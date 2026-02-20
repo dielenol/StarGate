@@ -1,0 +1,33 @@
+{
+  "name": "stargatev2",
+  "version": "1.0.0",
+  "description": "Stargate TRPG 공식 랜딩 웹앱 - 세계관 소개, 프로젝트 소식, 이메일 문의 및 지원 접수",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings=0"
+  },
+  "keywords": [
+    "nextjs",
+    "landing-page",
+    "stargate",
+    "trpg"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "next": "^16.1.6",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.1.6",
+    "typescript": "^5.9.3"
+  }
+}
