@@ -1,0 +1,80 @@
+.form-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+  color: #e2e8f0;
+}
+
+.form-page__title {
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.form-page__description {
+  color: #94a3b8;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.form-page__form {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid rgba(197, 160, 89, 0.4);
+  background: rgba(13, 27, 30, 0.85);
+}
+
+.form-page__label {
+  font-size: 14px;
+  color: #c5a059;
+  font-weight: 700;
+}
+
+.form-page__input,
+.form-page__textarea {
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: #0b1214;
+  color: #fff;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.form-page__textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.form-page__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.form-page__button {
+  border: 1px solid #c5a059;
+  background: #1a2a2c;
+  color: #fff;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.form-page__message {
+  font-size: 14px;
+}
+
+.form-page__message--error {
+  color: #fca5a5;
+}
+
+.form-page__message--success {
+  color: #86efac;
+}
+
+.form-page__back {
+  display: inline-block;
+  margin-top: 18px;
+  color: #c5a059;
+}

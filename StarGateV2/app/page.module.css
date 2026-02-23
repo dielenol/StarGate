@@ -1,0 +1,508 @@
+.stargate-page {
+  padding: 32px 16px;
+}
+
+.stargate {
+  border: 1px solid #34495e;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 10px;
+  background-color: #0d1b1e;
+  height: auto;
+  overflow: visible;
+}
+
+.stargate__frame {
+  border: 4px double #c5a059;
+  padding: 50px 20px;
+  background-color: #0d1b1e;
+  text-align: center;
+  height: auto;
+  overflow: visible;
+}
+
+.stargate__classification {
+  margin-bottom: 40px;
+  color: rgba(197, 160, 89, 0.5);
+  font-size: 11px;
+  letter-spacing: 3px;
+}
+
+.stargate__logo-wrap {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.stargate__logo-box {
+  display: inline-block;
+  border: 1px solid #c5a059;
+  padding: 12px;
+  background-color: #000;
+  box-shadow:
+    0 0 30px rgba(0, 0, 0, 0.8),
+    inset 0 0 10px rgba(197, 160, 89, 0.2);
+}
+
+.stargate__logo-placeholder {
+  color: #c5a059;
+  font-size: 13px;
+  margin: 0;
+  padding: 30px 60px;
+  border: 1px dashed rgba(197, 160, 89, 0.5);
+  text-align: center;
+}
+
+.stargate__logo-title {
+  letter-spacing: 2px;
+}
+
+.stargate__logo-image {
+  display: block;
+  margin: 10px auto 10px;
+  max-width: 220px;
+  width: 100%;
+  height: auto;
+}
+
+.stargate__intro {
+  margin-bottom: 60px;
+}
+
+.stargate__est {
+  display: inline-block;
+  background-color: #c5a059;
+  color: #0d1b1e;
+  padding: 2px 15px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  margin-bottom: 15px;
+}
+
+.stargate__title {
+  color: #fff;
+  font-size: 42px;
+  margin: 10px 0;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  text-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.stargate__ornament {
+  font-size: 20px;
+  color: #c5a059;
+  margin: 10px 0;
+}
+
+.stargate__intro-text {
+  color: #fff;
+  font-size: 19px;
+  line-height: 1.8;
+  word-break: keep-all;
+  font-weight: 300;
+}
+
+.stargate__highlight-underline {
+  color: #c5a059;
+  font-weight: bold;
+  border-bottom: 2px solid #c5a059;
+  padding-bottom: 2px;
+}
+
+.stargate__divider {
+  width: 80%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #c5a059, transparent);
+  margin: 0 auto 50px;
+  opacity: 0.5;
+}
+
+.stargate__about {
+  margin-bottom: 80px;
+}
+
+.stargate__about-text {
+  color: #b0c4de;
+  font-size: 16px;
+  line-height: 2;
+  word-break: keep-all;
+}
+
+.stargate__about-count {
+  color: #fff;
+  font-weight: bold;
+}
+
+.stargate__archive-wrap {
+  margin-top: 40px;
+}
+
+.stargate__archive-details {
+  cursor: pointer;
+  outline: none;
+  display: inline-block;
+  width: 100%;
+  max-width: 580px;
+}
+
+.stargate__archive-summary {
+  list-style: none;
+  display: block;
+  color: #c5a059;
+  border: 1px solid #c5a059;
+  padding: 15px 25px;
+  font-size: 15px;
+  font-weight: bold;
+  background-color: rgba(197, 160, 89, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.stargate__archive-content {
+  background-color: rgba(0, 0, 0, 0.4);
+  padding: 30px 25px;
+  border: 1px solid rgba(197, 160, 89, 0.4);
+  border-top: none;
+  color: #d0d0d0;
+  font-size: 15px;
+  line-height: 2.2;
+  text-align: center;
+  word-break: keep-all;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.stargate__archive-highlight {
+  color: #fff;
+  background-color: rgba(197, 160, 89, 0.2);
+  padding: 2px 5px;
+}
+
+.stargate__archive-emphasis {
+  color: #fff;
+  font-weight: bold;
+  font-size: 17px;
+  text-shadow: 0 0 10px #c5a059;
+}
+
+.stargate__leadership {
+  margin-top: 60px;
+  padding-top: 60px;
+  border-top: 1px solid rgba(197, 160, 89, 0.3);
+  background: linear-gradient(to bottom, rgba(197, 160, 89, 0.05), transparent);
+}
+
+.stargate__leadership-label {
+  letter-spacing: 8px;
+  color: #c5a059;
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 40px;
+}
+
+.stargate__profile-wrap {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.stargate__profile-frame {
+  display: inline-block;
+  border: 1px solid #c5a059;
+  padding: 5px;
+  background-color: #0d1b1e;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.stargate__profile-inner {
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  padding: 10px;
+  background-color: #000;
+}
+
+.stargate__profile-placeholder {
+  color: #c5a059;
+  font-size: 12px;
+  margin: 0;
+  padding: 10px 15px;
+  border: 1px dashed rgba(197, 160, 89, 0.4);
+}
+
+.stargate__profile-caption {
+  margin-top: 15px;
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.stargate__name-wrap {
+  margin-bottom: 40px;
+}
+
+.stargate__name-ko {
+  color: #fff;
+  font-size: 30px;
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.stargate__name-en {
+  color: #c5a059;
+  font-size: 15px;
+  margin-top: 8px;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+.stargate__position {
+  color: #94a3b8;
+  font-size: 14px;
+  margin-top: 10px;
+  background-color: rgba(255, 255, 255, 0.05);
+  display: inline-block;
+  padding: 3px 15px;
+  border-radius: 20px;
+}
+
+.stargate__quote-box {
+  max-width: 600px;
+  margin: 0 auto 50px;
+  padding: 40px 30px;
+  border-top: 1px solid #c5a059;
+  border-bottom: 1px solid #c5a059;
+  background-color: rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.stargate__quote-mark--open {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  margin-left: -15px;
+  background-color: #0d1b1e;
+  width: 30px;
+  color: #c5a059;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.stargate__quote-mark--close {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  margin-left: -15px;
+  background-color: #0d1b1e;
+  width: 30px;
+  color: #c5a059;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.stargate__quote-text {
+  color: #fff;
+  font-size: 19px;
+  line-height: 1.9;
+  font-style: italic;
+  word-break: keep-all;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.stargate__quote-highlight {
+  color: #c5a059;
+  font-weight: bold;
+}
+
+.stargate__bio {
+  text-align: center;
+  color: #e2e8f0;
+  font-size: 16px;
+  line-height: 2;
+  max-width: 680px;
+  margin: 0 auto;
+  word-break: keep-all;
+}
+
+.stargate__bio-main {
+  margin-bottom: 30px;
+  text-align: justify;
+  text-align-last: center;
+}
+
+.stargate__bio-emphasis {
+  color: #c5a059;
+  font-weight: bold;
+}
+
+.stargate__pandemic-box {
+  background-color: rgba(255, 207, 125, 0.05);
+  padding: 25px;
+  border: 1px solid rgba(255, 207, 125, 0.2);
+  margin-bottom: 30px;
+}
+
+.stargate__pandemic-text {
+  margin: 0;
+  color: #cbd5e1;
+}
+
+.stargate__pandemic-highlight {
+  color: #ffcf7d;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255, 207, 125, 0.4);
+}
+
+.stargate__protocol-wrap {
+  margin-top: 30px;
+}
+
+.stargate__protocol-details {
+  cursor: pointer;
+  outline: none;
+  display: inline-block;
+  width: 100%;
+  max-width: 550px;
+}
+
+.stargate__protocol-summary {
+  list-style: none;
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  padding: 10px;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.stargate__protocol-content {
+  margin-top: 0;
+  padding: 25px;
+  background-color: #050808;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-top: none;
+  font-size: 14px;
+  color: #94a3b8;
+  text-align: left;
+  line-height: 2;
+}
+
+.stargate__protocol-title {
+  color: #c5a059;
+  font-weight: bold;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.2);
+  padding-bottom: 5px;
+}
+
+.stargate__protocol-item {
+  color: #e2e8f0;
+}
+
+.stargate__cta-row {
+  text-align: center;
+}
+
+.stargate__cta-row--spaced {
+  margin: 35px 0;
+}
+
+.stargate__cta-link {
+  text-decoration: none;
+  display: inline-block;
+  width: 280px;
+}
+
+.stargate__cta-outer {
+  background-color: #1a2a2c;
+  border: 2px solid #c5a059;
+  padding: 2px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+}
+
+.stargate__cta-inner {
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  padding: 20px 10px;
+  position: relative;
+  background: linear-gradient(135deg, #1a2a2c 0%, #0d1b1e 100%);
+}
+
+.stargate__cta-icon {
+  font-size: 24px;
+  color: #c5a059;
+  margin-bottom: 5px;
+  text-shadow: 0 0 10px rgba(197, 160, 89, 0.5);
+}
+
+.stargate__cta-title {
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.stargate__cta-subtitle {
+  color: #c5a059;
+  font-size: 10px;
+  margin-top: 5px;
+  letter-spacing: 1px;
+  opacity: 0.8;
+}
+
+.stargate__footer {
+  margin-top: 100px;
+  padding-top: 30px;
+  border-top: 1px double rgba(197, 160, 89, 0.3);
+}
+
+.stargate__footer-property {
+  color: #4a5568;
+  font-size: 10px;
+  letter-spacing: 5px;
+  margin-bottom: 10px;
+}
+
+.stargate__footer-archive {
+  color: #c5a059;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.stargate__footer-mark {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+@media (max-width: 768px) {
+  .stargate__title {
+    font-size: 32px;
+  }
+
+  .stargate__name-ko {
+    font-size: 24px;
+  }
+
+  .stargate__logo-placeholder,
+  .stargate__profile-placeholder {
+    padding: 36px 28px;
+  }
+}
+
+@media print {
+  :global(*) {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  :global(body) {
+    background: #fff;
+  }
+
+  .stargate-page {
+    padding: 0;
+  }
+}
