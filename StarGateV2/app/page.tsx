@@ -18,7 +18,7 @@ export default function HomePage() {
                 <br />
                 <Image
                   className={styles["stargate__logo-image"]}
-                  src="/assets/StarGate_logo.png"
+                  src="/StarGate/assets/StarGate_logo.png"
                   alt="Star Gate logo"
                   width={220}
                   height={220}
@@ -89,7 +89,7 @@ export default function HomePage() {
                 <div className={styles["stargate__profile-inner"]}>
                   <p className={styles["stargate__profile-placeholder"]}>
                     <Image
-                      src="/assets/peoples/Amalia_Fredrika.png"
+                      src="/StarGate/assets/peoples/Amalia_Fredrika.png"
                       alt="아말리아 프레드리카 본 에센 초상화"
                       width={260}
                       height={379}

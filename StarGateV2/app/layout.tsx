@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description:
     "Stargate TRPG 공식 랜딩 웹앱",
   icons: {
-    icon: "/assets/favicon.ico",
+    icon: "/StarGate/assets/favicon.ico",
   },
 };
 
