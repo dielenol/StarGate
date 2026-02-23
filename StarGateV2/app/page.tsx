@@ -55,9 +55,9 @@ export default function HomePage() {
             </p>
 
             <div className={styles["stargate__archive-wrap"]}>
-              <details className={styles["stargate__archive-details"]}>
+              <details className={styles["stargate__archive-details"]} open>
                 <summary className={styles["stargate__archive-summary"]}>
-                  ▶ ARCHIVE: 조직의 발전사와 정체성 열람
+                  <span className={styles["stargate__archive-summary-icon"]}>▶</span> ARCHIVE: 조직의 발전사와 정체성 열람
                 </summary>
                 <div className={styles["stargate__archive-content"]}>
                   노부스 오르도는 빠르게 변화하는 세계에 발맞추기 위해
@@ -148,9 +148,9 @@ export default function HomePage() {
               </div>
 
               <div className={styles["stargate__protocol-wrap"]}>
-                <details className={styles["stargate__protocol-details"]}>
+                <details className={styles["stargate__protocol-details"]} open>
                   <summary className={styles["stargate__protocol-summary"]}>
-                    📁 ADMINISTRATIVE PROTOCOL: VIEW DETAILS
+                  <span className={styles["stargate__protocol-summary-icon"]}>▶</span> ADMINISTRATIVE PROTOCOL: VIEW DETAILS
                   </summary>
                   <div className={styles["stargate__protocol-content"]}>
                     <div className={styles["stargate__protocol-title"]}>

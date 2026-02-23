@@ -160,6 +160,17 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
+.stargate__archive-summary-icon {
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 0.25s ease;
+  transform-origin: center;
+}
+
+.stargate__archive-details[open] .stargate__archive-summary-icon {
+  transform: rotate(90deg);
+}
+
 .stargate__archive-content {
   background-color: rgba(0, 0, 0, 0.4);
   padding: 30px 25px;
@@ -375,6 +386,17 @@
   letter-spacing: 2px;
   padding: 10px;
   border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.stargate__protocol-summary-icon {
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 0.25s ease;
+  transform-origin: center;
+}
+
+.stargate__protocol-details[open] .stargate__protocol-summary-icon {
+  transform: rotate(90deg);
 }
 
 .stargate__protocol-content {
