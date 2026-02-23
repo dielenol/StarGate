@@ -12,8 +12,16 @@
 
 .form-page__description {
   color: #94a3b8;
+  line-height: 25px;
   margin-top: 0;
   margin-bottom: 24px;
+}
+
+.form-page__description-emphasis {
+  display: inline-block;
+  margin-top: 8px;
+  color: #f8d38d;
+  font-weight: 700;
 }
 
 .form-page__form {
