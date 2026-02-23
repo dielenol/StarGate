@@ -44,10 +44,9 @@ export default function ContactPage() {
       <div className={frameStyles.stargate}>
         <div className={frameStyles.stargate__frame}>
           <section className={styles["form-page"]}>
-            <h1 className={styles["form-page__title"]}>질문하기</h1>
+            <h1 className={styles["form-page__title"]}>문의하기</h1>
             <p className={styles["form-page__description"]}>
-              문의사항을 보내주세요. 현재는 1차 구현으로 폼 검증과 제출 플로우만
-              동작하며, 메일/DB 연동은 다음 단계에서 연결합니다.
+              해당 게임의 방식과 룰, 세계관 등 궁금하신 것을 자유롭게 문의해주세요.
             </p>
 
             <form className={styles["form-page__form"]} onSubmit={onSubmit}>

@@ -192,7 +192,7 @@ export default function HomePage() {
                   <div className={styles["stargate__cta-outer"]}>
                     <div className={styles["stargate__cta-inner"]}>
                       <div className={styles["stargate__cta-icon"]}>✉</div>
-                      <div className={styles["stargate__cta-title"]}>질문하기</div>
+                      <div className={styles["stargate__cta-title"]}>문의하기</div>
                       <div className={styles["stargate__cta-subtitle"]}>SECRET INQUIRY</div>
                     </div>
                   </div>
