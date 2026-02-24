@@ -8,9 +8,13 @@ Stargate TRPG 공식 랜딩 웹앱 - 세계관 소개, 프로젝트 소식, Disc
 
 ```bash
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+NEXT_PUBLIC_APP_BASE_PATH=
 ```
 
 Discord 채널에서 Webhook URL을 발급받아 입력하면 `/apply`, `/contact` 제출 시 해당 채널로 메시지가 전송됩니다.
+
+- `NEXT_PUBLIC_APP_BASE_PATH`는 이미지 경로 보정용 옵션입니다.
+- 로컬/Vercel 루트 도메인 배포에서는 비워두고, 서브패스 배포일 때만 `/StarGate` 같은 값을 설정하세요.
 
 ## 실행 방법
 
