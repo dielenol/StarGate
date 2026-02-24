@@ -44,9 +44,11 @@ export default function ContactPage() {
       <div className={frameStyles.stargate}>
         <div className={frameStyles.stargate__frame}>
           <section className={styles["form-page"]}>
-            <h1 className={styles["form-page__title"]}>문의하기</h1>
+            <h1 className={styles["form-page__title"]}>기밀 문의 접수</h1>
             <p className={styles["form-page__description"]}>
-              해당 게임의 방식과 룰, 세계관 등 궁금하신 것을 자유롭게 문의해주세요.
+              오르도 운영, 규약, 세계관 및 활동 절차 등 관련 질의를 접수합니다.
+              <br />
+              기록된 문의는 분류 후 담당 부서가 순차적으로 회신합니다.
             </p>
 
             <form className={styles["form-page__form"]} onSubmit={onSubmit}>
@@ -56,7 +58,7 @@ export default function ContactPage() {
                   className={styles["form-page__input"]}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="홍길동"
+                  placeholder="신원 식별명을 입력하세요."
                 />
               </label>
 
@@ -67,7 +69,7 @@ export default function ContactPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@email.com"
+                  placeholder="회신 가능한 채널(example@email.com)을 입력하세요."
                 />
               </label>
 
@@ -77,7 +79,7 @@ export default function ContactPage() {
                   className={styles["form-page__input"]}
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="문의 제목을 입력해주세요."
+                  placeholder="문의 분류용 제목을 입력하세요."
                 />
               </label>
 
@@ -87,13 +89,13 @@ export default function ContactPage() {
                   className={styles["form-page__textarea"]}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="문의 내용을 입력해주세요."
+                  placeholder="문의 상세 내용을 기록하세요."
                 />
               </label>
 
               <div className={styles["form-page__actions"]}>
                 <button className={styles["form-page__button"]} disabled={loading} type="submit">
-                  {loading ? "전송 중..." : "문의 보내기"}
+                  {loading ? "기록 전송 중..." : "기밀 문의 제출"}
                 </button>
                 {error ? (
                   <span
@@ -113,7 +115,7 @@ export default function ContactPage() {
             </form>
 
             <Link className={styles["form-page__back"]} href="/">
-              홈으로 돌아가기
+              기밀 아카이브로 복귀
             </Link>
           </section>
         </div>

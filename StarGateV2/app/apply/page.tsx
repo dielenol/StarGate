@@ -42,13 +42,13 @@ export default function ApplyPage() {
       <div className={frameStyles.stargate}>
         <div className={frameStyles.stargate__frame}>
           <section className={styles["form-page"]}>
-            <h1 className={styles["form-page__title"]}>가입 신청하기</h1>
+            <h1 className={styles["form-page__title"]}>입회 심사 신청</h1>
             <p className={styles["form-page__description"]}>
-              아래 양식에 맞춰 자유롭게 작성 후 신청해주세요. <br />
-              소개란엔 진행 가능 시간, 성향 등 자유롭게 써주세요. (미작성도 무관합니다.)
+              아래 기록지는 노부스 오르도 입회 심사를 위한 1차 서류입니다. <br />
+              소개란에는 활동 가능 시간, 성향, 참여 목적 등을 자유롭게 기입해 주세요.
               <br />
               <span className={styles["form-page__description-emphasis"]}>
-                네이버 게시글에 반드시 댓글도 써주셔야 합니다.
+                제출된 기록은 검토 후 등록된 연락처로 회신됩니다.
               </span>
             </p>
 
@@ -59,7 +59,7 @@ export default function ApplyPage() {
                   className={styles["form-page__input"]}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="홍길동"
+                  placeholder="신원 식별명을 입력하세요."
                 />
               </label>
 
@@ -70,23 +70,23 @@ export default function ApplyPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@email.com"
+                  placeholder="회신 가능한 채널(example@email.com)을 입력하세요."
                 />
               </label>
 
               <label className={styles["form-page__label"]}>
-                소개란
+                소개 기록
                 <textarea
                   className={styles["form-page__textarea"]}
                   value={motivation}
                   onChange={(e) => setMotivation(e.target.value)}
-                  placeholder="진행 가능 시간, 성향 등 자유롭게 써주세요 (미작성도 무관합니다.)"
+                  placeholder="활동 가능 시간, 성향, 참여 목적 등을 자유롭게 기록하세요. (미작성도 무관합니다)"
                 />
               </label>
 
               <div className={styles["form-page__actions"]}>
                 <button className={styles["form-page__button"]} disabled={loading} type="submit">
-                  {loading ? "제출 중..." : "신청서 제출"}
+                  {loading ? "기록 전송 중..." : "심사 기록 제출"}
                 </button>
                 {error ? (
                   <span
@@ -106,7 +106,7 @@ export default function ApplyPage() {
             </form>
 
             <Link className={styles["form-page__back"]} href="/">
-              홈으로 돌아가기
+              기밀 아카이브로 복귀
             </Link>
           </section>
         </div>
