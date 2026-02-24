@@ -1,8 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./page.module.css";
+import { resolvePublicAssetPath } from "@/lib/asset-path";
 
 export default function HomePage() {
+  // 배포 환경(basePath 유무)에 따라 public 자산 경로를 자동 보정합니다.
+  const logoSrc = resolvePublicAssetPath("/assets/StarGate_logo.png");
+  const amaliaPortraitSrc = resolvePublicAssetPath("/assets/peoples/Amalia_Fredrika.png");
+
   return (
     <main className={styles["stargate-page"]}>
       <div className={styles.stargate}>
@@ -18,7 +23,7 @@ export default function HomePage() {
                 <br />
                 <Image
                   className={styles["stargate__logo-image"]}
-                  src="/StarGate/assets/StarGate_logo.png"
+                  src={logoSrc}
                   alt="Star Gate logo"
                   width={220}
                   height={220}
@@ -89,7 +94,7 @@ export default function HomePage() {
                 <div className={styles["stargate__profile-inner"]}>
                   <p className={styles["stargate__profile-placeholder"]}>
                     <Image
-                      src="/StarGate/assets/peoples/Amalia_Fredrika.png"
+                      src={amaliaPortraitSrc}
                       alt="아말리아 프레드리카 본 에센 초상화"
                       width={260}
                       height={379}
