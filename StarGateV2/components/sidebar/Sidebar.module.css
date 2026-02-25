@@ -48,8 +48,7 @@
 }
 
 .sidebar__header {
-  margin-top: 44px;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   gap: 10px;
