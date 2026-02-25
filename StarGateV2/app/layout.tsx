@@ -1,12 +1,46 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import styles from "./layout.module.css";
+import Sidebar from "@/components/sidebar/Sidebar";
+
+// metadataBase 경고를 제거하고 환경별 절대 URL 기준을 고정합니다.
+// 우선순위:
+// 1) NEXT_PUBLIC_SITE_URL (수동 지정)
+// 2) VERCEL_PROJECT_PRODUCTION_URL (Vercel 제공)
+// 3) 로컬 개발 기본값
+const metadataBase = process.env.NEXT_PUBLIC_SITE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
+  : process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`)
+    : new URL("http://localhost:3000");
 
 export const metadata: Metadata = {
-  title: "StarGate | Novus Ordo",
+  title: "NOVUS ORDO",
   description:
-    "Stargate TRPG 공식 랜딩 웹앱",
+    "노부스 오르도에 오신 것을 환영합니다.",
+  metadataBase,
+  // 공유 미리보기에서 페이지 본문 이미지를 임의로 집어오지 않도록
+  // OG/Twitter 이미지를 로고로 명시적으로 고정합니다.
+  openGraph: {
+    title: "NOVUS ORDO",
+    description: "노부스 오르도에 오신 것을 환영합니다.",
+    images: [
+      {
+        url: "/assets/StarGate_logo.png",
+        width: 1200,
+        height: 1200,
+        alt: "StarGate 로고",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NOVUS ORDO",
+    description: "노부스 오르도에 오신 것을 환영합니다.",
+    images: ["/assets/StarGate_logo.png"],
+  },
   icons: {
-    icon: "/StarGate/assets/favicon.ico",
+    icon: "/assets/favicon.ico",
   },
 };
 
@@ -17,7 +51,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        <div className={styles.layout}>
+          <Sidebar />
+          <div className={styles["layout__content"]}>{children}</div>
+        </div>
+      </body>
     </html>
   );
 }

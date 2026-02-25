@@ -34,7 +34,7 @@ export default function HomePage() {
 
           <div className={styles.stargate__intro}>
             <span className={styles.stargate__est}>EST. 1945</span>
-            <h1 className={styles.stargate__title}>About Us</h1>
+            <h1 className={styles.stargate__title}>ABOUT US</h1>
             <div className={styles.stargate__ornament}>✥</div>
             <p className={styles["stargate__intro-text"]}>
               전 세계 국가들이 한자리에 모여
@@ -42,7 +42,7 @@ export default function HomePage() {
               국제 문제와 기현상을 논의하고
               <br />
               <span className={styles["stargate__highlight-underline"]}>
-                원로들의 지혜 아래에서 해결책을 모색하는 곳.
+                원로들의 지혜 아래에서 해결책을 모색하는 곳
               </span>
             </p>
           </div>
@@ -185,7 +185,7 @@ export default function HomePage() {
                   <div className={styles["stargate__cta-outer"]}>
                     <div className={styles["stargate__cta-inner"]}>
                       <div className={styles["stargate__cta-icon"]}>⚜</div>
-                      <div className={styles["stargate__cta-title"]}>가입 신청하기</div>
+                      <div className={styles["stargate__cta-title"]}>입회 심사 신청</div>
                       <div className={styles["stargate__cta-subtitle"]}>SUBMIT APPLICATION</div>
                     </div>
                   </div>
@@ -197,7 +197,7 @@ export default function HomePage() {
                   <div className={styles["stargate__cta-outer"]}>
                     <div className={styles["stargate__cta-inner"]}>
                       <div className={styles["stargate__cta-icon"]}>✉</div>
-                      <div className={styles["stargate__cta-title"]}>문의하기</div>
+                      <div className={styles["stargate__cta-title"]}>기밀 문의 접수</div>
                       <div className={styles["stargate__cta-subtitle"]}>SECRET INQUIRY</div>
                     </div>
                   </div>
