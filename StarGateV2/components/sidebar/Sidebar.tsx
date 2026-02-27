@@ -28,7 +28,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "세계관 기록",
     icon: "◈",
     children: [
-      { label: "세계관 메인", href: "/world", icon: "•" },
+      { label: "세계관", href: "/world", icon: "•" },
       { label: "세계관 A", href: "/world/a", icon: "A" },
       { label: "세계관 B", href: "/world/b", icon: "B" },
       { label: "세계관 C", href: "/world/c", icon: "C" },
