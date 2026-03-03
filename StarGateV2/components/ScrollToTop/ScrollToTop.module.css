@@ -10,7 +10,7 @@
   background: rgba(13, 27, 30, 0.9);
   color: #c5a059;
   border-radius: 8px;
-  font-size: 18px;
+  font-size: var(--font-size-md);
   display: flex;
   align-items: center;
   justify-content: center;
