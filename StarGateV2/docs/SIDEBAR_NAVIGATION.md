@@ -31,8 +31,8 @@
   - A(`/world/a`)
   - B(`/world/b`)
   - C(`/world/c`)
+- 작전 내규(`/gameplay`)
 - 룰 설명(`/rules`)
-- 게임 진행(`/gameplay`)
 
 ## 확장 가이드
 

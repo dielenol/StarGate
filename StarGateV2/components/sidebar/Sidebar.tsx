@@ -34,8 +34,8 @@ const NAV_ITEMS: NavItem[] = [
       { label: "세계관 C", href: "/world/c", icon: "C" },
     ],
   },
-  { label: "룰 설명", href: "/rules", icon: "☷" },
-  { label: "게임 진행", href: "/gameplay", icon: "▶" },
+  { label: "작전 내규", href: "/gameplay", icon: "▶" },
+  { label: "노부스 오르도 룰", href: "/rules", icon: "☷" },
 ];
 
 function isActivePath(pathname: string, href: string) {

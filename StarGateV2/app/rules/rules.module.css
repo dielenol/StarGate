@@ -89,6 +89,43 @@
   line-height: 1.9;
 }
 
+.numberList {
+  margin: 8px 0 14px;
+  padding-left: 20px;
+  color: #d7e0eb;
+  line-height: 1.9;
+}
+
+.numberList > li {
+  margin-bottom: 10px;
+}
+
+.termTitle {
+  color: #f2d39b;
+  font-weight: 800;
+}
+
+.statBox {
+  margin: 8px 0 14px;
+  padding: 14px;
+  border: 1px solid rgba(197, 160, 89, 0.22);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.statList {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #d7e0eb;
+  line-height: 1.85;
+}
+
+.note {
+  margin: 10px 0 0;
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
 .panicLevel1 {
   color: #7dd3fc;
 }

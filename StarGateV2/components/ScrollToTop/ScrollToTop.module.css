@@ -1,0 +1,36 @@
+/* Sidebar hamburger 스타일과 통일 */
+.button {
+  position: fixed;
+  bottom: 14px;
+  right: 14px;
+  z-index: 60;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(197, 160, 89, 0.5);
+  background: rgba(13, 27, 30, 0.9);
+  color: #c5a059;
+  border-radius: 8px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.button:hover {
+  border-color: rgba(197, 160, 89, 0.72);
+  background: rgba(18, 36, 39, 0.95);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.button:active {
+  transform: translateY(0);
+}
