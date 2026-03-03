@@ -14,7 +14,7 @@
 .hero__title {
   margin: 0;
   color: #ffffff;
-  font-size: clamp(30px, 4.5vw, 48px);
+  font-size: var(--font-size-hero);
   letter-spacing: 1px;
   font-weight: 900;
 }
@@ -22,7 +22,7 @@
 .hero__quote {
   margin: 12px 0 0;
   color: #c5a059;
-  font-size: clamp(15px, 2.5vw, 21px);
+  font-size: var(--font-size-hero-sub);
   line-height: 1.7;
 }
 
@@ -37,6 +37,7 @@
   box-shadow:
     0 12px 28px rgba(0, 0, 0, 0.35),
     inset 0 0 0 1px rgba(197, 160, 89, 0.12);
+  scroll-margin-top: 24px;
 }
 
 .entry__image {
@@ -50,7 +51,7 @@
   margin: 0;
   padding: 26px 24px 30px;
   color: #d8e0ea;
-  font-size: 16px;
+  font-size: var(--font-size-base);
   line-height: 1.95;
   text-align: left;
   word-break: keep-all;

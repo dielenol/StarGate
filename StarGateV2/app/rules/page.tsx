@@ -1,5 +1,19 @@
 import frameStyles from "../page.module.css";
 import styles from "./rules.module.css";
+import TableOfContents, { type TocItem } from "@/components/TableOfContents/TableOfContents";
+
+const RULES_TOC_ITEMS: TocItem[] = [
+  { id: "welcome", label: "환영" },
+  { id: "class", label: "클래스" },
+  { id: "stats", label: "캐릭터 능력치와 포인트" },
+  { id: "hp", label: "체력 (HP)" },
+  { id: "san", label: "정신력 (SAN)" },
+  { id: "def", label: "방어력 (DEF)" },
+  { id: "atk", label: "공격력 (ATK)" },
+  { id: "ability", label: "능력 메이킹" },
+  { id: "weapon", label: "무기 훈련" },
+  { id: "skill", label: "스킬 훈련" },
+];
 
 export default function RulesPage() {
   return (
@@ -21,8 +35,10 @@ export default function RulesPage() {
 
           <div className={frameStyles.stargate__divider}></div>
 
+          <TableOfContents items={RULES_TOC_ITEMS} />
+
           <div className={styles.sections}>
-            <section className={styles.section}>
+            <section className={styles.section} id="welcome">
               <h2 className={styles.section__title}>
                 노부스 오르도 룰에 오신 것을 환영합니다.
               </h2>
@@ -37,8 +53,9 @@ export default function RulesPage() {
                 해당 턴은 지연 또는 실패로 간주될 수 있습니다.
               </p>
               <p className={styles.section__text}>
-                요원들은 Zulu 및 기타 적대적 단체와 교전하여 대상 개체를 파괴하거나
-                포획하고, 유의미한 샘플을 확보해야 합니다.
+                요원들은 Zulu 및 기타 적대적 단체와 교전하여 대상 개체를{" "}
+                <span className={styles.emph}>파괴하거나 포획</span>하고,{" "}
+                <span className={styles.emph}>유의미한 샘플</span>을 확보해야 합니다.
               </p>
               <p className={styles.section__text}>
                 그 목적은 단 하나.
@@ -49,7 +66,7 @@ export default function RulesPage() {
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="class">
               <h2 className={styles.section__title}>클래스</h2>
               <p className={styles.section__text}>
                 노부스 오르도에는 다양한 직무를 수행하는 직업군, 즉 &apos;클래스&apos;가
@@ -64,17 +81,19 @@ export default function RulesPage() {
                     행정·관리 업무를 총괄합니다.
                   </p>
                   <p className={styles.section__text}>
-                    타 직군의 목적이 &apos;이상 개체&apos;의 제압이라면, 관료의 목적은
-                    &apos;이상 상황&apos;의 통제입니다. 작전 승인, 자원 배분, 정보 통제,
-                    격리 구역 설정 등 전투 외적 요소를 관리하며 작전의 흐름을 조율합니다.
+                    타 직군의 목적이 &apos;이상 개체&apos;의 제압이라면, 관료의 목적은{" "}
+                    <span className={styles.emph}>&apos;이상 상황&apos;의 통제</span>입니다.
+                    작전 승인, 자원 배분, 정보 통제, 격리 구역 설정 등 전투 외적 요소를
+                    관리하며 작전의 흐름을 조율합니다.
                   </p>
                 </li>
                 <li>
                   <span className={styles.termTitle}>군인</span>
                   <p className={styles.section__text}>
                     군인은 노부스 오르도의 현장 요원으로, 직접적인 위협 제거를 담당합니다.
-                    주 임무는 &apos;이상 개체&apos;의 제압·격리·파괴이며 전투 수행 능력과
-                    생존력이 핵심 요소입니다.
+                    주 임무는 &apos;이상 개체&apos;의 제압·격리·파괴이며{" "}
+                    <span className={styles.emph}>전투 수행 능력과 생존력</span>이 핵심
+                    요소입니다.
                   </p>
                 </li>
                 <li>
@@ -85,7 +104,8 @@ export default function RulesPage() {
                     확보한 샘플을 활용해 새로운 기술과 장비를 개발합니다.
                   </p>
                   <p className={styles.section__text}>
-                    직접 교전에 참여하지 않더라도 작전 난이도와 성공률에 중대한 영향을
+                    직접 교전에 참여하지 않더라도{" "}
+                    <span className={styles.emph}>작전 난이도와 성공률에 중대한 영향</span>을
                     미칩니다.
                   </p>
                 </li>
@@ -98,18 +118,19 @@ export default function RulesPage() {
                   </p>
                   <p className={styles.section__text}>
                     설정상 군인이나 과학자 등의 역할을 수행할 수 있으나, 본질적으로는
-                    기관의 감시 및 연구 대상이라는 점에서 타 클래스와 구별됩니다.
-                    전략 자산이자 잠재적 위험 요소로 간주됩니다.
+                    기관의 감시 및 연구 대상이라는 점에서 타 클래스와 구별됩니다.{" "}
+                    <span className={styles.warn}>전략 자산이자 잠재적 위험 요소</span>로
+                    간주됩니다.
                   </p>
                 </li>
               </ol>
               <p className={styles.note}>
-                ※ 모든 클래스는 고유 패시브 능력을 지니며, 추가로 다양한 수행 스킬을
-                습득할 수 있습니다.
+                ※ 모든 클래스는 <span className={styles.emph}>고유 패시브 능력</span>을
+                지니며, 추가로 다양한 수행 스킬을 습득할 수 있습니다.
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="stats">
               <h2 className={styles.section__title}>캐릭터 능력치와 포인트</h2>
               <p className={styles.section__text}>요원의 기본 능력치는 다음과 같습니다.</p>
               <div className={styles.statBox}>
@@ -147,14 +168,16 @@ export default function RulesPage() {
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="hp">
               <h2 className={styles.section__title}>체력 (HP)</h2>
               <p className={styles.section__text}>
                 체력은 스태미너, 건강, 근력 등 신체적 역량 전반을 아우르는 수치입니다.
               </p>
               <p className={styles.section__text}>
-                HP가 0이 되면 요원은 즉시 전투 불능 상태에 빠집니다. 이후 회수 없이
-                장면이 종료될 경우, 해당 요원은 사망 처리됩니다.
+                HP가 0이 되면 요원은 즉시{" "}
+                <span className={styles.warn}>전투 불능 상태</span>에 빠집니다. 이후 회수
+                없이 장면이 종료될 경우, 해당 요원은{" "}
+                <span className={styles.warn}>사망 처리</span>됩니다.
               </p>
               <p className={styles.section__text}>
                 체력을 기반으로 하는 스킬은 HP를 소모하여 해당 스킬 판정에 보정치를
@@ -173,17 +196,18 @@ export default function RulesPage() {
               </div>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="san">
               <h2 className={styles.section__title}>정신력 (SAN)</h2>
               <p className={styles.section__text}>
                 정신력은 의지, 끈기, 이성 등 정신적 안정성과 사고 능력을 포괄하는
                 수치입니다.
               </p>
               <p className={styles.section__text}>
-                노부스 오르도의 적대 존재들은 종종 정신적·심령적 공격을 가합니다.
-                SAN이 0에 도달할 경우, 요원은 전투 불능 상태에 빠지며
-                &apos;정신 질환&apos; 상태에 돌입합니다. 이후 회수 없이 장면이 종료될 경우,
-                사망 처리됩니다.
+                노부스 오르도의 적대 존재들은 종종 정신적·심령적 공격을 가합니다. SAN이
+                0에 도달할 경우, 요원은 전투 불능 상태에 빠지며{" "}
+                <span className={styles.warn}>&apos;정신 질환&apos; 상태</span>에 돌입합니다.
+                이후 회수 없이 장면이 종료될 경우,{" "}
+                <span className={styles.warn}>사망 처리</span>됩니다.
               </p>
               <p className={styles.section__text}>
                 정신력을 기반으로 하는 스킬은 SAN을 소모하여 해당 스킬 판정에 보정치를
@@ -207,18 +231,18 @@ export default function RulesPage() {
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="def">
               <h2 className={styles.section__title}>방어력 (DEF)</h2>
               <p className={styles.section__text}>
                 방어력은 살성(타격 저항력), 순간 회피 능력, 선천적 피부 내성, 방어구
                 효율의 총합으로 산정됩니다.
               </p>
               <p className={styles.section__text}>
-                피격 시 DEF 수치만큼 피해를 경감합니다.
+                피격 시 <span className={styles.emph}>DEF 수치만큼 피해를 경감</span>합니다.
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="atk">
               <h2 className={styles.section__title}>공격력 (ATK)</h2>
               <p className={styles.section__text}>
                 공격력은 맨손 공격의 위력과 근접 무기 사용 시 적용되는 보정치를
@@ -233,183 +257,89 @@ export default function RulesPage() {
                 </ul>
               </div>
               <p className={styles.section__text}>
-                이 중 ATK의 보정을 직접적으로 받는 유형은 &apos;근접 공격&apos;입니다.
-                원거리 공격은 특수 효과가 별도로 명시되어 있지 않다면 무기 자체의 고유
-                피해 수치를 사용합니다. 정신 공격은 일반적으로 SAN을 기반으로
-                판정됩니다.
+                이 중 ATK의 보정을 직접적으로 받는 유형은{" "}
+                <span className={styles.emph}>&apos;근접 공격&apos;</span>입니다. 원거리
+                공격은 특수 효과가 별도로 명시되어 있지 않다면 무기 자체의 고유 피해
+                수치를 사용합니다. 정신 공격은 일반적으로 SAN을 기반으로 판정됩니다.
               </p>
               <p className={styles.section__text}>
-                따라서 ATK에 포인트를 투자할 경우, 요원이 주력으로 사용할 무기 유형을
-                사전에 명확히 설정하는 것을 권장합니다.
+                따라서 ATK에 포인트를 투자할 경우,{" "}
+                <span className={styles.emph}>주력 무기 유형을 사전에 명확히 설정</span>하는
+                것을 권장합니다.
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="ability">
               <h2 className={styles.section__title}>능력 메이킹</h2>
               <p className={styles.section__text}>
-                노부스 오르도의 요원은 자신이 원하는 &quot;능력 설정&quot;을 자유롭게
-                창작할 수 있습니다.
+                노부스 오르도의 요원은 자신이 원하는{" "}
+                <span className={styles.emph}>&quot;능력 설정&quot;</span>을 자유롭게 창작할
+                수 있습니다.
               </p>
               <p className={styles.section__text}>
                 능력은 초자연적 현상, 심령 재능, 특수 체질, 개념적 간섭 등 세계관
                 내부에서 설명 가능한 범위라면 제한 없이 설계 가능합니다.
               </p>
               <p className={styles.section__text}>
-                단, 해당 능력을 실제 전투에 활용하기 위해서는 고도의 훈련과 숙련이
-                요구됩니다. 능력의 위력, 범용성, 발동 조건의 난이도, 지속 시간, 리스크
-                유무 등에 따라 &apos;능력 조형&apos;에 소모되는 포인트는 달라질 수 있습니다.
+                단, 해당 능력을 실제 전투에 활용하기 위해서는{" "}
+                <span className={styles.emph}>고도의 훈련과 숙련</span>이 요구됩니다. 능력의
+                위력, 범용성, 발동 조건의 난이도, 지속 시간, 리스크 유무 등에 따라
+                &apos;능력 조형&apos;에 소모되는 포인트는 달라질 수 있습니다.
               </p>
             </section>
 
-            <section className={styles.section}>
-              <h2 className={styles.section__title}>Zulu란?</h2>
+            <section className={styles.section} id="weapon">
+              <h2 className={styles.section__title}>무기 훈련</h2>
               <p className={styles.section__text}>
-                세계 곳곳에서 일어나는 미스테리 이상 현상 혹은 괴현상으로 인한 인간의
-                <span className={styles.warn}> 위협을 유발하는 모든 현상 및 개체</span>를
-                의미합니다.
+                버려진 군 격납고를 발견했다고 해서, 그 내부의 군사 장비를 즉시 운용할
+                수 있는 것은 아닙니다.
               </p>
               <p className={styles.section__text}>
-                노부스 오르도의 목표는 이 Zulu를{" "}
-                <span className={styles.emph}>포획하거나 파괴</span>하여{" "}
-                <span className={styles.emph}>사회 안녕</span>에 이바지하는 것입니다.
-              </p>
-            </section>
-
-            <section className={styles.section}>
-              <h2 className={styles.section__title}>Zulu의 공략</h2>
-              <p className={styles.section__text}>
-                모든 Zulu들은 세부 항목으로 나뉠 수 있지만 가장 중요한 것은 해당
-                Zulu의 <span className={styles.emph}>특징이나 약점</span>을 파악하는
-                것입니다.
+                대부분의 현장 요원은 투입 이전, 전문화된 무기 운용 훈련 과정을 거쳐야
+                합니다.
               </p>
               <p className={styles.section__text}>
-                Zulu는 고유한 &quot;특성&quot;과 &quot;약점&quot;을 지닙니다. 해당 특성과
-                약점은 Zulu를 향한 직접적인 상호 작용 묘사, 과학자의 연구 및 분석,
-                전투를 통한 화력 제압으로 획득합니다.
-              </p>
-              <p className={styles.section__text}>
-                전투 이전에 Zulu와 대면 시 요원들은 &quot;스킬 항목&quot;을 사용하여 Zulu
-                개체와 상호 작용할 수 있습니다. 알맞은 상호 작용을 한다면 해당 개체의
-                특성이나 약점을 파악할 수 있을 겁니다.
-              </p>
-              <p className={styles.section__example}>
-                eX) 누워있는 Zulu 개체에게 &quot;연극&quot;을 활용하여 오페라의 일부분을
-                불러보는 박사
-              </p>
-              <p className={styles.section__text}>
-                과학자는 해당 묘사를 전투 중에도 가능한 고유 능력을 지니고 있습니다.
-                또한 해당 Zulu가 생명 개체나 물리 개체일 경우 체력을 0으로 낮추면 
-                <span className={styles.emph}>특성을 하나 </span>알아낼 수 있습니다. (이
-                경우 약점은 의미가 없으므로 특성 중 하나로 알아낼 수 있습니다.)
-              </p>
-            </section>
-
-            <section className={styles.section}>
-              <h2 className={styles.section__title}>크레딧</h2>
-              <p className={styles.section__text}>
-                크레딧은 두 관점에서 사용이 가능합니다.
-              </p>
-              <div className={styles.subsection}>
-                <h3 className={styles.subsection__title}>개인 크레딧</h3>
-                <p className={styles.section__text}>
-                  개인에게 지급되는 일종의 보수입니다. 무기나 아이템 구매, 부서
-                  업그레이드에 사용됩니다.
-                </p>
-                <p className={styles.section__text}>
-                  관료의 경우 개인 크레딧을 사용하지 않으면 매 임무에{" "}
-                  <span className={styles.emph}>
-                    자신의 크레딧을 작전 자산으로 추가
-                  </span>
-                  할 수 있습니다.
-                </p>
-              </div>
-              <div className={styles.subsection}>
-                <h3 className={styles.subsection__title}>작전 크레딧</h3>
-                <p className={styles.section__text}>
-                  작전을 위해 현장에서 획득하는 크레딧으로 관료가 총 관리합니다. 해당
-                  크레딧으로 각 클래스는 고유 능력을 사용할 수 있습니다.
-                </p>
-                <p className={styles.section__text}>
-                  해당 크레딧은 작전이 종료되면{" "}
-                  <span className={styles.warn}>소멸합니다.</span>
-                </p>
-              </div>
-            </section>
-
-            <section className={styles.section}>
-              <h2 className={styles.section__title}>후원자</h2>
-              <p className={styles.section__text}>
-                노부스 오르도를 지지하는 수많은 기관들이 존재합니다. 이들은 자신들의
-                이득을 위해 샘플을 원한다던가 해당 작전이 &apos;조용하거나&apos;
-                &apos;시끄럽게&apos; 끝나길 원합니다.
-              </p>
-              <p className={styles.section__text}>
-                해당 조건을 만족하면 <span className={styles.emph}>추가 개인 크레딧</span>
-                을 획득할 수 있습니다. 반대로 이들의 요구를 너무 과하게 거부할 경우
-                훗날 <span className={styles.warn}>후원이 끊기거나 적대자</span>로
-                돌변하기도 합니다.
-              </p>
-            </section>
-
-            <section className={styles.section}>
-              <h2 className={styles.section__title}>지역 패닉</h2>
-              <p className={styles.section__text}>
-                지역 패닉은 1에서 6단계까지 존재하며 해당 구역의 민간인 혼란을
-                수치화한 개념입니다. 현상이 발생하면 해당 현상 고유의 지역 패닉 수치가
-                지역 패닉에 추가되며, 향후 언론 통제에 실패하면 지역 패닉이
-                추가적으로 1단계씩 올라가게 됩니다.
-              </p>
-              <ul className={styles.levelList}>
-                <li className={styles.panicLevel1}>1단계 : 인명 피해가 없는 교통사고</li>
-                <li className={styles.panicLevel2}>2단계 : 소수의 인명 피해가 있는 교통사고</li>
-                <li className={styles.panicLevel3}>3단계 : 다수의 인명피해가 있는 교통사고</li>
-                <li className={styles.panicLevel4}>4단계 : 국소 재난 사고</li>
-                <li className={styles.panicLevel5}>5단계 : 대규모 재난 주의보</li>
-                <li className={styles.panicLevel6}>6단계 : 계엄령</li>
-              </ul>
-              <p className={styles.section__text}>
-                해당 사건을 종결하는 동안 지역 패닉을 얼마나 낮추냐에 따라서 향후 받게
-                될 예산이 정해지며{" "}
+                &apos;무기 훈련&apos;을 습득하지 않은 상태에서 고난도 군사 장비를 사용할
+                경우,{" "}
                 <span className={styles.warn}>
-                  4단계, 5단계로 사건이 종결되면 기관 감사 및 예산 삭감
+                  명중률 저하, 오작동, 역효과 등의 페널티
                 </span>
-                이 일어납니다.
+                가 적용될 수 있습니다.
+              </p>
+              <p className={styles.section__text}>
+                현장에서 사용할 무기 및 장비는{" "}
+                <span className={styles.emph}>보유한 크레딧을 통해 구매</span>합니다.
+              </p>
+              <p className={styles.section__text}>
+                무기의 위력, 특수 효과, 사용 난이도에 따라 요구되는 훈련 수준이 달라질
+                수 있습니다.
               </p>
             </section>
 
-            <section className={styles.section}>
-              <h2 className={styles.section__title}>요원 레벨</h2>
+            <section className={styles.section} id="skill">
+              <h2 className={styles.section__title}>스킬 훈련</h2>
               <p className={styles.section__text}>
-                노부스 오르도 내부의 계급입니다. 사내 계급에 맞춰서 정보 공개량이
-                달라집니다.
-              </p>
-              <ul className={styles.levelList}>
-                <li className={styles.agentLevelV}>V : VIP</li>
-                <li className={styles.agentLevelA}>A : 최종 관리자 계급</li>
-                <li className={styles.agentLevelM}>M : 부서 관리자 계급</li>
-                <li className={styles.agentLevelH}>H : 부서 특수요원 계급</li>
-                <li className={styles.agentLevelG}>G : 부서 요원 계급</li>
-                <li className={styles.agentLevelJ}>J : 부서 평사원 계급</li>
-                <li className={styles.agentLevelU}>U : 소모품</li>
-              </ul>
-              <p className={styles.section__text}>
-                해당 계급은 작전 성공 시 보상 대신 획득할 수 있습니다. 계급에 따라서 
-                <span className={styles.emph}>공개되는 정보</span>가 달라지거나 명령
-                체계에 영향을 줄 수 있습니다.
-              </p>
-            </section>
-
-            <section className={styles.section}>
-              <h2 className={styles.section__title}>Zulu와 샘플의 활용</h2>
-              <p className={styles.section__text}>
-                모든 Zulu 개체들은 적절한 격리 절차나 상호작용, 파괴 방식에 따라 고유의
-                샘플을 제공합니다. 고유 샘플들 중 몇몇은 정해진 개수가 있을 수
-                있습니다.
+                현장에는 다양한 스킬 체크 상황이 존재합니다.
               </p>
               <p className={styles.section__text}>
-                샘플은 그 자체로 사용할 수 있거나, 장착하여 특정 클래스의 고유 능력을 
-                <span className={styles.emph}>증강</span>시키거나,{" "}
-                <span className={styles.warn}>소모</span>할 수 있습니다.
+                훈련된 요원이라면 해당 상황을 비교적 안정적으로 돌파할 수 있지만,{" "}
+                <span className={styles.warn}>훈련되지 않은 경우</span>에는 성공 여부를
+                운에 의존해야 합니다.
+              </p>
+              <p className={styles.section__text}>
+                스킬 체크는 기본적으로{" "}
+                <span className={styles.emph}>1d100 판정</span>을 사용합니다.
+              </p>
+              <p className={styles.section__text}>
+                판정 결과가 100에 가까울수록 성공 확률이 높으며, 진행자가 제시한 목표
+                수치 이상일 경우 성공으로 처리됩니다.
+              </p>
+              <p className={styles.section__text}>
+                스킬 훈련을 보유한 경우, 해당 스킬 판정에{" "}
+                <span className={styles.emph}>보정치가 부여</span>됩니다.
+              </p>
+              <p className={styles.note}>
+                ※ 보정 수치는 스킬 숙련도 및 상황 난이도에 따라 조정됩니다.
               </p>
             </section>
           </div>

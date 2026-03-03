@@ -1,5 +1,16 @@
 import frameStyles from "../page.module.css";
 import styles from "../rules/rules.module.css";
+import TableOfContents, { type TocItem } from "@/components/TableOfContents/TableOfContents";
+
+const GAMEPLAY_TOC_ITEMS: TocItem[] = [
+  { id: "zulu", label: "Zulu란?" },
+  { id: "zulu-tactics", label: "Zulu의 공략" },
+  { id: "credit", label: "크레딧" },
+  { id: "sponsor", label: "후원자" },
+  { id: "panic", label: "지역 패닉" },
+  { id: "agent-level", label: "요원 레벨" },
+  { id: "sample", label: "Zulu와 샘플의 활용" },
+];
 
 export default function GameplayPage() {
   return (
@@ -21,8 +32,10 @@ export default function GameplayPage() {
 
           <div className={frameStyles.stargate__divider}></div>
 
+          <TableOfContents items={GAMEPLAY_TOC_ITEMS} />
+
           <div className={styles.sections}>
-            <section className={styles.section}>
+            <section className={styles.section} id="zulu">
               <h2 className={styles.section__title}>Zulu란?</h2>
               <p className={styles.section__text}>
                 세계 곳곳에서 일어나는 미스테리 이상 현상 혹은 괴현상으로 인한 인간의
@@ -36,7 +49,7 @@ export default function GameplayPage() {
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="zulu-tactics">
               <h2 className={styles.section__title}>Zulu의 공략</h2>
               <p className={styles.section__text}>
                 모든 Zulu들은 세부 항목으로 나뉠 수 있지만 가장 중요한 것은 해당
@@ -65,7 +78,7 @@ export default function GameplayPage() {
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="credit">
               <h2 className={styles.section__title}>크레딧</h2>
               <p className={styles.section__text}>
                 크레딧은 두 관점에서 사용이 가능합니다.
@@ -97,7 +110,7 @@ export default function GameplayPage() {
               </div>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="sponsor">
               <h2 className={styles.section__title}>후원자</h2>
               <p className={styles.section__text}>
                 노부스 오르도를 지지하는 수많은 기관들이 존재합니다. 이들은 자신들의
@@ -112,7 +125,7 @@ export default function GameplayPage() {
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="panic">
               <h2 className={styles.section__title}>지역 패닉</h2>
               <p className={styles.section__text}>
                 지역 패닉은 1에서 6단계까지 존재하며 해당 구역의 민간인 혼란을
@@ -138,7 +151,7 @@ export default function GameplayPage() {
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="agent-level">
               <h2 className={styles.section__title}>요원 레벨</h2>
               <p className={styles.section__text}>
                 노부스 오르도 내부의 계급입니다. 사내 계급에 맞춰서 정보 공개량이
@@ -160,7 +173,7 @@ export default function GameplayPage() {
               </p>
             </section>
 
-            <section className={styles.section}>
+            <section className={styles.section} id="sample">
               <h2 className={styles.section__title}>Zulu와 샘플의 활용</h2>
               <p className={styles.section__text}>
                 모든 Zulu 개체들은 적절한 격리 절차나 상호작용, 파괴 방식에 따라 고유의

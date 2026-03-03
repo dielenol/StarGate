@@ -1,7 +1,17 @@
 import Image from "next/image";
 import frameStyles from "../page.module.css";
 import styles from "./world.module.css";
+import TableOfContents, { type TocItem } from "@/components/TableOfContents/TableOfContents";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
+
+const WORLD_TOC_ITEMS: TocItem[] = [
+  { id: "ww2", label: "제2차 세계대전과 오컬트" },
+  { id: "founding", label: "노부스 오르도 창설" },
+  { id: "ideology", label: "변칙적 현실주의" },
+  { id: "crack", label: "질서의 균열" },
+  { id: "aurora", label: "오로라 바이러스" },
+  { id: "crossroads", label: "오늘의 기로" },
+];
 
 export default function WorldPage() {
   const emblemSrc = resolvePublicAssetPath("/assets/StarGate_logo.png");
@@ -36,8 +46,10 @@ export default function WorldPage() {
 
           <div className={frameStyles.stargate__divider}></div>
 
+          <TableOfContents items={WORLD_TOC_ITEMS} />
+
           <div className={styles.timeline}>
-            <section className={styles.entry}>
+            <section className={styles.entry} id="ww2">
               <Image
                 src={worldview1Src}
                 alt="나치 오컬트 연구의 흔적을 상징하는 장면"
@@ -59,7 +71,7 @@ export default function WorldPage() {
               </p>
             </section>
 
-            <section className={styles.entry}>
+            <section className={styles.entry} id="founding">
               <Image
                 src={worldview2Src}
                 alt="전후 국제 질서의 불안정을 나타내는 세계 지도"
@@ -85,7 +97,7 @@ export default function WorldPage() {
               </p>
             </section>
 
-            <section className={styles.entry}>
+            <section className={styles.entry} id="ideology">
               <Image
                 src={worldview3Src}
                 alt="비공개 국제 회의장"
@@ -118,7 +130,7 @@ export default function WorldPage() {
               </p>
             </section>
 
-            <section className={styles.entry}>
+            <section className={styles.entry} id="crack">
               <Image
                 src={worldview4Src}
                 alt="질서 균열의 상징 장면"
@@ -146,7 +158,7 @@ export default function WorldPage() {
               </p>
             </section>
 
-            <section className={styles.entry}>
+            <section className={styles.entry} id="aurora">
               <Image
                 src={worldview5Src}
                 alt="오로라 바이러스 사태 이후의 황폐한 풍경"
@@ -165,7 +177,7 @@ export default function WorldPage() {
               </p>
             </section>
 
-            <section className={styles.entry}>
+            <section className={styles.entry} id="crossroads">
               <Image
                 src={worldview6Src}
                 alt="질서 붕괴와 초상적 위협 확산"

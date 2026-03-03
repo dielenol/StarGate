@@ -1,3 +1,15 @@
+:root {
+  /* 페이지 공통 타이포그래피 스케일 */
+  --font-size-xs: 11px;
+  --font-size-badge: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-md: 18px;
+  --font-size-lg: 24px;
+  --font-size-hero: clamp(30px, 4.5vw, 44px);
+  --font-size-hero-sub: 16px;
+}
+
 * {
   box-sizing: border-box;
 }
