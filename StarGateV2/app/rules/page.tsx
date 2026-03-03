@@ -59,8 +59,8 @@ export default function RulesPage() {
               </p>
               <p className={styles.section__text}>
                 과학자는 해당 묘사를 전투 중에도 가능한 고유 능력을 지니고 있습니다.
-                또한 해당 Zulu가 생명 개체나 물리 개체일 경우 체력을 0으로 낮추면
-                <span className={styles.emph}>특성을 하나 알아낼 수 있습니다.</span> (이
+                또한 해당 Zulu가 생명 개체나 물리 개체일 경우 체력을 0으로 낮추면 
+                <span className={styles.emph}>특성을 하나 </span>알아낼 수 있습니다. (이
                 경우 약점은 의미가 없으므로 특성 중 하나로 알아낼 수 있습니다.)
               </p>
             </section>
@@ -154,8 +154,8 @@ export default function RulesPage() {
                 <li className={styles.agentLevelU}>U : 소모품</li>
               </ul>
               <p className={styles.section__text}>
-                해당 계급은 작전 성공 시 보상 대신 획득할 수 있습니다. 계급에 따라서
-                <span className={styles.emph}>공개되는 정보가 달라지거나</span> 명령
+                해당 계급은 작전 성공 시 보상 대신 획득할 수 있습니다. 계급에 따라서 
+                <span className={styles.emph}>공개되는 정보</span>가 달라지거나 명령
                 체계에 영향을 줄 수 있습니다.
               </p>
             </section>
@@ -168,7 +168,7 @@ export default function RulesPage() {
                 있습니다.
               </p>
               <p className={styles.section__text}>
-                샘플은 그 자체로 사용할 수 있거나, 장착하여 특정 클래스의 고유 능력을
+                샘플은 그 자체로 사용할 수 있거나, 장착하여 특정 클래스의 고유 능력을 
                 <span className={styles.emph}>증강</span>시키거나,{" "}
                 <span className={styles.warn}>소모</span>할 수 있습니다.
               </p>

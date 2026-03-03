@@ -160,8 +160,8 @@ export default function WorldPage() {
                 불가역적 현상으로 이끌었고, 사회적·정치적 구조 전반에 깊은 상흔을
                 남겼습니다. 그 파급력은 단순한 감염병의 범주를 넘어섰습니다. 국가
                 기능이 마비되고, 정보 통제가 붕괴되었으며, 초상적 현상에 대한 공포가
-                대중화되었습니다. 이 사건을 계기로 <strong>노부스 오르도</strong>의 권위는 근본적인
-                <span className={styles.warn}>도전</span>에 직면하게 됩니다.
+                대중화되었습니다. 이 사건을 계기로 <strong>노부스 오르도</strong>의 권위는 
+                <span className={styles.warn}>근본적인 도전</span>에 직면하게 됩니다.
               </p>
             </section>
 
@@ -194,8 +194,8 @@ export default function WorldPage() {
                 세계에서, 균형을 유지하는 것. 그러나 과거와 같은 방식으로는 더 이상
                 충분하지 않습니다.
                 <br />
-                <strong>신질서</strong>를 다시 세우지 못한다면, 다음 붕괴는 통제 가능한 범위를
-                <span className={styles.warn}>넘어설 것입니다.</span>
+                <strong>신질서</strong>를 다시 세우지 못한다면, 다음 붕괴는 
+                <span className={styles.warn}>통제 가능한 범위</span>를 넘어설 것입니다.
               </p>
             </section>
           </div>
