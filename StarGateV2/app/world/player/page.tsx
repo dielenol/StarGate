@@ -20,19 +20,32 @@ type Agent = {
 
 const AGENTS = agentsData as Agent[];
 const BIG_BOY_AGENT_ID = "agent-bigboy";
+const BIG_BOY_WARNING_CHANCE = 0.2;
+const BIG_BOY_WARNING_MAX_PER_DAY = 3;
+const BIG_BOY_WARNING_STORAGE_KEY = "stargate-bigboy-warning-state";
 const WARNING_DURATION_MS = 1700;
 const RECOVERY_DURATION_MS = 1600;
+const RECOVERY_SOUND_DURATION_MS = 1300;
 
 export default function PlayerPage() {
   const [selectedAgentId, setSelectedAgentId] = useState(AGENTS[0]?.id ?? "");
   const [warningPhase, setWarningPhase] = useState<"idle" | "warning" | "video" | "recovery">("idle");
   const selectedAgent = AGENTS.find((agent) => agent.id === selectedAgentId) ?? AGENTS[0];
   const warningTimeoutRef = useRef<number | null>(null);
+  const recoverySoundTimeoutRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const warningAudioRef = useRef<HTMLAudioElement | null>(null);
+  const recoveryAudioRef = useRef<HTMLAudioElement | null>(null);
+  const paperAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (warningPhase !== "video" || !videoRef.current) {
       return;
+    }
+
+    if (warningAudioRef.current) {
+      warningAudioRef.current.pause();
+      warningAudioRef.current.currentTime = 0;
     }
 
     const videoElement = videoRef.current;
@@ -43,6 +56,10 @@ export default function PlayerPage() {
     return () => {
       if (warningTimeoutRef.current) {
         window.clearTimeout(warningTimeoutRef.current);
+      }
+
+      if (recoverySoundTimeoutRef.current) {
+        window.clearTimeout(recoverySoundTimeoutRef.current);
       }
     };
   }, []);
@@ -58,6 +75,21 @@ export default function PlayerPage() {
       videoRef.current.currentTime = 0;
     }
 
+    if (warningAudioRef.current) {
+      warningAudioRef.current.pause();
+      warningAudioRef.current.currentTime = 0;
+    }
+
+    if (recoveryAudioRef.current) {
+      recoveryAudioRef.current.pause();
+      recoveryAudioRef.current.currentTime = 0;
+    }
+
+    if (recoverySoundTimeoutRef.current) {
+      window.clearTimeout(recoverySoundTimeoutRef.current);
+      recoverySoundTimeoutRef.current = null;
+    }
+
     setWarningPhase("idle");
   }
 
@@ -65,6 +97,25 @@ export default function PlayerPage() {
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
+    }
+
+    if (recoveryAudioRef.current) {
+      recoveryAudioRef.current.volume = 0.15;
+      recoveryAudioRef.current.currentTime = 0;
+      void recoveryAudioRef.current.play().catch(() => undefined);
+
+      if (recoverySoundTimeoutRef.current) {
+        window.clearTimeout(recoverySoundTimeoutRef.current);
+      }
+
+      recoverySoundTimeoutRef.current = window.setTimeout(() => {
+        if (recoveryAudioRef.current) {
+          recoveryAudioRef.current.pause();
+          recoveryAudioRef.current.currentTime = 0;
+        }
+
+        recoverySoundTimeoutRef.current = null;
+      }, RECOVERY_SOUND_DURATION_MS);
     }
 
     setWarningPhase("recovery");
@@ -75,18 +126,69 @@ export default function PlayerPage() {
   }
 
   function handleAgentSelect(agent: Agent) {
+    if (agent.id === selectedAgentId) {
+      return;
+    }
+
     setSelectedAgentId(agent.id);
+
+    if (paperAudioRef.current) {
+      paperAudioRef.current.volume = 0.5;
+      paperAudioRef.current.currentTime = 0;
+      void paperAudioRef.current.play().catch(() => undefined);
+    }
 
     if (agent.id !== BIG_BOY_AGENT_ID || !agent.warningVideo) {
       closeBigBoySequence();
       return;
     }
 
+    const today = new Date().toISOString().slice(0, 10);
+    const storedState = window.localStorage.getItem(BIG_BOY_WARNING_STORAGE_KEY);
+    let triggerCount = 0;
+
+    if (storedState) {
+      try {
+        const parsedState = JSON.parse(storedState) as { date?: string; count?: number };
+        if (parsedState.date === today && typeof parsedState.count === "number") {
+          triggerCount = parsedState.count;
+        }
+      } catch {
+        triggerCount = 0;
+      }
+    }
+
+    if (triggerCount >= BIG_BOY_WARNING_MAX_PER_DAY) {
+      closeBigBoySequence();
+      return;
+    }
+
+    const randomBuffer = new Uint32Array(1);
+    window.crypto.getRandomValues(randomBuffer);
+    const isFirstTrigger = triggerCount === 0;
+    const shouldTriggerWarning =
+      isFirstTrigger || randomBuffer[0] / 4294967296 < BIG_BOY_WARNING_CHANCE;
+
+    if (!shouldTriggerWarning) {
+      closeBigBoySequence();
+      return;
+    }
+
+    window.localStorage.setItem(
+      BIG_BOY_WARNING_STORAGE_KEY,
+      JSON.stringify({ date: today, count: triggerCount + 1 }),
+    );
+
     if (warningTimeoutRef.current) {
       window.clearTimeout(warningTimeoutRef.current);
     }
 
     setWarningPhase("warning");
+    if (warningAudioRef.current) {
+      warningAudioRef.current.volume = 0.15;
+      warningAudioRef.current.currentTime = 0;
+      void warningAudioRef.current.play().catch(() => undefined);
+    }
     warningTimeoutRef.current = window.setTimeout(() => {
       setWarningPhase("video");
       warningTimeoutRef.current = null;
@@ -125,6 +227,7 @@ export default function PlayerPage() {
                   type="button"
                 >
                   <div className={styles.card__frame}>
+                    {active ? <div className={styles.card__status}>열람 중</div> : null}
                     <Image
                       className={styles.card__portrait}
                       src={agent.previewImage}
@@ -170,6 +273,22 @@ export default function PlayerPage() {
           </div>
         </div>
       </div>
+
+      <audio
+        ref={warningAudioRef}
+        src="/sound/181328__boulderdamstudios__special-marine-warning.wav"
+        preload="auto"
+      />
+      <audio
+        ref={recoveryAudioRef}
+        src="/sound/171223__ashowal__repairs-complete.wav"
+        preload="auto"
+      />
+      <audio
+        ref={paperAudioRef}
+        src="/sound/651514__1bob__paper.wav"
+        preload="auto"
+      />
 
       {warningPhase === "warning" ? (
         <div className={styles.securityOverlay} aria-live="assertive" role="alertdialog">
