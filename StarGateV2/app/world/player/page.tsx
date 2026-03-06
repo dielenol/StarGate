@@ -133,7 +133,7 @@ export default function PlayerPage() {
     setSelectedAgentId(agent.id);
 
     if (paperAudioRef.current) {
-      paperAudioRef.current.volume = 0.5;
+      paperAudioRef.current.volume = 1;
       paperAudioRef.current.currentTime = 0;
       void paperAudioRef.current.play().catch(() => undefined);
     }
