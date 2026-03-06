@@ -268,6 +268,7 @@
     "role": "군인 / 현장 돌격 요원",
     "previewImage": "/assets/peoples/BigBoy-pixel-profile.png",
     "pixelCharacterImage": "/assets/peoples/BigBoy-pixel-character.png",
+    "warningVideo": "/video/%EB%B9%85%EB%B3%B4%EC%9D%B4.mp4",
     "sheet": {
       "codename": "BIG BOY(빅 보이)",
       "name": "박애솔",

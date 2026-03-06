@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import frameStyles from "../../page.module.css";
 import styles from "./player.module.css";
 import CharacterSheet, { type CharacterSheetData } from "./components/CharacterSheet";
@@ -14,14 +14,84 @@ type Agent = {
   role: string;
   previewImage: string;
   pixelCharacterImage: string;
+  warningVideo?: string;
   sheet: CharacterSheetData;
 };
 
 const AGENTS = agentsData as Agent[];
+const BIG_BOY_AGENT_ID = "agent-bigboy";
+const WARNING_DURATION_MS = 1700;
+const RECOVERY_DURATION_MS = 1600;
 
 export default function PlayerPage() {
   const [selectedAgentId, setSelectedAgentId] = useState(AGENTS[0]?.id ?? "");
+  const [warningPhase, setWarningPhase] = useState<"idle" | "warning" | "video" | "recovery">("idle");
   const selectedAgent = AGENTS.find((agent) => agent.id === selectedAgentId) ?? AGENTS[0];
+  const warningTimeoutRef = useRef<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (warningPhase !== "video" || !videoRef.current) {
+      return;
+    }
+
+    const videoElement = videoRef.current;
+    void videoElement.play().catch(() => undefined);
+  }, [warningPhase]);
+
+  useEffect(() => {
+    return () => {
+      if (warningTimeoutRef.current) {
+        window.clearTimeout(warningTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  function closeBigBoySequence() {
+    if (warningTimeoutRef.current) {
+      window.clearTimeout(warningTimeoutRef.current);
+      warningTimeoutRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+
+    setWarningPhase("idle");
+  }
+
+  function handleBigBoyVideoEnd() {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+
+    setWarningPhase("recovery");
+    warningTimeoutRef.current = window.setTimeout(() => {
+      setWarningPhase("idle");
+      warningTimeoutRef.current = null;
+    }, RECOVERY_DURATION_MS);
+  }
+
+  function handleAgentSelect(agent: Agent) {
+    setSelectedAgentId(agent.id);
+
+    if (agent.id !== BIG_BOY_AGENT_ID || !agent.warningVideo) {
+      closeBigBoySequence();
+      return;
+    }
+
+    if (warningTimeoutRef.current) {
+      window.clearTimeout(warningTimeoutRef.current);
+    }
+
+    setWarningPhase("warning");
+    warningTimeoutRef.current = window.setTimeout(() => {
+      setWarningPhase("video");
+      warningTimeoutRef.current = null;
+    }, WARNING_DURATION_MS);
+  }
 
   return (
     <main className={frameStyles["stargate-page"]}>
@@ -51,7 +121,7 @@ export default function PlayerPage() {
                   aria-pressed={active}
                   className={`${styles.card} ${active ? styles["card--active"] : ""}`}
                   key={agent.id}
-                  onClick={() => setSelectedAgentId(agent.id)}
+                  onClick={() => handleAgentSelect(agent)}
                   type="button"
                 >
                   <div className={styles.card__frame}>
@@ -100,6 +170,88 @@ export default function PlayerPage() {
           </div>
         </div>
       </div>
+
+      {warningPhase === "warning" ? (
+        <div className={styles.securityOverlay} aria-live="assertive" role="alertdialog">
+          <div className={styles.securityOverlay__noise} aria-hidden="true" />
+          <div className={styles.securityOverlay__scanline} aria-hidden="true" />
+          <div className={styles.securityOverlay__glitch} aria-hidden="true">
+            SIGNAL BREACH DETECTED
+          </div>
+
+          <div className={styles.securityPopup}>
+            <div className={styles.securityPopup__header}>
+              <span className={styles.securityPopup__logo}>N.O.S.B</span>
+              <span className={styles.securityPopup__title}>INTELLIGENCE & ANOMALY CONTROL</span>
+            </div>
+
+            <div className={styles.securityPopup__content}>
+              <div className={styles.securityPopup__warning}>SECURITY BREACH</div>
+              <div className={styles.securityPopup__message}>
+                비인가된 접근 토큰이 인물 기록 노드에 주입되었습니다.
+                <br />
+                메모리 덤프 및 시각 계층 변조가 감지되어 방어 프로토콜이 강제 실행됩니다.
+                <br />
+                격리 대상: BIG BOY / 박애솔
+                <br />
+                임시 차폐막 전개 중. 단말 제어권이 복구될 때까지 현 상태를 유지하십시오.
+              </div>
+
+              <div className={styles.securityPopup__info}>
+                <div>
+                  NODE <span>WORLD/PLAYER/ENTITY-07</span>
+                </div>
+                <div>
+                  FLAG <span>UNAUTHORIZED VISUAL INJECTION</span>
+                </div>
+                <div>
+                  STATUS <span>COUNTER-INTRUSION ACTIVE</span>
+                </div>
+                <div>
+                  ACTION <span>SYSTEM LOCKDOWN / TRACE ROUTE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {warningPhase === "video" && selectedAgent?.warningVideo ? (
+        <div className={styles.videoOverlay} role="dialog" aria-modal="true" aria-label="빅보이 보안 영상">
+          <div className={styles.videoModal}>
+            <video
+              ref={videoRef}
+              className={styles.videoModal__player}
+              src={selectedAgent.warningVideo}
+              autoPlay
+              controls={false}
+              onEnded={handleBigBoyVideoEnd}
+              playsInline
+              preload="auto"
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {warningPhase === "recovery" ? (
+        <div className={styles.recoveryOverlay} role="status" aria-live="polite">
+          <div className={styles.recoveryOverlay__grid} aria-hidden="true" />
+          <div className={styles.recoveryPanel}>
+            <div className={styles.recoveryPanel__badge}>RECOVERY PROTOCOL</div>
+            <div className={styles.recoveryPanel__title}>시스템 무결성 복구 중</div>
+            <div className={styles.recoveryPanel__message}>
+              시각 계층 오염 제거 완료.
+              <br />
+              격리 채널 종료 및 세션 권한 재동기화를 수행합니다.
+            </div>
+            <div className={styles.recoveryPanel__status}>
+              <span>VISUAL STACK RESTORED</span>
+              <span>TRACE SEALED</span>
+              <span>ARCHIVE NODE STABLE</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
