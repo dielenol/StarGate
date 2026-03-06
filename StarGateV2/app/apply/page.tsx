@@ -105,9 +105,17 @@ export default function ApplyPage() {
               </div>
             </form>
 
-            <Link className={styles["form-page__back"]} href="/">
-              기밀 아카이브로 복귀
-            </Link>
+            <div className={frameStyles["stargate__cta-row"]}>
+              <Link className={frameStyles["stargate__cta-link"]} href="/">
+                <div className={frameStyles["stargate__cta-outer"]}>
+                  <div className={frameStyles["stargate__cta-inner"]}>
+                    <div className={frameStyles["stargate__cta-icon"]}>↩</div>
+                    <div className={frameStyles["stargate__cta-title"]}>기밀 아카이브로 복귀</div>
+                    <div className={frameStyles["stargate__cta-subtitle"]}>RETURN TO ARCHIVE</div>
+                  </div>
+                </div>
+              </Link>
+            </div>
           </section>
         </div>
       </div>
