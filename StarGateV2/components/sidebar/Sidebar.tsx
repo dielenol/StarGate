@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import styles from "./Sidebar.module.css";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
@@ -46,11 +46,17 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function isExactPath(pathname: string, href: string) {
+  return pathname === href;
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const brandLogoSrc = resolvePublicAssetPath("/assets/StarGate_logo.png");
+  const sidebarFlipSrc = resolvePublicAssetPath("/sound/sidebar_flip.wav");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [worldExpanded, setWorldExpanded] = useState(() => pathname.startsWith("/world"));
+  const sidebarAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const worldSectionOpen = pathname.startsWith("/world");
   const worldActive = pathname === "/world";
@@ -59,13 +65,32 @@ export default function Sidebar() {
     setMobileOpen(false);
   }
 
+  function playSidebarFlip() {
+    try {
+      if (!sidebarAudioRef.current) {
+        const audio = new Audio(sidebarFlipSrc);
+        audio.preload = "auto";
+        sidebarAudioRef.current = audio;
+      }
+
+      const audio = sidebarAudioRef.current;
+      audio.currentTime = 0;
+      void audio.play().catch(() => {});
+    } catch {
+      // Ignore audio playback errors (autoplay policy, unsupported env, etc.)
+    }
+  }
+
   return (
     <>
       <button
         aria-expanded={mobileOpen}
         aria-label="메뉴 열기"
         className={`${styles["sidebar__hamburger"]} ${mobileOpen ? styles["sidebar__hamburger--hidden"] : ""}`}
-        onClick={() => setMobileOpen((prev) => !prev)}
+        onClick={() => {
+          playSidebarFlip();
+          setMobileOpen((prev) => !prev);
+        }}
         type="button"
       >
         ☰
@@ -86,7 +111,10 @@ export default function Sidebar() {
           <button
             aria-label="메뉴 닫기"
             className={styles["sidebar__close"]}
-            onClick={() => setMobileOpen(false)}
+            onClick={() => {
+              playSidebarFlip();
+              setMobileOpen(false);
+            }}
             type="button"
           >
             ✕
@@ -102,7 +130,10 @@ export default function Sidebar() {
                 <Link
                   className={`${styles["sidebar__item"]} ${active ? styles["sidebar__item--active"] : ""}`}
                   href={item.href ?? "/"}
-                  onClick={closeMobileMenu}
+                  onClick={() => {
+                    playSidebarFlip();
+                    closeMobileMenu();
+                  }}
                   key={item.label}
                 >
                   <span className={styles["sidebar__icon"]}>{item.icon}</span>
@@ -118,7 +149,10 @@ export default function Sidebar() {
                 <button
                   aria-expanded={expanded}
                   className={`${styles["sidebar__item"]} ${worldActive ? styles["sidebar__item--active"] : ""}`}
-                  onClick={() => setWorldExpanded((prev) => !prev)}
+                  onClick={() => {
+                    playSidebarFlip();
+                    setWorldExpanded((prev) => !prev);
+                  }}
                   type="button"
                 >
                   <span className={styles["sidebar__icon"]}>{item.icon}</span>
@@ -130,13 +164,16 @@ export default function Sidebar() {
                   className={`${styles["sidebar__children"]} ${expanded ? styles["sidebar__children--open"] : ""}`}
                 >
                   {item.children.map((child) => {
-                    const childActive = isActivePath(pathname, child.href);
+                    const childActive = isExactPath(pathname, child.href);
 
                     return (
                       <Link
                         className={`${styles["sidebar__child-item"]} ${childActive ? styles["sidebar__child-item--active"] : ""}`}
                         href={child.href}
-                        onClick={closeMobileMenu}
+                        onClick={() => {
+                          playSidebarFlip();
+                          closeMobileMenu();
+                        }}
                         key={child.href}
                       >
                         <span className={styles["sidebar__child-icon"]}>{child.icon}</span>
@@ -155,7 +192,10 @@ export default function Sidebar() {
         <button
           aria-label="메뉴 닫기"
           className={styles["sidebar__backdrop"]}
-          onClick={() => setMobileOpen(false)}
+          onClick={() => {
+            playSidebarFlip();
+            setMobileOpen(false);
+          }}
           type="button"
         />
       ) : null}
