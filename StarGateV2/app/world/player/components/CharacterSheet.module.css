@@ -1,0 +1,432 @@
+.sheet {
+  border: 1px solid rgba(197, 160, 89, 0.4);
+  background: linear-gradient(180deg, rgba(197, 160, 89, 0.05), rgba(2, 8, 11, 0.85));
+  box-shadow:
+    inset 0 0 0 1px rgba(197, 160, 89, 0.1),
+    0 14px 30px rgba(0, 0, 0, 0.3);
+  padding: 20px 16px;
+  text-align: left;
+  animation: sheetReveal 220ms ease-out;
+}
+
+@keyframes sheetReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sheet__classification {
+  color: rgba(197, 160, 89, 0.65);
+  font-size: var(--font-size-xs);
+  letter-spacing: 3px;
+  border-bottom: 1px dashed rgba(197, 160, 89, 0.3);
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+
+.hero__details {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.portrait {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  background:
+    linear-gradient(180deg, rgba(197, 160, 89, 0.1), rgba(10, 16, 22, 0.7)),
+    rgba(8, 12, 16, 0.85);
+}
+
+.portrait__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 220px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  object-position: center top;
+  border: 1px solid rgba(197, 160, 89, 0.35);
+  filter: saturate(0.88) contrast(1.04);
+}
+
+.portrait__caption {
+  margin-top: 8px;
+  text-align: right;
+  color: rgba(197, 160, 89, 0.75);
+  font-size: var(--font-size-xs);
+  letter-spacing: 1.6px;
+}
+
+.voiceLog {
+  margin: 0;
+  padding: 14px;
+  border-left: 3px solid #c5a059;
+  background: rgba(197, 160, 89, 0.07);
+}
+
+.voiceLog__quote {
+  margin: 0;
+  color: #f2d39b;
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.voiceLog__meta {
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: var(--font-size-xs);
+  letter-spacing: 1.5px;
+}
+
+.identityTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.identityTable td {
+  border: 1px solid rgba(197, 160, 89, 0.2);
+  padding: 12px 10px;
+  color: #d7e0eb;
+  font-size: var(--font-size-sm);
+  vertical-align: top;
+}
+
+.identityTable__title {
+  background: rgba(197, 160, 89, 0.92);
+  color: #081014 !important;
+  font-weight: 900;
+  font-size: var(--font-size-lg) !important;
+  letter-spacing: 1px;
+}
+
+.identityTable strong {
+  color: #f2d39b;
+}
+
+.identityTable__item {
+  display: grid;
+  gap: 4px;
+  min-height: 44px;
+  align-content: start;
+}
+
+.identityTable__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #f2d39b;
+  line-height: 1.2;
+}
+
+.identityTable__label::after {
+  content: "|";
+  color: rgba(242, 211, 155, 0.78);
+}
+
+.identityTable__value {
+  display: block;
+  color: #d7e0eb;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.dossierPanel {
+  border: 1px solid rgba(197, 160, 89, 0.2);
+  background:
+    linear-gradient(180deg, rgba(197, 160, 89, 0.06), rgba(0, 0, 0, 0.2)),
+    rgba(6, 10, 14, 0.72);
+  padding: 12px;
+}
+
+.dossierGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dossierItem {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(52, 73, 94, 0.9);
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.dossierItem__label {
+  display: block;
+  margin-bottom: 4px;
+  color: #9fb0c7;
+  font-size: var(--font-size-xs);
+  letter-spacing: 1.2px;
+}
+
+.dossierItem__value {
+  display: block;
+  color: #f2d39b;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.dossierStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dossierStat {
+  padding: 10px 8px;
+  border: 1px solid rgba(197, 160, 89, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  text-align: center;
+}
+
+.dossierStat__label {
+  display: block;
+  margin-bottom: 4px;
+  color: #9fb0c7;
+  font-size: var(--font-size-xs);
+  letter-spacing: 1px;
+}
+
+.dossierStat__value {
+  display: block;
+  color: #ffffff;
+  font-size: var(--font-size-base);
+  font-weight: 800;
+}
+
+.bio {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.bioBlock__title {
+  margin: 0 0 8px;
+  display: inline-block;
+  color: #ffffff;
+  background: rgba(197, 160, 89, 0.2);
+  border-left: 3px solid #c5a059;
+  padding: 4px 12px;
+  font-size: var(--font-size-sm);
+}
+
+.bioBlock__body {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(52, 73, 94, 0.9);
+  background: rgba(0, 0, 0, 0.28);
+  color: #d7e0eb;
+  font-size: var(--font-size-sm);
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.statsSection,
+.equipmentSection,
+.abilitySection {
+  margin-bottom: 20px;
+}
+
+.statsSection__title,
+.equipmentSection__title,
+.abilitySection__title {
+  margin: 0 0 10px;
+  color: #f2d39b;
+  font-size: var(--font-size-md);
+  letter-spacing: 1px;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.45);
+  padding-bottom: 8px;
+}
+
+.statsTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border: 1px solid #34495e;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.statsTable td {
+  border: 1px solid #34495e;
+  padding: 12px 10px;
+  color: #d7e0eb;
+  font-size: var(--font-size-sm);
+}
+
+.statsTable__class {
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 700;
+}
+
+.statsTable__class span {
+  color: #9fb0c7;
+}
+
+.statsTable__statRow {
+  text-align: center;
+}
+
+.statsTable__statCell {
+  width: 25%;
+  height: 92px;
+  vertical-align: middle;
+}
+
+.statsTable__labelHp,
+.statsTable__labelSan,
+.statsTable__labelDef,
+.statsTable__labelAtk {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 6px;
+  letter-spacing: 0.6px;
+}
+
+.statsTable__labelHp {
+  color: #4ade80;
+}
+
+.statsTable__labelSan {
+  color: #22d3ee;
+}
+
+.statsTable__labelDef {
+  color: #cbd5e1;
+}
+
+.statsTable__labelAtk {
+  color: #fb923c;
+}
+
+.statsTable__value {
+  display: block;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.statsTable strong {
+  color: #f2d39b;
+}
+
+.statsTable__metaLine + .statsTable__metaLine {
+  margin-top: 5px;
+}
+
+.equipmentTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid rgba(251, 113, 133, 0.4);
+  background: rgba(251, 113, 133, 0.06);
+}
+
+.equipmentTable th,
+.equipmentTable td {
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  padding: 10px;
+  font-size: var(--font-size-sm);
+}
+
+.equipmentTable th {
+  color: #fda4af;
+  text-align: left;
+  background: rgba(251, 113, 133, 0.12);
+}
+
+.equipmentTable td {
+  color: #e2e8f0;
+}
+
+.abilityList {
+  display: grid;
+  gap: 10px;
+}
+
+.abilityCard {
+  border-left: 3px solid #a855f7;
+  background: rgba(168, 85, 247, 0.08);
+  padding: 12px;
+}
+
+.abilityCard__name {
+  margin: 0 0 8px;
+  color: #f5d0fe;
+  font-size: var(--font-size-base);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.abilityCard__name span {
+  color: #0f1720;
+  background: #a855f7;
+  padding: 2px 8px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.abilityCard p {
+  margin: 0 0 4px;
+  color: #e2e8f0;
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+}
+
+.abilityCard strong {
+  color: #e9d5ff;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .portrait__image {
+    min-height: 280px;
+  }
+
+  .identityTable__title {
+    font-size: 21px !important;
+  }
+
+  .dossierGrid,
+  .dossierStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .voiceLog__quote {
+    font-size: 15px;
+  }
+
+  .statsTable__value {
+    font-size: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}
