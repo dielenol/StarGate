@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import styles from "./Sidebar.module.css";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
@@ -29,9 +29,9 @@ const NAV_ITEMS: NavItem[] = [
     icon: "◈",
     children: [
       { label: "세계관", href: "/world", icon: "•" },
-      { label: "세계관 A", href: "/world/a", icon: "A" },
-      { label: "세계관 B", href: "/world/b", icon: "B" },
-      { label: "세계관 C", href: "/world/c", icon: "C" },
+      { label: "플레이어", href: "/world/player", icon: "♟" },
+      // { label: "세계관 B", href: "/world/b", icon: "B" },
+      // { label: "세계관 C", href: "/world/c", icon: "C" },
     ],
   },
   { label: "작전 내규", href: "/gameplay", icon: "▶" },
@@ -52,7 +52,8 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [worldExpanded, setWorldExpanded] = useState(() => pathname.startsWith("/world"));
 
-  const worldActive = useMemo(() => pathname.startsWith("/world"), [pathname]);
+  const worldSectionOpen = pathname.startsWith("/world");
+  const worldActive = pathname === "/world";
 
   function closeMobileMenu() {
     setMobileOpen(false);
@@ -110,7 +111,7 @@ export default function Sidebar() {
               );
             }
 
-            const expanded = worldExpanded || worldActive;
+            const expanded = worldExpanded || worldSectionOpen;
 
             return (
               <div className={styles["sidebar__group"]} key={item.label}>
