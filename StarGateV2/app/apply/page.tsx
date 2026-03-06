@@ -119,18 +119,10 @@ export default function ApplyPage() {
                   <h2 className={styles["form-page__success-title"]}>입회 심사 기록이 정상 접수되었습니다.</h2>
                   <p className={styles["form-page__success-description"]}>{success}</p>
 
-                  <button
-                    className={`${frameStyles["stargate__cta-link"]} ${styles["form-page__success-cta"]}`}
-                    onClick={() => router.push("/")}
-                    type="button"
-                  >
-                    <span className={frameStyles["stargate__cta-outer"]}>
-                      <span className={frameStyles["stargate__cta-inner"]}>
-                        <span className={frameStyles["stargate__cta-icon"]}>↩</span>
-                        <span className={frameStyles["stargate__cta-title"]}>기밀 아카이브로 이동</span>
-                        <span className={frameStyles["stargate__cta-subtitle"]}>RETURN TO ARCHIVE</span>
-                      </span>
-                    </span>
+                  <button className={styles["form-page__success-cta"]} onClick={() => router.push("/")} type="button">
+                    <span className={styles["form-page__success-cta-icon"]}>↩</span>
+                    <span className={styles["form-page__success-cta-title"]}>기밀 아카이브로 이동</span>
+                    <span className={styles["form-page__success-cta-subtitle"]}>RETURN TO ARCHIVE</span>
                   </button>
                 </div>
               </div>
