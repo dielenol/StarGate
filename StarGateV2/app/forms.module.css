@@ -1,4 +1,5 @@
 .form-page {
+  position: relative;
   max-width: 720px;
   margin: 0 auto;
   padding: 32px 16px 64px;
@@ -87,4 +88,67 @@
   display: inline-block;
   margin-top: 18px;
   color: #c5a059;
+}
+
+.form-page__success-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(2, 8, 11, 0.82);
+  backdrop-filter: blur(6px);
+}
+
+.form-page__success-panel {
+  width: min(100%, 520px);
+  padding: 24px 22px;
+  border: 1px solid rgba(197, 160, 89, 0.45);
+  background:
+    linear-gradient(180deg, rgba(197, 160, 89, 0.08), rgba(0, 0, 0, 0.3)),
+    rgba(7, 15, 18, 0.96);
+  box-shadow:
+    inset 0 0 0 1px rgba(197, 160, 89, 0.12),
+    0 20px 48px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.form-page__success-badge {
+  margin-bottom: 12px;
+  color: #f2d39b;
+  font-size: var(--font-size-xs);
+  letter-spacing: 2px;
+}
+
+.form-page__success-title {
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-size: clamp(22px, 3vw, 28px);
+}
+
+.form-page__success-description {
+  margin: 0 auto 18px;
+  max-width: 36ch;
+  color: #b7c6d9;
+  line-height: 1.7;
+}
+
+.form-page__success-cta {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .form-page__success-overlay {
+    padding: 18px;
+  }
+
+  .form-page__success-panel {
+    padding: 20px 18px;
+  }
 }

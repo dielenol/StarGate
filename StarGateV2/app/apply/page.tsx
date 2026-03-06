@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { submitApplyForm } from "@/lib/form-submit";
 import { validateApplyForm } from "@/lib/validators";
@@ -8,6 +9,7 @@ import styles from "../forms.module.css";
 import frameStyles from "../page.module.css";
 
 export default function ApplyPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [motivation, setMotivation] = useState("");
@@ -95,13 +97,6 @@ export default function ApplyPage() {
                     {error}
                   </span>
                 ) : null}
-                {success ? (
-                  <span
-                    className={`${styles["form-page__message"]} ${styles["form-page__message--success"]}`}
-                  >
-                    {success}
-                  </span>
-                ) : null}
               </div>
             </form>
 
@@ -116,6 +111,30 @@ export default function ApplyPage() {
                 </div>
               </Link>
             </div>
+
+            {success ? (
+              <div className={styles["form-page__success-overlay"]} role="dialog" aria-modal="true">
+                <div className={styles["form-page__success-panel"]}>
+                  <div className={styles["form-page__success-badge"]}>TRANSMISSION COMPLETE</div>
+                  <h2 className={styles["form-page__success-title"]}>입회 심사 기록이 정상 접수되었습니다.</h2>
+                  <p className={styles["form-page__success-description"]}>{success}</p>
+
+                  <button
+                    className={`${frameStyles["stargate__cta-link"]} ${styles["form-page__success-cta"]}`}
+                    onClick={() => router.push("/")}
+                    type="button"
+                  >
+                    <span className={frameStyles["stargate__cta-outer"]}>
+                      <span className={frameStyles["stargate__cta-inner"]}>
+                        <span className={frameStyles["stargate__cta-icon"]}>↩</span>
+                        <span className={frameStyles["stargate__cta-title"]}>기밀 아카이브로 이동</span>
+                        <span className={frameStyles["stargate__cta-subtitle"]}>RETURN TO ARCHIVE</span>
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </section>
         </div>
       </div>
