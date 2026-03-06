@@ -1,3 +1,15 @@
+.playerPage {
+  --player-desktop-scale: 1;
+}
+
+.playerShell {
+  width: 100%;
+}
+
+.playerFrame {
+  width: 100%;
+}
+
 .hero {
   margin: 8px 0 28px;
   text-align: center;
@@ -501,6 +513,87 @@
   margin: 8px 0 0;
   color: #94a3b8;
   font-size: var(--font-size-sm);
+}
+
+@media (min-width: 769px) {
+  .playerPage {
+    --player-desktop-scale: 1.5;
+  }
+
+  .playerShell {
+    max-width: 1200px;
+  }
+
+  .playerFrame {
+    padding: 68px 36px;
+  }
+
+  .hero {
+    margin: 16px 0 40px;
+  }
+
+  .hero__title {
+    margin: 16px 0 12px;
+    font-size: clamp(56px, 5vw, 68px);
+    letter-spacing: -0.02em;
+  }
+
+  .hero__description {
+    max-width: 60ch;
+    margin-inline: auto;
+    font-size: var(--font-size-base);
+  }
+
+  .selectGrid {
+    grid-template-columns: repeat(auto-fit, minmax(270px, 330px));
+    gap: 22px;
+    margin-bottom: 42px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .card__frame {
+    padding: 9px;
+  }
+
+  .card__status {
+    top: 16px;
+    left: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .card__portrait {
+    height: 320px;
+  }
+
+  .card__pixelBadge {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .card__pixelCharacter {
+    width: 92px;
+  }
+
+  .card__meta {
+    margin-top: 14px;
+    gap: 4px;
+  }
+
+  .card__name {
+    font-size: var(--font-size-base);
+  }
+
+  .card__role {
+    font-size: var(--font-size-sm);
+  }
+
+  .sheets {
+    gap: 22px;
+  }
 }
 
 @media (max-width: 768px) {

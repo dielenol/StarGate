@@ -196,9 +196,9 @@ export default function PlayerPage() {
   }
 
   return (
-    <main className={frameStyles["stargate-page"]}>
-      <div className={frameStyles.stargate}>
-        <div className={frameStyles.stargate__frame}>
+    <main className={`${frameStyles["stargate-page"]} ${styles.playerPage}`}>
+      <div className={`${frameStyles.stargate} ${styles.playerShell}`}>
+        <div className={`${frameStyles.stargate__frame} ${styles.playerFrame}`}>
           <div className={frameStyles.stargate__classification}>
             CLASSIFICATION: PERSONNEL ARCHIVE // AGENT DOSSIER
           </div>

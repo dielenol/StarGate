@@ -398,6 +398,128 @@
   color: #e9d5ff;
 }
 
+@media (min-width: 769px) {
+  .sheet {
+    padding: 28px 24px;
+  }
+
+  .sheet__classification {
+    margin-bottom: 24px;
+  }
+
+  .hero {
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    gap: 22px;
+    margin-bottom: 24px;
+  }
+
+  .hero__details {
+    gap: 16px;
+  }
+
+  .portrait {
+    padding: 14px;
+  }
+
+  .portrait__image {
+    min-height: 360px;
+  }
+
+  .voiceLog {
+    padding: 18px;
+  }
+
+  .voiceLog__quote {
+    font-size: var(--font-size-lg);
+  }
+
+  .identityTable td {
+    padding: 15px 14px;
+  }
+
+  .identityTable__title {
+    font-size: 32px !important;
+  }
+
+  .dossierPanel {
+    padding: 16px;
+  }
+
+  .dossierGrid,
+  .dossierStats {
+    gap: 12px;
+  }
+
+  .dossierItem,
+  .dossierStat {
+    padding: 14px 12px;
+  }
+
+  .bio {
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .bioBlock__title {
+    margin-bottom: 10px;
+    padding: 6px 14px;
+    font-size: var(--font-size-base);
+  }
+
+  .bioBlock__body {
+    padding: 14px 16px;
+    font-size: var(--font-size-base);
+  }
+
+  .statsSection,
+  .equipmentSection,
+  .abilitySection {
+    margin-bottom: 28px;
+  }
+
+  .statsSection__title,
+  .equipmentSection__title,
+  .abilitySection__title {
+    margin-bottom: 14px;
+    font-size: var(--font-size-lg);
+  }
+
+  .statsTable td {
+    padding: 16px 14px;
+  }
+
+  .statsTable__statCell {
+    height: 116px;
+  }
+
+  .statsTable__value {
+    font-size: 30px;
+  }
+
+  .equipmentTable th,
+  .equipmentTable td {
+    padding: 14px 12px;
+    font-size: var(--font-size-base);
+  }
+
+  .abilityList {
+    gap: 14px;
+  }
+
+  .abilityCard {
+    padding: 16px;
+  }
+
+  .abilityCard__name {
+    margin-bottom: 10px;
+    font-size: var(--font-size-md);
+  }
+
+  .abilityCard p {
+    font-size: var(--font-size-base);
+  }
+}
+
 @media (max-width: 768px) {
   .hero {
     grid-template-columns: 1fr;
