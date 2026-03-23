@@ -7,10 +7,12 @@
 
 import { getClient } from "./client.js";
 import type { Session, SessionResponse } from "../types/session.js";
+import type { SessionLog } from "../types/session-log.js";
 
 const DB_NAME = "trpg_bot";
 const SESSIONS_COLLECTION = "sessions";
 const RESPONSES_COLLECTION = "session_responses";
+const SESSION_LOGS_COLLECTION = "session_logs";
 
 /**
  * sessions 컬렉션을 반환합니다.
@@ -24,4 +26,11 @@ export function sessionsCollection() {
  */
 export function responsesCollection() {
   return getClient().db(DB_NAME).collection<SessionResponse>(RESPONSES_COLLECTION);
+}
+
+/**
+ * session_logs 컬렉션을 반환합니다.
+ */
+export function sessionLogsCollection() {
+  return getClient().db(DB_NAME).collection<SessionLog>(SESSION_LOGS_COLLECTION);
 }

@@ -25,6 +25,10 @@ export interface Session {
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+  /**
+   * 세션 시작 24시간 전 리마인드(참석/YES 응답자 멘션) 발송 여부
+   */
+  sessionStartReminder24hSent?: boolean;
 }
 
 /** DB에 저장되는 응답 문서 */

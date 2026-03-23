@@ -109,3 +109,165 @@ export async function findOpenSessionsPastClose(
   const cursor = sessionsCollection().find(filter);
   return cursor.toArray();
 }
+
+/**
+ * 모든 OPEN 세션을 조회합니다 (리마인드·수동 마감 등).
+ */
+export async function findAllOpenSessions(): Promise<Session[]> {
+  return sessionsCollection().find({ status: "OPEN" }).toArray();
+}
+
+/**
+ * 특정 길드의 OPEN 세션만, 최근 생성 순으로 조회합니다.
+ */
+export async function findOpenSessionsByGuild(
+  guildId: string
+): Promise<Session[]> {
+  const cursor = sessionsCollection().find({ guildId, status: "OPEN" });
+  return cursor.sort({ createdAt: -1 }).toArray();
+}
+
+/**
+ * 세션 시작 24시간 이내이면서 아직 시작 전인 세션 중, 시작 리마인드를 아직 안 보낸 것.
+ * 응답 마감으로 이미 `CLOSED`여도 세션 일시 전이면 포함합니다.
+ */
+export async function findSessionsForStartReminder(): Promise<Session[]> {
+  const now = new Date();
+  const within24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  const filter: Filter<Session> = {
+    status: { $in: ["OPEN", "CLOSED"] },
+    targetDateTime: { $gt: now, $lte: within24h },
+    $or: [
+      { sessionStartReminder24hSent: { $exists: false } },
+      { sessionStartReminder24hSent: false },
+    ],
+  };
+
+  return sessionsCollection().find(filter).toArray();
+}
+
+/**
+ * 길드 내 가장 최근 생성된 OPEN 세션 1건을 조회합니다.
+ */
+export async function findLatestOpenSessionByGuild(
+  guildId: string
+): Promise<Session | null> {
+  return sessionsCollection().findOne(
+    { guildId, status: "OPEN" },
+    { sort: { createdAt: -1 } }
+  );
+}
+
+/**
+ * 길드 내 가장 최근 마감된(CLOSED) 세션 1건을 조회합니다.
+ */
+export async function findLatestClosedSessionByGuild(
+  guildId: string
+): Promise<Session | null> {
+  return sessionsCollection().findOne(
+    { guildId, status: "CLOSED" },
+    { sort: { updatedAt: -1 } }
+  );
+}
+
+/**
+ * ID로 세션을 조회하되 해당 길드에 속한지 검증합니다.
+ */
+export async function findSessionByIdInGuild(
+  sessionId: string,
+  guildId: string
+): Promise<Session | null> {
+  const s = await findSessionById(sessionId);
+  if (!s || s.guildId !== guildId) return null;
+  return s;
+}
+
+/**
+ * 응답 마감 일시만 변경합니다. 세션 시작 리마인드 플래그는 그대로 둡니다.
+ */
+export async function updateSessionCloseDateTime(
+  sessionId: string,
+  closeDateTime: Date
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    { _id: new ObjectId(sessionId) } as SessionFilter,
+    {
+      $set: {
+        closeDateTime,
+        updatedAt: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+/**
+ * 세션 진행 일시(`targetDateTime`)를 변경합니다.
+ * 일정이 바뀌므로 시작 24시간 전 리마인드 플래그를 초기화합니다.
+ */
+export async function updateSessionTargetDateTime(
+  sessionId: string,
+  targetDateTime: Date
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    { _id: new ObjectId(sessionId) } as SessionFilter,
+    {
+      $set: {
+        targetDateTime,
+        updatedAt: new Date(),
+        sessionStartReminder24hSent: false,
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+/**
+ * 세션 일시·응답 마감을 한 번에 갱신합니다 (일정 수정 시 마감 자동 맞춤용).
+ * 리마인드 플래그는 초기화합니다.
+ */
+export async function updateSessionTargetAndCloseDateTime(
+  sessionId: string,
+  targetDateTime: Date,
+  closeDateTime: Date
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    { _id: new ObjectId(sessionId) } as SessionFilter,
+    {
+      $set: {
+        targetDateTime,
+        closeDateTime,
+        updatedAt: new Date(),
+        sessionStartReminder24hSent: false,
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+/**
+ * 리마인드 발송 플래그를 설정합니다.
+ */
+export async function setSessionReminderFlags(
+  sessionId: string,
+  flags: { sessionStartReminder24hSent?: boolean }
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const $set: Record<string, unknown> = { updatedAt: new Date() };
+  if (flags.sessionStartReminder24hSent !== undefined)
+    $set.sessionStartReminder24hSent = flags.sessionStartReminder24hSent;
+
+  const result = await sessionsCollection().updateOne(
+    { _id: new ObjectId(sessionId) } as SessionFilter,
+    { $set }
+  );
+  return result.modifiedCount > 0;
+}
