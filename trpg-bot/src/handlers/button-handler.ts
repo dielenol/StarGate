@@ -73,7 +73,10 @@ export async function handleButtonInteraction(
 
   if (session.status !== "OPEN") {
     await interaction.followUp({
-      content: "❌ 마감된 세션은 응답을 변경할 수 없습니다.",
+      content:
+        session.status === "CANCELED"
+          ? "❌ 취소된 세션은 응답을 변경할 수 없습니다."
+          : "❌ 마감된 세션은 응답을 변경할 수 없습니다.",
       flags: MessageFlags.Ephemeral,
     }).catch(() => {});
     return;
@@ -92,7 +95,11 @@ export async function handleButtonInteraction(
   const responses = await findBySessionId(sessionId);
   const yesIds = responses.filter((r) => r.status === "YES").map((r) => r.userId);
   const noIds = responses.filter((r) => r.status === "NO").map((r) => r.userId);
-  const embed = buildSessionEmbed(session, counts, yesIds, noIds);
+  const sid =
+    session._id !== undefined && session._id !== null
+      ? String(session._id)
+      : undefined;
+  const embed = buildSessionEmbed(session, counts, yesIds, noIds, sid);
 
   // 버튼은 그대로 유지 (마감 전에는 비활성화 안 함)
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(

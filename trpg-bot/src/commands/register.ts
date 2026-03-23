@@ -27,13 +27,15 @@ const SESSION_CREATE_CMD = {
         },
         {
           name: "date",
-          description: "세션 진행 일시 (예: 2026-03-22 20:00)",
+          description:
+            "세션 일시 24h (예: 2026-03-22 20:00=저녁8시). 지금 이후만 가능",
           type: 3,
           required: true,
         },
         {
           name: "close",
-          description: "응답 마감 일시 (예: 2026-03-20 23:59)",
+          description:
+            "응답 마감 24h (예: 15:50=오후3시50분, 03:50=새벽). 지금·세션일시 사이",
           type: 3,
           required: true,
         },
@@ -46,6 +48,96 @@ const SESSION_CREATE_CMD = {
         {
           name: "channel",
           description: "공지 채널 (채널 ID, 미지정 시 현재 채널)",
+          type: 3,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: "list",
+      description: "이 서버에서 진행 중(OPEN)인 세션 목록 (서버 관리 권한)",
+      type: 1,
+      options: [],
+    },
+    {
+      name: "result",
+      description: "현재 집계 또는 최종 결과 확인 (서버 관리 권한)",
+      type: 1,
+      options: [
+        {
+          name: "session_id",
+          description:
+            "세션 ID(생성 완료 메시지에 표시). 비우면 이 서버 전체 기준: 최근 진행 중→없으면 최근 마감 (만든 사람 무관)",
+          type: 3,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: "close",
+      description: "응답 수집을 강제 마감합니다 (관리자)",
+      type: 1,
+      options: [
+        {
+          name: "session_id",
+          description:
+            "세션 ID(생성 완료 메시지 참고). 비우면 이 서버에서 가장 최근 진행 중 세션",
+          type: 3,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: "edit_close",
+      description: "응답 마감 일시 변경 (진행 중 세션, 서버 관리 권한)",
+      type: 1,
+      options: [
+        {
+          name: "new_close",
+          description:
+            "새 응답 마감 24h. 과거·세션일 이후도 저장 가능(안내 문구 확인)",
+          type: 3,
+          required: true,
+        },
+        {
+          name: "session_id",
+          description:
+            "세션 ID(공지 임베드). 비우면 이 서버 가장 최근 진행 중 세션",
+          type: 3,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: "edit_date",
+      description: "세션 진행 일시 변경 (진행 중 세션, 서버 관리 권한)",
+      type: 1,
+      options: [
+        {
+          name: "new_date",
+          description:
+            "새 세션 일시 24h. 과거 허용. 마감보다 앞이면 마감을 세션 1시간 전으로 자동 조정",
+          type: 3,
+          required: true,
+        },
+        {
+          name: "session_id",
+          description:
+            "세션 ID(공지 임베드). 비우면 이 서버 가장 최근 진행 중 세션",
+          type: 3,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: "cancel",
+      description: "세션을 취소합니다 (집계 메시지 없음, 서버 관리 권한)",
+      type: 1,
+      options: [
+        {
+          name: "session_id",
+          description:
+            "세션 ID(생성 완료 메시지 참고). 비우면 이 서버에서 가장 최근 진행 중 세션",
           type: 3,
           required: false,
         },

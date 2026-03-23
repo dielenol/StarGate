@@ -14,6 +14,7 @@ import {
   MessageFlags,
 } from "discord.js";
 import { createSession, updateSessionMessageId } from "../db/sessions.js";
+import { appendSessionLog } from "../db/logs.js";
 import { buildSessionEmbed } from "../utils/embed.js";
 /** 버튼 customId 접두사 (trpg:attend:{sessionId}:yes|no|maybe) */
 const BUTTON_PREFIX = "trpg:attend:";
@@ -73,6 +74,26 @@ export async function handleSessionCreate(
   if (closeDateTime >= targetDateTime) {
     await interaction.editReply({
       content: "❌ 응답 마감일시는 세션 일시보다 이전이어야 합니다.",
+    });
+    return;
+  }
+
+  const now = Date.now();
+  // 이미 지난 마감이면 생성 직후 스케줄러가 곧바로 CLOSED 처리함 (오전/오후 혼동 방지)
+  if (closeDateTime.getTime() <= now) {
+    await interaction.editReply({
+      content:
+        "❌ **응답 마감 일시가 이미 지났습니다.** 봇이 세션을 바로 마감해 버립니다.\n" +
+        "· **24시간 형식**을 권장합니다. 예: 오후 3시 50분 → `2026-03-18 15:50` (❌ `03:50`은 **새벽** 3시 50분입니다)\n" +
+        "· 마감은 **지금 이후**여야 합니다.",
+    });
+    return;
+  }
+
+  if (targetDateTime.getTime() <= now) {
+    await interaction.editReply({
+      content:
+        "❌ 세션 일시는 **현재보다 이후**여야 합니다. (이미 지난 일정은 등록할 수 없습니다.)",
     });
     return;
   }
@@ -155,7 +176,10 @@ export async function handleSessionCreate(
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-      { yes: 0, no: 0 }
+      { yes: 0, no: 0 },
+      undefined,
+      undefined,
+      sessionId
     );
 
     const msg = await textChannel.send({
@@ -166,8 +190,19 @@ export async function handleSessionCreate(
     // messageId 업데이트 (마감 시 원본 메시지 수정용)
     await updateSessionMessageId(sessionId, msg.id);
 
+    await appendSessionLog(sessionId, "CREATED", {
+      userId: interaction.user.id,
+      payload: { channelId, messageId: msg.id },
+    });
+
     await interaction.editReply({
-      content: `✅ 세션이 생성되었습니다. [공지 메시지](${msg.url})`,
+      content: [
+        `✅ 세션이 생성되었습니다. [공지 메시지](${msg.url})`,
+        "",
+        `공지 임베드에도 **세션 ID**가 표시됩니다. (복사: \`${sessionId}\`)`,
+        "일정 변경: **`/session edit_date`**(세션 일시), **`/session edit_close`**(응답 마감)",
+        "_`session_id`를 비우면 서버 기준 가장 최근 진행 중 세션이 자동 선택됩니다._",
+      ].join("\n"),
     });
   } catch (err) {
     console.error("[session create]", err);
