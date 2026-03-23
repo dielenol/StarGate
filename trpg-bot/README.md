@@ -61,6 +61,15 @@ npm run register
 | role | O | 참여 대상 역할 ID 또는 @역할멘션 (@here, @everyone 불가) |
 | channel | - | 공지 채널 ID (미지정 시 현재 채널) |
 
+### 관리 (서버 관리 권한)
+
+| 서브커맨드 | 설명 |
+|-----------|------|
+| `edit_close` | 응답 마감 일시 변경 (`new_close`, 선택 `session_id`) |
+| `edit_date` | 세션 진행 일시 변경 (`new_date`, 선택 `session_id`) |
+| `list` | 이 서버 진행 중(OPEN) 세션 목록 (에페메랄) |
+| `result` / `close` / `cancel` | 집계·강제 마감·취소 — 자세한 내용은 SPEC 참고 |
+
 ## 상세 스펙
 
 전체 구현 스펙 및 플랜 대비 현황은 [docs/SPEC.md](docs/SPEC.md)를 참조하세요.
