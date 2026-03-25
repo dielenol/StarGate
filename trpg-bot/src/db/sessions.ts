@@ -128,6 +128,27 @@ export async function findOpenSessionsByGuild(
 }
 
 /**
+ * 같은 길드에서 `targetDateTime`이 (봇 서버 기준) 해당 연·월에 속하는 OPEN/CLOSED 세션.
+ * 결과 카드 캘린더에 동일 달 세션을 함께 표시할 때 사용합니다.
+ */
+export async function findSessionsByGuildInMonth(
+  guildId: string,
+  year: number,
+  monthIndex: number
+): Promise<Session[]> {
+  const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
+  const end = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+  return sessionsCollection()
+    .find({
+      guildId,
+      status: { $in: ["OPEN", "CLOSED"] },
+      targetDateTime: { $gte: start, $lte: end },
+    })
+    .sort({ targetDateTime: 1 })
+    .toArray();
+}
+
+/**
  * 세션 시작 24시간 이내이면서 아직 시작 전인 세션 중, 시작 리마인드를 아직 안 보낸 것.
  * 응답 마감으로 이미 `CLOSED`여도 세션 일시 전이면 포함합니다.
  */

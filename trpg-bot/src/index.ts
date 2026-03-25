@@ -21,6 +21,7 @@ import {
 } from "./commands/session-manage.js";
 import { startCloseChecker } from "./scheduler/close-checker.js";
 import { startReminderChecker } from "./scheduler/reminder-checker.js";
+import { closeResultCardBrowser } from "./utils/result-card-image.js";
 
 // Discord 봇 클라이언트 (Guilds: 서버/채널/역할 정보, GuildMembers: 역할 멤버 조회)
 const client = new Client({
@@ -93,10 +94,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 /** 프로세스 종료 시 DB 연결 해제 */
-process.on("SIGINT", async () => {
+async function shutdown(): Promise<void> {
   console.log("[TRPG Bot] 종료 중...");
+  await closeResultCardBrowser();
   await closeDb();
   process.exit(0);
+}
+
+process.on("SIGINT", () => {
+  void shutdown();
+});
+
+process.on("SIGTERM", () => {
+  void shutdown();
 });
 
 /** 봇 실행: DB 연결 후 Discord 로그인 */

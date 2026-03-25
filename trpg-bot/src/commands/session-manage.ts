@@ -8,6 +8,7 @@ import {
   type ChatInputCommandInteraction,
   type Client,
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
@@ -33,6 +34,7 @@ import {
   executeSessionClose,
   executeSessionCancel,
 } from "../services/session-close.js";
+import { buildSessionResultCardBuffer } from "../utils/build-session-result-card.js";
 import type { Session } from "../types/session.js";
 
 /** 버튼 customId는 button-handler와 동일해야 함 */
@@ -255,11 +257,30 @@ export async function handleSessionResult(
   }
 
   if (session.status === "OPEN") {
+    const noResponseIdsOpen = await getNonResponders(
+      guild,
+      session.targetRoleId,
+      responses,
+      members
+    );
     const embed = buildSessionEmbed(session, counts, yesIds, noIds, sid);
     embed.setFooter({ text: "현재 집계입니다. (진행 중)" });
+    const png = await buildSessionResultCardBuffer({
+      session,
+      guildId,
+      members,
+      responses,
+      yesIds,
+      noIds,
+      noResponseIds: noResponseIdsOpen,
+      cardMode: "open",
+    });
     await interaction.editReply({
       content: resultHeader(""),
       embeds: [embed],
+      ...(png
+        ? { files: [new AttachmentBuilder(png, { name: "session-result.png" })] }
+        : {}),
     });
     return;
   }
@@ -272,9 +293,22 @@ export async function handleSessionResult(
     members
   );
   const embed = buildResultEmbed(session, yesIds, noIds, noResponseIds);
+  const pngClosed = await buildSessionResultCardBuffer({
+    session,
+    guildId,
+    members,
+    responses,
+    yesIds,
+    noIds,
+    noResponseIds,
+    cardMode: "closed",
+  });
   await interaction.editReply({
     content: resultHeader(""),
     embeds: [embed],
+    ...(pngClosed
+      ? { files: [new AttachmentBuilder(pngClosed, { name: "session-result.png" })] }
+      : {}),
   });
 }
 

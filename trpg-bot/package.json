@@ -12,7 +12,8 @@
   "dependencies": {
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
-    "mongodb": "^6.10.0"
+    "mongodb": "^6.10.0",
+    "puppeteer": "^24.40.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",

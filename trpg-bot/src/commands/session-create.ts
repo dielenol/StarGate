@@ -79,21 +79,43 @@ export async function handleSessionCreate(
   }
 
   const now = Date.now();
+  const nowDate = new Date(now);
+  const interpretedClose = closeDateTime.toLocaleString("ko-KR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  const interpretedSession = targetDateTime.toLocaleString("ko-KR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
   // 이미 지난 마감이면 생성 직후 스케줄러가 곧바로 CLOSED 처리함 (오전/오후 혼동 방지)
   if (closeDateTime.getTime() <= now) {
+    const yearHint =
+      closeDateTime.getFullYear() < nowDate.getFullYear()
+        ? "\n· **연도**를 확인해 보세요. 올해가 " +
+          `${nowDate.getFullYear()}년이면 \`${closeDateTime.getFullYear()}\`년 날짜는 이미 지난 해입니다.`
+        : "";
     await interaction.editReply({
       content:
         "❌ **응답 마감 일시가 이미 지났습니다.** 봇이 세션을 바로 마감해 버립니다.\n" +
+        `· 입력한 마감을 **이렇게 해석**했습니다: **${interpretedClose}** (봇이 돌아가는 PC·서버의 **로컬 타임존** 기준)\n` +
         "· **24시간 형식**을 권장합니다. 예: 오후 3시 50분 → `2026-03-18 15:50` (❌ `03:50`은 **새벽** 3시 50분입니다)\n" +
-        "· 마감은 **지금 이후**여야 합니다.",
+        "· 마감은 **지금 이후**여야 합니다." +
+        yearHint,
     });
     return;
   }
 
   if (targetDateTime.getTime() <= now) {
+    const yearHint =
+      targetDateTime.getFullYear() < nowDate.getFullYear()
+        ? `\n· **연도** 확인: 세션 일시를 \`${interpretedSession}\`로 읽었는데, 올해는 **${nowDate.getFullYear()}년**입니다.`
+        : `\n· 세션 일시를 \`${interpretedSession}\`로 읽었습니다.`;
     await interaction.editReply({
       content:
-        "❌ 세션 일시는 **현재보다 이후**여야 합니다. (이미 지난 일정은 등록할 수 없습니다.)",
+        "❌ 세션 일시는 **현재보다 이후**여야 합니다. (이미 지난 일정은 등록할 수 없습니다.)" +
+        yearHint,
     });
     return;
   }

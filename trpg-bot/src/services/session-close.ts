@@ -9,16 +9,21 @@ import type { Client } from "discord.js";
 import {
   type TextChannel,
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
 } from "discord.js";
 import { updateSessionStatus } from "../db/sessions.js";
 import { findBySessionId, countByStatus } from "../db/responses.js";
-import { buildSessionEmbed, buildResultEmbed } from "../utils/embed.js";
+import {
+  buildSessionEmbed,
+  buildResultEmbed,
+} from "../utils/embed.js";
 import { getNonResponders } from "../utils/no-response.js";
 import { fetchGuildMembersCached } from "../utils/guild-members.js";
 import { appendSessionLog } from "../db/logs.js";
+import { buildSessionResultCardBuffer } from "../utils/build-session-result-card.js";
 import type { Session } from "../types/session.js";
 
 const PREFIX = "trpg:attend:";
@@ -36,6 +41,10 @@ export async function executeSessionClose(
   const channel = await guild.channels.fetch(session.channelId);
   if (!channel?.isTextBased() || !("send" in channel)) return;
 
+  if (session._id === undefined || session._id === null) {
+    console.error("[session-close] 세션 _id 없음 — 마감 처리를 건너뜁니다.");
+    return;
+  }
   const sid = String(session._id);
   const members = await fetchGuildMembersCached(guild);
 
@@ -59,10 +68,6 @@ export async function executeSessionClose(
 
   try {
     const msg = await channel.messages.fetch(session.messageId);
-    const sid =
-      session._id !== undefined && session._id !== null
-        ? String(session._id)
-        : undefined;
     const embed = buildSessionEmbed(session, counts, yesIds, noIds, sid);
     embed.setFooter({ text: "마감되었습니다." });
 
@@ -85,7 +90,24 @@ export async function executeSessionClose(
   }
 
   const resultEmbed = buildResultEmbed(session, yesIds, noIds, noResponseIds);
-  await (channel as TextChannel).send({ embeds: [resultEmbed] });
+
+  const cardPng = await buildSessionResultCardBuffer({
+    session,
+    guildId: session.guildId,
+    members,
+    responses,
+    yesIds,
+    noIds,
+    noResponseIds,
+    cardMode: "closed",
+  });
+
+  const files =
+    cardPng !== null
+      ? [new AttachmentBuilder(cardPng, { name: "session-result.png" })]
+      : undefined;
+
+  await (channel as TextChannel).send({ embeds: [resultEmbed], files });
 
   await appendSessionLog(sid, options.kind === "force" ? "FORCE_CLOSED" : "CLOSED", {
     userId: options.actorUserId,

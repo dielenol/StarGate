@@ -17,7 +17,7 @@ const EMBED_COLOR = 0xc5a059;
  * @param date Date 객체
  * @returns "YYYY-MM-DD HH:mm" 형식
  */
-function formatDateTime(date: Date): string {
+export function formatSessionDateTime(date: Date): string {
   return date.toLocaleString("ko-KR", {
     year: "numeric",
     month: "2-digit",
@@ -85,12 +85,12 @@ export function buildSessionEmbed(
     .addFields(
       {
         name: "세션 일시",
-        value: formatDateTime(session.targetDateTime),
+        value: formatSessionDateTime(session.targetDateTime),
         inline: true,
       },
       {
         name: "응답 마감",
-        value: formatDateTime(session.closeDateTime),
+        value: formatSessionDateTime(session.closeDateTime),
         inline: true,
       },
       {
@@ -147,7 +147,7 @@ export function buildResultEmbed(
     .addFields(
       {
         name: "세션 일시",
-        value: formatDateTime(session.targetDateTime),
+        value: formatSessionDateTime(session.targetDateTime),
         inline: true,
       },
       {

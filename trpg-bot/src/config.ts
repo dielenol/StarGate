@@ -40,6 +40,15 @@ function getGuildId(): string | undefined {
   return process.env.GUILD_ID;
 }
 
+/**
+ * 마감 시 결과 카드 PNG 첨부(Puppeteer) 사용 여부.
+ * `RESULT_CARD_IMAGE=0` / `false` / `off` 이면 비활성(임베드만 전송).
+ */
+export function isResultCardImageEnabled(): boolean {
+  const v = process.env.RESULT_CARD_IMAGE?.trim().toLowerCase();
+  return v !== "0" && v !== "false" && v !== "off";
+}
+
 /** 검증된 환경 설정 객체 */
 export const config = {
   discordToken: getDiscordToken(),
