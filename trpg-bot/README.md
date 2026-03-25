@@ -8,6 +8,7 @@ TRPG 세션 일정 참여 여부를 디스코드에서 수집하고, 마감 시 
 - **참여 응답**: 참석/불참 버튼으로 1인 1상태 응답 (실시간 명단 표시)
 - **자동 마감**: 마감 시점에 버튼 비활성화 및 최종 결과 메시지 전송
 - **무응답자 표시**: 대상 역할 기준으로 무응답자 명단 출력 (Discord 멘션 형식)
+- **결과 카드 이미지**: 마감 시·**`/session result`**(OPEN/CLOSED)에 **같은 달 세션을 한 격자에 표시**하는 PNG 첨부 (Puppeteer). `RESULT_CARD_IMAGE=0` 등으로 끌 수 있음
 
 ## 요구사항
 
@@ -23,6 +24,7 @@ TRPG 세션 일정 참여 여부를 디스코드에서 수집하고, 마감 시 
    - `DISCORD_CLIENT_ID`: Application ID
    - `MONGODB_URI`: MongoDB 연결 문자열
    - `GUILD_ID`: (선택) 개발용, 특정 서버에만 커맨드 등록 시
+   - `RESULT_CARD_IMAGE`: (선택) `0` / `false` / `off` 이면 마감 시 PNG 첨부 생략 (Chromium 없는 환경용)
 
 ## 설치 및 실행
 
