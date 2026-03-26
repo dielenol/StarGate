@@ -1,7 +1,7 @@
 /**
  * 세션 마감/조회 결과를 PNG 카드로 렌더링 (Puppeteer)
  *
- * 월간 캘린더(칸당 요약)와 우측 「이번 달 일정」목록·세션 응답 명단을 한 장에 출력합니다.
+ * 좌측 전체 월간 캘린더, 우측 제목·일시·「이번 달 일정」·세션 응답을 반반 배치해 PNG로 출력합니다.
  *
  * @module utils/result-card-image
  */
@@ -189,6 +189,8 @@ function buildCalendarHtml(anchorAt: Date, marks: CalendarSessionMark[]): string
     cells.push('<div class="cal-cell cal-empty"></div>');
   }
 
+  const rowCount = cells.length / 7;
+
   const wdRow = weekdays
     .map((w) => `<div class="cal-wd">${escapeHtml(w)}</div>`)
     .join("");
@@ -204,7 +206,9 @@ function buildCalendarHtml(anchorAt: Date, marks: CalendarSessionMark[]): string
     <div class="calendar-block">
       <div class="cal-month">${y}년 ${m + 1}월 <span class="cal-sub">동일 달 세션</span></div>
       <div class="cal-weekdays">${wdRow}</div>
-      <div class="cal-grid">${cells.join("")}</div>
+      <div class="cal-grid-wrap">
+        <div class="cal-grid" style="grid-template-rows: repeat(${rowCount}, minmax(28px, 1fr));">${cells.join("")}</div>
+      </div>
       ${legend}
     </div>`;
 }
@@ -269,25 +273,62 @@ function buildHtml(params: {
     max-width: 200px;
     letter-spacing: 0.05em;
   }
-  .layout {
+  .layout-split {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0 14px;
-    align-items: start;
-    margin-bottom: 6px;
+    align-items: stretch;
     min-width: 0;
   }
   .layout-cal {
     min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     border-right: 1px solid #3a3842;
     padding-right: 12px;
   }
-  .layout-rsvp {
+  .layout-right {
     min-width: 0;
+    min-height: 0;
     padding-left: 2px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+  .layout-right h1 {
+    text-align: left;
+    margin-bottom: 2px;
+  }
+  .layout-right .ribbon {
+    margin: 0 0 4px 0;
+    max-width: none;
+    align-self: flex-start;
+  }
+  .layout-right .meta-line {
+    text-align: left;
+    margin-bottom: 4px;
+  }
+  .layout-right .agenda {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .layout-right .agenda-rows {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: hidden;
+  }
+  .layout-right .rsvp-block {
+    flex-shrink: 0;
+  }
+  .layout-right .footer {
+    flex-shrink: 0;
+    margin-top: auto;
+    padding-top: 8px;
+    text-align: left;
   }
   .agenda {
     background: rgba(0,0,0,0.18);
@@ -314,7 +355,6 @@ function buildHtml(params: {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    max-height: 320px;
     overflow: hidden;
   }
   .agenda-row {
@@ -398,12 +438,23 @@ function buildHtml(params: {
   .calendar-block {
     width: 100%;
     max-width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     padding: 8px 0 6px 0;
     background: rgba(0,0,0,0.22);
     border-radius: 8px;
     border: 1px solid #2f2f38;
   }
+  .cal-grid-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
   .cal-month {
+    flex-shrink: 0;
     text-align: center;
     font-size: 13px;
     font-weight: 700;
@@ -421,6 +472,7 @@ function buildHtml(params: {
     letter-spacing: 0.04em;
   }
   .cal-weekdays {
+    flex-shrink: 0;
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 2px;
@@ -435,12 +487,16 @@ function buildHtml(params: {
   }
   .cal-wd:first-child { color: #b85a5a; }
   .cal-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 3px;
+    align-items: stretch;
   }
   .cal-cell {
-    min-height: 26px;
+    min-height: 0;
     border-radius: 5px;
     display: flex;
     flex-direction: column;
@@ -502,6 +558,7 @@ function buildHtml(params: {
     margin-top: 1px;
   }
   .cal-legend {
+    flex-shrink: 0;
     display: flex;
     gap: 8px;
     justify-content: center;
@@ -578,12 +635,12 @@ function buildHtml(params: {
 </head>
 <body>
   <div class="card">
-    <h1>${escapeHtml(params.title)}</h1>
-    <div class="ribbon">${escapeHtml(ribbon)}</div>
-    <div class="meta-line"><strong>세션 일시</strong> · ${escapeHtml(params.sessionWhen)}</div>
-    <div class="layout">
+    <div class="layout-split">
       <div class="layout-cal">${cal}</div>
-      <div class="layout-rsvp">
+      <div class="layout-right">
+        <h1>${escapeHtml(params.title)}</h1>
+        <div class="ribbon">${escapeHtml(ribbon)}</div>
+        <div class="meta-line"><strong>세션 일시</strong> · ${escapeHtml(params.sessionWhen)}</div>
         ${agenda}
         <div class="rsvp-block">
           <div class="rsvp-head">세션 응답</div>
@@ -593,9 +650,9 @@ function buildHtml(params: {
             ${sectionHtml("무응답", params.noResponse, "pending")}
           </div>
         </div>
+        <div class="footer">${escapeHtml(footer)}</div>
       </div>
     </div>
-    <div class="footer">${escapeHtml(footer)}</div>
   </div>
 </body>
 </html>`;
