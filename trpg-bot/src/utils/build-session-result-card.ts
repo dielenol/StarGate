@@ -13,6 +13,7 @@ import { formatSessionDateTime } from "./embed.js";
 import { displayLineForUser } from "./member-display-line.js";
 import {
   renderSessionResultCardPng,
+  renderGuildMonthCalendarPng,
   type CalendarSessionMark,
 } from "./result-card-image.js";
 import type { Session, SessionResponse } from "../types/session.js";
@@ -95,4 +96,31 @@ export async function buildSessionResultCardBuffer(
     absent: absentLines,
     noResponse: noResponseLines,
   });
+}
+
+/**
+ * 길드·연·월의 OPEN/CLOSED 세션만 모아 캘린더 격자 PNG만 생성합니다.
+ */
+export async function buildGuildMonthCalendarOnlyBuffer(
+  guildId: string,
+  year: number,
+  monthIndex: number
+): Promise<Buffer | null> {
+  if (!isResultCardImageEnabled()) return null;
+
+  const peers = await findSessionsByGuildInMonth(guildId, year, monthIndex);
+  const marks: CalendarSessionMark[] = [];
+  for (const s of peers) {
+    if (!s._id) continue;
+    if (s.status !== "OPEN" && s.status !== "CLOSED") continue;
+    marks.push({
+      at: s.targetDateTime,
+      title: s.title,
+      status: s.status,
+      isPrimary: false,
+    });
+  }
+
+  const anchorAt = new Date(year, monthIndex, 1);
+  return renderGuildMonthCalendarPng({ anchorAt, calendarMarks: marks });
 }

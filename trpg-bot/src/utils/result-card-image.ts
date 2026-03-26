@@ -12,12 +12,15 @@ import { isResultCardImageEnabled } from "../config.js";
 
 /** 카드 전체 너비(px) — 본문 그리드가 오른쪽 명단 영역을 넓게 씀 */
 const CARD_WIDTH = 900;
+/** 월간 캘린더만 출력할 때 카드 너비 */
+const CALENDAR_ONLY_WIDTH = 480;
 const MAX_NAMES_PER_SECTION = 42;
 const MAX_NAME_LEN = 52;
 
 /** 캘린더 칸당 최대 표시(나머지는 +N, 상세는 우측 목록) */
 const MAX_CALENDAR_CELL_ENTRIES = 2;
-const MAX_CAL_TITLE_IN_CELL = 9;
+/** 칸 제목 상한 글자(초과 시 …). 화면은 `.ce-title` 2줄 클램프 */
+const MAX_CAL_TITLE_IN_CELL = 96;
 
 /** 우측 「이번 달 일정」 최대 행 수 */
 const MAX_AGENDA_ITEMS = 24;
@@ -131,7 +134,12 @@ function sameLocalDay(d: Date, y: number, m: number, day: number): boolean {
 /**
  * anchorAt 기준 월 그리드. marks에 같은 달 세션(다른 일정 포함)을 모두 표시.
  */
-function buildCalendarHtml(anchorAt: Date, marks: CalendarSessionMark[]): string {
+function buildCalendarHtml(
+  anchorAt: Date,
+  marks: CalendarSessionMark[],
+  legendMode: "full" | "simple" = "full",
+  subLine = "동일 달 세션"
+): string {
   const y = anchorAt.getFullYear();
   const m = anchorAt.getMonth();
 
@@ -189,13 +197,26 @@ function buildCalendarHtml(anchorAt: Date, marks: CalendarSessionMark[]): string
     cells.push('<div class="cal-cell cal-empty"></div>');
   }
 
-  const rowCount = cells.length / 7;
+  const weekRows: string[] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    const chunk = cells.slice(i, i + 7);
+    const weekHasEvent = chunk.some((html) => html.includes("cal-has-events"));
+    const weekClass = weekHasEvent ? "cal-week cal-week-busy" : "cal-week cal-week-quiet";
+    weekRows.push(`<div class="${weekClass}">${chunk.join("")}</div>`);
+  }
 
   const wdRow = weekdays
     .map((w) => `<div class="cal-wd">${escapeHtml(w)}</div>`)
     .join("");
 
-  const legend = `
+  const legend =
+    legendMode === "simple"
+      ? `
+    <div class="cal-legend">
+      <span><i class="lg lg-open"></i>진행 중</span>
+      <span><i class="lg lg-closed"></i>마감</span>
+    </div>`
+      : `
     <div class="cal-legend">
       <span><i class="lg lg-primary"></i>조회 중</span>
       <span><i class="lg lg-open"></i>진행 중</span>
@@ -204,13 +225,231 @@ function buildCalendarHtml(anchorAt: Date, marks: CalendarSessionMark[]): string
 
   return `
     <div class="calendar-block">
-      <div class="cal-month">${y}년 ${m + 1}월 <span class="cal-sub">동일 달 세션</span></div>
+      <div class="cal-month">${y}년 ${m + 1}월 <span class="cal-sub">${escapeHtml(subLine)}</span></div>
       <div class="cal-weekdays">${wdRow}</div>
       <div class="cal-grid-wrap">
-        <div class="cal-grid" style="grid-template-rows: repeat(${rowCount}, minmax(28px, 1fr));">${cells.join("")}</div>
+        ${weekRows.join("")}
       </div>
       ${legend}
     </div>`;
+}
+
+/** 월간 격자·범례 (전체 결과 카드·캘린더 전용 페이지 공통) */
+const CSS_CALENDAR_BLOCK_STYLES = `
+  .calendar-block {
+    width: 100%;
+    max-width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0 6px 0;
+    background: rgba(0,0,0,0.22);
+    border-radius: 8px;
+    border: 1px solid #2f2f38;
+  }
+  .cal-grid-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cal-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    align-items: stretch;
+  }
+  .cal-week-quiet .cal-cell {
+    min-height: 18px;
+    padding: 1px 1px 2px;
+  }
+  .cal-week-quiet .cal-cell.cal-empty {
+    min-height: 12px;
+    padding: 0;
+  }
+  .cal-week-quiet .cal-daynum {
+    font-size: 9px;
+    margin-bottom: 0;
+  }
+  .cal-week-busy .cal-cell {
+    min-height: 24px;
+    padding: 2px 1px 3px;
+  }
+  .cal-month {
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #c5a059;
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+  }
+  .cal-sub {
+    display: block;
+    font-size: 9px;
+    font-weight: 600;
+    color: #8a8478;
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+  .cal-weekdays {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 3px;
+  }
+  .cal-wd {
+    text-align: center;
+    font-size: 9px;
+    font-weight: 600;
+    color: #7a7788;
+    padding: 2px 0;
+  }
+  .cal-wd:first-child { color: #b85a5a; }
+  .cal-cell {
+    min-height: 0;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    background: #25252e;
+    border: 1px solid #353542;
+    font-size: 11px;
+    color: #c4c0b8;
+    padding: 2px 1px 3px;
+  }
+  .cal-empty {
+    background: transparent;
+    border-color: transparent;
+    min-height: 14px;
+  }
+  .cal-has-events:not(.cal-session) {
+    border-color: #4d4d5c;
+    background: #232328;
+  }
+  .cal-session {
+    background: linear-gradient(155deg, rgba(197, 160, 89, 0.42), rgba(197, 160, 89, 0.12));
+    border: 2px solid #c5a059;
+    box-shadow: 0 0 14px rgba(197, 160, 89, 0.22);
+  }
+  .cal-daynum {
+    line-height: 1;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #b8b4aa;
+    margin-bottom: 1px;
+  }
+  .cal-session .cal-daynum { color: #fff8e8; }
+  .cal-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    width: 100%;
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    min-height: 0;
+  }
+  .cal-entry {
+    font-size: 7px;
+    line-height: 1.2;
+    text-align: center;
+    padding: 0 1px;
+    word-break: break-word;
+  }
+  .ce-t { font-weight: 700; display: block; }
+  .ce-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    font-size: 6.5px;
+    opacity: 0.95;
+    margin-top: 1px;
+    line-height: 1.2;
+    text-align: center;
+  }
+  .cal-primary { color: #ffe9a8; font-weight: 700; }
+  .cal-open { color: #8fd4a2; }
+  .cal-closed { color: #a8a8b8; }
+  .cal-more {
+    font-size: 6px;
+    color: #7a7788;
+    text-align: center;
+    margin-top: 1px;
+  }
+  .cal-legend {
+    flex-shrink: 0;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    font-size: 8px;
+    color: #8a8680;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid #2f2f38;
+  }
+  .cal-legend span { display: flex; align-items: center; gap: 4px; }
+  .lg {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .lg-primary { background: #c5a059; }
+  .lg-open { background: #5a9e6e; }
+  .lg-closed { background: #6a6a78; }
+`;
+
+function buildCalendarOnlyHtml(anchorAt: Date, marks: CalendarSessionMark[]): string {
+  const cal = buildCalendarHtml(
+    anchorAt,
+    marks,
+    "simple",
+    "작전 OPEN·마감 세션"
+  );
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0e0e10;
+    color: #e8e6e3;
+    font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    padding: 8px 10px;
+    width: ${CALENDAR_ONLY_WIDTH + 28}px;
+  }
+  .card {
+    border: 2px solid #c5a059;
+    border-radius: 10px;
+    padding: 12px 12px 10px;
+    background: linear-gradient(160deg, #1e1e24 0%, #131316 55%, #101012 100%);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+  }
+  ${CSS_CALENDAR_BLOCK_STYLES}
+  body .calendar-block,
+  body .cal-grid-wrap,
+  body .cal-week {
+    flex: none !important;
+    min-height: 0 !important;
+  }
+</style>
+</head>
+<body>
+  <div class="card">${cal}</div>
+</body>
+</html>`;
 }
 
 function buildHtml(params: {
@@ -435,151 +674,7 @@ function buildHtml(params: {
     color: #a89870;
     margin: 0 0 2px 0;
   }
-  .calendar-block {
-    width: 100%;
-    max-width: 100%;
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    padding: 8px 0 6px 0;
-    background: rgba(0,0,0,0.22);
-    border-radius: 8px;
-    border: 1px solid #2f2f38;
-  }
-  .cal-grid-wrap {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .cal-month {
-    flex-shrink: 0;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 700;
-    color: #c5a059;
-    margin-bottom: 6px;
-    letter-spacing: 0.02em;
-    line-height: 1.3;
-  }
-  .cal-sub {
-    display: block;
-    font-size: 9px;
-    font-weight: 600;
-    color: #8a8478;
-    margin-top: 2px;
-    letter-spacing: 0.04em;
-  }
-  .cal-weekdays {
-    flex-shrink: 0;
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    margin-bottom: 3px;
-  }
-  .cal-wd {
-    text-align: center;
-    font-size: 9px;
-    font-weight: 600;
-    color: #7a7788;
-    padding: 2px 0;
-  }
-  .cal-wd:first-child { color: #b85a5a; }
-  .cal-grid {
-    flex: 1 1 auto;
-    min-height: 0;
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 3px;
-    align-items: stretch;
-  }
-  .cal-cell {
-    min-height: 0;
-    border-radius: 5px;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    background: #25252e;
-    border: 1px solid #353542;
-    font-size: 11px;
-    color: #c4c0b8;
-    padding: 2px 1px 3px;
-  }
-  .cal-empty {
-    background: transparent;
-    border-color: transparent;
-    min-height: 20px;
-  }
-  .cal-has-events:not(.cal-session) {
-    border-color: #4d4d5c;
-    background: #232328;
-  }
-  .cal-session {
-    background: linear-gradient(155deg, rgba(197, 160, 89, 0.42), rgba(197, 160, 89, 0.12));
-    border: 2px solid #c5a059;
-    box-shadow: 0 0 14px rgba(197, 160, 89, 0.22);
-  }
-  .cal-daynum {
-    line-height: 1;
-    text-align: center;
-    font-size: 10px;
-    font-weight: 700;
-    color: #b8b4aa;
-    margin-bottom: 1px;
-  }
-  .cal-session .cal-daynum { color: #fff8e8; }
-  .cal-entries {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    width: 100%;
-    flex: 1;
-    justify-content: flex-start;
-  }
-  .cal-entry {
-    font-size: 7px;
-    line-height: 1.2;
-    text-align: center;
-    padding: 0 1px;
-    word-break: break-word;
-  }
-  .ce-t { font-weight: 700; display: block; }
-  .ce-title { display: block; font-size: 6.5px; opacity: 0.95; margin-top: 1px; line-height: 1.15; }
-  .cal-primary { color: #ffe9a8; font-weight: 700; }
-  .cal-open { color: #8fd4a2; }
-  .cal-closed { color: #a8a8b8; }
-  .cal-more {
-    font-size: 6px;
-    color: #7a7788;
-    text-align: center;
-    margin-top: 1px;
-  }
-  .cal-legend {
-    flex-shrink: 0;
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-    font-size: 8px;
-    color: #8a8680;
-    margin-top: 5px;
-    padding-top: 5px;
-    border-top: 1px solid #2f2f38;
-  }
-  .cal-legend span { display: flex; align-items: center; gap: 4px; }
-  .lg {
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
-    display: inline-block;
-    flex-shrink: 0;
-  }
-  .lg-primary { background: #c5a059; }
-  .lg-open { background: #5a9e6e; }
-  .lg-closed { background: #6a6a78; }
+  ${CSS_CALENDAR_BLOCK_STYLES}
   .meta-line {
     text-align: center;
     font-size: 11px;
@@ -743,6 +838,56 @@ export async function renderSessionResultCardPng(
     return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
   } catch (err) {
     console.error("[result-card-image] PNG 렌더 실패:", err);
+    return null;
+  } finally {
+    if (page) await page.close().catch(() => {});
+  }
+}
+
+export type GuildMonthCalendarInput = {
+  anchorAt: Date;
+  calendarMarks: CalendarSessionMark[];
+};
+
+/**
+ * 길드 월간 세션만 담은 캘린더 격자 PNG (우측 명단·일정 목록 없음).
+ */
+export async function renderGuildMonthCalendarPng(
+  params: GuildMonthCalendarInput
+): Promise<Buffer | null> {
+  if (!isResultCardImageEnabled()) return null;
+
+  const at =
+    params.anchorAt instanceof Date && !isNaN(params.anchorAt.getTime())
+      ? params.anchorAt
+      : new Date();
+  const marks = Array.isArray(params.calendarMarks)
+    ? params.calendarMarks
+    : [];
+  const html = buildCalendarOnlyHtml(at, marks);
+
+  let page = null;
+  try {
+    const browser = await getBrowser();
+    page = await browser.newPage();
+    await page.setViewport({
+      width: CALENDAR_ONLY_WIDTH + 80,
+      height: 1200,
+      deviceScaleFactor: 1.25,
+    });
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    await page.evaluate(
+      () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+    );
+    const cardEl = await page.$(".card");
+    if (!cardEl) {
+      console.error("[result-card-image] 달력 전용 .card 요소를 찾을 수 없음");
+      return null;
+    }
+    const buf = await cardEl.screenshot({ type: "png" });
+    return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
+  } catch (err) {
+    console.error("[result-card-image] 월간 달력 PNG 렌더 실패:", err);
     return null;
   } finally {
     if (page) await page.close().catch(() => {});

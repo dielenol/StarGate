@@ -1,5 +1,5 @@
 /**
- * /일정 생성 슬래시 커맨드 핸들러
+ * /일정 생성 슬래시 커맨드 핸들러 (서버 관리 권한)
  *
  * 세션 생성, DB 저장, 공지 메시지 전송, 참석/불참/미정 버튼 렌더링을 담당합니다.
  * @module commands/session-create
@@ -14,6 +14,7 @@ import {
   MessageFlags,
 } from "discord.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
+import { requireManageGuild } from "../utils/require-manage-guild.js";
 import { createSession, updateSessionMessageId } from "../db/sessions.js";
 import { appendSessionLog } from "../db/logs.js";
 import { buildSessionEmbed } from "../utils/embed.js";
@@ -54,6 +55,14 @@ function extractRoleId(value: string): string {
 export async function handleSessionCreate(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
+  if (!requireManageGuild(interaction)) {
+    await interaction.reply({
+      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const title = interaction.options.getString(Opt.title, true);

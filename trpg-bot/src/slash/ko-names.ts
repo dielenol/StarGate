@@ -9,6 +9,7 @@ export const Sub = {
   create: "생성",
   list: "목록",
   overview: "한눈에",
+  calendar: "달력",
   result: "집계",
   close: "마감",
   editClose: "응답마감변경",
@@ -26,4 +27,5 @@ export const Opt = {
   withImage: "이미지포함",
   newClose: "새응답마감",
   newDate: "새일시",
+  month: "월",
 } as const;

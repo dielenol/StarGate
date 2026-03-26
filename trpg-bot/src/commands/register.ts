@@ -16,7 +16,7 @@ const SCHEDULE_CMD = {
   options: [
     {
       name: Sub.create,
-      description: "새 세션을 만들고 참여 체크 공지를 올립니다.",
+      description: "새 세션을 만들고 참여 체크 공지를 올립니다. (서버 관리)",
       type: 1,
       options: [
         {
@@ -65,6 +65,22 @@ const SCHEDULE_CMD = {
         "OPEN·마감 세션을 세션 일시 기준 월별로 정리 (ID·공지 채널, 서버 관리)",
       type: 1,
       options: [],
+    },
+    {
+      name: Sub.calendar,
+      description:
+        "올해 지정 월의 세션만 월간 캘린더 PNG (격자만, 서버 관리)",
+      type: 1,
+      options: [
+        {
+          name: Opt.month,
+          description: "월 1~12 (봇 서버 타임존 기준 올해)",
+          type: 4,
+          required: true,
+          min_value: 1,
+          max_value: 12,
+        },
+      ],
     },
     {
       name: Sub.result,

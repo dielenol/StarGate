@@ -31,6 +31,11 @@ export function formatSessionDateTime(date: Date): string {
 /** Discord 임베드 필드 value 최대 길이 */
 const EMBED_FIELD_VALUE_MAX = 1024;
 
+/** 임베드에 세션 ID 필드를 넣을지 (공개 집계 등에서는 false) */
+export type SessionEmbedOptions = {
+  includeSessionIdField?: boolean;
+};
+
 /**
  * userId 배열을 Discord 멘션 형식(<@id>)으로 변환합니다.
  * 클릭 시 해당 유저 프로필/멘션 참조가 가능합니다.
@@ -60,6 +65,7 @@ export function sessionDocumentId(session: Session): string | undefined {
  * @param yesIds 참석자 유저 ID 목록 (선택)
  * @param noIds 불참자 유저 ID 목록 (선택)
  * @param sessionIdOverride `_id`가 세션 객체에 없을 때(생성 직후 등) 직접 넘김
+ * @param options `includeSessionIdField: false`면 세션 ID 필드 생략
  * @returns EmbedBuilder
  */
 export function buildSessionEmbed(
@@ -67,8 +73,10 @@ export function buildSessionEmbed(
   counts: ResponseCounts,
   yesIds?: string[],
   noIds?: string[],
-  sessionIdOverride?: string
+  sessionIdOverride?: string,
+  options?: SessionEmbedOptions
 ): EmbedBuilder {
+  const includeSessionIdField = options?.includeSessionIdField !== false;
   const sessionId = sessionIdOverride ?? sessionDocumentId(session);
   const formatWithMentions = (count: number, ids: string[] | undefined) => {
     if (!ids || ids.length === 0) return `${count}명`;
@@ -104,7 +112,7 @@ export function buildSessionEmbed(
         value: formatWithMentions(counts.no, noIds),
         inline: false,
       },
-      ...(sessionId
+      ...(sessionId && includeSessionIdField
         ? [
             {
               name: "세션 ID",
@@ -127,14 +135,17 @@ export function buildSessionEmbed(
  * @param yesIds 참석자 유저 ID 목록
  * @param noIds 불참자 유저 ID 목록
  * @param noResponseIds 무응답자 유저 ID 목록
+ * @param options `includeSessionIdField: false`면 세션 ID 필드 생략
  * @returns EmbedBuilder
  */
 export function buildResultEmbed(
   session: Session,
   yesIds: string[],
   noIds: string[],
-  noResponseIds: string[]
+  noResponseIds: string[],
+  options?: SessionEmbedOptions
 ): EmbedBuilder {
+  const includeSessionIdField = options?.includeSessionIdField !== false;
   const fmt = (ids: string[]) =>
     ids.length === 0 ? "(없음)" : ids.map((id) => `<@${id}>`).join(" ");
   const truncate = (s: string) =>
@@ -166,7 +177,7 @@ export function buildResultEmbed(
         value: truncate(fmt(noResponseIds)),
         inline: false,
       },
-      ...(sessionId
+      ...(sessionId && includeSessionIdField
         ? [
             {
               name: "세션 ID",

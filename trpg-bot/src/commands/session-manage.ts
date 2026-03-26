@@ -1,5 +1,5 @@
 /**
- * /일정 목록·한눈에·집계·마감·응답마감변경·일정변경·취소 관리자 핸들러
+ * /일정 목록·한눈에·달력·집계·마감·응답마감변경·일정변경·취소 관리자 핸들러
  *
  * @module commands/session-manage
  */
@@ -13,7 +13,6 @@ import {
   ButtonStyle,
   EmbedBuilder,
   MessageFlags,
-  PermissionFlagsBits,
 } from "discord.js";
 import { findBySessionId, countByStatus } from "../db/responses.js";
 import {
@@ -35,8 +34,13 @@ import {
   executeSessionClose,
   executeSessionCancel,
 } from "../services/session-close.js";
-import { buildSessionResultCardBuffer } from "../utils/build-session-result-card.js";
+import { isResultCardImageEnabled } from "../config.js";
+import {
+  buildSessionResultCardBuffer,
+  buildGuildMonthCalendarOnlyBuffer,
+} from "../utils/build-session-result-card.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
+import { requireManageGuild } from "../utils/require-manage-guild.js";
 import type { Session } from "../types/session.js";
 
 /** 버튼 customId는 button-handler와 동일해야 함 */
@@ -176,14 +180,6 @@ function parseDateTime(str: string): Date | null {
   const normalized = str.replace(" ", "T");
   const date = new Date(normalized);
   return isNaN(date.getTime()) ? null : date;
-}
-
-function requireManageGuild(interaction: ChatInputCommandInteraction): boolean {
-  const perms = interaction.memberPermissions;
-  if (!perms?.has(PermissionFlagsBits.ManageGuild)) {
-    return false;
-  }
-  return true;
 }
 
 async function resolveOpenSession(
@@ -344,7 +340,7 @@ export async function handleSessionOverview(
     foot.push(`분할·길이 한도`);
   }
   foot.push(
-    `집계: /${SCHEDULE_ROOT} ${Sub.result} + ${Opt.sessionId} · 달 PNG: ${Opt.withImage}`
+    `집계: /${SCHEDULE_ROOT} ${Sub.result} + ${Opt.sessionId} · 달 PNG: ${Opt.withImage} · 월만: /${SCHEDULE_ROOT} ${Sub.calendar}`
   );
   embeds[embeds.length - 1]!.setFooter({ text: foot.join(" · ") });
 
@@ -352,7 +348,62 @@ export async function handleSessionOverview(
 }
 
 /**
- * `/일정 집계` — 한 세션 집계·최종 결과 (에페메랄)
+ * `/일정 달력` — 올해 지정 월의 세션만 월간 캘린더 PNG (격자만, 채널에 공개)
+ */
+export async function handleSessionMonthCalendar(
+  interaction: ChatInputCommandInteraction
+): Promise<void> {
+  if (!requireManageGuild(interaction)) {
+    await interaction.reply({
+      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const guildId = interaction.guildId;
+  if (!guildId) {
+    await interaction.reply({
+      content: "❌ 길드에서만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const month = interaction.options.getInteger(Opt.month, true);
+  const year = new Date().getFullYear();
+  const monthIndex = month - 1;
+
+  await interaction.deferReply();
+
+  if (!isResultCardImageEnabled()) {
+    await interaction.editReply({
+      content:
+        "❌ 이미지 렌더링이 꺼져 있습니다. (`RESULT_CARD_IMAGE`를 켜고 Chromium 환경을 확인하세요.)",
+    });
+    return;
+  }
+
+  const buf = await buildGuildMonthCalendarOnlyBuffer(
+    guildId,
+    year,
+    monthIndex
+  );
+  if (!buf) {
+    await interaction.editReply({
+      content: "❌ 달력 이미지를 만들지 못했습니다. 잠시 후 다시 시도하세요.",
+    });
+    return;
+  }
+
+  await interaction.editReply({
+    content: `📅 **${year}년 ${month}월** · 세션 일시 기준 OPEN·마감 (취소 제외)`,
+    files: [new AttachmentBuilder(buf, { name: "session-calendar.png" })],
+  });
+}
+
+/**
+ * `/일정 집계` — 한 세션 집계·최종 결과 (채널 공개). 세션 ID는 실행 관리자에게만 에페메랄.
  */
 export async function handleSessionResult(
   interaction: ChatInputCommandInteraction
@@ -374,7 +425,7 @@ export async function handleSessionResult(
     return;
   }
 
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  await interaction.deferReply();
 
   const sessionIdOpt = interaction.options.getString(Opt.sessionId);
   const withImage = interaction.options.getBoolean(Opt.withImage) === true;
@@ -398,7 +449,13 @@ export async function handleSessionResult(
           : "";
       await interaction.editReply({
         content:
-          `진행 중(OPEN) 세션이 **${openOnly.length}개**라서, 임의로 하나만 고르지 않습니다.\n\n` +
+          `진행 중(OPEN) 세션이 **${openOnly.length}개**라서, 임의로 하나만 고르지 않습니다.\n` +
+          `**${Opt.sessionId}** 옵션으로 지정해 주세요.\n` +
+          `_후보 목록·세션 ID는 이 명령을 실행한 관리자에게만 보이는 메시지로 보냅니다._`,
+      });
+      await interaction.followUp({
+        flags: MessageFlags.Ephemeral,
+        content:
           `아래 **ID**를 복사해 \`/${SCHEDULE_ROOT} ${Sub.result}\`의 **${Opt.sessionId}**에 넣어 주세요.\n\n` +
           `${lines}${more}\n\n` +
           `— 마감만 보려면 ID를 넣거나, 전체 일정은 \`/${SCHEDULE_ROOT} ${Sub.overview}\` —`,
@@ -428,18 +485,34 @@ export async function handleSessionResult(
   const noIds = responses.filter((r) => r.status === "NO").map((r) => r.userId);
 
   const pickedAutomatically = !sessionIdOpt?.trim();
-  const resultHeader = (extra: string) =>
+  const resultHeaderPublic = (extra: string) =>
     [
-      `**${session.title}** · \`${sid}\`${pickedAutomatically ? " · _자동 선택(서버 최근 OPEN→없으면 CLOSED, 생성자 무관)_" : ""}`,
+      `**${session.title}**${
+        pickedAutomatically
+          ? " · _자동 선택(서버 최근 OPEN→없으면 CLOSED, 생성자 무관)_"
+          : ""
+      }`,
       extra,
     ]
       .filter(Boolean)
       .join("\n");
 
+  const sendSessionIdToInvoker = async (): Promise<void> => {
+    await interaction.followUp({
+      flags: MessageFlags.Ephemeral,
+      content: [
+        "🔒 **관리자 전용** — 이 집계 대상 세션 ID",
+        `\`${sid}\``,
+        `※ \`/${SCHEDULE_ROOT}\` 관리 명령의 **${Opt.sessionId}**에 사용할 수 있습니다.`,
+      ].join("\n"),
+    });
+  };
+
   if (session.status === "CANCELED") {
     await interaction.editReply({
-      content: resultHeader(`❌ 이 세션은 취소되었습니다.`),
+      content: resultHeaderPublic(`❌ 이 세션은 취소되었습니다.`),
     });
+    await sendSessionIdToInvoker();
     return;
   }
 
@@ -450,7 +523,9 @@ export async function handleSessionResult(
       responses,
       members
     );
-    const embed = buildSessionEmbed(session, counts, yesIds, noIds, sid);
+    const embed = buildSessionEmbed(session, counts, yesIds, noIds, sid, {
+      includeSessionIdField: false,
+    });
     embed.setFooter({ text: "현재 집계입니다. (진행 중)" });
     const png =
       withImage &&
@@ -465,12 +540,13 @@ export async function handleSessionResult(
         cardMode: "open",
       }));
     await interaction.editReply({
-      content: resultHeader(""),
+      content: resultHeaderPublic(""),
       embeds: [embed],
       ...(png
         ? { files: [new AttachmentBuilder(png, { name: "session-result.png" })] }
         : {}),
     });
+    await sendSessionIdToInvoker();
     return;
   }
 
@@ -481,7 +557,9 @@ export async function handleSessionResult(
     responses,
     members
   );
-  const embed = buildResultEmbed(session, yesIds, noIds, noResponseIds);
+  const embed = buildResultEmbed(session, yesIds, noIds, noResponseIds, {
+    includeSessionIdField: false,
+  });
   const pngClosed =
     withImage &&
     (await buildSessionResultCardBuffer({
@@ -495,12 +573,13 @@ export async function handleSessionResult(
       cardMode: "closed",
     }));
   await interaction.editReply({
-    content: resultHeader(""),
+    content: resultHeaderPublic(""),
     embeds: [embed],
     ...(pngClosed
       ? { files: [new AttachmentBuilder(pngClosed, { name: "session-result.png" })] }
       : {}),
   });
+  await sendSessionIdToInvoker();
 }
 
 /**

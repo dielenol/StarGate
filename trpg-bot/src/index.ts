@@ -15,6 +15,7 @@ import { handleSessionCreate } from "./commands/session-create.js";
 import {
   handleSessionList,
   handleSessionOverview,
+  handleSessionMonthCalendar,
   handleSessionResult,
   handleSessionClose,
   handleSessionEditClose,
@@ -70,6 +71,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       break;
     case Sub.overview:
       await handleSessionOverview(interaction);
+      break;
+    case Sub.calendar:
+      await handleSessionMonthCalendar(interaction);
       break;
     case Sub.result:
       await handleSessionResult(interaction);
