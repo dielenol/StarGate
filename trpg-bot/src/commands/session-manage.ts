@@ -1,5 +1,5 @@
 /**
- * /session list | result | close | edit_close | edit_date | cancel 관리자 명령 핸들러
+ * /일정 목록·한눈에·집계·마감·응답마감변경·일정변경·취소 관리자 핸들러
  *
  * @module commands/session-manage
  */
@@ -22,6 +22,7 @@ import {
   findLatestOpenSessionByGuild,
   findLatestClosedSessionByGuild,
   findOpenSessionsByGuild,
+  findOpenAndClosedSessionsByGuildOrderByTarget,
   updateSessionCloseDateTime,
   updateSessionTargetDateTime,
   updateSessionTargetAndCloseDateTime,
@@ -35,6 +36,7 @@ import {
   executeSessionCancel,
 } from "../services/session-close.js";
 import { buildSessionResultCardBuffer } from "../utils/build-session-result-card.js";
+import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 import type { Session } from "../types/session.js";
 
 /** 버튼 customId는 button-handler와 동일해야 함 */
@@ -45,9 +47,17 @@ const LIST_EMBED_COLOR = 0xc5a059;
 const LIST_DESC_SAFE_MAX = 3900;
 /** 한 번에 표시할 최대 세션 수 */
 const LIST_MAX_ITEMS = 20;
+/** overview: OPEN·CLOSED 세션 일시 순·월별 표에 포함할 최대 건수 */
+const OVERVIEW_MAX_SESSIONS = 100;
+/** overview: 임베드 description 여유 한도 */
+const OVERVIEW_DESC_SAFE_MAX = 3800;
+/** overview: 분할 임베드 최대 개수 */
+const OVERVIEW_MAX_EMBEDS = 6;
+/** result: OPEN 여러 개일 때 자동 선택 대신 안내에 줄 최대 줄 수 */
+const RESULT_MULTI_OPEN_PREVIEW = 8;
 
 /**
- * `/session list` — 이 길드의 OPEN 세션 목록 (에페메랄)
+ * `/일정 목록` — 이 길드의 OPEN 세션 목록 (에페메랄)
  */
 export async function handleSessionList(
   interaction: ChatInputCommandInteraction
@@ -114,7 +124,11 @@ export async function handleSessionList(
 
   if (total > LIST_MAX_ITEMS) {
     embed.setFooter({
-      text: `처음 ${LIST_MAX_ITEMS}건만 표시 (전체 ${total}건)`,
+      text: `처음 ${LIST_MAX_ITEMS}건만 표시 (전체 ${total}건) · 마감·월별: /${SCHEDULE_ROOT} ${Sub.overview}`,
+    });
+  } else {
+    embed.setFooter({
+      text: `마감 포함·월별 전체: /${SCHEDULE_ROOT} ${Sub.overview}`,
     });
   }
 
@@ -195,7 +209,150 @@ async function resolveSessionForResult(
 }
 
 /**
- * `/session result` — 현재 집계 또는 최종 결과 (에페메랄)
+ * `/일정 한눈에` — OPEN·마감 전체를 **세션 일시 기준 월별**로 (에페메랄, PNG 없음)
+ *
+ * 집계·PNG는 `/일정 집계`를 씁니다.
+ */
+export async function handleSessionOverview(
+  interaction: ChatInputCommandInteraction
+): Promise<void> {
+  if (!requireManageGuild(interaction)) {
+    await interaction.reply({
+      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const guildId = interaction.guildId;
+  if (!guildId) {
+    await interaction.reply({
+      content: "❌ 길드에서만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  const raw = await findOpenAndClosedSessionsByGuildOrderByTarget(
+    guildId,
+    OVERVIEW_MAX_SESSIONS + 1
+  );
+
+  if (raw.length === 0) {
+    await interaction.editReply({
+      content:
+        "📭 이 서버에 **진행 중(OPEN)** 또는 **마감(CLOSED)** 세션이 없습니다. (취소 제외)",
+    });
+    return;
+  }
+
+  const hitSessionCap = raw.length > OVERVIEW_MAX_SESSIONS;
+  const sessions = raw.slice(0, OVERVIEW_MAX_SESSIONS);
+
+  const monthKey = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const groups = new Map<string, Session[]>();
+  const order: string[] = [];
+  for (const s of sessions) {
+    const k = monthKey(s.targetDateTime);
+    if (!groups.has(k)) {
+      groups.set(k, []);
+      order.push(k);
+    }
+    groups.get(k)!.push(s);
+  }
+
+  const blocks: string[] = [];
+  for (const k of order) {
+    const list = groups.get(k)!;
+    const d0 = list[0]!.targetDateTime;
+    const head = `**${d0.getFullYear()}년 ${d0.getMonth() + 1}월**`;
+    const lines = list
+      .map((s) => {
+        const sid = String(s._id);
+        const ts = Math.floor(s.targetDateTime.getTime() / 1000);
+        const tc = Math.floor(s.closeDateTime.getTime() / 1000);
+        const ch = `<#${s.channelId}>`;
+        const st = s.status === "OPEN" ? "진행 중" : "마감";
+        const t = s.title.length > 48 ? `${s.title.slice(0, 45)}…` : s.title;
+        return `· [${st}] ${t}\n  \`${sid}\` · ${ch} · 세션 <t:${ts}:f> · 마감 <t:${tc}:f>`;
+      })
+      .join("\n");
+    blocks.push(`${head}\n${lines}`);
+  }
+
+  const embeds: EmbedBuilder[] = [];
+  let chunk = "";
+  const pushChunk = (): void => {
+    const t = chunk.trim();
+    if (!t) return;
+    embeds.push(new EmbedBuilder().setColor(LIST_EMBED_COLOR).setDescription(t));
+    chunk = "";
+  };
+
+  for (const b of blocks) {
+    if (embeds.length >= OVERVIEW_MAX_EMBEDS) break;
+    const joined = chunk ? `${chunk}\n\n${b}` : b;
+    if (joined.length > OVERVIEW_DESC_SAFE_MAX) {
+      if (chunk) pushChunk();
+      if (embeds.length >= OVERVIEW_MAX_EMBEDS) break;
+      if (b.length > OVERVIEW_DESC_SAFE_MAX) {
+        embeds.push(
+          new EmbedBuilder()
+            .setColor(LIST_EMBED_COLOR)
+            .setDescription(
+              `${b.slice(0, OVERVIEW_DESC_SAFE_MAX - 40).trimEnd()}\n…`
+            )
+        );
+        continue;
+      }
+      chunk = b;
+    } else {
+      chunk = joined;
+    }
+  }
+
+  if (embeds.length < OVERVIEW_MAX_EMBEDS) pushChunk();
+
+  if (embeds.length === 0) {
+    await interaction.editReply({ content: "표시할 내용을 만들 수 없습니다." });
+    return;
+  }
+
+  const omittedTail = chunk.trim().length > 0;
+  if (omittedTail) {
+    const last = embeds[embeds.length - 1]!;
+    last.setDescription(
+      `${last.data.description ?? ""}\n\n_이후 월·일정은 표시 한도로 생략됩니다._`
+    );
+  }
+
+  while (embeds.length > 10) embeds.pop();
+
+  embeds[0]!.setTitle("세션 일정 한눈에 보기 (월별)");
+  for (let i = 1; i < embeds.length; i++) {
+    embeds[i]!.setTitle(`계속 (${i + 1}/${embeds.length})`);
+  }
+
+  const foot: string[] = [];
+  if (hitSessionCap) {
+    foot.push(`최대 ${OVERVIEW_MAX_SESSIONS}건까지 표시`);
+  }
+  if (omittedTail || embeds.length >= OVERVIEW_MAX_EMBEDS) {
+    foot.push(`분할·길이 한도`);
+  }
+  foot.push(
+    `집계: /${SCHEDULE_ROOT} ${Sub.result} + ${Opt.sessionId} · 달 PNG: ${Opt.withImage}`
+  );
+  embeds[embeds.length - 1]!.setFooter({ text: foot.join(" · ") });
+
+  await interaction.editReply({ embeds });
+}
+
+/**
+ * `/일정 집계` — 한 세션 집계·최종 결과 (에페메랄)
  */
 export async function handleSessionResult(
   interaction: ChatInputCommandInteraction
@@ -219,15 +376,45 @@ export async function handleSessionResult(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const sessionIdOpt = interaction.options.getString("session_id");
+  const sessionIdOpt = interaction.options.getString(Opt.sessionId);
+  const withImage = interaction.options.getBoolean(Opt.withImage) === true;
+
+  if (!sessionIdOpt?.trim()) {
+    const openOnly = await findOpenSessionsByGuild(guildId);
+    if (openOnly.length > 1) {
+      const lines = openOnly
+        .slice(0, RESULT_MULTI_OPEN_PREVIEW)
+        .map((s, i) => {
+          const sid = String(s._id);
+          const ts = Math.floor(s.targetDateTime.getTime() / 1000);
+          const title =
+            s.title.length > 44 ? `${s.title.slice(0, 41)}…` : s.title;
+          return `${i + 1}. **${title}** — \`${sid}\` — 세션 <t:${ts}:D>`;
+        })
+        .join("\n");
+      const more =
+        openOnly.length > RESULT_MULTI_OPEN_PREVIEW
+          ? `\n… 외 ${openOnly.length - RESULT_MULTI_OPEN_PREVIEW}건`
+          : "";
+      await interaction.editReply({
+        content:
+          `진행 중(OPEN) 세션이 **${openOnly.length}개**라서, 임의로 하나만 고르지 않습니다.\n\n` +
+          `아래 **ID**를 복사해 \`/${SCHEDULE_ROOT} ${Sub.result}\`의 **${Opt.sessionId}**에 넣어 주세요.\n\n` +
+          `${lines}${more}\n\n` +
+          `— 마감만 보려면 ID를 넣거나, 전체 일정은 \`/${SCHEDULE_ROOT} ${Sub.overview}\` —`,
+      });
+      return;
+    }
+  }
+
   const session = await resolveSessionForResult(guildId, sessionIdOpt);
 
   if (!session) {
     await interaction.editReply({
       content:
         "❌ 대상 세션을 찾을 수 없습니다.\n" +
-        "· `session_id`를 적었다면 ID(생성 완료 에페메랄 메시지)를 확인하세요.\n" +
-        "· 비웠다면 이 서버에 **진행 중(OPEN)** 또는 **마감(CLOSED)** 세션이 DB에 없는 상태입니다.",
+        `· ${Opt.sessionId}를 적었다면 ID를 확인하세요.\n` +
+        `· 비웠을 때 OPEN이 없으면 **가장 최근 마감(CLOSED)** 만 자동 선택됩니다. 전체는 /${SCHEDULE_ROOT} ${Sub.overview}`,
     });
     return;
   }
@@ -265,16 +452,18 @@ export async function handleSessionResult(
     );
     const embed = buildSessionEmbed(session, counts, yesIds, noIds, sid);
     embed.setFooter({ text: "현재 집계입니다. (진행 중)" });
-    const png = await buildSessionResultCardBuffer({
-      session,
-      guildId,
-      members,
-      responses,
-      yesIds,
-      noIds,
-      noResponseIds: noResponseIdsOpen,
-      cardMode: "open",
-    });
+    const png =
+      withImage &&
+      (await buildSessionResultCardBuffer({
+        session,
+        guildId,
+        members,
+        responses,
+        yesIds,
+        noIds,
+        noResponseIds: noResponseIdsOpen,
+        cardMode: "open",
+      }));
     await interaction.editReply({
       content: resultHeader(""),
       embeds: [embed],
@@ -293,16 +482,18 @@ export async function handleSessionResult(
     members
   );
   const embed = buildResultEmbed(session, yesIds, noIds, noResponseIds);
-  const pngClosed = await buildSessionResultCardBuffer({
-    session,
-    guildId,
-    members,
-    responses,
-    yesIds,
-    noIds,
-    noResponseIds,
-    cardMode: "closed",
-  });
+  const pngClosed =
+    withImage &&
+    (await buildSessionResultCardBuffer({
+      session,
+      guildId,
+      members,
+      responses,
+      yesIds,
+      noIds,
+      noResponseIds,
+      cardMode: "closed",
+    }));
   await interaction.editReply({
     content: resultHeader(""),
     embeds: [embed],
@@ -313,7 +504,7 @@ export async function handleSessionResult(
 }
 
 /**
- * `/session close` — 강제 마감
+ * `/일정 마감` — 강제 마감
  */
 export async function handleSessionClose(
   interaction: ChatInputCommandInteraction
@@ -337,7 +528,7 @@ export async function handleSessionClose(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const sessionIdOpt = interaction.options.getString("session_id");
+  const sessionIdOpt = interaction.options.getString(Opt.sessionId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
 
   if (!session) {
@@ -371,7 +562,7 @@ export async function handleSessionClose(
 }
 
 /**
- * `/session edit_close` — 응답 마감 일시 변경
+ * `/일정 응답마감변경` — 응답 마감 일시 변경
  */
 export async function handleSessionEditClose(
   interaction: ChatInputCommandInteraction
@@ -393,11 +584,11 @@ export async function handleSessionEditClose(
     return;
   }
 
-  const newCloseStr = interaction.options.getString("new_close", true);
+  const newCloseStr = interaction.options.getString(Opt.newClose, true);
   const newClose = parseDateTime(newCloseStr);
   if (!newClose) {
     await interaction.reply({
-      content: "❌ `new_close` 날짜 형식이 올바르지 않습니다. (예: 2026-03-22 20:00)",
+      content: `❌ \`${Opt.newClose}\` 날짜 형식이 올바르지 않습니다. (예: 2026-03-22 20:00)`,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -405,7 +596,7 @@ export async function handleSessionEditClose(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const sessionIdOpt = interaction.options.getString("session_id");
+  const sessionIdOpt = interaction.options.getString(Opt.sessionId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
 
   if (!session || session.status !== "OPEN") {
@@ -424,7 +615,7 @@ export async function handleSessionEditClose(
   }
   if (newClose.getTime() >= session.targetDateTime.getTime()) {
     notes.push(
-      "_마감이 **세션 일시와 같거나 그 이후**입니다. 필요하면 `/session edit_date`로 세션 일시를 조정하세요._"
+      `_마감이 **세션 일시와 같거나 그 이후**입니다. 필요하면 \`/${SCHEDULE_ROOT} ${Sub.editDate}\`로 세션 일시를 조정하세요._`
     );
   }
 
@@ -473,7 +664,7 @@ function autoCloseBeforeSession(sessionStart: Date): Date {
 }
 
 /**
- * `/session edit_date` — 세션 진행 일시 변경
+ * `/일정 일정변경` — 세션 진행 일시 변경
  */
 export async function handleSessionEditDate(
   interaction: ChatInputCommandInteraction
@@ -495,12 +686,12 @@ export async function handleSessionEditDate(
     return;
   }
 
-  const newDateStr = interaction.options.getString("new_date", true);
+  const newDateStr = interaction.options.getString(Opt.newDate, true);
   const newDate = parseDateTime(newDateStr);
   if (!newDate) {
     await interaction.reply({
       content:
-        "❌ `new_date` 날짜 형식이 올바르지 않습니다. (예: 2026-03-22 20:00)",
+        `❌ \`${Opt.newDate}\` 날짜 형식이 올바르지 않습니다. (예: 2026-03-22 20:00)`,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -508,7 +699,7 @@ export async function handleSessionEditDate(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const sessionIdOpt = interaction.options.getString("session_id");
+  const sessionIdOpt = interaction.options.getString(Opt.sessionId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
 
   if (!session || session.status !== "OPEN") {
@@ -579,7 +770,7 @@ export async function handleSessionEditDate(
 }
 
 /**
- * `/session cancel` — 세션 취소
+ * `/일정 취소` — 세션 취소
  */
 export async function handleSessionCancel(
   interaction: ChatInputCommandInteraction
@@ -603,7 +794,7 @@ export async function handleSessionCancel(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const sessionIdOpt = interaction.options.getString("session_id");
+  const sessionIdOpt = interaction.options.getString(Opt.sessionId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
 
   if (!session || session.status !== "OPEN") {

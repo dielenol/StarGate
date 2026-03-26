@@ -6,6 +6,7 @@
  */
 
 import { EmbedBuilder } from "discord.js";
+import { SCHEDULE_ROOT } from "../slash/ko-names.js";
 import type { Session } from "../types/session.js";
 import type { ResponseCounts } from "../types/session.js";
 
@@ -107,7 +108,7 @@ export function buildSessionEmbed(
         ? [
             {
               name: "세션 ID",
-              value: `\`${sessionId}\`\n※ \`/session\` 관리 명령에서 특정할 때 사용`,
+              value: `\`${sessionId}\`\n※ \`/${SCHEDULE_ROOT}\` 관리 명령에서 특정할 때 사용`,
               inline: false,
             } as const,
           ]

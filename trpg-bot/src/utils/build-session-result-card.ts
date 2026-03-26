@@ -1,7 +1,7 @@
 /**
  * DB·길드 월별 세션을 조회해 결과 카드 PNG 버퍼를 만듭니다.
  *
- * `/session result`·마감 공통으로 사용합니다.
+ * `/일정 집계`(이미지포함)·마감 공통으로 사용합니다.
  *
  * @module utils/build-session-result-card
  */

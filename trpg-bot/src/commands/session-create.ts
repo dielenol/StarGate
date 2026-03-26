@@ -1,5 +1,5 @@
 /**
- * /session create 슬래시 커맨드 핸들러
+ * /일정 생성 슬래시 커맨드 핸들러
  *
  * 세션 생성, DB 저장, 공지 메시지 전송, 참석/불참/미정 버튼 렌더링을 담당합니다.
  * @module commands/session-create
@@ -13,6 +13,7 @@ import {
   ButtonStyle,
   MessageFlags,
 } from "discord.js";
+import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 import { createSession, updateSessionMessageId } from "../db/sessions.js";
 import { appendSessionLog } from "../db/logs.js";
 import { buildSessionEmbed } from "../utils/embed.js";
@@ -47,7 +48,7 @@ function extractRoleId(value: string): string {
 }
 
 /**
- * /session create 명령어를 처리합니다.
+ * /일정 생성 명령을 처리합니다.
  * @param interaction 슬래시 커맨드 인터랙션
  */
 export async function handleSessionCreate(
@@ -55,11 +56,11 @@ export async function handleSessionCreate(
 ): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const title = interaction.options.getString("title", true);
-  const dateStr = interaction.options.getString("date", true);
-  const closeStr = interaction.options.getString("close", true);
-  const roleOption = interaction.options.getString("role", true);
-  const channelOption = interaction.options.getString("channel");
+  const title = interaction.options.getString(Opt.title, true);
+  const dateStr = interaction.options.getString(Opt.date, true);
+  const closeStr = interaction.options.getString(Opt.closeTime, true);
+  const roleOption = interaction.options.getString(Opt.role, true);
+  const channelOption = interaction.options.getString(Opt.channel);
 
   const targetDateTime = parseDateTime(dateStr);
   const closeDateTime = parseDateTime(closeStr);
@@ -222,8 +223,8 @@ export async function handleSessionCreate(
         `✅ 세션이 생성되었습니다. [공지 메시지](${msg.url})`,
         "",
         `공지 임베드에도 **세션 ID**가 표시됩니다. (복사: \`${sessionId}\`)`,
-        "일정 변경: **`/session edit_date`**(세션 일시), **`/session edit_close`**(응답 마감)",
-        "_`session_id`를 비우면 서버 기준 가장 최근 진행 중 세션이 자동 선택됩니다._",
+        `일정 변경: **\`/${SCHEDULE_ROOT} ${Sub.editDate}\`**(세션 일시), **\`/${SCHEDULE_ROOT} ${Sub.editClose}\`**(응답 마감)`,
+        `_\`${Opt.sessionId}\`를 비우면 서버 기준 가장 최근 진행 중 세션이 자동 선택됩니다._`,
       ].join("\n"),
     });
   } catch (err) {

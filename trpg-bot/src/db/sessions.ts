@@ -128,6 +128,21 @@ export async function findOpenSessionsByGuild(
 }
 
 /**
+ * 길드의 OPEN·CLOSED 세션을 **세션 일시(`targetDateTime`) 오름차순**으로 최대 `limit`건 조회합니다.
+ * `/일정 한눈에` 등 월별 일정에 사용합니다.
+ */
+export async function findOpenAndClosedSessionsByGuildOrderByTarget(
+  guildId: string,
+  limit: number
+): Promise<Session[]> {
+  return sessionsCollection()
+    .find({ guildId, status: { $in: ["OPEN", "CLOSED"] } })
+    .sort({ targetDateTime: 1 })
+    .limit(limit)
+    .toArray();
+}
+
+/**
  * 같은 길드에서 `targetDateTime`이 (봇 서버 기준) 해당 연·월에 속하는 OPEN/CLOSED 세션.
  * 결과 카드 캘린더에 동일 달 세션을 함께 표시할 때 사용합니다.
  */

@@ -9,7 +9,7 @@ export type SessionLogType =
   | "CLOSED"
   | "FORCE_CLOSED"
   | "CANCELED"
-  /** 응답 마감 일시 변경 (구 `/session extend`) */
+  /** 응답 마감 일시 변경 (구 영문 슬래시 extend) */
   | "EXTENDED"
   /** 세션 진행 일시 변경 */
   | "SESSION_TARGET_UPDATED"

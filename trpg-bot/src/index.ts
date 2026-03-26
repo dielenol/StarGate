@@ -9,10 +9,12 @@ import { Client, Events, GatewayIntentBits } from "discord.js";
 import { config } from "./config.js";
 import { connectDb, closeDb } from "./db/client.js";
 import { registerCommands } from "./commands/register.js";
+import { SCHEDULE_ROOT, Sub } from "./slash/ko-names.js";
 import { handleButtonInteraction } from "./handlers/button-handler.js";
 import { handleSessionCreate } from "./commands/session-create.js";
 import {
   handleSessionList,
+  handleSessionOverview,
   handleSessionResult,
   handleSessionClose,
   handleSessionEditClose,
@@ -52,33 +54,36 @@ client.once(Events.ClientReady, async (readyClient) => {
   console.log("[TRPG Bot] 리마인드 스케줄러 시작");
 });
 
-/** 슬래시 커맨드 실행 시: /session create 처리 */
+/** 슬래시 커맨드 실행 시: /일정 … 처리 */
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName !== "session") return;
+  if (interaction.commandName !== SCHEDULE_ROOT) return;
 
   const sub = interaction.options.getSubcommand();
   switch (sub) {
-    case "create":
+    case Sub.create:
       await handleSessionCreate(interaction);
       break;
-    case "list":
+    case Sub.list:
       await handleSessionList(interaction);
       break;
-    case "result":
+    case Sub.overview:
+      await handleSessionOverview(interaction);
+      break;
+    case Sub.result:
       await handleSessionResult(interaction);
       break;
-    case "close":
+    case Sub.close:
       await handleSessionClose(interaction);
       break;
-    case "edit_close":
+    case Sub.editClose:
       await handleSessionEditClose(interaction);
       break;
-    case "edit_date":
+    case Sub.editDate:
       await handleSessionEditDate(interaction);
       break;
-    case "cancel":
+    case Sub.cancel:
       await handleSessionCancel(interaction);
       break;
     default:
