@@ -12,6 +12,7 @@ import { registerCommands } from "./commands/register.js";
 import { SCHEDULE_ROOT, Sub } from "./slash/ko-names.js";
 import { handleButtonInteraction } from "./handlers/button-handler.js";
 import { handleSessionCreate } from "./commands/session-create.js";
+import { handleSessionCreateAutocomplete } from "./commands/session-create-autocomplete.js";
 import {
   handleSessionList,
   handleSessionOverview,
@@ -53,6 +54,13 @@ client.once(Events.ClientReady, async (readyClient) => {
   console.log("[TRPG Bot] 마감 스케줄러 시작");
   startReminderChecker(client);
   console.log("[TRPG Bot] 리마인드 스케줄러 시작");
+});
+
+/** `/일정 생성` 문자열 옵션 자동완성 */
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.isAutocomplete()) return;
+  if (interaction.commandName !== SCHEDULE_ROOT) return;
+  await handleSessionCreateAutocomplete(interaction);
 });
 
 /** 슬래시 커맨드 실행 시: /일정 … 처리 */

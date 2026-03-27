@@ -7,7 +7,6 @@
 
 import {
   type ChatInputCommandInteraction,
-  type TextChannel,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -15,6 +14,7 @@ import {
 } from "discord.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 import { requireManageGuild } from "../utils/require-manage-guild.js";
+import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
 import { createSession, updateSessionMessageId } from "../db/sessions.js";
 import { appendSessionLog } from "../db/logs.js";
 import { buildSessionEmbed } from "../utils/embed.js";
@@ -69,7 +69,7 @@ export async function handleSessionCreate(
   const dateStr = interaction.options.getString(Opt.date, true);
   const closeStr = interaction.options.getString(Opt.closeTime, true);
   const roleOption = interaction.options.getString(Opt.role, true);
-  const channelOption = interaction.options.getString(Opt.channel);
+  const channelFromOpt = interaction.options.getChannel(Opt.channel);
 
   const targetDateTime = parseDateTime(dateStr);
   const closeDateTime = parseDateTime(closeStr);
@@ -139,32 +139,26 @@ export async function handleSessionCreate(
     return;
   }
 
-  const channelId =
-    channelOption?.trim() ??
-    interaction.channelId ??
-    interaction.channel?.id ??
-    "";
-
-  if (!channelId) {
+  const guild = interaction.guild;
+  if (!guild) {
     await interaction.editReply({
-      content: "❌ 채널을 지정해 주세요.",
+      content: "❌ 길드에서만 사용할 수 있습니다.",
     });
     return;
   }
 
-  const channel =
-    interaction.channel?.id === channelId
-      ? interaction.channel
-      : await interaction.guild?.channels.fetch(channelId);
-
-  if (!channel || !channel.isTextBased() || !("send" in channel)) {
-    await interaction.editReply({
-      content: "❌ 지정한 채널을 찾을 수 없거나 텍스트 채널이 아닙니다.",
-    });
+  const resolvedChannel = await resolveGuildTextSendChannel(
+    guild,
+    channelFromOpt,
+    interaction.channelId
+  );
+  if (!resolvedChannel.ok) {
+    await interaction.editReply({ content: resolvedChannel.message });
     return;
   }
 
-  const textChannel = channel as TextChannel;
+  const textChannel = resolvedChannel.channel;
+  const channelId = textChannel.id;
 
   try {
     // DB에 세션 저장 (messageId는 공지 전송 후 업데이트)
@@ -238,8 +232,16 @@ export async function handleSessionCreate(
     });
   } catch (err) {
     console.error("[session create]", err);
-    await interaction.editReply({
-      content: `❌ 세션 생성 중 오류가 발생했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`,
-    });
+    const missingAccess =
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: unknown }).code === 50001;
+    const content = missingAccess
+      ? "❌ 봇이 **공지 채널**에 메시지를 보낼 수 없습니다. (Discord `Missing Access`)\n" +
+        "· 채널·카테고리 권한에서 봇 역할에 **채널 보기**, **메시지 보내기**, **링크 임베드**를 허용했는지 확인하세요.\n" +
+        "· **스레드**면 **스레드에서 메시지 보내기**가 필요하고, 비공개 스레드는 봇을 스레드에 **초대**해야 할 수 있습니다."
+      : `❌ 세션 생성 중 오류가 발생했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`;
+    await interaction.editReply({ content });
   }
 }

@@ -41,6 +41,7 @@ import {
 } from "../utils/build-session-result-card.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 import { requireManageGuild } from "../utils/require-manage-guild.js";
+import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
 import type { Session } from "../types/session.js";
 
 /** 버튼 customId는 button-handler와 동일해야 함 */
@@ -348,7 +349,7 @@ export async function handleSessionOverview(
 }
 
 /**
- * `/일정 달력` — 올해 지정 월의 세션만 월간 캘린더 PNG (격자만, 채널에 공개)
+ * `/일정 달력` — 올해 지정 월의 세션만 월간 캘린더 PNG (격자만, 지정 채널에 공개)
  */
 export async function handleSessionMonthCalendar(
   interaction: ChatInputCommandInteraction
@@ -362,7 +363,8 @@ export async function handleSessionMonthCalendar(
   }
 
   const guildId = interaction.guildId;
-  if (!guildId) {
+  const guild = interaction.guild;
+  if (!guildId || !guild) {
     await interaction.reply({
       content: "❌ 길드에서만 사용할 수 있습니다.",
       flags: MessageFlags.Ephemeral,
@@ -374,7 +376,18 @@ export async function handleSessionMonthCalendar(
   const year = new Date().getFullYear();
   const monthIndex = month - 1;
 
-  await interaction.deferReply();
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  const resolvedCh = await resolveGuildTextSendChannel(
+    guild,
+    interaction.options.getChannel(Opt.channel),
+    interaction.channelId
+  );
+  if (!resolvedCh.ok) {
+    await interaction.editReply({ content: resolvedCh.message });
+    return;
+  }
+  const textChannel = resolvedCh.channel;
 
   if (!isResultCardImageEnabled()) {
     await interaction.editReply({
@@ -396,14 +409,33 @@ export async function handleSessionMonthCalendar(
     return;
   }
 
-  await interaction.editReply({
-    content: `📅 **${year}년 ${month}월** · 세션 일시 기준 OPEN·마감 (취소 제외)`,
-    files: [new AttachmentBuilder(buf, { name: "session-calendar.png" })],
-  });
+  try {
+    const msg = await textChannel.send({
+      content: `📅 **${year}년 ${month}월** · 세션 일시 기준 OPEN·마감 (취소 제외)`,
+      files: [new AttachmentBuilder(buf, { name: "session-calendar.png" })],
+    });
+    await interaction.editReply({
+      content: `✅ 달력을 올렸습니다. [메시지 보기](${msg.url})`,
+    });
+  } catch (err) {
+    console.error("[session calendar]", err);
+    const missingAccess =
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: unknown }).code === 50001;
+    await interaction.editReply({
+      content: missingAccess
+        ? "❌ 봇이 **선택한 채널**에 메시지를 보낼 수 없습니다. (Discord `Missing Access`)\n" +
+          "· 봇 역할에 **채널 보기**, **메시지 보내기**, **파일 첨부**를 허용했는지 확인하세요.\n" +
+          "· **스레드**면 **스레드에서 메시지 보내기**가 필요하고, 비공개 스레드는 봇을 **초대**해야 할 수 있습니다."
+        : `❌ 달력을 보내지 못했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`,
+    });
+  }
 }
 
 /**
- * `/일정 집계` — 한 세션 집계·최종 결과 (채널 공개). 세션 ID는 실행 관리자에게만 에페메랄.
+ * `/일정 집계` — 한 세션 집계·최종 결과 (지정 채널에 공개). 세션 ID는 실행 관리자에게만 에페메랄.
  */
 export async function handleSessionResult(
   interaction: ChatInputCommandInteraction
@@ -417,7 +449,8 @@ export async function handleSessionResult(
   }
 
   const guildId = interaction.guildId;
-  if (!guildId) {
+  const guildBase = interaction.guild;
+  if (!guildId || !guildBase) {
     await interaction.reply({
       content: "❌ 길드에서만 사용할 수 있습니다.",
       flags: MessageFlags.Ephemeral,
@@ -425,7 +458,7 @@ export async function handleSessionResult(
     return;
   }
 
-  await interaction.deferReply();
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const sessionIdOpt = interaction.options.getString(Opt.sessionId);
   const withImage = interaction.options.getBoolean(Opt.withImage) === true;
@@ -516,6 +549,33 @@ export async function handleSessionResult(
     return;
   }
 
+  const resolvedCh = await resolveGuildTextSendChannel(
+    guildBase,
+    interaction.options.getChannel(Opt.channel),
+    interaction.channelId
+  );
+  if (!resolvedCh.ok) {
+    await interaction.editReply({ content: resolvedCh.message });
+    return;
+  }
+  const textChannel = resolvedCh.channel;
+
+  const replySendError = async (err: unknown, ctx: string): Promise<void> => {
+    console.error(ctx, err);
+    const missingAccess =
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: unknown }).code === 50001;
+    await interaction.editReply({
+      content: missingAccess
+        ? "❌ 봇이 **선택한 채널**에 메시지를 보낼 수 없습니다. (Discord `Missing Access`)\n" +
+          "· 봇 역할에 **채널 보기**, **메시지 보내기**, **링크 임베드**, **파일 첨부**(이미지 사용 시)를 허용했는지 확인하세요.\n" +
+          "· **스레드**면 **스레드에서 메시지 보내기**가 필요하고, 비공개 스레드는 봇을 **초대**해야 할 수 있습니다."
+        : `❌ 집계를 보내지 못했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`,
+    });
+  };
+
   if (session.status === "OPEN") {
     const noResponseIdsOpen = await getNonResponders(
       guild,
@@ -539,14 +599,21 @@ export async function handleSessionResult(
         noResponseIds: noResponseIdsOpen,
         cardMode: "open",
       }));
-    await interaction.editReply({
-      content: resultHeaderPublic(""),
-      embeds: [embed],
-      ...(png
-        ? { files: [new AttachmentBuilder(png, { name: "session-result.png" })] }
-        : {}),
-    });
-    await sendSessionIdToInvoker();
+    try {
+      const msg = await textChannel.send({
+        content: resultHeaderPublic(""),
+        embeds: [embed],
+        ...(png
+          ? { files: [new AttachmentBuilder(png, { name: "session-result.png" })] }
+          : {}),
+      });
+      await interaction.editReply({
+        content: `✅ 집계를 올렸습니다. [메시지 보기](${msg.url})`,
+      });
+      await sendSessionIdToInvoker();
+    } catch (err) {
+      await replySendError(err, "[session result open]");
+    }
     return;
   }
 
@@ -572,14 +639,21 @@ export async function handleSessionResult(
       noResponseIds,
       cardMode: "closed",
     }));
-  await interaction.editReply({
-    content: resultHeaderPublic(""),
-    embeds: [embed],
-    ...(pngClosed
-      ? { files: [new AttachmentBuilder(pngClosed, { name: "session-result.png" })] }
-      : {}),
-  });
-  await sendSessionIdToInvoker();
+  try {
+    const msg = await textChannel.send({
+      content: resultHeaderPublic(""),
+      embeds: [embed],
+      ...(pngClosed
+        ? { files: [new AttachmentBuilder(pngClosed, { name: "session-result.png" })] }
+        : {}),
+    });
+    await interaction.editReply({
+      content: `✅ 집계를 올렸습니다. [메시지 보기](${msg.url})`,
+    });
+    await sendSessionIdToInvoker();
+  } catch (err) {
+    await replySendError(err, "[session result closed]");
+  }
 }
 
 /**

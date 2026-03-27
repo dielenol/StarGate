@@ -5,7 +5,7 @@
  * @module commands/register
  */
 
-import { REST, Routes } from "discord.js";
+import { ChannelType, REST, Routes } from "discord.js";
 import { config } from "../config.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 
@@ -16,40 +16,55 @@ const SCHEDULE_CMD = {
   options: [
     {
       name: Sub.create,
-      description: "새 세션을 만들고 참여 체크 공지를 올립니다. (서버 관리)",
+      description:
+        "새 세션 공지·참여 체크(서버 관리). 제목·일시·마감 자동완성은 참고용 예시이며 직접 입력 가능",
       type: 1,
       options: [
         {
           name: Opt.title,
-          description: "세션명",
+          description:
+            "세션명. 목록은 예시·참고용이며 원하는 문구를 직접 입력해도 됩니다",
           type: 3,
           required: true,
+          autocomplete: true,
         },
         {
           name: Opt.date,
           description:
-            "세션 일시 24h (예: 2026-03-22 20:00=저녁8시). 지금 이후만 가능",
+            "세션 일시 24h. 자동완성 시각은 예시·참고, 지금 이후만 (예 20:00=저녁8시)",
           type: 3,
           required: true,
+          autocomplete: true,
         },
         {
           name: Opt.closeTime,
           description:
-            "응답 마감 24h (예: 15:50=오후3시50분, 03:50=새벽). 지금·세션일시 사이",
+            "응답 마감 24h. 자동완성은 예시·참고, 지금~세션일시 사이 (예 15:50=오후3시50분)",
           type: 3,
           required: true,
+          autocomplete: true,
         },
         {
           name: Opt.role,
-          description: "참여 대상 역할 (역할 ID 또는 @멘션)",
+          description:
+            "참여 대상 역할. 자동완성은 길드 역할 검색(예시 목록 아님), ID·@멘션 가능",
           type: 3,
           required: true,
+          autocomplete: true,
         },
         {
           name: Opt.channel,
-          description: "공지 채널 (채널 ID, 비우면 현재 채널)",
-          type: 3,
+          description:
+            "공지를 올릴 채널·스레드 (목록에서 선택, 비우면 명령을 친 채널)",
+          type: 7,
           required: false,
+          channel_types: [
+            ChannelType.GuildText,
+            ChannelType.GuildAnnouncement,
+            ChannelType.PublicThread,
+            ChannelType.PrivateThread,
+            ChannelType.AnnouncementThread,
+          ],
         },
       ],
     },
@@ -80,6 +95,20 @@ const SCHEDULE_CMD = {
           min_value: 1,
           max_value: 12,
         },
+        {
+          name: Opt.channel,
+          description:
+            "달력 PNG를 올릴 채널·스레드 (목록에서 선택, 비우면 명령 채널)",
+          type: 7,
+          required: false,
+          channel_types: [
+            ChannelType.GuildText,
+            ChannelType.GuildAnnouncement,
+            ChannelType.PublicThread,
+            ChannelType.PrivateThread,
+            ChannelType.AnnouncementThread,
+          ],
+        },
       ],
     },
     {
@@ -99,6 +128,20 @@ const SCHEDULE_CMD = {
           description: "캘린더형 PNG 첨부 (무거움, 필요할 때만)",
           type: 5,
           required: false,
+        },
+        {
+          name: Opt.channel,
+          description:
+            "집계 임베드·이미지를 올릴 채널·스레드 (비우면 명령 채널)",
+          type: 7,
+          required: false,
+          channel_types: [
+            ChannelType.GuildText,
+            ChannelType.GuildAnnouncement,
+            ChannelType.PublicThread,
+            ChannelType.PrivateThread,
+            ChannelType.AnnouncementThread,
+          ],
         },
       ],
     },
