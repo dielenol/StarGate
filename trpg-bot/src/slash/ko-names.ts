@@ -11,6 +11,7 @@ export const Sub = {
   overview: "한눈에",
   calendar: "달력",
   result: "집계",
+  participationCheck: "참여확인",
   close: "마감",
   editClose: "응답마감변경",
   editDate: "일정변경",

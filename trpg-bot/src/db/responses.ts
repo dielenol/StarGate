@@ -5,8 +5,9 @@
  * @module db/responses
  */
 
-import { responsesCollection } from "./index.js";
-import type { SessionResponse, ResponseStatus } from "../types/session.js";
+import { ObjectId, type Filter } from "mongodb";
+import { responsesCollection, sessionsCollection } from "./index.js";
+import type { Session, SessionResponse, ResponseStatus } from "../types/session.js";
 
 /**
  * 사용자 응답을 저장하거나 덮어씁니다.
@@ -74,4 +75,65 @@ export async function countByStatus(sessionId: string): Promise<{
     }
   }
   return counts;
+}
+
+/** 길드 내에서 특정 유저가 응답한 세션 + 응답 한 행 */
+export type UserParticipationRow = {
+  session: Session;
+  response: SessionResponse;
+};
+
+/**
+ * 이 길드에서 `userId`가 응답한 세션만, 세션 일시 오름차순으로 조회합니다.
+ * @param displayLimit 표시용 상한(잘라내기 전 전체 건수는 `totalInGuild`로 반환)
+ * @param options.responseStatus 지정 시 해당 응답 상태만 (예: `/일정 참여확인`은 `YES`만)
+ */
+export async function findUserParticipationsInGuild(
+  guildId: string,
+  userId: string,
+  displayLimit: number,
+  options?: { responseStatus?: ResponseStatus }
+): Promise<{ items: UserParticipationRow[]; totalInGuild: number }> {
+  const filter: Record<string, unknown> = { userId };
+  if (options?.responseStatus != null) {
+    filter.status = options.responseStatus;
+  }
+  const responses = await responsesCollection().find(filter).toArray();
+  if (responses.length === 0) {
+    return { items: [], totalInGuild: 0 };
+  }
+
+  const bySessionId = new Map<string, SessionResponse>();
+  for (const r of responses) {
+    bySessionId.set(r.sessionId, r);
+  }
+
+  const oids: ObjectId[] = [];
+  for (const sid of bySessionId.keys()) {
+    if (ObjectId.isValid(sid)) oids.push(new ObjectId(sid));
+  }
+  if (oids.length === 0) {
+    return { items: [], totalInGuild: 0 };
+  }
+
+  const sessions = await sessionsCollection()
+    .find({
+      _id: { $in: oids },
+      guildId,
+    } as unknown as Filter<Session>)
+    .sort({ targetDateTime: 1 })
+    .toArray();
+
+  const totalInGuild = sessions.length;
+  const cap = Math.max(0, displayLimit);
+  const slice = sessions.slice(0, cap);
+
+  const items: UserParticipationRow[] = [];
+  for (const session of slice) {
+    const sid = String(session._id);
+    const response = bySessionId.get(sid);
+    if (response) items.push({ session, response });
+  }
+
+  return { items, totalInGuild };
 }

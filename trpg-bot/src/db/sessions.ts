@@ -91,6 +91,50 @@ export async function updateSessionMessageId(
 }
 
 /**
+ * 세션을 삭제합니다.
+ * 생성 보상 롤백에 사용합니다.
+ * @param sessionId ObjectId 문자열
+ * @returns 삭제 성공 여부
+ */
+export async function deleteSessionById(sessionId: string): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().deleteOne({
+    _id: new ObjectId(sessionId),
+  } as SessionFilter);
+  return result.deletedCount > 0;
+}
+
+/**
+ * 세션 상태를 현재 값이 일치할 때만 갱신합니다(CAS).
+ * 동시 마감/취소 중복 실행을 막는 데 사용합니다.
+ * @param sessionId ObjectId 문자열
+ * @param currentStatuses 현재 허용 상태(예: OPEN)
+ * @param nextStatus 새 상태
+ * @returns 상태 전이 성공 여부
+ */
+export async function updateSessionStatusIfCurrent(
+  sessionId: string,
+  currentStatuses: SessionStatus | SessionStatus[],
+  nextStatus: SessionStatus
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const expected = Array.isArray(currentStatuses)
+    ? currentStatuses
+    : [currentStatuses];
+
+  const result = await sessionsCollection().updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      status: { $in: expected },
+    } as unknown as SessionFilter,
+    { $set: { status: nextStatus, updatedAt: new Date() } }
+  );
+  return result.modifiedCount > 0;
+}
+
+/**
  * 마감 시간이 지난 OPEN 상태 세션을 조회합니다.
  * 마감 스케줄러에서 사용합니다.
  * @param guildId 길드 ID (선택, 필터용)

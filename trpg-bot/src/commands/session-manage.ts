@@ -14,7 +14,11 @@ import {
   EmbedBuilder,
   MessageFlags,
 } from "discord.js";
-import { findBySessionId, countByStatus } from "../db/responses.js";
+import {
+  findBySessionId,
+  countByStatus,
+  findUserParticipationsInGuild,
+} from "../db/responses.js";
 import {
   findSessionById,
   findSessionByIdInGuild,
@@ -38,11 +42,20 @@ import { isResultCardImageEnabled } from "../config.js";
 import {
   buildSessionResultCardBuffer,
   buildGuildMonthCalendarOnlyBuffer,
+  buildParticipationMonthCalendarBuffer,
+  hasParticipationCalendarMarksInMonth,
 } from "../utils/build-session-result-card.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 import { requireManageGuild } from "../utils/require-manage-guild.js";
 import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
-import type { Session } from "../types/session.js";
+import {
+  canIssueParticipationImage,
+  getParticipationImageCooldownMs,
+  markParticipationImageIssued,
+  msUntilNextParticipationImage,
+  participationImageCooldownKey,
+} from "../utils/participation-image-cooldown.js";
+import type { Session, SessionStatus } from "../types/session.js";
 
 /** 버튼 customId는 button-handler와 동일해야 함 */
 const ATTEND_PREFIX = "trpg:attend:";
@@ -52,6 +65,10 @@ const LIST_EMBED_COLOR = 0xc5a059;
 const LIST_DESC_SAFE_MAX = 3900;
 /** 한 번에 표시할 최대 세션 수 */
 const LIST_MAX_ITEMS = 20;
+/** `/일정 참여확인` — 표시 상한(전체 건수는 푸터에 안내) */
+const PARTICIPATION_CHECK_MAX_ITEMS = 20;
+/** 참여확인 임베드 description 여유 한도 */
+const PARTICIPATION_DESC_SAFE_MAX = 3900;
 /** overview: OPEN·CLOSED 세션 일시 순·월별 표에 포함할 최대 건수 */
 const OVERVIEW_MAX_SESSIONS = 100;
 /** overview: 임베드 description 여유 한도 */
@@ -699,12 +716,22 @@ export async function handleSessionClose(
   }
 
   try {
-    await executeSessionClose(interaction.client, session, {
+    const result = await executeSessionClose(interaction.client, session, {
       kind: "force",
       actorUserId: interaction.user.id,
     });
+    if (!result.transitioned) {
+      await interaction.editReply({
+        content: "ℹ️ 이 세션은 이미 다른 작업에서 마감되었거나 더 이상 OPEN 상태가 아닙니다.",
+      });
+      return;
+    }
+    const warningNote =
+      result.warnings.length > 0
+        ? `\n\n주의: ${result.warnings.join(" / ")}`
+        : "";
     await interaction.editReply({
-      content: `✅ **${session.title}** 세션을 강제 마감했습니다.`,
+      content: `✅ **${session.title}** 세션을 강제 마감했습니다.${warningNote}`,
     });
   } catch (err) {
     console.error("[session close]", err);
@@ -922,6 +949,171 @@ export async function handleSessionEditDate(
   });
 }
 
+function participationStatusLabel(status: SessionStatus): string {
+  switch (status) {
+    case "OPEN":
+      return "진행 중";
+    case "CLOSED":
+      return "마감됨";
+    case "CANCELED":
+      return "취소됨";
+    default:
+      return String(status);
+  }
+}
+
+/**
+ * `/일정 참여확인` — 본인이 **참석(YES)** 으로 응답한 세션만 (에페메랄).
+ * `RESULT_CARD_IMAGE`가 켜져 있으면 **쿨다운이 지난 조회에만** 이번 달 **월간 캘린더 PNG**를 함께 붙입니다 (`/일정 달력`과 동일 격자).
+ */
+export async function handleSessionParticipationCheck(
+  interaction: ChatInputCommandInteraction
+): Promise<void> {
+  const guildId = interaction.guildId;
+  if (!guildId) {
+    await interaction.reply({
+      content: "❌ 길드에서만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const userId = interaction.user.id;
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  const { items, totalInGuild } = await findUserParticipationsInGuild(
+    guildId,
+    userId,
+    PARTICIPATION_CHECK_MAX_ITEMS,
+    { responseStatus: "YES" }
+  );
+
+  if (totalInGuild === 0) {
+    await interaction.editReply({
+      content:
+        "📭 이 서버에서 **참석**으로 응답한 일정이 없습니다. 공지에서 **참석**을 누르면 여기에 표시됩니다.",
+    });
+    return;
+  }
+
+  const lines: string[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const { session: s } = items[i];
+    const sid = String(s._id);
+    const tStart = Math.floor(s.targetDateTime.getTime() / 1000);
+    const tClose = Math.floor(s.closeDateTime.getTime() / 1000);
+    const announceUrl = `https://discord.com/channels/${guildId}/${s.channelId}/${s.messageId}`;
+    const titleShort =
+      s.title.length > 80 ? `${s.title.slice(0, 77)}...` : s.title;
+    lines.push(
+      `**${i + 1}.** ${titleShort}\n` +
+        `· 상태: **${participationStatusLabel(s.status)}**\n` +
+        `· 세션 일시: <t:${tStart}:F>\n` +
+        `· 응답 마감: <t:${tClose}:F>\n` +
+        `· 공지: [열기](${announceUrl}) · \`${sid}\``
+    );
+  }
+
+  let description = lines.join("\n\n");
+  if (description.length > PARTICIPATION_DESC_SAFE_MAX) {
+    description =
+      description.slice(0, PARTICIPATION_DESC_SAFE_MAX - 20).trimEnd() +
+      "\n… _(일부만 표시)_";
+  }
+
+  const embed = new EmbedBuilder()
+    .setColor(LIST_EMBED_COLOR)
+    .setTitle("📌 내가 참석으로 응답한 일정 (이 서버 · 에페메랄)")
+    .setDescription(description);
+
+  const footerBits: string[] = [];
+  if (totalInGuild > PARTICIPATION_CHECK_MAX_ITEMS) {
+    footerBits.push(
+      `총 ${totalInGuild}건 중 앞선 ${PARTICIPATION_CHECK_MAX_ITEMS}건만 표시 (세션 일시 빠른 순)`
+    );
+  }
+
+  const cooldownKey = participationImageCooldownKey(guildId, userId);
+  const imageOn = isResultCardImageEnabled();
+  const canImage = imageOn && canIssueParticipationImage(cooldownKey);
+
+  if (imageOn && !canImage) {
+    const ms = msUntilNextParticipationImage(cooldownKey);
+    const mins = Math.max(1, Math.ceil(ms / 60_000));
+    footerBits.push(
+      `이번 달 캘린더 PNG는 약 ${mins}분 후 다시 첨부됩니다 (그전엔 글 목록만)`
+    );
+  }
+
+  if (footerBits.length > 0) {
+    embed.setFooter({ text: footerBits.join(" · ") });
+  }
+
+  if (canImage) {
+    const now = new Date();
+    const calYear = now.getFullYear();
+    const calMonth = now.getMonth();
+
+    if (!hasParticipationCalendarMarksInMonth(items, calYear, calMonth)) {
+      footerBits.push(
+        "이번 달에 표시할 응답 일정이 없어 캘린더 PNG를 생략했습니다"
+      );
+      embed.setFooter({
+        text:
+          footerBits.join(" · ").length > 2048
+            ? `${footerBits.join(" · ").slice(0, 2045)}…`
+            : footerBits.join(" · "),
+      });
+    } else {
+      const png = await buildParticipationMonthCalendarBuffer(
+        items,
+        calYear,
+        calMonth
+      );
+
+      if (png) {
+        markParticipationImageIssued(cooldownKey);
+        const cdMs = getParticipationImageCooldownMs();
+        const extraFooter: string[] = [];
+        extraFooter.push(
+          `캘린더: ${calYear}년 ${calMonth + 1}월(봇 타임존) · 목록은 전 기간 최대 ${PARTICIPATION_CHECK_MAX_ITEMS}건`
+        );
+        if (cdMs > 0) {
+          extraFooter.push(
+            `다음 캘린더 PNG는 약 ${Math.ceil(cdMs / 60_000)}분 후부터`
+          );
+        }
+        const base = footerBits.length > 0 ? footerBits.join(" · ") : "";
+        const merged = [base, ...extraFooter].filter(Boolean).join(" · ");
+        if (merged.length > 0) {
+          embed.setFooter({
+            text:
+              merged.length > 2048 ? `${merged.slice(0, 2045)}…` : merged,
+          });
+        }
+        await interaction.editReply({
+          embeds: [embed],
+          files: [
+            new AttachmentBuilder(png, {
+              name: "participation-calendar.png",
+            }),
+          ],
+        });
+        return;
+      }
+
+      const failDesc =
+        description +
+        "\n\n_캘린더 이미지를 만들지 못했습니다. 목록만 표시합니다._";
+      embed.setDescription(
+        failDesc.length > 4096 ? `${failDesc.slice(0, 4093)}…` : failDesc
+      );
+    }
+  }
+
+  await interaction.editReply({ embeds: [embed] });
+}
+
 /**
  * `/일정 취소` — 세션 취소
  */
@@ -958,13 +1150,23 @@ export async function handleSessionCancel(
   }
 
   try {
-    await executeSessionCancel(
+    const result = await executeSessionCancel(
       interaction.client,
       session,
       interaction.user.id
     );
+    if (!result.transitioned) {
+      await interaction.editReply({
+        content: "ℹ️ 이 세션은 이미 다른 작업에서 취소되었거나 더 이상 OPEN 상태가 아닙니다.",
+      });
+      return;
+    }
+    const warningNote =
+      result.warnings.length > 0
+        ? `\n\n주의: ${result.warnings.join(" / ")}`
+        : "";
     await interaction.editReply({
-      content: `✅ **${session.title}** 세션을 취소했습니다.`,
+      content: `✅ **${session.title}** 세션을 취소했습니다.${warningNote}`,
     });
   } catch (err) {
     console.error("[session cancel]", err);

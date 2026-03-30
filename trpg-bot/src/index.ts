@@ -18,6 +18,7 @@ import {
   handleSessionOverview,
   handleSessionMonthCalendar,
   handleSessionResult,
+  handleSessionParticipationCheck,
   handleSessionClose,
   handleSessionEditClose,
   handleSessionEditDate,
@@ -85,6 +86,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       break;
     case Sub.result:
       await handleSessionResult(interaction);
+      break;
+    case Sub.participationCheck:
+      await handleSessionParticipationCheck(interaction);
       break;
     case Sub.close:
       await handleSessionClose(interaction);

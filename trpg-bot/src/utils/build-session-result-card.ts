@@ -124,3 +124,59 @@ export async function buildGuildMonthCalendarOnlyBuffer(
   const anchorAt = new Date(year, monthIndex, 1);
   return renderGuildMonthCalendarPng({ anchorAt, calendarMarks: marks });
 }
+
+/**
+ * 해당 연·월에 캘린더에 찍을 본인 응답 세션이 하나라도 있는지 (PNG 생성 여부 판단용).
+ */
+export function hasParticipationCalendarMarksInMonth(
+  items: Array<{ session: Session }>,
+  year: number,
+  monthIndex: number
+): boolean {
+  for (const { session: s } of items) {
+    if (!s._id) continue;
+    const t = s.targetDateTime;
+    if (t.getFullYear() !== year || t.getMonth() !== monthIndex) continue;
+    if (s.status !== "OPEN" && s.status !== "CLOSED" && s.status !== "CANCELED")
+      continue;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * `/일정 참여확인` 에페메랄용 월간 캘린더 PNG (`/일정 달력`과 동일 격자).
+ * `year`·`monthIndex`는 봇 로컬 **이번 달** 기준으로 전달하는 것을 권장합니다.
+ * 이번 달에 표시할 일정이 없으면 `null`(Puppeteer 호출 없음).
+ */
+export async function buildParticipationMonthCalendarBuffer(
+  items: Array<{ session: Session }>,
+  year: number,
+  monthIndex: number
+): Promise<Buffer | null> {
+  if (!isResultCardImageEnabled()) return null;
+
+  const marks: CalendarSessionMark[] = [];
+  for (const { session: s } of items) {
+    if (!s._id) continue;
+    const t = s.targetDateTime;
+    if (t.getFullYear() !== year || t.getMonth() !== monthIndex) continue;
+    if (s.status !== "OPEN" && s.status !== "CLOSED" && s.status !== "CANCELED")
+      continue;
+    marks.push({
+      at: t,
+      title: s.title,
+      status: s.status,
+      isPrimary: false,
+    });
+  }
+
+  if (marks.length === 0) return null;
+
+  const anchorAt = new Date(year, monthIndex, 1);
+  return renderGuildMonthCalendarPng({
+    anchorAt,
+    calendarMarks: marks,
+    calendarVariant: "participation",
+  });
+}

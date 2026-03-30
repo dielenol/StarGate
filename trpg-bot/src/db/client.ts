@@ -5,11 +5,67 @@
  * @module db/client
  */
 
-import { MongoClient, type MongoClientOptions } from "mongodb";
+import {
+  MongoClient,
+  MongoServerError,
+  type MongoClientOptions,
+} from "mongodb";
 import { config } from "../config.js";
 
 /** MongoDB 클라이언트 싱글톤 인스턴스 */
 let client: MongoClient | null = null;
+let connectPromise: Promise<void> | null = null;
+
+const DB_NAME = "trpg_bot";
+const SESSIONS_COLLECTION = "sessions";
+const RESPONSES_COLLECTION = "session_responses";
+const SESSION_LOGS_COLLECTION = "session_logs";
+
+async function ensureIndexes(mongoClient: MongoClient): Promise<void> {
+  const db = mongoClient.db(DB_NAME);
+
+  await Promise.all([
+    db.collection(SESSIONS_COLLECTION).createIndexes([
+      {
+        key: { status: 1, closeDateTime: 1 },
+        name: "sessions_status_closeDateTime",
+      },
+      {
+        key: { guildId: 1, status: 1, createdAt: -1 },
+        name: "sessions_guild_status_createdAt",
+      },
+      {
+        key: { guildId: 1, status: 1, targetDateTime: 1 },
+        name: "sessions_guild_status_targetDateTime",
+      },
+      {
+        key: { status: 1, targetDateTime: 1, sessionStartReminder24hSent: 1 },
+        name: "sessions_status_targetDateTime_reminderFlag",
+      },
+    ]),
+    db.collection(RESPONSES_COLLECTION).createIndexes([
+      {
+        key: { sessionId: 1, userId: 1 },
+        name: "responses_sessionId_userId_unique",
+        unique: true,
+      },
+      {
+        key: { sessionId: 1, status: 1 },
+        name: "responses_sessionId_status",
+      },
+      {
+        key: { userId: 1, status: 1 },
+        name: "responses_userId_status",
+      },
+    ]),
+    db
+      .collection(SESSION_LOGS_COLLECTION)
+      .createIndex(
+        { sessionId: 1, createdAt: -1 },
+        { name: "session_logs_sessionId_createdAt" }
+      ),
+  ]);
+}
 
 /**
  * MongoDB에 연결합니다.
@@ -18,10 +74,30 @@ let client: MongoClient | null = null;
  */
 export async function connectDb(): Promise<void> {
   if (client) return;
+  if (connectPromise) return connectPromise;
 
   const options: MongoClientOptions = {};
-  client = new MongoClient(config.mongoUri, options);
-  await client.connect();
+  const mongoClient = new MongoClient(config.mongoUri, options);
+
+  connectPromise = (async () => {
+    try {
+      await mongoClient.connect();
+      await ensureIndexes(mongoClient);
+      client = mongoClient;
+    } catch (err) {
+      await mongoClient.close().catch(() => {});
+      if (err instanceof MongoServerError && err.code === 11000) {
+        throw new Error(
+          "MongoDB 인덱스 초기화에 실패했습니다. `session_responses`에 중복된 `(sessionId, userId)` 데이터가 없는지 확인하세요."
+        );
+      }
+      throw err;
+    } finally {
+      connectPromise = null;
+    }
+  })();
+
+  return connectPromise;
 }
 
 /**

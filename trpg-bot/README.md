@@ -9,6 +9,7 @@ TRPG 세션 일정 참여 여부를 디스코드에서 수집하고, 마감 시 
 - **자동 마감**: 마감 시점에 버튼 비활성화 및 최종 결과 메시지 전송
 - **무응답자 표시**: 대상 역할 기준으로 무응답자 명단 출력 (Discord 멘션 형식)
 - **일정·집계**: **`/일정 한눈에`** 로 OPEN·마감을 **월별**로 정리, **`/일정 집계`** 로 **한 세션** 집계 — 결과는 **채널 공개**, 세션 ID는 **실행 관리자에게만** 따로 안내. (OPEN 여러 개면 `세션아이디` 필요). 달력 PNG는 **`이미지포함`** 또는 마감 시만 (`RESULT_CARD_IMAGE=0` 등으로 끌 수 있음)
+- **내 일정**: **`/일정 참여확인`** — 이 서버에서 **본인이 참석(YES)으로만 응답한 세션**을 **에페메랄**로 모음. `RESULT_CARD_IMAGE`가 켜져 있으면 **일정 간격(기본 30분)** 마다 **`/일정 달력`과 같은 월간 캘린더 PNG**(봇 기준 이번 달·내 응답 일정만)를 같은 에페메랄에 첨부 (`PARTICIPATION_CHECK_IMAGE_COOLDOWN_MINUTES`, `PNG_RENDER_MIN_INTERVAL_MS` 참고)
 
 ## 요구사항
 
@@ -25,6 +26,8 @@ TRPG 세션 일정 참여 여부를 디스코드에서 수집하고, 마감 시 
    - `MONGODB_URI`: MongoDB 연결 문자열
    - `GUILD_ID`: (선택) 개발용, 특정 서버에만 커맨드 등록 시
    - `RESULT_CARD_IMAGE`: (선택) `0` / `false` / `off` 이면 마감 시 PNG 첨부 생략 (Chromium 없는 환경용)
+   - `PARTICIPATION_CHECK_IMAGE_COOLDOWN_MINUTES`: (선택) `/일정 참여확인` 월간 캘린더 PNG 재첨부 최소 간격(분, 기본 30). `0`이면 매 조회 시도(전역 PNG 큐가 부하 완화)
+   - `PNG_RENDER_MIN_INTERVAL_MS`: (선택) Puppeteer PNG 한 건 처리 후 다음 건까지 대기(ms, 기본 500)
 
 ## 설치 및 실행
 

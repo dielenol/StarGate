@@ -146,6 +146,13 @@ const SCHEDULE_CMD = {
       ],
     },
     {
+      name: Sub.participationCheck,
+      description:
+        "내가 이 서버에서 참석으로 응답한 일정만 (에페메랄). 이번 달 캘린더 PNG는 쿨다운 후에만 첨부",
+      type: 1,
+      options: [],
+    },
+    {
       name: Sub.close,
       description: "응답 수집을 강제 마감 (서버 관리)",
       type: 1,

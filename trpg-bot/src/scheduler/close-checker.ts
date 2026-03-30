@@ -28,7 +28,16 @@ async function processOneWithRetry(
 ): Promise<void> {
   for (let attempt = 1; attempt <= MAX_CLOSE_ATTEMPTS; attempt++) {
     try {
-      await executeSessionClose(client, session, { kind: "scheduled" });
+      const result = await executeSessionClose(client, session, {
+        kind: "scheduled",
+      });
+      if (result.transitioned && result.warnings.length > 0) {
+        console.warn(
+          "[close-checker] 세션 마감은 완료됐지만 후속 처리 경고가 있습니다:",
+          session._id,
+          result.warnings
+        );
+      }
       return;
     } catch (err) {
       if (isRateLimitError(err)) {

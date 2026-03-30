@@ -10,6 +10,31 @@ import puppeteer from "puppeteer";
 import type { Browser } from "puppeteer";
 import { isResultCardImageEnabled } from "../config.js";
 
+/**
+ * Puppeteer 캡처를 전역으로 직렬화한 뒤, 완료 후 최소 간격(ms)을 둡니다.
+ * PNG 동시 생성으로 인한 CPU·메모리 스파이크를 줄입니다.
+ */
+function getPngRenderMinIntervalMs(): number {
+  const v = process.env.PNG_RENDER_MIN_INTERVAL_MS?.trim();
+  if (v === undefined || v === "") return 500;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? Math.min(n, 120_000) : 500;
+}
+
+let pngRenderTail: Promise<void> = Promise.resolve();
+
+function queuePngRenderTask<T>(fn: () => Promise<T>): Promise<T> {
+  const run: Promise<T> = pngRenderTail.then(() => fn());
+  pngRenderTail = run
+    .then(async () => {
+      const ms = getPngRenderMinIntervalMs();
+      if (ms > 0)
+        await new Promise<void>((resolve) => setTimeout(resolve, ms));
+    })
+    .catch(() => {});
+  return run;
+}
+
 /** 카드 전체 너비(px) — 본문 그리드가 오른쪽 명단 영역을 넓게 씀 */
 const CARD_WIDTH = 900;
 /** 월간 캘린더만 출력할 때 카드 너비 */
@@ -32,7 +57,7 @@ let browserPromise: Promise<Browser> | null = null;
 export type CalendarSessionMark = {
   at: Date;
   title: string;
-  status: "OPEN" | "CLOSED";
+  status: "OPEN" | "CLOSED" | "CANCELED";
   /** 현재 조회/마감 대상 세션 */
   isPrimary: boolean;
 };
@@ -88,8 +113,21 @@ function buildAgendaHtml(marks: CalendarSessionMark[], anchorAt: Date): string {
 
   const rows = shown
     .map((mk) => {
-      const stLabel = mk.isPrimary ? "조회 중" : mk.status === "OPEN" ? "진행 중" : "마감";
-      const badgeCls = mk.isPrimary ? "ag-primary" : mk.status === "OPEN" ? "ag-open" : "ag-closed";
+      const stLabel =
+        mk.isPrimary
+          ? "조회 중"
+          : mk.status === "OPEN"
+            ? "진행 중"
+            : mk.status === "CLOSED"
+              ? "마감"
+              : "취소";
+      const badgeCls = mk.isPrimary
+        ? "ag-primary"
+        : mk.status === "OPEN"
+          ? "ag-open"
+          : mk.status === "CLOSED"
+            ? "ag-closed"
+            : "ag-canceled";
       const rowCls = mk.isPrimary ? "agenda-row agenda-row-primary" : "agenda-row";
       return `<div class="${rowCls}"><div class="ag-top"><span class="ag-when">${escapeHtml(formatAgendaWhenLine(mk.at))}</span><span class="ag-badge ${badgeCls}">${escapeHtml(stLabel)}</span></div><div class="ag-title">${escapeHtml(truncateAgendaTitle(mk.title))}</div></div>`;
     })
@@ -137,7 +175,7 @@ function sameLocalDay(d: Date, y: number, m: number, day: number): boolean {
 function buildCalendarHtml(
   anchorAt: Date,
   marks: CalendarSessionMark[],
-  legendMode: "full" | "simple" = "full",
+  legendMode: "full" | "simple" | "simple3" = "full",
   subLine = "동일 달 세션"
 ): string {
   const y = anchorAt.getFullYear();
@@ -176,7 +214,9 @@ function buildCalendarHtml(
           ? "cal-entry cal-primary"
           : mk.status === "OPEN"
             ? "cal-entry cal-open"
-            : "cal-entry cal-closed";
+            : mk.status === "CLOSED"
+              ? "cal-entry cal-closed"
+              : "cal-entry cal-canceled";
         return `<div class="${cls}"><span class="ce-t">${escapeHtml(`${hh}:${mm}`)}</span><span class="ce-title">${escapeHtml(truncateCalendarTitle(mk.title, MAX_CAL_TITLE_IN_CELL))}</span></div>`;
       })
       .join("");
@@ -210,13 +250,20 @@ function buildCalendarHtml(
     .join("");
 
   const legend =
-    legendMode === "simple"
+    legendMode === "simple3"
       ? `
     <div class="cal-legend">
       <span><i class="lg lg-open"></i>진행 중</span>
       <span><i class="lg lg-closed"></i>마감</span>
+      <span><i class="lg lg-canceled"></i>취소</span>
     </div>`
-      : `
+      : legendMode === "simple"
+        ? `
+    <div class="cal-legend">
+      <span><i class="lg lg-open"></i>진행 중</span>
+      <span><i class="lg lg-closed"></i>마감</span>
+    </div>`
+        : `
     <div class="cal-legend">
       <span><i class="lg lg-primary"></i>조회 중</span>
       <span><i class="lg lg-open"></i>진행 중</span>
@@ -379,6 +426,7 @@ const CSS_CALENDAR_BLOCK_STYLES = `
   .cal-primary { color: #ffe9a8; font-weight: 700; }
   .cal-open { color: #8fd4a2; }
   .cal-closed { color: #a8a8b8; }
+  .cal-canceled { color: #e8b888; }
   .cal-more {
     font-size: 6px;
     color: #7a7788;
@@ -408,15 +456,20 @@ const CSS_CALENDAR_BLOCK_STYLES = `
   .lg-primary { background: #c5a059; }
   .lg-open { background: #5a9e6e; }
   .lg-closed { background: #6a6a78; }
+  .lg-canceled { background: #8a6040; }
 `;
 
-function buildCalendarOnlyHtml(anchorAt: Date, marks: CalendarSessionMark[]): string {
-  const cal = buildCalendarHtml(
-    anchorAt,
-    marks,
-    "simple",
-    "작전 OPEN·마감 세션"
-  );
+function buildCalendarOnlyHtml(
+  anchorAt: Date,
+  marks: CalendarSessionMark[],
+  variant: "guild" | "participation" = "guild"
+): string {
+  const subLine =
+    variant === "participation"
+      ? "내가 참석 응답한 일정 (이번 달)"
+      : "작전 OPEN·마감 세션";
+  const legendMode = variant === "participation" ? "simple3" : "simple";
+  const cal = buildCalendarHtml(anchorAt, marks, legendMode, subLine);
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -655,6 +708,10 @@ function buildHtml(params: {
     background: rgba(106, 106, 120, 0.35);
     color: #c8c8d4;
   }
+  .ag-badge.ag-canceled {
+    background: rgba(138, 96, 64, 0.38);
+    color: #e8c4a0;
+  }
   .agenda-more {
     font-size: 9px;
     color: #8a8680;
@@ -814,39 +871,41 @@ export async function renderSessionResultCardPng(
     cardMode: params.cardMode ?? "closed",
   });
 
-  let page = null;
-  try {
-    const browser = await getBrowser();
-    page = await browser.newPage();
-    await page.setViewport({
-      width: CARD_WIDTH + 40,
-      height: 2200,
-      deviceScaleFactor: 1.25,
-    });
-    await page.setContent(html, { waitUntil: "domcontentloaded" });
-    // 다음 틱까지 기다려 레이아웃·폰트 적용 후 캡처
-    await page.evaluate(
-      () => new Promise<void>((resolve) => setTimeout(resolve, 0))
-    );
-    const cardEl = await page.$(".card");
-    if (!cardEl) {
-      console.error("[result-card-image] .card 요소를 찾을 수 없음");
+  return queuePngRenderTask(async () => {
+    let page = null;
+    try {
+      const browser = await getBrowser();
+      page = await browser.newPage();
+      await page.setViewport({
+        width: CARD_WIDTH + 40,
+        height: 2200,
+        deviceScaleFactor: 1.25,
+      });
+      await page.setContent(html, { waitUntil: "domcontentloaded" });
+      await page.evaluate(
+        () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+      );
+      const cardEl = await page.$(".card");
+      if (!cardEl) {
+        console.error("[result-card-image] .card 요소를 찾을 수 없음");
+        return null;
+      }
+      const buf = await cardEl.screenshot({ type: "png" });
+      return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
+    } catch (err) {
+      console.error("[result-card-image] PNG 렌더 실패:", err);
       return null;
+    } finally {
+      if (page) await page.close().catch(() => {});
     }
-    // 카드 박스만 캡처 — 전체 페이지(fullPage) 캡처 시 뷰포트·body 여백이 PNG에 남지 않도록 함
-    const buf = await cardEl.screenshot({ type: "png" });
-    return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
-  } catch (err) {
-    console.error("[result-card-image] PNG 렌더 실패:", err);
-    return null;
-  } finally {
-    if (page) await page.close().catch(() => {});
-  }
+  });
 }
 
 export type GuildMonthCalendarInput = {
   anchorAt: Date;
   calendarMarks: CalendarSessionMark[];
+  /** `participation`: `/일정 참여확인` 에페메랄(내 응답 일정·이번 달). 기본 `guild`는 `/일정 달력` */
+  calendarVariant?: "guild" | "participation";
 };
 
 /**
@@ -864,32 +923,35 @@ export async function renderGuildMonthCalendarPng(
   const marks = Array.isArray(params.calendarMarks)
     ? params.calendarMarks
     : [];
-  const html = buildCalendarOnlyHtml(at, marks);
+  const variant = params.calendarVariant ?? "guild";
+  const html = buildCalendarOnlyHtml(at, marks, variant);
 
-  let page = null;
-  try {
-    const browser = await getBrowser();
-    page = await browser.newPage();
-    await page.setViewport({
-      width: CALENDAR_ONLY_WIDTH + 80,
-      height: 1200,
-      deviceScaleFactor: 1.25,
-    });
-    await page.setContent(html, { waitUntil: "domcontentloaded" });
-    await page.evaluate(
-      () => new Promise<void>((resolve) => setTimeout(resolve, 0))
-    );
-    const cardEl = await page.$(".card");
-    if (!cardEl) {
-      console.error("[result-card-image] 달력 전용 .card 요소를 찾을 수 없음");
+  return queuePngRenderTask(async () => {
+    let page = null;
+    try {
+      const browser = await getBrowser();
+      page = await browser.newPage();
+      await page.setViewport({
+        width: CALENDAR_ONLY_WIDTH + 80,
+        height: 1200,
+        deviceScaleFactor: 1.25,
+      });
+      await page.setContent(html, { waitUntil: "domcontentloaded" });
+      await page.evaluate(
+        () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+      );
+      const cardEl = await page.$(".card");
+      if (!cardEl) {
+        console.error("[result-card-image] 달력 전용 .card 요소를 찾을 수 없음");
+        return null;
+      }
+      const buf = await cardEl.screenshot({ type: "png" });
+      return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
+    } catch (err) {
+      console.error("[result-card-image] 월간 달력 PNG 렌더 실패:", err);
       return null;
+    } finally {
+      if (page) await page.close().catch(() => {});
     }
-    const buf = await cardEl.screenshot({ type: "png" });
-    return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
-  } catch (err) {
-    console.error("[result-card-image] 월간 달력 PNG 렌더 실패:", err);
-    return null;
-  } finally {
-    if (page) await page.close().catch(() => {});
-  }
+  });
 }

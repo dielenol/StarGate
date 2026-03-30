@@ -15,7 +15,11 @@ import {
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 import { requireManageGuild } from "../utils/require-manage-guild.js";
 import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
-import { createSession, updateSessionMessageId } from "../db/sessions.js";
+import {
+  createSession,
+  deleteSessionById,
+  updateSessionMessageId,
+} from "../db/sessions.js";
 import { appendSessionLog } from "../db/logs.js";
 import { buildSessionEmbed } from "../utils/embed.js";
 /** 버튼 customId 접두사 (trpg:attend:{sessionId}:yes|no|maybe) */
@@ -46,6 +50,42 @@ function extractRoleId(value: string): string {
   const match = value.match(/<@&(\d+)>/);
   const id = match ? match[1] : value.trim();
   return SNOWFLAKE_REGEX.test(id) ? id : "";
+}
+
+async function rollbackCreatedSession(
+  sessionId: string | null,
+  announcement:
+    | {
+        id: string;
+        delete: () => Promise<unknown>;
+      }
+    | null
+): Promise<void> {
+  if (announcement) {
+    try {
+      await announcement.delete();
+    } catch (err) {
+      console.error(
+        "[session create] 롤백 중 공지 메시지 삭제 실패:",
+        announcement.id,
+        err
+      );
+    }
+  }
+
+  if (!sessionId) return;
+
+  try {
+    const deleted = await deleteSessionById(sessionId);
+    if (!deleted) {
+      console.warn(
+        "[session create] 롤백 대상 세션을 찾지 못했습니다:",
+        sessionId
+      );
+    }
+  } catch (err) {
+    console.error("[session create] 롤백 중 세션 삭제 실패:", sessionId, err);
+  }
 }
 
 /**
@@ -160,9 +200,18 @@ export async function handleSessionCreate(
   const textChannel = resolvedChannel.channel;
   const channelId = textChannel.id;
 
+  let sessionId: string | null = null;
+  let announcementMessage:
+    | {
+        id: string;
+        url: string;
+        delete: () => Promise<unknown>;
+      }
+    | null = null;
+
   try {
     // DB에 세션 저장 (messageId는 공지 전송 후 업데이트)
-    const sessionId = await createSession({
+    sessionId = await createSession({
       guildId: interaction.guildId!,
       channelId,
       messageId: "", // 아래에서 채움
@@ -208,29 +257,26 @@ export async function handleSessionCreate(
       sessionId
     );
 
-    const msg = await textChannel.send({
+    announcementMessage = await textChannel.send({
       embeds: [embed],
       components: [row],
     });
 
     // messageId 업데이트 (마감 시 원본 메시지 수정용)
-    await updateSessionMessageId(sessionId, msg.id);
+    const messageIdUpdated = await updateSessionMessageId(
+      sessionId,
+      announcementMessage.id
+    );
+    if (!messageIdUpdated) {
+      throw new Error("세션 공지 messageId 저장에 실패했습니다.");
+    }
 
     await appendSessionLog(sessionId, "CREATED", {
       userId: interaction.user.id,
-      payload: { channelId, messageId: msg.id },
-    });
-
-    await interaction.editReply({
-      content: [
-        `✅ 세션이 생성되었습니다. [공지 메시지](${msg.url})`,
-        "",
-        `공지 임베드에도 **세션 ID**가 표시됩니다. (복사: \`${sessionId}\`)`,
-        `일정 변경: **\`/${SCHEDULE_ROOT} ${Sub.editDate}\`**(세션 일시), **\`/${SCHEDULE_ROOT} ${Sub.editClose}\`**(응답 마감)`,
-        `_\`${Opt.sessionId}\`를 비우면 서버 기준 가장 최근 진행 중 세션이 자동 선택됩니다._`,
-      ].join("\n"),
+      payload: { channelId, messageId: announcementMessage.id },
     });
   } catch (err) {
+    await rollbackCreatedSession(sessionId, announcementMessage);
     console.error("[session create]", err);
     const missingAccess =
       typeof err === "object" &&
@@ -243,5 +289,16 @@ export async function handleSessionCreate(
         "· **스레드**면 **스레드에서 메시지 보내기**가 필요하고, 비공개 스레드는 봇을 스레드에 **초대**해야 할 수 있습니다."
       : `❌ 세션 생성 중 오류가 발생했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`;
     await interaction.editReply({ content });
+    return;
   }
+
+  await interaction.editReply({
+    content: [
+      `✅ 세션이 생성되었습니다. [공지 메시지](${announcementMessage.url})`,
+      "",
+      `공지 임베드에도 **세션 ID**가 표시됩니다. (복사: \`${sessionId}\`)`,
+      `일정 변경: **\`/${SCHEDULE_ROOT} ${Sub.editDate}\`**(세션 일시), **\`/${SCHEDULE_ROOT} ${Sub.editClose}\`**(응답 마감)`,
+      `_\`${Opt.sessionId}\`를 비우면 서버 기준 가장 최근 진행 중 세션이 자동 선택됩니다._`,
+    ].join("\n"),
+  });
 }

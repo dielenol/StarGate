@@ -14,7 +14,7 @@ import {
   ButtonStyle,
   EmbedBuilder,
 } from "discord.js";
-import { updateSessionStatus } from "../db/sessions.js";
+import { updateSessionStatusIfCurrent } from "../db/sessions.js";
 import { findBySessionId, countByStatus } from "../db/responses.js";
 import {
   buildSessionEmbed,
@@ -29,6 +29,11 @@ import type { Session } from "../types/session.js";
 const PREFIX = "trpg:attend:";
 const EMBED_COLOR = 0xc5a059;
 
+export type SessionFinalizeResult = {
+  transitioned: boolean;
+  warnings: string[];
+};
+
 /**
  * 정상 마감(스케줄 또는 강제): 집계·공지 수정·결과 메시지·로그
  */
@@ -36,83 +41,129 @@ export async function executeSessionClose(
   client: Client,
   session: Session,
   options: { kind: "scheduled" | "force"; actorUserId?: string }
-): Promise<void> {
-  const guild = await client.guilds.fetch(session.guildId);
-  const channel = await guild.channels.fetch(session.channelId);
-  if (!channel?.isTextBased() || !("send" in channel)) return;
-
+): Promise<SessionFinalizeResult> {
+  const warnings: string[] = [];
   if (session._id === undefined || session._id === null) {
     console.error("[session-close] 세션 _id 없음 — 마감 처리를 건너뜁니다.");
-    return;
+    warnings.push("세션 ID가 없어 마감 처리를 건너뛰었습니다.");
+    return { transitioned: false, warnings };
   }
   const sid = String(session._id);
-  const members = await fetchGuildMembersCached(guild);
 
-  await updateSessionStatus(sid, "CLOSED");
-
-  const responses = await findBySessionId(sid);
-  const counts = await countByStatus(sid);
-
-  const noResponseIds = await getNonResponders(
-    guild,
-    session.targetRoleId,
-    responses,
-    members
-  );
-  const yesIds = responses
-    .filter((r) => r.status === "YES")
-    .map((r) => r.userId);
-  const noIds = responses
-    .filter((r) => r.status === "NO")
-    .map((r) => r.userId);
-
-  try {
-    const msg = await channel.messages.fetch(session.messageId);
-    const embed = buildSessionEmbed(session, counts, yesIds, noIds, sid);
-    embed.setFooter({ text: "마감되었습니다." });
-
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`${PREFIX}${sid}:yes`)
-        .setLabel("참석")
-        .setStyle(ButtonStyle.Success)
-        .setDisabled(true),
-      new ButtonBuilder()
-        .setCustomId(`${PREFIX}${sid}:no`)
-        .setLabel("불참")
-        .setStyle(ButtonStyle.Danger)
-        .setDisabled(true)
-    );
-
-    await msg.edit({ embeds: [embed], components: [row] });
-  } catch (err) {
-    console.error("[session-close] 공지 메시지 수정 실패:", err);
+  const transitioned = await updateSessionStatusIfCurrent(sid, "OPEN", "CLOSED");
+  if (!transitioned) {
+    return { transitioned: false, warnings };
   }
 
-  const resultEmbed = buildResultEmbed(session, yesIds, noIds, noResponseIds);
+  const closedSession: Session = {
+    ...session,
+    status: "CLOSED",
+    updatedAt: new Date(),
+  };
 
-  const cardPng = await buildSessionResultCardBuffer({
-    session,
-    guildId: session.guildId,
-    members,
-    responses,
-    yesIds,
-    noIds,
-    noResponseIds,
-    cardMode: "closed",
-  });
+  try {
+    const guild = await client.guilds.fetch(closedSession.guildId);
+    const channel = await guild.channels.fetch(closedSession.channelId);
+    if (!channel?.isTextBased() || !("send" in channel)) {
+      warnings.push("공지 채널에 접근할 수 없어 결과 메시지를 보내지 못했습니다.");
+    } else {
+      const members = await fetchGuildMembersCached(guild);
+      const responses = await findBySessionId(sid);
+      const counts = await countByStatus(sid);
 
-  const files =
-    cardPng !== null
-      ? [new AttachmentBuilder(cardPng, { name: "session-result.png" })]
-      : undefined;
+      const noResponseIds = await getNonResponders(
+        guild,
+        closedSession.targetRoleId,
+        responses,
+        members
+      );
+      const yesIds = responses
+        .filter((r) => r.status === "YES")
+        .map((r) => r.userId);
+      const noIds = responses
+        .filter((r) => r.status === "NO")
+        .map((r) => r.userId);
 
-  await (channel as TextChannel).send({ embeds: [resultEmbed], files });
+      try {
+        const msg = await channel.messages.fetch(closedSession.messageId);
+        const embed = buildSessionEmbed(
+          closedSession,
+          counts,
+          yesIds,
+          noIds,
+          sid
+        );
+        embed.setFooter({ text: "마감되었습니다." });
 
-  await appendSessionLog(sid, options.kind === "force" ? "FORCE_CLOSED" : "CLOSED", {
-    userId: options.actorUserId,
-    payload: { kind: options.kind },
-  });
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`${PREFIX}${sid}:yes`)
+            .setLabel("참석")
+            .setStyle(ButtonStyle.Success)
+            .setDisabled(true),
+          new ButtonBuilder()
+            .setCustomId(`${PREFIX}${sid}:no`)
+            .setLabel("불참")
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(true)
+        );
+
+        await msg.edit({ embeds: [embed], components: [row] });
+      } catch (err) {
+        warnings.push("기존 공지 메시지 수정에 실패했습니다.");
+        console.error("[session-close] 공지 메시지 수정 실패:", err);
+      }
+
+      try {
+        const resultEmbed = buildResultEmbed(
+          closedSession,
+          yesIds,
+          noIds,
+          noResponseIds
+        );
+
+        const cardPng = await buildSessionResultCardBuffer({
+          session: closedSession,
+          guildId: closedSession.guildId,
+          members,
+          responses,
+          yesIds,
+          noIds,
+          noResponseIds,
+          cardMode: "closed",
+        });
+
+        const files =
+          cardPng !== null
+            ? [new AttachmentBuilder(cardPng, { name: "session-result.png" })]
+            : undefined;
+
+        await (channel as TextChannel).send({ embeds: [resultEmbed], files });
+      } catch (err) {
+        warnings.push("최종 결과 메시지 전송에 실패했습니다.");
+        console.error("[session-close] 결과 메시지 전송 실패:", err);
+      }
+    }
+  } catch (err) {
+    warnings.push("Discord 후속 처리 중 오류가 발생했습니다.");
+    console.error("[session-close] 마감 후속 처리 실패:", err);
+  }
+
+  try {
+    await appendSessionLog(
+      sid,
+      options.kind === "force" ? "FORCE_CLOSED" : "CLOSED",
+      {
+        userId: options.actorUserId,
+        payload: { kind: options.kind, warnings },
+      }
+    );
+  } catch (err) {
+    warnings.push("운영 로그 저장에 실패했습니다.");
+    console.error("[session-close] 운영 로그 저장 실패:", err);
+  }
+
+  return { transitioned: true, warnings };
 }
 
 /**
@@ -122,41 +173,71 @@ export async function executeSessionCancel(
   client: Client,
   session: Session,
   actorUserId: string
-): Promise<void> {
-  const guild = await client.guilds.fetch(session.guildId);
-  const channel = await guild.channels.fetch(session.channelId);
-  if (!channel?.isTextBased() || !("send" in channel)) return;
-
+): Promise<SessionFinalizeResult> {
+  const warnings: string[] = [];
   const sid = String(session._id);
-  await updateSessionStatus(sid, "CANCELED");
-
-  try {
-    const msg = await channel.messages.fetch(session.messageId);
-    const cancelEmbed = new EmbedBuilder()
-      .setTitle(`❌ 취소됨 — ${session.title}`)
-      .setColor(EMBED_COLOR)
-      .setDescription("이 세션 참여 체크는 관리자에 의해 취소되었습니다.")
-      .setTimestamp();
-
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`${PREFIX}${sid}:yes`)
-        .setLabel("참석")
-        .setStyle(ButtonStyle.Success)
-        .setDisabled(true),
-      new ButtonBuilder()
-        .setCustomId(`${PREFIX}${sid}:no`)
-        .setLabel("불참")
-        .setStyle(ButtonStyle.Danger)
-        .setDisabled(true)
-    );
-
-    await msg.edit({ embeds: [cancelEmbed], components: [row] });
-  } catch (err) {
-    console.error("[session-close] 취소 시 메시지 수정 실패:", err);
+  const transitioned = await updateSessionStatusIfCurrent(
+    sid,
+    "OPEN",
+    "CANCELED"
+  );
+  if (!transitioned) {
+    return { transitioned: false, warnings };
   }
 
-  await appendSessionLog(sid, "CANCELED", {
-    userId: actorUserId,
-  });
+  const canceledSession: Session = {
+    ...session,
+    status: "CANCELED",
+    updatedAt: new Date(),
+  };
+
+  try {
+    const guild = await client.guilds.fetch(canceledSession.guildId);
+    const channel = await guild.channels.fetch(canceledSession.channelId);
+    if (!channel?.isTextBased() || !("send" in channel)) {
+      warnings.push("공지 채널에 접근할 수 없어 취소 공지를 갱신하지 못했습니다.");
+    } else {
+      try {
+        const msg = await channel.messages.fetch(canceledSession.messageId);
+        const cancelEmbed = new EmbedBuilder()
+          .setTitle(`❌ 취소됨 — ${canceledSession.title}`)
+          .setColor(EMBED_COLOR)
+          .setDescription("이 세션 참여 체크는 관리자에 의해 취소되었습니다.")
+          .setTimestamp();
+
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`${PREFIX}${sid}:yes`)
+            .setLabel("참석")
+            .setStyle(ButtonStyle.Success)
+            .setDisabled(true),
+          new ButtonBuilder()
+            .setCustomId(`${PREFIX}${sid}:no`)
+            .setLabel("불참")
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(true)
+        );
+
+        await msg.edit({ embeds: [cancelEmbed], components: [row] });
+      } catch (err) {
+        warnings.push("기존 공지 메시지 수정에 실패했습니다.");
+        console.error("[session-close] 취소 시 메시지 수정 실패:", err);
+      }
+    }
+  } catch (err) {
+    warnings.push("Discord 후속 처리 중 오류가 발생했습니다.");
+    console.error("[session-close] 취소 후속 처리 실패:", err);
+  }
+
+  try {
+    await appendSessionLog(sid, "CANCELED", {
+      userId: actorUserId,
+      payload: { warnings },
+    });
+  } catch (err) {
+    warnings.push("운영 로그 저장에 실패했습니다.");
+    console.error("[session-close] 취소 로그 저장 실패:", err);
+  }
+
+  return { transitioned: true, warnings };
 }
