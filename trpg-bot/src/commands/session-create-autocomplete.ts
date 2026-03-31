@@ -108,8 +108,6 @@ function buildDateChoices(q: string): ApplicationCommandOptionChoiceData<string>
 
   addDaysAt(1, 20, 0, "내일 저녁 8시");
   addDaysAt(2, 20, 0, "이틀 뒤 저녁 8시");
-  addDaysAt(3, 20, 0, "3일 뒤 저녁 8시");
-  addDaysAt(5, 20, 0, "5일 뒤 저녁 8시");
   addDaysAt(7, 20, 0, "일주일 뒤 저녁 8시");
   addDaysAt(14, 20, 0, "2주 뒤 저녁 8시");
 

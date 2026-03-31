@@ -19,7 +19,7 @@ import {
   EMBED_FOOTER_ANNOUNCE_CLOSED,
   REGISTRAR_SIGNATURE,
 } from "../constants/registrar.js";
-import { CancelEmbed, L, W } from "../constants/registrar-voice.js";
+import { CancelEmbed, D, L, W } from "../constants/registrar-voice.js";
 import { updateSessionStatusIfCurrent } from "../db/sessions.js";
 import { findBySessionId, countByStatus } from "../db/responses.js";
 import {
@@ -30,6 +30,7 @@ import { getNonResponders } from "../utils/no-response.js";
 import { fetchGuildMembersCached } from "../utils/guild-members.js";
 import { appendSessionLog } from "../db/logs.js";
 import { buildSessionResultCardBuffer } from "../utils/build-session-result-card.js";
+import { safeTitleForAnnouncePing } from "../utils/safe-announce-title.js";
 import type { Session } from "../types/session.js";
 
 const PREFIX = ATTEND_BUTTON_PREFIX;
@@ -146,7 +147,15 @@ export async function executeSessionClose(
             ? [new AttachmentBuilder(cardPng, { name: "session-result.png" })]
             : undefined;
 
-        await (channel as TextChannel).send({ embeds: [resultEmbed], files });
+        await (channel as TextChannel).send({
+          content: D.closeChannelAnnounceWithHere(
+            options.kind,
+            safeTitleForAnnouncePing(closedSession.title)
+          ),
+          embeds: [resultEmbed],
+          files,
+          allowedMentions: { parse: ["everyone"] },
+        });
       } catch (err) {
         warnings.push(W.resultSendFail);
         console.error(L.sessionCloseResultSend, err);

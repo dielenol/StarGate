@@ -17,6 +17,7 @@ import { D, L } from "../constants/registrar-voice.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 import { requireManageGuild } from "../utils/require-manage-guild.js";
 import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
+import { safeTitleForAnnouncePing } from "../utils/safe-announce-title.js";
 import {
   createSession,
   deleteSessionById,
@@ -243,8 +244,10 @@ export async function handleSessionCreate(
     );
 
     announcementMessage = await textChannel.send({
+      content: D.createChannelAnnounceWithHere(safeTitleForAnnouncePing(title)),
       embeds: [embed],
       components: [row],
+      allowedMentions: { parse: ["everyone"] },
     });
 
     // messageId 업데이트 (마감 시 원본 메시지 수정용)

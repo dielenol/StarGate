@@ -165,6 +165,7 @@ const SCHEDULE_CMD = {
           description: Cmd.optNewClose,
           type: 3,
           required: true,
+          autocomplete: true,
         },
         {
           name: Opt.registrationId,
@@ -184,6 +185,7 @@ const SCHEDULE_CMD = {
           description: Cmd.optNewDate,
           type: 3,
           required: true,
+          autocomplete: true,
         },
         {
           name: Opt.registrationId,

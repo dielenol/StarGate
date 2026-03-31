@@ -65,7 +65,7 @@ client.once(Events.ClientReady, async (readyClient) => {
   console.log(L.schedulerRemind);
 });
 
-/** `/일정 생성` 문자열 옵션 자동완성 */
+/** `/일정` 생성·일정변경·응답마감변경 문자열 옵션 자동완성 */
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isAutocomplete()) return;
   if (interaction.commandName !== SCHEDULE_ROOT) return;

@@ -7,6 +7,7 @@
 
 import { EmbedBuilder } from "discord.js";
 import {
+  EMBED_DESCRIPTION_OPEN,
   EMBED_FOOTER_OPEN,
   EMBED_FOOTER_RESULT_CLOSED,
   REGISTRAR_SIGNATURE,
@@ -95,8 +96,13 @@ export function buildSessionEmbed(
 
   const embed = new EmbedBuilder()
     .setTitle(session.title)
-    .setColor(EMBED_COLOR)
-    .addFields(
+    .setColor(EMBED_COLOR);
+
+  if (session.status === "OPEN") {
+    embed.setDescription(EMBED_DESCRIPTION_OPEN);
+  }
+
+  embed.addFields(
       {
         name: "배정 일시",
         value: formatSessionDateTime(session.targetDateTime),
@@ -126,7 +132,9 @@ export function buildSessionEmbed(
             } as const,
           ]
         : [])
-    )
+    );
+
+  embed
     .setFooter({ text: `${EMBED_FOOTER_OPEN}\n— ${REGISTRAR_SIGNATURE}` })
     .setTimestamp(session.closeDateTime);
 

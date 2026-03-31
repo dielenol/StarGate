@@ -18,6 +18,10 @@ export const REGISTRAR_SIGNATURE = "NOVUS ORDO · REGISTRAR";
 export const EMBED_FOOTER_OPEN =
   "가용·불가 회신은 기한 내 제출하십시오. 미제출 인원은 대장에 공백으로 남습니다.";
 
+/** 공지 임베드 본문(OPEN): 채널 공지 상단에 표시되는 안내 문구 */
+export const EMBED_DESCRIPTION_OPEN =
+  "통보 대상 **역할**을 보유한 인원은 아래 **가용**·**불가**로 회신하십시오. 「응답 마감」 시각까지 제출할 수 있으며, 기한 내 재클릭 시 회신이 갱신됩니다.";
+
 /** 최종 결과 임베드 푸터 */
 export const EMBED_FOOTER_RESULT_CLOSED =
   "회신 접수를 마감했습니다. 이후 수정·취소는 허용되지 않습니다.";

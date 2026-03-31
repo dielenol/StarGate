@@ -21,6 +21,7 @@ const DB_NAME = config.mongoDbName;
 const SESSIONS_COLLECTION = "sessions";
 const RESPONSES_COLLECTION = "session_responses";
 const SESSION_LOGS_COLLECTION = "session_logs";
+const REGISTRAR_USER_TIPS_COLLECTION = "registrar_user_tips";
 
 async function ensureIndexes(mongoClient: MongoClient): Promise<void> {
   const db = mongoClient.db(DB_NAME);
@@ -65,6 +66,13 @@ async function ensureIndexes(mongoClient: MongoClient): Promise<void> {
         { sessionId: 1, createdAt: -1 },
         { name: "session_logs_sessionId_createdAt" }
       ),
+    db.collection(REGISTRAR_USER_TIPS_COLLECTION).createIndex(
+      { guildId: 1, userId: 1, tipId: 1 },
+      {
+        unique: true,
+        name: "registrar_user_tips_guild_user_tip_unique",
+      }
+    ),
   ]);
 }
 

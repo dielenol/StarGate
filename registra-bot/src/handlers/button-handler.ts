@@ -21,6 +21,10 @@ import {
   countByStatus,
   findBySessionId,
 } from "../db/responses.js";
+import {
+  hasParticipationCheckTipBeenShown,
+  recordParticipationCheckTipShown,
+} from "../db/registrar-user-tips.js";
 import { buildSessionEmbed } from "../utils/embed.js";
 import type { ResponseStatus } from "../types/session.js";
 
@@ -119,5 +123,26 @@ export async function handleButtonInteraction(
     });
   } catch (err) {
     console.error(L.btnEdit, err);
+  }
+
+  if (status === "YES" && interaction.guildId) {
+    try {
+      const shown = await hasParticipationCheckTipBeenShown(
+        interaction.guildId,
+        interaction.user.id
+      );
+      if (!shown) {
+        await interaction.followUp({
+          content: D.btnYesParticipationTipOnce,
+          flags: MessageFlags.Ephemeral,
+        });
+        await recordParticipationCheckTipShown(
+          interaction.guildId,
+          interaction.user.id
+        );
+      }
+    } catch (err) {
+      console.error(L.btnParticipationTip, err);
+    }
   }
 }

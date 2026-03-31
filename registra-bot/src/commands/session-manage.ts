@@ -47,6 +47,7 @@ import {
 } from "../utils/build-session-result-card.js";
 import { ATTEND_BUTTON_PREFIX } from "../constants/registrar.js";
 import { D, L } from "../constants/registrar-voice.js";
+import { resolveParticipationCodename } from "../constants/participation-codename.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 import { requireManageGuild } from "../utils/require-manage-guild.js";
 import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
@@ -1016,6 +1017,16 @@ export async function handleSessionParticipationCheck(
     return;
   }
 
+  let displayNick = interaction.user.username;
+  try {
+    const m = await interaction.guild!.members.fetch(userId);
+    displayNick = m.displayName ?? interaction.user.username;
+  } catch {
+    /* 길드 멤버 캐시 실패 시 유저명만 사용 */
+  }
+  const codeName = resolveParticipationCodename(displayNick);
+  const introLine = D.partIntro(displayNick, codeName);
+
   const lines: string[] = [];
   for (let i = 0; i < items.length; i++) {
     const { session: s } = items[i];
@@ -1034,11 +1045,19 @@ export async function handleSessionParticipationCheck(
     );
   }
 
-  let description = lines.join("\n\n");
-  if (description.length > PARTICIPATION_DESC_SAFE_MAX) {
-    description =
-      description.slice(0, PARTICIPATION_DESC_SAFE_MAX - 20).trimEnd() +
+  let body = lines.join("\n\n");
+  if (body.length > PARTICIPATION_DESC_SAFE_MAX) {
+    body =
+      body.slice(0, PARTICIPATION_DESC_SAFE_MAX - 20).trimEnd() +
       D.partDescTrunc;
+  }
+
+  let description = `${introLine}\n\n${body}`;
+  if (description.length > 4096) {
+    const budget = Math.max(0, 4096 - (introLine.length + 2 + D.partDescTrunc.length));
+    body =
+      body.slice(0, budget).trimEnd() + (body.length > budget ? D.partDescTrunc : "");
+    description = `${introLine}\n\n${body}`;
   }
 
   const embed = new EmbedBuilder()

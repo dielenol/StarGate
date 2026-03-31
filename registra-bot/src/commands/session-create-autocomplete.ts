@@ -1,5 +1,5 @@
 /**
- * `/일정 생성` 문자열 옵션 자동완성
+ * `/일정` 생성·일정변경·응답마감변경 문자열 옵션 자동완성
  *
  * @module commands/session-create-autocomplete
  */
@@ -9,7 +9,12 @@ import type {
   ApplicationCommandOptionChoiceData,
 } from "discord.js";
 import { Ac, L } from "../constants/registrar-voice.js";
+import {
+  findLatestOpenSessionByGuild,
+  findSessionByIdInGuild,
+} from "../db/sessions.js";
 import { Opt, Sub } from "../slash/ko-names.js";
+import type { Session } from "../types/session.js";
 
 function parseDateTime(str: string): Date | null {
   const t = str.trim();
@@ -111,8 +116,6 @@ function buildDateChoices(q: string): ApplicationCommandOptionChoiceData<string>
 
   addDaysAt(1, 20, 0, "내일 저녁 8시");
   addDaysAt(2, 20, 0, "이틀 뒤 저녁 8시");
-  addDaysAt(3, 20, 0, "3일 뒤 저녁 8시");
-  addDaysAt(5, 20, 0, "5일 뒤 저녁 8시");
   addDaysAt(7, 20, 0, "일주일 뒤 저녁 8시");
   addDaysAt(14, 20, 0, "2주 뒤 저녁 8시");
 
@@ -189,6 +192,19 @@ function buildCloseChoices(
   return filtered.slice(0, 25).map(clampChoice);
 }
 
+/** 자동완성 시 배정 일시 상한(응답 마감 후보)용 OPEN 일정 */
+async function resolveOpenSessionForAutocomplete(
+  guildId: string,
+  registrationIdOpt: string | null
+): Promise<Session | null> {
+  const trimmed = registrationIdOpt?.trim();
+  if (trimmed) {
+    const s = await findSessionByIdInGuild(trimmed, guildId);
+    return s && s.status === "OPEN" ? s : null;
+  }
+  return findLatestOpenSessionByGuild(guildId);
+}
+
 async function buildRoleChoices(
   interaction: AutocompleteInteraction,
   q: string
@@ -216,54 +232,103 @@ async function buildRoleChoices(
 }
 
 /**
- * `/일정` → `생성` 서브커맨드의 자동완성 응답
+ * `/일정` 서브커맨드별 문자열 옵션 자동완성
  */
 export async function handleSessionCreateAutocomplete(
   interaction: AutocompleteInteraction
 ): Promise<void> {
-  if (interaction.options.getSubcommand() !== Sub.create) {
-    await interaction.respond([]);
-    return;
-  }
+  const sub = interaction.options.getSubcommand();
 
-  const focused = interaction.options.getFocused(true);
-  if (focused.type !== 3) {
-    await interaction.respond([]);
-    return;
-  }
-
-  const q = typeof focused.value === "string" ? focused.value : "";
-
-  try {
-    const dateStr = interaction.options.getString(Opt.date);
-    const sessionDate = dateStr ? parseDateTime(dateStr) : null;
-
-    let choices: ApplicationCommandOptionChoiceData<string>[];
-
-    switch (focused.name) {
-      case Opt.title:
-        choices = buildTitleChoices(q);
-        break;
-      case Opt.date:
-        choices = buildDateChoices(q);
-        break;
-      case Opt.closeTime:
-        choices = buildCloseChoices(q, sessionDate);
-        break;
-      case Opt.role:
-        choices = await buildRoleChoices(interaction, q);
-        break;
-      default:
-        choices = [];
-    }
-
-    await interaction.respond(choices);
-  } catch (err) {
-    console.error(L.autocomplete, err);
-    try {
+  if (sub === Sub.create) {
+    const focused = interaction.options.getFocused(true);
+    if (focused.type !== 3) {
       await interaction.respond([]);
-    } catch {
-      /* ignore */
+      return;
     }
+
+    const q = typeof focused.value === "string" ? focused.value : "";
+
+    try {
+      const dateStr = interaction.options.getString(Opt.date);
+      const sessionDate = dateStr ? parseDateTime(dateStr) : null;
+
+      let choices: ApplicationCommandOptionChoiceData<string>[];
+
+      switch (focused.name) {
+        case Opt.title:
+          choices = buildTitleChoices(q);
+          break;
+        case Opt.date:
+          choices = buildDateChoices(q);
+          break;
+        case Opt.closeTime:
+          choices = buildCloseChoices(q, sessionDate);
+          break;
+        case Opt.role:
+          choices = await buildRoleChoices(interaction, q);
+          break;
+        default:
+          choices = [];
+      }
+
+      await interaction.respond(choices);
+    } catch (err) {
+      console.error(L.autocomplete, err);
+      try {
+        await interaction.respond([]);
+      } catch {
+        /* ignore */
+      }
+    }
+    return;
   }
+
+  if (sub === Sub.editClose) {
+    const focused = interaction.options.getFocused(true);
+    if (focused.type !== 3 || focused.name !== Opt.newClose) {
+      await interaction.respond([]);
+      return;
+    }
+    const q = typeof focused.value === "string" ? focused.value : "";
+    try {
+      let sessionEnd: Date | null = null;
+      const gid = interaction.guildId;
+      if (gid) {
+        const reg = interaction.options.getString(Opt.registrationId);
+        const session = await resolveOpenSessionForAutocomplete(gid, reg);
+        if (session) sessionEnd = session.targetDateTime;
+      }
+      await interaction.respond(buildCloseChoices(q, sessionEnd));
+    } catch (err) {
+      console.error(L.autocomplete, err);
+      try {
+        await interaction.respond([]);
+      } catch {
+        /* ignore */
+      }
+    }
+    return;
+  }
+
+  if (sub === Sub.editDate) {
+    const focused = interaction.options.getFocused(true);
+    if (focused.type !== 3 || focused.name !== Opt.newDate) {
+      await interaction.respond([]);
+      return;
+    }
+    const q = typeof focused.value === "string" ? focused.value : "";
+    try {
+      await interaction.respond(buildDateChoices(q));
+    } catch (err) {
+      console.error(L.autocomplete, err);
+      try {
+        await interaction.respond([]);
+      } catch {
+        /* ignore */
+      }
+    }
+    return;
+  }
+
+  await interaction.respond([]);
 }

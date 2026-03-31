@@ -11,30 +11,44 @@ const N = "※ ";
 
 /** 슬래시 루트·옵션 설명 (Discord 100자 제한 준수) */
 export const Cmd = {
-  root: "NOVUS ORDO 통합일정 창구—레지스트라. 등재·가용회신 절차",
+  root: "NOVUS ORDO 통합일정 관리 비서. 등재·가용·불가 회신부터 집계까지 한 흐름으로 이용 부탁드립니다.",
   create:
-    "신규 일정 등재 공지·가용·불가 회신(관리권한). 자동완성은 참고용",
-  optTitle: "일정 명칭(회의·실험·작전 등). 예시는 참고, 직접 기재 권장",
-  optDate: "배정 일시 24h. 예시 시각 참고. 현재 시각 이후만 유효",
-  optClose: "회신 마감 24h. 배정 일시 이전·현재 이후여야 함",
-  optRole: "통보·집계 대상 역할. 검색·ID·@멘션",
-  optChannel: "공지 채널·스레드(선택). 비우면 명령 채널",
-  list: "접수 중(OPEN) 건만 요약(관리권한)",
-  overview: "접수·마감 전부 월별 대장(등록ID·채널, 관리권한)",
-  calendar: "지정 월 등록 일정만 격자 PNG(관리권한)",
-  optMonth: "월 1~12(봇 로컬 연도)",
-  result: "단일 건 집계·확정 보고 출력(관리권한)",
-  optRegId: "등록ID. OPEN 다수면 필수. 비우면 단일 OPEN·없으면 최근 마감",
-  optWithImage: "캘린더형 PNG 첨부(부하 큼, 필요 시만)",
+    "신규 일정 및 작전 등재를 원하시면 이 항목을 사용해주십시오. 자동완성 예시는 참고용이며, 직접 기재를 권장드립니다.",
+  optTitle: "일정 명칭(회의·실험·작전 등). 자동완성 예시는 참고용이며, 직접 기재를 권장드립니다.",
+  optDate: "배정 일시 24h. 보여지는 예시는 참고용이며, 현재 시각 이후 일정만 유효하니 참고 부탁드립니다.",
+  optClose: "회신 마감 24h. 보여지는 예시는 참고용이며, 입력 시간은 배정 일시 이전 ~ 현재 이후여야 합니다.",
+  optRole: "통보·집계 대상 역할군을 기재 부탁드립니다. 고르신 직책 기준으로 집계 결과가 정리됩니다.",
+  optChannel:
+    "안내 하실 공지 채널을 선택해주시면 공지 사항이 올라갑니다(선택). 비우시면 명령하신 채널에 공지 사항이 올라갑니다. 결과·전송·결과물 승인은 사전 확인 부탁드립니다.",
+  list: "접수 중(OPEN) 등재만 요약합니다(관리권한). 전체·마감 건은 「한눈에」 이용을 부탁드립니다. 월별 조회는 「달력」을 참고 부탁드립니다.",
+  overview:
+    "접수·마감 건을 월별 대장으로 봅니다(등록ID·채널, 관리권한). 캘린더형 이미지 보고서는 「달력」을 참고 부탁드립니다.",
+  calendar:
+    "지정 월 등재를 캘린더형 이미지 보고서로 출력합니다(관리권한). 작업량에 다소 부하가 있어 필요할 때만 실행을 권장드립니다.",
+  optMonth:
+    "표시할 월 (1~12)을 입력 부탁드립니다. 시차·자정 전후는 관리자님을 기준으로 하니 참고 부탁드립니다.",
+  result:
+    "단일 건 집계·확정 보고를 출력합니다. 캘린더형 이미지 보고서는 부하가 있어 필요 시에만 선택을 권장드립니다.",
+  optRegId:
+    "대상 등록 ID. OPEN이 여러 건이면 필수입니다. 비우면 단일 OPEN·없으면 최근 마감이 자동 지정됩니다.",
+  optWithImage:
+    "캘린더형 이미지 보고서 첨부. 생략을 기본으로 권장드리며, 필요할 때만 요청 주시기 바랍니다.",
   participation:
-    "본인이 가용으로 회신한 일정만(비밀). 이번·다음 달 격자 PNG는 쿨다운 후",
-  close: "응답 접수를 즉시 마감(관리권한)",
-  optRegIdClose: "등록ID. 비우면 최근 접수 중 1건",
-  editClose: "회신 마감 시각 변경(접수 중, 관리권한)",
-  optNewClose: "새 마감 24h. 과거·배정 이후도 허용(주의)",
-  editDate: "배정 일시 변경(접수 중, 관리권한)",
-  optNewDate: "새 배정 24h. 마감이 늦으면 배정 1h 전으로 자동 조정",
-  cancel: "등재 취소—확정 보고 없음(관리권한)",
+    "본인이 가용으로 회신한 일정을 비밀 열람으로 조회합니다. 관리자가 아니실 경우 캘린더형 이미지 보고서로 내부 규약에 따라 주기적으로만 제공되는 점 참고 부탁드립니다.",
+  close:
+    "해당 건 응답 접수를 즉시 마감합니다. 확정 보고는 「집계」로 이어가실 수 있습니다.",
+  optRegIdClose:
+    "대상 등록 ID. 비우시면 본 길드 최근 접수 중(OPEN) 1건이 자동 지정됩니다.",
+  editClose:
+    "접수 중 건의 회신 마감 시각 변경. 배정 일시와의 선후는 규칙에 맞게 기재 부탁드립니다.",
+  optNewClose:
+    "새 회신 마감 24h. 예시는 참고용이며, 배정 이후·과거 허용은 운영상 주의가 필요합니다.",
+  editDate:
+    "접수 중 건의 배정 일시 변경. 마감이 늦으면 배정 1h 전 등으로 자동 조정될 수 있습니다.",
+  optNewDate:
+    "새 배정 일시 24h. 예시는 참고용이며, 마감과의 관계는 규칙에 맞게 기재 부탁드립니다.",
+  cancel:
+    "등재 취소·기각. 확정 보고는 없으며, 공지는 안내에 따라 정리됩니다.",
 } as const;
 
 /** 디스코드 사용자 응답 */
@@ -56,6 +70,36 @@ export const D = {
   createErr: (detail: string) =>
     `${E}등재 처리 중 오류. 기술 담당에 통보하십시오: ${detail}`,
   createMissingAccess: `${E}봇이 **공지 채널**에 교신할 권한이 없습니다(\`Missing Access\`).\n${N}채널·역할 권한: **보기·메시지 전송·링크 임베드**.\n${N}스레드면 **스레드에서 전송**·비공개 스레드는 봇 **초대** 필요.`,
+  /**
+   * 등재 공지 메시지 본문 상단(@here). `safeTitle`은 마크다운·멘션 깨짐 방지 처리된 일정명.
+   */
+  createChannelAnnounceWithHere: (safeTitle: string) =>
+    [
+      `@here **관리자님**에 의해 **최우선** 등재 일정이 공표되었습니다.`,
+      "",
+      `**「${safeTitle}」**`,
+      "",
+      "노부스 오르도에 소속된 관료·군인·과학자·실험체 분들께서는, 공지사항에 명시된 **응답 마감 시간**까지 기한을 준수하여 아래 해당 일정에 **가용**·**불가**로 회신해 주시기 바랍니다.",
+    ].join("\n"),
+  /**
+   * 마감 후 확정 보고 메시지 본문(@here). `scheduled`는 자동 마감, `force`는 `/일정 마감` 등.
+   */
+  closeChannelAnnounceWithHere: (
+    kind: "scheduled" | "force",
+    safeTitle: string
+  ) => {
+    const head =
+      kind === "scheduled"
+        ? "@here 공지에 명시된 **응답 마감 시간**이 경과하여, 아래 **최우선** 등재 일정의 접수를 **마감·확정**하였습니다."
+        : "@here **관리자님**에 의해 아래 **최우선** 등재 일정의 접수를 **즉시 마감**하였습니다.";
+    return [
+      head,
+      "",
+      `**「${safeTitle}」**`,
+      "",
+      "노부스 오르도에 소속된 관료·군인·과학자·실험체 분들께서는, 본 메시지에 첨부된 **【확정 보고】**를 확인해 주시기 바랍니다. 이후 일정은 관리자님 외 변경이 불가능하며, 관리자님께 직접 문의 하셔야 합니다.",
+    ].join("\n");
+  },
   createDone: (url: string, regId: string, editDateCmd: string, editCloseCmd: string, optReg: string) =>
     [
       `${S}일정이 **등재**되었습니다. [공지 열람](${url})`,
@@ -68,6 +112,8 @@ export const D = {
   btnNoRecord: `${E}해당 등록 번호를 대장에서 찾지 못했습니다. 재확인 바랍니다.`,
   btnClosed: `${E}이미 **마감**된 건입니다. 회신을 수정할 수 없습니다.`,
   btnCanceled: `${E}**기각** 처리된 건입니다. 회신을 수정할 수 없습니다.`,
+  /** 가용 최초 제출 시 에페메랄 1회(길드·유저 기준) */
+  btnYesParticipationTipOnce: `${S}**가용**을 제출하셨습니다.\n${N}본인이 가용으로 회신한 일정은 슬래시 명령 \`/참여확인\`에서 **비밀 열람**(에페메랄)로 모아 볼 수 있습니다.\n${N}_이 안내는 서버당 최초 1회만 표시됩니다._`,
 
   listEmpty: `${N}본 길드에 **접수 중**인 등재 건이 없습니다.`,
   listTitle: (n: number) => `접수 중인 등재 건 · ${n}건`,
@@ -142,12 +188,21 @@ export const D = {
   autoCloseNote: (ts: string) =>
     `\n· 회신 마감이 배정보다 늦어 **${ts}**(배정 1시간 전·불가 시 1분 전)으로 맞췄습니다.`,
   announceOkDate:
-    "\n· 공지 임베드의 **배정 일시**를 반영했습니다. 24h 알림은 새 시각 기준으로 재판단합니다.",
+    "\n· 공지 사항의 **배정 일시**를 반영했습니다. 24h 알림은 새 시각 기준으로 재판단합니다.",
   announceFailDate: "\n· _(공지 자동 갱신 실패 가능. 권한 확인.)_",
   pastDateWarn: "\n\n_배정이 과거입니다. 알림·집계 의미를 재확인하십시오._",
 
-  partEmpty: `${N}에서 **가용**으로 회신한 등재가 없습니다. 공지의 **가용**을 누르면 여기에 뜹니다.`,
+  partEmpty: `${N}. 기존에 **가용**으로 회신하여 등재된 일정이 없습니다. 가용으로 회신한 일정이 있는 지 확인후 다시 시도해주십시오.`,
   partTitle: "【비밀 열람】 본인 가용 회신 대장",
+  /** `codename`이 있으면 `표시닉(코드네임)님.` 형식 */
+  partIntro: (displayNick: string, codename: string | null) => {
+    const raw = displayNick.trim() || "요원";
+    const safeNick = raw.length > 36 ? `${raw.slice(0, 33)}…` : raw;
+    if (codename?.trim()) {
+      return `${safeNick}(${codename.trim()})님. 예정된 일정은 다음과 같습니다.`;
+    }
+    return `${safeNick}님. 예정된 일정은 다음과 같습니다.`;
+  },
   partFooterCap: (total: number, shown: number) =>
     `총 ${total}건 중 앞 ${shown}건만 표기(배정 시각 순)`,
   partCooldown: (mins: number) =>
@@ -230,6 +285,7 @@ export const L = {
   remindTick: "[Registrar] 통보 감시 틱 오류:",
 
   btnEdit: "[Registrar] 공지 집계 갱신 실패:",
+  btnParticipationTip: "[Registrar] 가용 안내(참여확인) 에페메랄 실패:",
 
   sessionCreate: "[Registrar] 등재 처리 오류:",
   sessionCreateRollbackDel: "[Registrar] 롤백 중 공지 삭제 실패:",
@@ -321,7 +377,7 @@ export const Remind = {
   lineTitle: (t: string) => `**${t}**`,
   lineWhen: (discordTs: string) => `배정 시각: <t:${discordTs}:F>`,
   lineMentions: (line: string) => `다음 인원은 가용으로 회신되어 있습니다: ${line}`,
-  footer: `변경 사항은 담당 라인에 즉시 보고할 것. ${REGISTRAR_SIGNATURE}`,
+  footer: `변경 사항은 관리자에게 즉시 보고할 것. ${REGISTRAR_SIGNATURE}`,
 } as const;
 
 
