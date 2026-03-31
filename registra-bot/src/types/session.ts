@@ -1,17 +1,16 @@
 /**
- * 세션 및 응답 데이터 타입 정의
+ * 등록 일정(Session)·응답 데이터 타입 (내부 모델명은 기존 `Session` 유지)
  *
- * 플랜 6장 데이터 모델 기준.
  * @module types/session
  */
 
-/** 세션 상태: OPEN(응답 수집 중), CLOSED(마감), CANCELED(취소) */
+/** 일정 상태: OPEN(접수 중), CLOSED(마감), CANCELED(취소) */
 export type SessionStatus = "OPEN" | "CLOSED" | "CANCELED";
 
-/** 참여 응답 상태: YES(참석), NO(불참) */
+/** 가용 여부: YES(가용), NO(불가) */
 export type ResponseStatus = "YES" | "NO";
 
-/** DB에 저장되는 세션 문서 */
+/** DB에 저장되는 등록 일정 문서 */
 export interface Session {
   _id?: string;
   guildId: string;
@@ -25,9 +24,7 @@ export interface Session {
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
-  /**
-   * 세션 시작 24시간 전 리마인드(참석/YES 응답자 멘션) 발송 여부
-   */
+  /** 배정 24시간 전 리마인드(가용 YES 멘션) 발송 여부 */
   sessionStartReminder24hSent?: boolean;
 }
 

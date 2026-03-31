@@ -1,8 +1,8 @@
 /**
  * 버튼 인터랙션 핸들러
  *
- * 참석/불참 버튼 클릭 시 응답을 저장하고 공지 메시지의 집계를 갱신합니다.
- * customId 형식: trpg:attend:{sessionId}:yes|no
+ * 가용/불가 버튼 클릭 시 응답을 저장하고 공지 임베드 집계를 갱신합니다.
+ * customId 형식: registrar:attend:{sessionId}:yes|no
  * @module handlers/button-handler
  */
 
@@ -13,6 +13,8 @@ import {
   ButtonStyle,
   MessageFlags,
 } from "discord.js";
+import { ATTEND_BUTTON_PREFIX } from "../constants/registrar.js";
+import { D, L } from "../constants/registrar-voice.js";
 import { findSessionById } from "../db/sessions.js";
 import {
   upsertResponse,
@@ -22,21 +24,20 @@ import {
 import { buildSessionEmbed } from "../utils/embed.js";
 import type { ResponseStatus } from "../types/session.js";
 
-/** 버튼 customId 접두사 */
-const PREFIX = "trpg:attend:";
+const PREFIX = ATTEND_BUTTON_PREFIX;
 
 /**
  * customId에서 sessionId와 status를 파싱합니다.
- * @param customId "trpg:attend:xxx:yes"
+ * @param customId "registrar:attend:xxx:yes"
  * @returns { sessionId, status } 또는 null
  */
 function parseCustomId(customId: string): {
   sessionId: string;
   status: ResponseStatus;
 } | null {
-  if (!customId.startsWith(PREFIX)) return null;
+  if (!customId.startsWith(ATTEND_BUTTON_PREFIX)) return null;
 
-  const parts = customId.slice(PREFIX.length).split(":");
+  const parts = customId.slice(ATTEND_BUTTON_PREFIX.length).split(":");
   if (parts.length !== 2) return null;
 
   const [sessionId, status] = parts;
@@ -65,7 +66,7 @@ export async function handleButtonInteraction(
   const session = await findSessionById(sessionId);
   if (!session) {
     await interaction.followUp({
-      content: "❌ 해당 세션을 찾을 수 없습니다.",
+      content: D.btnNoRecord,
       flags: MessageFlags.Ephemeral,
     }).catch(() => {});
     return;
@@ -74,9 +75,7 @@ export async function handleButtonInteraction(
   if (session.status !== "OPEN") {
     await interaction.followUp({
       content:
-        session.status === "CANCELED"
-          ? "❌ 취소된 세션은 응답을 변경할 수 없습니다."
-          : "❌ 마감된 세션은 응답을 변경할 수 없습니다.",
+        session.status === "CANCELED" ? D.btnCanceled : D.btnClosed,
       flags: MessageFlags.Ephemeral,
     }).catch(() => {});
     return;
@@ -105,11 +104,11 @@ export async function handleButtonInteraction(
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`${PREFIX}${sessionId}:yes`)
-      .setLabel("참석")
+      .setLabel("가용")
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
       .setCustomId(`${PREFIX}${sessionId}:no`)
-      .setLabel("불참")
+      .setLabel("불가")
       .setStyle(ButtonStyle.Danger)
   );
 
@@ -119,6 +118,6 @@ export async function handleButtonInteraction(
       components: [row],
     });
   } catch (err) {
-    console.error("[button handler] 메시지 수정 실패:", err);
+    console.error(L.btnEdit, err);
   }
 }

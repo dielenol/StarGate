@@ -9,11 +9,21 @@ import { ChannelType, REST, Routes } from "discord.js";
 import { config } from "../config.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 
+const PARTICIPATION_DESC =
+  "내가 이 서버에서 참석으로 응답한 일정만 (에페메랄). 이번 달 캘린더 PNG는 쿨다운 후에만 첨부";
+
 /** /일정 … 명령어 정의 */
 const SCHEDULE_CMD = {
   name: SCHEDULE_ROOT,
   description: "TRPG 세션 일정·참여 체크",
+  default_member_permissions: null,
   options: [
+    {
+      name: Sub.participationCheck,
+      description: PARTICIPATION_DESC,
+      type: 1,
+      options: [],
+    },
     {
       name: Sub.create,
       description:
@@ -146,13 +156,6 @@ const SCHEDULE_CMD = {
       ],
     },
     {
-      name: Sub.participationCheck,
-      description:
-        "내가 이 서버에서 참석으로 응답한 일정만 (에페메랄). 이번 달 캘린더 PNG는 쿨다운 후에만 첨부",
-      type: 1,
-      options: [],
-    },
-    {
       name: Sub.close,
       description: "응답 수집을 강제 마감 (서버 관리)",
       type: 1,
@@ -222,12 +225,19 @@ const SCHEDULE_CMD = {
   ],
 };
 
+const PARTICIPATION_ROOT_CMD = {
+  type: 1 as const,
+  name: Sub.participationCheck,
+  description: PARTICIPATION_DESC,
+  default_member_permissions: null,
+};
+
 /**
  * 슬래시 커맨드를 Discord에 등록합니다.
  */
 export async function registerCommands(): Promise<void> {
   const rest = new REST().setToken(config.discordToken);
-  const body = [SCHEDULE_CMD];
+  const body = [SCHEDULE_CMD, PARTICIPATION_ROOT_CMD];
 
   if (config.guildId) {
     await rest.put(

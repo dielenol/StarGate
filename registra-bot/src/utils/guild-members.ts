@@ -9,6 +9,7 @@
  */
 
 import type { Collection, Guild, GuildMember } from "discord.js";
+import { L } from "../constants/registrar-voice.js";
 
 /** 정상 캐시 TTL */
 const CACHE_TTL_MS = 300_000; // 5분
@@ -57,9 +58,7 @@ async function waitForMinGap(guildId: string): Promise<void> {
   const elapsed = Date.now() - last;
   const need = MIN_GAP_BETWEEN_GATEWAY_FETCH_MS - elapsed;
   if (need > 0) {
-    console.warn(
-      `[guild-members] 길드 ${guildId}: Gateway 멤버 요청 간격 유지를 위해 ${(need / 1000).toFixed(1)}초 대기`
-    );
+    console.warn(L.guildGap(guildId, need / 1000));
     await sleep(need);
   }
 }
@@ -79,13 +78,13 @@ async function fetchGuildMembersWithRetry(
       const retrySec = err.data?.retry_after ?? 5;
       const waitMs = Math.ceil(retrySec * 1000) + 1000;
       console.warn(
-        `[guild-members] Gateway 멤버 요청 제한 (길드 ${guild.id}), ${(waitMs / 1000).toFixed(1)}초 후 재시도 (${attempt}/${maxAttempts})`
+        L.guildRl(guild.id, waitMs / 1000, attempt, maxAttempts)
       );
       if (attempt === maxAttempts) throw err;
       await sleep(waitMs);
     }
   }
-  throw new Error("fetchGuildMembersWithRetry: exhausted");
+  throw new Error(L.guildExhaust);
 }
 
 /**
@@ -120,9 +119,7 @@ export async function fetchGuildMembersCached(
       return members;
     } catch (err) {
       if (staleFallback) {
-        console.warn(
-          `[guild-members] 멤버 fetch 실패 → 만료된 캐시로 대체 (길드 ${id}). 무응답 계산이 일부 부정확할 수 있습니다.`
-        );
+        console.warn(L.guildStale(id));
         return staleFallback;
       }
       throw err;

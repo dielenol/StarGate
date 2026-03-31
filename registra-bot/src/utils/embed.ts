@@ -1,11 +1,16 @@
 /**
  * Discord 임베드 빌더
  *
- * 세션 공지 메시지와 최종 결과 메시지용 임베드를 생성합니다.
+ * 등록 일정 공지·확정 보고용 임베드 (NOVUS ORDO 레지스트라 톤).
  * @module utils/embed
  */
 
 import { EmbedBuilder } from "discord.js";
+import {
+  EMBED_FOOTER_OPEN,
+  EMBED_FOOTER_RESULT_CLOSED,
+  REGISTRAR_SIGNATURE,
+} from "../constants/registrar.js";
 import { SCHEDULE_ROOT } from "../slash/ko-names.js";
 import type { Session } from "../types/session.js";
 import type { ResponseCounts } from "../types/session.js";
@@ -93,7 +98,7 @@ export function buildSessionEmbed(
     .setColor(EMBED_COLOR)
     .addFields(
       {
-        name: "세션 일시",
+        name: "배정 일시",
         value: formatSessionDateTime(session.targetDateTime),
         inline: true,
       },
@@ -103,26 +108,26 @@ export function buildSessionEmbed(
         inline: true,
       },
       {
-        name: "참석",
+        name: "가용",
         value: formatWithMentions(counts.yes, yesIds),
         inline: false,
       },
       {
-        name: "불참",
+        name: "불가",
         value: formatWithMentions(counts.no, noIds),
         inline: false,
       },
       ...(sessionId && includeSessionIdField
         ? [
             {
-              name: "세션 ID",
-              value: `\`${sessionId}\`\n※ \`/${SCHEDULE_ROOT}\` 관리 명령에서 특정할 때 사용`,
+              name: "등록 ID",
+              value: `\`${sessionId}\`\n※ \`/${SCHEDULE_ROOT}\` 관리 명령에서 지정할 때 사용`,
               inline: false,
             } as const,
           ]
         : [])
     )
-    .setFooter({ text: "아직 응답하지 않은 인원이 있을 수 있습니다." })
+    .setFooter({ text: `${EMBED_FOOTER_OPEN}\n— ${REGISTRAR_SIGNATURE}` })
     .setTimestamp(session.closeDateTime);
 
   return embed;
@@ -154,39 +159,41 @@ export function buildResultEmbed(
   const sessionId = sessionDocumentId(session);
 
   return new EmbedBuilder()
-    .setTitle(`📋 ${session.title} - 최종 결과`)
+    .setTitle(`【확정 보고】 ${session.title}`)
     .setColor(EMBED_COLOR)
     .addFields(
       {
-        name: "세션 일시",
+        name: "배정 일시",
         value: formatSessionDateTime(session.targetDateTime),
         inline: true,
       },
       {
-        name: "참석",
+        name: "가용",
         value: truncate(fmt(yesIds)),
         inline: false,
       },
       {
-        name: "불참",
+        name: "불가",
         value: truncate(fmt(noIds)),
         inline: false,
       },
       {
-        name: "무응답",
+        name: "미제출",
         value: truncate(fmt(noResponseIds)),
         inline: false,
       },
       ...(sessionId && includeSessionIdField
         ? [
             {
-              name: "세션 ID",
+              name: "등록 ID",
               value: `\`${sessionId}\``,
               inline: false,
             } as const,
           ]
         : [])
     )
-    .setFooter({ text: "마감되었습니다. 응답 변경이 불가합니다." })
+    .setFooter({
+      text: `${EMBED_FOOTER_RESULT_CLOSED}\n— ${REGISTRAR_SIGNATURE}`,
+    })
     .setTimestamp();
 }

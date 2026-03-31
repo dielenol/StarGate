@@ -7,12 +7,13 @@
  */
 
 import "dotenv/config";
+import { ConfigErr } from "./constants/registrar-voice.js";
 
 /** 환경변수에서 Discord 봇 토큰을 읽어 반환합니다. */
 function getDiscordToken(): string {
   const token = process.env.DISCORD_TOKEN;
   if (!token) {
-    throw new Error("DISCORD_TOKEN 환경변수가 설정되지 않았습니다.");
+    throw new Error(ConfigErr.token);
   }
   return token;
 }
@@ -21,7 +22,7 @@ function getDiscordToken(): string {
 function getDiscordClientId(): string {
   const id = process.env.DISCORD_CLIENT_ID;
   if (!id) {
-    throw new Error("DISCORD_CLIENT_ID 환경변수가 설정되지 않았습니다.");
+    throw new Error(ConfigErr.clientId);
   }
   return id;
 }
@@ -30,7 +31,7 @@ function getDiscordClientId(): string {
 function getMongoUri(): string {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
-    throw new Error("MONGODB_URI 환경변수가 설정되지 않았습니다.");
+    throw new Error(ConfigErr.mongo);
   }
   return uri;
 }
@@ -38,6 +39,12 @@ function getMongoUri(): string {
 /** 개발용: 특정 길드에만 커맨드를 등록할 때 사용 (선택) */
 function getGuildId(): string | undefined {
   return process.env.GUILD_ID;
+}
+
+/** MongoDB 데이터베이스 이름 (미설정 시 registrar_bot) */
+function getMongoDbName(): string {
+  const n = process.env.MONGODB_DB_NAME?.trim();
+  return n && n.length > 0 ? n : "registrar_bot";
 }
 
 /**
@@ -55,4 +62,5 @@ export const config = {
   discordClientId: getDiscordClientId(),
   mongoUri: getMongoUri(),
   guildId: getGuildId(),
+  mongoDbName: getMongoDbName(),
 } as const;

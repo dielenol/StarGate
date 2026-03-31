@@ -466,7 +466,7 @@ function buildCalendarOnlyHtml(
 ): string {
   const subLine =
     variant === "participation"
-      ? "내가 참석 응답한 일정 (이번 달)"
+      ? "내가 참석 응답한 일정 (이번·다음 달)"
       : "작전 OPEN·마감 세션";
   const legendMode = variant === "participation" ? "simple3" : "simple";
   const cal = buildCalendarHtml(anchorAt, marks, legendMode, subLine);
@@ -501,6 +501,59 @@ function buildCalendarOnlyHtml(
 </head>
 <body>
   <div class="card">${cal}</div>
+</body>
+</html>`;
+}
+
+function buildCalendarOnlyHtmlTwoMonths(
+  anchorFirst: Date,
+  anchorSecond: Date,
+  marks: CalendarSessionMark[],
+  variant: "guild" | "participation" = "guild"
+): string {
+  const subLine =
+    variant === "participation"
+      ? "내가 참석 응답한 일정 (이번·다음 달)"
+      : "작전 OPEN·마감 세션";
+  const legendMode = variant === "participation" ? "simple3" : "simple";
+  const cal0 = buildCalendarHtml(anchorFirst, marks, legendMode, subLine);
+  const cal1 = buildCalendarHtml(anchorSecond, marks, legendMode, subLine);
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0e0e10;
+    color: #e8e6e3;
+    font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    padding: 8px 10px;
+    width: ${CALENDAR_ONLY_WIDTH + 28}px;
+  }
+  .card {
+    border: 2px solid #c5a059;
+    border-radius: 10px;
+    padding: 12px 12px 10px;
+    background: linear-gradient(160deg, #1e1e24 0%, #131316 55%, #101012 100%);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+  }
+  .dual-cal-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  ${CSS_CALENDAR_BLOCK_STYLES}
+  body .calendar-block,
+  body .cal-grid-wrap,
+  body .cal-week {
+    flex: none !important;
+    min-height: 0 !important;
+  }
+</style>
+</head>
+<body>
+  <div class="card"><div class="dual-cal-wrap">${cal0}${cal1}</div></div>
 </body>
 </html>`;
 }
@@ -810,9 +863,9 @@ function buildHtml(params: {
 </html>`;
 }
 
-async function getBrowser(): Promise<Browser> {
-  if (!browserPromise) {
-    browserPromise = puppeteer.launch({
+function launchBrowserWithCleanup(): Promise<Browser> {
+  return puppeteer
+    .launch({
       headless: true,
       args: [
         "--no-sandbox",
@@ -820,8 +873,26 @@ async function getBrowser(): Promise<Browser> {
         "--disable-dev-shm-usage",
         "--disable-gpu",
       ],
+    })
+    .then((browser) => {
+      browser.once("disconnected", () => {
+        browserPromise = null;
+      });
+      return browser;
     });
+}
+
+async function getBrowser(): Promise<Browser> {
+  if (browserPromise) {
+    try {
+      const existing = await browserPromise;
+      if (existing.connected) return existing;
+    } catch {
+      /* 이전 launch 실패 등 */
+    }
+    browserPromise = null;
   }
+  browserPromise = launchBrowserWithCleanup();
   return browserPromise;
 }
 
@@ -893,6 +964,7 @@ export async function renderSessionResultCardPng(
       const buf = await cardEl.screenshot({ type: "png" });
       return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
     } catch (err) {
+      if (isPuppeteerConnectionLost(err)) browserPromise = null;
       console.error("[result-card-image] PNG 렌더 실패:", err);
       return null;
     } finally {
@@ -901,10 +973,20 @@ export async function renderSessionResultCardPng(
   });
 }
 
+function isPuppeteerConnectionLost(err: unknown): boolean {
+  const name = err instanceof Error ? err.name : "";
+  const msg = String(err instanceof Error ? err.message : err);
+  return (
+    name === "ConnectionClosedError" ||
+    name === "TargetCloseError" ||
+    /connection closed|Target closed|WebSocket is not open/i.test(msg)
+  );
+}
+
 export type GuildMonthCalendarInput = {
   anchorAt: Date;
   calendarMarks: CalendarSessionMark[];
-  /** `participation`: `/일정 참여확인` 에페메랄(내 응답 일정·이번 달). 기본 `guild`는 `/일정 달력` */
+  /** `participation`: `/일정 참여확인` 에페메랄(내 응답·이번·다음 달). 기본 `guild`는 `/일정 달력` */
   calendarVariant?: "guild" | "participation";
 };
 
@@ -948,6 +1030,64 @@ export async function renderGuildMonthCalendarPng(
       const buf = await cardEl.screenshot({ type: "png" });
       return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
     } catch (err) {
+      if (isPuppeteerConnectionLost(err)) browserPromise = null;
+      console.error("[result-card-image] 월간 달력 PNG 렌더 실패:", err);
+      return null;
+    } finally {
+      if (page) await page.close().catch(() => {});
+    }
+  });
+}
+
+export type ParticipationTwoMonthCalendarInput = {
+  anchorFirst: Date;
+  anchorSecond: Date;
+  calendarMarks: CalendarSessionMark[];
+};
+
+/** `/일정 참여확인`용: 봇 로컬 연속 두 달 격자를 한 PNG에 렌더 */
+export async function renderParticipationTwoMonthCalendarPng(
+  params: ParticipationTwoMonthCalendarInput
+): Promise<Buffer | null> {
+  if (!isResultCardImageEnabled()) return null;
+
+  const a0 =
+    params.anchorFirst instanceof Date && !isNaN(params.anchorFirst.getTime())
+      ? params.anchorFirst
+      : new Date();
+  const a1 =
+    params.anchorSecond instanceof Date &&
+    !isNaN(params.anchorSecond.getTime())
+      ? params.anchorSecond
+      : new Date();
+  const marks = Array.isArray(params.calendarMarks)
+    ? params.calendarMarks
+    : [];
+  const html = buildCalendarOnlyHtmlTwoMonths(a0, a1, marks, "participation");
+
+  return queuePngRenderTask(async () => {
+    let page = null;
+    try {
+      const browser = await getBrowser();
+      page = await browser.newPage();
+      await page.setViewport({
+        width: CALENDAR_ONLY_WIDTH + 80,
+        height: 2280,
+        deviceScaleFactor: 1.25,
+      });
+      await page.setContent(html, { waitUntil: "domcontentloaded" });
+      await page.evaluate(
+        () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+      );
+      const cardEl = await page.$(".card");
+      if (!cardEl) {
+        console.error("[result-card-image] 달력 전용 .card 요소를 찾을 수 없음");
+        return null;
+      }
+      const buf = await cardEl.screenshot({ type: "png" });
+      return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
+    } catch (err) {
+      if (isPuppeteerConnectionLost(err)) browserPromise = null;
       console.error("[result-card-image] 월간 달력 PNG 렌더 실패:", err);
       return null;
     } finally {

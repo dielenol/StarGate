@@ -1,13 +1,14 @@
 /**
- * 세션 마감/조회 결과를 PNG 카드로 렌더링 (Puppeteer)
+ * 등록 일정 마감/조회 결과를 PNG 카드로 렌더링 (Puppeteer · REGISTRAR)
  *
- * 좌측 전체 월간 캘린더, 우측 제목·일시·「이번 달 일정」·세션 응답을 반반 배치해 PNG로 출력합니다.
+ * 좌측 월간 캘린더, 우측 제목·일시·「이번 달 등록」·가용 집계를 반반 배치해 PNG로 출력합니다.
  *
  * @module utils/result-card-image
  */
 
 import puppeteer from "puppeteer";
 import type { Browser } from "puppeteer";
+import { Png, L } from "../constants/registrar-voice.js";
 import { isResultCardImageEnabled } from "../config.js";
 
 /**
@@ -47,18 +48,18 @@ const MAX_CALENDAR_CELL_ENTRIES = 2;
 /** 칸 제목 상한 글자(초과 시 …). 화면은 `.ce-title` 2줄 클램프 */
 const MAX_CAL_TITLE_IN_CELL = 96;
 
-/** 우측 「이번 달 일정」 최대 행 수 */
+/** 우측 「이번 달 등록」 최대 행 수 */
 const MAX_AGENDA_ITEMS = 24;
 const MAX_AGENDA_TITLE_LEN = 46;
 
 let browserPromise: Promise<Browser> | null = null;
 
-/** 캘린더에 찍을 세션 마커 (같은 달·같은 길드) */
+/** 캘린더에 찍을 등록 일정 마커 (같은 달·같은 길드) */
 export type CalendarSessionMark = {
   at: Date;
   title: string;
   status: "OPEN" | "CLOSED" | "CANCELED";
-  /** 현재 조회/마감 대상 세션 */
+  /** 현재 조회/마감 대상 등록 일정 */
   isPrimary: boolean;
 };
 
@@ -105,7 +106,7 @@ function buildAgendaHtml(marks: CalendarSessionMark[], anchorAt: Date): string {
   const total = inMonth.length;
 
   if (total === 0) {
-    return `<div class="agenda"><div class="agenda-head">이번 달 일정</div><p class="agenda-empty">표시할 세션이 없습니다.</p></div>`;
+    return `<div class="agenda"><div class="agenda-head">${escapeHtml(Png.agendaHead)}</div><p class="agenda-empty">${escapeHtml(Png.agendaEmpty)}</p></div>`;
   }
 
   const shown = inMonth.slice(0, MAX_AGENDA_ITEMS);
@@ -115,12 +116,12 @@ function buildAgendaHtml(marks: CalendarSessionMark[], anchorAt: Date): string {
     .map((mk) => {
       const stLabel =
         mk.isPrimary
-          ? "조회 중"
+          ? Png.stPrimary
           : mk.status === "OPEN"
-            ? "진행 중"
+            ? Png.stOpen
             : mk.status === "CLOSED"
-              ? "마감"
-              : "취소";
+              ? Png.stClosed
+              : Png.stCanceled;
       const badgeCls = mk.isPrimary
         ? "ag-primary"
         : mk.status === "OPEN"
@@ -135,10 +136,10 @@ function buildAgendaHtml(marks: CalendarSessionMark[], anchorAt: Date): string {
 
   const more =
     overflow > 0
-      ? `<div class="agenda-more">외 ${overflow}건 (이미지에 일부만 표시)</div>`
+      ? `<div class="agenda-more">${escapeHtml(Png.agendaMore(overflow))}</div>`
       : "";
 
-  return `<div class="agenda"><div class="agenda-head">이번 달 일정</div><div class="agenda-rows">${rows}</div>${more}</div>`;
+  return `<div class="agenda"><div class="agenda-head">${escapeHtml(Png.agendaHead)}</div><div class="agenda-rows">${rows}</div>${more}</div>`;
 }
 
 function sliceNames(names: string[]): { lines: string[]; overflow: number } {
@@ -156,11 +157,11 @@ function sectionHtml(title: string, names: string[], variant: "yes" | "no" | "pe
   const { lines, overflow } = sliceNames(names);
   const items =
     lines.length === 0
-      ? `<p class="empty">(없음)</p>`
+      ? `<p class="empty">${escapeHtml(Png.emptyNames)}</p>`
       : `<ul>${lines.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
   const more =
     overflow > 0
-      ? `<p class="more">외 ${overflow}명 (이미지에는 일부만 표시)</p>`
+      ? `<p class="more">${escapeHtml(Png.namesMore(overflow))}</p>`
       : "";
   return `<div class="section section-${variant}"><h2>${escapeHtml(title)}</h2>${items}${more}</div>`;
 }
@@ -170,13 +171,13 @@ function sameLocalDay(d: Date, y: number, m: number, day: number): boolean {
 }
 
 /**
- * anchorAt 기준 월 그리드. marks에 같은 달 세션(다른 일정 포함)을 모두 표시.
+ * anchorAt 기준 월 그리드. marks에 같은 달 등록 일정(다른 건 포함)을 모두 표시.
  */
 function buildCalendarHtml(
   anchorAt: Date,
   marks: CalendarSessionMark[],
   legendMode: "full" | "simple" | "simple3" = "full",
-  subLine = "동일 달 세션"
+  subLine: string = Png.subGuild
 ): string {
   const y = anchorAt.getFullYear();
   const m = anchorAt.getMonth();
@@ -253,26 +254,26 @@ function buildCalendarHtml(
     legendMode === "simple3"
       ? `
     <div class="cal-legend">
-      <span><i class="lg lg-open"></i>진행 중</span>
-      <span><i class="lg lg-closed"></i>마감</span>
-      <span><i class="lg lg-canceled"></i>취소</span>
+      <span><i class="lg lg-open"></i>${escapeHtml(Png.stOpen)}</span>
+      <span><i class="lg lg-closed"></i>${escapeHtml(Png.stClosed)}</span>
+      <span><i class="lg lg-canceled"></i>${escapeHtml(Png.stCanceled)}</span>
     </div>`
       : legendMode === "simple"
         ? `
     <div class="cal-legend">
-      <span><i class="lg lg-open"></i>진행 중</span>
-      <span><i class="lg lg-closed"></i>마감</span>
+      <span><i class="lg lg-open"></i>${escapeHtml(Png.stOpen)}</span>
+      <span><i class="lg lg-closed"></i>${escapeHtml(Png.stClosed)}</span>
     </div>`
         : `
     <div class="cal-legend">
-      <span><i class="lg lg-primary"></i>조회 중</span>
-      <span><i class="lg lg-open"></i>진행 중</span>
-      <span><i class="lg lg-closed"></i>마감</span>
+      <span><i class="lg lg-primary"></i>${escapeHtml(Png.stPrimary)}</span>
+      <span><i class="lg lg-open"></i>${escapeHtml(Png.stOpen)}</span>
+      <span><i class="lg lg-closed"></i>${escapeHtml(Png.stClosed)}</span>
     </div>`;
 
   return `
     <div class="calendar-block">
-      <div class="cal-month">${y}년 ${m + 1}월 <span class="cal-sub">${escapeHtml(subLine)}</span></div>
+      <div class="cal-month">${escapeHtml(Png.calMonthLine(y, m + 1))} <span class="cal-sub">${escapeHtml(subLine)}</span></div>
       <div class="cal-weekdays">${wdRow}</div>
       <div class="cal-grid-wrap">
         ${weekRows.join("")}
@@ -465,9 +466,7 @@ function buildCalendarOnlyHtml(
   variant: "guild" | "participation" = "guild"
 ): string {
   const subLine =
-    variant === "participation"
-      ? "내가 참석 응답한 일정 (이번 달)"
-      : "작전 OPEN·마감 세션";
+    variant === "participation" ? Png.subPart : Png.subGuild;
   const legendMode = variant === "participation" ? "simple3" : "simple";
   const cal = buildCalendarHtml(anchorAt, marks, legendMode, subLine);
   return `<!DOCTYPE html>
@@ -505,6 +504,57 @@ function buildCalendarOnlyHtml(
 </html>`;
 }
 
+function buildCalendarOnlyHtmlTwoMonths(
+  anchorFirst: Date,
+  anchorSecond: Date,
+  marks: CalendarSessionMark[],
+  variant: "guild" | "participation" = "guild"
+): string {
+  const subLine =
+    variant === "participation" ? Png.subPart : Png.subGuild;
+  const legendMode = variant === "participation" ? "simple3" : "simple";
+  const cal0 = buildCalendarHtml(anchorFirst, marks, legendMode, subLine);
+  const cal1 = buildCalendarHtml(anchorSecond, marks, legendMode, subLine);
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0e0e10;
+    color: #e8e6e3;
+    font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    padding: 8px 10px;
+    width: ${CALENDAR_ONLY_WIDTH + 28}px;
+  }
+  .card {
+    border: 2px solid #c5a059;
+    border-radius: 10px;
+    padding: 12px 12px 10px;
+    background: linear-gradient(160deg, #1e1e24 0%, #131316 55%, #101012 100%);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+  }
+  .dual-cal-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  ${CSS_CALENDAR_BLOCK_STYLES}
+  body .calendar-block,
+  body .cal-grid-wrap,
+  body .cal-week {
+    flex: none !important;
+    min-height: 0 !important;
+  }
+</style>
+</head>
+<body>
+  <div class="card"><div class="dual-cal-wrap">${cal0}${cal1}</div></div>
+</body>
+</html>`;
+}
+
 function buildHtml(params: {
   title: string;
   sessionWhen: string;
@@ -517,11 +567,10 @@ function buildHtml(params: {
 }): string {
   const cal = buildCalendarHtml(params.sessionAt, params.calendarMarks);
   const agenda = buildAgendaHtml(params.calendarMarks, params.sessionAt);
-  const ribbon = params.cardMode === "open" ? "현재 집계" : "최종 결과";
+  const ribbon =
+    params.cardMode === "open" ? Png.ribbonOpen : Png.ribbonClosed;
   const footer =
-    params.cardMode === "open"
-      ? "진행 중입니다. 응답은 마감 전까지 변경할 수 있습니다."
-      : "마감되었습니다. 응답 변경이 불가합니다.";
+    params.cardMode === "open" ? Png.footerOpen : Png.footerClosed;
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -792,14 +841,14 @@ function buildHtml(params: {
       <div class="layout-right">
         <h1>${escapeHtml(params.title)}</h1>
         <div class="ribbon">${escapeHtml(ribbon)}</div>
-        <div class="meta-line"><strong>세션 일시</strong> · ${escapeHtml(params.sessionWhen)}</div>
+        <div class="meta-line"><strong>${escapeHtml(Png.metaAssign)}</strong> · ${escapeHtml(params.sessionWhen)}</div>
         ${agenda}
         <div class="rsvp-block">
-          <div class="rsvp-head">세션 응답</div>
+          <div class="rsvp-head">${escapeHtml(Png.sectionHead)}</div>
           <div class="lists">
-            ${sectionHtml("참석", params.attending, "yes")}
-            ${sectionHtml("불참", params.absent, "no")}
-            ${sectionHtml("무응답", params.noResponse, "pending")}
+            ${sectionHtml(Png.colAvail, params.attending, "yes")}
+            ${sectionHtml(Png.colDeny, params.absent, "no")}
+            ${sectionHtml(Png.colPending, params.noResponse, "pending")}
           </div>
         </div>
         <div class="footer">${escapeHtml(footer)}</div>
@@ -810,9 +859,9 @@ function buildHtml(params: {
 </html>`;
 }
 
-async function getBrowser(): Promise<Browser> {
-  if (!browserPromise) {
-    browserPromise = puppeteer.launch({
+function launchBrowserWithCleanup(): Promise<Browser> {
+  return puppeteer
+    .launch({
       headless: true,
       args: [
         "--no-sandbox",
@@ -820,8 +869,26 @@ async function getBrowser(): Promise<Browser> {
         "--disable-dev-shm-usage",
         "--disable-gpu",
       ],
+    })
+    .then((browser) => {
+      browser.once("disconnected", () => {
+        browserPromise = null;
+      });
+      return browser;
     });
+}
+
+async function getBrowser(): Promise<Browser> {
+  if (browserPromise) {
+    try {
+      const existing = await browserPromise;
+      if (existing.connected) return existing;
+    } catch {
+      /* 이전 launch 실패 등 */
+    }
+    browserPromise = null;
   }
+  browserPromise = launchBrowserWithCleanup();
   return browserPromise;
 }
 
@@ -852,7 +919,7 @@ export type ResultCardDisplayInput = {
 };
 
 /**
- * 세션 결과 카드 PNG 버퍼를 생성합니다.
+ * 등록 일정 결과 카드 PNG 버퍼를 생성합니다.
  */
 export async function renderSessionResultCardPng(
   params: ResultCardDisplayInput
@@ -887,13 +954,14 @@ export async function renderSessionResultCardPng(
       );
       const cardEl = await page.$(".card");
       if (!cardEl) {
-        console.error("[result-card-image] .card 요소를 찾을 수 없음");
+        console.error(L.pngNoCard);
         return null;
       }
       const buf = await cardEl.screenshot({ type: "png" });
       return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
     } catch (err) {
-      console.error("[result-card-image] PNG 렌더 실패:", err);
+      if (isPuppeteerConnectionLost(err)) browserPromise = null;
+      console.error(L.pngFail, err);
       return null;
     } finally {
       if (page) await page.close().catch(() => {});
@@ -901,15 +969,25 @@ export async function renderSessionResultCardPng(
   });
 }
 
+function isPuppeteerConnectionLost(err: unknown): boolean {
+  const name = err instanceof Error ? err.name : "";
+  const msg = String(err instanceof Error ? err.message : err);
+  return (
+    name === "ConnectionClosedError" ||
+    name === "TargetCloseError" ||
+    /connection closed|Target closed|WebSocket is not open/i.test(msg)
+  );
+}
+
 export type GuildMonthCalendarInput = {
   anchorAt: Date;
   calendarMarks: CalendarSessionMark[];
-  /** `participation`: `/일정 참여확인` 에페메랄(내 응답 일정·이번 달). 기본 `guild`는 `/일정 달력` */
+  /** `participation`: `/일정 참여확인` 에페메랄(가용·이번·다음 달). 기본 `guild`는 `/일정 달력` */
   calendarVariant?: "guild" | "participation";
 };
 
 /**
- * 길드 월간 세션만 담은 캘린더 격자 PNG (우측 명단·일정 목록 없음).
+ * 길드 월간 등록 일정만 담은 캘린더 격자 PNG (우측 패널 없음).
  */
 export async function renderGuildMonthCalendarPng(
   params: GuildMonthCalendarInput
@@ -942,13 +1020,73 @@ export async function renderGuildMonthCalendarPng(
       );
       const cardEl = await page.$(".card");
       if (!cardEl) {
-        console.error("[result-card-image] 달력 전용 .card 요소를 찾을 수 없음");
+        console.error(L.pngCalNoCard);
         return null;
       }
       const buf = await cardEl.screenshot({ type: "png" });
       return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
     } catch (err) {
-      console.error("[result-card-image] 월간 달력 PNG 렌더 실패:", err);
+      if (isPuppeteerConnectionLost(err)) browserPromise = null;
+      console.error(L.pngCalFail, err);
+      return null;
+    } finally {
+      if (page) await page.close().catch(() => {});
+    }
+  });
+}
+
+export type ParticipationTwoMonthCalendarInput = {
+  anchorFirst: Date;
+  anchorSecond: Date;
+  calendarMarks: CalendarSessionMark[];
+};
+
+/**
+ * `/일정 참여확인`용: 봇 로컬 **연속 두 달** 격자를 세로로 한 PNG에 렌더.
+ */
+export async function renderParticipationTwoMonthCalendarPng(
+  params: ParticipationTwoMonthCalendarInput
+): Promise<Buffer | null> {
+  if (!isResultCardImageEnabled()) return null;
+
+  const a0 =
+    params.anchorFirst instanceof Date && !isNaN(params.anchorFirst.getTime())
+      ? params.anchorFirst
+      : new Date();
+  const a1 =
+    params.anchorSecond instanceof Date &&
+    !isNaN(params.anchorSecond.getTime())
+      ? params.anchorSecond
+      : new Date();
+  const marks = Array.isArray(params.calendarMarks)
+    ? params.calendarMarks
+    : [];
+  const html = buildCalendarOnlyHtmlTwoMonths(a0, a1, marks, "participation");
+
+  return queuePngRenderTask(async () => {
+    let page = null;
+    try {
+      const browser = await getBrowser();
+      page = await browser.newPage();
+      await page.setViewport({
+        width: CALENDAR_ONLY_WIDTH + 80,
+        height: 2280,
+        deviceScaleFactor: 1.25,
+      });
+      await page.setContent(html, { waitUntil: "domcontentloaded" });
+      await page.evaluate(
+        () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+      );
+      const cardEl = await page.$(".card");
+      if (!cardEl) {
+        console.error(L.pngCalNoCard);
+        return null;
+      }
+      const buf = await cardEl.screenshot({ type: "png" });
+      return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
+    } catch (err) {
+      if (isPuppeteerConnectionLost(err)) browserPromise = null;
+      console.error(L.pngCalFail, err);
       return null;
     } finally {
       if (page) await page.close().catch(() => {});

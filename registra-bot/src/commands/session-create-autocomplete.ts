@@ -8,6 +8,7 @@ import type {
   AutocompleteInteraction,
   ApplicationCommandOptionChoiceData,
 } from "discord.js";
+import { Ac, L } from "../constants/registrar-voice.js";
 import { Opt, Sub } from "../slash/ko-names.js";
 
 function parseDateTime(str: string): Date | null {
@@ -29,23 +30,25 @@ function formatLocalDateTime(d: Date): string {
 
 /** 자동완성 후보가 예시·참고용임을 드롭다운에 표시 (Discord name ≤100자) */
 function exampleChoiceName(body: string): string {
-  const prefix = "[예시] ";
+  const prefix = Ac.example;
   const full = `${prefix}${body}`;
   return full.length <= 100 ? full : `${full.slice(0, 97)}…`;
 }
 
 /** 사용자가 친 값을 그대로 쓸 때 */
 function directInputChoiceName(body: string): string {
-  const prefix = "[직접 입력] ";
+  const prefix = Ac.direct;
   const full = `${prefix}${body}`;
   return full.length <= 100 ? full : `${full.slice(0, 97)}…`;
 }
 
 const TITLE_SUGGESTIONS: { name: string; value: string }[] = [
-  { name: "노부스 오르도", value: "노부스 오르도" },
-  { name: "노부스 오르도 - 정규 세션", value: "노부스 오르도 - 정규 세션" },
-  { name: "노부스 오르도 - 미니 세션", value: "노부스 오르도 - 미니 세션" },
-  { name: "송사리 탐정 사무소", value: "송사리 탐정 사무소" },
+  { name: "NOVUS ORDO — 상급자 회의", value: "NOVUS ORDO — 상급자 회의" },
+  { name: "NOVUS ORDO — 실험 일정 브리핑", value: "NOVUS ORDO — 실험 일정 브리핑" },
+  { name: "NOVUS ORDO — 작전 투입 안내", value: "NOVUS ORDO — 작전 투입 안내" },
+  { name: "NOVUS ORDO — 격리 구역 순찰", value: "NOVUS ORDO — 격리 구역 순찰" },
+  { name: "NOVUS ORDO — 주간 보고 마감", value: "NOVUS ORDO — 주간 보고 마감" },
+  { name: "REGISTRAR — 통합 일정 등록", value: "REGISTRAR — 통합 일정 등록" },
 ];
 
 function clampChoice(
@@ -256,7 +259,7 @@ export async function handleSessionCreateAutocomplete(
 
     await interaction.respond(choices);
   } catch (err) {
-    console.error("[session-create-autocomplete]", err);
+    console.error(L.autocomplete, err);
     try {
       await interaction.respond([]);
     } catch {

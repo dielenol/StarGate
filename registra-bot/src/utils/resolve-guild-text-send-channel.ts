@@ -5,6 +5,7 @@
  */
 
 import type { Guild, TextChannel } from "discord.js";
+import { Channel } from "../constants/registrar-voice.js";
 
 export type ResolveGuildTextSendChannelResult =
   | { ok: true; channel: TextChannel }
@@ -23,8 +24,7 @@ export async function resolveGuildTextSendChannel(
   if (!targetId) {
     return {
       ok: false,
-      message:
-        "❌ 메시지를 보낼 채널을 정할 수 없습니다. 텍스트 채널에서 명령하거나 **채널** 옵션으로 지정해 주세요.",
+      message: Channel.noTarget,
     };
   }
 
@@ -38,8 +38,7 @@ export async function resolveGuildTextSendChannel(
   if (!channel || !channel.isTextBased() || !("send" in channel)) {
     return {
       ok: false,
-      message:
-        "❌ 해당 채널을 찾을 수 없거나, **텍스트·공지 채널** 또는 **스레드**에만 올릴 수 있습니다.",
+      message: Channel.bad,
     };
   }
 

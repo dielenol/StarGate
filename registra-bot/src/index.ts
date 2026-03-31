@@ -1,11 +1,16 @@
 /**
- * TRPG 참여 체크 디스코드 봇 진입점
+ * 레지스트라(REGISTRAR) — NOVUS ORDO 통합 일정 봇 진입점
  *
- * Discord Client 초기화, 이벤트 핸들러 등록, DB 연결, 마감 스케줄러 시작을 담당합니다.
  * @module index
  */
 
-import { Client, Events, GatewayIntentBits } from "discord.js";
+import {
+  ActivityType,
+  Client,
+  Events,
+  GatewayIntentBits,
+} from "discord.js";
+import { L } from "./constants/registrar-voice.js";
 import { config } from "./config.js";
 import { connectDb, closeDb } from "./db/client.js";
 import { registerCommands } from "./commands/register.js";
@@ -37,24 +42,27 @@ const client = new Client({
  * GatewayRateLimitError 등이 처리되지 않으면 Client `error`로 전파되어 프로세스가 종료될 수 있음
  */
 client.on(Events.Error, (err) => {
-  console.error("[TRPG Bot] Discord 클라이언트 오류:", err);
+  console.error(L.discordErr, err);
 });
 
 /** 봇 준비 완료 시: 커맨드 등록 및 스케줄러 시작 */
 client.once(Events.ClientReady, async (readyClient) => {
-  console.log(`[TRPG Bot] 로그인: ${readyClient.user.tag}`);
+  console.log(L.login(readyClient.user.tag));
+  readyClient.user.setActivity("NOVUS ORDO 일정 총괄", {
+    type: ActivityType.Watching,
+  });
 
   try {
     await registerCommands();
-    console.log("[TRPG Bot] 슬래시 커맨드 등록 완료");
+    console.log(L.slashOk);
   } catch (err) {
-    console.error("[TRPG Bot] 커맨드 등록 실패:", err);
+    console.error(L.slashFail, err);
   }
 
   startCloseChecker(client);
-  console.log("[TRPG Bot] 마감 스케줄러 시작");
+  console.log(L.schedulerClose);
   startReminderChecker(client);
-  console.log("[TRPG Bot] 리마인드 스케줄러 시작");
+  console.log(L.schedulerRemind);
 });
 
 /** `/일정 생성` 문자열 옵션 자동완성 */
@@ -64,9 +72,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
   await handleSessionCreateAutocomplete(interaction);
 });
 
-/** 슬래시 커맨드 실행 시: /일정 … 처리 */
+/** 슬래시 커맨드 실행 시: /일정 … 및 단독 /참여확인 */
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === Sub.participationCheck) {
+    await handleSessionParticipationCheck(interaction);
+    return;
+  }
 
   if (interaction.commandName !== SCHEDULE_ROOT) return;
 
@@ -107,7 +120,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-/** 버튼 클릭 시: 참석/불참/미정 응답 처리 */
+/** 버튼 클릭 시: 가용/불가 응답 처리 */
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton()) {
     await handleButtonInteraction(interaction);
@@ -116,7 +129,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 /** 프로세스 종료 시 DB 연결 해제 */
 async function shutdown(): Promise<void> {
-  console.log("[TRPG Bot] 종료 중...");
+  console.log(L.shutdown);
   await closeResultCardBrowser();
   await closeDb();
   process.exit(0);
@@ -137,6 +150,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("[TRPG Bot] 시작 실패:", err);
+  console.error(L.bootFail, err);
   process.exit(1);
 });

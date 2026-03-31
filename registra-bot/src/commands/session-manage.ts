@@ -45,6 +45,8 @@ import {
   buildParticipationMonthCalendarBuffer,
   hasParticipationCalendarMarksInMonth,
 } from "../utils/build-session-result-card.js";
+import { ATTEND_BUTTON_PREFIX } from "../constants/registrar.js";
+import { D, L } from "../constants/registrar-voice.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 import { requireManageGuild } from "../utils/require-manage-guild.js";
 import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
@@ -58,7 +60,7 @@ import {
 import type { Session, SessionStatus } from "../types/session.js";
 
 /** 버튼 customId는 button-handler와 동일해야 함 */
-const ATTEND_PREFIX = "trpg:attend:";
+const ATTEND_PREFIX = ATTEND_BUTTON_PREFIX;
 
 const LIST_EMBED_COLOR = 0xc5a059;
 /** 임베드 description 한도(여유) */
@@ -86,7 +88,7 @@ export async function handleSessionList(
 ): Promise<void> {
   if (!requireManageGuild(interaction)) {
     await interaction.reply({
-      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      content: D.permManage,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -95,7 +97,7 @@ export async function handleSessionList(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({
-      content: "❌ 길드에서만 사용할 수 있습니다.",
+      content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -107,7 +109,7 @@ export async function handleSessionList(
 
   if (sessions.length === 0) {
     await interaction.editReply({
-      content: "📭 이 서버에 **진행 중(OPEN)** 인 세션이 없습니다.",
+      content: D.listEmpty,
     });
     return;
   }
@@ -125,10 +127,10 @@ export async function handleSessionList(
     const titleShort =
       s.title.length > 80 ? `${s.title.slice(0, 77)}...` : s.title;
     lines.push(
-      `**${i + 1}.** ${titleShort}\n` +
-        `sessionId : \`${sid}\` · 공지 ${ch}\n` +
-        `· 세션 시작일 : <t:${tStart}:F>\n` +
-        `· 투표 마감일 :  <t:${tClose}:F>`
+      `【${i + 1}】 ${titleShort}\n` +
+        `등록번호 \`${sid}\` · 공지 ${ch}\n` +
+        `· 배정 <t:${tStart}:F>\n` +
+        `· 회신 마감 <t:${tClose}:F>`
     );
   }
 
@@ -139,18 +141,22 @@ export async function handleSessionList(
   }
 
   const embed = new EmbedBuilder()
-    .setTitle(`진행 중인 세션 · ${total}건`)
+    .setTitle(D.listTitle(total))
     .setColor(LIST_EMBED_COLOR)
     .setDescription(description)
     .setTimestamp();
 
   if (total > LIST_MAX_ITEMS) {
     embed.setFooter({
-      text: `처음 ${LIST_MAX_ITEMS}건만 표시 (전체 ${total}건) · 마감·월별: /${SCHEDULE_ROOT} ${Sub.overview}`,
+      text: D.listFooterMore(
+        LIST_MAX_ITEMS,
+        total,
+        `/${SCHEDULE_ROOT} ${Sub.overview}`
+      ),
     });
   } else {
     embed.setFooter({
-      text: `마감 포함·월별 전체: /${SCHEDULE_ROOT} ${Sub.overview}`,
+      text: D.listFooterAll(`/${SCHEDULE_ROOT} ${Sub.overview}`),
     });
   }
 
@@ -158,7 +164,7 @@ export async function handleSessionList(
 }
 
 /**
- * OPEN 세션 공지 메시지 임베드·버튼을 DB 기준 최신 상태로 다시 그립니다.
+ * 접수 중인 등록 일정 공지 임베드·버튼을 DB 기준으로 다시 그립니다.
  */
 async function refreshOpenSessionAnnouncement(
   client: Client,
@@ -181,11 +187,11 @@ async function refreshOpenSessionAnnouncement(
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`${ATTEND_PREFIX}${sid}:yes`)
-      .setLabel("참석")
+      .setLabel("가용")
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
       .setCustomId(`${ATTEND_PREFIX}${sid}:no`)
-      .setLabel("불참")
+      .setLabel("불가")
       .setStyle(ButtonStyle.Danger)
   );
 
@@ -223,7 +229,7 @@ async function resolveSessionForResult(
 }
 
 /**
- * `/일정 한눈에` — OPEN·마감 전체를 **세션 일시 기준 월별**로 (에페메랄, PNG 없음)
+ * `/일정 한눈에` — 접수 중·마감 전체를 **배정 일시 기준 월별**로 (에페메랄, PNG 없음)
  *
  * 집계·PNG는 `/일정 집계`를 씁니다.
  */
@@ -232,7 +238,7 @@ export async function handleSessionOverview(
 ): Promise<void> {
   if (!requireManageGuild(interaction)) {
     await interaction.reply({
-      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      content: D.permManage,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -241,7 +247,7 @@ export async function handleSessionOverview(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({
-      content: "❌ 길드에서만 사용할 수 있습니다.",
+      content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -256,8 +262,7 @@ export async function handleSessionOverview(
 
   if (raw.length === 0) {
     await interaction.editReply({
-      content:
-        "📭 이 서버에 **진행 중(OPEN)** 또는 **마감(CLOSED)** 세션이 없습니다. (취소 제외)",
+      content: D.overviewEmpty,
     });
     return;
   }
@@ -289,9 +294,9 @@ export async function handleSessionOverview(
         const ts = Math.floor(s.targetDateTime.getTime() / 1000);
         const tc = Math.floor(s.closeDateTime.getTime() / 1000);
         const ch = `<#${s.channelId}>`;
-        const st = s.status === "OPEN" ? "진행 중" : "마감";
+        const st = s.status === "OPEN" ? "접수 중" : "마감";
         const t = s.title.length > 48 ? `${s.title.slice(0, 45)}…` : s.title;
-        return `· [${st}] ${t}\n  \`${sid}\` · ${ch} · 세션 <t:${ts}:f> · 마감 <t:${tc}:f>`;
+        return `· 【${st}】 ${t}\n  \`${sid}\` · ${ch} · 배정 <t:${ts}:f> · 회신마감 <t:${tc}:f>`;
       })
       .join("\n");
     blocks.push(`${head}\n${lines}`);
@@ -331,7 +336,7 @@ export async function handleSessionOverview(
   if (embeds.length < OVERVIEW_MAX_EMBEDS) pushChunk();
 
   if (embeds.length === 0) {
-    await interaction.editReply({ content: "표시할 내용을 만들 수 없습니다." });
+    await interaction.editReply({ content: D.overviewNoRender });
     return;
   }
 
@@ -339,15 +344,15 @@ export async function handleSessionOverview(
   if (omittedTail) {
     const last = embeds[embeds.length - 1]!;
     last.setDescription(
-      `${last.data.description ?? ""}\n\n_이후 월·일정은 표시 한도로 생략됩니다._`
+      `${last.data.description ?? ""}\n\n${D.overviewOmitted}`
     );
   }
 
   while (embeds.length > 10) embeds.pop();
 
-  embeds[0]!.setTitle("세션 일정 한눈에 보기 (월별)");
+  embeds[0]!.setTitle(D.overviewTitle);
   for (let i = 1; i < embeds.length; i++) {
-    embeds[i]!.setTitle(`계속 (${i + 1}/${embeds.length})`);
+    embeds[i]!.setTitle(D.overviewCont(i, embeds.length));
   }
 
   const foot: string[] = [];
@@ -358,7 +363,13 @@ export async function handleSessionOverview(
     foot.push(`분할·길이 한도`);
   }
   foot.push(
-    `집계: /${SCHEDULE_ROOT} ${Sub.result} + ${Opt.sessionId} · 달 PNG: ${Opt.withImage} · 월만: /${SCHEDULE_ROOT} ${Sub.calendar}`
+    D.overviewFooterTools(
+      SCHEDULE_ROOT,
+      Sub.result,
+      Opt.registrationId,
+      Opt.withImage,
+      Sub.calendar
+    )
   );
   embeds[embeds.length - 1]!.setFooter({ text: foot.join(" · ") });
 
@@ -366,14 +377,14 @@ export async function handleSessionOverview(
 }
 
 /**
- * `/일정 달력` — 올해 지정 월의 세션만 월간 캘린더 PNG (격자만, 지정 채널에 공개)
+ * `/일정 달력` — 올해 지정 월의 등록 일정만 월간 캘린더 PNG (격자만)
  */
 export async function handleSessionMonthCalendar(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
   if (!requireManageGuild(interaction)) {
     await interaction.reply({
-      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      content: D.permManage,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -383,7 +394,7 @@ export async function handleSessionMonthCalendar(
   const guild = interaction.guild;
   if (!guildId || !guild) {
     await interaction.reply({
-      content: "❌ 길드에서만 사용할 수 있습니다.",
+      content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -408,8 +419,7 @@ export async function handleSessionMonthCalendar(
 
   if (!isResultCardImageEnabled()) {
     await interaction.editReply({
-      content:
-        "❌ 이미지 렌더링이 꺼져 있습니다. (`RESULT_CARD_IMAGE`를 켜고 Chromium 환경을 확인하세요.)",
+      content: D.calImageOff,
     });
     return;
   }
@@ -421,21 +431,21 @@ export async function handleSessionMonthCalendar(
   );
   if (!buf) {
     await interaction.editReply({
-      content: "❌ 달력 이미지를 만들지 못했습니다. 잠시 후 다시 시도하세요.",
+      content: D.calRenderFail,
     });
     return;
   }
 
   try {
     const msg = await textChannel.send({
-      content: `📅 **${year}년 ${month}월** · 세션 일시 기준 OPEN·마감 (취소 제외)`,
+      content: D.calPosted(year, month),
       files: [new AttachmentBuilder(buf, { name: "session-calendar.png" })],
     });
     await interaction.editReply({
-      content: `✅ 달력을 올렸습니다. [메시지 보기](${msg.url})`,
+      content: D.calDone(msg.url),
     });
   } catch (err) {
-    console.error("[session calendar]", err);
+    console.error(L.sessionCalendar, err);
     const missingAccess =
       typeof err === "object" &&
       err !== null &&
@@ -443,23 +453,23 @@ export async function handleSessionMonthCalendar(
       (err as { code: unknown }).code === 50001;
     await interaction.editReply({
       content: missingAccess
-        ? "❌ 봇이 **선택한 채널**에 메시지를 보낼 수 없습니다. (Discord `Missing Access`)\n" +
-          "· 봇 역할에 **채널 보기**, **메시지 보내기**, **파일 첨부**를 허용했는지 확인하세요.\n" +
-          "· **스레드**면 **스레드에서 메시지 보내기**가 필요하고, 비공개 스레드는 봇을 **초대**해야 할 수 있습니다."
-        : `❌ 달력을 보내지 못했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`,
+        ? D.calMissingAccess
+        : D.calSendFail(
+            err instanceof Error ? err.message : "원인 미상"
+          ),
     });
   }
 }
 
 /**
- * `/일정 집계` — 한 세션 집계·최종 결과 (지정 채널에 공개). 세션 ID는 실행 관리자에게만 에페메랄.
+ * `/일정 집계` — 한 건 집계·확정 보고 (채널 공개). 등록 ID는 실행 관리자에게만 에페메랄.
  */
 export async function handleSessionResult(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
   if (!requireManageGuild(interaction)) {
     await interaction.reply({
-      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      content: D.permManage,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -469,7 +479,7 @@ export async function handleSessionResult(
   const guildBase = interaction.guild;
   if (!guildId || !guildBase) {
     await interaction.reply({
-      content: "❌ 길드에서만 사용할 수 있습니다.",
+      content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -477,7 +487,7 @@ export async function handleSessionResult(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const sessionIdOpt = interaction.options.getString(Opt.sessionId);
+  const sessionIdOpt = interaction.options.getString(Opt.registrationId);
   const withImage = interaction.options.getBoolean(Opt.withImage) === true;
 
   if (!sessionIdOpt?.trim()) {
@@ -490,7 +500,7 @@ export async function handleSessionResult(
           const ts = Math.floor(s.targetDateTime.getTime() / 1000);
           const title =
             s.title.length > 44 ? `${s.title.slice(0, 41)}…` : s.title;
-          return `${i + 1}. **${title}** — \`${sid}\` — 세션 <t:${ts}:D>`;
+          return `${i + 1}. **${title}** — \`${sid}\` — 배정 <t:${ts}:D>`;
         })
         .join("\n");
       const more =
@@ -498,17 +508,20 @@ export async function handleSessionResult(
           ? `\n… 외 ${openOnly.length - RESULT_MULTI_OPEN_PREVIEW}건`
           : "";
       await interaction.editReply({
-        content:
-          `진행 중(OPEN) 세션이 **${openOnly.length}개**라서, 임의로 하나만 고르지 않습니다.\n` +
-          `**${Opt.sessionId}** 옵션으로 지정해 주세요.\n` +
-          `_후보 목록·세션 ID는 이 명령을 실행한 관리자에게만 보이는 메시지로 보냅니다._`,
+        content: D.resultMultiOpen(
+          openOnly.length,
+          Opt.registrationId,
+          `/${SCHEDULE_ROOT} ${Sub.overview}`
+        ),
       });
       await interaction.followUp({
         flags: MessageFlags.Ephemeral,
-        content:
-          `아래 **ID**를 복사해 \`/${SCHEDULE_ROOT} ${Sub.result}\`의 **${Opt.sessionId}**에 넣어 주세요.\n\n` +
-          `${lines}${more}\n\n` +
-          `— 마감만 보려면 ID를 넣거나, 전체 일정은 \`/${SCHEDULE_ROOT} ${Sub.overview}\` —`,
+        content: D.resultPickIds(
+          lines,
+          more,
+          `/${SCHEDULE_ROOT} ${Sub.result}`,
+          `/${SCHEDULE_ROOT} ${Sub.overview}`
+        ),
       });
       return;
     }
@@ -518,10 +531,10 @@ export async function handleSessionResult(
 
   if (!session) {
     await interaction.editReply({
-      content:
-        "❌ 대상 세션을 찾을 수 없습니다.\n" +
-        `· ${Opt.sessionId}를 적었다면 ID를 확인하세요.\n` +
-        `· 비웠을 때 OPEN이 없으면 **가장 최근 마감(CLOSED)** 만 자동 선택됩니다. 전체는 /${SCHEDULE_ROOT} ${Sub.overview}`,
+      content: D.resultNotFound(
+        Opt.registrationId,
+        `/${SCHEDULE_ROOT} ${Sub.overview}`
+      ),
     });
     return;
   }
@@ -550,17 +563,17 @@ export async function handleSessionResult(
   const sendSessionIdToInvoker = async (): Promise<void> => {
     await interaction.followUp({
       flags: MessageFlags.Ephemeral,
-      content: [
-        "🔒 **관리자 전용** — 이 집계 대상 세션 ID",
-        `\`${sid}\``,
-        `※ \`/${SCHEDULE_ROOT}\` 관리 명령의 **${Opt.sessionId}**에 사용할 수 있습니다.`,
-      ].join("\n"),
+      content: D.resultEphemeralId(
+        sid,
+        `/${SCHEDULE_ROOT}`,
+        Opt.registrationId
+      ),
     });
   };
 
   if (session.status === "CANCELED") {
     await interaction.editReply({
-      content: resultHeaderPublic(`❌ 이 세션은 취소되었습니다.`),
+      content: resultHeaderPublic(D.resultCanceled),
     });
     await sendSessionIdToInvoker();
     return;
@@ -578,7 +591,7 @@ export async function handleSessionResult(
   const textChannel = resolvedCh.channel;
 
   const replySendError = async (err: unknown, ctx: string): Promise<void> => {
-    console.error(ctx, err);
+    console.error(L.sessionResult(ctx), err);
     const missingAccess =
       typeof err === "object" &&
       err !== null &&
@@ -586,10 +599,10 @@ export async function handleSessionResult(
       (err as { code: unknown }).code === 50001;
     await interaction.editReply({
       content: missingAccess
-        ? "❌ 봇이 **선택한 채널**에 메시지를 보낼 수 없습니다. (Discord `Missing Access`)\n" +
-          "· 봇 역할에 **채널 보기**, **메시지 보내기**, **링크 임베드**, **파일 첨부**(이미지 사용 시)를 허용했는지 확인하세요.\n" +
-          "· **스레드**면 **스레드에서 메시지 보내기**가 필요하고, 비공개 스레드는 봇을 **초대**해야 할 수 있습니다."
-        : `❌ 집계를 보내지 못했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`,
+        ? D.resultChannelDeny
+        : D.resultSendFail(
+            err instanceof Error ? err.message : "원인 미상"
+          ),
     });
   };
 
@@ -603,7 +616,7 @@ export async function handleSessionResult(
     const embed = buildSessionEmbed(session, counts, yesIds, noIds, sid, {
       includeSessionIdField: false,
     });
-    embed.setFooter({ text: "현재 집계입니다. (진행 중)" });
+    embed.setFooter({ text: D.resultOpenFooter });
     const png =
       withImage &&
       (await buildSessionResultCardBuffer({
@@ -625,11 +638,11 @@ export async function handleSessionResult(
           : {}),
       });
       await interaction.editReply({
-        content: `✅ 집계를 올렸습니다. [메시지 보기](${msg.url})`,
+        content: D.resultPosted(msg.url),
       });
       await sendSessionIdToInvoker();
     } catch (err) {
-      await replySendError(err, "[session result open]");
+      await replySendError(err, "접수 중 집계 송부");
     }
     return;
   }
@@ -665,11 +678,11 @@ export async function handleSessionResult(
         : {}),
     });
     await interaction.editReply({
-      content: `✅ 집계를 올렸습니다. [메시지 보기](${msg.url})`,
+      content: D.resultPosted(msg.url),
     });
     await sendSessionIdToInvoker();
   } catch (err) {
-    await replySendError(err, "[session result closed]");
+    await replySendError(err, "마감 집계 송부");
   }
 }
 
@@ -681,7 +694,7 @@ export async function handleSessionClose(
 ): Promise<void> {
   if (!requireManageGuild(interaction)) {
     await interaction.reply({
-      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      content: D.permManage,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -690,7 +703,7 @@ export async function handleSessionClose(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({
-      content: "❌ 길드에서만 사용할 수 있습니다.",
+      content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -698,19 +711,19 @@ export async function handleSessionClose(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const sessionIdOpt = interaction.options.getString(Opt.sessionId);
+  const sessionIdOpt = interaction.options.getString(Opt.registrationId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
 
   if (!session) {
     await interaction.editReply({
-      content: "❌ 열린(OPEN) 세션을 찾을 수 없습니다.",
+      content: D.closeNoOpen,
     });
     return;
   }
 
   if (session.status !== "OPEN") {
     await interaction.editReply({
-      content: "❌ 이미 마감되었거나 취소된 세션입니다.",
+      content: D.closeNotOpen,
     });
     return;
   }
@@ -722,21 +735,23 @@ export async function handleSessionClose(
     });
     if (!result.transitioned) {
       await interaction.editReply({
-        content: "ℹ️ 이 세션은 이미 다른 작업에서 마감되었거나 더 이상 OPEN 상태가 아닙니다.",
+        content: D.closeAlready,
       });
       return;
     }
     const warningNote =
       result.warnings.length > 0
-        ? `\n\n주의: ${result.warnings.join(" / ")}`
+        ? `${D.warnPrefix}${result.warnings.join(" / ")}`
         : "";
     await interaction.editReply({
-      content: `✅ **${session.title}** 세션을 강제 마감했습니다.${warningNote}`,
+      content: D.closeDone(session.title, warningNote),
     });
   } catch (err) {
-    console.error("[session close]", err);
+    console.error(L.sessionCloseCmd, err);
     await interaction.editReply({
-      content: `❌ 마감 처리 중 오류: ${err instanceof Error ? err.message : "알 수 없는 오류"}`,
+      content: D.closeErr(
+        err instanceof Error ? err.message : "원인 미상"
+      ),
     });
   }
 }
@@ -749,7 +764,7 @@ export async function handleSessionEditClose(
 ): Promise<void> {
   if (!requireManageGuild(interaction)) {
     await interaction.reply({
-      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      content: D.permManage,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -758,7 +773,7 @@ export async function handleSessionEditClose(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({
-      content: "❌ 길드에서만 사용할 수 있습니다.",
+      content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -768,7 +783,7 @@ export async function handleSessionEditClose(
   const newClose = parseDateTime(newCloseStr);
   if (!newClose) {
     await interaction.reply({
-      content: `❌ \`${Opt.newClose}\` 날짜 형식이 올바르지 않습니다. (예: 2026-03-22 20:00)`,
+      content: D.editCloseDateBad(Opt.newClose),
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -776,12 +791,12 @@ export async function handleSessionEditClose(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const sessionIdOpt = interaction.options.getString(Opt.sessionId);
+  const sessionIdOpt = interaction.options.getString(Opt.registrationId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
 
   if (!session || session.status !== "OPEN") {
     await interaction.editReply({
-      content: "❌ 열린(OPEN) 세션을 찾을 수 없습니다.",
+      content: D.closeNoOpen,
     });
     return;
   }
@@ -789,21 +804,17 @@ export async function handleSessionEditClose(
   const now = new Date();
   const notes: string[] = [];
   if (newClose.getTime() <= now.getTime()) {
-    notes.push(
-      "_마감 시각이 이미 지났습니다. 잠시 후 스케줄러가 자동 마감할 수 있습니다._"
-    );
+    notes.push(D.warnClosePast);
   }
   if (newClose.getTime() >= session.targetDateTime.getTime()) {
-    notes.push(
-      `_마감이 **세션 일시와 같거나 그 이후**입니다. 필요하면 \`/${SCHEDULE_ROOT} ${Sub.editDate}\`로 세션 일시를 조정하세요._`
-    );
+    notes.push(D.warnCloseAfterTarget(`/${SCHEDULE_ROOT} ${Sub.editDate}`));
   }
 
   const sid = String(session._id);
   const ok = await updateSessionCloseDateTime(sid, newClose);
   if (!ok) {
     await interaction.editReply({
-      content: "❌ DB 업데이트에 실패했습니다.",
+      content: D.dbFail,
     });
     return;
   }
@@ -823,35 +834,40 @@ export async function handleSessionEditClose(
       await refreshOpenSessionAnnouncement(interaction.client, refreshed);
       announceUpdated = true;
     } catch (err) {
-      console.error("[session edit_close] 공지 메시지 임베드 갱신 실패:", err);
+      console.error(L.sessionEditClose, err);
     }
   }
 
   const announceNote = announceUpdated
-    ? "\n· 공지 메시지의 **응답 마감** 일시도 반영했습니다."
-    : "\n· _(공지 임베드 자동 갱신에 실패했을 수 있습니다. 봇이 해당 채널 메시지를 수정할 권한이 있는지 확인하세요.)_";
+    ? D.announceOkClose
+    : D.announceFailClose;
 
   const warnBlock = notes.length ? `\n\n${notes.join("\n")}` : "";
 
   await interaction.editReply({
-    content: `✅ **${session.title}** **응답 마감 일시**를 변경했습니다. 새 마감: <t:${Math.floor(newClose.getTime() / 1000)}:F>${announceNote}${warnBlock}`,
+    content: D.editCloseDone(
+      session.title,
+      `<t:${Math.floor(newClose.getTime() / 1000)}:F>`,
+      announceNote,
+      warnBlock
+    ),
   });
 }
 
-/** 세션 시작 1시간 전을 응답 마감으로 쓰기 (일정만 앞당길 때 자동 맞춤) */
+/** 배정 1시간 전을 응답 마감으로 쓰기 (일정만 앞당길 때 자동 맞춤) */
 function autoCloseBeforeSession(sessionStart: Date): Date {
   return new Date(sessionStart.getTime() - 60 * 60 * 1000);
 }
 
 /**
- * `/일정 일정변경` — 세션 진행 일시 변경
+ * `/일정 일정변경` — 배정 일시 변경
  */
 export async function handleSessionEditDate(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
   if (!requireManageGuild(interaction)) {
     await interaction.reply({
-      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      content: D.permManage,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -860,7 +876,7 @@ export async function handleSessionEditDate(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({
-      content: "❌ 길드에서만 사용할 수 있습니다.",
+      content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -870,8 +886,7 @@ export async function handleSessionEditDate(
   const newDate = parseDateTime(newDateStr);
   if (!newDate) {
     await interaction.reply({
-      content:
-        `❌ \`${Opt.newDate}\` 날짜 형식이 올바르지 않습니다. (예: 2026-03-22 20:00)`,
+      content: D.editDateBad(Opt.newDate),
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -879,12 +894,12 @@ export async function handleSessionEditDate(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const sessionIdOpt = interaction.options.getString(Opt.sessionId);
+  const sessionIdOpt = interaction.options.getString(Opt.registrationId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
 
   if (!session || session.status !== "OPEN") {
     await interaction.editReply({
-      content: "❌ 열린(OPEN) 세션을 찾을 수 없습니다.",
+      content: D.closeNoOpen,
     });
     return;
   }
@@ -900,7 +915,7 @@ export async function handleSessionEditDate(
     : await updateSessionTargetDateTime(sid, newDate);
   if (!ok) {
     await interaction.editReply({
-      content: "❌ DB 업데이트에 실패했습니다.",
+      content: D.dbFail,
     });
     return;
   }
@@ -927,43 +942,49 @@ export async function handleSessionEditDate(
       await refreshOpenSessionAnnouncement(interaction.client, refreshed);
       announceUpdated = true;
     } catch (err) {
-      console.error("[session edit_date] 공지 메시지 임베드 갱신 실패:", err);
+      console.error(L.sessionEditDate, err);
     }
   }
 
   const autoCloseNote = autoClose
-    ? `\n· 응답 마감이 세션보다 늦거나 같아, 마감을 **<t:${Math.floor(autoClose.getTime() / 1000)}:F>** (세션 1시간 전·불가 시 1분 전)으로 맞췄습니다.`
+    ? D.autoCloseNote(
+        `<t:${Math.floor(autoClose.getTime() / 1000)}:F>`
+      )
     : "";
 
   const announceNote = announceUpdated
-    ? "\n· 공지 메시지의 **세션 일시**도 반영했습니다. (시작 24시간 전 리마인드는 새 일정 기준으로 다시 판단합니다.)"
-    : "\n· _(공지 임베드 자동 갱신에 실패했을 수 있습니다. 봇 권한을 확인하세요.)_";
+    ? D.announceOkDate
+    : D.announceFailDate;
 
   const pastNote =
-    newDate.getTime() <= Date.now()
-      ? "\n\n_세션 일시가 과거입니다. 리마인드·집계 의미를 확인해 주세요._"
-      : "";
+    newDate.getTime() <= Date.now() ? D.pastDateWarn : "";
 
   await interaction.editReply({
-    content: `✅ **${session.title}** **세션 진행 일시**를 변경했습니다. 새 일시: <t:${Math.floor(newDate.getTime() / 1000)}:F>${autoCloseNote}${announceNote}${pastNote}`,
+    content: D.editDateDone(
+      session.title,
+      `<t:${Math.floor(newDate.getTime() / 1000)}:F>`,
+      autoCloseNote,
+      announceNote,
+      pastNote
+    ),
   });
 }
 
 function participationStatusLabel(status: SessionStatus): string {
   switch (status) {
     case "OPEN":
-      return "진행 중";
+      return D.statusOpen;
     case "CLOSED":
-      return "마감됨";
+      return D.statusClosed;
     case "CANCELED":
-      return "취소됨";
+      return D.statusCanceled;
     default:
       return String(status);
   }
 }
 
 /**
- * `/일정 참여확인` — 본인이 **참석(YES)** 으로 응답한 세션만 (에페메랄).
+ * `/일정 참여확인` — 본인이 **가용(YES)** 으로 제출한 등록 일정만 (에페메랄).
  * `RESULT_CARD_IMAGE`가 켜져 있으면 **쿨다운이 지난 조회에만** 이번 달 **월간 캘린더 PNG**를 함께 붙입니다 (`/일정 달력`과 동일 격자).
  */
 export async function handleSessionParticipationCheck(
@@ -972,7 +993,7 @@ export async function handleSessionParticipationCheck(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({
-      content: "❌ 길드에서만 사용할 수 있습니다.",
+      content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -990,8 +1011,7 @@ export async function handleSessionParticipationCheck(
 
   if (totalInGuild === 0) {
     await interaction.editReply({
-      content:
-        "📭 이 서버에서 **참석**으로 응답한 일정이 없습니다. 공지에서 **참석**을 누르면 여기에 표시됩니다.",
+      content: D.partEmpty,
     });
     return;
   }
@@ -1007,10 +1027,10 @@ export async function handleSessionParticipationCheck(
       s.title.length > 80 ? `${s.title.slice(0, 77)}...` : s.title;
     lines.push(
       `**${i + 1}.** ${titleShort}\n` +
-        `· 상태: **${participationStatusLabel(s.status)}**\n` +
-        `· 세션 일시: <t:${tStart}:F>\n` +
-        `· 응답 마감: <t:${tClose}:F>\n` +
-        `· 공지: [열기](${announceUrl}) · \`${sid}\``
+        `${D.partLineState(participationStatusLabel(s.status))}\n` +
+        `${D.partLineAssign(tStart)}\n` +
+        `${D.partLineClose(tClose)}\n` +
+        `${D.partLineLink(announceUrl, sid)}`
     );
   }
 
@@ -1018,18 +1038,18 @@ export async function handleSessionParticipationCheck(
   if (description.length > PARTICIPATION_DESC_SAFE_MAX) {
     description =
       description.slice(0, PARTICIPATION_DESC_SAFE_MAX - 20).trimEnd() +
-      "\n… _(일부만 표시)_";
+      D.partDescTrunc;
   }
 
   const embed = new EmbedBuilder()
     .setColor(LIST_EMBED_COLOR)
-    .setTitle("📌 내가 참석으로 응답한 일정 (이 서버 · 에페메랄)")
+    .setTitle(D.partTitle)
     .setDescription(description);
 
   const footerBits: string[] = [];
   if (totalInGuild > PARTICIPATION_CHECK_MAX_ITEMS) {
     footerBits.push(
-      `총 ${totalInGuild}건 중 앞선 ${PARTICIPATION_CHECK_MAX_ITEMS}건만 표시 (세션 일시 빠른 순)`
+      D.partFooterCap(totalInGuild, PARTICIPATION_CHECK_MAX_ITEMS)
     );
   }
 
@@ -1040,9 +1060,7 @@ export async function handleSessionParticipationCheck(
   if (imageOn && !canImage) {
     const ms = msUntilNextParticipationImage(cooldownKey);
     const mins = Math.max(1, Math.ceil(ms / 60_000));
-    footerBits.push(
-      `이번 달 캘린더 PNG는 약 ${mins}분 후 다시 첨부됩니다 (그전엔 글 목록만)`
-    );
+    footerBits.push(D.partCooldown(mins));
   }
 
   if (footerBits.length > 0) {
@@ -1055,9 +1073,7 @@ export async function handleSessionParticipationCheck(
     const calMonth = now.getMonth();
 
     if (!hasParticipationCalendarMarksInMonth(items, calYear, calMonth)) {
-      footerBits.push(
-        "이번 달에 표시할 응답 일정이 없어 캘린더 PNG를 생략했습니다"
-      );
+      footerBits.push(D.partNoCalMarks);
       embed.setFooter({
         text:
           footerBits.join(" · ").length > 2048
@@ -1075,14 +1091,21 @@ export async function handleSessionParticipationCheck(
         markParticipationImageIssued(cooldownKey);
         const cdMs = getParticipationImageCooldownMs();
         const extraFooter: string[] = [];
+        const nextCal = new Date(calYear, calMonth + 1, 1);
+        const y2 = nextCal.getFullYear();
+        const m2 = nextCal.getMonth();
         extraFooter.push(
-          `캘린더: ${calYear}년 ${calMonth + 1}월(봇 타임존) · 목록은 전 기간 최대 ${PARTICIPATION_CHECK_MAX_ITEMS}건`
+          D.partCalFooterTwo(
+            calYear,
+            calMonth + 1,
+            y2,
+            m2 + 1,
+            PARTICIPATION_CHECK_MAX_ITEMS,
+            cdMs > 0
+              ? D.partCalCdNext(Math.ceil(cdMs / 60_000))
+              : ""
+          )
         );
-        if (cdMs > 0) {
-          extraFooter.push(
-            `다음 캘린더 PNG는 약 ${Math.ceil(cdMs / 60_000)}분 후부터`
-          );
-        }
         const base = footerBits.length > 0 ? footerBits.join(" · ") : "";
         const merged = [base, ...extraFooter].filter(Boolean).join(" · ");
         if (merged.length > 0) {
@@ -1102,9 +1125,7 @@ export async function handleSessionParticipationCheck(
         return;
       }
 
-      const failDesc =
-        description +
-        "\n\n_캘린더 이미지를 만들지 못했습니다. 목록만 표시합니다._";
+      const failDesc = description + D.partCalFail;
       embed.setDescription(
         failDesc.length > 4096 ? `${failDesc.slice(0, 4093)}…` : failDesc
       );
@@ -1115,14 +1136,14 @@ export async function handleSessionParticipationCheck(
 }
 
 /**
- * `/일정 취소` — 세션 취소
+ * `/일정 취소` — 등록 일정 취소
  */
 export async function handleSessionCancel(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
   if (!requireManageGuild(interaction)) {
     await interaction.reply({
-      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      content: D.permManage,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -1131,7 +1152,7 @@ export async function handleSessionCancel(
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({
-      content: "❌ 길드에서만 사용할 수 있습니다.",
+      content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -1139,12 +1160,12 @@ export async function handleSessionCancel(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const sessionIdOpt = interaction.options.getString(Opt.sessionId);
+  const sessionIdOpt = interaction.options.getString(Opt.registrationId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
 
   if (!session || session.status !== "OPEN") {
     await interaction.editReply({
-      content: "❌ 열린(OPEN) 세션을 찾을 수 없습니다.",
+      content: D.cancelNoOpen,
     });
     return;
   }
@@ -1157,21 +1178,23 @@ export async function handleSessionCancel(
     );
     if (!result.transitioned) {
       await interaction.editReply({
-        content: "ℹ️ 이 세션은 이미 다른 작업에서 취소되었거나 더 이상 OPEN 상태가 아닙니다.",
+        content: D.cancelAlready,
       });
       return;
     }
     const warningNote =
       result.warnings.length > 0
-        ? `\n\n주의: ${result.warnings.join(" / ")}`
+        ? `${D.warnPrefix}${result.warnings.join(" / ")}`
         : "";
     await interaction.editReply({
-      content: `✅ **${session.title}** 세션을 취소했습니다.${warningNote}`,
+      content: D.cancelDone(session.title, warningNote),
     });
   } catch (err) {
-    console.error("[session cancel]", err);
+    console.error(L.sessionCancelCmd, err);
     await interaction.editReply({
-      content: `❌ 취소 처리 중 오류: ${err instanceof Error ? err.message : "알 수 없는 오류"}`,
+      content: D.cancelErr(
+        err instanceof Error ? err.message : "원인 미상"
+      ),
     });
   }
 }

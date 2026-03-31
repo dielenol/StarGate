@@ -1,5 +1,5 @@
 /**
- * 세션 운영 로그 타입
+ * 등록 일정 운영 로그 타입
  *
  * @module types/session-log
  */
@@ -11,9 +11,9 @@ export type SessionLogType =
   | "CANCELED"
   /** 응답 마감 일시 변경 (구 영문 슬래시 extend) */
   | "EXTENDED"
-  /** 세션 진행 일시 변경 */
+  /** 배정 일시 변경 */
   | "SESSION_TARGET_UPDATED"
-  /** 세션 시작 24시간 전 · 참석(YES) 응답자 대상 */
+  /** 배정 24시간 전 · 가용(YES) 응답자 대상 */
   | "REMINDER_SESSION_START_24H"
   /** 구버전 로그 호환 */
   | "REMINDER_24H"

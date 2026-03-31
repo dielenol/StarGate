@@ -14,6 +14,7 @@ import { displayLineForUser } from "./member-display-line.js";
 import {
   renderSessionResultCardPng,
   renderGuildMonthCalendarPng,
+  renderParticipationTwoMonthCalendarPng,
   type CalendarSessionMark,
 } from "./result-card-image.js";
 import type { Session, SessionResponse } from "../types/session.js";
@@ -125,18 +126,31 @@ export async function buildGuildMonthCalendarOnlyBuffer(
   return renderGuildMonthCalendarPng({ anchorAt, calendarMarks: marks });
 }
 
+function nextCalendarMonth(
+  year: number,
+  monthIndex: number
+): { y: number; m: number } {
+  const d = new Date(year, monthIndex + 1, 1);
+  return { y: d.getFullYear(), m: d.getMonth() };
+}
+
 /**
- * 해당 연·월에 캘린더에 찍을 본인 응답 세션이 하나라도 있는지 (PNG 생성 여부 판단용).
+ * 봇 로컬 **이번 달·다음 달** 중 어느 한 달이라도 캘린더에 찍을 본인 응답이 있는지 (PNG 생성 여부).
  */
 export function hasParticipationCalendarMarksInMonth(
   items: Array<{ session: Session }>,
   year: number,
   monthIndex: number
 ): boolean {
+  const n = nextCalendarMonth(year, monthIndex);
   for (const { session: s } of items) {
     if (!s._id) continue;
     const t = s.targetDateTime;
-    if (t.getFullYear() !== year || t.getMonth() !== monthIndex) continue;
+    const ty = t.getFullYear();
+    const tm = t.getMonth();
+    const inFirst = ty === year && tm === monthIndex;
+    const inSecond = ty === n.y && tm === n.m;
+    if (!inFirst && !inSecond) continue;
     if (s.status !== "OPEN" && s.status !== "CLOSED" && s.status !== "CANCELED")
       continue;
     return true;
@@ -145,9 +159,8 @@ export function hasParticipationCalendarMarksInMonth(
 }
 
 /**
- * `/일정 참여확인` 에페메랄용 월간 캘린더 PNG (`/일정 달력`과 동일 격자).
- * `year`·`monthIndex`는 봇 로컬 **이번 달** 기준으로 전달하는 것을 권장합니다.
- * 이번 달에 표시할 일정이 없으면 `null`(Puppeteer 호출 없음).
+ * `/일정 참여확인` 에페메랄용 **연속 두 달** 캘린더 PNG.
+ * `year`·`monthIndex`는 봇 로컬 이번 달; 다음 달 격자까지 같은 이미지에 포함합니다.
  */
 export async function buildParticipationMonthCalendarBuffer(
   items: Array<{ session: Session }>,
@@ -156,11 +169,16 @@ export async function buildParticipationMonthCalendarBuffer(
 ): Promise<Buffer | null> {
   if (!isResultCardImageEnabled()) return null;
 
+  const n = nextCalendarMonth(year, monthIndex);
   const marks: CalendarSessionMark[] = [];
   for (const { session: s } of items) {
     if (!s._id) continue;
     const t = s.targetDateTime;
-    if (t.getFullYear() !== year || t.getMonth() !== monthIndex) continue;
+    const ty = t.getFullYear();
+    const tm = t.getMonth();
+    const inFirst = ty === year && tm === monthIndex;
+    const inSecond = ty === n.y && tm === n.m;
+    if (!inFirst && !inSecond) continue;
     if (s.status !== "OPEN" && s.status !== "CLOSED" && s.status !== "CANCELED")
       continue;
     marks.push({
@@ -173,10 +191,9 @@ export async function buildParticipationMonthCalendarBuffer(
 
   if (marks.length === 0) return null;
 
-  const anchorAt = new Date(year, monthIndex, 1);
-  return renderGuildMonthCalendarPng({
-    anchorAt,
+  return renderParticipationTwoMonthCalendarPng({
+    anchorFirst: new Date(year, monthIndex, 1),
+    anchorSecond: new Date(n.y, n.m, 1),
     calendarMarks: marks,
-    calendarVariant: "participation",
   });
 }

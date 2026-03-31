@@ -1,7 +1,7 @@
 /**
  * /일정 생성 슬래시 커맨드 핸들러 (서버 관리 권한)
  *
- * 세션 생성, DB 저장, 공지 메시지 전송, 참석/불참/미정 버튼 렌더링을 담당합니다.
+ * 등록 일정 생성, 공지, 가용/불가 버튼을 담당합니다.
  * @module commands/session-create
  */
 
@@ -12,6 +12,8 @@ import {
   ButtonStyle,
   MessageFlags,
 } from "discord.js";
+import { ATTEND_BUTTON_PREFIX } from "../constants/registrar.js";
+import { D, L } from "../constants/registrar-voice.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
 import { requireManageGuild } from "../utils/require-manage-guild.js";
 import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
@@ -22,8 +24,7 @@ import {
 } from "../db/sessions.js";
 import { appendSessionLog } from "../db/logs.js";
 import { buildSessionEmbed } from "../utils/embed.js";
-/** 버튼 customId 접두사 (trpg:attend:{sessionId}:yes|no|maybe) */
-const BUTTON_PREFIX = "trpg:attend:";
+const BUTTON_PREFIX = ATTEND_BUTTON_PREFIX;
 
 /**
  * 날짜 문자열을 Date로 파싱합니다.
@@ -65,11 +66,7 @@ async function rollbackCreatedSession(
     try {
       await announcement.delete();
     } catch (err) {
-      console.error(
-        "[session create] 롤백 중 공지 메시지 삭제 실패:",
-        announcement.id,
-        err
-      );
+      console.error(L.sessionCreateRollbackDel, announcement.id, err);
     }
   }
 
@@ -78,13 +75,10 @@ async function rollbackCreatedSession(
   try {
     const deleted = await deleteSessionById(sessionId);
     if (!deleted) {
-      console.warn(
-        "[session create] 롤백 대상 세션을 찾지 못했습니다:",
-        sessionId
-      );
+      console.warn(L.sessionCreateRollbackMiss, sessionId);
     }
   } catch (err) {
-    console.error("[session create] 롤백 중 세션 삭제 실패:", sessionId, err);
+    console.error(L.sessionCreateRollbackDb, sessionId, err);
   }
 }
 
@@ -97,7 +91,7 @@ export async function handleSessionCreate(
 ): Promise<void> {
   if (!requireManageGuild(interaction)) {
     await interaction.reply({
-      content: "❌ 이 명령은 **서버 관리** 권한이 있는 사용자만 사용할 수 있습니다.",
+      content: D.permManage,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -116,14 +110,14 @@ export async function handleSessionCreate(
 
   if (!targetDateTime || !closeDateTime) {
     await interaction.editReply({
-      content: "❌ 날짜 형식이 올바르지 않습니다. (예: 2026-03-22 20:00)",
+      content: D.dateBad,
     });
     return;
   }
 
   if (closeDateTime >= targetDateTime) {
     await interaction.editReply({
-      content: "❌ 응답 마감일시는 세션 일시보다 이전이어야 합니다.",
+      content: D.closeNotBeforeTarget,
     });
     return;
   }
@@ -147,12 +141,7 @@ export async function handleSessionCreate(
           `${nowDate.getFullYear()}년이면 \`${closeDateTime.getFullYear()}\`년 날짜는 이미 지난 해입니다.`
         : "";
     await interaction.editReply({
-      content:
-        "❌ **응답 마감 일시가 이미 지났습니다.** 봇이 세션을 바로 마감해 버립니다.\n" +
-        `· 입력한 마감을 **이렇게 해석**했습니다: **${interpretedClose}** (봇이 돌아가는 PC·서버의 **로컬 타임존** 기준)\n` +
-        "· **24시간 형식**을 권장합니다. 예: 오후 3시 50분 → `2026-03-18 15:50` (❌ `03:50`은 **새벽** 3시 50분입니다)\n" +
-        "· 마감은 **지금 이후**여야 합니다." +
-        yearHint,
+      content: D.pastCloseBlock(interpretedClose, yearHint),
     });
     return;
   }
@@ -160,12 +149,10 @@ export async function handleSessionCreate(
   if (targetDateTime.getTime() <= now) {
     const yearHint =
       targetDateTime.getFullYear() < nowDate.getFullYear()
-        ? `\n· **연도** 확인: 세션 일시를 \`${interpretedSession}\`로 읽었는데, 올해는 **${nowDate.getFullYear()}년**입니다.`
-        : `\n· 세션 일시를 \`${interpretedSession}\`로 읽었습니다.`;
+        ? `\n· **연도** 확인: 배정 일시를 \`${interpretedSession}\`로 읽었는데, 올해는 **${nowDate.getFullYear()}년**입니다.`
+        : `\n· 배정 일시를 \`${interpretedSession}\`로 읽었습니다.`;
     await interaction.editReply({
-      content:
-        "❌ 세션 일시는 **현재보다 이후**여야 합니다. (이미 지난 일정은 등록할 수 없습니다.)" +
-        yearHint,
+      content: D.targetPast(yearHint),
     });
     return;
   }
@@ -173,8 +160,7 @@ export async function handleSessionCreate(
   const targetRoleId = extractRoleId(roleOption);
   if (!targetRoleId) {
     await interaction.editReply({
-      content:
-        "❌ 참여 대상 역할을 올바르게 지정해 주세요. (역할 ID 또는 @역할멘션)\n@here, @everyone은 사용할 수 없습니다.",
+      content: D.roleBad,
     });
     return;
   }
@@ -182,7 +168,7 @@ export async function handleSessionCreate(
   const guild = interaction.guild;
   if (!guild) {
     await interaction.editReply({
-      content: "❌ 길드에서만 사용할 수 있습니다.",
+      content: D.guildOnly,
     });
     return;
   }
@@ -210,7 +196,7 @@ export async function handleSessionCreate(
     | null = null;
 
   try {
-    // DB에 세션 저장 (messageId는 공지 전송 후 업데이트)
+    // DB에 등록 일정 저장 (messageId는 공지 전송 후 업데이트)
     sessionId = await createSession({
       guildId: interaction.guildId!,
       channelId,
@@ -225,15 +211,14 @@ export async function handleSessionCreate(
       updatedAt: new Date(),
     });
 
-    // 참석/불참 버튼 2개
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId(`${BUTTON_PREFIX}${sessionId}:yes`)
-        .setLabel("참석")
+        .setLabel("가용")
         .setStyle(ButtonStyle.Success),
       new ButtonBuilder()
         .setCustomId(`${BUTTON_PREFIX}${sessionId}:no`)
-        .setLabel("불참")
+        .setLabel("불가")
         .setStyle(ButtonStyle.Danger)
     );
 
@@ -268,7 +253,7 @@ export async function handleSessionCreate(
       announcementMessage.id
     );
     if (!messageIdUpdated) {
-      throw new Error("세션 공지 messageId 저장에 실패했습니다.");
+      throw new Error(D.createRollbackFail);
     }
 
     await appendSessionLog(sessionId, "CREATED", {
@@ -277,28 +262,28 @@ export async function handleSessionCreate(
     });
   } catch (err) {
     await rollbackCreatedSession(sessionId, announcementMessage);
-    console.error("[session create]", err);
+    console.error(L.sessionCreate, err);
     const missingAccess =
       typeof err === "object" &&
       err !== null &&
       "code" in err &&
       (err as { code: unknown }).code === 50001;
     const content = missingAccess
-      ? "❌ 봇이 **공지 채널**에 메시지를 보낼 수 없습니다. (Discord `Missing Access`)\n" +
-        "· 채널·카테고리 권한에서 봇 역할에 **채널 보기**, **메시지 보내기**, **링크 임베드**를 허용했는지 확인하세요.\n" +
-        "· **스레드**면 **스레드에서 메시지 보내기**가 필요하고, 비공개 스레드는 봇을 스레드에 **초대**해야 할 수 있습니다."
-      : `❌ 세션 생성 중 오류가 발생했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`;
+      ? D.createMissingAccess
+      : D.createErr(
+          err instanceof Error ? err.message : "원인 미상"
+        );
     await interaction.editReply({ content });
     return;
   }
 
   await interaction.editReply({
-    content: [
-      `✅ 세션이 생성되었습니다. [공지 메시지](${announcementMessage.url})`,
-      "",
-      `공지 임베드에도 **세션 ID**가 표시됩니다. (복사: \`${sessionId}\`)`,
-      `일정 변경: **\`/${SCHEDULE_ROOT} ${Sub.editDate}\`**(세션 일시), **\`/${SCHEDULE_ROOT} ${Sub.editClose}\`**(응답 마감)`,
-      `_\`${Opt.sessionId}\`를 비우면 서버 기준 가장 최근 진행 중 세션이 자동 선택됩니다._`,
-    ].join("\n"),
+    content: D.createDone(
+      announcementMessage.url,
+      sessionId!,
+      `/${SCHEDULE_ROOT} ${Sub.editDate}`,
+      `/${SCHEDULE_ROOT} ${Sub.editClose}`,
+      Opt.registrationId
+    ),
   });
 }

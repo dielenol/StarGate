@@ -1,11 +1,12 @@
 /**
  * 마감 스케줄러
  *
- * closeDateTime이 지난 OPEN 세션을 주기적으로 검사하여 마감 처리합니다.
+ * closeDateTime이 지난 OPEN 등록 일정을 주기적으로 검사하여 마감 처리합니다.
  * @module scheduler/close-checker
  */
 
 import type { Client } from "discord.js";
+import { L } from "../constants/registrar-voice.js";
 import { findOpenSessionsPastClose } from "../db/sessions.js";
 import { executeSessionClose } from "../services/session-close.js";
 import type { Session } from "../types/session.js";
@@ -32,21 +33,17 @@ async function processOneWithRetry(
         kind: "scheduled",
       });
       if (result.transitioned && result.warnings.length > 0) {
-        console.warn(
-          "[close-checker] 세션 마감은 완료됐지만 후속 처리 경고가 있습니다:",
-          session._id,
-          result.warnings
-        );
+        console.warn(L.closeWarn, session._id, result.warnings);
       }
       return;
     } catch (err) {
       if (isRateLimitError(err)) {
         const waitMs = Math.ceil((err.data?.retry_after ?? 30) * 1000) + 750;
         console.warn(
-          `[close-checker] rate limit, ${(waitMs / 1000).toFixed(1)}초 후 재시도 (${attempt}/${MAX_CLOSE_ATTEMPTS})`
+          L.closeRateWait(waitMs / 1000, attempt, MAX_CLOSE_ATTEMPTS)
         );
         if (attempt === MAX_CLOSE_ATTEMPTS) {
-          console.error("[close-checker] 마감 재시도 한도 초과:", session._id);
+          console.error(L.closeRetryExhausted, session._id);
           throw err;
         }
         await new Promise((r) => setTimeout(r, waitMs));
@@ -68,11 +65,11 @@ export function startCloseChecker(client: Client): void {
         try {
           await processOneWithRetry(client, session);
         } catch (err) {
-          console.error("[close-checker] 세션 마감 실패:", session._id, err);
+          console.error(L.closeFail, session._id, err);
         }
       }
     } catch (err) {
-      console.error("[close-checker] 마감 처리 오류:", err);
+      console.error(L.closeTick, err);
     }
   }, CHECK_INTERVAL_MS);
 }

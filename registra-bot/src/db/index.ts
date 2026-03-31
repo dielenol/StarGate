@@ -5,11 +5,12 @@
  * @module db/index
  */
 
+import { config } from "../config.js";
 import { getClient } from "./client.js";
 import type { Session, SessionResponse } from "../types/session.js";
 import type { SessionLog } from "../types/session-log.js";
 
-const DB_NAME = "trpg_bot";
+const DB_NAME = config.mongoDbName;
 const SESSIONS_COLLECTION = "sessions";
 const RESPONSES_COLLECTION = "session_responses";
 const SESSION_LOGS_COLLECTION = "session_logs";

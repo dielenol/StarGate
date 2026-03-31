@@ -1041,7 +1041,7 @@ export async function handleSessionParticipationCheck(
     const ms = msUntilNextParticipationImage(cooldownKey);
     const mins = Math.max(1, Math.ceil(ms / 60_000));
     footerBits.push(
-      `이번 달 캘린더 PNG는 약 ${mins}분 후 다시 첨부됩니다 (그전엔 글 목록만)`
+      `이번·다음 달 캘린더 PNG는 약 ${mins}분 후 다시 첨부됩니다 (그전엔 글 목록만)`
     );
   }
 
@@ -1056,7 +1056,7 @@ export async function handleSessionParticipationCheck(
 
     if (!hasParticipationCalendarMarksInMonth(items, calYear, calMonth)) {
       footerBits.push(
-        "이번 달에 표시할 응답 일정이 없어 캘린더 PNG를 생략했습니다"
+        "캘린더 PNG는 봇 기준 **이번 달·다음 달** 세션 일시가 있는 항목만 그립니다. 위 목록은 전 기간이라 두 달 모두에 해당이 없으면 생략됩니다"
       );
       embed.setFooter({
         text:
@@ -1075,8 +1075,15 @@ export async function handleSessionParticipationCheck(
         markParticipationImageIssued(cooldownKey);
         const cdMs = getParticipationImageCooldownMs();
         const extraFooter: string[] = [];
+        const nextCal = new Date(calYear, calMonth + 1, 1);
+        const y2 = nextCal.getFullYear();
+        const m2 = nextCal.getMonth();
+        const calRange =
+          calYear === y2
+            ? `${calYear}년 ${calMonth + 1}~${m2 + 1}월`
+            : `${calYear}년 ${calMonth + 1}월 ~ ${y2}년 ${m2 + 1}월`;
         extraFooter.push(
-          `캘린더: ${calYear}년 ${calMonth + 1}월(봇 타임존) · 목록은 전 기간 최대 ${PARTICIPATION_CHECK_MAX_ITEMS}건`
+          `캘린더: ${calRange}(봇 타임존) · 목록은 전 기간 최대 ${PARTICIPATION_CHECK_MAX_ITEMS}건`
         );
         if (cdMs > 0) {
           extraFooter.push(

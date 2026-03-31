@@ -10,13 +10,14 @@ import {
   MongoServerError,
   type MongoClientOptions,
 } from "mongodb";
+import { DbErr } from "../constants/registrar-voice.js";
 import { config } from "../config.js";
 
 /** MongoDB 클라이언트 싱글톤 인스턴스 */
 let client: MongoClient | null = null;
 let connectPromise: Promise<void> | null = null;
 
-const DB_NAME = "trpg_bot";
+const DB_NAME = config.mongoDbName;
 const SESSIONS_COLLECTION = "sessions";
 const RESPONSES_COLLECTION = "session_responses";
 const SESSION_LOGS_COLLECTION = "session_logs";
@@ -87,9 +88,7 @@ export async function connectDb(): Promise<void> {
     } catch (err) {
       await mongoClient.close().catch(() => {});
       if (err instanceof MongoServerError && err.code === 11000) {
-        throw new Error(
-          "MongoDB 인덱스 초기화에 실패했습니다. `session_responses`에 중복된 `(sessionId, userId)` 데이터가 없는지 확인하세요."
-        );
+        throw new Error(DbErr.indexDup);
       }
       throw err;
     } finally {
@@ -119,7 +118,7 @@ export async function closeDb(): Promise<void> {
  */
 export function getClient(): MongoClient {
   if (!client) {
-    throw new Error("DB가 연결되지 않았습니다. connectDb()를 먼저 호출하세요.");
+    throw new Error(DbErr.notConnected);
   }
   return client;
 }

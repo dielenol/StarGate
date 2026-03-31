@@ -1,5 +1,5 @@
 /**
- * `/일정 참여확인` 에페메랄 PNG 쿨다운 (메모리, 프로세스 단위)
+ * `/일정 참여확인`(가용 목록) 에페메랄 PNG 쿨다운 (메모리, 프로세스 단위)
  *
  * @module utils/participation-image-cooldown
  */

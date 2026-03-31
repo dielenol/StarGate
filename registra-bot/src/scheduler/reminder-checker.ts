@@ -1,12 +1,12 @@
 /**
- * 세션 시작 리마인드 스케줄러
+ * 배정 일시 24시간 전 리마인드 (가용 YES 응답자만, 15분 폴링)
  *
- * 세션 시작까지 24시간 이내인 세션에 대해, **참석(YES)으로 응답한 사용자**에게만 멘션 알림을 보냅니다 (15분 폴링).
  * @module scheduler/reminder-checker
  */
 
 import type { Client } from "discord.js";
 import { EmbedBuilder } from "discord.js";
+import { L, Remind } from "../constants/registrar-voice.js";
 import {
   findSessionsForStartReminder,
   setSessionReminderFlags,
@@ -17,7 +17,7 @@ import type { Session } from "../types/session.js";
 
 /**
  * 리마인드 폴링 주기.
- * 발송 조건이 "세션 시작 24시간 이내"라 1분 단위는 불필요하며, 세션 수가 많을수록 DB·프로세스 부하만 커짐.
+ * 발송 조건이 "배정 24시간 이내"라 1분 단위는 불필요하며, 일정 건수가 많을수록 DB·프로세스 부하만 커짐.
  */
 const CHECK_INTERVAL_MS = 15 * 60 * 1000;
 /** close-checker(1분 틱)과 첫 실행 시각이 겹치지 않게 */
@@ -37,17 +37,17 @@ async function sendSessionStartReminder(
 
   const startTs = Math.floor(session.targetDateTime.getTime() / 1000);
   const embed = new EmbedBuilder()
-    .setTitle("⏰ 세션 시작 24시간 전 (참석자 안내)")
+    .setTitle(Remind.title)
     .setColor(EMBED_COLOR)
     .setDescription(
       [
-        `**${session.title}**`,
-        `세션 일시: <t:${startTs}:F>`,
+        Remind.lineTitle(session.title),
+        Remind.lineWhen(String(startTs)),
         "",
-        `참석으로 응답하신 분께 알려드립니다: ${mentionLine}`,
+        Remind.lineMentions(mentionLine),
       ].join("\n")
     )
-    .setFooter({ text: "일정에 변경이 있으면 진행자에게 문의해 주세요." });
+    .setFooter({ text: Remind.footer });
 
   await channel.send({ embeds: [embed] });
 
@@ -83,7 +83,7 @@ async function runReminderTick(client: Client): Promise<void> {
     try {
       await processSessionReminder(client, session);
     } catch (err) {
-      console.error("[reminder-checker] 세션 처리 오류:", session._id, err);
+      console.error(L.remindRow, session._id, err);
     }
   }
 }
@@ -94,7 +94,7 @@ async function runReminderTick(client: Client): Promise<void> {
 export function startReminderChecker(client: Client): void {
   const tick = () => {
     void runReminderTick(client).catch((err) => {
-      console.error("[reminder-checker] 틱 오류:", err);
+      console.error(L.remindTick, err);
     });
   };
 

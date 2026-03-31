@@ -24,7 +24,8 @@ export const Opt = {
   closeTime: "응답마감",
   role: "역할",
   channel: "채널",
-  sessionId: "세션아이디",
+  /** 슬래시 옵션 API 이름: 등록 ID(문서 _id) */
+  registrationId: "등록아이디",
   withImage: "이미지포함",
   newClose: "새응답마감",
   newDate: "새일시",

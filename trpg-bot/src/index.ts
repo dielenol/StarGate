@@ -64,9 +64,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
   await handleSessionCreateAutocomplete(interaction);
 });
 
-/** 슬래시 커맨드 실행 시: /일정 … 처리 */
+/** 슬래시 커맨드 실행 시: /일정 … 및 단독 /참여확인 */
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === Sub.participationCheck) {
+    await handleSessionParticipationCheck(interaction);
+    return;
+  }
 
   if (interaction.commandName !== SCHEDULE_ROOT) return;
 
