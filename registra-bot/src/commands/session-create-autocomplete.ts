@@ -103,9 +103,70 @@ function addIfFuture(
   });
 }
 
+/** 봇 호스트 로컬: `d`가 속한 주의 월요일 00:00 (한국식 달력 주) */
+function mondayStartOfLocalWeek(d: Date): Date {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = x.getDay();
+  const delta = day === 0 ? -6 : 1 - day;
+  x.setDate(x.getDate() + delta);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+/** 일요일 배정 일시: 오후 8시반 / 9시 / 9시반 */
+const SUNDAY_SESSION_TIMES: readonly {
+  hour: number;
+  minute: number;
+  label: string;
+}[] = [
+  { hour: 20, minute: 30, label: "오후 8시반" },
+  { hour: 21, minute: 0, label: "오후 9시" },
+  { hour: 21, minute: 30, label: "오후 9시반" },
+];
+
+function buildSundaySessionDateSuggestions(now: Date): { label: string; d: Date }[] {
+  const mon = mondayStartOfLocalWeek(now);
+  const thisSunMidnight = new Date(mon);
+  thisSunMidnight.setDate(mon.getDate() + 6);
+  thisSunMidnight.setHours(0, 0, 0, 0);
+  const nextSunMidnight = new Date(thisSunMidnight);
+  nextSunMidnight.setDate(thisSunMidnight.getDate() + 7);
+
+  const out: { label: string; d: Date }[] = [];
+  for (const { base, weekLabel } of [
+    { base: thisSunMidnight, weekLabel: "이번 주 일요일" },
+    { base: nextSunMidnight, weekLabel: "다음 주 일요일" },
+  ] as const) {
+    for (const t of SUNDAY_SESSION_TIMES) {
+      const d = new Date(
+        base.getFullYear(),
+        base.getMonth(),
+        base.getDate(),
+        t.hour,
+        t.minute,
+        0,
+        0
+      );
+      out.push({
+        label: `${weekLabel} ${t.label}`,
+        d,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * `/일정 생성`·`일정변경`의 배정 일시 자동완성.
+ * **월요일 시작 주** 기준 이번·다음 주 일요일 × (20:30, 21:00, 21:30), 과거는 제외.
+ */
 function buildDateChoices(q: string): ApplicationCommandOptionChoiceData<string>[] {
   const now = new Date();
   const out: { name: string; value: string }[] = [];
+
+  for (const { label, d } of buildSundaySessionDateSuggestions(now)) {
+    addIfFuture(out, label, d, now, null);
+  }
 
   const addDaysAt = (days: number, hour: number, minute: number, label: string) => {
     const d = new Date(now);
@@ -114,10 +175,9 @@ function buildDateChoices(q: string): ApplicationCommandOptionChoiceData<string>
     addIfFuture(out, label, d, now, null);
   };
 
-  addDaysAt(1, 20, 0, "내일 저녁 8시");
-  addDaysAt(2, 20, 0, "이틀 뒤 저녁 8시");
-  addDaysAt(7, 20, 0, "일주일 뒤 저녁 8시");
-  addDaysAt(14, 20, 0, "2주 뒤 저녁 8시");
+  if (out.length === 0) {
+    addDaysAt(1, 20, 30, "내일 오후 8시반(평일 보정)");
+  }
 
   const ql = q.trim().toLowerCase();
   const filtered = ql
@@ -140,6 +200,28 @@ function buildDateChoices(q: string): ApplicationCommandOptionChoiceData<string>
   return filtered.slice(0, 25).map(clampChoice);
 }
 
+function buildSaturdayTenPmCloseSuggestions(now: Date): { label: string; d: Date }[] {
+  const mon = mondayStartOfLocalWeek(now);
+  const thisSat = new Date(mon);
+  thisSat.setDate(mon.getDate() + 5);
+  thisSat.setHours(22, 0, 0, 0);
+  const nextSat = new Date(thisSat);
+  nextSat.setDate(thisSat.getDate() + 7);
+  return [
+    {
+      label: "이번 주 토요일 저녁 10시 (배정 전날)",
+      d: thisSat,
+    },
+    {
+      label: "다음 주 토요일 저녁 10시 (배정 전날)",
+      d: nextSat,
+    },
+  ];
+}
+
+/**
+ * 응답 마감 자동완성: 이번·다음 주 **토요일 22:00**(일요일 배정 전날). 배정 일시보다 앞서야 하면 `sessionDate`로 걸러짐.
+ */
 function buildCloseChoices(
   q: string,
   sessionDate: Date | null
@@ -156,15 +238,17 @@ function buildCloseChoices(
     addIfFuture(out, label, d, now, end);
   };
 
-  const today2359 = new Date(now);
-  today2359.setHours(23, 59, 0, 0);
-  addIfFuture(out, "오늘 밤 23:59", today2359, now, end);
+  for (const { label, d } of buildSaturdayTenPmCloseSuggestions(now)) {
+    addIfFuture(out, label, d, now, end);
+  }
 
-  addDaysAt(1, 23, 59, "내일 밤 23:59");
-  addDaysAt(1, 18, 0, "내일 오후 6시");
-  addDaysAt(2, 20, 0, "이틀 뒤 저녁 8시");
-  addDaysAt(3, 12, 0, "3일 뒤 정오");
-  addDaysAt(0, 18, 0, "오늘 오후 6시 (가능할 때만)");
+  if (out.length === 0) {
+    addDaysAt(1, 22, 0, "내일 저녁 10시");
+    addDaysAt(2, 22, 0, "이틀 뒤 저녁 10시");
+    const today2359 = new Date(now);
+    today2359.setHours(23, 59, 0, 0);
+    addIfFuture(out, "오늘 밤 23:59", today2359, now, end);
+  }
 
   const ql = q.trim().toLowerCase();
   let filtered = ql
