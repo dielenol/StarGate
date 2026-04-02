@@ -49,7 +49,10 @@ import { ATTEND_BUTTON_PREFIX } from "../constants/registrar.js";
 import { D, L } from "../constants/registrar-voice.js";
 import { resolveParticipationCodename } from "../constants/participation-codename.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
-import { requireManageGuild } from "../utils/require-manage-guild.js";
+import {
+  deferReplyAndRequireManageGuild,
+  hasManageGuildAfterDeferred,
+} from "../utils/require-manage-guild.js";
 import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
 import {
   canIssueParticipationImage,
@@ -87,24 +90,8 @@ const RESULT_MULTI_OPEN_PREVIEW = 8;
 export async function handleSessionList(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
-  if (!requireManageGuild(interaction)) {
-    await interaction.reply({
-      content: D.permManage,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  const guildId = interaction.guildId;
-  if (!guildId) {
-    await interaction.reply({
-      content: D.guildOnly,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  if (!(await deferReplyAndRequireManageGuild(interaction))) return;
+  const guildId = interaction.guildId!;
 
   const sessions = await findOpenSessionsByGuild(guildId);
 
@@ -237,24 +224,8 @@ async function resolveSessionForResult(
 export async function handleSessionOverview(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
-  if (!requireManageGuild(interaction)) {
-    await interaction.reply({
-      content: D.permManage,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  const guildId = interaction.guildId;
-  if (!guildId) {
-    await interaction.reply({
-      content: D.guildOnly,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  if (!(await deferReplyAndRequireManageGuild(interaction))) return;
+  const guildId = interaction.guildId!;
 
   const raw = await findOpenAndClosedSessionsByGuildOrderByTarget(
     guildId,
@@ -383,29 +354,22 @@ export async function handleSessionOverview(
 export async function handleSessionMonthCalendar(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
-  if (!requireManageGuild(interaction)) {
-    await interaction.reply({
-      content: D.permManage,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
+  if (!(await deferReplyAndRequireManageGuild(interaction))) return;
 
-  const guildId = interaction.guildId;
-  const guild = interaction.guild;
-  if (!guildId || !guild) {
-    await interaction.reply({
-      content: D.guildOnly,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
+  const guildId = interaction.guildId!;
+  let guild = interaction.guild;
+  if (!guild) {
+    try {
+      guild = await interaction.client.guilds.fetch(guildId);
+    } catch {
+      await interaction.editReply({ content: D.guildOnly });
+      return;
+    }
   }
 
   const month = interaction.options.getInteger(Opt.month, true);
   const year = new Date().getFullYear();
   const monthIndex = month - 1;
-
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const resolvedCh = await resolveGuildTextSendChannel(
     guild,
@@ -468,25 +432,18 @@ export async function handleSessionMonthCalendar(
 export async function handleSessionResult(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
-  if (!requireManageGuild(interaction)) {
-    await interaction.reply({
-      content: D.permManage,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
+  if (!(await deferReplyAndRequireManageGuild(interaction))) return;
 
-  const guildId = interaction.guildId;
-  const guildBase = interaction.guild;
-  if (!guildId || !guildBase) {
-    await interaction.reply({
-      content: D.guildOnly,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
+  const guildId = interaction.guildId!;
+  let guildBase = interaction.guild;
+  if (!guildBase) {
+    try {
+      guildBase = await interaction.client.guilds.fetch(guildId);
+    } catch {
+      await interaction.editReply({ content: D.guildOnly });
+      return;
+    }
   }
-
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const sessionIdOpt = interaction.options.getString(Opt.registrationId);
   const withImage = interaction.options.getBoolean(Opt.withImage) === true;
@@ -693,24 +650,8 @@ export async function handleSessionResult(
 export async function handleSessionClose(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
-  if (!requireManageGuild(interaction)) {
-    await interaction.reply({
-      content: D.permManage,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  const guildId = interaction.guildId;
-  if (!guildId) {
-    await interaction.reply({
-      content: D.guildOnly,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  if (!(await deferReplyAndRequireManageGuild(interaction))) return;
+  const guildId = interaction.guildId!;
 
   const sessionIdOpt = interaction.options.getString(Opt.registrationId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
@@ -763,16 +704,7 @@ export async function handleSessionClose(
 export async function handleSessionEditClose(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
-  if (!requireManageGuild(interaction)) {
-    await interaction.reply({
-      content: D.permManage,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  const guildId = interaction.guildId;
-  if (!guildId) {
+  if (!interaction.guildId) {
     await interaction.reply({
       content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
@@ -780,17 +712,21 @@ export async function handleSessionEditClose(
     return;
   }
 
-  const newCloseStr = interaction.options.getString(Opt.newClose, true);
-  const newClose = parseDateTime(newCloseStr);
-  if (!newClose) {
-    await interaction.reply({
-      content: D.editCloseDateBad(Opt.newClose),
-      flags: MessageFlags.Ephemeral,
-    });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  if (!(await hasManageGuildAfterDeferred(interaction))) {
+    await interaction.editReply({ content: D.permManage });
     return;
   }
 
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  const guildId = interaction.guildId;
+  const newCloseStr = interaction.options.getString(Opt.newClose, true);
+  const newClose = parseDateTime(newCloseStr);
+  if (!newClose) {
+    await interaction.editReply({
+      content: D.editCloseDateBad(Opt.newClose),
+    });
+    return;
+  }
 
   const sessionIdOpt = interaction.options.getString(Opt.registrationId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
@@ -866,16 +802,7 @@ function autoCloseBeforeSession(sessionStart: Date): Date {
 export async function handleSessionEditDate(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
-  if (!requireManageGuild(interaction)) {
-    await interaction.reply({
-      content: D.permManage,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  const guildId = interaction.guildId;
-  if (!guildId) {
+  if (!interaction.guildId) {
     await interaction.reply({
       content: D.guildOnly,
       flags: MessageFlags.Ephemeral,
@@ -883,17 +810,21 @@ export async function handleSessionEditDate(
     return;
   }
 
-  const newDateStr = interaction.options.getString(Opt.newDate, true);
-  const newDate = parseDateTime(newDateStr);
-  if (!newDate) {
-    await interaction.reply({
-      content: D.editDateBad(Opt.newDate),
-      flags: MessageFlags.Ephemeral,
-    });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  if (!(await hasManageGuildAfterDeferred(interaction))) {
+    await interaction.editReply({ content: D.permManage });
     return;
   }
 
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  const guildId = interaction.guildId;
+  const newDateStr = interaction.options.getString(Opt.newDate, true);
+  const newDate = parseDateTime(newDateStr);
+  if (!newDate) {
+    await interaction.editReply({
+      content: D.editDateBad(Opt.newDate),
+    });
+    return;
+  }
 
   const sessionIdOpt = interaction.options.getString(Opt.registrationId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);
@@ -1160,24 +1091,8 @@ export async function handleSessionParticipationCheck(
 export async function handleSessionCancel(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
-  if (!requireManageGuild(interaction)) {
-    await interaction.reply({
-      content: D.permManage,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  const guildId = interaction.guildId;
-  if (!guildId) {
-    await interaction.reply({
-      content: D.guildOnly,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  if (!(await deferReplyAndRequireManageGuild(interaction))) return;
+  const guildId = interaction.guildId!;
 
   const sessionIdOpt = interaction.options.getString(Opt.registrationId);
   const session = await resolveOpenSession(guildId, sessionIdOpt);

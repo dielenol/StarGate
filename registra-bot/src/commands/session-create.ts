@@ -15,7 +15,7 @@ import {
 import { ATTEND_BUTTON_PREFIX } from "../constants/registrar.js";
 import { D, L } from "../constants/registrar-voice.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
-import { requireManageGuild } from "../utils/require-manage-guild.js";
+import { deferReplyAndRequireManageGuild } from "../utils/require-manage-guild.js";
 import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
 import { safeTitleForAnnouncePing } from "../utils/safe-announce-title.js";
 import {
@@ -90,15 +90,7 @@ async function rollbackCreatedSession(
 export async function handleSessionCreate(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
-  if (!requireManageGuild(interaction)) {
-    await interaction.reply({
-      content: D.permManage,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  if (!(await deferReplyAndRequireManageGuild(interaction))) return;
 
   const title = interaction.options.getString(Opt.title, true);
   const dateStr = interaction.options.getString(Opt.date, true);
