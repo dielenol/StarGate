@@ -7,8 +7,14 @@
 
 import type { Client } from "discord.js";
 import { L } from "../constants/registrar-voice.js";
-import { findOpenSessionsPastClose } from "../db/sessions.js";
-import { executeSessionClose } from "../services/session-close.js";
+import {
+  findOpenSessionsPastClose,
+  findSessionsPendingFinalization,
+} from "../db/sessions.js";
+import {
+  executeSessionCancel,
+  executeSessionClose,
+} from "../services/session-close.js";
 import type { Session } from "../types/session.js";
 
 /** 마감 체크 주기 (밀리초, 1분) */
@@ -29,9 +35,17 @@ async function processOneWithRetry(
 ): Promise<void> {
   for (let attempt = 1; attempt <= MAX_CLOSE_ATTEMPTS; attempt++) {
     try {
-      const result = await executeSessionClose(client, session, {
-        kind: "scheduled",
-      });
+      const result =
+        session.status === "CANCELING" || session.finalizationKind === "CANCEL"
+          ? await executeSessionCancel(
+              client,
+              session,
+              session.finalizationRequestedBy ?? "system"
+            )
+          : await executeSessionClose(client, session, {
+              kind: "scheduled",
+              actorUserId: session.finalizationRequestedBy,
+            });
       if (result.transitioned && result.warnings.length > 0) {
         console.warn(L.closeWarn, session._id, result.warnings);
       }
@@ -60,8 +74,11 @@ async function processOneWithRetry(
 export function startCloseChecker(client: Client): void {
   setInterval(async () => {
     try {
-      const sessions = await findOpenSessionsPastClose();
-      for (const session of sessions) {
+      const [sessions, pending] = await Promise.all([
+        findOpenSessionsPastClose(),
+        findSessionsPendingFinalization(),
+      ]);
+      for (const session of [...sessions, ...pending]) {
         try {
           await processOneWithRetry(client, session);
         } catch (err) {

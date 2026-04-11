@@ -31,7 +31,7 @@ export type BuildSessionResultCardOptions = {
 };
 
 /**
- * 동일 길드·조회 중 등록 일정 `targetDateTime`이 속한 달의 OPEN/CLOSED를 캘린더에 표시하고,
+ * 동일 길드·조회 중 등록 일정 `targetDateTime`이 속한 달의 OPEN/CLOSING/CANCELING/CLOSED/CANCELED를 캘린더에 표시하고,
  * 조회 중 일정의 집계 명단을 포함한 PNG를 반환합니다.
  */
 export async function buildSessionResultCardBuffer(
@@ -50,7 +50,15 @@ export async function buildSessionResultCardBuffer(
 
   for (const s of peers) {
     if (!s._id) continue;
-    if (s.status !== "OPEN" && s.status !== "CLOSED") continue;
+    if (
+      s.status !== "OPEN" &&
+      s.status !== "CLOSING" &&
+      s.status !== "CANCELING" &&
+      s.status !== "CLOSED" &&
+      s.status !== "CANCELED"
+    ) {
+      continue;
+    }
     const id = String(s._id);
     byId.set(id, {
       at: s.targetDateTime,
@@ -62,7 +70,13 @@ export async function buildSessionResultCardBuffer(
 
   if (!byId.has(primaryId)) {
     const st = opts.session.status;
-    if (st === "OPEN" || st === "CLOSED") {
+    if (
+      st === "OPEN" ||
+      st === "CLOSING" ||
+      st === "CANCELING" ||
+      st === "CLOSED" ||
+      st === "CANCELED"
+    ) {
       byId.set(primaryId, {
         at: opts.session.targetDateTime,
         title: opts.session.title,
@@ -100,7 +114,7 @@ export async function buildSessionResultCardBuffer(
 }
 
 /**
- * 길드·연·월의 OPEN/CLOSED 등록 일정만 모아 캘린더 격자 PNG만 생성합니다.
+ * 길드·연·월의 OPEN/CLOSING/CANCELING/CLOSED/CANCELED 등록 일정만 모아 캘린더 격자 PNG만 생성합니다.
  */
 export async function buildGuildMonthCalendarOnlyBuffer(
   guildId: string,
@@ -113,7 +127,15 @@ export async function buildGuildMonthCalendarOnlyBuffer(
   const marks: CalendarSessionMark[] = [];
   for (const s of peers) {
     if (!s._id) continue;
-    if (s.status !== "OPEN" && s.status !== "CLOSED") continue;
+    if (
+      s.status !== "OPEN" &&
+      s.status !== "CLOSING" &&
+      s.status !== "CANCELING" &&
+      s.status !== "CLOSED" &&
+      s.status !== "CANCELED"
+    ) {
+      continue;
+    }
     marks.push({
       at: s.targetDateTime,
       title: s.title,
@@ -151,8 +173,15 @@ export function hasParticipationCalendarMarksInMonth(
     const inFirst = ty === year && tm === monthIndex;
     const inSecond = ty === n.y && tm === n.m;
     if (!inFirst && !inSecond) continue;
-    if (s.status !== "OPEN" && s.status !== "CLOSED" && s.status !== "CANCELED")
+    if (
+      s.status !== "OPEN" &&
+      s.status !== "CLOSING" &&
+      s.status !== "CANCELING" &&
+      s.status !== "CLOSED" &&
+      s.status !== "CANCELED"
+    ) {
       continue;
+    }
     return true;
   }
   return false;
@@ -180,8 +209,15 @@ export async function buildParticipationMonthCalendarBuffer(
     const inFirst = ty === year && tm === monthIndex;
     const inSecond = ty === n.y && tm === n.m;
     if (!inFirst && !inSecond) continue;
-    if (s.status !== "OPEN" && s.status !== "CLOSED" && s.status !== "CANCELED")
+    if (
+      s.status !== "OPEN" &&
+      s.status !== "CLOSING" &&
+      s.status !== "CANCELING" &&
+      s.status !== "CLOSED" &&
+      s.status !== "CANCELED"
+    ) {
       continue;
+    }
     marks.push({
       at: t,
       title: s.title,

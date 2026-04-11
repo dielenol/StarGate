@@ -58,10 +58,67 @@ let browserPromise: Promise<Browser> | null = null;
 export type CalendarSessionMark = {
   at: Date;
   title: string;
-  status: "OPEN" | "CLOSED" | "CANCELED";
+  status: "OPEN" | "CLOSING" | "CLOSED" | "CANCELING" | "CANCELED";
   /** 현재 조회/마감 대상 등록 일정 */
   isPrimary: boolean;
 };
+
+function calendarStatusLabel(
+  status: CalendarSessionMark["status"]
+): string {
+  switch (status) {
+    case "OPEN":
+      return Png.stOpen;
+    case "CLOSING":
+      return Png.stClosing;
+    case "CLOSED":
+      return Png.stClosed;
+    case "CANCELING":
+      return Png.stCanceling;
+    case "CANCELED":
+      return Png.stCanceled;
+    default:
+      return Png.stClosed;
+  }
+}
+
+function calendarStatusBadgeClass(
+  status: CalendarSessionMark["status"]
+): string {
+  switch (status) {
+    case "OPEN":
+      return "ag-open";
+    case "CLOSING":
+      return "ag-closing";
+    case "CLOSED":
+      return "ag-closed";
+    case "CANCELING":
+      return "ag-canceling";
+    case "CANCELED":
+      return "ag-canceled";
+    default:
+      return "ag-closed";
+  }
+}
+
+function calendarEntryClass(
+  status: CalendarSessionMark["status"]
+): string {
+  switch (status) {
+    case "OPEN":
+      return "cal-entry cal-open";
+    case "CLOSING":
+      return "cal-entry cal-closing";
+    case "CLOSED":
+      return "cal-entry cal-closed";
+    case "CANCELING":
+      return "cal-entry cal-canceling";
+    case "CANCELED":
+      return "cal-entry cal-canceled";
+    default:
+      return "cal-entry cal-closed";
+  }
+}
 
 function escapeHtml(s: string): string {
   return s
@@ -114,21 +171,12 @@ function buildAgendaHtml(marks: CalendarSessionMark[], anchorAt: Date): string {
 
   const rows = shown
     .map((mk) => {
-      const stLabel =
-        mk.isPrimary
-          ? Png.stPrimary
-          : mk.status === "OPEN"
-            ? Png.stOpen
-            : mk.status === "CLOSED"
-              ? Png.stClosed
-              : Png.stCanceled;
+      const stLabel = mk.isPrimary
+        ? Png.stPrimary
+        : calendarStatusLabel(mk.status);
       const badgeCls = mk.isPrimary
         ? "ag-primary"
-        : mk.status === "OPEN"
-          ? "ag-open"
-          : mk.status === "CLOSED"
-            ? "ag-closed"
-            : "ag-canceled";
+        : calendarStatusBadgeClass(mk.status);
       const rowCls = mk.isPrimary ? "agenda-row agenda-row-primary" : "agenda-row";
       return `<div class="${rowCls}"><div class="ag-top"><span class="ag-when">${escapeHtml(formatAgendaWhenLine(mk.at))}</span><span class="ag-badge ${badgeCls}">${escapeHtml(stLabel)}</span></div><div class="ag-title">${escapeHtml(truncateAgendaTitle(mk.title))}</div></div>`;
     })
@@ -213,11 +261,7 @@ function buildCalendarHtml(
         const mm = mk.at.getMinutes().toString().padStart(2, "0");
         const cls = mk.isPrimary
           ? "cal-entry cal-primary"
-          : mk.status === "OPEN"
-            ? "cal-entry cal-open"
-            : mk.status === "CLOSED"
-              ? "cal-entry cal-closed"
-              : "cal-entry cal-canceled";
+          : calendarEntryClass(mk.status);
         return `<div class="${cls}"><span class="ce-t">${escapeHtml(`${hh}:${mm}`)}</span><span class="ce-title">${escapeHtml(truncateCalendarTitle(mk.title, MAX_CAL_TITLE_IN_CELL))}</span></div>`;
       })
       .join("");
@@ -255,20 +299,26 @@ function buildCalendarHtml(
       ? `
     <div class="cal-legend">
       <span><i class="lg lg-open"></i>${escapeHtml(Png.stOpen)}</span>
+      <span><i class="lg lg-closing"></i>${escapeHtml(Png.stClosing)}</span>
       <span><i class="lg lg-closed"></i>${escapeHtml(Png.stClosed)}</span>
+      <span><i class="lg lg-canceling"></i>${escapeHtml(Png.stCanceling)}</span>
       <span><i class="lg lg-canceled"></i>${escapeHtml(Png.stCanceled)}</span>
     </div>`
       : legendMode === "simple"
         ? `
     <div class="cal-legend">
       <span><i class="lg lg-open"></i>${escapeHtml(Png.stOpen)}</span>
+      <span><i class="lg lg-closing"></i>${escapeHtml(Png.stClosing)}</span>
       <span><i class="lg lg-closed"></i>${escapeHtml(Png.stClosed)}</span>
+      <span><i class="lg lg-canceling"></i>${escapeHtml(Png.stCanceling)}</span>
     </div>`
         : `
     <div class="cal-legend">
       <span><i class="lg lg-primary"></i>${escapeHtml(Png.stPrimary)}</span>
       <span><i class="lg lg-open"></i>${escapeHtml(Png.stOpen)}</span>
+      <span><i class="lg lg-closing"></i>${escapeHtml(Png.stClosing)}</span>
       <span><i class="lg lg-closed"></i>${escapeHtml(Png.stClosed)}</span>
+      <span><i class="lg lg-canceling"></i>${escapeHtml(Png.stCanceling)}</span>
     </div>`;
 
   return `
@@ -426,7 +476,9 @@ const CSS_CALENDAR_BLOCK_STYLES = `
   }
   .cal-primary { color: #ffe9a8; font-weight: 700; }
   .cal-open { color: #8fd4a2; }
+  .cal-closing { color: #c3d0ff; }
   .cal-closed { color: #a8a8b8; }
+  .cal-canceling { color: #f0d0aa; }
   .cal-canceled { color: #e8b888; }
   .cal-more {
     font-size: 6px;
@@ -456,7 +508,9 @@ const CSS_CALENDAR_BLOCK_STYLES = `
   }
   .lg-primary { background: #c5a059; }
   .lg-open { background: #5a9e6e; }
+  .lg-closing { background: #6d78a8; }
   .lg-closed { background: #6a6a78; }
+  .lg-canceling { background: #9a6b48; }
   .lg-canceled { background: #8a6040; }
 `;
 
@@ -753,9 +807,17 @@ function buildHtml(params: {
     background: rgba(90, 158, 110, 0.28);
     color: #b8e8c8;
   }
+  .ag-badge.ag-closing {
+    background: rgba(120, 130, 170, 0.34);
+    color: #d5def8;
+  }
   .ag-badge.ag-closed {
     background: rgba(106, 106, 120, 0.35);
     color: #c8c8d4;
+  }
+  .ag-badge.ag-canceling {
+    background: rgba(170, 120, 82, 0.36);
+    color: #f0d0aa;
   }
   .ag-badge.ag-canceled {
     background: rgba(138, 96, 64, 0.38);

@@ -38,7 +38,7 @@ export const Cmd = {
   close:
     "해당 건 응답 접수를 즉시 마감합니다. 확정 보고는 「집계」로 이어가실 수 있습니다.",
   optRegIdClose:
-    "대상 등록 ID. 비우시면 본 길드 최근 접수 중(OPEN) 1건이 자동 지정됩니다.",
+    "대상 등록 ID. 단일 OPEN이면 생략 가능하나, OPEN이 여러 건이면 필수입니다.",
   editClose:
     "접수 중 건의 회신 마감 시각 변경. 배정 일시와의 선후는 규칙에 맞게 기재 부탁드립니다.",
   optNewClose:
@@ -55,6 +55,8 @@ export const Cmd = {
 export const D = {
   permManage: `${E}권한 부족. **서버 관리**가 승인된 인원만 이 절차를 발동할 수 있습니다.`,
   guildOnly: `${E}길드 서버 외부에서는 통합 일정 체계에 접근할 수 없습니다.`,
+  interactionUnexpected:
+    `${E}처리 중 예기치 않은 오류가 발생했습니다. 잠시 후 다시 시도하시거나 기술 담당에 문의하십시오.`,
   dateBad: `${E}시각 기재 형식이 프로토콜에 맞지 않습니다. 예: 2026-03-22 20:00`,
   closeNotBeforeTarget: `${E}회신 마감은 **배정 일시보다 앞서야** 합니다. 재기안하십시오.`,
   pastCloseBlock: (interpretedClose: string, yearHint: string) =>
@@ -111,7 +113,9 @@ export const D = {
 
   btnNoRecord: `${E}해당 등록 번호를 대장에서 찾지 못했습니다. 재확인 바랍니다.`,
   btnClosed: `${E}이미 **마감**된 건입니다. 회신을 수정할 수 없습니다.`,
+  btnClosing: `${E}해당 건은 현재 **마감 후속 처리 중**입니다. 잠시 후 다시 확인 바랍니다.`,
   btnCanceled: `${E}**기각** 처리된 건입니다. 회신을 수정할 수 없습니다.`,
+  btnCanceling: `${E}해당 건은 현재 **기각 후속 처리 중**입니다. 잠시 후 다시 확인 바랍니다.`,
   /** 가용 최초 제출 시 에페메랄 1회(길드·유저 기준) */
   btnYesParticipationTipOnce: `${S}**가용**을 제출하셨습니다.\n${N}본인이 가용으로 회신한 일정은 슬래시 명령 \`/참여확인\`에서 **비밀 열람**(에페메랄)로 모아 볼 수 있습니다.\n${N}_이 안내는 서버당 최초 1회만 표시됩니다._`,
 
@@ -151,9 +155,23 @@ export const D = {
   resultPickIds: (lines: string, more: string, resultCmd: string, overviewCmd: string) =>
     `아래 ID를 \`${resultCmd}\`의 **등록아이디**에 넣으십시오.\n\n${lines}${more}\n\n` +
     `— 마감 건만 보려면 ID를 기재하거나 \`${overviewCmd}\` —`,
+  mutationMultiOpen: (n: number, optReg: string, cmd: string) =>
+    `접수 중인 건이 **${n}건**입니다. \`${cmd}\` 대상은 자동 지정하지 않습니다.\n` +
+    `**${optReg}**로 등록 ID를 명시하십시오.\n` +
+    `_후보·ID는 실행 관리자에게만 전달됩니다._`,
+  mutationPickIds: (
+    lines: string,
+    more: string,
+    cmd: string,
+    overviewCmd: string
+  ) =>
+    `아래 ID를 \`${cmd}\`의 **등록아이디**에 넣으십시오.\n\n${lines}${more}\n\n` +
+    `— 전체 대장은 \`${overviewCmd}\` —`,
   resultNotFound: (optReg: string, overviewCmd: string) =>
     `${E}지정한 등재를 찾지 못했습니다.\n${N}${optReg} 기재 시 ID를 재확인.\n${N}비웠을 때 OPEN이 없으면 **최근 마감** 1건을 택합니다. 전체: ${overviewCmd}`,
   resultCanceled: `【기각】 해당 건은 취소되었습니다.`,
+  resultClosing: `【마감 처리 중】 해당 건은 공지 정리·확정 보고 송부를 재시도 중입니다. 잠시 후 다시 확인하십시오.`,
+  resultCanceling: `【기각 처리 중】 해당 건은 공지 정리를 마무리하는 중입니다. 잠시 후 다시 확인하십시오.`,
   resultEphemeralId: (sid: string, rootCmd: string, optReg: string) =>
     `【대장·관리용】 집계 대상 등록번호\n\`${sid}\`\n${N}슬래시 \`${rootCmd}\` 의 **${optReg}** 필드에 기재.`,
   resultOpenFooter: "가용·불가 집계(접수 구간). 마감 전까지 수정 가능.",
@@ -164,6 +182,7 @@ export const D = {
 
   closeNoOpen: `${E}접수 중인 등재를 찾지 못했습니다.`,
   closeNotOpen: `${E}이미 마감되었거나 기각된 건입니다.`,
+  closeInProgress: `${N}해당 건은 이미 **마감 후속 처리 중**입니다.`,
   closeAlready: `${N}타 절차에서 이미 마감되었거나 OPEN이 아닙니다.`,
   closeDone: (title: string, warn: string) =>
     `${S}**${title}** — 응답 접수를 **즉시 마감**했습니다.${warn}`,
@@ -171,6 +190,8 @@ export const D = {
 
   editCloseDateBad: (opt: string) => `${E}\`${opt}\` 시각 형식이 잘못되었습니다.`,
   editCloseNoOpen: `${E}접수 중인 등재를 찾지 못했습니다.`,
+  editMutationLostOpen:
+    `${E}조회 직후 상태가 바뀌어 수정을 적용하지 못했습니다. 이미 마감·기각 절차가 진행 중인지 확인 바랍니다.`,
   dbFail: `${E}기록 갱신에 실패했습니다. 잠시 후 재시도하십시오.`,
   editCloseDone: (title: string, ts: string, announce: string, notes: string) =>
     `${S}**${title}** — 회신 마감 시각을 변경했습니다. 새 마감: ${ts}${announce}${notes}`,
@@ -231,10 +252,13 @@ export const D = {
   partLineClose: (ts: number) => `· 회신 마감: <t:${ts}:F>`,
   partLineLink: (url: string, sid: string) => `· 공지: [열람](${url}) · 등록 \`${sid}\``,
   statusOpen: "접수",
+  statusClosing: "마감 처리 중",
   statusClosed: "마감 확정",
+  statusCanceling: "기각 처리 중",
   statusCanceled: "기각",
 
   cancelNoOpen: `${E}접수 중인 등재를 찾지 못했습니다.`,
+  cancelInProgress: `${N}해당 건은 이미 **기각 후속 처리 중**입니다.`,
   cancelAlready: `${N}타 절차에서 이미 기각되었거나 OPEN이 아닙니다.`,
   cancelDone: (title: string, warn: string) =>
     `${S}**${title}** — 등재를 **기각**했습니다.${warn}`,
@@ -251,6 +275,7 @@ export const W = {
   resultSendFail: "확정 보고 메시지 송부에 실패했습니다.",
   discordErr: "교신( Discord ) 후속 처리 중 오류가 발생했습니다.",
   logFail: "운영 대장(로그) 기록에 실패했습니다.",
+  statePersistFail: "후속 처리 진행 상태 저장에 실패했습니다.",
   cancelAnnounceInaccessible: "공지 채널에 접근할 수 없어 기각 안내를 반영하지 못했습니다.",
 } as const;
 
@@ -269,9 +294,11 @@ export const L = {
   sessionCloseAnnounceEdit: "[Registrar] 공지 교정 실패:",
   sessionCloseResultSend: "[Registrar] 확정 보고 송부 실패:",
   sessionCloseFollowup: "[Registrar] 마감 후속 처리 실패:",
+  sessionCloseState: "[Registrar] 마감 진행 상태 저장 실패:",
   sessionCloseLog: "[Registrar] 대장 기록 실패:",
   sessionCancelEdit: "[Registrar] 기각 시 공지 교정 실패:",
   sessionCancelFollow: "[Registrar] 기각 후속 실패:",
+  sessionCancelState: "[Registrar] 기각 진행 상태 저장 실패:",
   sessionCancelLog: "[Registrar] 기각 대장 기록 실패:",
 
   closeWarn: "[Registrar] 마감은 끝났으나 아래 경고가 남았습니다.",
@@ -283,6 +310,10 @@ export const L = {
 
   remindRow: "[Registrar] 통보 처리 중 오류(등록 ID):",
   remindTick: "[Registrar] 통보 감시 틱 오류:",
+  remindLog: "[Registrar] 통보 발송 로그 기록 실패:",
+  remindClaimRelease: "[Registrar] 통보 선점 해제 실패:",
+  remindMarkSent: "[Registrar] 통보 발송 완료 기록 실패:",
+  remindLeaseExtend: "[Registrar] 통보 선점 연장 실패:",
 
   btnEdit: "[Registrar] 공지 집계 갱신 실패:",
   btnParticipationTip: "[Registrar] 가용 안내(참여확인) 에페메랄 실패:",
@@ -313,6 +344,11 @@ export const L = {
   sessionEditClose: "[Registrar] 마감 시각 변경 — 공지 갱신 실패:",
   sessionEditDate: "[Registrar] 배정 변경 — 공지 갱신 실패:",
   sessionCancelCmd: "[Registrar] 기각 명령 오류:",
+  interactionUnhandled: (kind: string) =>
+    `[Registrar] 인터랙션 처리 실패(${kind}):`,
+  interactionFallback: (kind: string) =>
+    `[Registrar] 인터랙션 fallback 응답 실패(${kind}):`,
+  readyUnhandled: "[Registrar] 준비 완료 핸들러 오류:",
 } as const;
 
 export const ConfigErr = {
@@ -337,7 +373,9 @@ export const Channel = {
 export const Png = {
   stPrimary: "조회 대상",
   stOpen: "접수",
+  stClosing: "마감중",
   stClosed: "마감",
+  stCanceling: "기각중",
   stCanceled: "기각",
   subGuild: "동일 월 등재(접수·마감)",
   subPart: "가용 회신(본인 · 이번·다음 달)",
@@ -379,5 +417,4 @@ export const Remind = {
   lineMentions: (line: string) => `다음 인원은 가용으로 회신되어 있습니다: ${line}`,
   footer: `변경 사항은 관리자에게 즉시 보고할 것. ${REGISTRAR_SIGNATURE}`,
 } as const;
-
 

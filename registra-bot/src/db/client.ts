@@ -41,8 +41,13 @@ async function ensureIndexes(mongoClient: MongoClient): Promise<void> {
         name: "sessions_guild_status_targetDateTime",
       },
       {
-        key: { status: 1, targetDateTime: 1, sessionStartReminder24hSent: 1 },
-        name: "sessions_status_targetDateTime_reminderFlag",
+        key: {
+          status: 1,
+          targetDateTime: 1,
+          sessionStartReminder24hSent: 1,
+          sessionStartReminder24hClaimLeaseUntil: 1,
+        },
+        name: "sessions_status_targetDateTime_reminderFlag_claimLease",
       },
     ]),
     db.collection(RESPONSES_COLLECTION).createIndexes([

@@ -25,19 +25,8 @@ import {
 } from "../db/sessions.js";
 import { appendSessionLog } from "../db/logs.js";
 import { buildSessionEmbed } from "../utils/embed.js";
+import { parseStrictDateTimeInput } from "../utils/date-time-input.js";
 const BUTTON_PREFIX = ATTEND_BUTTON_PREFIX;
-
-/**
- * 날짜 문자열을 Date로 파싱합니다.
- * "2026-03-22 20:00" 또는 "2026-03-22T20:00" 형식 지원
- * @param str 날짜 문자열
- * @returns Date 또는 null
- */
-function parseDateTime(str: string): Date | null {
-  const normalized = str.replace(" ", "T");
-  const date = new Date(normalized);
-  return isNaN(date.getTime()) ? null : date;
-}
 
 /** Discord snowflake 형식 (17~19자리 숫자) */
 const SNOWFLAKE_REGEX = /^\d{17,19}$/;
@@ -98,8 +87,8 @@ export async function handleSessionCreate(
   const roleOption = interaction.options.getString(Opt.role, true);
   const channelFromOpt = interaction.options.getChannel(Opt.channel);
 
-  const targetDateTime = parseDateTime(dateStr);
-  const closeDateTime = parseDateTime(closeStr);
+  const targetDateTime = parseStrictDateTimeInput(dateStr);
+  const closeDateTime = parseStrictDateTimeInput(closeStr);
 
   if (!targetDateTime || !closeDateTime) {
     await interaction.editReply({

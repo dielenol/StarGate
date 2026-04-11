@@ -7,10 +7,17 @@
 
 import { ObjectId, type Filter } from "mongodb";
 import { sessionsCollection } from "./index.js";
-import type { Session, SessionStatus } from "../types/session.js";
+import type {
+  Session,
+  SessionFinalizationKind,
+  SessionStatus,
+} from "../types/session.js";
 
 /** MongoDB 내부 _id는 ObjectId이므로 필터용 타입 */
 type SessionFilter = Filter<Session> & { _id?: ObjectId };
+
+export type UpdateOpenSessionTimeResult = "updated" | "not_open";
+export type ReminderClaimResult = { token: string } | null;
 
 /** 세션 생성 시 필요한 입력 (DB 자동 필드 제외) */
 export type CreateSessionInput = Omit<
@@ -180,7 +187,10 @@ export async function findOpenAndClosedSessionsByGuildOrderByTarget(
   limit: number
 ): Promise<Session[]> {
   return sessionsCollection()
-    .find({ guildId, status: { $in: ["OPEN", "CLOSED"] } })
+    .find({
+      guildId,
+      status: { $in: ["OPEN", "CLOSING", "CANCELING", "CLOSED"] },
+    })
     .sort({ targetDateTime: 1 })
     .limit(limit)
     .toArray();
@@ -200,7 +210,7 @@ export async function findSessionsByGuildInMonth(
   return sessionsCollection()
     .find({
       guildId,
-      status: { $in: ["OPEN", "CLOSED"] },
+      status: { $in: ["OPEN", "CLOSING", "CANCELING", "CLOSED", "CANCELED"] },
       targetDateTime: { $gte: start, $lte: end },
     })
     .sort({ targetDateTime: 1 })
@@ -216,11 +226,19 @@ export async function findSessionsForStartReminder(): Promise<Session[]> {
   const within24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
   const filter: Filter<Session> = {
-    status: { $in: ["OPEN", "CLOSED"] },
+    status: { $in: ["OPEN", "CLOSING", "CLOSED"] },
     targetDateTime: { $gt: now, $lte: within24h },
     $or: [
       { sessionStartReminder24hSent: { $exists: false } },
       { sessionStartReminder24hSent: false },
+    ],
+    $and: [
+      {
+        $or: [
+          { sessionStartReminder24hClaimLeaseUntil: { $exists: false } },
+          { sessionStartReminder24hClaimLeaseUntil: { $lte: now } },
+        ],
+      },
     ],
   };
 
@@ -269,11 +287,11 @@ export async function findSessionByIdInGuild(
 export async function updateSessionCloseDateTime(
   sessionId: string,
   closeDateTime: Date
-): Promise<boolean> {
-  if (!ObjectId.isValid(sessionId)) return false;
+): Promise<UpdateOpenSessionTimeResult> {
+  if (!ObjectId.isValid(sessionId)) return "not_open";
 
   const result = await sessionsCollection().updateOne(
-    { _id: new ObjectId(sessionId) } as SessionFilter,
+    { _id: new ObjectId(sessionId), status: "OPEN" } as SessionFilter,
     {
       $set: {
         closeDateTime,
@@ -281,7 +299,7 @@ export async function updateSessionCloseDateTime(
       },
     }
   );
-  return result.modifiedCount > 0;
+  return result.matchedCount > 0 ? "updated" : "not_open";
 }
 
 /**
@@ -291,11 +309,11 @@ export async function updateSessionCloseDateTime(
 export async function updateSessionTargetDateTime(
   sessionId: string,
   targetDateTime: Date
-): Promise<boolean> {
-  if (!ObjectId.isValid(sessionId)) return false;
+): Promise<UpdateOpenSessionTimeResult> {
+  if (!ObjectId.isValid(sessionId)) return "not_open";
 
   const result = await sessionsCollection().updateOne(
-    { _id: new ObjectId(sessionId) } as SessionFilter,
+    { _id: new ObjectId(sessionId), status: "OPEN" } as SessionFilter,
     {
       $set: {
         targetDateTime,
@@ -304,7 +322,7 @@ export async function updateSessionTargetDateTime(
       },
     }
   );
-  return result.modifiedCount > 0;
+  return result.matchedCount > 0 ? "updated" : "not_open";
 }
 
 /**
@@ -315,11 +333,11 @@ export async function updateSessionTargetAndCloseDateTime(
   sessionId: string,
   targetDateTime: Date,
   closeDateTime: Date
-): Promise<boolean> {
-  if (!ObjectId.isValid(sessionId)) return false;
+): Promise<UpdateOpenSessionTimeResult> {
+  if (!ObjectId.isValid(sessionId)) return "not_open";
 
   const result = await sessionsCollection().updateOne(
-    { _id: new ObjectId(sessionId) } as SessionFilter,
+    { _id: new ObjectId(sessionId), status: "OPEN" } as SessionFilter,
     {
       $set: {
         targetDateTime,
@@ -329,7 +347,7 @@ export async function updateSessionTargetAndCloseDateTime(
       },
     }
   );
-  return result.modifiedCount > 0;
+  return result.matchedCount > 0 ? "updated" : "not_open";
 }
 
 /**
@@ -350,4 +368,277 @@ export async function setSessionReminderFlags(
     { $set }
   );
   return result.modifiedCount > 0;
+}
+
+export async function claimSessionStartReminder(
+  sessionId: string,
+  claimToken: string,
+  leaseUntil: Date
+): Promise<ReminderClaimResult> {
+  if (!ObjectId.isValid(sessionId)) return null;
+
+  const now = new Date();
+  const result = await sessionsCollection().findOneAndUpdate(
+    {
+      _id: new ObjectId(sessionId),
+      status: { $in: ["OPEN", "CLOSING", "CLOSED"] },
+      $or: [
+        { sessionStartReminder24hSent: { $exists: false } },
+        { sessionStartReminder24hSent: false },
+      ],
+      $and: [
+        {
+          $or: [
+            { sessionStartReminder24hClaimLeaseUntil: { $exists: false } },
+            { sessionStartReminder24hClaimLeaseUntil: { $lte: now } },
+          ],
+        },
+      ],
+    } as unknown as SessionFilter,
+    {
+      $set: {
+        sessionStartReminder24hClaimToken: claimToken,
+        sessionStartReminder24hClaimedAt: now,
+        sessionStartReminder24hClaimLeaseUntil: leaseUntil,
+        updatedAt: now,
+      },
+    },
+    {
+      returnDocument: "after",
+      includeResultMetadata: true,
+    }
+  );
+
+  return result.value ? { token: claimToken } : null;
+}
+
+export async function markSessionStartReminderSent(
+  sessionId: string,
+  claimToken: string
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      sessionStartReminder24hClaimToken: claimToken,
+      $or: [
+        { sessionStartReminder24hSent: { $exists: false } },
+        { sessionStartReminder24hSent: false },
+      ],
+    } as unknown as SessionFilter,
+    {
+      $set: {
+        sessionStartReminder24hSent: true,
+        updatedAt: new Date(),
+      },
+      $unset: {
+        sessionStartReminder24hClaimToken: "",
+        sessionStartReminder24hClaimedAt: "",
+        sessionStartReminder24hClaimLeaseUntil: "",
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+export async function releaseSessionStartReminderClaim(
+  sessionId: string,
+  claimToken: string
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      sessionStartReminder24hClaimToken: claimToken,
+      $or: [
+        { sessionStartReminder24hSent: { $exists: false } },
+        { sessionStartReminder24hSent: false },
+      ],
+    } as unknown as SessionFilter,
+    {
+      $unset: {
+        sessionStartReminder24hClaimToken: "",
+        sessionStartReminder24hClaimedAt: "",
+        sessionStartReminder24hClaimLeaseUntil: "",
+      },
+      $set: {
+        updatedAt: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+export async function extendSessionStartReminderClaimLease(
+  sessionId: string,
+  claimToken: string,
+  leaseUntil: Date
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      sessionStartReminder24hClaimToken: claimToken,
+      $or: [
+        { sessionStartReminder24hSent: { $exists: false } },
+        { sessionStartReminder24hSent: false },
+      ],
+    } as unknown as SessionFilter,
+    {
+      $set: {
+        sessionStartReminder24hClaimLeaseUntil: leaseUntil,
+        updatedAt: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+export async function beginSessionFinalization(
+  sessionId: string,
+  nextStatus: "CLOSING" | "CANCELING",
+  kind: SessionFinalizationKind,
+  requestedBy?: string
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      status: "OPEN",
+    } as SessionFilter,
+    {
+      $set: {
+        status: nextStatus,
+        updatedAt: new Date(),
+        finalizationPending: true,
+        finalizationKind: kind,
+        finalizationAnnouncementDone: false,
+        finalizationLogDone: false,
+        finalizationRequestedBy: requestedBy,
+        finalizationRequestedAt: new Date(),
+      },
+      $unset: {
+        finalizationResultMessageId: "",
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+export async function markSessionFinalizationAnnouncementDone(
+  sessionId: string,
+  status: "CLOSING" | "CANCELING"
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      status,
+      finalizationPending: true,
+    } as SessionFilter,
+    {
+      $set: {
+        finalizationAnnouncementDone: true,
+        updatedAt: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+export async function recordSessionFinalizationResultMessage(
+  sessionId: string,
+  messageId: string
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      status: "CLOSING",
+      finalizationPending: true,
+    } as SessionFilter,
+    {
+      $set: {
+        finalizationResultMessageId: messageId,
+        updatedAt: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+export async function markSessionFinalizationLogDone(
+  sessionId: string,
+  status: "CLOSING" | "CANCELING"
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      status,
+      finalizationPending: true,
+    } as SessionFilter,
+    {
+      $set: {
+        finalizationLogDone: true,
+        updatedAt: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+export async function completeSessionFinalization(
+  sessionId: string,
+  currentStatus: "CLOSING" | "CANCELING",
+  finalStatus: "CLOSED" | "CANCELED"
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const result = await sessionsCollection().updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      status: currentStatus,
+      finalizationPending: true,
+      finalizationAnnouncementDone: true,
+      ...(currentStatus === "CLOSING"
+        ? { finalizationResultMessageId: { $exists: true, $ne: "" } }
+        : {}),
+      finalizationLogDone: true,
+    } as unknown as SessionFilter,
+    {
+      $set: {
+        status: finalStatus,
+        updatedAt: new Date(),
+        finalizationPending: false,
+      },
+      $unset: {
+        finalizationKind: "",
+        finalizationAnnouncementDone: "",
+        finalizationResultMessageId: "",
+        finalizationLogDone: "",
+        finalizationRequestedBy: "",
+        finalizationRequestedAt: "",
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
+export async function findSessionsPendingFinalization(): Promise<Session[]> {
+  return sessionsCollection()
+    .find({
+      finalizationPending: true,
+      status: { $in: ["CLOSING", "CANCELING"] },
+      finalizationKind: { $in: ["CLOSE", "CANCEL"] },
+    } as unknown as SessionFilter)
+    .sort({ finalizationRequestedAt: 1, updatedAt: 1 })
+    .toArray();
 }

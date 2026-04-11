@@ -4,8 +4,16 @@
  * @module types/session
  */
 
-/** 일정 상태: OPEN(접수 중), CLOSED(마감), CANCELED(취소) */
-export type SessionStatus = "OPEN" | "CLOSED" | "CANCELED";
+/** 마감/기각 후속 처리 종류 */
+export type SessionFinalizationKind = "CLOSE" | "CANCEL";
+
+/** 일정 상태: OPEN(접수 중), CLOSING/CANCELING(후속 처리 중), CLOSED/CANCELED(완료) */
+export type SessionStatus =
+  | "OPEN"
+  | "CLOSING"
+  | "CANCELING"
+  | "CLOSED"
+  | "CANCELED";
 
 /** 가용 여부: YES(가용), NO(불가) */
 export type ResponseStatus = "YES" | "NO";
@@ -26,6 +34,26 @@ export interface Session {
   updatedAt: Date;
   /** 배정 24시간 전 리마인드(가용 YES 멘션) 발송 여부 */
   sessionStartReminder24hSent?: boolean;
+  /** 배정 24시간 전 리마인드 발송권 선점 토큰 */
+  sessionStartReminder24hClaimToken?: string;
+  /** 배정 24시간 전 리마인드 발송권 선점 시각 */
+  sessionStartReminder24hClaimedAt?: Date;
+  /** 배정 24시간 전 리마인드 발송권 만료 시각 */
+  sessionStartReminder24hClaimLeaseUntil?: Date;
+  /** 마감/기각 후속 처리 진행 중 여부 */
+  finalizationPending?: boolean;
+  /** 후속 처리 종류 */
+  finalizationKind?: SessionFinalizationKind;
+  /** 원본 공지 수정 완료 여부 */
+  finalizationAnnouncementDone?: boolean;
+  /** 마감 확정 보고 메시지 ID (마감 시에만 사용) */
+  finalizationResultMessageId?: string;
+  /** 운영 로그 기록 완료 여부 */
+  finalizationLogDone?: boolean;
+  /** 후속 처리를 요청한 사용자 ID */
+  finalizationRequestedBy?: string;
+  /** 후속 처리 시작 시각 */
+  finalizationRequestedAt?: Date;
 }
 
 /** DB에 저장되는 응답 문서 */

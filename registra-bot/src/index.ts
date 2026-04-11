@@ -32,6 +32,7 @@ import {
 import { startCloseChecker } from "./scheduler/close-checker.js";
 import { startReminderChecker } from "./scheduler/reminder-checker.js";
 import { closeResultCardBrowser } from "./utils/result-card-image.js";
+import { runSafely, safeHandleInteraction } from "./utils/safe-interaction.js";
 
 // Discord 봇 클라이언트 (Guilds: 서버/채널/역할 정보, GuildMembers: 역할 멤버 조회)
 const client = new Client({
@@ -46,84 +47,93 @@ client.on(Events.Error, (err) => {
 });
 
 /** 봇 준비 완료 시: 커맨드 등록 및 스케줄러 시작 */
-client.once(Events.ClientReady, async (readyClient) => {
-  console.log(L.login(readyClient.user.tag));
-  readyClient.user.setActivity("NOVUS ORDO 일정 총괄", {
-    type: ActivityType.Watching,
+client.once(Events.ClientReady, (readyClient) => {
+  void runSafely(L.readyUnhandled, async () => {
+    console.log(L.login(readyClient.user.tag));
+    readyClient.user.setActivity("NOVUS ORDO 일정 총괄", {
+      type: ActivityType.Watching,
+    });
+
+    try {
+      await registerCommands();
+      console.log(L.slashOk);
+    } catch (err) {
+      console.error(L.slashFail, err);
+    }
+
+    startCloseChecker(client);
+    console.log(L.schedulerClose);
+    startReminderChecker(client);
+    console.log(L.schedulerRemind);
   });
-
-  try {
-    await registerCommands();
-    console.log(L.slashOk);
-  } catch (err) {
-    console.error(L.slashFail, err);
-  }
-
-  startCloseChecker(client);
-  console.log(L.schedulerClose);
-  startReminderChecker(client);
-  console.log(L.schedulerRemind);
 });
 
 /** `/일정` 생성·일정변경·응답마감변경 문자열 옵션 자동완성 */
-client.on(Events.InteractionCreate, async (interaction) => {
+client.on(Events.InteractionCreate, (interaction) => {
   if (!interaction.isAutocomplete()) return;
   if (interaction.commandName !== SCHEDULE_ROOT) return;
-  await handleSessionCreateAutocomplete(interaction);
+
+  void safeHandleInteraction(
+    "autocomplete",
+    interaction,
+    handleSessionCreateAutocomplete
+  );
 });
 
 /** 슬래시 커맨드 실행 시: /일정 … 및 단독 /참여확인 */
-client.on(Events.InteractionCreate, async (interaction) => {
+client.on(Events.InteractionCreate, (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === Sub.participationCheck) {
-    await handleSessionParticipationCheck(interaction);
-    return;
-  }
+  void safeHandleInteraction("chat-input", interaction, async (safeInteraction) => {
+    if (safeInteraction.commandName === Sub.participationCheck) {
+      await handleSessionParticipationCheck(safeInteraction);
+      return;
+    }
 
-  if (interaction.commandName !== SCHEDULE_ROOT) return;
+    if (safeInteraction.commandName !== SCHEDULE_ROOT) return;
 
-  const sub = interaction.options.getSubcommand();
-  switch (sub) {
-    case Sub.create:
-      await handleSessionCreate(interaction);
-      break;
-    case Sub.list:
-      await handleSessionList(interaction);
-      break;
-    case Sub.overview:
-      await handleSessionOverview(interaction);
-      break;
-    case Sub.calendar:
-      await handleSessionMonthCalendar(interaction);
-      break;
-    case Sub.result:
-      await handleSessionResult(interaction);
-      break;
-    case Sub.participationCheck:
-      await handleSessionParticipationCheck(interaction);
-      break;
-    case Sub.close:
-      await handleSessionClose(interaction);
-      break;
-    case Sub.editClose:
-      await handleSessionEditClose(interaction);
-      break;
-    case Sub.editDate:
-      await handleSessionEditDate(interaction);
-      break;
-    case Sub.cancel:
-      await handleSessionCancel(interaction);
-      break;
-    default:
-      break;
-  }
+    const sub = safeInteraction.options.getSubcommand();
+    switch (sub) {
+      case Sub.create:
+        await handleSessionCreate(safeInteraction);
+        break;
+      case Sub.list:
+        await handleSessionList(safeInteraction);
+        break;
+      case Sub.overview:
+        await handleSessionOverview(safeInteraction);
+        break;
+      case Sub.calendar:
+        await handleSessionMonthCalendar(safeInteraction);
+        break;
+      case Sub.result:
+        await handleSessionResult(safeInteraction);
+        break;
+      case Sub.participationCheck:
+        await handleSessionParticipationCheck(safeInteraction);
+        break;
+      case Sub.close:
+        await handleSessionClose(safeInteraction);
+        break;
+      case Sub.editClose:
+        await handleSessionEditClose(safeInteraction);
+        break;
+      case Sub.editDate:
+        await handleSessionEditDate(safeInteraction);
+        break;
+      case Sub.cancel:
+        await handleSessionCancel(safeInteraction);
+        break;
+      default:
+        break;
+    }
+  });
 });
 
 /** 버튼 클릭 시: 가용/불가 응답 처리 */
-client.on(Events.InteractionCreate, async (interaction) => {
+client.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isButton()) {
-    await handleButtonInteraction(interaction);
+    void safeHandleInteraction("button", interaction, handleButtonInteraction);
   }
 });
 

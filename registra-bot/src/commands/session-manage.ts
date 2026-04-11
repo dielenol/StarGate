@@ -62,6 +62,7 @@ import {
   participationImageCooldownKey,
 } from "../utils/participation-image-cooldown.js";
 import type { Session, SessionStatus } from "../types/session.js";
+import { parseStrictDateTimeInput } from "../utils/date-time-input.js";
 
 /** 버튼 customId는 button-handler와 동일해야 함 */
 const ATTEND_PREFIX = ATTEND_BUTTON_PREFIX;
@@ -83,6 +84,8 @@ const OVERVIEW_DESC_SAFE_MAX = 3800;
 const OVERVIEW_MAX_EMBEDS = 6;
 /** result: OPEN 여러 개일 때 자동 선택 대신 안내에 줄 최대 줄 수 */
 const RESULT_MULTI_OPEN_PREVIEW = 8;
+/** 파괴적 관리자 명령에서 OPEN 후보를 안내할 최대 줄 수 */
+const MUTATION_MULTI_OPEN_PREVIEW = 8;
 
 /**
  * `/일정 목록` — 이 길드의 OPEN 세션 목록 (에페메랄)
@@ -187,21 +190,75 @@ async function refreshOpenSessionAnnouncement(
   await msg.edit({ embeds: [embed], components: [row] });
 }
 
-/** 날짜 문자열을 Date로 파싱 (create와 동일 규칙) */
-function parseDateTime(str: string): Date | null {
-  const normalized = str.replace(" ", "T");
-  const date = new Date(normalized);
-  return isNaN(date.getTime()) ? null : date;
-}
+type ResolveOpenSessionForMutationResult =
+  | { kind: "resolved"; session: Session }
+  | { kind: "not_found" }
+  | { kind: "ambiguous"; sessions: Session[] };
 
-async function resolveOpenSession(
+async function resolveOpenSessionForMutation(
   guildId: string,
   sessionIdOpt: string | null
-): Promise<Session | null> {
-  if (sessionIdOpt?.trim()) {
-    return findSessionByIdInGuild(sessionIdOpt.trim(), guildId);
+): Promise<ResolveOpenSessionForMutationResult> {
+  const trimmed = sessionIdOpt?.trim();
+  if (trimmed) {
+    const session = await findSessionByIdInGuild(trimmed, guildId);
+    if (!session) return { kind: "not_found" };
+    return { kind: "resolved", session };
   }
-  return findLatestOpenSessionByGuild(guildId);
+
+  const openSessions = await findOpenSessionsByGuild(guildId);
+  if (openSessions.length === 0) return { kind: "not_found" };
+  if (openSessions.length === 1) {
+    return { kind: "resolved", session: openSessions[0]! };
+  }
+  return { kind: "ambiguous", sessions: openSessions };
+}
+
+function buildOpenSessionPreview(
+  sessions: Session[]
+): { lines: string; more: string } {
+  const lines = [...sessions]
+    .sort((a, b) => a.targetDateTime.getTime() - b.targetDateTime.getTime())
+    .slice(0, MUTATION_MULTI_OPEN_PREVIEW)
+    .map((s, i) => {
+      const sid = String(s._id);
+      const ts = Math.floor(s.targetDateTime.getTime() / 1000);
+      const title = s.title.length > 44 ? `${s.title.slice(0, 41)}…` : s.title;
+      return `${i + 1}. **${title}** — \`${sid}\` — 배정 <t:${ts}:D>`;
+    })
+    .join("\n");
+
+  const more =
+    sessions.length > MUTATION_MULTI_OPEN_PREVIEW
+      ? `\n… 외 ${sessions.length - MUTATION_MULTI_OPEN_PREVIEW}건`
+      : "";
+
+  return { lines, more };
+}
+
+async function replyNeedRegistrationIdForMutation(
+  interaction: ChatInputCommandInteraction,
+  sessions: Session[],
+  commandName: string
+): Promise<void> {
+  const { lines, more } = buildOpenSessionPreview(sessions);
+
+  await interaction.editReply({
+    content: D.mutationMultiOpen(
+      sessions.length,
+      Opt.registrationId,
+      commandName
+    ),
+  });
+  await interaction.followUp({
+    flags: MessageFlags.Ephemeral,
+    content: D.mutationPickIds(
+      lines,
+      more,
+      commandName,
+      `/${SCHEDULE_ROOT} ${Sub.overview}`
+    ),
+  });
 }
 
 async function resolveSessionForResult(
@@ -266,7 +323,7 @@ export async function handleSessionOverview(
         const ts = Math.floor(s.targetDateTime.getTime() / 1000);
         const tc = Math.floor(s.closeDateTime.getTime() / 1000);
         const ch = `<#${s.channelId}>`;
-        const st = s.status === "OPEN" ? "접수 중" : "마감";
+        const st = participationStatusLabel(s.status);
         const t = s.title.length > 48 ? `${s.title.slice(0, 45)}…` : s.title;
         return `· 【${st}】 ${t}\n  \`${sid}\` · ${ch} · 배정 <t:${ts}:f> · 회신마감 <t:${tc}:f>`;
       })
@@ -537,6 +594,22 @@ export async function handleSessionResult(
     return;
   }
 
+  if (session.status === "CLOSING") {
+    await interaction.editReply({
+      content: resultHeaderPublic(D.resultClosing),
+    });
+    await sendSessionIdToInvoker();
+    return;
+  }
+
+  if (session.status === "CANCELING") {
+    await interaction.editReply({
+      content: resultHeaderPublic(D.resultCanceling),
+    });
+    await sendSessionIdToInvoker();
+    return;
+  }
+
   const resolvedCh = await resolveGuildTextSendChannel(
     guildBase,
     interaction.options.getChannel(Opt.channel),
@@ -654,11 +727,27 @@ export async function handleSessionClose(
   const guildId = interaction.guildId!;
 
   const sessionIdOpt = interaction.options.getString(Opt.registrationId);
-  const session = await resolveOpenSession(guildId, sessionIdOpt);
+  const resolved = await resolveOpenSessionForMutation(guildId, sessionIdOpt);
+  if (resolved.kind === "ambiguous") {
+    await replyNeedRegistrationIdForMutation(
+      interaction,
+      resolved.sessions,
+      `/${SCHEDULE_ROOT} ${Sub.close}`
+    );
+    return;
+  }
+  const session = resolved.kind === "resolved" ? resolved.session : null;
 
   if (!session) {
     await interaction.editReply({
       content: D.closeNoOpen,
+    });
+    return;
+  }
+
+  if (session.status === "CLOSING") {
+    await interaction.editReply({
+      content: D.closeInProgress,
     });
     return;
   }
@@ -720,7 +809,7 @@ export async function handleSessionEditClose(
 
   const guildId = interaction.guildId;
   const newCloseStr = interaction.options.getString(Opt.newClose, true);
-  const newClose = parseDateTime(newCloseStr);
+  const newClose = parseStrictDateTimeInput(newCloseStr);
   if (!newClose) {
     await interaction.editReply({
       content: D.editCloseDateBad(Opt.newClose),
@@ -729,7 +818,16 @@ export async function handleSessionEditClose(
   }
 
   const sessionIdOpt = interaction.options.getString(Opt.registrationId);
-  const session = await resolveOpenSession(guildId, sessionIdOpt);
+  const resolved = await resolveOpenSessionForMutation(guildId, sessionIdOpt);
+  if (resolved.kind === "ambiguous") {
+    await replyNeedRegistrationIdForMutation(
+      interaction,
+      resolved.sessions,
+      `/${SCHEDULE_ROOT} ${Sub.editClose}`
+    );
+    return;
+  }
+  const session = resolved.kind === "resolved" ? resolved.session : null;
 
   if (!session || session.status !== "OPEN") {
     await interaction.editReply({
@@ -748,10 +846,11 @@ export async function handleSessionEditClose(
   }
 
   const sid = String(session._id);
-  const ok = await updateSessionCloseDateTime(sid, newClose);
-  if (!ok) {
+  const updateResult = await updateSessionCloseDateTime(sid, newClose);
+  if (updateResult !== "updated") {
     await interaction.editReply({
-      content: D.dbFail,
+      content:
+        updateResult === "not_open" ? D.editMutationLostOpen : D.dbFail,
     });
     return;
   }
@@ -818,7 +917,7 @@ export async function handleSessionEditDate(
 
   const guildId = interaction.guildId;
   const newDateStr = interaction.options.getString(Opt.newDate, true);
-  const newDate = parseDateTime(newDateStr);
+  const newDate = parseStrictDateTimeInput(newDateStr);
   if (!newDate) {
     await interaction.editReply({
       content: D.editDateBad(Opt.newDate),
@@ -827,7 +926,16 @@ export async function handleSessionEditDate(
   }
 
   const sessionIdOpt = interaction.options.getString(Opt.registrationId);
-  const session = await resolveOpenSession(guildId, sessionIdOpt);
+  const resolved = await resolveOpenSessionForMutation(guildId, sessionIdOpt);
+  if (resolved.kind === "ambiguous") {
+    await replyNeedRegistrationIdForMutation(
+      interaction,
+      resolved.sessions,
+      `/${SCHEDULE_ROOT} ${Sub.editDate}`
+    );
+    return;
+  }
+  const session = resolved.kind === "resolved" ? resolved.session : null;
 
   if (!session || session.status !== "OPEN") {
     await interaction.editReply({
@@ -842,12 +950,13 @@ export async function handleSessionEditDate(
     autoClose = autoCloseBeforeSession(newDate);
   }
 
-  const ok = autoClose
+  const updateResult = autoClose
     ? await updateSessionTargetAndCloseDateTime(sid, newDate, autoClose)
     : await updateSessionTargetDateTime(sid, newDate);
-  if (!ok) {
+  if (updateResult !== "updated") {
     await interaction.editReply({
-      content: D.dbFail,
+      content:
+        updateResult === "not_open" ? D.editMutationLostOpen : D.dbFail,
     });
     return;
   }
@@ -906,8 +1015,12 @@ function participationStatusLabel(status: SessionStatus): string {
   switch (status) {
     case "OPEN":
       return D.statusOpen;
+    case "CLOSING":
+      return D.statusClosing;
     case "CLOSED":
       return D.statusClosed;
+    case "CANCELING":
+      return D.statusCanceling;
     case "CANCELED":
       return D.statusCanceled;
     default:
@@ -1095,9 +1208,32 @@ export async function handleSessionCancel(
   const guildId = interaction.guildId!;
 
   const sessionIdOpt = interaction.options.getString(Opt.registrationId);
-  const session = await resolveOpenSession(guildId, sessionIdOpt);
+  const resolved = await resolveOpenSessionForMutation(guildId, sessionIdOpt);
+  if (resolved.kind === "ambiguous") {
+    await replyNeedRegistrationIdForMutation(
+      interaction,
+      resolved.sessions,
+      `/${SCHEDULE_ROOT} ${Sub.cancel}`
+    );
+    return;
+  }
+  const session = resolved.kind === "resolved" ? resolved.session : null;
 
-  if (!session || session.status !== "OPEN") {
+  if (!session) {
+    await interaction.editReply({
+      content: D.cancelNoOpen,
+    });
+    return;
+  }
+
+  if (session.status === "CANCELING") {
+    await interaction.editReply({
+      content: D.cancelInProgress,
+    });
+    return;
+  }
+
+  if (session.status !== "OPEN") {
     await interaction.editReply({
       content: D.cancelNoOpen,
     });

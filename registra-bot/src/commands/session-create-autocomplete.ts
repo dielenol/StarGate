@@ -10,19 +10,12 @@ import type {
 } from "discord.js";
 import { Ac, L } from "../constants/registrar-voice.js";
 import {
-  findLatestOpenSessionByGuild,
+  findOpenSessionsByGuild,
   findSessionByIdInGuild,
 } from "../db/sessions.js";
 import { Opt, Sub } from "../slash/ko-names.js";
 import type { Session } from "../types/session.js";
-
-function parseDateTime(str: string): Date | null {
-  const t = str.trim();
-  if (!t) return null;
-  const normalized = t.replace(" ", "T");
-  const date = new Date(normalized);
-  return isNaN(date.getTime()) ? null : date;
-}
+import { parseStrictDateTimeInput } from "../utils/date-time-input.js";
 
 function formatLocalDateTime(d: Date): string {
   const y = d.getFullYear();
@@ -188,7 +181,7 @@ function buildDateChoices(q: string): ApplicationCommandOptionChoiceData<string>
     : out;
 
   if (q.trim().length > 0 && /^\d{4}-\d{2}-\d{2}/.test(q.trim())) {
-    const parsed = parseDateTime(q.trim());
+    const parsed = parseStrictDateTimeInput(q.trim());
     if (parsed && parsed.getTime() > now.getTime()) {
       filtered.unshift({
         name: directInputChoiceName(formatLocalDateTime(parsed)),
@@ -259,7 +252,7 @@ function buildCloseChoices(
     : out;
 
   if (q.trim().length > 0) {
-    const parsed = parseDateTime(q.trim());
+    const parsed = parseStrictDateTimeInput(q.trim());
     if (parsed && parsed.getTime() > now.getTime()) {
       if (!end || parsed.getTime() < end.getTime()) {
         filtered = [
@@ -286,7 +279,9 @@ async function resolveOpenSessionForAutocomplete(
     const s = await findSessionByIdInGuild(trimmed, guildId);
     return s && s.status === "OPEN" ? s : null;
   }
-  return findLatestOpenSessionByGuild(guildId);
+  const openSessions = await findOpenSessionsByGuild(guildId);
+  if (openSessions.length !== 1) return null;
+  return openSessions[0] ?? null;
 }
 
 async function buildRoleChoices(
@@ -334,7 +329,9 @@ export async function handleSessionCreateAutocomplete(
 
     try {
       const dateStr = interaction.options.getString(Opt.date);
-      const sessionDate = dateStr ? parseDateTime(dateStr) : null;
+      const sessionDate = dateStr
+        ? parseStrictDateTimeInput(dateStr)
+        : null;
 
       let choices: ApplicationCommandOptionChoiceData<string>[];
 

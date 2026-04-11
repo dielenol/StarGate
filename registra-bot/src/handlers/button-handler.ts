@@ -79,7 +79,13 @@ export async function handleButtonInteraction(
   if (session.status !== "OPEN") {
     await interaction.followUp({
       content:
-        session.status === "CANCELED" ? D.btnCanceled : D.btnClosed,
+        session.status === "CANCELING"
+          ? D.btnCanceling
+          : session.status === "CANCELED"
+            ? D.btnCanceled
+            : session.status === "CLOSING"
+              ? D.btnClosing
+              : D.btnClosed,
       flags: MessageFlags.Ephemeral,
     }).catch(() => {});
     return;
