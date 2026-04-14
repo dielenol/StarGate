@@ -1,0 +1,148 @@
+.detail {
+  max-width: 720px;
+}
+
+.detail__classification {
+  margin-bottom: 8px;
+  color: rgba(197, 160, 89, 0.5);
+  font-size: 11px;
+  letter-spacing: 3px;
+}
+
+.detail__back {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.detail__back:hover {
+  color: #c5a059;
+}
+
+.detail__title {
+  margin: 0 0 12px;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.detail__meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.detail__gm {
+  color: #5ea3c5;
+  font-weight: 600;
+}
+
+.detail__date {
+  color: #5a6a6e;
+}
+
+/* Actions */
+
+.detail__actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.detail__editBtn,
+.detail__deleteBtn {
+  padding: 6px 14px;
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  background: transparent;
+  color: #d8c39a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.detail__editBtn:hover {
+  background: rgba(197, 160, 89, 0.08);
+  border-color: #c5a059;
+}
+
+.detail__deleteBtn {
+  border-color: rgba(200, 60, 60, 0.3);
+  color: #e07070;
+}
+
+.detail__deleteBtn:hover {
+  background: rgba(200, 60, 60, 0.1);
+  border-color: #e07070;
+}
+
+.detail__deleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sections */
+
+.detail__section {
+  margin-bottom: 24px;
+}
+
+.detail__sectionHeader {
+  margin-bottom: 10px;
+  color: #c5a059;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.detail__body {
+  margin: 0;
+  color: #d8c39a;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.detail__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detail__listItem {
+  position: relative;
+  padding: 8px 0 8px 18px;
+  color: #d8c39a;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.06);
+}
+
+.detail__listItem::before {
+  content: "\25C9";
+  position: absolute;
+  left: 0;
+  color: #c5a059;
+  font-size: 10px;
+}
+
+/* Participants */
+
+.detail__participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail__participant {
+  padding: 4px 12px;
+  border: 1px solid rgba(94, 163, 94, 0.2);
+  background: rgba(94, 163, 94, 0.08);
+  color: #5ea35e;
+  font-size: 13px;
+  font-weight: 600;
+}

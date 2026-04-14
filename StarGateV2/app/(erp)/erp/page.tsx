@@ -77,16 +77,33 @@ export default async function ERPDashboardPage() {
             <a href="/erp/sessions" className={styles.dashboard__action}>
               ◉ 세션 일정
             </a>
+            <a href="/erp/sessions/report" className={styles.dashboard__action}>
+              ◎ 세션 리포트
+            </a>
             <a href="/erp/characters" className={styles.dashboard__action}>
               ⚔ 캐릭터
+            </a>
+            <a href="/erp/credits" className={styles.dashboard__action}>
+              ◇ 크레딧
+            </a>
+            <a href="/erp/inventory" className={styles.dashboard__action}>
+              ▣ 장비
+            </a>
+            <a href="/erp/notifications" className={styles.dashboard__action}>
+              ⚡ 알림
             </a>
             <a href="/erp/profile" className={styles.dashboard__action}>
               ◎ 프로필
             </a>
             {isAdmin && (
-              <a href="/erp/admin/users" className={styles.dashboard__action}>
-                ⚙ 사용자 관리
-              </a>
+              <>
+                <a href="/erp/admin/users" className={styles.dashboard__action}>
+                  ⚙ 사용자 관리
+                </a>
+                <a href="/erp/admin/members" className={styles.dashboard__action}>
+                  ⚙ 멤버 관리
+                </a>
+              </>
             )}
           </div>
         </div>

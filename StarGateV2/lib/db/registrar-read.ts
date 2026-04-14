@@ -46,6 +46,26 @@ export async function findSessionResponses(
   return col.find({ sessionId }).sort({ respondedAt: 1 }).toArray();
 }
 
+/**
+ * userId별 세션 참여 횟수 집계 (YES 응답만 카운트)
+ */
+export async function countSessionParticipation(): Promise<
+  Record<string, number>
+> {
+  const col = await responsesCollection();
+  const responses = await col
+    .find({ status: "YES" })
+    .project({ userId: 1 })
+    .toArray();
+
+  const counts: Record<string, number> = {};
+  for (const r of responses) {
+    const uid = r.userId as string;
+    counts[uid] = (counts[uid] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export async function findUpcomingSessions(
   guildId: string,
   limit = 3,
