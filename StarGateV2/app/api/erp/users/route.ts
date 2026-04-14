@@ -54,6 +54,14 @@ export async function POST(request: Request) {
     );
   }
 
+  // 자신보다 높거나 같은 역할은 부여 불가
+  if (role === "SUPER_ADMIN" && session.user.role !== "SUPER_ADMIN") {
+    return NextResponse.json(
+      { error: "SUPER_ADMIN 역할은 SUPER_ADMIN만 부여할 수 있습니다." },
+      { status: 403 },
+    );
+  }
+
   try {
     const result = await createUser({
       username: username.trim(),
@@ -61,7 +69,10 @@ export async function POST(request: Request) {
       role: role as UserRole,
     });
 
-    return NextResponse.json(result, { status: 201 });
+    return NextResponse.json(result, {
+      status: 201,
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "사용자 생성 실패";
     return NextResponse.json({ error: message }, { status: 400 });

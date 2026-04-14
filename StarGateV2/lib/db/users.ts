@@ -147,6 +147,11 @@ export async function linkDiscord(
   );
 }
 
+export async function countUsers(): Promise<number> {
+  const col = await usersCollection();
+  return col.countDocuments();
+}
+
 export async function listUsers(): Promise<UserPublic[]> {
   const col = await usersCollection();
   const users = await col.find().sort({ createdAt: -1 }).toArray();

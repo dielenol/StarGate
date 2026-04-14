@@ -69,5 +69,14 @@ export function renderMarkdown(content: string): string {
     }
   }
 
-  return htmlParts.join("");
+  return sanitizeHtml(htmlParts.join(""));
+}
+
+/** 허용된 HTML 태그만 남기고 나머지 제거 */
+function sanitizeHtml(html: string): string {
+  const ALLOWED_TAGS = /^(h[2-4]|p|br|hr|strong|em)$/;
+  // self-closing 허용 태그
+  return html.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\/?>/g, (match, tag) => {
+    return ALLOWED_TAGS.test(tag.toLowerCase()) ? match : escapeHtml(match);
+  });
 }

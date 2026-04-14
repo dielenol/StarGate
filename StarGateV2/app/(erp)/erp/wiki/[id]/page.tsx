@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findWikiPageById } from "@/lib/db/wiki";
+import { isValidObjectId } from "@/lib/db/utils";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import WikiDeleteButton from "./WikiDeleteButton";
@@ -22,6 +23,7 @@ export default async function WikiDetailPage({
   }
 
   const { id } = await params;
+  if (!isValidObjectId(id)) notFound();
   const page = await findWikiPageById(id);
 
   if (!page) {
@@ -89,20 +91,12 @@ export default async function WikiDetailPage({
 
         <div className={styles.detail__actions}>
           {isGM && (
-            <>
-              <Link
-                className={styles.detail__actionBtn}
-                href={`/erp/wiki/${pageId}/edit`}
-              >
-                수정
-              </Link>
-              <Link
-                className={styles.detail__actionBtn}
-                href={`/erp/wiki/${pageId}/history`}
-              >
-                히스토리
-              </Link>
-            </>
+            <Link
+              className={styles.detail__actionBtn}
+              href={`/erp/wiki/${pageId}/edit`}
+            >
+              수정
+            </Link>
           )}
           {isAdmin && <WikiDeleteButton pageId={pageId} />}
         </div>

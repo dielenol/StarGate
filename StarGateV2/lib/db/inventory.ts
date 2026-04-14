@@ -77,22 +77,21 @@ export async function addToInventory(
 ): Promise<CharacterInventory> {
   const col = await inventoryCollection();
 
-  // 같은 아이템이 이미 있으면 수량 증가
-  const existing = await col.findOne({
-    characterId: input.characterId,
-    itemId: input.itemId,
-  });
-
-  if (existing) {
-    await col.updateOne(
-      { _id: existing._id },
-      { $inc: { quantity: input.quantity } },
-    );
-    return { ...existing, quantity: existing.quantity + input.quantity };
-  }
-
-  const result = await col.insertOne(input as CharacterInventory);
-  return { ...input, _id: result.insertedId } as CharacterInventory;
+  // upsert로 원자적 처리 — 동시 요청 시 중복 문서 방지
+  const result = await col.findOneAndUpdate(
+    { characterId: input.characterId, itemId: input.itemId },
+    {
+      $inc: { quantity: input.quantity },
+      $setOnInsert: {
+        characterCodename: input.characterCodename,
+        itemName: input.itemName,
+        acquiredAt: input.acquiredAt,
+        note: input.note,
+      },
+    },
+    { upsert: true, returnDocument: "after" },
+  );
+  return result!;
 }
 
 export async function removeFromInventory(

@@ -6,6 +6,7 @@ import type { AgentCharacter, NpcCharacter } from "@/types/character";
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
+import { isValidObjectId } from "@/lib/db/utils";
 
 import CharacterDetailClient from "./CharacterDetailClient";
 
@@ -23,6 +24,7 @@ export default async function CharacterDetailPage({ params }: PageProps) {
   }
 
   const { id } = await params;
+  if (!isValidObjectId(id)) notFound();
   const character = await findCharacterById(id);
 
   if (!character) {

@@ -41,10 +41,10 @@ export async function createNotification(
   return { ...doc, _id: result.insertedId };
 }
 
-export async function markAsRead(id: string): Promise<boolean> {
+export async function markAsRead(id: string, userId: string): Promise<boolean> {
   const col = await notificationsCollection();
   const result = await col.updateOne(
-    { _id: new ObjectId(id) },
+    { _id: new ObjectId(id), userId },
     { $set: { isRead: true } },
   );
   return result.modifiedCount > 0;

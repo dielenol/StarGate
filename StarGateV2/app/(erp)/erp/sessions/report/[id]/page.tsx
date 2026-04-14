@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findReportById } from "@/lib/db/session-reports";
+import { isValidObjectId } from "@/lib/db/utils";
 
 import ReportActions from "./ReportActions";
 
@@ -21,6 +22,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
   }
 
   const { id } = await params;
+  if (!isValidObjectId(id)) notFound();
 
   const report = await findReportById(id);
   if (!report) {

@@ -7,6 +7,7 @@ import {
   findWikiPageById,
   updateWikiPage,
 } from "@/lib/db/wiki";
+import { isValidObjectId } from "@/lib/db/utils";
 
 export async function GET(
   _request: Request,
@@ -18,6 +19,9 @@ export async function GET(
   }
 
   const { id } = await params;
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
 
   try {
     const page = await findWikiPageById(id);
@@ -53,6 +57,9 @@ export async function PATCH(
   }
 
   const { id } = await params;
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
   const body = await request.json();
   const { title, content, category, tags, isPublic } = body as {
     title?: string;
@@ -100,6 +107,9 @@ export async function DELETE(
   }
 
   const { id } = await params;
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
 
   try {
     const deleted = await deleteWikiPage(id);

@@ -78,14 +78,25 @@ export async function createCharacter(
 
 /* ── 수정 ── */
 
+const ALLOWED_CHARACTER_FIELDS = new Set([
+  "codename", "type", "role", "previewImage", "pixelCharacterImage",
+  "warningVideo", "ownerId", "isPublic", "sheet",
+]);
+
 export async function updateCharacter(
   id: string,
   update: Record<string, unknown>,
 ): Promise<boolean> {
+  const sanitized: Record<string, unknown> = {};
+  for (const key of Object.keys(update)) {
+    if (ALLOWED_CHARACTER_FIELDS.has(key)) sanitized[key] = update[key];
+  }
+  if (Object.keys(sanitized).length === 0) return false;
+
   const col = await charactersCollection();
   const result = await col.updateOne(
     { _id: new ObjectId(id) },
-    { $set: { ...update, updatedAt: new Date() } as Record<string, unknown> },
+    { $set: { ...sanitized, updatedAt: new Date() } as Record<string, unknown> },
   );
   return result.modifiedCount > 0;
 }

@@ -9,6 +9,7 @@ import {
   updateCharacter,
   deleteCharacter,
 } from "@/lib/db/characters";
+import { isValidObjectId } from "@/lib/db/utils";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -21,6 +22,9 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
 
   try {
     const character = await findCharacterById(id);
@@ -50,6 +54,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
   const body = (await request.json()) as Partial<
     Omit<Character, "_id" | "createdAt">
   >;
@@ -82,6 +89,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
 
   try {
     const deleted = await deleteCharacter(id);

@@ -46,7 +46,7 @@ export async function findTransactionById(
   return col.findOne({ _id: new ObjectId(id) });
 }
 
-/** 유저의 잔액 계산 후 트랜잭션 생성 (원자적이진 않으나 소규모에 충분) */
+/** 유저의 잔액 계산 후 트랜잭션 생성 — 잔액 조회+생성 사이 레이스 방지를 위해 직렬 처리 */
 export async function addCredit(
   userId: string,
   userName: string,
@@ -58,10 +58,18 @@ export async function addCredit(
   characterId?: string,
   characterCodename?: string,
 ): Promise<CreditTransaction> {
-  const currentBalance = await getUserBalance(userId);
+  const col = await creditTransactionsCollection();
+
+  // 최신 잔액을 조회하고 즉시 새 트랜잭션 삽입 (단일 컬렉션이므로 findOneAndUpdate 불가, 대신 정렬 기반)
+  const latest = await col
+    .find({ userId })
+    .sort({ createdAt: -1 })
+    .limit(1)
+    .toArray();
+  const currentBalance = latest[0]?.balance ?? 0;
   const newBalance = currentBalance + amount;
 
-  return createCreditTransaction({
+  const doc: CreditTransaction = {
     userId,
     userName,
     characterId,
@@ -72,5 +80,8 @@ export async function addCredit(
     description,
     createdById,
     createdByName,
-  });
+    createdAt: new Date(),
+  };
+  const result = await col.insertOne(doc);
+  return { ...doc, _id: result.insertedId };
 }

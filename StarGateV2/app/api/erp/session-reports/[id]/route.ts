@@ -7,6 +7,7 @@ import {
   findReportById,
   updateSessionReport,
 } from "@/lib/db/session-reports";
+import { isValidObjectId } from "@/lib/db/utils";
 
 export async function GET(
   _request: Request,
@@ -18,6 +19,9 @@ export async function GET(
   }
 
   const { id } = await params;
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
 
   try {
     const report = await findReportById(id);
@@ -53,6 +57,9 @@ export async function PATCH(
   }
 
   const { id } = await params;
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
   const body = await request.json();
   const { sessionTitle, summary, highlights, participants } = body as {
     sessionTitle?: string;
@@ -99,6 +106,9 @@ export async function DELETE(
   }
 
   const { id } = await params;
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
 
   try {
     const deleted = await deleteSessionReport(id);

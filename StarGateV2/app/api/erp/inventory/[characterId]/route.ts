@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { listCharacterInventory, addToInventory } from "@/lib/db/inventory";
 import { findCharacterById } from "@/lib/db/characters";
+import { isValidObjectId } from "@/lib/db/utils";
 
 export async function GET(
   _request: Request,
@@ -17,6 +18,9 @@ export async function GET(
   }
 
   const { characterId } = await params;
+  if (!isValidObjectId(characterId)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
 
   try {
     const inventory = await listCharacterInventory(characterId);
@@ -44,6 +48,9 @@ export async function POST(
   }
 
   const { characterId } = await params;
+  if (!isValidObjectId(characterId)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
 
   const character = await findCharacterById(characterId);
   if (!character) {
