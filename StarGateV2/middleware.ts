@@ -1,29 +1,33 @@
-import { auth } from "@/lib/auth/config";
-import { getRouteMinRole, hasRole } from "@/lib/auth/rbac";
+/**
+ * Edge Runtime 경량 미들웨어
+ *
+ * mongodb 드라이버는 Edge Runtime에서 사용 불가하므로,
+ * 여기서는 세션 쿠키 존재 여부만 확인하여 빠른 리다이렉트 처리.
+ * 실제 인증·RBAC 검증은 (erp)/layout.tsx 및 각 페이지의 서버 컴포넌트에서 수행.
+ */
+
 import { NextResponse } from "next/server";
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
+import type { NextRequest } from "next/server";
 
-  // ERP 경로가 아니면 통과
-  const minRole = getRouteMinRole(pathname);
-  if (!minRole) return NextResponse.next();
+const SESSION_COOKIE_NAMES = [
+  "authjs.session-token",
+  "__Secure-authjs.session-token",
+];
 
-  // 비인증 → 로그인
-  if (!req.auth?.user) {
-    const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
+export function middleware(request: NextRequest) {
+  const hasSession = SESSION_COOKIE_NAMES.some(
+    (name) => request.cookies.get(name)?.value,
+  );
+
+  if (!hasSession) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 역할 부족 → 403
-  const userRole = req.auth.user.role;
-  if (!hasRole(userRole, minRole)) {
-    return new NextResponse("권한이 부족합니다.", { status: 403 });
-  }
-
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/erp/:path*"],
