@@ -1,0 +1,354 @@
+.survey {
+  background-color: #03060a;
+  padding: 50px 10px;
+  text-align: center;
+  font-family: "Apple SD Gothic Neo", "Malgun Gothic", serif;
+  min-height: 100vh;
+}
+
+.survey__outer {
+  border: 1px solid #34495e;
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 10px;
+  background-color: #081216;
+}
+
+.survey__inner {
+  border: 4px double #c5a059;
+  padding: 60px 30px;
+  background-color: #081216;
+  text-align: center;
+}
+
+.survey__classification {
+  color: rgba(197, 160, 89, 0.6);
+  font-size: 12px;
+  letter-spacing: 5px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.2);
+  padding-bottom: 10px;
+}
+
+/* Hero */
+
+.survey__hero {
+  margin-bottom: 50px;
+}
+
+.survey__emblem {
+  color: #c5a059;
+  font-size: 36px;
+  letter-spacing: 12px;
+  margin-bottom: 8px;
+}
+
+.survey__title {
+  color: #fff;
+  font-size: 34px;
+  margin: 0;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px rgba(197, 160, 89, 0.4);
+}
+
+.survey__subtitle {
+  color: #c5a059;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 12px;
+  margin-top: 10px;
+  margin-left: 12px;
+}
+
+.survey__divider {
+  width: 80px;
+  height: 2px;
+  background-color: #c5a059;
+  margin: 25px auto 0;
+}
+
+/* Intro */
+
+.survey__intro {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.survey__intro p {
+  color: #e0e0e0;
+  font-size: 15px;
+  line-height: 2.2;
+  word-break: keep-all;
+  padding: 0 20px;
+  margin: 0;
+}
+
+/* Request note */
+
+.survey__requestNote {
+  color: rgba(197, 160, 89, 0.6);
+  font-size: 13px;
+  letter-spacing: 1px;
+  margin: 0 0 30px;
+}
+
+/* Warning */
+
+.survey__warning {
+  background-color: rgba(255, 51, 51, 0.05);
+  border: 1px solid rgba(255, 51, 51, 0.25);
+  padding: 14px 20px;
+  margin-bottom: 40px;
+}
+
+.survey__warning p {
+  color: rgba(255, 120, 120, 0.7);
+  font-size: 13px;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+/* Sections */
+
+.survey__section {
+  margin-bottom: 50px;
+  text-align: left;
+}
+
+.survey__sectionTitle--gold,
+.survey__sectionTitle--cyan,
+.survey__sectionTitle--green {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  padding-left: 15px;
+  letter-spacing: 2px;
+  border-left: 4px solid;
+}
+
+.survey__sectionTitle--gold {
+  color: #c5a059;
+  border-color: #c5a059;
+}
+
+.survey__sectionTitle--cyan {
+  color: #00eaff;
+  border-color: #00eaff;
+}
+
+.survey__sectionTitle--green {
+  color: #a8e6cf;
+  border-color: #a8e6cf;
+}
+
+.survey__sectionBody--gold,
+.survey__sectionBody--cyan,
+.survey__sectionBody--green {
+  padding: 25px;
+  border: 1px solid;
+}
+
+.survey__sectionBody--gold {
+  background-color: rgba(197, 160, 89, 0.05);
+  border-color: rgba(197, 160, 89, 0.2);
+}
+
+.survey__sectionBody--cyan {
+  background-color: rgba(0, 234, 255, 0.05);
+  border-color: rgba(0, 234, 255, 0.2);
+}
+
+.survey__sectionBody--green {
+  background-color: rgba(168, 230, 207, 0.05);
+  border-color: rgba(168, 230, 207, 0.2);
+}
+
+.survey__sectionBody--gold p,
+.survey__sectionBody--green p {
+  color: #b0c4de;
+  font-size: 15px;
+  line-height: 2;
+  margin: 0;
+  word-break: keep-all;
+}
+
+.survey__sectionBody--gold b {
+  color: #e0e0e0;
+}
+
+/* Accent colors */
+
+.gold {
+  color: #c5a059;
+}
+
+.cyan {
+  color: #00eaff;
+}
+
+/* Table */
+
+.survey__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.survey__table tr {
+  border-bottom: 1px solid rgba(0, 234, 255, 0.1);
+}
+
+.survey__table tr:last-child {
+  border-bottom: none;
+}
+
+.survey__tableLabel {
+  color: rgba(0, 234, 255, 0.6);
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 12px 0;
+  width: 120px;
+  vertical-align: top;
+}
+
+.survey__tableValue {
+  color: #b0c4de;
+  font-size: 15px;
+  padding: 12px 0;
+}
+
+.survey__priceValue {
+  color: #00eaff;
+  font-size: 18px;
+}
+
+.survey__badge {
+  color: #00eaff;
+  background-color: rgba(0, 234, 255, 0.12);
+  border: 1px solid rgba(0, 234, 255, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+/* Notes */
+
+.survey__notes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.survey__notes li {
+  color: #b0c4de;
+  font-size: 14px;
+  line-height: 2.2;
+  word-break: keep-all;
+}
+
+.survey__notes li::before {
+  content: "\2022";
+  color: rgba(168, 230, 207, 0.5);
+  margin-right: 8px;
+}
+
+/* Notice */
+
+.survey__notice {
+  background-color: rgba(197, 160, 89, 0.08);
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  padding: 16px 24px;
+  margin-bottom: 50px;
+}
+
+.survey__notice p {
+  color: #c5a059;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+/* CTA */
+
+.survey__cta {
+  text-align: center;
+  border-top: 1px dashed rgba(197, 160, 89, 0.3);
+  padding-top: 40px;
+  margin-bottom: 30px;
+}
+
+.survey__ctaText {
+  color: #e0e0e0;
+  font-size: 15px;
+  line-height: 2;
+  word-break: keep-all;
+  margin-bottom: 25px;
+}
+
+.survey__ctaBtn {
+  display: inline-block;
+  background-color: #c5a059;
+  color: #081216;
+  padding: 14px 40px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  font-size: 16px;
+  text-decoration: none;
+  box-shadow: 0 0 20px rgba(197, 160, 89, 0.4);
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.survey__ctaBtn:hover {
+  background-color: #d4af6a;
+  box-shadow: 0 0 30px rgba(197, 160, 89, 0.6);
+}
+
+.survey__ctaHint {
+  color: rgba(197, 160, 89, 0.4);
+  font-size: 11px;
+  letter-spacing: 3px;
+  margin-top: 12px;
+}
+
+/* Footer */
+
+.survey__footer {
+  margin-top: 50px;
+  padding-top: 25px;
+  border-top: 1px double rgba(197, 160, 89, 0.3);
+  color: rgba(197, 160, 89, 0.5);
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+/* Mobile */
+
+@media (max-width: 640px) {
+  .survey__inner {
+    padding: 40px 16px;
+  }
+
+  .survey__title {
+    font-size: 24px;
+    letter-spacing: 2px;
+  }
+
+  .survey__subtitle {
+    font-size: 12px;
+    letter-spacing: 6px;
+  }
+
+  .survey__tableLabel {
+    width: 80px;
+    font-size: 10px;
+  }
+
+  .survey__ctaBtn {
+    padding: 12px 24px;
+    font-size: 14px;
+    letter-spacing: 2px;
+  }
+}
