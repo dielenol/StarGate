@@ -1,0 +1,68 @@
+.sessions {
+  max-width: 960px;
+}
+
+.sessions__classification {
+  margin-bottom: 8px;
+  color: rgba(197, 160, 89, 0.5);
+  font-size: 11px;
+  letter-spacing: 3px;
+}
+
+.sessions__title {
+  margin: 0 0 24px;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.sessions__empty {
+  color: #5a6a6e;
+  font-size: 14px;
+  padding: 40px;
+  text-align: center;
+  border: 1px dashed rgba(197, 160, 89, 0.1);
+}
+
+/* Legend */
+
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  background: rgba(13, 27, 30, 0.4);
+  border: 1px solid rgba(197, 160, 89, 0.08);
+}
+
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend__dot--open {
+  background: #5ea35e;
+}
+
+.legend__dot--closing {
+  background: #c5a059;
+}
+
+.legend__dot--closed {
+  background: #94a3b8;
+}
+
+.legend__dot--canceled {
+  background: #e07070;
+}

@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
+import { findUpcomingSessions } from "@/lib/db/registrar-read";
+import { listUsers } from "@/lib/db/users";
+import { hasRole } from "@/lib/auth/rbac";
 
 import styles from "./page.module.css";
 
@@ -12,6 +15,28 @@ export default async function ERPDashboardPage() {
   }
 
   const { displayName, role } = session.user;
+  const isAdmin = hasRole(role, "ADMIN");
+
+  let upcomingSessions: Awaited<ReturnType<typeof findUpcomingSessions>> = [];
+  let memberCount = 0;
+
+  try {
+    const guildId = process.env.GUILD_ID ?? "";
+    if (guildId) {
+      upcomingSessions = await findUpcomingSessions(guildId, 5);
+    }
+  } catch {
+    // registrar_bot DB 연결 실패 시 빈 배열 유지
+  }
+
+  if (isAdmin) {
+    try {
+      const users = await listUsers();
+      memberCount = users.length;
+    } catch {
+      // DB 연결 실패 시 0 유지
+    }
+  }
 
   return (
     <section className={styles.dashboard}>
@@ -20,28 +45,85 @@ export default async function ERPDashboardPage() {
       </div>
       <h1 className={styles.dashboard__title}>대시보드</h1>
 
-      <div className={styles.dashboard__card}>
-        <p className={styles.dashboard__placeholder}>
-          Phase 2에서 구현 예정입니다.
-          <br />
-          세션 일정, 캐릭터 현황, 최근 활동 등의 요약 정보가 이곳에 표시됩니다.
-        </p>
-
-        <div className={styles["dashboard__user-info"]}>
-          <div className={styles["dashboard__user-title"]}>
-            CURRENT OPERATOR
+      <div className={styles.dashboard__grid}>
+        {/* 현재 요원 정보 */}
+        <div className={styles.dashboard__card}>
+          <div className={styles.dashboard__cardHeader}>CURRENT OPERATOR</div>
+          <div className={styles.dashboard__row}>
+            <span className={styles.dashboard__label}>이름</span>
+            <span className={styles.dashboard__value}>{displayName}</span>
           </div>
-          <div className={styles["dashboard__user-row"]}>
-            <span className={styles["dashboard__user-label"]}>이름</span>
-            <span className={styles["dashboard__user-value"]}>
-              {displayName}
-            </span>
-          </div>
-          <div className={styles["dashboard__user-row"]}>
-            <span className={styles["dashboard__user-label"]}>역할</span>
-            <span className={styles["dashboard__user-value"]}>{role}</span>
+          <div className={styles.dashboard__row}>
+            <span className={styles.dashboard__label}>역할</span>
+            <span className={styles.dashboard__value}>{role}</span>
           </div>
         </div>
+
+        {/* 멤버 현황 (ADMIN+) */}
+        {isAdmin && (
+          <div className={styles.dashboard__card}>
+            <div className={styles.dashboard__cardHeader}>PERSONNEL STATUS</div>
+            <div className={styles.dashboard__stat}>
+              <span className={styles.dashboard__statNumber}>{memberCount}</span>
+              <span className={styles.dashboard__statLabel}>등록 인원</span>
+            </div>
+          </div>
+        )}
+
+        {/* 퀵 액션 */}
+        <div className={styles.dashboard__card}>
+          <div className={styles.dashboard__cardHeader}>QUICK ACTIONS</div>
+          <div className={styles.dashboard__actions}>
+            <a href="/erp/sessions" className={styles.dashboard__action}>
+              ◉ 세션 일정
+            </a>
+            <a href="/erp/characters" className={styles.dashboard__action}>
+              ⚔ 캐릭터
+            </a>
+            <a href="/erp/profile" className={styles.dashboard__action}>
+              ◎ 프로필
+            </a>
+            {isAdmin && (
+              <a href="/erp/admin/users" className={styles.dashboard__action}>
+                ⚙ 사용자 관리
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 다가오는 세션 */}
+      <div className={styles.dashboard__section}>
+        <div className={styles.dashboard__sectionHeader}>UPCOMING SESSIONS</div>
+        {upcomingSessions.length === 0 ? (
+          <p className={styles.dashboard__empty}>
+            예정된 세션이 없습니다.
+          </p>
+        ) : (
+          <div className={styles.dashboard__sessions}>
+            {upcomingSessions.map((s) => (
+              <div key={String(s._id)} className={styles.dashboard__sessionCard}>
+                <div className={styles.dashboard__sessionTitle}>{s.title}</div>
+                <div className={styles.dashboard__sessionDate}>
+                  {new Date(s.targetDateTime).toLocaleDateString("ko-KR", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    weekday: "short",
+                  })}
+                  {" "}
+                  {new Date(s.targetDateTime).toLocaleTimeString("ko-KR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
+                <div className={styles.dashboard__sessionStatus}>
+                  {s.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
