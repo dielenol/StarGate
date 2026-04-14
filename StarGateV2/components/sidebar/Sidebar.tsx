@@ -36,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   { label: "작전 내규", href: "/gameplay", icon: "▶" },
   { label: "노부스 오르도 룰", href: "/rules", icon: "☷" },
+  { label: "운영 시스템", href: "/erp", icon: "⚙" },
 ];
 
 function isActivePath(pathname: string, href: string) {

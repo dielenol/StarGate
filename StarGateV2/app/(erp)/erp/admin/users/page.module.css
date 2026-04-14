@@ -1,0 +1,234 @@
+.page {
+  padding: 32px;
+}
+
+.page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page__title {
+  font-size: 24px;
+  color: #c5a059;
+  letter-spacing: 0.05em;
+}
+
+.page__add {
+  padding: 8px 16px;
+  background: #c5a059;
+  color: #050808;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: background 0.2s;
+}
+
+.page__add:hover {
+  background: #d4af6a;
+}
+
+.page__loading {
+  color: #d8c39a;
+  text-align: center;
+  padding: 40px;
+}
+
+/* Form */
+
+.form {
+  background: #0a1214;
+  border: 1px solid #1a2a2e;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .form__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form__label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: #c5a059;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.form__input,
+.form__select {
+  padding: 10px 12px;
+  background: #050808;
+  border: 1px solid #2a3a3e;
+  color: #d8c39a;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.form__input::placeholder {
+  color: #5a6a6e;
+}
+
+.form__input:focus,
+.form__select:focus {
+  outline: none;
+  border-color: #c5a059;
+}
+
+.form__select {
+  cursor: pointer;
+}
+
+.form__submit {
+  padding: 10px 24px;
+  background: #c5a059;
+  color: #050808;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: background 0.2s;
+}
+
+.form__submit:hover {
+  background: #d4af6a;
+}
+
+.form__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form__error {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(200, 60, 60, 0.15);
+  border: 1px solid rgba(200, 60, 60, 0.3);
+  color: #e07070;
+  font-size: 13px;
+}
+
+.form__password {
+  margin-top: 12px;
+  padding: 14px;
+  background: rgba(94, 163, 94, 0.1);
+  border: 1px solid rgba(94, 163, 94, 0.3);
+  color: #8ebe8e;
+  font-size: 13px;
+}
+
+.form__password-code {
+  display: block;
+  margin: 8px 0;
+  padding: 10px;
+  background: #050808;
+  color: #c5a059;
+  font-size: 18px;
+  font-family: monospace;
+  letter-spacing: 0.1em;
+  user-select: all;
+}
+
+.form__password p {
+  margin: 0;
+  font-size: 12px;
+  color: #6a8a6a;
+}
+
+/* Table */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: #0a1214;
+  color: #c5a059;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid #1a2a2e;
+}
+
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #0e1618;
+  color: #d8c39a;
+}
+
+.table tr:hover td {
+  background: rgba(197, 160, 89, 0.04);
+}
+
+/* Badges */
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.badge--super_admin {
+  background: rgba(200, 60, 60, 0.2);
+  color: #e07070;
+}
+
+.badge--admin {
+  background: rgba(197, 160, 89, 0.2);
+  color: #c5a059;
+}
+
+.badge--gm {
+  background: rgba(94, 163, 197, 0.2);
+  color: #5ea3c5;
+}
+
+.badge--player {
+  background: rgba(94, 163, 94, 0.2);
+  color: #5ea35e;
+}
+
+.badge--guest {
+  background: rgba(160, 160, 160, 0.2);
+  color: #a0a0a0;
+}
+
+/* Status */
+
+.status {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.status--active {
+  color: #5ea35e;
+}
+
+.status--inactive {
+  color: #a0a0a0;
+}
+
+.status--suspended {
+  color: #e07070;
+}

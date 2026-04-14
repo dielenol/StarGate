@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
+
 import "./globals.css";
-import styles from "./layout.module.css";
-import Sidebar from "@/components/sidebar/Sidebar";
-import ScrollToTop from "@/components/ScrollToTop/ScrollToTop";
 
 // metadataBase 경고를 제거하고 환경별 절대 URL 기준을 고정합니다.
 // 우선순위:
@@ -52,13 +50,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body>
-        <div className={styles.layout}>
-          <Sidebar />
-          <div className={styles["layout__content"]}>{children}</div>
-          <ScrollToTop />
-        </div>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
