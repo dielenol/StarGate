@@ -1,0 +1,173 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100vh;
+  background: #0a1214;
+  border-right: 1px solid rgba(197, 160, 89, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.sidebar__header {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.15);
+}
+
+.sidebar__logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #c5a059;
+}
+
+.sidebar__logo-image {
+  flex-shrink: 0;
+}
+
+.sidebar__logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar__logo-title {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #c5a059;
+}
+
+.sidebar__logo-badge {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(197, 160, 89, 0.5);
+  margin-top: 2px;
+}
+
+.sidebar__nav {
+  flex: 1;
+  padding: 16px 0;
+}
+
+.sidebar__section {
+  margin-bottom: 8px;
+}
+
+.sidebar__section-title {
+  padding: 8px 20px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(197, 160, 89, 0.4);
+}
+
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  color: #d8c39a;
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sidebar__item:hover {
+  background: rgba(197, 160, 89, 0.08);
+  color: #fff;
+}
+
+.sidebar__item--active {
+  background: rgba(197, 160, 89, 0.12);
+  color: #fff;
+  border-right: 2px solid #c5a059;
+}
+
+.sidebar__item-icon {
+  width: 18px;
+  text-align: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.sidebar__footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(197, 160, 89, 0.15);
+}
+
+.sidebar__return {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 13px;
+  color: rgba(197, 160, 89, 0.6);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.sidebar__return:hover {
+  color: #c5a059;
+}
+
+/* 모바일: 상단 바로 전환 */
+@media (max-width: 1023px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 56px;
+    flex-direction: row;
+    align-items: center;
+    overflow: visible;
+    border-right: none;
+    border-bottom: 1px solid rgba(197, 160, 89, 0.2);
+  }
+
+  .sidebar__header {
+    padding: 0 16px;
+    border-bottom: none;
+    flex-shrink: 0;
+  }
+
+  .sidebar__nav {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar__section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+  }
+
+  .sidebar__section-title {
+    display: none;
+  }
+
+  .sidebar__item {
+    padding: 16px 14px;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  .sidebar__item--active {
+    border-right: none;
+    border-bottom: 2px solid #c5a059;
+  }
+
+  .sidebar__footer {
+    display: none;
+  }
+}

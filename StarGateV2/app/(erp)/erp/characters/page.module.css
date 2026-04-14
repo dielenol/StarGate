@@ -1,0 +1,206 @@
+/* ── Characters list page ── */
+
+.page {
+  max-width: 960px;
+}
+
+.page__classification {
+  margin-bottom: 8px;
+  color: rgba(197, 160, 89, 0.5);
+  font-size: 11px;
+  letter-spacing: 3px;
+}
+
+.page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.page__title {
+  margin: 0;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.page__addBtn {
+  padding: 8px 16px;
+  background: #c5a059;
+  color: #050808;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.page__addBtn:hover {
+  background: #d4af6a;
+}
+
+/* Filter tabs */
+
+.filters {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.filters__tab {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid rgba(197, 160, 89, 0.15);
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.filters__tab:hover {
+  background: rgba(197, 160, 89, 0.06);
+  border-color: rgba(197, 160, 89, 0.3);
+  color: #d8c39a;
+}
+
+.filters__tab--active {
+  background: rgba(197, 160, 89, 0.12);
+  border-color: #c5a059;
+  color: #c5a059;
+}
+
+/* Card grid */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid rgba(197, 160, 89, 0.15);
+  background: rgba(13, 27, 30, 0.6);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.card:hover {
+  background: rgba(13, 27, 30, 0.85);
+  border-color: rgba(197, 160, 89, 0.35);
+}
+
+.card__image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border: 1px solid rgba(197, 160, 89, 0.1);
+  background: #0a1214;
+  flex-shrink: 0;
+}
+
+.card__imagePlaceholder {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(197, 160, 89, 0.1);
+  background: #0a1214;
+  color: #5a6a6e;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.card__codename {
+  color: #d8c39a;
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__role {
+  color: #94a3b8;
+  font-size: 13px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Badges */
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.badge--agent {
+  background: rgba(197, 160, 89, 0.2);
+  color: #c5a059;
+}
+
+.badge--npc {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+
+.badge--public {
+  background: rgba(94, 163, 94, 0.15);
+  color: #5ea35e;
+}
+
+.badge--private {
+  background: rgba(200, 60, 60, 0.15);
+  color: #e07070;
+}
+
+/* Empty */
+
+.empty {
+  color: #5a6a6e;
+  font-size: 14px;
+  padding: 48px;
+  text-align: center;
+  border: 1px dashed rgba(197, 160, 89, 0.1);
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page__header {
+    flex-direction: column;
+    gap: 12px;
+  }
+}

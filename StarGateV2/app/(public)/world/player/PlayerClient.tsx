@@ -3,12 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+
+import type { CharacterSheetData } from "./components/CharacterSheet";
+
+import CharacterSheet from "./components/CharacterSheet";
 import frameStyles from "../../page.module.css";
 import styles from "./player.module.css";
-import CharacterSheet, { type CharacterSheetData } from "./components/CharacterSheet";
-import agentsData from "./data/agents.json";
 
-type Agent = {
+export type AgentForView = {
   id: string;
   codename: string;
   role: string;
@@ -18,7 +20,6 @@ type Agent = {
   sheet: CharacterSheetData;
 };
 
-const AGENTS = agentsData as Agent[];
 const BIG_BOY_AGENT_ID = "agent-bigboy";
 const BIG_BOY_WARNING_CHANCE = 0.2;
 const BIG_BOY_WARNING_MAX_PER_DAY = 3;
@@ -27,10 +28,10 @@ const WARNING_DURATION_MS = 1700;
 const RECOVERY_DURATION_MS = 1600;
 const RECOVERY_SOUND_DURATION_MS = 1300;
 
-export default function PlayerPage() {
-  const [selectedAgentId, setSelectedAgentId] = useState(AGENTS[0]?.id ?? "");
+export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
+  const [selectedAgentId, setSelectedAgentId] = useState(agents[0]?.id ?? "");
   const [warningPhase, setWarningPhase] = useState<"idle" | "warning" | "video" | "recovery">("idle");
-  const selectedAgent = AGENTS.find((agent) => agent.id === selectedAgentId) ?? AGENTS[0];
+  const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? agents[0];
   const warningTimeoutRef = useRef<number | null>(null);
   const recoverySoundTimeoutRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -125,7 +126,7 @@ export default function PlayerPage() {
     }, RECOVERY_DURATION_MS);
   }
 
-  function handleAgentSelect(agent: Agent) {
+  function handleAgentSelect(agent: AgentForView) {
     if (agent.id === selectedAgentId) {
       return;
     }
@@ -215,7 +216,7 @@ export default function PlayerPage() {
           <div className={frameStyles.stargate__divider}></div>
 
           <section className={styles.selectGrid} aria-label="요원 선택">
-            {AGENTS.map((agent) => {
+            {agents.map((agent) => {
               const active = selectedAgent?.id === agent.id;
 
               return (

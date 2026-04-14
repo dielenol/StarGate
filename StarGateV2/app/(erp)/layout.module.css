@@ -1,0 +1,71 @@
+.erp {
+  min-height: 100vh;
+}
+
+.erp__content {
+  min-height: 100vh;
+  padding-left: 240px;
+}
+
+.erp__header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 12px 24px;
+  background: rgba(5, 8, 8, 0.9);
+  border-bottom: 1px solid rgba(197, 160, 89, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.erp__user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.erp__user-name {
+  font-size: 14px;
+  color: #d8c39a;
+  font-weight: 600;
+}
+
+.erp__user-role {
+  font-size: 11px;
+  color: rgba(197, 160, 89, 0.6);
+  padding: 2px 8px;
+  border: 1px solid rgba(197, 160, 89, 0.2);
+  letter-spacing: 1px;
+}
+
+.erp__logout {
+  padding: 6px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: transparent;
+  color: #94a3b8;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.erp__logout:hover {
+  color: #fca5a5;
+  border-color: rgba(252, 165, 165, 0.4);
+}
+
+.erp__main {
+  padding: 24px;
+}
+
+@media (max-width: 1023px) {
+  .erp__content {
+    padding-left: 0;
+    padding-top: 56px;
+  }
+}
