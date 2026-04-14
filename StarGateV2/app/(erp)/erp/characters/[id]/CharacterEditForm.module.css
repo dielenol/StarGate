@@ -1,0 +1,242 @@
+/* ── Character edit / create form ── */
+
+.form {
+  max-width: 800px;
+}
+
+.form__section {
+  margin-bottom: 24px;
+}
+
+.form__sectionHeader {
+  margin-bottom: 14px;
+  color: #c5a059;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.form__card {
+  padding: 18px;
+  border: 1px solid rgba(197, 160, 89, 0.15);
+  background: rgba(13, 27, 30, 0.6);
+}
+
+/* Field rows */
+
+.form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form__gridFull {
+  grid-column: 1 / -1;
+}
+
+.form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form__label {
+  font-size: 11px;
+  color: #c5a059;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.form__input,
+.form__select,
+.form__textarea {
+  padding: 10px 12px;
+  background: #050808;
+  border: 1px solid #2a3a3e;
+  color: #d8c39a;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.form__input::placeholder,
+.form__textarea::placeholder {
+  color: #5a6a6e;
+}
+
+.form__input:focus,
+.form__select:focus,
+.form__textarea:focus {
+  outline: none;
+  border-color: #c5a059;
+}
+
+.form__select {
+  cursor: pointer;
+}
+
+.form__textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.form__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form__checkboxInput {
+  accent-color: #c5a059;
+  width: 16px;
+  height: 16px;
+}
+
+.form__checkboxLabel {
+  font-size: 13px;
+  color: #d8c39a;
+}
+
+/* Stat grid (4-col for combat stats) */
+
+.form__statGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* Dynamic list (Equipment / Abilities) */
+
+.form__listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.form__addBtn {
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  color: #c5a059;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.form__addBtn:hover {
+  background: rgba(197, 160, 89, 0.1);
+}
+
+.form__listItem {
+  padding: 14px;
+  border: 1px solid rgba(197, 160, 89, 0.1);
+  background: rgba(13, 27, 30, 0.4);
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.form__listItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.form__listItemTitle {
+  color: #94a3b8;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.form__removeBtn {
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid rgba(200, 60, 60, 0.3);
+  color: #e07070;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.form__removeBtn:hover {
+  background: rgba(200, 60, 60, 0.15);
+}
+
+/* Actions */
+
+.form__actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.form__submit {
+  padding: 10px 24px;
+  background: #c5a059;
+  color: #050808;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: background 0.2s;
+}
+
+.form__submit:hover {
+  background: #d4af6a;
+}
+
+.form__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form__cancel {
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid #2a3a3e;
+  color: #94a3b8;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.form__cancel:hover {
+  border-color: #94a3b8;
+  color: #d8c39a;
+}
+
+/* Error / Success */
+
+.form__error {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(200, 60, 60, 0.15);
+  border: 1px solid rgba(200, 60, 60, 0.3);
+  color: #e07070;
+  font-size: 13px;
+}
+
+.form__success {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(94, 163, 94, 0.1);
+  border: 1px solid rgba(94, 163, 94, 0.3);
+  color: #8ebe8e;
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form__statGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
