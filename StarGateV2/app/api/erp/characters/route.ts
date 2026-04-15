@@ -25,7 +25,14 @@ export async function GET(request: Request) {
         ? await listCharactersByType(type)
         : await listCharacters();
 
-    return NextResponse.json({ characters });
+    return NextResponse.json(
+      { characters },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+        },
+      },
+    );
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "캐릭터 목록 조회 실패";

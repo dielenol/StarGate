@@ -18,20 +18,10 @@ export default async function MembersAdminPage() {
     redirect("/erp");
   }
 
-  let users: Awaited<ReturnType<typeof listUsers>> = [];
-  let participation: Record<string, number> = {};
-
-  try {
-    users = await listUsers();
-  } catch {
-    // DB 연결 실패 시 빈 배열 유지
-  }
-
-  try {
-    participation = await countSessionParticipation();
-  } catch {
-    // registrar_bot DB 연결 실패 시 빈 객체 유지
-  }
+  const [users, participation] = await Promise.all([
+    listUsers().catch((): Awaited<ReturnType<typeof listUsers>> => []),
+    countSessionParticipation().catch((): Record<string, number> => ({})),
+  ]);
 
   // discordId → userId 매핑으로 참여 횟수 연결
   function getParticipationCount(user: (typeof users)[number]): number {

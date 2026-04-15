@@ -111,11 +111,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       session.user = {
         ...session.user,
-        id: token.id,
-        username: token.username,
-        displayName: token.displayName,
-        role: token.role,
-        discordId: token.discordId,
+        id: token.id as string,
+        username: token.username as string,
+        displayName: token.displayName as string,
+        role: token.role as "SUPER_ADMIN" | "ADMIN" | "GM" | "PLAYER" | "GUEST",
+        discordId: token.discordId as string | null,
       };
       return session;
     },

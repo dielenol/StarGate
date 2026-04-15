@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 
 import SessionWrapper from "@/components/erp/SessionWrapper";
+import QueryProvider from "@/components/erp/QueryProvider";
 import ERPSidebar from "@/components/erp/ERPSidebar/ERPSidebar";
 
 import styles from "./layout.module.css";
@@ -21,13 +22,15 @@ export default async function ERPLayout({
 
   return (
     <SessionWrapper>
-      <div className={styles.erp}>
-        <ERPSidebar />
-        <div className={styles.erp__content}>
-          <ERPHeader user={session.user} />
-          <main className={styles.erp__main}>{children}</main>
+      <QueryProvider>
+        <div className={styles.erp}>
+          <ERPSidebar />
+          <div className={styles.erp__content}>
+            <ERPHeader user={session.user} />
+            <main className={styles.erp__main}>{children}</main>
+          </div>
         </div>
-      </div>
+      </QueryProvider>
     </SessionWrapper>
   );
 }

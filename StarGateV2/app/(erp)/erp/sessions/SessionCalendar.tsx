@@ -1,25 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 
-import type { SessionStatus } from "@/types/session";
+import {
+  useSessionsByMonth,
+  type SerializedSession,
+} from "@/hooks/queries/useSessionsQuery";
 
 import styles from "./SessionCalendar.module.css";
-
-interface SerializedSession {
-  _id: string;
-  guildId: string;
-  channelId: string;
-  messageId: string;
-  title: string;
-  targetDateTime: string;
-  closeDateTime: string;
-  targetRoleId: string;
-  status: SessionStatus;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface SessionCalendarProps {
   initialSessions: SerializedSession[];
@@ -54,41 +42,19 @@ export default function SessionCalendar({
 }: SessionCalendarProps) {
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
-  const [sessions, setSessions] = useState<SerializedSession[]>(initialSessions);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
 
   const isInitialMonth = year === initialYear && month === initialMonth;
 
-  const fetchSessions = useCallback(
-    async (y: number, m: number) => {
-      setLoading(true);
-      setError(null);
+  const {
+    data: sessions = [],
+    isLoading: loading,
+    error: queryError,
+  } = useSessionsByMonth(year, month, guildId, {
+    initialData: isInitialMonth ? initialSessions : undefined,
+  });
 
-      try {
-        const res = await fetch(
-          `/api/erp/sessions?year=${y}&month=${m}&guildId=${encodeURIComponent(guildId)}`,
-        );
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error ?? "세션 데이터를 불러올 수 없습니다.");
-        }
-
-        const data = await res.json();
-        setSessions(data.sessions);
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "네트워크 오류가 발생했습니다.";
-        setError(message);
-        setSessions([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [guildId],
-  );
+  const error = queryError?.message ?? null;
 
   const handlePrevMonth = useCallback(() => {
     setSelectedDate(null);
@@ -105,14 +71,6 @@ export default function SessionCalendar({
     setYear(newYear);
     setMonth(newMonth);
   }, [year, month]);
-
-  useEffect(() => {
-    if (isInitialMonth) {
-      setSessions(initialSessions);
-      return;
-    }
-    fetchSessions(year, month);
-  }, [year, month, isInitialMonth, initialSessions, fetchSessions]);
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfWeek(year, month);

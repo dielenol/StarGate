@@ -11,7 +11,14 @@ export async function GET() {
 
   try {
     const notifications = await listUserNotifications(session.user.id);
-    return NextResponse.json({ notifications });
+    return NextResponse.json(
+      { notifications },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        },
+      },
+    );
   } catch {
     return NextResponse.json(
       { error: "알림 목록 조회 실패" },

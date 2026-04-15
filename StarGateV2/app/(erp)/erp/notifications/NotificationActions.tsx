@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import {
+  useMarkRead,
+  useMarkAllRead,
+} from "@/hooks/mutations/useNotificationMutation";
 
 import styles from "./page.module.css";
 
@@ -14,50 +16,22 @@ export default function NotificationActions({
   notificationId,
   mode = "all",
 }: Props) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const markRead = useMarkRead();
+  const markAllRead = useMarkAllRead();
 
-  const handleMarkAllRead = async () => {
-    setLoading(true);
+  const loading = markRead.isPending || markAllRead.isPending;
 
-    try {
-      const res = await fetch("/api/erp/notifications/read-all", {
-        method: "POST",
-      });
-
-      if (res.ok) {
-        router.refresh();
-      } else {
-        const data = await res.json();
-        alert(data.error ?? "처리에 실패했습니다.");
-      }
-    } catch {
-      alert("네트워크 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
-    }
+  const handleMarkSingleRead = () => {
+    if (!notificationId) return;
+    markRead.mutate(notificationId, {
+      onError: (err) => alert(err.message),
+    });
   };
 
-  const handleMarkSingleRead = async () => {
-    if (!notificationId) return;
-    setLoading(true);
-
-    try {
-      const res = await fetch(`/api/erp/notifications/${notificationId}`, {
-        method: "PATCH",
-      });
-
-      if (res.ok) {
-        router.refresh();
-      } else {
-        const data = await res.json();
-        alert(data.error ?? "처리에 실패했습니다.");
-      }
-    } catch {
-      alert("네트워크 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
-    }
+  const handleMarkAllRead = () => {
+    markAllRead.mutate(undefined, {
+      onError: (err) => alert(err.message),
+    });
   };
 
   if (mode === "single") {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useUpdateWiki } from "@/hooks/mutations/useWikiMutation";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import styles from "./WikiEditForm.module.css";
@@ -26,18 +27,17 @@ export default function WikiEditForm({
   initialIsPublic,
 }: WikiEditFormProps) {
   const router = useRouter();
+  const updateWiki = useUpdateWiki();
 
   const [title, setTitle] = useState(initialTitle);
   const [category, setCategory] = useState(initialCategory);
   const [tagsInput, setTagsInput] = useState(initialTags.join(", "));
   const [content, setContent] = useState(initialContent);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
 
     const tags = tagsInput
@@ -45,25 +45,17 @@ export default function WikiEditForm({
       .map((t) => t.trim())
       .filter(Boolean);
 
-    try {
-      const res = await fetch(`/api/erp/wiki/${pageId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, category, tags, content, isPublic }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "저장 실패");
-        setSubmitting(false);
-        return;
-      }
-
-      router.push(`/erp/wiki/${pageId}`);
-    } catch {
-      setError("저장 요청 중 오류가 발생했습니다.");
-      setSubmitting(false);
-    }
+    updateWiki.mutate(
+      { id: pageId, data: { title, category, tags, content, isPublic } },
+      {
+        onSuccess: () => {
+          router.push(`/erp/wiki/${pageId}`);
+        },
+        onError: (err) => {
+          setError(err.message);
+        },
+      },
+    );
   }
 
   const previewHtml = renderMarkdown(content);
@@ -163,10 +155,10 @@ export default function WikiEditForm({
       <div className={styles.form__actions}>
         <button
           className={styles.form__submit}
-          disabled={submitting}
+          disabled={updateWiki.isPending}
           type="submit"
         >
-          {submitting ? "저장 중..." : "저장"}
+          {updateWiki.isPending ? "저장 중..." : "저장"}
         </button>
         <Link className={styles.form__cancel} href={`/erp/wiki/${pageId}`}>
           취소

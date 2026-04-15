@@ -43,7 +43,14 @@ export async function GET(request: Request) {
       updatedAt: new Date(s.updatedAt).toISOString(),
     }));
 
-    return NextResponse.json({ sessions: serialized });
+    return NextResponse.json(
+      { sessions: serialized },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+        },
+      },
+    );
   } catch {
     return NextResponse.json(
       { error: "세션 데이터를 불러오는데 실패했습니다." },
