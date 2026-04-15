@@ -24,6 +24,7 @@ export interface User {
   discordAvatar: string | null;
   role: UserRole;
   status: UserStatus;
+  securityClearance?: import("./character").AgentLevel;
   characterIds: string[];
   lastLoginAt: Date | null;
   passwordChangedAt: Date | null;

@@ -1,0 +1,225 @@
+/* ── Personnel Dossier ── */
+
+.dossier {
+  max-width: 800px;
+}
+
+/* Back link */
+
+.dossier__back {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.dossier__back:hover {
+  color: #c5a059;
+}
+
+/* Classification banner */
+
+.dossier__classification {
+  margin-bottom: 8px;
+  color: rgba(220, 80, 80, 0.6);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+}
+
+/* Header */
+
+.dossier__header {
+  margin-bottom: 28px;
+}
+
+.dossier__codename {
+  margin: 0 0 8px;
+  color: #fff;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.dossier__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dossier__levelBadge {
+  display: inline-block;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(197, 160, 89, 0.35);
+  color: #c5a059;
+  background: rgba(197, 160, 89, 0.1);
+}
+
+.dossier__department {
+  color: #94a3b8;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+/* Section */
+
+.dossier__section {
+  margin-bottom: 24px;
+}
+
+.dossier__sectionHeader {
+  margin-bottom: 14px;
+  color: #c5a059;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.dossier__card {
+  padding: 18px;
+  border: 1px solid rgba(197, 160, 89, 0.15);
+  background: rgba(13, 27, 30, 0.6);
+}
+
+/* Field rows */
+
+.dossier__row {
+  display: flex;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 14px;
+}
+
+.dossier__label {
+  color: #94a3b8;
+  min-width: 90px;
+  flex-shrink: 0;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.dossier__value {
+  color: #d8c39a;
+  font-weight: 500;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Classified field */
+
+.dossier__classified {
+  color: rgba(220, 80, 80, 0.7);
+  font-style: italic;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+/* Redacted block */
+
+.dossier__redacted {
+  color: rgba(197, 160, 89, 0.15);
+  user-select: none;
+  letter-spacing: -1px;
+  font-size: 14px;
+}
+
+/* Text block */
+
+.dossier__text {
+  margin: 0;
+  color: #d8c39a;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Stat grid */
+
+.dossier__statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.dossier__statCard {
+  text-align: center;
+  padding: 14px 12px;
+  border: 1px solid rgba(197, 160, 89, 0.1);
+  background: rgba(13, 27, 30, 0.4);
+}
+
+.dossier__statValue {
+  font-size: 28px;
+  font-weight: 900;
+  color: #c5a059;
+  line-height: 1;
+}
+
+.dossier__statLabel {
+  color: #94a3b8;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+/* Item list (abilities, equipment) */
+
+.dossier__itemList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dossier__item {
+  padding: 12px 14px;
+  border: 1px solid rgba(197, 160, 89, 0.1);
+  background: rgba(13, 27, 30, 0.4);
+}
+
+.dossier__itemName {
+  color: #d8c39a;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.dossier__itemDetail {
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dossier__itemCode {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  background: rgba(197, 160, 89, 0.15);
+  color: #c5a059;
+}
+
+/* Responsive */
+
+@media (max-width: 640px) {
+  .dossier__statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dossier__row {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dossier__label {
+    min-width: unset;
+  }
+}

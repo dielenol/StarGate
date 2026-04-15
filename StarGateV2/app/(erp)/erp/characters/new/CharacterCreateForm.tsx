@@ -5,11 +5,13 @@ import { useState } from "react";
 
 import type {
   CharacterType,
+  AgentLevel,
   AgentSheet,
   NpcSheet,
   Equipment,
   Ability,
 } from "@/types/character";
+import { AGENT_LEVELS, AGENT_LEVEL_LABELS, DEPARTMENTS } from "@/types/character";
 
 import styles from "../[id]/CharacterEditForm.module.css";
 
@@ -32,6 +34,8 @@ export default function CharacterCreateForm() {
   /* ── Common fields ── */
   const [codename, setCodename] = useState("");
   const [role, setRole] = useState("");
+  const [agentLevel, setAgentLevel] = useState<AgentLevel>("J");
+  const [department, setDepartment] = useState("UNASSIGNED");
   const [previewImage, setPreviewImage] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [ownerId, setOwnerId] = useState("");
@@ -154,6 +158,8 @@ export default function CharacterCreateForm() {
       codename,
       type,
       role,
+      agentLevel,
+      department,
       previewImage,
       isPublic,
       ownerId: ownerId || null,
@@ -234,6 +240,40 @@ export default function CharacterCreateForm() {
                 onChange={(e) => setRole(e.target.value)}
                 required
               />
+            </div>
+            <div className={styles.form__field}>
+              <label className={styles.form__label} htmlFor="agentLevel">
+                AGENT LEVEL
+              </label>
+              <select
+                id="agentLevel"
+                className={styles.form__select}
+                value={agentLevel}
+                onChange={(e) => setAgentLevel(e.target.value as AgentLevel)}
+              >
+                {AGENT_LEVELS.map((lvl) => (
+                  <option key={lvl} value={lvl}>
+                    {lvl} — {AGENT_LEVEL_LABELS[lvl]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.form__field}>
+              <label className={styles.form__label} htmlFor="department">
+                DEPARTMENT
+              </label>
+              <select
+                id="department"
+                className={styles.form__select}
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+              >
+                {DEPARTMENTS.map((dept) => (
+                  <option key={dept.code} value={dept.code}>
+                    {dept.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className={styles.form__field}>
               <label className={styles.form__label} htmlFor="name">

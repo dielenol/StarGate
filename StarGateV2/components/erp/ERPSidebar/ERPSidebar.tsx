@@ -22,6 +22,7 @@ const MAIN_NAV_ITEMS: NavItem[] = [
   { href: "/erp", label: "대시보드", icon: "◈" },
   { href: "/erp/sessions", label: "세션", icon: "◉" },
   { href: "/erp/characters", label: "캐릭터", icon: "⚔" },
+  { href: "/erp/personnel", label: "인원 관리", icon: "⊕" },
   { href: "/erp/wiki", label: "위키", icon: "☰" },
   { href: "/erp/credits", label: "크레딧", icon: "◇" },
   { href: "/erp/inventory", label: "장비", icon: "▣" },

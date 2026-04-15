@@ -58,11 +58,39 @@ export interface NpcSheet extends SheetBase {
 
 export type CharacterType = "AGENT" | "NPC";
 
+export type AgentLevel = "V" | "A" | "M" | "H" | "G" | "J" | "U";
+
+export const AGENT_LEVELS: AgentLevel[] = ["V", "A", "M", "H", "G", "J", "U"];
+
+export const AGENT_LEVEL_LABELS: Record<AgentLevel, string> = {
+  V: "VIP",
+  A: "최종 관리자",
+  M: "부서 관리자",
+  H: "특수요원",
+  G: "부서 요원",
+  J: "평사원",
+  U: "소모품",
+};
+
+export const DEPARTMENTS = [
+  { code: "HQ", label: "사무총장실", labelEn: "Secretary General's Office" },
+  { code: "FIELD", label: "현장작전부", labelEn: "Field Operations" },
+  { code: "RESEARCH", label: "연구분석부", labelEn: "Research & Analysis" },
+  { code: "SECURITY", label: "보안국", labelEn: "Security Bureau (N.O.S.B)" },
+  { code: "LOGISTICS", label: "후방지원부", labelEn: "Logistics & Supply" },
+  { code: "EXTERNAL", label: "외부협력", labelEn: "External Affairs" },
+  { code: "UNASSIGNED", label: "미배정", labelEn: "Unassigned" },
+] as const;
+
+export type DepartmentCode = (typeof DEPARTMENTS)[number]["code"];
+
 interface CharacterBase {
   _id?: ObjectId;
   codename: string;
   type: CharacterType;
   role: string;
+  agentLevel?: AgentLevel;
+  department?: DepartmentCode;
   previewImage: string;
   pixelCharacterImage?: string;
   warningVideo?: string;

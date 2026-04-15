@@ -58,6 +58,16 @@ export async function findCharacterByCodename(
   return col.findOne({ codename });
 }
 
+export async function listCharactersByOwner(
+  ownerId: string,
+): Promise<Pick<Character, "_id" | "agentLevel">[]> {
+  const col = await charactersCollection();
+  return col
+    .find({ ownerId })
+    .project<Pick<Character, "_id" | "agentLevel">>({ agentLevel: 1 })
+    .toArray();
+}
+
 /* ── 생성 ── */
 
 export async function createCharacter(
@@ -79,7 +89,8 @@ export async function createCharacter(
 /* ── 수정 ── */
 
 const ALLOWED_CHARACTER_FIELDS = new Set([
-  "codename", "type", "role", "previewImage", "pixelCharacterImage",
+  "codename", "type", "role", "agentLevel", "department",
+  "previewImage", "pixelCharacterImage",
   "warningVideo", "ownerId", "isPublic", "sheet",
 ]);
 
