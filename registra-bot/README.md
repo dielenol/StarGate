@@ -40,6 +40,12 @@ npm run run
 
 봇 기동 시 `ClientReady`에서 자동 등록합니다.
 
+## 배포
+
+OCI VM 한 대에서 다른 봇과 함께 `PM2`로 운영하려면 루트 문서인 [`docs/OCI_COMPUTE_PM2_MULTI_BOT_DEPLOYMENT.md`](../docs/OCI_COMPUTE_PM2_MULTI_BOT_DEPLOYMENT.md)를 참고하세요.
+
+공용 PM2 설정 파일은 [`deploy/pm2/ecosystem.config.cjs`](../deploy/pm2/ecosystem.config.cjs)에 있습니다.
+
 ## 기술 메모
 
 - 버튼 `customId` 접두사: `registrar:attend:` (다른 봇·복제본과 분리)

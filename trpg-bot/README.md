@@ -84,6 +84,12 @@ npm run register
 
 전체 구현 스펙 및 플랜 대비 현황은 [docs/SPEC.md](docs/SPEC.md)를 참조하세요.
 
+## 배포
+
+OCI VM 한 대에서 `registra-bot` 등 다른 봇과 함께 `PM2`로 운영하려면 루트 문서인 [`docs/OCI_COMPUTE_PM2_MULTI_BOT_DEPLOYMENT.md`](../docs/OCI_COMPUTE_PM2_MULTI_BOT_DEPLOYMENT.md)를 참고하세요.
+
+공용 PM2 설정 파일은 [`deploy/pm2/ecosystem.config.cjs`](../deploy/pm2/ecosystem.config.cjs)에 있습니다.
+
 ## 라이선스
 
 MIT
