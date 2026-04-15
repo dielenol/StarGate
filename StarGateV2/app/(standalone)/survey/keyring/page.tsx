@@ -18,6 +18,10 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/assets/events/novusordo2026-og.jpg"],
+  },
   robots: { index: false, follow: false },
 };
 
