@@ -117,7 +117,7 @@ export default function KeyringSurveyPage() {
                   <tr>
                     <td className={styles.survey__tableLabel}>QUANTITY</td>
                     <td className={styles.survey__tableValue}>
-                      인당 최대 <b className={styles.cyan}>13개</b>
+                      인당 최대 <b className={styles.cyan}>14개</b>
                     </td>
                   </tr>
                 </tbody>
