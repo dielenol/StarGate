@@ -11,7 +11,12 @@ export const metadata: Metadata = {
     description:
       "노부스 오르도 PC 아크릴 키링 무상 제작 프로젝트. 수요조사 참여 페이지입니다.",
     type: "website",
-    images: [{ url: "/assets/events/novusordo2026.png" }],
+    images: [
+      {
+        url: "/assets/events/novusordo2026-og.jpg",
+        alt: "노부스 오르도 아크릴 키링 수요조사",
+      },
+    ],
   },
   robots: { index: false, follow: false },
 };
