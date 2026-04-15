@@ -4,6 +4,14 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "아크릴 키링 수요조사 | Novus Ordo",
+  description:
+    "노부스 오르도 PC 아크릴 키링 무상 제작 프로젝트. 약 5~7cm 사이즈, 배송비 무료. 구매 의사가 있으신 분은 수요조사에 참여해주세요.",
+  openGraph: {
+    title: "아크릴 키링 수요조사 | Novus Ordo",
+    description:
+      "노부스 오르도 PC 아크릴 키링 무상 제작 프로젝트. 수요조사 참여 페이지입니다.",
+    type: "website",
+  },
   robots: { index: false, follow: false },
 };
 
