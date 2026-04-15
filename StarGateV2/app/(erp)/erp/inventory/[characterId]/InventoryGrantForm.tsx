@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import type { MasterItem } from "@/types/inventory";
+
+import { useGrantInventory } from "@/hooks/mutations/useInventoryMutation";
 
 import styles from "./page.module.css";
 
@@ -16,13 +17,12 @@ export default function InventoryGrantForm({
   characterId,
   availableItems,
 }: InventoryGrantFormProps) {
-  const router = useRouter();
+  const grantInventory = useGrantInventory();
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [note, setNote] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -44,50 +44,44 @@ export default function InventoryGrantForm({
     (item) => String(item._id) === selectedItemId,
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
-    setIsSubmitting(true);
 
-    try {
-      if (!selectedItemId) {
-        setError("아이템을 선택하세요.");
-        return;
-      }
+    if (!selectedItemId) {
+      setError("아이템을 선택하세요.");
+      return;
+    }
 
-      const numQuantity = Number(quantity);
-      if (isNaN(numQuantity) || numQuantity < 1) {
-        setError("수량은 1 이상이어야 합니다.");
-        return;
-      }
+    const numQuantity = Number(quantity);
+    if (isNaN(numQuantity) || numQuantity < 1) {
+      setError("수량은 1 이상이어야 합니다.");
+      return;
+    }
 
-      const res = await fetch(`/api/erp/inventory/${characterId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    grantInventory.mutate(
+      {
+        characterId,
+        data: {
           itemId: selectedItemId,
           itemName: selectedItem?.name ?? "",
           quantity: numQuantity,
           note,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? "아이템 지급에 실패했습니다.");
-      }
-
-      setSuccess("아이템이 성공적으로 지급되었습니다.");
-      setSelectedItemId("");
-      setQuantity("1");
-      setNote("");
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
-    } finally {
-      setIsSubmitting(false);
-    }
+        },
+      },
+      {
+        onSuccess: () => {
+          setSuccess("아이템이 성공적으로 지급되었습니다.");
+          setSelectedItemId("");
+          setQuantity("1");
+          setNote("");
+        },
+        onError: (err) => {
+          setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
+        },
+      },
+    );
   };
 
   return (
@@ -163,9 +157,9 @@ export default function InventoryGrantForm({
         <button
           type="submit"
           className={styles.grantForm__submit}
-          disabled={isSubmitting}
+          disabled={grantInventory.isPending}
         >
-          {isSubmitting ? "처리 중..." : "지급"}
+          {grantInventory.isPending ? "처리 중..." : "지급"}
         </button>
       </div>
     </form>

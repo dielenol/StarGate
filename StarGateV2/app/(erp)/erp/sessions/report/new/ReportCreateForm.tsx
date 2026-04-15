@@ -3,16 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useCreateReport } from "@/hooks/mutations/useReportMutation";
+
 import styles from "./page.module.css";
 
 export default function ReportCreateForm() {
   const router = useRouter();
+  const createReport = useCreateReport();
 
   const [sessionTitle, setSessionTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [highlights, setHighlights] = useState<string[]>([""]);
   const [participants, setParticipants] = useState<string[]>([""]);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleAddHighlight = () => {
@@ -39,38 +41,29 @@ export default function ReportCreateForm() {
     setParticipants((prev) => prev.map((p, i) => (i === index ? value : p)));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
 
     const filteredHighlights = highlights.filter((h) => h.trim() !== "");
     const filteredParticipants = participants.filter((p) => p.trim() !== "");
 
-    try {
-      const res = await fetch("/api/erp/session-reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionTitle: sessionTitle.trim(),
-          summary: summary.trim(),
-          highlights: filteredHighlights,
-          participants: filteredParticipants,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "리포트 생성에 실패했습니다.");
-        setSubmitting(false);
-        return;
-      }
-
-      router.push("/erp/sessions/report");
-    } catch {
-      setError("네트워크 오류가 발생했습니다.");
-      setSubmitting(false);
-    }
+    createReport.mutate(
+      {
+        sessionTitle: sessionTitle.trim(),
+        summary: summary.trim(),
+        highlights: filteredHighlights,
+        participants: filteredParticipants,
+      },
+      {
+        onSuccess: () => {
+          router.push("/erp/sessions/report");
+        },
+        onError: (err) => {
+          setError(err.message);
+        },
+      },
+    );
   };
 
   return (
@@ -178,9 +171,9 @@ export default function ReportCreateForm() {
       <button
         type="submit"
         className={styles.form__submit}
-        disabled={submitting}
+        disabled={createReport.isPending}
       >
-        {submitting ? "작성 중..." : "리포트 작성"}
+        {createReport.isPending ? "작성 중..." : "리포트 작성"}
       </button>
     </form>
   );

@@ -2,8 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type { Character } from "@/types/character";
+
+import { characterKeys } from "@/hooks/queries/useCharactersQuery";
 
 import CharacterEditForm from "./CharacterEditForm";
 
@@ -21,6 +24,7 @@ export default function CharacterDetailClient({
   canDelete,
 }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -49,8 +53,8 @@ export default function CharacterDetailClient({
         return;
       }
 
+      await queryClient.invalidateQueries({ queryKey: characterKeys.all });
       router.push("/erp/characters");
-      router.refresh();
     } catch {
       setError("네트워크 오류가 발생했습니다.");
       setIsDeleting(false);
@@ -62,9 +66,9 @@ export default function CharacterDetailClient({
       <CharacterEditForm
         character={character}
         onCancel={() => setIsEditing(false)}
-        onSaved={() => {
+        onSaved={async () => {
           setIsEditing(false);
-          router.refresh();
+          await queryClient.invalidateQueries({ queryKey: characterKeys.all });
         }}
       />
     );

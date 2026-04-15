@@ -30,7 +30,14 @@ export async function GET(request: Request) {
       pages = await listWikiPages();
     }
 
-    return NextResponse.json({ pages });
+    return NextResponse.json(
+      { pages },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=120, stale-while-revalidate=300",
+        },
+      },
+    );
   } catch {
     return NextResponse.json(
       { error: "위키 목록 조회 실패" },

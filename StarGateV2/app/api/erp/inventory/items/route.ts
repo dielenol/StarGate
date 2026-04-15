@@ -14,7 +14,14 @@ export async function GET() {
 
   try {
     const items = await listMasterItems();
-    return NextResponse.json({ items });
+    return NextResponse.json(
+      { items },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=120, stale-while-revalidate=300",
+        },
+      },
+    );
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "아이템 목록 조회 실패";

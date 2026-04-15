@@ -15,7 +15,14 @@ export async function GET() {
 
   try {
     const reports = await listSessionReports();
-    return NextResponse.json({ reports });
+    return NextResponse.json(
+      { reports },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+        },
+      },
+    );
   } catch {
     return NextResponse.json(
       { error: "리포트 목록 조회 실패" },

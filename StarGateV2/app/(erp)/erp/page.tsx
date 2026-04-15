@@ -18,25 +18,16 @@ export default async function ERPDashboardPage() {
   const { displayName, role } = session.user;
   const isAdmin = hasRole(role, "ADMIN");
 
-  let upcomingSessions: Awaited<ReturnType<typeof findUpcomingSessions>> = [];
-  let memberCount = 0;
+  const guildId = process.env.GUILD_ID ?? "";
 
-  try {
-    const guildId = process.env.GUILD_ID ?? "";
-    if (guildId) {
-      upcomingSessions = await findUpcomingSessions(guildId, 5);
-    }
-  } catch {
-    // registrar_bot DB 연결 실패 시 빈 배열 유지
-  }
-
-  if (isAdmin) {
-    try {
-      memberCount = await countUsers();
-    } catch {
-      // DB 연결 실패 시 0 유지
-    }
-  }
+  const [upcomingSessions, memberCount] = await Promise.all([
+    guildId
+      ? findUpcomingSessions(guildId, 5).catch(() => [])
+      : Promise.resolve([]),
+    isAdmin
+      ? countUsers().catch(() => 0)
+      : Promise.resolve(0),
+  ]);
 
   return (
     <section className={styles.dashboard}>

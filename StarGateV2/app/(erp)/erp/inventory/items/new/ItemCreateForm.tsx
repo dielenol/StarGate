@@ -6,6 +6,8 @@ import Link from "next/link";
 
 import type { ItemCategory } from "@/types/inventory";
 
+import { useCreateItem } from "@/hooks/mutations/useInventoryMutation";
+
 import styles from "./page.module.css";
 
 const ITEM_CATEGORIES: { value: ItemCategory; label: string }[] = [
@@ -18,6 +20,7 @@ const ITEM_CATEGORIES: { value: ItemCategory; label: string }[] = [
 
 export default function ItemCreateForm() {
   const router = useRouter();
+  const createItem = useCreateItem();
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState<ItemCategory>("WEAPON");
@@ -26,45 +29,36 @@ export default function ItemCreateForm() {
   const [damage, setDamage] = useState("");
   const [effect, setEffect] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setIsSubmitting(true);
 
-    try {
-      if (!name.trim()) {
-        setError("아이템 이름은 필수입니다.");
-        return;
-      }
-
-      const res = await fetch("/api/erp/inventory/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          category,
-          description,
-          price: price ? Number(price) : 0,
-          damage: damage || undefined,
-          effect: effect || undefined,
-          isAvailable,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? "아이템 생성에 실패했습니다.");
-      }
-
-      router.push("/erp/inventory");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
-    } finally {
-      setIsSubmitting(false);
+    if (!name.trim()) {
+      setError("아이템 이름은 필수입니다.");
+      return;
     }
+
+    createItem.mutate(
+      {
+        name: name.trim(),
+        category,
+        description,
+        price: price ? Number(price) : 0,
+        damage: damage || undefined,
+        effect: effect || undefined,
+        isAvailable,
+      },
+      {
+        onSuccess: () => {
+          router.push("/erp/inventory");
+        },
+        onError: (err) => {
+          setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
+        },
+      },
+    );
   };
 
   return (
@@ -189,9 +183,9 @@ export default function ItemCreateForm() {
         <button
           type="submit"
           className={styles.newItem__submit}
-          disabled={isSubmitting}
+          disabled={createItem.isPending}
         >
-          {isSubmitting ? "생성 중..." : "아이템 생성"}
+          {createItem.isPending ? "생성 중..." : "아이템 생성"}
         </button>
       </div>
     </form>

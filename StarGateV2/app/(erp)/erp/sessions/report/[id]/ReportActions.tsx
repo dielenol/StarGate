@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+
+import { useDeleteReport } from "@/hooks/mutations/useReportMutation";
 
 import styles from "./page.module.css";
 
@@ -13,29 +14,19 @@ interface Props {
 
 export default function ReportActions({ reportId, canEdit, canDelete }: Props) {
   const router = useRouter();
-  const [deleting, setDeleting] = useState(false);
+  const deleteReport = useDeleteReport();
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!confirm("정말로 이 리포트를 삭제하시겠습니까?")) return;
 
-    setDeleting(true);
-
-    try {
-      const res = await fetch(`/api/erp/session-reports/${reportId}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
+    deleteReport.mutate(reportId, {
+      onSuccess: () => {
         router.push("/erp/sessions/report");
-      } else {
-        const data = await res.json();
-        alert(data.error ?? "삭제에 실패했습니다.");
-      }
-    } catch {
-      alert("네트워크 오류가 발생했습니다.");
-    } finally {
-      setDeleting(false);
-    }
+      },
+      onError: (err) => {
+        alert(err.message);
+      },
+    });
   };
 
   return (
@@ -54,9 +45,9 @@ export default function ReportActions({ reportId, canEdit, canDelete }: Props) {
           type="button"
           className={styles.detail__deleteBtn}
           onClick={handleDelete}
-          disabled={deleting}
+          disabled={deleteReport.isPending}
         >
-          {deleting ? "삭제 중..." : "삭제"}
+          {deleteReport.isPending ? "삭제 중..." : "삭제"}
         </button>
       )}
     </div>

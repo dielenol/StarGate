@@ -39,26 +39,16 @@ export default async function CreditsPage() {
   const { id: userId, role } = session.user;
   const isGm = hasRole(role, "GM");
 
-  let transactions: Awaited<ReturnType<typeof listCreditTransactions>> = [];
-  let balance: number = 0;
-
-  try {
-    transactions = isGm
-      ? await listCreditTransactions()
-      : await listCreditTransactions(userId);
-    balance = await getUserBalance(userId);
-  } catch {
-    // DB 연결 실패 시 빈 상태 유지
-  }
-
-  let users: Awaited<ReturnType<typeof listUsers>> = [];
-  if (isGm) {
-    try {
-      users = await listUsers();
-    } catch {
-      // 유저 목록 조회 실패 시 빈 배열 유지
-    }
-  }
+  const [transactions, balance, users] = await Promise.all([
+    (isGm
+      ? listCreditTransactions()
+      : listCreditTransactions(userId)
+    ).catch((): Awaited<ReturnType<typeof listCreditTransactions>> => []),
+    getUserBalance(userId).catch(() => 0),
+    isGm
+      ? listUsers().catch((): Awaited<ReturnType<typeof listUsers>> => [])
+      : Promise.resolve([] as Awaited<ReturnType<typeof listUsers>>),
+  ]);
 
   return (
     <section className={styles.credits}>

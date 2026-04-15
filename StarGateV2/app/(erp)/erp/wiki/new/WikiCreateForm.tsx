@@ -4,24 +4,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useCreateWiki } from "@/hooks/mutations/useWikiMutation";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import styles from "../[id]/edit/WikiEditForm.module.css";
 
 export default function WikiCreateForm() {
   const router = useRouter();
+  const createWiki = useCreateWiki();
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [content, setContent] = useState("");
   const [isPublic, setIsPublic] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
 
     const tags = tagsInput
@@ -29,27 +29,18 @@ export default function WikiCreateForm() {
       .map((t) => t.trim())
       .filter(Boolean);
 
-    try {
-      const res = await fetch("/api/erp/wiki", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, category, tags, content, isPublic }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "생성 실패");
-        setSubmitting(false);
-        return;
-      }
-
-      const data = await res.json();
-      const newId = data.page?._id;
-      router.push(newId ? `/erp/wiki/${newId}` : "/erp/wiki");
-    } catch {
-      setError("요청 중 오류가 발생했습니다.");
-      setSubmitting(false);
-    }
+    createWiki.mutate(
+      { title, category, tags, content, isPublic },
+      {
+        onSuccess: (data) => {
+          const newId = data.page?._id;
+          router.push(newId ? `/erp/wiki/${newId}` : "/erp/wiki");
+        },
+        onError: (err) => {
+          setError(err.message);
+        },
+      },
+    );
   }
 
   const previewHtml = renderMarkdown(content);
@@ -149,10 +140,10 @@ export default function WikiCreateForm() {
       <div className={styles.form__actions}>
         <button
           className={styles.form__submit}
-          disabled={submitting}
+          disabled={createWiki.isPending}
           type="submit"
         >
-          {submitting ? "저장 중..." : "저장"}
+          {createWiki.isPending ? "저장 중..." : "저장"}
         </button>
         <Link className={styles.form__cancel} href="/erp/wiki">
           취소

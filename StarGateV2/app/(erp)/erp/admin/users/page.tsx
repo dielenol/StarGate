@@ -1,64 +1,45 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 
-import type { UserPublic, UserRole } from "@/types/user";
+import type { UserRole } from "@/types/user";
 import { USER_ROLES } from "@/types/user";
+
+import { useUsers } from "@/hooks/queries/useUsersQuery";
+import { useCreateUser } from "@/hooks/mutations/useUserMutation";
 
 import styles from "./page.module.css";
 
 export default function UsersAdminPage() {
-  const [users, setUsers] = useState<UserPublic[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: users = [], isLoading: loading } = useUsers();
+  const createUser = useCreateUser();
 
   const [showForm, setShowForm] = useState(false);
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<UserRole>("PLAYER");
-  const [submitting, setSubmitting] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch("/api/erp/users");
-    if (res.ok) {
-      const data = await res.json();
-      setUsers(data.users);
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  async function handleCreate(e: React.FormEvent) {
+  function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
     setGeneratedPassword(null);
 
-    const res = await fetch("/api/erp/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, displayName, role }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.error);
-      setSubmitting(false);
-      return;
-    }
-
-    setGeneratedPassword(data.plainPassword);
-    setSubmitting(false);
-    setUsername("");
-    setDisplayName("");
-    setRole("PLAYER");
-    await fetchUsers();
+    createUser.mutate(
+      { username, displayName, role },
+      {
+        onSuccess: (data) => {
+          setGeneratedPassword(data.plainPassword);
+          setUsername("");
+          setDisplayName("");
+          setRole("PLAYER");
+        },
+        onError: (err) => {
+          setError(err.message);
+        },
+      },
+    );
   }
 
   return (
@@ -121,9 +102,9 @@ export default function UsersAdminPage() {
           <button
             className={styles.form__submit}
             type="submit"
-            disabled={submitting}
+            disabled={createUser.isPending}
           >
-            {submitting ? "생성 중..." : "사용자 생성"}
+            {createUser.isPending ? "생성 중..." : "사용자 생성"}
           </button>
 
           {error && (

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import type { CreditTransactionType } from "@/types/credit";
 import type { UserPublic } from "@/types/user";
+
+import { useGrantCredit } from "@/hooks/mutations/useCreditMutation";
 
 import styles from "./CreditGrantForm.module.css";
 
@@ -19,14 +20,13 @@ const GRANT_TYPES: { value: CreditTransactionType; label: string }[] = [
 ];
 
 export default function CreditGrantForm({ users }: CreditGrantFormProps) {
-  const router = useRouter();
+  const grantCredit = useGrantCredit();
 
   const [isOpen, setIsOpen] = useState(false);
   const [userId, setUserId] = useState("");
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<CreditTransactionType>("ADMIN_GRANT");
   const [description, setDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -50,45 +50,36 @@ export default function CreditGrantForm({ users }: CreditGrantFormProps) {
     e.preventDefault();
     setError("");
     setSuccess("");
-    setIsSubmitting(true);
 
-    try {
-      const numAmount = Number(amount);
-      if (isNaN(numAmount) || numAmount === 0) {
-        setError("유효한 금액을 입력하세요.");
-        return;
-      }
-
-      const finalAmount =
-        type === "ADMIN_DEDUCT" ? -Math.abs(numAmount) : Math.abs(numAmount);
-
-      const res = await fetch("/api/erp/credits", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          userName: selectedUser?.displayName ?? "",
-          amount: finalAmount,
-          type,
-          description,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? "크레딧 지급에 실패했습니다.");
-      }
-
-      setSuccess("크레딧이 성공적으로 처리되었습니다.");
-      setUserId("");
-      setAmount("");
-      setDescription("");
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
-    } finally {
-      setIsSubmitting(false);
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount === 0) {
+      setError("유효한 금액을 입력하세요.");
+      return;
     }
+
+    const finalAmount =
+      type === "ADMIN_DEDUCT" ? -Math.abs(numAmount) : Math.abs(numAmount);
+
+    grantCredit.mutate(
+      {
+        userId,
+        userName: selectedUser?.displayName ?? "",
+        amount: finalAmount,
+        type,
+        description,
+      },
+      {
+        onSuccess: () => {
+          setSuccess("크레딧이 성공적으로 처리되었습니다.");
+          setUserId("");
+          setAmount("");
+          setDescription("");
+        },
+        onError: (err) => {
+          setError(err.message);
+        },
+      },
+    );
   };
 
   return (
@@ -184,9 +175,9 @@ export default function CreditGrantForm({ users }: CreditGrantFormProps) {
         <button
           type="submit"
           className={styles.form__submit}
-          disabled={isSubmitting}
+          disabled={grantCredit.isPending}
         >
-          {isSubmitting ? "처리 중..." : "지급"}
+          {grantCredit.isPending ? "처리 중..." : "지급"}
         </button>
       </div>
     </form>
