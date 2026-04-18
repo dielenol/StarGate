@@ -10,10 +10,31 @@ const nextConfig: NextConfig = {
   // 워크스페이스 내부 패키지(@stargate/shared-db)를 Next.js가 트랜스파일하도록 설정
   transpilePackages: ["@stargate/shared-db"],
   // SVG를 React 컴포넌트로 import 할 수 있도록 SVGR 연결 (Turbopack 경로)
+  // 주의: SVGR 기본 svgo는 `removeViewBox` 가 켜져 있어 viewBox가 사라지고,
+  // CSS로 축소한 크기에서 path가 잘려 보인다. icon:true 또는 svgoConfig로 유지시킨다.
   turbopack: {
     rules: {
       "*.svg": {
-        loaders: ["@svgr/webpack"],
+        loaders: [
+          {
+            loader: "@svgr/webpack",
+            options: {
+              icon: true, // viewBox 유지 + width/height="1em" (CSS font-size/width로 제어 가능)
+              svgoConfig: {
+                plugins: [
+                  {
+                    name: "preset-default",
+                    params: {
+                      overrides: {
+                        removeViewBox: false,
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        ],
         as: "*.js",
       },
     },
