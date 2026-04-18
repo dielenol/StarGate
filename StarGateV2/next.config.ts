@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
   },
   // 워크스페이스 내부 패키지(@stargate/shared-db)를 Next.js가 트랜스파일하도록 설정
   transpilePackages: ["@stargate/shared-db"],
+  // SVG를 React 컴포넌트로 import 할 수 있도록 SVGR 연결 (Turbopack 경로)
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
+      },
+    },
+  },
 };
 
 export default nextConfig;
