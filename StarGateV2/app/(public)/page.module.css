@@ -92,9 +92,16 @@
 }
 
 .stargate__ornament {
-  font-size: 20px;
   color: #c5a059;
   margin: 10px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stargate__ornament svg {
+  width: 20px;
+  height: 20px;
 }
 
 .stargate__intro-text {
@@ -161,10 +168,18 @@
 }
 
 .stargate__archive-summary-icon {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-right: 6px;
+  vertical-align: middle;
   transition: transform 0.25s ease;
   transform-origin: center;
+}
+
+.stargate__archive-summary-icon svg {
+  width: 13px;
+  height: 13px;
 }
 
 .stargate__archive-details[open] .stargate__archive-summary-icon {
@@ -389,10 +404,18 @@
 }
 
 .stargate__protocol-summary-icon {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-right: 6px;
+  vertical-align: middle;
   transition: transform 0.25s ease;
   transform-origin: center;
+}
+
+.stargate__protocol-summary-icon svg {
+  width: 13px;
+  height: 13px;
 }
 
 .stargate__protocol-details[open] .stargate__protocol-summary-icon {
@@ -453,10 +476,17 @@
 }
 
 .stargate__cta-icon {
-  font-size: 24px;
   color: #c5a059;
   margin-bottom: 5px;
   text-shadow: 0 0 10px rgba(197, 160, 89, 0.5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stargate__cta-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .stargate__cta-title {
@@ -492,12 +522,28 @@
   font-size: 12px;
   font-weight: bold;
   letter-spacing: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.stargate__footer-archive svg {
+  width: 14px;
+  height: 14px;
 }
 
 .stargate__footer-mark {
   margin-top: 20px;
-  font-size: 18px;
   color: #2c3e50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stargate__footer-mark svg {
+  width: 18px;
+  height: 18px;
 }
 
 @media (max-width: 768px) {

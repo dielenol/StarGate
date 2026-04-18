@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { IconCrown, IconDivider } from "@/components/icons";
+
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -39,7 +41,10 @@ export default function KeyringSurveyPage() {
 
           {/* Hero */}
           <div className={styles.survey__hero}>
-            <div className={styles.survey__emblem}>♚♚</div>
+            <div className={styles.survey__emblem}>
+              <IconCrown aria-hidden />
+              <IconCrown aria-hidden />
+            </div>
             <h1 className={styles.survey__title}>아크릴 키링 수요조사</h1>
             <div className={styles.survey__subtitle}>NOVUS ORDO GOODS</div>
             <div className={styles.survey__divider} />
@@ -159,7 +164,8 @@ export default function KeyringSurveyPage() {
             <p className={styles.survey__ctaText}>
               노부스 오르도를 함께 즐기는 기념으로
               <br />
-              작은 굿즈를 남겨보고자 시작한 프로젝트입니다 (=ↀωↀ=)✧
+              작은 굿즈를 남겨보고자 시작한 프로젝트입니다 (=ↀωↀ=){" "}
+              <IconDivider aria-hidden />
               <br />
               관심 있으신 분들의 많은 참여 부탁드립니다!
             </p>
@@ -169,7 +175,9 @@ export default function KeyringSurveyPage() {
               rel="noopener noreferrer"
               target="_blank"
             >
-              ✦ 수요조사 참여하기 ✦
+              <IconDivider aria-hidden />
+              수요조사 참여하기
+              <IconDivider aria-hidden />
             </a>
             <p className={styles.survey__ctaHint}>CLICK TO OPEN SURVEY FORM</p>
           </div>

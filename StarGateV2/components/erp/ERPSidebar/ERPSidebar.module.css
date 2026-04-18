@@ -92,8 +92,15 @@
 .sidebar__item-icon {
   width: 18px;
   text-align: center;
-  font-size: 14px;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar__item-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .sidebar__footer {
@@ -110,6 +117,11 @@
   color: rgba(197, 160, 89, 0.6);
   text-decoration: none;
   transition: color 0.15s ease;
+}
+
+.sidebar__return svg {
+  width: 14px;
+  height: 14px;
 }
 
 .sidebar__return:hover {

@@ -4,39 +4,56 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, useState } from "react";
-import styles from "./Sidebar.module.css";
+
 import { resolvePublicAssetPath } from "@/lib/asset-path";
+
+import type { IconComponent } from "@/components/icons";
+import {
+  IconApply,
+  IconArchive,
+  IconBullet,
+  IconChevronDown,
+  IconChevronRight,
+  IconClose,
+  IconContact,
+  IconMenu,
+  IconNotes,
+  IconPlayer,
+  IconRules,
+  IconSystem,
+  IconWorld,
+} from "@/components/icons";
+
+import styles from "./Sidebar.module.css";
 
 type NavChildItem = {
   label: string;
   href: string;
-  icon: string;
+  icon: IconComponent;
 };
 
 type NavItem = {
   label: string;
   href?: string;
-  icon: string;
+  icon: IconComponent;
   children?: NavChildItem[];
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "기밀 아카이브", href: "/", icon: "⌂" },
-  { label: "입회 심사 신청", href: "/apply", icon: "⚜" },
-  { label: "기밀 문의 접수", href: "/contact", icon: "✉" },
+  { label: "기밀 아카이브", href: "/", icon: IconArchive },
+  { label: "입회 심사 신청", href: "/apply", icon: IconApply },
+  { label: "기밀 문의 접수", href: "/contact", icon: IconContact },
   {
     label: "세계관 기록",
-    icon: "◈",
+    icon: IconWorld,
     children: [
-      { label: "세계관", href: "/world", icon: "•" },
-      { label: "플레이어", href: "/world/player", icon: "♟" },
-      // { label: "세계관 B", href: "/world/b", icon: "B" },
-      // { label: "세계관 C", href: "/world/c", icon: "C" },
+      { label: "세계관", href: "/world", icon: IconBullet },
+      { label: "플레이어", href: "/world/player", icon: IconPlayer },
     ],
   },
-  { label: "작전 내규", href: "/gameplay", icon: "▶" },
-  { label: "노부스 오르도 룰", href: "/rules", icon: "☷" },
-  { label: "운영 시스템", href: "/erp", icon: "⚙" },
+  { label: "작전 내규", href: "/gameplay", icon: IconNotes },
+  { label: "노부스 오르도 룰", href: "/rules", icon: IconRules },
+  { label: "운영 시스템", href: "/erp", icon: IconSystem },
 ];
 
 function isActivePath(pathname: string, href: string) {
@@ -94,7 +111,7 @@ export default function Sidebar() {
         }}
         type="button"
       >
-        ☰
+        <IconMenu aria-hidden />
       </button>
 
       <aside className={`${styles.sidebar} ${mobileOpen ? styles["sidebar--mobile-open"] : ""}`}>
@@ -118,7 +135,7 @@ export default function Sidebar() {
             }}
             type="button"
           >
-            ✕
+            <IconClose aria-hidden />
           </button>
         </div>
 
@@ -126,6 +143,7 @@ export default function Sidebar() {
           {NAV_ITEMS.map((item) => {
             if (!item.children || item.children.length === 0) {
               const active = item.href ? isActivePath(pathname, item.href) : false;
+              const Icon = item.icon;
 
               return (
                 <Link
@@ -137,13 +155,16 @@ export default function Sidebar() {
                   }}
                   key={item.label}
                 >
-                  <span className={styles["sidebar__icon"]}>{item.icon}</span>
+                  <span className={styles["sidebar__icon"]}>
+                    <Icon aria-hidden />
+                  </span>
                   <span className={styles["sidebar__label"]}>{item.label}</span>
                 </Link>
               );
             }
 
             const expanded = worldExpanded || worldSectionOpen;
+            const Icon = item.icon;
 
             return (
               <div className={styles["sidebar__group"]} key={item.label}>
@@ -156,9 +177,13 @@ export default function Sidebar() {
                   }}
                   type="button"
                 >
-                  <span className={styles["sidebar__icon"]}>{item.icon}</span>
+                  <span className={styles["sidebar__icon"]}>
+                    <Icon aria-hidden />
+                  </span>
                   <span className={styles["sidebar__label"]}>{item.label}</span>
-                  <span className={styles["sidebar__caret"]}>{expanded ? "▾" : "▸"}</span>
+                  <span className={styles["sidebar__caret"]}>
+                    {expanded ? <IconChevronDown aria-hidden /> : <IconChevronRight aria-hidden />}
+                  </span>
                 </button>
 
                 <div
@@ -166,6 +191,7 @@ export default function Sidebar() {
                 >
                   {item.children.map((child) => {
                     const childActive = isExactPath(pathname, child.href);
+                    const ChildIcon = child.icon;
 
                     return (
                       <Link
@@ -177,7 +203,9 @@ export default function Sidebar() {
                         }}
                         key={child.href}
                       >
-                        <span className={styles["sidebar__child-icon"]}>{child.icon}</span>
+                        <span className={styles["sidebar__child-icon"]}>
+                          <ChildIcon aria-hidden />
+                        </span>
                         <span className={styles["sidebar__child-label"]}>{child.label}</span>
                       </Link>
                     );

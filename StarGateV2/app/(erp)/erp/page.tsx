@@ -6,6 +6,18 @@ import { findUpcomingSessions } from "@/lib/db/registrar-read";
 import { countUsers } from "@/lib/db/users";
 import { hasRole } from "@/lib/auth/rbac";
 
+import {
+  IconBullet,
+  IconCharacter,
+  IconCredit,
+  IconEquipment,
+  IconMembers,
+  IconNotification,
+  IconProfile,
+  IconSession,
+  IconUserAdmin,
+} from "@/components/icons";
+
 import styles from "./page.module.css";
 
 export default async function ERPDashboardPage() {
@@ -66,33 +78,42 @@ export default async function ERPDashboardPage() {
           <div className={styles.dashboard__cardHeader}>QUICK ACTIONS</div>
           <div className={styles.dashboard__actions}>
             <Link href="/erp/sessions" className={styles.dashboard__action}>
-              ◉ 세션 일정
+              <IconSession aria-hidden />
+              세션 일정
             </Link>
             <Link href="/erp/sessions/report" className={styles.dashboard__action}>
-              ◎ 세션 리포트
+              <IconBullet aria-hidden />
+              세션 리포트
             </Link>
             <Link href="/erp/characters" className={styles.dashboard__action}>
-              ⚔ 캐릭터
+              <IconCharacter aria-hidden />
+              캐릭터
             </Link>
             <Link href="/erp/credits" className={styles.dashboard__action}>
-              ◇ 크레딧
+              <IconCredit aria-hidden />
+              크레딧
             </Link>
             <Link href="/erp/inventory" className={styles.dashboard__action}>
-              ▣ 장비
+              <IconEquipment aria-hidden />
+              장비
             </Link>
             <Link href="/erp/notifications" className={styles.dashboard__action}>
-              ⚡ 알림
+              <IconNotification aria-hidden />
+              알림
             </Link>
             <Link href="/erp/profile" className={styles.dashboard__action}>
-              ◎ 프로필
+              <IconProfile aria-hidden />
+              프로필
             </Link>
             {isAdmin && (
               <>
                 <Link href="/erp/admin/users" className={styles.dashboard__action}>
-                  ⚙ 사용자 관리
+                  <IconUserAdmin aria-hidden />
+                  사용자 관리
                 </Link>
                 <Link href="/erp/admin/members" className={styles.dashboard__action}>
-                  ⚙ 멤버 관리
+                  <IconMembers aria-hidden />
+                  멤버 관리
                 </Link>
               </>
             )}

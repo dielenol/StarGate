@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+
 import { submitContactForm } from "@/lib/form-submit";
 import { validateContactForm } from "@/lib/validators";
+
+import { IconReturn } from "@/components/icons";
+
 import styles from "../forms.module.css";
 import frameStyles from "../page.module.css";
 
@@ -113,7 +117,9 @@ export default function ContactPage() {
               <Link className={frameStyles["stargate__cta-link"]} href="/">
                 <div className={frameStyles["stargate__cta-outer"]}>
                   <div className={frameStyles["stargate__cta-inner"]}>
-                    <div className={frameStyles["stargate__cta-icon"]}>↩</div>
+                    <div className={frameStyles["stargate__cta-icon"]}>
+                      <IconReturn aria-hidden />
+                    </div>
                     <div className={frameStyles["stargate__cta-title"]}>기밀 아카이브로 복귀</div>
                     <div className={frameStyles["stargate__cta-subtitle"]}>RETURN TO ARCHIVE</div>
                   </div>
@@ -129,7 +135,9 @@ export default function ContactPage() {
                   <p className={styles["form-page__success-description"]}>{success}</p>
 
                   <button className={styles["form-page__success-cta"]} onClick={() => router.push("/")} type="button">
-                    <span className={styles["form-page__success-cta-icon"]}>↩</span>
+                    <span className={styles["form-page__success-cta-icon"]}>
+                      <IconReturn aria-hidden />
+                    </span>
                     <span className={styles["form-page__success-cta-title"]}>기밀 아카이브로 이동</span>
                     <span className={styles["form-page__success-cta-subtitle"]}>RETURN TO ARCHIVE</span>
                   </button>

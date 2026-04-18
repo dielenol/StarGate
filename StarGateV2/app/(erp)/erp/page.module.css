@@ -86,13 +86,21 @@
 }
 
 .dashboard__action {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   border: 1px solid rgba(197, 160, 89, 0.2);
   color: #d8c39a;
   font-size: 13px;
   text-decoration: none;
   transition: background 0.15s, border-color 0.15s;
+}
+
+.dashboard__action svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .dashboard__action:hover {
