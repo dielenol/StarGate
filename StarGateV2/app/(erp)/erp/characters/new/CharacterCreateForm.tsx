@@ -11,7 +11,12 @@ import type {
   Equipment,
   Ability,
 } from "@/types/character";
-import { AGENT_LEVELS, AGENT_LEVEL_LABELS, DEPARTMENTS } from "@/types/character";
+import {
+  AGENT_LEVELS,
+  AGENT_LEVEL_LABELS,
+  FACTIONS,
+  INSTITUTIONS,
+} from "@/types/character";
 
 import styles from "../[id]/CharacterEditForm.module.css";
 
@@ -268,11 +273,32 @@ export default function CharacterCreateForm() {
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
               >
-                {DEPARTMENTS.map((dept) => (
-                  <option key={dept.code} value={dept.code}>
-                    {dept.label}
-                  </option>
-                ))}
+                <option value="UNASSIGNED">미배정</option>
+                <optgroup label="3대 세력">
+                  {FACTIONS.map((f) => (
+                    <option key={f.code} value={f.code}>
+                      {f.label}
+                    </option>
+                  ))}
+                </optgroup>
+                {INSTITUTIONS.map((inst) =>
+                  inst.subUnits.length > 0 ? (
+                    <optgroup key={inst.code} label={inst.label}>
+                      <option value={inst.code}>
+                        {inst.label} (직속)
+                      </option>
+                      {inst.subUnits.map((u) => (
+                        <option key={u.code} value={u.code}>
+                          {u.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ) : (
+                    <optgroup key={inst.code} label="독립 기관">
+                      <option value={inst.code}>{inst.label}</option>
+                    </optgroup>
+                  ),
+                )}
               </select>
             </div>
             <div className={styles.form__field}>

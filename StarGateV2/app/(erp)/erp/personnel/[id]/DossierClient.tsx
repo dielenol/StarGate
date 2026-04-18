@@ -3,9 +3,10 @@
 import Link from "next/link";
 
 import type { Character, AgentLevel } from "@/types/character";
-import { AGENT_LEVEL_LABELS, DEPARTMENTS } from "@/types/character";
+import { AGENT_LEVEL_LABELS } from "@/types/character";
 
 import { canViewField, type FieldGroup } from "@/lib/personnel";
+import { getDepartmentLabel } from "@/lib/org-structure";
 
 import styles from "./page.module.css";
 
@@ -51,12 +52,6 @@ function RedactedBlock({
   return <p className={styles.dossier__text}>{content ?? "—"}</p>;
 }
 
-/* ── 유틸 ── */
-
-function getDepartmentLabel(code: string): string {
-  const dept = DEPARTMENTS.find((d) => d.code === code);
-  return dept?.label ?? "미배정";
-}
 
 function formatDate(value: string | Date | undefined): string {
   if (!value) return "—";

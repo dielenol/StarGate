@@ -72,6 +72,39 @@ export const AGENT_LEVEL_LABELS: Record<AgentLevel, string> = {
   U: "소모품",
 };
 
+/* ── 조직 구조 (세계관 표면적 구조) ── */
+
+export const FACTIONS = [
+  { code: "MILITARY", label: "군부", labelEn: "Military" },
+  { code: "COUNCIL", label: "이사회", labelEn: "World Council" },
+  { code: "CIVIL", label: "시민사회", labelEn: "Civil Society" },
+] as const;
+
+export type FactionCode = (typeof FACTIONS)[number]["code"];
+
+export const INSTITUTIONS = [
+  {
+    code: "SECRETARIAT",
+    label: "사무국",
+    labelEn: "Secretariat",
+    subUnits: [
+      { code: "RESEARCH", label: "연구 기구" },
+      { code: "ADMIN_BUREAU", label: "행정 기구" },
+      { code: "INTL", label: "국제 기구" },
+      { code: "CONTROL", label: "통제 기구" },
+    ],
+  },
+  {
+    code: "FINANCE",
+    label: "재무국",
+    labelEn: "Financial Bureau",
+    subUnits: [],
+  },
+] as const;
+
+export type InstitutionCode = (typeof INSTITUTIONS)[number]["code"];
+
+/** @deprecated 호환용. 새 코드는 FACTIONS + INSTITUTIONS 사용 */
 export const DEPARTMENTS = [
   { code: "HQ", label: "사무총장실", labelEn: "Secretary General's Office" },
   { code: "FIELD", label: "현장작전부", labelEn: "Field Operations" },
@@ -82,7 +115,16 @@ export const DEPARTMENTS = [
   { code: "UNASSIGNED", label: "미배정", labelEn: "Unassigned" },
 ] as const;
 
-export type DepartmentCode = (typeof DEPARTMENTS)[number]["code"];
+/** @deprecated 레거시 코드 유니온 */
+export type LegacyDepartmentCode = (typeof DEPARTMENTS)[number]["code"];
+
+/** 모든 유효한 부서/세력/기관 코드 유니온 */
+export type DepartmentCode =
+  | FactionCode
+  | InstitutionCode
+  | (typeof INSTITUTIONS)[number]["subUnits"][number]["code"]
+  | LegacyDepartmentCode
+  | "UNASSIGNED";
 
 interface CharacterBase {
   _id?: ObjectId;
