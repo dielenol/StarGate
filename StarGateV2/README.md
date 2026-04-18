@@ -53,3 +53,6 @@ Vercel 배포 절차는 `docs/DEPLOYMENT_VERCEL.md`를 참고하세요.
 - Discord 외 알림 채널(Resend 이메일, Slack 등) 추가
 - 관리자 확인용 저장소(DB/Spreadsheet) 연동
 - SEO 메타/OG 이미지 보강
+
+## 개발 서버 포트
+기본 포트는 3000이며, 환경변수 PORT로 변경 가능하다.
