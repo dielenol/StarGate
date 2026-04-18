@@ -25,19 +25,21 @@
 /* Field rows */
 
 .form__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
-}
-
-.form__gridFull {
-  grid-column: 1 / -1;
 }
 
 .form__field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1 1 calc(50% - 8px);
+}
+
+.form__field.form__gridFull,
+.form__gridFull {
+  flex: 1 1 100%;
 }
 
 .form__label {
@@ -99,9 +101,13 @@
 /* Stat grid (4-col for combat stats) */
 
 .form__statGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
+}
+
+.form__statGrid > .form__field {
+  flex: 1 1 calc(25% - 9px);
 }
 
 /* Dynamic list (Equipment / Abilities) */
@@ -231,12 +237,12 @@
   font-size: 13px;
 }
 
-@media (max-width: 768px) {
-  .form__grid {
-    grid-template-columns: 1fr;
+@media (max-width: 767px) {
+  .form__grid > .form__field {
+    flex: 1 1 100%;
   }
 
-  .form__statGrid {
-    grid-template-columns: repeat(2, 1fr);
+  .form__statGrid > .form__field {
+    flex: 1 1 calc(50% - 6px);
   }
 }

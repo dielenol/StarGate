@@ -5,3 +5,11 @@
   justify-content: center;
   padding: 20px;
 }
+
+/* Mobile */
+
+@media (max-width: 767px) {
+  .auth {
+    padding: 12px;
+  }
+}

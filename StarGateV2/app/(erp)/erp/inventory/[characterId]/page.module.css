@@ -114,20 +114,21 @@
 }
 
 .grantForm__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 16px;
 }
 
 .grantForm__field {
+  flex: 1 1 200px;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
 .grantForm__field--full {
-  grid-column: 1 / -1;
+  flex: 1 1 100%;
 }
 
 .grantForm__label {
@@ -235,7 +236,7 @@
   font-size: 13px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .charInventory__table {
     font-size: 12px;
   }
@@ -243,5 +244,9 @@
   .charInventory__table th,
   .charInventory__table td {
     padding: 8px 6px;
+  }
+
+  .grantForm__field {
+    flex: 1 1 100%;
   }
 }

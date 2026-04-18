@@ -181,7 +181,7 @@
   color: #fda4af;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .section {
     padding: 18px 14px;
   }

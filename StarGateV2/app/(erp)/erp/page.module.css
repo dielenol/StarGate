@@ -20,16 +20,23 @@
 /* Cards grid */
 
 .dashboard__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 32px;
 }
 
 .dashboard__card {
+  flex: 1 1 260px;
   padding: 20px;
   border: 1px solid rgba(197, 160, 89, 0.15);
   background: rgba(13, 27, 30, 0.6);
+}
+
+@media (max-width: 767px) {
+  .dashboard__card {
+    flex: 1 1 100%;
+  }
 }
 
 .dashboard__cardHeader {

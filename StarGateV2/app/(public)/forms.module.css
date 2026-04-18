@@ -188,7 +188,7 @@
   opacity: 0.85;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .form-page__success-overlay {
     padding: 18px;
   }

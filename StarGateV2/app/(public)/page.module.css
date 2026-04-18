@@ -500,7 +500,7 @@
   color: #2c3e50;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .stargate__frame {
     padding: 40px 14px;
   }
@@ -519,21 +519,15 @@
   }
 
   .stargate__cta-link {
-    width: min(100%, 320px);
+    width: 100%;
   }
 
   .stargate__cta-inner {
     padding: 16px 10px;
   }
-}
 
-@media (max-width: 430px) {
   .stargate__cta-row--spaced {
     margin: 24px 0;
-  }
-
-  .stargate__cta-link {
-    width: 100%;
   }
 
   .stargate__cta-title {

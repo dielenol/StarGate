@@ -326,7 +326,7 @@
 
 /* Mobile */
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .survey__inner {
     padding: 40px 16px;
   }

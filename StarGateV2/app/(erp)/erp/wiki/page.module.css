@@ -189,7 +189,7 @@
   border: 1px dashed rgba(197, 160, 89, 0.1);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .wiki__item {
     flex-direction: column;
     align-items: flex-start;

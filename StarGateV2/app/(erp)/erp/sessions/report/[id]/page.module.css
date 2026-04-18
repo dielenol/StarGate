@@ -146,3 +146,28 @@
   font-size: 13px;
   font-weight: 600;
 }
+
+/* Mobile */
+
+@media (max-width: 767px) {
+  .detail__title {
+    font-size: 22px;
+    letter-spacing: 1px;
+  }
+
+  .detail__meta {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .detail__actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .detail__editBtn,
+  .detail__deleteBtn {
+    width: 100%;
+    text-align: center;
+  }
+}

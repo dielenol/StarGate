@@ -191,3 +191,41 @@
   text-align: center;
   border: 1px dashed rgba(197, 160, 89, 0.1);
 }
+
+/* Mobile */
+
+@media (max-width: 767px) {
+  .detail__title {
+    font-size: 22px;
+    letter-spacing: 0.5px;
+  }
+
+  .detail__content {
+    font-size: 14px;
+    padding: 16px 0;
+  }
+
+  .detail__content h2 {
+    font-size: 18px;
+  }
+
+  .detail__content h3 {
+    font-size: 16px;
+  }
+
+  .detail__footer {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .detail__actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .detail__actionBtn,
+  .detail__deleteBtn {
+    flex: 1;
+    text-align: center;
+  }
+}

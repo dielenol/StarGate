@@ -20,13 +20,14 @@
 /* Stats */
 
 .members__stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 32px;
 }
 
 .members__statCard {
+  flex: 1 1 180px;
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -159,4 +160,12 @@
 
 .members__status--suspended {
   color: #e07070;
+}
+
+/* ── 반응형 ── */
+
+@media (max-width: 767px) {
+  .members__statCard {
+    flex: 1 1 100%;
+  }
 }

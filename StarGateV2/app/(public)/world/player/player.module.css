@@ -31,16 +31,22 @@
 }
 
 .selectGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 220px));
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 14px;
   margin-bottom: 28px;
 }
 
+.selectGrid > * {
+  flex: 0 1 220px;
+  min-width: 180px;
+}
+
 .card {
   width: 100%;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   text-align: left;
   text-decoration: none;
   border: 1px solid rgba(197, 160, 89, 0.42);
@@ -154,7 +160,8 @@
 
 .card__meta {
   margin-top: 9px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 2px;
 }
 
@@ -180,7 +187,8 @@
 }
 
 .sheets {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
@@ -313,8 +321,8 @@
 }
 
 .securityPopup__info {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 12px;
   border: 1px solid #333;
@@ -322,6 +330,11 @@
   color: #707780;
   font-size: 10px;
   letter-spacing: 0.08em;
+}
+
+.securityPopup__info > * {
+  flex: 1 1 calc(50% - 10px);
+  min-width: 0;
 }
 
 .securityPopup__info span {
@@ -515,7 +528,7 @@
   font-size: var(--font-size-sm);
 }
 
-@media (min-width: 769px) {
+@media (min-width: 768px) {
   .playerPage {
     --player-desktop-scale: 1.5;
   }
@@ -545,9 +558,13 @@
   }
 
   .selectGrid {
-    grid-template-columns: repeat(auto-fit, minmax(270px, 330px));
     gap: 22px;
     margin-bottom: 42px;
+  }
+
+  .selectGrid > * {
+    flex: 0 1 330px;
+    min-width: 270px;
   }
 
   .card {
@@ -596,9 +613,10 @@
   }
 }
 
-@media (max-width: 768px) {
-  .selectGrid {
-    grid-template-columns: minmax(0, 1fr);
+@media (max-width: 767px) {
+  .selectGrid > * {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
   .card__portrait {
@@ -632,8 +650,8 @@
     padding-right: 16px;
   }
 
-  .securityPopup__info {
-    grid-template-columns: 1fr;
+  .securityPopup__info > * {
+    flex: 1 1 100%;
   }
 
   .recoveryPanel {

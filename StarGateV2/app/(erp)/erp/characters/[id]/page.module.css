@@ -194,8 +194,8 @@
 /* Stat grid (Agent combat) */
 
 .statGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -204,6 +204,7 @@
   padding: 12px;
   border: 1px solid rgba(197, 160, 89, 0.1);
   background: rgba(13, 27, 30, 0.4);
+  flex: 1 1 100px;
 }
 
 .stat__value {
@@ -279,7 +280,7 @@
   font-size: 16px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .profile {
     flex-direction: column;
     align-items: center;
@@ -289,7 +290,7 @@
     flex-direction: column;
   }
 
-  .statGrid {
-    grid-template-columns: repeat(2, 1fr);
+  .stat {
+    flex: 1 1 calc(50% - 6px);
   }
 }

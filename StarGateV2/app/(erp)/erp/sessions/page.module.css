@@ -66,3 +66,16 @@
 .legend__dot--canceled {
   background: #e07070;
 }
+
+/* Mobile */
+
+@media (max-width: 767px) {
+  .sessions__title {
+    font-size: 22px;
+    letter-spacing: 1px;
+  }
+
+  .legend {
+    gap: 10px;
+  }
+}

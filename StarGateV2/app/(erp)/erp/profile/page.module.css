@@ -176,7 +176,7 @@
   color: #a0a0a0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .info__row {
     flex-direction: column;
     gap: 4px;

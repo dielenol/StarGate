@@ -274,7 +274,7 @@
 
 /* Responsive */
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .calendar__cell {
     min-height: 56px;
     padding: 4px;

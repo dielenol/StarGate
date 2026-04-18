@@ -204,13 +204,13 @@
   display: none;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .sidebar__hamburger {
     display: none;
   }
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1279px) {
   .sidebar {
     width: 270px;
     transform: translateX(-100%);

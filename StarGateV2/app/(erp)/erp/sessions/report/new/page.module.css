@@ -162,3 +162,28 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Mobile */
+
+@media (max-width: 767px) {
+  .newReport__title {
+    font-size: 22px;
+    letter-spacing: 1px;
+  }
+
+  .form {
+    gap: 16px;
+  }
+
+  .form__fieldset {
+    padding: 12px;
+  }
+
+  .form__dynamicRow {
+    gap: 6px;
+  }
+
+  .form__submit {
+    width: 100%;
+  }
+}

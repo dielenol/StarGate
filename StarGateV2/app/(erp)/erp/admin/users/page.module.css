@@ -46,16 +46,16 @@
 }
 
 .form__row {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 16px;
+  align-items: flex-end;
 }
 
-@media (max-width: 768px) {
-  .form__row {
-    grid-template-columns: 1fr;
-  }
+.form__row > .form__label {
+  flex: 1 1 calc(50% - 8px);
+  min-width: 0;
 }
 
 .form__label {
@@ -231,4 +231,12 @@
 
 .status--suspended {
   color: #e07070;
+}
+
+/* ── 반응형 ── */
+
+@media (max-width: 767px) {
+  .form__row > .form__label {
+    flex: 1 1 100%;
+  }
 }

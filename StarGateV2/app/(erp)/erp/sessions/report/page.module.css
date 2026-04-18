@@ -52,12 +52,13 @@
 /* Cards grid */
 
 .reports__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
 .reports__card {
+  flex: 1 1 280px;
   display: flex;
   flex-direction: column;
   padding: 20px;
@@ -105,4 +106,12 @@
 .reports__cardDate {
   color: #5a6a6e;
   font-size: 12px;
+}
+
+/* ── 반응형 ── */
+
+@media (max-width: 767px) {
+  .reports__card {
+    flex: 1 1 100%;
+  }
 }
