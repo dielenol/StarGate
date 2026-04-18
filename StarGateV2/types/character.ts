@@ -19,7 +19,7 @@ export type {
   NpcSheet,
   CreateCharacterInput,
   CharacterPublic,
-} from "@stargate/shared-db";
+} from "@stargate/shared-db/types";
 
 export {
   AGENT_LEVELS,
@@ -27,4 +27,4 @@ export {
   DEPARTMENTS,
   FACTIONS,
   INSTITUTIONS,
-} from "@stargate/shared-db";
+} from "@stargate/shared-db/types";

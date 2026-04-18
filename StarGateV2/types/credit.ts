@@ -6,4 +6,4 @@ export type {
   CreditTransaction,
   CreditTransactionType,
   CreateCreditTransactionInput,
-} from "@stargate/shared-db";
+} from "@stargate/shared-db/types";

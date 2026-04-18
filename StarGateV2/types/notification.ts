@@ -6,4 +6,4 @@ export type {
   Notification,
   NotificationType,
   CreateNotificationInput,
-} from "@stargate/shared-db";
+} from "@stargate/shared-db/types";

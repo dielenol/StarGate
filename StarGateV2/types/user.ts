@@ -8,6 +8,6 @@ export type {
   UserStatus,
   CreateUserInput,
   UserPublic,
-} from "@stargate/shared-db";
+} from "@stargate/shared-db/types";
 
-export { USER_ROLES, USER_STATUSES } from "@stargate/shared-db";
+export { USER_ROLES, USER_STATUSES } from "@stargate/shared-db/types";

@@ -8,4 +8,4 @@ export type {
   ItemCategory,
   CreateMasterItemInput,
   CreateInventoryInput,
-} from "@stargate/shared-db";
+} from "@stargate/shared-db/types";

@@ -5,4 +5,4 @@
 export type {
   SessionReport,
   CreateSessionReportInput,
-} from "@stargate/shared-db";
+} from "@stargate/shared-db/types";

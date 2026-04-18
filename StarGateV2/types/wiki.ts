@@ -7,4 +7,4 @@ export type {
   WikiPageRevision,
   CreateWikiPageInput,
   UpdateWikiPageInput,
-} from "@stargate/shared-db";
+} from "@stargate/shared-db/types";
