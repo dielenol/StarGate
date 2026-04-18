@@ -1,28 +1,9 @@
-import type { ObjectId } from "mongodb";
+/**
+ * @deprecated shared-db에서 직접 import하세요.
+ */
 
-export type CreditTransactionType =
-  | "SESSION_REWARD"
-  | "PURCHASE"
-  | "ADMIN_GRANT"
-  | "ADMIN_DEDUCT"
-  | "TRANSFER";
-
-export interface CreditTransaction {
-  _id?: ObjectId;
-  userId: string;
-  userName: string;
-  characterId?: string;
-  characterCodename?: string;
-  type: CreditTransactionType;
-  amount: number;
-  balance: number;
-  description: string;
-  createdById: string;
-  createdByName: string;
-  createdAt: Date;
-}
-
-export type CreateCreditTransactionInput = Omit<
+export type {
   CreditTransaction,
-  "_id" | "createdAt"
->;
+  CreditTransactionType,
+  CreateCreditTransactionInput,
+} from "@stargate/shared-db";

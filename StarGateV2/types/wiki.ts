@@ -1,33 +1,10 @@
-import type { ObjectId } from "mongodb";
+/**
+ * @deprecated shared-db에서 직접 import하세요.
+ */
 
-export interface WikiPage {
-  _id?: ObjectId;
-  slug: string;
-  title: string;
-  content: string;
-  category: string;
-  tags: string[];
-  isPublic: boolean;
-  authorId: string;
-  authorName: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface WikiPageRevision {
-  _id?: ObjectId;
-  pageId: string;
-  content: string;
-  editedById: string;
-  editedByName: string;
-  createdAt: Date;
-}
-
-export type CreateWikiPageInput = Omit<
+export type {
   WikiPage,
-  "_id" | "createdAt" | "updatedAt"
->;
-
-export type UpdateWikiPageInput = Partial<
-  Pick<WikiPage, "title" | "content" | "category" | "tags" | "isPublic">
->;
+  WikiPageRevision,
+  CreateWikiPageInput,
+  UpdateWikiPageInput,
+} from "@stargate/shared-db";
