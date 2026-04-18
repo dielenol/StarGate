@@ -41,10 +41,10 @@ function getGuildId(): string | undefined {
   return process.env.GUILD_ID;
 }
 
-/** MongoDB 데이터베이스 이름 (미설정 시 registrar_bot) */
+/** MongoDB 데이터베이스 이름 (미설정 시 stargate 통합 DB) */
 function getMongoDbName(): string {
   const n = process.env.MONGODB_DB_NAME?.trim();
-  return n && n.length > 0 ? n : "registrar_bot";
+  return n && n.length > 0 ? n : "stargate";
 }
 
 /**
