@@ -38,9 +38,17 @@
 
 .survey__emblem {
   color: #c5a059;
-  font-size: 36px;
   letter-spacing: 12px;
   margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.survey__emblem svg {
+  width: 36px;
+  height: 36px;
 }
 
 .survey__title {
@@ -288,7 +296,10 @@
 }
 
 .survey__ctaBtn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   background-color: #c5a059;
   color: #081216;
   padding: 14px 40px;
@@ -298,6 +309,11 @@
   text-decoration: none;
   box-shadow: 0 0 20px rgba(197, 160, 89, 0.4);
   transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.survey__ctaBtn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .survey__ctaBtn:hover {

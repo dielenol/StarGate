@@ -7,6 +7,8 @@ import {
   type SerializedSession,
 } from "@/hooks/queries/useSessionsQuery";
 
+import { IconChevronLeft, IconChevronRight } from "@/components/icons";
+
 import styles from "./SessionCalendar.module.css";
 
 interface SessionCalendarProps {
@@ -106,7 +108,8 @@ export default function SessionCalendar({
           disabled={loading}
           aria-label="이전 월"
         >
-          ← 이전
+          <IconChevronLeft aria-hidden />
+          이전
         </button>
         <span className={styles.nav__title}>
           {year}년 {month}월
@@ -118,7 +121,8 @@ export default function SessionCalendar({
           disabled={loading}
           aria-label="다음 월"
         >
-          다음 →
+          다음
+          <IconChevronRight aria-hidden />
         </button>
       </div>
 

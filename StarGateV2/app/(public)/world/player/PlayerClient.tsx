@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 
 import type { CharacterSheetData } from "./components/CharacterSheet";
 
+import { IconDivider, IconReturn } from "@/components/icons";
+
 import CharacterSheet from "./components/CharacterSheet";
 import frameStyles from "../../page.module.css";
 import styles from "./player.module.css";
@@ -207,7 +209,9 @@ export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
           <section className={styles.hero}>
             <span className={frameStyles.stargate__est}>AGENT SELECT</span>
             <h1 className={styles.hero__title}>현장 요원 아카이브</h1>
-            <div className={frameStyles.stargate__ornament}>✥</div>
+            <div className={frameStyles.stargate__ornament}>
+              <IconDivider aria-hidden />
+            </div>
             <p className={styles.hero__description}>
               상단 포트레이트를 선택하면 해당 요원의 상세 기록이 아래 패널에 표시됩니다.
             </p>
@@ -265,7 +269,9 @@ export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
             <Link className={frameStyles["stargate__cta-link"]} href="/world">
               <div className={frameStyles["stargate__cta-outer"]}>
                 <div className={frameStyles["stargate__cta-inner"]}>
-                  <div className={frameStyles["stargate__cta-icon"]}>↩</div>
+                  <div className={frameStyles["stargate__cta-icon"]}>
+                    <IconReturn aria-hidden />
+                  </div>
                   <div className={frameStyles["stargate__cta-title"]}>세계관 메인으로</div>
                   <div className={frameStyles["stargate__cta-subtitle"]}>RETURN TO INDEX</div>
                 </div>

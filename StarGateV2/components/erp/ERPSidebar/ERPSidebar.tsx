@@ -8,31 +8,45 @@ import { useSession } from "next-auth/react";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 import { hasRole } from "@/lib/auth/rbac";
 
+import type { IconComponent } from "@/components/icons";
 import PermissionGate from "@/components/erp/PermissionGate/PermissionGate";
+import {
+  IconCharacter,
+  IconChevronLeft,
+  IconCredit,
+  IconDashboard,
+  IconEquipment,
+  IconMembers,
+  IconNotification,
+  IconProfile,
+  IconSession,
+  IconUserAdmin,
+  IconWiki,
+} from "@/components/icons";
 
 import styles from "./ERPSidebar.module.css";
 
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: IconComponent;
 }
 
 const MAIN_NAV_ITEMS: NavItem[] = [
-  { href: "/erp", label: "대시보드", icon: "◈" },
-  { href: "/erp/sessions", label: "세션", icon: "◉" },
-  { href: "/erp/characters", label: "캐릭터", icon: "⚔" },
-  { href: "/erp/personnel", label: "신원 조회", icon: "⊕" },
-  { href: "/erp/wiki", label: "위키", icon: "☰" },
-  { href: "/erp/credits", label: "크레딧", icon: "◇" },
-  { href: "/erp/inventory", label: "장비", icon: "▣" },
-  { href: "/erp/notifications", label: "알림", icon: "⚡" },
-  { href: "/erp/profile", label: "프로필", icon: "◎" },
+  { href: "/erp", label: "대시보드", icon: IconDashboard },
+  { href: "/erp/sessions", label: "세션", icon: IconSession },
+  { href: "/erp/characters", label: "캐릭터", icon: IconCharacter },
+  { href: "/erp/personnel", label: "신원 조회", icon: IconMembers },
+  { href: "/erp/wiki", label: "위키", icon: IconWiki },
+  { href: "/erp/credits", label: "크레딧", icon: IconCredit },
+  { href: "/erp/inventory", label: "장비", icon: IconEquipment },
+  { href: "/erp/notifications", label: "알림", icon: IconNotification },
+  { href: "/erp/profile", label: "프로필", icon: IconProfile },
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
-  { href: "/erp/admin/users", label: "사용자 관리", icon: "⚙" },
-  { href: "/erp/admin/members", label: "멤버 관리", icon: "✦" },
+  { href: "/erp/admin/users", label: "사용자 관리", icon: IconUserAdmin },
+  { href: "/erp/admin/members", label: "멤버 관리", icon: IconMembers },
 ];
 
 export default function ERPSidebar() {
@@ -73,7 +87,9 @@ export default function ERPSidebar() {
               href={item.href}
               className={`${styles.sidebar__item} ${isActive(item.href) ? styles["sidebar__item--active"] : ""}`}
             >
-              <span className={styles["sidebar__item-icon"]}>{item.icon}</span>
+              <span className={styles["sidebar__item-icon"]}>
+                <item.icon aria-hidden />
+              </span>
               {item.label}
             </Link>
           ))}
@@ -89,7 +105,7 @@ export default function ERPSidebar() {
                 className={`${styles.sidebar__item} ${isActive(item.href) ? styles["sidebar__item--active"] : ""}`}
               >
                 <span className={styles["sidebar__item-icon"]}>
-                  {item.icon}
+                  <item.icon aria-hidden />
                 </span>
                 {item.label}
               </Link>
@@ -100,7 +116,7 @@ export default function ERPSidebar() {
 
       <div className={styles.sidebar__footer}>
         <Link href="/" className={styles.sidebar__return}>
-          <span>←</span>
+          <IconChevronLeft aria-hidden />
           홍보 사이트로 돌아가기
         </Link>
       </div>

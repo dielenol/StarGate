@@ -1,6 +1,7 @@
 import frameStyles from "../page.module.css";
 import styles from "../rules/rules.module.css";
 import TableOfContents, { type TocItem } from "@/components/TableOfContents/TableOfContents";
+import { IconDivider } from "@/components/icons";
 
 const GAMEPLAY_TOC_ITEMS: TocItem[] = [
   { id: "zulu", label: "Zulu란?" },
@@ -24,7 +25,9 @@ export default function GameplayPage() {
           <div className={styles.hero}>
             <span className={frameStyles.stargate__est}>OPERATION DOSSIER</span>
             <h1 className={styles.hero__title}>작전 내규 브리핑</h1>
-            <div className={frameStyles.stargate__ornament}>✥</div>
+            <div className={frameStyles.stargate__ornament}>
+              <IconDivider aria-hidden />
+            </div>
             <p className={styles.hero__description}>
               Zulu 대응, 크레딧, 후원자, 지역 패닉 등 작전 수행 시 필요한 현장 내규를 정리한 문서입니다.
             </p>

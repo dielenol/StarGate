@@ -1,0 +1,23 @@
+import type { SVGProps } from 'react'
+
+export function IconWiki(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width={24}
+      height={24}
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M12 6L3 4v14l9 2 9-2V4l-9 2z" />
+      <path d="M12 6v14" />
+      <path d="M6 8.5l3 .5M6 11.5l3 .5M15 9l3-.5M15 12l3-.5" />
+    </svg>
+  )
+}

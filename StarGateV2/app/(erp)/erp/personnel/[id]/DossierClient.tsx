@@ -8,6 +8,8 @@ import { AGENT_LEVEL_LABELS } from "@/types/character";
 import { canViewField, type FieldGroup } from "@/lib/personnel";
 import { getDepartmentLabel } from "@/lib/org-structure";
 
+import { IconArrowLeft } from "@/components/icons";
+
 import styles from "./page.module.css";
 
 /* ── 헬퍼 컴포넌트 ── */
@@ -83,7 +85,8 @@ export default function DossierClient({ character, clearance }: Props) {
     <div className={styles.dossier}>
       {/* 뒤로가기 */}
       <Link href="/erp/personnel" className={styles.dossier__back}>
-        ← 인원 목록
+        <IconArrowLeft aria-hidden />
+        인원 목록
       </Link>
 
       {/* Classification banner */}

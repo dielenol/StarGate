@@ -10,7 +10,6 @@
   background: rgba(13, 27, 30, 0.9);
   color: #c5a059;
   border-radius: 8px;
-  font-size: var(--font-size-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22,6 +21,11 @@
     border-color 0.2s ease,
     background-color 0.2s ease,
     color 0.2s ease;
+}
+
+.button svg {
+  width: 20px;
+  height: 20px;
 }
 
 .button:hover {

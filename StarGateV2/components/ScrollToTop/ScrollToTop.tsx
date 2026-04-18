@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+
+import { IconChevronUp } from "@/components/icons";
+
 import styles from "./ScrollToTop.module.css";
 
 const SCROLL_THRESHOLD = 300;
@@ -38,7 +41,7 @@ export default function ScrollToTop() {
       onClick={scrollToTop}
       aria-label="맨 위로 이동"
     >
-      ▲
+      <IconChevronUp aria-hidden />
     </button>
   );
 }

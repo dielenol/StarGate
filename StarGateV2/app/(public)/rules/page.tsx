@@ -1,6 +1,7 @@
 import frameStyles from "../page.module.css";
 import styles from "./rules.module.css";
 import TableOfContents, { type TocItem } from "@/components/TableOfContents/TableOfContents";
+import { IconDivider } from "@/components/icons";
 
 const RULES_TOC_ITEMS: TocItem[] = [
   { id: "welcome", label: "환영" },
@@ -27,7 +28,9 @@ export default function RulesPage() {
           <div className={styles.hero}>
             <span className={frameStyles.stargate__est}>RULE DOSSIER</span>
             <h1 className={styles.hero__title}>노부스 오르도 룰</h1>
-            <div className={frameStyles.stargate__ornament}>✥</div>
+            <div className={frameStyles.stargate__ornament}>
+              <IconDivider aria-hidden />
+            </div>
             <p className={styles.hero__description}>
               실시간 턴제 전투, 능력치, 클래스 등 핵심 노부스 오르도 규칙을 정리한 문서입니다.
             </p>

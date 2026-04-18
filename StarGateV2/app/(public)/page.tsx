@@ -1,7 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
-import styles from "./page.module.css";
+
 import { resolvePublicAssetPath } from "@/lib/asset-path";
+
+import {
+  IconApply,
+  IconChevronRight,
+  IconContact,
+  IconDivider,
+} from "@/components/icons";
+
+import styles from "./page.module.css";
 
 export default function HomePage() {
   // 배포 환경(basePath 유무)에 따라 public 자산 경로를 자동 보정합니다.
@@ -35,7 +44,9 @@ export default function HomePage() {
           <div className={styles.stargate__intro}>
             <span className={styles.stargate__est}>EST. 1945</span>
             <h1 className={styles.stargate__title}>ABOUT US</h1>
-            <div className={styles.stargate__ornament}>✥</div>
+            <div className={styles.stargate__ornament}>
+              <IconDivider aria-hidden />
+            </div>
             <p className={styles["stargate__intro-text"]}>
               전 세계 국가들이 한자리에 모여
               <br />
@@ -62,7 +73,10 @@ export default function HomePage() {
             <div className={styles["stargate__archive-wrap"]}>
               <details className={styles["stargate__archive-details"]} open>
                 <summary className={styles["stargate__archive-summary"]}>
-                  <span className={styles["stargate__archive-summary-icon"]}>▶</span> ARCHIVE: 조직의 발전사와 정체성 열람
+                  <span className={styles["stargate__archive-summary-icon"]}>
+                    <IconChevronRight aria-hidden />
+                  </span>
+                  ARCHIVE: 조직의 발전사와 정체성 열람
                 </summary>
                 <div className={styles["stargate__archive-content"]}>
                   노부스 오르도는 빠르게 변화하는 세계에 발맞추기 위해
@@ -155,7 +169,10 @@ export default function HomePage() {
               <div className={styles["stargate__protocol-wrap"]}>
                 <details className={styles["stargate__protocol-details"]} open>
                   <summary className={styles["stargate__protocol-summary"]}>
-                  <span className={styles["stargate__protocol-summary-icon"]}>▶</span> ADMINISTRATIVE PROTOCOL: VIEW DETAILS
+                    <span className={styles["stargate__protocol-summary-icon"]}>
+                      <IconChevronRight aria-hidden />
+                    </span>
+                    ADMINISTRATIVE PROTOCOL: VIEW DETAILS
                   </summary>
                   <div className={styles["stargate__protocol-content"]}>
                     <div className={styles["stargate__protocol-title"]}>
@@ -184,7 +201,9 @@ export default function HomePage() {
                 <Link className={styles["stargate__cta-link"]} href="/apply">
                   <div className={styles["stargate__cta-outer"]}>
                     <div className={styles["stargate__cta-inner"]}>
-                      <div className={styles["stargate__cta-icon"]}>⚜</div>
+                      <div className={styles["stargate__cta-icon"]}>
+                        <IconApply aria-hidden />
+                      </div>
                       <div className={styles["stargate__cta-title"]}>입회 심사 신청</div>
                       <div className={styles["stargate__cta-subtitle"]}>SUBMIT APPLICATION</div>
                     </div>
@@ -196,7 +215,9 @@ export default function HomePage() {
                 <Link className={styles["stargate__cta-link"]} href="/contact">
                   <div className={styles["stargate__cta-outer"]}>
                     <div className={styles["stargate__cta-inner"]}>
-                      <div className={styles["stargate__cta-icon"]}>✉</div>
+                      <div className={styles["stargate__cta-icon"]}>
+                        <IconContact aria-hidden />
+                      </div>
                       <div className={styles["stargate__cta-title"]}>기밀 문의 접수</div>
                       <div className={styles["stargate__cta-subtitle"]}>SECRET INQUIRY</div>
                     </div>
@@ -210,8 +231,14 @@ export default function HomePage() {
             <div className={styles["stargate__footer-property"]}>
               PROPERTY OF NOVUS ORDO CONVENTION
             </div>
-            <div className={styles["stargate__footer-archive"]}>✦ OFFICIAL ARCHIVE ✦</div>
-            <div className={styles["stargate__footer-mark"]}>⚜</div>
+            <div className={styles["stargate__footer-archive"]}>
+              <IconDivider aria-hidden />
+              OFFICIAL ARCHIVE
+              <IconDivider aria-hidden />
+            </div>
+            <div className={styles["stargate__footer-mark"]}>
+              <IconDivider aria-hidden />
+            </div>
           </div>
         </div>
       </div>
