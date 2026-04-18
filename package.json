@@ -1,0 +1,9 @@
+{
+  "name": "stargate",
+  "private": true,
+  "scripts": {
+    "build:shared": "pnpm --filter @stargate/shared-db build",
+    "build:web": "pnpm --filter stargatev2 build",
+    "build:bot": "pnpm --filter registrar-bot build"
+  }
+}
