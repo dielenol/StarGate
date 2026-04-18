@@ -1,6 +1,5 @@
-import { ObjectId } from "mongodb";
+/**
+ * @deprecated shared-db의 isValidObjectId를 직접 사용하세요.
+ */
 
-/** ObjectId 형식(24자리 hex) 여부 검사 */
-export function isValidObjectId(id: string): boolean {
-  return ObjectId.isValid(id) && new ObjectId(id).toString() === id;
-}
+export { isValidObjectId } from "@stargate/shared-db";

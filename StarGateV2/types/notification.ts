@@ -1,24 +1,9 @@
-import type { ObjectId } from "mongodb";
+/**
+ * @deprecated shared-db에서 직접 import하세요.
+ */
 
-export type NotificationType =
-  | "SESSION_REMIND"
-  | "ROLE_CHANGE"
-  | "CREDIT_RECEIVED"
-  | "REPORT_PUBLISHED"
-  | "SYSTEM";
-
-export interface Notification {
-  _id?: ObjectId;
-  userId: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  link?: string;
-  isRead: boolean;
-  createdAt: Date;
-}
-
-export type CreateNotificationInput = Omit<
+export type {
   Notification,
-  "_id" | "isRead" | "createdAt"
->;
+  NotificationType,
+  CreateNotificationInput,
+} from "@stargate/shared-db";

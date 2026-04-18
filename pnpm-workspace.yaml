@@ -1,0 +1,4 @@
+packages:
+  - 'packages/*'
+  - 'StarGateV2'
+  - 'registra-bot'

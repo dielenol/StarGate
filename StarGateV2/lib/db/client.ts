@@ -1,45 +1,29 @@
 /**
- * MongoDB 연결 관리 (Vercel 서버리스 최적화)
+ * MongoDB 클라이언트 — shared-db로 이전됨 (shim)
  *
- * global 캐싱으로 hot reload / 서버리스 cold start 시 커넥션 재사용.
- * 동일 클러스터의 stargate_erp DB와 registrar_bot DB 모두 접근 가능.
+ * @deprecated shared-db의 getClient/getDb를 직접 사용하세요.
+ * 이 파일은 하위 호환성을 위해 유지됩니다.
  */
 
-import { MongoClient, type Db } from "mongodb";
+import "./init";
 
-const ERP_DB_NAME = process.env.ERP_DB_NAME ?? "stargate_erp";
-const REGISTRAR_DB_NAME = process.env.REGISTRAR_DB_NAME ?? "registrar_bot";
-
-interface MongoGlobal {
-  _mongoClientPromise?: Promise<MongoClient>;
-}
-
-const g = globalThis as unknown as MongoGlobal;
-
-function getClientPromise(): Promise<MongoClient> {
-  if (g._mongoClientPromise) return g._mongoClientPromise;
-
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error("MONGODB_URI 환경변수가 설정되지 않았습니다.");
-  }
-
-  const client = new MongoClient(uri, { maxPoolSize: 5 });
-  const promise = client.connect();
-  g._mongoClientPromise = promise;
-  return promise;
-}
+import type { Db, MongoClient } from "mongodb";
+import { getClient as sharedGetClient, getDb as sharedGetDb } from "@stargate/shared-db";
 
 export async function getClient(): Promise<MongoClient> {
-  return getClientPromise();
+  return sharedGetClient();
 }
 
+/**
+ * @deprecated 통합 DB(`stargate`)를 사용하므로 ERP/Registrar 구분 없음.
+ */
 export async function getErpDb(): Promise<Db> {
-  const client = await getClientPromise();
-  return client.db(ERP_DB_NAME);
+  return sharedGetDb();
 }
 
+/**
+ * @deprecated 통합 DB(`stargate`)를 사용하므로 ERP/Registrar 구분 없음.
+ */
 export async function getRegistrarDb(): Promise<Db> {
-  const client = await getClientPromise();
-  return client.db(REGISTRAR_DB_NAME);
+  return sharedGetDb();
 }

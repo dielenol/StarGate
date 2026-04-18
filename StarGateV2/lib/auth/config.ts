@@ -13,6 +13,7 @@ import type { UserRole } from "@/types/user";
 import {
   findUserByUsername,
   findUserByDiscordId,
+  upsertDiscordUser,
   verifyPassword,
   updateLastLogin,
   linkDiscord,
@@ -63,34 +64,49 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account, profile }) {
       if (account?.provider === "discord" && profile) {
         const discordId = profile.id as string;
-        const existingUser = await findUserByDiscordId(discordId);
+        const discordUsername = profile.username as string;
+        const discordGlobalName =
+          (profile.global_name as string | undefined) ?? null;
+        const discordAvatar = profile.avatar
+          ? `https://cdn.discordapp.com/avatars/${discordId}/${profile.avatar}.png`
+          : null;
 
-        if (!existingUser) {
-          // Discord 계정이 등록되지 않은 경우 로그인 거부
-          return "/login?error=NoAccount";
+        // 미등록 유저도 GUEST로 자동 생성 (봇 쪽 upsert와 동일 정책)
+        let dbUser = await findUserByDiscordId(discordId);
+        if (!dbUser) {
+          dbUser = await upsertDiscordUser({
+            discordId,
+            discordUsername,
+            discordGlobalName,
+            discordAvatar,
+          });
         }
 
-        if (existingUser.status !== "ACTIVE") {
+        if (dbUser.status !== "ACTIVE") {
           return "/login?error=AccountSuspended";
         }
 
-        // Discord 정보 갱신
+        const userId = dbUser._id?.toString();
+        if (!userId) {
+          return "/login?error=Default";
+        }
+
+        // 기존 유저는 Discord 정보 갱신
         await linkDiscord(
-          existingUser._id!.toString(),
+          userId,
           discordId,
-          profile.username as string,
-          profile.avatar
-            ? `https://cdn.discordapp.com/avatars/${discordId}/${profile.avatar}.png`
-            : null,
+          discordUsername,
+          discordGlobalName,
+          discordAvatar,
         );
 
-        await updateLastLogin(existingUser._id!.toString());
+        await updateLastLogin(userId);
 
         // user 객체에 DB 정보를 매핑
-        user.id = existingUser._id!.toString();
-        user.username = existingUser.username;
-        user.displayName = existingUser.displayName;
-        user.role = existingUser.role;
+        user.id = userId;
+        user.username = dbUser.username;
+        user.displayName = dbUser.displayName;
+        user.role = dbUser.role;
         user.discordId = discordId;
       }
 

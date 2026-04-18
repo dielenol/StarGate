@@ -1,20 +1,8 @@
-import type { ObjectId } from "mongodb";
+/**
+ * @deprecated shared-db에서 직접 import하세요.
+ */
 
-export interface SessionReport {
-  _id?: ObjectId;
-  /** registrar_bot sessions._id 참조 */
-  sessionId: string;
-  sessionTitle: string;
-  summary: string;
-  highlights: string[];
-  participants: string[];
-  gmId: string;
-  gmName: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type CreateSessionReportInput = Omit<
+export type {
   SessionReport,
-  "_id" | "createdAt" | "updatedAt"
->;
+  CreateSessionReportInput,
+} from "@stargate/shared-db";

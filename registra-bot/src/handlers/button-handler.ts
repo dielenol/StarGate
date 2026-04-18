@@ -25,6 +25,7 @@ import {
   hasParticipationCheckTipBeenShown,
   recordParticipationCheckTipShown,
 } from "../db/registrar-user-tips.js";
+import { appendSessionLog, upsertDiscordUser } from "@stargate/shared-db";
 import { buildSessionEmbed } from "../utils/embed.js";
 import type { ResponseStatus } from "../types/session.js";
 
@@ -95,6 +96,32 @@ export async function handleButtonInteraction(
   const displayName =
     (interaction.member as { displayName?: string } | null)?.displayName ??
     interaction.user.username;
+
+  // Discord 유저를 통합 users 컬렉션에 upsert (미등록은 GUEST 자동 생성)
+  // 실패해도 응답 저장은 계속 진행 (핵심 흐름 보호)
+  try {
+    await upsertDiscordUser({
+      discordId: interaction.user.id,
+      discordUsername: interaction.user.username,
+      discordGlobalName: interaction.user.globalName ?? null,
+      discordAvatar: interaction.user.avatar
+        ? `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png`
+        : null,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[upsertDiscordUser] failed:", err);
+    // 운영자 관측성: session_logs에 실패 기록
+    void appendSessionLog(sessionId, "CREATED", {
+      userId: interaction.user.id,
+      payload: {
+        kind: "USER_UPSERT_FAILED",
+        error: message,
+      },
+    }).catch((logErr) => {
+      console.error("[appendSessionLog:USER_UPSERT_FAILED] failed:", logErr);
+    });
+  }
 
   // 응답 저장 (1인 1상태, 덮어쓰기)
   await upsertResponse(sessionId, interaction.user.id, status, displayName);
