@@ -1,175 +1,266 @@
-.dashboard {
-  max-width: 960px;
-}
-
-.dashboard__classification {
-  margin-bottom: 8px;
-  color: rgba(197, 160, 89, 0.5);
-  font-size: 11px;
-  letter-spacing: 3px;
-}
-
-.dashboard__title {
-  margin: 0 0 24px;
-  color: #fff;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: 2px;
-}
-
-/* Cards grid */
-
-.dashboard__grid {
+.row3 {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
 }
 
-.dashboard__card {
-  flex: 1 1 260px;
-  padding: 20px;
-  border: 1px solid rgba(197, 160, 89, 0.15);
-  background: rgba(13, 27, 30, 0.6);
+.row3 > * {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.rowWideNarrow {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
 }
 
 @media (max-width: 767px) {
-  .dashboard__card {
-    flex: 1 1 100%;
+  .rowWideNarrow {
+    grid-template-columns: 1fr;
   }
 }
 
-.dashboard__cardHeader {
-  margin-bottom: 14px;
-  color: #c5a059;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
+/* ── 공용 유틸 ── */
+
+.mono {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
 }
 
-.dashboard__row {
-  display: flex;
-  gap: 8px;
-  padding: 4px 0;
-  font-size: 14px;
+.gold {
+  color: var(--gold);
 }
 
-.dashboard__label {
-  color: #94a3b8;
-  min-width: 60px;
-}
-
-.dashboard__value {
-  color: #d8c39a;
-  font-weight: 600;
-}
-
-/* Stat */
-
-.dashboard__stat {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.dashboard__statNumber {
-  font-size: 36px;
-  font-weight: 900;
-  color: #c5a059;
-  line-height: 1;
-}
-
-.dashboard__statLabel {
-  color: #94a3b8;
-  font-size: 14px;
-}
-
-/* Quick actions */
-
-.dashboard__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.dashboard__action {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: 1px solid rgba(197, 160, 89, 0.2);
-  color: #d8c39a;
-  font-size: 13px;
+.panelLink {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
   text-decoration: none;
-  transition: background 0.15s, border-color 0.15s;
+  transition: color 0.15s ease;
 }
 
-.dashboard__action svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
+.panelLink:hover {
+  color: var(--gold);
 }
 
-.dashboard__action:hover {
-  background: rgba(197, 160, 89, 0.08);
-  border-color: #c5a059;
+.bigNum {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 34px;
+  letter-spacing: -0.02em;
 }
 
-/* Sessions section */
-
-.dashboard__section {
-  margin-top: 8px;
-}
-
-.dashboard__sectionHeader {
-  margin-bottom: 14px;
-  color: #c5a059;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-.dashboard__empty {
-  color: #5a6a6e;
-  font-size: 14px;
-  padding: 24px;
-  text-align: center;
-  border: 1px dashed rgba(197, 160, 89, 0.1);
-}
-
-.dashboard__sessions {
+.empty {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+/* ── MY CHARACTER ── */
+
+.char {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.char__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.char__name {
+  margin-top: 2px;
+  color: var(--ink-0);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.char__sub {
+  margin-top: 2px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.char__stats {
+  margin-top: 10px;
+}
+
+.char__cta {
+  justify-content: center;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-.dashboard__sessionCard {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
-  border: 1px solid rgba(197, 160, 89, 0.1);
-  background: rgba(13, 27, 30, 0.4);
+.stat__label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  min-width: 28px;
 }
 
-.dashboard__sessionTitle {
+.stat__bar {
   flex: 1;
-  color: #d8c39a;
-  font-weight: 600;
-  font-size: 14px;
 }
 
-.dashboard__sessionDate {
-  color: #94a3b8;
-  font-size: 13px;
+.stat__value {
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  min-width: 24px;
+  text-align: right;
+}
+
+/* ── CREDITS ── */
+
+.credits__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+/* ── NOTIFICATIONS ── */
+
+.notifList {
+  font-size: 12px;
+}
+
+.notifLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.notifText {
+  color: var(--ink-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dashboard__sessionStatus {
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  background: rgba(94, 163, 94, 0.15);
-  color: #5ea35e;
+/* ── SESSION CARD ── */
+
+.sessionCard {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+
+.sessionCard__code {
+  display: flex;
+  flex-direction: column;
+}
+
+.sessionCard__codeMain {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.sessionCard__codeSub {
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.sessionCard__body {
+  min-width: 0;
+}
+
+.sessionCard__title {
+  color: var(--ink-0);
+  font-weight: 500;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sessionCard__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 767px) {
+  .sessionCard {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── DISCORD BRIDGE (KV list) ── */
+
+.kv {
+  margin: 0;
+}
+
+.kv__row {
+  display: flex;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 12px;
+}
+
+.kv__row:last-child {
+  border-bottom: none;
+}
+
+.kv__row dt {
+  margin: 0;
+  width: 38%;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.kv__row dd {
+  flex: 1;
+  margin: 0;
+  color: var(--ink-0);
+}
+
+/* ── WIKI ── */
+
+.wikiLink {
+  color: var(--ink-1);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.wikiLink:hover {
+  color: var(--gold);
 }

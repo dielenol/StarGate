@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import type {
-  CharacterType,
+  Ability,
   AgentLevel,
   AgentSheet,
-  NpcSheet,
+  CharacterType,
   Equipment,
-  Ability,
+  NpcSheet,
 } from "@/types/character";
 import {
   AGENT_LEVELS,
@@ -17,6 +17,12 @@ import {
   FACTIONS,
   INSTITUTIONS,
 } from "@/types/character";
+
+import Box from "@/components/ui/Box/Box";
+import Button from "@/components/ui/Button/Button";
+import Input from "@/components/ui/Input/Input";
+import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
+import Select from "@/components/ui/Select/Select";
 
 import styles from "../[id]/CharacterEditForm.module.css";
 
@@ -195,441 +201,521 @@ export default function CharacterCreateForm() {
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       {/* ── Type Selection ── */}
-      <div className={styles.form__section}>
-        <div className={styles.form__sectionHeader}>CHARACTER TYPE</div>
-        <div className={styles.form__card}>
-          <div className={styles.form__field}>
-            <label className={styles.form__label} htmlFor="type">
-              TYPE
-            </label>
-            <select
+      <Box className={styles.form__box}>
+        <PanelTitle>CHARACTER TYPE</PanelTitle>
+        <div className={styles.grid}>
+          <Field id="type" label="TYPE">
+            <Select
               id="type"
-              className={styles.form__select}
               value={type}
               onChange={(e) => setType(e.target.value as CharacterType)}
             >
               <option value="AGENT">AGENT</option>
               <option value="NPC">NPC</option>
-            </select>
-          </div>
+            </Select>
+          </Field>
         </div>
-      </div>
+      </Box>
 
       {/* ── Common Fields ── */}
-      <div className={styles.form__section}>
-        <div className={styles.form__sectionHeader}>BASIC INFO</div>
-        <div className={styles.form__card}>
-          <div className={styles.form__grid}>
-            <div className={styles.form__field}>
-              <label className={styles.form__label} htmlFor="codename">
-                CODENAME
-              </label>
-              <input
-                id="codename"
-                className={styles.form__input}
-                type="text"
-                value={codename}
-                onChange={(e) => setCodename(e.target.value)}
-                required
-              />
-            </div>
-            <div className={styles.form__field}>
-              <label className={styles.form__label} htmlFor="role">
-                ROLE
-              </label>
-              <input
-                id="role"
-                className={styles.form__input}
-                type="text"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                required
-              />
-            </div>
-            <div className={styles.form__field}>
-              <label className={styles.form__label} htmlFor="agentLevel">
-                AGENT LEVEL
-              </label>
-              <select
-                id="agentLevel"
-                className={styles.form__select}
-                value={agentLevel}
-                onChange={(e) => setAgentLevel(e.target.value as AgentLevel)}
-              >
-                {AGENT_LEVELS.map((lvl) => (
-                  <option key={lvl} value={lvl}>
-                    {lvl} — {AGENT_LEVEL_LABELS[lvl]}
+      <Box className={styles.form__box}>
+        <PanelTitle>BASIC INFO</PanelTitle>
+        <div className={styles.grid}>
+          <Field id="codename" label="CODENAME">
+            <Input
+              id="codename"
+              type="text"
+              value={codename}
+              onChange={(e) => setCodename(e.target.value)}
+              required
+            />
+          </Field>
+          <Field id="role" label="ROLE">
+            <Input
+              id="role"
+              type="text"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              required
+            />
+          </Field>
+          <Field id="agentLevel" label="AGENT LEVEL">
+            <Select
+              id="agentLevel"
+              value={agentLevel}
+              onChange={(e) => setAgentLevel(e.target.value as AgentLevel)}
+            >
+              {AGENT_LEVELS.map((lvl) => (
+                <option key={lvl} value={lvl}>
+                  {lvl} — {AGENT_LEVEL_LABELS[lvl]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field id="department" label="DEPARTMENT">
+            <Select
+              id="department"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+            >
+              <option value="UNASSIGNED">미배정</option>
+              <optgroup label="3대 세력">
+                {FACTIONS.map((f) => (
+                  <option key={f.code} value={f.code}>
+                    {f.label}
                   </option>
                 ))}
-              </select>
-            </div>
-            <div className={styles.form__field}>
-              <label className={styles.form__label} htmlFor="department">
-                DEPARTMENT
-              </label>
-              <select
-                id="department"
-                className={styles.form__select}
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-              >
-                <option value="UNASSIGNED">미배정</option>
-                <optgroup label="3대 세력">
-                  {FACTIONS.map((f) => (
-                    <option key={f.code} value={f.code}>
-                      {f.label}
-                    </option>
-                  ))}
-                </optgroup>
-                {INSTITUTIONS.map((inst) =>
-                  inst.subUnits.length > 0 ? (
-                    <optgroup key={inst.code} label={inst.label}>
-                      <option value={inst.code}>
-                        {inst.label} (직속)
+              </optgroup>
+              {INSTITUTIONS.map((inst) =>
+                inst.subUnits.length > 0 ? (
+                  <optgroup key={inst.code} label={inst.label}>
+                    <option value={inst.code}>{inst.label} (직속)</option>
+                    {inst.subUnits.map((u) => (
+                      <option key={u.code} value={u.code}>
+                        {u.label}
                       </option>
-                      {inst.subUnits.map((u) => (
-                        <option key={u.code} value={u.code}>
-                          {u.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ) : (
-                    <optgroup key={inst.code} label="독립 기관">
-                      <option value={inst.code}>{inst.label}</option>
-                    </optgroup>
-                  ),
-                )}
-              </select>
-            </div>
-            <div className={styles.form__field}>
-              <label className={styles.form__label} htmlFor="name">
-                NAME
-              </label>
+                    ))}
+                  </optgroup>
+                ) : (
+                  <optgroup key={inst.code} label="독립 기관">
+                    <option value={inst.code}>{inst.label}</option>
+                  </optgroup>
+                ),
+              )}
+            </Select>
+          </Field>
+          <Field id="name" label="NAME">
+            <Input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </Field>
+          <Field id="ownerId" label="OWNER ID">
+            <Input
+              id="ownerId"
+              type="text"
+              value={ownerId}
+              onChange={(e) => setOwnerId(e.target.value)}
+              placeholder="소유자 ID (선택)"
+            />
+          </Field>
+          <Field id="previewImage" label="PREVIEW IMAGE URL" full>
+            <Input
+              id="previewImage"
+              type="text"
+              value={previewImage}
+              onChange={(e) => setPreviewImage(e.target.value)}
+              placeholder="미리보기 이미지 URL"
+            />
+          </Field>
+          <Field id="mainImage" label="MAIN IMAGE URL" full>
+            <Input
+              id="mainImage"
+              type="text"
+              value={mainImage}
+              onChange={(e) => setMainImage(e.target.value)}
+              placeholder="메인 이미지 URL"
+            />
+          </Field>
+          <div className={`${styles.field} ${styles["field--full"]}`}>
+            <label className={styles.checkbox}>
               <input
-                id="name"
-                className={styles.form__input}
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className={styles.checkbox__input}
               />
-            </div>
-            <div className={styles.form__field}>
-              <label className={styles.form__label} htmlFor="ownerId">
-                OWNER ID
-              </label>
-              <input
-                id="ownerId"
-                className={styles.form__input}
-                type="text"
-                value={ownerId}
-                onChange={(e) => setOwnerId(e.target.value)}
-                placeholder="소유자 ID (선택)"
-              />
-            </div>
-            <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-              <label className={styles.form__label} htmlFor="previewImage">
-                PREVIEW IMAGE URL
-              </label>
-              <input
-                id="previewImage"
-                className={styles.form__input}
-                type="text"
-                value={previewImage}
-                onChange={(e) => setPreviewImage(e.target.value)}
-                placeholder="미리보기 이미지 URL"
-              />
-            </div>
-            <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-              <label className={styles.form__label} htmlFor="mainImage">
-                MAIN IMAGE URL
-              </label>
-              <input
-                id="mainImage"
-                className={styles.form__input}
-                type="text"
-                value={mainImage}
-                onChange={(e) => setMainImage(e.target.value)}
-                placeholder="메인 이미지 URL"
-              />
-            </div>
-            <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-              <div className={styles.form__checkbox}>
-                <input
-                  id="isPublic"
-                  className={styles.form__checkboxInput}
-                  type="checkbox"
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                />
-                <label
-                  className={styles.form__checkboxLabel}
-                  htmlFor="isPublic"
-                >
-                  공개 캐릭터
-                </label>
-              </div>
-            </div>
+              <span>공개 캐릭터</span>
+            </label>
           </div>
         </div>
-      </div>
+      </Box>
 
       {/* ── Sheet Common ── */}
-      <div className={styles.form__section}>
-        <div className={styles.form__sectionHeader}>CHARACTER PROFILE</div>
-        <div className={styles.form__card}>
-          <div className={styles.form__grid}>
-            <div className={styles.form__field}>
-              <label className={styles.form__label} htmlFor="quote">
-                QUOTE
-              </label>
-              <input
-                id="quote"
-                className={styles.form__input}
-                type="text"
-                value={quote}
-                onChange={(e) => setQuote(e.target.value)}
-              />
-            </div>
-            <div className={styles.form__field}>
-              <label className={styles.form__label} htmlFor="gender">
-                GENDER
-              </label>
-              <input
-                id="gender"
-                className={styles.form__input}
-                type="text"
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-              />
-            </div>
-            <div className={styles.form__field}>
-              <label className={styles.form__label} htmlFor="age">
-                AGE
-              </label>
-              <input
-                id="age"
-                className={styles.form__input}
-                type="text"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-              />
-            </div>
-            <div className={styles.form__field}>
-              <label className={styles.form__label} htmlFor="height">
-                HEIGHT
-              </label>
-              <input
-                id="height"
-                className={styles.form__input}
-                type="text"
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
-              />
-            </div>
-            <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-              <label className={styles.form__label} htmlFor="appearance">
-                외모
-              </label>
-              <textarea
-                id="appearance"
-                className={styles.form__textarea}
-                value={appearance}
-                onChange={(e) => setAppearance(e.target.value)}
-              />
-            </div>
-            <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-              <label className={styles.form__label} htmlFor="personality">
-                성격
-              </label>
-              <textarea
-                id="personality"
-                className={styles.form__textarea}
-                value={personality}
-                onChange={(e) => setPersonality(e.target.value)}
-              />
-            </div>
-            <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-              <label className={styles.form__label} htmlFor="background">
-                배경
-              </label>
-              <textarea
-                id="background"
-                className={styles.form__textarea}
-                value={background}
-                onChange={(e) => setBackground(e.target.value)}
-              />
-            </div>
-          </div>
+      <Box className={styles.form__box}>
+        <PanelTitle>CHARACTER PROFILE</PanelTitle>
+        <div className={styles.grid}>
+          <Field id="quote" label="QUOTE">
+            <Input
+              id="quote"
+              type="text"
+              value={quote}
+              onChange={(e) => setQuote(e.target.value)}
+            />
+          </Field>
+          <Field id="gender" label="GENDER">
+            <Input
+              id="gender"
+              type="text"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+            />
+          </Field>
+          <Field id="age" label="AGE">
+            <Input
+              id="age"
+              type="text"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+            />
+          </Field>
+          <Field id="height" label="HEIGHT">
+            <Input
+              id="height"
+              type="text"
+              value={height}
+              onChange={(e) => setHeight(e.target.value)}
+            />
+          </Field>
+          <Field id="appearance" label="외모" full>
+            <textarea
+              id="appearance"
+              className={styles.textarea}
+              value={appearance}
+              onChange={(e) => setAppearance(e.target.value)}
+            />
+          </Field>
+          <Field id="personality" label="성격" full>
+            <textarea
+              id="personality"
+              className={styles.textarea}
+              value={personality}
+              onChange={(e) => setPersonality(e.target.value)}
+            />
+          </Field>
+          <Field id="background" label="배경" full>
+            <textarea
+              id="background"
+              className={styles.textarea}
+              value={background}
+              onChange={(e) => setBackground(e.target.value)}
+            />
+          </Field>
         </div>
-      </div>
+      </Box>
 
       {/* ── Agent-specific ── */}
-      {type === "AGENT" && (
+      {type === "AGENT" ? (
         <>
-          <div className={styles.form__section}>
-            <div className={styles.form__sectionHeader}>COMBAT STATS</div>
-            <div className={styles.form__card}>
-              <div className={styles.form__statGrid}>
-                <div className={styles.form__field}>
-                  <label className={styles.form__label} htmlFor="hp">HP</label>
-                  <input id="hp" className={styles.form__input} type="number" value={hp} onChange={(e) => setHp(Number(e.target.value))} />
-                </div>
-                <div className={styles.form__field}>
-                  <label className={styles.form__label} htmlFor="san">SAN</label>
-                  <input id="san" className={styles.form__input} type="number" value={san} onChange={(e) => setSan(Number(e.target.value))} />
-                </div>
-                <div className={styles.form__field}>
-                  <label className={styles.form__label} htmlFor="def">DEF</label>
-                  <input id="def" className={styles.form__input} type="number" value={def} onChange={(e) => setDef(Number(e.target.value))} />
-                </div>
-                <div className={styles.form__field}>
-                  <label className={styles.form__label} htmlFor="atk">ATK</label>
-                  <input id="atk" className={styles.form__input} type="number" value={atk} onChange={(e) => setAtk(Number(e.target.value))} />
-                </div>
-              </div>
+          <Box className={styles.form__box}>
+            <PanelTitle>COMBAT STATS</PanelTitle>
+            <div className={styles.statGrid}>
+              <Field id="hp" label="HP">
+                <Input
+                  id="hp"
+                  type="number"
+                  value={hp}
+                  onChange={(e) => setHp(Number(e.target.value))}
+                />
+              </Field>
+              <Field id="san" label="SAN">
+                <Input
+                  id="san"
+                  type="number"
+                  value={san}
+                  onChange={(e) => setSan(Number(e.target.value))}
+                />
+              </Field>
+              <Field id="def" label="DEF">
+                <Input
+                  id="def"
+                  type="number"
+                  value={def}
+                  onChange={(e) => setDef(Number(e.target.value))}
+                />
+              </Field>
+              <Field id="atk" label="ATK">
+                <Input
+                  id="atk"
+                  type="number"
+                  value={atk}
+                  onChange={(e) => setAtk(Number(e.target.value))}
+                />
+              </Field>
             </div>
-          </div>
+          </Box>
 
-          <div className={styles.form__section}>
-            <div className={styles.form__sectionHeader}>AGENT DETAILS</div>
-            <div className={styles.form__card}>
-              <div className={styles.form__grid}>
-                <div className={styles.form__field}>
-                  <label className={styles.form__label} htmlFor="className">CLASS</label>
-                  <input id="className" className={styles.form__input} type="text" value={className} onChange={(e) => setClassName(e.target.value)} />
-                </div>
-                <div className={styles.form__field}>
-                  <label className={styles.form__label} htmlFor="weight">WEIGHT</label>
-                  <input id="weight" className={styles.form__input} type="text" value={weight} onChange={(e) => setWeight(e.target.value)} />
-                </div>
-                <div className={styles.form__field}>
-                  <label className={styles.form__label} htmlFor="abilityType">ABILITY TYPE</label>
-                  <input id="abilityType" className={styles.form__input} type="text" value={abilityType} onChange={(e) => setAbilityType(e.target.value)} />
-                </div>
-                <div className={styles.form__field}>
-                  <label className={styles.form__label} htmlFor="credit">CREDIT</label>
-                  <input id="credit" className={styles.form__input} type="text" value={credit} onChange={(e) => setCredit(e.target.value)} />
-                </div>
-                <div className={styles.form__field}>
-                  <label className={styles.form__label} htmlFor="weaponTraining">WEAPON TRAINING</label>
-                  <input id="weaponTraining" className={styles.form__input} type="text" value={weaponTraining} onChange={(e) => setWeaponTraining(e.target.value)} />
-                </div>
-                <div className={styles.form__field}>
-                  <label className={styles.form__label} htmlFor="skillTraining">SKILL TRAINING</label>
-                  <input id="skillTraining" className={styles.form__input} type="text" value={skillTraining} onChange={(e) => setSkillTraining(e.target.value)} />
-                </div>
-              </div>
+          <Box className={styles.form__box}>
+            <PanelTitle>AGENT DETAILS</PanelTitle>
+            <div className={styles.grid}>
+              <Field id="className" label="CLASS">
+                <Input
+                  id="className"
+                  type="text"
+                  value={className}
+                  onChange={(e) => setClassName(e.target.value)}
+                />
+              </Field>
+              <Field id="weight" label="WEIGHT">
+                <Input
+                  id="weight"
+                  type="text"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                />
+              </Field>
+              <Field id="abilityType" label="ABILITY TYPE">
+                <Input
+                  id="abilityType"
+                  type="text"
+                  value={abilityType}
+                  onChange={(e) => setAbilityType(e.target.value)}
+                />
+              </Field>
+              <Field id="credit" label="CREDIT">
+                <Input
+                  id="credit"
+                  type="text"
+                  value={credit}
+                  onChange={(e) => setCredit(e.target.value)}
+                />
+              </Field>
+              <Field id="weaponTraining" label="WEAPON TRAINING">
+                <Input
+                  id="weaponTraining"
+                  type="text"
+                  value={weaponTraining}
+                  onChange={(e) => setWeaponTraining(e.target.value)}
+                />
+              </Field>
+              <Field id="skillTraining" label="SKILL TRAINING">
+                <Input
+                  id="skillTraining"
+                  type="text"
+                  value={skillTraining}
+                  onChange={(e) => setSkillTraining(e.target.value)}
+                />
+              </Field>
             </div>
-          </div>
+          </Box>
 
           {/* Equipment */}
-          <div className={styles.form__section}>
-            <div className={styles.form__listHeader}>
-              <div className={styles.form__sectionHeader}>EQUIPMENT</div>
-              <button type="button" className={styles.form__addBtn} onClick={addEquipment}>+ 추가</button>
-            </div>
-            {equipment.map((eq, i) => (
-              <div key={i} className={styles.form__listItem}>
-                <div className={styles.form__listItemHeader}>
-                  <span className={styles.form__listItemTitle}>ITEM #{i + 1}</span>
-                  <button type="button" className={styles.form__removeBtn} onClick={() => removeEquipment(i)}>삭제</button>
-                </div>
-                <div className={styles.form__grid}>
-                  <div className={styles.form__field}>
-                    <label className={styles.form__label}>NAME</label>
-                    <input className={styles.form__input} type="text" value={eq.name} onChange={(e) => updateEquipment(i, "name", e.target.value)} />
+          <Box className={styles.form__box}>
+            <PanelTitle
+              right={
+                <Button type="button" size="sm" onClick={addEquipment}>
+                  + 추가
+                </Button>
+              }
+            >
+              EQUIPMENT
+            </PanelTitle>
+            {equipment.length === 0 ? (
+              <div className={styles.empty}>장비 없음</div>
+            ) : (
+              <div className={styles.list}>
+                {equipment.map((eq, i) => (
+                  <div key={i} className={styles.listItem}>
+                    <div className={styles.listItem__head}>
+                      <span className={styles.listItem__title}>
+                        ITEM #{i + 1}
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => removeEquipment(i)}
+                      >
+                        삭제
+                      </Button>
+                    </div>
+                    <div className={styles.grid}>
+                      <Field id={`eq-name-${i}`} label="NAME">
+                        <Input
+                          id={`eq-name-${i}`}
+                          type="text"
+                          value={eq.name}
+                          onChange={(e) =>
+                            updateEquipment(i, "name", e.target.value)
+                          }
+                        />
+                      </Field>
+                      <Field id={`eq-price-${i}`} label="PRICE">
+                        <Input
+                          id={`eq-price-${i}`}
+                          type="text"
+                          value={String(eq.price)}
+                          onChange={(e) =>
+                            updateEquipment(i, "price", e.target.value)
+                          }
+                        />
+                      </Field>
+                      <Field id={`eq-damage-${i}`} label="DAMAGE">
+                        <Input
+                          id={`eq-damage-${i}`}
+                          type="text"
+                          value={eq.damage}
+                          onChange={(e) =>
+                            updateEquipment(i, "damage", e.target.value)
+                          }
+                        />
+                      </Field>
+                      <Field id={`eq-desc-${i}`} label="DESCRIPTION">
+                        <Input
+                          id={`eq-desc-${i}`}
+                          type="text"
+                          value={eq.description}
+                          onChange={(e) =>
+                            updateEquipment(i, "description", e.target.value)
+                          }
+                        />
+                      </Field>
+                    </div>
                   </div>
-                  <div className={styles.form__field}>
-                    <label className={styles.form__label}>PRICE</label>
-                    <input className={styles.form__input} type="text" value={String(eq.price)} onChange={(e) => updateEquipment(i, "price", e.target.value)} />
-                  </div>
-                  <div className={styles.form__field}>
-                    <label className={styles.form__label}>DAMAGE</label>
-                    <input className={styles.form__input} type="text" value={eq.damage} onChange={(e) => updateEquipment(i, "damage", e.target.value)} />
-                  </div>
-                  <div className={styles.form__field}>
-                    <label className={styles.form__label}>DESCRIPTION</label>
-                    <input className={styles.form__input} type="text" value={eq.description} onChange={(e) => updateEquipment(i, "description", e.target.value)} />
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </Box>
 
           {/* Abilities */}
-          <div className={styles.form__section}>
-            <div className={styles.form__listHeader}>
-              <div className={styles.form__sectionHeader}>ABILITIES</div>
-              <button type="button" className={styles.form__addBtn} onClick={addAbility}>+ 추가</button>
-            </div>
-            {abilities.map((ab, i) => (
-              <div key={i} className={styles.form__listItem}>
-                <div className={styles.form__listItemHeader}>
-                  <span className={styles.form__listItemTitle}>ABILITY #{i + 1}</span>
-                  <button type="button" className={styles.form__removeBtn} onClick={() => removeAbility(i)}>삭제</button>
-                </div>
-                <div className={styles.form__grid}>
-                  <div className={styles.form__field}>
-                    <label className={styles.form__label}>CODE</label>
-                    <input className={styles.form__input} type="text" value={ab.code} onChange={(e) => updateAbility(i, "code", e.target.value)} />
+          <Box className={styles.form__box}>
+            <PanelTitle
+              right={
+                <Button type="button" size="sm" onClick={addAbility}>
+                  + 추가
+                </Button>
+              }
+            >
+              ABILITIES
+            </PanelTitle>
+            {abilities.length === 0 ? (
+              <div className={styles.empty}>어빌리티 없음</div>
+            ) : (
+              <div className={styles.list}>
+                {abilities.map((ab, i) => (
+                  <div key={i} className={styles.listItem}>
+                    <div className={styles.listItem__head}>
+                      <span className={styles.listItem__title}>
+                        ABILITY #{i + 1}
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => removeAbility(i)}
+                      >
+                        삭제
+                      </Button>
+                    </div>
+                    <div className={styles.grid}>
+                      <Field id={`ab-code-${i}`} label="CODE">
+                        <Input
+                          id={`ab-code-${i}`}
+                          type="text"
+                          value={ab.code}
+                          onChange={(e) =>
+                            updateAbility(i, "code", e.target.value)
+                          }
+                        />
+                      </Field>
+                      <Field id={`ab-name-${i}`} label="NAME">
+                        <Input
+                          id={`ab-name-${i}`}
+                          type="text"
+                          value={ab.name}
+                          onChange={(e) =>
+                            updateAbility(i, "name", e.target.value)
+                          }
+                        />
+                      </Field>
+                      <Field id={`ab-desc-${i}`} label="DESCRIPTION" full>
+                        <Input
+                          id={`ab-desc-${i}`}
+                          type="text"
+                          value={ab.description}
+                          onChange={(e) =>
+                            updateAbility(i, "description", e.target.value)
+                          }
+                        />
+                      </Field>
+                      <Field id={`ab-effect-${i}`} label="EFFECT" full>
+                        <Input
+                          id={`ab-effect-${i}`}
+                          type="text"
+                          value={ab.effect}
+                          onChange={(e) =>
+                            updateAbility(i, "effect", e.target.value)
+                          }
+                        />
+                      </Field>
+                    </div>
                   </div>
-                  <div className={styles.form__field}>
-                    <label className={styles.form__label}>NAME</label>
-                    <input className={styles.form__input} type="text" value={ab.name} onChange={(e) => updateAbility(i, "name", e.target.value)} />
-                  </div>
-                  <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-                    <label className={styles.form__label}>DESCRIPTION</label>
-                    <input className={styles.form__input} type="text" value={ab.description} onChange={(e) => updateAbility(i, "description", e.target.value)} />
-                  </div>
-                  <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-                    <label className={styles.form__label}>EFFECT</label>
-                    <input className={styles.form__input} type="text" value={ab.effect} onChange={(e) => updateAbility(i, "effect", e.target.value)} />
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </Box>
         </>
-      )}
+      ) : null}
 
       {/* ── NPC-specific ── */}
-      {type === "NPC" && (
-        <div className={styles.form__section}>
-          <div className={styles.form__sectionHeader}>NPC DETAILS</div>
-          <div className={styles.form__card}>
-            <div className={styles.form__grid}>
-              <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-                <label className={styles.form__label} htmlFor="nameEn">NAME (EN)</label>
-                <input id="nameEn" className={styles.form__input} type="text" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
-              </div>
-              <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-                <label className={styles.form__label} htmlFor="roleDetail">ROLE DETAIL</label>
-                <textarea id="roleDetail" className={styles.form__textarea} value={roleDetail} onChange={(e) => setRoleDetail(e.target.value)} />
-              </div>
-              <div className={`${styles.form__field} ${styles.form__gridFull}`}>
-                <label className={styles.form__label} htmlFor="notes">NOTES</label>
-                <textarea id="notes" className={styles.form__textarea} value={notes} onChange={(e) => setNotes(e.target.value)} />
-              </div>
-            </div>
+      {type === "NPC" ? (
+        <Box className={styles.form__box}>
+          <PanelTitle>NPC DETAILS</PanelTitle>
+          <div className={styles.grid}>
+            <Field id="nameEn" label="NAME (EN)" full>
+              <Input
+                id="nameEn"
+                type="text"
+                value={nameEn}
+                onChange={(e) => setNameEn(e.target.value)}
+              />
+            </Field>
+            <Field id="roleDetail" label="ROLE DETAIL" full>
+              <textarea
+                id="roleDetail"
+                className={styles.textarea}
+                value={roleDetail}
+                onChange={(e) => setRoleDetail(e.target.value)}
+              />
+            </Field>
+            <Field id="notes" label="NOTES" full>
+              <textarea
+                id="notes"
+                className={styles.textarea}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </Field>
           </div>
-        </div>
-      )}
+        </Box>
+      ) : null}
 
       {/* ── Actions ── */}
-      {error && <div className={styles.form__error}>{error}</div>}
+      {error ? <div className={styles.error}>{error}</div> : null}
 
-      <div className={styles.form__actions}>
-        <button
-          type="submit"
-          className={styles.form__submit}
-          disabled={submitting}
-        >
+      <div className={styles.actions}>
+        <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? "생성 중..." : "캐릭터 생성"}
-        </button>
-        <a href="/erp/characters" className={styles.form__cancel}>
+        </Button>
+        <Button as="a" href="/erp/characters">
           취소
-        </a>
+        </Button>
       </div>
     </form>
+  );
+}
+
+function Field({
+  id,
+  label,
+  children,
+  full = false,
+}: {
+  id?: string;
+  label: string;
+  children: React.ReactNode;
+  full?: boolean;
+}) {
+  return (
+    <div
+      className={[styles.field, full ? styles["field--full"] : ""]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <label className={styles.label} htmlFor={id}>
+        {label}
+      </label>
+      {children}
+    </div>
   );
 }

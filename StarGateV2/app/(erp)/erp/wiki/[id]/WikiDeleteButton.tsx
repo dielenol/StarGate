@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { useDeleteWiki } from "@/hooks/mutations/useWikiMutation";
 
-import styles from "./page.module.css";
+import Button from "@/components/ui/Button/Button";
 
 interface WikiDeleteButtonProps {
   pageId: string;
@@ -15,7 +15,11 @@ export default function WikiDeleteButton({ pageId }: WikiDeleteButtonProps) {
   const deleteWiki = useDeleteWiki();
 
   function handleDelete() {
-    if (!confirm("정말 이 문서를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+    if (
+      !confirm(
+        "정말 이 문서를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+      )
+    ) {
       return;
     }
 
@@ -30,13 +34,12 @@ export default function WikiDeleteButton({ pageId }: WikiDeleteButtonProps) {
   }
 
   return (
-    <button
-      className={styles.detail__deleteBtn}
-      disabled={deleteWiki.isPending}
-      onClick={handleDelete}
+    <Button
       type="button"
+      onClick={handleDelete}
+      disabled={deleteWiki.isPending}
     >
       {deleteWiki.isPending ? "삭제 중..." : "삭제"}
-    </button>
+    </Button>
   );
 }

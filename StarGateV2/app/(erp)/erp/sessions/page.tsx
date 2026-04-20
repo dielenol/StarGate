@@ -3,7 +3,12 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { findSessionsByMonth } from "@/lib/db/registrar-read";
 
-import SessionCalendar from "./SessionCalendar";
+import Box from "@/components/ui/Box/Box";
+import Button from "@/components/ui/Button/Button";
+import PageHead from "@/components/ui/PageHead/PageHead";
+
+import SessionsClient from "./SessionsClient";
+
 import styles from "./page.module.css";
 
 export default async function SessionsPage() {
@@ -38,43 +43,35 @@ export default async function SessionsPage() {
   }));
 
   return (
-    <section className={styles.sessions}>
-      <div className={styles.sessions__classification}>
-        SESSION MANAGEMENT
-      </div>
-      <h1 className={styles.sessions__title}>세션 캘린더</h1>
-
-      <div className={styles.legend}>
-        <div className={styles.legend__item}>
-          <span className={`${styles.legend__dot} ${styles["legend__dot--open"]}`} />
-          OPEN
-        </div>
-        <div className={styles.legend__item}>
-          <span className={`${styles.legend__dot} ${styles["legend__dot--closing"]}`} />
-          CLOSING
-        </div>
-        <div className={styles.legend__item}>
-          <span className={`${styles.legend__dot} ${styles["legend__dot--closed"]}`} />
-          CLOSED
-        </div>
-        <div className={styles.legend__item}>
-          <span className={`${styles.legend__dot} ${styles["legend__dot--canceled"]}`} />
-          CANCELED
-        </div>
-      </div>
+    <>
+      <PageHead
+        breadcrumb="ERP / SESSIONS"
+        title="세션"
+        right={
+          <Button
+            as="a"
+            href="/erp/sessions/report"
+            variant="primary"
+          >
+            리포트 →
+          </Button>
+        }
+      />
 
       {!guildId ? (
-        <p className={styles.sessions__empty}>
-          GUILD_ID 환경변수가 설정되지 않았습니다.
-        </p>
+        <Box>
+          <div className={styles.empty}>
+            GUILD_ID 환경변수가 설정되지 않았습니다.
+          </div>
+        </Box>
       ) : (
-        <SessionCalendar
+        <SessionsClient
           initialSessions={serializedSessions}
           initialYear={year}
           initialMonth={month}
           guildId={guildId}
         />
       )}
-    </section>
+    </>
   );
 }

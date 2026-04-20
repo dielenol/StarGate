@@ -1,33 +1,44 @@
 import { redirect } from "next/navigation";
 
-import type { CreditTransactionType } from "@/types/credit";
-
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import {
-  listCreditTransactions,
   getUserBalance,
+  listCreditTransactions,
 } from "@/lib/db/credits";
 import { listUsers } from "@/lib/db/users";
 
+import type { CreditTransactionType } from "@/types/credit";
+
+import Box from "@/components/ui/Box/Box";
+import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
+import PageHead from "@/components/ui/PageHead/PageHead";
+import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
+import Tag from "@/components/ui/Tag/Tag";
+
 import CreditGrantForm from "./CreditGrantForm";
+
 import styles from "./page.module.css";
 
-const TYPE_BADGE_CLASS: Record<CreditTransactionType, string> = {
-  SESSION_REWARD: styles["credits__badge--sessionReward"],
-  PURCHASE: styles["credits__badge--purchase"],
-  ADMIN_GRANT: styles["credits__badge--adminGrant"],
-  ADMIN_DEDUCT: styles["credits__badge--adminDeduct"],
-  TRANSFER: styles["credits__badge--transfer"],
+const TYPE_META: Record<
+  CreditTransactionType,
+  { label: string; tone: "gold" | "info" | "success" | "danger" | "default" }
+> = {
+  SESSION_REWARD: { label: "세션 보상", tone: "success" },
+  PURCHASE: { label: "구매", tone: "info" },
+  ADMIN_GRANT: { label: "관리자 지급", tone: "gold" },
+  ADMIN_DEDUCT: { label: "관리자 차감", tone: "danger" },
+  TRANSFER: { label: "이체", tone: "default" },
 };
 
-const TYPE_LABEL: Record<CreditTransactionType, string> = {
-  SESSION_REWARD: "세션 보상",
-  PURCHASE: "구매",
-  ADMIN_GRANT: "관리자 지급",
-  ADMIN_DEDUCT: "관리자 차감",
-  TRANSFER: "이체",
-};
+function fmtDate(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleDateString("ko-KR", {
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
 
 export default async function CreditsPage() {
   const session = await auth();
@@ -51,78 +62,83 @@ export default async function CreditsPage() {
   ]);
 
   return (
-    <section className={styles.credits}>
-      <div className={styles.credits__classification}>
-        FINANCIAL RECORDS
+    <>
+      <PageHead breadcrumb="ERP / CREDITS" title="크레딧" />
+
+      <div className={styles.topRow}>
+        <Box variant="gold" className={styles.balance}>
+          <PanelTitle right={<span className={styles.mono}>WALLET</span>}>
+            <span className={styles.gold}>CURRENT BALANCE</span>
+          </PanelTitle>
+          <div className={styles.bigNum}>¤ {balance.toLocaleString()}</div>
+          <Eyebrow>{isGm ? "전체 시스템 내역 조회 가능" : "내 계정 내역"}</Eyebrow>
+        </Box>
+
+        {isGm ? (
+          <Box>
+            <PanelTitle>CREDIT GRANT · GM</PanelTitle>
+            <CreditGrantForm users={users} />
+          </Box>
+        ) : null}
       </div>
-      <h1 className={styles.credits__title}>크레딧 관리</h1>
 
-      {/* 잔액 카드 */}
-      <div className={styles.credits__balanceCard}>
-        <span className={styles.credits__balanceLabel}>CURRENT BALANCE</span>
-        <span className={styles.credits__balanceValue}>{balance.toLocaleString()}</span>
-        <span className={styles.credits__balanceUnit}>CR</span>
-      </div>
+      <Box>
+        <PanelTitle
+          right={<span className={styles.mono}>{transactions.length} 건</span>}
+        >
+          TRANSACTION LOG
+        </PanelTitle>
 
-      {/* GM/ADMIN: 크레딧 지급 폼 */}
-      {isGm && <CreditGrantForm users={users} />}
-
-      {/* 트랜잭션 테이블 */}
-      {transactions.length === 0 ? (
-        <p className={styles.credits__empty}>
-          트랜잭션 기록이 없습니다.
-        </p>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table className={styles.credits__table}>
-            <thead>
-              <tr>
-                <th>유형</th>
-                {isGm && <th>유저</th>}
-                <th>금액</th>
-                <th>잔액</th>
-                <th>설명</th>
-                <th>일시</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((tx) => (
-                <tr key={String(tx._id)}>
-                  <td>
-                    <span
-                      className={`${styles.credits__badge} ${TYPE_BADGE_CLASS[tx.type]}`}
-                    >
-                      {TYPE_LABEL[tx.type]}
-                    </span>
-                  </td>
-                  {isGm && <td>{tx.userName}</td>}
-                  <td>
-                    <span
-                      className={
-                        tx.amount >= 0
-                          ? styles.credits__amountPositive
-                          : styles.credits__amountNegative
-                      }
-                    >
-                      {tx.amount >= 0 ? "+" : ""}
-                      {tx.amount.toLocaleString()}
-                    </span>
-                  </td>
-                  <td>{tx.balance.toLocaleString()}</td>
-                  <td>{tx.description}</td>
-                  <td>
-                    {new Date(tx.createdAt).toLocaleDateString("ko-KR", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                    })}
-                  </td>
+        {transactions.length === 0 ? (
+          <div className={styles.empty}>트랜잭션 기록이 없습니다.</div>
+        ) : (
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>유형</th>
+                  {isGm ? <th>유저</th> : null}
+                  <th className={styles.numCol}>금액</th>
+                  <th className={styles.numCol}>잔액</th>
+                  <th>설명</th>
+                  <th className={styles.dateCol}>일시</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
+              </thead>
+              <tbody>
+                {transactions.map((tx) => {
+                  const meta = TYPE_META[tx.type];
+                  const positive = tx.amount >= 0;
+                  return (
+                    <tr key={String(tx._id)}>
+                      <td>
+                        <Tag tone={meta.tone}>{meta.label}</Tag>
+                      </td>
+                      {isGm ? <td>{tx.userName}</td> : null}
+                      <td className={styles.numCol}>
+                        <span
+                          className={
+                            positive ? styles.amountPos : styles.amountNeg
+                          }
+                        >
+                          {positive ? "+" : ""}
+                          {tx.amount.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className={`${styles.numCol} ${styles.mono}`}>
+                        {tx.balance.toLocaleString()}
+                      </td>
+                      <td className={styles.desc}>{tx.description}</td>
+                      <td className={`${styles.dateCol} ${styles.mono}`}>
+                        {fmtDate(tx.createdAt)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Box>
+    </>
   );
 }

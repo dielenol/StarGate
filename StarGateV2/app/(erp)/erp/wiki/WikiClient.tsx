@@ -1,10 +1,18 @@
 "use client";
 
+import { useMemo } from "react";
+
 import Link from "next/link";
 
 import type { WikiPage } from "@/types/wiki";
 
 import { useWikiPages } from "@/hooks/queries/useWikiQuery";
+
+import Box from "@/components/ui/Box/Box";
+import Button from "@/components/ui/Button/Button";
+import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
+import PageHead from "@/components/ui/PageHead/PageHead";
+import Tag from "@/components/ui/Tag/Tag";
 
 import WikiSearchBar from "./WikiSearchBar";
 
@@ -16,6 +24,11 @@ interface Props {
   currentCategory?: string;
   currentQuery?: string;
   isGM: boolean;
+}
+
+function fmtDate(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export default function WikiClient({
@@ -32,75 +45,154 @@ export default function WikiClient({
     { initialData: initialPages },
   );
 
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of initialPages) {
+      counts[p.category] = (counts[p.category] ?? 0) + 1;
+    }
+    return counts;
+  }, [initialPages]);
+
+  const recent = useMemo(
+    () =>
+      [...initialPages]
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        )
+        .slice(0, 5),
+    [initialPages],
+  );
+
+  const totalCount = initialPages.length;
+  const noFilter = !currentCategory && !currentQuery;
+
   return (
-    <section className={styles.wiki}>
-      <div className={styles.wiki__header}>
-        <div className={styles.wiki__headerLeft}>
-          <div className={styles.wiki__classification}>WORLD DATABASE</div>
-          <h1 className={styles.wiki__title}>월드빌딩 위키</h1>
-        </div>
-        {isGM && (
-          <Link className={styles.wiki__newBtn} href="/erp/wiki/new">
-            + 새 문서 작성
-          </Link>
-        )}
-      </div>
+    <>
+      <PageHead
+        breadcrumb="ERP / CODEX"
+        title="위키"
+        right={
+          isGM ? (
+            <Button as="a" href="/erp/wiki/new" variant="primary">
+              + 새 문서
+            </Button>
+          ) : null
+        }
+      />
 
-      <WikiSearchBar />
+      <div className={styles.layout}>
+        {/* ── Left: category nav ── */}
+        <Box className={styles.nav}>
+          <Eyebrow>CATEGORIES</Eyebrow>
+          <ul className={styles.nav__list}>
+            <li>
+              <Link
+                href="/erp/wiki"
+                className={[
+                  styles.nav__item,
+                  noFilter ? styles["nav__item--active"] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                aria-current={noFilter ? "page" : undefined}
+              >
+                <span>전체</span>
+                <span className={styles.nav__count}>{totalCount}</span>
+              </Link>
+            </li>
+            {categories.map((cat) => {
+              const active = currentCategory === cat;
+              return (
+                <li key={cat}>
+                  <Link
+                    href={`/erp/wiki?category=${encodeURIComponent(cat)}`}
+                    className={[
+                      styles.nav__item,
+                      active ? styles["nav__item--active"] : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    <span>{cat}</span>
+                    <span className={styles.nav__count}>
+                      {categoryCounts[cat] ?? 0}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Box>
 
-      {categories.length > 0 && (
-        <div className={styles.wiki__categories}>
-          <Link
-            className={`${styles.wiki__categoryBtn} ${!currentCategory && !currentQuery ? styles["wiki__categoryBtn--active"] : ""}`}
-            href="/erp/wiki"
-          >
-            전체
-          </Link>
-          {categories.map((cat) => (
-            <Link
-              className={`${styles.wiki__categoryBtn} ${currentCategory === cat ? styles["wiki__categoryBtn--active"] : ""}`}
-              href={`/erp/wiki?category=${encodeURIComponent(cat)}`}
-              key={cat}
-            >
-              {cat}
-            </Link>
-          ))}
-        </div>
-      )}
+        {/* ── Center: search + article list ── */}
+        <div className={styles.body}>
+          <WikiSearchBar />
 
-      {pages.length === 0 ? (
-        <p className={styles.wiki__empty}>
-          {currentQuery
-            ? `"${currentQuery}"에 대한 검색 결과가 없습니다.`
-            : "등록된 문서가 없습니다."}
-        </p>
-      ) : (
-        <div className={styles.wiki__list}>
-          {pages.map((page) => (
-            <Link
-              className={styles.wiki__item}
-              href={`/erp/wiki/${page._id!.toString()}`}
-              key={page._id!.toString()}
-            >
-              <span className={styles.wiki__itemTitle}>{page.title}</span>
-              <div className={styles.wiki__itemMeta}>
-                <span className={styles.wiki__badge}>{page.category}</span>
-                {page.tags.slice(0, 3).map((tag) => (
-                  <span className={styles.wiki__tag} key={tag}>
-                    {tag}
-                  </span>
-                ))}
-                {!page.isPublic && (
-                  <span className={styles.wiki__private}>PRIVATE</span>
-                )}
-                <span className={styles.wiki__date}>
-                  {new Date(page.updatedAt).toLocaleDateString("ko-KR")}
-                </span>
+          <Box>
+            {pages.length === 0 ? (
+              <div className={styles.empty}>
+                {currentQuery
+                  ? `"${currentQuery}"에 대한 검색 결과가 없습니다.`
+                  : "등록된 문서가 없습니다."}
               </div>
-            </Link>
-          ))}
+            ) : (
+              <div className={styles.list}>
+                {pages.map((page) => {
+                  const id = String(page._id);
+                  return (
+                    <Link
+                      key={id}
+                      href={`/erp/wiki/${id}`}
+                      className={styles.item}
+                    >
+                      <div className={styles.item__body}>
+                        <div className={styles.item__title}>{page.title}</div>
+                        <div className={styles.item__meta}>
+                          <Tag tone="info">{page.category}</Tag>
+                          {page.tags.slice(0, 3).map((tag) => (
+                            <Tag key={tag}>{tag}</Tag>
+                          ))}
+                          {!page.isPublic ? (
+                            <Tag tone="danger">PRIVATE</Tag>
+                          ) : null}
+                        </div>
+                      </div>
+                      <span className={styles.item__date}>
+                        {fmtDate(page.updatedAt)}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </Box>
         </div>
-      )}
-    </section>
+
+        {/* ── Right: recent updates placeholder ── */}
+        <Box className={`${styles.aside} ${styles.layout__aside}`}>
+          <div className={styles.aside__section}>
+            <Eyebrow>RECENT</Eyebrow>
+            {recent.length === 0 ? (
+              <span className={styles.aside__link}>—</span>
+            ) : (
+              <ul className={styles.aside__list}>
+                {recent.map((p) => (
+                  <li key={String(p._id)}>
+                    <Link
+                      href={`/erp/wiki/${String(p._id)}`}
+                      className={styles.aside__link}
+                    >
+                      · {p.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Box>
+      </div>
+    </>
   );
 }

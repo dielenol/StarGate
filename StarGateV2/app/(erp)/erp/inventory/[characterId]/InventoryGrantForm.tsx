@@ -6,7 +6,12 @@ import type { MasterItem } from "@/types/inventory";
 
 import { useGrantInventory } from "@/hooks/mutations/useInventoryMutation";
 
-import styles from "./page.module.css";
+import Button from "@/components/ui/Button/Button";
+import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
+import Input from "@/components/ui/Input/Input";
+import Select from "@/components/ui/Select/Select";
+
+import styles from "./InventoryGrantForm.module.css";
 
 interface InventoryGrantFormProps {
   characterId: string;
@@ -19,32 +24,17 @@ export default function InventoryGrantForm({
 }: InventoryGrantFormProps) {
   const grantInventory = useGrantInventory();
 
-  const [isOpen, setIsOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  if (!isOpen) {
-    return (
-      <div className={styles.grantForm__actions}>
-        <button
-          type="button"
-          className={styles.grantForm__toggleButton}
-          onClick={() => setIsOpen(true)}
-        >
-          + 아이템 지급
-        </button>
-      </div>
-    );
-  }
-
   const selectedItem = availableItems.find(
     (item) => String(item._id) === selectedItemId,
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -82,85 +72,60 @@ export default function InventoryGrantForm({
         },
       },
     );
-  };
+  }
 
   return (
-    <form className={styles.grantForm} onSubmit={handleSubmit}>
-      <div className={styles.grantForm__header}>GRANT ITEM</div>
+    <form className={styles.form} onSubmit={handleSubmit}>
+      <label className={styles.field}>
+        <Eyebrow>아이템</Eyebrow>
+        <Select
+          value={selectedItemId}
+          onChange={(e) => setSelectedItemId(e.target.value)}
+          required
+        >
+          <option value="">-- 아이템 선택 --</option>
+          {availableItems.map((item) => (
+            <option key={String(item._id)} value={String(item._id)}>
+              {item.name} ({item.category})
+            </option>
+          ))}
+        </Select>
+      </label>
 
-      <div className={styles.grantForm__grid}>
-        <div className={styles.grantForm__field}>
-          <label className={styles.grantForm__label} htmlFor="grant-item">
-            아이템
-          </label>
-          <select
-            id="grant-item"
-            className={styles.grantForm__select}
-            value={selectedItemId}
-            onChange={(e) => setSelectedItemId(e.target.value)}
-            required
-          >
-            <option value="">-- 아이템 선택 --</option>
-            {availableItems.map((item) => (
-              <option key={String(item._id)} value={String(item._id)}>
-                {item.name} ({item.category})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.grantForm__field}>
-          <label className={styles.grantForm__label} htmlFor="grant-quantity">
-            수량
-          </label>
-          <input
-            id="grant-quantity"
+      <div className={styles.row}>
+        <label className={styles.field}>
+          <Eyebrow>수량</Eyebrow>
+          <Input
             type="number"
-            className={styles.grantForm__input}
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             min="1"
             required
           />
-        </div>
+        </label>
 
-        <div className={`${styles.grantForm__field} ${styles["grantForm__field--full"]}`}>
-          <label className={styles.grantForm__label} htmlFor="grant-note">
-            메모 (선택)
-          </label>
-          <input
-            id="grant-note"
+        <label className={styles.field}>
+          <Eyebrow>메모 (선택)</Eyebrow>
+          <Input
             type="text"
-            className={styles.grantForm__input}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="지급 사유"
           />
-        </div>
+        </label>
       </div>
 
-      {error && <div className={styles.grantForm__error}>{error}</div>}
-      {success && <div className={styles.grantForm__success}>{success}</div>}
+      {error ? <div className={styles.error}>{error}</div> : null}
+      {success ? <div className={styles.success}>{success}</div> : null}
 
-      <div className={styles.grantForm__actions}>
-        <button
-          type="button"
-          className={styles.grantForm__cancel}
-          onClick={() => {
-            setIsOpen(false);
-            setError("");
-            setSuccess("");
-          }}
-        >
-          취소
-        </button>
-        <button
+      <div className={styles.actions}>
+        <Button
           type="submit"
-          className={styles.grantForm__submit}
+          variant="primary"
           disabled={grantInventory.isPending}
         >
           {grantInventory.isPending ? "처리 중..." : "지급"}
-        </button>
+        </Button>
       </div>
     </form>
   );

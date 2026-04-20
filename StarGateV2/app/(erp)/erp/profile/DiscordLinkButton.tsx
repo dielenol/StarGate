@@ -2,7 +2,7 @@
 
 import { signIn } from "next-auth/react";
 
-import styles from "./page.module.css";
+import Button from "@/components/ui/Button/Button";
 
 export default function DiscordLinkButton() {
   function handleClick() {
@@ -10,12 +10,8 @@ export default function DiscordLinkButton() {
   }
 
   return (
-    <button
-      type="button"
-      className={styles.discord__link}
-      onClick={handleClick}
-    >
+    <Button type="button" variant="primary" onClick={handleClick}>
       Discord 연동
-    </button>
+    </Button>
   );
 }

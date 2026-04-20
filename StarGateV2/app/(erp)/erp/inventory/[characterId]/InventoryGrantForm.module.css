@@ -4,13 +4,25 @@
   gap: 12px;
 }
 
+.row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .field {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.submit {
+.actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
@@ -18,7 +30,7 @@
 
 .error {
   padding: 10px 12px;
-  background: rgba(192, 106, 90, 0.1);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
   border: 1px solid var(--danger);
   color: var(--danger);
   font-family: var(--font-mono);
@@ -28,7 +40,7 @@
 
 .success {
   padding: 10px 12px;
-  background: rgba(122, 168, 131, 0.1);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
   border: 1px solid var(--success);
   color: var(--success);
   font-family: var(--font-mono);

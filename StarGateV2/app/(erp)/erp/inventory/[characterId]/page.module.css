@@ -1,252 +1,72 @@
-.charInventory {
-  max-width: 960px;
-}
+/* ── Character inventory detail ── */
 
-.charInventory__classification {
-  margin-bottom: 8px;
-  color: rgba(197, 160, 89, 0.5);
-  font-size: 11px;
-  letter-spacing: 3px;
-}
-
-.charInventory__title {
-  margin: 0 0 4px;
-  color: #fff;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: 2px;
-}
-
-.charInventory__subtitle {
-  margin: 0 0 24px;
-  color: #94a3b8;
-  font-size: 14px;
-}
-
-.charInventory__backLink {
-  display: inline-block;
-  margin-bottom: 16px;
-  color: #94a3b8;
-  font-size: 13px;
-  text-decoration: none;
-  transition: color 0.15s;
-}
-
-.charInventory__backLink:hover {
-  color: #c5a059;
-}
-
-/* Grant form wrapper */
-
-.charInventory__grantSection {
-  margin-bottom: 24px;
-}
-
-/* Table */
-
-.charInventory__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.charInventory__table th {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(197, 160, 89, 0.2);
-  color: #c5a059;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-align: left;
-  text-transform: uppercase;
-}
-
-.charInventory__table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(197, 160, 89, 0.06);
-  color: #d8c39a;
-}
-
-.charInventory__table tr:hover td {
-  background: rgba(197, 160, 89, 0.04);
-}
-
-.charInventory__muted {
-  color: #5a6a6e;
-}
-
-/* Empty */
-
-.charInventory__empty {
-  color: #5a6a6e;
-  font-size: 14px;
-  padding: 40px;
-  text-align: center;
-  border: 1px dashed rgba(197, 160, 89, 0.1);
-}
-
-/* Not found */
-
-.charInventory__notFound {
-  color: #e07070;
-  font-size: 14px;
-  padding: 40px;
-  text-align: center;
-  border: 1px solid rgba(224, 112, 112, 0.15);
-  background: rgba(224, 112, 112, 0.05);
-}
-
-/* Grant form (inline) */
-
-.grantForm {
-  padding: 20px;
-  border: 1px solid rgba(197, 160, 89, 0.15);
-  background: rgba(13, 27, 30, 0.6);
-}
-
-.grantForm__header {
-  margin-bottom: 16px;
-  color: #c5a059;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-.grantForm__grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.grantForm__field {
-  flex: 1 1 200px;
+.grantBox {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
+  margin-bottom: var(--gap);
 }
 
-.grantForm__field--full {
-  flex: 1 1 100%;
+.mono {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
 }
 
-.grantForm__label {
-  color: #94a3b8;
+.muted {
+  color: var(--ink-3);
+}
+
+/* ── Table ── */
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
 }
 
-.grantForm__input,
-.grantForm__select {
+.table th {
   padding: 8px 10px;
-  border: 1px solid rgba(197, 160, 89, 0.2);
-  background: rgba(5, 8, 8, 0.8);
-  color: #d8c39a;
-  font-size: 13px;
-  font-family: inherit;
-  transition: border-color 0.15s;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: normal;
+  letter-spacing: 0.15em;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
 }
 
-.grantForm__input:focus,
-.grantForm__select:focus {
-  outline: none;
-  border-color: #c5a059;
+.table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--ink-1);
 }
 
-.grantForm__select option {
-  background: #0d1b1e;
-  color: #d8c39a;
+.table tbody tr:hover td {
+  background: var(--bg-2);
 }
 
-.grantForm__actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+.numCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-.grantForm__toggleButton {
-  padding: 8px 16px;
-  border: 1px solid rgba(197, 160, 89, 0.3);
-  background: rgba(197, 160, 89, 0.1);
-  color: #c5a059;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+.dateCol {
+  text-align: right;
+  white-space: nowrap;
 }
 
-.grantForm__toggleButton:hover {
-  background: rgba(197, 160, 89, 0.2);
-  border-color: #c5a059;
-}
-
-.grantForm__submit {
-  padding: 8px 20px;
-  border: 1px solid rgba(94, 163, 94, 0.4);
-  background: rgba(94, 163, 94, 0.15);
-  color: #5ea35e;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.grantForm__submit:hover:not(:disabled) {
-  background: rgba(94, 163, 94, 0.25);
-  border-color: #5ea35e;
-}
-
-.grantForm__submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.grantForm__cancel {
-  padding: 8px 20px;
-  border: 1px solid rgba(197, 160, 89, 0.15);
-  background: transparent;
-  color: #94a3b8;
-  font-size: 13px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.grantForm__cancel:hover {
-  border-color: rgba(197, 160, 89, 0.3);
-}
-
-.grantForm__error {
-  margin-top: 8px;
-  padding: 8px 12px;
-  border: 1px solid rgba(224, 112, 112, 0.3);
-  background: rgba(224, 112, 112, 0.1);
-  color: #e07070;
-  font-size: 13px;
-}
-
-.grantForm__success {
-  margin-top: 8px;
-  padding: 8px 12px;
-  border: 1px solid rgba(94, 163, 94, 0.3);
-  background: rgba(94, 163, 94, 0.1);
-  color: #5ea35e;
-  font-size: 13px;
-}
-
-@media (max-width: 767px) {
-  .charInventory__table {
-    font-size: 12px;
-  }
-
-  .charInventory__table th,
-  .charInventory__table td {
-    padding: 8px 6px;
-  }
-
-  .grantForm__field {
-    flex: 1 1 100%;
-  }
+.empty {
+  padding: 30px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-align: center;
 }

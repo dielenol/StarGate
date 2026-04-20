@@ -4,6 +4,9 @@ import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { listSessionReports } from "@/lib/db/session-reports";
 
+import Button from "@/components/ui/Button/Button";
+import PageHead from "@/components/ui/PageHead/PageHead";
+
 import ReportsClient from "./ReportsClient";
 
 export default async function SessionReportListPage() {
@@ -17,6 +20,19 @@ export default async function SessionReportListPage() {
   const reports = await listSessionReports().catch(() => []);
 
   return (
-    <ReportsClient initialReports={reports} isGmOrAbove={isGmOrAbove} />
+    <>
+      <PageHead
+        breadcrumb="ERP / SESSIONS / REPORTS"
+        title="세션 리포트"
+        right={
+          isGmOrAbove ? (
+            <Button as="a" href="/erp/sessions/report/new" variant="primary">
+              ＋ 리포트 작성
+            </Button>
+          ) : null
+        }
+      />
+      <ReportsClient initialReports={reports} />
+    </>
   );
 }

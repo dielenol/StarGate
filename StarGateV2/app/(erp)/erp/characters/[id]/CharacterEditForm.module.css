@@ -1,248 +1,159 @@
 /* ── Character edit / create form ── */
 
 .form {
-  max-width: 800px;
-}
-
-.form__section {
-  margin-bottom: 24px;
-}
-
-.form__sectionHeader {
-  margin-bottom: 14px;
-  color: #c5a059;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-.form__card {
-  padding: 18px;
-  border: 1px solid rgba(197, 160, 89, 0.15);
-  background: rgba(13, 27, 30, 0.6);
-}
-
-/* Field rows */
-
-.form__grid {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-direction: column;
+  gap: var(--gap);
+  max-width: 860px;
 }
 
-.form__field {
+.form__box {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Grid layout */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .statGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Field */
+
+.field {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex: 1 1 calc(50% - 8px);
+  min-width: 0;
 }
 
-.form__field.form__gridFull,
-.form__gridFull {
-  flex: 1 1 100%;
+.field--full {
+  grid-column: 1 / -1;
 }
 
-.form__label {
+.label {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+/* Textarea (no primitive yet — matches Input style) */
+
+.textarea {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: #c5a059;
-  letter-spacing: 0.1em;
-  font-weight: 600;
-}
-
-.form__input,
-.form__select,
-.form__textarea {
-  padding: 10px 12px;
-  background: #050808;
-  border: 1px solid #2a3a3e;
-  color: #d8c39a;
-  font-size: 14px;
-  font-family: inherit;
-}
-
-.form__input::placeholder,
-.form__textarea::placeholder {
-  color: #5a6a6e;
-}
-
-.form__input:focus,
-.form__select:focus,
-.form__textarea:focus {
-  outline: none;
-  border-color: #c5a059;
-}
-
-.form__select {
-  cursor: pointer;
-}
-
-.form__textarea {
+  letter-spacing: 0.05em;
   min-height: 80px;
   resize: vertical;
 }
 
-.form__checkbox {
+.textarea:focus {
+  outline: none;
+  border-color: var(--gold-dim);
+}
+
+.textarea::placeholder {
+  color: var(--ink-3);
+}
+
+/* Checkbox */
+
+.checkbox {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.form__checkboxInput {
-  accent-color: #c5a059;
-  width: 16px;
-  height: 16px;
-}
-
-.form__checkboxLabel {
-  font-size: 13px;
-  color: #d8c39a;
-}
-
-/* Stat grid (4-col for combat stats) */
-
-.form__statGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.form__statGrid > .form__field {
-  flex: 1 1 calc(25% - 9px);
-}
-
-/* Dynamic list (Equipment / Abilities) */
-
-.form__listHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.form__addBtn {
-  padding: 4px 12px;
-  background: transparent;
-  border: 1px solid rgba(197, 160, 89, 0.3);
-  color: #c5a059;
+  color: var(--ink-1);
   font-size: 12px;
-  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
 }
 
-.form__addBtn:hover {
-  background: rgba(197, 160, 89, 0.1);
+.checkbox__input {
+  accent-color: var(--gold);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
 }
 
-.form__listItem {
-  padding: 14px;
-  border: 1px solid rgba(197, 160, 89, 0.1);
-  background: rgba(13, 27, 30, 0.4);
-  margin-bottom: 8px;
-  position: relative;
+/* Dynamic list (equipment / abilities) */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.form__listItemHeader {
+.listItem {
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+}
+
+.listItem__head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
 }
 
-.form__listItemTitle {
-  color: #94a3b8;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  font-weight: 600;
+.listItem__title {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
 }
 
-.form__removeBtn {
-  padding: 2px 8px;
-  background: transparent;
-  border: 1px solid rgba(200, 60, 60, 0.3);
-  color: #e07070;
-  font-size: 11px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
+/* Empty */
 
-.form__removeBtn:hover {
-  background: rgba(200, 60, 60, 0.15);
+.empty {
+  padding: 20px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-align: center;
 }
 
 /* Actions */
 
-.form__actions {
+.actions {
   display: flex;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 10px;
+  margin-top: 4px;
 }
 
-.form__submit {
-  padding: 10px 24px;
-  background: #c5a059;
-  color: #050808;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  transition: background 0.2s;
-}
+/* Error */
 
-.form__submit:hover {
-  background: #d4af6a;
-}
-
-.form__submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.form__cancel {
-  padding: 10px 24px;
-  background: transparent;
-  border: 1px solid #2a3a3e;
-  color: #94a3b8;
-  cursor: pointer;
-  font-weight: 600;
-  text-decoration: none;
-  font-size: 14px;
-  display: inline-flex;
-  align-items: center;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.form__cancel:hover {
-  border-color: #94a3b8;
-  color: #d8c39a;
-}
-
-/* Error / Success */
-
-.form__error {
-  margin-top: 12px;
-  padding: 10px 14px;
-  background: rgba(200, 60, 60, 0.15);
-  border: 1px solid rgba(200, 60, 60, 0.3);
-  color: #e07070;
-  font-size: 13px;
-}
-
-.form__success {
-  margin-top: 12px;
-  padding: 10px 14px;
-  background: rgba(94, 163, 94, 0.1);
-  border: 1px solid rgba(94, 163, 94, 0.3);
-  color: #8ebe8e;
-  font-size: 13px;
-}
-
-@media (max-width: 767px) {
-  .form__grid > .form__field {
-    flex: 1 1 100%;
-  }
-
-  .form__statGrid > .form__field {
-    flex: 1 1 calc(50% - 6px);
-  }
+.error {
+  padding: 10px 12px;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  font-size: 12px;
 }

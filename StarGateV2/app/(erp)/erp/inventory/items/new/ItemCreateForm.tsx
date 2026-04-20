@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 import type { ItemCategory } from "@/types/inventory";
 
 import { useCreateItem } from "@/hooks/mutations/useInventoryMutation";
+
+import Box from "@/components/ui/Box/Box";
+import Button from "@/components/ui/Button/Button";
+import Input from "@/components/ui/Input/Input";
+import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
+import Select from "@/components/ui/Select/Select";
 
 import styles from "./page.module.css";
 
@@ -31,7 +36,7 @@ export default function ItemCreateForm() {
   const [isAvailable, setIsAvailable] = useState(true);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
@@ -59,135 +64,128 @@ export default function ItemCreateForm() {
         },
       },
     );
-  };
+  }
 
   return (
-    <form className={styles.newItem__form} onSubmit={handleSubmit}>
-      <div className={styles.newItem__formHeader}>ITEM DETAILS</div>
-
-      <div className={styles.newItem__grid}>
-        <div className={styles.newItem__field}>
-          <label className={styles.newItem__label} htmlFor="item-name">
-            이름
-          </label>
-          <input
-            id="item-name"
-            type="text"
-            className={styles.newItem__input}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="아이템 이름"
-            required
-          />
-        </div>
-
-        <div className={styles.newItem__field}>
-          <label className={styles.newItem__label} htmlFor="item-category">
-            카테고리
-          </label>
-          <select
-            id="item-category"
-            className={styles.newItem__select}
-            value={category}
-            onChange={(e) => setCategory(e.target.value as ItemCategory)}
-          >
-            {ITEM_CATEGORIES.map((cat) => (
-              <option key={cat.value} value={cat.value}>
-                {cat.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className={`${styles.newItem__field} ${styles["newItem__field--full"]}`}>
-          <label className={styles.newItem__label} htmlFor="item-desc">
-            설명
-          </label>
-          <textarea
-            id="item-desc"
-            className={styles.newItem__textarea}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="아이템 설명"
-          />
-        </div>
-
-        <div className={styles.newItem__field}>
-          <label className={styles.newItem__label} htmlFor="item-price">
-            가격
-          </label>
-          <input
-            id="item-price"
-            type="number"
-            className={styles.newItem__input}
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="0"
-            min="0"
-          />
-        </div>
-
-        <div className={styles.newItem__field}>
-          <label className={styles.newItem__label} htmlFor="item-damage">
-            데미지 (선택)
-          </label>
-          <input
-            id="item-damage"
-            type="text"
-            className={styles.newItem__input}
-            value={damage}
-            onChange={(e) => setDamage(e.target.value)}
-            placeholder="예: 1d8+2"
-          />
-        </div>
-
-        <div className={`${styles.newItem__field} ${styles["newItem__field--full"]}`}>
-          <label className={styles.newItem__label} htmlFor="item-effect">
-            효과 (선택)
-          </label>
-          <input
-            id="item-effect"
-            type="text"
-            className={styles.newItem__input}
-            value={effect}
-            onChange={(e) => setEffect(e.target.value)}
-            placeholder="아이템 효과 설명"
-          />
-        </div>
-
-        <div className={`${styles.newItem__field} ${styles["newItem__field--full"]}`}>
-          <div className={styles.newItem__checkbox}>
-            <input
-              id="item-available"
-              type="checkbox"
-              className={styles.newItem__checkboxInput}
-              checked={isAvailable}
-              onChange={(e) => setIsAvailable(e.target.checked)}
+    <form className={styles.form} onSubmit={handleSubmit}>
+      <Box className={styles.form__box}>
+        <PanelTitle>ITEM DETAILS</PanelTitle>
+        <div className={styles.grid}>
+          <Field id="item-name" label="이름">
+            <Input
+              id="item-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="아이템 이름"
+              required
             />
-            <label
-              htmlFor="item-available"
-              className={styles.newItem__checkboxLabel}
+          </Field>
+
+          <Field id="item-category" label="카테고리">
+            <Select
+              id="item-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as ItemCategory)}
             >
-              구매 가능 (Available)
+              {ITEM_CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field id="item-price" label="가격">
+            <Input
+              id="item-price"
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="0"
+              min="0"
+            />
+          </Field>
+
+          <Field id="item-damage" label="데미지 (선택)">
+            <Input
+              id="item-damage"
+              type="text"
+              value={damage}
+              onChange={(e) => setDamage(e.target.value)}
+              placeholder="예: 1d8+2"
+            />
+          </Field>
+
+          <Field id="item-effect" label="효과 (선택)" full>
+            <Input
+              id="item-effect"
+              type="text"
+              value={effect}
+              onChange={(e) => setEffect(e.target.value)}
+              placeholder="아이템 효과 설명"
+            />
+          </Field>
+
+          <Field id="item-desc" label="설명" full>
+            <textarea
+              id="item-desc"
+              className={styles.textarea}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="아이템 설명"
+            />
+          </Field>
+
+          <div className={`${styles.field} ${styles["field--full"]}`}>
+            <label className={styles.checkbox}>
+              <input
+                type="checkbox"
+                className={styles.checkbox__input}
+                checked={isAvailable}
+                onChange={(e) => setIsAvailable(e.target.checked)}
+              />
+              <span>구매 가능 (Available)</span>
             </label>
           </div>
         </div>
-      </div>
+      </Box>
 
-      {error && <div className={styles.newItem__error}>{error}</div>}
+      {error ? <div className={styles.error}>{error}</div> : null}
 
-      <div className={styles.newItem__actions}>
-        <Link href="/erp/inventory" className={styles.newItem__cancel}>
-          취소
-        </Link>
-        <button
-          type="submit"
-          className={styles.newItem__submit}
-          disabled={createItem.isPending}
-        >
+      <div className={styles.actions}>
+        <Button type="submit" variant="primary" disabled={createItem.isPending}>
           {createItem.isPending ? "생성 중..." : "아이템 생성"}
-        </button>
+        </Button>
+        <Button as="a" href="/erp/inventory">
+          취소
+        </Button>
       </div>
     </form>
+  );
+}
+
+function Field({
+  id,
+  label,
+  children,
+  full = false,
+}: {
+  id?: string;
+  label: string;
+  children: React.ReactNode;
+  full?: boolean;
+}) {
+  return (
+    <div
+      className={[styles.field, full ? styles["field--full"] : ""]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <label className={styles.label} htmlFor={id}>
+        {label}
+      </label>
+      {children}
+    </div>
   );
 }

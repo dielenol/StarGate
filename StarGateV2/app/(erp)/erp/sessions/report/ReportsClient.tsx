@@ -6,66 +6,80 @@ import type { SessionReport } from "@/types/session-report";
 
 import { useSessionReports } from "@/hooks/queries/useSessionReportsQuery";
 
+import Box from "@/components/ui/Box/Box";
+import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
+
 import styles from "./page.module.css";
 
 interface Props {
   initialReports: SessionReport[];
-  isGmOrAbove: boolean;
 }
 
-export default function ReportsClient({ initialReports, isGmOrAbove }: Props) {
+function fmtDate(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleDateString("ko-KR", {
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+export default function ReportsClient({ initialReports }: Props) {
   const { data: reports = [] } = useSessionReports({
     initialData: initialReports,
   });
 
   return (
-    <section className={styles.reports}>
-      <div className={styles.reports__classification}>SESSION REPORTS</div>
-
-      <div className={styles.reports__header}>
-        <h1 className={styles.reports__title}>세션 리포트</h1>
-        {isGmOrAbove && (
-          <Link
-            href="/erp/sessions/report/new"
-            className={styles.reports__add}
-          >
-            + 리포트 작성
-          </Link>
-        )}
-      </div>
+    <Box>
+      <PanelTitle
+        right={<span className={styles.mono}>{reports.length} 건</span>}
+      >
+        REPORT LOG
+      </PanelTitle>
 
       {reports.length === 0 ? (
-        <p className={styles.reports__empty}>
-          작성된 세션 리포트가 없습니다.
-        </p>
+        <div className={styles.empty}>작성된 세션 리포트가 없습니다.</div>
       ) : (
-        <div className={styles.reports__grid}>
-          {reports.map((report) => (
-            <Link
-              key={String(report._id)}
-              href={`/erp/sessions/report/${String(report._id)}`}
-              className={styles.reports__card}
-            >
-              <div className={styles.reports__cardHeader}>
-                {report.sessionTitle}
-              </div>
-              <p className={styles.reports__cardSummary}>
-                {report.summary.length > 100
-                  ? `${report.summary.slice(0, 100)}...`
-                  : report.summary}
-              </p>
-              <div className={styles.reports__cardMeta}>
-                <span className={styles.reports__cardGm}>
-                  GM: {report.gmName}
-                </span>
-                <span className={styles.reports__cardDate}>
-                  {new Date(report.createdAt).toLocaleDateString("ko-KR")}
-                </span>
-              </div>
-            </Link>
-          ))}
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>작전명</th>
+                <th>GM</th>
+                <th className={styles.dateCol}>작성일</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map((report) => {
+                const id = String(report._id);
+                return (
+                  <tr key={id}>
+                    <td className={styles.titleCol}>
+                      <Link
+                        href={`/erp/sessions/report/${id}`}
+                        className={styles.titleLink}
+                      >
+                        {report.sessionTitle}
+                      </Link>
+                      {report.summary ? (
+                        <div className={styles.summary}>
+                          {report.summary.length > 120
+                            ? `${report.summary.slice(0, 120)}...`
+                            : report.summary}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className={styles.gmCol}>{report.gmName}</td>
+                    <td className={`${styles.dateCol} ${styles.mono}`}>
+                      {fmtDate(report.createdAt)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
-    </section>
+    </Box>
   );
 }

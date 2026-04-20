@@ -1,171 +1,108 @@
-.members {
-  max-width: 960px;
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
+  margin-bottom: var(--gap);
 }
 
-.members__classification {
-  margin-bottom: 8px;
-  color: rgba(197, 160, 89, 0.5);
-  font-size: 11px;
-  letter-spacing: 3px;
+@media (max-width: 700px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
 }
 
-.members__title {
-  margin: 0 0 24px;
-  color: #fff;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: 2px;
-}
-
-/* Stats */
-
-.members__stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.members__statCard {
-  flex: 1 1 180px;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 20px;
-  border: 1px solid rgba(197, 160, 89, 0.15);
-  background: rgba(13, 27, 30, 0.6);
-}
-
-.members__statNumber {
-  font-size: 36px;
-  font-weight: 900;
-  color: #c5a059;
+.statNum {
+  margin-top: 6px;
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 32px;
+  letter-spacing: -0.02em;
   line-height: 1;
 }
 
-.members__statLabel {
-  color: #94a3b8;
-  font-size: 14px;
+.statNumGold {
+  color: var(--gold);
 }
 
-/* Table */
+.statNumSuccess {
+  color: var(--success);
+}
 
-.members__tableWrap {
+.mono {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.empty {
+  padding: 40px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+/* ── Table ── */
+
+.tableWrap {
   overflow-x: auto;
 }
 
-.members__table {
+.table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 12px;
 }
 
-.members__table th {
+.table th {
+  padding: 8px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: normal;
+  letter-spacing: 0.15em;
   text-align: left;
-  padding: 10px 12px;
-  background: #0a1214;
-  color: #c5a059;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  border-bottom: 1px solid #1a2a2e;
+  border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
 
-.members__table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #0e1618;
-  color: #d8c39a;
+.table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--ink-1);
 }
 
-.members__table tr:hover td {
-  background: rgba(197, 160, 89, 0.04);
+.table tbody tr:hover td {
+  background: var(--bg-2);
 }
 
-.members__name {
-  font-weight: 600;
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.members__date {
-  color: #94a3b8;
-  font-size: 13px;
+.strong {
+  color: var(--ink-0);
+  font-weight: 500;
+}
+
+.sub {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.numCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dateCol {
+  text-align: right;
   white-space: nowrap;
-}
-
-.members__count {
-  text-align: center;
-  font-weight: 600;
-  color: #c5a059;
-}
-
-.members__empty {
-  color: #5a6a6e;
-  font-size: 14px;
-  padding: 40px;
-  text-align: center;
-  border: 1px dashed rgba(197, 160, 89, 0.1);
-}
-
-/* Badges */
-
-.members__badge {
-  display: inline-block;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-}
-
-.members__badge--super_admin {
-  background: rgba(200, 60, 60, 0.2);
-  color: #e07070;
-}
-
-.members__badge--admin {
-  background: rgba(197, 160, 89, 0.2);
-  color: #c5a059;
-}
-
-.members__badge--gm {
-  background: rgba(94, 163, 197, 0.2);
-  color: #5ea3c5;
-}
-
-.members__badge--player {
-  background: rgba(94, 163, 94, 0.2);
-  color: #5ea35e;
-}
-
-.members__badge--guest {
-  background: rgba(160, 160, 160, 0.2);
-  color: #a0a0a0;
-}
-
-/* Status */
-
-.members__status {
-  display: inline-block;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-}
-
-.members__status--active {
-  color: #5ea35e;
-}
-
-.members__status--inactive {
-  color: #a0a0a0;
-}
-
-.members__status--suspended {
-  color: #e07070;
-}
-
-/* ── 반응형 ── */
-
-@media (max-width: 767px) {
-  .members__statCard {
-    flex: 1 1 100%;
-  }
 }

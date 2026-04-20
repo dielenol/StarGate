@@ -3,9 +3,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 
-import ReportCreateForm from "./ReportCreateForm";
+import Box from "@/components/ui/Box/Box";
+import Button from "@/components/ui/Button/Button";
+import PageHead from "@/components/ui/PageHead/PageHead";
 
-import styles from "./page.module.css";
+import ReportCreateForm from "./ReportCreateForm";
 
 export default async function NewReportPage() {
   const session = await auth();
@@ -19,12 +21,19 @@ export default async function NewReportPage() {
   }
 
   return (
-    <section className={styles.newReport}>
-      <div className={styles.newReport__classification}>
-        SESSION REPORT / NEW
-      </div>
-      <h1 className={styles.newReport__title}>세션 리포트 작성</h1>
-      <ReportCreateForm />
-    </section>
+    <>
+      <PageHead
+        breadcrumb="ERP / SESSIONS / REPORTS / NEW"
+        title="세션 리포트 작성"
+        right={
+          <Button as="a" href="/erp/sessions/report">
+            ← 목록
+          </Button>
+        }
+      />
+      <Box>
+        <ReportCreateForm />
+      </Box>
+    </>
   );
 }

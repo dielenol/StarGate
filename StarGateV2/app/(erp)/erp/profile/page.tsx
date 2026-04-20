@@ -1,12 +1,36 @@
-import { redirect } from "next/navigation";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
 import { findUserById } from "@/lib/db/users";
 
+import Box from "@/components/ui/Box/Box";
+import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
+import PageHead from "@/components/ui/PageHead/PageHead";
+import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
+import Seal from "@/components/ui/Seal/Seal";
+import Tag from "@/components/ui/Tag/Tag";
+
 import DiscordLinkButton from "./DiscordLinkButton";
 import PasswordForm from "./PasswordForm";
+
 import styles from "./page.module.css";
+
+function fmtDate(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function fmtDateTime(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${fmtDate(date)} · ${hh}:${mm}`;
+}
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -21,124 +45,139 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const roleLower = user.role.toLowerCase();
+  const initial = (user.displayName || user.username).charAt(0).toUpperCase();
 
   return (
-    <section className={styles.profile}>
-      <div className={styles.profile__classification}>OPERATOR PROFILE</div>
-      <h1 className={styles.profile__title}>프로필</h1>
+    <>
+      <PageHead breadcrumb="ERP / PROFILE" title="프로필" />
 
-      {/* 기본 정보 */}
-      <div className={styles.section}>
-        <div className={styles.section__header}>BASIC INFORMATION</div>
-        <div className={styles.info}>
-          <div className={styles.info__row}>
-            <span className={styles.info__label}>USERNAME</span>
-            <span className={styles.info__value}>{user.username}</span>
+      <div className={styles.layout}>
+        {/* ── 좌측 사이드 ── */}
+        <Box className={styles.side}>
+          <div className={styles.sideHeader}>
+            <Seal size="lg" className={styles.sideHeader__seal}>
+              {initial}
+            </Seal>
+            <h2 className={styles.sideHeader__name}>{user.displayName}</h2>
+            <div className={styles.sideHeader__role}>{user.role}</div>
+            <div className={styles.sideHeader__sub}>{user.username}</div>
           </div>
-          <div className={styles.info__row}>
-            <span className={styles.info__label}>표시 이름</span>
-            <span className={styles.info__value}>{user.displayName}</span>
+
+          <div className={styles.sideTags}>
+            <Tag tone="gold">CLR {user.securityClearance ?? "U"}</Tag>
+            <Tag tone={user.status === "ACTIVE" ? "success" : "default"}>
+              {user.status}
+            </Tag>
           </div>
-          <div className={styles.info__row}>
-            <span className={styles.info__label}>역할</span>
-            <span
-              className={`${styles.badge} ${styles[`badge--${roleLower}`]}`}
-            >
-              {user.role}
-            </span>
-          </div>
-          <div className={styles.info__row}>
-            <span className={styles.info__label}>가입일</span>
-            <span className={styles.info__value}>
-              {new Date(user.createdAt).toLocaleDateString("ko-KR", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </span>
-          </div>
-          <div className={styles.info__row}>
-            <span className={styles.info__label}>마지막 로그인</span>
-            <span className={styles.info__value}>
-              {user.lastLoginAt
-                ? new Date(user.lastLoginAt).toLocaleString("ko-KR", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "—"}
-            </span>
-          </div>
-          {user.passwordChangedAt && (
-            <div className={styles.info__row}>
-              <span className={styles.info__label}>비밀번호 변경</span>
-              <span className={styles.info__value}>
-                {new Date(user.passwordChangedAt).toLocaleDateString("ko-KR", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
+
+          <dl className={styles.kv}>
+            <div className={styles.kv__row}>
+              <dt>가입일</dt>
+              <dd className={styles.mono}>{fmtDate(user.createdAt)}</dd>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Discord 연동 */}
-      <div className={styles.section}>
-        <div className={styles.section__header}>DISCORD ACCOUNT</div>
-        <div className={styles.discord}>
-          {user.discordId ? (
-            <div className={styles.discord__connected}>
-              {user.discordAvatar ? (
-                <Image
-                  className={styles.discord__avatar}
-                  src={user.discordAvatar}
-                  alt={`${user.discordUsername} 아바타`}
-                  width={48}
-                  height={48}
-                />
-              ) : (
-                <div
-                  className={styles.discord__avatar}
-                  aria-hidden="true"
-                  style={{ background: "#5865f2" }}
-                />
-              )}
-              <div className={styles.discord__info}>
-                <span className={styles.discord__username}>
-                  {user.discordUsername}
-                </span>
-                <span className={styles.discord__status}>연동됨</span>
+            <div className={styles.kv__row}>
+              <dt>마지막 접속</dt>
+              <dd className={styles.mono}>
+                {user.lastLoginAt ? fmtDateTime(user.lastLoginAt) : "—"}
+              </dd>
+            </div>
+            {user.passwordChangedAt ? (
+              <div className={styles.kv__row}>
+                <dt>PW 변경</dt>
+                <dd className={styles.mono}>
+                  {fmtDate(user.passwordChangedAt)}
+                </dd>
               </div>
-            </div>
-          ) : (
-            <div className={styles.discord__notConnected}>
-              <span className={styles.discord__message}>
-                Discord 계정이 연동되지 않았습니다.
-              </span>
-              <DiscordLinkButton />
-            </div>
-          )}
+            ) : null}
+          </dl>
+        </Box>
+
+        {/* ── 우측 메인 ── */}
+        <div className={styles.main}>
+          <Box>
+            <PanelTitle>ACCOUNT</PanelTitle>
+            <dl className={styles.kv}>
+              <div className={styles.kv__row}>
+                <dt>USERNAME</dt>
+                <dd className={styles.mono}>{user.username}</dd>
+              </div>
+              <div className={styles.kv__row}>
+                <dt>표시명</dt>
+                <dd>{user.displayName}</dd>
+              </div>
+              <div className={styles.kv__row}>
+                <dt>역할</dt>
+                <dd>
+                  <Tag tone="gold">{user.role}</Tag>
+                </dd>
+              </div>
+              <div className={styles.kv__row}>
+                <dt>상태</dt>
+                <dd>{user.status}</dd>
+              </div>
+            </dl>
+          </Box>
+
+          <Box variant="gold">
+            <PanelTitle
+              right={
+                user.discordId ? (
+                  <Tag tone="success">CONNECTED</Tag>
+                ) : (
+                  <Tag>NOT LINKED</Tag>
+                )
+              }
+            >
+              <span className={styles.gold}>DISCORD LINK</span>
+            </PanelTitle>
+
+            {user.discordId ? (
+              <>
+                <div className={styles.discord}>
+                  {user.discordAvatar ? (
+                    <Image
+                      className={styles.discord__avatar}
+                      src={user.discordAvatar}
+                      alt={`${user.discordUsername ?? "Discord"} 아바타`}
+                      width={48}
+                      height={48}
+                    />
+                  ) : (
+                    <div
+                      className={styles.discord__avatarFallback}
+                      aria-hidden
+                    />
+                  )}
+                  <div className={styles.discord__info}>
+                    <div className={styles.discord__name}>
+                      {user.discordGlobalName ?? user.discordUsername}
+                    </div>
+                    <div className={styles.discord__handle}>
+                      {user.discordUsername ? `@${user.discordUsername}` : "—"}
+                    </div>
+                  </div>
+                </div>
+                <dl className={styles.kv}>
+                  <div className={styles.kv__row}>
+                    <dt>User ID</dt>
+                    <dd className={styles.mono}>{user.discordId}</dd>
+                  </div>
+                </dl>
+              </>
+            ) : (
+              <div className={styles.discord__empty}>
+                <Eyebrow>아직 Discord 계정이 연결되지 않았습니다.</Eyebrow>
+                <DiscordLinkButton />
+              </div>
+            )}
+          </Box>
+
+          <Box>
+            <PanelTitle>SECURITY · 비밀번호 변경</PanelTitle>
+            <PasswordForm />
+          </Box>
         </div>
       </div>
-
-      {/* 비밀번호 변경 */}
-      <div className={styles.section}>
-        <div className={styles.section__header}>CHANGE PASSWORD</div>
-        <PasswordForm />
-      </div>
-
-      {/* 참여 이력 (Phase 4 예정) */}
-      <div className={styles.section}>
-        <div className={styles.section__header}>PARTICIPATION HISTORY</div>
-        <div className={styles.placeholder}>
-          참여 이력 기능은 준비 중입니다.
-        </div>
-      </div>
-    </section>
+    </>
   );
 }

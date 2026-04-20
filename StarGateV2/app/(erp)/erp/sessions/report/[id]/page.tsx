@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
@@ -6,12 +5,28 @@ import { hasRole } from "@/lib/auth/rbac";
 import { findReportById } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
 
+import Box from "@/components/ui/Box/Box";
+import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
+import PageHead from "@/components/ui/PageHead/PageHead";
+import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
+import Stack from "@/components/ui/Stack/Stack";
+import Tag from "@/components/ui/Tag/Tag";
+
 import ReportActions from "./ReportActions";
 
 import styles from "./page.module.css";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+function fmtDate(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 export default async function SessionReportDetailPage({ params }: Props) {
@@ -31,68 +46,105 @@ export default async function SessionReportDetailPage({ params }: Props) {
 
   const isGmOrAbove = hasRole(session.user.role, "GM");
   const isAdmin = hasRole(session.user.role, "ADMIN");
+  const reportId = String(report._id);
 
   return (
-    <section className={styles.detail}>
-      <div className={styles.detail__classification}>
-        SESSION REPORT / DETAIL
-      </div>
+    <>
+      <PageHead
+        breadcrumb={`ERP / SESSIONS / REPORTS / ${reportId.slice(-6).toUpperCase()}`}
+        title={report.sessionTitle}
+        right={
+          isGmOrAbove || isAdmin ? (
+            <ReportActions
+              reportId={reportId}
+              canEdit={isGmOrAbove}
+              canDelete={isAdmin}
+            />
+          ) : null
+        }
+      />
 
-      <Link href="/erp/sessions/report" className={styles.detail__back}>
-        &larr; 리포트 목록
-      </Link>
+      <div className={styles.layout}>
+        <div className={styles.side}>
+          <Box>
+            <PanelTitle>METADATA</PanelTitle>
+            <dl className={styles.kv}>
+              <div className={styles.kv__row}>
+                <dt>GM</dt>
+                <dd className={styles.kv__gm}>{report.gmName}</dd>
+              </div>
+              <div className={styles.kv__row}>
+                <dt>작성일</dt>
+                <dd className={styles.mono}>{fmtDate(report.createdAt)}</dd>
+              </div>
+              {report.updatedAt &&
+              new Date(report.updatedAt).getTime() !==
+                new Date(report.createdAt).getTime() ? (
+                <div className={styles.kv__row}>
+                  <dt>수정일</dt>
+                  <dd className={styles.mono}>{fmtDate(report.updatedAt)}</dd>
+                </div>
+              ) : null}
+              <div className={styles.kv__row}>
+                <dt>세션 ID</dt>
+                <dd className={styles.mono}>{report.sessionId.slice(-8)}</dd>
+              </div>
+            </dl>
+          </Box>
 
-      <h1 className={styles.detail__title}>{report.sessionTitle}</h1>
-
-      <div className={styles.detail__meta}>
-        <span className={styles.detail__gm}>GM: {report.gmName}</span>
-        <span className={styles.detail__date}>
-          {new Date(report.createdAt).toLocaleDateString("ko-KR", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </span>
-      </div>
-
-      {(isGmOrAbove || isAdmin) && (
-        <ReportActions
-          reportId={String(report._id)}
-          canEdit={isGmOrAbove}
-          canDelete={isAdmin}
-        />
-      )}
-
-      <div className={styles.detail__section}>
-        <div className={styles.detail__sectionHeader}>SUMMARY</div>
-        <p className={styles.detail__body}>{report.summary}</p>
-      </div>
-
-      {report.highlights.length > 0 && (
-        <div className={styles.detail__section}>
-          <div className={styles.detail__sectionHeader}>HIGHLIGHTS</div>
-          <ul className={styles.detail__list}>
-            {report.highlights.map((h, i) => (
-              <li key={i} className={styles.detail__listItem}>
-                {h}
-              </li>
-            ))}
-          </ul>
+          {report.participants.length > 0 ? (
+            <Box>
+              <PanelTitle
+                right={
+                  <span className={styles.mono}>
+                    {report.participants.length}
+                  </span>
+                }
+              >
+                PARTICIPANTS
+              </PanelTitle>
+              <Stack gap={6}>
+                {report.participants.map((p, i) => (
+                  <Tag key={i} tone="success">
+                    {p}
+                  </Tag>
+                ))}
+              </Stack>
+            </Box>
+          ) : null}
         </div>
-      )}
 
-      {report.participants.length > 0 && (
-        <div className={styles.detail__section}>
-          <div className={styles.detail__sectionHeader}>PARTICIPANTS</div>
-          <div className={styles.detail__participants}>
-            {report.participants.map((p, i) => (
-              <span key={i} className={styles.detail__participant}>
-                {p}
-              </span>
-            ))}
-          </div>
+        <div className={styles.main}>
+          <Box>
+            <PanelTitle>SUMMARY</PanelTitle>
+            <p className={styles.body}>{report.summary || "—"}</p>
+          </Box>
+
+          {report.highlights.length > 0 ? (
+            <Box>
+              <PanelTitle
+                right={
+                  <span className={styles.mono}>
+                    {report.highlights.length}
+                  </span>
+                }
+              >
+                HIGHLIGHTS
+              </PanelTitle>
+              <ul className={styles.list}>
+                {report.highlights.map((h, i) => (
+                  <li key={i} className={styles.list__item}>
+                    <Eyebrow tone="gold" className={styles.list__num}>
+                      {String(i + 1).padStart(2, "0")}
+                    </Eyebrow>
+                    <span className={styles.list__text}>{h}</span>
+                  </li>
+                ))}
+              </ul>
+            </Box>
+          ) : null}
         </div>
-      )}
-    </section>
+      </div>
+    </>
   );
 }

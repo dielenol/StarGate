@@ -5,7 +5,7 @@ import {
   useMarkAllRead,
 } from "@/hooks/mutations/useNotificationMutation";
 
-import styles from "./page.module.css";
+import Button from "@/components/ui/Button/Button";
 
 interface Props {
   notificationId?: string;
@@ -21,40 +21,39 @@ export default function NotificationActions({
 
   const loading = markRead.isPending || markAllRead.isPending;
 
-  const handleMarkSingleRead = () => {
+  function handleMarkSingleRead() {
     if (!notificationId) return;
     markRead.mutate(notificationId, {
       onError: (err) => alert(err.message),
     });
-  };
+  }
 
-  const handleMarkAllRead = () => {
+  function handleMarkAllRead() {
     markAllRead.mutate(undefined, {
       onError: (err) => alert(err.message),
     });
-  };
+  }
 
   if (mode === "single") {
     return (
-      <button
+      <Button
         type="button"
-        className={styles.notif__readBtn}
+        size="sm"
         onClick={handleMarkSingleRead}
         disabled={loading}
       >
         {loading ? "처리 중..." : "읽음"}
-      </button>
+      </Button>
     );
   }
 
   return (
-    <button
+    <Button
       type="button"
-      className={styles.notif__readAllBtn}
       onClick={handleMarkAllRead}
       disabled={loading}
     >
       {loading ? "처리 중..." : "모두 읽음 처리"}
-    </button>
+    </Button>
   );
 }

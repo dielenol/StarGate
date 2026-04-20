@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { useDeleteReport } from "@/hooks/mutations/useReportMutation";
 
-import styles from "./page.module.css";
+import Button from "@/components/ui/Button/Button";
 
 interface Props {
   reportId: string;
@@ -30,26 +30,24 @@ export default function ReportActions({ reportId, canEdit, canDelete }: Props) {
   };
 
   return (
-    <div className={styles.detail__actions}>
-      {canEdit && (
-        <button
-          type="button"
-          className={styles.detail__editBtn}
-          onClick={() => alert("수정 기능은 추후 구현됩니다.")}
-        >
-          수정
-        </button>
-      )}
-      {canDelete && (
-        <button
-          type="button"
-          className={styles.detail__deleteBtn}
+    <>
+      <Button as="a" href="/erp/sessions/report">
+        ← 목록
+      </Button>
+      {canEdit ? (
+        <Button onClick={() => alert("수정 기능은 추후 구현됩니다.")}>
+          편집
+        </Button>
+      ) : null}
+      {canDelete ? (
+        <Button
           onClick={handleDelete}
           disabled={deleteReport.isPending}
+          aria-label="리포트 삭제"
         >
           {deleteReport.isPending ? "삭제 중..." : "삭제"}
-        </button>
-      )}
-    </div>
+        </Button>
+      ) : null}
+    </>
   );
 }

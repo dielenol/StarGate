@@ -1,9 +1,10 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import styles from "./page.module.css";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import Input from "@/components/ui/Input/Input";
 
 const DEBOUNCE_MS = 500;
 
@@ -41,15 +42,12 @@ export default function WikiSearchBar() {
   }
 
   return (
-    <div className={styles.wiki__search}>
-      <input
-        aria-label="위키 문서 검색"
-        className={styles.wiki__searchInput}
-        onChange={handleChange}
-        placeholder="문서 검색..."
-        type="search"
-        value={value}
-      />
-    </div>
+    <Input
+      aria-label="위키 문서 검색"
+      onChange={handleChange}
+      placeholder="제목 · 내용 · 태그 검색"
+      type="search"
+      value={value}
+    />
   );
 }

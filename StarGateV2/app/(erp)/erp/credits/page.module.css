@@ -1,178 +1,105 @@
-.credits {
-  max-width: 960px;
+.topRow {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
 }
 
-.credits__classification {
-  margin-bottom: 8px;
-  color: rgba(197, 160, 89, 0.5);
-  font-size: 11px;
-  letter-spacing: 3px;
-}
-
-.credits__title {
-  margin: 0 0 24px;
-  color: #fff;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: 2px;
-}
-
-/* Balance card */
-
-.credits__balanceCard {
+.balance {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  padding: 20px;
-  margin-bottom: 24px;
-  border: 1px solid rgba(197, 160, 89, 0.15);
-  background: rgba(13, 27, 30, 0.6);
+  flex-direction: column;
+  gap: 10px;
 }
 
-.credits__balanceLabel {
-  color: #c5a059;
+@media (max-width: 900px) {
+  .topRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mono {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.gold {
+  color: var(--gold);
+}
+
+.bigNum {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 40px;
+  letter-spacing: -0.02em;
+}
+
+.empty {
+  padding: 30px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
 }
 
-.credits__balanceValue {
-  font-size: 36px;
-  font-weight: 900;
-  color: #c5a059;
-  line-height: 1;
+/* ── Table ── */
+
+.tableWrap {
+  overflow-x: auto;
 }
 
-.credits__balanceUnit {
-  font-size: 14px;
-  color: #94a3b8;
-}
-
-/* Actions row */
-
-.credits__actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
-}
-
-.credits__grantButton {
-  padding: 8px 16px;
-  border: 1px solid rgba(197, 160, 89, 0.3);
-  background: rgba(197, 160, 89, 0.1);
-  color: #c5a059;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.credits__grantButton:hover {
-  background: rgba(197, 160, 89, 0.2);
-  border-color: #c5a059;
-}
-
-/* Table */
-
-.credits__table {
+.table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
-}
-
-.credits__table th {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(197, 160, 89, 0.2);
-  color: #c5a059;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
+}
+
+.table th {
+  padding: 8px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: normal;
+  letter-spacing: 0.15em;
   text-align: left;
-  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
 }
 
-.credits__table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(197, 160, 89, 0.06);
-  color: #d8c39a;
+.table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--ink-1);
 }
 
-.credits__table tr:hover td {
-  background: rgba(197, 160, 89, 0.04);
+.table tbody tr:hover td {
+  background: var(--bg-2);
 }
 
-/* Type badge */
-
-.credits__badge {
-  display: inline-block;
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+.numCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-.credits__badge--sessionReward {
-  background: rgba(94, 163, 94, 0.15);
-  color: #5ea35e;
+.dateCol {
+  text-align: right;
+  white-space: nowrap;
 }
 
-.credits__badge--purchase {
-  background: rgba(224, 112, 112, 0.15);
-  color: #e07070;
+.amountPos {
+  color: var(--success);
+  font-family: var(--font-mono);
+  font-weight: 500;
 }
 
-.credits__badge--adminGrant {
-  background: rgba(197, 160, 89, 0.15);
-  color: #c5a059;
+.amountNeg {
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-weight: 500;
 }
 
-.credits__badge--adminDeduct {
-  background: rgba(224, 112, 112, 0.15);
-  color: #e07070;
-}
-
-.credits__badge--transfer {
-  background: rgba(94, 158, 163, 0.15);
-  color: #5e9ea3;
-}
-
-/* Amount */
-
-.credits__amountPositive {
-  color: #5ea35e;
-  font-weight: 600;
-}
-
-.credits__amountNegative {
-  color: #e07070;
-  font-weight: 600;
-}
-
-/* Empty state */
-
-.credits__empty {
-  color: #5a6a6e;
-  font-size: 14px;
-  padding: 40px;
-  text-align: center;
-  border: 1px dashed rgba(197, 160, 89, 0.1);
-}
-
-/* Responsive */
-
-@media (max-width: 767px) {
-  .credits__table {
-    font-size: 12px;
-  }
-
-  .credits__table th,
-  .credits__table td {
-    padding: 8px 6px;
-  }
-
-  .credits__balanceValue {
-    font-size: 28px;
-  }
+.desc {
+  color: var(--ink-1);
 }

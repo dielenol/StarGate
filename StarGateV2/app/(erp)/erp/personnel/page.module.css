@@ -1,444 +1,168 @@
-/* ── 신원 조회 페이지 ── */
+/* ── Personnel list ── */
 
-.org {
-  max-width: 1100px;
+/* Search Box */
+
+.searchBox {
+  margin-bottom: var(--gap);
 }
 
-.org__classification {
-  margin-bottom: 8px;
-  color: rgba(197, 160, 89, 0.5);
-  font-size: 11px;
-  letter-spacing: 3px;
-}
-
-.org__title {
-  margin: 0 0 16px;
-  color: #fff;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: 2px;
-}
-
-/* Clearance badge */
-
-.org__clearanceBadge {
+.searchRow {
   display: flex;
-  align-items: center;
   gap: 8px;
-  margin-bottom: 32px;
-  padding: 8px 14px;
-  border: 1px solid rgba(197, 160, 89, 0.25);
-  background: rgba(197, 160, 89, 0.05);
-  color: #d8c39a;
-  font-size: 12px;
-  font-weight: 600;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+}
+
+.searchHint {
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
   letter-spacing: 0.08em;
 }
 
-.org__clearanceLevel {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  background: rgba(197, 160, 89, 0.2);
-  color: #c5a059;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0;
-}
+/* Filter tabs */
 
-/* ── 메인 레이아웃: 좌측 삼권분립 + 우측 독립기관 ── */
-
-.org__main {
+.filters {
   display: flex;
-  flex-wrap: wrap;
-  gap: 32px;
-  align-items: flex-start;
-}
-
-/* ── 좌측: 3대 세력 삼각형 배치 ── */
-
-.org__factions {
-  display: flex;
-  flex-direction: column;
   gap: 0;
-  flex: 1;
-  min-width: 0;
+  margin-top: 12px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
-.org__factionLabel {
-  color: rgba(197, 160, 89, 0.5);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 3px;
-  margin-bottom: 20px;
-}
-
-/* 삼각형: 상단 1개 중앙, 하단 2개 좌우 */
-.org__triangle {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.org__triangleTop {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-}
-
-.org__triangleBottom {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  gap: 24px;
-}
-
-/* 연결선 시각 효과 */
-.org__triangleConnector {
-  display: flex;
-  justify-content: center;
-  padding: 4px 0;
-  color: rgba(197, 160, 89, 0.2);
-  font-size: 14px;
-  letter-spacing: 8px;
-  user-select: none;
-}
-
-/* ── 우측: 독립 기관 ── */
-
-.org__institutions {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 280px;
-  flex-shrink: 0;
-}
-
-.org__institutionLabel {
-  color: rgba(197, 160, 89, 0.5);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 3px;
-  margin-bottom: 20px;
-}
-
-.org__institutionStack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* ── 세력/기관 블록 버튼 ── */
-
-.org__block {
-  width: 100%;
-  padding: 20px;
-  border: 1px solid rgba(197, 160, 89, 0.15);
-  background: rgba(13, 27, 30, 0.6);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.2s, background 0.2s;
-  font-family: inherit;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.org__block:hover {
-  border-color: rgba(197, 160, 89, 0.4);
-  background: rgba(13, 27, 30, 0.85);
-}
-
-.org__block--active {
-  border-color: #c5a059;
-  background: rgba(197, 160, 89, 0.08);
-}
-
-/* 삼각형 상단 블록 (이사회) — 적당한 너비 */
-.org__block--top {
-  max-width: 280px;
-}
-
-/* 삼각형 하단 블록 (군부, 시민사회) */
-.org__block--bottom {
-  flex: 1;
-}
-
-.org__blockLabel {
-  color: #d8c39a;
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.org__blockLabelEn {
-  color: rgba(197, 160, 89, 0.4);
-  font-size: 10px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-.org__blockSub {
-  color: #94a3b8;
-  font-size: 11px;
-  margin-top: 4px;
-}
-
-.org__blockCount {
-  color: rgba(197, 160, 89, 0.6);
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-/* ── 뒤로가기 ── */
-
-.org__back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 16px;
-  padding: 6px 0;
+.filters__tab {
+  padding: 8px 14px;
   border: none;
+  border-bottom: 2px solid transparent;
   background: transparent;
-  color: #c5a059;
-  font-size: 13px;
-  font-family: inherit;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
   cursor: pointer;
-  letter-spacing: 0.05em;
-  transition: color 0.15s;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
-.org__back:hover {
-  color: #d4af6a;
+.filters__tab:hover {
+  color: var(--ink-0);
 }
 
-/* ── 기관 내부 트리 (사무국 하위 기구) ── */
-
-.org__tree {
-  margin-top: 8px;
+.filters__tab--active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
 }
 
-.org__treeBlocks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 4px;
+/* Grid */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--gap);
 }
 
-.org__treeBlock {
-  padding: 16px;
-  border: 1px solid rgba(197, 160, 89, 0.12);
-  background: rgba(10, 18, 20, 0.5);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.2s, background 0.2s;
-  font-family: inherit;
+.cardLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  flex: 1 1 180px;
-  min-width: 0;
-}
-
-.org__treeBlock:hover {
-  border-color: rgba(197, 160, 89, 0.35);
-  background: rgba(13, 27, 30, 0.7);
-}
-
-.org__treeBlock--active {
-  border-color: #c5a059;
-  background: rgba(197, 160, 89, 0.06);
-}
-
-.org__treeBlockLabel {
-  color: #d8c39a;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.org__treeBlockCount {
-  color: rgba(197, 160, 89, 0.5);
-  font-size: 11px;
-}
-
-/* ── 아코디언 ── */
-
-.org__accordion {
-  padding: 16px 0;
-  border-top: 1px solid rgba(197, 160, 89, 0.08);
-}
-
-/* ── 인원 카드 그리드 ── */
-
-.org__cardGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.org__cardGrid > .org__card {
-  flex: 1 1 240px;
-}
-
-/* ── 인원 카드 ── */
-
-.org__card {
-  display: flex;
-  align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid rgba(197, 160, 89, 0.08);
-  background: rgba(10, 18, 20, 0.5);
-  text-decoration: none;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
-.org__card:hover {
-  border-color: rgba(197, 160, 89, 0.3);
-  background: rgba(13, 27, 30, 0.7);
+.cardLink:hover .card,
+.cardLink:focus-visible .card {
+  background: var(--bg-2);
+  border-color: var(--gold-dim);
 }
 
-.org__cardImage {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border: 1px solid rgba(197, 160, 89, 0.1);
-  background: #0a1214;
-  flex-shrink: 0;
-}
-
-.org__cardPlaceholder {
-  width: 48px;
-  height: 48px;
+.card__head {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(197, 160, 89, 0.1);
-  background: #0a1214;
-  color: #5a6a6e;
-  font-size: 18px;
-  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 12px;
 }
 
-.org__cardInfo {
+.card__headBody {
   flex: 1;
   min-width: 0;
 }
 
-.org__cardCodename {
-  color: #d8c39a;
-  font-weight: 700;
-  font-size: 14px;
+.card__code {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.card__name {
+  margin-top: 2px;
+  color: var(--ink-0);
+  font-size: 15px;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.org__cardRole {
+.card__sub {
+  margin-top: 2px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__footer {
   display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   align-items: center;
-  gap: 5px;
-  color: #94a3b8;
-  font-size: 12px;
-  margin-top: 2px;
 }
 
-.org__cardIdentity {
-  color: #6b7a8d;
-  font-size: 11px;
-  margin-top: 2px;
-}
-
-/* Classified */
-
-.org__classified {
-  color: rgba(197, 160, 89, 0.3);
-  font-style: italic;
+.card__group {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
   letter-spacing: 0.08em;
 }
 
-/* Level badge */
+/* Redacted inline (list card) */
 
-.org__levelBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0;
-  flex-shrink: 0;
+.redacted {
+  display: inline-block;
+  color: var(--gold-dim);
+  letter-spacing: -1px;
+  user-select: none;
 }
-
-.org__levelBadge--V { background: rgba(197, 160, 89, 0.25); color: #c5a059; }
-.org__levelBadge--A { background: rgba(192, 192, 210, 0.2); color: #c0c0d2; }
-.org__levelBadge--M { background: rgba(180, 130, 80, 0.2); color: #b4824f; }
-.org__levelBadge--H { background: rgba(100, 160, 180, 0.2); color: #64a0b4; }
-.org__levelBadge--G { background: rgba(94, 163, 94, 0.15); color: #5ea35e; }
-.org__levelBadge--J { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
-.org__levelBadge--U { background: rgba(100, 100, 100, 0.15); color: #6b6b6b; }
 
 /* Empty */
 
-.org__empty {
-  color: #5a6a6e;
-  font-size: 13px;
-  padding: 24px;
+.empty {
+  padding: 40px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
   text-align: center;
 }
 
-/* 섹션 헤더 (드릴다운 내부, 미배정 등) */
-
-.org__sectionHeader {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 32px 0 16px;
-  color: rgba(197, 160, 89, 0.5);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 3px;
-}
-
-.org__sectionHeader::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: rgba(197, 160, 89, 0.15);
-}
-
-/* ── 반응형 ── */
-
-/* 태블릿: 2열 → 1열, 삼각형 유지 */
-@media (max-width: 1279px) {
-  .org__main {
-    flex-direction: column;
-    gap: 32px;
-  }
-
-  .org__institutions {
-    width: 100%;
-  }
-
-  .org__block--top {
-    max-width: 100%;
-  }
-}
-
-/* 모바일: 카드/트리 1열 */
-@media (max-width: 767px) {
-  .org__cardGrid > .org__card {
-    flex: 1 1 100%;
-  }
-
-  .org__treeBlock {
-    flex: 1 1 100%;
-  }
-
-  .org__triangleBottom {
-    gap: 12px;
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
   }
 }

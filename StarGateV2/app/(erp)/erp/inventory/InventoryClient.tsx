@@ -7,9 +7,27 @@ import type { ItemCategory, MasterItem } from "@/types/inventory";
 
 import { useInventoryItems } from "@/hooks/queries/useInventoryQuery";
 
+import Box from "@/components/ui/Box/Box";
+import Button from "@/components/ui/Button/Button";
+import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
+import PageHead from "@/components/ui/PageHead/PageHead";
+import Spread from "@/components/ui/Spread/Spread";
+import Tag from "@/components/ui/Tag/Tag";
+
 import styles from "./page.module.css";
 
-const CATEGORIES: { value: ItemCategory | "ALL"; label: string }[] = [
+const CATEGORY_META: Record<
+  ItemCategory,
+  { label: string; tone: "gold" | "info" | "success" | "danger" | "default" }
+> = {
+  WEAPON: { label: "무기", tone: "danger" },
+  ARMOR: { label: "방어구", tone: "info" },
+  CONSUMABLE: { label: "소모품", tone: "success" },
+  MATERIAL: { label: "재료", tone: "default" },
+  SPECIAL: { label: "특수", tone: "gold" },
+};
+
+const CATEGORY_FILTERS: { value: ItemCategory | "ALL"; label: string }[] = [
   { value: "ALL", label: "전체" },
   { value: "WEAPON", label: "무기" },
   { value: "ARMOR", label: "방어구" },
@@ -18,21 +36,17 @@ const CATEGORIES: { value: ItemCategory | "ALL"; label: string }[] = [
   { value: "SPECIAL", label: "특수" },
 ];
 
-const CATEGORY_BADGE_CLASS: Record<ItemCategory, string> = {
-  WEAPON: styles["inventory__badge--weapon"],
-  ARMOR: styles["inventory__badge--armor"],
-  CONSUMABLE: styles["inventory__badge--consumable"],
-  MATERIAL: styles["inventory__badge--material"],
-  SPECIAL: styles["inventory__badge--special"],
-};
-
-const CATEGORY_LABEL: Record<ItemCategory, string> = {
-  WEAPON: "무기",
-  ARMOR: "방어구",
-  CONSUMABLE: "소모품",
-  MATERIAL: "재료",
-  SPECIAL: "특수",
-};
+function formatPrice(price: MasterItem["price"]): string {
+  if (typeof price === "number") {
+    return price.toLocaleString();
+  }
+  const trimmed = price.trim();
+  if (!trimmed) return "-";
+  const numeric = Number(trimmed);
+  return Number.isFinite(numeric) && trimmed !== ""
+    ? numeric.toLocaleString()
+    : trimmed;
+}
 
 interface Props {
   initialItems: MasterItem[];
@@ -58,15 +72,21 @@ export default function InventoryClient({
   );
 
   return (
-    <section className={styles.inventory}>
-      <div className={styles.inventory__classification}>
-        EQUIPMENT REGISTRY
-      </div>
-      <h1 className={styles.inventory__title}>아이템 마스터</h1>
+    <>
+      <PageHead
+        breadcrumb="ERP / EQUIPMENT"
+        title="장비"
+        right={
+          isGm ? (
+            <Button as="a" href="/erp/inventory/items/new" variant="primary">
+              + 아이템 추가
+            </Button>
+          ) : null
+        }
+      />
 
-      {/* 카테고리 필터 */}
-      <nav className={styles.inventory__filters} aria-label="아이템 카테고리 필터">
-        {CATEGORIES.map((cat) => {
+      <nav className={styles.filters} aria-label="아이템 카테고리 필터">
+        {CATEGORY_FILTERS.map((cat) => {
           const isActive =
             cat.value === "ALL"
               ? !categoryFilter
@@ -75,86 +95,83 @@ export default function InventoryClient({
             cat.value === "ALL"
               ? "/erp/inventory"
               : `/erp/inventory?category=${cat.value}`;
+          const count =
+            cat.value === "ALL"
+              ? allItems.length
+              : allItems.filter((i) => i.category === cat.value).length;
 
           return (
             <Link
               key={cat.value}
               href={href}
-              className={`${styles.inventory__filterLink} ${isActive ? styles["inventory__filterLink--active"] : ""}`}
+              className={[
+                styles.filters__tab,
+                isActive ? styles["filters__tab--active"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               aria-current={isActive ? "page" : undefined}
             >
-              {cat.label}
+              {cat.label} · {count}
             </Link>
           );
         })}
       </nav>
 
-      {/* GM/ADMIN: 아이템 추가 버튼 */}
-      {isGm && (
-        <div className={styles.inventory__actions}>
-          <Link href="/erp/inventory/items/new" className={styles.inventory__addButton}>
-            + 아이템 추가
-          </Link>
-        </div>
-      )}
-
-      {/* 아이템 테이블 */}
       {items.length === 0 ? (
-        <p className={styles.inventory__empty}>
-          등록된 아이템이 없습니다.
-        </p>
+        <Box>
+          <div className={styles.empty}>등록된 아이템이 없습니다.</div>
+        </Box>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table className={styles.inventory__table}>
-            <thead>
-              <tr>
-                <th>이름</th>
-                <th>카테고리</th>
-                <th>가격</th>
-                <th>데미지</th>
-                <th>효과</th>
-                <th>상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={String(item._id)}>
-                  <td>{item.name}</td>
-                  <td>
-                    <span
-                      className={`${styles.inventory__badge} ${CATEGORY_BADGE_CLASS[item.category]}`}
-                    >
-                      {CATEGORY_LABEL[item.category]}
+        <div className={styles.grid}>
+          {items.map((item) => {
+            const meta = CATEGORY_META[item.category];
+            return (
+              <Box key={String(item._id)} className={styles.card}>
+                <div className={styles.card__thumb}>
+                  <span className={styles.card__thumbLabel}>
+                    {meta.label.toUpperCase()}
+                  </span>
+                </div>
+                <Eyebrow tone="gold">{meta.label}</Eyebrow>
+                <div className={styles.card__name}>{item.name}</div>
+                {item.description ? (
+                  <div className={styles.card__desc}>{item.description}</div>
+                ) : null}
+                <div className={styles.card__meta}>
+                  {item.damage ? (
+                    <span className={styles.card__metaItem}>
+                      <span className={styles.card__metaLabel}>DMG</span>
+                      <span className={styles.card__metaValue}>
+                        {item.damage}
+                      </span>
                     </span>
-                  </td>
-                  <td>{String(item.price)}</td>
-                  <td>
-                    {item.damage ? (
-                      item.damage
-                    ) : (
-                      <span className={styles.inventory__muted}>-</span>
-                    )}
-                  </td>
-                  <td>
-                    {item.effect ? (
-                      item.effect
-                    ) : (
-                      <span className={styles.inventory__muted}>-</span>
-                    )}
-                  </td>
-                  <td>
-                    {item.isAvailable ? (
-                      <span className={styles.inventory__available}>Available</span>
-                    ) : (
-                      <span className={styles.inventory__unavailable}>Unavailable</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  ) : null}
+                  {item.effect ? (
+                    <span className={styles.card__metaItem}>
+                      <span className={styles.card__metaLabel}>EFX</span>
+                      <span className={styles.card__metaValue}>
+                        {item.effect}
+                      </span>
+                    </span>
+                  ) : null}
+                </div>
+                <Spread align="center">
+                  <Tag tone={meta.tone}>{meta.label}</Tag>
+                  <span className={styles.card__price}>
+                    ¤ {formatPrice(item.price)}
+                  </span>
+                </Spread>
+                <Spread align="center">
+                  <Tag tone={item.isAvailable ? "success" : "danger"}>
+                    {item.isAvailable ? "AVAILABLE" : "LOCKED"}
+                  </Tag>
+                </Spread>
+              </Box>
+            );
+          })}
         </div>
       )}
-    </section>
+    </>
   );
 }

@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 
 import { useCreateReport } from "@/hooks/mutations/useReportMutation";
 
+import Button from "@/components/ui/Button/Button";
+import Input from "@/components/ui/Input/Input";
+import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
+import Row from "@/components/ui/Row/Row";
+import Stack from "@/components/ui/Stack/Stack";
+
 import styles from "./page.module.css";
 
 export default function ReportCreateForm() {
@@ -45,8 +51,12 @@ export default function ReportCreateForm() {
     e.preventDefault();
     setError(null);
 
-    const filteredHighlights = highlights.filter((h) => h.trim() !== "");
-    const filteredParticipants = participants.filter((p) => p.trim() !== "");
+    const filteredHighlights = highlights
+      .map((h) => h.trim())
+      .filter((h) => h !== "");
+    const filteredParticipants = participants
+      .map((p) => p.trim())
+      .filter((p) => p !== "");
 
     createReport.mutate(
       {
@@ -67,114 +77,119 @@ export default function ReportCreateForm() {
   };
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      {/* Session Title */}
-      <label className={styles.form__label}>
-        SESSION TITLE
-        <input
-          className={styles.form__input}
-          type="text"
-          value={sessionTitle}
-          onChange={(e) => setSessionTitle(e.target.value)}
-          placeholder="세션 제목"
-          required
-        />
-      </label>
-
-      {/* Summary */}
-      <label className={styles.form__label}>
-        SUMMARY
-        <textarea
-          className={styles.form__textarea}
-          value={summary}
-          onChange={(e) => setSummary(e.target.value)}
-          placeholder="세션 요약을 작성하세요..."
-          rows={6}
-          required
-        />
-      </label>
-
-      {/* Highlights */}
-      <fieldset className={styles.form__fieldset}>
-        <legend className={styles.form__legend}>HIGHLIGHTS</legend>
-        {highlights.map((h, i) => (
-          <div key={i} className={styles.form__dynamicRow}>
-            <input
-              className={styles.form__input}
-              type="text"
-              value={h}
-              onChange={(e) => handleHighlightChange(i, e.target.value)}
-              placeholder={`하이라이트 ${i + 1}`}
-            />
-            {highlights.length > 1 && (
-              <button
-                type="button"
-                className={styles.form__removeBtn}
-                onClick={() => handleRemoveHighlight(i)}
-                aria-label={`하이라이트 ${i + 1} 삭제`}
-              >
-                &times;
-              </button>
-            )}
-          </div>
-        ))}
-        <button
-          type="button"
-          className={styles.form__addBtn}
-          onClick={handleAddHighlight}
-        >
-          + 하이라이트 추가
-        </button>
-      </fieldset>
-
-      {/* Participants */}
-      <fieldset className={styles.form__fieldset}>
-        <legend className={styles.form__legend}>PARTICIPANTS</legend>
-        {participants.map((p, i) => (
-          <div key={i} className={styles.form__dynamicRow}>
-            <input
-              className={styles.form__input}
-              type="text"
-              value={p}
-              onChange={(e) => handleParticipantChange(i, e.target.value)}
-              placeholder={`참여자 ${i + 1}`}
-            />
-            {participants.length > 1 && (
-              <button
-                type="button"
-                className={styles.form__removeBtn}
-                onClick={() => handleRemoveParticipant(i)}
-                aria-label={`참여자 ${i + 1} 삭제`}
-              >
-                &times;
-              </button>
-            )}
-          </div>
-        ))}
-        <button
-          type="button"
-          className={styles.form__addBtn}
-          onClick={handleAddParticipant}
-        >
-          + 참여자 추가
-        </button>
-      </fieldset>
-
-      {/* Error */}
-      {error && (
-        <div className={styles.form__error} role="alert">
-          {error}
+    <form className={styles.form} onSubmit={handleSubmit} noValidate>
+      <Stack gap="var(--gap)">
+        <div>
+          <PanelTitle>SESSION TITLE</PanelTitle>
+          <Input
+            type="text"
+            value={sessionTitle}
+            onChange={(e) => setSessionTitle(e.target.value)}
+            placeholder="세션 제목"
+            required
+            aria-label="세션 제목"
+          />
         </div>
-      )}
 
-      {/* Submit */}
-      <button
-        type="submit"
-        className={styles.form__submit}
-        disabled={createReport.isPending}
-      >
-        {createReport.isPending ? "작성 중..." : "리포트 작성"}
-      </button>
+        <div>
+          <PanelTitle>SUMMARY</PanelTitle>
+          <textarea
+            className={styles.textarea}
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            placeholder="세션 요약을 작성하세요..."
+            rows={6}
+            required
+            aria-label="세션 요약"
+          />
+        </div>
+
+        <div>
+          <PanelTitle
+            right={<span className={styles.mono}>{highlights.length}</span>}
+          >
+            HIGHLIGHTS
+          </PanelTitle>
+          <Stack gap={6}>
+            {highlights.map((h, i) => (
+              <Row key={i} gap={6}>
+                <Input
+                  type="text"
+                  value={h}
+                  onChange={(e) => handleHighlightChange(i, e.target.value)}
+                  placeholder={`하이라이트 ${i + 1}`}
+                  aria-label={`하이라이트 ${i + 1}`}
+                />
+                {highlights.length > 1 ? (
+                  <Button
+                    onClick={() => handleRemoveHighlight(i)}
+                    aria-label={`하이라이트 ${i + 1} 삭제`}
+                  >
+                    ✕
+                  </Button>
+                ) : null}
+              </Row>
+            ))}
+            <Button
+              onClick={handleAddHighlight}
+              className={styles.addBtn}
+            >
+              ＋ 하이라이트 추가
+            </Button>
+          </Stack>
+        </div>
+
+        <div>
+          <PanelTitle
+            right={<span className={styles.mono}>{participants.length}</span>}
+          >
+            PARTICIPANTS
+          </PanelTitle>
+          <Stack gap={6}>
+            {participants.map((p, i) => (
+              <Row key={i} gap={6}>
+                <Input
+                  type="text"
+                  value={p}
+                  onChange={(e) => handleParticipantChange(i, e.target.value)}
+                  placeholder={`참여자 ${i + 1}`}
+                  aria-label={`참여자 ${i + 1}`}
+                />
+                {participants.length > 1 ? (
+                  <Button
+                    onClick={() => handleRemoveParticipant(i)}
+                    aria-label={`참여자 ${i + 1} 삭제`}
+                  >
+                    ✕
+                  </Button>
+                ) : null}
+              </Row>
+            ))}
+            <Button
+              onClick={handleAddParticipant}
+              className={styles.addBtn}
+            >
+              ＋ 참여자 추가
+            </Button>
+          </Stack>
+        </div>
+
+        {error ? (
+          <div className={styles.error} role="alert">
+            {error}
+          </div>
+        ) : null}
+
+        <Row gap={8} align="center" className={styles.submitRow}>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={createReport.isPending}
+          >
+            {createReport.isPending ? "작성 중..." : "리포트 작성"}
+          </Button>
+        </Row>
+      </Stack>
     </form>
   );
 }
