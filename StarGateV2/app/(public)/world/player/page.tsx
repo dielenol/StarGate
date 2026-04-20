@@ -1,42 +1,32 @@
-import type { AgentCharacter } from "@/types/character";
+import type { AgentCharacter, Character } from "@/types/character";
 
 import { listPublicCharactersByType } from "@/lib/db/characters";
 
 import type { AgentForView } from "./PlayerClient";
 
 import PlayerClient from "./PlayerClient";
-import agentsJson from "./data/agents.json";
+
+export const revalidate = 300;
 
 /**
- * DB에서 공개 에이전트를 조회. 비어있으면 정적 JSON 폴백.
+ * DB에서 공개 에이전트를 조회. 실패 시 빈 배열 반환.
  */
 async function getAgents(): Promise<AgentForView[]> {
-  try {
-    const dbAgents = await listPublicCharactersByType("AGENT");
+  const dbResult = await listPublicCharactersByType("AGENT").catch(
+    () => [] as Character[],
+  );
+  const dbAgents = dbResult.filter(
+    (c): c is AgentCharacter => c.type === "AGENT",
+  );
 
-    if (dbAgents.length > 0) {
-      return (dbAgents as AgentCharacter[]).map((c) => ({
-        id: c._id?.toString() ?? c.codename,
-        codename: c.codename,
-        role: c.role,
-        previewImage: c.previewImage,
-        pixelCharacterImage: c.pixelCharacterImage ?? "",
-        warningVideo: c.warningVideo,
-        sheet: c.sheet,
-      }));
-    }
-  } catch {
-    // DB 연결 실패 시 JSON 폴백
-  }
-
-  return (agentsJson as AgentForView[]).map((a) => ({
-    id: a.id,
-    codename: a.codename,
-    role: a.role,
-    previewImage: a.previewImage,
-    pixelCharacterImage: a.pixelCharacterImage,
-    warningVideo: a.warningVideo,
-    sheet: a.sheet,
+  return dbAgents.map((c) => ({
+    id: c._id?.toString() ?? c.codename,
+    codename: c.codename,
+    role: c.role,
+    previewImage: c.previewImage,
+    pixelCharacterImage: c.pixelCharacterImage ?? "",
+    warningVideo: c.warningVideo,
+    sheet: c.sheet,
   }));
 }
 
