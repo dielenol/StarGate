@@ -1,0 +1,47 @@
+.box {
+  position: relative;
+  padding: var(--pad);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+}
+
+.box::before,
+.box::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+  border-color: var(--gold-dim);
+}
+
+.box::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+
+.box::after {
+  right: -1px;
+  bottom: -1px;
+  border-right: 1px solid;
+  border-bottom: 1px solid;
+}
+
+.box--gold {
+  background:
+    linear-gradient(180deg, rgba(201, 168, 90, 0.05), transparent 40%),
+    var(--bg-1);
+  border-color: var(--gold-dim);
+}
+
+.box--solid {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+
+.box--solid::before,
+.box--solid::after {
+  display: none;
+}

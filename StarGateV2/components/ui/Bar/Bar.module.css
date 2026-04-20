@@ -1,0 +1,20 @@
+.bar {
+  position: relative;
+  height: 4px;
+  background: var(--bg-3);
+  overflow: hidden;
+}
+
+.bar__fill {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+
+.bar--info .bar__fill {
+  background: var(--info);
+}
+
+.bar--danger .bar__fill {
+  background: var(--danger);
+}

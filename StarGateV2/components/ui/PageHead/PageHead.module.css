@@ -1,0 +1,33 @@
+.pageHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: var(--pad);
+  margin-bottom: var(--gap);
+  border-bottom: 1px solid var(--line);
+}
+
+.pageHead__breadcrumb {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+
+.pageHead__title {
+  margin: 0;
+  color: var(--ink-0);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.pageHead__right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}

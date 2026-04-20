@@ -1,0 +1,18 @@
+.panelTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+
+.panelTitle__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

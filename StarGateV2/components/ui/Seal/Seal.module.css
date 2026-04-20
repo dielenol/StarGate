@@ -1,0 +1,24 @@
+.seal {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--bg-2);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-mono);
+}
+
+.seal--sm {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+
+.seal--lg {
+  width: 72px;
+  height: 72px;
+  font-size: 22px;
+}

@@ -1,0 +1,14 @@
+.pips {
+  display: flex;
+  gap: 3px;
+}
+
+.pips__pip {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--gold-dim);
+}
+
+.pips__pip--on {
+  background: var(--gold);
+}
