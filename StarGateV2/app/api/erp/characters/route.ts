@@ -61,6 +61,16 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!/^[A-Z0-9_]+$/.test(body.codename)) {
+    return NextResponse.json(
+      {
+        error:
+          "codename은 대문자, 숫자, 언더스코어(_)만 허용됩니다 (예: NPC_JOHN_SMITH)",
+      },
+      { status: 400 },
+    );
+  }
+
   if (body.type !== "AGENT" && body.type !== "NPC") {
     return NextResponse.json(
       { error: "type은 AGENT 또는 NPC여야 합니다." },

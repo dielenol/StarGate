@@ -70,6 +70,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "인물·조직",
     items: [
       { label: "캐릭터", keywords: "characters", icon: IconCharacter, href: "/erp/characters" },
+      { label: "캐릭터 인입", keywords: "character import", icon: IconCharacter, href: "/erp/admin/characters/import", minRole: "GM" },
       { label: "신원조회", keywords: "identity personnel", icon: IconMembers, href: "/erp/personnel" },
       { label: "명예의 전당", keywords: "hall of fame", icon: IconCrown, href: "/erp/hall-of-fame" },
     ],

@@ -1,0 +1,153 @@
+.import {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap, 16px);
+}
+
+@media (max-width: 960px) {
+  .import {
+    grid-template-columns: 1fr;
+  }
+}
+
+.import__col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.import__hint {
+  margin: 0;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.import__textarea {
+  width: 100%;
+  min-height: 460px;
+  padding: 12px;
+  background: var(--bg);
+  color: var(--ink-0);
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.import__textarea:focus {
+  outline: none;
+  border-color: var(--gold-dim);
+}
+
+.import__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+.import__previewField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.import__previewField:last-child {
+  border-bottom: none;
+}
+
+.import__previewLabel {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.import__previewValue {
+  color: var(--ink-0);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.import__empty {
+  margin: 0;
+  padding: 40px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.import__details {
+  margin-top: 6px;
+}
+
+.import__summary {
+  cursor: pointer;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.import__raw {
+  margin: 8px 0 0;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.import__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-top: 4px;
+}
+
+.import__codenameField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.import__codenameLabel {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.import__error {
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  background: rgba(192, 106, 90, 0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}

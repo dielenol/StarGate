@@ -68,10 +68,17 @@ export default function ERPSidebar() {
             return null;
           }
 
+          const visibleItems = group.items.filter(
+            (item) =>
+              !item.minRole || (role ? hasRole(role, item.minRole) : false),
+          );
+
+          if (visibleItems.length === 0) return null;
+
           return (
             <div key={group.key} className={styles.sidebar__group}>
               <div className={styles.sidebar__groupLabel}>{group.label}</div>
-              {group.items.map((item) => {
+              {visibleItems.map((item) => {
                 const active = isItemActive(item);
                 const disabled = item.href === null;
                 const Icon = item.icon;

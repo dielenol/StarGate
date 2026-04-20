@@ -35,7 +35,15 @@ export default function CommandK() {
     return NAV_GROUPS.filter(
       (group) =>
         !group.minRole || (role ? hasRole(role, group.minRole) : false),
-    );
+    )
+      .map((group) => ({
+        ...group,
+        items: group.items.filter(
+          (item) =>
+            !item.minRole || (role ? hasRole(role, item.minRole) : false),
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
   }, [role]);
 
   const filteredGroups = useMemo<NavGroup[]>(() => {
