@@ -1,13 +1,13 @@
 .toc {
   margin-bottom: 28px;
   padding: 9px 10px;
-  border: 1px solid rgba(197, 160, 89, 0.3);
-  background: rgba(5, 12, 16, 0.6);
+  border: 1px solid rgba(201, 168, 90, 0.3);
+  background: rgba(15, 15, 19, 0.6);
 }
 
 .toc__title {
   margin: 0 0 14px;
-  color: rgba(197, 160, 89, 0.9);
+  color: rgba(201, 168, 90, 0.9);
   font-size: var(--font-size-sm);
   font-weight: 700;
   letter-spacing: 2px;
@@ -31,7 +31,7 @@
 .toc__link {
   display: block;
   padding: 6px 0;
-  color: #b0c4de;
+  color: var(--ink-1);
   font-size: var(--font-size-sm);
   text-decoration: none;
   border-bottom: 1px solid transparent;
@@ -39,7 +39,7 @@
 }
 
 .toc__link:hover {
-  color: #f2d39b;
+  color: var(--gold);
 }
 
 @media (max-width: 767px) {

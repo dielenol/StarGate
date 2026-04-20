@@ -1,8 +1,8 @@
 .sheet {
-  border: 1px solid rgba(197, 160, 89, 0.4);
-  background: linear-gradient(180deg, rgba(197, 160, 89, 0.05), rgba(2, 8, 11, 0.85));
+  border: 1px solid rgba(201, 168, 90, 0.4);
+  background: linear-gradient(180deg, rgba(201, 168, 90, 0.05), rgba(15, 15, 19, 0.85));
   box-shadow:
-    inset 0 0 0 1px rgba(197, 160, 89, 0.1),
+    inset 0 0 0 1px rgba(201, 168, 90, 0.1),
     0 14px 30px rgba(0, 0, 0, 0.3);
   padding: 20px 16px;
   text-align: left;
@@ -21,10 +21,10 @@
 }
 
 .sheet__classification {
-  color: rgba(197, 160, 89, 0.65);
+  color: rgba(201, 168, 90, 0.65);
   font-size: var(--font-size-xs);
   letter-spacing: 3px;
-  border-bottom: 1px dashed rgba(197, 160, 89, 0.3);
+  border-bottom: 1px dashed rgba(201, 168, 90, 0.3);
   padding-bottom: 10px;
   margin-bottom: 16px;
 }
@@ -57,10 +57,10 @@
 .portrait {
   margin: 0;
   padding: 10px;
-  border: 1px solid rgba(197, 160, 89, 0.3);
+  border: 1px solid rgba(201, 168, 90, 0.3);
   background:
-    linear-gradient(180deg, rgba(197, 160, 89, 0.1), rgba(10, 16, 22, 0.7)),
-    rgba(8, 12, 16, 0.85);
+    linear-gradient(180deg, rgba(201, 168, 90, 0.1), rgba(15, 15, 19, 0.7)),
+    rgba(10, 10, 13, 0.85);
 }
 
 .portrait__image {
@@ -71,14 +71,14 @@
   aspect-ratio: 2 / 3;
   object-fit: cover;
   object-position: center top;
-  border: 1px solid rgba(197, 160, 89, 0.35);
+  border: 1px solid rgba(201, 168, 90, 0.35);
   filter: saturate(0.88) contrast(1.04);
 }
 
 .portrait__caption {
   margin-top: 8px;
   text-align: right;
-  color: rgba(197, 160, 89, 0.75);
+  color: rgba(201, 168, 90, 0.75);
   font-size: var(--font-size-xs);
   letter-spacing: 1.6px;
 }
@@ -86,13 +86,13 @@
 .voiceLog {
   margin: 0;
   padding: 14px;
-  border-left: 3px solid #c5a059;
-  background: rgba(197, 160, 89, 0.07);
+  border-left: 3px solid var(--gold);
+  background: rgba(201, 168, 90, 0.07);
 }
 
 .voiceLog__quote {
   margin: 0;
-  color: #f2d39b;
+  color: var(--gold);
   font-size: var(--font-size-md);
   line-height: 1.6;
   font-style: italic;
@@ -100,7 +100,7 @@
 
 .voiceLog__meta {
   margin-top: 8px;
-  color: #94a3b8;
+  color: var(--ink-2);
   font-size: var(--font-size-xs);
   letter-spacing: 1.5px;
 }
@@ -113,23 +113,23 @@
 }
 
 .identityTable td {
-  border: 1px solid rgba(197, 160, 89, 0.2);
+  border: 1px solid rgba(201, 168, 90, 0.2);
   padding: 12px 10px;
-  color: #d7e0eb;
+  color: var(--ink-1);
   font-size: var(--font-size-sm);
   vertical-align: top;
 }
 
 .identityTable__title {
-  background: rgba(197, 160, 89, 0.92);
-  color: #081014 !important;
+  background: rgba(201, 168, 90, 0.92);
+  color: var(--bg-1) !important;
   font-weight: 900;
   font-size: var(--font-size-lg) !important;
   letter-spacing: 1px;
 }
 
 .identityTable strong {
-  color: #f2d39b;
+  color: var(--gold);
 }
 
 .identityTable__item {
@@ -144,27 +144,27 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #f2d39b;
+  color: var(--gold);
   line-height: 1.2;
 }
 
 .identityTable__label::after {
   content: "|";
-  color: rgba(242, 211, 155, 0.78);
+  color: rgba(201, 168, 90, 0.78);
 }
 
 .identityTable__value {
   display: block;
-  color: #d7e0eb;
+  color: var(--ink-1);
   line-height: 1.5;
   word-break: keep-all;
 }
 
 .dossierPanel {
-  border: 1px solid rgba(197, 160, 89, 0.2);
+  border: 1px solid rgba(201, 168, 90, 0.2);
   background:
-    linear-gradient(180deg, rgba(197, 160, 89, 0.06), rgba(0, 0, 0, 0.2)),
-    rgba(6, 10, 14, 0.72);
+    linear-gradient(180deg, rgba(201, 168, 90, 0.06), rgba(0, 0, 0, 0.2)),
+    rgba(15, 15, 19, 0.72);
   padding: 12px;
 }
 
@@ -183,21 +183,21 @@
 .dossierItem {
   min-width: 0;
   padding: 10px;
-  border: 1px solid rgba(52, 73, 94, 0.9);
+  border: 1px solid var(--line-strong);
   background: rgba(0, 0, 0, 0.24);
 }
 
 .dossierItem__label {
   display: block;
   margin-bottom: 4px;
-  color: #9fb0c7;
+  color: var(--ink-2);
   font-size: var(--font-size-xs);
   letter-spacing: 1.2px;
 }
 
 .dossierItem__value {
   display: block;
-  color: #f2d39b;
+  color: var(--gold);
   font-size: var(--font-size-sm);
   line-height: 1.5;
   word-break: keep-all;
@@ -216,7 +216,7 @@
 
 .dossierStat {
   padding: 10px 8px;
-  border: 1px solid rgba(197, 160, 89, 0.18);
+  border: 1px solid rgba(201, 168, 90, 0.18);
   background: rgba(255, 255, 255, 0.03);
   text-align: center;
 }
@@ -224,14 +224,14 @@
 .dossierStat__label {
   display: block;
   margin-bottom: 4px;
-  color: #9fb0c7;
+  color: var(--ink-2);
   font-size: var(--font-size-xs);
   letter-spacing: 1px;
 }
 
 .dossierStat__value {
   display: block;
-  color: #ffffff;
+  color: var(--ink-0);
   font-size: var(--font-size-base);
   font-weight: 800;
 }
@@ -246,9 +246,9 @@
 .bioBlock__title {
   margin: 0 0 8px;
   display: inline-block;
-  color: #ffffff;
-  background: rgba(197, 160, 89, 0.2);
-  border-left: 3px solid #c5a059;
+  color: var(--ink-0);
+  background: rgba(201, 168, 90, 0.2);
+  border-left: 3px solid var(--gold);
   padding: 4px 12px;
   font-size: var(--font-size-sm);
 }
@@ -256,9 +256,9 @@
 .bioBlock__body {
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid rgba(52, 73, 94, 0.9);
+  border: 1px solid var(--line-strong);
   background: rgba(0, 0, 0, 0.28);
-  color: #d7e0eb;
+  color: var(--ink-1);
   font-size: var(--font-size-sm);
   line-height: 1.8;
   white-space: pre-line;
@@ -274,10 +274,10 @@
 .equipmentSection__title,
 .abilitySection__title {
   margin: 0 0 10px;
-  color: #f2d39b;
+  color: var(--gold);
   font-size: var(--font-size-md);
   letter-spacing: 1px;
-  border-bottom: 1px solid rgba(197, 160, 89, 0.45);
+  border-bottom: 1px solid rgba(201, 168, 90, 0.45);
   padding-bottom: 8px;
 }
 
@@ -285,14 +285,14 @@
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
-  border: 1px solid #34495e;
+  border: 1px solid var(--line-strong);
   background: rgba(0, 0, 0, 0.45);
 }
 
 .statsTable td {
-  border: 1px solid #34495e;
+  border: 1px solid var(--line-strong);
   padding: 12px 10px;
-  color: #d7e0eb;
+  color: var(--ink-1);
   font-size: var(--font-size-sm);
 }
 
@@ -302,7 +302,7 @@
 }
 
 .statsTable__class span {
-  color: #9fb0c7;
+  color: var(--ink-2);
 }
 
 .statsTable__statRow {
@@ -343,7 +343,7 @@
 
 .statsTable__value {
   display: block;
-  color: #ffffff;
+  color: var(--ink-0);
   font-size: 22px;
   font-weight: 900;
   line-height: 1;
@@ -351,7 +351,7 @@
 }
 
 .statsTable strong {
-  color: #f2d39b;
+  color: var(--gold);
 }
 
 .statsTable__metaLine + .statsTable__metaLine {
@@ -379,7 +379,7 @@
 }
 
 .equipmentTable td {
-  color: #e2e8f0;
+  color: var(--ink-1);
 }
 
 .abilityList {
@@ -413,7 +413,7 @@
 
 .abilityCard p {
   margin: 0 0 4px;
-  color: #e2e8f0;
+  color: var(--ink-1);
   font-size: var(--font-size-sm);
   line-height: 1.7;
 }

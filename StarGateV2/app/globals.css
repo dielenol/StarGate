@@ -8,6 +8,44 @@
   --font-size-lg: 24px;
   --font-size-hero: clamp(30px, 4.5vw, 44px);
   --font-size-hero-sub: 16px;
+
+  /* NOVUS ORDO — color tokens (dark + gold, Delta Green/SCP 톤) */
+  --bg: #0a0a0d;
+  --bg-1: #0f0f13;
+  --bg-2: #15151a;
+  --bg-3: #1c1c22;
+  --ink-0: #f1ecdc;
+  --ink-1: #c9c4b4;
+  --ink-2: #878273;
+  --ink-3: #5a5748;
+  --muted: #6b6758;
+  --gold: #c9a85a;
+  --gold-dim: #8a7840;
+  --line: #2a2a32;
+  --line-strong: #3a3a44;
+  --info: #6a87a8;
+  --success: #7aa883;
+  --danger: #c06a5a;
+  --p0: #c06a5a;
+  --p1: #c9a85a;
+  --p2: #6a87a8;
+
+  /* 폰트 변수 — next/font 가 --font-mono / --font-body 로 주입 */
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-body: "Noto Sans KR", "Inter", "Pretendard", "Apple SD Gothic Neo",
+    sans-serif;
+
+  /* 간격 / 레이아웃 */
+  --gap: 18px;
+  --pad: 18px;
+  --radius: 0px;
+  --sidebar-w: 232px;
+  --topbar-h: 56px;
+}
+
+[data-density="compact"] {
+  --gap: 12px;
+  --pad: 12px;
 }
 
 * {
@@ -22,6 +60,16 @@ body {
 
 body {
   min-height: 100vh;
-  background: #050808;
-  font-family: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  background: var(--bg);
+  color: var(--ink-1);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.012) 0 1px,
+      transparent 1px 3px
+    ),
+    radial-gradient(circle at 10% 0%, rgba(201, 168, 90, 0.04), transparent 50%);
 }

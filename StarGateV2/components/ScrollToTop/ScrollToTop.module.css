@@ -6,9 +6,9 @@
   z-index: 60;
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(197, 160, 89, 0.5);
-  background: rgba(13, 27, 30, 0.9);
-  color: #c5a059;
+  border: 1px solid rgba(201, 168, 90, 0.5);
+  background: rgba(15, 15, 19, 0.9);
+  color: var(--gold);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -29,9 +29,9 @@
 }
 
 .button:hover {
-  border-color: rgba(197, 160, 89, 0.72);
-  background: rgba(18, 36, 39, 0.95);
-  color: #fff;
+  border-color: rgba(201, 168, 90, 0.72);
+  background: rgba(28, 28, 34, 0.95);
+  color: var(--ink-0);
   transform: translateY(-2px);
 }
 

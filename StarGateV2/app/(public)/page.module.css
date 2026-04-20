@@ -3,19 +3,19 @@
 }
 
 .stargate {
-  border: 1px solid #34495e;
+  border: 1px solid var(--line-strong);
   max-width: 800px;
   margin: 0 auto;
   padding: 10px;
-  background-color: #0d1b1e;
+  background-color: var(--bg-1);
   height: auto;
   overflow: visible;
 }
 
 .stargate__frame {
-  border: 4px double #c5a059;
+  border: 4px double var(--gold);
   padding: 50px 20px;
-  background-color: #0d1b1e;
+  background-color: var(--bg-1);
   text-align: center;
   height: auto;
   overflow: visible;
@@ -23,7 +23,7 @@
 
 .stargate__classification {
   margin-bottom: 40px;
-  color: rgba(197, 160, 89, 0.5);
+  color: rgba(201, 168, 90, 0.5);
   font-size: var(--font-size-xs);
   letter-spacing: 3px;
 }
@@ -36,20 +36,20 @@
 
 .stargate__logo-box {
   display: inline-block;
-  border: 1px solid #c5a059;
+  border: 1px solid var(--gold);
   padding: 12px;
   background-color: #000;
   box-shadow:
     0 0 30px rgba(0, 0, 0, 0.8),
-    inset 0 0 10px rgba(197, 160, 89, 0.2);
+    inset 0 0 10px rgba(201, 168, 90, 0.2);
 }
 
 .stargate__logo-placeholder {
-  color: #c5a059;
+  color: var(--gold);
   font-size: 13px;
   margin: 0;
   padding: 30px 60px;
-  border: 1px dashed rgba(197, 160, 89, 0.5);
+  border: 1px dashed rgba(201, 168, 90, 0.5);
   text-align: center;
 }
 
@@ -71,8 +71,8 @@
 
 .stargate__est {
   display: inline-block;
-  background-color: #c5a059;
-  color: #0d1b1e;
+  background-color: var(--gold);
+  color: var(--bg-1);
   padding: 2px 15px;
   font-size: var(--font-size-badge);
   font-weight: bold;
@@ -81,7 +81,7 @@
 }
 
 .stargate__title {
-  color: #fff;
+  color: var(--ink-0);
   font-size: 42px;
   margin: 10px 0;
   font-weight: 900;
@@ -92,7 +92,7 @@
 }
 
 .stargate__ornament {
-  color: #c5a059;
+  color: var(--gold);
   margin: 10px 0;
   display: inline-flex;
   align-items: center;
@@ -105,7 +105,7 @@
 }
 
 .stargate__intro-text {
-  color: #fff;
+  color: var(--ink-0);
   font-size: 19px;
   line-height: 1.8;
   word-break: keep-all;
@@ -113,16 +113,16 @@
 }
 
 .stargate__highlight-underline {
-  color: #c5a059;
+  color: var(--gold);
   font-weight: bold;
-  border-bottom: 2px solid #c5a059;
+  border-bottom: 2px solid var(--gold);
   padding-bottom: 2px;
 }
 
 .stargate__divider {
   width: 80%;
   height: 1px;
-  background: linear-gradient(to right, transparent, #c5a059, transparent);
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
   margin: 0 auto 50px;
   opacity: 0.5;
 }
@@ -132,14 +132,14 @@
 }
 
 .stargate__about-text {
-  color: #b0c4de;
+  color: var(--ink-1);
   font-size: 16px;
   line-height: 2;
   word-break: keep-all;
 }
 
 .stargate__about-count {
-  color: #fff;
+  color: var(--ink-0);
   font-weight: bold;
 }
 
@@ -158,12 +158,12 @@
 .stargate__archive-summary {
   list-style: none;
   display: block;
-  color: #c5a059;
-  border: 1px solid #c5a059;
+  color: var(--gold);
+  border: 1px solid var(--gold);
   padding: 15px 25px;
   font-size: 15px;
   font-weight: bold;
-  background-color: rgba(197, 160, 89, 0.08);
+  background-color: rgba(201, 168, 90, 0.08);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
@@ -189,9 +189,9 @@
 .stargate__archive-content {
   background-color: rgba(0, 0, 0, 0.4);
   padding: 30px 25px;
-  border: 1px solid rgba(197, 160, 89, 0.4);
+  border: 1px solid rgba(201, 168, 90, 0.4);
   border-top: none;
-  color: #d0d0d0;
+  color: var(--ink-1);
   font-size: 15px;
   line-height: 2.2;
   text-align: center;
@@ -200,28 +200,28 @@
 }
 
 .stargate__archive-highlight {
-  color: #fff;
-  background-color: rgba(197, 160, 89, 0.2);
+  color: var(--ink-0);
+  background-color: rgba(201, 168, 90, 0.2);
   padding: 2px 5px;
 }
 
 .stargate__archive-emphasis {
-  color: #fff;
+  color: var(--ink-0);
   font-weight: bold;
   font-size: 17px;
-  text-shadow: 0 0 10px #c5a059;
+  text-shadow: 0 0 10px var(--gold);
 }
 
 .stargate__leadership {
   margin-top: 60px;
   padding-top: 60px;
-  border-top: 1px solid rgba(197, 160, 89, 0.3);
-  background: linear-gradient(to bottom, rgba(197, 160, 89, 0.05), transparent);
+  border-top: 1px solid rgba(201, 168, 90, 0.3);
+  background: linear-gradient(to bottom, rgba(201, 168, 90, 0.05), transparent);
 }
 
 .stargate__leadership-label {
   letter-spacing: 8px;
-  color: #c5a059;
+  color: var(--gold);
   font-size: 13px;
   font-weight: bold;
   margin-bottom: 40px;
@@ -235,24 +235,24 @@
 
 .stargate__profile-frame {
   display: inline-block;
-  border: 1px solid #c5a059;
+  border: 1px solid var(--gold);
   padding: 5px;
-  background-color: #0d1b1e;
+  background-color: var(--bg-1);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
 .stargate__profile-inner {
-  border: 1px solid rgba(197, 160, 89, 0.3);
+  border: 1px solid rgba(201, 168, 90, 0.3);
   padding: 10px;
   background-color: #000;
 }
 
 .stargate__profile-placeholder {
-  color: #c5a059;
+  color: var(--gold);
   font-size: 12px;
   margin: 0;
   padding: 10px 15px;
-  border: 1px dashed rgba(197, 160, 89, 0.4);
+  border: 1px dashed rgba(201, 168, 90, 0.4);
 }
 
 .stargate__profile-caption {
@@ -266,7 +266,7 @@
 }
 
 .stargate__name-ko {
-  color: #fff;
+  color: var(--ink-0);
   font-size: 30px;
   margin: 0;
   font-weight: 800;
@@ -275,7 +275,7 @@
 }
 
 .stargate__name-en {
-  color: #c5a059;
+  color: var(--gold);
   font-size: 15px;
   margin-top: 8px;
   letter-spacing: 2px;
@@ -283,7 +283,7 @@
 }
 
 .stargate__position {
-  color: #94a3b8;
+  color: var(--ink-2);
   font-size: 14px;
   margin-top: 10px;
   background-color: rgba(255, 255, 255, 0.05);
@@ -296,8 +296,8 @@
   max-width: 600px;
   margin: 0 auto 50px;
   padding: 40px 30px;
-  border-top: 1px solid #c5a059;
-  border-bottom: 1px solid #c5a059;
+  border-top: 1px solid var(--gold);
+  border-bottom: 1px solid var(--gold);
   background-color: rgba(0, 0, 0, 0.2);
   position: relative;
 }
@@ -307,9 +307,9 @@
   top: -15px;
   left: 50%;
   margin-left: -15px;
-  background-color: #0d1b1e;
+  background-color: var(--bg-1);
   width: 30px;
-  color: #c5a059;
+  color: var(--gold);
   font-size: 30px;
   line-height: 1;
 }
@@ -319,15 +319,15 @@
   bottom: -20px;
   left: 50%;
   margin-left: -15px;
-  background-color: #0d1b1e;
+  background-color: var(--bg-1);
   width: 30px;
-  color: #c5a059;
+  color: var(--gold);
   font-size: 30px;
   line-height: 1;
 }
 
 .stargate__quote-text {
-  color: #fff;
+  color: var(--ink-0);
   font-size: 19px;
   line-height: 1.9;
   font-style: italic;
@@ -337,13 +337,13 @@
 }
 
 .stargate__quote-highlight {
-  color: #c5a059;
+  color: var(--gold);
   font-weight: bold;
 }
 
 .stargate__bio {
   text-align: center;
-  color: #e2e8f0;
+  color: var(--ink-1);
   font-size: 16px;
   line-height: 2;
   max-width: 680px;
@@ -358,26 +358,26 @@
 }
 
 .stargate__bio-emphasis {
-  color: #c5a059;
+  color: var(--gold);
   font-weight: bold;
 }
 
 .stargate__pandemic-box {
-  background-color: rgba(255, 207, 125, 0.05);
+  background-color: rgba(201, 168, 90, 0.05);
   padding: 25px;
-  border: 1px solid rgba(255, 207, 125, 0.2);
+  border: 1px solid rgba(201, 168, 90, 0.2);
   margin-bottom: 30px;
 }
 
 .stargate__pandemic-text {
   margin: 0;
-  color: #cbd5e1;
+  color: var(--ink-1);
 }
 
 .stargate__pandemic-highlight {
-  color: #ffcf7d;
+  color: var(--gold);
   font-weight: bold;
-  text-shadow: 0 0 10px rgba(255, 207, 125, 0.4);
+  text-shadow: 0 0 10px rgba(201, 168, 90, 0.4);
 }
 
 .stargate__protocol-wrap {
@@ -395,12 +395,12 @@
 .stargate__protocol-summary {
   list-style: none;
   display: block;
-  color: #64748b;
+  color: var(--ink-3);
   font-size: 12px;
   font-weight: bold;
   letter-spacing: 2px;
   padding: 10px;
-  border: 1px solid rgba(100, 116, 139, 0.3);
+  border: 1px solid var(--line);
 }
 
 .stargate__protocol-summary-icon {
@@ -425,25 +425,25 @@
 .stargate__protocol-content {
   margin-top: 0;
   padding: 25px;
-  background-color: #050808;
-  border: 1px solid rgba(100, 116, 139, 0.3);
+  background-color: var(--bg);
+  border: 1px solid var(--line);
   border-top: none;
   font-size: 14px;
-  color: #94a3b8;
+  color: var(--ink-2);
   text-align: left;
   line-height: 2;
 }
 
 .stargate__protocol-title {
-  color: #c5a059;
+  color: var(--gold);
   font-weight: bold;
   margin-bottom: 10px;
-  border-bottom: 1px solid rgba(197, 160, 89, 0.2);
+  border-bottom: 1px solid rgba(201, 168, 90, 0.2);
   padding-bottom: 5px;
 }
 
 .stargate__protocol-item {
-  color: #e2e8f0;
+  color: var(--ink-1);
 }
 
 .stargate__cta-row {
@@ -462,23 +462,23 @@
 }
 
 .stargate__cta-outer {
-  background-color: #1a2a2c;
-  border: 2px solid #c5a059;
+  background-color: var(--bg-2);
+  border: 2px solid var(--gold);
   padding: 2px;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
 }
 
 .stargate__cta-inner {
-  border: 1px solid rgba(197, 160, 89, 0.3);
+  border: 1px solid rgba(201, 168, 90, 0.3);
   padding: 20px 10px;
   position: relative;
-  background: linear-gradient(135deg, #1a2a2c 0%, #0d1b1e 100%);
+  background: linear-gradient(135deg, var(--bg-2) 0%, var(--bg-1) 100%);
 }
 
 .stargate__cta-icon {
-  color: #c5a059;
+  color: var(--gold);
   margin-bottom: 5px;
-  text-shadow: 0 0 10px rgba(197, 160, 89, 0.5);
+  text-shadow: 0 0 10px rgba(201, 168, 90, 0.5);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -490,14 +490,14 @@
 }
 
 .stargate__cta-title {
-  color: #fff;
+  color: var(--ink-0);
   font-size: 16px;
   font-weight: bold;
   letter-spacing: 2px;
 }
 
 .stargate__cta-subtitle {
-  color: #c5a059;
+  color: var(--gold);
   font-size: 10px;
   margin-top: 5px;
   letter-spacing: 1px;
@@ -507,18 +507,18 @@
 .stargate__footer {
   margin-top: 100px;
   padding-top: 30px;
-  border-top: 1px double rgba(197, 160, 89, 0.3);
+  border-top: 1px double rgba(201, 168, 90, 0.3);
 }
 
 .stargate__footer-property {
-  color: #4a5568;
+  color: var(--ink-3);
   font-size: 10px;
   letter-spacing: 5px;
   margin-bottom: 10px;
 }
 
 .stargate__footer-archive {
-  color: #c5a059;
+  color: var(--gold);
   font-size: 12px;
   font-weight: bold;
   letter-spacing: 2px;
@@ -535,7 +535,7 @@
 
 .stargate__footer-mark {
   margin-top: 20px;
-  color: #2c3e50;
+  color: var(--muted);
   display: flex;
   align-items: center;
   justify-content: center;

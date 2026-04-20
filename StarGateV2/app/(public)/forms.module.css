@@ -3,16 +3,16 @@
   max-width: 720px;
   margin: 0 auto;
   padding: 32px 16px 64px;
-  color: #e2e8f0;
+  color: var(--ink-1);
 }
 
 .form-page__title {
-  color: #fff;
+  color: var(--ink-0);
   margin-bottom: 8px;
 }
 
 .form-page__description {
-  color: #94a3b8;
+  color: var(--ink-2);
   line-height: 25px;
   margin-top: 0;
   margin-bottom: 24px;
@@ -21,7 +21,7 @@
 .form-page__description-emphasis {
   display: inline-block;
   margin-top: 8px;
-  color: #f8d38d;
+  color: var(--gold);
   font-weight: 700;
 }
 
@@ -29,15 +29,15 @@
   display: grid;
   gap: 14px;
   padding: 20px;
-  border: 1px solid rgba(197, 160, 89, 0.4);
-  background: rgba(13, 27, 30, 0.85);
+  border: 1px solid rgba(201, 168, 90, 0.4);
+  background: rgba(15, 15, 19, 0.85);
 }
 
 .form-page__label {
   display: block;
   text-align: left;
   font-size: 14px;
-  color: #c5a059;
+  color: var(--gold);
   font-weight: 700;
 }
 
@@ -45,9 +45,9 @@
 .form-page__textarea {
   width: 100%;
   margin-top: 6px;
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  background: #0b1214;
-  color: #fff;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-2);
+  color: var(--ink-0);
   padding: 10px 12px;
   font-size: 14px;
 }
@@ -64,9 +64,9 @@
 }
 
 .form-page__button {
-  border: 1px solid #c5a059;
-  background: #1a2a2c;
-  color: #fff;
+  border: 1px solid var(--gold);
+  background: var(--bg-2);
+  color: var(--ink-0);
   font-weight: 700;
   padding: 10px 16px;
   cursor: pointer;
@@ -77,17 +77,17 @@
 }
 
 .form-page__message--error {
-  color: #fca5a5;
+  color: var(--danger);
 }
 
 .form-page__message--success {
-  color: #86efac;
+  color: var(--success);
 }
 
 .form-page__back {
   display: inline-block;
   margin-top: 18px;
-  color: #c5a059;
+  color: var(--gold);
 }
 
 .form-page__success-overlay {
@@ -98,40 +98,40 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(2, 8, 11, 0.82);
+  background: rgba(10, 10, 13, 0.82);
   backdrop-filter: blur(6px);
 }
 
 .form-page__success-panel {
   width: min(100%, 520px);
   padding: 24px 22px;
-  border: 1px solid rgba(197, 160, 89, 0.45);
+  border: 1px solid rgba(201, 168, 90, 0.45);
   background:
-    linear-gradient(180deg, rgba(197, 160, 89, 0.08), rgba(0, 0, 0, 0.3)),
-    rgba(7, 15, 18, 0.96);
+    linear-gradient(180deg, rgba(201, 168, 90, 0.08), rgba(0, 0, 0, 0.3)),
+    rgba(15, 15, 19, 0.96);
   box-shadow:
-    inset 0 0 0 1px rgba(197, 160, 89, 0.12),
+    inset 0 0 0 1px rgba(201, 168, 90, 0.12),
     0 20px 48px rgba(0, 0, 0, 0.45);
   text-align: center;
 }
 
 .form-page__success-badge {
   margin-bottom: 12px;
-  color: #f2d39b;
+  color: var(--ink-0);
   font-size: var(--font-size-xs);
   letter-spacing: 2px;
 }
 
 .form-page__success-title {
   margin: 0 0 10px;
-  color: #ffffff;
+  color: var(--ink-0);
   font-size: clamp(22px, 3vw, 28px);
 }
 
 .form-page__success-description {
   margin: 0 auto 18px;
   max-width: 36ch;
-  color: #b7c6d9;
+  color: var(--ink-1);
   line-height: 1.7;
 }
 
@@ -140,15 +140,15 @@
   display: grid;
   gap: 4px;
   justify-items: center;
-  border: 1px solid rgba(197, 160, 89, 0.55);
+  border: 1px solid rgba(201, 168, 90, 0.55);
   padding: 16px 14px;
   background:
-    linear-gradient(135deg, rgba(26, 42, 44, 0.96), rgba(13, 27, 30, 0.98));
+    linear-gradient(135deg, rgba(28, 28, 34, 0.96), rgba(15, 15, 19, 0.98));
   box-shadow:
-    inset 0 0 0 1px rgba(197, 160, 89, 0.15),
+    inset 0 0 0 1px rgba(201, 168, 90, 0.15),
     0 10px 24px rgba(0, 0, 0, 0.28);
   cursor: pointer;
-  color: #fff;
+  color: var(--ink-0);
   transition:
     transform 0.18s ease,
     border-color 0.18s ease,
@@ -157,19 +157,19 @@
 
 .form-page__success-cta:hover {
   transform: translateY(-1px);
-  border-color: rgba(242, 211, 155, 0.82);
+  border-color: rgba(201, 168, 90, 0.82);
   box-shadow:
-    inset 0 0 0 1px rgba(242, 211, 155, 0.2),
+    inset 0 0 0 1px rgba(201, 168, 90, 0.2),
     0 12px 28px rgba(0, 0, 0, 0.32);
 }
 
 .form-page__success-cta:focus-visible {
-  outline: 2px solid rgba(242, 211, 155, 0.72);
+  outline: 2px solid rgba(201, 168, 90, 0.72);
   outline-offset: 2px;
 }
 
 .form-page__success-cta-icon {
-  color: #c5a059;
+  color: var(--gold);
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -182,14 +182,14 @@
 }
 
 .form-page__success-cta-title {
-  color: #ffffff;
+  color: var(--ink-0);
   font-size: var(--font-size-base);
   font-weight: 700;
   letter-spacing: 1px;
 }
 
 .form-page__success-cta-subtitle {
-  color: #c5a059;
+  color: var(--gold);
   font-size: var(--font-size-xs);
   letter-spacing: 1.2px;
   opacity: 0.85;

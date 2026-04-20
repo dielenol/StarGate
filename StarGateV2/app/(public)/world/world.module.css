@@ -8,12 +8,12 @@
   width: min(65vw, 360px);
   height: auto;
   margin: 0 auto 20px;
-  filter: drop-shadow(0 0 28px rgba(197, 160, 89, 0.2));
+  filter: drop-shadow(0 0 28px rgba(201, 168, 90, 0.2));
 }
 
 .hero__title {
   margin: 0;
-  color: #ffffff;
+  color: var(--ink-0);
   font-size: var(--font-size-hero);
   letter-spacing: 1px;
   font-weight: 900;
@@ -21,7 +21,7 @@
 
 .hero__quote {
   margin: 12px 0 0;
-  color: #c5a059;
+  color: var(--gold);
   font-size: var(--font-size-hero-sub);
   line-height: 1.7;
 }
@@ -32,11 +32,11 @@
 }
 
 .entry {
-  border: 1px solid rgba(197, 160, 89, 0.35);
-  background: rgba(1, 7, 9, 0.75);
+  border: 1px solid rgba(201, 168, 90, 0.35);
+  background: rgba(10, 10, 13, 0.75);
   box-shadow:
     0 12px 28px rgba(0, 0, 0, 0.35),
-    inset 0 0 0 1px rgba(197, 160, 89, 0.12);
+    inset 0 0 0 1px rgba(201, 168, 90, 0.12);
   scroll-margin-top: 24px;
 }
 
@@ -44,13 +44,13 @@
   display: block;
   width: 100%;
   height: auto;
-  border-bottom: 1px solid rgba(197, 160, 89, 0.25);
+  border-bottom: 1px solid rgba(201, 168, 90, 0.25);
 }
 
 .entry__text {
   margin: 0;
   padding: 26px 24px 30px;
-  color: #d8e0ea;
+  color: var(--ink-1);
   font-size: var(--font-size-base);
   line-height: 1.95;
   text-align: left;
@@ -58,17 +58,17 @@
 }
 
 .entry__text strong {
-  color: #f2d39b;
+  color: var(--gold);
   font-weight: 800;
 }
 
 .emph {
-  color: #f2d39b;
+  color: var(--gold);
   font-weight: 800;
 }
 
 .warn {
-  color: #fda4af;
+  color: var(--danger);
   font-weight: 800;
 }
 

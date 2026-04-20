@@ -1,6 +1,22 @@
 import type { Metadata } from "next";
 
+import { JetBrains_Mono, Noto_Sans_KR } from "next/font/google";
+
 import "./globals.css";
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
+const notoSansKr = Noto_Sans_KR({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 // metadataBase 경고를 제거하고 환경별 절대 URL 기준을 고정합니다.
 // 우선순위:
@@ -15,8 +31,7 @@ const metadataBase = process.env.NEXT_PUBLIC_SITE_URL
 
 export const metadata: Metadata = {
   title: "NOVUS ORDO",
-  description:
-    "노부스 오르도에 오신 것을 환영합니다.",
+  description: "노부스 오르도에 오신 것을 환영합니다.",
   metadataBase,
   // 공유 미리보기에서 페이지 본문 이미지를 임의로 집어오지 않도록
   // OG/Twitter 이미지를 로고로 명시적으로 고정합니다.
@@ -49,7 +64,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html
+      lang="ko"
+      className={`${jetbrainsMono.variable} ${notoSansKr.variable}`}
+    >
       <body>{children}</body>
     </html>
   );
