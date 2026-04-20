@@ -136,6 +136,9 @@ interface CharacterBase {
   previewImage: string;
   pixelCharacterImage?: string;
   warningVideo?: string;
+  source?: 'discord' | 'legacy-json' | 'manual';
+  lore?: string;
+  rawText?: string;
   ownerId: string | null;
   isPublic: boolean;
   createdAt: Date;

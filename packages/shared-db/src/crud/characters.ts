@@ -95,6 +95,9 @@ const ALLOWED_CHARACTER_FIELDS = new Set([
   "warningVideo",
   "ownerId",
   "isPublic",
+  "source",
+  "lore",
+  "rawText",
   "sheet",
 ]);
 
