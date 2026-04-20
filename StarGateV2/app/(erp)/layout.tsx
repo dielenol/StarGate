@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth/config";
 import SessionWrapper from "@/components/erp/SessionWrapper";
 import QueryProvider from "@/components/erp/QueryProvider";
 import ERPSidebar from "@/components/erp/ERPSidebar/ERPSidebar";
+import CommandK from "@/components/erp/CommandK/CommandK";
 
 import styles from "./layout.module.css";
 import ERPHeader from "./ERPHeader";
@@ -21,14 +22,15 @@ export default async function ERPLayout({
   }
 
   return (
-    <SessionWrapper>
+    <SessionWrapper session={session}>
       <QueryProvider>
         <div className={styles.erp}>
-          <ERPSidebar />
-          <div className={styles.erp__content}>
-            <ERPHeader user={session.user} />
+          <ERPHeader user={session.user} />
+          <div className={styles.erp__body}>
+            <ERPSidebar />
             <main className={styles.erp__main}>{children}</main>
           </div>
+          <CommandK />
         </div>
       </QueryProvider>
     </SessionWrapper>

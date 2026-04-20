@@ -1,125 +1,138 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 
-import { resolvePublicAssetPath } from "@/lib/asset-path";
 import { hasRole } from "@/lib/auth/rbac";
 
-import type { IconComponent } from "@/components/icons";
-import PermissionGate from "@/components/erp/PermissionGate/PermissionGate";
-import {
-  IconCharacter,
-  IconChevronLeft,
-  IconCredit,
-  IconDashboard,
-  IconEquipment,
-  IconMembers,
-  IconNotification,
-  IconProfile,
-  IconSession,
-  IconUserAdmin,
-  IconWiki,
-} from "@/components/icons";
+import type { NavItem } from "@/components/erp/nav-config";
+import { NAV_GROUPS } from "@/components/erp/nav-config";
+import { IconChevronLeft } from "@/components/icons";
 
 import styles from "./ERPSidebar.module.css";
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: IconComponent;
-}
-
-const MAIN_NAV_ITEMS: NavItem[] = [
-  { href: "/erp", label: "대시보드", icon: IconDashboard },
-  { href: "/erp/sessions", label: "세션", icon: IconSession },
-  { href: "/erp/characters", label: "캐릭터", icon: IconCharacter },
-  { href: "/erp/personnel", label: "신원 조회", icon: IconMembers },
-  { href: "/erp/wiki", label: "위키", icon: IconWiki },
-  { href: "/erp/credits", label: "크레딧", icon: IconCredit },
-  { href: "/erp/inventory", label: "장비", icon: IconEquipment },
-  { href: "/erp/notifications", label: "알림", icon: IconNotification },
-  { href: "/erp/profile", label: "프로필", icon: IconProfile },
-];
-
-const ADMIN_NAV_ITEMS: NavItem[] = [
-  { href: "/erp/admin/users", label: "사용자 관리", icon: IconUserAdmin },
-  { href: "/erp/admin/members", label: "멤버 관리", icon: IconMembers },
-];
+const SIDEBAR_OPEN_EVENT = "no:sidebar-open";
 
 export default function ERPSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
 
-  const logoSrc = resolvePublicAssetPath("/assets/StarGate_logo.png");
+  const [isOpen, setIsOpen] = useState(false);
 
-  function isActive(href: string): boolean {
-    if (href === "/erp") return pathname === "/erp";
-    return pathname.startsWith(href);
+  const close = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  useEffect(() => {
+    function handleOpen() {
+      setIsOpen(true);
+    }
+
+    window.addEventListener(SIDEBAR_OPEN_EVENT, handleOpen);
+
+    return () => {
+      window.removeEventListener(SIDEBAR_OPEN_EVENT, handleOpen);
+    };
+  }, []);
+
+  function isItemActive(item: NavItem): boolean {
+    if (!item.href) return false;
+    if (item.href === "/erp") return pathname === "/erp";
+    return pathname.startsWith(item.href);
   }
 
+  const role = session?.user?.role;
+
   return (
-    <aside className={styles.sidebar}>
-      <div className={styles.sidebar__header}>
-        <Link href="/erp" className={styles.sidebar__logo}>
-          <Image
-            className={styles["sidebar__logo-image"]}
-            src={logoSrc}
-            alt="NOVUS ORDO"
-            width={32}
-            height={32}
-          />
-          <span className={styles["sidebar__logo-text"]}>
-            <span className={styles["sidebar__logo-title"]}>NOVUS ORDO</span>
-            <span className={styles["sidebar__logo-badge"]}>ERP SYSTEM</span>
-          </span>
-        </Link>
-      </div>
+    <>
+      <div
+        className={[
+          styles.sidebar__backdrop,
+          isOpen ? styles["sidebar__backdrop--open"] : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        onClick={close}
+        aria-hidden
+      />
+      <aside
+        className={[styles.sidebar, isOpen ? styles["sidebar--open"] : ""]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        {NAV_GROUPS.map((group) => {
+          if (group.minRole && (!role || !hasRole(role, group.minRole))) {
+            return null;
+          }
 
-      <nav className={styles.sidebar__nav}>
-        <div className={styles.sidebar__section}>
-          <div className={styles["sidebar__section-title"]}>MENU</div>
-          {MAIN_NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`${styles.sidebar__item} ${isActive(item.href) ? styles["sidebar__item--active"] : ""}`}
-            >
-              <span className={styles["sidebar__item-icon"]}>
-                <item.icon aria-hidden />
-              </span>
-              {item.label}
-            </Link>
-          ))}
+          return (
+            <div key={group.key} className={styles.sidebar__group}>
+              <div className={styles.sidebar__groupLabel}>{group.label}</div>
+              {group.items.map((item) => {
+                const active = isItemActive(item);
+                const disabled = item.href === null;
+                const Icon = item.icon;
+
+                if (disabled) {
+                  return (
+                    <span
+                      key={`${group.key}-${item.label}`}
+                      className={[
+                        styles.sidebar__item,
+                        styles["sidebar__item--disabled"],
+                      ].join(" ")}
+                      aria-disabled
+                    >
+                      <span className={styles.sidebar__itemLeft}>
+                        <span className={styles.sidebar__icon} aria-hidden>
+                          <Icon />
+                        </span>
+                        <span className={styles.sidebar__itemLabel}>
+                          {item.label}
+                        </span>
+                      </span>
+                      <span className={styles.sidebar__badge}>준비중</span>
+                    </span>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={`${group.key}-${item.label}`}
+                    href={item.href as string}
+                    className={[
+                      styles.sidebar__item,
+                      active ? styles["sidebar__item--active"] : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={close}
+                  >
+                    <span className={styles.sidebar__itemLeft}>
+                      <span className={styles.sidebar__icon} aria-hidden>
+                        <Icon />
+                      </span>
+                      <span className={styles.sidebar__itemLabel}>
+                        {item.label}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          );
+        })}
+
+        <div className={styles.sidebar__footer}>
+          <Link href="/" className={styles.sidebar__return}>
+            <IconChevronLeft aria-hidden />
+            홍보 사이트로 돌아가기
+          </Link>
         </div>
-
-        <PermissionGate minRole="ADMIN">
-          <div className={styles.sidebar__section}>
-            <div className={styles["sidebar__section-title"]}>ADMIN</div>
-            {ADMIN_NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`${styles.sidebar__item} ${isActive(item.href) ? styles["sidebar__item--active"] : ""}`}
-              >
-                <span className={styles["sidebar__item-icon"]}>
-                  <item.icon aria-hidden />
-                </span>
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </PermissionGate>
-      </nav>
-
-      <div className={styles.sidebar__footer}>
-        <Link href="/" className={styles.sidebar__return}>
-          <IconChevronLeft aria-hidden />
-          홍보 사이트로 돌아가기
-        </Link>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
