@@ -166,5 +166,45 @@ export async function ensureAllIndexes(): Promise<void> {
         name: "registrar_user_tips_guild_user_tip_unique",
       },
     ),
+
+    /* ── factions (lore schemas) ── */
+    db.collection("factions").createIndexes([
+      {
+        key: { code: 1 },
+        name: "factions_code_unique",
+        unique: true,
+      },
+      {
+        key: { slug: 1 },
+        name: "factions_slug_unique",
+        unique: true,
+      },
+      {
+        key: { isPublic: 1 },
+        name: "factions_isPublic",
+      },
+    ]),
+
+    /* ── institutions (lore schemas) ── */
+    db.collection("institutions").createIndexes([
+      {
+        key: { code: 1 },
+        name: "institutions_code_unique",
+        unique: true,
+      },
+      {
+        key: { slug: 1 },
+        name: "institutions_slug_unique",
+        unique: true,
+      },
+      {
+        key: { parentFactionCode: 1 },
+        name: "institutions_parentFactionCode",
+      },
+      {
+        key: { isPublic: 1 },
+        name: "institutions_isPublic",
+      },
+    ]),
   ]);
 }

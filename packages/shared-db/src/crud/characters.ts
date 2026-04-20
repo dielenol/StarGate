@@ -97,8 +97,13 @@ const ALLOWED_CHARACTER_FIELDS = new Set([
   "isPublic",
   "source",
   "lore",
+  "loreMd",
   "rawText",
   "sheet",
+  "loreTags",
+  "factionCode",
+  "institutionCode",
+  "appearsInEvents",
 ]);
 
 export async function updateCharacter(

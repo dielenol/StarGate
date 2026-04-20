@@ -13,6 +13,10 @@
     "./types": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/types/index.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "import": "./dist/schemas/index.js"
     }
   },
   "scripts": {
@@ -20,7 +24,8 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "mongodb": "^7.1.1"
+    "mongodb": "^7.1.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.3.0",

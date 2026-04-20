@@ -89,6 +89,8 @@ export {
   wikiPageRevisionsCol,
   sessionReportsCol,
   notificationsCol,
+  factionsCol,
+  institutionsCol,
 } from "./collections.js";
 
 /* ── Collections (sync, long-running only) ── */
@@ -107,6 +109,8 @@ export {
   wikiPageRevisionsColSync,
   sessionReportsColSync,
   notificationsColSync,
+  factionsColSync,
+  institutionsColSync,
 } from "./collections.js";
 
 /* ── Indexes ── */
@@ -120,3 +124,7 @@ export { isValidObjectId } from "./utils.js";
 /* ── CRUD ── */
 
 export * from "./crud/index.js";
+
+/* ── Schemas (zod) ── */
+
+export * from "./schemas/index.js";

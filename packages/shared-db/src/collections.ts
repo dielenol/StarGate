@@ -13,6 +13,8 @@ import type {
 import type { WikiPage, WikiPageRevision } from "./types/wiki.js";
 import type { SessionReport } from "./types/session-report.js";
 import type { Notification } from "./types/notification.js";
+import type { FactionDoc } from "./schemas/faction.schema.js";
+import type { InstitutionDoc } from "./schemas/institution.schema.js";
 
 import { getDb, getDbSync } from "./client.js";
 
@@ -32,6 +34,8 @@ const COL = {
   SESSION_RESPONSES: "session_responses",
   SESSION_LOGS: "session_logs",
   REGISTRAR_USER_TIPS: "registrar_user_tips",
+  FACTIONS: "factions",
+  INSTITUTIONS: "institutions",
 } as const;
 
 /* ── Async accessors (both modes) ── */
@@ -101,6 +105,16 @@ export async function notificationsCol(): Promise<Collection<Notification>> {
   return db.collection<Notification>(COL.NOTIFICATIONS);
 }
 
+export async function factionsCol(): Promise<Collection<FactionDoc>> {
+  const db = await getDb();
+  return db.collection<FactionDoc>(COL.FACTIONS);
+}
+
+export async function institutionsCol(): Promise<Collection<InstitutionDoc>> {
+  const db = await getDb();
+  return db.collection<InstitutionDoc>(COL.INSTITUTIONS);
+}
+
 /* ── Sync accessors (long-running only) ── */
 
 export function usersColSync(): Collection<User> {
@@ -153,4 +167,12 @@ export function sessionReportsColSync(): Collection<SessionReport> {
 
 export function notificationsColSync(): Collection<Notification> {
   return getDbSync().collection<Notification>(COL.NOTIFICATIONS);
+}
+
+export function factionsColSync(): Collection<FactionDoc> {
+  return getDbSync().collection<FactionDoc>(COL.FACTIONS);
+}
+
+export function institutionsColSync(): Collection<InstitutionDoc> {
+  return getDbSync().collection<InstitutionDoc>(COL.INSTITUTIONS);
 }

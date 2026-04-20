@@ -136,7 +136,7 @@ interface CharacterBase {
   previewImage: string;
   pixelCharacterImage?: string;
   warningVideo?: string;
-  source?: 'discord' | 'legacy-json' | 'manual';
+  source?: 'discord' | 'legacy-json' | 'manual' | 'create-lore';
   lore?: string;
   rawText?: string;
   ownerId: string | null;
@@ -153,6 +153,12 @@ export interface AgentCharacter extends CharacterBase {
 export interface NpcCharacter extends CharacterBase {
   type: "NPC";
   sheet: NpcSheet;
+  loreTags?: string[];
+  /** DB 승격 후 신규 코드를 수용하기 위해 string (FactionCode 유니온과 별개) */
+  factionCode?: string;
+  /** DB 승격 후 신규 코드를 수용하기 위해 string */
+  institutionCode?: string;
+  appearsInEvents?: string[];
 }
 
 export type Character = AgentCharacter | NpcCharacter;
