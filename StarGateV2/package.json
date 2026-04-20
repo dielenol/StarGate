@@ -7,7 +7,14 @@
     "dev": "next dev",
     "build": "pnpm --filter @stargate/shared-db build && next build",
     "start": "next start",
-    "lint": "eslint . --max-warnings=0"
+    "lint": "eslint . --max-warnings=0",
+    "preseed:factions": "pnpm --filter @stargate/shared-db build",
+    "seed:factions": "node --experimental-strip-types scripts/seed-factions.ts",
+    "preseed:institutions": "pnpm --filter @stargate/shared-db build",
+    "seed:institutions": "node --experimental-strip-types scripts/seed-institutions.ts"
+  },
+  "engines": {
+    "node": ">=22.6.0"
   },
   "keywords": [
     "nextjs",
