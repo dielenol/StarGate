@@ -9,7 +9,6 @@ import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
 import type { Notification, NotificationType } from "@/types/notification";
 
 import Box from "@/components/ui/Box/Box";
-import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 

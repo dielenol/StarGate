@@ -9,7 +9,6 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import DiscordProvider from "next-auth/providers/discord";
 
-import type { UserRole } from "@/types/user";
 import {
   findUserByUsername,
   findUserByDiscordId,

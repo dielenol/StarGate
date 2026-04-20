@@ -2,8 +2,7 @@
  * 인원 관리 — 열람 등급 판정 유틸
  */
 
-import type { AgentLevel, Character, CharacterType } from "@/types/character";
-import type { AgentSheet, NpcSheet, SheetBase } from "@/types/character";
+import type { AgentLevel, Character, SheetBase } from "@/types/character";
 import type { UserRole } from "@/types/user";
 
 import { hasRole } from "@/lib/auth/rbac";
