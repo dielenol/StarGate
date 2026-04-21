@@ -241,7 +241,7 @@ export default function SessionsClient({
 
             <Eyebrow className={styles.sideEyebrow}>DISCORD BOT</Eyebrow>
             <div className={styles.botNote}>
-              registrar_bot · 세션 생성/알림 연동
+              registra-bot · 세션 생성/알림 연동
             </div>
             <Stack gap={6} className={styles.botActions}>
               <Spread>

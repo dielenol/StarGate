@@ -2,7 +2,7 @@ import type { ObjectId } from "mongodb";
 
 export interface SessionReport {
   _id?: ObjectId;
-  /** registrar_bot sessions._id 참조 */
+  /** sessions._id 참조 */
   sessionId: string;
   sessionTitle: string;
   summary: string;

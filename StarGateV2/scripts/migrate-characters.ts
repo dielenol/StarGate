@@ -3,7 +3,7 @@
  *
  * 사용법: npx tsx scripts/migrate-characters.ts
  *
- * 환경변수: MONGODB_URI, ERP_DB_NAME (기본값: stargate_erp)
+ * 환경변수: MONGODB_URI, DB_NAME (기본값: stargate)
  */
 
 import { MongoClient } from "mongodb";
@@ -11,7 +11,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const DB_NAME = process.env.ERP_DB_NAME ?? "stargate_erp";
+const DB_NAME = process.env.DB_NAME ?? "stargate";
 
 if (!MONGODB_URI) {
   console.error("MONGODB_URI 환경변수가 필요합니다.");

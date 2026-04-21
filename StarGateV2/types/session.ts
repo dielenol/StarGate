@@ -1,8 +1,8 @@
 /**
- * registrar_bot DB 호환 세션 타입
+ * 세션 타입 (stargate 통합 DB 호환)
  *
  * registra-bot/src/types/session.ts 와 동일한 구조.
- * stargate_erp에서는 읽기 전용으로 사용.
+ * StarGateV2에서는 읽기 전용으로 사용.
  */
 
 export type SessionStatus =

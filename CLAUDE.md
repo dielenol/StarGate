@@ -58,9 +58,9 @@ types/            — 도메인 타입 정의
 ```
 
 ### DB 구조
-- **stargate_erp** DB: users, characters, credits, inventory, notifications, wiki, session-reports
-- **registrar_bot** DB: sessions, session_responses (디스코드 봇이 관리)
-- 연결: `lib/db/client.ts` — `globalThis` 캐싱으로 커넥션 재사용
+- **stargate** DB (통합): users, characters, credit_transactions, character_inventory, master_items, wiki_pages, session_reports, notifications, sessions, session_responses, factions, institutions 등
+- 연결: `@stargate/shared-db` 패키지 (`StarGateV2/lib/db/init.ts`에서 serverless 초기화)
+- 세계관 문서 규격(NPC/Faction/Institution): `StarGateV2/docs/spec/README.md` — Zod 스키마는 `@stargate/shared-db/schemas`, 대화형 작성은 `/create-lore` skill
 
 ### 인증/권한
 - 역할: `SUPER_ADMIN > ADMIN > GM > PLAYER > GUEST`

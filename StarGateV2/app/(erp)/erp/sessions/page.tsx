@@ -29,7 +29,7 @@ export default async function SessionsPage() {
     try {
       initialSessions = await findSessionsByMonth(guildId, year, month);
     } catch {
-      // registrar_bot DB 연결 실패 시 빈 배열 유지
+      // 세션 DB 연결 실패 시 빈 배열 유지
     }
   }
 

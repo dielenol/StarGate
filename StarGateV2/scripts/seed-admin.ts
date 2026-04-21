@@ -31,7 +31,7 @@ try {
 }
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const DB_NAME = process.env.ERP_DB_NAME ?? "stargate_erp";
+const DB_NAME = process.env.DB_NAME ?? "stargate";
 
 async function main() {
   const discordId = process.argv[2];

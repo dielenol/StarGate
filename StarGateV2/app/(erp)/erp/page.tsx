@@ -272,7 +272,7 @@ export default async function ERPDashboardPage() {
             </div>
             <div className={styles.kv__row}>
               <dt>Bot</dt>
-              <dd className={styles.mono}>registrar_bot</dd>
+              <dd className={styles.mono}>registra-bot</dd>
             </div>
             <div className={styles.kv__row}>
               <dt>Last sync</dt>

@@ -54,7 +54,7 @@ lib/
 ├── db/client.ts               # MongoClient 싱글톤 (global 캐싱, maxPoolSize: 5)
 ├── db/collections.ts          # 컬렉션 헬퍼
 ├── db/*.ts                    # 도메인별 CRUD (users, characters, wiki, credits 등)
-└── db/registrar-read.ts       # registrar_bot DB 읽기 전용
+└── db/registrar-read.ts       # 세션 조회 shim (deprecated, shared-db 재내보내기)
 
 components/
 ├── erp/ERPSidebar/            # ERP 사이드바
@@ -63,6 +63,16 @@ components/
 
 types/                         # 도메인 타입 (user, character, wiki, credit 등)
 ```
+
+## 세계관 문서 (docs/spec)
+
+NPC/세력(Faction)/기관(Institution) 3개 도메인 구조화. 상세는 [docs/spec/README.md](docs/spec/README.md).
+
+- MD 템플릿: `docs/spec/templates/{npc,faction,institution}.template.md`
+- 자동 작성: `/create-lore [npc|faction|institution]` (Claude skill, Zod 검증 포함)
+- Zod 스키마: `@stargate/shared-db/schemas` — `{domain}DocSchema` + `{domain}FrontmatterSchema` + `toDb{Domain}` 어댑터
+- DB 컬렉션: `factions` / `institutions` / `characters (type=NPC)`
+- seed: `pnpm run seed:{factions,institutions}` (dry-run 기본, 쓰기는 `-- --execute --yes`)
 
 ## 인증 & RBAC
 
@@ -73,9 +83,9 @@ types/                         # 도메인 타입 (user, character, wiki, credit
 
 ## DB 연결
 
-- `stargate_erp` — ERP 데이터 (users, characters, wiki_pages 등)
-- `registrar_bot` — 봇 데이터 읽기 전용 (`registrar-read.ts`)
-- 연결 풀: `maxPoolSize: 5`, `global.mongoClientPromise` 패턴
+- `stargate` — 통합 DB (users, characters, wiki_pages, sessions, session_responses 등)
+- 연결: `@stargate/shared-db` + `lib/db/init.ts` (serverless, `maxPoolSize: 5`)
+- `lib/db/registrar-read.ts`는 구버전 호환 shim (deprecated, 내부적으로 shared-db 사용)
 
 ## API Route 패턴
 
