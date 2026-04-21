@@ -47,6 +47,31 @@ export async function findBySessionId(
   return col.find({ sessionId }).toArray();
 }
 
+/**
+ * 전역(모든 길드) `status: "YES"` 응답을 userId 키로 집계해 반환한다.
+ *
+ * ⚠️ 현재 단일 길드 운영 전제. 다중 길드 확장 시 `guildId` 파라미터를 추가하거나,
+ * `sessions` 컬렉션과 aggregate pipeline으로 스코프를 좁혀야 한다.
+ *
+ * 반환 키는 `session_responses.userId` = Discord snowflake userId 기준.
+ */
+export async function countParticipationByUserId(): Promise<
+  Record<string, number>
+> {
+  const col = await sessionResponsesCol();
+  const responses = await col
+    .find({ status: "YES" })
+    .project<{ userId: string }>({ userId: 1 })
+    .toArray();
+
+  const counts: Record<string, number> = {};
+  for (const r of responses) {
+    const uid = r.userId;
+    counts[uid] = (counts[uid] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /** 세션별 상태별 응답 수를 집계합니다. */
 export async function countByStatus(sessionId: string): Promise<{
   yes: number;

@@ -182,6 +182,23 @@ export async function findSessionsByGuildInMonth(
     .toArray();
 }
 
+/** 길드 내 시작 예정(OPEN) 세션을 가까운 순으로 limit건 조회합니다. */
+export async function findUpcomingSessionsByGuild(
+  guildId: string,
+  limit = 3
+): Promise<Session[]> {
+  const col = await sessionsCol();
+  return col
+    .find({
+      guildId,
+      status: "OPEN",
+      targetDateTime: { $gte: new Date() },
+    })
+    .sort({ targetDateTime: 1 })
+    .limit(limit)
+    .toArray();
+}
+
 /** 세션 시작 24시간 이내이면서 아직 시작 전인 세션 중, 시작 리마인드를 아직 안 보낸 것. */
 export async function findSessionsForStartReminder(): Promise<Session[]> {
   const col = await sessionsCol();

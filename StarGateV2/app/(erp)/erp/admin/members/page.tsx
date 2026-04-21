@@ -4,8 +4,8 @@ import type { UserPublic, UserRole, UserStatus } from "@/types/user";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
+import { countParticipationByUserId } from "@/lib/db/sessions";
 import { listUsers } from "@/lib/db/users";
-import { countSessionParticipation } from "@/lib/db/registrar-read";
 
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -58,9 +58,11 @@ export default async function MembersAdminPage() {
 
   const [users, participation] = await Promise.all([
     listUsers().catch((): UserPublic[] => []),
-    countSessionParticipation().catch((): Record<string, number> => ({})),
+    countParticipationByUserId().catch((): Record<string, number> => ({})),
   ]);
 
+  // participation map의 키는 session_responses.userId(Discord snowflake).
+  // discordId 없는 레거시 유저는 ObjectId 폴백 — dead code 가능성 있으나 호환성 유지.
   function getParticipationCount(user: UserPublic): number {
     if (user.discordId) {
       return participation[user.discordId] ?? 0;

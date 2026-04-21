@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth/config";
 import { findCharacterById, listCharactersByOwner } from "@/lib/db/characters";
 import { getUserBalance } from "@/lib/db/credits";
 import { listUserNotifications } from "@/lib/db/notifications";
-import { findUpcomingSessions } from "@/lib/db/registrar-read";
+import { findUpcomingSessionsByGuild } from "@/lib/db/sessions";
 import { listWikiPages } from "@/lib/db/wiki";
 
 import type { NotificationType } from "@/types/notification";
@@ -72,7 +72,7 @@ export default async function ERPDashboardPage() {
       getUserBalance(userId).catch(() => 0),
       listUserNotifications(userId, 3).catch(() => []),
       guildId
-        ? findUpcomingSessions(guildId, 3).catch(() => [])
+        ? findUpcomingSessionsByGuild(guildId, 3).catch(() => [])
         : Promise.resolve([]),
       listWikiPages().catch(() => []),
     ]);

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
-import { findSessionsByMonth } from "@/lib/db/registrar-read";
+import { findSessionsByGuildInMonth } from "@/lib/db/sessions";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
@@ -23,13 +23,20 @@ export default async function SessionsPage() {
   const month = now.getMonth() + 1;
   const guildId = process.env.GUILD_ID ?? "";
 
-  let initialSessions: Awaited<ReturnType<typeof findSessionsByMonth>> = [];
+  let initialSessions: Awaited<
+    ReturnType<typeof findSessionsByGuildInMonth>
+  > = [];
 
   if (guildId) {
     try {
-      initialSessions = await findSessionsByMonth(guildId, year, month);
-    } catch {
-      // 세션 DB 연결 실패 시 빈 배열 유지
+      // findSessionsByGuildInMonth 는 monthIndex(0~11) 기반
+      initialSessions = await findSessionsByGuildInMonth(
+        guildId,
+        year,
+        month - 1,
+      );
+    } catch (err) {
+      console.error("[SessionsPage] initialSessions fetch failed", err);
     }
   }
 
