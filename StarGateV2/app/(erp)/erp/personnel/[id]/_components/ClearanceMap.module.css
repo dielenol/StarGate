@@ -1,0 +1,52 @@
+/* ── ClearanceMap ── */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.label {
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+
+.valueOpen {
+  color: var(--gold);
+}
+
+.valueLocked {
+  color: var(--danger);
+}
+
+.summary {
+  margin-top: 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-align: center;
+}
+
+.requestBtn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 10px;
+}

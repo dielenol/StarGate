@@ -1,8 +1,10 @@
-/* ── Personnel dossier ── */
+/* ── Personnel dossier v2 ── */
+
+/* Layout (2-column) */
 
 .layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 320px 1fr;
   gap: var(--gap);
   margin-bottom: var(--gap);
 }
@@ -11,6 +13,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--gap);
+  min-width: 0;
 }
 
 .main {
@@ -26,39 +29,105 @@
   }
 }
 
-/* Side header */
+/* Page head right slot */
 
-.sideHeader {
+.headRight {
   display: flex;
-  flex-direction: column;
+  gap: 8px;
   align-items: center;
-  gap: 4px;
-  text-align: center;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
-.sideHeader__image {
-  width: 160px;
-  height: 160px;
-  object-fit: cover;
-  border: 1px solid var(--gold-dim);
-  background: var(--bg-2);
-  margin-bottom: 10px;
-}
-
-.sideHeader__seal {
-  margin-bottom: 10px;
-}
-
-.sideHeader__code {
-  color: var(--gold);
+.headTitleEn {
+  margin-left: 10px;
+  color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.15em;
 }
 
-.sideHeader__name {
-  margin: 2px 0 0;
+.clrPill {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+/* Read-only notice */
+
+.readOnlyNotice {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--gap);
+  padding: 10px 14px;
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--danger);
+  background: rgba(192, 106, 90, 0.06);
+  color: var(--ink-1);
+  font-size: 11px;
+}
+
+.readOnlyNotice__label {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+}
+
+.readOnlyNotice__body {
+  flex: 1 1 auto;
+  min-width: 220px;
+  line-height: 1.6;
+}
+
+.readOnlyNotice__body strong {
+  color: var(--gold);
+}
+
+.readOnlyNotice__audit {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+/* Side portrait box */
+
+.portraitBox {
+  text-align: center;
+}
+
+.portraitImg {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 3 / 4;
+  margin: 0 auto;
+  object-fit: cover;
+  border: 1px solid var(--gold-dim);
+  background: var(--bg-2);
+}
+
+.portraitPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 3 / 4;
+  margin: 0 auto;
+}
+
+.portraitName {
+  margin: 14px 0 0;
   color: var(--ink-0);
   font-size: 18px;
   font-weight: 500;
@@ -66,38 +135,54 @@
   min-height: 22px;
 }
 
-.sideHeader__role {
+.portraitCode {
   margin-top: 4px;
-  color: var(--ink-2);
+  color: var(--gold);
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.2em;
 }
 
-.sideHeader__tags {
+.portraitNameEn {
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+
+.typeRow {
   display: flex;
+  justify-content: center;
   gap: 6px;
-  margin-top: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
 }
 
-/* Key-value list (side) */
+.clrPillRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+/* KV list (side) */
 
 .kv {
   margin: 0;
 }
 
-.kv__row {
+.kvRow {
   display: flex;
   padding: 6px 0;
   border-bottom: 1px dashed var(--line);
   font-size: 12px;
 }
 
-.kv__row:last-child {
+.kvRow:last-child {
   border-bottom: none;
 }
 
-.kv__row dt {
+.kvRow dt {
   margin: 0;
   width: 40%;
   color: var(--ink-2);
@@ -106,144 +191,346 @@
   letter-spacing: 0.1em;
 }
 
-.kv__row dd {
+.kvRow dd {
   flex: 1;
   margin: 0;
   color: var(--ink-0);
   word-break: break-word;
 }
 
-/* Profile kv list (main) */
+/* Main profile (2-col appearance/personality + background + quote) */
 
-.prof {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+.profileGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
 }
 
-.prof__row {
-  display: flex;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px dashed var(--line);
-  font-size: 13px;
+@media (max-width: 720px) {
+  .profileGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.prof__row:last-child {
-  border-bottom: none;
-}
-
-.prof__row dt {
-  margin: 0;
-  flex-shrink: 0;
-  width: 100px;
-  color: var(--ink-2);
+.profileHeading {
+  color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  padding-top: 2px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
 
-.prof__row dd {
-  flex: 1;
-  margin: 0;
-  color: var(--ink-0);
+.profileBody {
+  margin: 6px 0 0;
+  color: var(--ink-1);
+  line-height: 1.8;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-/* Stats grid */
+.profileSection {
+  margin-top: 12px;
+}
 
-.statsGrid {
+.quote {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-left: 2px solid var(--gold);
+  background: rgba(201, 168, 90, 0.04);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.quoteMeta {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+
+/* Combat stats grid */
+
+.combatStatsGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
 
-.statCard {
-  text-align: center;
+.statBox {
   padding: 14px 12px;
+  text-align: center;
   border: 1px solid var(--line);
   background: var(--bg-2);
 }
 
-.statCard__value {
+.statLabel {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.statNumber {
+  margin-top: 6px;
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 500;
   line-height: 1;
 }
 
-.statCard__label {
-  margin-top: 6px;
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-}
-
-@media (max-width: 600px) {
-  .statsGrid {
+@media (max-width: 720px) {
+  .combatStatsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Item list (abilities, equipment) */
+/* Agent details grid (3 column × 2 row) */
 
-.itemList {
-  /* spacing via Stack */
+.agentDetailsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
 }
 
-.itemCard {
+.agentDetailCell {
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.agentDetailCell:last-child {
+  border-bottom: none;
+}
+
+.agentDetailLabel {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.agentDetailValue {
+  margin-top: 4px;
+  color: var(--ink-0);
+  font-size: 13px;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .agentDetailsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Abilities list */
+
+.abilitiesList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.abilityItem {
   padding: 12px;
   border: 1px solid var(--line);
   background: var(--bg-2);
 }
 
-.itemCard__head {
+.abilityItem__head {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
   gap: 8px;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 6px;
 }
 
-.itemCard__name {
+.abilityItem__name {
   color: var(--ink-0);
   font-size: 13px;
   font-weight: 500;
 }
 
-.itemCard__meta {
-  color: var(--ink-2);
-  font-size: 11px;
-  margin-bottom: 6px;
-}
-
-.itemCard__desc {
+.abilityItem__desc {
   color: var(--ink-1);
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-.itemCard__effect {
+.abilityItem__effect {
   margin-top: 4px;
   color: var(--ink-2);
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-/* Redaction + classified */
+/* Abilities locked preview (dashed-list inline) */
+
+.abilitiesLockedList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.abilitiesLockedRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-strong);
+}
+
+.abilitiesLockedCode {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+
+.redactBlock {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 8px;
+  height: 1em;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ink-3) 0 3px,
+    transparent 3px 5px
+  );
+}
+
+.classifiedTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px dashed var(--danger);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+}
+
+.classifiedTag::before {
+  content: "⚠";
+}
+
+.abilitiesLockedFooter {
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+}
+
+/* Equipment grid */
+
+.equipmentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.equipmentCard {
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.equipmentCard__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.equipmentCard__name {
+  color: var(--ink-0);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.equipmentCard__meta {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.equipmentCard__desc {
+  color: var(--ink-1);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Equipment locked preview (locked-grid-cards inline) */
+
+.equipmentLockedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.equipmentLockedCard {
+  padding: 14px;
+  text-align: center;
+  border: 1px dashed var(--danger);
+  background: rgba(192, 106, 90, 0.04);
+}
+
+.equipmentLockedCode {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+
+.equipmentLockedValue {
+  margin-top: 6px;
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+}
+
+/* Tab content */
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.tabEmpty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  line-height: 1.7;
+}
+
+/* Classified inline value / redacted text block */
 
 .classified {
   display: inline-block;
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.15em;
 }
 
 .redactedBar {
@@ -265,6 +552,8 @@
   display: block;
   white-space: pre-wrap;
   word-break: break-word;
+  line-height: 1.8;
+  color: var(--ink-1);
 }
 
 /* Utilities */
@@ -272,8 +561,12 @@
 .mono {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--ink-2);
+}
+
+.monoGold {
+  color: var(--gold);
 }
 
 .empty {

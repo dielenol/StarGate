@@ -1,0 +1,75 @@
+/* ── LockedSection ── */
+
+/* variant: full (큰 자물쇠 + 제목 + 서브) */
+
+.full {
+  padding: 32px 22px;
+  text-align: center;
+  color: var(--ink-3);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      var(--bg-1) 0 8px,
+      var(--bg-2) 8px 16px
+    );
+  border: 1px dashed var(--danger);
+}
+
+.fullIcon {
+  color: var(--danger);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.fullTitle {
+  margin-top: 8px;
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+}
+
+.fullSub {
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+/* variant: grid (6 stat-locked 박스, 3 column) */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.gridCell {
+  padding: 18px 14px;
+  text-align: center;
+  border: 1px dashed var(--danger);
+  background: rgba(192, 106, 90, 0.04);
+}
+
+.gridEyebrow {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.gridValue {
+  margin-top: 6px;
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
