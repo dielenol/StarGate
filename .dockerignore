@@ -1,0 +1,54 @@
+# Docker build context에서 제외할 파일/디렉토리
+# (루트 컨텍스트 빌드 시 적용됨 — registra-bot / StarGateV2 공통)
+
+# ---- Node ----
+**/node_modules
+**/dist
+**/build
+**/.next
+**/.turbo
+**/.vercel
+**/coverage
+**/.nyc_output
+**/*.tsbuildinfo
+
+# ---- 환경변수 (시크릿) ----
+**/.env
+**/.env.*
+!**/.env.example
+
+# ---- Git / CI ----
+.git
+.github
+.gitignore
+.gitattributes
+
+# ---- 로그 ----
+**/*.log
+**/npm-debug.log*
+**/pnpm-debug.log*
+**/yarn-debug.log*
+
+# ---- 에디터/OS ----
+.vscode
+.idea
+.DS_Store
+**/*.swp
+
+# ---- 프로젝트 내부 도구 ----
+.claude
+.claude-code-router
+**/worktrees
+
+# ---- 문서/잡파일 (빌드 불필요) ----
+docs
+deploy
+scripts
+*.md
+!**/package.json
+
+# ---- 모놀로식 웹앱은 봇 빌드 컨텍스트에서 제외 ----
+StarGateV2
+
+# ---- 리뷰 산출물 ----
+registra-bot-review.md

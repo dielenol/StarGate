@@ -1,0 +1,92 @@
+name: Deploy bots
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'registra-bot/**'
+      - 'trpg-bot/**'
+      - 'packages/shared-db/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/deploy-bots.yml'
+  workflow_dispatch: # 수동 트리거 (Actions 탭 → Run workflow)
+
+concurrency:
+  group: deploy-bots-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ------------------------------------------------------------
+  # 어떤 봇이 변경됐는지 감지 → 해당 봇만 배포
+  # ------------------------------------------------------------
+  detect-changes:
+    name: Detect changed bots
+    runs-on: ubuntu-latest
+    outputs:
+      registra: ${{ steps.filter.outputs.registra }}
+      trpg: ${{ steps.filter.outputs.trpg }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            registra:
+              - 'registra-bot/**'
+              - 'packages/shared-db/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+            trpg:
+              - 'trpg-bot/**'
+
+  # ------------------------------------------------------------
+  # registra-bot 배포 (Dokploy webhook 호출)
+  # ------------------------------------------------------------
+  deploy-registra:
+    name: Deploy registra-bot
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.registra == 'true' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Dokploy deploy (registra-bot)
+        env:
+          WEBHOOK_URL: ${{ secrets.DOKPLOY_REGISTRA_WEBHOOK }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "❌ DOKPLOY_REGISTRA_WEBHOOK secret이 설정되지 않았습니다."
+            echo "→ Dokploy → registra-bot → Deployments → Webhook URL 을 복사해서"
+            echo "  GitHub repo → Settings → Secrets → Actions 에 등록하세요."
+            exit 1
+          fi
+          curl -fsSL -X POST "$WEBHOOK_URL"
+          echo "✅ registra-bot deploy triggered"
+
+  # ------------------------------------------------------------
+  # trpg-bot 배포
+  # ------------------------------------------------------------
+  deploy-trpg:
+    name: Deploy trpg-bot
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.trpg == 'true' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Dokploy deploy (trpg-bot)
+        env:
+          WEBHOOK_URL: ${{ secrets.DOKPLOY_TRPG_WEBHOOK }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "❌ DOKPLOY_TRPG_WEBHOOK secret이 설정되지 않았습니다."
+            echo "→ Dokploy → trpg-bot → Deployments → Webhook URL 을 복사해서"
+            echo "  GitHub repo → Settings → Secrets → Actions 에 등록하세요."
+            exit 1
+          fi
+          curl -fsSL -X POST "$WEBHOOK_URL"
+          echo "✅ trpg-bot deploy triggered"
