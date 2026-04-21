@@ -177,6 +177,15 @@ process.on("SIGTERM", () => {
   void shutdown();
 });
 
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException]", err);
+  void shutdown().finally(() => process.exit(1));
+});
+
 /** 봇 실행: DB 연결 후 Discord 로그인 */
 async function main() {
   await connectDb();
