@@ -16,7 +16,7 @@ NPC·세계관 참고: [docs/NPC-REFERENCES.md](docs/NPC-REFERENCES.md)
 ## 요구사항
 
 - Node.js 18+
-- MongoDB (기본 DB 이름: `registrar_bot`, `MONGODB_DB_NAME`로 변경 가능)
+- MongoDB (기본 DB 이름: `stargate` 통합 DB, `MONGODB_DB_NAME`로 변경 가능)
 - Discord Bot Token
 
 ## 설정
@@ -24,7 +24,7 @@ NPC·세계관 참고: [docs/NPC-REFERENCES.md](docs/NPC-REFERENCES.md)
 1. `.env.example`을 복사해 `.env` 생성
 2. `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `MONGODB_URI` 필수
 3. `GUILD_ID` (선택): 해당 길드에만 슬래시 등록
-4. `MONGODB_DB_NAME` (선택): 기본 `registrar_bot`
+4. `MONGODB_DB_NAME` (선택): 기본 `stargate` (통합 DB)
 5. `RESULT_CARD_IMAGE`, `PARTICIPATION_CHECK_IMAGE_COOLDOWN_MINUTES`, `PNG_RENDER_MIN_INTERVAL_MS` — PNG 관련은 SPEC 참고
 
 ## 실행

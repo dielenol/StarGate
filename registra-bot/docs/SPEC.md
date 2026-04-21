@@ -18,7 +18,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 기본 MongoDB DB 이름 | `registrar_bot` (`MONGODB_DB_NAME`로 재정의) |
+| 기본 MongoDB DB 이름 | `stargate` (통합 DB, `MONGODB_DB_NAME`로 재정의) |
 | 컬렉션 | `sessions`, `session_responses`, `session_logs` (스키마는 타입 `Session` 등과 동일) |
 | 버튼 `customId` | `registrar:attend:{등록ID}:yes` / `:no` |
 

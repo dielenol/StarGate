@@ -17,7 +17,7 @@ Discord 봇 **레지스트라**가 실제로 무엇을 하는지, 권한·데이
 | 항목           | 내용                                                                         |
 | -------------- | ---------------------------------------------------------------------------- |
 | Node.js        | 18+                                                                          |
-| MongoDB        | 연결 URI 필수 (`MONGODB_URI`), DB명 기본 `registrar_bot` (`MONGODB_DB_NAME`) |
+| MongoDB        | 연결 URI 필수 (`MONGODB_URI`), DB명 기본 `stargate` 통합 DB (`MONGODB_DB_NAME`) |
 | Discord        | Bot Token, Application(Client) ID                                            |
 | Gateway Intent | **Guilds**, **GuildMembers**(특권 — 개발자 포털에서 반드시 ON)               |
 | 선택           | Puppeteer/Chromium — `RESULT_CARD_IMAGE` 켤 때만 (PNG 생성)                  |
@@ -33,7 +33,7 @@ Discord 봇 **레지스트라**가 실제로 무엇을 하는지, 권한·데이
 | `DISCORD_TOKEN`                              | 예     | 봇 토큰                                                          |
 | `DISCORD_CLIENT_ID`                          | 예     | 애플리케이션 ID (슬래시 등록·OAuth에 사용)                       |
 | `MONGODB_URI`                                | 예     | MongoDB 연결 문자열                                              |
-| `MONGODB_DB_NAME`                            | 아니오 | 기본 `registrar_bot`                                             |
+| `MONGODB_DB_NAME`                            | 아니오 | 기본 `stargate` (통합 DB)                                        |
 | `GUILD_ID`                                   | 아니오 | 있으면 해당 길드에만 슬래시 등록(개발용). 없으면 **글로벌** 등록 |
 | `RESULT_CARD_IMAGE`                          | 아니오 | `0` / `false` / `off` 이면 PNG 생략                              |
 | `PARTICIPATION_CHECK_IMAGE_COOLDOWN_MINUTES` | 아니오 | `/일정 참여확인` 월간 PNG 재첨부 최소 간격(분)                   |
