@@ -70,9 +70,11 @@ async function processOneWithRetry(
 
 /**
  * 마감 스케줄러를 시작합니다.
+ *
+ * 반환된 `NodeJS.Timeout` 은 종료 시 `clearInterval` 로 해제해야 합니다.
  */
-export function startCloseChecker(client: Client): void {
-  setInterval(async () => {
+export function startCloseChecker(client: Client): NodeJS.Timeout {
+  return setInterval(async () => {
     try {
       const [sessions, pending] = await Promise.all([
         findOpenSessionsPastClose(),

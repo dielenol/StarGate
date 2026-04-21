@@ -152,18 +152,36 @@ async function runReminderTick(client: Client): Promise<void> {
   }
 }
 
+/** 리마인드 스케줄러 핸들 (타이머 해제용) */
+export interface ReminderCheckerHandle {
+  stop(): void;
+}
+
 /**
  * 리마인드 스케줄러를 시작합니다.
+ *
+ * 반환된 핸들의 `stop()` 은 초기 지연 타이머와 반복 인터벌을 모두 해제합니다.
  */
-export function startReminderChecker(client: Client): void {
+export function startReminderChecker(client: Client): ReminderCheckerHandle {
   const tick = () => {
     void runReminderTick(client).catch((err) => {
       console.error(L.remindTick, err);
     });
   };
 
-  setTimeout(() => {
+  let intervalId: NodeJS.Timeout | null = null;
+  const startTimeoutId = setTimeout(() => {
     tick();
-    setInterval(tick, CHECK_INTERVAL_MS);
+    intervalId = setInterval(tick, CHECK_INTERVAL_MS);
   }, INITIAL_DELAY_MS);
+
+  return {
+    stop() {
+      clearTimeout(startTimeoutId);
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    },
+  };
 }

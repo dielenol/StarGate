@@ -30,7 +30,10 @@ import {
   handleSessionCancel,
 } from "./commands/session-manage.js";
 import { startCloseChecker } from "./scheduler/close-checker.js";
-import { startReminderChecker } from "./scheduler/reminder-checker.js";
+import {
+  startReminderChecker,
+  type ReminderCheckerHandle,
+} from "./scheduler/reminder-checker.js";
 import { closeResultCardBrowser } from "./utils/result-card-image.js";
 import { runSafely, safeHandleInteraction } from "./utils/safe-interaction.js";
 
@@ -38,6 +41,13 @@ import { runSafely, safeHandleInteraction } from "./utils/safe-interaction.js";
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 });
+
+/** 기동 중인 스케줄러 타이머 핸들 (종료 시 해제용) */
+let closeCheckerTimer: NodeJS.Timeout | null = null;
+let reminderCheckerHandle: ReminderCheckerHandle | null = null;
+
+/** shutdown 재진입 방지 플래그 (SIGINT + SIGTERM 중복 수신 방어) */
+let isShuttingDown = false;
 
 /**
  * GatewayRateLimitError 등이 처리되지 않으면 Client `error`로 전파되어 프로세스가 종료될 수 있음
@@ -61,9 +71,9 @@ client.once(Events.ClientReady, (readyClient) => {
       console.error(L.slashFail, err);
     }
 
-    startCloseChecker(client);
+    closeCheckerTimer = startCloseChecker(client);
     console.log(L.schedulerClose);
-    startReminderChecker(client);
+    reminderCheckerHandle = startReminderChecker(client);
     console.log(L.schedulerRemind);
   });
 });
@@ -137,9 +147,23 @@ client.on(Events.InteractionCreate, (interaction) => {
   }
 });
 
-/** 프로세스 종료 시 DB 연결 해제 */
+/** 프로세스 종료 시 스케줄러 타이머 해제 + Discord 클라이언트 + 브라우저 + DB 연결 해제 */
 async function shutdown(): Promise<void> {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
   console.log(L.shutdown);
+  if (closeCheckerTimer !== null) {
+    clearInterval(closeCheckerTimer);
+    closeCheckerTimer = null;
+  }
+  if (reminderCheckerHandle !== null) {
+    reminderCheckerHandle.stop();
+    reminderCheckerHandle = null;
+  }
+  await client.destroy().catch((err) => {
+    console.error("[shutdown] client.destroy failed", err);
+  });
   await closeResultCardBrowser();
   await closeDb();
   process.exit(0);
