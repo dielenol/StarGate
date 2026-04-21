@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NOVUS ORDO — Wireframes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-density="comfortable">
+
+<!-- Floating controls -->
+<div class="screen-switcher">
+  <span class="sw-label">SCREEN</span>
+  <select id="screenSelect">
+    <optgroup label="PUBLIC">
+      <option value="login">00 · LOGIN</option>
+    </optgroup>
+    <optgroup label="내 정보">
+      <option value="dashboard" selected>01 · 대시보드</option>
+      <option value="profile">09 · 프로필</option>
+      <option value="notifications">10 · 알림</option>
+    </optgroup>
+    <optgroup label="활동">
+      <option value="sessions">02 · 세션</option>
+      <option value="session-detail">02b · 세션 상세</option>
+      <option value="missions">03 · 미션 보드</option>
+    </optgroup>
+    <optgroup label="인물·조직">
+      <option value="characters">04 · 캐릭터</option>
+      <option value="character-detail">04b · 캐릭터 시트</option>
+      <option value="identity">05 · 신원조회</option>
+      <option value="identity-detail">05b · 신원 상세</option>
+      <option value="hall-of-fame">06 · 명예의 전당</option>
+    </optgroup>
+    <optgroup label="자산">
+      <option value="equipment">07 · 장비</option>
+      <option value="credits">08 · 크레딧</option>
+    </optgroup>
+    <optgroup label="자료실">
+      <option value="wiki">11 · 위키</option>
+      <option value="gallery">12 · 갤러리</option>
+      <option value="chronicle">13 · 연대기</option>
+    </optgroup>
+    <optgroup label="관리">
+      <option value="admin">14 · 관리자</option>
+    </optgroup>
+  </select>
+  <button class="btn btn-sm" id="tweaksBtn">TWEAKS</button>
+</div>
+
+<div class="tweaks" id="tweaksPanel">
+  <div class="tw-title">TWEAKS</div>
+  <div class="tw-row">
+    <span class="lab">LAYOUT</span>
+    <span class="tw-opts" data-tw="layout">
+      <button data-val="sidebar" class="on">SIDEBAR</button>
+      <button data-val="topbar">TOPBAR</button>
+    </span>
+  </div>
+  <div class="tw-row">
+    <span class="lab">DENSITY</span>
+    <span class="tw-opts" data-tw="density">
+      <button data-val="comfortable" class="on">COMFY</button>
+      <button data-val="compact">COMPACT</button>
+    </span>
+  </div>
+  <div class="tw-row">
+    <span class="lab">INTERACTION</span>
+    <span class="tw-opts" data-tw="pattern">
+      <button data-val="tab" class="on">TAB</button>
+      <button data-val="card">CARD</button>
+    </span>
+  </div>
+</div>
+
+<!-- Login screen (full-viewport; shell hidden when active) -->
+<div class="screen" data-screen-label="00 Login" id="screen-login">
+  <div class="login-root">
+    <div class="login-card">
+      <div class="row">
+        <div class="seal seal-lg" style="width:64px; height:64px; font-size:11px;">◎</div>
+        <div>
+          <div class="eyebrow eyebrow-gold">NOVUS ORDO · ERP</div>
+          <div class="mono" style="color:var(--ink-2); font-size:10px; letter-spacing:0.2em; margin-top:4px;">CLEARANCE REQUIRED</div>
+        </div>
+      </div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:4px;">OPERATOR ID</div>
+        <input class="input" placeholder="novusordo.id / 요원 코드" />
+      </div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:4px;">CIPHER</div>
+        <input class="input" type="password" placeholder="········" />
+      </div>
+      <div class="spread">
+        <label class="mono" style="font-size:10px; color:var(--ink-2); display:flex; align-items:center; gap:6px;">
+          <span style="display:inline-block; width:10px; height:10px; border:1px solid var(--line-strong);"></span>
+          REMEMBER DEVICE
+        </label>
+        <a class="mono" style="font-size:10px; color:var(--ink-2);" href="#">FORGOT CIPHER →</a>
+      </div>
+      <button class="btn btn-primary" style="justify-content:center; padding:10px;">인증 요청 · AUTHENTICATE</button>
+      <div class="spread" style="padding-top:12px; border-top:1px dashed var(--line); font-family:var(--mono); font-size:9px; color:var(--ink-3); letter-spacing:0.15em;">
+        <span>v2.6.0 · build 2026.04</span>
+        <span>SESSION LOG · ENCRYPTED</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- App shell -->
+<div class="shell" id="appShell" data-layout="sidebar">
+
+  <header class="topbar">
+    <button class="burger" id="burger" aria-label="menu">☰</button>
+    <div class="brand">
+      <div class="brand-seal">◎</div>
+      <div>
+        <div class="brand-name">NOVUS ORDO</div>
+        <div class="brand-sub">ERP · INTERNAL</div>
+      </div>
+    </div>
+    <div class="ops-status">
+      <span class="dot"></span>
+      <span>OPERATIONAL</span>
+      <span style="color:var(--ink-3);">│</span>
+      <span>SEOUL-03</span>
+      <span style="color:var(--ink-3);">│</span>
+      <span>DISCORD · SYNC</span>
+    </div>
+    <div class="row" style="gap:10px;">
+      <button class="cmdk-trigger" id="openCmdK">⌕ 검색 <kbd>⌘K</kbd></button>
+      <div class="user">
+        <span>관리자</span>
+        <span class="role">SUPER_ADMIN</span>
+        <button class="btn btn-sm">로그아웃</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Subnav only in topbar layout -->
+  <nav class="subnav" id="subnav">
+    <a data-go="dashboard" class="active">◫ 대시보드</a>
+    <span class="sub-sep"></span>
+    <a data-go="sessions">⎙ 세션</a>
+    <a data-go="missions">✦ 미션</a>
+    <span class="sub-sep"></span>
+    <a data-go="characters">♟ 캐릭터</a>
+    <a data-go="identity">⊙ 신원</a>
+    <a data-go="hall-of-fame">♛ 전당</a>
+    <span class="sub-sep"></span>
+    <a data-go="equipment">⊞ 장비</a>
+    <a data-go="credits">⊛ 크레딧</a>
+    <span class="sub-sep"></span>
+    <a data-go="wiki">☰ 위키</a>
+    <a data-go="gallery">▦ 갤러리</a>
+    <a data-go="chronicle">⧗ 연대기</a>
+    <span class="sub-sep"></span>
+    <a data-go="notifications">◉ 알림</a>
+    <a data-go="profile">◍ 프로필</a>
+    <a data-go="admin">⚿ 관리</a>
+  </nav>
+
+  <div class="shell-body">
+    <!-- Sidebar -->
+    <div class="sidebar-backdrop" id="sideBackdrop"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="s-brand">
+        <div class="brand-seal">◎</div>
+        <div>
+          <div class="brand-name">NOVUS ORDO</div>
+          <div class="brand-sub">ERP SYSTEM</div>
+        </div>
+      </div>
+
+      <div class="s-group">
+        <div class="s-group-label">내 정보</div>
+        <a class="s-item active" data-go="dashboard"><span class="ico">◫</span>대시보드</a>
+        <a class="s-item" data-go="profile"><span class="ico">◍</span>프로필</a>
+        <a class="s-item" data-go="notifications"><span class="ico">◉</span>알림</a>
+      </div>
+      <div class="s-group">
+        <div class="s-group-label">활동</div>
+        <a class="s-item" data-go="sessions"><span class="ico">⎙</span>세션</a>
+        <a class="s-item" data-go="missions"><span class="ico">✦</span>미션 보드</a>
+      </div>
+      <div class="s-group">
+        <div class="s-group-label">인물·조직</div>
+        <a class="s-item" data-go="characters"><span class="ico">♟</span>캐릭터</a>
+        <a class="s-item" data-go="identity"><span class="ico">⊙</span>신원조회</a>
+        <a class="s-item" data-go="hall-of-fame"><span class="ico">♛</span>명예의 전당</a>
+      </div>
+      <div class="s-group">
+        <div class="s-group-label">자산</div>
+        <a class="s-item" data-go="equipment"><span class="ico">⊞</span>장비</a>
+        <a class="s-item" data-go="credits"><span class="ico">⊛</span>크레딧</a>
+      </div>
+      <div class="s-group">
+        <div class="s-group-label">자료실</div>
+        <a class="s-item" data-go="wiki"><span class="ico">☰</span>위키</a>
+        <a class="s-item" data-go="gallery"><span class="ico">▦</span>갤러리</a>
+        <a class="s-item" data-go="chronicle"><span class="ico">⧗</span>연대기</a>
+      </div>
+      <div class="s-group">
+        <div class="s-group-label">관리 · ADMIN+</div>
+        <a class="s-item" data-go="admin"><span class="ico">⚿</span>관리자</a>
+      </div>
+
+      <div class="s-footer"><a href="#">‹ 홍보 사이트로 돌아가기</a></div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main" id="mainArea">
+      <div class="screen active" data-screen-label="01 대시보드" id="screen-dashboard"></div>
+      <div class="screen" data-screen-label="02 세션" id="screen-sessions"></div>
+      <div class="screen" data-screen-label="02b 세션 상세" id="screen-session-detail"></div>
+      <div class="screen" data-screen-label="03 미션 보드" id="screen-missions"></div>
+      <div class="screen" data-screen-label="04 캐릭터" id="screen-characters"></div>
+      <div class="screen" data-screen-label="04b 캐릭터 시트" id="screen-character-detail"></div>
+      <div class="screen" data-screen-label="05 신원조회" id="screen-identity"></div>
+      <div class="screen" data-screen-label="05b 신원 상세" id="screen-identity-detail"></div>
+      <div class="screen" data-screen-label="06 명예의 전당" id="screen-hall-of-fame"></div>
+      <div class="screen" data-screen-label="07 장비" id="screen-equipment"></div>
+      <div class="screen" data-screen-label="08 크레딧" id="screen-credits"></div>
+      <div class="screen" data-screen-label="09 프로필" id="screen-profile"></div>
+      <div class="screen" data-screen-label="10 알림" id="screen-notifications"></div>
+      <div class="screen" data-screen-label="11 위키" id="screen-wiki"></div>
+      <div class="screen" data-screen-label="12 갤러리" id="screen-gallery"></div>
+      <div class="screen" data-screen-label="13 연대기" id="screen-chronicle"></div>
+      <div class="screen" data-screen-label="14 관리자" id="screen-admin"></div>
+    </main>
+  </div>
+</div>
+
+<!-- Command-K palette -->
+<div class="cmdk-mask" id="cmdkMask">
+  <div class="cmdk-box">
+    <input class="cmdk-input" id="cmdkInput" placeholder="⌕  전역 검색 · 캐릭터 · 위키 · 세션 · 장비" />
+    <div class="cmdk-list">
+      <div class="cmdk-sec">JUMP TO</div>
+      <div class="cmdk-row on" data-go="dashboard">◫ 대시보드<span class="kind">menu</span></div>
+      <div class="cmdk-row" data-go="sessions">⎙ 세션<span class="kind">menu</span></div>
+      <div class="cmdk-row" data-go="missions">✦ 미션 보드<span class="kind">menu</span></div>
+      <div class="cmdk-row" data-go="identity">⊙ 신원조회<span class="kind">menu</span></div>
+      <div class="cmdk-sec">CHARACTERS</div>
+      <div class="cmdk-row" data-go="character-detail">♟ 카렌 모리츠 · OP-0208<span class="kind">character</span></div>
+      <div class="cmdk-row" data-go="identity">⊙ 하세가와 아야 · NPC-0412<span class="kind">character</span></div>
+      <div class="cmdk-sec">SESSIONS</div>
+      <div class="cmdk-row" data-go="session-detail">⎙ OP-047 은빛 경로<span class="kind">session</span></div>
+      <div class="cmdk-sec">WIKI</div>
+      <div class="cmdk-row" data-go="wiki">☰ Δ-11 외부 계약자 운용<span class="kind">doc · v3.2</span></div>
+    </div>
+  </div>
+</div>
+
+<script src="screens.js?v=6"></script>
+<script src="app.js?v=6"></script>
+</body>
+</html>
