@@ -17,6 +17,8 @@ node --test packages/shared-db/src/schemas/__tests__/*.test.mjs
 - `npc.schema.test.mjs` — NpcDoc/Frontmatter + toDbNpc 어댑터
 - `frontmatter.test.mjs` — parseFrontmatter, parseMdBody 엣지 케이스 + 템플릿 round-trip
 - `characters-allowlist.test.mjs` — updateCharacter 필드 화이트리스트
+- `seed-payload.test.mjs` — `scripts/seed-factions.ts` / `seed-institutions.ts`의 `buildPayload` 결과가 `factionDocSchema` / `institutionDocSchema`를 통과하는지 sanity check. seed와 스키마 간 drift 감지.
+- `migration.test.mjs` — 레거시 `docs/civil-society/*` / `docs/spec/npc/npc-*-spec.md`를 신 규격으로 이주한 `StarGateV2/docs/spec/npc/{registrar,dominique-lee,towaski}.md` 의 파싱·스키마 통과 round-trip 검증.
 
 ## 제약
 

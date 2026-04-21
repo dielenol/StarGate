@@ -130,10 +130,15 @@
 
 현재 저장소 기준으로 바로 묶을 수 있는 앱은 다음과 같습니다.
 
-- `registra-bot`
-- `trpg-bot`
+- `registra-bot` (pnpm workspace — `@stargate/shared-db` 의존, 모노레포 루트에서 `pnpm install` 필요)
+- `trpg-bot` (npm, 독립 패키지 — `package-lock.json` 기반)
 
-루트의 `deploy/pm2/ecosystem.config.cjs`는 이 두 봇을 바로 PM2에 등록하도록 작성되어 있습니다.
+루트의 `deploy/pm2/ecosystem.config.cjs`는 이 두 봇을 바로 PM2에 등록하도록 작성되어 있습니다. 주요 특성:
+
+- 로그 디렉토리(`<bot>/logs/`)를 `fs.mkdirSync(..., { recursive: true })`로 config 로드 시점에 선행 생성 — 최초 기동 실패 방지
+- `instances: 1`, `exec_mode: "fork"` 고정 — Discord gateway 연결은 프로세스당 1개여야 하므로 cluster 모드 금지
+- `node_args: "--enable-source-maps"` + `max_memory_restart: "512M"` — 스택 추적과 메모리 가드
+- `env_file`로 각 봇 디렉토리의 `.env`를 로드하고 `env.NODE_ENV=production` 주입
 
 ## 2. 추천 토폴로지
 
@@ -528,13 +533,22 @@ nano .env
 
 ## 11. 각 봇 빌드
 
-PM2는 이 저장소에서 `dist/index.js`를 직접 실행합니다. 따라서 빌드가 먼저 필요합니다.
+PM2는 이 저장소에서 `dist/index.js`를 직접 실행합니다. 따라서 빌드가 먼저 필요합니다. 두 봇은 패키지매니저가 다릅니다.
+
+`registra-bot` — pnpm workspace (모노레포 루트에서 설치 + shared-db 빌드가 선행돼야 합니다):
 
 ```bash
-cd ~/apps/StarGate/registra-bot
-npm ci
-npm run build
+cd ~/apps/StarGate
+pnpm install
+pnpm --filter @stargate/shared-db build
 
+cd ~/apps/StarGate/registra-bot
+pnpm run build
+```
+
+`trpg-bot` — 독립 npm 패키지:
+
+```bash
 cd ~/apps/StarGate/trpg-bot
 npm ci
 npm run build
@@ -605,10 +619,13 @@ pm2 save
 cd ~/apps/StarGate
 git pull
 
+# registra-bot (pnpm workspace)
+pnpm install
+pnpm --filter @stargate/shared-db build
 cd registra-bot
-npm ci
-npm run build
+pnpm run build
 
+# trpg-bot (독립 npm)
 cd ../trpg-bot
 npm ci
 npm run build

@@ -29,18 +29,20 @@ pnpm lint         # eslint . --max-warnings=0
 app/
 ├── (auth)/login/              # 로그인 페이지
 ├── (erp)/erp/                 # ERP 내부망 (인증 필수)
-│   ├── admin/{members,users}  # ADMIN 전용
+│   ├── admin/{members,users,characters/import}  # ADMIN 전용
 │   ├── characters/            # 캐릭터 관리 (GM+)
 │   ├── credits/               # 크레딧/재화
 │   ├── inventory/             # 장비/인벤토리
 │   ├── notifications/         # 알림
 │   ├── profile/               # 프로필/PW 변경
 │   ├── sessions/              # 세션 캘린더 + 리포트
-│   └── wiki/                  # 월드빌딩 위키
+│   ├── wiki/                  # 월드빌딩 위키
+│   ├── personnel/[id]         # 신원조회 Dossier
+│   └── chronicle/, gallery/, hall-of-fame/, missions/  # 스텁 (COMING SOON)
 ├── (public)/                  # 공개 홍보 사이트
 │   ├── apply/, contact/       # 입회 신청, 문의
 │   ├── gameplay/, rules/      # 게임 정보
-│   └── world/                 # 세계관 (캐릭터 포함)
+│   └── world/                 # 세계관 (b, c, player 포함)
 ├── (standalone)/              # 독립 페이지 (네비 없음, URL 직접 접근)
 │   └── survey/keyring/
 └── api/
@@ -52,13 +54,18 @@ lib/
 ├── auth/config.ts             # NextAuth 설정
 ├── auth/rbac.ts               # RBAC 유틸 (역할 계층 검증)
 ├── db/client.ts               # MongoClient 싱글톤 (global 캐싱, maxPoolSize: 5)
+├── db/init.ts                 # shared-db serverless 초기화 (사이드이펙트)
 ├── db/collections.ts          # 컬렉션 헬퍼
-├── db/*.ts                    # 도메인별 CRUD (users, characters, wiki, credits 등)
-└── db/registrar-read.ts       # 세션 조회 shim (deprecated, shared-db 재내보내기)
+├── db/sessions.ts             # shared-db 세션/참여 집계 함수 re-export 래퍼 (`import "./init"` 포함)
+└── db/*.ts                    # 도메인별 CRUD (users, characters, wiki, credits, session-reports 등)
 
 components/
 ├── erp/ERPSidebar/            # ERP 사이드바
+├── erp/CommandK/              # ⌘K 커맨드 팔레트
 ├── erp/PermissionGate/        # 클라이언트 권한 게이트
+├── erp/QueryProvider.tsx      # TanStack Query Provider
+├── erp/SessionWrapper.tsx     # 세션 컨텍스트 래퍼
+├── erp/nav-config.ts          # ERP 내비 메뉴 정의
 └── sidebar/                   # 공개 사이트 사이드바
 
 types/                         # 도메인 타입 (user, character, wiki, credit 등)
@@ -85,7 +92,7 @@ NPC/세력(Faction)/기관(Institution) 3개 도메인 구조화. 상세는 [doc
 
 - `stargate` — 통합 DB (users, characters, wiki_pages, sessions, session_responses 등)
 - 연결: `@stargate/shared-db` + `lib/db/init.ts` (serverless, `maxPoolSize: 5`)
-- `lib/db/registrar-read.ts`는 구버전 호환 shim (deprecated, 내부적으로 shared-db 사용)
+- `lib/db/sessions.ts` — shared-db의 `findSessionsByGuildInMonth` / `findUpcomingSessionsByGuild` / `countParticipationByUserId`를 `import "./init"` 사이드이펙트와 함께 re-export. 세션 집계가 필요한 라우트/서버 컴포넌트는 이 래퍼를 import해 초기화 순서를 보장한다.
 
 ## API Route 패턴
 
@@ -98,6 +105,7 @@ try { requireRole(session.user.role, "GM"); } catch { return 403; }
 
 - 모든 동적 라우트에 `isValidObjectId()` 검증 필수
 - 업데이트 API는 필드 화이트리스트 적용
+- `/api/erp/sessions` (GET) — ERP 로그인 사용자(PLAYER 이상) 접근 허용, `guildId`는 클라이언트 쿼리가 아닌 `process.env.GUILD_ID`를 서버에서 강제 사용 (단일 길드 전제)
 
 ## 환경변수
 

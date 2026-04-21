@@ -1,58 +1,112 @@
-# StarGateV2
+# StarGate Web (NOVUS ORDO)
 
-Stargate TRPG 공식 랜딩 웹앱 - 세계관 소개, 프로젝트 소식, Discord 문의/지원 접수.
+Stargate TRPG 운영을 위한 공식 웹앱 + ERP 시스템. 공개 홍보 사이트와 내부 운영 ERP를 한 Next.js 앱으로 통합.
 
-## 환경변수 설정
+## 기술 스택
 
-프로젝트 루트에 `.env.local` 파일을 만들고 아래 값을 설정하세요.
-
-```bash
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
-NEXT_PUBLIC_APP_BASE_PATH=
-```
-
-Discord 채널에서 Webhook URL을 발급받아 입력하면 `/apply`, `/contact` 제출 시 해당 채널로 메시지가 전송됩니다.
-
-- `NEXT_PUBLIC_APP_BASE_PATH`는 이미지 경로 보정용 옵션입니다.
-- 로컬/Vercel 루트 도메인 배포에서는 비워두고, 서브패스 배포일 때만 `/StarGate` 같은 값을 설정하세요.
-
-## 실행 방법
-
-```bash
-pnpm install
-pnpm dev
-```
-
-개발 서버: `http://localhost:3000`
-
-## 스크립트
-
-- `pnpm dev`: 개발 서버 실행
-- `pnpm lint`: ESLint 검사
-- `pnpm build`: 프로덕션 빌드(서버 런타임 포함)
-- `pnpm start`: 프로덕션 서버 실행
+- Next.js 16 (App Router, Turbopack)
+- React 19
+- next-auth 5 beta (Discord OAuth / Credentials, JWT)
+- MongoDB 7 (`@stargate/shared-db` 워크스페이스 패키지 경유)
+- TanStack Query v5 (서버 상태 캐싱 + 뮤테이션)
+- CSS Modules (BEM 네이밍)
+- 배포: Vercel (serverless)
 
 ## 페이지 구조
 
-- `/`: 메인 랜딩 페이지
-- `/apply`: 가입 신청 폼 (클라이언트/서버 검증 + Discord 전송)
-- `/contact`: 문의 폼 (클라이언트/서버 검증 + Discord 전송)
+### 공개 (`app/(public)/`)
+- `/` — 메인 랜딩
+- `/apply` — 가입 신청 (Discord Webhook 전송)
+- `/contact` — 문의 (Discord Webhook 전송)
+- `/gameplay`, `/rules` — 게임 안내
+- `/world`, `/world/b`, `/world/c`, `/world/player` — 세계관
 
-## 배포
+### 인증 (`app/(auth)/`)
+- `/login`
 
-현재 프로젝트는 Next API Route(`app/api/*`)를 사용하므로 서버 런타임이 필요합니다.
+### 독립 (`app/(standalone)/`)
+- `/survey/keyring` — 독립 설문 (네비 없음)
 
-- 권장: Vercel 배포(자동 Preview/Production 파이프라인)
-- 대안: Node 서버 환경(Render, Railway, Fly.io 등)
-- 비권장: GitHub Pages(정적 호스팅)는 API Route 실행 불가
+### ERP (`app/(erp)/erp/`, 인증 필수)
+- `/erp` — 대시보드
+- `/erp/characters` / `/erp/characters/[id]` / `/erp/characters/new`
+- `/erp/credits`
+- `/erp/inventory` / `/erp/inventory/[characterId]` / `/erp/inventory/items/new`
+- `/erp/sessions` — 세션 캘린더
+- `/erp/sessions/report` / `/erp/sessions/report/[id]` / `/erp/sessions/report/new`
+- `/erp/wiki` / `/erp/wiki/[id]` / `/erp/wiki/[id]/edit` / `/erp/wiki/new`
+- `/erp/notifications`
+- `/erp/profile`
+- `/erp/personnel` / `/erp/personnel/[id]` — 신원조회 Dossier
+- `/erp/admin/members` / `/erp/admin/users` / `/erp/admin/characters/import` — ADMIN+ 전용
+- `/erp/chronicle`, `/erp/gallery`, `/erp/hall-of-fame`, `/erp/missions` — 스텁 (COMING SOON)
 
-Vercel 배포 절차는 `docs/DEPLOYMENT_VERCEL.md`를 참고하세요.
+## 권한 모델
 
-## 다음 단계 TODO
+`SUPER_ADMIN(100) > ADMIN(80) > GM(60) > PLAYER(40) > GUEST(20)` 계층. RBAC 유틸은 `lib/auth/rbac.ts`의 `hasRole` / `requireRole`. `middleware.ts`는 Edge Runtime에서 쿠키 존재만 확인하고, 실제 세션/역할 검증은 `app/(erp)/layout.tsx`와 각 API 라우트에서 수행.
 
-- Discord 외 알림 채널(Resend 이메일, Slack 등) 추가
-- 관리자 확인용 저장소(DB/Spreadsheet) 연동
-- SEO 메타/OG 이미지 보강
+## 환경 변수
 
-## 개발 서버 포트
-기본 포트는 3000이며, 환경변수 PORT로 변경 가능하다.
+`.env.example` 참조. 필수:
+
+| 변수 | 용도 |
+|------|------|
+| `AUTH_SECRET` | next-auth JWT 서명 (`openssl rand -base64 32`) |
+| `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | Discord OAuth |
+| `MONGODB_URI` | MongoDB Atlas 연결 문자열 |
+| `GUILD_ID` | 운영 Discord 길드 ID (세션 API가 서버에서 강제 사용) |
+| `DISCORD_WEBHOOK_URL` | `/apply`, `/contact` 제출 알림 채널 |
+
+선택:
+- `NEXT_PUBLIC_APP_BASE_PATH` — 서브패스 배포 시 이미지 경로 보정
+- `NEXT_PUBLIC_SITE_URL` — 메타 절대 URL 고정
+
+## 개발
+
+모노레포 루트에서 shared-db 빌드가 선행돼야 한다.
+
+```bash
+# 모노레포 루트에서
+pnpm install
+pnpm --filter @stargate/shared-db build
+
+# StarGateV2에서
+cd StarGateV2
+pnpm dev         # next dev --turbopack (http://localhost:3000)
+pnpm build       # shared-db 빌드 + next build
+pnpm start       # 프로덕션 서버
+pnpm lint        # eslint . --max-warnings=0
+npx tsc --noEmit # 타입 체크
+```
+
+## 시드
+
+```bash
+pnpm seed:factions        # dry-run (기본, 쓰기 없음)
+pnpm seed:institutions    # dry-run
+
+# 실제 적재 (opt-in 2단계 필수)
+pnpm seed:factions -- --execute --yes
+pnpm seed:institutions -- --execute --yes
+```
+
+`scripts/` 하위의 `seed-admin`, `migrate-characters` 등 기타 스크립트는 `tsx`로 직접 실행.
+
+## DB 접근 패턴
+
+- `lib/db/init.ts` — shared-db serverless 초기화 (사이드이펙트)
+- `lib/db/sessions.ts` — shared-db의 `findSessionsByGuildInMonth` / `findUpcomingSessionsByGuild` / `countParticipationByUserId`를 `import "./init"`과 함께 re-export. 세션 집계는 반드시 이 래퍼 경유.
+- 그 외 도메인은 `lib/db/{users,characters,credits,inventory,wiki,session-reports,notifications}.ts` 의 CRUD 함수 직접 호출.
+
+## 주의사항
+
+- `<a>` 대신 `<Link>` 사용 (Next.js 클라이언트 내비게이션)
+- CSS Modules BEM 패턴: `styles.block__element`, `styles["block__element--modifier"]`
+- `dangerouslySetInnerHTML` 사용 시 반드시 `sanitizeHtml` 적용
+- middleware에 `mongodb` import 금지 (Edge Runtime 비호환)
+
+## 관련 문서
+
+- 루트 [`CLAUDE.md`](../CLAUDE.md) — 모노레포 전반
+- [`docs/spec/README.md`](docs/spec/README.md) — NPC/Faction/Institution 스펙
+- [`docs/design/novus-ordo/`](docs/design/novus-ordo/) — 세계관 설계 노트

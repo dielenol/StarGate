@@ -29,6 +29,8 @@ TRPG 세션 일정 참여 여부를 디스코드에서 수집하고, 마감 시 
    - `PARTICIPATION_CHECK_IMAGE_COOLDOWN_MINUTES`: (선택) `/일정 참여확인` 월간 캘린더 PNG 재첨부 최소 간격(분, 기본 30). `0`이면 매 조회 시도(전역 PNG 큐가 부하 완화)
    - `PNG_RENDER_MIN_INTERVAL_MS`: (선택) Puppeteer PNG 한 건 처리 후 다음 건까지 대기(ms, 기본 500)
 
+> DB 이름은 코드에 고정(`trpg_bot`)되어 있어 `MONGODB_URI`의 database path 부분은 무시됨.
+
 ## 설치 및 실행
 
 ```bash
@@ -46,13 +48,7 @@ npm run dev
 
 ## 슬래시 커맨드 등록
 
-봇을 처음 실행하면 자동으로 등록됩니다. `GUILD_ID`를 설정하면 해당 서버에만 등록되어 즉시 반영됩니다.
-
-수동 등록만 필요할 때:
-
-```bash
-npm run register
-```
+봇 시작 시 Discord에 슬래시 커맨드를 자동으로 등록합니다. `GUILD_ID`를 설정하면 해당 길드에만 등록되어 즉시 반영되고, 비우면 글로벌 등록이 수행됩니다. 별도의 `register` 스크립트는 없습니다.
 
 ## 커맨드 사용법
 

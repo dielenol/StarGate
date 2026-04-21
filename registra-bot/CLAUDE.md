@@ -9,7 +9,7 @@ Discord 일정 관리 봇. TRPG 세션의 생성·응답 수집·자동 마감·
 | 런타임 | Node.js ESM (`"type": "module"`) |
 | 언어 | TypeScript 5.7, strict, ES2022 target, NodeNext module |
 | 봇 프레임워크 | discord.js v14 |
-| DB | MongoDB 6 (Atlas, 싱글톤 MongoClient) |
+| DB | MongoDB 7 (드라이버 `mongodb@^7.1.1`, Atlas, 싱글톤 MongoClient) |
 | 이미지 생성 | Puppeteer 24 (결과 카드 PNG) |
 | 환경변수 | dotenv |
 | 패키지 매니저 | pnpm |
@@ -28,12 +28,13 @@ pnpm start        # node dist/index.js (프로덕션)
 src/
 ├── index.ts           # 진입점 — Client 초기화, 이벤트·스케줄러 등록
 ├── config.ts          # 환경변수 검증, config 객체 export
-├── commands/          # 슬래시 커맨드 핸들러 (create, manage, autocomplete, register)
+├── commands/          # 슬래시 커맨드 핸들러 (session-create, session-manage, session-create-autocomplete, register)
 ├── handlers/          # 버튼 인터랙션 처리
 ├── scheduler/         # 백그라운드 폴링 (close-checker 1분, reminder-checker 15분)
 ├── services/          # 비즈니스 로직 (session-close)
-├── db/                # MongoDB 컬렉션별 CRUD (sessions, responses, logs, user-tips)
-│   └── client.ts      # MongoClient 싱글톤, 인덱스 자동 생성
+├── db/                # MongoDB 컬렉션별 CRUD (sessions, responses, logs, registrar-user-tips)
+│   ├── client.ts      # MongoClient 싱글톤, 인덱스 자동 생성
+│   └── index.ts       # 배럴 export
 ├── types/             # session.ts, session-log.ts
 ├── constants/         # 텍스트/상수 (registrar-voice.ts)
 ├── slash/             # 슬래시 커맨드 한국어 이름 정의

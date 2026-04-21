@@ -15,7 +15,7 @@ NPC·세계관 참고: [docs/NPC-REFERENCES.md](docs/NPC-REFERENCES.md)
 
 ## 요구사항
 
-- Node.js 18+
+- Node.js 20+ (루트 pnpm workspace/StarGateV2와 함께 빌드 시 22.6.0+ 권장)
 - MongoDB (기본 DB 이름: `stargate` 통합 DB, `MONGODB_DB_NAME`로 변경 가능)
 - Discord Bot Token
 
@@ -29,12 +29,20 @@ NPC·세계관 참고: [docs/NPC-REFERENCES.md](docs/NPC-REFERENCES.md)
 
 ## 실행
 
-```bash
-npm install
-npm run run
-```
+모노레포 루트에서 pnpm 워크스페이스 설치 후 이 디렉토리에서 스크립트 실행.
 
-개발: `npm run dev`
+```bash
+# 모노레포 루트에서 1회
+pnpm install
+pnpm --filter @stargate/shared-db build
+
+# registra-bot 실행
+cd registra-bot
+pnpm run build   # tsc → dist/
+pnpm start       # node dist/index.js
+pnpm run run     # build + start 일괄
+pnpm dev         # tsx src/index.ts (개발, hot reload 없음)
+```
 
 ## 슬래시 등록
 
