@@ -1,9 +1,80 @@
-/* ── Personnel list ── */
+/* ── Personnel list (v2) ── */
 
-/* Search Box */
+/* Page head right */
+
+.headRight {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.clrPill {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+/* Clearance context strip (gold notice) */
+
+.clearanceStrip {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--gold-dim);
+  border-left: 2px solid var(--gold);
+  background: rgba(201, 168, 90, 0.06);
+  color: var(--ink-1);
+  font-size: 11px;
+}
+
+.clearanceStrip__label {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+}
+
+.clearanceStrip__body {
+  flex: 1 1 auto;
+  min-width: 220px;
+}
+
+.clearanceStrip__level {
+  color: var(--gold);
+  font-family: var(--font-mono);
+}
+
+.clearanceStrip__source {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.classifiedTag {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+}
+
+/* Search + Filter Box */
 
 .searchBox {
-  margin-bottom: var(--gap);
+  margin-bottom: 14px;
 }
 
 .searchRow {
@@ -16,24 +87,56 @@
   flex: 1;
 }
 
-.searchHint {
-  margin-top: 10px;
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filters__eyebrow {
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.2em;
 }
 
-/* Filter tabs */
+/* Segmented control (seg) */
 
-.filters {
-  display: flex;
-  gap: 0;
-  margin-top: 12px;
-  border-bottom: 1px solid var(--line);
-  overflow-x: auto;
-  white-space: nowrap;
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
 }
+
+.seg__btn {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.seg__btn + .seg__btn {
+  border-left: 1px solid var(--line-strong);
+}
+
+.seg__btn:hover {
+  color: var(--ink-0);
+}
+
+.seg__btn--on {
+  background: var(--gold);
+  color: var(--bg);
+}
+
+/* Legacy v1 filter tabs — retained as fallback (hidden unless used) */
 
 .filters__tab {
   padding: 8px 14px;
@@ -45,13 +148,6 @@
   font-size: 10px;
   letter-spacing: 0.12em;
   cursor: pointer;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.filters__tab:hover {
-  color: var(--ink-0);
 }
 
 .filters__tab--active {
@@ -59,7 +155,143 @@
   border-bottom-color: var(--gold);
 }
 
-/* Grid */
+.searchHint {
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+/* Org breadcrumbs (drill state) */
+
+.orgBreadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 14px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+.orgBreadcrumbs__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crumb {
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-3);
+  background: transparent;
+  white-space: nowrap;
+}
+
+.crumb--on {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(201, 168, 90, 0.06);
+}
+
+.sep {
+  color: var(--ink-3);
+}
+
+/* Drilldown wrapper */
+
+.drilldown {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Sub-unit group stack */
+
+.subunitGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Card grid */
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--gap);
+}
+
+/* Empty state */
+
+.empty {
+  padding: 24px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+/* Legend */
+
+.legend {
+  margin-top: 18px;
+  padding: 12px 14px;
+}
+
+.legend__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.legend__item {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.legend__label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.12em;
+}
+
+.lvScale {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.lvScale > span {
+  width: 6px;
+  height: 2px;
+  background: var(--line-strong);
+}
+
+.lvScale > span.lvScale--on {
+  background: var(--gold);
+}
+
+.redactBlock {
+  display: inline-block;
+  width: 80px;
+  height: 10px;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      var(--gold-dim) 0 4px,
+      transparent 4px 8px
+    );
+  border: 1px solid var(--gold-dim);
+}
+
+/* ── v1 legacy classes (유지, 현재 미사용) ── */
 
 .grid {
   display: grid;
@@ -77,15 +309,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.cardLink:hover .card,
-.cardLink:focus-visible .card {
-  background: var(--bg-2);
-  border-color: var(--gold-dim);
 }
 
 .card__head {
@@ -121,10 +344,6 @@
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.05em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .card__footer {
@@ -138,10 +357,7 @@
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.08em;
 }
-
-/* Redacted inline (list card) */
 
 .redacted {
   display: inline-block;
@@ -150,19 +366,13 @@
   user-select: none;
 }
 
-/* Empty */
-
-.empty {
-  padding: 40px 10px;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-align: center;
-}
-
 @media (max-width: 600px) {
+  .cardGrid,
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .clearanceStrip__source {
+    margin-left: 0;
   }
 }
