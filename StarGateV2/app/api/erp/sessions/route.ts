@@ -1,22 +1,37 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { findSessionsByMonth } from "@/lib/db/registrar-read";
+import { requireRole } from "@/lib/auth/rbac";
+import { findSessionsByGuildInMonth } from "@/lib/db/sessions";
 
+// 단일 길드 전제. 다중 길드 확장 시 세션 유저의 소속 길드 화이트리스트 검증 추가.
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  try {
+    requireRole(session.user.role, "PLAYER");
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const guildId = process.env.GUILD_ID;
+  if (!guildId) {
+    return NextResponse.json(
+      { error: "GUILD_ID 환경변수가 설정되지 않았습니다." },
+      { status: 500 },
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const yearParam = searchParams.get("year");
   const monthParam = searchParams.get("month");
-  const guildId = searchParams.get("guildId");
 
-  if (!yearParam || !monthParam || !guildId) {
+  if (!yearParam || !monthParam) {
     return NextResponse.json(
-      { error: "year, month, guildId 파라미터가 필요합니다." },
+      { error: "year, month 파라미터가 필요합니다." },
       { status: 400 },
     );
   }
@@ -32,7 +47,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const sessions = await findSessionsByMonth(guildId, year, month);
+    // findSessionsByGuildInMonth 는 monthIndex(0~11) 기반
+    const sessions = await findSessionsByGuildInMonth(guildId, year, month - 1);
 
     const serialized = sessions.map((s) => ({
       ...s,
