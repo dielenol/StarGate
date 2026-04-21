@@ -6,11 +6,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 
-import { hasRole } from "@/lib/auth/rbac";
-
 import type { NavItem } from "@/components/erp/nav-config";
+
 import { NAV_GROUPS } from "@/components/erp/nav-config";
 import { IconChevronLeft } from "@/components/icons";
+
+import { hasRole } from "@/lib/auth/rbac";
 
 import styles from "./ERPSidebar.module.css";
 

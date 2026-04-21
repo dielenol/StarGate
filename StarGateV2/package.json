@@ -4,7 +4,7 @@
   "description": "Stargate TRPG 공식 랜딩 웹앱 - 세계관 소개, 프로젝트 소식, 이메일 문의 및 지원 접수",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "pnpm --filter @stargate/shared-db build && next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
