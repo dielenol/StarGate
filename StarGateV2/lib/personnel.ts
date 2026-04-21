@@ -28,12 +28,28 @@ export type FieldGroup =
   | "abilities"
   | "meta";
 
-const FIELD_REQUIRED_LEVEL: Record<FieldGroup, AgentLevel> = {
+export const FIELD_REQUIRED_LEVEL: Record<FieldGroup, AgentLevel> = {
   identity: "G",
   profile: "H",
   combatStats: "H",
   abilities: "M",
   meta: "V",
+};
+
+export const FIELD_GROUP_ORDER: readonly FieldGroup[] = [
+  "identity",
+  "profile",
+  "combatStats",
+  "abilities",
+  "meta",
+] as const;
+
+export const FIELD_GROUP_LABEL: Record<FieldGroup, string> = {
+  identity: "IDENTITY",
+  profile: "PROFILE",
+  combatStats: "COMBAT STATS",
+  abilities: "ABILITIES",
+  meta: "META",
 };
 
 /* ── 사용자의 실효 열람 등급 ── */
