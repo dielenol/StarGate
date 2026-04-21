@@ -1,0 +1,358 @@
+# 신원조회 (Personnel) 기능 명세
+
+> 경로: `/erp/personnel`
+> 역할: ERP에 등록된 AGENT / NPC 캐릭터를 열람하는 **읽기 전용** 화면. 조회자의 **보안 등급(AgentLevel)** 에 따라 필드가 등급별로 마스킹된다.
+
+---
+
+## 1. 개요
+
+- **목적**: ERP 사용자가 다른 요원/NPC 정보를 열람할 때, 조회자의 등급 이상의 정보만 노출되도록 **필드 그룹별 접근 제어**를 적용한다.
+- **특성**: 편집 기능 없음(읽기 전용). 필드 마스킹은 **서버 컴포넌트에서 렌더 전에 수행**되어 클라이언트로는 마스킹된 데이터만 전달된다.
+- **타입 구분**: 캐릭터는 `AGENT`(플레이어블 요원) 또는 `NPC` 두 타입으로 나뉘며, 상세 화면 섹션 구성이 다르다.
+
+---
+
+## 2. 라우트 / 페이지
+
+| 경로 | 파일 | 설명 |
+|------|------|------|
+| `/erp/personnel` | [app/(erp)/erp/personnel/page.tsx](../../app/(erp)/erp/personnel/page.tsx) | 목록 서버 컴포넌트 |
+| `/erp/personnel/[id]` | [app/(erp)/erp/personnel/[id]/page.tsx](../../app/(erp)/erp/personnel/[id]/page.tsx) | 상세(도시에) 서버 컴포넌트 |
+
+### 사이드바 등록
+[components/erp/nav-config.ts:74](../../components/erp/nav-config.ts)
+```ts
+{ label: "신원조회", keywords: "identity personnel",
+  icon: IconMembers, href: "/erp/personnel" }
+```
+- 소속 그룹: `people` ("인물·조직")
+- `minRole` 미설정 → 로그인한 모든 유저에게 메뉴 노출
+
+---
+
+## 3. 접근 권한
+
+### 라우트 레벨
+- `/erp/*` 전체: `PLAYER` 이상 (`middleware.ts` + `(erp)/layout.tsx`)
+- `/erp/personnel`: 별도 `minRole` 없음 → **PLAYER 이상 전원 접근 가능**
+
+### 데이터 레벨 (핵심)
+접근 자체는 열려 있으나, **열람 등급(clearance)** 에 따라 반환 필드가 마스킹된다. 아래 §4, §5 참조.
+
+---
+
+## 4. 열람 등급 산출 로직
+
+### 등급(AgentLevel) 서열
+`U(0) < J(1) < G(2) < H(3) < M(4) < A(5) < V(6)`
+
+| 등급 | 의미 (대략) |
+|------|------------|
+| V | 최고 기밀 (Voidwalker) |
+| A | 상급 (Archivist) |
+| M | 중상급 |
+| H | 중급 |
+| G | 일반 |
+| J | 주니어 |
+| U | 미분류 |
+
+### 산출 규칙
+[lib/personnel.ts `getUserClearance()`](../../lib/personnel.ts)
+
+| 조건 | 부여 등급 |
+|------|----------|
+| `ADMIN` 이상 | **V** (강제 최고) |
+| `GM` | **A** |
+| 그 외 (PLAYER) | `max(본인이 소유한 캐릭터의 agentLevel들) ∪ (user.securityClearance)` 중 최댓값 |
+| 소유 캐릭터 없음 + `securityClearance` 없음 | **U** |
+
+- `user.securityClearance`: 관리자가 수동으로 부여하는 보조 등급 필드 (옵셔널).
+- 즉, 플레이어는 **자기 캐릭터의 등급**이 곧 열람 등급의 기본값이 되고, 관리자가 별도로 `securityClearance`를 올려주면 그만큼 더 열람할 수 있다.
+
+---
+
+## 5. 필드 그룹별 마스킹 정책
+
+필드는 5개 그룹으로 분류되며, 각 그룹마다 최소 요구 등급이 있다.
+[lib/personnel.ts](../../lib/personnel.ts) 의 `FIELD_GROUP_MIN_CLEARANCE`
+
+| FieldGroup | 최소 등급 | 포함 필드 |
+|-----------|----------|----------|
+| `identity` | **G** | 실명(`sheet.name`), 성별, 나이, 신장, 메인 이미지, 외형(appearance) |
+| `profile` | **H** | 외형 상세, 성격, 배경, 인용문(quote), NPC의 `nameEn`/`roleDetail`/`notes` |
+| `combatStats` | **H** | HP, SAN, DEF, ATK |
+| `abilities` | **M** | weight, className, abilityType, credit, weaponTraining, skillTraining, equipment[], abilities[] |
+| `meta` | **V** | ownerId, createdAt, updatedAt |
+
+### 마스킹 표현
+- **값 마스킹**: 등급 미달 시 `[CLASSIFIED · {요구등급}]` 태그 또는 `████████████████████` 블록으로 치환
+- **이름 필드(목록)**: `████████` 고정 폭 블록으로 치환
+
+### 마스킹 함수
+- `filterCharacterForList(character, clearance)` — 목록용. `sheet.name` 만 처리
+- `filterCharacterByClearance(character, clearance)` — 상세용. 모든 필드 그룹 처리
+
+---
+
+## 6. UI 구성
+
+### 6-1. 목록 페이지 (`PersonnelClient`)
+[app/(erp)/erp/personnel/PersonnelClient.tsx](../../app/(erp)/erp/personnel/PersonnelClient.tsx)
+
+**데이터 소스**
+- 서버 page.tsx 에서 `listCharacters()` + `findUserById()` + `listCharactersByOwner()` 병렬 fetch
+- `getUserClearance()` 로 등급 산출 → `filterCharacterForList()` 로 이름 마스킹
+- 클라이언트는 `useCharacters(null, { initialData })` 하이브리드 패턴 (`staleTime: 2분`)
+
+**로컬 상태**
+- `query: string` — 검색어
+- `filter: "ALL" | "AGENT" | "NPC"` — 타입 필터
+
+**검색 대상**
+- `codename`, `role`, 부서명, `sheet.name` (단, `canViewField(clearance, "identity")` true일 때만)
+
+**카드 구성 (`PersonnelCard`)**
+- 코드네임
+- 실명 or `████████` (identity 등급 미달 시)
+- 역할 / 부서
+- CLR 등급 태그 (해당 캐릭터의 agentLevel)
+- 타입 태그 (AGENT / NPC)
+- 그룹/소속 라벨
+- 클릭 시 `/erp/personnel/{id}` 로 이동
+
+### 6-2. 상세(Dossier) 페이지 (`DossierClient`)
+[app/(erp)/erp/personnel/[id]/DossierClient.tsx](../../app/(erp)/erp/personnel/[id]/DossierClient.tsx)
+
+**데이터 소스**
+- 서버 page.tsx 에서 `findCharacterById()` + `findUserById()` + `listCharactersByOwner()` 병렬 fetch
+- `filterCharacterByClearance()` 로 전체 필드 마스킹
+- `JSON.parse(JSON.stringify(...))` 로 직렬화 후 클라이언트에 전달 — **클라이언트 재조회 없음**
+
+**레이아웃**
+- 사이드 패널: 초상화 이미지 또는 `<Seal>` 대체 표식
+  - KV 목록: CODE, 실명, 성별, 나이, 신장, 소속
+  - AUDIT 박스: OWNER / 생성일 / 수정일 (`meta` 등급 V 필요)
+- 메인 패널 (공통)
+  - **CHARACTER PROFILE**: 외형 / 성격 / 배경 / QUOTE — `profile` 등급 H 필요
+- 메인 패널 (AGENT 전용)
+  - **COMBAT STATS**: HP / SAN / DEF / ATK — `combatStats` 등급 H 필요
+  - **AGENT DETAILS**: CLASS / WEIGHT / ABILITY TYPE / CREDIT / WEAPON TRAINING / SKILL TRAINING — `abilities` 등급 M 필요
+  - **ABILITIES** 목록
+  - **EQUIPMENT** 목록
+- 메인 패널 (NPC 전용)
+  - **NPC DETAILS**: NAME(EN) / ROLE DETAIL / NOTES — `profile` 등급 H 필요
+
+**헬퍼 컴포넌트**
+- `ClassifiedValue` — 값 마스킹 (등급 미달 시 `[CLASSIFIED · {등급}]`)
+- `RedactedBlock` — 블록 마스킹 (`████████████████████`)
+
+---
+
+## 7. 데이터 흐름
+
+```
+[서버 page.tsx]
+  ├─ auth() → session 검증
+  ├─ MongoDB 병렬 fetch (listCharacters / findUserById / listCharactersByOwner)
+  ├─ getUserClearance() → 등급 산출
+  ├─ filterCharacterForList() 또는 filterCharacterByClearance() → 필드 마스킹
+  └─ props 로 전달
+        ↓
+[클라이언트 Component]
+  ├─ 목록: useCharacters(null, { initialData }) — 2분 staleTime
+  └─ 상세: 재조회 없이 initial props 사용
+```
+
+### 재조회 시 주의
+- 목록은 `GET /api/erp/characters` 를 통해 갱신되는데, **이 API는 마스킹을 적용하지 않는다** (§9 참조).
+
+---
+
+## 8. 관련 파일 (빠른 참조)
+
+| 레이어 | 파일 |
+|--------|------|
+| 목록 서버 | [app/(erp)/erp/personnel/page.tsx](../../app/(erp)/erp/personnel/page.tsx) |
+| 목록 클라 | [app/(erp)/erp/personnel/PersonnelClient.tsx](../../app/(erp)/erp/personnel/PersonnelClient.tsx) |
+| 상세 서버 | [app/(erp)/erp/personnel/[id]/page.tsx](../../app/(erp)/erp/personnel/[id]/page.tsx) |
+| 상세 클라 | [app/(erp)/erp/personnel/[id]/DossierClient.tsx](../../app/(erp)/erp/personnel/[id]/DossierClient.tsx) |
+| 등급/마스킹 로직 | [lib/personnel.ts](../../lib/personnel.ts) |
+| 사이드바 등록 | [components/erp/nav-config.ts:74](../../components/erp/nav-config.ts) |
+| Query Hook | [hooks/queries/useCharactersQuery.ts](../../hooks/queries/useCharactersQuery.ts) |
+| DB CRUD | [packages/shared-db/src/crud/characters.ts](../../../packages/shared-db/src/crud/characters.ts) |
+| 타입 정의 | [packages/shared-db/src/types/character.ts](../../../packages/shared-db/src/types/character.ts) |
+
+### DB 컬렉션
+- **DB**: `stargate`
+- **Collection**: `characters`
+- 주요 필드: `codename`, `type`, `role`, `agentLevel`, `department`, `ownerId`, `sheet{...}`, `previewImage`, `pixelCharacterImage`, `isPublic`, `createdAt`, `updatedAt`
+- User 측 등급 필드: `users.securityClearance?: AgentLevel`
+
+---
+
+## 9. 보안 고려사항 / 알려진 한계
+
+### 9-1. API 엔드포인트는 마스킹을 적용하지 않는다
+- `GET /api/erp/characters` 및 `GET /api/erp/characters/[id]` 는 인증만 체크하고 **원본 데이터를 그대로 반환**한다.
+- 필드 마스킹은 **서버 컴포넌트(page.tsx) 경로에서만** 적용된다.
+- 따라서 PLAYER 권한으로 API 를 직접 호출하면 마스킹된 필드(예: 타 요원의 실명, 스탯)를 우회 조회할 수 있다.
+- **개선 방향**:
+  1. `GET /api/erp/characters*` 응답에도 `filterCharacterByClearance()` 를 적용
+  2. 혹은 `/api/erp/personnel/*` 전용 라우트를 분리하여 마스킹 필수화
+  3. 기존 `/api/erp/characters` 는 GM+ 로 minRole 격상
+
+### 9-2. 목록 클라이언트 재조회 시 마스킹 유지 여부
+- `useCharacters()` 는 `GET /api/erp/characters` 로 재조회하므로, **재조회 순간부터는 마스킹되지 않은 원본이 캐시에 들어간다** (§9-1 의 직접적 귀결).
+- 초기 렌더는 `initialData`(마스킹됨) 로 동작하지만, `staleTime: 2분` 경과 후 background refetch 시 무마스킹 데이터로 대체된다.
+
+### 9-3. 상세는 서버 렌더만
+- DossierClient 는 재조회 로직이 없어 서버 마스킹이 유지된다. (단, `/api/erp/characters/[id]` 를 별도 호출하면 여전히 우회 가능)
+
+### 9-4. `filterCharacterForList` 의 커버리지
+- 목록용 필터는 `sheet.name` 만 마스킹한다. 그러나 서버에서 클라이언트로 전달되는 `character` 객체에는 여전히 다른 필드(`sheet.appearance`, `sheet.personality` 등)가 포함될 수 있다.
+- 현 UI 는 이 필드들을 목록에서 렌더하지 않지만, **브라우저의 React DevTools / 네트워크 페이로드로는 노출된다.**
+- **개선 방향**: 목록 응답을 `{ _id, codename, type, role, agentLevel, department, previewImage, name? }` 수준으로 축소한 DTO 로 변환해서 전달.
+
+---
+
+## 10. 향후 확장 아이디어 (참고)
+
+- 조회 이력(audit log) 적재: 누가 언제 어떤 Dossier 를 열었는지 기록 → V 등급 뷰어에서 열람
+- 페이지네이션: 현재는 `listCharacters()` 가 전체 반환. 캐릭터 수 증가 시 cursor 기반 페이지네이션 필요
+- 정렬 옵션: 등급/부서/갱신일 기준 정렬 UI
+- 부서별 집계 뷰: 조직도 관점의 별도 탭
+
+---
+
+## 11. v2 재설계 — 조직도 드릴다운
+
+> **상태**: 설계 합의 완료, 미구현.
+> **배경**: v1 (§6-1 카드 그리드)은 `department` 를 카드 내부 라벨로만 표현해 **세력/소속 관계가 시각적으로 드러나지 않음**. 최초 의도였던 "조직 관계도 → 노드 클릭 시 아코디언"을 v2 에서 되살린다.
+
+### 11-1. 설계 원칙
+
+- **UI 교체, 데이터 유지**: 같은 라우트 `/erp/personnel` 에서 목록 컴포넌트만 교체. DB 스키마 / API / 마스킹 로직 변경 없음.
+- **Dossier 페이지(§6-2) 는 유지**: 카드 클릭 → 기존 `/erp/personnel/[id]` 흐름 그대로.
+- **조직은 코드 상수로 유지** (§11-2): 별도 MongoDB 컬렉션 신설하지 않음.
+- **지휘 라인 엣지는 v1 에서 생략**: 카드 정렬로 위계 표현.
+
+### 11-2. 데이터 구조 (변경 없음 확인)
+
+조직은 [types/character.ts](../../types/character.ts) 의 **코드 상수**로 관리:
+
+```
+FACTIONS (3대 세력)           INSTITUTIONS (독립 기관)
+├─ MILITARY (군부)             ├─ SECRETARIAT (사무국)
+├─ COUNCIL  (이사회)           │   ├─ RESEARCH (연구 기구)
+└─ CIVIL    (시민사회)         │   ├─ ADMIN_BUREAU (행정 기구)
+                               │   ├─ INTL (국제 기구)
+                               │   └─ CONTROL (통제 기구)
+                               └─ FINANCE (재무국)
+```
+
+- `character.department: DepartmentCode` — 단일 문자열, 한 캐릭터는 한 부서에만 소속
+- 유틸: [lib/org-structure.ts](../../lib/org-structure.ts) — `getTopLevelGroup()`, `getDepartmentLabel()`, `getSubUnits()`, `isFaction()`, `isInstitution()`
+
+**조직 메타 확장이 필요할 때**: 상수 객체에 필드만 추가.
+
+```ts
+// 예시 (아직 미적용)
+{ code: "MILITARY", label: "군부", labelEn: "Military",
+  emblem: "/images/org/military.svg",
+  description: "..." }
+```
+
+### 11-3. 뷰 구조 — 3-depth 드릴다운
+
+| Depth | 상태 | 내용 |
+|-------|------|------|
+| **L1 조감 뷰** | 초기 진입 상태 | 3대 세력 + 독립 기관 노드를 박스+라인 다이어그램으로 배치. 각 노드에 라벨/영문라벨/소속 인원수. 클릭 시 L2 로 진입 |
+| **L2 그룹 뷰** | `selectedGroup !== null` | 선택된 세력/기관 내부. 하위 기구가 있으면 (`SECRETARIAT`) 트리 표시, 없으면 (`MILITARY`, `FINANCE` 등) 멤버 카드 바로 표시 |
+| **L3 아코디언** | `expandedSubUnit !== null` | L2 에서 하위 기구 노드 클릭 시 해당 기구의 멤버 카드 그리드 펼침. 토글 (재클릭 시 접힘) |
+
+**공통 UI 요소** (모든 depth 에서 노출):
+- 상단 현재 열람 등급 배지
+- 검색 입력
+- 타입 필터 (`ALL` / `AGENT` / `NPC`)
+- L2 이상에서는 "← 조직도" 복귀 버튼
+
+### 11-4. L1 조감 뷰 레이아웃
+
+- **좌측**: 3대 세력 (`FACTIONS`) — 삼각형 배치 (COUNCIL 상단, MILITARY 좌하, CIVIL 우하)
+- **우측**: 독립 기관 (`INSTITUTIONS`) — 수직 스택
+- **하단**: `UNASSIGNED` (미배정) — 존재할 때만 카드 그리드로 노출
+- **구현 수준**: CSS Grid + SVG 라인으로 충분. 현재 노드 규모 (세력 3 + 기관 2 + 하위 기구 4 = **9개**)에서 react-flow 등 전문 라이브러리는 오버엔지니어링. 노드 50+ 시점에 재검토.
+
+### 11-5. 카드 정렬 (위계 표현)
+
+지휘 라인 엣지 대신 **카드 순서**로 위계를 표현:
+
+1. `agentLevel` **내림차순** (V → A → M → H → G → J → U)
+2. **A 이상**에는 "부서장" 배지 표시 (카드 상단)
+3. 동일 등급 내 `codename` 알파벳 오름차순
+
+**지휘 라인 엣지**는 v2 추후 옵션 — 필요 시점에 `character.reportsTo` 필드 신설 + 토글 on/off UI 추가.
+
+### 11-6. 검색 인터랙션 (자동 드릴다운 + 하이라이트 하이브리드)
+
+검색어 입력 시:
+
+1. **매칭 탐색**: `codename` / `role` / `sheet.name` (단 `canViewField(clearance, "identity")` 통과 시) / `departmentLabel` 대상
+2. **자동 드릴다운**: 매칭 인물이 속한 최상위 그룹을 `selectedGroup` 으로 자동 세팅
+3. **자동 펼침**: 매칭 인물의 하위 기구(있으면)를 `expandedSubUnit` 으로 자동 세팅
+4. **매칭 카드 강조**: 테두리 glow (border highlight)
+5. **비매칭 카드**: `opacity: 0.35` — 숨기지 않음 (컨텍스트 유지)
+6. **여러 그룹 교차 매칭**: 상단 배너로 `"매칭 N건 · 현재 그룹 K건 · [다른 그룹 N-K건 보기 →]"` 점프 버튼
+7. **검색어 비움**: `selectedGroup` / `expandedSubUnit` 초기화, 조감 뷰 복귀
+
+**이유**: 조직도의 핵심 가치인 "관계 시각화"를 검색 중에도 유지. flat list 전환은 조직도의 존재 이유를 삭제하므로 기각.
+
+### 11-7. 타입 필터 (AGENT / NPC)
+
+- v1 동작 유지. `ALL` / `AGENT` / `NPC` 세그먼트 토글.
+- 필터 적용 시 각 노드 **인원수 라벨 재계산** (예: 필터 `AGENT` → 노드 "군부 12명"이 "군부 8명" 으로).
+- 검색과 AND 조건.
+
+### 11-8. 등급별 조회 가능 정보 표기 (§4 합의 흡수)
+
+조직 자체에는 기밀 등급을 두지 않되, **상위 등급만 볼 수 있는 항목이 존재함을 표식으로 알린다**.
+
+- **개인 카드 (L3)**: 해당 카드의 마스킹된 필드 개수가 있으면 카드 하단에 `[상위 기밀 N건 — M 등급 필요]` 같은 뱃지
+- **Dossier 페이지 (§6-2)**: 각 섹션(COMBAT STATS / AGENT DETAILS 등) 제목 옆에 요구 등급 뱃지 (`H CLR`, `M CLR` 등)
+- **목적**: 플레이어가 "내가 못 보는 정보가 여기에 있다"를 인지 → 등급 상승 동기 부여
+
+### 11-9. 보안 고려사항 (v1 이슈 승계)
+
+§9 의 모든 한계가 v2 에도 동일 적용:
+
+- §9-1 `GET /api/erp/characters*` 마스킹 부재 — **v2 구현 시점에 같이 해결 권장**
+- §9-2 목록 background refetch 시 무마스킹 데이터 대체 — §9-1 해결로 자동 해결
+- §9-4 목록 응답 과다 필드 — 목록용 DTO 축소 권장
+
+### 11-10. 구현 단계 (제안 순서)
+
+1. L1 조감 뷰 레이아웃 (박스 + 라인, 3 세력 + 2 기관)
+2. L2 드릴다운 상태 관리 (`selectedGroup`, `expandedSubUnit`)
+3. L3 아코디언 카드 그리드 (기존 `PersonnelCard` 재사용)
+4. 카드 정렬 로직 (agentLevel 내림차순 + 부서장 배지)
+5. 검색 인터랙션 (자동 드릴다운 + 하이라이트 + 여러 그룹 점프)
+6. 타입 필터 재적용 + 인원수 재계산
+7. 등급별 정보 표기 뱃지 (카드 + Dossier)
+8. **[병행 권장]** §9-1 API 레벨 마스킹 보완
+
+### 11-11. 마이그레이션
+
+- **DB 스키마 변경 없음** → 마이그레이션 불필요
+- **라우트 유지** (`/erp/personnel` + `/erp/personnel/[id]`) → 외부 링크 영향 없음
+- **Dossier 페이지 유지** → 상세 UI 건드리지 않음
+- `PersonnelClient.tsx` **전면 교체**, `DossierClient.tsx` **무변경**
+
+### 11-12. 결정 근거 요약
+
+| 결정 | 근거 |
+|------|------|
+| 조직 엔티티 신설 X | 세계관 설정은 런타임 CRUD 불필요. 코드 상수가 truth source. git 이력으로 변경 추적 |
+| 지휘 라인 엣지 v1 생략 | (1) 드릴다운 자체가 이미 3단 계층 표현 (2) TRPG 관계는 수시 변동, `reportsTo` 필드 신설 부담 (3) 엣지 과다 시 시각적 공해 |
+| 검색 = 자동 드릴다운 + 하이라이트 | (1) 조직도의 "관계 시각화" 가치 유지 (2) 비매칭 흐림으로 컨텍스트 유지 (3) 여러 그룹 점프로 전역 매칭 접근성 확보 |
+| 조직 기밀 등급 X | 플레이어 전원 G 이상 전제 → 조직 존재 자체 마스킹은 오버킬. 개인 필드 마스킹으로 이미 충분 |
