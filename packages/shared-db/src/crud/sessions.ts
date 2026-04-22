@@ -611,6 +611,35 @@ export async function completeSessionFinalization(
   return result.modifiedCount > 0;
 }
 
+/**
+ * 이미 마감된(CLOSED) 세션을 사후 철회합니다. (CLOSED → CANCELED 직접 전이)
+ *
+ * 일반 `executeSessionCancel` 흐름은 OPEN만 다루지만, 확정 보고 이후에도
+ * 운영 사유로 철회가 필요한 경우가 있어 별도 경로를 제공합니다.
+ *
+ * - 필터: `status === "CLOSED"` 인 건만 갱신 (동시성 가드)
+ * - 기존 `finalizationPending`류 플래그는 이미 `completeSessionFinalization`에서
+ *   `$unset` 처리돼 있으므로, 여기서는 상태만 전환합니다.
+ */
+export async function retractClosedSession(sessionId: string): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const col = await sessionsCol();
+  const result = await col.updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      status: "CLOSED",
+    } as SessionFilter,
+    {
+      $set: {
+        status: "CANCELED",
+        updatedAt: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount > 0;
+}
+
 export async function findSessionsPendingFinalization(): Promise<Session[]> {
   const col = await sessionsCol();
   return col
