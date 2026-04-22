@@ -6,7 +6,7 @@
 
 import { MongoServerError, ObjectId } from "mongodb";
 
-import type { User, UserRole, UserPublic } from "../types/index.js";
+import type { User, UserRole, UserStatus, UserPublic } from "../types/index.js";
 import { usersCol } from "../collections.js";
 
 function toPublic(user: User): UserPublic {
@@ -55,6 +55,41 @@ export async function updateUserRole(
   );
 }
 
+export async function updateUserStatus(
+  userId: string,
+  status: UserStatus
+): Promise<void> {
+  const col = await usersCol();
+  await col.updateOne(
+    { _id: new ObjectId(userId) },
+    { $set: { status, updatedAt: new Date() } }
+  );
+}
+
+export async function unlinkDiscord(userId: string): Promise<void> {
+  const col = await usersCol();
+  await col.updateOne(
+    { _id: new ObjectId(userId) },
+    {
+      $set: {
+        discordId: null,
+        discordUsername: null,
+        discordGlobalName: null,
+        discordAvatar: null,
+        updatedAt: new Date(),
+      },
+    }
+  );
+}
+
+export async function deleteUser(
+  userId: string
+): Promise<{ deletedCount: number }> {
+  const col = await usersCol();
+  const result = await col.deleteOne({ _id: new ObjectId(userId) });
+  return { deletedCount: result.deletedCount };
+}
+
 export async function updateLastLogin(userId: string): Promise<void> {
   const col = await usersCol();
   await col.updateOne(
@@ -88,6 +123,11 @@ export async function linkDiscord(
 export async function countUsers(): Promise<number> {
   const col = await usersCol();
   return col.countDocuments();
+}
+
+export async function countUsersByRole(role: UserRole): Promise<number> {
+  const col = await usersCol();
+  return col.countDocuments({ role });
 }
 
 export async function listUsers(): Promise<UserPublic[]> {

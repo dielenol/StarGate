@@ -19,7 +19,16 @@ export default async function UsersAdminPage() {
     redirect("/erp");
   }
 
-  const users = await listUsers().catch((): UserPublic[] => []);
+  const users = await listUsers().catch((err): UserPublic[] => {
+    console.error("[admin/users] listUsers failed:", err);
+    return [];
+  });
 
-  return <UsersAdminClient initialUsers={users} />;
+  return (
+    <UsersAdminClient
+      initialUsers={users}
+      currentUserId={session.user.id}
+      currentUserRole={session.user.role}
+    />
+  );
 }

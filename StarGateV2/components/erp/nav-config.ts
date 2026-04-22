@@ -99,7 +99,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "관리자", keywords: "admin", icon: IconSystem, href: null },
       { label: "사용자 관리", keywords: "users admin", icon: IconUserAdmin, href: "/erp/admin/users" },
-      { label: "멤버 관리", keywords: "members admin", icon: IconMembers, href: "/erp/admin/members" },
     ],
   },
 ];

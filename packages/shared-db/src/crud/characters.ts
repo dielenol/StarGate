@@ -126,6 +126,23 @@ export async function updateCharacter(
   return result.modifiedCount > 0;
 }
 
+/**
+ * 특정 user 소유의 모든 character ownerId를 null로 해제한다.
+ * 사용자 삭제 시 캐릭터 데이터는 보존하되 소유자만 끊기 위함.
+ *
+ * @returns matchedCount — ownerId === userId에 해당하는 도큐먼트 수
+ */
+export async function clearCharacterOwnerByUserId(
+  userId: string
+): Promise<{ matchedCount: number }> {
+  const col = await charactersCol();
+  const result = await col.updateMany(
+    { ownerId: userId },
+    { $set: { ownerId: null, updatedAt: new Date() } }
+  );
+  return { matchedCount: result.matchedCount };
+}
+
 /* ── 삭제 ── */
 
 export async function deleteCharacter(id: string): Promise<boolean> {
