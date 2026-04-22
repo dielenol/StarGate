@@ -44,8 +44,8 @@ export default async function SessionReportDetailPage({ params }: Props) {
     notFound();
   }
 
-  const isGmOrAbove = hasRole(session.user.role, "GM");
-  const isAdmin = hasRole(session.user.role, "ADMIN");
+  const isGmOrAbove = hasRole(session.user.role, "V");
+  const isAdmin = hasRole(session.user.role, "GM");
   const reportId = String(report._id);
 
   return (

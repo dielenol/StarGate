@@ -48,7 +48,7 @@ export default async function CreditsPage() {
   }
 
   const { id: userId, role } = session.user;
-  const isGm = hasRole(role, "GM");
+  const isGm = hasRole(role, "V");
 
   const [transactions, balance, users] = await Promise.all([
     (isGm

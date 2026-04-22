@@ -42,7 +42,7 @@ export interface NavItem {
 export interface NavGroup {
   key: string;
   label: string;
-  /** 그룹 전체를 감출 최소 역할 (예: "관리" 는 ADMIN+). */
+  /** 그룹 전체를 감출 최소 역할 (예: "관리" 는 GM 전용). */
   minRole?: UserRole;
   items: NavItem[];
 }
@@ -70,7 +70,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "인물·조직",
     items: [
       { label: "캐릭터", keywords: "characters", icon: IconCharacter, href: "/erp/characters" },
-      { label: "캐릭터 인입", keywords: "character import", icon: IconCharacter, href: "/erp/admin/characters/import", minRole: "GM" },
+      { label: "캐릭터 인입", keywords: "character import", icon: IconCharacter, href: "/erp/admin/characters/import", minRole: "V" },
       { label: "신원조회", keywords: "identity personnel", icon: IconMembers, href: "/erp/personnel" },
       { label: "명예의 전당", keywords: "hall of fame", icon: IconCrown, href: "/erp/hall-of-fame" },
     ],
@@ -94,8 +94,8 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     key: "admin",
-    label: "관리 · ADMIN+",
-    minRole: "ADMIN",
+    label: "관리 · GM 전용",
+    minRole: "GM",
     items: [
       { label: "관리자", keywords: "admin", icon: IconSystem, href: null },
       { label: "사용자 관리", keywords: "users admin", icon: IconUserAdmin, href: "/erp/admin/users" },

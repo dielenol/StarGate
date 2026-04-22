@@ -30,11 +30,14 @@ import { hasRole } from "@/lib/auth/rbac";
 import styles from "./page.module.css";
 
 const ROLE_TONE: Record<UserRole, "gold" | "info" | "success" | "danger" | "default"> = {
-  SUPER_ADMIN: "danger",
-  ADMIN: "gold",
-  GM: "info",
-  PLAYER: "success",
-  GUEST: "default",
+  GM: "danger",
+  V: "gold",
+  A: "gold",
+  M: "info",
+  H: "info",
+  G: "success",
+  J: "default",
+  U: "default",
 };
 
 const STATUS_TONE: Record<UserStatus, "success" | "danger" | "default"> = {
@@ -86,7 +89,7 @@ export default function UsersAdminClient({
   const [showForm, setShowForm] = useState(false);
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<UserRole>("PLAYER");
+  const [role, setRole] = useState<UserRole>("G");
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(
     null,
   );
@@ -120,7 +123,7 @@ export default function UsersAdminClient({
     });
   }, [users, query, roleFilter, statusFilter]);
 
-  const isSuperAdmin = currentUserRole === "SUPER_ADMIN";
+  const isSuperAdmin = currentUserRole === "GM";
 
   function handleToggleForm() {
     setShowForm((prev) => !prev);
@@ -140,7 +143,7 @@ export default function UsersAdminClient({
           setGeneratedPassword(data.plainPassword);
           setUsername("");
           setDisplayName("");
-          setRole("PLAYER");
+          setRole("G");
         },
         onError: (err) => {
           setError(err.message);
@@ -481,12 +484,12 @@ export default function UsersAdminClient({
               <tbody>
                 {filteredUsers.map((user) => {
                   const isSelf = user._id === currentUserId;
-                  const targetIsSuperAdmin = user.role === "SUPER_ADMIN";
+                  const targetIsSuperAdmin = user.role === "GM";
                   const isRowPending = pendingUserIds.has(user._id);
 
                   // 액션 권한 매트릭스 (행 단위):
-                  //  - 역할 변경 / 삭제 (SUPER_ADMIN+): 본인 제외, 대상이 SUPER_ADMIN이어도 본인이 SUPER_ADMIN이면 허용
-                  //  - 상태 / 비번 리셋 / 디코 해제 (ADMIN+): 본인 제외, 대상이 SUPER_ADMIN인 경우 본인도 SUPER_ADMIN이어야 허용
+                  //  - 역할 변경 / 삭제 (GM 전용): 본인 제외, 대상이 GM이어도 본인이 GM이면 허용
+                  //  - 상태 / 비번 리셋 / 디코 해제 (GM 전용): 본인 제외, 대상이 GM인 경우 본인도 GM이어야 허용
                   //  - UI disabled는 보조 방어선 — 최종 권한 검증은 서버 API에서 수행
                   const canActOnTarget =
                     !isSelf && (isSuperAdmin || !targetIsSuperAdmin);
@@ -495,12 +498,12 @@ export default function UsersAdminClient({
                   const adminDisabledTitle = isSelf
                     ? "자신의 계정에는 액션을 수행할 수 없습니다"
                     : targetIsSuperAdmin && !isSuperAdmin
-                      ? "SUPER_ADMIN 대상 액션은 SUPER_ADMIN 권한이 필요합니다"
+                      ? "GM 대상 액션은 GM 권한이 필요합니다"
                       : undefined;
                   const superDisabledTitle = isSelf
                     ? "자신의 계정에는 액션을 수행할 수 없습니다"
                     : !isSuperAdmin
-                      ? "SUPER_ADMIN 권한이 필요합니다"
+                      ? "GM 권한이 필요합니다"
                       : undefined;
 
                   return (
@@ -556,7 +559,9 @@ export default function UsersAdminClient({
                             disabled={
                               !canActOnTarget ||
                               isRowPending ||
-                              !hasRole(currentUserRole, "ADMIN")
+                              // currentUserRole === "GM"은 서버에서 이미 보장됨.
+                              // 이 체크는 UI 보조 방어선.
+                              !hasRole(currentUserRole, "GM")
                             }
                             title={adminDisabledTitle}
                             onClick={() => handleStatusToggle(user)}

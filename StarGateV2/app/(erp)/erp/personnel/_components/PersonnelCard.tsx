@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import type { AgentLevel, Character } from "@/types/character";
 
-import { getLevelRank } from "@/lib/personnel";
+import { getLevelDisplayRank } from "@/lib/personnel";
 
 import Pips from "@/components/ui/Pips/Pips";
 import Tag from "@/components/ui/Tag/Tag";
@@ -94,7 +94,7 @@ export default function PersonnelCard({
             </Tag>
             <span className={styles.clrPill}>
               <span>CLR · {level}</span>
-              <Pips total={6} filled={getLevelRank(level)} />
+              <Pips total={7} filled={getLevelDisplayRank(level)} />
             </span>
           </>
         )}

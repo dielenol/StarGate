@@ -58,11 +58,30 @@ export interface NpcSheet extends SheetBase {
 
 export type CharacterType = "AGENT" | "NPC";
 
-export type AgentLevel = "V" | "A" | "M" | "H" | "G" | "J" | "U";
+/** 8단 역할 계층: GM > V > A > M > H > G > J > U (높을수록 권한 큼) */
+export const ROLE_LEVELS = ["GM", "V", "A", "M", "H", "G", "J", "U"] as const;
+export type RoleLevel = (typeof ROLE_LEVELS)[number];
 
-export const AGENT_LEVELS: AgentLevel[] = ["V", "A", "M", "H", "G", "J", "U"];
+/** 수치 rank (rbac.ts/personnel.ts 공용) */
+export const ROLE_LEVEL_RANK: Record<RoleLevel, number> = {
+  GM: 100,
+  V: 90,
+  A: 80,
+  M: 70,
+  H: 60,
+  G: 50,
+  J: 40,
+  U: 30,
+};
+
+/** AgentLevel은 RoleLevel과 동일 union으로 alias (Phase 2-A 일체화) */
+export type AgentLevel = RoleLevel;
+
+/** AGENT_LEVELS는 character.agentLevel 입력 전용 (GM 제외, 명시 7단 리터럴) */
+export const AGENT_LEVELS = ["V", "A", "M", "H", "G", "J", "U"] as const satisfies readonly AgentLevel[];
 
 export const AGENT_LEVEL_LABELS: Record<AgentLevel, string> = {
+  GM: "GM",
   V: "VIP",
   A: "최종 관리자",
   M: "부서 관리자",

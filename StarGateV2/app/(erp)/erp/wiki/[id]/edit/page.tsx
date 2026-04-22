@@ -18,7 +18,7 @@ export default async function WikiEditPage({ params }: WikiEditPageProps) {
   }
 
   try {
-    requireRole(session.user.role, "GM");
+    requireRole(session.user.role, "V");
   } catch {
     redirect("/erp/wiki");
   }

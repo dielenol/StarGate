@@ -15,7 +15,7 @@ export default async function UsersAdminPage() {
     redirect("/login");
   }
 
-  if (!hasRole(session.user.role, "ADMIN")) {
+  if (!hasRole(session.user.role, "GM")) {
     redirect("/erp");
   }
 

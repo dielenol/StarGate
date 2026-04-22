@@ -2,14 +2,20 @@
  * 인원 관리 — 열람 등급 판정 유틸
  */
 
+import { ROLE_LEVEL_RANK } from "@stargate/shared-db";
+
 import type { AgentLevel, Character, SheetBase } from "@/types/character";
 import type { UserRole } from "@/types/user";
 
-import { hasRole } from "@/lib/auth/rbac";
+/* ── 등급 수치화 (rbac.ts와 동일 rank 공유) ── */
 
-/* ── 등급 수치화 ── */
+const LEVEL_RANK = ROLE_LEVEL_RANK;
 
-const LEVEL_RANK: Record<AgentLevel, number> = {
+/**
+ * UI 표시용 정규화 rank (0~7).
+ * Pips 등 0-N 스케일 컴포넌트용. 비교/정렬은 {@link getLevelRank} 사용.
+ */
+const LEVEL_DISPLAY_RANK: Record<AgentLevel, number> = {
   U: 0,
   J: 1,
   G: 2,
@@ -17,6 +23,7 @@ const LEVEL_RANK: Record<AgentLevel, number> = {
   M: 4,
   A: 5,
   V: 6,
+  GM: 7,
 };
 
 /* ── 필드 그룹별 최소 열람 등급 ── */
@@ -54,29 +61,9 @@ export const FIELD_GROUP_LABEL: Record<FieldGroup, string> = {
 
 /* ── 사용자의 실효 열람 등급 ── */
 
-interface ClearanceInput {
-  userRole: UserRole;
-  securityClearance?: AgentLevel;
-  characterLevels: AgentLevel[];
-}
-
-export function getUserClearance(input: ClearanceInput): AgentLevel {
-  if (hasRole(input.userRole, "ADMIN")) return "V";
-  if (hasRole(input.userRole, "GM")) return "A";
-
-  const charLevel = input.characterLevels.length === 0
-    ? "U" as AgentLevel
-    : input.characterLevels.reduce<AgentLevel>((max, level) =>
-        LEVEL_RANK[level] > LEVEL_RANK[max] ? level : max, "U");
-
-  // securityClearance와 캐릭터 레벨 중 높은 쪽 채택
-  if (input.securityClearance) {
-    return LEVEL_RANK[input.securityClearance] > LEVEL_RANK[charLevel]
-      ? input.securityClearance
-      : charLevel;
-  }
-
-  return charLevel;
+/** 사용자 권한 = 클리어런스 (Phase 2-A에서 UserRole과 AgentLevel 일체화) */
+export function getUserClearance(userRole: UserRole): AgentLevel {
+  return userRole;
 }
 
 /* ── 필드 그룹 열람 가능 여부 ── */
@@ -96,6 +83,15 @@ export function compareLevels(a: AgentLevel, b: AgentLevel): number {
 
 export function getLevelRank(level: AgentLevel): number {
   return LEVEL_RANK[level];
+}
+
+/**
+ * UI 표시용 0~7 스케일 rank.
+ * Pips, lvScale 등 `total={N}` 기반 시각화 컴포넌트에 사용.
+ * 비교/정렬 목적으로는 {@link getLevelRank} 를 사용해야 한다.
+ */
+export function getLevelDisplayRank(level: AgentLevel): number {
+  return LEVEL_DISPLAY_RANK[level];
 }
 
 /* ── 서버사이드 데이터 필터링 (P1 보안) ── */

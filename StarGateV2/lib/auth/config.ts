@@ -9,6 +9,8 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import DiscordProvider from "next-auth/providers/discord";
 
+import type { UserRole } from "@stargate/shared-db";
+
 import {
   findUserByUsername,
   findUserByDiscordId,
@@ -129,7 +131,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         id: token.id as string,
         username: token.username as string,
         displayName: token.displayName as string,
-        role: token.role as "SUPER_ADMIN" | "ADMIN" | "GM" | "PLAYER" | "GUEST",
+        role: token.role as UserRole,
         discordId: token.discordId as string | null,
       };
       return session;

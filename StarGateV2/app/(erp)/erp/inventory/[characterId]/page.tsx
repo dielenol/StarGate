@@ -41,7 +41,7 @@ export default async function CharacterInventoryPage({
   }
 
   const { role } = session.user;
-  const isGm = hasRole(role, "GM");
+  const isGm = hasRole(role, "V");
 
   const { characterId } = await params;
 

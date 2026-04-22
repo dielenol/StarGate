@@ -13,7 +13,7 @@ export async function GET() {
   }
 
   try {
-    const isGm = hasRole(session.user.role, "GM");
+    const isGm = hasRole(session.user.role, "V");
     const transactions = isGm
       ? await listCreditTransactions()
       : await listCreditTransactions(session.user.id);
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    requireRole(session.user.role, "GM");
+    requireRole(session.user.role, "V");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

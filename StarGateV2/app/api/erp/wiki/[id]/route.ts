@@ -51,7 +51,7 @@ export async function PATCH(
   }
 
   try {
-    requireRole(session.user.role, "GM");
+    requireRole(session.user.role, "V");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -101,7 +101,7 @@ export async function DELETE(
   }
 
   try {
-    requireRole(session.user.role, "ADMIN");
+    requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import type { CharacterType } from "@/types/character";
+import type { Character, CharacterType } from "@/types/character";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
@@ -25,7 +25,7 @@ export default async function CharactersPage({ searchParams }: PageProps) {
   }
 
   const { role } = session.user;
-  const isGMOrAbove = hasRole(role, "GM");
+  const isGMOrAbove = hasRole(role, "V");
 
   const params = await searchParams;
   const typeFilter =
@@ -38,9 +38,15 @@ export default async function CharactersPage({ searchParams }: PageProps) {
     : listCharacters()
   ).catch(() => []);
 
+  // MongoDB ObjectId -> string 직렬화 (Client Component 전달용)
+  const serializedCharacters = characters.map((c) => ({
+    ...c,
+    _id: c._id?.toString() ?? "",
+  })) as unknown as Character[];
+
   return (
     <CharactersClient
-      initialCharacters={characters}
+      initialCharacters={serializedCharacters}
       typeFilter={typeFilter}
       isGMOrAbove={isGMOrAbove}
     />

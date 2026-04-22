@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    requireRole(session.user.role, "PLAYER");
+    requireRole(session.user.role, "G");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -23,7 +23,7 @@ export default async function WikiListPage({
   }
 
   const { category, q } = await searchParams;
-  const isGM = hasRole(session.user.role, "GM");
+  const isGM = hasRole(session.user.role, "V");
 
   let pages: Awaited<ReturnType<typeof listWikiPages>> = [];
   let allPages: Awaited<ReturnType<typeof listWikiPages>> = [];

@@ -64,7 +64,7 @@ export default async function ProfilePage() {
           </div>
 
           <div className={styles.sideTags}>
-            <Tag tone="gold">CLR {user.securityClearance ?? "U"}</Tag>
+            <Tag tone="gold">CLR {user.role}</Tag>
             <Tag tone={user.status === "ACTIVE" ? "success" : "default"}>
               {user.status}
             </Tag>

@@ -21,7 +21,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    requireRole(session.user.role, "SUPER_ADMIN");
+    requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -67,12 +67,12 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
-  // 마지막 SUPER_ADMIN 강등 방지 — 남은 SUPER_ADMIN 이 본인 뿐이면 운영 공백 발생
-  if (target.role === "SUPER_ADMIN" && role !== "SUPER_ADMIN") {
-    const superAdminCount = await countUsersByRole("SUPER_ADMIN");
+  // 마지막 GM 강등 방지 — 남은 GM 이 본인 뿐이면 운영 공백 발생
+  if (target.role === "GM" && role !== "GM") {
+    const superAdminCount = await countUsersByRole("GM");
     if (superAdminCount <= 1) {
       return NextResponse.json(
-        { error: "마지막 SUPER_ADMIN은 강등할 수 없습니다." },
+        { error: "마지막 GM은 강등할 수 없습니다." },
         { status: 400 },
       );
     }

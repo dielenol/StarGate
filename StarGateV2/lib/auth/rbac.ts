@@ -1,23 +1,19 @@
 /**
  * RBAC (Role-Based Access Control)
  *
- * 5단계 역할 계층: SUPER_ADMIN > ADMIN > GM > PLAYER > GUEST
+ * 8단계 역할 계층: GM > V > A > M > H > G > J > U (높을수록 권한 큼)
  */
+
+import { ROLE_LEVEL_RANK } from "@stargate/shared-db";
 
 import type { UserRole } from "@/types/user";
 
-const ROLE_HIERARCHY: Record<UserRole, number> = {
-  SUPER_ADMIN: 100,
-  ADMIN: 80,
-  GM: 60,
-  PLAYER: 40,
-  GUEST: 20,
-};
+const ROLE_HIERARCHY = ROLE_LEVEL_RANK;
 
 /** 경로별 최소 요구 역할 (prefix 매칭, 구체적 경로 우선) */
-const ROUTE_PERMISSIONS: Array<{ pattern: string; minRole: UserRole }> = [
-  { pattern: "/erp/admin", minRole: "ADMIN" },
-  { pattern: "/erp", minRole: "PLAYER" },
+const ROUTE_PERMISSIONS: ReadonlyArray<{ pattern: string; minRole: UserRole }> = [
+  { pattern: "/erp/admin", minRole: "GM" },
+  { pattern: "/erp", minRole: "G" },
 ];
 
 export function hasRole(userRole: UserRole, requiredRole: UserRole): boolean {

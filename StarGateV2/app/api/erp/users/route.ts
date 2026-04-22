@@ -12,7 +12,7 @@ export async function GET() {
   }
 
   try {
-    requireRole(session.user.role, "ADMIN");
+    requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    requireRole(session.user.role, "ADMIN");
+    requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -55,9 +55,9 @@ export async function POST(request: Request) {
   }
 
   // 자신보다 높거나 같은 역할은 부여 불가
-  if (role === "SUPER_ADMIN" && session.user.role !== "SUPER_ADMIN") {
+  if (role === "GM" && session.user.role !== "GM") {
     return NextResponse.json(
-      { error: "SUPER_ADMIN 역할은 SUPER_ADMIN만 부여할 수 있습니다." },
+      { error: "GM 역할은 GM만 부여할 수 있습니다." },
       { status: 403 },
     );
   }

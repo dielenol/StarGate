@@ -97,7 +97,7 @@ export async function handleButtonInteraction(
     (interaction.member as { displayName?: string } | null)?.displayName ??
     interaction.user.username;
 
-  // Discord 유저를 통합 users 컬렉션에 upsert (미등록은 GUEST 자동 생성)
+  // Discord 유저를 통합 users 컬렉션에 upsert (미등록은 U(미분류) 자동 생성)
   // 실패해도 응답 저장은 계속 진행 (핵심 흐름 보호)
   try {
     await upsertDiscordUser({

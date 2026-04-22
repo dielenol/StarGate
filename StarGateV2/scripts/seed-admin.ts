@@ -1,5 +1,5 @@
 /**
- * 최초 SUPER_ADMIN 계정 시드 스크립트
+ * 최초 GM 계정 시드 스크립트
  *
  * 사용법:
  *   npx tsx scripts/seed-admin.ts <DISCORD_ID>
@@ -79,7 +79,7 @@ async function main() {
       discordId,
       discordUsername: null,
       discordAvatar: null,
-      role: "SUPER_ADMIN",
+      role: "GM",
       status: "ACTIVE",
       characterIds: [],
       lastLoginAt: null,
@@ -90,7 +90,7 @@ async function main() {
 
     await users.insertOne(doc);
 
-    console.log("SUPER_ADMIN 계정 생성 완료:");
+    console.log("GM 계정 생성 완료:");
     console.log(`  username: admin`);
     console.log(`  password: ${plainPassword}`);
     console.log(`  discordId: ${discordId}`);

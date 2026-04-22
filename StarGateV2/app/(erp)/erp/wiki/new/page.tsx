@@ -12,7 +12,7 @@ export default async function WikiNewPage() {
   }
 
   try {
-    requireRole(session.user.role, "GM");
+    requireRole(session.user.role, "V");
   } catch {
     redirect("/erp/wiki");
   }

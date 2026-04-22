@@ -48,7 +48,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    requireRole(session.user.role, "GM");
+    requireRole(session.user.role, "V");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -83,7 +83,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   try {
-    requireRole(session.user.role, "ADMIN");
+    requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

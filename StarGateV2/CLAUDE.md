@@ -84,7 +84,8 @@ NPC/세력(Faction)/기관(Institution) 3개 도메인 구조화. 상세는 [doc
 ## 인증 & RBAC
 
 - **JWT 전략** (서버리스 최적화)
-- **역할 계층**: `SUPER_ADMIN(100) > ADMIN(80) > GM(60) > PLAYER(40) > GUEST(20)`
+- **역할 계층**: `GM(100) > V(90) > A(80) > M(70) > H(60) > G(50) > J(40) > U(30)` (8단계, AgentLevel과 통일)
+- **user.role** 과 **character.agentLevel** 은 동일 enum 도메인(`RoleLevel`)을 공유한다. 단, `agentLevel` 은 AGENT 입력용이라 `GM` 리터럴을 제외한 7단만 사용.
 - **middleware**: Edge Runtime — 쿠키 존재만 확인, 실제 RBAC는 서버 컴포넌트에서
 - **middleware에 mongodb import 금지** (Edge Runtime 비호환)
 

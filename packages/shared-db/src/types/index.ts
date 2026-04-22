@@ -24,6 +24,7 @@ export type {
   NpcCharacter,
   CharacterType,
   AgentLevel,
+  RoleLevel,
   DepartmentCode,
   FactionCode,
   InstitutionCode,
@@ -39,6 +40,8 @@ export type {
 export {
   AGENT_LEVELS,
   AGENT_LEVEL_LABELS,
+  ROLE_LEVELS,
+  ROLE_LEVEL_RANK,
   DEPARTMENTS,
   FACTIONS,
   INSTITUTIONS,

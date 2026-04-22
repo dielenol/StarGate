@@ -65,7 +65,8 @@ types/            — 도메인 타입 정의
 - 현재 DB 적재 상태(factions/institutions 개수)는 `StarGateV2/docs/spec/README.md`의 "현재 DB 상태" 섹션 참조.
 
 ### 인증/권한
-- 역할: `SUPER_ADMIN > ADMIN > GM > PLAYER > GUEST`
+- 역할: `GM > V > A > M > H > G > J > U` (8단계, AgentLevel과 통일)
+- `user.role` 과 `character.agentLevel` 은 동일 enum 도메인 공유 (`@stargate/shared-db` 의 `RoleLevel`). `agentLevel` 은 `GM` 제외한 7단.
 - middleware.ts: Edge Runtime, 쿠키 존재 체크 → `(erp)/layout.tsx`: 실제 세션 검증
 - RBAC: `lib/auth/rbac.ts` → `hasRole(role, required)`
 

@@ -44,11 +44,12 @@
 
 ## 4. 열람 등급 산출 로직
 
-### 등급(AgentLevel) 서열
-`U(0) < J(1) < G(2) < H(3) < M(4) < A(5) < V(6)`
+### 등급(RoleLevel) 서열
+`U < J < G < H < M < A < V < GM` (오른쪽일수록 권한 높음)
 
 | 등급 | 의미 (대략) |
 |------|------------|
+| GM | 게임 마스터 / 최고 운영자 (user.role 전용, agentLevel 에서는 미사용) |
 | V | 최고 기밀 (Voidwalker) |
 | A | 상급 (Archivist) |
 | M | 중상급 |
@@ -57,18 +58,21 @@
 | J | 주니어 |
 | U | 미분류 |
 
-### 산출 규칙
+### 산출 규칙 (Phase 2-A 이후)
 [lib/personnel.ts `getUserClearance()`](../../lib/personnel.ts)
 
-| 조건 | 부여 등급 |
-|------|----------|
-| `ADMIN` 이상 | **V** (강제 최고) |
-| `GM` | **A** |
-| 그 외 (PLAYER) | `max(본인이 소유한 캐릭터의 agentLevel들) ∪ (user.securityClearance)` 중 최댓값 |
-| 소유 캐릭터 없음 + `securityClearance` 없음 | **U** |
+Phase 2-A 에서 `user.role` 과 `character.agentLevel` 의 enum 도메인이 `RoleLevel` 로 통일되면서 산출 로직이 **사용자 role 을 그대로 반환**하도록 단순화됐다.
 
-- `user.securityClearance`: 관리자가 수동으로 부여하는 보조 등급 필드 (옵셔널).
-- 즉, 플레이어는 **자기 캐릭터의 등급**이 곧 열람 등급의 기본값이 되고, 관리자가 별도로 `securityClearance`를 올려주면 그만큼 더 열람할 수 있다.
+```ts
+export function getUserClearance(userRole: UserRole): AgentLevel {
+  return userRole;
+}
+```
+
+- 구 `user.securityClearance` 보조 필드는 **제거됨** (Phase 2-A 마이그레이션에서 `$unset`).
+- 구 `max(내 캐릭터 agentLevel, securityClearance)` 로직도 **제거됨** — 이제 `user.role` 이 곧 열람 등급.
+- 관리자가 등급을 올리고 싶으면 `/erp/admin/users` 에서 `user.role` 을 직접 변경 (예: `G` → `H`).
+- `GM` 역할 사용자는 자동으로 `GM` 등급 clearance — 어떤 필드 그룹 요구치도 통과.
 
 ---
 
@@ -101,8 +105,8 @@
 [app/(erp)/erp/personnel/PersonnelClient.tsx](../../app/(erp)/erp/personnel/PersonnelClient.tsx)
 
 **데이터 소스**
-- 서버 page.tsx 에서 `listCharacters()` + `findUserById()` + `listCharactersByOwner()` 병렬 fetch
-- `getUserClearance()` 로 등급 산출 → `filterCharacterForList()` 로 이름 마스킹
+- 서버 page.tsx 에서 `listCharacters()` 단일 fetch (Phase 2-A 기준 — 구 `findUserById` / `listCharactersByOwner` 는 `getUserClearance` 단순화로 제거됨)
+- `getUserClearance(session.user.role)` 로 등급 산출 → `filterCharacterForList()` 로 이름 마스킹
 - 클라이언트는 `useCharacters(null, { initialData })` 하이브리드 패턴 (`staleTime: 2분`)
 
 **로컬 상태**
@@ -125,7 +129,7 @@
 [app/(erp)/erp/personnel/[id]/DossierClient.tsx](../../app/(erp)/erp/personnel/[id]/DossierClient.tsx)
 
 **데이터 소스**
-- 서버 page.tsx 에서 `findCharacterById()` + `findUserById()` + `listCharactersByOwner()` 병렬 fetch
+- 서버 page.tsx 에서 `findCharacterById()` 단일 fetch (Phase 2-A 기준)
 - `filterCharacterByClearance()` 로 전체 필드 마스킹
 - `JSON.parse(JSON.stringify(...))` 로 직렬화 후 클라이언트에 전달 — **클라이언트 재조회 없음**
 
@@ -154,8 +158,8 @@
 ```
 [서버 page.tsx]
   ├─ auth() → session 검증
-  ├─ MongoDB 병렬 fetch (listCharacters / findUserById / listCharactersByOwner)
-  ├─ getUserClearance() → 등급 산출
+  ├─ MongoDB fetch (목록: listCharacters / 상세: findCharacterById)
+  ├─ getUserClearance(session.user.role) → 등급 산출
   ├─ filterCharacterForList() 또는 filterCharacterByClearance() → 필드 마스킹
   └─ props 로 전달
         ↓
@@ -187,7 +191,7 @@
 - **DB**: `stargate`
 - **Collection**: `characters`
 - 주요 필드: `codename`, `type`, `role`, `agentLevel`, `department`, `ownerId`, `sheet{...}`, `previewImage`, `pixelCharacterImage`, `isPublic`, `createdAt`, `updatedAt`
-- User 측 등급 필드: `users.securityClearance?: AgentLevel`
+- User 측 등급 필드: `users.role: RoleLevel` (Phase 2-A 이전: 별도 `securityClearance` 존재했으나 제거됨)
 
 ---
 

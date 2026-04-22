@@ -16,7 +16,7 @@ export default async function SessionReportListPage() {
     redirect("/login");
   }
 
-  const isGmOrAbove = hasRole(session.user.role, "GM");
+  const isGmOrAbove = hasRole(session.user.role, "V");
   const reports = await listSessionReports().catch(() => []);
 
   return (

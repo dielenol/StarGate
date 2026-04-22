@@ -22,7 +22,7 @@ export default async function InventoryPage({
   }
 
   const { role } = session.user;
-  const isGm = hasRole(role, "GM");
+  const isGm = hasRole(role, "V");
 
   const resolvedParams = await searchParams;
   const categoryFilter = resolvedParams.category as ItemCategory | undefined;

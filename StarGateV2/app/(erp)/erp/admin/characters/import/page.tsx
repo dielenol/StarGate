@@ -14,7 +14,7 @@ export default async function CharactersImportPage() {
     redirect("/login");
   }
 
-  if (!hasRole(session.user.role, "GM")) {
+  if (!hasRole(session.user.role, "V")) {
     redirect("/erp");
   }
 

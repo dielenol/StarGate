@@ -16,7 +16,7 @@ export default async function NewItemPage() {
   }
 
   try {
-    requireRole(session.user.role, "GM");
+    requireRole(session.user.role, "V");
   } catch {
     redirect("/erp/inventory");
   }

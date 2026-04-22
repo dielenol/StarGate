@@ -1,16 +1,11 @@
 import type { ObjectId } from "mongodb";
 
-import type { AgentLevel } from "./character.js";
+import type { RoleLevel } from "./character.js";
+import { ROLE_LEVELS } from "./character.js";
 
-export const USER_ROLES = [
-  "SUPER_ADMIN",
-  "ADMIN",
-  "GM",
-  "PLAYER",
-  "GUEST",
-] as const;
-
-export type UserRole = (typeof USER_ROLES)[number];
+/** 사용자 역할 = 8단 RoleLevel (AgentLevel과 동일 union, Phase 2-A 일체화) */
+export type UserRole = RoleLevel;
+export const USER_ROLES = ROLE_LEVELS;
 
 export const USER_STATUSES = ["ACTIVE", "INACTIVE", "SUSPENDED"] as const;
 
@@ -28,7 +23,6 @@ export interface User {
   discordAvatar: string | null;
   role: UserRole;
   status: UserStatus;
-  securityClearance?: AgentLevel;
   characterIds: string[];
   lastLoginAt: Date | null;
   passwordChangedAt: Date | null;

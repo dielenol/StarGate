@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    requireRole(session.user.role, "GM");
+    requireRole(session.user.role, "V");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

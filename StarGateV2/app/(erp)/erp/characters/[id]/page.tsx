@@ -27,8 +27,8 @@ export default async function CharacterDetailPage({ params }: PageProps) {
   }
 
   const { role } = session.user;
-  const isGMOrAbove = hasRole(role, "GM");
-  const isAdmin = hasRole(role, "ADMIN");
+  const isGMOrAbove = hasRole(role, "V");
+  const isAdmin = hasRole(role, "GM");
 
   // MongoDB ObjectId -> string 직렬화 (client 전달용)
   const serialized = JSON.parse(JSON.stringify(character)) as typeof character;

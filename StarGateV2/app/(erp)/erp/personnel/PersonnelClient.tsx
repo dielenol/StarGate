@@ -21,6 +21,7 @@ import {
   compareLevels,
   FIELD_GROUP_ORDER,
   FIELD_REQUIRED_LEVEL,
+  getLevelDisplayRank,
   getLevelRank,
 } from "@/lib/personnel";
 import {
@@ -498,7 +499,7 @@ export default function PersonnelClient({
               <span>
                 CLR · {clearance} · {AGENT_LEVEL_LABELS[clearance]}
               </span>
-              <Pips total={6} filled={getLevelRank(clearance)} />
+              <Pips total={7} filled={getLevelDisplayRank(clearance)} />
             </span>
             <Button
               size="sm"
@@ -517,14 +518,12 @@ export default function PersonnelClient({
         <span className={styles.clearanceStrip__label}>CLEARANCE</span>
         <span className={styles.clearanceStrip__body}>
           내 열람 등급{" "}
-          <span className={styles.clearanceStrip__level}>
-            {clearance} ({getLevelRank(clearance)})
-          </span>{" "}
+          <span className={styles.clearanceStrip__level}>{clearance}</span>{" "}
           — 이 등급 이상의 필드만 노출됩니다. 상위 등급 필드는{" "}
           <span className={styles.classifiedTag}>CLASSIFIED</span> 로 표시됩니다.
         </span>
         <span className={styles.clearanceStrip__source}>
-          산출: max(내 캐릭터 agentLevel, securityClearance)
+          산출: user.role
         </span>
       </div>
 
@@ -642,11 +641,13 @@ export default function PersonnelClient({
           {LEGEND_ITEMS.map((item) => (
             <div key={item.level} className={styles.legend__item}>
               <span className={styles.lvScale} aria-hidden>
-                {Array.from({ length: 6 }, (_, i) => (
+                {Array.from({ length: 7 }, (_, i) => (
                   <span
                     key={i}
                     className={
-                      i < getLevelRank(item.level) ? styles["lvScale--on"] : ""
+                      i < getLevelDisplayRank(item.level)
+                        ? styles["lvScale--on"]
+                        : ""
                     }
                   />
                 ))}

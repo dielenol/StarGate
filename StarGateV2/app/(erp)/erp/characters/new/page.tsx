@@ -15,7 +15,7 @@ export default async function CharacterNewPage() {
     redirect("/login");
   }
 
-  const isGMOrAbove = hasRole(session.user.role, "GM");
+  const isGMOrAbove = hasRole(session.user.role, "V");
 
   if (!isGMOrAbove) {
     redirect("/erp/characters");

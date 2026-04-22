@@ -6,7 +6,11 @@ import type { ReactNode } from "react";
 import type { AgentLevel, Character } from "@/types/character";
 import { AGENT_LEVEL_LABELS } from "@/types/character";
 
-import { canViewField, FIELD_REQUIRED_LEVEL, getLevelRank } from "@/lib/personnel";
+import {
+  canViewField,
+  FIELD_REQUIRED_LEVEL,
+  getLevelDisplayRank,
+} from "@/lib/personnel";
 import type { FieldGroup } from "@/lib/personnel";
 import { getDepartmentLabel, getTopLevelGroup } from "@/lib/org-structure";
 
@@ -174,7 +178,7 @@ export default function DossierClient({ character, clearance }: Props) {
         <span>
           MY CLR · {clearance} · {AGENT_LEVEL_LABELS[clearance]}
         </span>
-        <Pips total={6} filled={getLevelRank(clearance)} />
+        <Pips total={7} filled={getLevelDisplayRank(clearance)} />
       </span>
       <Button as="a" href="/erp/personnel" size="sm">
         ← 복귀
@@ -637,7 +641,7 @@ export default function DossierClient({ character, clearance }: Props) {
                 <span>
                   TARGET CLR · {level} · {AGENT_LEVEL_LABELS[level]}
                 </span>
-                <Pips total={6} filled={getLevelRank(level)} />
+                <Pips total={7} filled={getLevelDisplayRank(level)} />
               </span>
             </div>
           </Box>

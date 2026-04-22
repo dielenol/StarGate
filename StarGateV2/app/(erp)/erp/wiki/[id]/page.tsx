@@ -81,8 +81,8 @@ export default async function WikiDetailPage({
     notFound();
   }
 
-  const isGM = hasRole(session.user.role, "GM");
-  const isAdmin = hasRole(session.user.role, "ADMIN");
+  const isGM = hasRole(session.user.role, "V");
+  const isAdmin = hasRole(session.user.role, "GM");
   const pageId = page._id!.toString();
   const contentHtml = renderMarkdown(page.content);
   const toc = extractToc(page.content);

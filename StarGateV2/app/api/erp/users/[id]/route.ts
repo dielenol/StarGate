@@ -22,7 +22,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   try {
-    requireRole(session.user.role, "SUPER_ADMIN");
+    requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -50,12 +50,12 @@ export async function DELETE(_request: Request, context: RouteContext) {
     );
   }
 
-  // 마지막 SUPER_ADMIN 삭제 방지
-  if (target.role === "SUPER_ADMIN") {
-    const superAdminCount = await countUsersByRole("SUPER_ADMIN");
+  // 마지막 GM 삭제 방지
+  if (target.role === "GM") {
+    const superAdminCount = await countUsersByRole("GM");
     if (superAdminCount <= 1) {
       return NextResponse.json(
-        { error: "마지막 SUPER_ADMIN은 삭제할 수 없습니다." },
+        { error: "마지막 GM은 삭제할 수 없습니다." },
         { status: 400 },
       );
     }

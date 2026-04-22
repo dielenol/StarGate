@@ -16,7 +16,7 @@ export async function POST(_request: Request, context: RouteContext) {
   }
 
   try {
-    requireRole(session.user.role, "ADMIN");
+    requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -44,8 +44,10 @@ export async function POST(_request: Request, context: RouteContext) {
     );
   }
 
-  // 권한 역전 방지: ADMIN은 SUPER_ADMIN 대상 변경 불가
-  if (target.role === "SUPER_ADMIN" && !hasRole(session.user.role, "SUPER_ADMIN")) {
+  // TODO(phase2-b): Phase 2-A rename 후 dead code. Phase 2-B에서 권한 분화 시
+  // ADMIN/SUPER_ADMIN 구분 재도입하면 이 블록이 다시 의미 있어짐. 현재는 무해.
+  // 권한 역전 방지: GM은 최상위 대상 변경 불가
+  if (target.role === "GM" && !hasRole(session.user.role, "GM")) {
     return NextResponse.json(
       { error: "상위 역할 사용자는 변경할 수 없습니다." },
       { status: 403 },

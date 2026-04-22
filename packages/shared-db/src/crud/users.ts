@@ -177,7 +177,7 @@ export async function upsertDiscordUser(
           hashedPassword: null,
           displayName: input.discordGlobalName ?? input.discordUsername,
           discordId: input.discordId,
-          role: "GUEST",
+          role: "U",
           status: "ACTIVE",
           characterIds: [],
           lastLoginAt: null,
