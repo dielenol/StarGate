@@ -191,6 +191,24 @@
   white-space: nowrap;
 }
 
+.crumb--clickable {
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+
+.crumb--clickable:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(201, 168, 90, 0.06);
+}
+
+.crumb--clickable:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+}
+
 .crumb--on {
   border-color: var(--gold-dim);
   color: var(--gold);

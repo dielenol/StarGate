@@ -389,8 +389,23 @@ export default function PersonnelClient({
 
   // 현재 drill 상태 breadcrumb
   const crumbs = useMemo(() => {
-    const items: { key: string; label: string; on: boolean }[] = [
-      { key: "root", label: "◎ 조직도 L1", on: !selectedGroup },
+    const items: {
+      key: string;
+      label: string;
+      on: boolean;
+      onClick?: () => void;
+    }[] = [
+      {
+        key: "root",
+        label: "◎ 조직도 L1",
+        on: !selectedGroup,
+        onClick: selectedGroup
+          ? () => {
+              setSelectedGroup(null);
+              setExpandedSubUnit(null);
+            }
+          : undefined,
+      },
     ];
 
     if (selectedGroup) {
@@ -401,7 +416,12 @@ export default function PersonnelClient({
         kind === "unassigned"
           ? "미배정"
           : `${prefix}: ${getGroupLabel(selectedGroup)}`;
-      items.push({ key: "group", label, on: !expandedSubUnit });
+      items.push({
+        key: "group",
+        label,
+        on: !expandedSubUnit,
+        onClick: expandedSubUnit ? () => setExpandedSubUnit(null) : undefined,
+      });
     } else {
       items.push({ key: "group", label: "세력/기관 선택", on: false });
     }
@@ -577,22 +597,42 @@ export default function PersonnelClient({
 
       {/* Org breadcrumbs */}
       <div className={styles.orgBreadcrumbs} aria-label="조직도 경로">
-        {crumbs.map((c, idx) => (
-          <span key={c.key} className={styles.orgBreadcrumbs__item}>
-            <span
-              className={[styles.crumb, c.on ? styles["crumb--on"] : ""]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              {c.label}
+        {crumbs.map((c, idx) => {
+          const className = [
+            styles.crumb,
+            c.onClick ? styles["crumb--clickable"] : "",
+            c.on ? styles["crumb--on"] : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+
+          return (
+            <span key={c.key} className={styles.orgBreadcrumbs__item}>
+              {c.onClick ? (
+                <button
+                  type="button"
+                  className={className}
+                  onClick={c.onClick}
+                  aria-current={c.on ? "location" : undefined}
+                >
+                  {c.label}
+                </button>
+              ) : (
+                <span
+                  className={className}
+                  aria-current={c.on ? "location" : undefined}
+                >
+                  {c.label}
+                </span>
+              )}
+              {idx < crumbs.length - 1 ? (
+                <span className={styles.sep} aria-hidden>
+                  ›
+                </span>
+              ) : null}
             </span>
-            {idx < crumbs.length - 1 ? (
-              <span className={styles.sep} aria-hidden>
-                ›
-              </span>
-            ) : null}
-          </span>
-        ))}
+          );
+        })}
       </div>
 
       {/* L1 조감 or L2 드릴다운 */}
