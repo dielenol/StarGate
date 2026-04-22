@@ -40,4 +40,5 @@ export {
   markSessionFinalizationLogDone,
   completeSessionFinalization,
   findSessionsPendingFinalization,
+  retractClosedSession,
 } from "@stargate/shared-db";

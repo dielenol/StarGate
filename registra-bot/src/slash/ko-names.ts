@@ -4,6 +4,8 @@
  */
 
 export const SCHEDULE_ROOT = "일정";
+export const HELP_ROOT_KO = "도움말";
+export const HELP_ROOT_EN = "help";
 
 export const Sub = {
   create: "생성",
@@ -30,4 +32,5 @@ export const Opt = {
   newClose: "새응답마감",
   newDate: "새일시",
   month: "월",
+  reason: "사유",
 } as const;

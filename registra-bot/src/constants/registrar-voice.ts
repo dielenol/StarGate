@@ -14,9 +14,12 @@ export const Cmd = {
   root: "NOVUS ORDO 통합일정 관리 비서. 등재·가용·불가 회신부터 집계까지 한 흐름으로 이용 부탁드립니다.",
   create:
     "신규 일정 및 작전 등재를 원하시면 이 항목을 사용해주십시오. 자동완성 예시는 참고용이며, 직접 기재를 권장드립니다.",
-  optTitle: "일정 명칭(회의·실험·작전 등). 자동완성 예시는 참고용이며, 직접 기재를 권장드립니다.",
-  optDate: "배정 일시 24h. 보여지는 예시는 참고용이며, 현재 시각 이후 일정만 유효하니 참고 부탁드립니다.",
-  optClose: "회신 마감 24h. 보여지는 예시는 참고용이며, 입력 시간은 배정 일시 이전 ~ 현재 이후여야 합니다.",
+  optTitle:
+    "일정 제목(자유 기재). 아래 자동완성은 양식 예시일 뿐, 직접 입력을 권장드립니다. 예) NOVUS ORDO — 회의명",
+  optDate:
+    "배정 일시 — 형식: YYYY-MM-DD HH:mm (24시간). 아래 자동완성은 양식 예시이며, 현재 이후 시각만 유효합니다.",
+  optClose:
+    "응답 마감 — 형식: YYYY-MM-DD HH:mm (24시간). 아래 자동완성은 양식 예시. 배정 이전·현재 이후만 유효.",
   optRole: "통보·집계 대상 역할군을 기재 부탁드립니다. 고르신 직책 기준으로 집계 결과가 정리됩니다.",
   optChannel:
     "안내 하실 공지 채널을 선택해주시면 공지 사항이 올라갑니다(선택). 비우시면 명령하신 채널에 공지 사항이 올라갑니다. 결과·전송·결과물 승인은 사전 확인 부탁드립니다.",
@@ -42,13 +45,15 @@ export const Cmd = {
   editClose:
     "접수 중 건의 회신 마감 시각 변경. 배정 일시와의 선후는 규칙에 맞게 기재 부탁드립니다.",
   optNewClose:
-    "새 회신 마감 24h. 예시는 참고용이며, 배정 이후·과거 허용은 운영상 주의가 필요합니다.",
+    "새 응답 마감 — 형식: YYYY-MM-DD HH:mm (24시간). 아래 자동완성은 양식 예시. 직접 입력 권장.",
   editDate:
     "접수 중 건의 배정 일시 변경. 마감이 늦으면 배정 1h 전 등으로 자동 조정될 수 있습니다.",
   optNewDate:
-    "새 배정 일시 24h. 예시는 참고용이며, 마감과의 관계는 규칙에 맞게 기재 부탁드립니다.",
+    "새 배정 일시 — 형식: YYYY-MM-DD HH:mm (24시간). 아래 자동완성은 양식 예시. 직접 입력 권장.",
   cancel:
-    "등재 취소·기각. 확정 보고는 없으며, 공지는 안내에 따라 정리됩니다.",
+    "등재 취소·기각. 확정 보고는 없으며, 공지는 안내에 따라 정리됩니다. 마감된 건도 **사후 철회**가 가능합니다(확정 보고에 표식 반영).",
+  optCancelReason:
+    "(선택) 취소 사유. 공지·확정 보고에 표식과 함께 노출되며, 로그에도 기록됩니다.",
 } as const;
 
 /** 디스코드 사용자 응답 */
@@ -257,12 +262,78 @@ export const D = {
   statusCanceling: "기각 처리 중",
   statusCanceled: "기각",
 
+  /**
+   * OPEN 취소 시 채널에 별도 공지할 문구(@here). `safeTitle`은 멘션 깨짐 방지 처리된 일정명.
+   */
+  cancelChannelAnnounceWithHere: (
+    safeTitle: string,
+    reason: string | null
+  ) => {
+    const reasonLine = reason ? `\n> 사유: ${reason}` : "";
+    return [
+      `@here **관리자님**에 의해 아래 등재가 **기각(취소)** 처리되었습니다.`,
+      "",
+      `**「${safeTitle}」**${reasonLine}`,
+      "",
+      "응답 접수는 무효화되며, 본 건은 집행되지 않습니다.",
+    ].join("\n");
+  },
+  /**
+   * 배정 일시 변경 시 채널에 별도 공지할 문구(@here).
+   * `autoCloseLine`이 비어있지 않으면 응답 마감도 자동 조정됐다는 줄이 포함됩니다.
+   */
+  editDateChannelAnnounceWithHere: (
+    safeTitle: string,
+    previousTs: number,
+    newTs: number,
+    autoCloseLine: string
+  ) => {
+    const autoPart = autoCloseLine ? `\n${autoCloseLine}` : "";
+    return [
+      `@here **관리자님**에 의해 아래 등재의 **배정 일시**가 변경되었습니다.`,
+      "",
+      `**「${safeTitle}」**`,
+      `> 이전 배정: <t:${previousTs}:F>`,
+      `> 새 배정: **<t:${newTs}:F>**${autoPart}`,
+      "",
+      "회신 가능 여부를 재확인해 주시기 바랍니다.",
+    ].join("\n");
+  },
+  /** 배정 변경에 맞춰 응답 마감이 자동 조정됐을 때 덧붙이는 줄 */
+  editDateChannelAutoCloseLine: (newCloseTs: number) =>
+    `> 응답 마감: **<t:${newCloseTs}:F>** (배정에 맞춰 자동 조정)`,
   cancelNoOpen: `${E}접수 중인 등재를 찾지 못했습니다.`,
   cancelInProgress: `${N}해당 건은 이미 **기각 후속 처리 중**입니다.`,
   cancelAlready: `${N}타 절차에서 이미 기각되었거나 OPEN이 아닙니다.`,
+  /** CLOSING — 마감 후속 처리 중이라 취소가 불가능한 상태 */
+  cancelOnClosingBlocked: `${N}해당 건은 현재 **마감 후속 처리 중**입니다. 마감 완료 후 사후 철회가 필요하면 \`/일정 취소\`를 다시 실행하십시오.`,
+  /** 일정 변경 시 채널 공지 송부 실패 경고(관리자 ephemeral 말미) */
+  editDateChannelNotifyFail: `${N}변경 내용을 채널에 공지하지 못했습니다. 봇의 채널 **메시지 전송** 권한을 확인하십시오.`,
   cancelDone: (title: string, warn: string) =>
     `${S}**${title}** — 등재를 **기각**했습니다.${warn}`,
   cancelErr: (detail: string) => `${E}기각 절차 오류: ${detail}`,
+
+  /** CLOSED 세션 사후 철회 — 관리자 ephemeral 완료 메시지 */
+  retractDone: (title: string, reason: string | null, warn: string) => {
+    const reasonLine = reason ? `\n${N}사유: ${reason}` : "";
+    return `${S}**${title}** — 확정 보고된 건을 **사후 철회**했습니다.${reasonLine}${warn}`;
+  },
+  /** 이미 철회 처리된 경우 */
+  retractAlready: `${N}타 절차에서 이미 철회되었거나 CLOSED 상태가 아닙니다.`,
+  /** 사후 철회 시 채널에 별도 공지할 문구(@here) */
+  retractChannelAnnounceWithHere: (
+    safeTitle: string,
+    reason: string | null
+  ) => {
+    const reasonLine = reason ? `\n> 사유: ${reason}` : "";
+    return [
+      `@here **관리자님**에 의해 확정 보고 이후, 아래 등재가 **사후 철회**되었습니다.`,
+      "",
+      `**「${safeTitle}」**${reasonLine}`,
+      "",
+      "이전 **【확정 보고】**는 더 이상 유효하지 않습니다. 일정 관련 문의는 관리자님께 직접 부탁드립니다.",
+    ].join("\n");
+  },
 
   warnPrefix: "\n\n【주의】 ",
 } as const;
@@ -344,6 +415,10 @@ export const L = {
   sessionEditClose: "[Registrar] 마감 시각 변경 — 공지 갱신 실패:",
   sessionEditDate: "[Registrar] 배정 변경 — 공지 갱신 실패:",
   sessionCancelCmd: "[Registrar] 기각 명령 오류:",
+  sessionCancelAnnounce: "[Registrar] 기각 채널 공지 실패:",
+  sessionRetractEdit: "[Registrar] 사후 철회 시 확정 보고 수정 실패:",
+  sessionRetractAnnounce: "[Registrar] 사후 철회 채널 공지 실패:",
+  sessionRetractLog: "[Registrar] 사후 철회 로그 기록 실패:",
   interactionUnhandled: (kind: string) =>
     `[Registrar] 인터랙션 처리 실패(${kind}):`,
   interactionFallback: (kind: string) =>
@@ -407,6 +482,85 @@ export const CancelEmbed = {
 export const Ac = {
   example: "[양식] ",
   direct: "[직접기재] ",
+} as const;
+
+/** `/도움말`·`/help` — 권한별 사용 안내 */
+export const Help = {
+  cmd: "이 봇 사용 안내를 비밀 열람(본인 한정)으로 표시합니다.",
+
+  playerTitle: "【이용 안내】 세션 참여자",
+  playerDesc:
+    "세션 일정 관리에서 참여자가 사용할 수 있는 기능은 다음과 같습니다.",
+  playerFields: [
+    {
+      name: "◆ 참여 응답하기",
+      value:
+        "공지된 세션 메시지 하단의 **[가용]** · **[불가]** 버튼으로 응답 부탁드립니다. 응답 마감 시각 이전이면 언제든 다시 눌러 **수정**이 가능합니다.",
+    },
+    {
+      name: "◆ 내 응답 확인",
+      value:
+        "`/참여확인` — 본인이 **가용**으로 응답한 세션 목록을 **본인에게만 보이는(비공개)** 형태로 조회합니다.",
+    },
+    {
+      name: "※ 응답 마감 이후",
+      value:
+        "마감이 지나면 응답 수정이 차단되며, 최종 집계가 공지됩니다. 변경이 필요한 경우 운영자에게 직접 문의 부탁드립니다.",
+    },
+  ],
+  playerFooter: "본 안내는 본인에게만 표시됩니다.",
+
+  adminTitle: "【운영자 명령】 세션 일정 관리",
+  adminDesc:
+    "운영 권한 보유자에게 제공되는 전체 명령입니다. **등록 ID**는 대부분의 관리 명령에서 대상을 지정할 때 사용됩니다.",
+  adminFields: [
+    {
+      name: "◆ `/일정 생성` — 새 세션 등록",
+      value:
+        "제목 · 세션 일시 · 응답 마감 · 대상 역할 · (선택) 공지 채널을 입력하면 공지와 응답 버튼이 자동 설치됩니다. 반환되는 **등록 ID**는 이후 관리 명령에서 대상을 지정할 때 사용합니다.",
+    },
+    {
+      name: "◆ `/일정 목록` — 응답 모집 중 요약",
+      value:
+        "현재 응답을 받고 있는 세션만 간단히 요약합니다(최대 20건). 빠른 점검용입니다.",
+    },
+    {
+      name: "◆ `/일정 한눈에` — 월별 전체 보기",
+      value:
+        "모집 중·마감된 세션을 세션 시각 기준 **월별 대장**으로 열람합니다. 최대 100건까지 분할 표시됩니다.",
+    },
+    {
+      name: "◆ `/일정 달력 [월]` — 월간 캘린더 이미지",
+      value:
+        "지정 월의 세션을 **월간 달력 PNG**로 출력합니다. 이미지 생성에 시간이 걸려 **필요할 때만** 실행을 권장드립니다.",
+    },
+    {
+      name: "◆ `/일정 집계` — 최종 결과 공지",
+      value:
+        "단일 세션의 **최종 집계(확정 보고)**를 공지 채널에 게시합니다. `이미지포함` 옵션을 켜면 PNG 카드가 함께 첨부됩니다(생략 권장).",
+    },
+    {
+      name: "◆ `/일정 응답마감변경` — 응답 받는 시간 변경",
+      value:
+        "응답 모집 중인 세션의 **응답 마감 시각**을 변경합니다. 세션 시각보다 이르고 현재보다 이후여야 합니다.",
+    },
+    {
+      name: "◆ `/일정 일정변경` — 세션 날짜·시간 변경",
+      value:
+        "응답 모집 중인 세션의 **세션 시각**을 변경합니다. 변경 후 응답 마감이 세션보다 늦어지면 자동으로 세션 1시간 전(불가 시 1분 전)으로 당겨집니다.",
+    },
+    {
+      name: "◆ `/일정 마감` — 응답 접수 즉시 종료",
+      value:
+        "응답 모집을 **즉시 마감**합니다. 이후 최종 집계 공지는 `/일정 집계`로 별도 진행하십시오.",
+    },
+    {
+      name: "◆ `/일정 취소` — 세션 등록 철회",
+      value:
+        "세션을 **기각(취소)** 처리합니다. 최종 집계 공지는 없으며, 기존 공지에는 취소 표식이 남습니다.",
+    },
+  ],
+  adminFooter: "세션 식별이 필요하면 /일정 목록 또는 /일정 한눈에 사용",
 } as const;
 
 /** 배정 24h 전 리마인드 임베드 */

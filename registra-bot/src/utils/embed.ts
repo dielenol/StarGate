@@ -114,6 +114,11 @@ export function buildSessionEmbed(
         inline: true,
       },
       {
+        name: "등록자",
+        value: `<@${session.createdBy}>`,
+        inline: true,
+      },
+      {
         name: "가용",
         value: formatWithMentions(counts.yes, yesIds),
         inline: false,
@@ -127,7 +132,12 @@ export function buildSessionEmbed(
         ? [
             {
               name: "등록 ID",
-              value: `\`${sessionId}\`\n※ \`/${SCHEDULE_ROOT}\` 관리 명령에서 지정할 때 사용`,
+              value: `\`${sessionId}\``,
+              inline: false,
+            } as const,
+            {
+              name: "안내",
+              value: `※ \`/${SCHEDULE_ROOT}\` 관리 명령에서 지정할 때 사용`,
               inline: false,
             } as const,
           ]
@@ -173,6 +183,11 @@ export function buildResultEmbed(
       {
         name: "배정 일시",
         value: formatSessionDateTime(session.targetDateTime),
+        inline: true,
+      },
+      {
+        name: "등록자",
+        value: `<@${session.createdBy}>`,
         inline: true,
       },
       {

@@ -7,6 +7,7 @@
 import {
   type ChatInputCommandInteraction,
   type Client,
+  type TextChannel,
   ActionRowBuilder,
   AttachmentBuilder,
   ButtonBuilder,
@@ -37,6 +38,7 @@ import { fetchGuildMembersCached } from "../utils/guild-members.js";
 import {
   executeSessionClose,
   executeSessionCancel,
+  executeSessionRetract,
 } from "../services/session-close.js";
 import { isResultCardImageEnabled } from "../config.js";
 import {
@@ -54,6 +56,8 @@ import {
   hasManageGuildAfterDeferred,
 } from "../utils/require-manage-guild.js";
 import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
+import { safeTitleForAnnouncePing } from "../utils/safe-announce-title.js";
+import { buildAnnounceLinkRow } from "../utils/announce-link.js";
 import {
   canIssueParticipationImage,
   getParticipationImageCooldownMs,
@@ -119,7 +123,7 @@ export async function handleSessionList(
       s.title.length > 80 ? `${s.title.slice(0, 77)}...` : s.title;
     lines.push(
       `【${i + 1}】 ${titleShort}\n` +
-        `등록번호 \`${sid}\` · 공지 ${ch}\n` +
+        `등록번호 \`${sid}\` · 공지 ${ch} · 등록 <@${s.createdBy}>\n` +
         `· 배정 <t:${tStart}:F>\n` +
         `· 회신 마감 <t:${tClose}:F>`
     );
@@ -156,16 +160,19 @@ export async function handleSessionList(
 
 /**
  * 접수 중인 등록 일정 공지 임베드·버튼을 DB 기준으로 다시 그립니다.
+ *
+ * 성공 시 해당 채널을 반환해 호출처가 동일 guild/channel을 **재fetch 없이** 이어
+ * 다른 메시지 전송(예: 변경 알림)에 재사용할 수 있도록 합니다.
  */
 async function refreshOpenSessionAnnouncement(
   client: Client,
   session: Session
-): Promise<void> {
-  if (!session.messageId?.trim()) return;
+): Promise<{ channel: TextChannel } | null> {
+  if (!session.messageId?.trim()) return null;
 
   const guild = await client.guilds.fetch(session.guildId);
   const channel = await guild.channels.fetch(session.channelId);
-  if (!channel?.isTextBased() || !("messages" in channel)) return;
+  if (!channel?.isTextBased() || !("messages" in channel)) return null;
 
   const sid = String(session._id);
   const counts = await countByStatus(sid);
@@ -188,6 +195,7 @@ async function refreshOpenSessionAnnouncement(
 
   const msg = await channel.messages.fetch(session.messageId);
   await msg.edit({ embeds: [embed], components: [row] });
+  return { channel: channel as TextChannel };
 }
 
 type ResolveOpenSessionForMutationResult =
@@ -325,7 +333,7 @@ export async function handleSessionOverview(
         const ch = `<#${s.channelId}>`;
         const st = participationStatusLabel(s.status);
         const t = s.title.length > 48 ? `${s.title.slice(0, 45)}…` : s.title;
-        return `· 【${st}】 ${t}\n  \`${sid}\` · ${ch} · 배정 <t:${ts}:f> · 회신마감 <t:${tc}:f>`;
+        return `· 【${st}】 ${t}\n  \`${sid}\` · ${ch} · 등록 <@${s.createdBy}> · 배정 <t:${ts}:f> · 회신마감 <t:${tc}:f>`;
       })
       .join("\n");
     blocks.push(`${head}\n${lines}`);
@@ -977,12 +985,42 @@ export async function handleSessionEditDate(
   });
 
   const refreshed = await findSessionById(sid);
-  let announceUpdated = false;
+  let refreshResult: { channel: TextChannel } | null = null;
   if (refreshed) {
     try {
-      await refreshOpenSessionAnnouncement(interaction.client, refreshed);
-      announceUpdated = true;
+      refreshResult = await refreshOpenSessionAnnouncement(
+        interaction.client,
+        refreshed
+      );
     } catch (err) {
+      console.error(L.sessionEditDate, err);
+    }
+  }
+  const announceUpdated = refreshResult !== null;
+
+  let channelNotifyFailed = false;
+  if (refreshResult && refreshed) {
+    try {
+      const previousTs = Math.floor(session.targetDateTime.getTime() / 1000);
+      const newTs = Math.floor(newDate.getTime() / 1000);
+      const autoCloseLine = autoClose
+        ? D.editDateChannelAutoCloseLine(
+            Math.floor(autoClose.getTime() / 1000)
+          )
+        : "";
+      const announceRow = buildAnnounceLinkRow(refreshed);
+      await refreshResult.channel.send({
+        content: D.editDateChannelAnnounceWithHere(
+          safeTitleForAnnouncePing(refreshed.title),
+          previousTs,
+          newTs,
+          autoCloseLine
+        ),
+        components: announceRow ? [announceRow] : undefined,
+        allowedMentions: { parse: ["everyone"] },
+      });
+    } catch (err) {
+      channelNotifyFailed = true;
       console.error(L.sessionEditDate, err);
     }
   }
@@ -1000,14 +1038,19 @@ export async function handleSessionEditDate(
   const pastNote =
     newDate.getTime() <= Date.now() ? D.pastDateWarn : "";
 
+  const notifyFailNote = channelNotifyFailed
+    ? `\n${D.editDateChannelNotifyFail}`
+    : "";
+
   await interaction.editReply({
-    content: D.editDateDone(
-      session.title,
-      `<t:${Math.floor(newDate.getTime() / 1000)}:F>`,
-      autoCloseNote,
-      announceNote,
-      pastNote
-    ),
+    content:
+      D.editDateDone(
+        session.title,
+        `<t:${Math.floor(newDate.getTime() / 1000)}:F>`,
+        autoCloseNote,
+        announceNote,
+        pastNote
+      ) + notifyFailNote,
   });
 }
 
@@ -1208,6 +1251,9 @@ export async function handleSessionCancel(
   const guildId = interaction.guildId!;
 
   const sessionIdOpt = interaction.options.getString(Opt.registrationId);
+  const reasonOpt = interaction.options.getString(Opt.reason);
+  const reason = reasonOpt?.trim() ? reasonOpt.trim() : null;
+
   const resolved = await resolveOpenSessionForMutation(guildId, sessionIdOpt);
   if (resolved.kind === "ambiguous") {
     await replyNeedRegistrationIdForMutation(
@@ -1233,6 +1279,44 @@ export async function handleSessionCancel(
     return;
   }
 
+  if (session.status === "CLOSING") {
+    await interaction.editReply({
+      content: D.cancelOnClosingBlocked,
+    });
+    return;
+  }
+
+  // CLOSED 사후 철회 경로 — 확정 보고 이후 운영자 재량 취소
+  if (session.status === "CLOSED") {
+    try {
+      const result = await executeSessionRetract(
+        interaction.client,
+        session,
+        interaction.user.id,
+        reason
+      );
+      if (!result.transitioned) {
+        await interaction.editReply({ content: D.retractAlready });
+        return;
+      }
+      const warningNote =
+        result.warnings.length > 0
+          ? `${D.warnPrefix}${result.warnings.join(" / ")}`
+          : "";
+      await interaction.editReply({
+        content: D.retractDone(session.title, reason, warningNote),
+      });
+    } catch (err) {
+      console.error(L.sessionCancelCmd, err);
+      await interaction.editReply({
+        content: D.cancelErr(
+          err instanceof Error ? err.message : "원인 미상"
+        ),
+      });
+    }
+    return;
+  }
+
   if (session.status !== "OPEN") {
     await interaction.editReply({
       content: D.cancelNoOpen,
@@ -1244,7 +1328,8 @@ export async function handleSessionCancel(
     const result = await executeSessionCancel(
       interaction.client,
       session,
-      interaction.user.id
+      interaction.user.id,
+      reason
     );
     if (!result.transitioned) {
       await interaction.editReply({

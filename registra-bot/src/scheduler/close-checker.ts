@@ -40,7 +40,8 @@ async function processOneWithRetry(
           ? await executeSessionCancel(
               client,
               session,
-              session.finalizationRequestedBy ?? "system"
+              session.finalizationRequestedBy ?? "system",
+              null
             )
           : await executeSessionClose(client, session, {
               kind: "scheduled",

@@ -14,10 +14,16 @@ import { L } from "./constants/registrar-voice.js";
 import { config } from "./config.js";
 import { connectDb, closeDb } from "./db/client.js";
 import { registerCommands } from "./commands/register.js";
-import { SCHEDULE_ROOT, Sub } from "./slash/ko-names.js";
+import {
+  HELP_ROOT_EN,
+  HELP_ROOT_KO,
+  SCHEDULE_ROOT,
+  Sub,
+} from "./slash/ko-names.js";
 import { handleButtonInteraction } from "./handlers/button-handler.js";
 import { handleSessionCreate } from "./commands/session-create.js";
 import { handleSessionCreateAutocomplete } from "./commands/session-create-autocomplete.js";
+import { handleHelp } from "./commands/session-help.js";
 import {
   handleSessionList,
   handleSessionOverview,
@@ -97,6 +103,14 @@ client.on(Events.InteractionCreate, (interaction) => {
   void safeHandleInteraction("chat-input", interaction, async (safeInteraction) => {
     if (safeInteraction.commandName === Sub.participationCheck) {
       await handleSessionParticipationCheck(safeInteraction);
+      return;
+    }
+
+    if (
+      safeInteraction.commandName === HELP_ROOT_KO ||
+      safeInteraction.commandName === HELP_ROOT_EN
+    ) {
+      await handleHelp(safeInteraction);
       return;
     }
 

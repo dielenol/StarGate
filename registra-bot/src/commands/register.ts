@@ -6,9 +6,15 @@
  */
 
 import { ChannelType, REST, Routes } from "discord.js";
-import { Cmd } from "../constants/registrar-voice.js";
+import { Cmd, Help } from "../constants/registrar-voice.js";
 import { config } from "../config.js";
-import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
+import {
+  HELP_ROOT_EN,
+  HELP_ROOT_KO,
+  Opt,
+  SCHEDULE_ROOT,
+  Sub,
+} from "../slash/ko-names.js";
 
 /** /일정 … 명령어 정의 */
 const SCHEDULE_CMD = {
@@ -206,6 +212,12 @@ const SCHEDULE_CMD = {
           type: 3,
           required: false,
         },
+        {
+          name: Opt.reason,
+          description: Cmd.optCancelReason,
+          type: 3,
+          required: false,
+        },
       ],
     },
   ],
@@ -219,12 +231,30 @@ const PARTICIPATION_ROOT_CMD = {
   default_member_permissions: null,
 };
 
+/** `/도움말` — 한국어 사용자용 도움말 루트. DM에서는 `/참여확인` 안내가 작동 안 하므로 길드 전용 */
+const HELP_KO_CMD = {
+  type: 1 as const,
+  name: HELP_ROOT_KO,
+  description: Help.cmd,
+  default_member_permissions: null,
+  dm_permission: false,
+};
+
+/** `/help` — 영어 alias. `/도움말`과 동일 핸들러 공유 */
+const HELP_EN_CMD = {
+  type: 1 as const,
+  name: HELP_ROOT_EN,
+  description: Help.cmd,
+  default_member_permissions: null,
+  dm_permission: false,
+};
+
 /**
  * 슬래시 커맨드를 Discord에 등록합니다.
  */
 export async function registerCommands(): Promise<void> {
   const rest = new REST().setToken(config.discordToken);
-  const body = [SCHEDULE_CMD, PARTICIPATION_ROOT_CMD];
+  const body = [SCHEDULE_CMD, PARTICIPATION_ROOT_CMD, HELP_KO_CMD, HELP_EN_CMD];
 
   if (config.guildId) {
     await rest.put(
