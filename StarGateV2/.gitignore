@@ -10,6 +10,10 @@ out/
 .env.local
 .env.*.local
 
+# DB 백업 (PII 포함 가능)
+backup-users-*.json
+backup-*.json
+
 # logs
 *.log
 npm-debug.log*
