@@ -2,7 +2,7 @@
  * 인원 관리 — 열람 등급 판정 유틸
  */
 
-import { ROLE_LEVEL_RANK } from "@stargate/shared-db";
+import { ROLE_LEVEL_RANK } from "@stargate/shared-db/types";
 
 import type { AgentLevel, Character, SheetBase } from "@/types/character";
 import type { UserRole } from "@/types/user";

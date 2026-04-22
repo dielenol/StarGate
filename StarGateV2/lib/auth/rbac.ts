@@ -4,7 +4,7 @@
  * 8단계 역할 계층: GM > V > A > M > H > G > J > U (높을수록 권한 큼)
  */
 
-import { ROLE_LEVEL_RANK } from "@stargate/shared-db";
+import { ROLE_LEVEL_RANK } from "@stargate/shared-db/types";
 
 import type { UserRole } from "@/types/user";
 
