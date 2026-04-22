@@ -63,6 +63,9 @@ export async function createUser(
   const hashedPassword = await hash(plainPassword, BCRYPT_ROUNDS);
   const now = new Date();
 
+  // discord 관련 필드는 null 로 초기화. unique 인덱스는
+  // partialFilterExpression({ discordId: { $type: "string" } }) 로 구성되어
+  // string 타입일 때만 검사하므로, null 중복이 쌓여도 충돌하지 않는다.
   const doc: User = {
     username: input.username,
     hashedPassword,

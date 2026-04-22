@@ -18,9 +18,12 @@ export async function ensureAllIndexes(): Promise<void> {
       },
       {
         key: { discordId: 1 },
-        name: "users_discordId_unique",
+        name: "users_discordId_partial_unique",
         unique: true,
-        sparse: true,
+        // partialFilterExpression: discordId가 string일 때만 unique 제약 적용.
+        // sparse는 필드 누락만 제외하고 명시적 null은 포함하므로,
+        // discordId:null 문서가 2개 이상이면 E11000 발생 → partial 로 교체.
+        partialFilterExpression: { discordId: { $type: "string" } },
       },
     ]),
 
