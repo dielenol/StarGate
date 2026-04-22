@@ -4,10 +4,24 @@ import {
   MessageFlags,
   PermissionFlagsBits,
 } from "discord.js";
+import { config } from "../config.js";
 import { D } from "../constants/registrar-voice.js";
 
 /**
+ * 미니세션 마스터 Role 보유 여부.
+ * `config.miniSessionMasterRoleId` 미설정 시 항상 false — 기존 동작 보존.
+ */
+function hasMiniSessionMasterRole(member: GuildMember): boolean {
+  const roleId = config.miniSessionMasterRoleId;
+  if (!roleId) return false;
+  return member.roles.cache.has(roleId);
+}
+
+/**
  * 인터랙션 페이로드만으로 판별 가능하면 true/false, 아니면 `null`(멤버 fetch 필요).
+ *
+ * Role 체크는 `GuildMember` 인스턴스에서만 수행. 페이로드가 raw
+ * `APIInteractionGuildMember`일 때는 `null`을 돌려 `fetch` 경로로 위임한다.
  */
 function syncManageGuild(
   interaction: ChatInputCommandInteraction
@@ -15,21 +29,19 @@ function syncManageGuild(
   const p = interaction.memberPermissions;
   if (p?.has(PermissionFlagsBits.Administrator)) return true;
   if (p?.has(PermissionFlagsBits.ManageGuild)) return true;
-  if (p != null) {
-    return false;
-  }
   const mem = interaction.member;
   if (mem instanceof GuildMember) {
     if (mem.permissions.has(PermissionFlagsBits.Administrator)) return true;
     if (mem.permissions.has(PermissionFlagsBits.ManageGuild)) return true;
+    if (hasMiniSessionMasterRole(mem)) return true;
     return false;
   }
   return null;
 }
 
 /**
- * `deferReply` 이후 호출. 서버 관리·관리자 권한 여부.
- * 페이로드에 권한 비트가 없으면 `guild.members.fetch`로 보강합니다.
+ * `deferReply` 이후 호출. 서버 관리·관리자 권한 또는 미니세션 마스터 Role 여부.
+ * 페이로드만으로 판별 불가하면 `guild.members.fetch`로 보강합니다.
  */
 export async function hasManageGuildAfterDeferred(
   interaction: ChatInputCommandInteraction
@@ -41,7 +53,8 @@ export async function hasManageGuildAfterDeferred(
     const m = await interaction.guild!.members.fetch(interaction.user.id);
     return (
       m.permissions.has(PermissionFlagsBits.Administrator) ||
-      m.permissions.has(PermissionFlagsBits.ManageGuild)
+      m.permissions.has(PermissionFlagsBits.ManageGuild) ||
+      hasMiniSessionMasterRole(m)
     );
   } catch {
     return false;

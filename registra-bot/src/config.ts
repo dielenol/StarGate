@@ -41,6 +41,15 @@ function getGuildId(): string | undefined {
   return process.env.GUILD_ID;
 }
 
+/**
+ * 선택: 이 Role ID를 보유한 멤버는 서버 관리 권한이 없어도 `/일정` 계열을 사용할 수 있음.
+ * 미설정 시 기존과 동일하게 `Administrator`/`ManageGuild` 비트만 통과.
+ */
+function getMiniSessionMasterRoleId(): string | undefined {
+  const v = process.env.MINI_SESSION_MASTER_ROLE_ID?.trim();
+  return v && v.length > 0 ? v : undefined;
+}
+
 /** MongoDB 데이터베이스 이름 (미설정 시 stargate 통합 DB) */
 function getMongoDbName(): string {
   const n = process.env.MONGODB_DB_NAME?.trim();
@@ -63,4 +72,5 @@ export const config = {
   mongoUri: getMongoUri(),
   guildId: getGuildId(),
   mongoDbName: getMongoDbName(),
+  miniSessionMasterRoleId: getMiniSessionMasterRoleId(),
 } as const;
