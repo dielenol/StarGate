@@ -13,6 +13,7 @@ import type {
 import { characterKeys } from "@/hooks/queries/useCharactersQuery";
 
 import { getDepartmentLabel } from "@/lib/org-structure";
+import type { CharacterEditMode } from "@/lib/auth/rbac";
 
 import Bar from "@/components/ui/Bar/Bar";
 import Box from "@/components/ui/Box/Box";
@@ -30,7 +31,11 @@ import styles from "./page.module.css";
 
 interface Props {
   character: Character;
-  canEdit: boolean;
+  /**
+   * 'admin' = V+ 모든 필드 편집, 'player' = 본인 캐릭터 서사 7필드만,
+   * 'none' = 편집 불가 (편집 버튼/폼 모두 숨김).
+   */
+  editMode: CharacterEditMode;
   canDelete: boolean;
 }
 
@@ -41,9 +46,10 @@ function getInitial(c: Character): string {
 
 export default function CharacterDetailClient({
   character,
-  canEdit,
+  editMode,
   canDelete,
 }: Props) {
+  const canEdit = editMode !== "none";
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -82,7 +88,7 @@ export default function CharacterDetailClient({
     }
   }
 
-  if (isEditing) {
+  if (isEditing && editMode !== "none") {
     return (
       <>
         <PageHead
@@ -98,6 +104,7 @@ export default function CharacterDetailClient({
         />
         <CharacterEditForm
           character={character}
+          editMode={editMode}
           onCancel={() => setIsEditing(false)}
           onSaved={async () => {
             setIsEditing(false);

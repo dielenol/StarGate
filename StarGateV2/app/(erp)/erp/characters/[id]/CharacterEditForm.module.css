@@ -57,6 +57,35 @@
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.12em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* GM-only 잠금 표시 — 플레이어 모드에서 비활성 필드 라벨 옆 */
+.lockedBadge {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--line);
+  padding: 1px 6px;
+}
+
+/* 모드 안내 배너 (admin/player) */
+.modeBanner {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+.modeBanner--player {
+  border-color: var(--gold-dim);
+  color: var(--ink-1);
 }
 
 /* Textarea (no primitive yet — matches Input style) */

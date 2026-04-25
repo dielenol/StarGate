@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
-import { hasRole } from "@/lib/auth/rbac";
+import { canEditCharacter, hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
 
@@ -26,9 +26,10 @@ export default async function CharacterDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const { role } = session.user;
-  const isGMOrAbove = hasRole(role, "V");
-  const isAdmin = hasRole(role, "GM");
+  const { id: userId, role } = session.user;
+  const decision = canEditCharacter(userId, role, character);
+  // 삭제는 admin(GM) 전용으로 계속 유지 — 자가삭제 도입은 별도 결정 필요.
+  const canDelete = hasRole(role, "GM");
 
   // MongoDB ObjectId -> string 직렬화 (client 전달용)
   const serialized = JSON.parse(JSON.stringify(character)) as typeof character;
@@ -36,8 +37,8 @@ export default async function CharacterDetailPage({ params }: PageProps) {
   return (
     <CharacterDetailClient
       character={serialized}
-      canEdit={isGMOrAbove}
-      canDelete={isAdmin}
+      editMode={decision.mode}
+      canDelete={canDelete}
     />
   );
 }

@@ -17,10 +17,39 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
 import styles from "./CharacterEditForm.module.css";
 
+/**
+ * 'admin' = V+ 모든 필드 편집 가능, 'player' = 본인 캐릭터 서사 7필드만 편집 가능.
+ * 'none' 은 폼 진입 자체가 막혀 여기서는 다루지 않음.
+ */
+type EditMode = "admin" | "player";
+
 interface Props {
   character: Character;
+  editMode: EditMode;
   onCancel: () => void;
   onSaved: () => void;
+}
+
+/**
+ * 플레이어 자가편집에서 허용되는 필드 (서버 PLAYER_ALLOWED_CHARACTER_FIELDS와 정합).
+ * 이미지/식별/능력치/소유권은 의도적으로 제외 — 변경 시 GM에 문의하도록 유도.
+ *
+ * 화면상 입력 컨트롤의 로컬 키 (`name`, `quote`, ...)와 매칭되는 7개.
+ * `name` 은 표시상 sheet.name 필드에 매핑되지만 PLAYER_ALLOWED 에는 포함되지 않으므로
+ * 의도적으로 빠져 있다.
+ */
+const PLAYER_EDITABLE_FIELDS = new Set<string>([
+  "quote",
+  "appearance",
+  "personality",
+  "background",
+  "gender",
+  "age",
+  "height",
+]);
+
+function isPlayerEditable(fieldKey: string): boolean {
+  return PLAYER_EDITABLE_FIELDS.has(fieldKey);
 }
 
 /* ── Default factories ── */
@@ -35,10 +64,23 @@ function emptyAbility(): Ability {
 
 export default function CharacterEditForm({
   character,
+  editMode,
   onCancel,
   onSaved,
 }: Props) {
   const characterId = String(character._id);
+  const isPlayer = editMode === "player";
+
+  /**
+   * 플레이어 모드에서 비활성화 여부 판정.
+   * - admin 모드면 항상 false (잠금 없음)
+   * - player 모드면 PLAYER_EDITABLE_FIELDS 외 모든 필드 잠금
+   *
+   * Field 컴포넌트의 `locked` prop과 입력 컨트롤의 `disabled` prop 양쪽에 같은 값 사용.
+   */
+  function isLocked(fieldKey: string): boolean {
+    return isPlayer && !isPlayerEditable(fieldKey);
+  }
 
   /* ── Common fields ── */
   const [codename, setCodename] = useState(character.codename);
@@ -136,55 +178,80 @@ export default function CharacterEditForm({
     setSubmitting(true);
     setError(null);
 
-    const sheetBase = {
-      codename,
-      name,
-      mainImage,
-      posterImage,
-      quote,
-      gender,
-      age,
-      height,
-      appearance,
-      personality,
-      background,
-    };
+    /**
+     * 모드별 body 빌드.
+     * - player: PLAYER_ALLOWED_CHARACTER_FIELDS 7필드(sheet 하위)만 전송. 서버에서도
+     *   동일 화이트리스트가 적용되지만 클라이언트도 정합성 유지 (불필요 페이로드/오해 방지).
+     *   sheet 루트 키 자체를 보내지 않고 sheet 하위 필드만 dot-equivalent 객체로 전달.
+     *   서버 buildUpdatePatch 가 input.sheet?.quote 형태로 dot path를 읽기 때문에,
+     *   `sheet: { quote, ... }` 부분 객체로 보내야 한다.
+     * - admin: 기존 동작 그대로 (sheet 통째 + 최상위 메타 모두).
+     */
+    let body: Record<string, unknown>;
 
-    let sheet: AgentSheet | NpcSheet;
-
-    if (character.type === "AGENT") {
-      sheet = {
-        ...sheetBase,
-        weight,
-        className,
-        hp,
-        san,
-        def,
-        atk,
-        abilityType,
-        credit: credit === "" ? "" : Number(credit) || credit,
-        weaponTraining,
-        skillTraining,
-        equipment,
-        abilities,
+    if (isPlayer) {
+      body = {
+        sheet: {
+          quote,
+          appearance,
+          personality,
+          background,
+          gender,
+          age,
+          height,
+        },
       };
     } else {
-      sheet = {
-        ...sheetBase,
-        nameEn,
-        roleDetail,
-        notes,
+      const sheetBase = {
+        codename,
+        name,
+        mainImage,
+        posterImage,
+        quote,
+        gender,
+        age,
+        height,
+        appearance,
+        personality,
+        background,
+      };
+
+      let sheet: AgentSheet | NpcSheet;
+
+      if (character.type === "AGENT") {
+        sheet = {
+          ...sheetBase,
+          weight,
+          className,
+          hp,
+          san,
+          def,
+          atk,
+          abilityType,
+          credit: credit === "" ? "" : Number(credit) || credit,
+          weaponTraining,
+          skillTraining,
+          equipment,
+          abilities,
+        };
+      } else {
+        sheet = {
+          ...sheetBase,
+          nameEn,
+          roleDetail,
+          notes,
+        };
+      }
+
+      body = {
+        codename,
+        role,
+        previewImage,
+        isPublic,
+        ownerId: ownerId || null,
+        sheet,
       };
     }
-
-    const body = {
-      codename,
-      role,
-      previewImage,
-      isPublic,
-      ownerId: ownerId || null,
-      sheet,
-    };
 
     try {
       const res = await fetch(`/api/erp/characters/${characterId}`, {
@@ -209,70 +276,107 @@ export default function CharacterEditForm({
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
+      {/* ── 모드 안내 배너 ── */}
+      <div
+        className={[
+          styles.modeBanner,
+          isPlayer ? styles["modeBanner--player"] : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        role="status"
+      >
+        {isPlayer
+          ? "플레이어 편집 모드 — 서사 필드만 수정 가능 (능력치·이미지 등은 GM 문의)"
+          : "관리자 편집 모드 — 모든 필드 수정 가능"}
+      </div>
+
       {/* ── Common Fields ── */}
       <Box className={styles.form__box}>
         <PanelTitle>BASIC INFO</PanelTitle>
         <div className={styles.grid}>
-          <Field id="codename" label="CODENAME">
+          <Field id="codename" label="CODENAME" locked={isLocked("codename")}>
             <Input
               id="codename"
               type="text"
               value={codename}
               onChange={(e) => setCodename(e.target.value)}
-              required
+              required={!isLocked("codename")}
+              disabled={isLocked("codename")}
             />
           </Field>
-          <Field id="role" label="ROLE">
+          <Field id="role" label="ROLE" locked={isLocked("role")}>
             <Input
               id="role"
               type="text"
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              required
+              required={!isLocked("role")}
+              disabled={isLocked("role")}
             />
           </Field>
-          <Field id="name" label="NAME">
+          <Field id="name" label="NAME" locked={isLocked("name")}>
             <Input
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              disabled={isLocked("name")}
             />
           </Field>
-          <Field id="ownerId" label="OWNER ID">
+          <Field id="ownerId" label="OWNER ID" locked={isLocked("ownerId")}>
             <Input
               id="ownerId"
               type="text"
               value={ownerId}
               onChange={(e) => setOwnerId(e.target.value)}
               placeholder="소유자 ID (선택)"
+              disabled={isLocked("ownerId")}
             />
           </Field>
-          <Field id="previewImage" label="PREVIEW IMAGE URL" full>
+          <Field
+            id="previewImage"
+            label="PREVIEW IMAGE URL"
+            full
+            locked={isLocked("previewImage")}
+          >
             <Input
               id="previewImage"
               type="text"
               value={previewImage}
               onChange={(e) => setPreviewImage(e.target.value)}
               placeholder="미리보기 이미지 URL"
+              disabled={isLocked("previewImage")}
             />
           </Field>
-          <Field id="mainImage" label="MAIN IMAGE URL" full>
+          <Field
+            id="mainImage"
+            label="MAIN IMAGE URL"
+            full
+            locked={isLocked("mainImage")}
+          >
             <Input
               id="mainImage"
               type="text"
               value={mainImage}
               onChange={(e) => setMainImage(e.target.value)}
               placeholder="메인 이미지 URL (세로 초상화)"
+              disabled={isLocked("mainImage")}
             />
           </Field>
-          <Field id="posterImage" label="POSTER IMAGE URL" full>
+          <Field
+            id="posterImage"
+            label="POSTER IMAGE URL"
+            full
+            locked={isLocked("posterImage")}
+          >
             <Input
               id="posterImage"
               type="text"
               value={posterImage}
               onChange={(e) => setPosterImage(e.target.value)}
               placeholder="캐릭터 상세 상단 와이드 히어로 (선택)"
+              disabled={isLocked("posterImage")}
             />
           </Field>
           <div className={`${styles.field} ${styles["field--full"]}`}>
@@ -282,78 +386,120 @@ export default function CharacterEditForm({
                 checked={isPublic}
                 onChange={(e) => setIsPublic(e.target.checked)}
                 className={styles.checkbox__input}
+                disabled={isLocked("isPublic")}
               />
               <span>공개 캐릭터</span>
+              {isLocked("isPublic") ? (
+                <span
+                  className={styles.lockedBadge}
+                  aria-label="GM 전용 필드"
+                  title="GM 전용 필드"
+                >
+                  GM
+                </span>
+              ) : null}
             </label>
           </div>
         </div>
       </Box>
 
       {/* ── Sheet Common ── */}
+      {/*
+        이 섹션의 7개 필드(quote/gender/age/height/appearance/personality/background)는
+        PLAYER_ALLOWED_CHARACTER_FIELDS와 정확히 일치 — player 모드에서도 모두 편집 가능.
+        잠금은 isLocked 헬퍼가 알아서 false 반환.
+      */}
       <Box className={styles.form__box}>
         <PanelTitle>CHARACTER PROFILE</PanelTitle>
         <div className={styles.grid}>
-          <Field id="quote" label="QUOTE">
+          <Field id="quote" label="QUOTE" locked={isLocked("quote")}>
             <Input
               id="quote"
               type="text"
               value={quote}
               onChange={(e) => setQuote(e.target.value)}
+              disabled={isLocked("quote")}
             />
           </Field>
-          <Field id="gender" label="GENDER">
+          <Field id="gender" label="GENDER" locked={isLocked("gender")}>
             <Input
               id="gender"
               type="text"
               value={gender}
               onChange={(e) => setGender(e.target.value)}
+              disabled={isLocked("gender")}
             />
           </Field>
-          <Field id="age" label="AGE">
+          <Field id="age" label="AGE" locked={isLocked("age")}>
             <Input
               id="age"
               type="text"
               value={age}
               onChange={(e) => setAge(e.target.value)}
+              disabled={isLocked("age")}
             />
           </Field>
-          <Field id="height" label="HEIGHT">
+          <Field id="height" label="HEIGHT" locked={isLocked("height")}>
             <Input
               id="height"
               type="text"
               value={height}
               onChange={(e) => setHeight(e.target.value)}
+              disabled={isLocked("height")}
             />
           </Field>
-          <Field id="appearance" label="외모" full>
+          <Field
+            id="appearance"
+            label="외모"
+            full
+            locked={isLocked("appearance")}
+          >
             <textarea
               id="appearance"
               className={styles.textarea}
               value={appearance}
               onChange={(e) => setAppearance(e.target.value)}
+              disabled={isLocked("appearance")}
             />
           </Field>
-          <Field id="personality" label="성격" full>
+          <Field
+            id="personality"
+            label="성격"
+            full
+            locked={isLocked("personality")}
+          >
             <textarea
               id="personality"
               className={styles.textarea}
               value={personality}
               onChange={(e) => setPersonality(e.target.value)}
+              disabled={isLocked("personality")}
             />
           </Field>
-          <Field id="background" label="배경" full>
+          <Field
+            id="background"
+            label="배경"
+            full
+            locked={isLocked("background")}
+          >
             <textarea
               id="background"
               className={styles.textarea}
               value={background}
               onChange={(e) => setBackground(e.target.value)}
+              disabled={isLocked("background")}
             />
           </Field>
         </div>
       </Box>
 
-      {/* ── Agent-specific ── */}
-      {character.type === "AGENT" ? (
+      {/*
+        ── Agent-specific (admin only) ──
+        능력치/장비/어빌리티는 PLAYER_ALLOWED_CHARACTER_FIELDS 에 미포함이므로
+        player 모드에서는 섹션 자체를 비표시. 입력해도 서버 화이트리스트에서 drop 되며,
+        UI에서 잠긴 상태로 노출하면 시각적 잡음만 늘어 사용자 인지 부하 증가.
+      */}
+      {character.type === "AGENT" && !isPlayer ? (
         <>
           <Box className={styles.form__box}>
             <PanelTitle>COMBAT STATS</PanelTitle>
@@ -603,8 +749,8 @@ export default function CharacterEditForm({
         </>
       ) : null}
 
-      {/* ── NPC-specific ── */}
-      {character.type === "NPC" ? (
+      {/* ── NPC-specific (admin only) — NPC 전용 필드는 PLAYER_ALLOWED 외 ── */}
+      {character.type === "NPC" && !isPlayer ? (
         <Box className={styles.form__box}>
           <PanelTitle>NPC DETAILS</PanelTitle>
           <div className={styles.grid}>
@@ -656,11 +802,14 @@ function Field({
   label,
   children,
   full = false,
+  locked = false,
 }: {
   id?: string;
   label: string;
   children: React.ReactNode;
   full?: boolean;
+  /** true 이면 라벨 옆에 'GM' 자물쇠 배지 표시. 입력 비활성화는 호출자(disabled prop)가 별도 책임. */
+  locked?: boolean;
 }) {
   return (
     <div
@@ -669,7 +818,16 @@ function Field({
         .join(" ")}
     >
       <label className={styles.label} htmlFor={id}>
-        {label}
+        <span>{label}</span>
+        {locked ? (
+          <span
+            className={styles.lockedBadge}
+            aria-label="GM 전용 필드"
+            title="GM 전용 필드"
+          >
+            GM
+          </span>
+        ) : null}
       </label>
       {children}
     </div>
