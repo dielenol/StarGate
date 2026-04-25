@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-import { PLAYER_ALLOWED_CHARACTER_FIELDS } from "@stargate/shared-db";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type {
   Ability,
@@ -11,6 +10,11 @@ import type {
   Equipment,
   NpcSheet,
 } from "@/types/character";
+
+import {
+  characterEditQuotaKeys,
+  useCharacterEditQuota,
+} from "@/hooks/queries/useCharacterEditQuota";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
@@ -33,15 +37,24 @@ interface Props {
 }
 
 /**
- * 플레이어 자가편집에서 허용되는 sheet 필드 (서버 PLAYER_ALLOWED_CHARACTER_FIELDS 에서 derive).
- * 단일 진실의 원천(shared-db) 에서 sheet.* dot path 만 추출해 로컬 키로 변환.
+ * 플레이어 자가편집에서 허용되는 sheet 필드.
+ *
+ * ⚠️ 서버 PLAYER_ALLOWED_CHARACTER_FIELDS (`@stargate/shared-db`) 와 sync 필수 (sheet.* prefix 제거형).
+ * shared-db 직접 import 시 mongodb transitive 의존이 client 번들에 누수되어 빌드 실패 →
+ * 클라 측 hardcoded 유지. drift 검증은 lib/auth/__tests__/character-edit-e2e.test.mjs 의
+ * sync 케이스가 담당.
+ *
  * 이미지/식별/능력치/소유권은 의도적으로 제외 — 변경 시 GM에 문의하도록 유도.
  */
-const PLAYER_EDITABLE_FIELDS = new Set<string>(
-  [...PLAYER_ALLOWED_CHARACTER_FIELDS]
-    .filter((p) => p.startsWith("sheet."))
-    .map((p) => p.slice("sheet.".length)),
-);
+const PLAYER_EDITABLE_FIELDS = new Set<string>([
+  "quote",
+  "appearance",
+  "personality",
+  "background",
+  "gender",
+  "age",
+  "height",
+]);
 
 function isPlayerEditable(fieldKey: string): boolean {
   return PLAYER_EDITABLE_FIELDS.has(fieldKey);
@@ -65,6 +78,14 @@ export default function CharacterEditForm({
 }: Props) {
   const characterId = String(character._id);
   const isPlayer = editMode === "player";
+
+  const queryClient = useQueryClient();
+
+  /**
+   * 편집 쿼터 조회 — player 모드에서만 활성화. admin 은 쿨다운 미적용이라 폴링 불필요.
+   * 응답 도착 전엔 quotaData 가 undefined → 배너 텍스트 보강 영역만 비어 보임.
+   */
+  const { data: quotaData } = useCharacterEditQuota(characterId, isPlayer);
 
   /**
    * 플레이어 모드에서 비활성화 여부 판정.
@@ -257,9 +278,23 @@ export default function CharacterEditForm({
 
       if (!res.ok) {
         const data = await res.json();
+        // 429(쿨다운) 응답은 cooldown 정보를 포함하지만 표시는 단순 메시지로 통일.
+        // 쿼터 캐시도 invalidate 해 다음 편집 진입 시 갱신된 used/remaining 표시.
+        if (res.status === 429 && isPlayer) {
+          await queryClient.invalidateQueries({
+            queryKey: characterEditQuotaKeys.byCharacter(characterId),
+          });
+        }
         setError(data.error ?? "저장에 실패했습니다.");
         setSubmitting(false);
         return;
+      }
+
+      // PATCH 성공 — player 모드면 used 카운트가 +1 되었으므로 quota 캐시 invalidate.
+      if (isPlayer) {
+        await queryClient.invalidateQueries({
+          queryKey: characterEditQuotaKeys.byCharacter(characterId),
+        });
       }
 
       onSaved();
@@ -284,6 +319,15 @@ export default function CharacterEditForm({
         {isPlayer
           ? "플레이어 편집 모드 — 서사 필드만 수정 가능 (능력치·이미지 등은 GM 문의)"
           : "관리자 편집 모드 — 모든 필드 수정 가능"}
+        {isPlayer && quotaData && quotaData.mode === "player" ? (
+          <span className={styles.quota}>
+            {" · "}
+            남은 편집 횟수 {quotaData.remaining}/{quotaData.maxCount}
+            {" (다음 리셋: "}
+            {new Date(quotaData.resetAt).toLocaleString()}
+            {")"}
+          </span>
+        ) : null}
       </div>
 
       {/* ── Common Fields ── */}

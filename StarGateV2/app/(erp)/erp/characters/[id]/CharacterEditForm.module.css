@@ -88,6 +88,13 @@
   color: var(--ink-1);
 }
 
+/* P6 — player 쿨다운 잔여 표시 (디자인 placeholder, 같은 라인 인라인) */
+.quota {
+  color: var(--ink-2);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
 /* Textarea (no primitive yet — matches Input style) */
 
 .textarea {
