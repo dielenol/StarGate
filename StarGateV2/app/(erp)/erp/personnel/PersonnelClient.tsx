@@ -2,12 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type {
-  AgentLevel,
-  Character,
-  CharacterType,
-  NpcCharacter,
-} from "@/types/character";
+import type { AgentLevel, Character, NpcCharacter } from "@/types/character";
 import {
   AGENT_LEVEL_LABELS,
   FACTIONS,
@@ -45,29 +40,30 @@ import PersonnelCard from "./_components/PersonnelCard";
 import SearchJumpBanner from "./_components/SearchJumpBanner";
 import SubUnitAccordion from "./_components/SubUnitAccordion";
 
+import {
+  FACTION_DOCTRINE,
+  FACTION_LOGO,
+  INSTITUTION_DOCTRINE,
+  INSTITUTION_LOGO,
+  INSTITUTION_OVERSIGHT,
+} from "./_constants";
+
 import styles from "./page.module.css";
 
 /* ── 상수 ── */
 
-type FilterKey = "ALL" | CharacterType;
-
-const FILTER_ORDER: FilterKey[] = ["ALL", "AGENT", "NPC"];
-
-const FILTER_LABEL: Record<FilterKey, string> = {
-  ALL: "ALL",
-  AGENT: "AGENT",
-  NPC: "NPC",
-};
-
 const UNASSIGNED_CODE = "UNASSIGNED";
 
+/* 등급 legend — globals.css 의 `--rank-*` 팔레트와 라벨 체계가 1:1 */
 const LEGEND_ITEMS: { level: AgentLevel; label: string }[] = [
-  { level: "V", label: "최고기밀" },
-  { level: "A", label: "상급" },
-  { level: "M", label: "중상급" },
-  { level: "H", label: "중급" },
-  { level: "G", label: "일반" },
-  { level: "J", label: "주니어" },
+  { level: "GM", label: "게임 마스터" },
+  { level: "V", label: "VIP" },
+  { level: "A", label: "최종 관리자" },
+  { level: "M", label: "부서 관리자" },
+  { level: "H", label: "부서 특수요원" },
+  { level: "G", label: "부서 요원" },
+  { level: "J", label: "부서 평사원" },
+  { level: "U", label: "소모품" },
 ];
 
 /* ── 헬퍼 ── */
@@ -156,7 +152,6 @@ export default function PersonnelClient({
   });
 
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<FilterKey>("ALL");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [expandedSubUnit, setExpandedSubUnit] = useState<string | null>(null);
 
@@ -166,18 +161,17 @@ export default function PersonnelClient({
   const hiddenFieldsCount = countHiddenFields(clearance);
   const hiddenMinLevel = lowestRequiredForHidden(clearance);
 
-  /* 타입 필터 적용 후 그룹별 인덱스 */
+  /* 그룹별 인덱스 (AGENT / NPC 구분 없이 세계관 내 모든 인물) */
   const groupIndex = useMemo(() => {
     const map = new Map<string, Character[]>();
     for (const c of characters) {
-      if (filter !== "ALL" && c.type !== filter) continue;
       const g = resolveGroup(c);
       const bucket = map.get(g);
       if (bucket) bucket.push(c);
       else map.set(g, [c]);
     }
     return map;
-  }, [characters, filter]);
+  }, [characters]);
 
   /* 하위 기구별 인덱스 (institution 산하) */
   const subUnitIndex = useMemo(() => {
@@ -188,23 +182,12 @@ export default function PersonnelClient({
       }
     }
     for (const c of characters) {
-      if (filter !== "ALL" && c.type !== filter) continue;
       const dept = c.department;
       if (!dept) continue;
       const bucket = map.get(dept);
       if (bucket) bucket.push(c);
     }
     return map;
-  }, [characters, filter]);
-
-  /* 카운트 (필터 탭 표시용) — 필터 적용 전 전체 기준 */
-  const totalCounts = useMemo(() => {
-    const c: Record<FilterKey, number> = { ALL: 0, AGENT: 0, NPC: 0 };
-    for (const ch of characters) {
-      c.ALL += 1;
-      c[ch.type] = (c[ch.type] ?? 0) + 1;
-    }
-    return c;
   }, [characters]);
 
   /* 검색 매칭 */
@@ -219,8 +202,6 @@ export default function PersonnelClient({
     }
 
     const matched = characters.filter((c) => {
-      if (filter !== "ALL" && c.type !== filter) return false;
-
       if (c.codename.toLowerCase().includes(q)) return true;
       if (c.role && c.role.toLowerCase().includes(q)) return true;
 
@@ -256,7 +237,7 @@ export default function PersonnelClient({
     }
 
     return { ids, groupCounts, subUnitCounts };
-  }, [characters, query, filter, showIdentity]);
+  }, [characters, query, showIdentity]);
 
   /* 검색어 변화 → 자동 드릴다운 / 조감 복귀 */
   useEffect(() => {
@@ -338,6 +319,30 @@ export default function PersonnelClient({
     return counts;
   }, [groupIndex]);
 
+  // 그룹별 등급 분포 (AGENT + agentLevel 있는 캐릭터만 집계).
+  // FACTIONS / INSTITUTIONS / UNASSIGNED 전 그룹 커버 — OrgCanvas 와 GroupHero 공용.
+  const canvasGroupLevelCounts = useMemo<
+    Record<string, Partial<Record<AgentLevel, number>>>
+  >(() => {
+    const counts: Record<string, Partial<Record<AgentLevel, number>>> = {};
+    const codes = [
+      ...FACTIONS.map((f) => f.code as string),
+      ...INSTITUTIONS.map((i) => i.code as string),
+      UNASSIGNED_CODE,
+    ];
+    for (const code of codes) {
+      const bucket = groupIndex.get(code) ?? [];
+      const dist: Partial<Record<AgentLevel, number>> = {};
+      for (const c of bucket) {
+        if (c.type === "AGENT" && c.agentLevel) {
+          dist[c.agentLevel] = (dist[c.agentLevel] ?? 0) + 1;
+        }
+      }
+      counts[code] = dist;
+    }
+    return counts;
+  }, [groupIndex]);
+
   const unassignedSamples = useMemo(() => {
     const list = groupIndex.get(UNASSIGNED_CODE) ?? [];
     return list.slice(0, 3).map((c) => ({ codename: c.codename }));
@@ -408,6 +413,7 @@ export default function PersonnelClient({
       },
     ];
 
+    // 세력/기관이 선택된 경우에만 group crumb 추가 (미도달 placeholder 제거)
     if (selectedGroup) {
       const kind = getGroupKind(selectedGroup);
       const prefix =
@@ -422,24 +428,15 @@ export default function PersonnelClient({
         on: !expandedSubUnit,
         onClick: expandedSubUnit ? () => setExpandedSubUnit(null) : undefined,
       });
-    } else {
-      items.push({ key: "group", label: "세력/기관 선택", on: false });
     }
 
-    if (selectedGroup && selectedSubUnits.length > 0) {
-      if (expandedSubUnit) {
-        const subLabel =
-          selectedSubUnits.find((u) => u.code === expandedSubUnit)?.label ??
-          expandedSubUnit;
-        items.push({ key: "sub", label: `하위: ${subLabel}`, on: true });
-      } else {
-        items.push({ key: "sub", label: "하위 기구", on: false });
-      }
-    } else {
-      items.push({ key: "sub", label: "하위 기구", on: false });
+    // 하위 기구가 실제로 펼쳐졌을 때만 sub crumb 추가
+    if (selectedGroup && expandedSubUnit && selectedSubUnits.length > 0) {
+      const subLabel =
+        selectedSubUnits.find((u) => u.code === expandedSubUnit)?.label ??
+        expandedSubUnit;
+      items.push({ key: "sub", label: `하위: ${subLabel}`, on: true });
     }
-
-    items.push({ key: "dossier", label: "개인 Dossier", on: false });
 
     return items;
   }, [selectedGroup, expandedSubUnit, selectedSubUnits]);
@@ -511,11 +508,14 @@ export default function PersonnelClient({
   return (
     <>
       <PageHead
-        breadcrumb="ERP / PERSONNEL"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "PERSONNEL" },
+        ]}
         title="신원 조회"
         right={
           <div className={styles.headRight}>
-            <span className={styles.clrPill}>
+            <span className={styles.clrPill} data-rank={clearance}>
               <span>
                 CLR · {clearance} · {AGENT_LEVEL_LABELS[clearance]}
               </span>
@@ -543,7 +543,7 @@ export default function PersonnelClient({
           <span className={styles.classifiedTag}>CLASSIFIED</span> 로 표시됩니다.
         </span>
         <span className={styles.clearanceStrip__source}>
-          산출: user.role
+          SOURCE · 인사 등록부
         </span>
       </div>
 
@@ -569,30 +569,6 @@ export default function PersonnelClient({
           </Button>
         </div>
 
-        <div className={styles.filters} role="group" aria-label="타입 필터">
-          <span className={styles.filters__eyebrow}>TYPE</span>
-          <div className={styles.seg}>
-            {FILTER_ORDER.map((key) => {
-              const active = filter === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className={[
-                    styles.seg__btn,
-                    active ? styles["seg__btn--on"] : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() => setFilter(key)}
-                  aria-pressed={active}
-                >
-                  {FILTER_LABEL[key]} · {totalCounts[key]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </Box>
 
       {/* Org breadcrumbs */}
@@ -639,6 +615,7 @@ export default function PersonnelClient({
       {!selectedGroup ? (
         <OrgCanvas
           groupCounts={canvasGroupCounts}
+          groupLevelCounts={canvasGroupLevelCounts}
           unassignedSamples={unassignedSamples}
           onSelect={handleSelectGroup}
         />
@@ -650,7 +627,28 @@ export default function PersonnelClient({
             groupLabelEn={selectedGroupLabelEn}
             kind={selectedGroupKind}
             subUnitCount={selectedSubUnits.length}
+            subUnitLabels={selectedSubUnits.map((u) => u.label)}
             memberCount={selectedGroupMembers.length}
+            doctrine={
+              selectedGroupKind === "faction"
+                ? FACTION_DOCTRINE[selectedGroup]
+                : selectedGroupKind === "institution"
+                  ? INSTITUTION_DOCTRINE[selectedGroup]
+                  : undefined
+            }
+            levelCounts={canvasGroupLevelCounts[selectedGroup]}
+            oversight={
+              selectedGroupKind === "institution"
+                ? INSTITUTION_OVERSIGHT[selectedGroup]
+                : undefined
+            }
+            logoUrl={
+              selectedGroupKind === "faction"
+                ? FACTION_LOGO[selectedGroup]
+                : selectedGroupKind === "institution"
+                  ? INSTITUTION_LOGO
+                  : undefined
+            }
             onBack={handleBackToOverview}
           />
 
@@ -680,7 +678,11 @@ export default function PersonnelClient({
         <div className={styles.legend__row}>
           {LEGEND_ITEMS.map((item) => (
             <div key={item.level} className={styles.legend__item}>
-              <span className={styles.lvScale} aria-hidden>
+              <span
+                className={styles.lvScale}
+                data-level={item.level}
+                aria-hidden
+              >
                 {Array.from({ length: 7 }, (_, i) => (
                   <span
                     key={i}
@@ -692,18 +694,23 @@ export default function PersonnelClient({
                   />
                 ))}
               </span>
-              <span className={styles.legend__label}>
+              <span
+                className={styles.legend__label}
+                data-level={item.level}
+              >
                 {item.level} · {item.label}
               </span>
             </div>
           ))}
           <div className={styles.legend__item}>
             <span className={styles.classifiedTag}>CLASSIFIED</span>
-            <span className={styles.legend__label}>값 마스킹</span>
+            <span className={styles.legend__label}>등급 미달 · 값 가림</span>
           </div>
           <div className={styles.legend__item}>
             <span className={styles.redactBlock} aria-hidden />
-            <span className={styles.legend__label}>REDACTED 블록</span>
+            <span className={styles.legend__label}>
+              REDACTED · 필드 전체 차단
+            </span>
           </div>
         </div>
       </Box>

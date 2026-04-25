@@ -42,19 +42,20 @@
   margin-left: 10px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 15px;
   letter-spacing: 0.15em;
 }
 
+/* data-rank 주입 시 rank 팔레트로 자동 전환, 미지정 시 gold 폴백 */
 .clrPill {
   display: inline-flex;
   gap: 8px;
   align-items: center;
-  padding: 4px 10px;
-  border: 1px solid var(--gold-dim);
-  color: var(--gold);
+  padding: 5px 12px;
+  border: 1px solid var(--rank-active-marker, var(--gold-dim));
+  color: var(--rank-active-text, var(--gold));
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.18em;
 }
 
@@ -66,18 +67,18 @@
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: var(--gap);
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: 1px solid var(--line-strong);
   border-left: 2px solid var(--danger);
   background: rgba(192, 106, 90, 0.06);
   color: var(--ink-1);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .readOnlyNotice__label {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.22em;
 }
 
@@ -95,7 +96,7 @@
   margin-left: auto;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }
 
@@ -129,17 +130,17 @@
 .portraitName {
   margin: 14px 0 0;
   color: var(--ink-0);
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  min-height: 22px;
+  min-height: 24px;
 }
 
 .portraitCode {
   margin-top: 4px;
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.2em;
 }
 
@@ -147,7 +148,7 @@
   margin-top: 2px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.15em;
 }
 
@@ -173,9 +174,9 @@
 
 .kvRow {
   display: flex;
-  padding: 6px 0;
+  padding: 7px 0;
   border-bottom: 1px dashed var(--line);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .kvRow:last-child {
@@ -187,7 +188,7 @@
   width: 40%;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }
 
@@ -215,7 +216,7 @@
 .profileHeading {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
@@ -234,12 +235,12 @@
 
 .quote {
   margin-top: 12px;
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-left: 2px solid var(--gold);
   background: rgba(201, 168, 90, 0.04);
   color: var(--ink-1);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
@@ -250,7 +251,7 @@
   margin-top: 6px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.15em;
 }
 
@@ -263,25 +264,28 @@
 }
 
 .statBox {
-  padding: 14px 12px;
+  padding: 16px 14px;
   text-align: center;
   border: 1px solid var(--line);
   background: var(--bg-2);
 }
 
 .statLabel {
+  overflow: hidden;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.2em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .statNumber {
   margin-top: 6px;
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 500;
   line-height: 1;
 }
@@ -301,7 +305,7 @@
 }
 
 .agentDetailCell {
-  padding: 6px 0;
+  padding: 7px 0;
   border-bottom: 1px dashed var(--line);
 }
 
@@ -312,7 +316,7 @@
 .agentDetailLabel {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
@@ -320,7 +324,7 @@
 .agentDetailValue {
   margin-top: 4px;
   color: var(--ink-0);
-  font-size: 13px;
+  font-size: 15px;
   word-break: break-word;
 }
 
@@ -339,7 +343,7 @@
 }
 
 .abilityItem {
-  padding: 12px;
+  padding: 14px;
   border: 1px solid var(--line);
   background: var(--bg-2);
 }
@@ -354,20 +358,20 @@
 
 .abilityItem__name {
   color: var(--ink-0);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
 }
 
 .abilityItem__desc {
   color: var(--ink-1);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
 .abilityItem__effect {
   margin-top: 4px;
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
@@ -377,7 +381,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .abilitiesLockedRow {
@@ -385,14 +389,14 @@
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px dashed var(--line-strong);
 }
 
 .abilitiesLockedCode {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.15em;
 }
 
@@ -412,11 +416,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border: 1px dashed var(--danger);
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.18em;
   white-space: nowrap;
 }
@@ -429,7 +433,7 @@
   margin-top: 10px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.15em;
 }
 
@@ -442,7 +446,7 @@
 }
 
 .equipmentCard {
-  padding: 12px;
+  padding: 14px;
   border: 1px solid var(--line);
   background: var(--bg-2);
   display: flex;
@@ -459,19 +463,19 @@
 
 .equipmentCard__name {
   color: var(--ink-0);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
 }
 
 .equipmentCard__meta {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .equipmentCard__desc {
   color: var(--ink-1);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
@@ -484,7 +488,7 @@
 }
 
 .equipmentLockedCard {
-  padding: 14px;
+  padding: 16px;
   text-align: center;
   border: 1px dashed var(--danger);
   background: rgba(192, 106, 90, 0.04);
@@ -493,7 +497,7 @@
 .equipmentLockedCode {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.15em;
 }
 
@@ -501,7 +505,7 @@
   margin-top: 6px;
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 15px;
   letter-spacing: 0.18em;
 }
 
@@ -518,7 +522,7 @@
   text-align: center;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.15em;
   line-height: 1.7;
 }
@@ -529,7 +533,7 @@
   display: inline-block;
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.15em;
 }
 
@@ -538,7 +542,7 @@
   color: var(--gold-dim);
   letter-spacing: -1px;
   user-select: none;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .redactedInline {
@@ -560,7 +564,7 @@
 
 .mono {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.12em;
   color: var(--ink-2);
 }
@@ -573,7 +577,7 @@
   padding: 20px 10px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-align: center;
 }

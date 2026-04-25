@@ -1,14 +1,15 @@
 /* ── ReqClrBadge ── */
 
+/* data-rank 가 있으면 rank 팔레트로, 없으면 gold 폴백. locked 는 danger 로 오버라이드. */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 8px;
-  border: 1px solid var(--gold-dim);
-  color: var(--gold);
+  padding: 3px 10px;
+  border: 1px solid var(--rank-active-marker, var(--gold-dim));
+  color: var(--rank-active-text, var(--gold));
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.2em;
   white-space: nowrap;
 }

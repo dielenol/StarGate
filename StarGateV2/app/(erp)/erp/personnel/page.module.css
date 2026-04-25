@@ -8,15 +8,16 @@
   align-items: center;
 }
 
+/* data-rank 주입 시 rank 팔레트로 자동 전환, 미지정 시 gold 폴백 */
 .clrPill {
   display: inline-flex;
   gap: 8px;
   align-items: center;
-  padding: 4px 10px;
-  border: 1px solid var(--gold-dim);
-  color: var(--gold);
+  padding: 5px 12px;
+  border: 1px solid var(--rank-active-marker, var(--gold-dim));
+  color: var(--rank-active-text, var(--gold));
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.18em;
 }
 
@@ -28,18 +29,18 @@
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 14px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: 1px solid var(--gold-dim);
   border-left: 2px solid var(--gold);
   background: rgba(201, 168, 90, 0.06);
   color: var(--ink-1);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .clearanceStrip__label {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.22em;
 }
 
@@ -57,17 +58,17 @@
   margin-left: auto;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }
 
 .classifiedTag {
   display: inline-block;
-  padding: 1px 6px;
+  padding: 2px 8px;
   border: 1px solid var(--danger);
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.2em;
 }
 
@@ -98,7 +99,7 @@
 .filters__eyebrow {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.2em;
 }
 
@@ -110,12 +111,12 @@
 }
 
 .seg__btn {
-  padding: 6px 12px;
+  padding: 7px 14px;
   border: none;
   background: transparent;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.12em;
   cursor: pointer;
   transition:
@@ -139,13 +140,13 @@
 /* Legacy v1 filter tabs — retained as fallback (hidden unless used) */
 
 .filters__tab {
-  padding: 8px 14px;
+  padding: 10px 16px;
   border: none;
   border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.12em;
   cursor: pointer;
 }
@@ -159,7 +160,7 @@
   margin-top: 10px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.08em;
 }
 
@@ -173,7 +174,7 @@
   margin-bottom: 14px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.14em;
 }
 
@@ -184,7 +185,7 @@
 }
 
 .crumb {
-  padding: 4px 8px;
+  padding: 5px 10px;
   border: 1px solid var(--line-strong);
   color: var(--ink-3);
   background: transparent;
@@ -239,7 +240,7 @@
 
 .cardGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--gap);
 }
 
@@ -249,7 +250,7 @@
   padding: 24px 10px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-align: center;
 }
@@ -264,9 +265,9 @@
 .legend__row {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
+  gap: 20px;
   align-items: center;
-  font-size: 10px;
+  font-size: 14px;
   color: var(--ink-3);
 }
 
@@ -294,6 +295,58 @@
 
 .lvScale > span.lvScale--on {
   background: var(--gold);
+}
+
+/* 등급별 scale pip — rank marker 색상 사용 (진한 톤, bg 위에서 식별) */
+.lvScale[data-level="GM"] > span.lvScale--on {
+  background: var(--rank-gm-marker);
+}
+.lvScale[data-level="V"] > span.lvScale--on {
+  background: var(--rank-v-marker);
+}
+.lvScale[data-level="A"] > span.lvScale--on {
+  background: var(--rank-a-marker);
+}
+.lvScale[data-level="M"] > span.lvScale--on {
+  background: var(--rank-m-marker);
+}
+.lvScale[data-level="H"] > span.lvScale--on {
+  background: var(--rank-h-marker);
+}
+.lvScale[data-level="G"] > span.lvScale--on {
+  background: var(--rank-g-marker);
+}
+.lvScale[data-level="J"] > span.lvScale--on {
+  background: var(--rank-j-marker);
+}
+.lvScale[data-level="U"] > span.lvScale--on {
+  background: var(--rank-u-marker);
+}
+
+/* 등급별 legend 라벨 — rank text 색상 (밝은 톤, 가독성) */
+.legend__label[data-level="GM"] {
+  color: var(--rank-gm-text);
+}
+.legend__label[data-level="V"] {
+  color: var(--rank-v-text);
+}
+.legend__label[data-level="A"] {
+  color: var(--rank-a-text);
+}
+.legend__label[data-level="M"] {
+  color: var(--rank-m-text);
+}
+.legend__label[data-level="H"] {
+  color: var(--rank-h-text);
+}
+.legend__label[data-level="G"] {
+  color: var(--rank-g-text);
+}
+.legend__label[data-level="J"] {
+  color: var(--rank-j-text);
+}
+.legend__label[data-level="U"] {
+  color: var(--rank-u-text);
 }
 
 .redactBlock {
@@ -343,7 +396,7 @@
 .card__code {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }
 
@@ -361,7 +414,7 @@
   margin-top: 2px;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
 }
 
 .card__footer {
@@ -374,7 +427,7 @@
 .card__group {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
 }
 
 .redacted {

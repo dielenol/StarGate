@@ -44,6 +44,7 @@ export default function ClearanceMap({ clearance }: Props) {
               ]
                 .filter(Boolean)
                 .join(" ")}
+              data-rank={r.required}
             >
               {r.required} · {r.locked ? "잠김" : "열람"}
             </span>

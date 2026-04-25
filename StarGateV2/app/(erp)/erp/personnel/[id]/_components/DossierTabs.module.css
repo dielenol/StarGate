@@ -9,13 +9,13 @@
 }
 
 .tab {
-  padding: 8px 14px;
+  padding: 10px 16px;
   border: none;
   border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.12em;
   cursor: pointer;
   user-select: none;
@@ -37,5 +37,5 @@
 }
 
 .tabLevel {
-  font-size: 8px;
+  font-size: 14px;
 }

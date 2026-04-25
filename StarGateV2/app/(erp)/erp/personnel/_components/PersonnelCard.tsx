@@ -92,7 +92,7 @@ export default function PersonnelCard({
             <Tag tone={character.type === "AGENT" ? "gold" : "default"}>
               {character.type}
             </Tag>
-            <span className={styles.clrPill}>
+            <span className={styles.clrPill} data-rank={level}>
               <span>CLR · {level}</span>
               <Pips total={7} filled={getLevelDisplayRank(level)} />
             </span>

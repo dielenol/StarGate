@@ -17,7 +17,7 @@
 
 .fullIcon {
   color: var(--danger);
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1;
 }
 
@@ -25,14 +25,14 @@
   margin-top: 8px;
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.2em;
 }
 
 .fullSub {
   margin-top: 6px;
   color: var(--ink-3);
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.6;
   white-space: pre-line;
 }
@@ -55,7 +55,7 @@
 .gridEyebrow {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
@@ -64,7 +64,7 @@
   margin-top: 6px;
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 15px;
   letter-spacing: 0.18em;
 }
 

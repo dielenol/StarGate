@@ -2,6 +2,7 @@
 
 .hero {
   position: relative;
+  overflow: hidden;
   padding: 22px 26px;
   border: 1px solid var(--gold-dim);
   background: linear-gradient(
@@ -45,30 +46,150 @@
   border-right: 1px solid var(--gold);
 }
 
-.row {
+.watermark {
+  position: absolute;
+  right: -60px;
+  bottom: -60px;
+  width: 280px;
+  opacity: 0.07;
+  pointer-events: none;
+  user-select: none;
+}
+
+.head {
+  position: relative;
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
   align-items: flex-end;
+  justify-content: space-between;
+}
+
+.headMain {
+  min-width: 0;
 }
 
 .title {
   margin: 4px 0 0;
   color: var(--ink-0);
-  font-size: 20px;
+  font-size: 28px;
   font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
-.meta {
-  margin-top: 2px;
-  color: var(--ink-3);
+.subtitle {
+  margin-top: 4px;
+  color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
 }
 
 .actions {
   display: flex;
   gap: 6px;
   margin-left: auto;
+}
+
+/* ── 정보 섹션 그리드 ── */
+
+.sections {
+  position: relative;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--line-strong);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px 22px;
+}
+
+@media (max-width: 1100px) {
+  .sections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sections {
+    grid-template-columns: 1fr;
+  }
+}
+
+.section {
+  min-width: 0;
+}
+
+.sectionLabel {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.sectionValue {
+  margin-top: 6px;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+}
+
+/* DISTRIBUTION pips */
+
+.distribution {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  margin-top: 8px;
+}
+
+.pip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+/* data-rank 가 주입되므로 활성 시 해당 등급 text 색 */
+.pip--on {
+  color: var(--rank-active-text, var(--gold));
+}
+
+.pipLevel {
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.pipCount {
+  opacity: 0.9;
+}
+
+/* HEADCOUNT */
+
+.headcount {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.headcountN {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.headcountU {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.22em;
 }

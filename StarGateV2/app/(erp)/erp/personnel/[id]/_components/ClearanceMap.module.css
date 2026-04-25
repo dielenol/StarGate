@@ -3,8 +3,8 @@
 .rows {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  font-size: 11px;
+  gap: 10px;
+  font-size: 14px;
 }
 
 .row {
@@ -17,21 +17,23 @@
 .label {
   color: var(--ink-1);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.12em;
 }
 
 .value {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.14em;
   white-space: nowrap;
 }
 
+/* 열람 가능 필드 — data-rank 로 해당 등급 text 색, 미지정 시 gold 폴백 */
 .valueOpen {
-  color: var(--gold);
+  color: var(--rank-active-text, var(--gold));
 }
 
+/* 잠긴 필드는 danger 고정 */
 .valueLocked {
   color: var(--danger);
 }
@@ -40,7 +42,7 @@
   margin-top: 12px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.15em;
   text-align: center;
 }

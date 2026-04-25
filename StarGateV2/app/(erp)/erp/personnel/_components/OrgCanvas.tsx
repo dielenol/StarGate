@@ -1,16 +1,18 @@
 "use client";
 
+import type { AgentLevel } from "@/types/character";
 import { FACTIONS, INSTITUTIONS } from "@/types/character";
 
+import {
+  FACTION_DOCTRINE,
+  FACTION_LOGO,
+  INSTITUTION_DOCTRINE,
+  INSTITUTION_LOGO,
+  INSTITUTION_OVERSIGHT,
+  LEVEL_ORDER,
+} from "../_constants";
+
 import styles from "./OrgCanvas.module.css";
-
-/* ── 상수 ── */
-
-const FACTION_EMBLEM: Record<string, string> = {
-  COUNCIL: "✦",
-  MILITARY: "✶",
-  CIVIL: "◈",
-};
 
 const UNASSIGNED_CODE = "UNASSIGNED";
 
@@ -20,19 +22,21 @@ interface UnassignedSample {
 
 interface Props {
   groupCounts: Record<string, number>;
+  groupLevelCounts?: Record<string, Partial<Record<AgentLevel, number>>>;
   unassignedSamples?: UnassignedSample[];
   onSelect: (groupCode: string) => void;
 }
 
 export default function OrgCanvas({
   groupCounts,
+  groupLevelCounts = {},
   unassignedSamples = [],
   onSelect,
 }: Props) {
   const unassignedCount = groupCounts[UNASSIGNED_CODE] ?? 0;
   const hasUnassigned = unassignedCount > 0;
 
-  // FACTIONS 삼각 배치: COUNCIL 상단, MILITARY 좌하, CIVIL 우하
+  // FACTIONS 정삼각형 배치 (상호 견제): COUNCIL(상), MILITARY(좌하), CIVIL(우하)
   const factionsOrdered = [...FACTIONS].sort((a, b) => {
     const order = (code: string) =>
       code === "COUNCIL" ? 0 : code === "MILITARY" ? 1 : 2;
@@ -41,59 +45,132 @@ export default function OrgCanvas({
 
   return (
     <section className={styles.canvas}>
-      <svg
-        className={styles.lines}
-        viewBox="0 0 1000 560"
-        preserveAspectRatio="none"
-        aria-hidden
-      >
-        <g
-          fill="none"
-          stroke="rgba(201,168,90,0.35)"
-          strokeWidth={1}
-          strokeDasharray="4 4"
-        >
-          <path d="M290 120 L160 320" />
-          <path d="M290 120 L420 320" />
-          <path d="M540 170 L760 170" />
-          <path d="M540 170 L760 310" />
-          <path d="M760 170 L820 310" />
-        </g>
-      </svg>
-
       <div className={styles.inner}>
         {/* FACTIONS */}
         <div>
           <div className={styles.sectionTitle}>3대 세력 · FACTIONS</div>
           <div className={styles.factions}>
-            {factionsOrdered.map((faction, idx) => {
+            {/* 상호 견제 — 3 꼭짓점을 잇는 양방향 화살표 + 중앙 '견제' 라벨.
+                viewBox 100×100 기준: COUNCIL(50,18), MILITARY(20,82), CIVIL(80,82) */}
+            <svg
+              className={styles.crossfire}
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-hidden
+            >
+              <defs>
+                <marker
+                  id="crossfireArrow"
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="5"
+                  markerWidth="3"
+                  markerHeight="3"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M0,0 L10,5 L0,10 z" fill="var(--danger)" />
+                </marker>
+              </defs>
+              {/* COUNCIL ↔ MILITARY */}
+              <line
+                x1="50"
+                y1="18"
+                x2="20"
+                y2="82"
+                markerStart="url(#crossfireArrow)"
+                markerEnd="url(#crossfireArrow)"
+              />
+              {/* COUNCIL ↔ CIVIL */}
+              <line
+                x1="50"
+                y1="18"
+                x2="80"
+                y2="82"
+                markerStart="url(#crossfireArrow)"
+                markerEnd="url(#crossfireArrow)"
+              />
+              {/* MILITARY ↔ CIVIL */}
+              <line
+                x1="20"
+                y1="82"
+                x2="80"
+                y2="82"
+                markerStart="url(#crossfireArrow)"
+                markerEnd="url(#crossfireArrow)"
+              />
+            </svg>
+            <span className={styles.crossfireLabel} aria-hidden>
+              상호 감시 · MUTUAL OVERSIGHT
+            </span>
+
+            {factionsOrdered.map((faction) => {
               const count = groupCounts[faction.code] ?? 0;
-              const isTop = idx === 0;
+              const levels = groupLevelCounts[faction.code] ?? {};
+              const logo = FACTION_LOGO[faction.code];
+              const doctrine = FACTION_DOCTRINE[faction.code] ?? "";
               return (
                 <button
                   key={faction.code}
                   type="button"
-                  className={[
-                    styles.node,
-                    styles["node--lg"],
-                    isTop ? styles.factions__top : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
+                  className={[styles.node, styles["node--lg"]].join(" ")}
                   onClick={() => onSelect(faction.code)}
                   aria-label={`${faction.label} (${count}명)`}
                 >
                   <span className={styles.tl} />
                   <span className={styles.br} />
-                  <span className={styles.emblem} aria-hidden>
-                    {FACTION_EMBLEM[faction.code] ?? "◆"}
-                  </span>
-                  <div className={styles.code}>{faction.code}</div>
-                  <div className={styles.label}>{faction.label}</div>
-                  <div className={styles.labelEn}>{faction.labelEn}</div>
-                  <div className={styles.headcount}>
-                    <span className={styles.headcount__n}>{count}</span>
-                    <span className={styles.headcount__u}>MEMBERS</span>
+
+                  {logo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={logo}
+                      alt=""
+                      className={styles.node__watermark}
+                      aria-hidden
+                    />
+                  ) : null}
+
+                  <div className={styles.node__header}>
+                    <div className={styles.code}>{faction.code}</div>
+                    <div className={styles.label}>{faction.label}</div>
+                  </div>
+
+                  <div className={styles.node__section}>
+                    <div className={styles.node__sectionLabel}>DOCTRINE</div>
+                    <div className={styles.node__doctrine}>{doctrine}</div>
+                  </div>
+
+                  <div className={styles.node__section}>
+                    <div className={styles.node__sectionLabel}>
+                      DISTRIBUTION
+                    </div>
+                    <div className={styles.node__distribution}>
+                      {LEVEL_ORDER.map((lv) => {
+                        const c = levels[lv] ?? 0;
+                        return (
+                          <span
+                            key={lv}
+                            className={[
+                              styles.node__pip,
+                              styles[`node__pip--${lv}`],
+                              c > 0 ? styles["node__pip--on"] : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                          >
+                            <span className={styles.node__pipLevel}>{lv}</span>
+                            <span className={styles.node__pipCount}>·{c}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className={styles.node__section}>
+                    <div className={styles.node__sectionLabel}>HEADCOUNT</div>
+                    <div className={styles.headcount}>
+                      <span className={styles.headcount__n}>{count}</span>
+                      <span className={styles.headcount__u}>MEMBERS</span>
+                    </div>
                   </div>
                 </button>
               );
@@ -108,15 +185,18 @@ export default function OrgCanvas({
             {INSTITUTIONS.map((inst) => {
               const count = groupCounts[inst.code] ?? 0;
               const hasSub = inst.subUnits.length > 0;
-              const subLabel = hasSub
-                ? `${inst.labelEn} · ${inst.subUnits.length}개 하위 기구`
-                : inst.labelEn;
+              const doctrine = INSTITUTION_DOCTRINE[inst.code] ?? "";
+              const oversight = INSTITUTION_OVERSIGHT[inst.code];
+              const subUnitsLabel = inst.subUnits
+                .map((s) => s.label)
+                .join(" · ");
               return (
                 <button
                   key={inst.code}
                   type="button"
                   className={[
                     styles.node,
+                    styles["node--lg"],
                     hasSub ? styles["node--hasSub"] : "",
                   ]
                     .filter(Boolean)
@@ -126,12 +206,49 @@ export default function OrgCanvas({
                 >
                   <span className={styles.tl} />
                   <span className={styles.br} />
-                  <div className={styles.code}>{inst.code}</div>
-                  <div className={styles.label}>{inst.label}</div>
-                  <div className={styles.labelEn}>{subLabel}</div>
-                  <div className={styles.headcount}>
-                    <span className={styles.headcount__n}>{count}</span>
-                    <span className={styles.headcount__u}>MEMBERS</span>
+
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={INSTITUTION_LOGO}
+                    alt=""
+                    className={styles.node__watermark}
+                    aria-hidden
+                  />
+
+                  <div className={styles.node__header}>
+                    <div className={styles.code}>{inst.code}</div>
+                    <div className={styles.label}>{inst.label}</div>
+                  </div>
+
+                  <div className={styles.node__section}>
+                    <div className={styles.node__sectionLabel}>DOCTRINE</div>
+                    <div className={styles.node__doctrine}>{doctrine}</div>
+                  </div>
+
+                  {hasSub ? (
+                    <div className={styles.node__section}>
+                      <div className={styles.node__sectionLabel}>
+                        SUB UNITS · {inst.subUnits.length}
+                      </div>
+                      <div className={styles.node__subUnits}>
+                        {subUnitsLabel}
+                      </div>
+                    </div>
+                  ) : oversight ? (
+                    <div className={styles.node__section}>
+                      <div className={styles.node__sectionLabel}>
+                        OVERSIGHT
+                      </div>
+                      <div className={styles.node__doctrine}>{oversight}</div>
+                    </div>
+                  ) : null}
+
+                  <div className={styles.node__section}>
+                    <div className={styles.node__sectionLabel}>HEADCOUNT</div>
+                    <div className={styles.headcount}>
+                      <span className={styles.headcount__n}>{count}</span>
+                      <span className={styles.headcount__u}>MEMBERS</span>
+                    </div>
                   </div>
                 </button>
               );

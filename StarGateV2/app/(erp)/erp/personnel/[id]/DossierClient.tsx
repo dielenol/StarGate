@@ -159,9 +159,12 @@ export default function DossierClient({ character, clearance }: Props) {
   const auditId = buildAuditId(character);
   const auditTimestamp = formatDate(character.updatedAt);
 
-  const breadcrumb = ["‹ PERSONNEL", topGroupLabel, subUnitLabel, character.codename]
-    .filter(Boolean)
-    .join(" / ");
+  const breadcrumb = [
+    { label: "‹ PERSONNEL", href: "/erp/personnel" },
+    topGroupLabel ? { label: topGroupLabel } : null,
+    subUnitLabel ? { label: subUnitLabel } : null,
+    { label: character.codename },
+  ].filter(Boolean) as { label: string; href?: string }[];
 
   const displayName = canIdentity && !isRedactedValue(character.sheet.name)
     ? character.sheet.name
@@ -174,7 +177,7 @@ export default function DossierClient({ character, clearance }: Props) {
 
   const headRight = (
     <div className={styles.headRight}>
-      <span className={styles.clrPill}>
+      <span className={styles.clrPill} data-rank={clearance}>
         <span>
           MY CLR · {clearance} · {AGENT_LEVEL_LABELS[clearance]}
         </span>
@@ -637,7 +640,7 @@ export default function DossierClient({ character, clearance }: Props) {
             </div>
 
             <div className={styles.clrPillRow}>
-              <span className={styles.clrPill}>
+              <span className={styles.clrPill} data-rank={level}>
                 <span>
                   TARGET CLR · {level} · {AGENT_LEVEL_LABELS[level]}
                 </span>

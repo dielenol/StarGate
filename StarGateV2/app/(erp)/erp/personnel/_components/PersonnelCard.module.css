@@ -33,11 +33,11 @@
   position: absolute;
   top: -1px;
   left: 10px;
-  padding: 2px 7px 1px;
+  padding: 3px 9px 2px;
   background: var(--gold);
   color: var(--bg);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 0.25em;
 }
 
@@ -72,7 +72,7 @@
   background: var(--bg-2);
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   overflow: hidden;
 }
 
@@ -86,7 +86,7 @@
 .avatar--sealed {
   border-color: var(--gold-dim);
   color: var(--gold);
-  font-size: 16px;
+  font-size: 17px;
 }
 
 .body {
@@ -97,14 +97,14 @@
 .code {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.18em;
 }
 
 .name {
   margin-top: 2px;
   color: var(--ink-0);
-  font-size: 14px;
+  font-size: 15px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -120,7 +120,7 @@
 .role {
   margin-top: 2px;
   color: var(--ink-2);
-  font-size: 11px;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -136,15 +136,17 @@
   align-items: center;
 }
 
+/* data-rank 주입 시 rank 팔레트로 자동 전환, 미지정 시 gold 폴백.
+   clrPill--danger 는 REDACTED 케이스로 유지. */
 .clrPill {
   display: inline-flex;
   gap: 8px;
   align-items: center;
-  padding: 2px 7px;
-  border: 1px solid var(--gold-dim);
-  color: var(--gold);
+  padding: 3px 9px;
+  border: 1px solid var(--rank-active-marker, var(--gold-dim));
+  color: var(--rank-active-text, var(--gold));
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.2em;
 }
 
@@ -156,14 +158,14 @@
 /* Foot */
 
 .foot {
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px dashed var(--line-strong);
   display: flex;
   align-items: center;
   justify-content: space-between;
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.12em;
 }
