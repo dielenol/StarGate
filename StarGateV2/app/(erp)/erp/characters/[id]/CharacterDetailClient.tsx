@@ -24,6 +24,9 @@ import Seal from "@/components/ui/Seal/Seal";
 import Stack from "@/components/ui/Stack/Stack";
 import Tag from "@/components/ui/Tag/Tag";
 
+import ChangeLogsPanel, {
+  type ChangeLogsPanelMode,
+} from "./ChangeLogsPanel";
 import CharacterEditForm from "./CharacterEditForm";
 import PosterHero from "./PosterHero";
 
@@ -37,6 +40,14 @@ interface Props {
    */
   editMode: CharacterEditMode;
   canDelete: boolean;
+  /**
+   * P8 변경 이력 패널 권한 모드.
+   * - 'gm'    : GM (V+ 가 아닌 GM 한정) — 이력 + revert 버튼
+   * - 'owner' : 본인 소유 캐릭터 readonly 이력
+   * - 'none'  : 패널 미노출
+   * 권한 결정은 서버(page.tsx)에서 한 번만 수행해 prop 으로 내려준다.
+   */
+  changeLogsMode: ChangeLogsPanelMode;
 }
 
 function getInitial(c: Character): string {
@@ -48,6 +59,7 @@ export default function CharacterDetailClient({
   character,
   editMode,
   canDelete,
+  changeLogsMode,
 }: Props) {
   const canEdit = editMode !== "none";
   const router = useRouter();
@@ -265,6 +277,14 @@ export default function CharacterDetailClient({
           ) : (
             <NpcSections character={character} />
           )}
+
+          {/* P8 — 변경 이력 패널. GM 또는 본인일 때만 노출. */}
+          {changeLogsMode !== "none" ? (
+            <ChangeLogsPanel
+              characterId={characterId}
+              mode={changeLogsMode}
+            />
+          ) : null}
         </div>
       </div>
     </>
