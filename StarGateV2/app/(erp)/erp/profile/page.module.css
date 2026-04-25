@@ -1,86 +1,240 @@
 /*
- * 내 프로필(`/erp/profile`) 레이아웃 — 디자인은 Claude Design 후속.
- * 본 파일은 구조 슬롯/최소 레이아웃만 정의 (placeholder).
+ * /erp/profile — 내 캐릭터 대문 (v2)
+ * 군사 다이어리 톤. globals.css 토큰만 사용.
+ *
+ * v1 → v2 변경:
+ *   - 히어로 포스터 슬롯을 16:9 가로 → 세로 3:4 로 변경.
+ *     (실제 캐릭터 포스터가 모두 세로 초상화이므로 letterbox/blur 백드롭 제거)
+ *   - hero__poster--portrait / hero__posterBackdrop 제거
+ *   - hero__poster--wide modifier 추가: 가로 포스터가 들어올 때만 16:9 로 전환
+ *   - 모바일 레이아웃 정리: 포스터가 너무 길어지지 않도록 max-height 적용,
+ *     좌측 watermark 가 column 으로 떨어지도록 그리드 단순화
+ *   - 코드네임/서브 라벨이 좁은 폭에서 깨지지 않도록 word-break / flex-wrap 보강
  */
+
+/* ────────────────────────────────────────────────────────────
+   Layout
+   ──────────────────────────────────────────────────────────── */
 
 .layout {
   display: flex;
   flex-direction: column;
-  gap: var(--gap);
+  gap: 24px;
   min-width: 0;
+  container-type: inline-size;
+  container-name: profile-layout;
 }
 
-/* ── 히어로 ── */
+/* ────────────────────────────────────────────────────────────
+   HERO — 세로 포스터 + 메타 컬럼
+   ──────────────────────────────────────────────────────────── */
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: var(--gap);
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 24px;
   align-items: stretch;
 }
 
-@media (max-width: 900px) {
+@container profile-layout (max-width: 720px) {
   .hero {
     grid-template-columns: 1fr;
+    gap: 18px;
   }
 }
+
+/* ── poster ───────────────────────────────────────────────── */
 
 .hero__poster {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 4;          /* 세로 초상화 기본 */
   overflow: hidden;
-  background: var(--surface-1);
+  background: var(--bg-2);
   border: 1px solid var(--line);
+  isolation: isolate;
+  align-self: start;            /* 메타 컬럼이 더 길어지면 포스터는 위 정렬 */
+}
+
+/* 모바일에서는 포스터가 화면을 다 먹지 않도록 가로비 + max-height 제한 */
+@container profile-layout (max-width: 720px) {
+  .hero__poster {
+    aspect-ratio: 4 / 5;
+    max-height: 420px;
+  }
+  .hero__posterImage {
+    object-position: center 25%; /* 얼굴이 잘리지 않도록 위쪽 우선 */
+  }
+}
+
+/* 가로 포스터 modifier — 16:9 cover */
+.hero__poster--wide {
+  aspect-ratio: 16 / 9;
+}
+@container profile-layout (max-width: 720px) {
+  .hero__poster--wide {
+    aspect-ratio: 16 / 9;
+    max-height: none;
+  }
 }
 
 .hero__posterImage {
   object-fit: cover;
 }
 
+/* poster 위에 좌상단 / 우하단 코너 틱 (군사 차트 톤) */
+.hero__poster::before,
+.hero__poster::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  z-index: 2;
+  pointer-events: none;
+  border-color: var(--gold-dim);
+}
+.hero__poster::before {
+  top: 8px;
+  left: 8px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+.hero__poster::after {
+  bottom: 8px;
+  right: 8px;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+}
+
+/* 좌하단 DOSSIER 스탬프 */
+.hero__posterStamp {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--line-strong);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  color: var(--ink-2);
+  white-space: nowrap;
+  max-width: calc(100% - 20px);
+}
+.hero__posterStamp b {
+  color: var(--gold);
+  font-weight: 500;
+}
+.hero__posterStamp::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  flex-shrink: 0;
+}
+
+/* posterImage 가 없을 때 Seal fallback */
 .hero__posterFallback {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(201, 161, 74, 0.04) 0 6px,
+      transparent 6px 14px
+    ),
+    var(--bg-2);
 }
+
+/* ── meta column ──────────────────────────────────────────── */
 
 .hero__meta {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
+  padding: 8px 4px 8px 4px;
+}
+
+@container profile-layout (max-width: 720px) {
+  .hero__meta {
+    padding: 0;
+    justify-content: flex-start;
+    gap: 8px;
+  }
 }
 
 .hero__codename {
-  color: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 0.15em;
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.hero__codename::before {
+  content: "//";
+  color: var(--gold-dim);
+  flex-shrink: 0;
 }
 
 .hero__name {
   margin: 0;
   color: var(--ink-0);
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 500;
   letter-spacing: 0.02em;
+  line-height: 1.2;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+@container profile-layout (max-width: 720px) {
+  .hero__name {
+    font-size: 24px;
+  }
 }
 
 .hero__sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 14px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  min-width: 0;
+}
+.hero__sub::before {
+  content: "OPERATOR";
+  color: var(--ink-3);
+  border-right: 1px solid var(--line);
+  padding-right: 8px;
+  letter-spacing: 0.18em;
+  flex-shrink: 0;
 }
 
 .hero__tags {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .hero__cta {
@@ -88,72 +242,187 @@
   margin-top: 12px;
 }
 
+/* ── empty state ──────────────────────────────────────────── */
+
 .hero__empty {
   grid-column: 1 / -1;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+  padding: 8px 4px 4px;
+  overflow: hidden;
+}
+
+/* 좌측 watermark Seal 자리 */
+.hero__emptyMark {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(201, 161, 74, 0.04) 0 4px,
+      transparent 4px 10px
+    );
+}
+
+.hero__emptyBody {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-  padding: 24px 0;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hero__emptyEyebrow {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  color: var(--gold-dim);
+  white-space: nowrap;
 }
 
 .hero__emptyTitle {
   color: var(--ink-0);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  word-break: keep-all;
 }
 
 .hero__emptySub {
   color: var(--ink-2);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
+  max-width: 56ch;
+  word-break: keep-all;
 }
 
-/* ── 섹션 공통 ── */
+.hero__emptyActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+@container profile-layout (max-width: 560px) {
+  .hero__empty {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 4px;
+  }
+  .hero__emptyMark {
+    width: 56px;
+    height: 56px;
+    font-size: 13px;
+  }
+  .hero__emptyEyebrow {
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    white-space: normal;
+  }
+  .hero__emptyTitle {
+    font-size: 20px;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   섹션 공통
+   ──────────────────────────────────────────────────────────── */
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+  min-width: 0;
 }
 
 .section__title {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.22em;
+  white-space: nowrap;
+}
+.section__title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
 }
 
-/* ── 캐릭터 카드 그리드 ── */
+/* ────────────────────────────────────────────────────────────
+   캐릭터 카드 그리드
+   ──────────────────────────────────────────────────────────── */
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--gap);
+  gap: 16px;
+}
+
+@container profile-layout (max-width: 720px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
 }
 
 .cardLink {
   display: block;
   color: inherit;
   text-decoration: none;
+  outline: none;
+  min-width: 0;
+}
+.cardLink:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
 }
 
+/* card 는 cardLink 안의 Box. Box 의 기본 padding/border 를 reset 하고
+   카드 자체 스타일을 적용. (외부 Box 컴포넌트가 padding 을 강제하면
+   inner wrapper 를 두는 방식으로 변경 필요) */
 .card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   height: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.cardLink:hover .card,
+.cardLink:focus-visible .card {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
 }
 
 .card__thumb {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 5;
   overflow: hidden;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
+  background: var(--bg-1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -161,35 +430,61 @@
 
 .card__thumbImage {
   object-fit: cover;
+  transition: transform 200ms ease;
+}
+.cardLink:hover .card__thumbImage {
+  transform: scale(1.02);
 }
 
 .card__body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--line);
 }
 
 .card__codename {
-  color: var(--ink-3);
+  color: var(--gold-dim);
   font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.15em;
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardLink:hover .card__codename {
+  color: var(--gold);
 }
 
 .card__name {
   color: var(--ink-0);
   font-size: 15px;
   font-weight: 500;
-  word-break: break-all;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card__role {
   color: var(--ink-2);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.4;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ── shortcuts ── */
+/* ────────────────────────────────────────────────────────────
+   Shortcuts
+   ──────────────────────────────────────────────────────────── */
 
 .shortcuts {
   display: flex;

@@ -66,9 +66,9 @@ export default function ProfileClient({ characters, userDisplayName }: Props) {
                 {posterSrc ? (
                   <Image
                     src={posterSrc}
-                    alt={`${primary.sheet.name ?? primary.codename} 포스터`}
+                    alt={`${primary.sheet.name || primary.codename} 포스터`}
                     fill
-                    sizes="(max-width: 900px) 100vw, 70vw"
+                    sizes="(max-width: 720px) 100vw, 320px"
                     className={styles.hero__posterImage}
                     priority
                   />
@@ -77,6 +77,9 @@ export default function ProfileClient({ characters, userDisplayName }: Props) {
                     <Seal size="lg">{getInitial(primary)}</Seal>
                   </div>
                 )}
+                <div className={styles.hero__posterStamp}>
+                  <b>DOSSIER</b> 대표 캐릭터
+                </div>
               </div>
               <div className={styles.hero__meta}>
                 <div className={styles.hero__codename}>{primary.codename}</div>
@@ -96,22 +99,32 @@ export default function ProfileClient({ characters, userDisplayName }: Props) {
                   variant="primary"
                   className={styles.hero__cta}
                 >
-                  캐릭터 상세 보기
+                  캐릭터 상세 보기 →
                 </Button>
               </div>
             </>
           ) : (
             <div className={styles.hero__empty}>
-              <div className={styles.hero__emptyTitle}>
-                등록된 캐릭터가 없습니다
+              <div className={styles.hero__emptyMark} aria-hidden>
+                N/A
               </div>
-              <div className={styles.hero__emptySub}>
-                캐릭터 페이지에서 신규 캐릭터를 등록하거나, 기존 캐릭터에
-                소유자를 등록할 수 있습니다.
+              <div className={styles.hero__emptyBody}>
+                <div className={styles.hero__emptyEyebrow}>
+                  STATUS · NO ASSIGNMENT
+                </div>
+                <div className={styles.hero__emptyTitle}>
+                  등록된 캐릭터가 없습니다
+                </div>
+                <div className={styles.hero__emptySub}>
+                  캐릭터 페이지에서 신규 캐릭터를 등록하거나, 기존 캐릭터에
+                  소유자를 등록할 수 있습니다.
+                </div>
+                <div className={styles.hero__emptyActions}>
+                  <Button as="a" href="/erp/characters" variant="primary">
+                    캐릭터 페이지로 이동 →
+                  </Button>
+                </div>
               </div>
-              <Button as="a" href="/erp/characters" variant="primary">
-                캐릭터 페이지로 이동
-              </Button>
             </div>
           )}
         </Box>
@@ -167,13 +180,13 @@ export default function ProfileClient({ characters, userDisplayName }: Props) {
           <h3 className={styles.section__title}>SHORTCUTS</h3>
           <div className={styles.shortcuts}>
             <Button as="a" href="/erp/characters">
-              캐릭터
+              캐릭터 →
             </Button>
             <Button as="a" href="/erp/inventory">
-              인벤토리
+              인벤토리 →
             </Button>
             <Button as="a" href="/erp/credits">
-              크레딧
+              크레딧 →
             </Button>
           </div>
         </section>
