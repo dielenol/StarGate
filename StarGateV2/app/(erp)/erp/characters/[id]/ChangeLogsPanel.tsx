@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type {
@@ -11,7 +12,6 @@ import {
   characterChangeLogsKeys,
   useCharacterChangeLogs,
 } from "@/hooks/queries/useCharacterChangeLogs";
-import { characterKeys } from "@/hooks/queries/useCharactersQuery";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
@@ -111,6 +111,7 @@ function formatKst(iso: string): string {
 
 export default function ChangeLogsPanel({ characterId, mode }: Props) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [page, setPage] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -157,15 +158,14 @@ export default function ChangeLogsPanel({ characterId, mode }: Props) {
         return;
       }
 
-      // 이력 + 캐릭터 캐시 둘 다 invalidate.
-      // - 이력은 revert 자체가 새 row 로 추가됨 + 원본 row 의 revertedAt 표시
-      // - 캐릭터는 시트 값이 복원됨
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: characterChangeLogsKeys.all,
-        }),
-        queryClient.invalidateQueries({ queryKey: characterKeys.all }),
-      ]);
+      // 이력만 invalidate — revert 자체가 새 row 추가 + 원본 row 의 revertedAt 표시.
+      // 캐릭터 상세는 server component(/erp/characters/[id]/page.tsx)라 client query
+      // 캐시가 없으므로 router.refresh() 로 서버 재요청. 목록(characterKeys.all)은
+      // 시트값 변경에 영향 없으므로 invalidate 생략 — 다음 자연 fetch 에 따름.
+      await queryClient.invalidateQueries({
+        queryKey: characterChangeLogsKeys.all,
+      });
+      router.refresh();
     } catch {
       setRevertError("네트워크 오류가 발생했습니다.");
     } finally {

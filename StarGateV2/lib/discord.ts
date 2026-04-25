@@ -119,18 +119,34 @@ export interface CharacterEditWebhookPayload {
 }
 
 /**
+ * Discord mention syntax 무력화. 사용자 제어 가능 텍스트(quote/appearance/reason 등)가
+ * embed 로 흘러갈 때 `@everyone`, `<@123>`, `<@&123>`, `<#123>` 같은 ping 트리거를
+ * zero-width space 로 분리해 mention 발화를 차단.
+ *
+ * GM 전용 채널이라 영향 범위는 좁지만 신뢰성/혼동 방지 차원에서 적용.
+ */
+function sanitizeForDiscord(text: string): string {
+  return text
+    .replace(/@(everyone|here)/gi, "@​$1")
+    .replace(/<(@[!&]?|#)(\d+)>/g, "<$1​$2>");
+}
+
+/**
  * Discord embed 의 field value 로 변환. 1000자 컷, 줄바꿈 보존.
  *
  * 객체/배열은 JSON 직렬화. 이미지 URL도 그대로 노출 (Discord 가 자동 미리보기).
+ * string 값은 mention sanitize 적용.
  */
 function formatChangeValue(value: unknown): string {
   if (value === null || value === undefined) return "(비어 있음)";
-  if (typeof value === "string") return value || "(빈 문자열)";
+  if (typeof value === "string") {
+    return sanitizeForDiscord(value || "(빈 문자열)");
+  }
   if (typeof value === "number" || typeof value === "boolean") {
     return String(value);
   }
   try {
-    return JSON.stringify(value);
+    return sanitizeForDiscord(JSON.stringify(value));
   } catch {
     return String(value);
   }
@@ -211,14 +227,14 @@ export async function notifyCharacterEdit(
 
     if (reason && reason.trim()) {
       // reason 은 별도 field 로 추가 — embed 최상단 가까이 노출되도록 changes 보다 앞엔
-      // 두지 않고 명시적 라벨로 구분.
+      // 두지 않고 명시적 라벨로 구분. mention sanitize 필수 (사용자 입력).
       fields.push({
         name: "변경 사유",
-        value: reason.slice(0, DISCORD_FIELD_VALUE_MAX),
+        value: sanitizeForDiscord(reason).slice(0, DISCORD_FIELD_VALUE_MAX),
       });
     }
 
-    const description = `${actor.displayName} · ${actor.role}\n${
+    const description = `${sanitizeForDiscord(actor.displayName)} · ${actor.role}\n${
       actorIsOwner ? "소유자 자가편집" : "관리자 편집"
     }`;
 

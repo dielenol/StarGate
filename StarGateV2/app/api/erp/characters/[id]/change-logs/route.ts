@@ -40,7 +40,16 @@ interface RouteContext {
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
+/** limit 용 — 1 미만 입력은 fallback (0 도 fallback). */
 function parsePositiveInt(value: string | null, fallback: number): number {
+  if (value === null) return fallback;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 1) return fallback;
+  return Math.floor(n);
+}
+
+/** skip 용 — 0 은 정상값(첫 페이지), 음수만 fallback. */
+function parseNonNegativeInt(value: string | null, fallback: number): number {
   if (value === null) return fallback;
   const n = Number(value);
   if (!Number.isFinite(n) || n < 0) return fallback;
@@ -88,10 +97,9 @@ export async function GET(request: Request, context: RouteContext) {
   const url = new URL(request.url);
   const limit = Math.min(
     MAX_LIMIT,
-    parsePositiveInt(url.searchParams.get("limit"), DEFAULT_LIMIT) ||
-      DEFAULT_LIMIT,
+    parsePositiveInt(url.searchParams.get("limit"), DEFAULT_LIMIT),
   );
-  const skip = parsePositiveInt(url.searchParams.get("skip"), 0);
+  const skip = parseNonNegativeInt(url.searchParams.get("skip"), 0);
 
   // limit + 1 로 끌어서 hasMore 판정. 응답에는 limit 만큼만 노출.
   const fetched = await listChangeLogsByCharacter(id, {

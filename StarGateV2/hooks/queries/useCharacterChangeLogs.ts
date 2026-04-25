@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import type { CharacterChangeLogEntry } from "@stargate/shared-db";
 import type { UserRole } from "@/types/user";
@@ -81,5 +81,7 @@ export function useCharacterChangeLogs(
     enabled,
     staleTime: 60 * 1000,
     retry: 1,
+    // 페이지 전환 시 직전 페이지 데이터 유지 — 빈 화면 깜빡임 방지.
+    placeholderData: keepPreviousData,
   });
 }

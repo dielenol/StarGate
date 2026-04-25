@@ -103,11 +103,17 @@ export async function POST(_request: Request, context: RouteContext) {
       allowedFields: ADMIN_ALLOWED_CHARACTER_FIELDS,
     });
     if (!updated) {
-      // 변경 사항이 없거나 (이미 before 값과 동일) ID 미스매치
-      return NextResponse.json(
-        { error: "되돌릴 변경 사항이 없습니다." },
-        { status: 409 },
-      );
+      // 이미 before 값과 동일 (no-op revert) — DB 변경 없이 mark 만 처리해
+      // 동일 로그를 두 번 시도하는 무한 409 회피. GM 의 의사 결정은 확정된 것.
+      try {
+        await markChangeLogReverted(logId, session.user.id);
+      } catch (markErr) {
+        console.warn(
+          `[revert POST] noop mark failed user=${session.user.id} log=${logId}:`,
+          markErr,
+        );
+      }
+      return NextResponse.json({ success: true, noop: true });
     }
 
     /**

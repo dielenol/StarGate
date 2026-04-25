@@ -125,12 +125,19 @@ export default function DiffPreviewModal({
 
   const [reason, setReason] = useState("");
 
+  // 부모가 onCancel/isSubmitting 을 매 렌더 새 함수/값으로 만들어도
+  // focus trap useEffect 가 재실행되어 포커스가 튕기지 않도록 ref 로 안정화.
+  const onCancelRef = useRef(onCancel);
+  const isSubmittingRef = useRef(isSubmitting);
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+    isSubmittingRef.current = isSubmitting;
+  }, [onCancel, isSubmitting]);
+
   /**
-   * Focus trap + ESC 닫기.
-   *
-   * 단순 trap: Tab/Shift+Tab 으로 dialog 내부의 첫/마지막 포커스 가능 요소 사이를 순환.
-   * isSubmitting 중에도 사용자가 ESC 로 빠져나갈 수 있어야 race 회복 가능 (단,
-   * 실제 PATCH 가 진행 중이면 응답 도착 시 onSaved 가 닫히는 흐름이라 무해).
+   * Focus trap + ESC 닫기. mount/unmount 시점에만 등록 — deps 배열은 빈 배열.
+   * 부모 렌더로 인한 재실행을 막아야 reason textarea 입력 중 포커스가
+   * 첫 focusable 로 튕기지 않음 (M8 합의).
    */
   useEffect(() => {
     previousFocusRef.current = document.activeElement as HTMLElement | null;
@@ -143,9 +150,9 @@ export default function DiffPreviewModal({
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !isSubmitting) {
+      if (event.key === "Escape" && !isSubmittingRef.current) {
         event.preventDefault();
-        onCancel();
+        onCancelRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -180,7 +187,7 @@ export default function DiffPreviewModal({
       document.removeEventListener("keydown", handleKeyDown);
       previousFocusRef.current?.focus();
     };
-  }, [isSubmitting, onCancel]);
+  }, []);
 
   function handleConfirm() {
     const trimmed = reason.trim();
