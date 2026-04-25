@@ -104,6 +104,7 @@ export const npcFrontmatterSchema = z.object({
   appearsInEvents: z.array(z.string().max(80)).optional(),
   source: loreSourceSchema.optional(),
   previewImage: previewImageSchema.optional(),
+  posterImage: previewImageSchema.optional(),
   pixelCharacterImage: z.string().optional(),
   warningVideo: z.string().optional(),
   agentLevel: agentLevelSchema.optional(),

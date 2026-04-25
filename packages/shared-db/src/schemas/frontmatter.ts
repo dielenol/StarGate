@@ -377,6 +377,7 @@ export function toDbNpc(
       name: parsed.nameKo,
       nameEn: parsed.nameEn ?? "",
       mainImage: "",
+      posterImage: emptyToUndefined(parsed.posterImage),
       quote: sections.quote ?? "",
       gender: parsed.gender ?? "",
       age: parsed.age ?? "",

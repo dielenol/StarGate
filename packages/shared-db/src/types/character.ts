@@ -159,6 +159,8 @@ interface CharacterBase {
   warningVideo?: string;
   source?: 'discord' | 'legacy-json' | 'manual' | 'create-lore';
   lore?: string;
+  /** 원본 MD body 보존 (frontmatter 미커버 섹션 복원용). faction/institution과 일관. */
+  loreMd?: string;
   rawText?: string;
   ownerId: string | null;
   isPublic: boolean;
