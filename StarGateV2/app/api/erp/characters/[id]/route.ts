@@ -5,8 +5,6 @@ import {
   PLAYER_ALLOWED_CHARACTER_FIELDS,
 } from "@stargate/shared-db";
 
-import type { Character } from "@/types/character";
-
 import { auth } from "@/lib/auth/config";
 import { canEditCharacter, requireRole } from "@/lib/auth/rbac";
 import {
@@ -57,24 +55,22 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
 
+  // 존재 여부와 권한 응답을 통합 — 권한 없는 사용자에게 캐릭터 존재 누설(404 vs 403 oracle) 차단.
   const character = await findCharacterById(id);
-  if (!character) {
-    return NextResponse.json(
-      { error: "캐릭터를 찾을 수 없습니다." },
-      { status: 404 },
-    );
-  }
-
-  // 권한 + 모드 결정. admin/player/none 분기.
   const decision = canEditCharacter(
     session.user.id,
     session.user.role,
-    character,
+    character ?? { ownerId: null },
   );
-  if (decision.mode === "none") {
+  if (!character || decision.mode === "none") {
+    if (character && decision.mode === "none") {
+      console.warn(
+        `[characters PATCH] denied user=${session.user.id} character=${id} reason=${decision.reason}`,
+      );
+    }
     return NextResponse.json(
-      { error: "Forbidden", reason: decision.reason },
-      { status: 403 },
+      { error: "캐릭터를 찾을 수 없습니다." },
+      { status: 404 },
     );
   }
 
@@ -84,9 +80,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       ? ADMIN_ALLOWED_CHARACTER_FIELDS
       : PLAYER_ALLOWED_CHARACTER_FIELDS;
 
-  const body = (await request.json()) as Partial<
-    Omit<Character, "_id" | "createdAt">
-  >;
+  // body 형식은 admin / player 모드에 따라 다름 (sheet 통째 vs sheet 부분객체).
+  // 화이트리스트는 shared-db buildUpdatePatch 가 dot path 기준으로 안전 추출.
+  const body = (await request.json()) as Record<string, unknown>;
 
   try {
     const updated = await updateCharacter(id, body, { allowedFields });

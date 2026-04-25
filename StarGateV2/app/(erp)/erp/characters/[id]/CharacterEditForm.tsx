@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { PLAYER_ALLOWED_CHARACTER_FIELDS } from "@stargate/shared-db";
+
 import type {
   Ability,
   AgentSheet,
@@ -31,22 +33,15 @@ interface Props {
 }
 
 /**
- * 플레이어 자가편집에서 허용되는 필드 (서버 PLAYER_ALLOWED_CHARACTER_FIELDS와 정합).
+ * 플레이어 자가편집에서 허용되는 sheet 필드 (서버 PLAYER_ALLOWED_CHARACTER_FIELDS 에서 derive).
+ * 단일 진실의 원천(shared-db) 에서 sheet.* dot path 만 추출해 로컬 키로 변환.
  * 이미지/식별/능력치/소유권은 의도적으로 제외 — 변경 시 GM에 문의하도록 유도.
- *
- * 화면상 입력 컨트롤의 로컬 키 (`name`, `quote`, ...)와 매칭되는 7개.
- * `name` 은 표시상 sheet.name 필드에 매핑되지만 PLAYER_ALLOWED 에는 포함되지 않으므로
- * 의도적으로 빠져 있다.
  */
-const PLAYER_EDITABLE_FIELDS = new Set<string>([
-  "quote",
-  "appearance",
-  "personality",
-  "background",
-  "gender",
-  "age",
-  "height",
-]);
+const PLAYER_EDITABLE_FIELDS = new Set<string>(
+  [...PLAYER_ALLOWED_CHARACTER_FIELDS]
+    .filter((p) => p.startsWith("sheet."))
+    .map((p) => p.slice("sheet.".length)),
+);
 
 function isPlayerEditable(fieldKey: string): boolean {
   return PLAYER_EDITABLE_FIELDS.has(fieldKey);
