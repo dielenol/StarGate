@@ -1,100 +1,44 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-import type { SessionStatus } from "@/types/session";
+import Link from "next/link";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import {
   useSessionsByMonth,
   type SerializedSession,
 } from "@/hooks/queries/useSessionsQuery";
 
-import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
-import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
-import Input from "@/components/ui/Input/Input";
-import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
-import Select from "@/components/ui/Select/Select";
-import Tag from "@/components/ui/Tag/Tag";
+import PageHead from "@/components/ui/PageHead/PageHead";
 
 import SessionCalendar from "./SessionCalendar";
+import SessionsAgenda from "./SessionsAgenda";
+
+import {
+  DOW_KO,
+  STATUS_LABEL,
+  buildDiscordLink,
+  ddayLabel,
+  ddayTone,
+  formatDateMD,
+  formatDuration,
+  formatTime,
+  inGroup,
+  isAttending,
+  matchesQuery,
+  pad,
+  statusModifier,
+  type StatusGroup,
+} from "./_utils";
 
 import type { UpcomingSessionLink } from "./page";
 
 import styles from "./page.module.css";
 
-type TabKey = "calendar" | "list";
+// 별도 모듈에서 사용할 수 있게 buildDiscordLink 재노출 (기존 호환).
+export { buildDiscordLink };
 
-interface TabDef {
-  key: TabKey;
-  label: string;
-}
-
-const MY_RSVP_UPCOMING_LIMIT = 5;
-
-const TABS: TabDef[] = [
-  { key: "calendar", label: "달력" },
-  { key: "list", label: "리스트" },
-];
-
-const STATUS_TAG: Record<
-  SessionStatus,
-  { label: string; tone: "gold" | "info" | "success" | "danger" | "default" }
-> = {
-  OPEN: { label: "모집중", tone: "gold" },
-  CLOSING: { label: "마감 임박", tone: "info" },
-  CLOSED: { label: "확정", tone: "success" },
-  CANCELING: { label: "취소 예정", tone: "danger" },
-  CANCELED: { label: "취소됨", tone: "danger" },
-};
-
-const STATUS_FILTER_OPTIONS: Array<{
-  value: "ALL" | SessionStatus;
-  label: string;
-}> = [
-  { value: "ALL", label: "상태: 전체" },
-  { value: "OPEN", label: "모집중" },
-  { value: "CLOSING", label: "마감 임박" },
-  { value: "CLOSED", label: "확정" },
-  { value: "CANCELING", label: "취소 예정" },
-  { value: "CANCELED", label: "취소됨" },
-];
-
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  return `${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} · ${String(
-    d.getHours(),
-  ).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-/**
- * 디스코드 메시지 딥링크. messageId가 비어있으면 채널 URL로 fallback.
- */
-export function buildDiscordLink(opts: {
-  guildId: string;
-  channelId: string;
-  messageId?: string;
-}): string {
-  const { guildId, channelId, messageId } = opts;
-  if (messageId && messageId.trim().length > 0) {
-    return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
-  }
-  return `https://discord.com/channels/${guildId}/${channelId}`;
-}
-
-/**
- * 검색어 q로 세션 매칭. title, 참여자 codename/displayName 전부 대상.
- * q는 이미 trim + toLowerCase 된 값 가정.
- */
-function matchesQuery(s: SerializedSession, q: string): boolean {
-  if (!q) return true;
-  if (s.title.toLowerCase().includes(q)) return true;
-  for (const p of s.participants) {
-    if (p.displayName.toLowerCase().includes(q)) return true;
-    if (p.codename && p.codename.toLowerCase().includes(q)) return true;
-  }
-  return false;
-}
+export type ViewKey = "calendar" | "list" | "agenda";
 
 interface SessionsClientProps {
   initialSessions: SerializedSession[];
@@ -104,6 +48,26 @@ interface SessionsClientProps {
   initialUpcoming: UpcomingSessionLink[];
 }
 
+interface TabDef {
+  key: ViewKey;
+  label: string;
+  icon: string;
+}
+
+const TABS: TabDef[] = [
+  { key: "calendar", label: "달력", icon: "▦" },
+  { key: "list", label: "리스트", icon: "≡" },
+  { key: "agenda", label: "어젠다", icon: "◇" },
+];
+
+interface StatusCounts {
+  all: number;
+  open: number;
+  closed: number;
+  cancel: number;
+  mine: number;
+}
+
 export default function SessionsClient({
   initialSessions,
   initialYear,
@@ -111,259 +75,471 @@ export default function SessionsClient({
   guildId,
   initialUpcoming,
 }: SessionsClientProps) {
-  const [tab, setTab] = useState<TabKey>("calendar");
+  const [view, setView] = useState<ViewKey>("calendar");
+  const [year, setYear] = useState(initialYear);
+  const [month, setMonth] = useState(initialMonth);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | SessionStatus>(
-    "ALL",
-  );
+  const [statusGroup, setStatusGroup] = useState<StatusGroup>("ALL");
 
-  const { data: sessions = [] } = useSessionsByMonth(
-    initialYear,
-    initialMonth,
-    guildId,
-    { initialData: initialSessions },
-  );
+  const isInitialMonth = year === initialYear && month === initialMonth;
+
+  const { data: sessions = [] } = useSessionsByMonth(year, month, guildId, {
+    initialData: isInitialMonth ? initialSessions : undefined,
+  });
+
+  const handlePrevMonth = useCallback(() => {
+    setYear((y) => (month === 1 ? y - 1 : y));
+    setMonth((m) => (m === 1 ? 12 : m - 1));
+  }, [month]);
+
+  const handleNextMonth = useCallback(() => {
+    setYear((y) => (month === 12 ? y + 1 : y));
+    setMonth((m) => (m === 12 ? 1 : m + 1));
+  }, [month]);
 
   const normalizedQuery = query.trim().toLowerCase();
 
-  const filteredList = useMemo(() => {
+  const filteredSessions = useMemo(() => {
     return sessions.filter((s) => {
-      if (statusFilter !== "ALL" && s.status !== statusFilter) return false;
+      if (!inGroup(s, statusGroup)) return false;
       if (!matchesQuery(s, normalizedQuery)) return false;
       return true;
     });
-  }, [sessions, normalizedQuery, statusFilter]);
+  }, [sessions, normalizedQuery, statusGroup]);
+
+  const counts = useMemo<StatusCounts>(() => {
+    let all = 0;
+    let open = 0;
+    let closed = 0;
+    let cancel = 0;
+    let mine = 0;
+    for (const s of sessions) {
+      all += 1;
+      if (s.status === "OPEN" || s.status === "CLOSING") open += 1;
+      else if (s.status === "CLOSED") closed += 1;
+      else if (s.status === "CANCELING" || s.status === "CANCELED") cancel += 1;
+      if (isAttending(s)) mine += 1;
+    }
+    return { all, open, closed, cancel, mine };
+  }, [sessions]);
 
   const myRsvpUpcoming = useMemo(() => {
-    const now = new Date().getTime();
+    // 24h 미만 세션 필터링용 cutoff — useMemo deps 가 sessions 라 매 렌더 재계산되지 않음.
+    // eslint-disable-next-line react-hooks/purity
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
     return sessions
       .filter(
         (s) =>
           s.myRsvp === "YES" &&
           s.status !== "CANCELED" &&
-          new Date(s.targetDateTime).getTime() >= now,
+          new Date(s.targetDateTime).getTime() >= cutoff,
       )
       .sort(
         (a, b) =>
           new Date(a.targetDateTime).getTime() -
           new Date(b.targetDateTime).getTime(),
-      )
-      .slice(0, MY_RSVP_UPCOMING_LIMIT);
+      );
   }, [sessions]);
+
+  const showMonth = view !== "agenda";
+  const prevLabel = `${month === 1 ? 12 : month - 1}월`;
+  const nextLabel = `${month === 12 ? 1 : month + 1}월`;
+
+  const titleNode: ReactNode = (
+    <span className={styles.titleRow}>
+      세션{" "}
+      <span className={styles.headMeta}>
+        <b>{counts.all}</b>{" "}
+        {showMonth ? `SCHEDULED · ${year}.${pad(month)}` : "UPCOMING"}
+      </span>
+    </span>
+  );
 
   return (
     <>
-      <Box className={styles.searchBox}>
-        <div className={styles.searchRow}>
-          <Input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="작전명 · 참여자 codename · 닉네임 검색"
-            className={styles.searchInput}
-            aria-label="세션 검색"
-          />
-          <Button size="sm" aria-label="검색" type="button">
-            ⌕ 검색
+      <PageHead
+        breadcrumb="ERP / SESSIONS"
+        title={titleNode}
+        right={
+          <Button as="a" href="/erp/sessions/report" variant="primary">
+            리포트 →
           </Button>
-        </div>
-      </Box>
+        }
+      />
 
-      <div className={styles.tabsRow}>
-        <div className={styles.tabs} role="tablist">
-          {TABS.map(({ key, label }) => {
-            const active = tab === key;
-            return (
+      <div className={styles.ctrl}>
+        <div className={styles.ctrlRow}>
+          <div className={styles.ctrlSeg} role="tablist">
+            {TABS.map(({ key, label, icon }) => (
               <button
                 key={key}
                 type="button"
                 role="tab"
-                aria-selected={active}
-                className={[styles.tab, active ? styles["tab--active"] : ""]
-                  .filter(Boolean)
-                  .join(" ")}
-                onClick={() => setTab(key)}
+                aria-selected={view === key}
+                className={view === key ? styles.on : undefined}
+                onClick={() => setView(key)}
               >
+                <span className={styles.ico}>{icon}</span>
                 {label}
               </button>
-            );
-          })}
+            ))}
+          </div>
+
+          <div className={styles.ctrlSearch}>
+            <span className={styles.icn}>⌕</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="작전명 · 참여자 codename · 닉네임 검색"
+              aria-label="세션 검색"
+            />
+          </div>
+
+          {showMonth ? (
+            <div className={styles.ctrlMonth}>
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                aria-label="이전 월"
+              >
+                ‹ {prevLabel}
+              </button>
+              <span className={styles.lbl}>
+                {year} · {pad(month)}
+              </span>
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                aria-label="다음 월"
+              >
+                {nextLabel} ›
+              </button>
+            </div>
+          ) : (
+            <div className={styles.ctrlMonth}>
+              <span className={styles.lbl}>UPCOMING</span>
+            </div>
+          )}
         </div>
 
-        <Select
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as "ALL" | SessionStatus)
-          }
-          aria-label="상태 필터"
-          className={styles.statusSelect}
-        >
-          {STATUS_FILTER_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
+        <div className={`${styles.ctrlRow} ${styles["ctrlRow--r2"]}`}>
+          <div className={styles.ctrlStatus}>
+            <span className={styles.ctrlStatusLbl}>STATUS</span>
+            <div className={styles.pillgroup}>
+              <StatusPill
+                on={statusGroup === "ALL"}
+                onClick={() => setStatusGroup("ALL")}
+              >
+                ALL · {counts.all}
+              </StatusPill>
+              <StatusPill
+                mod="open"
+                on={statusGroup === "open"}
+                onClick={() => setStatusGroup("open")}
+              >
+                모집중 · {counts.open}
+              </StatusPill>
+              <StatusPill
+                mod="closed"
+                on={statusGroup === "closed"}
+                onClick={() => setStatusGroup("closed")}
+              >
+                확정 · {counts.closed}
+              </StatusPill>
+              <StatusPill
+                mod="cancel"
+                on={statusGroup === "cancel"}
+                onClick={() => setStatusGroup("cancel")}
+              >
+                취소 · {counts.cancel}
+              </StatusPill>
+              <StatusPill
+                mod="mine"
+                on={statusGroup === "mine"}
+                onClick={() => setStatusGroup("mine")}
+              >
+                내 참여 · {counts.mine}
+              </StatusPill>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className={styles.cols}>
-        <div className={styles.colMain}>
-          {tab === "calendar" ? (
-            <Box>
-              <SessionCalendar
-                initialSessions={initialSessions}
-                initialYear={initialYear}
-                initialMonth={initialMonth}
-                guildId={guildId}
-              />
-            </Box>
+      <div className={styles.notice} role="note">
+        <span className={styles.lbl}>BOT-OPS</span>
+        <span>
+          세션 생성·마감·취소는 <span className={styles.cmd}>/일정</span>{" "}
+          디스코드 커맨드 전용입니다. 웹은 RSVP 현황과 리포트 작성만 지원.
+        </span>
+      </div>
+
+      <div className={styles.body}>
+        <main>
+          {view === "calendar" ? (
+            <SessionCalendar
+              sessions={filteredSessions}
+              year={year}
+              month={month}
+            />
           ) : null}
 
-          {tab === "list" ? (
-            <Box>
-              <PanelTitle
-                right={
-                  <span className={styles.mono}>{filteredList.length} 건</span>
-                }
-              >
-                SESSION LIST · {initialYear}.
-                {String(initialMonth).padStart(2, "0")}
-              </PanelTitle>
-
-              {filteredList.length === 0 ? (
-                <div className={styles.empty}>해당 조건의 세션이 없습니다.</div>
-              ) : (
-                <div className={styles.tableWrap}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>상태</th>
-                        <th>작전명</th>
-                        <th className={styles.countCol}>참여</th>
-                        <th className={styles.dateCol}>일시</th>
-                        <th className={styles.linkCol} aria-label="디스코드" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredList.map((s) => {
-                        const meta = STATUS_TAG[s.status];
-                        const link = buildDiscordLink(s);
-                        return (
-                          <tr key={s._id}>
-                            <td>
-                              <Tag tone={meta.tone}>{meta.label}</Tag>
-                            </td>
-                            <td className={styles.titleCol}>
-                              {s.myRsvp === "YES" &&
-                              s.status !== "CANCELED" ? (
-                                <span
-                                  className={styles.attendMark}
-                                  aria-label="내 참여"
-                                  title="내 참여"
-                                >
-                                  ★
-                                </span>
-                              ) : null}
-                              {s.title}
-                            </td>
-                            <td className={`${styles.countCol} ${styles.mono}`}>
-                              {s.counts.yes}명
-                            </td>
-                            <td
-                              className={`${styles.dateCol} ${styles.mono}`}
-                            >
-                              {formatDateTime(s.targetDateTime)}
-                            </td>
-                            <td className={styles.linkCol}>
-                              <Button
-                                as="a"
-                                size="sm"
-                                href={link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                aria-label={`${s.title} · 디스코드에서 열기`}
-                              >
-                                ↗ 디스코드
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Box>
+          {view === "list" ? (
+            <SessionsList
+              sessions={filteredSessions}
+              year={year}
+              month={month}
+              counts={counts}
+            />
           ) : null}
-        </div>
 
-        <div className={styles.colSide}>
-          <Box>
-            <PanelTitle
-              right={
-                <span className={styles.mono}>{myRsvpUpcoming.length}</span>
-              }
-            >
-              MY RSVP · 다가올
-            </PanelTitle>
+          {view === "agenda" ? (
+            <SessionsAgenda sessions={filteredSessions} />
+          ) : null}
+        </main>
 
-            {myRsvpUpcoming.length === 0 ? (
-              <div className={styles.empty}>예정된 참여 세션 없음</div>
-            ) : (
-              <ul className={styles.sideList}>
-                {myRsvpUpcoming.map((s) => (
-                  <li key={s._id} className={styles.sideItem}>
-                    <div className={styles.sideItemBody}>
-                      <span className={styles.sideItemTitle}>{s.title}</span>
-                      <span className={`${styles.sideItemDate} ${styles.mono}`}>
-                        {formatDateTime(s.targetDateTime)}
-                      </span>
-                    </div>
-                    <Button
-                      as="a"
-                      size="sm"
-                      href={buildDiscordLink(s)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${s.title} · 디스코드에서 열기`}
-                    >
-                      ↗
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <Eyebrow className={styles.sideEyebrow}>OPEN · 임박</Eyebrow>
-            {initialUpcoming.length === 0 ? (
-              <div className={styles.empty}>열려있는 세션 없음</div>
-            ) : (
-              <ul className={styles.sideList}>
-                {initialUpcoming.map((s) => (
-                  <li key={s._id} className={styles.sideItem}>
-                    <div className={styles.sideItemBody}>
-                      <span className={styles.sideItemTitle}>{s.title}</span>
-                      <span className={`${styles.sideItemDate} ${styles.mono}`}>
-                        {formatDateTime(s.targetDateTime)}
-                      </span>
-                    </div>
-                    <Button
-                      as="a"
-                      size="sm"
-                      href={buildDiscordLink(s)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${s.title} · 디스코드에서 열기`}
-                    >
-                      ↗
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Box>
-        </div>
+        <SessionsRail
+          counts={counts}
+          myRsvp={myRsvpUpcoming}
+          openImminent={initialUpcoming}
+        />
       </div>
     </>
+  );
+}
+
+/* ── Status pill ── */
+
+interface StatusPillProps {
+  on: boolean;
+  mod?: "open" | "closed" | "cancel" | "mine";
+  onClick: () => void;
+  children: ReactNode;
+}
+
+function StatusPill({ on, mod, onClick, children }: StatusPillProps) {
+  const cls = [
+    styles.pill,
+    mod ? styles[`pill--${mod}`] : "",
+    on ? styles["pill--on"] : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <button
+      type="button"
+      className={cls}
+      aria-pressed={on}
+      onClick={onClick}
+    >
+      <span className={styles.dot} aria-hidden /> {children}
+    </button>
+  );
+}
+
+/* ── List view ── */
+
+interface SessionsListProps {
+  sessions: SerializedSession[];
+  year: number;
+  month: number;
+  counts: StatusCounts;
+}
+
+function SessionsList({ sessions, year, month, counts }: SessionsListProps) {
+  return (
+    <div className={styles.list}>
+      <div className={styles.listMonth}>
+        <span className={styles.ym}>
+          SESSION LIST · {year}.{pad(month)}
+        </span>
+        <span className={styles.cnt}>
+          {sessions.length} 건 · 모집중 {counts.open} · 확정 {counts.closed}
+        </span>
+      </div>
+      {sessions.length === 0 ? (
+        <div className={styles.empty}>해당 조건의 세션이 없습니다.</div>
+      ) : (
+        <>
+          <div className={styles.listHead}>
+            <div>STATUS</div>
+            <div>작전명</div>
+            <div>일자 · 요일</div>
+            <div>일시</div>
+            <div style={{ textAlign: "right" }}>RSVP</div>
+          </div>
+          {sessions.map((s) => {
+            const mod = statusModifier(s.status);
+            const rowCls = [
+              styles.listRow,
+              mod ? styles[`listRow--${mod}`] : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
+            const statCls = [
+              styles.listStat,
+              mod ? styles[`listStat--${mod}`] : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
+            const target = new Date(s.targetDateTime);
+            const dow = DOW_KO[target.getDay()];
+            const dur = formatDuration(s.targetDateTime, s.closeDateTime);
+            return (
+              <Link
+                key={s._id}
+                href={buildDiscordLink(s)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={rowCls}
+              >
+                <div className={statCls}>{STATUS_LABEL[s.status]}</div>
+                <div className={styles.listName}>
+                  {isAttending(s) ? (
+                    <span className={styles.me} aria-label="내 참여" />
+                  ) : null}
+                  <span className={styles.nm}>{s.title}</span>
+                </div>
+                <div className={styles.listDate}>
+                  {formatDateMD(s.targetDateTime)} · {dow}
+                </div>
+                <div className={styles.listWhen}>
+                  {formatTime(s.targetDateTime)}
+                  {dur ? <span className={styles.d}>· {dur}</span> : null}
+                </div>
+                <div className={styles.listRsvp}>
+                  <span>
+                    <span className={styles.y}>{s.counts.yes}</span>명 응답
+                  </span>
+                  <span className={styles.sep}>·</span>
+                  <span className={styles.n}>NO {s.counts.no}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── Right rail ── */
+
+interface SessionsRailProps {
+  counts: StatusCounts;
+  myRsvp: SerializedSession[];
+  openImminent: UpcomingSessionLink[];
+}
+
+function SessionsRail({ counts, myRsvp, openImminent }: SessionsRailProps) {
+  return (
+    <aside className={styles.rail}>
+      <div className={styles.statStrip}>
+        <div className={styles.statCell}>
+          <div className={styles.statKey}>이번 달</div>
+          <div className={styles.statVal}>
+            {counts.all}
+            <small>회</small>
+          </div>
+        </div>
+        <div className={styles.statCell}>
+          <div className={styles.statKey}>내 RSVP</div>
+          <div className={styles.statVal}>
+            {counts.mine}
+            <small>건</small>
+          </div>
+        </div>
+        <div className={styles.statCell}>
+          <div className={styles.statKey}>모집중</div>
+          <div className={styles.statVal}>
+            {counts.open}
+            <small>건</small>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.railCard}>
+        <div className={styles.railHead}>
+          <span>MY RSVP · 다가올</span>
+          <span className={styles.cnt}>{myRsvp.length}</span>
+        </div>
+        {myRsvp.length === 0 ? (
+          <div className={styles.empty}>예정된 참여 세션 없음</div>
+        ) : (
+          <div className={styles.myrsvp}>
+            {myRsvp.map((s) => {
+              const d = new Date(s.targetDateTime);
+              const dow = DOW_KO[d.getDay()];
+              const tone = ddayTone(s.targetDateTime);
+              const cdCls = [
+                styles.rsvpCd,
+                tone ? styles[`rsvpCd--${tone}`] : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+              return (
+                <Link
+                  key={s._id}
+                  href={buildDiscordLink(s)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.rsvpItem}
+                >
+                  <div className={styles.rsvpWhen}>
+                    <div className={styles.d}>{d.getDate()}</div>
+                    <div className={styles.m}>
+                      {pad(d.getMonth() + 1)}월 · {dow}
+                    </div>
+                  </div>
+                  <div className={styles.rsvpBody}>
+                    <div className={styles.rsvpName}>{s.title}</div>
+                    <div className={styles.rsvpMeta}>
+                      <span className={styles.t}>
+                        {formatTime(s.targetDateTime)}
+                      </span>{" "}
+                      · 응답 {s.counts.yes}
+                    </div>
+                  </div>
+                  <div className={cdCls}>{ddayLabel(s.targetDateTime)}</div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        <div className={styles.railSep}>OPEN · 임박</div>
+        {openImminent.length === 0 ? (
+          <div className={styles.empty}>열려있는 세션 없음</div>
+        ) : (
+          openImminent.map((s) => {
+            const tone = ddayTone(s.targetDateTime);
+            const cdCls = [
+              styles.openCd,
+              tone === "urgent" ? styles["openCd--urgent"] : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
+            return (
+              <Link
+                key={s._id}
+                href={buildDiscordLink(s)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.openItem}
+              >
+                <div>
+                  <div className={styles.openName}>{s.title}</div>
+                  <div className={styles.openMeta}>
+                    {formatDateMD(s.targetDateTime)} ·{" "}
+                    {formatTime(s.targetDateTime)}
+                  </div>
+                </div>
+                <div className={cdCls}>{ddayLabel(s.targetDateTime)}</div>
+              </Link>
+            );
+          })
+        )}
+      </div>
+    </aside>
   );
 }

@@ -88,6 +88,11 @@ export async function PATCH(request: Request, context: RouteContext) {
    * 쿨다운 enforcement (P6) — player 모드에만 적용.
    * admin 은 운영 책임 영역이라 별도 throttle 없음 (감사 로그로만 추적).
    * 응답에 used/remaining/resetAt 을 포함해 클라이언트가 안내 메시지/카운트다운에 활용.
+   *
+   * TODO(P7/P8): TOCTTOU race — count read 와 audit insert 사이에 동시 PATCH 가
+   *   끼면 maxCount 를 1~N 만큼 우회 가능. 현재 운영 규모(플레이어 ~20, 자가편집
+   *   빈도 매우 낮음)에서는 수용 가능 리스크. atomic counter / waitUntil revert
+   *   도입은 P7 webhook 인프라와 함께 검토.
    */
   if (decision.mode === "player") {
     const status = await checkEditCooldown(session.user.id);

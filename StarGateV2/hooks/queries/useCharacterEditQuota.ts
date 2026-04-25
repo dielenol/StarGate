@@ -45,5 +45,7 @@ export function useCharacterEditQuota(characterId: string, enabled: boolean) {
     queryFn: () => fetchCharacterEditQuota(characterId),
     enabled,
     staleTime: 30 * 1000,
+    // 4xx (권한/존재) 는 재시도해도 결과 동일 — 트래픽/로그 노이즈 회피.
+    retry: 1,
   });
 }

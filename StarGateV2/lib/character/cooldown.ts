@@ -27,7 +27,11 @@ export interface CooldownStatus {
   used: number;
   /** maxCount - used (음수면 0). */
   remaining: number;
-  /** 클라이언트에 표시할 다음 리셋 시각 — 단순화된 슬라이딩 카운트다운. */
+  /**
+   * 다음 "윈도우 통째 리셋" 시각이 아니라, "지금 + windowMs" 의 단순 카운트다운.
+   * 실제는 sliding window — oldest 로그가 windowMs 경과 시점에 1슬롯씩 회복.
+   * UI 라벨은 "최근 N시간 이내 사용 X/Y" 처럼 표시해 사용자 오해를 방지할 것.
+   */
   resetAt: Date;
   windowHours: number;
   maxCount: number;

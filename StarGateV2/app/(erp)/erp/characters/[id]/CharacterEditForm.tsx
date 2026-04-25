@@ -322,10 +322,11 @@ export default function CharacterEditForm({
         {isPlayer && quotaData && quotaData.mode === "player" ? (
           <span className={styles.quota}>
             {" · "}
-            남은 편집 횟수 {quotaData.remaining}/{quotaData.maxCount}
-            {" (다음 리셋: "}
-            {new Date(quotaData.resetAt).toLocaleString()}
-            {")"}
+            최근 {quotaData.windowHours}시간 이내 편집 {quotaData.used}/
+            {quotaData.maxCount}
+            {quotaData.remaining > 0
+              ? ` (남은 ${quotaData.remaining}회)`
+              : ` (가장 이른 편집이 ${new Date(quotaData.resetAt).toLocaleString("ko-KR")} 경에 만료되어야 회복)`}
           </span>
         ) : null}
       </div>

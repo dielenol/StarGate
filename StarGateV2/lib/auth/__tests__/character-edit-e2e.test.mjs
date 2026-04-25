@@ -461,4 +461,38 @@ if (!HAS_MODULE_MOCK) {
     });
     assert.equal(decision.mode, "none", "공백 trim 등 normalize 없음");
   });
+
+  /* ────────────────────────────────────────────────────────────────────── */
+  /* S6-1: PLAYER 화이트리스트 client/server set sync (drift 회귀 보호)        */
+  /*                                                                          */
+  /* CharacterEditForm 은 mongodb 누수 방지로 shared-db 에서 직접 import 못 하고 */
+  /* hardcoded 7 필드를 유지한다. 둘 중 한쪽만 변경되어도 silent drift 가 발생하 */
+  /* 므로 본 테스트가 사이의 sync 를 강제한다.                                  */
+  /* ────────────────────────────────────────────────────────────────────── */
+
+  test("S6-1: client PLAYER_EDITABLE_FIELDS ↔ server PLAYER_ALLOWED_CHARACTER_FIELDS sync", () => {
+    // CharacterEditForm 의 hardcoded 세트 미러링 (수정 시 함께 갱신).
+    const CLIENT_PLAYER_EDITABLE_FIELDS = new Set([
+      "quote",
+      "appearance",
+      "personality",
+      "background",
+      "gender",
+      "age",
+      "height",
+    ]);
+
+    // 서버 화이트리스트는 'sheet.*' prefix 형태이므로 prefix 제거 후 비교.
+    const serverWithoutPrefix = new Set(
+      [...PLAYER_ALLOWED_CHARACTER_FIELDS].map((f) =>
+        f.replace(/^sheet\./, ""),
+      ),
+    );
+
+    assert.deepEqual(
+      CLIENT_PLAYER_EDITABLE_FIELDS,
+      serverWithoutPrefix,
+      "CharacterEditForm 의 PLAYER_EDITABLE_FIELDS 와 shared-db 의 PLAYER_ALLOWED_CHARACTER_FIELDS 가 어긋남 — 둘 중 하나만 변경되었는지 확인",
+    );
+  });
 }

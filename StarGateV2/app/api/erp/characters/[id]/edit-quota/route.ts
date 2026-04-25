@@ -43,25 +43,39 @@ export async function GET(_request: Request, context: RouteContext) {
     character ?? { ownerId: null },
   );
   if (!character || decision.mode === "none") {
+    if (character && decision.mode === "none") {
+      console.warn(
+        `[edit-quota GET] denied user=${session.user.id} character=${id} reason=${decision.reason}`,
+      );
+    }
     return NextResponse.json(
       { error: "캐릭터를 찾을 수 없습니다." },
       { status: 404 },
     );
   }
 
+  // 사용자별/시간별로 변동되는 quota 응답은 절대 캐시되면 안 됨 (CDN/브라우저 양쪽).
+  const noStoreHeaders = { "Cache-Control": "private, no-store" } as const;
+
   if (decision.mode === "admin") {
-    return NextResponse.json({ mode: "admin", allowed: true });
+    return NextResponse.json(
+      { mode: "admin", allowed: true },
+      { headers: noStoreHeaders },
+    );
   }
 
   // player 모드 — 실제 쿨다운 상태 조회.
   const status = await checkEditCooldown(session.user.id);
-  return NextResponse.json({
-    mode: "player",
-    allowed: status.allowed,
-    used: status.used,
-    remaining: status.remaining,
-    resetAt: status.resetAt.toISOString(),
-    windowHours: status.windowHours,
-    maxCount: status.maxCount,
-  });
+  return NextResponse.json(
+    {
+      mode: "player",
+      allowed: status.allowed,
+      used: status.used,
+      remaining: status.remaining,
+      resetAt: status.resetAt.toISOString(),
+      windowHours: status.windowHours,
+      maxCount: status.maxCount,
+    },
+    { headers: noStoreHeaders },
+  );
 }
