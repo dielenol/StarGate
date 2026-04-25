@@ -152,3 +152,66 @@ export async function findUserParticipationsInGuild(
 
   return { items, totalInGuild };
 }
+
+/**
+ * 여러 세션의 응답을 한 번에 조회한다.
+ *
+ * `responses_sessionId_userId_unique` 인덱스(sessionId 선두)를 활용한 $in 쿼리.
+ * 빈 배열 입력은 즉시 빈 배열 반환으로 short-circuit.
+ *
+ * @param sessionIds 조회 대상 세션 ID 배열
+ */
+export async function findResponsesBySessionIds(
+  sessionIds: string[]
+): Promise<SessionResponse[]> {
+  if (sessionIds.length === 0) return [];
+  const col = await sessionResponsesCol();
+  return col.find({ sessionId: { $in: sessionIds } }).toArray();
+}
+
+/**
+ * 여러 세션의 `{ yes, no }` 카운트를 한 번에 집계한다.
+ *
+ * `responses_sessionId_status` 인덱스를 활용한 aggregate pipeline.
+ * 응답이 없는 세션도 `{ yes: 0, no: 0 }` 로 채워 반환한다 — 호출처에서 안전하게 lookup.
+ *
+ * @param sessionIds 집계 대상 세션 ID 배열
+ * @returns sessionId → { yes, no } 맵
+ */
+export async function countByStatusBulk(
+  sessionIds: string[]
+): Promise<Record<string, { yes: number; no: number }>> {
+  const base: Record<string, { yes: number; no: number }> = {};
+  for (const sid of sessionIds) base[sid] = { yes: 0, no: 0 };
+
+  if (sessionIds.length === 0) return base;
+
+  const col = await sessionResponsesCol();
+  const pipeline = [
+    { $match: { sessionId: { $in: sessionIds } } },
+    {
+      $group: {
+        _id: { sid: "$sessionId", st: "$status" },
+        c: { $sum: 1 },
+      },
+    },
+  ];
+
+  const rows = await col
+    .aggregate<{
+      _id: { sid: string; st: string };
+      c: number;
+    }>(pipeline)
+    .toArray();
+
+  for (const row of rows) {
+    const bucket = base[row._id.sid];
+    if (!bucket) continue;
+    const status = row._id.st.toLowerCase();
+    if (status === "yes" || status === "no") {
+      bucket[status] = row.c;
+    }
+  }
+
+  return base;
+}

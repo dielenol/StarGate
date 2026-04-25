@@ -14,6 +14,8 @@ export const npcSheetSchema = z.object({
   name: z.string(),
   nameEn: z.string(),
   mainImage: z.string(),
+  /** 캐릭터 상세 상단 히어로에 노출되는 공식 포스터 (와이드). mainImage(세로 초상화)와 구분. */
+  posterImage: z.string().optional(),
   quote: z.string(),
   gender: z.string(),
   age: z.string(),

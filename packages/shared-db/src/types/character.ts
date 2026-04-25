@@ -6,6 +6,8 @@ export interface SheetBase {
   codename: string;
   name: string;
   mainImage: string;
+  /** 캐릭터 상세 상단 히어로에 노출되는 공식 포스터 (와이드). mainImage(세로 초상화)와 구분. */
+  posterImage?: string;
   quote: string;
   gender: string;
   age: string;

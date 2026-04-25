@@ -1,4 +1,5 @@
 import { getDb } from "./client.js";
+import { ensureChangeLogsIndexes } from "./migrations/ensure-change-logs-indexes.js";
 
 /**
  * 모든 컬렉션의 인덱스를 생성한다.
@@ -9,6 +10,9 @@ export async function ensureAllIndexes(): Promise<void> {
   const db = await getDb();
 
   await Promise.all([
+    /* ── character_change_logs (감사 로그) ── */
+    ensureChangeLogsIndexes(db),
+
     /* ── users (from StarGateV2) ── */
     db.collection("users").createIndexes([
       {

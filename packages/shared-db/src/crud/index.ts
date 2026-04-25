@@ -15,3 +15,4 @@ export * from "./notifications.js";
 export * from "./session-reports.js";
 export * from "./factions.js";
 export * from "./institutions.js";
+export * from "./change-logs.js";

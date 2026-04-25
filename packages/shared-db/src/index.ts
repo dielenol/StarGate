@@ -49,6 +49,9 @@ export type {
   SessionReport,
   CreateSessionReportInput,
   RegistrarUserTip,
+  CharacterChangeLog,
+  CharacterChangeLogEntry,
+  NewCharacterChangeLog,
 } from "./types/index.js";
 
 export {
@@ -119,6 +122,7 @@ export {
 /* ── Indexes ── */
 
 export { ensureAllIndexes } from "./indexes.js";
+export { ensureChangeLogsIndexes } from "./migrations/ensure-change-logs-indexes.js";
 
 /* ── Utils ── */
 

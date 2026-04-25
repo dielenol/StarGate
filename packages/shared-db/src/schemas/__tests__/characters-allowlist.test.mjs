@@ -15,7 +15,7 @@ const CHARACTERS_SRC = resolve(__dirname, "../../crud/characters.ts");
 
 test("ALLOWED_CHARACTER_FIELDS 에 신규 4개 필드 포함", () => {
   const src = readFileSync(CHARACTERS_SRC, "utf8");
-  const setMatch = /const ALLOWED_CHARACTER_FIELDS\s*=\s*new Set\(\[([\s\S]*?)\]\)/m.exec(
+  const setMatch = /(?:export\s+)?const ALLOWED_CHARACTER_FIELDS\s*=\s*new Set(?:<[^>]+>)?\(\[([\s\S]*?)\]\)/m.exec(
     src
   );
   assert.ok(setMatch, "ALLOWED_CHARACTER_FIELDS set 선언을 찾지 못함");
@@ -38,7 +38,7 @@ test("ALLOWED_CHARACTER_FIELDS 에 신규 4개 필드 포함", () => {
 
 test("ALLOWED_CHARACTER_FIELDS 에 중복 엔트리 없음", () => {
   const src = readFileSync(CHARACTERS_SRC, "utf8");
-  const setMatch = /const ALLOWED_CHARACTER_FIELDS\s*=\s*new Set\(\[([\s\S]*?)\]\)/m.exec(
+  const setMatch = /(?:export\s+)?const ALLOWED_CHARACTER_FIELDS\s*=\s*new Set(?:<[^>]+>)?\(\[([\s\S]*?)\]\)/m.exec(
     src
   );
   const listed = (setMatch[1].match(/"([^"]+)"/g) ?? []).map((s) =>

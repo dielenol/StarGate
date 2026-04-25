@@ -80,3 +80,9 @@ export type {
 } from "./session-report.js";
 
 export type { RegistrarUserTip } from "./user-tip.js";
+
+export type {
+  CharacterChangeLog,
+  CharacterChangeLogEntry,
+  NewCharacterChangeLog,
+} from "./change-log.js";

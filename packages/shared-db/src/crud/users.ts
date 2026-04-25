@@ -38,6 +38,19 @@ export async function findUserByDiscordId(
   return col.findOne({ discordId });
 }
 
+/**
+ * 여러 discordId를 한 번에 조회한다. 빈 배열은 즉시 short-circuit.
+ *
+ * `users_discordId_partial_unique` 인덱스(string 타입 한정)를 활용한 $in 쿼리.
+ */
+export async function findUsersByDiscordIds(
+  discordIds: string[]
+): Promise<User[]> {
+  if (discordIds.length === 0) return [];
+  const col = await usersCol();
+  return col.find({ discordId: { $in: discordIds } }).toArray();
+}
+
 export async function findUserById(id: string): Promise<User | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await usersCol();
