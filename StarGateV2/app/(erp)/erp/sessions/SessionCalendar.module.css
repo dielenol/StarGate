@@ -36,6 +36,7 @@
 }
 
 .cal__cell {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -131,6 +132,24 @@
   color: var(--danger);
 }
 
+.cal__chip--attending {
+  border-left-color: var(--attend-marker);
+  color: var(--attend-text);
+  background: color-mix(in srgb, var(--attend-marker) 18%, transparent);
+}
+
+.cal__attend {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  color: var(--attend-text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
 .cal__legend {
   display: flex;
   gap: 12px;
@@ -198,6 +217,19 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.detail__mark {
+  color: var(--attend-text);
+  font-family: var(--font-mono);
+}
+
+.detail__count {
+  flex-shrink: 0;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
 }
 
 /* ── Mobile ── */

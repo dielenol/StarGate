@@ -13,6 +13,8 @@ import Button from "@/components/ui/Button/Button";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Row from "@/components/ui/Row/Row";
 
+import { buildDiscordLink } from "./SessionsClient";
+
 import styles from "./SessionCalendar.module.css";
 
 interface SessionCalendarProps {
@@ -31,6 +33,11 @@ const CHIP_CLASS: Record<SessionStatus, string> = {
   CANCELING: styles["cal__chip--danger"],
   CANCELED: styles["cal__chip--danger"],
 };
+
+/** 내 참여 + CANCELED 아닌 세션에만 attending 시각효과 적용 */
+function isAttending(s: SerializedSession): boolean {
+  return s.myRsvp === "YES" && s.status !== "CANCELED";
+}
 
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
@@ -104,6 +111,16 @@ export default function SessionCalendar({
       const existing = map.get(d);
       if (existing) existing.push(s);
       else map.set(d, [s]);
+    }
+    return map;
+  }, [sessions]);
+
+  const attendingCountByDate = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const s of sessions) {
+      if (!isAttending(s)) continue;
+      const d = new Date(s.targetDateTime).getDate();
+      map.set(d, (map.get(d) ?? 0) + 1);
     }
     return map;
   }, [sessions]);
@@ -204,20 +221,40 @@ export default function SessionCalendar({
                     .filter(Boolean)
                     .join(" ");
 
+                  const attendCount = attendingCountByDate.get(dayNum) ?? 0;
                   const content = (
                     <>
                       <span className={styles.cal__date}>{dayNum}</span>
+                      {attendCount > 0 ? (
+                        <span
+                          className={styles.cal__attend}
+                          aria-label={`내 참여 ${attendCount}건`}
+                        >
+                          ●{attendCount > 1 ? attendCount : ""}
+                        </span>
+                      ) : null}
                       {hasSessions ? (
                         <div className={styles.cal__chips}>
-                          {daySessions.slice(0, 2).map((s) => (
-                            <span
-                              key={s._id}
-                              className={`${styles.cal__chip} ${CHIP_CLASS[s.status] ?? ""}`}
-                              title={`${s.title} · ${s.status}`}
-                            >
-                              {s.title}
-                            </span>
-                          ))}
+                          {daySessions.slice(0, 2).map((s) => {
+                            const attending = isAttending(s);
+                            const chipClassName = [
+                              styles.cal__chip,
+                              CHIP_CLASS[s.status] ?? "",
+                              attending ? styles["cal__chip--attending"] : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ");
+                            return (
+                              <span
+                                key={s._id}
+                                className={chipClassName}
+                                title={`${s.title} · ${s.status} · 참여 ${s.counts.yes}명`}
+                              >
+                                {attending ? "★ " : ""}
+                                {s.title}
+                              </span>
+                            );
+                          })}
                           {daySessions.length > 2 ? (
                             <span className={styles.cal__chip}>
                               +{daySessions.length - 2}
@@ -235,7 +272,9 @@ export default function SessionCalendar({
                         type="button"
                         className={classes}
                         onClick={() => setSelectedDate(dayNum)}
-                        aria-label={`${month}월 ${dayNum}일, 세션 ${daySessions.length}건`}
+                        aria-label={`${month}월 ${dayNum}일, 세션 ${daySessions.length}건${
+                          attendCount > 0 ? `, 내 참여 ${attendCount}건` : ""
+                        }`}
                         aria-pressed={isSelected}
                       >
                         {content}
@@ -274,6 +313,11 @@ export default function SessionCalendar({
             >
               취소
             </span>
+            <span
+              className={`${styles.cal__chip} ${styles["cal__chip--attending"]}`}
+            >
+              ★ 내 참여
+            </span>
           </div>
         </>
       )}
@@ -288,7 +332,30 @@ export default function SessionCalendar({
                 <span className={styles.detail__time}>
                   {formatTime(s.targetDateTime)}
                 </span>
-                <span className={styles.detail__title}>{s.title}</span>
+                <span className={styles.detail__title}>
+                  {isAttending(s) ? (
+                    <span
+                      className={styles.detail__mark}
+                      aria-label="내 참여"
+                    >
+                      ★{" "}
+                    </span>
+                  ) : null}
+                  {s.title}
+                </span>
+                <span className={styles.detail__count}>
+                  {s.counts.yes}명
+                </span>
+                <Button
+                  as="a"
+                  size="sm"
+                  href={buildDiscordLink(s)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${s.title} · 디스코드에서 열기`}
+                >
+                  ↗
+                </Button>
               </div>
             ))
           )}

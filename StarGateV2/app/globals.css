@@ -30,6 +30,10 @@
   --p1: #c9a85a;
   --p2: #6a87a8;
 
+  /* 세션 "내 참여" 마커 (teal) — session 페이지 attending 칩/배지 전용 */
+  --attend-marker: #3e8e7c;
+  --attend-text: #6cc4ad;
+
   /* 폰트 변수 — next/font 가 --font-mono / --font-body 로 주입 */
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --font-body: "Noto Sans KR", "Inter", "Pretendard", "Apple SD Gothic Neo",

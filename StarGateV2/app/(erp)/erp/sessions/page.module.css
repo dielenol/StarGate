@@ -1,10 +1,40 @@
+/* ── Search box (상단 승격) ── */
+
+.searchBox {
+  margin-bottom: var(--gap);
+}
+
+.searchRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+}
+
+/* ── Tabs row (탭 + 상태 필터 수평 배치) ── */
+
+.tabsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--gap);
+  border-bottom: 1px solid var(--line);
+}
+
+.statusSelect {
+  min-width: 140px;
+  margin-bottom: -1px;
+}
+
 /* ── Tabs ── */
 
 .tabs {
   display: flex;
   gap: 0;
-  margin-bottom: var(--gap);
-  border-bottom: 1px solid var(--line);
   overflow-x: auto;
   white-space: nowrap;
 }
@@ -100,6 +130,27 @@
   text-align: right;
 }
 
+/* ── List table extras ── */
+
+.countCol {
+  width: 80px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.linkCol {
+  width: 120px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.attendMark {
+  display: inline-block;
+  margin-right: 4px;
+  color: var(--attend-text);
+  font-family: var(--font-mono);
+}
+
 /* ── Side panel helpers ── */
 
 .sideEyebrow {
@@ -107,15 +158,44 @@
   margin: 16px 0 6px;
 }
 
-.botNote {
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
+.sideList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.botActions {
-  margin-top: 8px;
+.sideItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+
+.sideItemBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sideItemTitle {
+  color: var(--ink-0);
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sideItemDate {
+  color: var(--ink-3);
+  font-size: 13px;
+  letter-spacing: 0.08em;
 }
 
 /* ── Utilities ── */
