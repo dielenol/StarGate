@@ -24,6 +24,7 @@ import Stack from "@/components/ui/Stack/Stack";
 import Tag from "@/components/ui/Tag/Tag";
 
 import CharacterEditForm from "./CharacterEditForm";
+import PosterHero from "./PosterHero";
 
 import styles from "./page.module.css";
 
@@ -150,6 +151,16 @@ export default function CharacterDetailClient({
       />
 
       {deleteError ? <div className={styles.error}>{deleteError}</div> : null}
+
+      <PosterHero
+        posterImage={character.sheet.posterImage}
+        mainImage={character.sheet.mainImage}
+        codename={character.codename}
+        name={character.sheet.name}
+        type={character.type}
+        role={character.role}
+        agentLevel={character.agentLevel}
+      />
 
       <div className={styles.layout}>
         {/* ── 좌측 사이드: 초상화, 신상, VITALS (AGENT) ── */}

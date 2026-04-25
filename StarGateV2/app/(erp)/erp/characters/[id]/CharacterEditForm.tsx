@@ -50,6 +50,9 @@ export default function CharacterEditForm({
   /* ── Sheet common ── */
   const [name, setName] = useState(character.sheet.name);
   const [mainImage, setMainImage] = useState(character.sheet.mainImage);
+  const [posterImage, setPosterImage] = useState(
+    character.sheet.posterImage ?? "",
+  );
   const [quote, setQuote] = useState(character.sheet.quote);
   const [gender, setGender] = useState(character.sheet.gender);
   const [age, setAge] = useState(character.sheet.age);
@@ -137,6 +140,7 @@ export default function CharacterEditForm({
       codename,
       name,
       mainImage,
+      posterImage,
       quote,
       gender,
       age,
@@ -259,7 +263,16 @@ export default function CharacterEditForm({
               type="text"
               value={mainImage}
               onChange={(e) => setMainImage(e.target.value)}
-              placeholder="메인 이미지 URL"
+              placeholder="메인 이미지 URL (세로 초상화)"
+            />
+          </Field>
+          <Field id="posterImage" label="POSTER IMAGE URL" full>
+            <Input
+              id="posterImage"
+              type="text"
+              value={posterImage}
+              onChange={(e) => setPosterImage(e.target.value)}
+              placeholder="캐릭터 상세 상단 와이드 히어로 (선택)"
             />
           </Field>
           <div className={`${styles.field} ${styles["field--full"]}`}>

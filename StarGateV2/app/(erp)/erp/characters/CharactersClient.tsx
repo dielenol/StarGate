@@ -124,7 +124,16 @@ export default function CharactersClient({
               <Link key={id} href={`/erp/characters/${id}`} className={styles.cardLink}>
                 <Box className={styles.card}>
                   <div className={styles.card__head}>
-                    <Seal>{getInitial(c)}</Seal>
+                    {c.previewImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={c.previewImage}
+                        alt={`${c.sheet.name || c.codename} 미리보기`}
+                        className={styles.card__thumb}
+                      />
+                    ) : (
+                      <Seal>{getInitial(c)}</Seal>
+                    )}
                     <div className={styles.card__headBody}>
                       <div className={styles.card__code}>{c.codename}</div>
                       <div className={styles.card__name}>

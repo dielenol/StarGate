@@ -1,0 +1,99 @@
+/*
+ * 캐릭터 상세 상단 와이드 히어로 — 디자인은 Claude Design 후속.
+ * 본 파일은 구조 슬롯/최소 레이아웃만 정의 (placeholder).
+ * 색상/스페이싱은 globals.css 의 CSS 변수만 참조 (하드코딩 금지).
+ */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
+  gap: var(--gap);
+  align-items: stretch;
+  margin-bottom: var(--gap);
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 좌측 와이드 슬롯 (poster | mainImage fallback | seal placeholder) ── */
+
+.hero__slot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero__slotImage {
+  object-fit: cover;
+}
+
+/* mainImage fallback — 세로 초상화를 와이드 슬롯에 풀블리드. blur 백드롭은 후속 디자인 단계에서 추가 */
+.hero__slotImage--portrait {
+  object-fit: cover;
+}
+
+.hero__slotEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.hero__slotEmptyName {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.15em;
+}
+
+/* ── 우측 메타 ── */
+
+.hero__meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.hero__codename {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.15em;
+}
+
+.hero__name {
+  margin: 0;
+  color: var(--ink-0);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  word-break: break-word;
+}
+
+.hero__role {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+.hero__tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
