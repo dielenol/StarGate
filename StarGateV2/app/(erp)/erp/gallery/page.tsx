@@ -18,7 +18,10 @@ export default async function GalleryPage() {
   return (
     <>
       <PageHead
-        breadcrumb="ERP / GALLERY"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "GALLERY" },
+        ]}
         title="갤러리"
         right={<Tag tone="p2">P2 · 준비중</Tag>}
       />

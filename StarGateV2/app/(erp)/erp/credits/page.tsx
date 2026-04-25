@@ -63,7 +63,13 @@ export default async function CreditsPage() {
 
   return (
     <>
-      <PageHead breadcrumb="ERP / CREDITS" title="크레딧" />
+      <PageHead
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "CREDITS" },
+        ]}
+        title="크레딧"
+      />
 
       <div className={styles.topRow}>
         <Box variant="gold" className={styles.balance}>

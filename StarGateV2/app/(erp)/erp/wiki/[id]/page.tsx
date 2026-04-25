@@ -94,7 +94,11 @@ export default async function WikiDetailPage({
   return (
     <>
       <PageHead
-        breadcrumb={`ERP / CODEX / ${page.category.toUpperCase()}`}
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "CODEX", href: "/erp/wiki" },
+          { label: page.category.toUpperCase() },
+        ]}
         title={page.title}
         right={
           <>

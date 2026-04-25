@@ -45,9 +45,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 8px 10px;
   color: var(--ink-1);
-  font-size: 12px;
+  font-size: 14px;
   text-decoration: none;
   transition:
     background-color 0.15s ease,
@@ -91,7 +91,7 @@
 .header__title {
   margin: 0;
   color: var(--ink-0);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -99,7 +99,7 @@
 .header__info {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
@@ -107,7 +107,7 @@
 
 .content {
   color: var(--ink-1);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.7;
   word-break: break-word;
 }
@@ -115,7 +115,7 @@
 .content h2 {
   margin: 24px 0 10px;
   color: var(--gold);
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 600;
   letter-spacing: 0.02em;
   scroll-margin-top: calc(var(--topbar-h) + 16px);
@@ -132,8 +132,8 @@
 .content h4 {
   margin: 16px 0 6px;
   color: var(--ink-0);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   scroll-margin-top: calc(var(--topbar-h) + 16px);
 }
 
@@ -178,15 +178,15 @@
 .footerMeta__row {
   display: flex;
   gap: 8px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .footerMeta__row dt {
   margin: 0;
-  width: 70px;
+  width: 74px;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }
 
@@ -228,7 +228,7 @@
 .toc__link {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.05em;
   text-decoration: none;
   transition: color 0.15s ease;
@@ -251,7 +251,7 @@
 .aside__empty {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
@@ -260,7 +260,7 @@
 .back {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-decoration: none;
   transition: color 0.15s ease;

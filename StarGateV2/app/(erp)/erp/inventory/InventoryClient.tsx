@@ -74,7 +74,10 @@ export default function InventoryClient({
   return (
     <>
       <PageHead
-        breadcrumb="ERP / EQUIPMENT"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "EQUIPMENT" },
+        ]}
         title="장비"
         right={
           isGm ? (

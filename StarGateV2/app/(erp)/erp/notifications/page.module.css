@@ -1,10 +1,10 @@
 .unreadBadge {
   margin-left: 10px;
-  padding: 2px 8px;
+  padding: 3px 10px;
   background: var(--gold);
   color: #000;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   vertical-align: middle;
 }
@@ -21,13 +21,13 @@
 }
 
 .tab {
-  padding: 8px 14px;
+  padding: 10px 16px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.12em;
   cursor: pointer;
   transition:
@@ -52,10 +52,10 @@
 }
 
 .empty {
-  padding: 40px 10px;
+  padding: 42px 12px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-align: center;
 }
@@ -109,7 +109,7 @@
 .notif__title {
   color: var(--ink-0);
   font-weight: 500;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .notif--read .notif__title {
@@ -121,14 +121,14 @@
   flex-shrink: 0;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
 .notif__message {
   margin-top: 4px;
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -142,7 +142,7 @@
 .notif__link {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-decoration: none;
   transition: color 0.15s ease;

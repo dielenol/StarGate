@@ -18,7 +18,10 @@ export default async function MissionsPage() {
   return (
     <>
       <PageHead
-        breadcrumb="ERP / MISSIONS"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "MISSIONS" },
+        ]}
         title="미션 보드"
         right={<Tag tone="p1">P1 · 준비중</Tag>}
       />

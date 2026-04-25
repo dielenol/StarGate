@@ -85,7 +85,14 @@ export default function CharacterDetailClient({
     return (
       <>
         <PageHead
-          breadcrumb={`CHARACTERS / ${character.codename} / EDIT`}
+          breadcrumb={[
+            { label: "CHARACTERS", href: "/erp/characters" },
+            {
+              label: character.codename,
+              href: `/erp/characters/${character._id}`,
+            },
+            { label: "EDIT" },
+          ]}
           title={`${character.sheet.name || character.codename} · 편집`}
         />
         <CharacterEditForm
@@ -107,7 +114,10 @@ export default function CharacterDetailClient({
   return (
     <>
       <PageHead
-        breadcrumb={`CHARACTERS / ${character.codename}`}
+        breadcrumb={[
+          { label: "CHARACTERS", href: "/erp/characters" },
+          { label: character.codename },
+        ]}
         title={character.sheet.name || character.codename}
         right={
           <>

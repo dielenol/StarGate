@@ -24,7 +24,10 @@ export default async function NewItemPage() {
   return (
     <>
       <PageHead
-        breadcrumb="EQUIPMENT / NEW"
+        breadcrumb={[
+          { label: "EQUIPMENT", href: "/erp/inventory" },
+          { label: "NEW" },
+        ]}
         title="아이템 추가"
         right={
           <Button as="a" href="/erp/inventory">

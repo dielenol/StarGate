@@ -1,10 +1,10 @@
 .tag {
   display: inline-block;
-  padding: 2px 7px;
+  padding: 3px 9px;
   border: 1px solid var(--line-strong);
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.15em;
   white-space: nowrap;
 }
@@ -42,4 +42,38 @@
 .tag--p2 {
   color: var(--p2);
   border-color: var(--p2);
+}
+
+/* Rank tones — text 색상(밝은 톤)을 라벨에, marker 색상(짙은 톤)을 테두리에 */
+.tag--rankGm {
+  color: var(--rank-gm-text);
+  border-color: var(--rank-gm-marker);
+}
+.tag--rankV {
+  color: var(--rank-v-text);
+  border-color: var(--rank-v-marker);
+}
+.tag--rankA {
+  color: var(--rank-a-text);
+  border-color: var(--rank-a-marker);
+}
+.tag--rankM {
+  color: var(--rank-m-text);
+  border-color: var(--rank-m-marker);
+}
+.tag--rankH {
+  color: var(--rank-h-text);
+  border-color: var(--rank-h-marker);
+}
+.tag--rankG {
+  color: var(--rank-g-text);
+  border-color: var(--rank-g-marker);
+}
+.tag--rankJ {
+  color: var(--rank-j-text);
+  border-color: var(--rank-j-marker);
+}
+.tag--rankU {
+  color: var(--rank-u-text);
+  border-color: var(--rank-u-marker);
 }

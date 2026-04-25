@@ -23,7 +23,12 @@ export default async function NewReportPage() {
   return (
     <>
       <PageHead
-        breadcrumb="ERP / SESSIONS / REPORTS / NEW"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "SESSIONS", href: "/erp/sessions" },
+          { label: "REPORTS", href: "/erp/sessions/report" },
+          { label: "NEW" },
+        ]}
         title="세션 리포트 작성"
         right={
           <Button as="a" href="/erp/sessions/report">

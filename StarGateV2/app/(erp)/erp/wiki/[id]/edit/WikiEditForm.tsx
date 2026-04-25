@@ -70,7 +70,12 @@ export default function WikiEditForm({
   return (
     <>
       <PageHead
-        breadcrumb={`ERP / CODEX / ${initialCategory.toUpperCase()} / EDIT`}
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "CODEX", href: "/erp/wiki" },
+          { label: initialCategory.toUpperCase(), href: `/erp/wiki/${pageId}` },
+          { label: "EDIT" },
+        ]}
         title="문서 수정"
         right={
           <Button as="a" href={`/erp/wiki/${pageId}`}>

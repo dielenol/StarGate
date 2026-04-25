@@ -3,12 +3,13 @@
   gap: 3px;
 }
 
+/* 부모에 data-rank 가 있으면 해당 등급 색 상속, 없으면 gold 폴백. */
 .pips__pip {
   width: 10px;
   height: 10px;
-  border: 1px solid var(--gold-dim);
+  border: 1px solid var(--rank-active-marker, var(--gold-dim));
 }
 
 .pips__pip--on {
-  background: var(--gold);
+  background: var(--rank-active-marker, var(--gold));
 }

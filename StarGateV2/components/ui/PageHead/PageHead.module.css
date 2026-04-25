@@ -12,15 +12,67 @@
 .pageHead__breadcrumb {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.15em;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
+}
+
+.crumbNav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.crumbItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crumbSep {
+  color: var(--ink-3);
+}
+
+/* 이동 가능한 상위 세그먼트 — 링크 톤, hover 시 골드, 포인터 커서 */
+.crumbLink {
+  color: var(--ink-2);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    text-decoration-color 120ms ease;
+}
+
+.crumbLink:hover {
+  color: var(--gold);
+  text-decoration: underline;
+  text-decoration-color: var(--gold-dim);
+  text-underline-offset: 3px;
+}
+
+.crumbLink:focus-visible {
+  outline: 1px solid var(--gold-dim);
+  outline-offset: 2px;
+}
+
+/* 현재 페이지 — 골드 강조, 클릭 불가 (default 커서) */
+.crumbCurrent {
+  color: var(--gold);
+  font-weight: 500;
+  cursor: default;
+}
+
+/* href 미지정 상위 세그먼트 (예: /erp/admin 처럼 페이지가 없는 경우) — 링크 아님 */
+.crumbPlain {
+  color: var(--ink-2);
+  cursor: default;
 }
 
 .pageHead__title {
   margin: 0;
   color: var(--ink-0);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 500;
   letter-spacing: -0.02em;
 }

@@ -49,7 +49,13 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <PageHead breadcrumb="ERP / PROFILE" title="프로필" />
+      <PageHead
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "PROFILE" },
+        ]}
+        title="프로필"
+      />
 
       <div className={styles.layout}>
         {/* ── 좌측 사이드 ── */}

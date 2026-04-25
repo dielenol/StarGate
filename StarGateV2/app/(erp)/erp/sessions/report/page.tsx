@@ -22,7 +22,11 @@ export default async function SessionReportListPage() {
   return (
     <>
       <PageHead
-        breadcrumb="ERP / SESSIONS / REPORTS"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "SESSIONS", href: "/erp/sessions" },
+          { label: "REPORTS" },
+        ]}
         title="세션 리포트"
         right={
           isGmOrAbove ? (

@@ -24,7 +24,10 @@ export default async function CharacterNewPage() {
   return (
     <>
       <PageHead
-        breadcrumb="CHARACTERS / NEW"
+        breadcrumb={[
+          { label: "CHARACTERS", href: "/erp/characters" },
+          { label: "NEW" },
+        ]}
         title="캐릭터 추가"
         right={
           <Button as="a" href="/erp/characters">

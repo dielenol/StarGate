@@ -70,7 +70,10 @@ export default function WikiClient({
   return (
     <>
       <PageHead
-        breadcrumb="ERP / CODEX"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "CODEX" },
+        ]}
         title="위키"
         right={
           isGM ? (

@@ -37,12 +37,12 @@ type NavItem = {
   href?: string;
   icon: IconComponent;
   children?: NavChildItem[];
+  /** 모집/접수 마감 등 접근은 되지만 기능이 비활성화된 항목 */
+  closed?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
   { label: "기밀 아카이브", href: "/", icon: IconArchive },
-  { label: "입회 심사 신청", href: "/apply", icon: IconApply },
-  { label: "기밀 문의 접수", href: "/contact", icon: IconContact },
   {
     label: "세계관 기록",
     icon: IconWorld,
@@ -54,6 +54,9 @@ const NAV_ITEMS: NavItem[] = [
   { label: "작전 내규", href: "/gameplay", icon: IconNotes },
   { label: "노부스 오르도 룰", href: "/rules", icon: IconRules },
   { label: "운영 시스템", href: "/erp", icon: IconSystem },
+  /* 마감된 접수 창구 — 사이드바 최하단으로 내려 접근 빈도를 낮춤 */
+  { label: "입회 심사 신청", href: "/apply", icon: IconApply, closed: true },
+  { label: "기밀 문의 접수", href: "/contact", icon: IconContact, closed: true },
 ];
 
 function isActivePath(pathname: string, href: string) {
@@ -147,7 +150,7 @@ export default function Sidebar() {
 
               return (
                 <Link
-                  className={`${styles["sidebar__item"]} ${active ? styles["sidebar__item--active"] : ""}`}
+                  className={`${styles["sidebar__item"]} ${active ? styles["sidebar__item--active"] : ""} ${item.closed ? styles["sidebar__item--closed"] : ""}`}
                   href={item.href ?? "/"}
                   onClick={() => {
                     playSidebarFlip();
@@ -159,6 +162,11 @@ export default function Sidebar() {
                     <Icon aria-hidden />
                   </span>
                   <span className={styles["sidebar__label"]}>{item.label}</span>
+                  {item.closed ? (
+                    <span className={styles["sidebar__closed-stamp"]} aria-label="마감">
+                      CLOSED
+                    </span>
+                  ) : null}
                 </Link>
               );
             }

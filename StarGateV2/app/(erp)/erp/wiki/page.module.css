@@ -47,9 +47,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 8px 10px;
   color: var(--ink-1);
-  font-size: 12px;
+  font-size: 14px;
   text-decoration: none;
   transition:
     background-color 0.15s ease,
@@ -69,7 +69,7 @@
 .nav__count {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
@@ -130,7 +130,7 @@
 
 .item__title {
   color: var(--ink-0);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   letter-spacing: 0.01em;
 }
@@ -146,7 +146,7 @@
 .item__date {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.05em;
   flex-shrink: 0;
 }
@@ -189,7 +189,7 @@
 .aside__link {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.05em;
   text-decoration: none;
   transition: color 0.15s ease;
@@ -202,10 +202,10 @@
 /* Empty */
 
 .empty {
-  padding: 40px 10px;
+  padding: 42px 12px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-align: center;
 }

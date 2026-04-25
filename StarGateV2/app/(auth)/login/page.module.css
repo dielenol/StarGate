@@ -8,7 +8,11 @@
 
 .login__logo {
   display: block;
+  width: 80px;
+  height: 80px;
   margin: 0 auto 12px;
+  /* 원본이 839×697 비정사각형 → object-fit: contain 으로 왜곡 방지, 박스 내 비율 유지. */
+  object-fit: contain;
 }
 
 .login__title {

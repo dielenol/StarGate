@@ -21,7 +21,10 @@ export default async function CharactersImportPage() {
   return (
     <>
       <PageHead
-        breadcrumb="CHARACTERS / IMPORT"
+        breadcrumb={[
+          { label: "CHARACTERS", href: "/erp/characters" },
+          { label: "IMPORT" },
+        ]}
         title="캐릭터 텍스트 인입"
       />
       <ImportClient />

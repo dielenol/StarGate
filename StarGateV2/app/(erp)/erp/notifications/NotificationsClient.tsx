@@ -101,7 +101,10 @@ export default function NotificationsClient({
   return (
     <>
       <PageHead
-        breadcrumb="ERP / NOTIFICATIONS"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "NOTIFICATIONS" },
+        ]}
         title={
           <>
             알림

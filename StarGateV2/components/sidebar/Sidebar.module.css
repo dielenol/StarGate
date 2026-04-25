@@ -105,7 +105,8 @@
 .sidebar__brand-text,
 .sidebar__label,
 .sidebar__child-label,
-.sidebar__caret {
+.sidebar__caret,
+.sidebar__closed-stamp {
   opacity: 0;
   transform: translateX(-6px);
   transition:
@@ -116,9 +117,15 @@
 .sidebar:hover .sidebar__brand-text,
 .sidebar:hover .sidebar__label,
 .sidebar:hover .sidebar__child-label,
-.sidebar:hover .sidebar__caret {
+.sidebar:hover .sidebar__caret,
+.sidebar:hover .sidebar__closed-stamp {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* 마감 항목은 hover 후에도 label 이 감쇠된 상태 유지 */
+.sidebar:hover .sidebar__item--closed .sidebar__label {
+  opacity: 0.45;
 }
 
 .sidebar__nav {
@@ -155,6 +162,38 @@
   border-color: rgba(201, 168, 90, 0.72);
   background: rgba(201, 168, 90, 0.12);
   color: var(--ink-0);
+}
+
+/* ── 마감된 항목 (접근은 되지만 기능 비활성) ── */
+.sidebar__item--closed {
+  position: relative;
+}
+
+.sidebar__item--closed .sidebar__label {
+  opacity: 0.45;
+  text-decoration: line-through;
+  text-decoration-color: rgba(201, 168, 90, 0.35);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.sidebar__item--closed .sidebar__icon {
+  opacity: 0.45;
+}
+
+.sidebar__closed-stamp {
+  margin-left: auto;
+  padding: 2px 5px;
+  transform: rotate(-6deg);
+  border: 1px solid #6d2f20;
+  background: #160c08;
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  pointer-events: none;
+  flex-shrink: 0;
 }
 
 .sidebar__icon {
@@ -269,9 +308,15 @@
   .sidebar__brand-text,
   .sidebar__label,
   .sidebar__child-label,
-  .sidebar__caret {
+  .sidebar__caret,
+  .sidebar__closed-stamp {
     opacity: 1;
     transform: none;
+  }
+
+  /* 모바일 드로어에서도 마감 항목 label 은 감쇠된 상태 유지 */
+  .sidebar__item--closed .sidebar__label {
+    opacity: 0.45;
   }
 
   .sidebar__backdrop {

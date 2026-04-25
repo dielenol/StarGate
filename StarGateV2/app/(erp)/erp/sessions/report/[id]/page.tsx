@@ -51,7 +51,12 @@ export default async function SessionReportDetailPage({ params }: Props) {
   return (
     <>
       <PageHead
-        breadcrumb={`ERP / SESSIONS / REPORTS / ${reportId.slice(-6).toUpperCase()}`}
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "SESSIONS", href: "/erp/sessions" },
+          { label: "REPORTS", href: "/erp/sessions/report" },
+          { label: reportId.slice(-6).toUpperCase() },
+        ]}
         title={report.sessionTitle}
         right={
           isGmOrAbove || isAdmin ? (

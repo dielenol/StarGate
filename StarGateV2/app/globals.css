@@ -45,7 +45,70 @@
   --radius: 0px;
   --sidebar-w: 232px;
   --topbar-h: 56px;
+
+  /* ── NOVUS ORDO · Rank Colors (8단 직원 등급) ──
+     전 페이지(ERP/public/auth) 공통. 신규 코드는 marker/text 직접 사용.
+     marker = 뱃지/도트/border 같이 강한 강조용 (짙은 톤)
+     text   = 본문/라벨/아이콘 위 글자용 (밝은 톤)
+  */
+  --rank-gm-marker: #DC2626;  --rank-gm-text: #F87171;  /* 게임 마스터 */
+  --rank-v-marker:  #D4AF37;  --rank-v-text:  #E6C454;  /* VIP */
+  --rank-a-marker:  #D1D5DB;  --rank-a-text:  #F3F4F6;  /* 최종 관리자 */
+  --rank-m-marker:  #3B6EAB;  --rank-m-text:  #60A5FA;  /* 부서 관리자 */
+  --rank-h-marker:  #2A7B6B;  --rank-h-text:  #34D399;  /* 부서 특수요원 */
+  --rank-g-marker:  #B07B2E;  --rank-g-text:  #D4A24D;  /* 부서 요원 */
+  --rank-j-marker:  #64748B;  --rank-j-text:  #94A3B8;  /* 부서 평사원 */
+  --rank-u-marker:  #8B4A3A;  --rank-u-text:  #B87454;  /* 소모품 */
+
+  /* 레거시 등급 별칭 — 기존 `--lv-*` 사용처는 그대로 두고 rank text 로 리다이렉트.
+     신규 코드는 `--rank-*-marker|text` 직접 사용을 권장. */
+  --lv-GM: var(--rank-gm-text);
+  --lv-V:  var(--rank-v-text);
+  --lv-A:  var(--rank-a-text);
+  --lv-M:  var(--rank-m-text);
+  --lv-H:  var(--rank-h-text);
+  --lv-G:  var(--rank-g-text);
+  --lv-J:  var(--rank-j-text);
+  --lv-U:  var(--rank-u-text);
+
+  /* ── NOVUS ORDO · Alert Levels (지역 패닉 1~6) ──
+     전 페이지 공통. Lv6 는 검정 바탕 + 크림슨 테두리로 "스케일 외" 상태 표기.
+  */
+  --alert-1-marker: #3B82F6;  --alert-1-text: #60A5FA;  /* 인명 피해 없음 */
+  --alert-2-marker: #EAB308;  --alert-2-text: #FBBF24;  /* 소수 사상자 */
+  --alert-3-marker: #F97316;  --alert-3-text: #FB923C;  /* 다수 사상자 */
+  --alert-4-marker: #DC2626;  --alert-4-text: #EF4444;  /* 국소 재난 사고 */
+  --alert-5-marker: #9D174D;  --alert-5-text: #F472B6;  /* 대규모 재난 주의보 */
+  --alert-6-marker: #0A0A0A;  --alert-6-text: #F87171;  /* 계엄령 · MARTIAL LAW */
+  --alert-6-border: #B91C1C;  /* Lv6 전용 테두리 색 */
+
+  /* ── NOVUS ORDO · Attend Marker (세션 "내 참여" 표기 전용) ──
+     rank/alert 팔레트와 의미가 직교. 청록 계열로 info/success와 톤 구분. */
+  --attend-marker: #3E8E7C;   /* 뱃지/칩 border 강조용 */
+  --attend-text:   #6CC4AD;   /* 라벨/아이콘 위 밝은 톤 */
 }
+
+/* ── data-rank 공통 훅 ──
+   등급 배지/pill/라벨 어느 요소든 `data-rank="GM|V|A|M|H|G|J|U"` 를 주면
+   로컬 CSS 변수 `--rank-active-text`, `--rank-active-marker` 가 자동 세팅된다.
+   컴포넌트 CSS 에선 `color: var(--rank-active-text)` / `border-color: var(--rank-active-marker)` 로 바인딩.
+*/
+[data-rank="GM"] { --rank-active-text: var(--rank-gm-text); --rank-active-marker: var(--rank-gm-marker); }
+[data-rank="V"]  { --rank-active-text: var(--rank-v-text);  --rank-active-marker: var(--rank-v-marker);  }
+[data-rank="A"]  { --rank-active-text: var(--rank-a-text);  --rank-active-marker: var(--rank-a-marker);  }
+[data-rank="M"]  { --rank-active-text: var(--rank-m-text);  --rank-active-marker: var(--rank-m-marker);  }
+[data-rank="H"]  { --rank-active-text: var(--rank-h-text);  --rank-active-marker: var(--rank-h-marker);  }
+[data-rank="G"]  { --rank-active-text: var(--rank-g-text);  --rank-active-marker: var(--rank-g-marker);  }
+[data-rank="J"]  { --rank-active-text: var(--rank-j-text);  --rank-active-marker: var(--rank-j-marker);  }
+[data-rank="U"]  { --rank-active-text: var(--rank-u-text);  --rank-active-marker: var(--rank-u-marker);  }
+
+/* data-alert 공통 훅 (지역 패닉 1~6) */
+[data-alert="1"] { --alert-active-text: var(--alert-1-text); --alert-active-marker: var(--alert-1-marker); }
+[data-alert="2"] { --alert-active-text: var(--alert-2-text); --alert-active-marker: var(--alert-2-marker); }
+[data-alert="3"] { --alert-active-text: var(--alert-3-text); --alert-active-marker: var(--alert-3-marker); }
+[data-alert="4"] { --alert-active-text: var(--alert-4-text); --alert-active-marker: var(--alert-4-marker); }
+[data-alert="5"] { --alert-active-text: var(--alert-5-text); --alert-active-marker: var(--alert-5-marker); }
+[data-alert="6"] { --alert-active-text: var(--alert-6-text); --alert-active-marker: var(--alert-6-marker); }
 
 [data-density="compact"] {
   --gap: 12px;
@@ -76,4 +139,19 @@ body {
       transparent 1px 3px
     ),
     radial-gradient(circle at 10% 0%, rgba(201, 168, 90, 0.04), transparent 50%);
+}
+
+/* ERP scope: 최소 14px 강제 (scale B, 2026-04-22).
+   Public/auth/standalone 사이트는 본 override의 영향을 받지 않으며,
+   body 기본 font-size 13px + :root 토큰(xs 11/sm 14/base 16/md 18/lg 24)이 유지된다.
+   ERP 트리에서만 14px floor + scale B 적용. */
+[data-scope="erp"] {
+  --font-size-xs: 14px;
+  --font-size-badge: 14px;
+  --font-size-sm: 15px;
+  --font-size-base: 17px;
+  --font-size-md: 19px;
+  --font-size-lg: 26px;
+  --topbar-h: 64px;
+  font-size: 15px;
 }

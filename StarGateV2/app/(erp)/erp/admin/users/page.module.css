@@ -35,12 +35,12 @@
 }
 
 .error {
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: rgba(192, 106, 90, 0.1);
   border: 1px solid var(--danger);
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
@@ -54,11 +54,11 @@
 }
 
 .passwordCode {
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: var(--bg);
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 16px;
+  font-size: 17px;
   letter-spacing: 0.1em;
   user-select: all;
 }
@@ -66,7 +66,7 @@
 .passwordNote {
   margin: 0;
   color: var(--ink-2);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
@@ -109,7 +109,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 12px;
+  padding: 14px;
   background: rgba(201, 168, 90, 0.06);
   border: 1px solid var(--gold-dim);
   position: relative;
@@ -125,23 +125,23 @@
 .resetBanner__title {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }
 
 .resetBanner__target {
   color: var(--ink-1);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
 .resetBanner__code {
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: var(--bg);
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 16px;
+  font-size: 17px;
   letter-spacing: 0.1em;
   user-select: all;
 }
@@ -149,7 +149,7 @@
 .resetBanner__note {
   margin: 0;
   color: var(--ink-2);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
@@ -158,9 +158,9 @@
   border: 1px solid var(--line-strong);
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.1em;
-  padding: 3px 8px;
+  padding: 4px 10px;
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -208,7 +208,7 @@
 .mono {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
@@ -221,7 +221,7 @@
   padding: 40px 10px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-align: center;
 }
@@ -233,14 +233,14 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .table th {
-  padding: 8px 10px;
+  padding: 10px 12px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   font-weight: normal;
   letter-spacing: 0.15em;
   text-align: left;
@@ -249,7 +249,7 @@
 }
 
 .table td {
-  padding: 10px;
+  padding: 12px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
   color: var(--ink-1);
@@ -259,14 +259,36 @@
   background: var(--bg-2);
 }
 
+/* width: 1% + white-space: nowrap 조합 → 콘텐츠 최소 폭으로 수축.
+   나머지 공간은 이름/USERNAME 등 flex 컬럼으로 흘러간다.
+   이렇게 해야 "액션" 헤더와 버튼이 넓은 빈 공간으로 벌어지지 않는다. */
 .dateCol {
+  width: 1%;
   text-align: right;
   white-space: nowrap;
 }
 
 .actionCol {
-  text-align: right;
+  width: 1%;
   white-space: nowrap;
+}
+
+/* 헤더 라벨은 다른 컬럼과 동일하게 좌측 정렬, td 내부 버튼은 우측 정렬. */
+.table th.actionCol {
+  text-align: left;
+}
+
+.table td.actionCol {
+  text-align: right;
+}
+
+/* 이니셜 아바타 전용 좁은 컬럼.
+   우측 패딩을 0 으로 줄여 Seal 과 "이름" 셀의 간격을 너무 벌어지지 않게 한다. */
+.table th.sealCol,
+.table td.sealCol {
+  width: 44px;
+  padding-right: 0;
+  text-align: left;
 }
 
 /* ── Row actions ── */
@@ -280,19 +302,19 @@
 
 .roleSelect {
   width: auto;
-  min-width: 110px;
-  font-size: 10px;
+  min-width: 120px;
+  font-size: 14px;
 }
 
 .actionBtn {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
+  padding: 5px 10px;
   background: transparent;
   border: 1px solid var(--line-strong);
   color: var(--ink-1);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   white-space: nowrap;
   cursor: pointer;

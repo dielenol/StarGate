@@ -29,9 +29,9 @@
 
 .kv__row {
   display: flex;
-  padding: 8px 0;
+  padding: 10px 0;
   border-bottom: 1px dashed var(--line);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .kv__row:last-child {
@@ -43,7 +43,7 @@
   width: 40%;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }
 
@@ -64,7 +64,7 @@
 .body {
   margin: 0;
   color: var(--ink-1);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
@@ -101,7 +101,7 @@
 .list__text {
   flex: 1;
   color: var(--ink-1);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.6;
   word-break: break-word;
 }
@@ -111,6 +111,6 @@
 .mono {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }

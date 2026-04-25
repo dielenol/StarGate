@@ -18,7 +18,10 @@ export default async function ChroniclePage() {
   return (
     <>
       <PageHead
-        breadcrumb="ERP / CHRONICLE"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "CHRONICLE" },
+        ]}
         title="연대기"
         right={<Tag tone="p2">P2 · 준비중</Tag>}
       />

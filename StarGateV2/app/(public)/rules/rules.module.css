@@ -127,58 +127,60 @@
   line-height: 1.7;
 }
 
+/* 지역 패닉 등급 — globals.css 의 `--alert-*-text` 팔레트 참조. */
 .panicLevel1 {
-  color: #7dd3fc;
+  color: var(--alert-1-text);
 }
 
 .panicLevel2 {
-  color: #93c5fd;
+  color: var(--alert-2-text);
 }
 
 .panicLevel3 {
-  color: #fde68a;
+  color: var(--alert-3-text);
 }
 
 .panicLevel4 {
-  color: #fdba74;
+  color: var(--alert-4-text);
 }
 
 .panicLevel5 {
-  color: #fb7185;
+  color: var(--alert-5-text);
 }
 
 .panicLevel6 {
-  color: #f43f5e;
+  color: var(--alert-6-text);
   font-weight: 800;
 }
 
+/* 직원 등급 — globals.css 의 `--rank-*-text` 팔레트 참조. */
 .agentLevelV {
-  color: #fef08a;
+  color: var(--rank-v-text);
   font-weight: 800;
 }
 
 .agentLevelA {
-  color: #facc15;
+  color: var(--rank-a-text);
 }
 
 .agentLevelM {
-  color: #67e8f9;
+  color: var(--rank-m-text);
 }
 
 .agentLevelH {
-  color: #5eead4;
+  color: var(--rank-h-text);
 }
 
 .agentLevelG {
-  color: #a7f3d0;
+  color: var(--rank-g-text);
 }
 
 .agentLevelJ {
-  color: #cbd5e1;
+  color: var(--rank-j-text);
 }
 
 .agentLevelU {
-  color: #fda4af;
+  color: var(--rank-u-text);
 }
 
 @media (max-width: 767px) {

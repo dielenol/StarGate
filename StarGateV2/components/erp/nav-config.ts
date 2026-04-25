@@ -62,7 +62,8 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "활동",
     items: [
       { label: "세션", keywords: "sessions", icon: IconSession, href: "/erp/sessions" },
-      { label: "미션 보드", keywords: "missions", icon: IconApply, href: "/erp/missions" },
+      /* 미션 보드 — 콘텐츠 준비중 (page.tsx 는 placeholder). */
+      { label: "미션 보드", keywords: "missions", icon: IconApply, href: null },
     ],
   },
   {
@@ -72,7 +73,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "캐릭터", keywords: "characters", icon: IconCharacter, href: "/erp/characters" },
       { label: "캐릭터 인입", keywords: "character import", icon: IconCharacter, href: "/erp/admin/characters/import", minRole: "V" },
       { label: "신원조회", keywords: "identity personnel", icon: IconMembers, href: "/erp/personnel" },
-      { label: "명예의 전당", keywords: "hall of fame", icon: IconCrown, href: "/erp/hall-of-fame" },
+      /* 명예의 전당 — 콘텐츠 준비중. */
+      { label: "명예의 전당", keywords: "hall of fame", icon: IconCrown, href: null },
     ],
   },
   {
@@ -88,8 +90,9 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "자료실",
     items: [
       { label: "위키", keywords: "wiki", icon: IconWiki, href: "/erp/wiki" },
-      { label: "갤러리", keywords: "gallery", icon: IconArchive, href: "/erp/gallery" },
-      { label: "연대기", keywords: "chronicle", icon: IconWorld, href: "/erp/chronicle" },
+      /* 갤러리 · 연대기 — 콘텐츠 준비중. */
+      { label: "갤러리", keywords: "gallery", icon: IconArchive, href: null },
+      { label: "연대기", keywords: "chronicle", icon: IconWorld, href: null },
     ],
   },
   {

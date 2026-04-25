@@ -55,7 +55,11 @@ export default function WikiCreateForm() {
   return (
     <>
       <PageHead
-        breadcrumb="ERP / CODEX / NEW"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "CODEX", href: "/erp/wiki" },
+          { label: "NEW" },
+        ]}
         title="새 문서 작성"
         right={
           <Button as="a" href="/erp/wiki">

@@ -18,7 +18,10 @@ export default async function HallOfFamePage() {
   return (
     <>
       <PageHead
-        breadcrumb="ERP / HALL OF FAME"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "HALL OF FAME" },
+        ]}
         title="명예의 전당"
         right={<Tag tone="p2">P2 · 준비중</Tag>}
       />

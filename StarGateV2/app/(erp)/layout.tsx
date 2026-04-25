@@ -24,7 +24,7 @@ export default async function ERPLayout({
   return (
     <SessionWrapper session={session}>
       <QueryProvider>
-        <div className={styles.erp}>
+        <div className={styles.erp} data-scope="erp">
           <ERPHeader user={session.user} />
           <div className={styles.erp__body}>
             <ERPSidebar />

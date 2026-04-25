@@ -198,6 +198,30 @@ export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
     }, WARNING_DURATION_MS);
   }
 
+  if (agents.length === 0) {
+    return (
+      <main className={`${frameStyles["stargate-page"]} ${styles.playerPage}`}>
+        <div className={`${frameStyles.stargate} ${styles.playerShell}`}>
+          <div
+            className={`${frameStyles.stargate__frame} ${styles.playerFrame}`}
+          >
+            <div className={frameStyles.stargate__classification}>
+              CLASSIFICATION: PERSONNEL ARCHIVE // AGENT DOSSIER
+            </div>
+            <section className={styles.empty}>
+              <span className={frameStyles.stargate__est}>STANDBY</span>
+              <h1 className={styles.empty__title}>공개 에이전트 준비 중</h1>
+              <p className={styles.empty__desc}>
+                현재 열람 가능한 요원 기록이 없습니다. 운영진이 자료를 정리하는
+                대로 공개됩니다.
+              </p>
+            </section>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className={`${frameStyles["stargate-page"]} ${styles.playerPage}`}>
       <div className={`${frameStyles.stargate} ${styles.playerShell}`}>

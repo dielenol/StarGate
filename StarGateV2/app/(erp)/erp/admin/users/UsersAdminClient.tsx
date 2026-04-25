@@ -29,15 +29,26 @@ import { hasRole } from "@/lib/auth/rbac";
 
 import styles from "./page.module.css";
 
-const ROLE_TONE: Record<UserRole, "gold" | "info" | "success" | "danger" | "default"> = {
-  GM: "danger",
-  V: "gold",
-  A: "gold",
-  M: "info",
-  H: "info",
-  G: "success",
-  J: "default",
-  U: "default",
+/* 사용자 역할 배지 톤 — globals.css 의 rank 팔레트와 1:1 매핑 */
+const ROLE_TONE: Record<
+  UserRole,
+  | "rank-gm"
+  | "rank-v"
+  | "rank-a"
+  | "rank-m"
+  | "rank-h"
+  | "rank-g"
+  | "rank-j"
+  | "rank-u"
+> = {
+  GM: "rank-gm",
+  V: "rank-v",
+  A: "rank-a",
+  M: "rank-m",
+  H: "rank-h",
+  G: "rank-g",
+  J: "rank-j",
+  U: "rank-u",
 };
 
 const STATUS_TONE: Record<UserStatus, "success" | "danger" | "default"> = {
@@ -289,7 +300,11 @@ export default function UsersAdminClient({
   return (
     <>
       <PageHead
-        breadcrumb="ERP / ADMIN / USERS"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "ADMIN" },
+          { label: "USERS" },
+        ]}
         title="사용자 관리"
         right={
           <Button
@@ -471,7 +486,7 @@ export default function UsersAdminClient({
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th aria-label="이니셜" />
+                  <th className={styles.sealCol} aria-label="이니셜" />
                   <th>이름</th>
                   <th>USERNAME</th>
                   <th>역할</th>
@@ -511,7 +526,7 @@ export default function UsersAdminClient({
                       key={user._id}
                       className={isSelf ? styles.selfRow : undefined}
                     >
-                      <td>
+                      <td className={styles.sealCol}>
                         <Seal size="sm">{getInitial(user)}</Seal>
                       </td>
                       <td className={styles.strong}>{user.displayName}</td>
@@ -579,17 +594,29 @@ export default function UsersAdminClient({
                             비번 리셋
                           </button>
 
-                          {user.discordId ? (
-                            <button
-                              type="button"
-                              className={styles.actionBtn}
-                              disabled={!canActOnTarget || isRowPending}
-                              title={adminDisabledTitle}
-                              onClick={() => handleUnlinkDiscord(user)}
-                            >
-                              디코 해제
-                            </button>
-                          ) : null}
+                          {/* 디코 해제 버튼은 항상 렌더해 액션 컬럼 폭을
+                              행별로 고정. 연동 없을 때는 visibility:hidden 으로
+                              공간만 유지하고 포커스에서 제외. */}
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            disabled={
+                              !user.discordId ||
+                              !canActOnTarget ||
+                              isRowPending
+                            }
+                            aria-hidden={!user.discordId}
+                            tabIndex={user.discordId ? undefined : -1}
+                            style={
+                              user.discordId
+                                ? undefined
+                                : { visibility: "hidden" }
+                            }
+                            title={adminDisabledTitle}
+                            onClick={() => handleUnlinkDiscord(user)}
+                          >
+                            디코 해제
+                          </button>
 
                           <button
                             type="button"

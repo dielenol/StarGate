@@ -20,19 +20,19 @@
   margin: 0;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
 .import__textarea {
   width: 100%;
-  min-height: 460px;
-  padding: 12px;
+  min-height: 464px;
+  padding: 14px;
   background: var(--bg);
   color: var(--ink-0);
   border: 1px solid var(--line);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.6;
   resize: vertical;
 }
@@ -65,14 +65,14 @@
 .import__previewLabel {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 .import__previewValue {
   color: var(--ink-0);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
@@ -80,10 +80,10 @@
 
 .import__empty {
   margin: 0;
-  padding: 40px 10px;
+  padding: 42px 12px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-align: center;
 }
@@ -96,23 +96,23 @@
   cursor: pointer;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .import__raw {
   margin: 8px 0 0;
-  padding: 10px;
+  padding: 12px;
   background: var(--bg);
   border: 1px solid var(--line);
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 260px;
+  max-height: 264px;
   overflow-y: auto;
 }
 
@@ -136,18 +136,18 @@
 .import__codenameLabel {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 .import__error {
   grid-column: 1 / -1;
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: rgba(192, 106, 90, 0.1);
   border: 1px solid var(--danger);
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }

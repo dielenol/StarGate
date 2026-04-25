@@ -12,11 +12,11 @@
 }
 
 .filters__tab {
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-bottom: 2px solid transparent;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.12em;
   text-decoration: none;
   transition:
@@ -76,7 +76,7 @@
 .card__code {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }
 
@@ -94,7 +94,7 @@
   margin-top: 2px;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.05em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -117,10 +117,10 @@
 
 .card__statLabel {
   flex-shrink: 0;
-  width: 28px;
+  width: 32px;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
@@ -130,10 +130,10 @@
 
 .card__statValue {
   flex-shrink: 0;
-  width: 32px;
+  width: 36px;
   color: var(--ink-0);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.05em;
   text-align: right;
 }
@@ -152,10 +152,10 @@
 /* Empty */
 
 .empty {
-  padding: 40px 10px;
+  padding: 42px 12px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-align: center;
 }

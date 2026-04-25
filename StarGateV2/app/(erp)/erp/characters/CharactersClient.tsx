@@ -57,7 +57,10 @@ export default function CharactersClient({
   return (
     <>
       <PageHead
-        breadcrumb="ERP / CHARACTERS"
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "CHARACTERS" },
+        ]}
         title="캐릭터"
         right={
           isGMOrAbove ? (

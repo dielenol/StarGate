@@ -93,7 +93,7 @@ export default async function ERPDashboardPage() {
   return (
     <>
       <PageHead
-        breadcrumb="ERP / HOME"
+        breadcrumb={[{ label: "ERP" }, { label: "HOME" }]}
         title="대시보드"
         right={
           <>

@@ -70,7 +70,11 @@ export default async function CharacterInventoryPage({
   return (
     <>
       <PageHead
-        breadcrumb={`ERP / EQUIPMENT / ${character.codename}`}
+        breadcrumb={[
+          { label: "ERP", href: "/erp" },
+          { label: "EQUIPMENT", href: "/erp/inventory" },
+          { label: character.codename },
+        ]}
         title={character.codename}
         right={
           <Button as="a" href="/erp/inventory">
