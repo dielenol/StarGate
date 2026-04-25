@@ -1,0 +1,390 @@
+/* ===========================================================
+   NOVUS ORDO — Recruitment Closed state (/apply · /contact)
+   원본: Claude Design · "NOVUS ORDO Recruitment Closed" 핸드오프
+   StarGateV2 기존 팔레트(--gold, --ink-*, --bg*)를 재활용하고
+   closed-state 전용 색(danger border, line-gold)만 로컬로 정의.
+   =========================================================== */
+
+.frame {
+  position: relative;
+  padding: 14px;
+  border: 1px solid var(--gold-dim);
+  background: linear-gradient(180deg, #0f0d0a, #0b0a08);
+
+  /* 로컬 전용 토큰 (closed-state 한정) */
+  --cs-line-gold: #7a5f25;
+  --cs-red-dim: #6d2f20;
+  --cs-ink-4: #463e2d;
+  --cs-panel: #131210;
+}
+
+.frame::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(201, 168, 90, 0.22);
+  pointer-events: none;
+}
+
+/* ── Panel ── */
+
+.panel {
+  position: relative;
+  padding: 28px 34px 26px;
+  border: 1px solid var(--cs-red-dim);
+  background: var(--cs-panel);
+  box-shadow: inset 0 0 0 1px rgba(184, 90, 60, 0.08);
+}
+
+.panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    -12deg,
+    transparent 0 14px,
+    rgba(184, 90, 60, 0.025) 14px 15px
+  );
+}
+
+/* ── Corner stamp (모집 마감) ── */
+
+.stampWrap {
+  position: absolute;
+  top: -18px;
+  right: -22px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.stamp {
+  position: relative;
+  transform: rotate(-8deg);
+  padding: 8px 14px 6px;
+  border: 2px solid var(--danger);
+  color: var(--danger);
+  background: rgba(184, 90, 60, 0.04);
+  box-shadow: 0 0 18px rgba(184, 90, 60, 0.18);
+}
+
+.stamp::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid var(--cs-red-dim);
+}
+
+.stampInner {
+  position: relative;
+  text-align: center;
+}
+
+.stampKr {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  padding-left: 0.32em;
+}
+
+.stampEn {
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  opacity: 0.9;
+}
+
+.stampDate {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  letter-spacing: 0.25em;
+  opacity: 0.75;
+}
+
+/* ── Head ── */
+
+.head {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.eyebrow {
+  margin-bottom: 10px;
+  color: var(--gold-dim);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.3em;
+}
+
+.title {
+  margin: 0 0 16px;
+  color: var(--ink-0);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-shadow: 0 0 18px rgba(201, 168, 90, 0.15);
+}
+
+/* ── Dossier meta ── */
+
+.dossierHead {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+  max-width: 520px;
+  margin: 14px auto 16px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--cs-line-gold);
+  border-bottom: 1px solid var(--cs-line-gold);
+  text-align: left;
+}
+
+.dossierRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.dossierK {
+  color: var(--ink-3);
+}
+
+.dossierV {
+  color: var(--gold);
+  text-align: right;
+}
+
+.dossierVStatus {
+  color: var(--danger);
+}
+
+.dossierNote {
+  max-width: 480px;
+  margin: 0 auto 14px;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.8;
+  text-align: center;
+}
+
+/* ── Form (DISABLED / dim) ── */
+
+.form {
+  position: relative;
+  z-index: 1;
+  opacity: 0.55;
+  filter: saturate(0.4);
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+.fieldHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.fieldLbl {
+  color: var(--ink-3);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.fieldVoid {
+  padding: 1px 5px;
+  border: 1px solid var(--cs-red-dim);
+  color: var(--cs-red-dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+}
+
+.input {
+  position: relative;
+  min-height: 18px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  background: #0a0907;
+  color: #4a4332;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+.inputTall {
+  min-height: 70px;
+}
+
+.inputPh {
+  opacity: 0.6;
+}
+
+.inputStrike {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    -18deg,
+    transparent 0 10px,
+    rgba(201, 168, 90, 0.04) 10px 11px
+  );
+}
+
+.formFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.submitDisabled {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--cs-ink-4);
+  color: var(--cs-ink-4);
+  font-family: var(--font-body);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  cursor: not-allowed;
+}
+
+.submitDisabled::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 4px,
+    rgba(229, 223, 199, 0.03) 4px 5px
+  );
+}
+
+.submitTag {
+  padding: 1px 4px;
+  border: 1px solid var(--cs-red-dim);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.25em;
+}
+
+.closedTrace {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.closedTraceEn {
+  color: var(--cs-ink-4);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(184, 90, 60, 0.55);
+  animation: cs-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes cs-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Return button ── */
+
+.returnBox {
+  display: flex;
+  justify-content: center;
+  margin: 24px auto 10px;
+}
+
+.returnBtn {
+  position: relative;
+  padding: 14px 40px;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: var(--font-body);
+  text-align: center;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.returnBtn:hover {
+  background: rgba(201, 168, 90, 0.06);
+}
+
+.returnKr {
+  font-size: 15px;
+  letter-spacing: 0.18em;
+}
+
+.returnEn {
+  margin-top: 4px;
+  color: var(--gold-dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.28em;
+}
+
+@media (max-width: 640px) {
+  .panel {
+    padding: 24px 18px 22px;
+  }
+
+  .title {
+    font-size: 22px;
+    letter-spacing: 0.2em;
+  }
+
+  .stampWrap {
+    top: -12px;
+    right: -8px;
+  }
+
+  .stampKr {
+    font-size: 13px;
+  }
+
+  .dossierRow {
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+
+  .formFoot {
+    align-items: flex-start;
+  }
+}
