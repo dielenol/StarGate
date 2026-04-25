@@ -1,0 +1,290 @@
+/*
+ * DiffPreviewModal — 디자인 placeholder.
+ *
+ * Claude Design 후속에서 토큰/타이포/색상 정제 예정. 본 파일은:
+ *   - globals.css 의 CSS 변수만 사용 (--bg-*, --line, --gold, --ink-*, --danger 등)
+ *   - 모달 골격(overlay + dialog + header + body + footer) + 변경 행 비교 레이아웃
+ *   - 반응형(작은 뷰포트에서 좌우 비교를 세로 스택)
+ */
+
+/* ── Overlay ── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+/* ── Dialog ── */
+
+.dialog {
+  width: 100%;
+  max-width: 720px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 80px);
+}
+
+/* ── Header ── */
+
+.header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.12em;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.modeBadge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+
+.modeBadge--admin {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.modeBadge--player {
+  border-color: var(--line);
+  color: var(--ink-1);
+}
+
+.cooldown {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Body ── */
+
+.body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.empty {
+  margin: 0;
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+/* ── Diff list ── */
+
+.diffList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.row__label {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+}
+
+.row__field {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Value compare ── */
+
+.textCompare,
+.imageCompare {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+
+@media (max-width: 640px) {
+  .textCompare,
+  .imageCompare {
+    grid-template-columns: 1fr;
+  }
+}
+
+.arrow {
+  align-self: center;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .arrow {
+    display: none;
+  }
+}
+
+.valueCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  min-width: 0;
+}
+
+.valueCell--before {
+  border-color: var(--line);
+}
+
+.valueCell--after {
+  border-color: var(--gold-dim);
+}
+
+.valueCell__caption {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.valueCell__text {
+  margin: 0;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+/* ── Image compare ── */
+
+.imageCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  min-width: 0;
+}
+
+.imageCell__img {
+  width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  background: var(--bg-2);
+  display: block;
+}
+
+.imageCell__empty {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 24px 8px;
+  text-align: center;
+}
+
+/* ── Reason ── */
+
+.reasonLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+}
+
+.reasonTextarea {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  resize: vertical;
+}
+
+.reasonTextarea:focus {
+  outline: none;
+  border-color: var(--gold-dim);
+}
+
+.reasonTextarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.reasonTextarea::placeholder {
+  color: var(--ink-3);
+}
+
+/* ── Footer ── */
+
+.footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: var(--bg-1);
+}

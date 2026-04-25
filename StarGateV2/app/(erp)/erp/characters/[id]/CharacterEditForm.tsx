@@ -21,6 +21,10 @@ import Button from "@/components/ui/Button/Button";
 import Input from "@/components/ui/Input/Input";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
+import DiffPreviewModal, {
+  type DiffEntry,
+} from "./DiffPreviewModal";
+
 import styles from "./CharacterEditForm.module.css";
 
 /**
@@ -59,6 +63,100 @@ const PLAYER_EDITABLE_FIELDS = new Set<string>([
 function isPlayerEditable(fieldKey: string): boolean {
   return PLAYER_EDITABLE_FIELDS.has(fieldKey);
 }
+
+/* ── P7: client-side diff (lib/character/diff.ts 와 동일 시멘틱) ──
+   서버 round-trip 없이 form state ↔ character props 비교.
+   shared-db 의 mongodb transitive 의존을 피하려고 hardcoded 한 inline 구현.
+   변경 시 lib/character/diff.ts 도 함께 수정 (S6-1 처럼 sync 필수 위치는 아니지만
+   diff 결과가 server audit 와 의미상 일치해야 사용자 기대 부합). */
+function getPathValue(source: unknown, path: string): unknown {
+  if (source === null || source === undefined) return undefined;
+  const segments = path.split(".");
+  let cursor: unknown = source;
+  for (const seg of segments) {
+    if (cursor === null || cursor === undefined) return undefined;
+    if (typeof cursor !== "object") return undefined;
+    cursor = (cursor as Record<string, unknown>)[seg];
+  }
+  return cursor;
+}
+
+function isSemanticallyEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return a === b;
+  if (a === null || b === null) return a === b;
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+}
+
+function buildLocalDiff(
+  before: unknown,
+  after: unknown,
+  fields: Iterable<string>,
+): { field: string; before: unknown; after: unknown }[] {
+  const entries: { field: string; before: unknown; after: unknown }[] = [];
+  for (const field of fields) {
+    const beforeVal = getPathValue(before, field);
+    const afterVal = getPathValue(after, field);
+    if (!isSemanticallyEqual(beforeVal, afterVal)) {
+      entries.push({ field, before: beforeVal, after: afterVal });
+    }
+  }
+  return entries;
+}
+
+/* ── 모드별 diff 비교 대상 dot path 세트 ──
+   - player: PLAYER_EDITABLE_FIELDS 7개에 'sheet.' prefix 부착 (서버 화이트리스트와 정합)
+   - admin: ADMIN_ALLOWED_CHARACTER_FIELDS 와 동일한 dot path 집합
+     (shared-db hardcoded 미러 — 서버 truth 는 buildUpdatePatch 가 담당, 본 set 은 UI 미리보기 전용) */
+const PLAYER_DIFF_FIELDS: ReadonlyArray<string> = [
+  "sheet.quote",
+  "sheet.appearance",
+  "sheet.personality",
+  "sheet.background",
+  "sheet.gender",
+  "sheet.age",
+  "sheet.height",
+];
+
+const ADMIN_DIFF_FIELDS: ReadonlyArray<string> = [
+  "codename",
+  "role",
+  "isPublic",
+  "previewImage",
+  "ownerId",
+  "sheet.codename",
+  "sheet.name",
+  "sheet.mainImage",
+  "sheet.posterImage",
+  "sheet.quote",
+  "sheet.gender",
+  "sheet.age",
+  "sheet.height",
+  "sheet.appearance",
+  "sheet.personality",
+  "sheet.background",
+  // AGENT
+  "sheet.weight",
+  "sheet.className",
+  "sheet.hp",
+  "sheet.san",
+  "sheet.def",
+  "sheet.atk",
+  "sheet.abilityType",
+  "sheet.credit",
+  "sheet.weaponTraining",
+  "sheet.skillTraining",
+  "sheet.equipment",
+  "sheet.abilities",
+  // NPC
+  "sheet.nameEn",
+  "sheet.roleDetail",
+  "sheet.notes",
+];
 
 /* ── Default factories ── */
 
@@ -154,6 +252,18 @@ export default function CharacterEditForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /* ── P7: diff 프리뷰 모달 상태 ── */
+  /**
+   * pendingBody / pendingDiff 는 confirm 시점에 그대로 PATCH 에 투입.
+   * handleSubmit 에서 한 번 빌드 후 모달이 닫힐 때까지 보관 — confirm 시 reason 만 합쳐 전송.
+   * 모달 cancel 시 둘 다 null 로 리셋.
+   */
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [pendingDiff, setPendingDiff] = useState<DiffEntry[]>([]);
+  const [pendingBody, setPendingBody] = useState<Record<string, unknown> | null>(
+    null,
+  );
+
   /* ── Equipment helpers ── */
   function addEquipment() {
     setEquipment((prev) => [...prev, emptyEquipment()]);
@@ -188,25 +298,15 @@ export default function CharacterEditForm({
     );
   }
 
-  /* ── Submit ── */
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
-
-    /**
-     * 모드별 body 빌드.
-     * - player: PLAYER_ALLOWED_CHARACTER_FIELDS 7필드(sheet 하위)만 전송. 서버에서도
-     *   동일 화이트리스트가 적용되지만 클라이언트도 정합성 유지 (불필요 페이로드/오해 방지).
-     *   sheet 루트 키 자체를 보내지 않고 sheet 하위 필드만 dot-equivalent 객체로 전달.
-     *   서버 buildUpdatePatch 가 input.sheet?.quote 형태로 dot path를 읽기 때문에,
-     *   `sheet: { quote, ... }` 부분 객체로 보내야 한다.
-     * - admin: 기존 동작 그대로 (sheet 통째 + 최상위 메타 모두).
-     */
-    let body: Record<string, unknown>;
-
+  /**
+   * 현재 form state 로 PATCH body 를 빌드. handleSubmit 과 모달 confirm 양쪽에서 공유.
+   * 모드별 형식:
+   *  - player: sheet 부분객체 7필드만
+   *  - admin: 기존 (최상위 메타 + sheet 통째)
+   */
+  function buildBody(): Record<string, unknown> {
     if (isPlayer) {
-      body = {
+      return {
         sheet: {
           quote,
           appearance,
@@ -217,63 +317,136 @@ export default function CharacterEditForm({
           height,
         },
       };
-    } else {
-      const sheetBase = {
-        codename,
-        name,
-        mainImage,
-        posterImage,
-        quote,
-        gender,
-        age,
-        height,
-        appearance,
-        personality,
-        background,
+    }
+
+    const sheetBase = {
+      codename,
+      name,
+      mainImage,
+      posterImage,
+      quote,
+      gender,
+      age,
+      height,
+      appearance,
+      personality,
+      background,
+    };
+
+    let sheet: AgentSheet | NpcSheet;
+
+    if (character.type === "AGENT") {
+      sheet = {
+        ...sheetBase,
+        weight,
+        className,
+        hp,
+        san,
+        def,
+        atk,
+        abilityType,
+        credit: credit === "" ? "" : Number(credit) || credit,
+        weaponTraining,
+        skillTraining,
+        equipment,
+        abilities,
       };
-
-      let sheet: AgentSheet | NpcSheet;
-
-      if (character.type === "AGENT") {
-        sheet = {
-          ...sheetBase,
-          weight,
-          className,
-          hp,
-          san,
-          def,
-          atk,
-          abilityType,
-          credit: credit === "" ? "" : Number(credit) || credit,
-          weaponTraining,
-          skillTraining,
-          equipment,
-          abilities,
-        };
-      } else {
-        sheet = {
-          ...sheetBase,
-          nameEn,
-          roleDetail,
-          notes,
-        };
-      }
-
-      body = {
-        codename,
-        role,
-        previewImage,
-        isPublic,
-        ownerId: ownerId || null,
-        sheet,
+    } else {
+      sheet = {
+        ...sheetBase,
+        nameEn,
+        roleDetail,
+        notes,
       };
     }
+
+    return {
+      codename,
+      role,
+      previewImage,
+      isPublic,
+      ownerId: ownerId || null,
+      sheet,
+    };
+  }
+
+  /**
+   * 클라이언트 측 diff 계산 — 서버 round-trip 없이 form state ↔ character props 비교.
+   * isPlayer 면 7필드만, admin 이면 ADMIN_DIFF_FIELDS 전체.
+   * AGENT/NPC 무관하게 ADMIN_DIFF_FIELDS 를 모두 비교 — getPathValue 가 undefined 일 땐
+   * before/after 가 동일 undefined 라 diff 에 남지 않음 (해당 타입에 없는 필드는 자동 무시).
+   */
+  function computeFormDiff(): DiffEntry[] {
+    const fields = isPlayer ? PLAYER_DIFF_FIELDS : ADMIN_DIFF_FIELDS;
+
+    // form state 를 character 동형 구조로 재구성 — buildBody 의 결과를 그대로 사용하면
+    // player 모드에서 admin 필드(ownerId 등) 가 누락되어 비교 시 잘못 'undefined' 처리됨.
+    // 대신 character 구조와 같은 형태의 candidate 를 직접 빌드.
+    // 기존 form 은 sheet.codename 도 form codename 으로 set 하므로 동일 값 사용.
+    const sheetCandidate: Record<string, unknown> = {
+      codename,
+      name,
+      mainImage,
+      posterImage,
+      quote,
+      gender,
+      age,
+      height,
+      appearance,
+      personality,
+      background,
+    };
+
+    if (character.type === "AGENT") {
+      Object.assign(sheetCandidate, {
+        weight,
+        className,
+        hp,
+        san,
+        def,
+        atk,
+        abilityType,
+        credit: credit === "" ? "" : Number(credit) || credit,
+        weaponTraining,
+        skillTraining,
+        equipment,
+        abilities,
+      });
+    } else {
+      Object.assign(sheetCandidate, {
+        nameEn,
+        roleDetail,
+        notes,
+      });
+    }
+
+    const candidate = {
+      codename,
+      role,
+      isPublic,
+      previewImage,
+      ownerId: ownerId || null,
+      sheet: sheetCandidate,
+    };
+
+    return buildLocalDiff(character, candidate, fields);
+  }
+
+  /**
+   * 모달 confirm 시 실제 PATCH 수행. handleSubmit 에서도 fallback 으로 사용 (변경 0 케이스).
+   * reason 은 선택 — body 에 포함되어 서버 audit 로 흘러간다 (P7-T4).
+   */
+  async function performPatch(body: Record<string, unknown>, reason?: string) {
+    setSubmitting(true);
+    setError(null);
+
+    const finalBody = reason ? { ...body, reason } : body;
 
     try {
       const res = await fetch(`/api/erp/characters/${characterId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(finalBody),
       });
 
       if (!res.ok) {
@@ -287,6 +460,7 @@ export default function CharacterEditForm({
         }
         setError(data.error ?? "저장에 실패했습니다.");
         setSubmitting(false);
+        // 모달은 닫지 않음 — 사용자가 메시지 확인 후 닫거나 재시도
         return;
       }
 
@@ -297,11 +471,47 @@ export default function CharacterEditForm({
         });
       }
 
+      // 성공 — 모달 닫고 상위 콜백 호출
+      setPreviewOpen(false);
+      setPendingDiff([]);
+      setPendingBody(null);
+      setSubmitting(false);
       onSaved();
     } catch {
       setError("네트워크 오류가 발생했습니다.");
       setSubmitting(false);
     }
+  }
+
+  /* ── Submit ── */
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    setError(null);
+
+    const diff = computeFormDiff();
+    if (diff.length === 0) {
+      // 변경 없음 — 모달 띄우지 않고 안내만
+      setError("변경 사항이 없습니다.");
+      return;
+    }
+
+    // diff 가 있으면 모달 열기. 실제 PATCH 는 confirm 시 performPatch.
+    setPendingDiff(diff);
+    setPendingBody(buildBody());
+    setPreviewOpen(true);
+  }
+
+  function handlePreviewConfirm(reason?: string) {
+    if (!pendingBody) return;
+    void performPatch(pendingBody, reason);
+  }
+
+  function handlePreviewCancel() {
+    if (submitting) return; // PATCH 진행 중엔 닫지 못함 — 응답 도착 후 자동 처리
+    setPreviewOpen(false);
+    setPendingDiff([]);
+    setPendingBody(null);
   }
 
   return (
@@ -833,6 +1043,27 @@ export default function CharacterEditForm({
           취소
         </Button>
       </div>
+
+      {/* ── P7: diff 프리뷰 모달 ── */}
+      {previewOpen ? (
+        <DiffPreviewModal
+          diff={pendingDiff}
+          mode={isPlayer ? "player" : "admin"}
+          cooldown={
+            isPlayer && quotaData && quotaData.mode === "player"
+              ? {
+                  used: quotaData.used,
+                  remaining: quotaData.remaining,
+                  maxCount: quotaData.maxCount,
+                  windowHours: quotaData.windowHours,
+                }
+              : undefined
+          }
+          isSubmitting={submitting}
+          onConfirm={handlePreviewConfirm}
+          onCancel={handlePreviewCancel}
+        />
+      ) : null}
     </form>
   );
 }

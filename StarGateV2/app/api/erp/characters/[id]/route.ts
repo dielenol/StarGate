@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 
 import {
   ADMIN_ALLOWED_CHARACTER_FIELDS,
@@ -17,6 +17,7 @@ import {
   deleteCharacter,
 } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
+import { notifyCharacterEdit } from "@/lib/discord";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -117,6 +118,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   // 화이트리스트는 shared-db buildUpdatePatch 가 dot path 기준으로 안전 추출.
   const body = (await request.json()) as Record<string, unknown>;
 
+  // P7 — 변경 사유 (선택). reason 은 update payload 가 아니라 audit/webhook 메타데이터.
+  // 화이트리스트가 `reason` 을 포함하지 않으므로 buildUpdatePatch 단계에서 자동 drop —
+  // 그래도 의미적 경계를 명확히 하려고 여기서 분리해 audit 변수에 보관.
+  const reason =
+    typeof body.reason === "string" ? body.reason.trim() || undefined : undefined;
+
   try {
     const updated = await updateCharacter(id, body, { allowedFields });
     if (!updated) {
@@ -130,15 +137,19 @@ export async function PATCH(request: Request, context: RouteContext) {
      * Audit 기록 (P6) — update 가 성공한 후 best-effort 로 changes log 를 남긴다.
      *
      * - 트랜잭션 미사용 정책이라 audit insert 실패가 사용자 응답에 영향을 주지 않도록
-     *   try/catch 로 격리. 실패는 console.warn 만 기록 (P7 에서 alert/webhook 도입 시 강화).
+     *   try/catch 로 격리. 실패는 console.warn 만 기록.
      * - diff 가 비어 있으면 (예: 동일값 재전송) insert 자체를 생략 — 노이즈 방지.
      * - actorIsOwner 는 ownerId 직접 비교. session.user.id 가 빈 문자열일 가능성은
      *   canEditCharacter 가 unauthenticated 로 차단하므로 여기엔 도달하지 않음.
+     *
+     * P7: audit 성공 시 GM 채널 디스코드 웹훅 전송. `after()` 로 응답 후 처리 —
+     *   사용자 응답 시간에 영향 0. 웹훅 실패도 응답에 영향 X (notifyCharacterEdit
+     *   내부에서 swallow + console.warn).
      */
     try {
-      const after = await findCharacterById(id);
-      if (after) {
-        const changes = computeCharacterDiff(before, after, allowedFields);
+      const updatedDoc = await findCharacterById(id);
+      if (updatedDoc) {
+        const changes = computeCharacterDiff(before, updatedDoc, allowedFields);
         if (changes.length > 0) {
           await insertChangeLog({
             characterId: new ObjectId(id),
@@ -147,6 +158,42 @@ export async function PATCH(request: Request, context: RouteContext) {
             actorIsOwner: before.ownerId === session.user.id,
             source: decision.mode === "admin" ? "admin" : "player",
             changes,
+            ...(reason ? { reason } : {}),
+          });
+
+          // P7 — 디스코드 GM 채널 알림 (fire-and-forget via Next.js after()).
+          // session.user.displayName 가 비어 있으면 username 으로 fallback.
+          // displayName/username 모두 없으면 actorId 의 첫 6자로 anonymize 표기.
+          const displayName =
+            session.user.displayName ||
+            session.user.username ||
+            `user-${session.user.id.slice(0, 6)}`;
+
+          after(async () => {
+            try {
+              await notifyCharacterEdit({
+                character: {
+                  id,
+                  codename: before.codename,
+                  name: before.sheet.name,
+                },
+                actor: {
+                  id: session.user.id,
+                  displayName,
+                  role: session.user.role,
+                },
+                source: decision.mode === "admin" ? "admin" : "player",
+                actorIsOwner: before.ownerId === session.user.id,
+                changes,
+                reason,
+                timestamp: new Date(),
+              });
+            } catch (webhookErr) {
+              console.warn(
+                `[characters PATCH] webhook scheduling failed user=${session.user.id} character=${id}:`,
+                webhookErr,
+              );
+            }
           });
         }
       }
