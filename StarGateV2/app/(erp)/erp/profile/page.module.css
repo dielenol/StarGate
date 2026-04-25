@@ -1,154 +1,198 @@
-.layout {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: var(--gap);
-}
+/*
+ * 내 프로필(`/erp/profile`) 레이아웃 — 디자인은 Claude Design 후속.
+ * 본 파일은 구조 슬롯/최소 레이아웃만 정의 (placeholder).
+ */
 
-.main {
+.layout {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
   min-width: 0;
 }
 
-.side {
-  display: flex;
-  flex-direction: column;
+/* ── 히어로 ── */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   gap: var(--gap);
+  align-items: stretch;
 }
 
 @media (max-width: 900px) {
-  .layout {
+  .hero {
     grid-template-columns: 1fr;
   }
 }
 
-.sideHeader {
+.hero__poster {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+}
+
+.hero__posterImage {
+  object-fit: cover;
+}
+
+.hero__posterFallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero__meta {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
 }
 
-.sideHeader__seal {
-  margin-bottom: 10px;
+.hero__codename {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.15em;
 }
 
-.sideHeader__name {
+.hero__name {
   margin: 0;
   color: var(--ink-0);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 500;
   letter-spacing: 0.02em;
 }
 
-.sideHeader__role {
-  color: var(--gold);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.15em;
-}
-
-.sideHeader__sub {
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.1em;
-}
-
-.sideTags {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.kv {
-  margin: 0;
-}
-
-.kv__row {
-  display: flex;
-  padding: 7px 0;
-  border-bottom: 1px dashed var(--line);
-  font-size: 14px;
-}
-
-.kv__row:last-child {
-  border-bottom: none;
-}
-
-.kv__row dt {
-  margin: 0;
-  width: 38%;
+.hero__sub {
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 14px;
-  letter-spacing: 0.1em;
-}
-
-.kv__row dd {
-  flex: 1;
-  margin: 0;
-  color: var(--ink-0);
-  word-break: break-all;
-}
-
-.mono {
-  font-family: var(--font-mono);
-  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
-.gold {
-  color: var(--gold);
-}
-
-.discord {
+.hero__tags {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
 }
 
-.discord__avatar {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border: 1px solid var(--gold-dim);
+.hero__cta {
+  align-self: flex-start;
+  margin-top: 12px;
 }
 
-.discord__avatarFallback {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  background: #5865f2;
-  border: 1px solid var(--gold-dim);
-}
-
-.discord__info {
-  flex: 1;
-  min-width: 0;
-}
-
-.discord__name {
-  color: var(--ink-0);
-  font-weight: 500;
-  font-size: 15px;
-}
-
-.discord__handle {
-  margin-top: 2px;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.05em;
-}
-
-.discord__empty {
+.hero__empty {
+  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
+  padding: 24px 0;
+}
+
+.hero__emptyTitle {
+  color: var(--ink-0);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.hero__emptySub {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── 섹션 공통 ── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section__title {
+  margin: 0;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+}
+
+/* ── 캐릭터 카드 그리드 ── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--gap);
+}
+
+.cardLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+}
+
+.card__thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card__thumbImage {
+  object-fit: cover;
+}
+
+.card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.card__codename {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+}
+
+.card__name {
+  color: var(--ink-0);
+  font-size: 15px;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.card__role {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+/* ── shortcuts ── */
+
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

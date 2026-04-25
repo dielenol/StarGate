@@ -6,7 +6,7 @@ import Button from "@/components/ui/Button/Button";
 
 export default function DiscordLinkButton() {
   function handleClick() {
-    signIn("discord", { callbackUrl: "/erp/profile" });
+    signIn("discord", { callbackUrl: "/erp/account" });
   }
 
   return (

@@ -53,7 +53,8 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "내 정보",
     items: [
       { label: "대시보드", keywords: "dashboard", icon: IconDashboard, href: "/erp" },
-      { label: "프로필", keywords: "profile", icon: IconProfile, href: "/erp/profile" },
+      { label: "프로필", keywords: "profile character", icon: IconProfile, href: "/erp/profile" },
+      { label: "계정", keywords: "account password discord settings", icon: IconSystem, href: "/erp/account" },
       { label: "알림", keywords: "notifications", icon: IconNotification, href: "/erp/notifications" },
     ],
   },
@@ -100,7 +101,8 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "관리 · GM 전용",
     minRole: "GM",
     items: [
-      { label: "관리자", keywords: "admin", icon: IconSystem, href: null },
+      /* 관리자 대시보드 — 콘텐츠 준비중. 계정 메뉴(IconSystem)와 시각 충돌 회피 위해 IconCrown 사용. */
+      { label: "관리자", keywords: "admin", icon: IconCrown, href: null },
       { label: "사용자 관리", keywords: "users admin", icon: IconUserAdmin, href: "/erp/admin/users" },
     ],
   },

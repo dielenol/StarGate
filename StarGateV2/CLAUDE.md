@@ -34,7 +34,8 @@ app/
 │   ├── credits/               # 크레딧/재화
 │   ├── inventory/             # 장비/인벤토리
 │   ├── notifications/         # 알림
-│   ├── profile/               # 프로필/PW 변경
+│   ├── profile/               # 내 캐릭터 대문 (대표 포스터 + 보유 캐릭터 카드)
+│   ├── account/               # 시스템 계정 설정 (Discord 연동, PW 변경)
 │   ├── sessions/              # 세션 캘린더 + 리포트
 │   ├── wiki/                  # 월드빌딩 위키
 │   ├── personnel/[id]         # 신원조회 Dossier
