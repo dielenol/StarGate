@@ -13,11 +13,6 @@ import {
   useCharacterChangeLogs,
 } from "@/hooks/queries/useCharacterChangeLogs";
 
-import Box from "@/components/ui/Box/Box";
-import Button from "@/components/ui/Button/Button";
-import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
-import Tag from "@/components/ui/Tag/Tag";
-
 import styles from "./ChangeLogsPanel.module.css";
 
 const PAGE_LIMIT = 20;
@@ -42,14 +37,15 @@ interface Props {
  * 그대로 노출 (기능 영향 X — 라벨만 저하).
  */
 const FIELD_LABELS: Record<string, string> = {
-  codename: "CODENAME",
-  role: "ROLE",
+  codename: "코드네임",
+  role: "역할",
   isPublic: "공개 여부",
   ownerId: "소유자 ID",
-  previewImage: "프리뷰 이미지 URL",
+  previewImage: "프리뷰 이미지",
+  "sheet.codename": "코드네임",
   "sheet.name": "이름",
-  "sheet.mainImage": "메인 이미지 URL",
-  "sheet.posterImage": "포스터 이미지 URL",
+  "sheet.mainImage": "메인 이미지",
+  "sheet.posterImage": "포스터 이미지",
   "sheet.quote": "인용문",
   "sheet.gender": "성별",
   "sheet.age": "나이",
@@ -79,8 +75,8 @@ function labelFor(field: string): string {
 }
 
 function stringifyValue(value: unknown): string {
-  if (value === null || value === undefined) return "(비어 있음)";
-  if (typeof value === "string") return value || "(빈 문자열)";
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") {
     return String(value);
   }
@@ -92,6 +88,12 @@ function stringifyValue(value: unknown): string {
   }
 }
 
+function isEmptyValue(value: unknown): boolean {
+  if (value === null || value === undefined) return true;
+  if (typeof value === "string") return value.length === 0;
+  return false;
+}
+
 const KST_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
   year: "numeric",
@@ -99,7 +101,6 @@ const KST_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   day: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
-  second: "2-digit",
   hour12: false,
 });
 
@@ -160,8 +161,7 @@ export default function ChangeLogsPanel({ characterId, mode }: Props) {
 
       // 이력만 invalidate — revert 자체가 새 row 추가 + 원본 row 의 revertedAt 표시.
       // 캐릭터 상세는 server component(/erp/characters/[id]/page.tsx)라 client query
-      // 캐시가 없으므로 router.refresh() 로 서버 재요청. 목록(characterKeys.all)은
-      // 시트값 변경에 영향 없으므로 invalidate 생략 — 다음 자연 fetch 에 따름.
+      // 캐시가 없으므로 router.refresh() 로 서버 재요청.
       await queryClient.invalidateQueries({
         queryKey: characterChangeLogsKeys.all,
       });
@@ -173,11 +173,18 @@ export default function ChangeLogsPanel({ characterId, mode }: Props) {
     }
   }
 
+  const totalPages = data
+    ? data.hasMore
+      ? page + 2
+      : page + 1
+    : page + 1;
+
   return (
-    <Box>
-      <PanelTitle right={<span className={styles.headerHint}>AUDIT</span>}>
-        변경 이력
-      </PanelTitle>
+    <div className={styles.box}>
+      <header className={styles.header}>
+        <h3 className={styles.header__title}>변경 이력</h3>
+        <span className={styles.headerHint}>AUDIT</span>
+      </header>
 
       {revertError ? (
         <div className={styles.errorBox} role="alert">
@@ -186,10 +193,14 @@ export default function ChangeLogsPanel({ characterId, mode }: Props) {
       ) : null}
 
       {isLoading ? (
-        <div className={styles.empty}>로딩 중...</div>
+        <div className={`${styles.empty} ${styles["empty--loading"]}`}>
+          로딩 중...
+        </div>
       ) : isError ? (
         <div className={styles.empty}>
-          {error instanceof Error ? error.message : "이력을 불러올 수 없습니다."}
+          {error instanceof Error
+            ? error.message
+            : "이력을 불러올 수 없습니다."}
         </div>
       ) : !data || data.items.length === 0 ? (
         <div className={styles.empty}>기록된 변경 이력이 없습니다.</div>
@@ -211,31 +222,32 @@ export default function ChangeLogsPanel({ characterId, mode }: Props) {
         </ul>
       )}
 
-      {data ? (
+      {data && data.items.length > 0 ? (
         <div className={styles.pager}>
-          <Button
+          <button
             type="button"
-            size="sm"
+            className={`${styles.pagerBtn} ${styles["pagerBtn--prev"]}`}
             disabled={page === 0}
             onClick={() => setPage((p) => Math.max(0, p - 1))}
           >
-            이전
-          </Button>
+            ← PREV
+          </button>
           <span className={styles.pagerLabel}>
-            페이지 {page + 1}
-            {data.hasMore ? "" : " (마지막)"}
+            <b>{page + 1}</b>
+            <span className={styles.pagerLabel__sep}>/</span>
+            {totalPages}
           </span>
-          <Button
+          <button
             type="button"
-            size="sm"
+            className={`${styles.pagerBtn} ${styles["pagerBtn--next"]}`}
             disabled={!data.hasMore}
             onClick={() => setPage((p) => p + 1)}
           >
-            다음
-          </Button>
+            NEXT →
+          </button>
         </div>
       ) : null}
-    </Box>
+    </div>
   );
 }
 
@@ -260,11 +272,18 @@ function LogRow({
 }: RowProps) {
   const actorLabel = log.actorDisplayName ?? log.actorUsername ?? log.actorId;
   const isReverted = Boolean(log.revertedAt);
+  const canRevert = showRevertButton && log.revertable && !isReverted;
+
+  // actor role 라벨 — owner 면 OWNER 접두, 그 외 actorRole
+  const actorRoleLabel = log.actorIsOwner
+    ? `/ OWNER · ${log.actorRole}`
+    : `/ ${log.actorRole}`;
 
   return (
     <li
       className={[
         styles.row,
+        expanded ? styles["row--expanded"] : "",
         isReverted ? styles["row--reverted"] : "",
       ]
         .filter(Boolean)
@@ -272,39 +291,52 @@ function LogRow({
     >
       <div className={styles.row__head}>
         <div className={styles.row__meta}>
-          <span className={styles.row__time}>{formatKst(log.createdAt)}</span>
-          <span className={styles.row__actor}>{actorLabel}</span>
-          <Tag tone={log.actorRole === "GM" ? "rank-gm" : "default"}>
-            {log.actorRole}
-          </Tag>
-          <Tag tone={log.source === "admin" ? "gold" : "info"}>
+          <span className={styles.row__time}>
+            {formatKst(log.createdAt)}
+            <span className={styles.row__time__kst}>KST</span>
+          </span>
+          <span className={styles.row__actor}>
+            {actorLabel}
+            <span className={styles.row__actor__role}>{actorRoleLabel}</span>
+          </span>
+          <span
+            className={`${styles.sourceBadge} ${
+              log.source === "admin"
+                ? styles["sourceBadge--admin"]
+                : styles["sourceBadge--player"]
+            }`}
+          >
             {log.source === "admin" ? "ADMIN" : "PLAYER"}
-          </Tag>
-          {log.actorIsOwner ? <Tag tone="default">OWNER</Tag> : null}
-          {isReverted ? <Tag tone="danger">REVERTED</Tag> : null}
+          </span>
+          {isReverted ? (
+            <span className={styles.row__revertedBadge}>REVERTED</span>
+          ) : null}
         </div>
         <div className={styles.row__actions}>
           <span className={styles.row__count}>
-            {log.changes.length}개 필드 변경
+            <b>{log.changes.length}</b>개 필드 변경
           </span>
-          <Button
+          <button
             type="button"
-            size="sm"
+            className={styles.expandBtn}
             onClick={onToggle}
             aria-expanded={expanded}
           >
             {expanded ? "접기" : "펼치기"}
-          </Button>
-          {showRevertButton ? (
-            <Button
+            <span className={styles.expandBtn__caret} aria-hidden>
+              ▾
+            </span>
+          </button>
+          {canRevert ? (
+            <button
               type="button"
-              size="sm"
-              variant="primary"
+              className={styles.revertBtn}
               onClick={onRevert}
-              disabled={!log.revertable || isReverting}
+              disabled={isReverting}
+              aria-label={`로그 ${log._id} 되돌리기`}
             >
-              {isReverting ? "되돌리는 중..." : "되돌리기"}
-            </Button>
+              {isReverting ? "REVERTING…" : "REVERT"}
+            </button>
           ) : null}
         </div>
       </div>
@@ -318,39 +350,78 @@ function LogRow({
 
       {isReverted ? (
         <div className={styles.row__revertedNote}>
-          되돌림 ·{" "}
-          {log.revertedByDisplayName ?? log.revertedBy ?? "(unknown)"} ·{" "}
-          {log.revertedAt ? formatKst(log.revertedAt) : ""}
+          REVERTED ·{" "}
+          <b>
+            {log.revertedByDisplayName ?? log.revertedBy ?? "(unknown)"}
+          </b>
+          {log.revertedAt ? ` · ${formatKst(log.revertedAt)} KST` : ""}
         </div>
       ) : null}
 
       {expanded ? (
         <ul className={styles.diffList}>
           {log.changes.map((change, idx) => (
-            <li key={`${change.field}-${idx}`} className={styles.diff}>
-              <div className={styles.diff__head}>
-                <span className={styles.diff__label}>
-                  {labelFor(change.field)}
-                </span>
-                <span className={styles.diff__field} aria-hidden="true">
-                  {change.field}
-                </span>
-              </div>
-              <div className={styles.diff__body}>
-                <pre className={styles["diff__cell--before"]}>
-                  {stringifyValue(change.before)}
-                </pre>
-                <span className={styles.diff__arrow} aria-hidden="true">
-                  →
-                </span>
-                <pre className={styles["diff__cell--after"]}>
-                  {stringifyValue(change.after)}
-                </pre>
-              </div>
-            </li>
+            <DiffItem key={`${change.field}-${idx}`} change={change} index={idx + 1} />
           ))}
         </ul>
       ) : null}
+    </li>
+  );
+}
+
+function DiffItem({
+  change,
+  index,
+}: {
+  change: { field: string; before: unknown; after: unknown };
+  index: number;
+}) {
+  const beforeEmpty = isEmptyValue(change.before);
+  const afterEmpty = isEmptyValue(change.after);
+  const beforeText = beforeEmpty ? "(비어 있음)" : stringifyValue(change.before);
+  const afterText = afterEmpty ? "(비어 있음)" : stringifyValue(change.after);
+  const indexStr = String(index).padStart(2, "0");
+
+  return (
+    <li className={styles.diff}>
+      <div className={styles.diff__head}>
+        <div>
+          <span className={styles.diff__index}>{indexStr}</span>
+          <span className={styles.diff__label}>{labelFor(change.field)}</span>
+        </div>
+        <span className={styles.diff__field} aria-hidden="true">
+          {change.field}
+        </span>
+      </div>
+      <div className={styles.diff__body}>
+        <pre
+          className={[
+            styles.diff__cell,
+            styles["diff__cell--before"],
+            beforeEmpty ? styles["diff__cell--empty"] : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <span className={styles.diff__cell__tag}>BEFORE</span>
+          {beforeText}
+        </pre>
+        <span className={styles.diff__arrow} aria-hidden="true">
+          →
+        </span>
+        <pre
+          className={[
+            styles.diff__cell,
+            styles["diff__cell--after"],
+            afterEmpty ? styles["diff__cell--empty"] : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <span className={styles.diff__cell__tag}>AFTER</span>
+          {afterText}
+        </pre>
+      </div>
     </li>
   );
 }
