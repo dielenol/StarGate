@@ -179,6 +179,17 @@ export default function CharacterDetailClient({
         type={character.type}
         role={character.role}
         agentLevel={character.agentLevel}
+        factionCode={
+          character.type === "NPC" ? character.factionCode : undefined
+        }
+        department={
+          character.type === "NPC"
+            ? character.institutionCode ?? character.department
+            : character.department
+        }
+        gender={character.sheet.gender}
+        age={character.sheet.age}
+        height={character.sheet.height}
       />
 
       <div className={styles.layout}>

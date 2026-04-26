@@ -1,99 +1,297 @@
 /*
- * 캐릭터 상세 상단 와이드 히어로 — 디자인은 Claude Design 후속.
- * 본 파일은 구조 슬롯/최소 레이아웃만 정의 (placeholder).
- * 색상/스페이싱은 globals.css 의 CSS 변수만 참조 (하드코딩 금지).
+ * 캐릭터 상세 상단 히어로 — Tower 레이아웃 (Claude Design 슬롯 3, 1단계)
+ *
+ * - 좌측 큰 portrait 3:4 (코너 틱, gradient overlay 하단, caption block, meta 라인)
+ * - 우측 사이드 rail: LOGO 카드 (faction logo + AFFILIATION + DEPT) + tags
+ * - vitals/agent details/quote 등은 1단계 범위 외 (CharacterDetailClient 시트 영역 유지)
+ *
+ * 색/스페이싱은 globals.css 토큰만 사용. (rgba 글로우는 gold(#c9a14a) 기준 inline.)
  */
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
-  gap: var(--gap);
-  align-items: stretch;
+  grid-template-columns: minmax(280px, 1.35fr) minmax(0, 1fr);
+  gap: 18px;
   margin-bottom: var(--gap);
+  container-type: inline-size;
+  container-name: poster-hero;
 }
 
-@media (max-width: 900px) {
+@container poster-hero (max-width: 760px) {
   .hero {
     grid-template-columns: 1fr;
+    gap: 14px;
   }
 }
 
-/* ── 좌측 와이드 슬롯 (poster | mainImage fallback | seal placeholder) ── */
+/* ────────────────────────────────────────────────────────────
+   좌측 portrait
+   ──────────────────────────────────────────────────────────── */
 
-.hero__slot {
+.hero__poster {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   background: var(--bg-2);
-  border: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 1px solid var(--gold-dim);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 161, 74, 0.15),
+    0 0 24px rgba(0, 0, 0, 0.6);
+  isolation: isolate;
 }
 
-.hero__slotImage {
+.hero__posterImage {
+  object-fit: cover;
+  z-index: 0;
+}
+.hero__posterImage--portrait {
   object-fit: cover;
 }
 
-/* mainImage fallback — 세로 초상화를 와이드 슬롯에 풀블리드. blur 백드롭은 후속 디자인 단계에서 추가 */
-.hero__slotImage--portrait {
-  object-fit: cover;
+/* corner ticks (군사 차트 톤) */
+.hero__corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--gold);
+  z-index: 3;
+  pointer-events: none;
+}
+.hero__corner--tl {
+  top: 8px;
+  left: 8px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.hero__corner--tr {
+  top: 8px;
+  right: 8px;
+  border-left: 0;
+  border-bottom: 0;
+}
+.hero__corner--bl {
+  bottom: 8px;
+  left: 8px;
+  border-right: 0;
+  border-top: 0;
+}
+.hero__corner--br {
+  bottom: 8px;
+  right: 8px;
+  border-left: 0;
+  border-top: 0;
 }
 
-.hero__slotEmpty {
+/* gradient overlay 하단 — 캡션 가독성 보강 */
+.hero__gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 45%,
+    rgba(0, 0, 0, 0.7) 75%,
+    rgba(0, 0, 0, 0.92) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* portrait empty (poster/main 둘 다 없을 때) */
+.hero__posterEmpty {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 24px;
-  text-align: center;
+  justify-content: center;
+  gap: 12px;
+  background:
+    radial-gradient(
+      ellipse at 50% 25%,
+      rgba(42, 35, 22, 0.4) 0%,
+      var(--bg-2) 60%
+    ),
+    repeating-linear-gradient(
+      135deg,
+      rgba(201, 161, 74, 0.04) 0 4px,
+      transparent 4px 12px
+    );
 }
 
-.hero__slotEmptyName {
+.hero__posterEmptyName {
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 13px;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.18em;
 }
 
-/* ── 우측 메타 ── */
-
-.hero__meta {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  min-width: 0;
-  padding: 4px 0;
+/* caption block */
+.hero__caption {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 52px;
+  z-index: 2;
+  pointer-events: none;
 }
 
-.hero__codename {
-  color: var(--gold);
+.hero__captionCode {
   font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 0.15em;
+  font-size: 11px;
+  letter-spacing: 0.36em;
+  color: var(--gold);
 }
 
-.hero__name {
-  margin: 0;
+.hero__captionName {
+  margin: 6px 0 4px;
   color: var(--ink-0);
   font-size: 28px;
   font-weight: 500;
-  letter-spacing: 0.02em;
-  word-break: break-word;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.85);
+  word-break: keep-all;
+  line-height: 1.2;
 }
 
-.hero__role {
-  color: var(--ink-2);
+.hero__captionAlias {
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.05em;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--ink-2);
 }
 
+/* meta line — gender · age · height */
+.hero__captionMeta {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--ink-2);
+  border-top: 1px solid rgba(201, 161, 74, 0.25);
+  padding-top: 10px;
+  pointer-events: none;
+}
+.hero__captionMetaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+.hero__captionMetaSep {
+  color: var(--ink-3);
+}
+
+@container poster-hero (max-width: 760px) {
+  .hero__caption {
+    left: 16px;
+    right: 16px;
+    bottom: 48px;
+  }
+  .hero__captionName {
+    font-size: 22px;
+    letter-spacing: 0.04em;
+  }
+  .hero__captionMeta {
+    left: 16px;
+    right: 16px;
+    bottom: 14px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   우측 side rail
+   ──────────────────────────────────────────────────────────── */
+
+.hero__side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* logo card — gold border + 더블 라인 */
+.hero__logoCard {
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--gold-dim);
+  background: var(--bg-2);
+  padding: 14px;
+  position: relative;
+}
+.hero__logoCard::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(201, 161, 74, 0.12);
+  pointer-events: none;
+}
+
+.hero__logoSlot {
+  position: relative;
+  width: 86px;
+  height: 86px;
+  border: 1px solid var(--gold-dim);
+  display: grid;
+  place-items: center;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(201, 161, 74, 0.04) 0 6px,
+      transparent 6px 12px
+    ),
+    var(--bg-1);
+  overflow: hidden;
+}
+
+.hero__logoSlotImage {
+  object-fit: contain;
+  padding: 8px;
+}
+
+.hero__logoMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hero__logoK {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--ink-3);
+}
+.hero__logoK + .hero__logoK {
+  margin-top: 8px;
+}
+
+.hero__logoV {
+  font-size: 13px;
+  color: var(--ink-0);
+  letter-spacing: 0.08em;
+  word-break: keep-all;
+}
+.hero__logoV--dim {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+/* tags row (type / agentLevel) */
 .hero__tags {
   display: flex;
-  gap: 6px;
   flex-wrap: wrap;
-  margin-top: 4px;
+  gap: 6px;
 }
