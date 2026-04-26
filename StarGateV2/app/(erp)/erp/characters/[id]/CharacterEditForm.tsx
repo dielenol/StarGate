@@ -16,11 +16,6 @@ import {
   useCharacterEditQuota,
 } from "@/hooks/queries/useCharacterEditQuota";
 
-import Box from "@/components/ui/Box/Box";
-import Button from "@/components/ui/Button/Button";
-import Input from "@/components/ui/Input/Input";
-import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
-
 import DiffPreviewModal, {
   type DiffEntry,
 } from "./DiffPreviewModal";
@@ -526,132 +521,188 @@ export default function CharacterEditForm({
           .join(" ")}
         role="status"
       >
-        {isPlayer
-          ? "플레이어 편집 모드 — 서사 필드만 수정 가능 (능력치·이미지 등은 GM 문의)"
-          : "관리자 편집 모드 — 모든 필드 수정 가능"}
-        {isPlayer && quotaData && quotaData.mode === "player" ? (
-          <span className={styles.quota}>
-            {" · "}
-            최근 {quotaData.windowHours}시간 이내 편집 {quotaData.used}/
-            {quotaData.maxCount}
-            {quotaData.remaining > 0
-              ? ` (남은 ${quotaData.remaining}회)`
-              : ` (가장 이른 편집이 ${new Date(quotaData.resetAt).toLocaleString("ko-KR")} 경에 만료되어야 회복)`}
+        <div className={styles.modeBanner__eyebrow}>
+          FORM-04 · CHARACTER REVISION
+        </div>
+        <div className={styles.modeBanner__row}>
+          <div className={styles.modeBanner__text}>
+            <b>{isPlayer ? "플레이어 편집 모드" : "관리자 편집 모드"}</b>
+            {isPlayer
+              ? "서사 필드만 수정 가능합니다 (능력치 · 이미지는 GM 문의)."
+              : "모든 필드를 수정할 수 있습니다."}
+          </div>
+          <span
+            className={`${styles.modeBadge} ${
+              isPlayer ? styles["modeBadge--player"] : styles["modeBadge--admin"]
+            }`}
+          >
+            {isPlayer ? "PLAYER" : "ADMIN"}
           </span>
+        </div>
+        {isPlayer && quotaData && quotaData.mode === "player" ? (
+          <div
+            className={styles.quota}
+            aria-label={`최근 ${quotaData.windowHours}시간 편집 ${quotaData.used} / ${quotaData.maxCount}`}
+          >
+            최근 {quotaData.windowHours}h 편집{" "}
+            <span className={styles.quota__num}>{quotaData.used}</span>
+            <span className={styles.quota__sep}>/</span>
+            <span className={styles.quota__total}>{quotaData.maxCount}</span>
+            <span className={styles.quota__bar} aria-hidden>
+              <span
+                className={styles.quota__barFill}
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.round((quotaData.used / quotaData.maxCount) * 100),
+                  )}%`,
+                }}
+              />
+            </span>
+            {quotaData.remaining > 0 ? (
+              <span className={styles.quota__note}>
+                (남은 {quotaData.remaining}회)
+              </span>
+            ) : (
+              <span className={styles.quota__note}>
+                (가장 이른 편집이{" "}
+                {new Date(quotaData.resetAt).toLocaleString("ko-KR")} 경에
+                만료되어야 회복)
+              </span>
+            )}
+          </div>
         ) : null}
       </div>
 
       {/* ── Common Fields ── */}
-      <Box className={styles.form__box}>
-        <PanelTitle>BASIC INFO</PanelTitle>
-        <div className={styles.grid}>
-          <Field id="codename" label="CODENAME" locked={isLocked("codename")}>
-            <Input
-              id="codename"
-              type="text"
-              value={codename}
-              onChange={(e) => setCodename(e.target.value)}
-              required={!isLocked("codename")}
-              disabled={isLocked("codename")}
-            />
-          </Field>
-          <Field id="role" label="ROLE" locked={isLocked("role")}>
-            <Input
-              id="role"
-              type="text"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              required={!isLocked("role")}
-              disabled={isLocked("role")}
-            />
-          </Field>
-          <Field id="name" label="NAME" locked={isLocked("name")}>
-            <Input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={isLocked("name")}
-            />
-          </Field>
-          <Field id="ownerId" label="OWNER ID" locked={isLocked("ownerId")}>
-            <Input
-              id="ownerId"
-              type="text"
-              value={ownerId}
-              onChange={(e) => setOwnerId(e.target.value)}
-              placeholder="소유자 ID (선택)"
-              disabled={isLocked("ownerId")}
-            />
-          </Field>
-          <Field
-            id="previewImage"
-            label="PREVIEW IMAGE URL"
-            full
-            locked={isLocked("previewImage")}
-          >
-            <Input
-              id="previewImage"
-              type="text"
-              value={previewImage}
-              onChange={(e) => setPreviewImage(e.target.value)}
-              placeholder="미리보기 이미지 URL"
-              disabled={isLocked("previewImage")}
-            />
-          </Field>
-          <Field
-            id="mainImage"
-            label="MAIN IMAGE URL"
-            full
-            locked={isLocked("mainImage")}
-          >
-            <Input
-              id="mainImage"
-              type="text"
-              value={mainImage}
-              onChange={(e) => setMainImage(e.target.value)}
-              placeholder="메인 이미지 URL (세로 초상화)"
-              disabled={isLocked("mainImage")}
-            />
-          </Field>
-          <Field
-            id="posterImage"
-            label="POSTER IMAGE URL"
-            full
-            locked={isLocked("posterImage")}
-          >
-            <Input
-              id="posterImage"
-              type="text"
-              value={posterImage}
-              onChange={(e) => setPosterImage(e.target.value)}
-              placeholder="캐릭터 상세 상단 와이드 히어로 (선택)"
-              disabled={isLocked("posterImage")}
-            />
-          </Field>
-          <div className={`${styles.field} ${styles["field--full"]}`}>
-            <label className={styles.checkbox}>
+      <div className={styles.form__box}>
+        <div className={styles.panelTitle}>
+          <span className={styles.panelTitle__label}>BASIC INFO</span>
+        </div>
+        <div className={styles.form__box__body}>
+          <div className={styles.grid}>
+            <Field id="codename" label="CODENAME" locked={isLocked("codename")}>
               <input
-                type="checkbox"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                className={styles.checkbox__input}
-                disabled={isLocked("isPublic")}
+                id="codename"
+                type="text"
+                className={styles.input}
+                value={codename}
+                onChange={(e) => setCodename(e.target.value)}
+                required={!isLocked("codename")}
+                disabled={isLocked("codename")}
               />
-              <span>공개 캐릭터</span>
-              {isLocked("isPublic") ? (
-                <span
-                  className={styles.lockedBadge}
-                  aria-label="GM 전용 필드"
-                  title="GM 전용 필드"
-                >
-                  GM
-                </span>
-              ) : null}
-            </label>
+            </Field>
+            <Field id="role" label="ROLE" locked={isLocked("role")}>
+              <input
+                id="role"
+                type="text"
+                className={styles.input}
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                required={!isLocked("role")}
+                disabled={isLocked("role")}
+              />
+            </Field>
+            <Field id="name" label="NAME" locked={isLocked("name")}>
+              <input
+                id="name"
+                type="text"
+                className={styles.input}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={isLocked("name")}
+              />
+            </Field>
+            <Field id="ownerId" label="OWNER ID" locked={isLocked("ownerId")}>
+              <input
+                id="ownerId"
+                type="text"
+                className={styles.input}
+                value={ownerId}
+                onChange={(e) => setOwnerId(e.target.value)}
+                placeholder="소유자 ID (선택)"
+                disabled={isLocked("ownerId")}
+              />
+            </Field>
+            <Field
+              id="previewImage"
+              label="PREVIEW IMAGE URL"
+              full
+              locked={isLocked("previewImage")}
+            >
+              <input
+                id="previewImage"
+                type="text"
+                className={styles.input}
+                value={previewImage}
+                onChange={(e) => setPreviewImage(e.target.value)}
+                placeholder="미리보기 이미지 URL"
+                disabled={isLocked("previewImage")}
+              />
+            </Field>
+            <Field
+              id="mainImage"
+              label="MAIN IMAGE URL"
+              full
+              locked={isLocked("mainImage")}
+            >
+              <input
+                id="mainImage"
+                type="text"
+                className={styles.input}
+                value={mainImage}
+                onChange={(e) => setMainImage(e.target.value)}
+                placeholder="메인 이미지 URL (세로 초상화)"
+                disabled={isLocked("mainImage")}
+              />
+            </Field>
+            <Field
+              id="posterImage"
+              label="POSTER IMAGE URL"
+              full
+              locked={isLocked("posterImage")}
+            >
+              <input
+                id="posterImage"
+                type="text"
+                className={styles.input}
+                value={posterImage}
+                onChange={(e) => setPosterImage(e.target.value)}
+                placeholder="캐릭터 상세 상단 와이드 히어로 (선택)"
+                disabled={isLocked("posterImage")}
+              />
+            </Field>
+            <div className={`${styles.field} ${styles["field--full"]}`}>
+              <label
+                className={[
+                  styles.checkbox,
+                  isLocked("isPublic") ? styles["checkbox--locked"] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <input
+                  type="checkbox"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                  className={styles.checkbox__input}
+                  disabled={isLocked("isPublic")}
+                />
+                <span className={styles.checkbox__text}>공개 캐릭터</span>
+                {isLocked("isPublic") ? (
+                  <span
+                    className={styles.lockedBadge}
+                    aria-label="GM 전용"
+                    title="GM 전용"
+                  >
+                    GM
+                  </span>
+                ) : null}
+              </label>
+            </div>
           </div>
         </div>
-      </Box>
+      </div>
 
       {/* ── Sheet Common ── */}
       {/*
@@ -659,89 +710,97 @@ export default function CharacterEditForm({
         PLAYER_ALLOWED_CHARACTER_FIELDS와 정확히 일치 — player 모드에서도 모두 편집 가능.
         잠금은 isLocked 헬퍼가 알아서 false 반환.
       */}
-      <Box className={styles.form__box}>
-        <PanelTitle>CHARACTER PROFILE</PanelTitle>
-        <div className={styles.grid}>
-          <Field id="quote" label="QUOTE" locked={isLocked("quote")}>
-            <Input
-              id="quote"
-              type="text"
-              value={quote}
-              onChange={(e) => setQuote(e.target.value)}
-              disabled={isLocked("quote")}
-            />
-          </Field>
-          <Field id="gender" label="GENDER" locked={isLocked("gender")}>
-            <Input
-              id="gender"
-              type="text"
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              disabled={isLocked("gender")}
-            />
-          </Field>
-          <Field id="age" label="AGE" locked={isLocked("age")}>
-            <Input
-              id="age"
-              type="text"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              disabled={isLocked("age")}
-            />
-          </Field>
-          <Field id="height" label="HEIGHT" locked={isLocked("height")}>
-            <Input
-              id="height"
-              type="text"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
-              disabled={isLocked("height")}
-            />
-          </Field>
-          <Field
-            id="appearance"
-            label="외모"
-            full
-            locked={isLocked("appearance")}
-          >
-            <textarea
-              id="appearance"
-              className={styles.textarea}
-              value={appearance}
-              onChange={(e) => setAppearance(e.target.value)}
-              disabled={isLocked("appearance")}
-            />
-          </Field>
-          <Field
-            id="personality"
-            label="성격"
-            full
-            locked={isLocked("personality")}
-          >
-            <textarea
-              id="personality"
-              className={styles.textarea}
-              value={personality}
-              onChange={(e) => setPersonality(e.target.value)}
-              disabled={isLocked("personality")}
-            />
-          </Field>
-          <Field
-            id="background"
-            label="배경"
-            full
-            locked={isLocked("background")}
-          >
-            <textarea
-              id="background"
-              className={styles.textarea}
-              value={background}
-              onChange={(e) => setBackground(e.target.value)}
-              disabled={isLocked("background")}
-            />
-          </Field>
+      <div className={styles.form__box}>
+        <div className={styles.panelTitle}>
+          <span className={styles.panelTitle__label}>CHARACTER PROFILE</span>
         </div>
-      </Box>
+        <div className={styles.form__box__body}>
+          <div className={styles.grid}>
+            <Field id="quote" label="QUOTE" locked={isLocked("quote")}>
+              <input
+                id="quote"
+                type="text"
+                className={styles.input}
+                value={quote}
+                onChange={(e) => setQuote(e.target.value)}
+                disabled={isLocked("quote")}
+              />
+            </Field>
+            <Field id="gender" label="GENDER" locked={isLocked("gender")}>
+              <input
+                id="gender"
+                type="text"
+                className={styles.input}
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                disabled={isLocked("gender")}
+              />
+            </Field>
+            <Field id="age" label="AGE" locked={isLocked("age")}>
+              <input
+                id="age"
+                type="text"
+                className={styles.input}
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                disabled={isLocked("age")}
+              />
+            </Field>
+            <Field id="height" label="HEIGHT" locked={isLocked("height")}>
+              <input
+                id="height"
+                type="text"
+                className={styles.input}
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                disabled={isLocked("height")}
+              />
+            </Field>
+            <Field
+              id="appearance"
+              label="외모"
+              full
+              locked={isLocked("appearance")}
+            >
+              <textarea
+                id="appearance"
+                className={styles.textarea}
+                value={appearance}
+                onChange={(e) => setAppearance(e.target.value)}
+                disabled={isLocked("appearance")}
+              />
+            </Field>
+            <Field
+              id="personality"
+              label="성격"
+              full
+              locked={isLocked("personality")}
+            >
+              <textarea
+                id="personality"
+                className={styles.textarea}
+                value={personality}
+                onChange={(e) => setPersonality(e.target.value)}
+                disabled={isLocked("personality")}
+              />
+            </Field>
+            <Field
+              id="background"
+              label="배경"
+              full
+              locked={isLocked("background")}
+            >
+              <textarea
+                id="background"
+                className={styles.textarea}
+                value={background}
+                onChange={(e) => setBackground(e.target.value)}
+                disabled={isLocked("background")}
+              />
+            </Field>
+          </div>
+        </div>
+      </div>
 
       {/*
         ── Agent-specific (admin only) ──
@@ -751,297 +810,353 @@ export default function CharacterEditForm({
       */}
       {character.type === "AGENT" && !isPlayer ? (
         <>
-          <Box className={styles.form__box}>
-            <PanelTitle>COMBAT STATS</PanelTitle>
-            <div className={styles.statGrid}>
-              <Field id="hp" label="HP">
-                <Input
-                  id="hp"
-                  type="number"
-                  value={hp}
-                  onChange={(e) => setHp(Number(e.target.value))}
-                />
-              </Field>
-              <Field id="san" label="SAN">
-                <Input
-                  id="san"
-                  type="number"
-                  value={san}
-                  onChange={(e) => setSan(Number(e.target.value))}
-                />
-              </Field>
-              <Field id="def" label="DEF">
-                <Input
-                  id="def"
-                  type="number"
-                  value={def}
-                  onChange={(e) => setDef(Number(e.target.value))}
-                />
-              </Field>
-              <Field id="atk" label="ATK">
-                <Input
-                  id="atk"
-                  type="number"
-                  value={atk}
-                  onChange={(e) => setAtk(Number(e.target.value))}
-                />
-              </Field>
+          <div className={styles.form__box}>
+            <div className={styles.panelTitle}>
+              <span className={styles.panelTitle__label}>COMBAT STATS</span>
             </div>
-          </Box>
+            <div className={styles.form__box__body}>
+              <div className={styles.statGrid}>
+                <Field id="hp" label="HP">
+                  <input
+                    id="hp"
+                    type="number"
+                    className={`${styles.input} ${styles["input--num"]}`}
+                    value={hp}
+                    onChange={(e) => setHp(Number(e.target.value))}
+                  />
+                </Field>
+                <Field id="san" label="SAN">
+                  <input
+                    id="san"
+                    type="number"
+                    className={`${styles.input} ${styles["input--num"]}`}
+                    value={san}
+                    onChange={(e) => setSan(Number(e.target.value))}
+                  />
+                </Field>
+                <Field id="def" label="DEF">
+                  <input
+                    id="def"
+                    type="number"
+                    className={`${styles.input} ${styles["input--num"]}`}
+                    value={def}
+                    onChange={(e) => setDef(Number(e.target.value))}
+                  />
+                </Field>
+                <Field id="atk" label="ATK">
+                  <input
+                    id="atk"
+                    type="number"
+                    className={`${styles.input} ${styles["input--num"]}`}
+                    value={atk}
+                    onChange={(e) => setAtk(Number(e.target.value))}
+                  />
+                </Field>
+              </div>
+            </div>
+          </div>
 
-          <Box className={styles.form__box}>
-            <PanelTitle>AGENT DETAILS</PanelTitle>
-            <div className={styles.grid}>
-              <Field id="className" label="CLASS">
-                <Input
-                  id="className"
-                  type="text"
-                  value={className}
-                  onChange={(e) => setClassName(e.target.value)}
-                />
-              </Field>
-              <Field id="weight" label="WEIGHT">
-                <Input
-                  id="weight"
-                  type="text"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                />
-              </Field>
-              <Field id="abilityType" label="ABILITY TYPE">
-                <Input
-                  id="abilityType"
-                  type="text"
-                  value={abilityType}
-                  onChange={(e) => setAbilityType(e.target.value)}
-                />
-              </Field>
-              <Field id="credit" label="CREDIT">
-                <Input
-                  id="credit"
-                  type="text"
-                  value={credit}
-                  onChange={(e) => setCredit(e.target.value)}
-                />
-              </Field>
-              <Field id="weaponTraining" label="WEAPON TRAINING">
-                <Input
-                  id="weaponTraining"
-                  type="text"
-                  value={weaponTraining}
-                  onChange={(e) => setWeaponTraining(e.target.value)}
-                />
-              </Field>
-              <Field id="skillTraining" label="SKILL TRAINING">
-                <Input
-                  id="skillTraining"
-                  type="text"
-                  value={skillTraining}
-                  onChange={(e) => setSkillTraining(e.target.value)}
-                />
-              </Field>
+          <div className={styles.form__box}>
+            <div className={styles.panelTitle}>
+              <span className={styles.panelTitle__label}>AGENT DETAILS</span>
             </div>
-          </Box>
+            <div className={styles.form__box__body}>
+              <div className={styles.grid}>
+                <Field id="className" label="CLASS">
+                  <input
+                    id="className"
+                    type="text"
+                    className={styles.input}
+                    value={className}
+                    onChange={(e) => setClassName(e.target.value)}
+                  />
+                </Field>
+                <Field id="weight" label="WEIGHT">
+                  <input
+                    id="weight"
+                    type="text"
+                    className={styles.input}
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                  />
+                </Field>
+                <Field id="abilityType" label="ABILITY TYPE">
+                  <input
+                    id="abilityType"
+                    type="text"
+                    className={styles.input}
+                    value={abilityType}
+                    onChange={(e) => setAbilityType(e.target.value)}
+                  />
+                </Field>
+                <Field id="credit" label="CREDIT">
+                  <input
+                    id="credit"
+                    type="text"
+                    className={styles.input}
+                    value={credit}
+                    onChange={(e) => setCredit(e.target.value)}
+                  />
+                </Field>
+                <Field id="weaponTraining" label="WEAPON TRAINING">
+                  <input
+                    id="weaponTraining"
+                    type="text"
+                    className={styles.input}
+                    value={weaponTraining}
+                    onChange={(e) => setWeaponTraining(e.target.value)}
+                  />
+                </Field>
+                <Field id="skillTraining" label="SKILL TRAINING">
+                  <input
+                    id="skillTraining"
+                    type="text"
+                    className={styles.input}
+                    value={skillTraining}
+                    onChange={(e) => setSkillTraining(e.target.value)}
+                  />
+                </Field>
+              </div>
+            </div>
+          </div>
 
           {/* Equipment list */}
-          <Box className={styles.form__box}>
-            <PanelTitle
-              right={
-                <Button type="button" size="sm" onClick={addEquipment}>
-                  + 추가
-                </Button>
-              }
-            >
-              EQUIPMENT
-            </PanelTitle>
-            {equipment.length === 0 ? (
-              <div className={styles.empty}>장비 없음</div>
-            ) : (
-              <div className={styles.list}>
-                {equipment.map((eq, i) => (
-                  <div key={i} className={styles.listItem}>
-                    <div className={styles.listItem__head}>
-                      <span className={styles.listItem__title}>
-                        ITEM #{i + 1}
-                      </span>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => removeEquipment(i)}
-                      >
-                        삭제
-                      </Button>
-                    </div>
-                    <div className={styles.grid}>
-                      <Field id={`eq-name-${i}`} label="NAME">
-                        <Input
-                          id={`eq-name-${i}`}
-                          type="text"
-                          value={eq.name}
-                          onChange={(e) =>
-                            updateEquipment(i, "name", e.target.value)
-                          }
-                        />
-                      </Field>
-                      <Field id={`eq-price-${i}`} label="PRICE">
-                        <Input
-                          id={`eq-price-${i}`}
-                          type="text"
-                          value={String(eq.price)}
-                          onChange={(e) =>
-                            updateEquipment(i, "price", e.target.value)
-                          }
-                        />
-                      </Field>
-                      <Field id={`eq-damage-${i}`} label="DAMAGE">
-                        <Input
-                          id={`eq-damage-${i}`}
-                          type="text"
-                          value={eq.damage}
-                          onChange={(e) =>
-                            updateEquipment(i, "damage", e.target.value)
-                          }
-                        />
-                      </Field>
-                      <Field id={`eq-desc-${i}`} label="DESCRIPTION">
-                        <Input
-                          id={`eq-desc-${i}`}
-                          type="text"
-                          value={eq.description}
-                          onChange={(e) =>
-                            updateEquipment(i, "description", e.target.value)
-                          }
-                        />
-                      </Field>
-                    </div>
-                  </div>
-                ))}
+          <div className={styles.form__box}>
+            <div className={styles.panelTitle}>
+              <span className={styles.panelTitle__label}>EQUIPMENT</span>
+              <div className={styles.panelTitle__right}>
+                <button
+                  type="button"
+                  className={`${styles.ghostBtn} ${styles["ghostBtn--add"]}`}
+                  onClick={addEquipment}
+                >
+                  추가
+                </button>
               </div>
-            )}
-          </Box>
+            </div>
+            <div className={styles.form__box__body}>
+              {equipment.length === 0 ? (
+                <div className={styles.empty}>장비 없음</div>
+              ) : (
+                <div className={styles.list}>
+                  {equipment.map((eq, i) => (
+                    <div key={i} className={styles.listItem}>
+                      <div className={styles.listItem__head}>
+                        <span className={styles.listItem__title}>
+                          ITEM <b>#{String(i + 1).padStart(2, "0")}</b>
+                        </span>
+                        <button
+                          type="button"
+                          className={`${styles.ghostBtn} ${styles["ghostBtn--remove"]}`}
+                          onClick={() => removeEquipment(i)}
+                        >
+                          삭제
+                        </button>
+                      </div>
+                      <div className={styles.listItem__body}>
+                        <div className={styles.grid}>
+                          <Field id={`eq-name-${i}`} label="NAME">
+                            <input
+                              id={`eq-name-${i}`}
+                              type="text"
+                              className={styles.input}
+                              value={eq.name}
+                              onChange={(e) =>
+                                updateEquipment(i, "name", e.target.value)
+                              }
+                            />
+                          </Field>
+                          <Field id={`eq-price-${i}`} label="PRICE">
+                            <input
+                              id={`eq-price-${i}`}
+                              type="text"
+                              className={styles.input}
+                              value={String(eq.price)}
+                              onChange={(e) =>
+                                updateEquipment(i, "price", e.target.value)
+                              }
+                            />
+                          </Field>
+                          <Field id={`eq-damage-${i}`} label="DAMAGE">
+                            <input
+                              id={`eq-damage-${i}`}
+                              type="text"
+                              className={styles.input}
+                              value={eq.damage}
+                              onChange={(e) =>
+                                updateEquipment(i, "damage", e.target.value)
+                              }
+                            />
+                          </Field>
+                          <Field id={`eq-desc-${i}`} label="DESCRIPTION">
+                            <input
+                              id={`eq-desc-${i}`}
+                              type="text"
+                              className={styles.input}
+                              value={eq.description}
+                              onChange={(e) =>
+                                updateEquipment(i, "description", e.target.value)
+                              }
+                            />
+                          </Field>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Abilities list */}
-          <Box className={styles.form__box}>
-            <PanelTitle
-              right={
-                <Button type="button" size="sm" onClick={addAbility}>
-                  + 추가
-                </Button>
-              }
-            >
-              ABILITIES
-            </PanelTitle>
-            {abilities.length === 0 ? (
-              <div className={styles.empty}>어빌리티 없음</div>
-            ) : (
-              <div className={styles.list}>
-                {abilities.map((ab, i) => (
-                  <div key={i} className={styles.listItem}>
-                    <div className={styles.listItem__head}>
-                      <span className={styles.listItem__title}>
-                        ABILITY #{i + 1}
-                      </span>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => removeAbility(i)}
-                      >
-                        삭제
-                      </Button>
-                    </div>
-                    <div className={styles.grid}>
-                      <Field id={`ab-code-${i}`} label="CODE">
-                        <Input
-                          id={`ab-code-${i}`}
-                          type="text"
-                          value={ab.code}
-                          onChange={(e) =>
-                            updateAbility(i, "code", e.target.value)
-                          }
-                        />
-                      </Field>
-                      <Field id={`ab-name-${i}`} label="NAME">
-                        <Input
-                          id={`ab-name-${i}`}
-                          type="text"
-                          value={ab.name}
-                          onChange={(e) =>
-                            updateAbility(i, "name", e.target.value)
-                          }
-                        />
-                      </Field>
-                      <Field id={`ab-desc-${i}`} label="DESCRIPTION" full>
-                        <Input
-                          id={`ab-desc-${i}`}
-                          type="text"
-                          value={ab.description}
-                          onChange={(e) =>
-                            updateAbility(i, "description", e.target.value)
-                          }
-                        />
-                      </Field>
-                      <Field id={`ab-effect-${i}`} label="EFFECT" full>
-                        <Input
-                          id={`ab-effect-${i}`}
-                          type="text"
-                          value={ab.effect}
-                          onChange={(e) =>
-                            updateAbility(i, "effect", e.target.value)
-                          }
-                        />
-                      </Field>
-                    </div>
-                  </div>
-                ))}
+          <div className={styles.form__box}>
+            <div className={styles.panelTitle}>
+              <span className={styles.panelTitle__label}>ABILITIES</span>
+              <div className={styles.panelTitle__right}>
+                <button
+                  type="button"
+                  className={`${styles.ghostBtn} ${styles["ghostBtn--add"]}`}
+                  onClick={addAbility}
+                >
+                  추가
+                </button>
               </div>
-            )}
-          </Box>
+            </div>
+            <div className={styles.form__box__body}>
+              {abilities.length === 0 ? (
+                <div className={styles.empty}>어빌리티 없음</div>
+              ) : (
+                <div className={styles.list}>
+                  {abilities.map((ab, i) => (
+                    <div key={i} className={styles.listItem}>
+                      <div className={styles.listItem__head}>
+                        <span className={styles.listItem__title}>
+                          ABILITY <b>#{String(i + 1).padStart(2, "0")}</b>
+                        </span>
+                        <button
+                          type="button"
+                          className={`${styles.ghostBtn} ${styles["ghostBtn--remove"]}`}
+                          onClick={() => removeAbility(i)}
+                        >
+                          삭제
+                        </button>
+                      </div>
+                      <div className={styles.listItem__body}>
+                        <div className={styles.grid}>
+                          <Field id={`ab-code-${i}`} label="CODE">
+                            <input
+                              id={`ab-code-${i}`}
+                              type="text"
+                              className={styles.input}
+                              value={ab.code}
+                              onChange={(e) =>
+                                updateAbility(i, "code", e.target.value)
+                              }
+                            />
+                          </Field>
+                          <Field id={`ab-name-${i}`} label="NAME">
+                            <input
+                              id={`ab-name-${i}`}
+                              type="text"
+                              className={styles.input}
+                              value={ab.name}
+                              onChange={(e) =>
+                                updateAbility(i, "name", e.target.value)
+                              }
+                            />
+                          </Field>
+                          <Field id={`ab-desc-${i}`} label="DESCRIPTION" full>
+                            <input
+                              id={`ab-desc-${i}`}
+                              type="text"
+                              className={styles.input}
+                              value={ab.description}
+                              onChange={(e) =>
+                                updateAbility(i, "description", e.target.value)
+                              }
+                            />
+                          </Field>
+                          <Field id={`ab-effect-${i}`} label="EFFECT" full>
+                            <input
+                              id={`ab-effect-${i}`}
+                              type="text"
+                              className={styles.input}
+                              value={ab.effect}
+                              onChange={(e) =>
+                                updateAbility(i, "effect", e.target.value)
+                              }
+                            />
+                          </Field>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </>
       ) : null}
 
       {/* ── NPC-specific (admin only) — NPC 전용 필드는 PLAYER_ALLOWED 외 ── */}
       {character.type === "NPC" && !isPlayer ? (
-        <Box className={styles.form__box}>
-          <PanelTitle>NPC DETAILS</PanelTitle>
-          <div className={styles.grid}>
-            <Field id="nameEn" label="NAME (EN)" full>
-              <Input
-                id="nameEn"
-                type="text"
-                value={nameEn}
-                onChange={(e) => setNameEn(e.target.value)}
-              />
-            </Field>
-            <Field id="roleDetail" label="ROLE DETAIL" full>
-              <textarea
-                id="roleDetail"
-                className={styles.textarea}
-                value={roleDetail}
-                onChange={(e) => setRoleDetail(e.target.value)}
-              />
-            </Field>
-            <Field id="notes" label="NOTES" full>
-              <textarea
-                id="notes"
-                className={styles.textarea}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </Field>
+        <div className={styles.form__box}>
+          <div className={styles.panelTitle}>
+            <span className={styles.panelTitle__label}>NPC DETAILS</span>
           </div>
-        </Box>
+          <div className={styles.form__box__body}>
+            <div className={styles.grid}>
+              <Field id="nameEn" label="NAME (EN)" full>
+                <input
+                  id="nameEn"
+                  type="text"
+                  className={styles.input}
+                  value={nameEn}
+                  onChange={(e) => setNameEn(e.target.value)}
+                />
+              </Field>
+              <Field id="roleDetail" label="ROLE DETAIL" full>
+                <textarea
+                  id="roleDetail"
+                  className={styles.textarea}
+                  value={roleDetail}
+                  onChange={(e) => setRoleDetail(e.target.value)}
+                />
+              </Field>
+              <Field id="notes" label="NOTES" full>
+                <textarea
+                  id="notes"
+                  className={styles.textarea}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {/* ── Actions ── */}
       {error ? <div className={styles.error}>{error}</div> : null}
 
       <div className={styles.actions}>
-        <Button type="submit" variant="primary" disabled={submitting}>
-          {submitting ? "저장 중..." : "저장"}
-        </Button>
-        <Button type="button" onClick={onCancel}>
+        <span className={styles.actions__notice}>감사 로그 자동 기록</span>
+        <button
+          type="button"
+          className={styles.cancelBtn}
+          onClick={onCancel}
+          disabled={submitting}
+        >
           취소
-        </Button>
+        </button>
+        <button
+          type="submit"
+          className={styles.submitBtn}
+          disabled={submitting}
+          aria-busy={submitting}
+        >
+          {submitting ? "저장 중" : "저장"}
+        </button>
       </div>
 
       {/* ── P7: diff 프리뷰 모달 ── */}
@@ -1093,8 +1208,13 @@ function Field({
         .filter(Boolean)
         .join(" ")}
     >
-      <label className={styles.label} htmlFor={id}>
-        <span>{label}</span>
+      <label
+        className={[styles.label, locked ? styles["label--locked"] : ""]
+          .filter(Boolean)
+          .join(" ")}
+        htmlFor={id}
+      >
+        <span className={styles.label__text}>{label}</span>
         {locked ? (
           <span
             className={styles.lockedBadge}
