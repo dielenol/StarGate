@@ -1,177 +1,532 @@
-/* ── Characters list ── */
+/* ==========================================================
+   /erp/characters · page.module.css (Claude Design 슬롯 4)
+   캐릭터 카탈로그 dossier
+   - CharacterEditForm form__box / DiffPreviewModal modeBadge / PosterHero vitals 패턴 자매
+   - globals.css 토큰만 사용
+   ========================================================== */
 
-/* Filter tabs (bar with bottom border) */
-
+/* ---------- filters (탭 그룹) ---------- */
 .filters {
   display: flex;
   gap: 0;
-  margin-bottom: var(--gap);
+  margin-bottom: 22px;
   border-bottom: 1px solid var(--line);
+  position: relative;
   overflow-x: auto;
-  white-space: nowrap;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
 }
+.filters::-webkit-scrollbar { height: 4px; }
+.filters::-webkit-scrollbar-track { background: transparent; }
+.filters::-webkit-scrollbar-thumb { background: var(--line-strong); }
 
 .filters__tab {
-  padding: 10px 16px;
-  border-bottom: 2px solid transparent;
-  color: var(--ink-2);
+  position: relative;
+  padding: 10px 18px 11px;
+  border: 1px solid var(--line-strong);
+  border-bottom: 0;
+  background: var(--bg-2);
+  color: var(--ink-1);
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.12em;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
   text-decoration: none;
+  white-space: nowrap;
+  margin-right: -1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
   transition:
-    color 0.15s ease,
-    border-color 0.15s ease;
+    color 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
 }
-
+.filters__tab::before {
+  content: "";
+  width: 5px; height: 5px;
+  background: var(--ink-3);
+  flex-shrink: 0;
+}
 .filters__tab:hover {
   color: var(--ink-0);
+  border-color: var(--ink-2);
+  z-index: 1;
+}
+.filters__tab:hover::before { background: var(--ink-2); }
+.filters__tab__count {
+  color: var(--ink-2);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+.filters__tab__count b {
+  color: var(--ink-0);
+  font-weight: 600;
+  margin-left: 1px;
 }
 
 .filters__tab--active {
   color: var(--gold);
-  border-bottom-color: var(--gold);
+  border-color: var(--gold-dim);
+  background:
+    linear-gradient(rgba(201,169,97,0.06), rgba(201,169,97,0.06)),
+    var(--bg-1);
+  z-index: 2;
+}
+.filters__tab--active::before {
+  background: var(--gold);
+  box-shadow: 0 0 6px rgba(201,169,97,0.5);
+}
+.filters__tab--active::after {
+  /* 활성 탭 하단 — border-bottom 덮어 grid edge 흡수 */
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 1px;
+  background: var(--bg-1);
+}
+.filters__tab--active .filters__tab__count { color: var(--gold-dim); }
+.filters__tab--active .filters__tab__count b { color: var(--gold); }
+.filters__tab:focus-visible {
+  outline: 1px solid var(--gold-dim); outline-offset: 2px;
+  z-index: 3;
 }
 
-/* Grid */
-
+/* ---------- grid ---------- */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--gap);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .cardLink {
   display: block;
   text-decoration: none;
   color: inherit;
+  transition: transform 140ms ease;
+}
+.cardLink:hover { transform: translateY(-1px); }
+.cardLink:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 3px;
 }
 
+/* ---------- card (form__box 자매 — 더블 보더) ---------- */
 .card {
+  position: relative;
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  height: 100%;
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
+    border-color 140ms ease,
+    background 140ms ease;
 }
-
+.card::before {
+  content: ""; position: absolute; inset: 4px;
+  border: 1px solid rgba(201,169,97,0.05);
+  pointer-events: none;
+  transition: border-color 140ms ease;
+}
+/* 좌상단 코너 틱 — dossier 강화 */
+.card::after {
+  content: "";
+  position: absolute; left: -1px; top: -1px;
+  width: 10px; height: 10px;
+  border-top: 1px solid var(--gold-dim);
+  border-left: 1px solid var(--gold-dim);
+  pointer-events: none;
+  opacity: 0.6;
+  transition: border-color 140ms ease, opacity 140ms ease;
+}
 .cardLink:hover .card,
 .cardLink:focus-visible .card {
-  background: var(--bg-2);
   border-color: var(--gold-dim);
+  background:
+    linear-gradient(rgba(201,169,97,0.025), rgba(201,169,97,0.025)),
+    var(--bg-1);
+}
+.cardLink:hover .card::before,
+.cardLink:focus-visible .card::before {
+  border-color: rgba(201,169,97,0.16);
+}
+.cardLink:hover .card::after,
+.cardLink:focus-visible .card::after {
+  border-color: var(--gold);
+  opacity: 1;
 }
 
+/* ---------- card head ---------- */
 .card__head {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
+  padding: 18px 20px 14px;
+  position: relative;
 }
 
-/* Seal/이미지 공통 슬롯 — Seal 기본 사이즈(44x44)와 정렬 */
-.card__thumb {
+/* thumbnail wrapper (이미지 또는 fallback Seal 둘 다 동일 사이즈) */
+.card__thumbWrap {
+  position: relative;
+  width: 54px;
+  height: 72px;
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  object-fit: cover;
-  background: var(--bg-2);
-  border: 1px solid var(--gold-dim);
 }
+
+/* thumbnail — 3:4 비율 */
+.card__thumb {
+  position: relative;
+  width: 54px;
+  height: 72px;
+  flex-shrink: 0;
+  background-color: var(--bg-2);
+  border: 1px solid var(--gold-dim);
+  object-fit: cover;
+  display: block;
+}
+/* thumb 내부 코너 틱 */
+.card__thumb__tick {
+  position: absolute;
+  width: 8px; height: 8px;
+  border: 1px solid var(--gold);
+  pointer-events: none;
+  z-index: 2;
+}
+.card__thumb__tick--tl { top: 3px; left: 3px;  border-right: 0; border-bottom: 0; }
+.card__thumb__tick--br { bottom: 3px; right: 3px; border-left: 0;  border-top: 0; }
+
+/* Seal 이니셜 fallback (이미지 없을 때) */
+.card__seal {
+  position: relative;
+  width: 54px;
+  height: 72px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  border: 1px solid var(--gold-dim);
+  background-color: var(--bg-2);
+  background-image: repeating-linear-gradient(
+    135deg, transparent 0, transparent 6px,
+    rgba(201,169,97,0.06) 6px, rgba(201,169,97,0.06) 7px
+  );
+  font-family: var(--font-mono);
+  font-size: 26px; font-weight: 600;
+  color: var(--gold);
+}
+.card__seal::before {
+  content: ""; position: absolute; inset: 3px;
+  border: 1px solid rgba(201,169,97,0.18);
+  pointer-events: none;
+}
+.card__seal__tick {
+  position: absolute;
+  width: 8px; height: 8px;
+  border: 1px solid var(--gold);
+  pointer-events: none;
+}
+.card__seal__tick--tl { top: -1px; left: -1px;  border-right: 0; border-bottom: 0; }
 
 .card__headBody {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 2px;
 }
-
 .card__code {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.1em;
-}
-
-.card__name {
-  margin-top: 2px;
-  color: var(--ink-0);
-  font-size: 15px;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card__sub {
-  margin-top: 2px;
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.05em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Agent HP/SAN stats */
-
-.card__stats {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.card__stat {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
-.card__statLabel {
+.card__code::before {
+  content: "";
+  width: 10px; height: 1px;
+  background: var(--gold-dim);
   flex-shrink: 0;
-  width: 32px;
+}
+.card__name {
+  color: var(--ink-0);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card__sub {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.05em;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.card__statBar {
-  flex: 1;
-}
-
-.card__statValue {
-  flex-shrink: 0;
-  width: 36px;
-  color: var(--ink-0);
+/* ---------- type tag (DiffPreviewModal modeBadge 자매) ---------- */
+.tag {
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.05em;
-  text-align: right;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border: 1px solid;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 20px;
+  white-space: nowrap;
+}
+.tag::before {
+  content: "";
+  width: 5px; height: 5px;
+  flex-shrink: 0;
+}
+.tag--gold {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: rgba(201,169,97,0.06);
+}
+.tag--gold::before { background: var(--gold); }
+
+.tag--default {
+  color: var(--ink-2);
+  border-color: var(--line-strong);
+  background: var(--bg-2);
+}
+.tag--default::before { background: var(--ink-3); }
+
+.tag--success {
+  color: #9bc096;
+  border-color: rgba(110,154,106,0.5);
+  background: rgba(110,154,106,0.08);
+}
+.tag--success::before {
+  background: var(--success, #6e9a6a);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(110,154,106,0.55);
+}
+.tag--danger {
+  color: #d9938b;
+  border-color: rgba(193,74,61,0.5);
+  background: rgba(193,74,61,0.08);
+}
+.tag--danger::before {
+  background: var(--danger);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(193,74,61,0.5);
 }
 
+/* ---------- agent stats ---------- */
+.card__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px 20px 18px;
+  border-top: 1px dashed var(--line);
+  margin-top: auto;
+  position: relative;
+}
+.card__stats::before {
+  content: "";
+  position: absolute;
+  left: 20px; right: 20px; top: -1px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold-dim) 14%, var(--gold-dim) 86%, transparent);
+  opacity: 0.25;
+}
+.card__stat {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.card__statLabel {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  font-weight: 600;
+}
+
+/* Bar (PosterHero vitals 자매) */
+.card__statBar {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.card__statBar::before {
+  /* tick marks every 25% */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right,
+      transparent 0, transparent calc(25% - 1px),
+      rgba(74,69,56,0.55) calc(25% - 1px), rgba(74,69,56,0.55) 25%,
+      transparent 25%, transparent calc(50% - 1px),
+      rgba(74,69,56,0.55) calc(50% - 1px), rgba(74,69,56,0.55) 50%,
+      transparent 50%, transparent calc(75% - 1px),
+      rgba(74,69,56,0.55) calc(75% - 1px), rgba(74,69,56,0.55) 75%,
+      transparent 75%);
+  pointer-events: none;
+  z-index: 2;
+}
+.card__statBar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--gold);
+  z-index: 1;
+}
+.card__statBar--info .card__statBar__fill {
+  background: var(--info, #6a87a8);
+}
+.card__statBar--danger .card__statBar__fill {
+  background: var(--danger);
+  box-shadow: 0 0 6px rgba(193,74,61,0.4);
+}
+.card__statValue {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--ink-0);
+  text-align: right;
+  min-width: 32px;
+  font-weight: 600;
+}
 .card__statValue--danger {
   color: var(--danger);
 }
 
-/* NPC footer */
-
+/* ---------- npc footer ---------- */
 .card__footer {
   display: flex;
-  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px 14px;
+  border-top: 1px dashed var(--line);
+  margin-top: auto;
+  position: relative;
 }
-
-/* Empty */
-
-.empty {
-  padding: 42px 12px;
-  color: var(--ink-3);
+.card__footer::before {
+  content: "";
+  position: absolute;
+  left: 20px; right: 20px; top: -1px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold-dim) 14%, var(--gold-dim) 86%, transparent);
+  opacity: 0.25;
+}
+.card__footer__label {
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.1em;
-  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-right: auto;
 }
 
-@media (max-width: 600px) {
+/* ---------- empty ---------- */
+.empty {
+  padding: 56px 20px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 8px,
+    rgba(74, 69, 56, 0.18) 8px,
+    rgba(74, 69, 56, 0.18) 9px
+  );
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.empty::before {
+  content: "";
+  width: 8px; height: 8px;
+  background: var(--gold-dim);
+  transform: rotate(45deg);
+}
+
+/* ==========================================================
+   responsive
+   - desktop  : ≥ 1280px → 3 columns
+   - tablet   : 768–1279 → 2 columns
+   - mobile   : ≤ 767    → 1 column
+   ========================================================== */
+@media (max-width: 1279px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 767px) {
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0;
+    padding-bottom: 2px;
+  }
   .grid {
     grid-template-columns: 1fr;
+    gap: 14px;
   }
+  /* 모바일 — 더블 보더 비활성 (자매 슬롯들과 일치) */
+  .card::before { inset: 0; border: 0; }
+}
+
+@media (max-width: 480px) {
+  .card__head {
+    padding: 16px 16px 12px;
+    gap: 12px;
+  }
+  .card__thumb,
+  .card__seal,
+  .card__thumbWrap {
+    width: 40px;
+    height: 52px;
+  }
+  .card__seal { font-size: 20px; }
+  .card__name { font-size: 16px; }
+  .card__stats,
+  .card__footer { padding-left: 16px; padding-right: 16px; }
+  .card__stats::before,
+  .card__footer::before { left: 16px; right: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardLink,
+  .card,
+  .card::before,
+  .card::after,
+  .filters__tab { transition: none; }
+  .cardLink:hover { transform: none; }
 }
