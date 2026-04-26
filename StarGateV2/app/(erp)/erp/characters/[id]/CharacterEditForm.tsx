@@ -1059,6 +1059,11 @@ export default function CharacterEditForm({
                 }
               : undefined
           }
+          characterLabel={
+            character.sheet.name && character.sheet.name !== character.codename
+              ? `${character.sheet.name} / ${character.codename}`
+              : character.codename
+          }
           isSubmitting={submitting}
           onConfirm={handlePreviewConfirm}
           onCancel={handlePreviewCancel}

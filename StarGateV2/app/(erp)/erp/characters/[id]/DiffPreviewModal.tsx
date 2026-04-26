@@ -2,15 +2,15 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-import Button from "@/components/ui/Button/Button";
-
 import styles from "./DiffPreviewModal.module.css";
 
 /**
- * P7 — 캐릭터 편집 저장 직전 diff 프리뷰.
+ * P7 — 캐릭터 편집 저장 직전 diff 프리뷰 (Claude Design 슬롯 7).
  *
  * 사용자가 변경 사항을 한 번에 확인하고 의도하지 않은 수정을 자가 검열하도록 한다.
  * server PATCH 흐름은 변경 없이 그대로 유지 (모달 confirm → 기존 PATCH 경로 진입).
+ *
+ * 디자인 톤: 군사 결재 양식 (FORM-04). PosterHero 의 더블 보더 / 코너 틱 패턴 계승.
  */
 export interface DiffEntry {
   field: string;
@@ -33,6 +33,8 @@ interface Props {
   mode: "admin" | "player";
   /** player 모드에서만 의미 — admin 은 쿨다운 미적용 */
   cooldown?: CooldownInfo;
+  /** 헤더 docId 표시용 (선택) — 예: "박예솔 / BIG BOY" */
+  characterLabel?: string;
 }
 
 /**
@@ -41,14 +43,15 @@ interface Props {
  * 매핑 누락이 있어도 기능은 동작 — UX 만 저하. 새 필드 추가 시 본 매핑에 등재.
  */
 const FIELD_LABELS: Record<string, string> = {
-  codename: "CODENAME",
-  role: "ROLE",
+  codename: "코드네임",
+  role: "역할",
   isPublic: "공개 여부",
   ownerId: "소유자 ID",
-  previewImage: "프리뷰 이미지 URL",
+  previewImage: "프리뷰 이미지",
+  "sheet.codename": "코드네임",
   "sheet.name": "이름",
-  "sheet.mainImage": "메인 이미지 URL",
-  "sheet.posterImage": "포스터 이미지 URL",
+  "sheet.mainImage": "메인 이미지",
+  "sheet.posterImage": "포스터 이미지",
   "sheet.quote": "인용문",
   "sheet.gender": "성별",
   "sheet.age": "나이",
@@ -90,8 +93,8 @@ function labelFor(field: string): string {
  * 변환 실패 시 fallback 으로 String(value) 사용 — 표시 자체는 항상 성공.
  */
 function stringifyValue(value: unknown): string {
-  if (value === null || value === undefined) return "(비어 있음)";
-  if (typeof value === "string") return value || "(빈 문자열)";
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") {
     return String(value);
   }
@@ -101,6 +104,12 @@ function stringifyValue(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+function isEmptyValue(value: unknown): boolean {
+  if (value === null || value === undefined) return true;
+  if (typeof value === "string") return value.length === 0;
+  return false;
 }
 
 function isImageUrl(value: unknown): value is string {
@@ -118,8 +127,10 @@ export default function DiffPreviewModal({
   isSubmitting,
   mode,
   cooldown,
+  characterLabel,
 }: Props) {
   const titleId = useId();
+  const reasonId = useId();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -137,7 +148,7 @@ export default function DiffPreviewModal({
   /**
    * Focus trap + ESC 닫기. mount/unmount 시점에만 등록 — deps 배열은 빈 배열.
    * 부모 렌더로 인한 재실행을 막아야 reason textarea 입력 중 포커스가
-   * 첫 focusable 로 튕기지 않음 (M8 합의).
+   * 첫 focusable 로 튕기지 않음.
    */
   useEffect(() => {
     previousFocusRef.current = document.activeElement as HTMLElement | null;
@@ -146,7 +157,9 @@ export default function DiffPreviewModal({
       if (!dialogRef.current) return [];
       const selector =
         'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-      return Array.from(dialogRef.current.querySelectorAll<HTMLElement>(selector));
+      return Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(selector),
+      );
     }
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -200,6 +213,11 @@ export default function DiffPreviewModal({
     }
   }
 
+  // cooldown 진행도 — used / maxCount (0 ~ 100)
+  const cooldownPct = cooldown
+    ? Math.min(100, Math.round((cooldown.used / cooldown.maxCount) * 100))
+    : 0;
+
   return (
     <div
       className={styles.overlay}
@@ -213,75 +231,128 @@ export default function DiffPreviewModal({
         aria-modal="true"
         aria-labelledby={titleId}
       >
+        <span
+          className={`${styles.dialog__tick} ${styles["dialog__tick--tl"]}`}
+          aria-hidden
+        />
+        <span
+          className={`${styles.dialog__tick} ${styles["dialog__tick--tr"]}`}
+          aria-hidden
+        />
+        <span
+          className={`${styles.dialog__tick} ${styles["dialog__tick--bl"]}`}
+          aria-hidden
+        />
+        <span
+          className={`${styles.dialog__tick} ${styles["dialog__tick--br"]}`}
+          aria-hidden
+        />
+
         <header className={styles.header}>
+          <div className={styles.eyebrow}>FORM-04 · CHARACTER REVISION</div>
           <h2 id={titleId} className={styles.title}>
-            변경 사항 확인
+            <span className={styles.title__seal}>§</span>변경 사항 확인
           </h2>
           <div className={styles.metaRow}>
-            <span
-              className={[
-                styles.modeBadge,
-                mode === "admin"
-                  ? styles["modeBadge--admin"]
-                  : styles["modeBadge--player"],
-              ].join(" ")}
-            >
-              {mode === "admin" ? "관리자 편집" : "플레이어 편집"}
-            </span>
-            {cooldown ? (
-              <span className={styles.cooldown}>
-                최근 {cooldown.windowHours}시간 이내 {cooldown.used}/
-                {cooldown.maxCount}회 사용 (남은 {cooldown.remaining}회)
+            <div className={styles.metaRow__left}>
+              <span
+                className={`${styles.modeBadge} ${
+                  mode === "admin"
+                    ? styles["modeBadge--admin"]
+                    : styles["modeBadge--player"]
+                }`}
+              >
+                {mode === "admin" ? "ADMIN" : "PLAYER"}
               </span>
+              {characterLabel ? (
+                <span className={styles.docId}>
+                  DOC <b>{characterLabel}</b>
+                </span>
+              ) : null}
+            </div>
+            {cooldown ? (
+              <div
+                className={styles.cooldown}
+                aria-label={`최근 ${cooldown.windowHours}시간 편집 ${cooldown.used} / ${cooldown.maxCount}`}
+              >
+                최근 {cooldown.windowHours}시간 편집{" "}
+                <span className={styles.cooldown__num}>{cooldown.used}</span>
+                <span className={styles.cooldown__sep}>/</span>
+                <span className={styles.cooldown__total}>
+                  {cooldown.maxCount}
+                </span>
+                <span className={styles.cooldown__bar} aria-hidden>
+                  <span
+                    className={styles.cooldown__barFill}
+                    style={{ width: `${cooldownPct}%` }}
+                  />
+                </span>
+              </div>
             ) : null}
           </div>
         </header>
 
         <div className={styles.body}>
+          <div className={styles.summary}>
+            <div className={styles.summary__count}>
+              변경 항목 <b>{diff.length}</b>
+            </div>
+            <div className={styles.summary__hint}>감사 로그 자동 기록</div>
+          </div>
+
           {diff.length === 0 ? (
             <p className={styles.empty}>변경 사항이 없습니다.</p>
           ) : (
             <ul className={styles.diffList}>
-              {diff.map((entry) => (
-                <DiffRow key={entry.field} entry={entry} />
+              {diff.map((entry, index) => (
+                <DiffRow
+                  key={entry.field}
+                  index={index + 1}
+                  entry={entry}
+                />
               ))}
             </ul>
           )}
+        </div>
 
-          <label className={styles.reasonLabel} htmlFor="diff-reason">
-            <span>변경 사유 (선택)</span>
-            <textarea
-              id="diff-reason"
-              className={styles.reasonTextarea}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder={
-                mode === "admin"
-                  ? "관리자 편집 사유를 남겨두면 audit/롤백 시 추적이 쉬워집니다."
-                  : "필요 시 변경 사유를 남겨주세요."
-              }
-              disabled={isSubmitting}
-              rows={3}
-            />
+        <div className={styles.reasonBlock}>
+          <label className={styles.reasonLabel} htmlFor={reasonId}>
+            <span>변경 사유</span>
+            <span className={styles.reasonLabel__optional}>OPTIONAL</span>
           </label>
+          <textarea
+            id={reasonId}
+            className={styles.reasonTextarea}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="변경 이유를 간단히 적어 주세요 (선택) — Discord GM 채널에 함께 기록됩니다."
+            disabled={isSubmitting}
+          />
         </div>
 
         <footer className={styles.footer}>
-          <Button
-            type="button"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            취소
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            onClick={handleConfirm}
-            disabled={isSubmitting || diff.length === 0}
-          >
-            {isSubmitting ? "저장 중..." : "저장"}
-          </Button>
+          <div className={styles.footer__notice}>
+            감사 로그 · Discord GM 채널 알림
+          </div>
+          <div className={styles.footer__actions}>
+            <button
+              type="button"
+              className={styles.cancelBtn}
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              className={styles.submitBtn}
+              onClick={handleConfirm}
+              disabled={isSubmitting || diff.length === 0}
+              aria-busy={isSubmitting}
+            >
+              {isSubmitting ? "저장 중" : "저장 확인"}
+            </button>
+          </div>
         </footer>
       </div>
     </div>
@@ -290,27 +361,32 @@ export default function DiffPreviewModal({
 
 /* ── Row ── */
 
-function DiffRow({ entry }: { entry: DiffEntry }) {
+function DiffRow({ index, entry }: { index: number; entry: DiffEntry }) {
   const { field, before, after } = entry;
   const label = labelFor(field);
   const isImage =
     IMAGE_FIELDS.has(field) && (isImageUrl(before) || isImageUrl(after));
+  const indexStr = String(index).padStart(2, "0");
 
   return (
     <li className={styles.row}>
       <div className={styles.row__head}>
-        <span className={styles.row__label}>{label}</span>
+        <div>
+          <span className={styles.row__index}>{indexStr}</span>
+          <span className={styles.row__label}>{label}</span>
+        </div>
         <span className={styles.row__field} aria-hidden="true">
           {field}
         </span>
       </div>
       {isImage ? (
         <div className={styles.imageCompare}>
-          <ImageCell label="이전" value={before} />
+          <ImageCell variant="before" value={before} />
           <span className={styles.arrow} aria-hidden="true">
             →
           </span>
-          <ImageCell label="이후" value={after} />
+          <ImageCell variant="after" value={after} />
+          <ImageMeta before={before} after={after} field={field} />
         </div>
       ) : (
         <div className={styles.textCompare}>
@@ -332,6 +408,9 @@ function ValueCell({
   variant: "before" | "after";
   value: unknown;
 }) {
+  const empty = isEmptyValue(value);
+  const text = empty ? "(비어 있음)" : stringifyValue(value);
+
   return (
     <div
       className={[
@@ -339,31 +418,100 @@ function ValueCell({
         variant === "before"
           ? styles["valueCell--before"]
           : styles["valueCell--after"],
-      ].join(" ")}
+        empty ? styles["valueCell--empty"] : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
-      <span className={styles.valueCell__caption}>
-        {variant === "before" ? "이전" : "이후"}
+      <span className={styles.valueCell__tag}>
+        {variant === "before" ? "BEFORE" : "AFTER"}
       </span>
-      <pre className={styles.valueCell__text}>{stringifyValue(value)}</pre>
+      {text}
     </div>
   );
 }
 
-function ImageCell({ label, value }: { label: string; value: unknown }) {
+function ImageCell({
+  variant,
+  value,
+}: {
+  variant: "before" | "after";
+  value: unknown;
+}) {
   const url = isImageUrl(value) ? value : null;
+  const tagText = variant === "before" ? "BEFORE" : "AFTER";
+
   return (
-    <div className={styles.imageCell}>
-      <span className={styles.valueCell__caption}>{label}</span>
+    <div
+      className={[
+        styles.imageCell,
+        variant === "before"
+          ? styles["imageCell--before"]
+          : styles["imageCell--after"],
+        !url ? styles["imageCell--empty"] : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <span className={styles.imageCell__tag}>{tagText}</span>
+      <span
+        className={`${styles.imageCell__tick} ${styles["imageCell__tick--tl"]}`}
+        aria-hidden
+      />
+      <span
+        className={`${styles.imageCell__tick} ${styles["imageCell__tick--tr"]}`}
+        aria-hidden
+      />
+      <span
+        className={`${styles.imageCell__tick} ${styles["imageCell__tick--bl"]}`}
+        aria-hidden
+      />
+      <span
+        className={`${styles.imageCell__tick} ${styles["imageCell__tick--br"]}`}
+        aria-hidden
+      />
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={url}
-          alt={`${label} 이미지`}
-          className={styles.imageCell__img}
-        />
+        <img src={url} alt={`${tagText} 이미지`} />
       ) : (
-        <span className={styles.imageCell__empty}>(비어 있음)</span>
+        <span>(비어 있음)</span>
       )}
+    </div>
+  );
+}
+
+function ImageMeta({
+  before,
+  after,
+  field,
+}: {
+  before: unknown;
+  after: unknown;
+  field: string;
+}) {
+  const beforeUrl = isImageUrl(before) ? before : null;
+  const afterUrl = isImageUrl(after) ? after : null;
+  const fileFromUrl = (url: string | null): string | null => {
+    if (!url) return null;
+    const idx = url.lastIndexOf("/");
+    return idx >= 0 ? url.slice(idx + 1) : url;
+  };
+  const beforeFile = fileFromUrl(beforeUrl);
+  const afterFile = fileFromUrl(afterUrl);
+
+  return (
+    <div className={styles.imageMeta}>
+      <b>{labelFor(field)}</b>
+      <br />
+      <span className={styles.imageMeta__path}>{field}</span>
+      <br />
+      {beforeFile || afterFile ? (
+        <>
+          {beforeFile ? `BEFORE · ${beforeFile}` : "BEFORE · (비어 있음)"}
+          <br />
+          {afterFile ? `AFTER · ${afterFile}` : "AFTER · (비어 있음)"}
+        </>
+      ) : null}
     </div>
   );
 }
