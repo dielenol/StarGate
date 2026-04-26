@@ -1,154 +1,428 @@
+/* ==========================================================
+   /erp/account · page.module.css
+   노부스 오르도 · 시스템 신원 dossier 톤 (Claude Design 슬롯 2)
+   - CharacterEditForm form__box / DiffPreviewModal modeBadge / ChangeLogsPanel time__kst 패턴 차용
+   - globals.css 토큰만 사용
+   ========================================================== */
+
 .layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: var(--gap);
+  grid-template-columns: 300px 1fr;
+  gap: 18px;
+  align-items: start;
 }
-
 .main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
-  min-width: 0;
+  display: flex; flex-direction: column; gap: 18px; min-width: 0;
 }
 
+/* ---------- box (CharacterEditForm form__box 자매) ---------- */
+.box {
+  position: relative;
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+}
+.box::before {
+  content: ""; position: absolute; inset: 4px;
+  border: 1px solid rgba(201,169,97,0.05); pointer-events: none;
+}
+
+.panelTitle {
+  position: relative;
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 14px 22px 10px;
+  border-bottom: 1px solid var(--line);
+  gap: 14px;
+}
+.panelTitle::after {
+  content: "";
+  position: absolute; left: 22px; right: 22px; bottom: -1px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold-dim) 14%, var(--gold-dim) 86%, transparent);
+  opacity: 0.4;
+}
+.panelTitle__label {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-0);
+  display: flex; align-items: center; gap: 12px;
+}
+.panelTitle__label::before {
+  content: ""; width: 14px; height: 1px; background: var(--gold-dim);
+}
+.panelTitle__sub {
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.04em; color: var(--ink-3);
+  margin-left: 4px;
+  text-transform: none;
+  font-weight: 400;
+}
+.panelTitle__right { display: flex; align-items: center; gap: 10px; }
+
+.box__body { padding: 18px 22px 20px; }
+
+/* ---------- side card ---------- */
 .side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
+  position: sticky; top: 24px;
 }
-
-@media (max-width: 900px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-}
-
 .sideHeader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 6px;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 26px 22px 22px;
+  gap: 10px;
+  border-bottom: 1px dashed var(--line);
+  position: relative;
 }
-
 .sideHeader__seal {
-  margin-bottom: 10px;
-}
-
-.sideHeader__name {
-  margin: 0;
-  color: var(--ink-0);
-  font-size: 26px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
-.sideHeader__role {
+  width: 88px; height: 88px;
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--gold-dim);
+  background-color: var(--bg-2);
+  background-image: repeating-linear-gradient(
+    135deg, transparent 0, transparent 6px,
+    rgba(201,169,97,0.06) 6px, rgba(201,169,97,0.06) 7px
+  );
+  font-family: var(--font-mono);
+  font-size: 38px; font-weight: 600;
   color: var(--gold);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.15em;
+  letter-spacing: 0;
+  margin-bottom: 4px;
 }
-
+.sideHeader__seal::before {
+  content: ""; position: absolute; inset: 4px;
+  border: 1px solid rgba(201,169,97,0.18); pointer-events: none;
+}
+.sideHeader__seal::after {
+  /* L자 코너 틱 — top-left 만 — 자매 dossier 패턴 */
+  content: "";
+  position: absolute; left: -1px; top: -1px;
+  width: 10px; height: 10px;
+  border-top: 1px solid var(--gold);
+  border-left: 1px solid var(--gold);
+}
+.sideHeader__name {
+  margin: 6px 0 0;
+  font-size: 22px; font-weight: 600;
+  color: var(--ink-0); letter-spacing: 0.02em;
+}
+.sideHeader__role {
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: flex; align-items: center; gap: 10px;
+}
+.sideHeader__role::before,
+.sideHeader__role::after {
+  content: ""; width: 14px; height: 1px; background: var(--gold-dim);
+}
 .sideHeader__sub {
-  color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.1em;
+  font-size: 12px; letter-spacing: 0.08em;
+  color: var(--ink-2);
 }
-
 .sideTags {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  display: flex; justify-content: center; gap: 6px;
+  padding: 14px 22px;
+  border-bottom: 1px dashed var(--line);
 }
 
-.kv {
-  margin: 0;
+/* ---------- role / status badges ---------- */
+.roleBadge {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 5px 9px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-2);
+  color: var(--ink-1);
+  line-height: 1;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 22px;
+  white-space: nowrap;
 }
+.roleBadge--gm {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: rgba(201,169,97,0.08);
+}
+.roleBadge--gm::before {
+  content: ""; width: 5px; height: 5px;
+  background: var(--gold); transform: rotate(45deg);
+}
+
+.statusBadge {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 5px 9px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-2);
+  color: var(--ink-1);
+  line-height: 1;
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 22px;
+  white-space: nowrap;
+}
+.statusBadge::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ink-2);
+  box-shadow: 0 0 6px rgba(255,255,255,0.05);
+}
+.statusBadge--active {
+  color: #9bc096;
+  border-color: rgba(110,154,106,0.5);
+  background: rgba(110,154,106,0.08);
+}
+.statusBadge--active::before {
+  background: var(--success, #6e9a6a);
+  box-shadow: 0 0 8px rgba(110,154,106,0.6);
+}
+.statusBadge--suspended {
+  color: #d9938b;
+  border-color: rgba(193,74,61,0.5);
+  background: rgba(193,74,61,0.08);
+}
+.statusBadge--suspended::before {
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(193,74,61,0.5);
+}
+
+/* ---------- kv definition list ---------- */
+.kv { margin: 0; padding: 18px 22px 20px; }
+.side .kv { padding: 16px 22px 20px; }
 
 .kv__row {
-  display: flex;
-  padding: 7px 0;
+  display: flex; align-items: baseline;
+  gap: 14px;
+  padding: 9px 0;
   border-bottom: 1px dashed var(--line);
-  font-size: 14px;
 }
-
-.kv__row:last-child {
-  border-bottom: none;
-}
+.kv__row:first-child { padding-top: 0; }
+.kv__row:last-child { border-bottom: 0; padding-bottom: 0; }
 
 .kv__row dt {
   margin: 0;
   width: 38%;
-  color: var(--ink-2);
+  flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.1em;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-2);
 }
-
 .kv__row dd {
-  flex: 1;
   margin: 0;
+  flex: 1;
+  min-width: 0;
   color: var(--ink-0);
-  word-break: break-all;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .mono {
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.05em;
-}
-
-.gold {
-  color: var(--gold);
-}
-
-.discord {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.discord__avatar {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border: 1px solid var(--gold-dim);
-}
-
-.discord__avatarFallback {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  background: #5865f2;
-  border: 1px solid var(--gold-dim);
-}
-
-.discord__info {
-  flex: 1;
-  min-width: 0;
-}
-
-.discord__name {
+  font-size: 13px;
+  letter-spacing: 0.04em;
   color: var(--ink-0);
-  font-weight: 500;
-  font-size: 15px;
+  white-space: nowrap;
 }
-
-.discord__handle {
-  margin-top: 2px;
+/* long IDs (Discord snowflake) — allow break */
+.mono--break { white-space: normal; word-break: break-all; }
+.kvKst {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  margin-left: 2px;
+  vertical-align: 1px;
+}
+.kvEmpty {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 10px;
 }
 
+/* ---------- discord card ---------- */
+.discord {
+  display: flex; align-items: center; gap: 18px;
+  padding: 18px 22px;
+  border-bottom: 1px dashed var(--line);
+}
+.discord__avatar {
+  position: relative;
+  width: 64px; height: 64px;
+  flex-shrink: 0;
+  border: 1px solid var(--gold-dim);
+  background: var(--bg-2);
+  overflow: hidden;
+}
+.discord__avatar::before {
+  content: ""; position: absolute; inset: 3px;
+  border: 1px solid rgba(201,169,97,0.18); pointer-events: none; z-index: 2;
+}
+.discord__avatar img,
+.discord__avatarFallback {
+  display: block; width: 100%; height: 100%;
+  object-fit: cover;
+}
+.discord__avatarFallback {
+  background-color: #5865f2;
+  background-image:
+    linear-gradient(135deg, rgba(255,255,255,0.18) 0 1px, transparent 1px 8px);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-family: var(--font-mono); font-weight: 600; font-size: 24px;
+}
+.discord__info {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.discord__name {
+  color: var(--ink-0); font-size: 16px; font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.discord__handle {
+  font-family: var(--font-mono);
+  font-size: 12px; letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.discord__action {
+  flex-shrink: 0;
+}
 .discord__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+  padding: 22px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+  background-image: repeating-linear-gradient(
+    135deg, transparent 0, transparent 8px,
+    rgba(74,69,56,0.18) 8px, rgba(74,69,56,0.18) 9px
+  );
+  border-bottom: 1px dashed var(--line);
+}
+.discord__emptyText {
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-2);
+  display: flex; align-items: center; gap: 10px;
+}
+.discord__emptyText::before {
+  content: ""; width: 6px; height: 6px;
+  background: var(--gold-dim); transform: rotate(45deg);
+}
+
+/* connected state status pill (top-right of panelTitle) */
+.connectedBadge {
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  line-height: 1;
+  border: 1px solid;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 18px;
+  white-space: nowrap;
+}
+.connectedBadge::before {
+  content: ""; width: 5px; height: 5px;
+}
+.connectedBadge--on {
+  color: #9bc096; border-color: rgba(110,154,106,0.5);
+  background: rgba(110,154,106,0.08);
+}
+.connectedBadge--on::before {
+  background: var(--success, #6e9a6a); border-radius: 50%;
+  box-shadow: 0 0 6px rgba(110,154,106,0.6);
+}
+.connectedBadge--off {
+  color: var(--ink-2); border-color: var(--line-strong);
+  background: var(--bg-2);
+}
+.connectedBadge--off::before {
+  background: var(--ink-3); border-radius: 50%;
+}
+
+/* ---------- buttons (자매 패턴) ---------- */
+.ghostBtn,
+.primaryBtn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 11px 20px;
+  cursor: pointer;
+  line-height: 1;
+  height: 38px;
+  display: inline-flex; align-items: center; gap: 10px;
+  background: transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.ghostBtn {
+  color: var(--ink-1);
+  border: 1px solid var(--line-strong);
+}
+.ghostBtn:hover {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: rgba(201,169,97,0.05);
+}
+.ghostBtn::after {
+  content: "↻"; font-size: 13px;
+}
+.ghostBtn:focus-visible { outline: 1px solid var(--gold-dim); outline-offset: 2px; }
+
+.primaryBtn {
+  color: var(--gold);
+  border: 1px solid var(--gold-dim);
+  background: linear-gradient(rgba(201,169,97,0.08), rgba(201,169,97,0.08));
+  font-weight: 600;
+}
+.primaryBtn::after {
+  content: "→"; transition: transform 140ms ease;
+}
+.primaryBtn:hover {
+  background: linear-gradient(rgba(201,169,97,0.18), rgba(201,169,97,0.18));
+  border-color: var(--gold);
+  color: var(--ink-0);
+}
+.primaryBtn:hover::after { transform: translateX(3px); }
+.primaryBtn:focus-visible { outline: 1px solid var(--gold); outline-offset: 2px; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1279px) {
+  .panelTitle { padding-left: 20px; padding-right: 20px; }
+  .panelTitle::after { left: 20px; right: 20px; }
+  .box__body, .kv, .discord {
+    padding-left: 20px; padding-right: 20px;
+  }
+  .sideHeader { padding-left: 20px; padding-right: 20px; }
+  .sideTags { padding-left: 20px; padding-right: 20px; }
+  .discord__empty { padding: 20px; }
+}
+@media (max-width: 767px) {
+  .layout { grid-template-columns: 1fr; }
+  .side { position: static; }
+  .discord { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .discord__action { width: 100%; }
+  .discord__action .ghostBtn,
+  .discord__action .primaryBtn { width: 100%; justify-content: center; }
+}
+@media (max-width: 480px) {
+  .box::before { inset: 0; border: 0; }
+  .panelTitle { padding-left: 16px; padding-right: 16px; }
+  .panelTitle::after { left: 16px; right: 16px; }
+  .box__body, .kv, .discord {
+    padding-left: 16px; padding-right: 16px;
+  }
+  .sideHeader { padding-left: 16px; padding-right: 16px; }
+  .sideTags { padding-left: 16px; padding-right: 16px; }
+  .discord__empty { padding: 16px; }
+  .kv__row { flex-direction: column; gap: 4px; align-items: flex-start; }
+  .kv__row dt { width: 100%; }
+  .primaryBtn, .ghostBtn { justify-content: center; height: 44px; }
 }

@@ -1,0 +1,68 @@
+/* DiscordLinkButton 자체 스타일 — page.module.css 의 primaryBtn / ghostBtn 톤 미러.
+   별도 파일로 분리한 이유: client component 에서 page.module.css 를 import 하면
+   CSS Module 스코프 충돌 + 빌드 경고 회피. */
+
+.ghostBtn,
+.primaryBtn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 11px 20px;
+  cursor: pointer;
+  line-height: 1;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.ghostBtn {
+  color: var(--ink-1);
+  border: 1px solid var(--line-strong);
+}
+.ghostBtn:hover {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: rgba(201, 169, 97, 0.05);
+}
+.ghostBtn::after {
+  content: "↻";
+  font-size: 13px;
+}
+.ghostBtn:focus-visible {
+  outline: 1px solid var(--gold-dim);
+  outline-offset: 2px;
+}
+
+.primaryBtn {
+  color: var(--gold);
+  border: 1px solid var(--gold-dim);
+  background: linear-gradient(
+    rgba(201, 169, 97, 0.08),
+    rgba(201, 169, 97, 0.08)
+  );
+  font-weight: 600;
+}
+.primaryBtn::after {
+  content: "→";
+  transition: transform 140ms ease;
+}
+.primaryBtn:hover {
+  background: linear-gradient(
+    rgba(201, 169, 97, 0.18),
+    rgba(201, 169, 97, 0.18)
+  );
+  border-color: var(--gold);
+  color: var(--ink-0);
+}
+.primaryBtn:hover::after {
+  transform: translateX(3px);
+}
+.primaryBtn:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+}

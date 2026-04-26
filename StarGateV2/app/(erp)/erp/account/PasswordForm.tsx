@@ -2,10 +2,6 @@
 
 import { useState } from "react";
 
-import Button from "@/components/ui/Button/Button";
-import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
-import Input from "@/components/ui/Input/Input";
-
 import styles from "./PasswordForm.module.css";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -63,10 +59,11 @@ export default function PasswordForm() {
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      <label className={styles.field}>
-        <Eyebrow>CURRENT PASSWORD</Eyebrow>
-        <Input
+    <form className={styles.pw__form} onSubmit={handleSubmit}>
+      <label className={styles.pw__field}>
+        <span className={styles.pw__label}>CURRENT PASSWORD</span>
+        <input
+          className={styles.pw__input}
           type="password"
           value={currentPassword}
           onChange={(e) => setCurrentPassword(e.target.value)}
@@ -76,9 +73,10 @@ export default function PasswordForm() {
         />
       </label>
 
-      <label className={styles.field}>
-        <Eyebrow>NEW PASSWORD</Eyebrow>
-        <Input
+      <label className={styles.pw__field}>
+        <span className={styles.pw__label}>NEW PASSWORD</span>
+        <input
+          className={styles.pw__input}
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
@@ -87,11 +85,15 @@ export default function PasswordForm() {
           minLength={MIN_PASSWORD_LENGTH}
           autoComplete="new-password"
         />
+        <span className={styles.pw__hint}>
+          최소 {MIN_PASSWORD_LENGTH}자 · 영문/숫자/기호 혼합 권장
+        </span>
       </label>
 
-      <label className={styles.field}>
-        <Eyebrow>CONFIRM NEW PASSWORD</Eyebrow>
-        <Input
+      <label className={styles.pw__field}>
+        <span className={styles.pw__label}>CONFIRM NEW PASSWORD</span>
+        <input
+          className={styles.pw__input}
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
@@ -102,27 +104,31 @@ export default function PasswordForm() {
         />
       </label>
 
-      <div className={styles.submit}>
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={submitting}
-        >
-          {submitting ? "변경 중..." : "비밀번호 변경"}
-        </Button>
-      </div>
-
       {error ? (
-        <div className={styles.error} role="alert">
+        <div className={styles.pw__error} role="alert">
           {error}
         </div>
       ) : null}
 
       {success ? (
-        <div className={styles.success} role="status">
+        <div className={styles.pw__success} role="status">
           비밀번호가 성공적으로 변경되었습니다.
         </div>
       ) : null}
+
+      <div className={styles.pw__submit}>
+        <span className={styles.pw__submit__notice}>
+          변경 시 모든 세션 로그아웃
+        </span>
+        <button
+          type="submit"
+          className={styles.pw__btn}
+          disabled={submitting}
+          aria-busy={submitting}
+        >
+          {submitting ? "변경 중" : "비밀번호 변경"}
+        </button>
+      </div>
     </form>
   );
 }
