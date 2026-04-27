@@ -6,8 +6,6 @@ import styles from "./PasswordForm.module.css";
 
 const MIN_PASSWORD_LENGTH = 8;
 
-// TODO(P5): API 경로(`/api/erp/profile/password`) 를 `/api/erp/account/password` 로 이관.
-// 현재는 호환성 유지 차원에서 그대로 둠 — account 라우트 이관과 함께 일괄 정리 예정.
 export default function PasswordForm() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -34,7 +32,7 @@ export default function PasswordForm() {
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/erp/profile/password", {
+      const res = await fetch("/api/erp/account/password", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
 import { findUserById } from "@/lib/db/users";
+import { formatDate, formatDateTime } from "@/lib/format/date";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
 
@@ -10,22 +11,6 @@ import DiscordLinkButton from "./DiscordLinkButton";
 import PasswordForm from "./PasswordForm";
 
 import styles from "./page.module.css";
-
-function fmtDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
-
-function fmtDateTime(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${fmtDate(date)} · ${hh}:${mm}`;
-}
 
 function daysSince(d: Date | string | null | undefined): number | null {
   if (!d) return null;
@@ -82,7 +67,7 @@ export default async function AccountPage() {
                 isGm ? styles["roleBadge--gm"] : ""
               }`}
             >
-              CLR · {user.role}
+              권한등급 · {user.role}
             </span>
             <span
               className={`${styles.statusBadge} ${
@@ -99,7 +84,7 @@ export default async function AccountPage() {
             <div className={styles.kv__row}>
               <dt>가입일</dt>
               <dd>
-                <span className={styles.mono}>{fmtDate(user.createdAt)}</span>
+                <span className={styles.mono}>{formatDate(user.createdAt, "numeric")}</span>
               </dd>
             </div>
             <div className={styles.kv__row}>
@@ -108,7 +93,7 @@ export default async function AccountPage() {
                 {user.lastLoginAt ? (
                   <>
                     <span className={styles.mono}>
-                      {fmtDateTime(user.lastLoginAt)}
+                      {formatDateTime(user.lastLoginAt)}
                     </span>
                     <span className={styles.kvKst}>KST</span>
                   </>
@@ -122,7 +107,7 @@ export default async function AccountPage() {
                 <dt>PW 변경</dt>
                 <dd>
                   <span className={styles.mono}>
-                    {fmtDate(user.passwordChangedAt)}
+                    {formatDate(user.passwordChangedAt, "numeric")}
                   </span>
                 </dd>
               </div>
