@@ -135,3 +135,21 @@ export async function markChangeLogReverted(
     { returnDocument: "after" }
   );
 }
+
+/* ── 삭제 ── */
+
+/**
+ * 단일 change log 삭제. GM 전용 도구로만 호출되어야 한다 (감사 로그 무결성).
+ *
+ * 호출자는 path mismatch (logId 가 해당 character 에 속하지 않는 경우) 검증을
+ * 별도 수행한다. 본 함수는 logId 만으로 단순 deleteOne — 멱등 (이미 없으면 false).
+ */
+export async function deleteChangeLog(
+  logId: ObjectId | string
+): Promise<boolean> {
+  const oid = toObjectId(logId);
+  if (!oid) return false;
+  const col = await characterChangeLogsCol();
+  const result = await col.deleteOne({ _id: oid });
+  return result.deletedCount > 0;
+}

@@ -90,8 +90,8 @@ for (const entry of MIGRATED_FILES) {
     assert.equal(parsed.type, "NPC");
     assert.equal(parsed.factionCode, entry.factionCode);
     assert.equal(parsed.institutionCode, entry.institutionCode);
-    assert.ok(parsed.sheet.appearance.length > 0, "sheet.appearance 비어 있음");
-    assert.ok(parsed.sheet.background.length > 0, "sheet.background 비어 있음");
+    assert.ok(parsed.lore.appearance.length > 0, "lore.appearance 비어 있음");
+    assert.ok(parsed.lore.background.length > 0, "lore.background 비어 있음");
 
     // loreMd에 body 전체가 보존되는지 확인 (섹션 파서가 흡수하지 않는 '## 관계' '## 데이터 연동' 등
     // 참고 섹션도 원본 문자열에는 살아 있어야 한다)

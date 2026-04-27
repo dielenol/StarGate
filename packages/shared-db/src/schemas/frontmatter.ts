@@ -372,28 +372,41 @@ export function toDbNpc(
     warningVideo: emptyToUndefined(parsed.warningVideo),
     agentLevel: parsed.agentLevel,
     isPublic: parsed.isPublic,
-    sheet: {
-      codename: parsed.codename,
+    lore: {
+      // 이름 — nameKo 가 주 표기(한국어), nameEn/nameNative/nickname 은 옵션
       name: parsed.nameKo,
-      nameEn: parsed.nameEn ?? "",
-      mainImage: "",
-      posterImage: emptyToUndefined(parsed.posterImage),
-      quote: sections.quote ?? "",
+      nameNative: emptyToUndefined(parsed.nameNative),
+      nickname: emptyToUndefined(parsed.nickname),
+      nameEn: parsed.nameEn,
+
+      // 인물 신상 — 빈 문자열은 그대로 유지(스키마가 z.string() 필수라서 ""로 보존)
       gender: parsed.gender ?? "",
       age: parsed.age ?? "",
       height: parsed.height ?? "",
+      weight: parsed.weight ?? "",
+
+      // 서사 — body 섹션 매핑
       appearance: sections.appearance ?? "",
       personality: sections.personality ?? "",
       background: sections.background ?? "",
-      roleDetail: sections.roleDetail ?? "",
-      notes: sections.notes ?? "",
+      quote: sections.quote ?? "",
+
+      // 이미지 — NPC frontmatter 에 mainImage 가 없으므로 ""로 초기화
+      mainImage: "",
+      posterImage: emptyToUndefined(parsed.posterImage),
+
+      // 메타 — frontmatter 에서 lore 영역으로 이동된 필드들
+      loreTags: parsed.loreTags,
+      appearsInEvents: parsed.appearsInEvents,
+
+      // NPC 호환 필드 — body 섹션 매핑
+      roleDetail: sections.roleDetail,
+      notes: sections.notes,
     },
     loreMd:
       resolvedBody !== undefined && resolvedBody.trim() !== ""
         ? resolvedBody
         : undefined,
-    loreTags: parsed.loreTags,
-    appearsInEvents: parsed.appearsInEvents,
     source: parsed.source,
     ownerId: null,
     createdAt: coerceDate(parsed.createdAt, n),

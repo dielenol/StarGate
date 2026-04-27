@@ -2,12 +2,12 @@
  * P1 검증 — S1/S2/S3: updateCharacter dot path 화이트리스트 보안
  *
  * 목적:
- *   - S1: 플레이어 자가편집 경로(PLAYER_ALLOWED_CHARACTER_FIELDS)에서 sheet 통째 입력이
- *         들어와도 $set에 'sheet' 루트 키가 누설되지 않음 (능력치 덮어쓰기 차단)
+ *   - S1: 플레이어 자가편집 경로(PLAYER_ALLOWED_CHARACTER_FIELDS)에서 lore 통째 입력이
+ *         들어와도 $set에 'lore' 루트 키가 누설되지 않음 (능력치/이미지 덮어쓰기 차단)
  *   - S2: allowedFields 미지정 시 ADMIN_ALLOWED_CHARACTER_FIELDS 디폴트 적용
  *         → 기존 (P1 이전) 호출처 무영향
  *   - S3: PLAYER_ALLOWED_CHARACTER_FIELDS 형상 검증
- *         이미지 3종 / 능력치 4종 / 식별 4종 미포함, 7개 필드만 정확히 포함
+ *         이미지 / 능력치 / 식별 미포함, 8개 필드만 정확히 포함
  *
  * 실행 방식:
  *   - charactersCol을 mock으로 교체해 updateOne($set 페이로드)를 캡처
@@ -69,15 +69,16 @@ if (!HAS_MODULE_MOCK) {
 
   /* ── S3: PLAYER_ALLOWED_CHARACTER_FIELDS 형상 검증 ── */
 
-  test("S3: PLAYER_ALLOWED_CHARACTER_FIELDS — 정확히 7개 필드만 포함", () => {
+  test("S3: PLAYER_ALLOWED_CHARACTER_FIELDS — 정확히 8개 필드만 포함 (lore.* 영역)", () => {
     const expected = [
-      "sheet.quote",
-      "sheet.appearance",
-      "sheet.personality",
-      "sheet.background",
-      "sheet.gender",
-      "sheet.age",
-      "sheet.height",
+      "lore.quote",
+      "lore.appearance",
+      "lore.personality",
+      "lore.background",
+      "lore.gender",
+      "lore.age",
+      "lore.height",
+      "lore.weight",
     ];
     assert.equal(
       PLAYER_ALLOWED_CHARACTER_FIELDS.size,
@@ -92,11 +93,11 @@ if (!HAS_MODULE_MOCK) {
     }
   });
 
-  test("S3: PLAYER_ALLOWED — 이미지 필드 3종 (previewImage, sheet.mainImage, sheet.posterImage) 미포함", () => {
+  test("S3: PLAYER_ALLOWED — 이미지 필드 미포함 (previewImage, lore.mainImage, lore.posterImage)", () => {
     for (const forbidden of [
       "previewImage",
-      "sheet.mainImage",
-      "sheet.posterImage",
+      "lore.mainImage",
+      "lore.posterImage",
       "pixelCharacterImage",
       "warningVideo",
     ]) {
@@ -107,12 +108,12 @@ if (!HAS_MODULE_MOCK) {
     }
   });
 
-  test("S3: PLAYER_ALLOWED — 능력치 필드 4종 미포함", () => {
+  test("S3: PLAYER_ALLOWED — 능력치 필드 미포함 (play.hp/atk/def/san)", () => {
     for (const forbidden of [
-      "sheet.hp",
-      "sheet.atk",
-      "sheet.def",
-      "sheet.san",
+      "play.hp",
+      "play.atk",
+      "play.def",
+      "play.san",
     ]) {
       assert.ok(
         !PLAYER_ALLOWED_CHARACTER_FIELDS.has(forbidden),
@@ -141,34 +142,41 @@ if (!HAS_MODULE_MOCK) {
     }
   });
 
-  test("S3: PLAYER_ALLOWED — 'sheet' 루트 키 자체는 미포함 (전체 덮어쓰기 차단)", () => {
+  test("S3: PLAYER_ALLOWED — 'lore' / 'play' 루트 키 자체는 미포함 (전체 덮어쓰기 차단)", () => {
     assert.ok(
-      !PLAYER_ALLOWED_CHARACTER_FIELDS.has("sheet"),
-      "PLAYER_ALLOWED에 'sheet' 루트 키가 포함되면 sheet 전체가 $set으로 덮어써져 능력치 손실"
+      !PLAYER_ALLOWED_CHARACTER_FIELDS.has("lore"),
+      "PLAYER_ALLOWED에 'lore' 루트 키가 포함되면 lore 전체가 $set으로 덮어써져 신원 정보 손실"
+    );
+    assert.ok(
+      !PLAYER_ALLOWED_CHARACTER_FIELDS.has("play"),
+      "PLAYER_ALLOWED에 'play' 루트 키가 포함되면 play 전체가 $set으로 덮어써져 능력치 손실"
     );
   });
 
-  /* ── S1: sheet 덮어쓰기 차단 (보안 핵심) ── */
+  /* ── S1: lore 덮어쓰기 차단 (보안 핵심) ── */
 
-  test("S1: PLAYER 화이트리스트 + sheet 통째 입력 — 'sheet' 루트 키가 $set에 누설되지 않음", async () => {
+  test("S1: PLAYER 화이트리스트 + lore 통째 입력 — 'lore' 루트 키가 $set에 누설되지 않음", async () => {
     capturedSetPayload = null;
     capturedFilter = null;
 
-    // 악성/실수 입력: sheet 통째를 새 객체로 던짐 (능력치 덮어쓰기 시도)
+    // 악성/실수 입력: lore 통째를 새 객체로 던짐
     const result = await updateCharacter(
       VALID_ID,
       {
-        sheet: {
+        lore: {
+          quote: "악의의 견적",
+          appearance: "악의 외형",
+          // 식별/이미지 시도
+          codename: "HACKED",
+          mainImage: "/evil.png",
+          posterImage: "/evil-wide.png",
+        },
+        // play 통째 시도 — 능력치 덮어쓰기
+        play: {
           hp: 0,
           san: 0,
           def: 0,
           atk: 999,
-          quote: "악의의 견적",
-          appearance: "악의 외형",
-          // 능력치 필드도 sheet 안에 같이 넣어서 시도
-          codename: "HACKED",
-          mainImage: "/evil.png",
-          posterImage: "/evil-wide.png",
         },
       },
       { allowedFields: PLAYER_ALLOWED_CHARACTER_FIELDS }
@@ -177,26 +185,30 @@ if (!HAS_MODULE_MOCK) {
     assert.equal(result, true, "updateCharacter 성공 반환");
     assert.ok(capturedSetPayload, "$set 페이로드가 캡처되어야 함");
 
-    // 1) 루트 키 'sheet' 가 절대 $set에 들어가면 안 됨
+    // 1) 루트 키 'lore' / 'play' 가 절대 $set에 들어가면 안 됨
     assert.ok(
-      !("sheet" in capturedSetPayload),
-      `$set에 'sheet' 루트 키가 누설됨. 키 목록: ${Object.keys(capturedSetPayload).join(",")}`
+      !("lore" in capturedSetPayload),
+      `$set에 'lore' 루트 키가 누설됨. 키 목록: ${Object.keys(capturedSetPayload).join(",")}`
+    );
+    assert.ok(
+      !("play" in capturedSetPayload),
+      `$set에 'play' 루트 키가 누설됨. 키 목록: ${Object.keys(capturedSetPayload).join(",")}`
     );
 
     // 2) PLAYER_ALLOWED에 있는 dot path만 통과해야 함
     assert.equal(
-      capturedSetPayload["sheet.quote"],
+      capturedSetPayload["lore.quote"],
       "악의의 견적",
-      "sheet.quote는 dot path로 정상 통과"
+      "lore.quote는 dot path로 정상 통과"
     );
     assert.equal(
-      capturedSetPayload["sheet.appearance"],
+      capturedSetPayload["lore.appearance"],
       "악의 외형",
-      "sheet.appearance는 dot path로 정상 통과"
+      "lore.appearance는 dot path로 정상 통과"
     );
 
     // 3) 능력치 dot path는 PLAYER_ALLOWED에 없으므로 절대 누설되지 않음
-    for (const stat of ["sheet.hp", "sheet.atk", "sheet.def", "sheet.san"]) {
+    for (const stat of ["play.hp", "play.atk", "play.def", "play.san"]) {
       assert.ok(
         !(stat in capturedSetPayload),
         `${stat}이 $set에 누설됨 — 능력치 덮어쓰기 차단 실패`
@@ -204,17 +216,17 @@ if (!HAS_MODULE_MOCK) {
     }
 
     // 4) 이미지 dot path도 누설되지 않음
-    for (const img of ["sheet.mainImage", "sheet.posterImage"]) {
+    for (const img of ["lore.mainImage", "lore.posterImage"]) {
       assert.ok(
         !(img in capturedSetPayload),
         `${img}이 $set에 누설됨 — 이미지 변경 차단 실패`
       );
     }
 
-    // 5) 식별 필드(codename)도 누설되지 않음 (sheet 내부 codename 시도 차단)
+    // 5) 식별 필드(codename)도 누설되지 않음 (lore 내부 codename 시도 차단)
     assert.ok(
       !("codename" in capturedSetPayload),
-      "sheet 내부의 codename이 루트 codename으로 승격되어 누설되면 안 됨"
+      "lore 내부의 codename이 루트 codename으로 승격되어 누설되면 안 됨"
     );
 
     // 6) updatedAt만 추가로 들어감
@@ -235,7 +247,7 @@ if (!HAS_MODULE_MOCK) {
         agentLevel: "GM",
         ownerId: "evil-user-id",
         isPublic: true,
-        sheet: { quote: "정상 변경" },
+        lore: { quote: "정상 변경" },
       },
       { allowedFields: PLAYER_ALLOWED_CHARACTER_FIELDS }
     );
@@ -243,8 +255,8 @@ if (!HAS_MODULE_MOCK) {
     assert.equal(result, true);
     assert.ok(capturedSetPayload);
 
-    // sheet.quote만 통과
-    assert.equal(capturedSetPayload["sheet.quote"], "정상 변경");
+    // lore.quote만 통과
+    assert.equal(capturedSetPayload["lore.quote"], "정상 변경");
 
     // 식별/권한 필드는 모두 silent drop
     for (const forbidden of ["codename", "role", "agentLevel", "ownerId", "isPublic"]) {
@@ -255,13 +267,13 @@ if (!HAS_MODULE_MOCK) {
     }
   });
 
-  test("S1: PLAYER 화이트리스트 + sheet 자체 누락(undefined) — 다른 dot path도 모두 silent drop", async () => {
+  test("S1: PLAYER 화이트리스트 + lore 자체 누락(undefined) — 다른 dot path도 모두 silent drop", async () => {
     capturedSetPayload = null;
 
     const result = await updateCharacter(
       VALID_ID,
       {
-        // sheet 객체 자체가 없음 — 모든 sheet.* dot path는 undefined로 drop
+        // lore 객체 자체가 없음 — 모든 lore.* dot path는 undefined로 drop
         codename: "X",
       },
       { allowedFields: PLAYER_ALLOWED_CHARACTER_FIELDS }
@@ -280,12 +292,12 @@ if (!HAS_MODULE_MOCK) {
     );
   });
 
-  test("S1: PLAYER 화이트리스트 + sheet null/typeof != object — silent drop, $set 비어 false", async () => {
+  test("S1: PLAYER 화이트리스트 + lore null/typeof != object — silent drop, $set 비어 false", async () => {
     capturedSetPayload = null;
 
     const result = await updateCharacter(
       VALID_ID,
-      { sheet: null },
+      { lore: null },
       { allowedFields: PLAYER_ALLOWED_CHARACTER_FIELDS }
     );
     assert.equal(result, false);
@@ -294,7 +306,7 @@ if (!HAS_MODULE_MOCK) {
     capturedSetPayload = null;
     const result2 = await updateCharacter(
       VALID_ID,
-      { sheet: "not an object" },
+      { lore: "not an object" },
       { allowedFields: PLAYER_ALLOWED_CHARACTER_FIELDS }
     );
     assert.equal(result2, false);
@@ -307,7 +319,7 @@ if (!HAS_MODULE_MOCK) {
     const result = await updateCharacter(
       VALID_ID,
       {
-        sheet: {
+        lore: {
           quote: "Q",
           age: "32",
           // appearance/personality/background/gender/height는 미포함
@@ -322,7 +334,7 @@ if (!HAS_MODULE_MOCK) {
     );
     assert.deepEqual(
       new Set(keys),
-      new Set(["sheet.quote", "sheet.age"]),
+      new Set(["lore.quote", "lore.age"]),
       "채워진 dot path만 $set에 포함 (undefined 필드는 제외)"
     );
   });
@@ -332,30 +344,37 @@ if (!HAS_MODULE_MOCK) {
   test("S2: allowedFields 미지정 → ADMIN 디폴트 적용", async () => {
     capturedSetPayload = null;
 
-    // sheet 통째 + 다른 ADMIN 허용 필드들 — ADMIN 모드에서는 다 통과
+    // lore + play 통째 + 다른 ADMIN 허용 필드들 — ADMIN 모드에서는 다 통과
     const result = await updateCharacter(VALID_ID, {
       codename: "AGENT_NEW",
       role: "field",
       agentLevel: "G",
-      sheet: { hp: 100, san: 80, def: 5, atk: 7, quote: "정상" },
+      lore: {
+        name: "이름",
+        gender: "남",
+        age: "30",
+        height: "180",
+        weight: "80",
+        appearance: "",
+        personality: "",
+        background: "",
+        quote: "정상",
+        mainImage: "",
+      },
+      play: { hp: 100, hpDelta: 0, san: 80, sanDelta: 0, def: 5, defDelta: 0, atk: 7, atkDelta: 0 },
       isPublic: true,
-      loreTags: ["test"],
     });
 
     assert.equal(result, true);
     assert.ok(capturedSetPayload);
 
-    // ADMIN 경로에서는 'sheet' 루트 키가 통째로 들어감 (의도된 동작)
-    assert.deepEqual(
-      capturedSetPayload.sheet,
-      { hp: 100, san: 80, def: 5, atk: 7, quote: "정상" },
-      "ADMIN 디폴트에서는 sheet 루트 키가 통째로 $set에 포함되어야 함 (기존 동작)"
-    );
+    // ADMIN 경로에서는 'lore' / 'play' 루트 키가 통째로 들어감 (의도된 동작)
+    assert.equal(capturedSetPayload.lore.quote, "정상");
+    assert.equal(capturedSetPayload.play.hp, 100);
     assert.equal(capturedSetPayload.codename, "AGENT_NEW");
     assert.equal(capturedSetPayload.role, "field");
     assert.equal(capturedSetPayload.agentLevel, "G");
     assert.equal(capturedSetPayload.isPublic, true);
-    assert.deepEqual(capturedSetPayload.loreTags, ["test"]);
   });
 
   test("S2: ADMIN_ALLOWED_CHARACTER_FIELDS === ALLOWED_CHARACTER_FIELDS (별칭)", () => {
@@ -366,14 +385,22 @@ if (!HAS_MODULE_MOCK) {
     );
   });
 
-  test("S2: ADMIN 디폴트는 'sheet' 루트 키 포함 (PLAYER와 대조)", () => {
+  test("S2: ADMIN 디폴트는 'lore' / 'play' 루트 키 포함 (PLAYER와 대조)", () => {
     assert.ok(
-      ADMIN_ALLOWED_CHARACTER_FIELDS.has("sheet"),
-      "ADMIN 디폴트는 sheet 루트 키를 포함 (전체 교체 의도)"
+      ADMIN_ALLOWED_CHARACTER_FIELDS.has("lore"),
+      "ADMIN 디폴트는 lore 루트 키를 포함 (전체 교체 의도)"
     );
     assert.ok(
-      !PLAYER_ALLOWED_CHARACTER_FIELDS.has("sheet"),
-      "PLAYER는 sheet 루트 키를 미포함 (부분 업데이트만 허용)"
+      ADMIN_ALLOWED_CHARACTER_FIELDS.has("play"),
+      "ADMIN 디폴트는 play 루트 키를 포함 (전체 교체 의도)"
+    );
+    assert.ok(
+      !PLAYER_ALLOWED_CHARACTER_FIELDS.has("lore"),
+      "PLAYER는 lore 루트 키를 미포함 (부분 업데이트만 허용)"
+    );
+    assert.ok(
+      !PLAYER_ALLOWED_CHARACTER_FIELDS.has("play"),
+      "PLAYER는 play 루트 키를 미포함"
     );
   });
 
@@ -478,41 +505,41 @@ if (!HAS_MODULE_MOCK) {
     assert.equal(capturedSetPayload.isPublic, true, "isPublic은 정상 통과");
   });
 
-  test("보안: PLAYER 경로 — input.sheet가 Date/Array일 때 silent drop, 크래시 없음", async () => {
-    // input.sheet가 Date 객체
+  test("보안: PLAYER 경로 — input.lore가 Date/Array일 때 silent drop, 크래시 없음", async () => {
+    // input.lore가 Date 객체
     capturedSetPayload = null;
     const result1 = await updateCharacter(
       VALID_ID,
-      { sheet: new Date() },
+      { lore: new Date() },
       { allowedFields: PLAYER_ALLOWED_CHARACTER_FIELDS }
     );
-    assert.equal(result1, false, "Date 객체에서 sheet.quote 등이 추출되지 않아 빈 패치 → false");
+    assert.equal(result1, false, "Date 객체에서 lore.quote 등이 추출되지 않아 빈 패치 → false");
     assert.equal(capturedSetPayload, null);
 
-    // input.sheet가 Array
+    // input.lore가 Array
     capturedSetPayload = null;
     const result2 = await updateCharacter(
       VALID_ID,
-      { sheet: ["array", "values"] },
+      { lore: ["array", "values"] },
       { allowedFields: PLAYER_ALLOWED_CHARACTER_FIELDS }
     );
     // Array는 typeof === "object"이고 정수 인덱스로만 접근됨 → quote 등 키는 undefined
     assert.equal(result2, false);
     assert.equal(capturedSetPayload, null);
 
-    // input.sheet가 Map (typeof object지만 [seg] 접근으로는 빈 값)
+    // input.lore가 Map (typeof object지만 [seg] 접근으로는 빈 값)
     capturedSetPayload = null;
     const m = new Map([["quote", "no-leak"]]);
     const result3 = await updateCharacter(
       VALID_ID,
-      { sheet: m },
+      { lore: m },
       { allowedFields: PLAYER_ALLOWED_CHARACTER_FIELDS }
     );
     assert.equal(result3, false, "Map은 bracket 접근으로 quote 키를 노출하지 않음");
     assert.equal(capturedSetPayload, null);
   });
 
-  test("보안: PLAYER 경로 — sheet 내부 dot path 시도 직접 (sheet의 단순 prototype) 차단", async () => {
+  test("보안: PLAYER 경로 — lore 내부 dot path 시도 직접 (lore의 단순 prototype) 차단", async () => {
     capturedSetPayload = null;
 
     // 깊은 dot path가 포함된 잘못된 입력 — getPathValue는 segments=[seg]로 split하므로
@@ -520,9 +547,9 @@ if (!HAS_MODULE_MOCK) {
     const result = await updateCharacter(
       VALID_ID,
       {
-        "sheet.hp": 999,
-        "sheet.atk": 999,
-        sheet: { quote: "정상" },
+        "play.hp": 999,
+        "play.atk": 999,
+        lore: { quote: "정상" },
       },
       { allowedFields: PLAYER_ALLOWED_CHARACTER_FIELDS }
     );
@@ -530,11 +557,11 @@ if (!HAS_MODULE_MOCK) {
     assert.equal(result, true);
     // PLAYER 화이트리스트에 없는 dot key는 input의 top-level에 있어도 무시
     assert.ok(
-      !("sheet.hp" in capturedSetPayload),
-      "input top-level의 'sheet.hp' 키는 PLAYER 화이트리스트에 없어 silent drop"
+      !("play.hp" in capturedSetPayload),
+      "input top-level의 'play.hp' 키는 PLAYER 화이트리스트에 없어 silent drop"
     );
-    assert.ok(!("sheet.atk" in capturedSetPayload));
-    // sheet.quote만 정상 통과
-    assert.equal(capturedSetPayload["sheet.quote"], "정상");
+    assert.ok(!("play.atk" in capturedSetPayload));
+    // lore.quote만 정상 통과
+    assert.equal(capturedSetPayload["lore.quote"], "정상");
   });
 }

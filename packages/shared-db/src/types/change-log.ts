@@ -7,7 +7,7 @@ import type { RoleLevel } from "./character.js";
    insert는 update 성공 후 호출자가 별도 호출 (트랜잭션 미사용). */
 
 export interface CharacterChangeLogEntry {
-  /** 변경된 필드. `sheet.quote` 같은 dot path 그대로 저장. */
+  /** 변경된 필드. `lore.quote` / `play.hp` 같은 dot path 그대로 저장. */
   field: string;
   /** 변경 전 값. 필드가 없었으면 undefined(serialize 후 null 될 수 있음). */
   before: unknown;

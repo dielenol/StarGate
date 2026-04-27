@@ -4,12 +4,12 @@ import { strict as assert } from "node:assert";
 import {
   npcDocSchema,
   npcFrontmatterSchema,
-  npcSheetSchema,
+  loreSheetSchema,
+  playSheetSchema,
 } from "../../../dist/schemas/npc.schema.js";
 import { toDbNpc } from "../../../dist/schemas/frontmatter.js";
 
-const validSheet = {
-  codename: "FOO",
+const validLore = {
   name: "이름",
   nameEn: "Name",
   mainImage: "",
@@ -17,18 +17,77 @@ const validSheet = {
   gender: "",
   age: "",
   height: "",
+  weight: "",
   appearance: "",
   personality: "",
   background: "",
-  roleDetail: "",
-  notes: "",
 };
 
-test("npcSheetSchema: 전체 문자열 필드 필수", () => {
-  assert.doesNotThrow(() => npcSheetSchema.parse(validSheet));
-  const missing = { ...validSheet };
-  delete missing.notes;
-  assert.throws(() => npcSheetSchema.parse(missing));
+test("loreSheetSchema: 필수 문자열 필드 검증", () => {
+  assert.doesNotThrow(() => loreSheetSchema.parse(validLore));
+  const missing = { ...validLore };
+  delete missing.appearance;
+  assert.throws(() => loreSheetSchema.parse(missing));
+});
+
+test("loreSheetSchema: 신규 옵션 필드 (nameNative, nickname, weight) 허용", () => {
+  assert.doesNotThrow(() =>
+    loreSheetSchema.parse({
+      ...validLore,
+      nameNative: "月城 葛葉",
+      nickname: "쿠즈하",
+      weight: "55kg",
+    })
+  );
+});
+
+test("playSheetSchema: AGENT play 필수 구조 검증", () => {
+  assert.doesNotThrow(() =>
+    playSheetSchema.parse({
+      className: "관료",
+      hp: 20,
+      hpDelta: -30,
+      san: 50,
+      sanDelta: 0,
+      def: 1,
+      defDelta: 0,
+      atk: 2,
+      atkDelta: 0,
+      abilityType: "",
+      weaponTraining: [],
+      skillTraining: ["설득"],
+      credit: "0",
+      equipment: [{ name: "권총", ammo: "5/5", grip: "한손" }],
+      abilities: [
+        { slot: "C1", name: "" },
+        { slot: "C2", name: "" },
+        { slot: "C3", name: "" },
+        { slot: "P", name: "" },
+        { slot: "A1", name: "" },
+        { slot: "A2", name: "" },
+        { slot: "A3", name: "" },
+      ],
+    })
+  );
+
+  assert.throws(() =>
+    playSheetSchema.parse({
+      className: "관료",
+      hp: 20,
+      hpDelta: 0,
+      san: 50,
+      sanDelta: 0,
+      def: 1,
+      defDelta: 0,
+      atk: 2,
+      atkDelta: 0,
+      weaponTraining: "",
+      skillTraining: [],
+      credit: "0",
+      equipment: [],
+      abilities: [{ name: "slot 없음" }],
+    })
+  );
 });
 
 test("npcDocSchema: 최소 유효 NPC 문서", () => {
@@ -38,7 +97,7 @@ test("npcDocSchema: 최소 유효 NPC 문서", () => {
     role: "비서",
     previewImage: "",
     isPublic: true,
-    sheet: validSheet,
+    lore: validLore,
     ownerId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -55,7 +114,7 @@ test("npcDocSchema: type은 'NPC' 리터럴 고정", () => {
       role: "r",
       previewImage: "",
       isPublic: false,
-      sheet: validSheet,
+      lore: validLore,
       ownerId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -69,7 +128,7 @@ test("npcDocSchema: previewImage 빈 문자열, 절대 URL, 서버 루트 상대
     type: "NPC",
     role: "r",
     isPublic: false,
-    sheet: validSheet,
+    lore: validLore,
     ownerId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -124,7 +183,7 @@ test("npcDocSchema: ownerId null 허용, undefined 거부", () => {
       role: "r",
       previewImage: "",
       isPublic: false,
-      sheet: validSheet,
+      lore: validLore,
       ownerId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -137,7 +196,7 @@ test("npcDocSchema: ownerId null 허용, undefined 거부", () => {
       role: "r",
       previewImage: "",
       isPublic: false,
-      sheet: validSheet,
+      lore: validLore,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
@@ -169,7 +228,7 @@ test("npcFrontmatterSchema: age/height는 string", () => {
   );
 });
 
-test("toDbNpc: body 섹션 → sheet 주입, 누락 섹션은 빈 문자열", () => {
+test("toDbNpc: body 섹션 → lore 주입, 누락 섹션은 빈 문자열", () => {
   const doc = toDbNpc(
     {
       codename: "REGISTRAR",
@@ -186,13 +245,34 @@ test("toDbNpc: body 섹션 → sheet 주입, 누락 섹션은 빈 문자열", ()
       // personality / background / roleDetail / notes 누락
     }
   );
-  assert.equal(doc.sheet.quote, "q");
-  assert.equal(doc.sheet.appearance, "a");
-  assert.equal(doc.sheet.personality, ""); // 기본값
-  assert.equal(doc.sheet.background, "");
-  assert.equal(doc.sheet.name, "아그네타");
-  assert.deepEqual(doc.loreTags, ["행정"]);
+  assert.equal(doc.lore.quote, "q");
+  assert.equal(doc.lore.appearance, "a");
+  assert.equal(doc.lore.personality, ""); // 기본값
+  assert.equal(doc.lore.background, "");
+  assert.equal(doc.lore.name, "아그네타");
+  assert.equal(doc.lore.nameEn, "Agneta");
+  assert.deepEqual(doc.lore.loreTags, ["행정"]);
   assert.equal(doc.ownerId, null);
+});
+
+test("toDbNpc: nameNative / nickname / weight frontmatter → lore 매핑", () => {
+  const doc = toDbNpc(
+    {
+      codename: "FOO",
+      type: "NPC",
+      role: "r",
+      nameKo: "츠키시로 쿠즈하",
+      nameNative: "月城 葛葉",
+      nickname: "쿠즈하",
+      weight: "55kg",
+      isPublic: true,
+    },
+    {}
+  );
+  assert.equal(doc.lore.name, "츠키시로 쿠즈하");
+  assert.equal(doc.lore.nameNative, "月城 葛葉");
+  assert.equal(doc.lore.nickname, "쿠즈하");
+  assert.equal(doc.lore.weight, "55kg");
 });
 
 test("toDbNpc: isPublic 누락 시 throw", () => {

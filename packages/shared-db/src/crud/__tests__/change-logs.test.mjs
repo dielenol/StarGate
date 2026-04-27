@@ -117,7 +117,7 @@ test(
       actorIsOwner: true,
       source: "player",
       changes: [
-        { field: "sheet.quote", before: "old", after: "new" },
+        { field: "lore.quote", before: "old", after: "new" },
       ],
       reason: "테스트",
     });
@@ -161,7 +161,7 @@ test(
       actorRole: "U",
       actorIsOwner: true,
       source: "player",
-      changes: [{ field: "sheet.age", before: "30", after: "31" }],
+      changes: [{ field: "lore.age", before: "30", after: "31" }],
     });
     await new Promise((r) => setTimeout(r, 10));
     const log2 = await insertChangeLog({
@@ -170,7 +170,7 @@ test(
       actorRole: "U",
       actorIsOwner: true,
       source: "player",
-      changes: [{ field: "sheet.height", before: "170", after: "171" }],
+      changes: [{ field: "lore.height", before: "170", after: "171" }],
     });
     await new Promise((r) => setTimeout(r, 10));
     const log3 = await insertChangeLog({
@@ -179,7 +179,7 @@ test(
       actorRole: "U",
       actorIsOwner: true,
       source: "player",
-      changes: [{ field: "sheet.background", before: "old", after: "new" }],
+      changes: [{ field: "lore.background", before: "old", after: "new" }],
     });
 
     const list = await listChangeLogsByCharacter(TEST_CHARACTER_ID);
@@ -228,7 +228,7 @@ test(
       actorRole: "U",
       actorIsOwner: true,
       source: "player",
-      changes: [{ field: "sheet.quote", before: "a", after: "b" }],
+      changes: [{ field: "lore.quote", before: "a", after: "b" }],
     });
 
     // 1차 revert
@@ -273,7 +273,7 @@ test(
         actorRole: "U",
         actorIsOwner: true,
         source: "player",
-        changes: [{ field: "sheet.age", before: "0", after: String(i) }],
+        changes: [{ field: "lore.age", before: "0", after: String(i) }],
       });
     }
 
@@ -296,7 +296,7 @@ test(
       actorRole: "U",
       actorIsOwner: true,
       source: "player",
-      changes: [{ field: "sheet.quote", before: "x", after: "y" }],
+      changes: [{ field: "lore.quote", before: "x", after: "y" }],
     });
     await markChangeLogReverted(log._id, "admin-x");
     const includesReverted = await countRecentChangesByActor(
@@ -329,7 +329,7 @@ test(
       actorRole: "M",
       actorIsOwner: false,
       source: "admin",
-      changes: [{ field: "sheet.hp", before: 100, after: 80 }],
+      changes: [{ field: "play.hp", before: 100, after: 80 }],
       reason: "데미지 적용",
     });
     await new Promise((r) => setTimeout(r, 5));
@@ -339,14 +339,14 @@ test(
       actorRole: "M",
       actorIsOwner: false,
       source: "admin",
-      changes: [{ field: "sheet.san", before: 70, after: 65 }],
+      changes: [{ field: "play.san", before: 70, after: 65 }],
     });
 
     const list = await listChangeLogsByActor(isolatedActor);
     assert.equal(list.length, 2);
     // 최신 먼저
-    assert.equal(list[0].changes[0].field, "sheet.san");
-    assert.equal(list[1].changes[0].field, "sheet.hp");
+    assert.equal(list[0].changes[0].field, "play.san");
+    assert.equal(list[1].changes[0].field, "play.hp");
 
     // cleanup
     const db = await getDb();
