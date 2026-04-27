@@ -6,6 +6,8 @@ import type { SessionReport } from "@/types/session-report";
 
 import { useSessionReports } from "@/hooks/queries/useSessionReportsQuery";
 
+import { formatDate } from "@/lib/format/date";
+
 import Box from "@/components/ui/Box/Box";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
@@ -13,15 +15,6 @@ import styles from "./page.module.css";
 
 interface Props {
   initialReports: SessionReport[];
-}
-
-function fmtDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("ko-KR", {
-    year: "2-digit",
-    month: "2-digit",
-    day: "2-digit",
-  });
 }
 
 export default function ReportsClient({ initialReports }: Props) {
@@ -71,7 +64,7 @@ export default function ReportsClient({ initialReports }: Props) {
                     </td>
                     <td className={styles.gmCol}>{report.gmName}</td>
                     <td className={`${styles.dateCol} ${styles.mono}`}>
-                      {fmtDate(report.createdAt)}
+                      {formatDate(report.createdAt)}
                     </td>
                   </tr>
                 );

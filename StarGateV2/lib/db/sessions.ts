@@ -21,12 +21,15 @@ import {
 export {
   findSessionsByGuildInMonth,
   findUpcomingSessionsByGuild,
+  countActiveSessionsByGuild,
   countParticipationByUserId,
   findResponsesBySessionIds,
   countByStatusBulk,
   findUsersByDiscordIds,
   listCharactersByOwnerIds,
 } from "@stargate/shared-db";
+
+export type { ActiveSessionCounts } from "@stargate/shared-db";
 
 /** 참여자 enrich 1행 */
 export interface EnrichedParticipant {

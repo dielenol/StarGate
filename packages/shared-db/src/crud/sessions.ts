@@ -12,7 +12,7 @@ import type {
   SessionStatus,
 } from "../types/index.js";
 
-import { sessionsCol } from "../collections.js";
+import { sessionResponsesCol, sessionsCol } from "../collections.js";
 
 /** MongoDB 내부 _id는 ObjectId이므로 필터용 타입 */
 type SessionFilter = Filter<Session> & { _id?: ObjectId };
@@ -650,4 +650,78 @@ export async function findSessionsPendingFinalization(): Promise<Session[]> {
     } as unknown as SessionFilter)
     .sort({ finalizationRequestedAt: 1, updatedAt: 1 })
     .toArray();
+}
+
+/** 길드별 활성 세션 카운트 (전체/모집중/확정/취소/내 참여). 월 범위와 무관. */
+export interface ActiveSessionCounts {
+  all: number;
+  open: number;
+  closed: number;
+  cancel: number;
+  mine: number;
+}
+
+const ACTIVE_STATUSES: SessionStatus[] = [
+  "OPEN",
+  "CLOSING",
+  "CLOSED",
+  "CANCELING",
+  "CANCELED",
+];
+
+/**
+ * 길드의 활성 세션을 status별로 카운트합니다 (월 범위 무관).
+ *
+ * `mine`은 viewerDiscordId가 YES 회신한 세션 중 활성 상태인 것 카운트.
+ * 페이지 헤더 STATUS 칩 표기 전용 — 본문 달력/리스트와 별개로 작동.
+ */
+export async function countActiveSessionsByGuild(
+  guildId: string,
+  viewerDiscordId: string | null,
+): Promise<ActiveSessionCounts> {
+  const sCol = await sessionsCol();
+
+  const agg = await sCol
+    .aggregate<{ _id: SessionStatus; count: number }>([
+      { $match: { guildId, status: { $in: ACTIVE_STATUSES } } },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ])
+    .toArray();
+
+  let all = 0;
+  let open = 0;
+  let closed = 0;
+  let cancel = 0;
+  for (const row of agg) {
+    all += row.count;
+    if (row._id === "OPEN" || row._id === "CLOSING") open += row.count;
+    else if (row._id === "CLOSED") closed += row.count;
+    else if (row._id === "CANCELING" || row._id === "CANCELED")
+      cancel += row.count;
+  }
+
+  let mine = 0;
+  if (viewerDiscordId) {
+    const rCol = await sessionResponsesCol();
+    const yesRows = await rCol
+      .find({ userId: viewerDiscordId, status: "YES" })
+      .project<{ sessionId?: string }>({ sessionId: 1 })
+      .toArray();
+
+    const validIds = yesRows
+      .map((r) => r.sessionId)
+      .filter(
+        (id): id is string => typeof id === "string" && ObjectId.isValid(id),
+      );
+
+    if (validIds.length > 0) {
+      mine = await sCol.countDocuments({
+        _id: { $in: validIds.map((id) => new ObjectId(id)) },
+        guildId,
+        status: { $in: ACTIVE_STATUSES },
+      } as unknown as SessionFilter);
+    }
+  }
+
+  return { all, open, closed, cancel, mine };
 }

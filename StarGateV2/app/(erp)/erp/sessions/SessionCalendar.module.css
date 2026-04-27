@@ -1,175 +1,362 @@
-/* ── Calendar grid (novus ordo) ── */
+/* ── Calendar root ── */
 
 .cal {
-  display: flex;
-  flex-direction: column;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
 }
 
-.cal__head {
+.head {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  margin-top: 10px;
-  margin-bottom: 1px;
-  background: var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
-.cal__head span {
-  padding: 8px;
-  background: var(--bg-1);
+.head span {
+  padding: 10px 0;
+  border-right: 1px solid var(--line);
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.18em;
   text-align: center;
 }
 
-.cal__row {
+.head span:last-child {
+  border-right: 0;
+}
+
+.sun {
+  color: var(--danger);
+}
+
+.sat {
+  color: var(--info);
+}
+
+.grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: var(--line);
+  grid-auto-rows: 132px;
 }
 
-.cal__row + .cal__row {
-  margin-top: 1px;
-}
-
-.cal__cell {
+.cell {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  height: 132px;
-  padding: 8px;
-  background: var(--bg-1);
-  border: 1px solid transparent;
+  padding: 8px 6px 6px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
   overflow: hidden;
+  background: transparent;
+  color: inherit;
   text-align: left;
   font: inherit;
   cursor: default;
 }
 
-.cal__cell--empty {
-  opacity: 0.4;
+.cell > * {
+  min-width: 0;
 }
 
-.cal__cell--today {
-  background: rgba(201, 168, 90, 0.08);
-  border-color: var(--gold-dim);
+.cell:nth-child(7n) {
+  border-right: 0;
 }
 
-.cal__cell--selected {
-  outline: 1px solid var(--gold);
-  outline-offset: -1px;
+.grid > .cell:nth-last-child(-n + 7) {
+  border-bottom: 0;
 }
 
-.cal__cell--clickable {
+.cell--other {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.cell--other .day {
+  color: var(--line-strong);
+}
+
+.cell--today {
+  background: color-mix(in srgb, var(--gold) 6%, transparent);
+}
+
+.cell--today::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--gold);
+  pointer-events: none;
+}
+
+.cell--clickable {
   cursor: pointer;
 }
 
-.cal__cell--clickable:hover {
+.cell--clickable:hover {
   background: var(--bg-2);
 }
 
-.cal__cell--clickable:focus-visible {
+.cell--today.cell--clickable:hover {
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+
+.cell--selected {
   outline: 1px solid var(--gold-dim);
   outline-offset: -1px;
 }
 
-.cal__date {
+.day {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   color: var(--ink-1);
   font-family: var(--font-mono);
   font-size: 14px;
+  letter-spacing: 0.04em;
 }
 
-.cal__cell--sunday .cal__date {
+.day--sun {
   color: var(--danger);
 }
 
-.cal__cell--saturday .cal__date {
+.day--sat {
   color: var(--info);
 }
 
-.cal__cell--today .cal__date {
-  color: var(--gold);
-}
-
-.cal__chips {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 3px;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.cal__chip {
-  display: inline-block;
-  padding: 3px 7px;
-  border-left: 2px solid var(--gold);
-  background: rgba(201, 168, 90, 0.18);
-  color: var(--gold);
+.todayTag {
+  padding: 2px 6px;
+  background: var(--gold);
+  color: var(--bg);
   font-family: var(--font-mono);
   font-size: 14px;
-  letter-spacing: 0.08em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: 0.1em;
+  line-height: 1;
 }
 
-.cal__chip--info {
-  background: rgba(106, 135, 168, 0.18);
+.attendDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--attend-marker);
+  border-radius: 50%;
+}
+
+/* Chips */
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 5px;
+  border-left: 2px solid var(--gold);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.chip .t {
+  flex: 0 0 auto;
+  color: var(--gold);
+  font-size: 14px;
+}
+
+.chip .n {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink-0);
+  font-family: var(--font-body);
+}
+
+.chip--closing {
   border-left-color: var(--info);
+  background: color-mix(in srgb, var(--info) 12%, transparent);
+}
+
+.chip--closing .t {
   color: var(--info);
 }
 
-.cal__chip--success {
-  background: rgba(122, 168, 131, 0.18);
+.chip--closed {
   border-left-color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+
+.chip--closed .t {
   color: var(--success);
 }
 
-.cal__chip--danger {
-  background: rgba(192, 106, 90, 0.18);
+.chip--closed .n {
+  color: var(--ink-1);
+}
+
+.chip--cancel {
   border-left-color: var(--danger);
-  color: var(--danger);
+  background: transparent;
+  opacity: 0.55;
 }
 
-.cal__chip--attending {
-  border-left-color: var(--attend-marker);
-  color: var(--attend-text);
-  background: color-mix(in srgb, var(--attend-marker) 18%, transparent);
+.chip--cancel .n {
+  text-decoration: line-through;
+  color: var(--ink-3);
 }
 
-.cal__attend {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  color: var(--attend-text);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1;
-  letter-spacing: 0.04em;
-  pointer-events: none;
+.chipMe {
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  background: var(--attend-marker);
+  border-radius: 50%;
 }
 
-.cal__legend {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 10px;
+.more {
+  padding: 1px 6px;
+  background: none;
+  border: 0;
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
+  letter-spacing: 0.08em;
+  text-align: left;
+  cursor: pointer;
 }
 
-/* ── Status / messages ── */
+.more:hover {
+  color: var(--gold);
+}
+
+/* Legend */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.legendItem .sw {
+  width: 12px;
+  height: 12px;
+  border-left: 2px solid var(--gold);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+
+.legendItem--closing .sw {
+  border-left-color: var(--info);
+  background: color-mix(in srgb, var(--info) 12%, transparent);
+}
+
+.legendItem--closed .sw {
+  border-left-color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+
+.legendItem--cancel .sw {
+  border-left-color: var(--danger);
+  background: transparent;
+}
+
+.legendItem--mine .sw {
+  position: relative;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+}
+
+.legendItem--mine .sw::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: var(--attend-marker);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Selected-day detail */
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.detail__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.12s;
+}
+
+.detail__row:hover {
+  border-color: var(--gold-dim);
+}
+
+.detail__time {
+  flex-shrink: 0;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.06em;
+}
+
+.detail__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-0);
+  font-size: 15px;
+}
+
+.detail__count {
+  flex-shrink: 0;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+/* States */
 
 .error {
+  margin: 12px;
   padding: 12px 14px;
-  margin-top: 12px;
   border: 1px solid var(--danger);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   color: var(--danger);
@@ -185,67 +372,8 @@
   text-align: center;
 }
 
-/* ── Selected-day detail list ── */
-
-.detail {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--line);
-}
-
-.detail__row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-}
-
-.detail__time {
-  flex-shrink: 0;
-  color: var(--gold);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.1em;
-}
-
-.detail__title {
-  flex: 1;
-  min-width: 0;
-  color: var(--ink-0);
-  font-size: 15px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.detail__mark {
-  color: var(--attend-text);
-  font-family: var(--font-mono);
-}
-
-.detail__count {
-  flex-shrink: 0;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-}
-
-/* ── Mobile ── */
-
 @media (max-width: 767px) {
-  .cal__cell {
-    height: 96px;
-    padding: 5px;
-  }
-
-  .cal__chip {
-    font-size: 14px;
-    padding: 2px 5px;
+  .grid {
+    grid-auto-rows: 110px;
   }
 }

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findReportById } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
+import { formatDate } from "@/lib/format/date";
 
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -18,15 +19,6 @@ import styles from "./page.module.css";
 
 interface Props {
   params: Promise<{ id: string }>;
-}
-
-function fmtDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 }
 
 export default async function SessionReportDetailPage({ params }: Props) {
@@ -80,14 +72,14 @@ export default async function SessionReportDetailPage({ params }: Props) {
               </div>
               <div className={styles.kv__row}>
                 <dt>작성일</dt>
-                <dd className={styles.mono}>{fmtDate(report.createdAt)}</dd>
+                <dd className={styles.mono}>{formatDate(report.createdAt, "long")}</dd>
               </div>
               {report.updatedAt &&
               new Date(report.updatedAt).getTime() !==
                 new Date(report.createdAt).getTime() ? (
                 <div className={styles.kv__row}>
                   <dt>수정일</dt>
-                  <dd className={styles.mono}>{fmtDate(report.updatedAt)}</dd>
+                  <dd className={styles.mono}>{formatDate(report.updatedAt, "long")}</dd>
                 </div>
               ) : null}
               <div className={styles.kv__row}>

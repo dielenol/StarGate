@@ -1,217 +1,967 @@
-/* ── Search box (상단 승격) ── */
+/* ── Page head meta (right of title) ── */
 
-.searchBox {
-  margin-bottom: var(--gap);
+.titleRow {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.searchRow {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.searchInput {
-  flex: 1;
-}
-
-/* ── Tabs row (탭 + 상태 필터 수평 배치) ── */
-
-.tabsRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: var(--gap);
-  border-bottom: 1px solid var(--line);
-}
-
-.statusSelect {
-  min-width: 140px;
-  margin-bottom: -1px;
-}
-
-/* ── Tabs ── */
-
-.tabs {
-  display: flex;
-  gap: 0;
-  overflow-x: auto;
+.headMeta {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.14em;
   white-space: nowrap;
 }
 
-.tab {
-  padding: 8px 14px;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.tab:hover {
-  color: var(--ink-0);
-}
-
-.tab--active {
+.headMeta b {
   color: var(--gold);
-  border-bottom-color: var(--gold);
+  font-weight: 500;
 }
 
-/* ── Two-column layout (wide / narrow) ── */
+/* ── Unified control bar ── */
 
-.cols {
+.ctrl {
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  margin-bottom: 16px;
+}
+
+.ctrlRow {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: var(--gap);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: stretch;
+  height: 52px;
+}
+
+.ctrlRow--r2 {
+  grid-template-columns: 1fr;
+  height: auto;
+  min-height: 46px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.ctrlSeg {
+  display: flex;
+  align-items: stretch;
+  border-right: 1px solid var(--line);
+}
+
+.ctrlSeg button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: transparent;
+  border: 0;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ctrlSeg button:hover {
+  color: var(--ink-1);
+}
+
+.ctrlSeg button.on {
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 6%, transparent);
+}
+
+.ctrlSeg button + button {
+  border-left: 1px solid var(--line);
+}
+
+.ctrlSeg .ico {
+  font-size: 14px;
+}
+
+.ctrlSearch {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  padding: 0 16px;
+  border-right: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.ctrlSearch .icn {
+  margin-right: 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 16px;
+}
+
+.ctrlSearch input {
+  flex: 1;
+  height: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.ctrlSearch input::placeholder {
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+}
+
+.ctrlMonth {
+  display: flex;
+  align-items: stretch;
+}
+
+.ctrlMonth button {
+  padding: 0 14px;
+  background: transparent;
+  border: 0;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ctrlMonth button:hover {
+  color: var(--gold);
+}
+
+.ctrlMonth button + button {
+  border-left: 1px solid var(--line);
+}
+
+.ctrlMonth .lbl {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.ctrlStatus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  flex-wrap: wrap;
+}
+
+.ctrlStatusLbl {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  margin-right: 4px;
+  padding-right: 10px;
+  border-right: 1px solid var(--line);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+}
+
+.pillgroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pill:hover {
+  color: var(--ink-1);
+}
+
+.pill .dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  background: var(--ink-3);
+  vertical-align: middle;
+}
+
+.pill--on {
+  color: var(--ink-0);
+  border-color: var(--gold-dim);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+
+.pill--open .dot {
+  background: var(--gold);
+}
+
+.pill--closed .dot {
+  background: var(--success);
+}
+
+.pill--cancel .dot {
+  background: var(--danger);
+}
+
+.pill--mine .dot {
+  background: var(--attend-marker);
+}
+
+/* ── BOT-OPS notice ── */
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: color-mix(in srgb, var(--info) 6%, transparent);
+  border-left: 2px solid var(--info);
+  color: var(--ink-1);
+  font-size: 14px;
+}
+
+.notice .lbl {
+  flex-shrink: 0;
+  color: var(--info);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+.notice .cmd {
+  color: var(--gold);
+  font-family: var(--font-mono);
+}
+
+/* ── Body grid ── */
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
+  align-items: start;
   margin-bottom: var(--gap);
 }
 
-.colMain,
-.colSide {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
+.body main {
   min-width: 0;
 }
 
-@media (max-width: 900px) {
-  .cols {
+.body--full {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 1024px) {
+  .body {
     grid-template-columns: 1fr;
   }
 }
 
-/* ── List table ── */
+/* ── Right rail ── */
 
-.tableWrap {
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-
-.table th {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: normal;
-  letter-spacing: 0.15em;
-  text-align: left;
-}
-
-.table td {
-  padding: 10px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: middle;
-  color: var(--ink-1);
-}
-
-.table tbody tr:hover td {
-  background: var(--bg-2);
-}
-
-.titleCol {
-  color: var(--ink-0);
-  font-weight: 500;
-}
-
-.dateCol {
-  white-space: nowrap;
-  text-align: right;
-}
-
-/* ── List table extras ── */
-
-.countCol {
-  width: 80px;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.linkCol {
-  width: 120px;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.attendMark {
-  display: inline-block;
-  margin-right: 4px;
-  color: var(--attend-text);
-  font-family: var(--font-mono);
-}
-
-/* ── Side panel helpers ── */
-
-.sideEyebrow {
-  display: block;
-  margin: 16px 0 6px;
-}
-
-.sideList {
+.rail {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
+  gap: 16px;
 }
 
-.sideItem {
+.statStrip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+}
+
+.statCell {
+  padding: 12px;
+  border-right: 1px solid var(--line);
+  min-width: 0;
+}
+
+.statCell:last-child {
+  border-right: 0;
+}
+
+.statKey {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.statVal {
+  margin-top: 6px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.statVal small {
+  margin-left: 4px;
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+}
+
+.railCard {
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+}
+
+.railHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+.railHead .cnt {
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+}
+
+.railSep {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-}
-
-.sideItemBody {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sideItemTitle {
-  color: var(--ink-0);
+  margin: 16px 0 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
   font-size: 14px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: 0.16em;
   white-space: nowrap;
 }
 
-.sideItemDate {
+.railSep::before,
+.railSep::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+/* MY RSVP item */
+
+.myrsvp {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rsvpItem {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  min-width: 0;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.12s;
+}
+
+.rsvpItem:hover {
+  border-color: var(--gold-dim);
+}
+
+.rsvpWhen {
+  padding-right: 8px;
+  border-right: 1px solid var(--line);
+  text-align: center;
+}
+
+.rsvpWhen .d {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.rsvpWhen .m {
+  margin-top: 4px;
   color: var(--ink-3);
-  font-size: 13px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.rsvpBody {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rsvpName {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-0);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.rsvpMeta {
+  margin-top: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.rsvpMeta .t {
+  color: var(--ink-1);
+}
+
+.rsvpCd {
+  padding: 4px 8px;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.rsvpCd--urgent {
+  color: var(--info);
+  border-color: var(--info);
+}
+
+.rsvpCd--past {
+  color: var(--ink-3);
+  border-color: var(--line-strong);
+}
+
+/* OPEN imminent list */
+
+.openItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--line);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.openItem:last-child {
+  border-bottom: 0;
+}
+
+.openItem:hover .openName {
+  color: var(--gold);
+}
+
+.openName {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-0);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  transition: color 0.12s;
+}
+
+.openMeta {
+  margin-top: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.openCd {
+  padding: 4px 8px;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.openCd--urgent {
+  color: var(--info);
+  border-color: var(--info);
+}
+
+/* ── List view ── */
+
+.list {
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+}
+
+.listMonth {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.listMonth .ym {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.listMonth .cnt {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.listHead {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 140px 100px;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.listHead > div {
+  white-space: nowrap;
+}
+
+.listRow {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 140px 100px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.12s;
+}
+
+.listRow:last-child {
+  border-bottom: 0;
+}
+
+.listRow:hover {
+  background: color-mix(in srgb, var(--gold) 4%, transparent);
+}
+
+.listRow::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--gold);
+}
+
+.listRow--closing::before {
+  background: var(--info);
+}
+
+.listRow--closed::before {
+  background: var(--success);
+}
+
+.listRow--cancel::before {
+  background: var(--danger);
+}
+
+.listStat {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.listStat--closing {
+  color: var(--info);
+}
+
+.listStat--closed {
+  color: var(--success);
+}
+
+.listStat--cancel {
+  color: var(--danger);
+}
+
+.listName {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.listName .row1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--ink-0);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.listName .me {
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  background: var(--attend-marker);
+  border-radius: 50%;
+}
+
+.listName .nm {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.listName .sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.listRow--cancel .listName .nm {
+  text-decoration: line-through;
+  color: var(--ink-3);
+}
+
+.listWhen {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.listWhen .top {
+  color: var(--ink-0);
+}
+
+.listWhen .sub {
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.listRsvp {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: right;
+  gap: 8px;
+  white-space: nowrap;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.listRsvp .y {
+  color: var(--gold);
+  font-size: 16px;
+}
+
+.listRsvp .lbl {
+  display: block;
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+/* ── Agenda view ── */
+
+.agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.agendaDay {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+}
+
+.agendaDay--today {
+  border-color: var(--gold-dim);
+}
+
+.agendaDate {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 14px;
+  border-right: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.dow {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+}
+
+.dow--sun {
+  color: var(--danger);
+}
+
+.dow--sat {
+  color: var(--info);
+}
+
+.day {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 32px;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.ym {
+  margin-top: 4px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.todayMark {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 2px 6px;
+  background: var(--gold);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+.agendaList {
+  display: flex;
+  flex-direction: column;
+}
+
+.agendaRow {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+}
+
+.agendaRow:last-child {
+  border-bottom: 0;
+}
+
+.agendaRow::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: var(--gold);
+}
+
+.agendaRow--closing::before {
+  background: var(--info);
+}
+
+.agendaRow--closed::before {
+  background: var(--success);
+}
+
+.agendaRow--cancel::before {
+  background: var(--danger);
+  opacity: 0.6;
+}
+
+.agendaRow:hover {
+  background: color-mix(in srgb, var(--gold) 4%, transparent);
+}
+
+.agendaTime {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.agendaTime .dur {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.agendaBody {
+  min-width: 0;
+}
+
+.agendaBody > * {
+  min-width: 0;
+}
+
+.agendaTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-0);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.agendaTitle .me {
+  width: 7px;
+  height: 7px;
+  background: var(--attend-marker);
+  border-radius: 50%;
+}
+
+.agendaRow--cancel .agendaTitle {
+  text-decoration: line-through;
+  color: var(--ink-3);
+}
+
+.agendaMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.agendaMeta .sep {
+  color: var(--line-strong);
+}
+
+.agendaStat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 14px;
   letter-spacing: 0.08em;
 }
 
-/* ── Utilities ── */
-
-.mono {
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
+.agendaStat .label {
+  color: var(--gold);
 }
 
+.agendaStat--closing .label {
+  color: var(--info);
+}
+
+.agendaStat--closed .label {
+  color: var(--success);
+}
+
+.agendaStat--cancel .label {
+  color: var(--danger);
+}
+
+.agendaStat .rsvp {
+  color: var(--ink-1);
+  font-size: 14px;
+}
+
+/* ── Empty state (shared across views) ── */
+
 .empty {
-  padding: 28px 10px;
+  padding: 28px 16px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-size: 14px;
+  letter-spacing: 0.16em;
   text-align: center;
 }

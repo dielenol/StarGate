@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 
 import {
+  countActiveSessionsByGuild,
   enrichSessions,
   findSessionsByGuildInMonth,
   findUpcomingSessionsByGuild,
+  type ActiveSessionCounts,
 } from "@/lib/db/sessions";
 import { auth } from "@/lib/auth/config";
 
@@ -43,14 +45,24 @@ export default async function SessionsPage() {
 
   let serializedSessions: SerializedSession[] = [];
   let initialUpcoming: UpcomingSessionLink[] = [];
+  let initialGlobalCounts: ActiveSessionCounts = {
+    all: 0,
+    open: 0,
+    closed: 0,
+    cancel: 0,
+    mine: 0,
+  };
 
   if (guildId) {
     try {
       // findSessionsByGuildInMonth 는 monthIndex(0~11) 기반
-      const [rawMonth, rawUpcoming] = await Promise.all([
+      // countActiveSessionsByGuild 는 월 무관 — STATUS 칩 표기 전용
+      const [rawMonth, rawUpcoming, globalCounts] = await Promise.all([
         findSessionsByGuildInMonth(guildId, year, month - 1),
         findUpcomingSessionsByGuild(guildId, UPCOMING_OPEN_LIMIT),
+        countActiveSessionsByGuild(guildId, session.user.discordId),
       ]);
+      initialGlobalCounts = globalCounts;
 
       const enriched = await enrichSessions(
         rawMonth,
@@ -90,37 +102,35 @@ export default async function SessionsPage() {
     }
   }
 
-  return (
-    <>
-      <PageHead
-        breadcrumb="ERP / SESSIONS"
-        title="세션"
-        right={
-          <Button
-            as="a"
-            href="/erp/sessions/report"
-            variant="primary"
-          >
-            리포트 →
-          </Button>
-        }
-      />
-
-      {!guildId ? (
+  if (!guildId) {
+    return (
+      <>
+        <PageHead
+          breadcrumb="ERP / SESSIONS"
+          title="세션"
+          right={
+            <Button as="a" href="/erp/sessions/report" variant="primary">
+              리포트 →
+            </Button>
+          }
+        />
         <Box>
           <div className={styles.empty}>
             GUILD_ID 환경변수가 설정되지 않았습니다.
           </div>
         </Box>
-      ) : (
-        <SessionsClient
-          initialSessions={serializedSessions}
-          initialYear={year}
-          initialMonth={month}
-          guildId={guildId}
-          initialUpcoming={initialUpcoming}
-        />
-      )}
-    </>
+      </>
+    );
+  }
+
+  return (
+    <SessionsClient
+      initialSessions={serializedSessions}
+      initialYear={year}
+      initialMonth={month}
+      guildId={guildId}
+      initialUpcoming={initialUpcoming}
+      initialGlobalCounts={initialGlobalCounts}
+    />
   );
 }

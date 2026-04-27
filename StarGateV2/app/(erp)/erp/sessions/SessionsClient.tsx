@@ -7,6 +7,7 @@ import {
   useSessionsByMonth,
   type SerializedSession,
 } from "@/hooks/queries/useSessionsQuery";
+import type { ActiveSessionCounts } from "@/lib/db/sessions";
 
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -46,6 +47,8 @@ interface SessionsClientProps {
   initialMonth: number;
   guildId: string;
   initialUpcoming: UpcomingSessionLink[];
+  /** STATUS 칩 카운트 — 월 무관 전체 활성 세션 기준 (서버에서 1회 fetch) */
+  initialGlobalCounts: ActiveSessionCounts;
 }
 
 interface TabDef {
@@ -74,6 +77,7 @@ export default function SessionsClient({
   initialMonth,
   guildId,
   initialUpcoming,
+  initialGlobalCounts,
 }: SessionsClientProps) {
   const [view, setView] = useState<ViewKey>("calendar");
   const [year, setYear] = useState(initialYear);
@@ -231,35 +235,35 @@ export default function SessionsClient({
                 on={statusGroup === "ALL"}
                 onClick={() => setStatusGroup("ALL")}
               >
-                ALL · {counts.all}
+                ALL · {initialGlobalCounts.all}
               </StatusPill>
               <StatusPill
                 mod="open"
                 on={statusGroup === "open"}
                 onClick={() => setStatusGroup("open")}
               >
-                모집중 · {counts.open}
+                모집중 · {initialGlobalCounts.open}
               </StatusPill>
               <StatusPill
                 mod="closed"
                 on={statusGroup === "closed"}
                 onClick={() => setStatusGroup("closed")}
               >
-                확정 · {counts.closed}
+                확정 · {initialGlobalCounts.closed}
               </StatusPill>
               <StatusPill
                 mod="cancel"
                 on={statusGroup === "cancel"}
                 onClick={() => setStatusGroup("cancel")}
               >
-                취소 · {counts.cancel}
+                취소 · {initialGlobalCounts.cancel}
               </StatusPill>
               <StatusPill
                 mod="mine"
                 on={statusGroup === "mine"}
                 onClick={() => setStatusGroup("mine")}
               >
-                내 참여 · {counts.mine}
+                내 참여 · {initialGlobalCounts.mine}
               </StatusPill>
             </div>
           </div>
@@ -270,11 +274,18 @@ export default function SessionsClient({
         <span className={styles.lbl}>BOT-OPS</span>
         <span>
           세션 생성·마감·취소는 <span className={styles.cmd}>/일정</span>{" "}
-          디스코드 커맨드 전용입니다. 웹은 RSVP 현황과 리포트 작성만 지원.
+          디스코드 내 <span className={styles.cmd}>레지스트라</span> 전용 커맨드입니다. 해당 페이지는 참여 현황과 리포트 작성만 지원 합니다.
         </span>
       </div>
 
-      <div className={styles.body}>
+      <div
+        className={[
+          styles.body,
+          view === "calendar" ? styles["body--full"] : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <main>
           {view === "calendar" ? (
             <SessionCalendar
@@ -298,11 +309,13 @@ export default function SessionsClient({
           ) : null}
         </main>
 
-        <SessionsRail
-          counts={counts}
-          myRsvp={myRsvpUpcoming}
-          openImminent={initialUpcoming}
-        />
+        {view !== "calendar" ? (
+          <SessionsRail
+            counts={counts}
+            myRsvp={myRsvpUpcoming}
+            openImminent={initialUpcoming}
+          />
+        ) : null}
       </div>
     </>
   );
@@ -364,7 +377,6 @@ function SessionsList({ sessions, year, month, counts }: SessionsListProps) {
           <div className={styles.listHead}>
             <div>STATUS</div>
             <div>작전명</div>
-            <div>일자 · 요일</div>
             <div>일시</div>
             <div style={{ textAlign: "right" }}>RSVP</div>
           </div>
@@ -395,24 +407,30 @@ function SessionsList({ sessions, year, month, counts }: SessionsListProps) {
               >
                 <div className={statCls}>{STATUS_LABEL[s.status]}</div>
                 <div className={styles.listName}>
-                  {isAttending(s) ? (
-                    <span className={styles.me} aria-label="내 참여" />
+                  <div className={styles.row1}>
+                    {isAttending(s) ? (
+                      <span className={styles.me} aria-label="내 참여" />
+                    ) : null}
+                    <span className={styles.nm}>{s.title}</span>
+                  </div>
+                  {s.counts.no > 0 ? (
+                    <div className={styles.sub}>
+                      거절 {s.counts.no}명
+                    </div>
                   ) : null}
-                  <span className={styles.nm}>{s.title}</span>
-                </div>
-                <div className={styles.listDate}>
-                  {formatDateMD(s.targetDateTime)} · {dow}
                 </div>
                 <div className={styles.listWhen}>
-                  {formatTime(s.targetDateTime)}
-                  {dur ? <span className={styles.d}>· {dur}</span> : null}
+                  <span className={styles.top}>
+                    {formatDateMD(s.targetDateTime)} · {dow} ·{" "}
+                    {formatTime(s.targetDateTime)}
+                  </span>
+                  {dur ? (
+                    <span className={styles.sub}>소요 {dur}</span>
+                  ) : null}
                 </div>
                 <div className={styles.listRsvp}>
-                  <span>
-                    <span className={styles.y}>{s.counts.yes}</span>명 응답
-                  </span>
-                  <span className={styles.sep}>·</span>
-                  <span className={styles.n}>NO {s.counts.no}</span>
+                  <span className={styles.y}>{s.counts.yes}</span>
+                  <span className={styles.lbl}>응답</span>
                 </div>
               </Link>
             );
