@@ -7,7 +7,7 @@ import type { UserRole } from "@/types/user";
 
 import { auth } from "@/lib/auth/config";
 import { listCharacters } from "@/lib/db/characters";
-import { getUserClearance, filterCharacterForList } from "@/lib/personnel";
+import { getUserClearance, filterCharacterByClearance } from "@/lib/personnel";
 
 import ERPLoading from "../loading";
 
@@ -19,7 +19,7 @@ async function PersonnelBody({ role }: { role: UserRole }) {
 
   // MongoDB ObjectId -> string 직렬화 (Client Component 전달용)
   const filtered = characters.map((c) => {
-    const masked = filterCharacterForList(c, clearance);
+    const masked = filterCharacterByClearance(c, clearance);
     return {
       ...masked,
       _id: masked._id?.toString() ?? "",

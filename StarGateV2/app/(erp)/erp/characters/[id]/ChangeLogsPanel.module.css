@@ -268,7 +268,8 @@
 }
 
 .expandBtn,
-.revertBtn {
+.revertBtn,
+.deleteBtn {
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.22em;
@@ -329,6 +330,32 @@
   outline-offset: 2px;
 }
 .revertBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* delete — danger tone (감사 로그 영구 제거) */
+.deleteBtn {
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  background: color-mix(in srgb, var(--danger) 4%, transparent);
+}
+.deleteBtn::before {
+  content: "✕";
+  font-size: 11px;
+  line-height: 1;
+  margin-right: 2px;
+}
+.deleteBtn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.deleteBtn:focus-visible {
+  outline: 1px solid var(--danger);
+  outline-offset: 2px;
+}
+.deleteBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

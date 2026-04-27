@@ -25,7 +25,8 @@ import { ObjectId } from "mongodb";
 import { NextResponse, after } from "next/server";
 
 import {
-  ADMIN_ALLOWED_CHARACTER_FIELDS,
+  ALLOWED_LORE_FIELDS_ADMIN,
+  ALLOWED_PLAY_FIELDS_ADMIN,
   getChangeLogById,
   insertChangeLog,
   markChangeLogReverted,
@@ -98,9 +99,32 @@ export async function POST(_request: Request, context: RouteContext) {
     );
   }
 
+  /**
+   * revert 화이트리스트 — admin 권한자(GM)이 수행하는 복원이므로 root 메타 + lore + play
+   * 모두 허용. PATCH 라우트와 동일하게 root 필드를 명시적으로 추가.
+   */
+  const ROOT_ALLOWED_FIELDS_ADMIN = new Set<string>([
+    "codename",
+    "tier",
+    "role",
+    "agentLevel",
+    "department",
+    "previewImage",
+    "pixelCharacterImage",
+    "warningVideo",
+    "ownerId",
+    "isPublic",
+    "factionCode",
+    "institutionCode",
+  ]);
+  const revertAllowedFields = new Set<string>();
+  for (const f of ROOT_ALLOWED_FIELDS_ADMIN) revertAllowedFields.add(f);
+  for (const f of ALLOWED_LORE_FIELDS_ADMIN) revertAllowedFields.add(f);
+  for (const f of ALLOWED_PLAY_FIELDS_ADMIN) revertAllowedFields.add(f);
+
   try {
     const updated = await updateCharacter(id, revertBody, {
-      allowedFields: ADMIN_ALLOWED_CHARACTER_FIELDS,
+      allowedFields: revertAllowedFields,
     });
     if (!updated) {
       // 이미 before 값과 동일 (no-op revert) — DB 변경 없이 mark 만 처리해
@@ -128,7 +152,7 @@ export async function POST(_request: Request, context: RouteContext) {
         revertChanges = computeCharacterDiff(
           before,
           updatedDoc,
-          ADMIN_ALLOWED_CHARACTER_FIELDS,
+          revertAllowedFields,
         );
         if (revertChanges.length > 0) {
           await insertChangeLog({
@@ -178,7 +202,7 @@ export async function POST(_request: Request, context: RouteContext) {
             character: {
               id,
               codename: before.codename,
-              name: before.sheet.name,
+              name: before.lore.name,
             },
             actor: {
               id: session.user.id,

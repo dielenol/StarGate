@@ -22,7 +22,7 @@ export interface ProfileCharacter {
   agentLevel?: Character["agentLevel"];
   /** shared-db 계약: required string (빈 문자열 가능, undefined 불가) */
   previewImage: string;
-  sheet: {
+  lore: {
     name: string;
     posterImage?: string;
     mainImage: string;
@@ -35,14 +35,14 @@ interface Props {
 }
 
 function getInitial(c: ProfileCharacter): string {
-  const source = c.sheet.name || c.codename || "?";
+  const source = c.lore.name || c.codename || "?";
   return source.charAt(0).toUpperCase();
 }
 
 export default function ProfileClient({ characters, userDisplayName }: Props) {
   // 대표 캐릭터: 현재는 목록 첫 번째 (추후 user.primaryCharacterId 도입 시 우선 사용)
   const primary = characters[0] ?? null;
-  const posterSrc = primary?.sheet.posterImage || primary?.sheet.mainImage || null;
+  const posterSrc = primary?.lore.posterImage || primary?.lore.mainImage || null;
   const others = primary
     ? characters.filter((c) => c._id !== primary._id)
     : characters;
@@ -66,7 +66,7 @@ export default function ProfileClient({ characters, userDisplayName }: Props) {
                 {posterSrc ? (
                   <Image
                     src={posterSrc}
-                    alt={`${primary.sheet.name || primary.codename} 포스터`}
+                    alt={`${primary.lore.name || primary.codename} 포스터`}
                     fill
                     sizes="(max-width: 720px) 100vw, 320px"
                     className={styles.hero__posterImage}
@@ -84,13 +84,13 @@ export default function ProfileClient({ characters, userDisplayName }: Props) {
               <div className={styles.hero__meta}>
                 <div className={styles.hero__codename}>{primary.codename}</div>
                 <h2 className={styles.hero__name}>
-                  {primary.sheet.name || primary.codename}
+                  {primary.lore.name || primary.codename}
                 </h2>
                 <div className={styles.hero__sub}>{userDisplayName}</div>
                 <div className={styles.hero__tags}>
                   <Tag tone="gold">{primary.type}</Tag>
                   {primary.agentLevel ? (
-                    <Tag tone="default">CLR {primary.agentLevel}</Tag>
+                    <Tag tone="default">권한등급 {primary.agentLevel}</Tag>
                   ) : null}
                 </div>
                 <Button
@@ -137,7 +137,7 @@ export default function ProfileClient({ characters, userDisplayName }: Props) {
             </h3>
             <div className={styles.grid}>
               {others.map((c) => {
-                const thumb = c.previewImage || c.sheet.mainImage || null;
+                const thumb = c.previewImage || c.lore.mainImage || null;
                 return (
                   <Link
                     key={c._id}
@@ -149,7 +149,7 @@ export default function ProfileClient({ characters, userDisplayName }: Props) {
                         {thumb ? (
                           <Image
                             src={thumb}
-                            alt={`${c.sheet.name || c.codename} 미리보기`}
+                            alt={`${c.lore.name || c.codename} 미리보기`}
                             fill
                             sizes="(max-width: 600px) 50vw, 200px"
                             className={styles.card__thumbImage}
@@ -161,7 +161,7 @@ export default function ProfileClient({ characters, userDisplayName }: Props) {
                       <div className={styles.card__body}>
                         <div className={styles.card__codename}>{c.codename}</div>
                         <div className={styles.card__name}>
-                          {c.sheet.name || c.codename}
+                          {c.lore.name || c.codename}
                         </div>
                         {c.role.trim().length > 0 ? (
                           <div className={styles.card__role}>{c.role}</div>

@@ -30,29 +30,11 @@ import ReqClrBadge from "./_components/ReqClrBadge";
 
 import styles from "./page.module.css";
 
-const AGENT_DETAIL_LABELS = [
-  "CLASS",
-  "WEIGHT",
-  "ABILITY TYPE",
-  "CREDIT",
-  "WEAPON TRAINING",
-  "SKILL TRAINING",
-] as const;
-
-const EQUIPMENT_LOCKED_CODES = [
-  "EQ-████ · 01",
-  "EQ-████ · 02",
-  "EQ-████ · 03",
-  "EQ-████ · 04",
-] as const;
-
-const ABILITIES_LOCKED_WIDTHS = [140, 200, 160] as const;
-
 const REDACTED = "[CLASSIFIED]";
 
 function getInitial(c: Character): string {
   const source =
-    c.sheet.name && c.sheet.name !== REDACTED ? c.sheet.name : c.codename;
+    c.lore.name && c.lore.name !== REDACTED ? c.lore.name : c.codename;
   return source.charAt(0).toUpperCase() || "?";
 }
 
@@ -69,8 +51,6 @@ function formatDate(value: string | Date | undefined | null): string {
 
 /**
  * 임시 AUDIT ID placeholder.
- * character._id 가 있으면 뒷 6자 대문자, 없으면 codename fallback + 0 패딩.
- * TODO: 실제 감사 로그 연동 시 ObjectId 기반 audit log ID 로 교체.
  */
 function buildAuditId(character: Character): string {
   const raw = character._id ? String(character._id) : character.codename;
@@ -135,7 +115,11 @@ interface Props {
   clearance: AgentLevel;
 }
 
-/* ── Component ── */
+/* ── Component ──
+ *
+ * Phase 3 — `/erp/personnel` dossier 는 lore-only readonly. play (게임 시트) 섹션은 모두 제거되었다.
+ * 게임 시트 노출은 `/erp/characters/[id]` 라우트로 분리. AGENT/NPC 모두 진입 가능.
+ */
 
 export default function DossierClient({ character, clearance }: Props) {
   const [activeTab, setActiveTab] = useState<DossierTabKey>("dossier");
@@ -152,8 +136,6 @@ export default function DossierClient({ character, clearance }: Props) {
 
   const canIdentity = canViewField(clearance, "identity");
   const canProfile = canViewField(clearance, "profile");
-  const canCombat = canViewField(clearance, "combatStats");
-  const canAbilities = canViewField(clearance, "abilities");
   const canMeta = canViewField(clearance, "meta");
 
   const auditId = buildAuditId(character);
@@ -166,20 +148,19 @@ export default function DossierClient({ character, clearance }: Props) {
     { label: character.codename },
   ].filter(Boolean) as { label: string; href?: string }[];
 
-  const displayName = canIdentity && !isRedactedValue(character.sheet.name)
-    ? character.sheet.name
-    : null;
+  const lore = character.lore;
+
+  const displayName =
+    canIdentity && !isRedactedValue(lore.name) ? lore.name : null;
 
   const nameEn =
-    !isAgent && canProfile && !isRedactedValue(character.sheet.nameEn)
-      ? character.sheet.nameEn
-      : null;
+    canIdentity && !isRedactedValue(lore.nameEn) ? lore.nameEn : null;
 
   const headRight = (
     <div className={styles.headRight}>
       <span className={styles.clrPill} data-rank={clearance}>
         <span>
-          MY CLR · {clearance} · {AGENT_LEVEL_LABELS[clearance]}
+          권한등급 · {clearance} · {AGENT_LEVEL_LABELS[clearance]}
         </span>
         <Pips total={7} filled={getLevelDisplayRank(clearance)} />
       </span>
@@ -225,7 +206,7 @@ export default function DossierClient({ character, clearance }: Props) {
             <div className={styles.profileHeading}>APPEARANCE · 외형</div>
             <p className={styles.profileBody}>
               <RedactedBlock
-                content={character.sheet.appearance}
+                content={lore.appearance}
                 fieldGroup="profile"
                 clearance={clearance}
               />
@@ -235,7 +216,7 @@ export default function DossierClient({ character, clearance }: Props) {
             <div className={styles.profileHeading}>PERSONALITY · 성격</div>
             <p className={styles.profileBody}>
               <RedactedBlock
-                content={character.sheet.personality}
+                content={lore.personality}
                 fieldGroup="profile"
                 clearance={clearance}
               />
@@ -247,16 +228,16 @@ export default function DossierClient({ character, clearance }: Props) {
           <div className={styles.profileHeading}>BACKGROUND · 배경</div>
           <p className={styles.profileBody}>
             <RedactedBlock
-              content={character.sheet.background}
+              content={lore.background}
               fieldGroup="profile"
               clearance={clearance}
             />
           </p>
         </div>
 
-        {character.sheet.quote && !isRedactedValue(character.sheet.quote) ? (
+        {lore.quote && !isRedactedValue(lore.quote) ? (
           <div className={styles.quote}>
-            {character.sheet.quote}
+            &ldquo;{lore.quote}&rdquo;
             <span className={styles.quoteMeta}>— QUOTE</span>
           </div>
         ) : null}
@@ -264,246 +245,46 @@ export default function DossierClient({ character, clearance }: Props) {
     );
   };
 
-  const renderAgentBody = () => {
-    if (!isAgent) return null;
-
-    const sheet = character.sheet;
+  /**
+   * LORE 메타 (loreTags / appearsInEvents). identity 그룹 하위 보조 정보.
+   */
+  const renderLoreMeta = () => {
+    const hasTags = lore.loreTags && lore.loreTags.length > 0;
+    const hasEvents = lore.appearsInEvents && lore.appearsInEvents.length > 0;
+    if (!hasTags && !hasEvents) return null;
+    if (!canIdentity) return null;
 
     return (
-      <>
-        {/* COMBAT STATS */}
-        <Box>
-          <PanelTitle
-            right={
-              <ReqClrBadge required="H" locked={!canCombat} />
-            }
-          >
-            COMBAT STATS · AGENT
-          </PanelTitle>
-          {canCombat ? (
-            <div className={styles.combatStatsGrid}>
-              {(
-                [
-                  ["HP", sheet.hp],
-                  ["SAN", sheet.san],
-                  ["DEF", sheet.def],
-                  ["ATK", sheet.atk],
-                ] as const
-              ).map(([label, value]) => (
-                <div key={label} className={styles.statBox}>
-                  <div className={styles.statLabel}>{label}</div>
-                  <div className={styles.statNumber}>{value}</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <LockedSection
-              variant="full"
-              required="H"
-              title="CLASSIFIED · H"
-              subtitle={"HP / SAN / DEF / ATK\n상위 등급 필요"}
-            />
-          )}
-        </Box>
-
-        {/* AGENT DETAILS */}
-        <Box>
-          <PanelTitle
-            right={<ReqClrBadge required="M" locked={!canAbilities} />}
-          >
-            AGENT DETAILS
-          </PanelTitle>
-          {canAbilities ? (
-            <div className={styles.agentDetailsGrid}>
-              <div className={styles.agentDetailCell}>
-                <div className={styles.agentDetailLabel}>CLASS</div>
-                <div className={styles.agentDetailValue}>
-                  <ClassifiedValue
-                    value={sheet.className}
-                    fieldGroup="abilities"
-                    clearance={clearance}
-                  />
-                </div>
-              </div>
-              <div className={styles.agentDetailCell}>
-                <div className={styles.agentDetailLabel}>WEIGHT</div>
-                <div className={styles.agentDetailValue}>
-                  <ClassifiedValue
-                    value={sheet.weight}
-                    fieldGroup="abilities"
-                    clearance={clearance}
-                  />
-                </div>
-              </div>
-              <div className={styles.agentDetailCell}>
-                <div className={styles.agentDetailLabel}>ABILITY TYPE</div>
-                <div className={styles.agentDetailValue}>
-                  <ClassifiedValue
-                    value={sheet.abilityType}
-                    fieldGroup="abilities"
-                    clearance={clearance}
-                  />
-                </div>
-              </div>
-              <div className={styles.agentDetailCell}>
-                <div className={styles.agentDetailLabel}>CREDIT</div>
-                <div
-                  className={[styles.agentDetailValue, styles.mono]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  <ClassifiedValue
-                    value={sheet.credit}
-                    fieldGroup="abilities"
-                    clearance={clearance}
-                  />
-                </div>
-              </div>
-              <div className={styles.agentDetailCell}>
-                <div className={styles.agentDetailLabel}>WEAPON TRAINING</div>
-                <div className={styles.agentDetailValue}>
-                  <ClassifiedValue
-                    value={sheet.weaponTraining}
-                    fieldGroup="abilities"
-                    clearance={clearance}
-                  />
-                </div>
-              </div>
-              <div className={styles.agentDetailCell}>
-                <div className={styles.agentDetailLabel}>SKILL TRAINING</div>
-                <div className={styles.agentDetailValue}>
-                  <ClassifiedValue
-                    value={sheet.skillTraining}
-                    fieldGroup="abilities"
-                    clearance={clearance}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <LockedSection
-              variant="grid"
-              required="M"
-              fields={[...AGENT_DETAIL_LABELS]}
-            />
-          )}
-        </Box>
-
-        {/* ABILITIES */}
-        <Box>
-          <PanelTitle
-            right={<ReqClrBadge required="M" locked={!canAbilities} />}
-          >
-            ABILITIES
-          </PanelTitle>
-          {canAbilities ? (
-            sheet.abilities.length === 0 ? (
-              <div className={styles.empty}>등록된 능력 없음</div>
-            ) : (
-              <div className={styles.abilitiesList}>
-                {sheet.abilities.map((ab, i) => (
-                  <div
-                    key={ab.code || `${ab.name}-${i}`}
-                    className={styles.abilityItem}
-                  >
-                    <div className={styles.abilityItem__head}>
-                      <div className={styles.abilityItem__name}>{ab.name}</div>
-                      {ab.code ? <Tag tone="gold">{ab.code}</Tag> : null}
-                    </div>
-                    {ab.description ? (
-                      <div className={styles.abilityItem__desc}>
-                        {ab.description}
-                      </div>
-                    ) : null}
-                    {ab.effect ? (
-                      <div className={styles.abilityItem__effect}>
-                        <span className={styles.mono}>EFFECT · </span>
-                        {ab.effect}
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            )
-          ) : (
-            <>
-              <div className={styles.abilitiesLockedList}>
-                {ABILITIES_LOCKED_WIDTHS.map((width, i) => (
-                  <div key={i} className={styles.abilitiesLockedRow}>
-                    <span>
-                      <span className={styles.abilitiesLockedCode}>AB-████</span>
-                      <span
-                        className={styles.redactBlock}
-                        style={{ width }}
-                        aria-hidden
-                      />
-                    </span>
-                    <span className={styles.classifiedTag}>CLR · M</span>
-                  </div>
-                ))}
-              </div>
-              <div className={styles.abilitiesLockedFooter}>
-                {ABILITIES_LOCKED_WIDTHS.length} 항목 · 전체 마스킹
-              </div>
-            </>
-          )}
-        </Box>
-
-        {/* EQUIPMENT */}
-        <Box>
-          <PanelTitle
-            right={<ReqClrBadge required="M" locked={!canAbilities} />}
-          >
-            EQUIPMENT
-          </PanelTitle>
-          {canAbilities ? (
-            sheet.equipment.length === 0 ? (
-              <div className={styles.empty}>등록된 장비 없음</div>
-            ) : (
-              <div className={styles.equipmentGrid}>
-                {sheet.equipment.map((eq, i) => (
-                  <div key={`${eq.name}-${i}`} className={styles.equipmentCard}>
-                    <div className={styles.equipmentCard__head}>
-                      <div className={styles.equipmentCard__name}>
-                        {eq.name || "UNNAMED"}
-                      </div>
-                      {eq.damage ? (
-                        <Tag tone="danger">DMG {eq.damage}</Tag>
-                      ) : null}
-                    </div>
-                    {eq.price !== undefined && eq.price !== "" ? (
-                      <div className={styles.equipmentCard__meta}>
-                        PRICE · {eq.price}
-                      </div>
-                    ) : null}
-                    {eq.description ? (
-                      <div className={styles.equipmentCard__desc}>
-                        {eq.description}
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            )
-          ) : (
-            <div className={styles.equipmentLockedGrid}>
-              {EQUIPMENT_LOCKED_CODES.map((code) => (
-                <div key={code} className={styles.equipmentLockedCard}>
-                  <div className={styles.equipmentLockedCode}>{code}</div>
-                  <div className={styles.equipmentLockedValue}>
-                    [CLASSIFIED · M]
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Box>
-      </>
+      <Box>
+        <PanelTitle right={<ReqClrBadge required="G" locked={false} />}>
+          LORE · 태그 · 이벤트
+        </PanelTitle>
+        <dl className={styles.kv}>
+          {hasTags ? (
+            <KVRow label="TAGS">
+              <span>{lore.loreTags!.join(", ")}</span>
+            </KVRow>
+          ) : null}
+          {hasEvents ? (
+            <KVRow label="APPEARS IN">
+              <span>{lore.appearsInEvents!.join(", ")}</span>
+            </KVRow>
+          ) : null}
+        </dl>
+      </Box>
     );
   };
 
-  const renderNpcBody = () => {
-    if (isAgent) return null;
+  /**
+   * NPC 추가 필드 (NAME EN / ROLE DETAIL / NOTES).
+   * lore sub-document 안에 NPC 호환 필드로 보존됨.
+   */
+  const renderNpcExtras = () => {
+    const hasNpcExtras =
+      !isRedactedValue(lore.nameEn) ||
+      !isRedactedValue(lore.roleDetail) ||
+      !isRedactedValue(lore.notes);
+    if (!hasNpcExtras) return null;
 
     return (
       <Box>
@@ -512,29 +293,35 @@ export default function DossierClient({ character, clearance }: Props) {
         </PanelTitle>
         {canProfile ? (
           <dl className={styles.kv}>
-            <KVRow label="NAME (EN)">
-              <span className={styles.mono}>
-                <ClassifiedValue
-                  value={character.sheet.nameEn}
+            {!isRedactedValue(lore.nameEn) ? (
+              <KVRow label="NAME (EN)">
+                <span className={styles.mono}>
+                  <ClassifiedValue
+                    value={lore.nameEn}
+                    fieldGroup="profile"
+                    clearance={clearance}
+                  />
+                </span>
+              </KVRow>
+            ) : null}
+            {!isRedactedValue(lore.roleDetail) ? (
+              <KVRow label="ROLE DETAIL">
+                <RedactedBlock
+                  content={lore.roleDetail}
                   fieldGroup="profile"
                   clearance={clearance}
                 />
-              </span>
-            </KVRow>
-            <KVRow label="ROLE DETAIL">
-              <RedactedBlock
-                content={character.sheet.roleDetail}
-                fieldGroup="profile"
-                clearance={clearance}
-              />
-            </KVRow>
-            <KVRow label="NOTES">
-              <RedactedBlock
-                content={character.sheet.notes}
-                fieldGroup="profile"
-                clearance={clearance}
-              />
-            </KVRow>
+              </KVRow>
+            ) : null}
+            {!isRedactedValue(lore.notes) ? (
+              <KVRow label="NOTES">
+                <RedactedBlock
+                  content={lore.notes}
+                  fieldGroup="profile"
+                  clearance={clearance}
+                />
+              </KVRow>
+            ) : null}
           </dl>
         ) : (
           <LockedSection
@@ -558,7 +345,8 @@ export default function DossierClient({ character, clearance }: Props) {
         {renderCharacterProfile()}
       </Box>
 
-      {isAgent ? renderAgentBody() : renderNpcBody()}
+      {renderLoreMeta()}
+      {renderNpcExtras()}
     </>
   );
 
@@ -642,7 +430,7 @@ export default function DossierClient({ character, clearance }: Props) {
             <div className={styles.clrPillRow}>
               <span className={styles.clrPill} data-rank={level}>
                 <span>
-                  TARGET CLR · {level} · {AGENT_LEVEL_LABELS[level]}
+                  대상 권한등급 · {level} · {AGENT_LEVEL_LABELS[level]}
                 </span>
                 <Pips total={7} filled={getLevelDisplayRank(level)} />
               </span>
@@ -665,21 +453,39 @@ export default function DossierClient({ character, clearance }: Props) {
                 </KVRow>
                 <KVRow label="실명">
                   <ClassifiedValue
-                    value={character.sheet.name}
+                    value={lore.name}
                     fieldGroup="identity"
                     clearance={clearance}
                   />
                 </KVRow>
+                {!isRedactedValue(lore.nameNative) ? (
+                  <KVRow label="원어 표기">
+                    <ClassifiedValue
+                      value={lore.nameNative}
+                      fieldGroup="identity"
+                      clearance={clearance}
+                    />
+                  </KVRow>
+                ) : null}
+                {!isRedactedValue(lore.nickname) ? (
+                  <KVRow label="별칭">
+                    <ClassifiedValue
+                      value={lore.nickname}
+                      fieldGroup="identity"
+                      clearance={clearance}
+                    />
+                  </KVRow>
+                ) : null}
                 <KVRow label="성별">
                   <ClassifiedValue
-                    value={character.sheet.gender}
+                    value={lore.gender}
                     fieldGroup="identity"
                     clearance={clearance}
                   />
                 </KVRow>
                 <KVRow label="나이">
                   <ClassifiedValue
-                    value={character.sheet.age}
+                    value={lore.age}
                     fieldGroup="identity"
                     clearance={clearance}
                   />
@@ -687,7 +493,16 @@ export default function DossierClient({ character, clearance }: Props) {
                 <KVRow label="신장">
                   <span className={styles.mono}>
                     <ClassifiedValue
-                      value={character.sheet.height}
+                      value={lore.height}
+                      fieldGroup="identity"
+                      clearance={clearance}
+                    />
+                  </span>
+                </KVRow>
+                <KVRow label="체중">
+                  <span className={styles.mono}>
+                    <ClassifiedValue
+                      value={lore.weight}
                       fieldGroup="identity"
                       clearance={clearance}
                     />

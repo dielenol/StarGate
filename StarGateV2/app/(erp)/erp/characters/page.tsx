@@ -1,20 +1,16 @@
 import { redirect } from "next/navigation";
 
-import type { Character, CharacterType } from "@/types/character";
+import type { Character, CharacterTier } from "@/types/character";
+import { CHARACTER_TIERS } from "@/types/character";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
-import {
-  listCharacters,
-  listCharactersByType,
-} from "@/lib/db/characters";
+import { listAgentCharacters } from "@/lib/db/characters";
 
 import CharactersClient from "./CharactersClient";
 
-const VALID_TYPES: CharacterType[] = ["AGENT", "NPC"];
-
 interface PageProps {
-  searchParams: Promise<{ type?: string }>;
+  searchParams: Promise<{ tier?: string }>;
 }
 
 export default async function CharactersPage({ searchParams }: PageProps) {
@@ -28,15 +24,13 @@ export default async function CharactersPage({ searchParams }: PageProps) {
   const isGMOrAbove = hasRole(role, "V");
 
   const params = await searchParams;
-  const typeFilter =
-    params.type && VALID_TYPES.includes(params.type as CharacterType)
-      ? (params.type as CharacterType)
+  const tierFilter: CharacterTier | null =
+    params.tier &&
+    (CHARACTER_TIERS as readonly string[]).includes(params.tier)
+      ? (params.tier as CharacterTier)
       : null;
 
-  const characters = await (typeFilter
-    ? listCharactersByType(typeFilter)
-    : listCharacters()
-  ).catch(() => []);
+  const characters = await listAgentCharacters(tierFilter).catch(() => []);
 
   // MongoDB ObjectId -> string 직렬화 (Client Component 전달용)
   const serializedCharacters = characters.map((c) => ({
@@ -47,7 +41,7 @@ export default async function CharactersPage({ searchParams }: PageProps) {
   return (
     <CharactersClient
       initialCharacters={serializedCharacters}
-      typeFilter={typeFilter}
+      tierFilter={tierFilter}
       isGMOrAbove={isGMOrAbove}
     />
   );

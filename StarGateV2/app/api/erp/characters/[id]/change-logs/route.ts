@@ -1,11 +1,10 @@
 /**
  * GET /api/erp/characters/[id]/change-logs  (P8)
  *
- * 캐릭터 변경 이력 조회. GM 또는 본인(소유자) 만 접근.
+ * 캐릭터 변경 이력 조회. **GM 전용** (이전 owner readonly 모드 폐지).
  *
  * 권한 매트릭스:
- *   - GM (V+ 가 아니라 GM 한정) : 모든 캐릭터의 이력 조회 + revertable=true
- *   - 본인(ownerId === sessionUserId) : 자신의 캐릭터 이력만 readonly (revertable=false)
+ *   - GM (V+ 가 아니라 GM 한정) : 모든 캐릭터의 이력 조회 + revertable=true + 삭제 가능
  *   - 그 외 : 통합 404 (existence oracle 차단 — `/edit-quota` 와 동일 패턴)
  *
  * 페이지네이션:
@@ -29,7 +28,7 @@ import {
 import type { User } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
-import { canEditCharacter, hasRole } from "@/lib/auth/rbac";
+import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
 
@@ -70,20 +69,13 @@ export async function GET(request: Request, context: RouteContext) {
   const character = await findCharacterById(id);
 
   /**
-   * 권한 결정. GM 이면 모든 캐릭터 OK. 그 외에는 본인(ownerId 일치) 만.
-   * canEditCharacter 의 'admin' 모드는 V+ 까지 — 여기서는 더 엄격한 GM 게이트가 필요해서
-   * hasRole(GM) 별도 체크. 본인 케이스는 canEditCharacter 의 'player' 모드 활용.
+   * 권한 결정 — GM 전용. owner readonly 경로 폐지 (운영 정책 변경).
+   * 캐릭터가 없거나 GM 이 아니면 통합 404 — existence oracle 차단.
    */
-  const decision = canEditCharacter(
-    session.user.id,
-    session.user.role,
-    character ?? { ownerId: null },
-  );
   const isGm = hasRole(session.user.role, "GM");
-  const isOwner = decision.mode === "player";
 
-  if (!character || (!isGm && !isOwner)) {
-    if (character && !isGm && !isOwner) {
+  if (!character || !isGm) {
+    if (character && !isGm) {
       console.warn(
         `[change-logs GET] denied user=${session.user.id} character=${id} role=${session.user.role}`,
       );

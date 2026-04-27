@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { AgentLevel, Character, NpcCharacter } from "@/types/character";
+import type { AgentLevel, Character } from "@/types/character";
 import {
   AGENT_LEVEL_LABELS,
   FACTIONS,
   INSTITUTIONS,
 } from "@/types/character";
 
-import { useCharacters } from "@/hooks/queries/useCharactersQuery";
+import { usePersonnelQuery } from "@/hooks/queries/useCharactersQuery";
 
 import {
   canViewField,
@@ -54,9 +54,9 @@ import styles from "./page.module.css";
 
 const UNASSIGNED_CODE = "UNASSIGNED";
 
-/* 등급 legend — globals.css 의 `--rank-*` 팔레트와 라벨 체계가 1:1 */
+/* 등급 legend — globals.css 의 `--rank-*` 팔레트와 라벨 체계가 1:1.
+ * GM은 세계관 외부 메타 권한이라 범례에서 제외 (V~U 7단만 노출). */
 const LEGEND_ITEMS: { level: AgentLevel; label: string }[] = [
-  { level: "GM", label: "게임 마스터" },
   { level: "V", label: "VIP" },
   { level: "A", label: "최종 관리자" },
   { level: "M", label: "부서 관리자" },
@@ -68,11 +68,12 @@ const LEGEND_ITEMS: { level: AgentLevel; label: string }[] = [
 
 /* ── 헬퍼 ── */
 
-function isNpc(character: Character): character is NpcCharacter {
-  return character.type === "NPC";
-}
-
-/** 캐릭터가 속한 최상위 그룹 코드 (세력/기관/UNASSIGNED) */
+/**
+ * 캐릭터가 속한 최상위 그룹 코드 (세력/기관/UNASSIGNED).
+ *
+ * Phase 1 후 factionCode / institutionCode 는 AGENT/NPC 공통 root 필드로 승격되었으므로
+ * type 분기 없이 동일 로직 적용.
+ */
 function resolveGroup(c: Character): string {
   const dept = c.department;
   if (dept && dept !== UNASSIGNED_CODE) {
@@ -80,13 +81,11 @@ function resolveGroup(c: Character): string {
     if (top !== UNASSIGNED_CODE) return top;
   }
 
-  if (isNpc(c)) {
-    if (c.institutionCode) {
-      const top = getTopLevelGroup(c.institutionCode);
-      return top !== UNASSIGNED_CODE ? top : c.institutionCode;
-    }
-    if (c.factionCode && isFaction(c.factionCode)) return c.factionCode;
+  if (c.institutionCode) {
+    const top = getTopLevelGroup(c.institutionCode);
+    return top !== UNASSIGNED_CODE ? top : c.institutionCode;
   }
+  if (c.factionCode && isFaction(c.factionCode)) return c.factionCode;
 
   return UNASSIGNED_CODE;
 }
@@ -147,7 +146,7 @@ export default function PersonnelClient({
   initialCharacters,
   clearance,
 }: Props) {
-  const { data: characters = [] } = useCharacters(null, {
+  const { data: characters = [] } = usePersonnelQuery({
     initialData: initialCharacters,
   });
 
@@ -212,8 +211,8 @@ export default function PersonnelClient({
 
       if (
         showIdentity &&
-        c.sheet.name &&
-        c.sheet.name.toLowerCase().includes(q)
+        c.lore.name &&
+        c.lore.name.toLowerCase().includes(q)
       ) {
         return true;
       }
@@ -517,7 +516,7 @@ export default function PersonnelClient({
           <div className={styles.headRight}>
             <span className={styles.clrPill} data-rank={clearance}>
               <span>
-                CLR · {clearance} · {AGENT_LEVEL_LABELS[clearance]}
+                권한등급 · {clearance} · {AGENT_LEVEL_LABELS[clearance]}
               </span>
               <Pips total={7} filled={getLevelDisplayRank(clearance)} />
             </span>
@@ -535,7 +534,7 @@ export default function PersonnelClient({
 
       {/* Clearance notice strip */}
       <div className={styles.clearanceStrip}>
-        <span className={styles.clearanceStrip__label}>CLEARANCE</span>
+        <span className={styles.clearanceStrip__label}>권한등급</span>
         <span className={styles.clearanceStrip__body}>
           내 열람 등급{" "}
           <span className={styles.clearanceStrip__level}>{clearance}</span>{" "}

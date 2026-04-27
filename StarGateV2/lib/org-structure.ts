@@ -19,9 +19,9 @@ for (const inst of INSTITUTIONS) {
 const FACTION_CODES = new Set<string>(FACTIONS.map((f) => f.code));
 const INSTITUTION_CODES = new Set<string>(INSTITUTIONS.map((i) => i.code));
 
-/** 레거시 department 코드 → 새 최상위 그룹 폴백 매핑 */
+/** 레거시 department 코드 → 새 최상위 그룹 폴백 매핑
+ *  HQ 는 SECRETARIAT.subUnits 정식 코드로 승격되어 폴백 불필요. */
 const LEGACY_DEPT_MAP: Record<string, string> = {
-  HQ: "SECRETARIAT",
   FIELD: "MILITARY",
   SECURITY: "SECRETARIAT",
   LOGISTICS: "SECRETARIAT",
@@ -62,9 +62,9 @@ export function getGroupLabel(code: string): string {
 /**
  * department 코드의 라벨을 반환 (하위 기구 포함).
  */
-/** 레거시 코드 → 라벨 폴백 */
+/** 레거시 코드 → 라벨 폴백
+ *  HQ 라벨은 SECRETARIAT.subUnits 의 정식 항목에서 직접 도출. */
 const LEGACY_DEPT_LABELS: Record<string, string> = {
-  HQ: "사무총장실",
   FIELD: "현장작전부",
   SECURITY: "보안국",
   LOGISTICS: "후방지원부",

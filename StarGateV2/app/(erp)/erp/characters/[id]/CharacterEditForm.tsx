@@ -5,10 +5,15 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import type {
   Ability,
-  AgentSheet,
-  Character,
+  AbilitySlot,
+  AgentCharacter,
+  CharacterTier,
   Equipment,
-  NpcSheet,
+} from "@/types/character";
+import {
+  CHARACTER_TIERS,
+  FACTIONS,
+  INSTITUTIONS,
 } from "@/types/character";
 
 import {
@@ -23,29 +28,37 @@ import DiffPreviewModal, {
 import styles from "./CharacterEditForm.module.css";
 
 /**
- * 'admin' = V+ 모든 필드 편집 가능, 'player' = 본인 캐릭터 서사 7필드만 편집 가능.
+ * 'admin' = V+ 모든 필드 편집 가능, 'player' = 본인 캐릭터 lore 8필드만 편집 가능.
  * 'none' 은 폼 진입 자체가 막혀 여기서는 다루지 않음.
  */
 type EditMode = "admin" | "player";
 
 interface Props {
-  character: Character;
+  /** AGENT 전용 — page.tsx 가 NPC 를 redirect 하므로 NPC 분기 불필요. */
+  character: AgentCharacter;
   editMode: EditMode;
   onCancel: () => void;
   onSaved: () => void;
 }
 
+const ABILITY_SLOTS: readonly AbilitySlot[] = [
+  "C1",
+  "C2",
+  "C3",
+  "P",
+  "A1",
+  "A2",
+  "A3",
+] as const;
+
 /**
- * 플레이어 자가편집에서 허용되는 sheet 필드.
+ * 플레이어 자가편집에서 허용되는 lore 필드 (sub-document key 명, prefix 없음).
  *
- * ⚠️ 서버 PLAYER_ALLOWED_CHARACTER_FIELDS (`@stargate/shared-db`) 와 sync 필수 (sheet.* prefix 제거형).
+ * shared-db `ALLOWED_LORE_FIELDS_PLAYER` 와 sync 필수 (`lore.X` prefix 제거형).
  * shared-db 직접 import 시 mongodb transitive 의존이 client 번들에 누수되어 빌드 실패 →
- * 클라 측 hardcoded 유지. drift 검증은 lib/auth/__tests__/character-edit-e2e.test.mjs 의
- * sync 케이스가 담당.
- *
- * 이미지/식별/능력치/소유권은 의도적으로 제외 — 변경 시 GM에 문의하도록 유도.
+ * 클라 측 hardcoded 유지.
  */
-const PLAYER_EDITABLE_FIELDS = new Set<string>([
+const PLAYER_EDITABLE_LORE_FIELDS = new Set<string>([
   "quote",
   "appearance",
   "personality",
@@ -53,17 +66,15 @@ const PLAYER_EDITABLE_FIELDS = new Set<string>([
   "gender",
   "age",
   "height",
+  "weight",
 ]);
 
-function isPlayerEditable(fieldKey: string): boolean {
-  return PLAYER_EDITABLE_FIELDS.has(fieldKey);
+function isPlayerEditableLore(fieldKey: string): boolean {
+  return PLAYER_EDITABLE_LORE_FIELDS.has(fieldKey);
 }
 
-/* ── P7: client-side diff (lib/character/diff.ts 와 동일 시멘틱) ──
-   서버 round-trip 없이 form state ↔ character props 비교.
-   shared-db 의 mongodb transitive 의존을 피하려고 hardcoded 한 inline 구현.
-   변경 시 lib/character/diff.ts 도 함께 수정 (S6-1 처럼 sync 필수 위치는 아니지만
-   diff 결과가 server audit 와 의미상 일치해야 사용자 기대 부합). */
+/* ── client-side diff util ── */
+
 function getPathValue(source: unknown, path: string): unknown {
   if (source === null || source === undefined) return undefined;
   const segments = path.split(".");
@@ -104,63 +115,89 @@ function buildLocalDiff(
 }
 
 /* ── 모드별 diff 비교 대상 dot path 세트 ──
-   - player: PLAYER_EDITABLE_FIELDS 7개에 'sheet.' prefix 부착 (서버 화이트리스트와 정합)
-   - admin: ADMIN_ALLOWED_CHARACTER_FIELDS 와 동일한 dot path 집합
-     (shared-db hardcoded 미러 — 서버 truth 는 buildUpdatePatch 가 담당, 본 set 은 UI 미리보기 전용) */
+   - player: lore 8필드
+   - admin: root 메타 + lore 전 + play 전 — shared-db 화이트리스트 미러 */
 const PLAYER_DIFF_FIELDS: ReadonlyArray<string> = [
-  "sheet.quote",
-  "sheet.appearance",
-  "sheet.personality",
-  "sheet.background",
-  "sheet.gender",
-  "sheet.age",
-  "sheet.height",
+  "lore.quote",
+  "lore.appearance",
+  "lore.personality",
+  "lore.background",
+  "lore.gender",
+  "lore.age",
+  "lore.height",
+  "lore.weight",
 ];
 
 const ADMIN_DIFF_FIELDS: ReadonlyArray<string> = [
   "codename",
+  "tier",
   "role",
   "isPublic",
   "previewImage",
   "ownerId",
-  "sheet.codename",
-  "sheet.name",
-  "sheet.mainImage",
-  "sheet.posterImage",
-  "sheet.quote",
-  "sheet.gender",
-  "sheet.age",
-  "sheet.height",
-  "sheet.appearance",
-  "sheet.personality",
-  "sheet.background",
-  // AGENT
-  "sheet.weight",
-  "sheet.className",
-  "sheet.hp",
-  "sheet.san",
-  "sheet.def",
-  "sheet.atk",
-  "sheet.abilityType",
-  "sheet.credit",
-  "sheet.weaponTraining",
-  "sheet.skillTraining",
-  "sheet.equipment",
-  "sheet.abilities",
-  // NPC
-  "sheet.nameEn",
-  "sheet.roleDetail",
-  "sheet.notes",
+  "department",
+  "factionCode",
+  "institutionCode",
+  // lore
+  "lore.name",
+  "lore.nameNative",
+  "lore.nickname",
+  "lore.gender",
+  "lore.age",
+  "lore.height",
+  "lore.weight",
+  "lore.appearance",
+  "lore.personality",
+  "lore.background",
+  "lore.quote",
+  "lore.mainImage",
+  "lore.posterImage",
+  // play
+  "play.className",
+  "play.hp",
+  "play.hpDelta",
+  "play.san",
+  "play.sanDelta",
+  "play.def",
+  "play.defDelta",
+  "play.atk",
+  "play.atkDelta",
+  "play.abilityType",
+  "play.weaponTraining",
+  "play.skillTraining",
+  "play.credit",
+  "play.equipment",
+  "play.abilities",
 ];
 
 /* ── Default factories ── */
 
 function emptyEquipment(): Equipment {
-  return { name: "", price: "", damage: "", description: "" };
+  return { name: "", price: "", damage: "", ammo: "", grip: "", description: "" };
 }
 
-function emptyAbility(): Ability {
-  return { code: "", name: "", description: "", effect: "" };
+/** 7-슬롯 ability 초기화. 기존 ability 가 슬롯에 없으면 빈 슬롯으로 채움. */
+function initAbilities(existing: Ability[]): Ability[] {
+  const map = new Map(existing.map((a) => [a.slot, a]));
+  return ABILITY_SLOTS.map(
+    (slot) => map.get(slot) ?? { slot, name: "" },
+  );
+}
+
+/** 콤마/공백 구분 string ↔ string[] 변환 */
+function tagsToString(arr: string[] | undefined): string {
+  return (arr ?? []).join(", ");
+}
+function stringToTags(s: string): string[] {
+  return s
+    .split(/[,\n]/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
+
+function emptyToUndefined(value: string): string | undefined {
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
 }
 
 export default function CharacterEditForm({
@@ -174,85 +211,72 @@ export default function CharacterEditForm({
 
   const queryClient = useQueryClient();
 
-  /**
-   * 편집 쿼터 조회 — player 모드에서만 활성화. admin 은 쿨다운 미적용이라 폴링 불필요.
-   * 응답 도착 전엔 quotaData 가 undefined → 배너 텍스트 보강 영역만 비어 보임.
-   */
+  /** 편집 쿼터 — player 한정 폴링 */
   const { data: quotaData } = useCharacterEditQuota(characterId, isPlayer);
 
-  /**
-   * 플레이어 모드에서 비활성화 여부 판정.
-   * - admin 모드면 항상 false (잠금 없음)
-   * - player 모드면 PLAYER_EDITABLE_FIELDS 외 모든 필드 잠금
-   *
-   * Field 컴포넌트의 `locked` prop과 입력 컨트롤의 `disabled` prop 양쪽에 같은 값 사용.
-   */
-  function isLocked(fieldKey: string): boolean {
-    return isPlayer && !isPlayerEditable(fieldKey);
+  function isLocked(loreFieldKey: string): boolean {
+    // admin 모드 전체 허용 / player 는 lore 8필드만 허용
+    return isPlayer && !isPlayerEditableLore(loreFieldKey);
   }
 
-  /* ── Common fields ── */
+  /* ── Root meta ── */
   const [codename, setCodename] = useState(character.codename);
   const [role, setRole] = useState(character.role);
   const [previewImage, setPreviewImage] = useState(character.previewImage);
   const [isPublic, setIsPublic] = useState(character.isPublic);
   const [ownerId, setOwnerId] = useState(character.ownerId ?? "");
-
-  /* ── Sheet common ── */
-  const [name, setName] = useState(character.sheet.name);
-  const [mainImage, setMainImage] = useState(character.sheet.mainImage);
-  const [posterImage, setPosterImage] = useState(
-    character.sheet.posterImage ?? "",
+  const [tier, setTier] = useState<CharacterTier>(character.tier ?? "MAIN");
+  const [department, setDepartment] = useState<string>(
+    character.department ?? "UNASSIGNED",
   );
-  const [quote, setQuote] = useState(character.sheet.quote);
-  const [gender, setGender] = useState(character.sheet.gender);
-  const [age, setAge] = useState(character.sheet.age);
-  const [height, setHeight] = useState(character.sheet.height);
-  const [appearance, setAppearance] = useState(character.sheet.appearance);
-  const [personality, setPersonality] = useState(character.sheet.personality);
-  const [background, setBackground] = useState(character.sheet.background);
-
-  /* ── Agent-specific ── */
-  const agentSheet = character.type === "AGENT" ? character.sheet : null;
-
-  const [weight, setWeight] = useState(agentSheet?.weight ?? "");
-  const [className, setClassName] = useState(agentSheet?.className ?? "");
-  const [hp, setHp] = useState(agentSheet?.hp ?? 0);
-  const [san, setSan] = useState(agentSheet?.san ?? 0);
-  const [def, setDef] = useState(agentSheet?.def ?? 0);
-  const [atk, setAtk] = useState(agentSheet?.atk ?? 0);
-  const [abilityType, setAbilityType] = useState(agentSheet?.abilityType ?? "");
-  const [credit, setCredit] = useState(String(agentSheet?.credit ?? ""));
-  const [weaponTraining, setWeaponTraining] = useState(
-    agentSheet?.weaponTraining ?? "",
-  );
-  const [skillTraining, setSkillTraining] = useState(
-    agentSheet?.skillTraining ?? "",
-  );
-  const [equipment, setEquipment] = useState<Equipment[]>(
-    agentSheet?.equipment ?? [],
-  );
-  const [abilities, setAbilities] = useState<Ability[]>(
-    agentSheet?.abilities ?? [],
+  const [factionCode, setFactionCode] = useState(character.factionCode ?? "");
+  const [institutionCode, setInstitutionCode] = useState(
+    character.institutionCode ?? "",
   );
 
-  /* ── NPC-specific ── */
-  const npcSheet = character.type === "NPC" ? character.sheet : null;
+  /* ── Lore ── */
+  const lore = character.lore;
+  const [name, setName] = useState(lore.name);
+  const [nameNative, setNameNative] = useState(lore.nameNative ?? "");
+  const [nickname, setNickname] = useState(lore.nickname ?? "");
+  const [mainImage, setMainImage] = useState(lore.mainImage);
+  const [posterImage, setPosterImage] = useState(lore.posterImage ?? "");
+  const [quote, setQuote] = useState(lore.quote);
+  const [gender, setGender] = useState(lore.gender);
+  const [age, setAge] = useState(lore.age);
+  const [height, setHeight] = useState(lore.height);
+  const [weight, setWeight] = useState(lore.weight);
+  const [appearance, setAppearance] = useState(lore.appearance);
+  const [personality, setPersonality] = useState(lore.personality);
+  const [background, setBackground] = useState(lore.background);
 
-  const [nameEn, setNameEn] = useState(npcSheet?.nameEn ?? "");
-  const [roleDetail, setRoleDetail] = useState(npcSheet?.roleDetail ?? "");
-  const [notes, setNotes] = useState(npcSheet?.notes ?? "");
+  /* ── Play (admin 전용 입력) ── */
+  const play = character.play;
+  const [className, setClassName] = useState(play.className);
+  const [hp, setHp] = useState(play.hp);
+  const [hpDelta, setHpDelta] = useState(play.hpDelta);
+  const [san, setSan] = useState(play.san);
+  const [sanDelta, setSanDelta] = useState(play.sanDelta);
+  const [def, setDef] = useState(play.def);
+  const [defDelta, setDefDelta] = useState(play.defDelta);
+  const [atk, setAtk] = useState(play.atk);
+  const [atkDelta, setAtkDelta] = useState(play.atkDelta);
+  const [abilityType, setAbilityType] = useState(play.abilityType ?? "");
+  const [credit, setCredit] = useState(play.credit ?? "");
+  const [weaponTrainingStr, setWeaponTrainingStr] = useState(
+    tagsToString(play.weaponTraining),
+  );
+  const [skillTrainingStr, setSkillTrainingStr] = useState(
+    tagsToString(play.skillTraining),
+  );
+  const [equipment, setEquipment] = useState<Equipment[]>(play.equipment);
+  const [abilities, setAbilities] = useState<Ability[]>(initAbilities(play.abilities));
 
   /* ── Form state ── */
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /* ── P7: diff 프리뷰 모달 상태 ── */
-  /**
-   * pendingBody / pendingDiff 는 confirm 시점에 그대로 PATCH 에 투입.
-   * handleSubmit 에서 한 번 빌드 후 모달이 닫힐 때까지 보관 — confirm 시 reason 만 합쳐 전송.
-   * 모달 cancel 시 둘 다 null 로 리셋.
-   */
+  /* ── diff preview modal ── */
   const [previewOpen, setPreviewOpen] = useState(false);
   const [pendingDiff, setPendingDiff] = useState<DiffEntry[]>([]);
   const [pendingBody, setPendingBody] = useState<Record<string, unknown> | null>(
@@ -263,11 +287,9 @@ export default function CharacterEditForm({
   function addEquipment() {
     setEquipment((prev) => [...prev, emptyEquipment()]);
   }
-
   function removeEquipment(index: number) {
     setEquipment((prev) => prev.filter((_, i) => i !== index));
   }
-
   function updateEquipment(
     index: number,
     field: keyof Equipment,
@@ -278,15 +300,7 @@ export default function CharacterEditForm({
     );
   }
 
-  /* ── Ability helpers ── */
-  function addAbility() {
-    setAbilities((prev) => [...prev, emptyAbility()]);
-  }
-
-  function removeAbility(index: number) {
-    setAbilities((prev) => prev.filter((_, i) => i !== index));
-  }
-
+  /* ── Ability helpers (7-slot 고정, 슬롯 자체는 추가/삭제 불가) ── */
   function updateAbility(index: number, field: keyof Ability, value: string) {
     setAbilities((prev) =>
       prev.map((ab, i) => (i === index ? { ...ab, [field]: value } : ab)),
@@ -294,15 +308,14 @@ export default function CharacterEditForm({
   }
 
   /**
-   * 현재 form state 로 PATCH body 를 빌드. handleSubmit 과 모달 confirm 양쪽에서 공유.
-   * 모드별 형식:
-   *  - player: sheet 부분객체 7필드만
-   *  - admin: 기존 (최상위 메타 + sheet 통째)
+   * PATCH body 빌드 — sub-document 분리.
+   *  - player: lore 8필드만
+   *  - admin: root + lore + play
    */
   function buildBody(): Record<string, unknown> {
     if (isPlayer) {
       return {
-        sheet: {
+        lore: {
           quote,
           appearance,
           personality,
@@ -310,48 +323,8 @@ export default function CharacterEditForm({
           gender,
           age,
           height,
+          weight,
         },
-      };
-    }
-
-    const sheetBase = {
-      codename,
-      name,
-      mainImage,
-      posterImage,
-      quote,
-      gender,
-      age,
-      height,
-      appearance,
-      personality,
-      background,
-    };
-
-    let sheet: AgentSheet | NpcSheet;
-
-    if (character.type === "AGENT") {
-      sheet = {
-        ...sheetBase,
-        weight,
-        className,
-        hp,
-        san,
-        def,
-        atk,
-        abilityType,
-        credit: credit === "" ? "" : Number(credit) || credit,
-        weaponTraining,
-        skillTraining,
-        equipment,
-        abilities,
-      };
-    } else {
-      sheet = {
-        ...sheetBase,
-        nameEn,
-        roleDetail,
-        notes,
       };
     }
 
@@ -361,59 +334,48 @@ export default function CharacterEditForm({
       previewImage,
       isPublic,
       ownerId: ownerId || null,
-      sheet,
+      tier,
+      department: department as AgentCharacter["department"],
+      factionCode: emptyToUndefined(factionCode),
+      institutionCode: emptyToUndefined(institutionCode),
+      lore: {
+        name,
+        nameNative: emptyToUndefined(nameNative),
+        nickname: emptyToUndefined(nickname),
+        gender,
+        age,
+        height,
+        weight,
+        appearance,
+        personality,
+        background,
+        quote,
+        mainImage,
+        posterImage: emptyToUndefined(posterImage),
+      },
+      play: {
+        className,
+        hp,
+        hpDelta,
+        san,
+        sanDelta,
+        def,
+        defDelta,
+        atk,
+        atkDelta,
+        abilityType: emptyToUndefined(abilityType),
+        weaponTraining: stringToTags(weaponTrainingStr),
+        skillTraining: stringToTags(skillTrainingStr),
+        credit,
+        equipment,
+        abilities,
+      },
     };
   }
 
-  /**
-   * 클라이언트 측 diff 계산 — 서버 round-trip 없이 form state ↔ character props 비교.
-   * isPlayer 면 7필드만, admin 이면 ADMIN_DIFF_FIELDS 전체.
-   * AGENT/NPC 무관하게 ADMIN_DIFF_FIELDS 를 모두 비교 — getPathValue 가 undefined 일 땐
-   * before/after 가 동일 undefined 라 diff 에 남지 않음 (해당 타입에 없는 필드는 자동 무시).
-   */
+  /** form state ↔ character props diff */
   function computeFormDiff(): DiffEntry[] {
     const fields = isPlayer ? PLAYER_DIFF_FIELDS : ADMIN_DIFF_FIELDS;
-
-    // form state 를 character 동형 구조로 재구성 — buildBody 의 결과를 그대로 사용하면
-    // player 모드에서 admin 필드(ownerId 등) 가 누락되어 비교 시 잘못 'undefined' 처리됨.
-    // 대신 character 구조와 같은 형태의 candidate 를 직접 빌드.
-    // 기존 form 은 sheet.codename 도 form codename 으로 set 하므로 동일 값 사용.
-    const sheetCandidate: Record<string, unknown> = {
-      codename,
-      name,
-      mainImage,
-      posterImage,
-      quote,
-      gender,
-      age,
-      height,
-      appearance,
-      personality,
-      background,
-    };
-
-    if (character.type === "AGENT") {
-      Object.assign(sheetCandidate, {
-        weight,
-        className,
-        hp,
-        san,
-        def,
-        atk,
-        abilityType,
-        credit: credit === "" ? "" : Number(credit) || credit,
-        weaponTraining,
-        skillTraining,
-        equipment,
-        abilities,
-      });
-    } else {
-      Object.assign(sheetCandidate, {
-        nameEn,
-        roleDetail,
-        notes,
-      });
-    }
 
     const candidate = {
       codename,
@@ -421,16 +383,47 @@ export default function CharacterEditForm({
       isPublic,
       previewImage,
       ownerId: ownerId || null,
-      sheet: sheetCandidate,
+      tier,
+      department: department as AgentCharacter["department"],
+      factionCode: emptyToUndefined(factionCode),
+      institutionCode: emptyToUndefined(institutionCode),
+      lore: {
+        name,
+        nameNative: emptyToUndefined(nameNative),
+        nickname: emptyToUndefined(nickname),
+        gender,
+        age,
+        height,
+        weight,
+        appearance,
+        personality,
+        background,
+        quote,
+        mainImage,
+        posterImage: emptyToUndefined(posterImage),
+      },
+      play: {
+        className,
+        hp,
+        hpDelta,
+        san,
+        sanDelta,
+        def,
+        defDelta,
+        atk,
+        atkDelta,
+        abilityType: emptyToUndefined(abilityType),
+        weaponTraining: stringToTags(weaponTrainingStr),
+        skillTraining: stringToTags(skillTrainingStr),
+        credit,
+        equipment,
+        abilities,
+      },
     };
 
     return buildLocalDiff(character, candidate, fields);
   }
 
-  /**
-   * 모달 confirm 시 실제 PATCH 수행. handleSubmit 에서도 fallback 으로 사용 (변경 0 케이스).
-   * reason 은 선택 — body 에 포함되어 서버 audit 로 흘러간다 (P7-T4).
-   */
   async function performPatch(body: Record<string, unknown>, reason?: string) {
     setSubmitting(true);
     setError(null);
@@ -446,8 +439,6 @@ export default function CharacterEditForm({
 
       if (!res.ok) {
         const data = await res.json();
-        // 429(쿨다운) 응답은 cooldown 정보를 포함하지만 표시는 단순 메시지로 통일.
-        // 쿼터 캐시도 invalidate 해 다음 편집 진입 시 갱신된 used/remaining 표시.
         if (res.status === 429 && isPlayer) {
           await queryClient.invalidateQueries({
             queryKey: characterEditQuotaKeys.byCharacter(characterId),
@@ -455,18 +446,15 @@ export default function CharacterEditForm({
         }
         setError(data.error ?? "저장에 실패했습니다.");
         setSubmitting(false);
-        // 모달은 닫지 않음 — 사용자가 메시지 확인 후 닫거나 재시도
         return;
       }
 
-      // PATCH 성공 — player 모드면 used 카운트가 +1 되었으므로 quota 캐시 invalidate.
       if (isPlayer) {
         await queryClient.invalidateQueries({
           queryKey: characterEditQuotaKeys.byCharacter(characterId),
         });
       }
 
-      // 성공 — 모달 닫고 상위 콜백 호출
       setPreviewOpen(false);
       setPendingDiff([]);
       setPendingBody(null);
@@ -478,20 +466,16 @@ export default function CharacterEditForm({
     }
   }
 
-  /* ── Submit ── */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
     setError(null);
 
     const diff = computeFormDiff();
     if (diff.length === 0) {
-      // 변경 없음 — 모달 띄우지 않고 안내만
       setError("변경 사항이 없습니다.");
       return;
     }
 
-    // diff 가 있으면 모달 열기. 실제 PATCH 는 confirm 시 performPatch.
     setPendingDiff(diff);
     setPendingBody(buildBody());
     setPreviewOpen(true);
@@ -503,7 +487,7 @@ export default function CharacterEditForm({
   }
 
   function handlePreviewCancel() {
-    if (submitting) return; // PATCH 진행 중엔 닫지 못함 — 응답 도착 후 자동 처리
+    if (submitting) return;
     setPreviewOpen(false);
     setPendingDiff([]);
     setPendingBody(null);
@@ -528,8 +512,8 @@ export default function CharacterEditForm({
           <div className={styles.modeBanner__text}>
             <b>{isPlayer ? "플레이어 편집 모드" : "관리자 편집 모드"}</b>
             {isPlayer
-              ? "서사 필드만 수정 가능합니다 (능력치 · 이미지는 GM 문의)."
-              : "모든 필드를 수정할 수 있습니다."}
+              ? "lore 서사 필드만 수정 가능합니다 (능력치 · 이미지는 GM 문의)."
+              : "lore + play 모든 필드를 수정할 수 있습니다."}
           </div>
           <span
             className={`${styles.modeBadge} ${
@@ -574,46 +558,110 @@ export default function CharacterEditForm({
         ) : null}
       </div>
 
-      {/* ── Common Fields ── */}
+      {/* ── BASIC INFO (root + 일부 lore meta) ── */}
       <div className={styles.form__box}>
         <div className={styles.panelTitle}>
           <span className={styles.panelTitle__label}>BASIC INFO</span>
         </div>
         <div className={styles.form__box__body}>
           <div className={styles.grid}>
-            <Field id="codename" label="CODENAME" locked={isLocked("codename")}>
+            <Field id="codename" label="CODENAME" locked={!isPlayer ? false : true}>
               <input
                 id="codename"
                 type="text"
                 className={styles.input}
                 value={codename}
                 onChange={(e) => setCodename(e.target.value)}
-                required={!isLocked("codename")}
-                disabled={isLocked("codename")}
+                required={!isPlayer}
+                disabled={isPlayer}
               />
             </Field>
-            <Field id="role" label="ROLE" locked={isLocked("role")}>
+            <Field id="role" label="ROLE" locked={isPlayer}>
               <input
                 id="role"
                 type="text"
                 className={styles.input}
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                required={!isLocked("role")}
-                disabled={isLocked("role")}
+                required={!isPlayer}
+                disabled={isPlayer}
               />
             </Field>
-            <Field id="name" label="NAME" locked={isLocked("name")}>
-              <input
-                id="name"
-                type="text"
+            <Field id="tier" label="TIER" locked={isPlayer}>
+              <select
+                id="tier"
                 className={styles.input}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isLocked("name")}
-              />
+                value={tier}
+                onChange={(e) => setTier(e.target.value as CharacterTier)}
+                disabled={isPlayer}
+              >
+                {CHARACTER_TIERS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
             </Field>
-            <Field id="ownerId" label="OWNER ID" locked={isLocked("ownerId")}>
+            <Field id="department" label="DEPARTMENT" locked={isPlayer}>
+              <select
+                id="department"
+                className={styles.input}
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                disabled={isPlayer}
+              >
+                <option value="UNASSIGNED">미배정</option>
+                {INSTITUTIONS.map((inst) =>
+                  inst.subUnits.length > 0 ? (
+                    <optgroup key={inst.code} label={inst.label}>
+                      <option value={inst.code}>{inst.label} (직속)</option>
+                      {inst.subUnits.map((u) => (
+                        <option key={u.code} value={u.code}>
+                          {u.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ) : (
+                    <optgroup key={inst.code} label="독립 기관">
+                      <option value={inst.code}>{inst.label}</option>
+                    </optgroup>
+                  ),
+                )}
+              </select>
+            </Field>
+            <Field id="factionCode" label="FACTION" locked={isPlayer}>
+              <select
+                id="factionCode"
+                className={styles.input}
+                value={factionCode}
+                onChange={(e) => setFactionCode(e.target.value)}
+                disabled={isPlayer}
+              >
+                <option value="">미지정</option>
+                {FACTIONS.map((f) => (
+                  <option key={f.code} value={f.code}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field id="institutionCode" label="INSTITUTION" locked={isPlayer}>
+              <select
+                id="institutionCode"
+                className={styles.input}
+                value={institutionCode}
+                onChange={(e) => setInstitutionCode(e.target.value)}
+                disabled={isPlayer}
+              >
+                <option value="">미지정</option>
+                {INSTITUTIONS.map((inst) => (
+                  <option key={inst.code} value={inst.code}>
+                    {inst.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field id="ownerId" label="OWNER ID" locked={isPlayer}>
               <input
                 id="ownerId"
                 type="text"
@@ -621,14 +669,14 @@ export default function CharacterEditForm({
                 value={ownerId}
                 onChange={(e) => setOwnerId(e.target.value)}
                 placeholder="소유자 ID (선택)"
-                disabled={isLocked("ownerId")}
+                disabled={isPlayer}
               />
             </Field>
             <Field
               id="previewImage"
               label="PREVIEW IMAGE URL"
               full
-              locked={isLocked("previewImage")}
+              locked={isPlayer}
             >
               <input
                 id="previewImage"
@@ -637,46 +685,14 @@ export default function CharacterEditForm({
                 value={previewImage}
                 onChange={(e) => setPreviewImage(e.target.value)}
                 placeholder="미리보기 이미지 URL"
-                disabled={isLocked("previewImage")}
-              />
-            </Field>
-            <Field
-              id="mainImage"
-              label="MAIN IMAGE URL"
-              full
-              locked={isLocked("mainImage")}
-            >
-              <input
-                id="mainImage"
-                type="text"
-                className={styles.input}
-                value={mainImage}
-                onChange={(e) => setMainImage(e.target.value)}
-                placeholder="메인 이미지 URL (세로 초상화)"
-                disabled={isLocked("mainImage")}
-              />
-            </Field>
-            <Field
-              id="posterImage"
-              label="POSTER IMAGE URL"
-              full
-              locked={isLocked("posterImage")}
-            >
-              <input
-                id="posterImage"
-                type="text"
-                className={styles.input}
-                value={posterImage}
-                onChange={(e) => setPosterImage(e.target.value)}
-                placeholder="캐릭터 상세 상단 와이드 히어로 (선택)"
-                disabled={isLocked("posterImage")}
+                disabled={isPlayer}
               />
             </Field>
             <div className={`${styles.field} ${styles["field--full"]}`}>
               <label
                 className={[
                   styles.checkbox,
-                  isLocked("isPublic") ? styles["checkbox--locked"] : "",
+                  isPlayer ? styles["checkbox--locked"] : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -686,10 +702,10 @@ export default function CharacterEditForm({
                   checked={isPublic}
                   onChange={(e) => setIsPublic(e.target.checked)}
                   className={styles.checkbox__input}
-                  disabled={isLocked("isPublic")}
+                  disabled={isPlayer}
                 />
                 <span className={styles.checkbox__text}>공개 캐릭터</span>
-                {isLocked("isPublic") ? (
+                {isPlayer ? (
                   <span
                     className={styles.lockedBadge}
                     aria-label="GM 전용"
@@ -704,26 +720,42 @@ export default function CharacterEditForm({
         </div>
       </div>
 
-      {/* ── Sheet Common ── */}
-      {/*
-        이 섹션의 7개 필드(quote/gender/age/height/appearance/personality/background)는
-        PLAYER_ALLOWED_CHARACTER_FIELDS와 정확히 일치 — player 모드에서도 모두 편집 가능.
-        잠금은 isLocked 헬퍼가 알아서 false 반환.
-      */}
+      {/* ── LORE — 신원/서사 (8필드는 player 도 편집 가능) ── */}
       <div className={styles.form__box}>
         <div className={styles.panelTitle}>
-          <span className={styles.panelTitle__label}>CHARACTER PROFILE</span>
+          <span className={styles.panelTitle__label}>LORE · 신원 · 서사</span>
         </div>
         <div className={styles.form__box__body}>
           <div className={styles.grid}>
-            <Field id="quote" label="QUOTE" locked={isLocked("quote")}>
+            <Field id="name" label="NAME" locked={isPlayer}>
               <input
-                id="quote"
+                id="name"
                 type="text"
                 className={styles.input}
-                value={quote}
-                onChange={(e) => setQuote(e.target.value)}
-                disabled={isLocked("quote")}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={isPlayer}
+              />
+            </Field>
+            <Field id="nameNative" label="NAME (NATIVE)" locked={isPlayer}>
+              <input
+                id="nameNative"
+                type="text"
+                className={styles.input}
+                value={nameNative}
+                onChange={(e) => setNameNative(e.target.value)}
+                placeholder="원어 표기 (한자/일본어 등)"
+                disabled={isPlayer}
+              />
+            </Field>
+            <Field id="nickname" label="NICKNAME" locked={isPlayer}>
+              <input
+                id="nickname"
+                type="text"
+                className={styles.input}
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                disabled={isPlayer}
               />
             </Field>
             <Field id="gender" label="GENDER" locked={isLocked("gender")}>
@@ -754,6 +786,58 @@ export default function CharacterEditForm({
                 value={height}
                 onChange={(e) => setHeight(e.target.value)}
                 disabled={isLocked("height")}
+              />
+            </Field>
+            <Field id="weight" label="WEIGHT" locked={isLocked("weight")}>
+              <input
+                id="weight"
+                type="text"
+                className={styles.input}
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                disabled={isLocked("weight")}
+              />
+            </Field>
+            <Field id="quote" label="QUOTE" full locked={isLocked("quote")}>
+              <input
+                id="quote"
+                type="text"
+                className={styles.input}
+                value={quote}
+                onChange={(e) => setQuote(e.target.value)}
+                disabled={isLocked("quote")}
+              />
+            </Field>
+            <Field
+              id="mainImage"
+              label="MAIN IMAGE URL"
+              full
+              locked={isPlayer}
+            >
+              <input
+                id="mainImage"
+                type="text"
+                className={styles.input}
+                value={mainImage}
+                onChange={(e) => setMainImage(e.target.value)}
+                placeholder="메인 이미지 URL (세로 초상화)"
+                disabled={isPlayer}
+              />
+            </Field>
+            <Field
+              id="posterImage"
+              label="POSTER IMAGE URL"
+              full
+              locked={isPlayer}
+            >
+              <input
+                id="posterImage"
+                type="text"
+                className={styles.input}
+                value={posterImage}
+                onChange={(e) => setPosterImage(e.target.value)}
+                placeholder="캐릭터 상세 상단 와이드 히어로 (선택)"
+                disabled={isPlayer}
               />
             </Field>
             <Field
@@ -802,17 +886,14 @@ export default function CharacterEditForm({
         </div>
       </div>
 
-      {/*
-        ── Agent-specific (admin only) ──
-        능력치/장비/어빌리티는 PLAYER_ALLOWED_CHARACTER_FIELDS 에 미포함이므로
-        player 모드에서는 섹션 자체를 비표시. 입력해도 서버 화이트리스트에서 drop 되며,
-        UI에서 잠긴 상태로 노출하면 시각적 잡음만 늘어 사용자 인지 부하 증가.
-      */}
-      {character.type === "AGENT" && !isPlayer ? (
+      {/* ── PLAY (admin only) ── */}
+      {!isPlayer ? (
         <>
           <div className={styles.form__box}>
             <div className={styles.panelTitle}>
-              <span className={styles.panelTitle__label}>COMBAT STATS</span>
+              <span className={styles.panelTitle__label}>
+                COMBAT STATS · base + delta 메모
+              </span>
             </div>
             <div className={styles.form__box__body}>
               <div className={styles.statGrid}>
@@ -825,6 +906,15 @@ export default function CharacterEditForm({
                     onChange={(e) => setHp(Number(e.target.value))}
                   />
                 </Field>
+                <Field id="hpDelta" label="HP Δ">
+                  <input
+                    id="hpDelta"
+                    type="number"
+                    className={`${styles.input} ${styles["input--num"]}`}
+                    value={hpDelta}
+                    onChange={(e) => setHpDelta(Number(e.target.value))}
+                  />
+                </Field>
                 <Field id="san" label="SAN">
                   <input
                     id="san"
@@ -832,6 +922,15 @@ export default function CharacterEditForm({
                     className={`${styles.input} ${styles["input--num"]}`}
                     value={san}
                     onChange={(e) => setSan(Number(e.target.value))}
+                  />
+                </Field>
+                <Field id="sanDelta" label="SAN Δ">
+                  <input
+                    id="sanDelta"
+                    type="number"
+                    className={`${styles.input} ${styles["input--num"]}`}
+                    value={sanDelta}
+                    onChange={(e) => setSanDelta(Number(e.target.value))}
                   />
                 </Field>
                 <Field id="def" label="DEF">
@@ -843,6 +942,15 @@ export default function CharacterEditForm({
                     onChange={(e) => setDef(Number(e.target.value))}
                   />
                 </Field>
+                <Field id="defDelta" label="DEF Δ">
+                  <input
+                    id="defDelta"
+                    type="number"
+                    className={`${styles.input} ${styles["input--num"]}`}
+                    value={defDelta}
+                    onChange={(e) => setDefDelta(Number(e.target.value))}
+                  />
+                </Field>
                 <Field id="atk" label="ATK">
                   <input
                     id="atk"
@@ -850,6 +958,15 @@ export default function CharacterEditForm({
                     className={`${styles.input} ${styles["input--num"]}`}
                     value={atk}
                     onChange={(e) => setAtk(Number(e.target.value))}
+                  />
+                </Field>
+                <Field id="atkDelta" label="ATK Δ">
+                  <input
+                    id="atkDelta"
+                    type="number"
+                    className={`${styles.input} ${styles["input--num"]}`}
+                    value={atkDelta}
+                    onChange={(e) => setAtkDelta(Number(e.target.value))}
                   />
                 </Field>
               </div>
@@ -871,15 +988,6 @@ export default function CharacterEditForm({
                     onChange={(e) => setClassName(e.target.value)}
                   />
                 </Field>
-                <Field id="weight" label="WEIGHT">
-                  <input
-                    id="weight"
-                    type="text"
-                    className={styles.input}
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                  />
-                </Field>
                 <Field id="abilityType" label="ABILITY TYPE">
                   <input
                     id="abilityType"
@@ -898,22 +1006,32 @@ export default function CharacterEditForm({
                     onChange={(e) => setCredit(e.target.value)}
                   />
                 </Field>
-                <Field id="weaponTraining" label="WEAPON TRAINING">
+                <Field
+                  id="weaponTraining"
+                  label="WEAPON TRAINING (콤마 구분)"
+                  full
+                >
                   <input
                     id="weaponTraining"
                     type="text"
                     className={styles.input}
-                    value={weaponTraining}
-                    onChange={(e) => setWeaponTraining(e.target.value)}
+                    value={weaponTrainingStr}
+                    onChange={(e) => setWeaponTrainingStr(e.target.value)}
+                    placeholder="권총, 산탄총"
                   />
                 </Field>
-                <Field id="skillTraining" label="SKILL TRAINING">
+                <Field
+                  id="skillTraining"
+                  label="SKILL TRAINING (콤마 구분)"
+                  full
+                >
                   <input
                     id="skillTraining"
                     type="text"
                     className={styles.input}
-                    value={skillTraining}
-                    onChange={(e) => setSkillTraining(e.target.value)}
+                    value={skillTrainingStr}
+                    onChange={(e) => setSkillTrainingStr(e.target.value)}
+                    placeholder="유혹, 설득, 샘플관리"
                   />
                 </Field>
               </div>
@@ -971,7 +1089,7 @@ export default function CharacterEditForm({
                               id={`eq-price-${i}`}
                               type="text"
                               className={styles.input}
-                              value={String(eq.price)}
+                              value={String(eq.price ?? "")}
                               onChange={(e) =>
                                 updateEquipment(i, "price", e.target.value)
                               }
@@ -982,18 +1100,42 @@ export default function CharacterEditForm({
                               id={`eq-damage-${i}`}
                               type="text"
                               className={styles.input}
-                              value={eq.damage}
+                              value={eq.damage ?? ""}
                               onChange={(e) =>
                                 updateEquipment(i, "damage", e.target.value)
                               }
                             />
                           </Field>
-                          <Field id={`eq-desc-${i}`} label="DESCRIPTION">
+                          <Field id={`eq-ammo-${i}`} label="AMMO">
+                            <input
+                              id={`eq-ammo-${i}`}
+                              type="text"
+                              className={styles.input}
+                              value={eq.ammo ?? ""}
+                              onChange={(e) =>
+                                updateEquipment(i, "ammo", e.target.value)
+                              }
+                              placeholder="5/5"
+                            />
+                          </Field>
+                          <Field id={`eq-grip-${i}`} label="GRIP">
+                            <input
+                              id={`eq-grip-${i}`}
+                              type="text"
+                              className={styles.input}
+                              value={eq.grip ?? ""}
+                              onChange={(e) =>
+                                updateEquipment(i, "grip", e.target.value)
+                              }
+                              placeholder="양손, 혹은 한손"
+                            />
+                          </Field>
+                          <Field id={`eq-desc-${i}`} label="DESCRIPTION" full>
                             <input
                               id={`eq-desc-${i}`}
                               type="text"
                               className={styles.input}
-                              value={eq.description}
+                              value={eq.description ?? ""}
                               onChange={(e) =>
                                 updateEquipment(i, "description", e.target.value)
                               }
@@ -1008,132 +1150,76 @@ export default function CharacterEditForm({
             </div>
           </div>
 
-          {/* Abilities list */}
+          {/* Abilities — 7-슬롯 고정 그리드 */}
           <div className={styles.form__box}>
             <div className={styles.panelTitle}>
-              <span className={styles.panelTitle__label}>ABILITIES</span>
-              <div className={styles.panelTitle__right}>
-                <button
-                  type="button"
-                  className={`${styles.ghostBtn} ${styles["ghostBtn--add"]}`}
-                  onClick={addAbility}
-                >
-                  추가
-                </button>
-              </div>
+              <span className={styles.panelTitle__label}>
+                ABILITIES · 7 SLOTS (C1/C2/C3/P/A1/A2/A3)
+              </span>
             </div>
             <div className={styles.form__box__body}>
-              {abilities.length === 0 ? (
-                <div className={styles.empty}>어빌리티 없음</div>
-              ) : (
-                <div className={styles.list}>
-                  {abilities.map((ab, i) => (
-                    <div key={i} className={styles.listItem}>
-                      <div className={styles.listItem__head}>
-                        <span className={styles.listItem__title}>
-                          ABILITY <b>#{String(i + 1).padStart(2, "0")}</b>
-                        </span>
-                        <button
-                          type="button"
-                          className={`${styles.ghostBtn} ${styles["ghostBtn--remove"]}`}
-                          onClick={() => removeAbility(i)}
-                        >
-                          삭제
-                        </button>
-                      </div>
-                      <div className={styles.listItem__body}>
-                        <div className={styles.grid}>
-                          <Field id={`ab-code-${i}`} label="CODE">
-                            <input
-                              id={`ab-code-${i}`}
-                              type="text"
-                              className={styles.input}
-                              value={ab.code}
-                              onChange={(e) =>
-                                updateAbility(i, "code", e.target.value)
-                              }
-                            />
-                          </Field>
-                          <Field id={`ab-name-${i}`} label="NAME">
-                            <input
-                              id={`ab-name-${i}`}
-                              type="text"
-                              className={styles.input}
-                              value={ab.name}
-                              onChange={(e) =>
-                                updateAbility(i, "name", e.target.value)
-                              }
-                            />
-                          </Field>
-                          <Field id={`ab-desc-${i}`} label="DESCRIPTION" full>
-                            <input
-                              id={`ab-desc-${i}`}
-                              type="text"
-                              className={styles.input}
-                              value={ab.description}
-                              onChange={(e) =>
-                                updateAbility(i, "description", e.target.value)
-                              }
-                            />
-                          </Field>
-                          <Field id={`ab-effect-${i}`} label="EFFECT" full>
-                            <input
-                              id={`ab-effect-${i}`}
-                              type="text"
-                              className={styles.input}
-                              value={ab.effect}
-                              onChange={(e) =>
-                                updateAbility(i, "effect", e.target.value)
-                              }
-                            />
-                          </Field>
-                        </div>
+              <div className={styles.list}>
+                {abilities.map((ab, i) => (
+                  <div key={ab.slot} className={styles.listItem}>
+                    <div className={styles.listItem__head}>
+                      <span className={styles.listItem__title}>
+                        SLOT <b>{ab.slot}</b>
+                      </span>
+                    </div>
+                    <div className={styles.listItem__body}>
+                      <div className={styles.grid}>
+                        <Field id={`ab-name-${i}`} label="NAME">
+                          <input
+                            id={`ab-name-${i}`}
+                            type="text"
+                            className={styles.input}
+                            value={ab.name}
+                            onChange={(e) =>
+                              updateAbility(i, "name", e.target.value)
+                            }
+                          />
+                        </Field>
+                        <Field id={`ab-code-${i}`} label="CODE">
+                          <input
+                            id={`ab-code-${i}`}
+                            type="text"
+                            className={styles.input}
+                            value={ab.code ?? ""}
+                            onChange={(e) =>
+                              updateAbility(i, "code", e.target.value)
+                            }
+                          />
+                        </Field>
+                        <Field id={`ab-desc-${i}`} label="DESCRIPTION" full>
+                          <input
+                            id={`ab-desc-${i}`}
+                            type="text"
+                            className={styles.input}
+                            value={ab.description ?? ""}
+                            onChange={(e) =>
+                              updateAbility(i, "description", e.target.value)
+                            }
+                          />
+                        </Field>
+                        <Field id={`ab-effect-${i}`} label="EFFECT" full>
+                          <input
+                            id={`ab-effect-${i}`}
+                            type="text"
+                            className={styles.input}
+                            value={ab.effect ?? ""}
+                            onChange={(e) =>
+                              updateAbility(i, "effect", e.target.value)
+                            }
+                          />
+                        </Field>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </>
-      ) : null}
-
-      {/* ── NPC-specific (admin only) — NPC 전용 필드는 PLAYER_ALLOWED 외 ── */}
-      {character.type === "NPC" && !isPlayer ? (
-        <div className={styles.form__box}>
-          <div className={styles.panelTitle}>
-            <span className={styles.panelTitle__label}>NPC DETAILS</span>
-          </div>
-          <div className={styles.form__box__body}>
-            <div className={styles.grid}>
-              <Field id="nameEn" label="NAME (EN)" full>
-                <input
-                  id="nameEn"
-                  type="text"
-                  className={styles.input}
-                  value={nameEn}
-                  onChange={(e) => setNameEn(e.target.value)}
-                />
-              </Field>
-              <Field id="roleDetail" label="ROLE DETAIL" full>
-                <textarea
-                  id="roleDetail"
-                  className={styles.textarea}
-                  value={roleDetail}
-                  onChange={(e) => setRoleDetail(e.target.value)}
-                />
-              </Field>
-              <Field id="notes" label="NOTES" full>
-                <textarea
-                  id="notes"
-                  className={styles.textarea}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </Field>
-            </div>
-          </div>
-        </div>
       ) : null}
 
       {/* ── Actions ── */}
@@ -1159,7 +1245,7 @@ export default function CharacterEditForm({
         </button>
       </div>
 
-      {/* ── P7: diff 프리뷰 모달 ── */}
+      {/* ── diff 프리뷰 모달 ── */}
       {previewOpen ? (
         <DiffPreviewModal
           diff={pendingDiff}
@@ -1175,8 +1261,8 @@ export default function CharacterEditForm({
               : undefined
           }
           characterLabel={
-            character.sheet.name && character.sheet.name !== character.codename
-              ? `${character.sheet.name} / ${character.codename}`
+            character.lore.name && character.lore.name !== character.codename
+              ? `${character.lore.name} / ${character.codename}`
               : character.codename
           }
           isSubmitting={submitting}

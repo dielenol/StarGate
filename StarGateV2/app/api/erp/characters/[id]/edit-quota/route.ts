@@ -16,7 +16,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { canEditCharacter } from "@/lib/auth/rbac";
+import { canEditLore } from "@/lib/auth/rbac";
 import { checkEditCooldown } from "@/lib/character/cooldown";
 import { findCharacterById } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
@@ -37,10 +37,10 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   const character = await findCharacterById(id);
-  const decision = canEditCharacter(
+  const decision = canEditLore(
     session.user.id,
     session.user.role,
-    character ?? { ownerId: null },
+    character ?? { type: "AGENT", ownerId: null },
   );
   if (!character || decision.mode === "none") {
     if (character && decision.mode === "none") {

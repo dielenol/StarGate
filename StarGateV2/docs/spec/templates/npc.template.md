@@ -3,8 +3,8 @@
   frontmatter 필드 안내
   ─────────────────────
   필수: codename, type, role, nameKo, isPublic
-  권장: slug, factionCode, institutionCode, gender, age, height, source
-  선택: department, nameEn, loreTags, appearsInEvents, previewImage, createdAt, updatedAt
+  권장: slug, factionCode, institutionCode, gender, age, height, weight, source
+  선택: department, nameEn, nameNative, nickname, loreTags, appearsInEvents, previewImage, createdAt, updatedAt
 
   규칙
   - codename: UPPER_SNAKE_CASE (예: REGISTRAR, INDEXER)
@@ -14,6 +14,9 @@
   - isPublic: 공개 랜딩 페이지 노출 여부 (true/false)
   - source: 생성 출처. "create-lore" | "discord" | "legacy-json" | "manual"
   - loreTags: 자유 태그 배열 (인라인 [tag1, tag2] 또는 빈 배열 [])
+  - nameNative: 원어 표기 (한자/일본어 등). 한국어 nameKo 와 별개.
+  - nickname: 짧은 별칭/통칭.
+  - weight: 체중. lore 영역(신상 정보)으로 분류.
   - 긴 서술(대사/외형/성격/배경/역할 상세/이름 설명)은 아래 body 섹션에 작성
   - frontmatter는 평탄 YAML만 허용. 중첩 객체 금지.
 -->
@@ -23,10 +26,13 @@ slug: example-npc
 type: NPC
 role: 역할 한 줄 요약
 nameKo: 한국어 이름
+nameNative:
+nickname:
 nameEn: English Name
 gender: female
 age: 32
 height: 168cm
+weight:
 factionCode: CIVIL
 institutionCode:
 department:

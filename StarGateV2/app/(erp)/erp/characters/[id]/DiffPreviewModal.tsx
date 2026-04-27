@@ -2,6 +2,11 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
+import {
+  CHARACTER_IMAGE_FIELDS,
+  labelForCharacterField,
+} from "./_field-labels";
+
 import styles from "./DiffPreviewModal.module.css";
 
 /**
@@ -37,54 +42,8 @@ interface Props {
   characterLabel?: string;
 }
 
-/**
- * dot path 필드 키를 한국어 라벨로 매핑. 매핑되지 않은 키는 그대로 표시 (drift 안전).
- *
- * 매핑 누락이 있어도 기능은 동작 — UX 만 저하. 새 필드 추가 시 본 매핑에 등재.
- */
-const FIELD_LABELS: Record<string, string> = {
-  codename: "코드네임",
-  role: "역할",
-  isPublic: "공개 여부",
-  ownerId: "소유자 ID",
-  previewImage: "프리뷰 이미지",
-  "sheet.codename": "코드네임",
-  "sheet.name": "이름",
-  "sheet.mainImage": "메인 이미지",
-  "sheet.posterImage": "포스터 이미지",
-  "sheet.quote": "인용문",
-  "sheet.gender": "성별",
-  "sheet.age": "나이",
-  "sheet.height": "신장",
-  "sheet.appearance": "외모",
-  "sheet.personality": "성격",
-  "sheet.background": "배경",
-  "sheet.weight": "체중",
-  "sheet.className": "직군",
-  "sheet.hp": "HP",
-  "sheet.san": "SAN",
-  "sheet.def": "DEF",
-  "sheet.atk": "ATK",
-  "sheet.abilityType": "능력 타입",
-  "sheet.credit": "크레딧",
-  "sheet.weaponTraining": "무기 훈련",
-  "sheet.skillTraining": "기술 훈련",
-  "sheet.equipment": "장비",
-  "sheet.abilities": "어빌리티",
-  "sheet.nameEn": "이름(EN)",
-  "sheet.roleDetail": "역할 상세",
-  "sheet.notes": "비고",
-};
-
-/** 이미지 필드 — admin 모드에서만 등장 (player 화이트리스트엔 없음) */
-const IMAGE_FIELDS = new Set<string>([
-  "previewImage",
-  "sheet.mainImage",
-  "sheet.posterImage",
-]);
-
 function labelFor(field: string): string {
-  return FIELD_LABELS[field] ?? field;
+  return labelForCharacterField(field);
 }
 
 /**
@@ -365,7 +324,8 @@ function DiffRow({ index, entry }: { index: number; entry: DiffEntry }) {
   const { field, before, after } = entry;
   const label = labelFor(field);
   const isImage =
-    IMAGE_FIELDS.has(field) && (isImageUrl(before) || isImageUrl(after));
+    CHARACTER_IMAGE_FIELDS.has(field) &&
+    (isImageUrl(before) || isImageUrl(after));
   const indexStr = String(index).padStart(2, "0");
 
   return (

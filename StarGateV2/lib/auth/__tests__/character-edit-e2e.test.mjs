@@ -4,8 +4,8 @@
  * 목적:
  *   - CharacterEditForm.handleSubmit 의 body 빌더가 만드는 payload가
  *     서버의 buildUpdatePatch + PLAYER_ALLOWED_CHARACTER_FIELDS 를 거쳤을 때
- *     정확히 의도한 7필드 dot path 만 $set 에 들어가는지 e2e 시뮬레이션.
- *   - reviewer 가 합의한 `Record<string, unknown>` 캐스트 + sheet 부분객체 흐름이
+ *     정확히 의도한 8필드 dot path 만 $set 에 들어가는지 e2e 시뮬레이션.
+ *   - reviewer 가 합의한 `Record<string, unknown>` 캐스트 + lore 부분객체 흐름이
  *     화이트리스트와 정확히 결합하는지 (drift 회귀 보호).
  *   - 응답 body 에 reason 노출 안 됨 (route handler 미러 검증)
  *
@@ -23,7 +23,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { ObjectId } from "mongodb";
 
-import { canEditCharacter } from "../rbac.ts";
+import { canEditCharacter, canEditLore } from "../rbac.ts";
 
 const testApi = await import("node:test");
 const HAS_MODULE_MOCK =
@@ -65,7 +65,7 @@ if (!HAS_MODULE_MOCK) {
    */
   function buildPlayerBody(form) {
     return {
-      sheet: {
+      lore: {
         quote: form.quote,
         appearance: form.appearance,
         personality: form.personality,
@@ -73,6 +73,7 @@ if (!HAS_MODULE_MOCK) {
         gender: form.gender,
         age: form.age,
         height: form.height,
+        weight: form.weight,
       },
     };
   }
@@ -81,15 +82,21 @@ if (!HAS_MODULE_MOCK) {
    * CharacterEditForm.handleSubmit 의 admin 모드 body 빌더 (AGENT) 미러링.
    */
   function buildAdminAgentBody(form) {
-    const sheetBase = {
-      codename: form.codename,
+    const emptyToUndefined = (value = "") => {
+      const trimmed = value.trim();
+      return trimmed === "" ? undefined : trimmed;
+    };
+    const lore = {
       name: form.name,
+      nameNative: emptyToUndefined(form.nameNative ?? ""),
+      nickname: emptyToUndefined(form.nickname ?? ""),
       mainImage: form.mainImage,
-      posterImage: form.posterImage,
+      posterImage: emptyToUndefined(form.posterImage),
       quote: form.quote,
       gender: form.gender,
       age: form.age,
       height: form.height,
+      weight: form.weight,
       appearance: form.appearance,
       personality: form.personality,
       background: form.background,
@@ -100,18 +107,29 @@ if (!HAS_MODULE_MOCK) {
       previewImage: form.previewImage,
       isPublic: form.isPublic,
       ownerId: form.ownerId || null,
-      sheet: {
-        ...sheetBase,
-        weight: form.weight,
+      tier: form.tier,
+      department: form.department,
+      factionCode: emptyToUndefined(form.factionCode ?? ""),
+      institutionCode: emptyToUndefined(form.institutionCode ?? ""),
+      lore,
+      play: {
         className: form.className,
         hp: form.hp,
+        hpDelta: form.hpDelta ?? 0,
         san: form.san,
+        sanDelta: form.sanDelta ?? 0,
         def: form.def,
+        defDelta: form.defDelta ?? 0,
         atk: form.atk,
-        abilityType: form.abilityType,
+        atkDelta: form.atkDelta ?? 0,
+        abilityType: emptyToUndefined(form.abilityType),
         credit: form.credit,
-        weaponTraining: form.weaponTraining,
-        skillTraining: form.skillTraining,
+        weaponTraining: Array.isArray(form.weaponTraining)
+          ? form.weaponTraining
+          : [form.weaponTraining].filter(Boolean),
+        skillTraining: Array.isArray(form.skillTraining)
+          ? form.skillTraining
+          : [form.skillTraining].filter(Boolean),
         equipment: form.equipment,
         abilities: form.abilities,
       },
@@ -119,10 +137,10 @@ if (!HAS_MODULE_MOCK) {
   }
 
   /* ────────────────────────────────────────────────────────────────────── */
-  /* S4-1: player 모드 body → PLAYER 화이트리스트 → 정확히 7개 dot path        */
+  /* S4-1: player 모드 body → PLAYER 화이트리스트 → 정확히 8개 dot path        */
   /* ────────────────────────────────────────────────────────────────────── */
 
-  test("S4-1: 정상 player body — sheet 7필드 dot path 만 $set 에 통과", async () => {
+  test("S4-1: 정상 player body — lore 8필드 dot path 만 $set 에 통과", async () => {
     capturedSetPayload = null;
 
     const form = {
@@ -133,6 +151,7 @@ if (!HAS_MODULE_MOCK) {
       gender: "male",
       age: "29",
       height: "183cm",
+      weight: "80kg",
     };
     const body = buildPlayerBody(form);
 
@@ -142,34 +161,36 @@ if (!HAS_MODULE_MOCK) {
     assert.equal(result, true);
     assert.ok(capturedSetPayload);
 
-    // 정확히 7개 dot path + updatedAt 만 들어가야 함
+    // 정확히 8개 dot path + updatedAt 만 들어가야 함
     const keys = Object.keys(capturedSetPayload).filter(
       (k) => k !== "updatedAt",
     );
     assert.deepEqual(
       new Set(keys),
       new Set([
-        "sheet.quote",
-        "sheet.appearance",
-        "sheet.personality",
-        "sheet.background",
-        "sheet.gender",
-        "sheet.age",
-        "sheet.height",
+        "lore.quote",
+        "lore.appearance",
+        "lore.personality",
+        "lore.background",
+        "lore.gender",
+        "lore.age",
+        "lore.height",
+        "lore.weight",
       ]),
-      `의도한 7개 dot path 외 키 누설 — 실제: ${keys.join(",")}`,
+      `의도한 8개 dot path 외 키 누설 — 실제: ${keys.join(",")}`,
     );
 
     // 값 정합성
-    assert.equal(capturedSetPayload["sheet.quote"], "오늘도 살아남자.");
-    assert.equal(capturedSetPayload["sheet.appearance"], "슬림한 체격");
-    assert.equal(capturedSetPayload["sheet.gender"], "male");
-    assert.equal(capturedSetPayload["sheet.age"], "29");
+    assert.equal(capturedSetPayload["lore.quote"], "오늘도 살아남자.");
+    assert.equal(capturedSetPayload["lore.appearance"], "슬림한 체격");
+    assert.equal(capturedSetPayload["lore.gender"], "male");
+    assert.equal(capturedSetPayload["lore.age"], "29");
+    assert.equal(capturedSetPayload["lore.weight"], "80kg");
 
-    // 루트 'sheet' 키 누설 없음
+    // 루트 'lore' 키 누설 없음
     assert.ok(
-      !("sheet" in capturedSetPayload),
-      "'sheet' 루트 키가 $set 에 누설되면 안 됨",
+      !("lore" in capturedSetPayload),
+      "'lore' 루트 키가 $set 에 누설되면 안 됨",
     );
   });
 
@@ -190,6 +211,7 @@ if (!HAS_MODULE_MOCK) {
         gender: "G",
         age: "A",
         height: "H",
+        weight: "W",
       }),
       // 악의 추가
       codename: "HACKED",
@@ -200,12 +222,11 @@ if (!HAS_MODULE_MOCK) {
       previewImage: "/evil.png",
     };
 
-    // sheet 안에도 능력치/이미지 시도
-    evilBody.sheet.hp = 999;
-    evilBody.sheet.atk = 999;
-    evilBody.sheet.mainImage = "/evil-main.png";
-    evilBody.sheet.posterImage = "/evil-poster.png";
-    evilBody.sheet.codename = "HACKED2";
+    // lore/play 안에도 능력치/이미지 시도
+    evilBody.play = { hp: 999, atk: 999 };
+    evilBody.lore.mainImage = "/evil-main.png";
+    evilBody.lore.posterImage = "/evil-poster.png";
+    evilBody.lore.codename = "HACKED2";
 
     const result = await updateCharacter(VALID_ID, evilBody, {
       allowedFields: PLAYER_ALLOWED_CHARACTER_FIELDS,
@@ -227,15 +248,15 @@ if (!HAS_MODULE_MOCK) {
       );
     }
 
-    // 2) sheet 내부 능력치/이미지 dot path 누설 없음
+    // 2) lore/play 내부 능력치/이미지 dot path 누설 없음
     for (const forbidden of [
-      "sheet.hp",
-      "sheet.atk",
-      "sheet.def",
-      "sheet.san",
-      "sheet.mainImage",
-      "sheet.posterImage",
-      "sheet.codename",
+      "play.hp",
+      "play.atk",
+      "play.def",
+      "play.san",
+      "lore.mainImage",
+      "lore.posterImage",
+      "lore.codename",
     ]) {
       assert.ok(
         !(forbidden in capturedSetPayload),
@@ -243,19 +264,21 @@ if (!HAS_MODULE_MOCK) {
       );
     }
 
-    // 3) sheet 루트 키 누설 없음
-    assert.ok(!("sheet" in capturedSetPayload));
+    // 3) lore/play 루트 키 누설 없음
+    assert.ok(!("lore" in capturedSetPayload));
+    assert.ok(!("play" in capturedSetPayload));
 
-    // 4) 정상 7필드는 통과
-    assert.equal(capturedSetPayload["sheet.quote"], "Q");
-    assert.equal(capturedSetPayload["sheet.appearance"], "A");
+    // 4) 정상 8필드는 통과
+    assert.equal(capturedSetPayload["lore.quote"], "Q");
+    assert.equal(capturedSetPayload["lore.appearance"], "A");
+    assert.equal(capturedSetPayload["lore.weight"], "W");
   });
 
   /* ────────────────────────────────────────────────────────────────────── */
-  /* S4-3: admin body — sheet 통째 + 메타 모두 통과 (회귀 0)                  */
+  /* S4-3: admin body — lore/play 통째 + 메타 모두 통과 (회귀 0)             */
   /* ────────────────────────────────────────────────────────────────────── */
 
-  test("S4-3: 정상 admin AGENT body — sheet 통째 + 메타 모두 $set 에 포함", async () => {
+  test("S4-3: 정상 admin AGENT body — lore/play 통째 + 메타 모두 $set 에 포함", async () => {
     capturedSetPayload = null;
 
     const form = {
@@ -293,8 +316,9 @@ if (!HAS_MODULE_MOCK) {
     const result = await updateCharacter(VALID_ID, body);
     assert.equal(result, true);
 
-    // 1) sheet 루트 키가 통째 포함되어야 함 (admin 의 의도된 동작)
-    assert.deepEqual(capturedSetPayload.sheet, body.sheet);
+    // 1) lore/play 루트 키가 통째 포함되어야 함 (admin 의 의도된 동작)
+    assert.deepEqual(capturedSetPayload.lore, body.lore);
+    assert.deepEqual(capturedSetPayload.play, body.play);
 
     // 2) 최상위 메타 필드 모두 포함
     assert.equal(capturedSetPayload.codename, "AGENT_001");
@@ -362,7 +386,7 @@ if (!HAS_MODULE_MOCK) {
 
     // 일부 필드만 채움 — 나머지 undefined
     const body = {
-      sheet: {
+      lore: {
         quote: "Q",
         appearance: undefined,
         personality: "P",
@@ -379,16 +403,17 @@ if (!HAS_MODULE_MOCK) {
     assert.equal(result, true);
 
     // 채운 것만 통과
-    assert.equal(capturedSetPayload["sheet.quote"], "Q");
-    assert.equal(capturedSetPayload["sheet.personality"], "P");
+    assert.equal(capturedSetPayload["lore.quote"], "Q");
+    assert.equal(capturedSetPayload["lore.personality"], "P");
 
     // undefined 는 제외
     for (const forbidden of [
-      "sheet.appearance",
-      "sheet.background",
-      "sheet.gender",
-      "sheet.age",
-      "sheet.height",
+      "lore.appearance",
+      "lore.background",
+      "lore.gender",
+      "lore.age",
+      "lore.height",
+      "lore.weight",
     ]) {
       assert.ok(
         !(forbidden in capturedSetPayload),
@@ -405,10 +430,10 @@ if (!HAS_MODULE_MOCK) {
     // route.ts 의 NextResponse.json 페이로드 재현
     const sessionUser = { id: "u-other", role: "U" };
     const character = { ownerId: "u-self" };
-    const decision = canEditCharacter(
+    const decision = canEditLore(
       sessionUser.id,
       sessionUser.role,
-      character,
+      { type: "AGENT", ownerId: character.ownerId },
     );
 
     // 서버 console.warn 으로만 reason 로깅 — 응답에는 미포함
@@ -427,7 +452,7 @@ if (!HAS_MODULE_MOCK) {
   });
 
   test("S5-4: 미존재 캐릭터 응답 body — reason 노출 없음", () => {
-    // character 가 null 이라 canEditCharacter 도 호출 안 되거나 admin 일 수 있음.
+    // character 가 null 이라 canEditLore 도 호출 안 되거나 admin 일 수 있음.
     // 라우트는 character 가 null 이면 무조건 통합 404 응답.
     const responseBody = { error: "캐릭터를 찾을 수 없습니다." };
     assert.ok(!("reason" in responseBody));
@@ -466,7 +491,7 @@ if (!HAS_MODULE_MOCK) {
   /* S6-1: PLAYER 화이트리스트 client/server set sync (drift 회귀 보호)        */
   /*                                                                          */
   /* CharacterEditForm 은 mongodb 누수 방지로 shared-db 에서 직접 import 못 하고 */
-  /* hardcoded 7 필드를 유지한다. 둘 중 한쪽만 변경되어도 silent drift 가 발생하 */
+  /* hardcoded 8 필드를 유지한다. 둘 중 한쪽만 변경되어도 silent drift 가 발생하 */
   /* 므로 본 테스트가 사이의 sync 를 강제한다.                                  */
   /* ────────────────────────────────────────────────────────────────────── */
 
@@ -480,12 +505,13 @@ if (!HAS_MODULE_MOCK) {
       "gender",
       "age",
       "height",
+      "weight",
     ]);
 
-    // 서버 화이트리스트는 'sheet.*' prefix 형태이므로 prefix 제거 후 비교.
+    // 서버 화이트리스트는 'lore.*' prefix 형태이므로 prefix 제거 후 비교.
     const serverWithoutPrefix = new Set(
       [...PLAYER_ALLOWED_CHARACTER_FIELDS].map((f) =>
-        f.replace(/^sheet\./, ""),
+        f.replace(/^lore\./, ""),
       ),
     );
 

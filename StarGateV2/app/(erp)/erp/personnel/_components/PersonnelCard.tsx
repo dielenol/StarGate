@@ -35,8 +35,8 @@ export default function PersonnelCard({
   const id = String(character._id);
   const level: AgentLevel = character.agentLevel ?? "J";
   const displayName =
-    showIdentity && !isRedacted && character.sheet.name
-      ? character.sheet.name
+    showIdentity && !isRedacted && character.lore.name
+      ? character.lore.name
       : null;
 
   const avatarNode = renderAvatar(character, isRedacted);
@@ -84,7 +84,7 @@ export default function PersonnelCard({
           <>
             <Tag tone="danger">REDACTED</Tag>
             <span className={`${styles.clrPill} ${styles["clrPill--danger"]}`}>
-              CLR · V+
+              권한등급 · V+
             </span>
           </>
         ) : (
@@ -93,7 +93,7 @@ export default function PersonnelCard({
               {character.type}
             </Tag>
             <span className={styles.clrPill} data-rank={level}>
-              <span>CLR · {level}</span>
+              <span>권한등급 · {level}</span>
               <Pips total={7} filled={getLevelDisplayRank(level)} />
             </span>
           </>

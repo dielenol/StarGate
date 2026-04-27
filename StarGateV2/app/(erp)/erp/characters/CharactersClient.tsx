@@ -2,9 +2,13 @@
 
 import Link from "next/link";
 
-import type { Character, CharacterType } from "@/types/character";
+import type {
+  AgentCharacter,
+  Character,
+  CharacterTier,
+} from "@/types/character";
 
-import { useCharacters } from "@/hooks/queries/useCharactersQuery";
+import { useAgentCharactersQuery } from "@/hooks/queries/useCharactersQuery";
 
 import { getDepartmentLabel } from "@/lib/org-structure";
 
@@ -13,45 +17,54 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 
 import styles from "./page.module.css";
 
-const VALID_TYPES: CharacterType[] = ["AGENT", "NPC"];
+const VALID_TIERS: CharacterTier[] = ["MAIN", "MINI"];
 
-const TYPE_LABEL: Record<CharacterType, string> = {
-  AGENT: "AGENT",
-  NPC: "NPC",
+const TIER_LABEL: Record<CharacterTier, string> = {
+  MAIN: "MAIN",
+  MINI: "MINI",
 };
 
-const FILTER_LABEL: Record<"ALL" | CharacterType, string> = {
+const FILTER_LABEL: Record<"ALL" | CharacterTier, string> = {
   ALL: "ALL",
-  AGENT: "AGENT",
-  NPC: "NPC",
+  MAIN: "MAIN",
+  MINI: "MINI",
 };
 
 const HP_MAX = 100;
 const SAN_MAX = 99;
 
 function getInitial(c: Character): string {
-  const source = c.sheet.name || c.codename;
+  const source = c.lore.name || c.codename;
   return source.charAt(0).toUpperCase() || "?";
 }
 
-function isAgent(c: Character): c is Character & { type: "AGENT" } {
+function isAgent(c: Character): c is AgentCharacter {
   return c.type === "AGENT";
+}
+
+/** tier 미설정 데이터는 MAIN 으로 fallback (legacy 호환). */
+function tierOf(c: Character): CharacterTier {
+  return c.tier ?? "MAIN";
 }
 
 interface Props {
   initialCharacters: Character[];
-  typeFilter: CharacterType | null;
+  tierFilter: CharacterTier | null;
   isGMOrAbove: boolean;
 }
 
 export default function CharactersClient({
   initialCharacters,
-  typeFilter,
+  tierFilter,
   isGMOrAbove,
 }: Props) {
-  const { data: characters = [] } = useCharacters(typeFilter, {
-    initialData: initialCharacters,
-  });
+  const { data: characters = [] } = useAgentCharactersQuery(
+    tierFilter ?? "ALL",
+    { initialData: initialCharacters },
+  );
+
+  // server 가 type=AGENT 로 강제하지만 type narrow 를 위해 client 가드도 유지.
+  const agents = characters.filter(isAgent);
 
   return (
     <>
@@ -60,7 +73,7 @@ export default function CharactersClient({
           { label: "ERP", href: "/erp" },
           { label: "CHARACTERS" },
         ]}
-        title="캐릭터"
+        title="플레이어블 캐릭터"
         right={
           isGMOrAbove ? (
             <Button as="a" href="/erp/characters/new" variant="primary">
@@ -70,29 +83,29 @@ export default function CharactersClient({
         }
       />
 
-      <nav className={styles.filters} aria-label="캐릭터 타입 필터">
+      <nav className={styles.filters} aria-label="캐릭터 분류 필터">
         <Link
           href="/erp/characters"
           className={[
             styles.filters__tab,
-            !typeFilter ? styles["filters__tab--active"] : "",
+            !tierFilter ? styles["filters__tab--active"] : "",
           ]
             .filter(Boolean)
             .join(" ")}
-          aria-current={!typeFilter ? "page" : undefined}
+          aria-current={!tierFilter ? "page" : undefined}
         >
           {FILTER_LABEL.ALL}
           <span className={styles.filters__tab__count}>
-            · <b>{characters.length}</b>
+            · <b>{agents.length}</b>
           </span>
         </Link>
-        {VALID_TYPES.map((t) => {
-          const count = characters.filter((c) => c.type === t).length;
-          const active = typeFilter === t;
+        {VALID_TIERS.map((t) => {
+          const count = agents.filter((c) => tierOf(c) === t).length;
+          const active = tierFilter === t;
           return (
             <Link
               key={t}
-              href={`/erp/characters?type=${t}`}
+              href={`/erp/characters?tier=${t}`}
               className={[
                 styles.filters__tab,
                 active ? styles["filters__tab--active"] : "",
@@ -110,11 +123,11 @@ export default function CharactersClient({
         })}
       </nav>
 
-      {characters.length === 0 ? (
+      {agents.length === 0 ? (
         <div className={styles.empty}>등록된 캐릭터가 없습니다.</div>
       ) : (
         <div className={styles.grid}>
-          {characters.map((c) => {
+          {agents.map((c) => {
             const id = String(c._id);
             const departmentLabel = c.department
               ? getDepartmentLabel(c.department)
@@ -122,7 +135,8 @@ export default function CharactersClient({
             const subLine = [c.role, departmentLabel]
               .filter(Boolean)
               .join(" · ");
-            const displayName = c.sheet.name || c.codename;
+            const displayName = c.lore.name || c.codename;
+            const tier = tierOf(c);
 
             return (
               <Link
@@ -167,46 +181,29 @@ export default function CharactersClient({
                     </div>
                     <span
                       className={`${styles.tag} ${
-                        c.type === "AGENT"
+                        tier === "MAIN"
                           ? styles["tag--gold"]
                           : styles["tag--default"]
                       }`}
                     >
-                      {TYPE_LABEL[c.type]}
+                      {TIER_LABEL[tier]}
                     </span>
                   </div>
 
-                  {isAgent(c) ? (
-                    <div className={styles.card__stats}>
-                      <StatRow
-                        label="HP"
-                        value={c.sheet.hp}
-                        max={HP_MAX}
-                        tone="gold"
-                      />
-                      <StatRow
-                        label="SAN"
-                        value={c.sheet.san}
-                        max={SAN_MAX}
-                        tone={c.sheet.san < 30 ? "danger" : "info"}
-                      />
-                    </div>
-                  ) : (
-                    <div className={styles.card__footer}>
-                      <span className={styles.card__footer__label}>
-                        VISIBILITY
-                      </span>
-                      <span
-                        className={`${styles.tag} ${
-                          c.isPublic
-                            ? styles["tag--success"]
-                            : styles["tag--danger"]
-                        }`}
-                      >
-                        {c.isPublic ? "PUBLIC" : "PRIVATE"}
-                      </span>
-                    </div>
-                  )}
+                  <div className={styles.card__stats}>
+                    <StatRow
+                      label="HP"
+                      value={c.play.hp}
+                      max={HP_MAX}
+                      tone="gold"
+                    />
+                    <StatRow
+                      label="SAN"
+                      value={c.play.san}
+                      max={SAN_MAX}
+                      tone={c.play.san < 30 ? "danger" : "info"}
+                    />
+                  </div>
                 </div>
               </Link>
             );

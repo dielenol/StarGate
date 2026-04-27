@@ -11,6 +11,7 @@ age: 32
 height: 168cm
 factionCode: COUNCIL
 institutionCode: SECRETARIAT
+department: HQ
 isPublic: true
 loreTags: [사무총장실, 일정관리, 행정, 스웨덴, 보안]
 appearsInEvents: []

@@ -31,6 +31,13 @@ function getPathValue(source: unknown, path: string): unknown {
 }
 
 /**
+ * Audit 노이즈 회피 — Phase 1 sheet 분리 이후 codename 은 root 에만 있고 sub-document
+ * (lore/play) 에는 없다. 별도 mirror 경로가 사라졌으므로 본 set 은 비어 있지만,
+ * 향후 mirror 컬럼이 다시 생길 때를 위해 슬롯만 유지.
+ */
+const AUDIT_EXCLUDED_DOT_PATHS = new Set<string>();
+
+/**
  * 두 값이 의미상 동일한지. JSON 직렬화 비교라 Date / ObjectId 등은 문자열로 변환된 뒤 비교.
  *
  * 캐릭터 sheet 는 거의 string/number/boolean/array/plain object 이므로 JSON 비교로
@@ -59,6 +66,7 @@ export function computeCharacterDiff(
 ): CharacterChangeLogEntry[] {
   const entries: CharacterChangeLogEntry[] = [];
   for (const field of allowedFields) {
+    if (AUDIT_EXCLUDED_DOT_PATHS.has(field)) continue;
     const beforeVal = getPathValue(before, field);
     const afterVal = getPathValue(after, field);
     if (!isEqual(beforeVal, afterVal)) {

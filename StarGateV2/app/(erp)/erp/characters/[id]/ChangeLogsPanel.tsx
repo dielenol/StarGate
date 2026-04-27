@@ -13,6 +13,8 @@ import {
   useCharacterChangeLogs,
 } from "@/hooks/queries/useCharacterChangeLogs";
 
+import { labelForCharacterField } from "./_field-labels";
+
 import styles from "./ChangeLogsPanel.module.css";
 
 const PAGE_LIMIT = 20;
@@ -20,58 +22,18 @@ const PAGE_LIMIT = 20;
 /**
  * 패널 권한 모드. CharacterDetailClient 가 결정해 prop 으로 내려준다.
  *
- * - 'gm'    : 모든 캐릭터 이력 + revert 버튼 노출 (서버 기반 권한 GM 한정)
- * - 'owner' : 본인 캐릭터 이력 readonly (revert 버튼 미노출)
+ * - 'gm'    : 모든 캐릭터 이력 + revert + 삭제 버튼 노출 (서버 기반 권한 GM 한정)
  * - 'none'  : 패널 자체를 렌더하지 않음 (호출자가 패널 자체를 분기하지만, 안전망으로 가드)
  */
-export type ChangeLogsPanelMode = "gm" | "owner" | "none";
+export type ChangeLogsPanelMode = "gm" | "none";
 
 interface Props {
   characterId: string;
   mode: ChangeLogsPanelMode;
 }
 
-/**
- * dot path 필드 키 → 한국어 라벨 매핑.
- * DiffPreviewModal 의 FIELD_LABELS 와 동일 셋. drift 가 발생해도 매핑 누락은 dot path
- * 그대로 노출 (기능 영향 X — 라벨만 저하).
- */
-const FIELD_LABELS: Record<string, string> = {
-  codename: "코드네임",
-  role: "역할",
-  isPublic: "공개 여부",
-  ownerId: "소유자 ID",
-  previewImage: "프리뷰 이미지",
-  "sheet.codename": "코드네임",
-  "sheet.name": "이름",
-  "sheet.mainImage": "메인 이미지",
-  "sheet.posterImage": "포스터 이미지",
-  "sheet.quote": "인용문",
-  "sheet.gender": "성별",
-  "sheet.age": "나이",
-  "sheet.height": "신장",
-  "sheet.appearance": "외모",
-  "sheet.personality": "성격",
-  "sheet.background": "배경",
-  "sheet.weight": "체중",
-  "sheet.className": "직군",
-  "sheet.hp": "HP",
-  "sheet.san": "SAN",
-  "sheet.def": "DEF",
-  "sheet.atk": "ATK",
-  "sheet.abilityType": "능력 타입",
-  "sheet.credit": "크레딧",
-  "sheet.weaponTraining": "무기 훈련",
-  "sheet.skillTraining": "기술 훈련",
-  "sheet.equipment": "장비",
-  "sheet.abilities": "어빌리티",
-  "sheet.nameEn": "이름(EN)",
-  "sheet.roleDetail": "역할 상세",
-  "sheet.notes": "비고",
-};
-
 function labelFor(field: string): string {
-  return FIELD_LABELS[field] ?? field;
+  return labelForCharacterField(field);
 }
 
 function stringifyValue(value: unknown): string {
@@ -118,6 +80,8 @@ export default function ChangeLogsPanel({ characterId, mode }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revertingId, setRevertingId] = useState<string | null>(null);
   const [revertError, setRevertError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const enabled = mode !== "none";
   const skip = page * PAGE_LIMIT;
@@ -173,6 +137,44 @@ export default function ChangeLogsPanel({ characterId, mode }: Props) {
     }
   }
 
+  async function handleDelete(log: CharacterChangeLogRow) {
+    const summary = `${log.changes.length}개 필드 변경`;
+    const ts = formatKst(log.createdAt);
+    const confirmed = window.confirm(
+      `이 변경 이력(${ts}, ${summary})을 영구 삭제하시겠습니까?\n` +
+        `- 캐릭터 본문은 변경되지 않습니다 (revert 와 다름).\n` +
+        `- 감사 기록 자체가 사라지므로 되돌릴 수 없습니다.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingId(log._id);
+    setDeleteError(null);
+
+    try {
+      const res = await fetch(
+        `/api/erp/characters/${characterId}/change-logs/${log._id}`,
+        { method: "DELETE" },
+      );
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        setDeleteError(body?.error ?? "삭제에 실패했습니다.");
+        return;
+      }
+
+      // 이력 목록만 invalidate — 캐릭터 본문 변경 없음.
+      await queryClient.invalidateQueries({
+        queryKey: characterChangeLogsKeys.all,
+      });
+    } catch {
+      setDeleteError("네트워크 오류가 발생했습니다.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   const totalPages = data
     ? data.hasMore
       ? page + 2
@@ -189,6 +191,12 @@ export default function ChangeLogsPanel({ characterId, mode }: Props) {
       {revertError ? (
         <div className={styles.errorBox} role="alert">
           {revertError}
+        </div>
+      ) : null}
+
+      {deleteError ? (
+        <div className={styles.errorBox} role="alert">
+          {deleteError}
         </div>
       ) : null}
 
@@ -216,7 +224,9 @@ export default function ChangeLogsPanel({ characterId, mode }: Props) {
               }
               onRevert={() => handleRevert(log)}
               isReverting={revertingId === log._id}
-              showRevertButton={mode === "gm"}
+              onDelete={() => handleDelete(log)}
+              isDeleting={deletingId === log._id}
+              showGmActions={mode === "gm"}
             />
           ))}
         </ul>
@@ -259,7 +269,10 @@ interface RowProps {
   onToggle: () => void;
   onRevert: () => void;
   isReverting: boolean;
-  showRevertButton: boolean;
+  onDelete: () => void;
+  isDeleting: boolean;
+  /** GM 모드일 때만 revert + 삭제 버튼 노출. */
+  showGmActions: boolean;
 }
 
 function LogRow({
@@ -268,11 +281,14 @@ function LogRow({
   onToggle,
   onRevert,
   isReverting,
-  showRevertButton,
+  onDelete,
+  isDeleting,
+  showGmActions,
 }: RowProps) {
   const actorLabel = log.actorDisplayName ?? log.actorUsername ?? log.actorId;
   const isReverted = Boolean(log.revertedAt);
-  const canRevert = showRevertButton && log.revertable && !isReverted;
+  const canRevert = showGmActions && log.revertable && !isReverted;
+  const canDelete = showGmActions;
 
   // actor role 라벨 — owner 면 OWNER 접두, 그 외 actorRole
   const actorRoleLabel = log.actorIsOwner
@@ -336,6 +352,17 @@ function LogRow({
               aria-label={`로그 ${log._id} 되돌리기`}
             >
               {isReverting ? "REVERTING…" : "REVERT"}
+            </button>
+          ) : null}
+          {canDelete ? (
+            <button
+              type="button"
+              className={styles.deleteBtn}
+              onClick={onDelete}
+              disabled={isDeleting}
+              aria-label={`로그 ${log._id} 삭제`}
+            >
+              {isDeleting ? "DELETING…" : "DELETE"}
             </button>
           ) : null}
         </div>

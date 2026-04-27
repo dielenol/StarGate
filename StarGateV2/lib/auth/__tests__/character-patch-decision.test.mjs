@@ -19,7 +19,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { canEditCharacter } from "../rbac.ts";
+import { canEditLore } from "../rbac.ts";
 import {
   ADMIN_ALLOWED_CHARACTER_FIELDS,
   PLAYER_ALLOWED_CHARACTER_FIELDS,
@@ -39,10 +39,10 @@ function decidePatchResponse({ session, character, idValid }) {
   if (!idValid) return { status: 400 };
 
   // 3. character ?? { ownerId: null } fallback 후 권한 결정
-  const decision = canEditCharacter(
+  const decision = canEditLore(
     session.user.id,
     session.user.role,
-    character ?? { ownerId: null },
+    character ?? { type: "AGENT", ownerId: null },
   );
 
   // 4. character 미존재 또는 mode === 'none' → 통합 404 (oracle 차단)
@@ -59,7 +59,7 @@ function decidePatchResponse({ session, character, idValid }) {
 }
 
 const validSession = (id, role) => ({ user: { id, role } });
-const charDoc = (ownerId) => ({ ownerId });
+const charDoc = (ownerId, type = "AGENT") => ({ type, ownerId });
 
 /* ────────────────────────────────────────────────────────────────────── */
 /* S2: PATCH 라우트 응답 정합성                                            */
@@ -114,6 +114,15 @@ test("S2-5: 비-V owner 본인 → 200 player (PLAYER_ALLOWED)", () => {
   assert.equal(res.status, 200);
   assert.equal(res.mode, "player");
   assert.strictEqual(res.allowedFields, PLAYER_ALLOWED_CHARACTER_FIELDS);
+});
+
+test("S2-5b: 비-V owner 본인 NPC → 404 (NPC self-edit 차단)", () => {
+  const res = decidePatchResponse({
+    session: validSession("u-self", "U"),
+    character: charDoc("u-self", "NPC"),
+    idValid: true,
+  });
+  assert.equal(res.status, 404);
 });
 
 test("S2-6: 비-V 사용자 + 타인 캐릭터 (존재) → 404", () => {

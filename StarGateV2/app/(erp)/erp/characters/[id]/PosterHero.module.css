@@ -10,9 +10,10 @@
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(280px, 1.35fr) minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(280px, 1fr) minmax(0, 1.15fr);
+  gap: 14px;
   margin-bottom: var(--gap);
+  align-items: start;
   container-type: inline-size;
   container-name: poster-hero;
 }
@@ -31,7 +32,7 @@
 .hero__poster {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 6 / 8;          /* 세로 초상화 기본 */
   overflow: hidden;
   background: var(--bg-2);
   border: 1px solid var(--gold-dim);
@@ -123,7 +124,7 @@
 .hero__posterEmptyName {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.18em;
 }
 
@@ -139,8 +140,8 @@
 
 .hero__captionCode {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.36em;
+  font-size: 14px;
+  letter-spacing: 0.32em;
   color: var(--gold);
 }
 
@@ -157,8 +158,8 @@
 
 .hero__captionAlias {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.22em;
+  font-size: 14px;
+  letter-spacing: 0.18em;
   color: var(--ink-2);
 }
 
@@ -173,8 +174,8 @@
   gap: 10px;
   z-index: 2;
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.2em;
+  font-size: 14px;
+  letter-spacing: 0.16em;
   color: var(--ink-2);
   border-top: 1px solid rgba(201, 161, 74, 0.25);
   padding-top: 10px;
@@ -204,8 +205,8 @@
     left: 16px;
     right: 16px;
     bottom: 14px;
-    font-size: 10px;
-    letter-spacing: 0.18em;
+    font-size: 14px;
+    letter-spacing: 0.16em;
   }
 }
 
@@ -220,15 +221,29 @@
   min-width: 0;
 }
 
+/* topRow — LOGO 카드 + QUOTE 같은 row */
+.hero__topRow {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+@container poster-hero (max-width: 760px) {
+  .hero__topRow {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* logo card — gold border + 더블 라인 */
 .hero__logoCard {
   display: grid;
-  grid-template-columns: 86px 1fr;
-  gap: 14px;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
   align-items: center;
   border: 1px solid var(--gold-dim);
   background: var(--bg-2);
-  padding: 14px;
+  padding: 12px;
   position: relative;
 }
 .hero__logoCard::before {
@@ -241,8 +256,8 @@
 
 .hero__logoSlot {
   position: relative;
-  width: 86px;
-  height: 86px;
+  width: 64px;
+  height: 64px;
   border: 1px solid var(--gold-dim);
   display: grid;
   place-items: center;
@@ -270,28 +285,219 @@
 
 .hero__logoK {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.24em;
+  font-size: 14px;
+  letter-spacing: 0.18em;
   color: var(--ink-3);
 }
 .hero__logoK + .hero__logoK {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .hero__logoV {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-0);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   word-break: keep-all;
 }
 .hero__logoV--dim {
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 14px;
 }
 
-/* tags row (type / agentLevel) */
-.hero__tags {
+/* ────────────────────────────────────────────────────────────
+   QUOTE blockquote — gold left-bar + 큰 따옴표 마크 (reference: .pc-quote)
+   ──────────────────────────────────────────────────────────── */
+
+.hero__quote {
+  position: relative;
+  margin: 0;
+  border-left: 2px solid var(--gold);
+  padding: 16px 22px 16px 26px;
+  background: rgba(201, 161, 74, 0.04);
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  min-height: 100%;
+}
+.hero__quote p {
+  margin: 0;
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.65;
+  font-style: italic;
+  word-break: keep-all;
+}
+.hero__quoteMark {
+  position: absolute;
+  top: -4px;
+  left: 8px;
+  font-size: 36px;
+  color: var(--gold);
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.hero__quoteMark--close {
+  top: auto;
+  left: auto;
+  bottom: -22px;
+  right: 10px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   VITALS / AGENT DETAILS 패널 공통 (reference: .pc-vitals / .pc-agent)
+   ──────────────────────────────────────────────────────────── */
+
+.hero__panel {
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  padding: 12px 14px 14px;
+}
+
+.hero__panelHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.22em;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.hero__panelHead span:first-child {
+  color: var(--gold);
+}
+.hero__panelHeadSub {
+  color: var(--ink-3);
+}
+
+.hero__statusDot {
+  color: var(--gold);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+}
+.hero__statusDot::before {
+  content: "●";
+  color: var(--success, #6aa97c);
+  margin-right: 4px;
+}
+
+/* HP/SAN — bar 한 줄 */
+.hero__vital {
+  margin-bottom: 8px;
+}
+.hero__vital:last-child {
+  margin-bottom: 0;
+}
+.hero__vitalHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.hero__vitalLabel {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  color: var(--ink-3);
+}
+.hero__vitalValue {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink-1);
+}
+.hero__vitalValue b {
+  color: var(--gold);
+  font-weight: 500;
+}
+.hero__vitalMax {
+  color: var(--ink-3);
+  font-size: 14px;
+  margin-left: 2px;
+}
+
+/* DEF/ATK — 페어 (점선 구분) */
+.hero__vitalsPair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+}
+.hero__vitalSmall {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+/* AGENT DETAILS — 2열 그리드 + extra (점선 구분) */
+.hero__detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+}
+.hero__detailsExtra {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.hero__cellK {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+.hero__cellV {
+  font-size: 14px;
+  color: var(--ink-0);
+  letter-spacing: 0.04em;
+  word-break: keep-all;
+}
+.hero__cellV--gold {
+  color: var(--gold);
+  font-family: var(--font-mono);
+}
+
+/* ────────────────────────────────────────────────────────────
+   PROFILE / NPC EXTRAS — 우측 rail 흡수 패널 (외모/성격/배경 등)
+   ──────────────────────────────────────────────────────────── */
+
+.hero__profileList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.hero__profileRow {
+  display: flex;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 14px;
+}
+.hero__profileRow:last-child {
+  border-bottom: none;
+}
+.hero__profileRow dt {
+  margin: 0;
+  flex-shrink: 0;
+  width: 80px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  padding-top: 2px;
+}
+.hero__profileRow dd {
+  flex: 1;
+  margin: 0;
+  color: var(--ink-0);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
 }

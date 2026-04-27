@@ -7,6 +7,7 @@ import { getUserBalance } from "@/lib/db/credits";
 import { listUserNotifications } from "@/lib/db/notifications";
 import { findUpcomingSessionsByGuild } from "@/lib/db/sessions";
 import { listWikiPages } from "@/lib/db/wiki";
+import { formatDate, formatTime } from "@/lib/format/date";
 
 import type { NotificationType } from "@/types/notification";
 import type { SessionStatus } from "@/types/session";
@@ -46,16 +47,6 @@ const SESSION_STATUS_TAG: Record<
   CANCELED: { label: "취소", tone: "danger" },
 };
 
-function fmtDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function fmtTime(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-}
-
 export default async function ERPDashboardPage() {
   const session = await auth();
 
@@ -88,7 +79,7 @@ export default async function ERPDashboardPage() {
     )
     .slice(0, 3);
 
-  const lastSync = fmtTime(new Date());
+  const lastSync = formatTime(new Date());
 
   return (
     <>
@@ -118,12 +109,12 @@ export default async function ERPDashboardPage() {
             <>
               <div className={styles.char}>
                 <Seal>
-                  {(myChar.sheet.name || myChar.codename).charAt(0).toUpperCase()}
+                  {(myChar.lore.name || myChar.codename).charAt(0).toUpperCase()}
                 </Seal>
                 <div className={styles.char__body}>
                   <Eyebrow tone="gold">{myChar.codename}</Eyebrow>
                   <div className={styles.char__name}>
-                    {myChar.sheet.name || myChar.codename}
+                    {myChar.lore.name || myChar.codename}
                   </div>
                   <div className={styles.char__sub}>
                     {myChar.role}
@@ -133,20 +124,20 @@ export default async function ERPDashboardPage() {
                     <Stack gap={6} className={styles.char__stats}>
                       <div className={styles.stat}>
                         <span className={styles.stat__label}>HP</span>
-                        <Bar value={myChar.sheet.hp} className={styles.stat__bar} />
+                        <Bar value={myChar.play.hp} className={styles.stat__bar} />
                         <span className={styles.stat__value}>
-                          {myChar.sheet.hp}
+                          {myChar.play.hp}
                         </span>
                       </div>
                       <div className={styles.stat}>
                         <span className={styles.stat__label}>SAN</span>
                         <Bar
-                          value={myChar.sheet.san}
+                          value={myChar.play.san}
                           tone="info"
                           className={styles.stat__bar}
                         />
                         <span className={styles.stat__value}>
-                          {myChar.sheet.san}
+                          {myChar.play.san}
                         </span>
                       </div>
                     </Stack>
@@ -207,7 +198,7 @@ export default async function ERPDashboardPage() {
                       <Tag tone={meta.tone}>{meta.label}</Tag>
                       <span className={styles.notifText}>{n.title}</span>
                     </span>
-                    <span className={styles.mono}>{fmtTime(n.createdAt)}</span>
+                    <span className={styles.mono}>{formatTime(n.createdAt)}</span>
                   </Spread>
                 );
               })}
@@ -241,10 +232,10 @@ export default async function ERPDashboardPage() {
                   <div key={String(s._id)} className={styles.sessionCard}>
                     <div className={styles.sessionCard__code}>
                       <div className={styles.sessionCard__codeMain}>
-                        {fmtDate(s.targetDateTime)}
+                        {formatDate(s.targetDateTime, "compact")}
                       </div>
                       <div className={styles.sessionCard__codeSub}>
-                        {fmtTime(s.targetDateTime)}
+                        {formatTime(s.targetDateTime)}
                       </div>
                     </div>
                     <div className={styles.sessionCard__body}>
@@ -305,7 +296,7 @@ export default async function ERPDashboardPage() {
                 >
                   {w.title}
                 </Link>
-                <span className={styles.mono}>{fmtDate(w.updatedAt)}</span>
+                <span className={styles.mono}>{formatDate(w.updatedAt, "compact")}</span>
               </Spread>
             ))}
           </Stack>

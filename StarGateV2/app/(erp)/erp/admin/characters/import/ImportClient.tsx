@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 
-import type { CreateCharacterInput } from "@/types/character";
+import type {
+  AbilitySlot,
+  Ability,
+  AgentCharacter,
+  LoreSheet,
+  PlaySheet,
+} from "@/types/character";
 
 import type { ParsedCharacterDraft } from "@/lib/parsers/character-text";
 
@@ -20,19 +26,36 @@ import styles from "./page.module.css";
 const LORE_PREVIEW_LIMIT = 300;
 const CODENAME_RE = /^[A-Z0-9_]+$/;
 
-const PREVIEW_FIELDS: Array<{
-  key: keyof ParsedCharacterDraft["sheet"];
-  label: string;
-}> = [
-  { key: "name", label: "이름 (헤더)" },
-  { key: "gender", label: "성별" },
-  { key: "age", label: "나이" },
-  { key: "height", label: "신장" },
-  { key: "weight", label: "체중" },
-  { key: "className", label: "직업" },
-  { key: "abilityType", label: "능력명" },
-  { key: "quote", label: "Quote" },
+const ABILITY_SLOTS: readonly AbilitySlot[] = [
+  "C1",
+  "C2",
+  "C3",
+  "P",
+  "A1",
+  "A2",
+  "A3",
+] as const;
+
+/** 미리보기 필드 — domain + key 페어. 파서가 lore/play 분리 산출하므로 매핑도 분리. */
+type PreviewRow =
+  | { domain: "name"; label: string }
+  | { domain: "lore"; key: keyof LoreSheet; label: string }
+  | { domain: "play"; key: keyof PlaySheet; label: string };
+
+const PREVIEW_FIELDS: PreviewRow[] = [
+  { domain: "name", label: "이름 (헤더)" },
+  { domain: "lore", key: "gender", label: "성별" },
+  { domain: "lore", key: "age", label: "나이" },
+  { domain: "lore", key: "height", label: "신장" },
+  { domain: "lore", key: "weight", label: "체중" },
+  { domain: "play", key: "className", label: "직업" },
+  { domain: "play", key: "abilityType", label: "능력명" },
+  { domain: "lore", key: "quote", label: "Quote" },
 ];
+
+function emptyAbilities(): Ability[] {
+  return ABILITY_SLOTS.map((slot) => ({ slot, name: "" }));
+}
 
 export default function ImportClient() {
   const [raw, setRaw] = useState("");
@@ -73,40 +96,51 @@ export default function ImportClient() {
 
     setError(null);
 
-    const body: CreateCharacterInput = {
+    // lore/play sub-document 빌드. 파서 결과를 그대로 채우고 빈 필드는 기본값.
+    const lore: LoreSheet = {
+      name: draft.name,
+      gender: draft.lore.gender ?? "",
+      age: draft.lore.age ?? "",
+      height: draft.lore.height ?? "",
+      weight: draft.lore.weight ?? "",
+      appearance: "",
+      personality: "",
+      background: "",
+      quote: draft.lore.quote ?? "",
+      mainImage: "",
+    };
+
+    const play: PlaySheet = {
+      className: draft.play.className ?? "",
+      hp: 0,
+      hpDelta: 0,
+      san: 0,
+      sanDelta: 0,
+      def: 0,
+      defDelta: 0,
+      atk: 0,
+      atkDelta: 0,
+      abilityType: draft.play.abilityType,
+      weaponTraining: [],
+      skillTraining: [],
+      credit: "",
+      equipment: [],
+      abilities: emptyAbilities(),
+    };
+
+    // discriminated union 회피 — AGENT 변종 명시.
+    const body: Omit<AgentCharacter, "_id" | "createdAt" | "updatedAt"> = {
       codename: trimmedCodename,
       type: "AGENT",
-      role: draft.sheet.className || "AGENT",
+      role: draft.play.className || "AGENT",
       previewImage: "",
       ownerId: null,
       isPublic: false,
       source: "discord",
-      lore: draft.lore || undefined,
+      loreMd: draft.loreMd || undefined,
       rawText: draft.rawText,
-      sheet: {
-        codename: trimmedCodename,
-        name: draft.name,
-        mainImage: "",
-        quote: draft.sheet.quote ?? "",
-        gender: draft.sheet.gender ?? "",
-        age: draft.sheet.age ?? "",
-        height: draft.sheet.height ?? "",
-        appearance: "",
-        personality: "",
-        background: "",
-        weight: draft.sheet.weight ?? "",
-        className: draft.sheet.className ?? "",
-        hp: 0,
-        san: 0,
-        def: 0,
-        atk: 0,
-        abilityType: draft.sheet.abilityType ?? "",
-        credit: 0,
-        weaponTraining: "",
-        skillTraining: "",
-        equipment: [],
-        abilities: [],
-      },
+      lore,
+      play,
     };
 
     try {
@@ -119,10 +153,10 @@ export default function ImportClient() {
     }
   }
 
-  const lorePreview = draft?.lore
-    ? draft.lore.length > LORE_PREVIEW_LIMIT
-      ? `${draft.lore.slice(0, LORE_PREVIEW_LIMIT)}…`
-      : draft.lore
+  const lorePreview = draft?.loreMd
+    ? draft.loreMd.length > LORE_PREVIEW_LIMIT
+      ? `${draft.loreMd.slice(0, LORE_PREVIEW_LIMIT)}…`
+      : draft.loreMd
     : "";
 
   return (
@@ -147,21 +181,31 @@ export default function ImportClient() {
         <PanelTitle>PREVIEW</PanelTitle>
         {draft ? (
           <div className={styles.import__preview}>
-            {PREVIEW_FIELDS.map(({ key, label }) => {
-              const value =
-                key === "name" ? draft.name : draft.sheet[key];
+            {PREVIEW_FIELDS.map((row) => {
+              let value: string | undefined;
+              let key: string;
+              if (row.domain === "name") {
+                value = draft.name;
+                key = "name";
+              } else if (row.domain === "lore") {
+                const v = draft.lore[row.key];
+                value = typeof v === "string" ? v : undefined;
+                key = `lore.${String(row.key)}`;
+              } else {
+                const v = draft.play[row.key];
+                value = typeof v === "string" ? v : undefined;
+                key = `play.${String(row.key)}`;
+              }
               if (!value) return null;
               return (
                 <div key={key} className={styles.import__previewField}>
-                  <div className={styles.import__previewLabel}>{label}</div>
-                  <div className={styles.import__previewValue}>
-                    {String(value)}
-                  </div>
+                  <div className={styles.import__previewLabel}>{row.label}</div>
+                  <div className={styles.import__previewValue}>{value}</div>
                 </div>
               );
             })}
 
-            {draft.lore ? (
+            {draft.loreMd ? (
               <div className={styles.import__previewField}>
                 <div className={styles.import__previewLabel}>Lore (미리보기)</div>
                 <div className={styles.import__previewValue}>{lorePreview}</div>

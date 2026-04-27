@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
 
-import type { CharacterType, CreateCharacterInput } from "@/types/character";
+import {
+  loreSheetSchema,
+  playSheetSchema,
+} from "@stargate/shared-db";
+
+import type { CharacterTier, CreateCharacterInput } from "@/types/character";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import {
-  listCharacters,
-  listCharactersByType,
+  listAgentCharacters,
   createCharacter,
 } from "@/lib/db/characters";
+
+const VALID_TIER_PARAMS = new Set(["MAIN", "MINI", "ALL"]);
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -17,13 +23,19 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const type = searchParams.get("type") as CharacterType | null;
+  const tierParam = searchParams.get("tier");
 
   try {
-    const characters =
-      type === "AGENT" || type === "NPC"
-        ? await listCharactersByType(type)
-        : await listCharacters();
+    let characters;
+    if (tierParam && VALID_TIER_PARAMS.has(tierParam)) {
+      // tier 명시 → AGENT 자동 강제 (NPC 제외)
+      const tier =
+        tierParam === "ALL" ? null : (tierParam as CharacterTier);
+      characters = await listAgentCharacters(tier);
+    } else {
+      // 무필터도 AGENT 카탈로그로 제한한다. personnel 은 /api/erp/personnel 사용.
+      characters = await listAgentCharacters(null);
+    }
 
     return NextResponse.json(
       { characters },
@@ -53,6 +65,7 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as Partial<CreateCharacterInput>;
+  const bodyRecord = body as Record<string, unknown>;
 
   if (!body.codename?.trim()) {
     return NextResponse.json(
@@ -78,8 +91,41 @@ export async function POST(request: Request) {
     );
   }
 
+  const loreResult = loreSheetSchema.safeParse(bodyRecord.lore);
+  if (!loreResult.success) {
+    return NextResponse.json(
+      { error: "lore sub-document가 유효하지 않습니다." },
+      { status: 400 },
+    );
+  }
+
+  const createPayload: Record<string, unknown> = {
+    ...bodyRecord,
+    lore: loreResult.data,
+  };
+
+  if (body.type === "AGENT") {
+    const playResult = playSheetSchema.safeParse(bodyRecord.play);
+    if (!playResult.success) {
+      return NextResponse.json(
+        { error: "AGENT 생성에는 유효한 play sub-document가 필요합니다." },
+        { status: 400 },
+      );
+    }
+    createPayload.play = playResult.data;
+  } else if (bodyRecord.play !== undefined) {
+    return NextResponse.json(
+      { error: "NPC 생성 payload에는 play sub-document를 포함할 수 없습니다." },
+      { status: 400 },
+    );
+  } else {
+    delete createPayload.play;
+  }
+
   try {
-    const character = await createCharacter(body as CreateCharacterInput);
+    const character = await createCharacter(
+      createPayload as unknown as CreateCharacterInput,
+    );
     return NextResponse.json({ character }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "캐릭터 생성 실패";

@@ -23,8 +23,8 @@ export default async function ProfilePage() {
     () => [],
   );
 
-  // ObjectId / sheet 직렬화 — Client Component 전달용.
-  // shared-db 계약상 previewImage / sheet.name / sheet.mainImage 는 required string —
+  // ObjectId / lore 직렬화 — Client Component 전달용.
+  // shared-db 계약상 previewImage / lore.name / lore.mainImage 는 required string —
   // 도큐먼트 무결성이 깨진 경우(legacy 데이터)에 대비해 빈 문자열 fallback 만 적용.
   const characters: ProfileCharacter[] = ownedRaw.map((c) => ({
     _id: c._id?.toString() ?? "",
@@ -33,10 +33,10 @@ export default async function ProfilePage() {
     role: c.role,
     agentLevel: c.agentLevel,
     previewImage: c.previewImage ?? "",
-    sheet: {
-      name: c.sheet?.name ?? "",
-      posterImage: c.sheet?.posterImage,
-      mainImage: c.sheet?.mainImage ?? "",
+    lore: {
+      name: c.lore?.name ?? "",
+      posterImage: c.lore?.posterImage,
+      mainImage: c.lore?.mainImage ?? "",
     },
   }));
 
