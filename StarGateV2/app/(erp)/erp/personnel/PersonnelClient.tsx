@@ -516,7 +516,7 @@ export default function PersonnelClient({
           <div className={styles.headRight}>
             <span className={styles.clrPill} data-rank={clearance}>
               <span>
-                권한등급 · {clearance} · {AGENT_LEVEL_LABELS[clearance]}
+                권한등급: {clearance} - {AGENT_LEVEL_LABELS[clearance]}
               </span>
               <Pips total={7} filled={getLevelDisplayRank(clearance)} />
             </span>

@@ -55,7 +55,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "대시보드", keywords: "dashboard", icon: IconDashboard, href: "/erp" },
       { label: "프로필", keywords: "profile character", icon: IconProfile, href: "/erp/profile" },
       { label: "계정", keywords: "account password discord settings", icon: IconSystem, href: "/erp/account" },
-      { label: "알림", keywords: "notifications", icon: IconNotification, href: "/erp/notifications" },
+      /* 알림 — 콘텐츠 준비중. */
+      { label: "알림", keywords: "notifications", icon: IconNotification, href: null },
     ],
   },
   {
@@ -82,8 +83,9 @@ export const NAV_GROUPS: NavGroup[] = [
     key: "assets",
     label: "자산",
     items: [
-      { label: "장비", keywords: "equipment inventory", icon: IconEquipment, href: "/erp/inventory" },
-      { label: "크레딧", keywords: "credits", icon: IconCredit, href: "/erp/credits" },
+      /* 장비 · 크레딧 — 콘텐츠 준비중. */
+      { label: "장비", keywords: "equipment inventory", icon: IconEquipment, href: null },
+      { label: "크레딧", keywords: "credits", icon: IconCredit, href: null },
     ],
   },
   {

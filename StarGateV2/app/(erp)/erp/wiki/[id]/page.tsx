@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { isValidObjectId } from "@/lib/db/utils";
 import { findWikiPageById, listWikiPages } from "@/lib/db/wiki";
+import { formatDate } from "@/lib/format/date";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import Box from "@/components/ui/Box/Box";
@@ -54,15 +55,6 @@ function extractToc(content: string): TocEntry[] {
     counter += 1;
   }
   return entries;
-}
-
-function fmtDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 }
 
 export default async function WikiDetailPage({
@@ -163,7 +155,7 @@ export default async function WikiDetailPage({
               </div>
               <h2 className={styles.header__title}>{page.title}</h2>
               <div className={styles.header__info}>
-                최종 수정 {fmtDate(page.updatedAt)} · @{page.authorName}
+                최종 수정 {formatDate(page.updatedAt, "long")} · @{page.authorName}
               </div>
             </div>
 
@@ -177,11 +169,11 @@ export default async function WikiDetailPage({
                 </div>
                 <div className={styles.footerMeta__row}>
                   <dt>작성일</dt>
-                  <dd>{fmtDate(page.createdAt)}</dd>
+                  <dd>{formatDate(page.createdAt, "long")}</dd>
                 </div>
                 <div className={styles.footerMeta__row}>
                   <dt>수정일</dt>
-                  <dd>{fmtDate(page.updatedAt)}</dd>
+                  <dd>{formatDate(page.updatedAt, "long")}</dd>
                 </div>
               </dl>
 

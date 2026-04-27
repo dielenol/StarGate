@@ -7,6 +7,7 @@ import {
   listCreditTransactions,
 } from "@/lib/db/credits";
 import { listUsers } from "@/lib/db/users";
+import { formatDate } from "@/lib/format/date";
 
 import type { CreditTransactionType } from "@/types/credit";
 
@@ -30,15 +31,6 @@ const TYPE_META: Record<
   ADMIN_DEDUCT: { label: "관리자 차감", tone: "danger" },
   TRANSFER: { label: "이체", tone: "default" },
 };
-
-function fmtDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("ko-KR", {
-    year: "2-digit",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
 
 export default async function CreditsPage() {
   const session = await auth();
@@ -135,7 +127,7 @@ export default async function CreditsPage() {
                       </td>
                       <td className={styles.desc}>{tx.description}</td>
                       <td className={`${styles.dateCol} ${styles.mono}`}>
-                        {fmtDate(tx.createdAt)}
+                        {formatDate(tx.createdAt)}
                       </td>
                     </tr>
                   );

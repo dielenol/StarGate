@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useSyncExternalStore } from "react";
 
@@ -72,7 +73,7 @@ export default function ERPHeader({ user }: ERPHeaderProps) {
         ☰
       </button>
 
-      <div className={styles.header__brand}>
+      <Link href="/erp" className={styles.header__brand} aria-label="ERP 홈">
         <Image
           className={styles.header__logo}
           src={logoSrc}
@@ -88,7 +89,7 @@ export default function ERPHeader({ user }: ERPHeaderProps) {
           </span>
           <span className={styles.header__brandSub}>ERP · INTERNAL</span>
         </div>
-      </div>
+      </Link>
 
       <div className={styles.header__status} aria-label="운영 상태">
         <span className={styles.header__statusDot} aria-hidden />

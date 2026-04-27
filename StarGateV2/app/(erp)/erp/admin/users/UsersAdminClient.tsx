@@ -26,6 +26,7 @@ import Select from "@/components/ui/Select/Select";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { hasRole } from "@/lib/auth/rbac";
+import { formatDate } from "@/lib/format/date";
 
 import styles from "./page.module.css";
 
@@ -56,16 +57,6 @@ const STATUS_TONE: Record<UserStatus, "success" | "danger" | "default"> = {
   SUSPENDED: "danger",
   INACTIVE: "default",
 };
-
-function fmtDate(d: Date | string | null): string {
-  if (!d) return "—";
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("ko-KR", {
-    year: "2-digit",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
 
 function getInitial(u: UserPublic): string {
   const source = u.displayName || u.username || "?";
@@ -541,7 +532,7 @@ export default function UsersAdminClient({
                         {user.discordUsername ?? "—"}
                       </td>
                       <td className={`${styles.dateCol} ${styles.mono}`}>
-                        {fmtDate(user.lastLoginAt)}
+                        {formatDate(user.lastLoginAt)}
                       </td>
                       <td className={styles.actionCol}>
                         <div className={styles.actionGroup}>

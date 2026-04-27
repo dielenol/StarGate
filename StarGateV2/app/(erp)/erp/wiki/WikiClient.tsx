@@ -8,6 +8,8 @@ import type { WikiPage } from "@/types/wiki";
 
 import { useWikiPages } from "@/hooks/queries/useWikiQuery";
 
+import { formatDate } from "@/lib/format/date";
+
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -24,11 +26,6 @@ interface Props {
   currentCategory?: string;
   currentQuery?: string;
   isGM: boolean;
-}
-
-function fmtDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export default function WikiClient({
@@ -163,7 +160,7 @@ export default function WikiClient({
                         </div>
                       </div>
                       <span className={styles.item__date}>
-                        {fmtDate(page.updatedAt)}
+                        {formatDate(page.updatedAt, "padded")}
                       </span>
                     </Link>
                   );
