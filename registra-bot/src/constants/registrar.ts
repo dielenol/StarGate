@@ -29,3 +29,13 @@ export const EMBED_FOOTER_RESULT_CLOSED =
 /** 마감 직후 공지 임베드 푸터(버튼 비활성화 상태) */
 export const EMBED_FOOTER_ANNOUNCE_CLOSED =
   "회신 접수를 마감했습니다. 확정 보고를 확인하십시오.";
+
+/** 임베드 색상 — 맥락별 분기. 모든 신규/리팩터 시 이 상수만 참조. */
+export const REGISTRAR_COLORS = {
+  /** 공지·확정 보고·달력 등 공식 게시물 (기존 골드) */
+  primary: 0xc5a059,
+  /** 참여자용 안내(에페메랄) — 무채 톤으로 권한 차이 시각화 */
+  helpPlayer: 0x8a8a8a,
+  /** 운영자용 안내(에페메랄) — 짙은 갈색으로 권한 인지 */
+  helpAdmin: 0x6b4423,
+} as const;

@@ -11,17 +11,15 @@ import {
   MessageFlags,
 } from "discord.js";
 
-import { REGISTRAR_SIGNATURE } from "../constants/registrar.js";
+import { REGISTRAR_COLORS, REGISTRAR_SIGNATURE } from "../constants/registrar.js";
 import { Help } from "../constants/registrar-voice.js";
 
 import { hasManageGuildAfterDeferred } from "../utils/require-manage-guild.js";
 
-const EMBED_COLOR = 0xc5a059;
-
 function buildPlayerHelpEmbed(): EmbedBuilder {
   return new EmbedBuilder()
     .setTitle(Help.playerTitle)
-    .setColor(EMBED_COLOR)
+    .setColor(REGISTRAR_COLORS.helpPlayer)
     .setDescription(Help.playerDesc)
     .addFields(Help.playerFields.map((f) => ({ ...f })))
     .setFooter({ text: `${Help.playerFooter}\n— ${REGISTRAR_SIGNATURE}` });
@@ -30,7 +28,7 @@ function buildPlayerHelpEmbed(): EmbedBuilder {
 function buildAdminHelpEmbed(): EmbedBuilder {
   return new EmbedBuilder()
     .setTitle(Help.adminTitle)
-    .setColor(EMBED_COLOR)
+    .setColor(REGISTRAR_COLORS.helpAdmin)
     .setDescription(Help.adminDesc)
     .addFields(Help.adminFields.map((f) => ({ ...f })))
     .setFooter({ text: `${Help.adminFooter}\n— ${REGISTRAR_SIGNATURE}` });

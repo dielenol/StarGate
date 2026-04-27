@@ -7,6 +7,7 @@
 import { randomUUID } from "node:crypto";
 import type { Client } from "discord.js";
 import { EmbedBuilder } from "discord.js";
+import { REGISTRAR_COLORS } from "../constants/registrar.js";
 import { L, Remind } from "../constants/registrar-voice.js";
 import {
   claimSessionStartReminder,
@@ -33,8 +34,6 @@ const MARK_SENT_MAX_ATTEMPTS = 3;
 /** 발송 완료 마킹이 끝내 실패했을 때 중복 재발송을 막기 위한 여유 */
 const POST_SEND_GUARD_MS = 15 * 60 * 1000;
 
-const EMBED_COLOR = 0xc5a059;
-
 async function sendSessionStartReminder(
   client: Client,
   session: Session,
@@ -47,7 +46,7 @@ async function sendSessionStartReminder(
   const startTs = Math.floor(session.targetDateTime.getTime() / 1000);
   const embed = new EmbedBuilder()
     .setTitle(Remind.title)
-    .setColor(EMBED_COLOR)
+    .setColor(REGISTRAR_COLORS.primary)
     .setDescription(
       [
         Remind.lineTitle(session.title),

@@ -17,10 +17,13 @@ import { registerCommands } from "./commands/register.js";
 import {
   HELP_ROOT_EN,
   HELP_ROOT_KO,
+  INFO_ROOT_EN,
+  INFO_ROOT_KO,
   SCHEDULE_ROOT,
   Sub,
 } from "./slash/ko-names.js";
 import { handleButtonInteraction } from "./handlers/button-handler.js";
+import { handleInfo } from "./commands/info.js";
 import { handleSessionCreate } from "./commands/session-create.js";
 import { handleSessionCreateAutocomplete } from "./commands/session-create-autocomplete.js";
 import { handleHelp } from "./commands/session-help.js";
@@ -111,6 +114,14 @@ client.on(Events.InteractionCreate, (interaction) => {
       safeInteraction.commandName === HELP_ROOT_EN
     ) {
       await handleHelp(safeInteraction);
+      return;
+    }
+
+    if (
+      safeInteraction.commandName === INFO_ROOT_KO ||
+      safeInteraction.commandName === INFO_ROOT_EN
+    ) {
+      await handleInfo(safeInteraction);
       return;
     }
 

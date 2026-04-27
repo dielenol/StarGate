@@ -47,7 +47,7 @@ import {
   buildParticipationMonthCalendarBuffer,
   hasParticipationCalendarMarksInMonth,
 } from "../utils/build-session-result-card.js";
-import { ATTEND_BUTTON_PREFIX } from "../constants/registrar.js";
+import { ATTEND_BUTTON_PREFIX, REGISTRAR_COLORS } from "../constants/registrar.js";
 import { D, L } from "../constants/registrar-voice.js";
 import { resolveParticipationCodename } from "../constants/participation-codename.js";
 import { Opt, SCHEDULE_ROOT, Sub } from "../slash/ko-names.js";
@@ -71,7 +71,6 @@ import { parseStrictDateTimeInput } from "../utils/date-time-input.js";
 /** 버튼 customId는 button-handler와 동일해야 함 */
 const ATTEND_PREFIX = ATTEND_BUTTON_PREFIX;
 
-const LIST_EMBED_COLOR = 0xc5a059;
 /** 임베드 description 한도(여유) */
 const LIST_DESC_SAFE_MAX = 3900;
 /** 한 번에 표시할 최대 세션 수 */
@@ -137,7 +136,7 @@ export async function handleSessionList(
 
   const embed = new EmbedBuilder()
     .setTitle(D.listTitle(total))
-    .setColor(LIST_EMBED_COLOR)
+    .setColor(REGISTRAR_COLORS.primary)
     .setDescription(description)
     .setTimestamp();
 
@@ -344,7 +343,7 @@ export async function handleSessionOverview(
   const pushChunk = (): void => {
     const t = chunk.trim();
     if (!t) return;
-    embeds.push(new EmbedBuilder().setColor(LIST_EMBED_COLOR).setDescription(t));
+    embeds.push(new EmbedBuilder().setColor(REGISTRAR_COLORS.primary).setDescription(t));
     chunk = "";
   };
 
@@ -357,7 +356,7 @@ export async function handleSessionOverview(
       if (b.length > OVERVIEW_DESC_SAFE_MAX) {
         embeds.push(
           new EmbedBuilder()
-            .setColor(LIST_EMBED_COLOR)
+            .setColor(REGISTRAR_COLORS.primary)
             .setDescription(
               `${b.slice(0, OVERVIEW_DESC_SAFE_MAX - 40).trimEnd()}\n…`
             )
@@ -1148,7 +1147,7 @@ export async function handleSessionParticipationCheck(
   }
 
   const embed = new EmbedBuilder()
-    .setColor(LIST_EMBED_COLOR)
+    .setColor(REGISTRAR_COLORS.primary)
     .setTitle(D.partTitle)
     .setDescription(description);
 

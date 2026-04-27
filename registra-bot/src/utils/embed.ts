@@ -10,14 +10,12 @@ import {
   EMBED_DESCRIPTION_OPEN,
   EMBED_FOOTER_OPEN,
   EMBED_FOOTER_RESULT_CLOSED,
+  REGISTRAR_COLORS,
   REGISTRAR_SIGNATURE,
 } from "../constants/registrar.js";
 import { SCHEDULE_ROOT } from "../slash/ko-names.js";
 import type { Session } from "../types/session.js";
 import type { ResponseCounts } from "../types/session.js";
-
-/** 임베드 기본 색상 (골드 톤) */
-const EMBED_COLOR = 0xc5a059;
 
 /**
  * 날짜를 로컬 문자열로 포맷합니다.
@@ -96,7 +94,7 @@ export function buildSessionEmbed(
 
   const embed = new EmbedBuilder()
     .setTitle(session.title)
-    .setColor(EMBED_COLOR);
+    .setColor(REGISTRAR_COLORS.primary);
 
   if (session.status === "OPEN") {
     embed.setDescription(EMBED_DESCRIPTION_OPEN);
@@ -178,7 +176,7 @@ export function buildResultEmbed(
 
   return new EmbedBuilder()
     .setTitle(`【확정 보고】 ${session.title}`)
-    .setColor(EMBED_COLOR)
+    .setColor(REGISTRAR_COLORS.primary)
     .addFields(
       {
         name: "배정 일시",

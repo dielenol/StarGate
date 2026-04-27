@@ -17,6 +17,7 @@ import {
 import {
   ATTEND_BUTTON_PREFIX,
   EMBED_FOOTER_ANNOUNCE_CLOSED,
+  REGISTRAR_COLORS,
   REGISTRAR_SIGNATURE,
 } from "../constants/registrar.js";
 import { CancelEmbed, D, L, W } from "../constants/registrar-voice.js";
@@ -43,7 +44,6 @@ import { buildAnnounceLinkRow } from "../utils/announce-link.js";
 import type { Session } from "../types/session.js";
 
 const PREFIX = ATTEND_BUTTON_PREFIX;
-const EMBED_COLOR = 0xc5a059;
 
 export type SessionFinalizeResult = {
   transitioned: boolean;
@@ -371,7 +371,7 @@ export async function executeSessionCancel(
           const msg = await channel.messages.fetch(canceledSession.messageId);
           const cancelEmbed = new EmbedBuilder()
             .setTitle(CancelEmbed.title(canceledSession.title))
-            .setColor(EMBED_COLOR)
+            .setColor(REGISTRAR_COLORS.primary)
             .setDescription(CancelEmbed.body)
             .setFooter({ text: CancelEmbed.footer })
             .setTimestamp();
@@ -506,7 +506,7 @@ export async function executeSessionRetract(
           const msg = await channel.messages.fetch(retractedSession.messageId);
           const cancelEmbed = new EmbedBuilder()
             .setTitle(CancelEmbed.title(retractedSession.title))
-            .setColor(EMBED_COLOR)
+            .setColor(REGISTRAR_COLORS.primary)
             .setDescription(CancelEmbed.body)
             .setFooter({ text: CancelEmbed.footer })
             .setTimestamp();

@@ -11,6 +11,8 @@ import { config } from "../config.js";
 import {
   HELP_ROOT_EN,
   HELP_ROOT_KO,
+  INFO_ROOT_EN,
+  INFO_ROOT_KO,
   Opt,
   SCHEDULE_ROOT,
   Sub,
@@ -249,12 +251,59 @@ const HELP_EN_CMD = {
   dm_permission: false,
 };
 
+/** `/안내` — 운영자 전용. 채널에 봇 사용 안내 임베드를 영구 게시 */
+const INFO_KO_CMD = {
+  type: 1 as const,
+  name: INFO_ROOT_KO,
+  description: Cmd.info,
+  default_member_permissions: null,
+  dm_permission: false,
+  options: [
+    {
+      name: Opt.channel,
+      description: Cmd.optInfoChannel,
+      type: 7,
+      required: false,
+      channel_types: [
+        ChannelType.GuildText,
+        ChannelType.GuildAnnouncement,
+        ChannelType.PublicThread,
+        ChannelType.PrivateThread,
+        ChannelType.AnnouncementThread,
+      ],
+    },
+    {
+      name: Opt.pin,
+      description: Cmd.optPin,
+      type: 5,
+      required: false,
+    },
+  ],
+};
+
+/** `/info` — 영어 alias. `/안내`와 동일 핸들러 공유 */
+const INFO_EN_CMD = {
+  type: 1 as const,
+  name: INFO_ROOT_EN,
+  description: Cmd.info,
+  default_member_permissions: null,
+  dm_permission: false,
+  options: INFO_KO_CMD.options,
+};
+
 /**
  * 슬래시 커맨드를 Discord에 등록합니다.
  */
 export async function registerCommands(): Promise<void> {
   const rest = new REST().setToken(config.discordToken);
-  const body = [SCHEDULE_CMD, PARTICIPATION_ROOT_CMD, HELP_KO_CMD, HELP_EN_CMD];
+  const body = [
+    SCHEDULE_CMD,
+    PARTICIPATION_ROOT_CMD,
+    HELP_KO_CMD,
+    HELP_EN_CMD,
+    INFO_KO_CMD,
+    INFO_EN_CMD,
+  ];
 
   if (config.guildId) {
     await rest.put(

@@ -6,6 +6,8 @@
 export const SCHEDULE_ROOT = "일정";
 export const HELP_ROOT_KO = "도움말";
 export const HELP_ROOT_EN = "help";
+export const INFO_ROOT_KO = "안내";
+export const INFO_ROOT_EN = "info";
 
 export const Sub = {
   create: "생성",
@@ -33,4 +35,5 @@ export const Opt = {
   newDate: "새일시",
   month: "월",
   reason: "사유",
+  pin: "고정",
 } as const;
