@@ -114,15 +114,17 @@ const REDACTED = "[CLASSIFIED]";
  * - profile 미달: appearance / personality / background / quote / roleDetail / notes 마스킹
  *
  * weight 는 lore 영역으로 이동되었으므로 identity 그룹에서 마스킹 (구 abilities → identity 로 격상).
+ *
+ * Optional 필드(nameNative/nickname/nameEn/roleDetail/notes/posterImage) 는 원본이 undefined 면
+ * 결과도 undefined 유지. "필드 자체가 없음" 과 "마스킹됨" 을 구분해야 검색 oracle 누출 방지.
  */
 function redactLore(lore: LoreSheet, clearance: AgentLevel): LoreSheet {
   const canIdentity = canViewField(clearance, "identity");
   const canProfile = canViewField(clearance, "profile");
 
-  return {
+  // 필수 필드는 항상 마스킹 또는 원본
+  const result: LoreSheet = {
     name: canIdentity ? lore.name : REDACTED,
-    nameNative: canIdentity ? lore.nameNative : REDACTED,
-    nickname: canIdentity ? lore.nickname : REDACTED,
     gender: canIdentity ? lore.gender : REDACTED,
     age: canIdentity ? lore.age : REDACTED,
     height: canIdentity ? lore.height : REDACTED,
@@ -132,13 +134,38 @@ function redactLore(lore: LoreSheet, clearance: AgentLevel): LoreSheet {
     background: canProfile ? lore.background : REDACTED,
     quote: canProfile ? lore.quote : REDACTED,
     mainImage: canIdentity ? lore.mainImage : "",
-    posterImage: canIdentity ? lore.posterImage : undefined,
-    loreTags: lore.loreTags,
-    appearsInEvents: lore.appearsInEvents,
-    nameEn: canIdentity ? lore.nameEn : REDACTED,
-    roleDetail: canProfile ? lore.roleDetail : REDACTED,
-    notes: canProfile ? lore.notes : REDACTED,
   };
+
+  // optional 필드 — 원본이 undefined 면 결과도 undefined 유지
+  if (lore.nameNative !== undefined) {
+    result.nameNative = canIdentity ? lore.nameNative : REDACTED;
+  }
+  if (lore.nickname !== undefined) {
+    result.nickname = canIdentity ? lore.nickname : REDACTED;
+  }
+  if (lore.nameEn !== undefined) {
+    result.nameEn = canIdentity ? lore.nameEn : REDACTED;
+  }
+  if (lore.roleDetail !== undefined) {
+    result.roleDetail = canProfile ? lore.roleDetail : REDACTED;
+  }
+  if (lore.notes !== undefined) {
+    result.notes = canProfile ? lore.notes : REDACTED;
+  }
+  if (lore.posterImage !== undefined) {
+    result.posterImage = canIdentity ? lore.posterImage : "";
+  }
+
+  // 메타 배열 — 마스킹 대상 아님 (loreTags/appearsInEvents 는 V meta 그룹에서 일괄 처리)
+  // 원본이 undefined 면 결과도 undefined 유지
+  if (lore.loreTags !== undefined) {
+    result.loreTags = lore.loreTags;
+  }
+  if (lore.appearsInEvents !== undefined) {
+    result.appearsInEvents = lore.appearsInEvents;
+  }
+
+  return result;
 }
 
 /**

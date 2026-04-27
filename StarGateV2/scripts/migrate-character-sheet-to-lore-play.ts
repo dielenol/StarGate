@@ -325,13 +325,41 @@ function buildExistingLoreRepairPatch(
   return updates;
 }
 
+/** 유효한 slot 문자열 집합 (런타임 검증용). */
+const VALID_ABILITY_SLOTS = new Set<AbilitySlot>(ABILITY_SLOT_BY_INDEX);
+
+/** Legacy ability → 정상화된 ability payload 로 변환. slot 은 호출자가 결정. */
+function buildAbilityPayload(
+  src: LegacyAbility | undefined,
+  slot: AbilitySlot,
+): PlayPayload["abilities"][number] {
+  if (!src) return { slot, name: "" };
+  return {
+    slot,
+    name: asStringOrFallback(src.name, ""),
+    ...(typeof src.code === "string" && src.code !== ""
+      ? { code: src.code }
+      : {}),
+    ...(typeof src.description === "string" && src.description !== ""
+      ? { description: src.description }
+      : {}),
+    ...(typeof src.effect === "string" && src.effect !== ""
+      ? { effect: src.effect }
+      : {}),
+  };
+}
+
 /**
  * 어빌리티 배열에 slot 자동 할당 + 길이 7 보정.
  *
  * - 이미 모든 항목에 slot 이 있으면 그대로 보존 (길이 7 강제 안 함)
- * - 일부라도 slot 누락 → 인덱스 기반 매핑(C1/C2/C3/P/A1/A2/A3)
+ * - 일부라도 slot 누락 → "명시 slot 우선 보존 + 빈 슬롯에 잔여 항목 채움" 전략 (slot 중복 방지)
  * - 7개 미만 → 부족분 빈 항목 채움
  * - 7개 초과 → 처음 7개만 보존 (warnings 에 기록)
+ * - 결과는 ABILITY_SLOT_BY_INDEX 순서로 정렬
+ *
+ * 중복 slot 방지: src.slot 이 명시된 항목들을 먼저 자리잡게 하고, slot 누락/충돌 항목은
+ * 비어있는 표준 슬롯 순서로 채운다. 이렇게 하면 같은 slot 이 두 번 나오는 사고가 없다.
  *
  * @returns { abilities, warnings }
  */
@@ -350,12 +378,14 @@ function normalizeAbilities(
   }
 
   const sourceList = rawAbilities as LegacyAbility[];
-  const allHaveSlot = sourceList.every(
-    (a) => typeof a?.slot === "string" && a.slot !== "",
+  const allHaveValidSlot = sourceList.every(
+    (a) =>
+      typeof a?.slot === "string" &&
+      VALID_ABILITY_SLOTS.has(a.slot as AbilitySlot),
   );
 
-  // 이미 모든 항목에 slot 있음 → 그대로 보존 (길이 7 강제 X)
-  if (allHaveSlot) {
+  // 이미 모든 항목에 유효 slot 있음 → 그대로 보존 (길이 7 강제 X)
+  if (allHaveValidSlot) {
     if (sourceList.length > ABILITY_SLOT_COUNT) {
       warnings.push(
         `abilities 길이 ${sourceList.length} > 7 — 처음 ${ABILITY_SLOT_COUNT}개만 보존하고 나머지는 무시 (codename=${codename})`,
@@ -363,56 +393,54 @@ function normalizeAbilities(
     }
     const sliced = sourceList.slice(0, ABILITY_SLOT_COUNT);
     return {
-      abilities: sliced.map((a) => ({
-        slot: a.slot as AbilitySlot,
-        name: asStringOrFallback(a.name, ""),
-        ...(typeof a.code === "string" && a.code !== ""
-          ? { code: a.code }
-          : {}),
-        ...(typeof a.description === "string" && a.description !== ""
-          ? { description: a.description }
-          : {}),
-        ...(typeof a.effect === "string" && a.effect !== ""
-          ? { effect: a.effect }
-          : {}),
-      })),
+      abilities: sliced.map((a) =>
+        buildAbilityPayload(a, a.slot as AbilitySlot),
+      ),
       warnings,
     };
   }
 
-  // 일부 또는 전부 slot 누락 → 인덱스 매핑 (7개 초과는 잘라냄)
+  // 일부 또는 전부 slot 누락 → 명시 slot 우선 보존 + 빈 슬롯에 fallback (slot 중복 방지)
   if (sourceList.length > ABILITY_SLOT_COUNT) {
     warnings.push(
       `abilities 길이 ${sourceList.length} > 7 — 처음 ${ABILITY_SLOT_COUNT}개만 보존하고 나머지는 무시 (codename=${codename})`,
     );
   }
+  const truncated = sourceList.slice(0, ABILITY_SLOT_COUNT);
 
-  const out: PlayPayload["abilities"] = [];
-  for (let i = 0; i < ABILITY_SLOT_COUNT; i += 1) {
-    const slot = ABILITY_SLOT_BY_INDEX[i]!;
-    const src = sourceList[i];
-    if (!src) {
-      out.push({ slot, name: "" });
-      continue;
+  // Pass 1: src.slot 이 유효하고 아직 미사용이면 보존
+  const slotMap = new Map<AbilitySlot, LegacyAbility>();
+  const remaining: LegacyAbility[] = [];
+  for (const item of truncated) {
+    const rawSlot = item?.slot;
+    const isValid =
+      typeof rawSlot === "string" &&
+      VALID_ABILITY_SLOTS.has(rawSlot as AbilitySlot);
+    if (isValid && !slotMap.has(rawSlot as AbilitySlot)) {
+      slotMap.set(rawSlot as AbilitySlot, item);
+    } else {
+      // slot 미정의, 비유효, 또는 이미 점유된 slot — fallback 풀로
+      if (isValid && slotMap.has(rawSlot as AbilitySlot)) {
+        warnings.push(
+          `abilities slot 중복 감지 — '${rawSlot}' 가 이미 점유됨, 잔여 항목으로 처리 (codename=${codename})`,
+        );
+      }
+      remaining.push(item);
     }
-    const resolvedSlot =
-      typeof src.slot === "string" && src.slot !== ""
-        ? (src.slot as AbilitySlot)
-        : slot;
-    out.push({
-      slot: resolvedSlot,
-      name: asStringOrFallback(src.name, ""),
-      ...(typeof src.code === "string" && src.code !== ""
-        ? { code: src.code }
-        : {}),
-      ...(typeof src.description === "string" && src.description !== ""
-        ? { description: src.description }
-        : {}),
-      ...(typeof src.effect === "string" && src.effect !== ""
-        ? { effect: src.effect }
-        : {}),
-    });
   }
+
+  // Pass 2: 빈 슬롯을 표준 순서로 순회하며 remaining 으로 채움
+  const emptySlots = ABILITY_SLOT_BY_INDEX.filter((s) => !slotMap.has(s));
+  for (let i = 0; i < emptySlots.length; i += 1) {
+    const slot = emptySlots[i]!;
+    const src = remaining[i];
+    slotMap.set(slot, src ?? { slot, name: "" });
+  }
+
+  // Pass 3: ABILITY_SLOT_BY_INDEX 순서로 결과 정렬
+  const out: PlayPayload["abilities"] = ABILITY_SLOT_BY_INDEX.map((slot) =>
+    buildAbilityPayload(slotMap.get(slot), slot),
+  );
 
   return { abilities: out, warnings };
 }
@@ -654,10 +682,17 @@ export function validateDoc(doc: LegacyCharacterDoc): InvariantViolation | null 
       }
       if (Array.isArray(play.abilities)) {
         const abilities = play.abilities as LegacyAbility[];
+        const seenSlots = new Set<string>();
         for (let i = 0; i < abilities.length; i += 1) {
           const a = abilities[i];
           if (!a || typeof a.slot !== "string" || a.slot === "") {
             reasons.push(`play.abilities[${i}].slot 미정의`);
+            continue;
+          }
+          if (seenSlots.has(a.slot)) {
+            reasons.push(`play.abilities[${i}].slot '${a.slot}' 중복`);
+          } else {
+            seenSlots.add(a.slot);
           }
         }
       } else {

@@ -204,29 +204,57 @@ test("D-6: clearance V → ownerId 노출, A → ownerId null", () => {
   );
 });
 
-/* ── D-7 (Strict #6 결함 검증): optional 필드 부재 시 REDACTED 부작용 ── */
+/* ── D-7 (Strict #6 fix 검증): optional 필드 부재 시 undefined 유지 ── */
 
-test("D-7: redactLore — 원본 lore.nameNative 부재인데 마스킹 결과는 REDACTED 가 됨 (Strict #6)", () => {
+test("D-7: redactLore — 원본 optional 필드 undefined 면 결과도 undefined (검색 oracle 차단)", () => {
   // NPC 처럼 nameNative 가 없는 캐릭터를 U 사용자가 봤을 때
-  const npcWithoutNative = npcChar(); // nameNative 없음
+  const npcWithoutNative = npcChar(); // nameNative/nickname/nameEn/roleDetail/notes 없음
   const filtered = filterCharacterByClearance(npcWithoutNative, "U");
-  // canIdentity=false → 무조건 REDACTED 로 채워짐 (실제 원본은 undefined)
+  // canIdentity=false 라도 원본 undefined 면 결과도 undefined.
+  // "[CLASSIFIED]" 채움이 사라져 "필드 자체 부재" 와 "마스킹됨" 이 구분된다.
   assert.equal(
     filtered.lore.nameNative,
-    REDACTED,
-    "현재 동작: 원본 undefined 라도 REDACTED 채움. " +
-      "결과적으로 검색/존재 여부 oracle 발생 가능 — Strict #6 별도 PR 권고",
+    undefined,
+    "원본 undefined → 결과 undefined (REDACTED 채움 금지)",
   );
-  assert.equal(filtered.lore.nickname, REDACTED);
-  assert.equal(filtered.lore.nameEn, REDACTED);
-  assert.equal(filtered.lore.roleDetail, REDACTED);
+  assert.equal(filtered.lore.nickname, undefined);
+  assert.equal(filtered.lore.nameEn, undefined);
+  assert.equal(filtered.lore.roleDetail, undefined);
+  assert.equal(filtered.lore.notes, undefined);
+  // 필수 필드는 그대로 REDACTED
+  assert.equal(filtered.lore.name, REDACTED);
+  assert.equal(filtered.lore.gender, REDACTED);
 });
 
-test("D-7b: 인증된 GM 사용자 — nameNative 부재 시 undefined 유지", () => {
+test("D-7b: 인증된 GM 사용자 — optional 필드 부재 시 undefined 유지", () => {
   const npcWithoutNative = npcChar();
   const filtered = filterCharacterByClearance(npcWithoutNative, "GM");
   // canIdentity=true 분기는 lore.nameNative 그대로 → undefined
   assert.equal(filtered.lore.nameNative, undefined);
+  assert.equal(filtered.lore.nickname, undefined);
+  assert.equal(filtered.lore.nameEn, undefined);
+});
+
+test("D-7c: 원본에 optional 값 존재 + clearance 미달 → REDACTED 마스킹", () => {
+  // AGENT 는 nameNative/nickname/nameEn/roleDetail/notes 모두 채워둠
+  const filtered = filterCharacterByClearance(agentChar(), "U");
+  // 원본이 정의돼 있을 때만 REDACTED
+  assert.equal(filtered.lore.nameNative, REDACTED);
+  assert.equal(filtered.lore.nickname, REDACTED);
+  assert.equal(filtered.lore.nameEn, REDACTED);
+  assert.equal(filtered.lore.roleDetail, REDACTED);
+  assert.equal(filtered.lore.notes, REDACTED);
+  assert.equal(filtered.lore.posterImage, "");
+});
+
+test("D-7d: posterImage optional — 원본 부재 시 undefined, 존재 + 미달 시 빈 문자열", () => {
+  // NPC 는 posterImage 부재
+  const filteredNpc = filterCharacterByClearance(npcChar(), "U");
+  assert.equal(filteredNpc.lore.posterImage, undefined, "원본 부재 → undefined");
+
+  // AGENT 는 posterImage 존재
+  const filteredAgent = filterCharacterByClearance(agentChar(), "U");
+  assert.equal(filteredAgent.lore.posterImage, "", "원본 존재 + 미달 → 빈 문자열");
 });
 
 /* ── D-8: NPC 의 play 가 마스킹 결과에 절대 포함되지 않음 ── */

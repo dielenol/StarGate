@@ -172,10 +172,10 @@ test("E-4: AGENT + lore.weight 누락 → 400", () => {
   assert.match(res.error, /lore/);
 });
 
-/* ── E-5: PlaySheet delta — default 0 가 아니라 number 필수 ── */
+/* ── E-5: PlaySheet delta 4종 — default 0 적용 ── */
 
-test("E-5: PlaySheet delta 4종 (hpDelta/sanDelta/defDelta/atkDelta) number 필수 — schema 에 default 없음", () => {
-  // schema 가 z.number() 라 default 처리 안 됨. 클라이언트가 0 명시해야 통과.
+test("E-5: PlaySheet delta 4종 (hpDelta/sanDelta/defDelta/atkDelta) 누락 → default 0 통과", () => {
+  // schema 가 .default(0) 이므로 누락 시 0 으로 채워져 통과.
   const playMissingDelta = {
     className: "Op",
     hp: 80,
@@ -192,14 +192,29 @@ test("E-5: PlaySheet delta 4종 (hpDelta/sanDelta/defDelta/atkDelta) number 필�
   const result = playSheetSchema.safeParse(playMissingDelta);
   assert.equal(
     result.success,
-    false,
-    "delta 누락 → schema fail (default 없음 — 핸드오프 명시 'default 0' 은 마이그레이션 한정)",
+    true,
+    "delta 누락 → schema 가 default 0 적용",
   );
+  assert.equal(result.data.hpDelta, 0);
+  assert.equal(result.data.sanDelta, 0);
+  assert.equal(result.data.defDelta, 0);
+  assert.equal(result.data.atkDelta, 0);
 });
 
-test("E-5b: PlaySheet delta 0 명시 → 통과", () => {
+test("E-5b: PlaySheet delta 0 명시 → 통과 (명시값 보존)", () => {
   const result = playSheetSchema.safeParse(validPlay());
   assert.equal(result.success, true);
+  assert.equal(result.data.hpDelta, 0);
+});
+
+test("E-5c: PlaySheet delta 명시값 (0이 아닌) → 보존", () => {
+  const play = validPlay();
+  play.hpDelta = -10;
+  play.sanDelta = 5;
+  const result = playSheetSchema.safeParse(play);
+  assert.equal(result.success, true);
+  assert.equal(result.data.hpDelta, -10);
+  assert.equal(result.data.sanDelta, 5);
 });
 
 /* ── E-6: NPC + play 부재 → 정상 201 ── */

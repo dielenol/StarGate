@@ -67,9 +67,6 @@ test("A-3: lore mutation invalidation — agent + personnel 두 캐시 모두 in
     defaultOptions: { queries: { retry: false, staleTime: 0 } },
   });
 
-  let agentRefetchCount = 0;
-  let personnelRefetchCount = 0;
-
   // 캐시 prepopulate
   qc.setQueryData(characterKeys.agent.all, [{ id: "fake-agent" }]);
   qc.setQueryData(personnelKeys.all, [{ id: "fake-personnel" }]);

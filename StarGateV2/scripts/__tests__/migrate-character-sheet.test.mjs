@@ -266,44 +266,82 @@ test("B-7: NPC sheet.weight 부재 → lore.weight = ''", () => {
   assert.equal(plan.setPayload.play, undefined, "NPC 는 play 빌드 안 됨");
 });
 
-/* ── B-8: AGENT abilities 일부 slot 누락 → 인덱스 매핑 ── */
+/* ── B-8: AGENT abilities 일부 slot 누락 → 명시 slot 보존 + 빈 슬롯에 fallback ── */
 
-test("B-8: abilities 혼재 slot — 빈 slot 은 인덱스 매핑, 명시 slot 은 보존", () => {
+test("B-8: abilities 혼재 slot — 명시 slot 보존, 잔여 항목은 빈 슬롯에 채움 (slot 중복 없음)", () => {
   const doc = freshAgent();
   doc.sheet.abilities = [
     { slot: "C1", name: "사격" },
-    { name: "은신" }, // slot 누락
+    { name: "은신" }, // slot 누락 — 빈 슬롯으로
     { slot: "A1", name: "치료" },
   ];
   const plan = planForDoc(doc);
   const play = plan.setPayload.play;
-  // 현재 코드: src.slot 이 있으면 보존, 없으면 인덱스 fallback (혼합)
   assert.equal(play.abilities.length, 7);
-  assert.equal(play.abilities[0].slot, "C1", "index 0 → src.slot=C1 보존");
-  assert.equal(
-    play.abilities[1].slot,
-    "C2",
-    "index 1 → src.slot 누락 → fallback C2",
-  );
-  // ⚠ 정합성 결함: src.slot=A1 이 보존되어 index 4 의 fallback A1 과 충돌 가능
-  // (현재 동작 그대로 검증, 결함은 발견사항에 기록)
-  assert.equal(
-    play.abilities[2].slot,
-    "A1",
-    "index 2 → src.slot=A1 보존 (현재 동작)",
-  );
+
+  // 결과는 ABILITY_SLOT_BY_INDEX 순서 (C1/C2/C3/P/A1/A2/A3)
+  assert.equal(play.abilities[0].slot, "C1");
+  assert.equal(play.abilities[0].name, "사격");
+  assert.equal(play.abilities[1].slot, "C2");
+  // C2 는 빈 슬롯 → remaining[0] = { name: "은신" } 가 들어감
+  assert.equal(play.abilities[1].name, "은신");
+  assert.equal(play.abilities[2].slot, "C3");
+  assert.equal(play.abilities[2].name, "");
+  assert.equal(play.abilities[3].slot, "P");
   assert.equal(play.abilities[3].name, "");
+  // A1 은 명시 보존
+  assert.equal(play.abilities[4].slot, "A1");
+  assert.equal(play.abilities[4].name, "치료");
+  assert.equal(play.abilities[5].slot, "A2");
   assert.equal(play.abilities[6].slot, "A3");
 
-  // ⚠ slot 중복 가능 — index 2(보존된 A1) ↔ index 4(fallback A1) 가 동일 slot
+  // slot 중복 없음 — 7개 모두 unique
   const slots = play.abilities.map((a) => a.slot);
   const slotSet = new Set(slots);
-  // 결함 명시: 길이 7 인데 unique slot 개수가 7 미만이면 중복 발생
-  if (slotSet.size < 7) {
-    console.warn(
-      `⚠ MIGRATE-DEFECT: slot 중복 — slots=${slots.join(",")}; AGENT abilities 의 invariant 위반 가능 (validateDoc 은 slot 미정의만 검사, 중복은 미검사)`,
-    );
-  }
+  assert.equal(slotSet.size, 7, "slot 7개 모두 unique");
+});
+
+test("B-8b: abilities slot 충돌 — 동일 slot 두 번 등장 시 두 번째는 잔여로 처리 + warning", () => {
+  const doc = freshAgent();
+  // C1 두 번 명시
+  doc.sheet.abilities = [
+    { slot: "C1", name: "first" },
+    { slot: "C1", name: "second-duplicate" },
+    { name: "no-slot" },
+  ];
+  const plan = planForDoc(doc);
+  const play = plan.setPayload.play;
+  assert.equal(play.abilities.length, 7);
+  // C1 은 first 보존
+  assert.equal(play.abilities[0].slot, "C1");
+  assert.equal(play.abilities[0].name, "first");
+  // 두 번째 C1 + slot 미정의 → remaining 으로 처리, 빈 슬롯 C2/C3 등에 채워짐
+  const slots = play.abilities.map((a) => a.slot);
+  const slotSet = new Set(slots);
+  assert.equal(slotSet.size, 7, "slot 모두 unique");
+  // warning 발생 — 중복 감지
+  assert.ok(
+    plan.warnings && plan.warnings.some((w) => /slot 중복/.test(w)),
+    "C1 중복 감지 warning 필요",
+  );
+});
+
+test("B-8c: abilities 비유효 slot 문자열 → 잔여로 처리", () => {
+  const doc = freshAgent();
+  doc.sheet.abilities = [
+    { slot: "INVALID", name: "weird" },
+    { slot: "C1", name: "valid" },
+  ];
+  const plan = planForDoc(doc);
+  const play = plan.setPayload.play;
+  // C1 은 valid 보존
+  const c1 = play.abilities.find((a) => a.slot === "C1");
+  assert.ok(c1);
+  assert.equal(c1.name, "valid");
+  // 비유효 slot 의 항목은 다른 빈 슬롯에 채워졌어야 함
+  const weird = play.abilities.find((a) => a.name === "weird");
+  assert.ok(weird, "INVALID slot 항목도 잔여로 보존");
+  assert.notEqual(weird.slot, "INVALID", "비유효 slot 은 표준 슬롯으로 재할당");
 });
 
 /* ── B-Idempotency: 두 번째 plan 은 cleanup 또는 skip ── */
@@ -463,4 +501,49 @@ test("VAL-5: sheet 잔존 → 위반", () => {
   const v = validateDoc(doc);
   assert.ok(v);
   assert.ok(v.reasons.some((r) => /sheet/.test(r)));
+});
+
+test("VAL-6: AGENT play.abilities slot 중복 → 위반 'duplicate slot'", () => {
+  const doc = {
+    codename: "AGENT_DUP",
+    type: "AGENT",
+    lore: { weight: "75" },
+    play: {
+      weaponTraining: [],
+      skillTraining: [],
+      abilities: [
+        { slot: "C1", name: "first" },
+        { slot: "C2", name: "second" },
+        { slot: "C1", name: "duplicate" },
+      ],
+    },
+  };
+  const v = validateDoc(doc);
+  assert.ok(v, "중복 slot 검출 시 위반 보고");
+  assert.ok(
+    v.reasons.some((r) => /C1.*중복|duplicate.*C1/.test(r)),
+    `reasons: ${v.reasons.join("; ")}`,
+  );
+});
+
+test("VAL-6b: AGENT play.abilities 모든 slot unique → null", () => {
+  const doc = {
+    codename: "AGENT_OK",
+    type: "AGENT",
+    lore: { weight: "75" },
+    play: {
+      weaponTraining: [],
+      skillTraining: [],
+      abilities: [
+        { slot: "C1", name: "" },
+        { slot: "C2", name: "" },
+        { slot: "C3", name: "" },
+        { slot: "P", name: "" },
+        { slot: "A1", name: "" },
+        { slot: "A2", name: "" },
+        { slot: "A3", name: "" },
+      ],
+    },
+  };
+  assert.equal(validateDoc(doc), null);
 });

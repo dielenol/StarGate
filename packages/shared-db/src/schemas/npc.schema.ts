@@ -68,13 +68,14 @@ const abilitySchema = z.object({
 export const playSheetSchema = z.object({
   className: z.string(),
   hp: z.number(),
-  hpDelta: z.number(),
+  /** delta 메모 — 미명시 시 0. base 와 별개로 표기 누적값을 보존. */
+  hpDelta: z.number().default(0),
   san: z.number(),
-  sanDelta: z.number(),
+  sanDelta: z.number().default(0),
   def: z.number(),
-  defDelta: z.number(),
+  defDelta: z.number().default(0),
   atk: z.number(),
-  atkDelta: z.number(),
+  atkDelta: z.number().default(0),
   abilityType: z.string().optional(),
   weaponTraining: z.array(z.string()),
   skillTraining: z.array(z.string()),
