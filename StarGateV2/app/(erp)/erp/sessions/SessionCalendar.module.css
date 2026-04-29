@@ -1,8 +1,67 @@
 /* ── Calendar root ── */
 
 .cal {
+  position: relative;
   border: 1px solid var(--line);
   background: var(--bg-1);
+}
+
+/* Floating month nav — 캘린더 좌/우 가장자리에 떠 있음. */
+.navBtn {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 64px;
+  padding: 0;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  transform: translateY(-50%);
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.navBtn:hover {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+}
+
+.navBtn:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.navBtn--prev {
+  left: 8px;
+}
+
+.navBtn--next {
+  right: 8px;
+}
+
+@media (max-width: 480px) {
+  .navBtn {
+    width: 28px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .navBtn--prev {
+    left: 4px;
+  }
+
+  .navBtn--next {
+    right: 4px;
+  }
 }
 
 .head {
@@ -100,9 +159,13 @@
   background: color-mix(in srgb, var(--gold) 10%, transparent);
 }
 
-.cell--selected {
-  outline: 1px solid var(--gold-dim);
-  outline-offset: -1px;
+/* STATUS 강조 모드 — 매칭되는 세션이 0개인 cell 은 흐리게. */
+.cell--dim .day {
+  color: var(--ink-3);
+}
+
+.cell--dim .attendDot {
+  opacity: 0.35;
 }
 
 .day {
@@ -209,6 +272,16 @@
   color: var(--ink-3);
 }
 
+/* STATUS 강조 모드 — 비매칭 chip 은 흐리게. */
+.chip--dim {
+  opacity: 0.28;
+  filter: saturate(0.6);
+}
+
+.chip--dim:hover {
+  opacity: 0.55;
+}
+
 .chipMe {
   flex: 0 0 6px;
   width: 6px;
@@ -294,62 +367,6 @@
   background: var(--attend-marker);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-}
-
-/* Selected-day detail */
-
-.detail {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px;
-  border-top: 1px solid var(--line);
-  background: var(--bg);
-}
-
-.detail__row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  background: var(--bg-1);
-  text-decoration: none;
-  color: inherit;
-  transition: border-color 0.12s;
-}
-
-.detail__row:hover {
-  border-color: var(--gold-dim);
-}
-
-.detail__time {
-  flex-shrink: 0;
-  color: var(--gold);
-  font-family: var(--font-mono);
-  font-size: 16px;
-  letter-spacing: 0.06em;
-}
-
-.detail__title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--ink-0);
-  font-size: 15px;
-}
-
-.detail__count {
-  flex-shrink: 0;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.06em;
 }
 
 /* States */

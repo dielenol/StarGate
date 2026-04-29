@@ -131,6 +131,7 @@ export default async function SessionsPage() {
       guildId={guildId}
       initialUpcoming={initialUpcoming}
       initialGlobalCounts={initialGlobalCounts}
+      currentUserDiscordId={session.user.discordId}
     />
   );
 }
