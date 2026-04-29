@@ -65,6 +65,8 @@ const abilitySlotSchema = z.enum([
   "A1",
   "A2",
   "A3",
+  "A4",
+  "A5",
 ]);
 
 const abilitySchema = z.object({
