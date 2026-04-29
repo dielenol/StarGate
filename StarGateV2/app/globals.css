@@ -21,6 +21,9 @@
   --muted: #6b6758;
   --gold: #c9a85a;
   --gold-dim: #8a7840;
+  /* 스크롤바 3단계 매핑 (평소/hover/active). active 는 --gold 직접 사용. */
+  --scrollbar-thumb: rgba(232, 196, 112, 0.38);
+  --scrollbar-thumb-hover: rgb(197, 170, 83);
   --line: #2a2a32;
   --line-strong: #3a3a44;
   --info: #6a87a8;
@@ -154,4 +157,50 @@ body {
   --font-size-lg: 26px;
   --topbar-h: 64px;
   font-size: 15px;
+}
+
+/* ── Custom scrollbar ──
+ *
+ * 군사 dossier 톤 유지. 3단계 매핑:
+ *   - 평소: var(--scrollbar-thumb) — 알파 골드, 어두운 배경에 차분히 녹아듦
+ *   - hover: var(--scrollbar-thumb-hover) — 단색 진골드, "잡았다" 피드백
+ *   - active(드래그): var(--gold) — 가장 진한 골드 액센트
+ * 각진 모서리(border-radius 0). transition 0.12s 로 색 전환 부드럽게.
+ *
+ * - 표준: scrollbar-width / scrollbar-color (Firefox + 신형 Chromium).
+ *   Firefox 는 hover 분기 미지원이라 평소 톤만 적용.
+ * - WebKit: ::-webkit-scrollbar pseudo-elements (Chrome/Safari/Edge — 정밀 제어).
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--bg-1);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-1);
+  border-left: 1px solid var(--line);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 2px solid var(--bg-1);
+  border-radius: 0;
+  transition: background 0.12s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--gold);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--bg-1);
 }
