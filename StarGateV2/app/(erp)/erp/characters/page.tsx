@@ -30,7 +30,9 @@ export default async function CharactersPage({ searchParams }: PageProps) {
       ? (params.tier as CharacterTier)
       : null;
 
-  const characters = await listAgentCharacters(tierFilter).catch(() => []);
+  // 카탈로그 탭 카운트(ALL/MAIN/MINI)를 정확히 계산하려면 항상 전체 fetch.
+  // tier 필터는 CharactersClient 가 클라이언트 측 표시 필터로 처리.
+  const characters = await listAgentCharacters(null).catch(() => []);
 
   // MongoDB ObjectId -> string 직렬화 (Client Component 전달용)
   const serializedCharacters = characters.map((c) => ({

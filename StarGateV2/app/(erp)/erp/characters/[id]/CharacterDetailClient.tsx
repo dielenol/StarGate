@@ -34,6 +34,8 @@ const ABILITY_SLOT_ORDER = [
   "A1",
   "A2",
   "A3",
+  "A4",
+  "A5",
 ] as const;
 
 interface Props {
@@ -225,7 +227,7 @@ export default function CharacterDetailClient({
 function AgentSections({ character }: { character: AgentCharacter }) {
   const { play } = character;
 
-  // 어빌리티는 9-슬롯 시스템 (C1~C5/P/A1~A3). 채워진 슬롯만 노출, 전체 비면 빈 메시지.
+  // 어빌리티는 11-슬롯 시스템 (C1~C5/P/A1~A5). 채워진 슬롯만 노출, 전체 비면 빈 메시지.
   const abilitiesBySlot = new Map(play.abilities.map((ab) => [ab.slot, ab]));
 
   return (

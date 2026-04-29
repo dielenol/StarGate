@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 import type {
   AgentCharacter,
@@ -14,6 +15,8 @@ import { getDepartmentLabel } from "@/lib/org-structure";
 
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
+
+import OrgIcon from "../personnel/_components/OrgIcon";
 
 import styles from "./page.module.css";
 
@@ -58,13 +61,17 @@ export default function CharactersClient({
   tierFilter,
   isGMOrAbove,
 }: Props) {
-  const { data: characters = [] } = useAgentCharactersQuery(
-    tierFilter ?? "ALL",
-    { initialData: initialCharacters },
-  );
+  // 카운트(ALL/MAIN/MINI) 정확도를 위해 쿼리는 항상 전체("ALL") 를 fetch.
+  // tier 필터는 displayedAgents 에서 클라이언트 측으로만 적용.
+  const { data: characters = [] } = useAgentCharactersQuery("ALL", {
+    initialData: initialCharacters,
+  });
 
   // server 가 type=AGENT 로 강제하지만 type narrow 를 위해 client 가드도 유지.
   const agents = characters.filter(isAgent);
+  const displayedAgents = tierFilter
+    ? agents.filter((c) => tierOf(c) === tierFilter)
+    : agents;
 
   return (
     <>
@@ -94,6 +101,7 @@ export default function CharactersClient({
             .join(" ")}
           aria-current={!tierFilter ? "page" : undefined}
         >
+          <OrgIcon code="ALL" size={16} className={styles.filters__tab__icon} />
           {FILTER_LABEL.ALL}
           <span className={styles.filters__tab__count}>
             · <b>{agents.length}</b>
@@ -114,6 +122,11 @@ export default function CharactersClient({
                 .join(" ")}
               aria-current={active ? "page" : undefined}
             >
+              <OrgIcon
+                code={t}
+                size={16}
+                className={styles.filters__tab__icon}
+              />
               {FILTER_LABEL[t]}
               <span className={styles.filters__tab__count}>
                 · <b>{count}</b>
@@ -123,11 +136,11 @@ export default function CharactersClient({
         })}
       </nav>
 
-      {agents.length === 0 ? (
+      {displayedAgents.length === 0 ? (
         <div className={styles.empty}>등록된 캐릭터가 없습니다.</div>
       ) : (
         <div className={styles.grid}>
-          {agents.map((c) => {
+          {displayedAgents.map((c) => {
             const id = String(c._id);
             const departmentLabel = c.department
               ? getDepartmentLabel(c.department)
@@ -146,32 +159,11 @@ export default function CharactersClient({
               >
                 <div className={styles.card}>
                   <div className={styles.card__head}>
-                    {c.previewImage ? (
-                      <div className={styles.card__thumbWrap}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={c.previewImage}
-                          alt={`${displayName} 미리보기`}
-                          className={styles.card__thumb}
-                        />
-                        <span
-                          className={`${styles.card__thumb__tick} ${styles["card__thumb__tick--tl"]}`}
-                          aria-hidden
-                        />
-                        <span
-                          className={`${styles.card__thumb__tick} ${styles["card__thumb__tick--br"]}`}
-                          aria-hidden
-                        />
-                      </div>
-                    ) : (
-                      <div className={styles.card__seal} aria-hidden>
-                        {getInitial(c)}
-                        <span
-                          className={`${styles.card__seal__tick} ${styles["card__seal__tick--tl"]}`}
-                          aria-hidden
-                        />
-                      </div>
-                    )}
+                    <CharacterCardThumb
+                      src={c.previewImage}
+                      alt={`${displayName} 미리보기`}
+                      initial={getInitial(c)}
+                    />
                     <div className={styles.card__headBody}>
                       <div className={styles.card__code}>{c.codename}</div>
                       <div className={styles.card__name}>{displayName}</div>
@@ -186,6 +178,11 @@ export default function CharactersClient({
                           : styles["tag--default"]
                       }`}
                     >
+                      <OrgIcon
+                        code={tier}
+                        size={12}
+                        className={styles.tag__icon}
+                      />
                       {TIER_LABEL[tier]}
                     </span>
                   </div>
@@ -215,6 +212,52 @@ export default function CharactersClient({
 }
 
 /** AGENT 카드 vitals 한 줄 — 라벨 + tick 5단 progress bar + 숫자값 */
+/** 캐릭터 카드 썸네일 — src 가 비어 있거나 로드 실패 시 자동으로 seal placeholder 로 fallback. */
+function CharacterCardThumb({
+  src,
+  alt,
+  initial,
+}: {
+  src: string | undefined | null;
+  alt: string;
+  initial: string;
+}) {
+  const [errored, setErrored] = useState(false);
+  const showImage = src && !errored;
+
+  if (showImage) {
+    return (
+      <div className={styles.card__thumbWrap}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt}
+          className={styles.card__thumb}
+          onError={() => setErrored(true)}
+        />
+        <span
+          className={`${styles.card__thumb__tick} ${styles["card__thumb__tick--tl"]}`}
+          aria-hidden
+        />
+        <span
+          className={`${styles.card__thumb__tick} ${styles["card__thumb__tick--br"]}`}
+          aria-hidden
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.card__seal} aria-hidden>
+      {initial}
+      <span
+        className={`${styles.card__seal__tick} ${styles["card__seal__tick--tl"]}`}
+        aria-hidden
+      />
+    </div>
+  );
+}
+
 function StatRow({
   label,
   value,

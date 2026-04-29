@@ -51,6 +51,8 @@ const ABILITY_SLOTS: readonly AbilitySlot[] = [
   "A1",
   "A2",
   "A3",
+  "A4",
+  "A5",
 ] as const;
 
 /**
@@ -178,7 +180,7 @@ function emptyEquipment(): Equipment {
   return { name: "", price: "", damage: "", ammo: "", grip: "", description: "" };
 }
 
-/** 9-슬롯 ability 초기화. 기존 ability 가 슬롯에 없으면 빈 슬롯으로 채움. */
+/** 11-슬롯 ability 초기화. 기존 ability 가 슬롯에 없으면 빈 슬롯으로 채움. */
 function initAbilities(existing: Ability[]): Ability[] {
   const map = new Map(existing.map((a) => [a.slot, a]));
   return ABILITY_SLOTS.map(
@@ -1152,11 +1154,11 @@ export default function CharacterEditForm({
             </div>
           </div>
 
-          {/* Abilities — 9-슬롯 고정 그리드 */}
+          {/* Abilities — 11-슬롯 고정 그리드 */}
           <div className={styles.form__box}>
             <div className={styles.panelTitle}>
               <span className={styles.panelTitle__label}>
-                ABILITIES · 9 SLOTS (C1~C5/P/A1~A3)
+                ABILITIES · 11 SLOTS (C1~C5/P/A1~A5)
               </span>
             </div>
             <div className={styles.form__box__body}>

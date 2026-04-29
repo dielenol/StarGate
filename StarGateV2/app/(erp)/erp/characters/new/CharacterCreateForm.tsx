@@ -39,6 +39,8 @@ const ABILITY_SLOTS: readonly AbilitySlot[] = [
   "A1",
   "A2",
   "A3",
+  "A4",
+  "A5",
 ] as const;
 
 function emptyEquipment(): Equipment {
@@ -129,7 +131,7 @@ export default function CharacterCreateForm() {
     );
   }
 
-  /* ── Ability helpers — 9-슬롯 고정 ── */
+  /* ── Ability helpers — 11-슬롯 고정 ── */
   function updateAbility(index: number, field: keyof Ability, value: string) {
     setAbilities((prev) =>
       prev.map((ab, i) => (i === index ? { ...ab, [field]: value } : ab)),
@@ -668,7 +670,7 @@ export default function CharacterCreateForm() {
 
       {/* Abilities — 7 슬롯 */}
       <Box className={styles.form__box}>
-        <PanelTitle>ABILITIES · 9 SLOTS (C1~C5/P/A1~A3)</PanelTitle>
+        <PanelTitle>ABILITIES · 11 SLOTS (C1~C5/P/A1~A5)</PanelTitle>
         <div className={styles.list}>
           {abilities.map((ab, i) => (
             <div key={ab.slot} className={styles.listItem}>

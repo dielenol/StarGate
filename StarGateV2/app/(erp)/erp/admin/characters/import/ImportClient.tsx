@@ -36,6 +36,8 @@ const ABILITY_SLOTS: readonly AbilitySlot[] = [
   "A1",
   "A2",
   "A3",
+  "A4",
+  "A5",
 ] as const;
 
 /** 미리보기 필드 — domain + key 페어. 파서가 lore/play 분리 산출하므로 매핑도 분리. */
