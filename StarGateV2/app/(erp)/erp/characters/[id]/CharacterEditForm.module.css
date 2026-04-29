@@ -26,7 +26,7 @@
   border: 1px solid rgba(201,169,97,0.08); pointer-events: none;
 }
 .modeBanner__eyebrow {
-  font-family: var(--font-mono); font-size: 10px;
+  font-family: var(--font-mono); font-size: 14px;
   letter-spacing: 0.28em; text-transform: uppercase;
   color: var(--gold-dim);
   display: flex; align-items: center; gap: 8px;
@@ -45,14 +45,14 @@
   font-weight: 600;
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.06em;
   margin-right: 8px;
 }
 
 /* mode badge — DiffPreviewModal modeBadge 톤 */
 .modeBadge {
-  font-family: var(--font-mono); font-size: 10px;
+  font-family: var(--font-mono); font-size: 14px;
   letter-spacing: 0.24em; text-transform: uppercase;
   padding: 5px 10px; border: 1px solid; line-height: 1;
   display: inline-flex; align-items: center; gap: 6px;
@@ -88,7 +88,7 @@
   padding-top: 10px;
   border-top: 1px dashed rgba(91, 140, 168, 0.22);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-2);
@@ -99,7 +99,7 @@
 }
 .quota__num {
   color: #94b8d1;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -109,7 +109,7 @@
   color: var(--ink-3);
   letter-spacing: 0.1em;
   text-transform: none;
-  font-size: 11px;
+  font-size: 14px;
   margin-left: 4px;
 }
 .quota__bar {
@@ -162,7 +162,7 @@
 }
 .panelTitle__label {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -203,7 +203,7 @@
 
 .label {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -218,9 +218,10 @@
 .label__text { display: inline-block; }
 
 /* locked badge — DiffPreviewModal/ChangeLogs sourceBadge 자매 */
+/* a11y exception: height:16px + padding:2px 6px 의 fixed-height micro 뱃지. 14px line-box 가 16px 박스를 넘어 인라인 정렬이 깨짐 → 12px 유지. */
 .lockedBadge {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 2px 6px;
@@ -250,7 +251,7 @@
   border: 1px solid var(--line-strong);
   color: var(--ink-0);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.04em;
   outline: none;
   transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
@@ -258,7 +259,7 @@
 .textarea {
   min-height: 84px;
   font-family: var(--font-sans, inherit);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
   letter-spacing: 0.01em;
   resize: vertical;
@@ -313,7 +314,7 @@
   border: 1px solid var(--line);
   background: var(--bg-2);
   color: var(--ink-1);
-  font-size: 13px;
+  font-size: 14px;
   width: fit-content;
   transition: border-color 120ms ease;
 }
@@ -333,10 +334,11 @@
   border-color: var(--gold);
   background: var(--gold);
 }
+/* a11y exception: 14×14 컨트롤 내부 ✓ 글리프. 14px font 시 글리프가 박스를 넘쳐 컨트롤 시각이 깨짐 → 12px 유지. */
 .checkbox__input:checked::after {
   content: "✓";
   color: var(--bg-1);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1;
 }
@@ -372,7 +374,7 @@
 }
 .listItem__title {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--ink-2);
@@ -383,14 +385,14 @@
 .listItem__title b {
   color: var(--gold);
   font-weight: 600;
-  font-size: 11px;
+  font-size: 14px;
 }
 .listItem__body { padding: 14px; }
 
 /* small ghost button (add / remove) */
 .ghostBtn {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   padding: 6px 12px;
@@ -437,7 +439,7 @@
     rgba(74,69,56,0.18) 9px
   );
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -450,7 +452,7 @@
   background: rgba(193,74,61,0.06);
   color: #e0a59e;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.06em;
   display: flex;
   gap: 10px;
@@ -489,7 +491,7 @@
 }
 .actions__notice {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-2);
@@ -505,7 +507,7 @@
 .cancelBtn,
 .submitBtn {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 12px 22px;

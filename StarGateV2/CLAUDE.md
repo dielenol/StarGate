@@ -119,3 +119,21 @@ try { requireRole(session.user.role, "GM"); } catch { return 403; }
 - CSS Modules BEM 패턴: `styles.block__element`, `styles["block__element--modifier"]`
 - `dangerouslySetInnerHTML` 사용 시 반드시 `sanitizeHtml` 적용
 - 이미지: 현재 `<img>` 사용 중 (추후 `<Image>` 전환 검토)
+
+## 폰트 사이즈 정책 (ERP scope 14px floor)
+
+ERP 트리(`app/(erp)/erp/**`)는 **14px 최소 보장**. 다음 규칙을 따른다:
+
+- `app/globals.css` 의 `[data-scope="erp"]` 토큰을 우선 사용
+  - `--font-size-xs: 14px` / `--font-size-badge: 14px` / `--font-size-sm: 15px` / `--font-size-base: 17px` / `--font-size-md: 19px` / `--font-size-lg: 26px`
+  - body 기본 `font-size: 15px`
+- CSS 모듈에서 직접 `font-size`를 지정해야 한다면 **반드시 14px 이상**
+  - 9/10/11/12/13px 모두 금지 (가독성 + 시청 거리 + 군사 dossier 톤 일관성)
+  - 위계 표현은 굵기/명도/letter-spacing/uppercase 같은 다른 축으로 처리
+- 예외 — 14px 미만이 정말 필요한 경우 (예: `kbd` 칩, 14×14 이하 컨트롤 내부 글리프, absolute floating overlay 라벨, fixed-height micro 뱃지 등 소형 UI)
+  - 해당 모듈 상단 또는 해당 룰 직전에 `/* a11y exception: <이유> */` 주석 명시
+  - 이 케이스는 reviewer 가 별도로 확인
+- 인라인 스타일(`style={{ fontSize: ... }}`) 도 동일 룰 — 14px floor
+- public/auth/standalone 사이트는 본 정책 적용 대상 아님 (별도 토큰)
+
+`reviewer-strict` / `reviewer-pragmatic` 은 ERP 스코프 CSS 모듈 변경 시 sub-14px 등장 여부를 확인한다.

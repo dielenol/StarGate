@@ -28,7 +28,7 @@
   background: var(--bg-2);
   color: var(--ink-1);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   text-decoration: none;
@@ -43,10 +43,10 @@
     border-color 0.12s ease,
     background 0.12s ease;
 }
-.filters__tab::before {
-  content: "";
-  width: 5px; height: 5px;
-  background: var(--ink-3);
+/* OrgIcon SVG 가 시각 표식을 대체. ::before 더미 점은 hidden 처리 (active 발광 효과 포함). */
+.filters__tab::before { display: none; }
+
+.filters__tab__icon {
   flex-shrink: 0;
 }
 .filters__tab:hover {
@@ -240,7 +240,7 @@
 .card__code {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   display: flex;
@@ -269,7 +269,7 @@
 .card__sub {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.06em;
   margin-top: 2px;
   overflow: hidden;
@@ -280,7 +280,7 @@
 /* ---------- type tag (DiffPreviewModal modeBadge 자매) ---------- */
 .tag {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 4px 8px;
@@ -293,24 +293,24 @@
   height: 20px;
   white-space: nowrap;
 }
-.tag::before {
-  content: "";
-  width: 5px; height: 5px;
+/* OrgIcon SVG 가 표식을 대체. 더미 점 ::before 는 숨김. */
+.tag::before { display: none; }
+
+.tag__icon {
   flex-shrink: 0;
 }
+
 .tag--gold {
   color: var(--gold);
   border-color: var(--gold-dim);
   background: rgba(201,169,97,0.06);
 }
-.tag--gold::before { background: var(--gold); }
 
 .tag--default {
   color: var(--ink-2);
   border-color: var(--line-strong);
   background: var(--bg-2);
 }
-.tag--default::before { background: var(--ink-3); }
 
 .tag--success {
   color: #9bc096;
@@ -359,7 +359,7 @@
 }
 .card__statLabel {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--gold-dim);
@@ -407,7 +407,7 @@
 }
 .card__statValue {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.04em;
   color: var(--ink-0);
   text-align: right;
@@ -439,7 +439,7 @@
 }
 .card__footer__label {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -451,7 +451,7 @@
   padding: 56px 20px;
   text-align: center;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--ink-3);

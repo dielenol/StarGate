@@ -80,7 +80,7 @@
 
 .eyebrow {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--gold-dim);
@@ -129,7 +129,7 @@
 /* ---------- mode badge ---------- */
 .modeBadge {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 5px 10px;
@@ -162,7 +162,7 @@
 /* doc id chip (옵션) — 캐릭터 식별자 */
 .docId {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.16em;
   color: var(--ink-2);
 }
@@ -174,7 +174,7 @@
 /* ---------- cooldown (player only) ---------- */
 .cooldown {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.14em;
   color: var(--ink-2);
   text-transform: uppercase;
@@ -184,7 +184,7 @@
 }
 .cooldown__num {
   color: var(--gold);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -230,20 +230,20 @@
 }
 .summary__count {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-1);
 }
 .summary__count b {
   color: var(--gold);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   margin: 0 4px;
 }
 .summary__hint {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.16em;
   color: var(--ink-3);
   text-transform: uppercase;
@@ -272,20 +272,20 @@
 }
 .row__index {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   color: var(--gold-dim);
   letter-spacing: 0.12em;
   margin-right: 8px;
 }
 .row__label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink-0);
   letter-spacing: 0.02em;
 }
 .row__field {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   color: var(--ink-2);
   letter-spacing: 0.04em;
 }
@@ -301,7 +301,7 @@
 .valueCell {
   position: relative;
   padding: 12px 14px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -333,12 +333,13 @@
 }
 
 /* BEFORE / AFTER 태그 칩 */
+/* a11y exception: cell 경계 위에 top:-8px 로 떠 있는 floating overlay 라벨 + height:16px 고정 박스. 14px 시 line-box 가 박스를 넘어 윗줄 콘텐츠를 가림 → 12px 유지. */
 .valueCell__tag {
   position: absolute;
   top: -8px;
   left: 10px;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 0 6px;
@@ -355,7 +356,7 @@
 .valueCell--empty {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   background-image: repeating-linear-gradient(
@@ -417,12 +418,13 @@
 .imageCell__tick--bl { bottom: 4px; left: 4px;  border-right: 0; border-top: 0; }
 .imageCell__tick--br { bottom: 4px; right: 4px; border-left: 0;  border-top: 0; }
 
+/* a11y exception: 144×144 이미지 셀 좌상단 absolute floating chip. padding:2px 5px 의 narrow chip 에 14px font 는 시각 답답 + tick 코너 마커와 충돌 → 13px 유지. */
 .imageCell__tag {
   position: absolute;
   top: 8px;
   left: 14px;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 13px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -447,7 +449,7 @@
 }
 .imageCell--empty span {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.18em;
   color: var(--ink-3);
   text-transform: uppercase;
@@ -455,7 +457,7 @@
 
 .imageMeta {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   color: var(--ink-2);
   line-height: 1.7;
   word-break: break-all;
@@ -476,7 +478,7 @@
   align-items: baseline;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--ink-1);
@@ -495,7 +497,7 @@
   border: 1px solid var(--line);
   color: var(--ink-0);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
   outline: none;
   transition: border-color 120ms ease, box-shadow 120ms ease;
@@ -539,7 +541,7 @@
 }
 .footer__notice {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-2);
@@ -565,7 +567,7 @@
 .cancelBtn,
 .submitBtn {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 12px 22px;

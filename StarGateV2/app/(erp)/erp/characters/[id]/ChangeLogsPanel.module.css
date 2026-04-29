@@ -65,7 +65,7 @@
 }
 .headerHint {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--gold-dim);
@@ -89,7 +89,7 @@
   background: rgba(193, 74, 61, 0.06);
   color: #e0a59e;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.08em;
   display: flex;
   gap: 10px;
@@ -121,7 +121,7 @@
     rgba(74, 69, 56, 0.18) 9px
   );
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -183,7 +183,7 @@
 /* time + KST mark */
 .row__time {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.04em;
   color: var(--ink-1);
   white-space: nowrap;
@@ -192,7 +192,7 @@
   gap: 6px;
 }
 .row__time__kst {
-  font-size: 9px;
+  font-size: 14px;
   color: var(--ink-3);
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -200,7 +200,7 @@
 
 /* actor */
 .row__actor {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-0);
   display: inline-flex;
   align-items: baseline;
@@ -209,7 +209,7 @@
 }
 .row__actor__role {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.16em;
   color: var(--ink-3);
   text-transform: uppercase;
@@ -218,7 +218,7 @@
 /* source 배지 — DiffPreviewModal modeBadge 자매 */
 .sourceBadge {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 4px 8px;
@@ -256,14 +256,14 @@
 }
 .row__count {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.06em;
   color: var(--ink-2);
 }
 .row__count b {
   color: var(--gold);
   font-weight: 600;
-  font-size: 12px;
+  font-size: 14px;
   margin-right: 2px;
 }
 
@@ -271,7 +271,7 @@
 .revertBtn,
 .deleteBtn {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   padding: 7px 12px;
@@ -316,7 +316,7 @@
 }
 .revertBtn::before {
   content: "↺";
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
   margin-right: 2px;
 }
@@ -342,7 +342,7 @@
 }
 .deleteBtn::before {
   content: "✕";
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1;
   margin-right: 2px;
 }
@@ -372,13 +372,13 @@
 }
 .row__reasonLabel {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--ink-3);
 }
 .row__reasonText {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-1);
   line-height: 1.6;
   border-left: 1px solid var(--line-strong);
@@ -406,7 +406,7 @@
 }
 .row__revertedBadge {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   padding: 3px 8px;
@@ -421,7 +421,7 @@
   border-left: 2px solid var(--danger);
   background: rgba(193, 74, 61, 0.04);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.14em;
   color: #d49992;
   line-height: 1.7;
@@ -456,20 +456,20 @@
 }
 .diff__index {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   color: var(--gold-dim);
   letter-spacing: 0.14em;
   margin-right: 6px;
 }
 .diff__label {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink-0);
   letter-spacing: 0.02em;
 }
 .diff__field {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   color: var(--ink-3);
   letter-spacing: 0.04em;
 }
@@ -487,7 +487,7 @@
   padding: 10px 12px;
   margin: 0;
   font-family: var(--font-sans, inherit);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
@@ -521,7 +521,7 @@
   top: -7px;
   left: 8px;
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 0 5px;
@@ -537,7 +537,7 @@
 .diff__cell--empty {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   background-image: repeating-linear-gradient(
@@ -555,7 +555,7 @@
   justify-content: center;
   color: var(--gold-dim);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   user-select: none;
 }
 
@@ -587,7 +587,7 @@
 }
 .pagerBtn {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 8px 16px;
@@ -620,7 +620,7 @@
 
 .pagerLabel {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--ink-2);

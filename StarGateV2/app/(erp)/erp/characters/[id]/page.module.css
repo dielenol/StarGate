@@ -101,7 +101,7 @@
   background: rgba(201, 168, 90, 0.04);
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .adminSync__label {
