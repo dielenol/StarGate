@@ -14,7 +14,7 @@ export default async function CharactersImportPage() {
     redirect("/login");
   }
 
-  if (!hasRole(session.user.role, "V")) {
+  if (!hasRole(session.user.role, "GM")) {
     redirect("/erp");
   }
 
@@ -22,10 +22,12 @@ export default async function CharactersImportPage() {
     <>
       <PageHead
         breadcrumb={[
-          { label: "CHARACTERS", href: "/erp/characters" },
-          { label: "IMPORT" },
+          { label: "ERP", href: "/erp" },
+          { label: "ADMIN" },
+          { label: "CHARACTERS" },
+          { label: "REGISTER" },
         ]}
-        title="캐릭터 텍스트 인입"
+        title="캐릭터 등록"
       />
       <ImportClient />
     </>

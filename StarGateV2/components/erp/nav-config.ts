@@ -73,7 +73,6 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "인물·조직",
     items: [
       { label: "캐릭터", keywords: "characters", icon: IconCharacter, href: "/erp/characters" },
-      { label: "캐릭터 인입", keywords: "character import", icon: IconCharacter, href: "/erp/admin/characters/import", minRole: "V" },
       { label: "신원조회", keywords: "identity personnel", icon: IconMembers, href: "/erp/personnel" },
       /* 명예의 전당 — 콘텐츠 준비중. */
       { label: "명예의 전당", keywords: "hall of fame", icon: IconCrown, href: null },
@@ -106,6 +105,7 @@ export const NAV_GROUPS: NavGroup[] = [
       /* 관리자 대시보드 — 콘텐츠 준비중. 계정 메뉴(IconSystem)와 시각 충돌 회피 위해 IconCrown 사용. */
       { label: "관리자", keywords: "admin", icon: IconCrown, href: null },
       { label: "사용자 관리", keywords: "users admin", icon: IconUserAdmin, href: "/erp/admin/users" },
+      { label: "캐릭터 등록", keywords: "character register import", icon: IconCharacter, href: "/erp/admin/characters/import" },
     ],
   },
 ];
