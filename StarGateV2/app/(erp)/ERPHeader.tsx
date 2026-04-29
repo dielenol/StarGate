@@ -113,6 +113,7 @@ export default function ERPHeader({ user }: ERPHeaderProps) {
           <span className={styles.header__cmdkPlaceholder}>
             검색 — codename · 부서 · 세션 · 위키 …
           </span>
+          <span className={styles.header__cmdkPlaceholderShort}>검색…</span>
           <kbd className={styles.header__cmdkKbd}>{kbdLabel}</kbd>
         </button>
 
