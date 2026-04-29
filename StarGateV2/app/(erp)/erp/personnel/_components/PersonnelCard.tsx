@@ -1,6 +1,9 @@
-import Link from "next/link";
+"use client";
 
-import type { AgentLevel, Character } from "@/types/character";
+import Link from "next/link";
+import { useState } from "react";
+
+import type { AgentLevel, Character, CharacterType } from "@/types/character";
 
 import { getLevelDisplayRank } from "@/lib/personnel";
 
@@ -120,13 +123,29 @@ function renderAvatar(character: Character, isRedacted: boolean) {
 
   /* 신원조회 인덱스 카드는 lore.mainImage(메인 일러스트) 우선. 누락 시 previewImage(pixel-profile) 폴백. */
   const src = character.lore.mainImage || character.previewImage;
-  if (src) {
+  return <PersonnelAvatarImage src={src} type={character.type} />;
+}
+
+/** src 가 비어 있거나 로드 실패 시 type 별 텍스트 placeholder 로 fallback. */
+function PersonnelAvatarImage({
+  src,
+  type,
+}: {
+  src: string | undefined | null;
+  type: CharacterType;
+}) {
+  const [errored, setErrored] = useState(false);
+  if (src && !errored) {
     return (
       /* eslint-disable-next-line @next/next/no-img-element */
-      <img className={styles.avatar__img} src={src} alt="" />
+      <img
+        className={styles.avatar__img}
+        src={src}
+        alt=""
+        onError={() => setErrored(true)}
+      />
     );
   }
-
-  if (character.type === "NPC") return <span aria-hidden>NPC</span>;
+  if (type === "NPC") return <span aria-hidden>NPC</span>;
   return <span aria-hidden>IMG</span>;
 }

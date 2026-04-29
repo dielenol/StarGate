@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import OrgIcon, { type OrgIconCode } from "./OrgIcon";
+
 import styles from "./OrgDrillCrumbs.module.css";
 
 /**
@@ -17,6 +19,8 @@ export interface DrillCrumbItem {
   on?: boolean;
   href?: string;
   onClick?: () => void;
+  /** chip 좌측 아이콘 — NOVUS Org Add-on 세트(ROOT/HQ/RESEARCH/...). 미지정 시 아이콘 없음. */
+  iconCode?: OrgIconCode;
 }
 
 interface Props {
@@ -46,6 +50,15 @@ export default function OrgDrillCrumbs({
           .filter(Boolean)
           .join(" ");
 
+        const inner = (
+          <>
+            {c.iconCode ? (
+              <OrgIcon code={c.iconCode} size={16} className={styles.icon} />
+            ) : null}
+            <span>{c.label}</span>
+          </>
+        );
+
         return (
           <span key={c.key} className={styles.item}>
             {c.href ? (
@@ -54,7 +67,7 @@ export default function OrgDrillCrumbs({
                 className={chipClass}
                 aria-current={c.on ? "location" : undefined}
               >
-                {c.label}
+                {inner}
               </Link>
             ) : c.onClick ? (
               <button
@@ -63,14 +76,14 @@ export default function OrgDrillCrumbs({
                 onClick={c.onClick}
                 aria-current={c.on ? "location" : undefined}
               >
-                {c.label}
+                {inner}
               </button>
             ) : (
               <span
                 className={chipClass}
                 aria-current={c.on ? "location" : undefined}
               >
-                {c.label}
+                {inner}
               </span>
             )}
             {idx < items.length - 1 ? (

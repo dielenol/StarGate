@@ -39,6 +39,11 @@ import GroupHero from "./_components/GroupHero";
 import OrgCanvas from "./_components/OrgCanvas";
 import OrgDrillCrumbs from "./_components/OrgDrillCrumbs";
 import type { DrillCrumbItem } from "./_components/OrgDrillCrumbs";
+import {
+  FACTION_ICON_MAP,
+  INSTITUTION_ICON_MAP,
+  SUBUNIT_ICON_MAP,
+} from "./_components/OrgIcon";
 import PersonnelCard from "./_components/PersonnelCard";
 import SearchJumpBanner from "./_components/SearchJumpBanner";
 import SubUnitAccordion from "./_components/SubUnitAccordion";
@@ -415,7 +420,8 @@ export default function PersonnelClient({
     const items: DrillCrumbItem[] = [
       {
         key: "root",
-        label: "◎ 조직도 L1",
+        label: "조직도 · 전체",
+        iconCode: "ROOT",
         on: !selectedGroup,
         onClick: selectedGroup
           ? () => {
@@ -438,6 +444,14 @@ export default function PersonnelClient({
       items.push({
         key: "group",
         label,
+        iconCode:
+          kind === "faction"
+            ? FACTION_ICON_MAP[selectedGroup]
+            : kind === "institution"
+              ? INSTITUTION_ICON_MAP[selectedGroup]
+              : kind === "unassigned"
+                ? "UNASSIGNED"
+                : undefined,
         on: !expandedSubUnit,
         onClick: expandedSubUnit ? () => setExpandedSubUnit(null) : undefined,
       });
@@ -448,7 +462,12 @@ export default function PersonnelClient({
       const subLabel =
         selectedSubUnits.find((u) => u.code === expandedSubUnit)?.label ??
         expandedSubUnit;
-      items.push({ key: "sub", label: `하위: ${subLabel}`, on: true });
+      items.push({
+        key: "sub",
+        label: `하위: ${subLabel}`,
+        iconCode: SUBUNIT_ICON_MAP[expandedSubUnit],
+        on: true,
+      });
     }
 
     return items;
@@ -602,8 +621,10 @@ export default function PersonnelClient({
             groupLabel={selectedGroupLabel}
             groupLabelEn={selectedGroupLabelEn}
             kind={selectedGroupKind}
-            subUnitCount={selectedSubUnits.length}
-            subUnitLabels={selectedSubUnits.map((u) => u.label)}
+            subUnits={selectedSubUnits.map((u) => ({
+              code: u.code,
+              label: u.label,
+            }))}
             memberCount={selectedGroupMembers.length}
             doctrine={
               selectedGroupKind === "faction"
@@ -617,6 +638,15 @@ export default function PersonnelClient({
               selectedGroupKind === "institution"
                 ? INSTITUTION_OVERSIGHT[selectedGroup]
                 : undefined
+            }
+            iconCode={
+              selectedGroupKind === "faction"
+                ? FACTION_ICON_MAP[selectedGroup]
+                : selectedGroupKind === "institution"
+                  ? INSTITUTION_ICON_MAP[selectedGroup]
+                  : selectedGroupKind === "unassigned"
+                    ? "UNASSIGNED"
+                    : undefined
             }
             logoUrl={
               selectedGroupKind === "faction"

@@ -38,6 +38,11 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import OrgDrillCrumbs from "../_components/OrgDrillCrumbs";
 import type { DrillCrumbItem } from "../_components/OrgDrillCrumbs";
+import {
+  FACTION_ICON_MAP,
+  INSTITUTION_ICON_MAP,
+  SUBUNIT_ICON_MAP,
+} from "../_components/OrgIcon";
 
 import ClearanceMap from "./_components/ClearanceMap";
 import DossierTabs from "./_components/DossierTabs";
@@ -121,6 +126,35 @@ function KVRow({ label, children }: { label: string; children: ReactNode }) {
     <div className={styles.kvRow}>
       <dt>{label}</dt>
       <dd>{children}</dd>
+    </div>
+  );
+}
+
+/** Dossier 좌측 portrait — src 비어있거나 로드 실패 시 Seal initial 로 fallback. */
+function DossierPortraitImage({
+  src,
+  alt,
+  fallbackInitial,
+}: {
+  src: string;
+  alt: string;
+  fallbackInitial: string;
+}) {
+  const [errored, setErrored] = useState(false);
+  if (src && !errored) {
+    return (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img
+        src={src}
+        alt={alt}
+        className={styles.portraitImg}
+        onError={() => setErrored(true)}
+      />
+    );
+  }
+  return (
+    <div className={styles.portraitPlaceholder}>
+      <Seal size="lg">{fallbackInitial}</Seal>
     </div>
   );
 }
@@ -414,7 +448,12 @@ export default function DossierClient({ character, clearance }: Props) {
      마지막 chip 은 사용자 요청대로 `이름 (코드네임)` 형태. identity 권한이 없으면 codename 만. */
   const drillItems: DrillCrumbItem[] = (() => {
     const items: DrillCrumbItem[] = [
-      { key: "root", label: "◎ 조직도 L1", href: "/erp/personnel" },
+      {
+        key: "root",
+        label: "조직도 · 전체",
+        iconCode: "ROOT",
+        href: "/erp/personnel",
+      },
     ];
 
     if (topGroup !== "UNASSIGNED") {
@@ -428,6 +467,14 @@ export default function DossierClient({ character, clearance }: Props) {
       items.push({
         key: "group",
         label: groupLabel,
+        iconCode:
+          kind === "faction"
+            ? FACTION_ICON_MAP[topGroup]
+            : kind === "institution"
+              ? INSTITUTION_ICON_MAP[topGroup]
+              : kind === "unassigned"
+                ? "UNASSIGNED"
+                : undefined,
         href: `/erp/personnel?group=${topGroup}`,
       });
     }
@@ -436,6 +483,7 @@ export default function DossierClient({ character, clearance }: Props) {
       items.push({
         key: "sub",
         label: `하위: ${getDepartmentLabel(department)}`,
+        iconCode: SUBUNIT_ICON_MAP[department],
         href: `/erp/personnel?group=${topGroup}&sub=${department}`,
       });
     }
@@ -445,6 +493,7 @@ export default function DossierClient({ character, clearance }: Props) {
       label: displayName
         ? `${displayName} (${character.codename})`
         : character.codename,
+      iconCode: "PERSON",
       on: true,
     });
 
@@ -972,18 +1021,11 @@ export default function DossierClient({ character, clearance }: Props) {
         <div className={styles.side}>
           {/* Portrait — dossier 좌측 메인 이미지: lore.mainImage 우선, 폴백으로 previewImage(pixel-profile). */}
           <Box variant="gold" className={styles.portraitBox}>
-            {character.lore.mainImage || character.previewImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={character.lore.mainImage || character.previewImage}
-                alt={character.codename}
-                className={styles.portraitImg}
-              />
-            ) : (
-              <div className={styles.portraitPlaceholder}>
-                <Seal size="lg">{getInitial(character)}</Seal>
-              </div>
-            )}
+            <DossierPortraitImage
+              src={character.lore.mainImage || character.previewImage || ""}
+              alt={character.codename}
+              fallbackInitial={getInitial(character)}
+            />
 
             <h2 className={styles.portraitName}>
               {displayName ?? (

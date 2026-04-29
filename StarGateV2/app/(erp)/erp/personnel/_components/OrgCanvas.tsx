@@ -12,6 +12,11 @@ import {
   LEVEL_ORDER,
 } from "../_constants";
 
+import OrgIcon, {
+  FACTION_ICON_MAP,
+  INSTITUTION_ICON_MAP,
+} from "./OrgIcon";
+
 import styles from "./OrgCanvas.module.css";
 
 const UNASSIGNED_CODE = "UNASSIGNED";
@@ -106,6 +111,7 @@ export default function OrgCanvas({
             {factionsOrdered.map((faction) => {
               const count = groupCounts[faction.code] ?? 0;
               const levels = groupLevelCounts[faction.code] ?? {};
+              const iconCode = FACTION_ICON_MAP[faction.code];
               const logo = FACTION_LOGO[faction.code];
               const doctrine = FACTION_DOCTRINE[faction.code] ?? "";
               return (
@@ -120,7 +126,7 @@ export default function OrgCanvas({
                   <span className={styles.br} />
 
                   {logo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={logo}
                       alt=""
@@ -130,7 +136,16 @@ export default function OrgCanvas({
                   ) : null}
 
                   <div className={styles.node__header}>
-                    <div className={styles.code}>{faction.code}</div>
+                    <div className={styles.node__headerTop}>
+                      {iconCode ? (
+                        <OrgIcon
+                          code={iconCode}
+                          size={20}
+                          className={styles.node__headerIcon}
+                        />
+                      ) : null}
+                      <div className={styles.code}>{faction.code}</div>
+                    </div>
                     <div className={styles.label}>{faction.label}</div>
                   </div>
 
@@ -185,6 +200,7 @@ export default function OrgCanvas({
             {INSTITUTIONS.map((inst) => {
               const count = groupCounts[inst.code] ?? 0;
               const hasSub = inst.subUnits.length > 0;
+              const iconCode = INSTITUTION_ICON_MAP[inst.code];
               const doctrine = INSTITUTION_DOCTRINE[inst.code] ?? "";
               const oversight = INSTITUTION_OVERSIGHT[inst.code];
               const subUnitsLabel = inst.subUnits
@@ -216,7 +232,16 @@ export default function OrgCanvas({
                   />
 
                   <div className={styles.node__header}>
-                    <div className={styles.code}>{inst.code}</div>
+                    <div className={styles.node__headerTop}>
+                      {iconCode ? (
+                        <OrgIcon
+                          code={iconCode}
+                          size={20}
+                          className={styles.node__headerIcon}
+                        />
+                      ) : null}
+                      <div className={styles.code}>{inst.code}</div>
+                    </div>
                     <div className={styles.label}>{inst.label}</div>
                   </div>
 

@@ -150,6 +150,14 @@
   z-index: 1;
 }
 
+/* 헤더 상단 한 줄 — [아이콘] [세력/기관 코드] 가로 정렬, 세로 중앙. 그 아래 .label (한국어) 한 줄. */
+.node__headerTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .node__section {
   position: relative;
   z-index: 1;
@@ -234,6 +242,7 @@
   opacity: 0.9;
 }
 
+/* webp 라스터 워터마크 — 카드 우하단에 옅게 깔리는 세력/기관 로고. */
 .node__watermark {
   position: absolute;
   right: -40px;
@@ -244,6 +253,11 @@
   opacity: 0.08;
   pointer-events: none;
   filter: grayscale(0.2);
+}
+
+.node__headerIcon {
+  flex-shrink: 0;
+  color: var(--gold);
 }
 
 .node--hasSub::after {

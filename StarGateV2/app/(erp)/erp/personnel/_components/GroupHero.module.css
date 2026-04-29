@@ -46,11 +46,13 @@
   border-right: 1px solid var(--gold);
 }
 
+/* webp 라스터 워터마크 — 그룹 hero 우하단에 옅게 깔리는 세력/기관 로고. */
 .watermark {
   position: absolute;
   right: -60px;
   bottom: -60px;
   width: 280px;
+  object-fit: contain;
   opacity: 0.07;
   pointer-events: none;
   user-select: none;
@@ -71,10 +73,43 @@
 
 .title {
   margin: 4px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   color: var(--ink-0);
   font-size: 28px;
   font-weight: 500;
   letter-spacing: -0.01em;
+}
+
+.titleIcon {
+  flex-shrink: 0;
+  color: var(--gold);
+}
+
+/* sub-unit chip — 작은 sub-unit 식별 박스. */
+.subUnitChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.subUnitChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.subUnitChip svg {
+  color: var(--gold-dim);
 }
 
 .subtitle {

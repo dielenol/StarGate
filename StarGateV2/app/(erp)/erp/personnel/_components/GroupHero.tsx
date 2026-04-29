@@ -5,6 +5,11 @@ import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 
 import { LEVEL_ORDER } from "../_constants";
 
+import OrgIcon, {
+  SUBUNIT_ICON_MAP,
+  type OrgIconCode,
+} from "./OrgIcon";
+
 import styles from "./GroupHero.module.css";
 
 type GroupKind = "faction" | "institution" | "unassigned";
@@ -15,13 +20,17 @@ const KIND_EYEBROW_PREFIX: Record<GroupKind, string> = {
   unassigned: "UNASSIGNED",
 };
 
+interface SubUnitItem {
+  code: string;
+  label: string;
+}
+
 interface Props {
   groupCode: string;
   groupLabel: string;
   groupLabelEn: string;
   kind: GroupKind;
-  subUnitCount?: number;
-  subUnitLabels?: string[];
+  subUnits?: SubUnitItem[];
   memberCount: number;
   /** 교리 / 원칙 한 줄 */
   doctrine?: string;
@@ -29,7 +38,9 @@ interface Props {
   levelCounts?: Partial<Record<AgentLevel, number>>;
   /** 감독 영역 (institution 전용, subUnit 없을 때만 활용) */
   oversight?: string;
-  /** 배경 워터마크 로고 경로 */
+  /** OrgIcon 코드 — 헤더 좌측 작은 식별 아이콘용 (SVG line). */
+  iconCode?: OrgIconCode;
+  /** 우하단 webp 워터마크 로고 URL — faction/institution 일 때만 전달. */
   logoUrl?: string;
   onBack: () => void;
 }
@@ -39,12 +50,12 @@ export default function GroupHero({
   groupLabel,
   groupLabelEn,
   kind,
-  subUnitCount,
-  subUnitLabels,
+  subUnits,
   memberCount,
   doctrine,
   levelCounts,
   oversight,
+  iconCode,
   logoUrl,
   onBack,
 }: Props) {
@@ -53,11 +64,8 @@ export default function GroupHero({
       ? KIND_EYEBROW_PREFIX[kind]
       : `${KIND_EYEBROW_PREFIX[kind]} · ${groupCode}`;
 
-  const hasSubUnits =
-    subUnitCount !== undefined &&
-    subUnitCount > 0 &&
-    subUnitLabels !== undefined &&
-    subUnitLabels.length > 0;
+  const subUnitCount = subUnits?.length ?? 0;
+  const hasSubUnits = subUnitCount > 0;
 
   return (
     <div className={styles.hero}>
@@ -79,7 +87,16 @@ export default function GroupHero({
       <div className={styles.head}>
         <div className={styles.headMain}>
           <Eyebrow>{eyebrowText}</Eyebrow>
-          <h2 className={styles.title}>{groupLabel}</h2>
+          <h2 className={styles.title}>
+            {iconCode ? (
+              <OrgIcon
+                code={iconCode}
+                size={26}
+                className={styles.titleIcon}
+              />
+            ) : null}
+            {groupLabel}
+          </h2>
           {kind !== "unassigned" ? (
             <div className={styles.subtitle}>{groupLabelEn}</div>
           ) : null}
@@ -131,8 +148,18 @@ export default function GroupHero({
             <div className={styles.sectionLabel}>
               SUB UNITS · {subUnitCount}
             </div>
-            <div className={styles.sectionValue}>
-              {subUnitLabels!.join(" · ")}
+            <div className={styles.subUnitChips}>
+              {subUnits!.map((u) => {
+                const subIcon = SUBUNIT_ICON_MAP[u.code];
+                return (
+                  <span key={u.code} className={styles.subUnitChip}>
+                    {subIcon ? (
+                      <OrgIcon code={subIcon} size={14} />
+                    ) : null}
+                    <span>{u.label}</span>
+                  </span>
+                );
+              })}
             </div>
           </section>
         ) : oversight ? (

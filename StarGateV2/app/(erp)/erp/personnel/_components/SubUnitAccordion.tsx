@@ -2,6 +2,8 @@
 
 import type { ReactNode } from "react";
 
+import OrgIcon, { SUBUNIT_ICON_MAP } from "./OrgIcon";
+
 import styles from "./SubUnitAccordion.module.css";
 
 interface Props {
@@ -33,6 +35,8 @@ export default function SubUnitAccordion({
     metaParts.push(`부서장 ${leadCount}`);
   }
 
+  const subIcon = SUBUNIT_ICON_MAP[code];
+
   return (
     <div
       className={[styles.subunit, expanded ? styles["subunit--open"] : ""]
@@ -48,6 +52,9 @@ export default function SubUnitAccordion({
         <span className={styles.arrow} aria-hidden>
           ▸
         </span>
+        {subIcon ? (
+          <OrgIcon code={subIcon} size={18} className={styles.icon} />
+        ) : null}
         <span className={styles.code}>{code}</span>
         <span className={styles.label}>{label}</span>
         <span className={styles.subCount}>

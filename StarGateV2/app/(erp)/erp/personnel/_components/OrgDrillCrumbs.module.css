@@ -19,13 +19,20 @@
 }
 
 .crumb {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   padding: 5px 10px;
   border: 1px solid var(--line-strong);
   color: var(--ink-3);
   background: transparent;
   white-space: nowrap;
   text-decoration: none;
+}
+
+.icon {
+  flex-shrink: 0;
+  display: inline-block;
 }
 
 .crumb--clickable {
