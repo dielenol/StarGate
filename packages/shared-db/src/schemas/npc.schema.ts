@@ -55,7 +55,17 @@ const equipmentSchema = z.object({
   description: z.string().optional(),
 });
 
-const abilitySlotSchema = z.enum(["C1", "C2", "C3", "P", "A1", "A2", "A3"]);
+const abilitySlotSchema = z.enum([
+  "C1",
+  "C2",
+  "C3",
+  "C4",
+  "C5",
+  "P",
+  "A1",
+  "A2",
+  "A3",
+]);
 
 const abilitySchema = z.object({
   slot: abilitySlotSchema,
