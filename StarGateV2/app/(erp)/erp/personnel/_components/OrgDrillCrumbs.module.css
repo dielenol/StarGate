@@ -1,0 +1,57 @@
+/* Org drill crumbs — 인덱스(PersonnelClient) 와 dossier(DossierClient) 공용.
+   각 chip 은 box-bordered 형태이며, 현재 위치(--on)는 gold 강조. */
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crumb {
+  display: inline-block;
+  padding: 5px 10px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-3);
+  background: transparent;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.crumb--clickable {
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+
+.crumb--clickable:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(201, 168, 90, 0.06);
+}
+
+.crumb--clickable:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.crumb--on {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(201, 168, 90, 0.06);
+}
+
+.sep {
+  color: var(--ink-3);
+}

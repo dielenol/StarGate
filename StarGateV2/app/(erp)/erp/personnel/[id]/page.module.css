@@ -100,6 +100,81 @@
   letter-spacing: 0.1em;
 }
 
+/* GM 편집 모드 — 군사 dossier 톤을 유지하면서 색조만 gold 로 swap. */
+.readOnlyNotice--edit {
+  border-left-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 6%, transparent);
+}
+
+.readOnlyNotice--edit .readOnlyNotice__label {
+  color: var(--gold);
+}
+
+.readOnlyNotice__error {
+  margin-left: auto;
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+/* ── Edit-mode form fields ── */
+
+.editInput {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-0);
+  font-family: var(--font-body);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.editInput:hover {
+  border-color: var(--gold-dim);
+}
+
+.editInput:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 4%, var(--bg));
+}
+
+.editInput--mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.editInput--area {
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.editInput--select {
+  appearance: none;
+  background-image: linear-gradient(
+      45deg,
+      transparent 50%,
+      var(--ink-3) 50%
+    ),
+    linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 9px) 50%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 28px;
+}
+
+.profileEditArea {
+  margin-top: 4px;
+}
+
 /* Side portrait box */
 
 .portraitBox {
@@ -518,13 +593,32 @@
 }
 
 .tabEmpty {
-  padding: 32px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 16px;
   text-align: center;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.18em;
+  line-height: 1.6;
+}
+
+.tabEmpty__hint {
+  color: var(--ink-3);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+}
+
+/* 인사기록부 placeholder — 비어 있는 KV 값에 in-world 메시지로 자리를 채운다. */
+.placeholder {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.15em;
-  line-height: 1.7;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  font-style: italic;
 }
 
 /* Classified inline value / redacted text block */

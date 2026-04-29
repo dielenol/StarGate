@@ -111,3 +111,16 @@ export function isFaction(code: string): boolean {
 export function isInstitution(code: string): boolean {
   return INSTITUTION_CODES.has(code);
 }
+
+/**
+ * 그룹 코드가 세력(faction)/기관(institution)/미배정 중 무엇인지 판정.
+ * personnel 인덱스의 drill state crumb 와 dossier breadcrumb 양쪽에서 prefix(세력:/기관:/미배정)를 결정할 때 사용.
+ */
+export function getGroupKind(
+  code: string,
+): "faction" | "institution" | "unassigned" {
+  if (code === "UNASSIGNED") return "unassigned";
+  if (isFaction(code)) return "faction";
+  if (isInstitution(code)) return "institution";
+  return "unassigned";
+}

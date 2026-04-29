@@ -93,7 +93,7 @@ export default function PersonnelCard({
               {character.type}
             </Tag>
             <span className={styles.clrPill} data-rank={level}>
-              <span>권한등급 · {level}</span>
+              <span>권한등급 : {level}</span>
               <Pips total={7} filled={getLevelDisplayRank(level)} />
             </span>
           </>
@@ -118,14 +118,12 @@ export default function PersonnelCard({
 function renderAvatar(character: Character, isRedacted: boolean) {
   if (isRedacted) return <span aria-hidden>☩</span>;
 
-  if (character.previewImage) {
+  /* 신원조회 인덱스 카드는 lore.mainImage(메인 일러스트) 우선. 누락 시 previewImage(pixel-profile) 폴백. */
+  const src = character.lore.mainImage || character.previewImage;
+  if (src) {
     return (
       /* eslint-disable-next-line @next/next/no-img-element */
-      <img
-        className={styles.avatar__img}
-        src={character.previewImage}
-        alt=""
-      />
+      <img className={styles.avatar__img} src={src} alt="" />
     );
   }
 

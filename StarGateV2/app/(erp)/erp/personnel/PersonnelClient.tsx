@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import type { AgentLevel, Character } from "@/types/character";
 import {
@@ -36,6 +37,8 @@ import Pips from "@/components/ui/Pips/Pips";
 
 import GroupHero from "./_components/GroupHero";
 import OrgCanvas from "./_components/OrgCanvas";
+import OrgDrillCrumbs from "./_components/OrgDrillCrumbs";
+import type { DrillCrumbItem } from "./_components/OrgDrillCrumbs";
 import PersonnelCard from "./_components/PersonnelCard";
 import SearchJumpBanner from "./_components/SearchJumpBanner";
 import SubUnitAccordion from "./_components/SubUnitAccordion";
@@ -150,9 +153,25 @@ export default function PersonnelClient({
     initialData: initialCharacters,
   });
 
+  const searchParams = useSearchParams();
+
   const [query, setQuery] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [expandedSubUnit, setExpandedSubUnit] = useState<string | null>(null);
+  /* dossier breadcrumb 가 ?group=&sub= 로 진입한 경우 자동으로 해당 그룹/하위기구를 펼쳐
+     불필요한 drill-down 을 제거. 이후 사용자 인터랙션은 URL 동기화 없이 state-only. */
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(
+    () => searchParams.get("group") ?? null,
+  );
+  const [expandedSubUnit, setExpandedSubUnit] = useState<string | null>(
+    () => searchParams.get("sub") ?? null,
+  );
+
+  /* searchParams 변경(외부 진입) 시에만 동기화. 내부 인터랙션으로 인한 state 변경은 영향 없음. */
+  useEffect(() => {
+    const g = searchParams.get("group");
+    const s = searchParams.get("sub");
+    if (g !== null) setSelectedGroup(g);
+    if (s !== null) setExpandedSubUnit(s);
+  }, [searchParams]);
 
   const prevQueryRef = useRef("");
 
@@ -392,13 +411,8 @@ export default function PersonnelClient({
   }, [selectedGroup, query, searchMatches]);
 
   // 현재 drill 상태 breadcrumb
-  const crumbs = useMemo(() => {
-    const items: {
-      key: string;
-      label: string;
-      on: boolean;
-      onClick?: () => void;
-    }[] = [
+  const crumbs = useMemo<DrillCrumbItem[]>(() => {
+    const items: DrillCrumbItem[] = [
       {
         key: "root",
         label: "◎ 조직도 L1",
@@ -571,44 +585,7 @@ export default function PersonnelClient({
       </Box>
 
       {/* Org breadcrumbs */}
-      <div className={styles.orgBreadcrumbs} aria-label="조직도 경로">
-        {crumbs.map((c, idx) => {
-          const className = [
-            styles.crumb,
-            c.onClick ? styles["crumb--clickable"] : "",
-            c.on ? styles["crumb--on"] : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-
-          return (
-            <span key={c.key} className={styles.orgBreadcrumbs__item}>
-              {c.onClick ? (
-                <button
-                  type="button"
-                  className={className}
-                  onClick={c.onClick}
-                  aria-current={c.on ? "location" : undefined}
-                >
-                  {c.label}
-                </button>
-              ) : (
-                <span
-                  className={className}
-                  aria-current={c.on ? "location" : undefined}
-                >
-                  {c.label}
-                </span>
-              )}
-              {idx < crumbs.length - 1 ? (
-                <span className={styles.sep} aria-hidden>
-                  ›
-                </span>
-              ) : null}
-            </span>
-          );
-        })}
-      </div>
+      <OrgDrillCrumbs items={crumbs} className={styles.orgBreadcrumbs} />
 
       {/* L1 조감 or L2 드릴다운 */}
       {!selectedGroup ? (
