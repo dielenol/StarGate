@@ -87,3 +87,29 @@
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   font-size: 14px;
 }
+
+/* Admin sync meta — GM 전용. bulkUpdatedAt(통짜 데이터 동기화 시점) 표시. */
+
+.adminSync {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--gap);
+  padding: 8px 14px;
+  border: 1px dashed var(--gold-dim);
+  background: rgba(201, 168, 90, 0.04);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.adminSync__label {
+  color: var(--gold);
+  letter-spacing: 0.18em;
+}
+
+.adminSync__value {
+  color: var(--ink-1);
+  letter-spacing: 0.06em;
+}

@@ -24,7 +24,17 @@ import PosterHero from "./PosterHero";
 
 import styles from "./page.module.css";
 
-const ABILITY_SLOT_ORDER = ["C1", "C2", "C3", "P", "A1", "A2", "A3"] as const;
+const ABILITY_SLOT_ORDER = [
+  "C1",
+  "C2",
+  "C3",
+  "C4",
+  "C5",
+  "P",
+  "A1",
+  "A2",
+  "A3",
+] as const;
 
 interface Props {
   /** AGENT 전용. server (page.tsx) 가 NPC 를 personnel 로 redirect 하므로 여기엔 항상 AGENT 만 도달. */
@@ -43,6 +53,8 @@ interface Props {
    * 권한 결정은 서버(page.tsx)에서 한 번만 수행해 prop 으로 내려준다.
    */
   changeLogsMode: ChangeLogsPanelMode;
+  /** GM 운영진 여부 — bulkUpdatedAt SYNC 메타 노출 등 GM 전용 패널 제어용. */
+  isGM: boolean;
 }
 
 export default function CharacterDetailClient({
@@ -50,6 +62,7 @@ export default function CharacterDetailClient({
   editMode,
   canDelete,
   changeLogsMode,
+  isGM,
 }: Props) {
   const canEdit = editMode !== "none";
   const router = useRouter();
@@ -155,6 +168,25 @@ export default function CharacterDetailClient({
 
       {deleteError ? <div className={styles.error}>{deleteError}</div> : null}
 
+      {isGM && character.bulkUpdatedAt ? (
+        <div
+          className={styles.adminSync}
+          title="GM 운영진 전용 — Claude/스크립트로 통짜 데이터를 덮어쓴 시점. 사용자 폼 편집은 반영되지 않음."
+        >
+          <span className={styles.adminSync__label}>SYNC · GM</span>
+          <span className={styles.adminSync__value}>
+            통짜 데이터 동기화 ·{" "}
+            {new Date(character.bulkUpdatedAt).toLocaleString("ko-KR", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        </div>
+      ) : null}
+
       <PosterHero
         posterImage={character.lore.posterImage}
         mainImage={character.lore.mainImage}
@@ -193,7 +225,7 @@ export default function CharacterDetailClient({
 function AgentSections({ character }: { character: AgentCharacter }) {
   const { play } = character;
 
-  // 어빌리티는 7-슬롯 그리드 (C1/C2/C3/P/A1/A2/A3) 고정. 빈 슬롯도 라벨 칸으로 노출.
+  // 어빌리티는 9-슬롯 시스템 (C1~C5/P/A1~A3). 채워진 슬롯만 노출, 전체 비면 빈 메시지.
   const abilitiesBySlot = new Map(play.abilities.map((ab) => [ab.slot, ab]));
 
   return (
@@ -232,39 +264,49 @@ function AgentSections({ character }: { character: AgentCharacter }) {
         )}
       </Box>
 
-      <Box>
-        <PanelTitle right={<span className={styles.mono}>7 SLOTS</span>}>
-          ABILITIES
-        </PanelTitle>
-        <div className={styles.itemList}>
-          {ABILITY_SLOT_ORDER.map((slot) => {
-            const ab = abilitiesBySlot.get(slot);
-            const isFilled = ab && ab.name.trim().length > 0;
-            return (
-              <div key={slot} className={styles.itemCard}>
-                <div className={styles.itemCard__head}>
-                  <div className={styles.itemCard__name}>
-                    <Tag tone="gold">{slot}</Tag>{" "}
-                    {isFilled ? ab!.name : <span className={styles.mono}>EMPTY</span>}
+      {(() => {
+        // 빈 슬롯은 노출하지 않음. 채워진 슬롯만 ABILITY_SLOT_ORDER 순서로 정렬해 렌더.
+        // 채워진 슬롯이 0이면 EQUIPMENT 패턴과 일관되게 "어빌리티 없음" 안내.
+        const filled = ABILITY_SLOT_ORDER.flatMap((slot) => {
+          const ab = abilitiesBySlot.get(slot);
+          return ab && ab.name.trim().length > 0 ? [{ slot, ab }] : [];
+        });
+
+        return (
+          <Box>
+            <PanelTitle
+              right={<span className={styles.mono}>{filled.length}</span>}
+            >
+              ABILITIES
+            </PanelTitle>
+            {filled.length === 0 ? (
+              <div className={styles.empty}>어빌리티 없음</div>
+            ) : (
+              <div className={styles.itemList}>
+                {filled.map(({ slot, ab }) => (
+                  <div key={slot} className={styles.itemCard}>
+                    <div className={styles.itemCard__head}>
+                      <div className={styles.itemCard__name}>
+                        <Tag tone="gold">{slot}</Tag> {ab.name}
+                      </div>
+                      {ab.code ? <Tag tone="default">{ab.code}</Tag> : null}
+                    </div>
+                    {ab.description ? (
+                      <div className={styles.itemCard__desc}>{ab.description}</div>
+                    ) : null}
+                    {ab.effect ? (
+                      <div className={styles.itemCard__effect}>
+                        <span className={styles.mono}>EFFECT · </span>
+                        {ab.effect}
+                      </div>
+                    ) : null}
                   </div>
-                  {isFilled && ab!.code ? (
-                    <Tag tone="default">{ab!.code}</Tag>
-                  ) : null}
-                </div>
-                {isFilled && ab!.description ? (
-                  <div className={styles.itemCard__desc}>{ab!.description}</div>
-                ) : null}
-                {isFilled && ab!.effect ? (
-                  <div className={styles.itemCard__effect}>
-                    <span className={styles.mono}>EFFECT · </span>
-                    {ab!.effect}
-                  </div>
-                ) : null}
+                ))}
               </div>
-            );
-          })}
-        </div>
-      </Box>
+            )}
+          </Box>
+        );
+      })()}
     </>
   );
 }

@@ -30,8 +30,8 @@ const FILTER_LABEL: Record<"ALL" | CharacterTier, string> = {
   MINI: "MINI",
 };
 
-const HP_MAX = 100;
-const SAN_MAX = 99;
+const HP_MAX = 300;
+const SAN_MAX = 100;
 
 function getInitial(c: Character): string {
   const source = c.lore.name || c.codename;

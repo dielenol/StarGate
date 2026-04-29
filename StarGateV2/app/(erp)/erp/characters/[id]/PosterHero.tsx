@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import type { AgentLevel, PlaySheet } from "@/types/character";
+import { AGENT_LEVEL_LABELS, type AgentLevel, type PlaySheet } from "@/types/character";
 
 import Bar from "@/components/ui/Bar/Bar";
 import Seal from "@/components/ui/Seal/Seal";
@@ -184,28 +184,27 @@ export default function PosterHero({
         {/* gradient overlay */}
         <div className={styles.hero__gradient} aria-hidden />
 
-        {/* caption */}
+        {/* caption + meta — 한 컨테이너로 묶어 메타 라인이 wrap 돼도 caption 과
+            겹치지 않고 자연스럽게 위로 밀리도록 stacked. */}
         <div className={styles.hero__caption}>
           <div className={styles.hero__captionCode}>{codename}</div>
           <h2 className={styles.hero__captionName}>{displayName}</h2>
           {role ? (
             <div className={styles.hero__captionAlias}>{role}</div>
           ) : null}
+          {metaItems.length > 0 ? (
+            <div className={styles.hero__captionMeta}>
+              {metaItems.map((item, i) => (
+                <span key={item} className={styles.hero__captionMetaItem}>
+                  {i > 0 ? (
+                    <span className={styles.hero__captionMetaSep}>│</span>
+                  ) : null}
+                  {item}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
-
-        {/* meta line */}
-        {metaItems.length > 0 ? (
-          <div className={styles.hero__captionMeta}>
-            {metaItems.map((item, i) => (
-              <span key={item} className={styles.hero__captionMetaItem}>
-                {i > 0 ? (
-                  <span className={styles.hero__captionMetaSep}>│</span>
-                ) : null}
-                {item}
-              </span>
-            ))}
-          </div>
-        ) : null}
       </div>
 
       {/* ── 우측 side rail ── */}
@@ -239,7 +238,12 @@ export default function PosterHero({
               {agentLevel ? (
                 <>
                   <div className={styles.hero__logoK}>CLEARANCE</div>
-                  <div className={styles.hero__logoV}>{agentLevel}</div>
+                  <div
+                    className={`${styles.hero__logoV} ${styles["hero__logoV--rank"]}`}
+                    data-rank={agentLevel}
+                  >
+                    {agentLevel} · {AGENT_LEVEL_LABELS[agentLevel]}
+                  </div>
                 </>
               ) : null}
             </div>
@@ -274,14 +278,14 @@ export default function PosterHero({
                 label="HP"
                 value={playSheet.hp}
                 delta={playSheet.hpDelta}
-                max={100}
+                max={300}
                 tone="gold"
               />
               <VitalBarRow
                 label="SAN"
                 value={playSheet.san}
                 delta={playSheet.sanDelta}
-                max={99}
+                max={100}
                 tone={playSheet.san < 30 ? "danger" : "info"}
               />
               <div className={styles.hero__vitalsPair}>
@@ -289,13 +293,13 @@ export default function PosterHero({
                   label="DEF"
                   value={playSheet.def}
                   delta={playSheet.defDelta}
-                  max={10}
+                  max={5}
                 />
                 <SmallVital
                   label="ATK"
                   value={playSheet.atk}
                   delta={playSheet.atkDelta}
-                  max={10}
+                  max={20}
                 />
               </div>
             </div>

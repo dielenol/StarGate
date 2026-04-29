@@ -65,6 +65,7 @@ export default async function CharacterDetailPage({ params }: PageProps) {
       editMode={decision.mode}
       canDelete={canDelete}
       changeLogsMode={changeLogsMode}
+      isGM={hasRole(role, "GM")}
     />
   );
 }

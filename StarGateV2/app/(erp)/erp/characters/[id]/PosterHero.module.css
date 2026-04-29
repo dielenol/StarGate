@@ -128,12 +128,14 @@
   letter-spacing: 0.18em;
 }
 
-/* caption block */
+/* caption block — codename / name / role(alias) / meta(gender·age·height) 를
+   하나의 stacked 컨테이너로 흡수. meta 라인이 길어 wrap 돼도 caption 위로 밀려
+   leakage 가 없도록 absolute 는 컨테이너 한 곳에서만 잡는다. */
 .hero__caption {
   position: absolute;
   left: 22px;
   right: 22px;
-  bottom: 52px;
+  bottom: 18px;
   z-index: 2;
   pointer-events: none;
 }
@@ -163,23 +165,18 @@
   color: var(--ink-2);
 }
 
-/* meta line — gender · age · height */
+/* meta line — gender · age · height. caption block 자식으로 자연 흐름. */
 .hero__captionMeta {
-  position: absolute;
-  left: 22px;
-  right: 22px;
-  bottom: 18px;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  z-index: 2;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(201, 161, 74, 0.25);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.16em;
   color: var(--ink-2);
-  border-top: 1px solid rgba(201, 161, 74, 0.25);
-  padding-top: 10px;
-  pointer-events: none;
 }
 .hero__captionMetaItem {
   display: inline-flex;
@@ -195,16 +192,13 @@
   .hero__caption {
     left: 16px;
     right: 16px;
-    bottom: 48px;
+    bottom: 14px;
   }
   .hero__captionName {
     font-size: 22px;
     letter-spacing: 0.04em;
   }
   .hero__captionMeta {
-    left: 16px;
-    right: 16px;
-    bottom: 14px;
     font-size: 14px;
     letter-spacing: 0.16em;
   }
@@ -302,6 +296,14 @@
 .hero__logoV--dim {
   color: var(--ink-2);
   font-size: 14px;
+}
+
+/* CLEARANCE 등급 표기 — globals.css 의 [data-rank] 셀렉터가 자동 주입한
+   --rank-active-text 를 참조해 등급별 색상으로 전환. */
+.hero__logoV--rank {
+  color: var(--rank-active-text, var(--ink-0));
+  font-family: var(--font-mono);
+  letter-spacing: 0.16em;
 }
 
 /* ────────────────────────────────────────────────────────────
