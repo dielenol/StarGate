@@ -8,39 +8,46 @@ import {
 } from "./common.js";
 
 /* ── LoreSheet 스키마 (types/character.ts LoreSheet 거울) ──
-   AGENT/NPC 공통 신원조회 source. */
+   AGENT/NPC 공통 신원조회 source.
+
+   string 필드는 "-" 입력을 "미상" 으로 정규화한다 (시트 dash 표기 호환).
+   "기밀" 등 다른 토큰은 보존. 적용 대상은 lore 의 string 필드 (이름/신상/서사/
+   이미지/NPC 호환 필드) 전체. number / boolean / array / enum 은 제외. */
+
+const dashToUnknown = (s: string): string => (s === "-" ? "미상" : s);
+const loreString = () => z.string().transform(dashToUnknown);
 
 export const loreSheetSchema = z.object({
   /* 이름 */
-  name: z.string(),
-  nameNative: z.string().optional(),
-  nickname: z.string().optional(),
+  name: loreString(),
+  nameNative: loreString().optional(),
+  nickname: loreString().optional(),
 
   /* 인물 신상 */
-  gender: z.string(),
-  age: z.string(),
-  height: z.string(),
-  weight: z.string(),
+  gender: loreString(),
+  age: loreString(),
+  height: loreString(),
+  weight: loreString(),
 
   /* 서사 */
-  appearance: z.string(),
-  personality: z.string(),
-  background: z.string(),
-  quote: z.string(),
+  appearance: loreString(),
+  personality: loreString(),
+  background: loreString(),
+  quote: loreString(),
 
   /* 이미지 */
-  mainImage: z.string(),
+  mainImage: loreString(),
   /** 캐릭터 상세 상단 히어로에 노출되는 공식 포스터 (와이드). mainImage(세로 초상화)와 구분. */
-  posterImage: z.string().optional(),
+  posterImage: loreString().optional(),
 
   /* 메타 */
   loreTags: z.array(z.string().max(40)).optional(),
   appearsInEvents: z.array(z.string().max(80)).optional(),
 
   /* NPC 호환 필드 */
-  nameEn: z.string().optional(),
-  roleDetail: z.string().optional(),
-  notes: z.string().optional(),
+  nameEn: loreString().optional(),
+  roleDetail: loreString().optional(),
+  notes: loreString().optional(),
 });
 
 /* ── PlaySheet 스키마 (types/character.ts PlaySheet 거울)
