@@ -4,8 +4,12 @@ import type { CreateInventoryInput } from "@/types/inventory";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { listCharacterInventory, addToInventory } from "@/lib/db/inventory";
 import { findCharacterById } from "@/lib/db/characters";
+import {
+  addToInventory,
+  findMasterItemById,
+  listCharacterInventory,
+} from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
 
 export async function GET(
@@ -62,9 +66,10 @@ export async function POST(
 
   const body = (await request.json()) as Partial<CreateInventoryInput>;
 
-  if (!body.itemId?.trim() || !body.itemName?.trim()) {
+  // itemId 형식 검증 — ObjectId 가 아니면 400. master_items _id 는 ObjectId.
+  if (!body.itemId?.trim() || !isValidObjectId(body.itemId)) {
     return NextResponse.json(
-      { error: "itemId와 itemName은 필수입니다." },
+      { error: "itemId가 올바른 ObjectId 형식이 아닙니다." },
       { status: 400 },
     );
   }
@@ -76,12 +81,29 @@ export async function POST(
     );
   }
 
+  // master 실재성 + 가용성 검증 — 클라이언트가 임의 itemId/itemName 으로 인벤토리를
+  // 오염시키지 못하도록 서버에서 master 를 한 번 더 끌어와 기준값으로 사용한다.
+  const masterItem = await findMasterItemById(body.itemId);
+  if (!masterItem) {
+    return NextResponse.json(
+      { error: "마스터 아이템을 찾을 수 없습니다." },
+      { status: 404 },
+    );
+  }
+  if (masterItem.isAvailable === false) {
+    return NextResponse.json(
+      { error: "현재 지급 불가 상태인 아이템입니다." },
+      { status: 400 },
+    );
+  }
+
   try {
     const entry = await addToInventory({
       characterId,
       characterCodename: character.codename,
       itemId: body.itemId,
-      itemName: body.itemName,
+      // itemName 은 클라이언트 입력 무시 — master 의 정식 명칭만 사용.
+      itemName: masterItem.name,
       quantity: body.quantity,
       acquiredAt: new Date(),
       note: body.note ?? "",

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { validateSessionReportArrays } from "@/lib/api/session-report-validators";
 import {
   createSessionReport,
   listSessionReports,
@@ -44,14 +45,11 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { sessionId, sessionTitle, summary, highlights, participants } =
-    body as {
-      sessionId?: string;
-      sessionTitle?: string;
-      summary?: string;
-      highlights?: string[];
-      participants?: string[];
-    };
+  const { sessionId, sessionTitle, summary } = body as {
+    sessionId?: string;
+    sessionTitle?: string;
+    summary?: string;
+  };
 
   if (!sessionTitle?.trim() || !summary?.trim()) {
     return NextResponse.json(
@@ -59,6 +57,10 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+
+  const arrays = validateSessionReportArrays(body);
+  if ("error" in arrays) return arrays.error;
+  const { highlights, participants } = arrays.value;
 
   try {
     const report = await createSessionReport({

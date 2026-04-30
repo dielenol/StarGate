@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { sanitizeWikiBody } from "@/lib/api/wiki-validators";
 import {
   deleteWikiPage,
   findWikiPageById,
@@ -60,19 +61,14 @@ export async function PATCH(
   if (!isValidObjectId(id)) {
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
-  const body = await request.json();
-  const { title, content, category, tags, isPublic } = body as {
-    title?: string;
-    content?: string;
-    category?: string;
-    tags?: string[];
-    isPublic?: boolean;
-  };
+
+  const sanitized = sanitizeWikiBody(await request.json());
+  if ("error" in sanitized) return sanitized.error;
 
   try {
     const updated = await updateWikiPage(
       id,
-      { title, content, category, tags, isPublic },
+      sanitized.value,
       session.user.id,
       session.user.displayName,
     );

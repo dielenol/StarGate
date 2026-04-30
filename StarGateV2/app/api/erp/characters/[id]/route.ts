@@ -6,6 +6,7 @@ import {
   ALLOWED_LORE_FIELDS_PLAYER,
   ALLOWED_PLAY_FIELDS_ADMIN,
   insertChangeLog,
+  loreSheetSchema,
 } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
@@ -148,6 +149,20 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const reason =
     typeof body.reason === "string" ? body.reason.trim() || undefined : undefined;
+
+  // dash → "미상" 정규화. POST 라우트와 일관된 정책 (모든 입력 경로에서 통일).
+  // body.lore 가 partial object 이므로 partial schema 로 parse — transform 만 적용되고
+  // 누락 필드는 그대로 통과. 형식 오류 시 400 (lore 검증 실패).
+  if (body.lore && typeof body.lore === "object" && !Array.isArray(body.lore)) {
+    const parsed = loreSheetSchema.partial().safeParse(body.lore);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "lore 형식 오류" },
+        { status: 400 },
+      );
+    }
+    body.lore = parsed.data;
+  }
 
   // Phase 3+ — sub-document 별 화이트리스트 합성. admin 은 root + lore + play, player 는 lore 8필드.
   const allowedFields = new Set<string>();

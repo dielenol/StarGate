@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { sanitizeWikiBody } from "@/lib/api/wiki-validators";
 import {
   createWikiPage,
   listWikiPages,
@@ -58,14 +59,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json();
-  const { title, content, category, tags, isPublic } = body as {
-    title?: string;
-    content?: string;
-    category?: string;
-    tags?: string[];
-    isPublic?: boolean;
-  };
+  const sanitized = sanitizeWikiBody(await request.json());
+  if ("error" in sanitized) return sanitized.error;
+  const { title, content, category, tags, isPublic } = sanitized.value;
 
   if (!title?.trim() || !content?.trim()) {
     return NextResponse.json(

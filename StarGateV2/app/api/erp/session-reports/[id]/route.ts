@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { validateSessionReportArrays } from "@/lib/api/session-report-validators";
 import {
   deleteSessionReport,
   findReportById,
@@ -61,12 +62,14 @@ export async function PATCH(
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
   const body = await request.json();
-  const { sessionTitle, summary, highlights, participants } = body as {
+  const { sessionTitle, summary } = body as {
     sessionTitle?: string;
     summary?: string;
-    highlights?: string[];
-    participants?: string[];
   };
+
+  const arrays = validateSessionReportArrays(body);
+  if ("error" in arrays) return arrays.error;
+  const { highlights, participants } = arrays.value;
 
   try {
     const update: Record<string, unknown> = {};
