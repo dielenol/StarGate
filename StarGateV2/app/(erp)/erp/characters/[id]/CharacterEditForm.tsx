@@ -118,6 +118,45 @@ function buildLocalDiff(
   return entries;
 }
 
+/**
+ * dot path 와 값을 nested object 구조로 set.
+ *
+ * shared-db `buildUpdatePatch` 가 PATCH body 를 dot path 별로 다시 분해하므로
+ * 호출 측에서 nested object 형태로 보내도 동일하게 동작 — 핵심은 **변경되지 않은
+ * 필드는 nested object 에서도 누락** 시켜 race window 에서 통짜 업데이트분 덮어쓰기 차단.
+ */
+function setByPath(
+  target: Record<string, unknown>,
+  path: string,
+  value: unknown,
+): void {
+  const segments = path.split(".");
+  let cursor = target;
+  for (let i = 0; i < segments.length - 1; i += 1) {
+    const seg = segments[i];
+    const next = cursor[seg];
+    if (next === undefined || next === null || typeof next !== "object") {
+      const created: Record<string, unknown> = {};
+      cursor[seg] = created;
+      cursor = created;
+    } else {
+      cursor = next as Record<string, unknown>;
+    }
+  }
+  cursor[segments[segments.length - 1]] = value;
+}
+
+/** diff entries → PATCH body (변경된 필드만 포함된 nested object). */
+function diffToPatchBody(
+  diff: { field: string; after: unknown }[],
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  for (const entry of diff) {
+    setByPath(body, entry.field, entry.after);
+  }
+  return body;
+}
+
 /* ── 모드별 diff 비교 대상 dot path 세트 ──
    - player: lore 8필드
    - admin: root 메타 + lore 전 + play 전 — shared-db 화이트리스트 미러 */
@@ -311,72 +350,6 @@ export default function CharacterEditForm({
     );
   }
 
-  /**
-   * PATCH body 빌드 — sub-document 분리.
-   *  - player: lore 8필드만
-   *  - admin: root + lore + play
-   */
-  function buildBody(): Record<string, unknown> {
-    if (isPlayer) {
-      return {
-        lore: {
-          quote,
-          appearance,
-          personality,
-          background,
-          gender,
-          age,
-          height,
-          weight,
-        },
-      };
-    }
-
-    return {
-      codename,
-      role,
-      previewImage,
-      isPublic,
-      ownerId: ownerId || null,
-      tier,
-      department: department as AgentCharacter["department"],
-      factionCode: emptyToUndefined(factionCode),
-      institutionCode: emptyToUndefined(institutionCode),
-      lore: {
-        name,
-        nameNative: emptyToUndefined(nameNative),
-        nickname: emptyToUndefined(nickname),
-        gender,
-        age,
-        height,
-        weight,
-        appearance,
-        personality,
-        background,
-        quote,
-        mainImage,
-        posterImage: emptyToUndefined(posterImage),
-      },
-      play: {
-        className,
-        hp,
-        hpDelta,
-        san,
-        sanDelta,
-        def,
-        defDelta,
-        atk,
-        atkDelta,
-        abilityType: emptyToUndefined(abilityType),
-        weaponTraining: stringToTags(weaponTrainingStr),
-        skillTraining: stringToTags(skillTrainingStr),
-        credit,
-        equipment,
-        abilities,
-      },
-    };
-  }
-
   /** form state ↔ character props diff */
   function computeFormDiff(): DiffEntry[] {
     const fields = isPlayer ? PLAYER_DIFF_FIELDS : ADMIN_DIFF_FIELDS;
@@ -480,8 +453,12 @@ export default function CharacterEditForm({
       return;
     }
 
+    // PATCH body 는 diff 결과로부터 변경된 필드만 nested object 로 빌드.
+    // shared-db `buildUpdatePatch` 가 dot path 화이트리스트에서 root 키별 sub-path 를
+    // 다시 끌어오므로 nested 형태로 보내도 등가. 그러나 안 건드린 필드를 누락시켜야
+    // race window (다른 운영진/Claude 통짜 업데이트) 에서 덮어쓰기 위험을 차단할 수 있음.
     setPendingDiff(diff);
-    setPendingBody(buildBody());
+    setPendingBody(diffToPatchBody(diff));
     setPreviewOpen(true);
   }
 
@@ -907,7 +884,10 @@ export default function CharacterEditForm({
                     type="number"
                     className={`${styles.input} ${styles["input--num"]}`}
                     value={hp}
-                    onChange={(e) => setHp(Number(e.target.value))}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n)) setHp(n);
+                    }}
                   />
                 </Field>
                 <Field id="hpDelta" label="HP Δ">
@@ -916,7 +896,10 @@ export default function CharacterEditForm({
                     type="number"
                     className={`${styles.input} ${styles["input--num"]}`}
                     value={hpDelta}
-                    onChange={(e) => setHpDelta(Number(e.target.value))}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n)) setHpDelta(n);
+                    }}
                   />
                 </Field>
                 <Field id="san" label="SAN">
@@ -925,7 +908,10 @@ export default function CharacterEditForm({
                     type="number"
                     className={`${styles.input} ${styles["input--num"]}`}
                     value={san}
-                    onChange={(e) => setSan(Number(e.target.value))}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n)) setSan(n);
+                    }}
                   />
                 </Field>
                 <Field id="sanDelta" label="SAN Δ">
@@ -934,7 +920,10 @@ export default function CharacterEditForm({
                     type="number"
                     className={`${styles.input} ${styles["input--num"]}`}
                     value={sanDelta}
-                    onChange={(e) => setSanDelta(Number(e.target.value))}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n)) setSanDelta(n);
+                    }}
                   />
                 </Field>
                 <Field id="def" label="DEF">
@@ -943,7 +932,10 @@ export default function CharacterEditForm({
                     type="number"
                     className={`${styles.input} ${styles["input--num"]}`}
                     value={def}
-                    onChange={(e) => setDef(Number(e.target.value))}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n)) setDef(n);
+                    }}
                   />
                 </Field>
                 <Field id="defDelta" label="DEF Δ">
@@ -952,7 +944,10 @@ export default function CharacterEditForm({
                     type="number"
                     className={`${styles.input} ${styles["input--num"]}`}
                     value={defDelta}
-                    onChange={(e) => setDefDelta(Number(e.target.value))}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n)) setDefDelta(n);
+                    }}
                   />
                 </Field>
                 <Field id="atk" label="ATK">
@@ -961,7 +956,10 @@ export default function CharacterEditForm({
                     type="number"
                     className={`${styles.input} ${styles["input--num"]}`}
                     value={atk}
-                    onChange={(e) => setAtk(Number(e.target.value))}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n)) setAtk(n);
+                    }}
                   />
                 </Field>
                 <Field id="atkDelta" label="ATK Δ">
@@ -970,7 +968,10 @@ export default function CharacterEditForm({
                     type="number"
                     className={`${styles.input} ${styles["input--num"]}`}
                     value={atkDelta}
-                    onChange={(e) => setAtkDelta(Number(e.target.value))}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n)) setAtkDelta(n);
+                    }}
                   />
                 </Field>
               </div>

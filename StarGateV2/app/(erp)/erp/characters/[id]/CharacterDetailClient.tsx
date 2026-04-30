@@ -6,7 +6,11 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import type { AgentCharacter } from "@/types/character";
 
-import { characterKeys } from "@/hooks/queries/useCharactersQuery";
+import { characterChangeLogsKeys } from "@/hooks/queries/useCharacterChangeLogs";
+import {
+  characterKeys,
+  personnelKeys,
+} from "@/hooks/queries/useCharactersQuery";
 
 import type { CharacterEditMode } from "@/lib/auth/rbac";
 
@@ -125,7 +129,15 @@ export default function CharacterDetailClient({
           onCancel={() => setIsEditing(false)}
           onSaved={async () => {
             setIsEditing(false);
-            await queryClient.invalidateQueries({ queryKey: characterKeys.all });
+            // characters / personnel 양쪽 무효화 — character lore 가 personnel dossier 에도
+            // 노출되므로 한쪽만 invalidate 하면 다른 라우트에 stale 잔존.
+            // change-logs 도 함께 — admin 편집은 audit row 가 즉시 추가되므로 같은 페이지의
+            // ChangeLogsPanel 이 stale 60s 동안 새 row 를 못 보면 UX 회귀.
+            await Promise.all([
+              queryClient.invalidateQueries({ queryKey: characterKeys.all }),
+              queryClient.invalidateQueries({ queryKey: personnelKeys.all }),
+              queryClient.invalidateQueries({ queryKey: characterChangeLogsKeys.all }),
+            ]);
           }}
         />
       </>

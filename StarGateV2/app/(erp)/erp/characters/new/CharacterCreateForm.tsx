@@ -19,6 +19,8 @@ import {
   INSTITUTIONS,
 } from "@/types/character";
 
+import { useCreateCharacter } from "@/hooks/mutations/useCharacterMutation";
+
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
 import Input from "@/components/ui/Input/Input";
@@ -66,6 +68,9 @@ function stringToTags(s: string): string[] {
  */
 export default function CharacterCreateForm() {
   const router = useRouter();
+
+  /* ── Mutation ── */
+  const createCharacter = useCreateCharacter();
 
   /* ── Root meta ── */
   const [codename, setCodename] = useState("");
@@ -196,22 +201,14 @@ export default function CharacterCreateForm() {
     };
 
     try {
-      const res = await fetch("/api/erp/characters", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "생성에 실패했습니다.");
-        setSubmitting(false);
-        return;
-      }
-
+      // mutation hook 이 onSuccess 에서 characterKeys.all + personnelKeys.all 를
+      // invalidate. router.refresh 대신 캐시 갱신만으로 목록 페이지 재진입 시 최신 표시.
+      await createCharacter.mutateAsync(body);
       router.push("/erp/characters");
-    } catch {
-      setError("네트워크 오류가 발생했습니다.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "네트워크 오류가 발생했습니다.",
+      );
       setSubmitting(false);
     }
   }
@@ -461,7 +458,10 @@ export default function CharacterCreateForm() {
               id="hp"
               type="number"
               value={hp}
-              onChange={(e) => setHp(Number(e.target.value))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) setHp(n);
+              }}
             />
           </Field>
           <Field id="hpDelta" label="HP Δ">
@@ -469,7 +469,10 @@ export default function CharacterCreateForm() {
               id="hpDelta"
               type="number"
               value={hpDelta}
-              onChange={(e) => setHpDelta(Number(e.target.value))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) setHpDelta(n);
+              }}
             />
           </Field>
           <Field id="san" label="SAN">
@@ -477,7 +480,10 @@ export default function CharacterCreateForm() {
               id="san"
               type="number"
               value={san}
-              onChange={(e) => setSan(Number(e.target.value))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) setSan(n);
+              }}
             />
           </Field>
           <Field id="sanDelta" label="SAN Δ">
@@ -485,7 +491,10 @@ export default function CharacterCreateForm() {
               id="sanDelta"
               type="number"
               value={sanDelta}
-              onChange={(e) => setSanDelta(Number(e.target.value))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) setSanDelta(n);
+              }}
             />
           </Field>
           <Field id="def" label="DEF">
@@ -493,7 +502,10 @@ export default function CharacterCreateForm() {
               id="def"
               type="number"
               value={def}
-              onChange={(e) => setDef(Number(e.target.value))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) setDef(n);
+              }}
             />
           </Field>
           <Field id="defDelta" label="DEF Δ">
@@ -501,7 +513,10 @@ export default function CharacterCreateForm() {
               id="defDelta"
               type="number"
               value={defDelta}
-              onChange={(e) => setDefDelta(Number(e.target.value))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) setDefDelta(n);
+              }}
             />
           </Field>
           <Field id="atk" label="ATK">
@@ -509,7 +524,10 @@ export default function CharacterCreateForm() {
               id="atk"
               type="number"
               value={atk}
-              onChange={(e) => setAtk(Number(e.target.value))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) setAtk(n);
+              }}
             />
           </Field>
           <Field id="atkDelta" label="ATK Δ">
@@ -517,7 +535,10 @@ export default function CharacterCreateForm() {
               id="atkDelta"
               type="number"
               value={atkDelta}
-              onChange={(e) => setAtkDelta(Number(e.target.value))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) setAtkDelta(n);
+              }}
             />
           </Field>
         </div>

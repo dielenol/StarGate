@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type {
   AgentLevel,
@@ -14,6 +14,11 @@ import {
   AGENT_LEVEL_LABELS,
   CHARACTER_TIERS,
 } from "@/types/character";
+
+import {
+  characterKeys,
+  personnelKeys,
+} from "@/hooks/queries/useCharactersQuery";
 
 import {
   canViewField,
@@ -227,6 +232,68 @@ function parseCsv(raw: string): string[] {
     .filter((s) => s.length > 0);
 }
 
+/* ── PATCH body 빌드 (diff 기반) ── */
+
+interface DossierPatchBody {
+  codename?: string;
+  tier?: CharacterTier;
+  agentLevel?: AgentLevel;
+  department?: string;
+  lore?: Record<string, unknown>;
+}
+
+/**
+ * `initial` 과 `current` 를 비교해 **변경된 필드만** 담은 PATCH body 를 반환.
+ *
+ * 안 건드린 lore 필드를 빈 문자열로 같이 보내면 race window 에서 통짜 업데이트분이
+ * 덮어쓰일 위험이 있다. 따라서 user 가 실제로 수정한 필드만 patch 에 포함시킨다.
+ *
+ * 단, 사용자가 의도적으로 비운 필드(`""` 로 변경)는 그대로 patch 에 들어간다 —
+ * "초기값과 다르면 변경" 이 단일 판정 기준.
+ *
+ * 배열 필드(loreTags / appearsInEvents)는 raw CSV 가 다르면 변경으로 간주.
+ * shared-db `buildUpdatePatch` 가 `lore.X` dot path 단위로 처리하므로 nested object
+ * 형태로 보내도 안전 (undefined 인 키는 자동 drop).
+ */
+function buildDossierPatchBody(
+  initial: EditDraft,
+  current: EditDraft,
+): DossierPatchBody {
+  const body: DossierPatchBody = {};
+
+  if (current.codename !== initial.codename) body.codename = current.codename;
+  if (current.tier !== initial.tier) body.tier = current.tier;
+  if (current.agentLevel !== initial.agentLevel) body.agentLevel = current.agentLevel;
+  if (current.department !== initial.department) body.department = current.department;
+
+  const lore: Record<string, unknown> = {};
+  if (current.loreName !== initial.loreName) lore.name = current.loreName;
+  if (current.loreNameNative !== initial.loreNameNative) lore.nameNative = current.loreNameNative;
+  if (current.loreNickname !== initial.loreNickname) lore.nickname = current.loreNickname;
+  if (current.loreNameEn !== initial.loreNameEn) lore.nameEn = current.loreNameEn;
+  if (current.loreGender !== initial.loreGender) lore.gender = current.loreGender;
+  if (current.loreAge !== initial.loreAge) lore.age = current.loreAge;
+  if (current.loreHeight !== initial.loreHeight) lore.height = current.loreHeight;
+  if (current.loreWeight !== initial.loreWeight) lore.weight = current.loreWeight;
+  if (current.loreAppearance !== initial.loreAppearance) lore.appearance = current.loreAppearance;
+  if (current.lorePersonality !== initial.lorePersonality) lore.personality = current.lorePersonality;
+  if (current.loreBackground !== initial.loreBackground) lore.background = current.loreBackground;
+  if (current.loreQuote !== initial.loreQuote) lore.quote = current.loreQuote;
+  if (current.loreMainImage !== initial.loreMainImage) lore.mainImage = current.loreMainImage;
+  if (current.loreLoreTagsRaw !== initial.loreLoreTagsRaw) {
+    lore.loreTags = parseCsv(current.loreLoreTagsRaw);
+  }
+  if (current.loreAppearsInEventsRaw !== initial.loreAppearsInEventsRaw) {
+    lore.appearsInEvents = parseCsv(current.loreAppearsInEventsRaw);
+  }
+  if (current.loreRoleDetail !== initial.loreRoleDetail) lore.roleDetail = current.loreRoleDetail;
+  if (current.loreNotes !== initial.loreNotes) lore.notes = current.loreNotes;
+
+  if (Object.keys(lore).length > 0) body.lore = lore;
+
+  return body;
+}
+
 interface KVEditRowProps {
   label: string;
   value: string;
@@ -326,7 +393,7 @@ interface Props {
  */
 
 export default function DossierClient({ character, clearance }: Props) {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<DossierTabKey>("dossier");
 
   const isGM = clearance === "GM";
@@ -344,12 +411,23 @@ export default function DossierClient({ character, clearance }: Props) {
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
+  /**
+   * 편집 시작 시점의 초기 draft 스냅샷.
+   *
+   * Save 시 현재 draft 와 비교해 **변경된 필드만** PATCH body 에 포함하기 위함.
+   * 안 건드린 빈 필드까지 patch 에 포함되면 race window 에서 다른 운영진/Claude
+   * 통짜 업데이트분이 빈 문자열로 덮어쓰일 위험이 있어 정공법으로 차단.
+   */
+  const initialDraftRef = useRef<EditDraft | null>(null);
+
   const updateDraft = <K extends keyof EditDraft>(key: K, value: EditDraft[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleStartEdit = () => {
-    setDraft(buildInitialDraft(character));
+    const snapshot = buildInitialDraft(character);
+    initialDraftRef.current = snapshot;
+    setDraft(snapshot);
     setEditError(null);
     setActiveTab("dossier"); // 편집 폼은 DOSSIER 탭에 모여 있음
     setIsEditing(true);
@@ -357,6 +435,7 @@ export default function DossierClient({ character, clearance }: Props) {
 
   const handleCancelEdit = () => {
     setDraft(buildInitialDraft(character));
+    initialDraftRef.current = null;
     setEditError(null);
     setIsEditing(false);
   };
@@ -366,43 +445,39 @@ export default function DossierClient({ character, clearance }: Props) {
     setSaving(true);
     setEditError(null);
     try {
-      const body = {
-        codename: draft.codename,
-        tier: draft.tier,
-        agentLevel: draft.agentLevel,
-        department: draft.department,
-        lore: {
-          name: draft.loreName,
-          nameNative: draft.loreNameNative,
-          nickname: draft.loreNickname,
-          nameEn: draft.loreNameEn,
-          gender: draft.loreGender,
-          age: draft.loreAge,
-          height: draft.loreHeight,
-          weight: draft.loreWeight,
-          appearance: draft.loreAppearance,
-          personality: draft.lorePersonality,
-          background: draft.loreBackground,
-          quote: draft.loreQuote,
-          mainImage: draft.loreMainImage,
-          loreTags: parseCsv(draft.loreLoreTagsRaw),
-          appearsInEvents: parseCsv(draft.loreAppearsInEventsRaw),
-          roleDetail: draft.loreRoleDetail,
-          notes: draft.loreNotes,
-        },
-        reason: "personnel dossier 편집",
-      };
+      const initial = initialDraftRef.current ?? buildInitialDraft(character);
+      const body = buildDossierPatchBody(initial, draft);
+
+      // 변경 사항이 없으면 네트워크 round-trip 도 생략 — UX & race guard 동시 만족.
+      const hasRoot =
+        body.codename !== undefined ||
+        body.tier !== undefined ||
+        body.agentLevel !== undefined ||
+        body.department !== undefined;
+      const hasLore = body.lore && Object.keys(body.lore).length > 0;
+      if (!hasRoot && !hasLore) {
+        setIsEditing(false);
+        initialDraftRef.current = null;
+        return;
+      }
+
       const res = await fetch(`/api/erp/characters/${characterId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, reason: "personnel dossier 편집" }),
       });
       if (!res.ok) {
         const data: { error?: string } = await res.json().catch(() => ({}));
         throw new Error(data.error ?? "저장 실패");
       }
       setIsEditing(false);
-      router.refresh();
+      initialDraftRef.current = null;
+
+      // characters / personnel 양쪽 캐시 무효화 — router.refresh() 대신 정공법.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: characterKeys.all }),
+        queryClient.invalidateQueries({ queryKey: personnelKeys.all }),
+      ]);
     } catch (e) {
       setEditError(e instanceof Error ? e.message : "알 수 없는 오류");
     } finally {
