@@ -32,6 +32,14 @@ export function formatSessionDateTime(date: Date): string {
   });
 }
 
+/**
+ * 디스코드 클라이언트가 사용자 로컬 타임존/로케일로 자동 렌더하는 타임스탬프 매크로.
+ * inline:true 필드에 들어가도 모바일에서 잘리지 않도록 짧은 `:f` 포맷 사용.
+ */
+function formatDiscordTimestamp(date: Date): string {
+  return `<t:${Math.floor(date.getTime() / 1000)}:f>`;
+}
+
 /** Discord 임베드 필드 value 최대 길이 */
 const EMBED_FIELD_VALUE_MAX = 1024;
 
@@ -103,12 +111,12 @@ export function buildSessionEmbed(
   embed.addFields(
       {
         name: "배정 일시",
-        value: formatSessionDateTime(session.targetDateTime),
+        value: formatDiscordTimestamp(session.targetDateTime),
         inline: true,
       },
       {
         name: "응답 마감",
-        value: formatSessionDateTime(session.closeDateTime),
+        value: formatDiscordTimestamp(session.closeDateTime),
         inline: true,
       },
       {
@@ -180,7 +188,7 @@ export function buildResultEmbed(
     .addFields(
       {
         name: "배정 일시",
-        value: formatSessionDateTime(session.targetDateTime),
+        value: formatDiscordTimestamp(session.targetDateTime),
         inline: true,
       },
       {
