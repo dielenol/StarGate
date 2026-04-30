@@ -34,15 +34,24 @@ export {
 /* ── bcrypt 의존 함수 (StarGateV2 전용) ── */
 
 const BCRYPT_ROUNDS = 12;
-const RANDOM_PW_BYTES = 9; // Uint8Array 길이 (엔트로피 소스)
-const RANDOM_PW_CHAR_LENGTH = 12; // base36 인코딩 후 절단 길이
+const RANDOM_PW_CHAR_LENGTH = 12; // base36 글자 수 ≈ 62비트 엔트로피
+const BASE36 = "0123456789abcdefghijklmnopqrstuvwxyz";
+// 252 = 36 × 7, modulo bias 차단을 위한 rejection sampling 임계값.
+const REJECT_THRESHOLD = 252;
 
 function generateRandomPassword(): string {
-  const bytes = new Uint8Array(RANDOM_PW_BYTES);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(36).padStart(2, "0"))
-    .join("")
-    .slice(0, RANDOM_PW_CHAR_LENGTH);
+  let out = "";
+  // 문자당 1바이트 + 거부 시 추가 샘플 — base36 12글자로 균일 분포 확보.
+  while (out.length < RANDOM_PW_CHAR_LENGTH) {
+    const buf = new Uint8Array(RANDOM_PW_CHAR_LENGTH - out.length);
+    crypto.getRandomValues(buf);
+    for (const b of buf) {
+      if (b >= REJECT_THRESHOLD) continue;
+      out += BASE36[b % 36];
+      if (out.length === RANDOM_PW_CHAR_LENGTH) break;
+    }
+  }
+  return out;
 }
 
 /**
