@@ -17,7 +17,9 @@ export function useUsers(options?: { initialData?: UserPublic[] }) {
   return useQuery({
     queryKey: userKeys.all,
     queryFn: fetchUsers,
-    staleTime: 5 * 60 * 1000,
+    // /api/erp/users 가 no-store 응답이라 stale 시간 짧게 유지 — admin 변경 후
+    // 재방문 시 즉시 최신 화면을 보여주기 위함.
+    staleTime: 30 * 1000,
     initialData: options?.initialData,
   });
 }

@@ -139,7 +139,7 @@ function getGroupLabelEn(code: string): string {
   if (inst) return inst.labelEn;
   if (code === UNASSIGNED_CODE) return "Unassigned";
   return code;
-}
+}2
 
 /* ── Props ── */
 
@@ -617,7 +617,6 @@ export default function PersonnelClient({
       ) : (
         <div className={styles.drilldown}>
           <GroupHero
-            groupCode={selectedGroup}
             groupLabel={selectedGroupLabel}
             groupLabelEn={selectedGroupLabelEn}
             kind={selectedGroupKind}
@@ -655,6 +654,8 @@ export default function PersonnelClient({
                   ? INSTITUTION_LOGO
                   : undefined
             }
+            expandedSubUnit={expandedSubUnit}
+            onSubUnitClick={handleToggleSubUnit}
             onBack={handleBackToOverview}
           />
 

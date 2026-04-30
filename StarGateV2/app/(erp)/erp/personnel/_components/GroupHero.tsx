@@ -26,7 +26,6 @@ interface SubUnitItem {
 }
 
 interface Props {
-  groupCode: string;
   groupLabel: string;
   groupLabelEn: string;
   kind: GroupKind;
@@ -42,11 +41,15 @@ interface Props {
   iconCode?: OrgIconCode;
   /** 우하단 webp 워터마크 로고 URL — faction/institution 일 때만 전달. */
   logoUrl?: string;
+  /** 현재 펼쳐진 sub-unit code — 해당 chip 을 active 강조 */
+  expandedSubUnit?: string | null;
+  /** sub-unit chip 클릭 핸들러. 전달되면 chip 이 button 으로 렌더되고
+      클릭 시 해당 sub-unit accordion 을 토글한다. */
+  onSubUnitClick?: (code: string) => void;
   onBack: () => void;
 }
 
 export default function GroupHero({
-  groupCode,
   groupLabel,
   groupLabelEn,
   kind,
@@ -57,12 +60,11 @@ export default function GroupHero({
   oversight,
   iconCode,
   logoUrl,
+  expandedSubUnit,
+  onSubUnitClick,
   onBack,
 }: Props) {
-  const eyebrowText =
-    kind === "unassigned"
-      ? KIND_EYEBROW_PREFIX[kind]
-      : `${KIND_EYEBROW_PREFIX[kind]} · ${groupCode}`;
+  const eyebrowText = KIND_EYEBROW_PREFIX[kind];
 
   const subUnitCount = subUnits?.length ?? 0;
   const hasSubUnits = subUnitCount > 0;
@@ -151,12 +153,39 @@ export default function GroupHero({
             <div className={styles.subUnitChips}>
               {subUnits!.map((u) => {
                 const subIcon = SUBUNIT_ICON_MAP[u.code];
-                return (
-                  <span key={u.code} className={styles.subUnitChip}>
-                    {subIcon ? (
-                      <OrgIcon code={subIcon} size={14} />
-                    ) : null}
+                const isOn = expandedSubUnit === u.code;
+                const chipClass = [
+                  styles.subUnitChip,
+                  onSubUnitClick ? styles["subUnitChip--clickable"] : "",
+                  isOn ? styles["subUnitChip--on"] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+
+                const inner = (
+                  <>
+                    {subIcon ? <OrgIcon code={subIcon} size={14} /> : null}
                     <span>{u.label}</span>
+                  </>
+                );
+
+                if (onSubUnitClick) {
+                  return (
+                    <button
+                      key={u.code}
+                      type="button"
+                      className={chipClass}
+                      onClick={() => onSubUnitClick(u.code)}
+                      aria-pressed={isOn}
+                    >
+                      {inner}
+                    </button>
+                  );
+                }
+
+                return (
+                  <span key={u.code} className={chipClass}>
+                    {inner}
                   </span>
                 );
               })}

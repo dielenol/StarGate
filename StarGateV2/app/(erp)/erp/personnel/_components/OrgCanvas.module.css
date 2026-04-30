@@ -120,7 +120,11 @@
   position: relative;
   padding: 16px 18px;
   border: 1px solid var(--line-strong);
-  background: var(--bg-1);
+  background:
+    linear-gradient(#c9a85a0f, #0000 80%),
+    repeating-linear-gradient(0deg, #0000 0 15px, #ffffff04 15px 16px),
+    repeating-linear-gradient(90deg, #0000 0 15px, #ffffff04 15px 16px),
+    var(--bg-1);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -133,7 +137,11 @@
 .node:hover,
 .node:focus-visible {
   border-color: var(--gold-dim);
-  background: var(--bg-2);
+  background:
+    linear-gradient(#c9a85a0f, #0000 80%),
+    repeating-linear-gradient(0deg, #0000 0 15px, #ffffff04 15px 16px),
+    repeating-linear-gradient(90deg, #0000 0 15px, #ffffff04 15px 16px),
+    var(--bg-2);
   outline: none;
 }
 

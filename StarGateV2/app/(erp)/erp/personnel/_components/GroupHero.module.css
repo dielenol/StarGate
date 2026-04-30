@@ -61,18 +61,22 @@
 .head {
   position: relative;
   display: flex;
-  gap: 16px;
+  gap: 10px 18px;
   flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
+  align-items: baseline;
 }
 
 .headMain {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .title {
-  margin: 4px 0 0;
+  margin: 0;
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -87,18 +91,20 @@
   color: var(--gold);
 }
 
-/* sub-unit chip — 작은 sub-unit 식별 박스. */
+/* sub-unit chip — 균일 grid 배치. onSubUnitClick 가 있으면 button(--clickable),
+   현재 펼쳐진 sub-unit 은 --on 으로 강조. */
 .subUnitChips {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 6px;
+  margin-top: 8px;
 }
 
 .subUnitChip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 6px 10px;
   border: 1px solid var(--line-strong);
   background: rgba(255, 255, 255, 0.02);
   color: var(--ink-1);
@@ -106,17 +112,55 @@
   font-size: 14px;
   letter-spacing: 0.06em;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .subUnitChip svg {
+  flex-shrink: 0;
   color: var(--gold-dim);
 }
 
+.subUnitChip--clickable {
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.subUnitChip--clickable:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(201, 168, 90, 0.06);
+}
+
+.subUnitChip--clickable:hover svg {
+  color: var(--gold);
+}
+
+.subUnitChip--clickable:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.subUnitChip--on {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(201, 168, 90, 0.12);
+}
+
+.subUnitChip--on svg {
+  color: var(--gold);
+}
+
 .subtitle {
-  margin-top: 4px;
+  margin: 0;
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
@@ -125,6 +169,7 @@
   display: flex;
   gap: 6px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 /* ── 정보 섹션 그리드 ── */
