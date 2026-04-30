@@ -11,10 +11,16 @@ import type { UserRole } from "@/types/user";
 
 const ROLE_HIERARCHY = ROLE_LEVEL_RANK;
 
-/** 경로별 최소 요구 역할 (prefix 매칭, 구체적 경로 우선) */
+/**
+ * 경로별 최소 요구 역할 (prefix 매칭, 구체적 경로 우선).
+ *
+ * 정책 선언 — 실제 강제는 각 layout.tsx (`(erp)/layout.tsx`, `admin/layout.tsx`) 에서 수행.
+ * `/erp` 는 인증된 모든 사용자(U+) 통과 — `(erp)/layout.tsx` 의 세션 체크와 동등.
+ * `/erp/admin` 은 GM 강제 — `(erp)/erp/admin/layout.tsx` 에서 트리 단위 가드.
+ */
 const ROUTE_PERMISSIONS: ReadonlyArray<{ pattern: string; minRole: UserRole }> = [
   { pattern: "/erp/admin", minRole: "GM" },
-  { pattern: "/erp", minRole: "G" },
+  { pattern: "/erp", minRole: "U" },
 ];
 
 export function hasRole(userRole: UserRole, requiredRole: UserRole): boolean {
@@ -30,9 +36,30 @@ export function getRouteMinRole(pathname: string): UserRole | null {
   return null;
 }
 
+/**
+ * 403 권한 부족 표지. requireRole 이 평문 메시지 대신 본 클래스를 throw.
+ *
+ * 호출처가 catch 후 응답 body 에 그대로 흘리지 않도록 super 메시지는
+ * 짧은 고정 문자열만 사용한다. required / actual 은 서버 로그/감사용.
+ */
+export class ForbiddenError extends Error {
+  readonly code = "FORBIDDEN";
+  readonly required: UserRole;
+  readonly actual: UserRole;
+
+  // parameter property 대신 명시 필드 — Node `--experimental-strip-types`
+  // 회귀 테스트 환경에서 parameter property 미지원 회피.
+  constructor(required: UserRole, actual: UserRole) {
+    super("권한 부족");
+    this.name = "ForbiddenError";
+    this.required = required;
+    this.actual = actual;
+  }
+}
+
 export function requireRole(userRole: UserRole, requiredRole: UserRole): void {
   if (!hasRole(userRole, requiredRole)) {
-    throw new Error(`권한 부족: ${requiredRole} 이상 필요 (현재: ${userRole})`);
+    throw new ForbiddenError(requiredRole, userRole);
   }
 }
 

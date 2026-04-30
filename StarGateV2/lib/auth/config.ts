@@ -9,8 +9,6 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import DiscordProvider from "next-auth/providers/discord";
 
-import type { UserRole } from "@stargate/shared-db";
-
 import {
   findUserByUsername,
   findUserByDiscordId,
@@ -126,13 +124,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async session({ session, token }) {
+      // @auth/core/jwt 의 JWT 타입이 Record<string, unknown> extension 이라
+      // 모듈 augmentation 으로 추가한 필드도 키 접근 시 unknown 으로 떨어진다.
+      // 빈 토큰(이전 세션 잔재)이면 즉시 반환 — 캐스팅 대신 명시적 가드.
+      if (
+        typeof token.id !== "string" ||
+        typeof token.username !== "string" ||
+        typeof token.displayName !== "string" ||
+        typeof token.role !== "string"
+      ) {
+        return session;
+      }
       session.user = {
         ...session.user,
-        id: token.id as string,
-        username: token.username as string,
-        displayName: token.displayName as string,
-        role: token.role as UserRole,
-        discordId: token.discordId as string | null,
+        id: token.id,
+        username: token.username,
+        displayName: token.displayName,
+        role: token.role as (typeof session.user)["role"],
+        discordId:
+          typeof token.discordId === "string" ? token.discordId : null,
       };
       return session;
     },

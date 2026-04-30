@@ -6,6 +6,7 @@ import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
+import { safeCallbackUrl } from "@/lib/auth/callback-url";
 
 import styles from "./page.module.css";
 
@@ -19,6 +20,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 function LoginForm() {
   const searchParams = useSearchParams();
   const errorCode = searchParams.get("error");
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -38,13 +40,13 @@ function LoginForm() {
     await signIn("credentials", {
       username: username.trim(),
       password,
-      callbackUrl: "/erp",
+      callbackUrl,
     });
     setLoading(false);
   }
 
   function handleDiscordLogin() {
-    signIn("discord", { callbackUrl: "/erp" });
+    signIn("discord", { callbackUrl });
   }
 
   return (
