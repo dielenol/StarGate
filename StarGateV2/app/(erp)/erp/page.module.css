@@ -71,73 +71,178 @@
 
 /* ── MY CHARACTER ── */
 
-.char {
+.charMini {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
 }
 
-.char__body {
+/* pixel-character avatar 슬롯 — 정사각, 골드 외곽 + L 코너 틱 */
+.charMini__avatar {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--gold-dim);
+  overflow: hidden;
+}
+.charMini__avatar::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid var(--gold);
+  border-left: 1px solid var(--gold);
+  pointer-events: none;
+  z-index: 2;
+}
+.charMini__avatar::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-bottom: 1px solid var(--gold);
+  border-right: 1px solid var(--gold);
+  pointer-events: none;
+  z-index: 2;
+}
+.charMini__avatarImg {
+  object-fit: contain;
+  display: block;
+}
+
+.charMini__body {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.char__name {
-  margin-top: 2px;
+.charMini__name {
   color: var(--ink-0);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.char__sub {
-  margin-top: 2px;
+.charMini__tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+/* VITALS mini — HP/SAN bar 묶음. */
+.charMini__vitals {
+  margin-top: 14px;
+  padding: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.charMini__vital {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.charMini__vitalHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.charMini__vitalLabel {
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 14px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.18em;
+}
+.charMini__vitalValue {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--ink-0);
+}
+.charMini__vitalValue b {
+  color: var(--gold);
+  font-weight: 600;
+  font-size: 16px;
+}
+.charMini__vitalMax {
+  color: var(--ink-3);
 }
 
-.char__stats {
-  margin-top: 10px;
-}
-
-.char__cta {
-  justify-content: center;
-  margin-top: 12px;
-  width: 100%;
-}
-
-.stat {
+/* CTA row — 두 버튼 가로 배치 */
+.charMini__ctaRow {
   display: flex;
-  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.charMini__ctaBtn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* ── METRICS ── */
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 8px;
 }
 
-.stat__label {
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  min-width: 32px;
-}
-
-.stat__bar {
-  flex: 1;
-}
-
-.stat__value {
-  color: var(--ink-1);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  min-width: 28px;
-  text-align: right;
-}
-
-/* ── CREDITS ── */
-
-.credits__actions {
+.metric {
   display: flex;
+  flex-direction: column;
   gap: 6px;
-  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.metric:hover {
+  border-color: var(--gold-dim);
+}
+
+.metric__label {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.metric__value {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 0.02em;
+}
+
+.metric__valueGold {
+  color: var(--gold);
+}
+
+@media (max-width: 480px) {
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+  .metric__value {
+    font-size: 20px;
+  }
 }
 
 /* ── NOTIFICATIONS ── */
@@ -218,36 +323,68 @@
   }
 }
 
-/* ── DISCORD BRIDGE (KV list) ── */
+/* ── NOTIFICATIONS unread badge ── */
 
-.kv {
-  margin: 0;
-}
-
-.kv__row {
-  display: flex;
-  padding: 7px 0;
-  border-bottom: 1px dashed var(--line);
-  font-size: 14px;
-}
-
-.kv__row:last-child {
-  border-bottom: none;
-}
-
-.kv__row dt {
-  margin: 0;
-  width: 38%;
-  color: var(--ink-2);
+.unreadDot {
+  margin-left: 8px;
+  color: var(--gold);
   font-family: var(--font-mono);
   font-size: 14px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
 }
 
-.kv__row dd {
-  flex: 1;
-  margin: 0;
-  color: var(--ink-0);
+/* ── TASKS ── */
+
+.taskCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--gold-dim);
+  background: rgba(201, 169, 97, 0.12);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.taskList {
+  font-size: 14px;
+}
+
+.taskRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+
+.taskTitle {
+  min-width: 0;
+  color: var(--ink-1);
+  font-size: 14px;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.taskTitle:hover {
+  color: var(--gold);
+}
+
+@media (max-width: 480px) {
+  .taskRow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
 }
 
 /* ── WIKI ── */

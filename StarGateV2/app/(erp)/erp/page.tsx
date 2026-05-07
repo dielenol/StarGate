@@ -1,12 +1,19 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
 import { findCharacterById, listCharactersByOwner } from "@/lib/db/characters";
 import { getUserBalance } from "@/lib/db/credits";
-import { listUserNotifications } from "@/lib/db/notifications";
-import { findUpcomingSessionsByGuild } from "@/lib/db/sessions";
+import { countUnread, listUserNotifications } from "@/lib/db/notifications";
+import {
+  countParticipationByUserId,
+  enrichSessions,
+  findUpcomingSessionsByGuild,
+} from "@/lib/db/sessions";
+import { findUserById } from "@/lib/db/users";
 import { listWikiPages } from "@/lib/db/wiki";
+import { getPixelCharacterPath } from "@/lib/format/character-asset";
 import { formatDate, formatTime } from "@/lib/format/date";
 
 import type { NotificationType } from "@/types/notification";
@@ -24,6 +31,95 @@ import Stack from "@/components/ui/Stack/Stack";
 import Tag from "@/components/ui/Tag/Tag";
 
 import styles from "./page.module.css";
+
+/**
+ * 모듈 스코프 헬퍼 — react-hooks/purity 규칙이 component 본문 내부의
+ * Date.now() 호출을 impure 로 막는다. 모듈 함수로 분리해 우회.
+ */
+function daysSinceCreated(createdAt: Date | string): number {
+  const d = typeof createdAt === "string" ? new Date(createdAt) : createdAt;
+  const diff = Date.now() - d.getTime();
+  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+}
+
+/**
+ * 디스코드 메시지 딥링크. SessionsClient 의 동명 헬퍼와 정책 동일 — "use client"
+ * 모듈에서 import 하면 server 컴포넌트 빌드에 client reference 가 박히므로 inline 유지.
+ */
+function buildDiscordLink(opts: {
+  guildId: string;
+  channelId: string;
+  messageId?: string;
+}): string {
+  const { guildId, channelId, messageId } = opts;
+  if (messageId && messageId.trim().length > 0) {
+    return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
+  }
+  return `https://discord.com/channels/${guildId}/${channelId}`;
+}
+
+/**
+ * MY CHARACTER 아바타 — pixel-character (도트 풀샷) 우선, 폴백 chain:
+ *   1. /assets/peoples/<Slug>-pixel-character.png (codename → slug 매핑)
+ *   2. previewImage (pixel-profile 도트)
+ *   3. Seal initial 글자
+ */
+function CharAvatar({
+  codename,
+  previewImage,
+  initial,
+}: {
+  codename: string;
+  previewImage: string;
+  initial: string;
+}) {
+  const pixelChar = getPixelCharacterPath(codename);
+  const src = pixelChar || previewImage || null;
+  if (src) {
+    return (
+      <div className={styles.charMini__avatar}>
+        <Image
+          src={src}
+          alt=""
+          fill
+          sizes="96px"
+          className={styles.charMini__avatarImg}
+        />
+      </div>
+    );
+  }
+  return (
+    <div className={styles.charMini__avatar}>
+      <Seal size="sm">{initial}</Seal>
+    </div>
+  );
+}
+
+/** MY CHARACTER VITALS 한 줄 — 라벨 + 값/max + Bar */
+function CharVital({
+  label,
+  value,
+  max,
+  tone,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  tone: "gold" | "info" | "danger";
+}) {
+  return (
+    <div className={styles.charMini__vital}>
+      <div className={styles.charMini__vitalHead}>
+        <span className={styles.charMini__vitalLabel}>{label}</span>
+        <span className={styles.charMini__vitalValue}>
+          <b>{value}</b>
+          <span className={styles.charMini__vitalMax}>/{max}</span>
+        </span>
+      </div>
+      <Bar value={value} tone={tone} />
+    </div>
+  );
+}
 
 const NOTIFICATION_TAG: Record<
   NotificationType,
@@ -55,18 +151,64 @@ export default async function ERPDashboardPage() {
   }
 
   const userId = session.user.id;
+  const viewerDiscordId = session.user.discordId ?? null;
   const guildId = process.env.GUILD_ID ?? "";
 
-  const [myCharRefs, balance, notifications, upcomingSessions, wikiPages] =
-    await Promise.all([
-      listCharactersByOwner(userId).catch(() => []),
-      getUserBalance(userId).catch(() => 0),
-      listUserNotifications(userId, 3).catch(() => []),
-      guildId
-        ? findUpcomingSessionsByGuild(guildId, 3).catch(() => [])
-        : Promise.resolve([]),
-      listWikiPages().catch(() => []),
-    ]);
+  // 다가올 세션은 enrich 후 필터링용으로 더 넉넉히 fetch (기본 limit 20).
+  // countParticipationByUserId 는 모든 유저 카운트를 한 번에 반환 — viewer 항목만 lookup.
+  const [
+    user,
+    myCharRefs,
+    balance,
+    notifications,
+    unreadCount,
+    upcomingRaw,
+    participationCounts,
+    wikiPages,
+  ] = await Promise.all([
+    findUserById(userId).catch(() => null),
+    listCharactersByOwner(userId).catch(() => []),
+    getUserBalance(userId).catch(() => 0),
+    listUserNotifications(userId, 3).catch(() => []),
+    countUnread(userId).catch(() => 0),
+    guildId
+      ? findUpcomingSessionsByGuild(guildId, 20).catch(() => [])
+      : Promise.resolve([]),
+    viewerDiscordId
+      ? countParticipationByUserId().catch(() => ({}) as Record<string, number>)
+      : Promise.resolve({} as Record<string, number>),
+    listWikiPages().catch(() => []),
+  ]);
+
+  // 누적 STATS — profile 폐지로 dashboard 에 흡수.
+  const mySessionCount = viewerDiscordId
+    ? (participationCounts[viewerDiscordId] ?? 0)
+    : null;
+  const joinedDays = user ? daysSinceCreated(user.createdAt) : 0;
+  const myWikiCount = wikiPages.filter(
+    (w) => (w as { createdBy?: string }).createdBy === userId,
+  ).length;
+
+// 본인 RSVP 부착 — viewerDiscordId 가 없으면 enrich 하지 않고 빈 myRsvp 로 처리.
+  const enrichedUpcoming = upcomingRaw.length
+    ? await enrichSessions(upcomingRaw, viewerDiscordId).catch(() => [])
+    : [];
+
+  // MISSION QUEUE — 내 RSVP=YES + CANCELED 제외, 가장 임박 3건.
+  const myRsvpUpcoming = enrichedUpcoming
+    .filter(
+      ({ raw, myRsvp }) => myRsvp === "YES" && raw.status !== "CANCELED",
+    )
+    .slice(0, 3);
+
+  // TASKS — 내 응답이 없는 OPEN/CLOSING 세션 (응답 필요), 임박 5건.
+  const pendingResponse = enrichedUpcoming
+    .filter(
+      ({ raw, myRsvp }) =>
+        myRsvp === null &&
+        (raw.status === "OPEN" || raw.status === "CLOSING"),
+    )
+    .slice(0, 5);
 
   const firstCharRef = myCharRefs[0];
   const myChar = firstCharRef?._id
@@ -94,7 +236,7 @@ export default async function ERPDashboardPage() {
       />
 
       <div className={styles.row3}>
-        {/* MY CHARACTER */}
+        {/* MY CHARACTER — pixel-character avatar + tier/level + HP/SAN mini bar */}
         <Box>
           <PanelTitle
             right={
@@ -107,50 +249,53 @@ export default async function ERPDashboardPage() {
           </PanelTitle>
           {myChar ? (
             <>
-              <div className={styles.char}>
-                <Seal>
-                  {(myChar.lore.name || myChar.codename).charAt(0).toUpperCase()}
-                </Seal>
-                <div className={styles.char__body}>
+              <div className={styles.charMini}>
+                <CharAvatar
+                  codename={myChar.codename}
+                  previewImage={myChar.previewImage}
+                  initial={(myChar.lore.name || myChar.codename)
+                    .charAt(0)
+                    .toUpperCase()}
+                />
+                <div className={styles.charMini__body}>
                   <Eyebrow tone="gold">{myChar.codename}</Eyebrow>
-                  <div className={styles.char__name}>
+                  <div className={styles.charMini__name}>
                     {myChar.lore.name || myChar.codename}
                   </div>
-                  <div className={styles.char__sub}>
-                    {myChar.role}
-                    {myChar.department ? ` · ${myChar.department}` : ""}
+                  <div className={styles.charMini__tags}>
+                    <Tag tone="gold">{myChar.type}</Tag>
+                    {myChar.agentLevel ? (
+                      <Tag tone="default">권한 {myChar.agentLevel}</Tag>
+                    ) : null}
                   </div>
-                  {myChar.type === "AGENT" ? (
-                    <Stack gap={6} className={styles.char__stats}>
-                      <div className={styles.stat}>
-                        <span className={styles.stat__label}>HP</span>
-                        <Bar value={myChar.play.hp} className={styles.stat__bar} />
-                        <span className={styles.stat__value}>
-                          {myChar.play.hp}
-                        </span>
-                      </div>
-                      <div className={styles.stat}>
-                        <span className={styles.stat__label}>SAN</span>
-                        <Bar
-                          value={myChar.play.san}
-                          tone="info"
-                          className={styles.stat__bar}
-                        />
-                        <span className={styles.stat__value}>
-                          {myChar.play.san}
-                        </span>
-                      </div>
-                    </Stack>
-                  ) : null}
                 </div>
               </div>
-              <Button
-                as="a"
-                href={`/erp/characters/${String(myChar._id)}`}
-                className={styles.char__cta}
-              >
-                시트 열기 →
-              </Button>
+              {myChar.type === "AGENT" && myChar.play ? (
+                <div className={styles.charMini__vitals}>
+                  <CharVital
+                    label="HP"
+                    value={myChar.play.hp}
+                    max={300}
+                    tone="gold"
+                  />
+                  <CharVital
+                    label="SAN"
+                    value={myChar.play.san}
+                    max={100}
+                    tone={myChar.play.san < 30 ? "danger" : "info"}
+                  />
+                </div>
+              ) : null}
+              <div className={styles.charMini__ctaRow}>
+                <Button
+                  as="a"
+                  href={`/erp/characters/${String(myChar._id)}`}
+                  size="sm"
+                  className={styles.charMini__ctaBtn}
+                >
+                  시트 →
+                </Button>
+              </div>
             </>
           ) : (
             <div className={styles.empty}>
@@ -162,16 +307,45 @@ export default async function ERPDashboardPage() {
           )}
         </Box>
 
-        {/* CREDITS */}
+        {/* RESOURCES — 지금 운용 가능한 자원 */}
         <Box>
-          <PanelTitle right={<span className={styles.mono}>WALLET</span>}>
-            CREDITS
+          <PanelTitle right={<span className={styles.mono}>NOW</span>}>
+            RESOURCES
           </PanelTitle>
-          <div className={styles.bigNum}>¤ {balance.toLocaleString()}</div>
-          <div className={styles.credits__actions}>
-            <Button as="a" href="/erp/credits" size="sm">
-              내역 →
-            </Button>
+          <div className={styles.metricsGrid}>
+            <Link href="/erp/credits" className={styles.metric}>
+              <span className={styles.metric__label}>잔액</span>
+              <span className={`${styles.metric__value} ${styles.metric__valueGold}`}>
+                ¤ {balance.toLocaleString()}
+              </span>
+            </Link>
+          </div>
+        </Box>
+
+        {/* OPERATIVE STATS — 누적 활동 시그널 */}
+        <Box>
+          <PanelTitle right={<span className={styles.mono}>LIFETIME</span>}>
+            OPERATIVE STATS
+          </PanelTitle>
+          <div className={styles.metricsGrid}>
+            <Link href="/erp/characters" className={styles.metric}>
+              <span className={styles.metric__label}>보유 캐릭터</span>
+              <span className={styles.metric__value}>{myCharRefs.length}</span>
+            </Link>
+            <Link href="/erp/sessions" className={styles.metric}>
+              <span className={styles.metric__label}>누적 작전</span>
+              <span className={styles.metric__value}>
+                {mySessionCount !== null ? mySessionCount : "—"}
+              </span>
+            </Link>
+            <div className={styles.metric}>
+              <span className={styles.metric__label}>가입 후</span>
+              <span className={styles.metric__value}>{joinedDays}D</span>
+            </div>
+            <Link href="/erp/wiki" className={styles.metric}>
+              <span className={styles.metric__label}>작성한 위키</span>
+              <span className={styles.metric__value}>{myWikiCount}</span>
+            </Link>
           </div>
         </Box>
 
@@ -184,7 +358,12 @@ export default async function ERPDashboardPage() {
               </Link>
             }
           >
-            RECENT NOTIFICATIONS
+            <span>NOTIFICATIONS</span>
+            {unreadCount > 0 ? (
+              <span className={styles.unreadDot} aria-label={`안 읽은 알림 ${unreadCount}건`}>
+                ● {unreadCount}
+              </span>
+            ) : null}
           </PanelTitle>
           {notifications.length === 0 ? (
             <div className={styles.empty}>새 알림 없음</div>
@@ -208,7 +387,7 @@ export default async function ERPDashboardPage() {
       </div>
 
       <div className={styles.rowWideNarrow}>
-        {/* UPCOMING SESSIONS */}
+        {/* MISSION QUEUE — 내 RSVP=YES 다가올 작전 */}
         <Box>
           <PanelTitle
             right={
@@ -217,17 +396,25 @@ export default async function ERPDashboardPage() {
               </Link>
             }
           >
-            UPCOMING SESSIONS · 이번 주
+            MISSION QUEUE · 내 작전
           </PanelTitle>
-          {upcomingSessions.length === 0 ? (
-            <div className={styles.empty}>예정된 세션이 없습니다.</div>
+          {!viewerDiscordId ? (
+            <div className={styles.empty}>
+              Discord 연동 후 내 작전이 표시됩니다.
+              <Button as="a" href="/erp/account" size="sm">
+                계정 설정 →
+              </Button>
+            </div>
+          ) : myRsvpUpcoming.length === 0 ? (
+            <div className={styles.empty}>예정된 작전 없음</div>
           ) : (
             <Stack gap={10}>
-              {upcomingSessions.map((s) => {
+              {myRsvpUpcoming.map(({ raw: s }) => {
                 const meta = SESSION_STATUS_TAG[s.status] ?? {
                   label: s.status,
                   tone: "default" as const,
                 };
+                const link = buildDiscordLink(s);
                 return (
                   <div key={String(s._id)} className={styles.sessionCard}>
                     <div className={styles.sessionCard__code}>
@@ -243,6 +430,16 @@ export default async function ERPDashboardPage() {
                     </div>
                     <div className={styles.sessionCard__meta}>
                       <Tag tone={meta.tone}>{meta.label}</Tag>
+                      <Button
+                        as="a"
+                        href={link}
+                        size="sm"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${s.title} · 디스코드에서 열기`}
+                      >
+                        ↗
+                      </Button>
                     </div>
                   </div>
                 );
@@ -251,25 +448,54 @@ export default async function ERPDashboardPage() {
           )}
         </Box>
 
-        {/* DISCORD BRIDGE */}
-        <Box variant="gold">
-          <PanelTitle right={<span className={styles.mono}>SYNC</span>}>
-            <span className={styles.gold}>DISCORD BRIDGE</span>
+        {/* TASKS · 응답 필요 — 내 응답 없는 OPEN/CLOSING */}
+        <Box>
+          <PanelTitle
+            right={
+              pendingResponse.length > 0 ? (
+                <span className={styles.taskCount}>{pendingResponse.length}</span>
+              ) : (
+                <span className={styles.mono}>—</span>
+              )
+            }
+          >
+            TASKS · 응답 필요
           </PanelTitle>
-          <dl className={styles.kv}>
-            <div className={styles.kv__row}>
-              <dt>Guild</dt>
-              <dd>NOVUS ORDO · 본부</dd>
-            </div>
-            <div className={styles.kv__row}>
-              <dt>Bot</dt>
-              <dd className={styles.mono}>registra-bot</dd>
-            </div>
-            <div className={styles.kv__row}>
-              <dt>Last sync</dt>
-              <dd className={styles.mono}>{lastSync}</dd>
-            </div>
-          </dl>
+          {!viewerDiscordId ? (
+            <div className={styles.empty}>Discord 연동 필요</div>
+          ) : pendingResponse.length === 0 ? (
+            <div className={styles.empty}>응답 필요 작전 없음</div>
+          ) : (
+            <Stack gap={8} className={styles.taskList}>
+              {pendingResponse.map(({ raw: s }) => {
+                const link = buildDiscordLink(s);
+                const tone = s.status === "CLOSING" ? "danger" : "gold";
+                return (
+                  <div key={String(s._id)} className={styles.taskRow}>
+                    <Tag tone={tone}>
+                      {s.status === "CLOSING" ? "마감 임박" : "모집중"}
+                    </Tag>
+                    <Link
+                      href={`/erp/sessions`}
+                      className={styles.taskTitle}
+                      title={s.title}
+                    >
+                      {s.title}
+                    </Link>
+                    <Button
+                      as="a"
+                      href={link}
+                      size="sm"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      응답 ↗
+                    </Button>
+                  </div>
+                );
+              })}
+            </Stack>
+          )}
         </Box>
       </div>
 
