@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 import { AGENT_LEVEL_LABELS, type AgentLevel, type PlaySheet } from "@/types/character";
 
@@ -117,8 +120,20 @@ export default function PosterHero({
   notes,
   playSheet,
 }: Props) {
-  const heroSrc = posterImage || mainImage || null;
-  const isPortraitFallback = !posterImage && Boolean(mainImage);
+  // HERO 이미지 뷰 토글 — main(기본) ↔ poster(옵션). 두 자산 모두 있을 때만 토글 노출.
+  const hasMain = Boolean(mainImage);
+  const hasPoster = Boolean(posterImage);
+  const canToggleView = hasMain && hasPoster;
+  // 정책: 캐릭터 탭/프로필 탭 모두 기본 MAIN.
+  const [view, setView] = useState<"poster" | "main">(
+    hasMain ? "main" : "poster",
+  );
+  const heroSrc =
+    view === "main"
+      ? mainImage || posterImage || null
+      : posterImage || mainImage || null;
+  // contain 처리: main 뷰는 다양한 비율 (정사각/세로) → 잘림 방지.
+  const isPortraitFallback = view === "main" && hasMain;
   const displayName = name || codename;
 
   const logoSrc = factionCode
@@ -144,8 +159,9 @@ export default function PosterHero({
       <div className={styles.hero__poster}>
         {heroSrc ? (
           <Image
+            key={view /* src 변경 시 캐시 분리 */}
             src={heroSrc}
-            alt={`${displayName} ${posterImage ? "포스터" : "메인 이미지"}`}
+            alt={`${displayName} ${view === "poster" ? "포스터" : "메인 이미지"}`}
             fill
             sizes="(max-width: 760px) 100vw, 540px"
             className={[
@@ -162,6 +178,38 @@ export default function PosterHero({
             <div className={styles.hero__posterEmptyName}>{displayName}</div>
           </div>
         )}
+
+        {/* 좌상단 view toggle — main ↔ poster (두 자산 모두 있을 때만) */}
+        {canToggleView ? (
+          <div
+            className={styles.hero__viewToggle}
+            role="tablist"
+            aria-label="이미지 전환"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "main"}
+              className={`${styles.hero__viewToggleBtn} ${
+                view === "main" ? styles["hero__viewToggleBtn--on"] : ""
+              }`}
+              onClick={() => setView("main")}
+            >
+              MAIN
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "poster"}
+              className={`${styles.hero__viewToggleBtn} ${
+                view === "poster" ? styles["hero__viewToggleBtn--on"] : ""
+              }`}
+              onClick={() => setView("poster")}
+            >
+              POSTER
+            </button>
+          </div>
+        ) : null}
 
         {/* corner ticks */}
         <span

@@ -90,9 +90,9 @@
   inset: 0;
   background: linear-gradient(
     180deg,
-    transparent 45%,
-    rgba(0, 0, 0, 0.7) 75%,
-    rgba(0, 0, 0, 0.92) 100%
+    transparent 35%,
+    rgba(0, 0, 0, 0.85) 65%,
+    rgba(0, 0, 0, 0.96) 100%
   );
   pointer-events: none;
   z-index: 1;
@@ -128,6 +128,48 @@
   letter-spacing: 0.18em;
 }
 
+/* 좌상단 view toggle — main(기본) ↔ poster(옵션) segmented control */
+.hero__viewToggle {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 3;
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--line-strong);
+}
+.hero__viewToggleBtn {
+  padding: 6px 12px;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--line-strong);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+.hero__viewToggleBtn:last-child {
+  border-right: 0;
+}
+.hero__viewToggleBtn:hover {
+  color: var(--ink-0);
+  background: rgba(201, 169, 97, 0.08);
+}
+.hero__viewToggleBtn--on {
+  color: var(--gold);
+  background: rgba(201, 169, 97, 0.18);
+}
+.hero__viewToggleBtn:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: -2px;
+}
+
 /* caption block — codename / name / role(alias) / meta(gender·age·height) 를
    하나의 stacked 컨테이너로 흡수. meta 라인이 길어 wrap 돼도 caption 위로 밀려
    leakage 가 없도록 absolute 는 컨테이너 한 곳에서만 잡는다. */
@@ -145,6 +187,9 @@
   font-size: 14px;
   letter-spacing: 0.32em;
   color: var(--gold);
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 1),
+    0 0 14px rgba(0, 0, 0, 0.95);
 }
 
 .hero__captionName {
@@ -162,7 +207,10 @@
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.18em;
-  color: var(--ink-2);
+  color: var(--ink-0);
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 1),
+    0 0 12px rgba(0, 0, 0, 0.95);
 }
 
 /* meta line — gender · age · height. caption block 자식으로 자연 흐름. */
@@ -172,7 +220,11 @@
   gap: 10px;
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid rgba(201, 161, 74, 0.25);
+  border-top: 1px solid rgba(201, 161, 74, 0.55);
+  color: var(--ink-0);
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 1),
+    0 0 12px rgba(0, 0, 0, 0.95);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.16em;
@@ -185,7 +237,7 @@
   white-space: nowrap;
 }
 .hero__captionMetaSep {
-  color: var(--ink-3);
+  color: var(--gold-dim);
 }
 
 @container poster-hero (max-width: 760px) {
