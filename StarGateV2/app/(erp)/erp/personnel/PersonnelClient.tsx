@@ -139,7 +139,7 @@ function getGroupLabelEn(code: string): string {
   if (inst) return inst.labelEn;
   if (code === UNASSIGNED_CODE) return "Unassigned";
   return code;
-}2
+}
 
 /* ── Props ── */
 
