@@ -45,6 +45,7 @@ export default async function CharactersPage({ searchParams }: PageProps) {
       initialCharacters={serializedCharacters}
       tierFilter={tierFilter}
       isGMOrAbove={isGMOrAbove}
+      viewerUserId={session.user.id}
     />
   );
 }

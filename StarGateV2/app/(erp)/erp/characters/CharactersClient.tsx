@@ -54,12 +54,14 @@ interface Props {
   initialCharacters: Character[];
   tierFilter: CharacterTier | null;
   isGMOrAbove: boolean;
+  viewerUserId: string;
 }
 
 export default function CharactersClient({
   initialCharacters,
   tierFilter,
   isGMOrAbove,
+  viewerUserId,
 }: Props) {
   // 카운트(ALL/MAIN/MINI) 정확도를 위해 쿼리는 항상 전체("ALL") 를 fetch.
   // tier 필터는 displayedAgents 에서 클라이언트 측으로만 적용.
@@ -165,7 +167,12 @@ export default function CharactersClient({
                       initial={getInitial(c)}
                     />
                     <div className={styles.card__headBody}>
-                      <div className={styles.card__code}>{c.codename}</div>
+                      <div className={styles.card__code}>
+                        {c.codename}
+                        {c.ownerId === viewerUserId ? (
+                          <span className={styles.card__mine}>MINE</span>
+                        ) : null}
+                      </div>
                       <div className={styles.card__name}>{displayName}</div>
                       {subLine ? (
                         <div className={styles.card__sub}>{subLine}</div>

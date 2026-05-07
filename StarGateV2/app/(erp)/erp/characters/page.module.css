@@ -256,6 +256,18 @@
   background: var(--gold-dim);
   flex-shrink: 0;
 }
+.card__mine {
+  margin-left: auto;
+  padding: 1px 6px;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  line-height: 1.2;
+}
 .card__name {
   color: var(--ink-0);
   font-size: 17px;
