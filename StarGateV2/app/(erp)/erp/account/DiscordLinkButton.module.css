@@ -5,13 +5,13 @@
 .ghostBtn,
 .primaryBtn {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.24em;
+  font-size: 14px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   padding: 11px 20px;
   cursor: pointer;
   line-height: 1;
-  height: 38px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -31,7 +31,7 @@
 }
 .ghostBtn::after {
   content: "↻";
-  font-size: 13px;
+  font-size: 14px;
 }
 .ghostBtn:focus-visible {
   outline: 1px solid var(--gold-dim);

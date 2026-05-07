@@ -54,7 +54,17 @@ export default async function AccountPage() {
         <aside className={`${styles.box} ${styles.side}`}>
           <div className={styles.sideHeader}>
             <div className={styles.sideHeader__seal} aria-hidden>
-              {initial}
+              {user.discordAvatar ? (
+                <Image
+                  src={user.discordAvatar}
+                  alt=""
+                  width={88}
+                  height={88}
+                  className={styles.sideHeader__sealImg}
+                />
+              ) : (
+                initial
+              )}
             </div>
             <h2 className={styles.sideHeader__name}>{user.displayName}</h2>
             <div className={styles.sideHeader__role}>{user.role}</div>
@@ -91,12 +101,12 @@ export default async function AccountPage() {
               <dt>마지막 접속</dt>
               <dd>
                 {user.lastLoginAt ? (
-                  <>
+                  <span className={styles.kvDateKst}>
                     <span className={styles.mono}>
                       {formatDateTime(user.lastLoginAt)}
                     </span>
                     <span className={styles.kvKst}>KST</span>
-                  </>
+                  </span>
                 ) : (
                   <span className={styles.kvEmpty}>NEVER</span>
                 )}
@@ -262,7 +272,7 @@ export default async function AccountPage() {
                 <span className={styles.panelTitle__sub}>· 비밀번호 변경</span>
               </span>
               <div className={styles.panelTitle__right}>
-                <span className={styles.kvKst} style={{ fontSize: "10px" }}>
+                <span className={styles.kvKst}>
                   {pwChangedDays !== null
                     ? `최근 변경 ${pwChangedDays}일 전`
                     : "변경 이력 없음"}

@@ -41,7 +41,7 @@
   opacity: 0.4;
 }
 .panelTitle__label {
-  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  font-family: var(--font-mono); font-size: 14px; font-weight: 600;
   letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-0);
   display: flex; align-items: center; gap: 12px;
 }
@@ -49,7 +49,7 @@
   content: ""; width: 14px; height: 1px; background: var(--gold-dim);
 }
 .panelTitle__sub {
-  font-family: var(--font-mono); font-size: 11px;
+  font-family: var(--font-mono); font-size: 14px;
   letter-spacing: 0.04em; color: var(--ink-3);
   margin-left: 4px;
   text-transform: none;
@@ -98,6 +98,11 @@
   border-top: 1px solid var(--gold);
   border-left: 1px solid var(--gold);
 }
+.sideHeader__sealImg {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .sideHeader__name {
   margin: 6px 0 0;
   font-size: 22px; font-weight: 600;
@@ -105,7 +110,7 @@
 }
 .sideHeader__role {
   font-family: var(--font-mono);
-  font-size: 11px; letter-spacing: 0.24em;
+  font-size: 14px; letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--gold);
   display: flex; align-items: center; gap: 10px;
@@ -116,7 +121,7 @@
 }
 .sideHeader__sub {
   font-family: var(--font-mono);
-  font-size: 12px; letter-spacing: 0.08em;
+  font-size: 14px; letter-spacing: 0.08em;
   color: var(--ink-2);
 }
 .sideTags {
@@ -128,15 +133,15 @@
 /* ---------- role / status badges ---------- */
 .roleBadge {
   font-family: var(--font-mono);
-  font-size: 10px; letter-spacing: 0.24em;
+  font-size: 14px; letter-spacing: 0.18em;
   text-transform: uppercase;
-  padding: 5px 9px;
+  padding: 6px 10px;
   border: 1px solid var(--line-strong);
   background: var(--bg-2);
   color: var(--ink-1);
   line-height: 1;
   display: inline-flex; align-items: center; gap: 6px;
-  height: 22px;
+  height: 26px;
   white-space: nowrap;
 }
 .roleBadge--gm {
@@ -151,15 +156,15 @@
 
 .statusBadge {
   font-family: var(--font-mono);
-  font-size: 10px; letter-spacing: 0.22em;
+  font-size: 14px; letter-spacing: 0.18em;
   text-transform: uppercase;
-  padding: 5px 9px;
+  padding: 6px 10px;
   border: 1px solid var(--line-strong);
   background: var(--bg-2);
   color: var(--ink-1);
   line-height: 1;
   display: inline-flex; align-items: center; gap: 7px;
-  height: 22px;
+  height: 26px;
   white-space: nowrap;
 }
 .statusBadge::before {
@@ -199,15 +204,25 @@
 .kv__row:first-child { padding-top: 0; }
 .kv__row:last-child { border-bottom: 0; padding-bottom: 0; }
 
+/* 사이드 카드는 폭이 좁아 dt + 14px mono dd 가 한 줄에 안 들어감 — 세로 레이아웃 */
+.side .kv__row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
 .kv__row dt {
   margin: 0;
   width: 38%;
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: 14px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-2);
+}
+.side .kv__row dt {
+  width: 100%;
 }
 .kv__row dd {
   margin: 0;
@@ -221,9 +236,17 @@
   flex-wrap: wrap;
 }
 
+/* date + KST 라벨 묶음 — 좁은 너비에서도 한 덩어리로 줄바꿈되도록 */
+.kvDateKst {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
 .mono {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.04em;
   color: var(--ink-0);
   white-space: nowrap;
@@ -232,19 +255,18 @@
 .mono--break { white-space: normal; word-break: break-all; }
 .kvKst {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.22em;
+  font-size: 14px;
+  letter-spacing: 0.18em;
   color: var(--ink-3);
   text-transform: uppercase;
   margin-left: 2px;
-  vertical-align: 1px;
 }
 .kvEmpty {
   color: var(--ink-3);
   font-family: var(--font-mono);
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: 14px;
 }
 
 /* ---------- discord card ---------- */
@@ -288,7 +310,7 @@
 }
 .discord__handle {
   font-family: var(--font-mono);
-  font-size: 12px; letter-spacing: 0.06em;
+  font-size: 14px; letter-spacing: 0.06em;
   color: var(--ink-2);
 }
 .discord__action {
@@ -304,7 +326,7 @@
   border-bottom: 1px dashed var(--line);
 }
 .discord__emptyText {
-  font-family: var(--font-mono); font-size: 11px;
+  font-family: var(--font-mono); font-size: 14px;
   letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--ink-2);
   display: flex; align-items: center; gap: 10px;
@@ -317,13 +339,13 @@
 /* connected state status pill (top-right of panelTitle) */
 .connectedBadge {
   font-family: var(--font-mono);
-  font-size: 9px; letter-spacing: 0.24em;
+  font-size: 14px; letter-spacing: 0.18em;
   text-transform: uppercase;
-  padding: 4px 8px;
+  padding: 5px 10px;
   line-height: 1;
   border: 1px solid;
   display: inline-flex; align-items: center; gap: 6px;
-  height: 18px;
+  height: 24px;
   white-space: nowrap;
 }
 .connectedBadge::before {
@@ -349,13 +371,13 @@
 .ghostBtn,
 .primaryBtn {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.24em;
+  font-size: 14px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   padding: 11px 20px;
   cursor: pointer;
   line-height: 1;
-  height: 38px;
+  height: 40px;
   display: inline-flex; align-items: center; gap: 10px;
   background: transparent;
   white-space: nowrap;
@@ -372,7 +394,7 @@
   background: rgba(201,169,97,0.05);
 }
 .ghostBtn::after {
-  content: "↻"; font-size: 13px;
+  content: "↻"; font-size: 14px;
 }
 .ghostBtn:focus-visible { outline: 1px solid var(--gold-dim); outline-offset: 2px; }
 
