@@ -174,16 +174,16 @@ def add_credit(
             f"add_credit: invalid type '{type_}'. Must be one of {sorted(ALL_CREDIT_TYPES)}"
         )
 
-    # 음수 잔액 가드
-    if type_ != "ADMIN_DEDUCT":
-        latest_balance = get_balance(user_id_hex)
-        if latest_balance + amount < 0:
-            raise ValueError(
-                f"add_credit: insufficient balance "
-                f"(user={user_id_hex} {latest_balance} + {amount} < 0, type={type_})"
-            )
-
+    # 잔액 조회 1회 (P2-6 — 중복 read 제거).
     latest_balance = get_balance(user_id_hex)
+
+    # 음수 잔액 가드 (ADMIN_DEDUCT 만 우회 허용).
+    if type_ != "ADMIN_DEDUCT" and latest_balance + amount < 0:
+        raise ValueError(
+            f"add_credit: insufficient balance "
+            f"(user={user_id_hex} {latest_balance} + {amount} < 0, type={type_})"
+        )
+
     new_balance = latest_balance + amount
 
     doc: dict = {

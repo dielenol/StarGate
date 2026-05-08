@@ -2,22 +2,141 @@
 편의점 + 크레딧 + 주식 시스템 — shop.py
 bot.py에서 Cog으로 로드됨
 Pillow로 카드 그리드 UI 이미지 생성
+
+Phase 1C-1 (2026-05): 모든 SQLite 호출을 tia_bot/mongo/* 어댑터로 치환.
+  - 잔액/풀: mongo.credits
+  - 인벤토리/일별재고: mongo.shop
+  - 시세/보유: mongo.stock
+  - Discord ↔ User._id: mongo.users
+PIL 렌더 코드는 그대로 유지. 함수 시그니처(SHOP_ITEMS / ITEM_MAP / get_all_stock /
+ensure_stock / get_op_balance 등)는 외부 import 호환을 위해 보존.
 """
 
-import sqlite3, random, io, os
-from datetime import datetime, timedelta
+# 1. 코어 라이브러리, 기타 라이브러리
+import asyncio
+import io
+import os
+import random as _r
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 from zoneinfo import ZoneInfo
-from pathlib import Path
+
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+
+# 3. 자체 어댑터
 import stock_system as ss
+from mongo import credits as mongo_credits
+from mongo import shop as mongo_shop
+from mongo import stock as mongo_stock
+from mongo import users as mongo_users
+from mongo.client import get_db
+from mongo.credits import OPERATION_POOL_ID
+
+# 본 모듈 내 호환을 위해 random 별칭 유지 (random.choice / random.random / random.randint).
+random = _r
 
 TIMEZONE = ZoneInfo("Asia/Seoul")
-INITIAL_OP_CREDITS = 400
 SHOP_CHANNEL_ID = 1486557009590485174
 STOCK_CHANNEL_ID = 1487426439182680094
+
+# ============================================================
+# GM 닉 — 단일 출처 (P3-1, P3-2)
+# AGENT_NAMES 는 stock_system 의 매핑을 base 로 GM 닉을 합성.
+# ============================================================
+GM_NICKS = frozenset(["핏보이", "pitboy", "흑우"])
+AGENT_NAMES = {**ss.AGENT_NAMES, **{n: "GM" for n in GM_NICKS}}
+
+
+def _is_gm(user) -> bool:
+    """display_name 이 GM_NICKS 에 있는지 단일 검사."""
+    return getattr(user, "display_name", "") in GM_NICKS
+
+
+# ============================================================
+# 봇 자체 user._id (Phase 1C-3 bot.py main 진입점에서 set_bot_user_id_hex 호출)
+# createdById 필드용. 미설정 시 RuntimeError — mutation 거절 (P2-3).
+# ============================================================
+_BOT_USER_ID_HEX: Optional[str] = None
+
+
+def set_bot_user_id_hex(user_id_hex: str) -> None:
+    """bot.py main 진입점에서 호출. 봇 자체 user._id 를 createdBy 기록에 사용."""
+    global _BOT_USER_ID_HEX
+    _BOT_USER_ID_HEX = user_id_hex
+
+
+def _bot_user_id() -> str:
+    """createdBy ID. 미주입 시 RuntimeError — mutation 차단 (P2-3).
+
+    부트스트랩 실패 시 명령이 silent 통과하지 않도록 명시적 raise.
+    """
+    if not _BOT_USER_ID_HEX:
+        raise RuntimeError(
+            "Bot user not initialized. on_ready bootstrap may have failed. "
+            "Check bot.py mongo connection / users.ensure_user logs."
+        )
+    return _BOT_USER_ID_HEX
+
+
+def _bot_user_id_safe() -> str:
+    """RuntimeError 회피 — 시드/조회 등 mutation 외 경로용. 미주입 시 빈 문자열."""
+    return _BOT_USER_ID_HEX or ""
+
+
+# ============================================================
+# GM 알림 채널 (P1-3)
+# bot.py 부트스트랩에서 set_gm_alert_channel_id + set_bot_instance 주입.
+# 보상 ledger 자체 실패 등 critical path 의 운영 가시성 확보용.
+# ============================================================
+_GM_ALERT_CHANNEL_ID: Optional[int] = None
+_BOT_INSTANCE = None  # discord.ext.commands.Bot — bot.py main 에서 주입
+
+
+def set_gm_alert_channel_id(channel_id: int) -> None:
+    """GM 알림 채널 ID 주입 (bot.py main 진입점)."""
+    global _GM_ALERT_CHANNEL_ID
+    _GM_ALERT_CHANNEL_ID = int(channel_id)
+
+
+def set_bot_instance(bot_instance) -> None:
+    """discord Bot 인스턴스 주입 — _try_alert_gm 의 channel.send 용."""
+    global _BOT_INSTANCE
+    _BOT_INSTANCE = bot_instance
+
+
+def _try_alert_gm(message: str) -> None:
+    """비동기 GM 알림 시도. 실패해도 swallow.
+
+    Critical path (보상 ledger 실패 등) 직후 호출. 부트스트랩 미주입 / 채널 미발견 /
+    asyncio loop 미초기화 등 어떤 실패도 더 이상의 에러를 일으키지 않도록 방어.
+    """
+    if _GM_ALERT_CHANNEL_ID is None or _BOT_INSTANCE is None:
+        return
+    try:
+        channel = _BOT_INSTANCE.get_channel(_GM_ALERT_CHANNEL_ID)
+        if channel is None:
+            return
+        try:
+            asyncio.create_task(channel.send(message))
+        except RuntimeError:
+            # 이벤트 루프가 아직 안 도는 상황 — 부트스트랩 매우 초기. 콘솔만 기록.
+            print(f"[GM_ALERT] no running loop — skip send: {message}")
+    except Exception as e:
+        print(f"[GM_ALERT] 실패: {e}")
+
+
+# ============================================================
+# KST 시간 헬퍼
+# ============================================================
+def _today_kst() -> str:
+    return datetime.now(TIMEZONE).strftime("%Y-%m-%d")
+
+
+def _now_kst_dt() -> datetime:
+    return datetime.now(TIMEZONE)
 
 # ============================================================
 # 폰트 로드
@@ -34,8 +153,10 @@ def load_font(size):
     ]
     for p in paths:
         if os.path.exists(p):
-            try: return ImageFont.truetype(p, size)
-            except: continue
+            try:
+                return ImageFont.truetype(p, size)
+            except (OSError, IOError):
+                continue
     return ImageFont.load_default()
 
 def load_emoji_font(size):
@@ -47,8 +168,10 @@ def load_emoji_font(size):
     ]
     for p in paths:
         if os.path.exists(p):
-            try: return ImageFont.truetype(p, size)
-            except: continue
+            try:
+                return ImageFont.truetype(p, size)
+            except (OSError, IOError):
+                continue
     return load_font(size)  # 이모지 폰트 없으면 일반 폰트로 폴백
 
 FONT_TITLE = load_font(20)
@@ -62,7 +185,8 @@ FONT_EMOJI_SM = load_emoji_font(14)
 try:
     print(f"  [폰트] 텍스트: {FONT_BODY.path}")
     print(f"  [폰트] 이모지: {FONT_EMOJI.path}")
-except:
+except AttributeError:
+    # ImageFont.load_default() 는 .path 미보유 → 기본 폰트 사용 케이스
     print("  [폰트] 기본 폰트 사용 중")
 
 # ============================================================
@@ -143,7 +267,8 @@ def load_item_images():
                     img = Image.open(path).convert("RGBA")
                     ITEM_IMAGES[item["id"]] = img
                     print(f"  [이미지] {item['name']}: {path}")
-                except: pass
+                except (OSError, IOError):
+                    pass
                 break
 load_item_images()
 
@@ -155,109 +280,353 @@ INITIAL_CREDITS = {
 }
 
 # ============================================================
-# DB — shop.db
+# Mongo bridge — discord.User → user_id_hex + 잔액 시드
 # ============================================================
-def init_shop_db():
-    conn = sqlite3.connect("shop.db")
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS credits (
-        user_id INTEGER PRIMARY KEY, user_name TEXT NOT NULL,
-        balance INTEGER DEFAULT 0, initialized INTEGER DEFAULT 0)""")
-    c.execute("""CREATE TABLE IF NOT EXISTS operation_pool (
-        id INTEGER PRIMARY KEY CHECK (id=1), balance INTEGER DEFAULT 0)""")
-    c.execute("""CREATE TABLE IF NOT EXISTS inventory (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
-        item_id TEXT NOT NULL, quantity INTEGER DEFAULT 1,
-        UNIQUE(user_id, item_id))""")
-    c.execute("""CREATE TABLE IF NOT EXISTS trade_log (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, user_name TEXT,
-        action TEXT, item_id TEXT, amount INTEGER, detail TEXT,
-        created_at TEXT NOT NULL)""")
-    c.execute("""CREATE TABLE IF NOT EXISTS daily_stock (
-        item_id TEXT PRIMARY KEY, stock INTEGER DEFAULT 0,
-        last_refresh TEXT NOT NULL)""")
-    c.execute("INSERT OR IGNORE INTO operation_pool (id,balance) VALUES (1,?)",(INITIAL_OP_CREDITS,))
-    conn.commit()
-    return conn
+def _ensure_user_id(user) -> str:
+    """discord.User/Member → user_id_hex. ensure_user 는 캐시 단일.
 
-db = init_shop_db()
+    user.name=username, user.global_name=글로벌 표시명, user.display_avatar.url=아바타.
+    """
+    avatar_url: Optional[str] = None
+    try:
+        avatar = getattr(user, "display_avatar", None)
+        if avatar is not None:
+            avatar_url = str(avatar.url)
+    except Exception:
+        avatar_url = None
+    return mongo_users.ensure_user(
+        discord_id=int(user.id),
+        discord_username=getattr(user, "name", "") or "",
+        discord_global_name=getattr(user, "global_name", None),
+        discord_avatar=avatar_url,
+    )
+
+
+def _seed_user_if_first_time(user_id_hex: str, user) -> None:
+    """첫 호출이면 INITIAL_CREDITS lookup → ADMIN_GRANT 1건 시드.
+
+    P2-1: race 해소를 위해 metadata.kind="initial_seed" 사전 확인 + display_name/username
+    fallback. 동시 진입 시 두 번째 task 가 ValueError(혹은 unique 충돌) 로 안전하게 실패.
+    """
+    db = get_db()
+    # 1) 이미 initial_seed 트랜잭션이 있으면 skip (멱등 보호)
+    seeded = db["credit_transactions"].find_one(
+        {"userId": user_id_hex, "metadata.kind": "initial_seed"},
+        projection={"_id": 1},
+    )
+    if seeded:
+        return
+
+    # 2) 트랜잭션이 1건이라도 있으면 skip (기존 운영 user — 시드 history 미존재이지만 거래 이력 보유)
+    existing = mongo_credits.list_transactions(user_id_hex, limit=1)
+    if existing:
+        return
+
+    # 3) INITIAL_CREDITS lookup (display_name + username fallback)
+    display_name = getattr(user, "display_name", "") or ""
+    username = getattr(user, "name", "") or ""
+    initial = INITIAL_CREDITS.get(display_name) or INITIAL_CREDITS.get(username, 0)
+    if initial <= 0:
+        return
+
+    # 4) 시드 시도. race 시 다른 task 가 먼저 시드 → silent fail OK (이중 시드 방지).
+    try:
+        mongo_credits.add_credit(
+            user_id_hex=user_id_hex,
+            user_name=display_name or username,
+            amount=initial,
+            type_="ADMIN_GRANT",
+            description="INITIAL_SEED",
+            created_by_id=_bot_user_id_safe(),  # 부트스트랩 미주입에도 시드 자체는 통과
+            created_by_name="SYSTEM_INITIAL_SEED",
+            metadata={"kind": "initial_seed"},
+        )
+    except Exception as e:
+        # 부트스트랩 직후 race / mongo 일시 장애 등. 이중 시드 방지가 우선.
+        print(f"[SEED] {user_id_hex} 시드 시도 실패 (race 가능): {e}")
+
+
+def _ensure_and_get_balance(user) -> tuple[str, int]:
+    """user → (user_id_hex, balance). 첫 호출이면 INITIAL_CREDITS 자동 시드.
+
+    P2-2: 시드 트리거의 단일 출처. legacy get_balance 는 시드 책임 제거.
+    """
+    user_id_hex = _ensure_user_id(user)
+    _seed_user_if_first_time(user_id_hex, user)
+    return user_id_hex, mongo_credits.get_balance(user_id_hex)
+
+
+def _apply_credit(
+    user,
+    amount: int,
+    type_: str,
+    description: str,
+    metadata: Optional[dict] = None,
+    actor=None,
+) -> int:
+    """크레딧 변동을 ledger 1건으로 기록. Returns: new balance.
+
+    - user: 잔액 변경 대상 (discord.User/Member)
+    - actor: 명령 실행 주체 (GM 등). None 이면 봇 자체.
+      ADMIN_GRANT/ADMIN_DEDUCT 등 GM 발행 시 createdBy 를 GM 으로 기록.
+
+    Note: 봇 자체 user 가 미주입이면 _bot_user_id() 가 RuntimeError → 명령 실패 (P2-3).
+    """
+    user_id_hex, _ = _ensure_and_get_balance(user)
+    user_name = getattr(user, "display_name", "") or ""
+
+    if actor is not None:
+        actor_id_hex = _ensure_user_id(actor)
+        actor_name = getattr(actor, "display_name", "") or ""
+    else:
+        actor_id_hex = _bot_user_id()  # 미주입 시 RuntimeError
+        actor_name = "TIA_BOT"
+
+    tx = mongo_credits.add_credit(
+        user_id_hex=user_id_hex,
+        user_name=user_name,
+        amount=amount,
+        type_=type_,
+        description=description,
+        created_by_id=actor_id_hex,
+        created_by_name=actor_name,
+        metadata=metadata,
+    )
+    return int(tx["balance"])
+
 
 # ============================================================
-# 재고
+# 재고 (mongo.shop 위임)
 # ============================================================
 def get_today_str():
-    return datetime.now(TIMEZONE).strftime("%Y-%m-%d")
+    """레거시 호환 — bot.py 등 외부 호출 가능. 내부는 _today_kst() 사용."""
+    return _today_kst()
 
-def needs_refresh():
-    c = db.cursor(); c.execute("SELECT last_refresh FROM daily_stock LIMIT 1")
-    row = c.fetchone()
-    return not row or row["last_refresh"] != get_today_str()
 
-def refresh_stock():
-    today = get_today_str(); c = db.cursor(); c.execute("DELETE FROM daily_stock")
+def needs_refresh() -> bool:
+    """SHOP_ITEMS 중 어느 하나라도 today 와 lastRefresh 가 다르면 True.
+
+    원본 SQLite 시맨틱: 단일 last_refresh 컬럼 비교. Mongo 는 itemId 별로 저장되므로
+    어느 한 아이템이라도 갱신 필요 시 True (전체 동시 리프레시 가정).
+    """
+    today = _today_kst()
+    return any(mongo_shop.needs_refresh(item["id"], today) for item in SHOP_ITEMS)
+
+
+def refresh_stock() -> None:
+    """SHOP_ITEMS 전체에 대해 today 기준 재고를 새로 굴림 (upsert)."""
+    today = _today_kst()
     for item in SHOP_ITEMS:
-        stk = random.randint(item["stock_min"], item["stock_max"]) if random.random() <= item["appear"] else 0
-        c.execute("INSERT INTO daily_stock (item_id,stock,last_refresh) VALUES (?,?,?)",(item["id"],stk,today))
-    db.commit()
+        stk = (
+            random.randint(item["stock_min"], item["stock_max"])
+            if random.random() <= item["appear"]
+            else 0
+        )
+        mongo_shop.refresh_stock(item["id"], stk, today)
 
-def ensure_stock():
-    if needs_refresh(): refresh_stock()
 
-def get_stock(item_id):
-    ensure_stock(); c = db.cursor(); c.execute("SELECT stock FROM daily_stock WHERE item_id=?",(item_id,))
-    row = c.fetchone(); return row["stock"] if row else 0
+def ensure_stock() -> None:
+    if needs_refresh():
+        refresh_stock()
 
-def reduce_stock(item_id):
-    db.cursor().execute("UPDATE daily_stock SET stock=stock-1 WHERE item_id=? AND stock>0",(item_id,)); db.commit()
 
-def get_all_stock():
-    ensure_stock(); c = db.cursor(); c.execute("SELECT item_id,stock FROM daily_stock")
-    return {r["item_id"]:r["stock"] for r in c.fetchall()}
+def get_stock(item_id: str) -> int:
+    """오늘 재고 보장 후 stock 정수 반환. 미존재 시 0."""
+    ensure_stock()
+    doc = mongo_shop.get_stock(item_id)
+    if not doc:
+        return 0
+    return int(doc.get("stock", 0))
+
+
+def reduce_stock(item_id: str) -> None:
+    """1개 차감. atomic. 부족 시 silently skip (원본 시맨틱 보존)."""
+    mongo_shop.reduce_stock(item_id, 1)
+
+
+def get_all_stock() -> dict:
+    """{ item_id: stock } 딕셔너리. ensure_stock 보장."""
+    ensure_stock()
+    return {doc["itemId"]: int(doc.get("stock", 0)) for doc in mongo_shop.get_all_daily_stocks()}
+
 
 # ============================================================
-# 크레딧
+# 크레딧 (mongo.credits 위임) — 외부 호환 시그니처 보존
 # ============================================================
 def get_balance(user_id, user_name=""):
-    c = db.cursor(); c.execute("SELECT initialized FROM credits WHERE user_id=?",(user_id,))
-    row = c.fetchone()
-    if row is None:
-        initial = INITIAL_CREDITS.get(user_name, 0)
-        c.execute("INSERT INTO credits (user_id,user_name,balance,initialized) VALUES (?,?,?,1)",(user_id,user_name,initial)); db.commit()
-    elif row["initialized"]==0:
-        initial = INITIAL_CREDITS.get(user_name, 0)
-        c.execute("UPDATE credits SET balance=?,initialized=1 WHERE user_id=?",(initial,user_id)); db.commit()
-    c.execute("SELECT balance FROM credits WHERE user_id=?",(user_id,))
-    return c.fetchone()["balance"]
+    """레거시 호환 시그니처 — 단순 잔액 조회만.
 
-def add_credits(user_id, user_name, amount):
-    get_balance(user_id, user_name)
-    db.cursor().execute("UPDATE credits SET balance=balance+?,user_name=? WHERE user_id=?",(amount,user_name,user_id)); db.commit()
-    return get_balance(user_id, user_name)
+    P2-2: 시드 책임 제거 (DRY 단일화). 시드는 _ensure_and_get_balance 만 트리거.
+    봇 핸들러에서는 항상 discord.User/Member 객체가 있으므로 _ensure_and_get_balance
+    를 사용. 본 함수는 user_id (Discord snowflake int) + user_name 만 알 때의 폴백.
+    """
+    if user_id is None:
+        return 0
+    user_id_hex = mongo_users.ensure_user(
+        discord_id=int(user_id),
+        discord_username=user_name or "",
+    )
+    return mongo_credits.get_balance(user_id_hex)
 
-def get_op_balance():
-    c = db.cursor(); c.execute("SELECT balance FROM operation_pool WHERE id=1"); return c.fetchone()["balance"]
 
-def add_op_credits(amount):
-    db.cursor().execute("UPDATE operation_pool SET balance=balance+? WHERE id=1",(amount,)); db.commit()
-    return get_op_balance()
+def get_op_balance() -> int:
+    """작전 풀 잔액. 풀 미존재 시 ensure 후 반환."""
+    mongo_credits.ensure_op_pool()
+    return mongo_credits.get_op_balance(OPERATION_POOL_ID)
 
-def get_inventory(user_id):
-    c = db.cursor(); c.execute("SELECT item_id,quantity FROM inventory WHERE user_id=? AND quantity>0",(user_id,))
-    return [dict(r) for r in c.fetchall()]
 
-def add_inventory(user_id, item_id, qty=1):
-    db.cursor().execute("INSERT INTO inventory (user_id,item_id,quantity) VALUES (?,?,?) ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=quantity+?",
-              (user_id,item_id,qty,qty)); db.commit()
+# ============================================================
+# 주식 거래 실행 (매수/매도) — Phase 1C-2 stock_system 마이그 전 인라인 처리.
+# 1C-2 완료 후에도 호출자 변경 없이 그대로 유지.
+# ============================================================
+def _execute_stock_buy(user, ticker: str, qty: int) -> dict:
+    """매수 처리. step1 잔액 차감 → step2 보유 갱신.
 
-def log_trade(user_id, user_name, action, item_id, amount, detail=""):
-    now = datetime.now(TIMEZONE).isoformat()
-    db.cursor().execute("INSERT INTO trade_log (user_id,user_name,action,item_id,amount,detail,created_at) VALUES (?,?,?,?,?,?,?)",
-                        (user_id,user_name,action,item_id,amount,detail,now)); db.commit()
+    P1-1: step2 실패 시 raise 가 아닌 dict 반환 (UI 미처리 해소). 보상 ledger 자체 실패 시
+    GM 알림 + swallow 로 critical path 가시성 확보.
 
-def cleanup_old_trades():
-    cutoff = (datetime.now(TIMEZONE) - timedelta(days=30)).isoformat()
-    db.cursor().execute("DELETE FROM trade_log WHERE created_at < ?",(cutoff,)); db.commit()
+    Returns:
+        성공: {"ok": True, "price": int, "new_balance": int}
+        실패: {"ok": False, "error": str, "balance": int|None, "price"?: int}
+    """
+    price_doc = mongo_stock.get_stock_price(ticker)
+    if not price_doc:
+        return {"ok": False, "error": "없는 종목이도다...", "balance": None}
+    price = int(price_doc["price"])
+    if price <= 0:
+        return {"ok": False, "error": "현재가가 0이라 거래할 수 없도다...", "balance": None}
+    total = price * qty
+    user_id_hex = _ensure_user_id(user)
+
+    # step 1: 잔액 차감 (ValueError = 잔액 부족 등).
+    try:
+        new_bal = _apply_credit(
+            user=user,
+            amount=-total,
+            type_="STOCK_BUY",
+            description=f"매수 {ticker} {qty}주 @ {price}",
+            metadata={"ticker": ticker, "shares": qty, "price": price},
+        )
+    except ValueError:
+        return {"ok": False, "error": "크레딧이 부족하도다...", "balance": None}
+
+    # step 2: 보유 갱신 (실패 시 보상).
+    try:
+        mongo_stock.buy_holding(user_id_hex, ticker, qty, price)
+    except Exception as e:
+        # 보상: 잔액 환불 (audit 별도 ledger, metadata.kind=buy_rollback).
+        try:
+            _apply_credit(
+                user=user,
+                amount=+total,
+                type_="ADMIN_GRANT",
+                description=f"매수 보유 갱신 실패 보상 {ticker} {qty}주",
+                metadata={
+                    "ticker": ticker,
+                    "shares": qty,
+                    "kind": "buy_rollback",
+                },
+            )
+        except Exception as e2:
+            # 보상 자체 실패 — 운영 가시성 확보 (P1-3).
+            print(
+                f"[CRITICAL] buy 보상 실패 user={user_id_hex} ticker={ticker} "
+                f"qty={qty}: {e2}"
+            )
+            _try_alert_gm(
+                f"⚠️ 매수 실패+보상 실패 — user={user_id_hex} {ticker} {qty}주 "
+                f"@ {price} CR — GM 수동 복구 필요"
+            )
+        print(f"[주식] buy_holding 실패 → 보상 ADMIN_GRANT: {e}")
+        return {
+            "ok": False,
+            "error": "보유 갱신 실패. 잔액은 환불되었어요...",
+            "balance": None,
+        }
+
+    return {"ok": True, "price": price, "new_balance": int(new_bal)}
+
+
+def _execute_stock_sell(user, ticker: str, qty: int) -> dict:
+    """매도 처리. step1 사전 fetch → step2 보유 차감 → step3 잔액 가산.
+
+    P1-2: step3 (apply_credit) 실패 시 보유 원복 추가. 보상 자체 실패 시 GM 알림.
+
+    Returns:
+        성공: {"ok": True, "price": int, "new_balance": int, "profit": int}
+        실패: {"ok": False, "error": str, "balance": int|None}
+    """
+    price_doc = mongo_stock.get_stock_price(ticker)
+    if not price_doc:
+        return {"ok": False, "error": "없는 종목이도다...", "balance": None}
+    price = int(price_doc["price"])
+    if price <= 0:
+        return {"ok": False, "error": "현재가가 0이라 거래할 수 없도다...", "balance": None}
+
+    user_id_hex = _ensure_user_id(user)
+
+    # step 1: 사전 holding fetch (avg).
+    pre = mongo_stock.get_holding(user_id_hex, ticker)
+    avg = int(pre.get("avgPrice", 0)) if pre else 0
+
+    # step 2: atomic shares 차감 (race 시 ok=False).
+    res = mongo_stock.sell_holding(user_id_hex, ticker, qty)
+    if not res.get("ok"):
+        return {"ok": False, "error": "보유 주식이 부족하도다...", "balance": None}
+
+    # step 3: 잔액 가산 — 실패 시 보유 원복 (P1-2).
+    total = price * qty
+    profit = (price - avg) * qty
+    try:
+        new_bal = _apply_credit(
+            user=user,
+            amount=+total,
+            type_="STOCK_SELL",
+            description=f"매도 {ticker} {qty}주 @ {price} (손익 {profit:+d})",
+            metadata={
+                "ticker": ticker,
+                "shares": qty,
+                "price": price,
+                "avgPrice": avg,
+                "profit": profit,
+            },
+        )
+    except Exception as e:
+        # 보상: 보유 원복 (avg 로 buy_holding — avg 미상이면 price 로 폴백).
+        rollback_price = avg if avg > 0 else price
+        try:
+            mongo_stock.buy_holding(user_id_hex, ticker, qty, rollback_price)
+        except Exception as e2:
+            print(
+                f"[CRITICAL] sell 보상도 실패 user={user_id_hex} ticker={ticker} "
+                f"qty={qty}: {e2}"
+            )
+            _try_alert_gm(
+                f"⚠️ 매도 처리 실패+보상 실패 — user={user_id_hex} {ticker} {qty}주 "
+                f"@ {price} CR — GM 수동 복구 필요"
+            )
+        print(f"[주식] STOCK_SELL apply_credit 실패 → 보유 원복: {e}")
+        return {
+            "ok": False,
+            "error": "매도 처리 실패. 다시 시도해주세요...",
+            "balance": None,
+        }
+
+    return {
+        "ok": True,
+        "price": price,
+        "new_balance": int(new_bal),
+        "profit": int(profit),
+    }
+
+
+# ============================================================
+# 인벤토리 (mongo.shop 위임)
+# ============================================================
+def get_inventory(user_id_hex: str) -> list[dict]:
+    """user_id_hex 기준 활성 보유. SQLite 호환 키('item_id', 'quantity')로 변환."""
+    docs = mongo_shop.get_user_inventory(user_id_hex)
+    return [{"item_id": d["itemId"], "quantity": int(d.get("quantity", 0))} for d in docs]
 
 # ============================================================
 # 이미지 생성 — 공통 헬퍼
@@ -372,7 +741,6 @@ def draw_shop_page(page_info, stocks):
             ix = x + (card_w - icon_size) // 2
             iy = y + (icon_area_h - icon_size) // 2
             if sold:
-                from PIL import ImageEnhance
                 item_img = ImageEnhance.Brightness(item_img).enhance(0.3)
             img.paste(item_img, (ix, iy), item_img if item_img.mode == "RGBA" else None)
         else:
@@ -428,9 +796,13 @@ def draw_shop_images():
 # ============================================================
 # 이미지 — 인벤토리 카드 그리드
 # ============================================================
-def draw_inventory_image(user_id, user_name):
-    inv = get_inventory(user_id)
-    bal = get_balance(user_id, user_name)
+def draw_inventory_image(user_id_hex, user_name):
+    """user_id_hex: User._id hex. 호출자가 mongo_users.ensure_user 결과를 주입.
+
+    Note: 현재 호출처 없음 (Phase 1C-1 시점 데드 코드). 시그니처만 mongo 호환으로 갱신.
+    """
+    inv = get_inventory(user_id_hex)
+    bal = mongo_credits.get_balance(user_id_hex)
     cols, card_w, card_h, pad, margin = 4, 150, 100, 8, 20
     max_slots = 12
     items_to_show = inv[:max_slots]
@@ -486,29 +858,12 @@ def draw_inventory_image(user_id, user_name):
 # 이미지 — 전체 잔고
 # ============================================================
 def draw_all_balances_image():
-    c = db.cursor()
-    c.execute("SELECT user_name, balance FROM credits ORDER BY balance DESC")
-    db_rows = {r["user_name"]: r["balance"] for r in c.fetchall()}
+    rows = mongo_credits.list_balances_with_names()
+    db_rows = {r.get("userName", ""): int(r.get("balance", 0)) for r in rows}
     op_bal = get_op_balance()
 
-    # 전체 요원 목록 (DB에 있으면 실제 잔고, 없으면 초기 크레딧)
-    AGENT_NAMES = {
-        "춤추기사랑하기노래부르기": "빅보이",
-        "라면": "클라운",
-        "모스": "인덱서",
-        "세슘": "메리골드",
-        "대형마법": "우디",
-        "Bush Dog": "네베드",
-        "힘이": "시유",
-        "Arkaiyu": "마리아",
-        "치자도우": "이동식",
-        "버터누나": "발트만",
-        "홀로서기": "운연",
-        "순대/soondae": "크로노스",
-        "휴지": "핀치",
-        "카즈키": "킴라박", "카쫀쿠": "킴라박", "카사웨이": "킴라박",
-        "실명": "유회",
-    }
+    # 전체 요원 목록 (DB에 있으면 실제 잔고, 없으면 초기 크레딧).
+    # AGENT_NAMES 는 모듈 상단 단일 출처 (P3-1).
     all_agents = []
     seen = set()
     # DB에 있는 요원 먼저
@@ -557,20 +912,72 @@ def draw_all_balances_image():
 # ============================================================
 # 이미지 — 구매 내역 정리
 # ============================================================
-def draw_summary_image():
-    c = db.cursor()
-    c.execute("""SELECT user_name, item_id, COUNT(*) as cnt, SUM(amount) as total
-                 FROM trade_log WHERE action='buy' GROUP BY user_name, item_id ORDER BY user_name""")
-    rows = c.fetchall()
-    if not rows: return None
+def _week_start_kst() -> datetime:
+    """이번 주 월요일 06:00 KST. 월요일 06시 이전이면 지난 주 월요일 06시."""
+    now = _now_kst_dt()
+    # 월요일 = weekday 0. 이번 주 월요일 06시 산출.
+    days_since_monday = now.weekday()
+    monday_kst = now - timedelta(days=days_since_monday)
+    monday_six = monday_kst.replace(hour=6, minute=0, second=0, microsecond=0)
+    if now < monday_six:
+        # 월요일 06시 이전 → 지난 주 월요일 06시
+        monday_six = monday_six - timedelta(days=7)
+    return monday_six
 
-    summary = {}
+
+def draw_summary_image():
+    """이번 주 (월요일 06시 KST 이후) 편의점 구매 내역 정리 이미지.
+
+    원본 SQLite 시맨틱: trade_log 전체 (월요일 06시 DELETE 후 누적). Mongo 는 영구 보관이므로
+    명시적으로 이번 주 시작 시점 이후만 집계.
+
+    `(userName, itemId)` 페어로 group. mongo_credits.list_purchases_grouped 는 itemId
+    단일 group 만 제공하므로 여기서는 직접 aggregation. (어댑터 확장은 1B 종료.)
+    """
+    start = _week_start_kst().astimezone(timezone.utc)
+    pipeline = [
+        {"$match": {"type": "PURCHASE", "createdAt": {"$gte": start}}},
+        {
+            "$group": {
+                "_id": {
+                    "userName": "$userName",
+                    "itemId": {"$ifNull": ["$metadata.itemId", None]},
+                },
+                "cnt": {"$sum": 1},
+                "total": {"$sum": {"$abs": "$amount"}},
+            }
+        },
+    ]
+    rows = list(get_db()["credit_transactions"].aggregate(pipeline))
+
+    # group: (userName, itemId) → { cnt, total }
+    pair_count: dict[tuple[str, str], dict] = {}
     for r in rows:
-        name = r["user_name"]
-        if name not in summary: summary[name] = {"items":[], "total":0}
-        item = ITEM_MAP.get(r["item_id"])
-        if item: summary[name]["items"].append((item, r["cnt"]))
-        summary[name]["total"] += r["total"]
+        key = r.get("_id") or {}
+        name = key.get("userName") or ""
+        item_id = key.get("itemId")
+        if not name or not isinstance(item_id, str) or not item_id:
+            continue
+        cnt = int(r.get("cnt", 0))
+        total = int(r.get("total", 0))
+        pair_count[(name, item_id)] = {"cnt": cnt, "total": total}
+
+    if not pair_count:
+        return None
+
+    # user_name 별로 묶기
+    summary: dict[str, dict] = {}
+    for (name, item_id), data in pair_count.items():
+        if name not in summary:
+            summary[name] = {"items": [], "total": 0}
+        item = ITEM_MAP.get(item_id)
+        if item:
+            summary[name]["items"].append((item, data["cnt"]))
+        summary[name]["total"] += data["total"]
+
+    # 이름별 잔액 lookup
+    balance_rows = mongo_credits.list_balances_with_names()
+    balance_lookup = {r.get("userName", ""): int(r.get("balance", 0)) for r in balance_rows}
 
     margin, agent_h = 20, 80
     w = 600
@@ -587,9 +994,7 @@ def draw_summary_image():
         # 이름
         draw.text((margin+10, y+6), f"> {name}", fill=GOLD, font=FONT_BODY)
         # 잔고
-        c.execute("SELECT balance FROM credits WHERE user_name=?",(name,))
-        row = c.fetchone()
-        bal = row["balance"] if row else 0
+        bal = balance_lookup.get(name, 0)
         draw.text((w-margin-80, y+6), f"잔고 {bal} CR", fill=TEXT_DIM, font=FONT_SMALL)
         # 아이템 목록
         item_strs = [f"{it['icon']}{it['name']} x{cnt}" for it, cnt in data["items"]]
@@ -598,34 +1003,14 @@ def draw_summary_image():
         draw.text((margin+10, y+agent_h-24), f"총 사용: {data['total']} CR", fill=RED, font=FONT_SMALL)
 
     op_bal = get_op_balance()
-    draw_footer(draw, w, h, f"작전 풀: {op_bal} CR  |  30일 후 자동 삭제")
+    draw_footer(draw, w, h, f"작전 풀: {op_bal} CR  |  주 단위 집계")
     return img_to_buffer(img)
 
 # ============================================================
 # 이미지 — 영수증 (편의점 영수증 스타일)
 # ============================================================
 def draw_receipt_image(user_name, item, new_bal, remaining, now, qty=1):
-    # 디스코드 닉 → 요원명 변환
-    AGENT_NAMES = {
-        "춤추기사랑하기노래부르기": "빅보이",
-        "라면": "클라운",
-        "모스": "인덱서",
-        "세슘": "메리골드",
-        "대형마법": "우디",
-        "Bush Dog": "네베드",
-        "힘이": "시유",
-        "Arkaiyu": "마리아",
-        "치자도우": "이동식",
-        "버터누나": "발트만",
-        "홀로서기": "운연",
-        "순대/soondae": "크로노스",
-        "휴지": "핀치",
-        "카즈키": "킴라박", "카쫀쿠": "킴라박", "카사웨이": "킴라박",
-        "실명": "유회",
-        "핏보이": "GM",
-        "pitboy": "GM",
-        "흑우": "GM",
-    }
+    # 디스코드 닉 → 요원명 변환 (모듈 상단 AGENT_NAMES 단일 출처, P3-1).
     agent_name = AGENT_NAMES.get(user_name, user_name)
     total_price = item["price"] * qty
     w = 280
@@ -726,8 +1111,7 @@ def draw_receipt_image(user_name, item, new_bal, remaining, now, qty=1):
     draw.text((w//2 - 65, y), "NO REFUNDS ALLOWED", fill=(160, 80, 80), font=FONT_SMALL)
     y += 18
 
-    # 바코드 느낌 (장식)
-    import random as _r
+    # 바코드 느낌 (장식) — _r 은 모듈 상단 import (P3-4).
     bar_y = y + 5
     for bx in range(40, w-40, 3):
         bw = _r.choice([1, 2])
@@ -767,7 +1151,7 @@ class ShopSelect(discord.ui.Select):
         stk = get_stock(item_id)
         if stk <= 0:
             await interaction.response.send_message(f"앗... {item['name']}은(는) 방금 품절됐어요...", ephemeral=True); return
-        bal = get_balance(interaction.user.id, interaction.user.display_name)
+        _, bal = _ensure_and_get_balance(interaction.user)
         embed = discord.Embed(title=f"{item['name']}", description=f"*{item['desc']}*", color=discord.Color.from_rgb(255,183,77))
         embed.add_field(name="효과", value=item["effect"], inline=True)
         embed.add_field(name="단가", value=f"{item['price']} CR", inline=True)
@@ -808,7 +1192,7 @@ class QuantitySelect(discord.ui.Select):
         item = ITEM_MAP[self.item_id]
         total = item["price"] * qty
         stk = get_stock(self.item_id)
-        bal = get_balance(self.user_id, self.user_name)
+        _, bal = _ensure_and_get_balance(interaction.user)
         if stk < qty:
             await interaction.response.edit_message(content=f"앗... 재고가 {stk}개밖에 없어요...", embed=None, view=None); return
         if bal < total:
@@ -834,17 +1218,47 @@ class BuyConfirmView(discord.ui.View):
     @discord.ui.button(label="구매", style=discord.ButtonStyle.success, emoji="✅")
     async def buy(self, interaction, button):
         item = ITEM_MAP[self.item_id]
-        stk = get_stock(self.item_id)
         total = item["price"] * self.qty
-        if stk < self.qty:
-            await interaction.response.edit_message(content=f"앗... 재고가 {stk}개밖에 없어요...", embed=None, view=None); return
-        bal = get_balance(self.user_id, self.user_name)
-        if bal < total:
-            await interaction.response.edit_message(content="크레딧이 부족해요...", embed=None, view=None); return
-        new_bal = add_credits(self.user_id, self.user_name, -total)
-        for _ in range(self.qty):
-            reduce_stock(self.item_id)
-        log_trade(self.user_id, self.user_name, "buy", self.item_id, total, f"{item['name']} x{self.qty} 구매")
+
+        # 1) 재고 atomic 차감 먼저. 부족 시 잔액 손실 없이 즉시 거절.
+        ok = mongo_shop.reduce_stock(self.item_id, self.qty)
+        if not ok:
+            stk = get_stock(self.item_id)
+            await interaction.response.edit_message(
+                content=f"앗... 재고가 {stk}개밖에 없어요...", embed=None, view=None,
+            )
+            return
+
+        # 2) 잔액 차감. 부족 시 재고 보상 (atomic $inc).
+        try:
+            new_bal = _apply_credit(
+                user=interaction.user,
+                amount=-total,
+                type_="PURCHASE",
+                description=f"편의점 구매: {item['name']} x{self.qty}",
+                metadata={"itemId": self.item_id, "qty": self.qty},
+            )
+        except ValueError:
+            # 잔액 부족 (race) → 재고 되돌리기.
+            try:
+                get_db()["shop_daily_stock"].update_one(
+                    {"itemId": self.item_id}, {"$inc": {"stock": self.qty}},
+                )
+            except Exception as e:
+                print(f"[CRITICAL] 재고 보상 실패 item={self.item_id} qty={self.qty}: {e}")
+                _try_alert_gm(
+                    f"⚠️ 구매 잔액 차감 실패+재고 보상 실패 — "
+                    f"item={self.item_id} qty={self.qty} — GM 수동 복구 필요"
+                )
+            await interaction.response.edit_message(
+                content="크레딧이 부족해요...", embed=None, view=None,
+            )
+            return
+
+        # 3) 인벤토리 적재.
+        user_id_hex = _ensure_user_id(interaction.user)
+        mongo_shop.add_inventory(user_id_hex, self.item_id, self.qty)
+
         remaining = get_stock(self.item_id)
         await interaction.response.edit_message(
             content=f"감사합니다... **{item['name']} x{self.qty}** 여기 있어요! 잔고 **{new_bal}** CR (재고 {remaining}개 남음)",
@@ -865,12 +1279,14 @@ class BuyConfirmView(discord.ui.View):
 class StockTradeSelect(discord.ui.Select):
     def __init__(self, user_id, user_name):
         self.user_id = user_id; self.user_name = user_name
-        prices = ss.get_stock_prices()
+        # mongo.stock.get_stock_prices() 는 list[dict] 반환. 호환을 위해 dict 변환.
+        price_docs = mongo_stock.get_stock_prices()
+        prices = {p["ticker"]: p for p in price_docs}
         options = []
         for s in ss.STOCKS:
             p = prices.get(s["ticker"], {})
-            price = p.get("price", s["base_price"])
-            prev = p.get("prev_price", s["base_price"])
+            price = int(p.get("price", s["base_price"]))
+            prev = int(p.get("prevPrice", s["base_price"]))
             diff = price - prev
             arrow = f"+{diff}" if diff > 0 else str(diff) if diff < 0 else "0"
             options.append(discord.SelectOption(
@@ -880,12 +1296,17 @@ class StockTradeSelect(discord.ui.Select):
 
     async def callback(self, interaction):
         ticker = self.values[0]; s = ss.STOCK_MAP[ticker]
-        price = ss.get_stock_price(ticker)
-        bal = get_balance(interaction.user.id, interaction.user.display_name)
-        holdings = ss.get_holdings(interaction.user.id)
+        price_doc = mongo_stock.get_stock_price(ticker)
+        price = int(price_doc["price"]) if price_doc else 0
+        user_id_hex, bal = _ensure_and_get_balance(interaction.user)
+        # mongo.stock.get_holdings 는 활성 보유만 (shares > 0). avgPrice 키 사용.
+        holdings = mongo_stock.get_holdings(user_id_hex)
         held, avg = 0, 0
         for h in holdings:
-            if h["ticker"] == ticker: held = h["shares"]; avg = h["avg_price"]; break
+            if h["ticker"] == ticker:
+                held = int(h.get("shares", 0))
+                avg = int(h.get("avgPrice", 0))
+                break
         embed = discord.Embed(title=f"{s['name']} ({ticker})", description=s["desc"],
                               color=discord.Color.from_rgb(197,162,85))
         embed.add_field(name="현재가", value=f"**{price}** CR", inline=True)
@@ -944,7 +1365,7 @@ class StockActionView(discord.ui.View):
 
     @discord.ui.button(label="매수", style=discord.ButtonStyle.success, emoji="📈")
     async def buy_btn(self, interaction, button):
-        bal = get_balance(self.user_id, self.user_name)
+        _, bal = _ensure_and_get_balance(interaction.user)
         max_buy = min(bal // self.price, 50) if self.price > 0 else 0
         if max_buy <= 0:
             await interaction.response.edit_message(content="크레딧이 부족해요...", embed=None, view=None); return
@@ -972,20 +1393,31 @@ class StockConfirmView(discord.ui.View):
     async def confirm(self, interaction, button):
         s = ss.STOCK_MAP[self.ticker]
         if self.action == "buy":
-            result_price, err = ss.buy_stock(self.user_id, self.user_name, self.ticker, self.qty)
-            if err:
-                await interaction.response.edit_message(content=f"저, 저기... {err}", embed=None, view=None); return
+            result = _execute_stock_buy(interaction.user, self.ticker, self.qty)
+            if not result.get("ok"):
+                await interaction.response.edit_message(
+                    content=f"저, 저기... {result.get('error', '거래에 실패했어요...')}",
+                    embed=None, view=None,
+                )
+                return
+            result_price = result["price"]
+            new_bal = result["new_balance"]
             total = result_price * self.qty
-            new_bal = ss.get_balance(self.user_id, self.user_name)
             await interaction.response.edit_message(
                 content=f"**{s['name']}** {self.qty}주 매수 완료했어요...\n단가 {result_price} CR x {self.qty}주 = {total} CR\n잔고: {new_bal} CR",
                 embed=None, view=None)
         else:
-            result_price, profit = ss.sell_stock(self.user_id, self.user_name, self.ticker, self.qty)
-            if result_price is None:
-                await interaction.response.edit_message(content="보유 주식이 부족해요...", embed=None, view=None); return
+            result = _execute_stock_sell(interaction.user, self.ticker, self.qty)
+            if not result.get("ok"):
+                await interaction.response.edit_message(
+                    content=f"저, 저기... {result.get('error', '매도에 실패했어요...')}",
+                    embed=None, view=None,
+                )
+                return
+            result_price = result["price"]
+            new_bal = result["new_balance"]
+            profit = result["profit"]
             total = result_price * self.qty
-            new_bal = ss.get_balance(self.user_id, self.user_name)
             pstr = f"+{profit}" if profit >= 0 else str(profit)
             await interaction.response.edit_message(
                 content=f"**{s['name']}** {self.qty}주 매도 완료했어요...\n단가 {result_price} CR x {self.qty}주 = {total} CR\n손익: {pstr} CR | 잔고: {new_bal} CR",
@@ -1034,6 +1466,7 @@ class ShopCog(commands.Cog):
         # 주식 이벤트 시간(13/17/20시) 지났는데 오늘 업데이트 안 했으면 실행
         if now.weekday() != 6 and any(now.hour >= h for h in ss.STOCK_HOURS) and ss.needs_stock_update():
             try:
+                # circular import: bot ↔ shop — 함수 내부에서만 lazy import.
                 from bot import COPILOT_API_KEY, MODEL
                 results = await ss.update_stock_prices(COPILOT_API_KEY, MODEL)
                 print(f"[주식] 시작 시 시세 업데이트 완료 ({today})")
@@ -1083,13 +1516,13 @@ class ShopCog(commands.Cog):
     @tasks.loop(hours=1)
     async def daily_tasks(self):
         now = datetime.now(TIMEZONE)
-        # 월요일 06시: 구매내역 초기화 + 재고 리셋 (새 주 시작)
+        # 월요일 06시: 재고 리셋 (새 주 시작).
+        # 원본은 trade_log 'buy' DELETE 도 수행했으나, mongo 환경에서는 credit_transactions
+        # 가 영구 보관(audit). 주간 집계는 draw_summary_image 가 _week_start_kst 기준 시점
+        # 컷으로 처리하므로 별도 삭제 불필요.
         if now.hour == 6 and now.weekday() == 0:
-            c = db.cursor()
-            c.execute("DELETE FROM trade_log WHERE action='buy'")
-            db.commit()
             refresh_stock()
-            print(f"[편의점] 월요일 — 주간 구매내역 초기화 + 재고 리셋 ({now.strftime('%Y-%m-%d')})")
+            print(f"[편의점] 월요일 — 재고 리셋 ({now.strftime('%Y-%m-%d')})")
         # 화~토 06시: 재고 리셋만 (일요일 제외)
         elif now.hour == 6 and now.weekday() not in [0, 6]:
             refresh_stock()
@@ -1119,8 +1552,7 @@ class ShopCog(commands.Cog):
 
     @tasks.loop(hours=4)
     async def viral_task(self):
-        """가끔씩 잡담방에 바이럴 한마디"""
-        import random
+        """가끔씩 잡담방에 바이럴 한마디 — random 은 모듈 상단 import."""
         now = datetime.now(TIMEZONE)
         # 영업시간 아닐 때는 안 함 (새벽, 일요일, 토18시 이후)
         if now.weekday() == 6: return
@@ -1129,7 +1561,7 @@ class ShopCog(commands.Cog):
         # 40% 확률로 실행 (매번 하면 스팸)
         if random.random() > 0.40: return
 
-        # 잡담방 채널로 보냄
+        # 잡담방 채널로 보냄 (circular import: bot ↔ shop — lazy import).
         from bot import IDLE_CHAT_CHANNEL_ID
         if not IDLE_CHAT_CHANNEL_ID: return
         ch = self.bot.get_channel(IDLE_CHAT_CHANNEL_ID)
@@ -1223,7 +1655,7 @@ class ShopCog(commands.Cog):
     async def slash_balance(self, interaction: discord.Interaction):
         if SHOP_CHANNEL_ID and interaction.channel_id != SHOP_CHANNEL_ID:
             await interaction.response.send_message("편의점 채널에서만 확인할 수 있어요...!", ephemeral=True); return
-        bal = get_balance(interaction.user.id, interaction.user.display_name)
+        _, bal = _ensure_and_get_balance(interaction.user)
         await interaction.response.send_message(f"현재 잔고는 **{bal}** CR이에요...!", ephemeral=True)
 
     # ------ 작전 크레딧 (슬래시) ------
@@ -1261,7 +1693,7 @@ class ShopCog(commands.Cog):
             await interaction.response.send_message(f"저, 저기... {msg}", ephemeral=True); return
         await interaction.response.defer(ephemeral=True)
         buf = ss.draw_stock_board()
-        bal = get_balance(interaction.user.id, interaction.user.display_name)
+        _, bal = _ensure_and_get_balance(interaction.user)
         tia_img = os.path.join(IMG_DIR, "tia_stock.png")
         if os.path.exists(tia_img):
             await interaction.followup.send(file=discord.File(tia_img, filename="tia_stock.png"), ephemeral=True)
@@ -1285,8 +1717,10 @@ class ShopCog(commands.Cog):
             await interaction.response.send_message("1~50주 범위에서 매수할 수 있어요...!", ephemeral=True); return
         ticker = 종목.upper(); s = ss.STOCK_MAP.get(ticker)
         if not s: await interaction.response.send_message("없는 종목이에요...!", ephemeral=True); return
-        price = ss.get_stock_price(ticker); total = price * 수량
-        bal = get_balance(interaction.user.id, interaction.user.display_name)
+        price_doc = mongo_stock.get_stock_price(ticker)
+        price = int(price_doc["price"]) if price_doc else 0
+        total = price * 수량
+        _, bal = _ensure_and_get_balance(interaction.user)
         embed = discord.Embed(title=f"매수 확인 — {s['name']}", color=discord.Color.from_rgb(60,180,80))
         embed.add_field(name="현재가", value=f"{price} CR", inline=True)
         embed.add_field(name="수량", value=f"{수량}주", inline=True)
@@ -1313,11 +1747,16 @@ class ShopCog(commands.Cog):
         if 수량 <= 0: await interaction.response.send_message("1주 이상 매도해야 해요...!", ephemeral=True); return
         ticker = 종목.upper(); s = ss.STOCK_MAP.get(ticker)
         if not s: await interaction.response.send_message("없는 종목이에요...!", ephemeral=True); return
-        price = ss.get_stock_price(ticker)
-        holdings = ss.get_holdings(interaction.user.id)
+        price_doc = mongo_stock.get_stock_price(ticker)
+        price = int(price_doc["price"]) if price_doc else 0
+        user_id_hex = _ensure_user_id(interaction.user)
+        holdings = mongo_stock.get_holdings(user_id_hex)
         held, avg = 0, 0
         for h in holdings:
-            if h["ticker"] == ticker: held = h["shares"]; avg = h["avg_price"]; break
+            if h["ticker"] == ticker:
+                held = int(h.get("shares", 0))
+                avg = int(h.get("avgPrice", 0))
+                break
         embed = discord.Embed(title=f"매도 확인 — {s['name']}", color=discord.Color.from_rgb(200,60,60))
         embed.add_field(name="현재가", value=f"{price} CR", inline=True)
         embed.add_field(name="보유", value=f"{held}주 (평단 {avg})", inline=True)
@@ -1338,79 +1777,126 @@ class ShopCog(commands.Cog):
         file = discord.File(buf, filename="portfolio.png")
         await interaction.followup.send(file=file, ephemeral=True)
 
-                            # ------ GM: 크레딧 지급 ------
+    # ------ GM: 크레딧 지급 ------
     @commands.command(name="지급")
     async def give_credits(self, ctx, member: discord.Member = None, amount: int = 0):
-        if ctx.author.display_name not in ["핏보이","pitboy","흑우"]:
+        if not _is_gm(ctx.author):
             await ctx.reply("이건 GM님만 할 수 있어요..."); return
         if not member or amount <= 0: await ctx.reply("`!지급 @유저 금액`"); return
-        new_bal = add_credits(member.id, member.display_name, amount)
-        log_trade(member.id, member.display_name, "gm_give", None, amount, "GM 지급")
+        new_bal = _apply_credit(
+            user=member,
+            amount=amount,
+            type_="ADMIN_GRANT",
+            description=f"GM 지급 (by {ctx.author.display_name})",
+            actor=ctx.author,
+        )
         await ctx.reply(f"{member.display_name} 님에게 **{amount}** CR 지급. 잔고: **{new_bal}** CR")
 
     # ------ GM: 크레딧 차감 ------
     @commands.command(name="차감")
     async def take_credits(self, ctx, member: discord.Member = None, amount: int = 0):
-        if ctx.author.display_name not in ["핏보이","pitboy","흑우"]:
+        if not _is_gm(ctx.author):
             await ctx.reply("이건 GM님만 할 수 있어요..."); return
         if not member or amount <= 0: await ctx.reply("`!차감 @유저 금액`"); return
-        bal = get_balance(member.id, member.display_name)
+        _, bal = _ensure_and_get_balance(member)
         if bal < amount: await ctx.reply(f"{member.display_name} 님 잔고가 {bal} CR밖에 없어요..."); return
-        new_bal = add_credits(member.id, member.display_name, -amount)
-        log_trade(member.id, member.display_name, "gm_take", None, amount, "GM 차감")
+        # ADMIN_DEDUCT 는 음수 잔액 가드 우회 가능 type_. 위에서 사전 확인 했으므로 정상 흐름.
+        new_bal = _apply_credit(
+            user=member,
+            amount=-amount,
+            type_="ADMIN_DEDUCT",
+            description=f"GM 차감 (by {ctx.author.display_name})",
+            actor=ctx.author,
+        )
         await ctx.reply(f"{member.display_name} 님에게서 **{amount}** CR 차감. 잔고: **{new_bal}** CR")
 
     # ------ GM: 전체 지급 (일괄) ------
     @commands.command(name="전체지급")
     async def give_all_credits(self, ctx, amount: int = 0):
-        if ctx.author.display_name not in ["핏보이","pitboy","흑우"]:
+        if not _is_gm(ctx.author):
             await ctx.reply("이건 GM님만 할 수 있어요..."); return
         if amount <= 0: await ctx.reply("`!전체지급 금액`"); return
-        # 서버 멤버 중 INITIAL_CREDITS에 있는 사람 자동 등록
+        # 서버 멤버 중 INITIAL_CREDITS 에 있는 사람 자동 등록 (시드 트랜잭션 발생)
         if ctx.guild:
             for member in ctx.guild.members:
                 if member.display_name in INITIAL_CREDITS:
-                    get_balance(member.id, member.display_name)  # 등록 안 됐으면 초기화됨
-        # DB에 등록된 전원에게 지급
-        c = db.cursor()
-        c.execute("SELECT user_id, user_name FROM credits")
-        users = c.fetchall()
-        if not users:
+                    _ensure_and_get_balance(member)
+        # 등록된 전원에게 지급. mongo.credits.list_balances_with_names 가 source.
+        balance_rows = mongo_credits.list_balances_with_names()
+        if not balance_rows:
             await ctx.reply("등록된 요원이 없어요..."); return
-        results = []
-        for u in users:
-            new_bal = add_credits(u["user_id"], u["user_name"], amount)
-            log_trade(u["user_id"], u["user_name"], "gm_give_all", None, amount, f"전체 지급 {amount}CR")
-            agent = ss.AGENT_NAMES.get(u["user_name"], u["user_name"])
+        # ctx.guild.get_member 로 discord.Member 다시 매핑 (avatar/global_name 갱신 + actor 추적).
+        guild_members_by_id: dict[str, discord.Member] = {}
+        if ctx.guild:
+            for m in ctx.guild.members:
+                guild_members_by_id[str(m.id)] = m
+        results: list[str] = []
+        for row in balance_rows:
+            user_id_hex = row.get("userId")
+            user_name = row.get("userName") or ""
+            # discord.Member 가 있으면 그대로 사용 (캐시/avatar 갱신).
+            # 없으면 fallback: mongo_users.get_user_by_id_hex 로 discord_id 복원 후 user.name 으로 add_credit.
+            user_doc = mongo_users.get_user_by_id_hex(user_id_hex) if user_id_hex else None
+            discord_id = user_doc.get("discordId") if user_doc else None
+            member_obj = guild_members_by_id.get(discord_id) if discord_id else None
+            if member_obj is not None:
+                new_bal = _apply_credit(
+                    user=member_obj,
+                    amount=amount,
+                    type_="ADMIN_GRANT",
+                    description=f"전체 지급 {amount}CR (by {ctx.author.display_name})",
+                    actor=ctx.author,
+                )
+            else:
+                # discord.Member 캐시에 없는 경우 — user_id_hex 직접 사용.
+                actor_id_hex = _ensure_user_id(ctx.author)
+                tx = mongo_credits.add_credit(
+                    user_id_hex=user_id_hex,
+                    user_name=user_name,
+                    amount=amount,
+                    type_="ADMIN_GRANT",
+                    description=f"전체 지급 {amount}CR (by {ctx.author.display_name})",
+                    created_by_id=actor_id_hex,
+                    created_by_name=ctx.author.display_name,
+                )
+                new_bal = int(tx["balance"])
+            agent = ss.AGENT_NAMES.get(user_name, user_name)
             results.append(f"{agent}: {new_bal} CR")
         await ctx.reply(f"등록된 **{len(results)}명** 전원에게 **{amount}** CR 지급 완료!\n" + "\n".join(results))
 
     # ------ GM: 작전 지급 ------
     @commands.command(name="작전지급")
     async def give_op(self, ctx, amount: int = 0):
-        if ctx.author.display_name not in ["핏보이","pitboy","흑우"]:
+        if not _is_gm(ctx.author):
             await ctx.reply("이건 GM님만 할 수 있어요..."); return
         if amount <= 0: await ctx.reply("`!작전지급 금액`"); return
-        new_bal = add_op_credits(amount)
-        log_trade(None, "GM", "op_give", None, amount, "작전 풀 지급")
+        mongo_credits.ensure_op_pool()
+        # OP_GRANT/OP_DEDUCT 는 user 잔액 변경이 아니라 풀 자체 변동 → user ledger 기록 안 함.
+        # credit_pools 가 audit source. (Phase 1B 결정 — 본 PLAN 의 OP_GRANT 처리 방침과 일치.)
+        pool = mongo_credits.add_op_credit(OPERATION_POOL_ID, amount, allow_negative=False)
+        new_bal = int(pool["balance"])
         await ctx.reply(f"작전 풀에 **{amount}** CR 추가. 현재: **{new_bal}** CR")
 
     # ------ GM: 작전 차감 ------
     @commands.command(name="작전차감")
     async def take_op(self, ctx, amount: int = 0):
-        if ctx.author.display_name not in ["핏보이","pitboy","흑우"]:
+        if not _is_gm(ctx.author):
             await ctx.reply("이건 GM님만 할 수 있어요..."); return
         if amount <= 0: await ctx.reply("`!작전차감 금액`"); return
-        bal = get_op_balance()
+        mongo_credits.ensure_op_pool()
+        bal = mongo_credits.get_op_balance(OPERATION_POOL_ID)
         if bal < amount: await ctx.reply(f"작전 풀에 {bal} CR밖에 없어요..."); return
-        new_bal = add_op_credits(-amount)
-        log_trade(None, "GM", "op_take", None, amount, "작전 풀 차감")
+        try:
+            pool = mongo_credits.add_op_credit(OPERATION_POOL_ID, -amount, allow_negative=False)
+        except ValueError:
+            await ctx.reply(f"작전 풀 차감 실패. 잔액 race 발생 가능."); return
+        new_bal = int(pool["balance"])
         await ctx.reply(f"작전 풀에서 **{amount}** CR 차감. 현재: **{new_bal}** CR")
 
     # ------ GM: 구매내역 (이미지) ------
     @commands.command(name="구매내역", aliases=["구매정리","소모품정리"])
     async def purchase_summary(self, ctx):
-        if ctx.author.display_name not in ["핏보이","pitboy","흑우"]:
+        if not _is_gm(ctx.author):
             await ctx.reply("이건 GM님만 할 수 있어요..."); return
         buf = draw_summary_image()
         if not buf: await ctx.reply("아직 구매 내역이 없어요..."); return
@@ -1420,7 +1906,7 @@ class ShopCog(commands.Cog):
     # ------ GM: 전체 잔고 (이미지) ------
     @commands.command(name="전체잔고", aliases=["잔고정리"])
     async def all_balances(self, ctx):
-        if ctx.author.display_name not in ["핏보이","pitboy","흑우"]:
+        if not _is_gm(ctx.author):
             await ctx.reply("이건 GM님만 할 수 있어요..."); return
         buf = draw_all_balances_image()
         file = discord.File(buf, filename="balances.png")
@@ -1429,19 +1915,23 @@ class ShopCog(commands.Cog):
     # ------ GM: 주식 이벤트 수동 조절 ------
     @commands.command(name="주식이벤트")
     async def gm_stock_event(self, ctx, ticker: str = "", change: int = 0, *, event_text: str = ""):
-        if ctx.author.display_name not in ["핏보이","pitboy","흑우"]:
+        if not _is_gm(ctx.author):
             await ctx.reply("이건 GM님만 할 수 있어요..."); return
         if not ticker or not event_text:
             await ctx.reply("`!주식이벤트 [종목코드] [등락률] [이벤트 내용]`\n"
                            "예: `!주식이벤트 BPE -20 블랙피라미드 긴급 정전`\n"
                            "종목: " + " / ".join(s["ticker"] for s in ss.STOCKS)); return
-        try: await ctx.message.delete()
-        except: pass
+        try:
+            await ctx.message.delete()
+        except (discord.Forbidden, discord.NotFound):
+            # 권한 없음 또는 이미 삭제됨 — 무시.
+            pass
         result = ss.apply_gm_event(ticker.upper(), change, event_text)
         if not result: return
         ch = self.bot.get_channel(STOCK_CHANNEL_ID)
         if ch:
             try:
+                # circular import: bot ↔ shop — lazy import.
                 from bot import tia_speak
                 tia_comment = await tia_speak(
                     f"긴급 뉴스를 봤다. {result['name']}에 대한 소식: '{event_text}'. "
@@ -1464,7 +1954,7 @@ class ShopCog(commands.Cog):
     # ------ GM: 주식 현황 확인 ------
     @commands.command(name="주식현황")
     async def gm_stock_overview(self, ctx):
-        if ctx.author.display_name not in ["핏보이","pitboy","흑우"]:
+        if not _is_gm(ctx.author):
             await ctx.reply("이건 GM님만 할 수 있어요..."); return
         buf = ss.draw_stock_board()
         file = discord.File(buf, filename="stock_overview.png")
@@ -1479,6 +1969,7 @@ class ShopCog(commands.Cog):
         if now.hour not in ss.STOCK_HOURS or now.weekday() == 6: return
         if not ss.needs_stock_update(): return  # 이미 이 시간대에 업데이트 했으면 스킵
         try:
+            # circular import: bot ↔ shop — lazy import.
             from bot import COPILOT_API_KEY, MODEL
             results = await ss.update_stock_prices(COPILOT_API_KEY, MODEL)
             ch = self.bot.get_channel(STOCK_CHANNEL_ID)

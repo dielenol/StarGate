@@ -1,15 +1,35 @@
 """
 TRPG 세션 일정관리 디스코드 봇 — 띠아 (Tia) 비서 NPC
 GitHub Copilot API + GPT-4.1 | bot.py + shop.py 분리 구조
+
+Phase 1C-2 (2026-05): mongo 부트스트랩 추가.
+  - on_ready: bot user upsert → shop.set_bot_user_id_hex
+  - on_ready: ensure_op_pool, ensure_stock_prices (시드)
+  - atexit: close_client (PM2 SIGTERM 시 connection drain)
+sessions.db / chat.db (SQLite) 는 본 phase 범위 외 — 그대로 유지.
 """
 
-import os, json, sqlite3, asyncio
+# 1. 코어 라이브러리, 기타 라이브러리
+import asyncio
+import atexit
+import json
+import os
+import sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 from openai import OpenAI
+
+# 3. 자체 어댑터
+import shop as shop_module
+from mongo import credits as mongo_credits
+from mongo import stock as mongo_stock
+from mongo import users as mongo_users
+from mongo.client import close_client, get_db
+from stock_system import STOCKS
 
 # ============================================================
 # ★★★ 여기만 수정하면 돼 ★★★
@@ -36,6 +56,12 @@ intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 last_message_time = {}
+
+# ============================================================
+# Mongo connection drain — PM2 SIGTERM 시 호출.
+# 미등록이어도 MongoDB idle timeout 으로 자동 정리되지만 명시적으로 등록.
+# ============================================================
+atexit.register(close_client)
 
 # ============================================================
 # DB — sessions.db (일정), chat.db (대화)
@@ -340,7 +366,9 @@ JSON만. {{"title":"","description":"","game_system":"","gm_name":"","session_da
         elif "```" in r: r = r.split("```")[1].split("```")[0].strip()
         if r.lower() == "null": return None
         return json.loads(r)
-    except: return None
+    except (ValueError, json.JSONDecodeError, AttributeError, IndexError):
+        # GPT 응답이 JSON 이 아니거나, 빈 응답 / 파싱 실패. 일정 파싱은 옵셔널이므로 None 반환.
+        return None
 
 async def tia_chat(msg, user_name="", channel_id=0):
     today = datetime.now(TIMEZONE)
@@ -374,7 +402,9 @@ async def tia_chat(msg, user_name="", channel_id=0):
                     items_list.append(f"  {item['name']} — 품절")
             shop_info = "【편의점 현황 — 물어볼 때만 참고, 먼저 언급 금지, 거짓말 금지】\n" + "\n".join(items_list)
             shop_info += f"\n  작전 크레딧 풀: {get_op_balance()} CR"
-    except:
+    except Exception as e:
+        # shop_info 는 GPT 프롬프트 부가 정보. 실패해도 대화는 이어가야 함 → 빈 문자열 폴백.
+        print(f"[띠아] shop_info 수집 실패 (대화는 계속): {e}")
         shop_info = ""
     prompt = f"""{TIA_PROFILE}
 {ctx}
@@ -540,6 +570,65 @@ for t in [history_cleanup,daily_notification]:
 @bot.event
 async def on_ready():
     print(f"🎨 띠아 로그인: {bot.user}")
+
+    # ============================================================
+    # GM 알림 채널 + bot 인스턴스 주입 (Phase 1C-3 보강)
+    # 보상 ledger 자체 실패 시 운영 가시성 확보용.
+    # ============================================================
+    shop_module.set_bot_instance(bot)
+    shop_module.set_gm_alert_channel_id(shop_module.STOCK_CHANNEL_ID)
+
+    # ============================================================
+    # Mongo 부트스트랩 (Phase 1C-2)
+    # 1) 연결 검증 (lazy init 트리거)
+    # 2) 봇 자체 user upsert → createdById 기록용
+    # 3) operation pool 시드 (멱등)
+    # 4) stock_prices 시드 (멱등)
+    # ============================================================
+    try:
+        get_db()  # 첫 호출 시 lazy init + connection 검증
+
+        # 봇 자체 user
+        bot_avatar_url = None
+        try:
+            avatar = getattr(bot.user, "display_avatar", None)
+            if avatar is not None:
+                bot_avatar_url = str(avatar.url)
+        except Exception:
+            bot_avatar_url = None
+        bot_user_id_hex = mongo_users.ensure_user(
+            discord_id=int(bot.user.id),
+            discord_username=bot.user.name,
+            discord_global_name=getattr(bot.user, "global_name", None),
+            discord_avatar=bot_avatar_url,
+        )
+        shop_module.set_bot_user_id_hex(bot_user_id_hex)
+
+        # 작전 풀
+        mongo_credits.ensure_op_pool()
+
+        # 주식 시세 시드 — lastUpdate 포맷은 stock_system._now_kst_tag 와 동일 ("YYYY-MM-DD HH").
+        # needs_stock_update 비교 일치를 위해 HH 단위 통일 (Format).
+        seeds = [(s["ticker"], s["base_price"]) for s in STOCKS]
+        mongo_stock.ensure_stock_prices(
+            seeds,
+            initial_lastupdate_kst=datetime.now(TIMEZONE).strftime("%Y-%m-%d %H"),
+            initial_event_text="상장",
+        )
+        print("✅ Mongo 부트스트랩 완료")
+    except Exception as e:
+        print(f"[CRITICAL] mongo 부트스트랩 실패: {e}")
+        # 부트스트랩 실패 — shop mutation 은 _bot_user_id() RuntimeError 로 차단됨 (P2-3).
+        # 운영자에게 알림 시도 (채널 미발견 등은 swallow).
+        try:
+            channel = bot.get_channel(shop_module.STOCK_CHANNEL_ID)
+            if channel:
+                await channel.send(
+                    f"⚠️ TIA봇 mongo 부트스트랩 실패 — 명령 동작 불가. 로그 확인 필요.\n```{e}```"
+                )
+        except Exception as alert_err:
+            print(f"[CRITICAL] 부트스트랩 실패 알림 송신 실패: {alert_err}")
+
     # shop.py 먼저 로드 (슬래시 커맨드 등록)
     try:
         await bot.load_extension("shop")

@@ -1,38 +1,38 @@
-"""
-주식 시스템 모듈 — stock_system.py
-비앙카 봇에서 임포트해서 사용
-shop.db의 credits 테이블 공유, stock_prices/stock_holdings 테이블 추가
+"""주식 시스템 모듈 — stock_system.py
+
+bot.py / shop.py 가 import. 본 모듈은 mongo 어댑터 wrapper + AI 이벤트 + PIL 렌더만 담당.
+
+Phase 1C-2 (2026-05): SQLite 호출 전면 제거.
+  - 시세/보유: mongo.stock
+  - 잔액 조회: mongo.credits (포트폴리오 표시용)
+  - Discord ↔ User._id: mongo.users
+  - 거래량 집계: credit_transactions aggregate (STOCK_BUY/STOCK_SELL)
+PIL 렌더 코드는 그대로 유지. 호출자 시그니처는 보존 (shop.py 호환).
 """
 
-import os, io, sqlite3, random, asyncio
-from datetime import datetime, timedelta
+# 1. 코어 라이브러리, 기타 라이브러리
+import asyncio
+import io
+import os
+import random
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+
 from PIL import Image, ImageDraw, ImageFont
 
+# 3. 자체 어댑터
+from mongo import credits as mongo_credits
+from mongo import stock as mongo_stock
+from mongo import users as mongo_users
+from mongo.client import get_db
+
+# ============================================================
+# 상수
+# ============================================================
 TIMEZONE = ZoneInfo("Asia/Seoul")
+IMG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images")
 
-# ============================================================
-# 폰트
-# ============================================================
-def load_font(size):
-    paths = ["C:/Windows/Fonts/malgunbd.ttf","C:/Windows/Fonts/malgun.ttf",
-             "C:/Windows/Fonts/gulim.ttc","C:/Windows/Fonts/NanumGothicBold.ttf",
-             "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf"]
-    for p in paths:
-        if os.path.exists(p):
-            try: return ImageFont.truetype(p, size)
-            except: continue
-    return ImageFont.load_default()
-
-FONT_TITLE = load_font(20)
-FONT_HEADER = load_font(16)
-FONT_BODY = load_font(13)
-FONT_SMALL = load_font(11)
-FONT_TINY = load_font(9)
-
-# ============================================================
-# 색상
-# ============================================================
+# 색상 팔레트
 BG       = (10, 10, 8)
 GOLD     = (197, 162, 85)
 GOLD_DIM = (138, 113, 48)
@@ -43,30 +43,29 @@ TEXT_DIM = (104, 100, 96)
 WHITE    = (220, 215, 205)
 BORDER   = (50, 42, 25)
 
-IMG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images")
+# ============================================================
+# 폰트
+# ============================================================
+def load_font(size):
+    paths = ["C:/Windows/Fonts/malgunbd.ttf","C:/Windows/Fonts/malgun.ttf",
+             "C:/Windows/Fonts/gulim.ttc","C:/Windows/Fonts/NanumGothicBold.ttf",
+             "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf"]
+    for p in paths:
+        if os.path.exists(p):
+            try:
+                return ImageFont.truetype(p, size)
+            except (OSError, IOError):
+                continue
+    return ImageFont.load_default()
+
+FONT_TITLE = load_font(20)
+FONT_HEADER = load_font(16)
+FONT_BODY = load_font(13)
+FONT_SMALL = load_font(11)
+FONT_TINY = load_font(9)
 
 # ============================================================
-# 이미지 헬퍼
-# ============================================================
-def draw_header(draw, w, title, subtitle=""):
-    draw.line([(0,0),(w,0)], fill=GOLD, width=2)
-    draw.text((20,12), "NOVUS ORDO", fill=GOLD_DIM, font=FONT_TINY)
-    draw.text((20,28), title, fill=GOLD, font=FONT_TITLE)
-    if subtitle: draw.text((20,54), subtitle, fill=TEXT_DIM, font=FONT_SMALL)
-    y = 72 if subtitle else 56
-    draw.line([(15,y),(w-15,y)], fill=BORDER, width=1)
-    return y + 10
-
-def draw_footer(draw, w, h, text):
-    draw.line([(15,h-30),(w-15,h-30)], fill=BORDER, width=1)
-    draw.text((20,h-24), text, fill=TEXT_DIM, font=FONT_TINY)
-    draw.text((w-120,h-24), "NOVUS ORDO", fill=GOLD_DIM, font=FONT_TINY)
-
-def img_to_buffer(img):
-    buf = io.BytesIO(); img.save(buf, format="PNG"); buf.seek(0); return buf
-
-# ============================================================
-# 종목 정의
+# 종목 정의 (코드 상수 — DB 마이그 대상 아님)
 # ============================================================
 STOCKS = [
     {"ticker": "TWS", "name": "토와스키", "base_price": 10,
@@ -90,6 +89,8 @@ STOCKS = [
 ]
 STOCK_MAP = {s["ticker"]: s for s in STOCKS}
 
+STOCK_HOURS = [13, 17, 20]  # 하루 3번 이벤트
+
 AGENT_NAMES = {
     "춤추기사랑하기노래부르기": "빅보이", "라면": "클라운", "모스": "인덱서",
     "세슘": "메리골드", "대형마법": "우디", "Bush Dog": "네베드",
@@ -102,148 +103,182 @@ AGENT_NAMES = {
 }
 
 # ============================================================
-# DB — shop.db 접속 (크레딧 공유)
+# KST 헬퍼
 # ============================================================
-def init_stock_db():
-    conn = sqlite3.connect("shop.db")
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS stock_prices (
-        ticker TEXT PRIMARY KEY, price INTEGER NOT NULL,
-        prev_price INTEGER NOT NULL, event_text TEXT,
-        last_update TEXT NOT NULL)""")
-    c.execute("""CREATE TABLE IF NOT EXISTS stock_holdings (
-        user_id INTEGER NOT NULL, ticker TEXT NOT NULL,
-        shares INTEGER DEFAULT 0, avg_price INTEGER DEFAULT 0,
-        UNIQUE(user_id, ticker))""")
-    conn.commit()
-    return conn
-
-sdb = init_stock_db()
-
 def get_today_str():
     return datetime.now(TIMEZONE).strftime("%Y-%m-%d")
 
-def _init_prices():
-    c = sdb.cursor(); today = get_today_str()
-    for s in STOCKS:
-        c.execute("SELECT * FROM stock_prices WHERE ticker=?",(s["ticker"],))
-        if not c.fetchone():
-            c.execute("INSERT INTO stock_prices (ticker,price,prev_price,event_text,last_update) VALUES (?,?,?,?,?)",
-                      (s["ticker"], s["base_price"], s["base_price"], "상장", today))
-    sdb.commit()
 
-_init_prices()
+def _now_kst_tag(hour: int | None = None) -> str:
+    """update_stock_prices 의 lastUpdate 태그.
 
-# ============================================================
-# 크레딧 접근 (shop.db 공유 — 읽기/차감/지급만, 초기화는 shop.py가 담당)
-# ============================================================
-def get_balance(user_id, user_name=""):
-    c = sdb.cursor()
-    c.execute("SELECT balance FROM credits WHERE user_id=?",(user_id,))
-    row = c.fetchone()
-    if row:
-        return row["balance"]
-    # DB에 없으면 0 반환 (초기화는 편의점에서 /잔고 또는 /편의점 사용 시 됨)
-    return 0
+    포맷: "YYYY-MM-DD HH" (시간대별 멱등 키 — 동일 시간대 중복 갱신 방지).
+    """
+    now = datetime.now(TIMEZONE)
+    h = now.hour if hour is None else hour
+    return f"{get_today_str()} {h:02d}"
 
-def add_credits(user_id, user_name, amount):
-    c = sdb.cursor()
-    c.execute("SELECT balance FROM credits WHERE user_id=?",(user_id,))
-    row = c.fetchone()
-    if row:
-        new_bal = row["balance"] + amount
-        c.execute("UPDATE credits SET balance=?,user_name=? WHERE user_id=?",(new_bal,user_name,user_id))
-        sdb.commit()
-        return new_bal
-    else:
-        # DB에 없으면 거래 불가
-        return 0
-
-def log_trade(user_id, user_name, action, item_id, amount, detail=""):
-    now = datetime.now(TIMEZONE).isoformat()
-    sdb.cursor().execute(
-        "INSERT INTO trade_log (user_id,user_name,action,item_id,amount,detail,created_at) VALUES (?,?,?,?,?,?,?)",
-        (user_id,user_name,action,item_id,amount,detail,now))
-    sdb.commit()
 
 # ============================================================
-# 주식 함수
+# 이미지 헬퍼
 # ============================================================
-def get_stock_prices():
-    c = sdb.cursor(); c.execute("SELECT * FROM stock_prices")
-    return {r["ticker"]: dict(r) for r in c.fetchall()}
+def draw_header(draw, w, title, subtitle=""):
+    draw.line([(0,0),(w,0)], fill=GOLD, width=2)
+    draw.text((20,12), "NOVUS ORDO", fill=GOLD_DIM, font=FONT_TINY)
+    draw.text((20,28), title, fill=GOLD, font=FONT_TITLE)
+    if subtitle: draw.text((20,54), subtitle, fill=TEXT_DIM, font=FONT_SMALL)
+    y = 72 if subtitle else 56
+    draw.line([(15,y),(w-15,y)], fill=BORDER, width=1)
+    return y + 10
 
-def get_stock_price(ticker):
-    c = sdb.cursor(); c.execute("SELECT price FROM stock_prices WHERE ticker=?",(ticker,))
-    row = c.fetchone(); return row["price"] if row else 0
+def draw_footer(draw, w, h, text):
+    draw.line([(15,h-30),(w-15,h-30)], fill=BORDER, width=1)
+    draw.text((20,h-24), text, fill=TEXT_DIM, font=FONT_TINY)
+    draw.text((w-120,h-24), "NOVUS ORDO", fill=GOLD_DIM, font=FONT_TINY)
 
-def get_holdings(user_id):
-    c = sdb.cursor()
-    c.execute("SELECT * FROM stock_holdings WHERE user_id=? AND shares>0",(user_id,))
-    return [dict(r) for r in c.fetchall()]
+def img_to_buffer(img):
+    buf = io.BytesIO(); img.save(buf, format="PNG"); buf.seek(0); return buf
 
-def buy_stock(user_id, user_name, ticker, shares):
-    price = get_stock_price(ticker); total = price * shares
-    bal = get_balance(user_id, user_name)
-    if bal <= 0: return None, "크레딧이 등록되지 않았도다... 먼저 편의점에서 /잔고를 확인하거라."
-    if bal < total: return None, "크레딧이 부족하도다..."
-    add_credits(user_id, user_name, -total)
-    c = sdb.cursor()
-    c.execute("SELECT shares, avg_price FROM stock_holdings WHERE user_id=? AND ticker=?",(user_id,ticker))
-    row = c.fetchone()
-    if row and row["shares"] > 0:
-        old_s, old_a = row["shares"], row["avg_price"]
-        new_s = old_s + shares
-        new_a = ((old_a * old_s) + (price * shares)) // new_s
-        c.execute("UPDATE stock_holdings SET shares=?,avg_price=? WHERE user_id=? AND ticker=?",(new_s,new_a,user_id,ticker))
-    else:
-        c.execute("INSERT OR REPLACE INTO stock_holdings (user_id,ticker,shares,avg_price) VALUES (?,?,?,?)",(user_id,ticker,shares,price))
-    sdb.commit()
-    log_trade(user_id, user_name, "stock_buy", ticker, total, f"{STOCK_MAP[ticker]['name']} {shares}주 매수 @{price}")
-    return price, None
 
-def sell_stock(user_id, user_name, ticker, shares):
-    price = get_stock_price(ticker)
-    c = sdb.cursor()
-    c.execute("SELECT shares, avg_price FROM stock_holdings WHERE user_id=? AND ticker=?",(user_id,ticker))
-    row = c.fetchone()
-    if not row or row["shares"] < shares: return None, "보유 주식이 부족하도다..."
-    total = price * shares
-    add_credits(user_id, user_name, total)
-    new_s = row["shares"] - shares
-    if new_s == 0:
-        c.execute("DELETE FROM stock_holdings WHERE user_id=? AND ticker=?",(user_id,ticker))
-    else:
-        c.execute("UPDATE stock_holdings SET shares=? WHERE user_id=? AND ticker=?",(new_s,user_id,ticker))
-    sdb.commit()
-    profit = (price - row["avg_price"]) * shares
-    pstr = f"+{profit}" if profit >= 0 else str(profit)
-    log_trade(user_id, user_name, "stock_sell", ticker, total,
-              f"{STOCK_MAP[ticker]['name']} {shares}주 매도 @{price} ({pstr})")
-    return price, profit
+# ============================================================
+# 시세 — mongo.stock 위임 (호출자 호환 dict 변환)
+# ============================================================
+def _normalize_price_doc(doc: dict) -> dict:
+    """mongo stock_prices 문서를 SQLite 호환 키로 정규화.
+
+    mongo: {ticker, price, prevPrice, eventText, lastUpdate}
+    호환:  {ticker, price, prev_price, event_text, last_update}
+
+    P2-5: prevPrice 가 0 이거나 누락이면 price 로 fallback (시드 직후 0 등락 표기 방지).
+    """
+    price = int(doc.get("price", 0))
+    return {
+        "ticker": doc.get("ticker"),
+        "price": price,
+        "prev_price": int(doc.get("prevPrice") or price),
+        "event_text": doc.get("eventText", ""),
+        "last_update": doc.get("lastUpdate", ""),
+    }
+
+
+def get_stock_prices() -> dict:
+    """{ticker: {price, prev_price, event_text, last_update}} 형식 (SQLite 호환)."""
+    docs = mongo_stock.get_stock_prices()
+    return {d["ticker"]: _normalize_price_doc(d) for d in docs}
+
+
+def get_stock_price(ticker: str) -> int:
+    """현재가 정수. 미존재 시 0."""
+    doc = mongo_stock.get_stock_price(ticker)
+    return int(doc["price"]) if doc else 0
+
+
+# ============================================================
+# 보유 — mongo.stock 위임 (호출자 호환 dict 변환)
+# ============================================================
+def _normalize_holding_doc(doc: dict) -> dict:
+    """mongo stock_holdings → SQLite 호환 키.
+
+    mongo: {userId, ticker, shares, avgPrice}
+    호환:  {user_id, ticker, shares, avg_price}
+    """
+    return {
+        "user_id": doc.get("userId"),
+        "ticker": doc.get("ticker"),
+        "shares": int(doc.get("shares", 0)),
+        "avg_price": int(doc.get("avgPrice", 0)),
+    }
+
+
+def get_holdings(user_id_hex: str) -> list[dict]:
+    """user_id_hex 의 활성 보유 (shares>0). SQLite 호환 키.
+
+    Note: 인자명은 user_id_hex. (이전 SQLite 시맨틱은 Discord int. shop.py 호출처는
+    이미 user_id_hex 로 통일된 상태에서 mongo_stock.get_holdings 직접 호출 중이라
+    본 wrapper 의 호출은 stock_system 내부 함수 (get_all_holdings_text 등) 에서만 발생.)
+    """
+    docs = mongo_stock.get_holdings(user_id_hex)
+    return [_normalize_holding_doc(d) for d in docs]
+
+
+# ============================================================
+# 거래량 집계 (credit_transactions aggregate)
+# ============================================================
+def _get_recent_trade_volume(hours: int = 24) -> dict[str, dict]:
+    """최근 N시간 STOCK_BUY/STOCK_SELL 트랜잭션을 ticker별 집계.
+
+    metadata.ticker 기준 group. abs(amount) 합산 + buy/sell count 분리.
+
+    Returns: { ticker: { 'buy_count': int, 'sell_count': int, 'total_volume': int } }
+    """
+    db = get_db()
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    pipeline = [
+        {"$match": {
+            "type": {"$in": ["STOCK_BUY", "STOCK_SELL"]},
+            "createdAt": {"$gte": cutoff},
+            "metadata.ticker": {"$type": "string"},
+        }},
+        {"$group": {
+            "_id": {"ticker": "$metadata.ticker", "type": "$type"},
+            "count": {"$sum": 1},
+            "volume": {"$sum": {"$abs": "$amount"}},
+        }},
+    ]
+    out: dict[str, dict] = {}
+    for row in db["credit_transactions"].aggregate(pipeline):
+        ticker = row["_id"]["ticker"]
+        type_ = row["_id"]["type"]
+        bucket = out.setdefault(ticker, {"buy_count": 0, "sell_count": 0, "total_volume": 0})
+        if type_ == "STOCK_BUY":
+            bucket["buy_count"] += int(row["count"])
+        elif type_ == "STOCK_SELL":
+            bucket["sell_count"] += int(row["count"])
+        bucket["total_volume"] += int(row["volume"])
+    return out
+
+
+def _get_total_held_shares() -> dict[str, int]:
+    """ticker 별 활성 보유 합계 (shares > 0). AI 이벤트 prompt 입력용."""
+    db = get_db()
+    pipeline = [
+        {"$match": {"shares": {"$gt": 0}}},
+        {"$group": {"_id": "$ticker", "total": {"$sum": "$shares"}}},
+    ]
+    return {row["_id"]: int(row["total"]) for row in db["stock_holdings"].aggregate(pipeline)}
+
 
 # ============================================================
 # AI 이벤트 생성
 # ============================================================
 async def generate_stock_events(copilot_api_key, model):
     prices = get_stock_prices()
-    c = sdb.cursor()
+    volume = _get_recent_trade_volume(hours=24)
+    held_total = _get_total_held_shares()
+
     volume_info = []
     for s in STOCKS:
-        t = s["ticker"]; p = prices.get(t, {}); price = p.get("price", s["base_price"])
-        c.execute("SELECT COUNT(*) as cnt FROM trade_log WHERE action='stock_buy' AND item_id=?", (t,))
-        buy_cnt = c.fetchone()["cnt"]
-        c.execute("SELECT COUNT(*) as cnt FROM trade_log WHERE action='stock_sell' AND item_id=?", (t,))
-        sell_cnt = c.fetchone()["cnt"]
-        c.execute("SELECT SUM(shares) as total FROM stock_holdings WHERE ticker=? AND shares>0", (t,))
-        row = c.fetchone(); held = row["total"] if row["total"] else 0
-        if buy_cnt > 3: pop = "매우 인기 (많이 매수됨 → 하락 유도)"
-        elif buy_cnt > 1: pop = "보통 인기 (소폭 하락 유도)"
-        elif sell_cnt > buy_cnt: pop = "매도 우세 (소폭 상승 가능)"
-        elif held == 0 and buy_cnt == 0: pop = "관심 없음 (소폭 상승 가능)"
-        else: pop = "보통"
-        volume_info.append(f"- {s['name']}({t}): 현재 {price}CR, 기준가 {s['base_price']}CR, 보유 {held}주, 매수{buy_cnt}건/매도{sell_cnt}건 [{pop}]")
+        t = s["ticker"]
+        p = prices.get(t, {})
+        price = p.get("price", s["base_price"])
+        v = volume.get(t, {"buy_count": 0, "sell_count": 0, "total_volume": 0})
+        buy_cnt = v["buy_count"]
+        sell_cnt = v["sell_count"]
+        held = held_total.get(t, 0)
+        if buy_cnt > 3:
+            pop = "매우 인기 (많이 매수됨 → 하락 유도)"
+        elif buy_cnt > 1:
+            pop = "보통 인기 (소폭 하락 유도)"
+        elif sell_cnt > buy_cnt:
+            pop = "매도 우세 (소폭 상승 가능)"
+        elif held == 0 and buy_cnt == 0:
+            pop = "관심 없음 (소폭 상승 가능)"
+        else:
+            pop = "보통"
+        volume_info.append(
+            f"- {s['name']}({t}): 현재 {price}CR, 기준가 {s['base_price']}CR, "
+            f"보유 {held}주, 매수{buy_cnt}건/매도{sell_cnt}건 [{pop}]"
+        )
 
     price_info = "\n".join(volume_info)
     prompt = f"""너는 노부스 오르도 세계관의 금융 뉴스 기자다.
@@ -293,8 +328,11 @@ GN3|-4|지니어스 33 분기 수익 소폭 하락"""
             parts = line.split("|", 2)
             if len(parts) != 3: continue
             ticker = parts[0].strip().upper()
-            try: change = int(parts[1].strip().replace("+","").replace("%",""))
-            except: continue
+            try:
+                change = int(parts[1].strip().replace("+","").replace("%",""))
+            except ValueError:
+                # AI 응답 파싱 실패 — 해당 라인 skip.
+                continue
             event = parts[2].strip()
             if ticker in STOCK_MAP:
                 if ticker in ["TWS", "STM"]:
@@ -310,37 +348,56 @@ GN3|-4|지니어스 33 분기 수익 소폭 하락"""
             events[s["ticker"]] = {"change": change, "event": "시장 변동"}
         return events
 
+
+# ============================================================
+# 시세 갱신
+# ============================================================
 async def update_stock_prices(copilot_api_key, model):
+    """전 종목 시세 갱신 (AI 이벤트 기반).
+
+    Returns: [{ticker, name, old, new, change, event}, ...]
+    """
     events = await generate_stock_events(copilot_api_key, model)
-    c = sdb.cursor()
-    now = datetime.now(TIMEZONE)
-    update_tag = f"{get_today_str()} {now.hour:02d}"
+    update_tag = _now_kst_tag()
+    prices = get_stock_prices()
+
     results = []
     for s in STOCKS:
         ticker = s["ticker"]
         ev = events.get(ticker, {"change": 0, "event": "변동 없음"})
-        c.execute("SELECT price FROM stock_prices WHERE ticker=?",(ticker,))
-        row = c.fetchone()
-        old_price = row["price"] if row else s["base_price"]
-        new_price = max(1, int(old_price * (1 + ev["change"]/100.0)))
-        c.execute("UPDATE stock_prices SET prev_price=?,price=?,event_text=?,last_update=? WHERE ticker=?",
-                  (old_price, new_price, ev["event"], update_tag, ticker))
-        results.append({"ticker": ticker, "name": s["name"], "old": old_price, "new": new_price,
-                        "change": ev["change"], "event": ev["event"]})
-    sdb.commit()
+        old_price = int(prices.get(ticker, {}).get("price", s["base_price"]))
+        new_price = max(1, int(old_price * (1 + ev["change"] / 100.0)))
+        try:
+            mongo_stock.update_stock_price(ticker, new_price, ev["event"], update_tag)
+        except ValueError:
+            # ticker 미존재 → 부트스트랩 누락 케이스. 시드 후 재시도.
+            mongo_stock.ensure_stock_prices(
+                [(ticker, s["base_price"])], update_tag, "상장",
+            )
+            mongo_stock.update_stock_price(ticker, new_price, ev["event"], update_tag)
+        results.append({
+            "ticker": ticker, "name": s["name"],
+            "old": old_price, "new": new_price,
+            "change": ev["change"], "event": ev["event"],
+        })
     return results
 
-STOCK_HOURS = [13, 17, 20]  # 하루 3번 이벤트
 
-def needs_stock_update():
-    """현재 시간대의 업데이트가 필요한지 확인"""
+def needs_stock_update() -> bool:
+    """현재 시간대 (STOCK_HOURS) 의 갱신이 아직 안 됐으면 True.
+
+    P2-4: 어느 한 ticker라도 현재 시간대 갱신 안 됐으면 True (부분 갱신 보정).
+    원본 SQLite LIMIT 1 시맨틱은 race / 부분 실패 시 잘못된 skip 가능 → any() 로 강화.
+    """
     now = datetime.now(TIMEZONE)
-    if now.hour not in STOCK_HOURS: return False
-    c = sdb.cursor()
-    c.execute("SELECT last_update FROM stock_prices LIMIT 1")
-    row = c.fetchone()
-    current_tag = f"{get_today_str()} {now.hour:02d}"
-    return not row or row["last_update"] != current_tag
+    if now.hour not in STOCK_HOURS:
+        return False
+    docs = mongo_stock.get_stock_prices()
+    if not docs:
+        return True  # 시드 안 된 상태. 갱신(=시드 후 갱신) 필요.
+    current_tag = _now_kst_tag(now.hour)
+    return any(d.get("lastUpdate") != current_tag for d in docs)
+
 
 # ============================================================
 # 이미지 — 시세표
@@ -382,13 +439,23 @@ def draw_stock_board():
     draw_footer(draw, w, h, "UPDATE 13:00 / 17:00 / 20:00  |  NOVUS ORDO EXCHANGE")
     return img_to_buffer(img)
 
+
 # ============================================================
 # 이미지 — 포트폴리오
 # ============================================================
 def draw_portfolio_image(user_id, user_name):
-    holdings = get_holdings(user_id)
+    """포트폴리오 이미지 생성.
+
+    user_id: discord.User.id (snowflake int) — 호출자 호환 보존.
+    내부에서 mongo_users.ensure_user 로 user_id_hex 변환.
+    """
+    user_id_hex = mongo_users.ensure_user(
+        discord_id=int(user_id),
+        discord_username=user_name or "",
+    )
+    holdings = get_holdings(user_id_hex)
     prices = get_stock_prices()
-    bal = get_balance(user_id, user_name)
+    bal = mongo_credits.get_balance(user_id_hex)
 
     rows = []
     total_value = 0; total_profit = 0
@@ -440,70 +507,121 @@ def draw_portfolio_image(user_id, user_name):
     draw_footer(draw, w, h, f"잔고 {bal} + 주식 {total_value} = 총 {bal+total_value} CR")
     return img_to_buffer(img)
 
+
 # ============================================================
-# 위로 메시지 (폭락 시)
+# 위로 메시지 (폭락 시) — 보유자 → AGENT_NAMES 매핑
 # ============================================================
 def get_crashed_holders(results):
-    """-15% 이상 폭락 종목 보유자 목록 반환"""
+    """-15% 이상 폭락 종목의 활성 보유자 → AGENT_NAMES 매핑 리스트.
+
+    Returns: [{"agent": str, "stock_name": str}, ...]
+
+    Note: 원본 SQLite 시맨틱 — 보유자 유저명을 SQLite credits 테이블에서 가져왔음.
+    Mongo 에서는 mongo_users.get_user_by_id_hex 의 displayName/discordUsername 사용.
+    AGENT_NAMES lookup key 우선순위:
+      1. user.discordUsername (Discord 닉네임)
+      2. user.displayName
+    """
     crashed = [r for r in results if r["change"] <= -15]
     comfort_list = []
     for crash in crashed:
-        c = sdb.cursor()
-        c.execute("SELECT user_id FROM stock_holdings WHERE ticker=? AND shares>0", (crash["ticker"],))
-        holders = c.fetchall()
+        holders = mongo_stock.get_active_holders_by_ticker(crash["ticker"])
         for h in holders:
-            c.execute("SELECT user_name FROM credits WHERE user_id=?", (h["user_id"],))
-            name_row = c.fetchone()
-            if not name_row: continue
-            nick = name_row["user_name"]
+            user = mongo_users.get_user_by_id_hex(h["userId"])
+            if not user:
+                continue
+            # Discord 닉네임 우선 (AGENT_NAMES 키와 일치하는 형식).
+            nick = user.get("discordUsername") or user.get("displayName") or ""
+            if not nick:
+                continue
             agent = AGENT_NAMES.get(nick, nick)
             comfort_list.append({"agent": agent, "stock_name": crash["name"]})
     return comfort_list
+
 
 # ============================================================
 # GM 현황 텍스트
 # ============================================================
 def get_all_holdings_text():
-    c = sdb.cursor()
-    c.execute("SELECT DISTINCT user_id FROM stock_holdings WHERE shares>0")
-    users = c.fetchall()
-    if not users: return "아직 주식을 보유한 요원이 없다."
+    """전 요원 주식 보유 현황 markdown.
+
+    SQLite 시맨틱: DISTINCT user_id from stock_holdings WHERE shares>0.
+    Mongo: mongo_stock.get_all_holdings 에서 shares>0 만 필터 + userId 그룹.
+    """
+    all_docs = mongo_stock.get_all_holdings()
+    by_user: dict[str, list[dict]] = {}
+    for d in all_docs:
+        if int(d.get("shares", 0)) <= 0:
+            continue
+        uid_hex = d.get("userId")
+        if not uid_hex:
+            continue
+        by_user.setdefault(uid_hex, []).append(_normalize_holding_doc(d))
+
+    if not by_user:
+        return "아직 주식을 보유한 요원이 없다."
+
     prices = get_stock_prices()
     lines = ["**전 요원 주식 보유 현황**\n"]
-    for u in users:
-        uid = u["user_id"]
-        c.execute("SELECT user_name FROM credits WHERE user_id=?",(uid,))
-        name_row = c.fetchone()
-        nick = name_row["user_name"] if name_row else str(uid)
+    for uid_hex, holdings in by_user.items():
+        user = mongo_users.get_user_by_id_hex(uid_hex)
+        nick = ""
+        if user:
+            nick = user.get("discordUsername") or user.get("displayName") or uid_hex
+        else:
+            nick = uid_hex
         agent = AGENT_NAMES.get(nick, nick)
-        holdings = get_holdings(uid)
         total_value = 0; total_profit = 0; parts = []
         for h in holdings:
             s = STOCK_MAP.get(h["ticker"])
             if not s: continue
             cur = prices.get(h["ticker"], {}).get("price", s["base_price"])
-            val = cur * h["shares"]; pft = (cur - h["avg_price"]) * h["shares"]
+            val = cur * h["shares"]
+            pft = (cur - h["avg_price"]) * h["shares"]
             total_value += val; total_profit += pft
             pstr = f"+{pft}" if pft >= 0 else str(pft)
-            parts.append(f"  {h['ticker']} {h['shares']}주 (평단{h['avg_price']}, 현재{cur}, {pstr})")
+            parts.append(
+                f"  {h['ticker']} {h['shares']}주 "
+                f"(평단{h['avg_price']}, 현재{cur}, {pstr})"
+            )
         pstr = f"+{total_profit}" if total_profit >= 0 else str(total_profit)
         lines.append(f"**{agent}** ({nick}) — 평가액 {total_value} CR ({pstr})")
         lines.extend(parts)
     return "\n".join(lines)
 
+
+# ============================================================
+# GM 수동 이벤트 적용
+# ============================================================
 def apply_gm_event(ticker, change, event_text):
-    """GM 수동 이벤트 적용, 결과 반환"""
-    if ticker not in STOCK_MAP: return None
+    """GM 수동 이벤트 적용. Returns: result dict (update_stock_prices 와 동일 스키마).
+
+    - change 는 -90 ~ +200 으로 클램프 (원본 시맨틱 보존).
+    - lastUpdate 는 KST 일자 문자열 (시간대 태그 아님 — 원본 시맨틱 보존).
+      이렇게 해야 GM 이벤트 후에도 정규 STOCK_HOURS 갱신이 막히지 않음.
+    """
+    if ticker not in STOCK_MAP:
+        return None
     change = max(-90, min(200, change))
     s = STOCK_MAP[ticker]
-    c = sdb.cursor()
-    c.execute("SELECT price FROM stock_prices WHERE ticker=?",(ticker,))
-    row = c.fetchone()
-    old_price = row["price"] if row else s["base_price"]
-    new_price = max(1, int(old_price * (1 + change/100.0)))
     today = get_today_str()
-    c.execute("UPDATE stock_prices SET prev_price=?,price=?,event_text=?,last_update=? WHERE ticker=?",
-              (old_price, new_price, event_text, today, ticker))
-    sdb.commit()
-    return {"ticker": ticker, "name": s["name"], "old": old_price, "new": new_price,
-            "change": change, "event": event_text}
+
+    # 현재 가격 조회 (race window 있음 — 단일 봇 프로세스라 무시).
+    cur = mongo_stock.get_stock_price(ticker)
+    old_price = int(cur["price"]) if cur else s["base_price"]
+    new_price = max(1, int(old_price * (1 + change / 100.0)))
+
+    try:
+        mongo_stock.update_stock_price(ticker, new_price, event_text, today)
+    except ValueError:
+        # ticker 미존재 → 시드 후 재시도.
+        mongo_stock.ensure_stock_prices(
+            [(ticker, s["base_price"])], today, "상장",
+        )
+        mongo_stock.update_stock_price(ticker, new_price, event_text, today)
+
+    return {
+        "ticker": ticker, "name": s["name"],
+        "old": old_price, "new": new_price,
+        "change": change, "event": event_text,
+    }
