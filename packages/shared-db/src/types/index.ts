@@ -101,6 +101,7 @@ export type {
 } from "./credit-pool.js";
 export {
   OPERATION_POOL_ID,
+  OPERATION_POOL_DEFAULT_NAME,
   OPERATION_POOL_INITIAL_BALANCE,
 } from "./credit-pool.js";
 

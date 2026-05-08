@@ -5,10 +5,14 @@
  * @module commands/register
  */
 
-import { ChannelType, REST, Routes } from "discord.js";
+import { ChannelType, PermissionFlagsBits, REST, Routes } from "discord.js";
 import { Cmd, Help } from "../constants/registrar-voice.js";
 import { config } from "../config.js";
 import {
+  BALANCE_ROOT,
+  CREDIT_ROOT,
+  CreditOpt,
+  CreditSub,
   HELP_ROOT_EN,
   HELP_ROOT_KO,
   INFO_ROOT_EN,
@@ -292,6 +296,170 @@ const INFO_EN_CMD = {
 };
 
 /**
+ * `/크레딧` — GM 전용 크레딧 운영 (지급·차감·전체지급·작전 풀 입출금·조회).
+ *
+ * `default_member_permissions` 에 `ManageGuild` 를 지정해 Discord UI 단계에서 일반
+ * 사용자에게는 노출 자체를 차단한다. 본인 잔액 조회는 별도 단일 명령 `/잔액` 으로 분리.
+ *
+ * 핸들러도 추가로 Admin/ManageGuild 게이트를 걸어 직접 호출 시도 (예: 공격자 client)
+ * 까지 방어한다 (defense-in-depth).
+ */
+const CREDIT_CMD = {
+  type: 1 as const,
+  name: CREDIT_ROOT,
+  description:
+    "크레딧 운영 — 지급·차감·작전 풀 입출금·조회 (서버 관리권한 전용).",
+  default_member_permissions: String(PermissionFlagsBits.ManageGuild),
+  dm_permission: false,
+  options: [
+    {
+      type: 1,
+      name: CreditSub.grant,
+      description:
+        "지정 인원의 메인 캐릭에 크레딧을 지급합니다(관리권한). 사유 표기를 권장드립니다.",
+      options: [
+        {
+          type: 6,
+          name: CreditOpt.user,
+          description: "지급 대상 인원을 선택해주십시오.",
+          required: true,
+        },
+        {
+          type: 4,
+          name: CreditOpt.amount,
+          description: "지급 금액(CR · 양수). 단일 거래 단위로 기재 부탁드립니다.",
+          required: true,
+          min_value: 1,
+        },
+        {
+          type: 3,
+          name: CreditOpt.reason,
+          description: "(선택) 사유. 운영 대장과 캐릭터 ledger 에 함께 기록됩니다.",
+          required: false,
+        },
+      ],
+    },
+    {
+      type: 1,
+      name: CreditSub.deduct,
+      description:
+        "지정 인원의 메인 캐릭에서 크레딧을 차감합니다(관리권한). 음수 잔액 진입을 허용합니다.",
+      options: [
+        {
+          type: 6,
+          name: CreditOpt.user,
+          description: "차감 대상 인원을 선택해주십시오.",
+          required: true,
+        },
+        {
+          type: 4,
+          name: CreditOpt.amount,
+          description: "차감 금액(양수, CR). 부호 없이 기재해주십시오.",
+          required: true,
+          min_value: 1,
+        },
+        {
+          type: 3,
+          name: CreditOpt.reason,
+          description: "(선택) 사유. 운영 대장과 캐릭터 ledger 에 함께 기록됩니다.",
+          required: false,
+        },
+      ],
+    },
+    {
+      type: 1,
+      name: CreditSub.grantAll,
+      description:
+        "ledger 보유 운영 캐릭터 전원에게 동일 금액을 일괄 지급합니다(관리권한).",
+      options: [
+        {
+          type: 4,
+          name: CreditOpt.amount,
+          description: "1인당 지급 금액(CR · 양수).",
+          required: true,
+          min_value: 1,
+        },
+        {
+          type: 3,
+          name: CreditOpt.reason,
+          description: "(선택) 사유. 모든 대상 ledger 에 동일 문구로 기록됩니다.",
+          required: false,
+        },
+      ],
+    },
+    {
+      type: 1,
+      name: CreditSub.opGrant,
+      description: "작전 크레딧 풀에 입금합니다(관리권한). 사용자 ledger 와는 별도입니다.",
+      options: [
+        {
+          type: 4,
+          name: CreditOpt.amount,
+          description: "입금 금액(CR · 양수).",
+          required: true,
+          min_value: 1,
+        },
+        {
+          type: 3,
+          name: CreditOpt.reason,
+          description: "(선택) 사유.",
+          required: false,
+        },
+      ],
+    },
+    {
+      type: 1,
+      name: CreditSub.opDeduct,
+      description: "작전 크레딧 풀에서 출금합니다(관리권한). 잔액 부족 시 거부됩니다.",
+      options: [
+        {
+          type: 4,
+          name: CreditOpt.amount,
+          description: "출금 금액(CR · 양수, 풀 잔액 이하).",
+          required: true,
+          min_value: 1,
+        },
+        {
+          type: 3,
+          name: CreditOpt.reason,
+          description: "(선택) 사유.",
+          required: false,
+        },
+      ],
+    },
+    {
+      type: 1,
+      name: CreditSub.query,
+      description:
+        "지정 인원의 메인 캐릭 잔액과 최근 거래 5건을 조회합니다(관리권한).",
+      options: [
+        {
+          type: 6,
+          name: CreditOpt.user,
+          description: "조회 대상 인원을 선택해주십시오.",
+          required: true,
+        },
+      ],
+    },
+  ],
+};
+
+/**
+ * `/잔액` — 본인 메인 캐릭의 잔액 + 최근 거래 5건을 비밀 열람으로 조회 (누구나).
+ *
+ * 단일 명령(서브커맨드 ❌). `/크레딧` 이 GM 전용으로 잠긴 후에도 일반 사용자가
+ * 본인 잔액을 조회할 수 있도록 분리된 진입점.
+ */
+const BALANCE_CMD = {
+  type: 1 as const,
+  name: BALANCE_ROOT,
+  description: "본인의 메인 캐릭 잔액과 최근 거래 5건을 비밀 열람으로 조회합니다.",
+  default_member_permissions: null,
+  dm_permission: false,
+  options: [],
+};
+
+/**
  * 슬래시 커맨드를 Discord에 등록합니다.
  */
 export async function registerCommands(): Promise<void> {
@@ -303,6 +471,8 @@ export async function registerCommands(): Promise<void> {
     HELP_EN_CMD,
     INFO_KO_CMD,
     INFO_EN_CMD,
+    CREDIT_CMD,
+    BALANCE_CMD,
   ];
 
   if (config.guildId) {

@@ -8,6 +8,10 @@ export const HELP_ROOT_KO = "도움말";
 export const HELP_ROOT_EN = "help";
 export const INFO_ROOT_KO = "안내";
 export const INFO_ROOT_EN = "info";
+/** `/크레딧 ...` — GM 전용 크레딧 운영 (지급/차감/전체지급/작전지급/작전차감/조회) */
+export const CREDIT_ROOT = "크레딧";
+/** `/잔액` — 누구나 사용 가능한 본인 메인 캐릭 잔액 조회 (단일 명령, 서브 ❌) */
+export const BALANCE_ROOT = "잔액";
 
 export const Sub = {
   create: "생성",
@@ -20,6 +24,18 @@ export const Sub = {
   editClose: "응답마감변경",
   editDate: "일정변경",
   cancel: "취소",
+} as const;
+
+/**
+ * `/크레딧 ...` 서브커맨드 한국어 이름. GM 전용 6개 (잔액은 별도 단일 명령 `/잔액` 으로 분리).
+ */
+export const CreditSub = {
+  grant: "지급",
+  deduct: "차감",
+  grantAll: "전체지급",
+  opGrant: "작전지급",
+  opDeduct: "작전차감",
+  query: "조회",
 } as const;
 
 export const Opt = {
@@ -36,4 +52,11 @@ export const Opt = {
   month: "월",
   reason: "사유",
   pin: "고정",
+} as const;
+
+/** `/크레딧 ...` 옵션 한국어 이름. */
+export const CreditOpt = {
+  user: "대상",
+  amount: "금액",
+  reason: "사유",
 } as const;

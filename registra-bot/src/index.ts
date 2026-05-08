@@ -15,6 +15,8 @@ import { config } from "./config.js";
 import { connectDb, closeDb } from "./db/client.js";
 import { registerCommands } from "./commands/register.js";
 import {
+  BALANCE_ROOT,
+  CREDIT_ROOT,
   HELP_ROOT_EN,
   HELP_ROOT_KO,
   INFO_ROOT_EN,
@@ -23,6 +25,10 @@ import {
   Sub,
 } from "./slash/ko-names.js";
 import { handleButtonInteraction } from "./handlers/button-handler.js";
+import {
+  handleCreditCommand,
+  handleSelfBalanceCommand,
+} from "./commands/credit.js";
 import { handleInfo } from "./commands/info.js";
 import { handleSessionCreate } from "./commands/session-create.js";
 import { handleSessionCreateAutocomplete } from "./commands/session-create-autocomplete.js";
@@ -122,6 +128,16 @@ client.on(Events.InteractionCreate, (interaction) => {
       safeInteraction.commandName === INFO_ROOT_EN
     ) {
       await handleInfo(safeInteraction);
+      return;
+    }
+
+    if (safeInteraction.commandName === CREDIT_ROOT) {
+      await handleCreditCommand(safeInteraction);
+      return;
+    }
+
+    if (safeInteraction.commandName === BALANCE_ROOT) {
+      await handleSelfBalanceCommand(safeInteraction);
       return;
     }
 

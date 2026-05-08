@@ -340,6 +340,68 @@ export const D = {
   },
 
   warnPrefix: "\n\n【주의】 ",
+
+  /* ── /크레딧 ── */
+  /** GM/사용자 명령 진입 차단 — StarGate 계정(웹 가입) 미등록 */
+  userNotRegistered:
+    `${E}StarGate 계정 미등록. 본 절차는 웹 시스템에 가입된 인원만 처리할 수 있습니다.`,
+  /** 봇 계정 대상 차단 (지급/차감/조회 공용 voice) */
+  botAccountRejected: `${E}봇 계정에는 크레딧 대장이 발급되지 않습니다.`,
+  /** 메인 캐릭터 미등록 — owner 단위 라우팅이 불가 */
+  mainCharNotFound: `${E}메인 캐릭터 미등록. 캐릭터 등재 절차 완료 후 재시도 부탁드립니다.`,
+  /** 1인 1 MAIN 정책 위반 (운영 데이터 정합성 이상) */
+  mainCharIntegrityViolation: (codenames: string) =>
+    `${E}정합성 위반 — 메인 캐릭터가 다중 등재되어 있습니다 (${codenames}). 운영자 정리 후 재시도 부탁드립니다.`,
+  /** 잔액 부족(사용자 ledger) — 보통 GM 차감에는 allowNegative=true 라 표시되지 않음 */
+  insufficientCredit: (codename: string, current: number, requested: number) =>
+    `${E}**${codename}** 잔액 부족. 현재 ${current} CR, 요청 ${requested} CR.`,
+  /** 작전 풀 잔액 부족 — 출금 명령 거부 */
+  opPoolInsufficient: (current: number, requested: number) =>
+    `${E}작전 풀 잔액 부족. 현재 ${current} CR, 요청 ${requested} CR.`,
+  /** 지급 완료 (단일) */
+  creditGranted: (
+    codename: string,
+    amount: number,
+    prev: number,
+    next: number
+  ) =>
+    `${S}**${codename}**에 ${amount} CR을 지급 완료했습니다. 잔액: ${prev} → **${next}** CR`,
+  /** 차감 완료 (단일) */
+  creditDeducted: (
+    codename: string,
+    amount: number,
+    prev: number,
+    next: number
+  ) =>
+    `${S}**${codename}**에서 ${amount} CR을 차감 완료했습니다. 잔액: ${prev} → **${next}** CR`,
+  /**
+   * 전체 지급 결과 집계 — 성공만 있을 때와 부분 실패가 있을 때의 voice 분기.
+   *
+   * 실패 codename 목록은 호출처가 별도 라인으로 덧붙이도록 분리한다 (본 voice 는 summary 만).
+   */
+  creditAllGranted: (
+    successCount: number,
+    amount: number,
+    total: number,
+    failed: number
+  ) => {
+    const summary = `${S}운영 캐릭터 **${successCount}**명에게 각 ${amount} CR을 지급 완료했습니다 (총 ${total} CR).`;
+    if (failed > 0) {
+      return `${summary}\n${N}실패 **${failed}**건이 발생했습니다 — 아래 목록을 확인 부탁드립니다.`;
+    }
+    return summary;
+  },
+  /** 전체 지급 — 대상 0명 */
+  creditAllNoTarget: `${N}운영 캐릭터(ledger 보유)가 한 명도 식별되지 않습니다. 등재 상태를 점검 부탁드립니다.`,
+  /** 작전 풀 입금 완료 */
+  opPoolGranted: (amount: number, prev: number, next: number) =>
+    `${S}작전 풀에 ${amount} CR을 입금 완료했습니다. 잔액: ${prev} → **${next}** CR`,
+  /** 작전 풀 출금 완료 */
+  opPoolDeducted: (amount: number, prev: number, next: number) =>
+    `${S}작전 풀에서 ${amount} CR을 출금 완료했습니다. 잔액: ${prev} → **${next}** CR`,
+  /** 조회/잔액 임베드 — 임베드 외에 텍스트 안내가 필요할 때 */
+  creditQueryFooter: (codename: string) =>
+    `대상 캐릭터: ${codename} · 최근 5건 표시(없으면 생략)`,
 } as const;
 
 /** 세션 마감·취소 시 관리자에게 붙는 경고(문자열 배열) */

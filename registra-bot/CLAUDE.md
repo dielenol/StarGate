@@ -1,6 +1,6 @@
 # registra-bot
 
-Discord 일정 관리 봇. TRPG 세션의 생성·응답 수집·자동 마감·리마인드를 처리한다.
+Discord 일정 관리 + 크레딧 운영 봇. TRPG 세션의 생성·응답 수집·자동 마감·리마인드와, GM 의 크레딧 지급·차감·작전 풀 입출금·잔액 조회 + 사용자 본인 잔액 열람을 처리한다.
 
 ## 스택
 
@@ -28,7 +28,7 @@ pnpm start        # node dist/index.js (프로덕션)
 src/
 ├── index.ts           # 진입점 — Client 초기화, 이벤트·스케줄러 등록
 ├── config.ts          # 환경변수 검증, config 객체 export
-├── commands/          # 슬래시 커맨드 핸들러 (session-create, session-manage, session-create-autocomplete, register)
+├── commands/          # 슬래시 커맨드 핸들러 (session-create, session-manage, session-create-autocomplete, register, credit)
 ├── handlers/          # 버튼 인터랙션 처리
 ├── scheduler/         # 백그라운드 폴링 (close-checker 1분, reminder-checker 15분)
 ├── services/          # 비즈니스 로직 (session-close)
