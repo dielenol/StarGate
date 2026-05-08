@@ -5,6 +5,7 @@
 import { ObjectId, type Filter } from "mongodb";
 
 import type {
+  AgentCharacter,
   Character,
   CharacterTier,
   CharacterType,
@@ -83,6 +84,39 @@ export async function listCharactersByOwner(
     .find({ ownerId })
     .project<Pick<Character, "_id" | "agentLevel">>({ agentLevel: 1 })
     .toArray();
+}
+
+/**
+ * owner의 메인 AGENT 캐릭터 조회 — `type=AGENT` + (`tier=MAIN` 또는 미설정) + ownerId 매칭.
+ *
+ * 1인 1 MAIN 강제: 여러 개 발견 시 Error throw (운영 데이터 정합성 위반).
+ * 미존재 시 null 반환 — 호출자가 "메인 캐릭터 미등록" 으로 거절 처리한다.
+ *
+ * 크레딧 ledger 가 character 단위로 전환되면서, owner 단위로 받은 요청을
+ * 메인 캐릭터로 라우팅하기 위한 유일한 진입점.
+ */
+export async function findMainCharacterByOwner(
+  ownerId: string
+): Promise<AgentCharacter | null> {
+  const col = await charactersCol();
+  // tier 가 명시적으로 "MAIN" 이거나 미설정인 AGENT — listAgentCharacters("MAIN") 와 동일 패턴.
+  const docs = await col
+    .find({
+      type: "AGENT",
+      ownerId,
+      $or: [{ tier: "MAIN" }, { tier: { $exists: false } }],
+    })
+    .toArray();
+
+  if (docs.length === 0) return null;
+  if (docs.length > 1) {
+    const codenames = docs.map((d) => d.codename).join(", ");
+    throw new Error(
+      `findMainCharacterByOwner: owner=${ownerId} has ${docs.length} MAIN agents (${codenames}). ` +
+        `1인 1 MAIN 정책 위반 — 운영자 정리 필요.`
+    );
+  }
+  return docs[0] as AgentCharacter;
 }
 
 /**

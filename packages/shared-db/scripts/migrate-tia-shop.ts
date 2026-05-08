@@ -487,6 +487,24 @@ async function migrateCredits(
   args: CliArgs,
   stats: MigrationStats,
 ): Promise<void> {
+  // Phase 2 (character 단위 전환) 이후 호환성 미반영 — Phase D 에서 재작성 예정.
+  // createCreditTransaction 시그니처 변경:
+  //   user 단위 (userId, userName)  →  character 단위 (characterId, characterCodename, ownerId, ownerName)
+  // 각 SQLite credits.user_id → discordId → user._id → findMainCharacterByOwner 매핑 후
+  // character 단위 시드가 필요. 본 스크립트는 Phase D 에서 재구성 전까지 호출 금지.
+  //
+  // tsconfig.json:include=["src"] 라 scripts/ 컴파일 대상 외 → silent 위험.
+  // 이 fail-fast guard 가 운영자/Claude 의 잘못된 실행을 즉시 차단.
+  // 다른 단계(operation_pool / stock_holdings / stock_prices / shop_inventory / shop_daily_stock)는
+  // character 단위 전환 대상이 아니므로 정상 동작 유지.
+  throw new Error(
+    "migrateCredits: Phase 2 (character 단위 ledger 전환) 후 호환성 미반영 — Phase D 에서 재작성 예정. " +
+      "createCreditTransaction 시그니처 변경: userId/userName → characterId/characterCodename/ownerId/ownerName. " +
+      "각 SQLite credits.user_id → discordId → user._id → findMainCharacterByOwner 매핑 후 시드 필요. " +
+      "스크립트 호출 금지 — Phase D 작업 후 본 throw 를 제거하고 character 단위 시드로 재작성할 것.",
+  );
+
+  // 아래 기존 코드는 Phase D 재작성 시 참조용으로 보존 (현재 도달 불가).
   const rows = sqlite
     .prepare<[], SqliteCreditRow>("SELECT user_id, user_name, balance FROM credits")
     .all();

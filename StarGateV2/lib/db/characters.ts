@@ -16,6 +16,7 @@ export {
   findCharacterByCodename,
   listCharactersByOwner,
   listCharactersByOwnerIds,
+  findMainCharacterByOwner,
   createCharacter,
   updateCharacter,
   deleteCharacter,

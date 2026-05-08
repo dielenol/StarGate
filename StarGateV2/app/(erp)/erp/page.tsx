@@ -3,8 +3,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
-import { findCharacterById, listCharactersByOwner } from "@/lib/db/characters";
-import { getUserBalance } from "@/lib/db/credits";
+import {
+  findCharacterById,
+  findMainCharacterByOwner,
+  listCharactersByOwner,
+} from "@/lib/db/characters";
+import { getCharacterBalance } from "@/lib/db/credits";
 import { countUnread, listUserNotifications } from "@/lib/db/notifications";
 import {
   countParticipationByUserId,
@@ -156,10 +160,21 @@ export default async function ERPDashboardPage() {
 
   // 다가올 세션은 enrich 후 필터링용으로 더 넉넉히 fetch (기본 limit 20).
   // countParticipationByUserId 는 모든 유저 카운트를 한 번에 반환 — viewer 항목만 lookup.
+  // balance: character 단위 ledger 전환됨 — 메인 캐릭 미등록 user 는 0 표시.
+  // mainCharacter 은 정합성 위반 시 throw → null 폴백 + 별도 시그널 노출.
+  const mainCharacterPromise = findMainCharacterByOwner(userId).then(
+    (v) => ({ ok: true as const, value: v }),
+    (err: unknown) => ({
+      ok: false as const,
+      message:
+        err instanceof Error ? err.message : "메인 캐릭터 조회 실패 (정합성 위반)",
+    }),
+  );
+
   const [
     user,
     myCharRefs,
-    balance,
+    mainCharacterResult,
     notifications,
     unreadCount,
     upcomingRaw,
@@ -168,7 +183,7 @@ export default async function ERPDashboardPage() {
   ] = await Promise.all([
     findUserById(userId).catch(() => null),
     listCharactersByOwner(userId).catch(() => []),
-    getUserBalance(userId).catch(() => 0),
+    mainCharacterPromise,
     listUserNotifications(userId, 3).catch(() => []),
     countUnread(userId).catch(() => 0),
     guildId
@@ -179,6 +194,13 @@ export default async function ERPDashboardPage() {
       : Promise.resolve({} as Record<string, number>),
     listWikiPages().catch(() => []),
   ]);
+
+  const mainCharacter = mainCharacterResult.ok ? mainCharacterResult.value : null;
+  const mainIntegrityError = mainCharacterResult.ok ? null : mainCharacterResult.message;
+
+  const balance = mainCharacter
+    ? await getCharacterBalance(String(mainCharacter._id)).catch(() => 0)
+    : 0;
 
   // 누적 STATS — profile 폐지로 dashboard 에 흡수.
   const mySessionCount = viewerDiscordId
@@ -320,6 +342,13 @@ export default async function ERPDashboardPage() {
               </span>
             </Link>
           </div>
+          {mainIntegrityError ? (
+            <div className={styles.empty}>
+              <strong>⚠ 정합성 위반</strong>: {mainIntegrityError}
+              <br />
+              운영자에게 문의하세요.
+            </div>
+          ) : null}
         </Box>
 
         {/* OPERATIVE STATS — 누적 활동 시그널 */}

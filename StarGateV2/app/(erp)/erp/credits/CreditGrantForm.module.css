@@ -47,3 +47,40 @@
   font-size: 14px;
   letter-spacing: 0.05em;
 }
+
+.modeRow {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.modeBtn {
+  appearance: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: inherit;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.modeBtn:hover {
+  border-color: var(--gold);
+}
+
+.modeBtnActive {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+}
+
+.hint {
+  font-size: 14px;
+  color: var(--text-secondary, var(--text));
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  margin-top: -4px;
+}

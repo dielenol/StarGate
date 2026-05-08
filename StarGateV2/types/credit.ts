@@ -6,4 +6,11 @@ export type {
   CreditTransaction,
   CreditTransactionType,
   CreateCreditTransactionInput,
+  WebAllowedCreditType,
+} from "@stargate/shared-db/types";
+
+export {
+  CREDIT_TRANSACTION_TYPES,
+  WEB_ALLOWED_CREDIT_TYPES,
+  BOT_ONLY_CREDIT_TYPES,
 } from "@stargate/shared-db/types";

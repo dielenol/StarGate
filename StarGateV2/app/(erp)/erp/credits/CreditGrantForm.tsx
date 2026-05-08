@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
-
-import { useGrantCredit } from "@/hooks/mutations/useCreditMutation";
+import { useMemo, useState } from "react";
 
 import type { CreditTransactionType } from "@/types/credit";
-import type { UserPublic } from "@/types/user";
+
+import { useGrantCredit } from "@/hooks/mutations/useCreditMutation";
 
 import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -14,9 +13,7 @@ import Select from "@/components/ui/Select/Select";
 
 import styles from "./CreditGrantForm.module.css";
 
-interface CreditGrantFormProps {
-  users: UserPublic[];
-}
+/* ── 상수 ── */
 
 const GRANT_TYPES: { value: CreditTransactionType; label: string }[] = [
   { value: "ADMIN_GRANT", label: "관리자 지급" },
@@ -24,17 +21,72 @@ const GRANT_TYPES: { value: CreditTransactionType; label: string }[] = [
   { value: "SESSION_REWARD", label: "세션 보상" },
 ];
 
-export default function CreditGrantForm({ users }: CreditGrantFormProps) {
+/* ── 타입 ── */
+
+/**
+ * GM 발급 폼이 필요한 user 정보 + 메인 캐릭 매핑.
+ * 서버에서 미리 매핑해 넘겨줌으로써 UI 가 추가 fetch 없이 캐릭 codename 표시.
+ */
+export interface GrantTargetUser {
+  userId: string;
+  username: string;
+  displayName: string;
+  /** 메인 AGENT 캐릭터의 _id hex. 미등록이면 null — 발급 불가 표시. */
+  mainCharacterId: string | null;
+  /** 메인 AGENT 캐릭터의 codename. */
+  mainCharacterCodename: string | null;
+}
+
+interface CreditGrantFormProps {
+  targets: GrantTargetUser[];
+}
+
+type RoutingMode = "owner" | "character";
+
+/* ── 컴포넌트 ── */
+
+export default function CreditGrantForm({ targets }: CreditGrantFormProps) {
   const grantCredit = useGrantCredit();
 
-  const [userId, setUserId] = useState("");
+  const [mode, setMode] = useState<RoutingMode>("owner");
+  const [ownerId, setOwnerId] = useState("");
+  const [characterId, setCharacterId] = useState("");
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<CreditTransactionType>("ADMIN_GRANT");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const selectedUser = users.find((u) => u._id === userId);
+  // owner 모드용 — 메인 캐릭 보유자 우선, 미등록자는 하단 disabled 로 노출 (silent drop 금지).
+  const ownerOptions = useMemo(() => {
+    const sorted = [...targets].sort((a, b) => {
+      // 1차: 메인 보유자가 위.
+      if (Boolean(a.mainCharacterId) !== Boolean(b.mainCharacterId)) {
+        return a.mainCharacterId ? -1 : 1;
+      }
+      // 2차: displayName 알파벳.
+      return a.displayName.localeCompare(b.displayName);
+    });
+    return sorted;
+  }, [targets]);
+
+  // character 모드용 — 메인 캐릭이 있는 user 의 캐릭터만 노출 (1인 1 MAIN 전제).
+  const characterOptions = useMemo(
+    () =>
+      targets
+        .filter((t) => t.mainCharacterId !== null)
+        .map((t) => ({
+          characterId: t.mainCharacterId as string,
+          codename: t.mainCharacterCodename as string,
+          ownerLabel: `${t.displayName} (${t.username})`,
+        })),
+    [targets],
+  );
+
+  const selectedOwner = ownerOptions.find((t) => t.userId === ownerId);
+  const selectedCharacter = characterOptions.find(
+    (c) => c.characterId === characterId,
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,13 +99,22 @@ export default function CreditGrantForm({ users }: CreditGrantFormProps) {
       return;
     }
 
+    if (mode === "owner" && !ownerId) {
+      setError("대상 사용자를 선택하세요.");
+      return;
+    }
+    if (mode === "character" && !characterId) {
+      setError("대상 캐릭터를 선택하세요.");
+      return;
+    }
+
     const finalAmount =
       type === "ADMIN_DEDUCT" ? -Math.abs(numAmount) : Math.abs(numAmount);
 
     grantCredit.mutate(
       {
-        userId,
-        userName: selectedUser?.displayName ?? "",
+        ownerId: mode === "owner" ? ownerId : undefined,
+        characterId: mode === "character" ? characterId : undefined,
         amount: finalAmount,
         type,
         description,
@@ -61,7 +122,8 @@ export default function CreditGrantForm({ users }: CreditGrantFormProps) {
       {
         onSuccess: () => {
           setSuccess("크레딧이 처리되었습니다.");
-          setUserId("");
+          setOwnerId("");
+          setCharacterId("");
           setAmount("");
           setDescription("");
         },
@@ -74,21 +136,85 @@ export default function CreditGrantForm({ users }: CreditGrantFormProps) {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <label className={styles.field}>
-        <Eyebrow>대상 유저</Eyebrow>
-        <Select
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          required
-        >
-          <option value="">-- 유저 선택 --</option>
-          {users.map((u) => (
-            <option key={u._id} value={u._id}>
-              {u.displayName} ({u.username})
-            </option>
-          ))}
-        </Select>
-      </label>
+      <div>
+        <Eyebrow>대상 라우팅</Eyebrow>
+        <div className={styles.modeRow}>
+          <button
+            type="button"
+            className={`${styles.modeBtn} ${
+              mode === "owner" ? styles.modeBtnActive : ""
+            }`}
+            onClick={() => setMode("owner")}
+          >
+            사용자 선택
+          </button>
+          <button
+            type="button"
+            className={`${styles.modeBtn} ${
+              mode === "character" ? styles.modeBtnActive : ""
+            }`}
+            onClick={() => setMode("character")}
+          >
+            캐릭터 직접 지정
+          </button>
+        </div>
+        <div className={styles.hint}>
+          {mode === "owner"
+            ? "사용자를 선택하면 해당 사용자의 메인 AGENT 캐릭터로 자동 라우팅됩니다."
+            : "캐릭터를 직접 선택합니다 (메인 캐릭터만 노출)."}
+        </div>
+      </div>
+
+      {mode === "owner" ? (
+        <label className={styles.field}>
+          <Eyebrow>대상 사용자</Eyebrow>
+          <Select
+            value={ownerId}
+            onChange={(e) => setOwnerId(e.target.value)}
+            required
+          >
+            <option value="">-- 사용자 선택 --</option>
+            {ownerOptions.map((t) => (
+              <option
+                key={t.userId}
+                value={t.userId}
+                disabled={!t.mainCharacterId}
+              >
+                {t.displayName} ({t.username})
+                {t.mainCharacterId
+                  ? ` · ${t.mainCharacterCodename}`
+                  : " · ⚠ 메인 캐릭터 미등록 (발급 불가)"}
+              </option>
+            ))}
+          </Select>
+          {selectedOwner ? (
+            <div className={styles.hint}>
+              메인 캐릭: <b>{selectedOwner.mainCharacterCodename}</b>
+            </div>
+          ) : null}
+        </label>
+      ) : (
+        <label className={styles.field}>
+          <Eyebrow>대상 캐릭터</Eyebrow>
+          <Select
+            value={characterId}
+            onChange={(e) => setCharacterId(e.target.value)}
+            required
+          >
+            <option value="">-- 캐릭터 선택 --</option>
+            {characterOptions.map((c) => (
+              <option key={c.characterId} value={c.characterId}>
+                {c.codename} · {c.ownerLabel}
+              </option>
+            ))}
+          </Select>
+          {selectedCharacter ? (
+            <div className={styles.hint}>
+              소유자: {selectedCharacter.ownerLabel}
+            </div>
+          ) : null}
+        </label>
+      )}
 
       <div className={styles.row}>
         <label className={styles.field}>

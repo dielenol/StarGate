@@ -1,26 +1,143 @@
 import { NextResponse } from "next/server";
 
-import type { CreditTransactionType } from "@/types/credit";
+import type { CreditTransactionType, WebAllowedCreditType } from "@/types/credit";
+
+import { WEB_ALLOWED_CREDIT_TYPES } from "@/types/credit";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
-import { addCredit, getUserBalance, listCreditTransactions } from "@/lib/db/credits";
+import { findCharacterById, findMainCharacterByOwner } from "@/lib/db/characters";
+import {
+  addCredit,
+  getCharacterBalance,
+  listCreditTransactions,
+} from "@/lib/db/credits";
 import { findUserById } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
 
-export async function GET() {
+/* ── 상수 ── */
+
+/** 웹 API 허용 거래 type — shared-db 단일 출처 `WEB_ALLOWED_CREDIT_TYPES` 사용. */
+function isValidWebCreditType(value: unknown): value is WebAllowedCreditType {
+  return (
+    typeof value === "string" &&
+    (WEB_ALLOWED_CREDIT_TYPES as readonly string[]).includes(value)
+  );
+}
+
+/* ── GET: ledger + balance 조회 ── */
+
+/**
+ * 본인의 메인 캐릭 ledger 조회. V+ 권한이면 query 로 다른 user/캐릭터 조회 가능.
+ *
+ * Query params (V+ 권한 한정):
+ * - `characterId`: 직접 지정 (우선순위 1)
+ * - `ownerId`: 해당 owner 의 메인 캐릭 자동 라우팅 (우선순위 2)
+ *
+ * 응답 코드 정책:
+ * - 메인 캐릭 미등록 → 404 (`code=NO_MAIN_CHARACTER`) — V+ ownerId 조회와 일관.
+ * - 1인 1 MAIN 위반 (`findMainCharacterByOwner` throw) → 409 정합성 위반.
+ * - 그 외 예외 → 500.
+ */
+export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const isGm = hasRole(session.user.role, "V");
-    const transactions = isGm
-      ? await listCreditTransactions()
-      : await listCreditTransactions(session.user.id);
+    const isPrivileged = hasRole(session.user.role, "V");
+    const url = new URL(request.url);
+    const queryCharacterId = url.searchParams.get("characterId");
+    const queryOwnerId = url.searchParams.get("ownerId");
 
-    return NextResponse.json({ transactions });
+    let targetCharacterId: string | null = null;
+    let targetCharacterCodename = "";
+
+    if (queryCharacterId && isPrivileged) {
+      if (!isValidObjectId(queryCharacterId)) {
+        return NextResponse.json(
+          { error: "characterId가 올바른 ObjectId 형식이 아닙니다." },
+          { status: 400 },
+        );
+      }
+      const character = await findCharacterById(queryCharacterId);
+      if (!character || character.type !== "AGENT") {
+        return NextResponse.json(
+          { error: "AGENT 캐릭터를 찾을 수 없습니다." },
+          { status: 404 },
+        );
+      }
+      targetCharacterId = String(character._id);
+      targetCharacterCodename = character.codename;
+    } else if (queryOwnerId && isPrivileged) {
+      if (!isValidObjectId(queryOwnerId)) {
+        return NextResponse.json(
+          { error: "ownerId가 올바른 ObjectId 형식이 아닙니다." },
+          { status: 400 },
+        );
+      }
+      let main;
+      try {
+        main = await findMainCharacterByOwner(queryOwnerId);
+      } catch (err) {
+        // 1인 1 MAIN 위반 (정합성 위반) — 409.
+        const message =
+          err instanceof Error ? err.message : "메인 캐릭터 조회 실패 (정합성 위반)";
+        return NextResponse.json(
+          { error: message, code: "MAIN_CHARACTER_INTEGRITY" },
+          { status: 409 },
+        );
+      }
+      if (!main) {
+        return NextResponse.json(
+          {
+            error: "메인 캐릭터 미등록 — 캐릭터 등록 후 다시 시도하세요.",
+            code: "NO_MAIN_CHARACTER",
+          },
+          { status: 404 },
+        );
+      }
+      targetCharacterId = String(main._id);
+      targetCharacterCodename = main.codename;
+    } else {
+      // 본인 메인 캐릭. 1인 1 MAIN 위반(throw) 과 정상 미등록(null) 을 분리.
+      let main;
+      try {
+        main = await findMainCharacterByOwner(session.user.id);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "메인 캐릭터 조회 실패 (정합성 위반)";
+        return NextResponse.json(
+          { error: message, code: "MAIN_CHARACTER_INTEGRITY" },
+          { status: 409 },
+        );
+      }
+      if (!main) {
+        // V+ ownerId 조회와 일관 — 404 + code.
+        return NextResponse.json(
+          {
+            error: "메인 캐릭터 미등록 — 캐릭터 등록 후 다시 시도하세요.",
+            code: "NO_MAIN_CHARACTER",
+          },
+          { status: 404 },
+        );
+      }
+      targetCharacterId = String(main._id);
+      targetCharacterCodename = main.codename;
+    }
+
+    const [transactions, balance] = await Promise.all([
+      listCreditTransactions(targetCharacterId),
+      getCharacterBalance(targetCharacterId),
+    ]);
+
+    return NextResponse.json({
+      transactions,
+      balance,
+      characterId: targetCharacterId,
+      characterCodename: targetCharacterCodename,
+    });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "크레딧 트랜잭션 조회 실패";
@@ -28,6 +145,22 @@ export async function GET() {
   }
 }
 
+/* ── POST: GM 발급 ── */
+
+interface PostBody {
+  /** user._id hex — 메인 캐릭으로 자동 라우팅. */
+  ownerId?: string;
+  /** character._id hex — 직접 지정 (ownerId 보다 우선순위 높음). */
+  characterId?: string;
+  amount?: number;
+  type?: CreditTransactionType;
+  description?: string;
+}
+
+/**
+ * GM 발급 — body 의 `characterId` 우선, 없으면 `ownerId` 의 메인 캐릭으로 라우팅.
+ * 둘 다 없으면 400. 메인 캐릭 미등록 user 는 발급 거절 (404).
+ */
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
@@ -40,18 +173,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = (await request.json()) as {
-    userId?: string;
-    userName?: string;
-    amount?: number;
-    type?: CreditTransactionType;
-    description?: string;
-  };
+  const body = (await request.json()) as PostBody;
 
-  // userId 형식 검증 — ObjectId 가 아니면 400. trash row 방지.
-  if (!body.userId?.trim() || !isValidObjectId(body.userId)) {
+  // characterId / ownerId 둘 중 하나는 필수. characterId 가 우선.
+  if (!body.characterId?.trim() && !body.ownerId?.trim()) {
     return NextResponse.json(
-      { error: "userId가 올바른 ObjectId 형식이 아닙니다." },
+      { error: "characterId 또는 ownerId가 필요합니다." },
       { status: 400 },
     );
   }
@@ -62,58 +189,122 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const validatedAmount = body.amount;
 
-  const validTypes: CreditTransactionType[] = [
-    "ADMIN_GRANT",
-    "ADMIN_DEDUCT",
-    "SESSION_REWARD",
-  ];
-  if (!body.type || !validTypes.includes(body.type)) {
+  if (!isValidWebCreditType(body.type)) {
     return NextResponse.json(
       { error: "type은 ADMIN_GRANT, ADMIN_DEDUCT, SESSION_REWARD 중 하나여야 합니다." },
       { status: 400 },
     );
   }
+  // narrow 결과를 await 너머까지 보존하기 위한 캡처 (body.type 은 mutable property).
+  const validatedType = body.type;
 
-  // 대상 유저 실재성 확인 — 클라이언트가 임의 ObjectId 를 넣어도 distinguishable error 반환.
-  const target = await findUserById(body.userId);
-  if (!target) {
+  // 대상 AGENT 캐릭터 해석 — characterId 우선, 미지정 시 ownerId 의 메인 캐릭으로.
+  let targetCharacterId: string;
+  let targetCharacterCodename: string;
+  let targetOwnerId: string;
+
+  if (body.characterId?.trim()) {
+    if (!isValidObjectId(body.characterId)) {
+      return NextResponse.json(
+        { error: "characterId가 올바른 ObjectId 형식이 아닙니다." },
+        { status: 400 },
+      );
+    }
+    const character = await findCharacterById(body.characterId);
+    if (!character || character.type !== "AGENT") {
+      return NextResponse.json(
+        { error: "AGENT 캐릭터를 찾을 수 없습니다." },
+        { status: 404 },
+      );
+    }
+    if (!character.ownerId) {
+      return NextResponse.json(
+        { error: "캐릭터에 owner가 연결되어 있지 않습니다 — ledger 발급 불가." },
+        { status: 400 },
+      );
+    }
+    targetCharacterId = String(character._id);
+    targetCharacterCodename = character.codename;
+    targetOwnerId = character.ownerId;
+  } else {
+    const ownerId = body.ownerId!;
+    if (!isValidObjectId(ownerId)) {
+      return NextResponse.json(
+        { error: "ownerId가 올바른 ObjectId 형식이 아닙니다." },
+        { status: 400 },
+      );
+    }
+    let mainCharacter;
+    try {
+      mainCharacter = await findMainCharacterByOwner(ownerId);
+    } catch (err) {
+      // findMainCharacterByOwner 가 1인 1 MAIN 위반 시 throw — 정합성 위반(409).
+      const message =
+        err instanceof Error ? err.message : "메인 캐릭터 조회 실패 (정합성 위반)";
+      return NextResponse.json(
+        { error: message, code: "MAIN_CHARACTER_INTEGRITY" },
+        { status: 409 },
+      );
+    }
+    if (!mainCharacter) {
+      return NextResponse.json(
+        {
+          error:
+            "메인 캐릭터 미등록 — 발급 대상 user 가 메인 AGENT 캐릭터를 가지고 있어야 합니다.",
+          code: "NO_MAIN_CHARACTER",
+        },
+        { status: 404 },
+      );
+    }
+    targetCharacterId = String(mainCharacter._id);
+    targetCharacterCodename = mainCharacter.codename;
+    targetOwnerId = ownerId;
+  }
+
+  // ownerName 조회 (audit log 용 비정규화) — discordUsername 우선, fallback displayName.
+  const owner = await findUserById(targetOwnerId);
+  if (!owner) {
     return NextResponse.json(
-      { error: "대상 사용자를 찾을 수 없습니다." },
-      { status: 404 },
+      { error: "캐릭터의 owner user 정보를 찾을 수 없습니다." },
+      { status: 500 },
     );
   }
+  const ownerName = owner.discordUsername ?? owner.displayName;
 
   /**
-   * 음수 잔액 가드 — 정책 확정 전이라 보수적으로 거부.
-   * shared-db `addCredit` 의 race window 는 본 PR 범위 밖이라 여기 사전 검사는 best-effort.
-   * 정책이 "ADMIN_DEDUCT 는 음수 잔액 허용" 으로 확정되면 type 별 분기로 조건 완화 가능.
+   * addCredit 내부 atomic 가드:
+   * - 기본은 음수 잔액 거부 (잔액 부족 시 throw → 400).
+   * - ADMIN_DEDUCT 만 `allowNegative: true` 로 음수 진입 허용.
+   * 사전 `getCharacterBalance` 호출 제거 — race window 단축 + read 1회 절약.
    */
-  const currentBalance = await getUserBalance(body.userId);
-  if (currentBalance + body.amount < 0) {
-    return NextResponse.json(
-      {
-        error:
-          "잔액이 부족합니다. 음수 잔액은 허용되지 않습니다 (currentBalance + amount < 0).",
-      },
-      { status: 400 },
-    );
-  }
-
   try {
-    const transaction = await addCredit(
-      body.userId,
-      // userName 은 클라이언트 입력 무시 — audit log 신뢰성 확보를 위해 서버측 displayName 사용.
-      target.displayName,
-      body.amount,
-      body.type,
-      body.description ?? "",
-      session.user.id,
-      session.user.displayName,
-    );
+    const transaction = await addCredit({
+      characterId: targetCharacterId,
+      characterCodename: targetCharacterCodename,
+      ownerId: targetOwnerId,
+      ownerName,
+      amount: validatedAmount,
+      type: validatedType,
+      description: body.description ?? "",
+      createdById: session.user.id,
+      createdByName: session.user.displayName,
+      allowNegative: validatedType === "ADMIN_DEDUCT",
+    });
 
     return NextResponse.json({ transaction }, { status: 201 });
   } catch (err) {
+    if (err instanceof Error && err.message.includes("음수 잔액")) {
+      return NextResponse.json(
+        {
+          error:
+            "잔액이 부족합니다. 음수 잔액은 허용되지 않습니다 (currentBalance + amount < 0).",
+          code: "INSUFFICIENT_BALANCE",
+        },
+        { status: 400 },
+      );
+    }
     const message =
       err instanceof Error ? err.message : "크레딧 지급 실패";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -48,15 +48,17 @@ export async function ensureAllIndexes(): Promise<void> {
       },
     ]),
 
-    /* ── credit_transactions (from task spec) ── */
+    /* ── credit_transactions (Phase 2: character 단위 ledger) ── */
     db.collection("credit_transactions").createIndexes([
+      // characterId 단위 ledger 조회 + balance 조회.
       {
-        key: { userId: 1 },
-        name: "credit_transactions_userId",
+        key: { characterId: 1, createdAt: -1 },
+        name: "credit_transactions_characterId_createdAt",
       },
+      // owner 역참조 (GM 검색 / owner 단위 audit).
       {
-        key: { createdAt: -1 },
-        name: "credit_transactions_createdAt",
+        key: { ownerId: 1, createdAt: -1 },
+        name: "credit_transactions_ownerId_createdAt",
       },
       // tia_bot 통합 — metadata/type 기반 조회.
       {
