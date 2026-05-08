@@ -66,6 +66,8 @@ export {
   DEPARTMENTS,
   FACTIONS,
   INSTITUTIONS,
+  OPERATION_POOL_ID,
+  OPERATION_POOL_INITIAL_BALANCE,
 } from "./types/index.js";
 
 /* ── Client ── */
