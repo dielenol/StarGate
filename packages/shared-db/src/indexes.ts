@@ -58,6 +58,21 @@ export async function ensureAllIndexes(): Promise<void> {
         key: { createdAt: -1 },
         name: "credit_transactions_createdAt",
       },
+      // tia_bot 통합 — metadata/type 기반 조회.
+      {
+        key: { "metadata.ticker": 1, createdAt: -1 },
+        name: "credit_transactions_metadata_ticker",
+        partialFilterExpression: { "metadata.ticker": { $type: "string" } },
+      },
+      {
+        key: { "metadata.poolId": 1, createdAt: -1 },
+        name: "credit_transactions_metadata_poolId",
+        partialFilterExpression: { "metadata.poolId": { $type: "string" } },
+      },
+      {
+        key: { type: 1, createdAt: -1 },
+        name: "credit_transactions_type_createdAt",
+      },
     ]),
 
     /* ── master_items (from task spec) ── */
@@ -211,6 +226,43 @@ export async function ensureAllIndexes(): Promise<void> {
       {
         key: { isPublic: 1 },
         name: "institutions_isPublic",
+      },
+    ]),
+
+    /* ── credit_pools (tia_bot 통합) ── */
+    db.collection("credit_pools").createIndex(
+      { poolId: 1 },
+      { name: "credit_pools_poolId_unique", unique: true },
+    ),
+
+    /* ── shop_inventory (tia_bot 통합) ── */
+    db.collection("shop_inventory").createIndex(
+      { userId: 1, itemId: 1 },
+      { name: "shop_inventory_userId_itemId_unique", unique: true },
+    ),
+
+    /* ── shop_daily_stock (tia_bot 통합) ── */
+    db.collection("shop_daily_stock").createIndex(
+      { itemId: 1 },
+      { name: "shop_daily_stock_itemId_unique", unique: true },
+    ),
+
+    /* ── stock_prices (tia_bot 통합) ── */
+    db.collection("stock_prices").createIndex(
+      { ticker: 1 },
+      { name: "stock_prices_ticker_unique", unique: true },
+    ),
+
+    /* ── stock_holdings (tia_bot 통합) ── */
+    db.collection("stock_holdings").createIndexes([
+      {
+        key: { userId: 1, ticker: 1 },
+        name: "stock_holdings_userId_ticker_unique",
+        unique: true,
+      },
+      {
+        key: { ticker: 1 },
+        name: "stock_holdings_ticker",
       },
     ]),
   ]);

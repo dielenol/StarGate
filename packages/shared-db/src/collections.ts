@@ -15,6 +15,9 @@ import type { SessionReport } from "./types/session-report.js";
 import type { Notification } from "./types/notification.js";
 import type { FactionDoc } from "./schemas/faction.schema.js";
 import type { InstitutionDoc } from "./schemas/institution.schema.js";
+import type { CreditPool } from "./types/credit-pool.js";
+import type { ShopInventory, ShopDailyStock } from "./types/shop.js";
+import type { StockPrice, StockHolding } from "./types/stock.js";
 
 import { getDb, getDbSync } from "./client.js";
 
@@ -36,6 +39,11 @@ const COL = {
   REGISTRAR_USER_TIPS: "registrar_user_tips",
   FACTIONS: "factions",
   INSTITUTIONS: "institutions",
+  CREDIT_POOLS: "credit_pools",
+  SHOP_INVENTORY: "shop_inventory",
+  SHOP_DAILY_STOCK: "shop_daily_stock",
+  STOCK_PRICES: "stock_prices",
+  STOCK_HOLDINGS: "stock_holdings",
 } as const;
 
 /* ── Async accessors (both modes) ── */
@@ -115,6 +123,31 @@ export async function institutionsCol(): Promise<Collection<InstitutionDoc>> {
   return db.collection<InstitutionDoc>(COL.INSTITUTIONS);
 }
 
+export async function creditPoolsCol(): Promise<Collection<CreditPool>> {
+  const db = await getDb();
+  return db.collection<CreditPool>(COL.CREDIT_POOLS);
+}
+
+export async function shopInventoryCol(): Promise<Collection<ShopInventory>> {
+  const db = await getDb();
+  return db.collection<ShopInventory>(COL.SHOP_INVENTORY);
+}
+
+export async function shopDailyStockCol(): Promise<Collection<ShopDailyStock>> {
+  const db = await getDb();
+  return db.collection<ShopDailyStock>(COL.SHOP_DAILY_STOCK);
+}
+
+export async function stockPricesCol(): Promise<Collection<StockPrice>> {
+  const db = await getDb();
+  return db.collection<StockPrice>(COL.STOCK_PRICES);
+}
+
+export async function stockHoldingsCol(): Promise<Collection<StockHolding>> {
+  const db = await getDb();
+  return db.collection<StockHolding>(COL.STOCK_HOLDINGS);
+}
+
 /* ── Sync accessors (long-running only) ── */
 
 export function usersColSync(): Collection<User> {
@@ -175,4 +208,24 @@ export function factionsColSync(): Collection<FactionDoc> {
 
 export function institutionsColSync(): Collection<InstitutionDoc> {
   return getDbSync().collection<InstitutionDoc>(COL.INSTITUTIONS);
+}
+
+export function creditPoolsColSync(): Collection<CreditPool> {
+  return getDbSync().collection<CreditPool>(COL.CREDIT_POOLS);
+}
+
+export function shopInventoryColSync(): Collection<ShopInventory> {
+  return getDbSync().collection<ShopInventory>(COL.SHOP_INVENTORY);
+}
+
+export function shopDailyStockColSync(): Collection<ShopDailyStock> {
+  return getDbSync().collection<ShopDailyStock>(COL.SHOP_DAILY_STOCK);
+}
+
+export function stockPricesColSync(): Collection<StockPrice> {
+  return getDbSync().collection<StockPrice>(COL.STOCK_PRICES);
+}
+
+export function stockHoldingsColSync(): Collection<StockHolding> {
+  return getDbSync().collection<StockHolding>(COL.STOCK_HOLDINGS);
 }

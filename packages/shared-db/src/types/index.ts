@@ -53,6 +53,12 @@ export type {
   CreditTransaction,
   CreditTransactionType,
   CreateCreditTransactionInput,
+  WebAllowedCreditType,
+} from "./credit.js";
+export {
+  CREDIT_TRANSACTION_TYPES,
+  WEB_ALLOWED_CREDIT_TYPES,
+  BOT_ONLY_CREDIT_TYPES,
 } from "./credit.js";
 
 export type {
@@ -88,3 +94,26 @@ export type {
   CharacterChangeLogEntry,
   NewCharacterChangeLog,
 } from "./change-log.js";
+
+export type {
+  CreditPool,
+  CreateCreditPoolInput,
+} from "./credit-pool.js";
+export {
+  OPERATION_POOL_ID,
+  OPERATION_POOL_INITIAL_BALANCE,
+} from "./credit-pool.js";
+
+export type {
+  ShopInventory,
+  ShopDailyStock,
+  CreateShopInventoryInput,
+  CreateShopDailyStockInput,
+} from "./shop.js";
+
+export type {
+  StockPrice,
+  StockHolding,
+  CreateStockPriceInput,
+  CreateStockHoldingInput,
+} from "./stock.js";

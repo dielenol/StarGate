@@ -30,6 +30,11 @@ const TYPE_META: Record<
   ADMIN_GRANT: { label: "관리자 지급", tone: "gold" },
   ADMIN_DEDUCT: { label: "관리자 차감", tone: "danger" },
   TRANSFER: { label: "이체", tone: "default" },
+  STOCK_BUY: { label: "주식 매수", tone: "info" },
+  STOCK_SELL: { label: "주식 매도", tone: "info" },
+  OP_GRANT: { label: "작전풀 지급", tone: "gold" },
+  OP_DEDUCT: { label: "작전풀 차감", tone: "danger" },
+  MIGRATION: { label: "마이그레이션 (1회성)", tone: "info" },
 };
 
 export default async function CreditsPage() {

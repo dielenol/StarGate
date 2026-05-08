@@ -16,3 +16,6 @@ export * from "./session-reports.js";
 export * from "./factions.js";
 export * from "./institutions.js";
 export * from "./change-logs.js";
+export * from "./credit-pools.js";
+export * from "./shop.js";
+export * from "./stocks.js";
