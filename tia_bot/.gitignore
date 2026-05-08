@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 로컬 SQLite DB (운영 환경에서 직접 관리, git에 포함하지 않음)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# 환경변수
+.env
+*.env
+
+# 실수로 생성된 디렉토리/파일
+"python bot.py"/
