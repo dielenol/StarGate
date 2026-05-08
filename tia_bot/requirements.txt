@@ -1,0 +1,22 @@
+# tia_bot Python dependencies
+#
+# 봇 단일 PM2 fork process 환경에서 실행. async 미사용 (pymongo sync).
+# Phase 2 에서 motor (async) 검토 시 본 파일 갱신 필요.
+
+# Discord 봇 런타임
+discord.py>=2.3,<3.0
+
+# AI Copilot (Claude API)
+openai>=1.0,<2.0
+
+# 이미지 렌더 (편의점/주식 카드)
+Pillow>=10.0,<12.0
+
+# MongoDB 동기 클라이언트
+pymongo>=4.6,<5.0
+
+# MongoDB Atlas SRV 연결 (mongodb+srv://...) DNS lookup
+dnspython>=2.6
+
+# .env 로드
+python-dotenv>=1.0
