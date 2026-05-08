@@ -37,6 +37,13 @@ interface CliArgs {
   execute: boolean;
   yes: boolean;
   mongodbUri?: string;
+  dbName?: string;
+}
+
+/** mongo URI 의 path 부분에서 DB 이름 추출. 실패 시 null. */
+function extractDbNameFromUri(uri: string): string | null {
+  const match = uri.match(/\/\/[^/]+\/([^?]+)/);
+  return match ? match[1] : null;
 }
 
 function parseArgs(): CliArgs {
@@ -77,6 +84,7 @@ function parseArgs(): CliArgs {
     execute,
     yes,
     mongodbUri: get("mongodb-uri") ?? process.env.MONGODB_URI,
+    dbName: get("db-name") ?? process.env.MONGODB_DB_NAME,
   };
 }
 
@@ -103,13 +111,18 @@ async function main() {
     process.exit(1);
   }
 
+  // dbName 우선순위: --db-name > MONGODB_DB_NAME > URI path 추출 > "stargate" 기본
+  const dbName =
+    args.dbName ?? extractDbNameFromUri(args.mongodbUri) ?? "stargate";
+
   console.log("=== 캐릭터 owner 복원 ===");
   console.log(`Codename: ${args.codename}`);
   console.log(`Mode: ${args.dryRun ? "DRY-RUN" : "EXECUTE"}`);
   console.log(`Mongo: ${maskUri(args.mongodbUri)}`);
+  console.log(`DB: ${dbName}`);
   console.log();
 
-  await connect({ uri: args.mongodbUri, dbName: "stargate" });
+  await connect({ uri: args.mongodbUri, dbName });
 
   try {
     const col = await charactersCol();
