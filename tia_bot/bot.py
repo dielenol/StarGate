@@ -1,18 +1,14 @@
 """
-TRPG 세션 일정관리 디스코드 봇 — 띠아 (Tia) 비서 NPC
-GitHub Copilot API + GPT-4.1 | bot.py + shop.py 분리 구조
+NPC 채팅 + 가상 경제 디스코드 봇 — 띠아 (Tia) 비서 NPC
+shop.py (Cog) 가 편의점 / 크레딧 / 주식 시스템 담당.
 
-Phase 1C-2 (2026-05): mongo 부트스트랩 추가.
-  - on_ready: bot user upsert → shop.set_bot_user_id_hex
-  - on_ready: ensure_op_pool, ensure_stock_prices (시드)
-  - atexit: close_client (PM2 SIGTERM 시 connection drain)
-sessions.db / chat.db (SQLite) 는 본 phase 범위 외 — 그대로 유지.
+세션 일정 관리는 registra-bot 이 전담 — 본 봇은 NPC 채팅만 다룬다.
+chat.db (SQLite) 는 NPC 대화 이력 저장용으로 유지.
 """
 
 # 1. 코어 라이브러리, 기타 라이브러리
 import asyncio
 import atexit
-import json
 import os
 import sqlite3
 from datetime import datetime, timedelta
@@ -36,7 +32,6 @@ from stock_system import STOCKS
 # ============================================================
 DISCORD_TOKEN = "MTQ2MDg4NjY3MTc0OTk0MzM0Nw.G7dVCo.tDVmFrk16xaxYrdkeq0FJWERaURZ0N2j7CxZDo"
 COPILOT_API_KEY = "74d6f2fc18e649629a077993a552231d.2C3Ul-afJjZ-8X48WmHykoyt"
-NOTIFICATION_CHANNEL_ID = 1259347980218269767
 IDLE_CHAT_CHANNEL_ID = 1278677061271162941
 IDLE_CHAT_MINUTES = 120
 HISTORY_MAX = 50
@@ -64,25 +59,8 @@ last_message_time = {}
 atexit.register(close_client)
 
 # ============================================================
-# DB — sessions.db (일정), chat.db (대화)
+# DB — chat.db (NPC 대화 이력)
 # ============================================================
-def init_session_db():
-    conn = sqlite3.connect("sessions.db")
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS sessions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '',
-        game_system TEXT DEFAULT '', gm_name TEXT DEFAULT '', session_date TEXT NOT NULL,
-        session_time TEXT NOT NULL, created_by INTEGER NOT NULL, channel_id INTEGER,
-        message_id INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
-    c.execute("""CREATE TABLE IF NOT EXISTS attendance (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER NOT NULL, user_id INTEGER NOT NULL,
-        user_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending',
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (session_id) REFERENCES sessions(id), UNIQUE(session_id, user_id))""")
-    conn.commit()
-    return conn
-
 def init_chat_db():
     conn = sqlite3.connect("chat.db")
     conn.row_factory = sqlite3.Row
@@ -94,7 +72,6 @@ def init_chat_db():
     conn.commit()
     return conn
 
-sdb = init_session_db()
 cdb = init_chat_db()
 
 # ============================================================
@@ -277,7 +254,7 @@ TIA_PROFILE = """
 【노부스 오르도 현재】
 H등급 특수요원 / 실험체 / 편의점 운영 담당 (편돌이)
 실험체 출신이지만 위험도가 낮아 편의점을 맡게 됨. 요원들 간식이랑 소모품 챙겨주는 역할.
-상사: 아그네타 스톨 (레지스트라) — 존경+무서워함. 일정 관리는 레지스트라가 함.
+상사: 아그네타 스톨 (레지스트라) — 존경+무서워함.
 노부스 오르도(노치찜) — 줄루 통제, 줄루 상세는 기밀
 GM: 핏보이(pitboy)
 다른 TRPG로 "탐정사무소 송사리"라는 게 있음. 소문에 의하면 노치찜보다 재밌다고... 실제로 호평이었다고 함.
@@ -321,7 +298,6 @@ GM: 핏보이(pitboy)
 - 경어체, 소심, "저, 저기..." / 이모지 절대 안 씀 / 2~4문장
 - 닉→캐릭터명, 핏보이→"GM님" / 모르는 사람→닉 그대로 "~님"
 - 줄루 기밀 회피, 루미아 흐릿하게만
-- 일정/세션 이야기 나오면 가볍게 한마디 거드는 정도만 ("아, 세션 있나 봐요...!" 수준). 일정 관리는 레지스트라 담당.
 - 편의점 이야기는 상대가 먼저 꺼낼 때만. 먼저 편의점 이야기를 꺼내거나, 관계없는 대화를 편의점으로 돌리지 말 것.
 - 상대가 일상, 감정, 잡담, 고민 등을 이야기하면 그 주제에 맞춰서 대화할 것. 편돌이지만 편의점 밖 이야기도 할 줄 아는 사람임.
 - 채널 맥락 이어갈 것 / 레지스트라 메시지→부하직원 톤
@@ -355,33 +331,8 @@ async def tia_speak(situation, context="", user_name=""):
     r = await gpt_generate(prompt)
     return r if r else "저, 저기... 잠깐 머리가 하얘졌어요. 다시 한번 말씀해주시겠어요...?"
 
-async def parse_schedule(text):
-    today = datetime.now(TIMEZONE)
-    prompt = f"""TRPG 세션 일정 파싱. 오늘: {today.strftime('%Y-%m-%d')} ({today.strftime('%A')})
-JSON만. {{"title":"","description":"","game_system":"","gm_name":"","session_date":"YYYY-MM-DD","session_time":"HH:MM"}}
-시간없으면 "20:00". 일정아니면 null. 입력: {text}"""
-    try:
-        r = await gpt_generate(prompt, use_system=False)
-        if "```json" in r: r = r.split("```json")[1].split("```")[0].strip()
-        elif "```" in r: r = r.split("```")[1].split("```")[0].strip()
-        if r.lower() == "null": return None
-        return json.loads(r)
-    except (ValueError, json.JSONDecodeError, AttributeError, IndexError):
-        # GPT 응답이 JSON 이 아니거나, 빈 응답 / 파싱 실패. 일정 파싱은 옵셔널이므로 None 반환.
-        return None
-
 async def tia_chat(msg, user_name="", channel_id=0):
     today = datetime.now(TIMEZONE)
-    c = sdb.cursor()
-    c.execute("SELECT * FROM sessions WHERE session_date>=? ORDER BY session_date,session_time LIMIT 5",(today.strftime("%Y-%m-%d"),))
-    upcoming = [dict(r) for r in c.fetchall()]
-    si = ""
-    if upcoming:
-        si = "예정 세션 (가볍게만 언급):\n"
-        for s in upcoming:
-            c.execute("SELECT * FROM attendance WHERE session_id=?",(s["id"],))
-            att = sum(1 for a in c.fetchall() if dict(a)["status"]=="attending")
-            si += f"  - #{s['id']} {s['title']} | {s['session_date']} {s['session_time']} | 참가:{att}명\n"
     ctx = get_context(channel_id) if channel_id else ""
     # 편의점 재고 실시간 연동
     shop_info = ""
@@ -409,7 +360,6 @@ async def tia_chat(msg, user_name="", channel_id=0):
     prompt = f"""{TIA_PROFILE}
 {ctx}
 오늘: {today.strftime('%Y년 %m월 %d일 %A')}
-{si}
 {shop_info}
 【메시지】 (디스코드 닉: {user_name}) {msg}
 지금 말을 건 사람의 디스코드 닉은 "{user_name}"이다. 위 닉→캐릭터 매핑표에서 이 닉에 해당하는 캐릭터명으로만 부를 것.
@@ -420,64 +370,8 @@ async def tia_chat(msg, user_name="", channel_id=0):
     return r if r else "저, 저기... 잠깐 머리가 하얘졌어요. 다시 한번 말씀해주시겠어요...?"
 
 # ============================================================
-# 임베드 & 버튼
-# ============================================================
-def build_session_embed(session, attendees=None, tia_msg=""):
-    embed = discord.Embed(title=f"🎨 {session['title']}", color=discord.Color.from_rgb(255,183,77))
-    if tia_msg: embed.description = f"*{tia_msg}*"
-    embed.add_field(name="📅 날짜", value=session["session_date"], inline=True)
-    embed.add_field(name="⏰ 시간", value=session["session_time"], inline=True)
-    if session.get("game_system"): embed.add_field(name="🎮 시스템", value=session["game_system"], inline=True)
-    if session.get("gm_name"): embed.add_field(name="🧙 GM", value=session["gm_name"], inline=True)
-    if attendees:
-        parts = []
-        for st,em in [("attending","✅ 참가"),("declined","❌ 불참"),("tentative","❓ 미정")]:
-            g = [a for a in attendees if a["status"]==st]
-            if g: parts.append(f"{em} ({len(g)}명): {', '.join(a['user_name'] for a in g)}")
-        embed.add_field(name="👥 참가", value="\n".join(parts) if parts else "아직 없음...", inline=False)
-    else:
-        embed.add_field(name="👥 참가", value="아직 없음...", inline=False)
-    embed.set_footer(text="🐿️ 띠아")
-    return embed
-
-class AttendanceView(discord.ui.View):
-    def __init__(self, sid):
-        super().__init__(timeout=None); self.sid = sid
-    async def _upd(self, inter, status):
-        await inter.response.defer()
-        uid, un = inter.user.id, inter.user.display_name
-        c = sdb.cursor()
-        c.execute("INSERT INTO attendance (session_id,user_id,user_name,status,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(session_id,user_id) DO UPDATE SET status=?,user_name=?,updated_at=?",
-                  (self.sid,uid,un,status,datetime.now(TIMEZONE).isoformat(),status,un,datetime.now(TIMEZONE).isoformat()))
-        sdb.commit()
-        c.execute("SELECT * FROM sessions WHERE id=?",(self.sid,)); session=dict(c.fetchone())
-        c.execute("SELECT * FROM attendance WHERE session_id=?",(self.sid,)); att=[dict(r) for r in c.fetchall()]
-        sm={"attending":"참가","declined":"불참","tentative":"미정"}
-        t = await tia_speak(f"{un}님이 '{session['title']}'에 {sm[status]}.", user_name=un)
-        await inter.edit_original_response(embed=build_session_embed(session,att,t), view=self)
-    @discord.ui.button(label="참가",style=discord.ButtonStyle.success,emoji="✅")
-    async def a(self,i,b): await self._upd(i,"attending")
-    @discord.ui.button(label="불참",style=discord.ButtonStyle.danger,emoji="❌")
-    async def d(self,i,b): await self._upd(i,"declined")
-    @discord.ui.button(label="미정",style=discord.ButtonStyle.secondary,emoji="❓")
-    async def t(self,i,b): await self._upd(i,"tentative")
-
-# ============================================================
 # ! 커맨드
 # ============================================================
-@bot.command(name="일정등록")
-async def cmd_nat_reg(ctx, *, text):
-    async with ctx.typing(): parsed = await parse_schedule(text)
-    if not parsed:
-        await ctx.reply(f"{await tia_speak('일정 파싱 실패.',user_name=ctx.author.display_name)}\n\n예시: `!일정등록 이번 토요일 8시 노부스 오르도 세션`"); return
-    c=sdb.cursor()
-    c.execute("INSERT INTO sessions (title,description,game_system,gm_name,session_date,session_time,created_by,channel_id) VALUES (?,?,?,?,?,?,?,?)",
-              (parsed.get("title","TRPG 세션"),parsed.get("description",""),parsed.get("game_system",""),parsed.get("gm_name",""),parsed["session_date"],parsed["session_time"],ctx.author.id,ctx.channel.id))
-    sdb.commit(); sid=c.lastrowid
-    t=await tia_speak(f"새 세션: '{parsed.get('title','TRPG 세션')}' / {parsed['session_date']} {parsed['session_time']}",user_name=ctx.author.display_name)
-    v=AttendanceView(sid); msg=await ctx.reply(embed=build_session_embed(parsed,tia_msg=t),view=v)
-    c.execute("UPDATE sessions SET message_id=? WHERE id=?",(msg.id,sid)); sdb.commit()
-
 @bot.command(name="띠아",aliases=["띠띠"])
 async def cmd_tia(ctx, *, text=""):
     if not text: text="안녕"
@@ -536,31 +430,7 @@ async def on_message(message):
 @tasks.loop(hours=1)
 async def history_cleanup(): cleanup_old_history()
 
-@tasks.loop(hours=1)
-async def daily_notification():
-    now=datetime.now(TIMEZONE)
-    if now.hour!=10: return
-    tmr=(now+timedelta(days=1)).strftime("%Y-%m-%d")
-    c=sdb.cursor(); c.execute("SELECT * FROM sessions WHERE session_date=?",(tmr,))
-    ss=[dict(r) for r in c.fetchall()]
-    if not ss: return
-    ch=bot.get_channel(NOTIFICATION_CHANNEL_ID)
-    if not ch: return
-    for s in ss:
-        c.execute("SELECT * FROM attendance WHERE session_id=?",(s["id"],))
-        att=[dict(r) for r in c.fetchall()]
-        at=[a for a in att if a["status"]=="attending"]
-        dc=[a for a in att if a["status"]=="declined"]
-        tn=[a for a in att if a["status"]=="tentative"]
-        t=await tia_speak(f"전날 공지 — '{s['title']}' {s['session_date']} {s['session_time']}")
-        embed=discord.Embed(title="🎨 내일 세션!",description=f"*{t}*",color=discord.Color.from_rgb(255,107,107))
-        embed.add_field(name="📅",value=f"{s['session_date']} {s['session_time']}",inline=False)
-        if at: embed.add_field(name=f"✅ {len(at)}명",value=", ".join(a["user_name"] for a in at),inline=False)
-        if dc: embed.add_field(name=f"❌ {len(dc)}명",value=", ".join(a["user_name"] for a in dc),inline=False)
-        if tn: embed.add_field(name=f"❓ {len(tn)}명",value=", ".join(a["user_name"] for a in tn),inline=False)
-        await ch.send(content="@everyone 저, 저기요! 내일 세션이 있어요...!",embed=embed,view=AttendanceView(s["id"]))
-
-for t in [history_cleanup,daily_notification]:
+for t in [history_cleanup]:
     @t.before_loop
     async def _w(): await bot.wait_until_ready()
 
@@ -639,7 +509,7 @@ async def on_ready():
         synced = await bot.tree.sync()
         print(f"✅ 슬래시 커맨드 {len(synced)}개 동기화")
     except Exception as e: print(f"❌ 동기화 실패: {e}")
-    for t in [daily_notification,history_cleanup]:
+    for t in [history_cleanup]:
         if not t.is_running(): t.start()
     print("✅ 모든 시스템 시작")
 
