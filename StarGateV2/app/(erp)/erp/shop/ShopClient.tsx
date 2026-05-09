@@ -36,7 +36,11 @@ import styles from "./page.module.css";
 
 /* ── 상수 ── */
 
-const TAB_DEFS: { value: ShopPageGroup; label: string }[] = [
+/** 카테고리 4개 + 전체. ShopPageGroup 은 shared-db enum 이라 그대로 두고 local 에서 "ALL" 합집합. */
+type ShopTabValue = ShopPageGroup | "ALL";
+
+const TAB_DEFS: { value: ShopTabValue; label: string }[] = [
+  { value: "ALL", label: "전체" },
   { value: "BASIC", label: "기본" },
   { value: "RECOVERY", label: "회복" },
   { value: "LUXURY", label: "기호" },
@@ -104,7 +108,7 @@ export default function ShopClient({
   const consumeMutation = useConsumeShopItem();
 
   /* 10. 로컬 상태 */
-  const [activeTab, setActiveTab] = useState<ShopPageGroup>("BASIC");
+  const [activeTab, setActiveTab] = useState<ShopTabValue>("ALL");
   const [modal, setModal] = useState<ModalState>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -120,6 +124,7 @@ export default function ShopClient({
   }, [creditsQuery.data, initialBalance]);
 
   const itemsByTab = useMemo(() => {
+    if (activeTab === "ALL") return catalog.items;
     return catalog.items.filter((item) => item.pageGroup === activeTab);
   }, [catalog.items, activeTab]);
 
