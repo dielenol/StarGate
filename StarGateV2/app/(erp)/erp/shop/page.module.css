@@ -1,33 +1,374 @@
-.placeholder {
+/* ==========================================================
+   shop/page.module.css
+   - 편의점 사용자 페이지 (M2-A)
+   - 14px floor, globals.css 토큰만 사용
+   ========================================================== */
+
+/* ── 헤더 패널 (Box variant=gold 위에 얹는 3-column 레이아웃) ── */
+
+.header {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.2fr;
+  gap: var(--gap);
+  align-items: stretch;
+  margin-bottom: var(--gap);
+}
+
+.header__main,
+.header__balance,
+.header__status {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 64px 20px;
-  text-align: center;
+  gap: 4px;
+  min-width: 0;
 }
 
-.placeholder__title {
+.header__codename {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 19px;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header__balanceNum {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 15px;
-  letter-spacing: 0.3em;
+  font-size: 26px;
+  letter-spacing: -0.01em;
 }
 
-.placeholder__message {
-  max-width: 420px;
-  margin: 0;
+.header__statusText {
   color: var(--ink-1);
-  font-size: 15px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .header {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* ── 안내 / 에러 박스 ── */
+
+.notice {
+  margin-bottom: var(--gap);
+  color: var(--ink-1);
+  font-size: 14px;
   line-height: 1.6;
 }
 
-.placeholder__hint {
-  max-width: 420px;
-  margin: 0;
+.notice__strong {
+  color: var(--danger);
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+.errorBanner {
+  position: relative;
+  margin-bottom: var(--gap);
+  padding-right: 36px;
+  color: var(--ink-0);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.errorBanner__dismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.errorBanner__dismiss:hover {
+  color: var(--ink-0);
+  border-color: var(--ink-1);
+}
+
+/* ── 카테고리 탭 ── */
+
+.filters {
+  display: flex;
+  gap: 0;
+  margin-bottom: var(--gap);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.filters__tab {
+  padding: 10px 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.filters__tab:hover {
+  color: var(--ink-0);
+}
+
+.filters__tab--active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+/* ── 카드 그리드 ── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.card--disabled {
+  opacity: 0.55;
+}
+
+.card__badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 8px;
+  background: rgba(201, 168, 90, 0.12);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.card__icon {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  line-height: 1;
+  padding: 12px 0 4px;
+}
+
+.card__name {
+  color: var(--ink-0);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__slug {
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.1em;
+  width: 100%;
+  text-align: center;
+}
+
+.card__effect {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+  width: 100%;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card__meta {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+}
+
+.card__price {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.card__stock {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.card__stock--out {
+  color: var(--danger);
+}
+
+.card__action {
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px;
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.card__action:hover:not(:disabled) {
+  background: var(--gold-dim);
+  border-color: var(--gold-dim);
+}
+
+.card__action:disabled {
+  background: var(--bg-3);
+  border-color: var(--line-strong);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+/* ── 보유 인벤토리 패널 ── */
+
+.inventoryPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inventoryPanel__count {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.inventoryPanel__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.inventoryItem {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+
+.inventoryItem__icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.inventoryItem__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.inventoryItem__name {
+  color: var(--ink-0);
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventoryItem__effect {
+  color: var(--ink-2);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventoryItem__qty {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.inventoryItem__use {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.inventoryItem__use:hover {
+  color: var(--ink-0);
+  border-color: var(--ink-1);
+}
+
+/* ── Empty ── */
+
+.empty {
+  padding: 32px 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
 }

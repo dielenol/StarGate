@@ -21,6 +21,7 @@ export {
   ensureStockEntry,
   getStock,
   reduceStock,
+  restoreStock,
   getAllDailyStocks,
 } from "@stargate/shared-db";
 

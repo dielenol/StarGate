@@ -1,0 +1,307 @@
+/* ==========================================================
+   ShopModal.module.css
+   - 편의점 구매(BuyModal) / 소비(ConsumeModal) 공용 모달 스타일
+   - DiffPreviewModal 의 overlay/dialog/tick 패턴을 작게 압축
+   - 14px floor 준수, globals.css 토큰만 사용
+   ========================================================== */
+
+/* ── overlay ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(6px) saturate(0.6);
+  -webkit-backdrop-filter: blur(6px) saturate(0.6);
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  overflow-y: auto;
+}
+
+/* ── dialog ── */
+.dialog {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg-1);
+  color: var(--ink-0);
+  border: 1px solid var(--gold-dim);
+  box-shadow:
+    0 24px 80px -20px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(201, 169, 97, 0.04);
+}
+.dialog::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(201, 169, 97, 0.12);
+  pointer-events: none;
+}
+
+/* 코너 틱 */
+.dialog__tick {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--gold);
+  pointer-events: none;
+}
+.dialog__tick--tl { top: -1px; left: -1px;  border-right: 0; border-bottom: 0; }
+.dialog__tick--tr { top: -1px; right: -1px; border-left: 0;  border-bottom: 0; }
+.dialog__tick--bl { bottom: -1px; left: -1px;  border-right: 0; border-top: 0; }
+.dialog__tick--br { bottom: -1px; right: -1px; border-left: 0;  border-top: 0; }
+
+/* ── header ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.header__icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.header__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.header__name {
+  color: var(--ink-0);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header__slug {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+/* ── body ── */
+.body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.effect {
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border-left: 2px solid var(--gold-dim);
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 상태 grid (가격/재고/잔액) */
+.statsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat {
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+
+.stat__label {
+  display: block;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+}
+
+.stat__value {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.stat__value--gold {
+  color: var(--gold);
+}
+
+.stat__value--danger {
+  color: var(--danger);
+}
+
+/* ── 수량 입력 ── */
+.qtyBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qtyLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.qtyLabel__hint {
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+.qtyInput {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 17px;
+  text-align: right;
+}
+
+.qtyInput:focus {
+  outline: none;
+  border-color: var(--gold-dim);
+  background: var(--bg-3);
+}
+
+.qtyInput:disabled {
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+/* 총액 / 잔액 변화 미리보기 */
+.preview {
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px dashed var(--line-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.preview__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.preview__label {
+  color: var(--ink-3);
+  letter-spacing: 0.1em;
+}
+
+.preview__value {
+  color: var(--ink-0);
+  font-size: 15px;
+}
+
+.preview__value--gold {
+  color: var(--gold);
+}
+
+.preview__value--danger {
+  color: var(--danger);
+}
+
+/* 안내 메시지 */
+.notice {
+  padding: 10px 12px;
+  background: rgba(192, 106, 90, 0.08);
+  border-left: 2px solid var(--danger);
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── footer ── */
+.footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancelBtn {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  color: var(--ink-0);
+  border-color: var(--ink-2);
+}
+
+.cancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submitBtn {
+  padding: 10px 18px;
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: var(--gold-dim);
+  border-color: var(--gold-dim);
+}
+
+.submitBtn:disabled {
+  background: var(--bg-3);
+  border-color: var(--line-strong);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+.submitBtn--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--ink-0);
+}
+
+.submitBtn--danger:hover:not(:disabled) {
+  background: #a55545;
+  border-color: #a55545;
+}

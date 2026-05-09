@@ -8,6 +8,8 @@ export {
   listMasterItems,
   listAvailableItems,
   findMasterItemById,
+  findMasterItemBySlug,
+  findMasterItemsBySlugs,
   createMasterItem,
   updateMasterItem,
   deleteMasterItem,
