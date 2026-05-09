@@ -16,7 +16,8 @@ import styles from "./ShopModal.module.css";
  */
 
 interface Props {
-  icon: string;
+  /** 빈 값/미전달 시 아이콘 박스 자체 렌더 생략 (주식 모달처럼 아이콘이 없는 경우 대응). */
+  icon?: string;
   name: string;
   slug: string;
   ariaLabel: string;
@@ -144,10 +145,14 @@ export default function ShopModalShell({
           aria-hidden
         />
 
-        <header className={styles.header}>
-          <div className={styles.header__icon} aria-hidden>
-            {icon}
-          </div>
+        <header
+          className={`${styles.header}${icon ? "" : ` ${styles["header--noIcon"]}`}`}
+        >
+          {icon ? (
+            <div className={styles.header__icon} aria-hidden>
+              {icon}
+            </div>
+          ) : null}
           <div className={styles.header__main}>
             <div id={titleId} className={styles.header__name}>
               {name}

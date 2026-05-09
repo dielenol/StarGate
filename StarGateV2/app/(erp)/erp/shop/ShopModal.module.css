@@ -61,6 +61,11 @@
   border-bottom: 1px solid var(--line);
 }
 
+.header--noIcon {
+  /* icon 미전달(주식 모달 등) 시 좌측 14px gap 잔존 회피. */
+  gap: 0;
+}
+
 .header__icon {
   font-size: 32px;
   line-height: 1;
