@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import type { CreditTransactionType, WebAllowedCreditType } from "@/types/credit";
+import type { CreditTransactionType } from "@/types/credit";
 
-import { WEB_ALLOWED_CREDIT_TYPES } from "@/types/credit";
+import { GM_DIRECT_GRANT_TYPES, isGmDirectGrantType } from "@/types/credit";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
@@ -14,16 +14,6 @@ import {
 } from "@/lib/db/credits";
 import { findUserById } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
-
-/* ── 상수 ── */
-
-/** 웹 API 허용 거래 type — shared-db 단일 출처 `WEB_ALLOWED_CREDIT_TYPES` 사용. */
-function isValidWebCreditType(value: unknown): value is WebAllowedCreditType {
-  return (
-    typeof value === "string" &&
-    (WEB_ALLOWED_CREDIT_TYPES as readonly string[]).includes(value)
-  );
-}
 
 /* ── GET: ledger + balance 조회 ── */
 
@@ -191,9 +181,11 @@ export async function POST(request: Request) {
   }
   const validatedAmount = body.amount;
 
-  if (!isValidWebCreditType(body.type)) {
+  if (!isGmDirectGrantType(body.type)) {
     return NextResponse.json(
-      { error: "type은 ADMIN_GRANT, ADMIN_DEDUCT, SESSION_REWARD 중 하나여야 합니다." },
+      {
+        error: `type은 ${GM_DIRECT_GRANT_TYPES.join(", ")} 중 하나여야 합니다 (PURCHASE/STOCK_BUY/STOCK_SELL 은 도메인 전용 라우트에서 처리).`,
+      },
       { status: 400 },
     );
   }

@@ -31,6 +31,8 @@ export { default as IconProfile } from "@/public/assets/svg/ic_profile.svg";
 export { default as IconReturn } from "@/public/assets/svg/ic_return.svg";
 export { default as IconRules } from "@/public/assets/svg/ic_rules.svg";
 export { default as IconSession } from "@/public/assets/svg/ic_session.svg";
+export { default as IconShop } from "@/public/assets/svg/ic_shop.svg";
+export { default as IconStock } from "@/public/assets/svg/ic_stock.svg";
 export { default as IconSystem } from "@/public/assets/svg/ic_system.svg";
 export { default as IconUserAdmin } from "@/public/assets/svg/ic_user-admin.svg";
 export { default as IconWiki } from "@/public/assets/svg/ic_wiki.svg";

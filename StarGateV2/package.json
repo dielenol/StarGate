@@ -8,10 +8,13 @@
     "build": "pnpm --filter @stargate/shared-db build && next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit && tsc -p scripts/tsconfig.json --noEmit",
     "preseed:factions": "pnpm --filter @stargate/shared-db build",
     "seed:factions": "node --experimental-strip-types scripts/seed-factions.ts",
     "preseed:institutions": "pnpm --filter @stargate/shared-db build",
     "seed:institutions": "node --experimental-strip-types scripts/seed-institutions.ts",
+    "preseed:shop": "pnpm --filter @stargate/shared-db build",
+    "seed:shop": "node --experimental-strip-types scripts/seed-shop-catalog.ts",
     "premigrate:character-sheet": "pnpm --filter @stargate/shared-db build",
     "migrate:character-sheet": "node --experimental-strip-types scripts/migrate-character-sheet-to-lore-play.ts"
   },
@@ -35,7 +38,8 @@
     "next": "^16.1.6",
     "next-auth": "5.0.0-beta.30",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",
