@@ -262,18 +262,47 @@ export async function ensureAllIndexes(): Promise<void> {
       { name: "stock_prices_ticker_unique", unique: true },
     ),
 
-    /* ── stock_holdings (tia_bot 통합) ── */
-    db.collection("stock_holdings").createIndexes([
-      {
-        key: { userId: 1, ticker: 1 },
-        name: "stock_holdings_userId_ticker_unique",
-        unique: true,
-      },
-      {
-        key: { ticker: 1 },
-        name: "stock_holdings_ticker",
-      },
-    ]),
+    /* ── stock_holdings (tia_bot 통합 → ERP M3 character 단위 전환) ──
+     *
+     * Phase 2 ledger 가 character 단위로 전환되면서 holdings 도 characterId 키.
+     *
+     * 운영 DB 호환:
+     * - tia_bot 적재 row 들은 `userId` 만 있고 `characterId` 필드 부재.
+     *   `{ characterId: 1, ticker: 1 } unique` 를 풀 인덱스로 걸면 같은
+     *   (`characterId=null`, `ticker=X`) 쌍이 다수 → E11000.
+     * - `users.discordId` 의 partial unique 패턴(`{ $type: "string" }`)을 모방하여
+     *   characterId 가 string 인 row(=신규 ERP 적재) 에만 unique 강제.
+     *   legacy userId-only row 는 본 인덱스 적용 외 → 매수 차단 회피.
+     *
+     * 또한 기존 운영 DB 에 `stock_holdings_userId_ticker_unique` 가 잔존하면
+     * `userId: null` 충돌(unique 위반)로 신규 매수가 막힘 → 본 호출 직전 best-effort drop.
+     * dropIndex 자체가 ensureAllIndexes() 의 idempotent 성질을 깨지 않도록
+     * try/catch (인덱스 부재는 무시) — 재실행 안전.
+     */
+    (async () => {
+      const stockHoldingsCol = db.collection("stock_holdings");
+      // 신규 키 인덱스를 먼저 시도 — 이미 있으면 createIndexes 가 멱등.
+      await stockHoldingsCol.createIndexes([
+        {
+          key: { characterId: 1, ticker: 1 },
+          name: "stock_holdings_characterId_ticker_unique",
+          unique: true,
+          // legacy userId-only row(characterId 부재/null) 는 unique 적용 외.
+          // 신규 ERP 적재(characterId: string) 에만 (characterId, ticker) 유일성 강제.
+          partialFilterExpression: { characterId: { $type: "string" } },
+        },
+        {
+          key: { ticker: 1 },
+          name: "stock_holdings_ticker",
+        },
+      ]);
+      // legacy userId 키 인덱스 best-effort 제거 (없으면 throw — 무시).
+      try {
+        await stockHoldingsCol.dropIndex("stock_holdings_userId_ticker_unique");
+      } catch {
+        // index not found — 신규 환경 또는 이미 마이그된 환경. 무시.
+      }
+    })(),
 
     /* ── stock_price_history (M1: 30일 가격 시계열) ──
      * TTL 30일. ticker 별 차트 조회는 (ticker, createdAt desc) 복합 인덱스로 최적화.

@@ -3,8 +3,10 @@
  *
  * tia_bot 의 주식 도메인.
  * - stock_prices: ticker 별 단일 가격 문서. price/prevPrice 는 정수.
- * - stock_holdings: user × ticker 보유. shares < 0 금지 (atomic guard).
+ * - stock_holdings: character × ticker 보유. shares < 0 금지 (atomic guard).
  *   avgPrice 는 가중평균 정수 절사.
+ *
+ * Phase 2 ledger 가 character 단위로 전환되어 holdings 도 characterId 단위.
  */
 
 import type {
@@ -133,10 +135,10 @@ export async function updateStockPrice(
  * 활성 보유만 (shares > 0). 일반 표시/조회용.
  * 0 shares 잔여 row 가 있어도 제외.
  */
-export async function getHoldings(userId: string): Promise<StockHolding[]> {
+export async function getHoldings(characterId: string): Promise<StockHolding[]> {
   const col = await stockHoldingsCol();
   return col
-    .find({ userId, shares: { $gt: 0 } })
+    .find({ characterId, shares: { $gt: 0 } })
     .sort({ ticker: 1 })
     .toArray();
 }
@@ -144,17 +146,17 @@ export async function getHoldings(userId: string): Promise<StockHolding[]> {
 /**
  * 0 shares 포함 전체 보유 (감사/마이그용).
  */
-export async function getHoldingsRaw(userId: string): Promise<StockHolding[]> {
+export async function getHoldingsRaw(characterId: string): Promise<StockHolding[]> {
   const col = await stockHoldingsCol();
-  return col.find({ userId }).sort({ ticker: 1 }).toArray();
+  return col.find({ characterId }).sort({ ticker: 1 }).toArray();
 }
 
 export async function getHolding(
-  userId: string,
+  characterId: string,
   ticker: string,
 ): Promise<StockHolding | null> {
   const col = await stockHoldingsCol();
-  return col.findOne({ userId, ticker });
+  return col.findOne({ characterId, ticker });
 }
 
 /**
@@ -165,11 +167,11 @@ export async function getHolding(
  * 신규 보유 시 avgPrice = buyPrice.
  *
  * aggregation pipeline upsert 단일 호출로 read-then-write race window 제거.
- * 동일 (userId, ticker) 의 동시 매수에서도 oldShares stale 없음 —
+ * 동일 (characterId, ticker) 의 동시 매수에서도 oldShares stale 없음 —
  * mongo 가 문서 단위 atomic 으로 pipeline 을 평가.
  */
 export async function buyHolding(
-  userId: string,
+  characterId: string,
   ticker: string,
   shares: number,
   buyPrice: number,
@@ -183,7 +185,7 @@ export async function buyHolding(
   // 가중평균: newAvg = floor((oldShares * oldAvg + shares * buyPrice) / (oldShares + shares))
   // 신규 문서 (oldShares == 0): avgPrice = buyPrice
   const result = await col.findOneAndUpdate(
-    { userId, ticker },
+    { characterId, ticker },
     [
       {
         $set: {
@@ -216,7 +218,7 @@ export async function buyHolding(
             },
           },
           updatedAt: new Date(),
-          userId: { $ifNull: ["$userId", userId] },
+          characterId: { $ifNull: ["$characterId", characterId] },
           ticker: { $ifNull: ["$ticker", ticker] },
         },
       },
@@ -226,7 +228,9 @@ export async function buyHolding(
 
   // upsert + returnDocument:"after" → result 는 항상 truthy. 단, 드라이버 타입은 nullable.
   if (!result) {
-    throw new Error(`buyHolding: unexpected null result for ${userId} ${ticker}`);
+    throw new Error(
+      `buyHolding: unexpected null result for ${characterId} ${ticker}`,
+    );
   }
   return result;
 }
@@ -236,21 +240,25 @@ export async function buyHolding(
  *
  * - shares >= 매도수량 일 때만 매치.
  * - 부족 시 ok=false + remainingShares (현재 보유) 반환.
- * - avgPrice 는 매도 시 변경하지 않음 (매수단가 유지).
+ * - avgPrice 는 매도 시 변경하지 않음 (매수단가 유지) — 매도 후 ledger profit 계산용으로 노출.
  * - 매도 후 shares == 0 이면 race-aware deleteOne (tia_bot 원본 DELETE 시맨틱 보존).
+ *
+ * 반환: ok / remainingShares + 매도 직전 보유의 avgPrice (호출자 ledger profit 산출용).
+ * - ok=true: 매치 성공한 row 의 avgPrice 그대로.
+ * - ok=false: 부족 분기 — 현재 row 가 있으면 그 avgPrice, 없으면 0.
  */
 export async function sellHolding(
-  userId: string,
+  characterId: string,
   ticker: string,
   shares: number,
-): Promise<{ ok: boolean; remainingShares: number }> {
+): Promise<{ ok: boolean; remainingShares: number; avgPrice: number }> {
   if (shares <= 0) {
     throw new Error(`sellHolding: shares must be positive, got ${shares}`);
   }
   const col = await stockHoldingsCol();
 
   const result = await col.findOneAndUpdate(
-    { userId, ticker, shares: { $gte: shares } },
+    { characterId, ticker, shares: { $gte: shares } },
     {
       $inc: { shares: -shares },
       $set: { updatedAt: new Date() },
@@ -259,14 +267,22 @@ export async function sellHolding(
   );
 
   if (!result) {
-    const current = await col.findOne({ userId, ticker });
-    return { ok: false, remainingShares: current?.shares ?? 0 };
+    const current = await col.findOne({ characterId, ticker });
+    return {
+      ok: false,
+      remainingShares: current?.shares ?? 0,
+      avgPrice: current?.avgPrice ?? 0,
+    };
   }
   if (result.shares === 0) {
     // race-aware delete: 다른 호출이 그 사이 +shares 했으면 매치 안 되어 보존됨.
     await col.deleteOne({ _id: result._id, shares: 0 });
   }
-  return { ok: true, remainingShares: result.shares };
+  return {
+    ok: true,
+    remainingShares: result.shares,
+    avgPrice: result.avgPrice,
+  };
 }
 
 /**

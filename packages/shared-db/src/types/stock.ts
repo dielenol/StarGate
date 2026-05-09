@@ -19,17 +19,18 @@ export interface StockPrice {
 export type CreateStockPriceInput = Omit<StockPrice, "_id">;
 
 /**
- * 주식 보유량 (user × ticker).
+ * 주식 보유량 (character × ticker).
  *
  * - shares < 0 금지 (CRUD 단계 atomic guard 로 강제).
  * - avgPrice: 가중평균 매수단가 (정수 절사).
  *   newAvg = floor((oldShares * oldAvg + buyShares * buyPrice) / (oldShares + buyShares))
  *
- * userId 는 User._id.toHexString() (ObjectId 문자열).
+ * characterId 는 Character._id.toHexString() (ObjectId 문자열).
+ * (Phase 2 ledger 가 character 단위로 전환됨 → holdings 도 같은 키로 정합.)
  */
 export interface StockHolding {
   _id?: ObjectId;
-  userId: string;
+  characterId: string;
   ticker: string;
   shares: number;
   avgPrice: number;
