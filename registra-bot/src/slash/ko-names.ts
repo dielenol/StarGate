@@ -27,7 +27,7 @@ export const Sub = {
 } as const;
 
 /**
- * `/크레딧 ...` 서브커맨드 한국어 이름. GM 전용 6개 (잔액은 별도 단일 명령 `/잔액` 으로 분리).
+ * `/크레딧 ...` 서브커맨드 한국어 이름. GM 전용 8개 (잔액은 별도 단일 명령 `/잔액` 으로 분리).
  */
 export const CreditSub = {
   grant: "지급",
@@ -36,6 +36,8 @@ export const CreditSub = {
   opGrant: "작전지급",
   opDeduct: "작전차감",
   query: "조회",
+  listAll: "전체조회",
+  opPool: "작전풀",
 } as const;
 
 export const Opt = {

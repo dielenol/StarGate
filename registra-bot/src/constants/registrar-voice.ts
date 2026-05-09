@@ -402,6 +402,16 @@ export const D = {
   /** 조회/잔액 임베드 — 임베드 외에 텍스트 안내가 필요할 때 */
   creditQueryFooter: (codename: string) =>
     `대상 캐릭터: ${codename} · 최근 5건 표시(없으면 생략)`,
+  /** 전체 조회 — 운영 캐릭터가 한 명도 식별되지 않을 때 */
+  creditListAllNoTarget: `${N}운영 캐릭터(메인 등재)가 한 명도 식별되지 않습니다. 등재 상태를 점검 부탁드립니다.`,
+  /** 전체 조회 임베드 footer */
+  creditListAllFooter: (n: number) =>
+    `대상 캐릭터: ${n}명 · 잔액 내림차순 정렬`,
+  /** 작전 풀 단건 조회 — 풀 미생성 (fresh DB) */
+  opPoolNotInitialized: `${N}작전 크레딧 풀이 아직 생성되지 않았습니다 (잔액 0). 입금 명령으로 자동 생성됩니다.`,
+  /** 작전 풀 단건 조회 — 정상 잔액 표시 */
+  opPoolStatus: (balance: number) =>
+    `${A}**작전 크레딧 풀**\n잔액: **${balance.toLocaleString("ko-KR")}** CR`,
 } as const;
 
 /** 세션 마감·취소 시 관리자에게 붙는 경고(문자열 배열) */
@@ -697,6 +707,19 @@ export const Help = {
         "지정 멤버의 **메인 캐릭터** 잔액과 **최근 5건** 거래 내역을 운영자에게 비공개로 표시합니다. 옵션: `대상`(필수).",
       inline: true,
     },
+    {
+      name: "◆ `/크레딧 전체조회`",
+      value:
+        "**운영 캐릭터(메인) 전원**의 잔액 + **작전 풀** + 총 자금 합계를 한 번에 표시합니다. 잔액 내림차순.",
+      inline: true,
+    },
+    {
+      name: "◆ `/크레딧 작전풀`",
+      value:
+        "**작전 크레딧 풀** 잔액만 단건 조회합니다. 풀 미생성 시 0으로 안내됩니다.",
+      inline: true,
+    },
+    { name: "​", value: "​", inline: true },
   ],
   adminFooter:
     "세션 식별: /일정 목록 · /일정 한눈에  |  크레딧: 1인 1메인 라우팅 · 봇/미가입 계정 차단 · 음수 잔액은 차감만 허용",

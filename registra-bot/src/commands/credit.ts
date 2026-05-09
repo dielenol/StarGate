@@ -6,6 +6,8 @@
  * - `전체지급` — ledger 보유 운영 캐릭 전원 일괄 지급
  * - `작전지급` / `작전차감` — 작전 크레딧 풀 입출금
  * - `조회` — 지정 인원 메인 캐릭 잔액 + 최근 5건
+ * - `전체조회` — 메인 캐릭 전원 잔액 + 작전 풀 + 총 자금
+ * - `작전풀` — 작전 크레딧 풀 잔액 단건
  *
  * `/잔액` (단일 명령, 서브 ❌):
  * - 본인 메인 캐릭 잔액 + 최근 5건 (비밀 열람)
@@ -32,6 +34,7 @@ import {
 } from "discord.js";
 import {
   type AgentCharacter,
+  type Character,
   type CreditTransaction,
   type CreditTransactionType,
   type User as DbUser,
@@ -47,6 +50,7 @@ import {
   findUserById,
   getCharacterBalance,
   getCreditPool,
+  listAgentCharacters,
   listCreditTransactions,
   upsertDiscordUser,
 } from "@stargate/shared-db";
@@ -574,10 +578,139 @@ async function replyWithBalance(
   await interaction.editReply({ embeds: [embed] });
 }
 
+/* ── 서브커맨드: 전체조회 (GM) ── */
+
+/**
+ * codeblock 정렬용 — codename 을 고정 폭으로 padEnd 한다.
+ * Discord codeblock 은 monospace 라 시각 폭과 char 길이가 일치 (한글은 2배 폭으로 보이지만
+ * codename 은 영문/숫자 위주라 무시 가능).
+ */
+function padCodename(codename: string, width: number): string {
+  return codename.length >= width
+    ? codename
+    : codename + " ".repeat(width - codename.length);
+}
+
+function padNumberLeft(value: number, width: number): string {
+  const s = value.toLocaleString("ko-KR");
+  return s.length >= width ? s : " ".repeat(width - s.length) + s;
+}
+
+interface CharacterBalance {
+  character: AgentCharacter;
+  balance: number;
+}
+
+/**
+ * `/크레딧 전체조회` — 운영 캐릭(메인) 전원 잔액 + 작전 풀 + 합계.
+ *
+ * - `listAgentCharacters("MAIN")` → AGENT type + tier MAIN (또는 미설정) 전원 (ledger 보유 여부 무관).
+ * - 각 캐릭터 잔액은 `Promise.all` 로 병렬 조회.
+ * - 작전 풀은 `getCreditPool(OPERATION_POOL_ID)` 단일 호출 (없으면 0 으로 표시).
+ * - 정렬: 잔액 내림차순 → codename 알파벳 (안정 정렬).
+ * - 표시: codeblock + monospace padEnd 정렬. embed description 4096 자 한도 내.
+ */
+async function handleListAll(
+  interaction: ChatInputCommandInteraction
+): Promise<void> {
+  // 1. 메인 캐릭터 전원 조회
+  const characters = (await listAgentCharacters("MAIN")) as Character[];
+  if (characters.length === 0) {
+    await interaction.editReply({ content: D.creditListAllNoTarget });
+    return;
+  }
+
+  // 2. 각 캐릭터 잔액 + 작전 풀 잔액 병렬 조회
+  const [balances, pool] = await Promise.all([
+    Promise.all(
+      characters.map(async (c): Promise<CharacterBalance> => ({
+        character: c as AgentCharacter,
+        balance: await getCharacterBalance(c._id!.toHexString()),
+      }))
+    ),
+    getCreditPool(OPERATION_POOL_ID),
+  ]);
+
+  // 3. 정렬 — 잔액 내림차순 → codename 알파벳 (tie-break)
+  balances.sort((a, b) => {
+    if (b.balance !== a.balance) return b.balance - a.balance;
+    return a.character.codename.localeCompare(b.character.codename);
+  });
+
+  // 4. monospace 정렬 폭 계산
+  const codenameWidth = Math.min(
+    24,
+    Math.max(...balances.map((b) => b.character.codename.length))
+  );
+  const balanceWidth = Math.max(
+    5,
+    ...balances.map((b) => b.balance.toLocaleString("ko-KR").length)
+  );
+
+  // 5. 사용자 잔액 라인 + 합계 산출
+  const userLines = balances.map(
+    ({ character, balance }) =>
+      `${padCodename(character.codename, codenameWidth)}  ${padNumberLeft(balance, balanceWidth)} CR`
+  );
+  const userSum = balances.reduce((acc, b) => acc + b.balance, 0);
+  const poolBalance = pool?.balance ?? 0;
+  const totalSum = userSum + poolBalance;
+
+  // 6. embed description (codeblock) 빌드. 4096 한도 보호: 길면 끝 잘라내기.
+  const sections = [
+    `[ 운영 캐릭 (${balances.length}) ]`,
+    userLines.join("\n"),
+    "",
+    "[ 작전 풀 ]",
+    `${padCodename("OPERATION", codenameWidth)}  ${padNumberLeft(poolBalance, balanceWidth)} CR`,
+    "",
+    "[ 합계 ]",
+    `${padCodename("사용자 합계", codenameWidth)}  ${padNumberLeft(userSum, balanceWidth)} CR`,
+    `${padCodename("작전풀", codenameWidth)}  ${padNumberLeft(poolBalance, balanceWidth)} CR`,
+    `${padCodename("총 자금", codenameWidth)}  ${padNumberLeft(totalSum, balanceWidth)} CR`,
+  ];
+  let body = `\`\`\`\n${sections.join("\n")}\n\`\`\``;
+  // Discord embed description 한도: 4096. 안전하게 4000 자 컷 + 잘림 안내.
+  if (body.length > 4000) {
+    const truncated = body.slice(0, 3950);
+    body = `${truncated}\n... (목록 일부 생략)\n\`\`\``;
+  }
+
+  const embed = new EmbedBuilder()
+    .setTitle("【 전체 크레딧 현황 】")
+    .setColor(REGISTRAR_COLORS.primary)
+    .setDescription(body)
+    .setFooter({ text: D.creditListAllFooter(balances.length) })
+    .setTimestamp();
+
+  await interaction.editReply({ embeds: [embed] });
+}
+
+/* ── 서브커맨드: 작전풀 (GM, 단건 조회) ── */
+
+/**
+ * `/크레딧 작전풀` — 작전 크레딧 풀 잔액만 단건 조회.
+ *
+ * 풀이 없으면 (fresh DB) 잔액 0 으로 표시 + 미초기화 안내. 본 명령은 read-only 라
+ * `ensureCreditPool` 로 새로 생성하지 않는다 (입금/출금 시점에만 자동 생성).
+ */
+async function handleOpPoolStatus(
+  interaction: ChatInputCommandInteraction
+): Promise<void> {
+  const pool = await getCreditPool(OPERATION_POOL_ID);
+  if (!pool) {
+    await interaction.editReply({
+      content: `${D.opPoolStatus(0)}\n${D.opPoolNotInitialized}`,
+    });
+    return;
+  }
+  await interaction.editReply({ content: D.opPoolStatus(pool.balance) });
+}
+
 /* ── 진입점 ── */
 
 /**
- * `/크레딧 ...` 라우터 — GM 전용 6 서브커맨드.
+ * `/크레딧 ...` 라우터 — GM 전용 8 서브커맨드.
  *
  * 1. defer + Admin/ManageGuild 게이트 통과 (defense-in-depth: Discord
  *    `default_member_permissions` 로 UI 노출은 이미 차단되었으나 직접 호출 방어).
@@ -611,6 +744,12 @@ export async function handleCreditCommand(
       return;
     case CreditSub.query:
       await handleQuery(interaction);
+      return;
+    case CreditSub.listAll:
+      await handleListAll(interaction);
+      return;
+    case CreditSub.opPool:
+      await handleOpPoolStatus(interaction);
       return;
     default:
       // 알 수 없는 서브커맨드는 등록 표와 핸들러 누락 시 발생 — 운영자에게만 노출.

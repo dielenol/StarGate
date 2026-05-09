@@ -441,6 +441,20 @@ const CREDIT_CMD = {
         },
       ],
     },
+    {
+      type: 1,
+      name: CreditSub.listAll,
+      description:
+        "운영 캐릭(메인) 전원 잔액과 작전 풀을 한눈에 조회합니다(관리권한).",
+      options: [],
+    },
+    {
+      type: 1,
+      name: CreditSub.opPool,
+      description:
+        "작전 크레딧 풀 잔액을 단건 조회합니다(관리권한).",
+      options: [],
+    },
   ],
 };
 
