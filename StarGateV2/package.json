@@ -15,6 +15,8 @@
     "seed:institutions": "node --experimental-strip-types scripts/seed-institutions.ts",
     "preseed:shop": "pnpm --filter @stargate/shared-db build",
     "seed:shop": "node --experimental-strip-types scripts/seed-shop-catalog.ts",
+    "preseed:stocks": "pnpm --filter @stargate/shared-db build",
+    "seed:stocks": "node --experimental-strip-types scripts/seed-stock-catalog.ts",
     "premigrate:character-sheet": "pnpm --filter @stargate/shared-db build",
     "migrate:character-sheet": "node --experimental-strip-types scripts/migrate-character-sheet-to-lore-play.ts"
   },

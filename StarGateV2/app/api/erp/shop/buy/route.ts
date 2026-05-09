@@ -235,6 +235,7 @@ export async function POST(request: Request) {
     });
 
     // 환불 ledger — 실패 시 응답 코드 분리 (REFUND_FAILED).
+    // TODO(M3-B): 보상 환불 type 을 SYSTEM_REFUND 로 분리 (ADMIN_GRANT 와 ledger 분류 구분).
     let refundOk = true;
     await addCredit({
       characterId: String(mainChar._id),

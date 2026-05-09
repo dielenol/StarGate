@@ -1,0 +1,18 @@
+/* ==========================================================
+   StockModal.module.css
+   - 주식 매도 모달 전용 보강 스타일
+   - 평가손익 색상 (수익/손실) — globals.css 토큰만 사용
+   - 14px floor 준수
+   - 그 외 overlay/dialog/header/body/footer/입력은
+     ../shop/ShopModal.module.css 를 그대로 재사용
+   ========================================================== */
+
+/* 평가손익 — 수익 (var(--success): #7aa883) */
+.preview__value--profit {
+  color: var(--success);
+}
+
+/* 평가손익 — 손실 (var(--danger): #c06a5a) */
+.preview__value--loss {
+  color: var(--danger);
+}

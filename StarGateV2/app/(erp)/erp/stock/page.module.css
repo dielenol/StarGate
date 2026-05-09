@@ -1,33 +1,524 @@
-.placeholder {
+/* ==========================================================
+   stock/page.module.css
+   - 주식 사용자 페이지 (M3-A)
+   - 14px floor, globals.css 토큰만 사용 (var(--*) 만; 색/폰트 하드코딩 금지)
+   - shop/page.module.css 패턴을 기반으로 주식 도메인(차트/포지션) 추가
+   ========================================================== */
+
+/* ── 헤더 패널 (Box variant=gold 위에 얹는 3-column 레이아웃) ── */
+
+.header {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.2fr;
+  gap: var(--gap);
+  align-items: stretch;
+  margin-bottom: var(--gap);
+}
+
+.header__main,
+.header__balance,
+.header__status {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 64px 20px;
-  text-align: center;
+  gap: 4px;
+  min-width: 0;
 }
 
-.placeholder__title {
+.header__codename {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 19px;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header__balanceNum {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 15px;
-  letter-spacing: 0.3em;
+  font-size: 26px;
+  letter-spacing: -0.01em;
 }
 
-.placeholder__message {
-  max-width: 420px;
-  margin: 0;
+.header__statusText {
   color: var(--ink-1);
-  font-size: 15px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .header {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* ── 안내 / 에러 박스 ── */
+
+.notice {
+  margin-bottom: var(--gap);
+  color: var(--ink-1);
+  font-size: 14px;
   line-height: 1.6;
 }
 
-.placeholder__hint {
-  max-width: 420px;
-  margin: 0;
+.notice__strong {
+  color: var(--danger);
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+.errorBanner {
+  position: relative;
+  margin-bottom: var(--gap);
+  padding-right: 36px;
+  color: var(--ink-0);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.errorBanner__dismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.errorBanner__dismiss:hover {
+  color: var(--ink-0);
+  border-color: var(--ink-1);
+}
+
+/* ── 좌우 분할 layout (좌: 종목 카드 그리드 / 우: 차트 패널) ── */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 좌측 컬럼 — 카드 그리드 컨테이너 */
+.stockList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.stockGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+/* ── 종목 카드 ──
+ *
+ * P1-2: 카드 컨테이너는 <div>, 내부 select 영역과 buy 버튼을 형제로 배치
+ *  - .stockCard__select : 상단 정보(헤더/가격/이벤트) 영역의 클릭 가능한 button
+ *  - .stockCard__buyBtn : 하단 매수 button (별도 button)
+ *  → button 중첩 invalid HTML 회피.
+ */
+.stockCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.stockCard--active {
+  border-color: var(--gold);
+  background: var(--bg-3);
+}
+
+.stockCard__select {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.stockCard__select:hover {
+  /* globals.css 에 --gold 의 alpha 토큰 부재 — fallback 으로 RGB. M3-B sweep 시 토큰 신설 후 fallback 제거. */
+  background: var(--gold-tint, rgba(201, 168, 90, 0.04));
+}
+
+.stockCard__select:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: -2px;
+}
+
+.stockCard__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stockCard__ticker {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.stockCard__name {
+  color: var(--ink-0);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stockCard__priceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+}
+
+.stockCard__price {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 17px;
+  letter-spacing: 0.02em;
+}
+
+.stockCard__change {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.stockCard__change--up {
+  color: var(--gold);
+}
+
+.stockCard__change--down {
+  color: var(--danger);
+}
+
+.stockCard__event {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.stockCard__buyBtn {
+  width: 100%;
+  padding: 10px;
+  background: var(--gold);
+  border: 0;
+  border-top: 1px solid var(--gold);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.stockCard__buyBtn:hover:not(:disabled) {
+  background: var(--gold-dim);
+  border-top-color: var(--gold-dim);
+}
+
+.stockCard__buyBtn:disabled {
+  background: var(--bg-3);
+  border-top-color: var(--line-strong);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+.stockCard__buyBtn:focus-visible {
+  outline: 1px solid var(--ink-0);
+  outline-offset: -2px;
+}
+
+/* ── 차트 패널 (우측 컬럼) ── */
+
+.chartPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.chartPanel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.chartPanel__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chartPanel__ticker {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.chartPanel__name {
+  color: var(--ink-0);
+  font-size: 19px;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chartPanel__priceRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chartPanel__price {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.chartPanel__change {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.chartPanel__change--up {
+  color: var(--gold);
+}
+
+.chartPanel__change--down {
+  color: var(--danger);
+}
+
+.chartPanel__placeholder {
+  padding: 48px 12px;
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.chartPanel__chart {
+  width: 100%;
+  height: 280px;
+  min-width: 0;
+}
+
+.chartPanel__description {
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── 보유 포지션 패널 ── */
+
+.holdingsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.holdingsPanel__count {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.empty {
+  padding: 32px 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.holdingsTable {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.holdingsRow {
+  display: grid;
+  grid-template-columns:
+    minmax(160px, 1.4fr)
+    minmax(60px, 0.8fr)
+    minmax(80px, 1fr)
+    minmax(80px, 1fr)
+    minmax(90px, 1.1fr)
+    minmax(80px, 1fr)
+    minmax(70px, 0.8fr)
+    minmax(70px, auto);
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.holdingsRow:last-child {
+  border-bottom: 0;
+}
+
+.holdingsRow--head {
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.holdingsRow__num {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-align: right;
+}
+
+.holdingsRow__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.holdingsRow__ticker {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.holdingsRow__title {
+  color: var(--ink-0);
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.holdingsRow__profit--up {
+  color: var(--gold);
+}
+
+.holdingsRow__profit--down {
+  color: var(--danger);
+}
+
+.holdingsRow__action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.holdingsRow__sellBtn {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.holdingsRow__sellBtn:hover:not(:disabled) {
+  color: var(--ink-0);
+  border-color: var(--ink-1);
+}
+
+.holdingsRow__sellBtn:disabled {
+  color: var(--ink-3);
+  border-color: var(--line);
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  /* 좁은 폭에서는 가로 스크롤로 표 유지 (컬럼이 너무 많아 1열 변환은 가독성 더 나쁨). */
+  .holdingsTable {
+    overflow-x: auto;
+  }
+  .holdingsRow {
+    min-width: 760px;
+  }
+}
+
+@media (max-width: 600px) {
+  .stockGrid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+  .chartPanel__chart {
+    height: 220px;
+  }
 }
