@@ -33,6 +33,7 @@ import { charactersCol, usersCol } from "../src/collections.js";
 interface CliArgs {
   codename: string;
   targetOwner?: string;
+  targetOwnerUsername?: string;
   dryRun: boolean;
   execute: boolean;
   yes: boolean;
@@ -80,6 +81,7 @@ function parseArgs(): CliArgs {
   return {
     codename,
     targetOwner,
+    targetOwnerUsername: get("target-owner-username"),
     dryRun,
     execute,
     yes,
@@ -126,17 +128,67 @@ async function main() {
 
   try {
     const col = await charactersCol();
-    // 1. 캐릭터 검색 (codename 정확 일치 → 없으면 lore.name 부분 일치)
-    let character = await col.findOne({ codename: args.codename });
-    if (!character) {
-      character = await col.findOne({
-        "lore.name": { $regex: args.codename.split(/\s+/).join(".*"), $options: "i" },
-      });
+    // 1. 캐릭터 검색 — 다중 패턴 시도
+    const codename = args.codename;
+    const tokens = codename.split(/\s+/).filter(Boolean);
+    const tokenRegex = tokens.map((t) => `(?=.*${t})`).join("");
+
+    const queries: Array<{ label: string; filter: Record<string, unknown> }> = [
+      { label: "codename ===", filter: { codename } },
+      { label: "codename ~i", filter: { codename: { $regex: codename, $options: "i" } } },
+      { label: "codename tokens AND", filter: { codename: { $regex: tokenRegex, $options: "i" } } },
+      { label: "lore.name ===", filter: { "lore.name": codename } },
+      { label: "lore.name tokens AND", filter: { "lore.name": { $regex: tokenRegex, $options: "i" } } },
+      { label: "lore.fullName tokens AND", filter: { "lore.fullName": { $regex: tokenRegex, $options: "i" } } },
+    ];
+
+    let character = null;
+    let matchedBy = "";
+    for (const q of queries) {
+      const found = await col.findOne(q.filter);
+      if (found) {
+        character = found;
+        matchedBy = q.label;
+        break;
+      }
     }
+
     if (!character) {
-      console.error(`캐릭터 없음: ${args.codename}`);
+      // 진단 — 토큰 부분 일치 후보 list + 컬렉션 카운트 출력
+      const totalChars = await col.countDocuments({});
+      console.error(`\n캐릭터 없음: ${codename}`);
+      console.error(`전체 character 수: ${totalChars}`);
+      const candidates = await col
+        .find({
+          $or: [
+            { codename: { $regex: tokens[0] ?? codename, $options: "i" } },
+            { "lore.name": { $regex: tokens[0] ?? codename, $options: "i" } },
+            { "lore.fullName": { $regex: tokens[0] ?? codename, $options: "i" } },
+          ],
+        })
+        .project({ codename: 1, "lore.name": 1, "lore.fullName": 1, ownerId: 1 })
+        .limit(20)
+        .toArray();
+      if (candidates.length > 0) {
+        console.error(`\n첫 토큰 "${tokens[0] ?? codename}" 부분 일치 후보 ${candidates.length}건:`);
+        for (const c of candidates) {
+          const lore = c.lore as { name?: string; fullName?: string } | undefined;
+          console.error(
+            `  - codename="${c.codename}" lore.name="${lore?.name ?? ""}" lore.fullName="${lore?.fullName ?? ""}" ownerId=${c.ownerId ?? "null"}`,
+          );
+        }
+        console.error(`\n위에서 정확한 codename 확인 후 다시 실행: --codename="<정확한 codename>"`);
+      } else {
+        console.error(`\n토큰 "${tokens[0] ?? codename}" 부분 일치 후보 없음.`);
+        // codename 샘플 출력
+        const samples = await col.find({}).project({ codename: 1 }).limit(30).toArray();
+        console.error(`\n현재 DB 의 codename 샘플 ${samples.length}건:`);
+        for (const s of samples) console.error(`  - ${s.codename}`);
+      }
       process.exit(1);
     }
+
+    console.log(`[match] ${matchedBy}`);
 
     console.log("[1/4] 캐릭터 식별됨");
     console.log(`  _id: ${character._id}`);
@@ -150,6 +202,57 @@ async function main() {
     if (args.targetOwner) {
       newOwnerId = args.targetOwner;
       console.log("[2/4] 명시 target-owner 사용");
+    } else if (args.targetOwnerUsername) {
+      const uCol = await usersCol();
+      const matched = await uCol
+        .find({
+          $or: [
+            { username: args.targetOwnerUsername },
+            { discordUsername: args.targetOwnerUsername },
+            { discordGlobalName: args.targetOwnerUsername },
+            { displayName: args.targetOwnerUsername },
+          ],
+        })
+        .limit(5)
+        .toArray();
+      if (matched.length === 0) {
+        console.error(`user 없음: ${args.targetOwnerUsername}`);
+        // 비슷한 이름 후보
+        const candidates = await uCol
+          .find({
+            $or: [
+              { username: { $regex: args.targetOwnerUsername, $options: "i" } },
+              { discordUsername: { $regex: args.targetOwnerUsername, $options: "i" } },
+              { discordGlobalName: { $regex: args.targetOwnerUsername, $options: "i" } },
+              { displayName: { $regex: args.targetOwnerUsername, $options: "i" } },
+            ],
+          })
+          .project({ username: 1, discordUsername: 1, discordGlobalName: 1, displayName: 1 })
+          .limit(15)
+          .toArray();
+        if (candidates.length > 0) {
+          console.error(`\n부분 일치 후보 ${candidates.length}건:`);
+          for (const c of candidates) {
+            console.error(
+              `  - username="${c.username}" discordUsername="${c.discordUsername ?? ""}" globalName="${c.discordGlobalName ?? ""}" display="${c.displayName ?? ""}" _id=${c._id}`,
+            );
+          }
+        }
+        process.exit(1);
+      }
+      if (matched.length > 1) {
+        console.error(`\nuser 다중 일치: ${args.targetOwnerUsername} → ${matched.length}건`);
+        for (const m of matched) {
+          console.error(
+            `  - username="${m.username}" discordUsername="${m.discordUsername ?? ""}" _id=${m._id}`,
+          );
+        }
+        console.error("\n--target-owner=<_id hex> 로 명시 필요");
+        process.exit(1);
+      }
+      newOwnerId = matched[0]._id.toHexString();
+      console.log(`[2/4] username "${args.targetOwnerUsername}" 매칭`);
+      console.log(`  user._id: ${newOwnerId}`);
     } else {
       // change_logs 에서 가장 최근 ownerId 변경 찾기
       const logsCol = await characterChangeLogsCol();
