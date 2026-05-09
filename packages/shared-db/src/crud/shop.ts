@@ -178,6 +178,38 @@ export async function reduceStock(
   return result.modifiedCount > 0;
 }
 
+/**
+ * 재고를 qty 만큼 atomic 하게 복원 — `reduceStock` 의 보상 트랜잭션 용.
+ *
+ * 사용 시점:
+ * - 구매 라우트가 reduceStock 성공 → 후속 단계(잔액 차감 / 인벤토리 적재) 실패 시
+ *   이미 차감된 재고를 되돌려야 일관성이 유지된다.
+ * - 호출자는 best-effort 로 try/catch 후 console.error 로깅 권장 (보상 자체 실패 시
+ *   로그만 남기고 운영 모니터링이 처리).
+ *
+ * 동작:
+ * - itemId 매칭 row 가 있으면 `$inc: { stock: +qty }`. 미존재 시 noop (false 반환 없이 0건 update).
+ *   카탈로그 시드가 정상이면 reduceStock 으로 0건이 발생한 row 는 항상 존재 → 미매칭은 사실상 비정상 상황.
+ */
+export async function restoreStock(
+  itemId: string,
+  qty: number,
+): Promise<void> {
+  if (qty <= 0) {
+    throw new Error(`restoreStock: qty must be positive, got ${qty}`);
+  }
+  const col = await shopDailyStockCol();
+  const result = await col.updateOne(
+    { itemId },
+    { $inc: { stock: qty } },
+  );
+  if (result.matchedCount === 0) {
+    console.warn(
+      `[restoreStock] silent noop — itemId=${itemId} 의 daily_stock row 미존재. catalog seed drift 의심.`,
+    );
+  }
+}
+
 export async function getAllDailyStocks(): Promise<ShopDailyStock[]> {
   const col = await shopDailyStockCol();
   return col.find().sort({ itemId: 1 }).toArray();
