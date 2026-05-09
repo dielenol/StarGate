@@ -35,9 +35,14 @@ export type {
   CreditTransaction,
   CreditTransactionType,
   CreateCreditTransactionInput,
+  WebAllowedCreditType,
+  GmDirectGrantType,
+  BotOnlyCreditType,
   MasterItem,
   CharacterInventory,
   ItemCategory,
+  ShopMeta,
+  ShopPageGroup,
   CreateMasterItemInput,
   CreateInventoryInput,
   WikiPage,
@@ -53,6 +58,18 @@ export type {
   CharacterChangeLog,
   CharacterChangeLogEntry,
   NewCharacterChangeLog,
+  CreditPool,
+  CreateCreditPoolInput,
+  ShopInventory,
+  ShopDailyStock,
+  CreateShopInventoryInput,
+  CreateShopDailyStockInput,
+  StockPrice,
+  StockHolding,
+  StockPriceHistory,
+  CreateStockPriceInput,
+  CreateStockHoldingInput,
+  CreateStockPriceHistoryInput,
 } from "./types/index.js";
 
 export {
@@ -66,6 +83,11 @@ export {
   DEPARTMENTS,
   FACTIONS,
   INSTITUTIONS,
+  CREDIT_TRANSACTION_TYPES,
+  WEB_ALLOWED_CREDIT_TYPES,
+  GM_DIRECT_GRANT_TYPES,
+  BOT_ONLY_CREDIT_TYPES,
+  isGmDirectGrantType,
   OPERATION_POOL_ID,
   OPERATION_POOL_DEFAULT_NAME,
   OPERATION_POOL_INITIAL_BALANCE,
@@ -102,6 +124,12 @@ export {
   notificationsCol,
   factionsCol,
   institutionsCol,
+  creditPoolsCol,
+  shopInventoryCol,
+  shopDailyStockCol,
+  stockPricesCol,
+  stockHoldingsCol,
+  stockPriceHistoryCol,
 } from "./collections.js";
 
 /* ── Collections (sync, long-running only) ── */
@@ -122,6 +150,12 @@ export {
   notificationsColSync,
   factionsColSync,
   institutionsColSync,
+  creditPoolsColSync,
+  shopInventoryColSync,
+  shopDailyStockColSync,
+  stockPricesColSync,
+  stockHoldingsColSync,
+  stockPriceHistoryColSync,
 } from "./collections.js";
 
 /* ── Indexes ── */

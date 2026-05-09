@@ -37,3 +37,33 @@ export interface StockHolding {
 }
 
 export type CreateStockHoldingInput = Omit<StockHolding, "_id">;
+
+/**
+ * 주식 가격 변동 시계열 로그 (ticker × event).
+ *
+ * - StockPrice 가 "현재 스냅샷" 이라면 본 컬렉션은 차트/이력 표시용 append-only.
+ * - createdAt 기준 TTL 30 일 (`expireAfterSeconds: 30 * 24 * 60 * 60`).
+ * - source: 가격 변동 사유 분류.
+ *   - "scheduled": tia_bot 스케줄 갱신.
+ *   - "trade": 매매로 인한 가격 변동.
+ *   - "gm-event": GM 수동 이벤트 (폭락/폭등 등).
+ */
+export interface StockPriceHistory {
+  _id?: ObjectId;
+  ticker: string;
+  price: number;
+  prevPrice: number;
+  eventText?: string;
+  source: "scheduled" | "trade" | "gm-event";
+  createdAt: Date;
+}
+
+/**
+ * append-only 시계열 입력. createdAt 은 CRUD 가 항상 now 로 부여 (호출자 주입 금지).
+ *
+ * 다른 컬렉션(예: createCreditTransaction) 과 동일하게 createdAt 도 Omit 대상.
+ */
+export type CreateStockPriceHistoryInput = Omit<
+  StockPriceHistory,
+  "_id" | "createdAt"
+>;

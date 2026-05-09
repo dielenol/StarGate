@@ -54,17 +54,23 @@ export type {
   CreditTransactionType,
   CreateCreditTransactionInput,
   WebAllowedCreditType,
+  GmDirectGrantType,
+  BotOnlyCreditType,
 } from "./credit.js";
 export {
   CREDIT_TRANSACTION_TYPES,
   WEB_ALLOWED_CREDIT_TYPES,
+  GM_DIRECT_GRANT_TYPES,
   BOT_ONLY_CREDIT_TYPES,
+  isGmDirectGrantType,
 } from "./credit.js";
 
 export type {
   MasterItem,
   CharacterInventory,
   ItemCategory,
+  ShopMeta,
+  ShopPageGroup,
   CreateMasterItemInput,
   CreateInventoryInput,
 } from "./inventory.js";
@@ -115,6 +121,8 @@ export type {
 export type {
   StockPrice,
   StockHolding,
+  StockPriceHistory,
   CreateStockPriceInput,
   CreateStockHoldingInput,
+  CreateStockPriceHistoryInput,
 } from "./stock.js";

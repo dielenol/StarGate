@@ -87,6 +87,13 @@ export async function ensureAllIndexes(): Promise<void> {
         key: { isAvailable: 1 },
         name: "master_items_isAvailable",
       },
+      {
+        // 편의점 카탈로그 시드/lookup 안정 키. 기존 row 는 slug 누락 가능 → sparse.
+        key: { slug: 1 },
+        name: "master_items_slug_unique",
+        unique: true,
+        sparse: true,
+      },
     ]),
 
     /* ── character_inventory (from task spec) ── */
@@ -265,6 +272,22 @@ export async function ensureAllIndexes(): Promise<void> {
       {
         key: { ticker: 1 },
         name: "stock_holdings_ticker",
+      },
+    ]),
+
+    /* ── stock_price_history (M1: 30일 가격 시계열) ──
+     * TTL 30일. ticker 별 차트 조회는 (ticker, createdAt desc) 복합 인덱스로 최적화.
+     */
+    db.collection("stock_price_history").createIndexes([
+      {
+        key: { createdAt: 1 },
+        name: "stock_price_history_ttl",
+        // 30 일 = 30 * 24 * 60 * 60.
+        expireAfterSeconds: 30 * 24 * 60 * 60,
+      },
+      {
+        key: { ticker: 1, createdAt: -1 },
+        name: "stock_price_history_ticker_createdAt",
       },
     ]),
   ]);

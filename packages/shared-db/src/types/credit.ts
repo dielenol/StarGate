@@ -29,29 +29,64 @@ export const CREDIT_TRANSACTION_TYPES = [
 export type CreditTransactionType = (typeof CREDIT_TRANSACTION_TYPES)[number];
 
 /**
- * 웹 API (POST /api/erp/credits) 화이트리스트.
- * 운영자가 ERP UI 에서 직접 발생시킬 수 있는 거래 타입만 포함.
+ * 웹 API 도메인 전체 화이트리스트 — 웹에서 발생 가능한 모든 거래 타입.
+ *
+ * 라우트별 실제 게이트는 더 좁은 서브셋(아래 GM_DIRECT_GRANT_TYPES) 으로 분리되어 있다.
+ * 본 상수는 도메인 전체 카탈로그(웹에서 거부되지 않는 type) 표시 + UI 메타용.
+ *
+ * - ADMIN_GRANT / ADMIN_DEDUCT / SESSION_REWARD: GM 운영자가 발생시키는 직접 발급/차감.
+ *   → 라우트: /api/erp/credits (POST). 게이트: GM_DIRECT_GRANT_TYPES.
+ * - PURCHASE: ERP 편의점 페이지 결제. M2 도입 예정.
+ *   → 라우트: /api/erp/shop/* (예정). 자체 가드(재고/잔액/슬롯) 적용.
+ * - STOCK_BUY / STOCK_SELL: ERP 주식 페이지 매매. M3 도입 예정.
+ *   → 라우트: /api/erp/stocks/* (예정). 자체 가드(보유/시세) 적용.
  */
 export const WEB_ALLOWED_CREDIT_TYPES = [
   "ADMIN_GRANT",
   "ADMIN_DEDUCT",
   "SESSION_REWARD",
+  "PURCHASE",
+  "STOCK_BUY",
+  "STOCK_SELL",
 ] as const satisfies readonly CreditTransactionType[];
 export type WebAllowedCreditType = (typeof WEB_ALLOWED_CREDIT_TYPES)[number];
 
 /**
+ * GM 직접 발급 가능 type (POST /api/erp/credits 가 받는 화이트리스트).
+ *
+ * USER_INITIATED_TYPES (PURCHASE, STOCK_BUY, STOCK_SELL) 는 본 라우트가 아닌
+ * M2/M3 의 도메인 전용 라우트(/api/erp/shop/*, /api/erp/stocks/*)에서 자체 가드.
+ * 본 라우트가 모두 받으면 ledger 무결성(재고/시세 검증 우회) 깨짐.
+ */
+export const GM_DIRECT_GRANT_TYPES = [
+  "ADMIN_GRANT",
+  "ADMIN_DEDUCT",
+  "SESSION_REWARD",
+] as const satisfies readonly CreditTransactionType[];
+export type GmDirectGrantType = (typeof GM_DIRECT_GRANT_TYPES)[number];
+
+export function isGmDirectGrantType(value: unknown): value is GmDirectGrantType {
+  return (
+    typeof value === "string" &&
+    (GM_DIRECT_GRANT_TYPES as readonly string[]).includes(value)
+  );
+}
+
+/**
  * 봇 전용 거래 타입 — 웹 API 거부 대상 (tia_bot 에서만 직접 호출).
  * 웹은 read-only 표시.
+ *
+ * - TRANSFER: 사용자 간 송금 (봇 명령).
+ * - OP_GRANT / OP_DEDUCT: 작전 풀 ↔ 사용자 (운영자 봇 명령).
+ * - MIGRATION: 1회성 레거시 시드.
  */
 export const BOT_ONLY_CREDIT_TYPES = [
-  "PURCHASE",
   "TRANSFER",
-  "STOCK_BUY",
-  "STOCK_SELL",
   "OP_GRANT",
   "OP_DEDUCT",
   "MIGRATION",
 ] as const satisfies readonly CreditTransactionType[];
+export type BotOnlyCreditType = (typeof BOT_ONLY_CREDIT_TYPES)[number];
 
 /**
  * 크레딧 ledger 단위 — character 단위로 전환됨 (Phase 2).

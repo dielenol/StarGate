@@ -8,12 +8,15 @@
  */
 
 import type {
+  CreateStockPriceHistoryInput,
   StockHolding,
   StockPrice,
+  StockPriceHistory,
 } from "../types/index.js";
 
 import {
   stockHoldingsCol,
+  stockPriceHistoryCol,
   stockPricesCol,
 } from "../collections.js";
 
@@ -278,4 +281,43 @@ export async function getActiveHoldersByTicker(ticker: string): Promise<StockHol
 export async function getAllHoldings(): Promise<StockHolding[]> {
   const col = await stockHoldingsCol();
   return col.find().toArray();
+}
+
+/* ── stock_price_history ── */
+
+/**
+ * 가격 변동 시계열 1건 append (M1: ERP 차트 표시용).
+ *
+ * - createdAt 은 CRUD 가 항상 now 부여 (호출자 주입 금지 — 입력 타입에서 Omit).
+ * - source 분류는 호출자가 결정 ("scheduled" | "trade" | "gm-event").
+ * - TTL 인덱스가 30 일 후 자동 만료.
+ */
+export async function recordStockPriceHistory(
+  input: CreateStockPriceHistoryInput,
+): Promise<StockPriceHistory> {
+  const col = await stockPriceHistoryCol();
+  const doc: StockPriceHistory = {
+    ...input,
+    createdAt: new Date(),
+  };
+  const result = await col.insertOne(doc);
+  return { ...doc, _id: result.insertedId };
+}
+
+/**
+ * 특정 ticker 의 최근 N 일 가격 시계열을 createdAt 오름차순으로 반환 (차트 X축 정합).
+ *
+ * - days: 조회 기간 (기본 30 일, TTL 와 동일).
+ * - 인덱스: `{ ticker: 1, createdAt: -1 }` 활용 (sort reverse 는 mongo 가 처리).
+ */
+export async function listStockPriceHistory(
+  ticker: string,
+  days: number = 30,
+): Promise<StockPriceHistory[]> {
+  const col = await stockPriceHistoryCol();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  return col
+    .find({ ticker, createdAt: { $gte: since } })
+    .sort({ createdAt: 1 })
+    .toArray();
 }

@@ -17,7 +17,11 @@ import type { FactionDoc } from "./schemas/faction.schema.js";
 import type { InstitutionDoc } from "./schemas/institution.schema.js";
 import type { CreditPool } from "./types/credit-pool.js";
 import type { ShopInventory, ShopDailyStock } from "./types/shop.js";
-import type { StockPrice, StockHolding } from "./types/stock.js";
+import type {
+  StockPrice,
+  StockHolding,
+  StockPriceHistory,
+} from "./types/stock.js";
 
 import { getDb, getDbSync } from "./client.js";
 
@@ -44,6 +48,7 @@ const COL = {
   SHOP_DAILY_STOCK: "shop_daily_stock",
   STOCK_PRICES: "stock_prices",
   STOCK_HOLDINGS: "stock_holdings",
+  STOCK_PRICE_HISTORY: "stock_price_history",
 } as const;
 
 /* ── Async accessors (both modes) ── */
@@ -148,6 +153,11 @@ export async function stockHoldingsCol(): Promise<Collection<StockHolding>> {
   return db.collection<StockHolding>(COL.STOCK_HOLDINGS);
 }
 
+export async function stockPriceHistoryCol(): Promise<Collection<StockPriceHistory>> {
+  const db = await getDb();
+  return db.collection<StockPriceHistory>(COL.STOCK_PRICE_HISTORY);
+}
+
 /* ── Sync accessors (long-running only) ── */
 
 export function usersColSync(): Collection<User> {
@@ -228,4 +238,8 @@ export function stockPricesColSync(): Collection<StockPrice> {
 
 export function stockHoldingsColSync(): Collection<StockHolding> {
   return getDbSync().collection<StockHolding>(COL.STOCK_HOLDINGS);
+}
+
+export function stockPriceHistoryColSync(): Collection<StockPriceHistory> {
+  return getDbSync().collection<StockPriceHistory>(COL.STOCK_PRICE_HISTORY);
 }
