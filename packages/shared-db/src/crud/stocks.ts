@@ -340,3 +340,40 @@ export async function listStockPriceHistory(
     .limit(500)
     .toArray();
 }
+
+/**
+ * 다수 ticker 의 최근 N 일 sparkline 시계열을 일괄 조회 (카드 미니 차트용).
+ *
+ * 단일 호출로 N 종목 시계열을 반환해 카드별 N+1 fetch 함정을 회피한다.
+ *
+ * - tickers: 조회 대상. 빈 배열이면 즉시 `[]` 반환 (round-trip 절약).
+ * - days: 조회 기간 (기본 7 일).
+ * - 인덱스: `{ ticker: 1, createdAt: -1 }` 활용. `$in` 매칭 후 createdAt 오름차순.
+ * - 반환은 입력 ticker 순서를 보장하지 않는다 (호출자가 Map 으로 인덱싱).
+ *   ticker 가 시계열을 갖지 않으면 결과 배열에서 누락 (빈 points 항목으로 채우지 않음).
+ */
+export async function listStockPriceHistoryBulk(
+  tickers: string[],
+  days: number = 7,
+): Promise<Array<{ ticker: string; points: Array<{ ts: Date; price: number }> }>> {
+  if (tickers.length === 0) return [];
+  const col = await stockPriceHistoryCol();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const result = await col
+    .aggregate<{ _id: string; points: Array<{ ts: Date; price: number }> }>([
+      { $match: { ticker: { $in: tickers }, createdAt: { $gte: since } } },
+      { $sort: { createdAt: 1 } },
+      {
+        $group: {
+          _id: "$ticker",
+          points: {
+            $push: { ts: "$createdAt", price: "$price" },
+          },
+        },
+      },
+    ])
+    .toArray();
+
+  return result.map((row) => ({ ticker: row._id, points: row.points }));
+}

@@ -4,20 +4,24 @@
  * recharts 차트 분리 모듈.
  *
  * StockClient 의 정적 import 가 recharts 약 95KB(gzipped) 를 초기 stock 번들에
- *포함시키는 것을 회피하기 위한 분리. dynamic({ ssr: false }) 로 진입.
+ * 포함시키는 것을 회피하기 위한 분리. dynamic({ ssr: false }) 로 진입.
  *
  * Skeleton 은 동일 컨테이너(.chartPanel__chart) 높이를 그대로 차지해 CLS 방지.
+ *
+ * M3-A 토스 리워크: LineChart → AreaChart + gradient fill. dot 제거 (sparkline 톤).
  */
 
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+
+import { useGradientId } from "@/lib/charts/useGradientId";
 
 import styles from "./page.module.css";
 
@@ -67,7 +71,7 @@ interface Props {
 /* ── Skeleton (loading placeholder) ── */
 
 /**
- * dynamic() loading 동안 표시할 placeholder. 차트 컨테이너의 height(280px) 를
+ * dynamic() loading 동안 표시할 placeholder. 차트 컨테이너의 height(.chartPanel__chart) 를
  * 동일 className 으로 점유 → 청크 로드 후에도 layout shift 없음.
  */
 export function ChartSkeleton() {
@@ -79,30 +83,49 @@ export function ChartSkeleton() {
 /* ── 컴포넌트 ── */
 
 export default function StockHistoryChart({ data }: Props) {
+  // 같은 페이지에 sparkline AreaChart 가 다수 존재 → useId() 로 gradient id 충돌 방지.
+  const safeGradientId = useGradientId("g");
+
   return (
     <div className={styles.chartPanel__chart}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
+        <AreaChart
           data={data}
           margin={{ top: 12, right: 16, bottom: 8, left: 4 }}
         >
-          <CartesianGrid stroke="var(--line)" strokeDasharray="2 4" />
+          <defs>
+            <linearGradient id={safeGradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.32} />
+              <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid
+            stroke="var(--line)"
+            strokeDasharray="2 6"
+            vertical={false}
+          />
           <XAxis
             dataKey="ts"
             tickFormatter={formatChartDate}
             stroke="var(--ink-3)"
-            tick={{ fill: "var(--ink-2)", fontSize: 14 }}
-            minTickGap={28}
+            tick={{ fill: "var(--ink-3)", fontSize: 14 }}
+            minTickGap={40}
+            interval="preserveStartEnd"
           />
           <YAxis
             stroke="var(--ink-3)"
-            tick={{ fill: "var(--ink-2)", fontSize: 14 }}
+            tick={{ fill: "var(--ink-3)", fontSize: 14 }}
             tickFormatter={(v) =>
               typeof v === "number" ? v.toLocaleString() : String(v)
             }
-            width={60}
+            width={56}
           />
           <Tooltip
+            cursor={{
+              stroke: "var(--gold)",
+              strokeWidth: 1,
+              strokeDasharray: "0",
+            }}
             contentStyle={{
               background: "var(--bg-2)",
               border: "1px solid var(--line-strong)",
@@ -125,16 +148,23 @@ export default function StockHistoryChart({ data }: Props) {
                 : [v, "가격"];
             }}
           />
-          <Line
+          <Area
             type="monotone"
             dataKey="price"
             stroke="var(--gold)"
-            strokeWidth={2}
-            dot={{ r: 2, fill: "var(--gold)", stroke: "var(--gold)" }}
-            activeDot={{ r: 4, fill: "var(--gold)" }}
+            strokeWidth={1.5}
+            fill={`url(#${safeGradientId})`}
+            fillOpacity={1}
+            dot={false}
+            activeDot={{
+              r: 3,
+              stroke: "var(--gold)",
+              strokeWidth: 1,
+              fill: "var(--bg)",
+            }}
             isAnimationActive={false}
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

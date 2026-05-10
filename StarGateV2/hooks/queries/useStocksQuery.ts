@@ -20,7 +20,9 @@ export const stocksKeys = {
   all: ["stocks"] as const,
   prices: ["stocks", "prices"] as const,
   holdings: ["stocks", "holdings"] as const,
-  history: (ticker: string) => ["stocks", "history", ticker] as const,
+  history: (ticker: string, days: number) =>
+    ["stocks", "history", ticker, days] as const,
+  sparklines: (days: number) => ["stocks", "sparklines", days] as const,
 };
 
 /* ── 에러 타입 ── */
@@ -113,6 +115,22 @@ export interface StockHistoryResponse {
   items: StockHistoryItem[];
 }
 
+export interface StockSparklinePoint {
+  /** ISO 8601. 차트 라이브러리 X 축은 string 그대로 사용해도 무방. */
+  ts: string;
+  price: number;
+}
+
+export interface StockSparkline {
+  ticker: string;
+  points: StockSparklinePoint[];
+}
+
+export interface StockSparklinesResponse {
+  items: StockSparkline[];
+  days: number;
+}
+
 /* ── Fetchers ── */
 
 async function parseStocksError(res: Response): Promise<never> {
@@ -141,10 +159,19 @@ async function fetchStockHoldings(): Promise<StockHoldingsResponse> {
 
 async function fetchStockHistory(
   ticker: string,
+  days: number,
 ): Promise<StockHistoryResponse> {
   const res = await fetch(
-    `/api/erp/stocks/history?ticker=${encodeURIComponent(ticker)}`,
+    `/api/erp/stocks/history?ticker=${encodeURIComponent(ticker)}&days=${days}`,
   );
+  if (!res.ok) await parseStocksError(res);
+  return res.json();
+}
+
+async function fetchStockSparklines(
+  days: number,
+): Promise<StockSparklinesResponse> {
+  const res = await fetch(`/api/erp/stocks/sparklines?days=${days}`);
   if (!res.ok) await parseStocksError(res);
   return res.json();
 }
@@ -154,6 +181,7 @@ async function fetchStockHistory(
 const PRICES_STALE_MS = 30 * 1000;
 const HOLDINGS_STALE_MS = 30 * 1000;
 const HISTORY_STALE_MS = 5 * 60 * 1000;
+const SPARKLINES_STALE_MS = 2 * 60 * 1000;
 
 export function useStockPrices(options?: {
   initialData?: StockPricesResponse;
@@ -184,14 +212,38 @@ export function useStockHoldings(options?: {
 
 export function useStockHistory(
   ticker: string,
-  options?: { initialData?: StockHistoryResponse; enabled?: boolean },
+  options?: {
+    initialData?: StockHistoryResponse;
+    enabled?: boolean;
+    /** 조회 일수. 1~30. 기본 30 (기존 호출처 호환). */
+    days?: number;
+  },
 ) {
+  const days = options?.days ?? 30;
   return useQuery({
-    queryKey: stocksKeys.history(ticker),
-    queryFn: () => fetchStockHistory(ticker),
+    queryKey: stocksKeys.history(ticker, days),
+    queryFn: () => fetchStockHistory(ticker, days),
     staleTime: HISTORY_STALE_MS,
     initialData: options?.initialData,
     // ticker 비어 있으면 호출 안 함. 호출자가 명시적으로 disable 하고 싶을 때도 활용.
     enabled: ticker.length > 0 && (options?.enabled ?? true),
+  });
+}
+
+/**
+ * 카탈로그 전 종목의 sparkline 시계열 (카드 미니 차트).
+ *
+ * - days: 1~30. 기본 7.
+ * - history hook 과 동일 staleTime 정책 (변동 적음).
+ */
+export function useStockSparklines(
+  days: number = 7,
+  options?: { initialData?: StockSparklinesResponse },
+) {
+  return useQuery({
+    queryKey: stocksKeys.sparklines(days),
+    queryFn: () => fetchStockSparklines(days),
+    staleTime: SPARKLINES_STALE_MS,
+    initialData: options?.initialData,
   });
 }

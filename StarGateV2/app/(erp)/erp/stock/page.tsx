@@ -184,10 +184,17 @@ export default async function StockPage() {
         : Promise.resolve([]),
     ]);
 
+  // STOCK_CATALOG 는 카탈로그 시드 누락이면 운영 사고 — 빌드 시 invariant.
+  // 빈 카탈로그가 placeholder 와 구분 없이 silent 로 가려지는 것 방지.
+  if (STOCK_CATALOG.length === 0) {
+    throw new Error(
+      "STOCK_CATALOG 가 비어 있습니다 — lib/stocks/catalog.ts 시드 누락.",
+    );
+  }
+
   // 초기 차트 종목: 보유 ≥ 1 이면 첫 보유 종목, 아니면 카탈로그 첫 종목.
-  // STOCK_CATALOG 가 비어 있을 일은 없지만 방어적으로 fallback "".
   const initialHistoryTicker =
-    initialHoldings.items[0]?.ticker ?? STOCK_CATALOG[0]?.ticker ?? "";
+    initialHoldings.items[0]?.ticker ?? STOCK_CATALOG[0].ticker;
 
   const initialHistory: StockHistoryResponse = initialHistoryTicker
     ? await buildHistoryResponse(initialHistoryTicker).catch(
@@ -196,10 +203,14 @@ export default async function StockPage() {
     : { items: [] };
 
   // useCredits 가 받을 CreditsResponse — 메인 캐릭이 있을 때만 시드.
+  // Next.js 16: Server→Client prop 으로 ObjectId(toJSON 가진 객체) 전달 거부 → _id 를 hex string 으로 정규화.
   const initialCredits: CreditsResponse | undefined =
     mainCharacter && mainCharacterId
       ? {
-          transactions: initialLedger,
+          transactions: initialLedger.map((t) => ({
+            ...t,
+            _id: t._id?.toString() as unknown as typeof t._id,
+          })),
           balance: initialBalance,
           characterId: mainCharacterId,
           characterCodename: mainCharacter.codename,

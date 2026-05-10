@@ -29,6 +29,7 @@ export {
   // stock_price_history (M1)
   recordStockPriceHistory,
   listStockPriceHistory,
+  listStockPriceHistoryBulk,
 } from "@stargate/shared-db";
 
 export type {
