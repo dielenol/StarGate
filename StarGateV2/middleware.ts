@@ -36,5 +36,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/erp/:path*"],
+  // `/erp/:path*` 만으로는 path-to-regexp 동작 차이로 `/erp` 자체가 누락될 수 있어
+  // 명시적으로 두 패턴 등록. 가드 우회 (인증 없이 대시보드 접근) 사고 방지.
+  matcher: ["/erp", "/erp/:path*"],
 };
