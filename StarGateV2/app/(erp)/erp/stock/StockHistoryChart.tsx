@@ -3,8 +3,8 @@
 /**
  * recharts 차트 분리 모듈.
  *
- * StockClient 의 정적 import 가 recharts 약 95KB(gzipped) 를 초기 stock 번들에
- * 포함시키는 것을 회피하기 위한 분리. dynamic({ ssr: false }) 로 진입.
+ * 종목 상세 페이지(`/erp/stock/[ticker]`) 에서 dynamic({ ssr: false }) 로 진입 —
+ * recharts 약 95KB(gzipped) 를 초기 stock 번들에서 제외.
  *
  * Skeleton 은 동일 컨테이너(.chartPanel__chart) 높이를 그대로 차지해 CLS 방지.
  *

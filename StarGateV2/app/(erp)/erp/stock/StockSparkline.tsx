@@ -7,8 +7,8 @@
  * - 데이터가 < 2 포인트면 가운데 점선 baseline 을 표시 (placeholder 에 가깝게).
  * - 색은 등락 방향(direction) 으로 분기 — up:gold / down:danger / flat:ink-3.
  *
- * Note — 본 컴포넌트는 `StockHistoryChart` 와 함께 dynamic import 되는
- * stock 페이지 전용 chunk 에 합류한다 (공통 recharts vendor chunk 사용).
+ * Note — list view 의 행 sparkline 으로 정적 import 사용. recharts vendor chunk 는
+ * list view 진입 시점에 로드되며 이후 종목 상세의 dynamic chart 와 vendor chunk 공유.
  */
 
 import { Area, AreaChart, ResponsiveContainer } from "recharts";

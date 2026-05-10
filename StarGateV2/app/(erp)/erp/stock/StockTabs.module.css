@@ -1,0 +1,56 @@
+/* ==========================================================
+   StockTabs.module.css
+   - 주식 섹션 페이지 상단 탭 ([종목] / [내 자산])
+   - 토스 톤 칩 그룹 → ERP 검정+골드로 치환
+   - 14px floor 준수
+   ========================================================== */
+
+.tabs {
+  display: inline-flex;
+  gap: 0;
+  margin-bottom: var(--gap);
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 20px;
+  background: transparent;
+  border: 0;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--ink-1);
+  background: var(--bg-2);
+}
+
+.tab--active {
+  color: var(--ink-0);
+}
+
+/* 활성 탭 — 골드 underline (border-bottom 의 –1px overlap 으로 .tabs 의 1px 라인을 덮어 강조). */
+.tab--active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--gold);
+}
+
+.tab:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: -2px;
+}

@@ -1,12 +1,14 @@
 /* ==========================================================
    stock/page.module.css
-   - 주식 사용자 페이지 (M3-A → 토스 리워크)
+   - 주식 사용자 페이지 (M3-A 토스 라우트 리워크)
    - 14px floor, globals.css 토큰만 사용 (var(--*) 만; 색/폰트 하드코딩 금지)
-   - shop/page.module.css 패턴을 기반으로 주식 도메인(차트/포지션) 추가
-   - 토스 차용: sparkline 카드, hero chart 패널, range chip 토글, portfolio summary
+   - 3 페이지 공유 모듈:
+     · /erp/stock — list view (세로 list + sparkline)
+     · /erp/stock/[ticker] — 종목 상세 (큰 차트 + sticky CTA)
+     · /erp/stock/portfolio — 내 자산 (요약 + 보유 list)
    ========================================================== */
 
-/* ── 헤더 패널 (Box variant=gold 위에 얹는 3-column 레이아웃) ── */
+/* ── 공용: 헤더 패널 (Box variant=gold 위에 얹는 3-column 레이아웃) ── */
 
 .header {
   display: grid;
@@ -57,7 +59,7 @@
   }
 }
 
-/* ── 안내 / 에러 박스 ── */
+/* ── 공용: 안내 / 에러 박스 ── */
 
 .notice {
   margin-bottom: var(--gap);
@@ -104,106 +106,106 @@
   border-color: var(--ink-1);
 }
 
-/* ── 좌우 분할 layout (좌: 종목 카드 그리드 / 우: 차트 패널) ── */
+/* ── list view 검색 ── */
 
-.layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-  gap: var(--gap);
-  margin-bottom: var(--gap);
+.searchBar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
 }
 
-@media (max-width: 1024px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
+.searchBar__label {
+  display: inline-flex;
+  align-items: center;
 }
 
-/* 좌측 컬럼 — 카드 그리드 컨테이너 */
+.searchBar__input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.02em;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.searchBar__input::placeholder {
+  color: var(--ink-3);
+}
+
+.searchBar__input:focus {
+  border-color: var(--gold-dim);
+}
+
+/* ── list view 본체 ── */
+
 .stockList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.stockGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-/* ── 종목 카드 ──
- *
- * P1-2: 카드 컨테이너는 <div>, 내부 select 영역과 buy 버튼을 형제로 배치
- *  - .stockCard__select : 상단 정보(헤더/sparkline/가격/이벤트) 영역의 클릭 가능한 button
- *  - .stockCard__buyBtn : 하단 매수 button (별도 button)
- *  → button 중첩 invalid HTML 회피.
- *
- * 토스 차용 — active 시 inset glow 로 선택 강조 (단순 border 색상 변화보다 명확).
- */
-.stockCard {
-  position: relative;
-  display: flex;
-  flex-direction: column;
   gap: 0;
-  background: var(--bg-2);
+  margin: 0 0 var(--gap);
+  padding: 0;
+  background: var(--bg-1);
   border: 1px solid var(--line);
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+  list-style: none;
 }
 
-.stockCard:hover {
-  border-color: var(--line-strong);
+.stockList__item {
+  /* <li> 래퍼는 link 가 grid layout 차지하도록 reset 만 담당. */
+  list-style: none;
 }
 
-.stockCard--active {
-  border-color: var(--gold);
-  background: var(--bg-3);
-  box-shadow: inset 0 0 0 1px var(--gold);
-}
-
-.stockCard__select {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px 10px;
+.stockRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(120px, 2fr) minmax(120px, 1fr);
+  gap: 16px;
+  align-items: center;
+  min-height: 64px;
+  padding: 12px 16px;
   background: transparent;
   border: 0;
+  border-bottom: 1px solid var(--line);
   color: inherit;
   font: inherit;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
-.stockCard__select:hover {
-  /* globals.css 에 --gold 의 alpha 토큰 부재 — fallback 으로 RGB. M3-B sweep 시 토큰 신설 후 fallback 제거. */
-  background: var(--gold-tint, rgba(201, 168, 90, 0.04));
+.stockRow:last-child {
+  border-bottom: 0;
 }
 
-.stockCard__select:focus-visible {
+.stockRow:hover {
+  background: var(--bg-2);
+}
+
+.stockRow:focus-visible {
   outline: 1px solid var(--gold);
   outline-offset: -2px;
+  background: var(--bg-2);
 }
 
-.stockCard__head {
+.stockRow__left {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
 
-.stockCard__ticker {
+.stockRow__ticker {
   color: var(--gold);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: 0.12em;
 }
 
-.stockCard__name {
+.stockRow__name {
   color: var(--ink-0);
   font-size: 16px;
   font-weight: 500;
@@ -213,14 +215,54 @@
   white-space: nowrap;
 }
 
-/* 카드 sparkline 미니차트 슬롯 — 고정 높이로 CLS 방지. */
-.stockCard__sparkline {
+.stockRow__sparkline {
   width: 100%;
-  height: 40px;
+  height: 36px;
   min-width: 0;
 }
 
-/* sparkline 데이터 부족 placeholder — 가운데 점선 baseline. height 는 inline. */
+.stockRow__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stockRow__price {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 17px;
+  letter-spacing: 0.02em;
+}
+
+.stockRow__change {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+}
+
+.stockRow__change--up {
+  color: var(--gold);
+}
+
+.stockRow__change--down {
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .stockRow {
+    grid-template-columns: minmax(0, 1.2fr) minmax(80px, 1fr);
+    gap: 12px;
+  }
+  /* 모바일: sparkline 숨김. 가로 폭 부족. */
+  .stockRow__sparkline {
+    display: none;
+  }
+}
+
+/* sparkline 데이터 부족 placeholder (StockSparkline 가 사용) */
 .stockCard__sparklineEmpty {
   display: flex;
   align-items: center;
@@ -234,138 +276,54 @@
   border-top: 1px dashed var(--ink-3);
 }
 
-.stockCard__priceRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-  padding-top: 6px;
-  border-top: 1px dashed var(--line);
-}
+/* ── 종목 상세 (/erp/stock/[ticker]) ── */
 
-.stockCard__price {
-  color: var(--gold);
-  font-family: var(--font-mono);
-  font-size: 17px;
-  letter-spacing: 0.02em;
-}
-
-.stockCard__change {
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.04em;
-}
-
-.stockCard__change--up {
-  color: var(--gold);
-}
-
-.stockCard__change--down {
-  color: var(--danger);
-}
-
-.stockCard__event {
-  color: var(--ink-2);
-  font-size: var(--font-size-xs);
-  line-height: 1.4;
-  letter-spacing: 0.02em;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.stockCard__buyBtn {
-  width: 100%;
-  padding: 10px;
-  background: var(--gold);
-  border: 0;
-  border-top: 1px solid var(--gold);
-  color: var(--bg);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.stockCard__buyBtn:hover:not(:disabled) {
-  background: var(--gold-dim);
-  border-top-color: var(--gold-dim);
-}
-
-.stockCard__buyBtn:disabled {
-  background: var(--bg-3);
-  border-top-color: var(--line-strong);
-  color: var(--ink-3);
-  cursor: not-allowed;
-}
-
-.stockCard__buyBtn:focus-visible {
-  outline: 1px solid var(--ink-0);
-  outline-offset: -2px;
-}
-
-/* ── 차트 패널 (우측 컬럼) ── */
-
-.chartPanel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.chartPanel__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line);
-}
-
-.chartPanel__title {
+.detailHero {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-width: 0;
+  margin-bottom: var(--gap);
+  padding: var(--pad);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
 }
 
-.chartPanel__ticker {
-  color: var(--gold);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.12em;
-}
-
-.chartPanel__name {
-  color: var(--ink-0);
-  font-size: 19px;
-  letter-spacing: 0.02em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 토스 차용 hero — 큰 가격 + 작은 변동 칩 한 줄 */
-.chartPanel__hero {
+.detailHero__head {
   display: flex;
   align-items: baseline;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.chartPanel__heroPrice {
+.detailHero__ticker {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+}
+
+.detailHero__name {
+  color: var(--ink-0);
+  font-size: 19px;
+  letter-spacing: 0.02em;
+}
+
+.detailHero__priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.detailHero__price {
   color: var(--ink-0);
   font-family: var(--font-mono);
-  font-size: 26px;
+  font-size: clamp(28px, 5vw, 40px);
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
-.chartPanel__heroChange {
+.detailHero__change {
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
@@ -378,27 +336,43 @@
   letter-spacing: 0.04em;
 }
 
-.chartPanel__heroChange--up {
+.detailHero__change--up {
   color: var(--gold);
   border-color: var(--gold-dim);
 }
 
-.chartPanel__heroChange--down {
+.detailHero__change--down {
   color: var(--danger);
   border-color: var(--danger);
 }
 
-/* range 토글 영역 (head 우측 상단) */
-.chartPanel__rangeSlot {
+.detailHero__description {
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+/* 차트 패널 — 종목 상세에서 큰 hero chart */
+.chartPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: var(--gap);
+  min-width: 0;
+}
+
+.chartPanel__head {
   display: flex;
   justify-content: flex-end;
-  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
 }
 
 .chartPanel__placeholder {
   position: relative;
   width: 100%;
-  height: 340px;
+  height: 440px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -423,7 +397,6 @@
   letter-spacing: 0.08em;
 }
 
-/* placeholder 의 흐릿한 baseline — 차트 자리 시각화 */
 .chartPanel__placeholder::before {
   content: "";
   position: absolute;
@@ -437,16 +410,181 @@
 
 .chartPanel__chart {
   width: 100%;
-  height: 340px;
+  height: 440px;
   min-width: 0;
 }
 
-.chartPanel__description {
-  padding-top: 8px;
-  border-top: 1px dashed var(--line);
+@media (max-width: 720px) {
+  .chartPanel__chart,
+  .chartPanel__placeholder {
+    height: 320px;
+  }
+}
+
+/* 종목 정보 카드 (현재가/기준가/이벤트) */
+.detailInfo {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+  padding: var(--pad);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+
+.detailInfo__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.detailInfo__label {
   color: var(--ink-2);
+  font-family: var(--font-mono);
   font-size: var(--font-size-xs);
-  line-height: 1.6;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.detailInfo__value {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detailInfo__valueNote {
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  white-space: normal;
+}
+
+@media (max-width: 720px) {
+  .detailInfo {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 종목 상세 — 보유 정보 카드 */
+.detailHolding {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+  padding: var(--pad);
+  background: var(--bg-1);
+  border: 1px solid var(--gold-dim);
+}
+
+.detailHolding__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.detailHolding__label {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.detailHolding__value {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detailHolding__value--up {
+  color: var(--gold);
+}
+
+.detailHolding__value--down {
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .detailHolding {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* sticky CTA bar — 페이지 하단 고정. 매도/매수 두 버튼. */
+.stickyCta {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 0;
+  margin: 0 calc(-1 * var(--pad));
+  padding-left: var(--pad);
+  padding-right: var(--pad);
+  background: var(--bg);
+  border-top: 1px solid var(--line-strong);
+}
+
+.stickyCta__btn {
+  padding: 16px 0;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.stickyCta__btn--buy {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg);
+}
+
+.stickyCta__btn--buy:hover:not(:disabled) {
+  background: var(--gold-dim);
+  border-color: var(--gold-dim);
+}
+
+.stickyCta__btn--sell {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.stickyCta__btn--sell:hover:not(:disabled) {
+  background: var(--danger);
+  color: var(--bg);
+}
+
+.stickyCta__btn:disabled {
+  background: var(--bg-3);
+  border-color: var(--line);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+.stickyCta__btn:focus-visible {
+  outline: 1px solid var(--ink-0);
+  outline-offset: -2px;
 }
 
 /* ── Range 토글 chip ── */
@@ -486,30 +624,16 @@
   color: var(--bg);
 }
 
-/* ── 보유 포지션 패널 ── */
+/* ── Portfolio 페이지 ── */
 
-.holdingsPanel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.holdingsPanel__count {
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.1em;
-}
-
-/* 토스 차용 — portfolio 헤더 아래 요약 통계 (평가금/총손익/손익%) */
-.portfolio__summary {
+.portfolioSummary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--gap);
   margin-bottom: var(--gap);
   padding: var(--pad);
-  background: var(--bg-2);
-  border: 1px solid var(--line);
+  background: var(--bg-1);
+  border: 1px solid var(--gold-dim);
 }
 
 .portfolio__metric {
@@ -547,13 +671,129 @@
 }
 
 @media (max-width: 720px) {
-  .portfolio__summary {
+  .portfolioSummary {
     grid-template-columns: 1fr;
   }
 }
 
+/* 보유 종목 list (portfolio 페이지) — list view 스타일 + 보유 메타 노출 */
+.holdingList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 0 var(--gap);
+  padding: 0;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  list-style: none;
+}
+
+.holdingList__item {
+  list-style: none;
+}
+
+.holdingRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(100px, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.holdingRow:last-child {
+  border-bottom: 0;
+}
+
+.holdingRow:hover {
+  background: var(--bg-2);
+}
+
+.holdingRow:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: -2px;
+  background: var(--bg-2);
+}
+
+.holdingRow__left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.holdingRow__ticker {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+}
+
+.holdingRow__name {
+  color: var(--ink-0);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.holdingRow__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+
+.holdingRow__cellLabel {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+}
+
+.holdingRow__cellValue {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.02em;
+}
+
+.holdingRow__cellValue--up {
+  color: var(--gold);
+}
+
+.holdingRow__cellValue--down {
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .holdingRow {
+    grid-template-columns: minmax(0, 1.2fr) minmax(80px, 1fr);
+    gap: 12px;
+  }
+  /* 모바일: 평단/평가금 셀 숨김. 손익만 노출. */
+  .holdingRow__cell:nth-of-type(1),
+  .holdingRow__cell:nth-of-type(2) {
+    display: none;
+  }
+}
+
+/* ── 빈 상태 ── */
+
 .empty {
   padding: 32px 12px;
+  margin-bottom: var(--gap);
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
@@ -561,130 +801,22 @@
   text-align: center;
 }
 
-.holdingsTable {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  overflow-x: auto;
-}
-
-.holdingsRow {
-  display: grid;
-  grid-template-columns:
-    minmax(160px, 1.4fr)
-    minmax(60px, 0.8fr)
-    minmax(80px, 1fr)
-    minmax(80px, 1fr)
-    minmax(90px, 1.1fr)
-    minmax(80px, 1fr)
-    minmax(70px, 0.8fr)
-    minmax(70px, auto);
-  gap: 8px;
-  align-items: center;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--line);
-  color: var(--ink-1);
-  font-size: var(--font-size-xs);
-  line-height: 1.4;
-}
-
-.holdingsRow:last-child {
-  border-bottom: 0;
-}
-
-.holdingsRow--head {
-  background: var(--bg-2);
-  border-bottom: 1px solid var(--line-strong);
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.holdingsRow__num {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.02em;
-  text-align: right;
-}
-
-.holdingsRow__name {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.holdingsRow__ticker {
-  color: var(--gold);
+.emptyAction {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 10px 20px;
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  color: var(--bg);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: 0.12em;
-}
-
-.holdingsRow__title {
-  color: var(--ink-0);
-  font-size: 15px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.holdingsRow__profit--up {
-  color: var(--gold);
-}
-
-.holdingsRow__profit--down {
-  color: var(--danger);
-}
-
-.holdingsRow__action {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.holdingsRow__sellBtn {
-  padding: 6px 12px;
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  color: var(--ink-1);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.08em;
+  text-decoration: none;
   cursor: pointer;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease;
+  transition: background 0.15s ease;
 }
 
-.holdingsRow__sellBtn:hover:not(:disabled) {
-  color: var(--ink-0);
-  border-color: var(--ink-1);
-}
-
-.holdingsRow__sellBtn:disabled {
-  color: var(--ink-3);
-  border-color: var(--line);
-  cursor: not-allowed;
-}
-
-@media (max-width: 900px) {
-  /* 좁은 폭에서는 가로 스크롤로 표 유지 (컬럼이 너무 많아 1열 변환은 가독성 더 나쁨). */
-  .holdingsTable {
-    overflow-x: auto;
-  }
-  .holdingsRow {
-    min-width: 760px;
-  }
-}
-
-@media (max-width: 600px) {
-  .stockGrid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  }
-  .chartPanel__chart,
-  .chartPanel__placeholder {
-    height: 260px;
-  }
+.emptyAction:hover {
+  background: var(--gold-dim);
+  border-color: var(--gold-dim);
 }

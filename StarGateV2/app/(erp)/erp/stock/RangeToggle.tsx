@@ -19,6 +19,9 @@ export const RANGE_TO_DAYS: Record<RangeKey, number> = {
   ALL: 30,
 };
 
+/** 종목 상세 진입 시 기본 range — 서버 initialHistory 시드 days 와 동기화. */
+export const INITIAL_RANGE: RangeKey = "1M";
+
 const RANGES: RangeKey[] = ["1D", "1W", "1M", "ALL"];
 
 interface Props {
