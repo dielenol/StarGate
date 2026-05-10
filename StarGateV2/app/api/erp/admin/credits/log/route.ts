@@ -31,6 +31,8 @@ import {
 } from "@/lib/db/credits";
 import { isValidObjectId } from "@/lib/db/utils";
 
+import { listPublicMainAgentCharacters } from "@/app/(erp)/erp/admin/credits/_data";
+
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
@@ -165,7 +167,16 @@ export async function GET(request: Request) {
     skip = Math.floor(n);
   }
 
-  const filter = {
+  const filter: {
+    types?: CreditTransactionType[];
+    ownerId?: string;
+    characterId?: string;
+    characterIds?: string[];
+    from?: Date;
+    to?: Date;
+    amountMin?: number;
+    amountMax?: number;
+  } = {
     types,
     ownerId: ownerIdParam ?? undefined,
     characterId: characterIdParam ?? undefined,
@@ -174,6 +185,14 @@ export async function GET(request: Request) {
     amountMin,
     amountMax,
   };
+
+  // 운영 캐릭(isPublic !== false) 화이트리스트 자동 적용:
+  // GM 이 단건 characterId 를 명시한 경우는 그 의도 (audit 등) 를 존중하고 화이트리스트 미적용.
+  // 단건이 비어 있을 때만 운영 캐릭 IDs 를 채워 더미 트랜잭션을 화면에서 제외.
+  if (!filter.characterId) {
+    const publicMains = await listPublicMainAgentCharacters();
+    filter.characterIds = publicMains.map((c) => String(c._id));
+  }
 
   try {
     const [items, total] = await Promise.all([

@@ -27,6 +27,14 @@ export interface CreditTransactionFilter {
   types?: CreditTransactionType[];
   ownerId?: string;
   characterId?: string;
+  /**
+   * 다중 characterId 화이트리스트. admin 라우트가 운영(isPublic !== false)
+   * 캐릭터 IDs 로 자동 채워 더미 트랜잭션을 화면에서 제외한다.
+   *
+   * `characterId` (단건) 가 명시되면 단건이 우선 — GM 이 의도적으로 단건
+   * 필터를 입력한 경우 (더미 트랜잭션 audit 조회 등) 화이트리스트는 무시.
+   */
+  characterIds?: string[];
   from?: string; // ISO
   to?: string; // ISO
   amountMin?: number;

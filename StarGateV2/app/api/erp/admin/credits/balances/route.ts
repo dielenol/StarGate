@@ -15,12 +15,13 @@ import type { AgentBalanceRow } from "@/types/credit-admin";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { listAgentCharacters } from "@/lib/db/characters";
 import {
   getCharacterBalance,
   listCreditTransactions,
 } from "@/lib/db/credits";
 import { findUserById } from "@/lib/db/users";
+
+import { listPublicMainAgentCharacters } from "@/app/(erp)/erp/admin/credits/_data";
 
 export async function GET() {
   const session = await auth();
@@ -35,7 +36,8 @@ export async function GET() {
   }
 
   try {
-    const mainCharacters = await listAgentCharacters("MAIN");
+    // 운영 MAIN AGENT (isPublic !== false) 만 잔액 보드에 노출 — 테스트 더미 제외.
+    const mainCharacters = await listPublicMainAgentCharacters();
 
     // 캐릭별 balance + lastTxAt 동시 조회.
     // TODO: balance + lastTxAt 을 batch aggregation 으로 전환 시 N+1 호출 제거.

@@ -254,11 +254,18 @@ export async function getCreditsActivity24h(
  *
  * undefined / 빈 배열 필드는 query 에 추가하지 않는다 — 인덱스 손상 방지.
  * `listCreditTransactionsFiltered` 와 `countCreditTransactionsFiltered` 가 공유.
+ *
+ * characterId(단건) vs characterIds(다중) 우선순위:
+ * - 둘 다 주어지면 단건이 우선 (호출처 모호 방지). GM 이 명시적으로 단건을 지정한
+ *   경우는 그 의도를 존중하고 다중 화이트리스트는 무시.
+ * - 단건이 없고 다중이 빈 배열이 아니면 `{ $in: characterIds }` 적용.
+ * - 둘 다 비어 있으면 characterId 조건 자체를 추가하지 않는다.
  */
 function buildCreditFilterQuery(filter: {
   types?: CreditTransactionType[];
   ownerId?: string;
   characterId?: string;
+  characterIds?: string[];
   from?: Date;
   to?: Date;
   amountMin?: number;
@@ -274,6 +281,8 @@ function buildCreditFilterQuery(filter: {
   }
   if (filter.characterId) {
     query.characterId = filter.characterId;
+  } else if (filter.characterIds && filter.characterIds.length > 0) {
+    query.characterId = { $in: filter.characterIds };
   }
   if (filter.from || filter.to) {
     const range: { $gte?: Date; $lt?: Date } = {};
@@ -299,6 +308,8 @@ function buildCreditFilterQuery(filter: {
  *
  * - types: { $in: types } (1개 이상이면)
  * - ownerId / characterId: 정확 매칭
+ * - characterIds: { $in: characterIds } — characterId(단건) 가 비어 있을 때만 적용.
+ *   admin 라우트에서 운영(isPublic !== false) 캐릭터 IDs 화이트리스트로 사용.
  * - from / to: createdAt: { $gte: from, $lt: to } (한쪽만 있어도 처리)
  * - amountMin / amountMax: amount: { $gte: min, $lte: max }
  * - limit (default 50, max 200), skip (default 0)
@@ -312,6 +323,7 @@ export async function listCreditTransactionsFiltered(filter: {
   types?: CreditTransactionType[];
   ownerId?: string;
   characterId?: string;
+  characterIds?: string[];
   from?: Date;
   to?: Date;
   amountMin?: number;
@@ -336,12 +348,14 @@ export async function listCreditTransactionsFiltered(filter: {
  * `listCreditTransactionsFiltered` 와 동일 필터 객체를 받아 매칭 카운트만 반환.
  *
  * limit/skip 무시 — 페이지네이션 total 산출용.
- * 사용처: /api/erp/admin/credits/log (count 응답 필드).
+ * `characterIds` 동작은 `listCreditTransactionsFiltered` 와 동일 (단건 우선, 둘 다
+ * 비면 무시). 사용처: /api/erp/admin/credits/log (count 응답 필드).
  */
 export async function countCreditTransactionsFiltered(filter: {
   types?: CreditTransactionType[];
   ownerId?: string;
   characterId?: string;
+  characterIds?: string[];
   from?: Date;
   to?: Date;
   amountMin?: number;

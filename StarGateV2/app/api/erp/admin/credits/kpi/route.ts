@@ -14,7 +14,6 @@ import type { CreditKpiSnapshot } from "@/types/credit-admin";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { listAgentCharacters } from "@/lib/db/characters";
 import {
   OPERATION_POOL_ID,
   getCreditPool,
@@ -23,6 +22,8 @@ import {
   getCreditsActivity24h,
   sumLatestBalancesByCharacterIds,
 } from "@/lib/db/credits";
+
+import { listPublicMainAgentCharacters } from "@/app/(erp)/erp/admin/credits/_data";
 
 export async function GET() {
   const session = await auth();
@@ -37,8 +38,9 @@ export async function GET() {
   }
 
   try {
-    // MAIN AGENT 만 ledger 대상 (Phase 2 정책 — 1인 1 MAIN, MINI/NPC 제외).
-    const mainCharacters = await listAgentCharacters("MAIN");
+    // 운영 MAIN AGENT (isPublic !== false) 만 집계 대상 — 테스트 더미 캐릭 제외.
+    // (Phase 2 정책 — 1인 1 MAIN, MINI/NPC 제외 + 더미 isPublic=false 제외.)
+    const mainCharacters = await listPublicMainAgentCharacters();
     const characterIds = mainCharacters.map((c) => String(c._id));
 
     const [balanceAgg, activity24h, opPool] = await Promise.all([
