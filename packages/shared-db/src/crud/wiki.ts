@@ -8,6 +8,7 @@ import type {
   CreateWikiPageInput,
   UpdateWikiPageInput,
   WikiPage,
+  WikiPageLite,
   WikiPageRevision,
 } from "../types/index.js";
 
@@ -33,6 +34,33 @@ function toSlug(title: string): string {
 export async function listWikiPages(): Promise<WikiPage[]> {
   const col = await wikiPagesCol();
   return col.find().sort({ category: 1, title: 1 }).toArray();
+}
+
+/**
+ * 본문(content/tags/authorName/slug) 을 제외한 경량 list.
+ *
+ * - 대시보드 카운트, 최근 갱신 N개 카드처럼 본문이 필요 없는 표시 경로 전용.
+ * - projection 으로 네트워크/메모리/직렬화 비용을 본문 길이에 무관하게 유지.
+ * - 본문이 필요한 화면(상세, 검색, tags 카드)은 listWikiPages / searchWikiPages
+ *   / findWikiPageById 를 사용. 타입 시스템상 WikiPageLite 에는 content 필드가
+ *   없어 잘못 사용 시 컴파일 단계에서 차단된다.
+ */
+export async function listWikiPagesLite(): Promise<WikiPageLite[]> {
+  const col = await wikiPagesCol();
+  return col
+    .find()
+    .project<WikiPageLite>({
+      _id: 1,
+      title: 1,
+      category: 1,
+      isPublic: 1,
+      authorId: 1,
+      createdBy: 1,
+      createdAt: 1,
+      updatedAt: 1,
+    })
+    .sort({ category: 1, title: 1 })
+    .toArray();
 }
 
 export async function listPublicWikiPages(): Promise<WikiPage[]> {

@@ -77,6 +77,7 @@ export type {
 
 export type {
   WikiPage,
+  WikiPageLite,
   WikiPageRevision,
   CreateWikiPageInput,
   UpdateWikiPageInput,

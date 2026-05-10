@@ -6,6 +6,7 @@ import "./init";
 
 export {
   listWikiPages,
+  listWikiPagesLite,
   listPublicWikiPages,
   listWikiPagesByCategory,
   findWikiPageById,

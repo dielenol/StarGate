@@ -46,6 +46,7 @@ export type {
   CreateMasterItemInput,
   CreateInventoryInput,
   WikiPage,
+  WikiPageLite,
   WikiPageRevision,
   CreateWikiPageInput,
   UpdateWikiPageInput,

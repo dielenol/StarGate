@@ -16,7 +16,7 @@ import {
   findUpcomingSessionsByGuild,
 } from "@/lib/db/sessions";
 import { findUserById } from "@/lib/db/users";
-import { listWikiPages } from "@/lib/db/wiki";
+import { listWikiPagesLite } from "@/lib/db/wiki";
 import { getPixelCharacterPath } from "@/lib/format/character-asset";
 import { formatDate, formatTime } from "@/lib/format/date";
 
@@ -192,29 +192,45 @@ export default async function ERPDashboardPage() {
     viewerDiscordId
       ? countParticipationByUserId().catch(() => ({}) as Record<string, number>)
       : Promise.resolve({} as Record<string, number>),
-    listWikiPages().catch(() => []),
+    listWikiPagesLite().catch(() => []),
   ]);
 
   const mainCharacter = mainCharacterResult.ok ? mainCharacterResult.value : null;
   const mainIntegrityError = mainCharacterResult.ok ? null : mainCharacterResult.message;
-
-  const balance = mainCharacter
-    ? await getCharacterBalance(String(mainCharacter._id)).catch(() => 0)
-    : 0;
 
   // 누적 STATS — profile 폐지로 dashboard 에 흡수.
   const mySessionCount = viewerDiscordId
     ? (participationCounts[viewerDiscordId] ?? 0)
     : null;
   const joinedDays = user ? daysSinceCreated(user.createdAt) : 0;
-  const myWikiCount = wikiPages.filter(
-    (w) => (w as { createdBy?: string }).createdBy === userId,
-  ).length;
+  const myWikiCount = wikiPages.filter((w) => w.createdBy === userId).length;
 
-// 본인 RSVP 부착 — viewerDiscordId 가 없으면 enrich 하지 않고 빈 myRsvp 로 처리.
-  const enrichedUpcoming = upcomingRaw.length
-    ? await enrichSessions(upcomingRaw, viewerDiscordId).catch(() => [])
-    : [];
+  // 다음 단계의 직렬 await 들을 병렬화:
+  //   1) balance — mainCharacter 결정 후 character 단위 ledger 조회.
+  //   2) enrichSessions — viewerDiscordId 부착 (mainCharacter 의존 없음).
+  //   3) firstCharRef → findCharacterById — MY CHARACTER 카드용 상세.
+  // mainCharacter 와 firstCharRef 가 동일 id 면 findCharacterById 중복 호출 제거.
+  const firstCharRef = myCharRefs[0];
+  const firstCharIdStr = firstCharRef?._id ? String(firstCharRef._id) : null;
+  const mainCharIdStr = mainCharacter ? String(mainCharacter._id) : null;
+  const isSameAsMain = !!firstCharIdStr && firstCharIdStr === mainCharIdStr;
+
+  const [balance, enrichedUpcoming, firstCharFetched] = await Promise.all([
+    mainCharacter
+      ? getCharacterBalance(mainCharIdStr!).catch(() => 0)
+      : Promise.resolve(0),
+    upcomingRaw.length
+      ? enrichSessions(upcomingRaw, viewerDiscordId).catch(() => [])
+      : Promise.resolve(
+          [] as Awaited<ReturnType<typeof enrichSessions>>,
+        ),
+    firstCharIdStr && !isSameAsMain
+      ? findCharacterById(firstCharIdStr).catch(() => null)
+      : Promise.resolve(null),
+  ]);
+
+  // 동일 id 면 mainCharacter 재사용 → 중복 DB 호출 제거.
+  const myChar = isSameAsMain ? mainCharacter : firstCharFetched;
 
   // MISSION QUEUE — 내 RSVP=YES + CANCELED 제외, 가장 임박 3건.
   const myRsvpUpcoming = enrichedUpcoming
@@ -232,10 +248,6 @@ export default async function ERPDashboardPage() {
     )
     .slice(0, 5);
 
-  const firstCharRef = myCharRefs[0];
-  const myChar = firstCharRef?._id
-    ? await findCharacterById(String(firstCharRef._id)).catch(() => null)
-    : null;
   const recentWikis = [...wikiPages]
     .sort(
       (a, b) =>

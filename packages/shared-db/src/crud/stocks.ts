@@ -325,6 +325,8 @@ export async function recordStockPriceHistory(
  *
  * - days: 조회 기간 (기본 30 일, TTL 와 동일).
  * - 인덱스: `{ ticker: 1, createdAt: -1 }` 활용 (sort reverse 는 mongo 가 처리).
+ * - limit(500) 안전벨트: 차트는 30~100 포인트로 충분. 30일치라도 GM 폭주
+ *   이벤트가 분당 단위로 쌓이는 비정상 상황에서 응답 비대를 차단한다.
  */
 export async function listStockPriceHistory(
   ticker: string,
@@ -335,5 +337,6 @@ export async function listStockPriceHistory(
   return col
     .find({ ticker, createdAt: { $gte: since } })
     .sort({ createdAt: 1 })
+    .limit(500)
     .toArray();
 }
