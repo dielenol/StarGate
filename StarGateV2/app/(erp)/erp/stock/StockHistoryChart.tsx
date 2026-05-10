@@ -112,6 +112,11 @@ export default function StockHistoryChart({ data }: Props) {
             minTickGap={40}
             interval="preserveStartEnd"
           />
+          {/*
+            Y축 domain 을 dataMin/dataMax 로 좁혀 area 가 컨테이너 전체를 채움 (sparkline 과 동일 톤).
+            default 의 0~max 는 양수 가격에서 area 가 컨테이너 위쪽 일부만 그려져 평탄해 보임.
+            ±2% padding 으로 끝점 클립 방지 + tick 라벨 가독성.
+          */}
           <YAxis
             stroke="var(--ink-3)"
             tick={{ fill: "var(--ink-3)", fontSize: 14 }}
@@ -119,6 +124,10 @@ export default function StockHistoryChart({ data }: Props) {
               typeof v === "number" ? v.toLocaleString() : String(v)
             }
             width={56}
+            domain={[
+              (min: number) => Math.floor(min * 0.98),
+              (max: number) => Math.ceil(max * 1.02),
+            ]}
           />
           <Tooltip
             cursor={{
@@ -155,6 +164,7 @@ export default function StockHistoryChart({ data }: Props) {
             strokeWidth={1.5}
             fill={`url(#${safeGradientId})`}
             fillOpacity={1}
+            baseValue="dataMin"
             dot={false}
             activeDot={{
               r: 3,
