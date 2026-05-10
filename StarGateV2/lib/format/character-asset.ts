@@ -24,11 +24,6 @@ const EXPLICIT_CODENAME_TO_SLUG: Record<string, string> = {
   UNYEON: "운연",
   YUHOE: "유회",
   네베드: "NeBeD",
-  // 이동식 (Leedongsik) — codename / DB 옛 path 변형 흡수.
-  // 한글/영문 변형(Leedongik 등)이 모두 정규화 후 같은 슬러그로 매핑되도록 등록.
-  이동익: "Leedongsik",
-  Leedongik: "Leedongsik",
-  LEEDONGIK: "Leedongsik",
 };
 
 /** 디스크에 존재하는 슬러그 화이트리스트. 정규화 매칭의 후보. */
@@ -55,15 +50,6 @@ function normalize(s: string): string {
 }
 
 /**
- * EXPLICIT 매핑을 normalize 키로 인덱싱 — case/공백/하이픈 차이를 흡수해
- * 동일 codename 의 변형(LEEDONGIK / Leedongik / leedongik / lee-dong-ik 등)을
- * 한 번에 매핑한다. 모듈 로드 시 1회 빌드.
- */
-const EXPLICIT_NORMALIZED: Record<string, string> = Object.fromEntries(
-  Object.entries(EXPLICIT_CODENAME_TO_SLUG).map(([k, v]) => [normalize(k), v]),
-);
-
-/**
  * codename → 디스크 슬러그. 매핑 없으면 null.
  *
  * @example
@@ -73,11 +59,9 @@ const EXPLICIT_NORMALIZED: Record<string, string> = Object.fromEntries(
  */
 export function resolveCharacterAssetSlug(codename: string): string | null {
   if (!codename) return null;
-  const norm = normalize(codename);
-  // EXPLICIT 우선 (case-insensitive)
-  const explicit = EXPLICIT_NORMALIZED[norm];
+  const explicit = EXPLICIT_CODENAME_TO_SLUG[codename];
   if (explicit) return explicit;
-  // KNOWN_SLUGS 정규화 매칭
+  const norm = normalize(codename);
   for (const slug of KNOWN_SLUGS) {
     if (normalize(slug) === norm) return slug;
   }
