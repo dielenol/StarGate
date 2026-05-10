@@ -11,7 +11,7 @@
  * list view 진입 시점에 로드되며 이후 종목 상세의 dynamic chart 와 vendor chunk 공유.
  */
 
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
+import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
 
 import { useGradientId } from "@/lib/charts/useGradientId";
 
@@ -53,15 +53,25 @@ export default function StockSparkline({
     );
   }
 
+  // Y축 domain 을 dataMin/dataMax 로 좁혀 area 가 컨테이너 전체를 채우게 함 (토스 톤).
+  // default 의 0~max 는 가격이 양수일 때 컨테이너 위쪽 일부만 그려져 변동이 평탄해 보임.
+  // 약간의 padding (각 2%) 으로 끝점이 가장자리에 닿지 않게.
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={points} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
         <defs>
           <linearGradient id={safeId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={stroke} stopOpacity={0.36} />
+            <stop offset="0%" stopColor={stroke} stopOpacity={0.4} />
             <stop offset="100%" stopColor={stroke} stopOpacity={0} />
           </linearGradient>
         </defs>
+        <YAxis
+          hide
+          domain={[
+            (min: number) => min * 0.98,
+            (max: number) => max * 1.02,
+          ]}
+        />
         <Area
           type="monotone"
           dataKey="price"
@@ -69,6 +79,7 @@ export default function StockSparkline({
           strokeWidth={1.5}
           fill={`url(#${safeId})`}
           fillOpacity={1}
+          baseValue="dataMin"
           isAnimationActive={false}
           dot={false}
         />
