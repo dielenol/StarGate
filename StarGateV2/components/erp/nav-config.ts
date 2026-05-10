@@ -82,9 +82,9 @@ export const NAV_GROUPS: NavGroup[] = [
     key: "assets",
     label: "자산",
     items: [
-      /* 장비 · 크레딧 — 콘텐츠 준비중. */
+      /* 장비 — 콘텐츠 준비중. */
       { label: "장비", keywords: "equipment inventory", icon: IconEquipment, href: null },
-      { label: "크레딧", keywords: "credits", icon: IconCredit, href: null },
+      { label: "크레딧", keywords: "credits", icon: IconCredit, href: "/erp/credits" },
       /* 편의점 · 주식 — M1 stub. M2/M3 에서 본 구현 활성화. */
       { label: "편의점", keywords: "shop convenience store 편의점", icon: IconShop, href: "/erp/shop" },
       { label: "주식", keywords: "stock market 주식 증권", icon: IconStock, href: "/erp/stock" },
