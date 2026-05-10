@@ -247,6 +247,34 @@ export async function findLatestClosedSessionByGuild(
   );
 }
 
+/**
+ * 최근 `daysBack` 일 이내에 진행 일시(targetDateTime)가 잡혔던 CLOSED 세션을
+ * 최신순으로 반환합니다.
+ *
+ * GM 운영 대시보드의 세션 자동 보상 후보 라우트(`/api/erp/admin/credits/sessions`)에서
+ * 사용. 윈도우 상한은 호출처에서 60일로 클램프하지만, 본 함수는 입력값을 그대로 받는다.
+ *
+ * 인덱스: `sessions_guild_status_targetDateTime` 활용 — guildId + status + targetDateTime.
+ *
+ * 반환 정렬: targetDateTime 내림차순 (최근 먼저).
+ */
+export async function listRecentCompletedSessions(
+  daysBack: number,
+  guildId: string
+): Promise<Session[]> {
+  const col = await sessionsCol();
+  const now = new Date();
+  const since = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+  return col
+    .find({
+      guildId,
+      status: "CLOSED",
+      targetDateTime: { $gte: since, $lt: now },
+    })
+    .sort({ targetDateTime: -1 })
+    .toArray();
+}
+
 /** ID로 세션을 조회하되 해당 길드에 속한지 검증합니다. */
 export async function findSessionByIdInGuild(
   sessionId: string,

@@ -1,0 +1,494 @@
+/* ── 레이아웃 ── */
+
+.session__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.session__filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.session__filterLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.session__filterMeta {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+}
+
+/* ── 카드 리스트 ── */
+
+.session__cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.session__card {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.session__cardActive {
+  border-color: var(--gold);
+}
+
+.session__cardHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 14px;
+}
+
+.session__cardHeaderLeft {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.session__cardHeaderClickable {
+  cursor: pointer;
+}
+
+.session__title {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  word-break: break-word;
+}
+
+.session__date {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.session__alreadyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--success);
+  color: var(--success);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.session__cardActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ── 응답자 카운트 칩 ── */
+
+.session__statusChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.session__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.session__chipEligible {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.session__chipAlready {
+  color: var(--ink-2);
+  border-color: var(--ink-3);
+}
+
+.session__chipNoUser,
+.session__chipNoCharacter {
+  color: var(--alert-3-text);
+  border-color: var(--alert-3-text);
+}
+
+.session__chipIntegrity {
+  color: var(--alert-4-text);
+  border-color: var(--alert-4-text);
+}
+
+/* ── 응답자 상세 테이블 ── */
+
+.session__respondentWrap {
+  overflow-x: auto;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+}
+
+.session__respondentTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.session__respondentTable th {
+  padding: 6px 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: normal;
+  letter-spacing: 0.12em;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.session__respondentTable td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--ink-1);
+}
+
+.session__respondentTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.session__statusCell {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.session__statusEligible {
+  color: var(--success);
+}
+
+.session__statusAlready {
+  color: var(--ink-2);
+}
+
+.session__statusNoUser,
+.session__statusNoCharacter {
+  color: var(--alert-3-text);
+}
+
+.session__statusIntegrity {
+  color: var(--alert-4-text);
+}
+
+.session__discordId {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+}
+
+.session__codename {
+  color: var(--ink-0);
+  font-weight: 500;
+}
+
+.session__codenameEmpty {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.session__reason {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+}
+
+/* ── 발급 폼 (인라인) ── */
+
+.session__rewardForm {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--gold);
+  background: rgba(201, 168, 90, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.session__rewardFormHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.session__rewardFormHeading {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.session__rewardSummary {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+}
+
+.session__rewardFields {
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .session__rewardFields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.session__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.session__rewardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.session__confirm {
+  padding: 10px 12px;
+  background: rgba(201, 168, 90, 0.1);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.session__confirmActions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.session__error {
+  padding: 10px 12px;
+  background: rgba(192, 106, 90, 0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+}
+
+/* ── 결과 영역 ── */
+
+.session__resultsLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.session__resultsHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.session__statRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: baseline;
+}
+
+.session__statBlock {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.session__statBig {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.session__statSucceeded {
+  color: var(--success);
+}
+
+.session__statFailed {
+  color: var(--danger);
+}
+
+.session__statSkipped {
+  color: var(--ink-2);
+}
+
+.session__statLabel {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.session__resultsTableWrap {
+  overflow-x: auto;
+}
+
+.session__resultsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.session__resultsTable th {
+  padding: 10px 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: normal;
+  letter-spacing: 0.15em;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.session__resultsTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--ink-1);
+}
+
+.session__resultsTable tbody tr:hover td {
+  background: var(--bg-2);
+}
+
+.session__rowOk {
+  color: var(--success);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.session__rowSkip {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.session__rowFail {
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.session__numCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+.session__codeChip {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  margin-right: 6px;
+}
+
+.session__txId {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+}
+
+/* ── 빈 / 에러 상태 ── */
+
+.session__emptyState {
+  padding: 32px 12px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.session__loading {
+  padding: 24px 12px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.session__queryError {
+  padding: 14px;
+  background: rgba(192, 106, 90, 0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}

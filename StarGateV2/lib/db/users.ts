@@ -19,6 +19,7 @@ export {
   findUserByUsername,
   findUserByDiscordId,
   findUserById,
+  findUsersByDiscordIds,
   updateUserRole,
   updateUserStatus,
   updateLastLogin,

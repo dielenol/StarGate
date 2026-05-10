@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { CreditTransactionType } from "@/types/credit";
+import type { BulkGrantInput, BulkGrantResult } from "@/types/credit-admin";
 
+import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
 
 /**
@@ -38,6 +40,39 @@ export function useGrantCredit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
+      // GM admin 페이지의 KPI / 잔액 / 로그 모두 갱신.
+      queryClient.invalidateQueries({ queryKey: creditsAdminKeys.all });
+    },
+  });
+}
+
+/**
+ * GM 일괄 발급 — `POST /api/erp/admin/credits/bulk`.
+ *
+ * 부분 실패 허용. 응답 `BulkGrantResult.results` 의 각 항목이 success/skipped/error
+ * 코드를 가지므로 호출 측은 단순 throw 가 아닌 results 배열을 사용해 결과 테이블 렌더.
+ *
+ * 네트워크/입력 검증 실패(401/403/400/500) 만 throw — UI 가 폼 에러로 표시.
+ */
+export function useBulkGrantCredit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: BulkGrantInput): Promise<BulkGrantResult> => {
+      const res = await fetch("/api/erp/admin/credits/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "일괄 발급에 실패했습니다.");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: creditKeys.all });
+      queryClient.invalidateQueries({ queryKey: creditsAdminKeys.all });
     },
   });
 }

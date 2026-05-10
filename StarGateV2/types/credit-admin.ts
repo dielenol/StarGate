@@ -1,0 +1,106 @@
+/** /erp/admin/credits 응답 DTO. 서버 → 클라이언트 직렬화 후 전달. */
+
+import type { CreditTransaction, CreditTransactionType } from "@/types/credit";
+
+export interface CreditKpiSnapshot {
+  totalBalance: number;
+  activeAgentCount: number;
+  totalGranted24h: number;
+  totalDeducted24h: number;
+  opPoolBalance: number | null;
+  opPoolUpdatedAt: string | null; // ISO
+  generatedAt: string; // ISO
+}
+
+export interface AgentBalanceRow {
+  characterId: string;
+  characterCodename: string;
+  ownerId: string | null;
+  ownerName: string | null;
+  ownerDiscordId: string | null;
+  agentLevel: string;
+  balance: number;
+  lastTxAt: string | null; // ISO
+}
+
+export interface CreditTransactionFilter {
+  types?: CreditTransactionType[];
+  ownerId?: string;
+  characterId?: string;
+  from?: string; // ISO
+  to?: string; // ISO
+  amountMin?: number;
+  amountMax?: number;
+  limit?: number;
+  skip?: number;
+}
+
+export interface CreditTransactionPage {
+  items: CreditTransaction[];
+  total: number;
+  limit: number;
+  skip: number;
+  hasMore: boolean;
+}
+
+export interface BulkGrantTarget {
+  ownerId?: string;
+  characterId?: string;
+}
+
+export interface BulkGrantInput {
+  targets: BulkGrantTarget[];
+  amount: number;
+  type: "ADMIN_GRANT" | "ADMIN_DEDUCT" | "SESSION_REWARD";
+  description: string;
+  metadata?: Record<string, string | number | boolean | null>;
+}
+
+export interface BulkGrantResultItem {
+  ownerId?: string;
+  characterId?: string;
+  success: boolean;
+  transactionId?: string;
+  characterCodename?: string;
+  newBalance?: number;
+  error?: string;
+  code?: string;
+  /** 멱등 검출 등으로 발급을 건너뛴 경우 (세션 자동 보상에서 사용). */
+  skipped?: boolean;
+  skipReason?: string;
+}
+
+export interface BulkGrantResult {
+  results: BulkGrantResultItem[];
+  succeeded: number;
+  failed: number;
+  skipped: number;
+}
+
+export type SessionRespondentStatus =
+  | "eligible"
+  | "no-user" // discordId 매칭되는 user 없음
+  | "no-character" // user 는 있으나 메인 AGENT 미등록
+  | "integrity-violation" // 1인 1 MAIN 위반 (findMainCharacterByOwner throw)
+  | "already-rewarded"; // 이 세션의 자동 보상 이력 존재
+
+export interface SessionRespondent {
+  discordId: string;
+  displayName: string;
+  userId: string | null;
+  ownerId: string | null;
+  characterId: string | null;
+  characterCodename: string | null;
+  status: SessionRespondentStatus;
+  reason?: string;
+}
+
+export interface SessionRewardCandidate {
+  sessionId: string;
+  sessionTitle: string;
+  sessionDate: string; // ISO
+  guildId: string;
+  respondents: SessionRespondent[];
+  /** status 별 응답자 카운트 — UI 카드에서 즉시 표시. */
+  counts: Record<SessionRespondentStatus, number>;
+}

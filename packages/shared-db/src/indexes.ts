@@ -75,6 +75,16 @@ export async function ensureAllIndexes(): Promise<void> {
         key: { type: 1, createdAt: -1 },
         name: "credit_transactions_type_createdAt",
       },
+      // GM 운영 대시보드 — 세션 자동 보상 멱등 검출 (metadata.sessionId + autoReward=true).
+      // partial index 로 자동 보상 트랜잭션만 색인 (수동 발급은 제외 → 인덱스 사이즈 최소화).
+      // (sessionId, characterId) unique 로 두 GM 동시 발급 race 시 두 번째 insert 가
+      // E11000 으로 실패 → 라우트가 catch 후 already-rewarded 분류. DB 레벨 backstop.
+      {
+        key: { "metadata.sessionId": 1, characterId: 1 },
+        name: "credit_transactions_sessionReward_unique",
+        unique: true,
+        partialFilterExpression: { "metadata.autoReward": true },
+      },
     ]),
 
     /* ── master_items (from task spec) ── */

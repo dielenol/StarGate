@@ -1,0 +1,228 @@
+/* ── 컨테이너 ── */
+
+.opPool__layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* ── (a) 풀 미생성 상태 ── */
+
+.opPool__emptyState {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  color: var(--ink-1);
+  font-size: var(--font-size-sm);
+}
+
+.opPool__emptyHint {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.06em;
+}
+
+.opPool__initActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ── (b) 잔액 카드 ── */
+
+.opPool__balanceCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opPool__balanceMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  margin-bottom: 4px;
+}
+
+.opPool__bigNum {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: clamp(24px, 3.5vw, 36px);
+  letter-spacing: -0.02em;
+  margin: 6px 0 4px;
+}
+
+.opPool__bigNumNeg {
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: clamp(24px, 3.5vw, 36px);
+  letter-spacing: -0.02em;
+  margin: 6px 0 4px;
+}
+
+.opPool__poolName {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.05em;
+}
+
+.opPool__updatedAt {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+}
+
+/* ── 조정 폼 ── */
+
+.opPool__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.opPool__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.opPool__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .opPool__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.opPool__hint {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  margin-top: -2px;
+}
+
+/* ── 모드 토글 (충전 / 감액) ── */
+
+.opPool__modeRow {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.opPool__modeBtn {
+  appearance: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.opPool__modeBtn:hover {
+  border-color: var(--gold);
+}
+
+.opPool__modeBtnActive {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+}
+
+/* ── 음수 진입 허용 체크박스 ── */
+
+.opPool__allowNegLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  color: var(--ink-1);
+  margin-top: 2px;
+}
+
+/* ── 메시지 ── */
+
+.opPool__error {
+  padding: 12px 14px;
+  background: rgba(192, 106, 90, 0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+}
+
+.opPool__success {
+  padding: 12px 14px;
+  background: rgba(122, 168, 131, 0.1);
+  border: 1px solid var(--success);
+  color: var(--success);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.opPool__successDismiss {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--success);
+  color: var(--success);
+  cursor: pointer;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+}
+
+.opPool__successDismiss:hover {
+  background: rgba(122, 168, 131, 0.15);
+}
+
+/* ── 2단계 confirm (감액) ── */
+
+.opPool__confirmBox {
+  padding: 12px 14px;
+  background: rgba(201, 168, 90, 0.1);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.opPool__confirmActions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.opPool__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}

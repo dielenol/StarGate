@@ -27,6 +27,9 @@ export {
   countByStatusBulk,
   findUsersByDiscordIds,
   listCharactersByOwnerIds,
+  // GM 운영 대시보드 — 세션 자동 보상 후보 윈도우 + 단건 조회.
+  listRecentCompletedSessions,
+  findSessionById,
 } from "@stargate/shared-db";
 
 export type { ActiveSessionCounts } from "@stargate/shared-db";

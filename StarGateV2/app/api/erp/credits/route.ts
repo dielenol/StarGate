@@ -158,7 +158,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    requireRole(session.user.role, "V");
+    // admin UI 분리 후 V 호출처 없음 — admin layout 가드와 일관성.
+    // Phase 2 슬림화로 사용자 페이지의 GM 발급 폼 제거됨.
+    requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -173,9 +175,12 @@ export async function POST(request: Request) {
     );
   }
 
-  if (typeof body.amount !== "number" || body.amount === 0) {
+  // amount 는 양수 강제 (UI 폼은 Math.abs 로 통제하지만 외부 API 직접 호출 시
+  // 음수 ADMIN_GRANT 입력 → audit log 와 실제 발생 부호가 어긋나는 silent corruption).
+  // 부호는 type 으로 결정 (ADMIN_DEDUCT 만 음수). bulk 라우트와 일관.
+  if (typeof body.amount !== "number" || !Number.isFinite(body.amount) || body.amount <= 0) {
     return NextResponse.json(
-      { error: "amount는 0이 아닌 숫자여야 합니다." },
+      { error: "amount는 0보다 큰 유한 숫자여야 합니다 (부호는 type 으로 결정)." },
       { status: 400 },
     );
   }

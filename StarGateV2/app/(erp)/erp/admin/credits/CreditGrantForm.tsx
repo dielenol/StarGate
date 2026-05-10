@@ -39,13 +39,24 @@ export interface GrantTargetUser {
 
 interface CreditGrantFormProps {
   targets: GrantTargetUser[];
+  /**
+   * 외부(예: 잔액 보드의 [발급] 버튼) 가 캐릭터를 선택해 폼을 prefill 하도록 한다.
+   * truthy 값이 들어오면 mode = "character" 로 전환 + characterId 세팅.
+   */
+  prefillCharacterId?: string;
+  /** prefill 적용 후 부모 state 를 비우기 위한 콜백 (재발화 방지). */
+  onPrefillConsumed?: () => void;
 }
 
 type RoutingMode = "owner" | "character";
 
 /* ── 컴포넌트 ── */
 
-export default function CreditGrantForm({ targets }: CreditGrantFormProps) {
+export default function CreditGrantForm({
+  targets,
+  prefillCharacterId,
+  onPrefillConsumed,
+}: CreditGrantFormProps) {
   const grantCredit = useGrantCredit();
 
   const [mode, setMode] = useState<RoutingMode>("owner");
@@ -82,6 +93,23 @@ export default function CreditGrantForm({ targets }: CreditGrantFormProps) {
         })),
     [targets],
   );
+
+  // prefill 동기화 — useEffect 가 아닌 render-time 패턴으로 prop 변경에 반응.
+  // 부모가 같은 prefill 값을 두 번 보내도 수용해야 하므로 (행 재클릭 사용성)
+  // 부모가 null 로 비울 때 lastPrefill 도 함께 null 로 reset → 다음 truthy 값을 새로 흡수.
+  // React 권장 derived-state-from-prop 패턴 (useEffect cascading render 방지).
+  const [lastPrefill, setLastPrefill] = useState<string | null>(null);
+  if (prefillCharacterId == null && lastPrefill !== null) {
+    setLastPrefill(null);
+  } else if (prefillCharacterId && prefillCharacterId !== lastPrefill) {
+    setLastPrefill(prefillCharacterId);
+    setMode("character");
+    setCharacterId(prefillCharacterId);
+    setError("");
+    setSuccess("");
+    // 부모에게 흡수 완료 통지 — 부모가 null 로 비우면 다음 클릭(같은 값 포함) 에 정상 반응.
+    onPrefillConsumed?.();
+  }
 
   const selectedOwner = ownerOptions.find((t) => t.userId === ownerId);
   const selectedCharacter = characterOptions.find(

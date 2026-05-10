@@ -1,20 +1,23 @@
-.topRow {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr;
-  gap: var(--gap);
-  margin-bottom: var(--gap);
-}
-
 .balance {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-@media (max-width: 900px) {
-  .topRow {
-    grid-template-columns: 1fr;
-  }
+.adminHint {
+  font-size: var(--font-size-sm);
+  color: var(--ink-1);
+  line-height: 1.6;
+}
+
+.adminHintLink {
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.adminHintLink:hover {
+  color: var(--gold-dim);
 }
 
 .mono {

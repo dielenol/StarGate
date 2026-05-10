@@ -4,13 +4,21 @@
  * Phase 2 에서 user 단위 → character 단위로 전환됨. NPC/MINI 는 ledger 대상 ❌
  * (AGENT + MAIN tier 만). owner 단위 조회는 `findMainCharacterByOwner` 로 메인
  * 캐릭터를 먼저 해석한 뒤 character 단위 함수를 호출한다.
+ *
+ * GM 운영 대시보드용 집계/필터 함수도 본 모듈에 포함:
+ * - `sumLatestBalancesByCharacterIds` — 다중 캐릭 latest balance 합산 (KPI)
+ * - `getCreditsActivity24h` — 24h 발급/차감 활동 (KPI)
+ * - `listCreditTransactionsFiltered` / `countCreditTransactionsFiltered` — 다중 조건 검색
+ * - `findTransactionsBySessionMetadata` — 세션 자동 보상 멱등 검출
  */
 
+import type { Filter } from "mongodb";
 import { ObjectId } from "mongodb";
 
 import type {
   CreateCreditTransactionInput,
   CreditTransaction,
+  CreditTransactionType,
 } from "../types/index.js";
 
 import { creditTransactionsCol } from "../collections.js";
@@ -131,4 +139,240 @@ export async function getUserBalance(_ownerId: string): Promise<number> {
     "getUserBalance() is deprecated. Use getCharacterBalance(characterId) instead. " +
       "Owner의 메인 캐릭터를 찾으려면 findMainCharacterByOwner 사용."
   );
+}
+
+/* ────────────────────────────────────────────────────────────────────────── *
+ * GM 운영 대시보드용 집계/필터 함수 (Phase 3)
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * 다중 캐릭터의 latest balance 합산.
+ *
+ * Aggregation pipeline:
+ * 1. $match { characterId: { $in: ids } }
+ * 2. $sort { createdAt: -1 }
+ * 3. $group _id: characterId, latestBalance: { $first: "$balance" }
+ * 4. $group _id: null, totalBalance: { $sum: "$latestBalance" },
+ *           items: { $push: { id, balance } }
+ *
+ * 빈 배열 입력 시 mongo 호출 없이 `{ totalBalance: 0, perCharacter: {} }` 반환.
+ * 인덱스: `credit_transactions_characterId_createdAt` 활용 ($match + $sort).
+ *
+ * 사용처: /api/erp/admin/credits/kpi (전체 발행 잔액 합계 + 캐릭 단위 분포).
+ */
+export async function sumLatestBalancesByCharacterIds(
+  characterIds: string[]
+): Promise<{ totalBalance: number; perCharacter: Record<string, number> }> {
+  if (characterIds.length === 0) {
+    return { totalBalance: 0, perCharacter: {} };
+  }
+
+  const col = await creditTransactionsCol();
+  const result = await col
+    .aggregate<{
+      totalBalance: number;
+      items: { id: string; balance: number }[];
+    }>([
+      { $match: { characterId: { $in: characterIds } } },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: "$characterId",
+          latestBalance: { $first: "$balance" },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalBalance: { $sum: "$latestBalance" },
+          items: { $push: { id: "$_id", balance: "$latestBalance" } },
+        },
+      },
+    ])
+    .toArray();
+
+  if (result.length === 0) {
+    return { totalBalance: 0, perCharacter: {} };
+  }
+
+  const { totalBalance, items } = result[0];
+  const perCharacter: Record<string, number> = {};
+  for (const { id, balance } of items) {
+    perCharacter[id] = balance;
+  }
+  return { totalBalance, perCharacter };
+}
+
+/**
+ * 최근 24시간 발급/차감 활동 합계.
+ *
+ * - granted: amount > 0 의 합 (양수)
+ * - deducted: amount < 0 의 절댓값 합 (양수)
+ * - txCount: 트랜잭션 건수
+ *
+ * 인덱스: `credit_transactions_type_createdAt` 의 createdAt 부분 활용
+ * (전체 type 스캔이지만 createdAt 범위 필터로 24h 만 읽음).
+ *
+ * 사용처: /api/erp/admin/credits/kpi.
+ */
+export async function getCreditsActivity24h(
+  now: Date = new Date()
+): Promise<{ granted: number; deducted: number; txCount: number }> {
+  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const col = await creditTransactionsCol();
+  const result = await col
+    .aggregate<{ granted: number; deducted: number; txCount: number }>([
+      { $match: { createdAt: { $gte: since } } },
+      {
+        $group: {
+          _id: null,
+          granted: {
+            $sum: {
+              $cond: [{ $gt: ["$amount", 0] }, "$amount", 0],
+            },
+          },
+          deducted: {
+            $sum: {
+              $cond: [{ $lt: ["$amount", 0] }, { $abs: "$amount" }, 0],
+            },
+          },
+          txCount: { $sum: 1 },
+        },
+      },
+    ])
+    .toArray();
+
+  if (result.length === 0) {
+    return { granted: 0, deducted: 0, txCount: 0 };
+  }
+  const { granted, deducted, txCount } = result[0];
+  return { granted, deducted, txCount };
+}
+
+/**
+ * 다중 조건 필터로 트랜잭션 검색하기 위한 query 빌더 (내부 헬퍼).
+ *
+ * undefined / 빈 배열 필드는 query 에 추가하지 않는다 — 인덱스 손상 방지.
+ * `listCreditTransactionsFiltered` 와 `countCreditTransactionsFiltered` 가 공유.
+ */
+function buildCreditFilterQuery(filter: {
+  types?: CreditTransactionType[];
+  ownerId?: string;
+  characterId?: string;
+  from?: Date;
+  to?: Date;
+  amountMin?: number;
+  amountMax?: number;
+}): Filter<CreditTransaction> {
+  const query: Filter<CreditTransaction> = {};
+
+  if (filter.types && filter.types.length > 0) {
+    query.type = { $in: filter.types };
+  }
+  if (filter.ownerId) {
+    query.ownerId = filter.ownerId;
+  }
+  if (filter.characterId) {
+    query.characterId = filter.characterId;
+  }
+  if (filter.from || filter.to) {
+    const range: { $gte?: Date; $lt?: Date } = {};
+    if (filter.from) range.$gte = filter.from;
+    if (filter.to) range.$lt = filter.to;
+    query.createdAt = range;
+  }
+  if (filter.amountMin !== undefined || filter.amountMax !== undefined) {
+    const range: { $gte?: number; $lte?: number } = {};
+    if (filter.amountMin !== undefined) range.$gte = filter.amountMin;
+    if (filter.amountMax !== undefined) range.$lte = filter.amountMax;
+    query.amount = range;
+  }
+
+  return query;
+}
+
+/**
+ * 다중 조건 필터로 트랜잭션 검색 (페이지네이션 지원).
+ *
+ * 모든 필터 필드는 optional. undefined/빈 값은 mongo 쿼리에서 제외하여
+ * 인덱스를 손상시키지 않는다.
+ *
+ * - types: { $in: types } (1개 이상이면)
+ * - ownerId / characterId: 정확 매칭
+ * - from / to: createdAt: { $gte: from, $lt: to } (한쪽만 있어도 처리)
+ * - amountMin / amountMax: amount: { $gte: min, $lte: max }
+ * - limit (default 50, max 200), skip (default 0)
+ *
+ * 정렬: createdAt 내림차순.
+ * 인덱스: characterId/ownerId/type 복합 인덱스 중 가장 좁은 것이 자동 선택.
+ *
+ * 사용처: /api/erp/admin/credits/log.
+ */
+export async function listCreditTransactionsFiltered(filter: {
+  types?: CreditTransactionType[];
+  ownerId?: string;
+  characterId?: string;
+  from?: Date;
+  to?: Date;
+  amountMin?: number;
+  amountMax?: number;
+  limit?: number;
+  skip?: number;
+}): Promise<CreditTransaction[]> {
+  const limit = Math.min(Math.max(filter.limit ?? 50, 1), 200);
+  const skip = Math.max(filter.skip ?? 0, 0);
+  const query = buildCreditFilterQuery(filter);
+
+  const col = await creditTransactionsCol();
+  return col
+    .find(query)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .toArray();
+}
+
+/**
+ * `listCreditTransactionsFiltered` 와 동일 필터 객체를 받아 매칭 카운트만 반환.
+ *
+ * limit/skip 무시 — 페이지네이션 total 산출용.
+ * 사용처: /api/erp/admin/credits/log (count 응답 필드).
+ */
+export async function countCreditTransactionsFiltered(filter: {
+  types?: CreditTransactionType[];
+  ownerId?: string;
+  characterId?: string;
+  from?: Date;
+  to?: Date;
+  amountMin?: number;
+  amountMax?: number;
+}): Promise<number> {
+  const query = buildCreditFilterQuery(filter);
+  const col = await creditTransactionsCol();
+  return col.countDocuments(query);
+}
+
+/**
+ * 특정 세션의 자동 보상 이력 조회 (멱등 검출).
+ *
+ * 세션 자동 보상은 metadata.sessionId + metadata.autoReward=true 마킹.
+ * 동일 세션 재발급 시도 시 호출처에서 본 함수로 중복 검출.
+ *
+ * 인덱스: `credit_transactions_metadata_sessionId_autoReward` (partial sparse).
+ * 한 세션의 자동 보상 트랜잭션은 인원 수 내외라 limit 없음 (수십 건 이내).
+ *
+ * 사용처: /api/erp/admin/credits/sessions (POST).
+ */
+export async function findTransactionsBySessionMetadata(
+  sessionId: string
+): Promise<CreditTransaction[]> {
+  if (!sessionId) return [];
+  const col = await creditTransactionsCol();
+  return col
+    .find({
+      "metadata.sessionId": sessionId,
+      "metadata.autoReward": true,
+    })
+    .sort({ createdAt: -1 })
+    .toArray();
 }

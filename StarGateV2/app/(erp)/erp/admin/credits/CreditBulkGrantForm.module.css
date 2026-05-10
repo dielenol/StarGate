@@ -1,0 +1,370 @@
+/* ── 컨테이너 ── */
+
+.bulk__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bulk__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bulk__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .bulk__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bulk__hint {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  margin-top: -2px;
+}
+
+/* ── 모드 토글 ── */
+
+.bulk__modeRow {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.bulk__modeBtn {
+  appearance: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.bulk__modeBtn:hover {
+  border-color: var(--gold);
+}
+
+.bulk__modeBtnActive {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+}
+
+/* ── (a) 체크박스 선택 ── */
+
+.bulk__pickerHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 6px;
+}
+
+.bulk__pickerControls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.bulk__searchInput {
+  min-width: 200px;
+  flex: 1 1 200px;
+}
+
+.bulk__targetList {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+}
+
+.bulk__targetRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  color: var(--ink-1);
+}
+
+.bulk__targetRow:last-child {
+  border-bottom: none;
+}
+
+.bulk__targetRow:hover {
+  background: var(--bg-2);
+}
+
+.bulk__targetRowDisabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: transparent;
+}
+
+.bulk__targetRowDisabled:hover {
+  background: transparent;
+}
+
+.bulk__targetCodename {
+  color: var(--ink-0);
+  font-weight: 500;
+}
+
+.bulk__targetMeta {
+  color: var(--ink-2);
+}
+
+.bulk__targetWarn {
+  color: var(--alert-2-text, var(--danger));
+  margin-left: auto;
+}
+
+.bulk__selectedCount {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── (b) ID paste ── */
+
+.bulk__textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 10px 12px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  resize: vertical;
+}
+
+.bulk__textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.bulk__pasteOptions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.bulk__pasteCheckLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  color: var(--ink-1);
+}
+
+/* ── 메시지 ── */
+
+.bulk__error {
+  padding: 12px 14px;
+  background: rgba(192, 106, 90, 0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+}
+
+.bulk__confirm {
+  padding: 12px 14px;
+  background: rgba(201, 168, 90, 0.1);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.bulk__confirmActions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.bulk__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ── 결과 영역 ── */
+
+.bulk__resultsHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.bulk__statRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: baseline;
+}
+
+.bulk__statBlock {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bulk__statBig {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.bulk__statBigOk {
+  color: var(--success);
+}
+
+.bulk__statBigFail {
+  color: var(--danger);
+}
+
+.bulk__statBigSkip {
+  color: var(--ink-2);
+}
+
+.bulk__statLabel {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.bulk__resultsControls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.bulk__filterCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  color: var(--ink-1);
+}
+
+.bulk__resultsTableWrap {
+  overflow-x: auto;
+}
+
+.bulk__resultsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.bulk__resultsTable th {
+  padding: 10px 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: normal;
+  letter-spacing: 0.15em;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.bulk__resultsTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--ink-1);
+}
+
+.bulk__resultsTable tbody tr:hover td {
+  background: var(--bg-2);
+}
+
+.bulk__rowOk {
+  color: var(--success);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.bulk__rowFail {
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.bulk__numCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+.bulk__codeChip {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.05em;
+  margin-right: 6px;
+}
+
+.bulk__txId {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+}
+
+.bulk__resultsEmpty {
+  padding: 32px 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+  text-align: center;
+}
