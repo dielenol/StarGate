@@ -1,6 +1,7 @@
 import type { AgentCharacter, Character } from "@/types/character";
 
 import { listPublicCharactersByType } from "@/lib/db/characters";
+import { getPixelCharacterPath } from "@/lib/format/character-asset";
 
 import type { AgentForView } from "./PlayerClient";
 
@@ -31,7 +32,10 @@ async function getAgents(): Promise<AgentForView[]> {
       codename: c.codename,
       role: c.role,
       previewImage: c.previewImage,
-      pixelCharacterImage: c.pixelCharacterImage ?? "",
+      // 디스크 슬러그 매핑(getPixelCharacterPath) 우선 — DB 의 stored path 가 옛 파일명일 수 있어
+      // 자산 정리(rename) 후 깨지는 케이스 차단. 헬퍼가 매핑 못 하면 DB 값 fallback.
+      pixelCharacterImage:
+        getPixelCharacterPath(c.codename) ?? c.pixelCharacterImage ?? "",
       warningVideo: c.warningVideo,
       sheet: {
         // lore 영역
