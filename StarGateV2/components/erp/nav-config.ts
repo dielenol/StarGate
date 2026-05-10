@@ -108,6 +108,7 @@ export const NAV_GROUPS: NavGroup[] = [
       /* 관리자 대시보드 — 콘텐츠 준비중. 계정 메뉴(IconSystem)와 시각 충돌 회피 위해 IconCrown 사용. */
       { label: "관리자", keywords: "admin", icon: IconCrown, href: null },
       { label: "사용자 관리", keywords: "users admin", icon: IconUserAdmin, href: "/erp/admin/users" },
+      { label: "크레딧 운영", keywords: "credits admin grant op pool 작전풀", icon: IconCredit, href: "/erp/admin/credits" },
       { label: "캐릭터 등록", keywords: "character register import", icon: IconCharacter, href: "/erp/admin/characters/import" },
     ],
   },
