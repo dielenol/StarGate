@@ -4,8 +4,8 @@
  * 주식 — 내 자산 client (`/erp/stock/portfolio`).
  *
  * - 토스 패턴: 평가금/총손익/손익% 3-column 요약 hero + 보유 종목 list.
- * - 행 자체가 `<Link href="/erp/stock/[ticker]">` — 클릭 시 종목 상세로 이동
- *   (거기서 매도 sticky CTA).
+ * - 행 클릭 시 `/erp/stock?ticker=[ticker]` 로 이동 — master-detail detail 패널이
+ *   해당 종목으로 갱신 (거기서 매도 sticky CTA).
  * - 보유 0이면 안내 + [종목 보기] CTA.
  * - StockTabs 의 활성 탭은 "내 자산".
  */
@@ -214,7 +214,7 @@ export default function StockPortfolioClient({
             return (
               <li key={h.ticker} className={styles.holdingList__item}>
                 <Link
-                  href={`/erp/stock/${h.ticker}`}
+                  href={`/erp/stock?ticker=${encodeURIComponent(h.ticker)}`}
                   className={styles.holdingRow}
                   aria-label={`${h.name} 보유 ${h.shares}주 — 상세 보기`}
                 >

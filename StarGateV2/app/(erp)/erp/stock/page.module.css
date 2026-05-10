@@ -1,10 +1,9 @@
 /* ==========================================================
    stock/page.module.css
-   - 주식 사용자 페이지 (M3-A 토스 라우트 리워크)
+   - 주식 사용자 페이지 (M3-A 토스 마스터-디테일 통합)
    - 14px floor, globals.css 토큰만 사용 (var(--*) 만; 색/폰트 하드코딩 금지)
-   - 3 페이지 공유 모듈:
-     · /erp/stock — list view (세로 list + sparkline)
-     · /erp/stock/[ticker] — 종목 상세 (큰 차트 + sticky CTA)
+   - 2 페이지 공유 모듈:
+     · /erp/stock — 마스터-디테일 (좌 list + 우 detail, ?ticker= 동기화)
      · /erp/stock/portfolio — 내 자산 (요약 + 보유 list)
    ========================================================== */
 
@@ -106,6 +105,61 @@
   border-color: var(--ink-1);
 }
 
+/* ── 마스터-디테일 layout ── */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: var(--gap);
+  align-items: start;
+}
+
+.listPanel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.detailPanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /*
+   * sticky CTA 가 panel bottom 기준으로 고정되도록 panel 자체 scroll.
+   * viewport 높이에서 헤더/탭/안내 높이를 대략 빼 80vh 정도 확보.
+   */
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  padding: var(--pad);
+}
+
+.detailDisabled {
+  margin-top: auto;
+  padding: 16px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .detailPanel {
+    /*
+     * 모바일은 자연 흐름 — panel scroll 해제.
+     * sticky CTA 는 viewport bottom 기준으로 떨어지나 그래도 의도된 동작.
+     */
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
 /* ── list view 검색 ── */
 
 .searchBar {
@@ -189,6 +243,16 @@
 .stockRow:focus-visible {
   outline: 1px solid var(--gold);
   outline-offset: -2px;
+  background: var(--bg-2);
+}
+
+/* 선택된 행 — master-detail 우측 detail panel 과 동기화. */
+.stockRow--active {
+  background: var(--bg-2);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.stockRow--active:hover {
   background: var(--bg-2);
 }
 
@@ -411,14 +475,22 @@
 
 .chartPanel__chart {
   width: 100%;
-  height: 440px;
+  height: 360px;
   min-width: 0;
+}
+
+/* 좁은 detail panel — 마스터-디테일 stack 모드 직전 폭 */
+@media (max-width: 1280px) {
+  .chartPanel__chart,
+  .chartPanel__placeholder {
+    height: 320px;
+  }
 }
 
 @media (max-width: 720px) {
   .chartPanel__chart,
   .chartPanel__placeholder {
-    height: 320px;
+    height: 280px;
   }
 }
 
