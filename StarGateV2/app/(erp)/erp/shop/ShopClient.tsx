@@ -31,6 +31,8 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import BuyModal from "./BuyModal";
 import ConsumeModal from "./ConsumeModal";
+import ShopAdminStockModal from "./ShopAdminStockModal";
+import ShopItemIcon from "./ShopItemIcon";
 
 import styles from "./page.module.css";
 
@@ -87,6 +89,8 @@ interface Props {
   initialBalance: number;
   initialCredits: CreditsResponse | undefined;
   mainCharacterError: string | null;
+  /** GM 전용 재고 관리 모달 노출 여부. */
+  isGM: boolean;
 }
 
 /* ── 컴포넌트 ── */
@@ -98,6 +102,7 @@ export default function ShopClient({
   initialBalance,
   initialCredits,
   mainCharacterError,
+  isGM,
 }: Props) {
   /* 6. 쿼리 */
   const catalogQuery = useShopCatalog({ initialData: initialCatalog });
@@ -110,6 +115,7 @@ export default function ShopClient({
   /* 10. 로컬 상태 */
   const [activeTab, setActiveTab] = useState<ShopTabValue>("ALL");
   const [modal, setModal] = useState<ModalState>(null);
+  const [adminOpen, setAdminOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   /* 11. 파생 */
@@ -200,7 +206,7 @@ export default function ShopClient({
   /* ── 렌더 ── */
 
   return (
-    <>
+    <div className={styles.shopRoot}>
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -208,9 +214,20 @@ export default function ShopClient({
         ]}
         title="편의점"
         right={
-          <Tag tone={catalog.isOpen ? "gold" : "danger"}>
-            {catalog.isOpen ? "영업 중" : "영업 종료"}
-          </Tag>
+          <div className={styles.headRight}>
+            <Tag tone={catalog.isOpen ? "gold" : "danger"}>
+              {catalog.isOpen ? "영업 중" : "영업 종료"}
+            </Tag>
+            {isGM ? (
+              <button
+                type="button"
+                onClick={() => setAdminOpen(true)}
+                className={styles.adminBtn}
+              >
+                재고 관리 · GM
+              </button>
+            ) : null}
+          </div>
         }
       />
 
@@ -281,9 +298,10 @@ export default function ShopClient({
       >
         {TAB_DEFS.map((tab) => {
           const isActive = activeTab === tab.value;
-          const count = catalog.items.filter(
-            (it) => it.pageGroup === tab.value,
-          ).length;
+          const count =
+            tab.value === "ALL"
+              ? catalog.items.length
+              : catalog.items.filter((it) => it.pageGroup === tab.value).length;
           return (
             <button
               key={tab.value}
@@ -334,7 +352,7 @@ export default function ShopClient({
                   </span>
                 ) : null}
                 <div className={styles.card__icon} aria-hidden>
-                  {item.icon}
+                  <ShopItemIcon slug={item.slug} size={48} />
                 </div>
                 <div className={styles.card__name}>{item.name}</div>
                 <div className={styles.card__slug}>{item.slug}</div>
@@ -393,7 +411,7 @@ export default function ShopClient({
               {inventory.items.map((item) => (
                 <div key={item.slug} className={styles.inventoryItem}>
                   <div className={styles.inventoryItem__icon} aria-hidden>
-                    {item.icon}
+                    <ShopItemIcon slug={item.slug} size={32} />
                   </div>
                   <div className={styles.inventoryItem__body}>
                     <div className={styles.inventoryItem__name}>
@@ -446,6 +464,16 @@ export default function ShopClient({
           isPending={consumeMutation.isPending}
         />
       ) : null}
-    </>
+
+      {adminOpen ? (
+        <ShopAdminStockModal
+          onClose={() => setAdminOpen(false)}
+          onSaved={() => {
+            // 저장 후 catalog 재조회 → 카드 stock/available 즉시 반영.
+            void catalogQuery.refetch();
+          }}
+        />
+      ) : null}
+    </div>
   );
 }

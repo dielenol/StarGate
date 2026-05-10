@@ -68,7 +68,6 @@ export default function ConsumeModal({
 
   return (
     <ShopModalShell
-      icon={item.icon}
       name={item.name}
       slug={item.slug}
       ariaLabel={`${item.name} 사용/폐기`}

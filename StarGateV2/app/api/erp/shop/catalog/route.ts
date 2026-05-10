@@ -16,6 +16,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { getAllDailyStocks } from "@/lib/db/shop";
 import { isShopOpen, SHOP_CATALOG } from "@/lib/shop/catalog";
+import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 
 export async function GET() {
   const session = await auth();
@@ -24,6 +25,10 @@ export async function GET() {
   }
 
   try {
+    // 일일 재고 lazy refresh — KST 자정 기준 stale 이면 SHOP_CATALOG 룰로 자동 채움.
+    await ensureDailyStockRefresh().catch((err) => {
+      console.error("[api/erp/shop/catalog] ensureDailyStockRefresh 실패", err);
+    });
     const stocks = await getAllDailyStocks();
     const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
     const isOpen = isShopOpen(new Date());

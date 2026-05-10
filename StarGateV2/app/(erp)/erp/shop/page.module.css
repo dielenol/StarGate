@@ -4,6 +4,44 @@
    - 14px floor, globals.css 토큰만 사용
    ========================================================== */
 
+/* 편의점 콘텐츠 전체에 도트 폰트 적용 (PokemonDPPT — globals.css @font-face).
+   `--font-mono` 자체를 override 해서 자식 module 의 명시적 var(--font-mono) 도 같이 도트화. */
+.shopRoot {
+  --font-mono: "PokemonDPPT", ui-monospace, "SF Mono", "Menlo", monospace;
+  font-family: var(--font-mono);
+}
+.shopRoot input,
+.shopRoot button,
+.shopRoot select,
+.shopRoot textarea {
+  font-family: inherit;
+}
+
+/* ── PageHead right 슬롯 (영업 태그 + GM 재고 관리 버튼) ── */
+
+.headRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adminBtn {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.adminBtn:hover {
+  background: var(--gold);
+  color: var(--bg-0);
+}
+
 /* ── 헤더 패널 (Box variant=gold 위에 얹는 3-column 레이아웃) ── */
 
 .header {

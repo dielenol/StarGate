@@ -96,7 +96,6 @@ export default function BuyModal({
 
   return (
     <ShopModalShell
-      icon={item.icon}
       name={item.name}
       slug={item.slug}
       ariaLabel={`${item.name} 구매`}

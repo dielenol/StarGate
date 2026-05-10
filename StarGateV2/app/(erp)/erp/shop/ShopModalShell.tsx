@@ -3,6 +3,8 @@
 import { useEffect, useId, useRef } from "react";
 import type { ReactNode } from "react";
 
+import ShopItemIcon from "./ShopItemIcon";
+
 import styles from "./ShopModal.module.css";
 
 /**
@@ -16,8 +18,11 @@ import styles from "./ShopModal.module.css";
  */
 
 interface Props {
-  /** 빈 값/미전달 시 아이콘 박스 자체 렌더 생략 (주식 모달처럼 아이콘이 없는 경우 대응). */
-  icon?: string;
+  /**
+   * @deprecated 더 이상 emoji string 을 받지 않는다 — slug 기반으로 ShopItemIcon 이 자동 렌더.
+   * `false` 명시 시 아이콘 박스 자체 생략 (주식 모달처럼 아이콘이 없는 경우 대응).
+   */
+  icon?: string | false;
   name: string;
   slug: string;
   ariaLabel: string;
@@ -146,13 +151,13 @@ export default function ShopModalShell({
         />
 
         <header
-          className={`${styles.header}${icon ? "" : ` ${styles["header--noIcon"]}`}`}
+          className={`${styles.header}${icon === false ? ` ${styles["header--noIcon"]}` : ""}`}
         >
-          {icon ? (
+          {icon === false ? null : (
             <div className={styles.header__icon} aria-hidden>
-              {icon}
+              <ShopItemIcon slug={slug} size={40} />
             </div>
-          ) : null}
+          )}
           <div className={styles.header__main}>
             <div id={titleId} className={styles.header__name}>
               {name}

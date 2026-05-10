@@ -1,0 +1,279 @@
+/* GM 전용 재고 관리 모달 — ShopModal 톤 거울. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.dialog {
+  position: relative;
+  width: min(960px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-0);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.subtitle code {
+  color: var(--ink-0);
+  background: var(--bg-2);
+  padding: 0 6px;
+  border: 1px solid var(--line);
+}
+
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.closeBtn:hover:not(:disabled) {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.closeBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.error {
+  margin: 12px 20px 0;
+  padding: 10px 14px;
+  background: rgba(196, 50, 50, 0.08);
+  border: 1px solid var(--danger, #c43232);
+  color: var(--danger, #c43232);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.loading {
+  padding: 60px 20px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tableWrap {
+  overflow: auto;
+  flex: 1;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.rowDirty {
+  background: rgba(201, 168, 90, 0.06);
+}
+
+.rowDirty td {
+  border-bottom-color: var(--gold-dim);
+}
+
+.cellName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon {
+  font-size: 18px;
+}
+
+.slug {
+  margin-left: auto;
+  color: var(--ink-3);
+  background: var(--bg-2);
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.cellNum {
+  font-family: var(--font-mono);
+  color: var(--ink-1);
+}
+
+.cellInput {
+  width: 90px;
+}
+
+.input {
+  width: 80px;
+  padding: 6px 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-align: right;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.input:disabled {
+  opacity: 0.4;
+}
+
+.cellRefresh {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.staleTag {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--danger, #c43232);
+  color: var(--danger, #c43232);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.resetBtn {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.resetBtn:hover:not(:disabled) {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.resetBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-2);
+}
+
+.dirtyCount {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.footerBtns {
+  display: flex;
+  gap: 8px;
+}
+
+.btnGhost,
+.btnPrimary {
+  padding: 8px 18px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--line);
+}
+
+.btnGhost {
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.btnGhost:hover:not(:disabled) {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.btnPrimary {
+  background: var(--gold);
+  color: var(--bg-0);
+  border-color: var(--gold);
+  font-weight: 700;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: transparent;
+  color: var(--gold);
+}
+
+.btnPrimary:disabled,
+.btnGhost:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

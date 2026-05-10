@@ -1,3 +1,16 @@
+/* ── 편의점 도트 폰트 (Pokemon DPPt — CC BY-SA 3.0, aztecwarrior28).
+   /public/fonts/pokemon-dppt-LICENSE.txt 번들. shop scope 한정 사용.
+   size-adjust: 도트 폰트는 cap-height 가 작아 같은 CSS px 에서 글자 작아 보임 →
+   ERP 14px floor 정책의 시각적 보장 위해 130% 로 글리프 키움. */
+@font-face {
+  font-family: "PokemonDPPT";
+  src: url("/fonts/pokemon-dppt.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  size-adjust: 130%;
+}
+
 :root {
   /* 페이지 공통 타이포그래피 스케일 */
   --font-size-xs: 11px;

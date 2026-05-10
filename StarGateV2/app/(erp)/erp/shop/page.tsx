@@ -12,6 +12,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
+import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import {
   getCharacterBalance,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/db/inventory";
 import { getAllDailyStocks } from "@/lib/db/shop";
 import { findShopItemBySlug, isShopOpen, SHOP_CATALOG } from "@/lib/shop/catalog";
+import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 
 import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type {
@@ -41,6 +43,10 @@ export const metadata = {
 /* ── 서버 측 카탈로그 응답 빌더 (catalog API 와 동일 형식) ── */
 
 async function buildCatalogResponse(): Promise<ShopCatalogResponse> {
+  // 일일 재고 lazy refresh — KST 자정 기준 stale 이면 SHOP_CATALOG 룰로 자동 채움.
+  await ensureDailyStockRefresh().catch((err) => {
+    console.error("[shop] ensureDailyStockRefresh 실패", err);
+  });
   const stocks = await getAllDailyStocks();
   const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
   const isOpen = isShopOpen(new Date());
@@ -148,10 +154,14 @@ export default async function ShopPage() {
     ]);
 
   // useCredits 가 받을 CreditsResponse — 메인 캐릭이 있을 때만 시드.
+  // Next.js 16: Server→Client prop 으로 ObjectId(toJSON 가진 객체) 전달 거부 → _id 를 hex string 으로 정규화.
   const initialCredits: CreditsResponse | undefined =
     mainCharacter && mainCharacterId
       ? {
-          transactions: initialLedger,
+          transactions: initialLedger.map((t) => ({
+            ...t,
+            _id: t._id?.toString() as unknown as typeof t._id,
+          })),
           balance: initialBalance,
           characterId: mainCharacterId,
           characterCodename: mainCharacter.codename,
@@ -170,6 +180,7 @@ export default async function ShopPage() {
       initialBalance={initialBalance}
       initialCredits={initialCredits}
       mainCharacterError={mainCharacterError}
+      isGM={hasRole(session.user.role, "GM")}
     />
   );
 }
