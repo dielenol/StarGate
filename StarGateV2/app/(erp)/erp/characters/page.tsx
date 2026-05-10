@@ -22,6 +22,7 @@ export default async function CharactersPage({ searchParams }: PageProps) {
 
   const { role } = session.user;
   const isGMOrAbove = hasRole(role, "V");
+  const isGM = hasRole(role, "GM");
 
   const params = await searchParams;
   const tierFilter: CharacterTier | null =
@@ -32,7 +33,12 @@ export default async function CharactersPage({ searchParams }: PageProps) {
 
   // 카탈로그 탭 카운트(ALL/MAIN/MINI)를 정확히 계산하려면 항상 전체 fetch.
   // tier 필터는 CharactersClient 가 클라이언트 측 표시 필터로 처리.
-  const characters = await listAgentCharacters(null).catch(() => []);
+  const rawCharacters = await listAgentCharacters(null).catch(() => []);
+
+  // GM 외에는 isPublic=false 캐릭터(테스트 더미 등) 숨김.
+  const characters = isGM
+    ? rawCharacters
+    : rawCharacters.filter((c) => c.isPublic !== false);
 
   // MongoDB ObjectId -> string 직렬화 (Client Component 전달용)
   const serializedCharacters = characters.map((c) => ({

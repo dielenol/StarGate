@@ -6,6 +6,7 @@ import type { Character } from "@/types/character";
 import type { UserRole } from "@/types/user";
 
 import { auth } from "@/lib/auth/config";
+import { hasRole } from "@/lib/auth/rbac";
 import { listCharacters } from "@/lib/db/characters";
 import { getUserClearance, filterCharacterByClearance } from "@/lib/personnel";
 
@@ -14,8 +15,14 @@ import ERPLoading from "../loading";
 import PersonnelClient from "./PersonnelClient";
 
 async function PersonnelBody({ role }: { role: UserRole }) {
-  const characters = await listCharacters().catch(() => []);
+  const rawCharacters = await listCharacters().catch(() => []);
   const clearance = getUserClearance(role);
+  const isGM = hasRole(role, "GM");
+
+  // GM 외에는 isPublic=false 캐릭터(테스트 더미 등) 숨김.
+  const characters = isGM
+    ? rawCharacters
+    : rawCharacters.filter((c) => c.isPublic !== false);
 
   // MongoDB ObjectId -> string 직렬화 (Client Component 전달용)
   const filtered = characters.map((c) => {

@@ -8,7 +8,7 @@ import {
 import type { CharacterTier, CreateCharacterInput } from "@/types/character";
 
 import { auth } from "@/lib/auth/config";
-import { requireRole } from "@/lib/auth/rbac";
+import { hasRole, requireRole } from "@/lib/auth/rbac";
 import {
   listAgentCharacters,
   createCharacter,
@@ -35,6 +35,11 @@ export async function GET(request: Request) {
     } else {
       // 무필터도 AGENT 카탈로그로 제한한다. personnel 은 /api/erp/personnel 사용.
       characters = await listAgentCharacters(null);
+    }
+
+    // GM 외에는 isPublic=false 캐릭터(테스트 더미 등) 숨김.
+    if (!hasRole(session.user.role, "GM")) {
+      characters = characters.filter((c) => c.isPublic !== false);
     }
 
     return NextResponse.json(
