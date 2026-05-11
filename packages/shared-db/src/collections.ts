@@ -22,6 +22,9 @@ import type {
   StockHolding,
   StockPriceHistory,
 } from "./types/stock.js";
+import type { TrpgSession } from "./types/trpg-session.js";
+import type { TrpgGuildMember } from "./types/trpg-guild-member.js";
+import type { TrpgSessionNotification } from "./types/trpg-session-notification.js";
 
 import { getDb, getDbSync } from "./client.js";
 
@@ -49,6 +52,9 @@ const COL = {
   STOCK_PRICES: "stock_prices",
   STOCK_HOLDINGS: "stock_holdings",
   STOCK_PRICE_HISTORY: "stock_price_history",
+  TRPG_SESSIONS: "trpg_sessions",
+  TRPG_GUILD_MEMBERS: "trpg_guild_members",
+  TRPG_SESSION_NOTIFICATIONS: "trpg_session_notifications",
 } as const;
 
 /* ── Async accessors (both modes) ── */
@@ -158,6 +164,21 @@ export async function stockPriceHistoryCol(): Promise<Collection<StockPriceHisto
   return db.collection<StockPriceHistory>(COL.STOCK_PRICE_HISTORY);
 }
 
+export async function trpgSessionsCol(): Promise<Collection<TrpgSession>> {
+  const db = await getDb();
+  return db.collection<TrpgSession>(COL.TRPG_SESSIONS);
+}
+
+export async function trpgGuildMembersCol(): Promise<Collection<TrpgGuildMember>> {
+  const db = await getDb();
+  return db.collection<TrpgGuildMember>(COL.TRPG_GUILD_MEMBERS);
+}
+
+export async function trpgSessionNotificationsCol(): Promise<Collection<TrpgSessionNotification>> {
+  const db = await getDb();
+  return db.collection<TrpgSessionNotification>(COL.TRPG_SESSION_NOTIFICATIONS);
+}
+
 /* ── Sync accessors (long-running only) ── */
 
 export function usersColSync(): Collection<User> {
@@ -242,4 +263,18 @@ export function stockHoldingsColSync(): Collection<StockHolding> {
 
 export function stockPriceHistoryColSync(): Collection<StockPriceHistory> {
   return getDbSync().collection<StockPriceHistory>(COL.STOCK_PRICE_HISTORY);
+}
+
+export function trpgSessionsColSync(): Collection<TrpgSession> {
+  return getDbSync().collection<TrpgSession>(COL.TRPG_SESSIONS);
+}
+
+export function trpgGuildMembersColSync(): Collection<TrpgGuildMember> {
+  return getDbSync().collection<TrpgGuildMember>(COL.TRPG_GUILD_MEMBERS);
+}
+
+export function trpgSessionNotificationsColSync(): Collection<TrpgSessionNotification> {
+  return getDbSync().collection<TrpgSessionNotification>(
+    COL.TRPG_SESSION_NOTIFICATIONS,
+  );
 }

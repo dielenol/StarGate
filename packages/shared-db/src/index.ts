@@ -71,6 +71,14 @@ export type {
   CreateStockPriceInput,
   CreateStockHoldingInput,
   CreateStockPriceHistoryInput,
+  TrpgSession,
+  TrpgSessionStatus,
+  UpdateTrpgSessionResult,
+  CancelTrpgSessionResult,
+  TrpgGuildMember,
+  TrpgSessionNotification,
+  TrpgNotificationKind,
+  TrpgNotificationDeliveryMethod,
 } from "./types/index.js";
 
 export {
@@ -131,6 +139,9 @@ export {
   stockPricesCol,
   stockHoldingsCol,
   stockPriceHistoryCol,
+  trpgSessionsCol,
+  trpgGuildMembersCol,
+  trpgSessionNotificationsCol,
 } from "./collections.js";
 
 /* ── Collections (sync, long-running only) ── */
@@ -157,6 +168,9 @@ export {
   stockPricesColSync,
   stockHoldingsColSync,
   stockPriceHistoryColSync,
+  trpgSessionsColSync,
+  trpgGuildMembersColSync,
+  trpgSessionNotificationsColSync,
 } from "./collections.js";
 
 /* ── Indexes ── */

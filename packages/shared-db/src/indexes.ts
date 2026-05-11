@@ -329,5 +329,53 @@ export async function ensureAllIndexes(): Promise<void> {
         name: "stock_price_history_ticker_createdAt",
       },
     ]),
+
+    /* ── trpg_sessions (trpg-bot 신규 모델) ── */
+    db.collection("trpg_sessions").createIndexes([
+      {
+        // 길드 + 날짜 기반 월별 조회 / 같은 날 충돌 검사.
+        key: { guildId: 1, date: 1 },
+        name: "trpg_sessions_guildId_date",
+      },
+      {
+        // 길드 + 상태 + 날짜 — open 세션만 캘린더에 노출.
+        key: { guildId: 1, status: 1, date: 1 },
+        name: "trpg_sessions_guildId_status_date",
+      },
+      {
+        // 생성 알림 스케줄러: 미발송 + lease 만료된 후보 스캔.
+        key: {
+          status: 1,
+          notificationSentAt: 1,
+          notificationClaimLeaseUntil: 1,
+        },
+        name: "trpg_sessions_notification_pending",
+      },
+      {
+        // 24h 리마인드 스케줄러: 미발송 + 시작 시각 윈도우 스캔.
+        key: { status: 1, reminderSentAt: 1, date: 1, startTime: 1 },
+        name: "trpg_sessions_reminder_pending",
+      },
+    ]),
+
+    /* ── trpg_guild_members (참가자 후보 풀) ── */
+    db.collection("trpg_guild_members").createIndexes([
+      {
+        key: { guildId: 1, discordUserId: 1 },
+        name: "trpg_guild_members_guildId_discordUserId_unique",
+        unique: true,
+      },
+      {
+        // 활성 멤버만 (leftAt: null) 필터링용.
+        key: { guildId: 1, leftAt: 1 },
+        name: "trpg_guild_members_guildId_leftAt",
+      },
+    ]),
+
+    /* ── trpg_session_notifications (발송 시도 로그) ── */
+    db.collection("trpg_session_notifications").createIndex(
+      { sessionId: 1, kind: 1, discordUserId: 1 },
+      { name: "trpg_session_notifications_sessionId_kind_userId" },
+    ),
   ]);
 }

@@ -4,3 +4,6 @@ export * from "./institution.schema.js";
 export * from "./npc.schema.js";
 export * from "./frontmatter.js";
 export * from "./change-log.schema.js";
+export * from "./trpg-session.schema.js";
+export * from "./trpg-guild-member.schema.js";
+export * from "./trpg-session-notification.schema.js";

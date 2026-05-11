@@ -1,125 +1,51 @@
 /**
- * MongoDB 연결 관리 (싱글톤)
+ * MongoDB 연결 관리 — shared-db 로 이전됨 (shim)
  *
- * MongoClient를 한 번만 생성하고 재사용합니다.
+ * 자체 MongoClient 싱글톤을 제거하고 `@stargate/shared-db` 의 long-running
+ * 모드 connect/close 와 sync accessor 를 위임한다. DB 이름은 통합 DB
+ * (`stargate`) 로 전환 — 기존 `trpg_bot` 하드코딩은 제거.
+ *
+ * @deprecated 신규 호출처는 `@stargate/shared-db` 의 connect/close/getClientSync
+ * 를 직접 사용하세요.
  * @module db/client
  */
 
+import type { MongoClient } from "mongodb";
 import {
-  MongoClient,
-  MongoServerError,
-  type MongoClientOptions,
-} from "mongodb";
+  close as sharedClose,
+  connect as sharedConnect,
+  ensureAllIndexes,
+  getClientSync,
+} from "@stargate/shared-db";
+
 import { config } from "../config.js";
 
-/** MongoDB 클라이언트 싱글톤 인스턴스 */
-let client: MongoClient | null = null;
-let connectPromise: Promise<void> | null = null;
-
-const DB_NAME = "trpg_bot";
-const SESSIONS_COLLECTION = "sessions";
-const RESPONSES_COLLECTION = "session_responses";
-const SESSION_LOGS_COLLECTION = "session_logs";
-
-async function ensureIndexes(mongoClient: MongoClient): Promise<void> {
-  const db = mongoClient.db(DB_NAME);
-
-  await Promise.all([
-    db.collection(SESSIONS_COLLECTION).createIndexes([
-      {
-        key: { status: 1, closeDateTime: 1 },
-        name: "sessions_status_closeDateTime",
-      },
-      {
-        key: { guildId: 1, status: 1, createdAt: -1 },
-        name: "sessions_guild_status_createdAt",
-      },
-      {
-        key: { guildId: 1, status: 1, targetDateTime: 1 },
-        name: "sessions_guild_status_targetDateTime",
-      },
-      {
-        key: { status: 1, targetDateTime: 1, sessionStartReminder24hSent: 1 },
-        name: "sessions_status_targetDateTime_reminderFlag",
-      },
-    ]),
-    db.collection(RESPONSES_COLLECTION).createIndexes([
-      {
-        key: { sessionId: 1, userId: 1 },
-        name: "responses_sessionId_userId_unique",
-        unique: true,
-      },
-      {
-        key: { sessionId: 1, status: 1 },
-        name: "responses_sessionId_status",
-      },
-      {
-        key: { userId: 1, status: 1 },
-        name: "responses_userId_status",
-      },
-    ]),
-    db
-      .collection(SESSION_LOGS_COLLECTION)
-      .createIndex(
-        { sessionId: 1, createdAt: -1 },
-        { name: "session_logs_sessionId_createdAt" }
-      ),
-  ]);
-}
-
 /**
- * MongoDB에 연결합니다.
- * 봇 시작 시 한 번 호출합니다.
- * @throws {Error} 연결 실패 시
+ * MongoDB 에 연결한다. 봇 시작 시 한 번 호출.
+ *
+ * - long-running 모드로 진입 (Discord bot 은 서버리스 아님).
+ * - shared-db 통합 인덱스(`ensureAllIndexes`)를 함께 생성 — trpg_sessions,
+ *   trpg_guild_members, trpg_session_notifications 포함.
  */
 export async function connectDb(): Promise<void> {
-  if (client) return;
-  if (connectPromise) return connectPromise;
-
-  const options: MongoClientOptions = {};
-  const mongoClient = new MongoClient(config.mongoUri, options);
-
-  connectPromise = (async () => {
-    try {
-      await mongoClient.connect();
-      await ensureIndexes(mongoClient);
-      client = mongoClient;
-    } catch (err) {
-      await mongoClient.close().catch(() => {});
-      if (err instanceof MongoServerError && err.code === 11000) {
-        throw new Error(
-          "MongoDB 인덱스 초기화에 실패했습니다. `session_responses`에 중복된 `(sessionId, userId)` 데이터가 없는지 확인하세요."
-        );
-      }
-      throw err;
-    } finally {
-      connectPromise = null;
-    }
-  })();
-
-  return connectPromise;
+  await sharedConnect({
+    uri: config.mongoUri,
+    dbName: config.mongoDbName,
+    maxPoolSize: 10,
+  });
+  await ensureAllIndexes();
 }
 
-/**
- * MongoDB 연결을 종료합니다.
- * 프로세스 종료 시 호출합니다.
- */
+/** MongoDB 연결을 종료합니다. 프로세스 종료 시 호출. */
 export async function closeDb(): Promise<void> {
-  if (client) {
-    await client.close();
-    client = null;
-  }
+  await sharedClose();
 }
 
 /**
- * MongoDB 클라이언트를 반환합니다.
- * connectDb() 호출 후에만 사용합니다.
- * @returns MongoClient
- * @throws {Error} connectDb() 미호출 시
+ * MongoDB 클라이언트를 반환합니다. (`connectDb` 호출 후에만 사용)
+ *
+ * 기존 호출처 호환용 shim — sync getClientSync 를 위임.
  */
 export function getClient(): MongoClient {
-  if (!client) {
-    throw new Error("DB가 연결되지 않았습니다. connectDb()를 먼저 호출하세요.");
-  }
-  return client;
+  return getClientSync();
 }

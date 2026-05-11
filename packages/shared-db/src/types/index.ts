@@ -127,3 +127,18 @@ export type {
   CreateStockHoldingInput,
   CreateStockPriceHistoryInput,
 } from "./stock.js";
+
+export type {
+  TrpgSession,
+  TrpgSessionStatus,
+  UpdateTrpgSessionResult,
+  CancelTrpgSessionResult,
+} from "./trpg-session.js";
+
+export type { TrpgGuildMember } from "./trpg-guild-member.js";
+
+export type {
+  TrpgSessionNotification,
+  TrpgNotificationKind,
+  TrpgNotificationDeliveryMethod,
+} from "./trpg-session-notification.js";
