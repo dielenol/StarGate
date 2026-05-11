@@ -1,20 +1,21 @@
+/* PageHead 는 이제 ERP topbar 슬롯에 title/breadcrumb 을 위임한다.
+   이 모듈은 페이지 상단의 우측 액션 바 (right slot) 전용 컨테이너 + Breadcrumb
+   링크 스타일만 유지한다. (Breadcrumb 컴포넌트는 ERPHeader 에서 재사용) */
+
 .pageHead {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  justify-content: flex-end;
+  align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  padding-bottom: var(--pad);
   margin-bottom: var(--gap);
-  border-bottom: 1px solid var(--line);
 }
 
-.pageHead__breadcrumb {
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.15em;
-  margin-bottom: 5px;
+.pageHead__right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .crumbNav {
@@ -67,19 +68,4 @@
 .crumbPlain {
   color: var(--ink-2);
   cursor: default;
-}
-
-.pageHead__title {
-  margin: 0;
-  color: var(--ink-0);
-  font-size: 26px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-}
-
-.pageHead__right {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
 }

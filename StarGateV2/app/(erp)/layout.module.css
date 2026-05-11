@@ -13,11 +13,13 @@
 .erp__main {
   flex: 1;
   min-width: 0;
-  padding: calc(var(--pad) + 4px) calc(var(--pad) + 6px);
+  /* PageHead 가 차지하던 border-bottom + margin-bottom 영역이 헤더로 이전되었으므로
+     main 안쪽 padding-top 을 살짝 늘려 컨텐츠가 헤더에 너무 붙지 않도록 한다. */
+  padding: calc(var(--pad) + 12px) calc(var(--pad) + 6px) calc(var(--pad) + 4px);
 }
 
 @media (max-width: 1279px) {
   .erp__main {
-    padding: 14px;
+    padding: 18px 14px 14px;
   }
 }

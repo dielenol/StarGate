@@ -30,6 +30,7 @@
   gap: 12px;
   color: inherit;
   text-decoration: none;
+  flex-shrink: 0;
 }
 
 .header__logo {
@@ -39,72 +40,57 @@
   filter: drop-shadow(0 0 10px rgba(201, 168, 90, 0.25));
 }
 
-.header__brandText {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  white-space: nowrap;
-}
-
 .header__brandName {
   color: var(--ink-0);
   font-family: var(--font-mono);
   font-size: 24px;
   font-weight: 600;
   letter-spacing: 0.24em;
+  white-space: nowrap;
 }
 
-.header__brandDivider {
-  color: var(--gold-dim);
-  font-family: var(--font-mono);
-  font-size: 15px;
-}
-
-.header__brandSub {
-  color: var(--gold);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 0.18em;
-}
-
-.header__status {
+/* 페이지 헤딩 슬롯 — brand 와 cmdk/user 사이 가운데 영역.
+   PageHeadContext 가 비어 있을 때도 자리(높이)를 유지해 hydrate 시
+   layout shift 최소화. */
+.header__pageHead {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: baseline;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  min-height: 22px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.header__pageHeadCrumb {
+  flex-shrink: 0;
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 14px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
+  line-height: 1.2;
 }
 
-.header__statusDot {
-  width: 6px;
-  height: 6px;
-  background: var(--success);
-  border-radius: 50%;
-  box-shadow: 0 0 8px var(--success);
-  animation: no-pulse 2s infinite;
-}
-
-.header__statusSep {
-  color: var(--ink-3);
-}
-
-@keyframes no-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+.header__pageHeadTitle {
+  margin: 0;
+  color: var(--ink-0);
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .header__right {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .header__cmdk {
@@ -117,7 +103,7 @@
   border: 1px solid var(--line-strong);
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.05em;
   cursor: pointer;
   transition:
@@ -162,6 +148,7 @@
   background: var(--bg-3);
   border: 1px solid var(--line-strong);
   color: var(--ink-2);
+  /* a11y exception: kbd 칩, 14×14 이하 미세 컨트롤 */
   font-size: 12px;
 }
 
@@ -212,20 +199,16 @@
   border-color: var(--gold-dim);
 }
 
+/* 1280 미만 — burger 노출, cmdk 폭 축소, 긴 placeholder 를 짧은 것으로 교체 */
 @media (max-width: 1279px) {
   .header__burger {
     display: flex;
-  }
-
-  .header__status {
-    display: none;
   }
 
   .header__cmdk {
     min-width: 220px;
   }
 
-  /* 긴 placeholder → 짧은 placeholder ("검색…") 로 교체. 검색창은 폭과 텍스트 모두 유지. */
   .header__cmdkPlaceholder {
     display: none;
   }
@@ -235,8 +218,12 @@
   }
 }
 
-/* 1024px 미만 — cmdk 폭/패딩을 살짝 압축. 짧은 placeholder 는 그대로 표시. ⌘K kbd 만 숨김. */
+/* 1024 미만 — breadcrumb 숨김 (헤더 폭 절약), cmdk 추가 압축 + ⌘K kbd 제거 */
 @media (max-width: 1023px) {
+  .header__pageHeadCrumb {
+    display: none;
+  }
+
   .header__cmdk {
     min-width: 160px;
     padding: 9px 12px;
@@ -247,14 +234,14 @@
   }
 }
 
-/* 880px 미만 — brand 부제 / 구분자 숨김으로 brand 폭 축소. */
+/* 880 미만 — brand 텍스트(NOVUS ORDO) 숨김, 로고만 표시 */
 @media (max-width: 880px) {
-  .header__brandDivider,
-  .header__brandSub {
+  .header__brandName {
     display: none;
   }
 }
 
+/* 680 미만 — cmdk/userName 숨기고 title ellipsis 가 진가 발휘 */
 @media (max-width: 680px) {
   .header {
     gap: 8px;
@@ -264,6 +251,14 @@
   .header__logo {
     width: 36px;
     height: 36px;
+  }
+
+  .header__pageHead {
+    padding-left: 8px;
+  }
+
+  .header__pageHeadTitle {
+    font-size: 17px;
   }
 
   .header__cmdk {

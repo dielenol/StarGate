@@ -6,6 +6,7 @@ import SessionWrapper from "@/components/erp/SessionWrapper";
 import QueryProvider from "@/components/erp/QueryProvider";
 import ERPSidebar from "@/components/erp/ERPSidebar/ERPSidebar";
 import CommandK from "@/components/erp/CommandK/CommandK";
+import { PageHeadProvider } from "@/components/ui/PageHead/PageHeadContext";
 
 import styles from "./layout.module.css";
 import ERPHeader from "./ERPHeader";
@@ -31,14 +32,16 @@ export default async function ERPLayout({
   return (
     <SessionWrapper session={session}>
       <QueryProvider>
-        <div className={styles.erp} data-scope="erp">
-          <ERPHeader user={session.user} />
-          <div className={styles.erp__body}>
-            <ERPSidebar />
-            <main className={styles.erp__main}>{children}</main>
+        <PageHeadProvider>
+          <div className={styles.erp} data-scope="erp">
+            <ERPHeader user={session.user} />
+            <div className={styles.erp__body}>
+              <ERPSidebar />
+              <main className={styles.erp__main}>{children}</main>
+            </div>
+            <CommandK />
           </div>
-          <CommandK />
-        </div>
+        </PageHeadProvider>
       </QueryProvider>
     </SessionWrapper>
   );

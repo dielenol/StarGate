@@ -9,6 +9,11 @@ import type { UserRole } from "@/types/user";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
+import Breadcrumb, {
+  type BreadcrumbItem,
+} from "@/components/ui/PageHead/Breadcrumb";
+import { usePageHead } from "@/components/ui/PageHead/PageHeadContext";
+
 import styles from "./ERPHeader.module.css";
 
 interface ERPHeaderProps {
@@ -36,6 +41,17 @@ const subscribePlatform = () => () => {};
 const getClientKbdLabel = () => (detectIsMac() ? "⌘K" : "Ctrl K");
 const getServerKbdLabel = () => "⌘K";
 
+function isBreadcrumbItemArray(value: unknown): value is BreadcrumbItem[] {
+  if (!Array.isArray(value) || value.length === 0) return false;
+  return value.every((entry): entry is BreadcrumbItem => {
+    if (entry === null || typeof entry !== "object") return false;
+    if (!("label" in entry) || typeof entry.label !== "string") return false;
+    if ("href" in entry && entry.href != null && typeof entry.href !== "string")
+      return false;
+    return true;
+  });
+}
+
 export default function ERPHeader({ user }: ERPHeaderProps) {
   const logoSrc = resolvePublicAssetPath("/assets/StarGate_logo.png");
 
@@ -45,6 +61,8 @@ export default function ERPHeader({ user }: ERPHeaderProps) {
     getClientKbdLabel,
     getServerKbdLabel,
   );
+
+  const { breadcrumb, title } = usePageHead();
 
   function handleOpenSidebar() {
     window.dispatchEvent(new CustomEvent("no:sidebar-open"));
@@ -82,22 +100,27 @@ export default function ERPHeader({ user }: ERPHeaderProps) {
           height={44}
           priority
         />
-        <div className={styles.header__brandText}>
-          <span className={styles.header__brandName}>NOVUS ORDO</span>
-          <span className={styles.header__brandDivider} aria-hidden>
-            │
-          </span>
-          <span className={styles.header__brandSub}>ERP · INTERNAL</span>
-        </div>
+        <span className={styles.header__brandName}>NOVUS ORDO</span>
       </Link>
 
-      <div className={styles.header__status} aria-label="운영 상태">
-        <span className={styles.header__statusDot} aria-hidden />
-        <span>OPERATIONAL</span>
-        <span className={styles.header__statusSep}>│</span>
-        <span>SEOUL-03</span>
-        <span className={styles.header__statusSep}>│</span>
-        <span>DISCORD · SYNC</span>
+      {/* 페이지 헤딩 슬롯 — PageHeadContext 가 채운다. SSR 시 비어 있어도 자리 유지.
+          aria-live 미부착: 라우트 변경은 라우터 announcer 가 처리하고, 동적 카운트는
+          별도 status region 으로 분리해야 한다 (라이브 리전 노이즈 폭증 방지). */}
+      <div className={styles.header__pageHead}>
+        {breadcrumb ? (
+          <div className={styles.header__pageHeadCrumb}>
+            {isBreadcrumbItemArray(breadcrumb) ? (
+              <Breadcrumb items={breadcrumb} />
+            ) : typeof breadcrumb === "string" ? (
+              <Breadcrumb source={breadcrumb} />
+            ) : (
+              breadcrumb
+            )}
+          </div>
+        ) : null}
+        {title ? (
+          <h1 className={styles.header__pageHeadTitle}>{title}</h1>
+        ) : null}
       </div>
 
       <div className={styles.header__right}>
