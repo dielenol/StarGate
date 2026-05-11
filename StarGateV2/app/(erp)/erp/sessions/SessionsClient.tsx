@@ -17,7 +17,6 @@ import {
 } from "@/hooks/queries/useSessionsQuery";
 import type { ActiveSessionCounts } from "@/lib/db/sessions";
 
-import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
 import SessionCalendar from "./SessionCalendar";
@@ -156,9 +155,10 @@ export default function SessionsClient({
   }, [sessions]);
 
   const myRsvpUpcoming = useMemo(() => {
-    // 24h 미만 세션 필터링용 cutoff — useMemo deps 가 sessions 라 매 렌더 재계산되지 않음.
-    // eslint-disable-next-line react-hooks/purity
-    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    // 오늘 자정 기준 — 어제 이전 세션은 "지난 세션"으로 간주해 레일에서 제외.
+    const cutoffDate = new Date();
+    cutoffDate.setHours(0, 0, 0, 0);
+    const cutoff = cutoffDate.getTime();
     return sessions
       .filter(
         (s) =>
@@ -187,15 +187,7 @@ export default function SessionsClient({
 
   return (
     <>
-      <PageHead
-        breadcrumb="ERP / SESSIONS"
-        title={titleNode}
-        right={
-          <Button as="a" href="/erp/sessions/report" variant="primary">
-            리포트 →
-          </Button>
-        }
-      />
+      <PageHead breadcrumb="ERP / SESSIONS" title={titleNode} />
 
       <div className={styles.ctrl}>
         <div className={styles.ctrlRow}>
@@ -288,19 +280,11 @@ export default function SessionsClient({
             </div>
             {view === "calendar" && statusGroup !== "ALL" ? (
               <span className={styles.ctrlStatusHint}>
-                캘린더에서는 강조만 적용 · 분류 결과는 ≡ 리스트 뷰
+                캘린더는 매칭 강조만 표시 · 필터 결과는 ≡ 리스트 뷰에서
               </span>
             ) : null}
           </div>
         </div>
-      </div>
-
-      <div className={styles.notice} role="note">
-        <span className={styles.lbl}>BOT-OPS</span>
-        <span>
-          세션 생성·마감·취소는 <span className={styles.cmd}>/일정</span>{" "}
-          디스코드 내 <span className={styles.cmd}>레지스트라</span> 전용 커맨드입니다. 해당 페이지는 참여 현황과 리포트 작성만 지원 합니다.
-        </span>
       </div>
 
       <div
@@ -344,6 +328,16 @@ export default function SessionsClient({
           />
         ) : null}
       </div>
+
+      {view !== "calendar" ? (
+        <div className={styles.notice} role="note">
+          <span className={styles.lbl}>BOT-OPS</span>
+          <span>
+            세션 생성·마감·취소는 <span className={styles.cmd}>/일정</span>{" "}
+            디스코드 내 <span className={styles.cmd}>레지스트라</span> 전용 커맨드입니다. 해당 페이지는 참여 현황과 리포트 작성만 지원 합니다.
+          </span>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -398,13 +392,15 @@ function SessionsList({
 }: SessionsListProps) {
   const [upcomingOnly, setUpcomingOnly] = useState(false);
 
-  // "다가올만" 토글 적용 후 화면에 보일 세션. cutoff 는 어제 자정 (D+1 의 어젯밤 세션도 포함).
+  // "예정 세션만" 토글 적용 후 화면에 보일 세션. cutoff 는 오늘 자정 — 어제 이전은 제외.
   const visibleSessions = useMemo(() => {
     if (!upcomingOnly) return sessions;
     const now = new Date();
-    const cutoff =
-      new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() -
-      24 * 60 * 60 * 1000;
+    const cutoff = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    ).getTime();
     return sessions.filter(
       (s) => new Date(s.targetDateTime).getTime() >= cutoff,
     );
@@ -441,13 +437,13 @@ function SessionsList({
           onClick={() => setUpcomingOnly((prev) => !prev)}
           aria-pressed={upcomingOnly}
         >
-          {upcomingOnly ? "✓ " : ""}다가올만
+          {upcomingOnly ? "✓ " : ""}예정 세션만
         </button>
       </div>
       {visibleSessions.length === 0 ? (
         <div className={styles.empty}>
           {upcomingOnly
-            ? "다가올 세션이 없습니다."
+            ? "예정된 세션이 없습니다."
             : "해당 조건의 세션이 없습니다."}
         </div>
       ) : (
@@ -618,7 +614,7 @@ function ParticipantGroup({
     <div className={styles.listParticipants__group}>
       <div className={styles.listParticipants__head}>
         <span className={styles.listParticipants__lbl}>{label}</span>
-        <span className={styles.listParticipants__cnt}>{items.length}</span>
+        <span className={styles.listParticipants__cnt}>{items.length} 명</span>
       </div>
       {items.length === 0 ? (
         <div className={styles.listParticipants__empty}>—</div>
@@ -693,7 +689,7 @@ function SessionsRail({ counts, myRsvp, openImminent }: SessionsRailProps) {
 
       <div className={styles.railCard}>
         <div className={styles.railHead}>
-          <span>내 응답 · 다가올</span>
+          <span>내가 응답한 예정 세션</span>
           <span className={styles.cnt}>{myRsvp.length}</span>
         </div>
         {myRsvp.length === 0 ? (
@@ -740,9 +736,9 @@ function SessionsRail({ counts, myRsvp, openImminent }: SessionsRailProps) {
           </div>
         )}
 
-        <div className={styles.railSep}>OPEN · 임박</div>
+        <div className={styles.railSep}>OPEN · 곧 시작</div>
         {openImminent.length === 0 ? (
-          <div className={styles.empty}>열려있는 세션 없음</div>
+          <div className={styles.empty}>곧 시작할 세션 없음</div>
         ) : (
           openImminent.map((s) => {
             const tone = ddayTone(s.targetDateTime);

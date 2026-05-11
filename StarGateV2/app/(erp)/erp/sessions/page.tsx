@@ -12,7 +12,6 @@ import { auth } from "@/lib/auth/config";
 import type { SerializedSession } from "@/hooks/queries/useSessionsQuery";
 
 import Box from "@/components/ui/Box/Box";
-import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
 import SessionsClient from "./SessionsClient";
@@ -105,15 +104,7 @@ export default async function SessionsPage() {
   if (!guildId) {
     return (
       <>
-        <PageHead
-          breadcrumb="ERP / SESSIONS"
-          title="세션"
-          right={
-            <Button as="a" href="/erp/sessions/report" variant="primary">
-              리포트 →
-            </Button>
-          }
-        />
+        <PageHead breadcrumb="ERP / SESSIONS" title="세션" />
         <Box>
           <div className={styles.empty}>
             GUILD_ID 환경변수가 설정되지 않았습니다.
