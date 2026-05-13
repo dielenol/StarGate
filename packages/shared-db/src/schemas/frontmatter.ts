@@ -478,10 +478,11 @@ function pickCatalogLore(
 }
 
 /**
- * Equipment frontmatter + body → EquipmentDoc.
+ * Equipment frontmatter + body 를 EquipmentDoc 으로 변환.
  *
- * Faction/Institution 어댑터는 frontmatter.loreMd 를 우선 사용하지만
- * 카탈로그는 body 전체를 그대로 loreMd 에 보존 (의도된 비일관 — body 가 단일 진실원).
+ * 정책 차이 vs NPC/Faction/Institution: 카탈로그는 `previewImage` 미지정 시
+ * `undefined` 보존 (NPC 는 `""` 빈 문자열로 정규화). `loreMd` 도 frontmatter 가 아닌
+ * body 원문 그대로 보존 — body 가 단일 진실원.
  */
 export function toDbEquipment(
   frontmatter: unknown,
@@ -528,10 +529,11 @@ export function toDbEquipment(
 }
 
 /**
- * Consumable frontmatter + body → ConsumableDoc.
+ * Consumable frontmatter + body 를 ConsumableDoc 으로 변환.
  *
- * Faction/Institution 어댑터는 frontmatter.loreMd 를 우선 사용하지만
- * 카탈로그는 body 전체를 그대로 loreMd 에 보존 (의도된 비일관 — body 가 단일 진실원).
+ * 정책 차이 vs NPC/Faction/Institution: 카탈로그는 `previewImage` 미지정 시
+ * `undefined` 보존 (NPC 는 `""` 빈 문자열로 정규화). `loreMd` 도 frontmatter 가 아닌
+ * body 원문 그대로 보존 — body 가 단일 진실원.
  */
 export function toDbConsumable(
   frontmatter: unknown,
