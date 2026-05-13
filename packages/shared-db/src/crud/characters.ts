@@ -187,6 +187,7 @@ export const ALLOWED_CHARACTER_FIELDS = new Set<string>([
   "play",
   "factionCode",
   "institutionCode",
+  "clearanceOverrides",
 ]);
 
 /**

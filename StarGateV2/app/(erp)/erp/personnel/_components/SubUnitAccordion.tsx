@@ -39,6 +39,7 @@ export default function SubUnitAccordion({
 
   return (
     <div
+      id={`subunit-${code}`}
       className={[styles.subunit, expanded ? styles["subunit--open"] : ""]
         .filter(Boolean)
         .join(" ")}

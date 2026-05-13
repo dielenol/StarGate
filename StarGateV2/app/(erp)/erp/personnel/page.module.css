@@ -1,13 +1,5 @@
 /* ── Personnel list (v2) ── */
 
-/* Page head right */
-
-.headRight {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
 /* data-rank 주입 시 rank 팔레트로 자동 전환, 미지정 시 gold 폴백 */
 .clrPill {
   display: inline-flex;
@@ -15,38 +7,34 @@
   align-items: center;
   padding: 5px 12px;
   border: 1px solid var(--rank-active-marker, var(--gold-dim));
+  border-radius: var(--radius-sm);
   color: var(--rank-active-text, var(--gold));
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.18em;
+  flex-shrink: 0;
 }
 
-/* Clearance context strip (gold notice) */
+/* Clearance context strip — 권한등급 pill + 안내 + 등급 안내 버튼 + SOURCE 한 줄 통합 */
 
 .clearanceStrip {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 14px;
-  padding: 12px 16px;
+  padding: 10px 16px;
   border: 1px solid var(--gold-dim);
   border-left: 2px solid var(--gold);
+  border-radius: var(--radius-sm);
   background: rgba(201, 168, 90, 0.06);
   color: var(--ink-1);
   font-size: 14px;
 }
 
-.clearanceStrip__label {
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.22em;
-}
-
 .clearanceStrip__body {
-  flex: 1 1 auto;
-  min-width: 220px;
+  flex: 1 1 240px;
+  min-width: 0;
 }
 
 .clearanceStrip__level {
@@ -66,6 +54,7 @@
   display: inline-block;
   padding: 2px 8px;
   border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
   color: var(--danger);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -108,6 +97,8 @@
 .seg {
   display: inline-flex;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 .seg__btn {
@@ -311,6 +302,7 @@
       transparent 4px 8px
     );
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
 }
 
 /* ── v1 legacy classes (유지, 현재 미사용) ── */

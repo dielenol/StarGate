@@ -22,10 +22,14 @@ import {
 
 import {
   canViewField,
+  FIELD_GROUP_LABEL,
+  FIELD_GROUP_ORDER,
   FIELD_REQUIRED_LEVEL,
   getLevelDisplayRank,
+  getRequiredLevel,
+  normalizeClearanceOverrides,
 } from "@/lib/personnel";
-import type { FieldGroup } from "@/lib/personnel";
+import type { ClearanceOverrides, FieldGroup } from "@/lib/personnel";
 import {
   getDepartmentLabel,
   getGroupKind,
@@ -41,6 +45,7 @@ import Pips from "@/components/ui/Pips/Pips";
 import Seal from "@/components/ui/Seal/Seal";
 import Tag from "@/components/ui/Tag/Tag";
 
+import ClearanceStrip from "../_components/ClearanceStrip";
 import OrgDrillCrumbs from "../_components/OrgDrillCrumbs";
 import type { DrillCrumbItem } from "../_components/OrgDrillCrumbs";
 import {
@@ -94,15 +99,17 @@ function ClassifiedValue({
   value,
   fieldGroup,
   clearance,
+  overrides,
 }: {
   value: string | number | undefined | null;
   fieldGroup: FieldGroup;
   clearance: AgentLevel;
+  overrides?: ClearanceOverrides;
 }) {
-  if (!canViewField(clearance, fieldGroup)) {
+  if (!canViewField(clearance, fieldGroup, overrides)) {
     return (
       <span className={styles.classified}>
-        [CLASSIFIED · {FIELD_REQUIRED_LEVEL[fieldGroup]}]
+        [CLASSIFIED · {getRequiredLevel(fieldGroup, overrides)}]
       </span>
     );
   }
@@ -114,12 +121,14 @@ function RedactedBlock({
   content,
   fieldGroup,
   clearance,
+  overrides,
 }: {
   content: string | undefined | null;
   fieldGroup: FieldGroup;
   clearance: AgentLevel;
+  overrides?: ClearanceOverrides;
 }) {
-  if (!canViewField(clearance, fieldGroup)) {
+  if (!canViewField(clearance, fieldGroup, overrides)) {
     return <span className={styles.redactedBar}>████████████████████</span>;
   }
   if (isRedactedValue(content)) return <span>—</span>;
@@ -166,6 +175,14 @@ function DossierPortraitImage({
 
 /* ── Edit-mode primitives ── */
 
+/**
+ * `clearanceOverrides` 의 draft 표현.
+ *
+ * 각 FieldGroup 키마다 `AgentLevel | ""` (빈 문자열 = "기본값 사용" sentinel).
+ * `""` 가 선택된 키는 PATCH body 의 `clearanceOverrides` 에서 제거되어 fallback 동작.
+ */
+type OverrideDraft = Record<FieldGroup, AgentLevel | "">;
+
 interface EditDraft {
   /* root */
   codename: string;
@@ -190,12 +207,25 @@ interface EditDraft {
   loreAppearsInEventsRaw: string; // CSV
   loreRoleDetail: string;
   loreNotes: string;
+  /* 박스 단위 노출 권한 오버라이드 (GM 전용) */
+  overrides: OverrideDraft;
 }
 
 function dropRedacted(value: string | undefined | null): string {
   if (value === undefined || value === null) return "";
   if (value === REDACTED) return "";
   return value;
+}
+
+function buildInitialOverrideDraft(c: Character): OverrideDraft {
+  const normalized = normalizeClearanceOverrides(c.clearanceOverrides);
+  return {
+    identity: normalized?.identity ?? "",
+    profile: normalized?.profile ?? "",
+    combatStats: normalized?.combatStats ?? "",
+    abilities: normalized?.abilities ?? "",
+    meta: normalized?.meta ?? "",
+  };
 }
 
 function buildInitialDraft(c: Character): EditDraft {
@@ -221,7 +251,30 @@ function buildInitialDraft(c: Character): EditDraft {
     loreAppearsInEventsRaw: (c.lore.appearsInEvents ?? []).join(", "),
     loreRoleDetail: dropRedacted(c.lore.roleDetail),
     loreNotes: dropRedacted(c.lore.notes),
+    overrides: buildInitialOverrideDraft(c),
   };
+}
+
+/**
+ * `OverrideDraft` → wire format (`Record<string, AgentLevel>`).
+ *
+ * 빈 문자열("") 키는 제거 (= 해당 박스 fallback). 결과가 모든 키 비어 있으면 `{}` 반환.
+ * 빈 객체는 `clearanceOverrides: {}` 로 그대로 PATCH 되며 서버에서 빈 객체 그대로 저장 — 모든 박스 fallback 동작.
+ */
+function overrideDraftToWire(draft: OverrideDraft): Record<FieldGroup, AgentLevel> {
+  const out: Partial<Record<FieldGroup, AgentLevel>> = {};
+  for (const group of FIELD_GROUP_ORDER) {
+    const v = draft[group];
+    if (v !== "") out[group] = v;
+  }
+  return out as Record<FieldGroup, AgentLevel>;
+}
+
+function isOverrideDraftEqual(a: OverrideDraft, b: OverrideDraft): boolean {
+  for (const group of FIELD_GROUP_ORDER) {
+    if (a[group] !== b[group]) return false;
+  }
+  return true;
 }
 
 /** CSV 문자열 → 정리된 배열 (공백 trim, 빈 항목 제거). */
@@ -240,6 +293,11 @@ interface DossierPatchBody {
   agentLevel?: AgentLevel;
   department?: string;
   lore?: Record<string, unknown>;
+  /**
+   * 박스 단위 노출 권한 오버라이드. 변경 시에만 포함.
+   * 빈 객체(`{}`) 면 모든 박스 fallback 으로 복원.
+   */
+  clearanceOverrides?: Record<string, AgentLevel>;
 }
 
 /**
@@ -290,6 +348,12 @@ function buildDossierPatchBody(
   if (current.loreNotes !== initial.loreNotes) lore.notes = current.loreNotes;
 
   if (Object.keys(lore).length > 0) body.lore = lore;
+
+  // 박스 단위 노출 권한 오버라이드 — 변경 시 wire format 으로 전송.
+  // 빈 객체({}) 도 그대로 전송되어 모든 박스 fallback 복원.
+  if (!isOverrideDraftEqual(initial.overrides, current.overrides)) {
+    body.clearanceOverrides = overrideDraftToWire(current.overrides);
+  }
 
   return body;
 }
@@ -424,6 +488,19 @@ export default function DossierClient({ character, clearance }: Props) {
     setDraft((prev) => ({ ...prev, [key]: value }));
   };
 
+  /**
+   * 박스 단위 노출 권한 오버라이드 변경.
+   *
+   * `value === ""` 이면 해당 박스를 fallback (정적 기본값) 으로 복원.
+   * `value === AgentLevel` 이면 명시적 오버라이드 등록.
+   */
+  const updateOverride = (group: FieldGroup, value: AgentLevel | "") => {
+    setDraft((prev) => ({
+      ...prev,
+      overrides: { ...prev.overrides, [group]: value },
+    }));
+  };
+
   const handleStartEdit = () => {
     const snapshot = buildInitialDraft(character);
     initialDraftRef.current = snapshot;
@@ -455,7 +532,8 @@ export default function DossierClient({ character, clearance }: Props) {
         body.agentLevel !== undefined ||
         body.department !== undefined;
       const hasLore = body.lore && Object.keys(body.lore).length > 0;
-      if (!hasRoot && !hasLore) {
+      const hasOverrides = body.clearanceOverrides !== undefined;
+      if (!hasRoot && !hasLore && !hasOverrides) {
         setIsEditing(false);
         initialDraftRef.current = null;
         return;
@@ -494,22 +572,18 @@ export default function DossierClient({ character, clearance }: Props) {
   const subUnitLabel =
     topGroup !== "UNASSIGNED" && department !== topGroup ? department : "";
 
-  const canIdentity = canViewField(clearance, "identity");
-  const canProfile = canViewField(clearance, "profile");
-  const canMeta = canViewField(clearance, "meta");
+  // 캐릭터별 박스 노출 권한 오버라이드. canViewField / required level 계산에 일관 적용.
+  const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
+  const canIdentity = canViewField(clearance, "identity", overrides);
+  const canProfile = canViewField(clearance, "profile", overrides);
+  const canMeta = canViewField(clearance, "meta", overrides);
+
+  const reqIdentity = getRequiredLevel("identity", overrides);
+  const reqProfile = getRequiredLevel("profile", overrides);
+  const reqMeta = getRequiredLevel("meta", overrides);
 
   const auditId = buildAuditId(character);
   const auditTimestamp = formatDate(character.updatedAt);
-
-  /* dossier 에서 형제(같은 sub-unit) 캐릭터로 빠르게 점프할 수 있도록 breadcrumb 와
-     "복귀" 버튼에 group/sub query 를 포함 — PersonnelClient 가 이 query 로
-     해당 그룹/하위기구를 자동으로 펼친 상태로 진입한다. */
-  const personnelHref = (() => {
-    if (topGroup === "UNASSIGNED") return "/erp/personnel";
-    const params = new URLSearchParams({ group: topGroup });
-    if (department && department !== topGroup) params.set("sub", department);
-    return `/erp/personnel?${params.toString()}`;
-  })();
 
   const lore = character.lore;
 
@@ -577,12 +651,6 @@ export default function DossierClient({ character, clearance }: Props) {
 
   const headRight = (
     <div className={styles.headRight}>
-      <span className={styles.clrPill} data-rank={clearance}>
-        <span>
-          권한등급 : {clearance} - {AGENT_LEVEL_LABELS[clearance]}
-        </span>
-        <Pips total={7} filled={getLevelDisplayRank(clearance)} />
-      </span>
       {isEditing ? (
         <>
           <Button
@@ -603,9 +671,6 @@ export default function DossierClient({ character, clearance }: Props) {
         </>
       ) : (
         <>
-          <Button as="a" href={personnelHref} size="sm">
-            ← 복귀
-          </Button>
           {isGM && characterId ? (
             <Button
               variant="primary"
@@ -615,14 +680,6 @@ export default function DossierClient({ character, clearance }: Props) {
               ✎ 편집
             </Button>
           ) : null}
-          <Button
-            size="sm"
-            onClick={() => {
-              /* Phase 3: PDF 내보내기 연결 예정 */
-            }}
-          >
-            ⇣ PDF
-          </Button>
         </>
       )}
     </div>
@@ -693,8 +750,8 @@ export default function DossierClient({ character, clearance }: Props) {
       return (
         <LockedSection
           variant="full"
-          required="H"
-          title="CLASSIFIED · H"
+          required={reqProfile}
+          title={`CLASSIFIED · ${reqProfile}`}
           subtitle={"APPEARANCE / PERSONALITY / BACKGROUND\n상위 등급 필요"}
         />
       );
@@ -710,6 +767,7 @@ export default function DossierClient({ character, clearance }: Props) {
                 content={lore.appearance}
                 fieldGroup="profile"
                 clearance={clearance}
+                overrides={overrides}
               />
             </p>
           </div>
@@ -720,6 +778,7 @@ export default function DossierClient({ character, clearance }: Props) {
                 content={lore.personality}
                 fieldGroup="profile"
                 clearance={clearance}
+                overrides={overrides}
               />
             </p>
           </div>
@@ -732,6 +791,7 @@ export default function DossierClient({ character, clearance }: Props) {
               content={lore.background}
               fieldGroup="profile"
               clearance={clearance}
+              overrides={overrides}
             />
           </p>
         </div>
@@ -754,7 +814,7 @@ export default function DossierClient({ character, clearance }: Props) {
       character.type === "AGENT" ? "AGENT · 현장 요원" : "NPC · 외부 인사";
     return (
       <Box>
-        <PanelTitle right={<ReqClrBadge required="G" locked={!canIdentity} />}>
+        <PanelTitle right={<ReqClrBadge required={reqIdentity} locked={!canIdentity} />}>
           CURRENT POSTING · 현 보직
         </PanelTitle>
         {canIdentity ? (
@@ -779,8 +839,8 @@ export default function DossierClient({ character, clearance }: Props) {
         ) : (
           <LockedSection
             variant="full"
-            required="G"
-            title="CLASSIFIED · G"
+            required={reqIdentity}
+            title={`CLASSIFIED · ${reqIdentity}`}
             subtitle={"CURRENT POSTING\n상위 등급 필요"}
           />
         )}
@@ -796,7 +856,7 @@ export default function DossierClient({ character, clearance }: Props) {
     if (isEditing) {
       return (
         <Box>
-          <PanelTitle right={<ReqClrBadge required="G" locked={false} />}>
+          <PanelTitle right={<ReqClrBadge required={reqIdentity} locked={false} />}>
             REFERENCES & NOTES · 참조 · 특이사항
           </PanelTitle>
           <dl className={styles.kv}>
@@ -831,7 +891,7 @@ export default function DossierClient({ character, clearance }: Props) {
 
     return (
       <Box>
-        <PanelTitle right={<ReqClrBadge required="G" locked={!canIdentity} />}>
+        <PanelTitle right={<ReqClrBadge required={reqIdentity} locked={!canIdentity} />}>
           REFERENCES & NOTES · 참조 · 특이사항
         </PanelTitle>
         {canIdentity ? (
@@ -865,8 +925,8 @@ export default function DossierClient({ character, clearance }: Props) {
         ) : (
           <LockedSection
             variant="full"
-            required="G"
-            title="CLASSIFIED · G"
+            required={reqIdentity}
+            title={`CLASSIFIED · ${reqIdentity}`}
             subtitle={"REFERENCES & NOTES\n상위 등급 필요"}
           />
         )}
@@ -884,7 +944,7 @@ export default function DossierClient({ character, clearance }: Props) {
     if (isEditing) {
       return (
         <Box>
-          <PanelTitle right={<ReqClrBadge required="H" locked={false} />}>
+          <PanelTitle right={<ReqClrBadge required={reqProfile} locked={false} />}>
             NPC DETAILS
           </PanelTitle>
           <dl className={styles.kv}>
@@ -914,7 +974,7 @@ export default function DossierClient({ character, clearance }: Props) {
 
     return (
       <Box>
-        <PanelTitle right={<ReqClrBadge required="H" locked={!canProfile} />}>
+        <PanelTitle right={<ReqClrBadge required={reqProfile} locked={!canProfile} />}>
           NPC DETAILS
         </PanelTitle>
         {canProfile ? (
@@ -926,6 +986,7 @@ export default function DossierClient({ character, clearance }: Props) {
                     value={lore.nameEn}
                     fieldGroup="profile"
                     clearance={clearance}
+                    overrides={overrides}
                   />
                 </span>
               </KVRow>
@@ -936,6 +997,7 @@ export default function DossierClient({ character, clearance }: Props) {
                   content={lore.roleDetail}
                   fieldGroup="profile"
                   clearance={clearance}
+                  overrides={overrides}
                 />
               </KVRow>
             ) : null}
@@ -943,11 +1005,60 @@ export default function DossierClient({ character, clearance }: Props) {
         ) : (
           <LockedSection
             variant="full"
-            required="H"
-            title="CLASSIFIED · H"
+            required={reqProfile}
+            title={`CLASSIFIED · ${reqProfile}`}
             subtitle={"NPC DETAILS\n상위 등급 필요"}
           />
         )}
+      </Box>
+    );
+  };
+
+  /**
+   * CLEARANCE OVERRIDES — GM 전용 박스 단위 노출 권한 오버라이드 편집 UI.
+   *
+   * - 편집 모드 + GM 일 때만 노출. NPC 는 play sheet 가 없어 combatStats / abilities 그룹을 숨김.
+   * - 각 그룹 select: "(기본값)" 선택 시 해당 키를 wire body 에서 제거 → fallback 동작.
+   * - 정적 기본값(`FIELD_REQUIRED_LEVEL[group]`) 을 select label 에 표시해 운영진 의도 파악을 돕는다.
+   */
+  const renderClearanceOverridesEditor = () => {
+    if (!isEditing || !isGM) return null;
+
+    const groups = isAgent
+      ? FIELD_GROUP_ORDER
+      : FIELD_GROUP_ORDER.filter(
+          (g) => g !== "combatStats" && g !== "abilities",
+        );
+
+    return (
+      <Box>
+        <PanelTitle>CLEARANCE OVERRIDES · 박스 노출 등급 (GM)</PanelTitle>
+        <p className={styles.overridesHint}>
+          박스별 최소 열람 등급을 캐릭터 단위로 재정의합니다. <strong>(기본값)</strong>{" "}
+          선택 시 시스템 정적 기본값으로 복원됩니다.
+        </p>
+        <dl className={styles.kv}>
+          {groups.map((group) => {
+            const fallback = FIELD_REQUIRED_LEVEL[group];
+            return (
+              <KVEditSelectRow
+                key={group}
+                label={FIELD_GROUP_LABEL[group]}
+                value={draft.overrides[group]}
+                onChange={(v) =>
+                  updateOverride(group, v as AgentLevel | "")
+                }
+                options={[
+                  { value: "", label: `(기본값) · ${fallback}` },
+                  ...["GM", ...AGENT_LEVELS].map((l) => ({
+                    value: l,
+                    label: `${l} · ${AGENT_LEVEL_LABELS[l as AgentLevel]}`,
+                  })),
+                ]}
+              />
+            );
+          })}
+        </dl>
       </Box>
     );
   };
@@ -959,7 +1070,7 @@ export default function DossierClient({ character, clearance }: Props) {
 
       {/* CHARACTER PROFILE */}
       <Box>
-        <PanelTitle right={<ReqClrBadge required="H" locked={!canProfile} />}>
+        <PanelTitle right={<ReqClrBadge required={reqProfile} locked={!canProfile} />}>
           CHARACTER PROFILE · 인적 사항
         </PanelTitle>
         {renderCharacterProfile()}
@@ -970,6 +1081,9 @@ export default function DossierClient({ character, clearance }: Props) {
 
       {/* NPC 전용 추가 정보 — 데이터 있을 때만 (편집 모드에서는 NPC 라면 항상 표시). */}
       {renderNpcExtras()}
+
+      {/* CLEARANCE OVERRIDES — GM 편집 전용 박스 단위 노출 등급 재정의. */}
+      {renderClearanceOverridesEditor()}
     </>
   );
 
@@ -1002,13 +1116,13 @@ export default function DossierClient({ character, clearance }: Props) {
     if (!canMeta) {
       return (
         <Box>
-          <PanelTitle right={<ReqClrBadge required="V" locked />}>
+          <PanelTitle right={<ReqClrBadge required={reqMeta} locked />}>
             AUDIT TRAIL · 감사 로그
           </PanelTitle>
           <LockedSection
             variant="full"
-            required="V"
-            title="CLASSIFIED · V"
+            required={reqMeta}
+            title={`CLASSIFIED · ${reqMeta}`}
             subtitle={
               "AUDIT TRAIL\nVoidwalker (V) 등급 이상 열람"
             }
@@ -1018,7 +1132,7 @@ export default function DossierClient({ character, clearance }: Props) {
     }
     return (
       <Box>
-        <PanelTitle right={<ReqClrBadge required="V" locked={false} />}>
+        <PanelTitle right={<ReqClrBadge required={reqMeta} locked={false} />}>
           AUDIT TRAIL · 감사 로그
         </PanelTitle>
         <div className={styles.tabEmpty}>
@@ -1053,6 +1167,8 @@ export default function DossierClient({ character, clearance }: Props) {
         title={pageTitle}
         right={headRight}
       />
+
+      <ClearanceStrip clearance={clearance} />
 
       {/* Read-only / 편집 모드 notice */}
       {isEditing ? (
@@ -1132,7 +1248,7 @@ export default function DossierClient({ character, clearance }: Props) {
           {/* IDENTITY */}
           <Box>
             <PanelTitle
-              right={<ReqClrBadge required="G" locked={!canIdentity} />}
+              right={<ReqClrBadge required={reqIdentity} locked={!canIdentity} />}
             >
               IDENTITY
             </PanelTitle>
@@ -1229,6 +1345,7 @@ export default function DossierClient({ character, clearance }: Props) {
                     value={lore.name}
                     fieldGroup="identity"
                     clearance={clearance}
+                    overrides={overrides}
                   />
                 </KVRow>
                 {!isRedactedValue(lore.nameNative) ? (
@@ -1237,6 +1354,7 @@ export default function DossierClient({ character, clearance }: Props) {
                       value={lore.nameNative}
                       fieldGroup="identity"
                       clearance={clearance}
+                      overrides={overrides}
                     />
                   </KVRow>
                 ) : null}
@@ -1246,6 +1364,7 @@ export default function DossierClient({ character, clearance }: Props) {
                       value={lore.nickname}
                       fieldGroup="identity"
                       clearance={clearance}
+                      overrides={overrides}
                     />
                   </KVRow>
                 ) : null}
@@ -1254,6 +1373,7 @@ export default function DossierClient({ character, clearance }: Props) {
                     value={lore.gender}
                     fieldGroup="identity"
                     clearance={clearance}
+                    overrides={overrides}
                   />
                 </KVRow>
                 <KVRow label="나이">
@@ -1261,6 +1381,7 @@ export default function DossierClient({ character, clearance }: Props) {
                     value={lore.age}
                     fieldGroup="identity"
                     clearance={clearance}
+                    overrides={overrides}
                   />
                 </KVRow>
                 <KVRow label="신장">
@@ -1269,6 +1390,7 @@ export default function DossierClient({ character, clearance }: Props) {
                       value={lore.height}
                       fieldGroup="identity"
                       clearance={clearance}
+                      overrides={overrides}
                     />
                   </span>
                 </KVRow>
@@ -1278,6 +1400,7 @@ export default function DossierClient({ character, clearance }: Props) {
                       value={lore.weight}
                       fieldGroup="identity"
                       clearance={clearance}
+                      overrides={overrides}
                     />
                   </span>
                 </KVRow>
@@ -1288,8 +1411,8 @@ export default function DossierClient({ character, clearance }: Props) {
             ) : (
               <LockedSection
                 variant="full"
-                required="G"
-                title="CLASSIFIED · G"
+                required={reqIdentity}
+                title={`CLASSIFIED · ${reqIdentity}`}
                 subtitle={"CODE / 실명 / 성별 / 나이 / 신장\n상위 등급 필요"}
               />
             )}
@@ -1297,7 +1420,7 @@ export default function DossierClient({ character, clearance }: Props) {
 
           {/* AUDIT */}
           <Box>
-            <PanelTitle right={<ReqClrBadge required="V" locked={!canMeta} />}>
+            <PanelTitle right={<ReqClrBadge required={reqMeta} locked={!canMeta} />}>
               AUDIT
             </PanelTitle>
             {canMeta ? (
@@ -1319,8 +1442,8 @@ export default function DossierClient({ character, clearance }: Props) {
             ) : (
               <LockedSection
                 variant="full"
-                required="V"
-                title="CLASSIFIED · V"
+                required={reqMeta}
+                title={`CLASSIFIED · ${reqMeta}`}
                 subtitle={"OWNER / CREATED / UPDATED\nVoidwalker 등급 필요"}
               />
             )}
@@ -1329,7 +1452,7 @@ export default function DossierClient({ character, clearance }: Props) {
           {/* SERVICE RECORD — in-world 활동 통계. AUDIT(시스템 메타)과 분리. */}
           <Box>
             <PanelTitle
-              right={<ReqClrBadge required="G" locked={!canIdentity} />}
+              right={<ReqClrBadge required={reqIdentity} locked={!canIdentity} />}
             >
               SERVICE RECORD
             </PanelTitle>
@@ -1350,8 +1473,8 @@ export default function DossierClient({ character, clearance }: Props) {
             ) : (
               <LockedSection
                 variant="full"
-                required="G"
-                title="CLASSIFIED · G"
+                required={reqIdentity}
+                title={`CLASSIFIED · ${reqIdentity}`}
                 subtitle={"SERVICE RECORD\n상위 등급 필요"}
               />
             )}

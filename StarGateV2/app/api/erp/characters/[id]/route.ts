@@ -86,7 +86,39 @@ const ROOT_ALLOWED_FIELDS_ADMIN = new Set<string>([
   "isPublic",
   "factionCode",
   "institutionCode",
+  "clearanceOverrides",
 ]);
+
+/**
+ * `clearanceOverrides` 객체 sanitize.
+ *
+ * - 유효 키: `FIELD_GROUP_ORDER` (`identity` / `profile` / `combatStats` / `abilities` / `meta`)
+ * - 유효 값: `AGENT_LEVELS` 또는 `"GM"` (RoleLevel 전 8단)
+ * - 잘못된 키/값은 silently drop — fallback 동작
+ * - 결과가 빈 객체면 그대로 `{}` 반환 (DB 에 저장 → 모든 박스 fallback)
+ */
+function sanitizeClearanceOverrides(input: unknown): Record<string, string> | null {
+  if (input === null || typeof input !== "object" || Array.isArray(input)) {
+    return null;
+  }
+  const VALID_GROUPS = new Set<string>([
+    "identity",
+    "profile",
+    "combatStats",
+    "abilities",
+    "meta",
+  ]);
+  const VALID_LEVELS = new Set<string>(["GM", "V", "A", "M", "H", "G", "J", "U"]);
+  const source = input as Record<string, unknown>;
+  const out: Record<string, string> = {};
+  for (const key of Object.keys(source)) {
+    if (!VALID_GROUPS.has(key)) continue;
+    const v = source[key];
+    if (typeof v !== "string" || !VALID_LEVELS.has(v)) continue;
+    out[key] = v;
+  }
+  return out;
+}
 
 export async function PATCH(request: Request, context: RouteContext) {
   const session = await auth();
@@ -162,6 +194,19 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
     body.lore = parsed.data;
+  }
+
+  // clearanceOverrides 는 admin 만 갱신 가능. 유효 FieldGroup × RoleLevel 쌍으로 제한.
+  // body 에 존재하면 sanitize 결과로 교체 (잘못된 키/값 silently drop).
+  // 빈 객체({}) 는 그대로 저장 → 모든 박스 fallback 동작.
+  if (isAdmin && "clearanceOverrides" in body) {
+    const sanitized = sanitizeClearanceOverrides(body.clearanceOverrides);
+    if (sanitized === null) {
+      // null/배열/원시값 같은 잘못된 타입은 silently drop.
+      delete body.clearanceOverrides;
+    } else {
+      body.clearanceOverrides = sanitized;
+    }
   }
 
   // Phase 3+ — sub-document 별 화이트리스트 합성. admin 은 root + lore + play, player 는 lore 8필드.

@@ -5,6 +5,7 @@
   padding: 40px 28px 32px;
   min-height: 560px;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background:
     repeating-linear-gradient(
       0deg,
@@ -379,6 +380,7 @@
 .unassigned__button {
   padding: 16px 18px;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   background: var(--bg-1);
   color: inherit;
   font: inherit;

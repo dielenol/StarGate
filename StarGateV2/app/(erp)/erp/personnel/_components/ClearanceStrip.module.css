@@ -1,0 +1,66 @@
+/* Clearance strip — 권한 등급 pill + 안내 + 등급 안내 버튼 + SOURCE 한 줄 통합 */
+
+.strip {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 10px 16px;
+  border: 1px solid var(--gold-dim);
+  border-left: 2px solid var(--gold);
+  border-radius: var(--radius-sm);
+  background: rgba(201, 168, 90, 0.06);
+  color: var(--ink-1);
+  font-size: 14px;
+}
+
+/* data-rank 주입 시 rank 팔레트로 자동 전환, 미지정 시 gold 폴백 */
+.strip__pill {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 12px;
+  border: 1px solid var(--rank-active-marker, var(--gold-dim));
+  border-radius: var(--radius-sm);
+  color: var(--rank-active-text, var(--gold));
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  flex-shrink: 0;
+}
+
+.strip__body {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.strip__level {
+  color: var(--gold);
+  font-family: var(--font-mono);
+}
+
+.strip__source {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.strip__classified {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+}
+
+@media (max-width: 600px) {
+  .strip__source {
+    margin-left: 0;
+  }
+}

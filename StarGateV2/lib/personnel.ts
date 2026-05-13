@@ -45,12 +45,21 @@ export type FieldGroup =
   | "abilities"
   | "meta";
 
+/**
+ * 필드 그룹별 최소 열람 등급.
+ *
+ * 정책 (2026-05 재조정):
+ *   - 운영 인구의 다수가 J 등급 위주라 J 가 아무 정보도 못 보면 신원조회 페이지가 무용지물.
+ *   - identity / profile 은 J 도 볼 수 있게 풀고, combatStats / abilities 는 단계적 게이트 유지.
+ *
+ * 등급 계층: U < J < G < H < M < A < V < GM
+ */
 export const FIELD_REQUIRED_LEVEL: Record<FieldGroup, AgentLevel> = {
-  identity: "G",
-  profile: "H",
-  combatStats: "H",
-  abilities: "M",
-  meta: "V",
+  identity: "U", // codename / type / 소속(faction/institution/department) / agentLevel — 모두 노출
+  profile: "J", // 외모 / 성격 / 배경 (lore) — J 부터
+  combatStats: "G", // HP / SAN / ATK / DEF / 등급별 stat — G 부터
+  abilities: "H", // 어빌리티 11 슬롯 — H 부터
+  meta: "V", // GM 운영 메타 (createdAt 등) — V 부터
 };
 
 export const FIELD_GROUP_ORDER: readonly FieldGroup[] = [
@@ -78,11 +87,32 @@ export function getUserClearance(userRole: UserRole): AgentLevel {
 
 /* ── 필드 그룹 열람 가능 여부 ── */
 
+/**
+ * 박스(FieldGroup) 단위 노출 권한 오버라이드 맵.
+ *
+ * 캐릭터별 박스별 노출 등급을 GM 이 미세조정할 때 사용한다.
+ * 키가 누락되면 `FIELD_REQUIRED_LEVEL` 기본값으로 fallback — undefined 와 명시적 누락을 동일하게 처리.
+ */
+export type ClearanceOverrides = Partial<Record<FieldGroup, AgentLevel>>;
+
+/**
+ * 특정 fieldGroup 의 효력 요구 등급을 반환.
+ * `overrides` 에 명시된 값이 있으면 그것을, 없으면 `FIELD_REQUIRED_LEVEL` 기본값을 사용.
+ */
+export function getRequiredLevel(
+  fieldGroup: FieldGroup,
+  overrides?: ClearanceOverrides | null,
+): AgentLevel {
+  return overrides?.[fieldGroup] ?? FIELD_REQUIRED_LEVEL[fieldGroup];
+}
+
 export function canViewField(
   viewerLevel: AgentLevel,
   fieldGroup: FieldGroup,
+  overrides?: ClearanceOverrides | null,
 ): boolean {
-  return LEVEL_RANK[viewerLevel] >= LEVEL_RANK[FIELD_REQUIRED_LEVEL[fieldGroup]];
+  const required = getRequiredLevel(fieldGroup, overrides);
+  return LEVEL_RANK[viewerLevel] >= LEVEL_RANK[required];
 }
 
 /* ── 등급 비교 ── */
@@ -118,9 +148,13 @@ const REDACTED = "[CLASSIFIED]";
  * Optional 필드(nameNative/nickname/nameEn/roleDetail/notes/posterImage) 는 원본이 undefined 면
  * 결과도 undefined 유지. "필드 자체가 없음" 과 "마스킹됨" 을 구분해야 검색 oracle 누출 방지.
  */
-function redactLore(lore: LoreSheet, clearance: AgentLevel): LoreSheet {
-  const canIdentity = canViewField(clearance, "identity");
-  const canProfile = canViewField(clearance, "profile");
+function redactLore(
+  lore: LoreSheet,
+  clearance: AgentLevel,
+  overrides?: ClearanceOverrides | null,
+): LoreSheet {
+  const canIdentity = canViewField(clearance, "identity", overrides);
+  const canProfile = canViewField(clearance, "profile", overrides);
 
   // 필수 필드는 항상 마스킹 또는 원본
   const result: LoreSheet = {
@@ -176,9 +210,13 @@ function redactLore(lore: LoreSheet, clearance: AgentLevel): LoreSheet {
  * /erp/personnel 은 play 자체를 노출하지 않으므로 본 함수의 결과는 직접 표시되지 않는다.
  * 그러나 `filterCharacterByClearance` 는 데이터 정합성을 위해 sub-document 를 같이 정리한다.
  */
-function redactPlay(play: PlaySheet, clearance: AgentLevel): PlaySheet {
-  const canCombat = canViewField(clearance, "combatStats");
-  const canAbilities = canViewField(clearance, "abilities");
+function redactPlay(
+  play: PlaySheet,
+  clearance: AgentLevel,
+  overrides?: ClearanceOverrides | null,
+): PlaySheet {
+  const canCombat = canViewField(clearance, "combatStats", overrides);
+  const canAbilities = canViewField(clearance, "abilities", overrides);
 
   return {
     className: play.className,
@@ -200,28 +238,53 @@ function redactPlay(play: PlaySheet, clearance: AgentLevel): PlaySheet {
 }
 
 /**
+ * shared-db 가 갖고 있는 `Partial<Record<string, RoleLevel>>` 형 값을 본 모듈의
+ * `FieldGroup` 키로 좁힌다. 유효 FieldGroup 키 + 유효 AgentLevel 값만 통과.
+ *
+ * shared-db 는 도메인 무지를 유지하기 위해 키를 string 으로 두고, 본 모듈에서
+ * runtime 검증으로 좁혀 사용한다. 잘못된 키/값은 silently 무시되어 fallback 동작.
+ */
+export function normalizeClearanceOverrides(
+  raw: Partial<Record<string, string>> | null | undefined,
+): ClearanceOverrides | undefined {
+  if (!raw) return undefined;
+  const out: ClearanceOverrides = {};
+  for (const group of FIELD_GROUP_ORDER) {
+    const v = raw[group];
+    if (v !== undefined && v in LEVEL_RANK) {
+      out[group] = v as AgentLevel;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/**
  * clearance 등급에 따라 캐릭터 lore/play 의 기밀 필드를 제거한다.
  * 서버 컴포넌트에서 클라이언트에 데이터를 전달하기 전에 호출.
+ *
+ * `character.clearanceOverrides` 가 있으면 박스(FieldGroup) 단위로 요구 등급을
+ * 재정의한다. 잘못된 키/값은 silently 무시 → 기본값(`FIELD_REQUIRED_LEVEL`) fallback.
  */
 export function filterCharacterByClearance(
   character: Character,
   clearance: AgentLevel,
 ): Character {
-  const canMeta = canViewField(clearance, "meta");
+  const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
+  const canMeta = canViewField(clearance, "meta", overrides);
 
   if (character.type === "AGENT") {
     return {
       ...character,
       ownerId: canMeta ? character.ownerId : null,
-      lore: redactLore(character.lore, clearance),
-      play: redactPlay(character.play, clearance),
+      lore: redactLore(character.lore, clearance, overrides),
+      play: redactPlay(character.play, clearance, overrides),
     };
   }
 
   return {
     ...character,
     ownerId: canMeta ? character.ownerId : null,
-    lore: redactLore(character.lore, clearance),
+    lore: redactLore(character.lore, clearance, overrides),
   };
 }
 
@@ -233,7 +296,8 @@ export function filterCharacterForList(
   character: Character,
   clearance: AgentLevel,
 ): Character {
-  const canIdentity = canViewField(clearance, "identity");
+  const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
+  const canIdentity = canViewField(clearance, "identity", overrides);
   if (canIdentity) return character;
 
   return {

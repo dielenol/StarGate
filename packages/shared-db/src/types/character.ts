@@ -247,6 +247,18 @@ interface CharacterBase {
    * change-logs revert 등)에서는 갱신하지 않는다. GM 전용으로 노출.
    */
   bulkUpdatedAt?: Date;
+  /**
+   * 박스(FieldGroup) 단위 노출 권한 오버라이드.
+   *
+   * 키는 lib/personnel.ts `FieldGroup` (identity / profile / combatStats / abilities / meta),
+   * 값은 해당 그룹을 열람하기 위한 최소 등급(`RoleLevel`).
+   *
+   * 미정의 또는 키 누락 시에는 `lib/personnel.ts FIELD_REQUIRED_LEVEL` 기본값이 적용된다.
+   * 캐릭터별 캐릭터별 박스별 노출 등급을 GM 이 미세조정하기 위한 메타 필드 — 본 패키지는
+   * 도메인 무지를 유지하기 위해 키를 `string` 으로 두고, 호출자(StarGateV2) 가 `FieldGroup`
+   * 으로 좁혀 사용한다.
+   */
+  clearanceOverrides?: Partial<Record<string, RoleLevel>>;
 }
 
 export interface AgentCharacter extends CharacterBase {

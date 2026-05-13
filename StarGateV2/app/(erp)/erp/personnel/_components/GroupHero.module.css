@@ -92,10 +92,11 @@
 }
 
 /* sub-unit chip — 균일 grid 배치. onSubUnitClick 가 있으면 button(--clickable),
-   현재 펼쳐진 sub-unit 은 --on 으로 강조. */
+   현재 펼쳐진 sub-unit 은 --on 으로 강조.
+   minmax 최소폭 축소 (140 → 110) — SUB UNITS 영역 폭 증가와 결합해 5 chip 한 줄 안착. */
 .subUnitChips {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 6px;
   margin-top: 8px;
 }
@@ -106,6 +107,7 @@
   gap: 6px;
   padding: 6px 10px;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.02);
   color: var(--ink-1);
   font-family: var(--font-mono);
@@ -172,16 +174,18 @@
   flex-shrink: 0;
 }
 
-/* ── 정보 섹션 그리드 ── */
+/* ── 정보 섹션 그리드 ──
+ * 비율: DOCTRINE 0.8fr / DISTRIBUTION 1.2fr / SUB UNITS 2fr / HEADCOUNT 0.6fr
+ * SUB UNITS 폭을 늘려 chip 5개가 한 줄에 들어가도록. DOCTRINE 은 한 문장이라 좁아도 충분. */
 
 .sections {
   position: relative;
-  margin-top: 20px;
-  padding-top: 18px;
+  margin-top: 16px;
+  padding-top: 14px;
   border-top: 1px dashed var(--line-strong);
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px 22px;
+  grid-template-columns: 0.8fr 1.2fr 2fr 0.6fr;
+  gap: 14px 20px;
 }
 
 @media (max-width: 1100px) {

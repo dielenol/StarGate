@@ -2,7 +2,9 @@
 
 .subunit {
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   background: var(--bg-1);
+  overflow: hidden;
 }
 
 .subunit + .subunit {

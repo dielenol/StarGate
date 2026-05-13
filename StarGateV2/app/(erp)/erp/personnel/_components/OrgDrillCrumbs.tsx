@@ -42,10 +42,15 @@ export default function OrgDrillCrumbs({
       aria-label={ariaLabel}
     >
       {items.map((c, idx) => {
+        // 마지막 2 chip (현재 + 직속 부모) 는 항상 풀 라벨 노출.
+        // 그 외 상위 뎁스는 compact — 기본은 아이콘만, hover/focus 시 label 가로 expand.
+        // iconCode 없으면 compact 적용 안 함 (라벨이 사라지면 식별 불가).
+        const isCompact = idx < items.length - 2 && Boolean(c.iconCode);
         const chipClass = [
           styles.crumb,
           c.href || c.onClick ? styles["crumb--clickable"] : "",
           c.on ? styles["crumb--on"] : "",
+          isCompact ? styles["crumb--compact"] : "",
         ]
           .filter(Boolean)
           .join(" ");
@@ -55,7 +60,7 @@ export default function OrgDrillCrumbs({
             {c.iconCode ? (
               <OrgIcon code={c.iconCode} size={16} className={styles.icon} />
             ) : null}
-            <span>{c.label}</span>
+            <span className={styles.label}>{c.label}</span>
           </>
         );
 

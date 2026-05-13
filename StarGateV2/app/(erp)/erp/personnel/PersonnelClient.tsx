@@ -4,11 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import type { AgentLevel, Character } from "@/types/character";
-import {
-  AGENT_LEVEL_LABELS,
-  FACTIONS,
-  INSTITUTIONS,
-} from "@/types/character";
+import { FACTIONS, INSTITUTIONS } from "@/types/character";
 
 import { usePersonnelQuery } from "@/hooks/queries/useCharactersQuery";
 
@@ -33,8 +29,8 @@ import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
 import Input from "@/components/ui/Input/Input";
 import PageHead from "@/components/ui/PageHead/PageHead";
-import Pips from "@/components/ui/Pips/Pips";
 
+import ClearanceStrip from "./_components/ClearanceStrip";
 import GroupHero from "./_components/GroupHero";
 import OrgCanvas from "./_components/OrgCanvas";
 import OrgDrillCrumbs from "./_components/OrgDrillCrumbs";
@@ -329,6 +325,16 @@ export default function PersonnelClient({
 
   const handleToggleSubUnit = (code: string) => {
     setExpandedSubUnit((prev) => (prev === code ? null : code));
+    // accordion 펼치는 케이스에서만 스크롤 (이미 펼쳐진 chip 재클릭은 close 동작이라 스크롤 불필요).
+    // DOM 갱신 후 동작하도록 다음 frame 에 schedule.
+    if (expandedSubUnit !== code) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`subunit-${code}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
   };
 
   /* ── 파생 값 ── */
@@ -545,39 +551,9 @@ export default function PersonnelClient({
           { label: "PERSONNEL" },
         ]}
         title="신원 조회"
-        right={
-          <div className={styles.headRight}>
-            <span className={styles.clrPill} data-rank={clearance}>
-              <span>
-                권한등급: {clearance} - {AGENT_LEVEL_LABELS[clearance]}
-              </span>
-              <Pips total={7} filled={getLevelDisplayRank(clearance)} />
-            </span>
-            <Button
-              size="sm"
-              onClick={() => {
-                /* Phase 3: 등급 안내 모달 연결 예정 */
-              }}
-            >
-              등급 안내
-            </Button>
-          </div>
-        }
       />
 
-      {/* Clearance notice strip */}
-      <div className={styles.clearanceStrip}>
-        <span className={styles.clearanceStrip__label}>권한등급</span>
-        <span className={styles.clearanceStrip__body}>
-          내 열람 등급{" "}
-          <span className={styles.clearanceStrip__level}>{clearance}</span>{" "}
-          — 이 등급 이상의 필드만 노출됩니다. 상위 등급 필드는{" "}
-          <span className={styles.classifiedTag}>CLASSIFIED</span> 로 표시됩니다.
-        </span>
-        <span className={styles.clearanceStrip__source}>
-          SOURCE · 인사 등록부
-        </span>
-      </div>
+      <ClearanceStrip clearance={clearance} />
 
       {/* Search + Filter bar */}
       <Box className={styles.searchBox}>
@@ -721,6 +697,7 @@ export default function PersonnelClient({
           </div>
         </div>
       </Box>
+
     </>
   );
 }

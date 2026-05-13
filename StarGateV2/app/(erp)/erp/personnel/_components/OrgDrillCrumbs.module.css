@@ -24,6 +24,7 @@
   gap: 7px;
   padding: 5px 10px;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-3);
   background: transparent;
   white-space: nowrap;
@@ -57,6 +58,34 @@
   border-color: var(--gold-dim);
   color: var(--gold);
   background: rgba(201, 168, 90, 0.06);
+}
+
+/* compact chip — 기본은 아이콘만, hover/focus 시 라벨 가로 expand.
+   max-width transition + overflow:hidden 으로 글자 폭 슬라이드. */
+.label {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 200px;
+  transition: max-width 180ms ease, margin-left 180ms ease, opacity 180ms ease;
+}
+
+.crumb--compact {
+  gap: 0;
+}
+
+.crumb--compact .label {
+  max-width: 0;
+  margin-left: 0;
+  opacity: 0;
+}
+
+.crumb--compact:hover .label,
+.crumb--compact:focus-visible .label,
+.crumb--compact:focus-within .label {
+  max-width: 240px;
+  margin-left: 7px;
+  opacity: 1;
 }
 
 .sep {

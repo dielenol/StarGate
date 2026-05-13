@@ -13,6 +13,7 @@
       var(--bg-2) 8px 16px
     );
   border: 1px dashed var(--danger);
+  border-radius: var(--radius-sm);
 }
 
 .fullIcon {
@@ -49,6 +50,7 @@
   padding: 18px 14px;
   text-align: center;
   border: 1px dashed var(--danger);
+  border-radius: var(--radius-sm);
   background: rgba(192, 106, 90, 0.04);
 }
 
