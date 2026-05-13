@@ -8,6 +8,7 @@
     "department": "HQ",
     "factionCode": "COUNCIL",
     "institutionCode": "SECRETARIAT",
+    "agentLevel": "M",
     "previewImage": "/assets/npcs/Registrar-profile.png",
     "isPublic": true,
     "lore": {
