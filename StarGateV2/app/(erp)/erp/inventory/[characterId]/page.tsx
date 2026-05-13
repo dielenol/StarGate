@@ -1,13 +1,18 @@
 import { redirect, notFound } from "next/navigation";
 
-import type { CharacterInventory, MasterItem } from "@/types/inventory";
+import type {
+  CharacterInventory,
+  ItemCategory,
+  MasterItem,
+} from "@/types/inventory";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
-  listCharacterInventory,
+  findMasterItemsByIds,
   listAvailableItems,
+  listCharacterInventory,
 } from "@/lib/db/inventory";
 
 import Box from "@/components/ui/Box/Box";
@@ -15,20 +20,14 @@ import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
+import InventoryClient, {
+  type InventoryClientEntry,
+} from "./InventoryClient";
 import InventoryGrantForm from "./InventoryGrantForm";
 import styles from "./page.module.css";
 
 interface CharacterInventoryPageProps {
   params: Promise<{ characterId: string }>;
-}
-
-function formatDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
 }
 
 export default async function CharacterInventoryPage({
@@ -52,11 +51,35 @@ export default async function CharacterInventoryPage({
 
   let inventory: CharacterInventory[] = [];
   let availableItems: MasterItem[] = [];
+  let categoryByItemId = new Map<string, ItemCategory>();
 
   try {
     inventory = await listCharacterInventory(characterId);
   } catch {
     // DB 연결 실패 시 빈 배열 유지
+  }
+
+  if (inventory.length > 0) {
+    try {
+      const uniqueItemIds = Array.from(
+        new Set(inventory.map((entry) => entry.itemId)),
+      );
+      const masters = await findMasterItemsByIds(uniqueItemIds);
+      categoryByItemId = new Map(
+        masters.map((m) => [String(m._id), m.category]),
+      );
+      // catalog drift 감지: inventory.itemId 가 master_items 에 없는 경우.
+      const orphanIds = uniqueItemIds.filter(
+        (id) => !categoryByItemId.has(id),
+      );
+      if (orphanIds.length > 0) {
+        console.warn(
+          `[inventory] catalog drift: ${orphanIds.length} itemId not found in master_items (characterId=${characterId})`,
+        );
+      }
+    } catch {
+      // master_items 조회 실패 시 categoryByItemId 빈 Map 유지 → 전부 "기타" 탭으로 노출
+    }
   }
 
   if (isGm) {
@@ -66,6 +89,19 @@ export default async function CharacterInventoryPage({
       // 아이템 목록 조회 실패 시 빈 배열 유지
     }
   }
+
+  const entries: InventoryClientEntry[] = inventory.map((entry) => ({
+    _id: String(entry._id),
+    itemId: entry.itemId,
+    itemName: entry.itemName,
+    quantity: entry.quantity,
+    acquiredAt:
+      entry.acquiredAt instanceof Date
+        ? entry.acquiredAt.toISOString()
+        : new Date(entry.acquiredAt).toISOString(),
+    note: entry.note,
+    category: categoryByItemId.get(entry.itemId) ?? null,
+  }));
 
   return (
     <>
@@ -93,50 +129,7 @@ export default async function CharacterInventoryPage({
         </Box>
       ) : null}
 
-      <Box>
-        <PanelTitle
-          right={<span className={styles.mono}>{inventory.length} 개</span>}
-        >
-          INVENTORY
-        </PanelTitle>
-
-        {inventory.length === 0 ? (
-          <div className={styles.empty}>보유 아이템이 없습니다.</div>
-        ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>아이템</th>
-                  <th className={styles.numCol}>수량</th>
-                  <th className={styles.dateCol}>획득일</th>
-                  <th>메모</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inventory.map((entry) => (
-                  <tr key={String(entry._id)}>
-                    <td>{entry.itemName}</td>
-                    <td className={`${styles.numCol} ${styles.mono}`}>
-                      {entry.quantity}
-                    </td>
-                    <td className={`${styles.dateCol} ${styles.mono}`}>
-                      {formatDate(entry.acquiredAt)}
-                    </td>
-                    <td>
-                      {entry.note ? (
-                        entry.note
-                      ) : (
-                        <span className={styles.muted}>-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Box>
+      <InventoryClient entries={entries} />
     </>
   );
 }

@@ -72,6 +72,31 @@ export async function findMasterItemsBySlugs(
     .toArray();
 }
 
+/**
+ * 여러 ObjectId hex 문자열의 master_items 를 한 번에 조회 — projection { _id, category } 만.
+ *
+ * 용도: character_inventory.itemId(=master._id hex) → category 역매핑.
+ * - 유효하지 않은 hex 는 사전에 필터링.
+ * - 입력/유효 ID 가 비면 즉시 short-circuit.
+ */
+export async function findMasterItemsByIds(
+  ids: string[]
+): Promise<Pick<MasterItem, "_id" | "category">[]> {
+  if (ids.length === 0) return [];
+  const objectIds: ObjectId[] = [];
+  for (const id of ids) {
+    if (ObjectId.isValid(id)) objectIds.push(new ObjectId(id));
+  }
+  if (objectIds.length === 0) return [];
+  const col = await masterItemsCol();
+  return col
+    .find(
+      { _id: { $in: objectIds } },
+      { projection: { _id: 1, category: 1 } }
+    )
+    .toArray();
+}
+
 export async function createMasterItem(
   input: CreateMasterItemInput
 ): Promise<MasterItem> {

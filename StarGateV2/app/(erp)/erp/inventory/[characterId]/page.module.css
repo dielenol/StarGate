@@ -18,6 +18,50 @@
   color: var(--ink-3);
 }
 
+/* ── Category tabs ── */
+
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: var(--gap);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.tabs__tab {
+  padding: 10px 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.tabs__tab:hover {
+  color: var(--ink-0);
+}
+
+.tabs__tab--active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+.tabs__count {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.tabs__tab--active .tabs__count {
+  color: var(--gold);
+}
+
 /* ── Table ── */
 
 .tableWrap {
@@ -59,6 +103,10 @@
 
 .dateCol {
   text-align: right;
+  white-space: nowrap;
+}
+
+.catCol {
   white-space: nowrap;
 }
 
