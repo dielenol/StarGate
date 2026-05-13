@@ -114,89 +114,86 @@ export default function InventoryClient({ entries }: InventoryClientProps) {
         INVENTORY
       </PanelTitle>
 
-      {entries.length === 0 ? (
-        <div className={styles.empty}>보유 아이템이 없습니다.</div>
-      ) : (
-        <>
-          <div
-            role="tablist"
-            aria-label="인벤토리 카테고리"
-            className={styles.tabs}
-          >
-            {TAB_DEFS.map((tab) => {
-              const isActive = activeTab === tab.value;
-              const count = countByTab[tab.value];
-              return (
-                <button
-                  key={tab.value}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  tabIndex={isActive ? 0 : -1}
-                  className={[
-                    styles.tabs__tab,
-                    isActive ? styles["tabs__tab--active"] : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() => setActiveTab(tab.value)}
-                >
-                  {tab.label}{" "}
-                  <span className={styles.tabs__count}>· {count}</span>
-                </button>
-              );
-            })}
-          </div>
+      {/* 탭은 항상 렌더 — 보유 0개여도 카테고리 구조를 노출해 일관된 UX 유지. */}
+      <div
+        role="tablist"
+        aria-label="인벤토리 카테고리"
+        className={styles.tabs}
+      >
+        {TAB_DEFS.map((tab) => {
+          const isActive = activeTab === tab.value;
+          const count = countByTab[tab.value];
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
+              className={[
+                styles.tabs__tab,
+                isActive ? styles["tabs__tab--active"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={() => setActiveTab(tab.value)}
+            >
+              {tab.label}{" "}
+              <span className={styles.tabs__count}>· {count}</span>
+            </button>
+          );
+        })}
+      </div>
 
-          {filteredEntries.length === 0 ? (
-            <div className={styles.empty}>
-              이 카테고리에 보유 아이템이 없습니다.
-            </div>
-          ) : (
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>아이템</th>
-                    <th className={styles.catCol}>분류</th>
-                    <th className={styles.numCol}>수량</th>
-                    <th className={styles.dateCol}>획득일</th>
-                    <th>메모</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEntries.map((entry) => (
-                    <tr key={entry._id}>
-                      <td>{entry.itemName}</td>
-                      <td className={styles.catCol}>
-                        <span
-                          className={
-                            entry.category === null ? styles.muted : undefined
-                          }
-                        >
-                          {categoryLabel(entry.category)}
-                        </span>
-                      </td>
-                      <td className={`${styles.numCol} ${styles.mono}`}>
-                        {entry.quantity}
-                      </td>
-                      <td className={`${styles.dateCol} ${styles.mono}`}>
-                        {formatDate(entry.acquiredAt)}
-                      </td>
-                      <td>
-                        {entry.note ? (
-                          entry.note
-                        ) : (
-                          <span className={styles.muted}>-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
+      {filteredEntries.length === 0 ? (
+        <div className={styles.empty}>
+          {entries.length === 0
+            ? "보유 아이템이 없습니다."
+            : "이 카테고리에 보유 아이템이 없습니다."}
+        </div>
+      ) : (
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>아이템</th>
+                <th className={styles.catCol}>분류</th>
+                <th className={styles.numCol}>수량</th>
+                <th className={styles.dateCol}>획득일</th>
+                <th>메모</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEntries.map((entry) => (
+                <tr key={entry._id}>
+                  <td>{entry.itemName}</td>
+                  <td className={styles.catCol}>
+                    <span
+                      className={
+                        entry.category === null ? styles.muted : undefined
+                      }
+                    >
+                      {categoryLabel(entry.category)}
+                    </span>
+                  </td>
+                  <td className={`${styles.numCol} ${styles.mono}`}>
+                    {entry.quantity}
+                  </td>
+                  <td className={`${styles.dateCol} ${styles.mono}`}>
+                    {formatDate(entry.acquiredAt)}
+                  </td>
+                  <td>
+                    {entry.note ? (
+                      entry.note
+                    ) : (
+                      <span className={styles.muted}>-</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Box>
   );
