@@ -1,11 +1,19 @@
 import type { ObjectId } from "mongodb";
 
-export type ItemCategory =
-  | "WEAPON"
-  | "ARMOR"
-  | "CONSUMABLE"
-  | "MATERIAL"
-  | "SPECIAL";
+/**
+ * MasterItem.category 의 단일 출처 (SSOT).
+ * Zod enum 도 동일 배열로부터 유도하여 type/schema 가 절대 lag 하지 않도록 한다.
+ * - 신규 카테고리 추가 시 이 배열만 수정 → `ItemCategory` 타입과 모든 schema enum 이 자동 반영됨
+ */
+export const ITEM_CATEGORIES = [
+  "WEAPON",
+  "ARMOR",
+  "CONSUMABLE",
+  "MATERIAL",
+  "SPECIAL",
+] as const;
+
+export type ItemCategory = (typeof ITEM_CATEGORIES)[number];
 
 /**
  * 편의점 페이지 그룹 — tia_bot `SHOP_PAGES` 와 정합.
@@ -48,6 +56,22 @@ export interface MasterItem {
   isAvailable: boolean;
   createdAt: Date;
   updatedAt: Date;
+  /* ── equipment / consumable 카탈로그 mirror 필드 (optional) ──
+     spec MD frontmatter + body 섹션을 master_items 에 적재할 때 사용.
+     기존 비편의점/편의점 row 는 모두 undefined 로 유지되며 backward-compatible. */
+  nameEn?: string;
+  tags?: string[];
+  previewImage?: string;
+  isPublic?: boolean;
+  lore?: {
+    background?: string;
+    acquisition?: string;
+    notes?: string;
+  };
+  loreMd?: string;
+  source?: "discord" | "legacy-json" | "manual" | "create-lore";
+  authorId?: string;
+  authorName?: string;
 }
 
 export interface CharacterInventory {

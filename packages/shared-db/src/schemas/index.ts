@@ -1,4 +1,6 @@
 export * from "./common.js";
+export * from "./consumable.schema.js";
+export * from "./equipment.schema.js";
 export * from "./faction.schema.js";
 export * from "./institution.schema.js";
 export * from "./npc.schema.js";

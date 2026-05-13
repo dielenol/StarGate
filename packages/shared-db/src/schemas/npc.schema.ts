@@ -5,6 +5,7 @@ import {
   dateSchema,
   isoDateStringSchema,
   loreSourceSchema,
+  previewImageSchema,
 } from "./common.js";
 
 /* ── LoreSheet 스키마 (types/character.ts LoreSheet 거울) ──
@@ -105,16 +106,11 @@ export const playSheetSchema = z.object({
 
 /* ── 공통 필드 ── */
 
-// previewImage는 3가지를 모두 허용:
+// previewImage는 3가지를 모두 허용 (common.ts previewImageSchema 공유):
 //   1) 절대 URL (`https://…`)
 //   2) 서버 루트 상대경로 (`/assets/…`) — Next.js /public 또는 CDN 프록시 전제
 //   3) 빈 문자열 — 아직 지정되지 않음
 // 빈 문자열은 DB 어댑터(toDbNpc)에서 `""`로 유지, frontmatter 파서는 빈 라인을 "" 로 주므로 동일 경로 수용.
-const previewImageSchema = z.union([
-  z.url(),
-  z.string().regex(/^\//, "서버 루트 상대경로는 '/'로 시작해야 합니다."),
-  z.literal(""),
-]);
 
 /** types/character.ts AgentLevel 거울. NPC에도 CharacterBase 규약상 optional. */
 const agentLevelSchema = z.enum(["V", "A", "M", "H", "G", "J", "U"]);

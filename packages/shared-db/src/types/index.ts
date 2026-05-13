@@ -74,6 +74,7 @@ export type {
   CreateMasterItemInput,
   CreateInventoryInput,
 } from "./inventory.js";
+export { ITEM_CATEGORIES } from "./inventory.js";
 
 export type {
   WikiPage,

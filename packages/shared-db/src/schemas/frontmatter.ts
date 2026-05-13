@@ -1,4 +1,14 @@
 import {
+  consumableDocSchema,
+  consumableFrontmatterSchema,
+  type ConsumableDoc,
+} from "./consumable.schema.js";
+import {
+  equipmentDocSchema,
+  equipmentFrontmatterSchema,
+  type EquipmentDoc,
+} from "./equipment.schema.js";
+import {
   factionDocSchema,
   factionFrontmatterSchema,
   type FactionDoc,
@@ -32,10 +42,17 @@ const BODY_SECTION_ALIASES: Record<string, string> = {
   "이름 설명": "notes",
   "이름/코드네임 설명": "notes",
   "notes": "notes",
+  "비고": "notes",
   "이념/가치관": "ideology",
   "ideology": "ideology",
   "임무": "mission",
   "mission": "mission",
+  "설명": "description",
+  "description": "description",
+  "획득": "acquisition",
+  "획득 경로": "acquisition",
+  "획득경로": "acquisition",
+  "acquisition": "acquisition",
 };
 
 function canonicalSectionId(raw: string): string | null {
@@ -416,4 +433,144 @@ export function toDbNpc(
   };
 
   return npcDocSchema.parse(candidate);
+}
+
+/* ── Equipment / Consumable 어댑터 ──
+   spec MD frontmatter + body 섹션 → master_items 미러 문서.
+   body 섹션은 "## 설명 / 배경 / 획득 경로 / 비고" 4종을 추출하고
+   description 은 frontmatter 가 비어 있을 경우 body "## 설명" 으로 폴백한다.
+   배경/획득/비고는 lore.* sub-document 에 적재. */
+
+interface CatalogBodySections {
+  description?: string;
+  background?: string;
+  acquisition?: string;
+  notes?: string;
+}
+
+/**
+ * parseMdBody 결과(`Record<string, string>`) 에서 카탈로그 어댑터가 사용하는
+ * 4개 섹션만 명시적으로 골라낸다. 캐스팅으로 좁히면 record 의 임의 키가
+ * sections 에 슬쩍 흘러들 수 있어 타입 안전성 저하 → 명시 picker 로 차단.
+ */
+function pickCatalogBodySections(
+  sections: Record<string, string>,
+): CatalogBodySections {
+  return {
+    description: sections.description,
+    background: sections.background,
+    acquisition: sections.acquisition,
+    notes: sections.notes,
+  };
+}
+
+function pickCatalogLore(
+  sections: CatalogBodySections
+): { background?: string; acquisition?: string; notes?: string } | undefined {
+  if (!sections.background && !sections.acquisition && !sections.notes) {
+    return undefined;
+  }
+  return {
+    background: sections.background,
+    acquisition: sections.acquisition,
+    notes: sections.notes,
+  };
+}
+
+/**
+ * Equipment frontmatter + body → EquipmentDoc.
+ *
+ * Faction/Institution 어댑터는 frontmatter.loreMd 를 우선 사용하지만
+ * 카탈로그는 body 전체를 그대로 loreMd 에 보존 (의도된 비일관 — body 가 단일 진실원).
+ */
+export function toDbEquipment(
+  frontmatter: unknown,
+  body: string
+): EquipmentDoc {
+  const parsed = equipmentFrontmatterSchema.parse(frontmatter);
+  const sections = pickCatalogBodySections(parseMdBody(body));
+  const n = now();
+
+  // frontmatter.description 이 있으면 우선 사용, 비어 있으면 body "## 설명" 으로 폴백.
+  // 둘 다 비어 있으면 명시적 에러 — frontmatter 의 description 은 optional 이지만,
+  // 최종 EquipmentDoc.description 은 min(1) 이므로 어댑터 단계에서 조기 거절한다.
+  const description = parsed.description ?? sections.description ?? "";
+  if (description.length === 0) {
+    throw new Error(
+      "equipment 어댑터: description 이 frontmatter 또는 body '## 설명' 에 반드시 있어야 합니다",
+    );
+  }
+
+  const candidate: EquipmentDoc = {
+    code: parsed.code,
+    slug: parsed.slug,
+    name: parsed.name,
+    nameEn: parsed.nameEn,
+    category: parsed.category,
+    price: parsed.price,
+    damage: parsed.damage,
+    description,
+    // previewImage 는 카탈로그 미지정 케이스 undefined 보존 (NPC 와 다른 정책).
+    previewImage: parsed.previewImage,
+    isAvailable: parsed.isAvailable,
+    isPublic: parsed.isPublic,
+    tags: parsed.tags,
+    loreMd: body.trim() !== "" ? body : undefined,
+    lore: pickCatalogLore(sections),
+    source: parsed.source,
+    createdAt: coerceDate(parsed.createdAt, n),
+    updatedAt: coerceDate(parsed.updatedAt, n),
+    authorId: parsed.authorId,
+    authorName: parsed.authorName,
+  };
+
+  return equipmentDocSchema.parse(candidate);
+}
+
+/**
+ * Consumable frontmatter + body → ConsumableDoc.
+ *
+ * Faction/Institution 어댑터는 frontmatter.loreMd 를 우선 사용하지만
+ * 카탈로그는 body 전체를 그대로 loreMd 에 보존 (의도된 비일관 — body 가 단일 진실원).
+ */
+export function toDbConsumable(
+  frontmatter: unknown,
+  body: string
+): ConsumableDoc {
+  const parsed = consumableFrontmatterSchema.parse(frontmatter);
+  const sections = pickCatalogBodySections(parseMdBody(body));
+  const n = now();
+
+  // description 폴백 — equipment 와 동일 정책.
+  const description = parsed.description ?? sections.description ?? "";
+  if (description.length === 0) {
+    throw new Error(
+      "consumable 어댑터: description 이 frontmatter 또는 body '## 설명' 에 반드시 있어야 합니다",
+    );
+  }
+
+  const candidate: ConsumableDoc = {
+    code: parsed.code,
+    slug: parsed.slug,
+    name: parsed.name,
+    nameEn: parsed.nameEn,
+    category: parsed.category,
+    price: parsed.price,
+    effect: parsed.effect,
+    description,
+    // previewImage 는 카탈로그 미지정 케이스 undefined 보존 (NPC 와 다른 정책).
+    previewImage: parsed.previewImage,
+    isAvailable: parsed.isAvailable,
+    isPublic: parsed.isPublic,
+    tags: parsed.tags,
+    loreMd: body.trim() !== "" ? body : undefined,
+    lore: pickCatalogLore(sections),
+    source: parsed.source,
+    createdAt: coerceDate(parsed.createdAt, n),
+    updatedAt: coerceDate(parsed.updatedAt, n),
+    authorId: parsed.authorId,
+    authorName: parsed.authorName,
+  };
+
+  return consumableDocSchema.parse(candidate);
 }
