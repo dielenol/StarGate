@@ -32,7 +32,7 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Seal from "@/components/ui/Seal/Seal";
 import Spread from "@/components/ui/Spread/Spread";
 import Stack from "@/components/ui/Stack/Stack";
-import Tag from "@/components/ui/Tag/Tag";
+import Tag, { rankTone } from "@/components/ui/Tag/Tag";
 
 import styles from "./page.module.css";
 
@@ -299,7 +299,9 @@ export default async function ERPDashboardPage() {
                   <div className={styles.charMini__tags}>
                     <Tag tone="gold">{myChar.type}</Tag>
                     {myChar.agentLevel ? (
-                      <Tag tone="default">권한 {myChar.agentLevel}</Tag>
+                      <Tag tone={rankTone(myChar.agentLevel) ?? "default"}>
+                        권한 {myChar.agentLevel}
+                      </Tag>
                     ) : null}
                   </div>
                 </div>

@@ -29,6 +29,7 @@
 }
 
 .sidebar__item {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -37,21 +38,36 @@
   color: var(--ink-1);
   font-size: 14px;
   text-decoration: none;
-  border-left: 2px solid transparent;
+  border-radius: var(--radius-sm);
   transition:
-    background-color 0.15s ease,
+    background 0.15s ease,
     color 0.15s ease;
 }
 
-.sidebar__item:hover {
+/* active 아이템에는 hover 시각 효과 미적용 — active 그라데이션/골드 톤 그대로 유지 */
+.sidebar__item:not(.sidebar__item--active):hover {
   background: var(--bg-2);
   color: var(--ink-0);
 }
 
+/* 활성 아이템 — 골드 그라데이션 배경(좌→우 fade) + 텍스트 골드 + 살짝 굵게.
+   우측에 도트풍 체크 SVG(sidebar__activeMark) 가 active 표시. */
 .sidebar__item--active {
-  background: var(--bg-2);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--gold) 16%, transparent) 0%,
+    color-mix(in srgb, var(--gold) 4%, transparent) 100%
+  );
   color: var(--gold);
-  border-left-color: var(--gold);
+  font-weight: 500;
+}
+
+/* active 시 우측 끝 도트 체크 마크 */
+.sidebar__activeMark {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--gold);
 }
 
 .sidebar__item--disabled {
@@ -102,6 +118,7 @@
 .sidebar__badge {
   padding: 2px 7px;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;

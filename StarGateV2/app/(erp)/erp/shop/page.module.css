@@ -29,6 +29,7 @@
   padding: 6px 12px;
   background: transparent;
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   color: var(--gold);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -125,6 +126,7 @@
   height: 22px;
   background: transparent;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -204,6 +206,7 @@
   padding: 3px 8px;
   background: rgba(201, 168, 90, 0.12);
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   color: var(--gold);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -287,6 +290,7 @@
   padding: 10px;
   background: var(--gold);
   border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
   color: var(--bg);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -337,6 +341,7 @@
   padding: 10px 12px;
   background: var(--bg-2);
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 
 .inventoryItem__icon {
@@ -379,6 +384,7 @@
   padding: 6px 12px;
   background: transparent;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-1);
   font-family: var(--font-mono);
   font-size: 14px;

@@ -32,6 +32,7 @@
   padding: 12px 14px;
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
   color: var(--danger);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -42,6 +43,7 @@
   padding: 12px 14px;
   background: color-mix(in srgb, var(--success) 10%, transparent);
   border: 1px solid var(--success);
+  border-radius: var(--radius-sm);
   color: var(--success);
   font-family: var(--font-mono);
   font-size: 14px;

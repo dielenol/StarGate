@@ -59,6 +59,12 @@
   --gap: 18px;
   --pad: 18px;
   --radius: 0px;
+  /* Box / 카드 / 입력 등 일반 컨테이너용 약한 라운드.
+     sharp 톤 유지하면서 모서리만 살짝 부드럽게.
+     corner tick 붙은 영역(PosterHero portrait, ClearanceGuideModal dialog,
+     ShopModal dialog 등)은 직각 가정이라 sharp(0) 유지. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --sidebar-w: 232px;
   --topbar-h: 56px;
 

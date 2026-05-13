@@ -5,6 +5,7 @@
   padding: 7px 12px;
   background: transparent;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-1);
   font-family: var(--font-mono);
   font-size: 14px;

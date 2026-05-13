@@ -24,8 +24,10 @@
 
 .ctrl {
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: var(--bg-1);
   margin-bottom: 16px;
+  overflow: hidden;
 }
 
 .ctrlRow {
@@ -187,6 +189,7 @@
   padding: 5px 10px;
   background: transparent;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -255,6 +258,7 @@
   margin-top: 16px;
   background: color-mix(in srgb, var(--info) 6%, transparent);
   border-left: 2px solid var(--info);
+  border-radius: var(--radius-sm);
   color: var(--ink-1);
   font-size: 14px;
 }
@@ -308,7 +312,9 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: var(--bg-1);
+  overflow: hidden;
 }
 
 .statCell {
@@ -348,6 +354,7 @@
 .railCard {
   padding: 14px 16px 16px;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: var(--bg-1);
 }
 
@@ -407,6 +414,7 @@
   padding: 10px;
   background: var(--bg);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   min-width: 0;
   overflow: hidden;
   cursor: pointer;
@@ -474,6 +482,7 @@
 .rsvpCd {
   padding: 4px 8px;
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   color: var(--gold);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -538,6 +547,7 @@
 .openCd {
   padding: 4px 8px;
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   color: var(--gold);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -555,7 +565,9 @@
 
 .list {
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: var(--bg-1);
+  overflow: hidden;
 }
 
 .listMonth {
@@ -587,6 +599,7 @@
   padding: 5px 12px;
   background: transparent;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -834,6 +847,7 @@
   margin: 0;
   padding: 16px 18px;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: var(--bg-1);
 }
 
@@ -872,7 +886,9 @@
 
 .listParticipants__group {
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: var(--bg-1);
+  overflow: hidden;
 }
 
 .listParticipants__head {
@@ -982,6 +998,7 @@
   align-items: center;
   padding: 7px 14px;
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--gold) 6%, transparent);
   color: var(--gold);
   font-family: var(--font-mono);

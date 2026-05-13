@@ -67,7 +67,9 @@ export default async function AccountPage() {
               )}
             </div>
             <h2 className={styles.sideHeader__name}>{user.displayName}</h2>
-            <div className={styles.sideHeader__role}>{user.role}</div>
+            <div className={styles.sideHeader__role} data-rank={user.role}>
+              {user.role}
+            </div>
             <div className={styles.sideHeader__sub}>{user.username}</div>
           </div>
 
@@ -76,6 +78,7 @@ export default async function AccountPage() {
               className={`${styles.roleBadge} ${
                 isGm ? styles["roleBadge--gm"] : ""
               }`}
+              data-rank={user.role}
             >
               권한등급 · {user.role}
             </span>
@@ -160,6 +163,7 @@ export default async function AccountPage() {
                     className={`${styles.roleBadge} ${
                       isGm ? styles["roleBadge--gm"] : ""
                     }`}
+                    data-rank={user.role}
                   >
                     {user.role}
                   </span>

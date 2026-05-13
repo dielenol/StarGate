@@ -19,6 +19,7 @@
   height: 36px;
   background: transparent;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-0);
   font-size: 15px;
   cursor: pointer;
@@ -101,6 +102,7 @@
   padding: 9px 14px;
   background: var(--bg-2);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -170,6 +172,7 @@
 .header__userRole {
   padding: 3px 8px;
   border: 1px solid var(--rank-active-marker, var(--gold-dim));
+  border-radius: var(--radius-sm);
   color: var(--rank-active-text, var(--gold));
   font-family: var(--font-mono);
   font-size: 14px;
@@ -181,6 +184,7 @@
   padding: 4px 10px;
   background: transparent;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-1);
   font-family: var(--font-mono);
   font-size: 14px;

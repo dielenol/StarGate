@@ -7,6 +7,7 @@
   height: 44px;
   background: var(--bg-2);
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   color: var(--gold);
   font-family: var(--font-mono);
 }

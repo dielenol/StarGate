@@ -11,6 +11,7 @@
   padding: 10px 12px;
   background: var(--bg-2);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-0);
   font-family: var(--font-body);
   font-size: 15px;
@@ -46,6 +47,7 @@
 .error {
   padding: 12px 14px;
   border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   color: var(--danger);
   font-size: 14px;

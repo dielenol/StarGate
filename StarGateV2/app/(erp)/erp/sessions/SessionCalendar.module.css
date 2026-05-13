@@ -3,7 +3,9 @@
 .cal {
   position: relative;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: var(--bg-1);
+  overflow: hidden;
 }
 
 /* Floating month nav — 캘린더 좌/우 가장자리에 떠 있음. */
@@ -194,6 +196,7 @@
 .todayTag {
   padding: 2px 6px;
   background: var(--gold);
+  border-radius: var(--radius-sm);
   color: var(--bg);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -380,6 +383,7 @@
   margin: 12px;
   padding: 12px 14px;
   border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   color: var(--danger);
   font-size: 14px;

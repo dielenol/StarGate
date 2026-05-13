@@ -20,10 +20,13 @@
   position: relative;
   background: var(--bg-1);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
 }
 .box::before {
   content: ""; position: absolute; inset: 4px;
-  border: 1px solid rgba(201,169,97,0.05); pointer-events: none;
+  border: 1px solid rgba(201,169,97,0.05);
+  border-radius: calc(var(--radius-sm) - 3px);
+  pointer-events: none;
 }
 
 .panelTitle {
@@ -108,16 +111,18 @@
   font-size: 22px; font-weight: 600;
   color: var(--ink-0); letter-spacing: 0.02em;
 }
+/* data-rank 가 주입되면 rank 팔레트로 자동 전환, 미지정 시 gold 폴백 */
 .sideHeader__role {
   font-family: var(--font-mono);
   font-size: 14px; letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--rank-active-text, var(--gold));
   display: flex; align-items: center; gap: 10px;
 }
 .sideHeader__role::before,
 .sideHeader__role::after {
-  content: ""; width: 14px; height: 1px; background: var(--gold-dim);
+  content: ""; width: 14px; height: 1px;
+  background: var(--rank-active-marker, var(--gold-dim));
 }
 .sideHeader__sub {
   font-family: var(--font-mono);
@@ -130,28 +135,29 @@
   border-bottom: 1px dashed var(--line);
 }
 
-/* ---------- role / status badges ---------- */
+/* ---------- role / status badges ----------
+   data-rank 주입 시 rank 팔레트로 자동 전환. roleBadge--gm 은 sparkle 마커용으로 유지. */
 .roleBadge {
   font-family: var(--font-mono);
   font-size: 14px; letter-spacing: 0.18em;
   text-transform: uppercase;
   padding: 6px 10px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--rank-active-marker, var(--line-strong));
+  border-radius: var(--radius-sm);
   background: var(--bg-2);
-  color: var(--ink-1);
+  color: var(--rank-active-text, var(--ink-1));
   line-height: 1;
   display: inline-flex; align-items: center; gap: 6px;
   height: 26px;
   white-space: nowrap;
 }
 .roleBadge--gm {
-  color: var(--gold);
-  border-color: var(--gold-dim);
-  background: rgba(201,169,97,0.08);
+  background: color-mix(in srgb, var(--rank-active-text, var(--gold)) 8%, var(--bg-2));
 }
 .roleBadge--gm::before {
   content: ""; width: 5px; height: 5px;
-  background: var(--gold); transform: rotate(45deg);
+  background: var(--rank-active-marker, var(--gold));
+  transform: rotate(45deg);
 }
 
 .statusBadge {
@@ -160,6 +166,7 @@
   text-transform: uppercase;
   padding: 6px 10px;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   background: var(--bg-2);
   color: var(--ink-1);
   line-height: 1;
@@ -280,12 +287,15 @@
   width: 64px; height: 64px;
   flex-shrink: 0;
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   background: var(--bg-2);
   overflow: hidden;
 }
 .discord__avatar::before {
   content: ""; position: absolute; inset: 3px;
-  border: 1px solid rgba(201,169,97,0.18); pointer-events: none; z-index: 2;
+  border: 1px solid rgba(201,169,97,0.18);
+  border-radius: calc(var(--radius-sm) - 3px);
+  pointer-events: none; z-index: 2;
 }
 .discord__avatar img,
 .discord__avatarFallback {
@@ -344,6 +354,7 @@
   padding: 5px 10px;
   line-height: 1;
   border: 1px solid;
+  border-radius: var(--radius-sm);
   display: inline-flex; align-items: center; gap: 6px;
   height: 24px;
   white-space: nowrap;
@@ -387,6 +398,7 @@
 .ghostBtn {
   color: var(--ink-1);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
 }
 .ghostBtn:hover {
   color: var(--gold);
@@ -401,6 +413,7 @@
 .primaryBtn {
   color: var(--gold);
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   background: linear-gradient(rgba(201,169,97,0.08), rgba(201,169,97,0.08));
   font-weight: 600;
 }

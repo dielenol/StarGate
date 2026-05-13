@@ -18,6 +18,7 @@
   width: min(92vw, 620px);
   background: var(--bg-1);
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
 }
 
 .input {

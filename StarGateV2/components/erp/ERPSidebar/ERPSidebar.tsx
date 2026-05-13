@@ -9,7 +9,7 @@ import { useSession } from "next-auth/react";
 import type { NavItem } from "@/components/erp/nav-config";
 
 import { NAV_GROUPS } from "@/components/erp/nav-config";
-import { IconChevronLeft } from "@/components/icons";
+import { IconCheckDot, IconChevronLeft } from "@/components/icons";
 
 import { hasRole } from "@/lib/auth/rbac";
 
@@ -127,6 +127,12 @@ export default function ERPSidebar() {
                         {item.label}
                       </span>
                     </span>
+                    {active ? (
+                      <IconCheckDot
+                        className={styles.sidebar__activeMark}
+                        aria-hidden
+                      />
+                    ) : null}
                   </Link>
                 );
               })}

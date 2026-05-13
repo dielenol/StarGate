@@ -23,6 +23,7 @@
 .ghostBtn {
   color: var(--ink-1);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
 }
 .ghostBtn:hover {
   color: var(--gold);
@@ -41,6 +42,7 @@
 .primaryBtn {
   color: var(--gold);
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   background: linear-gradient(
     rgba(201, 169, 97, 0.08),
     rgba(201, 169, 97, 0.08)

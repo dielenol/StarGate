@@ -18,7 +18,9 @@
   flex-direction: column;
   background: var(--bg-1);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-0);
+  overflow: hidden;
 }
 
 .header {
@@ -58,6 +60,7 @@
   place-items: center;
   background: transparent;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   color: var(--ink-2);
   cursor: pointer;
   font-size: 14px;
@@ -78,6 +81,7 @@
   padding: 10px 14px;
   background: rgba(196, 50, 50, 0.08);
   border: 1px solid var(--danger, #c43232);
+  border-radius: var(--radius-sm);
   color: var(--danger, #c43232);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -166,6 +170,7 @@
   padding: 6px 8px;
   background: var(--bg-2);
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   color: var(--ink-0);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -191,6 +196,7 @@
   margin-left: 8px;
   padding: 1px 6px;
   border: 1px solid var(--danger, #c43232);
+  border-radius: var(--radius-sm);
   color: var(--danger, #c43232);
   font-size: 14px;
   letter-spacing: 0.08em;
@@ -201,6 +207,7 @@
   padding: 4px 10px;
   background: transparent;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -248,6 +255,7 @@
   text-transform: uppercase;
   cursor: pointer;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 
 .btnGhost {

@@ -54,6 +54,7 @@
   padding: 9px 12px;
   background: var(--bg-2);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-0);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -103,6 +104,7 @@
   padding: 12px 14px;
   color: var(--danger);
   border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   font-size: 14px;
 }

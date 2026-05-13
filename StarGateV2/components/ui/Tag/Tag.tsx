@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 import styles from "./Tag.module.css";
 
-type TagTone =
+export type TagTone =
   | "default"
   | "gold"
   | "info"
@@ -44,6 +44,17 @@ const TONE_CLASS: Record<TagTone, string> = {
   "rank-j": "tag--rankJ",
   "rank-u": "tag--rankU",
 };
+
+/**
+ * 권한 등급 코드(`V`/`A`/`M`/`H`/`G`/`J`/`U`/`GM`) → Tag tone 변환.
+ * 매핑 실패 시 undefined 반환 (호출처에서 fallback tone 처리).
+ */
+export function rankTone(level: string | undefined | null): TagTone | undefined {
+  if (!level) return undefined;
+  const lc = level.toLowerCase();
+  const candidate = `rank-${lc}` as TagTone;
+  return candidate in TONE_CLASS ? candidate : undefined;
+}
 
 export default function Tag({
   children,

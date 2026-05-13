@@ -130,6 +130,7 @@
   padding: 4px 10px;
   background: transparent;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
@@ -194,6 +195,7 @@
   gap: 6px;
   padding: 8px 10px;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: var(--bg-1);
 }
 
@@ -257,6 +259,7 @@
   padding: 4px 12px;
   background: transparent;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   color: var(--ink-1);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
