@@ -214,8 +214,8 @@ export async function buildInitialSessionCandidates(
 export async function buildGrantTargets(): Promise<GrantTargetUser[]> {
   // listUsers 는 UserPublic[] (필요 필드만).
   // 메인 캐릭이 없는 user 는 silent drop 금지 — 폼에서 disabled 옵션으로 노출한다.
-  // 메인 캐릭이 더미(isPublic === false) 인 user 는 mainCharacterId=null 로 처리해
-  // GM 의 발급 사고를 차단 (disabled 옵션으로 표시 — 미등록과 동일 UX).
+  // 더미(isPublic === false) 캐릭도 발급 대상에 포함하되, UI 가 [DUMMY] 로 마킹해
+  // GM 이 실수로 더미를 고르지 않도록 시각적으로 구분 (KPI/잔액 보드/로그는 여전히 제외).
   const users = await listUsers();
 
   // 1인 1 MAIN 정합성 위반 시 findMainCharacterByOwner 가 throw — 그 경우 null 처리.
@@ -227,15 +227,13 @@ export async function buildGrantTargets(): Promise<GrantTargetUser[]> {
       } catch {
         main = null;
       }
-      // 더미 캐릭 보유 user 는 mainCharacterId/Codename 을 null 로 흡수.
-      // GrantForm 의 ownerOptions 가 mainCharacterId === null 을 disabled 로 표시.
-      const publicMain = main && main.isPublic !== false ? main : null;
       return {
         userId: u._id,
         username: u.username,
         displayName: u.displayName,
-        mainCharacterId: publicMain ? String(publicMain._id) : null,
-        mainCharacterCodename: publicMain?.codename ?? null,
+        mainCharacterId: main ? String(main._id) : null,
+        mainCharacterCodename: main?.codename ?? null,
+        isDummy: main ? main.isPublic === false : false,
       };
     }),
   );

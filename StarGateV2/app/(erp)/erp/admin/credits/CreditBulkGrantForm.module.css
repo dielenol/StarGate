@@ -140,6 +140,18 @@
   margin-left: auto;
 }
 
+.bulk__targetDummy {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .bulk__selectedCount {
   color: var(--gold);
   font-family: var(--font-mono);

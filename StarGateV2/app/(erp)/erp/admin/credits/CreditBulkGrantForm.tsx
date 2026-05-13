@@ -404,7 +404,7 @@ export default function CreditBulkGrantForm({
         </div>
         <div className={styles.bulk__hint}>
           {mode === "picker"
-            ? "메인 AGENT 캐릭터를 보유한 사용자만 선택 가능합니다."
+            ? "메인 AGENT 캐릭터를 보유한 사용자만 선택 가능합니다 ([DUMMY] 표시는 테스트 캐릭 — 발급은 가능)."
             : "한 줄에 하나의 ID를 입력하세요. 기본은 ownerId(사용자 _id)이며, 체크 시 characterId 로 해석됩니다."}
         </div>
       </div>
@@ -457,6 +457,9 @@ export default function CreditBulkGrantForm({
                     <span className={styles.bulk__targetCodename}>
                       {t.mainCharacterCodename ?? "(미등록)"}
                     </span>
+                    {t.isDummy ? (
+                      <span className={styles.bulk__targetDummy}>DUMMY</span>
+                    ) : null}
                     <span className={styles.bulk__targetMeta}>
                       {t.displayName} ({t.username})
                     </span>

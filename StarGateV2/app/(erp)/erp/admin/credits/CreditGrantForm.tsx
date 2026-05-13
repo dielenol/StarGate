@@ -35,6 +35,11 @@ export interface GrantTargetUser {
   mainCharacterId: string | null;
   /** 메인 AGENT 캐릭터의 codename. */
   mainCharacterCodename: string | null;
+  /**
+   * 메인 캐릭이 더미(isPublic === false) 인지 여부. 발급은 가능하지만
+   * UI 가 [DUMMY] 로 시각 구분 — GM 오발급 방지용 힌트.
+   */
+  isDummy?: boolean;
 }
 
 interface CreditGrantFormProps {
@@ -90,6 +95,7 @@ export default function CreditGrantForm({
           characterId: t.mainCharacterId as string,
           codename: t.mainCharacterCodename as string,
           ownerLabel: `${t.displayName} (${t.username})`,
+          isDummy: Boolean(t.isDummy),
         })),
     [targets],
   );
@@ -210,7 +216,7 @@ export default function CreditGrantForm({
               >
                 {t.displayName} ({t.username})
                 {t.mainCharacterId
-                  ? ` · ${t.mainCharacterCodename}`
+                  ? ` · ${t.mainCharacterCodename}${t.isDummy ? " [DUMMY]" : ""}`
                   : " · ⚠ 메인 캐릭터 미등록 (발급 불가)"}
               </option>
             ))}
@@ -218,6 +224,7 @@ export default function CreditGrantForm({
           {selectedOwner ? (
             <div className={styles.hint}>
               메인 캐릭: <b>{selectedOwner.mainCharacterCodename}</b>
+              {selectedOwner.isDummy ? " · ⚠ DUMMY 캐릭" : ""}
             </div>
           ) : null}
         </label>
@@ -232,7 +239,8 @@ export default function CreditGrantForm({
             <option value="">-- 캐릭터 선택 --</option>
             {characterOptions.map((c) => (
               <option key={c.characterId} value={c.characterId}>
-                {c.codename} · {c.ownerLabel}
+                {c.codename}
+                {c.isDummy ? " [DUMMY]" : ""} · {c.ownerLabel}
               </option>
             ))}
           </Select>
