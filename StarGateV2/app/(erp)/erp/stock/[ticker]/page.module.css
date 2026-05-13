@@ -1,0 +1,282 @@
+/* ==========================================================
+   stock/[ticker]/page.module.css
+   - 종목 매수/매도 풀페이지 (`/erp/stock/[ticker]`)
+   - 좌측 main (차트+정보+시세) + 우측 rail (잔고+매수폼+보유+주문) 2-column
+   - 14px floor, globals.css 토큰만 사용
+   ========================================================== */
+
+/* ── 상단: 뒤로 가기 링크 + ticker 메타 ── */
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.backLink:hover {
+  color: var(--gold);
+}
+
+.backLink:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+  color: var(--gold);
+}
+
+.backLink__arrow {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* ── 2-column 풀페이지 레이아웃: 좌측 main(차트/정보/시세) + 우측 rail(잔고/매수/보유/주문) ── */
+
+.layout {
+  display: grid;
+  /* rail 폭 확장 (380 → 480) — 매수/매도 폼 input + 빠른 비율 칩이 한 줄에 여유롭게 들어가도록. */
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 480px);
+  gap: var(--gap);
+  align-items: start;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rail {
+  position: sticky;
+  top: calc(var(--gap) + 56px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* 매수 폼 카드는 rail 상단 가까이에서 시각적 강조. */
+.rail__trade {
+  /* StockTradeForm 본체 카드 스타일은 page.module.css 의 .tradeCard 를 재사용 — 별도 룰 없음. */
+}
+
+/* 1024px↓ : 전체 1-column stack — 우측 rail 이 main 아래로 떨어짐 + sticky 해제 */
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .rail {
+    position: static;
+    top: auto;
+  }
+}
+
+/* ── 알림/에러 박스 (페이지 상단) ── */
+
+.notice {
+  margin-bottom: var(--gap);
+  color: var(--ink-1);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+.notice__strong {
+  color: var(--danger);
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+.errorBanner {
+  position: relative;
+  margin-bottom: var(--gap);
+  padding-right: 36px;
+  color: var(--ink-0);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+.errorBanner__dismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.errorBanner__dismiss:hover {
+  color: var(--ink-0);
+  border-color: var(--ink-1);
+}
+
+/* ──────────────────────────────────────────────
+   주식 매수/매도 토스트 (성공 + 에러) — 화면 중앙 fixed overlay.
+   - overlay 는 pointer-events:none 으로 뒤 UI 클릭 통과
+   - toast 본체만 pointer-events:auto
+   - 성공: gold dim · 3 초 자동 dismiss
+   - 에러: danger · 수동 dismiss only (사용자가 읽고 닫음)
+   ────────────────────────────────────────────── */
+
+@keyframes successToastIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -54%) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.successToastOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  display: block;
+}
+
+.successToast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 18px 22px;
+  background: var(--bg-1);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(201, 168, 90, 0.15);
+  color: var(--ink-0);
+  pointer-events: auto;
+  animation: successToastIn 180ms ease-out;
+}
+
+.successToast__icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.successToast__body {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+}
+
+.successToast__dismiss {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.successToast__dismiss:hover {
+  color: var(--ink-0);
+  border-color: var(--gold-dim);
+}
+
+/* 에러 토스트 — danger 톤. 구조는 success 와 동일, 색만 다름. */
+
+.errorToastOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  display: block;
+}
+
+.errorToast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 18px 22px;
+  background: var(--bg-1);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(192, 106, 90, 0.18);
+  color: var(--ink-0);
+  pointer-events: auto;
+  animation: successToastIn 180ms ease-out;
+}
+
+.errorToast__icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.errorToast__body {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+}
+
+.errorToast__dismiss {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.errorToast__dismiss:hover {
+  color: var(--ink-0);
+  border-color: var(--danger);
+}

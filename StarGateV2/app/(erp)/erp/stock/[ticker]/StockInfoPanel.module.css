@@ -1,0 +1,290 @@
+/* ==========================================================
+   StockInfoPanel.module.css
+   - 토스 종목 정보 패널 (`/erp/stock/[ticker]`)
+   - 회사 설명 + KV 그리드 + 매출 도넛 + 주요 사업 카드
+   - 14px floor, globals.css 토큰 우선. brand color 는 인라인 style 로 주입.
+   ========================================================== */
+
+/* ── 패널 컨테이너 ── */
+
+.infoPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: var(--gap);
+  padding: var(--pad);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.infoPanel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.infoPanel__title {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.16em;
+}
+
+.infoPanel__subtitle {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+}
+
+/* ── 회사 설명 박스 ── */
+
+.infoPanel__description {
+  padding: 14px 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-1);
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+
+/* ── KV 그리드 ── */
+
+.infoPanel__kvGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.infoPanel__kvCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--bg-1);
+  min-width: 0;
+}
+
+.infoPanel__kvLabel {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.infoPanel__kvValue {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: -0.01em;
+  word-break: break-all;
+  white-space: normal;
+}
+
+.infoPanel__kvValueMono {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 720px) {
+  .infoPanel__kvGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 매출 도넛 섹션 ── */
+
+.infoPanel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.infoPanel__sectionTitle {
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.08em;
+}
+
+.infoPanel__donutSection {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.infoPanel__donutChart {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+/* recharts slice 클릭/포커스 시 브라우저 기본 outline(파란 박스) 제거.
+   tooltip 호버 인터랙션은 그대로 유지. */
+.infoPanel__donutChart :global(.recharts-sector),
+.infoPanel__donutChart :global(.recharts-pie-sector) {
+  outline: none;
+}
+.infoPanel__donutChart :global(.recharts-sector:focus),
+.infoPanel__donutChart :global(.recharts-sector:focus-visible),
+.infoPanel__donutChart :global(.recharts-pie-sector:focus),
+.infoPanel__donutChart :global(.recharts-pie-sector:focus-visible),
+.infoPanel__donutChart :global(svg path:focus),
+.infoPanel__donutChart :global(svg path:focus-visible) {
+  outline: none;
+  stroke: var(--bg-1);
+}
+
+.infoPanel__donutCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+  text-align: center;
+}
+
+.infoPanel__donutCenterLabel {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+}
+
+.infoPanel__donutCenterValue {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: -0.01em;
+}
+
+.infoPanel__donutLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.infoPanel__legendItem {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
+}
+
+.infoPanel__legendItem:hover {
+  background: var(--bg-1);
+}
+
+.infoPanel__legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.infoPanel__legendLabel {
+  color: var(--ink-1);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.infoPanel__legendRatio {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .infoPanel__donutSection {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* ── 주요 사업 카드 ── */
+
+.infoPanel__mainBusinesses {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.infoPanel__bizCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-2);
+  /* border-left 가 brand color (인라인 style). 나머지는 토큰. */
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  min-width: 0;
+}
+
+/* StockLogo size="sm" 의 .logoCircle--sm (20×20 동그라미) 가 적용된다. */
+.infoPanel__bizDot {
+  flex-shrink: 0;
+}
+
+.infoPanel__bizMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.infoPanel__bizLabel {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.infoPanel__bizRank {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 720px) {
+  .infoPanel__mainBusinesses {
+    grid-template-columns: 1fr;
+  }
+}

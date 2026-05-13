@@ -1,0 +1,212 @@
+/* ==========================================================
+   StockHoverPreview.module.css
+   - /erp/stock 가운데 영역의 hover 미리보기 카드
+   - 14px floor, globals.css 토큰만 사용 (var(--*) 만; 색/폰트 하드코딩 금지)
+   ========================================================== */
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: var(--pad);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  min-width: 0;
+}
+
+/* ── placeholder (hover 전) ── */
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.placeholder__title {
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.placeholder__hint {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+}
+
+.placeholder__hintMuted {
+  margin-top: 8px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+}
+
+/* ── 헤더 ── */
+
+.preview__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.preview__logo {
+  flex-shrink: 0;
+}
+
+.preview__headLeft {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.preview__ticker {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+}
+
+.preview__name {
+  color: var(--ink-0);
+  font-size: 17px;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.preview__priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.preview__price {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.preview__change {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+}
+
+.preview__change--up {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+}
+
+.preview__change--down {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ── 미니 차트 ── */
+
+.preview__chart {
+  width: 100%;
+  height: 200px;
+  min-width: 0;
+}
+
+/* ── 이벤트 / 설명 ── */
+
+.preview__event {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+/* direction 별 eventHead 색 변경 — TrendDotIcon 의 currentColor 를 동기화. */
+.preview__event--up .preview__eventHead {
+  color: var(--danger); /* 한국 주식 톤: 상승 = red */
+}
+.preview__event--down .preview__eventHead {
+  color: var(--info); /* 하락 = blue */
+}
+.preview__event--flat .preview__eventHead {
+  color: var(--ink-2);
+}
+
+.preview__eventHead {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.preview__eventHeadIcon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.preview__eventBody {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--ink-1);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+.preview__eventBodyIcon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.preview__description {
+  color: var(--ink-2);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+/* ── CTA ── */
+
+.preview__cta {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-align: center;
+}

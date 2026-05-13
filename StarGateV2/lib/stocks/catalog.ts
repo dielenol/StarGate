@@ -21,6 +21,11 @@ export interface StockCatalogItem {
   basePrice: number;
   /** 종목 설명 (UI 표시용). */
   description: string;
+  /**
+   * 종목 브랜드 컬러 (hex). 로고 동그라미 배경/액센트 등 시각 식별에 사용.
+   * dark theme 배경 위에서 식별 가능한 톤 + globals.css 의 gold/danger 와 충돌하지 않게 선택.
+   */
+  color: string;
 }
 
 /* ── Catalog (9 종목) ── */
@@ -32,6 +37,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     basePrice: 10,
     description:
       "연식 있는 브랜드 총기 제조사. 군·경찰·민간 시장에 걸쳐 폭넓은 유통망 보유.",
+    color: "#4A5560",
   },
   {
     ticker: "STM",
@@ -39,12 +45,14 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     basePrice: 10,
     description:
       "미국 상권 지분 30%를 차지하는 대형 마트 브랜드. 생활용품부터 초인 장비까지 취급.",
+    color: "#E08A1F",
   },
   {
     ticker: "SSR",
     name: "송사리",
     basePrice: 30,
     description: "한국계 글로벌 선박 회사. 물류·해운 사업을 기반으로 꾸준한 성장세.",
+    color: "#1F6B8F",
   },
   {
     ticker: "MSF",
@@ -52,6 +60,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     basePrice: 50,
     description:
       "한국계 제과 기업. 서울-만세 아이스크림으로 유명하며 현재 고급화 전략 추진 중.",
+    color: "#D87093",
   },
   {
     ticker: "VFP",
@@ -59,12 +68,14 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     basePrice: 80,
     description:
       "일본계 생명공학·의약품 회사. 과학자 혈청 등 특수 의약품의 주요 공급처.",
+    color: "#9B6FBF",
   },
   {
     ticker: "BPE",
     name: "블랙피라미드 에너지",
     basePrice: 100,
     description: "블랙피라미드에서 생산되는 전력을 전 세계에 공급하는 에너지 기업.",
+    color: "#9B2C6F",
   },
   {
     ticker: "ART",
@@ -72,6 +83,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     basePrice: 120,
     description:
       "오로라 판데믹 이후 창설된 중국계 기업. 오로라 바이러스 백신 및 광원화 활용 연구.",
+    color: "#1F9B7A",
   },
   {
     ticker: "GN3",
@@ -79,6 +91,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     basePrice: 350,
     description:
       "글로벌 자산 운용사. 사모펀드·투자 등 금융 전반에 걸친 사업 포트폴리오 보유.",
+    color: "#2F6B4F",
   },
   {
     ticker: "SPZ",
@@ -86,6 +99,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     basePrice: 1000,
     description:
       "우주항공·무기·AI 산업 글로벌 선두주자. 전기차 산업까지 이끄는 초대형 기업.",
+    color: "#3A8FBF",
   },
 ];
 
