@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import type {
   CharacterInventory,
   ItemCategory,
+  MasterItem,
 } from "@/types/inventory";
 
 import { auth } from "@/lib/auth/config";
@@ -10,23 +11,34 @@ import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
   findMasterItemsByIds,
+  listAvailableItems,
   listCharacterInventory,
 } from "@/lib/db/inventory";
 
+import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
+import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
 import InventoryClient, {
   type InventoryClientEntry,
-} from "./InventoryClient";
+} from "../../../inventory/[characterId]/InventoryClient";
+import InventoryGrantForm from "../../../inventory/[characterId]/InventoryGrantForm";
+import styles from "../../../inventory/[characterId]/page.module.css";
 
-interface CharacterInventoryPageProps {
+interface AdminInventoryPageProps {
   params: Promise<{ characterId: string }>;
 }
 
-export default async function CharacterInventoryPage({
+/**
+ * GM 전용 인벤토리 관리 (지급 + 조회). 일반 `/erp/inventory/[characterId]` 의 GM 분기가
+ * 본 라우트로 분리됨 — 일반 인벤은 사용자/캐릭 view 전용, admin 라우트만 GrantForm 노출.
+ *
+ * 권한: V 이상 (GM/Voidwalker). 미만 시 일반 인벤으로 redirect.
+ */
+export default async function AdminCharacterInventoryPage({
   params,
-}: CharacterInventoryPageProps) {
+}: AdminInventoryPageProps) {
   const session = await auth();
 
   if (!session?.user) {
@@ -34,7 +46,11 @@ export default async function CharacterInventoryPage({
   }
 
   const { role } = session.user;
-  const isGm = hasRole(role, "V");
+  if (!hasRole(role, "V")) {
+    // 일반 사용자가 admin URL 직접 진입 시 캐릭별 일반 인벤으로 강등.
+    const { characterId } = await params;
+    redirect(`/erp/inventory/${characterId}`);
+  }
 
   const { characterId } = await params;
 
@@ -44,12 +60,13 @@ export default async function CharacterInventoryPage({
   }
 
   let inventory: CharacterInventory[] = [];
+  let availableItems: MasterItem[] = [];
   let categoryByItemId = new Map<string, ItemCategory>();
 
   try {
     inventory = await listCharacterInventory(characterId);
   } catch {
-    // DB 연결 실패 시 빈 배열 유지
+    /* DB 실패 시 빈 배열 */
   }
 
   if (inventory.length > 0) {
@@ -61,18 +78,15 @@ export default async function CharacterInventoryPage({
       categoryByItemId = new Map(
         masters.map((m) => [String(m._id), m.category]),
       );
-      // catalog drift 감지: inventory.itemId 가 master_items 에 없는 경우.
-      const orphanIds = uniqueItemIds.filter(
-        (id) => !categoryByItemId.has(id),
-      );
-      if (orphanIds.length > 0) {
-        console.warn(
-          `[inventory] catalog drift: ${orphanIds.length} itemId not found in master_items (characterId=${characterId})`,
-        );
-      }
     } catch {
-      // master_items 조회 실패 시 categoryByItemId 빈 Map 유지 → 전부 "기타" 탭으로 노출
+      /* master 조회 실패 → 빈 Map */
     }
+  }
+
+  try {
+    availableItems = await listAvailableItems();
+  } catch {
+    /* 아이템 목록 실패 → 빈 배열 */
   }
 
   const entries: InventoryClientEntry[] = inventory.map((entry) => ({
@@ -93,27 +107,30 @@ export default async function CharacterInventoryPage({
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
-          { label: "EQUIPMENT", href: "/erp/inventory" },
+          { label: "ADMIN", href: "/erp/admin/inventory" },
+          { label: "INVENTORY", href: "/erp/admin/inventory" },
           { label: character.codename },
         ]}
-        title={character.codename}
+        title={`${character.codename} · 관리자 모드`}
         right={
           <>
-            {isGm ? (
-              <Button
-                as="a"
-                href={`/erp/admin/inventory/${characterId}`}
-                variant="primary"
-              >
-                관리자 모드 →
-              </Button>
-            ) : null}
-            <Button as="a" href="/erp/inventory">
-              ← 도감
+            <Button as="a" href={`/erp/inventory/${characterId}`}>
+              ← 일반 모드
+            </Button>
+            <Button as="a" href="/erp/admin/inventory">
+              ← 허브
             </Button>
           </>
         }
       />
+
+      <Box className={styles.grantBox}>
+        <PanelTitle>GRANT ITEM · GM</PanelTitle>
+        <InventoryGrantForm
+          characterId={characterId}
+          availableItems={availableItems}
+        />
+      </Box>
 
       <InventoryClient entries={entries} />
     </>
