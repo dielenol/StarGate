@@ -5,16 +5,32 @@
    - globals.css 토큰만 사용
    ========================================================== */
 
+/* ---------- filter row (탭 + GM 신규 버튼 한 줄) ---------- */
+.filterRow {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.filterRow__cta {
+  align-self: center;
+  margin-left: auto;
+  margin-bottom: 6px; /* border-bottom 과의 시각 정렬 보정 */
+  flex-shrink: 0;
+}
+
 /* ---------- filters (탭 그룹) ---------- */
 .filters {
   display: flex;
   gap: 0;
-  margin-bottom: 22px;
-  border-bottom: 1px solid var(--line);
   position: relative;
   overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .filters::-webkit-scrollbar { height: 4px; }
 .filters::-webkit-scrollbar-track { background: transparent; }
@@ -260,6 +276,7 @@
   margin-left: auto;
   padding: 1px 6px;
   border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
   color: var(--gold);
   background: transparent;
   font-family: var(--font-mono);
@@ -297,6 +314,7 @@
   text-transform: uppercase;
   padding: 4px 8px;
   border: 1px solid;
+  border-radius: var(--radius-sm);
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -468,6 +486,7 @@
   text-transform: uppercase;
   color: var(--ink-3);
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background-image: repeating-linear-gradient(
     135deg,
     transparent 0,

@@ -10,7 +10,7 @@
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 1.45fr);
   gap: 14px;
   margin-bottom: var(--gap);
   align-items: start;
@@ -84,15 +84,16 @@
   border-top: 0;
 }
 
-/* gradient overlay 하단 — 캡션 가독성 보강 */
+/* gradient overlay 하단 — 캡션 가독성용. 캐릭터 가림 최소화 위해 시작 위치를 아래로,
+   짙은 부분도 caption 영역(약 하단 20%)에만 닿도록 한정. */
 .hero__gradient {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     180deg,
-    transparent 35%,
-    rgba(0, 0, 0, 0.85) 65%,
-    rgba(0, 0, 0, 0.96) 100%
+    transparent 60%,
+    rgba(0, 0, 0, 0.55) 82%,
+    rgba(0, 0, 0, 0.85) 100%
   );
   pointer-events: none;
   z-index: 1;
@@ -126,6 +127,42 @@
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.18em;
+}
+
+/* 우상단 zoom 버튼 — lightbox 트리거. 도트풍 SVG + 반투명 검정 배경. */
+.hero__zoom {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-1);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
+}
+.hero__zoom:hover {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: rgba(0, 0, 0, 0.78);
+}
+.hero__zoom:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+}
+.hero__zoomIcon {
+  width: 20px;
+  height: 20px;
 }
 
 /* 좌상단 view toggle — main(기본) ↔ poster(옵션) segmented control */
@@ -170,9 +207,8 @@
   outline-offset: -2px;
 }
 
-/* caption block — codename / name / role(alias) / meta(gender·age·height) 를
-   하나의 stacked 컨테이너로 흡수. meta 라인이 길어 wrap 돼도 caption 위로 밀려
-   leakage 가 없도록 absolute 는 컨테이너 한 곳에서만 잡는다. */
+/* caption block — 좌측 codename/name/role/meta stack + 우측 quote 박스 (가로 2열).
+   absolute 위치는 caption 컨테이너 한 곳에서만 잡아 wrap leakage 회피. */
 .hero__caption {
   position: absolute;
   left: 22px;
@@ -180,6 +216,14 @@
   bottom: 18px;
   z-index: 2;
   pointer-events: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: end;
+}
+
+.hero__captionMain {
+  min-width: 0;
 }
 
 .hero__captionCode {
@@ -213,31 +257,35 @@
     0 0 12px rgba(0, 0, 0, 0.95);
 }
 
-/* meta line — gender · age · height. caption block 자식으로 자연 흐름. */
+/* meta — gender / age / height. grid 3열 (KEY · VALUE) 로 separator 위치 정렬.
+   KEY 컬럼은 max-content 라 가장 긴 라벨(HEIGHT) 폭에 맞춰 자동 정렬. */
 .hero__captionMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
   margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(201, 161, 74, 0.55);
-  color: var(--ink-0);
-  text-shadow:
-    0 0 4px rgba(0, 0, 0, 1),
-    0 0 12px rgba(0, 0, 0, 0.95);
+  display: grid;
+  grid-template-columns: max-content max-content minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 4px;
+  align-items: baseline;
+  color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.16em;
-  color: var(--ink-2);
+  line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 1),
+    0 0 12px rgba(0, 0, 0, 0.95);
 }
-.hero__captionMetaItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  white-space: nowrap;
+.hero__captionMetaKey {
+  color: var(--ink-2);
 }
 .hero__captionMetaSep {
   color: var(--gold-dim);
+}
+.hero__captionMetaValue {
+  color: var(--ink-1);
+  min-width: 0;
 }
 
 @container poster-hero (max-width: 760px) {
@@ -245,6 +293,8 @@
     left: 16px;
     right: 16px;
     bottom: 14px;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   .hero__captionName {
     font-size: 22px;
@@ -288,6 +338,7 @@
   gap: 12px;
   align-items: center;
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   background: var(--bg-2);
   padding: 12px;
   position: relative;
@@ -297,6 +348,7 @@
   position: absolute;
   inset: 3px;
   border: 1px solid rgba(201, 161, 74, 0.12);
+  border-radius: calc(var(--radius-sm) - 3px);
   pointer-events: none;
 }
 
@@ -305,6 +357,7 @@
   width: 64px;
   height: 64px;
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   display: grid;
   place-items: center;
   background:
@@ -359,40 +412,44 @@
 }
 
 /* ────────────────────────────────────────────────────────────
-   QUOTE blockquote — gold left-bar + 큰 따옴표 마크 (reference: .pc-quote)
+   QUOTE — caption 우측 컬럼 (좌 gold bar + 위/아래 따옴표 마크)
    ──────────────────────────────────────────────────────────── */
 
-.hero__quote {
+.hero__captionQuote {
   position: relative;
   margin: 0;
+  padding: 14px 18px 14px 20px;
   border-left: 2px solid var(--gold);
-  padding: 16px 22px 16px 26px;
-  background: rgba(201, 161, 74, 0.04);
-  display: flex;
-  align-items: center;
-  min-height: 100%;
+  background: rgba(0, 0, 0, 0.42);
+  align-self: end;
 }
-.hero__quote p {
+.hero__captionQuote p {
   margin: 0;
-  color: var(--ink-1);
+  color: var(--ink-0);
   font-size: 14px;
-  line-height: 1.65;
   font-style: italic;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
   word-break: keep-all;
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 1),
+    0 0 12px rgba(0, 0, 0, 0.95);
 }
-.hero__quoteMark {
+.hero__captionQuoteMark {
   position: absolute;
-  top: -4px;
-  left: 8px;
-  font-size: 36px;
   color: var(--gold);
   font-family: Georgia, serif;
+  font-style: normal;
+  font-size: 28px;
   line-height: 1;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
 }
-.hero__quoteMark--close {
-  top: auto;
-  left: auto;
-  bottom: -22px;
+.hero__captionQuoteMark--open {
+  top: -6px;
+  left: 8px;
+}
+.hero__captionQuoteMark--close {
+  bottom: -14px;
   right: 10px;
 }
 
@@ -402,6 +459,7 @@
 
 .hero__panel {
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: var(--bg-2);
   padding: 12px 14px 14px;
 }
@@ -470,11 +528,11 @@
   margin-left: 2px;
 }
 
-/* DEF/ATK — 페어 (점선 구분) */
+/* DEF/ATK — 페어 (점선 구분). 두 SmallVital 사이는 세로 구분선으로 명시. */
 .hero__vitalsPair {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 0;
   margin-top: 10px;
   border-top: 1px dashed var(--line);
   padding-top: 10px;
@@ -483,6 +541,14 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  padding: 0 14px;
+}
+.hero__vitalSmall:first-child {
+  padding-left: 0;
+}
+.hero__vitalSmall:last-child {
+  padding-right: 0;
+  border-left: 1px solid var(--line);
 }
 
 /* AGENT DETAILS — 2열 그리드 + extra (점선 구분) */
@@ -554,4 +620,142 @@
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.6;
+}
+
+/* ────────────────────────────────────────────────────────────
+   ABILITIES — 우측 rail 어빌리티 패널 (CHARACTER PROFILE 자리 차지).
+   ──────────────────────────────────────────────────────────── */
+
+.hero__abilityList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hero__abilityItem {
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.hero__abilityItem:last-child {
+  border-bottom: none;
+}
+
+.hero__abilityHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.hero__abilitySlot {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.hero__abilityName {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.hero__abilityDesc {
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 6px;
+}
+
+.hero__abilityEffect {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: var(--font-mono);
+}
+
+.hero__abilityEffectLabel {
+  color: var(--gold-dim);
+  letter-spacing: 0.08em;
+}
+
+.hero__abilityEmpty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+/* ────────────────────────────────────────────────────────────
+   Lightbox — portrait 이미지 확대 보기 모달 (fixed, full-screen overlay)
+   ──────────────────────────────────────────────────────────── */
+
+.hero__lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(6px);
+  cursor: zoom-out;
+}
+
+.hero__lightboxImage {
+  max-width: 92vw;
+  max-height: 92vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  cursor: default;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.85);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+}
+
+.hero__lightboxClose {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-0);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
+}
+.hero__lightboxClose:hover {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: rgba(0, 0, 0, 0.85);
+}
+.hero__lightboxClose:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
 }

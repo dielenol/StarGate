@@ -23,6 +23,7 @@
 .itemCard {
   padding: 12px;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: var(--bg-2);
 }
 
@@ -84,6 +85,7 @@
   padding: 12px 14px;
   color: var(--danger);
   border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   font-size: 14px;
 }
@@ -98,6 +100,7 @@
   margin-bottom: var(--gap);
   padding: 8px 14px;
   border: 1px dashed var(--gold-dim);
+  border-radius: var(--radius-sm);
   background: rgba(201, 168, 90, 0.04);
   color: var(--ink-2);
   font-family: var(--font-mono);

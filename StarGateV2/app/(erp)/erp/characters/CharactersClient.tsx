@@ -83,16 +83,10 @@ export default function CharactersClient({
           { label: "CHARACTERS" },
         ]}
         title="플레이어블 캐릭터"
-        right={
-          isGMOrAbove ? (
-            <Button as="a" href="/erp/characters/new" variant="primary">
-              + 신규
-            </Button>
-          ) : null
-        }
       />
 
-      <nav className={styles.filters} aria-label="캐릭터 분류 필터">
+      <div className={styles.filterRow}>
+        <nav className={styles.filters} aria-label="캐릭터 분류 필터">
         <Link
           href="/erp/characters"
           className={[
@@ -136,7 +130,18 @@ export default function CharactersClient({
             </Link>
           );
         })}
-      </nav>
+        </nav>
+        {isGMOrAbove ? (
+          <Button
+            as="a"
+            href="/erp/characters/new"
+            variant="primary"
+            className={styles.filterRow__cta}
+          >
+            + 신규
+          </Button>
+        ) : null}
+      </div>
 
       {displayedAgents.length === 0 ? (
         <div className={styles.empty}>등록된 캐릭터가 없습니다.</div>

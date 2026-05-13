@@ -1,12 +1,22 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
-import { AGENT_LEVEL_LABELS, type AgentLevel, type PlaySheet } from "@/types/character";
+import {
+  AGENT_LEVEL_LABELS,
+  DEPARTMENTS,
+  FACTIONS,
+  INSTITUTIONS,
+  type Ability,
+  type AbilitySlot,
+  type AgentLevel,
+  type PlaySheet,
+} from "@/types/character";
 
 import Bar from "@/components/ui/Bar/Bar";
 import Seal from "@/components/ui/Seal/Seal";
+import { IconClose, IconZoom } from "@/components/icons";
 
 import styles from "./PosterHero.module.css";
 
@@ -17,9 +27,11 @@ interface Props {
   name: string;
   role: string;
   agentLevel?: AgentLevel;
-  /** 소속 코드 (faction 또는 NPC factionCode). LOGO/AFFILIATION 라벨용. */
+  /** 외부 세력 코드 (군부/이사회/시민사회). NPC 위주, 없으면 institutionCode 로 폴백. */
   factionCode?: string;
-  /** 부서 코드 (department 또는 NPC institutionCode). DEPT 라벨용. */
+  /** 노부스 오르도 내부 기관 코드 (사무국/재무국 등). AGENT 위주. */
+  institutionCode?: string;
+  /** 기관 산하 subUnit 코드 또는 legacy 부서 코드. 소속과 함께 hierarchy 표현. */
   department?: string;
   /** 시트 신상 — portrait 하단 meta 라인 (gender · age · height) */
   gender?: string;
@@ -27,10 +39,10 @@ interface Props {
   height?: string;
   /** 우측 rail 인용문 카드. 빈 값/undefined 면 미노출. */
   quote?: string;
-  /** 우측 rail PROFILE 패널 — 외모/성격/배경 (Sheet 공통 필드). */
-  appearance?: string;
-  personality?: string;
-  background?: string;
+  /** 우측 rail ABILITIES 패널 — AGENT 한정. CHARACTER PROFILE 자리 차지.
+   *  외모/성격/배경(appearance/personality/background) 은 본 컴포넌트 외부 (AgentSections)
+   *  로 이동했다. */
+  abilities?: Ability[];
   /** NPC 전용 — nameEn / roleDetail / notes. AGENT 면 undefined. */
   nameEn?: string;
   roleDetail?: string;
@@ -42,6 +54,21 @@ interface Props {
   playSheet?: PlaySheet;
 }
 
+/** ABILITIES 슬롯 표시 순서 (CharacterDetailClient 와 동일). */
+const ABILITY_SLOT_ORDER: AbilitySlot[] = [
+  "C1",
+  "C2",
+  "C3",
+  "C4",
+  "C5",
+  "P",
+  "A1",
+  "A2",
+  "A3",
+  "A4",
+  "A5",
+];
+
 /**
  * Faction code → 로고 정적 매핑.
  * 신규 faction 추가 시 본 매핑 + public/assets/faction/ 에 로고 webp 추가.
@@ -52,30 +79,40 @@ const FACTION_LOGOS: Record<string, string> = {
   CIVIL: "/assets/faction/civil_society_logo.webp",
 };
 
-const FACTION_LABELS: Record<string, string> = {
-  MILITARY: "MILITARY",
-  COUNCIL: "WORLD COUNCIL",
-  CIVIL: "CIVIL SOCIETY",
-};
-
-/** Department / Institution / Sub-unit 코드 → 영문 라벨 (군사/도시어 톤). */
-const DEPT_LABELS: Record<string, string> = {
-  HQ: "HQ · 사무총장실",
-  FIELD: "FIELD OPS",
-  RESEARCH: "RESEARCH",
-  SECURITY: "SECURITY",
-  LOGISTICS: "LOGISTICS",
-  EXTERNAL: "EXTERNAL AFFAIRS",
-  UNASSIGNED: "UNASSIGNED",
-  SECRETARIAT: "SECRETARIAT",
-  FINANCE: "FINANCIAL BUREAU",
-  ADMIN_BUREAU: "ADMIN BUREAU",
-  INTL: "INTERNATIONAL",
-  CONTROL: "CONTROL",
-};
-
 /** factionCode 미지정 시 기본 노부스 오르도 로고. */
 const NOVUS_ORDO_LOGO = "/assets/StarGate_logo.png";
+
+/** factionCode → 한글 label (shared-db FACTIONS 매핑). */
+function resolveFactionLabel(code?: string): string | null {
+  if (!code) return null;
+  const found = FACTIONS.find((f) => f.code === code);
+  return found?.label ?? code;
+}
+
+/** institutionCode → 한글 label (shared-db INSTITUTIONS 매핑). */
+function resolveInstitutionLabel(code?: string): string | null {
+  if (!code) return null;
+  const found = INSTITUTIONS.find((i) => i.code === code);
+  return found?.label ?? code;
+}
+
+/**
+ * department code → 한글 label. institution 산하 subUnit 우선, 없으면 legacy DEPARTMENTS,
+ * 그래도 매칭 안 되면 raw 코드.
+ */
+function resolveDeptLabel(
+  deptCode?: string,
+  institutionCode?: string,
+): string | null {
+  if (!deptCode) return null;
+  if (institutionCode) {
+    const inst = INSTITUTIONS.find((i) => i.code === institutionCode);
+    const sub = inst?.subUnits.find((s) => s.code === deptCode);
+    if (sub) return sub.label;
+  }
+  const legacy = DEPARTMENTS.find((d) => d.code === deptCode);
+  return legacy?.label ?? deptCode;
+}
 
 function getInitial(source: string): string {
   return source.charAt(0).toUpperCase() || "?";
@@ -107,14 +144,13 @@ export default function PosterHero({
   role,
   agentLevel,
   factionCode,
+  institutionCode,
   department,
   gender,
   age,
   height,
   quote,
-  appearance,
-  personality,
-  background,
+  abilities,
   nameEn,
   roleDetail,
   notes,
@@ -128,10 +164,26 @@ export default function PosterHero({
   const [view, setView] = useState<"poster" | "main">(
     hasMain ? "main" : "poster",
   );
+  const [zoomOpen, setZoomOpen] = useState(false);
   const heroSrc =
     view === "main"
       ? mainImage || posterImage || null
       : posterImage || mainImage || null;
+
+  // lightbox 열림 동안 ESC 닫기 + body 스크롤 락.
+  useEffect(() => {
+    if (!zoomOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setZoomOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [zoomOpen]);
   // contain 처리: main 뷰는 다양한 비율 (정사각/세로) → 잘림 방지.
   const isPortraitFallback = view === "main" && hasMain;
   const displayName = name || codename;
@@ -139,19 +191,20 @@ export default function PosterHero({
   const logoSrc = factionCode
     ? FACTION_LOGOS[factionCode] ?? NOVUS_ORDO_LOGO
     : NOVUS_ORDO_LOGO;
-  const factionLabel = factionCode
-    ? FACTION_LABELS[factionCode] ?? factionCode
-    : "NOVUS ORDO";
-  const deptLabel = department
-    ? DEPT_LABELS[department] ?? department
-    : null;
 
-  // meta 라인 — gender / age / height. 빈 값은 제외.
-  const metaItems = [
-    gender ? `GENDER · ${gender}` : null,
-    age ? `AGE · ${age}` : null,
-    height ? `HEIGHT · ${height}` : null,
-  ].filter((s): s is string => Boolean(s));
+  // 소속 우선순위: faction(외부 세력) → institution(노부스 오르도 내부 기관) → 노부스 오르도 폴백.
+  // 부서: institution 산하 subUnit 우선 → legacy DEPARTMENTS 폴백. 소속과 자연스럽게 위계 표현.
+  const factionLabel = resolveFactionLabel(factionCode);
+  const institutionLabel = resolveInstitutionLabel(institutionCode);
+  const affiliationLabel = factionLabel ?? institutionLabel ?? "노부스 오르도";
+  const deptLabel = resolveDeptLabel(department, institutionCode);
+
+  // meta 라인 — gender / age / height. 빈 값은 제외. key/value 분리해 grid 컬럼 정렬.
+  const metaItems: { key: string; value: string }[] = [
+    gender ? { key: "GENDER", value: gender } : null,
+    age ? { key: "AGE", value: age } : null,
+    height ? { key: "HEIGHT", value: height } : null,
+  ].filter((m): m is { key: string; value: string } => m !== null);
 
   return (
     <section className={styles.hero} aria-label="캐릭터 히어로">
@@ -178,6 +231,18 @@ export default function PosterHero({
             <div className={styles.hero__posterEmptyName}>{displayName}</div>
           </div>
         )}
+
+        {/* 우상단 zoom 버튼 — 클릭 시 lightbox 모달로 이미지 확대. 이미지 자산이 있을 때만 노출. */}
+        {heroSrc ? (
+          <button
+            type="button"
+            className={styles.hero__zoom}
+            onClick={() => setZoomOpen(true)}
+            aria-label="이미지 확대 보기"
+          >
+            <IconZoom className={styles.hero__zoomIcon} />
+          </button>
+        ) : null}
 
         {/* 좌상단 view toggle — main ↔ poster (두 자산 모두 있을 때만) */}
         {canToggleView ? (
@@ -232,50 +297,77 @@ export default function PosterHero({
         {/* gradient overlay */}
         <div className={styles.hero__gradient} aria-hidden />
 
-        {/* caption + meta — 한 컨테이너로 묶어 메타 라인이 wrap 돼도 caption 과
-            겹치지 않고 자연스럽게 위로 밀리도록 stacked. */}
+        {/* caption — 좌측 codename/name/role/meta stack + 우측 quote 박스 (가로 2열).
+            메타 라인이 wrap 돼도 좌측만 자라며 quote 박스는 우측 컬럼에 정렬 유지. */}
         <div className={styles.hero__caption}>
-          <div className={styles.hero__captionCode}>{codename}</div>
-          <h2 className={styles.hero__captionName}>{displayName}</h2>
-          {role ? (
-            <div className={styles.hero__captionAlias}>{role}</div>
-          ) : null}
-          {metaItems.length > 0 ? (
-            <div className={styles.hero__captionMeta}>
-              {metaItems.map((item, i) => (
-                <span key={item} className={styles.hero__captionMetaItem}>
-                  {i > 0 ? (
-                    <span className={styles.hero__captionMetaSep}>│</span>
-                  ) : null}
-                  {item}
-                </span>
-              ))}
-            </div>
+          <div className={styles.hero__captionMain}>
+            <div className={styles.hero__captionCode}>{codename}</div>
+            <h2 className={styles.hero__captionName}>{displayName}</h2>
+            {role ? (
+              <div className={styles.hero__captionAlias}>{role}</div>
+            ) : null}
+            {metaItems.length > 0 ? (
+              <div className={styles.hero__captionMeta}>
+                {metaItems.map((item) => (
+                  <Fragment key={item.key}>
+                    <span className={styles.hero__captionMetaKey}>
+                      {item.key}
+                    </span>
+                    <span
+                      className={styles.hero__captionMetaSep}
+                      aria-hidden
+                    >
+                      ·
+                    </span>
+                    <span className={styles.hero__captionMetaValue}>
+                      {item.value}
+                    </span>
+                  </Fragment>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          {quote ? (
+            <blockquote className={styles.hero__captionQuote}>
+              <span
+                className={`${styles.hero__captionQuoteMark} ${styles["hero__captionQuoteMark--open"]}`}
+                aria-hidden
+              >
+                &ldquo;
+              </span>
+              <p>{quote}</p>
+              <span
+                className={`${styles.hero__captionQuoteMark} ${styles["hero__captionQuoteMark--close"]}`}
+                aria-hidden
+              >
+                &rdquo;
+              </span>
+            </blockquote>
           ) : null}
         </div>
       </div>
 
       {/* ── 우측 side rail ── */}
       <div className={styles.hero__side}>
-        {/* LOGO + QUOTE — 같은 row */}
+        {/* LOGO + VITALS — 같은 row. quote 는 portrait caption 으로 흡수됨. */}
         <div className={styles.hero__topRow}>
           {/* LOGO card */}
           <div className={styles.hero__logoCard}>
             <div className={styles.hero__logoSlot}>
               <Image
                 src={logoSrc}
-                alt={`${factionLabel} 로고`}
+                alt={`${affiliationLabel} 로고`}
                 width={64}
                 height={64}
                 className={styles.hero__logoSlotImage}
               />
             </div>
             <div className={styles.hero__logoMeta}>
-              <div className={styles.hero__logoK}>AFFILIATION</div>
-              <div className={styles.hero__logoV}>{factionLabel}</div>
+              <div className={styles.hero__logoK}>소속</div>
+              <div className={styles.hero__logoV}>{affiliationLabel}</div>
               {deptLabel ? (
                 <>
-                  <div className={styles.hero__logoK}>DEPT.</div>
+                  <div className={styles.hero__logoK}>부서</div>
                   <div
                     className={`${styles.hero__logoV} ${styles["hero__logoV--dim"]}`}
                   >
@@ -285,7 +377,7 @@ export default function PosterHero({
               ) : null}
               {agentLevel ? (
                 <>
-                  <div className={styles.hero__logoK}>CLEARANCE</div>
+                  <div className={styles.hero__logoK}>등급</div>
                   <div
                     className={`${styles.hero__logoV} ${styles["hero__logoV--rank"]}`}
                     data-rank={agentLevel}
@@ -297,26 +389,8 @@ export default function PosterHero({
             </div>
           </div>
 
-          {/* QUOTE — 같은 row */}
-          {quote ? (
-            <blockquote className={styles.hero__quote}>
-              <span className={styles.hero__quoteMark} aria-hidden>
-                &ldquo;
-              </span>
-              <p>{quote}</p>
-              <span
-                className={`${styles.hero__quoteMark} ${styles["hero__quoteMark--close"]}`}
-                aria-hidden
-              >
-                &rdquo;
-              </span>
-            </blockquote>
-          ) : null}
-        </div>
-
-        {/* VITALS / AGENT DETAILS — AGENT 한정. delta 메모는 stat 라인에 부각 표기. */}
-        {playSheet ? (
-          <>
+          {/* VITALS — quote 자리로 이동. AGENT 한정. */}
+          {playSheet ? (
             <div className={styles.hero__panel}>
               <div className={styles.hero__panelHead}>
                 <span>VITALS</span>
@@ -351,12 +425,21 @@ export default function PosterHero({
                 />
               </div>
             </div>
+          ) : null}
+        </div>
 
-            <div className={styles.hero__panel}>
-              <div className={styles.hero__panelHead}>
-                <span>AGENT DETAILS</span>
-                <span className={styles.hero__panelHeadSub}>SHEET</span>
-              </div>
+        {/* AGENT DETAILS — AGENT 한정. CLASS/ABILITY TYPE/WEAPON/SKILL 모두 비면 패널 생략. */}
+        {playSheet &&
+        (playSheet.className ||
+          playSheet.abilityType ||
+          playSheet.weaponTraining.length > 0 ||
+          playSheet.skillTraining.length > 0) ? (
+          <div className={styles.hero__panel}>
+            <div className={styles.hero__panelHead}>
+              <span>AGENT DETAILS</span>
+              <span className={styles.hero__panelHeadSub}>SHEET</span>
+            </div>
+            {playSheet.className || playSheet.abilityType ? (
               <div className={styles.hero__detailsGrid}>
                 {playSheet.className ? (
                   <Cell k="CLASS" v={playSheet.className} />
@@ -364,45 +447,84 @@ export default function PosterHero({
                 {playSheet.abilityType ? (
                   <Cell k="ABILITY TYPE" v={playSheet.abilityType} />
                 ) : null}
-                {playSheet.credit !== "" && playSheet.credit !== undefined ? (
-                  <Cell k="CREDIT" v={`¤ ${playSheet.credit}`} gold />
+              </div>
+            ) : null}
+            {playSheet.weaponTraining.length > 0 ||
+            playSheet.skillTraining.length > 0 ? (
+              <div className={styles.hero__detailsExtra}>
+                {playSheet.weaponTraining.length > 0 ? (
+                  <Cell
+                    k="WEAPON"
+                    v={playSheet.weaponTraining.join(", ")}
+                  />
+                ) : null}
+                {playSheet.skillTraining.length > 0 ? (
+                  <Cell
+                    k="SKILL"
+                    v={playSheet.skillTraining.join(", ")}
+                  />
                 ) : null}
               </div>
-              {playSheet.weaponTraining.length > 0 ||
-              playSheet.skillTraining.length > 0 ? (
-                <div className={styles.hero__detailsExtra}>
-                  {playSheet.weaponTraining.length > 0 ? (
-                    <Cell
-                      k="WEAPON"
-                      v={playSheet.weaponTraining.join(", ")}
-                    />
-                  ) : null}
-                  {playSheet.skillTraining.length > 0 ? (
-                    <Cell
-                      k="SKILL"
-                      v={playSheet.skillTraining.join(", ")}
-                    />
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          </>
-        ) : null}
-
-        {/* CHARACTER PROFILE — 외모 / 성격 / 배경 */}
-        {appearance || personality || background ? (
-          <div className={styles.hero__panel}>
-            <div className={styles.hero__panelHead}>
-              <span>CHARACTER PROFILE</span>
-              <span className={styles.hero__panelHeadSub}>DOSSIER</span>
-            </div>
-            <dl className={styles.hero__profileList}>
-              <ProfileRow label="외모" value={appearance} />
-              <ProfileRow label="성격" value={personality} />
-              <ProfileRow label="배경" value={background} />
-            </dl>
+            ) : null}
           </div>
         ) : null}
+
+        {/* ABILITIES — AGENT 한정. 채워진 슬롯 없어도 패널 헤더 + placeholder 노출 (휑함 회피).
+            abilities prop 자체가 undefined 면 NPC 케이스라 패널 미노출. */}
+        {abilities
+          ? (() => {
+              const bySlot = new Map(abilities.map((ab) => [ab.slot, ab]));
+              const filled = ABILITY_SLOT_ORDER.flatMap((slot) => {
+                const ab = bySlot.get(slot);
+                return ab && ab.name.trim().length > 0 ? [{ slot, ab }] : [];
+              });
+              return (
+                <div className={styles.hero__panel}>
+                  <div className={styles.hero__panelHead}>
+                    <span>ABILITIES</span>
+                    <span className={styles.hero__panelHeadSub}>
+                      {filled.length} / {ABILITY_SLOT_ORDER.length} SLOTS
+                    </span>
+                  </div>
+                  {filled.length === 0 ? (
+                    <div className={styles.hero__abilityEmpty}>
+                      등록된 어빌리티가 없습니다.
+                    </div>
+                  ) : (
+                    <ul className={styles.hero__abilityList}>
+                      {filled.map(({ slot, ab }) => (
+                        <li key={slot} className={styles.hero__abilityItem}>
+                          <div className={styles.hero__abilityHead}>
+                            <span className={styles.hero__abilitySlot}>
+                              {slot}
+                            </span>
+                            <span className={styles.hero__abilityName}>
+                              {ab.name}
+                            </span>
+                          </div>
+                          {ab.description ? (
+                            <div className={styles.hero__abilityDesc}>
+                              {ab.description}
+                            </div>
+                          ) : null}
+                          {ab.effect ? (
+                            <div className={styles.hero__abilityEffect}>
+                              <span
+                                className={styles.hero__abilityEffectLabel}
+                              >
+                                EFFECT ·
+                              </span>{" "}
+                              {ab.effect}
+                            </div>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })()
+          : null}
 
         {/* NPC EXTRAS — NPC 전용 추가 필드 */}
         {nameEn || roleDetail || notes ? (
@@ -421,6 +543,36 @@ export default function PosterHero({
           </div>
         ) : null}
       </div>
+
+      {/* Lightbox — 클릭/ESC 시 닫힘. 배경 클릭은 닫기, 이미지 클릭은 propagation 차단. */}
+      {zoomOpen && heroSrc ? (
+        <div
+          className={styles.hero__lightbox}
+          role="dialog"
+          aria-modal="true"
+          aria-label="이미지 확대 보기"
+          onClick={() => setZoomOpen(false)}
+        >
+          <button
+            type="button"
+            className={styles.hero__lightboxClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoomOpen(false);
+            }}
+            aria-label="닫기"
+          >
+            <IconClose />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element -- lightbox 는 자유 폭/높이 (max-vw/vh) 라 next/image fill 보다 raw img 가 단순 */}
+          <img
+            src={heroSrc}
+            alt={`${displayName} ${view === "poster" ? "포스터" : "메인 이미지"} 확대`}
+            className={styles.hero__lightboxImage}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      ) : null}
     </section>
   );
 }

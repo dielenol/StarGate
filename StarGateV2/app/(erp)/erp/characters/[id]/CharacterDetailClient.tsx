@@ -28,20 +28,6 @@ import PosterHero from "./PosterHero";
 
 import styles from "./page.module.css";
 
-const ABILITY_SLOT_ORDER = [
-  "C1",
-  "C2",
-  "C3",
-  "C4",
-  "C5",
-  "P",
-  "A1",
-  "A2",
-  "A3",
-  "A4",
-  "A5",
-] as const;
-
 interface Props {
   /** AGENT 전용. server (page.tsx) 가 NPC 를 personnel 로 redirect 하므로 여기엔 항상 AGENT 만 도달. */
   character: AgentCharacter;
@@ -153,30 +139,28 @@ export default function CharacterDetailClient({
         ]}
         title={character.lore.name || character.codename}
         right={
-          <>
-            <Tag tone="gold">{character.type}</Tag>
-            <Tag tone={character.isPublic ? "success" : "danger"}>
-              {character.isPublic ? "PUBLIC" : "PRIVATE"}
-            </Tag>
-            {canEdit ? (
-              <Button
-                type="button"
-                variant="primary"
-                onClick={() => setIsEditing(true)}
-              >
-                편집
-              </Button>
-            ) : null}
-            {canDelete ? (
-              <Button
-                type="button"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? "삭제 중..." : "삭제"}
-              </Button>
-            ) : null}
-          </>
+          canEdit || canDelete ? (
+            <>
+              {canEdit ? (
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => setIsEditing(true)}
+                >
+                  편집
+                </Button>
+              ) : null}
+              {canDelete ? (
+                <Button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "삭제 중..." : "삭제"}
+                </Button>
+              ) : null}
+            </>
+          ) : undefined
         }
       />
 
@@ -209,15 +193,14 @@ export default function CharacterDetailClient({
         role={character.role}
         agentLevel={character.agentLevel}
         factionCode={character.factionCode}
-        department={character.institutionCode ?? character.department}
+        institutionCode={character.institutionCode}
+        department={character.department}
         gender={character.lore.gender}
         age={character.lore.age}
         height={character.lore.height}
         quote={character.lore.quote}
-        appearance={character.lore.appearance}
-        personality={character.lore.personality}
-        background={character.lore.background}
         playSheet={character.play}
+        abilities={character.play.abilities}
       />
 
       <div className={styles.main}>
@@ -235,24 +218,59 @@ export default function CharacterDetailClient({
   );
 }
 
-/** AGENT 한정 — EQUIPMENT / ABILITIES 섹션. (CLASS/WEIGHT/스탯 등은 PosterHero 우측 흡수.) */
+/** AGENT 한정 — ABILITIES / EQUIPMENT 섹션. 콘텐츠 없는 박스는 통째로 생략.
+ *  순서: ABILITIES 가 AGENT DETAILS 바로 다음에 오도록 EQUIPMENT 앞에 배치. */
 function AgentSections({ character }: { character: AgentCharacter }) {
-  const { play } = character;
+  const { play, lore } = character;
 
-  // 어빌리티는 11-슬롯 시스템 (C1~C5/P/A1~A5). 채워진 슬롯만 노출, 전체 비면 빈 메시지.
-  const abilitiesBySlot = new Map(play.abilities.map((ab) => [ab.slot, ab]));
+  const hasEquipment = play.equipment.length > 0;
+  const hasProfile = Boolean(
+    lore.appearance || lore.personality || lore.background,
+  );
 
   return (
     <>
-      <Box>
-        <PanelTitle
-          right={<span className={styles.mono}>{play.equipment.length}</span>}
-        >
-          EQUIPMENT
-        </PanelTitle>
-        {play.equipment.length === 0 ? (
-          <div className={styles.empty}>장비 없음</div>
-        ) : (
+      {hasProfile ? (
+        <Box>
+          <PanelTitle right={<span className={styles.mono}>DOSSIER</span>}>
+            CHARACTER PROFILE
+          </PanelTitle>
+          <div className={styles.itemList}>
+            {lore.appearance ? (
+              <div className={styles.itemCard}>
+                <div className={styles.itemCard__head}>
+                  <div className={styles.itemCard__name}>외모</div>
+                </div>
+                <div className={styles.itemCard__desc}>{lore.appearance}</div>
+              </div>
+            ) : null}
+            {lore.personality ? (
+              <div className={styles.itemCard}>
+                <div className={styles.itemCard__head}>
+                  <div className={styles.itemCard__name}>성격</div>
+                </div>
+                <div className={styles.itemCard__desc}>{lore.personality}</div>
+              </div>
+            ) : null}
+            {lore.background ? (
+              <div className={styles.itemCard}>
+                <div className={styles.itemCard__head}>
+                  <div className={styles.itemCard__name}>배경</div>
+                </div>
+                <div className={styles.itemCard__desc}>{lore.background}</div>
+              </div>
+            ) : null}
+          </div>
+        </Box>
+      ) : null}
+
+      {hasEquipment ? (
+        <Box>
+          <PanelTitle
+            right={<span className={styles.mono}>{play.equipment.length}</span>}
+          >
+            EQUIPMENT
+          </PanelTitle>
           <div className={styles.itemList}>
             {play.equipment.map((eq, i) => (
               <div key={i} className={styles.itemCard}>
@@ -275,52 +293,8 @@ function AgentSections({ character }: { character: AgentCharacter }) {
               </div>
             ))}
           </div>
-        )}
-      </Box>
-
-      {(() => {
-        // 빈 슬롯은 노출하지 않음. 채워진 슬롯만 ABILITY_SLOT_ORDER 순서로 정렬해 렌더.
-        // 채워진 슬롯이 0이면 EQUIPMENT 패턴과 일관되게 "어빌리티 없음" 안내.
-        const filled = ABILITY_SLOT_ORDER.flatMap((slot) => {
-          const ab = abilitiesBySlot.get(slot);
-          return ab && ab.name.trim().length > 0 ? [{ slot, ab }] : [];
-        });
-
-        return (
-          <Box>
-            <PanelTitle
-              right={<span className={styles.mono}>{filled.length}</span>}
-            >
-              ABILITIES
-            </PanelTitle>
-            {filled.length === 0 ? (
-              <div className={styles.empty}>어빌리티 없음</div>
-            ) : (
-              <div className={styles.itemList}>
-                {filled.map(({ slot, ab }) => (
-                  <div key={slot} className={styles.itemCard}>
-                    <div className={styles.itemCard__head}>
-                      <div className={styles.itemCard__name}>
-                        <Tag tone="gold">{slot}</Tag> {ab.name}
-                      </div>
-                      {ab.code ? <Tag tone="default">{ab.code}</Tag> : null}
-                    </div>
-                    {ab.description ? (
-                      <div className={styles.itemCard__desc}>{ab.description}</div>
-                    ) : null}
-                    {ab.effect ? (
-                      <div className={styles.itemCard__effect}>
-                        <span className={styles.mono}>EFFECT · </span>
-                        {ab.effect}
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            )}
-          </Box>
-        );
-      })()}
+        </Box>
+      ) : null}
     </>
   );
 }

@@ -313,7 +313,12 @@ function LogRow({
           </span>
           <span className={styles.row__actor}>
             {actorLabel}
-            <span className={styles.row__actor__role}>{actorRoleLabel}</span>
+            <span
+              className={styles.row__actor__role}
+              data-rank={log.actorRole}
+            >
+              {actorRoleLabel}
+            </span>
           </span>
           <span
             className={`${styles.sourceBadge} ${
