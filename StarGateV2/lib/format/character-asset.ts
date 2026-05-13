@@ -21,8 +21,8 @@ const EXPLICIT_CODENAME_TO_SLUG: Record<string, string> = {
   PIPETTE: "Pinch",
   TIGER298: "Siyu",
   "WD-(𝓃)": "WD",
-  UNYEON: "운연",
-  YUHOE: "유회",
+  UNYEON: "Unyeon",
+  YUHOE: "Yuhoe",
   네베드: "NeBeD",
 };
 
@@ -41,8 +41,8 @@ const KNOWN_SLUGS = [
   "Pinch",
   "Siyu",
   "WD",
-  "운연",
-  "유회",
+  "Unyeon",
+  "Yuhoe",
 ] as const;
 
 function normalize(s: string): string {

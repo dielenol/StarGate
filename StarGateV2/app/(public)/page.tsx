@@ -15,7 +15,7 @@ import styles from "./page.module.css";
 export default function HomePage() {
   // 배포 환경(basePath 유무)에 따라 public 자산 경로를 자동 보정합니다.
   const logoSrc = resolvePublicAssetPath("/assets/StarGate_logo.png");
-  const amaliaPortraitSrc = resolvePublicAssetPath("/assets/peoples/Amalia_Fredrika.png");
+  const amaliaPortraitSrc = resolvePublicAssetPath("/assets/npcs/Amalia-Fredrika-profile.png");
 
   return (
     <main className={styles["stargate-page"]}>

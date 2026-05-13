@@ -61,3 +61,36 @@ catch (e) { print("[skip] credit_transactions_createdAt not found"); }
 
 - shared-db deploy 직후 1회 (운영 인스턴스).
 - 본 작업 후 다음 ERP 요청에서 `ensureAllIndexes()` 가 신규 인덱스를 생성하는지 로그로 확인.
+
+## 이미지 자산 컨벤션 (피규어/도트 파일 ↔ DB 필드)
+
+캐릭터/NPC 이미지 파일의 디렉토리 / 파일명 / DB 필드 매핑은 character 자산 통일 정책의 일부다 (운영자가 일관된 시각 자산으로 캐릭터를 식별).
+
+### peoples/ (AGENT — 플레이어블 캐릭터, 4종)
+
+디렉토리: `StarGateV2/public/assets/peoples/`
+
+- `<Slug>-main-image.png` → `lore.mainImage` (신원조회 portrait + 인덱스 카드)
+- `<Slug>-pixel-profile.png` → `previewImage` (ERP 캐릭터 카드 + 공개 `/world/player` portrait)
+- `<Slug>-pixel-character.png` → `pixelCharacterImage` (공개 `/world/player` 도트 배지)
+- `<Slug>-poster.webp` → `lore.posterImage` (캐릭터 상세 PosterHero 히어로 와이드)
+
+### npcs/ (NPC — 비플레이어블, 1종)
+
+디렉토리: `StarGateV2/public/assets/npcs/`
+
+- `<Slug>-profile.png` → `previewImage` (신원조회 인덱스 카드 + dossier 좌측 portrait)
+
+### 슬러그 규칙
+
+- **PascalCase 영문 강제** (예: `BigBoy`, `InDexer`, `Margaret`, `Unyeon`, `Yuhoe`, `Amalia-Fredrika`).
+- 한글 슬러그 금지 — URL 인코딩 회피 + macOS/Windows/Linux 간 NFC/NFD 차이로 인한 OS 호환성 문제 차단.
+- codename ↔ slug 매핑은 `StarGateV2/lib/format/character-asset.ts` 의 `EXPLICIT_CODENAME_TO_SLUG` + `KNOWN_SLUGS` 가 SSOT. 신규 캐릭터/NPC 정의 시 위 매핑을 **동시에** 갱신.
+
+### 원본 파일
+
+일러스트/도트 원본(psd/ai/aseprite 등)은 **레포 외부**에 보관. `StarGateV2/public/` 아래 절대 두지 말 것 — Next.js 가 정적 서빙하므로 원본이 그대로 인터넷에 노출된다.
+
+### 이미지 경로 마이그레이션 시 동기화 의무
+
+이미지 파일명/경로 변경 시 DB 의 **4 필드** (`previewImage` / `pixelCharacterImage` / `lore.mainImage` / `lore.posterImage`) 를 함께 갱신. 패턴은 `StarGateV2/scripts/_oneoff-fix-image-paths.mjs` 같은 일회성 마이그 스크립트로 처리 후 즉시 삭제 (영구 보관 X). 파일만 옮기고 DB 필드를 그대로 두면 신원조회/상세 페이지가 placeholder 로 떨어진다.

@@ -119,6 +119,7 @@ try { requireRole(session.user.role, "GM"); } catch { return 403; }
 - CSS Modules BEM 패턴: `styles.block__element`, `styles["block__element--modifier"]`
 - `dangerouslySetInnerHTML` 사용 시 반드시 `sanitizeHtml` 적용
 - 이미지: 현재 `<img>` 사용 중 (추후 `<Image>` 전환 검토)
+- 캐릭터 이미지: `public/assets/peoples/<Slug>-<type>.<ext>` (AGENT 4종: `main-image.png` / `pixel-profile.png` / `pixel-character.png` / `poster.webp`) / `public/assets/npcs/<Slug>-profile.png` (NPC 1종). 슬러그는 PascalCase 영문 강제 (한글 금지). 상세: `docs/spec/README.md` 의 "이미지 자산 컨벤션" 섹션 + `lib/format/character-asset.ts` SSOT
 
 ## 폰트 사이즈 정책 (ERP scope 14px floor)
 

@@ -1,4 +1,4 @@
-<!-- 예시 파일 — npc.template.md 기반. 원본: StarGateV2/docs/spec/npc/npc-registrar-spec.md -->
+<!-- 예시 파일 — npc.template.md 기반. 신 규격 NPC 의 작성 예시 참고용. -->
 ---
 codename: REGISTRAR
 slug: registrar

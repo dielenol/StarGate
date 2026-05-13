@@ -72,6 +72,7 @@ StarGate 세계관 자산은 **5개 도메인**(NPC / Faction / Institution / Eq
 | `source` | enum | | `create-lore` / `discord` / `legacy-json` / `manual` |
 | `previewImage` | url | | |
 | `pixelCharacterImage` | string | | 도트/픽셀 스타일 대표 이미지 URL (자유 문자열, URL 권장) |
+| `posterImage` | string | | 캐릭터 상세 히어로 와이드 이미지. lore sub-document 하위(`lore.posterImage`) 로 적재 |
 | `warningVideo` | string | | 경고/틀징 영상 URL (자유 문자열, URL 권장) |
 
 **body 섹션**: `## 대사` / `## 외형` / `## 성격` / `## 배경` / `## 역할 상세` / `## 이름 설명`
@@ -151,6 +152,35 @@ Equipment와 동일 구조. 단:
 - NPC의 `factionCode`/`institutionCode`, institution의 `parentFactionCode`/`leaderCodename`는 frontmatter에서 **빈 문자열**을 허용 (템플릿 프리필 수용). DB 어댑터(`toDb*`)가 빈 문자열을 `undefined`로 정규화해 적재한다.
 - Equipment/Consumable의 `description`은 frontmatter에서 optional. 미지정 시 body `## 설명` 섹션으로 폴백되며, 둘 다 비어 있으면 어댑터가 명시적 throw.
 
+## 이미지 자산 컨벤션
+
+### peoples/ (AGENT — 플레이어블 캐릭터)
+
+`StarGateV2/public/assets/peoples/<Slug>-<type>.<ext>` 4종:
+
+- `<Slug>-main-image.png` — 신원조회 portrait, `lore.mainImage` 매핑
+- `<Slug>-pixel-character.png` — 도트 풀샷, `pixelCharacterImage` 매핑
+- `<Slug>-pixel-profile.png` — 도트 프로필, `previewImage` 매핑
+- `<Slug>-poster.webp` — 캐릭터 상세 PosterHero 와이드 히어로, `lore.posterImage` 매핑
+
+### npcs/ (NPC — 비플레이어블)
+
+`StarGateV2/public/assets/npcs/<Slug>-profile.png` 1종. `previewImage` 매핑.
+
+### 슬러그 규칙
+
+- **PascalCase 영문 강제** (예: `BigBoy`, `InDexer`, `Margaret`, `Unyeon`, `Yuhoe`).
+- 한글 슬러그 금지 (URL 인코딩 + macOS/Windows/Linux 간 NFC/NFD 차이로 인한 OS 호환성 문제).
+- codename ↔ slug 매핑은 `StarGateV2/lib/format/character-asset.ts` 의 `EXPLICIT_CODENAME_TO_SLUG` + `KNOWN_SLUGS` 가 SSOT. 신규 캐릭터/NPC 추가 시 매핑을 **동시에** 갱신해야 한다 (매핑 없이 파일만 추가하면 폴백 경로가 mismatch).
+
+### 원본 파일
+
+레포 외부 보관 (psd/ai/aseprite 등). `StarGateV2/public/` 아래 절대 두지 말 것 — Next.js 가 정적 서빙하므로 원본을 두면 인터넷에서 그대로 다운로드 가능.
+
+### 경로 마이그레이션
+
+이미지 파일명/경로 변경 시 DB 의 4 필드(`previewImage` / `pixelCharacterImage` / `lore.mainImage` / `lore.posterImage`) 도 함께 갱신해야 한다. 패턴은 `StarGateV2/scripts/_oneoff-fix-image-paths.mjs` 같은 일회성 마이그레이션 스크립트로 처리 후 즉시 삭제 (영구 보관 X).
+
 ## 제약 — frontmatter 평탄 YAML
 
 `parseFrontmatter`(packages/shared-db/src/schemas/frontmatter.ts)는 경량 파서다. 다음만 지원:
@@ -165,11 +195,17 @@ Equipment와 동일 구조. 단:
 
 ## 구 체계 (마이그레이션 상태)
 
-- `docs/civil-society/` — **이주 완료**. `docs/spec/npc/{registrar,dominique-lee,towaski}.md` 로 이전. round-trip 검증은 `packages/shared-db/src/schemas/__tests__/migration.test.mjs` 참조.
+- `docs/civil-society/` — **이주 완료 + 구 파일 제거** (2026-05-13). `docs/spec/npc/{registrar,dominique-lee,towaski}.md` 로 이전됨. round-trip 검증은 `packages/shared-db/src/schemas/__tests__/migration.test.mjs` 참조.
 - `docs/military/`, `docs/wolrd-council/` — 남은 잔존 경로. Phase 4에서 본 규격으로 이관 예정.
-- `docs/spec/npc/npc-registrar-spec.md` — 구 spec 원본. 신 규격 예시는 `docs/spec/templates/examples/npc-registrar.example.md`.
+- 구 `docs/spec/npc/npc-registrar-spec.md` — **제거 완료** (2026-05-13). 신 규격 예시는 `docs/spec/templates/examples/npc-registrar.example.md`.
 
 그 외 `docs/spec/personnel-spec.md`는 인물 명세 원본으로 별도 유지.
+
+> 자산 마이그레이션 audit 규약: 이미지/asset 파일명·경로 변경 시 **forward(DB)** 와 **backward(소스 코드 하드코딩)** 양쪽을 모두 검사해야 한다. backward audit 게이트:
+> ```bash
+> grep -rn 'assets/(peoples|npcs)/' StarGateV2/{app,components,lib}
+> ```
+> 결과를 `lib/format/character-asset.ts` 의 `KNOWN_SLUGS` + 마이그 스크립트의 `REPLACEMENTS` 와 교차 검증.
 
 ## 작업 흐름
 
