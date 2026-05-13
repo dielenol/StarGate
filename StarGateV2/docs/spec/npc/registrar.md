@@ -1,4 +1,4 @@
-<!-- 이 문서는 레거시 StarGateV2/docs/spec/npc/npc-registrar-spec.md 를 신 규격으로 이주한 버전입니다. 원본은 안전을 위해 유지됩니다. -->
+<!-- 신 규격 NPC spec. 구 레거시(npc-registrar-spec.md) 는 2026-05-13 자로 제거됨. -->
 ---
 codename: REGISTRAR
 slug: registrar
