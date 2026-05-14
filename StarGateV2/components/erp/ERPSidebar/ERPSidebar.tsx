@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 import type { NavItem } from "@/components/erp/nav-config";
 
 import { NAV_GROUPS } from "@/components/erp/nav-config";
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import { IconCheckDot, IconChevronLeft } from "@/components/icons";
 
 import { hasRole } from "@/lib/auth/rbac";
@@ -16,6 +17,12 @@ import { hasRole } from "@/lib/auth/rbac";
 import styles from "./ERPSidebar.module.css";
 
 const SIDEBAR_OPEN_EVENT = "no:sidebar-open";
+
+const ALL_NAV_HREFS: string[] = NAV_GROUPS.flatMap((group) =>
+  group.items
+    .map((item) => item.href)
+    .filter((href): href is string => href !== null),
+);
 
 export default function ERPSidebar() {
   const pathname = usePathname();
@@ -39,10 +46,22 @@ export default function ERPSidebar() {
     };
   }, []);
 
+  const activeHref = useMemo(() => {
+    let best: string | null = null;
+    for (const href of ALL_NAV_HREFS) {
+      const matches =
+        href === "/erp"
+          ? pathname === "/erp"
+          : pathname === href || pathname.startsWith(`${href}/`);
+      if (matches && (best === null || href.length > best.length)) {
+        best = href;
+      }
+    }
+    return best;
+  }, [pathname]);
+
   function isItemActive(item: NavItem): boolean {
-    if (!item.href) return false;
-    if (item.href === "/erp") return pathname === "/erp";
-    return pathname.startsWith(item.href);
+    return item.href !== null && item.href === activeHref;
   }
 
   const role = session?.user?.role;
@@ -119,6 +138,7 @@ export default function ERPSidebar() {
                       .join(" ")}
                     onClick={close}
                   >
+                    <LinkPendingProbe />
                     <span className={styles.sidebar__itemLeft}>
                       <span className={styles.sidebar__icon} aria-hidden>
                         <Icon />
@@ -142,6 +162,7 @@ export default function ERPSidebar() {
 
         <div className={styles.sidebar__footer}>
           <Link href="/" className={styles.sidebar__return}>
+            <LinkPendingProbe />
             <IconChevronLeft aria-hidden />
             홍보 사이트로 돌아가기
           </Link>

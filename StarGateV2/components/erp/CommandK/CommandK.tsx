@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -9,6 +16,7 @@ import { hasRole } from "@/lib/auth/rbac";
 
 import type { NavGroup, NavItem } from "@/components/erp/nav-config";
 import { NAV_GROUPS } from "@/components/erp/nav-config";
+import { useNavPending } from "@/components/erp/NavPending/NavPendingProvider";
 
 import styles from "./CommandK.module.css";
 
@@ -21,6 +29,7 @@ interface FlatEntry {
 export default function CommandK() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { begin, end } = useNavPending();
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const rowRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -28,8 +37,16 @@ export default function CommandK() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isNavPending, startNavTransition] = useTransition();
 
   const role = session?.user?.role;
+
+  /* router.push 의 transition pending 을 전역 NavPending 카운터에 bridge */
+  useEffect(() => {
+    if (!isNavPending) return;
+    begin();
+    return end;
+  }, [isNavPending, begin, end]);
 
   const visibleGroups = useMemo<NavGroup[]>(() => {
     return NAV_GROUPS.filter(
@@ -146,8 +163,11 @@ export default function CommandK() {
   }
 
   function handleSelect(entry: FlatEntry) {
-    if (!entry.item.href) return;
-    router.push(entry.item.href);
+    const href = entry.item.href;
+    if (!href) return;
+    startNavTransition(() => {
+      router.push(href);
+    });
     close();
   }
 
