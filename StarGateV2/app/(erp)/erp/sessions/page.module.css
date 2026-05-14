@@ -427,6 +427,13 @@
   border-color: var(--gold-dim);
 }
 
+/* trpg 캘린더 base URL 미설정 시 — 호버/클릭/포커스 차단 + 시각적 비활성. */
+.rsvpItem--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .rsvpWhen {
   padding-right: 8px;
   border-right: 1px solid var(--line);
@@ -1014,6 +1021,13 @@
   color: var(--ink-0);
 }
 
+/* trpg 캘린더 base URL 미설정 시 — 호버/클릭/포커스 차단 + 시각적 비활성. */
+.listAction--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 
 /* ── Empty state (shared across views) ── */
 
@@ -1024,4 +1038,26 @@
   font-size: 14px;
   letter-spacing: 0.16em;
   text-align: center;
+}
+
+/* ── Source badge (trpg vs registra) ──
+   세션 출처 표시 — registra(공식 길드)는 뱃지 없음, trpg(별도 봇)만 뱃지.
+   색상은 globals.css 의 info 토큰 재사용 (calendar chip--closing 과 동일 톤).
+   14px floor 준수. */
+.sourceBadge--trpg {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 1px 6px;
+  background: color-mix(in srgb, var(--info) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info) 50%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--info);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  vertical-align: middle;
 }

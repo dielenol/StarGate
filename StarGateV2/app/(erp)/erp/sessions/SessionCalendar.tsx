@@ -178,19 +178,28 @@ export default function SessionCalendar({
               {visible.map((e) => {
                 const mod = CHIP_MOD[e.status];
                 const dim = isHighlighting && !inGroup(e, highlightGroup);
+                const isTrpg = e.source === "trpg";
                 const chipCls = [
                   styles.chip,
                   mod ? styles[`chip--${mod}`] : "",
+                  isTrpg ? styles["chip--trpg"] : "",
                   dim ? styles["chip--dim"] : "",
                 ]
                   .filter(Boolean)
                   .join(" ");
+                const titleText = `${isTrpg ? "[TRPG] " : ""}${e.title} · ${formatTime(e.targetDateTime)}`;
                 return (
                   <span
                     key={e._id}
                     className={chipCls}
-                    title={`${e.title} · ${formatTime(e.targetDateTime)}`}
+                    title={titleText}
                   >
+                    {isTrpg ? (
+                      <span
+                        className={styles.sourceDot}
+                        aria-label="TRPG 봇 세션"
+                      />
+                    ) : null}
                     <span className={styles.t}>
                       {formatTime(e.targetDateTime)}
                     </span>

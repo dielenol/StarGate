@@ -290,6 +290,22 @@
   opacity: 0.55;
 }
 
+/* trpg 출처 — 좌측 보더만 info 톤으로 덮어쓴다.
+   status (open/closing/closed/cancel) 와 직교하는 출처 표식.
+   status 별 배경/시각 정렬은 그대로 유지. */
+.chip--trpg {
+  border-left-color: var(--info);
+}
+
+/* trpg 출처 닷 — chip 좌측에 작은 dot 으로 출처를 표시. */
+.sourceDot {
+  flex: 0 0 5px;
+  width: 5px;
+  height: 5px;
+  background: var(--info);
+  border-radius: 50%;
+}
+
 .chipMe {
   flex: 0 0 6px;
   width: 6px;

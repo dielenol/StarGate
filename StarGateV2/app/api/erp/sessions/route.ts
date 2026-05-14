@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import {
-  enrichSessions,
-  findSessionsByGuildInMonth,
-} from "@/lib/db/sessions";
+import { findMergedSessionsByGuildInMonth } from "@/lib/db/sessions";
 
 // 단일 길드 전제. 다중 길드 확장 시 세션 유저의 소속 길드 화이트리스트 검증 추가.
 export async function GET(request: Request) {
@@ -50,35 +47,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    // findSessionsByGuildInMonth 는 monthIndex(0~11) 기반
-    const rawSessions = await findSessionsByGuildInMonth(
+    // findMergedSessionsByGuildInMonth: registra(공유 길드) + trpg(별도 길드) 통합.
+    // monthIndex 는 0~11 기반 — month(1~12) 에서 -1.
+    const serialized = await findMergedSessionsByGuildInMonth(
       guildId,
       year,
       month - 1,
-    );
-
-    const enriched = await enrichSessions(
-      rawSessions,
       session.user.discordId,
     );
-
-    const serialized = enriched.map(({ raw: s, participants, counts, myRsvp }) => ({
-      _id: s._id?.toString() ?? "",
-      guildId: s.guildId,
-      channelId: s.channelId,
-      messageId: s.messageId,
-      title: s.title,
-      targetDateTime: new Date(s.targetDateTime).toISOString(),
-      closeDateTime: new Date(s.closeDateTime).toISOString(),
-      targetRoleId: s.targetRoleId,
-      status: s.status,
-      createdBy: s.createdBy,
-      createdAt: new Date(s.createdAt).toISOString(),
-      updatedAt: new Date(s.updatedAt).toISOString(),
-      participants,
-      counts,
-      myRsvp,
-    }));
 
     return NextResponse.json(
       { sessions: serialized },

@@ -17,6 +17,16 @@ export interface SerializedSessionParticipant {
   codename?: string;
 }
 
+/**
+ * 세션 데이터 출처.
+ *
+ * - `"registra"`: registra-bot 공유 `sessions` 컬렉션 (디스코드 공지/응답 모델).
+ * - `"trpg"`: trpg-bot 단독 `trpg_sessions` 컬렉션 (DM 알림 모델, 채널/메시지 없음).
+ *
+ * UI 분기: source === "trpg" 일 때 디스코드 채널 링크 대신 trpg-web 캘린더로 이동.
+ */
+export type SessionSource = "registra" | "trpg";
+
 export interface SerializedSession {
   _id: string;
   guildId: string;
@@ -36,6 +46,8 @@ export interface SerializedSession {
   counts: { yes: number; no: number };
   /** 현재 로그인 유저의 응답. 미응답/게스트는 null. */
   myRsvp: ResponseStatus | null;
+  /** 데이터 출처 — registra(공유) / trpg(별도 봇). UI 분기/링크 동작에 사용. */
+  source: SessionSource;
 }
 
 export const sessionKeys = {

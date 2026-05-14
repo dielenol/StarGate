@@ -57,6 +57,13 @@ interface SessionsClientProps {
   initialGlobalCounts: ActiveSessionCounts;
   /** 현재 로그인 유저 discord id — 응답 참여자 목록에서 본인 강조용. 미연결 유저는 null. */
   currentUserDiscordId: string | null;
+  /**
+   * trpg-web 캘린더 base URL (env: `TRPG_WEB_BASE_URL`).
+   *
+   * source === "trpg" 인 세션 클릭 시 `${trpgWebBaseUrl}/calendar` 새 탭으로 이동.
+   * null 이면 클릭 비활성 + 안내 툴팁.
+   */
+  trpgWebBaseUrl: string | null;
 }
 
 interface TabDef {
@@ -86,6 +93,7 @@ export default function SessionsClient({
   initialUpcoming,
   initialGlobalCounts,
   currentUserDiscordId,
+  trpgWebBaseUrl,
 }: SessionsClientProps) {
   const [view, setView] = useState<ViewKey>("calendar");
   const [year, setYear] = useState(initialYear);
@@ -316,6 +324,7 @@ export default function SessionsClient({
               expandedId={listExpandedId}
               onExpandedChange={setListExpandedId}
               currentUserDiscordId={currentUserDiscordId}
+              trpgWebBaseUrl={trpgWebBaseUrl}
             />
           ) : null}
         </main>
@@ -325,6 +334,7 @@ export default function SessionsClient({
             counts={counts}
             myRsvp={myRsvpUpcoming}
             openImminent={initialUpcoming}
+            trpgWebBaseUrl={trpgWebBaseUrl}
           />
         ) : null}
       </div>
@@ -373,6 +383,21 @@ function StatusPill({ on, mod, onClick, children }: StatusPillProps) {
 
 /* ── List view ── */
 
+/** trpg-web 캘린더 경로 — base URL 에 붙여서 사용. */
+const TRPG_CALENDAR_PATH = "/calendar";
+/** trpg base URL 미설정 시 사용자에게 노출되는 라벨/툴팁 문구. */
+const TRPG_LINK_UNSET_LABEL = "TRPG 캘린더 링크 미설정";
+
+/**
+ * trpg 세션 외부 캘린더 링크.
+ *
+ * URL 이 없으면 null 반환 → 호출처에서 비활성 + 안내 툴팁 처리.
+ */
+function buildTrpgCalendarUrl(base: string | null): string | null {
+  if (!base) return null;
+  return `${base}${TRPG_CALENDAR_PATH}`;
+}
+
 interface SessionsListProps {
   sessions: SerializedSession[];
   year: number;
@@ -380,6 +405,7 @@ interface SessionsListProps {
   expandedId: string | null;
   onExpandedChange: (next: string | null) => void;
   currentUserDiscordId: string | null;
+  trpgWebBaseUrl: string | null;
 }
 
 function SessionsList({
@@ -389,6 +415,7 @@ function SessionsList({
   expandedId,
   onExpandedChange,
   currentUserDiscordId,
+  trpgWebBaseUrl,
 }: SessionsListProps) {
   const [upcomingOnly, setUpcomingOnly] = useState(false);
 
@@ -463,6 +490,7 @@ function SessionsList({
                 onExpandedChange(expandedId === s._id ? null : s._id)
               }
               currentUserDiscordId={currentUserDiscordId}
+              trpgWebBaseUrl={trpgWebBaseUrl}
             />
           ))}
         </>
@@ -476,6 +504,7 @@ interface SessionsListItemProps {
   expanded: boolean;
   onToggle: () => void;
   currentUserDiscordId: string | null;
+  trpgWebBaseUrl: string | null;
 }
 
 function SessionsListItem({
@@ -483,6 +512,7 @@ function SessionsListItem({
   expanded,
   onToggle,
   currentUserDiscordId,
+  trpgWebBaseUrl,
 }: SessionsListItemProps) {
   const itemRef = useRef<HTMLDivElement | null>(null);
 
@@ -512,6 +542,8 @@ function SessionsListItem({
   const dur = formatDuration(s.targetDateTime, s.closeDateTime);
 
   const yesParticipants = s.participants.filter((p) => p.status === "YES");
+  const isTrpg = s.source === "trpg";
+  const trpgCalendarUrl = isTrpg ? buildTrpgCalendarUrl(trpgWebBaseUrl) : null;
 
   return (
     <div ref={itemRef} className={styles.listItem}>
@@ -528,6 +560,15 @@ function SessionsListItem({
               <span className={styles.me} aria-label="내 참여" />
             ) : null}
             <span className={styles.nm}>{s.title}</span>
+            {isTrpg ? (
+              <span
+                className={styles["sourceBadge--trpg"]}
+                aria-label="TRPG 봇 세션"
+                title="TRPG 봇 세션"
+              >
+                TRPG
+              </span>
+            ) : null}
           </div>
         </div>
         <div className={styles.listWhen}>
@@ -539,7 +580,7 @@ function SessionsListItem({
         </div>
         <div className={styles.listRsvp}>
           <span className={styles.y}>{s.counts.yes}</span>
-          <span className={styles.lbl}>응답</span>
+          <span className={styles.lbl}>{isTrpg ? "참가자" : "응답"}</span>
           <span className={styles.caret} aria-hidden>
             {expanded ? "▾" : "▸"}
           </span>
@@ -556,13 +597,19 @@ function SessionsListItem({
                 {formatTime(s.targetDateTime)}
               </dd>
             </div>
-            <div className={styles.listInfo__row}>
-              <dt>응답 마감</dt>
-              <dd>
-                {formatDateMD(s.closeDateTime)} ·{" "}
-                {formatTime(s.closeDateTime)}
-              </dd>
-            </div>
+            {/*
+              trpg 는 close 시점이 모델에 없음 — closeDateTime 이 "" 면 row 자체 숨김.
+              registra 는 항상 closeDateTime 이 채워져 있다.
+            */}
+            {!isTrpg && s.closeDateTime ? (
+              <div className={styles.listInfo__row}>
+                <dt>응답 마감</dt>
+                <dd>
+                  {formatDateMD(s.closeDateTime)} ·{" "}
+                  {formatTime(s.closeDateTime)}
+                </dd>
+              </div>
+            ) : null}
             {dur ? (
               <div className={styles.listInfo__row}>
                 <dt>소요</dt>
@@ -577,21 +624,45 @@ function SessionsListItem({
 
           <div className={styles.listParticipants}>
             <ParticipantGroup
-              label="응답 참여자"
+              label={isTrpg ? "참가자" : "응답 참여자"}
               items={yesParticipants}
               currentUserDiscordId={currentUserDiscordId}
             />
           </div>
 
           <div className={styles.listActions}>
-            <Link
-              href={buildDiscordLink(s)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.listAction}
-            >
-              디스코드 공지사항으로 이동 →
-            </Link>
+            {isTrpg ? (
+              trpgCalendarUrl ? (
+                <a
+                  href={trpgCalendarUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.listAction}
+                >
+                  TRPG 캘린더로 이동 →
+                </a>
+              ) : (
+                <span
+                  className={[
+                    styles.listAction,
+                    styles["listAction--disabled"],
+                  ].join(" ")}
+                  aria-disabled="true"
+                  title={TRPG_LINK_UNSET_LABEL}
+                >
+                  {TRPG_LINK_UNSET_LABEL}
+                </span>
+              )
+            ) : (
+              <Link
+                href={buildDiscordLink(s)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.listAction}
+              >
+                디스코드 공지사항으로 이동 →
+              </Link>
+            )}
           </div>
         </div>
       ) : null}
@@ -658,9 +729,15 @@ interface SessionsRailProps {
   counts: StatusCounts;
   myRsvp: SerializedSession[];
   openImminent: UpcomingSessionLink[];
+  trpgWebBaseUrl: string | null;
 }
 
-function SessionsRail({ counts, myRsvp, openImminent }: SessionsRailProps) {
+function SessionsRail({
+  counts,
+  myRsvp,
+  openImminent,
+  trpgWebBaseUrl,
+}: SessionsRailProps) {
   return (
     <aside className={styles.rail}>
       <div className={styles.statStrip}>
@@ -706,14 +783,13 @@ function SessionsRail({ counts, myRsvp, openImminent }: SessionsRailProps) {
               ]
                 .filter(Boolean)
                 .join(" ");
-              return (
-                <Link
-                  key={s._id}
-                  href={buildDiscordLink(s)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.rsvpItem}
-                >
+              const isTrpg = s.source === "trpg";
+              const trpgUrl = isTrpg
+                ? buildTrpgCalendarUrl(trpgWebBaseUrl)
+                : null;
+
+              const body = (
+                <>
                   <div className={styles.rsvpWhen}>
                     <div className={styles.d}>{d.getDate()}</div>
                     <div className={styles.m}>
@@ -721,7 +797,18 @@ function SessionsRail({ counts, myRsvp, openImminent }: SessionsRailProps) {
                     </div>
                   </div>
                   <div className={styles.rsvpBody}>
-                    <div className={styles.rsvpName}>{s.title}</div>
+                    <div className={styles.rsvpName}>
+                      {s.title}
+                      {isTrpg ? (
+                        <span
+                          className={styles["sourceBadge--trpg"]}
+                          aria-label="TRPG 봇 세션"
+                          title="TRPG 봇 세션"
+                        >
+                          TRPG
+                        </span>
+                      ) : null}
+                    </div>
                     <div className={styles.rsvpMeta}>
                       <span className={styles.t}>
                         {formatTime(s.targetDateTime)}
@@ -730,6 +817,46 @@ function SessionsRail({ counts, myRsvp, openImminent }: SessionsRailProps) {
                     </div>
                   </div>
                   <div className={cdCls}>{ddayLabel(s.targetDateTime)}</div>
+                </>
+              );
+
+              if (isTrpg) {
+                // trpg 세션 — 외부 캘린더 링크. URL 없으면 비활성 span.
+                return trpgUrl ? (
+                  <a
+                    key={s._id}
+                    href={trpgUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.rsvpItem}
+                  >
+                    {body}
+                  </a>
+                ) : (
+                  <div
+                    key={s._id}
+                    className={[
+                      styles.rsvpItem,
+                      styles["rsvpItem--disabled"],
+                    ].join(" ")}
+                    aria-disabled="true"
+                    title={TRPG_LINK_UNSET_LABEL}
+                  >
+                    {body}
+                  </div>
+                );
+              }
+
+              // registra — 기존 디스코드 채널 링크.
+              return (
+                <Link
+                  key={s._id}
+                  href={buildDiscordLink(s)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.rsvpItem}
+                >
+                  {body}
                 </Link>
               );
             })}
