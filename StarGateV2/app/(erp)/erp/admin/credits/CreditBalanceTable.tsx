@@ -23,8 +23,8 @@ import styles from "./page.module.css";
 
 interface Props {
   initialData: BalancesResponse;
-  /** 행의 [발급] 버튼 클릭 시 호출 — 부모가 GrantForm 에 prefill 한다. */
-  onSelectCharacter: (characterId: string) => void;
+  /** 행의 [발급] 버튼 클릭 시 호출 — 부모가 GrantForm picker 에 ownerId 를 prefill 한다. */
+  onSelectOwner: (ownerId: string) => void;
 }
 
 type SortKey = "balance-desc" | "balance-asc" | "codename" | "lastTx";
@@ -83,7 +83,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 
 export default function CreditBalanceTable({
   initialData,
-  onSelectCharacter,
+  onSelectOwner,
 }: Props) {
   const { data } = useCreditBalances({ initialData });
 
@@ -198,7 +198,15 @@ export default function CreditBalanceTable({
                     <td className={styles.credits__numCol}>
                       <Button
                         size="sm"
-                        onClick={() => onSelectCharacter(row.characterId)}
+                        onClick={() =>
+                          row.ownerId && onSelectOwner(row.ownerId)
+                        }
+                        disabled={!row.ownerId}
+                        title={
+                          row.ownerId
+                            ? undefined
+                            : "owner 미연결 — 발급 불가"
+                        }
                       >
                         발급
                       </Button>

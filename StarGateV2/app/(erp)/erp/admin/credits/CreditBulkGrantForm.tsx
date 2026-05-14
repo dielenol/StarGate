@@ -17,8 +17,6 @@ import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import Input from "@/components/ui/Input/Input";
 import Select from "@/components/ui/Select/Select";
 
-import type { GrantTargetUser } from "./CreditGrantForm";
-
 import styles from "./CreditBulkGrantForm.module.css";
 
 /* ── 상수 ── */
@@ -33,9 +31,35 @@ const MAX_TARGETS = 100;
 
 /* ── 타입 ── */
 
+/**
+ * GM 발급 폼이 필요한 user 정보 + 메인 캐릭 매핑.
+ * 서버에서 미리 매핑해 넘겨줌으로써 UI 가 추가 fetch 없이 캐릭 codename 표시.
+ */
+export interface GrantTargetUser {
+  userId: string;
+  username: string;
+  displayName: string;
+  /** 메인 AGENT 캐릭터의 _id hex. 미등록이면 null — 발급 불가 표시. */
+  mainCharacterId: string | null;
+  /** 메인 AGENT 캐릭터의 codename. */
+  mainCharacterCodename: string | null;
+  /**
+   * 메인 캐릭이 더미(isPublic === false) 인지 여부. 발급은 가능하지만
+   * UI 가 [DUMMY] 로 시각 구분 — GM 오발급 방지용 힌트.
+   */
+  isDummy?: boolean;
+}
+
 interface CreditBulkGrantFormProps {
-  /** 단건 폼과 동일. 메인 미등록자는 picker 모드에서 disabled 로 노출. */
+  /** 메인 미등록자는 picker 모드에서 disabled 로 노출. */
   targets: GrantTargetUser[];
+  /**
+   * 외부(예: 잔액 보드의 [발급] 버튼)가 owner 1명을 prefill 하도록 한다.
+   * truthy 값이 들어오면 picker 모드 + 해당 owner 단독 체크로 전환.
+   */
+  prefillOwnerId?: string;
+  /** prefill 적용 후 부모 state 를 비우기 위한 콜백 (재발화 방지). */
+  onPrefillConsumed?: () => void;
 }
 
 type InputMode = "picker" | "paste";
@@ -51,6 +75,8 @@ interface PasteTarget {
 
 export default function CreditBulkGrantForm({
   targets,
+  prefillOwnerId,
+  onPrefillConsumed,
 }: CreditBulkGrantFormProps) {
   const bulkGrant = useBulkGrantCredit();
 
@@ -137,6 +163,27 @@ export default function CreditBulkGrantForm({
       return next;
     });
     setError("");
+  }
+
+  // 외부 prefill(예: 잔액 보드 [발급]) 흡수 — picker 모드로 전환 + 단독 체크.
+  // 부모가 null 로 비우면 lastPrefill 도 reset → 같은 값 재진입 허용 (행 재클릭 사용성).
+  // React 권장 derived-state-from-prop 패턴 (useEffect cascading render 방지).
+  const [lastPrefill, setLastPrefill] = useState<string | null>(null);
+  if (prefillOwnerId == null && lastPrefill !== null) {
+    setLastPrefill(null);
+  } else if (prefillOwnerId && prefillOwnerId !== lastPrefill) {
+    setLastPrefill(prefillOwnerId);
+    setMode("picker");
+    setPickedOwnerIds(new Set([prefillOwnerId]));
+    setError("");
+    setPendingConfirm(false);
+    // 이전 일괄 발급 결과 화면이 떠 있으면 폼이 가려지므로 함께 reset.
+    setResult(null);
+    setShowFailedOnly(false);
+    // paste 모드의 옛 입력/토글이 살아있으면 다음 모드 전환 시 오인 — picker 단독 의도와 충돌.
+    setPasteText("");
+    setPasteIsCharacterId(false);
+    onPrefillConsumed?.();
   }
 
   /* ── paste 모드: 라인 파싱 ── */
@@ -244,6 +291,7 @@ export default function CreditBulkGrantForm({
     setPendingConfirm(false);
     setPickedOwnerIds(new Set());
     setPasteText("");
+    setPasteIsCharacterId(false);
     setAmount("");
     setDescription("");
   }

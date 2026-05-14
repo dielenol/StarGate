@@ -32,7 +32,7 @@ import { findUserById, listUsers } from "@/lib/db/users";
 
 import type { OpPoolResponse } from "@/hooks/queries/useCreditsAdminQuery";
 
-import type { GrantTargetUser } from "./CreditGrantForm";
+import type { GrantTargetUser } from "./CreditBulkGrantForm";
 import { buildInitialSessionCandidates as buildSessionCandidatesViaHelper } from "./_session-rewards";
 
 const INITIAL_LOG_LIMIT = 50;
