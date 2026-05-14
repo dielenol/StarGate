@@ -182,13 +182,20 @@ export const INSTITUTIONS = [
       { code: "ADMIN_BUREAU", label: "행정 기구" },
       { code: "INTL", label: "국제 기구" },
       { code: "CONTROL", label: "통제 기구" },
+      { code: "FINANCE", label: "재무 기구" },
     ],
   },
   {
-    code: "FINANCE",
-    label: "재무국",
-    labelEn: "Financial Bureau",
-    subUnits: [],
+    code: "MANUS",
+    label: "현장",
+    labelEn: "Manus",
+    subUnits: [
+      { code: "SECTOR_A", label: "섹터 A" },
+      { code: "SECTOR_B", label: "섹터 B" },
+      { code: "SECTOR_C", label: "섹터 C" },
+      { code: "SECTOR_D", label: "섹터 D" },
+      { code: "SECTOR_E", label: "섹터 E" },
+    ],
   },
 ] as const;
 
@@ -208,7 +215,7 @@ export const DEPARTMENTS = [
 /** @deprecated 레거시 코드 유니온 */
 export type LegacyDepartmentCode = (typeof DEPARTMENTS)[number]["code"];
 
-/** 모든 유효한 부서/세력/기관 코드 유니온 */
+/** 모든 유효한 부서/외부 기관/내부 기관 코드 유니온 */
 export type DepartmentCode =
   | FactionCode
   | InstitutionCode

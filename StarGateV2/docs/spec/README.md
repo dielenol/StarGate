@@ -16,7 +16,7 @@ StarGate 세계관 자산은 **5개 도메인**(NPC / Faction / Institution / Eq
 |--------|------|-----------|--------|
 | **npc** | 세계관 등장인물 (플레이어블 아닌 NPC) | `docs/spec/npc/{slug}.md` | `characters` (type=NPC) |
 | **faction** | 세력 (정치·이념 단위. 군부/이사회/시민사회 등) | `docs/spec/faction/{slug}.md` | `factions` |
-| **institution** | 기관 (세력 하위 조직. 사무국/재무국 등) | `docs/spec/institution/{slug}.md` | `institutions` |
+| **institution** | 기관 (세력 하위 조직. 사무국/현장 등) | `docs/spec/institution/{slug}.md` | `institutions` |
 | **equipment** | 장비 (무기/방어구) | `docs/spec/equipment/{slug}.md` | `master_items` (category=`WEAPON`\|`ARMOR`) |
 | **consumable** | 소모품 (포션·아이템 등) | `docs/spec/consumable/{slug}.md` | `master_items` (category=`CONSUMABLE`) |
 
@@ -228,8 +228,8 @@ Equipment와 동일 구조. 단:
 
 | 컬렉션 | 건수 | 내용 |
 |--------|------|------|
-| `factions` | 3 | `MILITARY` / `COUNCIL` / `CIVIL` (`NOVUS_ORDO` 상위 코드 추가는 별도 작업 예정) |
-| `institutions` | 2 | `SECRETARIAT` (subUnits 4) / `FINANCE` |
+| `factions` | 3 | `MILITARY` / `COUNCIL` / `CIVIL` — **노부스 오르도 외부 기관**. 권한 등급은 V(VIP) 명목 부여만 일반적이고 A~U 정규 부여는 원칙적으로 없음 (운영 규약, [personnel-spec.md §4 등급 부여 정책](personnel-spec.md) 참조). `NOVUS_ORDO` 상위 코드 신설은 Phase 5-h 로 별도 작업 예정 |
+| `institutions` | 2 | `SECRETARIAT` (subUnits 6: HQ/RESEARCH/ADMIN_BUREAU/INTL/CONTROL/FINANCE) / `MANUS` (subUnits 5: SECTOR_A~E) — **노부스 오르도 내부 기관**. 권한 8단(GM~U) 모두 정규 부여 대상. lore MD: [`institution/manus.md`](institution/manus.md) / [`institution/secretariat.md`](institution/secretariat.md) |
 | `characters` (NPC) | 기존 N | NPC 이주본 3건(REGISTRAR/STAR_MART/TOWASKI) + ARBITER(제레마이어 폴, 재무위 의장) MD 작성 — DB 적재는 후속 |
 | `master_items` | 운영 N건 | equipment + consumable 도메인 mirror. ERP 인벤토리(`/erp/inventory`) + 카탈로그(`/erp/wiki/catalog/{equipment\|consumable}`)에서 활용 |
 
@@ -274,7 +274,7 @@ pnpm run seed:institutions -- --execute --yes
 - [ ] **Phase 5-e — `upsertByCode` atomic 전환**: check-then-act 경로를 `findOneAndUpdate({ upsert: true })` 단일 연산으로.
 - [ ] **Phase 5-f — update API Zod 검증**: `updateFaction`/`updateInstitution`에 partial 스키마 검증 추가 (호출부 생길 때).
 - [ ] **Phase 5-g — equipment/consumable seed 스크립트**: `master_items` upsertBySlug idempotent + dry-run/`--execute --yes` opt-in (factions seed 패턴 거울).
-- [ ] **Phase 5-h — NOVUS_ORDO 상위 코드 등록**: `FACTIONS` const + `docs/lore/faction/novus-ordo.md` + 노부스 오르도 직속 독립기구(SECRETARIAT/FINANCE) NPC들의 `factionCode` 일관 적용.
+- [ ] **Phase 5-h — NOVUS_ORDO 상위 코드 등록**: `FACTIONS` const + `docs/lore/faction/novus-ordo.md` + 노부스 오르도 직속 독립기구(SECRETARIAT/MANUS) NPC들의 `factionCode` 일관 적용.
 
 ## 커밋
 

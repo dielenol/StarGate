@@ -74,6 +74,20 @@ export function getUserClearance(userRole: UserRole): AgentLevel {
 - 관리자가 등급을 올리고 싶으면 `/erp/admin/users` 에서 `user.role` 을 직접 변경 (예: `G` → `H`).
 - `GM` 역할 사용자는 자동으로 `GM` 등급 clearance — 어떤 필드 그룹 요구치도 통과.
 
+### 등급 부여 정책 — 외부 vs 노부스 오르도 내부
+
+세계관 구조상 **외부 3대 기관(MILITARY/COUNCIL/CIVIL)은 노부스 오르도 바깥의 외부 조직**이고, 노부스 오르도 산하 내부 기관은 `SECRETARIAT`/`MANUS` 두 기관(+ 산하 sub-unit)에 한정된다. 등급 체계의 **운영상 의미**가 두 영역에서 다르다.
+
+| 소속 | V(VIP) | A~U |
+|------|--------|------|
+| **노부스 오르도 내부 기관** (SECRETARIAT / MANUS / 산하 sub-unit) | 일반 부여 | **일반 부여** — 정규 권한 등급 체계 적용 |
+| **외부 3대 기관** (MILITARY / COUNCIL / CIVIL) | 후원·공로 등 명목 부여 | **원칙적으로 미부여** — 외부 인사이므로 노부스 오르도 정규 권한 체계에 들어가지 않음 |
+| MANUS 차출 인력 | 정규 부여 | 정규 부여 (차출 시점에 내부 체계에 편입) |
+
+- **GM 직권 예외**: 외부 인사에게도 A~U 가 부여될 수 있으나 운영상 기본값은 "외부 인사는 V 만" 이다.
+- 본 정책은 **코드 강제가 아닌 운영 규약**이다. `lib/auth/rbac.ts` 의 `hasRole()` 은 단일 차원 8단 비교만 수행하며, faction-aware 분기는 없다. 관리 UI(`/erp/admin/users`) 에서 role 부여 시 사용자가 본 규약을 준수.
+- 후속 작업으로 NOVUS_ORDO 상위 코드 신설(Phase 5-h) 시 `user.factionContext` 같은 메타 필드를 두고 admin 화면에 경고/가드를 둘 수 있다.
+
 ---
 
 ## 5. 필드 그룹별 마스킹 정책
@@ -246,13 +260,20 @@ export function getUserClearance(userRole: UserRole): AgentLevel {
 조직은 [types/character.ts](../../types/character.ts) 의 **코드 상수**로 관리:
 
 ```
-FACTIONS (3대 세력)           INSTITUTIONS (독립 기관)
+FACTIONS (외부 기관)          INSTITUTIONS (내부 기관)
 ├─ MILITARY (군부)             ├─ SECRETARIAT (사무국)
-├─ COUNCIL  (이사회)           │   ├─ RESEARCH (연구 기구)
-└─ CIVIL    (시민사회)         │   ├─ ADMIN_BUREAU (행정 기구)
+├─ COUNCIL  (이사회)           │   ├─ HQ (사무총장실)
+└─ CIVIL    (시민사회)         │   ├─ RESEARCH (연구 기구)
+                               │   ├─ ADMIN_BUREAU (행정 기구)
                                │   ├─ INTL (국제 기구)
-                               │   └─ CONTROL (통제 기구)
-                               └─ FINANCE (재무국)
+                               │   ├─ CONTROL (통제 기구)
+                               │   └─ FINANCE (재무 기구)
+                               └─ MANUS (현장)
+                                   ├─ SECTOR_A (섹터 A)
+                                   ├─ SECTOR_B (섹터 B)
+                                   ├─ SECTOR_C (섹터 C)
+                                   ├─ SECTOR_D (섹터 D)
+                                   └─ SECTOR_E (섹터 E)
 ```
 
 - `character.department: DepartmentCode` — 단일 문자열, 한 캐릭터는 한 부서에만 소속
@@ -271,8 +292,8 @@ FACTIONS (3대 세력)           INSTITUTIONS (독립 기관)
 
 | Depth | 상태 | 내용 |
 |-------|------|------|
-| **L1 조감 뷰** | 초기 진입 상태 | 3대 세력 + 독립 기관 노드를 박스+라인 다이어그램으로 배치. 각 노드에 라벨/영문라벨/소속 인원수. 클릭 시 L2 로 진입 |
-| **L2 그룹 뷰** | `selectedGroup !== null` | 선택된 세력/기관 내부. 하위 기구가 있으면 (`SECRETARIAT`) 트리 표시, 없으면 (`MILITARY`, `FINANCE` 등) 멤버 카드 바로 표시 |
+| **L1 조감 뷰** | 초기 진입 상태 | 외부 기관 + 내부 기관 노드를 박스+라인 다이어그램으로 배치. 각 노드에 라벨/영문라벨/소속 인원수. 클릭 시 L2 로 진입 |
+| **L2 그룹 뷰** | `selectedGroup !== null` | 선택된 세력/기관 내부. 하위 기구가 있으면 (`SECRETARIAT`, `MANUS`) 트리 표시, 없으면 (`MILITARY` 등) 멤버 카드 바로 표시 |
 | **L3 아코디언** | `expandedSubUnit !== null` | L2 에서 하위 기구 노드 클릭 시 해당 기구의 멤버 카드 그리드 펼침. 토글 (재클릭 시 접힘) |
 
 **공통 UI 요소** (모든 depth 에서 노출):
@@ -283,10 +304,10 @@ FACTIONS (3대 세력)           INSTITUTIONS (독립 기관)
 
 ### 11-4. L1 조감 뷰 레이아웃
 
-- **좌측**: 3대 세력 (`FACTIONS`) — 삼각형 배치 (COUNCIL 상단, MILITARY 좌하, CIVIL 우하)
-- **우측**: 독립 기관 (`INSTITUTIONS`) — 수직 스택
+- **좌측**: 외부 기관 (`FACTIONS`) — 삼각형 배치 (COUNCIL 상단, MILITARY 좌하, CIVIL 우하)
+- **우측**: 내부 기관 (`INSTITUTIONS`) — 수직 스택
 - **하단**: `UNASSIGNED` (미배정) — 존재할 때만 카드 그리드로 노출
-- **구현 수준**: CSS Grid + SVG 라인으로 충분. 현재 노드 규모 (세력 3 + 기관 2 + 하위 기구 4 = **9개**)에서 react-flow 등 전문 라이브러리는 오버엔지니어링. 노드 50+ 시점에 재검토.
+- **구현 수준**: CSS Grid + SVG 라인으로 충분. 현재 노드 규모 (세력 3 + 기관 2 + 하위 기구 11 = **16개**)에서 react-flow 등 전문 라이브러리는 오버엔지니어링. 노드 50+ 시점에 재검토.
 
 ### 11-5. 카드 정렬 (위계 표현)
 

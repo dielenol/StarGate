@@ -36,9 +36,9 @@ import OrgCanvas from "./_components/OrgCanvas";
 import OrgDrillCrumbs from "./_components/OrgDrillCrumbs";
 import type { DrillCrumbItem } from "./_components/OrgDrillCrumbs";
 import {
-  FACTION_ICON_MAP,
-  INSTITUTION_ICON_MAP,
-  SUBUNIT_ICON_MAP,
+  getFactionIcon,
+  getInstitutionIcon,
+  getSubUnitIcon,
 } from "./_components/OrgIcon";
 import PersonnelCard from "./_components/PersonnelCard";
 import SearchJumpBanner from "./_components/SearchJumpBanner";
@@ -73,7 +73,7 @@ const LEGEND_ITEMS: { level: AgentLevel; label: string }[] = [
 /* ── 헬퍼 ── */
 
 /**
- * 캐릭터가 속한 최상위 그룹 코드 (세력/기관/UNASSIGNED).
+ * 캐릭터가 속한 최상위 그룹 코드 (외부 기관/내부 기관/UNASSIGNED).
  *
  * Phase 1 후 factionCode / institutionCode 는 AGENT/NPC 공통 root 필드로 승격되었으므로
  * type 분기 없이 동일 로직 적용.
@@ -339,7 +339,7 @@ export default function PersonnelClient({
 
   /* ── 파생 값 ── */
 
-  // OrgCanvas 용 groupCounts (세력 3 + 기관 2 + UNASSIGNED)
+  // OrgCanvas 용 groupCounts (외부 기관 3 + 내부 기관 2 + UNASSIGNED)
   const canvasGroupCounts = useMemo<Record<string, number>>(() => {
     const counts: Record<string, number> = {};
     for (const f of FACTIONS) counts[f.code] = groupIndex.get(f.code)?.length ?? 0;
@@ -438,11 +438,11 @@ export default function PersonnelClient({
       },
     ];
 
-    // 세력/기관이 선택된 경우에만 group crumb 추가 (미도달 placeholder 제거)
+    // 외부 기관/내부 기관이 선택된 경우에만 group crumb 추가 (미도달 placeholder 제거)
     if (selectedGroup) {
       const kind = getGroupKind(selectedGroup);
       const prefix =
-        kind === "faction" ? "세력" : kind === "institution" ? "기관" : "미배정";
+        kind === "faction" ? "외부 기관" : kind === "institution" ? "내부 기관" : "미배정";
       const label =
         kind === "unassigned"
           ? "미배정"
@@ -452,9 +452,9 @@ export default function PersonnelClient({
         label,
         iconCode:
           kind === "faction"
-            ? FACTION_ICON_MAP[selectedGroup]
+            ? getFactionIcon(selectedGroup)
             : kind === "institution"
-              ? INSTITUTION_ICON_MAP[selectedGroup]
+              ? getInstitutionIcon(selectedGroup)
               : kind === "unassigned"
                 ? "UNASSIGNED"
                 : undefined,
@@ -471,7 +471,7 @@ export default function PersonnelClient({
       items.push({
         key: "sub",
         label: `하위: ${subLabel}`,
-        iconCode: SUBUNIT_ICON_MAP[expandedSubUnit],
+        iconCode: getSubUnitIcon(expandedSubUnit),
         on: true,
       });
     }
@@ -616,9 +616,9 @@ export default function PersonnelClient({
             }
             iconCode={
               selectedGroupKind === "faction"
-                ? FACTION_ICON_MAP[selectedGroup]
+                ? getFactionIcon(selectedGroup)
                 : selectedGroupKind === "institution"
-                  ? INSTITUTION_ICON_MAP[selectedGroup]
+                  ? getInstitutionIcon(selectedGroup)
                   : selectedGroupKind === "unassigned"
                     ? "UNASSIGNED"
                     : undefined

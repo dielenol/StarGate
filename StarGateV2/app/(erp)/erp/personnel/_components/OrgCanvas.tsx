@@ -53,7 +53,7 @@ export default function OrgCanvas({
       <div className={styles.inner}>
         {/* FACTIONS */}
         <div>
-          <div className={styles.sectionTitle}>3대 세력 · FACTIONS</div>
+          <div className={styles.sectionTitle}>외부 기관 · FACTIONS</div>
           <div className={styles.factions}>
             {/* 상호 견제 — 3 꼭짓점을 잇는 양방향 화살표 + 중앙 '견제' 라벨.
                 viewBox 100×100 기준: COUNCIL(50,18), MILITARY(20,82), CIVIL(80,82) */}
@@ -195,7 +195,7 @@ export default function OrgCanvas({
 
         {/* INSTITUTIONS */}
         <div>
-          <div className={styles.sectionTitle}>독립 기관 · INSTITUTIONS</div>
+          <div className={styles.sectionTitle}>내부 기관 · INSTITUTIONS</div>
           <div className={styles.institutions}>
             {INSTITUTIONS.map((inst) => {
               const count = groupCounts[inst.code] ?? 0;

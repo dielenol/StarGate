@@ -7,8 +7,8 @@ export const CHARACTER_FIELD_LABELS: Record<string, string> = {
   isPublic: "공개 여부",
   ownerId: "소유자 ID",
   previewImage: "프리뷰 이미지",
-  factionCode: "세력",
-  institutionCode: "기관",
+  factionCode: "외부 기관",
+  institutionCode: "내부 기관",
 
   "lore.name": "이름",
   "lore.nameNative": "원어 표기",

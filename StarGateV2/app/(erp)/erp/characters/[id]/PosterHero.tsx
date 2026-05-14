@@ -27,9 +27,10 @@ interface Props {
   name: string;
   role: string;
   agentLevel?: AgentLevel;
-  /** 외부 세력 코드 (군부/이사회/시민사회). NPC 위주, 없으면 institutionCode 로 폴백. */
+  /** 외부 기관 코드 (군부/이사회/시민사회). NPC 위주, 없으면 institutionCode 로 폴백. */
   factionCode?: string;
-  /** 노부스 오르도 내부 기관 코드 (사무국/재무국 등). AGENT 위주. */
+  /** 노부스 오르도 내부 기관 코드 (사무국/현장 등). AGENT 위주.
+   *  재무는 사무국 산하 sub-unit 으로 강등됨 (department="FINANCE"). */
   institutionCode?: string;
   /** 기관 산하 subUnit 코드 또는 legacy 부서 코드. 소속과 함께 hierarchy 표현. */
   department?: string;
@@ -192,7 +193,7 @@ export default function PosterHero({
     ? FACTION_LOGOS[factionCode] ?? NOVUS_ORDO_LOGO
     : NOVUS_ORDO_LOGO;
 
-  // 소속 우선순위: faction(외부 세력) → institution(노부스 오르도 내부 기관) → 노부스 오르도 폴백.
+  // 소속 우선순위: faction(외부 기관) → institution(노부스 오르도 내부 기관) → 노부스 오르도 폴백.
   // 부서: institution 산하 subUnit 우선 → legacy DEPARTMENTS 폴백. 소속과 자연스럽게 위계 표현.
   const factionLabel = resolveFactionLabel(factionCode);
   const institutionLabel = resolveInstitutionLabel(institutionCode);

@@ -9,7 +9,7 @@ gender: 남
 age: 54세
 height: 188cm
 factionCode:
-institutionCode: FINANCE
+institutionCode: SECRETARIAT
 department: 시장조율기구
 agentLevel: V
 isPublic: true

@@ -1,12 +1,12 @@
 /**
  * 조직 구조 매핑 유틸
  *
- * 캐릭터의 department 코드 → 최상위 그룹 (세력/기관) 매핑.
+ * 캐릭터의 department 코드 → 최상위 그룹 (외부 기관/내부 기관) 매핑.
  */
 
 import { FACTIONS, INSTITUTIONS } from "@/types/character";
 
-/* ── 사무국 하위 기구 코드 → 상위 기관 매핑 ── */
+/* ── 사무국 하위 기구 코드 → 상위 내부 기관 매핑 ── */
 
 const SUB_UNIT_TO_INSTITUTION: Record<string, string> = {};
 
@@ -30,10 +30,11 @@ const LEGACY_DEPT_MAP: Record<string, string> = {
 
 /**
  * department 코드 → 최상위 그룹 코드.
- * - MILITARY, COUNCIL, CIVIL → 그대로 (세력)
- * - RESEARCH, ADMIN_BUREAU, INTL, CONTROL → "SECRETARIAT"
- * - FINANCE → 그대로 (기관)
- * - 레거시 코드 (HQ, FIELD 등) → 폴백 매핑
+ * - MILITARY, COUNCIL, CIVIL → 그대로 (외부 기관)
+ * - HQ, FINANCE, RESEARCH, ADMIN_BUREAU, INTL, CONTROL → "SECRETARIAT"
+ * - SECTOR_A~E → "MANUS"
+ * - MANUS → 그대로 (내부 기관)
+ * - 레거시 코드 (FIELD 등) → 폴백 매핑
  * - 기타 → "UNASSIGNED"
  */
 export function getTopLevelGroup(dept: string | undefined): string {
@@ -89,7 +90,7 @@ export function getDepartmentLabel(dept: string | undefined): string {
 }
 
 /**
- * 기관의 하위 기구 목록 반환.
+ * 내부 기관의 하위 기구 목록 반환.
  */
 export function getSubUnits(
   institutionCode: string,
@@ -99,22 +100,22 @@ export function getSubUnits(
 }
 
 /**
- * 코드가 세력(faction)인지 판별.
+ * 코드가 외부 기관(faction)인지 판별.
  */
 export function isFaction(code: string): boolean {
   return FACTION_CODES.has(code);
 }
 
 /**
- * 코드가 독립 기관(institution)인지 판별.
+ * 코드가 내부 기관(institution)인지 판별.
  */
 export function isInstitution(code: string): boolean {
   return INSTITUTION_CODES.has(code);
 }
 
 /**
- * 그룹 코드가 세력(faction)/기관(institution)/미배정 중 무엇인지 판정.
- * personnel 인덱스의 drill state crumb 와 dossier breadcrumb 양쪽에서 prefix(세력:/기관:/미배정)를 결정할 때 사용.
+ * 그룹 코드가 외부 기관(faction)/내부 기관(institution)/미배정 중 무엇인지 판정.
+ * personnel 인덱스의 drill state crumb 와 dossier breadcrumb 양쪽에서 prefix(외부 기관:/내부 기관:/미배정)를 결정할 때 사용.
  */
 export function getGroupKind(
   code: string,

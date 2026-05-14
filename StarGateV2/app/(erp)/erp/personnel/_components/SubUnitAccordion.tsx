@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import OrgIcon, { SUBUNIT_ICON_MAP } from "./OrgIcon";
+import OrgIcon, { getSubUnitIcon } from "./OrgIcon";
 
 import styles from "./SubUnitAccordion.module.css";
 
@@ -35,7 +35,7 @@ export default function SubUnitAccordion({
     metaParts.push(`부서장 ${leadCount}`);
   }
 
-  const subIcon = SUBUNIT_ICON_MAP[code];
+  const subIcon = getSubUnitIcon(code);
 
   return (
     <div

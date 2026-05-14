@@ -268,7 +268,7 @@ export default function CharacterCreateForm() {
                     ))}
                   </optgroup>
                 ) : (
-                  <optgroup key={inst.code} label="독립 기관">
+                  <optgroup key={inst.code} label="내부 기관">
                     <option value={inst.code}>{inst.label}</option>
                   </optgroup>
                 ),

@@ -1,31 +1,52 @@
 import type { CSSProperties } from "react";
 
+import type { FactionCode, InstitutionCode } from "@/types/character";
+import { INSTITUTIONS } from "@/types/character";
+
 /**
- * 조직도 add-on 아이콘 세트 (NOVUS Icon Set — Organization Add-on, 16 entries).
+ * 조직도 add-on 아이콘 세트 (NOVUS Icon Set — Organization Add-on).
  *
  * - viewBox 24×24, stroke 1.5, currentColor.
  * - **Source of truth = 아래 ICONS map 의 inline path**.
  *   `/public/assets/svg/org_*.svg` 의 동일본은 외부 도구 / 디자이너 공유용 mirror 이며,
  *   디자이너가 SVG 만 수정해도 컴포넌트는 따라가지 않는다. **변경 시 양쪽 모두 동기화 필수**.
  * - inline path 매핑으로 React 단에서 렌더 (CSS color 컨트롤 + zero network).
+ *
+ * Mirror 파일 네이밍 규칙:
+ *   - `org_root.svg`, `org_unassigned.svg`, `org_person.svg` — 단독 표식
+ *   - `org_faction_<lowercase>.svg` — 외부 기관 (예: org_faction_council.svg)
+ *   - `org_institution_<lowercase>.svg` — 내부 기관 (예: org_institution_manus.svg)
+ *   - `org_subunit_<snake_case>.svg` — 기관 산하 sub-unit (예: org_subunit_sector_a.svg)
+ *   - `org_scope_<lowercase>.svg` — 캐릭터 분류 스코프
  */
+
+/** INSTITUTIONS 상수에서 자동 추출한 sub-unit code union. INSTITUTIONS 변경 시 자동 추종 — SUBUNIT_ICON_MAP 누락이 컴파일 타임에 잡힘. */
+export type SubUnitCode = (typeof INSTITUTIONS)[number]["subUnits"][number]["code"];
 
 export type OrgIconCode =
   | "ROOT"
   | "UNASSIGNED"
   | "PERSON"
+  // SECRETARIAT 산하 sub-unit
   | "HQ"
   | "RESEARCH"
   | "ADMIN_BUREAU"
   | "INTL"
   | "CONTROL"
-  // 세력 (Faction)
+  | "FINANCE"
+  // MANUS 산하 섹터 sub-unit
+  | "SECTOR_A"
+  | "SECTOR_B"
+  | "SECTOR_C"
+  | "SECTOR_D"
+  | "SECTOR_E"
+  // 외부 기관 (Faction)
   | "COUNCIL"
   | "MILITARY"
   | "CIVIL"
-  // 독립기관 (Institution)
+  // 내부 기관 (Institution)
   | "SECRETARIAT"
-  | "FINANCE"
+  | "MANUS"
   // 캐릭터 분류 (Tier scope)
   | "ALL"
   | "MAIN"
@@ -36,27 +57,52 @@ type IconPath = {
   body: string;
 };
 
-/** Sub-unit code → OrgIconCode 매핑 (조직 구조 sub-unit 식별자 그대로 매핑). */
-export const SUBUNIT_ICON_MAP: Record<string, OrgIconCode> = {
+/** Sub-unit code → OrgIconCode 매핑. INSTITUTIONS 의 subUnits 추가 시 컴파일 타임에 누락 catch. */
+export const SUBUNIT_ICON_MAP: Record<SubUnitCode, OrgIconCode> = {
   HQ: "HQ",
   RESEARCH: "RESEARCH",
   ADMIN_BUREAU: "ADMIN_BUREAU",
   INTL: "INTL",
   CONTROL: "CONTROL",
+  FINANCE: "FINANCE",
+  SECTOR_A: "SECTOR_A",
+  SECTOR_B: "SECTOR_B",
+  SECTOR_C: "SECTOR_C",
+  SECTOR_D: "SECTOR_D",
+  SECTOR_E: "SECTOR_E",
 };
 
-/** Faction code → OrgIconCode 매핑. shared-db FACTIONS code 와 동일한 키. */
-export const FACTION_ICON_MAP: Record<string, OrgIconCode> = {
+/** Faction code → OrgIconCode 매핑. FACTIONS 변경 시 컴파일 타임에 누락 catch. */
+export const FACTION_ICON_MAP: Record<FactionCode, OrgIconCode> = {
   COUNCIL: "COUNCIL",
   MILITARY: "MILITARY",
   CIVIL: "CIVIL",
 };
 
-/** Institution code → OrgIconCode 매핑. shared-db INSTITUTIONS code 와 동일한 키. */
-export const INSTITUTION_ICON_MAP: Record<string, OrgIconCode> = {
+/** Institution code → OrgIconCode 매핑. INSTITUTIONS 변경 시 컴파일 타임에 누락 catch. */
+export const INSTITUTION_ICON_MAP: Record<InstitutionCode, OrgIconCode> = {
   SECRETARIAT: "SECRETARIAT",
-  FINANCE: "FINANCE",
+  MANUS: "MANUS",
 };
+
+/* ── Lookup helpers ──
+   `Record<NarrowCode, OrgIconCode>` 는 컴파일 타임 누락 catch 에 유리하지만
+   caller 가 `string` (DB 자유 텍스트 / state) 을 index 하면 TS7053 가 뜬다.
+   helper 는 string 입력을 받아 매핑 hit 시 OrgIconCode, miss 시 undefined 를 반환.
+   FACTIONS/INSTITUTIONS 의 element.code 처럼 이미 narrow 한 키를 가진 caller 는
+   Map 직접 access 도 그대로 사용 가능. */
+
+export function getSubUnitIcon(code: string): OrgIconCode | undefined {
+  return SUBUNIT_ICON_MAP[code as SubUnitCode];
+}
+
+export function getFactionIcon(code: string): OrgIconCode | undefined {
+  return FACTION_ICON_MAP[code as FactionCode];
+}
+
+export function getInstitutionIcon(code: string): OrgIconCode | undefined {
+  return INSTITUTION_ICON_MAP[code as InstitutionCode];
+}
 
 const ICONS: Record<OrgIconCode, IconPath> = {
   ROOT: {
@@ -97,6 +143,26 @@ const ICONS: Record<OrgIconCode, IconPath> = {
   },
   FINANCE: {
     body: `<path d="M12 4v16"/><path d="M9 20h6"/><path d="M4 8h16"/><path d="M6 8v2.5"/><path d="M3 10.5a3 1.5 0 006 0"/><path d="M18 8v2.5"/><path d="M15 10.5a3 1.5 0 006 0"/>`,
+  },
+  MANUS: {
+    /* 라틴 "손". 네 손가락+엄지로 펼친 손바닥 모티프 — 현장 집행을 상징. */
+    body: `<path d="M12 21V11"/><path d="M9 21V8.5a1.5 1.5 0 013 0V11"/><path d="M15 21V8.5a1.5 1.5 0 00-3 0"/><path d="M9 10V5a1.5 1.5 0 013 0v6"/><path d="M15 10.5V6.5a1.5 1.5 0 013 0V14a6 6 0 01-6 6"/><path d="M6 13.5V10a1.5 1.5 0 013 0"/>`,
+  },
+  /* SECTOR_A~E — 사각형 외곽 + 알파벳 모티프. MANUS 산하 5개 섹터 표식. */
+  SECTOR_A: {
+    body: `<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M9 16l3-8 3 8"/><path d="M10 13h4"/>`,
+  },
+  SECTOR_B: {
+    body: `<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M9 7v10h3.5a2.5 2.5 0 000-5H9"/><path d="M9 12h3.5a2.5 2.5 0 010 5"/>`,
+  },
+  SECTOR_C: {
+    body: `<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M15 9a4 4 0 100 6"/>`,
+  },
+  SECTOR_D: {
+    body: `<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M9 7v10h3a4 4 0 000-10H9z"/>`,
+  },
+  SECTOR_E: {
+    body: `<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M15 7H9v10h6"/><path d="M9 12h5"/>`,
   },
   ALL: {
     body: `<rect x="3" y="3" width="8" height="8" rx="0.8"/><circle cx="7" cy="7" r="1.4"/><rect x="13" y="3" width="8" height="8" rx="0.8"/><circle cx="17" cy="7" r="1.4"/><rect x="3" y="13" width="8" height="8" rx="0.8"/><circle cx="7" cy="17" r="1.4"/><rect x="13" y="13" width="8" height="8" rx="0.8"/><circle cx="17" cy="17" r="1.4"/>`,

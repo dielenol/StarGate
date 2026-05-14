@@ -43,8 +43,9 @@ const INSTITUTION_DEFAULT_SUMMARIES: Record<
   string
 > = {
   SECRETARIAT:
-    "세계이사회 직속 사무국. 연구·행정·국제·통제 기구를 총괄하는 실무 허브.",
-  FINANCE: "세계이사회 산하 재무국. 크레딧·예산 및 상업 독점 관련 승인 축.",
+    "세계이사회 직속 사무국. 연구·행정·국제·통제·재무 기구를 총괄하는 실무 허브.",
+  MANUS:
+    "노부스 오르도의 현장 집행 기관. 외부 기구·범죄조직·특수부대 등에서 차출된 인력을 섹터 A~E 로 분류 배치한다.",
 };
 
 /**
@@ -56,7 +57,7 @@ const PARENT_FACTION_BY_CODE: Record<
   string | undefined
 > = {
   SECRETARIAT: "COUNCIL",
-  FINANCE: "COUNCIL",
+  MANUS: "COUNCIL",
 };
 
 /* ── .env.local 로드 ──

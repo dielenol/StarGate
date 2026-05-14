@@ -6,7 +6,7 @@ import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import { LEVEL_ORDER } from "../_constants";
 
 import OrgIcon, {
-  SUBUNIT_ICON_MAP,
+  getSubUnitIcon,
   type OrgIconCode,
 } from "./OrgIcon";
 
@@ -152,7 +152,7 @@ export default function GroupHero({
             </div>
             <div className={styles.subUnitChips}>
               {subUnits!.map((u) => {
-                const subIcon = SUBUNIT_ICON_MAP[u.code];
+                const subIcon = getSubUnitIcon(u.code);
                 const isOn = expandedSubUnit === u.code;
                 const chipClass = [
                   styles.subUnitChip,

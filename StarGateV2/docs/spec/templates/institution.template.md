@@ -7,7 +7,7 @@
   선택: leaderCodename, headquartersLocation, createdAt, updatedAt
 
   규칙
-  - code: UPPER_SNAKE_CASE (예: SECRETARIAT, FINANCE)
+  - code: UPPER_SNAKE_CASE (예: SECRETARIAT, MANUS)
   - slug: kebab-case 소문자
   - parentFactionCode: 상위 세력 code (UPPER_SNAKE_CASE). 예: COUNCIL
   - leaderCodename: 수장 NPC codename (UPPER_SNAKE_CASE)

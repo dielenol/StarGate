@@ -49,9 +49,9 @@ import ClearanceStrip from "../_components/ClearanceStrip";
 import OrgDrillCrumbs from "../_components/OrgDrillCrumbs";
 import type { DrillCrumbItem } from "../_components/OrgDrillCrumbs";
 import {
-  FACTION_ICON_MAP,
-  INSTITUTION_ICON_MAP,
-  SUBUNIT_ICON_MAP,
+  getFactionIcon,
+  getInstitutionIcon,
+  getSubUnitIcon,
 } from "../_components/OrgIcon";
 
 import ClearanceMap from "./_components/ClearanceMap";
@@ -608,7 +608,7 @@ export default function DossierClient({ character, clearance }: Props) {
     if (topGroup !== "UNASSIGNED") {
       const kind = getGroupKind(topGroup);
       const prefix =
-        kind === "faction" ? "세력" : kind === "institution" ? "기관" : "";
+        kind === "faction" ? "외부 기관" : kind === "institution" ? "내부 기관" : "";
       const groupLabel =
         kind === "unassigned"
           ? "미배정"
@@ -618,9 +618,9 @@ export default function DossierClient({ character, clearance }: Props) {
         label: groupLabel,
         iconCode:
           kind === "faction"
-            ? FACTION_ICON_MAP[topGroup]
+            ? getFactionIcon(topGroup)
             : kind === "institution"
-              ? INSTITUTION_ICON_MAP[topGroup]
+              ? getInstitutionIcon(topGroup)
               : kind === "unassigned"
                 ? "UNASSIGNED"
                 : undefined,
@@ -632,7 +632,7 @@ export default function DossierClient({ character, clearance }: Props) {
       items.push({
         key: "sub",
         label: `하위: ${getDepartmentLabel(department)}`,
-        iconCode: SUBUNIT_ICON_MAP[department],
+        iconCode: getSubUnitIcon(department),
         href: `/erp/personnel?group=${topGroup}&sub=${department}`,
       });
     }
