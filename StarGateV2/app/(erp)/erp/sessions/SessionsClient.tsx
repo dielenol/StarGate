@@ -798,22 +798,20 @@ function SessionsRail({
                   </div>
                   <div className={styles.rsvpBody}>
                     <div className={styles.rsvpName}>
-                      {s.title}
                       {isTrpg ? (
                         <span
-                          className={styles["sourceBadge--trpg"]}
+                          className={styles.rsvpSourceDot}
                           aria-label="TRPG 봇 세션"
                           title="TRPG 봇 세션"
-                        >
-                          TRPG
-                        </span>
+                        />
                       ) : null}
+                      {s.title}
                     </div>
                     <div className={styles.rsvpMeta}>
                       <span className={styles.t}>
                         {formatTime(s.targetDateTime)}
                       </span>{" "}
-                      · 응답 {s.counts.yes}
+                      · {isTrpg ? "참가자" : "응답"} {s.counts.yes}
                     </div>
                   </div>
                   <div className={cdCls}>{ddayLabel(s.targetDateTime)}</div>
