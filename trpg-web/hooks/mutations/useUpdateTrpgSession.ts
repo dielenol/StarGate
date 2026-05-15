@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { TrpgSessionView } from "@/lib/trpg/serializer";
 
+import { useToast } from "@/components/ToastProvider";
 import { trpgSessionKeys } from "@/hooks/queries/useTrpgSessions";
 
 export interface UpdateTrpgSessionPatchInput {
@@ -20,6 +21,7 @@ export interface UpdateTrpgSessionVariables {
 
 export function useUpdateTrpgSession() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   return useMutation({
     mutationFn: async ({
       id,
@@ -38,8 +40,9 @@ export function useUpdateTrpgSession() {
 
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: trpgSessionKeys.all });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: trpgSessionKeys.all });
+      showToast("세션이 수정되었습니다.");
     },
   });
 }

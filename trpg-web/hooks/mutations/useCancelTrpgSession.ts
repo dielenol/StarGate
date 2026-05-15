@@ -2,10 +2,12 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { useToast } from "@/components/ToastProvider";
 import { trpgSessionKeys } from "@/hooks/queries/useTrpgSessions";
 
 export function useCancelTrpgSession() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   return useMutation({
     mutationFn: async (id: string): Promise<{ ok: true }> => {
       const res = await fetch(`/api/trpg/sessions/${id}`, {
@@ -17,8 +19,9 @@ export function useCancelTrpgSession() {
       }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: trpgSessionKeys.all });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: trpgSessionKeys.all });
+      showToast("세션이 제거되었습니다.");
     },
   });
 }

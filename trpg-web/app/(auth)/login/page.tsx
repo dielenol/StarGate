@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { signIn } from "@/lib/auth/config";
 
 import styles from "./page.module.css";
@@ -21,9 +23,23 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className={styles.login}>
       <div className={styles.login__panel}>
+        <div className={styles.login__brand} aria-hidden="true">
+          <span className={styles.login__brandRing}>
+            <Image
+              className={styles.login__mark}
+              src="/assets/favicon.ico"
+              alt=""
+              width={48}
+              height={48}
+              priority
+              unoptimized
+            />
+          </span>
+        </div>
+        <p className={styles.login__eyebrow}>다채로운 TRPG Calendar</p>
         <h1 className={styles.login__title}>TRPG 세션 캘린더</h1>
         <p className={styles.login__subtitle}>
-          Discord 계정으로 로그인해 일정에 참여하세요.
+          Discord 계정으로 로그인해 참여하세요.
         </p>
 
         <form

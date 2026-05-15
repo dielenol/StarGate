@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { useToast } from "@/components/ToastProvider";
 import { trpgSessionKeys } from "@/hooks/queries/useTrpgSessions";
 
 export interface CreateTrpgSessionInput {
@@ -13,6 +14,7 @@ export interface CreateTrpgSessionInput {
 
 export function useCreateTrpgSession() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   return useMutation({
     mutationFn: async (input: CreateTrpgSessionInput): Promise<{ id: string }> => {
       const res = await fetch("/api/trpg/sessions", {
@@ -28,8 +30,9 @@ export function useCreateTrpgSession() {
 
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: trpgSessionKeys.all });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: trpgSessionKeys.all });
+      showToast("세션이 생성되었습니다.");
     },
   });
 }

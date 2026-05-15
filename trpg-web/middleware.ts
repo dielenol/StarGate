@@ -28,7 +28,9 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // /login, /api/auth (next-auth), 정적 자원, favicon 을 제외한 전체 경로 가드.
+  // /login, /api/auth (next-auth), 정적 자원, public assets, favicon 을 제외한 전체 경로 가드.
   // 향후 추가되는 보호 경로를 누락하지 않기 위한 negative pattern.
-  matcher: ["/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!login|api/auth|_next/static|_next/image|assets|favicon.ico).*)",
+  ],
 };
