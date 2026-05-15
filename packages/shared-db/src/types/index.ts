@@ -47,6 +47,7 @@ export {
   DEPARTMENTS,
   FACTIONS,
   INSTITUTIONS,
+  INTERNAL_FACTION_CODE,
 } from "./character.js";
 
 export type {

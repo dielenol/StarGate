@@ -163,13 +163,32 @@ export const AGENT_LEVEL_LABELS: Record<AgentLevel, string> = {
 
 /* ── 조직 구조 (세계관 표면적 구조) ── */
 
+/**
+ * FACTIONS — 권력 블록.
+ *
+ * `scope` 메타:
+ *  - `external` — 노부스 오르도 **외부** 권력 블록 (군부/이사회/시민사회).
+ *    정규 권한 등급 체계 밖. V(VIP) 명목 부여 외엔 A~U 부여 비권장.
+ *  - `internal` — 노부스 오르도 **본부 자체**. NOVUS_ORDO 단 하나.
+ *    하위 INSTITUTIONS(사무국·MANUS) 를 통해 직접 실행 권한을 가진다.
+ */
 export const FACTIONS = [
-  { code: "MILITARY", label: "군부", labelEn: "Military" },
-  { code: "COUNCIL", label: "이사회", labelEn: "World Council" },
-  { code: "CIVIL", label: "시민사회", labelEn: "Civil Society" },
+  { code: "MILITARY", label: "군부", labelEn: "Military", scope: "external" },
+  { code: "COUNCIL", label: "이사회", labelEn: "World Council", scope: "external" },
+  { code: "CIVIL", label: "시민사회", labelEn: "Civil Society", scope: "external" },
+  { code: "NOVUS_ORDO", label: "노부스 오르도", labelEn: "Novus Ordo", scope: "internal" },
 ] as const;
 
 export type FactionCode = (typeof FACTIONS)[number]["code"];
+
+/** Faction scope — external(외부 권력 블록) | internal(노부스 오르도 본부). */
+export type FactionScope = (typeof FACTIONS)[number]["scope"];
+
+/**
+ * scope='internal' 인 유일한 faction code. NOVUS_ORDO 본부.
+ * 매직 스트링 사용 금지 — caller 는 이 상수를 import 해서 비교/분기에 사용.
+ */
+export const INTERNAL_FACTION_CODE = "NOVUS_ORDO" as const;
 
 export const INSTITUTIONS = [
   {
@@ -187,14 +206,14 @@ export const INSTITUTIONS = [
   },
   {
     code: "MANUS",
-    label: "현장",
+    label: "현장요원",
     labelEn: "Manus",
     subUnits: [
-      { code: "SECTOR_A", label: "섹터 A" },
-      { code: "SECTOR_B", label: "섹터 B" },
-      { code: "SECTOR_C", label: "섹터 C" },
-      { code: "SECTOR_D", label: "섹터 D" },
-      { code: "SECTOR_E", label: "섹터 E" },
+      { code: "SECTOR_A", label: "알파 섹터" },
+      { code: "SECTOR_B", label: "브라보 섹터" },
+      { code: "SECTOR_C", label: "찰리 섹터" },
+      { code: "SECTOR_D", label: "델타 섹터" },
+      { code: "SECTOR_E", label: "에코 섹터" },
     ],
   },
 ] as const;

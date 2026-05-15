@@ -17,6 +17,7 @@ const ALLOWED_FACTION_FIELDS = new Set([
   "slug",
   "label",
   "labelEn",
+  "scope",
   "summary",
   "ideology",
   "relationships",

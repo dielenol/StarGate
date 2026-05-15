@@ -28,11 +28,25 @@ export const factionRelationshipSchema = z.object({
 
 /* ── 공통 필드 ── */
 
+/**
+ * Faction scope — `external` (외부 권력 블록: MILITARY/COUNCIL/CIVIL)
+ *                 | `internal` (노부스 오르도 본부: NOVUS_ORDO).
+ *
+ * 외부 3대 권력 블록은 노부스 오르도의 정규 권한 등급 체계 바깥에 존재한다.
+ * NOVUS_ORDO 자체는 internal 로 분류되어 사무국·MANUS 등 내부 기관의
+ * 상위 우산 역할을 한다.
+ *
+ * 기존 frontmatter/문서 호환을 위해 optional 로 둔다 — 누락 시 seed 스크립트가
+ * code 별 디폴트(`external`/`internal`)를 적용한다.
+ */
+export const factionScopeSchema = z.enum(["external", "internal"]);
+
 const factionBaseFields = {
   code: codeSchema,
   slug: slugSchema,
   label: z.string().min(1).max(40),
   labelEn: z.string().max(60).optional(),
+  scope: factionScopeSchema.optional(),
   summary: z.string().min(1).max(500),
   ideology: z.string().max(4000).optional(),
   relationships: z.array(factionRelationshipSchema).optional(),
