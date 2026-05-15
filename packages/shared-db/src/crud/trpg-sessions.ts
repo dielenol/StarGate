@@ -55,6 +55,14 @@ export async function createTrpgSession(
     notificationClaimLeaseUntil: null,
     reminderSentAt: null,
     reminderClaimLeaseUntil: null,
+    cancellationNotificationQueuedAt: null,
+    cancellationNotificationSentAt: null,
+    cancellationNotificationClaimLeaseUntil: null,
+    updateNotificationQueuedAt: null,
+    updateNotificationSentAt: null,
+    updateNotificationClaimLeaseUntil: null,
+    updateNotificationRecipientDiscordIds: null,
+    updateNotificationChanges: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -198,6 +206,69 @@ export async function findDueReminderSessions(
 }
 
 /**
+ * 취소 알림 스케줄러용: 취소 시 대기열에 적재되었고 아직 알림이 발송되지 않은 세션.
+ *
+ * `cancellationNotificationQueuedAt` 이 존재하는 문서만 대상으로 삼아, 기능 배포 전부터
+ * cancelled 상태였던 과거 세션이 뒤늦게 발송되는 것을 막는다.
+ */
+export async function findUnnotifiedCancelledTrpgSessions(
+  now: Date,
+): Promise<TrpgSession[]> {
+  const col = await trpgSessionsCol();
+  return col
+    .find({
+      status: "cancelled",
+      cancellationNotificationQueuedAt: { $exists: true, $ne: null },
+      $and: [
+        {
+          $or: [
+            { cancellationNotificationSentAt: { $exists: false } },
+            { cancellationNotificationSentAt: null },
+          ],
+        },
+        {
+          $or: [
+            { cancellationNotificationClaimLeaseUntil: { $exists: false } },
+            { cancellationNotificationClaimLeaseUntil: null },
+            { cancellationNotificationClaimLeaseUntil: { $lt: now } },
+          ],
+        },
+      ],
+    })
+    .toArray();
+}
+
+/**
+ * 수정 알림 스케줄러용: 수정 시 대기열에 적재되었고 아직 알림이 발송되지 않은 세션.
+ */
+export async function findUnnotifiedUpdatedTrpgSessions(
+  now: Date,
+): Promise<TrpgSession[]> {
+  const col = await trpgSessionsCol();
+  return col
+    .find({
+      status: "open",
+      updateNotificationQueuedAt: { $exists: true, $ne: null },
+      $and: [
+        {
+          $or: [
+            { updateNotificationSentAt: { $exists: false } },
+            { updateNotificationSentAt: null },
+          ],
+        },
+        {
+          $or: [
+            { updateNotificationClaimLeaseUntil: { $exists: false } },
+            { updateNotificationClaimLeaseUntil: null },
+            { updateNotificationClaimLeaseUntil: { $lt: now } },
+          ],
+        },
+      ],
+    })
+    .toArray();
+}
+
+/**
  * 생성 알림 발송권을 원자적으로 선점한다.
  *
  * 동일 lease 기간 내에 다른 워커가 같은 세션을 다시 잡지 못하도록
@@ -256,6 +327,129 @@ export async function markNotificationSent(sessionId: string): Promise<void> {
       $set: {
         notificationSentAt: now,
         notificationClaimLeaseUntil: null,
+        updatedAt: now,
+      },
+    },
+  );
+}
+
+/**
+ * 취소 알림 발송권을 원자적으로 선점한다.
+ *
+ * 취소 알림은 `cancelTrpgSession` 이 `cancellationNotificationQueuedAt` 을 찍은
+ * 문서만 대상으로 삼는다.
+ */
+export async function claimCancellationNotification(
+  sessionId: string,
+  leaseUntil: Date,
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const col = await trpgSessionsCol();
+  const now = new Date();
+  const result = await col.updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      status: "cancelled",
+      cancellationNotificationQueuedAt: { $exists: true, $ne: null },
+      $or: [
+        { cancellationNotificationSentAt: { $exists: false } },
+        { cancellationNotificationSentAt: null },
+      ],
+      $and: [
+        {
+          $or: [
+            { cancellationNotificationClaimLeaseUntil: { $exists: false } },
+            { cancellationNotificationClaimLeaseUntil: null },
+            { cancellationNotificationClaimLeaseUntil: { $lt: now } },
+          ],
+        },
+      ],
+    } as unknown as TrpgSessionFilter,
+    {
+      $set: {
+        cancellationNotificationClaimLeaseUntil: leaseUntil,
+        updatedAt: now,
+      },
+    },
+  );
+
+  return result.matchedCount > 0;
+}
+
+/** 취소 알림 발송 완료를 기록한다 (lease 해제 포함). */
+export async function markCancellationNotificationSent(
+  sessionId: string,
+): Promise<void> {
+  if (!ObjectId.isValid(sessionId)) return;
+
+  const col = await trpgSessionsCol();
+  const now = new Date();
+  await col.updateOne(
+    { _id: new ObjectId(sessionId) } as TrpgSessionFilter,
+    {
+      $set: {
+        cancellationNotificationSentAt: now,
+        cancellationNotificationClaimLeaseUntil: null,
+        updatedAt: now,
+      },
+    },
+  );
+}
+
+/** 수정 알림 발송권을 원자적으로 선점한다. */
+export async function claimUpdateNotification(
+  sessionId: string,
+  leaseUntil: Date,
+): Promise<boolean> {
+  if (!ObjectId.isValid(sessionId)) return false;
+
+  const col = await trpgSessionsCol();
+  const now = new Date();
+  const result = await col.updateOne(
+    {
+      _id: new ObjectId(sessionId),
+      status: "open",
+      updateNotificationQueuedAt: { $exists: true, $ne: null },
+      $or: [
+        { updateNotificationSentAt: { $exists: false } },
+        { updateNotificationSentAt: null },
+      ],
+      $and: [
+        {
+          $or: [
+            { updateNotificationClaimLeaseUntil: { $exists: false } },
+            { updateNotificationClaimLeaseUntil: null },
+            { updateNotificationClaimLeaseUntil: { $lt: now } },
+          ],
+        },
+      ],
+    } as unknown as TrpgSessionFilter,
+    {
+      $set: {
+        updateNotificationClaimLeaseUntil: leaseUntil,
+        updatedAt: now,
+      },
+    },
+  );
+
+  return result.matchedCount > 0;
+}
+
+/** 수정 알림 발송 완료를 기록한다 (lease 해제 포함). */
+export async function markUpdateNotificationSent(
+  sessionId: string,
+): Promise<void> {
+  if (!ObjectId.isValid(sessionId)) return;
+
+  const col = await trpgSessionsCol();
+  const now = new Date();
+  await col.updateOne(
+    { _id: new ObjectId(sessionId) } as TrpgSessionFilter,
+    {
+      $set: {
+        updateNotificationSentAt: now,
+        updateNotificationClaimLeaseUntil: null,
         updatedAt: now,
       },
     },
@@ -322,6 +516,66 @@ export async function markReminderSent(sessionId: string): Promise<void> {
   );
 }
 
+function sameDiscordIdSet(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const set = new Set(a);
+  if (set.size !== b.length) return false;
+  return b.every((id) => set.has(id));
+}
+
+function unionDiscordIds(a: string[], b: string[]): string[] {
+  return Array.from(new Set([...a, ...b]));
+}
+
+function buildUpdateNotificationState(
+  existing: TrpgSession,
+  validated: UpdateTrpgSessionPatch,
+): {
+  changes: string[];
+  recipients: string[];
+} {
+  const changes: string[] = [];
+
+  if (validated.title !== undefined && validated.title !== existing.title) {
+    changes.push(`세션 제목 변경: ${existing.title} → ${validated.title}`);
+  }
+
+  const nextDate = validated.date ?? existing.date;
+  const nextStartTime = validated.startTime ?? existing.startTime;
+  if (nextDate !== existing.date || nextStartTime !== existing.startTime) {
+    changes.push(
+      `일시 변경: ${existing.date} ${existing.startTime} → ${nextDate} ${nextStartTime}`,
+    );
+  }
+
+  const nextParticipantDiscordIds =
+    validated.participantDiscordIds ?? existing.participantDiscordIds;
+  if (
+    validated.participantDiscordIds !== undefined &&
+    !sameDiscordIdSet(existing.participantDiscordIds, nextParticipantDiscordIds)
+  ) {
+    const before = new Set(existing.participantDiscordIds);
+    const after = new Set(nextParticipantDiscordIds);
+    const added = nextParticipantDiscordIds.filter((id) => !before.has(id));
+    const removed = existing.participantDiscordIds.filter((id) => !after.has(id));
+    const parts = [
+      added.length > 0 ? `추가 ${added.length}명` : null,
+      removed.length > 0 ? `제외 ${removed.length}명` : null,
+    ].filter((v): v is string => v !== null);
+    changes.push(
+      `참가 대상 변경: ${parts.length > 0 ? parts.join(", ") : "목록 조정"}`,
+    );
+  }
+
+  return {
+    changes,
+    recipients: unionDiscordIds(
+      existing.participantDiscordIds,
+      nextParticipantDiscordIds,
+    ),
+  };
+}
+
 /**
  * 세션을 부분 갱신한다 (생성자 본인 검증 포함).
  *
@@ -359,6 +613,7 @@ export async function updateTrpgSession(
   if (existing.status !== "open") return { kind: "not-open" };
 
   const $set: Record<string, unknown> = { updatedAt: new Date() };
+  const notificationState = buildUpdateNotificationState(existing, validated);
   if (validated.title !== undefined) $set.title = validated.title;
   if (validated.date !== undefined) {
     $set.date = validated.date;
@@ -373,6 +628,16 @@ export async function updateTrpgSession(
   }
   if (validated.participantDiscordIds !== undefined) {
     $set.participantDiscordIds = validated.participantDiscordIds;
+  }
+  if (
+    notificationState.changes.length > 0 &&
+    notificationState.recipients.length > 0
+  ) {
+    $set.updateNotificationQueuedAt = new Date();
+    $set.updateNotificationSentAt = null;
+    $set.updateNotificationClaimLeaseUntil = null;
+    $set.updateNotificationRecipientDiscordIds = notificationState.recipients;
+    $set.updateNotificationChanges = notificationState.changes;
   }
 
   const updated = await col.findOneAndUpdate(
@@ -428,6 +693,7 @@ export async function cancelTrpgSession(
   }
   if (existing.status === "cancelled") return { kind: "already-cancelled" };
 
+  const now = new Date();
   const result = await col.updateOne(
     {
       _id: objectId,
@@ -437,7 +703,10 @@ export async function cancelTrpgSession(
     {
       $set: {
         status: "cancelled",
-        updatedAt: new Date(),
+        cancellationNotificationQueuedAt: now,
+        cancellationNotificationSentAt: null,
+        cancellationNotificationClaimLeaseUntil: null,
+        updatedAt: now,
       },
     },
   );

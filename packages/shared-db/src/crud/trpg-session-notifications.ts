@@ -18,6 +18,7 @@ import { trpgSessionNotificationsCol } from "../collections.js";
 import {
   type RecordTrpgNotificationInput,
   recordTrpgNotificationInputSchema,
+  trpgNotificationKindSchema,
 } from "../schemas/trpg-session-notification.schema.js";
 
 /**
@@ -41,4 +42,24 @@ export async function recordNotificationAttempt(
     attemptedAt: validated.attemptedAt ?? new Date(),
     error: validated.error ?? null,
   });
+}
+
+/** 같은 세션/종류/유저에 대해 이미 성공적으로 전달된 기록이 있는지 확인한다. */
+export async function hasDeliveredNotificationAttempt(
+  input: Pick<
+    RecordTrpgNotificationInput,
+    "sessionId" | "discordUserId" | "kind"
+  >,
+): Promise<boolean> {
+  if (!ObjectId.isValid(input.sessionId)) return false;
+
+  const kind = trpgNotificationKindSchema.parse(input.kind);
+  const col = await trpgSessionNotificationsCol();
+  const existing = await col.findOne({
+    sessionId: new ObjectId(input.sessionId),
+    discordUserId: input.discordUserId,
+    kind,
+    deliveryMethod: { $in: ["dm", "fallback"] },
+  });
+  return existing !== null;
 }

@@ -15,7 +15,12 @@ import { z } from "zod";
 import { dateSchema, objectIdStringSchema } from "./common.js";
 import { trpgDiscordIdSchema } from "./trpg-session.schema.js";
 
-export const trpgNotificationKindSchema = z.enum(["creation", "reminder24h"]);
+export const trpgNotificationKindSchema = z.enum([
+  "creation",
+  "reminder24h",
+  "update",
+  "cancellation",
+]);
 
 export const trpgNotificationDeliveryMethodSchema = z.enum([
   "dm",

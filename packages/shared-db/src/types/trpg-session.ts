@@ -42,6 +42,24 @@ export interface TrpgSession {
   /** 24h 리마인드 발송권 선점 만료 시각 */
   reminderClaimLeaseUntil?: Date | null;
 
+  /** 취소 알림 발송 대기열 적재 시각 */
+  cancellationNotificationQueuedAt?: Date | null;
+  /** 취소 알림 발송 완료 시각 */
+  cancellationNotificationSentAt?: Date | null;
+  /** 취소 알림 발송권 선점 만료 시각 */
+  cancellationNotificationClaimLeaseUntil?: Date | null;
+
+  /** 수정 알림 발송 대기열 적재 시각 */
+  updateNotificationQueuedAt?: Date | null;
+  /** 수정 알림 발송 완료 시각 */
+  updateNotificationSentAt?: Date | null;
+  /** 수정 알림 발송권 선점 만료 시각 */
+  updateNotificationClaimLeaseUntil?: Date | null;
+  /** 수정 알림 발송 대상 스냅샷 (참가자 제거 대상까지 포함하기 위함) */
+  updateNotificationRecipientDiscordIds?: string[] | null;
+  /** 수정 알림에 표시할 변경 요약 */
+  updateNotificationChanges?: string[] | null;
+
   createdAt: Date;
   updatedAt: Date;
 }

@@ -356,6 +356,26 @@ export async function ensureAllIndexes(): Promise<void> {
         key: { status: 1, reminderSentAt: 1, date: 1, startTime: 1 },
         name: "trpg_sessions_reminder_pending",
       },
+      {
+        // 취소 알림 스케줄러: 취소 대기열 + 미발송 + lease 만료 후보 스캔.
+        key: {
+          status: 1,
+          cancellationNotificationQueuedAt: 1,
+          cancellationNotificationSentAt: 1,
+          cancellationNotificationClaimLeaseUntil: 1,
+        },
+        name: "trpg_sessions_cancellation_notification_pending",
+      },
+      {
+        // 수정 알림 스케줄러: 수정 대기열 + 미발송 + lease 만료 후보 스캔.
+        key: {
+          status: 1,
+          updateNotificationQueuedAt: 1,
+          updateNotificationSentAt: 1,
+          updateNotificationClaimLeaseUntil: 1,
+        },
+        name: "trpg_sessions_update_notification_pending",
+      },
     ]),
 
     /* ── trpg_guild_members (참가자 후보 풀) ── */

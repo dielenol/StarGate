@@ -31,9 +31,11 @@ const MIGRATED_DIR = resolve(
 /** 이주 문서 3종 + 기대 factionCode/institutionCode/codename 스팟체크. */
 const MIGRATED_FILES = [
   {
+    // Phase 5-h(2026-05-14): NOVUS_ORDO 본부 신설로 SECRETARIAT 소속 NPC 의
+    // factionCode 가 COUNCIL → NOVUS_ORDO 로 백필됨.
     file: "registrar.md",
     codename: "REGISTRAR",
-    factionCode: "COUNCIL",
+    factionCode: "NOVUS_ORDO",
     institutionCode: "SECRETARIAT",
     expectedSections: ["appearance", "personality", "background", "roleDetail", "notes", "quote"],
   },

@@ -14,8 +14,12 @@
 
 import type { ObjectId } from "mongodb";
 
-/** 알림 종류: 세션 생성 시 발송 / 시작 24h 전 리마인드 */
-export type TrpgNotificationKind = "creation" | "reminder24h";
+/** 알림 종류: 세션 생성 / 시작 24h 전 리마인드 / 세션 수정 / 세션 취소 */
+export type TrpgNotificationKind =
+  | "creation"
+  | "reminder24h"
+  | "update"
+  | "cancellation";
 
 /** 발송 방식: DM 성공 / fallback 채널 / 완전 실패 */
 export type TrpgNotificationDeliveryMethod = "dm" | "fallback" | "failed";

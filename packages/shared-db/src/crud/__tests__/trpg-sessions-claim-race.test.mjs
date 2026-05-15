@@ -18,13 +18,16 @@ import { fileURLToPath } from "node:url";
 
 import {
   cancelTrpgSession,
+  claimCancellationNotification,
   claimNotification,
   claimReminder,
   createTrpgSession,
   ensureAllIndexes,
+  findUnnotifiedCancelledTrpgSessions,
   findTrpgSessionById,
   getClient,
   initServerless,
+  markCancellationNotificationSent,
   markNotificationSent,
   markReminderSent,
   trpgSessionsCol,
@@ -99,6 +102,53 @@ test(
       trueCount,
       1,
       `claimNotification 은 10회 중 정확히 1회만 true 여야 하지만 ${trueCount}회 true`,
+    );
+  },
+);
+
+test(
+  "RACE: claimCancellationNotification 동시 10회 — 정확히 1회만 true",
+  { skip: !HAS_DB && "MONGODB_URI 없음" },
+  async () => {
+    const sessionId = await createTrpgSession({
+      guildId: TEST_GUILD,
+      title: "race cancellation",
+      date: "2026-06-02",
+      startTime: "21:00",
+      createdByDiscordId: "creator-cancel",
+      createdByUsername: "creator",
+      participantDiscordIds: ["p1", "p2"],
+    });
+
+    const cancelRes = await cancelTrpgSession(sessionId, "creator-cancel");
+    assert.equal(cancelRes.kind, "cancelled");
+
+    const pending = await findUnnotifiedCancelledTrpgSessions(new Date());
+    assert.ok(
+      pending.some((s) => String(s._id) === sessionId),
+      "취소된 세션은 취소 알림 후보로 조회되어야 함",
+    );
+
+    const leaseUntil = new Date(Date.now() + 5 * 60 * 1000);
+    const results = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        claimCancellationNotification(sessionId, leaseUntil),
+      ),
+    );
+
+    const trueCount = results.filter((v) => v === true).length;
+    assert.equal(
+      trueCount,
+      1,
+      `claimCancellationNotification 은 10회 중 정확히 1회만 true 여야 하지만 ${trueCount}회 true`,
+    );
+
+    await markCancellationNotificationSent(sessionId);
+    const afterMark = await claimCancellationNotification(sessionId, leaseUntil);
+    assert.equal(
+      afterMark,
+      false,
+      "markCancellationNotificationSent 후에는 claimCancellationNotification 이 false 여야 함",
     );
   },
 );
