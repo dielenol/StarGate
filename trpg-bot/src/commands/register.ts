@@ -15,6 +15,8 @@ import { REST, Routes } from "discord.js";
 import { config } from "../config.js";
 import { SESSION_CHECK_NAME } from "../slash/ko-names.js";
 
+const CURRENT_YEAR = 2026;
+
 /** `/세션확인` — 이번 달 TRPG 세션 일정을 PNG + 웹 링크로 응답 */
 const SESSION_CHECK_CMD = {
   type: 1 as const,
@@ -22,7 +24,40 @@ const SESSION_CHECK_CMD = {
   description:
     "이번 달 TRPG 세션 일정을 PNG로 보여주고 웹 캘린더 링크를 첨부합니다",
   default_member_permissions: null,
-  options: [],
+  options: [
+    {
+      type: 4,
+      name: "연도",
+      description: "조회할 연도",
+      min_value: CURRENT_YEAR,
+      max_value: 2100,
+      required: false,
+    },
+    {
+      type: 4,
+      name: "월",
+      description: "조회할 월",
+      min_value: 1,
+      max_value: 12,
+      required: false,
+    },
+    {
+      type: 3,
+      name: "모드",
+      description: "출력 상세도",
+      required: false,
+      choices: [
+        { name: "상세", value: "detail" },
+        { name: "간단", value: "summary" },
+      ],
+    },
+    {
+      type: 5,
+      name: "비공개",
+      description: "나에게만 보이도록 응답합니다",
+      required: false,
+    },
+  ],
 };
 
 /**

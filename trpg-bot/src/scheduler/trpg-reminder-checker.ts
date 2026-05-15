@@ -16,37 +16,21 @@
 import {
   claimReminder,
   findDueReminderSessions,
+  hasDeliveredNotificationAttempt,
   markReminderSent,
   recordNotificationAttempt,
 } from "@stargate/shared-db";
 
-import type { BaseMessageOptions, Client } from "discord.js";
+import type { Client } from "discord.js";
 import type { TrpgSession } from "@stargate/shared-db";
 
 import { config } from "../config.js";
 import { sendDmOrFallback } from "../utils/dm-with-fallback.js";
+import { buildTrpgSessionDmMessage } from "../utils/trpg-session-message.js";
 
 /** lease 기간 — claim 후 발송 완료까지 5분 안에 끝낸다고 가정 */
 const LEASE_DURATION_MS = 5 * 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-
-function formatReminderMessage(
-  session: TrpgSession,
-  sessionId: string,
-): BaseMessageOptions {
-  const url = `${config.trpgWebBaseUrl}/sessions/${sessionId}`;
-  const lines = [
-    "**TRPG 세션 시작 24시간 전 리마인드입니다.**",
-    "",
-    `세션명: **${session.title}**`,
-    `일시: ${session.date} ${session.startTime} (KST)`,
-    `생성자: ${session.createdByUsername}`,
-    "",
-    `상세: ${url}`,
-    `캘린더: ${config.trpgWebBaseUrl}/calendar`,
-  ];
-  return { content: lines.join("\n") };
-}
 
 async function processSession(
   client: Client,
@@ -59,10 +43,22 @@ async function processSession(
   const claimed = await claimReminder(sessionId, leaseUntil);
   if (!claimed) return;
 
-  const payload = formatReminderMessage(session, sessionId);
+  const payload = buildTrpgSessionDmMessage({
+    kind: "reminder24h",
+    session,
+    sessionId,
+    baseUrl: config.trpgWebBaseUrl,
+  });
 
   for (const userId of session.participantDiscordIds) {
     try {
+      const alreadyDelivered = await hasDeliveredNotificationAttempt({
+        sessionId,
+        discordUserId: userId,
+        kind: "reminder24h",
+      });
+      if (alreadyDelivered) continue;
+
       const result = await sendDmOrFallback(client, userId, payload, {
         fallbackChannelId: config.trpgFallbackChannelId,
         mentionUser: true,
