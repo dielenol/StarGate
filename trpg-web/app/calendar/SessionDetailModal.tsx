@@ -6,7 +6,6 @@ import type { TrpgMemberView } from "@/app/api/trpg/members/route";
 import type { TrpgSessionView } from "@/lib/trpg/serializer";
 
 import { useCancelTrpgSession } from "@/hooks/mutations/useCancelTrpgSession";
-import { TrpgSessionConflictError } from "@/hooks/mutations/useCreateTrpgSession";
 import { useUpdateTrpgSession } from "@/hooks/mutations/useUpdateTrpgSession";
 
 import styles from "./styles.module.css";
@@ -33,37 +32,54 @@ export function SessionDetailModal({
   const [date, setDate] = useState(session.date);
   const [startTime, setStartTime] = useState(session.startTime);
   const [participants, setParticipants] = useState<Set<string>>(
-    () => new Set(session.participantDiscordIds),
+    () =>
+      new Set(
+        session.participantDiscordIds.filter(
+          (pid) => pid !== session.createdByDiscordId,
+        ),
+      ),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [conflictedIds, setConflictedIds] = useState<string[]>([]);
 
   const updateMutation = useUpdateTrpgSession();
   const cancelMutation = useCancelTrpgSession();
 
-  // 선택 date 에 이미 참여 중인 사용자 ID 맵 — 본 세션은 제외.
-  const busyMap = useMemo(() => {
-    const map = new Map<string, string>();
+  const scheduledSessionMap = useMemo(() => {
+    const map = new Map<string, TrpgSessionView>();
     for (const s of existingSessions) {
       if (s.date !== date) continue;
       if (s.id === session.id) continue;
       for (const pid of s.participantDiscordIds) {
-        if (!map.has(pid)) map.set(pid, s.title);
+        if (!map.has(pid)) map.set(pid, s);
       }
     }
     return map;
   }, [existingSessions, date, session.id]);
+  const masterScheduledSession = scheduledSessionMap.get(
+    session.createdByDiscordId,
+  );
 
   const membersById = useMemo(() => {
     const map = new Map<string, TrpgMemberView>();
     for (const m of members) map.set(m.discordUserId, m);
     return map;
   }, [members]);
+  const selectableMembers = useMemo(
+    () =>
+      members.filter(
+        (member) => member.discordUserId !== session.createdByDiscordId,
+      ),
+    [members, session.createdByDiscordId],
+  );
+  const masterName =
+    membersById.get(session.createdByDiscordId)?.displayName ??
+    session.createdByUsername;
+  const displayParticipantIds = session.participantDiscordIds.filter(
+    (pid) => pid !== session.createdByDiscordId,
+  );
 
   function toggleParticipant(id: string) {
-    // disabled 체크박스를 외부 도구(키보드 단축키 등)로 우회해 add 가 발생하는
-    // 시나리오 방어 — 이미 다른 세션에 잡힌 사용자는 add 차단.
-    if (busyMap.has(id) && !participants.has(id)) return;
+    if (id === session.createdByDiscordId) return;
     setParticipants((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -75,7 +91,6 @@ export function SessionDetailModal({
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage(null);
-    setConflictedIds([]);
 
     if (title.trim().length === 0) {
       setErrorMessage("제목을 입력하세요.");
@@ -93,7 +108,9 @@ export function SessionDetailModal({
     if (date !== session.date) patch.date = date;
     if (startTime !== session.startTime) patch.startTime = startTime;
 
-    const newParticipants = Array.from(participants);
+    const newParticipants = Array.from(
+      new Set([session.createdByDiscordId, ...participants]),
+    );
     const originalSorted = [...session.participantDiscordIds].sort();
     const newSorted = [...newParticipants].sort();
     if (
@@ -113,10 +130,7 @@ export function SessionDetailModal({
       setEditing(false);
       onClose();
     } catch (err) {
-      if (err instanceof TrpgSessionConflictError) {
-        setConflictedIds(err.conflictedParticipants);
-        setErrorMessage(err.message);
-      } else if (err instanceof Error) {
+      if (err instanceof Error) {
         setErrorMessage(err.message);
       } else {
         setErrorMessage("세션 갱신 실패");
@@ -175,22 +189,42 @@ export function SessionDetailModal({
                 <dd className={styles.modal__dd}>{session.startTime}</dd>
               </div>
               <div className={styles.modal__row}>
-                <dt className={styles.modal__dt}>생성자</dt>
-                <dd className={styles.modal__dd}>
-                  {session.createdByUsername}
+                <dt className={styles.modal__dt}>마스터</dt>
+                <dd className={`${styles.modal__dd} ${styles.modal__master}`}>
+                  <span>{masterName}</span>
+                  {session.createdByDiscordId === currentUserDiscordId ? (
+                    <span className={styles.modal__selfBadge}>본인</span>
+                  ) : null}
                 </dd>
               </div>
               <div className={styles.modal__row}>
                 <dt className={styles.modal__dt}>참여자</dt>
                 <dd className={styles.modal__dd}>
-                  {session.participantDiscordIds.length === 0
-                    ? "없음"
-                    : session.participantDiscordIds
-                        .map(
-                          (pid) =>
-                            membersById.get(pid)?.displayName ?? `(${pid})`,
-                        )
-                        .join(", ")}
+                  {displayParticipantIds.length === 0 ? (
+                    <span className={styles.modal__emptyValue}>없음</span>
+                  ) : (
+                    <ul className={styles.modal__participants}>
+                      {displayParticipantIds.map((pid) => (
+                        <li
+                          key={pid}
+                          className={`${styles.modal__participant} ${
+                            pid === currentUserDiscordId
+                              ? styles["modal__participant--self"]
+                              : ""
+                          }`}
+                        >
+                          <span>
+                            {membersById.get(pid)?.displayName ?? `(${pid})`}
+                          </span>
+                          {pid === currentUserDiscordId ? (
+                            <span className={styles.modal__selfBadge}>
+                              본인
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </dd>
               </div>
             </dl>
@@ -270,46 +304,63 @@ export function SessionDetailModal({
 
             <fieldset className={styles.modal__fieldset}>
               <legend className={styles.modal__legend}>참여자</legend>
+              <div className={styles.modal__masterMember}>
+                <span className={styles["modal__masterMember-role"]}>
+                  마스터
+                </span>
+                <strong className={styles["modal__masterMember-name"]}>
+                  {masterName}
+                </strong>
+                {masterScheduledSession ? (
+                  <span
+                    className={styles["modal__masterMember-note"]}
+                    title={`${masterScheduledSession.startTime} ${masterScheduledSession.title}`}
+                  >
+                    {formatMonthDay(date)} 참여 세션 있음
+                  </span>
+                ) : null}
+              </div>
               <ul className={styles["modal__member-list"]}>
-                {members.map((m) => {
-                  const busyOther =
-                    busyMap.has(m.discordUserId) &&
-                    !participants.has(m.discordUserId);
-                  const conflicted = conflictedIds.includes(m.discordUserId);
+                {selectableMembers.map((m) => {
+                  const scheduledSession = scheduledSessionMap.get(
+                    m.discordUserId,
+                  );
                   const checked = participants.has(m.discordUserId);
                   return (
                     <li
                       key={m.discordUserId}
                       className={`${styles.modal__member} ${
-                        busyOther ? styles["modal__member--busy"] : ""
-                      } ${conflicted ? styles["modal__member--conflict"] : ""}`}
+                        scheduledSession
+                          ? styles["modal__member--has-session"]
+                          : ""
+                      }`}
                     >
                       <label className={styles["modal__member-label"]}>
                         <input
                           type="checkbox"
                           checked={checked}
-                          disabled={busyOther}
                           onChange={() => toggleParticipant(m.discordUserId)}
                         />
                         <span className={styles["modal__member-name"]}>
                           {m.displayName}
                         </span>
-                        {busyOther ? (
-                          <span className={styles["modal__member-note"]}>
-                            다른 세션 참여 중
-                          </span>
-                        ) : null}
-                        {conflicted ? (
+                        {scheduledSession ? (
                           <span
-                            className={`${styles["modal__member-note"]} ${styles["modal__member-note--danger"]}`}
+                            className={styles["modal__member-note"]}
+                            title={`${scheduledSession.startTime} ${scheduledSession.title}`}
                           >
-                            충돌
+                            {formatMonthDay(date)} 참여 세션 있음
                           </span>
                         ) : null}
                       </label>
                     </li>
                   );
                 })}
+                {selectableMembers.length === 0 ? (
+                  <li className={styles["modal__member-empty"]}>
+                    선택 가능한 참여자가 없습니다.
+                  </li>
+                ) : null}
               </ul>
             </fieldset>
 
@@ -341,4 +392,9 @@ export function SessionDetailModal({
       </div>
     </div>
   );
+}
+
+function formatMonthDay(dateKey: string): string {
+  const [, month, day] = dateKey.split("-");
+  return `${Number(month)}/${Number(day)}`;
 }

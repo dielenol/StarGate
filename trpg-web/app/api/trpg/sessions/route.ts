@@ -2,7 +2,7 @@
  * /api/trpg/sessions
  *
  * - GET: 월별 세션 조회 (year, month)
- * - POST: 새 세션 생성 (참가자 충돌 검사 포함, race 차단을 위해 insert 후 재검사)
+ * - POST: 새 세션 생성
  */
 
 import "@/lib/db/init";
@@ -12,16 +12,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
-  cancelTrpgSession,
   createTrpgSession,
   createTrpgSessionInputSchema,
   findTrpgGuildMember,
-  findTrpgSessionsByDate,
   findTrpgSessionsByMonth,
   listActiveTrpgGuildMembers,
 } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
+import { currentKstDateString } from "@/lib/calendar/month";
 import { TRPG_GUILD_ID } from "@/lib/env";
 import { toTrpgSessionView } from "@/lib/trpg/serializer";
 
@@ -95,40 +94,26 @@ export async function POST(request: Request) {
   }
 
   const guildId = TRPG_GUILD_ID;
+  const todayKey = currentKstDateString();
+  if (parsed.data.date < todayKey) {
+    return NextResponse.json(
+      { error: "오늘 이전 날짜에는 세션을 생성할 수 없습니다." },
+      { status: 400 },
+    );
+  }
 
   // 모든 참여자가 활성 길드 멤버 캐시에 존재하는지 서버 사이드 재검증.
+  const participantDiscordIds = Array.from(
+    new Set([createdByDiscordId, ...parsed.data.participantDiscordIds]),
+  );
   const activeMembers = await listActiveTrpgGuildMembers(guildId);
   const activeIds = new Set(activeMembers.map((m) => m.discordUserId));
-  const invalidIds = parsed.data.participantDiscordIds.filter(
-    (id) => !activeIds.has(id),
-  );
+  const invalidIds = participantDiscordIds.filter((id) => !activeIds.has(id));
   if (invalidIds.length > 0) {
     return NextResponse.json(
       { error: "활성 길드 멤버가 아닌 참여자가 포함되어 있습니다.", invalidIds },
       { status: 400 },
     );
-  }
-
-  // 사전 conflict check — 같은 날짜 다른 open 세션과의 참여자 교집합 검사.
-  const sessionsBefore = await findTrpgSessionsByDate(guildId, parsed.data.date);
-  const requestedSet = new Set(parsed.data.participantDiscordIds);
-  {
-    const conflicted = new Set<string>();
-    for (const s of sessionsBefore) {
-      if (s.status !== "open") continue;
-      for (const pid of s.participantDiscordIds) {
-        if (requestedSet.has(pid)) conflicted.add(pid);
-      }
-    }
-    if (conflicted.size > 0) {
-      return NextResponse.json(
-        {
-          error: "conflict",
-          conflictedParticipants: Array.from(conflicted),
-        },
-        { status: 409 },
-      );
-    }
   }
 
   // 표시용 username 은 길드 멤버 캐시의 displayName 을 우선 사용 (PII 최소화 — email 미사용).
@@ -146,7 +131,7 @@ export async function POST(request: Request) {
       startTime: parsed.data.startTime,
       createdByDiscordId,
       createdByUsername,
-      participantDiscordIds: parsed.data.participantDiscordIds,
+      participantDiscordIds,
     });
 
     insertedId = await createTrpgSession(input);
@@ -159,39 +144,6 @@ export async function POST(request: Request) {
     }
     const message = err instanceof Error ? err.message : "세션 생성 실패";
     return NextResponse.json({ error: message }, { status: 500 });
-  }
-
-  // Race 차단: insert 직후 재검사. 사이에 다른 요청이 동일 인원을 등록했을 수 있다.
-  // 충돌 발견 시 방금 생성한 세션을 즉시 cancel 하고 409 반환.
-  try {
-    const sessionsAfter = await findTrpgSessionsByDate(guildId, parsed.data.date);
-    const conflictedPost = new Set<string>();
-    for (const s of sessionsAfter) {
-      if (s.status !== "open") continue;
-      if (s._id?.toString() === insertedId) continue;
-      for (const pid of s.participantDiscordIds) {
-        if (requestedSet.has(pid)) conflictedPost.add(pid);
-      }
-    }
-    if (conflictedPost.size > 0) {
-      // 자신이 만든 세션이므로 createdByDiscordId 일치 — 안전하게 취소 가능.
-      await cancelTrpgSession(insertedId, createdByDiscordId).catch((err) => {
-        // rollback 실패 시 좀비 open 세션이 남을 수 있음. 운영 모니터링으로 잡아야 함.
-        console.error("[trpg] POST rollback 실패 — 좀비 세션 가능", {
-          insertedId,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      });
-      return NextResponse.json(
-        {
-          error: "conflict",
-          conflictedParticipants: Array.from(conflictedPost),
-        },
-        { status: 409 },
-      );
-    }
-  } catch {
-    // 사후 재검사 실패는 무시 — 이미 insert 는 성공했고 정합성 책임은 운영 모니터링으로.
   }
 
   return NextResponse.json({ id: insertedId }, { status: 201 });

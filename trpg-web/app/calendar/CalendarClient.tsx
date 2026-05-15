@@ -1,10 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { signOut } from "next-auth/react";
 
 import type { TrpgMemberView } from "@/app/api/trpg/members/route";
+import {
+  getKoreanHolidayInfo,
+  getKstWeekday,
+} from "@/lib/calendar/korean-holidays";
 import {
   buildCalendarGrid,
   currentKstDateString,
@@ -23,7 +27,7 @@ import { SessionDetailModal } from "./SessionDetailModal";
 import styles from "./styles.module.css";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
-const MAX_VISIBLE_SESSIONS_PER_CELL = 3;
+const MAX_VISIBLE_SESSIONS_PER_CELL = 2;
 
 interface Props {
   currentUserDiscordId: string;
@@ -31,6 +35,8 @@ interface Props {
   initialMonth: number;
   initialSessions: TrpgSessionView[];
   initialMembers: TrpgMemberView[];
+  initialSelectedDate?: string | null;
+  initialFocusedSessionId?: string | null;
 }
 
 export function CalendarClient({
@@ -39,14 +45,23 @@ export function CalendarClient({
   initialMonth,
   initialSessions,
   initialMembers,
+  initialSelectedDate = null,
+  initialFocusedSessionId = null,
 }: Props) {
   const [{ year, month }, setYearMonth] = useState(() => ({
     year: initialYear,
     month: initialMonth,
   }));
   const [createModalDate, setCreateModalDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    initialSelectedDate,
+  );
+  const [focusedSessionId, setFocusedSessionId] = useState<string | null>(
+    initialFocusedSessionId,
+  );
   const [detailModalSession, setDetailModalSession] =
     useState<TrpgSessionView | null>(null);
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
 
   // "오늘"은 컴포넌트 라이프타임 동안 고정 — 매 렌더 재계산하지 않는다.
   const todayKey = useMemo(() => currentKstDateString(), []);
@@ -67,6 +82,11 @@ export function CalendarClient({
     () => membersQuery.data ?? [],
     [membersQuery.data],
   );
+  const currentMember = useMemo(
+    () =>
+      members.find((member) => member.discordUserId === currentUserDiscordId),
+    [currentUserDiscordId, members],
+  );
 
   const sessionsByDate = useMemo(() => {
     const map = new Map<string, TrpgSessionView[]>();
@@ -86,19 +106,60 @@ export function CalendarClient({
     () => buildCalendarGrid(year, month),
     [year, month],
   );
+  const selectedDateSessions = useMemo(() => {
+    if (!selectedDate) return [];
+    return sessionsByDate.get(selectedDate) ?? [];
+  }, [sessionsByDate, selectedDate]);
+  const selectedDateCanCreate = selectedDate ? selectedDate >= todayKey : true;
+
+  useEffect(() => {
+    if (deepLinkHandled || !initialFocusedSessionId) return;
+    const target = sessions.find((s) => s.id === initialFocusedSessionId);
+    if (!target) return;
+    setSelectedDate(target.date);
+    setFocusedSessionId(target.id);
+    setDetailModalSession(target);
+    setDeepLinkHandled(true);
+  }, [deepLinkHandled, initialFocusedSessionId, sessions]);
 
   function handlePrev() {
+    setSelectedDate(null);
+    setFocusedSessionId(null);
     setYearMonth((prev) => shiftMonth(prev, -1));
   }
   function handleNext() {
+    setSelectedDate(null);
+    setFocusedSessionId(null);
     setYearMonth((prev) => shiftMonth(prev, 1));
   }
   function handleToday() {
+    setSelectedDate(null);
+    setFocusedSessionId(null);
     setYearMonth(currentKstYearMonth());
   }
 
   async function handleSignOut() {
     await signOut({ callbackUrl: "/login" });
+  }
+
+  function handleOpenCreate(dateKey = todayKey) {
+    if (dateKey < todayKey) return;
+    setCreateModalDate(dateKey);
+  }
+
+  function handleSelectDate(dateKey: string, sessionId?: string) {
+    const targetYearMonth = getYearMonthFromDateKey(dateKey);
+    if (targetYearMonth.year !== year || targetYearMonth.month !== month) {
+      setYearMonth(targetYearMonth);
+    }
+    setSelectedDate(dateKey);
+    setFocusedSessionId(sessionId ?? null);
+  }
+
+  function handleOpenSessionDetail(session: TrpgSessionView) {
+    setSelectedDate(session.date);
+    setFocusedSessionId(session.id);
+    setDetailModalSession(session);
   }
 
   return (
@@ -114,6 +175,13 @@ export function CalendarClient({
             onClick={handleToday}
           >
             오늘로
+          </button>
+          <button
+            className={styles["calendar__create-btn"]}
+            type="button"
+            onClick={() => handleOpenCreate()}
+          >
+            + 일정 생성
           </button>
         </div>
 
@@ -134,6 +202,9 @@ export function CalendarClient({
           >
             ›
           </button>
+          <span className={styles.calendar__profile} title="현재 로그인 사용자">
+            {currentMember?.displayName ?? currentUserDiscordId}
+          </span>
           <button
             className={styles["calendar__sign-out"]}
             type="button"
@@ -152,89 +223,162 @@ export function CalendarClient({
         </p>
       ) : null}
 
-      <div className={styles.calendar__weekdays}>
-        {WEEKDAY_LABELS.map((label, idx) => (
-          <div
-            key={label}
-            className={`${styles.calendar__weekday} ${
-              idx === 0 ? styles["calendar__weekday--sun"] : ""
-            } ${idx === 6 ? styles["calendar__weekday--sat"] : ""}`}
-          >
-            {label}
-          </div>
-        ))}
-      </div>
+      <div className={styles.calendar__body}>
+        {selectedDate ? (
+          <DateSessionsPanel
+            dateKey={selectedDate}
+            sessions={selectedDateSessions}
+            focusedSessionId={focusedSessionId}
+            members={members}
+            currentUserDiscordId={currentUserDiscordId}
+            onCreate={() => handleOpenCreate(selectedDate)}
+            canCreate={selectedDateCanCreate}
+            onOpenSession={handleOpenSessionDetail}
+            onClose={() => {
+              setSelectedDate(null);
+              setFocusedSessionId(null);
+            }}
+          />
+        ) : null}
 
-      <div className={styles.calendar__grid}>
-        {grid.map((cell) => {
-          const daySessions = sessionsByDate.get(cell.dateKey) ?? [];
-          const visible = daySessions.slice(0, MAX_VISIBLE_SESSIONS_PER_CELL);
-          const overflow = daySessions.length - visible.length;
-          const isToday = cell.dateKey === todayKey;
-
-          return (
-            // 셀 자체는 비-인터랙티브 컨테이너. 내부 요소(+ 추가 버튼, chip 버튼,
-            // 빈 영역 fill 버튼)만 명시적으로 클릭 가능 — nested interactive 해소.
-            <div
-              key={cell.dateKey}
-              className={`${styles.calendar__cell} ${
-                cell.inMonth ? "" : styles["calendar__cell--out"]
-              } ${isToday ? styles["calendar__cell--today"] : ""}`}
-            >
-              <div className={styles["calendar__cell-head"]}>
-                <span className={styles["calendar__cell-day"]}>{cell.day}</span>
-                <button
-                  type="button"
-                  className={styles["calendar__cell-add"]}
-                  aria-label={`${cell.dateKey} 에 세션 추가`}
-                  onClick={() => setCreateModalDate(cell.dateKey)}
-                >
-                  +
-                </button>
+        <section className={styles.calendar__board} aria-label="월간 캘린더">
+          <div className={styles.calendar__weekdays}>
+            {WEEKDAY_LABELS.map((label, idx) => (
+              <div
+                key={label}
+                className={`${styles.calendar__weekday} ${
+                  idx === 0 ? styles["calendar__weekday--sun"] : ""
+                } ${idx === 6 ? styles["calendar__weekday--sat"] : ""}`}
+              >
+                {label}
               </div>
+            ))}
+          </div>
 
-              <ul className={styles["calendar__cell-sessions"]}>
-                {visible.map((s) => (
-                  <li key={s.id}>
+          <div className={styles.calendar__grid}>
+            {grid.map((cell) => {
+              const daySessions = sessionsByDate.get(cell.dateKey) ?? [];
+              const visible = daySessions.slice(
+                0,
+                MAX_VISIBLE_SESSIONS_PER_CELL,
+              );
+              const overflow = daySessions.length - visible.length;
+              const isToday = cell.dateKey === todayKey;
+              const isSelected = cell.dateKey === selectedDate;
+              const canCreateOnDate = cell.dateKey >= todayKey;
+              const holidayInfo = getKoreanHolidayInfo(cell.dateKey);
+              const weekday = getKstWeekday(cell.dateKey);
+              const dayToneClass = holidayInfo
+                ? styles["calendar__cell-day--holiday"]
+                : weekday === 0
+                  ? styles["calendar__cell-day--sun"]
+                  : weekday === 6
+                    ? styles["calendar__cell-day--sat"]
+                    : "";
+
+              return (
+                <div
+                  key={cell.dateKey}
+                  className={`${styles.calendar__cell} ${
+                    cell.inMonth ? "" : styles["calendar__cell--out"]
+                  } ${isToday ? styles["calendar__cell--today"] : ""} ${
+                    isSelected ? styles["calendar__cell--selected"] : ""
+                  }`}
+                >
+                  <div
+                    className={styles["calendar__cell-head"]}
+                    onClick={() => handleSelectDate(cell.dateKey)}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" && event.key !== " ") return;
+                      event.preventDefault();
+                      handleSelectDate(cell.dateKey);
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${cell.dateKey} 세션 목록 보기`}
+                  >
+                    <span
+                      className={styles["calendar__cell-date"]}
+                    >
+                      <span
+                        className={`${styles["calendar__cell-day"]} ${dayToneClass}`}
+                      >
+                        {cell.day}
+                      </span>
+                      {holidayInfo ? (
+                        <span className={styles["calendar__holiday-label"]}>
+                          {holidayInfo.label}
+                        </span>
+                      ) : null}
+                    </span>
                     <button
                       type="button"
-                      className={styles.calendar__chip}
-                      onClick={() => setDetailModalSession(s)}
-                      aria-label={`${s.startTime} ${s.title} 세션 상세`}
+                      className={styles["calendar__cell-add"]}
+                      aria-label={`${cell.dateKey} 에 세션 추가`}
+                      disabled={!canCreateOnDate}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleOpenCreate(cell.dateKey);
+                      }}
                     >
-                      <span className={styles["calendar__chip-time"]}>
-                        {s.startTime}
-                      </span>
-                      <span className={styles["calendar__chip-title"]}>
-                        {s.title}
-                      </span>
+                      +
                     </button>
-                  </li>
-                ))}
-                {overflow > 0 ? (
-                  <li className={styles["calendar__chip-more"]}>
-                    +{overflow}건 더보기
-                  </li>
-                ) : null}
-              </ul>
+                  </div>
 
-              {/* 셀의 빈 여백을 클릭해도 세션 추가 모달이 열리도록 fill 버튼을
-                  깔아 둔다. chip / + 버튼은 above z-index 로 가린다. */}
-              <button
-                type="button"
-                className={styles["calendar__cell-fill"]}
-                aria-label={`${cell.dateKey} 에 세션 추가`}
-                tabIndex={-1}
-                onClick={() => setCreateModalDate(cell.dateKey)}
-              />
-            </div>
-          );
-        })}
+                  <ul className={styles["calendar__cell-sessions"]}>
+                    {visible.map((s) => (
+                      <li key={s.id}>
+                        <button
+                          type="button"
+                          className={styles.calendar__chip}
+                          onClick={() => handleOpenSessionDetail(s)}
+                          aria-label={`${s.startTime} ${s.title} 세션 상세 열기`}
+                        >
+                          <span className={styles["calendar__chip-time"]}>
+                            {s.startTime}
+                          </span>
+                          <span className={styles["calendar__chip-count"]}>
+                            {s.participantDiscordIds.length}명
+                          </span>
+                          <span className={styles["calendar__chip-title"]}>
+                            {s.title}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                    {overflow > 0 ? (
+                      <li>
+                        <button
+                          type="button"
+                          className={styles["calendar__chip-more"]}
+                          onClick={() => handleSelectDate(cell.dateKey)}
+                          aria-label={`${cell.dateKey} 세션 ${overflow}개 더 보기`}
+                        >
+                          <strong>+{overflow}개의 세션</strong>
+                        </button>
+                      </li>
+                    ) : null}
+                  </ul>
+
+                  {/* 셀의 빈 여백을 날짜 상세 진입점으로 사용한다. chip / + 버튼은
+                      above z-index 로 가린다. */}
+                  <button
+                    type="button"
+                    className={styles["calendar__cell-fill"]}
+                    aria-label={`${cell.dateKey} 세션 목록 보기`}
+                    onClick={() => handleSelectDate(cell.dateKey)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </section>
       </div>
 
       {createModalDate ? (
         <SessionCreateModal
           defaultDate={createModalDate}
+          minDate={todayKey}
           members={members}
           existingSessions={sessions}
           currentUserDiscordId={currentUserDiscordId}
@@ -253,4 +397,173 @@ export function CalendarClient({
       ) : null}
     </main>
   );
+}
+
+interface DateSessionsPanelProps {
+  dateKey: string;
+  sessions: TrpgSessionView[];
+  focusedSessionId: string | null;
+  members: TrpgMemberView[];
+  currentUserDiscordId: string;
+  onCreate: () => void;
+  canCreate: boolean;
+  onOpenSession: (session: TrpgSessionView) => void;
+  onClose: () => void;
+}
+
+function DateSessionsPanel({
+  dateKey,
+  sessions,
+  focusedSessionId,
+  members,
+  currentUserDiscordId,
+  onCreate,
+  canCreate,
+  onOpenSession,
+  onClose,
+}: DateSessionsPanelProps) {
+  const membersById = useMemo(() => {
+    const map = new Map<string, TrpgMemberView>();
+    for (const m of members) map.set(m.discordUserId, m);
+    return map;
+  }, [members]);
+
+  return (
+    <aside className={styles.dayPanel} aria-label={`${dateKey} 세션 정보`}>
+      <header className={styles.dayPanel__header}>
+        <div>
+          <p className={styles.dayPanel__eyebrow}>선택한 날짜</p>
+          <h2 className={styles.dayPanel__title}>{formatPanelDate(dateKey)}</h2>
+        </div>
+        <button
+          className={styles.dayPanel__close}
+          type="button"
+          onClick={onClose}
+          aria-label="날짜 정보 닫기"
+        >
+          ×
+        </button>
+      </header>
+
+      <div className={styles.dayPanel__summary}>
+        <strong>{sessions.length}</strong>
+        <span>개 세션</span>
+      </div>
+
+      <button
+        className={styles.dayPanel__create}
+        type="button"
+        onClick={onCreate}
+        disabled={!canCreate}
+      >
+        + 이 날짜에 일정 생성
+      </button>
+
+      {sessions.length > 0 ? (
+        <ul className={styles.dayPanel__list}>
+          {sessions.map((session) => {
+            const masterName =
+              membersById.get(session.createdByDiscordId)?.displayName ??
+              session.createdByUsername;
+            const participantIds = session.participantDiscordIds.filter(
+              (pid) => pid !== session.createdByDiscordId,
+            );
+
+            return (
+              <li
+                key={session.id}
+                className={`${styles.dayPanel__item} ${
+                  session.id === focusedSessionId
+                    ? styles["dayPanel__item--focused"]
+                    : ""
+                }`}
+              >
+                <button
+                  className={styles.dayPanel__sessionButton}
+                  type="button"
+                  onClick={() => onOpenSession(session)}
+                  aria-label={`${session.startTime} ${session.title} 세션 상세 열기`}
+                >
+                  <div className={styles.dayPanel__itemHeader}>
+                    <span className={styles.dayPanel__time}>
+                      {session.startTime}
+                    </span>
+                    <h3 className={styles.dayPanel__sessionTitle}>
+                      {session.title}
+                    </h3>
+                  </div>
+
+                  <dl className={styles.dayPanel__meta}>
+                    <div className={styles.dayPanel__metaRow}>
+                      <dt>마스터</dt>
+                      <dd className={styles.dayPanel__master}>
+                        <span>{masterName}</span>
+                        {session.createdByDiscordId === currentUserDiscordId ? (
+                          <span className={styles.dayPanel__selfBadge}>
+                            본인
+                          </span>
+                        ) : null}
+                      </dd>
+                    </div>
+                    <div className={styles.dayPanel__metaRow}>
+                      <dt>참여자</dt>
+                      <dd>
+                        {participantIds.length === 0 ? (
+                          <span className={styles.dayPanel__emptyValue}>
+                            없음
+                          </span>
+                        ) : (
+                          <ul className={styles.dayPanel__participants}>
+                            {participantIds.map((pid) => (
+                              <li
+                                key={pid}
+                                className={`${styles.dayPanel__participant} ${
+                                  pid === currentUserDiscordId
+                                    ? styles["dayPanel__participant--self"]
+                                    : ""
+                                }`}
+                              >
+                                <span>
+                                  {membersById.get(pid)?.displayName ??
+                                    `(${pid})`}
+                                </span>
+                                {pid === currentUserDiscordId ? (
+                                  <span className={styles.dayPanel__selfBadge}>
+                                    본인
+                                  </span>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className={styles.dayPanel__empty}>
+          이 날짜에 등록된 세션이 없습니다.
+        </p>
+      )}
+    </aside>
+  );
+}
+
+function formatPanelDate(dateKey: string): string {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const weekday =
+    WEEKDAY_LABELS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return `${year}년 ${String(month).padStart(2, "0")}월 ${String(day).padStart(
+    2,
+    "0",
+  )}일 (${weekday})`;
+}
+
+function getYearMonthFromDateKey(dateKey: string) {
+  const [year, month] = dateKey.split("-").map(Number);
+  return { year, month };
 }
