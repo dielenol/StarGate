@@ -161,7 +161,9 @@ export default function GameplayPage() {
                 달라집니다.
               </p>
               <ul className={styles.levelList}>
-                <li className={styles.agentLevelV}>V : VIP</li>
+                <li className={styles.agentLevelV}>
+                  V : VIP — 노부스 오르도 후원자 명목 부여 (외부 기관 인사 중심)
+                </li>
                 <li className={styles.agentLevelA}>A : 최종 관리자 계급</li>
                 <li className={styles.agentLevelM}>M : 부서 관리자 계급</li>
                 <li className={styles.agentLevelH}>H : 부서 특수요원 계급</li>

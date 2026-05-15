@@ -19,6 +19,11 @@ for (const inst of INSTITUTIONS) {
 const FACTION_CODES = new Set<string>(FACTIONS.map((f) => f.code));
 const INSTITUTION_CODES = new Set<string>(INSTITUTIONS.map((i) => i.code));
 
+/** code → scope O(1) lookup. getFactionScope 가 매 호출마다 FACTIONS.find 를 돌지 않도록 사전 인덱싱. */
+const FACTION_SCOPE_BY_CODE = new Map<string, "external" | "internal">(
+  FACTIONS.map((f) => [f.code, f.scope]),
+);
+
 /** 레거시 department 코드 → 새 최상위 그룹 폴백 매핑
  *  HQ 는 SECRETARIAT.subUnits 정식 코드로 승격되어 폴백 불필요. */
 const LEGACY_DEPT_MAP: Record<string, string> = {
@@ -101,6 +106,9 @@ export function getSubUnits(
 
 /**
  * 코드가 외부 기관(faction)인지 판별.
+ *
+ * 주의: NOVUS_ORDO 도 FACTIONS 에 포함되므로 isFaction(NOVUS_ORDO) === true.
+ * "외부 권력 블록인지"만 보려면 `getFactionScope(code) === "external"` 사용.
  */
 export function isFaction(code: string): boolean {
   return FACTION_CODES.has(code);
@@ -114,8 +122,23 @@ export function isInstitution(code: string): boolean {
 }
 
 /**
+ * Faction code → scope 메타.
+ *  - `external` — 외부 권력 블록 (MILITARY/COUNCIL/CIVIL)
+ *  - `internal` — 노부스 오르도 본부 (NOVUS_ORDO)
+ *  - `undefined` — faction 이 아닌 코드
+ */
+export function getFactionScope(
+  code: string,
+): "external" | "internal" | undefined {
+  return FACTION_SCOPE_BY_CODE.get(code);
+}
+
+/**
  * 그룹 코드가 외부 기관(faction)/내부 기관(institution)/미배정 중 무엇인지 판정.
  * personnel 인덱스의 drill state crumb 와 dossier breadcrumb 양쪽에서 prefix(외부 기관:/내부 기관:/미배정)를 결정할 때 사용.
+ *
+ * NOTE: NOVUS_ORDO 도 `faction` 으로 분류된다. crumb prefix 분기에서 "외부 기관" / "본부"
+ * 둘을 구분해야 한다면 추가로 `getFactionScope(code)` 를 확인해야 한다.
  */
 export function getGroupKind(
   code: string,

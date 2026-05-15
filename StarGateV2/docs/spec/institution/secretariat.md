@@ -4,7 +4,7 @@ code: SECRETARIAT
 slug: secretariat
 label: 사무국
 labelEn: Secretariat
-parentFactionCode: COUNCIL
+parentFactionCode: NOVUS_ORDO
 leaderCodename: REGISTRAR
 headquartersLocation:
 summary: 노부스 오르도의 정규 행정 라인이자 **내부 기관**. 연구·행정·국제·통제·재무 6개 하위 기구로 본부 실무를 총괄한다. 외부 기관인 세계이사회(COUNCIL)의 의결을 받아 실행하지만, 사무국 자체는 노부스 오르도 내부 조직이다.
@@ -48,7 +48,8 @@ updatedAt: 2026-05-13T00:00:00Z
 
 ## 타 조직 관계
 
+- `NOVUS_ORDO` — parent — 노부스 오르도 **본부**. 사무국은 본부 직속 정규 행정 라인이며, 인사·예산·정책 모든 면에서 본부의 결정을 일선에서 집행한다.
+- `MANUS` — sibling — 노부스 오르도 **내부 기관** (현장 집행). 사무국이 MANUS 의 임무 승인·예산 배정·통제 기구를 통한 감찰을 담당.
 - `COUNCIL` — neutral — **외부 기관** (세계이사회). 의결 보고 라인이 닿아 있으나 노부스 오르도 내부 위계 아래 두는 의미는 아님. 사무총장이 정기 보고 의무를 진다.
-- `MANUS` — parent — 노부스 오르도 **내부 기관**. 현장 집행을 담당하며 사무국이 임무 승인·예산 배정·통제 기구를 통한 감찰을 담당.
-- `MILITARY` — neutral — **외부 기관** (군부). 작전 권한이 분리된 별개 라인. 합동 사안은 이사회 의결로 조정.
+- `MILITARY` — neutral — **외부 기관** (군부). 작전 권한이 분리된 별개 라인. 합동 사안은 본부·이사회 조율로 결정.
 - `CIVIL` — neutral — **외부 기관** (시민사회). 공식 채널과 정기 협력.

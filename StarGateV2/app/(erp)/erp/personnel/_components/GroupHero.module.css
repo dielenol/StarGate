@@ -91,21 +91,26 @@
   color: var(--gold);
 }
 
-/* sub-unit chip — 균일 grid 배치. onSubUnitClick 가 있으면 button(--clickable),
-   현재 펼쳐진 sub-unit 은 --on 으로 강조.
-   minmax 최소폭 축소 (140 → 110) — SUB UNITS 영역 폭 증가와 결합해 5 chip 한 줄 안착. */
+.titleLogo {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+/* sub-unit chip — 컴팩트한 밀도를 유지하되 20px 아이콘과 긴 한글 라벨이 닿지 않게 여백만 보정. */
 .subUnitChips {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+  gap: 8px;
   margin-top: 8px;
 }
 
 .subUnitChip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 8px;
+  padding: 7px 12px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.02);
@@ -225,8 +230,8 @@
 
 .distribution {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 12px;
+  flex-wrap: nowrap;
+  gap: 6px 10px;
   margin-top: 8px;
 }
 

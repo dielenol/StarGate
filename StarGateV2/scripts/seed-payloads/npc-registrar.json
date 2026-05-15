@@ -6,7 +6,7 @@
     "type": "NPC",
     "role": "일정 총괄 비서",
     "department": "HQ",
-    "factionCode": "COUNCIL",
+    "factionCode": "NOVUS_ORDO",
     "institutionCode": "SECRETARIAT",
     "agentLevel": "M",
     "previewImage": "/assets/npcs/Registrar-profile.png",

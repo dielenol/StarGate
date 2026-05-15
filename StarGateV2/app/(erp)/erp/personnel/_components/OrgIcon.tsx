@@ -40,10 +40,12 @@ export type OrgIconCode =
   | "SECTOR_C"
   | "SECTOR_D"
   | "SECTOR_E"
-  // 외부 기관 (Faction)
+  // 외부 권력 블록 (Faction · scope=external)
   | "COUNCIL"
   | "MILITARY"
   | "CIVIL"
+  // 본부 (Faction · scope=internal)
+  | "NOVUS_ORDO"
   // 내부 기관 (Institution)
   | "SECRETARIAT"
   | "MANUS"
@@ -77,6 +79,7 @@ export const FACTION_ICON_MAP: Record<FactionCode, OrgIconCode> = {
   COUNCIL: "COUNCIL",
   MILITARY: "MILITARY",
   CIVIL: "CIVIL",
+  NOVUS_ORDO: "NOVUS_ORDO",
 };
 
 /** Institution code → OrgIconCode 매핑. INSTITUTIONS 변경 시 컴파일 타임에 누락 catch. */
@@ -138,6 +141,10 @@ const ICONS: Record<OrgIconCode, IconPath> = {
   CIVIL: {
     body: `<circle cx="6" cy="8.5" r="2.3"/><path d="M2 17c0-2.4 1.7-4.2 4-4.2"/><circle cx="12" cy="7.5" r="2.8"/><path d="M7.7 18c0-2.8 1.9-4.7 4.3-4.7s4.3 1.9 4.3 4.7"/><circle cx="18" cy="8.5" r="2.3"/><path d="M22 17c0-2.4-1.7-4.2-4-4.2"/>`,
   },
+  NOVUS_ORDO: {
+    /* 본부 — UN 로고 모티프(중앙 십자+원+격자) 단순화. 본부의 지구·통할 상징. */
+    body: `<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M3.5 12h17"/><path d="M5.5 7.5h13"/><path d="M5.5 16.5h13"/><circle cx="12" cy="12" r="3"/>`,
+  },
   SECRETARIAT: {
     body: `<rect x="5" y="3" width="14" height="18" rx="0.8"/><path d="M5 9h14"/><path d="M5 15h14"/><path d="M10 6h4"/><path d="M10 12h4"/><path d="M10 18h4"/>`,
   },
@@ -145,24 +152,24 @@ const ICONS: Record<OrgIconCode, IconPath> = {
     body: `<path d="M12 4v16"/><path d="M9 20h6"/><path d="M4 8h16"/><path d="M6 8v2.5"/><path d="M3 10.5a3 1.5 0 006 0"/><path d="M18 8v2.5"/><path d="M15 10.5a3 1.5 0 006 0"/>`,
   },
   MANUS: {
-    /* 라틴 "손". 네 손가락+엄지로 펼친 손바닥 모티프 — 현장 집행을 상징. */
-    body: `<path d="M12 21V11"/><path d="M9 21V8.5a1.5 1.5 0 013 0V11"/><path d="M15 21V8.5a1.5 1.5 0 00-3 0"/><path d="M9 10V5a1.5 1.5 0 013 0v6"/><path d="M15 10.5V6.5a1.5 1.5 0 013 0V14a6 6 0 01-6 6"/><path d="M6 13.5V10a1.5 1.5 0 013 0"/>`,
+    /* 현장요원 모티프 — 우상단에서 좌하단으로 흐르는 주 라인 + 보조 라인 + 짧은 연결선. 침투·기동·집행의 동선 추상화. */
+    body: `<path d="M21.1 0.64L17.49 4.16L15.79 2.77L15.79 6.08L12.69 9.17L10.03 8.85L6.93 12.05L7.57 13.87L2.13 19.31L6.19 23.36L9.07 16L10.45 19.52L12.27 18.88L11.73 16.21L13.44 14.51L14.19 13.12"/><path d="M16.43 8L13.87 11.52L15.57 13.12L18.13 14.29L16.75 16.96L14.08 15.47"/><path d="M8.96 12.37L12.05 9.28"/>`,
   },
-  /* SECTOR_A~E — 사각형 외곽 + 알파벳 모티프. MANUS 산하 5개 섹터 표식. */
+  /* SECTOR_A~E — 다이아몬드 외곽 + 알파벳(NATO 음성기호) 모티프. MANUS 산하 5개 섹터 표식. */
   SECTOR_A: {
-    body: `<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M9 16l3-8 3 8"/><path d="M10 13h4"/>`,
+    body: `<path d="M12 3L21 12L12 21L3 12Z"/><path d="M9.5 16L12 9L14.5 16"/><path d="M10.7 13.5h2.6"/>`,
   },
   SECTOR_B: {
-    body: `<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M9 7v10h3.5a2.5 2.5 0 000-5H9"/><path d="M9 12h3.5a2.5 2.5 0 010 5"/>`,
+    body: `<path d="M12 3L21 12L12 21L3 12Z"/><path d="M10 9.5v7"/><path d="M10 9.5h2.5a1.75 1.75 0 010 3.5H10"/><path d="M10 13h2.5a1.75 1.75 0 010 3.5H10"/>`,
   },
   SECTOR_C: {
-    body: `<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M15 9a4 4 0 100 6"/>`,
+    body: `<path d="M12 3L21 12L12 21L3 12Z"/><path d="M14.5 11a3 3 0 100 4"/>`,
   },
   SECTOR_D: {
-    body: `<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M9 7v10h3a4 4 0 000-10H9z"/>`,
+    body: `<path d="M12 3L21 12L12 21L3 12Z"/><path d="M10 9.5v7"/><path d="M10 9.5h2a3.5 3.5 0 010 7h-2"/>`,
   },
   SECTOR_E: {
-    body: `<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M15 7H9v10h6"/><path d="M9 12h5"/>`,
+    body: `<path d="M12 3L21 12L12 21L3 12Z"/><path d="M14 9.5h-4v7h4"/><path d="M10 13h3"/>`,
   },
   ALL: {
     body: `<rect x="3" y="3" width="8" height="8" rx="0.8"/><circle cx="7" cy="7" r="1.4"/><rect x="13" y="3" width="8" height="8" rx="0.8"/><circle cx="17" cy="7" r="1.4"/><rect x="3" y="13" width="8" height="8" rx="0.8"/><circle cx="7" cy="17" r="1.4"/><rect x="13" y="13" width="8" height="8" rx="0.8"/><circle cx="17" cy="17" r="1.4"/>`,

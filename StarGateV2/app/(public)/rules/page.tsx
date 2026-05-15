@@ -93,8 +93,10 @@ export default function RulesPage() {
                 <li>
                   <span className={styles.termTitle}>군인</span>
                   <p className={styles.section__text}>
-                    군인은 노부스 오르도의 현장 요원으로, 직접적인 위협 제거를 담당합니다.
-                    주 임무는 &apos;이상 개체&apos;의 제압·격리·파괴이며{" "}
+                    군인은 노부스 오르도의 현장요원으로, 직접적인 위협 제거를 담당합니다.
+                    <span className={styles.emph}>MANUS</span> (현장요원) 산하 NATO phonetic
+                    5개 섹터(알파/브라보/찰리/델타/에코)로 배치되며, 주 임무는 &apos;이상 개체&apos;의
+                    제압·격리·파괴이며{" "}
                     <span className={styles.emph}>전투 수행 능력과 생존력</span>이 핵심
                     요소입니다.
                   </p>

@@ -23,9 +23,14 @@
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 1.7fr 1fr;
-  gap: 32px;
+  /* 좌측: 본부 + 산하 INSTITUTIONS (세로 스택)
+     우측: 외부 3대 삼각 배치 (.factions)
+     canvas 풀폭을 다 채우지 않고 max-width 로 가운데 정렬 — 카드 자체는 정보 밀도 위주, 여백은 양 옆에. */
+  grid-template-columns: 1fr 1.3fr;
+  gap: 28px;
   align-items: start;
+  max-width: 960px;
+  margin-inline: auto;
 }
 
 .sectionTitle {
@@ -39,6 +44,75 @@
   text-transform: uppercase;
 }
 
+/* 본부 영역 내 INSTITUTIONS 보조 라벨 — 시각상 트리(노부스 오르도 → 사무국/현장)로 의미가
+   자명하므로 visually-hidden 으로 두고 a11y(스크린리더) 만 보존한다. */
+.sectionTitleSub {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 외부 권력 블록 영역 — 차가운 톤(회색-녹색 계열) 배경 + 좌측 경계.
+   외부 3대가 본부와 시각적으로 분리되어 보이도록 한다. */
+.externalArea {
+  position: relative;
+  padding: 8px 12px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: linear-gradient(
+    180deg,
+    rgba(64, 96, 84, 0.04) 0%,
+    rgba(64, 96, 84, 0.015) 70%,
+    transparent 100%
+  );
+}
+
+.externalArea .sectionTitle {
+  color: var(--ink-2);
+}
+
+/* 본부 영역 — 금색 강조. NOVUS_ORDO 가 외부 3대 위에 별개 권위로 서는
+   본부 자체임을 시각적으로 표현. */
+.headquartersArea {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  padding: 8px 14px 14px;
+  border: 1px dashed var(--gold-dim);
+  border-radius: 8px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--gold) 7%, transparent) 0%,
+    color-mix(in oklab, var(--gold) 2%, transparent) 60%,
+    transparent 100%
+  );
+}
+
+.headquartersArea .sectionTitle {
+  color: var(--gold);
+  border-bottom-color: var(--gold-dim);
+}
+
+/* 본부 → 사무국/현장 H-tree connector.
+   - 본부 박스 아래 가운데에서 수직 → ┬ 분기 → 좌우 가로 → 사무국/현장 박스 위로 수직.
+   - SVG path 로 한 번에 그려 박스 정렬에 무관하게 명확한 라인 보장.
+   - height 24px = path viewBox y=0..24. preserveAspectRatio="none" 으로 가로는 stretch. */
+.subordinateConnector {
+  display: block;
+  width: 100%;
+  height: 24px;
+  margin: 4px 0 0;
+  color: var(--gold-dim);
+  pointer-events: none;
+}
+
 /* Factions — 3권 분립 (정삼각형 상호 견제) */
 
 .factions {
@@ -49,8 +123,8 @@
   grid-template-areas:
     ".        council  council  ."
     "military military civil    civil";
-  gap: 96px 36px;
-  min-height: 440px;
+  gap: 48px 20px;
+  min-height: 260px;
 }
 
 /* button(.node) 만 타겟 — SVG/라벨 overlay 는 position:absolute 라 grid 제외 */
@@ -107,20 +181,22 @@
   z-index: 3;
 }
 
-/* Institutions — vertical stack */
+/* Institutions — 본부 박스 아래 2-col 가로 배치. connector 자체는 .subordinateConnector SVG 가 그린다. */
 
 .institutions {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  position: relative;
 }
 
 /* Generic node */
 
 .node {
   position: relative;
-  padding: 16px 18px;
+  padding: 14px 16px;
   border: 1px solid var(--line-strong);
+  border-radius: 8px;
   background:
     linear-gradient(#c9a85a0f, #0000 80%),
     repeating-linear-gradient(0deg, #0000 0 15px, #ffffff04 15px 16px),
@@ -147,9 +223,54 @@
 }
 
 .node--lg {
-  padding: 22px 24px;
-  min-height: 300px;
+  /* 정보 압축 — padding/min-height 축소. 박스 자체는 8px round, 외부 3대 삼각 배치도 함께 축소.
+     flex column — sub units 갯수가 달라도 HEADCOUNT 가 카드 하단에 정렬되도록 last section margin-top:auto. */
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  min-height: auto;
   overflow: hidden;
+}
+
+/* 사무국/현장 카드 HEADCOUNT 를 카드 하단으로 push — 두 카드 간 HEADCOUNT 위치 통일. */
+.headquartersArea .institutions > .node .node__section:last-child {
+  margin-top: auto;
+}
+
+/* 본부 카드 상단 로고 (메인 로고 img) — 다른 inline SVG 아이콘과 동일 크기·정렬. */
+.node__headerLogo {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+/* 본부 박스 — 컴팩트하지만 DISTRIBUTION 7-pip 한 줄 + SUB UNITS 한 줄에 들어갈 정도의 폭. */
+.headquartersArea .node[data-scope="internal"] {
+  max-width: 340px;
+  margin-inline: auto;
+  padding: 12px 14px;
+}
+
+.headquartersArea .node[data-scope="internal"] .node__section {
+  margin-top: 10px;
+}
+
+.headquartersArea .node[data-scope="internal"] .node__watermark {
+  width: 140px;
+  height: 140px;
+  right: -28px;
+  bottom: -28px;
+}
+
+/* 본부/외부 카드의 DISTRIBUTION — 7개 등급 pip 한 줄 보장. */
+.headquartersArea .node[data-scope="internal"] .node__distribution {
+  flex-wrap: nowrap;
+  gap: 4px 8px;
+}
+
+.headquartersArea .node[data-scope="internal"] .node__pip {
+  letter-spacing: 0.02em;
 }
 
 /* 세력 박스 내부 구조 */
@@ -170,7 +291,7 @@
 .node__section {
   position: relative;
   z-index: 1;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .node__sectionLabel {
@@ -198,11 +319,32 @@
 }
 
 .node__subUnits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
   color: var(--ink-1);
   font-family: var(--font-mono);
   font-size: 14px;
-  line-height: 1.7;
-  letter-spacing: 0.05em;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+/* sub unit 칩 — 미니멀 outlined 박스. 카드 안에서 자연스럽게 wrap.
+   svg 는 `currentColor` 이므로 chip color (var(--ink-2)) 를 그대로 inherit. */
+.node__subUnitChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.015);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.node__subUnitChip svg {
+  flex-shrink: 0;
 }
 
 .node__pip {
@@ -269,13 +411,42 @@
   color: var(--gold);
 }
 
-.node--hasSub::after {
-  content: "▾";
-  position: absolute;
-  right: 12px;
-  bottom: 8px;
-  color: var(--gold-dim);
-  font-size: 14px;
+/* 펼침 표식 ▾ 는 카드 우하단의 시각 노이즈로 제거됨 (2026-05-14).
+   클릭 가능 여부는 카드 hover + cursor:pointer 로 충분. */
+
+/* 본부 박스 (NOVUS_ORDO, scope=internal) — 금색 강조 보더 + 더 진한 금빛 톤.
+   data-scope="internal" attribute selector 로 데이터 주도 — `.node--hq` BEM modifier 대신
+   조직 스코프 메타(scope) 와 직접 결합해 의도가 명확. */
+.node[data-scope="internal"] {
+  border-color: var(--gold-dim);
+  background:
+    linear-gradient(
+      color-mix(in oklab, var(--gold) 9%, transparent),
+      color-mix(in oklab, var(--gold) 2%, transparent) 70%,
+      transparent 100%
+    ),
+    repeating-linear-gradient(0deg, transparent 0 15px, color-mix(in oklab, var(--ink-0) 2%, transparent) 15px 16px),
+    repeating-linear-gradient(90deg, transparent 0 15px, color-mix(in oklab, var(--ink-0) 2%, transparent) 15px 16px),
+    var(--bg-1);
+}
+
+.node[data-scope="internal"]:hover,
+.node[data-scope="internal"]:focus-visible {
+  border-color: var(--gold);
+  background:
+    linear-gradient(
+      color-mix(in oklab, var(--gold) 13%, transparent),
+      color-mix(in oklab, var(--gold) 3%, transparent) 70%,
+      transparent 100%
+    ),
+    repeating-linear-gradient(0deg, transparent 0 15px, color-mix(in oklab, var(--ink) 2.5%, transparent) 15px 16px),
+    repeating-linear-gradient(90deg, transparent 0 15px, color-mix(in oklab, var(--ink) 2.5%, transparent) 15px 16px),
+    var(--bg-2);
+}
+
+.node[data-scope="internal"] .code,
+.node[data-scope="internal"] .label {
+  color: var(--gold);
 }
 
 .tl {
@@ -355,8 +526,18 @@
   letter-spacing: 0.15em;
 }
 
-/* Unassigned */
+/* Unassigned — .inner 의 두 컬럼 아래 별도 영역 (두 컬럼 span). */
 
+.unassignedArea {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* @deprecated 미배정 박스가 .institutions 안에 있던 시절의 컨테이너 — 신규 .unassignedArea 사용. */
 .unassigned {
   margin-top: 28px;
   padding-top: 20px;
@@ -434,6 +615,15 @@
   /* 세로 1열에선 상호 견제 오버레이/라벨 비활성 */
   .crossfire,
   .crossfireLabel {
+    display: none;
+  }
+
+  /* 본부 산하 institutions — 모바일에선 1-col 로 stack. SVG connector 도 숨김 (단일 열에선 분기 의미 없음). */
+  .institutions {
+    grid-template-columns: 1fr;
+  }
+
+  .subordinateConnector {
     display: none;
   }
 }

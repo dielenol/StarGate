@@ -39,6 +39,8 @@ interface Props {
   oversight?: string;
   /** OrgIcon 코드 — 헤더 좌측 작은 식별 아이콘용 (SVG line). */
   iconCode?: OrgIconCode;
+  /** 헤더 좌측에 실제 로고 이미지를 우선 노출해야 하는 경우 사용. */
+  titleLogoUrl?: string;
   /** 우하단 webp 워터마크 로고 URL — faction/institution 일 때만 전달. */
   logoUrl?: string;
   /** 현재 펼쳐진 sub-unit code — 해당 chip 을 active 강조 */
@@ -59,6 +61,7 @@ export default function GroupHero({
   levelCounts,
   oversight,
   iconCode,
+  titleLogoUrl,
   logoUrl,
   expandedSubUnit,
   onSubUnitClick,
@@ -90,7 +93,16 @@ export default function GroupHero({
         <div className={styles.headMain}>
           <Eyebrow>{eyebrowText}</Eyebrow>
           <h2 className={styles.title}>
-            {iconCode ? (
+            {titleLogoUrl ? (
+              // 본부 drilldown 에서는 조직도 라인 아이콘 대신 NOVUS ORDO 메인 로고를 노출한다.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={titleLogoUrl}
+                alt=""
+                className={styles.titleLogo}
+                aria-hidden
+              />
+            ) : iconCode ? (
               <OrgIcon
                 code={iconCode}
                 size={26}
@@ -164,7 +176,7 @@ export default function GroupHero({
 
                 const inner = (
                   <>
-                    {subIcon ? <OrgIcon code={subIcon} size={14} /> : null}
+                    {subIcon ? <OrgIcon code={subIcon} size={20} /> : null}
                     <span>{u.label}</span>
                   </>
                 );

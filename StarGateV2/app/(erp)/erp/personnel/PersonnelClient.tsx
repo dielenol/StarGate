@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { AgentLevel, Character } from "@/types/character";
-import { FACTIONS, INSTITUTIONS } from "@/types/character";
+import { FACTIONS, INSTITUTIONS, INTERNAL_FACTION_CODE } from "@/types/character";
 
 import { usePersonnelQuery } from "@/hooks/queries/useCharactersQuery";
 
@@ -18,6 +18,7 @@ import {
 } from "@/lib/personnel";
 import {
   getDepartmentLabel,
+  getFactionScope,
   getGroupLabel,
   getSubUnits,
   getTopLevelGroup,
@@ -45,9 +46,9 @@ import SearchJumpBanner from "./_components/SearchJumpBanner";
 import SubUnitAccordion from "./_components/SubUnitAccordion";
 
 import {
-  FACTION_DOCTRINE,
-  FACTION_LOGO,
-  INSTITUTION_DOCTRINE,
+  getFactionDoctrine,
+  getFactionLogo,
+  getInstitutionDoctrine,
   INSTITUTION_LOGO,
   INSTITUTION_OVERSIGHT,
 } from "./_constants";
@@ -155,24 +156,55 @@ export default function PersonnelClient({
   });
 
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [query, setQuery] = useState("");
-  /* dossier breadcrumb 가 ?group=&sub= 로 진입한 경우 자동으로 해당 그룹/하위기구를 펼쳐
-     불필요한 drill-down 을 제거. 이후 사용자 인터랙션은 URL 동기화 없이 state-only. */
+  /* state 는 URL search params(?group=&sub=) 의 mirror.
+     - 명시 인터랙션(카드/sub-unit 클릭) → router.push 로 history 에 entry 적재
+     - 검색 자동 drill-down → router.replace 로 history 폭주 방지
+     - useEffect 가 searchParams 변경(뒤로가기/앞으로가기 포함) 시 state 자동 sync
+     state setter 는 optimistic update 용도로만 직접 호출. */
   const [selectedGroup, setSelectedGroup] = useState<string | null>(
-    () => searchParams.get("group") ?? null,
+    () => searchParams.get("group"),
   );
   const [expandedSubUnit, setExpandedSubUnit] = useState<string | null>(
-    () => searchParams.get("sub") ?? null,
+    () => searchParams.get("sub"),
   );
 
-  /* searchParams 변경(외부 진입) 시에만 동기화. 내부 인터랙션으로 인한 state 변경은 영향 없음. */
+  /* searchParams ↔ state 단방향 sync. 뒤로가기/앞으로가기 시 URL 이 바뀌면 state 자동 추종.
+     내부 router.push 직후에도 호출되지만 같은 값이라 React 가 re-render skip. */
   useEffect(() => {
-    const g = searchParams.get("group");
-    const s = searchParams.get("sub");
-    if (g !== null) setSelectedGroup(g);
-    if (s !== null) setExpandedSubUnit(s);
+    setSelectedGroup(searchParams.get("group"));
+    setExpandedSubUnit(searchParams.get("sub"));
   }, [searchParams]);
+
+  /** ?group=&sub= 으로 URL build. 빈 값은 omit. */
+  const buildUrl = useCallback(
+    (group: string | null, sub: string | null) => {
+      const params = new URLSearchParams();
+      if (group) params.set("group", group);
+      if (sub) params.set("sub", sub);
+      const q = params.toString();
+      return q ? `${pathname}?${q}` : pathname;
+    },
+    [pathname],
+  );
+
+  /** drill state navigation 단일 진입점.
+   *  - replace=false (default): 명시 인터랙션 — history entry 적재 → 뒤로가기 가능
+   *  - replace=true: 검색 자동 drill-down 등 외부 트리거 — history 적재 안 함 */
+  const navigateDrill = useCallback(
+    (group: string | null, sub: string | null, replace = false) => {
+      // optimistic update — searchParams 갱신 전에도 즉시 UI 반응
+      setSelectedGroup(group);
+      setExpandedSubUnit(sub);
+      const url = buildUrl(group, sub);
+      if (replace) router.replace(url, { scroll: false });
+      else router.push(url, { scroll: false });
+    },
+    [buildUrl, router],
+  );
 
   const prevQueryRef = useRef("");
 
@@ -265,10 +297,9 @@ export default function PersonnelClient({
     prevQueryRef.current = curr;
 
     if (!curr) {
-      // 검색 비움 → 조감 복귀
+      // 검색 비움 → 조감 복귀 (replace 로 history 적재 X)
       if (prev) {
-        setSelectedGroup(null);
-        setExpandedSubUnit(null);
+        navigateDrill(null, null, true);
       }
       return;
     }
@@ -283,73 +314,88 @@ export default function PersonnelClient({
     );
     const [topGroup] = entries[0];
 
-    setSelectedGroup((prevGroup) => {
-      if (prevGroup && searchMatches.groupCounts.has(prevGroup)) return prevGroup;
-      return topGroup;
-    });
-
-    // 하위 기구가 있는 그룹이면 매칭 최다 subUnit 자동 펼침
-    const targetGroup =
+    const nextGroup =
       selectedGroup && searchMatches.groupCounts.has(selectedGroup)
         ? selectedGroup
         : topGroup;
 
-    if (getSubUnits(targetGroup).length > 0) {
+    // 하위 기구가 있는 그룹이면 매칭 최다 subUnit 자동 펼침
+    let nextSub: string | null = null;
+    if (getSubUnits(nextGroup).length > 0) {
       const subEntries = [...searchMatches.subUnitCounts.entries()]
         .filter(([code]) => {
-          const inst = INSTITUTIONS.find((i) => i.code === targetGroup);
+          const inst = INSTITUTIONS.find((i) => i.code === nextGroup);
           return inst?.subUnits.some((u) => u.code === code);
         })
         .sort((a, b) => b[1] - a[1]);
       if (subEntries.length > 0) {
-        setExpandedSubUnit(subEntries[0][0]);
+        nextSub = subEntries[0][0];
       }
     }
+
+    navigateDrill(nextGroup, nextSub, true);
     // query/searchMatches 변화에만 트리거. selectedGroup 을 deps 에 넣지 않는 이유:
     // 사용자 수동 선택 직후 매칭 최다 그룹으로 되돌아가는 재귀 루프 방지.
     // prevGroup 이 매칭에 남아있으면 유지됨.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, searchMatches]);
 
-  /* ── 이벤트 핸들러 ── */
+  /* ── 이벤트 핸들러 — 모두 navigateDrill 경유로 URL 동기화 + history 적재.
+        crumbs useMemo deps 안정성을 위해 useCallback 으로 reference 고정. ── */
 
-  const handleSelectGroup = (groupCode: string) => {
-    setSelectedGroup(groupCode);
-    setExpandedSubUnit(null);
-  };
+  const handleSelectGroup = useCallback(
+    (groupCode: string) => {
+      navigateDrill(groupCode, null);
+    },
+    [navigateDrill],
+  );
 
-  const handleBackToOverview = () => {
-    setSelectedGroup(null);
-    setExpandedSubUnit(null);
-  };
+  const handleBackToOverview = useCallback(() => {
+    navigateDrill(null, null);
+  }, [navigateDrill]);
 
-  const handleToggleSubUnit = (code: string) => {
-    setExpandedSubUnit((prev) => (prev === code ? null : code));
-    // accordion 펼치는 케이스에서만 스크롤 (이미 펼쳐진 chip 재클릭은 close 동작이라 스크롤 불필요).
-    // DOM 갱신 후 동작하도록 다음 frame 에 schedule.
-    if (expandedSubUnit !== code) {
-      requestAnimationFrame(() => {
-        const el = document.getElementById(`subunit-${code}`);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      });
-    }
-  };
+  const handleToggleSubUnit = useCallback(
+    (code: string) => {
+      const next = expandedSubUnit === code ? null : code;
+      navigateDrill(selectedGroup, next);
+      // accordion 펼치는 케이스에서만 스크롤 (이미 펼쳐진 chip 재클릭은 close 동작이라 스크롤 불필요).
+      // DOM 갱신 후 동작하도록 다음 frame 에 schedule.
+      if (next) {
+        requestAnimationFrame(() => {
+          const el = document.getElementById(`subunit-${code}`);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      }
+    },
+    [expandedSubUnit, navigateDrill, selectedGroup],
+  );
 
   /* ── 파생 값 ── */
 
-  // OrgCanvas 용 groupCounts (외부 기관 3 + 내부 기관 2 + UNASSIGNED)
+  // OrgCanvas 용 groupCounts (외부 기관 3 + 내부 기관 2 + UNASSIGNED).
+  // NOVUS_ORDO 본부 박스는 직속 캐릭터가 거의 없으므로 산하 SECRETARIAT+MANUS 합산을 노출.
   const canvasGroupCounts = useMemo<Record<string, number>>(() => {
     const counts: Record<string, number> = {};
     for (const f of FACTIONS) counts[f.code] = groupIndex.get(f.code)?.length ?? 0;
     for (const i of INSTITUTIONS) counts[i.code] = groupIndex.get(i.code)?.length ?? 0;
     counts[UNASSIGNED_CODE] = groupIndex.get(UNASSIGNED_CODE)?.length ?? 0;
+
+    // 본부 박스: 본부 직속 + 산하 SECRETARIAT + 산하 MANUS 의 합산.
+    const novusDirect = groupIndex.get(INTERNAL_FACTION_CODE)?.length ?? 0;
+    const institutionsSum = INSTITUTIONS.reduce(
+      (acc, inst) => acc + (groupIndex.get(inst.code)?.length ?? 0),
+      0,
+    );
+    counts[INTERNAL_FACTION_CODE] = novusDirect + institutionsSum;
+
     return counts;
   }, [groupIndex]);
 
   // 그룹별 등급 분포 (AGENT + agentLevel 있는 캐릭터만 집계).
   // FACTIONS / INSTITUTIONS / UNASSIGNED 전 그룹 커버 — OrgCanvas 와 GroupHero 공용.
+  // NOVUS_ORDO 키는 본부 직속 + 산하 INSTITUTIONS 의 키별 합산으로 덮어쓴다.
   const canvasGroupLevelCounts = useMemo<
     Record<string, Partial<Record<AgentLevel, number>>>
   >(() => {
@@ -369,6 +415,19 @@ export default function PersonnelClient({
       }
       counts[code] = dist;
     }
+
+    // 본부 박스: 본부 직속 + 산하 INSTITUTIONS 의 키별 sum.
+    const novusLevels: Partial<Record<AgentLevel, number>> = {
+      ...(counts[INTERNAL_FACTION_CODE] ?? {}),
+    };
+    for (const inst of INSTITUTIONS) {
+      const dist = counts[inst.code] ?? {};
+      for (const [lv, n] of Object.entries(dist) as [AgentLevel, number][]) {
+        novusLevels[lv] = (novusLevels[lv] ?? 0) + n;
+      }
+    }
+    counts[INTERNAL_FACTION_CODE] = novusLevels;
+
     return counts;
   }, [groupIndex]);
 
@@ -377,16 +436,32 @@ export default function PersonnelClient({
     return list.slice(0, 3).map((c) => ({ codename: c.codename }));
   }, [groupIndex]);
 
-  // 현재 선택 그룹 멤버 (정렬 포함)
+  // 현재 선택 그룹 멤버 (정렬 포함).
+  // NOVUS_ORDO 본부 박스: 본부 직속 + 산하 SECRETARIAT/MANUS 캐릭터 union.
   const selectedGroupMembers = useMemo(() => {
     if (!selectedGroup) return [] as Character[];
+
+    if (selectedGroup === INTERNAL_FACTION_CODE) {
+      const merged: Character[] = [
+        ...(groupIndex.get(INTERNAL_FACTION_CODE) ?? []),
+        ...INSTITUTIONS.flatMap((inst) => groupIndex.get(inst.code) ?? []),
+      ];
+      return merged.sort(compareForCardOrder);
+    }
+
     const list = groupIndex.get(selectedGroup) ?? [];
     return [...list].sort(compareForCardOrder);
   }, [groupIndex, selectedGroup]);
 
-  // 현재 선택 그룹의 하위 기구 목록
+  // 현재 선택 그룹의 하위 기구 목록.
+  // NOVUS_ORDO 본부 박스: 산하 INSTITUTIONS 전체의 subUnits 를 평탄화.
   const selectedSubUnits = useMemo(() => {
     if (!selectedGroup) return [];
+    if (selectedGroup === INTERNAL_FACTION_CODE) {
+      return INSTITUTIONS.flatMap((inst) =>
+        inst.subUnits.map((u) => ({ code: u.code, label: u.label })),
+      );
+    }
     return getSubUnits(selectedGroup);
   }, [selectedGroup]);
 
@@ -429,20 +504,35 @@ export default function PersonnelClient({
         label: "조직도 · 전체",
         iconCode: "ROOT",
         on: !selectedGroup,
-        onClick: selectedGroup
-          ? () => {
-              setSelectedGroup(null);
-              setExpandedSubUnit(null);
-            }
-          : undefined,
+        onClick: selectedGroup ? handleBackToOverview : undefined,
       },
     ];
 
-    // 외부 기관/내부 기관이 선택된 경우에만 group crumb 추가 (미도달 placeholder 제거)
+    // 외부 기관/본부/내부 기관이 선택된 경우에만 group crumb 추가 (미도달 placeholder 제거)
     if (selectedGroup) {
       const kind = getGroupKind(selectedGroup);
+
+      // 내부 기관(SECRETARIAT/MANUS) 진입 시 그 위의 노부스 오르도 본부 단계도 함께 노출.
+      // ROOT → 본부 → 내부 기관 → (하위 기구) 흐름으로 organization tree 의 위계를 crumb 로 표현.
+      if (kind === "institution") {
+        items.push({
+          key: "headquarters",
+          label: `본부: ${getGroupLabel(INTERNAL_FACTION_CODE)}`,
+          iconCode: getFactionIcon(INTERNAL_FACTION_CODE),
+          on: false,
+          onClick: () => navigateDrill(INTERNAL_FACTION_CODE, null),
+        });
+      }
+
+      // NOVUS_ORDO 는 FACTION 이지만 scope=internal → crumb prefix 는 "본부".
       const prefix =
-        kind === "faction" ? "외부 기관" : kind === "institution" ? "내부 기관" : "미배정";
+        kind === "faction"
+          ? getFactionScope(selectedGroup) === "internal"
+            ? "본부"
+            : "외부 기관"
+          : kind === "institution"
+            ? "내부 기관"
+            : "미배정";
       const label =
         kind === "unassigned"
           ? "미배정"
@@ -459,7 +549,9 @@ export default function PersonnelClient({
                 ? "UNASSIGNED"
                 : undefined,
         on: !expandedSubUnit,
-        onClick: expandedSubUnit ? () => setExpandedSubUnit(null) : undefined,
+        onClick: expandedSubUnit
+          ? () => navigateDrill(selectedGroup, null)
+          : undefined,
       });
     }
 
@@ -477,7 +569,13 @@ export default function PersonnelClient({
     }
 
     return items;
-  }, [selectedGroup, expandedSubUnit, selectedSubUnits]);
+  }, [
+    selectedGroup,
+    expandedSubUnit,
+    selectedSubUnits,
+    handleBackToOverview,
+    navigateDrill,
+  ]);
 
   /* ── 렌더 ── */
 
@@ -555,8 +653,8 @@ export default function PersonnelClient({
 
       <ClearanceStrip clearance={clearance} />
 
-      {/* Search + Filter bar */}
-      <Box className={styles.searchBox}>
+      {/* Search + Filter bar — Box wrapper 제거 (border/corner tick 시각 노이즈 회피). */}
+      <div className={styles.searchBox}>
         <div className={styles.searchRow}>
           <Input
             type="search"
@@ -577,7 +675,7 @@ export default function PersonnelClient({
           </Button>
         </div>
 
-      </Box>
+      </div>
 
       {/* Org breadcrumbs */}
       <OrgDrillCrumbs items={crumbs} className={styles.orgBreadcrumbs} />
@@ -603,9 +701,9 @@ export default function PersonnelClient({
             memberCount={selectedGroupMembers.length}
             doctrine={
               selectedGroupKind === "faction"
-                ? FACTION_DOCTRINE[selectedGroup]
+                ? getFactionDoctrine(selectedGroup)
                 : selectedGroupKind === "institution"
-                  ? INSTITUTION_DOCTRINE[selectedGroup]
+                  ? getInstitutionDoctrine(selectedGroup)
                   : undefined
             }
             levelCounts={canvasGroupLevelCounts[selectedGroup]}
@@ -620,12 +718,17 @@ export default function PersonnelClient({
                 : selectedGroupKind === "institution"
                   ? getInstitutionIcon(selectedGroup)
                   : selectedGroupKind === "unassigned"
-                    ? "UNASSIGNED"
-                    : undefined
+                  ? "UNASSIGNED"
+                  : undefined
+            }
+            titleLogoUrl={
+              selectedGroup === INTERNAL_FACTION_CODE
+                ? getFactionLogo(selectedGroup)
+                : undefined
             }
             logoUrl={
               selectedGroupKind === "faction"
-                ? FACTION_LOGO[selectedGroup]
+                ? getFactionLogo(selectedGroup)
                 : selectedGroupKind === "institution"
                   ? INSTITUTION_LOGO
                   : undefined

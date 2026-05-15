@@ -56,6 +56,22 @@ export default function PersonnelCard({
 
   return (
     <Link href={`/erp/personnel/${id}`} className={cardClasses}>
+      {isLead ? (
+        <span className={styles.commanderBadge} aria-label="COMMANDER">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            stroke="none"
+            aria-hidden
+          >
+            {/* 5-point star — 지휘관 계급 표식. */}
+            <path d="M12 2 L14.5 8.6 L21.5 9 L16 13.4 L18 20.5 L12 16.6 L6 20.5 L8 13.4 L2.5 9 L9.5 8.6 Z" />
+          </svg>
+          <span>COMMANDER</span>
+        </span>
+      ) : null}
       <div className={styles.head}>
         <div
           className={[

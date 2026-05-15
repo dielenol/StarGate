@@ -9,7 +9,7 @@ nameEn: Agneta Stål
 gender: female
 age: 32
 height: 168cm
-factionCode: COUNCIL
+factionCode: NOVUS_ORDO
 institutionCode: SECRETARIAT
 department: HQ
 agentLevel: M

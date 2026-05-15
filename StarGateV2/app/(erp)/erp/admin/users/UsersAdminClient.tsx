@@ -58,6 +58,16 @@ const STATUS_TONE: Record<UserStatus, "success" | "danger" | "default"> = {
   INACTIVE: "default",
 };
 
+/**
+ * 외부 기관(군부/이사회/시민사회) 인사에 대한 등급 부여 정책 환기 문구.
+ * V(VIP) 만 외부 인사 명목 부여 허용. 그 외(A~U 및 GM) 는 노부스 오르도 내부
+ * 또는 MANUS 차출 인력 전용 — confirm 으로 정책 위반 가능성 환기.
+ */
+const EXTERNAL_FACTION_POLICY_NOTICE =
+  `정책 안내: 외부 기관(군부/이사회/시민사회) 인사는 V(VIP) 명목 부여만 권장됩니다.\n` +
+  `A~U 및 GM 등급은 노부스 오르도 내부 인사 또는 MANUS 차출 인력에만 부여하세요.\n\n` +
+  `이 사용자가 외부 기관 인사라면 V 외 등급 부여는 정책에 어긋날 수 있습니다. 계속하시겠습니까?`;
+
 function getInitial(u: UserPublic): string {
   const source = u.displayName || u.username || "?";
   return source.charAt(0).toUpperCase();
@@ -138,6 +148,12 @@ export default function UsersAdminClient({
     setError(null);
     setGeneratedPassword(null);
 
+    // 정책 가이드: V 외 등급으로 신규 생성 시 외부 기관 정책 환기 (GM 포함).
+    if (role !== "V") {
+      const policyOk = window.confirm(EXTERNAL_FACTION_POLICY_NOTICE);
+      if (!policyOk) return;
+    }
+
     createUser.mutate(
       { username, displayName, role },
       {
@@ -160,6 +176,14 @@ export default function UsersAdminClient({
       `${user.displayName}(${user.username})의 역할을 ${user.role} → ${nextRole} 로 변경합니다. 계속하시겠습니까?`,
     );
     if (!ok) return;
+
+    // 정책 가이드: 외부 기관(군부/이사회/시민사회) 인사는 V(VIP) 명목 부여만 권장.
+    // 그 외 모든 등급(A~U 및 GM) 은 노부스 오르도 내부(본부·사무국·MANUS) 인사 전용.
+    // user 도메인에서 외부 인사 여부를 직접 알 수 없으므로 V 외 등급 부여 시 추가 confirm 으로 환기.
+    if (nextRole !== "V") {
+      const policyOk = window.confirm(EXTERNAL_FACTION_POLICY_NOTICE);
+      if (!policyOk) return;
+    }
 
     const userId = user._id;
     setPendingUserIds((prev) => new Set(prev).add(userId));
@@ -358,6 +382,9 @@ export default function UsersAdminClient({
       {showForm ? (
         <Box className={styles.formBox}>
           <PanelTitle>NEW USER · ADMIN</PanelTitle>
+          <p className={styles.policyNote}>
+            정책 안내 · 외부 기관(군부/이사회/시민사회) 소속자는 V(VIP) 명목 부여만 권장. A~U 등급은 노부스 오르도 내부 인사 또는 MANUS 차출 인력에만 부여하세요.
+          </p>
           <form className={styles.form} onSubmit={handleCreate}>
             <div className={styles.formRow}>
               <label className={styles.field}>

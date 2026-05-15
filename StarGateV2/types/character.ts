@@ -32,4 +32,5 @@ export {
   DEPARTMENTS,
   FACTIONS,
   INSTITUTIONS,
+  INTERNAL_FACTION_CODE,
 } from "@stargate/shared-db/types";

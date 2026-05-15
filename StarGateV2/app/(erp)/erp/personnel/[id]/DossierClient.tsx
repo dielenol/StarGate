@@ -32,6 +32,7 @@ import {
 import type { ClearanceOverrides, FieldGroup } from "@/lib/personnel";
 import {
   getDepartmentLabel,
+  getFactionScope,
   getGroupKind,
   getGroupLabel,
   getTopLevelGroup,
@@ -45,6 +46,7 @@ import Pips from "@/components/ui/Pips/Pips";
 import Seal from "@/components/ui/Seal/Seal";
 import Tag from "@/components/ui/Tag/Tag";
 
+import ClearanceGuideModal from "../_components/ClearanceGuideModal";
 import ClearanceStrip from "../_components/ClearanceStrip";
 import OrgDrillCrumbs from "../_components/OrgDrillCrumbs";
 import type { DrillCrumbItem } from "../_components/OrgDrillCrumbs";
@@ -459,6 +461,7 @@ interface Props {
 export default function DossierClient({ character, clearance }: Props) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<DossierTabKey>("dossier");
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const isGM = clearance === "GM";
   const characterId = character._id ? String(character._id) : null;
@@ -607,8 +610,15 @@ export default function DossierClient({ character, clearance }: Props) {
 
     if (topGroup !== "UNASSIGNED") {
       const kind = getGroupKind(topGroup);
+      // NOVUS_ORDO 는 FACTION 이지만 scope=internal → "본부" 라벨.
       const prefix =
-        kind === "faction" ? "외부 기관" : kind === "institution" ? "내부 기관" : "";
+        kind === "faction"
+          ? getFactionScope(topGroup) === "internal"
+            ? "본부"
+            : "외부 기관"
+          : kind === "institution"
+            ? "내부 기관"
+            : "";
       const groupLabel =
         kind === "unassigned"
           ? "미배정"
@@ -1165,10 +1175,16 @@ export default function DossierClient({ character, clearance }: Props) {
       <PageHead
         breadcrumb={<OrgDrillCrumbs items={drillItems} />}
         title={pageTitle}
-        right={headRight}
       />
 
-      <ClearanceStrip clearance={clearance} />
+      <ClearanceStrip clearance={clearance} hideGuideButton />
+
+      {guideOpen ? (
+        <ClearanceGuideModal
+          current={clearance}
+          onClose={() => setGuideOpen(false)}
+        />
+      ) : null}
 
       {/* Read-only / 편집 모드 notice */}
       {isEditing ? (
@@ -1491,6 +1507,12 @@ export default function DossierClient({ character, clearance }: Props) {
             onChange={setActiveTab}
             counts={{ relations: 0, sessions: 0 }}
             auditLevel="V"
+            leftSlot={
+              <Button size="sm" onClick={() => setGuideOpen(true)}>
+                등급 안내
+              </Button>
+            }
+            rightSlot={headRight}
           />
           <div
             id={`dossier-tabpanel-${activeTab}`}

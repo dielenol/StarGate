@@ -47,9 +47,14 @@ const SEED_SOURCE = "manual" as const;
 
 /** FACTIONS 상수에 summary가 없으므로 한 줄 디폴트를 코드별로 고정. */
 const FACTION_DEFAULT_SUMMARIES: Record<(typeof FACTIONS)[number]["code"], string> = {
-  MILITARY: "노부스 오르도 군사 계열. 작전·무장 조직을 총괄한다.",
-  COUNCIL: "노부스 오르도 세계이사회. 정책·행정·재무를 총괄한다.",
-  CIVIL: "노부스 오르도와 연결된 민간 협력 계열. 상업·보급·외부 네트워크 축.",
+  MILITARY:
+    "광원화 사태 이전부터 존재한 군사 권력 블록. 노부스 오르도 외부에서 무력 통제·외적 방위를 담당한다.",
+  COUNCIL:
+    "세계이사회. 광원화 사태 이전 정치 의결의 최고 권위. 노부스 오르도에 대해 의결 보고 라인을 가지나 직접 통제 권한은 없는 외부 기관.",
+  CIVIL:
+    "시민사회 권력 블록. 미디어·NGO·종교·시민 단체 등 노부스 오르도 외부의 비국가 권위 총칭.",
+  NOVUS_ORDO:
+    "광원화 사태 이후 출범한 초인류 국제기구. 외부 3대 권력 블록(군부/이사회/시민사회) 위에 별개로 존재하며, 사무국·MANUS 등 내부 기관을 통해 직접 실행 권한을 가진다.",
 };
 
 /* ── .env.local 로드 ──
@@ -136,6 +141,7 @@ function buildPayload(entry: (typeof FACTIONS)[number]): CreateFactionInput {
     slug: codeToSlug(entry.code),
     label: entry.label,
     labelEn: entry.labelEn,
+    scope: entry.scope,
     summary,
     isPublic: true,
     source: SEED_SOURCE,

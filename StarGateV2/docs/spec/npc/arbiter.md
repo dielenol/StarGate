@@ -8,7 +8,7 @@ nameEn: Jeremiah Paul
 gender: 남
 age: 54세
 height: 188cm
-factionCode:
+factionCode: NOVUS_ORDO
 institutionCode: SECRETARIAT
 department: 시장조율기구
 agentLevel: V

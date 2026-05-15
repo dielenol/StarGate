@@ -18,6 +18,8 @@ import Bar from "@/components/ui/Bar/Bar";
 import Seal from "@/components/ui/Seal/Seal";
 import { IconClose, IconZoom } from "@/components/icons";
 
+import { getFactionLogo, FACTION_LOGO } from "@/app/(erp)/erp/personnel/_constants";
+
 import styles from "./PosterHero.module.css";
 
 interface Props {
@@ -71,17 +73,10 @@ const ABILITY_SLOT_ORDER: AbilitySlot[] = [
 ];
 
 /**
- * Faction code → 로고 정적 매핑.
- * 신규 faction 추가 시 본 매핑 + public/assets/faction/ 에 로고 webp 추가.
+ * factionCode 미지정 시 기본 노부스 오르도 로고.
+ * personnel/_constants 의 FACTION_LOGO.NOVUS_ORDO 와 일치 (SSOT).
  */
-const FACTION_LOGOS: Record<string, string> = {
-  MILITARY: "/assets/faction/military_logo.webp",
-  COUNCIL: "/assets/faction/world_council_logo.webp",
-  CIVIL: "/assets/faction/civil_society_logo.webp",
-};
-
-/** factionCode 미지정 시 기본 노부스 오르도 로고. */
-const NOVUS_ORDO_LOGO = "/assets/StarGate_logo.png";
+const NOVUS_ORDO_LOGO = FACTION_LOGO.NOVUS_ORDO;
 
 /** factionCode → 한글 label (shared-db FACTIONS 매핑). */
 function resolveFactionLabel(code?: string): string | null {
@@ -190,7 +185,7 @@ export default function PosterHero({
   const displayName = name || codename;
 
   const logoSrc = factionCode
-    ? FACTION_LOGOS[factionCode] ?? NOVUS_ORDO_LOGO
+    ? getFactionLogo(factionCode) ?? NOVUS_ORDO_LOGO
     : NOVUS_ORDO_LOGO;
 
   // 소속 우선순위: faction(외부 기관) → institution(노부스 오르도 내부 기관) → 노부스 오르도 폴백.

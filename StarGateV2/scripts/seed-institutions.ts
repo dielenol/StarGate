@@ -45,19 +45,22 @@ const INSTITUTION_DEFAULT_SUMMARIES: Record<
   SECRETARIAT:
     "세계이사회 직속 사무국. 연구·행정·국제·통제·재무 기구를 총괄하는 실무 허브.",
   MANUS:
-    "노부스 오르도의 현장 집행 기관. 외부 기구·범죄조직·특수부대 등에서 차출된 인력을 섹터 A~E 로 분류 배치한다.",
+    "노부스 오르도의 현장요원 풀. 여러 외부 기구에서 task force 처럼 차출돼 5개 섹터(알파/브라보/찰리/델타/에코)로 분류 배치된다. 섹터별 작전 수행과 현장 관리가 핵심 임무.",
 };
 
 /**
  * INSTITUTIONS 상위 기관 → 소속 세력(FACTIONS.code) 매핑.
- * 현재 설계상 두 기관 모두 이사회(COUNCIL) 산하.
+ *
+ * Phase 5-h(2026-05-14): NOVUS_ORDO 상위 코드 신설로 parentFactionCode 가
+ * COUNCIL → NOVUS_ORDO 로 이전. 외부 3대 권력 블록(MILITARY/COUNCIL/CIVIL)은
+ * 본부 위가 아니라 옆에 있는 외부 기관이며, 사무국·MANUS 는 본부(NOVUS_ORDO) 직속이다.
  */
 const PARENT_FACTION_BY_CODE: Record<
   (typeof INSTITUTIONS)[number]["code"],
   string | undefined
 > = {
-  SECRETARIAT: "COUNCIL",
-  MANUS: "COUNCIL",
+  SECRETARIAT: "NOVUS_ORDO",
+  MANUS: "NOVUS_ORDO",
 };
 
 /* ── .env.local 로드 ──

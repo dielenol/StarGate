@@ -260,21 +260,24 @@ export function getUserClearance(userRole: UserRole): AgentLevel {
 조직은 [types/character.ts](../../types/character.ts) 의 **코드 상수**로 관리:
 
 ```
-FACTIONS (외부 기관)          INSTITUTIONS (내부 기관)
-├─ MILITARY (군부)             ├─ SECRETARIAT (사무국)
-├─ COUNCIL  (이사회)           │   ├─ HQ (사무총장실)
-└─ CIVIL    (시민사회)         │   ├─ RESEARCH (연구 기구)
-                               │   ├─ ADMIN_BUREAU (행정 기구)
-                               │   ├─ INTL (국제 기구)
-                               │   ├─ CONTROL (통제 기구)
-                               │   └─ FINANCE (재무 기구)
-                               └─ MANUS (현장)
-                                   ├─ SECTOR_A (섹터 A)
-                                   ├─ SECTOR_B (섹터 B)
-                                   ├─ SECTOR_C (섹터 C)
-                                   ├─ SECTOR_D (섹터 D)
-                                   └─ SECTOR_E (섹터 E)
+FACTIONS (권력 블록)                          INSTITUTIONS (내부 기관)
+├─ MILITARY    (군부)        [external]       ├─ SECRETARIAT (사무국)  [parent: NOVUS_ORDO]
+├─ COUNCIL     (이사회)      [external]       │   ├─ HQ (사무총장실)
+├─ CIVIL       (시민사회)    [external]       │   ├─ RESEARCH (연구 기구)
+└─ NOVUS_ORDO  (노부스 오르도) [internal]      │   ├─ ADMIN_BUREAU (행정 기구)
+                                              │   ├─ INTL (국제 기구)
+                                              │   ├─ CONTROL (통제 기구)
+                                              │   └─ FINANCE (재무 기구)
+                                              └─ MANUS (현장요원)      [parent: NOVUS_ORDO]
+                                                  ├─ SECTOR_A (알파 섹터)
+                                                  ├─ SECTOR_B (브라보 섹터)
+                                                  ├─ SECTOR_C (찰리 섹터)
+                                                  ├─ SECTOR_D (델타 섹터)
+                                                  └─ SECTOR_E (에코 섹터)
 ```
+
+- `scope=external` — 노부스 오르도 **외부** 권력 블록. 정규 권한 등급 체계 밖.
+- `scope=internal` — 노부스 오르도 **본부 자체** (NOVUS_ORDO). 사무국·MANUS 가 직속 산하.
 
 - `character.department: DepartmentCode` — 단일 문자열, 한 캐릭터는 한 부서에만 소속
 - 유틸: [lib/org-structure.ts](../../lib/org-structure.ts) — `getTopLevelGroup()`, `getDepartmentLabel()`, `getSubUnits()`, `isFaction()`, `isInstitution()`
@@ -304,10 +307,11 @@ FACTIONS (외부 기관)          INSTITUTIONS (내부 기관)
 
 ### 11-4. L1 조감 뷰 레이아웃
 
-- **좌측**: 외부 기관 (`FACTIONS`) — 삼각형 배치 (COUNCIL 상단, MILITARY 좌하, CIVIL 우하)
-- **우측**: 내부 기관 (`INSTITUTIONS`) — 수직 스택
+- **좌측**: 외부 기관 (`FACTIONS · scope=external`) — 삼각형 배치 (COUNCIL 상단, MILITARY 좌하, CIVIL 우하)
+- **우측**: 본부 (`NOVUS_ORDO · scope=internal`) 박스 + 산하 내부 기관 (`INSTITUTIONS` SECRETARIAT/MANUS) 수직 스택
 - **하단**: `UNASSIGNED` (미배정) — 존재할 때만 카드 그리드로 노출
-- **구현 수준**: CSS Grid + SVG 라인으로 충분. 현재 노드 규모 (세력 3 + 기관 2 + 하위 기구 11 = **16개**)에서 react-flow 등 전문 라이브러리는 오버엔지니어링. 노드 50+ 시점에 재검토.
+- **시각**: 외부 영역은 차가운 톤(회색-녹색 계열) 배경, 본부 영역은 금색 강조 보더로 분리. NOVUS_ORDO 박스는 본부 카드(`node--hq`)로 별도 톤 처리.
+- **구현 수준**: CSS Grid + SVG 라인으로 충분. 현재 노드 규모 (외부 세력 3 + 본부 1 + 내부 기관 2 + 하위 기구 11 = **17개**)에서 react-flow 등 전문 라이브러리는 오버엔지니어링. 노드 50+ 시점에 재검토.
 
 ### 11-5. 카드 정렬 (위계 표현)
 
