@@ -22,6 +22,7 @@ type ConnectionMode = "serverless" | "long-running" | null;
 
 let mode: ConnectionMode = null;
 let dbName: string = DEFAULT_DB_NAME;
+let serverlessConfig: SharedDbConfig | null = null;
 
 // Long-running mode state
 let longRunningClient: MongoClient | null = null;
@@ -42,14 +43,7 @@ export function initServerless(config: SharedDbConfig): void {
 
   mode = "serverless";
   dbName = config.dbName ?? DEFAULT_DB_NAME;
-
-  const g = globalThis as unknown as MongoGlobal;
-  if (!g.__sharedDbClientPromise) {
-    const client = new MongoClient(config.uri, {
-      maxPoolSize: config.maxPoolSize ?? 5,
-    });
-    g.__sharedDbClientPromise = client.connect();
-  }
+  serverlessConfig = config;
 }
 
 /* ── Long-running mode ── */
@@ -111,9 +105,19 @@ export async function getClient(): Promise<MongoClient> {
   if (mode === "serverless") {
     const g = globalThis as unknown as MongoGlobal;
     if (!g.__sharedDbClientPromise) {
-      throw new Error(
-        "[shared-db] Serverless mode: initServerless() must be called first.",
-      );
+      if (!serverlessConfig) {
+        throw new Error(
+          "[shared-db] Serverless mode: initServerless() must be called first.",
+        );
+      }
+      const client = new MongoClient(serverlessConfig.uri, {
+        maxPoolSize: serverlessConfig.maxPoolSize ?? 5,
+      });
+      g.__sharedDbClientPromise = client.connect().catch(async (err) => {
+        delete g.__sharedDbClientPromise;
+        await client.close().catch(() => {});
+        throw err;
+      });
     }
     return g.__sharedDbClientPromise;
   }
