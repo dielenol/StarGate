@@ -1287,7 +1287,11 @@
   .dayPanel {
     width: 100%;
     flex-basis: auto;
-    max-height: 340px;
+    max-height: none;
+  }
+
+  .dayPanel__list {
+    overflow: visible;
   }
 
   .calendar__grid {
@@ -1349,8 +1353,19 @@
   .dayPanel {
     width: 100%;
     flex-basis: auto;
-    max-height: 320px;
     padding: 12px;
+  }
+
+  .dayPanel__list {
+    overflow: visible;
+  }
+
+  .dayPanel__sessionButton {
+    padding: 11px;
+  }
+
+  .dayPanel__metaRow {
+    grid-template-columns: 48px minmax(0, 1fr);
   }
 
   .dayPanel__title {
