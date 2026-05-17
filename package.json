@@ -5,7 +5,10 @@
   "scripts": {
     "build:shared": "pnpm --filter @stargate/shared-db build",
     "build:web": "pnpm --filter stargatev2 build",
-    "build:bot": "pnpm --filter registrar-bot build"
+    "build:bot": "pnpm --filter registrar-bot build",
+    "build:registra-bot": "pnpm --filter registrar-bot build",
+    "build:trpg-bot": "pnpm --filter trpg-discord-bot build",
+    "build:bots": "pnpm --filter registrar-bot build && pnpm --filter trpg-discord-bot build"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

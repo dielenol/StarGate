@@ -1,80 +1,67 @@
-# TRPG 참여 체크 디스코드 봇
+# TRPG 캘린더 디스코드 봇
 
-TRPG 세션 일정 참여 여부를 디스코드에서 수집하고, 마감 시 자동으로 결과를 집계하는 봇입니다.
+`trpg-web`에서 생성·수정·취소된 TRPG 세션을 Discord DM으로 안내하고, `/세션확인`으로 월간 세션 캘린더를 보여주는 봇입니다.
 
 ## 기능
 
-- **세션 생성**: `/일정 생성` — **서버 관리** 권한, 공지는 채널 전체 공개
-- **참여 응답**: 참석/불참 버튼으로 1인 1상태 응답 (실시간 명단 표시)
-- **자동 마감**: 마감 시점에 버튼 비활성화 및 최종 결과 메시지 전송
-- **무응답자 표시**: 대상 역할 기준으로 무응답자 명단 출력 (Discord 멘션 형식)
-- **일정·집계**: **`/일정 한눈에`** 로 OPEN·마감을 **월별**로 정리, **`/일정 집계`** 로 **한 세션** 집계 — 결과는 **채널 공개**, 세션 ID는 **실행 관리자에게만** 따로 안내. (OPEN 여러 개면 `세션아이디` 필요). 달력 PNG는 **`이미지포함`** 또는 마감 시만 (`RESULT_CARD_IMAGE=0` 등으로 끌 수 있음)
-- **내 일정**: **`/일정 참여확인`** — 이 서버에서 **본인이 참석(YES)으로만 응답한 세션**을 **에페메랄**로 모음. `RESULT_CARD_IMAGE`가 켜져 있으면 **일정 간격(기본 30분)** 마다 **`/일정 달력`과 같은 월간 캘린더 PNG**(봇 기준 이번 달·내 응답 일정만)를 같은 에페메랄에 첨부 (`PARTICIPATION_CHECK_IMAGE_COOLDOWN_MINUTES`, `PNG_RENDER_MIN_INTERVAL_MS` 참고)
+- **세션 알림**: `trpg-web` 세션 생성·수정·취소를 폴링해 참가 대상자에게 DM 전송
+- **DM 폴백**: DM 차단 사용자에게 지정 채널 멘션으로 동일 내용 안내
+- **24시간 전 리마인드**: 예정된 세션 참가자에게 리마인드 DM 전송
+- **멤버 동기화**: 운영 길드 멤버를 `trpg_guild_members`에 캐싱
+- **세션 확인**: `/세션확인` — 월간 TRPG 캘린더 PNG와 웹 캘린더 링크 응답
 
 ## 요구사항
 
-- Node.js 18+
-- MongoDB Atlas (또는 호환 MongoDB)
+- Node.js 22.6.0+ 권장
+- pnpm workspace
+- MongoDB Atlas (trpg-web과 같은 `stargate` DB)
 - Discord Bot Token
 
 ## 설정
 
-1. `.env.example`을 복사하여 `.env` 생성
-2. `.env`에 다음 값 입력:
+1. `.env.example`을 복사해 `trpg-bot/.env` 생성
+2. 필수 값 입력:
    - `DISCORD_TOKEN`: Discord Developer Portal에서 발급한 봇 토큰
    - `DISCORD_CLIENT_ID`: Application ID
-   - `MONGODB_URI`: MongoDB 연결 문자열
-   - `GUILD_ID`: (선택) 개발용, 특정 서버에만 커맨드 등록 시
-   - `RESULT_CARD_IMAGE`: (선택) `0` / `false` / `off` 이면 마감 시 PNG 첨부 생략 (Chromium 없는 환경용)
-   - `PARTICIPATION_CHECK_IMAGE_COOLDOWN_MINUTES`: (선택) `/일정 참여확인` 월간 캘린더 PNG 재첨부 최소 간격(분, 기본 30). `0`이면 매 조회 시도(전역 PNG 큐가 부하 완화)
-   - `PNG_RENDER_MIN_INTERVAL_MS`: (선택) Puppeteer PNG 한 건 처리 후 다음 건까지 대기(ms, 기본 500)
+   - `MONGODB_URI`: trpg-web과 같은 MongoDB 연결 문자열
+   - `TRPG_GUILD_ID`: 운영 Discord 서버 ID
+   - `TRPG_FALLBACK_CHANNEL_ID`: DM 실패 시 멘션을 보낼 텍스트 채널 ID
+   - `TRPG_WEB_BASE_URL`: 운영 trpg-web URL, 예: `https://dache-calender.vercel.app`
+3. `GUILD_ID`는 `/세션확인`을 길드 커맨드로 즉시 등록할 때 사용합니다. 운영에서는 보통 `TRPG_GUILD_ID`와 같은 값으로 둡니다.
 
-> DB 이름은 코드에 고정(`trpg_bot`)되어 있어 `MONGODB_URI`의 database path 부분은 무시됨.
+기본 DB 이름은 `stargate`이며, 테스트/스테이징만 `MONGODB_DB_NAME`으로 override합니다.
 
 ## 설치 및 실행
 
 ```bash
-npm install
-npm run run
-```
+# 모노레포 루트에서
+pnpm install
+pnpm run build:shared
+pnpm run build:trpg-bot
 
-`npm run run`은 빌드 후 바로 실행합니다. (빌드만: `npm run build`, 실행만: `npm start`)
+# 프로덕션 실행
+cd trpg-bot
+pnpm start
+```
 
 개발 모드 (hot reload):
 
 ```bash
-npm run dev
+cd trpg-bot
+pnpm dev
 ```
 
 ## 슬래시 커맨드 등록
 
-봇 시작 시 Discord에 슬래시 커맨드를 자동으로 등록합니다. `GUILD_ID`를 설정하면 해당 길드에만 등록되어 즉시 반영되고, 비우면 글로벌 등록이 수행됩니다. 별도의 `register` 스크립트는 없습니다.
+봇 시작 시 `/세션확인`을 자동 등록합니다. `GUILD_ID`를 설정하면 해당 길드에만 즉시 반영되고, 비우면 글로벌 등록이 수행됩니다. 별도의 register 스크립트는 없습니다.
 
 ## 커맨드 사용법
 
-### `/일정 생성` (서버 관리 권한)
-
-| 옵션        | 필수 | 설명                                                     |
-| ----------- | ---- | -------------------------------------------------------- |
-| 제목        | O    | 세션명                                                   |
-| 일시        | O    | 세션 진행 일시 (예: 2026-03-22 20:00)                    |
-| 응답마감    | O    | 응답 마감 일시 (예: 2026-03-20 23:59)                    |
-| 역할        | O    | 참여 대상 역할 ID 또는 @역할멘션 (@here, @everyone 불가) |
-| 채널        | -    | 디스코드 **채널 선택 UI**로 지정 (텍스트·공지·스레드). 비우면 명령을 친 채널 |
-
-완료 메시지는 에페메랄이며, 공지 임베드는 채널에 올라와 전원이 볼 수 있습니다.
-
-### 관리 (서버 관리 권한)
-
-| 서브커맨드                              | 설명                                                         |
-| --------------------------------------- | ------------------------------------------------------------ |
-| `생성`                                  | 새 세션·참여 체크 공지                                       |
-| `응답마감변경`                          | 응답 마감 일시 변경 (`새응답마감`, 선택 `세션아이디`)        |
-| `일정변경`                              | 세션 진행 일시 변경 (`새일시`, 선택 `세션아이디`)            |
-| `목록`                                  | 이 서버 진행 중(OPEN) 세션 목록 (에페메랄)                   |
-| `한눈에`                                | 월별 전체 일정·ID (OPEN·마감)                                |
-| `달력`                                  | 올해 `월`(1–12)의 세션만 **캘린더 격자 PNG**, 채널에 공개 (`RESULT_CARD_IMAGE` 필요) |
-| `집계` / `마감` / `취소`                | 집계·강제 마감·취소 — 자세한 내용은 SPEC 참고                |
+- `/세션확인`
+  - `연도` 선택
+  - `월` 선택
+  - `모드`: `상세` 또는 `간단`
+  - `비공개`: 나에게만 보이도록 응답
 
 ## 상세 스펙
 
@@ -82,9 +69,14 @@ npm run dev
 
 ## 배포
 
-OCI VM 한 대에서 `registra-bot` 등 다른 봇과 함께 `PM2`로 운영하려면 루트 문서인 [`docs/OCI_COMPUTE_PM2_MULTI_BOT_DEPLOYMENT.md`](../docs/OCI_COMPUTE_PM2_MULTI_BOT_DEPLOYMENT.md)를 참고하세요.
+`registra-bot`과 같은 Docker/Dokploy 방식으로 배포합니다.
 
-공용 PM2 설정 파일은 [`deploy/pm2/ecosystem.config.cjs`](../deploy/pm2/ecosystem.config.cjs)에 있습니다.
+- Build context: 저장소 루트(`/`)
+- Dockerfile path: `trpg-bot/Dockerfile`
+- Runtime env: `trpg-bot/.env.example`의 필수 값을 Dokploy 환경변수에 설정
+- 앱 타입: long-running worker/service. Vercel serverless 대상이 아님
+
+PM2 설정 파일은 로컬 또는 별도 VM에서 수동 운영할 때만 사용하는 보조 설정입니다.
 
 ## 라이선스
 

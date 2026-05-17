@@ -1,27 +1,22 @@
 /**
- * PM2 ecosystem config — OCI Compute VM 등 실배포 환경에서 사용한다.
+ * PM2 ecosystem config — 필요할 때만 사용하는 보조 실행 설정.
  *
+ * Docker/Dokploy 배포 경로에서는 사용하지 않는다.
  * 로컬 개발에는 사용하지 말 것.
- * 각 봇의 로컬 실행은 해당 패키지의 `pnpm start` 또는 `npm start` 를 사용.
+ * 각 봇의 로컬 실행은 해당 패키지의 `pnpm start` 를 사용.
  *
  * 사용법 (서버 안, 저장소 루트에서):
  *   pm2 start deploy/pm2/ecosystem.config.cjs
  *   pm2 reload deploy/pm2/ecosystem.config.cjs --update-env
  *
- * 배포 전 준비 (패키지 매니저가 봇마다 다름):
- *   - registra-bot (pnpm workspace 멤버):
- *       저장소 루트에서
- *         pnpm install
- *         pnpm --filter @stargate/shared-db build
- *         cd registra-bot && pnpm run build
- *   - trpg-bot (독립 npm 패키지, 워크스페이스 외부):
- *       cd trpg-bot && npm ci && npm run build
+ * 배포 전 준비:
+ *   저장소 루트에서
+ *     pnpm install --frozen-lockfile
+ *     pnpm run build:shared
+ *     pnpm run build:registra-bot
+ *     pnpm run build:trpg-bot
  *
- *   두 봇은 서로 다른 패키지 매니저를 사용한다
- *   (registra-bot = pnpm workspace, trpg-bot = 독립 npm).
- *   각 봇 디렉토리에 `.env` 파일이 있어야 한다 (DISCORD_TOKEN, MONGODB_URI 등).
- *
- * 상세 가이드: docs/OCI_COMPUTE_PM2_MULTI_BOT_DEPLOYMENT.md
+ * 각 봇 디렉토리에 `.env` 파일이 있어야 한다 (DISCORD_TOKEN, MONGODB_URI 등).
  */
 
 const fs = require("node:fs");

@@ -50,9 +50,13 @@ pnpm dev         # tsx src/index.ts (개발, hot reload 없음)
 
 ## 배포
 
-OCI VM 한 대에서 다른 봇과 함께 `PM2`로 운영하려면 루트 문서인 [`docs/OCI_COMPUTE_PM2_MULTI_BOT_DEPLOYMENT.md`](../docs/OCI_COMPUTE_PM2_MULTI_BOT_DEPLOYMENT.md)를 참고하세요.
+Docker/Dokploy 방식으로 배포합니다.
 
-공용 PM2 설정 파일은 [`deploy/pm2/ecosystem.config.cjs`](../deploy/pm2/ecosystem.config.cjs)에 있습니다.
+- Build context: 저장소 루트(`/`)
+- Dockerfile path: `registra-bot/Dockerfile`
+- Runtime env: `.env.example`의 필수 값을 Dokploy 환경변수에 설정
+
+PM2 설정 파일은 로컬 또는 별도 VM에서 수동 운영할 때만 사용하는 보조 설정입니다.
 
 ## 기술 메모
 
