@@ -18,7 +18,25 @@ import {
   linkDiscord,
 } from "@/lib/db/users";
 
+function readDiscordEnv(primaryName: string, fallbackName: string): string {
+  const value = process.env[primaryName] ?? process.env[fallbackName];
+  if (!value) {
+    throw new Error(`${primaryName} 또는 ${fallbackName} 환경변수가 필요합니다.`);
+  }
+  return value;
+}
+
+const discordClientId = readDiscordEnv(
+  "STARGATE_DISCORD_CLIENT_ID",
+  "DISCORD_CLIENT_ID",
+);
+const discordClientSecret = readDiscordEnv(
+  "STARGATE_DISCORD_CLIENT_SECRET",
+  "DISCORD_CLIENT_SECRET",
+);
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   pages: {
     signIn: "/login",
     error: "/login",
@@ -26,8 +44,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   providers: [
     DiscordProvider({
-      clientId: process.env.DISCORD_CLIENT_ID!,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+      clientId: discordClientId,
+      clientSecret: discordClientSecret,
     }),
     CredentialsProvider({
       name: "credentials",

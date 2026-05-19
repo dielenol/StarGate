@@ -26,9 +26,21 @@ function readEnv(name: string): string {
   return getRequiredEnv(name);
 }
 
+function readEnvWithFallback(primaryName: string, fallbackName: string): string {
+  const primary = process.env[primaryName];
+  if (primary && primary.length > 0) return primary;
+  return readEnv(fallbackName);
+}
+
 // 모듈 로드 시점 검증 — 누락 시 앱 부팅이 즉시 실패한다.
 export const MONGODB_URI = readEnv("MONGODB_URI");
 export const TRPG_GUILD_ID = readEnv("TRPG_GUILD_ID");
-export const DISCORD_CLIENT_ID = readEnv("DISCORD_CLIENT_ID");
-export const DISCORD_CLIENT_SECRET = readEnv("DISCORD_CLIENT_SECRET");
+export const DISCORD_CLIENT_ID = readEnvWithFallback(
+  "TRPG_DISCORD_CLIENT_ID",
+  "DISCORD_CLIENT_ID",
+);
+export const DISCORD_CLIENT_SECRET = readEnvWithFallback(
+  "TRPG_DISCORD_CLIENT_SECRET",
+  "DISCORD_CLIENT_SECRET",
+);
 export const AUTH_SECRET = readEnv("AUTH_SECRET");
