@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { signOut } from "next-auth/react";
 
@@ -60,8 +60,11 @@ export function CalendarClient({
     initialFocusedSessionId,
   );
   const [detailModalSession, setDetailModalSession] =
-    useState<TrpgSessionView | null>(null);
-  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
+    useState<TrpgSessionView | null>(
+      () =>
+        initialSessions.find((session) => session.id === initialFocusedSessionId) ??
+        null,
+    );
 
   // "오늘"은 컴포넌트 라이프타임 동안 고정 — 매 렌더 재계산하지 않는다.
   const todayKey = useMemo(() => currentKstDateString(), []);
@@ -111,16 +114,6 @@ export function CalendarClient({
     return sessionsByDate.get(selectedDate) ?? [];
   }, [sessionsByDate, selectedDate]);
   const selectedDateCanCreate = selectedDate ? selectedDate >= todayKey : true;
-
-  useEffect(() => {
-    if (deepLinkHandled || !initialFocusedSessionId) return;
-    const target = sessions.find((s) => s.id === initialFocusedSessionId);
-    if (!target) return;
-    setSelectedDate(target.date);
-    setFocusedSessionId(target.id);
-    setDetailModalSession(target);
-    setDeepLinkHandled(true);
-  }, [deepLinkHandled, initialFocusedSessionId, sessions]);
 
   function handlePrev() {
     setSelectedDate(null);
