@@ -18,12 +18,22 @@ import {
   linkDiscord,
 } from "@/lib/db/users";
 
+function isUsableEnvValue(value: string | undefined): value is string {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized.length > 0 && normalized !== "undefined" && normalized !== "null";
+}
+
 function readDiscordEnv(primaryName: string, fallbackName: string): string {
-  const value = process.env[primaryName] ?? process.env[fallbackName];
-  if (!value) {
+  const primary = process.env[primaryName];
+  if (isUsableEnvValue(primary)) return primary;
+
+  const fallback = process.env[fallbackName];
+  if (isUsableEnvValue(fallback)) return fallback;
+
+  {
     throw new Error(`${primaryName} 또는 ${fallbackName} 환경변수가 필요합니다.`);
   }
-  return value;
 }
 
 const discordClientId = readDiscordEnv(

@@ -13,7 +13,12 @@
 
 export function getRequiredEnv(name: string): string {
   const value = process.env[name];
-  if (!value || value.length === 0) {
+  if (
+    !value ||
+    value.length === 0 ||
+    value.trim().toLowerCase() === "undefined" ||
+    value.trim().toLowerCase() === "null"
+  ) {
     throw new Error(`${name} 환경변수가 설정되지 않았습니다.`);
   }
   return value;
@@ -28,7 +33,14 @@ function readEnv(name: string): string {
 
 function readEnvWithFallback(primaryName: string, fallbackName: string): string {
   const primary = process.env[primaryName];
-  if (primary && primary.length > 0) return primary;
+  if (
+    primary &&
+    primary.length > 0 &&
+    primary.trim().toLowerCase() !== "undefined" &&
+    primary.trim().toLowerCase() !== "null"
+  ) {
+    return primary;
+  }
   return readEnv(fallbackName);
 }
 
