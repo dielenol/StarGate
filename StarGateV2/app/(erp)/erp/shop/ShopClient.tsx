@@ -49,6 +49,9 @@ const TAB_DEFS: { value: ShopTabValue; label: string }[] = [
   { value: "RARE", label: "희귀" },
 ];
 
+const MIN_INVENTORY_SLOTS = 24;
+const INVENTORY_SLOT_COLUMNS = 6;
+
 /** 서버 에러 코드 → 한국어 사용자 메시지. */
 const ERROR_MESSAGE: Record<ShopErrorCode, string> = {
   SHOP_CLOSED: "영업 시간이 아닙니다 (토 18시 이후·일요일 마감).",
@@ -140,6 +143,17 @@ export default function ShopClient({
       map.set(item.slug, item);
     }
     return map;
+  }, [inventory.items]);
+
+  const inventorySlots = useMemo(() => {
+    const roundedItemCount =
+      Math.ceil(inventory.items.length / INVENTORY_SLOT_COLUMNS) *
+      INVENTORY_SLOT_COLUMNS;
+    const slotCount = Math.max(MIN_INVENTORY_SLOTS, roundedItemCount);
+    return Array.from(
+      { length: slotCount },
+      (_, index) => inventory.items[index] ?? null,
+    );
   }, [inventory.items]);
 
   // 모달이 가리킬 카탈로그 / 인벤 항목.
@@ -407,30 +421,48 @@ export default function ShopClient({
           {inventory.items.length === 0 ? (
             <div className={styles.empty}>보유한 편의점 아이템이 없습니다.</div>
           ) : (
-            <div className={styles.inventoryPanel__grid}>
-              {inventory.items.map((item) => (
-                <div key={item.slug} className={styles.inventoryItem}>
-                  <div className={styles.inventoryItem__icon} aria-hidden>
-                    <ShopItemIcon slug={item.slug} size={32} />
-                  </div>
-                  <div className={styles.inventoryItem__body}>
-                    <div className={styles.inventoryItem__name}>
-                      {item.name}
-                    </div>
-                    <div className={styles.inventoryItem__effect}>
-                      {item.effect}
-                    </div>
-                  </div>
-                  <div className={styles.inventoryItem__qty}>
-                    × {item.quantity}
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.inventoryItem__use}
-                    onClick={() => handleConsumeClick(item.slug)}
-                  >
-                    사용 / 폐기
-                  </button>
+            <div className={styles.inventoryPanel__slots}>
+              {inventorySlots.map((item, index) => (
+                <div
+                  key={item ? item.slug : `empty-${index}`}
+                  className={[
+                    styles.inventorySlot,
+                    item ? styles["inventorySlot--filled"] : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  {item ? (
+                    <>
+                      <button
+                        type="button"
+                        className={styles.inventorySlot__button}
+                        onClick={() => handleConsumeClick(item.slug)}
+                        aria-label={`${item.name} 사용 또는 폐기`}
+                      >
+                        <span
+                          className={styles.inventorySlot__icon}
+                          aria-hidden
+                        >
+                          <ShopItemIcon slug={item.slug} size={40} />
+                        </span>
+                        <span className={styles.inventorySlot__name}>
+                          {item.name}
+                        </span>
+                        <span className={styles.inventorySlot__effect}>
+                          {item.effect}
+                        </span>
+                      </button>
+                      <span
+                        className={styles.inventorySlot__qty}
+                        aria-label={`보유 ${item.quantity}개`}
+                      >
+                        ×{item.quantity}
+                      </span>
+                    </>
+                  ) : (
+                    <span className={styles.inventorySlot__emptyMark} />
+                  )}
                 </div>
               ))}
             </div>
