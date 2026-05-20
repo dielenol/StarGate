@@ -18,6 +18,7 @@ import { auth } from "@/lib/auth/config";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import { isStockMarketEnabled } from "@/lib/stocks/market";
 
 import type {
   StockHistoryResponse,
@@ -119,6 +120,7 @@ export default async function StockTradePage({ params }: Props) {
           : null
       }
       mainCharacterError={mainCharacterError}
+      marketEnabled={isStockMarketEnabled()}
     />
   );
 }

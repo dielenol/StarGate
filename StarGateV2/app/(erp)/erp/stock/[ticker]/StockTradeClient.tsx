@@ -73,6 +73,8 @@ const StockHistoryChart = dynamic(() => import("../StockHistoryChart"), {
 
 /** 시세 테이블 노출 행 수 — 최근부터. */
 const HISTORY_TABLE_LIMIT = 10;
+/** 서버 buy/sell 라우트와 동일한 1회 주문 수량 한도. */
+const MAX_ORDER_SHARES = 50;
 /** 빠른 비율 칩 — 매수 모드: 잔액 기준 / 매도 모드: 보유 기준 비율 (1=최대). */
 const QUICK_RATIOS: Array<{ label: string; ratio: number }> = [
   { label: "10%", ratio: 0.1 },
@@ -93,6 +95,7 @@ interface Props {
   initialHistory: StockHistoryResponse;
   mainCharacter: { id: string; codename: string } | null;
   mainCharacterError: string | null;
+  marketEnabled: boolean;
 }
 
 /* ── 컴포넌트 ── */
@@ -105,6 +108,7 @@ export default function StockTradeClient({
   initialHistory,
   mainCharacter,
   mainCharacterError,
+  marketEnabled,
 }: Props) {
   /* 6. 쿼리 */
   const pricesQuery = useStockPrices({ initialData: initialPrices });
@@ -164,8 +168,9 @@ export default function StockTradeClient({
   }, [history.items]);
 
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
-  const isMarketOpen = true;
-  const canTrade = hasMainCharacter && isMarketOpen;
+  const isMarketOpen = marketEnabled;
+  const isPriceSeeded = currentPrice?.isSeeded ?? false;
+  const canTrade = hasMainCharacter && isMarketOpen && isPriceSeeded;
   const sellDisabled = !canTrade || !holding || holding.shares === 0;
 
   /* ── Hero 표시값 ── */
@@ -215,17 +220,23 @@ export default function StockTradeClient({
   const insufficientBalance = effectiveTab === "buy" && tradeTotal > balance;
   const insufficientShares =
     effectiveTab === "sell" && tradeShares > heldShares;
+  const exceedsMaxShares = tradeShares > MAX_ORDER_SHARES;
 
   const buyDisabled =
     !canTrade ||
     tradeShares <= 0 ||
+    exceedsMaxShares ||
     insufficientBalance ||
     isTradePending ||
     displayPrice <= 0;
   const submitDisabled =
     effectiveTab === "buy"
       ? buyDisabled
-      : sellDisabled || tradeShares <= 0 || insufficientShares || isTradePending;
+      : sellDisabled ||
+        tradeShares <= 0 ||
+        exceedsMaxShares ||
+        insufficientShares ||
+        isTradePending;
 
   /* ── 핸들러 ── */
 
@@ -234,16 +245,22 @@ export default function StockTradeClient({
     if (effectiveTab === "buy") {
       if (displayPrice <= 0) return;
       const max = Math.floor(balance / displayPrice);
-      const next = Math.max(0, Math.floor(max * ratio));
+      const next = Math.min(
+        MAX_ORDER_SHARES,
+        Math.max(0, Math.floor(max * ratio)),
+      );
       setQtyInput(next > 0 ? String(next) : "");
     } else {
-      const next = Math.max(0, Math.floor(heldShares * ratio));
+      const next = Math.min(
+        MAX_ORDER_SHARES,
+        Math.max(0, Math.floor(heldShares * ratio)),
+      );
       setQtyInput(next > 0 ? String(next) : "");
     }
   }
 
   function adjustQty(delta: number) {
-    const next = Math.max(0, tradeShares + delta);
+    const next = Math.min(MAX_ORDER_SHARES, Math.max(0, tradeShares + delta));
     setQtyInput(next > 0 ? String(next) : "");
   }
 
@@ -253,15 +270,17 @@ export default function StockTradeClient({
     setSuccessMessage(null);
     const mutation = effectiveTab === "buy" ? buyMutation : sellMutation;
     const submittedShares = tradeShares;
-    const submittedPrice = displayPrice;
     const action = effectiveTab === "buy" ? "매수" : "매도";
     mutation.mutate(
       { ticker, shares: submittedShares },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           setQtyInput("");
           setErrorMessage(null);
-          const total = submittedShares * submittedPrice;
+          const total =
+            "purchase" in result
+              ? result.purchase.totalCost
+              : result.sale.totalProceeds;
           setSuccessMessage(
             `✓ ${submittedShares.toLocaleString()}주 ${action} 완료 · ¤ ${total.toLocaleString()}`,
           );
@@ -304,6 +323,16 @@ export default function StockTradeClient({
       };
     });
   }, [history.items]);
+
+  const stockTransactions = useMemo(() => {
+    const rows = creditsQuery.data?.transactions ?? [];
+    return rows
+      .filter((tx) => {
+        if (tx.type !== "STOCK_BUY" && tx.type !== "STOCK_SELL") return false;
+        return tx.metadata?.ticker === ticker;
+      })
+      .slice(0, 5);
+  }, [creditsQuery.data?.transactions, ticker]);
 
   if (!meta) {
     // server 가 notFound() 처리해 도달 불가 — defensive.
@@ -349,6 +378,20 @@ export default function StockTradeClient({
               다시 확인하세요. 시세·차트는 열람만 가능합니다.
             </>
           )}
+        </Box>
+      ) : null}
+
+      {hasMainCharacter && !isPriceSeeded ? (
+        <Box className={styles.notice}>
+          이 종목은 아직 운영 시세가 등록되지 않아 거래할 수 없습니다. 표시 가격은
+          카탈로그 기준가입니다.
+        </Box>
+      ) : null}
+
+      {hasMainCharacter && isPriceSeeded && !isMarketOpen ? (
+        <Box className={styles.notice}>
+          현재 주식 거래가 일시 중지되어 있습니다. 시세와 보유 내역은 계속
+          조회할 수 있습니다.
         </Box>
       ) : null}
 
@@ -762,6 +805,19 @@ export default function StockTradeClient({
                     <span>{heldShares.toLocaleString()}주</span>
                   </div>
                 )}
+                <div
+                  className={[
+                    sharedStyles.tradeCard__totalHint,
+                    exceedsMaxShares
+                      ? sharedStyles["tradeCard__totalHint--warn"]
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  <span>1회 주문 한도</span>
+                  <span>{MAX_ORDER_SHARES.toLocaleString()}주</span>
+                </div>
               </div>
 
               <button
@@ -912,12 +968,84 @@ export default function StockTradeClient({
             <div className={sharedStyles.railCard__head}>
               <span>주문내역</span>
             </div>
-            <div className={sharedStyles.railCard__empty}>
-              대기 주문 없음
-              <div className={sharedStyles.railCard__emptyHint}>
-                24시간 즉시 체결 — 대기 주문 미지원
+            {stockTransactions.length === 0 ? (
+              <div className={sharedStyles.railCard__empty}>
+                체결 내역 없음
+                <div className={sharedStyles.railCard__emptyHint}>
+                  매수·매도 완료 후 최근 내역이 표시됩니다.
+                </div>
               </div>
-            </div>
+            ) : (
+              <ul className={sharedStyles.tradeHistory}>
+                {stockTransactions.map((tx) => {
+                  const created = new Date(tx.createdAt);
+                  const dateLabel = Number.isFinite(created.getTime())
+                    ? created.toLocaleString("ko-KR", {
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                      })
+                    : "—";
+                  const shares =
+                    typeof tx.metadata?.shares === "number"
+                      ? tx.metadata.shares
+                      : null;
+                  const price =
+                    typeof tx.metadata?.price === "number"
+                      ? tx.metadata.price
+                      : null;
+                  const profit =
+                    typeof tx.metadata?.profit === "number"
+                      ? tx.metadata.profit
+                      : null;
+                  const isBuy = tx.type === "STOCK_BUY";
+                  return (
+                    <li
+                      key={String(tx._id)}
+                      className={sharedStyles.tradeHistory__item}
+                    >
+                      <div className={sharedStyles.tradeHistory__top}>
+                        <span
+                          className={[
+                            sharedStyles.tradeHistory__side,
+                            isBuy
+                              ? sharedStyles["tradeHistory__side--buy"]
+                              : sharedStyles["tradeHistory__side--sell"],
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        >
+                          {isBuy ? "매수" : "매도"}
+                        </span>
+                        <span className={sharedStyles.tradeHistory__date}>
+                          {dateLabel}
+                        </span>
+                      </div>
+                      <div className={sharedStyles.tradeHistory__meta}>
+                        {shares !== null
+                          ? `${shares.toLocaleString()}주`
+                          : "수량 미상"}
+                        {price !== null
+                          ? ` · ¤ ${price.toLocaleString()}`
+                          : ""}
+                      </div>
+                      <div className={sharedStyles.tradeHistory__amount}>
+                        {tx.amount > 0 ? "+" : ""}
+                        ¤ {tx.amount.toLocaleString()}
+                        {profit !== null ? (
+                          <span className={sharedStyles.tradeHistory__profit}>
+                            손익 {profit > 0 ? "+" : ""}¤{" "}
+                            {profit.toLocaleString()}
+                          </span>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </aside>
       </div>

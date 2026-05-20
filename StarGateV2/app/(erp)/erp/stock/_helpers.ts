@@ -39,6 +39,7 @@ export const ERROR_MESSAGE: Record<StocksErrorCode, string> = {
   MAIN_CHARACTER_INTEGRITY:
     "메인 캐릭터 정합성 위반 — 운영자(GM)에게 문의하세요.",
   PRICE_NOT_FOUND: "종목 시세를 찾을 수 없습니다.",
+  MARKET_CLOSED: "현재 주식 거래가 일시 중지되어 있습니다.",
   INSUFFICIENT_BALANCE: "잔액이 부족합니다.",
   INSUFFICIENT_SHARES: "보유 주식이 부족합니다.",
   REFUND_FAILED:

@@ -31,6 +31,7 @@ export type StocksErrorCode =
   | "NO_MAIN_CHARACTER"
   | "MAIN_CHARACTER_INTEGRITY"
   | "PRICE_NOT_FOUND"
+  | "MARKET_CLOSED"
   | "INSUFFICIENT_BALANCE"
   | "INSUFFICIENT_SHARES"
   | "REFUND_FAILED"
@@ -42,6 +43,7 @@ const STOCKS_ERROR_CODES: ReadonlySet<StocksErrorCode> = new Set([
   "NO_MAIN_CHARACTER",
   "MAIN_CHARACTER_INTEGRITY",
   "PRICE_NOT_FOUND",
+  "MARKET_CLOSED",
   "INSUFFICIENT_BALANCE",
   "INSUFFICIENT_SHARES",
   "REFUND_FAILED",
@@ -80,6 +82,8 @@ export interface StockPriceItem {
   eventText: string;
   changePercent: number;
   lastUpdate: string;
+  /** stock_prices row exists. false means catalog fallback only and trading is disabled. */
+  isSeeded: boolean;
 }
 
 export interface StockPricesResponse {
@@ -92,6 +96,8 @@ export interface StockHoldingItem {
   shares: number;
   avgPrice: number;
   currentPrice: number;
+  /** stock_prices row exists. false means currentPrice is catalog fallback. */
+  isPriceSeeded: boolean;
   evaluation: number;
   profitLoss: number;
   profitPercent: number;

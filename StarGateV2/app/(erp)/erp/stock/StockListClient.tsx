@@ -56,6 +56,7 @@ interface Props {
   initialBalance: number;
   mainCharacter: { id: string; codename: string } | null;
   mainCharacterError: string | null;
+  marketEnabled: boolean;
 }
 
 /* ── 컴포넌트 ── */
@@ -67,6 +68,7 @@ export default function StockListClient({
   initialBalance,
   mainCharacter,
   mainCharacterError,
+  marketEnabled,
 }: Props) {
   /* 5. router */
   const router = useRouter();
@@ -194,7 +196,9 @@ export default function StockListClient({
 
       <div className={styles.tabsRow}>
         <StockTabs />
-        <Tag tone="gold">거래 가능</Tag>
+        <Tag tone={marketEnabled ? "gold" : "danger"}>
+          {marketEnabled ? "거래 가능" : "거래 중지"}
+        </Tag>
       </div>
 
       {/* 메인 캐릭터 안내 */}

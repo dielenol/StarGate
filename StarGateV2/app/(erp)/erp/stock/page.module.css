@@ -297,6 +297,71 @@
   opacity: 0.7;
 }
 
+.tradeHistory {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tradeHistory__item {
+  list-style: none;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tradeHistory__item:last-child {
+  border-bottom: 0;
+}
+
+.tradeHistory__top,
+.tradeHistory__amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tradeHistory__side {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.tradeHistory__side--buy {
+  color: var(--gold);
+}
+
+.tradeHistory__side--sell {
+  color: var(--danger);
+}
+
+.tradeHistory__date,
+.tradeHistory__meta,
+.tradeHistory__profit {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+}
+
+.tradeHistory__meta {
+  margin-top: 6px;
+}
+
+.tradeHistory__amount {
+  margin-top: 8px;
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.tradeHistory__profit {
+  margin-left: auto;
+}
+
 /* 보유종목 mini list — rail 좁은 폭에 맞춘 2-row 카드형 */
 
 .holdingMini {

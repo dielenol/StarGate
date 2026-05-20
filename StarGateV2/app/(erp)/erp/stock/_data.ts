@@ -54,6 +54,7 @@ export async function buildPricesResponse(): Promise<StockPricesResponse> {
       eventText,
       changePercent,
       lastUpdate,
+      isSeeded: Boolean(row),
     };
   });
 
@@ -79,9 +80,12 @@ export async function buildHoldingsResponse(
   }
 
   const priceByTicker = pricesResponse
-    ? new Map(pricesResponse.items.map((p) => [p.ticker, p.price]))
+    ? new Map(pricesResponse.items.map((p) => [p.ticker, p]))
     : new Map(
-        (await getStockPrices()).map((p) => [p.ticker, p.price] as const),
+        (await getStockPrices()).map((p) => [
+          p.ticker,
+          { price: p.price, isSeeded: true },
+        ] as const),
       );
 
   const holdings = await getHoldings(mainCharacterId);
@@ -96,7 +100,8 @@ export async function buildHoldingsResponse(
       );
       continue;
     }
-    const currentPrice = priceByTicker.get(h.ticker) ?? 0;
+    const currentPriceRow = priceByTicker.get(h.ticker);
+    const currentPrice = currentPriceRow?.price ?? meta.basePrice;
     const evaluation = currentPrice * h.shares;
     const profitLoss = (currentPrice - h.avgPrice) * h.shares;
     const profitPercent =
@@ -107,6 +112,7 @@ export async function buildHoldingsResponse(
       shares: h.shares,
       avgPrice: h.avgPrice,
       currentPrice,
+      isPriceSeeded: currentPriceRow?.isSeeded ?? false,
       evaluation,
       profitLoss,
       profitPercent,

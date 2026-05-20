@@ -84,10 +84,10 @@ export const NAV_GROUPS: NavGroup[] = [
     key: "assets",
     label: "자산",
     items: [
-      { label: "인벤토리", keywords: "inventory equipment items", icon: IconInventory, href: "/erp/inventory" },
+      { label: "장비 인벤토리", keywords: "inventory equipment gear weapon armor items 장비", icon: IconInventory, href: "/erp/inventory" },
       { label: "크레딧", keywords: "credits", icon: IconCredit, href: "/erp/credits" },
       /* 편의점 · 주식 — M1 stub. M2/M3 에서 본 구현 활성화. */
-      { label: "편의점", keywords: "shop convenience store 편의점", icon: IconShop, href: "/erp/shop" },
+      { label: "소모품 상점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconShop, href: "/erp/shop" },
       { label: "주식", keywords: "stock market 주식 증권", icon: IconStock, href: "/erp/stock" },
     ],
   },
@@ -112,6 +112,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "관리자", keywords: "admin", icon: IconCrown, href: null },
       { label: "사용자 관리", keywords: "users admin", icon: IconUserAdmin, href: "/erp/admin/users" },
       { label: "크레딧 운영", keywords: "credits admin grant op pool 작전풀", icon: IconCredit, href: "/erp/admin/credits" },
+      { label: "주식 운영", keywords: "stocks admin market price 주식 시세", icon: IconStock, href: "/erp/admin/stocks" },
       { label: "인벤토리 운영", keywords: "inventory admin grant items 지급 마스터", icon: IconEquipment, href: "/erp/admin/inventory" },
       { label: "캐릭터 등록", keywords: "character register import", icon: IconCharacter, href: "/erp/admin/characters/import" },
     ],

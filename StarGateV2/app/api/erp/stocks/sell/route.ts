@@ -17,6 +17,7 @@ import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import { buyHolding, getStockPrice, sellHolding } from "@/lib/db/stocks";
 import { findUserById } from "@/lib/db/users";
+import { isStockMarketEnabled } from "@/lib/stocks/market";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 
 /* ── 상수 ── */
@@ -61,7 +62,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const ticker = body.ticker?.trim();
+  if (!isStockMarketEnabled()) {
+    return NextResponse.json(
+      { error: "현재 주식 거래가 일시 중지되어 있습니다.", code: "MARKET_CLOSED" },
+      { status: 423 },
+    );
+  }
+
+  const ticker = body.ticker?.trim().toUpperCase();
   const shares = body.shares;
 
   // ticker 검증.

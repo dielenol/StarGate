@@ -28,6 +28,8 @@ interface PriceItem {
   changePercent: number;
   /** KST 'YYYY-MM-DD HH:mm' 또는 빈 문자열(시드 fallback). */
   lastUpdate: string;
+  /** stock_prices row 존재 여부. false 면 catalog basePrice fallback. */
+  isSeeded: boolean;
 }
 
 interface PricesResponse {
@@ -62,6 +64,7 @@ export async function GET() {
         eventText,
         changePercent,
         lastUpdate,
+        isSeeded: Boolean(row),
       };
     });
 

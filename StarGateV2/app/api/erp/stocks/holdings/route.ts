@@ -21,6 +21,8 @@ interface HoldingItem {
   shares: number;
   avgPrice: number;
   currentPrice: number;
+  /** stock_prices row 존재 여부. false 면 catalog basePrice fallback. */
+  isPriceSeeded: boolean;
   /** currentPrice * shares (정수 — 가격이 정수 도메인). */
   evaluation: number;
   /** (currentPrice - avgPrice) * shares (음수 가능). */
@@ -89,7 +91,8 @@ export async function GET() {
         );
         continue;
       }
-      const currentPrice = priceByTicker.get(h.ticker) ?? 0;
+      const seededPrice = priceByTicker.get(h.ticker);
+      const currentPrice = seededPrice ?? meta.basePrice;
       const evaluation = currentPrice * h.shares;
       const profitLoss = (currentPrice - h.avgPrice) * h.shares;
       const profitPercent =
@@ -100,6 +103,7 @@ export async function GET() {
         shares: h.shares,
         avgPrice: h.avgPrice,
         currentPrice,
+        isPriceSeeded: seededPrice !== undefined,
         evaluation,
         profitLoss,
         profitPercent,

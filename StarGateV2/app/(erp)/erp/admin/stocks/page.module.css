@@ -1,0 +1,230 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+  gap: 18px;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  background: rgba(10, 14, 22, 0.74);
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: var(--ink-0);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.panel__head > span:last-child {
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.priceList {
+  display: grid;
+  gap: 8px;
+}
+
+.priceRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-0);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.priceRow:hover,
+.priceRow--active {
+  border-color: rgba(120, 130, 255, 0.58);
+  background: rgba(93, 101, 245, 0.13);
+}
+
+.priceRow__name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.priceRow__name > span {
+  display: grid;
+  gap: 3px;
+}
+
+.priceRow__name strong,
+.priceRow__quote {
+  font-size: 15px;
+}
+
+.priceRow__name span span,
+.priceRow__quote small {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.priceRow__quote {
+  display: grid;
+  gap: 3px;
+  text-align: right;
+  font-weight: 700;
+}
+
+.form,
+.field {
+  display: grid;
+  gap: 10px;
+}
+
+.form {
+  gap: 16px;
+}
+
+.actionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.field span {
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.field input,
+.readonly {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--ink-0);
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 15px;
+}
+
+.field input:focus {
+  outline: 2px solid rgba(120, 130, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.readonly {
+  display: flex;
+  align-items: center;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.summary span {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.summary strong {
+  color: var(--ink-0);
+  font-size: 15px;
+}
+
+.message,
+.error,
+.empty {
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.message {
+  border: 1px solid rgba(58, 184, 124, 0.34);
+  background: rgba(58, 184, 124, 0.12);
+  color: var(--success);
+}
+
+.error {
+  border: 1px solid rgba(255, 91, 91, 0.36);
+  background: rgba(255, 91, 91, 0.12);
+  color: var(--danger);
+}
+
+.empty {
+  color: var(--ink-2);
+}
+
+.submit {
+  min-height: 48px;
+  border: 1px solid rgba(120, 130, 255, 0.58);
+  background: var(--p2);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.secondaryBtn,
+.ghostBtn {
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.secondaryBtn {
+  border: 1px solid rgba(201, 168, 90, 0.58);
+  background: rgba(201, 168, 90, 0.16);
+  color: var(--gold);
+}
+
+.ghostBtn {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-1);
+}
+
+.secondaryBtn:hover:not(:disabled),
+.ghostBtn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.secondaryBtn:disabled,
+.ghostBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 1279px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
