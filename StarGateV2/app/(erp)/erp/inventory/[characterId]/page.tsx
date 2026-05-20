@@ -9,7 +9,7 @@ import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
-  findMasterItemsByIds,
+  listMasterItems,
   listCharacterInventory,
 } from "@/lib/db/inventory";
 
@@ -44,7 +44,10 @@ export default async function CharacterInventoryPage({
   }
 
   let inventory: CharacterInventory[] = [];
-  let categoryByItemId = new Map<string, ItemCategory>();
+  let masterByItemId = new Map<
+    string,
+    { category: ItemCategory; slug?: string; effect?: string }
+  >();
 
   try {
     inventory = await listCharacterInventory(characterId);
@@ -57,13 +60,19 @@ export default async function CharacterInventoryPage({
       const uniqueItemIds = Array.from(
         new Set(inventory.map((entry) => entry.itemId)),
       );
-      const masters = await findMasterItemsByIds(uniqueItemIds);
-      categoryByItemId = new Map(
-        masters.map((m) => [String(m._id), m.category]),
+      const itemIdSet = new Set(uniqueItemIds);
+      const masters = (await listMasterItems()).filter(
+        (m) => m._id && itemIdSet.has(String(m._id)),
+      );
+      masterByItemId = new Map(
+        masters.map((m) => [
+          String(m._id),
+          { category: m.category, slug: m.slug, effect: m.effect },
+        ]),
       );
       // catalog drift 감지: inventory.itemId 가 master_items 에 없는 경우.
       const orphanIds = uniqueItemIds.filter(
-        (id) => !categoryByItemId.has(id),
+        (id) => !masterByItemId.has(id),
       );
       if (orphanIds.length > 0) {
         console.warn(
@@ -71,7 +80,7 @@ export default async function CharacterInventoryPage({
         );
       }
     } catch {
-      // master_items 조회 실패 시 categoryByItemId 빈 Map 유지 → 전부 "기타" 탭으로 노출
+      // master_items 조회 실패 시 masterByItemId 빈 Map 유지 → 전부 "기타" 탭으로 노출
     }
   }
 
@@ -85,7 +94,9 @@ export default async function CharacterInventoryPage({
         ? entry.acquiredAt.toISOString()
         : new Date(entry.acquiredAt).toISOString(),
     note: entry.note,
-    category: categoryByItemId.get(entry.itemId) ?? null,
+    category: masterByItemId.get(entry.itemId)?.category ?? null,
+    slug: masterByItemId.get(entry.itemId)?.slug,
+    effect: masterByItemId.get(entry.itemId)?.effect,
   }));
 
   return (

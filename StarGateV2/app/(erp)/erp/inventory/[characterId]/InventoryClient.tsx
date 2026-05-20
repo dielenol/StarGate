@@ -4,8 +4,15 @@ import { useMemo, useState } from "react";
 
 import type { ItemCategory } from "@/types/inventory";
 
+import {
+  IconConsumable,
+  IconEquipment,
+  IconInventory,
+} from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
+
+import ShopItemIcon from "../../shop/ShopItemIcon";
 
 import styles from "./page.module.css";
 
@@ -19,6 +26,8 @@ export interface InventoryClientEntry {
   acquiredAt: string;
   note?: string;
   category: ItemCategory | null;
+  slug?: string;
+  effect?: string;
 }
 
 interface InventoryClientProps {
@@ -74,6 +83,38 @@ function formatDate(iso: string): string {
 
 function categoryLabel(category: ItemCategory | null): string {
   return category === null ? UNKNOWN_CATEGORY_LABEL : CATEGORY_LABEL[category];
+}
+
+function categoryTone(category: ItemCategory | null): string {
+  if (category === "WEAPON" || category === "ARMOR") return "equipment";
+  if (category === "CONSUMABLE") return "consumable";
+  return "other";
+}
+
+function tabTone(tab: InventoryTab): string {
+  if (tab === "EQUIPMENT") return "equipment";
+  if (tab === "CONSUMABLE") return "consumable";
+  if (tab === "OTHER") return "other";
+  return "all";
+}
+
+function CategoryIcon({
+  category,
+  slug,
+}: {
+  category: ItemCategory | null;
+  slug?: string;
+}) {
+  if (category === "CONSUMABLE" && slug) {
+    return <ShopItemIcon slug={slug} size={40} />;
+  }
+  if (category === "CONSUMABLE") {
+    return <IconConsumable className={styles.slot__iconSvg} aria-hidden />;
+  }
+  if (category === "WEAPON" || category === "ARMOR") {
+    return <IconEquipment className={styles.slot__iconSvg} aria-hidden />;
+  }
+  return <IconInventory className={styles.slot__iconSvg} aria-hidden />;
 }
 
 /* ── 컴포넌트 ── */
@@ -132,6 +173,7 @@ export default function InventoryClient({ entries }: InventoryClientProps) {
               tabIndex={isActive ? 0 : -1}
               className={[
                 styles.tabs__tab,
+                styles[`tabs__tab--${tabTone(tab.value)}`],
                 isActive ? styles["tabs__tab--active"] : "",
               ]
                 .filter(Boolean)
@@ -152,47 +194,48 @@ export default function InventoryClient({ entries }: InventoryClientProps) {
             : "이 카테고리에 보유 아이템이 없습니다."}
         </div>
       ) : (
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>아이템</th>
-                <th className={styles.catCol}>분류</th>
-                <th className={styles.numCol}>수량</th>
-                <th className={styles.dateCol}>획득일</th>
-                <th>메모</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEntries.map((entry) => (
-                <tr key={entry._id}>
-                  <td>{entry.itemName}</td>
-                  <td className={styles.catCol}>
-                    <span
-                      className={
-                        entry.category === null ? styles.muted : undefined
-                      }
-                    >
-                      {categoryLabel(entry.category)}
-                    </span>
-                  </td>
-                  <td className={`${styles.numCol} ${styles.mono}`}>
-                    {entry.quantity}
-                  </td>
-                  <td className={`${styles.dateCol} ${styles.mono}`}>
-                    {formatDate(entry.acquiredAt)}
-                  </td>
-                  <td>
-                    {entry.note ? (
-                      entry.note
-                    ) : (
-                      <span className={styles.muted}>-</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div
+          className={[
+            styles.slotGrid,
+            styles[`slotGrid--${tabTone(activeTab)}`],
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          {filteredEntries.map((entry) => {
+            const tone = categoryTone(entry.category);
+            const isConsumable = entry.category === "CONSUMABLE";
+            return (
+              <article
+                key={entry._id}
+                className={[styles.slot, styles[`slot--${tone}`]]
+                  .filter(Boolean)
+                .join(" ")}
+              >
+                <div className={styles.slot__art} aria-hidden>
+                  <CategoryIcon category={entry.category} slug={entry.slug} />
+                </div>
+                <div className={styles.slot__body}>
+                  <div className={styles.slot__name}>{entry.itemName}</div>
+                  {isConsumable && entry.effect ? (
+                    <div className={styles.slot__effect}>{entry.effect}</div>
+                  ) : null}
+                  {!isConsumable ? (
+                    <div className={styles.slot__meta}>
+                      <span>{categoryLabel(entry.category)}</span>
+                      <span className={styles.mono}>
+                        {formatDate(entry.acquiredAt)}
+                      </span>
+                    </div>
+                  ) : null}
+                  {!isConsumable && entry.note ? (
+                    <div className={styles.slot__note}>{entry.note}</div>
+                  ) : null}
+                </div>
+                <div className={styles.slot__qty}>× {entry.quantity}</div>
+              </article>
+            );
+          })}
         </div>
       )}
     </Box>

@@ -48,6 +48,21 @@
   color: var(--ink-0);
 }
 
+.tabs__tab--equipment.tabs__tab--active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+.tabs__tab--consumable.tabs__tab--active {
+  color: var(--rank-u-text);
+  border-bottom-color: var(--rank-u-text);
+}
+
+.tabs__tab--other.tabs__tab--active {
+  color: var(--ink-1);
+  border-bottom-color: var(--ink-1);
+}
+
 .tabs__tab--active {
   color: var(--gold);
   border-bottom-color: var(--gold);
@@ -62,52 +77,158 @@
   color: var(--gold);
 }
 
-/* ── Table ── */
-
-.tableWrap {
-  overflow-x: auto;
+.tabs__tab--consumable.tabs__tab--active .tabs__count {
+  color: var(--rank-u-text);
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.table th {
-  padding: 10px 12px;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: normal;
-  letter-spacing: 0.15em;
-  text-align: left;
-  border-bottom: 1px solid var(--line);
-}
-
-.table td {
-  padding: 10px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: middle;
+.tabs__tab--other.tabs__tab--active .tabs__count {
   color: var(--ink-1);
 }
 
-.table tbody tr:hover td {
+/* ── Game inventory slots ── */
+
+.slotGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  padding: 10px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    var(--bg-0);
+  background-size: 32px 32px;
+  border: 1px solid var(--line);
+}
+
+.slotGrid--equipment {
+  border-color: var(--gold-dim);
+}
+
+.slotGrid--consumable {
+  border-color: rgba(184, 116, 84, 0.55);
+}
+
+.slot {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 12px;
+  min-height: 116px;
+  padding: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 70%),
+    var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.slot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-top: 2px solid transparent;
+}
+
+.slot--equipment::before {
+  border-top-color: var(--gold-dim);
+}
+
+.slot--consumable::before {
+  border-top-color: var(--rank-u-text);
+}
+
+.slot--other::before {
+  border-top-color: var(--line-strong);
+}
+
+.slot__art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
   background: var(--bg-2);
+  border: 1px solid var(--line);
 }
 
-.numCol {
-  text-align: right;
+.slot__iconSvg {
+  width: 28px;
+  height: 28px;
+  color: var(--ink-1);
+}
+
+.slot--equipment .slot__iconSvg {
+  color: var(--gold);
+}
+
+.slot--consumable .slot__iconSvg {
+  color: var(--rank-u-text);
+}
+
+.slot__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding-right: 34px;
+}
+
+.slot__name {
+  color: var(--ink-0);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slot__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  color: var(--ink-2);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.slot__effect {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.slot__note {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.slot__qty {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  min-width: 34px;
+  padding: 3px 7px;
+  background: var(--bg-0);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-align: center;
   font-variant-numeric: tabular-nums;
-}
-
-.dateCol {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.catCol {
-  white-space: nowrap;
 }
 
 .empty {
@@ -117,4 +238,11 @@
   font-size: 14px;
   letter-spacing: 0.1em;
   text-align: center;
+}
+
+@media (max-width: 620px) {
+  .slotGrid {
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
 }
