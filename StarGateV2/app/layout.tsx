@@ -13,7 +13,6 @@ const jetbrainsMono = JetBrains_Mono({
 
 const notoSansKr = Noto_Sans_KR({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
   variable: "--font-body",
   display: "swap",
 });
@@ -67,8 +66,9 @@ export default function RootLayout({
     <html
       lang="ko"
       className={`${jetbrainsMono.variable} ${notoSansKr.variable}`}
+      suppressHydrationWarning
     >
-      <body>{children}</body>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit && tsc -p scripts/tsconfig.json --noEmit",
+    "optimize:images": "node scripts/optimize-public-images.mjs",
+    "db:ensure-indexes": "pnpm --filter @stargate/shared-db build && node --experimental-strip-types scripts/ensure-indexes.ts",
     "preseed:factions": "pnpm --filter @stargate/shared-db build",
     "seed:factions": "node --experimental-strip-types scripts/seed-factions.ts",
     "preseed:institutions": "pnpm --filter @stargate/shared-db build",
@@ -52,6 +54,7 @@
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.6",
+    "sharp": "^0.34.5",
     "typescript": "^5.9.3"
   }
 }

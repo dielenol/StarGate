@@ -8,6 +8,7 @@
 export async function register() {
   // Edge Runtime에서는 mongodb 사용 불가 → Node 런타임에서만 실행
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  if (process.env.STARGATE_ENSURE_INDEXES_ON_STARTUP !== "true") return;
 
   const { ensureAllIndexes } = await import("@stargate/shared-db");
   await import("./lib/db/init");
