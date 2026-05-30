@@ -1,9 +1,9 @@
 /**
  * 편의점 — Stargate ERP
  *
- * 서버 컴포넌트: 메인 캐릭터 + 카탈로그/재고 + 보유 인벤 + 잔액을 병렬 fetch 후
+ * 서버 컴포넌트: 메인 캐릭터 + 카탈로그/재고 + 잔액을 병렬 fetch 후
  * `ShopClient` 에 initialData 로 주입. 클라이언트는 TanStack Query 캐시 시드 +
- * 백그라운드 갱신 + 구매/소비 mutation 처리.
+ * 백그라운드 갱신 + 구매 mutation 처리.
  *
  * 권한 — 현재는 ERP 로그인만 통과 (별도 RBAC 게이트 없음).
  * TODO(M2-B): 편의점 권한 모델 결정 (현재 ERP 로그인 모두 허용) + GM 재고/입고/환불 기능.
@@ -18,19 +18,12 @@ import {
   getCharacterBalance,
   listCreditTransactions,
 } from "@/lib/db/credits";
-import {
-  findMasterItemsBySlugs,
-  listCharacterInventory,
-} from "@/lib/db/inventory";
 import { getAllDailyStocks } from "@/lib/db/shop";
-import { findShopItemBySlug, isShopOpen, SHOP_CATALOG } from "@/lib/shop/catalog";
+import { isShopOpen, SHOP_CATALOG } from "@/lib/shop/catalog";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 
 import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
-import type {
-  ShopCatalogResponse,
-  ShopInventoryResponse,
-} from "@/hooks/queries/useShopQuery";
+import type { ShopCatalogResponse } from "@/hooks/queries/useShopQuery";
 
 import ShopClient from "./ShopClient";
 
@@ -63,44 +56,6 @@ async function buildCatalogResponse(): Promise<ShopCatalogResponse> {
   return { items, isOpen };
 }
 
-/* ── 서버 측 인벤토리 응답 빌더 (inventory API 와 동일 형식) ── */
-
-async function buildInventoryResponse(
-  mainCharacterId: string | null,
-): Promise<ShopInventoryResponse> {
-  if (!mainCharacterId) {
-    return { items: [], hasMainCharacter: false };
-  }
-
-  const catalogSlugs = SHOP_CATALOG.map((c) => c.slug);
-  const masterDocs = await findMasterItemsBySlugs(catalogSlugs);
-
-  const idToSlug = new Map<string, string>();
-  for (const doc of masterDocs) {
-    if (doc.slug && doc._id) idToSlug.set(String(doc._id), doc.slug);
-  }
-
-  const inventory = await listCharacterInventory(mainCharacterId);
-  const items: ShopInventoryResponse["items"] = [];
-  for (const row of inventory) {
-    const slug = idToSlug.get(row.itemId);
-    if (!slug) continue;
-    const meta = findShopItemBySlug(slug);
-    if (!meta) continue;
-    items.push({
-      itemId: row.itemId,
-      slug,
-      name: meta.name,
-      quantity: row.quantity,
-      acquiredAt: row.acquiredAt.toISOString(),
-      icon: meta.icon,
-      effect: meta.effect,
-    });
-  }
-
-  return { items, hasMainCharacter: true };
-}
-
 /* ── 페이지 ── */
 
 export default async function ShopPage() {
@@ -130,28 +85,21 @@ export default async function ShopPage() {
   }
   const mainCharacterId = mainCharacter ? String(mainCharacter._id) : null;
 
-  // 카탈로그/인벤/잔액/ledger 병렬 fetch — 각각 독립적이므로 Promise.all + .catch() 폴백.
+  // 카탈로그/잔액/ledger 병렬 fetch — 각각 독립적이므로 Promise.all + .catch() 폴백.
   // ledger 는 useCredits 의 initialData 시드용 (페이지 진입 시 1회 fetch 절약).
-  const [initialCatalog, initialInventory, initialBalance, initialLedger] =
-    await Promise.all([
-      buildCatalogResponse().catch(
-        (): ShopCatalogResponse => ({ items: [], isOpen: false }),
-      ),
-      buildInventoryResponse(mainCharacterId).catch(
-        (): ShopInventoryResponse => ({
-          items: [],
-          hasMainCharacter: mainCharacterId !== null,
-        }),
-      ),
-      mainCharacterId
-        ? getCharacterBalance(mainCharacterId).catch(() => 0)
-        : Promise.resolve(0),
-      mainCharacterId
-        ? listCreditTransactions(mainCharacterId, INITIAL_LEDGER_LIMIT).catch(
-            () => [],
-          )
-        : Promise.resolve([]),
-    ]);
+  const [initialCatalog, initialBalance, initialLedger] = await Promise.all([
+    buildCatalogResponse().catch(
+      (): ShopCatalogResponse => ({ items: [], isOpen: false }),
+    ),
+    mainCharacterId
+      ? getCharacterBalance(mainCharacterId).catch(() => 0)
+      : Promise.resolve(0),
+    mainCharacterId
+      ? listCreditTransactions(mainCharacterId, INITIAL_LEDGER_LIMIT).catch(
+          () => [],
+        )
+      : Promise.resolve([]),
+  ]);
 
   // useCredits 가 받을 CreditsResponse — 메인 캐릭이 있을 때만 시드.
   // Next.js 16: Server→Client prop 으로 ObjectId(toJSON 가진 객체) 전달 거부 → _id 를 hex string 으로 정규화.
@@ -171,7 +119,6 @@ export default async function ShopPage() {
   return (
     <ShopClient
       initialCatalog={initialCatalog}
-      initialInventory={initialInventory}
       mainCharacter={
         mainCharacter
           ? { id: String(mainCharacter._id), codename: mainCharacter.codename }

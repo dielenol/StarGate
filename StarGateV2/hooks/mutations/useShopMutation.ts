@@ -2,6 +2,8 @@
  * 편의점 구매 / 소비 mutation hooks.
  *
  * - `useBuyShopItem`: POST /api/erp/shop/buy — 재고/잔액/인벤 3-step Saga.
+ * - `useCheckoutShopCart`: POST /api/erp/shop/checkout — 장바구니 일괄 결제.
+ * - `useRequestShopReorder`: POST /api/erp/shop/reorder-request — 품절 상품 발주 요청.
  * - `useConsumeShopItem`: POST /api/erp/shop/consume — 보유 인벤 차감만.
  *
  * 에러 — 서버 응답 `{ error, code }` 를 `ShopApiError` 로 wrap (UI 분기 가능).
@@ -31,6 +33,38 @@ interface BuyResponse {
     totalPrice: number;
   };
   balance: number;
+}
+
+interface CheckoutInput {
+  items: Array<{
+    slug: string;
+    quantity: number;
+  }>;
+}
+
+interface CheckoutResponse {
+  order: {
+    items: Array<{
+      slug: string;
+      name: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+    }>;
+    totalPrice: number;
+  };
+  balance: number;
+}
+
+interface ReorderInput {
+  slug: string;
+}
+
+interface ReorderResponse {
+  ok: boolean;
+  status: "requested" | "already-requested";
+  slug: string;
+  message: string;
 }
 
 interface ConsumeInput {
@@ -77,6 +111,41 @@ export function useBuyShopItem() {
       queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
       queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
+    },
+  });
+}
+
+export function useCheckoutShopCart() {
+  const queryClient = useQueryClient();
+
+  return useMutation<CheckoutResponse, ShopApiError, CheckoutInput>({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/shop/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
+      queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
+      queryClient.invalidateQueries({ queryKey: creditKeys.all });
+    },
+  });
+}
+
+export function useRequestShopReorder() {
+  return useMutation<ReorderResponse, ShopApiError, ReorderInput>({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/shop/reorder-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwShopError(res);
+      return res.json();
     },
   });
 }

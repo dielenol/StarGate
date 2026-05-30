@@ -170,6 +170,15 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
         ) : (
           <div className={styles.tableWrap}>
             <table className={styles.table}>
+              <colgroup>
+                <col className={styles.colItem} />
+                <col className={styles.colCurrent} />
+                <col className={styles.colInput} />
+                <col className={styles.colRange} />
+                <col className={styles.colRate} />
+                <col className={styles.colRefresh} />
+                <col className={styles.colAction} />
+              </colgroup>
               <thead>
                 <tr>
                   <th>아이템</th>
@@ -191,11 +200,13 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
                       className={dirty ? styles.rowDirty : undefined}
                     >
                       <td className={styles.cellName}>
-                        <span className={styles.icon} aria-hidden>
-                          <ShopItemIcon slug={item.slug} size={20} />
-                        </span>
-                        <span>{item.name}</span>
-                        <code className={styles.slug}>{item.slug}</code>
+                        <div className={styles.itemCell}>
+                          <span className={styles.icon} aria-hidden>
+                            <ShopItemIcon slug={item.slug} size={20} />
+                          </span>
+                          <span className={styles.itemName}>{item.name}</span>
+                          <code className={styles.slug}>{item.slug}</code>
+                        </div>
                       </td>
                       <td className={styles.cellNum}>{item.currentStock}</td>
                       <td className={styles.cellInput}>

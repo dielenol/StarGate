@@ -84,7 +84,7 @@ export default function BuyModal({
 
   // 비활성 사유
   const blockedReason = !isOpen
-    ? "영업 시간이 아닙니다 (토 18시 이후·일요일 마감)."
+    ? "영업 시간이 아닙니다 (20시 이후·일요일 마감)."
     : item.stock <= 0
       ? "재고가 부족합니다."
       : affordableMax < 1

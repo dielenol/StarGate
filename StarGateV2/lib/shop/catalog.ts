@@ -7,15 +7,15 @@
  * - color 는 tia_bot 의 RGB tuple 을 #RRGGBB 로 변환.
  * - pageGroup 은 SHOP_PAGES 분류와 정합 (BASIC / RECOVERY / LUXURY / RARE).
  * - stockMin / stockMax / appearRate 는 일자별 재고 시드 룰 (M2/M3 에서 활용).
- * - isShopOpen() 은 tia_bot 의 마감 룰: 토 18시 이후 + 일요일 종일 마감.
+ * - isShopOpen() 은 KST 20시 이후 + 일요일 종일 마감 룰을 따른다.
  */
 
 import type { ShopPageGroup } from "@stargate/shared-db/types";
 
 /* ── 상수 ── */
 
-/** 주말 마감 시각 (KST 18 시). */
-const WEEKEND_CLOSE_HOUR_KST = 18;
+/** 마감 시각 (KST 20 시). */
+const CLOSE_HOUR_KST = 20;
 
 /** Asia/Seoul 타임존 ID. */
 const KST_TIMEZONE = "Asia/Seoul";
@@ -239,12 +239,10 @@ export const SHOP_PAGE_GROUPS: Record<ShopPageGroup, ShopCatalogItem[]> = {
 /* ── 영업시간 ── */
 
 /**
- * 편의점 영업 여부 판정 (tia_bot 의 주말 마감 룰).
+ * 편의점 영업 여부 판정.
  *
- * 룰 (출처: tia_bot/shop.py:1489-1496):
  * - 일요일 (Sun): 종일 마감.
- * - 토요일 (Sat): KST 18 시 이전만 open. 18 시 이후 close.
- * - 평일 (월~금): 항상 open.
+ * - 월~토: KST 20 시 이전만 open. 20 시 이후 close.
  *
  * KST 변환은 `Intl.DateTimeFormat` 의 `Asia/Seoul` 을 통해 수행.
  * (Date 객체의 getDay/getHours 는 서버 OS 타임존 의존이라 사용하지 않음.)
@@ -268,6 +266,5 @@ export function isShopOpen(now: Date = new Date()): boolean {
   const hour = Number.parseInt(hourStr, 10) % 24;
 
   if (weekday === "Sunday") return false;
-  if (weekday === "Saturday" && hour >= WEEKEND_CLOSE_HOUR_KST) return false;
-  return true;
+  return hour < CLOSE_HOUR_KST;
 }

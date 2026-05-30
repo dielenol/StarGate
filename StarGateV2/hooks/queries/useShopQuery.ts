@@ -29,7 +29,9 @@ export type ShopErrorCode =
   | "NO_MAIN_CHARACTER"
   | "MAIN_CHARACTER_INTEGRITY"
   | "INVENTORY_FAILED_REFUNDED"
-  | "REFUND_FAILED";
+  | "REFUND_FAILED"
+  | "INVALID_CART"
+  | "REORDER_NOT_AVAILABLE";
 
 export class ShopApiError extends Error {
   readonly status: number;
@@ -98,7 +100,8 @@ async function fetchShopInventory(): Promise<ShopInventoryResponse> {
 
 /* ── Hooks ── */
 
-const STALE_TIME_MS = 60 * 1000;
+const CATALOG_STALE_TIME_MS = 5 * 60 * 1000;
+const INVENTORY_STALE_TIME_MS = 2 * 60 * 1000;
 
 export function useShopCatalog(options?: {
   initialData?: ShopCatalogResponse;
@@ -106,7 +109,7 @@ export function useShopCatalog(options?: {
   return useQuery({
     queryKey: shopKeys.catalog,
     queryFn: fetchShopCatalog,
-    staleTime: STALE_TIME_MS,
+    staleTime: CATALOG_STALE_TIME_MS,
     initialData: options?.initialData,
   });
 }
@@ -117,7 +120,7 @@ export function useShopInventory(options?: {
   return useQuery({
     queryKey: shopKeys.inventory,
     queryFn: fetchShopInventory,
-    staleTime: STALE_TIME_MS,
+    staleTime: INVENTORY_STALE_TIME_MS,
     initialData: options?.initialData,
     // 메인 캐릭 정합성 위반은 사용자 인풋으로 회복 불가 → 재시도 비활성.
     retry: (failureCount, err) => {

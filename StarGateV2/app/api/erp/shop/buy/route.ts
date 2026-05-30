@@ -106,7 +106,7 @@ export async function POST(request: Request) {
   if (!isShopOpen(new Date())) {
     return NextResponse.json(
       {
-        error: "영업 시간이 아닙니다 (토 18시 이후·일요일 마감).",
+        error: "영업 시간이 아닙니다 (20시 이후·일요일 마감).",
         code: "SHOP_CLOSED",
       },
       { status: 400 },

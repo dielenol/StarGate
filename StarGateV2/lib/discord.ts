@@ -17,12 +17,15 @@ type DiscordEmbed = {
 
 type DiscordPayload = {
   username: string;
+  avatar_url?: string;
+  allowed_mentions?: { parse: string[] };
   embeds: DiscordEmbed[];
 };
 
 const DISCORD_COLORS = {
   apply: 0xc5a059,
   contact: 0x5ea3c5,
+  shopRestock: 0xc5a059,
   /** 캐릭터 편집 — admin 모드 (관리자 편집 강조 색상) */
   charEditAdmin: 0xc5a059,
   /** 캐릭터 편집 — player 모드 (일반 인포 톤) */
@@ -183,6 +186,96 @@ function formatKstTimestamp(date: Date): string {
     second: "2-digit",
     hour12: false,
   }).format(date);
+}
+
+/* ──────────────────────────────────────────────────────────────────────── */
+/* 편의점 일일 입고 알림                                                    */
+/* ──────────────────────────────────────────────────────────────────────── */
+
+export interface ShopRestockWebhookItem {
+  name: string;
+  icon: string;
+  stock: number;
+  price: number;
+  pageGroup: "BASIC" | "RECOVERY" | "LUXURY" | "RARE";
+}
+
+export interface ShopRestockWebhookPayload {
+  today: string;
+  isOpen: boolean;
+  items: ShopRestockWebhookItem[];
+}
+
+const SHOP_GROUP_ORDER: ShopRestockWebhookItem["pageGroup"][] = [
+  "BASIC",
+  "RECOVERY",
+  "LUXURY",
+  "RARE",
+];
+
+const SHOP_GROUP_LABELS: Record<ShopRestockWebhookItem["pageGroup"], string> = {
+  BASIC: "기본 물품",
+  RECOVERY: "회복 물품",
+  LUXURY: "기호품",
+  RARE: "희귀 물품",
+};
+
+function formatShopRestockFields(
+  items: ShopRestockWebhookItem[],
+): DiscordEmbedField[] {
+  return SHOP_GROUP_ORDER.flatMap((group) => {
+    const lines = items
+      .filter((item) => item.pageGroup === group)
+      .map((item) => {
+        const name = sanitizeForDiscord(item.name);
+        const price = item.price.toLocaleString("ko-KR");
+        return `${item.icon} ${name} x${item.stock} · ${price}C`;
+      });
+
+    if (lines.length === 0) return [];
+
+    return [
+      {
+        name: SHOP_GROUP_LABELS[group],
+        value: lines.join("\n").slice(0, DISCORD_FIELD_VALUE_MAX),
+      },
+    ];
+  });
+}
+
+export async function notifyShopRestock(
+  payload: ShopRestockWebhookPayload,
+): Promise<"sent" | "skipped"> {
+  const webhookUrl = process.env.DISCORD_WEBHOOK_SHOP_URL;
+  if (!webhookUrl) {
+    console.warn(
+      "[notifyShopRestock] DISCORD_WEBHOOK_SHOP_URL 미설정 — silent skip",
+    );
+    return "skipped";
+  }
+
+  const items = payload.items.filter((item) => item.stock > 0);
+  if (items.length === 0) return "skipped";
+
+  const statusLabel = payload.isOpen ? "OPEN" : "CLOSED";
+  const discordPayload: DiscordPayload = {
+    username: "띠아",
+    avatar_url: process.env.DISCORD_WEBHOOK_SHOP_AVATAR_URL || undefined,
+    allowed_mentions: { parse: [] },
+    embeds: [
+      {
+        title: "편의점 입고 알림",
+        description: `오늘 입고된 상품이에요.\n영업 상태: ${statusLabel}`,
+        color: DISCORD_COLORS.shopRestock,
+        fields: formatShopRestockFields(items),
+        footer: { text: `${payload.today} KST` },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
+
+  await sendDiscordWebhook(discordPayload, webhookUrl);
+  return "sent";
 }
 
 /**
