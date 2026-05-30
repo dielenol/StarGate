@@ -7,8 +7,8 @@
  *   - SHOP_CATALOG 의 모든 12종을 한 번에 처리 (Promise.all 병렬). tia_bot 과 동일.
  *
  * 호출 지점:
- *   - `app/(erp)/erp/shop/page.tsx` (server) — 페이지 진입 시 lazy refresh.
- *   - `app/api/erp/shop/catalog/route.ts` (client refetch 경로) — 동일.
+ *   - `app/api/cron/shop/refresh/route.ts` — 일일 스케줄 갱신.
+ *   - 구매/체크아웃 같은 쓰기 경로 — cron 누락 시 stale 재고 방어.
  *
  * Race: 동시 호출 시 두 번 refresh 가능 — 마지막 write 가 이김. tia_bot 동작과 동일.
  */
@@ -16,7 +16,7 @@
 import "@/lib/db/init";
 
 import {
-  needsRefresh,
+  getAllDailyStocks,
   refreshStock,
 } from "@stargate/shared-db";
 
@@ -54,11 +54,15 @@ export async function ensureDailyStockRefresh(
   now: Date = new Date(),
 ): Promise<{ refreshed: number; today: string }> {
   const today = getTodayKst(now);
+  const currentStocks = await getAllDailyStocks();
+  const currentStockBySlug = new Map(
+    currentStocks.map((stock) => [stock.itemId, stock]),
+  );
 
   const results = await Promise.all(
     SHOP_CATALOG.map(async (item) => {
-      const stale = await needsRefresh(item.slug, today);
-      if (!stale) return false;
+      const current = currentStockBySlug.get(item.slug);
+      if (current?.lastRefresh === today) return false;
       const stock = rollStock(item);
       await refreshStock(item.slug, stock, today);
       return true;

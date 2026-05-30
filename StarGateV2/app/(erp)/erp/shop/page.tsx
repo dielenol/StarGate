@@ -20,7 +20,6 @@ import {
 } from "@/lib/db/credits";
 import { getAllDailyStocks } from "@/lib/db/shop";
 import { isShopOpen, SHOP_CATALOG } from "@/lib/shop/catalog";
-import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 
 import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type { ShopCatalogResponse } from "@/hooks/queries/useShopQuery";
@@ -36,10 +35,6 @@ export const metadata = {
 /* ── 서버 측 카탈로그 응답 빌더 (catalog API 와 동일 형식) ── */
 
 async function buildCatalogResponse(): Promise<ShopCatalogResponse> {
-  // 일일 재고 lazy refresh — KST 자정 기준 stale 이면 SHOP_CATALOG 룰로 자동 채움.
-  await ensureDailyStockRefresh().catch((err) => {
-    console.error("[shop] ensureDailyStockRefresh 실패", err);
-  });
   const stocks = await getAllDailyStocks();
   const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
   const isOpen = isShopOpen(new Date());
