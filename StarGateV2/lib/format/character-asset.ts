@@ -74,5 +74,5 @@ export function resolveCharacterAssetSlug(codename: string): string | null {
  */
 export function getPixelCharacterPath(codename: string): string | null {
   const slug = resolveCharacterAssetSlug(codename);
-  return slug ? `${ASSET_BASE}/${slug}-pixel-character.png` : null;
+  return slug ? `${ASSET_BASE}/${slug}-pixel-character.webp` : null;
 }

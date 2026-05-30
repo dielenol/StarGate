@@ -1,79 +1,22 @@
-import type { AgentCharacter, Character } from "@/types/character";
+import type { Character } from "@/types/character";
+import type { PublicAgentSummary } from "@/types/public-player";
 
 import { listPublicCharactersByType } from "@/lib/db/characters";
-import { getPixelCharacterPath } from "@/lib/format/character-asset";
-
-import type { AgentForView } from "./PlayerClient";
+import {
+  isPublicAgentWithSheet,
+  toPublicAgentSummary,
+} from "@/lib/public-player";
 
 import PlayerClient from "./PlayerClient";
 
 export const revalidate = 300;
 
-/**
- * DB에서 공개 에이전트를 조회. 실패 시 빈 배열 반환.
- *
- * Phase 1 후 sheet → lore + play. CharacterSheetData 는 두 sub-document 의 합집합 형태로
- * 클라이언트에 전달.
- */
-async function getAgents(): Promise<AgentForView[]> {
+async function getAgents(): Promise<PublicAgentSummary[]> {
   const dbResult = await listPublicCharactersByType("AGENT").catch(
     () => [] as Character[],
   );
-  const dbAgents = dbResult.filter(
-    (c): c is AgentCharacter => c.type === "AGENT",
-  );
 
-  return dbAgents
-    // 마이그레이션 미완료 도큐먼트(legacy `sheet` 단일 구조)는 lore/play 가 없을 수 있다.
-    // 공개 사이트는 보수적으로 둘 다 존재하는 도큐먼트만 노출.
-    .filter((c) => c.lore && c.play)
-    .map((c) => ({
-      id: c._id?.toString() ?? c.codename,
-      codename: c.codename,
-      role: c.role,
-      previewImage: c.previewImage,
-      // 디스크 슬러그 매핑(getPixelCharacterPath) 우선 — DB 의 stored path 가 옛 파일명일 수 있어
-      // 자산 정리(rename) 후 깨지는 케이스 차단. 헬퍼가 매핑 못 하면 DB 값 fallback.
-      pixelCharacterImage:
-        getPixelCharacterPath(c.codename) ?? c.pixelCharacterImage ?? "",
-      warningVideo: c.warningVideo,
-      sheet: {
-        // lore 영역
-        codename: c.codename,
-        name: c.lore.name,
-        mainImage: c.lore.mainImage,
-        quote: c.lore.quote,
-        gender: c.lore.gender,
-        age: c.lore.age,
-        height: c.lore.height,
-        weight: c.lore.weight,
-        appearance: c.lore.appearance,
-        personality: c.lore.personality,
-        background: c.lore.background,
-        // play 영역
-        className: c.play.className,
-        hp: c.play.hp,
-        san: c.play.san,
-        def: c.play.def,
-        atk: c.play.atk,
-        abilityType: c.play.abilityType ?? "",
-        credit: c.play.credit,
-        weaponTraining: c.play.weaponTraining.join(", "),
-        skillTraining: c.play.skillTraining.join(", "),
-        equipment: c.play.equipment.map((eq) => ({
-          name: eq.name,
-          price: eq.price ?? "",
-          damage: eq.damage ?? "",
-          description: eq.description ?? "",
-        })),
-        abilities: c.play.abilities.map((ab) => ({
-          code: ab.code ?? ab.slot,
-          name: ab.name,
-          description: ab.description ?? "",
-          effect: ab.effect ?? "",
-        })),
-      },
-    }));
+  return dbResult.filter(isPublicAgentWithSheet).map(toPublicAgentSummary);
 }
 
 export default async function PlayerPage() {

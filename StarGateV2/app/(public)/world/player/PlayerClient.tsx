@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import type { CharacterSheetData } from "./components/CharacterSheet";
+import type {
+  PublicAgentDetail,
+  PublicAgentSummary,
+} from "@/types/public-player";
 
 import { IconDivider, IconReturn } from "@/components/icons";
 
@@ -12,15 +16,7 @@ import CharacterSheet from "./components/CharacterSheet";
 import frameStyles from "../../page.module.css";
 import styles from "./player.module.css";
 
-export type AgentForView = {
-  id: string;
-  codename: string;
-  role: string;
-  previewImage: string;
-  pixelCharacterImage: string;
-  warningVideo?: string;
-  sheet: CharacterSheetData;
-};
+type SheetCache = Record<string, CharacterSheetData>;
 
 const BIG_BOY_AGENT_ID = "agent-bigboy";
 const BIG_BOY_WARNING_CHANCE = 0.2;
@@ -30,16 +26,64 @@ const WARNING_DURATION_MS = 1700;
 const RECOVERY_DURATION_MS = 1600;
 const RECOVERY_SOUND_DURATION_MS = 1300;
 
-export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
+export default function PlayerClient({ agents }: { agents: PublicAgentSummary[] }) {
   const [selectedAgentId, setSelectedAgentId] = useState(agents[0]?.id ?? "");
+  const [sheetCache, setSheetCache] = useState<SheetCache>({});
+  const [loadingSheetId, setLoadingSheetId] = useState<string | null>(null);
+  const [sheetError, setSheetError] = useState<string | null>(null);
   const [warningPhase, setWarningPhase] = useState<"idle" | "warning" | "video" | "recovery">("idle");
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? agents[0];
+  const selectedSheet = selectedAgent ? sheetCache[selectedAgent.id] : undefined;
   const warningTimeoutRef = useRef<number | null>(null);
   const recoverySoundTimeoutRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const warningAudioRef = useRef<HTMLAudioElement | null>(null);
   const recoveryAudioRef = useRef<HTMLAudioElement | null>(null);
   const paperAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (!selectedAgent || selectedSheet) return;
+
+    const controller = new AbortController();
+    setLoadingSheetId(selectedAgent.id);
+    setSheetError(null);
+
+    async function loadSheet() {
+      try {
+        const response = await fetch(
+          `/api/public/world/player/${encodeURIComponent(selectedAgent.id)}`,
+          { signal: controller.signal },
+        );
+        if (!response.ok) {
+          throw new Error("Failed to load public agent sheet.");
+        }
+        const data = (await response.json()) as { agent: PublicAgentDetail };
+        setSheetCache((prev) => ({
+          ...prev,
+          [selectedAgent.id]: data.agent.sheet,
+        }));
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setSheetError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load public agent sheet.",
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingSheetId((current) =>
+            current === selectedAgent.id ? null : current,
+          );
+        }
+      }
+    }
+
+    void loadSheet();
+
+    return () => {
+      controller.abort();
+    };
+  }, [selectedAgent, selectedSheet]);
 
   useEffect(() => {
     if (warningPhase !== "video" || !videoRef.current) {
@@ -128,7 +172,7 @@ export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
     }, RECOVERY_DURATION_MS);
   }
 
-  function handleAgentSelect(agent: AgentForView) {
+  function handleAgentSelect(agent: PublicAgentSummary) {
     if (agent.id === selectedAgentId) {
       return;
     }
@@ -264,6 +308,8 @@ export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
                       width={440}
                       height={440}
                       loading="lazy"
+                      quality={62}
+                      sizes="(min-width: 768px) 330px, 100vw"
                     />
                     <div className={styles.card__pixelBadge} aria-hidden="true">
                       <Image
@@ -273,6 +319,8 @@ export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
                         width={96}
                         height={96}
                         loading="lazy"
+                        quality={70}
+                        sizes="96px"
                       />
                     </div>
                   </div>
@@ -286,7 +334,17 @@ export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
           </section>
 
           <section className={styles.sheets}>
-            {selectedAgent ? <CharacterSheet key={selectedAgent.id} record={selectedAgent.sheet} /> : null}
+            {selectedAgent && selectedSheet ? (
+              <CharacterSheet key={selectedAgent.id} record={selectedSheet} />
+            ) : (
+              <div className={styles.sheetStatus} role="status">
+                {sheetError
+                  ? sheetError
+                  : loadingSheetId === selectedAgent?.id
+                    ? "LOADING DOSSIER..."
+                    : "STANDBY"}
+              </div>
+            )}
           </section>
 
           <div className={frameStyles["stargate__cta-row"]}>
@@ -308,17 +366,17 @@ export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
       <audio
         ref={warningAudioRef}
         src="/sound/181328__boulderdamstudios__special-marine-warning.wav"
-        preload="auto"
+        preload="none"
       />
       <audio
         ref={recoveryAudioRef}
         src="/sound/171223__ashowal__repairs-complete.wav"
-        preload="auto"
+        preload="none"
       />
       <audio
         ref={paperAudioRef}
         src="/sound/651514__1bob__paper.wav"
-        preload="auto"
+        preload="none"
       />
 
       {warningPhase === "warning" ? (
@@ -377,7 +435,7 @@ export default function PlayerClient({ agents }: { agents: AgentForView[] }) {
               controls={false}
               onEnded={handleBigBoyVideoEnd}
               playsInline
-              preload="auto"
+              preload="metadata"
             />
           </div>
         </div>

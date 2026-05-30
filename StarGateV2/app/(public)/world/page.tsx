@@ -36,6 +36,9 @@ export default function WorldPage() {
               alt="Novus Ordo emblem"
               width={360}
               height={360}
+              priority
+              quality={72}
+              sizes="(min-width: 768px) 360px, 70vw"
               className={styles.hero__emblem}
             />
             <h1 className={styles.hero__title}>노부스 오르도</h1>
@@ -55,6 +58,9 @@ export default function WorldPage() {
                 alt="나치 오컬트 연구의 흔적을 상징하는 장면"
                 width={1024}
                 height={574}
+                loading="lazy"
+                quality={72}
+                sizes="(min-width: 1024px) 1024px, 100vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -77,6 +83,9 @@ export default function WorldPage() {
                 alt="전후 국제 질서의 불안정을 나타내는 세계 지도"
                 width={1024}
                 height={768}
+                loading="lazy"
+                quality={72}
+                sizes="(min-width: 1024px) 1024px, 100vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -103,6 +112,9 @@ export default function WorldPage() {
                 alt="비공개 국제 회의장"
                 width={1024}
                 height={576}
+                loading="lazy"
+                quality={72}
+                sizes="(min-width: 1024px) 1024px, 100vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -136,6 +148,9 @@ export default function WorldPage() {
                 alt="질서 균열의 상징 장면"
                 width={1024}
                 height={576}
+                loading="lazy"
+                quality={72}
+                sizes="(min-width: 1024px) 1024px, 100vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -164,6 +179,9 @@ export default function WorldPage() {
                 alt="오로라 바이러스 사태 이후의 황폐한 풍경"
                 width={1024}
                 height={768}
+                loading="lazy"
+                quality={72}
+                sizes="(min-width: 1024px) 1024px, 100vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -183,6 +201,9 @@ export default function WorldPage() {
                 alt="질서 붕괴와 초상적 위협 확산"
                 width={718}
                 height={1024}
+                loading="lazy"
+                quality={72}
+                sizes="(min-width: 768px) 718px, 100vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>

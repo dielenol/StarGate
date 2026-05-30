@@ -1,40 +1,10 @@
 import Image from "next/image";
+
+import type { PublicAgentSheet } from "@/types/public-player";
+
 import styles from "./CharacterSheet.module.css";
 
-export type CharacterSheetData = {
-  codename: string;
-  name: string;
-  mainImage: string;
-  quote: string;
-  gender: string;
-  age: string;
-  height: string;
-  weight: string;
-  appearance: string;
-  personality: string;
-  background: string;
-  className: string;
-  hp: number;
-  san: number;
-  def: number;
-  atk: number;
-  abilityType: string;
-  credit: number | string;
-  weaponTraining: string;
-  skillTraining: string;
-  equipment: {
-    name: string;
-    price: number | string;
-    damage: string;
-    description: string;
-  }[];
-  abilities: {
-    code: string;
-    name: string;
-    description: string;
-    effect: string;
-  }[];
-};
+export type CharacterSheetData = PublicAgentSheet;
 
 type CharacterSheetProps = {
   record: CharacterSheetData;
@@ -60,6 +30,8 @@ export default function CharacterSheet({ record }: CharacterSheetProps) {
             width={440}
             height={660}
             loading="lazy"
+            quality={72}
+            sizes="(min-width: 768px) 340px, 100vw"
           />
           <figcaption className={styles.portrait__caption}>AGENT VISUAL</figcaption>
         </figure>

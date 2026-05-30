@@ -219,6 +219,16 @@
   gap: 16px;
 }
 
+.sheetStatus {
+  padding: 42px 18px;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
 .securityOverlay,
 .videoOverlay,
 .recoveryOverlay {
