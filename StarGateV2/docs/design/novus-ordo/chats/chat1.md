@@ -523,7 +523,7 @@ _[tool: update_todos]_
 - 상단: 내 CLR 배지(H · 3) + 마스킹 안내 스트립 + TYPE 필터(ALL / AGENT / NPC)
 - **L1 조감뷰**: 3대 세력(COUNCIL/MILITARY/CIVIL 삼각배치) + 독립 기관(SECRETARIAT/FINANCE) + UNASSIGNED, SVG 라인 연결, 노드별 인원수
 - **L2 그룹 헤더** (SECRETARIAT 예시) + 복귀 버튼
-- **L3 아코디언**: 하위 기구 4개, RESEARCH 펼쳐진 상태에 멤버 카드 6종 전시 — 부서장(COMMANDER 배지) · 일반 AGENT · 상위기밀 경고 · NPC · REDACTED 전체 마스킹 · DECEASED
+- **L3 아코디언**: 하위 기구 4개, SECTOR_A 펼쳐진 상태에 멤버 카드 6종 전시 — 부서장(COMMANDER 배지) · 일반 AGENT · 상위기밀 경고 · NPC · REDACTED 전체 마스킹 · DECEASED
 - 검색 결과 점프 배너 (다른 그룹 N건 보기)
 - 하단 범례: AgentLevel 6단계(U→V) 도트 스케일 + CLASSIFIED/REDACTED 패턴
 

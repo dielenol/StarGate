@@ -35,9 +35,12 @@
 |-------|--------------|
 | `registra` | `registra-bot` |
 | `trbot` | `trpg-bot` |
+| `trweb` | `trpg-web` |
 | `novusweb` | `StarGateV2` |
 | `all` | 여러 app에 영향을 미치는 변경 |
 | 기타 | 해당 서비스/도메인 축약어 |
+
+`trpg-web`의 신규 커밋 scope는 `trweb`을 사용한다. 과거 `trpgweb` 커밋은 히스토리 호환용으로만 둔다.
 
 ## 브랜치
 
