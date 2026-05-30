@@ -8,6 +8,7 @@ import {
   INSTITUTION_OVERSIGHT,
   LEVEL_ORDER,
 } from "../_constants";
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import OrgIcon, {
   FACTION_ICON_MAP,
@@ -50,7 +51,9 @@ export default function OrgCanvas({
   const novusOrdo = FACTIONS.find((f) => f.code === INTERNAL_FACTION_CODE);
   const novusOrdoCount = groupCounts[INTERNAL_FACTION_CODE] ?? 0;
   const novusOrdoLevels = groupLevelCounts[INTERNAL_FACTION_CODE] ?? {};
-  const novusOrdoLogo = FACTION_LOGO[INTERNAL_FACTION_CODE];
+  const novusOrdoLogo = preferOptimizedPublicImagePath(
+    FACTION_LOGO[INTERNAL_FACTION_CODE],
+  );
 
   return (
     <section className={styles.canvas}>
@@ -295,7 +298,9 @@ export default function OrgCanvas({
             {factionsOrdered.map((faction) => {
               const count = groupCounts[faction.code] ?? 0;
               const iconCode = FACTION_ICON_MAP[faction.code];
-              const logo = FACTION_LOGO[faction.code];
+              const logo = preferOptimizedPublicImagePath(
+                FACTION_LOGO[faction.code],
+              );
               return (
                 <button
                   key={faction.code}

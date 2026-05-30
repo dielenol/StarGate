@@ -140,7 +140,8 @@
 
 .notice {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 14px;
   padding: 12px 14px;
   border: 1px solid var(--gold-dim);
@@ -150,6 +151,7 @@
   color: var(--ink-1);
   font-size: 14px;
   line-height: 1.55;
+  text-align: center;
 }
 .notice__lbl {
   flex-shrink: 0;

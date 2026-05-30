@@ -17,6 +17,7 @@ import {
 } from "@/lib/db/sessions";
 import { findUserById } from "@/lib/db/users";
 import { listWikiPagesLite } from "@/lib/db/wiki";
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { getPixelCharacterPath } from "@/lib/format/character-asset";
 import { formatDate, formatTime } from "@/lib/format/date";
 
@@ -78,7 +79,7 @@ function CharAvatar({
   initial: string;
 }) {
   const pixelChar = getPixelCharacterPath(codename);
-  const src = pixelChar || previewImage || null;
+  const src = pixelChar || preferOptimizedPublicImagePath(previewImage) || null;
   if (src) {
     return (
       <div className={styles.charMini__avatar}>

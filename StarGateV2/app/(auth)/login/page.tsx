@@ -58,6 +58,8 @@ function LoginForm() {
         width={80}
         height={80}
         priority
+        quality={70}
+        sizes="80px"
       />
       <h1 className={styles.login__title}>NOVUS ORDO</h1>
       <p className={styles.login__subtitle}>CLASSIFIED ACCESS PORTAL</p>

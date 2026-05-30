@@ -33,7 +33,7 @@ export default async function ChroniclePage() {
             월드 타임라인과 내 캐릭터 오버레이는 현재 준비 중입니다.
           </p>
           <p className={styles.placeholder__hint}>
-            세션 리포트를 시간 축에 투영하는 집계 파이프라인이 먼저 필요합니다.
+            작전 보고서를 시간 축에 투영하는 집계 파이프라인이 먼저 필요합니다.
           </p>
         </div>
       </Box>

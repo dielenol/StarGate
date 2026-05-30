@@ -10,7 +10,7 @@ export const FACTION_LOGO: Record<FactionCode, string> = {
   MILITARY: "/assets/faction/military_logo.webp",
   CIVIL: "/assets/faction/civil_society_logo.webp",
   // NOVUS_ORDO 는 본부 자체 — 메인 로고를 직접 사용.
-  NOVUS_ORDO: "/assets/StarGate_logo.png",
+  NOVUS_ORDO: "/assets/StarGate_logo.webp",
 } as const;
 
 export const FACTION_DOCTRINE: Record<FactionCode, string> = {

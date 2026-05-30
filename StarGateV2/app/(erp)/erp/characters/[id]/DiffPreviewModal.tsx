@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+
 import {
   CHARACTER_IMAGE_FIELDS,
   labelForCharacterField,
@@ -432,7 +434,7 @@ function ImageCell({
       />
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt={`${tagText} 이미지`} />
+        <img src={preferOptimizedPublicImagePath(url)} alt={`${tagText} 이미지`} />
       ) : (
         <span>(비어 있음)</span>
       )}

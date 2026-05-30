@@ -12,6 +12,7 @@ import type {
 import { useAgentCharactersQuery } from "@/hooks/queries/useCharactersQuery";
 
 import { getDepartmentLabel } from "@/lib/org-structure";
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -238,11 +239,12 @@ function CharacterCardThumb({
   const showImage = src && !errored;
 
   if (showImage) {
+    const optimizedSrc = preferOptimizedPublicImagePath(src);
     return (
       <div className={styles.card__thumbWrap}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={src}
+          src={optimizedSrc}
           alt={alt}
           className={styles.card__thumb}
           onError={() => setErrored(true)}

@@ -8,6 +8,8 @@ import type {
 
 export type AgentTierFilter = CharacterTier | "ALL";
 
+const CHARACTER_STALE_TIME_MS = 5 * 60 * 1000;
+
 /**
  * 캐시 키 매트릭스 (Phase 4)
  *
@@ -80,7 +82,7 @@ export function useAgentCharactersQuery(
   return useQuery({
     queryKey: characterKeys.agent.byTier(tier),
     queryFn: () => fetchAgentCharacters(tier),
-    staleTime: 2 * 60 * 1000,
+    staleTime: CHARACTER_STALE_TIME_MS,
     initialData: options?.initialData,
   });
 }
@@ -93,7 +95,7 @@ export function useAgentCharacterQuery(
   return useQuery({
     queryKey: characterKeys.agent.byId(id),
     queryFn: () => fetchAgentCharacterById(id),
-    staleTime: 2 * 60 * 1000,
+    staleTime: CHARACTER_STALE_TIME_MS,
     initialData: options?.initialData,
     enabled: options?.enabled ?? true,
   });
@@ -104,7 +106,7 @@ export function usePersonnelQuery(options?: { initialData?: Character[] }) {
   return useQuery({
     queryKey: personnelKeys.all,
     queryFn: fetchPersonnelCharacters,
-    staleTime: 2 * 60 * 1000,
+    staleTime: CHARACTER_STALE_TIME_MS,
     initialData: options?.initialData,
   });
 }
@@ -117,7 +119,7 @@ export function usePersonnelByIdQuery(
   return useQuery({
     queryKey: personnelKeys.byId(id),
     queryFn: () => fetchPersonnelCharacterById(id),
-    staleTime: 2 * 60 * 1000,
+    staleTime: CHARACTER_STALE_TIME_MS,
     initialData: options?.initialData,
     enabled: options?.enabled ?? true,
   });

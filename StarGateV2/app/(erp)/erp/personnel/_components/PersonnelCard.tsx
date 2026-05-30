@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { AgentLevel, Character, CharacterType } from "@/types/character";
 
 import { getLevelDisplayRank } from "@/lib/personnel";
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import Pips from "@/components/ui/Pips/Pips";
 import Tag from "@/components/ui/Tag/Tag";
@@ -152,11 +153,12 @@ function PersonnelAvatarImage({
 }) {
   const [errored, setErrored] = useState(false);
   if (src && !errored) {
+    const optimizedSrc = preferOptimizedPublicImagePath(src);
     return (
       /* eslint-disable-next-line @next/next/no-img-element */
       <img
         className={styles.avatar__img}
-        src={src}
+        src={optimizedSrc}
         alt=""
         onError={() => setErrored(true)}
       />

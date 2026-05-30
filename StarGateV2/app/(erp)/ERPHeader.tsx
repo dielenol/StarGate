@@ -99,6 +99,8 @@ export default function ERPHeader({ user }: ERPHeaderProps) {
           width={44}
           height={44}
           priority
+          quality={70}
+          sizes="44px"
         />
         <span className={styles.header__brandName}>NOVUS ORDO</span>
       </Link>

@@ -2,6 +2,7 @@ import type { AgentLevel } from "@/types/character";
 
 import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import { LEVEL_ORDER } from "../_constants";
 
@@ -68,6 +69,12 @@ export default function GroupHero({
   onBack,
 }: Props) {
   const eyebrowText = KIND_EYEBROW_PREFIX[kind];
+  const optimizedLogoUrl = logoUrl
+    ? preferOptimizedPublicImagePath(logoUrl)
+    : undefined;
+  const optimizedTitleLogoUrl = titleLogoUrl
+    ? preferOptimizedPublicImagePath(titleLogoUrl)
+    : undefined;
 
   const subUnitCount = subUnits?.length ?? 0;
   const hasSubUnits = subUnitCount > 0;
@@ -79,10 +86,10 @@ export default function GroupHero({
       <span className={`${styles.corner} ${styles["corner--bl"]}`} />
       <span className={`${styles.corner} ${styles["corner--br"]}`} />
 
-      {logoUrl ? (
+      {optimizedLogoUrl ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
-          src={logoUrl}
+          src={optimizedLogoUrl}
           alt=""
           className={styles.watermark}
           aria-hidden
@@ -93,11 +100,11 @@ export default function GroupHero({
         <div className={styles.headMain}>
           <Eyebrow>{eyebrowText}</Eyebrow>
           <h2 className={styles.title}>
-            {titleLogoUrl ? (
+            {optimizedTitleLogoUrl ? (
               // 본부 drilldown 에서는 조직도 라인 아이콘 대신 NOVUS ORDO 메인 로고를 노출한다.
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={titleLogoUrl}
+                src={optimizedTitleLogoUrl}
                 alt=""
                 className={styles.titleLogo}
                 aria-hidden

@@ -37,6 +37,7 @@ import {
   getGroupLabel,
   getTopLevelGroup,
 } from "@/lib/org-structure";
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
@@ -158,10 +159,11 @@ function DossierPortraitImage({
 }) {
   const [errored, setErrored] = useState(false);
   if (src && !errored) {
+    const optimizedSrc = preferOptimizedPublicImagePath(src);
     return (
       /* eslint-disable-next-line @next/next/no-img-element */
       <img
-        src={src}
+        src={optimizedSrc}
         alt={alt}
         className={styles.portraitImg}
         onError={() => setErrored(true)}
@@ -1527,4 +1529,3 @@ export default function DossierClient({ character, clearance }: Props) {
     </>
   );
 }
-  

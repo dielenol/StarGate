@@ -59,7 +59,7 @@ export function useCredits(options?: { initialData?: CreditsResponse }) {
   return useQuery({
     queryKey: creditKeys.all,
     queryFn: fetchCredits,
-    staleTime: 60 * 1000,
+    staleTime: 2 * 60 * 1000,
     initialData: options?.initialData,
     // 메인 캐릭 미등록 / 정합성 위반은 사용자 인풋으로는 자동 회복 불가 → 재시도 비활성.
     retry: (failureCount, err) => {

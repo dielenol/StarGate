@@ -19,6 +19,7 @@ import Seal from "@/components/ui/Seal/Seal";
 import { IconClose, IconZoom } from "@/components/icons";
 
 import { getFactionLogo, FACTION_LOGO } from "@/app/(erp)/erp/personnel/_constants";
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import styles from "./PosterHero.module.css";
 
@@ -153,8 +154,14 @@ export default function PosterHero({
   playSheet,
 }: Props) {
   // HERO 이미지 뷰 토글 — main(기본) ↔ poster(옵션). 두 자산 모두 있을 때만 토글 노출.
-  const hasMain = Boolean(mainImage);
-  const hasPoster = Boolean(posterImage);
+  const optimizedMainImage = mainImage
+    ? preferOptimizedPublicImagePath(mainImage)
+    : "";
+  const optimizedPosterImage = posterImage
+    ? preferOptimizedPublicImagePath(posterImage)
+    : undefined;
+  const hasMain = Boolean(optimizedMainImage);
+  const hasPoster = Boolean(optimizedPosterImage);
   const canToggleView = hasMain && hasPoster;
   // 정책: 캐릭터 탭/프로필 탭 모두 기본 MAIN.
   const [view, setView] = useState<"poster" | "main">(
@@ -163,8 +170,8 @@ export default function PosterHero({
   const [zoomOpen, setZoomOpen] = useState(false);
   const heroSrc =
     view === "main"
-      ? mainImage || posterImage || null
-      : posterImage || mainImage || null;
+      ? optimizedMainImage || optimizedPosterImage || null
+      : optimizedPosterImage || optimizedMainImage || null;
 
   // lightbox 열림 동안 ESC 닫기 + body 스크롤 락.
   useEffect(() => {

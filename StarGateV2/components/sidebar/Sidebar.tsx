@@ -124,7 +124,10 @@ export default function Sidebar() {
               alt="NOVUS ORDO 로고"
               className={styles["sidebar__brand-image"]}
               height={36}
+              quality={70}
+              sizes="36px"
               src={brandLogoSrc}
+              style={{ height: "auto" }}
               width={36}
             />
           </span>

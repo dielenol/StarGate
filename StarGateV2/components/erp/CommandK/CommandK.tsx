@@ -165,6 +165,7 @@ export default function CommandK() {
   function handleSelect(entry: FlatEntry) {
     const href = entry.item.href;
     if (!href) return;
+    router.prefetch(href);
     startNavTransition(() => {
       router.push(href);
     });
@@ -261,6 +262,7 @@ export default function CommandK() {
                       }
                       onMouseEnter={() => {
                         if (flatIdx >= 0) setActiveIndex(flatIdx);
+                        if (!disabled && item.href) router.prefetch(item.href);
                       }}
                       disabled={disabled}
                       aria-disabled={disabled}

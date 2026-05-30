@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import type { NavItem } from "@/components/erp/nav-config";
@@ -26,6 +26,7 @@ const ALL_NAV_HREFS: string[] = NAV_GROUPS.flatMap((group) =>
 
 export default function ERPSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -33,6 +34,13 @@ export default function ERPSidebar() {
   const close = useCallback(() => {
     setIsOpen(false);
   }, []);
+
+  const prefetchHref = useCallback(
+    (href: string) => {
+      router.prefetch(href);
+    },
+    [router],
+  );
 
   useEffect(() => {
     function handleOpen() {
@@ -137,6 +145,9 @@ export default function ERPSidebar() {
                       .filter(Boolean)
                       .join(" ")}
                     onClick={close}
+                    onFocus={() => prefetchHref(item.href as string)}
+                    onMouseEnter={() => prefetchHref(item.href as string)}
+                    prefetch
                   >
                     <LinkPendingProbe />
                     <span className={styles.sidebar__itemLeft}>
@@ -161,7 +172,13 @@ export default function ERPSidebar() {
         })}
 
         <div className={styles.sidebar__footer}>
-          <Link href="/" className={styles.sidebar__return}>
+          <Link
+            href="/"
+            className={styles.sidebar__return}
+            onFocus={() => prefetchHref("/")}
+            onMouseEnter={() => prefetchHref("/")}
+            prefetch
+          >
             <LinkPendingProbe />
             <IconChevronLeft aria-hidden />
             홍보 사이트로 돌아가기
