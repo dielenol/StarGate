@@ -1,28 +1,19 @@
 "use client";
 
 /**
- * 종목 카드 미니 차트 (sparkline).
+ * Lightweight row sparkline.
  *
- * - 단일 sparkline 은 dot 없는 AreaChart + gradient fill 로 토스 톤 차용.
- * - 데이터가 < 2 포인트면 가운데 점선 baseline 을 표시 (placeholder 에 가깝게).
- * - 색은 등락 방향(direction) 으로 분기 — up:gold / down:danger / flat:ink-3.
- *
- * Note — list view 의 행 sparkline 으로 정적 import 사용. recharts vendor chunk 는
- * list view 진입 시점에 로드되며 이후 종목 상세의 dynamic chart 와 vendor chunk 공유.
+ * The stock list renders this once per row, so keep it free of Recharts and
+ * draw a tiny SVG path directly. The larger detail chart still owns Recharts.
  */
 
-import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
-
-import { useGradientId } from "@/lib/charts/useGradientId";
+import { useId, useMemo } from "react";
 
 import styles from "./page.module.css";
 
 interface Props {
-  /** 시계열 (오름차순). 빈 배열이면 빈 컨테이너 placeholder. */
   points: Array<{ ts: string; price: number }>;
-  /** 등락 방향 — gradient/stroke 색 분기. */
   direction: "up" | "down" | "flat";
-  /** 높이 px. 카드 미니 차트는 36~44 권장. */
   height?: number;
 }
 
@@ -32,58 +23,90 @@ const STROKE: Record<Props["direction"], string> = {
   flat: "var(--ink-3)",
 };
 
+const VIEWBOX_WIDTH = 100;
+const VIEWBOX_HEIGHT = 40;
+const PAD_Y = 3;
+
+function buildSparklinePaths(points: Props["points"]) {
+  const prices = points.map((point) => point.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min;
+  const drawableHeight = VIEWBOX_HEIGHT - PAD_Y * 2;
+  const baselineY = VIEWBOX_HEIGHT - PAD_Y;
+
+  const coords = points.map((point, index) => {
+    const x =
+      points.length === 1
+        ? VIEWBOX_WIDTH / 2
+        : (index / (points.length - 1)) * VIEWBOX_WIDTH;
+    const y =
+      range === 0
+        ? VIEWBOX_HEIGHT / 2
+        : PAD_Y + (1 - (point.price - min) / range) * drawableHeight;
+    return { x, y };
+  });
+
+  const linePath = coords
+    .map((coord, index) =>
+      `${index === 0 ? "M" : "L"} ${coord.x.toFixed(2)} ${coord.y.toFixed(2)}`,
+    )
+    .join(" ");
+  const areaPath = `${linePath} L ${VIEWBOX_WIDTH} ${baselineY} L 0 ${baselineY} Z`;
+
+  return { linePath, areaPath };
+}
+
 export default function StockSparkline({
   points,
   direction,
   height = 40,
 }: Props) {
-  const safeId = useGradientId("sl");
+  const rawGradientId = useId();
+  const gradientId = `sparkline-${rawGradientId.replace(/:/g, "")}`;
   const stroke = STROKE[direction];
+  const { linePath, areaPath } = useMemo(
+    () => buildSparklinePaths(points),
+    [points],
+  );
 
   if (points.length < 2) {
-    // 데이터 부족: 가운데 점선 baseline. ARIA "데이터 없음".
     return (
       <div
+        aria-hidden
         className={styles.stockCard__sparklineEmpty}
         style={{ height }}
-        aria-label="시세 시계열 없음"
       >
         <span className={styles.stockCard__sparklineEmptyLine} />
       </div>
     );
   }
 
-  // Y축 domain 을 dataMin/dataMax 로 좁혀 area 가 컨테이너 전체를 채우게 함 (토스 톤).
-  // default 의 0~max 는 가격이 양수일 때 컨테이너 위쪽 일부만 그려져 변동이 평탄해 보임.
-  // 약간의 padding (각 2%) 으로 끝점이 가장자리에 닿지 않게.
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={points} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
-        <defs>
-          <linearGradient id={safeId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={stroke} stopOpacity={0.4} />
-            <stop offset="100%" stopColor={stroke} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <YAxis
-          hide
-          domain={[
-            (min: number) => min * 0.98,
-            (max: number) => max * 1.02,
-          ]}
-        />
-        <Area
-          type="monotone"
-          dataKey="price"
-          stroke={stroke}
-          strokeWidth={1.5}
-          fill={`url(#${safeId})`}
-          fillOpacity={1}
-          baseValue="dataMin"
-          isAnimationActive={false}
-          dot={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+    <svg
+      aria-hidden
+      focusable="false"
+      height={height}
+      preserveAspectRatio="none"
+      viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
+      width="100%"
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity={0.36} />
+          <stop offset="100%" stopColor={stroke} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#${gradientId})`} />
+      <path
+        d={linePath}
+        fill="none"
+        stroke={stroke}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
   );
 }

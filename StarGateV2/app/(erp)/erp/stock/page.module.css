@@ -606,8 +606,7 @@
   width: 100%;
   height: 40px;
   min-width: 0;
-  /* recharts 기본 호버(activeDot/focus outline) 무력화 — sparkline 은 시각 인디케이터 only.
-     마우스 이벤트는 아래 .stockRow(Link) 로 그대로 통과해 row 클릭은 정상. */
+  /* Sparkline is visual-only; row link owns hover/click. */
   pointer-events: none;
 }
 
