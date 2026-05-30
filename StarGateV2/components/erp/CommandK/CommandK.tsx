@@ -26,7 +26,11 @@ interface FlatEntry {
   item: NavItem;
 }
 
-export default function CommandK() {
+interface CommandKProps {
+  defaultOpen?: boolean;
+}
+
+export default function CommandK({ defaultOpen = false }: CommandKProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const { begin, end } = useNavPending();
@@ -34,7 +38,7 @@ export default function CommandK() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const rowRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isNavPending, startNavTransition] = useTransition();

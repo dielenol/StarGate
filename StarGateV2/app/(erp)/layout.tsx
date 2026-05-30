@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth/config";
 import SessionWrapper from "@/components/erp/SessionWrapper";
 import QueryProvider from "@/components/erp/QueryProvider";
 import ERPSidebar from "@/components/erp/ERPSidebar/ERPSidebar";
-import CommandK from "@/components/erp/CommandK/CommandK";
+import CommandKDeferred from "@/components/erp/CommandK/CommandKDeferred";
 import NavPendingProvider from "@/components/erp/NavPending/NavPendingProvider";
 import { PageHeadProvider } from "@/components/ui/PageHead/PageHeadContext";
 
@@ -41,7 +41,7 @@ export default async function ERPLayout({
                 <ERPSidebar />
                 <main className={styles.erp__main}>{children}</main>
               </div>
-              <CommandK />
+              <CommandKDeferred />
             </div>
           </NavPendingProvider>
         </PageHeadProvider>
