@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
@@ -17,8 +18,14 @@ import Tag from "@/components/ui/Tag/Tag";
 import WikiDeleteButton from "./WikiDeleteButton";
 import WikiDetailContent from "./WikiDetailContent";
 import {
+  wikiArticleContent,
   wikiCategoryTone,
+  wikiFirstImage,
+  wikiInfoRows,
   wikiKeywordTags,
+  wikiLead,
+  wikiRelatedLinks,
+  wikiSourceLines,
 } from "../wiki-display";
 
 import styles from "./page.module.css";
@@ -80,13 +87,19 @@ export default async function WikiDetailPage({
   const isGM = hasRole(session.user.role, "V");
   const isAdmin = hasRole(session.user.role, "GM");
   const pageId = page._id!.toString();
-  const contentHtml = renderMarkdown(page.content);
-  const toc = extractToc(page.content);
-  const keywordTags = wikiKeywordTags(page, 4);
 
   // 카테고리 네비를 위해 전체 페이지 목록 로드 (실패 시 빈 목록)
   const allPages = await listWikiPages().catch(() => []);
   const categories = [...new Set(allPages.map((p) => p.category))].sort();
+  const articleContent = wikiArticleContent(page.content, page.title);
+  const contentHtml = renderMarkdown(articleContent);
+  const toc = extractToc(articleContent);
+  const keywordTags = wikiKeywordTags(page, 4);
+  const lead = wikiLead(page.content);
+  const infoboxImage = wikiFirstImage(page.content);
+  const infoRows = wikiInfoRows(page);
+  const relatedLinks = wikiRelatedLinks(page, allPages);
+  const sourceLines = wikiSourceLines(page.content);
 
   return (
     <>
@@ -150,7 +163,7 @@ export default async function WikiDetailPage({
 
         {/* ── Center: article body ── */}
         <div className={styles.body}>
-          <Box>
+          <Box className={styles.article}>
             <div className={styles.header}>
               <div className={styles.header__meta}>
                 <Tag tone={wikiCategoryTone(page.category)}>
@@ -161,8 +174,9 @@ export default async function WikiDetailPage({
                 ))}
               </div>
               <h2 className={styles.header__title}>{page.title}</h2>
+              {lead ? <p className={styles.header__lead}>{lead}</p> : null}
               <div className={styles.header__info}>
-                최종 수정 {formatDate(page.updatedAt, "long")} · @{page.authorName}
+                {page.authorName} · 최종 수정 {formatDate(page.updatedAt, "long")}
               </div>
             </div>
 
@@ -193,8 +207,42 @@ export default async function WikiDetailPage({
           </Box>
         </div>
 
-        {/* ── Right: TOC + placeholders ── */}
+        {/* ── Right: infobox + TOC + related docs ── */}
         <Box className={`${styles.aside} ${styles.layout__aside}`}>
+          <div className={styles.infobox}>
+            <div className={styles.infobox__head}>
+              <Eyebrow tone="gold">INFOBOX</Eyebrow>
+              <Tag tone={page.isPublic ? "success" : "danger"}>
+                {page.isPublic ? "PUBLIC" : "PRIVATE"}
+              </Tag>
+            </div>
+
+            {infoboxImage ? (
+              <figure className={styles.infobox__figure}>
+                <div className={styles.infobox__imageFrame}>
+                  <Image
+                    src={infoboxImage.src}
+                    alt={infoboxImage.alt}
+                    fill
+                    sizes="(max-width: 900px) 100vw, 300px"
+                  />
+                </div>
+                {infoboxImage.caption ? (
+                  <figcaption>{infoboxImage.caption}</figcaption>
+                ) : null}
+              </figure>
+            ) : null}
+
+            <dl className={styles.infobox__list}>
+              {infoRows.map((row) => (
+                <div key={row.label} className={styles.infobox__row}>
+                  <dt>{row.label}</dt>
+                  <dd>{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
           <div className={styles.aside__section}>
             <Eyebrow>CONTENTS</Eyebrow>
             {toc.length === 0 ? (
@@ -221,15 +269,51 @@ export default async function WikiDetailPage({
             )}
           </div>
 
-          {/* BACKLINKS / HISTORY 는 현재 데이터 모델에서 조회 지원 없음 — 차후 기능 */}
-          <div className={styles.aside__section}>
-            <Eyebrow>BACKLINKS</Eyebrow>
-            <span className={styles.aside__empty}>—</span>
-          </div>
+          {relatedLinks.length > 0 ? (
+            <div className={styles.aside__section}>
+              <Eyebrow>RELATED</Eyebrow>
+              <nav className={styles.related} aria-label="관련 위키 문서">
+                {relatedLinks.map((link) => (
+                  <Link
+                    key={link.id}
+                    href={`/erp/wiki/${link.id}`}
+                    className={styles.related__link}
+                  >
+                    <span className={styles.related__meta}>
+                      {link.category} · {link.relation}
+                    </span>
+                    <span className={styles.related__title}>
+                      {link.title}
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          ) : null}
+
+          {sourceLines.length > 0 ? (
+            <div className={styles.aside__section}>
+              <Eyebrow>SOURCES</Eyebrow>
+              <ul className={styles.sourceList}>
+                {sourceLines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           <div className={styles.aside__section}>
-            <Eyebrow>HISTORY</Eyebrow>
-            <span className={styles.aside__empty}>—</span>
+            <Eyebrow>RECORD</Eyebrow>
+            <dl className={styles.recordList}>
+              <div>
+                <dt>작성</dt>
+                <dd>{formatDate(page.createdAt, "long")}</dd>
+              </div>
+              <div>
+                <dt>수정</dt>
+                <dd>{formatDate(page.updatedAt, "long")}</dd>
+              </div>
+            </dl>
           </div>
         </Box>
       </div>
