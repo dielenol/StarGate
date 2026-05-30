@@ -16,6 +16,22 @@ import { charactersCol } from "../collections.js";
 
 /* ── 조회 ── */
 
+export type AgentCharacterCard = Pick<
+  Character,
+  | "_id"
+  | "codename"
+  | "type"
+  | "tier"
+  | "role"
+  | "department"
+  | "previewImage"
+  | "ownerId"
+  | "isPublic"
+> & {
+  lore: Pick<Character["lore"], "name">;
+  play: Pick<AgentCharacter["play"], "hp" | "san">;
+};
+
 export async function listCharacters(): Promise<Character[]> {
   const col = await charactersCol();
   return col.find().sort({ type: 1, codename: 1 }).toArray();
@@ -46,6 +62,36 @@ export async function listAgentCharacters(
     filter.tier = "MINI";
   }
   return col.find(filter).sort({ codename: 1 }).toArray();
+}
+
+export async function listAgentCharacterCards(
+  tier?: CharacterTier | null
+): Promise<AgentCharacterCard[]> {
+  const col = await charactersCol();
+  const filter: Filter<Character> = { type: "AGENT" };
+  if (tier === "MAIN") {
+    filter.$or = [{ tier: "MAIN" }, { tier: { $exists: false } }];
+  } else if (tier === "MINI") {
+    filter.tier = "MINI";
+  }
+  return col
+    .find(filter)
+    .project<AgentCharacterCard>({
+      _id: 1,
+      codename: 1,
+      type: 1,
+      tier: 1,
+      role: 1,
+      department: 1,
+      previewImage: 1,
+      ownerId: 1,
+      isPublic: 1,
+      "lore.name": 1,
+      "play.hp": 1,
+      "play.san": 1,
+    })
+    .sort({ codename: 1 })
+    .toArray();
 }
 
 export async function listPublicCharacters(): Promise<Character[]> {

@@ -10,7 +10,7 @@ import type { CharacterTier, CreateCharacterInput } from "@/types/character";
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import {
-  listAgentCharacters,
+  listAgentCharacterCards,
   createCharacter,
 } from "@/lib/db/characters";
 
@@ -31,10 +31,10 @@ export async function GET(request: Request) {
       // tier 명시 → AGENT 자동 강제 (NPC 제외)
       const tier =
         tierParam === "ALL" ? null : (tierParam as CharacterTier);
-      characters = await listAgentCharacters(tier);
+      characters = await listAgentCharacterCards(tier);
     } else {
       // 무필터도 AGENT 카탈로그로 제한한다. personnel 은 /api/erp/personnel 사용.
-      characters = await listAgentCharacters(null);
+      characters = await listAgentCharacterCards(null);
     }
 
     // GM 외에는 isPublic=false 캐릭터(테스트 더미 등) 숨김.

@@ -5,8 +5,12 @@ import type {
   Character,
   CharacterTier,
 } from "@/types/character";
+import type { AgentCharacterCard } from "@/lib/db/characters";
 
 export type AgentTierFilter = CharacterTier | "ALL";
+export type AgentCharacterCardDto = Omit<AgentCharacterCard, "_id"> & {
+  _id: string;
+};
 
 const CHARACTER_STALE_TIME_MS = 5 * 60 * 1000;
 
@@ -44,7 +48,7 @@ export const personnelKeys = {
 
 async function fetchAgentCharacters(
   tier: AgentTierFilter,
-): Promise<Character[]> {
+): Promise<AgentCharacterCardDto[]> {
   const res = await fetch(`/api/erp/characters?tier=${tier}`);
   if (!res.ok) throw new Error("캐릭터 목록을 불러올 수 없습니다.");
   const data = await res.json();
@@ -77,7 +81,7 @@ async function fetchPersonnelCharacterById(id: string): Promise<Character> {
 /** AGENT 캐릭터 카탈로그 — `/erp/characters` 카탈로그에서 사용. */
 export function useAgentCharactersQuery(
   tier: AgentTierFilter,
-  options?: { initialData?: Character[] },
+  options?: { initialData?: AgentCharacterCardDto[] },
 ) {
   return useQuery({
     queryKey: characterKeys.agent.byTier(tier),

@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type {
-  AgentCharacter,
-  Character,
   CharacterTier,
 } from "@/types/character";
+import type { AgentCharacterCardDto } from "@/hooks/queries/useCharactersQuery";
 
 import { useAgentCharactersQuery } from "@/hooks/queries/useCharactersQuery";
 
@@ -37,22 +36,18 @@ const FILTER_LABEL: Record<"ALL" | CharacterTier, string> = {
 const HP_MAX = 300;
 const SAN_MAX = 100;
 
-function getInitial(c: Character): string {
+function getInitial(c: AgentCharacterCardDto): string {
   const source = c.lore.name || c.codename;
   return source.charAt(0).toUpperCase() || "?";
 }
 
-function isAgent(c: Character): c is AgentCharacter {
-  return c.type === "AGENT";
-}
-
 /** tier 미설정 데이터는 MAIN 으로 fallback (legacy 호환). */
-function tierOf(c: Character): CharacterTier {
+function tierOf(c: AgentCharacterCardDto): CharacterTier {
   return c.tier ?? "MAIN";
 }
 
 interface Props {
-  initialCharacters: Character[];
+  initialCharacters: AgentCharacterCardDto[];
   tierFilter: CharacterTier | null;
   isGMOrAbove: boolean;
   viewerUserId: string;
@@ -70,8 +65,7 @@ export default function CharactersClient({
     initialData: initialCharacters,
   });
 
-  // server 가 type=AGENT 로 강제하지만 type narrow 를 위해 client 가드도 유지.
-  const agents = characters.filter(isAgent);
+  const agents = characters;
   const displayedAgents = tierFilter
     ? agents.filter((c) => tierOf(c) === tierFilter)
     : agents;

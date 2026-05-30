@@ -10,6 +10,7 @@ export {
   listCharacters,
   listCharactersByType,
   listAgentCharacters,
+  listAgentCharacterCards,
   listPublicCharacters,
   listPublicCharactersByType,
   findCharacterById,
@@ -21,3 +22,5 @@ export {
   updateCharacter,
   deleteCharacter,
 } from "@stargate/shared-db";
+
+export type { AgentCharacterCard } from "@stargate/shared-db";
