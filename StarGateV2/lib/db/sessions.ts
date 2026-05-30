@@ -34,6 +34,7 @@ export {
   findUpcomingSessionsByGuild,
   countActiveSessionsByGuild,
   countParticipationByUserId,
+  countParticipationForUser,
   findResponsesBySessionIds,
   countByStatusBulk,
   findUsersByDiscordIds,

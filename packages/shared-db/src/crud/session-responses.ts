@@ -72,6 +72,19 @@ export async function countParticipationByUserId(): Promise<
   return counts;
 }
 
+/**
+ * 특정 Discord userId 의 YES 응답 수만 집계한다.
+ *
+ * 대시보드처럼 현재 사용자 한 명의 누적 참여 수만 필요한 경로에서 전역 응답을
+ * 모두 읽지 않도록 `responses_userId_status` 인덱스를 직접 태운다.
+ */
+export async function countParticipationForUser(
+  userId: string
+): Promise<number> {
+  const col = await sessionResponsesCol();
+  return col.countDocuments({ userId, status: "YES" });
+}
+
 /** 세션별 상태별 응답 수를 집계합니다. */
 export async function countByStatus(sessionId: string): Promise<{
   yes: number;

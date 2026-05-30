@@ -11,7 +11,7 @@ import {
 import { getCharacterBalance } from "@/lib/db/credits";
 import { countUnread, listUserNotifications } from "@/lib/db/notifications";
 import {
-  countParticipationByUserId,
+  countParticipationForUser,
   enrichSessions,
   findUpcomingSessionsByGuild,
 } from "@/lib/db/sessions";
@@ -160,7 +160,7 @@ export default async function ERPDashboardPage() {
   const guildId = process.env.GUILD_ID ?? "";
 
   // 다가올 세션은 enrich 후 필터링용으로 더 넉넉히 fetch (기본 limit 20).
-  // countParticipationByUserId 는 모든 유저 카운트를 한 번에 반환 — viewer 항목만 lookup.
+  // 누적 참여 수는 현재 사용자만 집계해 전역 session_responses 스캔을 피한다.
   // balance: character 단위 ledger 전환됨 — 메인 캐릭 미등록 user 는 0 표시.
   // mainCharacter 은 정합성 위반 시 throw → null 폴백 + 별도 시그널 노출.
   const mainCharacterPromise = findMainCharacterByOwner(userId).then(
@@ -179,7 +179,7 @@ export default async function ERPDashboardPage() {
     notifications,
     unreadCount,
     upcomingRaw,
-    participationCounts,
+    mySessionCount,
     wikiPages,
   ] = await Promise.all([
     findUserById(userId).catch(() => null),
@@ -191,8 +191,8 @@ export default async function ERPDashboardPage() {
       ? findUpcomingSessionsByGuild(guildId, 20).catch(() => [])
       : Promise.resolve([]),
     viewerDiscordId
-      ? countParticipationByUserId().catch(() => ({}) as Record<string, number>)
-      : Promise.resolve({} as Record<string, number>),
+      ? countParticipationForUser(viewerDiscordId).catch(() => 0)
+      : Promise.resolve(null),
     listWikiPagesLite().catch(() => []),
   ]);
 
@@ -200,9 +200,6 @@ export default async function ERPDashboardPage() {
   const mainIntegrityError = mainCharacterResult.ok ? null : mainCharacterResult.message;
 
   // 누적 STATS — profile 폐지로 dashboard 에 흡수.
-  const mySessionCount = viewerDiscordId
-    ? (participationCounts[viewerDiscordId] ?? 0)
-    : null;
   const joinedDays = user ? daysSinceCreated(user.createdAt) : 0;
   const myWikiCount = wikiPages.filter((w) => w.createdBy === userId).length;
 
