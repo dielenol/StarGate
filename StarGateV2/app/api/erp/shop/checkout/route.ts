@@ -21,7 +21,8 @@ import {
   SYSTEM_USER_ID_SENTINEL,
 } from "@/lib/db/system-actor";
 import { findUserById } from "@/lib/db/users";
-import { findShopItemBySlug, isShopOpen } from "@/lib/shop/catalog";
+import { findShopItemBySlug } from "@/lib/shop/catalog";
+import { getShopOpenState } from "@/lib/shop/open-state";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 
 const MIN_QUANTITY = 1;
@@ -128,7 +129,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!isShopOpen(new Date())) {
+  if (!(await getShopOpenState()).isOpen) {
     return NextResponse.json(
       {
         error: "영업 시간이 아닙니다 (20시 이후·일요일 마감).",

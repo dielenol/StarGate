@@ -15,7 +15,8 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { getAllDailyStocks } from "@/lib/db/shop";
-import { isShopOpen, SHOP_CATALOG } from "@/lib/shop/catalog";
+import { SHOP_CATALOG } from "@/lib/shop/catalog";
+import { getShopOpenState } from "@/lib/shop/open-state";
 
 export async function GET() {
   const session = await auth();
@@ -26,22 +27,29 @@ export async function GET() {
   try {
     const stocks = await getAllDailyStocks();
     const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
-    const isOpen = isShopOpen(new Date());
+    const openState = await getShopOpenState();
 
     const items = SHOP_CATALOG.map((item) => {
       const stock = stockBySlug.get(item.slug) ?? 0;
       return {
         ...item,
         stock,
-        available: isOpen && stock > 0,
+        available: openState.isOpen && stock > 0,
       };
     });
 
     return NextResponse.json(
-      { items, isOpen },
+      {
+        items,
+        isOpen: openState.isOpen,
+        mode: openState.mode,
+        scheduledOpen: openState.scheduledOpen,
+        forceOpen: openState.forceOpen,
+        forceClosed: openState.forceClosed,
+      },
       {
         headers: {
-          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+          "Cache-Control": "private, no-store",
         },
       },
     );

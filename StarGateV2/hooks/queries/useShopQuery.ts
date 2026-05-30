@@ -54,6 +54,10 @@ export interface ShopCatalogEntry extends ShopCatalogItem {
 export interface ShopCatalogResponse {
   items: ShopCatalogEntry[];
   isOpen: boolean;
+  mode: "auto" | "open" | "closed";
+  scheduledOpen: boolean;
+  forceOpen: boolean;
+  forceClosed: boolean;
 }
 
 export interface ShopInventoryItem {

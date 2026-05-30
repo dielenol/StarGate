@@ -49,6 +49,18 @@
   color: var(--bg-0);
 }
 
+.adminBtn:disabled,
+.clearCartBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.adminBtn--active {
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  border-color: var(--gold);
+  color: var(--ink-0);
+}
+
 .notice,
 .errorBanner,
 .noticeBanner {

@@ -76,6 +76,23 @@ interface ConsumeResponse {
   remaining: number;
 }
 
+export type ShopOpenMode = "auto" | "open" | "closed";
+
+interface SetShopOpenModeInput {
+  mode: ShopOpenMode;
+}
+
+interface ShopOpenStateResponse {
+  mode: ShopOpenMode;
+  scheduledOpen: boolean;
+  forceOpen: boolean;
+  forceClosed: boolean;
+  isOpen: boolean;
+  updatedAt: string | null;
+  updatedById: string | null;
+  updatedByName: string | null;
+}
+
 /* ── 공통 에러 파서 ── */
 
 async function throwShopError(res: Response): Promise<never> {
@@ -166,6 +183,29 @@ export function useConsumeShopItem() {
     onSuccess: () => {
       // 보유 인벤만 변동.
       queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
+    },
+  });
+}
+
+export function useSetShopOpenMode() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ShopOpenStateResponse,
+    ShopApiError,
+    SetShopOpenModeInput
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/shop/admin/open", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
     },
   });
 }

@@ -19,7 +19,8 @@ import {
   listCreditTransactions,
 } from "@/lib/db/credits";
 import { getAllDailyStocks } from "@/lib/db/shop";
-import { isShopOpen, SHOP_CATALOG } from "@/lib/shop/catalog";
+import { SHOP_CATALOG } from "@/lib/shop/catalog";
+import { getShopOpenState } from "@/lib/shop/open-state";
 
 import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type { ShopCatalogResponse } from "@/hooks/queries/useShopQuery";
@@ -37,18 +38,25 @@ export const metadata = {
 async function buildCatalogResponse(): Promise<ShopCatalogResponse> {
   const stocks = await getAllDailyStocks();
   const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
-  const isOpen = isShopOpen(new Date());
+  const openState = await getShopOpenState();
 
   const items = SHOP_CATALOG.map((item) => {
     const stock = stockBySlug.get(item.slug) ?? 0;
     return {
       ...item,
       stock,
-      available: isOpen && stock > 0,
+      available: openState.isOpen && stock > 0,
     };
   });
 
-  return { items, isOpen };
+  return {
+    items,
+    isOpen: openState.isOpen,
+    mode: openState.mode,
+    scheduledOpen: openState.scheduledOpen,
+    forceOpen: openState.forceOpen,
+    forceClosed: openState.forceClosed,
+  };
 }
 
 /* ── 페이지 ── */
@@ -84,7 +92,14 @@ export default async function ShopPage() {
   // ledger 는 useCredits 의 initialData 시드용 (페이지 진입 시 1회 fetch 절약).
   const [initialCatalog, initialBalance, initialLedger] = await Promise.all([
     buildCatalogResponse().catch(
-      (): ShopCatalogResponse => ({ items: [], isOpen: false }),
+      (): ShopCatalogResponse => ({
+        items: [],
+        isOpen: false,
+        mode: "auto",
+        scheduledOpen: false,
+        forceOpen: false,
+        forceClosed: false,
+      }),
     ),
     mainCharacterId
       ? getCharacterBalance(mainCharacterId).catch(() => 0)

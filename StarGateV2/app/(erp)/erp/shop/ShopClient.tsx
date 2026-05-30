@@ -10,8 +10,10 @@ import {
   useCredits,
 } from "@/hooks/queries/useCreditsQuery";
 import {
+  type ShopOpenMode,
   useCheckoutShopCart,
   useRequestShopReorder,
+  useSetShopOpenMode,
 } from "@/hooks/mutations/useShopMutation";
 import {
   ShopApiError,
@@ -196,6 +198,7 @@ export default function ShopClient({
   const creditsQuery = useCredits({ initialData: initialCredits });
   const checkoutMutation = useCheckoutShopCart();
   const reorderMutation = useRequestShopReorder();
+  const openModeMutation = useSetShopOpenMode();
 
   const [activeTab, setActiveTab] = useState<ShopTabValue>("ALL");
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
@@ -267,6 +270,13 @@ export default function ShopClient({
   const cartTotal = cartLines.reduce((sum, line) => sum + line.total, 0);
   const cartHasStockIssue = cartLines.some((line) => line.stockIssue);
   const cartOverBalance = cartTotal > balance;
+  const shopStatusLabel = catalog.forceClosed
+    ? "GM 강제 종료"
+    : catalog.forceOpen
+    ? "GM 강제 오픈"
+    : catalog.isOpen
+      ? "영업 중"
+      : "영업 종료";
 
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
   const canUseShop = hasMainCharacter && catalog.isOpen;
@@ -609,6 +619,33 @@ export default function ShopClient({
     );
   }
 
+  function handleOpenModeChange(mode: ShopOpenMode) {
+    if (!isGM || openModeMutation.isPending) return;
+
+    setErrorMessage(null);
+    setNotice(null);
+    openModeMutation.mutate(
+      { mode },
+      {
+        onSuccess: (state) => {
+          void catalogQuery.refetch();
+          setNotice({
+            tone: "info",
+            text:
+              state.mode === "open"
+                ? "GM 강제 오픈으로 편의점을 열었습니다."
+                : state.mode === "closed"
+                  ? "GM 강제 종료로 편의점을 닫았습니다."
+                  : "편의점을 자동 영업시간 모드로 되돌렸습니다.",
+          });
+        },
+        onError: (err) => {
+          setErrorMessage(describeShopError(err));
+        },
+      },
+    );
+  }
+
   return (
     <div className={styles.shopRoot}>
       <PageHead
@@ -673,17 +710,71 @@ export default function ShopClient({
             <div className={styles.storeHeader__title}>STAR MART</div>
           </div>
           <div className={styles.headRight}>
-            <Tag tone={catalog.isOpen ? "gold" : "danger"}>
-              {catalog.isOpen ? "영업 중" : "영업 종료"}
+            <Tag
+              tone={
+                catalog.forceOpen
+                  ? "info"
+                  : catalog.isOpen
+                    ? "gold"
+                    : "danger"
+              }
+            >
+              {shopStatusLabel}
             </Tag>
             {isGM ? (
-              <button
-                type="button"
-                onClick={() => setAdminOpen(true)}
-                className={styles.adminBtn}
-              >
-                재고 관리 · GM
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleOpenModeChange(
+                      catalog.mode === "open" ? "auto" : "open",
+                    )
+                  }
+                  className={[
+                    styles.adminBtn,
+                    catalog.mode === "open" ? styles["adminBtn--active"] : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  disabled={openModeMutation.isPending}
+                >
+                  {openModeMutation.isPending
+                    ? "변경 중"
+                    : catalog.mode === "open"
+                      ? "자동 운영"
+                      : "강제 오픈"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleOpenModeChange(
+                      catalog.mode === "closed" ? "auto" : "closed",
+                    )
+                  }
+                  className={[
+                    styles.adminBtn,
+                    catalog.mode === "closed"
+                      ? styles["adminBtn--active"]
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  disabled={openModeMutation.isPending}
+                >
+                  {openModeMutation.isPending
+                    ? "변경 중"
+                    : catalog.mode === "closed"
+                      ? "자동 운영"
+                      : "강제 종료"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminOpen(true)}
+                  className={styles.adminBtn}
+                >
+                  재고 관리 · GM
+                </button>
+              </>
             ) : null}
           </div>
           <div className={styles.storeHeader__stats}>
@@ -706,7 +797,11 @@ export default function ShopClient({
           <>
             <div className={styles.closedBanner} role="status">
               <strong>CLOSED</strong>
-              <span>20:00 이후 STAFF OFF DUTY · 다음 영업 준비 중</span>
+              <span>
+                {catalog.forceClosed
+                  ? "GM 운영 제어로 임시 마감 중"
+                  : "20:00 이후 STAFF OFF DUTY · 다음 영업 준비 중"}
+              </span>
             </div>
             <div className={styles.closedScene} aria-hidden="true">
               <div className={styles.closedScene__stamp}>SEE YOU NEXT TIME</div>
