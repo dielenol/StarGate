@@ -24,6 +24,29 @@ function processInline(line: string): string {
   return result;
 }
 
+function normalizeImageSrc(src: string): string | null {
+  const trimmed = src.trim();
+  if (trimmed.includes("..")) return null;
+  if (!/^\/assets\/[A-Za-z0-9/_ .%()-]+\.(webp|png|jpe?g|gif|avif)$/i.test(trimmed)) {
+    return null;
+  }
+  return trimmed;
+}
+
+function renderImage(line: string): string | null {
+  const imageMatch = line.match(/^!\[([^\]]*)\]\((\S+?)(?:\s+"([^"]*)")?\)$/);
+  if (!imageMatch) return null;
+
+  const src = normalizeImageSrc(imageMatch[2]);
+  if (!src) return null;
+
+  const alt = escapeHtml(imageMatch[1].trim());
+  const caption = escapeHtml((imageMatch[3] ?? imageMatch[1]).trim());
+  const captionHtml = caption ? `<figcaption>${caption}</figcaption>` : "";
+
+  return `<figure><img src="${escapeHtml(src)}" alt="${alt}" loading="lazy" decoding="async" />${captionHtml}</figure>`;
+}
+
 export function renderMarkdown(content: string): string {
   if (!content) return "";
 
@@ -33,6 +56,13 @@ export function renderMarkdown(content: string): string {
 
   while (i < lines.length) {
     const line = lines[i];
+
+    const imageHtml = renderImage(line.trim());
+    if (imageHtml) {
+      htmlParts.push(imageHtml);
+      i++;
+      continue;
+    }
 
     // 수평선: ---
     if (/^-{3,}\s*$/.test(line)) {
@@ -59,7 +89,13 @@ export function renderMarkdown(content: string): string {
 
     // 일반 텍스트: 연속 줄을 하나의 문단으로
     const paragraphLines: string[] = [];
-    while (i < lines.length && lines[i].trim() !== "" && !/^#{1,3}\s/.test(lines[i]) && !/^-{3,}\s*$/.test(lines[i])) {
+    while (
+      i < lines.length &&
+      lines[i].trim() !== "" &&
+      !/^#{1,3}\s/.test(lines[i]) &&
+      !/^-{3,}\s*$/.test(lines[i]) &&
+      !/^!\[[^\]]*\]\(.+\)$/.test(lines[i].trim())
+    ) {
       paragraphLines.push(processInline(lines[i]));
       i++;
     }
@@ -74,7 +110,7 @@ export function renderMarkdown(content: string): string {
 
 /** 허용된 HTML 태그만 남기고 나머지 제거 */
 function sanitizeHtml(html: string): string {
-  const ALLOWED_TAGS = /^(h[2-4]|p|br|hr|strong|em)$/;
+  const ALLOWED_TAGS = /^(h[2-4]|p|br|hr|strong|em|figure|figcaption|img)$/;
   // self-closing 허용 태그
   return html.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\/?>/g, (match, tag) => {
     return ALLOWED_TAGS.test(tag.toLowerCase()) ? match : escapeHtml(match);

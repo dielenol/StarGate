@@ -136,6 +136,14 @@
   letter-spacing: 0.01em;
 }
 
+.item__summary {
+  max-width: 78ch;
+  margin: 5px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
 .item__meta {
   display: flex;
   flex-wrap: wrap;
@@ -176,6 +184,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.aside__title {
+  margin: 0 0 2px;
+  color: var(--gold);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .aside__list {

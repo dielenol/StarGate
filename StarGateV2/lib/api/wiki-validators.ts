@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 
 const ALLOWED_WIKI_FIELDS = new Set([
+  "slug",
   "title",
   "content",
   "category",
@@ -15,6 +16,9 @@ const ALLOWED_WIKI_FIELDS = new Set([
   "isPublic",
 ] as const);
 
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export const SLUG_MAX = 80;
 export const TITLE_MAX = 200;
 export const CONTENT_MAX = 200_000;
 export const CATEGORY_MAX = 80;
@@ -22,6 +26,7 @@ export const TAG_MAX = 40;
 export const TAGS_MAX_COUNT = 50;
 
 export type SanitizedWikiBody = {
+  slug?: string;
   title?: string;
   content?: string;
   category?: string;
@@ -44,7 +49,16 @@ export function sanitizeWikiBody(body: unknown): SanitizeResult {
   for (const [k, v] of Object.entries(body)) {
     if (!ALLOWED_WIKI_FIELDS.has(k as never)) continue;
 
-    if (k === "title") {
+    if (k === "slug") {
+      if (
+        typeof v !== "string" ||
+        v.length > SLUG_MAX ||
+        (v.trim().length > 0 && !SLUG_PATTERN.test(v.trim()))
+      ) {
+        return badRequest("slug 형식 오류");
+      }
+      value.slug = v;
+    } else if (k === "title") {
       if (typeof v !== "string" || v.length > TITLE_MAX) {
         return badRequest("title 형식 오류");
       }

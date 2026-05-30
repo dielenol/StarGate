@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
   const sanitized = sanitizeWikiBody(await request.json());
   if ("error" in sanitized) return sanitized.error;
-  const { title, content, category, tags, isPublic } = sanitized.value;
+  const { slug, title, content, category, tags, isPublic } = sanitized.value;
 
   if (!title?.trim() || !content?.trim()) {
     return NextResponse.json(
@@ -72,12 +72,12 @@ export async function POST(request: Request) {
 
   try {
     const page = await createWikiPage({
-      slug: "",
+      slug: slug?.trim() ?? "",
       title: title.trim(),
       content: content.trim(),
       category: category?.trim() ?? "미분류",
       tags: tags ?? [],
-      isPublic: isPublic ?? false,
+      isPublic: isPublic ?? true,
       authorId: session.user.id,
       authorName: session.user.displayName,
     });

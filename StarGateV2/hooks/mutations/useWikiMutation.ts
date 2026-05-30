@@ -5,6 +5,7 @@ import type { UpdateWikiPageInput } from "@/types/wiki";
 import { wikiKeys } from "@/hooks/queries/useWikiQuery";
 
 interface CreateWikiBody {
+  slug?: string;
   title: string;
   category?: string;
   tags?: string[];

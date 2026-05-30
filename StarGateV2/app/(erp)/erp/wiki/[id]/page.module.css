@@ -158,6 +158,28 @@
   font-style: italic;
 }
 
+.content figure {
+  margin: 16px 0 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.content img {
+  display: block;
+  width: 100%;
+  max-height: 520px;
+  object-fit: cover;
+}
+
+.content figcaption {
+  padding: 8px 10px;
+  border-top: 1px dashed var(--line);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
 /* Footer (meta + actions) */
 
 .footer {

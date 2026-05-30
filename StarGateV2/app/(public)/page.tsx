@@ -36,6 +36,10 @@ export default function HomePage() {
                   alt="Star Gate logo"
                   width={220}
                   height={220}
+                  priority
+                  quality={72}
+                  sizes="220px"
+                  style={{ height: "auto" }}
                 />
               </p>
             </div>
@@ -112,7 +116,11 @@ export default function HomePage() {
                       alt="아말리아 프레드리카 본 에센 초상화"
                       width={260}
                       height={379}
+                      loading="lazy"
+                      quality={72}
+                      sizes="260px"
                       className={styles["stargate__logo-image"]}
+                      style={{ height: "auto" }}
                     />
                     <span className={styles["stargate__profile-caption"]}>
                       AMALIA FREDRIKA VON ESSEN

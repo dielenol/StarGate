@@ -64,11 +64,13 @@ export async function PATCH(
 
   const sanitized = sanitizeWikiBody(await request.json());
   if ("error" in sanitized) return sanitized.error;
+  const update = { ...sanitized.value };
+  delete update.slug;
 
   try {
     const updated = await updateWikiPage(
       id,
-      sanitized.value,
+      update,
       session.user.id,
       session.user.displayName,
     );

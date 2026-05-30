@@ -16,6 +16,10 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import WikiDeleteButton from "./WikiDeleteButton";
 import WikiDetailContent from "./WikiDetailContent";
+import {
+  wikiCategoryTone,
+  wikiKeywordTags,
+} from "../wiki-display";
 
 import styles from "./page.module.css";
 
@@ -78,6 +82,7 @@ export default async function WikiDetailPage({
   const pageId = page._id!.toString();
   const contentHtml = renderMarkdown(page.content);
   const toc = extractToc(page.content);
+  const keywordTags = wikiKeywordTags(page, 4);
 
   // 카테고리 네비를 위해 전체 페이지 목록 로드 (실패 시 빈 목록)
   const allPages = await listWikiPages().catch(() => []);
@@ -148,8 +153,10 @@ export default async function WikiDetailPage({
           <Box>
             <div className={styles.header}>
               <div className={styles.header__meta}>
-                <Tag tone="gold">{page.category}</Tag>
-                {page.tags.map((tag) => (
+                <Tag tone={wikiCategoryTone(page.category)}>
+                  {page.category}
+                </Tag>
+                {keywordTags.map((tag) => (
                   <Tag key={tag}>{tag}</Tag>
                 ))}
               </div>

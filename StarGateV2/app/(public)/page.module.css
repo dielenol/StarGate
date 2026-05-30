@@ -63,6 +63,7 @@
   max-width: 220px;
   width: 100%;
   height: auto;
+  object-fit: contain;
 }
 
 .stargate__intro {

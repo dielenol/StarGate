@@ -50,6 +50,7 @@ export default async function WikiListPage({
   return (
     <WikiClient
       initialPages={pages}
+      allPages={allPages}
       categories={categories}
       currentCategory={category}
       currentQuery={q}

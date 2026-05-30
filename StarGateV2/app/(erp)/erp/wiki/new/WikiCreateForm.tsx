@@ -24,7 +24,7 @@ export default function WikiCreateForm() {
   const [category, setCategory] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [content, setContent] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {

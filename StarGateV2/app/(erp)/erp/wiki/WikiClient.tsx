@@ -17,11 +17,17 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
 import WikiSearchBar from "./WikiSearchBar";
+import {
+  wikiCategoryTone,
+  wikiKeywordTags,
+  wikiSummary,
+} from "./wiki-display";
 
 import styles from "./page.module.css";
 
 interface Props {
   initialPages: WikiPage[];
+  allPages: WikiPage[];
   categories: string[];
   currentCategory?: string;
   currentQuery?: string;
@@ -30,6 +36,7 @@ interface Props {
 
 export default function WikiClient({
   initialPages,
+  allPages,
   categories,
   currentCategory,
   currentQuery,
@@ -44,24 +51,24 @@ export default function WikiClient({
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const p of initialPages) {
+    for (const p of allPages) {
       counts[p.category] = (counts[p.category] ?? 0) + 1;
     }
     return counts;
-  }, [initialPages]);
+  }, [allPages]);
 
   const recent = useMemo(
     () =>
-      [...initialPages]
+      [...allPages]
         .sort(
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
         )
         .slice(0, 5),
-    [initialPages],
+    [allPages],
   );
 
-  const totalCount = initialPages.length;
+  const totalCount = allPages.length;
   const noFilter = !currentCategory && !currentQuery;
 
   return (
@@ -141,6 +148,8 @@ export default function WikiClient({
               <div className={styles.list}>
                 {pages.map((page) => {
                   const id = String(page._id);
+                  const summary = wikiSummary(page.content);
+                  const keywordTags = wikiKeywordTags(page);
                   return (
                     <Link
                       key={id}
@@ -149,9 +158,12 @@ export default function WikiClient({
                     >
                       <div className={styles.item__body}>
                         <div className={styles.item__title}>{page.title}</div>
+                        <p className={styles.item__summary}>{summary}</p>
                         <div className={styles.item__meta}>
-                          <Tag tone="info">{page.category}</Tag>
-                          {page.tags.slice(0, 3).map((tag) => (
+                          <Tag tone={wikiCategoryTone(page.category)}>
+                            {page.category}
+                          </Tag>
+                          {keywordTags.map((tag) => (
                             <Tag key={tag}>{tag}</Tag>
                           ))}
                           {!page.isPublic ? (
@@ -173,7 +185,7 @@ export default function WikiClient({
         {/* ── Right: recent updates placeholder ── */}
         <Box className={`${styles.aside} ${styles.layout__aside}`}>
           <div className={styles.aside__section}>
-            <Eyebrow>RECENT</Eyebrow>
+            <h2 className={styles.aside__title}>최근 갱신 문서</h2>
             {recent.length === 0 ? (
               <span className={styles.aside__link}>—</span>
             ) : (
