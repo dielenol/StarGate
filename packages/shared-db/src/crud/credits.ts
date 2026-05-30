@@ -23,6 +23,12 @@ import type {
 
 import { creditTransactionsCol } from "../collections.js";
 
+const CREDIT_SCALE = 100;
+
+function roundCreditValue(value: number): number {
+  return Math.round((value + Number.EPSILON) * CREDIT_SCALE) / CREDIT_SCALE;
+}
+
 /** characterId 단위 ledger 조회 (createdAt 내림차순). */
 export async function listCreditTransactions(
   characterId?: string,
@@ -99,12 +105,13 @@ export async function addCredit(input: {
     { sort: { createdAt: -1 } }
   );
   const currentBalance = latest?.balance ?? 0;
-  const newBalance = currentBalance + input.amount;
+  const amount = roundCreditValue(input.amount);
+  const newBalance = roundCreditValue(currentBalance + amount);
 
   if (newBalance < 0 && !input.allowNegative) {
     throw new Error(
       `addCredit: 음수 잔액 거부 — characterId=${input.characterId}, ` +
-        `current=${currentBalance}, delta=${input.amount}. ` +
+        `current=${currentBalance}, delta=${amount}. ` +
         `allowNegative 옵션이 필요한 호출이면 명시적으로 전달할 것.`
     );
   }
@@ -115,7 +122,7 @@ export async function addCredit(input: {
     ownerId: input.ownerId,
     ownerName: input.ownerName,
     type: input.type,
-    amount: input.amount,
+    amount,
     balance: newBalance,
     description: input.description,
     createdById: input.createdById,

@@ -41,6 +41,10 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import {
+  formatStockValue,
+  roundStockValue,
+} from "@/lib/stocks/pricing";
 
 import RangeToggle, {
   INITIAL_RANGE,
@@ -217,7 +221,7 @@ export default function StockTradeClient({
     return Math.floor(n);
   }, [qtyInput]);
 
-  const tradeTotal = tradeShares * displayPrice;
+  const tradeTotal = roundStockValue(tradeShares * displayPrice);
   const heldShares = holding?.shares ?? 0;
 
   const isBuyPending = buyMutation.isPending;
@@ -321,14 +325,15 @@ export default function StockTradeClient({
             "purchase" in result
               ? result.purchase.totalCost
               : result.sale.totalProceeds;
+          const formattedTotal = formatStockValue(total);
           setSuccessMessage(
-            `✓ ${submittedShares.toLocaleString()}주 ${action} 완료 · ¤ ${total.toLocaleString()}`,
+            `✓ ${submittedShares.toLocaleString()}주 ${action} 완료 · ¤ ${formattedTotal}`,
           );
           // 3 초 후 자동 dismiss — useEffect 없이 setTimeout 으로 단순 처리.
           window.setTimeout(() => {
             setSuccessMessage((curr) =>
               curr ===
-              `✓ ${submittedShares.toLocaleString()}주 ${action} 완료 · ¤ ${total.toLocaleString()}`
+              `✓ ${submittedShares.toLocaleString()}주 ${action} 완료 · ¤ ${formattedTotal}`
                 ? null
                 : curr,
             );
@@ -504,7 +509,7 @@ export default function StockTradeClient({
             </div>
             <div className={sharedStyles.detailHero__priceRow}>
               <span className={sharedStyles.detailHero__price}>
-                ¤ {displayPrice.toLocaleString()}
+                ¤ {formatStockValue(displayPrice)}
               </span>
               <span
                 className={[sharedStyles.detailHero__change, heroChangeMod]
@@ -598,7 +603,7 @@ export default function StockTradeClient({
                         {dateLabel}
                       </span>
                       <span className={sharedStyles.historyTable__cell}>
-                        ¤ {row.price.toLocaleString()}
+                        ¤ {formatStockValue(row.price)}
                       </span>
                       <span
                         className={[sharedStyles.historyTable__cell, dirMod]
@@ -627,13 +632,13 @@ export default function StockTradeClient({
               <div className={sharedStyles.detailInfo__cell}>
                 <span className={sharedStyles.detailInfo__label}>현재가</span>
                 <span className={sharedStyles.detailInfo__value}>
-                  ¤ {displayPrice.toLocaleString()}
+                  ¤ {formatStockValue(displayPrice)}
                 </span>
               </div>
               <div className={sharedStyles.detailInfo__cell}>
                 <span className={sharedStyles.detailInfo__label}>기준가</span>
                 <span className={sharedStyles.detailInfo__value}>
-                  ¤ {meta.basePrice.toLocaleString()}
+                  ¤ {formatStockValue(meta.basePrice)}
                 </span>
               </div>
               <div className={sharedStyles.detailInfo__cell}>
@@ -651,7 +656,7 @@ export default function StockTradeClient({
           <div className={sharedStyles.walletCard}>
             <Eyebrow>WALLET</Eyebrow>
             <div className={sharedStyles.walletCard__amount}>
-              ¤ {balance.toLocaleString()}
+              ¤ {formatStockValue(balance)}
             </div>
             {hasMainCharacter ? (
               <div className={sharedStyles.walletCard__agent}>
@@ -732,7 +737,7 @@ export default function StockTradeClient({
                 </span>
                 <div className={sharedStyles.tradeCard__priceInput}>
                   <span className={sharedStyles.tradeCard__priceInputValue}>
-                    ¤ {displayPrice.toLocaleString()}
+                    ¤ {formatStockValue(displayPrice)}
                   </span>
                   <span className={sharedStyles.tradeCard__priceInputUnit}>
                     주당
@@ -805,11 +810,11 @@ export default function StockTradeClient({
                 <div className={sharedStyles.tradeCard__total}>
                   <span className={sharedStyles.tradeCard__totalLabel}>
                     {tradeShares > 0
-                      ? `¤ ${displayPrice.toLocaleString()} × ${tradeShares.toLocaleString()}주`
+                      ? `¤ ${formatStockValue(displayPrice)} × ${tradeShares.toLocaleString()}주`
                       : "수량을 입력하세요"}
                   </span>
                   <span className={sharedStyles.tradeCard__totalValue}>
-                    ¤ {tradeTotal.toLocaleString()}
+                    ¤ {formatStockValue(tradeTotal)}
                   </span>
                 </div>
                 {effectiveTab === "buy" ? (
@@ -826,7 +831,7 @@ export default function StockTradeClient({
                     <span>
                       {insufficientBalance ? "잔액 부족" : "주문 가능 잔액"}
                     </span>
-                    <span>¤ {balance.toLocaleString()}</span>
+                    <span>¤ {formatStockValue(balance)}</span>
                   </div>
                 ) : (
                   <div
@@ -907,7 +912,7 @@ export default function StockTradeClient({
                     평단
                   </span>
                   <span className={sharedStyles.detailHolding__value}>
-                    ¤ {holding.avgPrice.toLocaleString()}
+                    ¤ {formatStockValue(holding.avgPrice)}
                   </span>
                 </div>
                 <div className={sharedStyles.detailHolding__cell}>
@@ -915,7 +920,7 @@ export default function StockTradeClient({
                     평가금
                   </span>
                   <span className={sharedStyles.detailHolding__value}>
-                    ¤ {holding.evaluation.toLocaleString()}
+                    ¤ {formatStockValue(holding.evaluation)}
                   </span>
                 </div>
                 <div className={sharedStyles.detailHolding__cell}>
@@ -931,7 +936,7 @@ export default function StockTradeClient({
                       .join(" ")}
                   >
                     {holding.profitLoss > 0 ? "+" : ""}
-                    {holding.profitLoss.toLocaleString()} (
+                    {formatStockValue(holding.profitLoss)} (
                     {holding.profitPercent > 0 ? "+" : ""}
                     {holding.profitPercent.toFixed(2)}%)
                   </span>
@@ -977,7 +982,7 @@ export default function StockTradeClient({
                             </span>
                           </span>
                           <span className={sharedStyles.holdingMini__eval}>
-                            ¤ {h.evaluation.toLocaleString()}
+                            ¤ {formatStockValue(h.evaluation)}
                           </span>
                         </div>
                         <div className={sharedStyles.holdingMini__bottom}>
@@ -1068,16 +1073,16 @@ export default function StockTradeClient({
                           ? `${shares.toLocaleString()}주`
                           : "수량 미상"}
                         {price !== null
-                          ? ` · ¤ ${price.toLocaleString()}`
+                          ? ` · ¤ ${formatStockValue(price)}`
                           : ""}
                       </div>
                       <div className={sharedStyles.tradeHistory__amount}>
                         {tx.amount > 0 ? "+" : ""}
-                        ¤ {tx.amount.toLocaleString()}
+                        ¤ {formatStockValue(tx.amount)}
                         {profit !== null ? (
                           <span className={sharedStyles.tradeHistory__profit}>
                             손익 {profit > 0 ? "+" : ""}¤{" "}
-                            {profit.toLocaleString()}
+                            {formatStockValue(profit)}
                           </span>
                         ) : null}
                       </div>

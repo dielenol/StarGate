@@ -28,6 +28,10 @@ import type {
 
 import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
+import {
+  formatStockValue,
+  roundStockValue,
+} from "@/lib/stocks/pricing";
 
 import StockTabs from "../StockTabs";
 import { StockLogo } from "../_logos";
@@ -95,8 +99,11 @@ export default function StockPortfolioClient({
     for (const h of holdings.items) {
       totalEval += h.evaluation;
       totalPL += h.profitLoss;
-      totalCost += h.avgPrice * h.shares;
+      totalCost += roundStockValue(h.avgPrice * h.shares);
     }
+    totalEval = roundStockValue(totalEval);
+    totalPL = roundStockValue(totalPL);
+    totalCost = roundStockValue(totalCost);
     const plPercent = totalCost > 0 ? (totalPL / totalCost) * 100 : 0;
     return { totalEval, totalPL, totalCost, plPercent };
   }, [holdings.items]);
@@ -138,13 +145,13 @@ export default function StockPortfolioClient({
         <div className={styles.tossHeader}>
           <div className={styles.tossHeader__label}>내 투자</div>
           <div className={styles.tossHeader__eval}>
-            ¤ {summary.totalEval.toLocaleString()}
+            ¤ {formatStockValue(summary.totalEval)}
           </div>
           <div className={styles.tossHeader__metaRow}>
             <span className={styles.tossHeader__metaItem}>
               <span className={styles.tossHeader__metaLabel}>원금</span>
               <span className={styles.tossHeader__metaValue}>
-                ¤ {summary.totalCost.toLocaleString()}
+                ¤ {formatStockValue(summary.totalCost)}
               </span>
             </span>
             <span className={styles.tossHeader__metaItem}>
@@ -156,7 +163,7 @@ export default function StockPortfolioClient({
                 )}
               >
                 {summary.totalPL > 0 ? "+" : ""}¤{" "}
-                {summary.totalPL.toLocaleString()} (
+                {formatStockValue(summary.totalPL)} (
                 {summary.plPercent > 0 ? "+" : ""}
                 {summary.plPercent.toFixed(2)}%)
               </span>
@@ -164,7 +171,7 @@ export default function StockPortfolioClient({
             <span className={styles.tossHeader__metaItem}>
               <span className={styles.tossHeader__metaLabel}>잔액</span>
               <span className={styles.tossHeader__metaValue}>
-                ¤ {balance.toLocaleString()}
+                ¤ {formatStockValue(balance)}
               </span>
             </span>
             <span className={styles.tossHeader__metaItem}>
@@ -219,7 +226,7 @@ export default function StockPortfolioClient({
           {holdings.items.map((h) => {
             const dir = profitDirection(h.profitLoss);
             const profitClass = directionMod(dir, styles.tossTable__num);
-            const cost = h.avgPrice * h.shares;
+            const cost = roundStockValue(h.avgPrice * h.shares);
             return (
               <Link
                 key={h.ticker}
@@ -243,22 +250,22 @@ export default function StockPortfolioClient({
                 </span>
                 <span className={profitClass} role="cell">
                   {h.profitLoss > 0 ? "+" : ""}
-                  {h.profitLoss.toLocaleString()}
+                  {formatStockValue(h.profitLoss)}
                 </span>
                 <span className={styles.tossTable__num} role="cell">
-                  ¤ {h.avgPrice.toLocaleString()}
+                  ¤ {formatStockValue(h.avgPrice)}
                 </span>
                 <span className={styles.tossTable__num} role="cell">
-                  ¤ {h.currentPrice.toLocaleString()}
+                  ¤ {formatStockValue(h.currentPrice)}
                 </span>
                 <span className={styles.tossTable__num} role="cell">
                   {h.shares.toLocaleString()} 주
                 </span>
                 <span className={styles.tossTable__num} role="cell">
-                  ¤ {h.evaluation.toLocaleString()}
+                  ¤ {formatStockValue(h.evaluation)}
                 </span>
                 <span className={styles.tossTable__num} role="cell">
-                  ¤ {cost.toLocaleString()}
+                  ¤ {formatStockValue(cost)}
                 </span>
               </Link>
             );

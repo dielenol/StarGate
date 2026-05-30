@@ -14,6 +14,7 @@ import { auth } from "@/lib/auth/config";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { getHoldings, getStockPrices } from "@/lib/db/stocks";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import { roundStockValue } from "@/lib/stocks/pricing";
 
 interface HoldingItem {
   ticker: string;
@@ -93,8 +94,8 @@ export async function GET() {
       }
       const seededPrice = priceByTicker.get(h.ticker);
       const currentPrice = seededPrice ?? meta.basePrice;
-      const evaluation = currentPrice * h.shares;
-      const profitLoss = (currentPrice - h.avgPrice) * h.shares;
+      const evaluation = roundStockValue(currentPrice * h.shares);
+      const profitLoss = roundStockValue((currentPrice - h.avgPrice) * h.shares);
       const profitPercent =
         h.avgPrice > 0 ? ((currentPrice - h.avgPrice) / h.avgPrice) * 100 : 0;
       items.push({

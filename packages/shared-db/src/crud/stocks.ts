@@ -2,9 +2,9 @@
  * stock_prices + stock_holdings CRUD
  *
  * tia_bot 의 주식 도메인.
- * - stock_prices: ticker 별 단일 가격 문서. price/prevPrice 는 정수.
+ * - stock_prices: ticker 별 단일 가격 문서. price/prevPrice 는 0.01 단위 숫자.
  * - stock_holdings: character × ticker 보유. shares < 0 금지 (atomic guard).
- *   avgPrice 는 가중평균 정수 절사.
+ *   avgPrice 는 가중평균 0.01 단위 반올림.
  *
  * Phase 2 ledger 가 character 단위로 전환되어 holdings 도 characterId 단위.
  */
@@ -162,7 +162,7 @@ export async function getHolding(
 /**
  * 매수 — 가중평균 매수단가 갱신.
  *
- * newAvg = floor((oldShares * oldAvg + shares * buyPrice) / (oldShares + shares))
+ * newAvg = round((oldShares * oldAvg + shares * buyPrice) / (oldShares + shares), 2)
  *
  * 신규 보유 시 avgPrice = buyPrice.
  *
@@ -182,7 +182,7 @@ export async function buyHolding(
   const col = await stockHoldingsCol();
 
   // aggregation pipeline upsert 로 read+write 단일화 — race window 제거.
-  // 가중평균: newAvg = floor((oldShares * oldAvg + shares * buyPrice) / (oldShares + shares))
+  // 가중평균: newAvg = round((oldShares * oldAvg + shares * buyPrice) / (oldShares + shares), 2)
   // 신규 문서 (oldShares == 0): avgPrice = buyPrice
   const result = await col.findOneAndUpdate(
     { characterId, ticker },
@@ -197,22 +197,25 @@ export async function buyHolding(
                 oldA: { $ifNull: ["$avgPrice", 0] },
               },
               in: {
-                $cond: [
-                  { $gt: ["$$oldS", 0] },
+                $round: [
                   {
-                    $floor: {
-                      $divide: [
-                        {
-                          $add: [
-                            { $multiply: ["$$oldS", "$$oldA"] },
-                            shares * buyPrice,
-                          ],
-                        },
-                        { $add: ["$$oldS", shares] },
-                      ],
-                    },
+                    $cond: [
+                      { $gt: ["$$oldS", 0] },
+                      {
+                        $divide: [
+                          {
+                            $add: [
+                              { $multiply: ["$$oldS", "$$oldA"] },
+                              shares * buyPrice,
+                            ],
+                          },
+                          { $add: ["$$oldS", shares] },
+                        ],
+                      },
+                      buyPrice,
+                    ],
                   },
-                  buyPrice,
+                  2,
                 ],
               },
             },

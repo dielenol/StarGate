@@ -24,6 +24,7 @@ import {
 import { findUserById } from "@/lib/db/users";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import { roundStockValue } from "@/lib/stocks/pricing";
 
 /* ── 상수 ── */
 
@@ -170,7 +171,7 @@ export async function POST(request: Request) {
     );
   }
   const price = priceDoc.price;
-  const totalCost = price * shares;
+  const totalCost = roundStockValue(price * shares);
 
   const characterId = String(mainChar._id);
 

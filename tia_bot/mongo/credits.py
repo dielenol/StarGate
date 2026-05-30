@@ -38,6 +38,15 @@ OPERATION_POOL_ID = "OPERATION"
 _COL_TX = "credit_transactions"
 _COL_POOLS = "credit_pools"
 
+
+def _is_number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _round_credit(value) -> float:
+    rounded = round(float(value) + 1e-9, 2)
+    return int(rounded) if rounded.is_integer() else rounded
+
 # ─────────────────────────────────────────────
 # credit type 화이트리스트 (오타/도메인 외 type 차단).
 # shared-db `ALL_CREDIT_TYPES` 와 동기화. 새 type 추가 시 양쪽 갱신.
@@ -100,7 +109,7 @@ def _pools_col() -> Collection:
 # ─────────────────────────────────────────────
 
 
-def get_balance(user_id_hex: str) -> int:
+def get_balance(user_id_hex: str) -> float:
     """latest 트랜잭션의 balance. 없으면 0. 이벤트 소싱 스냅샷.
 
     [RACE WINDOW]
@@ -110,7 +119,7 @@ def get_balance(user_id_hex: str) -> int:
     if not user_id_hex:
         raise ValueError("get_balance: user_id_hex must be non-empty")
     doc = _tx_col().find_one({"userId": user_id_hex}, sort=[("createdAt", -1)])
-    return int(doc["balance"]) if doc else 0
+    return _round_credit(doc["balance"]) if doc else 0
 
 
 def list_transactions(user_id_hex: str, limit: int = 100) -> list[dict]:
@@ -130,7 +139,7 @@ def list_transactions(user_id_hex: str, limit: int = 100) -> list[dict]:
 def add_credit(
     user_id_hex: str,
     user_name: str,
-    amount: int,
+    amount: float,
     type_: str,
     description: str,
     created_by_id: str,
@@ -163,10 +172,11 @@ def add_credit(
     """
     if not isinstance(user_id_hex, str) or not user_id_hex:
         raise ValueError(f"add_credit: invalid user_id_hex: {user_id_hex!r}")
-    if not isinstance(amount, int) or isinstance(amount, bool):
+    if not _is_number(amount):
         raise ValueError(
-            f"add_credit: amount must be int, got {type(amount).__name__} ({amount!r})"
+            f"add_credit: amount must be number, got {type(amount).__name__} ({amount!r})"
         )
+    amount = _round_credit(amount)
     if not isinstance(type_, str) or not type_:
         raise ValueError(f"add_credit: invalid type_: {type_!r}")
     if type_ not in ALL_CREDIT_TYPES:
@@ -184,7 +194,7 @@ def add_credit(
             f"(user={user_id_hex} {latest_balance} + {amount} < 0, type={type_})"
         )
 
-    new_balance = latest_balance + amount
+    new_balance = _round_credit(latest_balance + amount)
 
     doc: dict = {
         "userId": user_id_hex,
@@ -279,7 +289,7 @@ def list_purchases_grouped(start_date: datetime) -> dict[str, dict]:
         )
         bucket["count"] += 1
         amount = tx.get("amount", 0)
-        if isinstance(amount, int) and not isinstance(amount, bool):
+        if _is_number(amount):
             bucket["total"] += abs(amount)
         name = tx.get("userName") or ""
         if name:

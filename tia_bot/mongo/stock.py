@@ -28,6 +28,16 @@ from .client import get_db
 # ─────────────────────────────────────────────
 _COL_PRICES = "stock_prices"
 _COL_HOLDINGS = "stock_holdings"
+MIN_STOCK_PRICE = 0.01
+
+
+def _is_number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _round_price(value) -> float:
+    rounded = round(max(MIN_STOCK_PRICE, float(value)) + 1e-9, 2)
+    return int(rounded) if rounded.is_integer() else rounded
 
 
 def _prices_col() -> Collection:
@@ -55,7 +65,7 @@ def get_stock_price(ticker: str) -> Optional[dict]:
 
 
 def ensure_stock_prices(
-    seeds: list[tuple[str, int]],
+    seeds: list[tuple[str, float]],
     initial_lastupdate_kst: str,
     initial_event_text: str = "상장",
 ) -> None:
@@ -91,11 +101,12 @@ def ensure_stock_prices(
             raise ValueError(
                 f"ensure_stock_prices: invalid ticker in seed: {ticker!r}"
             )
-        if not isinstance(price, int) or isinstance(price, bool):
+        if not _is_number(price):
             raise ValueError(
-                f"ensure_stock_prices: price must be int, got {type(price).__name__} "
+                f"ensure_stock_prices: price must be number, got {type(price).__name__} "
                 f"for ticker {ticker}"
             )
+        price = _round_price(price)
         ops.append(
             UpdateOne(
                 {"ticker": ticker},
@@ -122,7 +133,7 @@ def ensure_stock_prices(
 
 def update_stock_price(
     ticker: str,
-    new_price: int,
+    new_price: float,
     event_text: str,
     last_update_kst: str,
 ) -> dict:
@@ -133,10 +144,11 @@ def update_stock_price(
     """
     if not isinstance(ticker, str) or not ticker:
         raise ValueError(f"update_stock_price: invalid ticker: {ticker!r}")
-    if not isinstance(new_price, int) or isinstance(new_price, bool):
+    if not _is_number(new_price):
         raise ValueError(
-            f"update_stock_price: new_price must be int, got {type(new_price).__name__}"
+            f"update_stock_price: new_price must be number, got {type(new_price).__name__}"
         )
+    new_price = _round_price(new_price)
     if not isinstance(event_text, str):
         raise ValueError(
             f"update_stock_price: event_text must be str, got {type(event_text).__name__}"
@@ -205,7 +217,7 @@ def buy_holding(
     user_id_hex: str,
     ticker: str,
     shares: int,
-    buy_price: int,
+    buy_price: float,
 ) -> dict:
     """매수 — 가중평균 매수단가 갱신 (aggregation pipeline upsert).
 
@@ -226,10 +238,11 @@ def buy_holding(
         )
     if shares <= 0:
         raise ValueError(f"buy_holding: shares must be positive, got {shares}")
-    if not isinstance(buy_price, int) or isinstance(buy_price, bool):
+    if not _is_number(buy_price):
         raise ValueError(
-            f"buy_holding: buy_price must be int, got {type(buy_price).__name__}"
+            f"buy_holding: buy_price must be number, got {type(buy_price).__name__}"
         )
+    buy_price = _round_price(buy_price)
     if buy_price <= 0:
         raise ValueError(
             f"buy_holding: buy_price must be positive, got {buy_price}"
@@ -253,22 +266,25 @@ def buy_holding(
                                 "$cond": [
                                     {"$gt": ["$$oldS", 0]},
                                     {
-                                        "$floor": {
-                                            "$divide": [
-                                                {
-                                                    "$add": [
-                                                        {
-                                                            "$multiply": [
-                                                                "$$oldS",
-                                                                "$$oldA",
-                                                            ]
-                                                        },
-                                                        shares * buy_price,
-                                                    ]
-                                                },
-                                                {"$add": ["$$oldS", shares]},
-                                            ]
-                                        }
+                                        "$round": [
+                                            {
+                                                "$divide": [
+                                                    {
+                                                        "$add": [
+                                                            {
+                                                                "$multiply": [
+                                                                    "$$oldS",
+                                                                    "$$oldA",
+                                                                ]
+                                                            },
+                                                            shares * buy_price,
+                                                        ]
+                                                    },
+                                                    {"$add": ["$$oldS", shares]},
+                                                ]
+                                            },
+                                            2,
+                                        ]
                                     },
                                     buy_price,
                                 ]

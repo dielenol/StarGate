@@ -32,6 +32,7 @@ import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
+import { formatStockValue } from "@/lib/stocks/pricing";
 
 import StockHoverPreview from "./StockHoverPreview";
 import StockSparkline from "./StockSparkline";
@@ -296,7 +297,7 @@ export default function StockListClient({
                       </div>
                       <div className={styles.stockRow__right}>
                         <span className={styles.stockRow__price}>
-                          ¤ {item.price.toLocaleString()}
+                          ¤ {formatStockValue(item.price)}
                         </span>
                         <span
                           className={[styles.stockRow__change, changeMod]
@@ -327,7 +328,7 @@ export default function StockListClient({
           <div className={styles.walletCard}>
             <Eyebrow>WALLET</Eyebrow>
             <div className={styles.walletCard__amount}>
-              ¤ {balance.toLocaleString()}
+              ¤ {formatStockValue(balance)}
             </div>
             {hasMainCharacter ? (
               <div className={styles.walletCard__agent}>
@@ -372,7 +373,7 @@ export default function StockListClient({
                             </span>
                           </span>
                           <span className={styles.holdingMini__eval}>
-                            ¤ {h.evaluation.toLocaleString()}
+                            ¤ {formatStockValue(h.evaluation)}
                           </span>
                         </div>
                         <div className={styles.holdingMini__bottom}>

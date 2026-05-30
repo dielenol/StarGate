@@ -4,6 +4,10 @@ import type {
   ScheduledStockTickResult,
   ScheduledStockTickSummary,
 } from "@/lib/stocks/scheduled-tick";
+import {
+  formatSignedStockValue,
+  formatStockValue,
+} from "@/lib/stocks/pricing";
 import { kstDateTag, kstNowTag } from "@/lib/stocks/time";
 
 type DiscordEmbedField = {
@@ -161,12 +165,11 @@ function getOfficerForDateTime(date: Date): MarketWireOfficer {
 }
 
 function formatPrice(price: number): string {
-  return `${price.toLocaleString("ko-KR")}C`;
+  return `${formatStockValue(price)}C`;
 }
 
 function formatSignedNumber(value: number, suffix = ""): string {
-  if (value === 0) return `0${suffix}`;
-  return `${value > 0 ? "+" : ""}${value.toLocaleString("ko-KR")}${suffix}`;
+  return formatSignedStockValue(value, suffix);
 }
 
 function formatPercent(value: number): string {

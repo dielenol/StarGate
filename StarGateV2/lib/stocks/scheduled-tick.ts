@@ -11,6 +11,7 @@ import {
   type StockEventTier,
   type StockPriceDirection,
 } from "@/lib/stocks/events";
+import { normalizeStockPrice } from "@/lib/stocks/pricing";
 import { kstDateTag, kstNowTag } from "@/lib/stocks/time";
 
 interface ApplyScheduledStockTickOptions {
@@ -45,9 +46,9 @@ function randomMagnitude(): number {
 }
 
 function volatilityForBasePrice(basePrice: number): number {
-  if (basePrice >= 500) return 0.045;
-  if (basePrice >= 100) return 0.055;
-  return 0.075;
+  if (basePrice >= 500) return 0.08;
+  if (basePrice >= 100) return 0.1;
+  return 0.14;
 }
 
 function signForDirection(direction: StockPriceDirection): 1 | -1 {
@@ -88,7 +89,7 @@ function calculateRoutinePercent(
   const adjustedMagnitude =
     baseMagnitude * (movesTowardBase ? 1 + meanReversionBias : 1 - meanReversionBias);
   const rawPercent = directionSign * adjustedMagnitude;
-  return Math.max(-0.09, Math.min(0.09, rawPercent));
+  return Math.max(-0.18, Math.min(0.18, rawPercent));
 }
 
 function calculateNextPrice(
@@ -96,15 +97,8 @@ function calculateNextPrice(
   basePrice: number,
   percent: number,
 ): number {
-  let delta = Math.round(currentPrice * percent);
-
-  // Low-price stocks would often round to zero; keep scheduled ticks visible.
-  if (delta === 0 && Math.abs(percent) >= 0.01) {
-    delta = percent > 0 ? 1 : -1;
-  }
-
   const upperBound = Math.max(basePrice * 5, basePrice + 10);
-  return Math.max(1, Math.min(upperBound, currentPrice + delta));
+  return normalizeStockPrice(Math.min(upperBound, currentPrice * (1 + percent)));
 }
 
 function changePercent(prevPrice: number, price: number): number {

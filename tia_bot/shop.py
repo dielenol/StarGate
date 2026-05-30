@@ -346,7 +346,7 @@ def _seed_user_if_first_time(user_id_hex: str, user) -> None:
         print(f"[SEED] {user_id_hex} 시드 시도 실패 (race 가능): {e}")
 
 
-def _ensure_and_get_balance(user) -> tuple[str, int]:
+def _ensure_and_get_balance(user) -> tuple[str, float]:
     """user → (user_id_hex, balance). 첫 호출이면 INITIAL_CREDITS 자동 시드.
 
     P2-2: 시드 트리거의 단일 출처. legacy get_balance 는 시드 책임 제거.
@@ -358,12 +358,12 @@ def _ensure_and_get_balance(user) -> tuple[str, int]:
 
 def _apply_credit(
     user,
-    amount: int,
+    amount: float,
     type_: str,
     description: str,
     metadata: Optional[dict] = None,
     actor=None,
-) -> int:
+) -> float:
     """크레딧 변동을 ledger 1건으로 기록. Returns: new balance.
 
     - user: 잔액 변경 대상 (discord.User/Member)
@@ -392,7 +392,7 @@ def _apply_credit(
         created_by_name=actor_name,
         metadata=metadata,
     )
-    return int(tx["balance"])
+    return ss.round_stock_value(tx["balance"])
 
 
 # ============================================================
@@ -492,10 +492,10 @@ def _execute_stock_buy(user, ticker: str, qty: int) -> dict:
     price_doc = mongo_stock.get_stock_price(ticker)
     if not price_doc:
         return {"ok": False, "error": "없는 종목이도다...", "balance": None}
-    price = int(price_doc["price"])
+    price = ss.round_stock_value(price_doc["price"])
     if price <= 0:
         return {"ok": False, "error": "현재가가 0이라 거래할 수 없도다...", "balance": None}
-    total = price * qty
+    total = ss.round_stock_value(price * qty)
     user_id_hex = _ensure_user_id(user)
 
     # step 1: 잔액 차감 (ValueError = 잔액 부족 등).
@@ -544,7 +544,7 @@ def _execute_stock_buy(user, ticker: str, qty: int) -> dict:
             "balance": None,
         }
 
-    return {"ok": True, "price": price, "new_balance": int(new_bal)}
+    return {"ok": True, "price": price, "new_balance": ss.round_stock_value(new_bal)}
 
 
 def _execute_stock_sell(user, ticker: str, qty: int) -> dict:
@@ -559,7 +559,7 @@ def _execute_stock_sell(user, ticker: str, qty: int) -> dict:
     price_doc = mongo_stock.get_stock_price(ticker)
     if not price_doc:
         return {"ok": False, "error": "없는 종목이도다...", "balance": None}
-    price = int(price_doc["price"])
+    price = ss.round_stock_value(price_doc["price"])
     if price <= 0:
         return {"ok": False, "error": "현재가가 0이라 거래할 수 없도다...", "balance": None}
 
@@ -567,7 +567,7 @@ def _execute_stock_sell(user, ticker: str, qty: int) -> dict:
 
     # step 1: 사전 holding fetch (avg).
     pre = mongo_stock.get_holding(user_id_hex, ticker)
-    avg = int(pre.get("avgPrice", 0)) if pre else 0
+    avg = ss.round_stock_value(pre.get("avgPrice", 0)) if pre else 0
 
     # step 2: atomic shares 차감 (race 시 ok=False).
     res = mongo_stock.sell_holding(user_id_hex, ticker, qty)
@@ -575,14 +575,14 @@ def _execute_stock_sell(user, ticker: str, qty: int) -> dict:
         return {"ok": False, "error": "보유 주식이 부족하도다...", "balance": None}
 
     # step 3: 잔액 가산 — 실패 시 보유 원복 (P1-2).
-    total = price * qty
-    profit = (price - avg) * qty
+    total = ss.round_stock_value(price * qty)
+    profit = ss.round_stock_value((price - avg) * qty)
     try:
         new_bal = _apply_credit(
             user=user,
             amount=+total,
             type_="STOCK_SELL",
-            description=f"매도 {ticker} {qty}주 @ {price} (손익 {profit:+d})",
+            description=f"매도 {ticker} {qty}주 @ {ss.format_stock_value(price)} (손익 {profit:+.2f})",
             metadata={
                 "ticker": ticker,
                 "shares": qty,
@@ -615,8 +615,8 @@ def _execute_stock_sell(user, ticker: str, qty: int) -> dict:
     return {
         "ok": True,
         "price": price,
-        "new_balance": int(new_bal),
-        "profit": int(profit),
+        "new_balance": ss.round_stock_value(new_bal),
+        "profit": profit,
     }
 
 
@@ -1285,19 +1285,25 @@ class StockTradeSelect(discord.ui.Select):
         options = []
         for s in ss.STOCKS:
             p = prices.get(s["ticker"], {})
-            price = int(p.get("price", s["base_price"]))
-            prev = int(p.get("prevPrice", s["base_price"]))
+            price = ss.round_stock_value(p.get("price", s["base_price"]))
+            prev = ss.round_stock_value(p.get("prevPrice", s["base_price"]))
             diff = price - prev
-            arrow = f"+{diff}" if diff > 0 else str(diff) if diff < 0 else "0"
+            arrow = (
+                f"+{ss.format_stock_value(diff)}"
+                if diff > 0
+                else ss.format_stock_value(diff)
+                if diff < 0
+                else "0"
+            )
             options.append(discord.SelectOption(
-                label=f"{s['name']} ({s['ticker']}) — {price} CR",
+                label=f"{s['name']} ({s['ticker']}) — {ss.format_stock_value(price)} CR",
                 value=s["ticker"], description=f"전일 대비 {arrow} CR"))
         super().__init__(placeholder="거래할 종목을 선택해주세요...", options=options)
 
     async def callback(self, interaction):
         ticker = self.values[0]; s = ss.STOCK_MAP[ticker]
         price_doc = mongo_stock.get_stock_price(ticker)
-        price = int(price_doc["price"]) if price_doc else 0
+        price = ss.round_stock_value(price_doc["price"]) if price_doc else 0
         user_id_hex, bal = _ensure_and_get_balance(interaction.user)
         # mongo.stock.get_holdings 는 활성 보유만 (shares > 0). avgPrice 키 사용.
         holdings = mongo_stock.get_holdings(user_id_hex)
@@ -1305,19 +1311,20 @@ class StockTradeSelect(discord.ui.Select):
         for h in holdings:
             if h["ticker"] == ticker:
                 held = int(h.get("shares", 0))
-                avg = int(h.get("avgPrice", 0))
+                avg = ss.round_stock_value(h.get("avgPrice", 0))
                 break
         embed = discord.Embed(title=f"{s['name']} ({ticker})", description=s["desc"],
                               color=discord.Color.from_rgb(197,162,85))
-        embed.add_field(name="현재가", value=f"**{price}** CR", inline=True)
-        embed.add_field(name="잔고", value=f"{bal} CR", inline=True)
-        embed.add_field(name="보유", value=f"{held}주 (평단 {avg})" if held > 0 else "없음", inline=True)
+        embed.add_field(name="현재가", value=f"**{ss.format_stock_value(price)}** CR", inline=True)
+        embed.add_field(name="잔고", value=f"{ss.format_stock_value(bal)} CR", inline=True)
+        embed.add_field(name="보유", value=f"{held}주 (평단 {ss.format_stock_value(avg)})" if held > 0 else "없음", inline=True)
         max_buy = min(bal // price, 50) if price > 0 else 0
         embed.add_field(name="최대 매수", value=f"{max_buy}주", inline=True)
         if held > 0:
-            cur_value = price * held; cur_profit = (price - avg) * held
-            pstr = f"+{cur_profit}" if cur_profit >= 0 else str(cur_profit)
-            embed.add_field(name="평가액", value=f"{cur_value} CR ({pstr})", inline=True)
+            cur_value = ss.round_stock_value(price * held)
+            cur_profit = ss.round_stock_value((price - avg) * held)
+            pstr = f"+{ss.format_stock_value(cur_profit)}" if cur_profit >= 0 else ss.format_stock_value(cur_profit)
+            embed.add_field(name="평가액", value=f"{ss.format_stock_value(cur_value)} CR ({pstr})", inline=True)
         await interaction.response.edit_message(content=None, embed=embed,
             view=StockActionView(ticker, interaction.user.id, interaction.user.display_name, price, held))
 
@@ -1332,8 +1339,8 @@ class StockQuantitySelect(discord.ui.Select):
         self.user_id = user_id; self.user_name = user_name; self.price = price
         options = []
         for i in range(1, min(max_qty, 9) + 1):
-            total = price * i
-            lbl = f"{i}주 매수 — {total} CR" if action == "buy" else f"{i}주 매도 — {total} CR"
+            total = ss.round_stock_value(price * i)
+            lbl = f"{i}주 매수 — {ss.format_stock_value(total)} CR" if action == "buy" else f"{i}주 매도 — {ss.format_stock_value(total)} CR"
             options.append(discord.SelectOption(label=lbl, value=str(i)))
         if not options:
             options.append(discord.SelectOption(label="거래 불가", value="0"))
@@ -1346,9 +1353,9 @@ class StockQuantitySelect(discord.ui.Select):
         s = ss.STOCK_MAP[self.ticker]
         embed = discord.Embed(title=f"{'매수' if self.action=='buy' else '매도'} 확인 — {s['name']}",
             color=discord.Color.from_rgb(60,180,80) if self.action=="buy" else discord.Color.from_rgb(200,60,60))
-        embed.add_field(name="현재가", value=f"{self.price} CR", inline=True)
+        embed.add_field(name="현재가", value=f"{ss.format_stock_value(self.price)} CR", inline=True)
         embed.add_field(name="수량", value=f"{qty}주", inline=True)
-        embed.add_field(name="합계", value=f"{self.price * qty} CR", inline=True)
+        embed.add_field(name="합계", value=f"{ss.format_stock_value(ss.round_stock_value(self.price * qty))} CR", inline=True)
         await interaction.response.edit_message(embed=embed,
             view=StockConfirmView(self.action, self.ticker, self.user_id, self.user_name, qty, self.price))
 
@@ -1402,9 +1409,9 @@ class StockConfirmView(discord.ui.View):
                 return
             result_price = result["price"]
             new_bal = result["new_balance"]
-            total = result_price * self.qty
+            total = ss.round_stock_value(result_price * self.qty)
             await interaction.response.edit_message(
-                content=f"**{s['name']}** {self.qty}주 매수 완료했어요...\n단가 {result_price} CR x {self.qty}주 = {total} CR\n잔고: {new_bal} CR",
+                content=f"**{s['name']}** {self.qty}주 매수 완료했어요...\n단가 {ss.format_stock_value(result_price)} CR x {self.qty}주 = {ss.format_stock_value(total)} CR\n잔고: {ss.format_stock_value(new_bal)} CR",
                 embed=None, view=None)
         else:
             result = _execute_stock_sell(interaction.user, self.ticker, self.qty)
@@ -1417,10 +1424,10 @@ class StockConfirmView(discord.ui.View):
             result_price = result["price"]
             new_bal = result["new_balance"]
             profit = result["profit"]
-            total = result_price * self.qty
-            pstr = f"+{profit}" if profit >= 0 else str(profit)
+            total = ss.round_stock_value(result_price * self.qty)
+            pstr = f"+{ss.format_stock_value(profit)}" if profit >= 0 else ss.format_stock_value(profit)
             await interaction.response.edit_message(
-                content=f"**{s['name']}** {self.qty}주 매도 완료했어요...\n단가 {result_price} CR x {self.qty}주 = {total} CR\n손익: {pstr} CR | 잔고: {new_bal} CR",
+                content=f"**{s['name']}** {self.qty}주 매도 완료했어요...\n단가 {ss.format_stock_value(result_price)} CR x {self.qty}주 = {ss.format_stock_value(total)} CR\n손익: {pstr} CR | 잔고: {ss.format_stock_value(new_bal)} CR",
                 embed=None, view=None)
 
     @discord.ui.button(label="취소", style=discord.ButtonStyle.secondary, emoji="❌")
@@ -1718,14 +1725,14 @@ class ShopCog(commands.Cog):
         ticker = 종목.upper(); s = ss.STOCK_MAP.get(ticker)
         if not s: await interaction.response.send_message("없는 종목이에요...!", ephemeral=True); return
         price_doc = mongo_stock.get_stock_price(ticker)
-        price = int(price_doc["price"]) if price_doc else 0
-        total = price * 수량
+        price = ss.round_stock_value(price_doc["price"]) if price_doc else 0
+        total = ss.round_stock_value(price * 수량)
         _, bal = _ensure_and_get_balance(interaction.user)
         embed = discord.Embed(title=f"매수 확인 — {s['name']}", color=discord.Color.from_rgb(60,180,80))
-        embed.add_field(name="현재가", value=f"{price} CR", inline=True)
+        embed.add_field(name="현재가", value=f"{ss.format_stock_value(price)} CR", inline=True)
         embed.add_field(name="수량", value=f"{수량}주", inline=True)
-        embed.add_field(name="합계", value=f"{total} CR", inline=True)
-        embed.add_field(name="잔고", value=f"{bal} CR → {bal - total} CR", inline=True)
+        embed.add_field(name="합계", value=f"{ss.format_stock_value(total)} CR", inline=True)
+        embed.add_field(name="잔고", value=f"{ss.format_stock_value(bal)} CR → {ss.format_stock_value(bal - total)} CR", inline=True)
         if bal < total:
             embed.set_footer(text="크레딧이 부족해요...")
             await interaction.response.send_message(embed=embed, ephemeral=True); return
@@ -1748,18 +1755,18 @@ class ShopCog(commands.Cog):
         ticker = 종목.upper(); s = ss.STOCK_MAP.get(ticker)
         if not s: await interaction.response.send_message("없는 종목이에요...!", ephemeral=True); return
         price_doc = mongo_stock.get_stock_price(ticker)
-        price = int(price_doc["price"]) if price_doc else 0
+        price = ss.round_stock_value(price_doc["price"]) if price_doc else 0
         user_id_hex = _ensure_user_id(interaction.user)
         holdings = mongo_stock.get_holdings(user_id_hex)
         held, avg = 0, 0
         for h in holdings:
             if h["ticker"] == ticker:
                 held = int(h.get("shares", 0))
-                avg = int(h.get("avgPrice", 0))
+                avg = ss.round_stock_value(h.get("avgPrice", 0))
                 break
         embed = discord.Embed(title=f"매도 확인 — {s['name']}", color=discord.Color.from_rgb(200,60,60))
-        embed.add_field(name="현재가", value=f"{price} CR", inline=True)
-        embed.add_field(name="보유", value=f"{held}주 (평단 {avg})", inline=True)
+        embed.add_field(name="현재가", value=f"{ss.format_stock_value(price)} CR", inline=True)
+        embed.add_field(name="보유", value=f"{held}주 (평단 {ss.format_stock_value(avg)})", inline=True)
         embed.add_field(name="매도 수량", value=f"{수량}주", inline=True)
         if held < 수량:
             embed.set_footer(text="보유 주식이 부족해요...")

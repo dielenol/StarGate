@@ -19,6 +19,7 @@ import { buyHolding, getStockPrice, sellHolding } from "@/lib/db/stocks";
 import { findUserById } from "@/lib/db/users";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import { roundStockValue } from "@/lib/stocks/pricing";
 
 /* ── 상수 ── */
 
@@ -162,7 +163,7 @@ export async function POST(request: Request) {
     );
   }
   const price = priceDoc.price;
-  const totalProceeds = price * shares;
+  const totalProceeds = roundStockValue(price * shares);
 
   const characterId = String(mainChar._id);
 
@@ -184,7 +185,7 @@ export async function POST(request: Request) {
   // 본 변수를 다른 값(예: post-fetch lookup)으로 교체하면 전량 매도 보상에서
   // avgPrice=0 오염되므로 절대 변경 금지.
   const avgPrice = sellResult.avgPrice;
-  const profit = (price - avgPrice) * shares;
+  const profit = roundStockValue((price - avgPrice) * shares);
 
   // Step 3: 잔액 적립 — STOCK_SELL ledger entry. allowNegative:true (양수 적립이라 영향 없으나
   // 안전하게 명시 — 음수가 발생할 일은 없음).

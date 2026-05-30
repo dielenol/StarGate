@@ -25,6 +25,7 @@ import type {
   StockPriceItem,
   StockSparklinePoint,
 } from "@/hooks/queries/useStocksQuery";
+import { formatStockValue } from "@/lib/stocks/pricing";
 
 import styles from "./StockHoverPreview.module.css";
 
@@ -168,7 +169,7 @@ export default function StockHoverPreview({ priceItem, sparklinePoints }: Props)
       </div>
       <div className={styles.preview__priceRow}>
         <span className={styles.preview__price}>
-          ¤ {priceItem.price.toLocaleString()}
+          ¤ {formatStockValue(priceItem.price)}
         </span>
         <span
           className={[styles.preview__change, changeMod]

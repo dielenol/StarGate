@@ -18,6 +18,7 @@ import {
   listStockPriceHistoryBulk,
 } from "@/lib/db/stocks";
 import { findStockByTicker, STOCK_CATALOG } from "@/lib/stocks/catalog";
+import { roundStockValue } from "@/lib/stocks/pricing";
 
 import type {
   StockHistoryResponse,
@@ -102,8 +103,8 @@ export async function buildHoldingsResponse(
     }
     const currentPriceRow = priceByTicker.get(h.ticker);
     const currentPrice = currentPriceRow?.price ?? meta.basePrice;
-    const evaluation = currentPrice * h.shares;
-    const profitLoss = (currentPrice - h.avgPrice) * h.shares;
+    const evaluation = roundStockValue(currentPrice * h.shares);
+    const profitLoss = roundStockValue((currentPrice - h.avgPrice) * h.shares);
     const profitPercent =
       h.avgPrice > 0 ? ((currentPrice - h.avgPrice) / h.avgPrice) * 100 : 0;
     items.push({

@@ -15,8 +15,8 @@ export interface StockEventRoll {
 
 export type StockPriceDirection = "up" | "down";
 
-const SCENARIO_CHANCE = 0.09;
-const SHOCK_CHANCE = 0.02;
+const SCENARIO_CHANCE = 0.24;
+const SHOCK_CHANCE = 0.06;
 
 const EVENTS_BY_TICKER: Record<string, StockMarketEvent[]> = {
   TWS: [

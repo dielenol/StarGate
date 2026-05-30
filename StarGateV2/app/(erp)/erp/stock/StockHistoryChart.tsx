@@ -22,6 +22,11 @@ import {
 } from "recharts";
 
 import { useGradientId } from "@/lib/charts/useGradientId";
+import {
+  MIN_STOCK_PRICE,
+  formatStockValue,
+  roundStockValue,
+} from "@/lib/stocks/pricing";
 
 import styles from "./page.module.css";
 
@@ -121,12 +126,13 @@ export default function StockHistoryChart({ data }: Props) {
             stroke="var(--ink-3)"
             tick={{ fill: "var(--ink-3)", fontSize: 14 }}
             tickFormatter={(v) =>
-              typeof v === "number" ? v.toLocaleString() : String(v)
+              typeof v === "number" ? formatStockValue(v) : String(v)
             }
             width={56}
             domain={[
-              (min: number) => Math.floor(min * 0.98),
-              (max: number) => Math.ceil(max * 1.02),
+              (min: number) =>
+                Math.max(MIN_STOCK_PRICE, roundStockValue(min * 0.98)),
+              (max: number) => roundStockValue(max * 1.02),
             ]}
           />
           <Tooltip
@@ -150,7 +156,7 @@ export default function StockHistoryChart({ data }: Props) {
               const point = payload?.payload as ChartPoint | undefined;
               const v =
                 typeof value === "number"
-                  ? `¤ ${value.toLocaleString()}`
+                  ? `¤ ${formatStockValue(value)}`
                   : String(value);
               return point?.eventText
                 ? [`${v} · ${point.eventText}`, "가격"]

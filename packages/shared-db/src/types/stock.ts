@@ -3,7 +3,7 @@ import type { ObjectId } from "mongodb";
 /**
  * 주식 가격 시계열 스냅샷 (ticker 별 단일 문서).
  *
- * - price / prevPrice: 정수 (소수점 없음, tia_bot 봇 코드와 정합).
+ * - price / prevPrice: 0.01 단위 숫자.
  * - lastUpdate: KST 'YYYY-MM-DD HH:mm' 문자열.
  *   UTC Date 가 아닌 문자열을 쓰는 이유는 KST 기준 표시 일관성 + 봇 호환.
  */
@@ -22,8 +22,8 @@ export type CreateStockPriceInput = Omit<StockPrice, "_id">;
  * 주식 보유량 (character × ticker).
  *
  * - shares < 0 금지 (CRUD 단계 atomic guard 로 강제).
- * - avgPrice: 가중평균 매수단가 (정수 절사).
- *   newAvg = floor((oldShares * oldAvg + buyShares * buyPrice) / (oldShares + buyShares))
+ * - avgPrice: 가중평균 매수단가 (0.01 단위 반올림).
+ *   newAvg = round((oldShares * oldAvg + buyShares * buyPrice) / (oldShares + buyShares), 2)
  *
  * characterId 는 Character._id.toHexString() (ObjectId 문자열).
  * (Phase 2 ledger 가 character 단위로 전환됨 → holdings 도 같은 키로 정합.)

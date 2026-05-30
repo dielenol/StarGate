@@ -42,6 +42,21 @@ TEXT     = (192, 184, 168)
 TEXT_DIM = (104, 100, 96)
 WHITE    = (220, 215, 205)
 BORDER   = (50, 42, 25)
+MIN_STOCK_PRICE = 0.01
+
+
+def round_stock_value(value) -> float:
+    rounded = round(float(value) + 1e-9, 2)
+    return int(rounded) if rounded.is_integer() else rounded
+
+
+def normalize_stock_price(value) -> float:
+    return max(MIN_STOCK_PRICE, round_stock_value(value))
+
+
+def format_stock_value(value) -> str:
+    rounded = round_stock_value(value)
+    return f"{rounded:,.2f}".rstrip("0").rstrip(".")
 
 # ============================================================
 # 폰트
@@ -151,11 +166,11 @@ def _normalize_price_doc(doc: dict) -> dict:
 
     P2-5: prevPrice 가 0 이거나 누락이면 price 로 fallback (시드 직후 0 등락 표기 방지).
     """
-    price = int(doc.get("price", 0))
+    price = round_stock_value(doc.get("price", 0))
     return {
         "ticker": doc.get("ticker"),
         "price": price,
-        "prev_price": int(doc.get("prevPrice") or price),
+        "prev_price": round_stock_value(doc.get("prevPrice") or price),
         "event_text": doc.get("eventText", ""),
         "last_update": doc.get("lastUpdate", ""),
     }
@@ -167,10 +182,10 @@ def get_stock_prices() -> dict:
     return {d["ticker"]: _normalize_price_doc(d) for d in docs}
 
 
-def get_stock_price(ticker: str) -> int:
-    """현재가 정수. 미존재 시 0."""
+def get_stock_price(ticker: str) -> float:
+    """현재가. 미존재 시 0."""
     doc = mongo_stock.get_stock_price(ticker)
-    return int(doc["price"]) if doc else 0
+    return round_stock_value(doc["price"]) if doc else 0
 
 
 # ============================================================
@@ -186,7 +201,7 @@ def _normalize_holding_doc(doc: dict) -> dict:
         "user_id": doc.get("userId"),
         "ticker": doc.get("ticker"),
         "shares": int(doc.get("shares", 0)),
-        "avg_price": int(doc.get("avgPrice", 0)),
+        "avg_price": round_stock_value(doc.get("avgPrice", 0)),
     }
 
 
@@ -234,7 +249,7 @@ def _get_recent_trade_volume(hours: int = 24) -> dict[str, dict]:
             bucket["buy_count"] += int(row["count"])
         elif type_ == "STOCK_SELL":
             bucket["sell_count"] += int(row["count"])
-        bucket["total_volume"] += int(row["volume"])
+        bucket["total_volume"] += round_stock_value(row["volume"])
     return out
 
 
@@ -365,8 +380,8 @@ async def update_stock_prices(copilot_api_key, model):
     for s in STOCKS:
         ticker = s["ticker"]
         ev = events.get(ticker, {"change": 0, "event": "변동 없음"})
-        old_price = int(prices.get(ticker, {}).get("price", s["base_price"]))
-        new_price = max(1, int(old_price * (1 + ev["change"] / 100.0)))
+        old_price = round_stock_value(prices.get(ticker, {}).get("price", s["base_price"]))
+        new_price = normalize_stock_price(old_price * (1 + ev["change"] / 100.0))
         try:
             mongo_stock.update_stock_price(ticker, new_price, ev["event"], update_tag)
         except ValueError:
@@ -423,12 +438,12 @@ def draw_stock_board():
 
         draw.text((30, y+4), s["ticker"], fill=GOLD, font=FONT_HEADER)
         draw.text((80, y+6), s["name"], fill=TEXT, font=FONT_BODY)
-        draw.text((w-100, y+4), f"{price} CR", fill=WHITE, font=FONT_HEADER)
+        draw.text((w-100, y+4), f"{format_stock_value(price)} CR", fill=WHITE, font=FONT_HEADER)
 
         if diff > 0:
-            color = (60, 180, 80); arrow = f"+{diff} (+{pct:.1f}%)"
+            color = (60, 180, 80); arrow = f"+{format_stock_value(diff)} (+{pct:.1f}%)"
         elif diff < 0:
-            color = (200, 60, 60); arrow = f"{diff} ({pct:.1f}%)"
+            color = (200, 60, 60); arrow = f"{format_stock_value(diff)} ({pct:.1f}%)"
         else:
             color = TEXT_DIM; arrow = "0 (0.0%)"
         draw.text((30, y+24), arrow, fill=color, font=FONT_BODY)
@@ -463,8 +478,8 @@ def draw_portfolio_image(user_id, user_name):
         s = STOCK_MAP.get(h["ticker"])
         if not s: continue
         cur_price = prices.get(h["ticker"], {}).get("price", s["base_price"])
-        value = cur_price * h["shares"]
-        profit = (cur_price - h["avg_price"]) * h["shares"]
+        value = round_stock_value(cur_price * h["shares"])
+        profit = round_stock_value((cur_price - h["avg_price"]) * h["shares"])
         total_value += value; total_profit += profit
         rows.append({"ticker": h["ticker"], "name": s["name"], "shares": h["shares"],
                       "avg": h["avg_price"], "cur": cur_price, "value": value, "profit": profit})
@@ -492,19 +507,19 @@ def draw_portfolio_image(user_id, user_name):
             draw.text((30, y+6), r["ticker"], fill=GOLD, font=FONT_BODY)
             draw.text((80, y+6), r["name"][:6], fill=TEXT, font=FONT_SMALL)
             draw.text((150, y+6), f"{r['shares']}주", fill=TEXT, font=FONT_BODY)
-            draw.text((210, y+6), str(r["avg"]), fill=TEXT_DIM, font=FONT_BODY)
-            draw.text((280, y+6), str(r["cur"]), fill=WHITE, font=FONT_BODY)
-            draw.text((350, y+6), str(r["value"]), fill=TEXT, font=FONT_BODY)
+            draw.text((210, y+6), format_stock_value(r["avg"]), fill=TEXT_DIM, font=FONT_BODY)
+            draw.text((280, y+6), format_stock_value(r["cur"]), fill=WHITE, font=FONT_BODY)
+            draw.text((350, y+6), format_stock_value(r["value"]), fill=TEXT, font=FONT_BODY)
             pc = (60,180,80) if r["profit"]>=0 else (200,60,60)
-            pstr = f"+{r['profit']}" if r["profit"]>=0 else str(r["profit"])
+            pstr = f"+{format_stock_value(r['profit'])}" if r["profit"]>=0 else format_stock_value(r["profit"])
             draw.text((430, y+6), pstr, fill=pc, font=FONT_BODY)
 
     sy = h - 60
     draw.rectangle([20, sy, w-20, sy+30], fill=(20,20,16))
-    draw.text((30, sy+6), f"총 평가액: {total_value} CR", fill=GOLD, font=FONT_BODY)
+    draw.text((30, sy+6), f"총 평가액: {format_stock_value(total_value)} CR", fill=GOLD, font=FONT_BODY)
     pc = (60,180,80) if total_profit>=0 else (200,60,60)
-    draw.text((280, sy+6), f"총 손익: {'+' if total_profit>=0 else ''}{total_profit} CR", fill=pc, font=FONT_BODY)
-    draw_footer(draw, w, h, f"잔고 {bal} + 주식 {total_value} = 총 {bal+total_value} CR")
+    draw.text((280, sy+6), f"총 손익: {'+' if total_profit>=0 else ''}{format_stock_value(total_profit)} CR", fill=pc, font=FONT_BODY)
+    draw_footer(draw, w, h, f"잔고 {format_stock_value(bal)} + 주식 {format_stock_value(total_value)} = 총 {format_stock_value(bal+total_value)} CR")
     return img_to_buffer(img)
 
 
@@ -576,16 +591,16 @@ def get_all_holdings_text():
             s = STOCK_MAP.get(h["ticker"])
             if not s: continue
             cur = prices.get(h["ticker"], {}).get("price", s["base_price"])
-            val = cur * h["shares"]
-            pft = (cur - h["avg_price"]) * h["shares"]
+            val = round_stock_value(cur * h["shares"])
+            pft = round_stock_value((cur - h["avg_price"]) * h["shares"])
             total_value += val; total_profit += pft
-            pstr = f"+{pft}" if pft >= 0 else str(pft)
+            pstr = f"+{format_stock_value(pft)}" if pft >= 0 else format_stock_value(pft)
             parts.append(
                 f"  {h['ticker']} {h['shares']}주 "
-                f"(평단{h['avg_price']}, 현재{cur}, {pstr})"
+                f"(평단{format_stock_value(h['avg_price'])}, 현재{format_stock_value(cur)}, {pstr})"
             )
-        pstr = f"+{total_profit}" if total_profit >= 0 else str(total_profit)
-        lines.append(f"**{agent}** ({nick}) — 평가액 {total_value} CR ({pstr})")
+        pstr = f"+{format_stock_value(total_profit)}" if total_profit >= 0 else format_stock_value(total_profit)
+        lines.append(f"**{agent}** ({nick}) — 평가액 {format_stock_value(total_value)} CR ({pstr})")
         lines.extend(parts)
     return "\n".join(lines)
 
@@ -608,8 +623,8 @@ def apply_gm_event(ticker, change, event_text):
 
     # 현재 가격 조회 (race window 있음 — 단일 봇 프로세스라 무시).
     cur = mongo_stock.get_stock_price(ticker)
-    old_price = int(cur["price"]) if cur else s["base_price"]
-    new_price = max(1, int(old_price * (1 + change / 100.0)))
+    old_price = round_stock_value(cur["price"]) if cur else s["base_price"]
+    new_price = normalize_stock_price(old_price * (1 + change / 100.0))
 
     try:
         mongo_stock.update_stock_price(ticker, new_price, event_text, today)

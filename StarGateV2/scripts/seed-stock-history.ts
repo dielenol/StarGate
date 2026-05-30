@@ -35,6 +35,7 @@ import {
 } from "@stargate/shared-db";
 
 import { STOCK_CATALOG } from "../lib/stocks/catalog.ts";
+import { normalizeStockPrice } from "../lib/stocks/pricing.ts";
 
 /* ── .env.local 로드 ── */
 
@@ -154,14 +155,14 @@ function buildSeries(
   const stepDrift = vol.dailyDrift / STEPS_PER_DAY;
 
   const prices: number[] = new Array(STEPS).fill(0);
-  prices[STEPS - 1] = Math.max(1, Math.round(currentPrice));
+  prices[STEPS - 1] = normalizeStockPrice(currentPrice);
 
   for (let i = STEPS - 2; i >= 0; i--) {
     const r = randomNormal(stepDrift, stepSigma);
     // 다음 step 가격 = 현재 × (1+r) → 거꾸로 = next / (1+r)
     const safeR = r > -0.95 ? r : -0.95; // 1+r 가 0 근접 방지
     const back = prices[i + 1] / (1 + safeR);
-    prices[i] = Math.max(1, Math.round(back));
+    prices[i] = normalizeStockPrice(back);
   }
 
   const rows: HistoryRow[] = new Array(STEPS);

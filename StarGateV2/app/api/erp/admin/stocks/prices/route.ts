@@ -14,6 +14,13 @@ import {
 } from "@/lib/db/stocks";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 import { notifyStockManualIntervention } from "@/lib/stocks/market-wire";
+import {
+  MAX_STOCK_PRICE,
+  MIN_STOCK_PRICE,
+  formatStockValue,
+  isValidStockPrice,
+  normalizeStockPrice,
+} from "@/lib/stocks/pricing";
 import { kstNowTag } from "@/lib/stocks/time";
 
 interface PostBody {
@@ -21,9 +28,6 @@ interface PostBody {
   price?: number;
   eventText?: string;
 }
-
-const MIN_PRICE = 1;
-const MAX_PRICE = 999_999_999;
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -53,20 +57,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const price = body.price;
+  const rawPrice = body.price;
   if (
-    typeof price !== "number" ||
-    !Number.isInteger(price) ||
-    price < MIN_PRICE ||
-    price > MAX_PRICE
+    typeof rawPrice !== "number" ||
+    !isValidStockPrice(rawPrice)
   ) {
     return NextResponse.json(
       {
-        error: `price는 ${MIN_PRICE}~${MAX_PRICE.toLocaleString()} 사이의 정수여야 합니다.`,
+        error: `price는 ${formatStockValue(MIN_STOCK_PRICE)}~${formatStockValue(
+          MAX_STOCK_PRICE,
+        )} 사이의 숫자여야 합니다.`,
       },
       { status: 400 },
     );
   }
+  const price = normalizeStockPrice(rawPrice);
 
   const eventText = body.eventText?.trim() || "GM 시세 조정";
   if (eventText.length > 80) {

@@ -10,6 +10,10 @@ import {
   type StockPricesResponse,
   useStockPrices,
 } from "@/hooks/queries/useStocksQuery";
+import {
+  MIN_STOCK_PRICE,
+  formatStockValue,
+} from "@/lib/stocks/pricing";
 
 import { ARROW, priceDirection } from "../../stock/_helpers";
 import { StockLogo } from "../../stock/_logos";
@@ -129,7 +133,7 @@ export default function StockAdminClient({ initialPrices }: Props) {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const price = Number.parseInt(priceInput, 10);
+    const price = Number.parseFloat(priceInput);
     mutation.mutate({
       ticker: selectedTicker,
       price,
@@ -177,7 +181,7 @@ export default function StockAdminClient({ initialPrices }: Props) {
                     </span>
                   </span>
                   <span className={styles.priceRow__quote}>
-                    ¤ {item.price.toLocaleString()}
+                    ¤ {formatStockValue(item.price)}
                     <small>{ARROW[direction]} {item.changePercent.toFixed(2)}%</small>
                   </span>
                 </button>
@@ -221,10 +225,17 @@ export default function StockAdminClient({ initialPrices }: Props) {
                 <span>변경 가격</span>
                 <input
                   type="number"
-                  min={1}
-                  step={1}
+                  min={MIN_STOCK_PRICE}
+                  step={0.01}
                   value={priceInput}
-                  onChange={(e) => setPriceInput(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) => {
+                    const next = e.target.value
+                      .replace(/[^\d.]/g, "")
+                      .replace(/(\..*)\./g, "$1");
+                    if (/^\d*(?:\.\d{0,2})?$/.test(next)) {
+                      setPriceInput(next);
+                    }
+                  }}
                 />
               </label>
               <label className={styles.field}>
@@ -239,7 +250,7 @@ export default function StockAdminClient({ initialPrices }: Props) {
               </label>
               <div className={styles.summary}>
                 <span>현재가</span>
-                <strong>¤ {selected.price.toLocaleString()}</strong>
+                <strong>¤ {formatStockValue(selected.price)}</strong>
                 <span>최근 이벤트</span>
                 <strong>{selected.eventText || "미등록"}</strong>
               </div>
