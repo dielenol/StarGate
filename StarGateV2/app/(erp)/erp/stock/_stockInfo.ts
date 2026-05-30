@@ -38,8 +38,8 @@ export interface StockInfo {
   enterpriseValueBillion: number;
   /** 대표이사 (1-2명). */
   ceos: string[];
-  /** 설립 연도. */
-  foundedYear: number;
+  /** 설립 연도. 미등록/비공개 종목은 null. */
+  foundedYear: number | null;
   /** 상장일 — display 용 (YYYY년 M월 D일). */
   ipoDate: string;
   /** 발행주식수. */
@@ -103,14 +103,14 @@ export const STOCK_INFO: Record<string, StockInfo> = {
   SSR: {
     ticker: "SSR",
     description:
-      "1972년 설립된 한국계 종합 해운 기업으로 컨테이너·벌크·LNG 화물 운송 및 항만 터미널 운영, 선박 건조 사업을 영위함.",
+      "다국적기업의 종합 해운 기업으로 컨테이너·벌크·LNG 화물 운송 및 항만 터미널 운영, 선박 건조 사업을 영위함.",
     englishName: "SongSaRi Shipping Co., Ltd.",
     marketCapBillion: 54,
     enterpriseValueBillion: 23,
-    ceos: ["박성호", "김정우"],
-    foundedYear: 1972,
-    ipoDate: "1988년 11월 3일",
-    sharesOutstanding: 180_000_000,
+    ceos: ["미등록"],
+    foundedYear: null,
+    ipoDate: "미등록",
+    sharesOutstanding: 184_237_409,
     revenueComposition: [
       { label: "컨테이너 해운", ratio: 47 },
       { label: "벌크 화물", ratio: 26 },

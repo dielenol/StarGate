@@ -73,6 +73,8 @@ export default function StockInfoPanel({ ticker }: Props) {
   // 시가총액 / EV — 10억 단위 입력 → 한글 단위 변환 ("12조 4,000억")
   const marketCapKor = formatBillionToKor(info.marketCapBillion);
   const enterpriseValueKor = formatBillionToKor(info.enterpriseValueBillion);
+  const listingLabel =
+    info.foundedYear === null ? "상장일" : `상장일 (설립 ${info.foundedYear})`;
 
   return (
     <section className={styles.infoPanel} aria-label="종목 정보">
@@ -111,9 +113,7 @@ export default function StockInfoPanel({ ticker }: Props) {
           </dd>
         </div>
         <div className={styles.infoPanel__kvCell}>
-          <dt className={styles.infoPanel__kvLabel}>
-            상장일 (설립 {info.foundedYear})
-          </dt>
+          <dt className={styles.infoPanel__kvLabel}>{listingLabel}</dt>
           <dd className={styles.infoPanel__kvValue}>{info.ipoDate}</dd>
         </div>
         <div className={styles.infoPanel__kvCell}>

@@ -1,11 +1,10 @@
 "use client";
 
 /**
- * 종목 로고 매핑 — ticker → React 컴포넌트.
+ * 종목 로고 매핑 — ticker → public asset.
  *
- * `lib/stocks/catalog.ts` 는 server-safe (React import 금지) 라 별도로 분리.
- * SVG 자체는 `public/assets/svg/ic_stock-{ticker}.svg` 단일 소스, Turbopack SVGR 규칙으로
- * React 컴포넌트화. 본 모듈은 컴포넌트 매핑 + `<StockLogo>` 래퍼만 담당.
+ * `lib/stocks/catalog.ts` 는 server-safe (React import 금지) 라 별도로 분리하고,
+ * 실제 회사 로고 asset 은 `public/assets/stocks/*-logo.webp` 에 둔다.
  *
  * 사용처:
  *  - list view (StockListClient) row 좌측 logoCircle--md
@@ -15,41 +14,28 @@
  */
 
 /* 1. 코어 라이브러리, 기타 라이브러리 */
-import { createElement, type ComponentProps } from "react";
-
-/* 4. 프로젝트 내부 컴포넌트 */
-import {
-  IconStockArt,
-  IconStockBpe,
-  IconStockGn3,
-  IconStockMsf,
-  IconStockSpz,
-  IconStockSsr,
-  IconStockStm,
-  IconStockTws,
-  IconStockVfp,
-  type IconComponent,
-} from "@/components/icons";
+import type { ComponentProps, CSSProperties } from "react";
+import Image from "next/image";
 
 /* 4-1. 유틸 / 상수 / asset */
 import { findStockByTicker } from "@/lib/stocks/catalog";
 
 import styles from "./_logos.module.css";
 
-/* 7. 상수 — ticker → 도트 SVG 컴포넌트 매핑. */
-const STOCK_LOGOS: Record<string, IconComponent> = {
-  TWS: IconStockTws,
-  STM: IconStockStm,
-  SSR: IconStockSsr,
-  MSF: IconStockMsf,
-  VFP: IconStockVfp,
-  BPE: IconStockBpe,
-  ART: IconStockArt,
-  GN3: IconStockGn3,
-  SPZ: IconStockSpz,
+/* 7. 상수 — ticker → 실제 회사 로고 asset 매핑. */
+const STOCK_LOGOS: Record<string, string> = {
+  TWS: "/assets/stocks/tws-logo.webp",
+  STM: "/assets/stocks/stm-logo.webp",
+  SSR: "/assets/stocks/ssr-logo.webp",
+  MSF: "/assets/stocks/msf-logo.webp",
+  VFP: "/assets/stocks/vfp-logo.webp",
+  BPE: "/assets/stocks/bpe-logo.webp",
+  ART: "/assets/stocks/art-logo.webp",
+  GN3: "/assets/stocks/gn3-logo.webp",
+  SPZ: "/assets/stocks/spz-logo.webp",
 };
 
-export function getStockLogo(ticker: string): IconComponent | null {
+export function getStockLogo(ticker: string): string | null {
   return STOCK_LOGOS[ticker] ?? null;
 }
 
@@ -73,9 +59,9 @@ export function StockLogo({
   className,
   ...rest
 }: StockLogoProps) {
-  const logoComponent = getStockLogo(ticker);
+  const logoSrc = getStockLogo(ticker);
   const item = findStockByTicker(ticker);
-  if (!logoComponent || !item) return null;
+  if (!logoSrc || !item) return null;
 
   const sizeMod =
     size === "sm"
@@ -83,6 +69,7 @@ export function StockLogo({
       : size === "lg"
         ? styles["logoCircle--lg"]
         : styles["logoCircle--md"];
+  const imageSizes = size === "sm" ? "20px" : size === "lg" ? "56px" : "36px";
 
   // createElement 로 직접 호출 — render 함수 내부에서 컴포넌트 변수 선언 시
   // react-hooks/static-components 가 경고 (state 초기화 위험). 매핑 객체에서
@@ -93,10 +80,21 @@ export function StockLogo({
       className={[styles.logoCircle, sizeMod, className]
         .filter(Boolean)
         .join(" ")}
-      style={{ background: item.color, ...rest.style }}
+      style={
+        {
+          "--stock-logo-accent": item.color,
+          ...rest.style,
+        } as CSSProperties
+      }
       aria-hidden="true"
     >
-      {createElement(logoComponent)}
+      <Image
+        className={styles.logoCircle__image}
+        src={logoSrc}
+        alt=""
+        fill
+        sizes={imageSizes}
+      />
     </span>
   );
 }

@@ -6,7 +6,11 @@ import {
   updateStockPrice,
 } from "@/lib/db/stocks";
 import { STOCK_CATALOG } from "@/lib/stocks/catalog";
-import { rollStockMarketEvent, type StockEventTier } from "@/lib/stocks/events";
+import {
+  rollStockMarketEvent,
+  type StockEventTier,
+  type StockPriceDirection,
+} from "@/lib/stocks/events";
 import { kstDateTag, kstNowTag } from "@/lib/stocks/time";
 
 interface ApplyScheduledStockTickOptions {
@@ -26,30 +30,65 @@ export interface ScheduledStockTickResult {
 
 export interface ScheduledStockTickSummary {
   date: string;
+  slot: string;
   results: ScheduledStockTickResult[];
 }
 
-function randomCentered(): number {
+function randomMagnitude(): number {
   // Average of multiple random samples gives fewer extreme spikes than pure uniform.
   const samples = 4;
   let sum = 0;
   for (let i = 0; i < samples; i += 1) {
     sum += Math.random();
   }
-  return sum / samples - 0.5;
+  return sum / samples;
 }
 
 function volatilityForBasePrice(basePrice: number): number {
-  if (basePrice >= 500) return 0.08;
-  if (basePrice >= 100) return 0.1;
-  return 0.14;
+  if (basePrice >= 500) return 0.045;
+  if (basePrice >= 100) return 0.055;
+  return 0.075;
 }
 
-function calculateRoutinePercent(currentPrice: number, basePrice: number): number {
-  const driftToBase = ((basePrice - currentPrice) / Math.max(basePrice, 1)) * 0.012;
+function signForDirection(direction: StockPriceDirection): 1 | -1 {
+  return direction === "up" ? 1 : -1;
+}
+
+function rollDirection(): StockPriceDirection {
+  return Math.random() < 0.5 ? "up" : "down";
+}
+
+function currentKstSlotTag(): string {
+  const nowTag = kstNowTag();
+  const date = nowTag.slice(0, 10);
+  const hour = Number.parseInt(nowTag.slice(11, 13), 10);
+  const slotHour = Math.floor(hour / 6) * 6;
+  return `${date} ${String(slotHour).padStart(2, "0")}:00`;
+}
+
+function slotTagForDate(date: Date): string {
+  const tag = kstNowTag(date);
+  const datePart = tag.slice(0, 10);
+  const hour = Number.parseInt(tag.slice(11, 13), 10);
+  const slotHour = Math.floor(hour / 6) * 6;
+  return `${datePart} ${String(slotHour).padStart(2, "0")}:00`;
+}
+
+function calculateRoutinePercent(
+  currentPrice: number,
+  basePrice: number,
+  direction: StockPriceDirection,
+): number {
   const volatility = volatilityForBasePrice(basePrice);
-  const rawPercent = randomCentered() * 2 * volatility + driftToBase;
-  return Math.max(-0.18, Math.min(0.18, rawPercent));
+  const directionSign = signForDirection(direction);
+  const distanceFromBase = (basePrice - currentPrice) / Math.max(basePrice, 1);
+  const movesTowardBase = directionSign * distanceFromBase > 0;
+  const meanReversionBias = Math.min(0.25, Math.abs(distanceFromBase) * 0.12);
+  const baseMagnitude = Math.max(0.006, randomMagnitude() * volatility);
+  const adjustedMagnitude =
+    baseMagnitude * (movesTowardBase ? 1 + meanReversionBias : 1 - meanReversionBias);
+  const rawPercent = directionSign * adjustedMagnitude;
+  return Math.max(-0.09, Math.min(0.09, rawPercent));
 }
 
 function calculateNextPrice(
@@ -72,10 +111,13 @@ function changePercent(prevPrice: number, price: number): number {
   return prevPrice > 0 ? ((price - prevPrice) / prevPrice) * 100 : 0;
 }
 
-async function hasScheduledTickToday(ticker: string, today: string): Promise<boolean> {
+async function hasScheduledTickInSlot(
+  ticker: string,
+  slot: string,
+): Promise<boolean> {
   const history = await listStockPriceHistory(ticker, 2);
   return history.some(
-    (row) => row.source === "scheduled" && kstDateTag(row.createdAt) === today,
+    (row) => row.source === "scheduled" && slotTagForDate(row.createdAt) === slot,
   );
 }
 
@@ -83,11 +125,13 @@ export async function applyScheduledStockTick(
   options: ApplyScheduledStockTickOptions = {},
 ): Promise<ScheduledStockTickSummary> {
   const today = kstDateTag();
+  const slot = currentKstSlotTag();
   const lastUpdate = kstNowTag();
   const results: ScheduledStockTickResult[] = [];
 
   for (const meta of STOCK_CATALOG) {
-    if (!options.force && (await hasScheduledTickToday(meta.ticker, today))) {
+    const direction = rollDirection();
+    if (!options.force && (await hasScheduledTickInSlot(meta.ticker, slot))) {
       const current = await getStockPrice(meta.ticker);
       results.push({
         ticker: meta.ticker,
@@ -128,8 +172,16 @@ export async function applyScheduledStockTick(
       continue;
     }
 
-    const routinePercent = calculateRoutinePercent(current.price, meta.basePrice);
-    const rolledEvent = rollStockMarketEvent(meta.ticker, routinePercent);
+    const routinePercent = calculateRoutinePercent(
+      current.price,
+      meta.basePrice,
+      direction,
+    );
+    const rolledEvent = rollStockMarketEvent(
+      meta.ticker,
+      routinePercent,
+      direction,
+    );
     const nextPrice = calculateNextPrice(
       current.price,
       meta.basePrice,
@@ -161,5 +213,5 @@ export async function applyScheduledStockTick(
     });
   }
 
-  return { date: today, results };
+  return { date: today, slot, results };
 }

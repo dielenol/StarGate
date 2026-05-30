@@ -13,6 +13,7 @@ import {
   updateStockPrice,
 } from "@/lib/db/stocks";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import { notifyStockManualIntervention } from "@/lib/stocks/market-wire";
 import { kstNowTag } from "@/lib/stocks/time";
 
 interface PostBody {
@@ -88,6 +89,16 @@ export async function POST(request: Request) {
     eventText,
     source: "gm-event",
   });
+  const marketWire = await notifyStockManualIntervention({
+    ticker,
+    previousPrice: previous?.price ?? updated.prevPrice,
+    price: updated.price,
+    eventText,
+    actor: {
+      displayName: session.user.displayName,
+      role: session.user.role,
+    },
+  });
 
   return NextResponse.json({
     item: {
@@ -97,6 +108,7 @@ export async function POST(request: Request) {
       eventText: updated.eventText,
       lastUpdate: updated.lastUpdate,
     },
+    marketWire,
   });
 }
 

@@ -51,7 +51,8 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     ticker: "SSR",
     name: "송사리",
     basePrice: 30,
-    description: "한국계 글로벌 선박 회사. 물류·해운 사업을 기반으로 꾸준한 성장세.",
+    description:
+      "다국적기업의 종합 해운 기업으로 컨테이너·벌크·LNG 화물 운송 및 항만 터미널 운영, 선박 건조 사업을 영위함.",
     color: "#1F6B8F",
   },
   {

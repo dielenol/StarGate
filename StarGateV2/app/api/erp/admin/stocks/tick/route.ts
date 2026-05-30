@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { notifyScheduledStockMarketWire } from "@/lib/stocks/market-wire";
 import { applyScheduledStockTick } from "@/lib/stocks/scheduled-tick";
 
 interface PostBody {
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as PostBody;
   const summary = await applyScheduledStockTick({ force: Boolean(body.force) });
-  return NextResponse.json(summary);
+  const marketWire = await notifyScheduledStockMarketWire(summary);
+  return NextResponse.json({ ...summary, marketWire });
 }
 

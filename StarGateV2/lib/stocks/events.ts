@@ -13,8 +13,10 @@ export interface StockEventRoll {
   percent: number;
 }
 
-const SCENARIO_CHANCE = 0.24;
-const SHOCK_CHANCE = 0.06;
+export type StockPriceDirection = "up" | "down";
+
+const SCENARIO_CHANCE = 0.09;
+const SHOCK_CHANCE = 0.02;
 
 const EVENTS_BY_TICKER: Record<string, StockMarketEvent[]> = {
   TWS: [
@@ -99,14 +101,27 @@ function pickRandom<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)]!;
 }
 
+function isDirectionMatch(
+  event: StockMarketEvent,
+  direction: StockPriceDirection,
+): boolean {
+  return direction === "up" ? event.maxPercent > 0 : event.minPercent < 0;
+}
+
 export function rollStockMarketEvent(
   ticker: string,
   routinePercent: number,
+  direction: StockPriceDirection,
 ): StockEventRoll {
   const events = EVENTS_BY_TICKER[ticker] ?? [];
   const roll = Math.random();
-  const shockEvents = events.filter((event) => event.tier === "shock");
-  const scenarioEvents = events.filter((event) => event.tier === "scenario");
+  const shockEvents = events.filter(
+    (event) => event.tier === "shock" && isDirectionMatch(event, direction),
+  );
+  const scenarioEvents = events.filter(
+    (event) =>
+      event.tier === "scenario" && isDirectionMatch(event, direction),
+  );
 
   if (roll < SHOCK_CHANCE && shockEvents.length > 0) {
     const event = pickRandom(shockEvents);

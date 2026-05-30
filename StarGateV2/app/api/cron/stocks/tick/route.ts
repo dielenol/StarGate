@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { notifyScheduledStockMarketWire } from "@/lib/stocks/market-wire";
 import { applyScheduledStockTick } from "@/lib/stocks/scheduled-tick";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -11,6 +15,7 @@ export async function GET(request: Request) {
   }
 
   const summary = await applyScheduledStockTick();
-  return NextResponse.json(summary);
+  const marketWire = await notifyScheduledStockMarketWire(summary);
+  return NextResponse.json({ ...summary, marketWire });
 }
 

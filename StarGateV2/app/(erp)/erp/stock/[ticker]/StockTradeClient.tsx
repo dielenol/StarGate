@@ -13,7 +13,7 @@
  * 다른 종목으로 이동: 우측 rail 의 보유 종목 mini list 클릭 → `/erp/stock/[새ticker]` push.
  */
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -39,6 +39,7 @@ import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
+import { resolvePublicAssetPath } from "@/lib/asset-path";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 
 import RangeToggle, {
@@ -82,6 +83,16 @@ const QUICK_RATIOS: Array<{ label: string; ratio: number }> = [
   { label: "50%", ratio: 0.5 },
   { label: "최대", ratio: 1 },
 ];
+const TRADE_SUCCESS_SOUNDS = {
+  buy: {
+    src: resolvePublicAssetPath("/sound/stocks/stock-buy-success.mp3"),
+    volume: 0.34,
+  },
+  sell: {
+    src: resolvePublicAssetPath("/sound/stocks/stock-sell-success.mp3"),
+    volume: 0.26,
+  },
+} as const;
 
 type TradeTab = "buy" | "sell";
 
@@ -127,6 +138,8 @@ export default function StockTradeClient({
   const [qtyInput, setQtyInput] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const buySuccessAudioRef = useRef<HTMLAudioElement | null>(null);
+  const sellSuccessAudioRef = useRef<HTMLAudioElement | null>(null);
 
   /* 11. 파생 — 시세 / 보유 / 차트 데이터 */
   const days = RANGE_TO_DAYS[range];
@@ -264,11 +277,37 @@ export default function StockTradeClient({
     setQtyInput(next > 0 ? String(next) : "");
   }
 
+  function getTradeSuccessAudio(tab: TradeTab): HTMLAudioElement {
+    const ref = tab === "buy" ? buySuccessAudioRef : sellSuccessAudioRef;
+    const config = TRADE_SUCCESS_SOUNDS[tab];
+
+    if (!ref.current) {
+      const audio = new Audio(config.src);
+      audio.preload = "auto";
+      ref.current = audio;
+    }
+
+    ref.current.volume = config.volume;
+    return ref.current;
+  }
+
+  function playTradeSuccessSound(tab: TradeTab) {
+    try {
+      const audio = getTradeSuccessAudio(tab);
+      audio.pause();
+      audio.currentTime = 0;
+      void audio.play().catch(() => {});
+    } catch {
+      // Ignore playback errors (browser autoplay policy, unsupported codec, etc.)
+    }
+  }
+
   function handleTradeSubmit() {
     if (submitDisabled) return;
     setErrorMessage(null);
     setSuccessMessage(null);
     const mutation = effectiveTab === "buy" ? buyMutation : sellMutation;
+    const soundTab = effectiveTab;
     const submittedShares = tradeShares;
     const action = effectiveTab === "buy" ? "매수" : "매도";
     mutation.mutate(
@@ -277,6 +316,7 @@ export default function StockTradeClient({
         onSuccess: (result) => {
           setQtyInput("");
           setErrorMessage(null);
+          playTradeSuccessSound(soundTab);
           const total =
             "purchase" in result
               ? result.purchase.totalCost
