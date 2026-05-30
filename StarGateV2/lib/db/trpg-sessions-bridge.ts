@@ -33,6 +33,7 @@ import {
 import type { SessionStatus } from "@stargate/shared-db";
 
 import type { SerializedSession } from "@/hooks/queries/useSessionsQuery";
+import { getParticipantCodenameOverride } from "@/lib/session-participant-overrides";
 
 /** `process.env.TRPG_GUILD_ID` 정규화 — 비어 있으면 null. */
 export function getTrpgGuildId(): string | null {
@@ -130,12 +131,15 @@ export async function fetchTrpgSessionsAsSerialized(
       }
     }
 
-    const participants = raw.participantDiscordIds.map((id) => ({
-      userId: id,
-      status: "YES" as const,
-      displayName: nameByDiscordId.get(id) ?? id,
-      codename: undefined,
-    }));
+    const participants = raw.participantDiscordIds.map((id) => {
+      const displayName = nameByDiscordId.get(id) ?? id;
+      return {
+        userId: id,
+        status: "YES" as const,
+        displayName,
+        codename: getParticipantCodenameOverride(displayName),
+      };
+    });
 
     const isViewerYes =
       typeof viewerDiscordId === "string" &&

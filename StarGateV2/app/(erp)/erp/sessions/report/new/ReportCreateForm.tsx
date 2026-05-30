@@ -21,6 +21,12 @@ export default function ReportCreateForm() {
   const [summary, setSummary] = useState("");
   const [highlights, setHighlights] = useState<string[]>([""]);
   const [participants, setParticipants] = useState<string[]>([""]);
+  const [locationLabel, setLocationLabel] = useState("");
+  const [mapX, setMapX] = useState("");
+  const [mapY, setMapY] = useState("");
+  const [mapPrecision, setMapPrecision] = useState<"confirmed" | "estimated">(
+    "estimated",
+  );
   const [error, setError] = useState<string | null>(null);
 
   const handleAddHighlight = () => {
@@ -57,6 +63,23 @@ export default function ReportCreateForm() {
     const filteredParticipants = participants
       .map((p) => p.trim())
       .filter((p) => p !== "");
+    const trimmedLocationLabel = locationLabel.trim();
+    const trimmedMapX = mapX.trim();
+    const trimmedMapY = mapY.trim();
+
+    if ((trimmedMapX && !trimmedMapY) || (!trimmedMapX && trimmedMapY)) {
+      setError("지도 X/Y 좌표는 함께 입력해야 합니다.");
+      return;
+    }
+
+    const mapFields =
+      trimmedMapX && trimmedMapY
+        ? {
+            mapX: Number(trimmedMapX),
+            mapY: Number(trimmedMapY),
+            mapPrecision,
+          }
+        : {};
 
     createReport.mutate(
       {
@@ -64,6 +87,10 @@ export default function ReportCreateForm() {
         summary: summary.trim(),
         highlights: filteredHighlights,
         participants: filteredParticipants,
+        ...(trimmedLocationLabel
+          ? { locationLabel: trimmedLocationLabel }
+          : {}),
+        ...mapFields,
       },
       {
         onSuccess: () => {
@@ -80,28 +107,72 @@ export default function ReportCreateForm() {
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
       <Stack gap="var(--gap)">
         <div>
-          <PanelTitle>SESSION TITLE</PanelTitle>
+          <PanelTitle>OPERATION REPORT TITLE</PanelTitle>
           <Input
             type="text"
             value={sessionTitle}
             onChange={(e) => setSessionTitle(e.target.value)}
-            placeholder="세션 제목"
+            placeholder="작전 보고서 제목"
             required
-            aria-label="세션 제목"
+            aria-label="작전 보고서 제목"
           />
         </div>
 
         <div>
-          <PanelTitle>SUMMARY</PanelTitle>
+          <PanelTitle>OPERATION SUMMARY</PanelTitle>
           <textarea
             className={styles.textarea}
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
-            placeholder="세션 요약을 작성하세요..."
+            placeholder="작전 개요를 작성하세요..."
             rows={6}
             required
-            aria-label="세션 요약"
+            aria-label="작전 개요"
           />
+        </div>
+
+        <div>
+          <PanelTitle>MAP PIN</PanelTitle>
+          <div className={styles.mapGrid}>
+            <Input
+              type="text"
+              value={locationLabel}
+              onChange={(e) => setLocationLabel(e.target.value)}
+              placeholder="표시 위치"
+              aria-label="지도 표시 위치"
+            />
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={mapX}
+              onChange={(e) => setMapX(e.target.value)}
+              placeholder="X%"
+              aria-label="지도 X 좌표"
+            />
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={mapY}
+              onChange={(e) => setMapY(e.target.value)}
+              placeholder="Y%"
+              aria-label="지도 Y 좌표"
+            />
+            <select
+              className={styles.select}
+              value={mapPrecision}
+              onChange={(e) =>
+                setMapPrecision(e.target.value as "confirmed" | "estimated")
+              }
+              aria-label="지도 좌표 확정도"
+            >
+              <option value="confirmed">확정</option>
+              <option value="estimated">추정</option>
+            </select>
+          </div>
         </div>
 
         <div>
@@ -186,7 +257,7 @@ export default function ReportCreateForm() {
             variant="primary"
             disabled={createReport.isPending}
           >
-            {createReport.isPending ? "작성 중..." : "리포트 작성"}
+            {createReport.isPending ? "작성 중..." : "작전 보고서 작성"}
           </Button>
         </Row>
       </Stack>

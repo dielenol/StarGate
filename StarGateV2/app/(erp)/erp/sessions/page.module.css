@@ -408,7 +408,7 @@
 
 .rsvpItem {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 56px minmax(0, 1fr);
   grid-template-areas:
     "when body"
     "when cd";
@@ -451,15 +451,6 @@
   font-size: 18px;
   letter-spacing: 0.04em;
   line-height: 1;
-}
-
-.rsvpWhen .m {
-  margin-top: 4px;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.08em;
-  white-space: nowrap;
 }
 
 .rsvpBody {
@@ -1059,18 +1050,14 @@
   text-align: center;
 }
 
-/* ── Source badge (trpg vs registra) ──
-   세션 출처 표시 — registra(공식 길드)는 뱃지 없음, trpg(별도 봇)만 뱃지.
-   색상은 globals.css 의 info 토큰 재사용 (calendar chip--closing 과 동일 톤).
+/* ── Source badge (ordo vs trpg) ──
+   세션 출처 표시 — ORDO 는 메인 사이트 gold 팔레트, TRPG 는 info 팔레트.
    14px floor 준수. */
-.sourceBadge--trpg {
+.sourceBadge {
   display: inline-block;
   margin-left: 8px;
   padding: 0 5px;
-  background: color-mix(in srgb, var(--info) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--info) 50%, transparent);
   border-radius: var(--radius-sm);
-  color: var(--info);
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 600;
@@ -1078,4 +1065,16 @@
   line-height: 1.2;
   text-transform: uppercase;
   vertical-align: baseline;
+}
+
+.sourceBadge--ordo {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 78%, transparent);
+  color: var(--gold);
+}
+
+.sourceBadge--trpg {
+  background: color-mix(in srgb, var(--info) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info) 50%, transparent);
+  color: var(--info);
 }

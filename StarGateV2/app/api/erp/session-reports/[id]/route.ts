@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { validateSessionReportArrays } from "@/lib/api/session-report-validators";
+import {
+  validateSessionReportArrays,
+  validateSessionReportMap,
+} from "@/lib/api/session-report-validators";
 import {
   deleteSessionReport,
   findReportById,
@@ -70,6 +73,8 @@ export async function PATCH(
   const arrays = validateSessionReportArrays(body);
   if ("error" in arrays) return arrays.error;
   const { highlights, participants } = arrays.value;
+  const map = validateSessionReportMap(body);
+  if ("error" in map) return map.error;
 
   try {
     const update: Record<string, unknown> = {};
@@ -77,6 +82,7 @@ export async function PATCH(
     if (summary !== undefined) update.summary = summary.trim();
     if (highlights !== undefined) update.highlights = highlights;
     if (participants !== undefined) update.participants = participants;
+    Object.assign(update, map.value);
 
     const updated = await updateSessionReport(id, update);
     if (!updated) {

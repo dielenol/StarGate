@@ -5,6 +5,8 @@ import { hasRole } from "@/lib/auth/rbac";
 import { findReportById } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
 import { formatDate } from "@/lib/format/date";
+import { formatOperationReportTitle } from "@/lib/format/session-report";
+import { renderMarkdown } from "@/lib/wiki-render";
 
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -39,17 +41,19 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const isGmOrAbove = hasRole(session.user.role, "V");
   const isAdmin = hasRole(session.user.role, "GM");
   const reportId = String(report._id);
+  const displayTitle = formatOperationReportTitle(report.sessionTitle);
+  const summaryHtml = renderMarkdown(report.summary || "—");
 
   return (
     <>
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
-          { label: "SESSIONS", href: "/erp/sessions" },
-          { label: "REPORTS", href: "/erp/sessions/report" },
+          { label: "세션", href: "/erp/sessions" },
+          { label: "작전 보고서", href: "/erp/sessions/report" },
           { label: reportId.slice(-6).toUpperCase() },
         ]}
-        title={report.sessionTitle}
+        title={displayTitle}
         right={
           isGmOrAbove || isAdmin ? (
             <ReportActions
@@ -63,15 +67,15 @@ export default async function SessionReportDetailPage({ params }: Props) {
 
       <div className={styles.layout}>
         <div className={styles.side}>
-          <Box>
+          <Box className={styles.reportPanel}>
             <PanelTitle>METADATA</PanelTitle>
             <dl className={styles.kv}>
               <div className={styles.kv__row}>
-                <dt>GM</dt>
+                <dt>보고자</dt>
                 <dd className={styles.kv__gm}>{report.gmName}</dd>
               </div>
               <div className={styles.kv__row}>
-                <dt>작성일</dt>
+                <dt>보고일</dt>
                 <dd className={styles.mono}>{formatDate(report.createdAt, "long")}</dd>
               </div>
               {report.updatedAt &&
@@ -90,7 +94,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
           </Box>
 
           {report.participants.length > 0 ? (
-            <Box>
+            <Box className={styles.reportPanel}>
               <PanelTitle
                 right={
                   <span className={styles.mono}>
@@ -112,13 +116,16 @@ export default async function SessionReportDetailPage({ params }: Props) {
         </div>
 
         <div className={styles.main}>
-          <Box>
-            <PanelTitle>SUMMARY</PanelTitle>
-            <p className={styles.body}>{report.summary || "—"}</p>
+          <Box className={styles.reportPanel}>
+            <PanelTitle>REPORT DOSSIER</PanelTitle>
+            <div
+              className={styles.reportBody}
+              dangerouslySetInnerHTML={{ __html: summaryHtml }}
+            />
           </Box>
 
           {report.highlights.length > 0 ? (
-            <Box>
+            <Box className={styles.reportPanel}>
               <PanelTitle
                 right={
                   <span className={styles.mono}>
@@ -126,7 +133,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
                   </span>
                 }
               >
-                HIGHLIGHTS
+                TACTICAL SEQUENCE
               </PanelTitle>
               <ul className={styles.list}>
                 {report.highlights.map((h, i) => (

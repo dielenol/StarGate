@@ -7,6 +7,10 @@ interface CreateReportBody {
   summary: string;
   highlights?: string[];
   participants?: string[];
+  locationLabel?: string;
+  mapX?: number;
+  mapY?: number;
+  mapPrecision?: "confirmed" | "estimated";
 }
 
 export function useCreateReport() {

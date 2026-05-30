@@ -344,7 +344,7 @@ export default function SessionsClient({
           <span className={styles.lbl}>BOT-OPS</span>
           <span>
             세션 생성·마감·취소는 <span className={styles.cmd}>/일정</span>{" "}
-            디스코드 내 <span className={styles.cmd}>레지스트라</span> 전용 커맨드입니다. 해당 페이지는 참여 현황과 리포트 작성만 지원 합니다.
+            디스코드 내 <span className={styles.cmd}>레지스트라</span> 전용 커맨드입니다. 해당 페이지는 참여 현황과 작전 보고서 작성만 지원 합니다.
           </span>
         </div>
       ) : null}
@@ -544,6 +544,12 @@ function SessionsListItem({
   const yesParticipants = s.participants.filter((p) => p.status === "YES");
   const isTrpg = s.source === "trpg";
   const trpgCalendarUrl = isTrpg ? buildTrpgCalendarUrl(trpgWebBaseUrl) : null;
+  const sourceBadgeCls = [
+    styles.sourceBadge,
+    isTrpg ? styles["sourceBadge--trpg"] : styles["sourceBadge--ordo"],
+  ].join(" ");
+  const sourceBadgeLabel = isTrpg ? "TRPG" : "ORDO";
+  const sourceBadgeTitle = isTrpg ? "TRPG 봇 세션" : "NOVUS ORDO 공식 일정";
 
   return (
     <div ref={itemRef} className={styles.listItem}>
@@ -560,15 +566,13 @@ function SessionsListItem({
               <span className={styles.me} aria-label="내 참여" />
             ) : null}
             <span className={styles.nm}>{s.title}</span>
-            {isTrpg ? (
-              <span
-                className={styles["sourceBadge--trpg"]}
-                aria-label="TRPG 봇 세션"
-                title="TRPG 봇 세션"
-              >
-                TRPG
-              </span>
-            ) : null}
+            <span
+              className={sourceBadgeCls}
+              aria-label={sourceBadgeTitle}
+              title={sourceBadgeTitle}
+            >
+              {sourceBadgeLabel}
+            </span>
           </div>
         </div>
         <div className={styles.listWhen}>
@@ -775,7 +779,6 @@ function SessionsRail({
           <div className={styles.myrsvp}>
             {myRsvp.map((s) => {
               const d = new Date(s.targetDateTime);
-              const dow = DOW_KO[d.getDay()];
               const tone = ddayTone(s.targetDateTime);
               const cdCls = [
                 styles.rsvpCd,
@@ -791,10 +794,7 @@ function SessionsRail({
               const body = (
                 <>
                   <div className={styles.rsvpWhen}>
-                    <div className={styles.d}>{d.getDate()}</div>
-                    <div className={styles.m}>
-                      {pad(d.getMonth() + 1)}월 · {dow}
-                    </div>
+                    <div className={styles.d}>{d.getDate()}일</div>
                   </div>
                   <div className={styles.rsvpBody}>
                     <div className={styles.rsvpName}>

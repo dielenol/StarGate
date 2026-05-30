@@ -17,7 +17,7 @@ export default function ReportActions({ reportId, canEdit, canDelete }: Props) {
   const deleteReport = useDeleteReport();
 
   const handleDelete = () => {
-    if (!confirm("정말로 이 리포트를 삭제하시겠습니까?")) return;
+    if (!confirm("정말로 이 작전 보고서를 삭제하시겠습니까?")) return;
 
     deleteReport.mutate(reportId, {
       onSuccess: () => {
@@ -32,7 +32,7 @@ export default function ReportActions({ reportId, canEdit, canDelete }: Props) {
   return (
     <>
       <Button as="a" href="/erp/sessions/report">
-        ← 목록
+        ← 작전 보고서
       </Button>
       {canEdit ? (
         <Button onClick={() => alert("수정 기능은 추후 구현됩니다.")}>
@@ -43,7 +43,7 @@ export default function ReportActions({ reportId, canEdit, canDelete }: Props) {
         <Button
           onClick={handleDelete}
           disabled={deleteReport.isPending}
-          aria-label="리포트 삭제"
+          aria-label="작전 보고서 삭제"
         >
           {deleteReport.isPending ? "삭제 중..." : "삭제"}
         </Button>

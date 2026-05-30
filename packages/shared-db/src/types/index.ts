@@ -93,6 +93,7 @@ export type {
 
 export type {
   SessionReport,
+  SessionReportMapPrecision,
   CreateSessionReportInput,
 } from "./session-report.js";
 

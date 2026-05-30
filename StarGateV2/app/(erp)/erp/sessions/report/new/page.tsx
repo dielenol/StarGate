@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
 import ReportCreateForm from "./ReportCreateForm";
+import styles from "./page.module.css";
 
 export default async function NewReportPage() {
   const session = await auth();
@@ -25,18 +26,18 @@ export default async function NewReportPage() {
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
-          { label: "SESSIONS", href: "/erp/sessions" },
-          { label: "REPORTS", href: "/erp/sessions/report" },
-          { label: "NEW" },
+          { label: "세션", href: "/erp/sessions" },
+          { label: "작전 보고서", href: "/erp/sessions/report" },
+          { label: "작성" },
         ]}
-        title="세션 리포트 작성"
+        title="작전 보고서 작성"
         right={
           <Button as="a" href="/erp/sessions/report">
-            ← 목록
+            ← 작전 보고서
           </Button>
         }
       />
-      <Box>
+      <Box className={styles.reportPanel}>
         <ReportCreateForm />
       </Box>
     </>

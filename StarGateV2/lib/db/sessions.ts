@@ -22,6 +22,7 @@ import {
 } from "@stargate/shared-db";
 
 import type { SerializedSession } from "@/hooks/queries/useSessionsQuery";
+import { getParticipantCodenameOverride } from "@/lib/session-participant-overrides";
 
 import {
   countTrpgActiveSessions,
@@ -168,15 +169,18 @@ export async function enrichSessions(
         myRsvp = r.status;
       }
 
+      const displayName = r.displayName ?? "(unknown)";
       const userMatch = userByDiscordId.get(r.userId);
-      const codename = userMatch
+      const matchedCodename = userMatch
         ? codenameByOwnerId.get(userMatch.userId)
         : undefined;
+      const codename =
+        getParticipantCodenameOverride(displayName) ?? matchedCodename;
 
       return {
         userId: r.userId,
         status: r.status,
-        displayName: r.displayName ?? "(unknown)",
+        displayName,
         codename,
       };
     });

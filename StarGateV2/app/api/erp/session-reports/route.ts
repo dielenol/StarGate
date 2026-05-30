@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { validateSessionReportArrays } from "@/lib/api/session-report-validators";
+import {
+  validateSessionReportArrays,
+  validateSessionReportMap,
+} from "@/lib/api/session-report-validators";
 import {
   createSessionReport,
   listSessionReports,
@@ -61,6 +64,8 @@ export async function POST(request: Request) {
   const arrays = validateSessionReportArrays(body);
   if ("error" in arrays) return arrays.error;
   const { highlights, participants } = arrays.value;
+  const map = validateSessionReportMap(body);
+  if ("error" in map) return map.error;
 
   try {
     const report = await createSessionReport({
@@ -69,6 +74,7 @@ export async function POST(request: Request) {
       summary: summary.trim(),
       highlights: highlights ?? [],
       participants: participants ?? [],
+      ...map.value,
       gmId: session.user.id,
       gmName: session.user.displayName,
     });

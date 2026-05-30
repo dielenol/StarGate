@@ -24,14 +24,14 @@ export default async function SessionReportListPage() {
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
-          { label: "SESSIONS", href: "/erp/sessions" },
-          { label: "REPORTS" },
+          { label: "세션", href: "/erp/sessions" },
+          { label: "작전 보고서" },
         ]}
-        title="세션 리포트"
+        title="작전 보고서"
         right={
           isGmOrAbove ? (
             <Button as="a" href="/erp/sessions/report/new" variant="primary">
-              ＋ 리포트 작성
+              ＋ 작전 보고서 작성
             </Button>
           ) : null
         }

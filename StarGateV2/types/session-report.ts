@@ -4,5 +4,6 @@
 
 export type {
   SessionReport,
+  SessionReportMapPrecision,
   CreateSessionReportInput,
 } from "@stargate/shared-db/types";

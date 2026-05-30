@@ -54,6 +54,7 @@ export type {
   NotificationType,
   CreateNotificationInput,
   SessionReport,
+  SessionReportMapPrecision,
   CreateSessionReportInput,
   RegistrarUserTip,
   CharacterChangeLog,

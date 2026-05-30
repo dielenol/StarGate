@@ -44,6 +44,10 @@ const ALLOWED_REPORT_FIELDS = new Set([
   "summary",
   "highlights",
   "participants",
+  "locationLabel",
+  "mapX",
+  "mapY",
+  "mapPrecision",
 ]);
 
 export async function updateSessionReport(
