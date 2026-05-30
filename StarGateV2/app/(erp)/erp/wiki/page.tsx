@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/wiki";
 
 import WikiClient from "./WikiClient";
+import { sortWikiCategories } from "./wiki-display";
 
 interface WikiListPageProps {
   searchParams: Promise<{ category?: string; q?: string }>;
@@ -45,7 +46,9 @@ export default async function WikiListPage({
     allPages = [];
   }
 
-  const categories = [...new Set(allPages.map((p) => p.category))].sort();
+  const categories = sortWikiCategories([
+    ...new Set(allPages.map((p) => p.category)),
+  ]);
 
   return (
     <WikiClient

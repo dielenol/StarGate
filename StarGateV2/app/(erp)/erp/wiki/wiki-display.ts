@@ -36,6 +36,20 @@ const CATEGORY_TONES: Record<string, TagTone> = {
   소모품: "rank-u",
 };
 
+const WIKI_CATEGORY_ORDER = [
+  "작전 보고서",
+  "개체",
+  "개념",
+  "세력",
+  "기관",
+  "장소",
+  "규정",
+  "인물",
+  "장비",
+  "소모품",
+  "문헌",
+];
+
 const LOW_SIGNAL_TAGS = new Set([
   "세션로그",
   "현장요원",
@@ -62,6 +76,20 @@ function truncate(value: string, maxLength: number): string {
 
 export function wikiCategoryTone(category: string): TagTone {
   return CATEGORY_TONES[category] ?? "default";
+}
+
+export function sortWikiCategories(categories: string[]): string[] {
+  return [...categories].sort((left, right) => {
+    const leftIndex = WIKI_CATEGORY_ORDER.indexOf(left);
+    const rightIndex = WIKI_CATEGORY_ORDER.indexOf(right);
+    const leftRank =
+      leftIndex === -1 ? WIKI_CATEGORY_ORDER.length : leftIndex;
+    const rightRank =
+      rightIndex === -1 ? WIKI_CATEGORY_ORDER.length : rightIndex;
+
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    return left.localeCompare(right, "ko");
+  });
 }
 
 function isLocalAssetImage(src: string): boolean {
@@ -361,25 +389,12 @@ export function wikiRelatedLinks(
         sessionTags(candidate).some((tag) => sessions.has(tag)),
       )
       .sort((left, right) => {
-        const categoryOrder = [
-          "작전 보고서",
-          "개체",
-          "개념",
-          "세력",
-          "기관",
-          "장소",
-          "규정",
-          "인물",
-          "장비",
-          "소모품",
-          "문헌",
-        ];
-        const leftRank = categoryOrder.indexOf(left.category);
-        const rightRank = categoryOrder.indexOf(right.category);
+        const leftRank = WIKI_CATEGORY_ORDER.indexOf(left.category);
+        const rightRank = WIKI_CATEGORY_ORDER.indexOf(right.category);
         const normalizedLeftRank =
-          leftRank === -1 ? categoryOrder.length : leftRank;
+          leftRank === -1 ? WIKI_CATEGORY_ORDER.length : leftRank;
         const normalizedRightRank =
-          rightRank === -1 ? categoryOrder.length : rightRank;
+          rightRank === -1 ? WIKI_CATEGORY_ORDER.length : rightRank;
         if (normalizedLeftRank !== normalizedRightRank) {
           return normalizedLeftRank - normalizedRightRank;
         }

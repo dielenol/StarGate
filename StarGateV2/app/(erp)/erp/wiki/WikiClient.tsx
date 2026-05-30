@@ -18,6 +18,7 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import WikiSearchBar from "./WikiSearchBar";
 import {
+  sortWikiCategories,
   wikiCategoryTone,
   wikiKeywordTags,
   wikiSummary,
@@ -42,6 +43,11 @@ export default function WikiClient({
   currentQuery,
   isGM,
 }: Props) {
+  const sortedCategories = useMemo(
+    () => sortWikiCategories(categories),
+    [categories],
+  );
+
   const { data: pages = [] } = useWikiPages(
     currentCategory || currentQuery
       ? { category: currentCategory, q: currentQuery }
@@ -69,7 +75,18 @@ export default function WikiClient({
   );
 
   const totalCount = allPages.length;
+  const visibleCount = pages.length;
   const noFilter = !currentCategory && !currentQuery;
+  const resultTitle = currentQuery
+    ? "검색 결과"
+    : currentCategory
+      ? `${currentCategory} 문서`
+      : "전체 문서";
+  const resultSubtitle = currentQuery
+    ? `"${currentQuery}" 검색어로 제목, 본문, 태그를 조회한 결과입니다.`
+    : currentCategory
+      ? `${currentCategory} 카테고리에 등록된 문서만 표시합니다.`
+      : "공개 위키와 내부 문서 전체를 카테고리 기준으로 탐색합니다.";
 
   return (
     <>
@@ -104,11 +121,14 @@ export default function WikiClient({
                   .join(" ")}
                 aria-current={noFilter ? "page" : undefined}
               >
-                <span>전체</span>
+                <span className={styles.nav__label}>
+                  <span className={styles.nav__marker} />
+                  <span>전체</span>
+                </span>
                 <span className={styles.nav__count}>{totalCount}</span>
               </Link>
             </li>
-            {categories.map((cat) => {
+            {sortedCategories.map((cat) => {
               const active = currentCategory === cat;
               return (
                 <li key={cat}>
@@ -122,7 +142,10 @@ export default function WikiClient({
                       .join(" ")}
                     aria-current={active ? "page" : undefined}
                   >
-                    <span>{cat}</span>
+                    <span className={styles.nav__label}>
+                      <span className={styles.nav__marker} />
+                      <span>{cat}</span>
+                    </span>
                     <span className={styles.nav__count}>
                       {categoryCounts[cat] ?? 0}
                     </span>
@@ -137,7 +160,34 @@ export default function WikiClient({
         <div className={styles.body}>
           <WikiSearchBar />
 
-          <Box>
+          <Box className={styles.index}>
+            <div className={styles.index__head}>
+              <div>
+                <Eyebrow tone="gold">DOCUMENT INDEX</Eyebrow>
+                <h2 className={styles.index__title}>{resultTitle}</h2>
+                <p className={styles.index__subtitle}>{resultSubtitle}</p>
+              </div>
+              <div className={styles.index__count}>
+                <span>{visibleCount}</span>
+                <small>/ {totalCount}</small>
+              </div>
+            </div>
+
+            {currentCategory || currentQuery ? (
+              <div className={styles.filterBar}>
+                <span className={styles.filterBar__label}>현재 필터</span>
+                {currentCategory ? (
+                  <Tag tone={wikiCategoryTone(currentCategory)}>
+                    {currentCategory}
+                  </Tag>
+                ) : null}
+                {currentQuery ? <Tag tone="info">{currentQuery}</Tag> : null}
+                <Link href="/erp/wiki" className={styles.filterBar__clear}>
+                  필터 해제
+                </Link>
+              </div>
+            ) : null}
+
             {pages.length === 0 ? (
               <div className={styles.empty}>
                 {currentQuery
@@ -157,22 +207,27 @@ export default function WikiClient({
                       className={styles.item}
                     >
                       <div className={styles.item__body}>
-                        <div className={styles.item__title}>{page.title}</div>
-                        <p className={styles.item__summary}>{summary}</p>
-                        <div className={styles.item__meta}>
+                        <div className={styles.item__head}>
                           <Tag tone={wikiCategoryTone(page.category)}>
                             {page.category}
                           </Tag>
-                          {keywordTags.map((tag) => (
-                            <Tag key={tag}>{tag}</Tag>
-                          ))}
                           {!page.isPublic ? (
                             <Tag tone="danger">PRIVATE</Tag>
                           ) : null}
                         </div>
+                        <div className={styles.item__title}>{page.title}</div>
+                        <p className={styles.item__summary}>{summary}</p>
+                        {keywordTags.length > 0 ? (
+                          <div className={styles.item__meta}>
+                            {keywordTags.map((tag) => (
+                              <Tag key={tag}>{tag}</Tag>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                      <span className={styles.item__date}>
-                        {formatDate(page.updatedAt, "padded")}
+                      <span className={styles.item__dateBlock}>
+                        <span>수정</span>
+                        <b>{formatDate(page.updatedAt, "padded")}</b>
                       </span>
                     </Link>
                   );
@@ -182,8 +237,26 @@ export default function WikiClient({
           </Box>
         </div>
 
-        {/* ── Right: recent updates placeholder ── */}
+        {/* ── Right: index stats + recent updates ── */}
         <Box className={`${styles.aside} ${styles.layout__aside}`}>
+          <div className={styles.aside__section}>
+            <h2 className={styles.aside__title}>문서 현황</h2>
+            <dl className={styles.stats}>
+              <div>
+                <dt>전체</dt>
+                <dd>{totalCount}</dd>
+              </div>
+              <div>
+                <dt>표시</dt>
+                <dd>{visibleCount}</dd>
+              </div>
+              <div>
+                <dt>분류</dt>
+                <dd>{sortedCategories.length}</dd>
+              </div>
+            </dl>
+          </div>
+
           <div className={styles.aside__section}>
             <h2 className={styles.aside__title}>최근 갱신 문서</h2>
             {recent.length === 0 ? (
@@ -194,9 +267,17 @@ export default function WikiClient({
                   <li key={String(p._id)}>
                     <Link
                       href={`/erp/wiki/${String(p._id)}`}
-                      className={styles.aside__link}
+                      className={styles.recentLink}
                     >
-                      · {p.title}
+                      <span className={styles.recentLink__category}>
+                        {p.category}
+                      </span>
+                      <span className={styles.recentLink__title}>
+                        {p.title}
+                      </span>
+                      <span className={styles.recentLink__date}>
+                        {formatDate(p.updatedAt, "padded")}
+                      </span>
                     </Link>
                   </li>
                 ))}
