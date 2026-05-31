@@ -4,7 +4,7 @@
  * 정책:
  *   - KST `YYYY-MM-DD` 기준 일자 비교. shop_daily_stock.lastRefresh 가 오늘과 다르거나 문서 미존재면 stale.
  *   - 각 item: Math.random() < appearRate 면 stockMin~stockMax 사이 정수, 아니면 0.
- *   - SHOP_CATALOG 의 모든 12종을 한 번에 처리 (Promise.all 병렬). tia_bot 과 동일.
+ *   - SHOP_CATALOG 의 모든 품목을 한 번에 처리 (Promise.all 병렬). tia_bot 과 동일.
  *
  * 호출 지점:
  *   - `app/api/cron/shop/refresh/route.ts` — 일일 스케줄 갱신.
@@ -47,7 +47,7 @@ function rollStock(item: ShopCatalogItem): number {
 }
 
 /**
- * 12종 모두에 대해 stale 체크 후 stale 인 것만 refresh.
+ * 전체 품목에 대해 stale 체크 후 stale 인 것만 refresh.
  * 호출자에게 `refreshed` 갯수를 반환 — 진단/로그 용도.
  */
 export async function ensureDailyStockRefresh(
