@@ -1,44 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useDeferredValue, useMemo, useState } from "react";
+import type { MouseEvent } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
-import type { ItemCategory } from "@stargate/shared-db";
+import type { MasterItem } from "@/types/inventory";
+
+import { useInventoryItems } from "@/hooks/queries/useInventoryQuery";
 
 import {
+  CATALOG_SCOPE_CATEGORIES,
+  CATALOG_SCOPE_HREF,
+  CATALOG_SCOPE_TITLE,
   CATALOG_TABS,
-  type CatalogScope,
   ITEM_CATEGORY_LABEL,
+  type CatalogScope,
   categoryTone,
+  normalizeCatalogScope,
 } from "@/lib/catalog/categories";
 import { getShopItemImageSrc } from "@/lib/shop/item-images";
 
 import styles from "./CatalogClient.module.css";
 
-type CatalogItem = {
-  _id: string;
-  slug?: string;
-  name: string;
-  category: ItemCategory;
-  description: string;
-  price: number | string;
-  damage?: string;
-  effect?: string;
-  previewImage?: string;
-  tags?: string[];
-  isAvailable: boolean;
+type CatalogItem = Omit<MasterItem, "_id" | "createdAt" | "updatedAt"> & {
+  _id?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 };
 
 interface Props {
   category: CatalogScope;
-  label: string;
   initialItems: CatalogItem[];
 }
 
-/**
- * 가격 문자열/숫자를 number 로 정규화. 파싱 불가 시 `null` 을 반환해
- * 호출부가 "—" 같은 명시적 미정 표기를 결정할 수 있게 한다.
- */
 function toPriceNumber(price: number | string): number | null {
   if (typeof price === "number" && Number.isFinite(price)) return price;
   const parsed = Number(price);
@@ -47,11 +41,21 @@ function toPriceNumber(price: number | string): number | null {
 
 function formatPrice(price: number | string): string {
   const n = toPriceNumber(price);
-  return n === null ? "—" : `₩${n.toLocaleString("ko-KR")}`;
+  return n === null ? "미정" : `¤ ${n.toLocaleString("ko-KR")}`;
+}
+
+function itemId(item: CatalogItem): string {
+  const rawId = item._id as unknown;
+  if (typeof rawId === "string" && rawId.trim()) return rawId;
+  if (rawId && typeof rawId === "object" && "toString" in rawId) {
+    const parsed = String(rawId);
+    if (parsed && parsed !== "[object Object]") return parsed;
+  }
+  return item.slug || item.name;
 }
 
 function itemDetailHref(item: CatalogItem): string {
-  return `/erp/wiki/catalog/item/${encodeURIComponent(item.slug || item._id)}`;
+  return `/erp/wiki/catalog/item/${encodeURIComponent(item.slug || itemId(item))}`;
 }
 
 function assetImageSrc(value?: string): string | null {
@@ -68,26 +72,51 @@ function itemImageSrc(item: CatalogItem): string | null {
   );
 }
 
-export default function CatalogClient({ category, label, initialItems }: Props) {
+function scopeFromPathname(pathname: string): CatalogScope | null {
+  const lastSegment = pathname.split("/").filter(Boolean).at(-1);
+  return lastSegment ? normalizeCatalogScope(lastSegment) : null;
+}
+
+function shouldUseClientNavigation(event: MouseEvent<HTMLAnchorElement>) {
+  return (
+    event.button === 0 &&
+    !event.defaultPrevented &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
+}
+
+export default function CatalogClient({ category, initialItems }: Props) {
+  const [activeScope, setActiveScope] = useState<CatalogScope>(category);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<"name" | "price">("name");
 
-  // 사전 정규화: name + description + damage/effect 을 한 번만 lowercase
-  // → 매 키스트로크마다 lowercase + includes 4회 호출 회피.
-  const searchIndex = useMemo(
-    () =>
-      initialItems.map((it) => ({
-        item: it,
-        haystack:
-          `${it.name} ${it.description} ${it.damage ?? ""} ${it.effect ?? ""} ${
-            it.tags?.join(" ") ?? ""
-          }`.toLowerCase(),
-      })),
-    [initialItems],
+  const { data: items = initialItems } = useInventoryItems({
+    initialData: initialItems as MasterItem[],
+  });
+  const catalogItems = items as CatalogItem[];
+
+  const deferredQuery = useDeferredValue(query);
+  const activeCategories = CATALOG_SCOPE_CATEGORIES[activeScope];
+
+  const visibleItems = useMemo(
+    () => catalogItems.filter((item) => activeCategories.includes(item.category)),
+    [catalogItems, activeCategories],
   );
 
-  // 입력은 즉시 갱신 / 필터링은 deferred — N 이 커져도 입력 지연 회귀 방지.
-  const deferredQuery = useDeferredValue(query);
+  const searchIndex = useMemo(
+    () =>
+      visibleItems.map((item) => ({
+        item,
+        haystack:
+          `${item.name} ${item.description} ${item.damage ?? ""} ${item.effect ?? ""} ${
+            item.tags?.join(" ") ?? ""
+          }`.toLowerCase(),
+      })),
+    [visibleItems],
+  );
 
   const filtered = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase();
@@ -95,32 +124,52 @@ export default function CatalogClient({ category, label, initialItems }: Props) 
       ? searchIndex
           .filter(({ haystack }) => haystack.includes(q))
           .map(({ item }) => item)
-      : initialItems.slice();
+      : visibleItems.slice();
 
     return list.sort((a, b) => {
       if (sortKey === "name") return a.name.localeCompare(b.name, "ko");
       const aN = toPriceNumber(a.price);
       const bN = toPriceNumber(b.price);
-      // 파싱 실패는 정렬에서 가장 끝으로 — 0 으로 silent fallback 하면 무료 아이템과 혼동.
       if (aN === null && bN === null) return 0;
       if (aN === null) return 1;
       if (bN === null) return -1;
       return aN - bN;
     });
-  }, [initialItems, searchIndex, deferredQuery, sortKey]);
+  }, [visibleItems, searchIndex, deferredQuery, sortKey]);
+
+  useEffect(() => {
+    function handlePopState() {
+      setActiveScope(scopeFromPathname(window.location.pathname) ?? "all");
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  function handleTabClick(
+    scope: CatalogScope,
+    event: MouseEvent<HTMLAnchorElement>,
+  ) {
+    if (!shouldUseClientNavigation(event)) return;
+    event.preventDefault();
+    setActiveScope(scope);
+    window.history.pushState(null, "", CATALOG_SCOPE_HREF[scope]);
+  }
 
   return (
-    <div className={styles.catalog} data-category={category}>
+    <div className={styles.catalog} data-category={activeScope}>
       <header className={styles.catalog__header}>
-        <h1 className={styles.catalog__title}>{label}</h1>
+        <h1 className={styles.catalog__title}>
+          {CATALOG_SCOPE_TITLE[activeScope]}
+        </h1>
         <p className={styles.catalog__meta}>
-          총 {filtered.length}개 / 전체 {initialItems.length}개
+          총 {filtered.length}개 / 전체 {visibleItems.length}개
         </p>
       </header>
 
       <nav className={styles.catalog__tabs} aria-label="카탈로그 분류">
         {CATALOG_TABS.map((tab) => {
-          const isActive = tab.key === category;
+          const isActive = tab.key === activeScope;
           return (
             <Link
               key={tab.key}
@@ -132,6 +181,7 @@ export default function CatalogClient({ category, label, initialItems }: Props) 
                 .filter(Boolean)
                 .join(" ")}
               aria-current={isActive ? "page" : undefined}
+              onClick={(event) => handleTabClick(tab.key, event)}
             >
               {tab.label}
             </Link>
@@ -148,8 +198,8 @@ export default function CatalogClient({ category, label, initialItems }: Props) 
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="이름·설명·효과로 검색"
-          aria-label="이름·설명·효과 검색"
+          placeholder="이름/설명/효과 검색"
+          aria-label="이름/설명/효과 검색"
           className={styles.catalog__search}
         />
         <label className={styles.visuallyHidden} htmlFor="catalog-sort">
@@ -168,67 +218,72 @@ export default function CatalogClient({ category, label, initialItems }: Props) 
       </div>
 
       {filtered.length === 0 ? (
-        <p className={styles.catalog__empty}>등록된 항목이 없습니다.</p>
+        <p className={styles.catalog__empty}>조건에 맞는 품목이 없습니다.</p>
       ) : (
         <ul className={styles.catalog__grid}>
-          {filtered.map((it) => (
-            <li key={it._id}>
-              <Link
-                href={itemDetailHref(it)}
-                className={[
-                  styles.card,
-                  !it.isAvailable && styles["card--unavailable"],
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                {itemImageSrc(it) ? (
-                  <div className={styles.card__media}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={itemImageSrc(it) ?? undefined}
-                      alt=""
-                      aria-hidden
-                      draggable={false}
-                    />
-                  </div>
-                ) : null}
-                <div className={styles.card__header}>
-                  <h2 className={styles.card__name}>{it.name}</h2>
-                  <span
-                    className={[
-                      styles.card__category,
-                      styles[`card__category--${categoryTone(it.category)}`],
-                    ].join(" ")}
-                  >
-                    {ITEM_CATEGORY_LABEL[it.category]}
-                  </span>
-                </div>
-                <p className={styles.card__description}>{it.description}</p>
-                <dl className={styles.card__stats}>
-                  <div className={styles.card__stat}>
-                    <dt>가격</dt>
-                    <dd>{formatPrice(it.price)}</dd>
-                  </div>
-                  {it.damage && (
-                    <div className={styles.card__stat}>
-                      <dt>데미지</dt>
-                      <dd>{it.damage}</dd>
+          {filtered.map((item) => {
+            const imageSrc = itemImageSrc(item);
+            return (
+              <li key={itemId(item)}>
+                <Link
+                  href={itemDetailHref(item)}
+                  className={[
+                    styles.card,
+                    !item.isAvailable && styles["card--unavailable"],
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  {imageSrc ? (
+                    <div className={styles.card__media}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imageSrc}
+                        alt=""
+                        aria-hidden
+                        draggable={false}
+                      />
                     </div>
-                  )}
-                  {it.effect && (
+                  ) : null}
+                  <div className={styles.card__header}>
+                    <h2 className={styles.card__name}>{item.name}</h2>
+                    <span
+                      className={[
+                        styles.card__category,
+                        styles[`card__category--${categoryTone(item.category)}`],
+                      ].join(" ")}
+                    >
+                      {ITEM_CATEGORY_LABEL[item.category]}
+                    </span>
+                  </div>
+                  <p className={styles.card__description}>
+                    {item.description}
+                  </p>
+                  <dl className={styles.card__stats}>
                     <div className={styles.card__stat}>
-                      <dt>효과</dt>
-                      <dd>{it.effect}</dd>
+                      <dt>가격</dt>
+                      <dd>{formatPrice(item.price)}</dd>
                     </div>
-                  )}
-                </dl>
-                {!it.isAvailable && (
-                  <span className={styles.card__badge}>미가용</span>
-                )}
-              </Link>
-            </li>
-          ))}
+                    {item.damage ? (
+                      <div className={styles.card__stat}>
+                        <dt>대미지</dt>
+                        <dd>{item.damage}</dd>
+                      </div>
+                    ) : null}
+                    {item.effect ? (
+                      <div className={styles.card__stat}>
+                        <dt>효과</dt>
+                        <dd>{item.effect}</dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                  {!item.isAvailable ? (
+                    <span className={styles.card__badge}>미판매</span>
+                  ) : null}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
