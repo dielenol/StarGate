@@ -5,6 +5,7 @@ import type { BulkGrantInput, BulkGrantResult } from "@/types/credit-admin";
 
 import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
+import { characterKeys, personnelKeys } from "@/hooks/queries/useCharactersQuery";
 
 /**
  * GM 발급 입력. ownerId 또는 characterId 중 하나가 필수 (백엔드 검증).
@@ -73,6 +74,8 @@ export function useBulkGrantCredit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
       queryClient.invalidateQueries({ queryKey: creditsAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: characterKeys.all });
+      queryClient.invalidateQueries({ queryKey: personnelKeys.all });
     },
   });
 }

@@ -22,12 +22,15 @@ import { NextResponse } from "next/server";
 import type {
   BulkGrantResult,
   BulkGrantResultItem,
+  RewardKind,
   SessionRespondent,
   SessionRespondentStatus,
 } from "@/types/credit-admin";
+import type { UserRole } from "@/types/user";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { adjustCharacterPoints } from "@/lib/db/character-points";
 import { addCredit } from "@/lib/db/credits";
 import {
   findSessionById,
@@ -78,6 +81,19 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const daysBackParam = url.searchParams.get("daysBack");
+  const rewardKindParam = url.searchParams.get("rewardKind");
+  const rewardKind: RewardKind =
+    rewardKindParam === "POINT" ? "POINT" : "CREDIT";
+  if (
+    rewardKindParam !== null &&
+    rewardKindParam !== "CREDIT" &&
+    rewardKindParam !== "POINT"
+  ) {
+    return NextResponse.json(
+      { error: "rewardKind must be CREDIT or POINT." },
+      { status: 400 },
+    );
+  }
   let daysBack = DEFAULT_DAYS_BACK;
   if (daysBackParam !== null) {
     const n = Number(daysBackParam);
@@ -99,7 +115,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const candidates = await buildSessionRewardCandidates(sessions);
+    const candidates = await buildSessionRewardCandidates(sessions, rewardKind);
 
     return NextResponse.json(
       { candidates },
@@ -120,6 +136,7 @@ interface PostBody {
   sessionId?: string;
   amount?: number;
   description?: string;
+  rewardKind?: RewardKind;
 }
 
 export async function POST(request: Request) {
@@ -154,6 +171,18 @@ export async function POST(request: Request) {
     );
   }
   const amount = body.amount;
+  const rewardKind: RewardKind =
+    body.rewardKind === "POINT" ? "POINT" : "CREDIT";
+  if (
+    body.rewardKind !== undefined &&
+    body.rewardKind !== "CREDIT" &&
+    body.rewardKind !== "POINT"
+  ) {
+    return NextResponse.json(
+      { error: "rewardKind must be CREDIT or POINT." },
+      { status: 400 },
+    );
+  }
 
   // description 은 audit 가치 보존을 위해 비어있지 않은 string 강제.
   // UI 는 default 로 "세션 자동 보상 — {sessionTitle}" 채움 → 정상 흐름 차단 X.
@@ -174,7 +203,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const candidates = await buildSessionRewardCandidates([sessionDoc]);
+    const candidates = await buildSessionRewardCandidates([sessionDoc], rewardKind);
     const candidate = candidates[0];
 
     const sessionTitle = sessionDoc.title;
@@ -186,13 +215,18 @@ export async function POST(request: Request) {
       const item = await processRespondent({
         respondent,
         amount,
+        rewardKind,
         description,
         sessionMeta: {
           sessionId: sessionIdStr,
           sessionTitle,
           sessionDate,
         },
-        session: { id: session.user.id, displayName: session.user.displayName },
+        session: {
+          id: session.user.id,
+          displayName: session.user.displayName,
+          role: session.user.role,
+        },
       });
       results.push(item);
     }
@@ -225,19 +259,21 @@ export async function POST(request: Request) {
 interface ProcessRespondentArgs {
   respondent: SessionRespondent;
   amount: number;
+  rewardKind: RewardKind;
   description: string;
   sessionMeta: {
     sessionId: string;
     sessionTitle: string;
     sessionDate: string;
   };
-  session: { id: string; displayName: string };
+  session: { id: string; displayName: string; role: UserRole };
 }
 
 async function processRespondent(
   args: ProcessRespondentArgs,
 ): Promise<BulkGrantResultItem> {
-  const { respondent, amount, description, sessionMeta, session } = args;
+  const { respondent, amount, rewardKind, description, sessionMeta, session } =
+    args;
 
   if (respondent.status === "already-rewarded") {
     return {
@@ -277,6 +313,32 @@ async function processRespondent(
   }
 
   try {
+    if (rewardKind === "POINT") {
+      const pointResult = await adjustCharacterPoints({
+        characterId: respondent.characterId,
+        amount,
+        actorId: session.id,
+        actorRole: session.role,
+        reason: description,
+        allowNegative: false,
+        metadata: {
+          sessionId: sessionMeta.sessionId,
+          sessionTitle: sessionMeta.sessionTitle,
+          sessionDate: sessionMeta.sessionDate,
+          autoReward: true,
+          rewardKind: "POINT",
+        },
+      });
+
+      return {
+        ownerId: respondent.ownerId,
+        characterId: respondent.characterId,
+        success: true,
+        characterCodename: respondent.characterCodename,
+        newPointBalance: pointResult.after,
+      };
+    }
+
     const transaction = await addCredit({
       characterId: respondent.characterId,
       characterCodename: respondent.characterCodename,

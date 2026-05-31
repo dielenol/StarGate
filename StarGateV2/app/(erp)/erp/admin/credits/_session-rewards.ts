@@ -13,9 +13,11 @@ import type {
   SessionRespondent,
   SessionRespondentStatus,
   SessionRewardCandidate,
+  RewardKind,
 } from "@/types/credit-admin";
 
 import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { listPointRewardedCharacterIdsBySession } from "@/lib/db/character-points";
 import { findTransactionsBySessionMetadata } from "@/lib/db/credits";
 import {
   findResponsesBySessionIds,
@@ -62,6 +64,7 @@ export interface RawSessionLike {
  */
 export async function buildSessionRewardCandidates(
   sessions: RawSessionLike[],
+  rewardKind: RewardKind = "CREDIT",
 ): Promise<SessionRewardCandidate[]> {
   const sessionIds = sessions
     .map((s) => (s._id ? String(s._id) : ""))
@@ -105,8 +108,14 @@ export async function buildSessionRewardCandidates(
   const rewardedByCharacterBySession = new Map<string, Set<string>>();
   await Promise.all(
     sessionIds.map(async (sid) => {
-      const txs = await findTransactionsBySessionMetadata(sid);
-      const charSet = new Set(txs.map((t) => t.characterId));
+      const charSet =
+        rewardKind === "POINT"
+          ? await listPointRewardedCharacterIdsBySession(sid)
+          : new Set(
+              (await findTransactionsBySessionMetadata(sid)).map(
+                (t) => t.characterId,
+              ),
+            );
       rewardedByCharacterBySession.set(sid, charSet);
     }),
   );
@@ -231,8 +240,9 @@ export async function buildSessionRewardCandidates(
 export async function buildInitialSessionCandidates(
   daysBack: number,
   guildId: string,
+  rewardKind: RewardKind = "CREDIT",
 ): Promise<SessionRewardCandidate[]> {
   const sessions = await listRecentCompletedSessions(daysBack, guildId);
   if (sessions.length === 0) return [];
-  return buildSessionRewardCandidates(sessions);
+  return buildSessionRewardCandidates(sessions, rewardKind);
 }

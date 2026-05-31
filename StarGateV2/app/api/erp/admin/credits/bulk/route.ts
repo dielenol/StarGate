@@ -23,8 +23,10 @@ import type {
   BulkGrantResult,
   BulkGrantResultItem,
   BulkGrantTarget,
+  RewardKind,
 } from "@/types/credit-admin";
 import type { GmDirectGrantType } from "@/types/credit";
+import type { UserRole } from "@/types/user";
 
 import { isGmDirectGrantType } from "@/types/credit";
 
@@ -35,6 +37,7 @@ import {
   findMainCharacterByOwner,
 } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
+import { adjustCharacterPoints } from "@/lib/db/character-points";
 import { findUserById } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
 
@@ -58,6 +61,7 @@ export async function POST(request: Request) {
     amount?: unknown;
     type?: unknown;
     description?: unknown;
+    rewardKind?: unknown;
   };
 
   if (!Array.isArray(body.targets) || body.targets.length === 0) {
@@ -92,6 +96,16 @@ export async function POST(request: Request) {
         error:
           "type은 ADMIN_GRANT, ADMIN_DEDUCT, SESSION_REWARD 중 하나여야 합니다.",
       },
+      { status: 400 },
+    );
+  }
+  if (
+    body.rewardKind !== undefined &&
+    body.rewardKind !== "CREDIT" &&
+    body.rewardKind !== "POINT"
+  ) {
+    return NextResponse.json(
+      { error: "rewardKind must be CREDIT or POINT." },
       { status: 400 },
     );
   }
@@ -161,6 +175,8 @@ export async function POST(request: Request) {
   const validatedType = body.type;
   const validatedAmount = body.amount;
   const description = body.description;
+  const rewardKind: RewardKind =
+    body.rewardKind === "POINT" ? "POINT" : "CREDIT";
 
   // ADMIN_DEDUCT 는 음수, 그 외는 양수.
   const finalAmount =
@@ -176,8 +192,13 @@ export async function POST(request: Request) {
         target,
         finalAmount,
         validatedType,
+        rewardKind,
         description,
-        session: { id: session.user.id, displayName: session.user.displayName },
+        session: {
+          id: session.user.id,
+          displayName: session.user.displayName,
+          role: session.user.role,
+        },
       });
     } catch (err) {
       item = {
@@ -210,12 +231,14 @@ interface ProcessArgs {
   target: BulkGrantTarget;
   finalAmount: number;
   validatedType: GmDirectGrantType;
+  rewardKind: RewardKind;
   description: string;
-  session: { id: string; displayName: string };
+  session: { id: string; displayName: string; role: UserRole };
 }
 
 async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
-  const { target, finalAmount, validatedType, description, session } = args;
+  const { target, finalAmount, validatedType, rewardKind, description, session } =
+    args;
   const baseEcho: BulkGrantResultItem = {
     ownerId: target.ownerId,
     characterId: target.characterId,
@@ -305,6 +328,29 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
   const ownerName = owner.discordUsername ?? owner.displayName;
 
   try {
+    if (rewardKind === "POINT") {
+      const pointResult = await adjustCharacterPoints({
+        characterId: targetCharacterId,
+        amount: finalAmount,
+        actorId: session.id,
+        actorRole: session.role,
+        reason: description || `${validatedType} point adjustment`,
+        allowNegative: false,
+        metadata: {
+          rewardKind: "POINT",
+          grantType: validatedType,
+        },
+      });
+
+      return {
+        ownerId: targetOwnerId,
+        characterId: targetCharacterId,
+        success: true,
+        characterCodename: targetCharacterCodename,
+        newPointBalance: pointResult.after,
+      };
+    }
+
     const transaction = await addCredit({
       characterId: targetCharacterId,
       characterCodename: targetCharacterCodename,
@@ -329,6 +375,16 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
       newBalance: transaction.balance,
     };
   } catch (err) {
+    if (err instanceof Error && err.message === "INSUFFICIENT_POINTS") {
+      return {
+        ownerId: targetOwnerId,
+        characterId: targetCharacterId,
+        success: false,
+        characterCodename: targetCharacterCodename,
+        error: "Point balance is insufficient.",
+        code: "INSUFFICIENT_POINTS",
+      };
+    }
     if (err instanceof Error && err.message.includes("음수 잔액")) {
       return {
         ownerId: targetOwnerId,

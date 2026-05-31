@@ -5,6 +5,7 @@ import type {
   CreditKpiSnapshot,
   CreditTransactionFilter,
   CreditTransactionPage,
+  RewardKind,
   SessionRewardCandidate,
 } from "@/types/credit-admin";
 
@@ -17,8 +18,8 @@ export const creditsAdminKeys = {
   log: (filter: CreditTransactionFilter) =>
     [...creditsAdminKeys.all, "log", filter] as const,
   opPool: () => [...creditsAdminKeys.all, "op-pool"] as const,
-  sessionCandidates: (daysBack: number) =>
-    [...creditsAdminKeys.all, "sessions", daysBack] as const,
+  sessionCandidates: (daysBack: number, rewardKind: RewardKind) =>
+    [...creditsAdminKeys.all, "sessions", daysBack, rewardKind] as const,
 };
 
 /* ── 에러 ── */
@@ -123,9 +124,10 @@ async function fetchOpPool(): Promise<OpPoolResponse> {
 
 async function fetchSessionCandidates(
   daysBack: number,
+  rewardKind: RewardKind,
 ): Promise<SessionCandidatesResponse> {
   const res = await fetch(
-    `/api/erp/admin/credits/sessions?daysBack=${daysBack}`,
+    `/api/erp/admin/credits/sessions?daysBack=${daysBack}&rewardKind=${rewardKind}`,
   );
   if (!res.ok) await parseError(res, "세션 후보 조회 실패");
   return res.json();
@@ -180,11 +182,12 @@ export function useCreditOpPool(opt?: { initialData?: OpPoolResponse }) {
 /** 세션 자동 보상 후보 — daysBack 만큼 과거 응답 세션 + 자격 분류. */
 export function useCreditSessionCandidates(
   daysBack: number,
+  rewardKind: RewardKind = "CREDIT",
   opt?: { initialData?: SessionCandidatesResponse },
 ) {
   return useQuery({
-    queryKey: creditsAdminKeys.sessionCandidates(daysBack),
-    queryFn: () => fetchSessionCandidates(daysBack),
+    queryKey: creditsAdminKeys.sessionCandidates(daysBack, rewardKind),
+    queryFn: () => fetchSessionCandidates(daysBack, rewardKind),
     staleTime: 30_000,
     initialData: opt?.initialData,
   });

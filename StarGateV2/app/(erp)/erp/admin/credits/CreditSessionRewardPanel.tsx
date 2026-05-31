@@ -5,6 +5,7 @@ import { useState } from "react";
 import type {
   BulkGrantResult,
   BulkGrantResultItem,
+  RewardKind,
   SessionRespondent,
   SessionRespondentStatus,
   SessionRewardCandidate,
@@ -29,6 +30,11 @@ import styles from "./CreditSessionRewardPanel.module.css";
 const DAYS_BACK_OPTIONS = [7, 14, 30, 60] as const;
 const DEFAULT_DAYS_BACK = 14;
 const DEFAULT_AMOUNT = 50;
+
+const REWARD_KINDS: { value: RewardKind; label: string }[] = [
+  { value: "CREDIT", label: "CREDIT" },
+  { value: "POINT", label: "POINT" },
+];
 
 const STATUS_LABEL: Record<SessionRespondentStatus, string> = {
   eligible: "지급 가능",
@@ -65,13 +71,14 @@ interface Props {
 export default function CreditSessionRewardPanel({ initialCandidates }: Props) {
   /* ── 필터 + 쿼리 ── */
   const [daysBack, setDaysBack] = useState<number>(DEFAULT_DAYS_BACK);
+  const [rewardKind, setRewardKind] = useState<RewardKind>("CREDIT");
 
   // initialCandidates 는 daysBack=14 기준. 다른 값으로 변경 시 useQuery 가
   // 별도 캐시 키로 fetch — initialData 는 14 일 때만 hit.
   const { data, isLoading, isFetching, isError, error, refetch } =
-    useCreditSessionCandidates(daysBack, {
+    useCreditSessionCandidates(daysBack, rewardKind, {
       initialData:
-        daysBack === DEFAULT_DAYS_BACK
+        daysBack === DEFAULT_DAYS_BACK && rewardKind === "CREDIT"
           ? { candidates: initialCandidates }
           : undefined,
     });
@@ -155,6 +162,7 @@ export default function CreditSessionRewardPanel({ initialCandidates }: Props) {
       {
         sessionId: candidate.sessionId,
         amount: numAmount,
+        rewardKind,
         description: finalDescription,
       },
       {
@@ -281,6 +289,25 @@ export default function CreditSessionRewardPanel({ initialCandidates }: Props) {
               {DAYS_BACK_OPTIONS.map((d) => (
                 <option key={d} value={d}>
                   최근 {d}일
+                </option>
+              ))}
+            </Select>
+          </label>
+          <label className={styles.session__filterLabel}>
+            <span>REWARD</span>
+            <Select
+              value={rewardKind}
+              onChange={(e) => {
+                setRewardKind(e.target.value as RewardKind);
+                setSelectedSessionId(null);
+                setFormSessionId(null);
+                setPendingConfirm(false);
+                setFormError("");
+              }}
+            >
+              {REWARD_KINDS.map((kind) => (
+                <option key={kind.value} value={kind.value}>
+                  {kind.label}
                 </option>
               ))}
             </Select>
@@ -441,7 +468,8 @@ export default function CreditSessionRewardPanel({ initialCandidates }: Props) {
                         <div className={styles.session__confirm}>
                           <span>
                             정말 발급하시겠습니까? {eligibleCount}명 ×{" "}
-                            {Math.abs(Number(amount) || 0).toLocaleString()} CR
+                            {Math.abs(Number(amount) || 0).toLocaleString()}{" "}
+                            {rewardKind === "POINT" ? "PT" : "CR"}
                           </span>
                           <span className={styles.session__confirmActions}>
                             <Button
@@ -608,7 +636,9 @@ function ResultsTable({ rows }: ResultsTableProps) {
                   )}
                 </td>
                 <td className={styles.session__numCol}>
-                  {row.newBalance != null
+                  {row.newPointBalance != null
+                    ? `${row.newPointBalance.toLocaleString()} PT`
+                    : row.newBalance != null
                     ? row.newBalance.toLocaleString()
                     : "—"}
                 </td>

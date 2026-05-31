@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import type { BulkGrantResult } from "@/types/credit-admin";
+import type { BulkGrantResult, RewardKind } from "@/types/credit-admin";
 
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
 import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
+import { characterKeys, personnelKeys } from "@/hooks/queries/useCharactersQuery";
 
 /**
  * GM 세션 자동 보상 발급 — `POST /api/erp/admin/credits/sessions`.
@@ -19,6 +20,7 @@ import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
 interface SessionRewardInput {
   sessionId: string;
   amount: number;
+  rewardKind?: RewardKind;
   description?: string;
 }
 
@@ -42,6 +44,8 @@ export function useSessionRewardMutation() {
       // 사용자 본인 크레딧 캐시 + admin 전체 (KPI/잔액/로그/세션후보) 모두 갱신.
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
       queryClient.invalidateQueries({ queryKey: creditsAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: characterKeys.all });
+      queryClient.invalidateQueries({ queryKey: personnelKeys.all });
     },
   });
 }

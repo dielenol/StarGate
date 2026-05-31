@@ -56,11 +56,14 @@ export interface BulkGrantTarget {
   characterId?: string;
 }
 
+export type RewardKind = "CREDIT" | "POINT";
+
 export interface BulkGrantInput {
   targets: BulkGrantTarget[];
   amount: number;
   type: "ADMIN_GRANT" | "ADMIN_DEDUCT" | "SESSION_REWARD";
   description: string;
+  rewardKind?: RewardKind;
   metadata?: Record<string, string | number | boolean | null>;
 }
 
@@ -71,6 +74,7 @@ export interface BulkGrantResultItem {
   transactionId?: string;
   characterCodename?: string;
   newBalance?: number;
+  newPointBalance?: number;
   error?: string;
   code?: string;
   /** 멱등 검출 등으로 발급을 건너뛴 경우 (세션 자동 보상에서 사용). */

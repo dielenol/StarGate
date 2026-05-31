@@ -279,7 +279,7 @@
 
 .session__rewardFields {
   display: grid;
-  grid-template-columns: minmax(120px, 160px) 1fr;
+  grid-template-columns: minmax(120px, 160px) minmax(120px, 160px) 1fr;
   gap: 10px;
 }
 

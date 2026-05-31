@@ -8,6 +8,7 @@ import type {
   BulkGrantResult,
   BulkGrantResultItem,
   BulkGrantTarget,
+  RewardKind,
 } from "@/types/credit-admin";
 
 import { useBulkGrantCredit } from "@/hooks/mutations/useCreditMutation";
@@ -25,6 +26,11 @@ const GRANT_TYPES: { value: CreditTransactionType; label: string }[] = [
   { value: "ADMIN_GRANT", label: "관리자 지급" },
   { value: "ADMIN_DEDUCT", label: "관리자 차감" },
   { value: "SESSION_REWARD", label: "세션 보상" },
+];
+
+const REWARD_KINDS: { value: RewardKind; label: string }[] = [
+  { value: "CREDIT", label: "CREDIT" },
+  { value: "POINT", label: "POINT" },
 ];
 
 const MAX_TARGETS = 100;
@@ -92,6 +98,7 @@ export default function CreditBulkGrantForm({
   const [pasteIsCharacterId, setPasteIsCharacterId] = useState(false);
 
   /* 공통 입력 */
+  const [rewardKind, setRewardKind] = useState<RewardKind>("CREDIT");
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<CreditTransactionType>("ADMIN_GRANT");
   const [description, setDescription] = useState("");
@@ -267,6 +274,7 @@ export default function CreditBulkGrantForm({
       targets: buildTargets(),
       amount: Math.abs(Number(amount)),
       type: type as "ADMIN_GRANT" | "ADMIN_DEDUCT" | "SESSION_REWARD",
+      rewardKind,
       description,
     };
 
@@ -384,12 +392,16 @@ export default function CreditBulkGrantForm({
                       )}
                     </td>
                     <td className={styles.bulk__numCol}>
-                      {row.success ? formatAmount(amount, type) : "-"}
+                      {row.success
+                        ? formatAmount(amount, type, rewardKind)
+                        : "-"}
                     </td>
                     <td className={styles.bulk__numCol}>
-                      {row.newBalance != null
-                        ? row.newBalance.toLocaleString()
-                        : "-"}
+                      {rewardKind === "POINT" && row.newPointBalance != null
+                        ? row.newPointBalance.toLocaleString()
+                        : row.newBalance != null
+                          ? row.newBalance.toLocaleString()
+                          : "-"}
                     </td>
                     <td>
                       {row.success ? (
@@ -553,6 +565,24 @@ export default function CreditBulkGrantForm({
 
       <div className={styles.bulk__row}>
         <label className={styles.bulk__field}>
+          <Eyebrow>REWARD</Eyebrow>
+          <Select
+            value={rewardKind}
+            onChange={(e) => {
+              setRewardKind(e.target.value as RewardKind);
+              setError("");
+              setPendingConfirm(false);
+            }}
+          >
+            {REWARD_KINDS.map((kind) => (
+              <option key={kind.value} value={kind.value}>
+                {kind.label}
+              </option>
+            ))}
+          </Select>
+        </label>
+
+        <label className={styles.bulk__field}>
           <Eyebrow>금액</Eyebrow>
           <Input
             type="number"
@@ -603,7 +633,8 @@ export default function CreditBulkGrantForm({
         <div className={styles.bulk__confirm}>
           <span>
             정말 차감하시겠습니까? {selectedCount}명 ×{" "}
-            {Math.abs(Number(amount) || 0).toLocaleString()} CR
+            {Math.abs(Number(amount) || 0).toLocaleString()}{" "}
+            {rewardKind === "POINT" ? "PT" : "CR"}
           </span>
           <span className={styles.bulk__confirmActions}>
             <Button type="button" onClick={cancelConfirm}>
@@ -635,9 +666,14 @@ export default function CreditBulkGrantForm({
 
 /* ── 헬퍼 ── */
 
-function formatAmount(amount: string, type: CreditTransactionType): string {
+function formatAmount(
+  amount: string,
+  type: CreditTransactionType,
+  rewardKind: RewardKind,
+): string {
   const n = Math.abs(Number(amount) || 0);
   const signed = type === "ADMIN_DEDUCT" ? -n : n;
   const formatted = signed.toLocaleString();
-  return signed > 0 ? `+${formatted}` : formatted;
+  const unit = rewardKind === "POINT" ? "PT" : "CR";
+  return `${signed > 0 ? `+${formatted}` : formatted} ${unit}`;
 }
