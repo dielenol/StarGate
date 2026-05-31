@@ -61,7 +61,7 @@ interface TiaLineOptions
 
 const MAX_CART_QUANTITY_PER_ITEM = 9;
 const SHOP_ENTRY_SFX_SRC = "/assets/shop/sfx/convenience-chime.mp3";
-const SHOP_ENTRY_SFX_VOLUME = 0.29;
+const SHOP_ENTRY_SFX_VOLUME = 0.145;
 const TIA_IDLE_DELAY_MS = 18000;
 const LOW_STOCK_THRESHOLD = 2;
 
