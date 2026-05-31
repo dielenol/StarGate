@@ -26,6 +26,7 @@ export interface RelatedReportLink {
   sessionId: string;
   title: string;
   locationLabel?: string;
+  participants: string[];
   createdAt: Date;
 }
 
@@ -69,6 +70,28 @@ function characterId(character: Pick<Character, "_id">): string | null {
 
 function pageSessionKeys(page: Pick<WikiPage, "tags" | "title" | "content">): string[] {
   return extractSessionKeys(page.title, page.content, ...page.tags);
+}
+
+function normalizePersonnelKey(value: string): string {
+  return value
+    .normalize("NFKC")
+    .toUpperCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+function characterParticipantKeys(character: Character): string[] {
+  const keys = new Set<string>();
+
+  for (const value of [character.codename, character.lore.name]) {
+    const normalized = normalizePersonnelKey(value);
+    if (normalized) keys.add(normalized);
+  }
+
+  const baseCodename = character.codename.split(/[-(]/u)[0];
+  const normalizedBase = normalizePersonnelKey(baseCodename);
+  if (normalizedBase) keys.add(normalizedBase);
+
+  return [...keys];
 }
 
 function pageMatchesReport(
@@ -151,9 +174,14 @@ export function relatedPersonnelForReport(
   report: SessionReport,
   characters: Character[],
 ): RelatedPersonnelLink[] {
+  const participantKeys = new Set(
+    report.participants.map(normalizePersonnelKey).filter(Boolean),
+  );
+
   return characters
     .filter((character) =>
-      character.lore.appearsInEvents?.includes(report.sessionId),
+      character.lore.appearsInEvents?.includes(report.sessionId) ||
+      characterParticipantKeys(character).some((key) => participantKeys.has(key)),
     )
     .map(toRelatedPersonnelLink)
     .filter((character): character is RelatedPersonnelLink => character !== null)
@@ -174,6 +202,7 @@ export function toRelatedReportLink(
     sessionId: report.sessionId,
     title: formatOperationReportTitle(report.sessionTitle),
     locationLabel: report.locationLabel,
+    participants: report.participants,
     createdAt: report.createdAt,
   };
 }
@@ -206,11 +235,18 @@ export function relatedPersonnelForReports(
   characters: Character[],
 ): RelatedPersonnelLink[] {
   const sessionIds = new Set(reports.map((report) => report.sessionId));
+  const participantKeys = new Set(
+    reports
+      .flatMap((report) => report.participants)
+      .map(normalizePersonnelKey)
+      .filter(Boolean),
+  );
   const seen = new Set<string>();
 
   return characters
     .filter((character) =>
-      character.lore.appearsInEvents?.some((event) => sessionIds.has(event)),
+      character.lore.appearsInEvents?.some((event) => sessionIds.has(event)) ||
+      characterParticipantKeys(character).some((key) => participantKeys.has(key)),
     )
     .map(toRelatedPersonnelLink)
     .filter((character): character is RelatedPersonnelLink => {

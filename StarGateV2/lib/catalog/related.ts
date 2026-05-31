@@ -33,6 +33,12 @@ const GENERIC_CATALOG_TAGS = new Set([
   "특수",
   "물증",
   "격리장비",
+  "격리",
+  "현장운용",
+  "사무국",
+  "노부스 오르도",
+  "manus",
+  "novus ordo",
 ]);
 
 const CATALOG_CATEGORY_ORDER: MasterItem["category"][] = [
@@ -49,6 +55,13 @@ function normalizeTerm(value: string): string {
 
 function includesTerm(haystack: string, term: string): boolean {
   return haystack.toLowerCase().includes(normalizeTerm(term));
+}
+
+function isGenericCatalogTag(value: string): boolean {
+  return (
+    GENERIC_CATALOG_TAGS.has(value) ||
+    GENERIC_CATALOG_TAGS.has(normalizeTerm(value))
+  );
 }
 
 function itemTextValues(item: MasterItem): string[] {
@@ -167,7 +180,7 @@ export function catalogItemSearchTerms(item: MasterItem): string[] {
     const normalized = tag.trim();
     if (!normalized) continue;
     if (sessionKeys.has(normalized.toUpperCase())) continue;
-    if (GENERIC_CATALOG_TAGS.has(normalized)) continue;
+    if (isGenericCatalogTag(normalized)) continue;
     if (normalized.length < 2) continue;
     terms.add(normalized);
   }
