@@ -3,7 +3,9 @@ import { redirect, notFound } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
+import { relatedCatalogItemsForReport } from "@/lib/catalog/related";
 import { listCharacters } from "@/lib/db/characters";
+import { listMasterItems } from "@/lib/db/inventory";
 import { findReportById } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
 import { listWikiPages } from "@/lib/db/wiki";
@@ -75,10 +77,15 @@ export default async function SessionReportDetailPage({ params }: Props) {
     : "작전지 좌표가 아직 등록되지 않은 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.";
   const allPages = await listWikiPages().catch(() => []);
   const allCharacters = await listCharacters().catch(() => []);
+  const allItems = await listMasterItems().catch(() => []);
   const visibleCharacters = isAdmin
     ? allCharacters
     : allCharacters.filter((character) => character.isPublic !== false);
+  const visibleItems = isGmOrAbove
+    ? allItems
+    : allItems.filter((item) => item.isPublic !== false);
   const relatedWikiLinks = relatedWikiForReport(report, allPages);
+  const relatedCatalogItems = relatedCatalogItemsForReport(report, visibleItems);
   const relatedPersonnelLinks = relatedPersonnelForReport(
     report,
     visibleCharacters,
@@ -194,6 +201,44 @@ export default async function SessionReportDetailPage({ params }: Props) {
                     <span className={styles.relatedWiki__title}>
                       {page.title}
                     </span>
+                  </Link>
+                ))}
+              </nav>
+            </Box>
+          ) : null}
+
+          {relatedCatalogItems.length > 0 ? (
+            <Box className={styles.reportPanel}>
+              <PanelTitle
+                right={
+                  <span className={styles.mono}>
+                    {relatedCatalogItems.length}
+                  </span>
+                }
+              >
+                RELATED CATALOG
+              </PanelTitle>
+              <nav
+                className={styles.relatedWiki}
+                aria-label="Related catalog items"
+              >
+                {relatedCatalogItems.map((item) => (
+                  <Link
+                    key={item.key}
+                    href={`/erp/wiki/catalog/item/${encodeURIComponent(item.key)}`}
+                    className={styles.relatedWiki__link}
+                  >
+                    <span className={styles.relatedWiki__category}>
+                      {item.categoryLabel}
+                    </span>
+                    <span className={styles.relatedWiki__title}>
+                      {item.name}
+                    </span>
+                    {item.effect ? (
+                      <span className={styles.relatedWiki__note}>
+                        {item.effect}
+                      </span>
+                    ) : null}
                   </Link>
                 ))}
               </nav>

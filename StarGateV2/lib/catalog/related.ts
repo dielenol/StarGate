@@ -4,6 +4,7 @@ import type {
   WikiPage,
 } from "@stargate/shared-db/types";
 
+import { ITEM_CATEGORY_LABEL } from "@/lib/catalog/categories";
 import {
   extractSessionKeys,
   sortRelatedWikiLinks,
@@ -12,6 +13,14 @@ import {
   type RelatedReportLink,
   type RelatedWikiLink,
 } from "@/lib/lore-links";
+
+export interface RelatedCatalogItemLink {
+  key: string;
+  name: string;
+  category: MasterItem["category"];
+  categoryLabel: string;
+  effect?: string;
+}
 
 const GENERIC_CATALOG_TAGS = new Set([
   "장비",
@@ -25,6 +34,14 @@ const GENERIC_CATALOG_TAGS = new Set([
   "물증",
   "격리장비",
 ]);
+
+const CATALOG_CATEGORY_ORDER: MasterItem["category"][] = [
+  "WEAPON",
+  "ARMOR",
+  "CONSUMABLE",
+  "MATERIAL",
+  "SPECIAL",
+];
 
 function normalizeTerm(value: string): string {
   return value.trim().toLowerCase();
@@ -48,6 +65,90 @@ function itemTextValues(item: MasterItem): string[] {
     item.loreMd,
     ...(item.tags ?? []),
   ].filter((value): value is string => Boolean(value));
+}
+
+function reportTextValues(report: SessionReport): string[] {
+  return [
+    report.sessionId,
+    report.sessionTitle,
+    report.summary,
+    ...report.highlights,
+    ...report.participants,
+    report.locationLabel,
+  ].filter((value): value is string => Boolean(value));
+}
+
+function pageTextValues(page: WikiPage): string[] {
+  return [page.title, page.content, page.category, ...page.tags].filter(
+    (value): value is string => Boolean(value),
+  );
+}
+
+function pageAllowsSessionKeyCatalogMatch(page: WikiPage): boolean {
+  const category = page.category.toLowerCase();
+  const title = page.title.toLowerCase();
+
+  return (
+    category.includes("작전") ||
+    category.includes("보고서") ||
+    category.includes("operation") ||
+    category.includes("report") ||
+    title.includes("작전") ||
+    title.includes("보고서")
+  );
+}
+
+function catalogItemKey(item: MasterItem): string | null {
+  return item.slug?.trim() || item._id?.toString() || null;
+}
+
+function toRelatedCatalogItemLink(
+  item: MasterItem,
+): RelatedCatalogItemLink | null {
+  const key = catalogItemKey(item);
+  if (!key) return null;
+
+  return {
+    key,
+    name: item.name,
+    category: item.category,
+    categoryLabel: ITEM_CATEGORY_LABEL[item.category] ?? item.category,
+    effect: item.effect,
+  };
+}
+
+function sortRelatedCatalogItemLinks(
+  left: RelatedCatalogItemLink,
+  right: RelatedCatalogItemLink,
+): number {
+  const leftRank = CATALOG_CATEGORY_ORDER.indexOf(left.category);
+  const rightRank = CATALOG_CATEGORY_ORDER.indexOf(right.category);
+  const safeLeftRank =
+    leftRank === -1 ? CATALOG_CATEGORY_ORDER.length : leftRank;
+  const safeRightRank =
+    rightRank === -1 ? CATALOG_CATEGORY_ORDER.length : rightRank;
+
+  if (safeLeftRank !== safeRightRank) return safeLeftRank - safeRightRank;
+  return left.name.localeCompare(right.name, "ko");
+}
+
+function itemMatchesContext(
+  item: MasterItem,
+  contextText: string,
+  contextSessionKeys: Set<string>,
+  options: { allowSessionKeyMatch?: boolean } = {},
+): boolean {
+  const itemSessionKeys = catalogItemSessionKeys(item);
+  if (
+    options.allowSessionKeyMatch !== false &&
+    itemSessionKeys.some((key) => contextSessionKeys.has(key))
+  ) {
+    return true;
+  }
+
+  return catalogItemSearchTerms(item).some((term) =>
+    includesTerm(contextText, term),
+  );
 }
 
 export function catalogItemSessionKeys(item: MasterItem): string[] {
@@ -130,4 +231,43 @@ export function relatedReportsForCatalogItem(
       (left, right) =>
         new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
     );
+}
+
+export function relatedCatalogItemsForReport(
+  report: SessionReport,
+  items: MasterItem[],
+): RelatedCatalogItemLink[] {
+  const contextValues = reportTextValues(report);
+  const contextText = contextValues.join(" ");
+  const contextSessionKeys = new Set(extractSessionKeys(...contextValues));
+
+  return items
+    .filter((item) =>
+      itemMatchesContext(item, contextText, contextSessionKeys, {
+        allowSessionKeyMatch: true,
+      }),
+    )
+    .map(toRelatedCatalogItemLink)
+    .filter((item): item is RelatedCatalogItemLink => item !== null)
+    .sort(sortRelatedCatalogItemLinks);
+}
+
+export function relatedCatalogItemsForWiki(
+  page: WikiPage,
+  items: MasterItem[],
+): RelatedCatalogItemLink[] {
+  const contextValues = pageTextValues(page);
+  const contextText = contextValues.join(" ");
+  const contextSessionKeys = new Set(extractSessionKeys(...contextValues));
+  const allowSessionKeyMatch = pageAllowsSessionKeyCatalogMatch(page);
+
+  return items
+    .filter((item) =>
+      itemMatchesContext(item, contextText, contextSessionKeys, {
+        allowSessionKeyMatch,
+      }),
+    )
+    .map(toRelatedCatalogItemLink)
+    .filter((item): item is RelatedCatalogItemLink => item !== null)
+    .sort(sortRelatedCatalogItemLinks);
 }

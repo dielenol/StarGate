@@ -4,7 +4,9 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
+import { relatedCatalogItemsForWiki } from "@/lib/catalog/related";
 import { listCharacters } from "@/lib/db/characters";
+import { listMasterItems } from "@/lib/db/inventory";
 import { listSessionReports } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
 import { findWikiPageById, listWikiPages } from "@/lib/db/wiki";
@@ -108,10 +110,15 @@ export default async function WikiDetailPage({
   const sourceLines = wikiSourceLines(page.content);
   const allReports = await listSessionReports().catch(() => []);
   const allCharacters = await listCharacters().catch(() => []);
+  const allItems = await listMasterItems().catch(() => []);
   const visibleCharacters = isAdmin
     ? allCharacters
     : allCharacters.filter((character) => character.isPublic !== false);
+  const visibleItems = isGM
+    ? allItems
+    : allItems.filter((item) => item.isPublic !== false);
   const relatedReports = relatedReportsForWiki(page, allReports);
+  const relatedCatalogItems = relatedCatalogItemsForWiki(page, visibleItems);
   const relatedPersonnel = relatedPersonnelForReports(
     relatedReports,
     visibleCharacters,
@@ -301,6 +308,33 @@ export default async function WikiDetailPage({
                     <span className={styles.related__title}>
                       {link.title}
                     </span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          ) : null}
+
+          {relatedCatalogItems.length > 0 ? (
+            <div className={styles.aside__section}>
+              <Eyebrow>RELATED CATALOG</Eyebrow>
+              <nav className={styles.related} aria-label="Related catalog items">
+                {relatedCatalogItems.map((item) => (
+                  <Link
+                    key={item.key}
+                    href={`/erp/wiki/catalog/item/${encodeURIComponent(item.key)}`}
+                    className={styles.related__link}
+                  >
+                    <span className={styles.related__meta}>
+                      {item.categoryLabel}
+                    </span>
+                    <span className={styles.related__title}>
+                      {item.name}
+                    </span>
+                    {item.effect ? (
+                      <span className={styles.related__note}>
+                        {item.effect}
+                      </span>
+                    ) : null}
                   </Link>
                 ))}
               </nav>
