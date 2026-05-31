@@ -18,6 +18,7 @@ type DiscordEmbedField = {
 
 type DiscordEmbed = {
   title: string;
+  url?: string;
   description?: string;
   color: number;
   fields: DiscordEmbedField[];
@@ -50,6 +51,7 @@ interface MarketWireOfficer {
   code: string;
   weekday: string;
   noticeLine: string;
+  linkLine: string;
 }
 
 export interface StockManualInterventionNotice {
@@ -68,6 +70,7 @@ const DISCORD_FIELD_VALUE_MAX = 1000;
 const MARKET_WIRE_COLOR = 0xc5a059;
 const MARKET_WIRE_POSITIVE = 0x2fbf71;
 const MARKET_WIRE_NEGATIVE = 0xd95f5f;
+const STOCK_WEB_URL = "https://www.ordonet.co.kr/erp/stock";
 
 const MARKET_WIRE_OFFICERS: Record<number, MarketWireOfficer> = {
   0: {
@@ -77,6 +80,7 @@ const MARKET_WIRE_OFFICERS: Record<number, MarketWireOfficer> = {
     origin: "세르비아계 유럽권",
     code: "FIN-SUN-07",
     noticeLine: "휴일 당직 기준으로 필수 변동 사항만 공시합니다.",
+    linkLine: "휴일 공시는 축약본입니다. 세부 호가표는 ORDO-NET 주식 거래소에서 확인하십시오.",
   },
   1: {
     weekday: "월요일",
@@ -85,6 +89,7 @@ const MARKET_WIRE_OFFICERS: Record<number, MarketWireOfficer> = {
     origin: "대한민국",
     code: "FIN-MON-01",
     noticeLine: "주간 개장 기준에 따라 정기 시세 갱신 내역을 통지합니다.",
+    linkLine: "개장 주간 표준 장부는 거래소 화면에 맞춰두었습니다. 세부 시세를 확인하십시오.",
   },
   2: {
     weekday: "화요일",
@@ -93,6 +98,7 @@ const MARKET_WIRE_OFFICERS: Record<number, MarketWireOfficer> = {
     origin: "나이지리아계 아프리카권",
     code: "FIN-TUE-02",
     noticeLine: "거래 지표 중심으로 변동 폭과 특이사항을 정리합니다.",
+    linkLine: "지표 원문과 변동 폭 대조표는 ORDO-NET 주식 거래소에서 교차 확인하십시오.",
   },
   3: {
     weekday: "수요일",
@@ -101,6 +107,7 @@ const MARKET_WIRE_OFFICERS: Record<number, MarketWireOfficer> = {
     origin: "아르헨티나계 남미권",
     code: "FIN-WED-03",
     noticeLine: "중간장 점검 결과를 ORDO-NET 시장기록에 반영합니다.",
+    linkLine: "중간장 흐름과 종목별 체결 기록은 거래소 화면에 함께 정리했습니다.",
   },
   4: {
     weekday: "목요일",
@@ -109,6 +116,7 @@ const MARKET_WIRE_OFFICERS: Record<number, MarketWireOfficer> = {
     origin: "인도계 남아시아권",
     code: "FIN-THU-04",
     noticeLine: "기업 동향과 가격 변동의 연결 항목을 우선 기록합니다.",
+    linkLine: "기업 동향 연결 항목은 ORDO-NET 주식 거래소에서 함께 대조하십시오.",
   },
   5: {
     weekday: "금요일",
@@ -117,6 +125,7 @@ const MARKET_WIRE_OFFICERS: Record<number, MarketWireOfficer> = {
     origin: "레반트계 중동권",
     code: "FIN-FRI-05",
     noticeLine: "주간 마감 전 시세 변동과 위험 신호를 함께 고지합니다.",
+    linkLine: "마감 전 위험 신호는 거래소 화면에서 다시 확인한 뒤 거래하십시오.",
   },
   6: {
     weekday: "토요일",
@@ -125,6 +134,7 @@ const MARKET_WIRE_OFFICERS: Record<number, MarketWireOfficer> = {
     origin: "북유럽권",
     code: "FIN-SAT-06",
     noticeLine: "주말 당직 관제 기준으로 시장 변동을 기록합니다.",
+    linkLine: "주말 관제 기록은 요약 공시입니다. 자세한 시세는 거래소 화면을 참조하십시오.",
   },
 };
 
@@ -194,6 +204,13 @@ function stockName(ticker: string): string {
   return meta ? `${meta.name} (${ticker})` : ticker;
 }
 
+function stockMarketLinkField(officer: MarketWireOfficer): DiscordEmbedField {
+  return {
+    name: "ORDO-NET 주식 거래소",
+    value: `[${officer.name} 담당 공시판 열람](${STOCK_WEB_URL})`,
+  };
+}
+
 function formatStockLine(result: ScheduledStockTickResult): string {
   const delta = result.price - result.previousPrice;
   const statusLabel =
@@ -257,6 +274,7 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
     "ORDO-NET MARKET WIRE",
     `${officer.weekday} 당직: ${officer.name} (${officer.romanizedName}) / ${officer.code}`,
     officer.noticeLine,
+    officer.linkLine,
   ].join("\n");
 
   return {
@@ -266,9 +284,10 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
     embeds: [
       {
         title: "재무기구 정기 시세 공시",
+        url: STOCK_WEB_URL,
         description,
         color: MARKET_WIRE_COLOR,
-        fields: buildRoutineFields(summary),
+        fields: [...buildRoutineFields(summary), stockMarketLinkField(officer)],
         footer: { text: `${officer.code} · ${summary.slot} KST · 자동 공시` },
         timestamp: new Date().toISOString(),
       },
@@ -304,8 +323,10 @@ function buildManualPayload(
           "ORDO-NET MARKET WIRE",
           `${officer.weekday} 당직: ${officer.name} (${officer.romanizedName}) / ${officer.code}`,
           "시장감시실장 승인에 따라 수동 조정 내역을 공시합니다.",
+          officer.linkLine,
         ].join("\n"),
         color,
+        url: STOCK_WEB_URL,
         fields: [
           {
             name: "대상 종목",
@@ -327,6 +348,7 @@ function buildManualPayload(
             name: "승인 기록",
             value: sanitizeForDiscord(`${notice.actor.displayName} · ${notice.actor.role}`),
           },
+          stockMarketLinkField(officer),
         ],
         footer: {
           text: `${officer.code} · ${kstNowTag(occurredAt)} KST · 특별 공시`,

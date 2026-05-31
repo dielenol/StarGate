@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/shop/refresh",
-      "schedule": "0 15 * * *"
+      "schedule": "0 2 * * *"
     }
   ]
 }

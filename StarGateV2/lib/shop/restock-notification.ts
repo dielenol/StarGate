@@ -5,7 +5,8 @@ import { getDb } from "@stargate/shared-db";
 import { getAllDailyStocks } from "@/lib/db/shop";
 import { notifyShopRestock } from "@/lib/discord";
 
-import { isShopOpen, SHOP_CATALOG } from "./catalog";
+import { SHOP_CATALOG } from "./catalog";
+import { getShopOpenState } from "./open-state";
 
 type ShopRestockNotificationStatus =
   | "sent"
@@ -147,6 +148,7 @@ async function releaseNotificationClaim(
 }
 
 async function buildRestockPayload(today: string, now: Date) {
+  const openState = await getShopOpenState(now);
   const stocks = await getAllDailyStocks();
   const stockByItemId = new Map(
     stocks
@@ -156,7 +158,9 @@ async function buildRestockPayload(today: string, now: Date) {
 
   return {
     today,
-    isOpen: isShopOpen(now),
+    isOpen: openState.isOpen,
+    openMode: openState.mode,
+    scheduledOpen: openState.scheduledOpen,
     items: SHOP_CATALOG.map((item) => ({
       name: item.name,
       icon: item.icon,

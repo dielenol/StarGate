@@ -116,6 +116,12 @@ const TIA_DIALOGUE_LINES = {
     "앗... 그 상품은 오늘 너무 잘 팔려서요. 지금은 재고가 얼마 안 남았어요.",
   soldOut:
     "앗... 그 상품은 지금 품절이에요. 발주 요청 남겨두면, 입고되는 대로 알려드릴게요.",
+  reorderRequested:
+    "네, 발주 요청 접수했어요. 입고표에 표시해둘게요. 재고가 들어오면 꼭 확인해주세요.",
+  reorderAlready:
+    "그 상품은 오늘 이미 발주 요청이 들어와 있어요. 제가 장부에 표시해뒀습니다.",
+  reorderError:
+    "앗... 발주 요청 장부에 적는 중 문제가 생겼어요. 잠시 후 다시 부탁드릴게요.",
   bag: "봉투도, 같이 챙겨드릴까요?",
   goodbye: "감사합니다! 조심히 들어가시고, 다음에 또 들러주세요~",
   closed: SHOP_CLOSED_MESSAGE,
@@ -206,10 +212,15 @@ export default function ShopClient({
   const [requestedSlugs, setRequestedSlugs] = useState<Set<string>>(
     () => new Set(),
   );
+  const [pendingReorderSlugs, setPendingReorderSlugs] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [adminOpen, setAdminOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
   const entrySfxPlayedRef = useRef(false);
+  const entrySfxPendingRef = useRef(false);
+  const entrySfxAutoAttemptedRef = useRef(false);
   const dialogueEngineRef = useRef<DialogueBeepEngine | null>(null);
   const dialogueReadyRef = useRef(false);
   const tiaLineSequenceRef = useRef(0);
@@ -446,7 +457,15 @@ export default function ShopClient({
     let audio: HTMLAudioElement | null = null;
 
     const play = async () => {
-      if (canceled || entrySfxPlayedRef.current) return;
+      if (
+        canceled ||
+        entrySfxPlayedRef.current ||
+        entrySfxPendingRef.current
+      ) {
+        return;
+      }
+
+      entrySfxPendingRef.current = true;
       const sequenceBeforePlay = tiaLineSequenceRef.current;
       audio ??= new Audio(SHOP_ENTRY_SFX_SRC);
       audio.volume = 0.58;
@@ -464,6 +483,8 @@ export default function ShopClient({
         window.removeEventListener("keydown", playOnGesture);
       } catch {
         // 브라우저가 자동재생을 막으면 사용자 제스처에서 한 번 재시도한다.
+      } finally {
+        entrySfxPendingRef.current = false;
       }
     };
 
@@ -473,12 +494,16 @@ export default function ShopClient({
       void play();
     };
 
-    void play();
+    if (!entrySfxAutoAttemptedRef.current) {
+      entrySfxAutoAttemptedRef.current = true;
+      void play();
+    }
     window.addEventListener("pointerdown", playOnGesture, { once: true });
     window.addEventListener("keydown", playOnGesture, { once: true });
 
     return () => {
       canceled = true;
+      entrySfxPendingRef.current = false;
       window.removeEventListener("pointerdown", playOnGesture);
       window.removeEventListener("keydown", playOnGesture);
       if (audio) {
@@ -548,8 +573,20 @@ export default function ShopClient({
     });
   }
 
-  function handleReorderRequest(item: ShopCatalogEntry) {
-    if (item.stock > 0 || reorderMutation.isPending) return;
+  function setReorderPending(slug: string, pending: boolean) {
+    setPendingReorderSlugs((prev) => {
+      const next = new Set(prev);
+      if (pending) {
+        next.add(slug);
+      } else {
+        next.delete(slug);
+      }
+      return next;
+    });
+  }
+
+  async function handleReorderRequest(item: ShopCatalogEntry): Promise<void> {
+    if (item.stock > 0 || pendingReorderSlugs.has(item.slug)) return;
     if (!canUseShop) {
       playTiaLine(
         catalog.isOpen ? "tired" : "nap",
@@ -561,30 +598,27 @@ export default function ShopClient({
     setSelectedSlug(item.slug);
     setErrorMessage(null);
     setNotice(null);
-    reorderMutation.mutate(
-      { slug: item.slug },
-      {
-        onSuccess: (res) => {
-          setRequestedSlugs((prev) => {
-            const next = new Set(prev);
-            next.add(item.slug);
-            return next;
-          });
-          playTiaLine("soldout", TIA_DIALOGUE_LINES.soldOut);
-          setNotice({
-            tone: "info",
-            text:
-              res.status === "already-requested"
-                ? "오늘 이미 발주 요청한 상품입니다."
-                : `${item.name} 발주 요청을 접수했습니다.`,
-          });
-        },
-        onError: (err) => {
-          playTiaLine("tired", TIA_DIALOGUE_LINES.checkoutError);
-          setErrorMessage(describeShopError(err));
-        },
-      },
-    );
+    setReorderPending(item.slug, true);
+
+    try {
+      const res = await reorderMutation.mutateAsync({ slug: item.slug });
+      setRequestedSlugs((prev) => {
+        const next = new Set(prev);
+        next.add(item.slug);
+        return next;
+      });
+      playTiaLine(
+        "soldout",
+        res.status === "already-requested"
+          ? TIA_DIALOGUE_LINES.reorderAlready
+          : TIA_DIALOGUE_LINES.reorderRequested,
+      );
+    } catch (err) {
+      playTiaLine("tired", TIA_DIALOGUE_LINES.reorderError);
+      setErrorMessage(describeShopError(err));
+    } finally {
+      setReorderPending(item.slug, false);
+    }
   }
 
   function handleCheckout() {
@@ -853,6 +887,7 @@ export default function ShopClient({
                   const isSelected = selectedItem?.slug === item.slug;
                   const isSoldOut = item.stock <= 0;
                   const requested = requestedSlugs.has(item.slug);
+                  const reorderPending = pendingReorderSlugs.has(item.slug);
                   const canAdd =
                     canUseShop &&
                     !isSoldOut &&
@@ -902,15 +937,17 @@ export default function ShopClient({
                           <button
                             type="button"
                             className={styles.reorderBtn}
-                            onClick={() => handleReorderRequest(item)}
+                            onClick={() => void handleReorderRequest(item)}
                             disabled={
                               !catalog.isOpen ||
                               requested ||
-                              reorderMutation.isPending
+                              reorderPending
                             }
                           >
                             {!catalog.isOpen
                               ? "영업 종료"
+                              : reorderPending
+                                ? "요청 중"
                               : requested
                                 ? "요청 완료"
                                 : "발주 요청"}
@@ -968,15 +1005,17 @@ export default function ShopClient({
                     <button
                       type="button"
                       className={styles.detailPanel__mainBtn}
-                      onClick={() => handleReorderRequest(selectedItem)}
+                      onClick={() => void handleReorderRequest(selectedItem)}
                       disabled={
                         !catalog.isOpen ||
                         requestedSlugs.has(selectedItem.slug) ||
-                        reorderMutation.isPending
+                        pendingReorderSlugs.has(selectedItem.slug)
                       }
                     >
                       {!catalog.isOpen
                         ? "영업 종료"
+                        : pendingReorderSlugs.has(selectedItem.slug)
+                        ? "발주 요청 중"
                         : requestedSlugs.has(selectedItem.slug)
                         ? "발주 요청 완료"
                         : "추가 발주 요청"}

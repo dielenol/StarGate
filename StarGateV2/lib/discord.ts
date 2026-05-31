@@ -8,6 +8,7 @@ type DiscordEmbedField = {
 
 type DiscordEmbed = {
   title: string;
+  url?: string;
   description?: string;
   color: number;
   fields: DiscordEmbedField[];
@@ -203,6 +204,8 @@ export interface ShopRestockWebhookItem {
 export interface ShopRestockWebhookPayload {
   today: string;
   isOpen: boolean;
+  openMode?: "auto" | "open" | "closed";
+  scheduledOpen?: boolean;
   items: ShopRestockWebhookItem[];
 }
 
@@ -219,6 +222,7 @@ const SHOP_GROUP_LABELS: Record<ShopRestockWebhookItem["pageGroup"], string> = {
   LUXURY: "기호품",
   RARE: "희귀 물품",
 };
+const SHOP_WEB_URL = "https://www.ordonet.co.kr/erp/shop";
 
 function formatShopRestockFields(
   items: ShopRestockWebhookItem[],
@@ -243,6 +247,24 @@ function formatShopRestockFields(
   });
 }
 
+function formatShopRestockStatusLine(
+  payload: ShopRestockWebhookPayload,
+): string {
+  if (payload.openMode === "open") {
+    return "지금은 GM이 문 열어뒀어요. 필요한 거 있으면 바로 들러요.";
+  }
+
+  if (payload.openMode === "closed") {
+    return "지금은 GM이 잠깐 셔터 내려뒀어요. 새로 들어온 물건은 미리 봐둬도 돼요.";
+  }
+
+  if (payload.isOpen) {
+    return "지금은 문 열려 있어요. 필요한 거 있으면 바로 들러요.";
+  }
+
+  return "지금은 영업 시간이 아니라 바로 구매는 어려워요. 새로 들어온 물건은 미리 봐둬도 돼요.";
+}
+
 export async function notifyShopRestock(
   payload: ShopRestockWebhookPayload,
 ): Promise<"sent" | "skipped"> {
@@ -257,7 +279,13 @@ export async function notifyShopRestock(
   const items = payload.items.filter((item) => item.stock > 0);
   if (items.length === 0) return "skipped";
 
-  const statusLabel = payload.isOpen ? "OPEN" : "CLOSED";
+  const fields = [
+    ...formatShopRestockFields(items),
+    {
+      name: "편의점으로 가기",
+      value: `[띠아 편의점 들어가기](${SHOP_WEB_URL})`,
+    },
+  ];
   const discordPayload: DiscordPayload = {
     username: "띠아",
     avatar_url: process.env.DISCORD_WEBHOOK_SHOP_AVATAR_URL || undefined,
@@ -265,9 +293,13 @@ export async function notifyShopRestock(
     embeds: [
       {
         title: "편의점 입고 알림",
-        description: `오늘 입고된 상품이에요.\n영업 상태: ${statusLabel}`,
+        url: SHOP_WEB_URL,
+        description: [
+          "오늘 새로 들어온 물건들이에요.",
+          formatShopRestockStatusLine(payload),
+        ].join("\n"),
         color: DISCORD_COLORS.shopRestock,
-        fields: formatShopRestockFields(items),
+        fields,
         footer: { text: `${payload.today} KST` },
         timestamp: new Date().toISOString(),
       },
