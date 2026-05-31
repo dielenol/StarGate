@@ -2,12 +2,13 @@
  * master_items + character_inventory CRUD
  */
 
-import { ObjectId } from "mongodb";
+import { ObjectId, type Filter } from "mongodb";
 
 import type {
   CharacterInventory,
   CreateInventoryInput,
   CreateMasterItemInput,
+  ItemCategory,
   MasterItem,
 } from "../types/index.js";
 
@@ -29,6 +30,24 @@ export async function listAvailableItems(): Promise<MasterItem[]> {
     .find({ isAvailable: true })
     .sort({ category: 1, name: 1 })
     .toArray();
+}
+
+export async function listMasterItemsByCategories(
+  categories: readonly ItemCategory[],
+  opts: { publicOnly?: boolean; availableOnly?: boolean } = {}
+): Promise<MasterItem[]> {
+  if (categories.length === 0) return [];
+
+  const { publicOnly = true, availableOnly = true } = opts;
+  const query: Filter<MasterItem> = {
+    category: { $in: [...categories] },
+  };
+
+  if (publicOnly) query.isPublic = { $ne: false };
+  if (availableOnly) query.isAvailable = { $ne: false };
+
+  const col = await masterItemsCol();
+  return col.find(query).sort({ category: 1, name: 1 }).toArray();
 }
 
 export async function findMasterItemById(id: string): Promise<MasterItem | null> {
