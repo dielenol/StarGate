@@ -142,6 +142,7 @@ function getCharacterEditWebhookUrl(
 ): string | undefined {
   if (isPlayerSelfEdit(payload)) {
     return (
+      process.env.DISCORD_WEBHOOK_URL ||
       process.env.DISCORD_WEBHOOK_CHAR_SELF_EDIT_URL ||
       process.env.DISCORD_WEBHOOK_CHARACTER_SELF_EDIT_URL ||
       process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL
@@ -354,7 +355,7 @@ export async function notifyCharacterEdit(
   const webhookUrl = getCharacterEditWebhookUrl(payload);
   if (!webhookUrl) {
     const envName = isPlayerSelfEdit(payload)
-      ? "DISCORD_WEBHOOK_CHAR_SELF_EDIT_URL"
+      ? "DISCORD_WEBHOOK_URL"
       : "DISCORD_WEBHOOK_CHAR_EDIT_URL";
     console.warn(
       `[notifyCharacterEdit] ${envName} 미설정 — silent skip`,
