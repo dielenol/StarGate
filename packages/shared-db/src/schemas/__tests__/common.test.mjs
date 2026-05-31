@@ -2,6 +2,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 
 import {
+  catalogSlugSchema,
   codeSchema,
   slugSchema,
   objectIdStringSchema,
@@ -35,6 +36,20 @@ test("slugSchema: 대문자·언더바·연속 대시 거부", () => {
   assert.throws(() => slugSchema.parse("foo_bar"));
   assert.throws(() => slugSchema.parse("foo--bar"));
   assert.throws(() => slugSchema.parse(""));
+});
+
+test("catalogSlugSchema: kebab-case와 shop underscore slug 허용", () => {
+  assert.equal(catalogSlugSchema.parse("first-aid-patch"), "first-aid-patch");
+  assert.equal(catalogSlugSchema.parse("first_aid_patch"), "first_aid_patch");
+  assert.equal(catalogSlugSchema.parse("cup_ramen"), "cup_ramen");
+});
+
+test("catalogSlugSchema: 대문자·연속 구분자·끝 구분자 거부", () => {
+  assert.throws(() => catalogSlugSchema.parse("Foo"));
+  assert.throws(() => catalogSlugSchema.parse("foo__bar"));
+  assert.throws(() => catalogSlugSchema.parse("foo--bar"));
+  assert.throws(() => catalogSlugSchema.parse("foo_"));
+  assert.throws(() => catalogSlugSchema.parse(""));
 });
 
 test("objectIdStringSchema: 24자 hex 허용", () => {

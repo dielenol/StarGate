@@ -7,7 +7,7 @@
 
   규칙
   - code: UPPER_SNAKE_CASE (예: STANDARD_PISTOL, KEVLAR_VEST)
-  - slug: kebab-case 소문자
+  - slug: 소문자·숫자와 하이픈/언더스코어. 일반 장비는 kebab-case 권장
   - category: "WEAPON" | "ARMOR"
   - price: 숫자 (KRW). master_items.price 와 정합.
   - damage: 자유 문자열 ("9mm / 단발", "방어력 +30" 등). 80자 이내.

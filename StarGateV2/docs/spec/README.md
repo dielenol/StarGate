@@ -122,7 +122,7 @@ StarGate 세계관 자산은 **핵심 도메인**(NPC / Faction / Institution / 
 | 필드 | 타입 | 필수 | 비고 |
 |------|------|------|------|
 | `code` | UPPER_SNAKE | ✓ | 유일 식별자 |
-| `slug` | kebab-case | ✓ | |
+| `slug` | catalog slug | ✓ | 소문자·숫자와 하이픈/언더스코어. 일반 장비는 kebab-case 권장 |
 | `name` | string ≤80 | ✓ | 카탈로그 표시명 (한국어) |
 | `nameEn` | string ≤80 | | 영문명 |
 | `category` | enum | ✓ | `"WEAPON"` \| `"ARMOR"` |
@@ -146,7 +146,7 @@ Equipment와 동일 구조. 단:
 | `category` | enum | ✓ | `"CONSUMABLE"` 고정 |
 | `effect` | string ≤120 | | 효과 한 줄 (`"HP +30 / 즉시"` 등). `damage` 대신 사용 |
 
-나머지 필드(`code`/`slug`/`name`/`nameEn`/`price`/`description`/`previewImage`/`isAvailable`/`isPublic`/`tags`/`source`) 및 body 섹션은 Equipment와 동일.
+나머지 필드(`code`/`slug`/`name`/`nameEn`/`price`/`description`/`previewImage`/`isAvailable`/`isPublic`/`tags`/`source`) 및 body 섹션은 Equipment와 동일. 편의점 연동 품목은 `SHOP_CATALOG.slug`와 `master_items.slug`가 같아야 하므로 기존 shop slug의 언더스코어를 보존한다.
 
 ### Catalog (`packages/shared-db/src/schemas/catalog.schema.ts`)
 
@@ -159,6 +159,8 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 | `damage` | string ≤80 | | 전투 장비일 때만 사용 |
 
 나머지 필드와 body 섹션은 Equipment/Consumable과 동일하다.
+
+`master_items` 계열 slug는 `catalogSlugSchema`를 사용한다. 공개 위키나 세력/기관/NPC의 일반 slug는 계속 kebab-case지만, 상점/봇에서 이미 쓰는 `cup_ramen`, `first_aid_patch` 같은 ID는 DB 연동 식별자이므로 언더스코어를 유지한다.
 
 ## 필드 일관성 메모
 

@@ -15,6 +15,15 @@ export const slugSchema = z
     "kebab-case 문자열만 허용 (소문자·숫자·하이픈)"
   );
 
+export const catalogSlugSchema = z
+  .string()
+  .min(1)
+  .max(80)
+  .regex(
+    /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/,
+    "catalog slug는 소문자·숫자와 단일 하이픈/언더스코어 구분자만 허용"
+  );
+
 export const codeSchema = z
   .string()
   .min(2)
@@ -97,7 +106,7 @@ export function catalogDocBaseFields<C extends z.ZodTypeAny>(
 ) {
   return {
     code: codeSchema,
-    slug: slugSchema,
+    slug: catalogSlugSchema,
     name: z.string().min(1).max(80),
     nameEn: z.string().max(80).optional(),
     category: categorySchema,
@@ -127,7 +136,7 @@ export function catalogFrontmatterBaseFields<C extends z.ZodTypeAny>(
 ) {
   return {
     code: codeSchema,
-    slug: slugSchema,
+    slug: catalogSlugSchema,
     name: z.string().min(1).max(80),
     nameEn: z.string().max(80).optional(),
     category: categorySchema,

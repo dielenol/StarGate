@@ -7,7 +7,7 @@
 
   규칙
   - code: UPPER_SNAKE_CASE (예: HP_POTION_SMALL, CUP_RAMEN)
-  - slug: kebab-case 소문자
+  - slug: 소문자·숫자와 하이픈/언더스코어. 편의점 연동 품목은 shop slug를 그대로 사용
   - category: "CONSUMABLE" 고정
   - price: 숫자 (KRW). master_items.price 와 정합.
   - effect: 자유 문자열 ("HP +30", "SAN +10 / 1턴" 등). 120자 이내.
