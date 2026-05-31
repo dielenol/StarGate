@@ -1,36 +1,55 @@
 "use client";
 
+import Link from "next/link";
 import { useDeferredValue, useMemo, useState } from "react";
 
 import type { ItemCategory } from "@stargate/shared-db";
 
 import styles from "./CatalogClient.module.css";
 
-type CatalogCategory = Extract<ItemCategory, "WEAPON" | "ARMOR" | "CONSUMABLE">;
+type CatalogScope = "all" | "equipment" | "consumable" | "material" | "special";
 
 type CatalogItem = {
   _id: string;
   slug?: string;
   name: string;
-  category: CatalogCategory;
+  category: ItemCategory;
   description: string;
   price: number | string;
   damage?: string;
   effect?: string;
+  tags?: string[];
   isAvailable: boolean;
 };
 
 interface Props {
-  category: "equipment" | "consumable";
+  category: CatalogScope;
   label: string;
   initialItems: CatalogItem[];
 }
 
-const CATEGORY_LABEL: Record<CatalogCategory, string> = {
+const CATEGORY_LABEL: Record<ItemCategory, string> = {
   WEAPON: "무기",
   ARMOR: "방어구",
   CONSUMABLE: "소모품",
+  MATERIAL: "샘플",
+  SPECIAL: "특수",
 };
+
+const CATALOG_TABS: { key: CatalogScope; label: string; href: string }[] = [
+  { key: "all", label: "전체", href: "/erp/wiki/catalog/all" },
+  { key: "equipment", label: "장비", href: "/erp/wiki/catalog/equipment" },
+  { key: "consumable", label: "소모품", href: "/erp/wiki/catalog/consumable" },
+  { key: "material", label: "샘플", href: "/erp/wiki/catalog/material" },
+  { key: "special", label: "특수", href: "/erp/wiki/catalog/special" },
+];
+
+function categoryTone(category: ItemCategory): string {
+  if (category === "WEAPON" || category === "ARMOR") return "equipment";
+  if (category === "CONSUMABLE") return "consumable";
+  if (category === "MATERIAL") return "material";
+  return "special";
+}
 
 /**
  * 가격 문자열/숫자를 number 로 정규화. 파싱 불가 시 `null` 을 반환해
@@ -58,7 +77,9 @@ export default function CatalogClient({ category, label, initialItems }: Props) 
       initialItems.map((it) => ({
         item: it,
         haystack:
-          `${it.name} ${it.description} ${it.damage ?? ""} ${it.effect ?? ""}`.toLowerCase(),
+          `${it.name} ${it.description} ${it.damage ?? ""} ${it.effect ?? ""} ${
+            it.tags?.join(" ") ?? ""
+          }`.toLowerCase(),
       })),
     [initialItems],
   );
@@ -94,6 +115,27 @@ export default function CatalogClient({ category, label, initialItems }: Props) 
           총 {filtered.length}개 / 전체 {initialItems.length}개
         </p>
       </header>
+
+      <nav className={styles.catalog__tabs} aria-label="카탈로그 분류">
+        {CATALOG_TABS.map((tab) => {
+          const isActive = tab.key === category;
+          return (
+            <Link
+              key={tab.key}
+              href={tab.href}
+              className={[
+                styles.catalog__tab,
+                isActive ? styles["catalog__tab--active"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              aria-current={isActive ? "page" : undefined}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
 
       <div className={styles.catalog__controls}>
         <label className={styles.visuallyHidden} htmlFor="catalog-search">
@@ -140,7 +182,12 @@ export default function CatalogClient({ category, label, initialItems }: Props) 
               {/* 차후 상세 페이지 추가 시 isAvailable=false 카드는 클릭 비활성 처리 필요 */}
               <div className={styles.card__header}>
                 <h2 className={styles.card__name}>{it.name}</h2>
-                <span className={styles.card__category}>
+                <span
+                  className={[
+                    styles.card__category,
+                    styles[`card__category--${categoryTone(it.category)}`],
+                  ].join(" ")}
+                >
                   {CATEGORY_LABEL[it.category]}
                 </span>
               </div>

@@ -1,4 +1,4 @@
-/* ── Catalog (장비 / 소모품) ── */
+/* ── Catalog (전체 / 장비 / 소모품 / 샘플 / 특수) ── */
 
 .catalog {
   display: flex;
@@ -32,6 +32,47 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: 0.08em;
+}
+
+/* Category tabs */
+
+.catalog__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 2px;
+}
+
+.catalog__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 8px 12px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.catalog__tab:hover {
+  border-color: var(--line-strong);
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+
+.catalog__tab--active {
+  border-color: var(--gold-dim);
+  background: color-mix(in srgb, var(--gold) 10%, var(--bg-1));
+  color: var(--gold);
 }
 
 /* Controls (검색 + 정렬) */
@@ -166,6 +207,26 @@
   font-size: var(--font-size-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.card__category--equipment {
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--line));
+  color: var(--gold);
+}
+
+.card__category--consumable {
+  border-color: color-mix(in srgb, var(--info) 45%, var(--line));
+  color: var(--info);
+}
+
+.card__category--material {
+  border-color: color-mix(in srgb, var(--success) 45%, var(--line));
+  color: var(--success);
+}
+
+.card__category--special {
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--line));
+  color: var(--danger);
 }
 
 .card__description {

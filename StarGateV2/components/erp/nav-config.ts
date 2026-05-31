@@ -10,7 +10,6 @@ import {
   IconApply,
   IconArchive,
   IconCharacter,
-  IconConsumable,
   IconCredit,
   IconCrown,
   IconDashboard,
@@ -98,8 +97,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "위키", keywords: "wiki", icon: IconWiki, href: "/erp/wiki" },
       { label: "작전 보고서", keywords: "report session archive operation 작전 보고서 세션 리포트 작전 기록", icon: IconReportDocument, href: "/erp/sessions/report" },
-      { label: "장비 카탈로그", keywords: "catalog equipment weapon armor 장비", icon: IconEquipment, href: "/erp/wiki/catalog/equipment" },
-      { label: "소모품 카탈로그", keywords: "catalog consumable potion 소모품", icon: IconConsumable, href: "/erp/wiki/catalog/consumable" },
+      { label: "카탈로그", keywords: "catalog equipment weapon armor consumable material sample evidence special 장비 소모품 샘플 물증 특수", icon: IconInventory, href: "/erp/wiki/catalog/all" },
       /* 갤러리 · 연대기 — 콘텐츠 준비중. */
       { label: "갤러리", keywords: "gallery", icon: IconArchive, href: null },
       { label: "연대기", keywords: "chronicle", icon: IconWorld, href: null },
