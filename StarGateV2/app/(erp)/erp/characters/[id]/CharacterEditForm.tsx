@@ -32,6 +32,14 @@ import styles from "./CharacterEditForm.module.css";
  * 'none' 은 폼 진입 자체가 막혀 여기서는 다루지 않음.
  */
 type EditMode = "admin" | "player";
+type SectionId =
+  | "basic"
+  | "bonusPoint"
+  | "lore"
+  | "combat"
+  | "agentDetails"
+  | "equipment"
+  | "abilities";
 
 interface Props {
   /** AGENT 전용 — page.tsx 가 NPC 를 redirect 하므로 NPC 분기 불필요. */
@@ -205,6 +213,7 @@ const ADMIN_DIFF_FIELDS: ReadonlyArray<string> = [
   "play.defDelta",
   "play.atk",
   "play.atkDelta",
+  "play.points",
   "play.abilityType",
   "play.weaponTraining",
   "play.skillTraining",
@@ -304,6 +313,7 @@ export default function CharacterEditForm({
   const [defDelta, setDefDelta] = useState(play.defDelta);
   const [atk, setAtk] = useState(play.atk);
   const [atkDelta, setAtkDelta] = useState(play.atkDelta);
+  const [points, setPoints] = useState(play.points ?? 0);
   const [abilityType, setAbilityType] = useState(play.abilityType ?? "");
   const [credit, setCredit] = useState(play.credit ?? "");
   const [weaponTrainingStr, setWeaponTrainingStr] = useState(
@@ -318,6 +328,9 @@ export default function CharacterEditForm({
   /* ── Form state ── */
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<
+    Partial<Record<SectionId, boolean>>
+  >({});
 
   /* ── diff preview modal ── */
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -325,6 +338,17 @@ export default function CharacterEditForm({
   const [pendingBody, setPendingBody] = useState<Record<string, unknown> | null>(
     null,
   );
+
+  function isSectionCollapsed(sectionId: SectionId): boolean {
+    return collapsedSections[sectionId] === true;
+  }
+
+  function toggleSection(sectionId: SectionId) {
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [sectionId]: !prev[sectionId],
+    }));
+  }
 
   /* ── Equipment helpers ── */
   function addEquipment() {
@@ -389,6 +413,7 @@ export default function CharacterEditForm({
         defDelta,
         atk,
         atkDelta,
+        points,
         abilityType: emptyToUndefined(abilityType),
         weaponTraining: stringToTags(weaponTrainingStr),
         skillTraining: stringToTags(skillTrainingStr),
@@ -540,11 +565,12 @@ export default function CharacterEditForm({
       </div>
 
       {/* ── BASIC INFO (root + 일부 lore meta) ── */}
-      <div className={styles.form__box}>
-        <div className={styles.panelTitle}>
-          <span className={styles.panelTitle__label}>BASIC INFO</span>
-        </div>
-        <div className={styles.form__box__body}>
+      <CollapsiblePanel
+        sectionId="basic"
+        title="BASIC INFO"
+        collapsed={isSectionCollapsed("basic")}
+        onToggle={() => toggleSection("basic")}
+      >
           <div className={styles.grid}>
             <Field id="codename" label="CODENAME" locked={!isPlayer ? false : true}>
               <input
@@ -698,15 +724,38 @@ export default function CharacterEditForm({
               </label>
             </div>
           </div>
-        </div>
-      </div>
+      </CollapsiblePanel>
+
+      <CollapsiblePanel
+        sectionId="bonusPoint"
+        title="BONUS POINT"
+        collapsed={isSectionCollapsed("bonusPoint")}
+        onToggle={() => toggleSection("bonusPoint")}
+      >
+          <div className={styles.grid}>
+            <Field id="points" label="BONUS POINT" locked={isPlayer}>
+              <input
+                id="points"
+                type="number"
+                className={`${styles.input} ${styles["input--num"]}`}
+                value={points}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (Number.isFinite(n)) setPoints(n);
+                }}
+                disabled={isPlayer}
+              />
+            </Field>
+          </div>
+      </CollapsiblePanel>
 
       {/* ── LORE — 신원/서사 (8필드는 player 도 편집 가능) ── */}
-      <div className={styles.form__box}>
-        <div className={styles.panelTitle}>
-          <span className={styles.panelTitle__label}>LORE · 신원 · 서사</span>
-        </div>
-        <div className={styles.form__box__body}>
+      <CollapsiblePanel
+        sectionId="lore"
+        title="LORE · 신원 · 서사"
+        collapsed={isSectionCollapsed("lore")}
+        onToggle={() => toggleSection("lore")}
+      >
           <div className={styles.grid}>
             <Field id="name" label="NAME" locked={isPlayer}>
               <input
@@ -864,19 +913,17 @@ export default function CharacterEditForm({
               />
             </Field>
           </div>
-        </div>
-      </div>
+      </CollapsiblePanel>
 
       {/* ── PLAY (admin only) ── */}
       {!isPlayer ? (
         <>
-          <div className={styles.form__box}>
-            <div className={styles.panelTitle}>
-              <span className={styles.panelTitle__label}>
-                COMBAT STATS · base + delta 메모
-              </span>
-            </div>
-            <div className={styles.form__box__body}>
+          <CollapsiblePanel
+            sectionId="combat"
+            title="COMBAT STATS · base + delta 메모"
+            collapsed={isSectionCollapsed("combat")}
+            onToggle={() => toggleSection("combat")}
+          >
               <div className={styles.statGrid}>
                 <Field id="hp" label="HP">
                   <input
@@ -975,14 +1022,14 @@ export default function CharacterEditForm({
                   />
                 </Field>
               </div>
-            </div>
-          </div>
+          </CollapsiblePanel>
 
-          <div className={styles.form__box}>
-            <div className={styles.panelTitle}>
-              <span className={styles.panelTitle__label}>AGENT DETAILS</span>
-            </div>
-            <div className={styles.form__box__body}>
+          <CollapsiblePanel
+            sectionId="agentDetails"
+            title="AGENT DETAILS"
+            collapsed={isSectionCollapsed("agentDetails")}
+            onToggle={() => toggleSection("agentDetails")}
+          >
               <div className={styles.grid}>
                 <Field id="className" label="CLASS">
                   <input
@@ -1040,24 +1087,29 @@ export default function CharacterEditForm({
                   />
                 </Field>
               </div>
-            </div>
-          </div>
+          </CollapsiblePanel>
 
           {/* Equipment list */}
-          <div className={styles.form__box}>
-            <div className={styles.panelTitle}>
-              <span className={styles.panelTitle__label}>EQUIPMENT</span>
-              <div className={styles.panelTitle__right}>
+          <CollapsiblePanel
+            sectionId="equipment"
+            title="EQUIPMENT"
+            collapsed={isSectionCollapsed("equipment")}
+            onToggle={() => toggleSection("equipment")}
+            right={
                 <button
                   type="button"
                   className={`${styles.ghostBtn} ${styles["ghostBtn--add"]}`}
-                  onClick={addEquipment}
+                  onClick={() => {
+                    addEquipment();
+                    if (isSectionCollapsed("equipment")) {
+                      toggleSection("equipment");
+                    }
+                  }}
                 >
                   추가
                 </button>
-              </div>
-            </div>
-            <div className={styles.form__box__body}>
+            }
+          >
               {equipment.length === 0 ? (
                 <div className={styles.empty}>장비 없음</div>
               ) : (
@@ -1152,17 +1204,15 @@ export default function CharacterEditForm({
                   ))}
                 </div>
               )}
-            </div>
-          </div>
+          </CollapsiblePanel>
 
           {/* Abilities — 11-슬롯 고정 그리드 */}
-          <div className={styles.form__box}>
-            <div className={styles.panelTitle}>
-              <span className={styles.panelTitle__label}>
-                ABILITIES · 11 SLOTS (C1~C5/P/A1~A5)
-              </span>
-            </div>
-            <div className={styles.form__box__body}>
+          <CollapsiblePanel
+            sectionId="abilities"
+            title="ABILITIES · 11 SLOTS (C1~C5/P/A1~A5)"
+            collapsed={isSectionCollapsed("abilities")}
+            onToggle={() => toggleSection("abilities")}
+          >
               <div className={styles.list}>
                 {abilities.map((ab, i) => (
                   <div key={ab.slot} className={styles.listItem}>
@@ -1222,8 +1272,7 @@ export default function CharacterEditForm({
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
+          </CollapsiblePanel>
         </>
       ) : null}
 
@@ -1276,6 +1325,61 @@ export default function CharacterEditForm({
         />
       ) : null}
     </form>
+  );
+}
+
+function CollapsiblePanel({
+  sectionId,
+  title,
+  children,
+  right,
+  collapsed,
+  onToggle,
+}: {
+  sectionId: SectionId;
+  title: string;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  const contentId = `character-edit-${sectionId}`;
+
+  return (
+    <div
+      className={[
+        styles.form__box,
+        collapsed ? styles["form__box--collapsed"] : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <div className={styles.panelTitle}>
+        <button
+          type="button"
+          className={styles.panelToggle}
+          aria-expanded={!collapsed}
+          aria-controls={contentId}
+          onClick={onToggle}
+        >
+          <span className={styles.panelTitle__label}>
+            <span className={styles.panelToggle__mark} aria-hidden="true">
+              {collapsed ? "+" : "-"}
+            </span>
+            <span className={styles.panelToggle__text}>{title}</span>
+          </span>
+          <span className={styles.panelToggle__state}>
+            {collapsed ? "펼치기" : "접기"}
+          </span>
+        </button>
+        {right ? <div className={styles.panelTitle__right}>{right}</div> : null}
+      </div>
+      {collapsed ? null : (
+        <div id={contentId} className={styles.form__box__body}>
+          {children}
+        </div>
+      )}
+    </div>
   );
 }
 

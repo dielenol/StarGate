@@ -108,6 +108,7 @@ export default function CharacterCreateForm() {
   const [defDelta, setDefDelta] = useState(0);
   const [atk, setAtk] = useState(0);
   const [atkDelta, setAtkDelta] = useState(0);
+  const [points, setPoints] = useState(0);
   const [abilityType, setAbilityType] = useState("");
   const [credit, setCredit] = useState("");
   const [weaponTrainingStr, setWeaponTrainingStr] = useState("");
@@ -175,6 +176,7 @@ export default function CharacterCreateForm() {
       defDelta,
       atk,
       atkDelta,
+      points,
       abilityType: abilityType || undefined,
       weaponTraining: stringToTags(weaponTrainingStr),
       skillTraining: stringToTags(skillTrainingStr),
@@ -569,6 +571,17 @@ export default function CharacterCreateForm() {
               type="text"
               value={credit}
               onChange={(e) => setCredit(e.target.value)}
+            />
+          </Field>
+          <Field id="points" label="BONUS POINT">
+            <Input
+              id="points"
+              type="number"
+              value={points}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) setPoints(n);
+              }}
             />
           </Field>
           <Field id="weaponTraining" label="WEAPON TRAINING (콤마 구분)" full>

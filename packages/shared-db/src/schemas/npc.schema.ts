@@ -96,6 +96,7 @@ export const playSheetSchema = z.object({
   defDelta: z.number().default(0),
   atk: z.number(),
   atkDelta: z.number().default(0),
+  points: z.number().default(0),
   abilityType: z.string().optional(),
   weaponTraining: z.array(z.string()),
   skillTraining: z.array(z.string()),

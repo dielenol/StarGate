@@ -26,6 +26,9 @@ export const characterChangeLogSchema = z.object({
   source: z.enum(["player", "admin"]),
   changes: z.array(characterChangeLogEntrySchema).min(1),
   reason: z.string().max(500).optional(),
+  metadata: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .optional(),
   createdAt: dateSchema,
   revertedAt: dateSchema.nullable().optional(),
   revertedBy: z.string().nullable().optional(),

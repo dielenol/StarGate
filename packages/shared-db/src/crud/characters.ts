@@ -319,6 +319,7 @@ export const ALLOWED_PLAY_FIELDS_ADMIN = new Set<string>([
   "play.defDelta",
   "play.atk",
   "play.atkDelta",
+  "play.points",
   "play.abilityType",
   "play.weaponTraining",
   "play.skillTraining",

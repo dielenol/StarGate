@@ -28,6 +28,7 @@ export interface CharacterChangeLog {
   changes: CharacterChangeLogEntry[];
   /** 선택적 변경 사유. player는 보통 비워둠, admin은 사유 기재 권장. */
   reason?: string;
+  metadata?: Record<string, string | number | boolean | null>;
   createdAt: Date;
   /** 되돌림(revert)이 적용된 시각. null/미설정이면 아직 유효한 변경. */
   revertedAt?: Date | null;

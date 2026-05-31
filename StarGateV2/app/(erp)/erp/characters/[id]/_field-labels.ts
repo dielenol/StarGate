@@ -37,6 +37,7 @@ export const CHARACTER_FIELD_LABELS: Record<string, string> = {
   "play.def": "DEF",
   "play.defDelta": "DEF Δ",
   "play.atk": "ATK",
+  "play.points": "BONUS POINT",
   "play.atkDelta": "ATK Δ",
   "play.abilityType": "능력 타입",
   "play.credit": "크레딧",

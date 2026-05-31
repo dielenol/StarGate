@@ -228,6 +228,7 @@ function redactPlay(
     defDelta: canCombat ? play.defDelta : 0,
     atk: canCombat ? play.atk : 0,
     atkDelta: canCombat ? play.atkDelta : 0,
+    points: canAbilities ? (play.points ?? 0) : 0,
     abilityType: canAbilities ? play.abilityType : REDACTED,
     weaponTraining: canAbilities ? play.weaponTraining : [],
     skillTraining: canAbilities ? play.skillTraining : [],

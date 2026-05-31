@@ -63,6 +63,7 @@ export interface PlaySheet {
   defDelta: number;
   atk: number;
   atkDelta: number;
+  points?: number;
 
   /** 능력 origin (예: "백면금모구미호의 후손"). */
   abilityType?: string;
