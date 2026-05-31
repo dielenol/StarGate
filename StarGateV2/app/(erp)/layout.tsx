@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
+import { findMainCharacterByOwner } from "@/lib/db/characters";
 
 import SessionWrapper from "@/components/erp/SessionWrapper";
 import QueryProvider from "@/components/erp/QueryProvider";
@@ -30,13 +31,21 @@ export default async function ERPLayout({
     redirect("/login");
   }
 
+  const mainCharacter = await findMainCharacterByOwner(session.user.id);
+  const headerIdentity = mainCharacter
+    ? {
+        name: mainCharacter.lore.name || mainCharacter.codename,
+        agentLevel: mainCharacter.agentLevel ?? null,
+      }
+    : null;
+
   return (
     <SessionWrapper session={session}>
       <QueryProvider>
         <PageHeadProvider>
           <NavPendingProvider>
             <div className={styles.erp} data-scope="erp">
-              <ERPHeader user={session.user} />
+              <ERPHeader user={session.user} identity={headerIdentity} />
               <div className={styles.erp__body}>
                 <ERPSidebar />
                 <main className={styles.erp__main}>{children}</main>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useSyncExternalStore } from "react";
 
-import type { UserRole } from "@/types/user";
+import type { AgentLevel } from "@/types/character";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
@@ -19,8 +19,11 @@ import styles from "./ERPHeader.module.css";
 interface ERPHeaderProps {
   user: {
     displayName: string;
-    role: UserRole;
   };
+  identity: {
+    name: string;
+    agentLevel: AgentLevel | null;
+  } | null;
 }
 
 /**
@@ -52,8 +55,14 @@ function isBreadcrumbItemArray(value: unknown): value is BreadcrumbItem[] {
   });
 }
 
-export default function ERPHeader({ user }: ERPHeaderProps) {
+export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const logoSrc = resolvePublicAssetPath("/assets/StarGate_logo.png");
+  const identityRank = identity ? (identity.agentLevel ?? "U") : undefined;
+  const userDisplayLabel = identity ? identity.name : user.displayName;
+  const userTitle =
+    identity && identityRank
+      ? `${identity.name} - ${identityRank}`
+      : user.displayName;
 
   // SSR 스냅샷은 "⌘K", 클라이언트 hydrate 시점에 플랫폼 감지 결과로 교체.
   const kbdLabel = useSyncExternalStore(
@@ -143,10 +152,17 @@ export default function ERPHeader({ user }: ERPHeaderProps) {
         </button>
 
         <div className={styles.header__user}>
-          <span className={styles.header__userName}>{user.displayName}</span>
-          <span className={styles.header__userRole} data-rank={user.role}>
-            {user.role}
+          <span
+            className={styles.header__userName}
+            title={userTitle}
+          >
+            {userDisplayLabel}
           </span>
+          {identityRank ? (
+            <span className={styles.header__userRole} data-rank={identityRank}>
+              {identityRank}
+            </span>
+          ) : null}
           <button
             type="button"
             className={styles.header__logout}

@@ -164,6 +164,9 @@
 
 .header__userName {
   color: var(--ink-1);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
