@@ -61,6 +61,7 @@ interface TiaLineOptions
 
 const MAX_CART_QUANTITY_PER_ITEM = 9;
 const SHOP_ENTRY_SFX_SRC = "/assets/shop/sfx/convenience-chime.mp3";
+const SHOP_ENTRY_SFX_VOLUME = 0.29;
 const TIA_IDLE_DELAY_MS = 18000;
 const LOW_STOCK_THRESHOLD = 2;
 
@@ -468,7 +469,7 @@ export default function ShopClient({
       entrySfxPendingRef.current = true;
       const sequenceBeforePlay = tiaLineSequenceRef.current;
       audio ??= new Audio(SHOP_ENTRY_SFX_SRC);
-      audio.volume = 0.58;
+      audio.volume = SHOP_ENTRY_SFX_VOLUME;
       audio.currentTime = 0;
 
       try {
