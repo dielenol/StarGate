@@ -44,7 +44,7 @@ interface Props {
 }
 
 function getInitial(c: AgentCharacterCardDto): string {
-  const source = c.lore.name || c.codename;
+  const source = getDisplayName(c);
   return source.charAt(0).toUpperCase() || "?";
 }
 
@@ -78,6 +78,10 @@ function normalizeSearchText(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function getDisplayName(c: AgentCharacterCardDto): string {
+  return c.lore.nickname || c.lore.name || c.codename;
+}
+
 function getSearchText(c: AgentCharacterCardDto): string {
   const tier = tierOf(c);
   const departmentLabel = c.department ? getDepartmentLabel(c.department) : "";
@@ -87,6 +91,10 @@ function getSearchText(c: AgentCharacterCardDto): string {
   return [
     c.codename,
     c.lore.name,
+    c.lore.nameNative,
+    c.lore.nickname,
+    c.lore.nameEn,
+    ...(c.lore.loreTags ?? []),
     c.role,
     departmentLabel,
     tier,
@@ -292,7 +300,7 @@ export default function CharactersClient({
               ? getDepartmentLabel(c.department)
               : null;
             const subLine = [c.role, departmentLabel].filter(Boolean).join(" / ");
-            const displayName = c.lore.name || c.codename;
+            const displayName = getDisplayName(c);
             const tier = tierOf(c);
 
             return (

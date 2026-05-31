@@ -72,7 +72,11 @@ const REDACTED = "[CLASSIFIED]";
 
 function getInitial(c: Character): string {
   const source =
-    c.lore.name && c.lore.name !== REDACTED ? c.lore.name : c.codename;
+    c.lore.nickname && c.lore.nickname !== REDACTED
+      ? c.lore.nickname
+      : c.lore.name && c.lore.name !== REDACTED
+        ? c.lore.name
+        : c.codename;
   return source.charAt(0).toUpperCase() || "?";
 }
 
@@ -700,7 +704,11 @@ export default function DossierClient({
     : undefined;
 
   const displayName =
-    canRealName && !isRedactedValue(lore.name) ? lore.name : null;
+    canIdentity && !isRedactedValue(lore.nickname)
+      ? lore.nickname
+      : canRealName && !isRedactedValue(lore.name)
+        ? lore.name
+        : null;
 
   const nameEn =
     canRealName && !isRedactedValue(lore.nameEn) ? lore.nameEn : null;

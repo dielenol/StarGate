@@ -59,6 +59,7 @@ import styles from "./page.module.css";
 /* ── 상수 ── */
 
 const UNASSIGNED_CODE = "UNASSIGNED";
+const CLASSIFIED_VALUE = "[CLASSIFIED]";
 
 /* 등급 legend — globals.css 의 `--rank-*` 팔레트와 라벨 체계가 1:1.
  * GM은 세계관 외부 메타 권한이라 범례에서 제외 (V~U 7단만 노출). */
@@ -137,6 +138,17 @@ function getGroupLabelEn(code: string): string {
   if (inst) return inst.labelEn;
   if (code === UNASSIGNED_CODE) return "Unassigned";
   return code;
+}
+
+function textMatchesQuery(
+  value: string | undefined | null,
+  query: string,
+): boolean {
+  return Boolean(
+    value &&
+      value !== CLASSIFIED_VALUE &&
+      value.toLowerCase().includes(query),
+  );
 }
 
 /* ── Props ── */
@@ -263,10 +275,13 @@ export default function PersonnelClient({
         : "";
       if (deptLabel.includes(q)) return true;
 
+      if (showIdentity && textMatchesQuery(c.lore.nickname, q)) return true;
+      if (showRealName && textMatchesQuery(c.lore.name, q)) return true;
+      if (showRealName && textMatchesQuery(c.lore.nameNative, q)) return true;
+      if (showRealName && textMatchesQuery(c.lore.nameEn, q)) return true;
       if (
-        showRealName &&
-        c.lore.name &&
-        c.lore.name.toLowerCase().includes(q)
+        showIdentity &&
+        (c.lore.loreTags ?? []).some((tag) => textMatchesQuery(tag, q))
       ) {
         return true;
       }
@@ -290,7 +305,7 @@ export default function PersonnelClient({
     }
 
     return { ids, groupCounts, subUnitCounts };
-  }, [characters, query, showRealName]);
+  }, [characters, query, showIdentity, showRealName]);
 
   /* 검색어 변화 → 자동 드릴다운 / 조감 복귀 */
   useEffect(() => {

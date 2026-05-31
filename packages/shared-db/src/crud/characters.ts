@@ -28,7 +28,10 @@ export type AgentCharacterCard = Pick<
   | "ownerId"
   | "isPublic"
 > & {
-  lore: Pick<Character["lore"], "name">;
+  lore: Pick<
+    Character["lore"],
+    "name" | "nameNative" | "nickname" | "nameEn" | "loreTags"
+  >;
   play: Pick<AgentCharacter["play"], "hp" | "san">;
 };
 
@@ -87,6 +90,10 @@ export async function listAgentCharacterCards(
       ownerId: 1,
       isPublic: 1,
       "lore.name": 1,
+      "lore.nameNative": 1,
+      "lore.nickname": 1,
+      "lore.nameEn": 1,
+      "lore.loreTags": 1,
       "play.hp": 1,
       "play.san": 1,
     })
