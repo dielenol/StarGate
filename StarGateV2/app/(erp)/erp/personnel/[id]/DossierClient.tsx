@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 
 import type {
   AgentLevel,
@@ -492,6 +493,15 @@ function KVEditSelectRow({
 interface Props {
   character: Character;
   clearance: AgentLevel;
+  relatedReports?: RelatedFieldReport[];
+}
+
+interface RelatedFieldReport {
+  id: string;
+  sessionId: string;
+  sessionTitle: string;
+  locationLabel?: string;
+  createdAt?: string | Date;
 }
 
 /* ── Component ──
@@ -500,7 +510,11 @@ interface Props {
  * 게임 시트 노출은 `/erp/characters/[id]` 라우트로 분리. AGENT/NPC 모두 진입 가능.
  */
 
-export default function DossierClient({ character, clearance }: Props) {
+export default function DossierClient({
+  character,
+  clearance,
+  relatedReports = [],
+}: Props) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<DossierTabKey>("dossier");
   const [guideOpen, setGuideOpen] = useState(false);
@@ -635,8 +649,14 @@ export default function DossierClient({ character, clearance }: Props) {
     (event): event is string =>
       typeof event === "string" && event.trim().length > 0,
   );
+  const relatedReportBySessionId = new Map(
+    relatedReports.map((report) => [report.sessionId, report]),
+  );
   const fieldEventCount = canIdentity ? fieldEvents.length : 0;
   const lastFieldEvent = fieldEvents.at(-1);
+  const lastFieldReport = lastFieldEvent
+    ? relatedReportBySessionId.get(lastFieldEvent)
+    : undefined;
 
   const displayName =
     canIdentity && !isRedactedValue(lore.name) ? lore.name : null;
@@ -1177,19 +1197,46 @@ export default function DossierClient({ character, clearance }: Props) {
         </PanelTitle>
         {fieldEvents.length > 0 ? (
           <div className={styles.eventList}>
-            {fieldEvents.map((eventCode, index) => (
-              <article key={`${eventCode}-${index}`} className={styles.eventCard}>
-                <div className={styles.eventCard__head}>
-                  <span className={styles.eventCode}>{eventCode}</span>
-                  <span className={styles.eventMeta}>
-                    출현 기록 {String(index + 1).padStart(2, "0")}
-                  </span>
-                </div>
-                <p className={styles.eventDesc}>
-                  해당 인물은 이 작전 또는 사건의 참조 인물로 등재되어 있습니다.
-                </p>
-              </article>
-            ))}
+            {fieldEvents.map((eventCode, index) => {
+              const report = relatedReportBySessionId.get(eventCode);
+              const eventTitle = report?.sessionTitle ?? eventCode;
+              const eventMeta = report
+                ? [
+                    report.locationLabel,
+                    formatDate(report.createdAt),
+                  ].filter(Boolean).join(" · ")
+                : "연결된 작전 보고서 없음";
+              const cardBody = (
+                <>
+                  <div className={styles.eventCard__head}>
+                    <span className={styles.eventCode}>{eventCode}</span>
+                    <span className={styles.eventMeta}>
+                      출현 기록 {String(index + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <div className={styles.eventTitle}>{eventTitle}</div>
+                  <p className={styles.eventDesc}>
+                    {report
+                      ? `작전 보고서에 연결된 현장 출현 기록입니다. ${eventMeta}`
+                      : "해당 인물은 이 작전 또는 사건의 참조 인물로 등재되어 있습니다."}
+                  </p>
+                </>
+              );
+
+              return report ? (
+                <Link
+                  key={`${eventCode}-${index}`}
+                  href={`/erp/sessions/report/${report.id}`}
+                  className={`${styles.eventCard} ${styles["eventCard--linked"]}`}
+                >
+                  {cardBody}
+                </Link>
+              ) : (
+                <article key={`${eventCode}-${index}`} className={styles.eventCard}>
+                  {cardBody}
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div className={styles.tabEmpty}>
@@ -1562,7 +1609,14 @@ export default function DossierClient({ character, clearance }: Props) {
                   <span className={styles.mono}>0건</span>
                 </KVRow>
                 <KVRow label="최종 출현">
-                  {lastFieldEvent ? (
+                  {lastFieldReport ? (
+                    <Link
+                      href={`/erp/sessions/report/${lastFieldReport.id}`}
+                      className={styles.recordLink}
+                    >
+                      {lastFieldReport.sessionTitle}
+                    </Link>
+                  ) : lastFieldEvent ? (
                     <span className={styles.mono}>{lastFieldEvent}</span>
                   ) : (
                     <span className={styles.placeholder}>

@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 
 import { auth } from "@/lib/auth/config";
 import { findCharacterById } from "@/lib/db/characters";
+import { listSessionReports } from "@/lib/db/session-reports";
 import { getUserClearance, filterCharacterByClearance } from "@/lib/personnel";
 
 import DossierClient from "./DossierClient";
@@ -33,6 +34,26 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
 
   const filtered = filterCharacterByClearance(character, clearance);
   const serialized = JSON.parse(JSON.stringify(filtered));
+  const eventIds = new Set(filtered.lore.appearsInEvents ?? []);
+  const relatedReports = eventIds.size > 0
+    ? (await listSessionReports().catch(() => []))
+        .filter((report) => eventIds.has(report.sessionId))
+        .map((report) => ({
+          id: report._id?.toString() ?? "",
+          sessionId: report.sessionId,
+          sessionTitle: report.sessionTitle,
+          locationLabel: report.locationLabel,
+          createdAt: report.createdAt,
+        }))
+        .filter((report) => report.id.length > 0)
+    : [];
+  const serializedRelatedReports = JSON.parse(JSON.stringify(relatedReports));
 
-  return <DossierClient character={serialized} clearance={clearance} />;
+  return (
+    <DossierClient
+      character={serialized}
+      clearance={clearance}
+      relatedReports={serializedRelatedReports}
+    />
+  );
 }
