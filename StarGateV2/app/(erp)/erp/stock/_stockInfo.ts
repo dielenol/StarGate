@@ -110,7 +110,7 @@ export const STOCK_INFO: Record<string, StockInfo> = {
     ceos: ["미등록"],
     foundedYear: null,
     ipoDate: "미등록",
-    sharesOutstanding: 184_237_409,
+    sharesOutstanding: 180_000_000,
     revenueComposition: [
       { label: "컨테이너 해운", ratio: 47 },
       { label: "벌크 화물", ratio: 26 },
@@ -247,10 +247,10 @@ export const STOCK_INFO: Record<string, StockInfo> = {
     englishName: "Space Zero Industries",
     marketCapBillion: 12_400,
     enterpriseValueBillion: 8_620,
-    ceos: ["라파엘 차베즈", "미카엘 옌센"],
+    ceos: ["요한 스미스"],
     foundedYear: 2008,
     ipoDate: "2014년 6월 26일",
-    sharesOutstanding: 124_000_000,
+    sharesOutstanding: 1_240_000_000,
     revenueComposition: [
       { label: "우주 발사체·위성", ratio: 32 },
       { label: "전기차·EV 인프라", ratio: 28 },
@@ -271,6 +271,37 @@ export const STOCK_INFO: Record<string, StockInfo> = {
 
 export function getStockInfo(ticker: string): StockInfo | undefined {
   return STOCK_INFO[ticker];
+}
+
+export interface StockValuation {
+  marketCapBillion: number;
+  enterpriseValueBillion: number;
+}
+
+const CREDIT_VALUE_UNIT = 100_000_000;
+
+export function calculateStockValuation(
+  info: StockInfo,
+  currentPrice: number,
+  basePrice: number,
+): StockValuation {
+  const safeBasePrice = Number.isFinite(basePrice) && basePrice > 0
+    ? basePrice
+    : currentPrice;
+  const safeCurrentPrice =
+    Number.isFinite(currentPrice) && currentPrice > 0
+      ? currentPrice
+      : safeBasePrice;
+  const priceRatio = safeBasePrice > 0 ? safeCurrentPrice / safeBasePrice : 1;
+
+  return {
+    marketCapBillion: Math.round(
+      (safeCurrentPrice * info.sharesOutstanding) / CREDIT_VALUE_UNIT,
+    ),
+    enterpriseValueBillion: Math.round(
+      info.enterpriseValueBillion * priceRatio,
+    ),
+  };
 }
 
 /* ── Formatters (server-safe — React/DOM 의존 없음) ── */

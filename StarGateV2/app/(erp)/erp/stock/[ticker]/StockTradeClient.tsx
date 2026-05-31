@@ -545,12 +545,16 @@ export default function StockTradeClient({
             ) : (
               <StockHistoryChart data={chartData} />
             )}
-          </div>
+            </div>
 
-          {/* 토스 종목 정보 패널 — 회사 설명/KV/매출 도넛/주요 사업 */}
-          <StockInfoPanel ticker={meta.ticker} />
+            {/* 토스 종목 정보 패널 — 회사 설명/KV/매출 도넛/주요 사업 */}
+            <StockInfoPanel
+              ticker={meta.ticker}
+              currentPrice={displayPrice}
+              basePrice={meta.basePrice}
+            />
 
-          {/* 시세 테이블 — history.items 시계열 (최근 N).
+            {/* 시세 테이블 — history.items 시계열 (최근 N).
               거래량 컬럼은 데이터 부재로 제거. 변동없는 행은 muted 처리해 시각 노이즈 축소. */}
           <div className={sharedStyles.historyTable}>
             <div className={sharedStyles.historyTable__head}>

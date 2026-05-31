@@ -26,6 +26,7 @@ import { findStockByTicker } from "@/lib/stocks/catalog";
 
 import type { DonutSlice } from "./RevenueDonut";
 import {
+  calculateStockValuation,
   deriveRevenueSliceColors,
   formatBillionToKor,
   getStockInfo,
@@ -46,11 +47,17 @@ const RevenueDonut = dynamic(() => import("./RevenueDonut"), {
 
 interface Props {
   ticker: string;
+  currentPrice?: number;
+  basePrice?: number;
 }
 
 /* ── 컴포넌트 ── */
 
-export default function StockInfoPanel({ ticker }: Props) {
+export default function StockInfoPanel({
+  ticker,
+  currentPrice,
+  basePrice,
+}: Props) {
   const info = getStockInfo(ticker);
   const meta = findStockByTicker(ticker);
 
@@ -70,9 +77,15 @@ export default function StockInfoPanel({ ticker }: Props) {
 
   if (!info || !meta) return null;
 
-  // 시가총액 / EV — 10억 단위 입력 → 한글 단위 변환 ("12조 4,000억")
-  const marketCapKor = formatBillionToKor(info.marketCapBillion);
-  const enterpriseValueKor = formatBillionToKor(info.enterpriseValueBillion);
+  const valuation = calculateStockValuation(
+    info,
+    currentPrice ?? meta.basePrice,
+    basePrice ?? meta.basePrice,
+  );
+  const marketCapKor = formatBillionToKor(valuation.marketCapBillion);
+  const enterpriseValueKor = formatBillionToKor(
+    valuation.enterpriseValueBillion,
+  );
   const listingLabel =
     info.foundedYear === null ? "상장일" : `상장일 (설립 ${info.foundedYear})`;
 
@@ -97,7 +110,7 @@ export default function StockInfoPanel({ ticker }: Props) {
           </dd>
         </div>
         <div className={styles.infoPanel__kvCell}>
-          <dt className={styles.infoPanel__kvLabel}>실제 기업가치</dt>
+          <dt className={styles.infoPanel__kvLabel}>현재 평가액</dt>
           <dd className={styles.infoPanel__kvValueMono}>
             ¤ {enterpriseValueKor} (크레딧)
           </dd>
