@@ -65,6 +65,7 @@ export default async function CatalogPage({
           price: it.price,
           damage: it.damage,
           effect: it.effect,
+          previewImage: it.previewImage,
           tags: it.tags,
           isAvailable: it.isAvailable,
         }))}

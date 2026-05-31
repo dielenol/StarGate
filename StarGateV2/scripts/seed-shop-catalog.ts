@@ -35,6 +35,7 @@ import {
 } from "@stargate/shared-db";
 
 import { SHOP_CATALOG, type ShopCatalogItem } from "../lib/shop/catalog.ts";
+import { getShopItemImageSrc } from "../lib/shop/item-images.ts";
 
 /* ── .env.local / .env 로드 ──
    `=== undefined` 로 빈 문자열("")을 unset 취급하지 않도록 방어.
@@ -114,6 +115,7 @@ function buildSetPayload(item: ShopCatalogItem): Record<string, unknown> {
     effect: item.effect,
     isAvailable: true,
     isPublic: true,
+    previewImage: getShopItemImageSrc(item.slug) ?? "",
     slug: item.slug,
     shopMeta: {
       stockMin: item.stockMin,

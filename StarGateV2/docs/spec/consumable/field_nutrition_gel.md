@@ -14,7 +14,7 @@ tags:
   - 회복
   - 야전
 source: create-lore
-previewImage:
+previewImage: /assets/shop/items/field_nutrition_gel.png
 createdAt: 2026-05-31T00:00:00Z
 updatedAt: 2026-05-31T00:00:00Z
 ---

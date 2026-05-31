@@ -14,7 +14,7 @@ tags:
   - 회복
   - 응급
 source: create-lore
-previewImage:
+previewImage: /assets/shop/items/first_aid_patch.png
 createdAt: 2026-05-31T00:00:00Z
 updatedAt: 2026-05-31T00:00:00Z
 ---

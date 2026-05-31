@@ -14,7 +14,7 @@ tags:
   - 회복
   - 안정
 source: create-lore
-previewImage:
+previewImage: /assets/shop/items/calm_mint.png
 createdAt: 2026-05-31T00:00:00Z
 updatedAt: 2026-05-31T00:00:00Z
 ---

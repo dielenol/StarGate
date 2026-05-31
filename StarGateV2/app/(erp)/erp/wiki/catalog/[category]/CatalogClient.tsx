@@ -11,6 +11,7 @@ import {
   ITEM_CATEGORY_LABEL,
   categoryTone,
 } from "@/lib/catalog/categories";
+import { getShopItemImageSrc } from "@/lib/shop/item-images";
 
 import styles from "./CatalogClient.module.css";
 
@@ -23,6 +24,7 @@ type CatalogItem = {
   price: number | string;
   damage?: string;
   effect?: string;
+  previewImage?: string;
   tags?: string[];
   isAvailable: boolean;
 };
@@ -50,6 +52,20 @@ function formatPrice(price: number | string): string {
 
 function itemDetailHref(item: CatalogItem): string {
   return `/erp/wiki/catalog/item/${encodeURIComponent(item.slug || item._id)}`;
+}
+
+function assetImageSrc(value?: string): string | null {
+  const src = value?.trim();
+  if (!src || !src.startsWith("/assets/")) return null;
+  return src;
+}
+
+function itemImageSrc(item: CatalogItem): string | null {
+  return (
+    assetImageSrc(item.previewImage) ??
+    getShopItemImageSrc(item.slug ?? "") ??
+    null
+  );
 }
 
 export default function CatalogClient({ category, label, initialItems }: Props) {
@@ -166,6 +182,17 @@ export default function CatalogClient({ category, label, initialItems }: Props) 
                   .filter(Boolean)
                   .join(" ")}
               >
+                {itemImageSrc(it) ? (
+                  <div className={styles.card__media}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={itemImageSrc(it) ?? undefined}
+                      alt=""
+                      aria-hidden
+                      draggable={false}
+                    />
+                  </div>
+                ) : null}
                 <div className={styles.card__header}>
                   <h2 className={styles.card__name}>{it.name}</h2>
                   <span

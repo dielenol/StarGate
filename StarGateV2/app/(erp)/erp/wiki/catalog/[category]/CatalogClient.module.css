@@ -182,6 +182,32 @@
   filter: grayscale(0.6);
 }
 
+.card__media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 108px;
+  padding: 10px;
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      color-mix(in srgb, var(--gold) 13%, transparent),
+      transparent 62%
+    ),
+    color-mix(in srgb, var(--bg) 88%, #000);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.card__media img {
+  display: block;
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.42));
+}
+
 .card__header {
   display: flex;
   align-items: flex-start;
