@@ -10,6 +10,7 @@ import { usePersonnelQuery } from "@/hooks/queries/useCharactersQuery";
 
 import {
   canViewField,
+  canViewRealName,
   compareLevels,
   FIELD_GROUP_ORDER,
   FIELD_REQUIRED_LEVEL,
@@ -209,6 +210,7 @@ export default function PersonnelClient({
   const prevQueryRef = useRef("");
 
   const showIdentity = canViewField(clearance, "identity");
+  const showRealName = canViewRealName(clearance);
   const hiddenFieldsCount = countHiddenFields(clearance);
   const hiddenMinLevel = lowestRequiredForHidden(clearance);
 
@@ -262,7 +264,7 @@ export default function PersonnelClient({
       if (deptLabel.includes(q)) return true;
 
       if (
-        showIdentity &&
+        showRealName &&
         c.lore.name &&
         c.lore.name.toLowerCase().includes(q)
       ) {
@@ -288,7 +290,7 @@ export default function PersonnelClient({
     }
 
     return { ids, groupCounts, subUnitCounts };
-  }, [characters, query, showIdentity]);
+  }, [characters, query, showRealName]);
 
   /* 검색어 변화 → 자동 드릴다운 / 조감 복귀 */
   useEffect(() => {

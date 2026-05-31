@@ -62,6 +62,8 @@ export const FIELD_REQUIRED_LEVEL: Record<FieldGroup, AgentLevel> = {
   meta: "V", // GM 운영 메타 (createdAt 등) — V 부터
 };
 
+export const REAL_NAME_REQUIRED_LEVEL: AgentLevel = "G";
+
 export const FIELD_GROUP_ORDER: readonly FieldGroup[] = [
   "identity",
   "profile",
@@ -104,6 +106,22 @@ export function getRequiredLevel(
   overrides?: ClearanceOverrides | null,
 ): AgentLevel {
   return overrides?.[fieldGroup] ?? FIELD_REQUIRED_LEVEL[fieldGroup];
+}
+
+export function getRealNameRequiredLevel(
+  overrides?: ClearanceOverrides | null,
+): AgentLevel {
+  const identityRequired = getRequiredLevel("identity", overrides);
+  return LEVEL_RANK[identityRequired] > LEVEL_RANK[REAL_NAME_REQUIRED_LEVEL]
+    ? identityRequired
+    : REAL_NAME_REQUIRED_LEVEL;
+}
+
+export function canViewRealName(
+  viewerLevel: AgentLevel,
+  overrides?: ClearanceOverrides | null,
+): boolean {
+  return LEVEL_RANK[viewerLevel] >= LEVEL_RANK[getRealNameRequiredLevel(overrides)];
 }
 
 export function canViewField(
@@ -154,11 +172,12 @@ function redactLore(
   overrides?: ClearanceOverrides | null,
 ): LoreSheet {
   const canIdentity = canViewField(clearance, "identity", overrides);
+  const canRealName = canViewRealName(clearance, overrides);
   const canProfile = canViewField(clearance, "profile", overrides);
 
   // 필수 필드는 항상 마스킹 또는 원본
   const result: LoreSheet = {
-    name: canIdentity ? lore.name : REDACTED,
+    name: canRealName ? lore.name : REDACTED,
     gender: canIdentity ? lore.gender : REDACTED,
     age: canIdentity ? lore.age : REDACTED,
     height: canIdentity ? lore.height : REDACTED,
@@ -172,13 +191,13 @@ function redactLore(
 
   // optional 필드 — 원본이 undefined 면 결과도 undefined 유지
   if (lore.nameNative !== undefined) {
-    result.nameNative = canIdentity ? lore.nameNative : REDACTED;
+    result.nameNative = canRealName ? lore.nameNative : REDACTED;
   }
   if (lore.nickname !== undefined) {
     result.nickname = canIdentity ? lore.nickname : REDACTED;
   }
   if (lore.nameEn !== undefined) {
-    result.nameEn = canIdentity ? lore.nameEn : REDACTED;
+    result.nameEn = canRealName ? lore.nameEn : REDACTED;
   }
   if (lore.roleDetail !== undefined) {
     result.roleDetail = canProfile ? lore.roleDetail : REDACTED;
@@ -298,8 +317,8 @@ export function filterCharacterForList(
   clearance: AgentLevel,
 ): Character {
   const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
-  const canIdentity = canViewField(clearance, "identity", overrides);
-  if (canIdentity) return character;
+  const canRealName = canViewRealName(clearance, overrides);
+  if (canRealName) return character;
 
   return {
     ...character,

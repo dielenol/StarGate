@@ -20,13 +20,13 @@ interface Props {
 
 /** 권한 등급별 한 줄 설명 (dossier 톤). AGENT_LEVELS(GM 제외 7단) 키만 사용. */
 const LEVEL_DESC: Record<Exclude<AgentLevel, "GM">, string> = {
-  V: "VIP — 전 영역 접근",
-  A: "최종 관리자 — 전체 부서 관리",
-  M: "부서 관리자 — 단일 부서 관리",
-  H: "특수요원 — 특수 작전 수행",
-  G: "부서 요원 — 일반 작전 수행",
-  J: "평사원 — 기본 현장 권한",
-  U: "소모품 — 임시 단발 권한",
+  V: "전 영역 접근",
+  A: "전체 부서 관리 권한",
+  M: "단일 부서 관리 권한",
+  H: "특수 작전 수행 권한",
+  G: "일반 작전 수행 권한 · 실명 열람",
+  J: "기본 현장 권한",
+  U: "임시 단말 권한",
 };
 
 /**
@@ -136,10 +136,13 @@ export default function ClearanceGuideModal({ current, onClose }: Props) {
 
           <div className={styles.notice}>
             <span className={styles.notice__lbl}>정책</span>
-            <span>
-              본인 등급 이상 필드는{" "}
-              <span className={styles.classified}>CLASSIFIED</span> 로 마스킹되어
-              노출됩니다. 실명 열람은 G 이상부터 가능.
+            <span className={styles.notice__body}>
+              <span>
+                본인 등급 이상 필드는{" "}
+                <span className={styles.classified}>CLASSIFIED</span> 로
+                마스킹되어 노출됩니다.
+              </span>
+              <span>실명 열람은 G 이상부터 가능합니다.</span>
             </span>
           </div>
         </div>

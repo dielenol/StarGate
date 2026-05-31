@@ -23,10 +23,12 @@ import {
 
 import {
   canViewField,
+  canViewRealName,
   FIELD_GROUP_LABEL,
   FIELD_GROUP_ORDER,
   FIELD_REQUIRED_LEVEL,
   getLevelDisplayRank,
+  getRealNameRequiredLevel,
   getRequiredLevel,
   normalizeClearanceOverrides,
 } from "@/lib/personnel";
@@ -104,16 +106,23 @@ function ClassifiedValue({
   fieldGroup,
   clearance,
   overrides,
+  canView,
+  requiredLevel,
 }: {
   value: string | number | undefined | null;
   fieldGroup: FieldGroup;
   clearance: AgentLevel;
   overrides?: ClearanceOverrides;
+  canView?: boolean;
+  requiredLevel?: AgentLevel;
 }) {
-  if (!canViewField(clearance, fieldGroup, overrides)) {
+  const allowed = canView ?? canViewField(clearance, fieldGroup, overrides);
+  const required = requiredLevel ?? getRequiredLevel(fieldGroup, overrides);
+
+  if (!allowed) {
     return (
       <span className={styles.classified}>
-        [CLASSIFIED · {getRequiredLevel(fieldGroup, overrides)}]
+        [CLASSIFIED · {required}]
       </span>
     );
   }
@@ -635,10 +644,12 @@ export default function DossierClient({
   // 캐릭터별 박스 노출 권한 오버라이드. canViewField / required level 계산에 일관 적용.
   const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
   const canIdentity = canViewField(clearance, "identity", overrides);
+  const canRealName = canViewRealName(clearance, overrides);
   const canProfile = canViewField(clearance, "profile", overrides);
   const canMeta = canViewField(clearance, "meta", overrides);
 
   const reqIdentity = getRequiredLevel("identity", overrides);
+  const reqRealName = getRealNameRequiredLevel(overrides);
   const reqProfile = getRequiredLevel("profile", overrides);
   const reqMeta = getRequiredLevel("meta", overrides);
 
@@ -660,10 +671,10 @@ export default function DossierClient({
     : undefined;
 
   const displayName =
-    canIdentity && !isRedactedValue(lore.name) ? lore.name : null;
+    canRealName && !isRedactedValue(lore.name) ? lore.name : null;
 
   const nameEn =
-    canIdentity && !isRedactedValue(lore.nameEn) ? lore.nameEn : null;
+    canRealName && !isRedactedValue(lore.nameEn) ? lore.nameEn : null;
 
   /* 인덱스(PersonnelClient) 의 drill chip 과 동일한 UI 로 통일.
      마지막 chip 은 사용자 요청대로 `이름 (코드네임)` 형태. identity 권한이 없으면 codename 만. */
@@ -1491,6 +1502,8 @@ export default function DossierClient({
                     fieldGroup="identity"
                     clearance={clearance}
                     overrides={overrides}
+                    canView={canRealName}
+                    requiredLevel={reqRealName}
                   />
                 </KVRow>
                 {!isRedactedValue(lore.nameNative) ? (
@@ -1500,6 +1513,8 @@ export default function DossierClient({
                       fieldGroup="identity"
                       clearance={clearance}
                       overrides={overrides}
+                      canView={canRealName}
+                      requiredLevel={reqRealName}
                     />
                   </KVRow>
                 ) : null}

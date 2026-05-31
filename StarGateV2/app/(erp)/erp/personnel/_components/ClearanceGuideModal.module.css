@@ -91,8 +91,8 @@
 
 .levelRow {
   display: grid;
-  grid-template-columns: 36px 110px minmax(0, 1fr) auto;
-  align-items: baseline;
+  grid-template-columns: 40px minmax(92px, 116px) minmax(0, 1fr) auto;
+  align-items: center;
   gap: 14px;
   padding: 10px 14px;
   border: 1px solid var(--line);
@@ -118,6 +118,7 @@
 .levelRow__label {
   color: var(--ink-0);
   font-size: 14px;
+  font-weight: 600;
   letter-spacing: 0.06em;
 }
 
@@ -125,6 +126,7 @@
   color: var(--ink-2);
   font-size: 14px;
   letter-spacing: 0.02em;
+  line-height: 1.45;
 }
 
 .levelRow__youTag {
@@ -140,8 +142,8 @@
 
 .notice {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 14px;
   padding: 12px 14px;
   border: 1px solid var(--gold-dim);
@@ -151,14 +153,21 @@
   color: var(--ink-1);
   font-size: 14px;
   line-height: 1.55;
-  text-align: center;
+  text-align: left;
 }
 .notice__lbl {
   flex-shrink: 0;
+  padding-top: 2px;
   color: var(--gold);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.18em;
+}
+.notice__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .classified {
@@ -188,5 +197,12 @@
   .levelRow__youTag {
     grid-column: 1 / -1;
     justify-self: end;
+  }
+  .notice {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .notice__lbl {
+    padding-top: 0;
   }
 }
