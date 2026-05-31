@@ -34,6 +34,7 @@ const KNOWN_SLUGS = [
   "InDexer",
   "Kimlee",
   "Leedongsik",
+  "Malcolm",
   "Margaret",
   "Maria",
   "NeBeD",
