@@ -638,6 +638,48 @@
   letter-spacing: 0.12em;
 }
 
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eventCard {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+}
+
+.eventCard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.eventCode {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.eventMeta {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.eventDesc {
+  margin: 8px 0 0;
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
 /* 인사기록부 placeholder — 비어 있는 KV 값에 in-world 메시지로 자리를 채운다. */
 .placeholder {
   color: var(--ink-3);
@@ -678,6 +720,36 @@
   word-break: break-word;
   line-height: 1.8;
   color: var(--ink-1);
+}
+
+.loreText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-1);
+  line-height: 1.8;
+}
+
+.loreText strong {
+  color: var(--ink-0);
+  font-weight: 600;
+}
+
+.loreTextLine,
+.loreTextBullet {
+  margin: 0;
+  word-break: break-word;
+}
+
+.loreTextBullet {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+}
+
+.loreTextBulletMarker {
+  color: var(--gold);
+  font-family: var(--font-mono);
 }
 
 /* Utilities */

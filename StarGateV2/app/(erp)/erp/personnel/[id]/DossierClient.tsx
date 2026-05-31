@@ -138,6 +138,46 @@ function RedactedBlock({
   return <span className={styles.textBlock}>{content}</span>;
 }
 
+function renderLoreInline(text: string): ReactNode[] {
+  return text
+    .split(/(\*\*[^*]+\*\*)/g)
+    .filter(Boolean)
+    .map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={index}>{part.slice(2, -2)}</strong>;
+      }
+      return <span key={index}>{part}</span>;
+    });
+}
+
+function FormattedLoreBlock({ content }: { content: string }) {
+  const lines = content
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim().length > 0);
+
+  return (
+    <div className={styles.loreText}>
+      {lines.map((line, index) => {
+        const bullet = line.match(/^\s*[-*]\s+(.*)$/);
+        if (bullet) {
+          return (
+            <p key={index} className={styles.loreTextBullet}>
+              <span className={styles.loreTextBulletMarker}>•</span>
+              <span>{renderLoreInline(bullet[1])}</span>
+            </p>
+          );
+        }
+        return (
+          <p key={index} className={styles.loreTextLine}>
+            {renderLoreInline(line)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 function KVRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className={styles.kvRow}>
@@ -591,6 +631,12 @@ export default function DossierClient({ character, clearance }: Props) {
   const auditTimestamp = formatDate(character.updatedAt);
 
   const lore = character.lore;
+  const fieldEvents = (lore.appearsInEvents ?? []).filter(
+    (event): event is string =>
+      typeof event === "string" && event.trim().length > 0,
+  );
+  const fieldEventCount = canIdentity ? fieldEvents.length : 0;
+  const lastFieldEvent = fieldEvents.at(-1);
 
   const displayName =
     canIdentity && !isRedactedValue(lore.name) ? lore.name : null;
@@ -926,7 +972,7 @@ export default function DossierClient({ character, clearance }: Props) {
             </KVRow>
             <KVRow label="특이사항">
               {hasNotes ? (
-                <span className={styles.textBlock}>{lore.notes}</span>
+                <FormattedLoreBlock content={lore.notes!} />
               ) : (
                 <span className={styles.placeholder}>
                   기록된 특이사항 없음
@@ -1005,12 +1051,7 @@ export default function DossierClient({ character, clearance }: Props) {
             ) : null}
             {hasRoleDetail ? (
               <KVRow label="ROLE DETAIL">
-                <RedactedBlock
-                  content={lore.roleDetail}
-                  fieldGroup="profile"
-                  clearance={clearance}
-                  overrides={overrides}
-                />
+                <FormattedLoreBlock content={lore.roleDetail!} />
               </KVRow>
             ) : null}
           </dl>
@@ -1112,17 +1153,55 @@ export default function DossierClient({ character, clearance }: Props) {
     </Box>
   );
 
-  const renderSessionsTab = () => (
-    <Box>
-      <PanelTitle>FIELD ACTIVITY · 현장 출현 이력</PanelTitle>
-      <div className={styles.tabEmpty}>
-        현장 활동 기록 없음
-        <span className={styles.tabEmpty__hint}>
-          작전 출현 시 자동 등록됩니다
-        </span>
-      </div>
-    </Box>
-  );
+  const renderSessionsTab = () => {
+    if (!canIdentity) {
+      return (
+        <Box>
+          <PanelTitle right={<ReqClrBadge required={reqIdentity} locked />}>
+            FIELD ACTIVITY · 현장 출현 이력
+          </PanelTitle>
+          <LockedSection
+            variant="full"
+            required={reqIdentity}
+            title={`CLASSIFIED · ${reqIdentity}`}
+            subtitle={"FIELD ACTIVITY\n상위 등급 필요"}
+          />
+        </Box>
+      );
+    }
+
+    return (
+      <Box>
+        <PanelTitle right={<ReqClrBadge required={reqIdentity} locked={false} />}>
+          FIELD ACTIVITY · 현장 출현 이력
+        </PanelTitle>
+        {fieldEvents.length > 0 ? (
+          <div className={styles.eventList}>
+            {fieldEvents.map((eventCode, index) => (
+              <article key={`${eventCode}-${index}`} className={styles.eventCard}>
+                <div className={styles.eventCard__head}>
+                  <span className={styles.eventCode}>{eventCode}</span>
+                  <span className={styles.eventMeta}>
+                    출현 기록 {String(index + 1).padStart(2, "0")}
+                  </span>
+                </div>
+                <p className={styles.eventDesc}>
+                  해당 인물은 이 작전 또는 사건의 참조 인물로 등재되어 있습니다.
+                </p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.tabEmpty}>
+            현장 활동 기록 없음
+            <span className={styles.tabEmpty__hint}>
+              작전 출현 시 자동 등록됩니다
+            </span>
+          </div>
+        )}
+      </Box>
+    );
+  };
 
   const renderAuditTab = () => {
     if (!canMeta) {
@@ -1477,15 +1556,19 @@ export default function DossierClient({ character, clearance }: Props) {
             {canIdentity ? (
               <dl className={styles.kv}>
                 <KVRow label="현장 출현">
-                  <span className={styles.mono}>0회</span>
+                  <span className={styles.mono}>{fieldEventCount}회</span>
                 </KVRow>
                 <KVRow label="인적 관계">
                   <span className={styles.mono}>0건</span>
                 </KVRow>
                 <KVRow label="최종 출현">
-                  <span className={styles.placeholder}>
-                    출현 기록 없음
-                  </span>
+                  {lastFieldEvent ? (
+                    <span className={styles.mono}>{lastFieldEvent}</span>
+                  ) : (
+                    <span className={styles.placeholder}>
+                      출현 기록 없음
+                    </span>
+                  )}
                 </KVRow>
               </dl>
             ) : (
@@ -1507,7 +1590,7 @@ export default function DossierClient({ character, clearance }: Props) {
           <DossierTabs
             active={activeTab}
             onChange={setActiveTab}
-            counts={{ relations: 0, sessions: 0 }}
+            counts={{ relations: 0, sessions: fieldEventCount }}
             auditLevel="V"
             leftSlot={
               <Button size="sm" onClick={() => setGuideOpen(true)}>
