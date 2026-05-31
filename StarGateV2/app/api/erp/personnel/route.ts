@@ -30,7 +30,7 @@ export async function GET() {
       { characters: filtered },
       {
         headers: {
-          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+          "Cache-Control": "private, max-age=900, stale-while-revalidate=3600",
         },
       },
     );

@@ -32,7 +32,7 @@ export function useWikiPages(
   return useQuery({
     queryKey: wikiKeys.list(params),
     queryFn: () => fetchWikiPages(params),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     initialData: options?.initialData,
   });
 }

@@ -184,10 +184,10 @@ async function fetchStockSparklines(
 
 /* ── Hooks ── */
 
-const PRICES_STALE_MS = 30 * 1000;
-const HOLDINGS_STALE_MS = 30 * 1000;
-const HISTORY_STALE_MS = 5 * 60 * 1000;
-const SPARKLINES_STALE_MS = 2 * 60 * 1000;
+const PRICES_STALE_MS = 60 * 1000;
+const HOLDINGS_STALE_MS = 60 * 1000;
+const HISTORY_STALE_MS = 15 * 60 * 1000;
+const SPARKLINES_STALE_MS = 10 * 60 * 1000;
 
 export function useStockPrices(options?: {
   initialData?: StockPricesResponse;

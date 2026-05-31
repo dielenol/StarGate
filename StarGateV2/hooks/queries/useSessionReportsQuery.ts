@@ -19,7 +19,7 @@ export function useSessionReports(options?: {
   return useQuery({
     queryKey: sessionReportKeys.all,
     queryFn: fetchSessionReports,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 20 * 60 * 1000,
     initialData: options?.initialData,
   });
 }

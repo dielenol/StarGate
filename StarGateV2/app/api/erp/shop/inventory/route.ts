@@ -46,7 +46,7 @@ export async function GET() {
       { items: [], hasMainCharacter: false },
       {
         headers: {
-          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+          "Cache-Control": "private, max-age=300, stale-while-revalidate=600",
         },
       },
     );
@@ -85,7 +85,7 @@ export async function GET() {
       { items, hasMainCharacter: true },
       {
         headers: {
-          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+          "Cache-Control": "private, max-age=300, stale-while-revalidate=600",
         },
       },
     );

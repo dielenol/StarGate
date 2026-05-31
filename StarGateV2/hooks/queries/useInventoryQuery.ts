@@ -20,7 +20,7 @@ export function useInventoryItems(options?: {
   return useQuery({
     queryKey: inventoryKeys.items,
     queryFn: fetchMasterItems,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     initialData: options?.initialData,
   });
 }

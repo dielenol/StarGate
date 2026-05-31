@@ -104,8 +104,8 @@ async function fetchShopInventory(): Promise<ShopInventoryResponse> {
 
 /* ── Hooks ── */
 
-const CATALOG_STALE_TIME_MS = 5 * 60 * 1000;
-const INVENTORY_STALE_TIME_MS = 2 * 60 * 1000;
+const CATALOG_STALE_TIME_MS = 10 * 60 * 1000;
+const INVENTORY_STALE_TIME_MS = 5 * 60 * 1000;
 
 export function useShopCatalog(options?: {
   initialData?: ShopCatalogResponse;

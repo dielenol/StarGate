@@ -60,7 +60,7 @@ export async function GET(request: Request) {
       { sessions: serialized },
       {
         headers: {
-          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+          "Cache-Control": "private, max-age=300, stale-while-revalidate=900",
         },
       },
     );

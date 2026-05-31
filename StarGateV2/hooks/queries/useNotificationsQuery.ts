@@ -19,7 +19,7 @@ export function useNotifications(options?: {
   return useQuery({
     queryKey: notificationKeys.all,
     queryFn: fetchNotifications,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000,
     initialData: options?.initialData,
   });
 }

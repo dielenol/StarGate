@@ -12,7 +12,7 @@ export type AgentCharacterCardDto = Omit<AgentCharacterCard, "_id"> & {
   _id: string;
 };
 
-const CHARACTER_STALE_TIME_MS = 5 * 60 * 1000;
+const CHARACTER_STALE_TIME_MS = 20 * 60 * 1000;
 
 /**
  * 캐시 키 매트릭스 (Phase 4)

@@ -71,7 +71,7 @@ export async function GET() {
     const response: PricesResponse = { items };
     return NextResponse.json(response, {
       headers: {
-        "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=180",
       },
     });
   } catch (err) {

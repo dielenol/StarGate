@@ -66,7 +66,7 @@ export async function GET() {
     const empty: HoldingsResponse = { items: [], hasMainCharacter: false };
     return NextResponse.json(empty, {
       headers: {
-        "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=180",
       },
     });
   }
@@ -114,7 +114,7 @@ export async function GET() {
     const response: HoldingsResponse = { items, hasMainCharacter: true };
     return NextResponse.json(response, {
       headers: {
-        "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=180",
       },
     });
   } catch (err) {
