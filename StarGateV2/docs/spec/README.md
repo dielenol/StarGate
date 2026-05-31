@@ -1,12 +1,12 @@
 # 세계관 문서 규격 (docs/spec)
 
-StarGate 세계관 자산은 **5개 도메인**(NPC / Faction / Institution / Equipment / Consumable)으로 정규화된다. 각 문서는 MD 파일(frontmatter + body 섹션)로 작성되며, Zod 스키마 검증을 거쳐 MongoDB에 적재된다.
+StarGate 세계관 자산은 **핵심 도메인**(NPC / Faction / Institution / Equipment / Consumable)과 **범용 카탈로그 항목**으로 정규화된다. 각 문서는 MD 파일(frontmatter + body 섹션)로 작성되며, Zod 스키마 검증을 거쳐 MongoDB에 적재된다.
 
 ## Quickstart — 3가지 방식
 
-새 세계관 자산(NPC/세력/기관/장비/소모품)을 추가하는 3가지 루트:
+새 세계관 자산(NPC/세력/기관/장비/소모품/카탈로그 항목)을 추가하는 3가지 루트:
 
-1. **대화형 작성 (권장)** — Claude에 `/create-lore npc` (또는 `faction`/`institution`/`equipment`/`consumable`) 호출. 질문 답하며 채우면 Zod 검증까지 자동. 산출물: MD 파일 + payload JSON.
+1. **대화형 작성 (권장)** — Claude에 `/create-lore npc` (또는 `faction`/`institution`/`equipment`/`consumable`/`catalog`) 호출. 질문 답하며 채우면 Zod 검증까지 자동. 산출물: MD 파일 + payload JSON.
 2. **템플릿 직접 편집** — `docs/spec/templates/{domain}.template.md` 복사해서 `docs/spec/{domain}/{slug}.md` 로 저장. 필드 규칙은 아래 "frontmatter 필드 요약" 참조.
 3. **Discord 텍스트 파싱 (AGENT 전용)** — 관리자 "AGENT 인입" 페이지. NPC/Faction/Institution/Equipment/Consumable은 대상 아님 (플레이어블 AGENT만).
 
@@ -19,8 +19,9 @@ StarGate 세계관 자산은 **5개 도메인**(NPC / Faction / Institution / Eq
 | **institution** | 기관 (노부스 오르도 본부 직속 내부 기관. 사무국/현장 등) | `docs/spec/institution/{slug}.md` | `institutions` |
 | **equipment** | 장비 (무기/방어구) | `docs/spec/equipment/{slug}.md` | `master_items` (category=`WEAPON`\|`ARMOR`) |
 | **consumable** | 소모품 (포션·아이템 등) | `docs/spec/consumable/{slug}.md` | `master_items` (category=`CONSUMABLE`) |
+| **catalog** | 범용 카탈로그 항목 (샘플·특수·비표준 물증) | `docs/spec/catalog/{slug}.md` | `master_items` (category=`MATERIAL`\|`SPECIAL` 등) |
 
-> equipment / consumable은 **별도 컬렉션이 아니라** 기존 `master_items`를 재활용한다. `ItemCategory` enum(`WEAPON`/`ARMOR`/`CONSUMABLE`/`MATERIAL`/`SPECIAL`)으로 구분하며, SSOT는 `packages/shared-db/src/types/inventory.ts`의 `ITEM_CATEGORIES` const tuple.
+> equipment / consumable / catalog는 **별도 컬렉션이 아니라** 기존 `master_items`를 재활용한다. `ItemCategory` enum(`WEAPON`/`ARMOR`/`CONSUMABLE`/`MATERIAL`/`SPECIAL`)으로 구분하며, SSOT는 `packages/shared-db/src/types/inventory.ts`의 `ITEM_CATEGORIES` const tuple.
 
 ## 템플릿
 
@@ -31,6 +32,7 @@ StarGate 세계관 자산은 **5개 도메인**(NPC / Faction / Institution / Eq
 - Institution: `docs/spec/templates/institution.template.md`
 - Equipment: `docs/spec/templates/equipment.template.md`
 - Consumable: `docs/spec/templates/consumable.template.md`
+- Catalog: `docs/spec/templates/catalog.template.md`
 - 예시: `docs/spec/templates/examples/npc-registrar.example.md`
 
 ## 자동 생성 — /create-lore
@@ -43,6 +45,7 @@ StarGate 세계관 자산은 **5개 도메인**(NPC / Faction / Institution / Eq
 /create-lore institution
 /create-lore equipment
 /create-lore consumable
+/create-lore catalog
 ```
 
 도메인 생략 시 선택 UI가 뜬다. 산출물은 **MD 파일 + 검증 리포트 + DB payload JSON** 3종.
@@ -145,6 +148,18 @@ Equipment와 동일 구조. 단:
 
 나머지 필드(`code`/`slug`/`name`/`nameEn`/`price`/`description`/`previewImage`/`isAvailable`/`isPublic`/`tags`/`source`) 및 body 섹션은 Equipment와 동일.
 
+### Catalog (`packages/shared-db/src/schemas/catalog.schema.ts`)
+
+Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는 `ITEM_CATEGORIES` 전체를 허용한다. 장비/소모품으로 좁힐 수 있는 항목은 전용 도메인을 우선 사용하고, 샘플(`MATERIAL`)·특수 격리 장비/작전 물증(`SPECIAL`)처럼 전용 도메인으로 환원하면 의미가 흐려지는 항목은 `docs/spec/catalog/{slug}.md`에 저장한다.
+
+| 필드 | 타입 | 필수 | 비고 |
+|------|------|------|------|
+| `category` | enum | ✓ | `"WEAPON"` \| `"ARMOR"` \| `"CONSUMABLE"` \| `"MATERIAL"` \| `"SPECIAL"` |
+| `effect` | string ≤120 | | 샘플 성격, 보관 효과, 운용상 의미 등 |
+| `damage` | string ≤80 | | 전투 장비일 때만 사용 |
+
+나머지 필드와 body 섹션은 Equipment/Consumable과 동일하다.
+
 ## 필드 일관성 메모
 
 - `previewImage`는 NPC/Equipment/Consumable에서 지원. faction/institution은 MVP에서 미지원 (향후 확장 대상).
@@ -221,8 +236,8 @@ Equipment와 동일 구조. 단:
 - **적재**:
   - factions/institutions: `scripts/seed-*.ts` (dry-run + `--execute --yes` opt-in)
   - characters (NPC): `/create-lore` payload JSON을 개발자가 수동 insert
-  - master_items (equipment/consumable): `/create-lore` payload JSON → ERP `/erp/inventory/items/new` 폼 또는 직접 insert. equipment/consumable 전용 seed 스크립트는 Phase 5-g 대상.
-- **소비**: factions/institutions/characters/master_items 컬렉션을 읽는 공개 사이트 페이지·디스코드 봇·ERP 페이지(`/erp/inventory`, `/erp/wiki/catalog/{category}`)에서 활용.
+  - master_items (equipment/consumable/catalog): `/create-lore` payload JSON → ERP `/erp/inventory/items/new` 폼 또는 직접 insert. catalog 전용 seed 스크립트는 Phase 5-g 대상.
+- **소비**: factions/institutions/characters/master_items 컬렉션을 읽는 공개 사이트 페이지·디스코드 봇·ERP 페이지(`/erp/inventory`, `/erp/wiki/catalog/{all|equipment|consumable|material|special}`)에서 활용.
 
 ## 현재 DB 상태 (2026-05-14 기준)
 
@@ -231,11 +246,11 @@ Equipment와 동일 구조. 단:
 | `factions` | 4 | 외부 3대 (`MILITARY` / `COUNCIL` / `CIVIL` — `scope=external`) + `NOVUS_ORDO` (`scope=internal`, 본부). 외부 3대는 V(VIP) 명목 부여만 일반적, A~U 정규 부여는 원칙적으로 NOVUS_ORDO 내부(사무국·MANUS) 인사에만 적용 (운영 규약, [personnel-spec.md §4 등급 부여 정책](personnel-spec.md) 참조). lore MD: [`faction/novus-ordo.md`](faction/novus-ordo.md) / [`faction/military.md`](faction/military.md) / [`faction/council.md`](faction/council.md) / [`faction/civil.md`](faction/civil.md) |
 | `institutions` | 2 | `SECRETARIAT` (사무국, subUnits 6: HQ/RESEARCH/ADMIN_BUREAU/INTL/CONTROL/FINANCE) / `MANUS` (현장요원, subUnits 5: SECTOR_A~E = NATO phonetic 알파/브라보/찰리/델타/에코) — **노부스 오르도 내부 기관**. `parentFactionCode` 는 모두 `NOVUS_ORDO` (Phase 5-h 에서 COUNCIL → NOVUS_ORDO 로 이전). 권한 8단(GM~U) 모두 정규 부여 대상. lore MD: [`institution/manus.md`](institution/manus.md) / [`institution/secretariat.md`](institution/secretariat.md) |
 | `characters` (NPC) | 기존 N | NPC 이주본 3건(REGISTRAR/STAR_MART/TOWASKI) + ARBITER(제레마이어 폴, 재무위 의장) MD 작성 — DB 적재는 후속. Phase 5-h: SECRETARIAT/MANUS 소속 NPC(ARBITER/REGISTRAR)의 factionCode 가 NOVUS_ORDO 로 백필됨 |
-| `master_items` | 운영 N건 | equipment + consumable 도메인 mirror. ERP 인벤토리(`/erp/inventory`) + 카탈로그(`/erp/wiki/catalog/{equipment\|consumable}`)에서 활용 |
+| `master_items` | 운영 N건 | equipment + consumable + catalog 도메인 mirror. ERP 인벤토리(`/erp/inventory`) + 카탈로그(`/erp/wiki/catalog/{all\|equipment\|consumable\|material\|special}`)에서 활용 |
 
 팩션/기관 seed는 `packages/shared-db/src/types/character.ts`의 `FACTIONS`/`INSTITUTIONS` const 기반. 신규 세력 추가 시 const와 DB 양쪽 동기화 필요 (현재 const가 TS 타입 소스). FACTIONS 의 `scope` 필드(`external`/`internal`)는 외부 권력 블록과 본부를 구분하는 핵심 메타.
 
-`master_items`의 `ItemCategory`는 `packages/shared-db/src/types/inventory.ts`의 `ITEM_CATEGORIES` const tuple이 SSOT. equipment/consumable Zod 스키마는 `satisfies` 로 부분집합 보증.
+`master_items`의 `ItemCategory`는 `packages/shared-db/src/types/inventory.ts`의 `ITEM_CATEGORIES` const tuple이 SSOT. equipment/consumable Zod 스키마는 엄격한 부분집합이고, catalog Zod 스키마는 전체 카테고리를 허용한다.
 
 ## seed 스크립트
 
@@ -273,7 +288,7 @@ pnpm run seed:institutions -- --execute --yes
 - [ ] **Phase 5-d — 기존 `docs/civil-society/`, `docs/military/`, `docs/wolrd-council/` 이관 완료** 후 구 경로 제거.
 - [ ] **Phase 5-e — `upsertByCode` atomic 전환**: check-then-act 경로를 `findOneAndUpdate({ upsert: true })` 단일 연산으로.
 - [ ] **Phase 5-f — update API Zod 검증**: `updateFaction`/`updateInstitution`에 partial 스키마 검증 추가 (호출부 생길 때).
-- [ ] **Phase 5-g — equipment/consumable seed 스크립트**: `master_items` upsertBySlug idempotent + dry-run/`--execute --yes` opt-in (factions seed 패턴 거울).
+- [ ] **Phase 5-g — catalog seed 스크립트**: `master_items` upsertBySlug idempotent + dry-run/`--execute --yes` opt-in (factions seed 패턴 거울).
 - [ ] **Phase 5-h — NOVUS_ORDO 상위 코드 등록**: `FACTIONS` const + `docs/lore/faction/novus-ordo.md` + 노부스 오르도 직속 독립기구(SECRETARIAT/MANUS) NPC들의 `factionCode` 일관 적용.
 
 ## 커밋
