@@ -6,6 +6,28 @@
    ========================================================== */
 
 /* ---------- filter row (탭 + GM 신규 버튼 한 줄) ---------- */
+.searchBox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.searchInput {
+  min-width: 0;
+}
+
+.searchMeta {
+  min-width: 72px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .filterRow {
   display: flex;
   align-items: stretch;
@@ -520,6 +542,14 @@
 }
 
 @media (max-width: 767px) {
+  .searchBox {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .searchMeta {
+    order: 3;
+    grid-column: 1 / -1;
+    text-align: left;
+  }
   .filters {
     flex-wrap: nowrap;
     overflow-x: auto;
