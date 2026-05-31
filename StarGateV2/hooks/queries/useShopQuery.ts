@@ -1,7 +1,7 @@
 /**
  * 편의점 카탈로그 / 보유 인벤토리 query hooks.
  *
- * - `useShopCatalog`: GET /api/erp/shop/catalog — 13 품목 + 일자별 재고 + 영업 여부.
+ * - `useShopCatalog`: GET /api/erp/shop/catalog — 전체 품목 + 일자별 재고 + 영업 여부.
  * - `useShopInventory`: GET /api/erp/shop/inventory — 본인 메인 캐릭의 보유 편의점 아이템.
  *
  * 에러 분기 — `ShopApiError.code` 로 클라이언트가 분기 가능 (creditKeys 와 동일 패턴).

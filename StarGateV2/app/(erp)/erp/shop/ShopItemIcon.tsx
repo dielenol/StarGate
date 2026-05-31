@@ -1,5 +1,5 @@
 /**
- * 편의점 13종 도트풍 SVG 아이콘.
+ * 편의점 도트풍 SVG 아이콘.
  *
  * - 16x16 viewBox + shape-rendering="crispEdges" 로 픽셀 경계 보존.
  * - slug 미매칭 시 fallback 박스 + ? — silent fail 회피.
@@ -24,7 +24,7 @@ function renderPixels(pixels: Pixel[]) {
   ));
 }
 
-/* ── 13종 픽셀 정의 — 16x16 그리드 ── */
+/* ── 픽셀 정의 — 16x16 그리드 ── */
 
 const RAMEN_NOODLE = "#f5d27a";
 const RAMEN_NOODLE_DARK = "#c89c4a";
@@ -83,6 +83,62 @@ const coffee: Pixel[] = [
   [12, 12, "#5a3820", 2, 1],
   // 받침
   [3, 13, "#fff", 10, 1],
+];
+
+const first_aid_patch: Pixel[] = [
+  // bandage body
+  [3, 4, "#f4d8c8", 10, 8],
+  [4, 5, "#fff0e6", 8, 6],
+  [3, 4, "#9f3b3b", 10, 1],
+  [3, 11, "#9f3b3b", 10, 1],
+  [3, 5, "#9f3b3b", 1, 6],
+  [12, 5, "#9f3b3b", 1, 6],
+  // medical cross
+  [7, 6, "#d95f5f", 2, 4],
+  [6, 7, "#d95f5f", 4, 2],
+  // perforation dots
+  [5, 6, "#d8a08e", 1, 1],
+  [10, 6, "#d8a08e", 1, 1],
+  [5, 9, "#d8a08e", 1, 1],
+  [10, 9, "#d8a08e", 1, 1],
+];
+
+const calm_mint: Pixel[] = [
+  // stem
+  [7, 4, "#2d6354", 1, 8],
+  [8, 5, "#2d6354", 1, 6],
+  // left leaf
+  [4, 5, "#5ea68c", 3, 1],
+  [3, 6, "#78c5aa", 4, 2],
+  [4, 8, "#5ea68c", 3, 1],
+  [5, 7, "#e4fff2", 1, 1],
+  // right leaf
+  [9, 6, "#5ea68c", 3, 1],
+  [9, 7, "#78c5aa", 4, 2],
+  [9, 9, "#5ea68c", 3, 1],
+  [10, 8, "#e4fff2", 1, 1],
+  // cool sparkle
+  [11, 3, "#c8f7e5", 1, 1],
+  [12, 4, "#c8f7e5", 1, 1],
+  [3, 10, "#c8f7e5", 1, 1],
+];
+
+const field_nutrition_gel: Pixel[] = [
+  // gel pouch
+  [4, 3, "#6f5630", 8, 1],
+  [3, 4, "#c9a04c", 10, 9],
+  [4, 5, "#e2bf66", 8, 7],
+  [3, 12, "#6f5630", 10, 1],
+  // cap
+  [6, 2, "#ddd5bd", 4, 1],
+  [7, 1, "#8b8068", 2, 1],
+  // label stripe
+  [5, 7, "#2a8b4c", 6, 2],
+  [6, 7, "#f5f0dc", 1, 1],
+  [9, 8, "#f5f0dc", 1, 1],
+  // squeeze folds
+  [5, 10, "#9b7b3b", 6, 1],
+  [4, 4, "#f5e7ac", 1, 1],
 ];
 
 const energy_bar: Pixel[] = [
@@ -253,6 +309,9 @@ const ICONS: Record<string, Pixel[]> = {
   cup_ramen,
   soda,
   coffee,
+  first_aid_patch,
+  calm_mint,
+  field_nutrition_gel,
   energy_bar,
   hotpack,
   chocolate,

@@ -9,7 +9,7 @@ import styles from "./ShopAdminStock.module.css";
 /**
  * GM 전용 편의점 재고 직접 조정 모달.
  *
- * - GET /api/erp/shop/admin/stock 으로 12종 현재 재고 조회.
+ * - GET /api/erp/shop/admin/stock 으로 전체 품목 현재 재고 조회.
  * - 각 row 에 stock 입력 → "저장" 클릭 시 변경된 row 만 PATCH.
  * - lastRefresh stale 표시 (오늘이 아니면 "stale" 뱃지).
  *

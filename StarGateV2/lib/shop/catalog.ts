@@ -38,7 +38,7 @@ export interface ShopCatalogItem {
   pageGroup: ShopPageGroup;
 }
 
-/* ── Catalog (13 items) ── */
+/* ── Catalog ── */
 
 export const SHOP_CATALOG: ShopCatalogItem[] = [
   {
@@ -79,6 +79,45 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     appearRate: 0.92,
     color: "#785032",
     pageGroup: "BASIC",
+  },
+  {
+    slug: "first_aid_patch",
+    name: "응급 패치",
+    icon: "🩹",
+    price: 70,
+    effect: "HP 15 회복",
+    description: "찢어진 살갗과 떨리는 손을 빠르게 붙잡아주는 소형 응급 패치.",
+    stockMin: 3,
+    stockMax: 7,
+    appearRate: 0.78,
+    color: "#d95f5f",
+    pageGroup: "RECOVERY",
+  },
+  {
+    slug: "calm_mint",
+    name: "진정 민트",
+    icon: "🌿",
+    price: 70,
+    effect: "SAN 12 회복",
+    description: "입안에 남는 박하 향이 호흡과 사고를 천천히 되돌려준다.",
+    stockMin: 3,
+    stockMax: 7,
+    appearRate: 0.76,
+    color: "#5ea68c",
+    pageGroup: "RECOVERY",
+  },
+  {
+    slug: "field_nutrition_gel",
+    name: "야전 영양젤",
+    icon: "🧃",
+    price: 45,
+    effect: "HP 10 / SAN 5",
+    description: "짠맛과 단맛이 묘하게 섞인 휴대용 영양젤. 야전에서 몸과 정신을 동시에 끌어올린다.",
+    stockMin: 5,
+    stockMax: 10,
+    appearRate: 0.88,
+    color: "#c9a04c",
+    pageGroup: "RECOVERY",
   },
   {
     slug: "energy_bar",

@@ -2,7 +2,7 @@
  * GET /api/erp/shop/catalog — 편의점 카탈로그 + 일자별 재고 + 영업 여부.
  *
  * 응답:
- * - items: SHOP_CATALOG 13 품목 + stock(0 fallback) + available(isOpen && stock>0).
+ * - items: SHOP_CATALOG 전체 품목 + stock(0 fallback) + available(isOpen && stock>0).
  * - isOpen: 영업 시간 판정 (`isShopOpen` — 20시 이후 / 일 종일 마감).
  *
  * 권한: ERP 로그인이면 OK (별도 RBAC 게이트 없음).

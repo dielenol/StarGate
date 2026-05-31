@@ -1,7 +1,7 @@
 /**
  * 편의점(shop) 카탈로그 seed 스크립트
  *
- * `lib/shop/catalog.ts` 의 SHOP_CATALOG (13 품목) 을 master_items 컬렉션에 slug 기준으로
+ * `lib/shop/catalog.ts` 의 SHOP_CATALOG 전체 품목을 master_items 컬렉션에 slug 기준으로
  * upsert 한다. tia_bot SHOP_ITEMS 의 TS 포팅 결과를 그대로 DB로 승격하는 일회성+멱등 스크립트.
  *
  * 사용법 (opt-in 쓰기 모드):
@@ -18,7 +18,7 @@
  *
  * 매핑 규칙:
  *   - filter: { slug: item.slug }
- *   - $set: name / category("CONSUMABLE") / description / price / effect / isAvailable(true)
+ *   - $set: name / category("CONSUMABLE") / description / price / effect / isAvailable(true) / isPublic(true)
  *           / slug / shopMeta(stockMin,stockMax,appearRate,color,pageGroup) / updatedAt
  *   - $setOnInsert: createdAt
  *   - icon 은 shopMeta 에 저장하지 않음 (이모지는 카탈로그 상수에서만 참조)
@@ -36,25 +36,30 @@ import {
 
 import { SHOP_CATALOG, type ShopCatalogItem } from "../lib/shop/catalog.ts";
 
-/* ── .env.local 로드 ──
+/* ── .env.local / .env 로드 ──
    `=== undefined` 로 빈 문자열("")을 unset 취급하지 않도록 방어.
-   process.env 에 이미 정의된 값은 보존 (명시적 export > .env.local). */
+   process.env 에 이미 정의된 값은 보존 (명시적 export > .env.local > .env). */
 
-const envPath = resolve(process.cwd(), ".env.local");
-try {
-  const envContent = readFileSync(envPath, "utf-8");
-  for (const line of envContent.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eqIdx = trimmed.indexOf("=");
-    if (eqIdx === -1) continue;
-    const key = trimmed.slice(0, eqIdx);
-    const val = trimmed.slice(eqIdx + 1);
-    if (process.env[key] === undefined) process.env[key] = val;
+function loadEnvFile(fileName: string): void {
+  const envPath = resolve(process.cwd(), fileName);
+  try {
+    const envContent = readFileSync(envPath, "utf-8");
+    for (const line of envContent.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx);
+      const val = trimmed.slice(eqIdx + 1);
+      if (process.env[key] === undefined) process.env[key] = val;
+    }
+  } catch {
+    // 선택 파일 부재 — dry-run은 계속 진행, 실제 실행은 main() 안에서 분기
   }
-} catch {
-  // .env.local 부재 — dry-run은 계속 진행, 실제 실행은 main() 안에서 분기
 }
+
+loadEnvFile(".env.local");
+loadEnvFile(".env");
 
 /* ── CLI 플래그 ──
    기본: dry-run. 실제 실행은 --execute + --yes 2개 모두 필요. */
@@ -108,6 +113,7 @@ function buildSetPayload(item: ShopCatalogItem): Record<string, unknown> {
     price: item.price,
     effect: item.effect,
     isAvailable: true,
+    isPublic: true,
     slug: item.slug,
     shopMeta: {
       stockMin: item.stockMin,

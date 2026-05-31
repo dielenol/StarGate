@@ -21,13 +21,13 @@ import {
   SYSTEM_USER_ID_SENTINEL,
 } from "@/lib/db/system-actor";
 import { findUserById } from "@/lib/db/users";
-import { findShopItemBySlug } from "@/lib/shop/catalog";
+import { findShopItemBySlug, SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getShopOpenState } from "@/lib/shop/open-state";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY_PER_ITEM = 9;
-const MAX_CART_LINES = 13;
+const MAX_CART_LINES = SHOP_CATALOG.length;
 
 interface CheckoutBody {
   items?: Array<{

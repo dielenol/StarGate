@@ -1,7 +1,7 @@
 /**
  * GET/PATCH /api/erp/shop/admin/stock — GM 전용 편의점 재고 관리.
  *
- * GET: SHOP_CATALOG 12종 + 현재 stock + lastRefresh.
+ * GET: SHOP_CATALOG 전체 품목 + 현재 stock + lastRefresh.
  * PATCH: { itemId, stock } — 단일 item stock 직접 set (lastRefresh=todayKst 동기화).
  *
  * 권한: GM 만 통과. requireRole("GM") 위반 시 403.
