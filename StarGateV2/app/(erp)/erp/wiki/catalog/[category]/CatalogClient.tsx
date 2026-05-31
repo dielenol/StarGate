@@ -234,17 +234,24 @@ export default function CatalogClient({ category, initialItems }: Props) {
                     .filter(Boolean)
                     .join(" ")}
                 >
-                  {imageSrc ? (
-                    <div className={styles.card__media}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={imageSrc}
-                        alt=""
-                        aria-hidden
-                        draggable={false}
+                  <div className={styles.card__media}>
+                    {imageSrc ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={imageSrc}
+                          alt=""
+                          aria-hidden
+                          draggable={false}
+                        />
+                      </>
+                    ) : (
+                      <span
+                        className={styles.card__mediaPlaceholder}
+                        aria-hidden="true"
                       />
-                    </div>
-                  ) : null}
+                    )}
+                  </div>
                   <div className={styles.card__header}>
                     <h2 className={styles.card__name}>{item.name}</h2>
                     <span
