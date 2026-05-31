@@ -82,7 +82,11 @@ function normalizePersonnelKey(value: string): string {
 function characterParticipantKeys(character: Character): string[] {
   const keys = new Set<string>();
 
-  for (const value of [character.codename, character.lore.name]) {
+  for (const value of [
+    character.codename,
+    character.lore.name,
+    ...(character.lore.loreTags ?? []),
+  ]) {
     const normalized = normalizePersonnelKey(value);
     if (normalized) keys.add(normalized);
   }
