@@ -5,6 +5,8 @@
 import "./init";
 
 import {
+  findMasterItemById,
+  findMasterItemBySlug,
   listMasterItemsByCategories,
   type ItemCategory,
   type MasterItem,
@@ -26,6 +28,12 @@ export {
   removeFromInventory,
   deleteInventoryEntry,
 } from "@stargate/shared-db";
+
+export async function findMasterItemBySlugOrId(
+  key: string,
+): Promise<MasterItem | null> {
+  return (await findMasterItemBySlug(key)) ?? findMasterItemById(key);
+}
 
 /**
  * 카테고리 + 공개/가용 플래그로 필터링한 마스터 아이템 목록.

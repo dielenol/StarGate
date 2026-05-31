@@ -48,6 +48,10 @@ function formatPrice(price: number | string): string {
   return n === null ? "—" : `₩${n.toLocaleString("ko-KR")}`;
 }
 
+function itemDetailHref(item: CatalogItem): string {
+  return `/erp/wiki/catalog/item/${encodeURIComponent(item.slug || item._id)}`;
+}
+
 export default function CatalogClient({ category, label, initialItems }: Props) {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<"name" | "price">("name");
@@ -152,49 +156,50 @@ export default function CatalogClient({ category, label, initialItems }: Props) 
       ) : (
         <ul className={styles.catalog__grid}>
           {filtered.map((it) => (
-            <li
-              key={it._id}
-              className={[
-                styles.card,
-                !it.isAvailable && styles["card--unavailable"],
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              {/* 차후 상세 페이지 추가 시 isAvailable=false 카드는 클릭 비활성 처리 필요 */}
-              <div className={styles.card__header}>
-                <h2 className={styles.card__name}>{it.name}</h2>
-                <span
-                  className={[
-                    styles.card__category,
-                    styles[`card__category--${categoryTone(it.category)}`],
-                  ].join(" ")}
-                >
-                  {ITEM_CATEGORY_LABEL[it.category]}
-                </span>
-              </div>
-              <p className={styles.card__description}>{it.description}</p>
-              <dl className={styles.card__stats}>
-                <div className={styles.card__stat}>
-                  <dt>가격</dt>
-                  <dd>{formatPrice(it.price)}</dd>
+            <li key={it._id}>
+              <Link
+                href={itemDetailHref(it)}
+                className={[
+                  styles.card,
+                  !it.isAvailable && styles["card--unavailable"],
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <div className={styles.card__header}>
+                  <h2 className={styles.card__name}>{it.name}</h2>
+                  <span
+                    className={[
+                      styles.card__category,
+                      styles[`card__category--${categoryTone(it.category)}`],
+                    ].join(" ")}
+                  >
+                    {ITEM_CATEGORY_LABEL[it.category]}
+                  </span>
                 </div>
-                {it.damage && (
+                <p className={styles.card__description}>{it.description}</p>
+                <dl className={styles.card__stats}>
                   <div className={styles.card__stat}>
-                    <dt>데미지</dt>
-                    <dd>{it.damage}</dd>
+                    <dt>가격</dt>
+                    <dd>{formatPrice(it.price)}</dd>
                   </div>
+                  {it.damage && (
+                    <div className={styles.card__stat}>
+                      <dt>데미지</dt>
+                      <dd>{it.damage}</dd>
+                    </div>
+                  )}
+                  {it.effect && (
+                    <div className={styles.card__stat}>
+                      <dt>효과</dt>
+                      <dd>{it.effect}</dd>
+                    </div>
+                  )}
+                </dl>
+                {!it.isAvailable && (
+                  <span className={styles.card__badge}>미가용</span>
                 )}
-                {it.effect && (
-                  <div className={styles.card__stat}>
-                    <dt>효과</dt>
-                    <dd>{it.effect}</dd>
-                  </div>
-                )}
-              </dl>
-              {!it.isAvailable && (
-                <span className={styles.card__badge}>미가용</span>
-              )}
+              </Link>
             </li>
           ))}
         </ul>
