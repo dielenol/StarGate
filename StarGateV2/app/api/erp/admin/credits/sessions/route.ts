@@ -6,10 +6,10 @@
  *   응답: { candidates: SessionRewardCandidate[] }
  *   각 응답자는 status 라벨링 (eligible / no-user / no-character / integrity-violation / already-rewarded).
  *
- * POST — 선택 세션의 YES 응답자에 일괄 자동 보상.
- *   body: { sessionId, amount(>0), description? }
+ * POST — 선택 세션의 실제 참여자 목록에 복합 자동 보상.
+ *   body: { sessionId, description, participants, rewards }
  *   응답: BulkGrantResult { results, succeeded, failed, skipped }
- *   - already-rewarded 는 skipped 로 분류.
+ *   - 이미 동일 세션 보상이 존재하는 reward operation 은 skipped 로 분류.
  *
  * 응답 코드: 401 / 403 / 400 (입력 검증 실패) / 404 (세션 부재) / 500.
  * Cache: no-store.
@@ -22,38 +22,35 @@ import { NextResponse } from "next/server";
 import type {
   BulkGrantResult,
   BulkGrantResultItem,
-  RewardKind,
-  SessionRespondent,
-  SessionRespondentStatus,
+  SessionRewardGrantInput,
+  SessionRewardLineInput,
+  SessionRewardStatField,
+  SessionRewardTarget,
 } from "@/types/credit-admin";
 import type { UserRole } from "@/types/user";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { adjustCharacterPoints } from "@/lib/db/character-points";
+import {
+  adjustCharacterPoints,
+  adjustCharacterStat,
+} from "@/lib/db/character-points";
+import {
+  findCharacterById,
+  findMainCharacterByOwner,
+} from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import {
   findSessionById,
   listRecentCompletedSessions,
 } from "@/lib/db/sessions";
+import { findUserById } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
 
 import { buildSessionRewardCandidates } from "@/app/(erp)/erp/admin/credits/_session-rewards";
 
 const DEFAULT_DAYS_BACK = 14;
 const MAX_DAYS_BACK = 60;
-
-/**
- * status → response.code 명시 매핑.
- * `status.toUpperCase().replace(/-/g, "_")` 같은 임시 변환은 새 status 추가 시 패턴 깨짐.
- */
-const STATUS_TO_CODE: Record<SessionRespondentStatus, string> = {
-  eligible: "ELIGIBLE",
-  "no-user": "NO_USER",
-  "no-character": "NO_CHARACTER",
-  "integrity-violation": "INTEGRITY_VIOLATION",
-  "already-rewarded": "ALREADY_REWARDED",
-};
 
 /* ────────────────────────────────────────────────────────────── *
  * GET — eligibility 후보 조회
@@ -81,19 +78,6 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const daysBackParam = url.searchParams.get("daysBack");
-  const rewardKindParam = url.searchParams.get("rewardKind");
-  const rewardKind: RewardKind =
-    rewardKindParam === "POINT" ? "POINT" : "CREDIT";
-  if (
-    rewardKindParam !== null &&
-    rewardKindParam !== "CREDIT" &&
-    rewardKindParam !== "POINT"
-  ) {
-    return NextResponse.json(
-      { error: "rewardKind must be CREDIT or POINT." },
-      { status: 400 },
-    );
-  }
   let daysBack = DEFAULT_DAYS_BACK;
   if (daysBackParam !== null) {
     const n = Number(daysBackParam);
@@ -115,7 +99,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const candidates = await buildSessionRewardCandidates(sessions, rewardKind);
+    const candidates = await buildSessionRewardCandidates(sessions);
 
     return NextResponse.json(
       { candidates },
@@ -132,13 +116,6 @@ export async function GET(request: Request) {
  * POST — 선택 세션 일괄 자동 보상
  * ────────────────────────────────────────────────────────────── */
 
-interface PostBody {
-  sessionId?: string;
-  amount?: number;
-  description?: string;
-  rewardKind?: RewardKind;
-}
-
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
@@ -151,7 +128,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = (await request.json()) as PostBody;
+  const body = (await request.json()) as Partial<SessionRewardGrantInput>;
 
   if (!body.sessionId || !isValidObjectId(body.sessionId)) {
     return NextResponse.json(
@@ -160,26 +137,28 @@ export async function POST(request: Request) {
     );
   }
 
-  if (
-    typeof body.amount !== "number" ||
-    !Number.isFinite(body.amount) ||
-    body.amount <= 0
-  ) {
+  if (!Array.isArray(body.participants) || body.participants.length === 0) {
     return NextResponse.json(
-      { error: "amount는 0보다 큰 유한 숫자여야 합니다 (자동 보상은 발급만)." },
+      { error: "participants는 1명 이상이어야 합니다." },
       { status: 400 },
     );
   }
-  const amount = body.amount;
-  const rewardKind: RewardKind =
-    body.rewardKind === "POINT" ? "POINT" : "CREDIT";
-  if (
-    body.rewardKind !== undefined &&
-    body.rewardKind !== "CREDIT" &&
-    body.rewardKind !== "POINT"
-  ) {
+  if (body.participants.length > 100) {
     return NextResponse.json(
-      { error: "rewardKind must be CREDIT or POINT." },
+      { error: "participants는 최대 100명까지 허용됩니다." },
+      { status: 400 },
+    );
+  }
+
+  if (!Array.isArray(body.rewards) || body.rewards.length === 0) {
+    return NextResponse.json(
+      { error: "rewards는 1개 이상의 보상 항목이어야 합니다." },
+      { status: 400 },
+    );
+  }
+  if (body.rewards.length > 20) {
+    return NextResponse.json(
+      { error: "rewards는 최대 20개까지 허용됩니다." },
       { status: 400 },
     );
   }
@@ -203,19 +182,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    const candidates = await buildSessionRewardCandidates([sessionDoc], rewardKind);
-    const candidate = candidates[0];
-
     const sessionTitle = sessionDoc.title;
     const sessionDate = new Date(sessionDoc.targetDateTime).toISOString();
     const sessionIdStr = String(sessionDoc._id);
+    const participants = await resolveParticipants(body.participants);
+    const rewards = normalizeRewards(body.rewards, participants);
 
     const results: BulkGrantResultItem[] = [];
-    for (const respondent of candidate.respondents) {
-      const item = await processRespondent({
-        respondent,
-        amount,
-        rewardKind,
+    for (const item of buildRewardOperations(participants, rewards)) {
+      const row = await processRewardOperation({
+        operation: item,
         description,
         sessionMeta: {
           sessionId: sessionIdStr,
@@ -228,7 +204,7 @@ export async function POST(request: Request) {
           role: session.user.role,
         },
       });
-      results.push(item);
+      results.push(row);
     }
 
     const succeeded = results.filter((r) => r.success).length;
@@ -252,14 +228,174 @@ export async function POST(request: Request) {
   }
 }
 
-/* ────────────────────────────────────────────────────────────── *
- * 공통 — POST 처리 (eligibility 결과 → 발급)
- * ────────────────────────────────────────────────────────────── */
+interface ResolvedParticipant {
+  ownerId: string;
+  ownerName: string;
+  characterId: string;
+  characterCodename: string;
+}
 
-interface ProcessRespondentArgs {
-  respondent: SessionRespondent;
-  amount: number;
-  rewardKind: RewardKind;
+type NormalizedReward = Required<
+  Pick<SessionRewardLineInput, "kind" | "amount">
+> &
+  Pick<SessionRewardLineInput, "statField" | "targetCharacterId"> & {
+    label: string;
+  };
+
+interface RewardOperation {
+  participant: ResolvedParticipant;
+  reward: NormalizedReward;
+}
+
+async function resolveParticipants(
+  targets: SessionRewardTarget[],
+): Promise<ResolvedParticipant[]> {
+  const seen = new Set<string>();
+  const resolved: ResolvedParticipant[] = [];
+
+  for (const target of targets) {
+    const participant = await resolveParticipant(target);
+    if (seen.has(participant.characterId)) continue;
+    seen.add(participant.characterId);
+    resolved.push(participant);
+  }
+
+  if (resolved.length === 0) {
+    throw new Error("지급 가능한 참여자가 없습니다.");
+  }
+  return resolved;
+}
+
+async function resolveParticipant(
+  target: SessionRewardTarget,
+): Promise<ResolvedParticipant> {
+  let character;
+  if (target.characterId?.trim()) {
+    if (!isValidObjectId(target.characterId)) {
+      throw new Error("참여자 characterId가 올바른 ObjectId 형식이 아닙니다.");
+    }
+    character = await findCharacterById(target.characterId);
+  } else if (target.ownerId?.trim()) {
+    if (!isValidObjectId(target.ownerId)) {
+      throw new Error("참여자 ownerId가 올바른 ObjectId 형식이 아닙니다.");
+    }
+    character = await findMainCharacterByOwner(target.ownerId);
+  } else {
+    throw new Error("참여자에는 ownerId 또는 characterId가 필요합니다.");
+  }
+
+  if (!character || character.type !== "AGENT") {
+    throw new Error("참여자 AGENT 캐릭터를 찾을 수 없습니다.");
+  }
+  if (!character.ownerId) {
+    throw new Error(`${character.codename} 캐릭터에 owner가 연결되어 있지 않습니다.`);
+  }
+
+  const owner = await findUserById(character.ownerId);
+  return {
+    ownerId: character.ownerId,
+    ownerName: owner?.discordUsername ?? owner?.displayName ?? character.ownerId,
+    characterId: String(character._id),
+    characterCodename: character.codename,
+  };
+}
+
+function normalizeRewards(
+  rewards: SessionRewardLineInput[],
+  participants: ResolvedParticipant[],
+): NormalizedReward[] {
+  const participantIds = new Set(participants.map((p) => p.characterId));
+  return rewards.map((reward, index) => {
+    if (!["CREDIT", "POINT", "STAT"].includes(reward.kind)) {
+      throw new Error(`rewards[${index}].kind가 올바르지 않습니다.`);
+    }
+    if (!Number.isFinite(reward.amount) || reward.amount === 0) {
+      throw new Error(`rewards[${index}].amount가 올바르지 않습니다.`);
+    }
+    if (reward.kind === "CREDIT" && reward.amount <= 0) {
+      throw new Error("CREDIT 보상은 0보다 커야 합니다.");
+    }
+    if (reward.kind === "POINT") {
+      if (reward.amount <= 0 || !Number.isInteger(reward.amount)) {
+        throw new Error("POINT 보상은 0보다 큰 정수여야 합니다.");
+      }
+    }
+    if (reward.kind === "STAT") {
+      if (
+        !reward.statField ||
+        !["hp", "san", "def", "atk"].includes(reward.statField)
+      ) {
+        throw new Error("STAT 보상에는 hp/san/def/atk 중 하나가 필요합니다.");
+      }
+      if (!Number.isInteger(reward.amount)) {
+        throw new Error("STAT 보상 수치는 정수여야 합니다.");
+      }
+    }
+    if (
+      reward.targetCharacterId &&
+      !participantIds.has(reward.targetCharacterId)
+    ) {
+      throw new Error("개별 보상 대상은 참여자 목록 안에 있어야 합니다.");
+    }
+
+    return {
+      kind: reward.kind,
+      amount: reward.amount,
+      statField: reward.statField,
+      targetCharacterId: reward.targetCharacterId ?? null,
+      label: formatRewardLabel(reward),
+    };
+  });
+}
+
+function buildRewardOperations(
+  participants: ResolvedParticipant[],
+  rewards: NormalizedReward[],
+): RewardOperation[] {
+  const operations: RewardOperation[] = [];
+  for (const reward of rewards) {
+    const targets = reward.targetCharacterId
+      ? participants.filter((p) => p.characterId === reward.targetCharacterId)
+      : participants;
+    for (const participant of targets) {
+      operations.push({ participant, reward: { ...reward } });
+    }
+  }
+  return coalesceRewardOperations(operations);
+}
+
+function coalesceRewardOperations(
+  operations: RewardOperation[],
+): RewardOperation[] {
+  const byKey = new Map<string, RewardOperation>();
+  for (const operation of operations) {
+    const statKey =
+      operation.reward.kind === "STAT" ? operation.reward.statField : "";
+    const key = [
+      operation.participant.characterId,
+      operation.reward.kind,
+      statKey,
+    ].join(":");
+    const prev = byKey.get(key);
+    if (!prev) {
+      byKey.set(key, operation);
+      continue;
+    }
+    prev.reward.amount += operation.reward.amount;
+    prev.reward.label = formatRewardLabel(prev.reward);
+  }
+  return Array.from(byKey.values()).filter((op) => op.reward.amount !== 0);
+}
+
+function formatRewardLabel(reward: Pick<NormalizedReward, "kind" | "amount" | "statField">): string {
+  if (reward.kind === "CREDIT") return `크레딧 +${reward.amount} CR`;
+  if (reward.kind === "POINT") return `포인트 +${reward.amount} PT`;
+  const sign = reward.amount > 0 ? "+" : "";
+  return `${reward.statField?.toUpperCase()} ${sign}${reward.amount}`;
+}
+
+async function processRewardOperation(args: {
+  operation: RewardOperation;
   description: string;
   sessionMeta: {
     sessionId: string;
@@ -267,56 +403,51 @@ interface ProcessRespondentArgs {
     sessionDate: string;
   };
   session: { id: string; displayName: string; role: UserRole };
-}
-
-async function processRespondent(
-  args: ProcessRespondentArgs,
-): Promise<BulkGrantResultItem> {
-  const { respondent, amount, rewardKind, description, sessionMeta, session } =
-    args;
-
-  if (respondent.status === "already-rewarded") {
-    return {
-      ownerId: respondent.ownerId ?? undefined,
-      characterId: respondent.characterId ?? undefined,
-      success: false,
-      skipped: true,
-      skipReason: "이미 자동 보상 발급됨",
-      characterCodename: respondent.characterCodename ?? undefined,
-    };
-  }
-
-  if (respondent.status !== "eligible") {
-    return {
-      ownerId: respondent.ownerId ?? undefined,
-      characterId: respondent.characterId ?? undefined,
-      success: false,
-      error: respondent.reason ?? respondent.status,
-      code: STATUS_TO_CODE[respondent.status],
-      characterCodename: respondent.characterCodename ?? undefined,
-    };
-  }
-
-  // 이 시점부터 ownerId / characterId / characterCodename 모두 존재.
-  if (
-    !respondent.ownerId ||
-    !respondent.characterId ||
-    !respondent.characterCodename
-  ) {
-    return {
-      ownerId: respondent.ownerId ?? undefined,
-      characterId: respondent.characterId ?? undefined,
-      success: false,
-      error: "eligible 후보의 식별자가 누락되었습니다.",
-      code: "ELIGIBLE_MISSING_IDS",
-    };
-  }
+}): Promise<BulkGrantResultItem> {
+  const { operation, description, sessionMeta, session } = args;
+  const { participant, reward } = operation;
+  const base = {
+    ownerId: participant.ownerId,
+    characterId: participant.characterId,
+    characterCodename: participant.characterCodename,
+    rewardLabel: reward.label,
+    rewardKind: reward.kind,
+    ...(reward.statField ? { statField: reward.statField } : {}),
+  };
 
   try {
-    if (rewardKind === "POINT") {
+    if (reward.kind === "CREDIT") {
+      const transaction = await addCredit({
+        characterId: participant.characterId,
+        characterCodename: participant.characterCodename,
+        ownerId: participant.ownerId,
+        ownerName: participant.ownerName,
+        amount: reward.amount,
+        type: "SESSION_REWARD",
+        description,
+        createdById: session.id,
+        createdByName: session.displayName,
+        allowNegative: false,
+        metadata: {
+          sessionId: sessionMeta.sessionId,
+          sessionTitle: sessionMeta.sessionTitle,
+          sessionDate: sessionMeta.sessionDate,
+          autoReward: true,
+          rewardKind: "CREDIT",
+        },
+      });
+      return {
+        ...base,
+        success: true,
+        transactionId: String(transaction._id),
+        newBalance: transaction.balance,
+      };
+    }
+
+    if (reward.kind === "POINT") {
       const pointResult = await adjustCharacterPoints({
-        characterId: respondent.characterId,
-        amount,
+        characterId: participant.characterId,
+        amount: reward.amount,
         actorId: session.id,
         actorRole: session.role,
         reason: description,
@@ -329,72 +460,59 @@ async function processRespondent(
           rewardKind: "POINT",
         },
       });
-
       return {
-        ownerId: respondent.ownerId,
-        characterId: respondent.characterId,
+        ...base,
         success: true,
-        characterCodename: respondent.characterCodename,
+        transactionId: pointResult.changeLogId,
         newPointBalance: pointResult.after,
       };
     }
 
-    const transaction = await addCredit({
-      characterId: respondent.characterId,
-      characterCodename: respondent.characterCodename,
-      ownerId: respondent.ownerId,
-      // ownerName 비정규화 — respondent 에는 별도 필드 없으므로 displayName 사용.
-      ownerName: respondent.displayName,
-      amount,
-      type: "SESSION_REWARD",
-      description,
-      createdById: session.id,
-      createdByName: session.displayName,
-      // 자동 보상은 항상 발급(양수) — 음수 진입 방지.
-      allowNegative: false,
+    const statResult = await adjustCharacterStat({
+      characterId: participant.characterId,
+      field: reward.statField as SessionRewardStatField,
+      amount: reward.amount,
+      actorId: session.id,
+      actorRole: session.role,
+      reason: description,
       metadata: {
         sessionId: sessionMeta.sessionId,
         sessionTitle: sessionMeta.sessionTitle,
         sessionDate: sessionMeta.sessionDate,
         autoReward: true,
+        rewardKind: "STAT",
+        statField: reward.statField ?? null,
       },
     });
-
     return {
-      ownerId: respondent.ownerId,
-      characterId: respondent.characterId,
+      ...base,
       success: true,
-      transactionId: String(transaction._id),
-      characterCodename: respondent.characterCodename,
-      newBalance: transaction.balance,
+      transactionId: statResult.changeLogId,
+      newStatValue: statResult.after,
     };
   } catch (err) {
-    // partial unique index `credit_transactions_sessionReward_unique` 가 backstop —
-    // 두 GM 동시 발급 race 에서 두 번째 insert 가 E11000 으로 실패 → 이미 보상으로 분류.
-    // 응용 레벨 멱등 검사(already-rewarded) 와 결과 일관.
-    if (
-      err &&
-      typeof err === "object" &&
-      "code" in err &&
-      (err as { code?: number }).code === 11000
-    ) {
+    if (isDuplicateRewardError(err)) {
       return {
-        ownerId: respondent.ownerId,
-        characterId: respondent.characterId,
+        ...base,
         success: false,
         skipped: true,
-        skipReason: "이미 자동 보상 발급됨 (race)",
-        characterCodename: respondent.characterCodename,
+        skipReason: "이미 해당 세션 보상 발급됨",
       };
     }
-    const message = err instanceof Error ? err.message : "발급 실패";
     return {
-      ownerId: respondent.ownerId,
-      characterId: respondent.characterId,
+      ...base,
       success: false,
-      characterCodename: respondent.characterCodename,
-      error: message,
+      error: err instanceof Error ? err.message : "발급 실패",
       code: "GRANT_FAILED",
     };
   }
+}
+
+function isDuplicateRewardError(err: unknown): boolean {
+  return (
+    err !== null &&
+    typeof err === "object" &&
+    "code" in err &&
+    (err as { code?: number }).code === 11000
+  );
 }

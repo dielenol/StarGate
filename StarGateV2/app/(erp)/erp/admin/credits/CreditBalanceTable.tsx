@@ -27,7 +27,13 @@ interface Props {
   onSelectOwner: (ownerId: string) => void;
 }
 
-type SortKey = "balance-desc" | "balance-asc" | "codename" | "lastTx";
+type SortKey =
+  | "balance-desc"
+  | "balance-asc"
+  | "points-desc"
+  | "points-asc"
+  | "codename"
+  | "lastTx";
 
 const RANK_TONES: Record<
   string,
@@ -60,6 +66,16 @@ function compareRows(a: AgentBalanceRow, b: AgentBalanceRow, key: SortKey): numb
     case "balance-asc":
       if (a.balance !== b.balance) return a.balance - b.balance;
       return a.characterCodename.localeCompare(b.characterCodename);
+    case "points-desc":
+      if (b.pointBalance !== a.pointBalance) {
+        return b.pointBalance - a.pointBalance;
+      }
+      return a.characterCodename.localeCompare(b.characterCodename);
+    case "points-asc":
+      if (a.pointBalance !== b.pointBalance) {
+        return a.pointBalance - b.pointBalance;
+      }
+      return a.characterCodename.localeCompare(b.characterCodename);
     case "codename":
       return a.characterCodename.localeCompare(b.characterCodename);
     case "lastTx": {
@@ -73,8 +89,10 @@ function compareRows(a: AgentBalanceRow, b: AgentBalanceRow, key: SortKey): numb
 }
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "balance-desc", label: "잔액 ↓" },
-  { key: "balance-asc", label: "잔액 ↑" },
+  { key: "balance-desc", label: "크레딧 ↓" },
+  { key: "balance-asc", label: "크레딧 ↑" },
+  { key: "points-desc", label: "포인트 ↓" },
+  { key: "points-asc", label: "포인트 ↑" },
   { key: "codename", label: "코드네임" },
   { key: "lastTx", label: "최근 거래" },
 ];
@@ -153,7 +171,8 @@ export default function CreditBalanceTable({
                 <th>소유자</th>
                 <th>Discord</th>
                 <th>등급</th>
-                <th className={styles.credits__numCol}>잔액</th>
+                <th className={styles.credits__numCol}>크레딧</th>
+                <th className={styles.credits__numCol}>포인트</th>
                 <th className={styles.credits__dateCol}>최근 거래</th>
                 <th className={styles.credits__numCol}>액션</th>
               </tr>
@@ -191,6 +210,9 @@ export default function CreditBalanceTable({
                     </td>
                     <td className={styles.credits__numCol}>
                       ¤ {row.balance.toLocaleString()}
+                    </td>
+                    <td className={styles.credits__numCol}>
+                      PT {row.pointBalance.toLocaleString()}
                     </td>
                     <td className={styles.credits__dateCol}>
                       {row.lastTxAt ? formatDate(new Date(row.lastTxAt)) : "—"}

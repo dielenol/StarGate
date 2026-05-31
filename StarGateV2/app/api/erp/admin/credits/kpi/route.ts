@@ -1,8 +1,8 @@
 /**
  * GM 크레딧 운영 대시보드 KPI.
  *
- * 응답: CreditKpiSnapshot { totalBalance, activeAgentCount, totalGranted24h,
- * totalDeducted24h, opPoolBalance, opPoolUpdatedAt, generatedAt }
+ * 응답: CreditKpiSnapshot { totalBalance, totalPointBalance, activeAgentCount,
+ * totalGranted24h, totalDeducted24h, opPoolBalance, opPoolUpdatedAt, generatedAt }
  *
  * 응답 코드: 401 (미인증) / 403 (GM 미만) / 500 (집계 실패).
  * Cache: no-store (실시간 운영 정보).
@@ -42,6 +42,10 @@ export async function GET() {
     // (Phase 2 정책 — 1인 1 MAIN, MINI/NPC 제외 + 더미 isPublic=false 제외.)
     const mainCharacters = await listPublicMainAgentCharacters();
     const characterIds = mainCharacters.map((c) => String(c._id));
+    const totalPointBalance = mainCharacters.reduce(
+      (sum, character) => sum + (character.play.points ?? 0),
+      0,
+    );
 
     const [balanceAgg, activity24h, opPool] = await Promise.all([
       sumLatestBalancesByCharacterIds(characterIds),
@@ -51,6 +55,7 @@ export async function GET() {
 
     const snapshot: CreditKpiSnapshot = {
       totalBalance: balanceAgg.totalBalance,
+      totalPointBalance,
       activeAgentCount: characterIds.length,
       totalGranted24h: activity24h.granted,
       totalDeducted24h: activity24h.deducted,

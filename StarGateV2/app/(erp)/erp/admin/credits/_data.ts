@@ -14,6 +14,7 @@ import type {
   CreditTransactionPage,
   SessionRewardCandidate,
 } from "@/types/credit-admin";
+import type { AgentCharacter } from "@stargate/shared-db";
 
 import {
   findMainCharacterByOwner,
@@ -50,9 +51,11 @@ const INITIAL_LOG_LIMIT = 50;
  * GM 이 명시적으로 `characterId=<dummy_id>` 단건 필터를 입력한 경우는
  * 그 의도를 존중하고 본 helper 의 화이트리스트는 무시 (log 라우트의 정책).
  */
-export async function listPublicMainAgentCharacters() {
+export async function listPublicMainAgentCharacters(): Promise<AgentCharacter[]> {
   const all = await listAgentCharacters("MAIN");
-  return all.filter((c) => c.isPublic !== false);
+  return all.filter((c): c is AgentCharacter => {
+    return c.type === "AGENT" && c.isPublic !== false;
+  });
 }
 
 /* ── KPI ── */
@@ -60,6 +63,10 @@ export async function listPublicMainAgentCharacters() {
 export async function buildInitialKpi(): Promise<CreditKpiSnapshot> {
   const mains = await listPublicMainAgentCharacters();
   const ids = mains.map((c) => String(c._id));
+  const totalPointBalance = mains.reduce(
+    (sum, character) => sum + (character.play.points ?? 0),
+    0,
+  );
 
   const [balanceAgg, activity24h, opPool] = await Promise.all([
     sumLatestBalancesByCharacterIds(ids),
@@ -69,6 +76,7 @@ export async function buildInitialKpi(): Promise<CreditKpiSnapshot> {
 
   return {
     totalBalance: balanceAgg.totalBalance,
+    totalPointBalance,
     activeAgentCount: ids.length,
     totalGranted24h: activity24h.granted,
     totalDeducted24h: activity24h.deducted,
@@ -133,6 +141,7 @@ export async function buildInitialBalances(): Promise<{
         ownerDiscordId: owner?.discordId ?? null,
         agentLevel: character.agentLevel ?? "U",
         balance,
+        pointBalance: character.play.points ?? 0,
         lastTxAt,
       };
     },

@@ -1,7 +1,12 @@
 .select {
+  appearance: none;
+  -webkit-appearance: none;
   width: 100%;
-  padding: 9px 12px;
-  background: var(--bg-2);
+  padding: 9px 36px 9px 12px;
+  background:
+    linear-gradient(45deg, transparent 50%, var(--ink-2) 50%) calc(100% - 18px) 50% / 6px 6px no-repeat,
+    linear-gradient(135deg, var(--ink-2) 50%, transparent 50%) calc(100% - 13px) 50% / 6px 6px no-repeat,
+    var(--bg-2);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   color: var(--ink-0);

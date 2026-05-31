@@ -4,6 +4,7 @@ import type { CreditTransaction, CreditTransactionType } from "@/types/credit";
 
 export interface CreditKpiSnapshot {
   totalBalance: number;
+  totalPointBalance: number;
   activeAgentCount: number;
   totalGranted24h: number;
   totalDeducted24h: number;
@@ -20,6 +21,7 @@ export interface AgentBalanceRow {
   ownerDiscordId: string | null;
   agentLevel: string;
   balance: number;
+  pointBalance: number;
   lastTxAt: string | null; // ISO
 }
 
@@ -57,6 +59,8 @@ export interface BulkGrantTarget {
 }
 
 export type RewardKind = "CREDIT" | "POINT";
+export type SessionRewardLineKind = "CREDIT" | "POINT" | "STAT";
+export type SessionRewardStatField = "hp" | "san" | "def" | "atk";
 
 export interface BulkGrantInput {
   targets: BulkGrantTarget[];
@@ -73,8 +77,12 @@ export interface BulkGrantResultItem {
   success: boolean;
   transactionId?: string;
   characterCodename?: string;
+  rewardLabel?: string;
+  rewardKind?: SessionRewardLineKind;
+  statField?: SessionRewardStatField;
   newBalance?: number;
   newPointBalance?: number;
+  newStatValue?: number;
   error?: string;
   code?: string;
   /** 멱등 검출 등으로 발급을 건너뛴 경우 (세션 자동 보상에서 사용). */
@@ -115,4 +123,24 @@ export interface SessionRewardCandidate {
   respondents: SessionRespondent[];
   /** status 별 응답자 카운트 — UI 카드에서 즉시 표시. */
   counts: Record<SessionRespondentStatus, number>;
+}
+
+export interface SessionRewardTarget {
+  ownerId?: string;
+  characterId?: string;
+}
+
+export interface SessionRewardLineInput {
+  id?: string;
+  kind: SessionRewardLineKind;
+  amount: number;
+  statField?: SessionRewardStatField;
+  targetCharacterId?: string | null;
+}
+
+export interface SessionRewardGrantInput {
+  sessionId: string;
+  description: string;
+  participants: SessionRewardTarget[];
+  rewards: SessionRewardLineInput[];
 }

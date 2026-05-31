@@ -29,7 +29,15 @@ export default function CreditKpiBoard({ initialData }: Props) {
         <div className={styles.credits__bigNum}>
           ¤ {kpi.totalBalance.toLocaleString()}
         </div>
-        <Eyebrow>전체 발행량</Eyebrow>
+        <Eyebrow>크레딧 전체 발행량</Eyebrow>
+      </Box>
+
+      <Box>
+        <PanelTitle>BONUS POINTS</PanelTitle>
+        <div className={styles.credits__bigNum}>
+          PT {kpi.totalPointBalance.toLocaleString()}
+        </div>
+        <Eyebrow>현재 보너스 포인트 합계</Eyebrow>
       </Box>
 
       <Box>

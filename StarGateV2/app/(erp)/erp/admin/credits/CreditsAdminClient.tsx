@@ -63,6 +63,7 @@ export default function CreditsAdminClient({
 
       <CreditSessionRewardPanel
         initialCandidates={initialSessionCandidates}
+        grantTargets={grantTargets}
       />
 
       <Box>

@@ -1,6 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import type { BulkGrantResult, RewardKind } from "@/types/credit-admin";
+import type {
+  BulkGrantResult,
+  SessionRewardGrantInput,
+} from "@/types/credit-admin";
 
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
 import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
@@ -17,18 +20,13 @@ import { characterKeys, personnelKeys } from "@/hooks/queries/useCharactersQuery
  * onSuccess 시 세션 후보 캐시(daysBack 별) 도 함께 invalidate 되어
  * already-rewarded 카운트 즉시 갱신.
  */
-interface SessionRewardInput {
-  sessionId: string;
-  amount: number;
-  rewardKind?: RewardKind;
-  description?: string;
-}
-
 export function useSessionRewardMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: SessionRewardInput): Promise<BulkGrantResult> => {
+    mutationFn: async (
+      input: SessionRewardGrantInput,
+    ): Promise<BulkGrantResult> => {
       const res = await fetch("/api/erp/admin/credits/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

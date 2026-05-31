@@ -6,6 +6,8 @@ import type { Db } from "mongodb";
  * - `{ characterId: 1, createdAt: -1 }` — 특정 캐릭터의 변경 타임라인 조회
  * - `{ actorId: 1, createdAt: -1 }` — 쿨다운/actor별 이력 조회
  * - `{ revertedAt: 1 }` — revert 상태 필터 (sparse).
+ * - `{ metadata.sessionId: 1, characterId: 1 }` — POINT 세션 자동 보상 멱등 backstop.
+ * - `{ metadata.sessionId: 1, characterId: 1, metadata.statField: 1 }` — STAT 세션 보상 멱등.
  *   TODO: 신규 로그가 항상 `revertedAt: null` 을 명시 저장하므로 sparse 효과 0.
  *   운영 인덱스 drop+rebuild 마이그레이션 후 `partialFilterExpression: { revertedAt: { $type: "date" } }`
  *   로 교체 권장. 현재는 기존 인덱스와의 IndexKeySpecsConflict 회피 위해 sparse 유지.
@@ -35,6 +37,36 @@ export async function ensureChangeLogsIndexes(db: Db): Promise<void> {
         name: "character_change_logs_revertedAt",
         background: true,
         sparse: true,
+      },
+    ),
+    col.createIndex(
+      { "metadata.sessionId": 1, characterId: 1 },
+      {
+        name: "character_change_logs_pointSessionReward_unique",
+        unique: true,
+        background: true,
+        partialFilterExpression: {
+          "metadata.autoReward": true,
+          "metadata.rewardKind": "POINT",
+          revertedAt: null,
+        },
+      },
+    ),
+    col.createIndex(
+      {
+        "metadata.sessionId": 1,
+        characterId: 1,
+        "metadata.statField": 1,
+      },
+      {
+        name: "character_change_logs_statSessionReward_unique",
+        unique: true,
+        background: true,
+        partialFilterExpression: {
+          "metadata.autoReward": true,
+          "metadata.rewardKind": "STAT",
+          revertedAt: null,
+        },
       },
     ),
   ]);

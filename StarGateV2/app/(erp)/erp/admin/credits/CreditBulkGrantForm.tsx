@@ -35,6 +35,18 @@ const REWARD_KINDS: { value: RewardKind; label: string }[] = [
 
 const MAX_TARGETS = 100;
 
+function getRewardUnit(kind: RewardKind): string {
+  return kind === "POINT" ? "PT" : "CR";
+}
+
+function getRewardAmountLabel(kind: RewardKind): string {
+  return kind === "POINT" ? "포인트" : "크레딧";
+}
+
+function getBalanceColumnLabel(kind: RewardKind): string {
+  return kind === "POINT" ? "새 포인트" : "새 크레딧";
+}
+
 /* ── 타입 ── */
 
 /**
@@ -231,7 +243,7 @@ export default function CreditBulkGrantForm({
   function validate(): string | null {
     const numAmount = Number(amount);
     if (!Number.isFinite(numAmount) || numAmount === 0) {
-      return "유효한 금액을 입력하세요 (0 또는 NaN 불가).";
+      return `유효한 ${getRewardAmountLabel(rewardKind)}을 입력하세요 (0 또는 NaN 불가).`;
     }
     if (selectedCount === 0) {
       return mode === "picker"
@@ -369,9 +381,11 @@ export default function CreditBulkGrantForm({
                 <tr>
                   <th>결과</th>
                   <th>코드네임</th>
-                  <th className={styles.bulk__numCol}>발급액</th>
-                  <th className={styles.bulk__numCol}>새 잔액</th>
-                  <th>사유 / 거래 ID</th>
+                  <th className={styles.bulk__numCol}>처리 수량</th>
+                  <th className={styles.bulk__numCol}>
+                    {getBalanceColumnLabel(rewardKind)}
+                  </th>
+                  <th>{rewardKind === "POINT" ? "사유 / 기록" : "사유 / 거래 ID"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -398,9 +412,9 @@ export default function CreditBulkGrantForm({
                     </td>
                     <td className={styles.bulk__numCol}>
                       {rewardKind === "POINT" && row.newPointBalance != null
-                        ? row.newPointBalance.toLocaleString()
+                        ? `${row.newPointBalance.toLocaleString()} PT`
                         : row.newBalance != null
-                          ? row.newBalance.toLocaleString()
+                          ? `${row.newBalance.toLocaleString()} CR`
                           : "-"}
                     </td>
                     <td>
@@ -583,7 +597,7 @@ export default function CreditBulkGrantForm({
         </label>
 
         <label className={styles.bulk__field}>
-          <Eyebrow>금액</Eyebrow>
+          <Eyebrow>{getRewardAmountLabel(rewardKind)}</Eyebrow>
           <Input
             type="number"
             value={amount}
@@ -592,8 +606,9 @@ export default function CreditBulkGrantForm({
               setError("");
               setPendingConfirm(false);
             }}
-            placeholder="양수 입력"
+            placeholder={`${getRewardUnit(rewardKind)} 양수 입력`}
             min="1"
+            step="1"
             required
           />
         </label>
@@ -634,7 +649,7 @@ export default function CreditBulkGrantForm({
           <span>
             정말 차감하시겠습니까? {selectedCount}명 ×{" "}
             {Math.abs(Number(amount) || 0).toLocaleString()}{" "}
-            {rewardKind === "POINT" ? "PT" : "CR"}
+            {getRewardUnit(rewardKind)}
           </span>
           <span className={styles.bulk__confirmActions}>
             <Button type="button" onClick={cancelConfirm}>
@@ -674,6 +689,6 @@ function formatAmount(
   const n = Math.abs(Number(amount) || 0);
   const signed = type === "ADMIN_DEDUCT" ? -n : n;
   const formatted = signed.toLocaleString();
-  const unit = rewardKind === "POINT" ? "PT" : "CR";
+  const unit = getRewardUnit(rewardKind);
   return `${signed > 0 ? `+${formatted}` : formatted} ${unit}`;
 }

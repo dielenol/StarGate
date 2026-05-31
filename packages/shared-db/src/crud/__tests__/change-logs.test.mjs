@@ -390,7 +390,7 @@ test(
 );
 
 test(
-  "S5-2: ensureChangeLogsIndexes — 3개 인덱스 생성 + 옵션 검증",
+  "S5-2: ensureChangeLogsIndexes — 5개 인덱스 생성 + 옵션 검증",
   { skip: !HAS_DB && SKIP_MSG },
   async () => {
     const db = await getDb();
@@ -404,6 +404,8 @@ test(
       "character_change_logs_characterId_createdAt",
       "character_change_logs_actorId_createdAt",
       "character_change_logs_revertedAt",
+      "character_change_logs_pointSessionReward_unique",
+      "character_change_logs_statSessionReward_unique",
     ];
     for (const name of expectedNames) {
       const idx = indexes.find((i) => i.name === name);
@@ -430,5 +432,34 @@ test(
       (i) => i.name === "character_change_logs_actorId_createdAt"
     );
     assert.deepEqual(actorIdx?.key, { actorId: 1, createdAt: -1 });
+
+    const pointRewardIdx = indexes.find(
+      (i) => i.name === "character_change_logs_pointSessionReward_unique"
+    );
+    assert.deepEqual(pointRewardIdx?.key, {
+      "metadata.sessionId": 1,
+      characterId: 1,
+    });
+    assert.equal(pointRewardIdx?.unique, true);
+    assert.deepEqual(pointRewardIdx?.partialFilterExpression, {
+      "metadata.autoReward": true,
+      "metadata.rewardKind": "POINT",
+      revertedAt: null,
+    });
+
+    const statRewardIdx = indexes.find(
+      (i) => i.name === "character_change_logs_statSessionReward_unique"
+    );
+    assert.deepEqual(statRewardIdx?.key, {
+      "metadata.sessionId": 1,
+      characterId: 1,
+      "metadata.statField": 1,
+    });
+    assert.equal(statRewardIdx?.unique, true);
+    assert.deepEqual(statRewardIdx?.partialFilterExpression, {
+      "metadata.autoReward": true,
+      "metadata.rewardKind": "STAT",
+      revertedAt: null,
+    });
   }
 );

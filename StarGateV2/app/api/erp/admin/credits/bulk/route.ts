@@ -109,6 +109,14 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const rewardKind: RewardKind =
+    body.rewardKind === "POINT" ? "POINT" : "CREDIT";
+  if (rewardKind === "POINT" && !Number.isInteger(body.amount)) {
+    return NextResponse.json(
+      { error: "POINT 조정 amount는 정수여야 합니다." },
+      { status: 400 },
+    );
+  }
 
   if (typeof body.description !== "string") {
     return NextResponse.json(
@@ -175,9 +183,6 @@ export async function POST(request: Request) {
   const validatedType = body.type;
   const validatedAmount = body.amount;
   const description = body.description;
-  const rewardKind: RewardKind =
-    body.rewardKind === "POINT" ? "POINT" : "CREDIT";
-
   // ADMIN_DEDUCT 는 음수, 그 외는 양수.
   const finalAmount =
     validatedType === "ADMIN_DEDUCT" ? -validatedAmount : validatedAmount;
@@ -346,6 +351,7 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
         ownerId: targetOwnerId,
         characterId: targetCharacterId,
         success: true,
+        transactionId: pointResult.changeLogId,
         characterCodename: targetCharacterCodename,
         newPointBalance: pointResult.after,
       };

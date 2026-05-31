@@ -88,6 +88,7 @@ export async function GET() {
           ownerDiscordId: owner?.discordId ?? null,
           agentLevel: character.agentLevel ?? "U",
           balance,
+          pointBalance: character.play.points ?? 0,
           lastTxAt,
         };
       },
