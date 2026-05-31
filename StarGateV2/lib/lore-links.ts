@@ -19,6 +19,7 @@ export interface RelatedPersonnelLink {
   role: string;
   type: Character["type"];
   agentLevel?: Character["agentLevel"];
+  aliases?: string[];
 }
 
 export interface RelatedReportLink {
@@ -171,6 +172,7 @@ export function toRelatedPersonnelLink(
     role: character.role,
     type: character.type,
     agentLevel: character.agentLevel,
+    aliases: character.lore.loreTags ?? [],
   };
 }
 

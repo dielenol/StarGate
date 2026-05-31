@@ -15,6 +15,7 @@ import {
   formatShortReporterName,
 } from "@/lib/format/session-report";
 import {
+  type RelatedPersonnelLink,
   relatedPersonnelForReport,
   relatedWikiForReport,
 } from "@/lib/lore-links";
@@ -25,8 +26,6 @@ import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
-import Stack from "@/components/ui/Stack/Stack";
-import Tag from "@/components/ui/Tag/Tag";
 
 import ReportActions from "./ReportActions";
 
@@ -45,6 +44,46 @@ function formatMapPrecision(precision?: string): string {
   if (precision === "confirmed") return "확정";
   if (precision === "estimated") return "추정";
   return "미등록";
+}
+
+function normalizePersonnelLabel(value: string): string {
+  return value
+    .normalize("NFKC")
+    .toUpperCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+function personnelLinkKeys(personnel: RelatedPersonnelLink): string[] {
+  const keys = new Set<string>();
+
+  for (const value of [
+    personnel.codename,
+    personnel.name,
+    ...(personnel.aliases ?? []),
+  ]) {
+    const normalized = normalizePersonnelLabel(value);
+    if (normalized) keys.add(normalized);
+  }
+
+  const baseCodename = personnel.codename.split(/[-(]/u)[0];
+  const normalizedBase = normalizePersonnelLabel(baseCodename);
+  if (normalizedBase) keys.add(normalizedBase);
+
+  return [...keys];
+}
+
+function findPersonnelForParticipant(
+  participant: string,
+  personnelLinks: RelatedPersonnelLink[],
+): RelatedPersonnelLink | null {
+  const participantKey = normalizePersonnelLabel(participant);
+  if (!participantKey) return null;
+
+  return (
+    personnelLinks.find((personnel) =>
+      personnelLinkKeys(personnel).includes(participantKey),
+    ) ?? null
+  );
 }
 
 export default async function SessionReportDetailPage({ params }: Props) {
@@ -72,7 +111,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const mapLocationLabel = report.locationLabel || "작전지 미등록";
   const mapCoordinate = formatMapCoordinate(report.mapX, report.mapY);
   const mapPrecision = formatMapPrecision(report.mapPrecision);
-  const dossierLead = report.locationLabel
+  const reportLead = report.locationLabel
     ? `${mapLocationLabel}에서 기록된 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.`
     : "작전지 좌표가 아직 등록되지 않은 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.";
   const allPages = await listWikiPages().catch(() => []);
@@ -90,6 +129,24 @@ export default async function SessionReportDetailPage({ params }: Props) {
     report,
     visibleCharacters,
   );
+  const participantEntries = report.participants.map((participant) => ({
+    label: participant,
+    personnel: findPersonnelForParticipant(participant, relatedPersonnelLinks),
+  }));
+  const linkedParticipantIds = new Set(
+    participantEntries
+      .map((entry) => entry.personnel?.id)
+      .filter((id): id is string => Boolean(id)),
+  );
+  const relatedContextPersonnelLinks = relatedPersonnelLinks.filter(
+    (personnel) => !linkedParticipantIds.has(personnel.id),
+  );
+  const personnelPanelTitle =
+    participantEntries.length > 0 ? "참여 인원" : "관련 인물 기록";
+  const personnelPanelCount =
+    participantEntries.length > 0
+      ? participantEntries.length
+      : relatedContextPersonnelLinks.length;
 
   return (
     <>
@@ -117,9 +174,9 @@ export default async function SessionReportDetailPage({ params }: Props) {
           <IconReportDocument />
         </div>
         <div className={styles.dossierHero__body}>
-          <Eyebrow tone="gold">OPERATION DOSSIER</Eyebrow>
+          <Eyebrow tone="gold">OPERATION REPORT</Eyebrow>
           <h2 className={styles.dossierHero__title}>{displayTitle}</h2>
-          <p className={styles.dossierHero__lead}>{dossierLead}</p>
+          <p className={styles.dossierHero__lead}>{reportLead}</p>
         </div>
         <dl className={styles.dossierHero__meta}>
           <div className={styles.dossierMetric}>
@@ -140,7 +197,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
       <div className={styles.layout}>
         <div className={styles.side}>
           <Box className={styles.reportPanel}>
-            <PanelTitle>METADATA</PanelTitle>
+            <PanelTitle>기록 정보</PanelTitle>
             <dl className={styles.kv}>
               <div className={styles.kv__row}>
                 <dt>보고자</dt>
@@ -186,7 +243,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
                   </span>
                 }
               >
-                RELATED WIKI
+                관련 위키
               </PanelTitle>
               <nav className={styles.relatedWiki} aria-label="관련 위키 문서">
                 {relatedWikiLinks.map((page) => (
@@ -216,11 +273,11 @@ export default async function SessionReportDetailPage({ params }: Props) {
                   </span>
                 }
               >
-                RELATED CATALOG
+                관련 카탈로그
               </PanelTitle>
               <nav
                 className={styles.relatedWiki}
-                aria-label="Related catalog items"
+                aria-label="관련 카탈로그 항목"
               >
                 {relatedCatalogItems.map((item) => (
                   <Link
@@ -245,64 +302,85 @@ export default async function SessionReportDetailPage({ params }: Props) {
             </Box>
           ) : null}
 
-          {relatedPersonnelLinks.length > 0 ? (
+          {participantEntries.length > 0 ||
+          relatedContextPersonnelLinks.length > 0 ? (
             <Box className={styles.reportPanel}>
               <PanelTitle
                 right={
                   <span className={styles.mono}>
-                    {relatedPersonnelLinks.length}
+                    {personnelPanelCount}
                   </span>
                 }
               >
-                RELATED DOSSIER
+                {personnelPanelTitle}
               </PanelTitle>
-              <nav className={styles.relatedWiki} aria-label="관련 인물 Dossier">
-                {relatedPersonnelLinks.map((character) => (
-                  <Link
-                    key={character.id}
-                    href={`/erp/personnel/${character.id}`}
-                    className={styles.relatedWiki__link}
-                  >
-                    <span className={styles.relatedWiki__category}>
-                      {character.type} · {character.agentLevel ?? "U"}
-                    </span>
-                    <span className={styles.relatedWiki__title}>
-                      {character.name}
-                    </span>
-                    <span className={styles.relatedWiki__note}>
-                      {character.codename} · {character.role}
-                    </span>
-                  </Link>
-                ))}
-              </nav>
-            </Box>
-          ) : null}
+              {participantEntries.length > 0 ? (
+                <nav className={styles.participantList} aria-label="참여 인원">
+                  {participantEntries.map((entry, index) =>
+                    entry.personnel ? (
+                      <Link
+                        key={`${entry.label}-${index}`}
+                        href={`/erp/personnel/${entry.personnel.id}`}
+                        className={styles.participantLink}
+                      >
+                        <span className={styles.participantLink__label}>
+                          {entry.label}
+                        </span>
+                        <span className={styles.participantLink__meta}>
+                          인물 기록 · {entry.personnel.name}
+                        </span>
+                      </Link>
+                    ) : (
+                      <span
+                        key={`${entry.label}-${index}`}
+                        className={styles.participantChip}
+                      >
+                        {entry.label}
+                      </span>
+                    ),
+                  )}
+                </nav>
+              ) : null}
 
-          {report.participants.length > 0 ? (
-            <Box className={styles.reportPanel}>
-              <PanelTitle
-                right={
-                  <span className={styles.mono}>
-                    {report.participants.length}
-                  </span>
-                }
-              >
-                PARTICIPANTS
-              </PanelTitle>
-              <Stack gap={6}>
-                {report.participants.map((p, i) => (
-                  <Tag key={i} tone="success">
-                    {p}
-                  </Tag>
-                ))}
-              </Stack>
+              {relatedContextPersonnelLinks.length > 0 ? (
+                <div className={styles.contextPersonnel}>
+                  <div className={styles.contextPersonnel__label}>
+                    관련 인물 기록
+                    <span className={styles.contextPersonnel__count}>
+                      {relatedContextPersonnelLinks.length}
+                    </span>
+                  </div>
+                  <nav
+                    className={styles.relatedWiki}
+                    aria-label="관련 인물 기록"
+                  >
+                    {relatedContextPersonnelLinks.map((character) => (
+                      <Link
+                        key={character.id}
+                        href={`/erp/personnel/${character.id}`}
+                        className={styles.relatedWiki__link}
+                      >
+                        <span className={styles.relatedWiki__category}>
+                          {character.type} · {character.agentLevel ?? "U"}
+                        </span>
+                        <span className={styles.relatedWiki__title}>
+                          {character.name}
+                        </span>
+                        <span className={styles.relatedWiki__note}>
+                          {character.codename} · {character.role}
+                        </span>
+                      </Link>
+                    ))}
+                  </nav>
+                </div>
+              ) : null}
             </Box>
           ) : null}
         </div>
 
         <div className={styles.main}>
           <Box className={styles.reportPanel}>
-            <PanelTitle>REPORT DOSSIER</PanelTitle>
+            <PanelTitle>작전 본문</PanelTitle>
             <div
               className={styles.reportBody}
               dangerouslySetInnerHTML={{ __html: summaryHtml }}
@@ -318,7 +396,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
                   </span>
                 }
               >
-                TACTICAL SEQUENCE
+                전개 기록
               </PanelTitle>
               <ul className={styles.list}>
                 {report.highlights.map((h, i) => (
