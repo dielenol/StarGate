@@ -4,15 +4,16 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
+  gap: 4px;
+  padding: 2px 7px;
   border: 1px solid var(--rank-active-marker, var(--gold-dim));
   border-radius: var(--radius-sm);
   color: var(--rank-active-text, var(--gold));
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.2em;
+  font-size: 12px;
+  letter-spacing: 0.08em;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .badge::before {
