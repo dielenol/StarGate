@@ -8,12 +8,25 @@ import Input from "@/components/ui/Input/Input";
 
 const DEBOUNCE_MS = 500;
 
-export default function WikiSearchBar() {
+interface WikiSearchBarProps {
+  value?: string;
+  onSearch?: (query: string) => void;
+}
+
+export default function WikiSearchBar({
+  value,
+  onSearch,
+}: WikiSearchBarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [value, setValue] = useState(searchParams.get("q") ?? "");
+  const queryValue = value ?? searchParams.get("q") ?? "";
+  const [inputValue, setInputValue] = useState(queryValue);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setInputValue(queryValue);
+  }, [queryValue]);
 
   useEffect(() => {
     return () => {
@@ -23,11 +36,16 @@ export default function WikiSearchBar() {
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const next = e.target.value;
-    setValue(next);
+    setInputValue(next);
 
     if (timerRef.current) clearTimeout(timerRef.current);
 
     timerRef.current = setTimeout(() => {
+      if (onSearch) {
+        onSearch(next.trim());
+        return;
+      }
+
       const params = new URLSearchParams(searchParams.toString());
 
       if (next.trim()) {
@@ -45,9 +63,9 @@ export default function WikiSearchBar() {
     <Input
       aria-label="위키 문서 검색"
       onChange={handleChange}
-      placeholder="제목 · 내용 · 태그 검색"
+      placeholder="제목, 내용, 태그 검색"
       type="search"
-      value={value}
+      value={inputValue}
     />
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 
@@ -35,6 +35,53 @@ interface Props {
   isGM: boolean;
 }
 
+function wikiListHref(category?: string, q?: string): string {
+  const params = new URLSearchParams();
+  if (q?.trim()) params.set("q", q.trim());
+  else if (category) params.set("category", category);
+  const qs = params.toString();
+  return qs ? `/erp/wiki?${qs}` : "/erp/wiki";
+}
+
+function pushWikiListUrl(category?: string, q?: string): void {
+  window.history.pushState(null, "", wikiListHref(category, q));
+}
+
+function shouldUseClientNavigation(
+  event: React.MouseEvent<HTMLAnchorElement>,
+): boolean {
+  return (
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
+}
+
+function searchHaystack(page: WikiPage): string {
+  return `${page.title} ${page.content} ${page.tags?.join(" ") ?? ""}`.toLowerCase();
+}
+
+function filterWikiPages(
+  pages: WikiPage[],
+  category?: string,
+  q?: string,
+): WikiPage[] {
+  const query = q?.trim().toLowerCase();
+  if (query) {
+    return pages
+      .filter((page) => searchHaystack(page).includes(query))
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )
+      .slice(0, 50);
+  }
+  if (category) return pages.filter((page) => page.category === category);
+  return pages;
+}
+
 export default function WikiClient({
   initialPages,
   allPages,
@@ -43,49 +90,107 @@ export default function WikiClient({
   currentQuery,
   isGM,
 }: Props) {
+  const [activeCategory, setActiveCategory] = useState<string | undefined>(
+    currentQuery ? undefined : currentCategory,
+  );
+  const [activeQuery, setActiveQuery] = useState(currentQuery ?? "");
+
+  useEffect(() => {
+    function handlePopState() {
+      const params = new URLSearchParams(window.location.search);
+      const nextQuery = params.get("q") ?? "";
+      setActiveQuery(nextQuery);
+      setActiveCategory(
+        nextQuery ? undefined : (params.get("category") ?? undefined),
+      );
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   const sortedCategories = useMemo(
     () => sortWikiCategories(categories),
     [categories],
   );
 
-  const { data: pages = [] } = useWikiPages(
-    currentCategory || currentQuery
-      ? { category: currentCategory, q: currentQuery }
-      : undefined,
-    { initialData: initialPages },
+  const seedPages = allPages.length > 0 ? allPages : initialPages;
+  const { data: cachedPages = seedPages } = useWikiPages(undefined, {
+    initialData: seedPages,
+  });
+
+  const activeQueryTrimmed = activeQuery.trim();
+
+  const pages = useMemo(
+    () => filterWikiPages(cachedPages, activeCategory, activeQueryTrimmed),
+    [cachedPages, activeCategory, activeQueryTrimmed],
+  );
+
+  const handleCategoryNav = useCallback(
+    (nextCategory?: string) =>
+      (event: React.MouseEvent<HTMLAnchorElement>) => {
+        if (!shouldUseClientNavigation(event)) return;
+        event.preventDefault();
+        setActiveCategory(nextCategory);
+        setActiveQuery("");
+        pushWikiListUrl(nextCategory);
+      },
+    [],
+  );
+
+  const handleSearch = useCallback((nextQuery: string) => {
+    const trimmed = nextQuery.trim();
+    setActiveQuery(trimmed);
+    if (trimmed) {
+      setActiveCategory(undefined);
+      pushWikiListUrl(undefined, trimmed);
+    } else {
+      pushWikiListUrl(undefined);
+    }
+  }, []);
+
+  const handleClearFilter = useCallback(
+    (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (!shouldUseClientNavigation(event)) return;
+      event.preventDefault();
+      setActiveCategory(undefined);
+      setActiveQuery("");
+      pushWikiListUrl(undefined);
+    },
+    [],
   );
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const p of allPages) {
+    for (const p of cachedPages) {
       counts[p.category] = (counts[p.category] ?? 0) + 1;
     }
     return counts;
-  }, [allPages]);
+  }, [cachedPages]);
 
   const recent = useMemo(
     () =>
-      [...allPages]
+      [...cachedPages]
         .sort(
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
         )
         .slice(0, 5),
-    [allPages],
+    [cachedPages],
   );
 
-  const totalCount = allPages.length;
+  const totalCount = cachedPages.length;
   const visibleCount = pages.length;
-  const noFilter = !currentCategory && !currentQuery;
-  const resultTitle = currentQuery
+  const noFilter = !activeCategory && !activeQueryTrimmed;
+  const resultTitle = activeQueryTrimmed
     ? "검색 결과"
-    : currentCategory
-      ? `${currentCategory} 문서`
+    : activeCategory
+      ? `${activeCategory} 문서`
       : "전체 문서";
-  const resultSubtitle = currentQuery
-    ? `"${currentQuery}" 검색어로 제목, 본문, 태그를 조회한 결과입니다.`
-    : currentCategory
-      ? `${currentCategory} 카테고리에 등록된 문서만 표시합니다.`
+  const resultSubtitle = activeQueryTrimmed
+    ? `"${activeQueryTrimmed}" 검색어로 제목, 본문, 태그를 조회한 결과입니다.`
+    : activeCategory
+      ? `${activeCategory} 카테고리에 등록된 문서만 표시합니다.`
       : "공개 위키와 내부 문서 전체를 카테고리 기준으로 탐색합니다.";
 
   return (
@@ -106,13 +211,13 @@ export default function WikiClient({
       />
 
       <div className={styles.layout}>
-        {/* ── Left: category nav ── */}
         <Box className={styles.nav}>
           <Eyebrow>CATEGORIES</Eyebrow>
           <ul className={styles.nav__list}>
             <li>
               <Link
                 href="/erp/wiki"
+                onClick={handleCategoryNav(undefined)}
                 className={[
                   styles.nav__item,
                   noFilter ? styles["nav__item--active"] : "",
@@ -129,11 +234,12 @@ export default function WikiClient({
               </Link>
             </li>
             {sortedCategories.map((cat) => {
-              const active = currentCategory === cat;
+              const active = activeCategory === cat;
               return (
                 <li key={cat}>
                   <Link
-                    href={`/erp/wiki?category=${encodeURIComponent(cat)}`}
+                    href={wikiListHref(cat)}
+                    onClick={handleCategoryNav(cat)}
                     className={[
                       styles.nav__item,
                       active ? styles["nav__item--active"] : "",
@@ -156,9 +262,8 @@ export default function WikiClient({
           </ul>
         </Box>
 
-        {/* ── Center: search + article list ── */}
         <div className={styles.body}>
-          <WikiSearchBar />
+          <WikiSearchBar value={activeQuery} onSearch={handleSearch} />
 
           <Box className={styles.index}>
             <div className={styles.index__head}>
@@ -173,16 +278,22 @@ export default function WikiClient({
               </div>
             </div>
 
-            {currentCategory || currentQuery ? (
+            {activeCategory || activeQueryTrimmed ? (
               <div className={styles.filterBar}>
                 <span className={styles.filterBar__label}>현재 필터</span>
-                {currentCategory ? (
-                  <Tag tone={wikiCategoryTone(currentCategory)}>
-                    {currentCategory}
+                {activeCategory ? (
+                  <Tag tone={wikiCategoryTone(activeCategory)}>
+                    {activeCategory}
                   </Tag>
                 ) : null}
-                {currentQuery ? <Tag tone="info">{currentQuery}</Tag> : null}
-                <Link href="/erp/wiki" className={styles.filterBar__clear}>
+                {activeQueryTrimmed ? (
+                  <Tag tone="info">{activeQueryTrimmed}</Tag>
+                ) : null}
+                <Link
+                  href="/erp/wiki"
+                  className={styles.filterBar__clear}
+                  onClick={handleClearFilter}
+                >
                   필터 해제
                 </Link>
               </div>
@@ -190,8 +301,8 @@ export default function WikiClient({
 
             {pages.length === 0 ? (
               <div className={styles.empty}>
-                {currentQuery
-                  ? `"${currentQuery}"에 대한 검색 결과가 없습니다.`
+                {activeQueryTrimmed
+                  ? `"${activeQueryTrimmed}"에 대한 검색 결과가 없습니다.`
                   : "등록된 문서가 없습니다."}
               </div>
             ) : (
@@ -237,7 +348,6 @@ export default function WikiClient({
           </Box>
         </div>
 
-        {/* ── Right: index stats + recent updates ── */}
         <Box className={`${styles.aside} ${styles.layout__aside}`}>
           <div className={styles.aside__section}>
             <h2 className={styles.aside__title}>문서 현황</h2>
@@ -260,7 +370,7 @@ export default function WikiClient({
           <div className={styles.aside__section}>
             <h2 className={styles.aside__title}>최근 갱신 문서</h2>
             {recent.length === 0 ? (
-              <span className={styles.aside__link}>—</span>
+              <span className={styles.aside__link}>-</span>
             ) : (
               <ul className={styles.aside__list}>
                 {recent.map((p) => (
