@@ -472,6 +472,8 @@ export default function PersonnelClient({
   const selectedGroupKind = selectedGroup
     ? getGroupKind(selectedGroup)
     : "faction";
+  const selectedGroupUsesAgentLevels =
+    !selectedGroup || getFactionScope(selectedGroup) !== "external";
 
   // 검색 배너 표시 조건 (L2 에서 다른 그룹에도 매칭이 있을 때)
   const searchBannerInfo = useMemo(() => {
@@ -598,7 +600,11 @@ export default function PersonnelClient({
             key={String(c._id)}
             character={c}
             showIdentity={showIdentity}
-            isLead={compareLevels(c.agentLevel ?? "J", "A") >= 0}
+            showAgentLevel={selectedGroupUsesAgentLevels}
+            isLead={
+              selectedGroupUsesAgentLevels &&
+              compareLevels(c.agentLevel ?? "J", "A") >= 0
+            }
             isRedacted={
               !canViewField(clearance, "identity") &&
               !canViewField(clearance, "profile")
@@ -708,7 +714,11 @@ export default function PersonnelClient({
                   ? getInstitutionDoctrine(selectedGroup)
                   : undefined
             }
-            levelCounts={canvasGroupLevelCounts[selectedGroup]}
+            levelCounts={
+              selectedGroupUsesAgentLevels
+                ? canvasGroupLevelCounts[selectedGroup]
+                : undefined
+            }
             oversight={
               selectedGroupKind === "institution"
                 ? INSTITUTION_OVERSIGHT[selectedGroup]
@@ -762,46 +772,48 @@ export default function PersonnelClient({
       )}
 
       {/* Legend */}
-      <Box className={styles.legend}>
-        <div className={styles.legend__row}>
-          {LEGEND_ITEMS.map((item) => (
-            <div key={item.level} className={styles.legend__item}>
-              <span
-                className={styles.lvScale}
-                data-level={item.level}
-                aria-hidden
-              >
-                {Array.from({ length: 7 }, (_, i) => (
-                  <span
-                    key={i}
-                    className={
-                      i < getLevelDisplayRank(item.level)
-                        ? styles["lvScale--on"]
-                        : ""
-                    }
-                  />
-                ))}
-              </span>
-              <span
-                className={styles.legend__label}
-                data-level={item.level}
-              >
-                {item.level} · {item.label}
+      {selectedGroupUsesAgentLevels ? (
+        <Box className={styles.legend}>
+          <div className={styles.legend__row}>
+            {LEGEND_ITEMS.map((item) => (
+              <div key={item.level} className={styles.legend__item}>
+                <span
+                  className={styles.lvScale}
+                  data-level={item.level}
+                  aria-hidden
+                >
+                  {Array.from({ length: 7 }, (_, i) => (
+                    <span
+                      key={i}
+                      className={
+                        i < getLevelDisplayRank(item.level)
+                          ? styles["lvScale--on"]
+                          : ""
+                      }
+                    />
+                  ))}
+                </span>
+                <span
+                  className={styles.legend__label}
+                  data-level={item.level}
+                >
+                  {item.level} · {item.label}
+                </span>
+              </div>
+            ))}
+            <div className={styles.legend__item}>
+              <span className={styles.classifiedTag}>CLASSIFIED</span>
+              <span className={styles.legend__label}>등급 미달 · 값 가림</span>
+            </div>
+            <div className={styles.legend__item}>
+              <span className={styles.redactBlock} aria-hidden />
+              <span className={styles.legend__label}>
+                REDACTED · 필드 전체 차단
               </span>
             </div>
-          ))}
-          <div className={styles.legend__item}>
-            <span className={styles.classifiedTag}>CLASSIFIED</span>
-            <span className={styles.legend__label}>등급 미달 · 값 가림</span>
           </div>
-          <div className={styles.legend__item}>
-            <span className={styles.redactBlock} aria-hidden />
-            <span className={styles.legend__label}>
-              REDACTED · 필드 전체 차단
-            </span>
-          </div>
-        </div>
-      </Box>
+        </Box>
+      ) : null}
 
     </>
   );

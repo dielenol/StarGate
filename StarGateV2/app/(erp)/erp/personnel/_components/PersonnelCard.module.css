@@ -169,6 +169,11 @@
   color: var(--danger);
 }
 
+.clrPill--external {
+  border-color: var(--line-strong);
+  color: var(--ink-2);
+}
+
 /* Foot */
 
 .foot {

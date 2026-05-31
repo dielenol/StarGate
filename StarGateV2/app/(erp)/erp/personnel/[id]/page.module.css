@@ -60,6 +60,11 @@
   letter-spacing: 0.18em;
 }
 
+.clrPill--external {
+  border-color: var(--line-strong);
+  color: var(--ink-2);
+}
+
 /* Read-only notice */
 
 .readOnlyNotice {

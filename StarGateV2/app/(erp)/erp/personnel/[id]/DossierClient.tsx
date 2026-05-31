@@ -99,6 +99,26 @@ function isRedactedValue(value: unknown): boolean {
   return value === REDACTED || value === "" || value === null || value === undefined;
 }
 
+function resolveCharacterGroup(character: Character): string {
+  const department = character.department;
+  if (department && department !== "UNASSIGNED") {
+    const top = getTopLevelGroup(department);
+    if (top !== "UNASSIGNED") return top;
+  }
+
+  if (character.institutionCode) {
+    const top = getTopLevelGroup(character.institutionCode);
+    return top !== "UNASSIGNED" ? top : character.institutionCode;
+  }
+
+  if (character.factionCode) {
+    const top = getTopLevelGroup(character.factionCode);
+    return top !== "UNASSIGNED" ? top : character.factionCode;
+  }
+
+  return "UNASSIGNED";
+}
+
 /* ── Helper primitives ── */
 
 function ClassifiedValue({
@@ -636,10 +656,19 @@ export default function DossierClient({
   const department = character.department ?? "UNASSIGNED";
   const isAgent = character.type === "AGENT";
 
-  const departmentLabel = getDepartmentLabel(department);
-  const topGroup = getTopLevelGroup(department);
+  const topGroup = resolveCharacterGroup(character);
+  const usesAgentLevels = getFactionScope(topGroup) !== "external";
+  const departmentLabel =
+    topGroup !== "UNASSIGNED" && department === "UNASSIGNED"
+      ? getGroupLabel(topGroup)
+      : getDepartmentLabel(department);
   const subUnitLabel =
-    topGroup !== "UNASSIGNED" && department !== topGroup ? department : "";
+    topGroup !== "UNASSIGNED" &&
+    department !== "UNASSIGNED" &&
+    getTopLevelGroup(department) === topGroup &&
+    department !== topGroup
+      ? department
+      : "";
 
   // 캐릭터별 박스 노출 권한 오버라이드. canViewField / required level 계산에 일관 적용.
   const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
@@ -901,7 +930,11 @@ export default function DossierClient({
    */
   const renderCurrentPosting = () => {
     const typeLabel =
-      character.type === "AGENT" ? "AGENT · 현장 요원" : "NPC · 외부 인사";
+      !usesAgentLevels
+        ? `${character.type} · 외부 기관 인사`
+        : character.type === "AGENT"
+          ? "AGENT · 현장 요원"
+          : "NPC · 외부 인사";
     return (
       <Box>
         <PanelTitle right={<ReqClrBadge required={reqIdentity} locked={!canIdentity} />}>
@@ -915,11 +948,17 @@ export default function DossierClient({
             <KVRow label="소속">
               <span>{departmentLabel || "미배정"}</span>
             </KVRow>
-            <KVRow label="권한등급">
-              <span className={styles.mono}>
-                {level} · {AGENT_LEVEL_LABELS[level]}
-              </span>
-            </KVRow>
+            {usesAgentLevels ? (
+              <KVRow label="권한등급">
+                <span className={styles.mono}>
+                  {level} · {AGENT_LEVEL_LABELS[level]}
+                </span>
+              </KVRow>
+            ) : (
+              <KVRow label="기관 분류">
+                <span className={styles.mono}>외부 기관</span>
+              </KVRow>
+            )}
             <KVRow label="등록일">
               <span className={styles.mono}>
                 {formatDate(character.createdAt)}
@@ -1392,12 +1431,20 @@ export default function DossierClient({
             </div>
 
             <div className={styles.clrPillRow}>
-              <span className={styles.clrPill} data-rank={level}>
-                <span>
-                  대상 권한등급 : {level} - {AGENT_LEVEL_LABELS[level]}
+              {usesAgentLevels ? (
+                <span className={styles.clrPill} data-rank={level}>
+                  <span>
+                    대상 권한등급 : {level} - {AGENT_LEVEL_LABELS[level]}
+                  </span>
+                  <Pips total={7} filled={getLevelDisplayRank(level)} />
                 </span>
-                <Pips total={7} filled={getLevelDisplayRank(level)} />
-              </span>
+              ) : (
+                <span
+                  className={`${styles.clrPill} ${styles["clrPill--external"]}`}
+                >
+                  외부 기관 인사
+                </span>
+              )}
             </div>
           </Box>
 
@@ -1463,15 +1510,17 @@ export default function DossierClient({
                   placeholder="department code"
                   mono
                 />
-                <KVEditSelectRow
-                  label="권한등급"
-                  value={draft.agentLevel}
-                  onChange={(v) => updateDraft("agentLevel", v as AgentLevel)}
-                  options={AGENT_LEVELS.map((l) => ({
-                    value: l,
-                    label: `${l} · ${AGENT_LEVEL_LABELS[l]}`,
-                  }))}
-                />
+                {usesAgentLevels ? (
+                  <KVEditSelectRow
+                    label="권한등급"
+                    value={draft.agentLevel}
+                    onChange={(v) => updateDraft("agentLevel", v as AgentLevel)}
+                    options={AGENT_LEVELS.map((l) => ({
+                      value: l,
+                      label: `${l} · ${AGENT_LEVEL_LABELS[l]}`,
+                    }))}
+                  />
+                ) : null}
                 <KVEditSelectRow
                   label="구분"
                   value={draft.tier}

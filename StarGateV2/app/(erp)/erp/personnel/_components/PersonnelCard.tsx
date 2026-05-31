@@ -25,6 +25,7 @@ interface Props {
   matchState?: MatchState;
   classifiedFieldsCount?: number;
   requiredLevelForHidden?: AgentLevel;
+  showAgentLevel?: boolean;
 }
 
 export default function PersonnelCard({
@@ -35,6 +36,7 @@ export default function PersonnelCard({
   matchState = "default",
   classifiedFieldsCount = 0,
   requiredLevelForHidden,
+  showAgentLevel = true,
 }: Props) {
   const id = String(character._id);
   const level: AgentLevel = character.agentLevel ?? "J";
@@ -104,7 +106,7 @@ export default function PersonnelCard({
           <>
             <Tag tone="danger">REDACTED</Tag>
             <span className={`${styles.clrPill} ${styles["clrPill--danger"]}`}>
-              권한등급 · V+
+              {showAgentLevel ? "권한등급 · V+" : "열람 제한"}
             </span>
           </>
         ) : (
@@ -112,10 +114,18 @@ export default function PersonnelCard({
             <Tag tone={character.type === "AGENT" ? "gold" : "default"}>
               {character.type}
             </Tag>
-            <span className={styles.clrPill} data-rank={level}>
-              <span>권한등급 : {level}</span>
-              <Pips total={7} filled={getLevelDisplayRank(level)} />
-            </span>
+            {showAgentLevel ? (
+              <span className={styles.clrPill} data-rank={level}>
+                <span>권한등급 : {level}</span>
+                <Pips total={7} filled={getLevelDisplayRank(level)} />
+              </span>
+            ) : (
+              <span
+                className={`${styles.clrPill} ${styles["clrPill--external"]}`}
+              >
+                외부 인사
+              </span>
+            )}
           </>
         )}
       </div>
@@ -123,12 +133,16 @@ export default function PersonnelCard({
       {isRedacted ? (
         <div className={styles.foot}>
           <span>⚠ 전체 마스킹</span>
-          <span>V 등급 필요</span>
+          <span>{showAgentLevel ? "V 등급 필요" : "상위 열람 권한 필요"}</span>
         </div>
       ) : classifiedFieldsCount > 0 && requiredLevelForHidden ? (
         <div className={styles.foot}>
           <span>⚠ 상위 기밀 {classifiedFieldsCount}건</span>
-          <span>{requiredLevelForHidden} 등급 필요</span>
+          <span>
+            {showAgentLevel
+              ? `${requiredLevelForHidden} 등급 필요`
+              : "상위 열람 권한 필요"}
+          </span>
         </div>
       ) : null}
     </Link>
