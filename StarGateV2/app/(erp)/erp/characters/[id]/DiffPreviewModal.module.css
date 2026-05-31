@@ -455,6 +455,93 @@
   letter-spacing: 0.12em;
 }
 
+.pointPreview {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+}
+.pointPreview__main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+.pointPreview__main span,
+.pointPreview__meta {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.pointPreview__main b {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  line-height: 1;
+}
+.pointPreview__amount--spend { color: #f0b1a8; }
+.pointPreview__amount--gain { color: #c8e4bc; }
+.pointPreview__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+.pointPreview p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.statDeltaPreview {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+}
+.statDeltaPreview span {
+  display: inline-flex;
+  align-items: center;
+  min-width: 72px;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+.statDeltaPreview--up { color: #c8e4bc; }
+.statDeltaPreview--down { color: #f0b1a8; }
+.statDeltaPreview--zero { color: var(--ink-2); }
+
+.abilityDiff {
+  display: grid;
+  gap: 10px;
+}
+.abilityDiff__item {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+}
+.abilityDiff__slot {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.16em;
+}
+.abilityDiff__body {
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* ---------- image compare ---------- */
 .imageCompare {
   display: grid;
@@ -817,6 +904,10 @@
   .textCompare .arrow {
     height: 28px;
     transform: rotate(90deg);
+  }
+  .abilityDiff__item {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   /* 이미지 비교 — 2 column, meta 풀폭 */

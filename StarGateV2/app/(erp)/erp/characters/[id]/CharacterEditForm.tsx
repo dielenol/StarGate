@@ -110,6 +110,30 @@ function isSemanticallyEqual(a: unknown, b: unknown): boolean {
   }
 }
 
+function normalizeAbilitiesForDiff(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+
+  return value
+    .flatMap((entry) => {
+      if (entry === null || typeof entry !== "object") return [];
+      const ability = entry as Partial<Ability>;
+      const normalized = {
+        slot: ability.slot,
+        name: ability.name?.trim() ?? "",
+        code: ability.code?.trim() ?? "",
+        description: ability.description?.trim() ?? "",
+        effect: ability.effect?.trim() ?? "",
+      };
+      const hasContent =
+        normalized.name ||
+        normalized.code ||
+        normalized.description ||
+        normalized.effect;
+      return hasContent ? [normalized] : [];
+    })
+    .sort((a, b) => String(a.slot).localeCompare(String(b.slot)));
+}
+
 function buildLocalDiff(
   before: unknown,
   after: unknown,
@@ -119,7 +143,11 @@ function buildLocalDiff(
   for (const field of fields) {
     const beforeVal = getPathValue(before, field);
     const afterVal = getPathValue(after, field);
-    if (!isSemanticallyEqual(beforeVal, afterVal)) {
+    const comparableBefore =
+      field === "play.abilities" ? normalizeAbilitiesForDiff(beforeVal) : beforeVal;
+    const comparableAfter =
+      field === "play.abilities" ? normalizeAbilitiesForDiff(afterVal) : afterVal;
+    if (!isSemanticallyEqual(comparableBefore, comparableAfter)) {
       entries.push({ field, before: beforeVal, after: afterVal });
     }
   }
@@ -266,6 +294,30 @@ function emptyToUndefined(value: string): string | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
+function clampNumber(value: number, min?: number, max?: number): number {
+  let next = Math.trunc(value);
+  if (typeof min === "number") next = Math.max(min, next);
+  if (typeof max === "number") next = Math.min(max, next);
+  return next;
+}
+
+function formatStepperValue(value: number, signed: boolean): string {
+  if (signed && value > 0) return `+${value}`;
+  return String(value);
+}
+
+function normalizeStepperDraft(raw: string, signed: boolean): string {
+  const sign = signed
+    ? raw.includes("-")
+      ? "-"
+      : raw.includes("+")
+        ? "+"
+        : ""
+    : "";
+  const digits = raw.replace(/\D/g, "");
+  return `${sign}${digits}`;
+}
+
 export default function CharacterEditForm({
   character,
   editMode,
@@ -327,7 +379,10 @@ export default function CharacterEditForm({
   const [defDelta, setDefDelta] = useState(play.defDelta);
   const [atk, setAtk] = useState(play.atk);
   const [atkDelta, setAtkDelta] = useState(play.atkDelta);
-  const [points, setPoints] = useState(play.points ?? 0);
+  const currentBonusPoints = play.points ?? 0;
+  const spendableBonusPoints = Math.max(0, currentBonusPoints);
+  const [pointsToSpend, setPointsToSpend] = useState(0);
+  const pointsAfterSpend = currentBonusPoints - pointsToSpend;
   const [abilityType, setAbilityType] = useState(play.abilityType ?? "");
   const [credit, setCredit] = useState(play.credit ?? "");
   const [weaponTrainingStr, setWeaponTrainingStr] = useState(
@@ -444,7 +499,7 @@ export default function CharacterEditForm({
         defDelta,
         atk,
         atkDelta,
-        points,
+        points: pointsAfterSpend,
         abilityType: emptyToUndefined(abilityType),
         weaponTraining: stringToTags(weaponTrainingStr),
         skillTraining: stringToTags(skillTrainingStr),
@@ -788,17 +843,32 @@ export default function CharacterEditForm({
       >
           <div className={styles.grid}>
             <Field id="points" label="BONUS POINT">
-              <input
+              <NumberStepper
                 id="points"
-                type="number"
-                className={`${styles.input} ${styles["input--num"]}`}
-                value={points}
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  if (Number.isFinite(n)) setPoints(n);
-                }}
+                value={pointsToSpend}
+                onChange={setPointsToSpend}
+                min={0}
+                max={spendableBonusPoints}
               />
             </Field>
+            <div className={styles.pointLedger}>
+              <div>
+                <span>현재 잔여</span>
+                <b>{currentBonusPoints}</b>
+              </div>
+              <div>
+                <span>사용 예정</span>
+                <b>{pointsToSpend}</b>
+              </div>
+              <div>
+                <span>저장 후 잔여</span>
+                <b>{pointsAfterSpend}</b>
+              </div>
+              <p>
+                보너스 포인트는 능력치, 스킬, 훈련 추가에 소모되는 값입니다.
+                현재 잔여 포인트를 초과해 사용할 수 없습니다.
+              </p>
+            </div>
           </div>
       </CollapsiblePanel>
 
@@ -978,99 +1048,67 @@ export default function CharacterEditForm({
           >
               <div className={styles.statGrid}>
                 <Field id="hp" label="HP">
-                  <input
+                  <NumberStepper
                     id="hp"
-                    type="number"
-                    className={`${styles.input} ${styles["input--num"]}`}
                     value={hp}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setHp(n);
-                    }}
+                    onChange={setHp}
+                    min={0}
                   />
                 </Field>
                 <Field id="hpDelta" label="HP Δ">
-                  <input
+                  <NumberStepper
                     id="hpDelta"
-                    type="number"
-                    className={`${styles.input} ${styles["input--num"]}`}
                     value={hpDelta}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setHpDelta(n);
-                    }}
+                    onChange={setHpDelta}
+                    signed
                   />
                 </Field>
                 <Field id="san" label="SAN">
-                  <input
+                  <NumberStepper
                     id="san"
-                    type="number"
-                    className={`${styles.input} ${styles["input--num"]}`}
                     value={san}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setSan(n);
-                    }}
+                    onChange={setSan}
+                    min={0}
                   />
                 </Field>
                 <Field id="sanDelta" label="SAN Δ">
-                  <input
+                  <NumberStepper
                     id="sanDelta"
-                    type="number"
-                    className={`${styles.input} ${styles["input--num"]}`}
                     value={sanDelta}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setSanDelta(n);
-                    }}
+                    onChange={setSanDelta}
+                    signed
                   />
                 </Field>
                 <Field id="def" label="DEF">
-                  <input
+                  <NumberStepper
                     id="def"
-                    type="number"
-                    className={`${styles.input} ${styles["input--num"]}`}
                     value={def}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setDef(n);
-                    }}
+                    onChange={setDef}
+                    min={0}
                   />
                 </Field>
                 <Field id="defDelta" label="DEF Δ">
-                  <input
+                  <NumberStepper
                     id="defDelta"
-                    type="number"
-                    className={`${styles.input} ${styles["input--num"]}`}
                     value={defDelta}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setDefDelta(n);
-                    }}
+                    onChange={setDefDelta}
+                    signed
                   />
                 </Field>
                 <Field id="atk" label="ATK">
-                  <input
+                  <NumberStepper
                     id="atk"
-                    type="number"
-                    className={`${styles.input} ${styles["input--num"]}`}
                     value={atk}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setAtk(n);
-                    }}
+                    onChange={setAtk}
+                    min={0}
                   />
                 </Field>
                 <Field id="atkDelta" label="ATK Δ">
-                  <input
+                  <NumberStepper
                     id="atkDelta"
-                    type="number"
-                    className={`${styles.input} ${styles["input--num"]}`}
                     value={atkDelta}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n)) setAtkDelta(n);
-                    }}
+                    onChange={setAtkDelta}
+                    signed
                   />
                 </Field>
               </div>
@@ -1375,6 +1413,98 @@ export default function CharacterEditForm({
         />
       ) : null}
     </form>
+  );
+}
+
+function NumberStepper({
+  id,
+  value,
+  onChange,
+  signed = false,
+  min,
+  max,
+  disabled = false,
+}: {
+  id: string;
+  value: number;
+  onChange: (value: number) => void;
+  signed?: boolean;
+  min?: number;
+  max?: number;
+  disabled?: boolean;
+}) {
+  const [draft, setDraft] = useState(formatStepperValue(value, signed));
+
+  useEffect(() => {
+    setDraft(formatStepperValue(value, signed));
+  }, [signed, value]);
+
+  function commit(nextDraft: string) {
+    if (nextDraft === "" || nextDraft === "+" || nextDraft === "-") {
+      const next = clampNumber(0, min, max);
+      onChange(next);
+      setDraft(formatStepperValue(next, signed));
+      return;
+    }
+
+    const next = clampNumber(Number(nextDraft), min, max);
+    onChange(next);
+    setDraft(formatStepperValue(next, signed));
+  }
+
+  function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const normalized = normalizeStepperDraft(event.target.value, signed);
+    setDraft(normalized);
+
+    if (normalized === "" || normalized === "+" || normalized === "-") return;
+    if (signed && /^[-+]0+$/.test(normalized) && value === 0) return;
+
+    const next = clampNumber(Number(normalized), min, max);
+    onChange(next);
+    if (String(Math.abs(Number(normalized))) !== normalized.replace(/[+-]/g, "")) {
+      setDraft(formatStepperValue(next, signed));
+    }
+  }
+
+  function step(delta: number) {
+    const next = clampNumber(value + delta, min, max);
+    onChange(next);
+    setDraft(formatStepperValue(next, signed));
+  }
+
+  return (
+    <div className={styles.numberStepper}>
+      <input
+        id={id}
+        type="text"
+        inputMode={signed ? "text" : "numeric"}
+        className={`${styles.input} ${styles["input--num"]} ${styles.numberStepper__input}`}
+        value={draft}
+        onChange={handleInputChange}
+        onBlur={() => commit(draft)}
+        disabled={disabled}
+      />
+      <div className={styles.numberStepper__controls}>
+        <button
+          type="button"
+          className={styles.numberStepper__btn}
+          onClick={() => step(1)}
+          disabled={disabled || (typeof max === "number" && value >= max)}
+          aria-label={`${id} 증가`}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className={styles.numberStepper__btn}
+          onClick={() => step(-1)}
+          disabled={disabled || (typeof min === "number" && value <= min)}
+          aria-label={`${id} 감소`}
+        >
+          -
+        </button>
+      </div>
+    </div>
   );
 }
 

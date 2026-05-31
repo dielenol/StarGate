@@ -367,6 +367,92 @@
 }
 .input--num:disabled { color: var(--ink-3); font-weight: 400; }
 
+.numberStepper {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 8px;
+  align-items: stretch;
+}
+.numberStepper__input {
+  appearance: textfield;
+}
+.numberStepper__input::-webkit-outer-spin-button,
+.numberStepper__input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.numberStepper__controls {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+}
+.numberStepper__btn {
+  width: 34px;
+  min-height: 0;
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(rgba(201,169,97,0.08), rgba(201,169,97,0.08)),
+    var(--bg-2);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+.numberStepper__btn:hover:not(:disabled),
+.numberStepper__btn:focus-visible {
+  border-color: var(--gold);
+  color: var(--ink-0);
+  background:
+    linear-gradient(rgba(201,169,97,0.18), rgba(201,169,97,0.18)),
+    var(--bg-2);
+  outline: none;
+}
+.numberStepper__btn:disabled {
+  border-color: var(--line);
+  color: var(--ink-3);
+  cursor: not-allowed;
+  background: var(--bg-1);
+}
+
+.pointLedger {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+}
+.pointLedger div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.pointLedger span {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.pointLedger b {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  line-height: 1.1;
+}
+.pointLedger p {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 /* ---------- checkbox ---------- */
 .checkbox {
   display: inline-flex;
@@ -697,6 +783,9 @@
   }
   .actions::before { left: 16px; right: 16px; }
   .actions__notice { margin-right: 0; justify-content: center; }
+  .pointLedger {
+    grid-template-columns: 1fr;
+  }
   .cancelBtn, .submitBtn {
     flex: 1;
     justify-content: center;

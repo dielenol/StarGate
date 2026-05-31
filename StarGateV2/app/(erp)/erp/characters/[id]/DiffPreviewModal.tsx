@@ -64,6 +64,37 @@ interface TextDiffChunk {
 const DIFF_DELETE: DiffOp = -1;
 const DIFF_EQUAL: DiffOp = 0;
 const DIFF_INSERT: DiffOp = 1;
+const STAT_DELTA_FIELDS = new Set([
+  "play.hpDelta",
+  "play.sanDelta",
+  "play.defDelta",
+  "play.atkDelta",
+]);
+
+interface PreviewAbility {
+  slot: string;
+  name: string;
+  code: string;
+  description: string;
+  effect: string;
+}
+
+function isSpecialPreviewField(field: string): boolean {
+  return (
+    field === "play.points" ||
+    field === "play.abilities" ||
+    STAT_DELTA_FIELDS.has(field)
+  );
+}
+
+function asNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function formatSignedInteger(value: number): string {
+  if (value > 0) return `+${Math.trunc(value)}`;
+  return String(Math.trunc(value));
+}
 
 function formatScalar(value: unknown): string {
   if (value === null || value === undefined) return "";
@@ -97,6 +128,55 @@ function formatAbilityList(value: unknown): string | null {
       return lines.join("\n");
     })
     .join("\n\n");
+}
+
+function normalizeAbility(value: unknown, fallbackSlot: string): PreviewAbility {
+  if (value === null || typeof value !== "object") {
+    return {
+      slot: fallbackSlot,
+      name: "",
+      code: "",
+      description: "",
+      effect: "",
+    };
+  }
+
+  const ability = value as Record<string, unknown>;
+  return {
+    slot: formatScalar(ability.slot) || fallbackSlot,
+    name: formatScalar(ability.name).trim(),
+    code: formatScalar(ability.code).trim(),
+    description: formatScalar(ability.description).trim(),
+    effect: formatScalar(ability.effect).trim(),
+  };
+}
+
+function abilityHasContent(ability: PreviewAbility): boolean {
+  return Boolean(
+    ability.name || ability.code || ability.description || ability.effect,
+  );
+}
+
+function abilityText(ability: PreviewAbility): string {
+  if (!abilityHasContent(ability)) return "";
+  const lines = [`[${ability.slot}] ${ability.name || "(이름 없음)"}`];
+  if (ability.code) lines.push(`code: ${ability.code}`);
+  if (ability.description) lines.push(`description: ${ability.description}`);
+  if (ability.effect) lines.push(`effect: ${ability.effect}`);
+  return lines.join("\n");
+}
+
+function abilityMap(value: unknown): Map<string, PreviewAbility> {
+  const map = new Map<string, PreviewAbility>();
+  if (!Array.isArray(value)) return map;
+
+  value.forEach((entry, index) => {
+    const ability = normalizeAbility(entry, `#${index + 1}`);
+    if (abilityHasContent(ability)) {
+      map.set(ability.slot, ability);
+    }
+  });
+  return map;
 }
 
 function stringifyPreviewValue(field: string, value: unknown): string {
@@ -414,6 +494,7 @@ function DiffRow({ index, entry }: { index: number; entry: DiffEntry }) {
     CHARACTER_IMAGE_FIELDS.has(field) &&
     (isImageUrl(before) || isImageUrl(after));
   const indexStr = String(index).padStart(2, "0");
+  const showFieldPath = !isSpecialPreviewField(field);
 
   return (
     <li className={styles.row}>
@@ -422,11 +503,19 @@ function DiffRow({ index, entry }: { index: number; entry: DiffEntry }) {
           <span className={styles.row__index}>{indexStr}</span>
           <span className={styles.row__label}>{label}</span>
         </div>
-        <span className={styles.row__field} aria-hidden="true">
-          {field}
-        </span>
+        {showFieldPath ? (
+          <span className={styles.row__field} aria-hidden="true">
+            {field}
+          </span>
+        ) : null}
       </div>
-      {isImage ? (
+      {field === "play.points" ? (
+        <PointSpendPreview before={before} after={after} />
+      ) : STAT_DELTA_FIELDS.has(field) ? (
+        <StatDeltaPreview value={after} />
+      ) : field === "play.abilities" ? (
+        <AbilityDiff before={before} after={after} />
+      ) : isImage ? (
         <div className={styles.imageCompare}>
           <ImageCell variant="before" value={before} />
           <span className={styles.arrow} aria-hidden="true">
@@ -492,6 +581,119 @@ function TextDiff({
           ))
         )}
       </div>
+    </div>
+  );
+}
+
+function PointSpendPreview({
+  before,
+  after,
+}: {
+  before: unknown;
+  after: unknown;
+}) {
+  const beforePoints = asNumber(before);
+  const afterPoints = asNumber(after);
+  const spent = beforePoints - afterPoints;
+  const isSpend = spent >= 0;
+
+  return (
+    <div className={styles.pointPreview}>
+      <div className={styles.pointPreview__main}>
+        <span>{isSpend ? "사용 포인트" : "추가 포인트"}</span>
+        <b
+          className={
+            isSpend
+              ? styles["pointPreview__amount--spend"]
+              : styles["pointPreview__amount--gain"]
+          }
+        >
+          {Math.abs(spent)}
+        </b>
+      </div>
+      <div className={styles.pointPreview__meta}>
+        <span>현재 잔여 {beforePoints}</span>
+        <span>저장 후 잔여 {afterPoints}</span>
+      </div>
+      <p>보너스 포인트는 능력치, 스킬, 훈련 추가에 소모됩니다.</p>
+    </div>
+  );
+}
+
+function StatDeltaPreview({ value }: { value: unknown }) {
+  const delta = asNumber(value);
+  const tone =
+    delta > 0
+      ? styles["statDeltaPreview--up"]
+      : delta < 0
+        ? styles["statDeltaPreview--down"]
+        : styles["statDeltaPreview--zero"];
+
+  return (
+    <div className={styles.statDeltaPreview}>
+      <span className={tone}>{formatSignedInteger(delta)}</span>
+    </div>
+  );
+}
+
+function AbilityDiff({
+  before,
+  after,
+}: {
+  before: unknown;
+  after: unknown;
+}) {
+  const beforeMap = abilityMap(before);
+  const afterMap = abilityMap(after);
+  const slots = Array.from(new Set([...beforeMap.keys(), ...afterMap.keys()]));
+  const changed = slots
+    .map((slot) => {
+      const beforeText = abilityText(
+        beforeMap.get(slot) ?? normalizeAbility(null, slot),
+      );
+      const afterText = abilityText(
+        afterMap.get(slot) ?? normalizeAbility(null, slot),
+      );
+      return beforeText === afterText ? null : { slot, beforeText, afterText };
+    })
+    .filter(
+      (
+        item,
+      ): item is { slot: string; beforeText: string; afterText: string } =>
+        item !== null,
+    );
+
+  if (changed.length === 0) {
+    return <div className={styles.textDiff__empty}>변경된 어빌리티 없음</div>;
+  }
+
+  return (
+    <div className={styles.abilityDiff}>
+      {changed.map((item) => {
+        const chunks = buildTextDiff(item.beforeText, item.afterText);
+        return (
+          <div className={styles.abilityDiff__item} key={item.slot}>
+            <div className={styles.abilityDiff__slot}>{item.slot}</div>
+            <div className={styles.abilityDiff__body}>
+              {chunks.map((chunk, index) => (
+                <span
+                  key={`${item.slot}-${chunk.op}-${index}`}
+                  className={[
+                    styles.textDiff__chunk,
+                    chunk.op === DIFF_DELETE
+                      ? styles["textDiff__chunk--delete"]
+                      : chunk.op === DIFF_INSERT
+                        ? styles["textDiff__chunk--insert"]
+                        : styles["textDiff__chunk--equal"],
+                  ].join(" ")}
+                >
+                  {chunk.text}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
