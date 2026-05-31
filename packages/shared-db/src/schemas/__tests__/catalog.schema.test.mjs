@@ -4,8 +4,10 @@
  * 검증 범위:
  *  - equipmentFrontmatterSchema / equipmentDocSchema / equipmentLoreSchema
  *  - consumableFrontmatterSchema / consumableDocSchema / consumableLoreSchema
+ *  - catalogItemFrontmatterSchema / catalogItemDocSchema / catalogItemLoreSchema
  *  - toDbEquipment / toDbConsumable 어댑터 (description body 폴백, lore pickCatalogLore,
  *    previewImage undefined 보존, loreMd 빈-body → undefined, category 검증)
+ *  - toDbCatalogItem 어댑터 (MATERIAL/SPECIAL 포함 전체 master_items mirror)
  *  - ITEM_CATEGORIES SSOT 정합 (Zod enum 값이 ITEM_CATEGORIES tuple 의 부분집합)
  *  - 카탈로그 round-trip: 템플릿 MD 의 frontmatter 가 스키마를 통과하는지
  */
@@ -16,7 +18,17 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { parseFrontmatter, toDbEquipment, toDbConsumable } from "../../../dist/schemas/frontmatter.js";
+import {
+  parseFrontmatter,
+  toDbCatalogItem,
+  toDbEquipment,
+  toDbConsumable,
+} from "../../../dist/schemas/frontmatter.js";
+import {
+  catalogItemDocSchema,
+  catalogItemFrontmatterSchema,
+  catalogItemLoreSchema,
+} from "../../../dist/schemas/catalog.schema.js";
 import {
   equipmentDocSchema,
   equipmentFrontmatterSchema,
@@ -63,9 +75,35 @@ const validConsumableFm = {
   isPublic: true,
 };
 
+const validMaterialFm = {
+  code: "BROKEN_SYLLABLE",
+  slug: "broken-syllable",
+  name: "깨진 음절",
+  nameEn: "Broken Syllable",
+  category: "MATERIAL",
+  price: 0,
+  effect: "음향성 잔재 샘플",
+  description: "검열된 비명과의 교전 후 회수된 음향성 잔재 샘플.",
+  isAvailable: false,
+  isPublic: true,
+};
+
+const validSpecialFm = {
+  code: "ZULU_0028_CONTAINMENT_BOX",
+  slug: "zulu-0028-containment-box",
+  name: "ZULU-0028 특수 격리 상자",
+  nameEn: "ZULU-0028 Special Containment Box",
+  category: "SPECIAL",
+  price: 0,
+  effect: "방음 격리 / 음파 억제",
+  description: "검열된 비명(ZULU-0028)을 이송·보관하기 위한 특수 격리 용기.",
+  isAvailable: false,
+  isPublic: true,
+};
+
 /* ── ITEM_CATEGORIES SSOT 정합 ── */
 
-test("CATALOG: ITEM_CATEGORIES SSOT — WEAPON/ARMOR/CONSUMABLE 모두 포함", () => {
+test("CATALOG: ITEM_CATEGORIES SSOT — 전체 카탈로그 범주 포함", () => {
   // equipment Zod enum 의 값들이 ITEM_CATEGORIES 의 부분집합
   for (const cat of ["WEAPON", "ARMOR"]) {
     assert.ok(
@@ -77,6 +115,12 @@ test("CATALOG: ITEM_CATEGORIES SSOT — WEAPON/ARMOR/CONSUMABLE 모두 포함", 
     ITEM_CATEGORIES.includes("CONSUMABLE"),
     "ITEM_CATEGORIES SSOT에 CONSUMABLE 누락 — consumable.schema 와 drift",
   );
+  for (const cat of ["MATERIAL", "SPECIAL"]) {
+    assert.ok(
+      ITEM_CATEGORIES.includes(cat),
+      `ITEM_CATEGORIES SSOT에 ${cat} 가 누락됨 — generic catalog.schema 와 drift`,
+    );
+  }
 });
 
 /* ── equipmentFrontmatterSchema ── */
@@ -160,6 +204,24 @@ test("consumableFrontmatterSchema: description optional (body 폴백 시나리�
   assert.doesNotThrow(() => consumableFrontmatterSchema.parse(rest));
 });
 
+/* ── catalogItemFrontmatterSchema ── */
+
+test("catalogItemFrontmatterSchema: ITEM_CATEGORIES 전체 통과", () => {
+  for (const category of ITEM_CATEGORIES) {
+    assert.doesNotThrow(() =>
+      catalogItemFrontmatterSchema.parse({
+        ...validSpecialFm,
+        category,
+      }),
+    );
+  }
+});
+
+test("catalogItemFrontmatterSchema: MATERIAL/SPECIAL 통과", () => {
+  assert.doesNotThrow(() => catalogItemFrontmatterSchema.parse(validMaterialFm));
+  assert.doesNotThrow(() => catalogItemFrontmatterSchema.parse(validSpecialFm));
+});
+
 /* ── DocSchema 검증 ── */
 
 test("equipmentDocSchema: description 빈 문자열 거부 (min(1))", () => {
@@ -184,6 +246,17 @@ test("consumableDocSchema: description 빈 문자열 거부", () => {
   );
 });
 
+test("catalogItemDocSchema: description 빈 문자열 거부", () => {
+  assert.throws(() =>
+    catalogItemDocSchema.parse({
+      ...validSpecialFm,
+      description: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }),
+  );
+});
+
 test("equipmentLoreSchema: 모든 필드 optional", () => {
   assert.doesNotThrow(() => equipmentLoreSchema.parse({}));
   assert.doesNotThrow(() =>
@@ -193,6 +266,10 @@ test("equipmentLoreSchema: 모든 필드 optional", () => {
 
 test("consumableLoreSchema: 모든 필드 optional", () => {
   assert.doesNotThrow(() => consumableLoreSchema.parse({}));
+});
+
+test("catalogItemLoreSchema: 모든 필드 optional", () => {
+  assert.doesNotThrow(() => catalogItemLoreSchema.parse({}));
 });
 
 /* ── toDbEquipment 어댑터 ── */
@@ -349,6 +426,25 @@ test("toDbConsumable: effect optional — 미지정 시 undefined 보존", () =>
   assert.equal(doc.effect, undefined);
 });
 
+/* ── toDbCatalogItem 어댑터 ── */
+
+test("toDbCatalogItem: MATERIAL 샘플 항목 변환", () => {
+  const doc = toDbCatalogItem(validMaterialFm, "## 획득 경로\nS1E1 회수 물증.\n");
+  assert.equal(doc.category, "MATERIAL");
+  assert.equal(doc.name, "깨진 음절");
+  assert.equal(doc.isAvailable, false);
+  assert.equal(doc.effect, "음향성 잔재 샘플");
+  assert.equal(doc.lore?.acquisition, "S1E1 회수 물증.");
+});
+
+test("toDbCatalogItem: SPECIAL 특수 항목 변환", () => {
+  const doc = toDbCatalogItem(validSpecialFm, "## 배경\n격리 절차에서 파생.\n");
+  assert.equal(doc.category, "SPECIAL");
+  assert.equal(doc.name, "ZULU-0028 특수 격리 상자");
+  assert.equal(doc.effect, "방음 격리 / 음파 억제");
+  assert.equal(doc.lore?.background, "격리 절차에서 파생.");
+});
+
 /* ── 카탈로그 템플릿 round-trip ── */
 
 test("CATALOG TEMPLATE: equipment.template.md frontmatter 가 schema 통과", () => {
@@ -375,5 +471,18 @@ test("CATALOG TEMPLATE: consumable.template.md frontmatter 가 schema 통과", (
   assert.equal(fm.category, "CONSUMABLE");
   assert.equal(fm.code, "EXAMPLE_CONSUMABLE");
   const doc = toDbConsumable(fm, body);
+  assert.ok(doc.description.length > 0);
+});
+
+test("CATALOG TEMPLATE: catalog.template.md frontmatter 가 schema 통과", () => {
+  const raw = readFileSync(resolve(TEMPLATES, "catalog.template.md"), "utf8");
+  const { data, body } = parseFrontmatter(raw, {
+    allowMissing: false,
+    fileName: "catalog.template.md",
+  });
+  const fm = catalogItemFrontmatterSchema.parse(data);
+  assert.equal(fm.category, "SPECIAL");
+  assert.equal(fm.code, "EXAMPLE_CATALOG_ITEM");
+  const doc = toDbCatalogItem(fm, body);
   assert.ok(doc.description.length > 0);
 });

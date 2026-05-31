@@ -1,4 +1,5 @@
 export * from "./common.js";
+export * from "./catalog.schema.js";
 export * from "./consumable.schema.js";
 export * from "./equipment.schema.js";
 export * from "./faction.schema.js";

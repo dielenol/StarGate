@@ -1,4 +1,9 @@
 import {
+  catalogItemDocSchema,
+  catalogItemFrontmatterSchema,
+  type CatalogItemDoc,
+} from "./catalog.schema.js";
+import {
   consumableDocSchema,
   consumableFrontmatterSchema,
   type ConsumableDoc,
@@ -575,4 +580,51 @@ export function toDbConsumable(
   };
 
   return consumableDocSchema.parse(candidate);
+}
+
+/**
+ * Generic catalog frontmatter + body 를 CatalogItemDoc 으로 변환.
+ *
+ * MATERIAL/SPECIAL 처럼 equipment/consumable 하위 타입으로 좁히면 의미가
+ * 흐려지는 항목을 위한 master_items mirror 경로다.
+ */
+export function toDbCatalogItem(
+  frontmatter: unknown,
+  body: string
+): CatalogItemDoc {
+  const parsed = catalogItemFrontmatterSchema.parse(frontmatter);
+  const sections = pickCatalogBodySections(parseMdBody(body));
+  const n = now();
+
+  const description = parsed.description ?? sections.description ?? "";
+  if (description.length === 0) {
+    throw new Error(
+      "catalog item 어댑터: description 이 frontmatter 또는 body '## 설명' 에 반드시 있어야 합니다",
+    );
+  }
+
+  const candidate: CatalogItemDoc = {
+    code: parsed.code,
+    slug: parsed.slug,
+    name: parsed.name,
+    nameEn: parsed.nameEn,
+    category: parsed.category,
+    price: parsed.price,
+    damage: parsed.damage,
+    effect: parsed.effect,
+    description,
+    previewImage: parsed.previewImage,
+    isAvailable: parsed.isAvailable,
+    isPublic: parsed.isPublic,
+    tags: parsed.tags,
+    loreMd: body.trim() !== "" ? body : undefined,
+    lore: pickCatalogLore(sections),
+    source: parsed.source,
+    createdAt: coerceDate(parsed.createdAt, n),
+    updatedAt: coerceDate(parsed.updatedAt, n),
+    authorId: parsed.authorId,
+    authorName: parsed.authorName,
+  };
+
+  return catalogItemDocSchema.parse(candidate);
 }
