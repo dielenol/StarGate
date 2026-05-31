@@ -219,7 +219,7 @@
   color: var(--info);
 }
 
-.card__category--material {
+.card__category--sample {
   border-color: color-mix(in srgb, var(--success) 45%, var(--line));
   color: var(--success);
 }

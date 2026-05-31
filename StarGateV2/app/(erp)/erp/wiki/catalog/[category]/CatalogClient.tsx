@@ -5,9 +5,14 @@ import { useDeferredValue, useMemo, useState } from "react";
 
 import type { ItemCategory } from "@stargate/shared-db";
 
-import styles from "./CatalogClient.module.css";
+import {
+  CATALOG_TABS,
+  type CatalogScope,
+  ITEM_CATEGORY_LABEL,
+  categoryTone,
+} from "@/lib/catalog/categories";
 
-type CatalogScope = "all" | "equipment" | "consumable" | "material" | "special";
+import styles from "./CatalogClient.module.css";
 
 type CatalogItem = {
   _id: string;
@@ -26,29 +31,6 @@ interface Props {
   category: CatalogScope;
   label: string;
   initialItems: CatalogItem[];
-}
-
-const CATEGORY_LABEL: Record<ItemCategory, string> = {
-  WEAPON: "무기",
-  ARMOR: "방어구",
-  CONSUMABLE: "소모품",
-  MATERIAL: "샘플",
-  SPECIAL: "특수",
-};
-
-const CATALOG_TABS: { key: CatalogScope; label: string; href: string }[] = [
-  { key: "all", label: "전체", href: "/erp/wiki/catalog/all" },
-  { key: "equipment", label: "장비", href: "/erp/wiki/catalog/equipment" },
-  { key: "consumable", label: "소모품", href: "/erp/wiki/catalog/consumable" },
-  { key: "material", label: "샘플", href: "/erp/wiki/catalog/material" },
-  { key: "special", label: "특수", href: "/erp/wiki/catalog/special" },
-];
-
-function categoryTone(category: ItemCategory): string {
-  if (category === "WEAPON" || category === "ARMOR") return "equipment";
-  if (category === "CONSUMABLE") return "consumable";
-  if (category === "MATERIAL") return "material";
-  return "special";
 }
 
 /**
@@ -188,7 +170,7 @@ export default function CatalogClient({ category, label, initialItems }: Props) 
                     styles[`card__category--${categoryTone(it.category)}`],
                   ].join(" ")}
                 >
-                  {CATEGORY_LABEL[it.category]}
+                  {ITEM_CATEGORY_LABEL[it.category]}
                 </span>
               </div>
               <p className={styles.card__description}>{it.description}</p>

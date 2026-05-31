@@ -49,7 +49,7 @@ const CATEGORY_LABEL: Record<ItemCategory, string> = {
   WEAPON: "무기",
   ARMOR: "방어구",
   CONSUMABLE: "소모품",
-  MATERIAL: "재료",
+  MATERIAL: "샘플",
   SPECIAL: "특수",
 };
 

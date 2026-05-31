@@ -9,7 +9,7 @@
   - code: UPPER_SNAKE_CASE (예: BROKEN_SYLLABLE, ZULU_0028_CONTAINMENT_BOX)
   - slug: 소문자·숫자와 하이픈/언더스코어. 상점/봇 연동 ID가 있으면 그대로 사용
   - category: "WEAPON" | "ARMOR" | "CONSUMABLE" | "MATERIAL" | "SPECIAL"
-  - MATERIAL은 샘플/재료, SPECIAL은 격리 장비·작전 물증·비표준 물품에 사용
+  - MATERIAL은 ERP의 샘플 탭(연구재료·격리 샘플), SPECIAL은 격리 장비·작전 물증·비표준 물품에 사용
   - price: 숫자 (KRW). 판매 대상이 아니면 0
   - effect: 샘플 성격, 보관 효과, 운용상 의미 등. 120자 이내.
   - damage: 전투 장비일 때만 사용. 80자 이내.

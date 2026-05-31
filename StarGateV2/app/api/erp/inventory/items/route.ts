@@ -1,10 +1,55 @@
 import { NextResponse } from "next/server";
+import { ITEM_CATEGORIES } from "@stargate/shared-db";
 
-import type { CreateMasterItemInput } from "@/types/inventory";
+import type { CreateMasterItemInput, ItemCategory } from "@/types/inventory";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { listMasterItems, createMasterItem } from "@/lib/db/inventory";
+
+function isItemCategory(value: unknown): value is ItemCategory {
+  return (
+    typeof value === "string" &&
+    (ITEM_CATEGORIES as readonly string[]).includes(value)
+  );
+}
+
+function trimOptional(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
+function normalizeTags(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const tags = value
+    .filter((tag): tag is string => typeof tag === "string")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+  return tags.length > 0 ? tags : undefined;
+}
+
+function normalizeLore(value: unknown): CreateMasterItemInput["lore"] {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Record<string, unknown>;
+  const lore = {
+    background: trimOptional(raw.background),
+    acquisition: trimOptional(raw.acquisition),
+    notes: trimOptional(raw.notes),
+  };
+  return lore.background || lore.acquisition || lore.notes ? lore : undefined;
+}
+
+function normalizePrice(value: unknown): number | string {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "") return 0;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : trimmed;
+  }
+  return 0;
+}
 
 export async function GET() {
   const session = await auth();
@@ -50,8 +95,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const validCategories = ["WEAPON", "ARMOR", "CONSUMABLE", "MATERIAL", "SPECIAL"];
-  if (!body.category || !validCategories.includes(body.category)) {
+  if (!isItemCategory(body.category)) {
     return NextResponse.json(
       { error: "유효한 category를 선택하세요." },
       { status: 400 },
@@ -60,13 +104,22 @@ export async function POST(request: Request) {
 
   try {
     const item = await createMasterItem({
+      slug: trimOptional(body.slug),
       name: body.name.trim(),
       category: body.category,
-      description: body.description ?? "",
-      price: body.price ?? 0,
-      damage: body.damage,
-      effect: body.effect,
+      description: trimOptional(body.description) ?? "",
+      price: normalizePrice(body.price),
+      damage: trimOptional(body.damage),
+      effect: trimOptional(body.effect),
+      tags: normalizeTags(body.tags),
+      previewImage: trimOptional(body.previewImage),
       isAvailable: body.isAvailable ?? true,
+      isPublic: body.isPublic ?? true,
+      lore: normalizeLore(body.lore),
+      loreMd: trimOptional(body.loreMd),
+      source: body.source ?? "manual",
+      authorId: trimOptional(body.authorId),
+      authorName: trimOptional(body.authorName),
     });
 
     return NextResponse.json({ item }, { status: 201 });

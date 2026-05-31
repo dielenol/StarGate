@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import type { ItemCategory } from "@/types/inventory";
 
 import { useCreateItem } from "@/hooks/mutations/useInventoryMutation";
+import {
+  CATALOG_SCOPE_HREF,
+  ITEM_CATEGORY_OPTIONS,
+  catalogScopeForItemCategory,
+} from "@/lib/catalog/categories";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
@@ -15,25 +20,20 @@ import Select from "@/components/ui/Select/Select";
 
 import styles from "./page.module.css";
 
-const ITEM_CATEGORIES: { value: ItemCategory; label: string }[] = [
-  { value: "WEAPON", label: "무기" },
-  { value: "ARMOR", label: "방어구" },
-  { value: "CONSUMABLE", label: "소모품" },
-  { value: "MATERIAL", label: "재료" },
-  { value: "SPECIAL", label: "특수" },
-];
-
 export default function ItemCreateForm() {
   const router = useRouter();
   const createItem = useCreateItem();
 
   const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
   const [category, setCategory] = useState<ItemCategory>("WEAPON");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [damage, setDamage] = useState("");
   const [effect, setEffect] = useState("");
+  const [tags, setTags] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
+  const [isPublic, setIsPublic] = useState(true);
   const [error, setError] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
@@ -48,16 +48,23 @@ export default function ItemCreateForm() {
     createItem.mutate(
       {
         name: name.trim(),
+        slug: slug.trim() || undefined,
         category,
         description,
         price: price ? Number(price) : 0,
         damage: damage || undefined,
         effect: effect || undefined,
+        tags: tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
         isAvailable,
+        isPublic,
+        source: "manual",
       },
       {
         onSuccess: () => {
-          router.push("/erp/inventory");
+          router.push(CATALOG_SCOPE_HREF[catalogScopeForItemCategory(category)]);
         },
         onError: (err) => {
           setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
@@ -82,13 +89,23 @@ export default function ItemCreateForm() {
             />
           </Field>
 
+          <Field id="item-slug" label="슬러그 (선택)">
+            <Input
+              id="item-slug"
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="예: zulu-0028-sample"
+            />
+          </Field>
+
           <Field id="item-category" label="카테고리">
             <Select
               id="item-category"
               value={category}
               onChange={(e) => setCategory(e.target.value as ItemCategory)}
             >
-              {ITEM_CATEGORIES.map((cat) => (
+              {ITEM_CATEGORY_OPTIONS.map((cat) => (
                 <option key={cat.value} value={cat.value}>
                   {cat.label}
                 </option>
@@ -127,6 +144,16 @@ export default function ItemCreateForm() {
             />
           </Field>
 
+          <Field id="item-tags" label="태그 (쉼표 구분)" full>
+            <Input
+              id="item-tags"
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="예: S1E1, ZULU-0028, 샘플"
+            />
+          </Field>
+
           <Field id="item-desc" label="설명" full>
             <textarea
               id="item-desc"
@@ -145,7 +172,16 @@ export default function ItemCreateForm() {
                 checked={isAvailable}
                 onChange={(e) => setIsAvailable(e.target.checked)}
               />
-              <span>구매 가능 (Available)</span>
+              <span>지급·구매 가능</span>
+            </label>
+            <label className={styles.checkbox}>
+              <input
+                type="checkbox"
+                className={styles.checkbox__input}
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+              />
+              <span>공개 카탈로그 노출</span>
             </label>
           </div>
         </div>
@@ -157,7 +193,7 @@ export default function ItemCreateForm() {
         <Button type="submit" variant="primary" disabled={createItem.isPending}>
           {createItem.isPending ? "생성 중..." : "아이템 생성"}
         </Button>
-        <Button as="a" href="/erp/inventory">
+        <Button as="a" href="/erp/wiki/catalog/all">
           취소
         </Button>
       </div>

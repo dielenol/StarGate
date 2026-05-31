@@ -25,13 +25,13 @@ export default async function NewItemPage() {
     <>
       <PageHead
         breadcrumb={[
-          { label: "EQUIPMENT", href: "/erp/inventory" },
+          { label: "CATALOG", href: "/erp/wiki/catalog/all" },
           { label: "NEW" },
         ]}
-        title="아이템 추가"
+        title="카탈로그 항목 추가"
         right={
-          <Button as="a" href="/erp/inventory">
-            ← 도감
+          <Button as="a" href="/erp/wiki/catalog/all">
+            ← 카탈로그
           </Button>
         }
       />
