@@ -1742,55 +1742,70 @@
 /* 보유 종목 테이블 */
 
 .tossTable {
-  display: grid;
-  /* 종목명 | 수익률 | 수익금 | 평균 | 현재가 | 보유 | 평가 | 원금
-     첫 col 만 넓고 나머지 7 개 모두 동일 1fr — wide screen 비례 깨짐 회피. */
-  grid-template-columns:
-    minmax(200px, 1.3fr)
-    repeat(7, minmax(90px, 1fr));
-  gap: 0;
+  --toss-table-columns: minmax(220px, 1.35fr) repeat(7, minmax(104px, 1fr));
+
+  display: flex;
+  flex-direction: column;
+  /* 종목명 | 수익률 | 수익금 | 평균 | 현재가 | 보유 | 평가 | 원금 */
   margin-bottom: var(--gap);
   background: var(--bg-1);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tossTable__head {
-  display: contents;
+  display: grid;
+  grid-template-columns: var(--toss-table-columns);
+  align-items: stretch;
+  min-width: 1040px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
 }
 
 /* 헤더 + 데이터 cell 의 padding / align 을 통일 — 행간 정렬 시각 안정화. */
 .tossTable__head > span {
+  display: flex;
+  align-items: center;
+  min-width: 0;
   padding: 14px 14px;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg-2);
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  align-self: center;
 }
 
 .tossTable__numHead {
+  justify-content: flex-end;
   text-align: right;
 }
 
 .tossTable__row {
-  display: contents;
+  display: grid;
+  grid-template-columns: var(--toss-table-columns);
+  align-items: stretch;
+  min-width: 1040px;
   text-decoration: none;
   color: inherit;
+  border-bottom: 1px solid var(--line);
 }
 
 .tossTable__row > * {
+  display: flex;
+  align-items: center;
+  min-width: 0;
   padding: 14px 14px;
-  border-bottom: 1px solid var(--line);
-  align-self: center;
 }
 
-.tossTable__row:hover > * {
+.tossTable__row:hover {
   background: rgba(255, 255, 255, 0.02);
+}
+
+.tossTable__row:last-child {
+  border-bottom: 0;
 }
 
 .tossTable__nameCell {
@@ -1831,11 +1846,13 @@
 }
 
 .tossTable__num {
+  justify-content: flex-end;
   text-align: right;
   color: var(--ink-1);
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .tossTable__num--up {
@@ -1848,11 +1865,15 @@
 /* 좁은 화면: 부 컬럼 숨김 — name + 수익률 + 평가 + 원금 만 유지 */
 @media (max-width: 1100px) {
   .tossTable {
-    grid-template-columns:
+    --toss-table-columns:
       minmax(160px, 2fr)
       minmax(90px, 1fr)
       minmax(110px, 1fr)
       minmax(110px, 1fr);
+  }
+  .tossTable__head,
+  .tossTable__row {
+    min-width: 560px;
   }
   .tossTable__head > span:nth-child(3),
   .tossTable__head > span:nth-child(4),
@@ -1871,7 +1892,11 @@
     font-size: 28px;
   }
   .tossTable {
-    grid-template-columns: minmax(140px, 2fr) minmax(90px, 1fr) minmax(110px, 1fr);
+    --toss-table-columns: minmax(140px, 2fr) minmax(90px, 1fr) minmax(110px, 1fr);
+  }
+  .tossTable__head,
+  .tossTable__row {
+    min-width: 420px;
   }
   /* 모바일: 이름 + 수익률 + 평가만 */
   .tossTable__head > span:nth-child(3),
