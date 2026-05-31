@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import DiffMatchPatch from "diff-match-patch";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
@@ -53,18 +54,102 @@ function labelFor(field: string): string {
  *
  * 변환 실패 시 fallback 으로 String(value) 사용 — 표시 자체는 항상 성공.
  */
-function stringifyValue(value: unknown): string {
+type DiffOp = -1 | 0 | 1;
+
+interface TextDiffChunk {
+  op: DiffOp;
+  text: string;
+}
+
+const DIFF_DELETE: DiffOp = -1;
+const DIFF_EQUAL: DiffOp = 0;
+const DIFF_INSERT: DiffOp = 1;
+
+function formatScalar(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") {
     return String(value);
   }
+  return JSON.stringify(value) ?? String(value);
+}
+
+function formatAbilityList(value: unknown): string | null {
+  if (!Array.isArray(value)) return null;
+
+  return value
+    .map((entry, index) => {
+      if (entry === null || typeof entry !== "object") {
+        return `#${index + 1} ${formatScalar(entry)}`;
+      }
+
+      const ability = entry as Record<string, unknown>;
+      const slot = formatScalar(ability.slot);
+      const name = formatScalar(ability.name);
+      const code = formatScalar(ability.code);
+      const description = formatScalar(ability.description);
+      const effect = formatScalar(ability.effect);
+      const lines = [`${slot ? `[${slot}] ` : ""}${name || "(이름 없음)"}`];
+
+      if (code) lines.push(`  code: ${code}`);
+      if (description) lines.push(`  description: ${description}`);
+      if (effect) lines.push(`  effect: ${effect}`);
+      return lines.join("\n");
+    })
+    .join("\n\n");
+}
+
+function stringifyPreviewValue(field: string, value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (field === "play.abilities") {
+    const formatted = formatAbilityList(value);
+    if (formatted !== null) return formatted;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => `- ${formatScalar(item)}`).join("\n");
+  }
   try {
     const json = JSON.stringify(value, null, 2);
-    return json.length > 1024 ? `${json.slice(0, 1024)}…` : json;
+    return json.length > 6000 ? `${json.slice(0, 6000)}...` : json;
   } catch {
     return String(value);
   }
+}
+
+function buildTextDiff(beforeText: string, afterText: string): TextDiffChunk[] {
+  const dmp = new DiffMatchPatch();
+  dmp.Diff_Timeout = 0.4;
+
+  const useLineMode =
+    beforeText.includes("\n") ||
+    afterText.includes("\n") ||
+    beforeText.length + afterText.length > 240;
+
+  let rawDiff: Array<[number, string]>;
+  if (useLineMode) {
+    const encoded = dmp.diff_linesToChars_(beforeText, afterText);
+    rawDiff = dmp.diff_main(encoded.chars1, encoded.chars2, false);
+    dmp.diff_charsToLines_(rawDiff, encoded.lineArray);
+  } else {
+    rawDiff = dmp.diff_main(beforeText, afterText, true);
+  }
+
+  dmp.diff_cleanupSemantic(rawDiff);
+  return rawDiff
+    .filter(([, text]) => text.length > 0)
+    .map(([op, text]) => ({
+      op:
+        op === DIFF_DELETE
+          ? DIFF_DELETE
+          : op === DIFF_INSERT
+            ? DIFF_INSERT
+            : DIFF_EQUAL,
+      text,
+    }));
 }
 
 function isEmptyValue(value: unknown): boolean {
@@ -351,44 +436,62 @@ function DiffRow({ index, entry }: { index: number; entry: DiffEntry }) {
           <ImageMeta before={before} after={after} field={field} />
         </div>
       ) : (
-        <div className={styles.textCompare}>
-          <ValueCell variant="before" value={before} />
-          <span className={styles.arrow} aria-hidden="true">
-            →
-          </span>
-          <ValueCell variant="after" value={after} />
-        </div>
+        <TextDiff field={field} before={before} after={after} />
       )}
     </li>
   );
 }
 
-function ValueCell({
-  variant,
-  value,
+function TextDiff({
+  field,
+  before,
+  after,
 }: {
-  variant: "before" | "after";
-  value: unknown;
+  field: string;
+  before: unknown;
+  after: unknown;
 }) {
-  const empty = isEmptyValue(value);
-  const text = empty ? "(비어 있음)" : stringifyValue(value);
+  const beforeText = stringifyPreviewValue(field, before);
+  const afterText = stringifyPreviewValue(field, after);
+  const chunks = buildTextDiff(beforeText, afterText);
+  const emptyBefore = isEmptyValue(before);
+  const emptyAfter = isEmptyValue(after);
 
   return (
-    <div
-      className={[
-        styles.valueCell,
-        variant === "before"
-          ? styles["valueCell--before"]
-          : styles["valueCell--after"],
-        empty ? styles["valueCell--empty"] : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-    >
-      <span className={styles.valueCell__tag}>
-        {variant === "before" ? "BEFORE" : "AFTER"}
-      </span>
-      {text}
+    <div className={styles.textDiff}>
+      <div className={styles.textDiff__legend} aria-hidden="true">
+        <span className={styles.textDiff__legendDelete}>삭제</span>
+        <span className={styles.textDiff__legendInsert}>추가</span>
+      </div>
+      <div
+        className={[
+          styles.textDiff__body,
+          emptyBefore || emptyAfter ? styles["textDiff__body--hasEmpty"] : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        {chunks.length === 0 ? (
+          <span className={styles.textDiff__empty}>(변경 없음)</span>
+        ) : (
+          chunks.map((chunk, index) => (
+            <span
+              // diff-match-patch chunks are positional, so index is stable for this preview render.
+              key={`${chunk.op}-${index}`}
+              className={[
+                styles.textDiff__chunk,
+                chunk.op === DIFF_DELETE
+                  ? styles["textDiff__chunk--delete"]
+                  : chunk.op === DIFF_INSERT
+                    ? styles["textDiff__chunk--insert"]
+                    : styles["textDiff__chunk--equal"],
+              ].join(" ")}
+            >
+              {chunk.text}
+            </span>
+          ))
+        )}
+      </div>
     </div>
   );
 }

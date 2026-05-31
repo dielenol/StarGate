@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type {
@@ -352,6 +352,23 @@ export default function CharacterEditForm({
   const [pendingBody, setPendingBody] = useState<Record<string, unknown> | null>(
     null,
   );
+  const actionsRef = useRef<HTMLDivElement | null>(null);
+  const [showFloatingActions, setShowFloatingActions] = useState(false);
+
+  useEffect(() => {
+    const target = actionsRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowFloatingActions(!entry.isIntersecting);
+      },
+      { rootMargin: "0px 0px -16px 0px", threshold: 0.1 },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
 
   function isSectionCollapsed(sectionId: SectionId): boolean {
     return collapsedSections[sectionId] === true;
@@ -511,6 +528,29 @@ export default function CharacterEditForm({
     setPreviewOpen(false);
     setPendingDiff([]);
     setPendingBody(null);
+  }
+
+  function renderActionButtons() {
+    return (
+      <>
+        <button
+          type="button"
+          className={styles.cancelBtn}
+          onClick={onCancel}
+          disabled={submitting}
+        >
+          취소
+        </button>
+        <button
+          type="submit"
+          className={styles.submitBtn}
+          disabled={submitting}
+          aria-busy={submitting}
+        >
+          {submitting ? "저장 중" : "저장"}
+        </button>
+      </>
+    );
   }
 
   return (
@@ -1293,24 +1333,20 @@ export default function CharacterEditForm({
       {/* ── Actions ── */}
       {error ? <div className={styles.error}>{error}</div> : null}
 
-      <div className={styles.actions}>
+      {showFloatingActions && !previewOpen ? (
+        <div className={styles.floatingActions} aria-label="빠른 저장 작업">
+          <div className={styles.floatingActions__inner}>
+            <span className={styles.actions__notice}>감사 로그 자동 기록</span>
+            <div className={styles.floatingActions__buttons}>
+              {renderActionButtons()}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div ref={actionsRef} className={styles.actions}>
         <span className={styles.actions__notice}>감사 로그 자동 기록</span>
-        <button
-          type="button"
-          className={styles.cancelBtn}
-          onClick={onCancel}
-          disabled={submitting}
-        >
-          취소
-        </button>
-        <button
-          type="submit"
-          className={styles.submitBtn}
-          disabled={submitting}
-          aria-busy={submitting}
-        >
-          {submitting ? "저장 중" : "저장"}
-        </button>
+        {renderActionButtons()}
       </div>
 
       {/* ── diff 프리뷰 모달 ── */}
