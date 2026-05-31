@@ -4,9 +4,15 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
+import { listCharacters } from "@/lib/db/characters";
+import { listSessionReports } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
 import { findWikiPageById, listWikiPages } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
+import {
+  relatedPersonnelForReports,
+  relatedReportsForWiki,
+} from "@/lib/lore-links";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import Box from "@/components/ui/Box/Box";
@@ -100,6 +106,16 @@ export default async function WikiDetailPage({
   const infoRows = wikiInfoRows(page);
   const relatedLinks = wikiRelatedLinks(page, allPages);
   const sourceLines = wikiSourceLines(page.content);
+  const allReports = await listSessionReports().catch(() => []);
+  const allCharacters = await listCharacters().catch(() => []);
+  const visibleCharacters = isAdmin
+    ? allCharacters
+    : allCharacters.filter((character) => character.isPublic !== false);
+  const relatedReports = relatedReportsForWiki(page, allReports);
+  const relatedPersonnel = relatedPersonnelForReports(
+    relatedReports,
+    visibleCharacters,
+  );
 
   return (
     <>
@@ -284,6 +300,57 @@ export default async function WikiDetailPage({
                     </span>
                     <span className={styles.related__title}>
                       {link.title}
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          ) : null}
+
+          {relatedReports.length > 0 ? (
+            <div className={styles.aside__section}>
+              <Eyebrow>OPERATION REPORTS</Eyebrow>
+              <nav className={styles.related} aria-label="관련 작전 보고서">
+                {relatedReports.map((report) => (
+                  <Link
+                    key={report.id}
+                    href={`/erp/sessions/report/${report.id}`}
+                    className={styles.related__link}
+                  >
+                    <span className={styles.related__meta}>
+                      {report.sessionId}
+                      {report.locationLabel ? ` · ${report.locationLabel}` : ""}
+                    </span>
+                    <span className={styles.related__title}>
+                      {report.title}
+                    </span>
+                    <span className={styles.related__note}>
+                      {formatDate(report.createdAt, "long")}
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          ) : null}
+
+          {relatedPersonnel.length > 0 ? (
+            <div className={styles.aside__section}>
+              <Eyebrow>DOSSIER</Eyebrow>
+              <nav className={styles.related} aria-label="관련 인물 Dossier">
+                {relatedPersonnel.map((character) => (
+                  <Link
+                    key={character.id}
+                    href={`/erp/personnel/${character.id}`}
+                    className={styles.related__link}
+                  >
+                    <span className={styles.related__meta}>
+                      {character.type} · {character.agentLevel ?? "U"}
+                    </span>
+                    <span className={styles.related__title}>
+                      {character.name}
+                    </span>
+                    <span className={styles.related__note}>
+                      {character.codename} · {character.role}
                     </span>
                   </Link>
                 ))}

@@ -234,6 +234,14 @@
   overflow-wrap: anywhere;
 }
 
+.relatedWiki__note {
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
 /* ── Report body ── */
 
 .reportBody {

@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
+import { listCharacters } from "@/lib/db/characters";
 import { findReportById } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
 import { listWikiPages } from "@/lib/db/wiki";
@@ -11,8 +12,11 @@ import {
   formatOperationReportTitle,
   formatShortReporterName,
 } from "@/lib/format/session-report";
+import {
+  relatedPersonnelForReport,
+  relatedWikiForReport,
+} from "@/lib/lore-links";
 import { renderMarkdown } from "@/lib/wiki-render";
-import type { WikiPage } from "@stargate/shared-db/types";
 
 import { IconReportDocument } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
@@ -28,84 +32,6 @@ import styles from "./page.module.css";
 
 interface Props {
   params: Promise<{ id: string }>;
-}
-
-interface RelatedWikiLink {
-  id: string;
-  title: string;
-  category: string;
-}
-
-const WIKI_CATEGORY_ORDER = [
-  "작전 보고서",
-  "개체",
-  "개념",
-  "세력",
-  "기관",
-  "장소",
-  "인물",
-  "규정",
-  "장비",
-  "소모품",
-  "문헌",
-];
-
-function extractSessionKeys(sessionId: string, title: string): string[] {
-  const keys = new Set<string>();
-  const source = `${sessionId} ${title}`;
-  const matches = source.match(/S\d+E\d+/giu) ?? [];
-
-  for (const match of matches) {
-    keys.add(match.toUpperCase());
-  }
-
-  return [...keys];
-}
-
-function pageMatchesReport(
-  page: WikiPage,
-  sessionKeys: string[],
-  displayTitle: string
-): boolean {
-  if (page.title === displayTitle) return true;
-  if (sessionKeys.length === 0) return false;
-
-  const tags = page.tags.map((tag) => tag.toUpperCase());
-  const title = page.title.toUpperCase();
-  const content = page.content.toUpperCase();
-
-  return sessionKeys.some(
-    (key) =>
-      tags.includes(key) ||
-      title.includes(key) ||
-      content.includes(`관련 세션: ${key}`.toUpperCase())
-  );
-}
-
-function toRelatedWikiLink(page: WikiPage): RelatedWikiLink | null {
-  const id = page._id?.toString();
-  if (!id) return null;
-
-  return {
-    id,
-    title: page.title,
-    category: page.category,
-  };
-}
-
-function sortRelatedWikiLinks(
-  left: RelatedWikiLink,
-  right: RelatedWikiLink
-): number {
-  const leftCategory = WIKI_CATEGORY_ORDER.indexOf(left.category);
-  const rightCategory = WIKI_CATEGORY_ORDER.indexOf(right.category);
-  const leftRank =
-    leftCategory === -1 ? WIKI_CATEGORY_ORDER.length : leftCategory;
-  const rightRank =
-    rightCategory === -1 ? WIKI_CATEGORY_ORDER.length : rightCategory;
-
-  if (leftRank !== rightRank) return leftRank - rightRank;
-  return left.title.localeCompare(right.title, "ko");
 }
 
 function formatMapCoordinate(mapX?: number, mapY?: number): string {
@@ -147,12 +73,16 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const dossierLead = report.locationLabel
     ? `${mapLocationLabel}에서 기록된 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.`
     : "작전지 좌표가 아직 등록되지 않은 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.";
-  const sessionKeys = extractSessionKeys(report.sessionId, displayTitle);
-  const relatedWikiLinks = (await listWikiPages().catch(() => []))
-    .filter((page) => pageMatchesReport(page, sessionKeys, displayTitle))
-    .map(toRelatedWikiLink)
-    .filter((page): page is RelatedWikiLink => page !== null)
-    .sort(sortRelatedWikiLinks);
+  const allPages = await listWikiPages().catch(() => []);
+  const allCharacters = await listCharacters().catch(() => []);
+  const visibleCharacters = isAdmin
+    ? allCharacters
+    : allCharacters.filter((character) => character.isPublic !== false);
+  const relatedWikiLinks = relatedWikiForReport(report, allPages);
+  const relatedPersonnelLinks = relatedPersonnelForReport(
+    report,
+    visibleCharacters,
+  );
 
   return (
     <>
@@ -263,6 +193,39 @@ export default async function SessionReportDetailPage({ params }: Props) {
                     </span>
                     <span className={styles.relatedWiki__title}>
                       {page.title}
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            </Box>
+          ) : null}
+
+          {relatedPersonnelLinks.length > 0 ? (
+            <Box className={styles.reportPanel}>
+              <PanelTitle
+                right={
+                  <span className={styles.mono}>
+                    {relatedPersonnelLinks.length}
+                  </span>
+                }
+              >
+                RELATED DOSSIER
+              </PanelTitle>
+              <nav className={styles.relatedWiki} aria-label="관련 인물 Dossier">
+                {relatedPersonnelLinks.map((character) => (
+                  <Link
+                    key={character.id}
+                    href={`/erp/personnel/${character.id}`}
+                    className={styles.relatedWiki__link}
+                  >
+                    <span className={styles.relatedWiki__category}>
+                      {character.type} · {character.agentLevel ?? "U"}
+                    </span>
+                    <span className={styles.relatedWiki__title}>
+                      {character.name}
+                    </span>
+                    <span className={styles.relatedWiki__note}>
+                      {character.codename} · {character.role}
                     </span>
                   </Link>
                 ))}
