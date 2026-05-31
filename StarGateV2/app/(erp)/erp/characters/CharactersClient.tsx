@@ -1,17 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import type { MouseEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import type {
-  CharacterTier,
-} from "@/types/character";
 import type { AgentCharacterCardDto } from "@/hooks/queries/useCharactersQuery";
-
 import { useAgentCharactersQuery } from "@/hooks/queries/useCharactersQuery";
+import type { CharacterTier } from "@/types/character";
 
-import { getDepartmentLabel } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { getDepartmentLabel } from "@/lib/org-structure";
 
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -36,21 +34,43 @@ const FILTER_LABEL: Record<"ALL" | CharacterTier, string> = {
 const HP_MAX = 300;
 const SAN_MAX = 100;
 
-function getInitial(c: AgentCharacterCardDto): string {
-  const source = c.lore.name || c.codename;
-  return source.charAt(0).toUpperCase() || "?";
-}
-
-/** tier 미설정 데이터는 MAIN 으로 fallback (legacy 호환). */
-function tierOf(c: AgentCharacterCardDto): CharacterTier {
-  return c.tier ?? "MAIN";
-}
-
 interface Props {
   initialCharacters: AgentCharacterCardDto[];
   tierFilter: CharacterTier | null;
   isGMOrAbove: boolean;
   viewerUserId: string;
+}
+
+function getInitial(c: AgentCharacterCardDto): string {
+  const source = c.lore.name || c.codename;
+  return source.charAt(0).toUpperCase() || "?";
+}
+
+function tierOf(c: AgentCharacterCardDto): CharacterTier {
+  return c.tier ?? "MAIN";
+}
+
+function hrefForFilter(filter: "ALL" | CharacterTier) {
+  return filter === "ALL" ? "/erp/characters" : `/erp/characters?tier=${filter}`;
+}
+
+function filterFromLocation(): CharacterTier | null {
+  const params = new URLSearchParams(window.location.search);
+  const tier = params.get("tier");
+  return VALID_TIERS.includes(tier as CharacterTier)
+    ? (tier as CharacterTier)
+    : null;
+}
+
+function shouldUseClientNavigation(event: MouseEvent<HTMLAnchorElement>) {
+  return (
+    event.button === 0 &&
+    !event.defaultPrevented &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
 }
 
 export default function CharactersClient({
@@ -59,16 +79,40 @@ export default function CharactersClient({
   isGMOrAbove,
   viewerUserId,
 }: Props) {
-  // 카운트(ALL/MAIN/MINI) 정확도를 위해 쿼리는 항상 전체("ALL") 를 fetch.
-  // tier 필터는 displayedAgents 에서 클라이언트 측으로만 적용.
+  const [activeTierFilter, setActiveTierFilter] =
+    useState<CharacterTier | null>(tierFilter);
+
   const { data: characters = [] } = useAgentCharactersQuery("ALL", {
     initialData: initialCharacters,
   });
 
-  const agents = characters;
-  const displayedAgents = tierFilter
-    ? agents.filter((c) => tierOf(c) === tierFilter)
-    : agents;
+  const displayedAgents = useMemo(
+    () =>
+      activeTierFilter
+        ? characters.filter((c) => tierOf(c) === activeTierFilter)
+        : characters,
+    [characters, activeTierFilter],
+  );
+
+  useEffect(() => {
+    function handlePopState() {
+      setActiveTierFilter(filterFromLocation());
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  function handleFilterClick(
+    filter: "ALL" | CharacterTier,
+    event: MouseEvent<HTMLAnchorElement>,
+  ) {
+    if (!shouldUseClientNavigation(event)) return;
+    event.preventDefault();
+    const nextFilter = filter === "ALL" ? null : filter;
+    setActiveTierFilter(nextFilter);
+    window.history.pushState(null, "", hrefForFilter(filter));
+  }
 
   return (
     <>
@@ -82,49 +126,55 @@ export default function CharactersClient({
 
       <div className={styles.filterRow}>
         <nav className={styles.filters} aria-label="캐릭터 분류 필터">
-        <Link
-          href="/erp/characters"
-          className={[
-            styles.filters__tab,
-            !tierFilter ? styles["filters__tab--active"] : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          aria-current={!tierFilter ? "page" : undefined}
-        >
-          <OrgIcon code="ALL" size={16} className={styles.filters__tab__icon} />
-          {FILTER_LABEL.ALL}
-          <span className={styles.filters__tab__count}>
-            · <b>{agents.length}</b>
-          </span>
-        </Link>
-        {VALID_TIERS.map((t) => {
-          const count = agents.filter((c) => tierOf(c) === t).length;
-          const active = tierFilter === t;
-          return (
-            <Link
-              key={t}
-              href={`/erp/characters?tier=${t}`}
-              className={[
-                styles.filters__tab,
-                active ? styles["filters__tab--active"] : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              aria-current={active ? "page" : undefined}
-            >
-              <OrgIcon
-                code={t}
-                size={16}
-                className={styles.filters__tab__icon}
-              />
-              {FILTER_LABEL[t]}
-              <span className={styles.filters__tab__count}>
-                · <b>{count}</b>
-              </span>
-            </Link>
-          );
-        })}
+          <Link
+            href={hrefForFilter("ALL")}
+            className={[
+              styles.filters__tab,
+              !activeTierFilter ? styles["filters__tab--active"] : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            aria-current={!activeTierFilter ? "page" : undefined}
+            onClick={(event) => handleFilterClick("ALL", event)}
+          >
+            <OrgIcon
+              code="ALL"
+              size={16}
+              className={styles.filters__tab__icon}
+            />
+            {FILTER_LABEL.ALL}
+            <span className={styles.filters__tab__count}>
+              · <b>{characters.length}</b>
+            </span>
+          </Link>
+          {VALID_TIERS.map((tier) => {
+            const count = characters.filter((c) => tierOf(c) === tier).length;
+            const active = activeTierFilter === tier;
+            return (
+              <Link
+                key={tier}
+                href={hrefForFilter(tier)}
+                className={[
+                  styles.filters__tab,
+                  active ? styles["filters__tab--active"] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                aria-current={active ? "page" : undefined}
+                onClick={(event) => handleFilterClick(tier, event)}
+              >
+                <OrgIcon
+                  code={tier}
+                  size={16}
+                  className={styles.filters__tab__icon}
+                />
+                {FILTER_LABEL[tier]}
+                <span className={styles.filters__tab__count}>
+                  · <b>{count}</b>
+                </span>
+              </Link>
+            );
+          })}
         </nav>
         {isGMOrAbove ? (
           <Button
@@ -147,9 +197,7 @@ export default function CharactersClient({
             const departmentLabel = c.department
               ? getDepartmentLabel(c.department)
               : null;
-            const subLine = [c.role, departmentLabel]
-              .filter(Boolean)
-              .join(" · ");
+            const subLine = [c.role, departmentLabel].filter(Boolean).join(" / ");
             const displayName = c.lore.name || c.codename;
             const tier = tierOf(c);
 
@@ -218,8 +266,6 @@ export default function CharactersClient({
   );
 }
 
-/** AGENT 카드 vitals 한 줄 — 라벨 + tick 5단 progress bar + 숫자값 */
-/** 캐릭터 카드 썸네일 — src 가 비어 있거나 로드 실패 시 자동으로 seal placeholder 로 fallback. */
 function CharacterCardThumb({
   src,
   alt,
