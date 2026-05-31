@@ -28,6 +28,75 @@ const metadataBase = process.env.NEXT_PUBLIC_SITE_URL
     ? new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`)
     : new URL("http://localhost:3000");
 
+const stripInjectedUserSelectScript = `
+(() => {
+  const STYLE_PATTERN = /(?:^|;)\\s*(?:-webkit-)?user-select\\s*:\\s*auto\\s*(?:;|$)/i;
+
+  const stripElement = (element) => {
+    if (!(element instanceof HTMLElement || element instanceof SVGElement)) {
+      return;
+    }
+
+    const style = element.getAttribute("style");
+    if (!style || !STYLE_PATTERN.test(style)) {
+      return;
+    }
+
+    element.style.userSelect = "";
+    element.style.webkitUserSelect = "";
+    element.style.msUserSelect = "";
+
+    if (!element.getAttribute("style")?.trim()) {
+      element.removeAttribute("style");
+    }
+  };
+
+  const stripTree = (root) => {
+    if (root instanceof Element) {
+      stripElement(root);
+    }
+
+    if ("querySelectorAll" in root) {
+      root
+        .querySelectorAll('[style*="user-select"]')
+        .forEach(stripElement);
+    }
+  };
+
+  stripTree(document.documentElement);
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === "attributes") {
+        stripElement(mutation.target);
+        continue;
+      }
+
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          stripTree(node);
+        }
+      });
+    }
+  });
+
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["style"],
+    childList: true,
+    subtree: true,
+  });
+
+  window.addEventListener(
+    "load",
+    () => {
+      window.setTimeout(() => observer.disconnect(), 3000);
+    },
+    { once: true },
+  );
+})();
+`;
+
 export const metadata: Metadata = {
   title: "NOVUS ORDO",
   description: "노부스 오르도에 오신 것을 환영합니다.",
@@ -68,7 +137,13 @@ export default function RootLayout({
       className={`${jetbrainsMono.variable} ${notoSansKr.variable}`}
       suppressHydrationWarning
     >
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <script
+          id="strip-injected-user-select"
+          dangerouslySetInnerHTML={{ __html: stripInjectedUserSelectScript }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
