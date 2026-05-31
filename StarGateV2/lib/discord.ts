@@ -133,14 +133,14 @@ function getCharacterPageUrl(characterId: string): string {
   return `${getSiteBaseUrl()}/erp/characters/${characterId}`;
 }
 
-function isPlayerSelfEdit(payload: CharacterEditWebhookPayload): boolean {
-  return payload.source === "player" && payload.actorIsOwner;
+function isOwnerSelfEdit(payload: CharacterEditWebhookPayload): boolean {
+  return payload.actorIsOwner;
 }
 
 function getCharacterEditWebhookUrl(
   payload: CharacterEditWebhookPayload,
 ): string | undefined {
-  if (isPlayerSelfEdit(payload)) {
+  if (isOwnerSelfEdit(payload)) {
     return (
       process.env.DISCORD_WEBHOOK_URL ||
       process.env.DISCORD_WEBHOOK_CHAR_SELF_EDIT_URL ||
@@ -354,7 +354,7 @@ export async function notifyCharacterEdit(
 ): Promise<void> {
   const webhookUrl = getCharacterEditWebhookUrl(payload);
   if (!webhookUrl) {
-    const envName = isPlayerSelfEdit(payload)
+    const envName = isOwnerSelfEdit(payload)
       ? "DISCORD_WEBHOOK_URL"
       : "DISCORD_WEBHOOK_CHAR_EDIT_URL";
     console.warn(
@@ -366,7 +366,7 @@ export async function notifyCharacterEdit(
   try {
     const { character, actor, source, actorIsOwner, changes, reason, timestamp } =
       payload;
-    const selfEdit = isPlayerSelfEdit(payload);
+    const selfEdit = isOwnerSelfEdit(payload);
     const editKind = selfEdit ? "자가편집" : "관리자 편집";
 
     const total = changes.length;
@@ -405,8 +405,9 @@ export async function notifyCharacterEdit(
       ),
       url: getCharacterPageUrl(character.id),
       description,
-      color:
-        source === "admin"
+      color: selfEdit
+        ? DISCORD_COLORS.charEditPlayer
+        : source === "admin"
           ? DISCORD_COLORS.charEditAdmin
           : DISCORD_COLORS.charEditPlayer,
       fields,
