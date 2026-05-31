@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { ObjectId } from "mongodb";
 
 import { auth } from "@/lib/auth/config";
+import { hasRole, isCharacterOwner } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import { listSessionReports } from "@/lib/db/session-reports";
 import { getUserClearance, filterCharacterByClearance } from "@/lib/personnel";
@@ -25,12 +26,11 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
 
   // 본인 보유 캐릭터는 자동 GM clearance — 자기 캐릭터의 전체 정보(스탯/어빌리티/메타)는
   // 권한 등급과 무관하게 볼 수 있어야 한다 (예: J 등급 플레이어가 본인 캐릭터 스탯 확인 가능).
-  const isOwnCharacter =
-    character.ownerId !== null &&
-    character.ownerId === session.user.id;
+  const isOwnCharacter = isCharacterOwner(session.user.id, character);
   const clearance = isOwnCharacter
     ? "GM"
     : getUserClearance(session.user.role);
+  const canEditDossier = hasRole(session.user.role, "GM");
 
   const filtered = filterCharacterByClearance(character, clearance);
   const serialized = JSON.parse(JSON.stringify(filtered));
@@ -53,6 +53,7 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
     <DossierClient
       character={serialized}
       clearance={clearance}
+      canEditDossier={canEditDossier}
       relatedReports={serializedRelatedReports}
     />
   );

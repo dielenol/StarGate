@@ -28,7 +28,7 @@ import DiffPreviewModal, {
 import styles from "./CharacterEditForm.module.css";
 
 /**
- * 'admin' = V+ 모든 필드 편집 가능, 'player' = 본인 캐릭터 lore 8필드만 편집 가능.
+ * 'admin' = V+ 모든 필드 편집 가능, 'player' = 본인 캐릭터의 안전한 lore/play 자가편집 필드.
  * 'none' 은 폼 진입 자체가 막혀 여기서는 다루지 않음.
  */
 type EditMode = "admin" | "player";
@@ -166,7 +166,7 @@ function diffToPatchBody(
 }
 
 /* ── 모드별 diff 비교 대상 dot path 세트 ──
-   - player: lore 8필드
+   - player: 안전한 lore/play 자가편집 필드
    - admin: root 메타 + lore 전 + play 전 — shared-db 화이트리스트 미러 */
 const PLAYER_DIFF_FIELDS: ReadonlyArray<string> = [
   "lore.quote",
@@ -177,6 +177,20 @@ const PLAYER_DIFF_FIELDS: ReadonlyArray<string> = [
   "lore.age",
   "lore.height",
   "lore.weight",
+  "play.className",
+  "play.hp",
+  "play.hpDelta",
+  "play.san",
+  "play.sanDelta",
+  "play.def",
+  "play.defDelta",
+  "play.atk",
+  "play.atkDelta",
+  "play.points",
+  "play.abilityType",
+  "play.weaponTraining",
+  "play.skillTraining",
+  "play.abilities",
 ];
 
 const ADMIN_DIFF_FIELDS: ReadonlyArray<string> = [
@@ -518,7 +532,7 @@ export default function CharacterEditForm({
           <div className={styles.modeBanner__text}>
             <b>{isPlayer ? "플레이어 편집 모드" : "관리자 편집 모드"}</b>
             {isPlayer
-              ? "lore 서사 필드만 수정 가능합니다 (능력치 · 이미지는 GM 문의)."
+              ? "서사, 능력치, 포인트, 스킬을 수정할 수 있습니다. 저장 내역은 관리자에게 전달됩니다."
               : "lore + play 모든 필드를 수정할 수 있습니다."}
           </div>
           <span
@@ -733,7 +747,7 @@ export default function CharacterEditForm({
         onToggle={() => toggleSection("bonusPoint")}
       >
           <div className={styles.grid}>
-            <Field id="points" label="BONUS POINT" locked={isPlayer}>
+            <Field id="points" label="BONUS POINT">
               <input
                 id="points"
                 type="number"
@@ -743,7 +757,6 @@ export default function CharacterEditForm({
                   const n = Number(e.target.value);
                   if (Number.isFinite(n)) setPoints(n);
                 }}
-                disabled={isPlayer}
               />
             </Field>
           </div>
@@ -915,9 +928,8 @@ export default function CharacterEditForm({
           </div>
       </CollapsiblePanel>
 
-      {/* ── PLAY (admin only) ── */}
-      {!isPlayer ? (
-        <>
+      {/* ── PLAY ── */}
+      <>
           <CollapsiblePanel
             sectionId="combat"
             title="COMBAT STATS · base + delta 메모"
@@ -1049,13 +1061,14 @@ export default function CharacterEditForm({
                     onChange={(e) => setAbilityType(e.target.value)}
                   />
                 </Field>
-                <Field id="credit" label="CREDIT">
+                <Field id="credit" label="CREDIT" locked={isPlayer}>
                   <input
                     id="credit"
                     type="text"
                     className={styles.input}
                     value={credit}
                     onChange={(e) => setCredit(e.target.value)}
+                    disabled={isPlayer}
                   />
                 </Field>
                 <Field
@@ -1090,7 +1103,8 @@ export default function CharacterEditForm({
           </CollapsiblePanel>
 
           {/* Equipment list */}
-          <CollapsiblePanel
+          {!isPlayer ? (
+            <CollapsiblePanel
             sectionId="equipment"
             title="EQUIPMENT"
             collapsed={isSectionCollapsed("equipment")}
@@ -1204,7 +1218,8 @@ export default function CharacterEditForm({
                   ))}
                 </div>
               )}
-          </CollapsiblePanel>
+            </CollapsiblePanel>
+          ) : null}
 
           {/* Abilities — 11-슬롯 고정 그리드 */}
           <CollapsiblePanel
@@ -1273,8 +1288,7 @@ export default function CharacterEditForm({
                 ))}
               </div>
           </CollapsiblePanel>
-        </>
-      ) : null}
+      </>
 
       {/* ── Actions ── */}
       {error ? <div className={styles.error}>{error}</div> : null}

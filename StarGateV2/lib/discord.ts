@@ -122,6 +122,35 @@ export interface CharacterEditWebhookPayload {
   timestamp: Date;
 }
 
+function getSiteBaseUrl(): string {
+  return (process.env.NEXT_PUBLIC_SITE_URL || "https://www.ordonet.co.kr").replace(
+    /\/+$/,
+    "",
+  );
+}
+
+function getCharacterPageUrl(characterId: string): string {
+  return `${getSiteBaseUrl()}/erp/characters/${characterId}`;
+}
+
+function isPlayerSelfEdit(payload: CharacterEditWebhookPayload): boolean {
+  return payload.source === "player" && payload.actorIsOwner;
+}
+
+function getCharacterEditWebhookUrl(
+  payload: CharacterEditWebhookPayload,
+): string | undefined {
+  if (isPlayerSelfEdit(payload)) {
+    return (
+      process.env.DISCORD_WEBHOOK_CHAR_SELF_EDIT_URL ||
+      process.env.DISCORD_WEBHOOK_CHARACTER_SELF_EDIT_URL ||
+      process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL
+    );
+  }
+
+  return process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL;
+}
+
 /**
  * Discord mention syntax 무력화. 사용자 제어 가능 텍스트(quote/appearance/reason 등)가
  * embed 로 흘러갈 때 `@everyone`, `<@123>`, `<@&123>`, `<#123>` 같은 ping 트리거를
@@ -322,10 +351,13 @@ export async function notifyShopRestock(
 export async function notifyCharacterEdit(
   payload: CharacterEditWebhookPayload,
 ): Promise<void> {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL;
+  const webhookUrl = getCharacterEditWebhookUrl(payload);
   if (!webhookUrl) {
+    const envName = isPlayerSelfEdit(payload)
+      ? "DISCORD_WEBHOOK_CHAR_SELF_EDIT_URL"
+      : "DISCORD_WEBHOOK_CHAR_EDIT_URL";
     console.warn(
-      "[notifyCharacterEdit] DISCORD_WEBHOOK_CHAR_EDIT_URL 미설정 — silent skip",
+      `[notifyCharacterEdit] ${envName} 미설정 — silent skip`,
     );
     return;
   }
@@ -333,6 +365,8 @@ export async function notifyCharacterEdit(
   try {
     const { character, actor, source, actorIsOwner, changes, reason, timestamp } =
       payload;
+    const selfEdit = isPlayerSelfEdit(payload);
+    const editKind = selfEdit ? "자가편집" : "관리자 편집";
 
     const total = changes.length;
     const visibleChanges = changes.slice(0, MAX_CHANGE_FIELDS);
@@ -364,10 +398,11 @@ export async function notifyCharacterEdit(
     }`;
 
     const embed: DiscordEmbed = {
-      title: `캐릭터 편집: ${character.name} (${character.codename})`.slice(
+      title: `캐릭터 ${editKind}: ${character.name} (${character.codename})`.slice(
         0,
         256,
       ),
+      url: getCharacterPageUrl(character.id),
       description,
       color:
         source === "admin"
@@ -379,7 +414,8 @@ export async function notifyCharacterEdit(
     };
 
     const discordPayload: DiscordPayload = {
-      username: "StarGate Audit Bot",
+      username: selfEdit ? "StarGate Character Watch" : "StarGate Audit Bot",
+      allowed_mentions: { parse: [] },
       embeds: [embed],
     };
 

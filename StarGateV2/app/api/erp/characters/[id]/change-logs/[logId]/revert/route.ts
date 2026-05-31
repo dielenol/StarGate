@@ -33,7 +33,7 @@ import {
 } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
-import { requireRole } from "@/lib/auth/rbac";
+import { isCharacterOwner, requireRole } from "@/lib/auth/rbac";
 import { computeCharacterDiff } from "@/lib/character/diff";
 import { changesToRevertBody } from "@/lib/character/revert";
 import { findCharacterById, updateCharacter } from "@/lib/db/characters";
@@ -98,6 +98,7 @@ export async function POST(_request: Request, context: RouteContext) {
       { status: 404 },
     );
   }
+  const actorIsOwner = isCharacterOwner(session.user.id, before);
 
   /**
    * revert 화이트리스트 — admin 권한자(GM)이 수행하는 복원이므로 root 메타 + lore + play
@@ -159,7 +160,7 @@ export async function POST(_request: Request, context: RouteContext) {
             characterId: new ObjectId(id),
             actorId: session.user.id,
             actorRole: session.user.role,
-            actorIsOwner: before.ownerId === session.user.id,
+            actorIsOwner,
             source: "admin",
             changes: revertChanges,
             reason: `revert:${logId}`,
@@ -210,7 +211,7 @@ export async function POST(_request: Request, context: RouteContext) {
               role: session.user.role,
             },
             source: "admin",
-            actorIsOwner: before.ownerId === session.user.id,
+            actorIsOwner,
             changes: revertChanges,
             reason: `revert:${logId}`,
             timestamp: new Date(),

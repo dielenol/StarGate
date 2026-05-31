@@ -57,6 +57,7 @@ if (!HAS_MODULE_MOCK) {
     ALLOWED_LORE_FIELDS_ADMIN,
     ALLOWED_LORE_FIELDS_PLAYER,
     ALLOWED_PLAY_FIELDS_ADMIN,
+    ALLOWED_PLAY_FIELDS_PLAYER,
   } = await import(new URL("crud/characters.js", sharedDbRoot).href);
 
   const ROOT_ALLOWED_FIELDS_ADMIN = new Set([
@@ -102,6 +103,7 @@ if (!HAS_MODULE_MOCK) {
       }
     } else {
       for (const f of ALLOWED_LORE_FIELDS_PLAYER) allowed.add(f);
+      for (const f of ALLOWED_PLAY_FIELDS_PLAYER) allowed.add(f);
     }
     return {
       status: 200,
@@ -207,9 +209,9 @@ if (!HAS_MODULE_MOCK) {
     }
   });
 
-  /* ── C-4: player + 본인 owner AGENT + lore 8필드 ── */
+  /* ── C-4: player + 본인 owner AGENT + lore/play 자가편집 필드 ── */
 
-  test("C-4: player U + owner AGENT — lore 8필드 dot path 통과", async () => {
+  test("C-4: player U + owner AGENT — lore/play 자가편집 dot path 통과", async () => {
     capturedSetPayload = null;
     const before = { type: "AGENT", ownerId: "u-self" };
     const session = { user: { id: "u-self", role: "U" } };
@@ -217,10 +219,10 @@ if (!HAS_MODULE_MOCK) {
     assert.equal(compose.mode, "player");
     assert.equal(compose.playAllowed, false);
 
-    // play 화이트리스트가 합성에 미포함이어야 함
-    for (const k of ALLOWED_PLAY_FIELDS_ADMIN) {
-      assert.ok(!compose.allowedFields.has(k));
-    }
+    assert.ok(compose.allowedFields.has("play.hp"));
+    assert.ok(compose.allowedFields.has("play.abilities"));
+    assert.ok(!compose.allowedFields.has("play.credit"));
+    assert.ok(!compose.allowedFields.has("play.equipment"));
     // root 도 미포함
     for (const k of ROOT_ALLOWED_FIELDS_ADMIN) {
       assert.ok(!compose.allowedFields.has(k));
@@ -237,28 +239,26 @@ if (!HAS_MODULE_MOCK) {
         height: "180",
         weight: "75",
       },
+      play: {
+        hp: 12,
+        atk: 3,
+        points: 2,
+        abilities: [{ slot: "C1", name: "ok" }],
+      },
     };
     await updateCharacter(VALID_ID, body, { allowedFields: compose.allowedFields });
     const keys = Object.keys(capturedSetPayload).filter((k) => k !== "updatedAt");
-    assert.equal(keys.length, 8);
-    assert.deepEqual(
-      new Set(keys),
-      new Set([
-        "lore.quote",
-        "lore.appearance",
-        "lore.personality",
-        "lore.background",
-        "lore.gender",
-        "lore.age",
-        "lore.height",
-        "lore.weight",
-      ]),
-    );
+    assert.ok(keys.includes("lore.quote"));
+    assert.ok(keys.includes("lore.weight"));
+    assert.ok(keys.includes("play.hp"));
+    assert.ok(keys.includes("play.atk"));
+    assert.ok(keys.includes("play.points"));
+    assert.ok(keys.includes("play.abilities"));
   });
 
-  /* ── C-5: player + 본인 AGENT + play 시도 → silent drop ── */
+  /* ── C-5: player + 본인 AGENT + play 경제/소유 필드 시도 → silent drop ── */
 
-  test("C-5: player U + owner AGENT — play 화이트리스트는 포함 안 됨, body.play silent drop", async () => {
+  test("C-5: player U + owner AGENT — play 경제/장비 필드는 silent drop", async () => {
     capturedSetPayload = null;
     const before = { type: "AGENT", ownerId: "u-self" };
     const session = { user: { id: "u-self", role: "U" } };
@@ -266,13 +266,15 @@ if (!HAS_MODULE_MOCK) {
 
     const evilBody = {
       lore: { appearance: "ok" },
-      play: { hp: 9999, atk: 9999 },
+      play: { hp: 9999, atk: 9999, credit: "999999", equipment: [] },
     };
     await updateCharacter(VALID_ID, evilBody, {
       allowedFields: compose.allowedFields,
     });
     assert.equal(capturedSetPayload["lore.appearance"], "ok");
-    for (const forbidden of ["play.hp", "play.atk", "play.def", "play.san"]) {
+    assert.equal(capturedSetPayload["play.hp"], 9999);
+    assert.equal(capturedSetPayload["play.atk"], 9999);
+    for (const forbidden of ["play.credit", "play.equipment"]) {
       assert.ok(
         !(forbidden in capturedSetPayload),
         `${forbidden} silent drop 실패`,

@@ -493,6 +493,7 @@ function KVEditSelectRow({
 interface Props {
   character: Character;
   clearance: AgentLevel;
+  canEditDossier?: boolean;
   relatedReports?: RelatedFieldReport[];
 }
 
@@ -513,13 +514,13 @@ interface RelatedFieldReport {
 export default function DossierClient({
   character,
   clearance,
+  canEditDossier = false,
   relatedReports = [],
 }: Props) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<DossierTabKey>("dossier");
   const [guideOpen, setGuideOpen] = useState(false);
 
-  const isGM = clearance === "GM";
   const characterId = character._id ? String(character._id) : null;
 
   /* ── 편집 상태 ──
@@ -749,7 +750,7 @@ export default function DossierClient({
         </>
       ) : (
         <>
-          {isGM && characterId ? (
+          {canEditDossier && characterId ? (
             <Button
               variant="primary"
               size="sm"
@@ -1095,7 +1096,7 @@ export default function DossierClient({
    * - 정적 기본값(`FIELD_REQUIRED_LEVEL[group]`) 을 select label 에 표시해 운영진 의도 파악을 돕는다.
    */
   const renderClearanceOverridesEditor = () => {
-    if (!isEditing || !isGM) return null;
+    if (!isEditing || !canEditDossier) return null;
 
     const groups = isAgent
       ? FIELD_GROUP_ORDER

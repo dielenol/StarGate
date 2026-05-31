@@ -69,7 +69,7 @@ if (!HAS_MODULE_MOCK) {
 
   /* ── S3: PLAYER_ALLOWED_CHARACTER_FIELDS 형상 검증 ── */
 
-  test("S3: PLAYER_ALLOWED_CHARACTER_FIELDS — 정확히 8개 필드만 포함 (lore.* 영역)", () => {
+  test("S3: PLAYER_ALLOWED_CHARACTER_FIELDS — 자가편집 필드만 포함", () => {
     const expected = [
       "lore.quote",
       "lore.appearance",
@@ -79,6 +79,20 @@ if (!HAS_MODULE_MOCK) {
       "lore.age",
       "lore.height",
       "lore.weight",
+      "play.className",
+      "play.hp",
+      "play.hpDelta",
+      "play.san",
+      "play.sanDelta",
+      "play.def",
+      "play.defDelta",
+      "play.atk",
+      "play.atkDelta",
+      "play.points",
+      "play.abilityType",
+      "play.weaponTraining",
+      "play.skillTraining",
+      "play.abilities",
     ];
     assert.equal(
       PLAYER_ALLOWED_CHARACTER_FIELDS.size,
@@ -108,16 +122,14 @@ if (!HAS_MODULE_MOCK) {
     }
   });
 
-  test("S3: PLAYER_ALLOWED — 능력치 필드 미포함 (play.hp/atk/def/san)", () => {
+  test("S3: PLAYER_ALLOWED — 경제/장비 필드 미포함 (play.credit/equipment)", () => {
     for (const forbidden of [
-      "play.hp",
-      "play.atk",
-      "play.def",
-      "play.san",
+      "play.credit",
+      "play.equipment",
     ]) {
       assert.ok(
         !PLAYER_ALLOWED_CHARACTER_FIELDS.has(forbidden),
-        `능력치 ${forbidden}가 PLAYER_ALLOWED에 포함됨 — 자가편집 경로에서 스탯 조작 가능`
+        `경제/장비 ${forbidden}가 PLAYER_ALLOWED에 포함됨`
       );
     }
   });
@@ -207,13 +219,11 @@ if (!HAS_MODULE_MOCK) {
       "lore.appearance는 dot path로 정상 통과"
     );
 
-    // 3) 능력치 dot path는 PLAYER_ALLOWED에 없으므로 절대 누설되지 않음
-    for (const stat of ["play.hp", "play.atk", "play.def", "play.san"]) {
-      assert.ok(
-        !(stat in capturedSetPayload),
-        `${stat}이 $set에 누설됨 — 능력치 덮어쓰기 차단 실패`
-      );
-    }
+    // 3) 자가편집 허용 play dot path는 정상 통과
+    assert.equal(capturedSetPayload["play.hp"], 0);
+    assert.equal(capturedSetPayload["play.san"], 0);
+    assert.equal(capturedSetPayload["play.def"], 0);
+    assert.equal(capturedSetPayload["play.atk"], 999);
 
     // 4) 이미지 dot path도 누설되지 않음
     for (const img of ["lore.mainImage", "lore.posterImage"]) {

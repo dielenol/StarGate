@@ -5,12 +5,18 @@ import {
   ALLOWED_LORE_FIELDS_ADMIN,
   ALLOWED_LORE_FIELDS_PLAYER,
   ALLOWED_PLAY_FIELDS_ADMIN,
+  ALLOWED_PLAY_FIELDS_PLAYER,
   insertChangeLog,
   loreSheetSchema,
 } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
-import { canEditLore, canEditPlay, requireRole } from "@/lib/auth/rbac";
+import {
+  canEditLore,
+  canEditPlay,
+  isCharacterOwner,
+  requireRole,
+} from "@/lib/auth/rbac";
 import { checkEditCooldown } from "@/lib/character/cooldown";
 import { computeCharacterDiff } from "@/lib/character/diff";
 import {
@@ -153,6 +159,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const playAllowed = canEditPlay(session.user.id, session.user.role, before);
   const isAdmin = loreDecision.mode === "admin";
   const isPlayer = loreDecision.mode === "player";
+  const actorIsOwner = isCharacterOwner(session.user.id, before);
 
   /**
    * 쿨다운 enforcement (P6) — player 모드에만 적용.
@@ -209,7 +216,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
-  // Phase 3+ — sub-document 별 화이트리스트 합성. admin 은 root + lore + play, player 는 lore 8필드.
+  // Phase 3+ — sub-document 별 화이트리스트 합성. admin 은 root + lore + play, player 는 안전한 lore/play 자가편집 필드.
   const allowedFields = new Set<string>();
   if (isAdmin) {
     for (const f of ROOT_ALLOWED_FIELDS_ADMIN) allowedFields.add(f);
@@ -219,7 +226,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   } else {
     for (const f of ALLOWED_LORE_FIELDS_PLAYER) allowedFields.add(f);
-    // play 는 player 에게 항상 차단 (canEditPlay → false). 화이트리스트 미포함 → 자동 drop.
+    for (const f of ALLOWED_PLAY_FIELDS_PLAYER) allowedFields.add(f);
   }
 
   try {
@@ -243,7 +250,7 @@ export async function PATCH(request: Request, context: RouteContext) {
             characterId: new ObjectId(id),
             actorId: session.user.id,
             actorRole: session.user.role,
-            actorIsOwner: before.ownerId === session.user.id,
+            actorIsOwner,
             source: isAdmin ? "admin" : "player",
             changes,
             ...(reason ? { reason } : {}),
@@ -268,7 +275,7 @@ export async function PATCH(request: Request, context: RouteContext) {
                   role: session.user.role,
                 },
                 source: isAdmin ? "admin" : "player",
-                actorIsOwner: before.ownerId === session.user.id,
+                actorIsOwner,
                 changes,
                 reason,
                 timestamp: new Date(),

@@ -75,6 +75,22 @@ if (!HAS_MODULE_MOCK) {
         height: form.height,
         weight: form.weight,
       },
+      play: {
+        className: form.className,
+        hp: form.hp,
+        hpDelta: form.hpDelta,
+        san: form.san,
+        sanDelta: form.sanDelta,
+        def: form.def,
+        defDelta: form.defDelta,
+        atk: form.atk,
+        atkDelta: form.atkDelta,
+        points: form.points,
+        abilityType: form.abilityType,
+        weaponTraining: form.weaponTraining,
+        skillTraining: form.skillTraining,
+        abilities: form.abilities,
+      },
     };
   }
 
@@ -152,6 +168,20 @@ if (!HAS_MODULE_MOCK) {
       age: "29",
       height: "183cm",
       weight: "80kg",
+      className: "Field",
+      hp: 20,
+      hpDelta: -1,
+      san: 30,
+      sanDelta: 0,
+      def: 2,
+      defDelta: 0,
+      atk: 4,
+      atkDelta: 1,
+      points: 3,
+      abilityType: "Type-A",
+      weaponTraining: ["Pistol"],
+      skillTraining: ["Search"],
+      abilities: [{ slot: "C1", name: "Spark" }],
     };
     const body = buildPlayerBody(form);
 
@@ -161,7 +191,7 @@ if (!HAS_MODULE_MOCK) {
     assert.equal(result, true);
     assert.ok(capturedSetPayload);
 
-    // 정확히 8개 dot path + updatedAt 만 들어가야 함
+    // 정확히 허용된 player dot path + updatedAt 만 들어가야 함
     const keys = Object.keys(capturedSetPayload).filter(
       (k) => k !== "updatedAt",
     );
@@ -176,8 +206,22 @@ if (!HAS_MODULE_MOCK) {
         "lore.age",
         "lore.height",
         "lore.weight",
+        "play.className",
+        "play.hp",
+        "play.hpDelta",
+        "play.san",
+        "play.sanDelta",
+        "play.def",
+        "play.defDelta",
+        "play.atk",
+        "play.atkDelta",
+        "play.points",
+        "play.abilityType",
+        "play.weaponTraining",
+        "play.skillTraining",
+        "play.abilities",
       ]),
-      `의도한 8개 dot path 외 키 누설 — 실제: ${keys.join(",")}`,
+      `의도한 player dot path 외 키 누설 — 실제: ${keys.join(",")}`,
     );
 
     // 값 정합성
@@ -186,19 +230,23 @@ if (!HAS_MODULE_MOCK) {
     assert.equal(capturedSetPayload["lore.gender"], "male");
     assert.equal(capturedSetPayload["lore.age"], "29");
     assert.equal(capturedSetPayload["lore.weight"], "80kg");
+    assert.equal(capturedSetPayload["play.hp"], 20);
+    assert.equal(capturedSetPayload["play.points"], 3);
+    assert.deepEqual(capturedSetPayload["play.weaponTraining"], ["Pistol"]);
 
-    // 루트 'lore' 키 누설 없음
+    // 루트 'lore'/'play' 키 누설 없음
     assert.ok(
       !("lore" in capturedSetPayload),
       "'lore' 루트 키가 $set 에 누설되면 안 됨",
     );
+    assert.ok(!("play" in capturedSetPayload));
   });
 
   /* ────────────────────────────────────────────────────────────────────── */
-  /* S4-2: 악의적 player body — admin 필드 + 능력치 시도, 모두 silent drop     */
+  /* S4-2: 악의적 player body — admin/경제/이미지 필드는 silent drop            */
   /* ────────────────────────────────────────────────────────────────────── */
 
-  test("S4-2: 악의적 player body — codename/role/agentLevel/이미지/능력치 모두 silent drop", async () => {
+  test("S4-2: 악의적 player body — codename/role/agentLevel/이미지/경제 필드 silent drop", async () => {
     capturedSetPayload = null;
 
     // form 변조: 클라이언트 코드 우회해 PLAYER 모드인데 admin 필드까지 붙여 보냄
@@ -222,8 +270,8 @@ if (!HAS_MODULE_MOCK) {
       previewImage: "/evil.png",
     };
 
-    // lore/play 안에도 능력치/이미지 시도
-    evilBody.play = { hp: 999, atk: 999 };
+    // lore/play 안에도 허용 능력치 + 금지 경제/이미지 필드 시도
+    evilBody.play = { hp: 999, atk: 999, credit: "999999", equipment: [] };
     evilBody.lore.mainImage = "/evil-main.png";
     evilBody.lore.posterImage = "/evil-poster.png";
     evilBody.lore.codename = "HACKED2";
@@ -248,12 +296,10 @@ if (!HAS_MODULE_MOCK) {
       );
     }
 
-    // 2) lore/play 내부 능력치/이미지 dot path 누설 없음
+    // 2) lore/play 내부 금지 경제/이미지 dot path 누설 없음
     for (const forbidden of [
-      "play.hp",
-      "play.atk",
-      "play.def",
-      "play.san",
+      "play.credit",
+      "play.equipment",
       "lore.mainImage",
       "lore.posterImage",
       "lore.codename",
@@ -268,10 +314,12 @@ if (!HAS_MODULE_MOCK) {
     assert.ok(!("lore" in capturedSetPayload));
     assert.ok(!("play" in capturedSetPayload));
 
-    // 4) 정상 8필드는 통과
+    // 4) 정상 player 필드는 통과
     assert.equal(capturedSetPayload["lore.quote"], "Q");
     assert.equal(capturedSetPayload["lore.appearance"], "A");
     assert.equal(capturedSetPayload["lore.weight"], "W");
+    assert.equal(capturedSetPayload["play.hp"], 999);
+    assert.equal(capturedSetPayload["play.atk"], 999);
   });
 
   /* ────────────────────────────────────────────────────────────────────── */
@@ -498,26 +546,33 @@ if (!HAS_MODULE_MOCK) {
   test("S6-1: client PLAYER_EDITABLE_FIELDS ↔ server PLAYER_ALLOWED_CHARACTER_FIELDS sync", () => {
     // CharacterEditForm 의 hardcoded 세트 미러링 (수정 시 함께 갱신).
     const CLIENT_PLAYER_EDITABLE_FIELDS = new Set([
-      "quote",
-      "appearance",
-      "personality",
-      "background",
-      "gender",
-      "age",
-      "height",
-      "weight",
+      "lore.quote",
+      "lore.appearance",
+      "lore.personality",
+      "lore.background",
+      "lore.gender",
+      "lore.age",
+      "lore.height",
+      "lore.weight",
+      "play.className",
+      "play.hp",
+      "play.hpDelta",
+      "play.san",
+      "play.sanDelta",
+      "play.def",
+      "play.defDelta",
+      "play.atk",
+      "play.atkDelta",
+      "play.points",
+      "play.abilityType",
+      "play.weaponTraining",
+      "play.skillTraining",
+      "play.abilities",
     ]);
-
-    // 서버 화이트리스트는 'lore.*' prefix 형태이므로 prefix 제거 후 비교.
-    const serverWithoutPrefix = new Set(
-      [...PLAYER_ALLOWED_CHARACTER_FIELDS].map((f) =>
-        f.replace(/^lore\./, ""),
-      ),
-    );
 
     assert.deepEqual(
       CLIENT_PLAYER_EDITABLE_FIELDS,
-      serverWithoutPrefix,
+      PLAYER_ALLOWED_CHARACTER_FIELDS,
       "CharacterEditForm 의 PLAYER_EDITABLE_FIELDS 와 shared-db 의 PLAYER_ALLOWED_CHARACTER_FIELDS 가 어긋남 — 둘 중 하나만 변경되었는지 확인",
     );
   });

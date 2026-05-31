@@ -243,15 +243,15 @@ export const ALLOWED_CHARACTER_FIELDS = new Set<string>([
 export const ADMIN_ALLOWED_CHARACTER_FIELDS = ALLOWED_CHARACTER_FIELDS;
 
 /**
- * 플레이어 자가편집 화이트리스트. 이미지/능력치/소유권은 의도적으로 제외하고
- * 캐릭터 서술 필드만 dot path 로 지정한다.
+ * 플레이어 자가편집 화이트리스트. 이미지/소유권/경제성 필드는 의도적으로 제외하고
+ * 캐릭터 서술 + 시트 커스터마이징 필드만 dot path 로 지정한다.
  *
  * dot path가 포함된 필드는 `updateCharacter` 내부에서 `$set: { 'lore.quote': ... }`
  * 형태로 부분 업데이트되며, `lore` / `play` 루트 키 자체는 `$set`에 포함되지 않는다
  * (루트 키가 포함되면 sub-document 전체가 덮어써져 능력치/이미지까지 날아감).
  *
  * 기존 PLAYER 7필드("sheet.quote/appearance/personality/background/gender/age/height")가
- * lore 영역으로 이동되었고, weight 는 신상 정보로 player 편집 대상에 포함한다.
+ * lore 영역으로 이동되었고, 능력치/포인트/스킬 커스터마이징은 play 영역에서 허용한다.
  */
 export const PLAYER_ALLOWED_CHARACTER_FIELDS = new Set<string>([
   "lore.quote",
@@ -262,6 +262,20 @@ export const PLAYER_ALLOWED_CHARACTER_FIELDS = new Set<string>([
   "lore.age",
   "lore.height",
   "lore.weight",
+  "play.className",
+  "play.hp",
+  "play.hpDelta",
+  "play.san",
+  "play.sanDelta",
+  "play.def",
+  "play.defDelta",
+  "play.atk",
+  "play.atkDelta",
+  "play.points",
+  "play.abilityType",
+  "play.weaponTraining",
+  "play.skillTraining",
+  "play.abilities",
 ]);
 
 /**
@@ -333,7 +347,22 @@ export const ALLOWED_PLAY_FIELDS_ADMIN = new Set<string>([
  *
  * Phase 5 자가편집 정책에서 player 는 능력치/장비/어빌리티를 직접 수정할 수 없다.
  */
-export const ALLOWED_PLAY_FIELDS_PLAYER = new Set<string>();
+export const ALLOWED_PLAY_FIELDS_PLAYER = new Set<string>([
+  "play.className",
+  "play.hp",
+  "play.hpDelta",
+  "play.san",
+  "play.sanDelta",
+  "play.def",
+  "play.defDelta",
+  "play.atk",
+  "play.atkDelta",
+  "play.points",
+  "play.abilityType",
+  "play.weaponTraining",
+  "play.skillTraining",
+  "play.abilities",
+]);
 
 /** 객체에서 dot path 값을 읽어온다. 중간 경로가 undefined면 undefined 반환. */
 function getPathValue(

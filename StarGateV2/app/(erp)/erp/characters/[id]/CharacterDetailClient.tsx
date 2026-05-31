@@ -32,7 +32,7 @@ interface Props {
   /** AGENT 전용. server (page.tsx) 가 NPC 를 personnel 로 redirect 하므로 여기엔 항상 AGENT 만 도달. */
   character: AgentCharacter;
   /**
-   * 'admin' = V+ 모든 필드 편집, 'player' = 본인 캐릭터 lore 7필드만,
+   * 'admin' = V+ 모든 필드 편집, 'player' = 본인 캐릭터의 안전한 lore/play 자가편집 필드,
    * 'none' = 편집 불가 (편집 버튼/폼 모두 숨김).
    */
   editMode: CharacterEditMode;

@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { AgentCharacter } from "@/types/character";
 
 import { auth } from "@/lib/auth/config";
-import { canEditCharacter, hasRole } from "@/lib/auth/rbac";
+import { canEditLore, hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
 
@@ -39,7 +39,7 @@ export default async function CharacterDetailPage({ params }: PageProps) {
   }
 
   const { id: userId, role } = session.user;
-  const decision = canEditCharacter(userId, role, character);
+  const decision = canEditLore(userId, role, character);
   // 삭제는 admin(GM) 전용으로 계속 유지 — 자가삭제 도입은 별도 결정 필요.
   const canDelete = hasRole(role, "GM");
 

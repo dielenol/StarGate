@@ -80,6 +80,26 @@ export interface CharacterEditDecision {
   reason?: "unauthenticated" | "not-owner";
 }
 
+type CharacterOwnerRef = { ownerId?: unknown };
+
+function normalizeOwnerId(ownerId: unknown): string | null {
+  if (!ownerId) return null;
+  if (typeof ownerId === "string") return ownerId;
+  if (typeof ownerId === "object" && "toString" in ownerId) {
+    const value = ownerId.toString();
+    return value && value !== "[object Object]" ? value : null;
+  }
+  return null;
+}
+
+export function isCharacterOwner(
+  sessionUserId: string | undefined,
+  character: CharacterOwnerRef,
+): boolean {
+  if (!sessionUserId) return false;
+  return normalizeOwnerId(character.ownerId) === sessionUserId;
+}
+
 /**
  * @deprecated `canEditLore` / `canEditPlay` 로 분리. 점진 마이그레이션 후 제거 예정.
  *
@@ -89,7 +109,7 @@ export interface CharacterEditDecision {
 export function canEditCharacter(
   sessionUserId: string | undefined,
   sessionUserRole: UserRole | undefined,
-  character: { ownerId: string | null },
+  character: CharacterOwnerRef,
 ): CharacterEditDecision {
   if (!sessionUserId || !sessionUserRole) {
     return { mode: "none", allowed: false, reason: "unauthenticated" };
@@ -99,7 +119,7 @@ export function canEditCharacter(
     return { mode: "admin", allowed: true };
   }
 
-  if (character.ownerId && character.ownerId === sessionUserId) {
+  if (isCharacterOwner(sessionUserId, character)) {
     return { mode: "player", allowed: true };
   }
 
@@ -117,7 +137,7 @@ export function canEditCharacter(
 export function canEditPlay(
   sessionUserId: string | undefined,
   sessionUserRole: UserRole | undefined,
-  character: Pick<Character, "type" | "ownerId">,
+  character: Pick<Character, "type"> & CharacterOwnerRef,
 ): boolean {
   if (!sessionUserId || !sessionUserRole) return false;
   if (character.type !== "AGENT") return false;
@@ -138,7 +158,7 @@ export function canEditPlay(
 export function canEditLore(
   sessionUserId: string | undefined,
   sessionUserRole: UserRole | undefined,
-  character: Pick<Character, "type" | "ownerId">,
+  character: Pick<Character, "type"> & CharacterOwnerRef,
 ): CharacterEditDecision {
   if (!sessionUserId || !sessionUserRole) {
     return { mode: "none", allowed: false, reason: "unauthenticated" };
@@ -150,8 +170,7 @@ export function canEditLore(
 
   if (
     character.type === "AGENT" &&
-    character.ownerId &&
-    character.ownerId === sessionUserId
+    isCharacterOwner(sessionUserId, character)
   ) {
     return { mode: "player", allowed: true };
   }
