@@ -1,0 +1,45 @@
+{
+  "collection": "institutions",
+  "type": "institution",
+  "payload": {
+    "code": "WHITE_ROSE",
+    "slug": "white-rose",
+    "label": "백장미단",
+    "labelEn": "White Rose",
+    "parentFactionCode": "CIVIL",
+    "summary": "통칭 화이트로즈. 초자연 현상과 줄루 기술 은폐에 반대하며, 피해자 권리와 대중의 알 권리를 요구하는 시민사회 계열 급진 인권운동 조직이다.",
+    "mission": "화이트로즈는 초자연 현상과 줄루 기술이 작전 용어 아래에서 은폐되는 현실에 반대하는 시민사회 계열 급진 조직이다. 이들은 피해자 보호와 알 권리를 명분으로 삼으며, 노부스 오르도와 군부의 현장 통제, 기억 말소, 은폐 작전, 기술 보안에 직접적인 변수로 분류된다.",
+    "relationships": [
+      {
+        "targetCode": "CIVIL",
+        "type": "parent",
+        "note": "시민사회 내부에서도 가장 급진적인 인권운동 축."
+      },
+      {
+        "targetCode": "NOVUS_ORDO",
+        "type": "rival",
+        "note": "은폐와 통제를 둘러싼 핵심 충돌 대상."
+      },
+      {
+        "targetCode": "MILITARY",
+        "type": "rival",
+        "note": "군부 은폐 시설, 피해자 보상, 자료 공개 문제에서 충돌한다."
+      },
+      {
+        "targetCode": "COUNCIL",
+        "type": "neutral",
+        "note": "시민 대표성과 알 권리 의제에서는 접점이 있다."
+      },
+      {
+        "targetCode": "SPACE_ZERO",
+        "type": "neutral",
+        "note": "같은 시민사회 계열이지만 공개와 활용의 우선순위가 다르다."
+      }
+    ],
+    "tags": ["시민사회", "백장미단", "화이트로즈", "인권운동", "급진파", "NOSB-S1E1-ORDER", "S1E1-ORDER"],
+    "isPublic": true,
+    "source": "create-lore",
+    "createdAt": "2026-04-22T00:00:00.000Z",
+    "updatedAt": "2026-06-02T00:00:00.000Z"
+  }
+}

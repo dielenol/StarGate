@@ -18,11 +18,11 @@ department: SECTOR_A
 agentLevel: H
 isPublic: true
 loreTags: [현장요원, 섹터A, 전략고문, 리모트뷰잉, Project Stargate]
-appearsInEvents: [NOSB-S1E1-ORDER]
+appearsInEvents: [NOSB-S1E1-ORDER, NOSB-S1E1-MINI]
 source: manual
 previewImage: /assets/npcs/Clairvoyance-profile.png
 createdAt: 2026-03-16T00:00:00Z
-updatedAt: 2026-05-30T00:00:00Z
+updatedAt: 2026-06-02T00:00:00Z
 ---
 
 ## 대사
@@ -55,7 +55,8 @@ updatedAt: 2026-05-30T00:00:00Z
 ## 관계 (참고)
 - **NOVUS ORDO / MANUS**: 섹터 A 현장 요원으로 작전 지원에 투입된다.
 - **S1E1 질서 작전팀**: 블랙 피라미드와 한반도 남부 작전선에서 현장 안내 및 브리핑 보조로 관여했다.
+- **S1E1 질서 미니 세션**: 블랙 피라미드 식당가에서 문제의 스테이크 가게 철거 현장에 모습을 보였고, 현장팀과 짧게 조우했다.
 
 ## 데이터 연동 (참고)
 - Dossier 이미지: `/assets/npcs/Clairvoyance-profile.png`
-- 등장 이벤트: `NOSB-S1E1-ORDER`
+- 등장 이벤트: `NOSB-S1E1-ORDER`, `NOSB-S1E1-MINI`

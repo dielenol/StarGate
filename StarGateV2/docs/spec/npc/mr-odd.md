@@ -22,7 +22,7 @@ appearsInEvents: [NOSB-S1E1-ORDER]
 source: manual
 previewImage: /assets/npcs/Mr-Odd-profile.png
 createdAt: 2026-03-16T00:00:00Z
-updatedAt: 2026-05-30T00:00:00Z
+updatedAt: 2026-06-02T00:00:00Z
 ---
 
 ## 대사
@@ -48,7 +48,7 @@ updatedAt: 2026-05-30T00:00:00Z
 
 ## 이름 설명
 - **Mr. 오드(Mr. Odd)**: 본명 불명의 감독관 표기. 조직 내부에서도 이 호칭이 사실상 고유 식별자로 사용된다.
-- **MR_ODD**: ERP와 Dossier에서 사용하는 공식 코드명.
+- **MR_ODD**: 노부스 오르도 내부 문서에서 사용하는 식별 코드.
 
 ## 관계 (참고)
 - **NOVUS ORDO / MANUS**: 섹터 A 현장 요원으로 등록되어 있으며, 고위 감독권을 행사한다.

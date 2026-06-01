@@ -1,0 +1,41 @@
+{
+  "collection": "institutions",
+  "type": "institution",
+  "payload": {
+    "code": "SPACE_ZERO",
+    "slug": "space-zero",
+    "label": "스페이스 제로",
+    "labelEn": "Space Zero",
+    "parentFactionCode": "CIVIL",
+    "headquartersLocation": "글로벌 본사 및 해외 지부",
+    "summary": "세계 최고 수준의 IT, 온라인 금융, 친환경, 우주항공, 군사 무기 기술을 다루는 시민사회 계열 초대형 기업집단. 노부스 오르도의 줄루 기술력에 강한 관심을 보인다.",
+    "mission": "스페이스 제로는 생활 인프라와 시장 지배력을 기술로 확장하는 초대형 민간 기업집단이다. S1E1 질서 미니 세션에서는 CEO 요한 스미스가 ZULU-0028 인수와 연구 이전을 제안하며, 노부스 오르도 인프라 일부에 스페이스 제로 기술이 이미 들어와 있음을 과시했다.",
+    "relationships": [
+      {
+        "targetCode": "CIVIL",
+        "type": "parent",
+        "note": "시민사회 내부에서 기술·자본 권위를 대표하는 대기업 계열."
+      },
+      {
+        "targetCode": "NOVUS_ORDO",
+        "type": "neutral",
+        "note": "줄루 기술 접근권과 기술 이전 문제에서 협력 가능성과 긴장이 함께 존재한다."
+      },
+      {
+        "targetCode": "WHITE_ROSE",
+        "type": "neutral",
+        "note": "같은 시민사회 계열이지만 공개와 활용의 우선순위가 다르다."
+      },
+      {
+        "targetCode": "MILITARY",
+        "type": "neutral",
+        "note": "군사 무기 기술과 방산 조달에서 접점이 있다."
+      }
+    ],
+    "tags": ["시민사회", "스페이스제로", "기업집단", "기술관료주의", "글로벌시장주의", "SPZ", "NOSB-S1E1-MINI", "S1E1-MINI"],
+    "isPublic": true,
+    "source": "create-lore",
+    "createdAt": "2026-04-22T00:00:00.000Z",
+    "updatedAt": "2026-06-02T00:00:00.000Z"
+  }
+}

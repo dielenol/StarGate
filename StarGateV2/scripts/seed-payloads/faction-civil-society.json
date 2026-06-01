@@ -1,0 +1,46 @@
+{
+  "collection": "factions",
+  "type": "faction",
+  "payload": {
+    "code": "CIVIL",
+    "slug": "civil",
+    "label": "시민사회",
+    "labelEn": "Civil Society",
+    "scope": "external",
+    "summary": "지구의 대부분을 차지하는 시민 세력. 편리함과 생존을 위해 기술의 진보를 바라며, 얄팍하지만 보편적인 선과 인본주의적 판단을 추구하는 외부 권력 블록이다.",
+    "ideology": "시민사회는 광원화 사태 이후에도 지구 인구의 대부분을 차지하는 민간 권위의 총칭이다. 성향은 대체로 온건파, 진보주의, 인본주의로 분류된다. 군부가 무력과 선제 격리를, 세계이사회가 정치적 의결과 균형을 대표한다면, 시민사회는 여론, 시장, NGO, 종교, 언론, 기업 집단을 포함한 비국가 권위의 압력을 대표한다.",
+    "relationships": [
+      {
+        "targetCode": "NOVUS_ORDO",
+        "type": "neutral",
+        "note": "시민 외교 채널, 상업 협력, 여론 통제 사안에서 접점이 있으나 통제주의와 공개 요구가 충돌한다."
+      },
+      {
+        "targetCode": "COUNCIL",
+        "type": "ally",
+        "note": "시민 대표성·여론 라인에서 협력적이다."
+      },
+      {
+        "targetCode": "MILITARY",
+        "type": "rival",
+        "note": "군 개입 강화 기조와 민간 영역 보호 기조 간 긴장 관계."
+      },
+      {
+        "targetCode": "WHITE_ROSE",
+        "type": "subordinate",
+        "note": "시민사회 내부의 급진 인권운동 조직."
+      },
+      {
+        "targetCode": "SPACE_ZERO",
+        "type": "subordinate",
+        "note": "시민사회 내부의 기술·자본 권위 축."
+      }
+    ],
+    "notableMembers": ["TOWASKI", "STAR_MART"],
+    "tags": ["외부", "시민", "시민사회", "인본주의", "진보주의"],
+    "isPublic": true,
+    "source": "manual",
+    "createdAt": "2026-05-14T00:00:00.000Z",
+    "updatedAt": "2026-06-02T00:00:00.000Z"
+  }
+}
