@@ -94,6 +94,9 @@ export default async function CatalogItemPage({
   const scope = catalogScopeForItemCategory(item.category);
   const contentHtml = renderMarkdown(itemMarkdown(item));
   const image = previewImage(item);
+  const tone = categoryTone(item.category);
+  const itemIdentifier = itemKey(item) || "—";
+  const primarySpec = item.effect ?? item.damage ?? "기록 없음";
 
   const [allPages, allReports] = await Promise.all([
     listWikiPages().catch(() => []),
@@ -123,32 +126,58 @@ export default async function CatalogItemPage({
 
       <div className={styles.layout}>
         <div className={styles.body}>
-          <Box className={styles.article}>
-            <header className={styles.header}>
-              <div className={styles.header__tags}>
-                <Tag tone={itemTagTone(item.category)}>
-                  {ITEM_CATEGORY_LABEL[item.category]}
-                </Tag>
-                <Tag tone={item.isPublic === false ? "danger" : "success"}>
-                  {item.isPublic === false ? "PRIVATE" : "PUBLIC"}
-                </Tag>
-                <Tag tone={item.isAvailable ? "info" : "gold"}>
-                  {item.isAvailable ? "지급 가능" : "보관 전용"}
-                </Tag>
-              </div>
-              <h2 className={styles.header__title}>{item.name}</h2>
-              {item.nameEn ? (
-                <p className={styles.header__subtitle}>{item.nameEn}</p>
-              ) : null}
-              <p className={styles.header__lead}>{item.description}</p>
-            </header>
+          <Box className={styles.article} data-tone={tone}>
+            <section className={styles.hero}>
+              <div className={styles.hero__main}>
+                <header className={styles.header}>
+                  <div className={styles.header__tags}>
+                    <Tag tone={itemTagTone(item.category)}>
+                      {ITEM_CATEGORY_LABEL[item.category]}
+                    </Tag>
+                    <Tag tone={item.isPublic === false ? "danger" : "success"}>
+                      {item.isPublic === false ? "PRIVATE" : "PUBLIC"}
+                    </Tag>
+                    <Tag tone={item.isAvailable ? "info" : "gold"}>
+                      {item.isAvailable ? "지급 가능" : "보관 전용"}
+                    </Tag>
+                  </div>
+                  <h2 className={styles.header__title}>{item.name}</h2>
+                  {item.nameEn ? (
+                    <p className={styles.header__subtitle}>{item.nameEn}</p>
+                  ) : null}
+                  <p className={styles.header__lead}>{item.description}</p>
+                </header>
 
-            {image ? (
+                <dl className={styles.quickFacts}>
+                  <div>
+                    <dt>PRICE</dt>
+                    <dd>{formatPrice(item.price)}</dd>
+                  </div>
+                  <div>
+                    <dt>STATUS</dt>
+                    <dd>{item.isAvailable ? "AVAILABLE" : "ARCHIVE"}</dd>
+                  </div>
+                  <div>
+                    <dt>
+                      {item.effect ? "EFFECT" : item.damage ? "DAMAGE" : "SPEC"}
+                    </dt>
+                    <dd>{primarySpec}</dd>
+                  </div>
+                </dl>
+              </div>
+
               <figure className={styles.figure}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={image} alt={item.name} />
+                <div className={styles.figure__frame}>
+                  {image ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={image} alt={item.name} />
+                  ) : (
+                    <span className={styles.figure__placeholder} aria-hidden />
+                  )}
+                </div>
+                <figcaption>{itemIdentifier}</figcaption>
               </figure>
-            ) : null}
+            </section>
 
             <section
               className={styles.content}
