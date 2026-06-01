@@ -54,6 +54,7 @@ const getServerKbdLabel = () => "⌘K";
 
 const ERP_BGM_MAX_VOLUME = 0.32;
 const ERP_BGM_DEFAULT_VOLUME_LEVEL = 70;
+const ERP_BGM_LAST_TRACK_STORAGE_KEY = "novus-ordo-erp-last-bgm-index";
 const ERP_BGM_TRACKS = [
   {
     label: "NOVUS 01",
@@ -92,15 +93,34 @@ function getRandomBgmIndex(currentIndex: number | null = null): number {
   const trackCount = ERP_BGM_TRACKS.length;
   if (trackCount <= 1) return 0;
 
-  const randomIndex = Math.floor(Math.random() * trackCount);
-  if (currentIndex === null || randomIndex !== currentIndex) {
-    return randomIndex;
-  }
-
-  return (
-    (randomIndex + 1 + Math.floor(Math.random() * (trackCount - 1))) %
-    trackCount
+  const candidates = ERP_BGM_TRACKS.map((_, index) => index).filter(
+    (index) => index !== currentIndex,
   );
+  const randomIndex = Math.floor(Math.random() * candidates.length);
+  return candidates[randomIndex] ?? 0;
+}
+
+function readLastBgmIndex(): number | null {
+  try {
+    const rawIndex = window.localStorage.getItem(ERP_BGM_LAST_TRACK_STORAGE_KEY);
+    const parsedIndex = rawIndex === null ? NaN : Number(rawIndex);
+    if (!Number.isInteger(parsedIndex)) return null;
+    if (parsedIndex < 0 || parsedIndex >= ERP_BGM_TRACKS.length) return null;
+    return parsedIndex;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastBgmIndex(trackIndex: number) {
+  try {
+    window.localStorage.setItem(
+      ERP_BGM_LAST_TRACK_STORAGE_KEY,
+      String(trackIndex),
+    );
+  } catch {
+    // localStorage may be unavailable in restricted browser contexts.
+  }
 }
 
 function getBgmVolume(track: ErpBgmTrack, volumeLevel: number): number {
@@ -211,6 +231,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
 
       try {
         await audio.play();
+        writeLastBgmIndex(trackIndex);
         setBgmPlaying(true);
         return true;
       } catch (error) {
@@ -248,7 +269,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
     }
 
     const startAutoplay = async () => {
-      const played = await playBgmTrack(getRandomBgmIndex());
+      const played = await playBgmTrack(getRandomBgmIndex(readLastBgmIndex()));
       if (played || canceled) return;
       setBgmError(false);
       window.addEventListener("pointerdown", retryOnGesture, { once: true });
@@ -334,7 +355,8 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
       return;
     }
 
-    const nextIndex = activeBgmIndex ?? getRandomBgmIndex();
+    const nextIndex =
+      activeBgmIndex ?? getRandomBgmIndex(readLastBgmIndex());
     void playBgmTrack(nextIndex);
   }
 
