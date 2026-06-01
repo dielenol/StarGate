@@ -25,6 +25,7 @@
 /* Variants */
 
 .card--lead {
+  padding-top: 36px;
   border-color: var(--gold-dim);
   background: linear-gradient(180deg, rgba(201, 168, 90, 0.04), transparent);
 }
@@ -43,8 +44,9 @@
   background: color-mix(in oklab, var(--gold) 8%, transparent);
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.12em;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.1em;
   pointer-events: none;
   z-index: 1;
 }
@@ -112,6 +114,9 @@
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.18em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .name {
