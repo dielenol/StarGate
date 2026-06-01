@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import {
+  type ChangeEvent,
+  type CSSProperties,
   useCallback,
   useEffect,
   useRef,
@@ -50,7 +52,8 @@ const subscribePlatform = () => () => {};
 const getClientKbdLabel = () => (detectIsMac() ? "⌘K" : "Ctrl K");
 const getServerKbdLabel = () => "⌘K";
 
-const ERP_BGM_VOLUME = 0.32;
+const ERP_BGM_MAX_VOLUME = 0.32;
+const ERP_BGM_DEFAULT_VOLUME_LEVEL = 70;
 const ERP_BGM_TRACKS = [
   {
     label: "NOVUS 01",
@@ -75,12 +78,15 @@ const ERP_BGM_TRACKS = [
   {
     label: "NOVUS 06",
     src: resolvePublicAssetPath("/sound/erp/novus-06.mp3"),
+    volumeScale: 0.4,
   },
   {
     label: "NOVUS 07",
     src: resolvePublicAssetPath("/sound/erp/novus-07.mp3"),
   },
 ] as const;
+
+type ErpBgmTrack = (typeof ERP_BGM_TRACKS)[number];
 
 function getRandomBgmIndex(currentIndex: number | null = null): number {
   const trackCount = ERP_BGM_TRACKS.length;
@@ -95,6 +101,25 @@ function getRandomBgmIndex(currentIndex: number | null = null): number {
     (randomIndex + 1 + Math.floor(Math.random() * (trackCount - 1))) %
     trackCount
   );
+}
+
+function getBgmVolume(track: ErpBgmTrack, volumeLevel: number): number {
+  const trackScale = "volumeScale" in track ? track.volumeScale : 1;
+  return Math.min(
+    1,
+    ERP_BGM_MAX_VOLUME * (Math.max(0, volumeLevel) / 100) * trackScale,
+  );
+}
+
+function getFiniteAudioTime(value: number): number {
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function formatBgmTime(seconds: number): string {
+  const finiteSeconds = getFiniteAudioTime(seconds);
+  const minutes = Math.floor(finiteSeconds / 60);
+  const remainingSeconds = Math.floor(finiteSeconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
 function isBreadcrumbItemArray(value: unknown): value is BreadcrumbItem[] {
@@ -129,6 +154,11 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const [bgmPlaying, setBgmPlaying] = useState(false);
   const [bgmPending, setBgmPending] = useState(false);
   const [bgmError, setBgmError] = useState(false);
+  const [bgmCurrentTime, setBgmCurrentTime] = useState(0);
+  const [bgmDuration, setBgmDuration] = useState(0);
+  const [bgmVolumeLevel, setBgmVolumeLevel] = useState(
+    ERP_BGM_DEFAULT_VOLUME_LEVEL,
+  );
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
   const bgmTrackIndexRef = useRef<number | null>(null);
   const playBgmTrackRef = useRef<(trackIndex: number) => Promise<void>>(
@@ -139,10 +169,18 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
     if (!bgmAudioRef.current) {
       const audio = new Audio();
       audio.preload = "auto";
-      audio.volume = ERP_BGM_VOLUME;
       audio.onended = () => {
         const nextIndex = getRandomBgmIndex(bgmTrackIndexRef.current);
         void playBgmTrackRef.current(nextIndex);
+      };
+      audio.ondurationchange = () => {
+        setBgmDuration(getFiniteAudioTime(audio.duration));
+      };
+      audio.onloadedmetadata = () => {
+        setBgmDuration(getFiniteAudioTime(audio.duration));
+      };
+      audio.ontimeupdate = () => {
+        setBgmCurrentTime(getFiniteAudioTime(audio.currentTime));
       };
       bgmAudioRef.current = audio;
     }
@@ -161,12 +199,14 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
       setBgmError(false);
 
       if (bgmTrackIndexRef.current !== trackIndex || audio.src.length === 0) {
+        setBgmCurrentTime(0);
+        setBgmDuration(0);
         audio.src = track.src;
         audio.load();
         bgmTrackIndexRef.current = trackIndex;
       }
 
-      audio.volume = ERP_BGM_VOLUME;
+      audio.volume = getBgmVolume(track, bgmVolumeLevel);
 
       try {
         await audio.play();
@@ -179,12 +219,18 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
         setBgmPending(false);
       }
     },
-    [getBgmAudio],
+    [bgmVolumeLevel, getBgmAudio],
   );
 
   useEffect(() => {
     playBgmTrackRef.current = playBgmTrack;
   }, [playBgmTrack]);
+
+  useEffect(() => {
+    const audio = bgmAudioRef.current;
+    if (!audio || activeBgmIndex === null) return;
+    audio.volume = getBgmVolume(ERP_BGM_TRACKS[activeBgmIndex], bgmVolumeLevel);
+  }, [activeBgmIndex, bgmVolumeLevel]);
 
   useEffect(() => {
     return () => {
@@ -201,11 +247,27 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
 
   const activeBgm =
     activeBgmIndex === null ? null : ERP_BGM_TRACKS[activeBgmIndex];
+  const bgmDurationValue = getFiniteAudioTime(bgmDuration);
+  const bgmCurrentTimeValue = Math.min(
+    getFiniteAudioTime(bgmCurrentTime),
+    bgmDurationValue || getFiniteAudioTime(bgmCurrentTime),
+  );
+  const bgmProgressPercent =
+    bgmDurationValue > 0 ? (bgmCurrentTimeValue / bgmDurationValue) * 100 : 0;
   const bgmStatusLabel = bgmPending
     ? "LOAD"
     : bgmError
       ? "ERR"
       : activeBgm?.label ?? "BGM";
+  const bgmTimeLabel = `${formatBgmTime(bgmCurrentTimeValue)} / ${formatBgmTime(
+    bgmDurationValue,
+  )}`;
+  const bgmProgressStyle = {
+    "--bgm-progress": `${bgmProgressPercent}%`,
+  } as CSSProperties;
+  const bgmVolumeStyle = {
+    "--bgm-progress": `${bgmVolumeLevel}%`,
+  } as CSSProperties;
   const bgmState = bgmError ? "error" : bgmPlaying ? "playing" : "idle";
   const bgmToggleLabel = bgmPlaying
     ? `${activeBgm?.label ?? "BGM"} 일시정지`
@@ -242,6 +304,19 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   function handleShuffleBgm() {
     const nextIndex = getRandomBgmIndex(bgmTrackIndexRef.current);
     void playBgmTrack(nextIndex);
+  }
+
+  function handleSeekBgm(event: ChangeEvent<HTMLInputElement>) {
+    const nextTime = Number(event.target.value);
+    setBgmCurrentTime(nextTime);
+
+    const audio = bgmAudioRef.current;
+    if (!audio || !Number.isFinite(audio.duration)) return;
+    audio.currentTime = nextTime;
+  }
+
+  function handleBgmVolumeChange(event: ChangeEvent<HTMLInputElement>) {
+    setBgmVolumeLevel(Number(event.target.value));
   }
 
   return (
@@ -319,9 +394,40 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
           >
             <span aria-hidden>↻</span>
           </button>
-          <span className={styles.header__bgmLabel} aria-live="polite">
-            {bgmStatusLabel}
-          </span>
+          <div className={styles.header__bgmBody}>
+            <div className={styles.header__bgmMeta}>
+              <span className={styles.header__bgmLabel} aria-live="polite">
+                {bgmStatusLabel}
+              </span>
+              <span className={styles.header__bgmTime}>{bgmTimeLabel}</span>
+            </div>
+            <input
+              type="range"
+              className={`${styles.header__bgmRange} ${styles.header__bgmProgress}`}
+              min={0}
+              max={bgmDurationValue || 0}
+              step={0.1}
+              value={bgmDurationValue > 0 ? bgmCurrentTimeValue : 0}
+              onChange={handleSeekBgm}
+              disabled={bgmDurationValue <= 0}
+              aria-label="BGM 재생 위치"
+              style={bgmProgressStyle}
+            />
+          </div>
+          <div className={styles.header__bgmVolume}>
+            <span className={styles.header__bgmVolumeLabel}>VOL</span>
+            <input
+              type="range"
+              className={styles.header__bgmRange}
+              min={0}
+              max={100}
+              step={1}
+              value={bgmVolumeLevel}
+              onChange={handleBgmVolumeChange}
+              aria-label="BGM 볼륨"
+              style={bgmVolumeStyle}
+            />
+          </div>
         </div>
 
         <button
@@ -333,9 +439,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
           <span className={styles.header__cmdkIcon} aria-hidden>
             ⌕
           </span>
-          <span className={styles.header__cmdkPlaceholder}>
-            검색 — codename · 부서 · 세션 · 위키 …
-          </span>
+          <span className={styles.header__cmdkPlaceholder}>검색</span>
           <span className={styles.header__cmdkPlaceholderShort}>검색…</span>
           <kbd className={styles.header__cmdkKbd}>{kbdLabel}</kbd>
         </button>
