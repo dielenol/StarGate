@@ -15,8 +15,7 @@
 import { useCallback, useDeferredValue, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import { useCredits } from "@/hooks/queries/useCreditsQuery";
 import {
   type StockHoldingsResponse,
@@ -85,9 +84,6 @@ export default function StockListClient({
   mainCharacterError,
   marketEnabled,
 }: Props) {
-  /* 5. router */
-  const router = useRouter();
-
   /* 6. 쿼리 — list view 의 모든 데이터 시드. */
   const pricesQuery = useStockPrices({ initialData: initialPrices });
   const sparklinesQuery = useStockSparklines(SPARKLINE_DAYS, {
@@ -195,7 +191,7 @@ export default function StockListClient({
    * 클릭 시 그대로 새 탭에서 매수 페이지가 열린다.
    */
   const handleSelect = useCallback(
-    (e: React.MouseEvent<HTMLAnchorElement>, ticker: string) => {
+    (e: React.MouseEvent<HTMLAnchorElement>) => {
       if (
         e.metaKey ||
         e.ctrlKey ||
@@ -205,12 +201,10 @@ export default function StockListClient({
       ) {
         return;
       }
-      e.preventDefault();
       // hover 상태 즉시 닫음 — 페이지 전환 후 잔존 방지.
       cancelHover();
-      router.push(`/erp/stock/${encodeURIComponent(ticker)}`);
     },
-    [router, cancelHover],
+    [cancelHover],
   );
 
   function filterCount(kind: StockFilter): number {
@@ -350,10 +344,11 @@ export default function StockListClient({
                         .filter(Boolean)
                         .join(" ")}
                       aria-label={`${item.name} ${item.ticker} 매수 페이지로 이동`}
-                      onClick={(e) => handleSelect(e, item.ticker)}
+                      onClick={handleSelect}
                       onMouseEnter={() => scheduleHover(item.ticker)}
                       onMouseLeave={cancelHover}
                     >
+                      <LinkPendingProbe />
                       <div className={styles.stockRow__left}>
                         <StockLogo
                           ticker={item.ticker}
@@ -446,6 +441,7 @@ export default function StockListClient({
                         href={`/erp/stock/${encodeURIComponent(h.ticker)}`}
                         className={styles.holdingMini__link}
                       >
+                        <LinkPendingProbe />
                         <div className={styles.holdingMini__top}>
                           <span className={styles.holdingMini__tickerWrap}>
                             <StockLogo ticker={h.ticker} size="sm" />

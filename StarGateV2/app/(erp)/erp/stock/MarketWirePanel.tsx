@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import type { StockMarketWireItem } from "@/hooks/queries/useStocksQuery";
 import { formatStockValue } from "@/lib/stocks/pricing";
 
@@ -76,6 +77,7 @@ export default function MarketWirePanel({
                     href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
                     className={styles.marketWire__ticker}
                   >
+                    <LinkPendingProbe />
                     {item.ticker}
                   </Link>
                   <span className={styles.marketWire__source}>

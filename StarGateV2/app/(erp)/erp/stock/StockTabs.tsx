@@ -12,6 +12,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
+
 import styles from "./StockTabs.module.css";
 
 const TABS: ReadonlyArray<{ href: string; label: string }> = [
@@ -36,6 +38,7 @@ export default function StockTabs() {
               .filter(Boolean)
               .join(" ")}
           >
+            <LinkPendingProbe />
             {t.label}
           </Link>
         );

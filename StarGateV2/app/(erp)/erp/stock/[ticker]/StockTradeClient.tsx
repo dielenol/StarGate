@@ -18,6 +18,7 @@ import { Fragment, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import { useCredits } from "@/hooks/queries/useCreditsQuery";
 import {
   useBuyStock,
@@ -437,6 +438,7 @@ export default function StockTradeClient({
       </div>
 
       <Link href="/erp/stock" className={styles.backLink}>
+        <LinkPendingProbe />
         <span className={styles.backLink__arrow} aria-hidden="true">
           ←
         </span>
@@ -1083,6 +1085,7 @@ export default function StockTradeClient({
                         href={`/erp/stock/${encodeURIComponent(h.ticker)}`}
                         className={sharedStyles.holdingMini__link}
                       >
+                        <LinkPendingProbe />
                         <div className={sharedStyles.holdingMini__top}>
                           <span className={sharedStyles.holdingMini__tickerWrap}>
                             <StockLogo ticker={h.ticker} size="sm" />

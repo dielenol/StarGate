@@ -15,6 +15,7 @@ import { useMemo } from "react";
 
 import Link from "next/link";
 
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import { useCredits } from "@/hooks/queries/useCreditsQuery";
 import {
   useStockHoldings,
@@ -238,6 +239,7 @@ export default function StockPortfolioClient({
                   href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
                   className={styles.allocationRow}
                 >
+                  <LinkPendingProbe />
                   <span className={styles.allocationRow__name}>
                     <StockLogo ticker={item.ticker} size="sm" />
                     <span>{item.ticker}</span>
@@ -273,6 +275,7 @@ export default function StockPortfolioClient({
           아직 매수한 종목이 없습니다.
           <br />
           <Link href="/erp/stock" className={styles.emptyAction}>
+            <LinkPendingProbe />
             종목 보러가기
           </Link>
         </Box>
@@ -318,6 +321,7 @@ export default function StockPortfolioClient({
                 role="row"
                 aria-label={`${h.name} ${h.ticker} — 매수/매도 페이지`}
               >
+                <LinkPendingProbe />
                 <span className={styles.tossTable__nameCell} role="cell">
                   <span className={styles.tossTable__logo} aria-hidden>
                     <StockLogo ticker={h.ticker} size="md" />
