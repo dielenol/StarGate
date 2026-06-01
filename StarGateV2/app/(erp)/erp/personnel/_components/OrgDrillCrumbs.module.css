@@ -70,6 +70,10 @@
   transition: max-width 180ms ease, margin-left 180ms ease, opacity 180ms ease;
 }
 
+.crumb--on .label {
+  max-width: min(72vw, 520px);
+}
+
 .crumb--compact {
   gap: 0;
 }

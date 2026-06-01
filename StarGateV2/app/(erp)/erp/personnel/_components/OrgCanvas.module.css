@@ -3,7 +3,7 @@
 .canvas {
   position: relative;
   padding: 40px 28px 32px;
-  min-height: 560px;
+  min-height: 640px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background:
@@ -29,7 +29,7 @@
   grid-template-columns: 1fr 1.3fr;
   gap: 28px;
   align-items: start;
-  max-width: 960px;
+  max-width: 1120px;
   margin-inline: auto;
 }
 
@@ -75,6 +75,10 @@
 
 .externalArea .sectionTitle {
   color: var(--ink-2);
+}
+
+.externalNetwork {
+  position: relative;
 }
 
 /* 본부 영역 — 금색 강조. NOVUS_ORDO 가 외부 3대 위에 별개 권위로 서는
@@ -125,6 +129,123 @@
     "military military civil    civil";
   gap: 48px 20px;
   min-height: 260px;
+}
+
+.civilSubOrgs {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  width: min(100%, 470px);
+  margin: 44px 0 0 auto;
+  padding-top: 30px;
+}
+
+.civilSubOrgConnector {
+  position: absolute;
+  top: -44px;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  width: 100%;
+  height: 82px;
+  color: rgba(255, 255, 255, 0.58);
+  pointer-events: none;
+}
+
+.subOrgNode {
+  z-index: 2;
+  min-height: 138px;
+  padding: 16px 14px 14px;
+  border-color: rgba(255, 255, 255, 0.34);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.015) 72%,
+      transparent
+    ),
+    repeating-linear-gradient(0deg, #0000 0 15px, #ffffff04 15px 16px),
+    repeating-linear-gradient(90deg, #0000 0 15px, #ffffff04 15px 16px),
+    var(--bg-1);
+}
+
+.subOrgNode:hover,
+.subOrgNode:focus-visible {
+  border-color: rgba(255, 255, 255, 0.78);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.02) 72%,
+      transparent
+    ),
+    repeating-linear-gradient(0deg, #0000 0 15px, #ffffff05 15px 16px),
+    repeating-linear-gradient(90deg, #0000 0 15px, #ffffff05 15px 16px),
+    var(--bg-2);
+}
+
+.subOrgNode .node__headerTop,
+.subOrgNode .label,
+.subOrgParent {
+  padding-left: 34px;
+}
+
+.subOrgNode .node__watermark {
+  right: -26px;
+  bottom: -42px;
+  width: 160px;
+  height: 160px;
+  opacity: 0.09;
+  filter: grayscale(1) contrast(1.1);
+}
+
+.subOrgNode[data-suborg="SPACE_ZERO"] .node__watermark {
+  opacity: 0.16;
+  filter: invert(1) grayscale(1) contrast(1.3);
+}
+
+.subOrgNode[data-suborg="SPACE_ZERO"] .node__headerTop,
+.subOrgNode[data-suborg="SPACE_ZERO"] .label,
+.subOrgNode[data-suborg="SPACE_ZERO"] .subOrgParent {
+  padding-left: 88px;
+}
+
+.subOrgNode[data-suborg="SPACE_ZERO"] .code {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+
+.subOrgLogo {
+  position: absolute;
+  top: 16px;
+  left: 14px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.18));
+}
+
+.subOrgNode[data-suborg="SPACE_ZERO"] .subOrgLogo {
+  width: 82px;
+  height: 22px;
+  filter: invert(1) grayscale(1) contrast(1.35)
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.18));
+}
+
+.subOrgNode[data-suborg="WHITE_ROSE"] .subOrgLogo {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.22));
+}
+
+.subOrgParent {
+  position: relative;
+  z-index: 1;
+  margin-top: 2px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* button(.node) 만 타겟 — SVG/라벨 overlay 는 position:absolute 라 grid 제외 */
@@ -589,6 +710,11 @@
   .factions {
     gap: 72px 24px;
   }
+
+  .civilSubOrgs {
+    width: min(100%, 520px);
+    margin-inline: auto;
+  }
 }
 
 @media (max-width: 768px) {
@@ -612,9 +738,18 @@
     min-height: 0;
   }
 
+  .civilSubOrgs {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 0;
+    width: 100%;
+  }
+
   /* 세로 1열에선 상호 견제 오버레이/라벨 비활성 */
   .crossfire,
-  .crossfireLabel {
+  .crossfireLabel,
+  .civilSubOrgConnector {
     display: none;
   }
 

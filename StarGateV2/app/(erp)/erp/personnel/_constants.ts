@@ -1,5 +1,44 @@
 import type { AgentLevel, FactionCode, InstitutionCode } from "@/types/character";
 
+export interface ExternalSubOrg {
+  code: string;
+  label: string;
+  labelEn: string;
+  parentCode: FactionCode;
+  parentLabel: string;
+  logoUrl: string;
+  doctrine: string;
+}
+
+export const EXTERNAL_SUB_ORGS: readonly ExternalSubOrg[] = [
+  {
+    code: "WHITE_ROSE",
+    label: "백장미단",
+    labelEn: "White Rose",
+    parentCode: "CIVIL",
+    parentLabel: "시민사회",
+    logoUrl: "/assets/faction/white_rose_logo.png",
+    doctrine: "급진 인권운동 · 정보공개",
+  },
+  {
+    code: "SPACE_ZERO",
+    label: "스페이스 제로",
+    labelEn: "Space Zero",
+    parentCode: "CIVIL",
+    parentLabel: "시민사회",
+    logoUrl: "/assets/faction/space_zero_logo.png",
+    doctrine: "기술 자본 · 글로벌 시장",
+  },
+] as const;
+
+export function getExternalSubOrg(code: string): ExternalSubOrg | undefined {
+  return EXTERNAL_SUB_ORGS.find((org) => org.code === code);
+}
+
+export function isExternalSubOrg(code: string): boolean {
+  return Boolean(getExternalSubOrg(code));
+}
+
 /* ── 외부 기관/내부 기관 보조 메타데이터 ──
    FACTIONS(외부 기관) / INSTITUTIONS(내부 기관) 기본 스키마(`shared-db`)에는 code/label/labelEn 만 있어
    UI 전용 추가 정보(교리·워터마크 로고·감독 영역)는 여기 로컬에 둔다.
@@ -25,11 +64,13 @@ export const FACTION_DOCTRINE: Record<FactionCode, string> = {
  * 보유한 경우 사용. 알려지지 않은 code 면 undefined 반환.
  */
 export function getFactionLogo(code: string): string | undefined {
-  return FACTION_LOGO[code as FactionCode];
+  return FACTION_LOGO[code as FactionCode] ?? getExternalSubOrg(code)?.logoUrl;
 }
 
 export function getFactionDoctrine(code: string): string | undefined {
-  return FACTION_DOCTRINE[code as FactionCode];
+  return (
+    FACTION_DOCTRINE[code as FactionCode] ?? getExternalSubOrg(code)?.doctrine
+  );
 }
 
 export const INSTITUTION_LOGO = "/assets/StarGate_logo_watermark.webp";

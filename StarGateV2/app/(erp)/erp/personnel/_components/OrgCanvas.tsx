@@ -4,6 +4,7 @@ import type { AgentLevel } from "@/types/character";
 import { FACTIONS, INSTITUTIONS, INTERNAL_FACTION_CODE } from "@/types/character";
 
 import {
+  EXTERNAL_SUB_ORGS,
   FACTION_LOGO,
   INSTITUTION_OVERSIGHT,
   LEVEL_ORDER,
@@ -20,6 +21,10 @@ import styles from "./OrgCanvas.module.css";
 
 const UNASSIGNED_CODE = "UNASSIGNED";
 
+function displayCode(code: string): string {
+  return code.replace(/_/g, " ");
+}
+
 interface UnassignedSample {
   codename: string;
 }
@@ -28,7 +33,7 @@ interface Props {
   groupCounts: Record<string, number>;
   groupLevelCounts?: Record<string, Partial<Record<AgentLevel, number>>>;
   unassignedSamples?: UnassignedSample[];
-  onSelect: (groupCode: string) => void;
+  onSelect: (groupCode: string, subUnitCode?: string | null) => void;
 }
 
 export default function OrgCanvas({
@@ -241,111 +246,195 @@ export default function OrgCanvas({
         {/* 외부 권력 블록 (scope=external) — 우측 */}
         <div className={styles.externalArea}>
           <div className={styles.sectionTitle}>노부스 오르도 외부 기관 · EXTERNAL FACTIONS</div>
-          <div className={styles.factions}>
-            {/* 상호 견제 — 3 꼭짓점을 잇는 양방향 화살표 + 중앙 '견제' 라벨.
-                viewBox 100×100 기준: COUNCIL(50,18), MILITARY(20,82), CIVIL(80,82) */}
-            <svg
-              className={styles.crossfire}
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              aria-hidden
+          <div className={styles.externalNetwork}>
+            <div className={styles.factions}>
+              {/* 상호 견제 — 3 꼭짓점을 잇는 양방향 화살표 + 중앙 '견제' 라벨.
+                  viewBox 100×100 기준: COUNCIL(50,18), MILITARY(20,82), CIVIL(80,82) */}
+              <svg
+                className={styles.crossfire}
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                <defs>
+                  <marker
+                    id="crossfireArrow"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="3"
+                    markerHeight="3"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="var(--danger)" />
+                  </marker>
+                </defs>
+                {/* COUNCIL ↔ MILITARY */}
+                <line
+                  x1="50"
+                  y1="18"
+                  x2="20"
+                  y2="82"
+                  markerStart="url(#crossfireArrow)"
+                  markerEnd="url(#crossfireArrow)"
+                />
+                {/* COUNCIL ↔ CIVIL */}
+                <line
+                  x1="50"
+                  y1="18"
+                  x2="80"
+                  y2="82"
+                  markerStart="url(#crossfireArrow)"
+                  markerEnd="url(#crossfireArrow)"
+                />
+                {/* MILITARY ↔ CIVIL */}
+                <line
+                  x1="20"
+                  y1="82"
+                  x2="80"
+                  y2="82"
+                  markerStart="url(#crossfireArrow)"
+                  markerEnd="url(#crossfireArrow)"
+                />
+              </svg>
+              <span className={styles.crossfireLabel} aria-hidden>
+                상호 감시 · MUTUAL OVERSIGHT
+              </span>
+
+              {factionsOrdered.map((faction) => {
+                const count = groupCounts[faction.code] ?? 0;
+                const iconCode = FACTION_ICON_MAP[faction.code];
+                const logo = preferOptimizedPublicImagePath(
+                  FACTION_LOGO[faction.code],
+                );
+                return (
+                  <button
+                    key={faction.code}
+                    type="button"
+                    className={[styles.node, styles["node--lg"]].join(" ")}
+                    onClick={() => onSelect(faction.code)}
+                    aria-label={`${faction.label} (${count}명)`}
+                  >
+                    <span className={styles.tl} />
+                    <span className={styles.br} />
+
+                    {logo ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={logo}
+                        alt=""
+                        className={styles.node__watermark}
+                        aria-hidden
+                      />
+                    ) : null}
+
+                    <div className={styles.node__header}>
+                      <div className={styles.node__headerTop}>
+                        {iconCode ? (
+                          <OrgIcon
+                            code={iconCode}
+                            size={20}
+                            className={styles.node__headerIcon}
+                          />
+                        ) : null}
+                        <div className={styles.code}>{faction.code}</div>
+                      </div>
+                      <div className={styles.label}>{faction.label}</div>
+                    </div>
+
+                    <div className={styles.node__section}>
+                      <div className={styles.node__sectionLabel}>HEADCOUNT</div>
+                      <div className={styles.headcount}>
+                        <span className={styles.headcount__n}>{count}</span>
+                        <span className={styles.headcount__u}>MEMBERS</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              className={styles.civilSubOrgs}
+              aria-label="시민사회 하위 조직"
             >
-              <defs>
-                <marker
-                  id="crossfireArrow"
-                  viewBox="0 0 10 10"
-                  refX="9"
-                  refY="5"
-                  markerWidth="3"
-                  markerHeight="3"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M0,0 L10,5 L0,10 z" fill="var(--danger)" />
-                </marker>
-              </defs>
-              {/* COUNCIL ↔ MILITARY */}
-              <line
-                x1="50"
-                y1="18"
-                x2="20"
-                y2="82"
-                markerStart="url(#crossfireArrow)"
-                markerEnd="url(#crossfireArrow)"
-              />
-              {/* COUNCIL ↔ CIVIL */}
-              <line
-                x1="50"
-                y1="18"
-                x2="80"
-                y2="82"
-                markerStart="url(#crossfireArrow)"
-                markerEnd="url(#crossfireArrow)"
-              />
-              {/* MILITARY ↔ CIVIL */}
-              <line
-                x1="20"
-                y1="82"
-                x2="80"
-                y2="82"
-                markerStart="url(#crossfireArrow)"
-                markerEnd="url(#crossfireArrow)"
-              />
-            </svg>
-            <span className={styles.crossfireLabel} aria-hidden>
-              상호 감시 · MUTUAL OVERSIGHT
-            </span>
+              <svg
+                className={styles.civilSubOrgConnector}
+                viewBox="0 0 100 72"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                <path
+                  d="M50 0 V28 M22 28 H78 M22 28 V72 M78 28 V72"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  strokeDasharray="4 6"
+                  vectorEffect="non-scaling-stroke"
+                />
+              </svg>
 
-            {factionsOrdered.map((faction) => {
-              const count = groupCounts[faction.code] ?? 0;
-              const iconCode = FACTION_ICON_MAP[faction.code];
-              const logo = preferOptimizedPublicImagePath(
-                FACTION_LOGO[faction.code],
-              );
-              return (
-                <button
-                  key={faction.code}
-                  type="button"
-                  className={[styles.node, styles["node--lg"]].join(" ")}
-                  onClick={() => onSelect(faction.code)}
-                  aria-label={`${faction.label} (${count}명)`}
-                >
-                  <span className={styles.tl} />
-                  <span className={styles.br} />
+              {EXTERNAL_SUB_ORGS.map((org) => {
+                const logo = preferOptimizedPublicImagePath(org.logoUrl);
+                const count = groupCounts[org.code] ?? 0;
+                return (
+                  <button
+                    key={org.code}
+                    type="button"
+                    className={[
+                      styles.node,
+                      styles["node--lg"],
+                      styles.subOrgNode,
+                    ].join(" ")}
+                    data-suborg={org.code}
+                    onClick={() => onSelect(org.parentCode, org.code)}
+                    aria-label={`${org.label} (${count}명)`}
+                  >
+                    <span className={styles.tl} />
+                    <span className={styles.br} />
 
-                  {logo ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={logo}
-                      alt=""
-                      className={styles.node__watermark}
-                      aria-hidden
-                    />
-                  ) : null}
-
-                  <div className={styles.node__header}>
-                    <div className={styles.node__headerTop}>
-                      {iconCode ? (
-                        <OrgIcon
-                          code={iconCode}
-                          size={20}
-                          className={styles.node__headerIcon}
+                    {logo ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={logo}
+                          alt=""
+                          className={styles.node__watermark}
+                          aria-hidden
                         />
-                      ) : null}
-                      <div className={styles.code}>{faction.code}</div>
-                    </div>
-                    <div className={styles.label}>{faction.label}</div>
-                  </div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={logo}
+                          alt=""
+                          className={styles.subOrgLogo}
+                          aria-hidden
+                        />
+                      </>
+                    ) : null}
 
-                  <div className={styles.node__section}>
-                    <div className={styles.node__sectionLabel}>HEADCOUNT</div>
-                    <div className={styles.headcount}>
-                      <span className={styles.headcount__n}>{count}</span>
-                      <span className={styles.headcount__u}>MEMBERS</span>
+                    <div className={styles.node__header}>
+                      <div className={styles.node__headerTop}>
+                        <div className={styles.code}>
+                          {displayCode(org.code)}
+                        </div>
+                      </div>
+                      <div className={styles.label}>{org.label}</div>
+                      <div className={styles.subOrgParent}>
+                        {org.parentLabel}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              );
-            })}
+
+                    <div className={styles.node__section}>
+                      <div className={styles.node__sectionLabel}>HEADCOUNT</div>
+                      <div className={styles.headcount}>
+                        <span className={styles.headcount__n}>{count}</span>
+                        <span className={styles.headcount__u}>MEMBERS</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 

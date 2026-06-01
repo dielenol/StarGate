@@ -52,10 +52,29 @@
   right: -60px;
   bottom: -60px;
   width: 280px;
+  height: 280px;
   object-fit: contain;
   opacity: 0.07;
   pointer-events: none;
   user-select: none;
+}
+
+.hero[data-group-code="WHITE_ROSE"] .watermark {
+  right: -42px;
+  bottom: -96px;
+  width: 260px;
+  height: 340px;
+  opacity: 0.11;
+  filter: grayscale(1) contrast(1.25);
+}
+
+.hero[data-group-code="SPACE_ZERO"] .watermark {
+  right: 28px;
+  bottom: 14px;
+  width: 360px;
+  height: 76px;
+  opacity: 0.11;
+  filter: invert(1) grayscale(1) contrast(1.35);
 }
 
 .head {
@@ -96,6 +115,24 @@
   height: 26px;
   flex-shrink: 0;
   object-fit: contain;
+}
+
+.titleLogo--badge {
+  width: 34px;
+  height: 34px;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.18));
+}
+
+.titleLogo--wide {
+  width: 112px;
+  height: 24px;
+  filter: invert(1) grayscale(1) contrast(1.35)
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.16));
+}
+
+.hero[data-group-code="WHITE_ROSE"] .titleLogo--badge {
+  height: 40px;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.22));
 }
 
 /* sub-unit chip — 컴팩트한 밀도를 유지하되 20px 아이콘과 긴 한글 라벨이 닿지 않게 여백만 보정. */

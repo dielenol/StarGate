@@ -27,6 +27,7 @@ interface SubUnitItem {
 }
 
 interface Props {
+  groupCode?: string;
   groupLabel: string;
   groupLabelEn: string;
   kind: GroupKind;
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export default function GroupHero({
+  groupCode,
   groupLabel,
   groupLabelEn,
   kind,
@@ -75,12 +77,23 @@ export default function GroupHero({
   const optimizedTitleLogoUrl = titleLogoUrl
     ? preferOptimizedPublicImagePath(titleLogoUrl)
     : undefined;
+  const isFactionTitleLogo =
+    optimizedTitleLogoUrl?.includes("/assets/faction/") ?? false;
+  const isWideTitleLogo =
+    optimizedTitleLogoUrl?.includes("space_zero_logo") ?? false;
+  const titleLogoClassName = [
+    styles.titleLogo,
+    isFactionTitleLogo ? styles["titleLogo--badge"] : "",
+    isWideTitleLogo ? styles["titleLogo--wide"] : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const subUnitCount = subUnits?.length ?? 0;
   const hasSubUnits = subUnitCount > 0;
 
   return (
-    <div className={styles.hero}>
+    <div className={styles.hero} data-group-code={groupCode}>
       <span className={`${styles.corner} ${styles["corner--tl"]}`} />
       <span className={`${styles.corner} ${styles["corner--tr"]}`} />
       <span className={`${styles.corner} ${styles["corner--bl"]}`} />
@@ -106,7 +119,7 @@ export default function GroupHero({
               <img
                 src={optimizedTitleLogoUrl}
                 alt=""
-                className={styles.titleLogo}
+                className={titleLogoClassName}
                 aria-hidden
               />
             ) : iconCode ? (

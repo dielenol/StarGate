@@ -48,11 +48,14 @@ import SearchJumpBanner from "./_components/SearchJumpBanner";
 import SubUnitAccordion from "./_components/SubUnitAccordion";
 
 import {
+  EXTERNAL_SUB_ORGS,
+  getExternalSubOrg,
   getFactionDoctrine,
   getFactionLogo,
   getInstitutionDoctrine,
   INSTITUTION_LOGO,
   INSTITUTION_OVERSIGHT,
+  isExternalSubOrg,
 } from "./_constants";
 
 import styles from "./page.module.css";
@@ -74,6 +77,8 @@ const LEGEND_ITEMS: { level: AgentLevel; label: string }[] = [
   { level: "U", label: "소모품" },
 ];
 
+type SubUnitItem = { code: string; label: string };
+
 /* ── 헬퍼 ── */
 
 /**
@@ -83,6 +88,9 @@ const LEGEND_ITEMS: { level: AgentLevel; label: string }[] = [
  * type 분기 없이 동일 로직 적용.
  */
 function resolveGroup(c: Character): string {
+  const externalSubOrg = resolveExternalSubOrg(c);
+  if (externalSubOrg) return externalSubOrg.parentCode;
+
   const dept = c.department;
   if (dept && dept !== UNASSIGNED_CODE) {
     const top = getTopLevelGroup(dept);
@@ -93,9 +101,28 @@ function resolveGroup(c: Character): string {
     const top = getTopLevelGroup(c.institutionCode);
     return top !== UNASSIGNED_CODE ? top : c.institutionCode;
   }
-  if (c.factionCode && isFaction(c.factionCode)) return c.factionCode;
+  if (c.factionCode && isFaction(c.factionCode)) {
+    return c.factionCode;
+  }
 
   return UNASSIGNED_CODE;
+}
+
+function resolveExternalSubOrg(c: Character) {
+  return (
+    getExternalSubOrg(c.department ?? "") ??
+    getExternalSubOrg(c.factionCode ?? "") ??
+    getExternalSubOrg(c.institutionCode ?? "")
+  );
+}
+
+function getDisplaySubUnits(groupCode: string): readonly SubUnitItem[] {
+  if (groupCode === "CIVIL") {
+    return EXTERNAL_SUB_ORGS.filter((org) => org.parentCode === groupCode).map(
+      (org) => ({ code: org.code, label: org.label }),
+    );
+  }
+  return getSubUnits(groupCode);
 }
 
 /** 같은 그룹/서브유닛 내부 카드 정렬: 등급 내림차순 → codename 오름차순 */
@@ -127,12 +154,20 @@ function lowestRequiredForHidden(clearance: AgentLevel): AgentLevel | undefined 
 function getGroupKind(code: string): "faction" | "institution" | "unassigned" {
   if (code === UNASSIGNED_CODE) return "unassigned";
   if (isFaction(code)) return "faction";
+  if (isExternalSubOrg(code)) return "faction";
   if (isInstitution(code)) return "institution";
   return "unassigned";
 }
 
+function getDisplayGroupLabel(code: string): string {
+  return getExternalSubOrg(code)?.label ?? getGroupLabel(code);
+}
+
 /** 그룹의 labelEn 찾기 (subUnit 은 labelEn 이 없으므로 label 반환) */
 function getGroupLabelEn(code: string): string {
+  const externalSubOrg = getExternalSubOrg(code);
+  if (externalSubOrg) return externalSubOrg.labelEn;
+
   const f = FACTIONS.find((x) => x.code === code);
   if (f) return f.labelEn;
   const inst = INSTITUTIONS.find((x) => x.code === code);
@@ -220,6 +255,13 @@ export default function PersonnelClient({
     [buildUrl, router],
   );
 
+  useEffect(() => {
+    if (!selectedGroup) return;
+    const externalSubOrg = getExternalSubOrg(selectedGroup);
+    if (!externalSubOrg) return;
+    navigateDrill(externalSubOrg.parentCode, externalSubOrg.code, true);
+  }, [navigateDrill, selectedGroup]);
+
   const prevQueryRef = useRef("");
 
   const showIdentity = canViewField(clearance, "identity");
@@ -247,7 +289,17 @@ export default function PersonnelClient({
         map.set(sub.code, []);
       }
     }
+    for (const org of EXTERNAL_SUB_ORGS) {
+      map.set(org.code, []);
+    }
     for (const c of characters) {
+      const externalSubOrg = resolveExternalSubOrg(c);
+      if (externalSubOrg) {
+        const bucket = map.get(externalSubOrg.code);
+        if (bucket) bucket.push(c);
+        continue;
+      }
+
       const dept = c.department;
       if (!dept) continue;
       const bucket = map.get(dept);
@@ -297,10 +349,12 @@ export default function PersonnelClient({
       const g = resolveGroup(c);
       groupCounts.set(g, (groupCounts.get(g) ?? 0) + 1);
 
-      if (c.department && c.department !== g) {
+      const externalSubOrg = resolveExternalSubOrg(c);
+      const subUnitCode = externalSubOrg?.code ?? c.department;
+      if (subUnitCode && subUnitCode !== g) {
         subUnitCounts.set(
-          c.department,
-          (subUnitCounts.get(c.department) ?? 0) + 1,
+          subUnitCode,
+          (subUnitCounts.get(subUnitCode) ?? 0) + 1,
         );
       }
     }
@@ -339,12 +393,10 @@ export default function PersonnelClient({
 
     // 하위 기구가 있는 그룹이면 매칭 최다 subUnit 자동 펼침
     let nextSub: string | null = null;
-    if (getSubUnits(nextGroup).length > 0) {
+    const nextSubUnits = getDisplaySubUnits(nextGroup);
+    if (nextSubUnits.length > 0) {
       const subEntries = [...searchMatches.subUnitCounts.entries()]
-        .filter(([code]) => {
-          const inst = INSTITUTIONS.find((i) => i.code === nextGroup);
-          return inst?.subUnits.some((u) => u.code === code);
-        })
+        .filter(([code]) => nextSubUnits.some((u) => u.code === code))
         .sort((a, b) => b[1] - a[1]);
       if (subEntries.length > 0) {
         nextSub = subEntries[0][0];
@@ -362,8 +414,8 @@ export default function PersonnelClient({
         crumbs useMemo deps 안정성을 위해 useCallback 으로 reference 고정. ── */
 
   const handleSelectGroup = useCallback(
-    (groupCode: string) => {
-      navigateDrill(groupCode, null);
+    (groupCode: string, subUnitCode: string | null = null) => {
+      navigateDrill(groupCode, subUnitCode);
     },
     [navigateDrill],
   );
@@ -398,6 +450,9 @@ export default function PersonnelClient({
     const counts: Record<string, number> = {};
     for (const f of FACTIONS) counts[f.code] = groupIndex.get(f.code)?.length ?? 0;
     for (const i of INSTITUTIONS) counts[i.code] = groupIndex.get(i.code)?.length ?? 0;
+    for (const org of EXTERNAL_SUB_ORGS) {
+      counts[org.code] = subUnitIndex.get(org.code)?.length ?? 0;
+    }
     counts[UNASSIGNED_CODE] = groupIndex.get(UNASSIGNED_CODE)?.length ?? 0;
 
     // 본부 박스: 본부 직속 + 산하 SECRETARIAT + 산하 MANUS 의 합산.
@@ -409,9 +464,9 @@ export default function PersonnelClient({
     counts[INTERNAL_FACTION_CODE] = novusDirect + institutionsSum;
 
     return counts;
-  }, [groupIndex]);
+  }, [groupIndex, subUnitIndex]);
 
-  // 그룹별 등급 분포 (AGENT + agentLevel 있는 캐릭터만 집계).
+  // 그룹별 등급 분포 (agentLevel 있는 AGENT/NPC 모두 집계).
   // FACTIONS / INSTITUTIONS / UNASSIGNED 전 그룹 커버 — OrgCanvas 와 GroupHero 공용.
   // NOVUS_ORDO 키는 본부 직속 + 산하 INSTITUTIONS 의 키별 합산으로 덮어쓴다.
   const canvasGroupLevelCounts = useMemo<
@@ -427,7 +482,7 @@ export default function PersonnelClient({
       const bucket = groupIndex.get(code) ?? [];
       const dist: Partial<Record<AgentLevel, number>> = {};
       for (const c of bucket) {
-        if (c.type === "AGENT" && c.agentLevel) {
+        if (c.agentLevel) {
           dist[c.agentLevel] = (dist[c.agentLevel] ?? 0) + 1;
         }
       }
@@ -480,16 +535,20 @@ export default function PersonnelClient({
         inst.subUnits.map((u) => ({ code: u.code, label: u.label })),
       );
     }
-    return getSubUnits(selectedGroup);
+    return getDisplaySubUnits(selectedGroup);
   }, [selectedGroup]);
 
-  const selectedGroupLabel = selectedGroup ? getGroupLabel(selectedGroup) : "";
+  const selectedGroupLabel = selectedGroup
+    ? getDisplayGroupLabel(selectedGroup)
+    : "";
   const selectedGroupLabelEn = selectedGroup ? getGroupLabelEn(selectedGroup) : "";
   const selectedGroupKind = selectedGroup
     ? getGroupKind(selectedGroup)
     : "faction";
   const selectedGroupUsesAgentLevels =
-    !selectedGroup || getFactionScope(selectedGroup) !== "external";
+    !selectedGroup ||
+    (getFactionScope(selectedGroup) !== "external" &&
+      !isExternalSubOrg(selectedGroup));
 
   // 검색 배너 표시 조건 (L2 에서 다른 그룹에도 매칭이 있을 때)
   const searchBannerInfo = useMemo(() => {
@@ -547,22 +606,26 @@ export default function PersonnelClient({
       // NOVUS_ORDO 는 FACTION 이지만 scope=internal → crumb prefix 는 "본부".
       const prefix =
         kind === "faction"
-          ? getFactionScope(selectedGroup) === "internal"
-            ? "본부"
-            : "외부 기관"
+          ? isExternalSubOrg(selectedGroup)
+            ? "시민사회 하위 조직"
+            : getFactionScope(selectedGroup) === "internal"
+              ? "본부"
+              : "외부 기관"
           : kind === "institution"
             ? "내부 기관"
             : "미배정";
       const label =
         kind === "unassigned"
           ? "미배정"
-          : `${prefix}: ${getGroupLabel(selectedGroup)}`;
+          : `${prefix}: ${getDisplayGroupLabel(selectedGroup)}`;
       items.push({
         key: "group",
         label,
         iconCode:
           kind === "faction"
-            ? getFactionIcon(selectedGroup)
+            ? isExternalSubOrg(selectedGroup)
+              ? getFactionIcon("CIVIL")
+              : getFactionIcon(selectedGroup)
             : kind === "institution"
               ? getInstitutionIcon(selectedGroup)
               : kind === "unassigned"
@@ -715,6 +778,7 @@ export default function PersonnelClient({
       ) : (
         <div className={styles.drilldown}>
           <GroupHero
+            groupCode={selectedGroup}
             groupLabel={selectedGroupLabel}
             groupLabelEn={selectedGroupLabelEn}
             kind={selectedGroupKind}
@@ -742,7 +806,9 @@ export default function PersonnelClient({
             }
             iconCode={
               selectedGroupKind === "faction"
-                ? getFactionIcon(selectedGroup)
+                ? isExternalSubOrg(selectedGroup)
+                  ? getFactionIcon("CIVIL")
+                  : getFactionIcon(selectedGroup)
                 : selectedGroupKind === "institution"
                   ? getInstitutionIcon(selectedGroup)
                   : selectedGroupKind === "unassigned"
@@ -750,7 +816,7 @@ export default function PersonnelClient({
                   : undefined
             }
             titleLogoUrl={
-              selectedGroup === INTERNAL_FACTION_CODE
+              selectedGroupKind === "faction"
                 ? getFactionLogo(selectedGroup)
                 : undefined
             }
