@@ -1,0 +1,104 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "operation-report-woody-mudi-disambiguation",
+    "filter": { "sessionId": "NOSB-S1E1-MINI" },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "수온 상승, 연기 기둥, 무디 투입",
+              "replacement": "수온 상승, 연기 기둥, 우디의 분신체 무디 투입"
+            }
+          },
+          "highlights": {
+            "$map": {
+              "input": "$highlights",
+              "as": "highlight",
+              "in": {
+                "$replaceAll": {
+                  "input": "$$highlight",
+                  "find": "수온 상승, 연기 기둥, 무디 투입",
+                  "replacement": "수온 상승, 연기 기둥, 우디의 분신체 무디 투입"
+                }
+              }
+            }
+          },
+          "updatedAt": { "$toDate": "2026-06-02T00:00:00.000Z" }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-wiki-woody-mudi-disambiguation",
+    "filter": { "slug": "s1e1-mini" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "수온 상승, 연기 기둥, 우디 투입",
+              "replacement": "수온 상승, 연기 기둥, 우디의 분신체 무디 투입"
+            }
+          },
+          "updatedAt": { "$toDate": "2026-06-02T00:00:00.000Z" }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki-woody-mudi-disambiguation",
+    "filter": { "slug": "zulu-0113-electronic-tear" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "우디의 분신체 투입",
+              "replacement": "우디의 분신체 무디 투입"
+            }
+          },
+          "updatedAt": { "$toDate": "2026-06-02T00:00:00.000Z" }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-woody-mudi-disambiguation",
+    "filter": { "slug": "zulu-0113-tear-sample" },
+    "update": [
+      {
+        "$set": {
+          "lore.acquisition": {
+            "$replaceAll": {
+              "input": "$lore.acquisition",
+              "find": "수온 상승, 연기 기둥, 우디 투입",
+              "replacement": "수온 상승, 연기 기둥, 우디의 분신체 무디 투입"
+            }
+          },
+          "updatedAt": { "$toDate": "2026-06-02T00:00:00.000Z" }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-alias-tag",
+    "filter": { "codename": "WD-(𝓃)" },
+    "update": {
+      "$addToSet": {
+        "lore.loreTags": "무디"
+      },
+      "$set": {
+        "updatedAt": "2026-06-02T00:00:00.000Z"
+      }
+    }
+  }
+]
