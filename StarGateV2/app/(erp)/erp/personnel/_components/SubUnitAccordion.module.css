@@ -1,6 +1,7 @@
 /* ── SubUnitAccordion ── */
 
 .subunit {
+  position: relative;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--bg-1);
@@ -12,6 +13,7 @@
 }
 
 .head {
+  position: relative;
   display: flex;
   width: 100%;
   align-items: center;
@@ -24,6 +26,16 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
+}
+
+.subunit[data-subunit="WHITE_ROSE"] .head,
+.subunit[data-subunit="SPACE_ZERO"] .head {
+  padding-right: 152px;
+}
+
+.subunit[data-subunit="SPACE_ZERO"] .head {
+  padding-right: 276px;
 }
 
 .subunit--open > .head {
@@ -49,11 +61,15 @@
 }
 
 .icon {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
   color: var(--gold-dim);
 }
 
 .logo {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
   width: 22px;
   height: 22px;
@@ -70,11 +86,43 @@
   height: 28px;
 }
 
+.watermark {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: 16px;
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  opacity: 0.09;
+  pointer-events: none;
+  transform: translateY(-50%);
+  user-select: none;
+}
+
+.subunit[data-subunit="WHITE_ROSE"] .watermark {
+  right: 20px;
+  width: 118px;
+  height: 118px;
+  opacity: 0.11;
+  filter: grayscale(1) contrast(1.2);
+}
+
+.subunit[data-subunit="SPACE_ZERO"] .watermark {
+  right: 18px;
+  width: 236px;
+  height: 54px;
+  opacity: 0.13;
+  filter: invert(1) grayscale(1) contrast(1.35);
+}
+
 .subunit--open .icon {
   color: var(--gold);
 }
 
 .code {
+  position: relative;
+  z-index: 1;
   color: var(--gold-dim);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -82,17 +130,32 @@
 }
 
 .label {
+  position: relative;
+  z-index: 1;
   color: var(--ink-0);
   font-size: 15px;
 }
 
 .subCount {
+  position: relative;
+  z-index: 1;
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
 }
 
+.summary {
+  position: relative;
+  z-index: 1;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+}
+
 .meta {
+  position: relative;
+  z-index: 1;
   margin-left: auto;
   color: var(--ink-2);
   font-family: var(--font-mono);
@@ -106,4 +169,15 @@
 
 .body {
   padding: 18px;
+}
+
+@media (max-width: 720px) {
+  .subunit[data-subunit="WHITE_ROSE"] .head,
+  .subunit[data-subunit="SPACE_ZERO"] .head {
+    padding-right: 18px;
+  }
+
+  .watermark {
+    display: none;
+  }
 }

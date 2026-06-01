@@ -4,9 +4,11 @@ export interface ExternalSubOrg {
   code: string;
   label: string;
   labelEn: string;
+  summary: string;
   parentCode: FactionCode;
   parentLabel: string;
   logoUrl: string;
+  logoVariant: "badge" | "wide";
   doctrine: string;
 }
 
@@ -15,18 +17,22 @@ export const EXTERNAL_SUB_ORGS: readonly ExternalSubOrg[] = [
     code: "WHITE_ROSE",
     label: "백장미단",
     labelEn: "White Rose",
+    summary: "시민사회 급진파",
     parentCode: "CIVIL",
     parentLabel: "시민사회",
     logoUrl: "/assets/faction/white_rose_logo.png",
+    logoVariant: "badge",
     doctrine: "급진 인권운동 · 정보공개",
   },
   {
     code: "SPACE_ZERO",
     label: "스페이스 제로",
     labelEn: "Space Zero",
+    summary: "기술자본 세력",
     parentCode: "CIVIL",
     parentLabel: "시민사회",
     logoUrl: "/assets/faction/space_zero_logo.png",
+    logoVariant: "wide",
     doctrine: "기술 자본 · 글로벌 시장",
   },
 ] as const;

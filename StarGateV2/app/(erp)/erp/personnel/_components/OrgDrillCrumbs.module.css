@@ -36,6 +36,24 @@
   display: inline-block;
 }
 
+.logo {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.crumb[data-logo-variant="badge"] .logo {
+  width: 22px;
+  height: 22px;
+}
+
+.crumb[data-logo-variant="wide"] .logo {
+  width: 64px;
+  height: 16px;
+  filter: invert(1) grayscale(1) contrast(1.35);
+}
+
 .crumb--clickable {
   font: inherit;
   letter-spacing: inherit;

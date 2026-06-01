@@ -33,6 +33,7 @@ export default function SubUnitAccordion({
   children,
 }: Props) {
   const memberCount = agentCount + npcCount;
+  const externalSubOrg = getExternalSubOrg(code);
 
   const metaParts: string[] = [`${memberCount}명`];
   if (leadCount && leadCount > 0) {
@@ -40,10 +41,11 @@ export default function SubUnitAccordion({
   }
 
   const subIcon = getSubUnitIcon(code);
-  const subLogo = getExternalSubOrg(code)?.logoUrl;
+  const subLogo = externalSubOrg?.logoUrl;
   const optimizedSubLogo = subLogo
     ? preferOptimizedPublicImagePath(subLogo)
     : undefined;
+  const displayLabel = externalSubOrg?.label ?? label;
 
   return (
     <div
@@ -73,12 +75,33 @@ export default function SubUnitAccordion({
         ) : subIcon ? (
           <OrgIcon code={subIcon} size={18} className={styles.icon} />
         ) : null}
-        <span className={styles.code}>{code}</span>
-        <span className={styles.label}>{label}</span>
-        <span className={styles.subCount}>
-          / {agentCount} AGENT · {npcCount} NPC
-        </span>
-        <span className={styles.meta}>{metaParts.join(" · ")}</span>
+        {externalSubOrg ? (
+          <>
+            <span className={styles.label}>{displayLabel}</span>
+            <span className={styles.subCount}>
+              / {agentCount} AGENT / {npcCount} NPC
+            </span>
+            <span className={styles.summary}>{externalSubOrg.summary}</span>
+          </>
+        ) : (
+          <>
+            <span className={styles.code}>{code}</span>
+            <span className={styles.label}>{displayLabel}</span>
+            <span className={styles.subCount}>
+              / {agentCount} AGENT · {npcCount} NPC
+            </span>
+            <span className={styles.meta}>{metaParts.join(" · ")}</span>
+          </>
+        )}
+        {optimizedSubLogo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={optimizedSubLogo}
+            alt=""
+            className={styles.watermark}
+            aria-hidden
+          />
+        ) : null}
       </button>
 
       {expanded && <div className={styles.body}>{children}</div>}

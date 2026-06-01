@@ -640,13 +640,16 @@ export default function PersonnelClient({
 
     // 하위 기구가 실제로 펼쳐졌을 때만 sub crumb 추가
     if (selectedGroup && expandedSubUnit && selectedSubUnits.length > 0) {
+      const externalSubOrg = getExternalSubOrg(expandedSubUnit);
       const subLabel =
         selectedSubUnits.find((u) => u.code === expandedSubUnit)?.label ??
         expandedSubUnit;
       items.push({
         key: "sub",
         label: `하위: ${subLabel}`,
-        iconCode: getSubUnitIcon(expandedSubUnit),
+        iconCode: externalSubOrg ? undefined : getSubUnitIcon(expandedSubUnit),
+        logoUrl: externalSubOrg?.logoUrl,
+        logoVariant: externalSubOrg?.logoVariant,
         on: true,
       });
     }
