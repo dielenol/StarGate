@@ -161,8 +161,9 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   );
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
   const bgmTrackIndexRef = useRef<number | null>(null);
-  const playBgmTrackRef = useRef<(trackIndex: number) => Promise<void>>(
-    async () => undefined,
+  const bgmAutoStartAttemptedRef = useRef(false);
+  const playBgmTrackRef = useRef<(trackIndex: number) => Promise<boolean>>(
+    async () => false,
   );
 
   const getBgmAudio = useCallback(() => {
@@ -191,7 +192,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const playBgmTrack = useCallback(
     async (trackIndex: number) => {
       const track = ERP_BGM_TRACKS[trackIndex];
-      if (!track) return;
+      if (!track) return false;
 
       const audio = getBgmAudio();
       setActiveBgmIndex(trackIndex);
@@ -211,10 +212,12 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
       try {
         await audio.play();
         setBgmPlaying(true);
+        return true;
       } catch (error) {
         console.warn("erp bgm playback failed", error);
         setBgmPlaying(false);
         setBgmError(true);
+        return false;
       } finally {
         setBgmPending(false);
       }
@@ -224,6 +227,40 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
 
   useEffect(() => {
     playBgmTrackRef.current = playBgmTrack;
+  }, [playBgmTrack]);
+
+  useEffect(() => {
+    if (bgmAutoStartAttemptedRef.current) return;
+    bgmAutoStartAttemptedRef.current = true;
+
+    let canceled = false;
+
+    function removeGestureListeners() {
+      window.removeEventListener("pointerdown", retryOnGesture);
+      window.removeEventListener("keydown", retryOnGesture);
+    }
+
+    function retryOnGesture() {
+      const nextIndex = bgmTrackIndexRef.current ?? getRandomBgmIndex();
+      void playBgmTrack(nextIndex).then((played) => {
+        if (played) removeGestureListeners();
+      });
+    }
+
+    const startAutoplay = async () => {
+      const played = await playBgmTrack(getRandomBgmIndex());
+      if (played || canceled) return;
+      setBgmError(false);
+      window.addEventListener("pointerdown", retryOnGesture, { once: true });
+      window.addEventListener("keydown", retryOnGesture, { once: true });
+    };
+
+    void startAutoplay();
+
+    return () => {
+      canceled = true;
+      removeGestureListeners();
+    };
   }, [playBgmTrack]);
 
   useEffect(() => {

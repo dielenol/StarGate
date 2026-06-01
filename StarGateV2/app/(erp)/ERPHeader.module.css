@@ -97,11 +97,11 @@
 .header__bgm {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 9px;
   flex-shrink: 0;
-  width: min(36vw, 430px);
-  min-width: 360px;
-  padding: 3px 8px 3px 3px;
+  width: min(40vw, 480px);
+  min-width: 420px;
+  padding: 5px 12px 5px 6px;
   background: var(--bg-2);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
@@ -124,7 +124,7 @@
   height: 32px;
   padding: 0;
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--radius-sm);
   color: var(--ink-2);
   font-family: var(--font-mono);
@@ -133,14 +133,15 @@
   cursor: pointer;
   transition:
     color 0.15s ease,
-    border-color 0.15s ease,
     background 0.15s ease;
 }
 
 .header__bgmButton:hover:not(:disabled),
 .header__bgmButton--active {
   color: var(--gold);
-  border-color: var(--gold-dim);
+}
+
+.header__bgmButton:hover:not(:disabled) {
   background: var(--bg-3);
 }
 
@@ -154,6 +155,7 @@
   flex: 1;
   flex-direction: column;
   gap: 4px;
+  justify-content: center;
   min-width: 140px;
 }
 
@@ -198,9 +200,10 @@
 .header__bgmVolume {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   flex-shrink: 0;
-  width: 92px;
+  width: 112px;
+  margin-left: 8px;
 }
 
 .header__bgmVolumeLabel {
@@ -380,9 +383,9 @@
 
 @media (max-width: 1180px) {
   .header__bgm {
-    padding-right: 3px;
-    width: 280px;
-    min-width: 280px;
+    padding-right: 6px;
+    width: 300px;
+    min-width: 300px;
   }
 
   .header__bgmTime,
@@ -425,8 +428,8 @@
   }
 
   .header__bgm {
-    width: 210px;
-    min-width: 210px;
+    width: 220px;
+    min-width: 220px;
   }
 
   .header__cmdk {
@@ -471,8 +474,8 @@
   }
 
   .header__bgm {
-    width: 170px;
-    min-width: 170px;
+    width: 176px;
+    min-width: 176px;
   }
 
   .header__bgmButton {
