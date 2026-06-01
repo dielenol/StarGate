@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole, isCharacterOwner } from "@/lib/auth/rbac";
-import { findCharacterById } from "@/lib/db/characters";
+import { findCharacterById, listCharacters } from "@/lib/db/characters";
 import { listSessionReports } from "@/lib/db/session-reports";
 import { getUserClearance, filterCharacterByClearance } from "@/lib/personnel";
 
@@ -35,6 +35,11 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
   const filtered = filterCharacterByClearance(character, clearance);
   const serialized = JSON.parse(JSON.stringify(filtered));
   const eventIds = new Set(filtered.lore.appearsInEvents ?? []);
+  const relationTargetCodes = new Set(
+    (filtered.lore.relations ?? [])
+      .map((relation) => relation.targetCodename)
+      .filter((codename): codename is string => codename.trim().length > 0),
+  );
   const relatedReports = eventIds.size > 0
     ? (await listSessionReports().catch(() => []))
         .filter((report) => eventIds.has(report.sessionId))
@@ -48,6 +53,23 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
         .filter((report) => report.id.length > 0)
     : [];
   const serializedRelatedReports = JSON.parse(JSON.stringify(relatedReports));
+  const relatedCharacters = relationTargetCodes.size > 0
+    ? (await listCharacters().catch(() => []))
+        .filter((candidate) => {
+          if (!relationTargetCodes.has(candidate.codename)) return false;
+          return canEditDossier || candidate.isPublic !== false;
+        })
+        .map((candidate) => ({
+          id: candidate._id?.toString() ?? "",
+          codename: candidate.codename,
+          displayName:
+            candidate.lore.nickname || candidate.lore.name || candidate.codename,
+          type: candidate.type,
+          agentLevel: candidate.agentLevel,
+        }))
+        .filter((candidate) => candidate.id.length > 0)
+    : [];
+  const serializedRelatedCharacters = JSON.parse(JSON.stringify(relatedCharacters));
 
   return (
     <DossierClient
@@ -55,6 +77,7 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
       clearance={clearance}
       canEditDossier={canEditDossier}
       relatedReports={serializedRelatedReports}
+      relatedCharacters={serializedRelatedCharacters}
     />
   );
 }

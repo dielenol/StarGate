@@ -35,6 +35,10 @@ export interface LoreSheet {
   loreTags?: string[];
   /** 등장 이벤트 (예: ["2025-Q1-알파"]). */
   appearsInEvents?: string[];
+  /** 인물 간 관계 기록. 세션 로그/공식 문서 기반으로만 적재한다. */
+  relations?: DossierRelation[];
+  /** 세션별 출현 맥락. appearsInEvents 의 구조화 보강 필드. */
+  sessionAppearances?: DossierSessionAppearance[];
 
   /* NPC 호환 필드 (AGENT 에서는 보통 미사용) */
   /** 영문 이름 (NPC 위주). */
@@ -43,6 +47,44 @@ export interface LoreSheet {
   roleDetail?: string;
   /** 이름/코드네임 설명 (NPC 위주). */
   notes?: string;
+}
+
+export type DossierRelationConfidence = "confirmed" | "candidate" | "testimony";
+
+export interface DossierRelation {
+  /** 대상 Dossier의 codename. 아직 Dossier가 없으면 future-candidate 로 남긴다. */
+  targetCodename: string;
+  /** 표시용 대상명 스냅샷. 링크 대상이 없거나 권한상 숨겨질 때 사용. */
+  targetName?: string;
+  /** 대상 캐릭터 ObjectId 문자열 스냅샷. 없어도 targetCodename으로 매칭한다. */
+  targetId?: string;
+  /** 관계 라벨. 예: "현장 협업", "업무 배정", "후속 호출". */
+  label: string;
+  /** 관계가 생긴 근거와 현재 의미. */
+  summary: string;
+  /** 근거 세션/사건 ID. 예: "NOSB-S1E1-MINI". */
+  sourceEvent?: string;
+  /** 근거 문서/작전보고서 제목. */
+  sourceLabel?: string;
+  /** 기록 상태. candidate/testimony 는 UI에서 단정하지 않는다. */
+  confidence?: DossierRelationConfidence;
+  /** ISO timestamp 문자열. */
+  updatedAt?: string;
+}
+
+export interface DossierSessionAppearance {
+  /** 세션/사건 ID. appearsInEvents 와 같은 키를 쓴다. */
+  sessionId: string;
+  /** 해당 세션 내 역할/위치. */
+  role: string;
+  /** 세션에서 확인된 행동 또는 맥락. */
+  summary: string;
+  /** 연결 가능한 작전보고서 ObjectId 문자열. 없으면 sessionId 로만 표시한다. */
+  reportId?: string;
+  /** 근거 문서/작전보고서 제목. */
+  sourceLabel?: string;
+  /** ISO timestamp 문자열. */
+  updatedAt?: string;
 }
 
 /* ── PlaySheet ──

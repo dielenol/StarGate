@@ -18,6 +18,33 @@ import {
 const dashToUnknown = (s: string): string => (s === "-" ? "미상" : s);
 const loreString = () => z.string().transform(dashToUnknown);
 
+export const dossierRelationConfidenceSchema = z.enum([
+  "confirmed",
+  "candidate",
+  "testimony",
+]);
+
+export const dossierRelationSchema = z.object({
+  targetCodename: z.string().min(1).max(100),
+  targetName: z.string().max(100).optional(),
+  targetId: z.string().max(80).optional(),
+  label: z.string().min(1).max(80),
+  summary: z.string().min(1).max(1000),
+  sourceEvent: z.string().max(80).optional(),
+  sourceLabel: z.string().max(160).optional(),
+  confidence: dossierRelationConfidenceSchema.optional(),
+  updatedAt: isoDateStringSchema.optional(),
+});
+
+export const dossierSessionAppearanceSchema = z.object({
+  sessionId: z.string().min(1).max(80),
+  role: z.string().min(1).max(120),
+  summary: z.string().min(1).max(1000),
+  reportId: z.string().max(80).optional(),
+  sourceLabel: z.string().max(160).optional(),
+  updatedAt: isoDateStringSchema.optional(),
+});
+
 export const loreSheetSchema = z.object({
   /* 이름 */
   name: loreString(),
@@ -44,6 +71,8 @@ export const loreSheetSchema = z.object({
   /* 메타 */
   loreTags: z.array(z.string().max(40)).optional(),
   appearsInEvents: z.array(z.string().max(80)).optional(),
+  relations: z.array(dossierRelationSchema).optional(),
+  sessionAppearances: z.array(dossierSessionAppearanceSchema).optional(),
 
   /* NPC 호환 필드 */
   nameEn: loreString().optional(),
@@ -194,4 +223,8 @@ export const npcFrontmatterSchema = z.object({
 export type NpcDoc = z.infer<typeof npcDocSchema>;
 export type NpcFrontmatter = z.infer<typeof npcFrontmatterSchema>;
 export type LoreSheetSchema = z.infer<typeof loreSheetSchema>;
+export type DossierRelationSchema = z.infer<typeof dossierRelationSchema>;
+export type DossierSessionAppearanceSchema = z.infer<
+  typeof dossierSessionAppearanceSchema
+>;
 export type PlaySheetSchema = z.infer<typeof playSheetSchema>;

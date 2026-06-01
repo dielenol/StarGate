@@ -308,6 +308,8 @@ export const ALLOWED_LORE_FIELDS_ADMIN = new Set<string>([
   "lore.posterImage",
   "lore.loreTags",
   "lore.appearsInEvents",
+  "lore.relations",
+  "lore.sessionAppearances",
   "lore.roleDetail",
   "lore.notes",
 ]);

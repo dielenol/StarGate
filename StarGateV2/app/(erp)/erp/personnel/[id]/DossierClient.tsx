@@ -104,6 +104,19 @@ function isRedactedValue(value: unknown): boolean {
   return value === REDACTED || value === "" || value === null || value === undefined;
 }
 
+function getRelationConfidenceLabel(value: string | undefined): string {
+  switch (value) {
+    case "confirmed":
+      return "확인";
+    case "candidate":
+      return "검토";
+    case "testimony":
+      return "증언";
+    default:
+      return "기록";
+  }
+}
+
 function resolveCharacterGroup(character: Character): string {
   const department = character.department;
   if (department && department !== "UNASSIGNED") {
@@ -529,6 +542,7 @@ interface Props {
   clearance: AgentLevel;
   canEditDossier?: boolean;
   relatedReports?: RelatedFieldReport[];
+  relatedCharacters?: RelatedCharacterSummary[];
 }
 
 interface RelatedFieldReport {
@@ -537,6 +551,14 @@ interface RelatedFieldReport {
   sessionTitle: string;
   locationLabel?: string;
   createdAt?: string | Date;
+}
+
+interface RelatedCharacterSummary {
+  id: string;
+  codename: string;
+  displayName: string;
+  type: Character["type"];
+  agentLevel?: AgentLevel;
 }
 
 /* ── Component ──
@@ -550,6 +572,7 @@ export default function DossierClient({
   clearance,
   canEditDossier = false,
   relatedReports = [],
+  relatedCharacters = [],
 }: Props) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<DossierTabKey>("dossier");
@@ -698,8 +721,34 @@ export default function DossierClient({
   const relatedReportBySessionId = new Map(
     relatedReports.map((report) => [report.sessionId, report]),
   );
-  const fieldEventCount = canIdentity ? fieldEvents.length : 0;
-  const lastFieldEvent = fieldEvents.at(-1);
+  const relationTargetsByCodename = new Map(
+    relatedCharacters.map((target) => [target.codename, target]),
+  );
+  const relations = (lore.relations ?? []).filter(
+    (relation) => relation.targetCodename.trim().length > 0,
+  );
+  const sessionAppearances = (lore.sessionAppearances ?? []).filter(
+    (appearance) => appearance.sessionId.trim().length > 0,
+  );
+  const appearanceBySessionId = new Map(
+    sessionAppearances.map((appearance) => [appearance.sessionId, appearance]),
+  );
+  const knownFieldEventIds = new Set(fieldEvents);
+  const fieldActivityRows = [
+    ...fieldEvents.map((eventCode) => ({
+      eventCode,
+      appearance: appearanceBySessionId.get(eventCode),
+    })),
+    ...sessionAppearances
+      .filter((appearance) => !knownFieldEventIds.has(appearance.sessionId))
+      .map((appearance) => ({
+        eventCode: appearance.sessionId,
+        appearance,
+      })),
+  ];
+  const fieldEventCount = canIdentity ? fieldActivityRows.length : 0;
+  const relationCount = canIdentity ? relations.length : 0;
+  const lastFieldEvent = fieldActivityRows.at(-1)?.eventCode;
   const lastFieldReport = lastFieldEvent
     ? relatedReportBySessionId.get(lastFieldEvent)
     : undefined;
@@ -1221,17 +1270,91 @@ export default function DossierClient({
   );
 
   /* in-world placeholder — 인사기록부에 데이터가 비어 있을 때 자연스럽게 자리 잡는 메시지. */
-  const renderRelationsTab = () => (
-    <Box>
-      <PanelTitle>INTERPERSONAL · 관계도</PanelTitle>
-      <div className={styles.tabEmpty}>
-        등록된 인적 관계 없음
-        <span className={styles.tabEmpty__hint}>
-          추가 정보 수집 시 자동 갱신
-        </span>
-      </div>
-    </Box>
-  );
+  const renderRelationsTab = () => {
+    if (!canIdentity) {
+      return (
+        <Box>
+          <PanelTitle right={<ReqClrBadge required={reqIdentity} locked />}>
+            INTERPERSONAL · 관계도
+          </PanelTitle>
+          <LockedSection
+            variant="full"
+            required={reqIdentity}
+            title={`CLASSIFIED · ${reqIdentity}`}
+            subtitle={"INTERPERSONAL\n상위 등급 필요"}
+          />
+        </Box>
+      );
+    }
+
+    return (
+      <Box>
+        <PanelTitle right={<ReqClrBadge required={reqIdentity} locked={false} />}>
+          INTERPERSONAL · 관계도
+        </PanelTitle>
+        {relations.length > 0 ? (
+          <div className={styles.relationList}>
+            {relations.map((relation, index) => {
+              const target = relationTargetsByCodename.get(relation.targetCodename);
+              const targetLabel =
+                target?.displayName ||
+                relation.targetName ||
+                relation.targetCodename;
+              const meta = [
+                relation.label,
+                relation.sourceEvent,
+                getRelationConfidenceLabel(relation.confidence),
+              ].filter(Boolean).join(" · ");
+              const cardBody = (
+                <>
+                  <div className={styles.relationCard__head}>
+                    <span className={styles.relationTarget}>
+                      {targetLabel}
+                      <span className={styles.relationCode}>
+                        {relation.targetCodename}
+                      </span>
+                    </span>
+                    <span className={styles.eventMeta}>
+                      REL {String(index + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <div className={styles.relationMeta}>{meta}</div>
+                  <p className={styles.relationSummary}>{relation.summary}</p>
+                  {relation.sourceLabel ? (
+                    <p className={styles.relationSource}>{relation.sourceLabel}</p>
+                  ) : null}
+                </>
+              );
+
+              return target ? (
+                <Link
+                  key={`${relation.targetCodename}-${index}`}
+                  href={`/erp/personnel/${target.id}`}
+                  className={`${styles.relationCard} ${styles["relationCard--linked"]}`}
+                >
+                  {cardBody}
+                </Link>
+              ) : (
+                <article
+                  key={`${relation.targetCodename}-${index}`}
+                  className={styles.relationCard}
+                >
+                  {cardBody}
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={styles.tabEmpty}>
+            등록된 인적 관계 없음
+            <span className={styles.tabEmpty__hint}>
+              추가 정보 수집 시 자동 갱신
+            </span>
+          </div>
+        )}
+      </Box>
+    );
+  };
 
   const renderSessionsTab = () => {
     if (!canIdentity) {
@@ -1255,17 +1378,23 @@ export default function DossierClient({
         <PanelTitle right={<ReqClrBadge required={reqIdentity} locked={false} />}>
           FIELD ACTIVITY · 현장 출현 이력
         </PanelTitle>
-        {fieldEvents.length > 0 ? (
+        {fieldActivityRows.length > 0 ? (
           <div className={styles.eventList}>
-            {fieldEvents.map((eventCode, index) => {
+            {fieldActivityRows.map(({ eventCode, appearance }, index) => {
               const report = relatedReportBySessionId.get(eventCode);
-              const eventTitle = report?.sessionTitle ?? eventCode;
+              const eventTitle =
+                appearance?.sourceLabel ?? report?.sessionTitle ?? eventCode;
               const eventMeta = report
                 ? [
                     report.locationLabel,
                     formatDate(report.createdAt),
                   ].filter(Boolean).join(" · ")
                 : "연결된 작전 보고서 없음";
+              const eventDesc = appearance
+                ? appearance.summary
+                : report
+                  ? `작전 보고서에 연결된 현장 출현 기록입니다. ${eventMeta}`
+                  : "해당 인물은 이 작전 또는 사건의 참조 인물로 등재되어 있습니다.";
               const cardBody = (
                 <>
                   <div className={styles.eventCard__head}>
@@ -1275,11 +1404,10 @@ export default function DossierClient({
                     </span>
                   </div>
                   <div className={styles.eventTitle}>{eventTitle}</div>
-                  <p className={styles.eventDesc}>
-                    {report
-                      ? `작전 보고서에 연결된 현장 출현 기록입니다. ${eventMeta}`
-                      : "해당 인물은 이 작전 또는 사건의 참조 인물로 등재되어 있습니다."}
-                  </p>
+                  {appearance?.role ? (
+                    <div className={styles.sessionRole}>{appearance.role}</div>
+                  ) : null}
+                  <p className={styles.eventDesc}>{eventDesc}</p>
                 </>
               );
 
@@ -1687,7 +1815,7 @@ export default function DossierClient({
                   <span className={styles.mono}>{fieldEventCount}회</span>
                 </KVRow>
                 <KVRow label="인적 관계">
-                  <span className={styles.mono}>0건</span>
+                  <span className={styles.mono}>{relationCount}건</span>
                 </KVRow>
                 <KVRow label="최종 출현">
                   {lastFieldReport ? (
@@ -1725,7 +1853,7 @@ export default function DossierClient({
           <DossierTabs
             active={activeTab}
             onChange={setActiveTab}
-            counts={{ relations: 0, sessions: fieldEventCount }}
+            counts={{ relations: relationCount, sessions: fieldEventCount }}
             auditLevel="V"
             leftSlot={
               <Button size="sm" onClick={() => setGuideOpen(true)}>

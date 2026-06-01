@@ -368,6 +368,14 @@ function summarizeSavedDoc(
         appearsInEvents: isRecord(doc.lore)
           ? doc.lore.appearsInEvents
           : undefined,
+        relationCount:
+          isRecord(doc.lore) && Array.isArray(doc.lore.relations)
+            ? doc.lore.relations.length
+            : 0,
+        sessionAppearanceCount:
+          isRecord(doc.lore) && Array.isArray(doc.lore.sessionAppearances)
+            ? doc.lore.sessionAppearances.length
+            : 0,
         personnelVisible: doc.isPublic !== false && doc.type === "NPC",
       };
     case "wiki_pages":

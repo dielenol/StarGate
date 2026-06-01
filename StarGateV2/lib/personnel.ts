@@ -224,6 +224,12 @@ function redactLore(
   if (lore.appearsInEvents !== undefined) {
     result.appearsInEvents = lore.appearsInEvents;
   }
+  if (lore.relations !== undefined) {
+    result.relations = canIdentity ? lore.relations : [];
+  }
+  if (lore.sessionAppearances !== undefined) {
+    result.sessionAppearances = canIdentity ? lore.sessionAppearances : [];
+  }
 
   return result;
 }
