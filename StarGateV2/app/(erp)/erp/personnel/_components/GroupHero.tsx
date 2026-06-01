@@ -4,7 +4,7 @@ import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
-import { LEVEL_ORDER } from "../_constants";
+import { getExternalSubOrg, LEVEL_ORDER } from "../_constants";
 
 import OrgIcon, {
   getSubUnitIcon,
@@ -185,6 +185,10 @@ export default function GroupHero({
             <div className={styles.subUnitChips}>
               {subUnits!.map((u) => {
                 const subIcon = getSubUnitIcon(u.code);
+                const subLogo = getExternalSubOrg(u.code)?.logoUrl;
+                const optimizedSubLogo = subLogo
+                  ? preferOptimizedPublicImagePath(subLogo)
+                  : undefined;
                 const isOn = expandedSubUnit === u.code;
                 const chipClass = [
                   styles.subUnitChip,
@@ -196,7 +200,17 @@ export default function GroupHero({
 
                 const inner = (
                   <>
-                    {subIcon ? <OrgIcon code={subIcon} size={20} /> : null}
+                    {optimizedSubLogo ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={optimizedSubLogo}
+                        alt=""
+                        className={styles.subUnitLogo}
+                        aria-hidden
+                      />
+                    ) : subIcon ? (
+                      <OrgIcon code={subIcon} size={20} />
+                    ) : null}
                     <span>{u.label}</span>
                   </>
                 );
@@ -207,6 +221,7 @@ export default function GroupHero({
                       key={u.code}
                       type="button"
                       className={chipClass}
+                      data-subunit={u.code}
                       onClick={() => onSubUnitClick(u.code)}
                       aria-pressed={isOn}
                     >
@@ -216,7 +231,11 @@ export default function GroupHero({
                 }
 
                 return (
-                  <span key={u.code} className={chipClass}>
+                  <span
+                    key={u.code}
+                    className={chipClass}
+                    data-subunit={u.code}
+                  >
                     {inner}
                   </span>
                 );

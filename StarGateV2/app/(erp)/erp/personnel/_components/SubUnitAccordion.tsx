@@ -2,6 +2,10 @@
 
 import type { ReactNode } from "react";
 
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+
+import { getExternalSubOrg } from "../_constants";
+
 import OrgIcon, { getSubUnitIcon } from "./OrgIcon";
 
 import styles from "./SubUnitAccordion.module.css";
@@ -36,10 +40,15 @@ export default function SubUnitAccordion({
   }
 
   const subIcon = getSubUnitIcon(code);
+  const subLogo = getExternalSubOrg(code)?.logoUrl;
+  const optimizedSubLogo = subLogo
+    ? preferOptimizedPublicImagePath(subLogo)
+    : undefined;
 
   return (
     <div
       id={`subunit-${code}`}
+      data-subunit={code}
       className={[styles.subunit, expanded ? styles["subunit--open"] : ""]
         .filter(Boolean)
         .join(" ")}
@@ -53,7 +62,15 @@ export default function SubUnitAccordion({
         <span className={styles.arrow} aria-hidden>
           ▸
         </span>
-        {subIcon ? (
+        {optimizedSubLogo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={optimizedSubLogo}
+            alt=""
+            className={styles.logo}
+            aria-hidden
+          />
+        ) : subIcon ? (
           <OrgIcon code={subIcon} size={18} className={styles.icon} />
         ) : null}
         <span className={styles.code}>{code}</span>

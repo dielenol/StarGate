@@ -164,6 +164,23 @@
   color: var(--gold-dim);
 }
 
+.subUnitLogo {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.subUnitChip[data-subunit="SPACE_ZERO"] .subUnitLogo {
+  width: 68px;
+  height: 18px;
+  filter: invert(1) grayscale(1) contrast(1.35);
+}
+
+.subUnitChip[data-subunit="WHITE_ROSE"] .subUnitLogo {
+  height: 24px;
+}
+
 .subUnitChip--clickable {
   font: inherit;
   letter-spacing: inherit;
