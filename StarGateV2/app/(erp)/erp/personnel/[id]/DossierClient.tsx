@@ -28,6 +28,7 @@ import {
   FIELD_GROUP_ORDER,
   FIELD_REQUIRED_LEVEL,
   getLevelDisplayRank,
+  getLevelDisplayTotal,
   getRealNameRequiredLevel,
   getRequiredLevel,
   normalizeClearanceOverrides,
@@ -1444,7 +1445,10 @@ export default function DossierClient({
                   <span>
                     대상 권한등급 : {level} - {AGENT_LEVEL_LABELS[level]}
                   </span>
-                  <Pips total={7} filled={getLevelDisplayRank(level)} />
+                  <Pips
+                    total={getLevelDisplayTotal(level)}
+                    filled={getLevelDisplayRank(level)}
+                  />
                 </span>
               ) : (
                 <span

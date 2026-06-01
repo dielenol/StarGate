@@ -15,6 +15,7 @@ import {
   FIELD_GROUP_ORDER,
   FIELD_REQUIRED_LEVEL,
   getLevelDisplayRank,
+  getLevelDisplayTotal,
   getLevelRank,
 } from "@/lib/personnel";
 import {
@@ -797,16 +798,19 @@ export default function PersonnelClient({
                   data-level={item.level}
                   aria-hidden
                 >
-                  {Array.from({ length: 7 }, (_, i) => (
-                    <span
-                      key={i}
-                      className={
-                        i < getLevelDisplayRank(item.level)
-                          ? styles["lvScale--on"]
-                          : ""
-                      }
-                    />
-                  ))}
+                  {Array.from(
+                    { length: getLevelDisplayTotal(item.level) },
+                    (_, i) => (
+                      <span
+                        key={i}
+                        className={
+                          i < getLevelDisplayRank(item.level)
+                            ? styles["lvScale--on"]
+                            : ""
+                        }
+                      />
+                    ),
+                  )}
                 </span>
                 <span
                   className={styles.legend__label}

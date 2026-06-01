@@ -36,6 +36,9 @@ const LEVEL_DISPLAY_RANK: Record<AgentLevel, number> = {
   GM: 7,
 };
 
+const LEVEL_DISPLAY_TOTAL = 6;
+const GM_LEVEL_DISPLAY_TOTAL = LEVEL_DISPLAY_TOTAL + 1;
+
 /* ── 필드 그룹별 최소 열람 등급 ── */
 
 export type FieldGroup =
@@ -150,6 +153,10 @@ export function getLevelRank(level: AgentLevel): number {
  */
 export function getLevelDisplayRank(level: AgentLevel): number {
   return LEVEL_DISPLAY_RANK[level];
+}
+
+export function getLevelDisplayTotal(level: AgentLevel): number {
+  return level === "GM" ? GM_LEVEL_DISPLAY_TOTAL : LEVEL_DISPLAY_TOTAL;
 }
 
 /* ── 서버사이드 데이터 필터링 (P1 보안) ── */

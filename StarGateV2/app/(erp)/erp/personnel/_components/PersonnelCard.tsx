@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import type { AgentLevel, Character, CharacterType } from "@/types/character";
 
-import { getLevelDisplayRank } from "@/lib/personnel";
+import { getLevelDisplayRank, getLevelDisplayTotal } from "@/lib/personnel";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import Pips from "@/components/ui/Pips/Pips";
@@ -116,7 +116,10 @@ export default function PersonnelCard({
             {showAgentLevel ? (
               <span className={styles.clrPill} data-rank={level}>
                 <span>권한등급 : {level}</span>
-                <Pips total={7} filled={getLevelDisplayRank(level)} />
+                <Pips
+                  total={getLevelDisplayTotal(level)}
+                  filled={getLevelDisplayRank(level)}
+                />
               </span>
             ) : (
               <span

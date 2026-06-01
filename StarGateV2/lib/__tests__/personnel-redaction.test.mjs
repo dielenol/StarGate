@@ -21,6 +21,8 @@ import assert from "node:assert/strict";
 import {
   filterCharacterByClearance,
   filterCharacterForList,
+  getLevelDisplayRank,
+  getLevelDisplayTotal,
   getUserClearance,
 } from "../personnel.ts";
 
@@ -292,6 +294,15 @@ test("D-10: getUserClearance — UserRole 그대로 반환 (Phase 2-A 일체화)
   assert.equal(getUserClearance("V"), "V");
   assert.equal(getUserClearance("U"), "U");
   assert.equal(getUserClearance("GM"), "GM");
+});
+
+test("D-10b: display pips use V as full scale and GM as overflow", () => {
+  assert.equal(getLevelDisplayTotal("V"), 6);
+  assert.equal(getLevelDisplayRank("V"), 6);
+  assert.equal(getLevelDisplayTotal("A"), 6);
+  assert.equal(getLevelDisplayRank("A"), 5);
+  assert.equal(getLevelDisplayTotal("GM"), 7);
+  assert.equal(getLevelDisplayRank("GM"), 7);
 });
 
 /* ── D-11: 입력 객체 변경 안 함 (immutability) ── */

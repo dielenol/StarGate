@@ -7,7 +7,7 @@ import {
   type AgentLevel,
 } from "@/types/character";
 
-import { getLevelDisplayRank } from "@/lib/personnel";
+import { getLevelDisplayRank, getLevelDisplayTotal } from "@/lib/personnel";
 
 import Button from "@/components/ui/Button/Button";
 import Pips from "@/components/ui/Pips/Pips";
@@ -43,7 +43,10 @@ export default function ClearanceStrip({ clearance, hideGuideButton }: Props) {
           <span>
             권한등급: {clearance} - {AGENT_LEVEL_LABELS[clearance]}
           </span>
-          <Pips total={7} filled={getLevelDisplayRank(clearance)} />
+          <Pips
+            total={getLevelDisplayTotal(clearance)}
+            filled={getLevelDisplayRank(clearance)}
+          />
         </span>
         <span className={styles.strip__body}>
           내 열람 등급{" "}
