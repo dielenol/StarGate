@@ -91,7 +91,7 @@ async function parseShopError(res: Response): Promise<never> {
 }
 
 async function fetchShopCatalog(): Promise<ShopCatalogResponse> {
-  const res = await fetch("/api/erp/shop/catalog");
+  const res = await fetch("/api/erp/shop/catalog", { cache: "no-store" });
   if (!res.ok) await parseShopError(res);
   return res.json();
 }

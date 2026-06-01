@@ -15,6 +15,7 @@ interface OpenStateBody {
 }
 
 const OPEN_MODES = new Set<ShopOpenMode>(["auto", "open", "closed"]);
+const NO_STORE_HEADERS = { "Cache-Control": "private, no-store" } as const;
 
 function serializeOpenState(state: ShopOpenState) {
   return {
@@ -45,7 +46,9 @@ export async function GET() {
 
   try {
     const state = await getShopOpenState();
-    return NextResponse.json(serializeOpenState(state));
+    return NextResponse.json(serializeOpenState(state), {
+      headers: NO_STORE_HEADERS,
+    });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "편의점 영업 상태 조회 실패";
@@ -87,7 +90,9 @@ export async function PATCH(request: Request) {
       updatedById: session.user.id,
       updatedByName: session.user.displayName,
     });
-    return NextResponse.json(serializeOpenState(state));
+    return NextResponse.json(serializeOpenState(state), {
+      headers: NO_STORE_HEADERS,
+    });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "편의점 영업 상태 변경 실패";

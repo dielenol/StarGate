@@ -3,12 +3,12 @@
  *
  * 응답:
  * - items: SHOP_CATALOG 전체 품목 + stock(0 fallback) + available(isOpen && stock>0).
- * - isOpen: 영업 시간 판정 (`isShopOpen` — 20시 이후 / 일 종일 마감).
+ * - isOpen: 영업 시간 판정 (`isShopOpen` — 06:00~20:00 / 일요일 마감).
  *
  * 권한: ERP 로그인이면 OK (별도 RBAC 게이트 없음).
  *
- * 캐시: private 60s + SWR 120s — 짧은 트래픽 모음 최적화. 재고 변동은 buy 라우트에서
- * 클라이언트 query invalidate 로 우회.
+ * 캐시: no-store. GM 운영 모드 전환 직후 이전 영업 상태가 되살아나면 구매 UI가
+ * 실제 서버 가드와 어긋나므로 브라우저/프록시 캐시를 쓰지 않는다.
  */
 
 import { NextResponse } from "next/server";
@@ -49,7 +49,7 @@ export async function GET() {
       },
       {
         headers: {
-          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+          "Cache-Control": "private, no-store",
         },
       },
     );

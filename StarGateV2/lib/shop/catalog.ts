@@ -7,12 +7,15 @@
  * - color 는 tia_bot 의 RGB tuple 을 #RRGGBB 로 변환.
  * - pageGroup 은 SHOP_PAGES 분류와 정합 (BASIC / RECOVERY / LUXURY / RARE).
  * - stockMin / stockMax / appearRate 는 일자별 재고 시드 룰 (M2/M3 에서 활용).
- * - isShopOpen() 은 KST 20시 이후 + 일요일 종일 마감 룰을 따른다.
+ * - isShopOpen() 은 KST 06:00~20:00 영업 + 일요일 종일 마감 룰을 따른다.
  */
 
 import type { ShopPageGroup } from "@stargate/shared-db/types";
 
 /* ── 상수 ── */
+
+/** 개점 시각 (KST 06 시). */
+const OPEN_HOUR_KST = 6;
 
 /** 마감 시각 (KST 20 시). */
 const CLOSE_HOUR_KST = 20;
@@ -281,7 +284,7 @@ export const SHOP_PAGE_GROUPS: Record<ShopPageGroup, ShopCatalogItem[]> = {
  * 편의점 영업 여부 판정.
  *
  * - 일요일 (Sun): 종일 마감.
- * - 월~토: KST 20 시 이전만 open. 20 시 이후 close.
+ * - 월~토: KST 06:00 이상, 20:00 미만만 open.
  *
  * KST 변환은 `Intl.DateTimeFormat` 의 `Asia/Seoul` 을 통해 수행.
  * (Date 객체의 getDay/getHours 는 서버 OS 타임존 의존이라 사용하지 않음.)
@@ -305,5 +308,5 @@ export function isShopOpen(now: Date = new Date()): boolean {
   const hour = Number.parseInt(hourStr, 10) % 24;
 
   if (weekday === "Sunday") return false;
-  return hour < CLOSE_HOUR_KST;
+  return hour >= OPEN_HOUR_KST && hour < CLOSE_HOUR_KST;
 }

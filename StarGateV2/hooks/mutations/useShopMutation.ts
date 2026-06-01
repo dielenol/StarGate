@@ -16,7 +16,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
-import { ShopApiError, shopKeys } from "@/hooks/queries/useShopQuery";
+import {
+  ShopApiError,
+  shopKeys,
+  type ShopCatalogResponse,
+} from "@/hooks/queries/useShopQuery";
 
 /* ── 입력/응답 타입 ── */
 
@@ -204,7 +208,25 @@ export function useSetShopOpenMode() {
       if (!res.ok) await throwShopError(res);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (state) => {
+      queryClient.setQueryData<ShopCatalogResponse>(
+        shopKeys.catalog,
+        (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            isOpen: state.isOpen,
+            mode: state.mode,
+            scheduledOpen: state.scheduledOpen,
+            forceOpen: state.forceOpen,
+            forceClosed: state.forceClosed,
+            items: prev.items.map((item) => ({
+              ...item,
+              available: state.isOpen && item.stock > 0,
+            })),
+          };
+        },
+      );
       queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
     },
   });

@@ -156,7 +156,7 @@ const GROUP_LABELS: Record<ShopPageGroup, string> = {
 };
 
 const ERROR_MESSAGE: Record<ShopErrorCode, string> = {
-  SHOP_CLOSED: "영업 시간이 아닙니다 (20시 이후·일요일 마감).",
+  SHOP_CLOSED: "영업 시간이 아닙니다 (06:00~20:00·일요일 마감).",
   OUT_OF_STOCK: "재고가 부족합니다.",
   INSUFFICIENT_BALANCE: "잔액이 부족합니다.",
   INSUFFICIENT_QUANTITY: "보유 수량이 부족합니다.",
@@ -835,7 +835,7 @@ export default function ShopClient({
               <span>
                 {catalog.forceClosed
                   ? "GM 운영 제어로 임시 마감 중"
-                  : "20:00 이후 STAFF OFF DUTY · 다음 영업 준비 중"}
+                  : "STAFF OFF DUTY · 영업 06:00~20:00"}
               </span>
             </div>
             <div className={styles.closedScene} aria-hidden="true">
