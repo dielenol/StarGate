@@ -4,15 +4,16 @@ import type {
   WikiPage,
 } from "@stargate/shared-db/types";
 
-import { ITEM_CATEGORY_LABEL } from "@/lib/catalog/categories";
+import { ITEM_CATEGORY_LABEL } from "./categories";
 import {
+  extractExactSessionKeys,
   extractSessionKeys,
   sortRelatedWikiLinks,
   toRelatedReportLink,
   toRelatedWikiLink,
   type RelatedReportLink,
   type RelatedWikiLink,
-} from "@/lib/lore-links";
+} from "../lore-links";
 
 export interface RelatedCatalogItemLink {
   key: string;
@@ -78,6 +79,14 @@ function itemTextValues(item: MasterItem): string[] {
     item.loreMd,
     ...(item.tags ?? []),
   ].filter((value): value is string => Boolean(value));
+}
+
+function intersects(left: Iterable<string>, right: Iterable<string>): boolean {
+  const rightSet = new Set(right);
+  for (const value of left) {
+    if (rightSet.has(value)) return true;
+  }
+  return false;
 }
 
 function reportTextValues(report: SessionReport): string[] {
@@ -149,14 +158,29 @@ function itemMatchesContext(
   item: MasterItem,
   contextText: string,
   contextSessionKeys: Set<string>,
+  contextExactSessionKeys: Set<string>,
   options: { allowSessionKeyMatch?: boolean } = {},
 ): boolean {
   const itemSessionKeys = catalogItemSessionKeys(item);
+  const itemExactSessionKeys = catalogItemExactSessionKeys(item);
   if (
-    options.allowSessionKeyMatch !== false &&
-    itemSessionKeys.some((key) => contextSessionKeys.has(key))
+    itemExactSessionKeys.length > 0 &&
+    contextExactSessionKeys.size > 0 &&
+    !intersects(itemExactSessionKeys, contextExactSessionKeys)
   ) {
-    return true;
+    return false;
+  }
+
+  if (
+    options.allowSessionKeyMatch !== false
+  ) {
+    if (itemExactSessionKeys.length > 0 || contextExactSessionKeys.size > 0) {
+      if (intersects(itemExactSessionKeys, contextExactSessionKeys)) {
+        return true;
+      }
+    } else if (itemSessionKeys.some((key) => contextSessionKeys.has(key))) {
+      return true;
+    }
   }
 
   return catalogItemSearchTerms(item).some((term) =>
@@ -168,8 +192,13 @@ export function catalogItemSessionKeys(item: MasterItem): string[] {
   return extractSessionKeys(...itemTextValues(item));
 }
 
+export function catalogItemExactSessionKeys(item: MasterItem): string[] {
+  return extractExactSessionKeys(...itemTextValues(item));
+}
+
 export function catalogItemSearchTerms(item: MasterItem): string[] {
   const sessionKeys = new Set(catalogItemSessionKeys(item));
+  const exactSessionKeys = new Set(catalogItemExactSessionKeys(item));
   const terms = new Set<string>();
 
   for (const value of [item.slug, item.name, item.nameEn]) {
@@ -179,7 +208,8 @@ export function catalogItemSearchTerms(item: MasterItem): string[] {
   for (const tag of item.tags ?? []) {
     const normalized = tag.trim();
     if (!normalized) continue;
-    if (sessionKeys.has(normalized.toUpperCase())) continue;
+    const upper = normalized.toUpperCase();
+    if (sessionKeys.has(upper) || exactSessionKeys.has(upper)) continue;
     if (isGenericCatalogTag(normalized)) continue;
     if (normalized.length < 2) continue;
     terms.add(normalized);
@@ -193,10 +223,24 @@ export function relatedWikiForCatalogItem(
   pages: WikiPage[],
 ): RelatedWikiLink[] {
   const terms = catalogItemSearchTerms(item);
+  const itemExactSessionKeys = catalogItemExactSessionKeys(item);
   if (terms.length === 0) return [];
 
   return pages
     .filter((page) => {
+      const pageExactSessionKeys = extractExactSessionKeys(
+        page.title,
+        page.content,
+        ...page.tags,
+      );
+      if (
+        itemExactSessionKeys.length > 0 &&
+        pageExactSessionKeys.length > 0 &&
+        !intersects(itemExactSessionKeys, pageExactSessionKeys)
+      ) {
+        return false;
+      }
+
       const tagText = page.tags.join(" ");
       const haystack = `${page.title} ${page.content} ${tagText}`;
       return terms.some((term) => includesTerm(haystack, term));
@@ -210,20 +254,36 @@ export function relatedReportsForCatalogItem(
   item: MasterItem,
   reports: SessionReport[],
 ): RelatedReportLink[] {
+  const exactSessionKeys = new Set(catalogItemExactSessionKeys(item));
   const sessionKeys = new Set(catalogItemSessionKeys(item));
   const terms = catalogItemSearchTerms(item);
 
-  if (sessionKeys.size === 0 && terms.length === 0) return [];
+  if (exactSessionKeys.size === 0 && sessionKeys.size === 0 && terms.length === 0) {
+    return [];
+  }
 
   return reports
     .filter((report) => {
-      const reportKeys = extractSessionKeys(
+      const reportExactKeys = extractExactSessionKeys(
         report.sessionId,
         report.sessionTitle,
         report.summary,
         ...report.highlights,
       );
-      if (reportKeys.some((key) => sessionKeys.has(key))) return true;
+      if (exactSessionKeys.size > 0 || reportExactKeys.length > 0) {
+        if (intersects(reportExactKeys, exactSessionKeys)) return true;
+        if (exactSessionKeys.size > 0 && reportExactKeys.length > 0) {
+          return false;
+        }
+      } else {
+        const reportKeys = extractSessionKeys(
+          report.sessionId,
+          report.sessionTitle,
+          report.summary,
+          ...report.highlights,
+        );
+        if (reportKeys.some((key) => sessionKeys.has(key))) return true;
+      }
 
       const reportText = [
         report.sessionId,
@@ -253,12 +313,21 @@ export function relatedCatalogItemsForReport(
   const contextValues = reportTextValues(report);
   const contextText = contextValues.join(" ");
   const contextSessionKeys = new Set(extractSessionKeys(...contextValues));
+  const contextExactSessionKeys = new Set(
+    extractExactSessionKeys(...contextValues),
+  );
 
   return items
     .filter((item) =>
-      itemMatchesContext(item, contextText, contextSessionKeys, {
-        allowSessionKeyMatch: true,
-      }),
+      itemMatchesContext(
+        item,
+        contextText,
+        contextSessionKeys,
+        contextExactSessionKeys,
+        {
+          allowSessionKeyMatch: true,
+        },
+      ),
     )
     .map(toRelatedCatalogItemLink)
     .filter((item): item is RelatedCatalogItemLink => item !== null)
@@ -272,13 +341,22 @@ export function relatedCatalogItemsForWiki(
   const contextValues = pageTextValues(page);
   const contextText = contextValues.join(" ");
   const contextSessionKeys = new Set(extractSessionKeys(...contextValues));
+  const contextExactSessionKeys = new Set(
+    extractExactSessionKeys(...contextValues),
+  );
   const allowSessionKeyMatch = pageAllowsSessionKeyCatalogMatch(page);
 
   return items
     .filter((item) =>
-      itemMatchesContext(item, contextText, contextSessionKeys, {
-        allowSessionKeyMatch,
-      }),
+      itemMatchesContext(
+        item,
+        contextText,
+        contextSessionKeys,
+        contextExactSessionKeys,
+        {
+          allowSessionKeyMatch,
+        },
+      ),
     )
     .map(toRelatedCatalogItemLink)
     .filter((item): item is RelatedCatalogItemLink => item !== null)

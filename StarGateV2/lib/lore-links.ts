@@ -4,7 +4,7 @@ import type {
   WikiPage,
 } from "@stargate/shared-db/types";
 
-import { formatOperationReportTitle } from "@/lib/format/session-report";
+import { formatOperationReportTitle } from "./format/session-report";
 
 export interface RelatedWikiLink {
   id: string;
@@ -45,6 +45,9 @@ const WIKI_CATEGORY_ORDER = [
   "문헌",
 ];
 
+const EXACT_SESSION_KEY_PATTERN =
+  /(?:[A-Z0-9]+-)?S\d+E\d+(?:-[A-Z0-9]+)+/giu;
+
 export function extractSessionKeys(...values: string[]): string[] {
   const keys = new Set<string>();
   const source = values.join(" ");
@@ -55,6 +58,30 @@ export function extractSessionKeys(...values: string[]): string[] {
   }
 
   return [...keys];
+}
+
+export function extractExactSessionKeys(...values: string[]): string[] {
+  const keys = new Set<string>();
+  const source = values.join(" ");
+  const matches = source.match(EXACT_SESSION_KEY_PATTERN) ?? [];
+
+  for (const match of matches) {
+    const normalized = match.toUpperCase();
+    keys.add(normalized);
+
+    const shorthand = normalized.match(/S\d+E\d+(?:-[A-Z0-9]+)+$/u)?.[0];
+    if (shorthand) keys.add(shorthand);
+  }
+
+  return [...keys];
+}
+
+function intersects(left: Iterable<string>, right: Iterable<string>): boolean {
+  const rightSet = new Set(right);
+  for (const value of left) {
+    if (rightSet.has(value)) return true;
+  }
+  return false;
 }
 
 function wikiPageId(page: Pick<WikiPage, "_id">): string | null {
@@ -71,6 +98,12 @@ function characterId(character: Pick<Character, "_id">): string | null {
 
 function pageSessionKeys(page: Pick<WikiPage, "tags" | "title" | "content">): string[] {
   return extractSessionKeys(page.title, page.content, ...page.tags);
+}
+
+function pageExactSessionKeys(
+  page: Pick<WikiPage, "tags" | "title" | "content">,
+): string[] {
+  return extractExactSessionKeys(page.title, page.content, ...page.tags);
 }
 
 function normalizePersonnelKey(value: string): string {
@@ -102,9 +135,16 @@ function characterParticipantKeys(character: Character): string[] {
 function pageMatchesReport(
   page: WikiPage,
   sessionKeys: string[],
+  exactSessionKeys: string[],
   displayTitle: string,
 ): boolean {
   if (page.title === displayTitle) return true;
+
+  const pageExactKeys = pageExactSessionKeys(page);
+  if (exactSessionKeys.length > 0 || pageExactKeys.length > 0) {
+    return intersects(pageExactKeys, exactSessionKeys);
+  }
+
   if (sessionKeys.length === 0) return false;
 
   const tags = page.tags.map((tag) => tag.toUpperCase());
@@ -151,9 +191,16 @@ export function relatedWikiForReport(
 ): RelatedWikiLink[] {
   const displayTitle = formatOperationReportTitle(report.sessionTitle);
   const sessionKeys = extractSessionKeys(report.sessionId, displayTitle);
+  const exactSessionKeys = extractExactSessionKeys(
+    report.sessionId,
+    report.sessionTitle,
+    displayTitle,
+  );
 
   return allPages
-    .filter((page) => pageMatchesReport(page, sessionKeys, displayTitle))
+    .filter((page) =>
+      pageMatchesReport(page, sessionKeys, exactSessionKeys, displayTitle),
+    )
     .map(toRelatedWikiLink)
     .filter((page): page is RelatedWikiLink => page !== null)
     .sort(sortRelatedWikiLinks);
@@ -217,11 +264,24 @@ export function relatedReportsForWiki(
   page: WikiPage,
   reports: SessionReport[],
 ): RelatedReportLink[] {
+  const exactKeys = new Set(pageExactSessionKeys(page));
   const keys = new Set(pageSessionKeys(page));
-  if (keys.size === 0) return [];
+  if (keys.size === 0 && exactKeys.size === 0) return [];
 
   return reports
     .filter((report) => {
+      const displayTitle = formatOperationReportTitle(report.sessionTitle);
+      if (page.title === displayTitle) return true;
+
+      const reportExactKeys = extractExactSessionKeys(
+        report.sessionId,
+        report.sessionTitle,
+        displayTitle,
+      );
+      if (exactKeys.size > 0 || reportExactKeys.length > 0) {
+        return intersects(reportExactKeys, exactKeys);
+      }
+
       const reportKeys = extractSessionKeys(
         report.sessionId,
         report.sessionTitle,
