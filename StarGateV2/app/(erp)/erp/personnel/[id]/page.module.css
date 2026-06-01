@@ -48,19 +48,46 @@
 
 /* data-rank 주입 시 rank 팔레트로 자동 전환, 미지정 시 gold 폴백 */
 .clrPill {
-  display: inline-flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 12px;
   align-items: center;
-  padding: 5px 12px;
+  width: 100%;
+  max-width: 250px;
+  padding: 9px 12px;
   border: 1px solid var(--rank-active-marker, var(--gold-dim));
   border-radius: var(--radius-sm);
   color: var(--rank-active-text, var(--gold));
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-align: left;
+}
+
+.clrPill__label {
+  grid-column: 1 / -1;
+  color: var(--ink-2);
+  font-size: 11px;
   letter-spacing: 0.18em;
 }
 
+.clrPill__value {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--rank-active-text, var(--gold));
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clrPill__pips {
+  justify-self: end;
+}
+
 .clrPill--external {
+  display: inline-flex;
+  width: auto;
   border-color: var(--line-strong);
   color: var(--ink-2);
 }
@@ -201,19 +228,24 @@
 /* Side portrait box */
 
 .portraitBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
 }
 
 .portraitImg {
   display: block;
   width: 100%;
-  max-width: 220px;
+  max-width: 238px;
   aspect-ratio: 3 / 4;
   margin: 0 auto;
   object-fit: cover;
+  object-position: center top;
   border: 1px solid var(--gold-dim);
   border-radius: var(--radius-sm);
   background: var(--bg-2);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 10%, transparent);
 }
 
 .portraitPlaceholder {
@@ -227,12 +259,14 @@
 }
 
 .portraitName {
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   color: var(--ink-0);
   font-size: 19px;
   font-weight: 500;
+  line-height: 1.35;
   letter-spacing: 0.02em;
   min-height: 24px;
+  word-break: keep-all;
 }
 
 .portraitCode {
@@ -244,11 +278,14 @@
 }
 
 .portraitNameEn {
-  margin-top: 2px;
-  color: var(--ink-3);
+  max-width: 100%;
+  margin-top: 6px;
+  color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.15em;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .typeRow {
@@ -262,7 +299,8 @@
 .clrPillRow {
   display: flex;
   justify-content: center;
-  margin-top: 8px;
+  width: 100%;
+  margin-top: 12px;
 }
 
 /* KV list (side) */

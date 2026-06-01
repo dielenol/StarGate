@@ -1442,10 +1442,14 @@ export default function DossierClient({
             <div className={styles.clrPillRow}>
               {usesAgentLevels ? (
                 <span className={styles.clrPill} data-rank={level}>
-                  <span>
-                    대상 권한등급 : {level} - {AGENT_LEVEL_LABELS[level]}
+                  <span className={styles.clrPill__label}>
+                    대상 권한등급
+                  </span>
+                  <span className={styles.clrPill__value}>
+                    {level} · {AGENT_LEVEL_LABELS[level]}
                   </span>
                   <Pips
+                    className={styles.clrPill__pips}
                     total={getLevelDisplayTotal(level)}
                     filled={getLevelDisplayRank(level)}
                   />
