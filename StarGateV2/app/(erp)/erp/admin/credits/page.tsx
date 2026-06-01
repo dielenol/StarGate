@@ -15,6 +15,10 @@ import {
 } from "./_data";
 import CreditsAdminClient from "./CreditsAdminClient";
 
+function toClientData<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export default async function CreditsAdminPage() {
   const session = await auth();
 
@@ -62,12 +66,12 @@ export default async function CreditsAdminPage() {
       />
 
       <CreditsAdminClient
-        initialKpi={initialKpi}
-        initialBalances={initialBalances}
-        initialLog={initialLog}
-        initialOpPool={initialOpPool}
-        grantTargets={grantTargets}
-        initialSessionCandidates={initialSessionCandidates}
+        initialKpi={toClientData(initialKpi)}
+        initialBalances={toClientData(initialBalances)}
+        initialLog={toClientData(initialLog)}
+        initialOpPool={toClientData(initialOpPool)}
+        grantTargets={toClientData(grantTargets)}
+        initialSessionCandidates={toClientData(initialSessionCandidates)}
       />
     </>
   );
