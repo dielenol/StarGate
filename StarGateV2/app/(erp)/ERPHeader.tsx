@@ -3,7 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import type { AgentLevel } from "@/types/character";
 
@@ -44,6 +50,53 @@ const subscribePlatform = () => () => {};
 const getClientKbdLabel = () => (detectIsMac() ? "⌘K" : "Ctrl K");
 const getServerKbdLabel = () => "⌘K";
 
+const ERP_BGM_VOLUME = 0.32;
+const ERP_BGM_TRACKS = [
+  {
+    label: "NOVUS 01",
+    src: resolvePublicAssetPath("/sound/erp/novus-01.mp3"),
+  },
+  {
+    label: "NOVUS 02",
+    src: resolvePublicAssetPath("/sound/erp/novus-02.mp3"),
+  },
+  {
+    label: "NOVUS 03",
+    src: resolvePublicAssetPath("/sound/erp/novus-03.mp3"),
+  },
+  {
+    label: "NOVUS 04",
+    src: resolvePublicAssetPath("/sound/erp/novus-04.mp3"),
+  },
+  {
+    label: "NOVUS 05",
+    src: resolvePublicAssetPath("/sound/erp/novus-05.mp3"),
+  },
+  {
+    label: "NOVUS 06",
+    src: resolvePublicAssetPath("/sound/erp/novus-06.mp3"),
+  },
+  {
+    label: "NOVUS 07",
+    src: resolvePublicAssetPath("/sound/erp/novus-07.mp3"),
+  },
+] as const;
+
+function getRandomBgmIndex(currentIndex: number | null = null): number {
+  const trackCount = ERP_BGM_TRACKS.length;
+  if (trackCount <= 1) return 0;
+
+  const randomIndex = Math.floor(Math.random() * trackCount);
+  if (currentIndex === null || randomIndex !== currentIndex) {
+    return randomIndex;
+  }
+
+  return (
+    (randomIndex + 1 + Math.floor(Math.random() * (trackCount - 1))) %
+    trackCount
+  );
+}
+
 function isBreadcrumbItemArray(value: unknown): value is BreadcrumbItem[] {
   if (!Array.isArray(value) || value.length === 0) return false;
   return value.every((entry): entry is BreadcrumbItem => {
@@ -72,6 +125,91 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   );
 
   const { breadcrumb, title } = usePageHead();
+  const [activeBgmIndex, setActiveBgmIndex] = useState<number | null>(null);
+  const [bgmPlaying, setBgmPlaying] = useState(false);
+  const [bgmPending, setBgmPending] = useState(false);
+  const [bgmError, setBgmError] = useState(false);
+  const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
+  const bgmTrackIndexRef = useRef<number | null>(null);
+  const playBgmTrackRef = useRef<(trackIndex: number) => Promise<void>>(
+    async () => undefined,
+  );
+
+  const getBgmAudio = useCallback(() => {
+    if (!bgmAudioRef.current) {
+      const audio = new Audio();
+      audio.preload = "auto";
+      audio.volume = ERP_BGM_VOLUME;
+      audio.onended = () => {
+        const nextIndex = getRandomBgmIndex(bgmTrackIndexRef.current);
+        void playBgmTrackRef.current(nextIndex);
+      };
+      bgmAudioRef.current = audio;
+    }
+
+    return bgmAudioRef.current;
+  }, []);
+
+  const playBgmTrack = useCallback(
+    async (trackIndex: number) => {
+      const track = ERP_BGM_TRACKS[trackIndex];
+      if (!track) return;
+
+      const audio = getBgmAudio();
+      setActiveBgmIndex(trackIndex);
+      setBgmPending(true);
+      setBgmError(false);
+
+      if (bgmTrackIndexRef.current !== trackIndex || audio.src.length === 0) {
+        audio.src = track.src;
+        audio.load();
+        bgmTrackIndexRef.current = trackIndex;
+      }
+
+      audio.volume = ERP_BGM_VOLUME;
+
+      try {
+        await audio.play();
+        setBgmPlaying(true);
+      } catch (error) {
+        console.warn("erp bgm playback failed", error);
+        setBgmPlaying(false);
+        setBgmError(true);
+      } finally {
+        setBgmPending(false);
+      }
+    },
+    [getBgmAudio],
+  );
+
+  useEffect(() => {
+    playBgmTrackRef.current = playBgmTrack;
+  }, [playBgmTrack]);
+
+  useEffect(() => {
+    return () => {
+      const audio = bgmAudioRef.current;
+      if (!audio) return;
+      audio.pause();
+      audio.onended = null;
+      audio.removeAttribute("src");
+      audio.load();
+      bgmAudioRef.current = null;
+      bgmTrackIndexRef.current = null;
+    };
+  }, []);
+
+  const activeBgm =
+    activeBgmIndex === null ? null : ERP_BGM_TRACKS[activeBgmIndex];
+  const bgmStatusLabel = bgmPending
+    ? "LOAD"
+    : bgmError
+      ? "ERR"
+      : activeBgm?.label ?? "BGM";
+  const bgmState = bgmError ? "error" : bgmPlaying ? "playing" : "idle";
+  const bgmToggleLabel = bgmPlaying
+    ? `${activeBgm?.label ?? "BGM"} 일시정지`
+    : "랜덤 BGM 재생";
 
   function handleOpenSidebar() {
     window.dispatchEvent(new CustomEvent("no:sidebar-open"));
@@ -87,6 +225,23 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
     } catch (error) {
       console.error("logout failed", error);
     }
+  }
+
+  function handleToggleBgm() {
+    if (bgmPlaying) {
+      bgmAudioRef.current?.pause();
+      setBgmPlaying(false);
+      setBgmPending(false);
+      return;
+    }
+
+    const nextIndex = activeBgmIndex ?? getRandomBgmIndex();
+    void playBgmTrack(nextIndex);
+  }
+
+  function handleShuffleBgm() {
+    const nextIndex = getRandomBgmIndex(bgmTrackIndexRef.current);
+    void playBgmTrack(nextIndex);
   }
 
   return (
@@ -135,6 +290,40 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
       </div>
 
       <div className={styles.header__right}>
+        <div
+          className={styles.header__bgm}
+          data-state={bgmState}
+          role="group"
+          aria-label="ERP BGM"
+        >
+          <button
+            type="button"
+            className={`${styles.header__bgmButton} ${
+              bgmPlaying ? styles["header__bgmButton--active"] : ""
+            }`}
+            onClick={handleToggleBgm}
+            aria-label={bgmToggleLabel}
+            aria-pressed={bgmPlaying}
+            title={bgmToggleLabel}
+            disabled={bgmPending}
+          >
+            <span aria-hidden>{bgmPlaying ? "Ⅱ" : "▶"}</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.header__bgmButton} ${styles.header__bgmShuffle}`}
+            onClick={handleShuffleBgm}
+            aria-label="랜덤 BGM으로 넘기기"
+            title="랜덤 BGM으로 넘기기"
+            disabled={bgmPending}
+          >
+            <span aria-hidden>↻</span>
+          </button>
+          <span className={styles.header__bgmLabel} aria-live="polite">
+            {bgmStatusLabel}
+          </span>
+        </div>
+
         <button
           type="button"
           className={styles.header__cmdk}

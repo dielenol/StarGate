@@ -94,6 +94,77 @@
   flex-shrink: 0;
 }
 
+.header__bgm {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px 8px 3px 3px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.header__bgm[data-state="playing"] {
+  border-color: var(--gold-dim);
+  background: rgba(201, 168, 90, 0.08);
+}
+
+.header__bgmButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.header__bgmButton:hover:not(:disabled),
+.header__bgmButton--active {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: var(--bg-3);
+}
+
+.header__bgmButton:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.header__bgmLabel {
+  min-width: 70px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.header__bgm[data-state="playing"] .header__bgmLabel {
+  color: var(--gold);
+}
+
+.header__bgm[data-state="error"] .header__bgmLabel {
+  color: var(--danger);
+}
+
 .header__cmdk {
   display: flex;
   align-items: center;
@@ -206,6 +277,16 @@
   border-color: var(--gold-dim);
 }
 
+@media (max-width: 1180px) {
+  .header__bgm {
+    padding-right: 3px;
+  }
+
+  .header__bgmLabel {
+    display: none;
+  }
+}
+
 /* 1280 미만 — burger 노출, cmdk 폭 축소, 긴 placeholder 를 짧은 것으로 교체 */
 @media (max-width: 1279px) {
   .header__burger {
@@ -228,6 +309,10 @@
 /* 1024 미만 — breadcrumb 숨김 (헤더 폭 절약), cmdk 추가 압축 + ⌘K kbd 제거 */
 @media (max-width: 1023px) {
   .header__pageHeadCrumb {
+    display: none;
+  }
+
+  .header__bgmShuffle {
     display: none;
   }
 
@@ -272,7 +357,18 @@
     display: none;
   }
 
+  .header__bgmButton {
+    width: 30px;
+    height: 30px;
+  }
+
   .header__userName {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .header__bgm {
     display: none;
   }
 }
