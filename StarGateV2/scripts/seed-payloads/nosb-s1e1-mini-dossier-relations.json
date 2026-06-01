@@ -1,0 +1,494 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "DOCTOR_MOSS" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "사후 처리 배정자",
+              "summary": "상부 지시와 사무총장의 관심을 전달하며 마리아·클라운·오틸리아 일행에게 사후 처리와 연구 방향 결정을 배정했다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MARIA",
+              "targetName": "외우주의 포식자",
+              "label": "업무 배정",
+              "summary": "전자화 눈물(ZULU-0113) 연구 방향 결정과 샘플 확보를 포함한 사후 처리 업무를 마리아 팀에 배정했다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "CLOWN",
+              "targetName": "스타크 일로니손",
+              "label": "업무 배정",
+              "summary": "검열된 비명(ZULU-0028) 연구 방향 결정과 스페이스 제로 접촉이 포함된 사후 처리 축을 클라운 팀에 배정했다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "OTILIA",
+              "targetName": "오틸리아 발트만",
+              "label": "업무 배정",
+              "summary": "검열된 비명(ZULU-0028)의 샘플 생성 조건 확인과 소닉 이미터 개발 방향 확정에 필요한 연구 판단을 오틸리아 일행에게 넘겼다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "MARIA" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "전자화 눈물 처리팀",
+              "summary": "뉴욕만 수중 격리 구역에서 전자기기 노출 차단, 수온 상승, 연기 기둥, 우디의 분신체 무디 투입을 조합해 ZULU-0113 눈물 샘플을 확보했다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "DOCTOR_MOSS",
+              "targetName": "Dr.모스",
+              "label": "업무 수령",
+              "summary": "닥터 모스의 호출과 배정에 따라 ZULU-0113 사후 처리와 행동교정물질 개발 방향 결정을 맡았다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "WD-(𝓃)",
+              "targetName": "우디 (03)",
+              "label": "현장 보조",
+              "summary": "전자화 눈물(ZULU-0113) 샘플 확보에서 우디의 분신체 무디 투입이 처리 조합으로 기록되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "INDEXER",
+              "targetName": "해쉬 테거",
+              "label": "긴급 통신 수신",
+              "summary": "해쉬 태거가 유럽 연구소 봉쇄와 내부 대상 말살 필요를 보고하면서 후속 작전 호출 축에 연결되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "WD-(𝓃)" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "분신체 무디 투입",
+              "summary": "ZULU-0113 눈물 샘플 확보 과정에서 우디의 분신체 무디가 수중 격리 구역 처리 조합에 투입되었다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MARIA",
+              "targetName": "외우주의 포식자",
+              "label": "현장 보조",
+              "summary": "마리아 팀의 ZULU-0113 샘플 확보 과정에서 분신체 무디 투입이 처리 수단으로 기록되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "MARGARET" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "식당가 접점",
+              "summary": "식당가에서 우디와 메리골드를 둘러싼 실험체 차별, 내무군 알렉산더 키호프 사망, 무장 해제 과정의 폭력 사태가 표면화되었다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "TIME" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "연구원 겸 실험체 합류",
+              "summary": "크로노스(TIME)가 연구원 겸 실험체로 미니 세션의 사후 처리 흐름에 합류했다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "UNYEON" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "현장 출현",
+              "summary": "S1E1 미니 세션 로그 기준 현장 참조 인물로 등재되었다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "CLOWN" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "검열된 비명 처리팀",
+              "summary": "화이트 쿠션룸에서 검열된 비명(ZULU-0028)의 샘플 생성 조건과 스페이스 제로 CEO의 기술 이전 제안을 마주한 스타크 팀 축으로 기록되었다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "DOCTOR_MOSS",
+              "targetName": "Dr.모스",
+              "label": "업무 수령",
+              "summary": "닥터 모스의 사후 처리 배정에 따라 검열된 비명(ZULU-0028) 연구 방향 결정과 스페이스 제로 접촉 축에 들어갔다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "INDEXER",
+              "targetName": "해쉬 테거",
+              "label": "긴급 통신 수신",
+              "summary": "해쉬 태거의 유럽 연구소 봉쇄 및 전멸 보고가 후속 작전 호출로 이어지며 같은 작전 흐름에 연결되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "OTILIA" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "검열된 비명 샘플 조건 확인",
+              "summary": "오틸리아·이동식·키아나의 조합으로 검열된 비명(ZULU-0028)의 샘플 생성 조건을 확인하고 소닉 이미터 개발 방향으로 연결했다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "DOCTOR_MOSS",
+              "targetName": "Dr.모스",
+              "label": "업무 수령",
+              "summary": "닥터 모스가 넘긴 사후 처리 축에서 검열된 비명(ZULU-0028)의 연구 조건 확인과 소닉 이미터 개발 방향 확정에 참여했다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "LEE DONGSIK",
+              "targetName": "GP03-RX780",
+              "label": "연구 조합",
+              "summary": "검열된 비명(ZULU-0028)의 샘플성 음절 방출 조건 확인에서 이동식과 같은 실험 조합으로 기록되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "네베드",
+              "targetName": "키아나 오 캘러핸",
+              "label": "연구 조합",
+              "summary": "검열된 비명(ZULU-0028)의 샘플성 음절 방출 조건 확인에서 키아나와 같은 실험 조합으로 기록되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "INDEXER",
+              "targetName": "해쉬 테거",
+              "label": "긴급 통신 수신",
+              "summary": "해쉬 태거의 유럽 연구소 봉쇄 및 전멸 보고가 후속 작전 호출로 이어지며 같은 작전 흐름에 연결되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "LEE DONGSIK" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "검열된 비명 연구 조합",
+              "summary": "오틸리아·이동식·키아나의 조합으로 검열된 비명(ZULU-0028)의 샘플 생성 조건을 확인하고 소닉 이미터 개발 방향으로 연결했다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "OTILIA",
+              "targetName": "오틸리아 발트만",
+              "label": "연구 조합",
+              "summary": "검열된 비명(ZULU-0028)의 샘플성 음절 방출 조건 확인에서 오틸리아와 같은 실험 조합으로 기록되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "네베드",
+              "targetName": "키아나 오 캘러핸",
+              "label": "연구 조합",
+              "summary": "검열된 비명(ZULU-0028)의 샘플성 음절 방출 조건 확인에서 키아나와 같은 실험 조합으로 기록되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "네베드" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "검열된 비명 연구 조합",
+              "summary": "오틸리아·이동식·키아나의 조합으로 검열된 비명(ZULU-0028)의 샘플 생성 조건을 확인하고 소닉 이미터 개발 방향으로 연결했다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "OTILIA",
+              "targetName": "오틸리아 발트만",
+              "label": "연구 조합",
+              "summary": "검열된 비명(ZULU-0028)의 샘플성 음절 방출 조건 확인에서 오틸리아와 같은 실험 조합으로 기록되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "LEE DONGSIK",
+              "targetName": "GP03-RX780",
+              "label": "연구 조합",
+              "summary": "검열된 비명(ZULU-0028)의 샘플성 음절 방출 조건 확인에서 이동식과 같은 실험 조합으로 기록되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "INDEXER" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "유럽 연구소 긴급 통신",
+              "summary": "종료 직전 해쉬 태거가 유럽 연구소 봉쇄, 지원군 전멸, 단독 고립, 내부 대상 말살 필요를 보고하며 후속 작전을 예고했다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MARIA",
+              "targetName": "외우주의 포식자",
+              "label": "후속 호출",
+              "summary": "유럽 연구소 봉쇄 및 전멸 상황을 보고해 마리아 팀을 후속 작전 축으로 호출하는 연결점이 되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "CLOWN",
+              "targetName": "스타크 일로니손",
+              "label": "후속 호출",
+              "summary": "유럽 연구소 봉쇄 및 전멸 상황을 보고해 클라운 팀을 후속 작전 축으로 호출하는 연결점이 되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "OTILIA",
+              "targetName": "오틸리아 발트만",
+              "label": "후속 호출",
+              "summary": "유럽 연구소 봉쇄 및 전멸 상황을 보고해 오틸리아 일행을 후속 작전 축으로 호출하는 연결점이 되었다.",
+              "sourceEvent": "NOSB-S1E1-MINI",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "CLAIRVOYANCE" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "식당가 접점",
+              "summary": "S1E1 미니 세션 로그 기준 구내식당·스테이크 가게 접점으로 등재되었다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "BIG BOY" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "현장 출현",
+              "summary": "S1E1 미니 세션 로그 기준 현장 참조 인물로 등재되었다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "TIGER298" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E1-MINI",
+              "role": "현장 출현",
+              "summary": "S1E1 미니 세션 로그 기준 현장 참조 인물로 등재되었다.",
+              "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  }
+]
