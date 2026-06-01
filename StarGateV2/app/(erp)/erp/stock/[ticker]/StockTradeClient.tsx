@@ -54,6 +54,7 @@ import RangeToggle, {
 } from "../RangeToggle";
 import { ChartSkeleton, type ChartPoint } from "../StockHistoryChart";
 import StockTabs from "../StockTabs";
+import WatchlistRailCard from "../WatchlistRailCard";
 import { StockLogo } from "../_logos";
 import {
   ARROW,
@@ -177,6 +178,14 @@ export default function StockTradeClient({
   }, [holdings.items, ticker]);
 
   const meta = useMemo(() => findStockByTicker(ticker), [ticker]);
+
+  const watchedTickerSet = useMemo(() => {
+    return new Set(watchlist.tickers);
+  }, [watchlist.tickers]);
+
+  const watchedItems = useMemo(() => {
+    return prices.items.filter((item) => watchedTickerSet.has(item.ticker));
+  }, [prices.items, watchedTickerSet]);
 
   const chartData: ChartPoint[] = useMemo(() => {
     return history.items.map((row) => ({
@@ -1055,6 +1064,8 @@ export default function StockTradeClient({
               </div>
             </div>
           ) : null}
+
+          <WatchlistRailCard items={watchedItems} />
 
           {/* 전체 보유 mini list — 다른 종목으로 push 이동 */}
           <div className={sharedStyles.railCard}>

@@ -39,6 +39,7 @@ import StockHoverPreview from "./StockHoverPreview";
 import MarketWirePanel from "./MarketWirePanel";
 import StockSparkline from "./StockSparkline";
 import StockTabs from "./StockTabs";
+import WatchlistRailCard from "./WatchlistRailCard";
 import { StockLogo } from "./_logos";
 import { ARROW, priceDirection, profitDirection } from "./_helpers";
 import { useStockWatchlist } from "./useStockWatchlist";
@@ -92,7 +93,11 @@ export default function StockListClient({
   const holdingsQuery = useStockHoldings({ initialData: initialHoldings });
   const marketWireQuery = useStockMarketWire({ initialData: initialMarketWire });
   const creditsQuery = useCredits();
-  const watchlist = useStockWatchlist();
+  const {
+    tickers: watchedTickers,
+    isWatched,
+    toggle: toggleWatch,
+  } = useStockWatchlist();
 
   /* 10. 로컬 — 검색 + hover 상태 */
   const [search, setSearch] = useState("");
@@ -135,10 +140,18 @@ export default function StockListClient({
     return new Set(holdings.items.map((item) => item.ticker));
   }, [holdings.items]);
 
+  const watchedTickerSet = useMemo(() => {
+    return new Set(watchedTickers);
+  }, [watchedTickers]);
+
+  const watchedItems = useMemo(() => {
+    return prices.items.filter((item) => watchedTickerSet.has(item.ticker));
+  }, [prices.items, watchedTickerSet]);
+
   const filteredItems = useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
-    return prices.items.filter((item) => {
-      if (filter === "watch" && !watchlist.isWatched(item.ticker)) {
+    const visible = prices.items.filter((item) => {
+      if (filter === "watch" && !watchedTickerSet.has(item.ticker)) {
         return false;
       }
       if (filter === "holding" && !heldTickerSet.has(item.ticker)) {
@@ -150,7 +163,14 @@ export default function StockListClient({
         item.name.toLowerCase().includes(q)
       );
     });
-  }, [filter, heldTickerSet, prices.items, deferredSearch, watchlist]);
+    if (filter !== "all" || watchedTickerSet.size === 0) return visible;
+    return [...visible].sort((a, b) => {
+      const aWatched = watchedTickerSet.has(a.ticker);
+      const bWatched = watchedTickerSet.has(b.ticker);
+      if (aWatched === bWatched) return 0;
+      return aWatched ? -1 : 1;
+    });
+  }, [filter, heldTickerSet, prices.items, deferredSearch, watchedTickerSet]);
 
   const hoveredPriceItem = useMemo(() => {
     if (!hoveredTicker) return null;
@@ -208,9 +228,26 @@ export default function StockListClient({
   );
 
   function filterCount(kind: StockFilter): number {
-    if (kind === "watch") return watchlist.tickers.length;
+    if (kind === "watch") return watchedItems.length;
     if (kind === "holding") return holdings.items.length;
     return prices.items.length;
+  }
+
+  function renderEmptyListMessage() {
+    if (filter === "watch" && watchedItems.length === 0) {
+      return (
+        <>
+          관심 종목이 없습니다. 종목 왼쪽의 별을 눌러 빠르게 모아보세요.
+        </>
+      );
+    }
+    if (filter === "watch") {
+      return <>선택한 검색 조건에 맞는 관심 종목이 없습니다.</>;
+    }
+    if (filter === "holding") {
+      return <>선택한 검색 조건에 맞는 보유 종목이 없습니다.</>;
+    }
+    return <>검색 결과가 없습니다 — &ldquo;{deferredSearch}&rdquo;</>;
   }
 
   return (
@@ -297,7 +334,7 @@ export default function StockListClient({
             </Box>
           ) : filteredItems.length === 0 ? (
             <Box className={styles.empty}>
-              검색 결과가 없습니다 — &ldquo;{deferredSearch}&rdquo;
+              {renderEmptyListMessage()}
             </Box>
           ) : (
             <ul className={styles.stockList}>
@@ -311,35 +348,33 @@ export default function StockListClient({
                       : "";
                 const sparkPoints = sparklineByTicker.get(item.ticker) ?? [];
                 const isActive = item.ticker === hoveredTicker;
+                const itemWatched = isWatched(item.ticker);
                 return (
                   <li key={item.ticker} className={styles.stockList__item}>
                     <button
                       type="button"
                       className={[
                         styles.stockRow__watch,
-                        watchlist.isWatched(item.ticker)
-                          ? styles["stockRow__watch--active"]
-                          : "",
+                        itemWatched ? styles["stockRow__watch--active"] : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      onClick={() => watchlist.toggle(item.ticker)}
+                      onClick={() => toggleWatch(item.ticker)}
                       aria-label={`${item.name} 관심종목 ${
-                        watchlist.isWatched(item.ticker) ? "해제" : "추가"
+                        itemWatched ? "해제" : "추가"
                       }`}
                       title={
-                        watchlist.isWatched(item.ticker)
-                          ? "관심종목 해제"
-                          : "관심종목 추가"
+                        itemWatched ? "관심종목 해제" : "관심종목 추가"
                       }
                     >
-                      {watchlist.isWatched(item.ticker) ? "★" : "☆"}
+                      {itemWatched ? "★" : "☆"}
                     </button>
                     <Link
                       href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
                       className={[
                         styles.stockRow,
                         isActive ? styles["stockRow--active"] : "",
+                        itemWatched ? styles["stockRow--watched"] : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
@@ -415,6 +450,8 @@ export default function StockListClient({
               </div>
             ) : null}
           </div>
+
+          <WatchlistRailCard items={watchedItems} />
 
           <div className={styles.railCard}>
             <div className={styles.railCard__head}>

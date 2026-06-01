@@ -583,6 +583,10 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: 0.04em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .holdingMini__profit {
@@ -768,6 +772,10 @@
 
 .stockRow:hover {
   background: var(--bg-2);
+}
+
+.stockRow--watched {
+  background: rgba(197, 160, 89, 0.04);
 }
 
 .stockRow:focus-visible {
