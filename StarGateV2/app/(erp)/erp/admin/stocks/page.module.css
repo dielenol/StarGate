@@ -4,6 +4,10 @@
   gap: 18px;
 }
 
+.wirePanel {
+  grid-column: 1 / -1;
+}
+
 .panel {
   border: 1px solid var(--line);
   background: rgba(10, 14, 22, 0.74);
@@ -99,6 +103,25 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   margin-bottom: 16px;
+}
+
+.scheduleNote {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(201, 168, 90, 0.38);
+  border-radius: 8px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.scheduleNote strong {
+  color: var(--gold);
+  font-size: 14px;
 }
 
 .field span {
@@ -225,6 +248,9 @@
 
 @media (max-width: 1279px) {
   .layout {
+    grid-template-columns: 1fr;
+  }
+  .scheduleNote {
     grid-template-columns: 1fr;
   }
 }

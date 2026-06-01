@@ -61,6 +61,7 @@ import {
   priceDirection,
   profitDirection,
 } from "../_helpers";
+import { useStockWatchlist } from "../useStockWatchlist";
 import StockInfoPanel from "./StockInfoPanel";
 
 import sharedStyles from "../page.module.css";
@@ -129,6 +130,7 @@ export default function StockTradeClient({
   const pricesQuery = useStockPrices({ initialData: initialPrices });
   const holdingsQuery = useStockHoldings({ initialData: initialHoldings });
   const creditsQuery = useCredits();
+  const watchlist = useStockWatchlist();
 
   const buyMutation = useBuyStock();
   const sellMutation = useSellStock();
@@ -223,6 +225,7 @@ export default function StockTradeClient({
 
   const tradeTotal = roundStockValue(tradeShares * displayPrice);
   const heldShares = holding?.shares ?? 0;
+  const heldAvgPrice = holding?.avgPrice ?? 0;
 
   const isBuyPending = buyMutation.isPending;
   const isSellPending = sellMutation.isPending;
@@ -254,6 +257,40 @@ export default function StockTradeClient({
         exceedsMaxShares ||
         insufficientShares ||
         isTradePending;
+
+  const tradeProjection = useMemo(() => {
+    if (tradeShares <= 0 || displayPrice <= 0) return null;
+    if (effectiveTab === "buy") {
+      const currentCost = roundStockValue(heldAvgPrice * heldShares);
+      const projectedShares = heldShares + tradeShares;
+      const projectedAvgPrice =
+        projectedShares > 0
+          ? roundStockValue((currentCost + tradeTotal) / projectedShares)
+          : displayPrice;
+      return {
+        kind: "buy" as const,
+        projectedShares,
+        projectedAvgPrice,
+        projectedBalance: roundStockValue(balance - tradeTotal),
+      };
+    }
+
+    const projectedShares = Math.max(0, heldShares - tradeShares);
+    return {
+      kind: "sell" as const,
+      projectedShares,
+      projectedBalance: roundStockValue(balance + tradeTotal),
+      realizedProfit: roundStockValue((displayPrice - heldAvgPrice) * tradeShares),
+    };
+  }, [
+    balance,
+    displayPrice,
+    effectiveTab,
+    heldAvgPrice,
+    heldShares,
+    tradeShares,
+    tradeTotal,
+  ]);
 
   /* ── 핸들러 ── */
 
@@ -501,6 +538,28 @@ export default function StockTradeClient({
                   {meta.name}
                 </span>
               </div>
+              <button
+                type="button"
+                className={[
+                  sharedStyles.detailHero__watch,
+                  watchlist.isWatched(meta.ticker)
+                    ? sharedStyles["detailHero__watch--active"]
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => watchlist.toggle(meta.ticker)}
+                aria-label={`${meta.name} 관심종목 ${
+                  watchlist.isWatched(meta.ticker) ? "해제" : "추가"
+                }`}
+                title={
+                  watchlist.isWatched(meta.ticker)
+                    ? "관심종목 해제"
+                    : "관심종목 추가"
+                }
+              >
+                {watchlist.isWatched(meta.ticker) ? "★" : "☆"}
+              </button>
             </div>
             <div className={sharedStyles.detailHero__meta}>
               <span>국내</span>
@@ -867,6 +926,52 @@ export default function StockTradeClient({
                   <span>1회 주문 한도</span>
                   <span>{MAX_ORDER_SHARES.toLocaleString()}주</span>
                 </div>
+                {tradeProjection ? (
+                  <div className={sharedStyles.tradeProjection}>
+                    <div className={sharedStyles.tradeProjection__title}>
+                      주문 후 예상
+                    </div>
+                    <div className={sharedStyles.tradeProjection__grid}>
+                      <span>보유 수량</span>
+                      <strong>
+                        {tradeProjection.projectedShares.toLocaleString()}주
+                      </strong>
+                      <span>잔액</span>
+                      <strong>
+                        ¤ {formatStockValue(tradeProjection.projectedBalance)}
+                      </strong>
+                      {tradeProjection.kind === "buy" ? (
+                        <>
+                          <span>예상 평단</span>
+                          <strong>
+                            ¤{" "}
+                            {formatStockValue(
+                              tradeProjection.projectedAvgPrice,
+                            )}
+                          </strong>
+                        </>
+                      ) : (
+                        <>
+                          <span>예상 손익</span>
+                          <strong
+                            className={
+                              tradeProjection.realizedProfit < 0
+                                ? sharedStyles["tradeProjection__value--down"]
+                                : tradeProjection.realizedProfit > 0
+                                  ? sharedStyles["tradeProjection__value--up"]
+                                  : ""
+                            }
+                          >
+                            {tradeProjection.realizedProfit > 0 ? "+" : ""}¤{" "}
+                            {formatStockValue(
+                              tradeProjection.realizedProfit,
+                            )}
+                          </strong>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <button

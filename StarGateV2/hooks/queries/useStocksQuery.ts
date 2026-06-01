@@ -4,6 +4,7 @@
  * - `useStockPrices`: GET /api/erp/stocks/prices — 9 종목 시세 + 변동률.
  * - `useStockHoldings`: GET /api/erp/stocks/holdings — 본인 메인 캐릭의 보유 + 평가/손익.
  * - `useStockHistory(ticker)`: GET /api/erp/stocks/history?ticker= — 차트용 30 일 시계열.
+ * - `useStockMarketWire`: GET /api/erp/stocks/wire — 전 종목 최근 공시 피드.
  *
  * 에러 분기 — `StocksApiError.code` 로 클라이언트 분기 가능 (shop/credits 와 동일 패턴).
  *
@@ -22,6 +23,8 @@ export const stocksKeys = {
   holdings: ["stocks", "holdings"] as const,
   history: (ticker: string, days: number) =>
     ["stocks", "history", ticker, days] as const,
+  marketWire: (days: number, limit: number) =>
+    ["stocks", "market-wire", days, limit] as const,
   sparklines: (days: number) => ["stocks", "sparklines", days] as const,
 };
 
@@ -121,6 +124,23 @@ export interface StockHistoryResponse {
   items: StockHistoryItem[];
 }
 
+export interface StockMarketWireItem {
+  ticker: string;
+  name: string;
+  price: number;
+  prevPrice: number;
+  changePercent: number;
+  eventText: string;
+  source: "scheduled" | "trade" | "gm-event";
+  createdAt: string;
+}
+
+export interface StockMarketWireResponse {
+  items: StockMarketWireItem[];
+  days: number;
+  limit: number;
+}
+
 export interface StockSparklinePoint {
   /** ISO 8601. 차트 라이브러리 X 축은 string 그대로 사용해도 무방. */
   ts: string;
@@ -182,11 +202,25 @@ async function fetchStockSparklines(
   return res.json();
 }
 
+async function fetchStockMarketWire(
+  days: number,
+  limit: number,
+): Promise<StockMarketWireResponse> {
+  const params = new URLSearchParams({
+    days: String(days),
+    limit: String(limit),
+  });
+  const res = await fetch(`/api/erp/stocks/wire?${params.toString()}`);
+  if (!res.ok) await parseStocksError(res);
+  return res.json();
+}
+
 /* ── Hooks ── */
 
 const PRICES_STALE_MS = 60 * 1000;
 const HOLDINGS_STALE_MS = 60 * 1000;
 const HISTORY_STALE_MS = 15 * 60 * 1000;
+const MARKET_WIRE_STALE_MS = 60 * 1000;
 const SPARKLINES_STALE_MS = 10 * 60 * 1000;
 
 export function useStockPrices(options?: {
@@ -250,6 +284,29 @@ export function useStockSparklines(
     queryKey: stocksKeys.sparklines(days),
     queryFn: () => fetchStockSparklines(days),
     staleTime: SPARKLINES_STALE_MS,
+    initialData: options?.initialData,
+  });
+}
+
+/**
+ * 전 종목 최근 공시 피드.
+ *
+ * - scheduled / gm-event / trade source 를 같은 타임라인으로 노출.
+ * - GM 수동 개입과 정기 크론 직후 즉시 갱신되도록 staleTime 은 짧게 둔다.
+ */
+export function useStockMarketWire(
+  options?: {
+    initialData?: StockMarketWireResponse;
+    days?: number;
+    limit?: number;
+  },
+) {
+  const days = options?.days ?? 7;
+  const limit = options?.limit ?? 12;
+  return useQuery({
+    queryKey: stocksKeys.marketWire(days, limit),
+    queryFn: () => fetchStockMarketWire(days, limit),
+    staleTime: MARKET_WIRE_STALE_MS,
     initialData: options?.initialData,
   });
 }

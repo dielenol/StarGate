@@ -3,6 +3,8 @@
  *
  * - `useBuyStock`: POST /api/erp/stocks/buy — 시세 + 잔액 + 보유 3-step Saga.
  * - `useSellStock`: POST /api/erp/stocks/sell — 시세 + 보유 + 잔액 3-step Saga.
+ * - `useUpdateStockPrice`: POST /api/erp/admin/stocks/prices — GM 시세 조정.
+ * - `useRunScheduledStockTick`: POST /api/erp/admin/stocks/tick — GM 정기 변동 수동 실행.
  *
  * 에러 — 서버 응답 `{ error, code }` 를 `StocksApiError` 로 wrap (UI 분기 가능).
  *
@@ -72,6 +74,38 @@ interface SellResponse {
   remainingShares: number;
 }
 
+export interface UpdateStockPriceInput {
+  ticker: string;
+  price: number;
+  eventText: string;
+}
+
+interface UpdateStockPriceResponse {
+  item: {
+    ticker: string;
+    price: number;
+    prevPrice: number;
+    eventText: string;
+    lastUpdate: string;
+  };
+  marketWire: unknown;
+}
+
+export interface RunScheduledStockTickResponse {
+  date: string;
+  slot: string;
+  results: Array<{
+    ticker: string;
+    previousPrice: number;
+    price: number;
+    changePercent: number;
+    eventText: string;
+    eventTier: "routine" | "scenario" | "shock";
+    status: "updated" | "initialized" | "skipped";
+  }>;
+  marketWire: unknown;
+}
+
 /* ── 공통 에러 파서 ── */
 
 async function throwStocksError(res: Response): Promise<never> {
@@ -86,6 +120,14 @@ async function throwStocksError(res: Response): Promise<never> {
     res.status,
     isKnownStocksErrorCode(body.code) ? body.code : undefined,
   );
+}
+
+function invalidateStockMarketQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
+  queryClient.invalidateQueries({ queryKey: stocksKeys.holdings });
+  queryClient.invalidateQueries({ queryKey: stocksKeys.all });
 }
 
 /* ── Hooks ── */
@@ -106,8 +148,7 @@ export function useBuyStock() {
     onSuccess: () => {
       // 시세 + 보유 + 잔액/ledger 모두 변동.
       // history 는 매매로 변동 없음 (M3-A: 가격 영향 무) → 제외.
-      queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
-      queryClient.invalidateQueries({ queryKey: stocksKeys.holdings });
+      invalidateStockMarketQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
     },
     onError: (err) => {
@@ -134,8 +175,7 @@ export function useSellStock() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
-      queryClient.invalidateQueries({ queryKey: stocksKeys.holdings });
+      invalidateStockMarketQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
     },
     onError: (err) => {
@@ -143,6 +183,48 @@ export function useSellStock() {
         queryClient.invalidateQueries({ queryKey: stocksKeys.holdings });
         queryClient.invalidateQueries({ queryKey: creditKeys.all });
       }
+    },
+  });
+}
+
+export function useUpdateStockPrice() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    UpdateStockPriceResponse,
+    StocksApiError,
+    UpdateStockPriceInput
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/admin/stocks/prices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwStocksError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      invalidateStockMarketQueries(queryClient);
+    },
+  });
+}
+
+export function useRunScheduledStockTick() {
+  const queryClient = useQueryClient();
+
+  return useMutation<RunScheduledStockTickResponse, StocksApiError, boolean>({
+    mutationFn: async (force) => {
+      const res = await fetch("/api/erp/admin/stocks/tick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force }),
+      });
+      if (!res.ok) await throwStocksError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      invalidateStockMarketQueries(queryClient);
     },
   });
 }

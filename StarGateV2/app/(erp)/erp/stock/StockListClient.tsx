@@ -20,10 +20,12 @@ import { useRouter } from "next/navigation";
 import { useCredits } from "@/hooks/queries/useCreditsQuery";
 import {
   type StockHoldingsResponse,
+  type StockMarketWireResponse,
   type StockPricesResponse,
   type StockSparkline as StockSparklineDto,
   type StockSparklinesResponse,
   useStockHoldings,
+  useStockMarketWire,
   useStockPrices,
   useStockSparklines,
 } from "@/hooks/queries/useStocksQuery";
@@ -35,10 +37,12 @@ import Tag from "@/components/ui/Tag/Tag";
 import { formatStockValue } from "@/lib/stocks/pricing";
 
 import StockHoverPreview from "./StockHoverPreview";
+import MarketWirePanel from "./MarketWirePanel";
 import StockSparkline from "./StockSparkline";
 import StockTabs from "./StockTabs";
 import { StockLogo } from "./_logos";
 import { ARROW, priceDirection, profitDirection } from "./_helpers";
+import { useStockWatchlist } from "./useStockWatchlist";
 
 import styles from "./page.module.css";
 
@@ -48,6 +52,14 @@ const SPARKLINE_DAYS = 7;
 /** 행 hover 시 미리보기 표시까지 대기 시간 (ms). */
 const HOVER_DELAY_MS = 150;
 
+type StockFilter = "all" | "watch" | "holding";
+
+const FILTER_OPTIONS: Array<{ value: StockFilter; label: string }> = [
+  { value: "all", label: "전체" },
+  { value: "watch", label: "관심" },
+  { value: "holding", label: "보유" },
+];
+
 /* ── Props ── */
 
 interface Props {
@@ -55,6 +67,7 @@ interface Props {
   initialSparklines: StockSparklinesResponse;
   initialHoldings: StockHoldingsResponse;
   initialBalance: number;
+  initialMarketWire: StockMarketWireResponse;
   mainCharacter: { id: string; codename: string } | null;
   mainCharacterError: string | null;
   marketEnabled: boolean;
@@ -67,6 +80,7 @@ export default function StockListClient({
   initialSparklines,
   initialHoldings,
   initialBalance,
+  initialMarketWire,
   mainCharacter,
   mainCharacterError,
   marketEnabled,
@@ -80,10 +94,13 @@ export default function StockListClient({
     initialData: initialSparklines,
   });
   const holdingsQuery = useStockHoldings({ initialData: initialHoldings });
+  const marketWireQuery = useStockMarketWire({ initialData: initialMarketWire });
   const creditsQuery = useCredits();
+  const watchlist = useStockWatchlist();
 
   /* 10. 로컬 — 검색 + hover 상태 */
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<StockFilter>("all");
   const deferredSearch = useDeferredValue(search);
   /**
    * hovered ticker — 초기값은 list 최상단 종목. mouseleave 시에도 null 로 되돌리지 않고
@@ -101,6 +118,7 @@ export default function StockListClient({
   /* 11. 파생 — 시세 / 보유 / sparkline 룩업 */
   const prices = pricesQuery.data ?? initialPrices;
   const holdings = holdingsQuery.data ?? initialHoldings;
+  const marketWire = marketWireQuery.data ?? initialMarketWire;
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -117,16 +135,26 @@ export default function StockListClient({
     return map;
   }, [sparklinesQuery.data]);
 
+  const heldTickerSet = useMemo(() => {
+    return new Set(holdings.items.map((item) => item.ticker));
+  }, [holdings.items]);
+
   const filteredItems = useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
-    if (!q) return prices.items;
     return prices.items.filter((item) => {
+      if (filter === "watch" && !watchlist.isWatched(item.ticker)) {
+        return false;
+      }
+      if (filter === "holding" && !heldTickerSet.has(item.ticker)) {
+        return false;
+      }
+      if (!q) return true;
       return (
         item.ticker.toLowerCase().includes(q) ||
         item.name.toLowerCase().includes(q)
       );
     });
-  }, [prices.items, deferredSearch]);
+  }, [filter, heldTickerSet, prices.items, deferredSearch, watchlist]);
 
   const hoveredPriceItem = useMemo(() => {
     if (!hoveredTicker) return null;
@@ -185,6 +213,12 @@ export default function StockListClient({
     [router, cancelHover],
   );
 
+  function filterCount(kind: StockFilter): number {
+    if (kind === "watch") return watchlist.tickers.length;
+    if (kind === "holding") return holdings.items.length;
+    return prices.items.length;
+  }
+
   return (
     <>
       <PageHead
@@ -236,6 +270,31 @@ export default function StockListClient({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            <div className={styles.filterTabs} role="tablist" aria-label="종목 필터">
+              {FILTER_OPTIONS.map((option) => {
+                const active = filter === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    className={[
+                      styles.filterTabs__chip,
+                      active ? styles["filterTabs__chip--active"] : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={() => setFilter(option.value)}
+                  >
+                    <span>{option.label}</span>
+                    <span className={styles.filterTabs__count}>
+                      {filterCount(option.value)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {prices.items.length === 0 ? (
@@ -260,6 +319,28 @@ export default function StockListClient({
                 const isActive = item.ticker === hoveredTicker;
                 return (
                   <li key={item.ticker} className={styles.stockList__item}>
+                    <button
+                      type="button"
+                      className={[
+                        styles.stockRow__watch,
+                        watchlist.isWatched(item.ticker)
+                          ? styles["stockRow__watch--active"]
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => watchlist.toggle(item.ticker)}
+                      aria-label={`${item.name} 관심종목 ${
+                        watchlist.isWatched(item.ticker) ? "해제" : "추가"
+                      }`}
+                      title={
+                        watchlist.isWatched(item.ticker)
+                          ? "관심종목 해제"
+                          : "관심종목 추가"
+                      }
+                    >
+                      {watchlist.isWatched(item.ticker) ? "★" : "☆"}
+                    </button>
                     <Link
                       href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
                       className={[
@@ -408,6 +489,8 @@ export default function StockListClient({
               </div>
             </div>
           </div>
+
+          <MarketWirePanel items={marketWire.items} compact />
         </aside>
       </div>
     </>

@@ -23,6 +23,7 @@ import { roundStockValue } from "@/lib/stocks/pricing";
 import type {
   StockHistoryResponse,
   StockHoldingsResponse,
+  StockMarketWireResponse,
   StockPricesResponse,
   StockSparklinesResponse,
 } from "@/hooks/queries/useStocksQuery";
@@ -142,6 +143,53 @@ export async function buildHistoryResponse(
     createdAt: r.createdAt.toISOString(),
   }));
   return { items };
+}
+
+/* ── market wire (전 종목 최근 공시) ── */
+
+/**
+ * 전 종목 최근 가격 이벤트를 ORDO-NET 공시 피드 형태로 평탄화한다.
+ *
+ * - `listStockPriceHistory` 는 종목별 오름차순 반환이므로, 여기서 전체 내림차순 정렬.
+ * - source 가 trade 인 과거 데이터가 생겨도 같은 피드에 섞어 보여준다.
+ */
+export async function buildMarketWireResponse(
+  days: number = 7,
+  limit: number = 12,
+): Promise<StockMarketWireResponse> {
+  const safeDays = Math.max(1, Math.min(30, Math.floor(days)));
+  const safeLimit = Math.max(1, Math.min(50, Math.floor(limit)));
+  const rows = await Promise.all(
+    STOCK_CATALOG.map(async (meta) => {
+      const history = await listStockPriceHistory(meta.ticker, safeDays);
+      return history.map((row) => {
+        const changePercent =
+          row.prevPrice > 0
+            ? ((row.price - row.prevPrice) / row.prevPrice) * 100
+            : 0;
+        return {
+          ticker: meta.ticker,
+          name: meta.name,
+          price: row.price,
+          prevPrice: row.prevPrice,
+          changePercent,
+          eventText: row.eventText ?? "공시 문구 미등록",
+          source: row.source,
+          createdAt: row.createdAt.toISOString(),
+        };
+      });
+    }),
+  );
+
+  const items = rows
+    .flat()
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+    .slice(0, safeLimit);
+
+  return { items, days: safeDays, limit: safeLimit };
 }
 
 /* ── sparklines (전 종목 동시) ── */

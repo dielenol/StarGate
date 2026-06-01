@@ -60,19 +60,11 @@ function rollDirection(): StockPriceDirection {
 }
 
 function currentKstSlotTag(): string {
-  const nowTag = kstNowTag();
-  const date = nowTag.slice(0, 10);
-  const hour = Number.parseInt(nowTag.slice(11, 13), 10);
-  const slotHour = Math.floor(hour / 6) * 6;
-  return `${date} ${String(slotHour).padStart(2, "0")}:00`;
+  return `${kstDateTag()} 12:00`;
 }
 
 function slotTagForDate(date: Date): string {
-  const tag = kstNowTag(date);
-  const datePart = tag.slice(0, 10);
-  const hour = Number.parseInt(tag.slice(11, 13), 10);
-  const slotHour = Math.floor(hour / 6) * 6;
-  return `${datePart} ${String(slotHour).padStart(2, "0")}:00`;
+  return `${kstDateTag(date)} 12:00`;
 }
 
 function calculateRoutinePercent(

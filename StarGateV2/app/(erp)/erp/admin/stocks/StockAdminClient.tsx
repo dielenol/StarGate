@@ -2,12 +2,16 @@
 
 import { useMemo, useState } from "react";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-
 import PageHead from "@/components/ui/PageHead/PageHead";
 import {
-  stocksKeys,
+  type RunScheduledStockTickResponse,
+  useRunScheduledStockTick,
+  useUpdateStockPrice,
+} from "@/hooks/mutations/useStocksMutation";
+import {
+  type StockMarketWireResponse,
   type StockPricesResponse,
+  useStockMarketWire,
   useStockPrices,
 } from "@/hooks/queries/useStocksQuery";
 import {
@@ -15,55 +19,28 @@ import {
   formatStockValue,
 } from "@/lib/stocks/pricing";
 
+import MarketWirePanel from "../../stock/MarketWirePanel";
 import { ARROW, priceDirection } from "../../stock/_helpers";
 import { StockLogo } from "../../stock/_logos";
 import styles from "./page.module.css";
 
 interface Props {
   initialPrices: StockPricesResponse;
+  initialMarketWire: StockMarketWireResponse;
 }
 
-interface UpdateInput {
-  ticker: string;
-  price: number;
-  eventText: string;
-}
-
-async function updateStockPrice(input: UpdateInput) {
-  const res = await fetch("/api/erp/admin/stocks/prices", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? "주가 변경에 실패했습니다.");
-  }
-  return res.json();
-}
-
-async function runScheduledTick(force: boolean) {
-  const res = await fetch("/api/erp/admin/stocks/tick", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ force }),
-  });
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? "정기 변동 실행에 실패했습니다.");
-  }
-  return res.json() as Promise<{
-    results: Array<{
-      status: "updated" | "initialized" | "skipped";
-      eventTier: "routine" | "scenario" | "shock";
-    }>;
-  }>;
-}
-
-export default function StockAdminClient({ initialPrices }: Props) {
-  const queryClient = useQueryClient();
+export default function StockAdminClient({
+  initialPrices,
+  initialMarketWire,
+}: Props) {
   const pricesQuery = useStockPrices({ initialData: initialPrices });
+  const marketWireQuery = useStockMarketWire({
+    initialData: initialMarketWire,
+    days: 14,
+    limit: 20,
+  });
   const prices = pricesQuery.data ?? initialPrices;
+  const marketWire = marketWireQuery.data ?? initialMarketWire;
   const [selectedTicker, setSelectedTicker] = useState(
     initialPrices.items[0]?.ticker ?? "",
   );
@@ -78,50 +55,46 @@ export default function StockAdminClient({ initialPrices }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: updateStockPrice,
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: stocksKeys.prices }),
-        queryClient.invalidateQueries({ queryKey: stocksKeys.holdings }),
-        queryClient.invalidateQueries({ queryKey: stocksKeys.all }),
-      ]);
-      setError(null);
-      setMessage("주가가 갱신되었습니다.");
-    },
-    onError: (err) => {
-      setMessage(null);
-      setError(err instanceof Error ? err.message : "주가 변경에 실패했습니다.");
-    },
-  });
+  const mutation = useUpdateStockPrice();
+  const tickMutation = useRunScheduledStockTick();
 
-  const tickMutation = useMutation({
-    mutationFn: runScheduledTick,
-    onSuccess: async (summary) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: stocksKeys.prices }),
-        queryClient.invalidateQueries({ queryKey: stocksKeys.holdings }),
-        queryClient.invalidateQueries({ queryKey: stocksKeys.all }),
-      ]);
-      const updated = summary.results.filter((r) => r.status === "updated").length;
-      const initialized = summary.results.filter(
-        (r) => r.status === "initialized",
-      ).length;
-      const skipped = summary.results.filter((r) => r.status === "skipped").length;
-      const scenario = summary.results.filter((r) => r.eventTier === "scenario").length;
-      const shock = summary.results.filter((r) => r.eventTier === "shock").length;
-      setError(null);
-      setMessage(
-        `정기 변동 완료 · 변경 ${updated} / 초기화 ${initialized} / 스킵 ${skipped} · 이벤트 ${scenario} / 급등락 ${shock}`,
-      );
-    },
-    onError: (err) => {
-      setMessage(null);
-      setError(
-        err instanceof Error ? err.message : "정기 변동 실행에 실패했습니다.",
-      );
-    },
-  });
+  const pricePreview = useMemo(() => {
+    if (!selected) return null;
+    const nextPrice = Number.parseFloat(priceInput);
+    if (!Number.isFinite(nextPrice) || nextPrice <= 0) return null;
+    const direction = priceDirection(nextPrice, selected.price);
+    const changePercent =
+      selected.price > 0
+        ? ((nextPrice - selected.price) / selected.price) * 100
+        : 0;
+    return { nextPrice, direction, changePercent };
+  }, [priceInput, selected]);
+
+  function handleUpdateSuccess() {
+    setError(null);
+    setMessage("주가가 갱신되었습니다.");
+  }
+
+  function handleMutationError(err: unknown, fallback: string) {
+    setMessage(null);
+    setError(err instanceof Error ? err.message : fallback);
+  }
+
+  function handleTickSuccess(summary: RunScheduledStockTickResponse) {
+    const updated = summary.results.filter((r) => r.status === "updated").length;
+    const initialized = summary.results.filter(
+      (r) => r.status === "initialized",
+    ).length;
+    const skipped = summary.results.filter((r) => r.status === "skipped").length;
+    const scenario = summary.results.filter(
+      (r) => r.eventTier === "scenario",
+    ).length;
+    const shock = summary.results.filter((r) => r.eventTier === "shock").length;
+    setError(null);
+    setMessage(
+      `정기 변동 완료 · 변경 ${updated} / 초기화 ${initialized} / 스킵 ${skipped} · 이벤트 ${scenario} / 급등락 ${shock}`,
+    );
+  }
 
   function handleSelect(ticker: string) {
     const next = prices.items.find((item) => item.ticker === ticker);
@@ -134,11 +107,17 @@ export default function StockAdminClient({ initialPrices }: Props) {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const price = Number.parseFloat(priceInput);
-    mutation.mutate({
-      ticker: selectedTicker,
-      price,
-      eventText,
-    });
+    mutation.mutate(
+      {
+        ticker: selectedTicker,
+        price,
+        eventText,
+      },
+      {
+        onSuccess: handleUpdateSuccess,
+        onError: (err) => handleMutationError(err, "주가 변경에 실패했습니다."),
+      },
+    );
   }
 
   return (
@@ -199,7 +178,13 @@ export default function StockAdminClient({ initialPrices }: Props) {
             <button
               type="button"
               className={styles.secondaryBtn}
-              onClick={() => tickMutation.mutate(false)}
+              onClick={() =>
+                tickMutation.mutate(false, {
+                  onSuccess: handleTickSuccess,
+                  onError: (err) =>
+                    handleMutationError(err, "정기 변동 실행에 실패했습니다."),
+                })
+              }
               disabled={tickMutation.isPending || mutation.isPending}
             >
               {tickMutation.isPending ? "실행 중..." : "오늘 정기 변동 실행"}
@@ -207,11 +192,22 @@ export default function StockAdminClient({ initialPrices }: Props) {
             <button
               type="button"
               className={styles.ghostBtn}
-              onClick={() => tickMutation.mutate(true)}
+              onClick={() =>
+                tickMutation.mutate(true, {
+                  onSuccess: handleTickSuccess,
+                  onError: (err) =>
+                    handleMutationError(err, "정기 변동 실행에 실패했습니다."),
+                })
+              }
               disabled={tickMutation.isPending || mutation.isPending}
             >
               강제 재실행
             </button>
+          </div>
+          <div className={styles.scheduleNote}>
+            <span>정기 크론</span>
+            <strong>매일 12:00 KST</strong>
+            <span>현재 Vercel cron은 하루 1회만 실행됩니다.</span>
           </div>
           {selected ? (
             <form className={styles.form} onSubmit={handleSubmit}>
@@ -251,6 +247,16 @@ export default function StockAdminClient({ initialPrices }: Props) {
               <div className={styles.summary}>
                 <span>현재가</span>
                 <strong>¤ {formatStockValue(selected.price)}</strong>
+                <span>변경 후</span>
+                <strong>
+                  {pricePreview
+                    ? `¤ ${formatStockValue(pricePreview.nextPrice)} · ${
+                        pricePreview.direction === "flat"
+                          ? "0.00%"
+                          : `${ARROW[pricePreview.direction]} ${pricePreview.changePercent.toFixed(2)}%`
+                      }`
+                    : "입력 대기"}
+                </strong>
                 <span>최근 이벤트</span>
                 <strong>{selected.eventText || "미등록"}</strong>
               </div>
@@ -268,6 +274,10 @@ export default function StockAdminClient({ initialPrices }: Props) {
             <div className={styles.empty}>조정할 종목이 없습니다.</div>
           )}
         </section>
+
+        <div className={styles.wirePanel}>
+          <MarketWirePanel items={marketWire.items} title="최근 시장 공시" />
+        </div>
       </div>
     </>
   );

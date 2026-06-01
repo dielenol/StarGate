@@ -297,6 +297,140 @@
   opacity: 0.7;
 }
 
+/* ── ORDO-NET 시장 공시 피드 ── */
+
+.marketWire {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.marketWire--compact .marketWire__list {
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.marketWire__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.16em;
+}
+
+.marketWire__head > span:last-child {
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+}
+
+.marketWire__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.marketWire__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.marketWire__item:last-child {
+  border-bottom: 0;
+}
+
+.marketWire__top,
+.marketWire__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.marketWire__ticker {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+}
+
+.marketWire__ticker:hover {
+  text-decoration: underline;
+}
+
+.marketWire__source,
+.marketWire__date,
+.marketWire__meta {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+}
+
+.marketWire__date {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.marketWire__body {
+  color: var(--ink-0);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.marketWire__meta {
+  justify-content: space-between;
+}
+
+.marketWire__meta > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marketWire__price {
+  color: var(--ink-1);
+  white-space: nowrap;
+}
+
+.marketWire__delta {
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.marketWire__delta--up {
+  color: var(--gold);
+}
+
+.marketWire__delta--down {
+  color: var(--danger);
+}
+
+.marketWire__empty {
+  padding: 18px 14px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
 .tradeHistory {
   display: flex;
   flex-direction: column;
@@ -503,6 +637,54 @@
   border-color: var(--gold-dim);
 }
 
+.filterTabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.filterTabs__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.filterTabs__chip:hover {
+  color: var(--ink-0);
+  border-color: var(--ink-2);
+}
+
+.filterTabs__chip--active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg);
+}
+
+.filterTabs__chip--active:hover {
+  color: var(--bg);
+}
+
+.filterTabs__count {
+  color: currentColor;
+  font-size: var(--font-size-xs);
+  opacity: 0.72;
+}
+
 /* ── list view 본체 ── */
 
 .stockList {
@@ -520,7 +702,45 @@
 
 .stockList__item {
   /* <li> 래퍼는 link 가 grid layout 차지하도록 reset 만 담당. */
+  position: relative;
   list-style: none;
+}
+
+.stockRow__watch {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1;
+  transform: translateY(-50%);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.stockRow__watch:hover,
+.stockRow__watch--active {
+  background: var(--bg-2);
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.stockRow__watch:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
 }
 
 .stockRow {
@@ -530,7 +750,7 @@
   gap: 16px;
   align-items: center;
   min-height: 64px;
-  padding: 12px 16px;
+  padding: 12px 16px 12px 52px;
   background: transparent;
   border: 0;
   border-bottom: 1px solid var(--line);
@@ -683,6 +903,38 @@
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
+}
+
+.detailHero__watch {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  padding: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.detailHero__watch:hover,
+.detailHero__watch--active {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.detailHero__watch:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
 }
 
 .detailHero__logo {
@@ -1285,6 +1537,56 @@
   color: var(--danger);
 }
 
+.tradeProjection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px dashed var(--gold-dim);
+  border-radius: var(--radius-sm);
+}
+
+.tradeProjection__title {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.14em;
+}
+
+.tradeProjection__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: baseline;
+}
+
+.tradeProjection__grid span {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+}
+
+.tradeProjection__grid strong {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tradeProjection__grid .tradeProjection__value--up {
+  color: var(--gold);
+}
+
+.tradeProjection__grid .tradeProjection__value--down {
+  color: var(--danger);
+}
+
 /* 큰 풀폭 CTA 버튼 */
 .tradeCard__submit {
   padding: 16px 0;
@@ -1737,6 +2039,106 @@
 }
 .tossHeader__metaValue--down {
   color: var(--info); /* 하락=blue */
+}
+
+.allocationPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: var(--gap);
+  padding: var(--pad);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.allocationPanel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.16em;
+}
+
+.allocationPanel__head > span:last-child {
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+}
+
+.allocationPanel__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.allocationRow {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(120px, 1fr) 64px 76px;
+  gap: 12px;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.allocationRow:hover .allocationRow__bar {
+  border-color: var(--gold-dim);
+}
+
+.allocationRow__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+}
+
+.allocationRow__bar {
+  position: relative;
+  height: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.allocationRow__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  border-radius: inherit;
+}
+
+.allocationRow__value,
+.allocationRow__profit {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.allocationRow__profit--up {
+  color: var(--danger);
+}
+
+.allocationRow__profit--down {
+  color: var(--info);
+}
+
+@media (max-width: 720px) {
+  .allocationRow {
+    grid-template-columns: minmax(90px, 0.8fr) minmax(80px, 1fr) 56px;
+  }
+  .allocationRow__profit {
+    display: none;
+  }
 }
 
 /* 보유 종목 테이블 */

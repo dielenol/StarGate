@@ -24,12 +24,14 @@ import { isStockMarketEnabled } from "@/lib/stocks/market";
 
 import type {
   StockHoldingsResponse,
+  StockMarketWireResponse,
   StockPricesResponse,
   StockSparklinesResponse,
 } from "@/hooks/queries/useStocksQuery";
 
 import {
   buildHoldingsResponse,
+  buildMarketWireResponse,
   buildPricesResponse,
   buildSparklinesResponse,
 } from "./_data";
@@ -97,6 +99,13 @@ export default async function StockPage() {
       ? getCharacterBalance(mainCharacterId).catch(() => 0)
       : Promise.resolve(0),
   ]);
+  const initialMarketWire = await buildMarketWireResponse(7, 12).catch(
+    (): StockMarketWireResponse => ({
+      items: [],
+      days: 7,
+      limit: 12,
+    }),
+  );
 
   return (
     <StockListClient
@@ -104,6 +113,7 @@ export default async function StockPage() {
       initialSparklines={initialSparklines}
       initialHoldings={initialHoldings}
       initialBalance={initialBalance}
+      initialMarketWire={initialMarketWire}
       mainCharacter={
         mainCharacter && mainCharacterId
           ? { id: mainCharacterId, codename: mainCharacter.codename }

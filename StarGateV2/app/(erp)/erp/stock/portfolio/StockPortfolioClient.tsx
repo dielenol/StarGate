@@ -109,6 +109,27 @@ export default function StockPortfolioClient({
   }, [holdings.items]);
 
   const summaryDirection = profitDirection(summary.totalPL);
+  const totalAsset = roundStockValue(summary.totalEval + balance);
+  const realizedProfit = useMemo(() => {
+    const rows = creditsQuery.data?.transactions ?? [];
+    return roundStockValue(
+      rows.reduce((sum, tx) => {
+        if (tx.type !== "STOCK_SELL") return sum;
+        const profit = tx.metadata?.profit;
+        return sum + (typeof profit === "number" ? profit : 0);
+      }, 0),
+    );
+  }, [creditsQuery.data?.transactions]);
+  const realizedDirection = profitDirection(realizedProfit);
+  const allocationRows = useMemo(() => {
+    if (summary.totalEval <= 0) return [];
+    return holdings.items
+      .map((item) => ({
+        ...item,
+        weight: (item.evaluation / summary.totalEval) * 100,
+      }))
+      .sort((a, b) => b.evaluation - a.evaluation);
+  }, [holdings.items, summary.totalEval]);
 
   return (
     <>
@@ -149,13 +170,19 @@ export default function StockPortfolioClient({
           </div>
           <div className={styles.tossHeader__metaRow}>
             <span className={styles.tossHeader__metaItem}>
+              <span className={styles.tossHeader__metaLabel}>총자산</span>
+              <span className={styles.tossHeader__metaValue}>
+                ¤ {formatStockValue(totalAsset)}
+              </span>
+            </span>
+            <span className={styles.tossHeader__metaItem}>
               <span className={styles.tossHeader__metaLabel}>원금</span>
               <span className={styles.tossHeader__metaValue}>
                 ¤ {formatStockValue(summary.totalCost)}
               </span>
             </span>
             <span className={styles.tossHeader__metaItem}>
-              <span className={styles.tossHeader__metaLabel}>총 수익</span>
+              <span className={styles.tossHeader__metaLabel}>미실현</span>
               <span
                 className={directionMod(
                   summaryDirection,
@@ -166,6 +193,18 @@ export default function StockPortfolioClient({
                 {formatStockValue(summary.totalPL)} (
                 {summary.plPercent > 0 ? "+" : ""}
                 {summary.plPercent.toFixed(2)}%)
+              </span>
+            </span>
+            <span className={styles.tossHeader__metaItem}>
+              <span className={styles.tossHeader__metaLabel}>실현손익</span>
+              <span
+                className={directionMod(
+                  realizedDirection,
+                  styles.tossHeader__metaValue,
+                )}
+              >
+                {realizedProfit > 0 ? "+" : ""}¤{" "}
+                {formatStockValue(realizedProfit)}
               </span>
             </span>
             <span className={styles.tossHeader__metaItem}>
@@ -180,6 +219,50 @@ export default function StockPortfolioClient({
                 {holdings.items.length} 종
               </span>
             </span>
+          </div>
+        </div>
+      ) : null}
+
+      {hasMainCharacter && allocationRows.length > 0 ? (
+        <div className={styles.allocationPanel}>
+          <div className={styles.allocationPanel__head}>
+            <span>보유 비중</span>
+            <span>{allocationRows.length} 종목</span>
+          </div>
+          <div className={styles.allocationPanel__bars}>
+            {allocationRows.map((item) => {
+              const dir = profitDirection(item.profitLoss);
+              return (
+                <Link
+                  key={item.ticker}
+                  href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
+                  className={styles.allocationRow}
+                >
+                  <span className={styles.allocationRow__name}>
+                    <StockLogo ticker={item.ticker} size="sm" />
+                    <span>{item.ticker}</span>
+                  </span>
+                  <span className={styles.allocationRow__bar}>
+                    <span
+                      className={styles.allocationRow__fill}
+                      style={{ width: `${Math.max(4, item.weight)}%` }}
+                    />
+                  </span>
+                  <span className={styles.allocationRow__value}>
+                    {item.weight.toFixed(1)}%
+                  </span>
+                  <span
+                    className={directionMod(
+                      dir,
+                      styles.allocationRow__profit,
+                    )}
+                  >
+                    {item.profitPercent > 0 ? "+" : ""}
+                    {item.profitPercent.toFixed(2)}%
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       ) : null}
