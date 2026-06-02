@@ -1,0 +1,76 @@
+[
+  {
+    "collection": "wiki_pages",
+    "type": "wiki-logo-image",
+    "filter": {
+      "slug": "white-rose"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$gte": [
+                  {
+                    "$indexOfCP": [
+                      "$content",
+                      "/assets/faction/white_rose_logo.png"
+                    ]
+                  },
+                  0
+                ]
+              },
+              "$content",
+              {
+                "$replaceOne": {
+                  "input": "$content",
+                  "find": "\n\n## 요약 정보",
+                  "replacement": "\n\n![백장미단 로고](/assets/faction/white_rose_logo.png \"WHITE_ROSE\")\n\n## 요약 정보"
+                }
+              }
+            ]
+          },
+          "updatedAt": "2026-06-02T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "wiki-logo-image",
+    "filter": {
+      "slug": "space-zero"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$gte": [
+                  {
+                    "$indexOfCP": [
+                      "$content",
+                      "/assets/faction/space_zero_logo.png"
+                    ]
+                  },
+                  0
+                ]
+              },
+              "$content",
+              {
+                "$replaceOne": {
+                  "input": "$content",
+                  "find": "\n\n## 요약 정보",
+                  "replacement": "\n\n![스페이스 제로 로고](/assets/faction/space_zero_logo.png \"SPACE_ZERO\")\n\n## 요약 정보"
+                }
+              }
+            ]
+          },
+          "updatedAt": "2026-06-02T00:00:00.000Z"
+        }
+      }
+    ]
+  }
+]
