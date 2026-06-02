@@ -38,7 +38,7 @@ source: stargate-lore
 | 해쉬 태거 / INDEXER | Europe lab emergency call | characters Dossier, report hook | Add event link/tag and preserve as next-operation hook | Applied; no separate operation report until next source |
 | AGENT participants | Log speakers plus existing codename map | characters Dossier | Add `NOSB-S1E1-MINI` to `lore.appearsInEvents` | Applied for 14 records |
 | 스페이스 제로 | CEO contact and existing SPACE_ZERO spec | institution spec, institution DB, wiki | Update institution with S1E1-MINI contact | Applied |
-| 요한 스미스 | CEO name appears in mini log | relation narrative, SPACE_ZERO major person | Keep as Dossier candidate only | Not created; needs codename/profile approval |
+| 요한 스미스 | CEO name appears in mini log; GM-provided Dossier profile/image | characters Dossier, SPACE_ZERO leader link, relation narrative | Create Dossier as `JOHAN_SMITH` and link to S1E1-MINI | Applied |
 | 개조 실험체 / 나사형 제어 장치 | CEO exchange offer | operation report, Space Zero notes | Preserve in report/institution context | Candidate-only; no character/spec row |
 | 구내식당 and steak shop encounter | Mini log social conflict sequence | operation report, CLAIRVOYANCE note | Keep as session context | Merged; no standalone place page |
 | 내무군 / 알렉산더 키호프 | Cafeteria conflict mention | operation report | Preserve as event context | Candidate-only; no Dossier without canonical record |
@@ -52,7 +52,8 @@ source: stargate-lore
 | 닥터 모스 | 마리아 / 클라운 / 오틸리아 | 사후 처리와 연구 방향 결정을 강제 배정 | operation report, Dossier `lore.relations` | Applied |
 | 마리아 | WD-(𝓃) | 전자화 눈물 샘플 회수에서 우디의 분신체 무디 투입 | report, Dossier `lore.relations`, ZULU-0113 wiki, catalog lore | Applied |
 | 마리아 팀 | ZULU-0113 | 해치 개방 유도를 차단하고 우디의 분신체 무디로 샘플 회수 | report, ZULU-0113 wiki, catalog lore | Applied; entity relation remains prose/catalog/wiki |
-| 스페이스 제로 CEO 요한 스미스 | 스타크 팀 / 노부스 오르도 | ZULU-0028 이전과 연구 기록 확보 제안, 거절 | report, Space Zero spec/wiki | Applied as narrative; Dossier candidate |
+| 스페이스 제로 CEO 요한 스미스 | 스타크 팀 / 노부스 오르도 | ZULU-0028 이전과 연구 기록 확보 제안, 거절 | report, Space Zero spec/wiki, Dossier `JOHAN_SMITH` | Applied |
+| 요한 스미스 | 클라운 / 오틸리아 | ZULU-0028 이전과 연구 기록 확보 제안, 거절 | Dossier `lore.relations` | Applied |
 | 오틸리아 / 이동식 / 키아나 | 서로 간 연구 조합 | 소음, 백색소음, 자극 발화 조합으로 샘플 조건 확인 | report, Dossier `lore.relations`, catalog lore | Applied |
 | 오틸리아 / 이동식 / 키아나 | ZULU-0028 | 소음, 백색소음, 자극 발화 조합으로 샘플 조건 확인 | report, catalog lore | Applied; entity relation remains prose/catalog/wiki |
 | 해쉬 태거 | 마리아 / 클라운 / 오틸리아 | 유럽 연구소 봉쇄/전멸 긴급 호출 | report hook, Dossier `lore.relations`, Dossier event link | Applied; next session pending |
@@ -65,22 +66,25 @@ source: stargate-lore
 | `/erp/wiki` | applied | `s1e1-mini` exists and is separated from `s1e1-order` | Recheck link graph after payload |
 | `/erp/wiki/catalog/*` | applied | No economy grant/stock should be inferred | Keep catalog-only |
 | `/erp/personnel` | applied | Dossier now reads structured `lore.relations` and `lore.sessionAppearances` in addition to `appearsInEvents` | Keep future session imports source-mapped and avoid unsourced relationship edges |
-| 요한 스미스 Dossier | unresolved | Named CEO lacks approved Dossier codename/profile/image | Ask user before creating |
+| 요한 스미스 Dossier | applied | GM provided profile and image; codename mechanically normalized to `JOHAN_SMITH` | Keep future edits source-mapped |
 | relation graph | partially applied | Character-to-character edges are persisted; entity/institution-only beats still live in report/wiki/catalog prose | Add entity/institution relation model only if the ERP needs cross-domain graphing |
 
 ## Applied Writes In This Pass
 
 - Follow-up payload: `StarGateV2/scripts/seed-payloads/nosb-s1e1-mini-followup.json`
 - Dossier relation payload: `StarGateV2/scripts/seed-payloads/nosb-s1e1-mini-dossier-relations.json`
+- 요한 스미스 Dossier payload: `StarGateV2/scripts/seed-payloads/npc-johan-smith.json`
 - Reproducibility updates: mini seed payloads and ZULU-0113 archive payload now disambiguate `우디의 분신체 무디`.
 - Spec update: `StarGateV2/docs/spec/catalog/zulu-0113-tear-sample.md` now uses `분신체`.
 - Schema/UI update: Dossier relationship and session-appearance fields now exist in shared-db types/Zod schema, character PATCH allowlist, personnel redaction, and `/erp/personnel/[id]` UI.
+- NPC spec/image: `StarGateV2/docs/spec/npc/johan-smith.md`, `/assets/npcs/Johan-Smith-profile.webp`.
 
 ## Post-write Verification
 
 - DB re-read: `session_reports.NOSB-S1E1-MINI`, `wiki_pages.s1e1-mini`, `wiki_pages.zulu-0113-electronic-tear`, `master_items.zulu-0113-tear-sample`, and `characters.WD-(𝓃)` contain `우디의 분신체 무디`.
 - Dossier event count: 14 character records currently include `NOSB-S1E1-MINI` in `lore.appearsInEvents`.
 - Structured Dossier sync: 14 character records now include one `NOSB-S1E1-MINI` `lore.sessionAppearances` entry each; sourced character-to-character relation counts are Doctor Moss 3, Maria 3, WD-(𝓃) 1, Clown 2, Otilia 4, Lee Dongsik 2, 네베드 2, Indexer 3.
+- 요한 스미스 Dossier: `characters.JOHAN_SMITH` includes `NOSB-S1E1-MINI`, official image path, one session appearance, and relations to CLOWN and OTILIA; `institutions.SPACE_ZERO.leaderCodename` is `JOHAN_SMITH`.
 - Browser check on local ERP session:
   - report page renders `우디의 분신체 무디`, `전자화 눈물`, and `ZULU-0113`.
   - mini wiki page renders `우디의 분신체 무디`, `스페이스 제로`, and `소닉 이미터`.
@@ -99,5 +103,5 @@ source: stargate-lore
 - Status: partial, not full completion.
 - Completed axes: source extraction, main/mini separation, report/wiki/catalog/personnel/institution/entity registration, ZULU-0113 archive image, relation prose fallback.
 - Completed in this follow-up: formal Dossier relation/session-appearance persistence for sourced character-to-character mini-session beats.
-- Remaining gaps: 요한 스미스 Dossier creation approval, economy mutations, future Europe lab operation source, optional cross-domain relation model for entity/institution-only beats.
+- Remaining gaps: economy mutations, future Europe lab operation source, optional cross-domain relation model for entity/institution-only beats.
 - Full sync is still not declared complete because the remaining gaps are outside the current persistence/source approval boundary.
