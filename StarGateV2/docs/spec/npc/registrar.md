@@ -17,9 +17,9 @@ isPublic: true
 loreTags: [사무총장실, 일정관리, 행정, 스웨덴, 보안]
 appearsInEvents: []
 source: manual
-previewImage:
+previewImage: /assets/npcs/Registrar-profile.webp
 createdAt: 2026-04-20T00:00:00Z
-updatedAt: 2026-04-20T00:00:00Z
+updatedAt: 2026-06-02T00:00:00Z
 ---
 
 ## 대사
@@ -50,3 +50,6 @@ updatedAt: 2026-04-20T00:00:00Z
 - **INDEXER (해쉬)**: 인덱서/해시 태거 — 동료의 SAN 회복 지원. 레지스트라와는 행정 vs 현장 지원으로 역할이 다름.
 - **MARIA**: 관료 — 작전 크레딧·행정 총괄. 레지스트라는 '일정'에 특화된 하위/병행 역할.
 - **사무총장 아말리아**: 스웨덴 출신. 레지스트라도 스웨덴 출신으로 설정하여 사무총장실 직속 맥락과 연결.
+
+## 데이터 연동 (참고)
+- Dossier 이미지: `/assets/npcs/Registrar-profile.webp`

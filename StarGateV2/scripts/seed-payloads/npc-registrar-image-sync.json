@@ -1,0 +1,14 @@
+[
+  {
+    "collection": "characters",
+    "type": "npc-image-sync",
+    "filter": { "codename": "REGISTRAR" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Registrar-profile.webp",
+        "lore.mainImage": "/assets/npcs/Registrar-profile.webp",
+        "updatedAt": "2026-06-02T00:00:00.000Z"
+      }
+    }
+  }
+]
