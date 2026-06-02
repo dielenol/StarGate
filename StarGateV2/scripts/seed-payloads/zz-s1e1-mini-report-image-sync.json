@@ -1,0 +1,40 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "operation-report-image-sync",
+    "filter": { "sessionId": "NOSB-S1E1-MINI" },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "팀은 전자기기 노출을 차단하고 수온 상승, 연기 기둥, 우디의 분신체 무디 투입을 조합해 눈물 샘플을 확보했다.\n\n스타크 팀은",
+              "replacement": "팀은 전자기기 노출을 차단하고 수온 상승, 연기 기둥, 우디의 분신체 무디 투입을 조합해 눈물 샘플을 확보했다.\n\n![전자화 눈물 - ZULU-0113](/assets/wiki/entities/zulu-0113.webp \"ZULU-0113 격리 개체 아카이브 도판\")\n\n스타크 팀은"
+            }
+          },
+          "updatedAt": "2026-06-03T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki-image-sync",
+    "filter": { "slug": "s1e1-mini" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "팀은 직접 진입을 피하고 전자기기 차단, 수온 상승, 연기 기둥, 우디의 분신체 무디 투입을 통해 눈물 샘플을 확보했다.\n\n스타크 팀은",
+              "replacement": "팀은 직접 진입을 피하고 전자기기 차단, 수온 상승, 연기 기둥, 우디의 분신체 무디 투입을 통해 눈물 샘플을 확보했다.\n\n![전자화 눈물 - ZULU-0113](/assets/wiki/entities/zulu-0113.webp \"ZULU-0113 격리 개체 아카이브 도판\")\n\n스타크 팀은"
+            }
+          },
+          "updatedAt": "2026-06-03T00:00:00.000Z"
+        }
+      }
+    ]
+  }
+]
