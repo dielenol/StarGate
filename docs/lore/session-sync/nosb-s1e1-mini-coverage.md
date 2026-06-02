@@ -43,7 +43,21 @@ source: stargate-lore
 | 구내식당 and steak shop encounter | Mini log social conflict sequence | operation report, CLAIRVOYANCE note | Keep as session context | Merged; no standalone place page |
 | 내무군 / 알렉산더 키호프 | Cafeteria conflict mention | operation report | Preserve as event context | Candidate-only; no Dossier without canonical record |
 | 관계 서사 | Doctor Moss assignment, ZULU handling, Space Zero offer, Hash hook | report/wiki prose, Dossier `lore.relations`, Dossier `lore.sessionAppearances` | Persist as sourced narrative notes and structured Dossier graph | Applied for sourced character-to-character edges; non-character edges remain prose/catalog/wiki |
-| economy/inventory/shop/credits | Session has research outcomes but no explicit grant approval | economy mutation plan | Do not mutate economy | Skipped by policy |
+| economy/inventory/shop/credits/stocks | Session has research outcomes and Space Zero exposure but no explicit grant/trade/price approval | economy and stock mutation plan | Keep as reviewed candidate-only audit | Skipped by policy; see economy audit below |
+
+## Economy / Inventory / Stock Audit
+
+This section is approval-only. It records mutation candidates and non-actions for auditability; it does not grant items, change shop stock, write credit ledgers, or adjust stock prices.
+
+| axis | sourced observation | existing ERP state checked | mutation decision |
+|---|---|---|---|
+| Catalog-only research outputs | `ZULU-0113` sample recovery, expected samples, `ZULU-0028` sample/development direction | `master_items` contains `zulu-0113-tear-sample`, `electronic-mental-disruption-substance`, `behavior-correction-substance`, `broken-syllable`, `sonic-emitter`, and `zulu-0028-containment-box` | No additional catalog mutation in this pass |
+| Character inventory grants | No explicit GM approval that any AGENT keeps or receives these items as personal inventory | DB read found no `character_inventory` grants for the checked catalog item ids | Do not grant inventory |
+| Shop stock / availability | Research samples and special containment/development items are not shop goods | DB read found no `shop_daily_stock` rows for the checked catalog slugs; listed catalog rows are `isAvailable=false` | Do not create shop stock |
+| Credits / rewards | Mini report/wiki text contains no explicit credit/reward/grant instruction | No session reward mutation was requested for this pass | Do not write credit ledger |
+| Stock market: `SPZ` / Space Zero | Space Zero CEO Yohann Smith attempts to secure `ZULU-0028` transfer/research records and is refused | `STOCK_CATALOG` maps Space Zero to `SPZ`; current `stock_prices.SPZ` is an unrelated scheduled market event | Candidate-only. Do not change `stock_prices` or `stock_price_history` without GM-approved ticker, target price/percent, event text, and public market-wire intent |
+
+Stock impact conclusion for `NOSB-S1E1-MINI`: the log contains a Space Zero story beat, but it is covert/operational and not yet a public market event. The correct current action is to preserve the beat in report/wiki/Dossier/institution surfaces and leave `SPZ` market adjustment as a future GM-reviewed `gm-event` candidate only.
 
 ## Relationship Narrative Candidates
 
