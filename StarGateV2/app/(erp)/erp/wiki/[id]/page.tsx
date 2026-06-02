@@ -15,6 +15,8 @@ import {
   relatedPersonnelForReports,
   relatedReportsForWiki,
 } from "@/lib/lore-links";
+import { filterCharacterByClearance, getUserClearance } from "@/lib/personnel";
+import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import Box from "@/components/ui/Box/Box";
@@ -112,7 +114,6 @@ export default async function WikiDetailPage({
     );
   }
   const articleContent = wikiArticleContent(page.content, page.title);
-  const contentHtml = renderMarkdown(articleContent);
   const toc = extractToc(articleContent);
   const keywordTags = wikiKeywordTags(page, 4);
   const lead = wikiLead(page.content);
@@ -123,17 +124,36 @@ export default async function WikiDetailPage({
   const allReports = await listSessionReports().catch(() => []);
   const allCharacters = await listCharacters().catch(() => []);
   const allItems = await listMasterItems().catch(() => []);
+  const userClearance = getUserClearance(session.user.role);
   const visibleCharacters = isAdmin
     ? allCharacters
     : allCharacters.filter((character) => character.isPublic !== false);
+  const linkableCharacters = visibleCharacters.map((character) =>
+    filterCharacterByClearance(character, userClearance),
+  );
   const visibleItems = isGM
     ? allItems
     : allItems.filter((item) => item.isPublic !== false);
+  const visibleWikiPages = isGM
+    ? allPages
+    : allPages.filter((wikiPage) => wikiPage.isPublic !== false);
+  const autoLinkTargets = buildWikiAutoLinkTargets({
+    catalogItems: visibleItems,
+    characters: linkableCharacters,
+    currentWikiPageId: pageId,
+    reports: allReports,
+    wikiPages: visibleWikiPages,
+  });
+  const contentHtml = renderMarkdown(articleContent, {
+    links: autoLinkTargets,
+    maxAutoLinksPerTarget: 2,
+    maxAutoLinksTotal: 48,
+  });
   const relatedReports = relatedReportsForWiki(page, allReports);
   const relatedCatalogItems = relatedCatalogItemsForWiki(page, visibleItems);
   const relatedPersonnel = relatedPersonnelForReports(
     relatedReports,
-    visibleCharacters,
+    linkableCharacters,
   );
 
   return (
