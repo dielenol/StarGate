@@ -25,7 +25,6 @@
 /* Variants */
 
 .card--lead {
-  padding-top: 36px;
   border-color: var(--gold-dim);
   background: linear-gradient(180deg, rgba(201, 168, 90, 0.04), transparent);
 }
@@ -33,7 +32,7 @@
 /* 우상단 미니 COMMANDER 배지 — 별 아이콘 + 텍스트. 좌상단 노랑 큰 박스 대신 컴팩트. */
 .commanderBadge {
   position: absolute;
-  top: 8px;
+  top: 0;
   right: 8px;
   display: inline-flex;
   align-items: center;
@@ -47,6 +46,7 @@
   font-size: 11px;
   line-height: 1;
   letter-spacing: 0.1em;
+  transform: translateY(-50%);
   pointer-events: none;
   z-index: 1;
 }
