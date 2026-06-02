@@ -8,7 +8,7 @@ category: MATERIAL
 price: 0
 effect: 음향성 잔재 샘플
 description: 검열된 비명(ZULU-0028)과의 교전 후 회수된 음향성 잔재 샘플.
-previewImage:
+previewImage: /assets/catalog/samples/broken-syllable.webp
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E1-ORDER, S1E1-ORDER, NOSB-S1E1-MINI, S1E1-MINI, ZULU-0028, 검열된비명, 샘플, 음향오염, 연구재료]

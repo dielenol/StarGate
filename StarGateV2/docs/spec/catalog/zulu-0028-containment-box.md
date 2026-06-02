@@ -8,13 +8,13 @@ category: SPECIAL
 price: 0
 effect: 방음 격리 / 음파 억제
 description: 검열된 비명(ZULU-0028)의 음파·발성 오염을 억제하기 위해 지정된 특수 격리 용기.
-previewImage:
+previewImage: /assets/catalog/special/zulu-0028-containment-box.webp
 isAvailable: false
 isPublic: true
 tags: [S1E1, ZULU-0028, 특수, 격리장비, 백색소음, MANUS]
 source: manual
 createdAt: 2026-03-16T00:00:00Z
-updatedAt: 2026-05-31T00:00:00Z
+updatedAt: 2026-06-02T00:00:00Z
 ---
 
 ## 설명

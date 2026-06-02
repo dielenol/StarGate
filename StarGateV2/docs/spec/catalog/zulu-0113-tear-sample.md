@@ -8,7 +8,7 @@ category: MATERIAL
 price: 0
 effect: 세뇌성 수중 개체의 눈물 연구 샘플
 description: 전자화 눈물(ZULU-0113)의 사후 처리 과정에서 확보한 눈물 기반 연구 샘플.
-previewImage: /assets/wiki/entities/zulu-0113.webp
+previewImage: /assets/catalog/samples/zulu-0113-tear-sample.webp
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E1-MINI, S1E1-MINI, ZULU-0113, ZULU-113, 전자화눈물, 눈물샘플, 전자화된정신교란물질, 행동교정물질]
