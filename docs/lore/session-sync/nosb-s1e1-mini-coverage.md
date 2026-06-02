@@ -55,9 +55,21 @@ This section is approval-only. It records mutation candidates and non-actions fo
 | Character inventory grants | No explicit GM approval that any AGENT keeps or receives these items as personal inventory | DB read found no `character_inventory` grants for the checked catalog item ids | Do not grant inventory |
 | Shop stock / availability | Research samples and special containment/development items are not shop goods | DB read found no `shop_daily_stock` rows for the checked catalog slugs; listed catalog rows are `isAvailable=false` | Do not create shop stock |
 | Credits / rewards | Mini report/wiki text contains no explicit credit/reward/grant instruction | No session reward mutation was requested for this pass | Do not write credit ledger |
-| Stock market: `SPZ` / Space Zero | Space Zero CEO Yohann Smith attempts to secure `ZULU-0028` transfer/research records and is refused | `STOCK_CATALOG` maps Space Zero to `SPZ`; current `stock_prices.SPZ` is an unrelated scheduled market event | Candidate-only. Do not change `stock_prices` or `stock_price_history` without GM-approved ticker, target price/percent, event text, and public market-wire intent |
+| Stock market: `SPZ` / Space Zero | Space Zero CEO Yohann Smith attempts to secure `ZULU-0028` transfer/research records and is refused | `STOCK_CATALOG` maps Space Zero to `SPZ`; current `stock_prices.SPZ` is an unrelated scheduled market event | `no-action` with watchlist note. The beat is not enough to raise SPZ because no asset/contract/research data was secured and the contact is covert. Do not change `stock_prices` or `stock_price_history` without GM-approved ticker, target price/percent, event text, and public market-wire intent |
 
-Stock impact conclusion for `NOSB-S1E1-MINI`: the log contains a Space Zero story beat, but it is covert/operational and not yet a public market event. The correct current action is to preserve the beat in report/wiki/Dossier/institution surfaces and leave `SPZ` market adjustment as a future GM-reviewed `gm-event` candidate only.
+### SPZ Direction Judgment
+
+| criterion | judgment |
+|---|---|
+| Ticker match | Confirmed candidate: Space Zero maps to `SPZ`. |
+| Materiality | Potentially material because `ZULU-0028` research records and transfer rights could benefit Space Zero's defense/research portfolio. |
+| Outcome | Not positive yet. Yohann Smith's offer is refused, so no completed acquisition, contract, asset transfer, or research access is confirmed. |
+| Market visibility | Covert/private. The log gives no public announcement, market leak, regulatory filing, procurement disclosure, or investor-facing event. |
+| Direction | No immediate upward adjustment. If the failed approach became public, the direction would be neutral or mildly negative rather than confirmed positive. |
+| Current mutation | Do not update `stock_prices.SPZ`; do not append `stock_price_history`; do not send market-wire. |
+| Future trigger | Upward `gm-event-candidate` only if later source confirms a public contract, successful asset/research acquisition, exclusive defense deal, or comparable market-visible success. |
+
+Stock impact conclusion for `NOSB-S1E1-MINI`: the log contains a Space Zero story beat, but it is covert/operational, failed at the negotiation level, and not yet a public market event. The correct current action is to preserve the beat in report/wiki/Dossier/institution surfaces and leave `SPZ` as watchlist/no-action, not a price increase.
 
 ## Relationship Narrative Candidates
 
