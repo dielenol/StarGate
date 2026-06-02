@@ -34,6 +34,7 @@ import {
   wikiLead,
   wikiRelatedLinks,
   wikiSourceLines,
+  sortWikiCategories,
 } from "../wiki-display";
 
 import styles from "./page.module.css";
@@ -49,10 +50,10 @@ interface TocEntry {
 }
 
 /**
- * 마크다운 본문에서 heading (#, ##, ###) 을 뽑아 TOC 엔트리로 변환.
+ * 마크다운 본문에서 heading (#-####) 을 뽑아 TOC 엔트리로 변환.
  *
  * `lib/wiki-render.ts` 와 동일한 파싱 규칙:
- *   `#` → h2, `##` → h3, `###` → h4.
+ *   `#`/`##` → h2, `###` → h3, `####` → h4.
  * 본문이 `dangerouslySetInnerHTML` 로 렌더되므로 서버에서 id 슬러그를 발급해
  * 클라이언트 컴포넌트가 동일 순서로 주입할 수 있게 한다.
  */
@@ -62,9 +63,11 @@ function extractToc(content: string): TocEntry[] {
   const lines = content.split("\n");
   let counter = 0;
   for (const line of lines) {
-    const match = line.match(/^(#{1,3})\s+(.+)$/);
+    const match = line.match(/^(#{1,4})\s+(.+)$/);
     if (!match) continue;
-    const level = (match[1].length + 1) as 2 | 3 | 4;
+    const level = (
+      match[1].length <= 2 ? 2 : match[1].length === 3 ? 3 : 4
+    ) as 2 | 3 | 4;
     const text = match[2]
       // 인라인 마크다운 제거 (볼드/이탤릭)
       .replace(/\*\*(.+?)\*\*/g, "$1")
@@ -98,7 +101,16 @@ export default async function WikiDetailPage({
 
   // 카테고리 네비를 위해 전체 페이지 목록 로드 (실패 시 빈 목록)
   const allPages = await listWikiPages().catch(() => []);
-  const categories = [...new Set(allPages.map((p) => p.category))].sort();
+  const categories = sortWikiCategories([
+    ...new Set(allPages.map((p) => p.category)),
+  ]);
+  const categoryCounts = new Map<string, number>();
+  for (const wikiPage of allPages) {
+    categoryCounts.set(
+      wikiPage.category,
+      (categoryCounts.get(wikiPage.category) ?? 0) + 1,
+    );
+  }
   const articleContent = wikiArticleContent(page.content, page.title);
   const contentHtml = renderMarkdown(articleContent);
   const toc = extractToc(articleContent);
@@ -130,7 +142,7 @@ export default async function WikiDetailPage({
         breadcrumb={[
           { label: "ERP", href: "/erp" },
           { label: "CODEX", href: "/erp/wiki" },
-          { label: page.category.toUpperCase() },
+          { label: page.category },
         ]}
         title={page.title}
         right={
@@ -159,7 +171,11 @@ export default async function WikiDetailPage({
           <ul className={styles.nav__list}>
             <li>
               <Link href="/erp/wiki" className={styles.nav__item}>
-                <span>전체</span>
+                <span className={styles.nav__label}>
+                  <span className={styles.nav__marker} />
+                  <span>전체</span>
+                </span>
+                <span className={styles.nav__count}>{allPages.length}</span>
               </Link>
             </li>
             {categories.map((cat) => {
@@ -176,7 +192,13 @@ export default async function WikiDetailPage({
                       .join(" ")}
                     aria-current={active ? "page" : undefined}
                   >
-                    <span>{cat}</span>
+                    <span className={styles.nav__label}>
+                      <span className={styles.nav__marker} />
+                      <span>{cat}</span>
+                    </span>
+                    <span className={styles.nav__count}>
+                      {categoryCounts.get(cat) ?? 0}
+                    </span>
                   </Link>
                 </li>
               );
@@ -192,10 +214,17 @@ export default async function WikiDetailPage({
                 <Tag tone={wikiCategoryTone(page.category)}>
                   {page.category}
                 </Tag>
-                {keywordTags.map((tag) => (
-                  <Tag key={tag}>{tag}</Tag>
-                ))}
               </div>
+              {keywordTags.length > 0 ? (
+                <div className={styles.header__keywords}>
+                  <span className={styles.header__keywordLabel}>KEYWORDS</span>
+                  {keywordTags.map((tag) => (
+                    <Tag key={tag} className={styles.header__keywordTag}>
+                      {tag}
+                    </Tag>
+                  ))}
+                </div>
+              ) : null}
               <h2 className={styles.header__title}>{page.title}</h2>
               {lead ? <p className={styles.header__lead}>{lead}</p> : null}
               <div className={styles.header__info}>

@@ -137,7 +137,7 @@ function extractSectionLines(content: string, sectionName: string): string[] {
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    const heading = line.match(/^(#{1,4})\s+(.+)$/);
 
     if (heading) {
       const title = stripInlineMarkdown(heading[2]).trim();
@@ -200,7 +200,7 @@ export function wikiSummary(content: string, maxLength = 180): string {
       continue;
     }
 
-    if (/^#{2,3}\s+/.test(line)) {
+    if (/^#{2,4}\s+/.test(line)) {
       if (inOverview && fallback) break;
       inOverview = false;
       continue;
@@ -225,7 +225,7 @@ export function wikiLead(content: string, maxLength = 240): string {
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
-    if (/^#{1,3}\s+/.test(line)) continue;
+    if (/^#{1,4}\s+/.test(line)) continue;
     if (markdownImageFromLine(line)) continue;
     if (/^-{3,}\s*$/.test(line)) continue;
 
@@ -252,7 +252,7 @@ export function wikiArticleContent(content: string, title: string): string {
 
   const lines = content.split(/\r?\n/).filter((rawLine) => {
     const line = rawLine.trim();
-    const heading = line.match(/^#{1,3}\s+(.+)$/);
+    const heading = line.match(/^#{1,4}\s+(.+)$/);
 
     if (skippingSummary) {
       if (heading) {
@@ -286,7 +286,7 @@ export function wikiArticleContent(content: string, title: string): string {
   const leadIndex = lines.findIndex((rawLine) => {
     const line = rawLine.trim();
     if (!line) return false;
-    if (/^#{1,3}\s+/.test(line)) return false;
+    if (/^#{1,4}\s+/.test(line)) return false;
     if (markdownImageFromLine(line)) return false;
     if (/^-{3,}\s*$/.test(line)) return false;
     return cleanPlainLine(line) === lead;

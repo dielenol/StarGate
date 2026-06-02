@@ -55,7 +55,13 @@ function isHorizontalRule(line: string): boolean {
 }
 
 function isHeading(line: string): boolean {
-  return /^#{1,3}\s+/.test(line);
+  return /^#{1,4}\s+/.test(line);
+}
+
+function markdownHeadingLevel(marker: string): 2 | 3 | 4 {
+  if (marker.length <= 2) return 2;
+  if (marker.length === 3) return 3;
+  return 4;
 }
 
 function isUnorderedListItem(line: string): boolean {
@@ -231,10 +237,10 @@ export function renderMarkdown(content: string): string {
       continue;
     }
 
-    // 제목: ### h4, ## h3, # h2
-    const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+    // 제목: #/## -> h2, ### -> h3, #### -> h4
+    const headingMatch = line.match(/^(#{1,4})\s+(.+)$/);
     if (headingMatch) {
-      const level = headingMatch[1].length + 1; // # -> h2, ## -> h3, ### -> h4
+      const level = markdownHeadingLevel(headingMatch[1]);
       const text = processInline(headingMatch[2]);
       htmlParts.push(`<h${level}>${text}</h${level}>`);
       i++;
