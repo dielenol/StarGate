@@ -123,6 +123,15 @@ function writeLastBgmIndex(trackIndex: number) {
   }
 }
 
+function isBgmAutoplayBlocked(error: unknown): boolean {
+  return (
+    error !== null &&
+    typeof error === "object" &&
+    "name" in error &&
+    error.name === "NotAllowedError"
+  );
+}
+
 function getBgmVolume(track: ErpBgmTrack, volumeLevel: number): number {
   const trackScale = "volumeScale" in track ? track.volumeScale : 1;
   return Math.min(
@@ -235,9 +244,12 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
         setBgmPlaying(true);
         return true;
       } catch (error) {
-        console.warn("erp bgm playback failed", error);
+        const autoplayBlocked = isBgmAutoplayBlocked(error);
+        if (!autoplayBlocked) {
+          console.warn("erp bgm playback failed", error);
+        }
         setBgmPlaying(false);
-        setBgmError(true);
+        setBgmError(!autoplayBlocked);
         return false;
       } finally {
         setBgmPending(false);
