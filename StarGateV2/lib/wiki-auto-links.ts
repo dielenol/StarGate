@@ -133,7 +133,6 @@ export function buildWikiAutoLinkTargets({
         character.lore.nameNative,
         character.lore.nickname,
         character.lore.nameEn,
-        ...(character.lore.loreTags ?? []),
       ],
       priority: 80,
       title: "신원조회",
