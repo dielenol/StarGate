@@ -125,7 +125,7 @@ function normalizePageTitle(value: string): string {
 
 function cleanPlainLine(value: string): string {
   return stripInlineMarkdown(value)
-    .replace(/^[-*]\s+/, "")
+    .replace(/^[-*]\s*/, "")
     .replace(/^·\s*/, "")
     .trim();
 }
@@ -281,6 +281,30 @@ export function wikiArticleContent(content: string, title: string): string {
 
     return true;
   });
+
+  const lead = wikiLead(content);
+  const leadIndex = lines.findIndex((rawLine) => {
+    const line = rawLine.trim();
+    if (!line) return false;
+    if (/^#{1,3}\s+/.test(line)) return false;
+    if (markdownImageFromLine(line)) return false;
+    if (/^-{3,}\s*$/.test(line)) return false;
+    return cleanPlainLine(line) === lead;
+  });
+
+  if (lead && leadIndex >= 0) {
+    const hasMoreBody = lines.slice(leadIndex + 1).some((rawLine) => {
+      const line = rawLine.trim();
+      if (!line) return false;
+      if (markdownImageFromLine(line)) return false;
+      if (/^-{3,}\s*$/.test(line)) return false;
+      return true;
+    });
+
+    if (hasMoreBody) {
+      lines.splice(leadIndex, 1);
+    }
+  }
 
   return lines.join("\n").trimStart();
 }

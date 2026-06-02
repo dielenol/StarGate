@@ -243,15 +243,34 @@
   color: var(--ink-1);
   font-size: var(--font-size-sm);
   line-height: 1.7;
+  overflow-x: auto;
   word-break: break-word;
 }
 
 .content h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 24px 0 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
   color: var(--gold);
   font-size: var(--font-size-md);
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+.content h2::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 3px;
+  height: 1.05em;
+  border-radius: 999px;
+  background: var(--catalog-tone, var(--gold));
+}
+
+.content h2:first-child {
+  margin-top: 12px;
 }
 
 .content h3,
@@ -264,6 +283,78 @@
 
 .content p {
   margin: 0 0 10px;
+}
+
+.content ul,
+.content ol {
+  margin: 0 0 14px;
+  padding-left: 22px;
+}
+
+.content li {
+  margin: 0 0 6px;
+  padding-left: 4px;
+}
+
+.content li::marker {
+  color: var(--catalog-tone, var(--gold));
+  font-family: var(--font-mono);
+}
+
+.content blockquote {
+  margin: 16px 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--catalog-tone, var(--gold));
+  background: color-mix(in srgb, var(--catalog-tone, var(--gold)) 8%, transparent);
+  color: var(--ink-1);
+}
+
+.content blockquote p {
+  margin-bottom: 8px;
+}
+
+.content blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.content code {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-2);
+  color: var(--catalog-tone, var(--gold));
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.content table {
+  width: 100%;
+  margin: 16px 0 18px;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: var(--font-size-sm);
+}
+
+.content th,
+.content td {
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.content th {
+  background: color-mix(in srgb, var(--catalog-tone, var(--gold)) 9%, transparent);
+  color: var(--catalog-tone, var(--gold));
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.content td {
+  color: var(--ink-1);
 }
 
 .content hr {
