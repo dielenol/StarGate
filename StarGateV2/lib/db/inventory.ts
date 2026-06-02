@@ -27,6 +27,10 @@ export {
   addToInventory,
   removeFromInventory,
   deleteInventoryEntry,
+  SHARED_INVENTORY_SCOPE,
+  listSharedInventory,
+  addToSharedInventory,
+  removeFromSharedInventory,
 } from "@stargate/shared-db";
 
 export async function findMasterItemBySlugOrId(

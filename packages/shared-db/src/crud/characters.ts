@@ -131,11 +131,14 @@ export async function findCharacterByCodename(
 
 export async function listCharactersByOwner(
   ownerId: string
-): Promise<Pick<Character, "_id" | "agentLevel">[]> {
+): Promise<Pick<Character, "_id" | "agentLevel" | "codename">[]> {
   const col = await charactersCol();
   return col
     .find({ ownerId })
-    .project<Pick<Character, "_id" | "agentLevel">>({ agentLevel: 1 })
+    .project<Pick<Character, "_id" | "agentLevel" | "codename">>({
+      agentLevel: 1,
+      codename: 1,
+    })
     .toArray();
 }
 

@@ -112,6 +112,12 @@ export async function ensureAllIndexes(): Promise<void> {
       { name: "character_inventory_characterId_itemId" },
     ),
 
+    /* ── shared_inventory (party/common reward storage) ── */
+    db.collection("shared_inventory").createIndex(
+      { scope: 1, itemId: 1 },
+      { name: "shared_inventory_scope_itemId_unique", unique: true },
+    ),
+
     /* ── wiki_pages (from StarGateV2) ── */
     db.collection("wiki_pages").createIndexes([
       {

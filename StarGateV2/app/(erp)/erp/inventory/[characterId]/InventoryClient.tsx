@@ -16,8 +16,6 @@ import ShopItemIcon from "../../shop/ShopItemIcon";
 
 import styles from "./page.module.css";
 
-/* ── 타입 ── */
-
 export interface InventoryClientEntry {
   _id: string;
   itemId: string;
@@ -32,11 +30,12 @@ export interface InventoryClientEntry {
 
 interface InventoryClientProps {
   entries: InventoryClientEntry[];
+  title?: string;
+  emptyText?: string;
+  filteredEmptyText?: string;
 }
 
 type InventoryTab = "ALL" | "EQUIPMENT" | "CONSUMABLE" | "OTHER";
-
-/* ── 상수 ── */
 
 const TAB_DEFS: { value: InventoryTab; label: string }[] = [
   { value: "ALL", label: "전체" },
@@ -53,9 +52,7 @@ const CATEGORY_LABEL: Record<ItemCategory, string> = {
   SPECIAL: "특수",
 };
 
-const UNKNOWN_CATEGORY_LABEL = "분류없음";
-
-/* ── 유틸 ── */
+const UNKNOWN_CATEGORY_LABEL = "분류 없음";
 
 function matchesTab(
   category: ItemCategory | null,
@@ -117,9 +114,12 @@ function CategoryIcon({
   return <IconInventory className={styles.slot__iconSvg} aria-hidden />;
 }
 
-/* ── 컴포넌트 ── */
-
-export default function InventoryClient({ entries }: InventoryClientProps) {
+export default function InventoryClient({
+  entries,
+  title = "INVENTORY",
+  emptyText = "보유 아이템이 없습니다.",
+  filteredEmptyText = "이 카테고리에 보유 아이템이 없습니다.",
+}: InventoryClientProps) {
   const [activeTab, setActiveTab] = useState<InventoryTab>("ALL");
 
   const countByTab = useMemo(() => {
@@ -149,13 +149,10 @@ export default function InventoryClient({ entries }: InventoryClientProps) {
 
   return (
     <Box>
-      <PanelTitle
-        right={<span className={styles.mono}>{entries.length} 개</span>}
-      >
-        INVENTORY
+      <PanelTitle right={<span className={styles.mono}>{entries.length}개</span>}>
+        {title}
       </PanelTitle>
 
-      {/* 탭은 항상 렌더 — 보유 0개여도 카테고리 구조를 노출해 일관된 UX 유지. */}
       <div
         role="tablist"
         aria-label="인벤토리 카테고리"
@@ -180,8 +177,8 @@ export default function InventoryClient({ entries }: InventoryClientProps) {
                 .join(" ")}
               onClick={() => setActiveTab(tab.value)}
             >
-              {tab.label}{" "}
-              <span className={styles.tabs__count}>· {count}</span>
+              {tab.label}
+              <span className={styles.tabs__count}> · {count}</span>
             </button>
           );
         })}
@@ -189,9 +186,7 @@ export default function InventoryClient({ entries }: InventoryClientProps) {
 
       {filteredEntries.length === 0 ? (
         <div className={styles.empty}>
-          {entries.length === 0
-            ? "보유 아이템이 없습니다."
-            : "이 카테고리에 보유 아이템이 없습니다."}
+          {entries.length === 0 ? emptyText : filteredEmptyText}
         </div>
       ) : (
         <div
@@ -210,7 +205,7 @@ export default function InventoryClient({ entries }: InventoryClientProps) {
                 key={entry._id}
                 className={[styles.slot, styles[`slot--${tone}`]]
                   .filter(Boolean)
-                .join(" ")}
+                  .join(" ")}
               >
                 <div className={styles.slot__art} aria-hidden>
                   <CategoryIcon category={entry.category} slug={entry.slug} />
@@ -232,7 +227,7 @@ export default function InventoryClient({ entries }: InventoryClientProps) {
                     <div className={styles.slot__note}>{entry.note}</div>
                   ) : null}
                 </div>
-                <div className={styles.slot__qty}>× {entry.quantity}</div>
+                <div className={styles.slot__qty}>x {entry.quantity}</div>
               </article>
             );
           })}

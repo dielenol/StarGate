@@ -1,50 +1,51 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 
-import type { CharacterInventory, ItemCategory } from "@/types/inventory";
+import type {
+  ItemCategory,
+  MasterItem,
+  SharedInventory,
+} from "@/types/inventory";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
-import { findCharacterById } from "@/lib/db/characters";
-import { listCharacterInventory, listMasterItems } from "@/lib/db/inventory";
+import {
+  listAvailableItems,
+  listMasterItems,
+  listSharedInventory,
+} from "@/lib/db/inventory";
 
+import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
+import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
 import InventoryModeNav from "../_components/InventoryModeNav";
-import InventoryClient, { type InventoryClientEntry } from "./InventoryClient";
+import InventoryClient, {
+  type InventoryClientEntry,
+} from "../[characterId]/InventoryClient";
+import InventoryGrantForm from "../[characterId]/InventoryGrantForm";
+import styles from "../[characterId]/page.module.css";
 
-interface CharacterInventoryPageProps {
-  params: Promise<{ characterId: string }>;
-}
-
-export default async function CharacterInventoryPage({
-  params,
-}: CharacterInventoryPageProps) {
+export default async function SharedInventoryPage() {
   const session = await auth();
 
   if (!session?.user) {
     redirect("/login");
   }
 
-  const { role } = session.user;
-  const isGm = hasRole(role, "V");
-  const { characterId } = await params;
+  const isGm = hasRole(session.user.role, "V");
 
-  const character = await findCharacterById(characterId);
-  if (!character) {
-    notFound();
-  }
-
-  let inventory: CharacterInventory[] = [];
+  let inventory: SharedInventory[] = [];
+  let availableItems: MasterItem[] = [];
   let masterByItemId = new Map<
     string,
     { category: ItemCategory; slug?: string; effect?: string }
   >();
 
   try {
-    inventory = await listCharacterInventory(characterId);
+    inventory = await listSharedInventory();
   } catch {
-    // Keep the page reachable even if inventory lookup temporarily fails.
+    // Keep the page visible even if the shared collection is temporarily absent.
   }
 
   if (inventory.length > 0) {
@@ -62,19 +63,21 @@ export default async function CharacterInventoryPage({
           { category: item.category, slug: item.slug, effect: item.effect },
         ]),
       );
-      const orphanIds = uniqueItemIds.filter((id) => !masterByItemId.has(id));
-      if (orphanIds.length > 0) {
-        console.warn(
-          `[inventory] catalog drift: ${orphanIds.length} itemId not found in master_items (characterId=${characterId})`,
-        );
-      }
     } catch {
       // Missing master metadata falls back to the "other" category display.
     }
   }
 
+  if (isGm) {
+    try {
+      availableItems = await listAvailableItems();
+    } catch {
+      // The form will render with an empty item list.
+    }
+  }
+
   const entries: InventoryClientEntry[] = inventory.map((entry) => ({
-    _id: String(entry._id),
+    _id: entry._id ? String(entry._id) : `${entry.scope}:${entry.itemId}`,
     itemId: entry.itemId,
     itemName: entry.itemName,
     quantity: entry.quantity,
@@ -94,30 +97,39 @@ export default async function CharacterInventoryPage({
         breadcrumb={[
           { label: "ERP", href: "/erp" },
           { label: "INVENTORY", href: "/erp/inventory" },
-          { label: character.codename },
+          { label: "SHARED" },
         ]}
-        title={character.codename}
+        title="공용 인벤토리"
         right={
           <>
-            {isGm ? (
-              <Button
-                as="a"
-                href={`/erp/admin/inventory/${characterId}`}
-                variant="primary"
-              >
-                관리자 모드
-              </Button>
-            ) : null}
             <Button as="a" href="/erp/inventory">
               인벤토리 허브
+            </Button>
+            <Button as="a" href="/erp/shop">
+              편의점
             </Button>
           </>
         }
       />
 
-      <InventoryModeNav active="personal" />
+      <InventoryModeNav active="shared" />
 
-      <InventoryClient entries={entries} title="PERSONAL INVENTORY" />
+      {isGm ? (
+        <Box className={styles.grantBox}>
+          <PanelTitle>GRANT SHARED ITEM · GM</PanelTitle>
+          <InventoryGrantForm
+            mode="shared"
+            availableItems={availableItems}
+          />
+        </Box>
+      ) : null}
+
+      <InventoryClient
+        entries={entries}
+        title="SHARED INVENTORY"
+        emptyText="공용 인벤토리에 등록된 아이템이 없습니다."
+        filteredEmptyText="이 카테고리에 등록된 공용 아이템이 없습니다."
+      />
     </>
   );
 }

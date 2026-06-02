@@ -60,3 +60,25 @@ export function useGrantInventory() {
     },
   });
 }
+
+export function useGrantSharedInventory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: GrantInventoryBody) => {
+      const res = await fetch("/api/erp/inventory/shared", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "공용 인벤토리 지급에 실패했습니다.");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
+    },
+  });
+}

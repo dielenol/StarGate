@@ -4,7 +4,10 @@ import { useState } from "react";
 
 import type { MasterItem } from "@/types/inventory";
 
-import { useGrantInventory } from "@/hooks/mutations/useInventoryMutation";
+import {
+  useGrantInventory,
+  useGrantSharedInventory,
+} from "@/hooks/mutations/useInventoryMutation";
 
 import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -14,15 +17,18 @@ import Select from "@/components/ui/Select/Select";
 import styles from "./InventoryGrantForm.module.css";
 
 interface InventoryGrantFormProps {
-  characterId: string;
+  characterId?: string;
   availableItems: MasterItem[];
+  mode?: "character" | "shared";
 }
 
 export default function InventoryGrantForm({
   characterId,
   availableItems,
+  mode = "character",
 }: InventoryGrantFormProps) {
   const grantInventory = useGrantInventory();
+  const grantSharedInventory = useGrantSharedInventory();
 
   const [selectedItemId, setSelectedItemId] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -33,6 +39,16 @@ export default function InventoryGrantForm({
   const selectedItem = availableItems.find(
     (item) => String(item._id) === selectedItemId,
   );
+  const isSharedMode = mode === "shared";
+  const isPending = isSharedMode
+    ? grantSharedInventory.isPending
+    : grantInventory.isPending;
+
+  function resetForm() {
+    setSelectedItemId("");
+    setQuantity("1");
+    setNote("");
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,22 +66,40 @@ export default function InventoryGrantForm({
       return;
     }
 
+    const data = {
+      itemId: selectedItemId,
+      itemName: selectedItem?.name ?? "",
+      quantity: numQuantity,
+      note,
+    };
+
+    if (isSharedMode) {
+      grantSharedInventory.mutate(data, {
+        onSuccess: () => {
+          setSuccess("공용 인벤토리에 아이템을 추가했습니다.");
+          resetForm();
+        },
+        onError: (err) => {
+          setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
+        },
+      });
+      return;
+    }
+
+    if (!characterId) {
+      setError("캐릭터 ID가 없어 지급할 수 없습니다.");
+      return;
+    }
+
     grantInventory.mutate(
       {
         characterId,
-        data: {
-          itemId: selectedItemId,
-          itemName: selectedItem?.name ?? "",
-          quantity: numQuantity,
-          note,
-        },
+        data,
       },
       {
         onSuccess: () => {
           setSuccess("아이템이 성공적으로 지급되었습니다.");
-          setSelectedItemId("");
-          setQuantity("1");
-          setNote("");
+          resetForm();
         },
         onError: (err) => {
           setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
@@ -110,7 +144,7 @@ export default function InventoryGrantForm({
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="지급 사유"
+            placeholder={isSharedMode ? "공용 지급 사유" : "지급 사유"}
           />
         </label>
       </div>
@@ -119,12 +153,8 @@ export default function InventoryGrantForm({
       {success ? <div className={styles.success}>{success}</div> : null}
 
       <div className={styles.actions}>
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={grantInventory.isPending}
-        >
-          {grantInventory.isPending ? "처리 중..." : "지급"}
+        <Button type="submit" variant="primary" disabled={isPending}>
+          {isPending ? "처리 중..." : isSharedMode ? "공용 지급" : "지급"}
         </Button>
       </div>
     </form>

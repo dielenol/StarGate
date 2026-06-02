@@ -5,7 +5,10 @@
 export type {
   MasterItem,
   CharacterInventory,
+  SharedInventory,
+  SharedInventoryScope,
   ItemCategory,
   CreateMasterItemInput,
   CreateInventoryInput,
+  CreateSharedInventoryInput,
 } from "@stargate/shared-db/types";

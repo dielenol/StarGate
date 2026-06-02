@@ -9,6 +9,7 @@ import type { CreditTransaction } from "./types/credit.js";
 import type {
   MasterItem,
   CharacterInventory,
+  SharedInventory,
 } from "./types/inventory.js";
 import type { WikiPage, WikiPageRevision } from "./types/wiki.js";
 import type { SessionReport } from "./types/session-report.js";
@@ -36,6 +37,7 @@ const COL = {
   CREDIT_TRANSACTIONS: "credit_transactions",
   MASTER_ITEMS: "master_items",
   CHARACTER_INVENTORY: "character_inventory",
+  SHARED_INVENTORY: "shared_inventory",
   WIKI_PAGES: "wiki_pages",
   WIKI_PAGE_REVISIONS: "wiki_page_revisions",
   SESSION_REPORTS: "session_reports",
@@ -102,6 +104,11 @@ export async function masterItemsCol(): Promise<Collection<MasterItem>> {
 export async function characterInventoryCol(): Promise<Collection<CharacterInventory>> {
   const db = await getDb();
   return db.collection<CharacterInventory>(COL.CHARACTER_INVENTORY);
+}
+
+export async function sharedInventoryCol(): Promise<Collection<SharedInventory>> {
+  const db = await getDb();
+  return db.collection<SharedInventory>(COL.SHARED_INVENTORY);
 }
 
 export async function wikiPagesCol(): Promise<Collection<WikiPage>> {
@@ -215,6 +222,10 @@ export function masterItemsColSync(): Collection<MasterItem> {
 
 export function characterInventoryColSync(): Collection<CharacterInventory> {
   return getDbSync().collection<CharacterInventory>(COL.CHARACTER_INVENTORY);
+}
+
+export function sharedInventoryColSync(): Collection<SharedInventory> {
+  return getDbSync().collection<SharedInventory>(COL.SHARED_INVENTORY);
 }
 
 export function wikiPagesColSync(): Collection<WikiPage> {

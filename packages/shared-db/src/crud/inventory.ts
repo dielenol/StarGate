@@ -8,13 +8,17 @@ import type {
   CharacterInventory,
   CreateInventoryInput,
   CreateMasterItemInput,
+  CreateSharedInventoryInput,
   ItemCategory,
   MasterItem,
+  SharedInventory,
+  SharedInventoryScope,
 } from "../types/index.js";
 
 import {
   characterInventoryCol,
   masterItemsCol,
+  sharedInventoryCol,
 } from "../collections.js";
 
 /* ── Master Items ── */
@@ -220,4 +224,64 @@ export async function deleteInventoryEntry(id: string): Promise<boolean> {
   const col = await characterInventoryCol();
   const result = await col.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount > 0;
+}
+
+/* ── Shared Inventory ── */
+
+export const SHARED_INVENTORY_SCOPE: SharedInventoryScope = "GLOBAL";
+
+export async function listSharedInventory(
+  scope: SharedInventoryScope = SHARED_INVENTORY_SCOPE
+): Promise<SharedInventory[]> {
+  const col = await sharedInventoryCol();
+  return col.find({ scope }).sort({ acquiredAt: -1 }).toArray();
+}
+
+export async function addToSharedInventory(
+  input: CreateSharedInventoryInput
+): Promise<SharedInventory> {
+  const col = await sharedInventoryCol();
+
+  const result = await col.findOneAndUpdate(
+    { scope: input.scope, itemId: input.itemId },
+    {
+      $inc: { quantity: input.quantity },
+      $setOnInsert: {
+        scope: input.scope,
+        itemName: input.itemName,
+        acquiredAt: input.acquiredAt,
+        note: input.note,
+      },
+    },
+    { upsert: true, returnDocument: "after" }
+  );
+  if (!result) {
+    throw new Error(
+      `Failed to upsert shared inventory: scope=${input.scope}, itemId=${input.itemId}`
+    );
+  }
+  return result;
+}
+
+export async function removeFromSharedInventory(
+  itemId: string,
+  quantity: number,
+  scope: SharedInventoryScope = SHARED_INVENTORY_SCOPE
+): Promise<{ ok: boolean; remaining: number }> {
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    throw new Error(
+      `removeFromSharedInventory: quantity must be a positive integer, got ${quantity}`
+    );
+  }
+  const col = await sharedInventoryCol();
+  const result = await col.findOneAndUpdate(
+    { scope, itemId, quantity: { $gte: quantity } },
+    { $inc: { quantity: -quantity } },
+    { returnDocument: "after" }
+  );
+  if (!result) return { ok: false, remaining: 0 };
+  if (result.quantity === 0) {
+    await col.deleteOne({ _id: result._id, quantity: 0 });
+  }
+  return { ok: true, remaining: result.quantity };
 }

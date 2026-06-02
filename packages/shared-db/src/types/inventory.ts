@@ -85,9 +85,22 @@ export interface CharacterInventory {
   note?: string;
 }
 
+export type SharedInventoryScope = "GLOBAL";
+
+export interface SharedInventory {
+  _id?: ObjectId;
+  scope: SharedInventoryScope;
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  acquiredAt: Date;
+  note?: string;
+}
+
 export type CreateMasterItemInput = Omit<
   MasterItem,
   "_id" | "createdAt" | "updatedAt"
 >;
 
 export type CreateInventoryInput = Omit<CharacterInventory, "_id">;
+export type CreateSharedInventoryInput = Omit<SharedInventory, "_id">;

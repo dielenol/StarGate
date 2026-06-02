@@ -72,11 +72,14 @@ export {
 export type {
   MasterItem,
   CharacterInventory,
+  SharedInventory,
+  SharedInventoryScope,
   ItemCategory,
   ShopMeta,
   ShopPageGroup,
   CreateMasterItemInput,
   CreateInventoryInput,
+  CreateSharedInventoryInput,
 } from "./inventory.js";
 export { ITEM_CATEGORIES } from "./inventory.js";
 

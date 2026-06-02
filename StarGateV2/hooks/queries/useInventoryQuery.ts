@@ -5,6 +5,7 @@ import type { MasterItem } from "@/types/inventory";
 export const inventoryKeys = {
   all: ["inventory"] as const,
   items: ["inventory", "items"] as const,
+  shared: ["inventory", "shared"] as const,
 };
 
 async function fetchMasterItems(): Promise<MasterItem[]> {
