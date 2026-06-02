@@ -1,0 +1,635 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "operation-report",
+    "payload": {
+      "sessionId": "NOSB-S1E2-CHOICE",
+      "sessionTitle": "작전 기록 S1E2: 선택",
+      "summary": "# 작전 기록 S1E2: 선택\n\nNOSB S1E2 \"선택\"은 유럽 오디세이 시설의 연락 두절과 긴급 신호를 조사한 본편 2화 작전 기록이다. 현장팀은 태거 박사와 선발조 구조, 시설 보존, 군부와 세계이사회 지시, 화이트로즈 접촉, ZULU-0040 \"왕관\" 격리 사이에서 선택을 강요받았다.\n\n## 진행 정보\n분류: 구조 / 감염 격리 / 시설 보존 결정\n세션 ID: NOSB-S1E2-CHOICE\n진행일: 2026년 3월 29일 ~ 2026년 4월 6일\n작전지: 유럽 오디세이 시설\n기록 상태: Cocofolia PDF 추출 로그 기반 확인. 원본은 단일 장문 PDF이며 pdfplumber 추출 경고가 있었으나 텍스트 판독 가능.\n\n## 주요 사건\nMr. 오드는 오디세이 시설이 유럽 소재 노부스 오르도 중앙 통제 시설 중 하나이며, 에볼라와 탄저균 같은 고위험 질병 샘플을 보관한다고 설명했다. 시설과 태거 박사, 선발조는 연락 두절 상태였고, 현장팀은 구조와 원인 조사를 명령받았다. 출처: 추출본 lines 67-127.\n\n시설 외부에서는 욤스비킹 부대와 군부가 독일 정부의 접근 요청을 근거로 연구소 파괴를 시도했다. 현장팀은 시설 파괴를 승인하지 않고, 군부의 12시간 지연 지원과 조건부 협조를 받아 진입했다. 출처: lines 280-425.\n\n시설 내부의 보라색 점착성 실과 감염 증상은 맥각류를 연상시키는 균사 군체로 분석되었다. 오틸리아는 해당 군체가 세뇌, 정신 증상, 신경 지배를 일으킬 수 있다고 판정했다. 출처: lines 491-518.\n\n선발조의 스타크 일로니손과 박애솔은 감염 상태로 발견되었다. 스타크는 두부 군체 제거 후 회복되었고, 박애솔은 촉수 절단과 감염 제거 과정을 거쳐 구조되었다. 출처: lines 606-611, 1175-1200, 1764-1805, 2088-2174.\n\n화이트로즈 요원은 지하 4층 식물원에서 정신 저항 항체 배합식을 제공했다. 현장팀은 스페이스 제로 독점 판매 메일 루트를 선택하지 않고 컴퓨터를 파괴했으며, 최종적으로 배합식을 획득했다. 출처: lines 2443-2456, 3311-3600, 3611-3654, 5740-5889.\n\n세계이사회는 GP03-RX780, 즉 이동식의 폐기와 재기동 문제에 개입했다. 현장팀은 이동식을 폐기하지 않고 재가동 및 보존을 선택했으며, 이에 따라 이사회 임무는 실패로 기록되었다. 출처: lines 4259-4314, 5389, 5630-5633.\n\nZULU-0040 \"왕관\"은 감염 숙주와 균사 군체를 통해 정신 지배를 행사한 개체로 확인되었다. 행동교정물질 주입 이후 주 개체가 붕괴했고, 우디가 생성한 대형 무디를 임시 숙주로 삼아 격리 상태가 안정화되었다. 출처: lines 4962-5088, 5126-5376, 5991.\n\n## 결과\nZULU-0040 격리는 성공했다. 오디세이 시설은 파괴되지 않았고, 공식 대외 발표는 환각과 경련을 유발한 먼지더듬이 벌레 및 화학물질 노출로 정리되었다. 군부 임무는 실패, 시민사회 관련 대외 평판 임무는 성공, 세계이사회 임무는 실패로 기록한다. 출처: lines 5951-5991.\n\n## 경제 및 주식 감사\n방호복 1,000 크레딧, 행동교정물질 700 크레딧 불출은 로그상 사용 후보로 기록하지만 이번 동기화에서는 크레딧, 인벤토리, 상점 재고를 변경하지 않는다. SPZ는 정신 저항제 독점 판매 제안이 있었으나 현장팀이 해당 전송 루트를 파괴했으므로 neutral/no-action으로 판단한다. 실제 주가, market-wire, 보유 주식 변동은 적용하지 않는다.\n\n## 후속 훅\nMr. 오드는 작전 후 오틸리아에게 1943년 절멸수용소 관련 자료와 광명회 단서를 제시했다. 다음 장면은 제인 피쉬, 물주먹 래키, 송사리 호 선상 파티, 지휘자라는 해양 후속 플롯으로 이어진다. 출처: lines 5994-6051.\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본, NOSB 2_compressed.pdf 추출 로그 lines 1-6053.",
+      "highlights": [
+        "오디세이 시설은 유럽 소재 노부스 오르도 중앙 통제 시설이며, 고위험 질병 샘플 보관소로 확인되었다.",
+        "군부와 욤스비킹 부대는 시설 파괴를 원했으나 현장팀은 시설 보존과 구조를 우선했다.",
+        "ZULU-0040 왕관은 균사 군체와 숙주 신경 지배를 통해 스타크, 박애솔, 이동식에게 영향을 주었다.",
+        "화이트로즈 요원은 정신 저항제 배합 자료를 제공했고, 현장팀은 스페이스 제로 독점 판매 루트를 거부했다.",
+        "행동교정물질은 감염된 이동식에게 주입되어 주 개체 붕괴와 격리 성공의 계기가 되었다.",
+        "최종 결과는 격리 성공, 시설 보존, 군부 임무 실패, 시민사회 평판 임무 성공, 세계이사회 임무 실패로 정리된다."
+      ],
+      "participants": [
+        "MARIA",
+        "OTILIA",
+        "CLOWN",
+        "INDEXER",
+        "TIME",
+        "UNYEON",
+        "MARGARET",
+        "WD-(𝓃)",
+        "LEE DONGSIK",
+        "TIGER298",
+        "BIG BOY",
+        "네베드"
+      ],
+      "locationLabel": "유럽 오디세이 시설",
+      "mapPrecision": "estimated",
+      "gmId": "novus-ordo-record-control",
+      "gmName": "NOVUS ORDO 기록통제실 분석관 K. Adler",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki",
+    "payload": {
+      "slug": "s1e2-choice",
+      "title": "작전 보고서 S1E2: 선택",
+      "category": "작전보고서",
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "선택", "오디세이시설", "ZULU-0040", "화이트로즈", "광명회", "스페이스제로"],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제실 분석관 K. Adler",
+      "content": "# 작전 보고서 S1E2: 선택\n\nS1E2 선택은 유럽 오디세이 시설의 연락 두절과 ZULU-0040 왕관 격리 사건을 다루는 작전 문서다. 이 문서는 작전보고서, 오디세이 시설, ZULU-0040 왕관, 정신 저항제 배합 자료, 화이트로즈, 세계이사회, 군부, 시민사회, 스페이스 제로 문서의 연결 허브로 사용한다.\n\n## 요약 정보\n분류: 구조 / 감염 격리 / 시설 보존 결정\n작전지: 유럽 오디세이 시설\n관련 개체: ZULU-0040 왕관\n관련 자료: 정신 저항제 배합 자료, 행동교정물질, 커룹의 불칼\n경제 상태: 크레딧 및 재고 변동 미적용, 후보 기록만 보존\n주식 상태: SPZ neutral/no-action 후보, 실제 주가 미변경\n기록 확정도: 로그 기반 확인\n\n## 사건 개요\nMr. 오드는 태거 박사와 구조팀 연락 두절, 오디세이 시설 긴급 신호, 시설 내 고위험 병원체 보관 사실을 설명하고 현장팀을 투입했다. 군부와 욤스비킹은 시설 파괴를 요구했으나, 현장팀은 파괴를 승인하지 않고 진입했다.\n\n시설 내부에서는 보라색 균사 군체가 감염과 정신 증상을 유발했고, 선발조 스타크 일로니손과 박애솔은 감염 상태로 구조되었다. 해쉬 테거는 시설 책임자 슈타이너 박사의 기록과 광명회 의혹, 우한 광원화 관련 증언을 확인했다.\n\n화이트로즈 요원은 지하 4층 식물원에서 정신 저항제 배합 자료를 제공했다. 현장팀은 스페이스 제로 독점 판매 루트를 거부하고 컴퓨터를 파괴했으며, 배합식은 전원 획득 상태로 정리되었다.\n\n## 결과와 판정\nZULU-0040 왕관은 행동교정물질 주입, 본체 붕괴, 무디 임시 숙주화, 심신안정 조치를 거쳐 격리 성공 판정을 받았다. 오디세이 시설은 파괴되지 않았고 대외 발표는 먼지더듬이 벌레와 화학물질 노출로 정리되었다.\n\n군부 임무는 시설 미파괴로 실패, 시민사회 관련 대외 평판 임무는 성공, 세계이사회 임무는 이동식 폐기 미이행으로 실패로 기록한다.\n\n## 관련 문서\n오디세이 시설, ZULU-0040 왕관, 정신 저항제 배합 자료, 행동교정물질, 커룹의 불칼, 화이트로즈, 세계이사회, 군부, 시민사회, 스페이스 제로, 광명회, Mr. 오드, 블랑셰 데 로랑, 아말리아 프레드리카 본 에센.\n\n## 출처\nNOSB 2_compressed.pdf 추출 로그 lines 67-6051.",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "facility-wiki",
+    "payload": {
+      "slug": "odyssey-facility",
+      "title": "오디세이 시설",
+      "category": "시설",
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "오디세이시설", "노부스오르도", "질병보관소", "ZULU-0040", "광명회"],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 시설기록실 문서관 S. Park",
+      "content": "# 오디세이 시설\n\n오디세이 시설은 NOSB S1E2 선택에서 확인된 유럽 소재 노부스 오르도 중앙 통제 시설 중 하나다. 로그상 에볼라, 탄저균, 공기감염 변종 AIDS 같은 고위험 질병 샘플을 보관하는 고가치 시설로 설명된다.\n\n## 요약 정보\n분류: 중앙 통제 시설 / 질병 샘플 보관소\n위치: 유럽\n관련 작전: NOSB-S1E2-CHOICE\n시설 책임자: 슈타이너 박사\n주요 구역: 1층 허브, 지하 연구 구역, 지하 4층 식물원\n기록 확정도: 로그 기반 확인\n\n## 시설 사건\nMr. 오드는 오디세이 시설이 자폭할 수 없는 고가치 시설이며, 높은 권력층이 시설 보존을 원한다고 설명했다. 태거 박사와 선발조 연락 두절 이후 현장팀이 투입되었다. 출처: 추출본 lines 67-127.\n\n시설 외부에서는 군부와 욤스비킹 부대가 독일 정부의 접근 요청을 근거로 연구소 파괴를 주장했다. 현장팀은 군부 협조를 지연시키고 시설 안으로 진입했다. 출처: lines 280-425.\n\n시설 내부에서는 보라색 점착성 실과 균사 군체가 확인되었다. 오틸리아는 이 군체가 맥각류를 연상시키며 세뇌, 정신 증상, 신경 지배를 일으킬 수 있다고 분석했다. 출처: lines 491-518.\n\n## 후속 처리\n최종적으로 오디세이 시설은 파괴되지 않았다. 대외 발표는 벌레와 화학물질 노출로 정리되었고, 시설은 방역 후 기존 기능을 유지하는 방향으로 처리되었다. 출처: lines 5951-5991.\n\n## 관련 문서\n작전 보고서 S1E2: 선택, ZULU-0040 왕관, 광명회, 군부, 시민사회, 세계이사회.\n\n## 출처\nNOSB 2_compressed.pdf 추출 로그 lines 67-127, 280-425, 491-518, 5951-5991.",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki",
+    "payload": {
+      "slug": "zulu-0040-crown",
+      "title": "ZULU-0040 왕관",
+      "category": "개체",
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "ZULU-0040", "왕관", "오디세이시설", "정신지배", "격리성공"],
+      "isPublic": true,
+      "authorId": "novus-ordo-containment-office",
+      "authorName": "NOVUS ORDO 격리기록실 분석관 E. Richter",
+      "content": "# ZULU-0040 왕관\n\nZULU-0040 왕관은 NOSB S1E2 선택에서 오디세이 시설 지하 4층을 중심으로 확인된 숙주 의존형 정신 지배 개체다. 개체명과 번호는 로그상 발화로 확인되며, 원본 격리 아카이브 HTML이나 공식 이미지 자료는 아직 제공되지 않았다.\n\n## 요약 정보\n격리 번호: ZULU-0040\n별칭: 왕관\n첫 확인 작전: NOSB-S1E2-CHOICE\n확인 위치: 오디세이 시설 지하 4층 및 식물원 구역\n주요 현상: 균사 군체, 두부 장악, 정신 지배, 숙주 의존, 건조 반응\n현재 상태: 격리 성공\n이미지 상태: 원본 격리 아카이브 미제공. 생성 이미지 사용 금지.\n기록 확정도: 로그 기반 확인\n\n## 특성\nZULU-0040은 보라색 점착성 실과 균사 군체를 통해 숙주 신경계와 두부에 영향을 주었다. 숙주가 없는 상태에서는 서서히 건조되는 반응을 보였고, 숙주 또는 영양원이 제공되면 뇌 장악을 시도했다.\n\n감염자는 외부 명령을 받거나 공격 목표가 지정되는 듯한 행동을 보였다. 스타크 일로니손과 박애솔은 두부 군체 또는 촉수 제거 후 회복되었으며, 감염된 이동식은 행동교정물질 주입과 시스템 오류를 거쳐 주 개체 붕괴 사건에 연결되었다.\n\n## 격리 경과\n현장팀은 감염된 이동식에게 행동교정물질을 주입했고, 이후 주 개체는 젤리처럼 붕괴했다. 해쉬 테거는 본체를 회수했으며, 우디가 생성한 대형 무디를 임시 숙주로 제공하자 개체는 영양과 뇌를 장악했다. 해쉬의 심신안정 조치와 적정 보관 상태 유지 후 격리 성공으로 기록한다.\n\n## 발화 기록\n개체는 무디를 통해 \"죽여라\"에 해당하는 단편 발화를 보였고, 이후 \"너희 인류는 특별하다고 생각하나\"와 \"시간이 얼마 남지 않았다\"는 취지의 질문 및 경고를 남겼다. 이 발화는 개체의 철학이나 예언으로 확정하지 않고, 로그상 발화 기록으로만 보존한다.\n\n## 관련 카탈로그\nZULU-0040 왕관 격리 표본, 정신 저항제 배합 자료, 행동교정물질.\n\n## 관련 문서\n작전 보고서 S1E2: 선택, 오디세이 시설, 화이트로즈, 광명회.\n\n## 출처\nNOSB 2_compressed.pdf 추출 로그 lines 491-518, 1175-1200, 2088-2174, 4962-5376, 5991.",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "faction-candidate-wiki",
+    "payload": {
+      "slug": "illuminati",
+      "title": "광명회",
+      "category": "세력",
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "광명회", "아넨에르베", "오디세이시설", "광원화", "증언"],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제실 문서관 S. Park",
+      "content": "# 광명회\n\n광명회는 NOSB S1E2 선택에서 슈타이너 박사의 증언, 오디세이 시설 증거, Mr. 오드의 후속 자료를 통해 제기된 세력 의혹이다. 현재 기록은 확정된 조직도나 규모가 아니라 S1E2에서 확인된 증언과 단서의 보존본으로 취급한다.\n\n## 요약 정보\n분류: 세력 의혹 / 후속 조사 대상\n관련 작전: NOSB-S1E2-CHOICE\n관련 키워드: 아넨에르베, 우한 광원화, 나치 표식 금괴, 오디세이 시설 침투, 1943년 절멸수용소 자료\n기록 확정도: 증언 및 단서. 조직 실체, 규모, 현재 지휘 구조는 검증 필요.\n\n## S1E2 증언\n슈타이너 박사는 우한 광원화 의심 주체로 랴오펑 연구소, CIA, 광명회를 언급했고, 광명회를 아넨에르베의 후계로 설명했다. 시설 내에서 나치 표식 금괴가 발견되었다는 진술도 이어졌다. 출처: 추출본 lines 2400-2419.\n\n해쉬 테거는 시설 비상 폐쇄와 감염 사건을 통해 광명회가 오디세이 시설이나 노부스 오르도 내부에 침투했을 가능성을 의심했다. 이 내용은 확정 사실이 아니라 현장 인식과 조사 가설로 기록한다. 출처: lines 2424-2440.\n\n## 후속 훅\n작전 이후 Mr. 오드는 오틸리아에게 1943년 절멸수용소 관련 자료를 제시하며 광명회 단서를 다시 꺼냈다. 이는 S1E2 이후 후속 플롯으로 이어질 가능성이 있는 기록이다. 출처: lines 5994-6039.\n\n## 관련 문서\n작전 보고서 S1E2: 선택, 오디세이 시설, 화이트로즈, Mr. 오드.\n\n## 출처\nNOSB 2_compressed.pdf 추출 로그 lines 2400-2440, 5994-6039.",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog",
+    "payload": {
+      "slug": "zulu-0040-crown-specimen",
+      "name": "ZULU-0040 왕관 격리 표본",
+      "nameEn": "ZULU-0040 Crown Specimen",
+      "category": "MATERIAL",
+      "price": 0,
+      "effect": "숙주 의존형 정신 지배 개체 표본",
+      "description": "오디세이 시설 지하 4층 사건에서 회수된 ZULU-0040 \"왕관\"의 격리 표본.",
+      "previewImage": "",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "ZULU-0040", "왕관", "오디세이시설", "격리표본", "정신지배"],
+      "lore": {
+        "background": "ZULU-0040은 오디세이 시설 지하 4층에서 감염자와 균사 군체를 통해 정신 지배 증상을 일으킨 개체다. 행동교정물질 주입 이후 주 개체가 붕괴했고, 우디가 생성한 대형 무디를 임시 숙주로 제공한 뒤 격리 상태가 안정화되었다.",
+        "acquisition": "일반 획득 불가. NOSB-S1E2-CHOICE 작전 중 해쉬 테거가 본체를 회수하고 현장팀이 격리 절차를 완료했다.",
+        "notes": "원본 격리 아카이브 HTML 또는 이미지가 아직 제공되지 않아 텍스트 기반 표본으로만 등록한다."
+      },
+      "source": "session-log",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog",
+    "payload": {
+      "slug": "mental-resistance-formula",
+      "name": "정신 저항제 배합 자료",
+      "nameEn": "Mental Resistance Formula",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "ZULU-0040 계열 정신 지배 저항 배합식",
+      "description": "화이트로즈 요원이 제공하고 현장팀이 확보한 정신 저항 항체 및 배합 자료.",
+      "previewImage": "",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "화이트로즈", "정신저항제", "배합식", "항체", "ZULU-0040"],
+      "lore": {
+        "background": "화이트로즈 요원은 자신이 감염 상태였으나 항체로 정신 지배를 버티고 있다고 주장했고, 해쉬 테거의 설득 이후 정신 저항 항체 배합법을 제공했다.",
+        "acquisition": "일반 획득 불가. NOSB-S1E2-CHOICE 작전 중 지하 4층 식물원에서 확보되었다.",
+        "notes": "스페이스 제로 독점 판매 제안은 선택되지 않았다. 생산, 보급, 시장 판매, 주가 반영은 별도 승인 대상이다."
+      },
+      "source": "session-log",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog",
+    "payload": {
+      "slug": "kerub-fireblade",
+      "name": "커룹의 불칼",
+      "nameEn": "Kerub Fireblade",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "연옥일섬 계열 화염 공격에 사용된 특수 무장",
+      "description": "NOSB S1E2에서 박애솔이 소지 및 사용했고 작전 말미 회수된 특수 화염 무장.",
+      "previewImage": "",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "커룹의불칼", "박애솔", "BIG_BOY", "특수무장", "화염"],
+      "lore": {
+        "background": "오디세이 시설 내부 감염자 대응 과정에서 박애솔이 커룹의 불칼을 보유한 상태로 등장했다. 로그상 연옥일섬 계열 화염 공격과 연결된다.",
+        "acquisition": "일반 획득 불가. NOSB-S1E2-CHOICE 작전 기록상 현장 보유품으로 확인되며 작전 말미 회수되었다.",
+        "notes": "정확한 피해값, 소모 조건, 장비 등급은 로그만으로 확정하지 않는다."
+      },
+      "source": "session-log",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-marker-update",
+    "filter": { "slug": "behavior-correction-substance" },
+    "update": [
+      {
+        "$set": {
+          "tags": {
+            "$setUnion": [
+              { "$ifNull": ["$tags", []] },
+              ["NOSB-S1E2-CHOICE", "S1E2", "ZULU-0040", "왕관", "행동교정물질", "오디세이시설"]
+            ]
+          },
+          "lore.notes": {
+            "$cond": [
+              { "$regexMatch": { "input": { "$ifNull": ["$lore.notes", ""] }, "regex": "NOSB-S1E2-CHOICE" } },
+              "$lore.notes",
+              { "$concat": [{ "$ifNull": ["$lore.notes", ""] }, "\nNOSB-S1E2-CHOICE: 감염된 이동식에게 행동교정물질이 주입되었고, 이 처리는 ZULU-0040 주 개체 붕괴 및 격리 성공 흐름에 연결되었다. 크레딧 및 재고 차감은 이번 payload에서 적용하지 않는다."] }
+            ]
+          },
+          "updatedAt": "2026-06-02T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": { "slug": "white-rose" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              { "$regexMatch": { "input": { "$ifNull": ["$content", ""] }, "regex": "S1E2 선택 기록 보강" } },
+              "$content",
+              { "$concat": [{ "$ifNull": ["$content", ""] }, "\n\n## S1E2 선택 기록 보강\n화이트로즈 요원은 오디세이 시설 지하 4층 식물원에서 감염 상태로 발견되었으나, 정신 저항 항체로 ZULU-0040의 지배를 버티고 있다고 주장했다. 그는 광원화 바이러스와 인간의 선택권을 언급하며 정신 저항제 배합 자료를 제공했다. 현장팀은 스페이스 제로 독점 판매 루트를 거부하고 컴퓨터를 파괴했으며, 배합식은 전원 획득 상태로 기록한다. 출처: NOSB-S1E2-CHOICE 추출 로그 lines 2443-2456, 3311-3654, 5740-5889."] }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              { "$ifNull": ["$tags", []] },
+              ["NOSB-S1E2-CHOICE", "S1E2", "정신저항제", "ZULU-0040"]
+            ]
+          },
+          "updatedAt": "2026-06-02T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": { "slug": "world-council" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              { "$regexMatch": { "input": { "$ifNull": ["$content", ""] }, "regex": "S1E2 선택 기록 보강" } },
+              "$content",
+              { "$concat": [{ "$ifNull": ["$content", ""] }, "\n\n## S1E2 선택 기록 보강\n세계이사회는 오디세이 시설 사건 중 GP03-RX780, 즉 이동식의 폐기와 재기동 문제에 개입했다. 현장팀은 이동식을 폐기하지 않고 재가동 및 보존을 선택했으며, 로그상 이사회 임무는 실패로 기록되었다. 이 내용은 이사회가 노부스 오르도 현장 판단에 직접 압력을 가하는 사례로 보존한다. 출처: NOSB-S1E2-CHOICE 추출 로그 lines 4259-4314, 5389, 5630-5633."] }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              { "$ifNull": ["$tags", []] },
+              ["NOSB-S1E2-CHOICE", "S1E2", "이동식", "GP03-RX780"]
+            ]
+          },
+          "updatedAt": "2026-06-02T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": { "slug": "military" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              { "$regexMatch": { "input": { "$ifNull": ["$content", ""] }, "regex": "S1E2 선택 기록 보강" } },
+              "$content",
+              { "$concat": [{ "$ifNull": ["$content", ""] }, "\n\n## S1E2 선택 기록 보강\n오디세이 시설 외부에서 군부와 욤스비킹 부대는 독일 정부 접근 요청을 근거로 연구소 파괴를 요구했다. 현장팀은 시설 파괴를 승인하지 않았고, 최종적으로 오디세이 시설이 보존되면서 군부 임무는 실패로 정리되었다. 출처: NOSB-S1E2-CHOICE 추출 로그 lines 280-425, 5951-5991."] }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              { "$ifNull": ["$tags", []] },
+              ["NOSB-S1E2-CHOICE", "S1E2", "오디세이시설", "욤스비킹"]
+            ]
+          },
+          "updatedAt": "2026-06-02T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": { "slug": "civil-society" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              { "$regexMatch": { "input": { "$ifNull": ["$content", ""] }, "regex": "S1E2 선택 기록 보강" } },
+              "$content",
+              { "$concat": [{ "$ifNull": ["$content", ""] }, "\n\n## S1E2 선택 기록 보강\n오디세이 시설 사건의 대외 발표는 먼지더듬이 벌레와 화학물질 노출로 정리되었다. 유럽 보건 관련 기관은 노부스 오르도에 감사를 표했고, 시민사회 관련 대외 평판 임무는 성공으로 기록되었다. 출처: NOSB-S1E2-CHOICE 추출 로그 lines 5951-5991."] }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              { "$ifNull": ["$tags", []] },
+              ["NOSB-S1E2-CHOICE", "S1E2", "대외발표", "오디세이시설"]
+            ]
+          },
+          "updatedAt": "2026-06-02T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": { "slug": "space-zero" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              { "$regexMatch": { "input": { "$ifNull": ["$content", ""] }, "regex": "S1E2 선택 기록 보강" } },
+              "$content",
+              { "$concat": [{ "$ifNull": ["$content", ""] }, "\n\n## S1E2 선택 기록 보강\n오디세이 시설 지하 4층의 비인가 메일 창은 정신 저항제 배합 자료를 스페이스 제로 1주와 교환하고 독점 권한으로 판매하라는 선택지를 제시했다. 현장팀은 해당 전송 루트를 선택하지 않고 컴퓨터를 파괴했다. 따라서 SPZ 주식 영향은 neutral/no-action 후보로만 기록하며, 실제 시세나 market-wire는 변경하지 않는다. 출처: NOSB-S1E2-CHOICE 추출 로그 lines 3611-3654."] }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              { "$ifNull": ["$tags", []] },
+              ["NOSB-S1E2-CHOICE", "S1E2", "SPZ", "정신저항제", "주식감사"]
+            ]
+          },
+          "updatedAt": "2026-06-02T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": { "slug": "novus-ordo" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              { "$regexMatch": { "input": { "$ifNull": ["$content", ""] }, "regex": "S1E2 선택 기록 보강" } },
+              "$content",
+              { "$concat": [{ "$ifNull": ["$content", ""] }, "\n\n## S1E2 선택 기록 보강\nS1E2 선택은 노부스 오르도가 시설 보존, 질병 샘플 보호, ZULU 격리, 시민사회 대외 발표, 군부 및 세계이사회 압력 사이에서 어떤 우선순위를 선택하는지 보여준다. 현장 결과는 ZULU-0040 격리 성공과 시설 보존이며, 군부와 세계이사회 임무는 각각 실패로 정리되었다. 출처: NOSB-S1E2-CHOICE 추출 로그 lines 67-127, 4259-4314, 5951-5991."] }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              { "$ifNull": ["$tags", []] },
+              ["NOSB-S1E2-CHOICE", "S1E2", "오디세이시설", "ZULU-0040"]
+            ]
+          },
+          "updatedAt": "2026-06-02T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "MARIA" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "현장 총괄 및 작전 판단",
+          "summary": "오디세이 시설 구조 및 보존 작전을 지휘하고, 화이트로즈 배합식 공유와 이동식 보존 판단을 포함한 현장 결정을 조율했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 67-127, 5740-5889"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "OTILIA" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "질병 분석 및 이동식 보존 주장",
+          "summary": "시설 균사 군체의 생물학적 성질을 분석했고, 감염 대응과 화이트로즈 접촉, 이동식 보존 논쟁에서 핵심 판단을 제시했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 491-518, 4259-4314, 5630-5633"
+        },
+        "lore.relations": {
+          "targetCodename": "LEE DONGSIK",
+          "targetName": "이 동식",
+          "label": "보존 주장",
+          "summary": "오틸리아는 세계이사회와 일부 현장 판단에 맞서 이동식을 단순 폐기 가능한 기계가 아니라 보존해야 할 동료 및 단일 개체로 취급했다.",
+          "sourceEvent": "NOSB-S1E2-CHOICE",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 4259-4314, 5630-5633",
+          "confidence": "confirmed"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "CLOWN" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "선발조 구조 대상 및 대외 발표자",
+          "summary": "오디세이 시설 선발조로 감염 상태에서 발견되었고, 두부 군체 제거 후 회복했다. 작전 종료 후 대외 기자회견에서 벌레와 화학물질 노출 은폐 발표를 수행했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 606-611, 1175-1200, 5951-5989"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "INDEXER" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "구조 대상, 광명회 단서 확인, 배합식 확보",
+          "summary": "오디세이 시설에서 슈타이너 박사의 증언과 광명회 단서를 확인했고, 화이트로즈 요원 설득 및 정신 저항제 배합식 확보에 관여했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 2353-2440, 3585-3600, 5740-5889"
+        },
+        "lore.relations": {
+          "targetCodename": "LEE DONGSIK",
+          "targetName": "이 동식",
+          "label": "기계관 충돌",
+          "summary": "해쉬 테거는 감염된 이동식을 교체 가능한 생산품처럼 다루는 판단을 보였고, 이 관점은 이동식 보존을 주장한 현장 의견과 충돌했다.",
+          "sourceEvent": "NOSB-S1E2-CHOICE",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 4259-4314, 5630-5633",
+          "confidence": "confirmed"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "TIME" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "전장 통제 지원",
+          "summary": "오디세이 시설 내부 교전과 감염자 대응 중 현장 전투 및 시간 계열 지원 축으로 참여했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf speaker/entity extraction"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "UNYEON" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "회복 및 현장 협상 지원",
+          "summary": "오디세이 시설 감염자 대응과 후반 협상 구간에서 회복, 보조, 현장 판단 축으로 참여했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf speaker/entity extraction"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "MARGARET" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "사령 및 감염자 판별 지원",
+          "summary": "오디세이 시설 감염자 대응과 현장 상황 판단에서 사령 및 판별 지원 축으로 참여했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf speaker/entity extraction"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "WD-(𝓃)" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "무디 제공 및 ZULU-0040 격리 매개",
+          "summary": "우디는 대형 무디를 생성해 ZULU-0040의 임시 숙주이자 격리 매개로 제공했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 5224-5376"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "LEE DONGSIK" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "진입 방패, 감염 숙주, 재가동 대상",
+          "summary": "GP03-RX780은 오디세이 시설 진입 및 감염 대응 과정에서 ZULU-0040 숙주로 기능했고, 행동교정물질 주입 이후 재가동 및 보존 선택의 중심이 되었다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 4962-5088, 5630-5633"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "TIGER298" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "전투 및 독점 판매 루트 차단",
+          "summary": "시유는 오디세이 시설 교전 및 감염자 대응에 참여했고, 정신 저항제 배합식의 스페이스 제로 독점 판매 컴퓨터를 파괴하는 판단에 관여했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 3611-3654"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "BIG BOY" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "선발조 감염자 및 커룹의 불칼 소지자",
+          "summary": "박애솔은 선발조 감염자로 발견되어 촉수 제거 후 회복되었고, 커룹의 불칼 소지 및 사용 기록이 남았다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 1764-2174, 5574-5585"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "네베드" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "선발조 및 감염 대응 참여자",
+          "summary": "키아나 오 캘러핸은 선발조 및 현장 감염 대응 축으로 S1E2 작전에 참여했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf speaker/entity extraction"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "MR_ODD" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "임무 배정 및 광명회 후속 의뢰",
+          "summary": "Mr. 오드는 오디세이 시설 임무를 배정했고, 작전 후 오틸리아에게 1943년 절멸수용소 자료와 광명회 단서를 제시했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 67-127, 5994-6039"
+        },
+        "lore.relations": {
+          "targetCodename": "OTILIA",
+          "targetName": "오틸리아 발트만",
+          "label": "후속 의뢰",
+          "summary": "작전 후 Mr. 오드는 오틸리아에게 화이트로즈를 놓아준 선택을 비판하고, 1943년 절멸수용소 자료와 광명회 단서를 넘기며 후속 조사의 방향을 열었다.",
+          "sourceEvent": "NOSB-S1E2-CHOICE",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 5994-6039",
+          "confidence": "confirmed"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "AMALIA_FREDRIKA_VON_ESSEN" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "개막 연설 및 노부스 오르도 통제 이념 제시",
+          "summary": "사무총장은 개막부에서 노부스 오르도가 Zulu를 통제할 유일한 수단이라는 취지의 연설을 남겼다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 1-65"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": { "codename": "BLANCHE_DE_LAURENT" },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-CHOICE",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "세계이사회 명령 주체",
+          "summary": "세계이사회장 블랑셰 데 로랑은 이동식 폐기 및 재기동 문제와 관련된 이사회 명령 축으로 등장했다.",
+          "sourceLabel": "NOSB 2_compressed.pdf lines 4259-4314, 5389, 5630-5633"
+        }
+      },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  }
+]
