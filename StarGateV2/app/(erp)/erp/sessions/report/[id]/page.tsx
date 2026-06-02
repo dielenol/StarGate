@@ -19,6 +19,7 @@ import {
   relatedPersonnelForReport,
   relatedWikiForReport,
 } from "@/lib/lore-links";
+import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import { IconReportDocument } from "@/components/icons";
@@ -105,7 +106,6 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const isAdmin = hasRole(session.user.role, "GM");
   const reportId = String(report._id);
   const displayTitle = formatOperationReportTitle(report.sessionTitle);
-  const summaryHtml = renderMarkdown(report.summary || "—");
   const reportCode = reportId.slice(-6).toUpperCase();
   const shortReporterName = formatShortReporterName(report.gmName);
   const mapLocationLabel = report.locationLabel || "작전지 미등록";
@@ -123,6 +123,20 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const visibleItems = isGmOrAbove
     ? allItems
     : allItems.filter((item) => item.isPublic !== false);
+  const visibleWikiPages = isGmOrAbove
+    ? allPages
+    : allPages.filter((page) => page.isPublic !== false);
+  const autoLinkTargets = buildWikiAutoLinkTargets({
+    catalogItems: visibleItems,
+    characters: visibleCharacters,
+    reports: [],
+    wikiPages: visibleWikiPages,
+  });
+  const summaryHtml = renderMarkdown(report.summary || "—", {
+    links: autoLinkTargets,
+    maxAutoLinksPerTarget: 1,
+    maxAutoLinksTotal: 32,
+  });
   const relatedWikiLinks = relatedWikiForReport(report, allPages);
   const relatedCatalogItems = relatedCatalogItemsForReport(report, visibleItems);
   const relatedPersonnelLinks = relatedPersonnelForReport(

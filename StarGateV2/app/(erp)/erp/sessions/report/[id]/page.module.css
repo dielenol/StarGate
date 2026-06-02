@@ -344,6 +344,21 @@
   margin: 0 0 12px;
 }
 
+.reportBody a {
+  color: var(--gold);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--gold-dim);
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.reportBody a:hover,
+.reportBody a:focus-visible {
+  color: var(--ink-0);
+  border-color: var(--gold);
+}
+
 .reportBody strong {
   color: var(--ink-0);
   font-weight: 600;
