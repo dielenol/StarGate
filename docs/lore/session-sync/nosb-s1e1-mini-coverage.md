@@ -88,12 +88,12 @@ Stock impact conclusion for `NOSB-S1E1-MINI`: the log contains a Space Zero stor
 
 | target | status | issue | action |
 |---|---|---|---|
-| `/erp/sessions/report` | partial until rechecked | DB summary had `무디` without parent disambiguation | Apply follow-up payload and re-read |
-| `/erp/wiki` | applied | `s1e1-mini` exists and is separated from `s1e1-order` | Recheck link graph after payload |
-| `/erp/wiki/catalog/*` | applied | No economy grant/stock should be inferred | Keep catalog-only |
-| `/erp/personnel` | applied | Dossier now reads structured `lore.relations` and `lore.sessionAppearances` in addition to `appearsInEvents` | Keep future session imports source-mapped and avoid unsourced relationship edges |
+| `/erp/sessions/report` | verified | Report page resolves the mini record and exposes related personnel/catalog anchors | Keep exact `NOSB-S1E1-MINI` event key |
+| `/erp/wiki` | verified | `s1e1-mini` exists, is separated from `s1e1-order`, and resolves related report/personnel/catalog through exact session linkage | Keep exact session tags and body anchors |
+| `/erp/wiki/catalog/*` | verified | Catalog rows are visible as lore/catalog data only; no economy grant/stock inferred | Keep catalog-only |
+| `/erp/personnel` | verified with client-tab caveat | Dossier reads structured `lore.relations` and `lore.sessionAppearances`; authenticated render confirms Johan's session link, while relation-card anchors render after the client relation tab is selected | Keep future session imports source-mapped and avoid unsourced relationship edges |
 | 요한 스미스 Dossier | applied | GM provided profile and image; codename mechanically normalized to `JOHAN_SMITH` | Keep future edits source-mapped |
-| relation graph | partially applied | Character-to-character edges are persisted; entity/institution-only beats still live in report/wiki/catalog prose | Add entity/institution relation model only if the ERP needs cross-domain graphing |
+| relation graph | current-source closed | Character-to-character edges are persisted; entity/institution-only beats intentionally live in report/wiki/catalog prose because no cross-domain relation model exists | Add entity/institution relation model only if the ERP needs cross-domain graphing |
 
 ## Applied Writes In This Pass
 
@@ -108,26 +108,29 @@ Stock impact conclusion for `NOSB-S1E1-MINI`: the log contains a Space Zero stor
 ## Post-write Verification
 
 - DB re-read: `session_reports.NOSB-S1E1-MINI`, `wiki_pages.s1e1-mini`, `wiki_pages.zulu-0113-electronic-tear`, `master_items.zulu-0113-tear-sample`, and `characters.WD-(𝓃)` contain `우디의 분신체 무디`.
-- Dossier event count: 14 character records currently include `NOSB-S1E1-MINI` in `lore.appearsInEvents`.
-- Structured Dossier sync: 14 character records now include one `NOSB-S1E1-MINI` `lore.sessionAppearances` entry each; sourced character-to-character relation counts are Doctor Moss 3, Maria 3, WD-(𝓃) 1, Clown 2, Otilia 4, Lee Dongsik 2, 네베드 2, Indexer 3.
+- Dossier event count: 15 character records currently include `NOSB-S1E1-MINI` in `lore.appearsInEvents`.
+- Structured Dossier sync: 15 character records now include one `NOSB-S1E1-MINI` `lore.sessionAppearances` entry each; sourced character-to-character relation counts are Doctor Moss 3, Maria 3, WD-(𝓃) 1, Clown 3, Otilia 5, Lee Dongsik 2, 네베드 2, Indexer 3, Johan Smith 2.
 - 요한 스미스 Dossier: `characters.JOHAN_SMITH` includes `NOSB-S1E1-MINI`, official image path, one session appearance, and relations to CLOWN and OTILIA; `institutions.SPACE_ZERO.leaderCodename` is `JOHAN_SMITH`.
-- Browser check on local ERP session:
-  - report page renders `우디의 분신체 무디`, `전자화 눈물`, and `ZULU-0113`.
-  - mini wiki page renders `우디의 분신체 무디`, `스페이스 제로`, and `소닉 이미터`.
-  - ZULU-0113 wiki and catalog detail render the disambiguated sample acquisition.
-  - `WD-(𝓃)` Dossier renders `NOSB-S1E1-MINI` and links back to the mini operation report.
+- Authenticated HTTP render check on local ERP session:
+  - report page renders `NOSB-S1E1-MINI`, `ZULU-0113`, `zulu-0113-tear-sample`, and links to Johan/Clown/Otilia personnel records plus the relevant catalog item.
+  - mini wiki page renders `NOSB-S1E1-MINI`, `ZULU-0113`, `zulu-0113-tear-sample`, and links to the mini operation report, Johan/Clown/Otilia personnel records, and the related catalog item.
+  - ZULU-0113 wiki page renders the sourced local image, mini report link, related personnel links, and related catalog link.
+  - ZULU-0113 tear sample catalog detail renders the item and links back to the mini operation report.
+  - Johan Smith Dossier renders `JOHAN_SMITH`, `요한 스미스`, `NOSB-S1E1-MINI`, and a mini operation-report link. Relation target data for CLOWN/OTILIA is loaded and the component renders relation cards as links after the client relation tab is selected; click-level screenshot verification is still a tool-availability caveat, not a data gap.
 - ERP link graph check:
   - report -> wiki: 4 links.
   - report -> catalog: 6 links.
-  - report -> personnel: 14 links.
+  - report -> personnel: 15 links.
   - wiki-mini -> report: 1 link.
   - catalog ZULU-0113 tear sample -> report/wiki: confirmed.
-  - personnel WD -> report: confirmed.
+  - personnel Johan -> report: confirmed.
+  - stock candidate -> ticker/current price/history: `SPZ` maps correctly, current price/history are scheduled market rows only, and no `gm-event` was written for this mini log.
 
 ## Completion Status
 
-- Status: partial, not full completion.
-- Completed axes: source extraction, main/mini separation, report/wiki/catalog/personnel/institution/entity registration, ZULU-0113 archive image, relation prose fallback.
-- Completed in this follow-up: formal Dossier relation/session-appearance persistence for sourced character-to-character mini-session beats.
-- Remaining gaps: economy mutations, future Europe lab operation source, optional cross-domain relation model for entity/institution-only beats.
-- Full sync is still not declared complete because the remaining gaps are outside the current persistence/source approval boundary.
+- Status: current-source closed; not a declaration that future hooks or optional ERP features are resolved.
+- Completed axes: source extraction, main/mini separation, report/wiki/catalog/personnel/institution/entity registration, ZULU-0113 archive image, formal Dossier relation/session-appearance persistence, economy/stock non-mutation audit, and authenticated ERP render/link verification.
+- No remaining source-backed writes for `NOSB-S1E1-MINI` are identified in the current log/archive/user-provided data.
+- Current-source non-actions: no inventory grant, no shop stock, no credit ledger, no stock price/history mutation, and no market-wire. `SPZ` remains watchlist/no-action because the Space Zero approach was covert and refused.
+- Blocked or needs user/source: the Europe lab emergency hook requires its own follow-up log/source before a separate operation report/wiki/Dossier sync; cross-domain entity/institution relation graphing requires an ERP schema/UI decision; relation-tab click screenshots require an available browser-click tool or manual user verification.
+- Next recommended step: proceed to the Europe lab follow-up source when available, or explicitly request the optional cross-domain relation model if entity/institution relationship graphing should become an ERP feature.
