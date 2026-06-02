@@ -187,11 +187,6 @@
   background: var(--bg-2);
 }
 
-.card--unavailable {
-  opacity: 0.55;
-  filter: grayscale(0.6);
-}
-
 .card__media {
   display: flex;
   align-items: center;

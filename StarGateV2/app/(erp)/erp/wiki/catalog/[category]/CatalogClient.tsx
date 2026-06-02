@@ -227,12 +227,7 @@ export default function CatalogClient({ category, initialItems }: Props) {
               <li key={itemId(item)}>
                 <Link
                   href={itemDetailHref(item)}
-                  className={[
-                    styles.card,
-                    !item.isAvailable && styles["card--unavailable"],
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
+                  className={styles.card}
                 >
                   <div className={styles.card__media}>
                     {imageSrc ? (
