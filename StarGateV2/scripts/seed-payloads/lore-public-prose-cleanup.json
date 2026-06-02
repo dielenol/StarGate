@@ -1,0 +1,143 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "public-prose-source-cleanup",
+    "filter": { "sessionId": "NOSB-S1E1-ORDER" },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "원본 로그 p.1-p.108 및 ZULU-0028 격리 개체 아카이브",
+              "replacement": "기록통제실 보존본 「S1E1 질서」와 ZULU-0028 격리 개체 아카이브"
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "public-prose-source-cleanup",
+    "filter": { "sessionId": "NOSB-S1E1-MINI" },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "NOVUS ORDO 사무국 기록통제실 보존본 S1E1 미니 세션 로그 p.1-p.79.",
+              "replacement": "NOVUS ORDO 사무국 기록통제실 보존본 「S1E1 질서 - 미니 세션」, 사후 처리 보존 기록."
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "public-prose-source-cleanup",
+    "filter": { "slug": "s1e1-order" },
+    "update": [{ "$set": { "content": { "$replaceAll": { "input": "$content", "find": ", 원본 로그 p.1-p.108", "replacement": ", 초기 현장 보존 기록" } } } }]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "public-prose-source-cleanup",
+    "filter": { "slug": "censored-scream" },
+    "update": [{ "$set": { "content": { "$replaceAll": { "input": "$content", "find": ", 원본 로그 p.30-p.33, p.45, p.60-p.61, p.74-p.103", "replacement": ", 검열된 비명 접촉·격리 보존 기록" } } } }]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "public-prose-source-cleanup",
+    "filter": { "slug": "black-pyramid" },
+    "update": [{ "$set": { "content": { "$replaceAll": { "input": "$content", "find": ", 원본 로그 p.1-p.20", "replacement": ", 블랙 피라미드 진입 보존 기록" } } } }]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "public-prose-source-cleanup",
+    "filter": { "slug": "white-rose" },
+    "update": [{ "$set": { "content": { "$replaceAll": { "input": "$content", "find": ", 원본 로그 p.35-p.45", "replacement": ", 남부 작전지 접촉 보존 기록" } } } }]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "public-prose-source-cleanup",
+    "filter": { "slug": "broken-syllable" },
+    "update": [{ "$set": { "content": { "$replaceAll": { "input": "$content", "find": ", 원본 로그 p.74-p.103", "replacement": ", 검열된 비명 샘플 회수 보존 기록" } } } }]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "public-prose-source-cleanup",
+    "filter": { "slug": "zulu-0113-electronic-tear" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": "$content",
+                  "find": ", 원본 로그 p.27, p.32, p.35-p.43",
+                  "replacement": ", 수중 격리구역 사후 처리 기록"
+                }
+              },
+              "find": "실전 투여나 경제 보상 처리는 별도 운영 승인 없이는 적용하지 않는다.",
+              "replacement": "실제 투여 사례는 후속 연구 기록이 필요하다."
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "public-prose-source-cleanup",
+    "filter": { "slug": "space-zero" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": "$content",
+                  "find": ", 원본 로그 p.48-p.52, p.59-p.61",
+                  "replacement": ", 화이트 쿠션룸 접촉 기록"
+                }
+              },
+              "find": "StarGateV2 docs/spec institution SPACE_ZERO 기록.",
+              "replacement": "NOVUS ORDO 민간기술협력기관 등록부 「SPACE_ZERO」."
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "public-prose-source-cleanup",
+    "filter": { "slug": "s1e1-mini" },
+    "update": [{ "$set": { "content": { "$replaceAll": { "input": "$content", "find": ", 원본 로그 p.1-p.79", "replacement": ", 사후 처리 보존 기록" } } } }]
+  },
+  {
+    "collection": "master_items",
+    "type": "public-prose-source-cleanup",
+    "filter": { "slug": "electronic-mental-disruption-substance" },
+    "update": {
+      "$set": {
+        "lore.notes": "관련 샘플은 ZULU-0113 눈물 샘플이며, 응용 후보는 행동교정물질이다. 현재 기록은 연구용 기준 물질로만 보존되며, 실제 제조·불출 사례는 후속 기록이 필요하다."
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "public-prose-source-cleanup",
+    "filter": { "slug": "behavior-correction-substance" },
+    "update": {
+      "$set": {
+        "lore.acquisition": "일반 보급품이 아니다. ZULU-0113 샘플 연구 결과로만 제조 가능하며, 실제 투여 사례는 후속 연구 기록이 필요하다.",
+        "lore.notes": "기억 소거제 강화 방향은 선택되지 않았다. 현재 보존 기록은 행동 교정 연구 계열만 추적한다."
+      }
+    }
+  }
+]
