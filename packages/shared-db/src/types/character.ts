@@ -210,14 +210,14 @@ export const AGENT_LEVEL_LABELS: Record<AgentLevel, string> = {
  * FACTIONS — 권력 블록.
  *
  * `scope` 메타:
- *  - `external` — 노부스 오르도 **외부** 권력 블록 (군부/이사회/시민사회).
+ *  - `external` — 노부스 오르도 **외부** 권력 블록 (군부/세계이사회/시민사회).
  *    정규 권한 등급 체계 밖. V(VIP) 명목 부여 외엔 A~U 부여 비권장.
  *  - `internal` — 노부스 오르도 **본부 자체**. NOVUS_ORDO 단 하나.
  *    하위 INSTITUTIONS(사무국·MANUS) 를 통해 직접 실행 권한을 가진다.
  */
 export const FACTIONS = [
   { code: "MILITARY", label: "군부", labelEn: "Military", scope: "external" },
-  { code: "COUNCIL", label: "이사회", labelEn: "World Council", scope: "external" },
+  { code: "COUNCIL", label: "세계이사회", labelEn: "World Council", scope: "external" },
   { code: "CIVIL", label: "시민사회", labelEn: "Civil Society", scope: "external" },
   { code: "NOVUS_ORDO", label: "노부스 오르도", labelEn: "Novus Ordo", scope: "internal" },
 ] as const;
