@@ -337,9 +337,22 @@ function renderList(
 
   while (i < lines.length) {
     const text = listItemText(lines[i], ordered);
-    if (!text) break;
-    items.push(`<li>${processInline(text, context)}</li>`);
-    i++;
+    if (text) {
+      items.push(`<li>${processInline(text, context)}</li>`);
+      i++;
+      continue;
+    }
+
+    if (
+      lines[i].trim() === "" &&
+      i + 1 < lines.length &&
+      listItemText(lines[i + 1], ordered)
+    ) {
+      i++;
+      continue;
+    }
+
+    break;
   }
 
   return {
