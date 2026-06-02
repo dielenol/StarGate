@@ -16,10 +16,13 @@ import {
 } from "@/lib/format/session-report";
 import {
   type RelatedPersonnelLink,
+  type RelatedWikiLink,
   relatedPersonnelForReport,
   relatedWikiForReport,
 } from "@/lib/lore-links";
+import { resolvePublicAssetPath } from "@/lib/asset-path";
 import { renderMarkdown } from "@/lib/wiki-render";
+import type { WikiPage } from "@stargate/shared-db/types";
 
 import { IconReportDocument } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
@@ -33,6 +36,111 @@ import styles from "./page.module.css";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+interface ReportSubjectVisual {
+  id: string;
+  title: string;
+  category: string;
+  src: string;
+  alt: string;
+  caption: string;
+}
+
+const REPORT_SUBJECT_IMAGE_LIMIT = 4;
+
+function isLocalAssetImage(src: string): boolean {
+  const trimmed = src.trim();
+  if (trimmed.includes("..")) return false;
+  return /^\/assets\/[A-Za-z0-9/_ .%()-]+\.(webp|png|jpe?g|gif|avif)$/i.test(
+    trimmed,
+  );
+}
+
+function stripInlineMarkdown(value: string): string {
+  return value
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .trim();
+}
+
+function firstMarkdownImage(
+  content: string,
+): Pick<ReportSubjectVisual, "src" | "alt" | "caption"> | null {
+  for (const rawLine of content.split(/\r?\n/)) {
+    const match = rawLine
+      .trim()
+      .match(/^!\[([^\]]*)\]\((\S+?)(?:\s+"([^"]*)")?\)$/);
+    if (!match || !isLocalAssetImage(match[2])) continue;
+
+    return {
+      src: match[2].trim(),
+      alt: stripInlineMarkdown(match[1].trim()),
+      caption: stripInlineMarkdown((match[3] ?? match[1]).trim()),
+    };
+  }
+
+  return null;
+}
+
+function isDirectCombatOrContainmentSubject(page: WikiPage): boolean {
+  const targetText = [page.title, page.category, ...page.tags]
+    .join(" ")
+    .normalize("NFKC")
+    .toUpperCase();
+
+  if (/ZULU-\d{3,4}/u.test(targetText)) return true;
+
+  const directTerms = [
+    "개체",
+    "격리 개체",
+    "제압 개체",
+    "전투 개체",
+    "메인 빌런",
+    "적대 개체",
+  ];
+
+  return directTerms.some((term) =>
+    targetText.includes(term.normalize("NFKC").toUpperCase()),
+  );
+}
+
+function pageId(page: Pick<WikiPage, "_id">): string | null {
+  return page._id?.toString() ?? null;
+}
+
+function reportSubjectVisuals(
+  relatedWikiLinks: RelatedWikiLink[],
+  allPages: WikiPage[],
+): ReportSubjectVisual[] {
+  const pagesById = new Map(
+    allPages
+      .map((page) => [pageId(page), page] as const)
+      .filter((entry): entry is readonly [string, WikiPage] =>
+        Boolean(entry[0]),
+      ),
+  );
+  const visuals: ReportSubjectVisual[] = [];
+
+  for (const link of relatedWikiLinks) {
+    const page = pagesById.get(link.id);
+    if (!page || !isDirectCombatOrContainmentSubject(page)) continue;
+
+    const image = firstMarkdownImage(page.content);
+    if (!image) continue;
+
+    visuals.push({
+      id: link.id,
+      title: page.title,
+      category: page.category,
+      ...image,
+    });
+
+    if (visuals.length >= REPORT_SUBJECT_IMAGE_LIMIT) break;
+  }
+
+  return visuals;
 }
 
 function formatMapCoordinate(mapX?: number, mapY?: number): string {
@@ -129,6 +237,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
     report,
     visibleCharacters,
   );
+  const subjectVisuals = reportSubjectVisuals(relatedWikiLinks, allPages);
   const participantEntries = report.participants.map((participant) => ({
     label: participant,
     personnel: findPersonnelForParticipant(participant, relatedPersonnelLinks),
@@ -379,6 +488,51 @@ export default async function SessionReportDetailPage({ params }: Props) {
         </div>
 
         <div className={styles.main}>
+          {subjectVisuals.length > 0 ? (
+            <Box className={styles.reportPanel}>
+              <PanelTitle
+                right={
+                  <span className={styles.mono}>
+                    {subjectVisuals.length}
+                  </span>
+                }
+              >
+                교전·격리 대상
+              </PanelTitle>
+              <div className={styles.subjectVisualGrid}>
+                {subjectVisuals.map((visual) => (
+                  <Link
+                    key={visual.id}
+                    href={`/erp/wiki/${visual.id}`}
+                    className={styles.subjectVisual}
+                  >
+                    <div className={styles.subjectVisual__frame}>
+                      <img
+                        src={resolvePublicAssetPath(visual.src)}
+                        alt={visual.alt || visual.title}
+                        className={styles.subjectVisual__image}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                    <div className={styles.subjectVisual__body}>
+                      <span className={styles.subjectVisual__category}>
+                        {visual.category}
+                      </span>
+                      <span className={styles.subjectVisual__title}>
+                        {visual.title}
+                      </span>
+                      {visual.caption ? (
+                        <span className={styles.subjectVisual__caption}>
+                          {visual.caption}
+                        </span>
+                      ) : null}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </Box>
+          ) : null}
           <Box className={styles.reportPanel}>
             <PanelTitle>작전 본문</PanelTitle>
             <div
