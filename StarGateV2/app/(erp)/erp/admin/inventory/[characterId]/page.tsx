@@ -23,11 +23,23 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import InventoryClient, {
   type InventoryClientEntry,
 } from "../../../inventory/[characterId]/InventoryClient";
-import InventoryGrantForm from "../../../inventory/[characterId]/InventoryGrantForm";
+import InventoryGrantForm, {
+  type InventoryGrantItem,
+} from "../../../inventory/[characterId]/InventoryGrantForm";
 import styles from "../../../inventory/[characterId]/page.module.css";
 
 interface AdminInventoryPageProps {
   params: Promise<{ characterId: string }>;
+}
+
+function toInventoryGrantItems(items: MasterItem[]): InventoryGrantItem[] {
+  return items
+    .filter((item) => item._id)
+    .map((item) => ({
+      id: String(item._id),
+      name: item.name,
+      category: item.category,
+    }));
 }
 
 /**
@@ -101,6 +113,7 @@ export default async function AdminCharacterInventoryPage({
     note: entry.note,
     category: categoryByItemId.get(entry.itemId) ?? null,
   }));
+  const grantItems = toInventoryGrantItems(availableItems);
 
   return (
     <>
@@ -128,7 +141,7 @@ export default async function AdminCharacterInventoryPage({
         <PanelTitle>GRANT ITEM · GM</PanelTitle>
         <InventoryGrantForm
           characterId={characterId}
-          availableItems={availableItems}
+          availableItems={grantItems}
         />
       </Box>
 

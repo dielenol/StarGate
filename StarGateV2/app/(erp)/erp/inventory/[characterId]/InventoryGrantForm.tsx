@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import type { MasterItem } from "@/types/inventory";
+import type { ItemCategory } from "@/types/inventory";
 
 import {
   useGrantInventory,
@@ -16,9 +16,15 @@ import Select from "@/components/ui/Select/Select";
 
 import styles from "./InventoryGrantForm.module.css";
 
+export interface InventoryGrantItem {
+  id: string;
+  name: string;
+  category: ItemCategory;
+}
+
 interface InventoryGrantFormProps {
   characterId?: string;
-  availableItems: MasterItem[];
+  availableItems: InventoryGrantItem[];
   mode?: "character" | "shared";
 }
 
@@ -37,7 +43,7 @@ export default function InventoryGrantForm({
   const [success, setSuccess] = useState("");
 
   const selectedItem = availableItems.find(
-    (item) => String(item._id) === selectedItemId,
+    (item) => item.id === selectedItemId,
   );
   const isSharedMode = mode === "shared";
   const isPending = isSharedMode
@@ -119,7 +125,7 @@ export default function InventoryGrantForm({
         >
           <option value="">-- 아이템 선택 --</option>
           {availableItems.map((item) => (
-            <option key={String(item._id)} value={String(item._id)}>
+            <option key={item.id} value={item.id}>
               {item.name} ({item.category})
             </option>
           ))}

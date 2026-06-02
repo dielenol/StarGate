@@ -14,8 +14,22 @@ import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
-import InventoryGrantForm from "../../inventory/[characterId]/InventoryGrantForm";
+import InventoryGrantForm, {
+  type InventoryGrantItem,
+} from "../../inventory/[characterId]/InventoryGrantForm";
 import inventoryStyles from "../../inventory/[characterId]/page.module.css";
+
+function toInventoryGrantItems(
+  items: Awaited<ReturnType<typeof listAvailableItems>>,
+): InventoryGrantItem[] {
+  return items
+    .filter((item) => item._id)
+    .map((item) => ({
+      id: String(item._id),
+      name: item.name,
+      category: item.category,
+    }));
+}
 
 export default async function AdminInventoryHubPage() {
   const session = await auth();
@@ -32,6 +46,7 @@ export default async function AdminInventoryHubPage() {
     listAvailableItems().catch(() => []),
     listSharedInventory().catch(() => []),
   ]);
+  const grantItems = toInventoryGrantItems(availableItems);
 
   return (
     <>
@@ -59,7 +74,7 @@ export default async function AdminInventoryHubPage() {
         >
           GRANT SHARED ITEM · GM
         </PanelTitle>
-        <InventoryGrantForm mode="shared" availableItems={availableItems} />
+        <InventoryGrantForm mode="shared" availableItems={grantItems} />
       </Box>
 
       <Box>
