@@ -1,0 +1,99 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "AMALIA_FREDRIKA_VON_ESSEN",
+      "type": "NPC",
+      "role": "제7대 노부스 오르도 사무총장",
+      "department": "HQ",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "SECRETARIAT",
+      "agentLevel": "V",
+      "previewImage": "/assets/npcs/Amalia-Fredrika-profile.png",
+      "isPublic": true,
+      "lore": {
+        "name": "아말리아 프레드리카 본 에센",
+        "nameEn": "Amalia Fredrika von Essen",
+        "gender": "여",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "공식 초상에서는 밝은 단발 머리와 단정한 정장, 장식 브로치와 귀걸이를 갖춘 모습으로 기록된다. 노부스 오르도 공개 랜딩 페이지의 사무총장 프로필에 쓰이는 대표 이미지다.",
+        "personality": "공개 연설과 소개문 기준으로, 아말리아는 노부스 오르도의 질서와 평화, 발전, 인류 안보를 상징하는 인물로 배치된다. 특히 불안정한 안보 전선과 이에 취약한 이들을 대변하는 옹호자로 소개된다.",
+        "background": "스웨덴 출신의 아말리아 프레드리카 본 에센은 제7대 노부스 오르도 사무총장이다. 2011년 6월 17일 취임했으며, 세계 질서 이사회의 권고 및 총회 임명을 거쳐 최고 행정 책임자이자 상징적 인물로 자리 잡았다.\n\n임기는 10년이며 연임 가능하다. 2021년 6월 18일 두 번째 임기로 재선임되었고, 오로라 판데믹을 극복하고 세계가 새로운 방향으로 나아가도록 돕는 것을 최우선 과제로 삼고 있다.\n\nS1E1 질서 미니 세션에서는 닥터 모스가 현장팀에게 사후 처리 업무를 배정하는 과정에서, 사무총장이 현장팀의 활약에 관심을 보였다는 상부 메시지로 언급된다.",
+        "quote": "\"결국 모든 것은 질서의 문제로 귀결됩니다. 우리는 우리 아이들이 물려받을 세상이 오르도 헌장에 담긴 가치, 즉 질서와 평화, 발전 그리고 인류 안보로 규정되기를 바랍니다.\"",
+        "mainImage": "/assets/npcs/Amalia-Fredrika-profile.png",
+        "loreTags": ["사무총장실", "노부스오르도", "스웨덴", "오로라판데믹", "질서", "S1E1-MINI"],
+        "appearsInEvents": ["NOSB-S1E1-MINI"],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E1-MINI",
+            "role": "상부 관심으로 언급된 사무총장",
+            "summary": "닥터 모스가 현장팀에게 사후 처리 업무를 배정하는 과정에서, 사무총장이 현장팀의 활약에 관심을 보였다는 상부 메시지로 언급된다.",
+            "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+          }
+        ],
+        "roleDetail": "- **직위**: 제7대 노부스 오르도 사무총장\n- **소속**: 노부스 오르도 본부 / 사무국 사무총장실\n- **취임일**: 2011년 6월 17일\n- **재선임일**: 2021년 6월 18일\n- **임기**: 10년, 연임 가능\n- **NPC 특성**: 공개 랜딩 페이지에서 노부스 오르도의 최고 행정 책임자이자 상징적 인물로 제시되는 지도부 NPC\n- **등장 방식**: 공식 연설, 상부 지시, 사무총장실 메시지, 본부 정책 기조 전달",
+        "notes": "- **아말리아 프레드리카 본 에센**: 공개 랜딩 페이지에 기재된 제7대 노부스 오르도 사무총장의 공식 인명 표기.\n- **AMALIA_FREDRIKA_VON_ESSEN**: 신원조회 및 Dossier 연결을 위한 기계적 식별 코드. 공개 영문 표기를 UPPER_SNAKE_CASE로 정규화했다.\n- **Dossier 이미지**: GM 제공 누끼 이미지를 `/assets/npcs/Amalia-Fredrika-profile.png` 기준 자산으로 반영했다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-02T00:00:00.000Z",
+      "updatedAt": "2026-06-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "BLANCHE_DE_LAURENT",
+      "type": "NPC",
+      "role": "세계이사회장",
+      "department": "COUNCIL",
+      "factionCode": "COUNCIL",
+      "agentLevel": "V",
+      "previewImage": "/assets/npcs/Blanche-De-Laurent-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "블랑셰 데 로랑",
+        "nameEn": "Blanche de Laurent",
+        "gender": "여",
+        "age": "73",
+        "height": "164cm",
+        "weight": "미상",
+        "appearance": "진한 향수와 고양이 털 냄새가 섞인 기이한 체취를 지니고 있다. 수수한 헤어 스타일과 정돈되지 않은 백발의 단발과 다르게, 천문학적인 치장물과 명품 브랜드가 몸을 감싸고 있다.",
+        "personality": "자신이 키우는 고양이 쇼콜라 봉봉을 제외한 모든 생명체를 하찮게 여기며, 오만하고 자기중심적이다.",
+        "background": "알려진 것이 많지 않다. 기록상 확실하게 드러나는 것은 그가 엄청난 부자이며, 그의 선택과 그에 따른 파급력이 어마무시하다는 사실이다.\n\n노부스 오르도 자금줄의 2할은 블랑셰 데 로랑이 세운 로샹 재단의 기부금에서 나온다고 봐도 무방하다. 노부스 오르도는 그녀의 헌신을 존중하기 위해서 줄루에 대한 사적인 사용을 묵인하고 있다.",
+        "quote": "\"모든 일은 사랑이 전부죠.\"",
+        "mainImage": "/assets/npcs/Blanche-De-Laurent-profile.webp",
+        "loreTags": ["세계이사회", "이사회장", "로샹재단", "Zulu", "비능력자"],
+        "appearsInEvents": [],
+        "roleDetail": "- **직업**: 세계이사회장\n- **소속**: 세계이사회\n- **능력명**: 비능력자\n- **관련 재단**: 로샹 재단\n- **관련 개체군**: Zulu\n- **NPC 특성**: 노부스 오르도 재정과 세계이사회 의결 축에 영향력을 행사하는 외부 권력자\n- **등장 방식**: 세계이사회 의결, 재정 압박, 후원 조건, Zulu 사적 사용을 둘러싼 정치적 긴장",
+        "notes": "- **블랑셰 데 로랑**: 세계이사회장의 공식 인명 표기.\n- **BLANCHE_DE_LAURENT**: 신원조회 및 Dossier 연결을 위한 기계적 식별 코드. GM 제공 이름을 영문식으로 정규화한 값이다.\n- **로샹 재단**: 노부스 오르도 자금줄의 2할에 해당하는 기부금을 제공하는 것으로 기록된다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-02T00:00:00.000Z",
+      "updatedAt": "2026-06-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "factions",
+    "type": "faction-notable-member-link",
+    "filter": { "code": "NOVUS_ORDO" },
+    "update": {
+      "$addToSet": { "notableMembers": "AMALIA_FREDRIKA_VON_ESSEN" },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "factions",
+    "type": "faction-notable-member-link",
+    "filter": { "code": "COUNCIL" },
+    "update": {
+      "$addToSet": { "notableMembers": "BLANCHE_DE_LAURENT" },
+      "$set": { "updatedAt": "2026-06-02T00:00:00.000Z" }
+    }
+  }
+]

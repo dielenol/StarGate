@@ -7,7 +7,7 @@ labelEn: Novus Ordo
 scope: internal
 summary: 광원화 사태 이후 출범한 초인류 국제기구. 외부 3대 권력 블록(군부/이사회/시민사회) 위에 별개로 존재하며, 사무국·MANUS 등 내부 기관을 통해 직접 실행 권한을 가진다.
 tags: [본부, 내부]
-notableMembers: []
+notableMembers: [AMALIA_FREDRIKA_VON_ESSEN]
 isPublic: true
 source: manual
 createdAt: 2026-05-14T00:00:00Z
@@ -31,10 +31,11 @@ updatedAt: 2026-05-14T00:00:00Z
 
 ## 주요 인물
 
-<!-- 사무총장·MANUS 사령관 등 본부 핵심 직함은 후속 NPC 추가 시 본 섹션 갱신. -->
-
+- `AMALIA_FREDRIKA_VON_ESSEN` — 제7대 사무총장 (아말리아 프레드리카 본 에센)
 - `REGISTRAR` — 사무국장 (아그네타 스톨)
 - `ARBITER` — 재무위 및 시장조율기구 의장 (제레마이어 폴)
+
+<!-- MANUS 사령관 등 본부 핵심 직함은 후속 NPC 추가 시 본 섹션 갱신. -->
 
 ## 타 세력/기관 관계
 

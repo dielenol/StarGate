@@ -7,7 +7,7 @@ labelEn: World Council
 scope: external
 summary: 세계이사회. 광원화 사태 이전 정치 의결의 최고 권위. 노부스 오르도에 대해 의결 보고 라인을 가지나 직접 통제 권한은 없는 외부 기관.
 tags: [외부, 의결]
-notableMembers: []
+notableMembers: [BLANCHE_DE_LAURENT]
 isPublic: true
 source: manual
 createdAt: 2026-05-14T00:00:00Z
@@ -24,7 +24,9 @@ updatedAt: 2026-05-14T00:00:00Z
 
 ## 주요 인물
 
-<!-- 이사회 의장·이사 명단은 후속 NPC 추가 시 본 섹션 갱신. -->
+- `BLANCHE_DE_LAURENT` — 세계이사회장 (블랑셰 데 로랑)
+
+<!-- 이사 명단은 후속 NPC 추가 시 본 섹션 갱신. -->
 
 ## 타 세력/기관 관계
 
