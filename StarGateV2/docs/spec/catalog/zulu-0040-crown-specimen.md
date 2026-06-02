@@ -8,13 +8,13 @@ category: MATERIAL
 price: 0
 effect: 오디세이 시설에서 회수된 숙주 의존형 정신 지배 개체 표본
 description: 오디세이 시설 지하 4층 사건에서 회수된 ZULU-0040 "왕관"의 격리 표본.
-previewImage:
+previewImage: /assets/wiki/entities/zulu-0040-crown.webp
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E2-CHOICE, S1E2, ZULU-0040, 왕관, 오디세이시설, 격리표본, 정신지배]
 source: session-log
 createdAt: 2026-04-06T00:00:00Z
-updatedAt: 2026-06-02T00:00:00Z
+updatedAt: 2026-06-03T00:00:00Z
 ---
 
 ## 설명
