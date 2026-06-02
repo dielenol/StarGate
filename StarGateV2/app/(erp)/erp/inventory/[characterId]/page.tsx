@@ -1,17 +1,25 @@
 import { notFound, redirect } from "next/navigation";
 
-import type { CharacterInventory, ItemCategory } from "@/types/inventory";
+import type {
+  CharacterInventory,
+  ItemCategory,
+  SharedInventory,
+} from "@/types/inventory";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
-import { listCharacterInventory, listMasterItems } from "@/lib/db/inventory";
+import {
+  listCharacterInventory,
+  listMasterItems,
+  listSharedInventory,
+} from "@/lib/db/inventory";
 
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
-import InventoryModeNav from "../_components/InventoryModeNav";
 import InventoryClient, { type InventoryClientEntry } from "./InventoryClient";
+import styles from "./page.module.css";
 
 interface CharacterInventoryPageProps {
   params: Promise<{ characterId: string }>;
@@ -36,22 +44,27 @@ export default async function CharacterInventoryPage({
   }
 
   let inventory: CharacterInventory[] = [];
+  let sharedInventory: SharedInventory[] = [];
   let masterByItemId = new Map<
     string,
     { category: ItemCategory; slug?: string; effect?: string }
   >();
 
-  try {
-    inventory = await listCharacterInventory(characterId);
-  } catch {
-    // Keep the page reachable even if inventory lookup temporarily fails.
-  }
+  [inventory, sharedInventory] = await Promise.all([
+    listCharacterInventory(characterId).catch(() => []),
+    listSharedInventory().catch(() => []),
+  ]);
 
-  if (inventory.length > 0) {
+  const uniqueItemIds = Array.from(
+    new Set(
+      [...inventory, ...sharedInventory]
+        .map((entry) => entry.itemId)
+        .filter(Boolean),
+    ),
+  );
+
+  if (uniqueItemIds.length > 0) {
     try {
-      const uniqueItemIds = Array.from(
-        new Set(inventory.map((entry) => entry.itemId)),
-      );
       const itemIdSet = new Set(uniqueItemIds);
       const masters = (await listMasterItems()).filter(
         (item) => item._id && itemIdSet.has(String(item._id)),
@@ -62,18 +75,14 @@ export default async function CharacterInventoryPage({
           { category: item.category, slug: item.slug, effect: item.effect },
         ]),
       );
-      const orphanIds = uniqueItemIds.filter((id) => !masterByItemId.has(id));
-      if (orphanIds.length > 0) {
-        console.warn(
-          `[inventory] catalog drift: ${orphanIds.length} itemId not found in master_items (characterId=${characterId})`,
-        );
-      }
     } catch {
       // Missing master metadata falls back to the "other" category display.
     }
   }
 
-  const entries: InventoryClientEntry[] = inventory.map((entry) => ({
+  const toClientEntry = (
+    entry: CharacterInventory | SharedInventory,
+  ): InventoryClientEntry => ({
     _id: String(entry._id),
     itemId: entry.itemId,
     itemName: entry.itemName,
@@ -86,7 +95,10 @@ export default async function CharacterInventoryPage({
     category: masterByItemId.get(entry.itemId)?.category ?? null,
     slug: masterByItemId.get(entry.itemId)?.slug,
     effect: masterByItemId.get(entry.itemId)?.effect,
-  }));
+  });
+
+  const entries = inventory.map(toClientEntry);
+  const sharedEntries = sharedInventory.map(toClientEntry);
 
   return (
     <>
@@ -109,15 +121,21 @@ export default async function CharacterInventoryPage({
               </Button>
             ) : null}
             <Button as="a" href="/erp/inventory">
-              인벤토리 허브
+              목록
             </Button>
           </>
         }
       />
 
-      <InventoryModeNav active="personal" />
-
-      <InventoryClient entries={entries} title="PERSONAL INVENTORY" />
+      <div className={styles.inventoryStack}>
+        <InventoryClient entries={entries} title="PERSONAL INVENTORY" />
+        <InventoryClient
+          entries={sharedEntries}
+          title="SHARED INVENTORY"
+          emptyText="공용 인벤토리에 등록된 아이템이 없습니다."
+          filteredEmptyText="이 카테고리에 등록된 공용 아이템이 없습니다."
+        />
+      </div>
     </>
   );
 }

@@ -7,6 +7,12 @@
   margin-bottom: var(--gap);
 }
 
+.inventoryStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
 .mono {
   color: var(--ink-2);
   font-family: var(--font-mono);

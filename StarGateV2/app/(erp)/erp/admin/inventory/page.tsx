@@ -4,19 +4,19 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { listAgentCharacters } from "@/lib/db/characters";
+import {
+  listAvailableItems,
+  listSharedInventory,
+} from "@/lib/db/inventory";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
-/**
- * GM 전용 인벤토리 관리 허브.
- *  - 캐릭터 list → 각 캐릭의 admin/inventory/[characterId] 진입
- *  - "신규 아이템" 생성 폼 진입 link
- *
- * 권한: V 이상.
- */
+import InventoryGrantForm from "../../inventory/[characterId]/InventoryGrantForm";
+import inventoryStyles from "../../inventory/[characterId]/page.module.css";
+
 export default async function AdminInventoryHubPage() {
   const session = await auth();
 
@@ -27,7 +27,11 @@ export default async function AdminInventoryHubPage() {
     redirect("/erp/inventory");
   }
 
-  const characters = await listAgentCharacters(null).catch(() => []);
+  const [characters, availableItems, sharedInventory] = await Promise.all([
+    listAgentCharacters(null).catch(() => []),
+    listAvailableItems().catch(() => []),
+    listSharedInventory().catch(() => []),
+  ]);
 
   return (
     <>
@@ -37,7 +41,7 @@ export default async function AdminInventoryHubPage() {
           { label: "ADMIN" },
           { label: "INVENTORY" },
         ]}
-        title="인벤토리 관리"
+        title="인벤토리 운용"
         right={
           <Button as="a" href="/erp/inventory/items/new" variant="primary">
             + 신규 아이템
@@ -45,8 +49,21 @@ export default async function AdminInventoryHubPage() {
         }
       />
 
+      <Box className={inventoryStyles.grantBox}>
+        <PanelTitle
+          right={
+            <span className={inventoryStyles.mono}>
+              공용 {sharedInventory.length}개
+            </span>
+          }
+        >
+          GRANT SHARED ITEM · GM
+        </PanelTitle>
+        <InventoryGrantForm mode="shared" availableItems={availableItems} />
+      </Box>
+
       <Box>
-        <PanelTitle>캐릭터 목록</PanelTitle>
+        <PanelTitle>캐릭터별 인벤토리 운용</PanelTitle>
         <div
           style={{
             display: "grid",
@@ -66,10 +83,10 @@ export default async function AdminInventoryHubPage() {
               등록된 캐릭터가 없습니다.
             </div>
           ) : (
-            characters.map((c) => (
+            characters.map((character) => (
               <Link
-                key={String(c._id)}
-                href={`/erp/admin/inventory/${String(c._id)}`}
+                key={String(character._id)}
+                href={`/erp/admin/inventory/${String(character._id)}`}
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -90,10 +107,10 @@ export default async function AdminInventoryHubPage() {
                     letterSpacing: "0.08em",
                   }}
                 >
-                  {c.codename}
+                  {character.codename}
                 </span>
                 <span style={{ color: "var(--ink-2)", fontSize: 14 }}>
-                  {c.lore?.name ?? c.codename}
+                  {character.lore?.name ?? character.codename}
                 </span>
               </Link>
             ))
