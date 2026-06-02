@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { AgentLevel, Character, CharacterType } from "@/types/character";
 
 import { getLevelDisplayRank, getLevelDisplayTotal } from "@/lib/personnel";
+import { isInternalOrgCode } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import Pips from "@/components/ui/Pips/Pips";
@@ -41,6 +42,11 @@ export default function PersonnelCard({
 }: Props) {
   const id = String(character._id);
   const level: AgentLevel = character.agentLevel ?? "J";
+  const canShowAgentLevel =
+    showAgentLevel &&
+    (isInternalOrgCode(character.department) ||
+      isInternalOrgCode(character.institutionCode) ||
+      isInternalOrgCode(character.factionCode));
   const displayName =
     showIdentity && !isRedacted ? getDisplayName(character) : null;
 
@@ -105,7 +111,7 @@ export default function PersonnelCard({
           <>
             <Tag tone="danger">REDACTED</Tag>
             <span className={`${styles.clrPill} ${styles["clrPill--danger"]}`}>
-              {showAgentLevel ? "권한등급 · V+" : "열람 제한"}
+              {canShowAgentLevel ? "권한등급 · V+" : "열람 제한"}
             </span>
           </>
         ) : (
@@ -113,7 +119,7 @@ export default function PersonnelCard({
             <Tag tone={character.type === "AGENT" ? "gold" : "default"}>
               {character.type}
             </Tag>
-            {showAgentLevel ? (
+            {canShowAgentLevel ? (
               <span className={styles.clrPill} data-rank={level}>
                 <span>권한등급 : {level}</span>
                 <Pips
@@ -121,13 +127,7 @@ export default function PersonnelCard({
                   filled={getLevelDisplayRank(level)}
                 />
               </span>
-            ) : (
-              <span
-                className={`${styles.clrPill} ${styles["clrPill--external"]}`}
-              >
-                외부 인사
-              </span>
-            )}
+            ) : null}
           </>
         )}
       </div>
@@ -135,13 +135,13 @@ export default function PersonnelCard({
       {isRedacted ? (
         <div className={styles.foot}>
           <span>⚠ 전체 마스킹</span>
-          <span>{showAgentLevel ? "V 등급 필요" : "상위 열람 권한 필요"}</span>
+          <span>{canShowAgentLevel ? "V 등급 필요" : "상위 열람 권한 필요"}</span>
         </div>
       ) : classifiedFieldsCount > 0 && requiredLevelForHidden ? (
         <div className={styles.foot}>
           <span>⚠ 상위 기밀 {classifiedFieldsCount}건</span>
           <span>
-            {showAgentLevel
+            {canShowAgentLevel
               ? `${requiredLevelForHidden} 등급 필요`
               : "상위 열람 권한 필요"}
           </span>

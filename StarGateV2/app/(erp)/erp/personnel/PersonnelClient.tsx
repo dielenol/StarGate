@@ -24,6 +24,7 @@ import {
   getGroupLabel,
   getSubUnits,
   getTopLevelGroup,
+  isInternalOrgCode,
   isFaction,
   isInstitution,
 } from "@/lib/org-structure";
@@ -116,6 +117,10 @@ function resolveExternalSubOrg(c: Character) {
   );
 }
 
+function characterUsesAgentLevels(c: Character): boolean {
+  return isInternalOrgCode(resolveGroup(c));
+}
+
 function getDisplaySubUnits(groupCode: string): readonly SubUnitItem[] {
   if (groupCode === "CIVIL") {
     return EXTERNAL_SUB_ORGS.filter((org) => org.parentCode === groupCode).map(
@@ -127,8 +132,10 @@ function getDisplaySubUnits(groupCode: string): readonly SubUnitItem[] {
 
 /** 같은 그룹/서브유닛 내부 카드 정렬: 등급 내림차순 → codename 오름차순 */
 function compareForCardOrder(a: Character, b: Character): number {
-  const levelCmp = compareLevels(b.agentLevel ?? "J", a.agentLevel ?? "J");
-  if (levelCmp !== 0) return levelCmp;
+  if (characterUsesAgentLevels(a) && characterUsesAgentLevels(b)) {
+    const levelCmp = compareLevels(b.agentLevel ?? "J", a.agentLevel ?? "J");
+    if (levelCmp !== 0) return levelCmp;
+  }
   return a.codename.localeCompare(b.codename, "en");
 }
 
@@ -546,9 +553,7 @@ export default function PersonnelClient({
     ? getGroupKind(selectedGroup)
     : "faction";
   const selectedGroupUsesAgentLevels =
-    !selectedGroup ||
-    (getFactionScope(selectedGroup) !== "external" &&
-      !isExternalSubOrg(selectedGroup));
+    !selectedGroup || isInternalOrgCode(selectedGroup);
 
   // 검색 배너 표시 조건 (L2 에서 다른 그룹에도 매칭이 있을 때)
   const searchBannerInfo = useMemo(() => {
@@ -677,25 +682,27 @@ export default function PersonnelClient({
 
     return (
       <div className={styles.cardGrid}>
-        {members.map((c) => (
-          <PersonnelCard
-            key={String(c._id)}
-            character={c}
-            showIdentity={showIdentity}
-            showAgentLevel={selectedGroupUsesAgentLevels}
-            isLead={
-              selectedGroupUsesAgentLevels &&
-              compareLevels(c.agentLevel ?? "J", "A") >= 0
-            }
-            isRedacted={
-              !canViewField(clearance, "identity") &&
-              !canViewField(clearance, "profile")
-            }
-            matchState={matchState(c)}
-            classifiedFieldsCount={hiddenFieldsCount}
-            requiredLevelForHidden={hiddenMinLevel}
-          />
-        ))}
+        {members.map((c) => {
+          const usesAgentLevels = characterUsesAgentLevels(c);
+          return (
+            <PersonnelCard
+              key={String(c._id)}
+              character={c}
+              showIdentity={showIdentity}
+              showAgentLevel={usesAgentLevels}
+              isLead={
+                usesAgentLevels && compareLevels(c.agentLevel ?? "J", "A") >= 0
+              }
+              isRedacted={
+                !canViewField(clearance, "identity") &&
+                !canViewField(clearance, "profile")
+              }
+              matchState={matchState(c)}
+              classifiedFieldsCount={hiddenFieldsCount}
+              requiredLevelForHidden={hiddenMinLevel}
+            />
+          );
+        })}
       </div>
     );
   };
@@ -708,7 +715,9 @@ export default function PersonnelClient({
           const agentCount = members.filter((m) => m.type === "AGENT").length;
           const npcCount = members.filter((m) => m.type === "NPC").length;
           const leadCount = members.filter(
-            (m) => compareLevels(m.agentLevel ?? "J", "A") >= 0,
+            (m) =>
+              characterUsesAgentLevels(m) &&
+              compareLevels(m.agentLevel ?? "J", "A") >= 0,
           ).length;
           const sorted = [...members].sort(compareForCardOrder);
 

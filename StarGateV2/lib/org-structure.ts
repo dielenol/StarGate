@@ -4,7 +4,7 @@
  * 캐릭터의 department 코드 → 최상위 그룹 (외부 기관/내부 기관) 매핑.
  */
 
-import { FACTIONS, INSTITUTIONS } from "@/types/character";
+import { FACTIONS, INSTITUTIONS, INTERNAL_FACTION_CODE } from "@/types/character";
 
 /* ── 사무국 하위 기구 코드 → 상위 내부 기관 매핑 ── */
 
@@ -131,6 +131,21 @@ export function getFactionScope(
   code: string,
 ): "external" | "internal" | undefined {
   return FACTION_SCOPE_BY_CODE.get(code);
+}
+
+/**
+ * Novus Ordo 내부 권한등급 체계를 쓰는 조직 코드인지 판정한다.
+ *
+ * NOVUS_ORDO 본부와 내부 기구(SECRETARIAT/MANUS 및 그 subUnit)만 true.
+ * 외부 세력과 시민사회 하위조직(WHITE_ROSE/SPACE_ZERO 등)은 false.
+ */
+export function isInternalOrgCode(code: string | undefined | null): boolean {
+  if (!code || code === "UNASSIGNED") return false;
+  if (code === INTERNAL_FACTION_CODE) return true;
+  if (INSTITUTION_CODES.has(code)) return true;
+
+  const top = getTopLevelGroup(code);
+  return top === INTERNAL_FACTION_CODE || INSTITUTION_CODES.has(top);
 }
 
 /**

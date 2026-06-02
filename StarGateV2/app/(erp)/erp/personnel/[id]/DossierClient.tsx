@@ -40,6 +40,7 @@ import {
   getGroupKind,
   getGroupLabel,
   getTopLevelGroup,
+  isInternalOrgCode,
 } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
@@ -685,7 +686,7 @@ export default function DossierClient({
   const isAgent = character.type === "AGENT";
 
   const topGroup = resolveCharacterGroup(character);
-  const usesAgentLevels = getFactionScope(topGroup) !== "external";
+  const usesAgentLevels = isInternalOrgCode(topGroup);
   const departmentLabel =
     topGroup !== "UNASSIGNED" && department === "UNASSIGNED"
       ? getGroupLabel(topGroup)
@@ -1567,8 +1568,8 @@ export default function DossierClient({
               ) : null}
             </div>
 
-            <div className={styles.clrPillRow}>
-              {usesAgentLevels ? (
+            {usesAgentLevels ? (
+              <div className={styles.clrPillRow}>
                 <span className={styles.clrPill} data-rank={level}>
                   <span className={styles.clrPill__label}>
                     대상 권한등급
@@ -1582,14 +1583,8 @@ export default function DossierClient({
                     filled={getLevelDisplayRank(level)}
                   />
                 </span>
-              ) : (
-                <span
-                  className={`${styles.clrPill} ${styles["clrPill--external"]}`}
-                >
-                  외부 기관 인사
-                </span>
-              )}
-            </div>
+              </div>
+            ) : null}
           </Box>
 
           {/* IDENTITY */}
