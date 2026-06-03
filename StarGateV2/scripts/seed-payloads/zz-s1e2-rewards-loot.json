@@ -1,0 +1,186 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "operation-report-rewards-and-loot",
+    "filter": {
+      "sessionId": "NOSB-S1E2-CHOICE"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": "$summary",
+                  "regex": "## 보상과 전리품"
+                }
+              },
+              "$summary",
+              {
+                "$replaceOne": {
+                  "input": "$summary",
+                  "find": "\n## 후속 훅\n",
+                  "replacement": "\n## 보상과 전리품\n화이트로즈 수장 R은 현장팀에 인류가 당면한 위기를 함께 종식시킬 수 있다며 긴밀한 연락을 제안했다. 해당 교신 이후 S1E2 선택 작전 보상은 시민 사회 호의도 2, 추가 포인트 100, 과학자 직군 항생제 해금, 군인 직군 스팀팩 해금으로 기록한다.\n\n전리품은 ZULU-040 \"왕관\" 본체 생포, ZULU-872-3 \"이동식의 날개\", ZULU-1004 \"커룹의 불칼\"로 정리한다. 세 전리품은 각각 ZULU-0040 왕관 격리 표본, ZULU-872-3 이동식의 날개, 커룹의 불칼 카탈로그 기록으로 추적한다.\n\n> \"귀하께선 인류를 돕고 계십니다. 함께라면 우린 당면한 위기를 종식시킬 수 있습니다. 긴밀히 연락합시다.\" - 화이트로즈 수장 R\n\n## 후속 훅\n"
+                }
+              }
+            ]
+          },
+          "highlights": {
+            "$setUnion": [
+              "$highlights",
+              [
+                "S1E2 선택 보상은 시민 사회 호의도 2, 추가 포인트 100, 과학자 항생제 해금, 군인 스팀팩 해금으로 기록된다.",
+                "전리품은 ZULU-040 왕관 본체, ZULU-872-3 이동식의 날개, ZULU-1004 커룹의 불칼로 정리된다."
+              ]
+            ]
+          },
+          "updatedAt": "2026-06-03T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-wiki-rewards-and-loot",
+    "filter": {
+      "slug": "s1e2-choice"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": "$content",
+                  "regex": "## 보상과 전리품"
+                }
+              },
+              "$content",
+              {
+                "$replaceOne": {
+                  "input": "$content",
+                  "find": "\n## 관련 문서\n",
+                  "replacement": "\n## 보상과 전리품\n화이트로즈 수장 R은 현장팀에 인류가 당면한 위기를 함께 종식시킬 수 있다며 긴밀한 연락을 제안했다. 보상은 시민 사회 호의도 2, 추가 포인트 100, 과학자 직군 항생제 해금, 군인 직군 스팀팩 해금으로 기록한다.\n\n전리품은 ZULU-040 \"왕관\" 본체 생포, ZULU-872-3 \"이동식의 날개\", ZULU-1004 \"커룹의 불칼\"이다. 왕관 본체는 ZULU-0040 왕관 격리 표본으로, 이동식의 날개와 커룹의 불칼은 각각 독립 카탈로그 물증으로 추적한다.\n\n> \"귀하께선 인류를 돕고 계십니다. 함께라면 우린 당면한 위기를 종식시킬 수 있습니다. 긴밀히 연락합시다.\" - 화이트로즈 수장 R\n\n## 관련 문서\n"
+                }
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              "$tags",
+              ["보상", "전리품", "항생제", "스팀팩", "ZULU-872-3", "ZULU-1004"]
+            ]
+          },
+          "updatedAt": "2026-06-03T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "master_items",
+    "type": "reward-consumable",
+    "payload": {
+      "slug": "antibiotic",
+      "name": "항생제",
+      "nameEn": "Antibiotic",
+      "category": "CONSUMABLE",
+      "price": 0,
+      "effect": "S1E2 보상으로 해금된 과학자 직군 감염 대응 소모품",
+      "description": "S1E2 선택 작전 보상으로 과학자 직군에 해금된 감염 대응 계열 소모품.",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "보상", "직군해금", "과학자", "항생제", "감염대응", "소모품"],
+      "lore": {
+        "background": "화이트로즈 측은 작전 종료 후 노부스 오르도 현장팀에 협력 의사를 전했고, 사무국은 해당 작전 보상 목록에 과학자 직군 항생제 해금을 기록했다.",
+        "acquisition": "S1E2 선택 작전 보상으로 해금된다. 실제 지급 수량, 제조 조건, 상점 재고 반영 여부는 별도 승인 대상이다.",
+        "notes": "세부 회복량, 감염 단계 완화 수치, 사용 조건은 현재 보상 기록만으로 확정하지 않는다. 이 문서는 해금 사실과 카탈로그 연결을 위한 기준 기록이다."
+      },
+      "source": "session-reward",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-03T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "reward-consumable",
+    "payload": {
+      "slug": "stimpack",
+      "name": "스팀팩",
+      "nameEn": "Stimpack",
+      "category": "CONSUMABLE",
+      "price": 0,
+      "effect": "S1E2 보상으로 해금된 군인 직군 전투 보조 소모품",
+      "description": "S1E2 선택 작전 보상으로 군인 직군에 해금된 전투 보조 계열 소모품.",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "보상", "직군해금", "군인", "스팀팩", "전투보조", "소모품"],
+      "lore": {
+        "background": "오디세이 시설 사건에서 현장팀은 감염자, 균사 군체, ZULU-0040 왕관에 대응했고, 사무국은 작전 보상 목록에 군인 직군 스팀팩 해금을 기록했다.",
+        "acquisition": "S1E2 선택 작전 보상으로 해금된다. 실제 지급 수량, 제조 조건, 상점 재고 반영 여부는 별도 승인 대상이다.",
+        "notes": "세부 버프 수치, 지속 턴, 부작용, 중복 사용 제한은 현재 보상 기록만으로 확정하지 않는다. 이 문서는 해금 사실과 카탈로그 연결을 위한 기준 기록이다."
+      },
+      "source": "session-reward",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-03T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "loot-special",
+    "payload": {
+      "slug": "zulu-0872-3-dongsik-wings",
+      "name": "ZULU-872-3 이동식의 날개",
+      "nameEn": "ZULU-872-3 Dongsik's Wings",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "S1E2 전리품으로 회수된 ZULU 계열 특수 물증",
+      "description": "S1E2 선택 작전 전리품으로 기록된 ZULU-872-3 \"이동식의 날개\" 특수 물증.",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "전리품", "ZULU-872-3", "ZULU-0872-3", "이동식의날개", "LEE_DONGSIK", "특수물증"],
+      "lore": {
+        "background": "오디세이 시설 사건에서 이동식은 ZULU-0040 왕관의 숙주 및 격리 흐름에 깊게 연결되었다. 작전 종료 보상표는 ZULU-872-3 \"이동식의 날개\"를 전리품으로 기록한다.",
+        "acquisition": "S1E2 선택 작전 전리품으로 회수된다. 일반 획득 및 상점 보급 대상이 아니다.",
+        "notes": "효과, 장착 가능 여부, 전투 스탯, 이미지 자료는 현재 보상 기록만으로 확정하지 않는다. 후속 격리 아카이브 또는 GM 지정 자료가 제공되면 개체 위키와 카탈로그를 보강한다."
+      },
+      "source": "session-reward",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-03T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "loot-existing-special-merge",
+    "payload": {
+      "slug": "kerub-fireblade",
+      "name": "커룹의 불칼",
+      "nameEn": "ZULU-1004 Kerub Fireblade",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "연옥일섬 계열 화염 공격에 사용된 특수 무장",
+      "description": "NOSB S1E2에서 박애솔이 소지 및 사용했고 작전 말미 ZULU-1004 전리품으로 회수된 특수 화염 무장.",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "전리품", "ZULU-1004", "커룹의불칼", "박애솔", "BIG_BOY", "특수무장", "화염"],
+      "lore": {
+        "background": "오디세이 시설 내부 감염자 대응 과정에서 박애솔은 커룹의 불칼을 보유한 상태로 등장했다. 이후 감염과 격리 대응이 정리되는 과정에서 해당 무장은 회수되었다.",
+        "acquisition": "일반 획득 불가. NOSB-S1E2-CHOICE 작전 기록상 현장 보유품으로 확인되며, 작전 말미 ZULU-1004 \"커룹의 불칼\" 전리품으로 회수되었다.",
+        "notes": "정확한 피해값, 소모 조건, 장비 등급은 로그와 보상표만으로 확정하지 않는다. 현재 등록은 lorebook 및 카탈로그 연결용이며, 전투 스탯 확정은 별도 밸런스 승인 대상이다."
+      },
+      "source": "session-reward",
+      "updatedAt": "2026-06-03T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "loot-existing-specimen-merge",
+    "payload": {
+      "slug": "zulu-0040-crown-specimen",
+      "tags": ["NOSB-S1E2-CHOICE", "S1E2", "전리품", "ZULU-0040", "ZULU-040", "왕관", "본체생포", "오디세이시설", "격리표본", "맥각균류", "위성기생군체", "정신지배", "감염은폐", "비유기체감염", "슈퍼감염", "신경약리학", "심문보조", "생체강화", "행동교정물질", "화염취약"],
+      "lore.acquisition": "일반 획득 불가. NOSB-S1E2-CHOICE 작전 전리품으로 본체 생포가 기록되었으며, 회수된 본체는 격리기록실이 인계받아 격리구역 32호실, 기생성 전염병 관리구역 유물 보관용 상자에 보관 중인 표본으로 분류한다.",
+      "updatedAt": "2026-06-03T00:00:00.000Z"
+    }
+  }
+]
