@@ -8,3 +8,14 @@ export type {
   CreateWikiPageInput,
   UpdateWikiPageInput,
 } from "@stargate/shared-db/types";
+
+import type { WikiPage } from "@stargate/shared-db/types";
+
+export type WikiPageClient = Omit<
+  WikiPage,
+  "_id" | "createdAt" | "updatedAt"
+> & {
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+};

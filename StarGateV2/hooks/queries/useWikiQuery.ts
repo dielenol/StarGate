@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import type { WikiPage } from "@/types/wiki";
+import type { WikiPageClient } from "@/types/wiki";
 
 export const wikiKeys = {
   all: ["wiki"] as const,
@@ -11,7 +11,7 @@ export const wikiKeys = {
 async function fetchWikiPages(params?: {
   category?: string;
   q?: string;
-}): Promise<WikiPage[]> {
+}): Promise<WikiPageClient[]> {
   const searchParams = new URLSearchParams();
   if (params?.category) searchParams.set("category", params.category);
   if (params?.q) searchParams.set("q", params.q);
@@ -27,7 +27,7 @@ async function fetchWikiPages(params?: {
 
 export function useWikiPages(
   params?: { category?: string; q?: string },
-  options?: { initialData?: WikiPage[] },
+  options?: { initialData?: WikiPageClient[] },
 ) {
   return useQuery({
     queryKey: wikiKeys.list(params),

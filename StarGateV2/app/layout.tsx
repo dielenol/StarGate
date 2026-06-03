@@ -87,13 +87,7 @@ const stripInjectedUserSelectScript = `
     subtree: true,
   });
 
-  window.addEventListener(
-    "load",
-    () => {
-      window.setTimeout(() => observer.disconnect(), 3000);
-    },
-    { once: true },
-  );
+  window.addEventListener("pageshow", () => stripTree(document.documentElement));
 })();
 `;
 

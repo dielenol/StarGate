@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import type { WikiPage } from "@/types/wiki";
+import type { WikiPageClient } from "@/types/wiki";
 
 import { useWikiPages } from "@/hooks/queries/useWikiQuery";
 
@@ -27,8 +27,8 @@ import {
 import styles from "./page.module.css";
 
 interface Props {
-  initialPages: WikiPage[];
-  allPages: WikiPage[];
+  initialPages: WikiPageClient[];
+  allPages: WikiPageClient[];
   categories: string[];
   currentCategory?: string;
   currentQuery?: string;
@@ -59,15 +59,15 @@ function shouldUseClientNavigation(
   );
 }
 
-function searchHaystack(page: WikiPage): string {
+function searchHaystack(page: WikiPageClient): string {
   return `${page.title} ${page.content} ${page.tags?.join(" ") ?? ""}`.toLowerCase();
 }
 
 function filterWikiPages(
-  pages: WikiPage[],
+  pages: WikiPageClient[],
   category?: string,
   q?: string,
-): WikiPage[] {
+): WikiPageClient[] {
   const query = q?.trim().toLowerCase();
   if (query) {
     return pages
