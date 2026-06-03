@@ -146,7 +146,7 @@
       "price": 0,
       "effect": "숙주 의존형 정신 지배 개체 표본",
       "description": "오디세이 시설 지하 4층 사건에서 회수된 ZULU-0040 \"왕관\"의 격리 표본.",
-      "previewImage": "/assets/wiki/entities/zulu-0040-crown.webp",
+      "previewImage": "/assets/catalog/samples/zulu-0040-crown-specimen.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": [
@@ -212,7 +212,7 @@
       "price": 0,
       "effect": "연옥일섬 계열 화염 공격에 사용된 특수 무장",
       "description": "NOSB S1E2에서 박애솔이 소지 및 사용했고 작전 말미 회수된 특수 화염 무장.",
-      "previewImage": "",
+      "previewImage": "/assets/catalog/special/kerub-fireblade.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": [
@@ -231,7 +231,7 @@
       },
       "source": "session-log",
       "createdAt": "2026-04-06T00:00:00.000Z",
-      "updatedAt": "2026-06-02T00:00:00.000Z"
+      "updatedAt": "2026-06-03T00:00:00.000Z"
     }
   },
   {

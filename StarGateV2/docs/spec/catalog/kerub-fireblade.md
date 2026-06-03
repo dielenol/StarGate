@@ -9,13 +9,13 @@ price: 0
 effect: 연옥일섬 계열 화염 공격에 사용된 특수 무장
 damage:
 description: NOSB S1E2에서 박애솔이 소지 및 사용했고 작전 말미 ZULU-1004 전리품으로 회수된 특수 화염 무장.
-previewImage:
+previewImage: /assets/catalog/special/kerub-fireblade.webp
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E2-CHOICE, S1E2, 전리품, ZULU-1004, 커룹의불칼, 박애솔, BIG_BOY, 특수무장, 화염]
 source: session-log
 createdAt: 2026-04-06T00:00:00Z
-updatedAt: 2026-06-02T00:00:00Z
+updatedAt: 2026-06-03T00:00:00Z
 ---
 
 ## 설명

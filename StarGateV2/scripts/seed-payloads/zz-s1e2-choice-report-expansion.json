@@ -171,8 +171,8 @@
     },
     "update": {
       "$set": {
-        "previewImage": "/assets/wiki/entities/zulu-0040-crown.webp",
-        "lore.notes": "공식 왕관 도판은 격리 개체 이미지로 연결한다. 세부 격리율, 최종 보관 위치, 기대 샘플은 별도 격리 아카이브가 제공되면 보강한다.",
+        "previewImage": "/assets/catalog/samples/zulu-0040-crown-specimen.webp",
+        "lore.notes": "표본 도판은 ZULU-0040 왕관 격리 표본 카탈로그 이미지로 연결한다. 세부 격리율, 최종 보관 위치, 기대 샘플은 별도 격리 아카이브가 제공되면 보강한다.",
         "updatedAt": "2026-06-03T00:00:00.000Z"
       }
     }

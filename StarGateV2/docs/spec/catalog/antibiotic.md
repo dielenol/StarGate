@@ -9,7 +9,7 @@ price: 0
 effect: S1E2 보상으로 해금된 과학자 직군 감염 대응 소모품
 damage:
 description: S1E2 선택 작전 보상으로 과학자 직군에 해금된 감염 대응 계열 소모품.
-previewImage:
+previewImage: /assets/catalog/consumables/antibiotic.webp
 isAvailable: true
 isPublic: true
 tags: [NOSB-S1E2-CHOICE, S1E2, 보상, 직군해금, 과학자, 항생제, 감염대응, 소모품]

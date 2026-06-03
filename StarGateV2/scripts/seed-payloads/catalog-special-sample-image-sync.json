@@ -38,7 +38,51 @@
     "filter": { "slug": "zulu-0040-crown-specimen" },
     "update": {
       "$set": {
-        "previewImage": "/assets/wiki/entities/zulu-0040-crown.webp",
+        "previewImage": "/assets/catalog/samples/zulu-0040-crown-specimen.webp",
+        "updatedAt": "2026-06-03T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-image-sync",
+    "filter": { "slug": "antibiotic" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/consumables/antibiotic.webp",
+        "updatedAt": "2026-06-03T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-image-sync",
+    "filter": { "slug": "stimpack" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/consumables/stimpack.webp",
+        "updatedAt": "2026-06-03T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-image-sync",
+    "filter": { "slug": "zulu-0872-3-dongsik-wings" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/special/zulu-0872-3-dongsik-wings.webp",
+        "updatedAt": "2026-06-03T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-image-sync",
+    "filter": { "slug": "kerub-fireblade" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/special/kerub-fireblade.webp",
         "updatedAt": "2026-06-03T00:00:00.000Z"
       }
     }
