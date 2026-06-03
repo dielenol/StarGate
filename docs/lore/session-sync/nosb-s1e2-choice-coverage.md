@@ -1,45 +1,78 @@
-# NOSB-S1E2-CHOICE Lore Sync Coverage
+# NOSB-S1E2-CHOICE 로어 동기화 커버리지
 
 Updated: 2026-06-03
 
-## Source Scope
+## 소스 범위
 
-- Session source: S1E2 "Choice" preserved session log.
-- Image source: GM-provided official Crown archive image.
-- Public ERP prose rule: no raw parser notes, local paths, extraction line ranges, implementation terms, or non-mutated economy/stock notes are published in report/wiki/catalog text.
+- 세션 소스: S1E2 「선택」 보존 세션 로그.
+- 이미지 소스: GM 제공 공식 왕관 도판.
+- 공개 ERP 문서 규칙: 보고서, 위키, 카탈로그 본문에는 원본 파일 경로, 추출 라인, 파서명, 작업용 구현 표현, 미적용 경제/주식 상태를 노출하지 않는다.
 
-## Applied Surfaces
+## 적용 표면
 
-| Surface | Key | Action | Status |
+| 표면 | 키 | 처리 | 상태 |
 | --- | --- | --- | --- |
-| Operation report | `session_reports.NOSB-S1E2-CHOICE` | Expanded as an in-universe report, corrected location context, restored chronological numbering, linked major subjects, and added the official ZULU-0040 Crown image. | Applied |
-| Wiki | `wiki_pages.s1e2-choice` | Reframed as the S1E2 operation-report wiki entry using the existing `작전 보고서` category and in-universe citations. | Applied |
-| Wiki | `wiki_pages.zulu-0040-crown` | Added/updated the Crown entity page with the official image, combat behavior, containment result, and linked report/catalog anchors. | Applied |
-| Catalog | `master_items.zulu-0040-crown-specimen` | Connected the official Crown image to the catalog preview. | Applied |
-| Spec doc | `StarGateV2/docs/spec/catalog/zulu-0040-crown-specimen.md` | Persisted the same preview image path in the durable catalog spec. | Updated |
-| Asset | `StarGateV2/public/assets/wiki/entities/zulu-0040-crown.webp` | Stored the official Crown image in the existing entity asset directory. | Added |
+| 작전보고서 | `session_reports.NOSB-S1E2-CHOICE` | 작전지 문맥, 시간대별 전개, 주요 연결축, ZULU-0040 왕관 도판을 보강했다. | 적용 |
+| 위키 | `wiki_pages.s1e2-choice` | 기존 `작전 보고서` 카테고리를 유지하고 S1E2 선택 보고서 허브로 재정리했다. | 적용 |
+| 위키 | `wiki_pages.zulu-0040-crown` | 왕관 개체 문서에 공식 도판, 전투 양상, 격리 경과, 관련 보고서/카탈로그 연결을 반영했다. | 적용 |
+| 카탈로그 | `master_items.zulu-0040-crown-specimen` | ZULU-0040 왕관 격리 표본의 대표 도판을 연결했다. | 적용 |
+| Spec 문서 | `StarGateV2/docs/spec/catalog/zulu-0040-crown-specimen.md` | durable catalog spec에도 같은 preview image 경로를 기록했다. | 갱신 |
+| Asset | `StarGateV2/public/assets/wiki/entities/zulu-0040-crown.webp` | 공식 왕관 도판을 기존 위키 개체 asset 위치에 저장했다. | 추가 |
 
-## Verified Existing Links
+## ERP 화면 검수
 
-| Axis | Expected Anchor |
-| --- | --- |
-| Report -> Wiki | `S1E2`, `ZULU-0040 왕관`, `오디세이 시설`, `광명회`, `스페이스 제로`, `화이트로즈`, `군부`, `시민사회`, `세계이사회` |
-| Report -> Catalog | `정신 저항제 배합 자료`, `행동교정물질`, `커룹의 불칼`, `ZULU-0040 왕관 표본` |
-| Report -> Personnel | `CLOWN`, `MARIA`, `INDEXER`, `MARGARET`, `OTILIA`, `GP03-RX780`, `Mr. 오드`, `블랑셰 데 로랑`, `아말리아 프레드리카 본 에센` |
-| Wiki -> Catalog | Crown page and S1E2 page mention concrete catalog names and specimen terms. |
-| Catalog -> Report/Wiki | Crown specimen keeps `S1E2`/`ZULU-0040` session tags and now has a sourced preview image. |
+검수 기준 라우트는 현재 ERP 구현에 맞춰 ObjectId 기반 상세 URL을 사용한다. slug 직접 접근(`/erp/wiki/s1e2-choice`, `/erp/wiki/zulu-0040-crown`)은 현 라우터에서 404가 정상이다.
 
-## Candidate-Only / Not Mutated
-
-| Axis | Status | Reason |
+| 표면 | 검수 라우트 | 결과 |
 | --- | --- | --- |
-| Credit, inventory, shop stock | Not mutated | S1E2 shop/usage beats remain unapproved economy side effects. |
-| Stock market | No action | SPZ-related beat is covert/failed as a market event and has no approved ticker mutation. |
-| Market wire | Not mutated | No public market notice was approved. |
-| Holdings/trades | Not mutated | No stock trade or holdings mutation was requested. |
+| 작전보고서 상세 | `/erp/sessions/report/6a1ed3baffdf6f90b0c74e68` | ZULU-0040 왕관 도판이 본문 이미지로 로드됨. 관련 위키 2건과 카탈로그 4건이 연결됨. |
+| S1E2 위키 | `/erp/wiki/6a1ed3baffdf6f90b0c74e69` | 우측 infobox에 왕관 도판이 로드됨. `시간대별 전개`, `사건 개요`, `결과와 판정` TOC가 표시됨. 관련 왕관 위키와 카탈로그가 연결됨. |
+| 왕관 위키 | `/erp/wiki/6a1ed3bbffdf6f90b0c74e6b` | `개체` 카테고리 문서로 표시되고 왕관 도판이 로드됨. S1E2 보고서와 왕관 표본 카탈로그가 연결됨. |
+| 왕관 카탈로그 | `/erp/wiki/catalog/item/zulu-0040-crown-specimen` | 대표 이미지가 공식 왕관 도판으로 표시됨. 관련 보고서 위키와 왕관 개체 위키가 연결됨. |
 
-## Remaining Gaps
+추가 화면 점검:
 
-- ZULU-0040 can be enriched further if a dedicated containment archive provides containment percentage, final facility location, samples, or formal isolation protocol.
-- `오디세이 시설` and `광명회` remain text-only unless official images or archive assets are provided.
-- Follow-up S1E2 hooks such as `제인 피쉬`, `물주먹 래키`, `송사리 호`, and the later `지휘자` thread need their own source material before they are promoted into durable pages.
+- 왕관 도판은 보고서 원본 이미지 렌더, 위키 Next image 렌더, 카탈로그 preview 렌더 모두에서 로드된다.
+- 검수 중 실패한 이미지 요청, 400 이상 HTTP 응답, 깨진 문자, 원본 PDF명, 라인 번호 노출은 확인되지 않았다.
+- `시민사회` 등 간접 키워드가 `요한 스미스` 계열 링크로 잘못 연결되는 사례는 이번 검수 범위에서 확인되지 않았다.
+
+## 검증된 연결축
+
+| 축 | 확인 앵커 |
+| --- | --- |
+| 보고서 -> 위키 | `작전 보고서 S1E2: 선택`, `ZULU-0040 왕관` |
+| 보고서 -> 카탈로그 | `행동교정물질`, `ZULU-0040 왕관 격리 표본`, `정신 저항제 배합 자료`, `커룹의 불칼` |
+| 위키 -> 보고서 | 왕관 개체 문서에서 S1E2 보고서가 관련 문서로 연결됨 |
+| 위키 -> 카탈로그 | S1E2 위키와 왕관 위키가 왕관 표본 및 관련 물품 카탈로그로 연결됨 |
+| 카탈로그 -> 보고서/위키 | 왕관 표본 상세에서 S1E2 보고서 위키와 ZULU-0040 왕관 위키가 연결됨 |
+| Dossier -> 보고서 | `NOSB-S1E2-CHOICE` 등장 연결 15건 유지 |
+
+## 왕관 아카이브 보강 상태
+
+공식 로컬 자료 탐색 결과 현재 확인된 왕관 자료는 이미지 2건뿐이다.
+
+- `왕관.webp`: ERP에 반영한 공식 도판.
+- `왕관.png`: 같은 도판의 PNG 원본 계열.
+
+전용 격리 아카이브 HTML/TXT는 현재 확인되지 않았다. 따라서 아래 항목은 보강 대기 상태로 남긴다.
+
+- 격리 완벽도 또는 격리율
+- 최종 격리 위치
+- 기대 샘플
+- 특수 격리 조건
+- 별도 CLEARANCE 또는 공식 분류 문구
+
+## 후보 / 미적용
+
+| 축 | 상태 | 이유 |
+| --- | --- | --- |
+| 크레딧, 인벤토리, 상점 재고 | 미적용 | S1E2 구매/사용 후보는 별도 경제 승인 없이 변동하지 않는다. |
+| 주식 시장 | no-action | SPZ 관련 사건은 비공개 전송 루트 폐기 및 실패 흐름이므로 공개 시장 이벤트로 보지 않는다. |
+| 시장 공시 | 미적용 | 공개 시장 공시 문구와 적용 승인이 없다. |
+| 보유 주식/거래 | 미적용 | 주식 거래 또는 보유량 변경 승인이 없다. |
+
+## 남은 간극
+
+- ZULU-0040은 전용 격리 아카이브가 제공되면 개체 위키와 카탈로그를 추가 보강한다.
+- 오디세이 시설과 광명회는 현재 텍스트 기반 문서이며, 공식 도판이나 추가 archive asset이 제공되면 시각 자료를 추가할 수 있다.
+- 제인 피쉬, 물주먹 래키, 송사리 호, 지휘자 후속 훅은 S1E2 말미 단서로만 보존한다. 별도 로그나 자료 없이는 독립 동기화 대상으로 승격하지 않는다.
