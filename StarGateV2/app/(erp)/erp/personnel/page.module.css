@@ -178,6 +178,39 @@
   gap: 10px;
 }
 
+.directMembers {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-1);
+  overflow: hidden;
+}
+
+.directMembers__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--bg-2);
+}
+
+.directMembers__label {
+  color: var(--ink-0);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.directMembers__meta {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.directMembers__body {
+  padding: 18px;
+}
+
 /* Card grid */
 
 .cardGrid {

@@ -138,7 +138,7 @@
 /* sub-unit chip — 컴팩트한 밀도를 유지하되 20px 아이콘과 긴 한글 라벨이 닿지 않게 여백만 보정. */
 .subUnitChips {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 176px), 1fr));
   gap: 8px;
   margin-top: 8px;
 }
@@ -155,8 +155,16 @@
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.06em;
+  min-width: 0;
+  overflow: hidden;
   white-space: nowrap;
   text-decoration: none;
+}
+
+.subUnitChip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .subUnitChip svg {
@@ -172,7 +180,7 @@
 }
 
 .subUnitChip[data-subunit="SPACE_ZERO"] .subUnitLogo {
-  width: 68px;
+  width: clamp(52px, 30%, 68px);
   height: 18px;
   filter: invert(1) grayscale(1) contrast(1.35);
 }

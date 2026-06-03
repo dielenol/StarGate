@@ -117,6 +117,10 @@ function resolveExternalSubOrg(c: Character) {
   );
 }
 
+function resolveSubUnitCode(c: Character): string | null {
+  return resolveExternalSubOrg(c)?.code ?? c.department ?? null;
+}
+
 function characterUsesAgentLevels(c: Character): boolean {
   return isInternalOrgCode(resolveGroup(c));
 }
@@ -300,16 +304,9 @@ export default function PersonnelClient({
       map.set(org.code, []);
     }
     for (const c of characters) {
-      const externalSubOrg = resolveExternalSubOrg(c);
-      if (externalSubOrg) {
-        const bucket = map.get(externalSubOrg.code);
-        if (bucket) bucket.push(c);
-        continue;
-      }
-
-      const dept = c.department;
-      if (!dept) continue;
-      const bucket = map.get(dept);
+      const subUnitCode = resolveSubUnitCode(c);
+      if (!subUnitCode) continue;
+      const bucket = map.get(subUnitCode);
       if (bucket) bucket.push(c);
     }
     return map;
@@ -356,8 +353,7 @@ export default function PersonnelClient({
       const g = resolveGroup(c);
       groupCounts.set(g, (groupCounts.get(g) ?? 0) + 1);
 
-      const externalSubOrg = resolveExternalSubOrg(c);
-      const subUnitCode = externalSubOrg?.code ?? c.department;
+      const subUnitCode = resolveSubUnitCode(c);
       if (subUnitCode && subUnitCode !== g) {
         subUnitCounts.set(
           subUnitCode,
@@ -545,6 +541,19 @@ export default function PersonnelClient({
     return getDisplaySubUnits(selectedGroup);
   }, [selectedGroup]);
 
+  const selectedSubUnitCodes = useMemo(
+    () => new Set(selectedSubUnits.map((u) => u.code)),
+    [selectedSubUnits],
+  );
+
+  const selectedDirectMembers = useMemo(() => {
+    if (!selectedGroup || selectedSubUnitCodes.size === 0) return [];
+    return selectedGroupMembers.filter((member) => {
+      const subUnitCode = resolveSubUnitCode(member);
+      return !subUnitCode || !selectedSubUnitCodes.has(subUnitCode);
+    });
+  }, [selectedGroup, selectedGroupMembers, selectedSubUnitCodes]);
+
   const selectedGroupLabel = selectedGroup
     ? getDisplayGroupLabel(selectedGroup)
     : "";
@@ -708,8 +717,31 @@ export default function PersonnelClient({
   };
 
   const renderSubUnitList = () => {
+    const directAgentCount = selectedDirectMembers.filter(
+      (m) => m.type === "AGENT",
+    ).length;
+    const directNpcCount = selectedDirectMembers.filter(
+      (m) => m.type === "NPC",
+    ).length;
+    const directLabel = `${selectedGroupLabel} 직속`;
+
     return (
       <div className={styles.subunitGroup}>
+        {selectedDirectMembers.length > 0 ? (
+          <section className={styles.directMembers} aria-label={directLabel}>
+            <div className={styles.directMembers__head}>
+              <span className={styles.directMembers__label}>
+                {directLabel}
+              </span>
+              <span className={styles.directMembers__meta}>
+                {directAgentCount} AGENT · {directNpcCount} NPC
+              </span>
+            </div>
+            <div className={styles.directMembers__body}>
+              {renderCardGrid(selectedDirectMembers)}
+            </div>
+          </section>
+        ) : null}
         {selectedSubUnits.map((unit) => {
           const members = subUnitIndex.get(unit.code) ?? [];
           const agentCount = members.filter((m) => m.type === "AGENT").length;
