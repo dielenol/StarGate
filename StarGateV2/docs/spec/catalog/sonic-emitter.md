@@ -8,13 +8,13 @@ category: SPECIAL
 price: 0
 effect: 음절 유도 / 음파 방출 장치
 description: 검열된 비명(ZULU-0028)의 음절 방출 조건을 응용하는 특수 음파 장치.
-previewImage:
+previewImage: /assets/catalog/special/sonic-emitter.webp
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E1-MINI, S1E1-MINI, ZULU-0028, 검열된비명, 소닉이미터, 음파]
 source: manual
 createdAt: 2026-03-23T00:00:00Z
-updatedAt: 2026-06-02T00:00:00Z
+updatedAt: 2026-06-03T00:00:00Z
 ---
 
 ## 설명

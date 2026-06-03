@@ -8,13 +8,13 @@ category: CONSUMABLE
 price: 0
 effect: 정신·행동 반응 교정 연구 약품
 description: ZULU-0113 눈물 샘플을 기반으로 개발 방향이 확정된 과학자 클래스 약품.
-previewImage:
+previewImage: /assets/catalog/consumables/behavior-correction-substance.webp
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E1-MINI, S1E1-MINI, ZULU-0113, ZULU-113, 전자화눈물, 행동교정물질, 과학자, 약품]
 source: manual
 createdAt: 2026-03-23T00:00:00Z
-updatedAt: 2026-06-02T00:00:00Z
+updatedAt: 2026-06-03T00:00:00Z
 ---
 
 ## 설명

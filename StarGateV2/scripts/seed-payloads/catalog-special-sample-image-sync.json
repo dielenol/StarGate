@@ -31,5 +31,49 @@
         "updatedAt": "2026-06-02T00:00:00.000Z"
       }
     }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-image-sync",
+    "filter": { "slug": "zulu-0040-crown-specimen" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/wiki/entities/zulu-0040-crown.webp",
+        "updatedAt": "2026-06-03T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-image-sync",
+    "filter": { "slug": "behavior-correction-substance" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/consumables/behavior-correction-substance.webp",
+        "updatedAt": "2026-06-03T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-image-sync",
+    "filter": { "slug": "sonic-emitter" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/special/sonic-emitter.webp",
+        "updatedAt": "2026-06-03T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-image-sync",
+    "filter": { "slug": "mental-resistance-formula" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/special/mental-resistance-formula.webp",
+        "updatedAt": "2026-06-03T00:00:00.000Z"
+      }
+    }
   }
 ]

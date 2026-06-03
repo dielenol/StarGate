@@ -146,7 +146,7 @@
       "price": 0,
       "effect": "숙주 의존형 정신 지배 개체 표본",
       "description": "오디세이 시설 지하 4층 사건에서 회수된 ZULU-0040 \"왕관\"의 격리 표본.",
-      "previewImage": "",
+      "previewImage": "/assets/wiki/entities/zulu-0040-crown.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": [
@@ -161,11 +161,11 @@
       "lore": {
         "background": "ZULU-0040은 오디세이 시설 지하 4층에서 감염자와 균사 군체를 통해 정신 지배 증상을 일으킨 개체다. 행동교정물질 주입 이후 주 개체가 붕괴했고, 우디가 생성한 대형 무디를 임시 숙주로 제공한 뒤 격리 상태가 안정화되었다.",
         "acquisition": "일반 획득 불가. NOSB-S1E2-CHOICE 작전 중 해쉬 테거가 본체를 회수하고 현장팀이 격리 절차를 완료했다.",
-        "notes": "원본 격리 아카이브 HTML 또는 이미지가 아직 제공되지 않아 텍스트 기반 표본으로만 등록한다."
+        "notes": "관련 도판은 ZULU-0040 격리 개체 아카이브 도판과 연결한다."
       },
       "source": "session-log",
       "createdAt": "2026-04-06T00:00:00.000Z",
-      "updatedAt": "2026-06-02T00:00:00.000Z"
+      "updatedAt": "2026-06-03T00:00:00.000Z"
     }
   },
   {
@@ -179,7 +179,7 @@
       "price": 0,
       "effect": "ZULU-0040 계열 정신 지배 저항 배합식",
       "description": "화이트로즈 요원이 제공하고 현장팀이 확보한 정신 저항 항체 및 배합 자료.",
-      "previewImage": "",
+      "previewImage": "/assets/catalog/special/mental-resistance-formula.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": [
@@ -198,7 +198,7 @@
       },
       "source": "session-log",
       "createdAt": "2026-04-06T00:00:00.000Z",
-      "updatedAt": "2026-06-02T00:00:00.000Z"
+      "updatedAt": "2026-06-03T00:00:00.000Z"
     }
   },
   {

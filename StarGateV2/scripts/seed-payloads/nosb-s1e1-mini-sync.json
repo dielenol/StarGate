@@ -100,6 +100,7 @@
       "price": 0,
       "effect": "정신·행동 반응 교정 연구 약품",
       "description": "ZULU-0113 눈물 샘플을 기반으로 개발 방향이 확정된 과학자 클래스 약품.",
+      "previewImage": "/assets/catalog/consumables/behavior-correction-substance.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E1-MINI", "S1E1-MINI", "ZULU-0113", "ZULU-113", "전자화눈물", "행동교정물질", "과학자", "약품"],
@@ -110,7 +111,7 @@
       },
       "source": "manual",
       "createdAt": "2026-03-23T00:00:00.000Z",
-      "updatedAt": "2026-06-02T00:00:00.000Z"
+      "updatedAt": "2026-06-03T00:00:00.000Z"
     }
   },
   {
@@ -124,6 +125,7 @@
       "price": 0,
       "effect": "음절 유도 / 음파 방출 장치",
       "description": "검열된 비명(ZULU-0028)의 음절 방출 조건을 응용하는 특수 음파 장치.",
+      "previewImage": "/assets/catalog/special/sonic-emitter.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E1-MINI", "S1E1-MINI", "ZULU-0028", "검열된비명", "소닉이미터", "음파"],
@@ -134,7 +136,7 @@
       },
       "source": "manual",
       "createdAt": "2026-03-23T00:00:00.000Z",
-      "updatedAt": "2026-06-02T00:00:00.000Z"
+      "updatedAt": "2026-06-03T00:00:00.000Z"
     }
   },
   {

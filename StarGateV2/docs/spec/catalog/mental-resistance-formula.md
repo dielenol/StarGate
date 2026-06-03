@@ -8,13 +8,13 @@ category: SPECIAL
 price: 0
 effect: ZULU-0040 계열 정신 지배 저항 배합식 자료
 description: 화이트로즈 요원이 제공하고 현장팀이 확보한 정신 저항 항체 및 배합 자료.
-previewImage:
+previewImage: /assets/catalog/special/mental-resistance-formula.webp
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E2-CHOICE, S1E2, 화이트로즈, 정신저항제, 배합식, 항체, ZULU-0040]
 source: session-log
 createdAt: 2026-04-06T00:00:00Z
-updatedAt: 2026-06-02T00:00:00Z
+updatedAt: 2026-06-03T00:00:00Z
 ---
 
 ## 설명
