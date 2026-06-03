@@ -30,21 +30,26 @@ const metadataBase = process.env.NEXT_PUBLIC_SITE_URL
 
 const stripInjectedUserSelectScript = `
 (() => {
-  const STYLE_PATTERN = /(?:^|;)\\s*(?:-webkit-)?user-select\\s*:\\s*auto\\s*(?:;|$)/i;
+  const USER_SELECT_PATTERN = /(?:^|;)\\s*(?:-webkit-|-ms-)?user-select\\s*:/i;
+  const USER_SELECT_PROPERTIES = [
+    "user-select",
+    "-webkit-user-select",
+    "-ms-user-select",
+  ];
 
   const stripElement = (element) => {
-    if (!(element instanceof HTMLElement || element instanceof SVGElement)) {
+    if (!(element instanceof Element) || !("style" in element)) {
       return;
     }
 
     const style = element.getAttribute("style");
-    if (!style || !STYLE_PATTERN.test(style)) {
+    if (!style || !USER_SELECT_PATTERN.test(style)) {
       return;
     }
 
-    element.style.userSelect = "";
-    element.style.webkitUserSelect = "";
-    element.style.msUserSelect = "";
+    USER_SELECT_PROPERTIES.forEach((property) => {
+      element.style.removeProperty(property);
+    });
 
     if (!element.getAttribute("style")?.trim()) {
       element.removeAttribute("style");
@@ -58,7 +63,7 @@ const stripInjectedUserSelectScript = `
 
     if ("querySelectorAll" in root) {
       root
-        .querySelectorAll('[style*="user-select"]')
+        .querySelectorAll("[style]")
         .forEach(stripElement);
     }
   };
@@ -131,11 +136,13 @@ export default function RootLayout({
       className={`${jetbrainsMono.variable} ${notoSansKr.variable}`}
       suppressHydrationWarning
     >
-      <body suppressHydrationWarning>
+      <head>
         <script
           id="strip-injected-user-select"
           dangerouslySetInnerHTML={{ __html: stripInjectedUserSelectScript }}
         />
+      </head>
+      <body suppressHydrationWarning>
         {children}
       </body>
     </html>
