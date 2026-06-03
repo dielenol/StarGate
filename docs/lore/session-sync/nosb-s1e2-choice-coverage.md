@@ -14,7 +14,9 @@ Updated: 2026-06-03
 | 표면 | 키 | 처리 | 상태 |
 | --- | --- | --- | --- |
 | 작전보고서 | `session_reports.NOSB-S1E2-CHOICE` | 작전지 문맥, 시간대별 전개, 주요 연결축, ZULU-0040 왕관 도판, 사후 첨지, 왕관 격리 표본 앵커를 보강했다. | 적용 |
+| 작전보고서 | `session_reports.NOSB-S1E2-CHOICE` | S1E1/미니 계열 타임라인이 섞였던 `시간대별 전개`를 S1E2 오디세이 시설 실제 전개로 교체했다. | 복구 |
 | 위키 | `wiki_pages.s1e2-choice` | 기존 `작전 보고서` 카테고리를 유지하고 S1E2 선택 보고서 허브로 재정리했다. | 적용 |
+| 위키 | `wiki_pages.s1e2-choice` | S1E1/미니 계열 타임라인 앵커를 제거하고 S1E2 브리핑, 선발조 구조, 화이트로즈 교신, 왕관 격리 순서로 교체했다. | 복구 |
 | 위키 | `wiki_pages.zulu-0040-crown` | 왕관 개체 문서에 공식 도판, 전투 양상, 격리 경과, 격리율 50%, 격리 위치, 감염 기전, 반응 기록, 기대 연구 응용을 반영했다. | 적용 |
 | 카탈로그 | `master_items.zulu-0040-crown-specimen` | ZULU-0040 왕관 격리 표본의 대표 도판과 아카이브 기반 표본 설명을 연결했다. | 적용 |
 | 카탈로그 | `master_items.antibiotic` | S1E2 보상으로 과학자 직군에 해금된 항생제 소모품을 등록했다. | 적용 |
@@ -28,6 +30,7 @@ Updated: 2026-06-03
 | Asset | `StarGateV2/public/assets/wiki/entities/zulu-0040-crown.webp` | 공식 왕관 도판을 기존 위키 개체 asset 위치에 저장했다. | 추가 |
 | Seed payload | `StarGateV2/scripts/seed-payloads/zz-zulu-0040-archive.json` | 왕관 위키와 왕관 표본 카탈로그의 아카이브 보강분을 재현 가능하게 만들었다. | 추가 |
 | Seed payload | `StarGateV2/scripts/seed-payloads/zz-s1e2-rewards-loot.json` | S1E2 보상과 전리품 반영분을 재현 가능하게 만들었다. | 추가 |
+| Seed payload | `StarGateV2/scripts/seed-payloads/zz-s1e2-report-contamination-repair.json` | S1E2 보고서/위키의 세션 교차오염 타임라인 복구를 재현 가능하게 만들었다. | 추가 |
 
 ## ERP 화면 검수
 
@@ -89,3 +92,4 @@ Updated: 2026-06-03
 - 오디세이 시설과 광명회는 사용자 지시로 이번 동기화 대상에서 제외했다.
 - 제인 피쉬, 물주먹 래키, 송사리 호, 지휘자 후속 훅은 S1E2 말미 단서로만 보존한다. 별도 로그나 자료 없이는 독립 동기화 대상으로 승격하지 않는다.
 - 보상 포인트, 세력 호의도, 해금품 실제 재고·지급 처리는 별도 경제/진행도 승인 후 적용한다.
+- 2026-06-03 복구: S1E2 보고서와 위키에서 S1E1/미니 계열 타임라인 앵커(`블랙 피라미드 입소`, `한국 투입`, `감염된 비명`, `백색소음`, `청각 의존성`, `특수 격리 상자`)가 제거되었음을 DB read로 확인했다.
