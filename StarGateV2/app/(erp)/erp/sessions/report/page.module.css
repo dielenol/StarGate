@@ -67,7 +67,15 @@
 }
 
 .mapPin--estimated {
-  opacity: 0.78;
+  opacity: 1;
+}
+
+.mapPin--estimated .mapPin__stem {
+  background: linear-gradient(180deg, var(--gold), transparent 82%);
+}
+
+.mapPin--estimated .mapPin__dot {
+  background: color-mix(in srgb, var(--gold) 18%, var(--bg-0));
 }
 
 .mapPin__report {
