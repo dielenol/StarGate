@@ -1,5 +1,6 @@
+/* eslint-disable @next/next/no-img-element -- Static WebP public assets avoid next/image hydration noise. */
+
 import Link from "next/link";
-import Image from "next/image";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
@@ -30,15 +31,14 @@ export default function HomePage() {
               <p className={styles["stargate__logo-placeholder"]}>
                 <span className={styles["stargate__logo-title"]}>NOVUS ORDO</span>
                 <br />
-                <Image
+                <img
                   className={styles["stargate__logo-image"]}
                   src={logoSrc}
                   alt="Star Gate logo"
                   width={220}
                   height={183}
-                  priority
-                  quality={72}
-                  sizes="220px"
+                  decoding="async"
+                  fetchPriority="high"
                 />
               </p>
             </div>
@@ -110,14 +110,13 @@ export default function HomePage() {
               <div className={styles["stargate__profile-frame"]}>
                 <div className={styles["stargate__profile-inner"]}>
                   <p className={styles["stargate__profile-placeholder"]}>
-                    <Image
+                    <img
                       src={amaliaPortraitSrc}
                       alt="아말리아 프레드리카 본 에센 초상화"
                       width={260}
                       height={380}
                       loading="lazy"
-                      quality={72}
-                      sizes="260px"
+                      decoding="async"
                       className={styles["stargate__portrait-image"]}
                     />
                     <span className={styles["stargate__profile-caption"]}>

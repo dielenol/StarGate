@@ -1,6 +1,7 @@
 "use client";
 
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element -- Static WebP public assets avoid next/image hydration noise. */
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, useState } from "react";
@@ -120,12 +121,12 @@ export default function Sidebar() {
       <aside className={`${styles.sidebar} ${mobileOpen ? styles["sidebar--mobile-open"] : ""}`}>
         <div className={styles["sidebar__header"]}>
           <span className={styles["sidebar__brand-icon"]}>
-            <Image
+            <img
               alt="NOVUS ORDO 로고"
               className={styles["sidebar__brand-image"]}
               height={36}
-              quality={70}
-              sizes="36px"
+              loading="lazy"
+              decoding="async"
               src={brandLogoSrc}
               width={36}
             />
