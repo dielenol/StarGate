@@ -60,8 +60,17 @@
 .stargate__logo-image {
   display: block;
   margin: 10px auto 10px;
-  max-width: 220px;
-  width: 100%;
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.stargate__portrait-image {
+  display: block;
+  margin: 10px auto 10px;
+  width: 260px;
+  max-width: 100%;
   height: auto;
   object-fit: contain;
 }

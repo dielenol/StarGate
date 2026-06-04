@@ -127,7 +127,6 @@ export default function Sidebar() {
               quality={70}
               sizes="36px"
               src={brandLogoSrc}
-              style={{ height: "auto" }}
               width={36}
             />
           </span>
