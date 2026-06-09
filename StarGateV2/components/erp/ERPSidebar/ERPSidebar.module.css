@@ -70,6 +70,20 @@
   color: var(--gold);
 }
 
+.sidebar__countBadge {
+  flex-shrink: 0;
+  min-width: 22px;
+  padding: 2px 7px;
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 58%, var(--line-strong));
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.2;
+  text-align: center;
+}
+
 .sidebar__item--disabled {
   opacity: 0.55;
   cursor: not-allowed;

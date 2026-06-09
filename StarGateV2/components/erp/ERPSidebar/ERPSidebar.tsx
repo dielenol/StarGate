@@ -8,6 +8,8 @@ import { useSession } from "next-auth/react";
 
 import type { NavItem } from "@/components/erp/nav-config";
 
+import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
+
 import { NAV_GROUPS } from "@/components/erp/nav-config";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import { IconCheckDot, IconChevronLeft } from "@/components/icons";
@@ -28,6 +30,7 @@ export default function ERPSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+  const { data: notifications = [] } = useNotifications();
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -73,6 +76,12 @@ export default function ERPSidebar() {
   }
 
   const role = session?.user?.role;
+  const unreadNotificationCount = useMemo(
+    () => notifications.filter((notification) => !notification.isRead).length,
+    [notifications],
+  );
+  const unreadNotificationLabel =
+    unreadNotificationCount > 99 ? "99+" : String(unreadNotificationCount);
 
   return (
     <>
@@ -110,6 +119,11 @@ export default function ERPSidebar() {
                 const active = isItemActive(item);
                 const disabled = item.href === null;
                 const Icon = item.icon;
+                const notificationBadge =
+                  item.href === "/erp/notifications" &&
+                  unreadNotificationCount > 0
+                    ? unreadNotificationLabel
+                    : null;
 
                 if (disabled) {
                   return (
@@ -158,7 +172,14 @@ export default function ERPSidebar() {
                         {item.label}
                       </span>
                     </span>
-                    {active ? (
+                    {notificationBadge ? (
+                      <span
+                        className={styles.sidebar__countBadge}
+                        aria-label={`안 읽은 알림 ${unreadNotificationCount}건`}
+                      >
+                        {notificationBadge}
+                      </span>
+                    ) : active ? (
                       <IconCheckDot
                         className={styles.sidebar__activeMark}
                         aria-hidden

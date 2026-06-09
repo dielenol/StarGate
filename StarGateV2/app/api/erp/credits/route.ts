@@ -14,6 +14,34 @@ import {
 } from "@/lib/db/credits";
 import { findUserById } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
+import {
+  formatSignedAmount,
+  notifyUser,
+} from "@/lib/notifications/events";
+
+function getCreditNotificationTitle(
+  type: CreditTransactionType,
+  amount: number,
+): string {
+  if (type === "ADMIN_DEDUCT" || amount < 0) return "크레딧이 차감되었습니다";
+  if (type === "SESSION_REWARD") return "세션 보상이 지급되었습니다";
+  return "크레딧이 지급되었습니다";
+}
+
+function getCreditNotificationMessage(input: {
+  characterCodename: string;
+  amount: number;
+  balance: number;
+  description: string;
+}): string {
+  const description = input.description.trim();
+  const lines = [
+    `${input.characterCodename} · ${formatSignedAmount(input.amount, "CR")}`,
+    `현재 잔액 ${input.balance.toLocaleString()} CR`,
+  ];
+  if (description) lines.push(description);
+  return lines.join(" · ");
+}
 
 /* ── GET: ledger + balance 조회 ── */
 
@@ -196,6 +224,8 @@ export async function POST(request: Request) {
   }
   // narrow 결과를 await 너머까지 보존하기 위한 캡처 (body.type 은 mutable property).
   const validatedType = body.type;
+  const finalAmount =
+    validatedType === "ADMIN_DEDUCT" ? -validatedAmount : validatedAmount;
 
   // 대상 AGENT 캐릭터 해석 — characterId 우선, 미지정 시 ownerId 의 메인 캐릭으로.
   let targetCharacterId: string;
@@ -282,12 +312,24 @@ export async function POST(request: Request) {
       characterCodename: targetCharacterCodename,
       ownerId: targetOwnerId,
       ownerName,
-      amount: validatedAmount,
+      amount: finalAmount,
       type: validatedType,
       description: body.description ?? "",
       createdById: session.user.id,
       createdByName: session.user.displayName,
       allowNegative: validatedType === "ADMIN_DEDUCT",
+    });
+    await notifyUser({
+      userId: targetOwnerId,
+      type: "CREDIT_RECEIVED",
+      title: getCreditNotificationTitle(validatedType, transaction.amount),
+      message: getCreditNotificationMessage({
+        characterCodename: targetCharacterCodename,
+        amount: transaction.amount,
+        balance: transaction.balance,
+        description: transaction.description,
+      }),
+      link: "/erp/credits",
     });
 
     return NextResponse.json({ transaction }, { status: 201 });

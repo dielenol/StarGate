@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { createUser, listUsers } from "@/lib/db/users";
+import { notifyUser } from "@/lib/notifications/events";
 import { USER_ROLES, type UserRole } from "@/types/user";
 
 export async function GET() {
@@ -67,6 +68,13 @@ export async function POST(request: Request) {
       username: username.trim(),
       displayName: displayName.trim(),
       role: role as UserRole,
+    });
+    await notifyUser({
+      userId: result.userId,
+      type: "SYSTEM",
+      title: "계정이 생성되었습니다",
+      message: `${displayName.trim()} 계정이 ${role} 등급으로 등록되었습니다.`,
+      link: "/erp/account",
     });
 
     return NextResponse.json(result, {

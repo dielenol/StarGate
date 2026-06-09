@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { findUserById, unlinkDiscord } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
+import { notifyUser } from "@/lib/notifications/events";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -64,6 +65,13 @@ export async function POST(_request: Request, context: RouteContext) {
 
   try {
     await unlinkDiscord(id);
+    await notifyUser({
+      userId: id,
+      type: "SYSTEM",
+      title: "Discord 연동이 해제되었습니다",
+      message: "운영자가 계정의 Discord 연동을 해제했습니다.",
+      link: "/erp/account",
+    });
     console.info("[admin-audit]", {
       action: "USER_DISCORD_UNLINK",
       actorId: session.user.id,

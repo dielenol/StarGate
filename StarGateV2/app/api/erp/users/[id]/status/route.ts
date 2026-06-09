@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { findUserById, updateUserStatus } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
+import { notifyUser } from "@/lib/notifications/events";
 import { USER_STATUSES, type UserStatus } from "@/types/user";
 
 interface RouteContext {
@@ -75,6 +76,13 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     await updateUserStatus(id, status as UserStatus);
+    await notifyUser({
+      userId: id,
+      type: "SYSTEM",
+      title: "계정 상태가 변경되었습니다",
+      message: `${target.status} → ${status} 상태로 변경되었습니다.`,
+      link: "/erp/account",
+    });
     console.info("[admin-audit]", {
       action: "USER_STATUS_CHANGE",
       actorId: session.user.id,

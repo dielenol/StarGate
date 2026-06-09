@@ -15,7 +15,7 @@ export async function GET() {
       { notifications },
       {
         headers: {
-          "Cache-Control": "private, max-age=120, stale-while-revalidate=300",
+          "Cache-Control": "no-store",
         },
       },
     );

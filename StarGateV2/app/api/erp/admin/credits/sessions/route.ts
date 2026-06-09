@@ -46,11 +46,21 @@ import {
 } from "@/lib/db/sessions";
 import { findUserById } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
+import {
+  formatSignedAmount,
+  notifyUser,
+} from "@/lib/notifications/events";
 
 import { buildSessionRewardCandidates } from "@/app/(erp)/erp/admin/credits/_session-rewards";
 
 const DEFAULT_DAYS_BACK = 14;
 const MAX_DAYS_BACK = 60;
+
+function appendDescription(parts: string[], description: string): string[] {
+  const trimmed = description.trim();
+  if (!trimmed) return parts;
+  return [...parts, trimmed];
+}
 
 /* ────────────────────────────────────────────────────────────── *
  * GET — eligibility 후보 조회
@@ -436,6 +446,20 @@ async function processRewardOperation(args: {
           rewardKind: "CREDIT",
         },
       });
+      await notifyUser({
+        userId: participant.ownerId,
+        type: "CREDIT_RECEIVED",
+        title: "세션 보상이 지급되었습니다",
+        message: appendDescription(
+          [
+            `${participant.characterCodename} · ${formatSignedAmount(transaction.amount, "CR")}`,
+            `현재 잔액 ${transaction.balance.toLocaleString()} CR`,
+            sessionMeta.sessionTitle,
+          ],
+          transaction.description,
+        ).join(" · "),
+        link: "/erp/credits",
+      });
       return {
         ...base,
         success: true,
@@ -460,6 +484,20 @@ async function processRewardOperation(args: {
           rewardKind: "POINT",
         },
       });
+      await notifyUser({
+        userId: participant.ownerId,
+        type: "SYSTEM",
+        title: "세션 포인트 보상이 지급되었습니다",
+        message: appendDescription(
+          [
+            `${participant.characterCodename} · ${formatSignedAmount(reward.amount, "PT")}`,
+            `현재 포인트 ${pointResult.after.toLocaleString()} PT`,
+            sessionMeta.sessionTitle,
+          ],
+          description,
+        ).join(" · "),
+        link: `/erp/characters/${participant.characterId}`,
+      });
       return {
         ...base,
         success: true,
@@ -483,6 +521,20 @@ async function processRewardOperation(args: {
         rewardKind: "STAT",
         statField: reward.statField ?? null,
       },
+    });
+    await notifyUser({
+      userId: participant.ownerId,
+      type: "SYSTEM",
+      title: "세션 스탯 보상이 반영되었습니다",
+      message: appendDescription(
+        [
+          `${participant.characterCodename} · ${formatRewardLabel(reward)}`,
+          `현재 ${reward.statField?.toUpperCase()} ${statResult.after.toLocaleString()}`,
+          sessionMeta.sessionTitle,
+        ],
+        description,
+      ).join(" · "),
+      link: `/erp/characters/${participant.characterId}`,
     });
     return {
       ...base,

@@ -57,8 +57,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "대시보드", keywords: "dashboard", icon: IconDashboard, href: "/erp" },
       { label: "계정", keywords: "account password discord settings", icon: IconSystem, href: "/erp/account" },
-      /* 알림 — 콘텐츠 준비중. */
-      { label: "알림", keywords: "notifications", icon: IconNotification, href: null },
+      { label: "알림", keywords: "notifications", icon: IconNotification, href: "/erp/notifications" },
     ],
   },
   {

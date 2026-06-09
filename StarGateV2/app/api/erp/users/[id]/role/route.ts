@@ -8,6 +8,7 @@ import {
   updateUserRole,
 } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
+import { notifyUser } from "@/lib/notifications/events";
 import { USER_ROLES, type UserRole } from "@/types/user";
 
 interface RouteContext {
@@ -80,6 +81,13 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     await updateUserRole(id, role as UserRole);
+    await notifyUser({
+      userId: id,
+      type: "ROLE_CHANGE",
+      title: "권한 등급이 변경되었습니다",
+      message: `${target.role} → ${role} 등급으로 변경되었습니다.`,
+      link: "/erp/account",
+    });
     console.info("[admin-audit]", {
       action: "USER_ROLE_CHANGE",
       actorId: session.user.id,

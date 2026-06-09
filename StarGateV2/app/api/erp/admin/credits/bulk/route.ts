@@ -40,8 +40,27 @@ import { addCredit } from "@/lib/db/credits";
 import { adjustCharacterPoints } from "@/lib/db/character-points";
 import { findUserById } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
+import {
+  formatSignedAmount,
+  notifyUser,
+} from "@/lib/notifications/events";
 
 const MAX_TARGETS = 100;
+
+function getCreditNotificationTitle(
+  type: GmDirectGrantType,
+  amount: number,
+): string {
+  if (type === "ADMIN_DEDUCT" || amount < 0) return "크레딧이 차감되었습니다";
+  if (type === "SESSION_REWARD") return "세션 보상이 지급되었습니다";
+  return "크레딧이 지급되었습니다";
+}
+
+function appendDescription(parts: string[], description: string): string[] {
+  const trimmed = description.trim();
+  if (!trimmed) return parts;
+  return [...parts, trimmed];
+}
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -346,6 +365,22 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
           grantType: validatedType,
         },
       });
+      await notifyUser({
+        userId: targetOwnerId,
+        type: "SYSTEM",
+        title:
+          finalAmount < 0
+            ? "작전 포인트가 차감되었습니다"
+            : "작전 포인트가 지급되었습니다",
+        message: appendDescription(
+          [
+            `${targetCharacterCodename} · ${formatSignedAmount(finalAmount, "PT")}`,
+            `현재 포인트 ${pointResult.after.toLocaleString()} PT`,
+          ],
+          description,
+        ).join(" · "),
+        link: `/erp/characters/${targetCharacterId}`,
+      });
 
       return {
         ownerId: targetOwnerId,
@@ -370,6 +405,19 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
       // ADMIN_DEDUCT 만 음수 진입 허용. SESSION_REWARD/ADMIN_GRANT 는 양수라 무관.
       allowNegative: validatedType === "ADMIN_DEDUCT",
       // metadata 는 본 라우트에서 받지 않음 — 외부 주입 시 자동 보상 멱등 검사 오염 가능.
+    });
+    await notifyUser({
+      userId: targetOwnerId,
+      type: "CREDIT_RECEIVED",
+      title: getCreditNotificationTitle(validatedType, transaction.amount),
+      message: appendDescription(
+        [
+          `${targetCharacterCodename} · ${formatSignedAmount(transaction.amount, "CR")}`,
+          `현재 잔액 ${transaction.balance.toLocaleString()} CR`,
+        ],
+        transaction.description,
+      ).join(" · "),
+      link: "/erp/credits",
     });
 
     return {

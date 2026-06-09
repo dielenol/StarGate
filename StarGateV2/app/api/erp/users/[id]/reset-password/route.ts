@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { findUserById, resetUserPassword } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
+import { notifyUser } from "@/lib/notifications/events";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -56,6 +57,13 @@ export async function POST(_request: Request, context: RouteContext) {
 
   try {
     const { plainPassword } = await resetUserPassword(id);
+    await notifyUser({
+      userId: id,
+      type: "SYSTEM",
+      title: "비밀번호가 초기화되었습니다",
+      message: "운영자가 계정 비밀번호를 초기화했습니다. 새 비밀번호로 로그인한 뒤 계정에서 변경하세요.",
+      link: "/erp/account",
+    });
     // audit 로그에 plainPassword 절대 포함 금지 — actor/target만 기록
     console.info("[admin-audit]", {
       action: "USER_PASSWORD_RESET",

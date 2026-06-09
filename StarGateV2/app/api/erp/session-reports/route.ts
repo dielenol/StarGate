@@ -10,6 +10,7 @@ import {
   createSessionReport,
   listSessionReports,
 } from "@/lib/db/session-reports";
+import { notifyActiveUsers } from "@/lib/notifications/events";
 
 export async function GET() {
   const session = await auth();
@@ -78,6 +79,15 @@ export async function POST(request: Request) {
       gmId: session.user.id,
       gmName: session.user.displayName,
     });
+    await notifyActiveUsers(
+      {
+        type: "REPORT_PUBLISHED",
+        title: "새 작전 보고서가 발행되었습니다",
+        message: report.sessionTitle,
+        link: `/erp/sessions/report/${String(report._id)}`,
+      },
+      { excludeUserIds: [session.user.id] },
+    );
 
     return NextResponse.json({ report }, { status: 201 });
   } catch (err) {

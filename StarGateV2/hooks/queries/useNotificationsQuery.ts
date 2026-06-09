@@ -7,7 +7,7 @@ export const notificationKeys = {
 };
 
 async function fetchNotifications(): Promise<Notification[]> {
-  const res = await fetch("/api/erp/notifications");
+  const res = await fetch("/api/erp/notifications", { cache: "no-store" });
   if (!res.ok) throw new Error("알림을 불러올 수 없습니다.");
   const data = await res.json();
   return data.notifications;
