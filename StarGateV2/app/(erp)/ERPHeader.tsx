@@ -358,7 +358,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
     ? "LOAD"
     : bgmError
       ? "ERR"
-      : activeBgm?.label ?? "BGM";
+      : activeBgm?.label ?? "bgm";
   const bgmTimeLabel = `${formatBgmTime(bgmCurrentTimeValue)} / ${formatBgmTime(
     bgmDurationValue,
   )}`;
@@ -370,9 +370,9 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   } as CSSProperties;
   const bgmState = bgmError ? "error" : bgmPlaying ? "playing" : "idle";
   const bgmToggleLabel = bgmPlaying
-    ? "배경음악 중지"
-    : "배경음악 재생";
-  const bgmShuffleLabel = "랜덤 배경음악으로 변경";
+    ? "bgm 중지"
+    : "bgm 재생";
+  const bgmShuffleLabel = "랜덤 bgm으로 변경";
   const unreadNotificationCount = useMemo(
     () => notifications.filter((notification) => !notification.isRead).length,
     [notifications],
@@ -489,7 +489,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
           className={styles.header__bgm}
           data-state={bgmState}
           role="group"
-          aria-label="ERP BGM"
+          aria-label="ERP bgm"
         >
           <button
             type="button"
@@ -518,7 +518,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
           >
             <IconShuffle aria-hidden />
           </button>
-          <span className={styles.header__bgmCompactLabel}>배경음악</span>
+          <span className={styles.header__bgmCompactLabel}>bgm</span>
 
           <div className={styles.header__bgmPanel}>
             <div className={styles.header__bgmPanelHead}>
@@ -541,7 +541,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                 value={bgmDurationValue > 0 ? bgmCurrentTimeValue : 0}
                 onChange={handleSeekBgm}
                 disabled={bgmDurationValue <= 0}
-                aria-label="배경음악 재생 위치"
+                aria-label="bgm 재생 위치"
                 style={bgmProgressStyle}
               />
             </label>
@@ -558,7 +558,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                 step={1}
                 value={bgmVolumeLevel}
                 onChange={handleBgmVolumeChange}
-                aria-label="배경음악 볼륨"
+                aria-label="bgm 볼륨"
                 style={bgmVolumeStyle}
               />
             </label>
