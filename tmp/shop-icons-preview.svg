@@ -1,0 +1,257 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1240" viewBox="0 0 1440 1240">
+  <defs>
+    <style>
+      .bg { fill: #090b0c; }
+      .grid { fill: none; stroke: rgba(209, 177, 92, .12); stroke-width: 1; }
+      .tile { fill: rgba(13, 16, 18, .92); stroke: rgba(209, 177, 92, .36); stroke-width: 2; }
+      .tileGlow { fill: none; stroke: rgba(209, 177, 92, .16); stroke-width: 8; }
+      .label { fill: #f2dfad; font: 700 23px "Noto Sans KR", "Malgun Gothic", sans-serif; }
+      .slug { fill: #798078; font: 500 15px "JetBrains Mono", Consolas, monospace; letter-spacing: .08em; }
+      .group { fill: #c9a75a; font: 700 14px "JetBrains Mono", Consolas, monospace; letter-spacing: .14em; }
+      .note { fill: #7e8278; font: 500 18px "Noto Sans KR", "Malgun Gothic", sans-serif; }
+      .title { fill: #f1d078; font: 800 42px "JetBrains Mono", Consolas, monospace; letter-spacing: .08em; }
+      .pixel * { shape-rendering: crispEdges; }
+      .outline { fill: #111315; }
+      .shade { opacity: .45; }
+      .shine { opacity: .85; }
+    </style>
+
+    <pattern id="scan" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M 16 0 L 0 0 0 16" class="grid" />
+    </pattern>
+
+    <symbol id="cup_ramen" viewBox="0 0 32 32" class="pixel">
+      <rect x="7" y="7" width="18" height="3" fill="#d9a846"/>
+      <rect x="5" y="10" width="22" height="2" fill="#f5d272"/>
+      <rect x="8" y="9" width="2" height="2" fill="#7b5227"/>
+      <rect x="13" y="9" width="2" height="2" fill="#7b5227"/>
+      <rect x="18" y="9" width="2" height="2" fill="#7b5227"/>
+      <rect x="4" y="12" width="24" height="3" fill="#5c1516"/>
+      <rect x="6" y="15" width="20" height="9" fill="#cc3338"/>
+      <rect x="8" y="17" width="16" height="3" fill="#ef464c"/>
+      <rect x="7" y="22" width="18" height="2" fill="#8c2024"/>
+      <rect x="10" y="24" width="12" height="2" fill="#651718"/>
+      <rect x="22" y="5" width="6" height="1" fill="#f1df9f"/>
+      <rect x="24" y="6" width="5" height="1" fill="#f1df9f"/>
+    </symbol>
+
+    <symbol id="soda" viewBox="0 0 32 32" class="pixel">
+      <rect x="11" y="4" width="10" height="2" fill="#8c9299"/>
+      <rect x="10" y="6" width="12" height="2" fill="#cfd5db"/>
+      <rect x="9" y="8" width="14" height="18" fill="#174f9d"/>
+      <rect x="11" y="9" width="10" height="16" fill="#2f74d0"/>
+      <rect x="12" y="12" width="8" height="3" fill="#e9f4ff"/>
+      <rect x="12" y="18" width="8" height="2" fill="#e9f4ff"/>
+      <rect x="9" y="25" width="14" height="2" fill="#12386e"/>
+      <rect x="18" y="9" width="3" height="15" fill="#80b7f1" opacity=".45"/>
+      <rect x="24" y="5" width="2" height="2" fill="#98d8ff"/>
+      <rect x="26" y="8" width="1" height="1" fill="#98d8ff"/>
+    </symbol>
+
+    <symbol id="coffee" viewBox="0 0 32 32" class="pixel">
+      <rect x="11" y="3" width="2" height="3" fill="#b7b0a4"/>
+      <rect x="17" y="2" width="2" height="4" fill="#b7b0a4"/>
+      <rect x="21" y="4" width="2" height="3" fill="#b7b0a4"/>
+      <rect x="6" y="10" width="18" height="3" fill="#4c2b18"/>
+      <rect x="8" y="13" width="14" height="9" fill="#7c4f2f"/>
+      <rect x="9" y="14" width="12" height="2" fill="#a06b43"/>
+      <rect x="22" y="14" width="5" height="2" fill="#4c2b18"/>
+      <rect x="25" y="16" width="2" height="5" fill="#4c2b18"/>
+      <rect x="22" y="21" width="5" height="2" fill="#4c2b18"/>
+      <rect x="7" y="22" width="16" height="2" fill="#eee9de"/>
+      <rect x="5" y="24" width="20" height="2" fill="#b8b0a2"/>
+      <rect x="10" y="13" width="3" height="8" fill="#e8dfcf" opacity=".35"/>
+    </symbol>
+
+    <symbol id="first_aid_patch" viewBox="0 0 32 32" class="pixel">
+      <rect x="5" y="9" width="22" height="14" fill="#7d3132"/>
+      <rect x="6" y="10" width="20" height="12" fill="#e9c3b4"/>
+      <rect x="8" y="12" width="16" height="8" fill="#fff0e7"/>
+      <rect x="14" y="12" width="4" height="8" fill="#d84b55"/>
+      <rect x="12" y="14" width="8" height="4" fill="#d84b55"/>
+      <rect x="9" y="13" width="1" height="1" fill="#c58d80"/>
+      <rect x="22" y="13" width="1" height="1" fill="#c58d80"/>
+      <rect x="9" y="18" width="1" height="1" fill="#c58d80"/>
+      <rect x="22" y="18" width="1" height="1" fill="#c58d80"/>
+      <rect x="6" y="10" width="20" height="2" fill="#f5d7ca"/>
+    </symbol>
+
+    <symbol id="calm_mint" viewBox="0 0 32 32" class="pixel">
+      <rect x="9" y="10" width="14" height="12" fill="#214f45"/>
+      <rect x="10" y="11" width="12" height="10" fill="#5ea68c"/>
+      <rect x="11" y="14" width="10" height="4" fill="#dffbec"/>
+      <rect x="15" y="7" width="2" height="16" fill="#2b6657"/>
+      <rect x="8" y="9" width="7" height="2" fill="#78c5aa"/>
+      <rect x="6" y="11" width="8" height="4" fill="#78c5aa"/>
+      <rect x="8" y="15" width="6" height="2" fill="#4e907b"/>
+      <rect x="17" y="9" width="7" height="2" fill="#78c5aa"/>
+      <rect x="18" y="11" width="8" height="4" fill="#78c5aa"/>
+      <rect x="18" y="15" width="6" height="2" fill="#4e907b"/>
+      <rect x="24" y="6" width="2" height="2" fill="#c8f7e5"/>
+      <rect x="26" y="8" width="1" height="1" fill="#c8f7e5"/>
+    </symbol>
+
+    <symbol id="field_nutrition_gel" viewBox="0 0 32 32" class="pixel">
+      <rect x="12" y="3" width="8" height="3" fill="#85755a"/>
+      <rect x="10" y="6" width="12" height="2" fill="#e8dcc0"/>
+      <rect x="7" y="8" width="18" height="17" fill="#6d532e"/>
+      <rect x="8" y="9" width="16" height="15" fill="#c9a04c"/>
+      <rect x="10" y="11" width="12" height="4" fill="#f0cf70"/>
+      <rect x="10" y="16" width="12" height="5" fill="#2e8552"/>
+      <rect x="12" y="17" width="3" height="2" fill="#fff3bd"/>
+      <rect x="18" y="18" width="3" height="1" fill="#fff3bd"/>
+      <rect x="9" y="22" width="14" height="2" fill="#8f6c34"/>
+      <rect x="8" y="9" width="2" height="13" fill="#f2df8a" opacity=".38"/>
+    </symbol>
+
+    <symbol id="energy_bar" viewBox="0 0 32 32" class="pixel">
+      <rect x="5" y="10" width="22" height="12" fill="#7d5a27"/>
+      <rect x="7" y="11" width="18" height="10" fill="#d4ad5a"/>
+      <rect x="8" y="14" width="16" height="4" fill="#5c371c"/>
+      <rect x="10" y="15" width="2" height="2" fill="#f6e7ae"/>
+      <rect x="14" y="15" width="2" height="2" fill="#f6e7ae"/>
+      <rect x="20" y="15" width="2" height="2" fill="#f6e7ae"/>
+      <rect x="3" y="12" width="3" height="8" fill="#c59643"/>
+      <rect x="26" y="12" width="3" height="8" fill="#c59643"/>
+      <rect x="6" y="21" width="20" height="2" fill="#6d4a20"/>
+    </symbol>
+
+    <symbol id="hotpack" viewBox="0 0 32 32" class="pixel">
+      <rect x="7" y="6" width="18" height="20" fill="#7d2d23"/>
+      <rect x="8" y="7" width="16" height="18" fill="#c9503d"/>
+      <rect x="10" y="9" width="12" height="14" fill="#e87858"/>
+      <rect x="13" y="12" width="2" height="2" fill="#fff5d0"/>
+      <rect x="18" y="12" width="2" height="2" fill="#fff5d0"/>
+      <rect x="15" y="16" width="2" height="2" fill="#fff5d0"/>
+      <rect x="20" y="18" width="2" height="2" fill="#fff5d0"/>
+      <rect x="11" y="20" width="2" height="2" fill="#fff5d0"/>
+      <rect x="8" y="24" width="16" height="2" fill="#4f1b16"/>
+    </symbol>
+
+    <symbol id="chocolate" viewBox="0 0 32 32" class="pixel">
+      <rect x="6" y="6" width="20" height="20" fill="#2c1710"/>
+      <rect x="8" y="8" width="16" height="16" fill="#5b351f"/>
+      <rect x="9" y="9" width="5" height="5" fill="#94613a"/>
+      <rect x="15" y="9" width="5" height="5" fill="#94613a"/>
+      <rect x="21" y="9" width="2" height="5" fill="#94613a"/>
+      <rect x="9" y="15" width="5" height="5" fill="#94613a"/>
+      <rect x="15" y="15" width="5" height="5" fill="#94613a"/>
+      <rect x="21" y="15" width="2" height="5" fill="#94613a"/>
+      <rect x="8" y="8" width="16" height="2" fill="#b37a4f" opacity=".45"/>
+    </symbol>
+
+    <symbol id="beer_pack" viewBox="0 0 32 32" class="pixel">
+      <rect x="5" y="7" width="8" height="9" fill="#5f411b"/>
+      <rect x="6" y="8" width="6" height="7" fill="#c79a3c"/>
+      <rect x="19" y="7" width="8" height="9" fill="#5f411b"/>
+      <rect x="20" y="8" width="6" height="7" fill="#c79a3c"/>
+      <rect x="5" y="17" width="8" height="9" fill="#5f411b"/>
+      <rect x="6" y="18" width="6" height="7" fill="#c79a3c"/>
+      <rect x="19" y="17" width="8" height="9" fill="#5f411b"/>
+      <rect x="20" y="18" width="6" height="7" fill="#c79a3c"/>
+      <rect x="13" y="13" width="6" height="6" fill="#2f2112"/>
+      <rect x="8" y="10" width="2" height="2" fill="#fff0b0"/>
+      <rect x="22" y="20" width="2" height="2" fill="#fff0b0"/>
+    </symbol>
+
+    <symbol id="cig_1" viewBox="0 0 32 32" class="pixel">
+      <rect x="7" y="15" width="15" height="4" fill="#f1eadb"/>
+      <rect x="22" y="15" width="4" height="4" fill="#a8894c"/>
+      <rect x="6" y="15" width="2" height="4" fill="#ff5b2a"/>
+      <rect x="8" y="16" width="13" height="1" fill="#ffffff"/>
+      <rect x="11" y="8" width="2" height="3" fill="#a9a9a9"/>
+      <rect x="9" y="11" width="2" height="2" fill="#a9a9a9"/>
+      <rect x="14" y="5" width="2" height="4" fill="#a9a9a9"/>
+      <rect x="17" y="9" width="1" height="2" fill="#a9a9a9"/>
+    </symbol>
+
+    <symbol id="cig_5" viewBox="0 0 32 32" class="pixel">
+      <rect x="8" y="7" width="16" height="19" fill="#2c1d19"/>
+      <rect x="9" y="8" width="14" height="17" fill="#5c3b31"/>
+      <rect x="10" y="10" width="12" height="5" fill="#c89c4a"/>
+      <rect x="11" y="5" width="2" height="5" fill="#f0e8d8"/>
+      <rect x="15" y="5" width="2" height="5" fill="#f0e8d8"/>
+      <rect x="19" y="5" width="2" height="5" fill="#f0e8d8"/>
+      <rect x="11" y="5" width="2" height="1" fill="#a08850"/>
+      <rect x="15" y="5" width="2" height="1" fill="#a08850"/>
+      <rect x="19" y="5" width="2" height="1" fill="#a08850"/>
+      <rect x="10" y="22" width="12" height="2" fill="#2b1b17"/>
+    </symbol>
+
+    <symbol id="liquor" viewBox="0 0 32 32" class="pixel">
+      <rect x="12" y="4" width="8" height="3" fill="#cfcfcf"/>
+      <rect x="11" y="7" width="10" height="3" fill="#7b1515"/>
+      <rect x="9" y="10" width="14" height="10" fill="#a52121"/>
+      <rect x="11" y="20" width="10" height="2" fill="#741818"/>
+      <rect x="14" y="22" width="4" height="4" fill="#cfcfcf"/>
+      <rect x="10" y="26" width="12" height="2" fill="#cfcfcf"/>
+      <rect x="11" y="10" width="2" height="8" fill="#fff1f1" opacity=".45"/>
+      <rect x="19" y="11" width="2" height="6" fill="#5d0f0f"/>
+    </symbol>
+
+    <symbol id="icecream" viewBox="0 0 32 32" class="pixel">
+      <rect x="10" y="5" width="12" height="3" fill="#ffd5e8"/>
+      <rect x="8" y="8" width="16" height="6" fill="#ffc1dc"/>
+      <rect x="10" y="14" width="12" height="3" fill="#dcb43c"/>
+      <rect x="11" y="17" width="10" height="2" fill="#c89c4a"/>
+      <rect x="12" y="19" width="8" height="3" fill="#c89c4a"/>
+      <rect x="13" y="22" width="6" height="3" fill="#a98139"/>
+      <rect x="14" y="25" width="4" height="2" fill="#806129"/>
+      <rect x="13" y="9" width="2" height="2" fill="#fff1f7"/>
+      <rect x="18" y="8" width="2" height="2" fill="#fff1f7"/>
+    </symbol>
+
+    <symbol id="force_core" viewBox="0 0 32 32" class="pixel">
+      <rect x="15" y="4" width="2" height="2" fill="#d6c4ff"/>
+      <rect x="13" y="6" width="6" height="3" fill="#a97dff"/>
+      <rect x="11" y="9" width="10" height="3" fill="#9b6cdc"/>
+      <rect x="9" y="12" width="14" height="4" fill="#7b45c7"/>
+      <rect x="10" y="16" width="12" height="4" fill="#6430a8"/>
+      <rect x="12" y="20" width="8" height="3" fill="#4d2386"/>
+      <rect x="14" y="23" width="4" height="3" fill="#35195e"/>
+      <rect x="12" y="9" width="2" height="2" fill="#f5f0ff"/>
+      <rect x="6" y="7" width="2" height="2" fill="#f5e5a0"/>
+      <rect x="25" y="18" width="2" height="2" fill="#f5e5a0"/>
+    </symbol>
+
+    <symbol id="vf_blood" viewBox="0 0 32 32" class="pixel">
+      <rect x="10" y="3" width="12" height="2" fill="#8c8c8c"/>
+      <rect x="8" y="5" width="16" height="22" fill="#54565b"/>
+      <rect x="10" y="7" width="12" height="18" fill="#d7d9dd"/>
+      <rect x="11" y="10" width="10" height="12" fill="#b41414"/>
+      <rect x="10" y="14" width="12" height="2" fill="#f4f4f4"/>
+      <rect x="10" y="18" width="12" height="2" fill="#f4f4f4"/>
+      <rect x="15" y="14" width="2" height="6" fill="#b41414"/>
+      <rect x="13" y="16" width="6" height="2" fill="#b41414"/>
+      <rect x="12" y="7" width="3" height="16" fill="#ffffff" opacity=".35"/>
+    </symbol>
+  </defs>
+
+  <rect class="bg" width="1440" height="1240"/>
+  <rect width="1440" height="1240" fill="url(#scan)" opacity=".35"/>
+  <rect x="36" y="34" width="1368" height="1172" rx="10" fill="none" stroke="rgba(209,177,92,.28)" stroke-width="2"/>
+  <text x="62" y="88" class="title">STAR MART ITEM ICON PREVIEW</text>
+  <text x="64" y="121" class="note">32-grid pixel SVG concept sheet / app files untouched</text>
+
+  <g id="tiles">
+    <g transform="translate(60 155)"><rect class="tileGlow" width="310" height="235"/><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">BASIC</text><use href="#cup_ramen" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">컵라면</text><text x="20" y="215" class="slug">cup_ramen</text></g>
+    <g transform="translate(390 155)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">BASIC</text><use href="#soda" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">소다</text><text x="20" y="215" class="slug">soda</text></g>
+    <g transform="translate(720 155)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">BASIC</text><use href="#coffee" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">커피</text><text x="20" y="215" class="slug">coffee</text></g>
+    <g transform="translate(1050 155)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">RECOVERY</text><use href="#first_aid_patch" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">응급 패치</text><text x="20" y="215" class="slug">first_aid_patch</text></g>
+
+    <g transform="translate(60 410)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">RECOVERY</text><use href="#calm_mint" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">진정 민트</text><text x="20" y="215" class="slug">calm_mint</text></g>
+    <g transform="translate(390 410)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">RECOVERY</text><use href="#field_nutrition_gel" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">야전 영양젤</text><text x="20" y="215" class="slug">field_nutrition_gel</text></g>
+    <g transform="translate(720 410)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">RECOVERY</text><use href="#energy_bar" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">에너지바</text><text x="20" y="215" class="slug">energy_bar</text></g>
+    <g transform="translate(1050 410)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">RECOVERY</text><use href="#hotpack" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">핫팩</text><text x="20" y="215" class="slug">hotpack</text></g>
+
+    <g transform="translate(60 665)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">RECOVERY</text><use href="#chocolate" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">고급 초콜렛</text><text x="20" y="215" class="slug">chocolate</text></g>
+    <g transform="translate(390 665)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">LUXURY</text><use href="#beer_pack" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">맥주팩x4</text><text x="20" y="215" class="slug">beer_pack</text></g>
+    <g transform="translate(720 665)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">LUXURY</text><use href="#cig_1" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">담배</text><text x="20" y="215" class="slug">cig_1</text></g>
+    <g transform="translate(1050 665)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">LUXURY</text><use href="#cig_5" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">담배 (5턴)</text><text x="20" y="215" class="slug">cig_5</text></g>
+
+    <g transform="translate(60 920)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">RARE</text><use href="#liquor" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">독주</text><text x="20" y="215" class="slug">liquor</text></g>
+    <g transform="translate(390 920)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">RARE</text><use href="#icecream" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">서울-만세</text><text x="20" y="215" class="slug">icecream</text></g>
+    <g transform="translate(720 920)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">RARE</text><use href="#force_core" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">포스코어</text><text x="20" y="215" class="slug">force_core</text></g>
+    <g transform="translate(1050 920)"><rect class="tile" width="310" height="235"/><text x="20" y="34" class="group">RARE</text><use href="#vf_blood" x="91" y="38" width="128" height="128"/><text x="20" y="191" class="label">VF혈액팩</text><text x="20" y="215" class="slug">vf_blood</text></g>
+  </g>
+</svg>

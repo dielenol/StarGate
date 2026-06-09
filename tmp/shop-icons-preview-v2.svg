@@ -1,0 +1,295 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1380" viewBox="0 0 1600 1380">
+  <defs>
+    <style>
+      .bg { fill: #070909; }
+      .band { fill: #0d1010; stroke: rgba(207, 171, 83, .22); stroke-width: 2; }
+      .tile { fill: rgba(11, 14, 14, .96); stroke: rgba(213, 178, 92, .42); stroke-width: 2; }
+      .tile2 { fill: none; stroke: rgba(255, 232, 166, .08); stroke-width: 8; }
+      .title { fill: #f0ce70; font: 900 46px "JetBrains Mono", Consolas, monospace; letter-spacing: .08em; }
+      .sub { fill: #83877d; font: 500 17px "JetBrains Mono", Consolas, monospace; letter-spacing: .08em; }
+      .group { fill: #caa75b; font: 800 14px "JetBrains Mono", Consolas, monospace; letter-spacing: .16em; }
+      .name { fill: #f4e5b5; font: 800 24px "Noto Sans KR", "Malgun Gothic", sans-serif; }
+      .slug { fill: #7c8478; font: 600 14px "JetBrains Mono", Consolas, monospace; letter-spacing: .07em; }
+      .px * { shape-rendering: crispEdges; }
+      .shadow { fill: #000; opacity: .32; }
+    </style>
+
+    <pattern id="micro-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M20 0H0V20" fill="none" stroke="rgba(213,178,92,.055)" stroke-width="1"/>
+    </pattern>
+
+    <symbol id="ramen_v2" viewBox="0 0 48 48" class="px">
+      <rect x="8" y="38" width="32" height="3" class="shadow"/>
+      <rect x="12" y="7" width="24" height="2" fill="#8c5e25"/>
+      <rect x="9" y="9" width="30" height="3" fill="#f2c562"/>
+      <rect x="8" y="12" width="32" height="3" fill="#c6923d"/>
+      <rect x="12" y="10" width="2" height="2" fill="#6b3e1f"/>
+      <rect x="18" y="10" width="2" height="2" fill="#6b3e1f"/>
+      <rect x="24" y="10" width="2" height="2" fill="#6b3e1f"/>
+      <rect x="30" y="10" width="2" height="2" fill="#6b3e1f"/>
+      <rect x="6" y="15" width="36" height="4" fill="#4b1012"/>
+      <rect x="8" y="19" width="32" height="16" fill="#bd2730"/>
+      <rect x="10" y="20" width="28" height="4" fill="#ef4148"/>
+      <rect x="11" y="25" width="26" height="3" fill="#d7333c"/>
+      <rect x="10" y="31" width="28" height="3" fill="#7d1a20"/>
+      <rect x="13" y="35" width="22" height="3" fill="#551117"/>
+      <rect x="34" y="6" width="9" height="1" fill="#f8e6a2"/>
+      <rect x="36" y="8" width="8" height="1" fill="#f8e6a2"/>
+      <rect x="14" y="21" width="5" height="2" fill="#ff7774" opacity=".55"/>
+    </symbol>
+
+    <symbol id="soda_v2" viewBox="0 0 48 48" class="px">
+      <rect x="15" y="39" width="18" height="3" class="shadow"/>
+      <rect x="17" y="4" width="14" height="3" fill="#7d858c"/>
+      <rect x="15" y="7" width="18" height="3" fill="#c8d0d6"/>
+      <rect x="14" y="10" width="20" height="29" fill="#12315d"/>
+      <rect x="15" y="11" width="18" height="27" fill="#1d5cac"/>
+      <rect x="17" y="13" width="14" height="5" fill="#367bd3"/>
+      <rect x="17" y="20" width="14" height="6" fill="#e7f6ff"/>
+      <rect x="17" y="30" width="14" height="3" fill="#e7f6ff"/>
+      <rect x="29" y="12" width="3" height="23" fill="#86c4ff" opacity=".58"/>
+      <rect x="14" y="36" width="20" height="3" fill="#0e2446"/>
+      <rect x="37" y="8" width="2" height="2" fill="#aee6ff"/>
+      <rect x="40" y="12" width="1" height="1" fill="#aee6ff"/>
+      <rect x="35" y="15" width="2" height="2" fill="#aee6ff"/>
+    </symbol>
+
+    <symbol id="coffee_v2" viewBox="0 0 48 48" class="px">
+      <rect x="10" y="39" width="30" height="3" class="shadow"/>
+      <rect x="16" y="4" width="3" height="5" fill="#bcb5a8"/>
+      <rect x="24" y="2" width="3" height="6" fill="#bcb5a8"/>
+      <rect x="31" y="5" width="3" height="5" fill="#bcb5a8"/>
+      <rect x="9" y="15" width="28" height="4" fill="#3c2114"/>
+      <rect x="12" y="19" width="22" height="17" fill="#5c351f"/>
+      <rect x="14" y="20" width="18" height="4" fill="#946240"/>
+      <rect x="15" y="26" width="16" height="7" fill="#7a4c30"/>
+      <rect x="34" y="22" width="7" height="3" fill="#3c2114"/>
+      <rect x="39" y="25" width="3" height="8" fill="#3c2114"/>
+      <rect x="34" y="33" width="7" height="3" fill="#3c2114"/>
+      <rect x="11" y="36" width="24" height="3" fill="#e7ddcf"/>
+      <rect x="8" y="39" width="30" height="3" fill="#a99e8e"/>
+      <rect x="15" y="20" width="4" height="14" fill="#f0e7d9" opacity=".28"/>
+      <rect x="12" y="14" width="22" height="1" fill="#c9a06d"/>
+    </symbol>
+
+    <symbol id="patch_v2" viewBox="0 0 48 48" class="px">
+      <rect x="8" y="36" width="32" height="3" class="shadow"/>
+      <rect x="7" y="14" width="34" height="20" fill="#512124"/>
+      <rect x="9" y="15" width="30" height="18" fill="#c98877"/>
+      <rect x="11" y="17" width="26" height="14" fill="#f0d1c5"/>
+      <rect x="14" y="19" width="20" height="10" fill="#fff0e8"/>
+      <rect x="21" y="18" width="6" height="12" fill="#c93e49"/>
+      <rect x="18" y="21" width="12" height="6" fill="#c93e49"/>
+      <rect x="12" y="17" width="24" height="2" fill="#ffe2d6" opacity=".7"/>
+      <rect x="12" y="29" width="24" height="2" fill="#b46b5f"/>
+      <rect x="13" y="20" width="2" height="2" fill="#c99083"/>
+      <rect x="33" y="20" width="2" height="2" fill="#c99083"/>
+      <rect x="13" y="27" width="2" height="2" fill="#c99083"/>
+      <rect x="33" y="27" width="2" height="2" fill="#c99083"/>
+    </symbol>
+
+    <symbol id="mint_v2" viewBox="0 0 48 48" class="px">
+      <rect x="12" y="37" width="24" height="3" class="shadow"/>
+      <rect x="22" y="7" width="4" height="29" fill="#18372f"/>
+      <rect x="24" y="9" width="3" height="26" fill="#2f715f"/>
+      <rect x="10" y="12" width="12" height="4" fill="#296757"/>
+      <rect x="7" y="16" width="15" height="8" fill="#66b596"/>
+      <rect x="10" y="24" width="12" height="4" fill="#3e826e"/>
+      <rect x="13" y="17" width="5" height="3" fill="#dffdec" opacity=".75"/>
+      <rect x="26" y="12" width="12" height="4" fill="#296757"/>
+      <rect x="26" y="16" width="15" height="8" fill="#66b596"/>
+      <rect x="26" y="24" width="12" height="4" fill="#3e826e"/>
+      <rect x="30" y="17" width="5" height="3" fill="#dffdec" opacity=".75"/>
+      <rect x="16" y="29" width="16" height="4" fill="#214f45"/>
+      <rect x="18" y="30" width="12" height="2" fill="#e6fff2"/>
+      <rect x="39" y="7" width="3" height="3" fill="#b8f7df"/>
+      <rect x="42" y="11" width="2" height="2" fill="#b8f7df"/>
+    </symbol>
+
+    <symbol id="gel_v2" viewBox="0 0 48 48" class="px">
+      <rect x="12" y="39" width="24" height="3" class="shadow"/>
+      <rect x="18" y="4" width="12" height="4" fill="#5e5547"/>
+      <rect x="16" y="8" width="16" height="3" fill="#e9ddbc"/>
+      <rect x="10" y="11" width="28" height="27" fill="#5c4424"/>
+      <rect x="12" y="12" width="24" height="25" fill="#c99c43"/>
+      <rect x="14" y="14" width="20" height="7" fill="#f2d36e"/>
+      <rect x="14" y="23" width="20" height="9" fill="#2c7e4d"/>
+      <rect x="17" y="24" width="5" height="3" fill="#fff4bd"/>
+      <rect x="27" y="26" width="4" height="2" fill="#fff4bd"/>
+      <rect x="13" y="34" width="22" height="3" fill="#8a642c"/>
+      <rect x="12" y="13" width="3" height="21" fill="#f7df8d" opacity=".42"/>
+      <rect x="35" y="15" width="2" height="17" fill="#6c4e23"/>
+    </symbol>
+
+    <symbol id="energy_v2" viewBox="0 0 48 48" class="px">
+      <rect x="8" y="35" width="32" height="3" class="shadow"/>
+      <rect x="7" y="16" width="34" height="16" fill="#5c3e1d"/>
+      <rect x="10" y="17" width="28" height="14" fill="#d1a84d"/>
+      <rect x="4" y="19" width="5" height="10" fill="#ba8538"/>
+      <rect x="39" y="19" width="5" height="10" fill="#ba8538"/>
+      <rect x="12" y="21" width="24" height="6" fill="#4b2c19"/>
+      <rect x="15" y="22" width="3" height="3" fill="#fff0b0"/>
+      <rect x="21" y="22" width="3" height="3" fill="#fff0b0"/>
+      <rect x="30" y="22" width="3" height="3" fill="#fff0b0"/>
+      <rect x="10" y="30" width="28" height="2" fill="#6d4a22"/>
+      <rect x="12" y="17" width="22" height="2" fill="#efd073" opacity=".55"/>
+    </symbol>
+
+    <symbol id="hotpack_v2" viewBox="0 0 48 48" class="px">
+      <rect x="12" y="39" width="24" height="3" class="shadow"/>
+      <rect x="12" y="7" width="24" height="32" fill="#5d211b"/>
+      <rect x="14" y="9" width="20" height="28" fill="#c74b3a"/>
+      <rect x="16" y="12" width="16" height="21" fill="#e87656"/>
+      <rect x="19" y="15" width="3" height="3" fill="#fff4c7"/>
+      <rect x="27" y="15" width="3" height="3" fill="#fff4c7"/>
+      <rect x="23" y="21" width="3" height="3" fill="#fff4c7"/>
+      <rect x="29" y="26" width="3" height="3" fill="#fff4c7"/>
+      <rect x="18" y="29" width="3" height="3" fill="#fff4c7"/>
+      <rect x="14" y="35" width="20" height="3" fill="#441513"/>
+      <rect x="16" y="10" width="5" height="24" fill="#ffb08b" opacity=".28"/>
+    </symbol>
+
+    <symbol id="choco_v2" viewBox="0 0 48 48" class="px">
+      <rect x="10" y="39" width="28" height="3" class="shadow"/>
+      <rect x="10" y="8" width="28" height="28" fill="#1f100b"/>
+      <rect x="12" y="10" width="24" height="24" fill="#5a331d"/>
+      <rect x="14" y="12" width="7" height="7" fill="#94613a"/>
+      <rect x="22" y="12" width="7" height="7" fill="#94613a"/>
+      <rect x="30" y="12" width="4" height="7" fill="#94613a"/>
+      <rect x="14" y="20" width="7" height="7" fill="#7e4b2c"/>
+      <rect x="22" y="20" width="7" height="7" fill="#7e4b2c"/>
+      <rect x="30" y="20" width="4" height="7" fill="#7e4b2c"/>
+      <rect x="14" y="28" width="7" height="4" fill="#60371f"/>
+      <rect x="22" y="28" width="7" height="4" fill="#60371f"/>
+      <rect x="30" y="28" width="4" height="4" fill="#60371f"/>
+      <rect x="13" y="10" width="20" height="2" fill="#bd8156" opacity=".45"/>
+    </symbol>
+
+    <symbol id="beer_v2" viewBox="0 0 48 48" class="px">
+      <rect x="8" y="39" width="32" height="3" class="shadow"/>
+      <rect x="8" y="8" width="12" height="14" fill="#3f2a12"/>
+      <rect x="10" y="10" width="8" height="10" fill="#c89a3b"/>
+      <rect x="28" y="8" width="12" height="14" fill="#3f2a12"/>
+      <rect x="30" y="10" width="8" height="10" fill="#c89a3b"/>
+      <rect x="8" y="24" width="12" height="14" fill="#3f2a12"/>
+      <rect x="10" y="26" width="8" height="10" fill="#c89a3b"/>
+      <rect x="28" y="24" width="12" height="14" fill="#3f2a12"/>
+      <rect x="30" y="26" width="8" height="10" fill="#c89a3b"/>
+      <rect x="20" y="19" width="8" height="10" fill="#20150d"/>
+      <rect x="12" y="12" width="3" height="3" fill="#fff0a8"/>
+      <rect x="32" y="28" width="3" height="3" fill="#fff0a8"/>
+      <rect x="7" y="22" width="34" height="2" fill="#6d4a1e"/>
+    </symbol>
+
+    <symbol id="cig1_v2" viewBox="0 0 48 48" class="px">
+      <rect x="8" y="31" width="32" height="3" class="shadow"/>
+      <rect x="8" y="23" width="25" height="6" fill="#e9dfce"/>
+      <rect x="33" y="23" width="7" height="6" fill="#a9894b"/>
+      <rect x="6" y="23" width="3" height="6" fill="#ff5b2a"/>
+      <rect x="10" y="24" width="21" height="2" fill="#fffaf0"/>
+      <rect x="16" y="12" width="3" height="5" fill="#a8a8a8"/>
+      <rect x="13" y="17" width="3" height="3" fill="#a8a8a8"/>
+      <rect x="22" y="8" width="3" height="6" fill="#a8a8a8"/>
+      <rect x="28" y="14" width="2" height="4" fill="#a8a8a8"/>
+    </symbol>
+
+    <symbol id="cig5_v2" viewBox="0 0 48 48" class="px">
+      <rect x="12" y="39" width="24" height="3" class="shadow"/>
+      <rect x="13" y="10" width="22" height="28" fill="#211513"/>
+      <rect x="15" y="12" width="18" height="24" fill="#5c3b31"/>
+      <rect x="16" y="15" width="16" height="7" fill="#c69a49"/>
+      <rect x="17" y="5" width="3" height="10" fill="#f2e9d9"/>
+      <rect x="23" y="5" width="3" height="10" fill="#f2e9d9"/>
+      <rect x="29" y="5" width="3" height="10" fill="#f2e9d9"/>
+      <rect x="17" y="5" width="3" height="2" fill="#a98a4d"/>
+      <rect x="23" y="5" width="3" height="2" fill="#a98a4d"/>
+      <rect x="29" y="5" width="3" height="2" fill="#a98a4d"/>
+      <rect x="16" y="33" width="16" height="3" fill="#2b1b17"/>
+      <rect x="15" y="12" width="4" height="20" fill="#8a5a49" opacity=".35"/>
+    </symbol>
+
+    <symbol id="liquor_v2" viewBox="0 0 48 48" class="px">
+      <rect x="13" y="40" width="22" height="3" class="shadow"/>
+      <rect x="18" y="5" width="12" height="5" fill="#c9c9c9"/>
+      <rect x="17" y="10" width="14" height="5" fill="#6b1113"/>
+      <rect x="14" y="15" width="20" height="17" fill="#a51e22"/>
+      <rect x="16" y="32" width="16" height="3" fill="#671215"/>
+      <rect x="21" y="35" width="6" height="5" fill="#c9c9c9"/>
+      <rect x="15" y="40" width="18" height="3" fill="#c9c9c9"/>
+      <rect x="17" y="16" width="4" height="13" fill="#fff1f1" opacity=".42"/>
+      <rect x="30" y="17" width="2" height="11" fill="#5d0f0f"/>
+      <rect x="20" y="12" width="8" height="2" fill="#df4c4c" opacity=".45"/>
+    </symbol>
+
+    <symbol id="ice_v2" viewBox="0 0 48 48" class="px">
+      <rect x="13" y="39" width="22" height="3" class="shadow"/>
+      <rect x="16" y="6" width="16" height="4" fill="#ffd8ea"/>
+      <rect x="13" y="10" width="22" height="8" fill="#ffc2dc"/>
+      <rect x="15" y="18" width="18" height="4" fill="#dcb43c"/>
+      <rect x="16" y="22" width="16" height="4" fill="#c89a42"/>
+      <rect x="18" y="26" width="12" height="5" fill="#b68538"/>
+      <rect x="20" y="31" width="8" height="5" fill="#946a2b"/>
+      <rect x="21" y="36" width="6" height="3" fill="#705020"/>
+      <rect x="19" y="11" width="3" height="3" fill="#fff3f8"/>
+      <rect x="27" y="9" width="3" height="3" fill="#fff3f8"/>
+      <rect x="14" y="17" width="20" height="1" fill="#f0d06d"/>
+    </symbol>
+
+    <symbol id="core_v2" viewBox="0 0 48 48" class="px">
+      <rect x="13" y="39" width="22" height="3" class="shadow"/>
+      <rect x="23" y="5" width="2" height="3" fill="#f5efff"/>
+      <rect x="20" y="8" width="8" height="4" fill="#b591ff"/>
+      <rect x="17" y="12" width="14" height="5" fill="#9e6cf0"/>
+      <rect x="14" y="17" width="20" height="6" fill="#7944c4"/>
+      <rect x="16" y="23" width="16" height="6" fill="#5e2b9f"/>
+      <rect x="19" y="29" width="10" height="5" fill="#461f7e"/>
+      <rect x="22" y="34" width="4" height="4" fill="#2f1558"/>
+      <rect x="18" y="13" width="4" height="3" fill="#fff7ff" opacity=".8"/>
+      <rect x="8" y="10" width="3" height="3" fill="#f5e5a0"/>
+      <rect x="37" y="26" width="3" height="3" fill="#f5e5a0"/>
+      <rect x="10" y="30" width="2" height="2" fill="#d8c6ff"/>
+    </symbol>
+
+    <symbol id="blood_v2" viewBox="0 0 48 48" class="px">
+      <rect x="13" y="40" width="22" height="3" class="shadow"/>
+      <rect x="18" y="4" width="12" height="3" fill="#8c8c8c"/>
+      <rect x="14" y="7" width="20" height="31" fill="#44474c"/>
+      <rect x="16" y="9" width="16" height="27" fill="#d9dcdf"/>
+      <rect x="18" y="14" width="12" height="16" fill="#b41414"/>
+      <rect x="16" y="19" width="16" height="3" fill="#f7f7f7"/>
+      <rect x="16" y="25" width="16" height="3" fill="#f7f7f7"/>
+      <rect x="23" y="19" width="3" height="9" fill="#b41414"/>
+      <rect x="20" y="22" width="9" height="3" fill="#b41414"/>
+      <rect x="18" y="10" width="4" height="24" fill="#fff" opacity=".35"/>
+      <rect x="14" y="36" width="20" height="3" fill="#25272a"/>
+    </symbol>
+  </defs>
+
+  <rect class="bg" width="1600" height="1380"/>
+  <rect width="1600" height="1380" fill="url(#micro-grid)" opacity=".75"/>
+  <rect x="44" y="36" width="1512" height="1308" rx="10" class="band"/>
+  <text x="78" y="96" class="title">STAR MART PIXEL ICONS V2</text>
+  <text x="82" y="126" class="sub">48x48 sprite-style redraw / stronger silhouette, material highlights, no app source changed</text>
+
+  <g transform="translate(76 170)">
+    <g transform="translate(0 0)"><rect class="tile2" width="350" height="260"/><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">BASIC</text><use href="#ramen_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">컵라면</text><text x="24" y="238" class="slug">cup_ramen</text></g>
+    <g transform="translate(374 0)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">BASIC</text><use href="#soda_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">소다</text><text x="24" y="238" class="slug">soda</text></g>
+    <g transform="translate(748 0)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">BASIC</text><use href="#coffee_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">커피</text><text x="24" y="238" class="slug">coffee</text></g>
+    <g transform="translate(1122 0)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">RECOVERY</text><use href="#patch_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">응급 패치</text><text x="24" y="238" class="slug">first_aid_patch</text></g>
+
+    <g transform="translate(0 284)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">RECOVERY</text><use href="#mint_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">진정 민트</text><text x="24" y="238" class="slug">calm_mint</text></g>
+    <g transform="translate(374 284)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">RECOVERY</text><use href="#gel_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">야전 영양젤</text><text x="24" y="238" class="slug">field_nutrition_gel</text></g>
+    <g transform="translate(748 284)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">RECOVERY</text><use href="#energy_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">에너지바</text><text x="24" y="238" class="slug">energy_bar</text></g>
+    <g transform="translate(1122 284)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">RECOVERY</text><use href="#hotpack_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">핫팩</text><text x="24" y="238" class="slug">hotpack</text></g>
+
+    <g transform="translate(0 568)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">RECOVERY</text><use href="#choco_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">고급 초콜렛</text><text x="24" y="238" class="slug">chocolate</text></g>
+    <g transform="translate(374 568)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">LUXURY</text><use href="#beer_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">맥주팩x4</text><text x="24" y="238" class="slug">beer_pack</text></g>
+    <g transform="translate(748 568)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">LUXURY</text><use href="#cig1_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">담배</text><text x="24" y="238" class="slug">cig_1</text></g>
+    <g transform="translate(1122 568)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">LUXURY</text><use href="#cig5_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">담배 (5턴)</text><text x="24" y="238" class="slug">cig_5</text></g>
+
+    <g transform="translate(0 852)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">RARE</text><use href="#liquor_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">독주</text><text x="24" y="238" class="slug">liquor</text></g>
+    <g transform="translate(374 852)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">RARE</text><use href="#ice_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">서울-만세</text><text x="24" y="238" class="slug">icecream</text></g>
+    <g transform="translate(748 852)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">RARE</text><use href="#core_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">포스코어</text><text x="24" y="238" class="slug">force_core</text></g>
+    <g transform="translate(1122 852)"><rect class="tile" width="350" height="260"/><text x="24" y="35" class="group">RARE</text><use href="#blood_v2" x="103" y="42" width="144" height="144"/><text x="24" y="213" class="name">VF혈액팩</text><text x="24" y="238" class="slug">vf_blood</text></g>
+  </g>
+</svg>
