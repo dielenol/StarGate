@@ -87,6 +87,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "크레딧", keywords: "credits", icon: IconCredit, href: "/erp/credits" },
       /* 편의점 · 주식 — M1 stub. M2/M3 에서 본 구현 활성화. */
       { label: "편의점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconShop, href: "/erp/shop" },
+      { label: "장비 판매점", keywords: "equipment shop armory weapon armor gear 장비 판매점 무기 방어구 토와스키", icon: IconEquipment, href: "/erp/equipment-shop" },
       { label: "주식", keywords: "stock market 주식 증권", icon: IconStock, href: "/erp/stock" },
     ],
   },
