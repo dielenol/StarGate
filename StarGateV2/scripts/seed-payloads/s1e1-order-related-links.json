@@ -1,0 +1,18 @@
+{
+  "collection": "wiki_pages",
+  "type": "operation-report-related-links",
+  "filter": { "slug": "s1e1-order" },
+  "update": [
+    {
+      "$set": {
+        "content": {
+          "$replaceAll": {
+            "input": "$content",
+            "find": "## 관련 문서\n\n- 검열된 비명\n- 줄루\n- 지역 패닉\n- MANUS 현장 분류\n- 화이트로즈\n- 블랙 피라미드\n- 깨진 음절\n- ZULU-0028 특수 격리 상자",
+            "replacement": "## 관련 문서\n\n- [[검열된 비명]]\n- [[줄루]]\n- [[지역 패닉]]\n- [[노부스 오르도 클래스와 현장 분류|MANUS 현장 분류]]\n- [[화이트로즈]]\n- [[블랙 피라미드]]\n- [[깨진 음절]]\n- [[ZULU-0028 특수 격리 상자]]"
+          }
+        }
+      }
+    }
+  ]
+}

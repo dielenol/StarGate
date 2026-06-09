@@ -4,7 +4,7 @@ codename: CLAIRVOYANCE
 slug: clairvoyance
 type: NPC
 role: 노부스 오르도 현장 전략 고문
-nameKo: 수잔 델러웨이
+nameKo: 수잔 델라웨어
 nameEn: Susan Delaware
 nameNative:
 nickname: 클레이보얀스
@@ -17,7 +17,7 @@ institutionCode: MANUS
 department: SECTOR_A
 agentLevel: H
 isPublic: true
-loreTags: [현장요원, 섹터A, 전략고문, 리모트뷰잉, Project Stargate]
+loreTags: [현장요원, 섹터A, 전략고문, 리모트뷰잉, Project Stargate, 수잔 델러웨이]
 appearsInEvents: [NOSB-S1E1-ORDER, NOSB-S1E1-MINI]
 source: manual
 previewImage: /assets/npcs/Clairvoyance-profile.png
@@ -39,7 +39,7 @@ updatedAt: 2026-06-02T00:00:00Z
 
 이 능력은 정보기관 내에서도 극비 자산으로 분류되었으며, **넵튠 스피어** 작전에서 빈 라덴의 은신처를 특정하는 데 결정적인 단서를 제공했다는 평가가 남아 있다.
 
-노부스 오르도는 그녀의 잠재력과 실전 성과에 주목했다. 현재 수잔 델러웨이는 MANUS 섹터 A 소속 현장 요원으로서 작전 현장의 보조관이자 전략 고문으로 활동하며, 팀원들에게 실시간 정보 분석과 위기 예측을 제공한다.
+노부스 오르도는 그녀의 잠재력과 실전 성과에 주목했다. 현재 수잔 델라웨어는 MANUS 섹터 A 소속 현장 요원으로서 작전 현장의 보조관이자 전략 고문으로 활동하며, 팀원들에게 실시간 정보 분석과 위기 예측을 제공한다.
 
 ## 역할 상세
 - **관리 범위**: 현장 정보 분석, 작전 보조, 위험 예측, 목표 위치 추정
@@ -50,7 +50,8 @@ updatedAt: 2026-06-02T00:00:00Z
 
 ## 이름 설명
 - **클레이보얀스(CLAIRVOYANCE)**: 원거리 관측 능력과 직관적 정보 판독을 가리키는 코드네임.
-- **수잔 델러웨이(Susan Delaware)**: 현장 기록과 대외 문서에서 사용하는 인명 표기.
+- **수잔 델라웨어(Susan Delaware)**: 현장 기록과 대외 문서에서 사용하는 인명 표기.
+- **수잔 델러웨이**: 초기 기록 일부에 남은 한국어 표기 흔들림. 검색 alias로만 보존한다.
 
 ## 관계 (참고)
 - **NOVUS ORDO / MANUS**: 섹터 A 현장 요원으로 작전 지원에 투입된다.
