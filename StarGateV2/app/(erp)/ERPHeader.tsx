@@ -26,6 +26,8 @@ import {
   IconPause,
   IconPlay,
   IconShuffle,
+  IconTimeline,
+  IconVolume,
 } from "@/components/icons";
 import Breadcrumb, {
   type BreadcrumbItem,
@@ -527,7 +529,9 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
             </div>
 
             <label className={styles.header__bgmControl}>
-              <span className={styles.header__bgmControlLabel}>SEEK</span>
+              <span className={styles.header__bgmControlLabel} aria-hidden>
+                <IconTimeline />
+              </span>
               <input
                 type="range"
                 className={`${styles.header__bgmRange} ${styles.header__bgmProgress}`}
@@ -537,13 +541,15 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                 value={bgmDurationValue > 0 ? bgmCurrentTimeValue : 0}
                 onChange={handleSeekBgm}
                 disabled={bgmDurationValue <= 0}
-                aria-label="BGM 재생 위치"
+                aria-label="배경음악 재생 위치"
                 style={bgmProgressStyle}
               />
             </label>
 
             <label className={styles.header__bgmControl}>
-              <span className={styles.header__bgmControlLabel}>VOL</span>
+              <span className={styles.header__bgmControlLabel} aria-hidden>
+                <IconVolume />
+              </span>
               <input
                 type="range"
                 className={styles.header__bgmRange}
@@ -552,7 +558,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                 step={1}
                 value={bgmVolumeLevel}
                 onChange={handleBgmVolumeChange}
-                aria-label="BGM 볼륨"
+                aria-label="배경음악 볼륨"
                 style={bgmVolumeStyle}
               />
             </label>
