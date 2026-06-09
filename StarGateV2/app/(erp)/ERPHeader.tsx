@@ -155,6 +155,23 @@ function formatBgmTime(seconds: number): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
+function formatNotificationTime(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "--:--";
+
+  const today = new Date();
+  const isToday =
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate();
+
+  if (isToday) {
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+
+  return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
+}
+
 function isBreadcrumbItemArray(value: unknown): value is BreadcrumbItem[] {
   if (!Array.isArray(value) || value.length === 0) return false;
   return value.every((entry): entry is BreadcrumbItem => {
@@ -353,6 +370,18 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   );
   const notificationBadge =
     unreadNotificationCount > 99 ? "99+" : String(unreadNotificationCount);
+  const recentNotifications = useMemo(
+    () => notifications.slice(0, 3),
+    [notifications],
+  );
+  const notificationButtonClassName = [
+    styles.header__notification,
+    unreadNotificationCount > 0
+      ? styles["header__notification--active"]
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   function handleOpenSidebar() {
     window.dispatchEvent(new CustomEvent("no:sidebar-open"));
@@ -527,24 +556,90 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
             <kbd className={styles.header__cmdkKbd}>{kbdLabel}</kbd>
           </button>
 
-          <Link
-            href="/erp/notifications"
-            className={styles.header__notification}
-            aria-label={
-              unreadNotificationCount > 0
-                ? `알림 ${unreadNotificationCount}건`
-                : "알림"
-            }
-            title="알림"
-            prefetch
-          >
-            <IconNotification aria-hidden />
-            {unreadNotificationCount > 0 ? (
-              <span className={styles.header__notificationBadge}>
-                {notificationBadge}
-              </span>
-            ) : null}
-          </Link>
+          <div className={styles.header__notificationWrap}>
+            <Link
+              href="/erp/notifications"
+              className={notificationButtonClassName}
+              aria-label={
+                unreadNotificationCount > 0
+                  ? `알림 ${unreadNotificationCount}건`
+                  : "알림"
+              }
+              title="알림"
+              prefetch
+            >
+              <IconNotification aria-hidden />
+              {unreadNotificationCount > 0 ? (
+                <span className={styles.header__notificationBadge}>
+                  {notificationBadge}
+                </span>
+              ) : null}
+            </Link>
+
+            <div
+              className={styles.header__notificationDropdown}
+              aria-label="최근 알림"
+            >
+              <div className={styles.header__notificationDropdownHead}>
+                <span>RECENT</span>
+                <span>
+                  {unreadNotificationCount > 0
+                    ? `${notificationBadge} UNREAD`
+                    : "CLEAR"}
+                </span>
+              </div>
+              {recentNotifications.length > 0 ? (
+                <div className={styles.header__notificationList}>
+                  {recentNotifications.map((notification) => (
+                    <Link
+                      key={String(notification._id)}
+                      href={notification.link ?? "/erp/notifications"}
+                      className={[
+                        styles.header__notificationItem,
+                        notification.isRead
+                          ? styles["header__notificationItem--read"]
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      prefetch
+                    >
+                      <span
+                        className={styles.header__notificationItemMark}
+                        aria-hidden
+                      />
+                      <span className={styles.header__notificationItemBody}>
+                        <span className={styles.header__notificationItemTitle}>
+                          {notification.title}
+                        </span>
+                        {notification.message ? (
+                          <span
+                            className={styles.header__notificationItemMessage}
+                          >
+                            {notification.message}
+                          </span>
+                        ) : null}
+                        <span className={styles.header__notificationItemTime}>
+                          {formatNotificationTime(notification.createdAt)}
+                        </span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.header__notificationEmpty}>
+                  새 알림 없음
+                </div>
+              )}
+              <Link
+                href="/erp/notifications"
+                className={styles.header__notificationAll}
+                prefetch
+              >
+                전체 알림 보기
+              </Link>
+            </div>
+          </div>
 
           <div className={styles.header__user}>
             <span

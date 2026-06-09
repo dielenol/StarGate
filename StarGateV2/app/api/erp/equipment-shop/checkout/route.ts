@@ -20,6 +20,7 @@ import {
   SYSTEM_USER_ID_SENTINEL,
 } from "@/lib/db/system-actor";
 import { findUserById } from "@/lib/db/users";
+import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import {
   isEquipmentShopCategory,
   toEquipmentPriceNumber,
@@ -310,6 +311,18 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  await notifyUser({
+    userId: mainChar.ownerId,
+    type: "CREDIT_RECEIVED",
+    title: "장비 구매로 크레딧이 사용되었습니다",
+    message: [
+      `${mainChar.codename} · ${formatOrderDescription(lines)}`,
+      formatSignedAmount(-totalPrice, "CR"),
+      `현재 잔액 ${creditTx.balance.toLocaleString()} CR`,
+    ].join(" · "),
+    link: "/erp/equipment-shop",
+  });
 
   return NextResponse.json(
     {

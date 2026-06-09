@@ -355,6 +355,12 @@
   font-size: 12px;
 }
 
+.header__notificationWrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
 .header__notification {
   position: relative;
   display: inline-flex;
@@ -368,16 +374,26 @@
   border-radius: var(--radius-sm);
   color: var(--ink-2);
   text-decoration: none;
+  box-shadow: none;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
+    box-shadow 0.15s ease,
     color 0.15s ease;
 }
 
-.header__notification:hover {
+.header__notification:hover,
+.header__notificationWrap:focus-within .header__notification {
   background: var(--bg-3);
   border-color: var(--gold-dim);
   color: var(--gold);
+}
+
+.header__notification--active {
+  background: rgba(201, 168, 90, 0.1);
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(201, 168, 90, 0.12);
 }
 
 .header__notification svg {
@@ -399,6 +415,148 @@
   font-size: 14px;
   line-height: 1;
   text-align: center;
+}
+
+.header__notificationDropdown {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  z-index: 80;
+  width: min(340px, calc(100vw - 20px));
+  padding: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s ease;
+}
+
+.header__notificationWrap:hover .header__notificationDropdown,
+.header__notificationWrap:focus-within .header__notificationDropdown {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.header__notificationDropdownHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 2px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.header__notificationList {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+}
+
+.header__notificationItem {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 8px;
+  padding: 9px 2px;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed var(--line);
+}
+
+.header__notificationItem:last-child {
+  border-bottom: 0;
+}
+
+.header__notificationItem:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.header__notificationItemMark {
+  width: 6px;
+  height: 6px;
+  margin-top: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+}
+
+.header__notificationItem--read .header__notificationItemMark {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+}
+
+.header__notificationItemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.header__notificationItemTitle {
+  color: var(--ink-0);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header__notificationItem--read .header__notificationItemTitle {
+  color: var(--ink-1);
+  font-weight: 400;
+}
+
+.header__notificationItemMessage {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header__notificationItemTime {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.header__notificationEmpty {
+  padding: 24px 6px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.header__notificationAll {
+  display: flex;
+  justify-content: center;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+}
+
+.header__notificationAll:hover {
+  color: var(--ink-0);
 }
 
 .header__user {
@@ -585,6 +743,10 @@
 
   .header__logout {
     display: none;
+  }
+
+  .header__notificationDropdown {
+    right: -34px;
   }
 }
 

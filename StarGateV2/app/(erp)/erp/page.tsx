@@ -185,7 +185,7 @@ export default async function ERPDashboardPage() {
     findUserById(userId).catch(() => null),
     listCharactersByOwner(userId).catch(() => []),
     mainCharacterPromise,
-    listUserNotifications(userId, 3).catch(() => []),
+    listUserNotifications(userId, 20).catch(() => []),
     countUnread(userId).catch(() => 0),
     guildId
       ? findUpcomingSessionsByGuild(guildId, 20).catch(() => [])

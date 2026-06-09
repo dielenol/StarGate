@@ -16,6 +16,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
+import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import {
   StocksApiError,
   type StocksErrorCode,
@@ -150,6 +151,7 @@ export function useBuyStock() {
       // history 는 매매로 변동 없음 (M3-A: 가격 영향 무) → 제외.
       invalidateStockMarketQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
     onError: (err) => {
       // 자동 환불/복구가 발생한 케이스도 ledger/holdings 가 변경됐으므로 invalidate.

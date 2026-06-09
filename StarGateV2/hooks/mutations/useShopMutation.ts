@@ -16,6 +16,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
+import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import {
   ShopApiError,
   shopKeys,
@@ -132,6 +133,7 @@ export function useBuyShopItem() {
       queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
       queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 }
@@ -153,6 +155,7 @@ export function useCheckoutShopCart() {
       queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
       queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 }

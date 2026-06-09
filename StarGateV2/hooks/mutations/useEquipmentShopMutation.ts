@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
+import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import {
   EquipmentShopApiError,
   equipmentShopKeys,
@@ -63,6 +64,7 @@ export function useCheckoutEquipmentShopCart() {
       queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 }
