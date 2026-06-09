@@ -20,7 +20,13 @@ import { resolvePublicAssetPath } from "@/lib/asset-path";
 
 import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
 
-import { IconMenu, IconNotification } from "@/components/icons";
+import {
+  IconMenu,
+  IconNotification,
+  IconPause,
+  IconPlay,
+  IconShuffle,
+} from "@/components/icons";
 import Breadcrumb, {
   type BreadcrumbItem,
 } from "@/components/ui/PageHead/Breadcrumb";
@@ -362,8 +368,9 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   } as CSSProperties;
   const bgmState = bgmError ? "error" : bgmPlaying ? "playing" : "idle";
   const bgmToggleLabel = bgmPlaying
-    ? `${activeBgm?.label ?? "BGM"} 일시정지`
-    : "랜덤 BGM 재생";
+    ? "배경음악 중지"
+    : "배경음악 재생";
+  const bgmShuffleLabel = "랜덤 배경음악으로 변경";
   const unreadNotificationCount = useMemo(
     () => notifications.filter((notification) => !notification.isRead).length,
     [notifications],
@@ -493,51 +500,62 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
             title={bgmToggleLabel}
             disabled={bgmPending}
           >
-            <span aria-hidden>{bgmPlaying ? "Ⅱ" : "▶"}</span>
+            {bgmPlaying ? (
+              <IconPause aria-hidden />
+            ) : (
+              <IconPlay aria-hidden />
+            )}
           </button>
           <button
             type="button"
             className={`${styles.header__bgmButton} ${styles.header__bgmShuffle}`}
             onClick={handleShuffleBgm}
-            aria-label="랜덤 BGM으로 넘기기"
-            title="랜덤 BGM으로 넘기기"
+            aria-label={bgmShuffleLabel}
+            title={bgmShuffleLabel}
             disabled={bgmPending}
           >
-            <span aria-hidden>↻</span>
+            <IconShuffle aria-hidden />
           </button>
-          <div className={styles.header__bgmBody}>
-            <div className={styles.header__bgmMeta}>
+          <span className={styles.header__bgmCompactLabel}>배경음악</span>
+
+          <div className={styles.header__bgmPanel}>
+            <div className={styles.header__bgmPanelHead}>
               <span className={styles.header__bgmLabel} aria-live="polite">
                 {bgmStatusLabel}
               </span>
               <span className={styles.header__bgmTime}>{bgmTimeLabel}</span>
             </div>
-            <input
-              type="range"
-              className={`${styles.header__bgmRange} ${styles.header__bgmProgress}`}
-              min={0}
-              max={bgmDurationValue || 0}
-              step={0.1}
-              value={bgmDurationValue > 0 ? bgmCurrentTimeValue : 0}
-              onChange={handleSeekBgm}
-              disabled={bgmDurationValue <= 0}
-              aria-label="BGM 재생 위치"
-              style={bgmProgressStyle}
-            />
-          </div>
-          <div className={styles.header__bgmVolume}>
-            <span className={styles.header__bgmVolumeLabel}>VOL</span>
-            <input
-              type="range"
-              className={styles.header__bgmRange}
-              min={0}
-              max={100}
-              step={1}
-              value={bgmVolumeLevel}
-              onChange={handleBgmVolumeChange}
-              aria-label="BGM 볼륨"
-              style={bgmVolumeStyle}
-            />
+
+            <label className={styles.header__bgmControl}>
+              <span className={styles.header__bgmControlLabel}>SEEK</span>
+              <input
+                type="range"
+                className={`${styles.header__bgmRange} ${styles.header__bgmProgress}`}
+                min={0}
+                max={bgmDurationValue || 0}
+                step={0.1}
+                value={bgmDurationValue > 0 ? bgmCurrentTimeValue : 0}
+                onChange={handleSeekBgm}
+                disabled={bgmDurationValue <= 0}
+                aria-label="BGM 재생 위치"
+                style={bgmProgressStyle}
+              />
+            </label>
+
+            <label className={styles.header__bgmControl}>
+              <span className={styles.header__bgmControlLabel}>VOL</span>
+              <input
+                type="range"
+                className={styles.header__bgmRange}
+                min={0}
+                max={100}
+                step={1}
+                value={bgmVolumeLevel}
+                onChange={handleBgmVolumeChange}
+                aria-label="BGM 볼륨"
+                style={bgmVolumeStyle}
+              />
+            </label>
           </div>
         </div>
 
