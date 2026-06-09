@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -17,6 +18,9 @@ import type { AgentLevel } from "@/types/character";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
+import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
+
+import { IconMenu, IconNotification } from "@/components/icons";
 import Breadcrumb, {
   type BreadcrumbItem,
 } from "@/components/ui/PageHead/Breadcrumb";
@@ -179,6 +183,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   );
 
   const { breadcrumb, title } = usePageHead();
+  const { data: notifications = [] } = useNotifications();
   const [activeBgmIndex, setActiveBgmIndex] = useState<number | null>(null);
   const [bgmPlaying, setBgmPlaying] = useState(false);
   const [bgmPending, setBgmPending] = useState(false);
@@ -342,6 +347,12 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const bgmToggleLabel = bgmPlaying
     ? `${activeBgm?.label ?? "BGM"} 일시정지`
     : "랜덤 BGM 재생";
+  const unreadNotificationCount = useMemo(
+    () => notifications.filter((notification) => !notification.isRead).length,
+    [notifications],
+  );
+  const notificationBadge =
+    unreadNotificationCount > 99 ? "99+" : String(unreadNotificationCount);
 
   function handleOpenSidebar() {
     window.dispatchEvent(new CustomEvent("no:sidebar-open"));
@@ -398,7 +409,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
         onClick={handleOpenSidebar}
         aria-label="메뉴 열기"
       >
-        ☰
+        <IconMenu aria-hidden />
       </button>
 
       <Link href="/erp" className={styles.header__brand} aria-label="ERP 홈">
@@ -501,39 +512,60 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
           </div>
         </div>
 
-        <button
-          type="button"
-          className={styles.header__cmdk}
-          onClick={handleOpenCmdK}
-          aria-label="명령 팔레트 열기"
-        >
-          <span className={styles.header__cmdkIcon} aria-hidden>
-            ⌕
-          </span>
-          <span className={styles.header__cmdkPlaceholder}>검색</span>
-          <span className={styles.header__cmdkPlaceholderShort}>검색…</span>
-          <kbd className={styles.header__cmdkKbd}>{kbdLabel}</kbd>
-        </button>
-
-        <div className={styles.header__user}>
-          <span
-            className={styles.header__userName}
-            title={userTitle}
-          >
-            {userDisplayLabel}
-          </span>
-          {identityRank ? (
-            <span className={styles.header__userRole} data-rank={identityRank}>
-              {identityRank}
-            </span>
-          ) : null}
+        <div className={styles.header__utility}>
           <button
             type="button"
-            className={styles.header__logout}
-            onClick={handleLogout}
+            className={styles.header__cmdk}
+            onClick={handleOpenCmdK}
+            aria-label="명령 팔레트 열기"
           >
-            로그아웃
+            <span className={styles.header__cmdkIcon} aria-hidden>
+              ⌕
+            </span>
+            <span className={styles.header__cmdkPlaceholder}>검색</span>
+            <span className={styles.header__cmdkPlaceholderShort}>검색…</span>
+            <kbd className={styles.header__cmdkKbd}>{kbdLabel}</kbd>
           </button>
+
+          <Link
+            href="/erp/notifications"
+            className={styles.header__notification}
+            aria-label={
+              unreadNotificationCount > 0
+                ? `알림 ${unreadNotificationCount}건`
+                : "알림"
+            }
+            title="알림"
+            prefetch
+          >
+            <IconNotification aria-hidden />
+            {unreadNotificationCount > 0 ? (
+              <span className={styles.header__notificationBadge}>
+                {notificationBadge}
+              </span>
+            ) : null}
+          </Link>
+
+          <div className={styles.header__user}>
+            <span
+              className={styles.header__userName}
+              title={userTitle}
+            >
+              {userDisplayLabel}
+            </span>
+            {identityRank ? (
+              <span className={styles.header__userRole} data-rank={identityRank}>
+                {identityRank}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              className={styles.header__logout}
+              onClick={handleLogout}
+            >
+              로그아웃
+            </button>
+          </div>
         </div>
       </div>
     </header>

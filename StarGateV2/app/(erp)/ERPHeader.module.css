@@ -2,7 +2,9 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "brand page actions";
   align-items: center;
   gap: 14px;
   height: var(--topbar-h);
@@ -12,6 +14,7 @@
 }
 
 .header__burger {
+  grid-area: menu;
   display: none;
   align-items: center;
   justify-content: center;
@@ -25,13 +28,20 @@
   cursor: pointer;
 }
 
+.header__burger svg {
+  width: 18px;
+  height: 18px;
+}
+
 .header__brand {
+  grid-area: brand;
   display: flex;
   align-items: center;
   gap: 12px;
   color: inherit;
   text-decoration: none;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .header__logo {
@@ -54,10 +64,10 @@
    PageHeadContext 가 비어 있을 때도 자리(높이)를 유지해 hydrate 시
    layout shift 최소화. */
 .header__pageHead {
+  grid-area: page;
   display: flex;
   align-items: baseline;
   gap: 12px;
-  flex: 1;
   min-width: 0;
   min-height: 22px;
   padding-left: 12px;
@@ -79,7 +89,7 @@
   color: var(--ink-0);
   font-size: 19px;
   font-weight: 500;
-  letter-spacing: -0.005em;
+  letter-spacing: 0;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -88,9 +98,19 @@
 }
 
 .header__right {
+  grid-area: actions;
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.header__utility {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   flex-shrink: 0;
 }
 
@@ -98,9 +118,9 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  flex-shrink: 0;
-  width: min(40vw, 480px);
-  min-width: 420px;
+  flex: 1 1 320px;
+  width: clamp(260px, 30vw, 430px);
+  min-width: 240px;
   padding: 5px 12px 5px 6px;
   background: var(--bg-2);
   border: 1px solid var(--line-strong);
@@ -278,7 +298,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 176px;
+  width: clamp(124px, 12vw, 176px);
+  min-width: 0;
   padding: 9px 10px;
   background: var(--bg-2);
   border: 1px solid var(--line-strong);
@@ -334,12 +355,59 @@
   font-size: 12px;
 }
 
+.header__notification {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.header__notification:hover {
+  background: var(--bg-3);
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.header__notification svg {
+  width: 19px;
+  height: 19px;
+}
+
+.header__notificationBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 20px;
+  padding: 2px 5px;
+  background: var(--danger);
+  border: 1px solid var(--bg-1);
+  border-radius: var(--radius-sm);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  text-align: center;
+}
+
 .header__user {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
   font-size: 14px;
+  min-width: 0;
 }
 
 .header__userName {
@@ -386,11 +454,26 @@
   border-color: var(--gold-dim);
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1279px) {
+  .header {
+    grid-template-columns: 36px auto minmax(0, 1fr) auto;
+    grid-template-areas: "menu brand page actions";
+    gap: 12px;
+  }
+
+  .header__burger {
+    display: flex;
+  }
+
+  .header__brandName {
+    font-size: 21px;
+    letter-spacing: 0.2em;
+  }
+
   .header__bgm {
     padding-right: 6px;
-    width: 300px;
-    min-width: 300px;
+    width: clamp(132px, 18vw, 260px);
+    min-width: 132px;
   }
 
   .header__bgmTime,
@@ -399,18 +482,11 @@
   }
 
   .header__bgmLabel {
-    max-width: 120px;
-  }
-}
-
-/* 1280 미만 — burger 노출, cmdk 폭 축소, 긴 placeholder 를 짧은 것으로 교체 */
-@media (max-width: 1279px) {
-  .header__burger {
-    display: flex;
+    max-width: 104px;
   }
 
   .header__cmdk {
-    min-width: 140px;
+    width: 112px;
   }
 
   .header__cmdkPlaceholder {
@@ -420,42 +496,17 @@
   .header__cmdkPlaceholderShort {
     display: block;
   }
-}
-
-/* 1024 미만 — breadcrumb 숨김 (헤더 폭 절약), cmdk 추가 압축 + ⌘K kbd 제거 */
-@media (max-width: 1023px) {
-  .header__pageHeadCrumb {
-    display: none;
-  }
-
-  .header__bgmShuffle {
-    display: none;
-  }
-
-  .header__bgm {
-    width: 220px;
-    min-width: 220px;
-  }
-
-  .header__cmdk {
-    min-width: 116px;
-    padding: 9px 12px;
-  }
 
   .header__cmdkKbd {
     display: none;
   }
-}
 
-/* 880 미만 — brand 텍스트(NOVUS ORDO) 숨김, 로고만 표시 */
-@media (max-width: 880px) {
-  .header__brandName {
+  .header__userName {
     display: none;
   }
 }
 
-/* 680 미만 — cmdk/userName 숨기고 title ellipsis 가 진가 발휘 */
-@media (max-width: 680px) {
+@media (max-width: 767px) {
   .header {
     gap: 8px;
     padding: 0 10px;
@@ -466,6 +517,11 @@
     height: 36px;
   }
 
+  .header__brandName,
+  .header__pageHeadCrumb {
+    display: none;
+  }
+
   .header__pageHead {
     padding-left: 8px;
   }
@@ -474,13 +530,10 @@
     font-size: 17px;
   }
 
-  .header__cmdk {
-    display: none;
-  }
-
   .header__bgm {
-    width: 176px;
-    min-width: 176px;
+    width: auto;
+    min-width: 0;
+    padding: 4px;
   }
 
   .header__bgmButton {
@@ -488,28 +541,74 @@
     height: 30px;
   }
 
-  .header__bgmLabel {
+  .header__bgmBody,
+  .header__bgmShuffle {
     display: none;
   }
 
-  .header__userName {
+  .header__cmdk {
+    width: 42px;
+    height: 42px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .header__cmdkPlaceholderShort,
+  .header__cmdkKbd {
+    display: none;
+  }
+
+  .header__logout {
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    grid-template-columns: 36px auto auto;
+    grid-template-areas: "menu brand actions";
+  }
+
+  .header__pageHead {
+    display: none;
+  }
+
+  .header__notification,
+  .header__cmdk {
+    width: 38px;
+    height: 38px;
+  }
+
+  .header__userRole {
+    padding-inline: 7px;
+  }
+
+  .header__logout {
     display: none;
   }
 }
 
-@media (max-width: 520px) {
-  .header__bgmBody {
-    display: none;
+@media (max-height: 720px) and (min-width: 768px) {
+  .header {
+    gap: 10px;
+  }
+
+  .header__logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .header__brandName {
+    font-size: 20px;
+    letter-spacing: 0.18em;
   }
 
   .header__bgm {
-    width: auto;
-    min-width: 0;
+    padding-block: 3px;
   }
-}
 
-@media (max-width: 420px) {
-  .header__bgm {
-    display: none;
+  .header__cmdk,
+  .header__notification {
+    height: 38px;
   }
 }
