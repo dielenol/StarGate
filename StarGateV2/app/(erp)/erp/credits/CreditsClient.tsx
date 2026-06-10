@@ -9,6 +9,17 @@ import type { CreditTransactionType } from "@/types/credit";
 
 import { CREDIT_TRANSACTION_TYPES } from "@/types/credit";
 
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconCredit,
+  IconInfo,
+  IconNotes,
+  IconReportDocument,
+  IconStock,
+  IconTimeline,
+  type IconComponent,
+} from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -185,13 +196,13 @@ function buildMonthlyBuckets(rows: SerializedCreditTransaction[]) {
 
 function toCsv(rows: SerializedCreditTransaction[]): string {
   const header = [
-    "createdAt",
-    "type",
-    "character",
-    "amount",
-    "balance",
-    "description",
-    "createdBy",
+    "일시",
+    "유형",
+    "캐릭터",
+    "금액",
+    "잔액",
+    "설명",
+    "처리자",
   ];
   const body = rows.map((row) =>
     [
@@ -207,6 +218,21 @@ function toCsv(rows: SerializedCreditTransaction[]): string {
       .join(","),
   );
   return [header.join(","), ...body].join("\n");
+}
+
+function PanelLabel({
+  icon: Icon,
+  children,
+}: {
+  icon: IconComponent;
+  children: string;
+}) {
+  return (
+    <span className={styles.panelLabel}>
+      <Icon className={styles.panelIcon} aria-hidden />
+      <span>{children}</span>
+    </span>
+  );
 }
 
 interface FilterDropdownProps<T extends string> {
@@ -380,7 +406,10 @@ export default function CreditsClient({
     <div className={styles.credits}>
       {isGm ? (
         <Box className={styles.adminHintBox}>
-          <Eyebrow>관리자 안내</Eyebrow>
+          <div className={styles.adminHeading}>
+            <IconInfo className={styles.adminIcon} aria-hidden />
+            <Eyebrow>관리자 안내</Eyebrow>
+          </div>
           <div className={styles.adminHint}>
             GM 발급 / 일괄 / 작전풀 운영은{" "}
             <Link href="/erp/admin/credits" className={styles.adminHintLink}>
@@ -393,8 +422,8 @@ export default function CreditsClient({
 
       <div className={styles.walletGrid}>
         <Box variant="gold" className={styles.balancePanel}>
-          <PanelTitle right={<span className={styles.mono}>WALLET</span>}>
-            CURRENT BALANCE
+          <PanelTitle right={<span className={styles.mono}>지갑</span>}>
+            <PanelLabel icon={IconCredit}>현재 잔액</PanelLabel>
           </PanelTitle>
           <div className={styles.balanceValue}>{formatCredit(balance)}</div>
           <div className={styles.identityLine}>
@@ -415,15 +444,15 @@ export default function CreditsClient({
             <div className={styles.notice}>
               <strong>크레딧 지갑 대기 중</strong>
               <span>
-                메인 AGENT 캐릭터가 없어 크레딧이 0으로 표시됩니다.
+                메인 캐릭터가 없어 크레딧이 0으로 표시됩니다.
               </span>
             </div>
           ) : null}
         </Box>
 
         <Box className={styles.flowPanel}>
-          <PanelTitle right={<span className={styles.mono}>6M</span>}>
-            CASHFLOW TRACE
+          <PanelTitle right={<span className={styles.mono}>최근 6개월</span>}>
+            <PanelLabel icon={IconTimeline}>월별 입출금 흐름</PanelLabel>
           </PanelTitle>
           <div className={styles.flowChart}>
             {buckets.map((bucket) => {
@@ -454,7 +483,9 @@ export default function CreditsClient({
 
       <div className={styles.kpiGrid}>
         <Box>
-          <PanelTitle>THIS MONTH</PanelTitle>
+          <PanelTitle>
+            <PanelLabel icon={IconTimeline}>이번 달 순변동</PanelLabel>
+          </PanelTitle>
           <div
             className={
               monthTotals.net >= 0 ? styles.metricValue : styles.metricValueNeg
@@ -468,21 +499,27 @@ export default function CreditsClient({
           </Eyebrow>
         </Box>
         <Box>
-          <PanelTitle>TOTAL INFLOW</PanelTitle>
+          <PanelTitle>
+            <PanelLabel icon={IconArrowRight}>총 입금</PanelLabel>
+          </PanelTitle>
           <div className={styles.metricValue}>
             +{totals.income.toLocaleString()}
           </div>
           <Eyebrow>{transactions.filter((row) => row.amount >= 0).length}건</Eyebrow>
         </Box>
         <Box>
-          <PanelTitle>TOTAL OUTFLOW</PanelTitle>
+          <PanelTitle>
+            <PanelLabel icon={IconArrowLeft}>총 출금</PanelLabel>
+          </PanelTitle>
           <div className={styles.metricValueNeg}>
             -{totals.spend.toLocaleString()}
           </div>
           <Eyebrow>{transactions.filter((row) => row.amount < 0).length}건</Eyebrow>
         </Box>
         <Box>
-          <PanelTitle>LARGEST MOVE</PanelTitle>
+          <PanelTitle>
+            <PanelLabel icon={IconStock}>가장 큰 변동</PanelLabel>
+          </PanelTitle>
           <div
             className={
               !largestMovement || largestMovement.amount >= 0
@@ -501,11 +538,11 @@ export default function CreditsClient({
       </div>
 
       <Box>
-        <PanelTitle right={<span className={styles.mono}>SUMMARY</span>}>
-          LEDGER COMPOSITION
+        <PanelTitle right={<span className={styles.mono}>요약</span>}>
+          <PanelLabel icon={IconNotes}>거래 유형 요약</PanelLabel>
         </PanelTitle>
         {typeBreakdown.length === 0 ? (
-          <div className={styles.empty}>집계할 트랜잭션이 없습니다.</div>
+          <div className={styles.empty}>집계할 거래 기록이 없습니다.</div>
         ) : (
           <div className={styles.breakdownGrid}>
             {typeBreakdown.map((entry) => {
@@ -534,7 +571,7 @@ export default function CreditsClient({
 
       <Box>
         <PanelTitle right={<span className={styles.mono}>{filtered.length}건</span>}>
-          TRANSACTION LOG
+          <PanelLabel icon={IconReportDocument}>거래 내역</PanelLabel>
         </PanelTitle>
 
         <div className={styles.controls}>
@@ -585,13 +622,13 @@ export default function CreditsClient({
           </div>
           <div className={styles.controlActions}>
             <Button size="sm" onClick={handleExport} disabled={filtered.length === 0}>
-              CSV
+              내역 받기
             </Button>
           </div>
         </div>
 
         {filtered.length === 0 ? (
-          <div className={styles.empty}>조건에 맞는 트랜잭션이 없습니다.</div>
+          <div className={styles.empty}>조건에 맞는 거래 기록이 없습니다.</div>
         ) : (
           <div className={styles.tableWrap}>
             <table className={styles.table}>

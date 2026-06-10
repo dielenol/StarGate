@@ -74,7 +74,7 @@ export default async function CreditsPage() {
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
-          { label: "CREDITS" },
+          { label: "크레딧" },
         ]}
         title="크레딧"
       />
