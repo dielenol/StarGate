@@ -110,20 +110,15 @@ export default async function CharacterInventoryPage({
         ]}
         title={character.codename}
         right={
-          <>
-            {isGm ? (
-              <Button
-                as="a"
-                href={`/erp/admin/inventory/${characterId}`}
-                variant="primary"
-              >
-                관리자 모드
-              </Button>
-            ) : null}
-            <Button as="a" href="/erp/inventory">
-              목록
+          isGm ? (
+            <Button
+              as="a"
+              href={`/erp/admin/inventory/${characterId}`}
+              variant="primary"
+            >
+              관리자 모드
             </Button>
-          </>
+          ) : null
         }
       />
 
