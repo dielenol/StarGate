@@ -1,0 +1,64 @@
+[
+  {
+    "collection": "wiki_pages",
+    "type": "wiki-session-marker-refresh",
+    "filter": {
+      "slug": "apocalypse-ho"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": "$content",
+                  "regex": "NOSB-S1E2-MINI"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  "$content",
+                  "\n\n관련 세션: NOSB-S1E2-MINI"
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-06-10T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "wiki-session-marker-refresh",
+    "filter": {
+      "slug": "project-dead-hand"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": "$content",
+                  "regex": "NOSB-S1E2-MINI"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  "$content",
+                  "\n\n관련 세션: NOSB-S1E2-MINI"
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-06-10T00:00:00.000Z"
+        }
+      }
+    ]
+  }
+]

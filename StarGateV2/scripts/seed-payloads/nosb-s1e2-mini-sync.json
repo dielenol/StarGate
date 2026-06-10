@@ -1,0 +1,466 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "operation-report",
+    "payload": {
+      "sessionId": "NOSB-S1E2-MINI",
+      "sessionTitle": "작전 보고서 S1E2: 미니 세션",
+      "summary": "# 작전 기록 S1E2: 미니 세션\n\n블랙 피라미드 핵심 구역 A에서 시작된 미니 세션은 휘트모어 핀치(피펫)의 현장 합류, 프로젝트 데드 핸드 점검, 오틸리아 감시 의뢰, 그리고 송사리 사가 제공한 선상 워크샵으로 이어졌다. 기록상 진행일은 2026년 4월 12일에서 4월 13일이다.\n\n## 시각 자료\n![송사리 호 - 선상 워크샵 제공 선박](/assets/wiki/places/song-sari-ho.webp \"송사리 호 - 선상 워크샵 제공 선박\")\n\n![아포칼립스 호 - 선체 명판](/assets/wiki/places/apocalypse-ho.webp \"아포칼립스 호 - 선체 명판\")\n\n## 진행 정보\n분류: 내부 점검 / 선상 워크샵 / 시공간 루프\n세션 ID: NOSB-S1E2-MINI\n진행일: 2026년 4월 12일 ~ 2026년 4월 13일\n작전지: 블랙 피라미드 핵심 구역 A, 송사리 호 / 아포칼립스 호\n기록 등급: 사무국 기록통제실 보존본\n\n## 블랙 피라미드 내부 상황\n수잔 델라웨어는 해쉬 테거에게 휘트모어 핀치(피펫)를 새 보조 인력으로 소개했다. 닥터 모스는 병가 중으로 언급되며, 핀치는 해쉬 테거와 마가렛(메리골드)이 참여한 프로젝트 데드 핸드 점검에 합류한다.\n\n메리골드는 사망자의 잔류 의식을 물체에 깃들게 하는 능력을 시연했고, 해쉬 테거는 이를 엑토플라즘과 텔레파시가 결합된 복합 능력으로 관찰했다. 해당 장면에서 프로젝트 데드 핸드는 세계이사회가 실시간으로 주시하는 연구 흐름으로 기록된다.\n\n별도 구획에서 Mr. 오드는 스타크 일로니손(클라운)과 마리아에게 광명회 관련 접근 권한과 경고를 전달했다. 오틸리아의 아넨에르베·페이퍼클립 이력은 내부 의심 대상으로 언급되었고, 스타크에게 오틸리아의 접촉 여부를 감시하라는 지시가 내려졌다. 이는 현 시점에서 확정된 배신 기록이 아니라 내부 감시 명령으로만 분류한다.\n\n## 송사리 호 워크샵\n현장요원 팀워크 향상 워크샵 공지가 내려오며, 요원들은 송사리 사가 제공한 고급 선박으로 이동했다. 키아나는 송사리를 다국적 해운 기업으로 인지하고 있었고, 관련 소문과 위험 인력에 대한 경계도 남긴다.\n\n오틸리아와 크로노스는 잠수복 차림으로 해상에 등장했고, 오틸리아가 회수한 작은 캐비넷에는 하켄크로이츠 표식이 보이는 것으로 기록된다. 오틸리아는 해당 캐비넷을 숨겼으며, 이후 아포칼립스 호 내부에서 같은 물증과 유사한 대상이 다시 등장한다.\n\n## 반복과 존 오푸스\n크로노스는 비밀 지시를 통해 이미 송사리 호에서 일행과 함께 42회 사망했다는 사실을 알고 있었다. 그는 진실을 직접 고지하면 파괴적 현상이 발생한다는 조건 때문에, 루프를 우회적으로 인지시키거나 적대적 의도를 중단시켜야 하는 위치에 놓였다.\n\n선박 구간에서는 제인 피쉬, 물주먹 래키, 송사리 탐정, 신사, 그리고 공간 조종 능력을 드러낸 존 오푸스가 핵심 인물로 등장한다. 존 오푸스는 노부스 오르도와 송사리를 부수겠다고 말했고, 선박을 부유시키거나 공간을 조작하는 위협으로 관찰되었다. 다만 오틸리아와 핀치가 Zulu 가능성을 의심한 수준에 머물며, 이 기록은 존 오푸스를 확정 Zulu로 분류하지 않는다.\n\n## 아포칼립스 호와 레버 선택\n신사는 스타크에게 송사리 호 운항 선택지를 제시했다. 송사리 사로 향하면 송사리 주가가 오를 수 있다는 설명, 노부스 오르도로 향하면 칭송받을 수 있다는 설명, 그리고 별도의 제3 선택지가 언급된다. 스타크는 노부스 오르도 방향의 레버를 당겼고, 그 결과 선박은 현실에 남되 일행이 선박의 시공간에 갇히는 조건이 드러났다.\n\n이후 송사리 호는 미국 실험선 아포칼립스 호로 확인되며, 노부스 오르도 뉴욕항으로 향할 경우 선박은 항구로 내려가지만 일행은 내부 시공간에 남는다는 설명이 이어진다. 송사리 관련 주가 변동 가능성은 선택지 설명으로만 기록하고, 실제 시장 변동은 적용하지 않는다.\n\n## 결과와 후속 훅\n크로노스는 시간 감속과 역행 선택으로 존 오푸스를 역행 흐름에 묶었고, 장면은 워크샵 준비 시점으로 되감겼다. 종료 기록은 복제체들이 43회 역행했고, 송사리 호가 최대 100회까지 반복될 수 있음을 남긴다.\n\n마지막 카메라 기록은 스타크와 물놀이 일행, 화장실의 닥터 모스, 경비원의 항의, 오틸리아가 작은 캐비넷을 바라보는 장면으로 닫힌다. 캐비넷의 정체, 존 오푸스의 분류, 아포칼립스 호의 루프 조건은 후속 조사 대상으로 남긴다.\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「S1E2 미니 세션」. 원본 세션 로그: NOSB 2 mini.pdf.",
+      "highlights": [
+        "휘트모어 핀치(피펫)가 해쉬 테거 보조 인력으로 합류했고, 프로젝트 데드 핸드 점검에서 메리골드의 사령-물체 빙의 능력이 관찰되었다.",
+        "Mr. 오드는 스타크와 마리아에게 광명회 접근 권한과 오틸리아 감시 명령을 전달했으나, 오틸리아의 배신은 확정하지 않는다.",
+        "송사리 사가 제공한 선상 워크샵은 송사리 호 / 아포칼립스 호의 시공간 루프 사건으로 전환되었다.",
+        "크로노스는 이미 42회 사망한 반복을 알고 있었고, 직접 폭로가 위험한 조건 속에서 루프를 우회적으로 깨야 했다.",
+        "존 오푸스는 공간 조종 능력과 노부스 오르도·송사리 파괴 의사를 드러낸 주요 위협으로 기록되지만, 확정 Zulu로 분류하지 않는다.",
+        "스타크가 노부스 오르도 방향 레버를 선택한 뒤 선박은 현실에 남고 일행은 선박 시공간에 갇히는 조건이 드러났다.",
+        "종료 시점에서 반복 횟수는 43회로 증가했고, 하켄크로이츠 표식의 작은 캐비넷과 최대 100회 루프 가능성이 후속 훅으로 남았다."
+      ],
+      "participants": [
+        "네베드",
+        "CLOWN",
+        "BIG BOY",
+        "PIPETTE",
+        "INDEXER",
+        "TIME",
+        "OTILIA",
+        "MARIA",
+        "TIGER298",
+        "LEE DONGSIK",
+        "WD-(𝓃)",
+        "MARGARET"
+      ],
+      "locationLabel": "미국 뉴욕만 해상 / 송사리 호-아포칼립스 호",
+      "mapPrecision": "estimated",
+      "gmId": "novus-ordo-record-control",
+      "gmName": "NOVUS ORDO 기록통제실 분석관 K. Adler",
+      "createdAt": "2026-04-13T00:00:00.000Z",
+      "updatedAt": "2026-06-10T00:00:00.000Z",
+      "mapX": 29,
+      "mapY": 41.2
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki",
+    "payload": {
+      "slug": "s1e2-mini",
+      "title": "작전 보고서 S1E2: 미니 세션",
+      "category": "작전 보고서",
+      "tags": [
+        "NOSB-S1E2-MINI",
+        "S1E2-MINI",
+        "송사리호",
+        "아포칼립스호",
+        "존오푸스",
+        "프로젝트데드핸드"
+      ],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제실",
+      "content": "# 작전 보고서 S1E2: 미니 세션\n\nS1E2 미니 세션은 블랙 피라미드 내부의 인력·연구 점검에서 시작해 송사리 호 / 아포칼립스 호의 시공간 루프 사건으로 전환된 작전 기록이다.\n\n![송사리 호 - 선상 워크샵 제공 선박](/assets/wiki/places/song-sari-ho.webp \"송사리 호 - 선상 워크샵 제공 선박\")\n\n![아포칼립스 호 - 선체 명판](/assets/wiki/places/apocalypse-ho.webp \"아포칼립스 호 - 선체 명판\")\n\n## 요약 정보\n분류: 내부 점검 / 선상 워크샵 / 시공간 루프\n세션 ID: NOSB-S1E2-MINI\n진행일: 2026년 4월 12일 ~ 2026년 4월 13일\n주요 장소: 블랙 피라미드 핵심 구역 A, 송사리 호, 아포칼립스 호\n주요 물증: 하켄크로이츠 표식의 작은 캐비넷\n\n## 사건 개요\n휘트모어 핀치(피펫)는 수잔 델라웨어의 소개로 해쉬 테거의 보조 인력으로 합류했다. 해쉬와 마가렛(메리골드)은 프로젝트 데드 핸드 점검에서 사망자의 잔류 의식을 물체에 깃들게 하는 능력을 관찰했고, 세계이사회가 해당 연구를 주시한다는 정보가 남았다.\n\n동시에 Mr. 오드는 스타크 일로니손(클라운)과 마리아에게 광명회 관련 접근 권한과 오틸리아 감시 명령을 전달했다. 이 명령은 오틸리아의 아넨에르베·페이퍼클립 이력을 근거로 한 내부 의심이며, 확정된 배신 기록은 아니다.\n\n## 선상 워크샵\n현장요원 팀워크 향상 워크샵 공지 후 일행은 송사리 사가 제공한 고급 선박으로 이동했다. 오틸리아는 잠수 중 하켄크로이츠 표식이 보이는 작은 캐비넷을 은닉했고, 해당 물증은 아포칼립스 호 내부 장면에서도 다시 연결된다.\n\n크로노스는 자신과 일행이 이미 송사리 호에서 42회 사망했다는 사실을 알고 있었으나, 직접 폭로가 파괴적 현상으로 이어진다는 조건 때문에 루프를 우회적으로 끊어야 했다.\n\n## 존 오푸스와 아포칼립스 호\n존 오푸스는 노부스 오르도와 송사리를 부수겠다고 말하며 공간 조종 능력을 드러낸 주요 위협이다. 오틸리아와 핀치가 Zulu 가능성을 의심했지만, 이 문서는 존 오푸스를 확정 Zulu로 분류하지 않는다.\n\n신사는 스타크에게 송사리 사 방향, 노부스 오르도 방향, 제3 선택지에 해당하는 레버를 제시했다. 스타크가 노부스 오르도 방향 레버를 선택한 뒤, 선박은 현실에 남고 일행은 선박의 시공간에 갇히는 조건이 드러났다. 선박은 미국 실험선 아포칼립스 호로 확인된다.\n\n## 결과와 보류 사항\n크로노스의 시간 역행 선택으로 장면은 워크샵 준비 시점으로 되감겼다. 종료 기록은 복제체들의 반복 횟수가 43회가 되었고, 송사리 호가 최대 100회까지 반복될 수 있음을 남긴다.\n\n송사리 주가 상승 가능성은 신사가 제시한 선택지 설명으로만 기록한다. 실제 시세, 재화, 인벤토리 변동은 이 세션 동기화에서 적용하지 않는다.\n\n## 관련 문서\n아포칼립스 호, 프로젝트 데드 핸드, 하켄크로이츠 표식의 작은 캐비넷, 송사리, 존 오푸스, 크로노스, 오틸리아, 스타크 일로니손.\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「S1E2 미니 세션」. 원본 세션 로그: NOSB 2 mini.pdf.",
+      "createdAt": "2026-04-13T00:00:00.000Z",
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "location-wiki",
+    "payload": {
+      "slug": "apocalypse-ho",
+      "title": "아포칼립스 호",
+      "category": "장소",
+      "tags": [
+        "NOSB-S1E2-MINI",
+        "S1E2-MINI",
+        "송사리호",
+        "아포칼립스호",
+        "시공간루프",
+        "존오푸스"
+      ],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제실",
+      "content": "# 아포칼립스 호\n\n아포칼립스 호는 S1E2 미니 세션에서 송사리 호로 인식되던 선박의 후반 정체로 드러난 미국 실험선이다. 송사리 사가 제공한 선상 워크샵의 무대였으며, 존 오푸스와 시간 반복 현상이 연결된 고위험 작전지로 기록한다.\n\n![아포칼립스 호 - 선체 명판](/assets/wiki/places/apocalypse-ho.webp \"아포칼립스 호 - 선체 명판\")\n\n![송사리 호 - 선상 워크샵 제공 선박](/assets/wiki/places/song-sari-ho.webp \"송사리 호로 인식된 선상 워크샵 선박\")\n\n## 확인된 정보\n일행은 현장요원 팀워크 향상 워크샵 명목으로 송사리 사가 제공한 고급 선박에 탑승했다. 이후 선박은 아포칼립스 호라는 이름으로 확인되며, 노부스 오르도 뉴욕항에 도착하더라도 탑승자들이 선박 내부 시공간에 남을 수 있다는 조건이 드러난다.\n\n## 레버와 항로\n신사는 스타크 일로니손에게 송사리 사 방향, 노부스 오르도 방향, 제3 선택지에 해당하는 레버를 설명했다. 송사리 사 방향은 송사리 주가 급등 가능성으로, 노부스 오르도 방향은 조직의 칭송 가능성으로 설명되었다. 실제 선택은 노부스 오르도 방향 레버였고, 이 선택은 선박이 현실에 남는 대신 탑승자가 선박 시공간에 갇히는 결과로 이어졌다.\n\n## 이상 현상\n크로노스는 이미 42회 사망한 반복을 인지하고 있었고, 종료 시점에는 반복 횟수가 43회로 증가했다. 기록상 송사리 호는 최대 100회까지 반복될 수 있으며, 반복을 끊기 위해서는 인물들의 정형화된 행동과 호르몬성 유도 조건을 바꾸어야 한다는 단서가 남았다.\n\n존 오푸스는 선박 위에서 공간 조종 능력을 보였고, 노부스 오르도와 송사리를 파괴하려는 의사를 드러냈다. 다만 이 기록은 존 오푸스를 확정 Zulu로 분류하지 않고, 의심 및 후속 조사 대상으로 남긴다.\n\n## 관련 물증\n하켄크로이츠 표식의 작은 캐비넷은 오틸리아가 잠수 중 회수·은닉한 물건으로, 아포칼립스 호 내부의 별도 장면에서도 다시 연결된다. 캐비넷의 정확한 기능과 소유권은 확정하지 않는다.\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「S1E2 미니 세션」.",
+      "createdAt": "2026-04-13T00:00:00.000Z",
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "concept-wiki",
+    "payload": {
+      "slug": "project-dead-hand",
+      "title": "프로젝트 데드 핸드",
+      "category": "개념",
+      "tags": [
+        "NOSB-S1E2-MINI",
+        "S1E2-MINI",
+        "해쉬테거",
+        "메리골드",
+        "세계이사회",
+        "엑토플라즘"
+      ],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제실",
+      "content": "# 프로젝트 데드 핸드\n\n프로젝트 데드 핸드는 S1E2 미니 세션에서 해쉬 테거와 마가렛(메리골드)이 블랙 피라미드 내부에서 점검한 연구 흐름이다. 세계이사회가 실시간으로 주시하는 프로젝트로 언급된다.\n\n## 관찰 기록\n메리골드는 사망자의 잔류 의식을 버려진 물건에 깃들게 하는 능력을 시연했다. 로그상 해당 효과는 약 1시간 동안 유지될 수 있고, 물체가 기거나 움직이는 현상으로 관찰된다.\n\n해쉬 테거는 이 현상을 엑토플라즘과 텔레파시가 결합된 복합 능력으로 보았다. 그는 노부스 오르도가 엑토플라즘 조작까지 시도할 수 있다는 가능성을 언급했으나, 이 문서는 해당 가능성을 확정 기술로 등록하지 않는다.\n\n## 현재 분류\n프로젝트 데드 핸드는 사령, 잔류 의식, 물체 빙의, 엑토플라즘 조작 가능성이 연결된 연구 후보군이다. 공식 결과물, 안정화 기술, 양산 가능한 절차는 아직 확인되지 않았다.\n\n## 관련 인물\n해쉬 테거, 마가렛(메리골드), 휘트모어 핀치(피펫), 수잔 델라웨어.\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「S1E2 미니 세션」.",
+      "createdAt": "2026-04-13T00:00:00.000Z",
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog",
+    "payload": {
+      "slug": "hakenkreuz-cabinet",
+      "name": "하켄크로이츠 표식의 작은 캐비넷",
+      "nameEn": "Hakenkreuz-Marked Small Cabinet",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "정체 미상 시공간 루프 물증 후보",
+      "description": "S1E2 미니 세션에서 오틸리아가 잠수 중 회수·은닉했고, 아포칼립스 호 내부 장면과 다시 연결된 정체 미상의 작은 캐비넷.",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": [
+        "NOSB-S1E2-MINI",
+        "S1E2-MINI",
+        "아포칼립스호",
+        "하켄크로이츠",
+        "캐비넷",
+        "시공간루프"
+      ],
+      "lore": {
+        "background": "오틸리아가 잠수 중 회수한 작은 캐비넷에는 하켄크로이츠 표식이 보이는 것으로 기록된다. 이후 아포칼립스 호 내부에서 캐비넷을 미국으로 옮기려는 인물의 장면과 연결된다.",
+        "acquisition": "일반 획득 불가. NOSB-S1E2-MINI 기록상 오틸리아가 은닉한 위험 물증 후보로만 확인된다.",
+        "notes": "정확한 기능, 소유권, 작동 조건은 로그만으로 확정하지 않는다."
+      },
+      "source": "manual",
+      "createdAt": "2026-04-13T00:00:00.000Z",
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "PIPETTE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "해쉬 테거 보조 인력 및 현장 관찰자",
+          "summary": "휘트모어 핀치(피펫)는 수잔 델라웨어의 소개로 해쉬 테거의 보조 인력으로 합류했고, 프로젝트 데드 핸드와 송사리 호 사건을 관찰했다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "INDEXER"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "프로젝트 데드 핸드 관찰 및 송사리 호 탑승자",
+          "summary": "해쉬 테거는 메리골드의 사령-물체 빙의 능력을 엑토플라즘과 텔레파시가 결합된 복합 능력으로 관찰했고, 이후 송사리 호 사건에 휘말렸다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "MARGARET"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "프로젝트 데드 핸드 실험체",
+          "summary": "마가렛(메리골드)은 사망자의 잔류 의식을 물체에 깃들게 하는 능력을 시연했고, 프로젝트 데드 핸드의 핵심 관찰 대상으로 기록되었다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "TIME"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "시공간 루프 인지자 및 역행 선택자",
+          "summary": "크로노스는 송사리 호에서 이미 42회 사망한 반복을 인지했고, 종료부에서 시간 역행 선택으로 존 오푸스를 역행 흐름에 묶었다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "CLOWN"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "오틸리아 감시 명령 수령 및 레버 선택자",
+          "summary": "스타크 일로니손은 Mr. 오드에게 오틸리아 감시 명령을 받았고, 아포칼립스 호에서 노부스 오르도 방향 레버를 선택해 선박 시공간 감금 조건을 드러냈다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "MARIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "Mr. 오드 브리핑 동석 및 송사리 호 탑승자",
+          "summary": "마리아는 Mr. 오드의 광명회 및 오틸리아 감시 브리핑에 동석했고, 이후 송사리 호 워크샵 사건에 참여했다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "OTILIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "감시 대상 및 캐비넷 은닉자",
+          "summary": "오틸리아는 Mr. 오드의 내부 감시 대상이 되었고, 송사리 호 사건에서 하켄크로이츠 표식의 작은 캐비넷을 회수·은닉한 인물로 기록되었다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        },
+        "lore.relations": {
+          "targetCodename": "CLOWN",
+          "targetName": "스타크 일로니손",
+          "label": "감시 명령",
+          "summary": "Mr. 오드는 오틸리아의 아넨에르베·페이퍼클립 이력을 근거로 스타크에게 오틸리아의 접촉 여부를 감시하라고 지시했다. 이는 배신 확정이 아니라 내부 감시 명령이다.",
+          "sourceEvent": "NOSB-S1E2-MINI",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」",
+          "confidence": "testimony"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "LEE DONGSIK"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "송사리 호 탑승자 및 스타크 이탈 처리",
+          "summary": "이동식은 송사리 호 사건에 참여했고, 스타크가 레버를 선택한 뒤 All Zip 계열 움직임으로 스타크를 끌어내며 장면 전환에 관여했다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "BIG BOY"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "송사리 호 탑승자 및 선상 사건 참여자",
+          "summary": "빅보이는 닥터 모스와의 별도 장면 이후 송사리 호 워크샵과 아포칼립스 호 반복 사건에 참여했다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "TIGER298"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "송사리 호 탑승자",
+          "summary": "시유는 송사리 호 워크샵과 아포칼립스 호 반복 사건에 참여한 현장요원으로 기록된다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "WD-(𝓃)"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "송사리 호 탑승자",
+          "summary": "우디는 송사리 호 워크샵과 아포칼립스 호 반복 사건에 참여한 현장요원으로 기록된다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "네베드"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "송사리 정보 인지자 및 선상 사건 참여자",
+          "summary": "키아나는 송사리 사를 다국적 해운 기업으로 인지하고 있었고, 송사리 호 워크샵과 아포칼립스 호 반복 사건에 참여했다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "JOHAN_SMITH"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "스페이스 제로 CEO / 브리핑실 인접 조우",
+          "summary": "스페이스 제로 CEO는 브리핑실 인근에서 스타크와 마리아에게 이미 계산했다는 식의 태도를 보이며 접촉했다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "MR_ODD"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "광명회 브리핑 및 오틸리아 감시 명령자",
+          "summary": "Mr. 오드는 스타크와 마리아에게 광명회 관련 접근 권한과 오틸리아 감시 명령을 전달했다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "DOCTOR_MOSS"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E2-MINI",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "병가 중 언급 및 반복 종료 카메라 기록",
+          "summary": "닥터 모스는 병가 중으로 언급되며, 종료부 카메라 기록에서는 화장실에 있는 장면으로 후속 훅에 남았다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  }
+]

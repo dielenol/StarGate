@@ -1,0 +1,180 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "JOHN_OPUS",
+      "type": "NPC",
+      "role": "송사리 무법자",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "previewImage": "/assets/npcs/John-Opus-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "존 오푸스",
+        "nameEn": "John Opus",
+        "gender": "남",
+        "age": "35",
+        "height": "181cm",
+        "weight": "미상",
+        "appearance": "송사리 호 사건 컷아웃 기준, 창백한 얼굴과 날카로운 표정, 손가락 사이를 잇는 실 같은 빛줄기가 먼저 관찰된다. 검은 배경과 흰 의상이 강하게 대비되며, 능력 사용 시 공간을 실처럼 잡아당기는 듯한 연출이 동반된다.",
+        "personality": "상세 성격은 미상이다. S1E2 미니 세션에서는 노부스 오르도와 송사리를 부수겠다는 적대 의사, 공간 조종 능력을 과시하는 태도, 선박 시공간 루프의 주요 위협으로서의 행동이 우선 기록된다.",
+        "background": "존 오푸스는 S1E2 미니 세션의 송사리 호 / 아포칼립스 호 사건에서 등장한 송사리 무법자다. 그는 공간을 실처럼 조종하는 능력을 드러냈고, 노부스 오르도와 송사리를 파괴하려는 의사를 밝혔다.\n\n현장 기록상 오틸리아와 핀치가 Zulu 가능성을 의심했으나, 이 Dossier는 존 오푸스를 확정 Zulu로 분류하지 않는다. 현재 등록 상태는 시민사회 소속 송사리 계열 위험 인물이다.",
+        "quote": "\"러시아 워\"",
+        "mainImage": "/assets/npcs/John-Opus-profile.webp",
+        "loreTags": [
+          "시민사회",
+          "송사리",
+          "송사리무법자",
+          "공간조종",
+          "존오푸스",
+          "NOSB-S1E2-MINI",
+          "S1E2-MINI"
+        ],
+        "appearsInEvents": [
+          "NOSB-S1E2-MINI"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E2-MINI",
+            "role": "공간 조종 능력자 / 송사리 무법자",
+            "summary": "송사리 호 / 아포칼립스 호 사건에서 공간을 실처럼 조종하는 능력을 보였고, 노부스 오르도와 송사리를 부수겠다는 의사를 드러낸 주요 위협으로 기록되었다.",
+            "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+          }
+        ],
+        "roleDetail": "- **직업**: 송사리 무법자\n- **소속**: 시민사회 권력 블록 / 송사리 라인\n- **능력명**: 공간을 실처럼 조종하는 능력\n- **등장 사건**: NOSB-S1E2-MINI 송사리 호 / 아포칼립스 호 루프 사건\n- **현재 분류**: 확정 Zulu가 아니라 송사리 계열 위험 인물",
+        "notes": "- **존 오푸스**: S1E2 미니 세션에서 직접 이름이 확인된 송사리 무법자.\n- **공간을 실처럼 조종하는 능력**: 선박 위 공간 조종과 부유 현상으로 연결되는 능력명.\n- **분류 보류**: 현장 의심은 있었지만 Zulu 확정 기록은 없다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "JANE_FISH",
+      "type": "NPC",
+      "role": "송사리 탐정",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "previewImage": "/assets/npcs/Jane-Fish-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "제인 피쉬",
+        "nameEn": "Jane Fish",
+        "gender": "암컷",
+        "age": "13개월",
+        "height": "10cm 미만",
+        "weight": "미상",
+        "appearance": "금붕어 한 마리가 투명한 물주머니 안에 들어 있고, 주머니가 회색 트렌치코트와 넥타이 위에 머리처럼 고정된 모습으로 기록된다. 작은 체구와 탐정 복장이 강하게 대비된다.",
+        "personality": "말투는 가볍고 의문형이 많다. 현재 공개된 대표 발화는 \"누구세용?\"이며, 세부 성격은 후속 등장 기록을 기다린다.",
+        "background": "제인 피쉬는 S1E2 미니 세션의 송사리 호 사건에서 등장한 송사리 탐정이다. 현장 기록에서는 금붕어 형태의 사고 가능한 존재로, 송사리 라인과 선박 사건을 연결하는 접점 인물로 남는다.",
+        "quote": "\"누구세용?\"",
+        "mainImage": "/assets/npcs/Jane-Fish-profile.webp",
+        "loreTags": [
+          "시민사회",
+          "송사리",
+          "송사리탐정",
+          "금붕어",
+          "제인피쉬",
+          "NOSB-S1E2-MINI",
+          "S1E2-MINI"
+        ],
+        "appearsInEvents": [
+          "NOSB-S1E2-MINI"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E2-MINI",
+            "role": "송사리 탐정 / 선박 사건 접점",
+            "summary": "송사리 호 사건에서 금붕어 형태의 송사리 탐정으로 등장해 현장팀과 송사리 라인의 접점 인물로 기록되었다.",
+            "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+          }
+        ],
+        "roleDetail": "- **직업**: 송사리 탐정\n- **소속**: 시민사회 권력 블록 / 송사리 라인\n- **능력명**: 생각하는 금붕어\n- **나이**: 13개월\n- **신장**: 10cm 미만\n- **등장 사건**: NOSB-S1E2-MINI 송사리 호 사건",
+        "notes": "- **제인 피쉬**: 송사리 탐정으로 등록된 금붕어형 NPC.\n- **생각하는 금붕어**: 사용자 제공 능력명. 세부 규칙과 판정 효과는 아직 등록하지 않는다.\n- **송사리 라인**: 별도 기업/기관 모델이 없으므로 현재는 시민사회 소속 NPC로 관리한다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "WATER_FIST_RACKY",
+      "type": "NPC",
+      "role": "송사리 탐정",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "previewImage": "/assets/npcs/Water-Fist-Racky-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "\"물주먹\" 래키",
+        "nameEn": "Water-Fist Racky",
+        "nickname": "물주먹",
+        "gender": "남",
+        "age": "44",
+        "height": "177cm",
+        "weight": "미상",
+        "appearance": "검은 정장과 중절모, 얼굴을 가리는 그늘, 손에 든 물담배 장치가 특징이다. 컷아웃 기준으로는 탐정과 무법자의 중간에 가까운 실루엣을 지닌다.",
+        "personality": "상세 성격은 미상이다. 대표 발화는 \"어이, 거기까지다.\"이며, 현장 기록에서는 송사리 탐정으로서 차단과 제지 역할이 먼저 확인된다.",
+        "background": "\"물주먹\" 래키는 S1E2 미니 세션의 송사리 호 사건에서 등장한 송사리 탐정이다. 주먹에서 물이 나가는 능력을 지녔으며, 송사리 호로 향하는 선박 사건의 현장 접점으로 기록된다.",
+        "quote": "\"어이, 거기까지다.\"",
+        "mainImage": "/assets/npcs/Water-Fist-Racky-profile.webp",
+        "loreTags": [
+          "시민사회",
+          "송사리",
+          "송사리탐정",
+          "물주먹",
+          "래키",
+          "NOSB-S1E2-MINI",
+          "S1E2-MINI"
+        ],
+        "appearsInEvents": [
+          "NOSB-S1E2-MINI"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E2-MINI",
+            "role": "송사리 탐정 / 물주먹 능력자",
+            "summary": "송사리 호 사건에서 물주먹 래키로 등장했고, 주먹에서 물이 나가는 능력을 지닌 송사리 탐정으로 기록되었다.",
+            "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+          }
+        ],
+        "roleDetail": "- **직업**: 송사리 탐정\n- **소속**: 시민사회 권력 블록 / 송사리 라인\n- **능력명**: 주먹에서 물이 나가는 능력\n- **나이**: 44\n- **신장**: 177cm\n- **등장 사건**: NOSB-S1E2-MINI 송사리 호 사건",
+        "notes": "- **\"물주먹\" 래키**: 송사리 탐정으로 등록된 시민사회 NPC.\n- **주먹에서 물이 나가는 능력**: 사용자 제공 능력명. 세부 규칙과 판정 효과는 아직 등록하지 않는다.\n- **표기**: 파일명은 레키로 제공되었지만, Dossier 표시명은 사용자 입력의 래키를 따른다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki-npc-tags",
+    "filter": {
+      "slug": "s1e2-mini"
+    },
+    "update": {
+      "$addToSet": {
+        "tags": {
+          "$each": [
+            "제인피쉬",
+            "물주먹래키",
+            "송사리탐정"
+          ]
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-10T00:00:00.000Z"
+      }
+    }
+  }
+]
