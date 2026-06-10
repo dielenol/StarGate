@@ -296,6 +296,10 @@
   cursor: pointer;
 }
 
+.header__bgmVolume {
+  --bgm-progress: 70%;
+}
+
 .header__bgmRange:disabled {
   cursor: default;
   opacity: 0.55;

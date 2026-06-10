@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element -- Static header logo avoids next/image hydration attribute noise. */
+
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import {
   type ChangeEvent,
-  type CSSProperties,
   useCallback,
   useEffect,
   useMemo,
@@ -219,6 +219,8 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
     ERP_BGM_DEFAULT_VOLUME_LEVEL,
   );
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
+  const bgmProgressInputRef = useRef<HTMLInputElement | null>(null);
+  const bgmVolumeInputRef = useRef<HTMLInputElement | null>(null);
   const bgmTrackIndexRef = useRef<number | null>(null);
   const bgmAutoStartAttemptedRef = useRef(false);
   const playBgmTrackRef = useRef<(trackIndex: number) => Promise<boolean>>(
@@ -354,6 +356,18 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   );
   const bgmProgressPercent =
     bgmDurationValue > 0 ? (bgmCurrentTimeValue / bgmDurationValue) * 100 : 0;
+  useEffect(() => {
+    bgmProgressInputRef.current?.style.setProperty(
+      "--bgm-progress",
+      `${bgmProgressPercent}%`,
+    );
+  }, [bgmProgressPercent]);
+  useEffect(() => {
+    bgmVolumeInputRef.current?.style.setProperty(
+      "--bgm-progress",
+      `${bgmVolumeLevel}%`,
+    );
+  }, [bgmVolumeLevel]);
   const bgmStatusLabel = bgmPending
     ? "LOAD"
     : bgmError
@@ -362,12 +376,6 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const bgmTimeLabel = `${formatBgmTime(bgmCurrentTimeValue)} / ${formatBgmTime(
     bgmDurationValue,
   )}`;
-  const bgmProgressStyle = {
-    "--bgm-progress": `${bgmProgressPercent}%`,
-  } as CSSProperties;
-  const bgmVolumeStyle = {
-    "--bgm-progress": `${bgmVolumeLevel}%`,
-  } as CSSProperties;
   const bgmState = bgmError ? "error" : bgmPlaying ? "playing" : "idle";
   const bgmToggleLabel = bgmPlaying
     ? "bgm 중지"
@@ -451,15 +459,14 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
       </button>
 
       <Link href="/erp" className={styles.header__brand} aria-label="ERP 홈">
-        <Image
+        <img
           className={styles.header__logo}
           src={logoSrc}
           alt="NOVUS ORDO"
           width={44}
           height={44}
-          priority
-          quality={70}
-          sizes="44px"
+          decoding="async"
+          fetchPriority="high"
         />
         <span className={styles.header__brandName}>NOVUS ORDO</span>
       </Link>
@@ -533,8 +540,9 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                 <IconTimeline />
               </span>
               <input
+                ref={bgmProgressInputRef}
                 type="range"
-                className={`${styles.header__bgmRange} ${styles.header__bgmProgress}`}
+                className={styles.header__bgmRange}
                 min={0}
                 max={bgmDurationValue || 0}
                 step={0.1}
@@ -542,7 +550,6 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                 onChange={handleSeekBgm}
                 disabled={bgmDurationValue <= 0}
                 aria-label="bgm 재생 위치"
-                style={bgmProgressStyle}
               />
             </label>
 
@@ -551,15 +558,15 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                 <IconVolume />
               </span>
               <input
+                ref={bgmVolumeInputRef}
                 type="range"
-                className={styles.header__bgmRange}
+                className={`${styles.header__bgmRange} ${styles.header__bgmVolume}`}
                 min={0}
                 max={100}
                 step={1}
                 value={bgmVolumeLevel}
                 onChange={handleBgmVolumeChange}
                 aria-label="bgm 볼륨"
-                style={bgmVolumeStyle}
               />
             </label>
           </div>
