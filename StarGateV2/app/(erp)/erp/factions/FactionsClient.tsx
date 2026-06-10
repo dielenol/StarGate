@@ -9,6 +9,7 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
 
+import orgStyles from "../personnel/_components/OrgCanvas.module.css";
 import styles from "./page.module.css";
 
 export type FactionBoardCode = string;
@@ -103,6 +104,10 @@ function formatFavorability(value: number | null): string {
   return value === null ? "-" : value.toString();
 }
 
+function displayCode(code: string): string {
+  return code.replace(/_/g, " ");
+}
+
 export default function FactionsClient({ data }: FactionsClientProps) {
   const [selectedCode, setSelectedCode] =
     useState<FactionBoardCode>(DEFAULT_NODE);
@@ -124,43 +129,77 @@ export default function FactionsClient({ data }: FactionsClientProps) {
   const whiteRoseNode = nodesByCode.get("WHITE_ROSE");
   const spaceZeroNode = nodesByCode.get("SPACE_ZERO");
 
-  function renderDiagramNode(node: FactionBoardNode, slot: string) {
+  function renderOrgNode(
+    node: FactionBoardNode,
+    options: { subOrg?: boolean } = {},
+  ) {
     const isActive = selectedCode === node.code;
+    const isSubOrg = options.subOrg === true;
 
     return (
       <button
         key={node.code}
         type="button"
         className={[
-          styles.graphNode,
-          styles[`graphNode--${slot}`],
-          isActive ? styles["graphNode--active"] : "",
+          orgStyles.node,
+          orgStyles["node--lg"],
+          isSubOrg ? orgStyles.subOrgNode : "",
+          isActive ? styles.orgNodeActive : "",
         ]
           .filter(Boolean)
           .join(" ")}
-        data-kind={node.kind}
-        data-code={node.code}
+        data-suborg={isSubOrg ? node.code : undefined}
         onClick={() => setSelectedCode(node.code)}
         aria-pressed={isActive}
       >
+        <span className={orgStyles.tl} />
+        <span className={orgStyles.br} />
+
         <img
           src={node.logoUrl}
           alt=""
-          className={styles.graphNode__watermark}
+          className={orgStyles.node__watermark}
           aria-hidden
         />
-        <span className={styles.graphNode__head}>
-          <span className={styles.graphNode__meta}>
-            <img src={node.logoUrl} alt="" className={styles.graphNode__icon} />
-            <span>{node.code.replace("_", " ")}</span>
-          </span>
-          <strong>{node.label}</strong>
-        </span>
-        <span className={styles.graphNode__statLabel}>우호도</span>
-        <span className={styles.graphNode__stat}>
-          <b>{formatFavorability(node.favorability)}</b>
-          <span>{node.favorability === null ? "미등록" : "/ 10"}</span>
-        </span>
+
+        {isSubOrg ? (
+          <img
+            src={node.logoUrl}
+            alt=""
+            className={orgStyles.subOrgLogo}
+            aria-hidden
+          />
+        ) : null}
+
+        <div className={orgStyles.node__header}>
+          <div className={orgStyles.node__headerTop}>
+            {!isSubOrg ? (
+              <img
+                src={node.logoUrl}
+                alt=""
+                className={styles.orgHeaderLogo}
+                aria-hidden
+              />
+            ) : null}
+            <div className={orgStyles.code}>{displayCode(node.code)}</div>
+          </div>
+          <div className={orgStyles.label}>{node.label}</div>
+          {isSubOrg && node.parentLabel ? (
+            <div className={orgStyles.subOrgParent}>{node.parentLabel}</div>
+          ) : null}
+        </div>
+
+        <div className={orgStyles.node__section}>
+          <div className={orgStyles.node__sectionLabel}>우호도</div>
+          <div className={orgStyles.headcount}>
+            <span className={orgStyles.headcount__n}>
+              {formatFavorability(node.favorability)}
+            </span>
+            <span className={orgStyles.headcount__u}>
+              {node.favorability === null ? "미등록" : "/ 10"}
+            </span>
+          </div>
+        </div>
       </button>
     );
   }
@@ -180,40 +219,100 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           <Box className={styles.networkPanel}>
             <PanelTitle>세력 관계도</PanelTitle>
 
-            <div className={styles.networkCanvas}>
-              <svg
-                className={styles.graphLines}
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                aria-hidden
-              >
-                <path
-                  className={styles.graphLines__primary}
-                  d="M50 29 V32 M36 36 L22 42 M64 36 L78 42"
-                />
-                <line
-                  className={styles.graphLines__balance}
-                  x1="36"
-                  y1="52"
-                  x2="64"
-                  y2="52"
-                />
-                <path
-                  className={styles.graphLines__branch}
-                  d="M78 65 V72 M78 72 H34 M34 72 V75 M78 72 H84 M84 72 V75"
-                />
-              </svg>
+            <div className={[orgStyles.canvas, styles.orgCanvas].join(" ")}>
+              <div className={styles.orgInner}>
+                <div className={orgStyles.externalArea}>
+                  <div className={orgStyles.sectionTitle}>
+                    외부 권력 블록 · EXTERNAL FACTIONS
+                  </div>
+                  <div className={orgStyles.externalNetwork}>
+                    <div className={orgStyles.factions}>
+                      <svg
+                        className={orgStyles.crossfire}
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                        aria-hidden
+                      >
+                        <defs>
+                          <marker
+                            id="factionCrossfireArrow"
+                            viewBox="0 0 10 10"
+                            refX="9"
+                            refY="5"
+                            markerWidth="3"
+                            markerHeight="3"
+                            orient="auto-start-reverse"
+                          >
+                            <path
+                              d="M0,0 L10,5 L0,10 z"
+                              fill="var(--danger)"
+                            />
+                          </marker>
+                        </defs>
+                        <line
+                          x1="50"
+                          y1="18"
+                          x2="20"
+                          y2="82"
+                          markerStart="url(#factionCrossfireArrow)"
+                          markerEnd="url(#factionCrossfireArrow)"
+                        />
+                        <line
+                          x1="50"
+                          y1="18"
+                          x2="80"
+                          y2="82"
+                          markerStart="url(#factionCrossfireArrow)"
+                          markerEnd="url(#factionCrossfireArrow)"
+                        />
+                        <line
+                          x1="20"
+                          y1="82"
+                          x2="80"
+                          y2="82"
+                          markerStart="url(#factionCrossfireArrow)"
+                          markerEnd="url(#factionCrossfireArrow)"
+                        />
+                      </svg>
+                      <span className={orgStyles.crossfireLabel} aria-hidden>
+                        상호 감시 · MUTUAL OVERSIGHT
+                      </span>
 
-              {councilNode ? renderDiagramNode(councilNode, "council") : null}
+                      {councilNode ? renderOrgNode(councilNode) : null}
+                      {militaryNode ? renderOrgNode(militaryNode) : null}
+                      {civilNode ? renderOrgNode(civilNode) : null}
+                    </div>
 
-              <div className={styles.oversightBanner}>
-                상호 감시 · MUTUAL OVERSIGHT
+                    <div
+                      className={orgStyles.civilSubOrgs}
+                      aria-label="시민사회 하위 조직"
+                    >
+                      <svg
+                        className={orgStyles.civilSubOrgConnector}
+                        viewBox="0 0 100 72"
+                        preserveAspectRatio="none"
+                        aria-hidden
+                      >
+                        <path
+                          d="M50 0 V28 M22 28 H78 M22 28 V72 M78 28 V72"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1"
+                          strokeDasharray="4 6"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      </svg>
+
+                      {whiteRoseNode
+                        ? renderOrgNode(whiteRoseNode, { subOrg: true })
+                        : null}
+                      {spaceZeroNode
+                        ? renderOrgNode(spaceZeroNode, { subOrg: true })
+                        : null}
+                    </div>
+                  </div>
+                </div>
               </div>
-
-              {militaryNode ? renderDiagramNode(militaryNode, "military") : null}
-              {civilNode ? renderDiagramNode(civilNode, "civil") : null}
-              {whiteRoseNode ? renderDiagramNode(whiteRoseNode, "whiteRose") : null}
-              {spaceZeroNode ? renderDiagramNode(spaceZeroNode, "spaceZero") : null}
             </div>
           </Box>
 
