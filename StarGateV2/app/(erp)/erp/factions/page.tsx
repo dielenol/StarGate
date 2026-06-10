@@ -58,6 +58,10 @@ const FAVORABILITY_BY_CODE: Record<string, number> = {
   SPACE_ZERO: 3,
 };
 
+const BOARD_LOGO_BY_CODE: Record<string, string> = {
+  SPACE_ZERO: "/assets/faction/space_zero_logo.webp",
+};
+
 const RELATIONSHIPS: FactionBoardRelationship[] = [
   {
     from: "COUNCIL",
@@ -278,7 +282,7 @@ function buildBoardNodes(
         parentLabel: org.parentLabel,
         summary: org.summary,
         doctrine: org.doctrine,
-        logoUrl: org.logoUrl,
+        logoUrl: BOARD_LOGO_BY_CODE[org.code] ?? org.logoUrl,
       },
       groupCounts,
       contactBuckets,

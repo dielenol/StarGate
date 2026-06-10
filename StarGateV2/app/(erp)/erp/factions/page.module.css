@@ -91,7 +91,7 @@
 
 .networkCanvas {
   position: relative;
-  min-height: 690px;
+  min-height: 610px;
   margin-top: 12px;
   overflow: hidden;
   background:
@@ -111,18 +111,18 @@
   pointer-events: none;
 }
 
-.graphLines__oversight {
+.graphLines__primary {
   fill: none;
-  stroke: rgba(255, 105, 105, 0.68);
+  stroke: rgba(201, 162, 74, 0.38);
   stroke-width: 1;
-  stroke-dasharray: 7 9;
+  stroke-dasharray: 6 8;
   vector-effect: non-scaling-stroke;
 }
 
 .graphLines__balance {
-  stroke: rgba(255, 105, 105, 0.62);
+  stroke: rgba(255, 105, 105, 0.34);
   stroke-width: 1;
-  stroke-dasharray: 7 9;
+  stroke-dasharray: 6 9;
   vector-effect: non-scaling-stroke;
 }
 
@@ -132,27 +132,6 @@
   stroke-width: 1;
   stroke-dasharray: 5 8;
   vector-effect: non-scaling-stroke;
-}
-
-.oversightBanner {
-  position: absolute;
-  top: 204px;
-  left: 50%;
-  z-index: 4;
-  display: flex;
-  width: min(320px, 58%);
-  min-height: 28px;
-  align-items: center;
-  justify-content: center;
-  transform: translateX(-50%);
-  color: rgba(255, 130, 110, 0.95);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0;
-  white-space: nowrap;
-  background: rgba(6, 8, 10, 0.94);
-  border: 1px solid rgba(255, 105, 105, 0.72);
-  box-shadow: 0 0 18px rgba(255, 105, 105, 0.08);
 }
 
 .graphNode {
@@ -211,25 +190,25 @@
 }
 
 .graphNode--military {
-  top: 240px;
+  top: 220px;
   left: 14px;
   width: min(315px, 46%);
 }
 
 .graphNode--civil {
-  top: 240px;
+  top: 220px;
   right: 14px;
   width: min(315px, 46%);
 }
 
 .graphNode--whiteRose {
-  top: 492px;
+  top: 430px;
   left: 20%;
   width: min(250px, 38%);
 }
 
 .graphNode--spaceZero {
-  top: 492px;
+  top: 430px;
   right: 14px;
   width: min(250px, 38%);
 }
@@ -250,6 +229,15 @@
 .graphNode--civil .graphNode__watermark {
   width: 220px;
   height: 220px;
+}
+
+.graphNode[data-code="SPACE_ZERO"] .graphNode__watermark {
+  right: -10px;
+  bottom: 26px;
+  width: 270px;
+  height: 74px;
+  opacity: 0.18;
+  filter: invert(1) grayscale(1) contrast(1.35);
 }
 
 .graphNode__head {
@@ -277,6 +265,13 @@
   flex: 0 0 auto;
   object-fit: contain;
   opacity: 0.9;
+}
+
+.graphNode[data-code="SPACE_ZERO"] .graphNode__icon {
+  width: 82px;
+  height: 22px;
+  filter: invert(1) grayscale(1) contrast(1.35)
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.18));
 }
 
 .graphNode strong {
@@ -325,149 +320,6 @@
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0;
-}
-
-.auxLane {
-  margin-top: 12px;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.12);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-}
-
-.auxLane[data-kind="hostile"] {
-  border-color: rgba(255, 105, 105, 0.45);
-}
-
-.auxLane__head {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: 14px;
-}
-
-.auxLane__head b {
-  color: var(--gold);
-  font-weight: 600;
-}
-
-.auxLane__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.auxNode {
-  position: relative;
-  min-height: 132px;
-  padding: 12px;
-  overflow: hidden;
-  color: var(--ink-1);
-  text-align: left;
-  background: rgba(13, 15, 18, 0.9);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.auxNode:hover,
-.auxNode--active {
-  border-color: var(--gold);
-}
-
-.auxNode[data-kind="hostile"]:hover,
-.auxNode[data-kind="hostile"].auxNode--active {
-  border-color: var(--danger);
-}
-
-.auxNode__watermark {
-  position: absolute;
-  right: -14px;
-  bottom: -20px;
-  width: 120px;
-  height: 120px;
-  object-fit: contain;
-  opacity: 0.08;
-}
-
-.auxNode__code {
-  display: block;
-  color: var(--gold);
-  font-family: var(--font-mono);
-  font-size: 14px;
-}
-
-.auxNode strong {
-  display: block;
-  margin-top: 5px;
-  color: var(--ink-0);
-  font-size: 16px;
-}
-
-.auxNode__scope {
-  display: block;
-  margin-top: 8px;
-  color: var(--ink-2);
-  font-size: 14px;
-}
-
-.auxNode__facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.auxNode__facts span {
-  min-width: 0;
-  padding: 5px 7px;
-  color: var(--ink-3);
-  font-size: 14px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--line);
-}
-
-.relationships {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.relationship {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-  padding: 12px;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-}
-
-.relationship--active {
-  border-color: var(--gold-dim);
-  background: rgba(201, 162, 74, 0.07);
-}
-
-.relationship__nodes,
-.relationship span {
-  overflow: hidden;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.relationship strong {
-  color: var(--ink-0);
-  font-size: 14px;
-  font-weight: 600;
 }
 
 .briefing {
@@ -593,44 +445,8 @@
   font-weight: 600;
 }
 
-.relationStack,
 .actionConsole {
   margin-top: 20px;
-}
-
-.relationLine {
-  display: grid;
-  grid-template-columns: minmax(100px, 0.45fr) minmax(0, 1fr);
-  gap: 5px 10px;
-  align-items: baseline;
-  margin-top: 8px;
-  padding: 10px;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-}
-
-.relationLine span,
-.relationLine em {
-  overflow: hidden;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-style: normal;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.relationLine strong {
-  overflow: hidden;
-  color: var(--ink-0);
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.relationLine em {
-  grid-column: 2;
 }
 
 .actionGrid {
@@ -850,8 +666,7 @@
     padding: 12px;
   }
 
-  .graphLines,
-  .oversightBanner {
+  .graphLines {
     display: none;
   }
 
@@ -886,8 +701,7 @@
 
   .briefing,
   .contactCard,
-  .recordItem,
-  .relationLine {
+  .recordItem {
     grid-template-columns: 1fr;
   }
 
@@ -899,9 +713,6 @@
     align-items: flex-start;
   }
 
-  .relationLine em {
-    grid-column: auto;
-  }
 }
 
 @media (max-width: 520px) {

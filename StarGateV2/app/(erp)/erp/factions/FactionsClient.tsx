@@ -100,7 +100,7 @@ interface FactionsClientProps {
   data: FactionBoardData;
 }
 
-const DEFAULT_NODE: FactionBoardCode = "NOVUS_ORDO";
+const DEFAULT_NODE: FactionBoardCode = "COUNCIL";
 
 const ACTIONS = [
   {
@@ -172,18 +172,10 @@ export default function FactionsClient({ data }: FactionsClientProps) {
   const selectedSignals = selectedNode
     ? (data.signalsByCode[selectedNode.code] ?? []).slice(0, 4)
     : [];
-  const selectedRelations = selectedNode
-    ? data.relationships.filter(
-        (relationship) =>
-          relationship.from === selectedNode.code ||
-          relationship.to === selectedNode.code,
-      )
-    : [];
   const selectedActionMeta =
     ACTIONS.find((action) => action.id === selectedAction) ?? ACTIONS[0];
   const density = selectedNode ? getDensity(selectedNode) : 0;
-  const internalNodes = data.boardNodes.filter((node) => node.kind === "internal");
-  const hostileNodes = data.boardNodes.filter((node) => node.kind === "hostile");
+  const visibleGraphNodeCount = data.totals.factionCount + data.totals.subOrgCount;
   const councilNode = nodesByCode.get("COUNCIL");
   const militaryNode = nodesByCode.get("MILITARY");
   const civilNode = nodesByCode.get("CIVIL");
@@ -205,6 +197,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           .filter(Boolean)
           .join(" ")}
         data-kind={node.kind}
+        data-code={node.code}
         onClick={() => setSelectedCode(node.code)}
         aria-pressed={isActive}
       >
@@ -230,37 +223,6 @@ export default function FactionsClient({ data }: FactionsClientProps) {
     );
   }
 
-  function renderAuxNode(node: FactionBoardNode) {
-    const isActive = selectedCode === node.code;
-    const recordCount = node.wikiCount + node.signalCount;
-
-    return (
-      <button
-        key={node.code}
-        type="button"
-        className={[
-          styles.auxNode,
-          isActive ? styles["auxNode--active"] : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        data-kind={node.kind}
-        onClick={() => setSelectedCode(node.code)}
-        aria-pressed={isActive}
-      >
-        <img src={node.logoUrl} alt="" className={styles.auxNode__watermark} />
-        <span className={styles.auxNode__code}>{node.code.replace("_", " ")}</span>
-        <strong>{node.label}</strong>
-        <span className={styles.auxNode__scope}>{node.scopeLabel}</span>
-        <span className={styles.auxNode__facts}>
-          <span>우호도 {formatFavorability(node.favorability)}</span>
-          <span>{node.contactCount} 접촉</span>
-          <span>{recordCount} 기록</span>
-        </span>
-      </button>
-    );
-  }
-
   return (
     <>
       <PageHead
@@ -280,11 +242,11 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           <div className={styles.commandStrip__metrics}>
             <div className={styles.commandMetric}>
               <span>NODES</span>
-              <b>{data.totals.nodeCount}</b>
+              <b>{visibleGraphNodeCount}</b>
             </div>
             <div className={styles.commandMetric}>
-              <span>INTERNAL</span>
-              <b>{data.totals.internalCount}</b>
+              <span>BRANCHES</span>
+              <b>{data.totals.subOrgCount}</b>
             </div>
             <div className={styles.commandMetric}>
               <span>CONTACTS</span>
@@ -300,7 +262,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
         <div className={styles.board}>
           <Box className={styles.networkPanel}>
             <PanelTitle
-              right={<span className={styles.panelCode}>EXTERNAL / INTERNAL</span>}
+              right={<span className={styles.panelCode}>EXTERNAL / BRANCHES</span>}
             >
               세력 관계도
             </PanelTitle>
@@ -313,77 +275,22 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                 aria-hidden
               >
                 <path
-                  className={styles.graphLines__oversight}
-                  d="M50 28 V33 M50 33 H20 M20 33 V35 M50 33 H80 M80 33 V35"
+                  className={styles.graphLines__primary}
+                  d="M50 31 V35 M50 35 H24 M24 35 V38 M50 35 H76 M76 35 V38"
                 />
-                <line className={styles.graphLines__balance} x1="38" y1="50" x2="62" y2="50" />
+                <line className={styles.graphLines__balance} x1="39" y1="52" x2="63" y2="52" />
                 <path
                   className={styles.graphLines__branch}
-                  d="M82 60 V70 M82 70 H34 M34 70 V72 M82 70 H84 M84 70 V72"
+                  d="M76 63 V70 M76 70 H35 M35 70 V72 M76 70 H84 M84 70 V72"
                 />
               </svg>
 
               {councilNode ? renderDiagramNode(councilNode, "council") : null}
 
-              <div className={styles.oversightBanner}>
-                견제 균형 · OVERSIGHT
-              </div>
-
               {militaryNode ? renderDiagramNode(militaryNode, "military") : null}
               {civilNode ? renderDiagramNode(civilNode, "civil") : null}
               {whiteRoseNode ? renderDiagramNode(whiteRoseNode, "whiteRose") : null}
               {spaceZeroNode ? renderDiagramNode(spaceZeroNode, "spaceZero") : null}
-            </div>
-
-            {internalNodes.length > 0 ? (
-              <section className={styles.auxLane}>
-                <div className={styles.auxLane__head}>
-                  <span>내부 세력</span>
-                  <b>{internalNodes.length}</b>
-                </div>
-                <div className={styles.auxLane__grid}>
-                  {internalNodes.map(renderAuxNode)}
-                </div>
-              </section>
-            ) : null}
-
-            {hostileNodes.length > 0 ? (
-              <section className={styles.auxLane} data-kind="hostile">
-                <div className={styles.auxLane__head}>
-                  <span>적대세력</span>
-                  <b>{hostileNodes.length}</b>
-                </div>
-                <div className={styles.auxLane__grid}>
-                  {hostileNodes.map(renderAuxNode)}
-                </div>
-              </section>
-            ) : null}
-
-            <div className={styles.relationships}>
-              {data.relationships.map((relationship) => {
-                const isActive =
-                  selectedNode &&
-                  (relationship.from === selectedNode.code ||
-                    relationship.to === selectedNode.code);
-
-                return (
-                  <div
-                    key={`${relationship.from}-${relationship.to}`}
-                    className={[
-                      styles.relationship,
-                      isActive ? styles["relationship--active"] : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    <span className={styles.relationship__nodes}>
-                      {relationship.from} ↔ {relationship.to}
-                    </span>
-                    <strong>{relationship.label}</strong>
-                    <span>{relationship.detail}</span>
-                  </div>
-                );
-              })}
             </div>
           </Box>
 
@@ -444,28 +351,6 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                   <span>REPORTS</span>
                   <b>{selectedNode.signalCount}</b>
                 </div>
-              </div>
-
-              <div className={styles.relationStack}>
-                <PanelTitle right={<span className={styles.panelCode}>LINKS</span>}>
-                  연결 관계
-                </PanelTitle>
-                {selectedRelations.length > 0 ? (
-                  selectedRelations.map((relationship) => (
-                    <div
-                      key={`${relationship.from}-${relationship.to}`}
-                      className={styles.relationLine}
-                    >
-                      <span>
-                        {relationship.from} ↔ {relationship.to}
-                      </span>
-                      <strong>{relationship.label}</strong>
-                      <em>{relationship.detail}</em>
-                    </div>
-                  ))
-                ) : (
-                  <div className={styles.empty}>등록된 연결 관계 없음</div>
-                )}
               </div>
 
               <div className={styles.actionConsole}>
