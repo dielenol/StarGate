@@ -13,7 +13,11 @@ import Tag, { rankTone } from "@/components/ui/Tag/Tag";
 import styles from "./page.module.css";
 
 export type FactionBoardCode = string;
-export type FactionBoardNodeKind = "external" | "branch" | "internal";
+export type FactionBoardNodeKind =
+  | "external"
+  | "branch"
+  | "internal"
+  | "hostile";
 
 export interface FactionBoardNode {
   code: FactionBoardCode;
@@ -173,11 +177,55 @@ export default function FactionsClient({ data }: FactionsClientProps) {
   const selectedActionMeta =
     ACTIONS.find((action) => action.id === selectedAction) ?? ACTIONS[0];
   const density = selectedNode ? getDensity(selectedNode) : 0;
-  const externalNodes = data.boardNodes.filter((node) => node.kind === "external");
-  const branchNodes = data.boardNodes.filter((node) => node.kind === "branch");
   const internalNodes = data.boardNodes.filter((node) => node.kind === "internal");
+  const hostileNodes = data.boardNodes.filter((node) => node.kind === "hostile");
+  const councilNode = nodesByCode.get("COUNCIL");
+  const militaryNode = nodesByCode.get("MILITARY");
+  const civilNode = nodesByCode.get("CIVIL");
+  const whiteRoseNode = nodesByCode.get("WHITE_ROSE");
+  const spaceZeroNode = nodesByCode.get("SPACE_ZERO");
 
-  function renderNodeButton(node: FactionBoardNode) {
+  function renderDiagramNode(node: FactionBoardNode, slot: string) {
+    const isActive = selectedCode === node.code;
+
+    return (
+      <button
+        key={node.code}
+        type="button"
+        className={[
+          styles.graphNode,
+          styles[`graphNode--${slot}`],
+          isActive ? styles["graphNode--active"] : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        data-kind={node.kind}
+        onClick={() => setSelectedCode(node.code)}
+        aria-pressed={isActive}
+      >
+        <img
+          src={node.logoUrl}
+          alt=""
+          className={styles.graphNode__watermark}
+          aria-hidden
+        />
+        <span className={styles.graphNode__head}>
+          <span className={styles.graphNode__meta}>
+            <img src={node.logoUrl} alt="" className={styles.graphNode__icon} />
+            <span>{node.code.replace("_", " ")}</span>
+          </span>
+          <strong>{node.label}</strong>
+        </span>
+        <span className={styles.graphNode__statLabel}>HEADCOUNT</span>
+        <span className={styles.graphNode__stat}>
+          <b>{node.memberCount}</b>
+          <span>MEMBERS</span>
+        </span>
+      </button>
+    );
+  }
+
+  function renderAuxNode(node: FactionBoardNode) {
     const isActive = selectedCode === node.code;
     const recordCount = node.wikiCount + node.signalCount;
 
@@ -186,8 +234,8 @@ export default function FactionsClient({ data }: FactionsClientProps) {
         key={node.code}
         type="button"
         className={[
-          styles.networkNode,
-          isActive ? styles["networkNode--active"] : "",
+          styles.auxNode,
+          isActive ? styles["auxNode--active"] : "",
         ]
           .filter(Boolean)
           .join(" ")}
@@ -195,30 +243,14 @@ export default function FactionsClient({ data }: FactionsClientProps) {
         onClick={() => setSelectedCode(node.code)}
         aria-pressed={isActive}
       >
-        <span className={styles.networkNode__top}>
-          <img src={node.logoUrl} alt="" className={styles.networkNode__logo} />
-          <span>
-            <span className={styles.networkNode__code}>{node.code}</span>
-            <strong>{node.label}</strong>
-          </span>
-        </span>
-        <span className={styles.networkNode__scope}>{node.scopeLabel}</span>
-        <span className={styles.networkNode__doctrine}>{node.doctrine}</span>
-        {node.parentLabel ? (
-          <span className={styles.networkNode__parent}>
-            {node.parentLabel} 산하
-          </span>
-        ) : null}
-        <span className={styles.networkNode__facts}>
-          <span>
-            <b>{node.memberCount}</b> 인원
-          </span>
-          <span>
-            <b>{node.contactCount}</b> 접촉
-          </span>
-          <span>
-            <b>{recordCount}</b> 기록
-          </span>
+        <img src={node.logoUrl} alt="" className={styles.auxNode__watermark} />
+        <span className={styles.auxNode__code}>{node.code.replace("_", " ")}</span>
+        <strong>{node.label}</strong>
+        <span className={styles.auxNode__scope}>{node.scopeLabel}</span>
+        <span className={styles.auxNode__facts}>
+          <span>{node.memberCount} 인원</span>
+          <span>{node.contactCount} 접촉</span>
+          <span>{recordCount} 기록</span>
         </span>
       </button>
     );
@@ -269,30 +301,57 @@ export default function FactionsClient({ data }: FactionsClientProps) {
             </PanelTitle>
 
             <div className={styles.networkCanvas}>
-              <section className={styles.networkColumn} data-kind="external">
-                <div className={styles.networkColumn__head}>
-                  <span>외부 권력 블록</span>
-                  <b>{data.totals.factionCount}</b>
-                </div>
-                {externalNodes.map(renderNodeButton)}
-              </section>
+              <svg
+                className={styles.graphLines}
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                <line className={styles.graphLines__threat} x1="50" y1="22" x2="29" y2="43" />
+                <line className={styles.graphLines__threat} x1="50" y1="22" x2="71" y2="43" />
+                <line className={styles.graphLines__threat} x1="29" y1="50" x2="71" y2="50" />
+                <line className={styles.graphLines__branch} x1="71" y1="62" x2="71" y2="71" />
+                <path
+                  className={styles.graphLines__branch}
+                  d="M39 71 H82 M39 71 V79 M82 71 V79"
+                />
+              </svg>
 
-              <section className={styles.networkColumn} data-kind="branch">
-                <div className={styles.networkColumn__head}>
-                  <span>시민사회 하위 세력</span>
-                  <b>{data.totals.subOrgCount}</b>
-                </div>
-                {branchNodes.map(renderNodeButton)}
-              </section>
+              {councilNode ? renderDiagramNode(councilNode, "council") : null}
 
-              <section className={styles.networkColumn} data-kind="internal">
-                <div className={styles.networkColumn__head}>
-                  <span>내부 세력</span>
-                  <b>{data.totals.internalCount}</b>
-                </div>
-                {internalNodes.map(renderNodeButton)}
-              </section>
+              <div className={styles.oversightBanner}>
+                상호 감시 · MUTUAL OVERSIGHT
+              </div>
+
+              {militaryNode ? renderDiagramNode(militaryNode, "military") : null}
+              {civilNode ? renderDiagramNode(civilNode, "civil") : null}
+              {whiteRoseNode ? renderDiagramNode(whiteRoseNode, "whiteRose") : null}
+              {spaceZeroNode ? renderDiagramNode(spaceZeroNode, "spaceZero") : null}
             </div>
+
+            {internalNodes.length > 0 ? (
+              <section className={styles.auxLane}>
+                <div className={styles.auxLane__head}>
+                  <span>내부 세력</span>
+                  <b>{internalNodes.length}</b>
+                </div>
+                <div className={styles.auxLane__grid}>
+                  {internalNodes.map(renderAuxNode)}
+                </div>
+              </section>
+            ) : null}
+
+            {hostileNodes.length > 0 ? (
+              <section className={styles.auxLane} data-kind="hostile">
+                <div className={styles.auxLane__head}>
+                  <span>적대세력</span>
+                  <b>{hostileNodes.length}</b>
+                </div>
+                <div className={styles.auxLane__grid}>
+                  {hostileNodes.map(renderAuxNode)}
+                </div>
+              </section>
+            ) : null}
 
             <div className={styles.relationships}>
               {data.relationships.map((relationship) => {
