@@ -50,24 +50,32 @@ const TRACKED_NODE_CODES = [
 
 const TRACKED_NODE_CODE_SET = new Set<string>(TRACKED_NODE_CODES);
 
+const FAVORABILITY_BY_CODE: Record<string, number> = {
+  COUNCIL: 3,
+  MILITARY: 4,
+  CIVIL: 5,
+  WHITE_ROSE: 10,
+  SPACE_ZERO: 3,
+};
+
 const RELATIONSHIPS: FactionBoardRelationship[] = [
   {
     from: "COUNCIL",
     to: "MILITARY",
     label: "의결권 · 무력 통제",
-    detail: "상호 감시",
+    detail: "견제·보고 라인",
   },
   {
     from: "COUNCIL",
     to: "CIVIL",
     label: "최고 의결 · 시민 대표",
-    detail: "상호 감시",
+    detail: "견제·대표성 조율",
   },
   {
     from: "MILITARY",
     to: "CIVIL",
     label: "외적 방위 · 사회 기반",
-    detail: "상호 감시",
+    detail: "긴장·여론 견제",
   },
   {
     from: "CIVIL",
@@ -210,7 +218,11 @@ function textMatchesFaction(text: string, code: string): boolean {
 function addStats(
   node: Omit<
     FactionBoardNode,
-    "memberCount" | "contactCount" | "wikiCount" | "signalCount"
+    | "favorability"
+    | "memberCount"
+    | "contactCount"
+    | "wikiCount"
+    | "signalCount"
   >,
   groupCounts: Record<string, number>,
   contactBuckets: Record<string, FactionBoardContact[]>,
@@ -219,6 +231,7 @@ function addStats(
 ): FactionBoardNode {
   return {
     ...node,
+    favorability: FAVORABILITY_BY_CODE[node.code] ?? null,
     memberCount: groupCounts[node.code] ?? 0,
     contactCount: contactBuckets[node.code]?.length ?? 0,
     wikiCount: wikiBuckets[node.code]?.length ?? 0,

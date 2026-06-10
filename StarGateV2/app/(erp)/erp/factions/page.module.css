@@ -111,8 +111,16 @@
   pointer-events: none;
 }
 
-.graphLines__threat {
-  stroke: var(--danger);
+.graphLines__oversight {
+  fill: none;
+  stroke: rgba(255, 105, 105, 0.68);
+  stroke-width: 1;
+  stroke-dasharray: 7 9;
+  vector-effect: non-scaling-stroke;
+}
+
+.graphLines__balance {
+  stroke: rgba(255, 105, 105, 0.62);
   stroke-width: 1;
   stroke-dasharray: 7 9;
   vector-effect: non-scaling-stroke;
@@ -128,21 +136,23 @@
 
 .oversightBanner {
   position: absolute;
-  top: 188px;
+  top: 204px;
   left: 50%;
   z-index: 4;
   display: flex;
-  width: min(330px, 52%);
-  min-height: 34px;
+  width: min(320px, 58%);
+  min-height: 28px;
   align-items: center;
   justify-content: center;
   transform: translateX(-50%);
-  color: var(--danger);
+  color: rgba(255, 130, 110, 0.95);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0;
-  background: rgba(6, 8, 10, 0.9);
-  border: 1px solid var(--danger);
+  white-space: nowrap;
+  background: rgba(6, 8, 10, 0.94);
+  border: 1px solid rgba(255, 105, 105, 0.72);
+  box-shadow: 0 0 18px rgba(255, 105, 105, 0.08);
 }
 
 .graphNode {

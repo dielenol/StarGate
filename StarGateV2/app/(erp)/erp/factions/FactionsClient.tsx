@@ -30,6 +30,7 @@ export interface FactionBoardNode {
   summary: string;
   doctrine: string;
   logoUrl: string;
+  favorability: number | null;
   memberCount: number;
   contactCount: number;
   wikiCount: number;
@@ -146,6 +147,10 @@ function getDensity(node: FactionBoardNode): number {
   );
 }
 
+function formatFavorability(value: number | null): string {
+  return value === null ? "-" : value.toString();
+}
+
 export default function FactionsClient({ data }: FactionsClientProps) {
   const [selectedCode, setSelectedCode] =
     useState<FactionBoardCode>(DEFAULT_NODE);
@@ -216,10 +221,10 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           </span>
           <strong>{node.label}</strong>
         </span>
-        <span className={styles.graphNode__statLabel}>HEADCOUNT</span>
+        <span className={styles.graphNode__statLabel}>우호도</span>
         <span className={styles.graphNode__stat}>
-          <b>{node.memberCount}</b>
-          <span>MEMBERS</span>
+          <b>{formatFavorability(node.favorability)}</b>
+          <span>{node.favorability === null ? "미등록" : "/ 10"}</span>
         </span>
       </button>
     );
@@ -248,7 +253,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
         <strong>{node.label}</strong>
         <span className={styles.auxNode__scope}>{node.scopeLabel}</span>
         <span className={styles.auxNode__facts}>
-          <span>{node.memberCount} 인원</span>
+          <span>우호도 {formatFavorability(node.favorability)}</span>
           <span>{node.contactCount} 접촉</span>
           <span>{recordCount} 기록</span>
         </span>
@@ -307,20 +312,21 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                 preserveAspectRatio="none"
                 aria-hidden
               >
-                <line className={styles.graphLines__threat} x1="50" y1="22" x2="29" y2="43" />
-                <line className={styles.graphLines__threat} x1="50" y1="22" x2="71" y2="43" />
-                <line className={styles.graphLines__threat} x1="29" y1="50" x2="71" y2="50" />
-                <line className={styles.graphLines__branch} x1="71" y1="62" x2="71" y2="71" />
+                <path
+                  className={styles.graphLines__oversight}
+                  d="M50 28 V33 M50 33 H20 M20 33 V35 M50 33 H80 M80 33 V35"
+                />
+                <line className={styles.graphLines__balance} x1="38" y1="50" x2="62" y2="50" />
                 <path
                   className={styles.graphLines__branch}
-                  d="M39 71 H82 M39 71 V79 M82 71 V79"
+                  d="M82 60 V70 M82 70 H34 M34 70 V72 M82 70 H84 M84 70 V72"
                 />
               </svg>
 
               {councilNode ? renderDiagramNode(councilNode, "council") : null}
 
               <div className={styles.oversightBanner}>
-                상호 감시 · MUTUAL OVERSIGHT
+                견제 균형 · OVERSIGHT
               </div>
 
               {militaryNode ? renderDiagramNode(militaryNode, "military") : null}
@@ -423,8 +429,8 @@ export default function FactionsClient({ data }: FactionsClientProps) {
 
               <div className={styles.detailStats}>
                 <div>
-                  <span>MEMBERS</span>
-                  <b>{selectedNode.memberCount}</b>
+                  <span>우호도</span>
+                  <b>{formatFavorability(selectedNode.favorability)}</b>
                 </div>
                 <div>
                   <span>CONTACTS</span>
