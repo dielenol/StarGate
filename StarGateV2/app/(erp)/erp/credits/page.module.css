@@ -1,12 +1,16 @@
-.balance {
+.credits {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--gap);
+}
+
+.adminHintBox {
+  border-color: var(--line-strong);
 }
 
 .adminHint {
-  font-size: var(--font-size-sm);
   color: var(--ink-1);
+  font-size: var(--font-size-sm);
   line-height: 1.6;
 }
 
@@ -20,34 +24,200 @@
   color: var(--gold-dim);
 }
 
+.walletGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: var(--gap);
+  align-items: stretch;
+}
+
+.balancePanel,
+.flowPanel {
+  min-width: 0;
+}
+
+.balanceValue {
+  margin: 12px 0;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 42px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.identityLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-1);
+  font-size: var(--font-size-sm);
+}
+
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font-size: var(--font-size-sm);
+}
+
+.notice strong {
+  color: var(--ink-0);
+  font-weight: 600;
+}
+
+.flowChart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.flowRow {
+  display: grid;
+  grid-template-columns: 48px minmax(120px, 1fr) 96px;
+  gap: 10px;
+  align-items: center;
+}
+
+.flowLabel,
+.flowTotal,
 .mono {
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.1em;
+  font-size: var(--font-size-badge);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
 }
 
-.gold {
-  color: var(--gold);
+.flowTotal {
+  text-align: right;
 }
 
-.bigNum {
-  color: var(--gold);
+.flowBars {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.flowBarIn,
+.flowBarOut {
+  display: block;
+  min-width: 2px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.flowBarIn {
+  background: var(--success);
+}
+
+.flowBarOut {
+  background: var(--danger);
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: var(--gap);
+}
+
+.metricValue,
+.metricValueNeg {
+  margin: 6px 0 4px;
   font-family: var(--font-mono);
-  font-size: 40px;
-  letter-spacing: -0.02em;
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+.metricValue {
+  color: var(--success);
+}
+
+.metricValueNeg {
+  color: var(--danger);
+}
+
+.breakdownGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.breakdownItem {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+}
+
+.breakdownHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.breakdownAmount,
+.breakdownAmountNeg {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.breakdownAmount {
+  color: var(--success);
+}
+
+.breakdownAmountNeg {
+  color: var(--danger);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(4, minmax(140px, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.controlField {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.controlActions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .empty {
   padding: 32px 12px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.1em;
+  font-size: var(--font-size-badge);
+  letter-spacing: 0;
   text-align: center;
 }
-
-/* ── Table ── */
 
 .tableWrap {
   overflow-x: auto;
@@ -56,22 +226,22 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 
 .table th {
   padding: 10px 12px;
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: normal;
-  letter-spacing: 0.15em;
+  font-size: var(--font-size-badge);
+  font-weight: 500;
+  letter-spacing: 0;
   text-align: left;
   border-bottom: 1px solid var(--line);
 }
 
 .table td {
-  padding: 10px;
+  padding: 12px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
   color: var(--ink-1);
@@ -81,9 +251,15 @@
   background: var(--bg-2);
 }
 
+.strong {
+  color: var(--ink-0);
+  font-weight: 600;
+}
+
 .numCol {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .dateCol {
@@ -91,18 +267,57 @@
   white-space: nowrap;
 }
 
+.amountPos,
+.amountNeg {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
 .amountPos {
   color: var(--success);
-  font-family: var(--font-mono);
-  font-weight: 500;
 }
 
 .amountNeg {
   color: var(--danger);
-  font-family: var(--font-mono);
-  font-weight: 500;
 }
 
 .desc {
+  max-width: 360px;
   color: var(--ink-1);
+}
+
+@media (max-width: 1180px) {
+  .walletGrid,
+  .kpiGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .walletGrid,
+  .kpiGrid,
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .balanceValue {
+    font-size: 34px;
+  }
+
+  .flowRow {
+    grid-template-columns: 42px minmax(80px, 1fr) 82px;
+  }
+
+  .controlActions {
+    justify-content: stretch;
+  }
+
+  .controlActions > * {
+    width: 100%;
+  }
 }
