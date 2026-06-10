@@ -24,6 +24,18 @@
   color: var(--ink-3);
 }
 
+.sectionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 /* ── Category tabs ── */
 
 .tabs {
@@ -36,6 +48,9 @@
 }
 
 .tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   padding: 10px 16px;
   background: transparent;
   border: 0;
@@ -48,6 +63,12 @@
   transition:
     color 0.15s ease,
     border-color 0.15s ease;
+}
+
+.tabs__icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
 }
 
 .tabs__tab:hover {
@@ -75,11 +96,20 @@
 }
 
 .tabs__count {
+  display: inline-grid;
+  min-width: 22px;
+  height: 20px;
+  place-items: center;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   color: var(--ink-3);
   font-size: 14px;
+  line-height: 1;
 }
 
 .tabs__tab--active .tabs__count {
+  border-color: currentColor;
   color: var(--gold);
 }
 

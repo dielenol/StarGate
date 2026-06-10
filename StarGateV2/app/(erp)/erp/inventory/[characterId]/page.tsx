@@ -123,10 +123,15 @@ export default async function CharacterInventoryPage({
       />
 
       <div className={styles.inventoryStack}>
-        <InventoryClient entries={entries} title="개인 인벤토리" />
+        <InventoryClient
+          entries={entries}
+          title="개인 인벤토리"
+          variant="personal"
+        />
         <InventoryClient
           entries={sharedEntries}
           title="공용 인벤토리"
+          variant="shared"
           emptyText="공용 인벤토리에 등록된 아이템이 없습니다."
           filteredEmptyText="이 카테고리에 등록된 공용 아이템이 없습니다."
         />

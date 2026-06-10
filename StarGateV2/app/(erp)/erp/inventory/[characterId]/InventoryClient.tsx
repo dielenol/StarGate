@@ -5,9 +5,12 @@ import { useMemo, useState } from "react";
 import type { ItemCategory } from "@/types/inventory";
 
 import {
+  IconArchive,
   IconConsumable,
   IconEquipment,
   IconInventory,
+  IconPlayer,
+  type IconComponent,
 } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
@@ -31,18 +34,25 @@ export interface InventoryClientEntry {
 interface InventoryClientProps {
   entries: InventoryClientEntry[];
   title?: string;
+  variant?: "personal" | "shared";
   emptyText?: string;
   filteredEmptyText?: string;
 }
 
 type InventoryTab = "ALL" | "EQUIPMENT" | "CONSUMABLE" | "OTHER";
 
-const TAB_DEFS: { value: InventoryTab; label: string }[] = [
-  { value: "ALL", label: "전체" },
-  { value: "EQUIPMENT", label: "장비" },
-  { value: "CONSUMABLE", label: "소모품" },
-  { value: "OTHER", label: "기타" },
-];
+const TAB_DEFS: { value: InventoryTab; label: string; icon: IconComponent }[] =
+  [
+    { value: "ALL", label: "전체", icon: IconInventory },
+    { value: "EQUIPMENT", label: "장비", icon: IconEquipment },
+    { value: "CONSUMABLE", label: "소모품", icon: IconConsumable },
+    { value: "OTHER", label: "기타", icon: IconArchive },
+  ];
+
+const SECTION_ICONS: Record<"personal" | "shared", IconComponent> = {
+  personal: IconPlayer,
+  shared: IconInventory,
+};
 
 const CATEGORY_LABEL: Record<ItemCategory, string> = {
   WEAPON: "무기",
@@ -117,10 +127,12 @@ function CategoryIcon({
 export default function InventoryClient({
   entries,
   title = "INVENTORY",
+  variant = "personal",
   emptyText = "보유 아이템이 없습니다.",
   filteredEmptyText = "이 카테고리에 보유 아이템이 없습니다.",
 }: InventoryClientProps) {
   const [activeTab, setActiveTab] = useState<InventoryTab>("ALL");
+  const SectionIcon = SECTION_ICONS[variant];
 
   const countByTab = useMemo(() => {
     const counts: Record<InventoryTab, number> = {
@@ -150,7 +162,10 @@ export default function InventoryClient({
   return (
     <Box>
       <PanelTitle right={<span className={styles.mono}>{entries.length}개</span>}>
-        {title}
+        <span className={styles.sectionTitle}>
+          <SectionIcon className={styles.sectionTitle__icon} aria-hidden />
+          <span>{title}</span>
+        </span>
       </PanelTitle>
 
       <div
@@ -161,6 +176,7 @@ export default function InventoryClient({
         {TAB_DEFS.map((tab) => {
           const isActive = activeTab === tab.value;
           const count = countByTab[tab.value];
+          const TabIcon = tab.icon;
           return (
             <button
               key={tab.value}
@@ -177,8 +193,9 @@ export default function InventoryClient({
                 .join(" ")}
               onClick={() => setActiveTab(tab.value)}
             >
-              {tab.label}
-              <span className={styles.tabs__count}> · {count}</span>
+              <TabIcon className={styles.tabs__icon} aria-hidden />
+              <span>{tab.label}</span>
+              <span className={styles.tabs__count}>{count}</span>
             </button>
           );
         })}
