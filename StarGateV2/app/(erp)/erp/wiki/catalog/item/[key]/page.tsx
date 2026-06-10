@@ -19,7 +19,7 @@ import { findMasterItemBySlugOrId } from "@/lib/db/inventory";
 import { listSessionReports } from "@/lib/db/session-reports";
 import { listWikiPages } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
-import { getShopItemImageSrc } from "@/lib/shop/item-images";
+import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import Box from "@/components/ui/Box/Box";
@@ -61,9 +61,11 @@ function itemMarkdown(item: MasterItem): string {
 }
 
 function previewImage(item: MasterItem): string | null {
+  const catalogSrc = getConsumableItemImageSrc(item.slug ?? "");
+  if (catalogSrc) return catalogSrc;
   const src = item.previewImage?.trim();
   if (src && src.startsWith("/assets/")) return src;
-  return getShopItemImageSrc(item.slug ?? "") ?? null;
+  return null;
 }
 
 function itemTagTone(category: MasterItem["category"]): TagTone {

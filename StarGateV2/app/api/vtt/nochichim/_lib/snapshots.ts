@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 
 import "@/lib/db/init";
+import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 
 import {
   findCharacterByCodename,
@@ -215,7 +216,8 @@ export async function loadCharacterConsumables(
         description: item.description ?? "",
         effect: item.effect ?? "",
         quantity: entry.quantity,
-        previewImage: item.previewImage ?? "",
+        previewImage:
+          getConsumableItemImageSrc(item.slug ?? "") ?? item.previewImage ?? "",
         note: entry.note,
         acquiredAt: dateToIso(entry.acquiredAt),
       },

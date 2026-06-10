@@ -114,7 +114,7 @@
       "price": 0,
       "effect": "S1E2 보상으로 해금된 군인 직군 전투 보조 소모품",
       "description": "S1E2 선택 작전 보상으로 군인 직군에 해금된 전투 보조 계열 소모품.",
-      "previewImage": "/assets/catalog/consumables/stimpack.webp",
+      "previewImage": "/assets/catalog/consumables/stimpack.png",
       "isAvailable": true,
       "isPublic": true,
       "tags": ["NOSB-S1E2-CHOICE", "S1E2", "보상", "직군해금", "군인", "스팀팩", "전투보조", "소모품"],

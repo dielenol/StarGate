@@ -19,8 +19,21 @@ export const SHOP_ITEM_IMAGE_BY_SLUG = {
   vf_blood: `${SHOP_ITEM_IMAGE_BASE_PATH}/vf_blood.png`,
 } as const satisfies Record<string, string>;
 
+export const CONSUMABLE_ITEM_IMAGE_BY_SLUG = {
+  ...SHOP_ITEM_IMAGE_BY_SLUG,
+  stimpack: "/assets/catalog/consumables/stimpack.png",
+} as const satisfies Record<string, string>;
+
 export function getShopItemImageSrc(slug: string): string | undefined {
   return SHOP_ITEM_IMAGE_BY_SLUG[
     slug as keyof typeof SHOP_ITEM_IMAGE_BY_SLUG
+  ];
+}
+
+export function getConsumableItemImageSrc(slug: string): string | undefined {
+  // Prefer the canonical PNG asset for known consumable slugs even if an older
+  // DB previewImage still points at a retired WebP path.
+  return CONSUMABLE_ITEM_IMAGE_BY_SLUG[
+    slug as keyof typeof CONSUMABLE_ITEM_IMAGE_BY_SLUG
   ];
 }

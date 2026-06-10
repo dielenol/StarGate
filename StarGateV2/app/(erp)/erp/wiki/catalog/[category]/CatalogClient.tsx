@@ -18,7 +18,7 @@ import {
   categoryTone,
   normalizeCatalogScope,
 } from "@/lib/catalog/categories";
-import { getShopItemImageSrc } from "@/lib/shop/item-images";
+import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 
 import styles from "./CatalogClient.module.css";
 
@@ -66,8 +66,8 @@ function assetImageSrc(value?: string): string | null {
 
 function itemImageSrc(item: CatalogItem): string | null {
   return (
+    getConsumableItemImageSrc(item.slug ?? "") ??
     assetImageSrc(item.previewImage) ??
-    getShopItemImageSrc(item.slug ?? "") ??
     null
   );
 }

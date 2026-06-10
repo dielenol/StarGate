@@ -60,7 +60,7 @@
     "filter": { "slug": "stimpack" },
     "update": {
       "$set": {
-        "previewImage": "/assets/catalog/consumables/stimpack.webp",
+        "previewImage": "/assets/catalog/consumables/stimpack.png",
         "updatedAt": "2026-06-03T00:00:00.000Z"
       }
     }
