@@ -13,11 +13,14 @@ import Tag, { rankTone } from "@/components/ui/Tag/Tag";
 import styles from "./page.module.css";
 
 export type FactionBoardCode = string;
+export type FactionBoardNodeKind = "external" | "branch" | "internal";
 
 export interface FactionBoardNode {
   code: FactionBoardCode;
   label: string;
   labelEn: string;
+  kind: FactionBoardNodeKind;
+  scopeLabel: string;
   parentCode: FactionBoardCode | null;
   parentLabel?: string;
   summary: string;
@@ -27,6 +30,7 @@ export interface FactionBoardNode {
   contactCount: number;
   wikiCount: number;
   signalCount: number;
+  subUnitCount?: number;
 }
 
 export interface FactionBoardContact {
@@ -67,7 +71,9 @@ export interface FactionBoardRelationship {
 }
 
 export interface FactionBoardTotals {
+  nodeCount: number;
   factionCount: number;
+  internalCount: number;
   subOrgCount: number;
   memberCount: number;
   contactCount: number;
@@ -76,8 +82,7 @@ export interface FactionBoardTotals {
 }
 
 export interface FactionBoardData {
-  factionNodes: FactionBoardNode[];
-  subOrgNodes: FactionBoardNode[];
+  boardNodes: FactionBoardNode[];
   relationships: FactionBoardRelationship[];
   contactsByCode: Record<string, FactionBoardContact[]>;
   wikiLinksByCode: Record<string, FactionBoardLink[]>;
@@ -90,15 +95,7 @@ interface FactionsClientProps {
   data: FactionBoardData;
 }
 
-const DEFAULT_NODE: FactionBoardCode = "COUNCIL";
-
-const NODE_POSITION_CLASS: Record<string, string | undefined> = {
-  COUNCIL: styles["networkNode--council"],
-  MILITARY: styles["networkNode--military"],
-  CIVIL: styles["networkNode--civil"],
-  WHITE_ROSE: undefined,
-  SPACE_ZERO: undefined,
-};
+const DEFAULT_NODE: FactionBoardCode = "NOVUS_ORDO";
 
 const ACTIONS = [
   {
@@ -138,7 +135,10 @@ function getShortDate(value: string): string {
 function getDensity(node: FactionBoardNode): number {
   return Math.min(
     100,
-    node.memberCount * 12 + node.contactCount * 8 + node.wikiCount * 10 + node.signalCount * 14,
+    node.memberCount * 12 +
+      node.contactCount * 8 +
+      node.wikiCount * 10 +
+      node.signalCount * 14,
   );
 }
 
@@ -148,19 +148,81 @@ export default function FactionsClient({ data }: FactionsClientProps) {
   const [selectedAction, setSelectedAction] = useState<ActionId>("formal");
 
   const nodesByCode = useMemo(() => {
-    const entries = [...data.factionNodes, ...data.subOrgNodes].map(
-      (node) => [node.code, node] as const,
-    );
+    const entries = data.boardNodes.map((node) => [node.code, node] as const);
     return new Map<FactionBoardCode, FactionBoardNode>(entries);
-  }, [data.factionNodes, data.subOrgNodes]);
+  }, [data.boardNodes]);
 
-  const selectedNode = nodesByCode.get(selectedCode) ?? data.factionNodes[0];
-  const selectedContacts = (data.contactsByCode[selectedNode.code] ?? []).slice(0, 5);
-  const selectedLinks = (data.wikiLinksByCode[selectedNode.code] ?? []).slice(0, 4);
-  const selectedSignals = (data.signalsByCode[selectedNode.code] ?? []).slice(0, 4);
+  const selectedNode =
+    nodesByCode.get(selectedCode) ?? data.boardNodes[0] ?? null;
+  const selectedContacts = selectedNode
+    ? (data.contactsByCode[selectedNode.code] ?? []).slice(0, 5)
+    : [];
+  const selectedLinks = selectedNode
+    ? (data.wikiLinksByCode[selectedNode.code] ?? []).slice(0, 4)
+    : [];
+  const selectedSignals = selectedNode
+    ? (data.signalsByCode[selectedNode.code] ?? []).slice(0, 4)
+    : [];
+  const selectedRelations = selectedNode
+    ? data.relationships.filter(
+        (relationship) =>
+          relationship.from === selectedNode.code ||
+          relationship.to === selectedNode.code,
+      )
+    : [];
   const selectedActionMeta =
     ACTIONS.find((action) => action.id === selectedAction) ?? ACTIONS[0];
-  const density = getDensity(selectedNode);
+  const density = selectedNode ? getDensity(selectedNode) : 0;
+  const externalNodes = data.boardNodes.filter((node) => node.kind === "external");
+  const branchNodes = data.boardNodes.filter((node) => node.kind === "branch");
+  const internalNodes = data.boardNodes.filter((node) => node.kind === "internal");
+
+  function renderNodeButton(node: FactionBoardNode) {
+    const isActive = selectedCode === node.code;
+    const recordCount = node.wikiCount + node.signalCount;
+
+    return (
+      <button
+        key={node.code}
+        type="button"
+        className={[
+          styles.networkNode,
+          isActive ? styles["networkNode--active"] : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        data-kind={node.kind}
+        onClick={() => setSelectedCode(node.code)}
+        aria-pressed={isActive}
+      >
+        <span className={styles.networkNode__top}>
+          <img src={node.logoUrl} alt="" className={styles.networkNode__logo} />
+          <span>
+            <span className={styles.networkNode__code}>{node.code}</span>
+            <strong>{node.label}</strong>
+          </span>
+        </span>
+        <span className={styles.networkNode__scope}>{node.scopeLabel}</span>
+        <span className={styles.networkNode__doctrine}>{node.doctrine}</span>
+        {node.parentLabel ? (
+          <span className={styles.networkNode__parent}>
+            {node.parentLabel} 산하
+          </span>
+        ) : null}
+        <span className={styles.networkNode__facts}>
+          <span>
+            <b>{node.memberCount}</b> 인원
+          </span>
+          <span>
+            <b>{node.contactCount}</b> 접촉
+          </span>
+          <span>
+            <b>{recordCount}</b> 기록
+          </span>
+        </span>
+      </button>
+    );
+  }
 
   return (
     <>
@@ -170,7 +232,6 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           { label: "ERP", href: "/erp" },
           { label: "세력도", href: "/erp/factions" },
         ]}
-        right={<Tag tone="gold">FACTION BOARD</Tag>}
       />
 
       <div className={styles.page}>
@@ -181,12 +242,12 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           </div>
           <div className={styles.commandStrip__metrics}>
             <div className={styles.commandMetric}>
-              <span>FACTIONS</span>
-              <b>{data.totals.factionCount}</b>
+              <span>NODES</span>
+              <b>{data.totals.nodeCount}</b>
             </div>
             <div className={styles.commandMetric}>
-              <span>MEMBERS</span>
-              <b>{data.totals.memberCount}</b>
+              <span>INTERNAL</span>
+              <b>{data.totals.internalCount}</b>
             </div>
             <div className={styles.commandMetric}>
               <span>CONTACTS</span>
@@ -202,187 +263,181 @@ export default function FactionsClient({ data }: FactionsClientProps) {
         <div className={styles.board}>
           <Box className={styles.networkPanel}>
             <PanelTitle
-              right={<span className={styles.panelCode}>MUTUAL OVERSIGHT</span>}
+              right={<span className={styles.panelCode}>EXTERNAL / INTERNAL</span>}
             >
-              3세력 관계
+              세력 관계도
             </PanelTitle>
 
             <div className={styles.networkCanvas}>
-              <svg
-                className={styles.networkLines}
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                aria-hidden
-              >
-                <defs>
-                  <marker
-                    id="factionArrow"
-                    viewBox="0 0 10 10"
-                    refX="9"
-                    refY="5"
-                    markerWidth="3"
-                    markerHeight="3"
-                    orient="auto-start-reverse"
-                  >
-                    <path d="M0,0 L10,5 L0,10 z" fill="var(--danger)" />
-                  </marker>
-                </defs>
-                <line x1="50" y1="16" x2="22" y2="78" />
-                <line x1="50" y1="16" x2="78" y2="78" />
-                <line x1="22" y1="78" x2="78" y2="78" />
-              </svg>
+              <section className={styles.networkColumn} data-kind="external">
+                <div className={styles.networkColumn__head}>
+                  <span>외부 권력 블록</span>
+                  <b>{data.totals.factionCount}</b>
+                </div>
+                {externalNodes.map(renderNodeButton)}
+              </section>
 
-              {data.factionNodes.map((node) => (
-                <button
-                  key={node.code}
-                  type="button"
-                  className={[
-                    styles.networkNode,
-                    NODE_POSITION_CLASS[node.code],
-                    selectedCode === node.code ? styles["networkNode--active"] : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() => setSelectedCode(node.code)}
-                  aria-pressed={selectedCode === node.code}
-                >
-                  <img src={node.logoUrl} alt="" className={styles.networkNode__logo} />
-                  <span className={styles.networkNode__code}>{node.code}</span>
-                  <strong>{node.label}</strong>
-                  <span className={styles.networkNode__doctrine}>{node.doctrine}</span>
-                  <span className={styles.networkNode__count}>
-                    {node.memberCount} MEMBERS
-                  </span>
-                </button>
-              ))}
+              <section className={styles.networkColumn} data-kind="branch">
+                <div className={styles.networkColumn__head}>
+                  <span>시민사회 하위 세력</span>
+                  <b>{data.totals.subOrgCount}</b>
+                </div>
+                {branchNodes.map(renderNodeButton)}
+              </section>
 
-              <span className={styles.networkLabel}>상호 감시</span>
+              <section className={styles.networkColumn} data-kind="internal">
+                <div className={styles.networkColumn__head}>
+                  <span>내부 세력</span>
+                  <b>{data.totals.internalCount}</b>
+                </div>
+                {internalNodes.map(renderNodeButton)}
+              </section>
             </div>
 
             <div className={styles.relationships}>
-              {data.relationships.map((relationship) => (
-                <div
-                  key={`${relationship.from}-${relationship.to}`}
-                  className={styles.relationship}
-                >
-                  <span className={styles.relationship__nodes}>
-                    {relationship.from} ↔ {relationship.to}
-                  </span>
-                  <strong>{relationship.label}</strong>
-                  <span>{relationship.detail}</span>
-                </div>
-              ))}
-            </div>
+              {data.relationships.map((relationship) => {
+                const isActive =
+                  selectedNode &&
+                  (relationship.from === selectedNode.code ||
+                    relationship.to === selectedNode.code);
 
-            <div className={styles.subOrgDock} aria-label="시민사회 하위 조직">
-              {data.subOrgNodes.map((node) => (
-                <button
-                  key={node.code}
-                  type="button"
-                  className={[
-                    styles.subOrgButton,
-                    selectedCode === node.code ? styles["subOrgButton--active"] : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() => setSelectedCode(node.code)}
-                  aria-pressed={selectedCode === node.code}
-                >
-                  <img src={node.logoUrl} alt="" className={styles.subOrgButton__logo} />
-                  <span>
-                    <b>{node.label}</b>
-                    <small>{node.summary}</small>
-                  </span>
-                  <em>{node.memberCount}</em>
-                </button>
-              ))}
-            </div>
-          </Box>
-
-          <Box className={styles.detailPanel} variant="gold">
-            <PanelTitle right={<Tag tone="info">{selectedNode.summary}</Tag>}>
-              세력 브리핑
-            </PanelTitle>
-
-            <div className={styles.briefing}>
-              <div className={styles.briefing__logoWrap}>
-                <img
-                  src={selectedNode.logoUrl}
-                  alt=""
-                  className={styles.briefing__logo}
-                />
-              </div>
-              <div className={styles.briefing__body}>
-                <span className={styles.briefing__code}>{selectedNode.code}</span>
-                <h2>{selectedNode.label}</h2>
-                <p>{selectedNode.doctrine}</p>
-                {selectedNode.parentLabel ? (
-                  <Tag tone="gold">{selectedNode.parentLabel}</Tag>
-                ) : null}
-              </div>
-            </div>
-
-            <div className={styles.density}>
-              <div className={styles.density__head}>
-                <span>LINK DENSITY</span>
-                <b>{density}%</b>
-              </div>
-              <div className={styles.density__bar} aria-hidden>
-                <span style={{ width: `${density}%` }} />
-              </div>
-            </div>
-
-            <div className={styles.detailStats}>
-              <div>
-                <span>MEMBERS</span>
-                <b>{selectedNode.memberCount}</b>
-              </div>
-              <div>
-                <span>CONTACTS</span>
-                <b>{selectedNode.contactCount}</b>
-              </div>
-              <div>
-                <span>WIKI</span>
-                <b>{selectedNode.wikiCount}</b>
-              </div>
-              <div>
-                <span>REPORTS</span>
-                <b>{selectedNode.signalCount}</b>
-              </div>
-            </div>
-
-            <div className={styles.actionConsole}>
-              <PanelTitle right={<span className={styles.panelCode}>LOCAL</span>}>
-                접촉 콘솔
-              </PanelTitle>
-              <div className={styles.actionGrid}>
-                {ACTIONS.map((action) => (
-                  <button
-                    key={action.id}
-                    type="button"
+                return (
+                  <div
+                    key={`${relationship.from}-${relationship.to}`}
                     className={[
-                      styles.actionButton,
-                      selectedAction === action.id ? styles["actionButton--active"] : "",
+                      styles.relationship,
+                      isActive ? styles["relationship--active"] : "",
                     ]
                       .filter(Boolean)
                       .join(" ")}
-                    onClick={() => setSelectedAction(action.id)}
-                    aria-pressed={selectedAction === action.id}
                   >
-                    <span>{action.channel}</span>
-                    <b>{action.label}</b>
-                  </button>
-                ))}
-              </div>
-              <div className={styles.actionPreview}>
-                <span>{selectedActionMeta.channel}</span>
-                <strong>
-                  {selectedNode.label} · {selectedActionMeta.label}
-                </strong>
-                <p>{selectedActionMeta.detail}</p>
-              </div>
+                    <span className={styles.relationship__nodes}>
+                      {relationship.from} ↔ {relationship.to}
+                    </span>
+                    <strong>{relationship.label}</strong>
+                    <span>{relationship.detail}</span>
+                  </div>
+                );
+              })}
             </div>
           </Box>
+
+          {selectedNode ? (
+            <Box className={styles.detailPanel} variant="gold">
+              <PanelTitle right={<Tag tone="info">{selectedNode.scopeLabel}</Tag>}>
+                세력 브리핑
+              </PanelTitle>
+
+              <div className={styles.briefing}>
+                <div className={styles.briefing__logoWrap}>
+                  <img
+                    src={selectedNode.logoUrl}
+                    alt=""
+                    className={styles.briefing__logo}
+                  />
+                </div>
+                <div className={styles.briefing__body}>
+                  <span className={styles.briefing__code}>{selectedNode.code}</span>
+                  <h2>{selectedNode.label}</h2>
+                  <p>{selectedNode.doctrine}</p>
+                  <div className={styles.briefing__tags}>
+                    <Tag tone="gold">{selectedNode.summary}</Tag>
+                    {selectedNode.parentLabel ? (
+                      <Tag>{selectedNode.parentLabel}</Tag>
+                    ) : null}
+                    {selectedNode.subUnitCount ? (
+                      <Tag>{selectedNode.subUnitCount} 하위 기구</Tag>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.density}>
+                <div className={styles.density__head}>
+                  <span>LINK DENSITY</span>
+                  <b>{density}%</b>
+                </div>
+                <div className={styles.density__bar} aria-hidden>
+                  <span style={{ width: `${density}%` }} />
+                </div>
+              </div>
+
+              <div className={styles.detailStats}>
+                <div>
+                  <span>MEMBERS</span>
+                  <b>{selectedNode.memberCount}</b>
+                </div>
+                <div>
+                  <span>CONTACTS</span>
+                  <b>{selectedNode.contactCount}</b>
+                </div>
+                <div>
+                  <span>WIKI</span>
+                  <b>{selectedNode.wikiCount}</b>
+                </div>
+                <div>
+                  <span>REPORTS</span>
+                  <b>{selectedNode.signalCount}</b>
+                </div>
+              </div>
+
+              <div className={styles.relationStack}>
+                <PanelTitle right={<span className={styles.panelCode}>LINKS</span>}>
+                  연결 관계
+                </PanelTitle>
+                {selectedRelations.length > 0 ? (
+                  selectedRelations.map((relationship) => (
+                    <div
+                      key={`${relationship.from}-${relationship.to}`}
+                      className={styles.relationLine}
+                    >
+                      <span>
+                        {relationship.from} ↔ {relationship.to}
+                      </span>
+                      <strong>{relationship.label}</strong>
+                      <em>{relationship.detail}</em>
+                    </div>
+                  ))
+                ) : (
+                  <div className={styles.empty}>등록된 연결 관계 없음</div>
+                )}
+              </div>
+
+              <div className={styles.actionConsole}>
+                <PanelTitle right={<span className={styles.panelCode}>LOCAL</span>}>
+                  접촉 콘솔
+                </PanelTitle>
+                <div className={styles.actionGrid}>
+                  {ACTIONS.map((action) => (
+                    <button
+                      key={action.id}
+                      type="button"
+                      className={[
+                        styles.actionButton,
+                        selectedAction === action.id
+                          ? styles["actionButton--active"]
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => setSelectedAction(action.id)}
+                      aria-pressed={selectedAction === action.id}
+                    >
+                      <span>{action.channel}</span>
+                      <b>{action.label}</b>
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.actionPreview}>
+                  <span>{selectedActionMeta.channel}</span>
+                  <strong>
+                    {selectedNode.label} · {selectedActionMeta.label}
+                  </strong>
+                  <p>{selectedActionMeta.detail}</p>
+                </div>
+              </div>
+            </Box>
+          ) : null}
         </div>
 
         <div className={styles.infoGrid}>
