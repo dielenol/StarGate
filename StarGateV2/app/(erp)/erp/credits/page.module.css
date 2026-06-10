@@ -26,9 +26,9 @@
 
 .walletGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(260px, 0.75fr) minmax(360px, 1.25fr);
   gap: var(--gap);
-  align-items: stretch;
+  align-items: start;
 }
 
 .balancePanel,
@@ -36,11 +36,15 @@
   min-width: 0;
 }
 
+.balancePanel {
+  align-self: start;
+}
+
 .balanceValue {
-  margin: 12px 0;
+  margin: 10px 0 6px;
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: 42px;
+  font-size: 36px;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   letter-spacing: 0;
@@ -52,8 +56,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  color: var(--ink-1);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
   font-size: var(--font-size-sm);
+  letter-spacing: 0;
 }
 
 .notice {
@@ -199,10 +205,96 @@
 }
 
 .controlField {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 4px;
+}
+
+.dropdown {
+  position: relative;
+  min-width: 0;
+}
+
+.dropdownButton {
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdownButton:hover,
+.dropdownButton:focus-visible {
+  border-color: var(--gold-dim);
+  outline: none;
+}
+
+.dropdownCaret {
+  width: 0;
+  height: 0;
+  flex: 0 0 auto;
+  border-top: 5px solid var(--ink-2);
+  border-right: 5px solid transparent;
+  border-left: 5px solid transparent;
+}
+
+.dropdownMenu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  display: flex;
+  max-height: 280px;
+  flex-direction: column;
+  overflow-y: auto;
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  background: var(--bg-1);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38);
+}
+
+.dropdownOption {
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdownOption:last-child {
+  border-bottom: 0;
+}
+
+.dropdownOption:hover,
+.dropdownOption:focus-visible {
+  background: var(--bg-2);
+  color: var(--gold);
+  outline: none;
+}
+
+.dropdownOptionActive {
+  background: rgba(201, 168, 90, 0.12);
+  color: var(--gold);
 }
 
 .controlActions {
@@ -306,7 +398,7 @@
   }
 
   .balanceValue {
-    font-size: 34px;
+    font-size: 30px;
   }
 
   .flowRow {

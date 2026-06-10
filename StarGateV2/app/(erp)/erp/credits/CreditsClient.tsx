@@ -1,5 +1,6 @@
 "use client";
 
+import type { FocusEvent } from "react";
 import { useMemo, useState } from "react";
 
 import Link from "next/link";
@@ -13,7 +14,6 @@ import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import Input from "@/components/ui/Input/Input";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
-import Select from "@/components/ui/Select/Select";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { CREDIT_TYPE_META } from "@/lib/credit-meta";
@@ -50,6 +50,10 @@ interface CreditsClientProps {
 type DirectionFilter = "ALL" | "IN" | "OUT";
 type PeriodFilter = "ALL" | "30D" | "90D" | "MONTH";
 type SortMode = "LATEST" | "AMOUNT_DESC" | "AMOUNT_ASC";
+type DropdownOption<T extends string> = {
+  value: T;
+  label: string;
+};
 
 const TYPE_ALL = "ALL" as const;
 
@@ -103,6 +107,35 @@ function isInPeriod(createdAt: string, period: PeriodFilter): boolean {
 function getTypeLabel(type: CreditTransactionType): string {
   return CREDIT_TYPE_META[type]?.label ?? type;
 }
+
+const TYPE_OPTIONS: DropdownOption<
+  CreditTransactionType | typeof TYPE_ALL
+>[] = [
+  { value: TYPE_ALL, label: "전체 유형" },
+  ...CREDIT_TRANSACTION_TYPES.map((type) => ({
+    value: type,
+    label: getTypeLabel(type),
+  })),
+];
+
+const DIRECTION_OPTIONS: DropdownOption<DirectionFilter>[] = [
+  { value: "ALL", label: DIRECTION_LABEL.ALL },
+  { value: "IN", label: DIRECTION_LABEL.IN },
+  { value: "OUT", label: DIRECTION_LABEL.OUT },
+];
+
+const PERIOD_OPTIONS: DropdownOption<PeriodFilter>[] = [
+  { value: "ALL", label: PERIOD_LABEL.ALL },
+  { value: "30D", label: PERIOD_LABEL["30D"] },
+  { value: "90D", label: PERIOD_LABEL["90D"] },
+  { value: "MONTH", label: PERIOD_LABEL.MONTH },
+];
+
+const SORT_OPTIONS: DropdownOption<SortMode>[] = [
+  { value: "LATEST", label: SORT_LABEL.LATEST },
+  { value: "AMOUNT_DESC", label: SORT_LABEL.AMOUNT_DESC },
+  { value: "AMOUNT_ASC", label: SORT_LABEL.AMOUNT_ASC },
+];
 
 function sumAmounts(rows: SerializedCreditTransaction[]): {
   income: number;
@@ -174,6 +207,74 @@ function toCsv(rows: SerializedCreditTransaction[]): string {
       .join(","),
   );
   return [header.join(","), ...body].join("\n");
+}
+
+interface FilterDropdownProps<T extends string> {
+  ariaLabel: string;
+  onChange: (value: T) => void;
+  options: DropdownOption<T>[];
+  value: T;
+}
+
+function FilterDropdown<T extends string>({
+  ariaLabel,
+  onChange,
+  options,
+  value,
+}: FilterDropdownProps<T>) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.value === value);
+
+  function handleBlur(event: FocusEvent<HTMLDivElement>) {
+    const nextFocus = event.relatedTarget;
+    if (nextFocus instanceof Node && event.currentTarget.contains(nextFocus)) {
+      return;
+    }
+    setOpen(false);
+  }
+
+  return (
+    <div className={styles.dropdown} onBlur={handleBlur}>
+      <button
+        type="button"
+        className={styles.dropdownButton}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{selected?.label ?? value}</span>
+        <span className={styles.dropdownCaret} aria-hidden="true" />
+      </button>
+      {open ? (
+        <div className={styles.dropdownMenu} role="listbox" aria-label={ariaLabel}>
+          {options.map((option) => {
+            const active = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={active}
+                className={[
+                  styles.dropdownOption,
+                  active ? styles.dropdownOptionActive : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export default function CreditsClient({
@@ -297,13 +398,6 @@ export default function CreditsClient({
           </PanelTitle>
           <div className={styles.balanceValue}>{formatCredit(balance)}</div>
           <div className={styles.identityLine}>
-            <Tag tone={character ? "gold" : integrityError ? "danger" : "info"}>
-              {character
-                ? "MAIN AGENT"
-                : integrityError
-                  ? "INTEGRITY"
-                  : "UNASSIGNED"}
-            </Tag>
             <span>
               {character
                 ? `${character.codename} · ${character.name || "이름 미기록"}`
@@ -453,65 +547,42 @@ export default function CreditsClient({
               placeholder="설명, 유형, 담당자"
             />
           </label>
-          <label className={styles.controlField}>
+          <div className={styles.controlField}>
             <Eyebrow>유형</Eyebrow>
-            <Select
+            <FilterDropdown
+              ariaLabel="유형 필터"
               value={typeFilter}
-              onChange={(event) =>
-                setTypeFilter(
-                  event.target.value as CreditTransactionType | typeof TYPE_ALL,
-                )
-              }
-            >
-              <option value={TYPE_ALL}>전체 유형</option>
-              {CREDIT_TRANSACTION_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {getTypeLabel(type)}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className={styles.controlField}>
+              options={TYPE_OPTIONS}
+              onChange={setTypeFilter}
+            />
+          </div>
+          <div className={styles.controlField}>
             <Eyebrow>흐름</Eyebrow>
-            <Select
+            <FilterDropdown
+              ariaLabel="흐름 필터"
               value={direction}
-              onChange={(event) =>
-                setDirection(event.target.value as DirectionFilter)
-              }
-            >
-              {Object.entries(DIRECTION_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className={styles.controlField}>
+              options={DIRECTION_OPTIONS}
+              onChange={setDirection}
+            />
+          </div>
+          <div className={styles.controlField}>
             <Eyebrow>기간</Eyebrow>
-            <Select
+            <FilterDropdown
+              ariaLabel="기간 필터"
               value={period}
-              onChange={(event) => setPeriod(event.target.value as PeriodFilter)}
-            >
-              {Object.entries(PERIOD_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className={styles.controlField}>
+              options={PERIOD_OPTIONS}
+              onChange={setPeriod}
+            />
+          </div>
+          <div className={styles.controlField}>
             <Eyebrow>정렬</Eyebrow>
-            <Select
+            <FilterDropdown
+              ariaLabel="정렬"
               value={sortMode}
-              onChange={(event) => setSortMode(event.target.value as SortMode)}
-            >
-              {Object.entries(SORT_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-          </label>
+              options={SORT_OPTIONS}
+              onChange={setSortMode}
+            />
+          </div>
           <div className={styles.controlActions}>
             <Button size="sm" onClick={handleExport} disabled={filtered.length === 0}>
               CSV
