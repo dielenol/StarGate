@@ -131,6 +131,7 @@ const NOTIFICATION_TAG: Record<
   { label: string; tone: "gold" | "info" | "success" | "default" }
 > = {
   SESSION_REMIND: { label: "세션", tone: "gold" },
+  CONSUMABLE_USED: { label: "소모품", tone: "info" },
   ROLE_CHANGE: { label: "역할", tone: "info" },
   CREDIT_RECEIVED: { label: "크레딧", tone: "success" },
   REPORT_PUBLISHED: { label: "리포트", tone: "gold" },

@@ -21,6 +21,7 @@ type FilterKey = "ALL" | NotificationType;
 const FILTER_ORDER: FilterKey[] = [
   "ALL",
   "SESSION_REMIND",
+  "CONSUMABLE_USED",
   "CREDIT_RECEIVED",
   "REPORT_PUBLISHED",
   "ROLE_CHANGE",
@@ -30,6 +31,7 @@ const FILTER_ORDER: FilterKey[] = [
 const FILTER_LABEL: Record<FilterKey, string> = {
   ALL: "전체",
   SESSION_REMIND: "세션",
+  CONSUMABLE_USED: "소모품",
   CREDIT_RECEIVED: "크레딧",
   REPORT_PUBLISHED: "리포트",
   ROLE_CHANGE: "역할",
@@ -41,6 +43,7 @@ const TYPE_TAG: Record<
   { label: string; tone: "gold" | "info" | "success" | "danger" | "default" }
 > = {
   SESSION_REMIND: { label: "SESSION", tone: "gold" },
+  CONSUMABLE_USED: { label: "ITEM", tone: "info" },
   ROLE_CHANGE: { label: "ROLE", tone: "info" },
   CREDIT_RECEIVED: { label: "CREDITS", tone: "success" },
   REPORT_PUBLISHED: { label: "REPORT", tone: "gold" },
@@ -82,6 +85,7 @@ export default function NotificationsClient({
     const counts: Record<FilterKey, number> = {
       ALL: notifications.length,
       SESSION_REMIND: 0,
+      CONSUMABLE_USED: 0,
       ROLE_CHANGE: 0,
       CREDIT_RECEIVED: 0,
       REPORT_PUBLISHED: 0,

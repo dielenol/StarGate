@@ -4,6 +4,7 @@ export type NotificationType =
   | "SESSION_REMIND"
   | "ROLE_CHANGE"
   | "CREDIT_RECEIVED"
+  | "CONSUMABLE_USED"
   | "REPORT_PUBLISHED"
   | "SYSTEM";
 

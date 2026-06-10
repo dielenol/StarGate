@@ -1,6 +1,8 @@
 import { ObjectId } from "mongodb";
 
 import "@/lib/db/init";
+import { findSessionById } from "@/lib/db/sessions";
+import { notifyUser } from "@/lib/notifications/events";
 import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 
 import {
@@ -80,6 +82,11 @@ export interface NochichimCharacterSnapshot extends NochichimCharacterListItem {
     }>;
   };
   consumables: NochichimConsumableSnapshot[];
+}
+
+export interface NochichimConsumptionSessionContext {
+  sessionId?: string;
+  sessionTitle?: string;
 }
 
 function isAgentCharacter(character: Character | null): character is AgentCharacter {
@@ -273,10 +280,56 @@ export async function loadCharacterSnapshot(
   };
 }
 
+async function resolveConsumptionSessionTitle(
+  session: NochichimConsumptionSessionContext | undefined,
+): Promise<string | null> {
+  const fallbackTitle = session?.sessionTitle?.trim() || null;
+  const sessionId = session?.sessionId?.trim();
+  if (!sessionId) return fallbackTitle;
+
+  const sessionDoc = await findSessionById(sessionId).catch((error) => {
+    console.warn("[nochichim] failed to resolve session for consume notification", {
+      sessionId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  });
+
+  return sessionDoc?.title?.trim() || fallbackTitle;
+}
+
+async function notifyConsumableUsed(input: {
+  character: AgentCharacter;
+  item: MasterItem;
+  quantity: number;
+  remaining: number;
+  session?: NochichimConsumptionSessionContext;
+}): Promise<void> {
+  if (!input.character.ownerId) return;
+
+  const characterId = objectIdString(input.character._id);
+  const itemName = input.item.name || "소모품";
+  const sessionTitle = await resolveConsumptionSessionTitle(input.session);
+
+  await notifyUser({
+    userId: input.character.ownerId,
+    type: "CONSUMABLE_USED",
+    title: `${itemName} 사용이 기록되었습니다`,
+    message: [
+      `${input.character.codename} · ${itemName} x${input.quantity}`,
+      sessionTitle ? `세션: ${sessionTitle}` : "세션: 미지정",
+      `잔여 ${input.remaining}`,
+      "노치찜 연동",
+    ].join(" · "),
+    link: characterId ? `/erp/inventory/${characterId}` : "/erp/notifications",
+  });
+}
+
 export async function consumeCharacterConsumable(input: {
   characterId: string;
   itemId: string;
   quantity: number;
+  session?: NochichimConsumptionSessionContext;
 }): Promise<{
   ok: boolean;
   remaining: number;
@@ -307,6 +360,16 @@ export async function consumeCharacterConsumable(input: {
     input.itemId,
     input.quantity,
   );
+
+  if (result.ok) {
+    await notifyConsumableUsed({
+      character,
+      item,
+      quantity: input.quantity,
+      remaining: result.remaining,
+      session: input.session,
+    });
+  }
 
   return {
     ok: result.ok,
