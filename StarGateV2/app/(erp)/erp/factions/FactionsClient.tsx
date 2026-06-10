@@ -118,7 +118,6 @@ export default function FactionsClient({ data }: FactionsClientProps) {
   const selectedActionMeta =
     ACTIONS.find((action) => action.id === selectedAction) ?? ACTIONS[0];
   const density = selectedNode ? getDensity(selectedNode) : 0;
-  const visibleGraphNodeCount = data.totals.factionCount + data.totals.subOrgCount;
   const councilNode = nodesByCode.get("COUNCIL");
   const militaryNode = nodesByCode.get("MILITARY");
   const civilNode = nodesByCode.get("CIVIL");
@@ -177,38 +176,9 @@ export default function FactionsClient({ data }: FactionsClientProps) {
       />
 
       <div className={styles.page}>
-        <section className={styles.commandStrip} aria-label="세력 현황 요약">
-          <div className={styles.commandStrip__title}>
-            <span className={styles.commandStrip__kicker}>NOVUS ORDO</span>
-            <h1>세력 관계도</h1>
-          </div>
-          <div className={styles.commandStrip__metrics}>
-            <div className={styles.commandMetric}>
-              <span>NODES</span>
-              <b>{visibleGraphNodeCount}</b>
-            </div>
-            <div className={styles.commandMetric}>
-              <span>BRANCHES</span>
-              <b>{data.totals.subOrgCount}</b>
-            </div>
-            <div className={styles.commandMetric}>
-              <span>CONTACTS</span>
-              <b>{data.totals.contactCount}</b>
-            </div>
-            <div className={styles.commandMetric}>
-              <span>RECORDS</span>
-              <b>{data.totals.wikiCount + data.totals.signalCount}</b>
-            </div>
-          </div>
-        </section>
-
         <div className={styles.board}>
           <Box className={styles.networkPanel}>
-            <PanelTitle
-              right={<span className={styles.panelCode}>EXTERNAL / BRANCHES</span>}
-            >
-              세력 관계도
-            </PanelTitle>
+            <PanelTitle>세력 관계도</PanelTitle>
 
             <div className={styles.networkCanvas}>
               <svg
@@ -219,15 +189,26 @@ export default function FactionsClient({ data }: FactionsClientProps) {
               >
                 <path
                   className={styles.graphLines__primary}
-                  d="M50 29 V36 M50 36 H23 M23 36 V39 M50 36 H77 M77 36 V39"
+                  d="M50 29 V32 M36 36 L22 42 M64 36 L78 42"
+                />
+                <line
+                  className={styles.graphLines__balance}
+                  x1="36"
+                  y1="52"
+                  x2="64"
+                  y2="52"
                 />
                 <path
                   className={styles.graphLines__branch}
-                  d="M77 62 V70 M77 70 H34 M34 70 V73 M77 70 H84 M84 70 V73"
+                  d="M78 65 V72 M78 72 H34 M34 72 V75 M78 72 H84 M84 72 V75"
                 />
               </svg>
 
               {councilNode ? renderDiagramNode(councilNode, "council") : null}
+
+              <div className={styles.oversightBanner}>
+                상호 감시 · MUTUAL OVERSIGHT
+              </div>
 
               {militaryNode ? renderDiagramNode(militaryNode, "military") : null}
               {civilNode ? renderDiagramNode(civilNode, "civil") : null}
