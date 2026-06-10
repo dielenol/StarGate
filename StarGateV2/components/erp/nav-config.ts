@@ -7,6 +7,7 @@
 
 import type { IconComponent } from "@/components/icons";
 import {
+  IconAccount,
   IconApply,
   IconArchive,
   IconCharacter,
@@ -56,7 +57,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "내 정보",
     items: [
       { label: "대시보드", keywords: "dashboard", icon: IconDashboard, href: "/erp" },
-      { label: "계정", keywords: "account password discord settings", icon: IconSystem, href: "/erp/account" },
+      { label: "계정", keywords: "account password discord settings", icon: IconAccount, href: "/erp/account" },
       { label: "알림", keywords: "notifications", icon: IconNotification, href: "/erp/notifications" },
     ],
   },

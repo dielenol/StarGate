@@ -5,6 +5,7 @@ export type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 // SVG 원본은 public/assets/svg/ic_*.svg 에 단일 소스로 존재하며,
 // next.config.ts의 Turbopack SVGR 규칙을 통해 React 컴포넌트로 직접 import된다.
 // `.tsx` 래퍼는 필요 없다 — 규칙/속성(viewBox, stroke="currentColor", aria-hidden 등)은 SVG 파일 자체에 명시되어 있음.
+export { default as IconAccount } from "@/public/assets/svg/ic_account.svg";
 export { default as IconApply } from "@/public/assets/svg/ic_apply.svg";
 export { default as IconArchive } from "@/public/assets/svg/ic_archive.svg";
 export { default as IconArrowLeft } from "@/public/assets/svg/ic_arrow-left.svg";
