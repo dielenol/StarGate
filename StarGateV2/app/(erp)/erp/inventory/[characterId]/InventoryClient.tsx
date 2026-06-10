@@ -9,6 +9,7 @@ import {
   IconConsumable,
   IconEquipment,
   IconInventory,
+  IconSharedInventory,
   type IconComponent,
 } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
@@ -50,7 +51,7 @@ const TAB_DEFS: { value: InventoryTab; label: string; icon: IconComponent }[] =
 
 const SECTION_ICONS: Record<"personal" | "shared", IconComponent> = {
   personal: IconInventory,
-  shared: IconInventory,
+  shared: IconSharedInventory,
 };
 
 const CATEGORY_LABEL: Record<ItemCategory, string> = {

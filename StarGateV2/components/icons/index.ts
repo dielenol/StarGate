@@ -40,6 +40,7 @@ export { default as IconReportDocument } from "@/public/assets/svg/ic_report-doc
 export { default as IconReturn } from "@/public/assets/svg/ic_return.svg";
 export { default as IconRules } from "@/public/assets/svg/ic_rules.svg";
 export { default as IconSession } from "@/public/assets/svg/ic_session.svg";
+export { default as IconSharedInventory } from "@/public/assets/svg/ic_shared-inventory.svg";
 export { default as IconShop } from "@/public/assets/svg/ic_shop.svg";
 export { default as IconShuffle } from "@/public/assets/svg/ic_shuffle.svg";
 export { default as IconStock } from "@/public/assets/svg/ic_stock.svg";

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" aria-hidden="true">
+  <defs>
+    <mask id="cut-shared-inventory-front-box" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512">
+      <rect width="512" height="512" fill="#ffffff"/>
+      <path d="M256 116 L478 244 L478 366 L256 494 L34 366 L34 244 Z" fill="#000000" stroke="#000000" stroke-width="46" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <g mask="url(#cut-shared-inventory-front-box)" stroke-opacity="0.88">
+    <path d="M150 34 L272 104 L150 174 L28 104 Z"/>
+    <path d="M28 104 L28 246 L150 316 L150 174"/>
+    <path d="M272 104 L272 246 L150 316 L150 174"/>
+    <path d="M91 70 L213 140"/>
+    <path d="M68 178 L122 209"/>
+    <path d="M334 34 L484 120 L334 206 L184 120 Z"/>
+    <path d="M184 120 L184 270 L334 356 L334 206"/>
+    <path d="M484 120 L484 270 L334 356 L334 206"/>
+    <path d="M258 78 L409 165"/>
+    <path d="M407 213 L450 188 L450 240 L407 265 Z"/>
+  </g>
+  <path d="M256 116 L478 244 L256 372 L34 244 Z"/>
+  <path d="M34 244 L34 366 L256 494 L256 372"/>
+  <path d="M478 244 L478 366 L256 494 L256 372"/>
+  <path d="M138 184 L360 312"/>
+  <path d="M214 140 L436 268"/>
+  <path d="M88 304 L180 357"/>
+  <path d="M334 308 L408 266 L408 330 L334 372 Z"/>
+</svg>
