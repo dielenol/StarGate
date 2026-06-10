@@ -115,7 +115,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "크레딧 운영", keywords: "credits admin grant op pool 작전풀", icon: IconCredit, href: "/erp/admin/credits" },
       { label: "주식 운영", keywords: "stocks admin market price 주식 시세", icon: IconStock, href: "/erp/admin/stocks" },
       { label: "대사 비프 테스트", keywords: "dialogue beep audio npc hud undertale", icon: IconSystem, href: "/erp/admin/dialogue-beep" },
-      { label: "인벤토리 운영", keywords: "inventory admin grant items 지급 마스터", icon: IconEquipment, href: "/erp/admin/inventory" },
+      { label: "인벤토리 운영", keywords: "inventory admin grant items 지급 마스터", icon: IconInventory, href: "/erp/admin/inventory" },
       { label: "캐릭터 등록", keywords: "character register import", icon: IconCharacter, href: "/erp/admin/characters/import" },
     ],
   },
