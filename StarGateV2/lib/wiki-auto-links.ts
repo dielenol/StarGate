@@ -89,9 +89,10 @@ function pushTarget(
       allowShortHangul: target.kind === "personnel",
     }),
   );
-  if (keywords.length === 0) return;
+  const explicitKeywords = uniqueAliases(target.explicitKeywords ?? []);
+  if (keywords.length === 0 && explicitKeywords.length === 0) return;
 
-  targets.push({ ...target, keywords });
+  targets.push({ ...target, explicitKeywords, keywords });
 }
 
 export function buildWikiAutoLinkTargets({
@@ -108,6 +109,11 @@ export function buildWikiAutoLinkTargets({
     if (!id) continue;
 
     pushTarget(targets, {
+      explicitKeywords: [
+        report.sessionId,
+        report.sessionTitle,
+        formatOperationReportTitle(report.sessionTitle),
+      ],
       href: `/erp/sessions/report/${id}`,
       kind: "report",
       keywords: [
@@ -125,6 +131,13 @@ export function buildWikiAutoLinkTargets({
     if (!id) continue;
 
     pushTarget(targets, {
+      explicitKeywords: [
+        character.codename,
+        character.lore.name,
+        character.lore.nameNative,
+        character.lore.nickname,
+        character.lore.nameEn,
+      ],
       href: `/erp/personnel/${id}`,
       kind: "personnel",
       keywords: [
@@ -144,6 +157,7 @@ export function buildWikiAutoLinkTargets({
     if (!id || id === currentWikiPageId) continue;
 
     pushTarget(targets, {
+      explicitKeywords: [page.title, page.slug],
       href: `/erp/wiki/${id}`,
       kind: "wiki",
       keywords: [
@@ -160,6 +174,7 @@ export function buildWikiAutoLinkTargets({
     if (!key) continue;
 
     pushTarget(targets, {
+      explicitKeywords: [item.name, item.nameEn, item.slug],
       href: `/erp/wiki/catalog/item/${encodeURIComponent(key)}`,
       kind: "catalog",
       keywords: [

@@ -7,6 +7,7 @@
 export type MarkdownLinkKind = "wiki" | "catalog" | "personnel" | "report";
 
 export interface MarkdownLinkTarget {
+  explicitKeywords?: Array<string | null | undefined>;
   href: string;
   keywords: Array<string | null | undefined>;
   kind: MarkdownLinkKind;
@@ -99,6 +100,32 @@ function setExplicitEntry(
   }
 }
 
+function addExplicitKeyword(
+  explicitMap: Map<string, AutoLinkEntry>,
+  target: MarkdownLinkTarget,
+  rawKeyword: string | null | undefined,
+  priority: number,
+): void {
+  const keyword = rawKeyword?.trim();
+  if (!keyword) return;
+
+  const key = normalizeLinkKey(keyword);
+  if (!key) return;
+
+  const entry: AutoLinkEntry = {
+    href: target.href,
+    keyword,
+    kind: target.kind,
+    priority,
+    title: target.title,
+  };
+
+  for (const kindAlias of linkKindAliases(target.kind)) {
+    setExplicitEntry(explicitMap, `${kindAlias}:${key}`, entry);
+  }
+  setExplicitEntry(explicitMap, key, entry);
+}
+
 function buildInlineContext(options?: RenderMarkdownOptions): InlineContext {
   const byKeyword = new Map<string, AutoLinkEntry>();
   const explicitMap = new Map<string, AutoLinkEntry>();
@@ -125,10 +152,11 @@ function buildInlineContext(options?: RenderMarkdownOptions): InlineContext {
         byKeyword.set(key, entry);
       }
 
-      for (const kindAlias of linkKindAliases(target.kind)) {
-        setExplicitEntry(explicitMap, `${kindAlias}:${key}`, entry);
-      }
-      setExplicitEntry(explicitMap, key, byKeyword.get(key) ?? entry);
+      addExplicitKeyword(explicitMap, target, keyword, priority);
+    }
+
+    for (const rawKeyword of target.explicitKeywords ?? []) {
+      addExplicitKeyword(explicitMap, target, rawKeyword, priority);
     }
   }
 

@@ -385,9 +385,12 @@
 
 .reportBody img {
   display: block;
-  width: 100%;
-  max-height: 520px;
-  object-fit: cover;
+  width: auto;
+  max-width: 100%;
+  max-height: min(520px, 62vh);
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
 }
 
 .reportBody figcaption {
