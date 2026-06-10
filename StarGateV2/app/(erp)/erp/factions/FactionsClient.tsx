@@ -348,7 +348,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
 
               <div className={styles.density}>
                 <div className={styles.density__head}>
-                  <span>LINK DENSITY</span>
+                  <span>관계 연결도</span>
                   <b>{density}%</b>
                 </div>
                 <div className={styles.density__bar} aria-hidden>
@@ -362,15 +362,15 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                   <b>{formatFavorability(selectedNode.favorability)}</b>
                 </div>
                 <div>
-                  <span>CONTACTS</span>
+                  <span>연락망</span>
                   <b>{selectedNode.contactCount}</b>
                 </div>
                 <div>
-                  <span>WIKI</span>
+                  <span>문서</span>
                   <b>{selectedNode.wikiCount}</b>
                 </div>
                 <div>
-                  <span>REPORTS</span>
+                  <span>보고서</span>
                   <b>{selectedNode.signalCount}</b>
                 </div>
               </div>
