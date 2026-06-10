@@ -11,9 +11,7 @@ import { hasRole } from "@/lib/auth/rbac";
 import { listCharacters } from "@/lib/db/characters";
 import { listSessionReports } from "@/lib/db/session-reports";
 import { listWikiPages } from "@/lib/db/wiki";
-import { filterCharacterByClearance, getUserClearance } from "@/lib/personnel";
 import {
-  getDepartmentLabel,
   getTopLevelGroup,
   isFaction,
 } from "@/lib/org-structure";
@@ -30,12 +28,8 @@ import {
 
 import FactionsClient from "./FactionsClient";
 import type {
-  FactionBoardContact,
   FactionBoardData,
-  FactionBoardLink,
   FactionBoardNode,
-  FactionBoardRelationship,
-  FactionBoardSignal,
   FactionBoardTotals,
 } from "./FactionsClient";
 
@@ -61,51 +55,6 @@ const FAVORABILITY_BY_CODE: Record<string, number> = {
 const BOARD_LOGO_BY_CODE: Record<string, string> = {
   SPACE_ZERO: "/assets/faction/space_zero_logo.webp",
 };
-
-const RELATIONSHIPS: FactionBoardRelationship[] = [
-  {
-    from: "COUNCIL",
-    to: "MILITARY",
-    label: "의결권 · 무력 통제",
-    detail: "견제·보고 라인",
-  },
-  {
-    from: "COUNCIL",
-    to: "CIVIL",
-    label: "최고 의결 · 시민 대표",
-    detail: "견제·대표성 조율",
-  },
-  {
-    from: "MILITARY",
-    to: "CIVIL",
-    label: "외적 방위 · 사회 기반",
-    detail: "긴장·여론 견제",
-  },
-  {
-    from: "CIVIL",
-    to: "WHITE_ROSE",
-    label: "시민사회 내부 분기",
-    detail: "급진 인권운동 · 정보공개",
-  },
-  {
-    from: "CIVIL",
-    to: "SPACE_ZERO",
-    label: "시민사회 내부 분기",
-    detail: "기술 자본 · 글로벌 시장",
-  },
-  {
-    from: "NOVUS_ORDO",
-    to: "SECRETARIAT",
-    label: "의회 운영 · 행정 총괄",
-    detail: "내부 운영",
-  },
-  {
-    from: "NOVUS_ORDO",
-    to: "MANUS",
-    label: "섹터 작전 수행 · 현장 관리",
-    detail: "내부 실행",
-  },
-];
 
 function resolveExternalSubOrg(c: Character) {
   return (
@@ -150,34 +99,6 @@ function getContactBucketCodes(c: Character): string[] {
   }
 
   return [...codes];
-}
-
-function contactDisplayName(c: Character): string {
-  const name = c.lore?.name;
-  if (name && name !== "[CLASSIFIED]") return name;
-  return c.codename;
-}
-
-function contactRole(c: Character): string {
-  const roleDetail = c.lore?.roleDetail;
-  if (roleDetail && roleDetail !== "[CLASSIFIED]") return roleDetail;
-  if (c.type === "NPC") return "NPC";
-  return c.agentLevel ? `${c.agentLevel} 등급` : "AGENT";
-}
-
-function pushContact(
-  bucket: Record<string, FactionBoardContact[]>,
-  code: string,
-  contact: FactionBoardContact,
-) {
-  if (!bucket[code]) bucket[code] = [];
-  bucket[code].push(contact);
-}
-
-function sortContacts(a: FactionBoardContact, b: FactionBoardContact): number {
-  const typeCompare = a.type.localeCompare(b.type, "en");
-  if (typeCompare !== 0) return typeCompare;
-  return a.codename.localeCompare(b.codename, "ko");
 }
 
 function keywordSetFor(code: string): string[] {
@@ -229,25 +150,23 @@ function addStats(
     | "signalCount"
   >,
   groupCounts: Record<string, number>,
-  contactBuckets: Record<string, FactionBoardContact[]>,
-  wikiBuckets: Record<string, FactionBoardLink[]>,
-  signalBuckets: Record<string, FactionBoardSignal[]>,
+  wikiCounts: Record<string, number>,
+  signalCounts: Record<string, number>,
 ): FactionBoardNode {
   return {
     ...node,
     favorability: FAVORABILITY_BY_CODE[node.code] ?? null,
     memberCount: groupCounts[node.code] ?? 0,
-    contactCount: contactBuckets[node.code]?.length ?? 0,
-    wikiCount: wikiBuckets[node.code]?.length ?? 0,
-    signalCount: signalBuckets[node.code]?.length ?? 0,
+    contactCount: groupCounts[node.code] ?? 0,
+    wikiCount: wikiCounts[node.code] ?? 0,
+    signalCount: signalCounts[node.code] ?? 0,
   };
 }
 
 function buildBoardNodes(
   groupCounts: Record<string, number>,
-  contactBuckets: Record<string, FactionBoardContact[]>,
-  wikiBuckets: Record<string, FactionBoardLink[]>,
-  signalBuckets: Record<string, FactionBoardSignal[]>,
+  wikiCounts: Record<string, number>,
+  signalCounts: Record<string, number>,
 ): FactionBoardNode[] {
   const externalNodes = EXTERNAL_FACTION_CODES.map((code) => {
     const faction = FACTIONS.find((f) => f.code === code);
@@ -264,9 +183,8 @@ function buildBoardNodes(
         logoUrl: FACTION_LOGO[code],
       },
       groupCounts,
-      contactBuckets,
-      wikiBuckets,
-      signalBuckets,
+      wikiCounts,
+      signalCounts,
     );
   });
 
@@ -285,9 +203,8 @@ function buildBoardNodes(
         logoUrl: BOARD_LOGO_BY_CODE[org.code] ?? org.logoUrl,
       },
       groupCounts,
-      contactBuckets,
-      wikiBuckets,
-      signalBuckets,
+      wikiCounts,
+      signalCounts,
     ),
   );
 
@@ -306,9 +223,8 @@ function buildBoardNodes(
         logoUrl: FACTION_LOGO.NOVUS_ORDO,
       },
       groupCounts,
-      contactBuckets,
-      wikiBuckets,
-      signalBuckets,
+      wikiCounts,
+      signalCounts,
     ),
     ...INSTITUTIONS.map((institution) =>
       addStats(
@@ -326,9 +242,8 @@ function buildBoardNodes(
           subUnitCount: institution.subUnits.length,
         },
         groupCounts,
-        contactBuckets,
-        wikiBuckets,
-        signalBuckets,
+        wikiCounts,
+        signalCounts,
       ),
     ),
   ];
@@ -343,14 +258,12 @@ async function FactionsBody({ role }: { role: UserRole }) {
     listWikiPages().catch(() => []),
   ]);
 
-  const clearance = getUserClearance(role);
   const isGM = hasRole(role, "GM");
   const visibleCharacters = isGM
     ? rawCharacters
     : rawCharacters.filter((c) => c.isPublic !== false);
 
   const groupCounts: Record<string, number> = {};
-  const contactBuckets: Record<string, FactionBoardContact[]> = {};
   let visibleTrackedMemberCount = 0;
 
   for (const raw of visibleCharacters) {
@@ -360,71 +273,25 @@ async function FactionsBody({ role }: { role: UserRole }) {
 
     visibleTrackedMemberCount += 1;
 
-    const externalSubOrg = resolveExternalSubOrg(raw);
-    const internalUnitCode =
-      !externalSubOrg && raw.department && raw.department !== primaryGroup
-        ? raw.department
-        : null;
-    const branchCode = externalSubOrg?.code ?? internalUnitCode;
-    const branchLabel =
-      externalSubOrg?.label ??
-      (branchCode && branchCode !== primaryGroup
-        ? getDepartmentLabel(branchCode)
-        : null);
-
-    const masked = filterCharacterByClearance(raw, clearance);
-    const id = raw._id?.toString() ?? "";
-    const contact: FactionBoardContact = {
-      id,
-      codename: masked.codename,
-      displayName: contactDisplayName(masked),
-      role: contactRole(masked),
-      type: masked.type,
-      level: masked.agentLevel ?? null,
-      groupCode: primaryGroup,
-      subOrgCode: branchCode,
-      subOrgLabel: branchLabel,
-      profileHref: id
-        ? `/erp/personnel/${id}`
-        : `/erp/personnel?group=${primaryGroup}`,
-    };
-
     for (const code of bucketCodes) {
       groupCounts[code] = (groupCounts[code] ?? 0) + 1;
-      pushContact(contactBuckets, code, contact);
     }
   }
 
-  for (const contacts of Object.values(contactBuckets)) {
-    contacts.sort(sortContacts);
-  }
-
-  const wikiBuckets: Record<string, FactionBoardLink[]> = {};
+  const wikiCounts: Record<string, number> = {};
   for (const page of rawWikiPages) {
     if (!isGM && page.isPublic === false) continue;
 
     const text = `${page.title} ${page.category} ${page.tags.join(" ")} ${page.content}`;
-    const link: FactionBoardLink = {
-      id: page._id?.toString() ?? page.slug,
-      title: page.title,
-      category: page.category,
-      href: `/erp/wiki/${page._id?.toString() ?? page.slug}`,
-      updatedAt: page.updatedAt.toISOString(),
-    };
 
     for (const code of TRACKED_NODE_CODES) {
       if (textMatchesFaction(text, code)) {
-        if (!wikiBuckets[code]) wikiBuckets[code] = [];
-        wikiBuckets[code].push(link);
+        wikiCounts[code] = (wikiCounts[code] ?? 0) + 1;
       }
     }
   }
 
-  for (const links of Object.values(wikiBuckets)) {
-    links.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  }
-
-  const signalBuckets: Record<string, FactionBoardSignal[]> = {};
+  const signalCounts: Record<string, number> = {};
   for (const report of rawReports) {
     const text = [
       report.sessionTitle,
@@ -434,32 +301,17 @@ async function FactionsBody({ role }: { role: UserRole }) {
       report.locationLabel ?? "",
     ].join(" ");
 
-    const signal: FactionBoardSignal = {
-      id: report._id?.toString() ?? report.sessionId,
-      sessionId: report.sessionId,
-      title: report.sessionTitle,
-      summary: report.summary,
-      href: `/erp/sessions/report/${report._id?.toString() ?? report.sessionId}`,
-      updatedAt: report.updatedAt.toISOString(),
-    };
-
     for (const code of TRACKED_NODE_CODES) {
       if (textMatchesFaction(text, code)) {
-        if (!signalBuckets[code]) signalBuckets[code] = [];
-        signalBuckets[code].push(signal);
+        signalCounts[code] = (signalCounts[code] ?? 0) + 1;
       }
     }
   }
 
-  for (const signals of Object.values(signalBuckets)) {
-    signals.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  }
-
   const boardNodes = buildBoardNodes(
     groupCounts,
-    contactBuckets,
-    wikiBuckets,
-    signalBuckets,
+    wikiCounts,
+    signalCounts,
   );
   const totals: FactionBoardTotals = {
     nodeCount: boardNodes.length,
@@ -468,19 +320,12 @@ async function FactionsBody({ role }: { role: UserRole }) {
     subOrgCount: EXTERNAL_SUB_ORGS.length,
     memberCount: visibleTrackedMemberCount,
     contactCount: visibleTrackedMemberCount,
-    wikiCount: Object.values(wikiBuckets).reduce((sum, links) => sum + links.length, 0),
-    signalCount: Object.values(signalBuckets).reduce(
-      (sum, signals) => sum + signals.length,
-      0,
-    ),
+    wikiCount: Object.values(wikiCounts).reduce((sum, count) => sum + count, 0),
+    signalCount: Object.values(signalCounts).reduce((sum, count) => sum + count, 0),
   };
 
   const data: FactionBoardData = {
     boardNodes,
-    relationships: RELATIONSHIPS,
-    contactsByCode: contactBuckets,
-    wikiLinksByCode: wikiBuckets,
-    signalsByCode: signalBuckets,
     totals,
     generatedAt: new Date().toISOString(),
   };

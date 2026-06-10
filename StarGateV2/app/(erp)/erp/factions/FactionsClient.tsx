@@ -3,12 +3,11 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 
 import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
-import Tag, { rankTone } from "@/components/ui/Tag/Tag";
+import Tag from "@/components/ui/Tag/Tag";
 
 import styles from "./page.module.css";
 
@@ -38,43 +37,6 @@ export interface FactionBoardNode {
   subUnitCount?: number;
 }
 
-export interface FactionBoardContact {
-  id: string;
-  codename: string;
-  displayName: string;
-  role: string;
-  type: "AGENT" | "NPC";
-  level: string | null;
-  groupCode: FactionBoardCode;
-  subOrgCode: FactionBoardCode | null;
-  subOrgLabel: string | null;
-  profileHref: string;
-}
-
-export interface FactionBoardLink {
-  id: string;
-  title: string;
-  category: string;
-  href: string;
-  updatedAt: string;
-}
-
-export interface FactionBoardSignal {
-  id: string;
-  sessionId: string;
-  title: string;
-  summary: string;
-  href: string;
-  updatedAt: string;
-}
-
-export interface FactionBoardRelationship {
-  from: FactionBoardCode;
-  to: FactionBoardCode;
-  label: string;
-  detail: string;
-}
-
 export interface FactionBoardTotals {
   nodeCount: number;
   factionCount: number;
@@ -88,10 +50,6 @@ export interface FactionBoardTotals {
 
 export interface FactionBoardData {
   boardNodes: FactionBoardNode[];
-  relationships: FactionBoardRelationship[];
-  contactsByCode: Record<string, FactionBoardContact[]>;
-  wikiLinksByCode: Record<string, FactionBoardLink[]>;
-  signalsByCode: Record<string, FactionBoardSignal[]>;
   totals: FactionBoardTotals;
   generatedAt: string;
 }
@@ -131,12 +89,6 @@ const ACTIONS = [
 
 type ActionId = (typeof ACTIONS)[number]["id"];
 
-function getShortDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "UNKNOWN";
-  return date.toISOString().slice(0, 10);
-}
-
 function getDensity(node: FactionBoardNode): number {
   return Math.min(
     100,
@@ -163,15 +115,6 @@ export default function FactionsClient({ data }: FactionsClientProps) {
 
   const selectedNode =
     nodesByCode.get(selectedCode) ?? data.boardNodes[0] ?? null;
-  const selectedContacts = selectedNode
-    ? (data.contactsByCode[selectedNode.code] ?? []).slice(0, 5)
-    : [];
-  const selectedLinks = selectedNode
-    ? (data.wikiLinksByCode[selectedNode.code] ?? []).slice(0, 4)
-    : [];
-  const selectedSignals = selectedNode
-    ? (data.signalsByCode[selectedNode.code] ?? []).slice(0, 4)
-    : [];
   const selectedActionMeta =
     ACTIONS.find((action) => action.id === selectedAction) ?? ACTIONS[0];
   const density = selectedNode ? getDensity(selectedNode) : 0;
@@ -276,12 +219,11 @@ export default function FactionsClient({ data }: FactionsClientProps) {
               >
                 <path
                   className={styles.graphLines__primary}
-                  d="M50 31 V35 M50 35 H24 M24 35 V38 M50 35 H76 M76 35 V38"
+                  d="M50 29 V36 M50 36 H23 M23 36 V39 M50 36 H77 M77 36 V39"
                 />
-                <line className={styles.graphLines__balance} x1="39" y1="52" x2="63" y2="52" />
                 <path
                   className={styles.graphLines__branch}
-                  d="M76 63 V70 M76 70 H35 M35 70 V72 M76 70 H84 M84 70 V72"
+                  d="M77 62 V70 M77 70 H34 M34 70 V73 M77 70 H84 M84 70 V73"
                 />
               </svg>
 
@@ -388,87 +330,6 @@ export default function FactionsClient({ data }: FactionsClientProps) {
               </div>
             </Box>
           ) : null}
-        </div>
-
-        <div className={styles.infoGrid}>
-          <Box className={styles.infoPanel}>
-            <PanelTitle right={<Link href="/erp/personnel">신원조회</Link>}>
-              접촉 후보
-            </PanelTitle>
-            <div className={styles.contactList}>
-              {selectedContacts.length > 0 ? (
-                selectedContacts.map((contact) => (
-                  <Link
-                    key={`${contact.profileHref}-${contact.codename}`}
-                    href={contact.profileHref}
-                    className={styles.contactCard}
-                  >
-                    <span className={styles.contactCard__avatar}>
-                      {contact.codename.slice(0, 2)}
-                    </span>
-                    <span className={styles.contactCard__body}>
-                      <strong>{contact.displayName}</strong>
-                      <small>{contact.codename}</small>
-                    </span>
-                    <span className={styles.contactCard__meta}>
-                      {contact.level ? (
-                        <Tag tone={rankTone(contact.level) ?? "default"}>
-                          {contact.level}
-                        </Tag>
-                      ) : (
-                        <Tag>{contact.type}</Tag>
-                      )}
-                      <em>{contact.subOrgLabel ?? contact.role}</em>
-                    </span>
-                  </Link>
-                ))
-              ) : (
-                <div className={styles.empty}>등록된 접촉 후보 없음</div>
-              )}
-            </div>
-          </Box>
-
-          <Box className={styles.infoPanel}>
-            <PanelTitle right={<Link href="/erp/wiki">위키</Link>}>
-              관련 문서
-            </PanelTitle>
-            <div className={styles.recordList}>
-              {selectedLinks.length > 0 ? (
-                selectedLinks.map((link) => (
-                  <Link key={link.id} href={link.href} className={styles.recordItem}>
-                    <span>{link.category}</span>
-                    <strong>{link.title}</strong>
-                    <time>{getShortDate(link.updatedAt)}</time>
-                  </Link>
-                ))
-              ) : (
-                <div className={styles.empty}>연결된 위키 문서 없음</div>
-              )}
-            </div>
-          </Box>
-
-          <Box className={styles.infoPanel}>
-            <PanelTitle right={<Link href="/erp/sessions/report">보고서</Link>}>
-              최근 신호
-            </PanelTitle>
-            <div className={styles.recordList}>
-              {selectedSignals.length > 0 ? (
-                selectedSignals.map((signal) => (
-                  <Link
-                    key={signal.id}
-                    href={signal.href}
-                    className={styles.recordItem}
-                  >
-                    <span>{signal.sessionId}</span>
-                    <strong>{signal.title}</strong>
-                    <time>{getShortDate(signal.updatedAt)}</time>
-                  </Link>
-                ))
-              ) : (
-                <div className={styles.empty}>감지된 작전 기록 없음</div>
-              )}
-            </div>
-          </Box>
         </div>
       </div>
     </>
