@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 
-import type { SessionReport } from "@/types/session-report";
+import type { ClientSessionReport } from "@/types/session-report";
 
 export const sessionReportKeys = {
   all: ["session-reports"] as const,
 };
 
-async function fetchSessionReports(): Promise<SessionReport[]> {
+async function fetchSessionReports(): Promise<ClientSessionReport[]> {
   const res = await fetch("/api/erp/session-reports");
   if (!res.ok) throw new Error("세션 리포트를 불러올 수 없습니다.");
   const data = await res.json();
@@ -14,7 +14,7 @@ async function fetchSessionReports(): Promise<SessionReport[]> {
 }
 
 export function useSessionReports(options?: {
-  initialData?: SessionReport[];
+  initialData?: ClientSessionReport[];
 }) {
   return useQuery({
     queryKey: sessionReportKeys.all,

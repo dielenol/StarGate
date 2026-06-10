@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { type CSSProperties, useMemo } from "react";
 
-import type { SessionReport } from "@/types/session-report";
+import type { ClientSessionReport } from "@/types/session-report";
 
 import { useSessionReports } from "@/hooks/queries/useSessionReportsQuery";
 
@@ -20,7 +20,7 @@ import { IconReportDocument } from "@/components/icons";
 import styles from "./page.module.css";
 
 interface Props {
-  initialReports: SessionReport[];
+  initialReports: ClientSessionReport[];
 }
 
 interface MapPoint {
@@ -30,7 +30,7 @@ interface MapPoint {
   precision: "confirmed" | "estimated";
 }
 
-function normalizeReportText(report: SessionReport): string {
+function normalizeReportText(report: ClientSessionReport): string {
   return [
     report.sessionId,
     report.sessionTitle,
@@ -49,7 +49,10 @@ function getCoordinate(value: number): number {
   return Math.min(100, Math.max(0, value));
 }
 
-function getReportMapPoint(report: SessionReport, index: number): MapPoint {
+function getReportMapPoint(
+  report: ClientSessionReport,
+  index: number,
+): MapPoint {
   const text = normalizeReportText(report);
 
   if (

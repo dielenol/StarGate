@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation";
 
+import type {
+  ClientSessionReport,
+  SessionReport,
+} from "@/types/session-report";
+
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { listSessionReports } from "@/lib/db/session-reports";
@@ -9,6 +14,19 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 
 import ReportsClient from "./ReportsClient";
 
+function serializeDate(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+function serializeReport(report: SessionReport): ClientSessionReport {
+  return {
+    ...report,
+    _id: report._id?.toString() ?? "",
+    createdAt: serializeDate(report.createdAt),
+    updatedAt: serializeDate(report.updatedAt),
+  };
+}
+
 export default async function SessionReportListPage() {
   const session = await auth();
 
@@ -17,7 +35,9 @@ export default async function SessionReportListPage() {
   }
 
   const isGmOrAbove = hasRole(session.user.role, "V");
-  const reports = await listSessionReports().catch(() => []);
+  const reports = (await listSessionReports().catch(() => [])).map(
+    serializeReport,
+  );
 
   return (
     <>
