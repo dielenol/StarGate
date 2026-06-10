@@ -30,6 +30,11 @@ interface MapPoint {
   precision: "confirmed" | "estimated";
 }
 
+const REPORT_PIN_OFFSETS: Record<string, { x: string; y: string }> = {
+  "02": { x: "-34px", y: "-22px" },
+  "04": { x: "34px", y: "22px" },
+};
+
 function normalizeReportText(report: ClientSessionReport): string {
   return [
     report.sessionId,
@@ -135,6 +140,7 @@ export default function ReportsClient({ initialReports }: Props) {
             const id = String(report._id);
             const point = getReportMapPoint(report, index);
             const reportNumber = getReportNumber(index);
+            const offset = REPORT_PIN_OFFSETS[reportNumber];
             const reporterName = formatShortReporterName(report.gmName);
             const displayTitle = formatOperationReportTitle(
               report.sessionTitle,
@@ -142,6 +148,8 @@ export default function ReportsClient({ initialReports }: Props) {
             const style = {
               "--x": `${point.x}%`,
               "--y": `${point.y}%`,
+              "--pin-offset-x": offset?.x ?? "0px",
+              "--pin-offset-y": offset?.y ?? "0px",
             } as CSSProperties;
 
             return (

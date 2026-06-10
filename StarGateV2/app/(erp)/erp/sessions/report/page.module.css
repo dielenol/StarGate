@@ -51,7 +51,10 @@
   color: inherit;
   text-align: center;
   text-decoration: none;
-  transform: translate(-50%, -100%);
+  transform: translate(
+    calc(-50% + var(--pin-offset-x, 0px)),
+    calc(-100% + var(--pin-offset-y, 0px))
+  );
   transform-origin: 50% 100%;
   transition:
     filter 0.15s ease,
@@ -62,7 +65,12 @@
 .mapPin:focus-visible {
   z-index: 2;
   filter: drop-shadow(0 0 14px rgba(201, 168, 90, 0.24));
-  transform: translate(-50%, -100%) scale(1.04);
+  transform:
+    translate(
+      calc(-50% + var(--pin-offset-x, 0px)),
+      calc(-100% + var(--pin-offset-y, 0px))
+    )
+    scale(1.04);
   outline: none;
 }
 
