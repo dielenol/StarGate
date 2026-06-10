@@ -168,6 +168,94 @@
   font-weight: 600;
 }
 
+.favorabilityEditor {
+  margin-top: 18px;
+  padding: 12px;
+  background: rgba(201, 162, 74, 0.08);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+}
+
+.favorabilityEditor__field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.favorabilityEditor__field span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-1);
+  font-size: 15px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.favorabilityEditor__field input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.favorabilityEditor__field input:focus {
+  border-color: var(--gold);
+  outline: none;
+}
+
+.favorabilityEditor__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.favorabilityEditor__actions span {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.favorabilityEditor__actions button {
+  min-height: 38px;
+  padding: 8px 14px;
+  color: var(--ink-0);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  background: rgba(201, 162, 74, 0.14);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.favorabilityEditor__actions button:hover:not(:disabled),
+.favorabilityEditor__actions button:focus-visible {
+  border-color: var(--gold);
+  outline: none;
+}
+
+.favorabilityEditor__actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.favorabilityEditor__message {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 .actionConsole {
   margin-top: 20px;
 }
@@ -247,7 +335,8 @@
 
 @media (max-width: 760px) {
   .detailStats,
-  .actionGrid {
+  .actionGrid,
+  .favorabilityEditor__field {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -263,7 +352,8 @@
 
 @media (max-width: 520px) {
   .detailStats,
-  .actionGrid {
+  .actionGrid,
+  .favorabilityEditor__field {
     grid-template-columns: 1fr;
   }
 }

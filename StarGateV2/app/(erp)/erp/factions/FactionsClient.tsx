@@ -2,7 +2,8 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -53,6 +54,7 @@ export interface FactionBoardData {
   boardNodes: FactionBoardNode[];
   totals: FactionBoardTotals;
   generatedAt: string;
+  canEditFavorability: boolean;
 }
 
 interface FactionsClientProps {
@@ -109,17 +111,24 @@ function displayCode(code: string): string {
 }
 
 export default function FactionsClient({ data }: FactionsClientProps) {
+  const [boardNodes, setBoardNodes] = useState(data.boardNodes);
   const [selectedCode, setSelectedCode] =
     useState<FactionBoardCode>(DEFAULT_NODE);
   const [selectedAction, setSelectedAction] = useState<ActionId>("formal");
+  const [favorabilityDraft, setFavorabilityDraft] = useState("");
+  const [favorabilityMessage, setFavorabilityMessage] = useState<string | null>(
+    null,
+  );
+  const [isSavingFavorability, setIsSavingFavorability] = useState(false);
+  const lastFavorabilityCodeRef = useRef<FactionBoardCode | null>(null);
 
   const nodesByCode = useMemo(() => {
-    const entries = data.boardNodes.map((node) => [node.code, node] as const);
+    const entries = boardNodes.map((node) => [node.code, node] as const);
     return new Map<FactionBoardCode, FactionBoardNode>(entries);
-  }, [data.boardNodes]);
+  }, [boardNodes]);
 
   const selectedNode =
-    nodesByCode.get(selectedCode) ?? data.boardNodes[0] ?? null;
+    nodesByCode.get(selectedCode) ?? boardNodes[0] ?? null;
   const selectedActionMeta =
     ACTIONS.find((action) => action.id === selectedAction) ?? ACTIONS[0];
   const density = selectedNode ? getDensity(selectedNode) : 0;
@@ -128,6 +137,77 @@ export default function FactionsClient({ data }: FactionsClientProps) {
   const civilNode = nodesByCode.get("CIVIL");
   const whiteRoseNode = nodesByCode.get("WHITE_ROSE");
   const spaceZeroNode = nodesByCode.get("SPACE_ZERO");
+
+  useEffect(() => {
+    setFavorabilityDraft(
+      selectedNode?.favorability === null ||
+        typeof selectedNode?.favorability === "undefined"
+        ? ""
+        : selectedNode.favorability.toString(),
+    );
+    if (lastFavorabilityCodeRef.current !== (selectedNode?.code ?? null)) {
+      setFavorabilityMessage(null);
+      lastFavorabilityCodeRef.current = selectedNode?.code ?? null;
+    }
+  }, [selectedNode?.code, selectedNode?.favorability]);
+
+  async function handleFavorabilitySubmit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+    if (!selectedNode || !data.canEditFavorability || isSavingFavorability) {
+      return;
+    }
+
+    const nextFavorability = Number(favorabilityDraft);
+    if (
+      !Number.isInteger(nextFavorability) ||
+      nextFavorability < 0 ||
+      nextFavorability > 10
+    ) {
+      setFavorabilityMessage("0부터 10까지의 정수만 저장할 수 있습니다.");
+      return;
+    }
+
+    setIsSavingFavorability(true);
+    setFavorabilityMessage(null);
+
+    try {
+      const res = await fetch("/api/erp/factions/favorability", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: selectedNode.code,
+          favorability: nextFavorability,
+        }),
+      });
+
+      const payload = (await res.json()) as {
+        code?: string;
+        favorability?: number;
+        error?: string;
+      };
+
+      if (!res.ok || typeof payload.favorability !== "number" || !payload.code) {
+        throw new Error(payload.error ?? "우호도 저장에 실패했습니다.");
+      }
+
+      setBoardNodes((nodes) =>
+        nodes.map((node) =>
+          node.code === payload.code
+            ? { ...node, favorability: payload.favorability ?? null }
+            : node,
+        ),
+      );
+      setFavorabilityMessage("우호도를 저장했습니다.");
+    } catch (err) {
+      setFavorabilityMessage(
+        err instanceof Error ? err.message : "우호도 저장에 실패했습니다.",
+      );
+    } finally {
+      setIsSavingFavorability(false);
+    }
+  }
 
   function renderOrgNode(
     node: FactionBoardNode,
@@ -374,6 +454,42 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                   <b>{selectedNode.signalCount}</b>
                 </div>
               </div>
+
+              {data.canEditFavorability ? (
+                <form
+                  className={styles.favorabilityEditor}
+                  onSubmit={handleFavorabilitySubmit}
+                >
+                  <PanelTitle right={<span className={styles.panelCode}>GM</span>}>
+                    우호도 조정
+                  </PanelTitle>
+                  <label className={styles.favorabilityEditor__field}>
+                    <span>{selectedNode.label}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="1"
+                      value={favorabilityDraft}
+                      onChange={(event) =>
+                        setFavorabilityDraft(event.currentTarget.value)
+                      }
+                      aria-label={`${selectedNode.label} 우호도`}
+                    />
+                  </label>
+                  <div className={styles.favorabilityEditor__actions}>
+                    <span>0-10</span>
+                    <button type="submit" disabled={isSavingFavorability}>
+                      {isSavingFavorability ? "저장 중" : "저장"}
+                    </button>
+                  </div>
+                  {favorabilityMessage ? (
+                    <p className={styles.favorabilityEditor__message}>
+                      {favorabilityMessage}
+                    </p>
+                  ) : null}
+                </form>
+              ) : null}
 
               <div className={styles.actionConsole}>
                 <PanelTitle right={<span className={styles.panelCode}>LOCAL</span>}>

@@ -9,6 +9,7 @@ import type { UserRole } from "@/types/user";
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { listCharacters } from "@/lib/db/characters";
+import { listFactionFavorabilityOverrides } from "@/lib/db/faction-favorability";
 import { listSessionReports } from "@/lib/db/session-reports";
 import { listWikiPages } from "@/lib/db/wiki";
 import {
@@ -152,10 +153,11 @@ function addStats(
   groupCounts: Record<string, number>,
   wikiCounts: Record<string, number>,
   signalCounts: Record<string, number>,
+  favorabilityByCode: Record<string, number>,
 ): FactionBoardNode {
   return {
     ...node,
-    favorability: FAVORABILITY_BY_CODE[node.code] ?? null,
+    favorability: favorabilityByCode[node.code] ?? null,
     memberCount: groupCounts[node.code] ?? 0,
     contactCount: groupCounts[node.code] ?? 0,
     wikiCount: wikiCounts[node.code] ?? 0,
@@ -167,6 +169,7 @@ function buildBoardNodes(
   groupCounts: Record<string, number>,
   wikiCounts: Record<string, number>,
   signalCounts: Record<string, number>,
+  favorabilityByCode: Record<string, number>,
 ): FactionBoardNode[] {
   const externalNodes = EXTERNAL_FACTION_CODES.map((code) => {
     const faction = FACTIONS.find((f) => f.code === code);
@@ -185,6 +188,7 @@ function buildBoardNodes(
       groupCounts,
       wikiCounts,
       signalCounts,
+      favorabilityByCode,
     );
   });
 
@@ -205,6 +209,7 @@ function buildBoardNodes(
       groupCounts,
       wikiCounts,
       signalCounts,
+      favorabilityByCode,
     ),
   );
 
@@ -225,6 +230,7 @@ function buildBoardNodes(
       groupCounts,
       wikiCounts,
       signalCounts,
+      favorabilityByCode,
     ),
     ...INSTITUTIONS.map((institution) =>
       addStats(
@@ -244,6 +250,7 @@ function buildBoardNodes(
         groupCounts,
         wikiCounts,
         signalCounts,
+        favorabilityByCode,
       ),
     ),
   ];
@@ -252,11 +259,13 @@ function buildBoardNodes(
 }
 
 async function FactionsBody({ role }: { role: UserRole }) {
-  const [rawCharacters, rawReports, rawWikiPages] = await Promise.all([
-    listCharacters().catch(() => []),
-    listSessionReports().catch(() => []),
-    listWikiPages().catch(() => []),
-  ]);
+  const [rawCharacters, rawReports, rawWikiPages, favorabilityOverrides] =
+    await Promise.all([
+      listCharacters().catch(() => []),
+      listSessionReports().catch(() => []),
+      listWikiPages().catch(() => []),
+      listFactionFavorabilityOverrides().catch(() => ({})),
+    ]);
 
   const isGM = hasRole(role, "GM");
   const visibleCharacters = isGM
@@ -312,6 +321,10 @@ async function FactionsBody({ role }: { role: UserRole }) {
     groupCounts,
     wikiCounts,
     signalCounts,
+    {
+      ...FAVORABILITY_BY_CODE,
+      ...favorabilityOverrides,
+    },
   );
   const totals: FactionBoardTotals = {
     nodeCount: boardNodes.length,
@@ -328,6 +341,7 @@ async function FactionsBody({ role }: { role: UserRole }) {
     boardNodes,
     totals,
     generatedAt: new Date().toISOString(),
+    canEditFavorability: isGM,
   };
 
   return <FactionsClient data={data} />;
