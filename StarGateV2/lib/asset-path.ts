@@ -2,11 +2,25 @@
 // - 로컬/Vercel 루트 배포: NEXT_PUBLIC_APP_BASE_PATH 미설정(기본값 "")
 // - 서브패스 배포: NEXT_PUBLIC_APP_BASE_PATH="/StarGate" 등으로 설정
 const PUBLIC_IMAGE_EXT_RE = /\.(png|jpe?g)$/i;
+const CACHE_BUSTED_PUBLIC_IMAGES = new Set([
+  "/assets/npcs/Casey-Racer-Valkyrie-profile.webp",
+  "/assets/npcs/David-O-Callahan-Sandman-profile.webp",
+  "/assets/npcs/Igrit-profile.webp",
+  "/assets/npcs/ORSIS-201-DonaDona-profile.webp",
+  "/assets/npcs/Zulu-269-Punk-Cat-profile.webp",
+]);
+
+function applyPublicImageVersion(assetPath: string): string {
+  if (!CACHE_BUSTED_PUBLIC_IMAGES.has(assetPath)) return assetPath;
+  return `${assetPath}?v=20260611-cutout`;
+}
 
 export function preferOptimizedPublicImagePath(assetPath: string): string {
   if (!assetPath.startsWith("/assets/")) return assetPath;
-  if (!PUBLIC_IMAGE_EXT_RE.test(assetPath)) return assetPath;
-  return assetPath.replace(PUBLIC_IMAGE_EXT_RE, ".webp");
+  if (!PUBLIC_IMAGE_EXT_RE.test(assetPath)) {
+    return applyPublicImageVersion(assetPath);
+  }
+  return applyPublicImageVersion(assetPath.replace(PUBLIC_IMAGE_EXT_RE, ".webp"));
 }
 
 export function resolvePublicAssetPath(assetPath: string): string {
