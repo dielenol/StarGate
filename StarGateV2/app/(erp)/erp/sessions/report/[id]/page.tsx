@@ -22,7 +22,7 @@ import {
 import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
 import { renderMarkdown } from "@/lib/wiki-render";
 
-import { IconReportDocument } from "@/components/icons";
+import { IconBriefing } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -185,7 +185,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
 
       <section className={styles.dossierHero} aria-label="작전 보고서 요약">
         <div className={styles.dossierHero__icon} aria-hidden="true">
-          <IconReportDocument />
+          <IconBriefing />
         </div>
         <div className={styles.dossierHero__body}>
           <Eyebrow tone="gold">OPERATION REPORT</Eyebrow>

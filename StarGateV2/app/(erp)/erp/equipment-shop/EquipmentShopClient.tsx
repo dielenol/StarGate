@@ -20,6 +20,11 @@ import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
+import {
+  IconEquipment,
+  IconGridAll,
+  type IconComponent,
+} from "@/components/icons";
 
 import {
   DialogueBeepEngine,
@@ -123,10 +128,14 @@ const TOWASKI_IDLE_LINES: readonly { mood: TowaskiMood; text: string }[] = [
   { mood: "nap", text: TOWASKI_DIALOGUE_LINES.idleSleepy },
 ];
 
-const TAB_DEFS: { value: EquipmentShopTabValue; label: string }[] = [
-  { value: "ALL", label: "전체" },
-  { value: "WEAPON", label: "무기" },
-  { value: "ARMOR", label: "방어구" },
+const TAB_DEFS: {
+  value: EquipmentShopTabValue;
+  label: string;
+  icon: IconComponent;
+}[] = [
+  { value: "ALL", label: "전체", icon: IconGridAll },
+  { value: "WEAPON", label: "무기", icon: IconEquipment },
+  { value: "ARMOR", label: "방어구", icon: IconEquipment },
 ];
 
 const GROUP_LABELS: Record<Exclude<EquipmentShopTabValue, "ALL">, string> = {
@@ -669,6 +678,7 @@ export default function EquipmentShopClient({
               >
                 {TAB_DEFS.map((tab) => {
                   const isActive = activeTab === tab.value;
+                  const TabIcon = tab.icon;
                   const count =
                     tab.value === "ALL"
                       ? catalog.items.length
@@ -689,6 +699,7 @@ export default function EquipmentShopClient({
                         .join(" ")}
                       onClick={() => handleTabChange(tab.value)}
                     >
+                      <TabIcon className={styles.filters__tabIcon} aria-hidden />
                       {tab.label}
                       <span>{count}</span>
                     </button>

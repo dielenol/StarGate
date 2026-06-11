@@ -10,19 +10,19 @@ import { resolvePublicAssetPath } from "@/lib/asset-path";
 
 import type { IconComponent } from "@/components/icons";
 import {
-  IconApply,
   IconArchive,
-  IconBullet,
+  IconBoard,
+  IconBriefing,
   IconChevronDown,
   IconChevronRight,
   IconClose,
-  IconContact,
+  IconConcept,
+  IconContainment,
+  IconControl,
   IconMenu,
-  IconNotes,
-  IconPlayer,
-  IconRules,
-  IconSystem,
-  IconWorld,
+  IconPersonCard,
+  IconRegulation,
+  IconRelations,
 } from "@/components/icons";
 
 import styles from "./Sidebar.module.css";
@@ -46,18 +46,18 @@ const NAV_ITEMS: NavItem[] = [
   { label: "기밀 아카이브", href: "/", icon: IconArchive },
   {
     label: "세계관 기록",
-    icon: IconWorld,
+    icon: IconBoard,
     children: [
-      { label: "세계관", href: "/world", icon: IconBullet },
-      { label: "플레이어", href: "/world/player", icon: IconPlayer },
+      { label: "세계관", href: "/world", icon: IconConcept },
+      { label: "플레이어", href: "/world/player", icon: IconPersonCard },
     ],
   },
-  { label: "작전 내규", href: "/gameplay", icon: IconNotes },
-  { label: "노부스 오르도 룰", href: "/rules", icon: IconRules },
-  { label: "운영 시스템", href: "/erp", icon: IconSystem },
+  { label: "작전 내규", href: "/gameplay", icon: IconBriefing },
+  { label: "노부스 오르도 룰", href: "/rules", icon: IconRegulation },
+  { label: "운영 시스템", href: "/erp", icon: IconControl },
   /* 마감된 접수 창구 — 사이드바 최하단으로 내려 접근 빈도를 낮춤 */
-  { label: "입회 심사 신청", href: "/apply", icon: IconApply, closed: true },
-  { label: "기밀 문의 접수", href: "/contact", icon: IconContact, closed: true },
+  { label: "입회 심사 신청", href: "/apply", icon: IconContainment, closed: true },
+  { label: "기밀 문의 접수", href: "/contact", icon: IconRelations, closed: true },
 ];
 
 function isActivePath(pathname: string, href: string) {

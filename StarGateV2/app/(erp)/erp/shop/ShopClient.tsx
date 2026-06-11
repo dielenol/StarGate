@@ -29,6 +29,14 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
 import {
+  IconBasic,
+  IconGridAll,
+  IconPreference,
+  IconRare,
+  IconRecovery,
+  type IconComponent,
+} from "@/components/icons";
+import {
   DialogueBeepEngine,
   type DialogueBeepOptions,
 } from "@/lib/audio/dialogue-beep-engine";
@@ -140,12 +148,12 @@ const TIA_IDLE_LINES: readonly { mood: TiaMood; text: string }[] = [
   { mood: "nap", text: TIA_DIALOGUE_LINES.idleSleepy },
 ];
 
-const TAB_DEFS: { value: ShopTabValue; label: string }[] = [
-  { value: "ALL", label: "전체" },
-  { value: "BASIC", label: "기본" },
-  { value: "RECOVERY", label: "회복" },
-  { value: "LUXURY", label: "기호" },
-  { value: "RARE", label: "희귀" },
+const TAB_DEFS: { value: ShopTabValue; label: string; icon: IconComponent }[] = [
+  { value: "ALL", label: "전체", icon: IconGridAll },
+  { value: "BASIC", label: "기본", icon: IconBasic },
+  { value: "RECOVERY", label: "회복", icon: IconRecovery },
+  { value: "LUXURY", label: "기호", icon: IconPreference },
+  { value: "RARE", label: "희귀", icon: IconRare },
 ];
 
 const GROUP_LABELS: Record<ShopPageGroup, string> = {
@@ -852,6 +860,7 @@ export default function ShopClient({
               >
                 {TAB_DEFS.map((tab) => {
                   const isActive = activeTab === tab.value;
+                  const TabIcon = tab.icon;
                   const count =
                     tab.value === "ALL"
                       ? catalog.items.length
@@ -872,6 +881,7 @@ export default function ShopClient({
                         .join(" ")}
                       onClick={() => handleTabChange(tab.value)}
                     >
+                      <TabIcon className={styles.filters__tabIcon} aria-hidden />
                       {tab.label}
                       <span>{count}</span>
                     </button>

@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { CSSProperties } from "react";
 
 import { getShopItemImageSrc } from "@/lib/shop/item-images";
+import { IconGoods } from "@/components/icons";
 
 interface Props {
   slug: string;
@@ -29,22 +30,15 @@ export default function ShopItemIcon({
 
   if (!src) {
     return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 32 32"
-        shapeRendering="crispEdges"
+      <IconGoods
         className={className}
-        style={style}
+        style={{
+          width: size,
+          height: size,
+          ...style,
+        }}
         aria-hidden
-      >
-        <rect x="4" y="4" width="24" height="24" fill="#18171b" />
-        <rect x="5" y="5" width="22" height="22" fill="none" stroke="#d1b25c" />
-        <path
-          d="M13 11h6v3h-3v3h-3zM13 21h4v4h-4z"
-          fill="#d1b25c"
-        />
-      </svg>
+      />
     );
   }
 

@@ -580,6 +580,12 @@
   text-align: center;
 }
 
+.filters__tabIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 .filters__tab:hover,
 .filters__tab--active {
   border-color: var(--gold-dim);

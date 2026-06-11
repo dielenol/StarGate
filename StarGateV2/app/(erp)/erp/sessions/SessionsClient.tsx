@@ -18,6 +18,11 @@ import {
 import type { ActiveSessionCounts } from "@/lib/db/sessions";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
+import {
+  IconBriefing,
+  IconGridAll,
+  type IconComponent,
+} from "@/components/icons";
 
 import SessionCalendar from "./SessionCalendar";
 
@@ -69,12 +74,12 @@ interface SessionsClientProps {
 interface TabDef {
   key: ViewKey;
   label: string;
-  icon: string;
+  icon: IconComponent;
 }
 
 const TABS: TabDef[] = [
-  { key: "calendar", label: "달력", icon: "▦" },
-  { key: "list", label: "리스트", icon: "≡" },
+  { key: "calendar", label: "달력", icon: IconBriefing },
+  { key: "list", label: "리스트", icon: IconGridAll },
 ];
 
 interface StatusCounts {
@@ -200,7 +205,7 @@ export default function SessionsClient({
       <div className={styles.ctrl}>
         <div className={styles.ctrlRow}>
           <div className={styles.ctrlSeg} role="tablist">
-            {TABS.map(({ key, label, icon }) => (
+            {TABS.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 type="button"
@@ -209,7 +214,7 @@ export default function SessionsClient({
                 className={view === key ? styles.on : undefined}
                 onClick={() => changeView(key)}
               >
-                <span className={styles.ico}>{icon}</span>
+                <Icon className={styles.ico} aria-hidden />
                 {label}
               </button>
             ))}

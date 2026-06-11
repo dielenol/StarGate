@@ -5,10 +5,10 @@ import { useMemo, useState } from "react";
 import type { ItemCategory } from "@/types/inventory";
 
 import {
-  IconArchive,
   IconConsumable,
   IconEquipment,
   IconInventory,
+  IconMisc,
   IconSharedInventory,
   type IconComponent,
 } from "@/components/icons";
@@ -46,7 +46,7 @@ const TAB_DEFS: { value: InventoryTab; label: string; icon: IconComponent }[] =
     { value: "ALL", label: "전체", icon: IconInventory },
     { value: "EQUIPMENT", label: "장비", icon: IconEquipment },
     { value: "CONSUMABLE", label: "소모품", icon: IconConsumable },
-    { value: "OTHER", label: "기타", icon: IconArchive },
+    { value: "OTHER", label: "기타", icon: IconMisc },
   ];
 
 const SECTION_ICONS: Record<"personal" | "shared", IconComponent> = {
@@ -121,7 +121,7 @@ function CategoryIcon({
   if (category === "WEAPON" || category === "ARMOR") {
     return <IconEquipment className={styles.slot__iconSvg} aria-hidden />;
   }
-  return <IconInventory className={styles.slot__iconSvg} aria-hidden />;
+  return <IconMisc className={styles.slot__iconSvg} aria-hidden />;
 }
 
 export default function InventoryClient({

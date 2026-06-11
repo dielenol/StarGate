@@ -5,10 +5,10 @@ import Link from "next/link";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
 import {
-  IconApply,
   IconChevronRight,
-  IconContact,
+  IconContainment,
   IconDivider,
+  IconRelations,
 } from "@/components/icons";
 
 import styles from "./page.module.css";
@@ -207,7 +207,7 @@ export default function HomePage() {
                   <div className={styles["stargate__cta-outer"]}>
                     <div className={styles["stargate__cta-inner"]}>
                       <div className={styles["stargate__cta-icon"]}>
-                        <IconApply aria-hidden />
+                        <IconContainment aria-hidden />
                       </div>
                       <div className={styles["stargate__cta-title"]}>입회 심사 신청</div>
                       <div className={styles["stargate__cta-subtitle"]}>SUBMIT APPLICATION</div>
@@ -221,7 +221,7 @@ export default function HomePage() {
                   <div className={styles["stargate__cta-outer"]}>
                     <div className={styles["stargate__cta-inner"]}>
                       <div className={styles["stargate__cta-icon"]}>
-                        <IconContact aria-hidden />
+                        <IconRelations aria-hidden />
                       </div>
                       <div className={styles["stargate__cta-title"]}>기밀 문의 접수</div>
                       <div className={styles["stargate__cta-subtitle"]}>SECRET INQUIRY</div>

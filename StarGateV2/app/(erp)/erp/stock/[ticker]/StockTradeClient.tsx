@@ -35,7 +35,7 @@ import {
   useStockPrices,
 } from "@/hooks/queries/useStocksQuery";
 
-import { IconCaution, IconSuccess } from "@/components/icons";
+import { IconContainment, IconSuccess } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -495,7 +495,7 @@ export default function StockTradeClient({
           aria-live="assertive"
         >
           <div className={styles.errorToast}>
-            <IconCaution className={styles.errorToast__icon} aria-hidden />
+            <IconContainment className={styles.errorToast__icon} aria-hidden />
             <div className={styles.errorToast__body}>{errorMessage}</div>
             <button
               type="button"

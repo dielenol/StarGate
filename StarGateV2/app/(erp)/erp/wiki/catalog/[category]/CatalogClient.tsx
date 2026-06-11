@@ -8,7 +8,7 @@ import type { MasterItem } from "@/types/inventory";
 
 import {
   IconArchive,
-  IconCaution,
+  IconContainment,
   IconConsumable,
   IconEquipment,
   IconSample,
@@ -41,7 +41,7 @@ const CATALOG_TAB_ICONS: Record<CatalogScope, IconComponent> = {
   equipment: IconEquipment,
   consumable: IconConsumable,
   sample: IconSample,
-  special: IconCaution,
+  special: IconContainment,
 };
 
 const ITEM_CATEGORY_ICONS: Record<CatalogItem["category"], IconComponent> = {
@@ -49,7 +49,7 @@ const ITEM_CATEGORY_ICONS: Record<CatalogItem["category"], IconComponent> = {
   ARMOR: IconEquipment,
   CONSUMABLE: IconConsumable,
   MATERIAL: IconSample,
-  SPECIAL: IconCaution,
+  SPECIAL: IconContainment,
 };
 
 interface Props {

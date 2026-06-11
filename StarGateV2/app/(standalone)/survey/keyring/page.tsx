@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { IconCrown, IconDivider } from "@/components/icons";
+import { IconDivider, IconGoods } from "@/components/icons";
 
 import styles from "./page.module.css";
 
@@ -42,8 +42,8 @@ export default function KeyringSurveyPage() {
           {/* Hero */}
           <div className={styles.survey__hero}>
             <div className={styles.survey__emblem}>
-              <IconCrown aria-hidden />
-              <IconCrown aria-hidden />
+              <IconGoods aria-hidden />
+              <IconGoods aria-hidden />
             </div>
             <h1 className={styles.survey__title}>아크릴 키링 수요조사</h1>
             <div className={styles.survey__subtitle}>NOVUS ORDO GOODS</div>

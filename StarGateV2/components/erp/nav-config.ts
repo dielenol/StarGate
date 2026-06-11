@@ -7,25 +7,25 @@
 
 import type { IconComponent } from "@/components/icons";
 import {
-  IconAccount,
-  IconApply,
+  IconAdminBureau,
+  IconAll,
   IconArchive,
-  IconCredit,
-  IconCrown,
-  IconDashboard,
+  IconBasic,
+  IconBriefing,
+  IconClearance,
+  IconConcept,
+  IconContainment,
+  IconControl,
+  IconEmblem,
   IconEquipment,
+  IconFactionMap,
+  IconFinance,
   IconInventory,
-  IconMembers,
-  IconNotification,
+  IconMain,
   IconPersonCard,
-  IconReportDocument,
-  IconSession,
-  IconShop,
-  IconStock,
-  IconSystem,
-  IconUserAdmin,
-  IconWiki,
-  IconWorld,
+  IconRegulation,
+  IconRelations,
+  IconTransactions,
 } from "@/components/icons";
 
 import type { UserRole } from "@/types/user";
@@ -56,18 +56,18 @@ export const NAV_GROUPS: NavGroup[] = [
     key: "me",
     label: "내 정보",
     items: [
-      { label: "대시보드", keywords: "dashboard", icon: IconDashboard, href: "/erp" },
-      { label: "계정", keywords: "account password discord settings", icon: IconAccount, href: "/erp/account" },
-      { label: "알림", keywords: "notifications", icon: IconNotification, href: "/erp/notifications" },
+      { label: "대시보드", keywords: "dashboard", icon: IconEmblem, href: "/erp" },
+      { label: "계정", keywords: "account password discord settings", icon: IconClearance, href: "/erp/account" },
+      { label: "알림", keywords: "notifications", icon: IconBriefing, href: "/erp/notifications" },
     ],
   },
   {
     key: "activity",
     label: "활동",
     items: [
-      { label: "세션", keywords: "sessions", icon: IconSession, href: "/erp/sessions" },
+      { label: "세션", keywords: "sessions", icon: IconBriefing, href: "/erp/sessions" },
       /* 미션 보드 — 콘텐츠 준비중 (page.tsx 는 placeholder). */
-      { label: "미션 보드", keywords: "missions", icon: IconApply, href: null },
+      { label: "미션 보드", keywords: "missions", icon: IconContainment, href: null },
     ],
   },
   {
@@ -75,10 +75,10 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "인물·조직",
     items: [
       { label: "캐릭터", keywords: "characters person", icon: IconPersonCard, href: "/erp/characters" },
-      { label: "신원조회", keywords: "identity personnel", icon: IconMembers, href: "/erp/personnel" },
-      { label: "세력도", keywords: "factions diplomacy influence 세력 관계도 외교", icon: IconWorld, href: "/erp/factions" },
+      { label: "신원조회", keywords: "identity personnel", icon: IconAll, href: "/erp/personnel" },
+      { label: "세력도", keywords: "factions diplomacy influence 세력 관계도 외교", icon: IconFactionMap, href: "/erp/factions" },
       /* 명예의 전당 — 콘텐츠 준비중. */
-      { label: "명예의 전당", keywords: "hall of fame", icon: IconCrown, href: null },
+      { label: "명예의 전당", keywords: "hall of fame", icon: IconMain, href: null },
     ],
   },
   {
@@ -86,23 +86,23 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "자산",
     items: [
       { label: "인벤토리", keywords: "inventory equipment gear weapon armor items 장비", icon: IconInventory, href: "/erp/inventory" },
-      { label: "크레딧", keywords: "credits", icon: IconCredit, href: "/erp/credits" },
+      { label: "크레딧", keywords: "credits", icon: IconFinance, href: "/erp/credits" },
       /* 편의점 · 주식 — M1 stub. M2/M3 에서 본 구현 활성화. */
-      { label: "편의점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconShop, href: "/erp/shop" },
+      { label: "편의점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconBasic, href: "/erp/shop" },
       { label: "장비 판매점", keywords: "equipment shop armory weapon armor gear 장비 판매점 무기 방어구 토와스키", icon: IconEquipment, href: "/erp/equipment-shop" },
-      { label: "주식", keywords: "stock market 주식 증권", icon: IconStock, href: "/erp/stock" },
+      { label: "주식", keywords: "stock market 주식 증권", icon: IconTransactions, href: "/erp/stock" },
     ],
   },
   {
     key: "library",
     label: "자료실",
     items: [
-      { label: "위키", keywords: "wiki", icon: IconWiki, href: "/erp/wiki" },
-      { label: "작전 보고서", keywords: "report session archive operation 작전 보고서 세션 리포트 작전 기록", icon: IconReportDocument, href: "/erp/sessions/report" },
+      { label: "위키", keywords: "wiki", icon: IconConcept, href: "/erp/wiki" },
+      { label: "작전 보고서", keywords: "report session archive operation 작전 보고서 세션 리포트 작전 기록", icon: IconBriefing, href: "/erp/sessions/report" },
       { label: "기록보관소", keywords: "catalog archive records equipment weapon armor consumable material sample evidence special 기록보관소 장비 소모품 샘플 물증 특수", icon: IconArchive, href: "/erp/wiki/catalog/all" },
       /* 갤러리 · 연대기 — 콘텐츠 준비중. */
       { label: "갤러리", keywords: "gallery", icon: IconArchive, href: null },
-      { label: "연대기", keywords: "chronicle", icon: IconWorld, href: null },
+      { label: "연대기", keywords: "chronicle", icon: IconRelations, href: null },
     ],
   },
   {
@@ -110,12 +110,12 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "관리 · GM 전용",
     minRole: "GM",
     items: [
-      /* 관리자 대시보드 — 콘텐츠 준비중. 계정 메뉴(IconSystem)와 시각 충돌 회피 위해 IconCrown 사용. */
-      { label: "관리자", keywords: "admin", icon: IconCrown, href: null },
-      { label: "사용자 관리", keywords: "users admin", icon: IconUserAdmin, href: "/erp/admin/users" },
-      { label: "크레딧 운영", keywords: "credits admin grant op pool 작전풀", icon: IconCredit, href: "/erp/admin/credits" },
-      { label: "주식 운영", keywords: "stocks admin market price 주식 시세", icon: IconStock, href: "/erp/admin/stocks" },
-      { label: "대사 비프 테스트", keywords: "dialogue beep audio npc hud undertale", icon: IconSystem, href: "/erp/admin/dialogue-beep" },
+      /* 관리자 대시보드 — 콘텐츠 준비중. */
+      { label: "관리자", keywords: "admin", icon: IconControl, href: null },
+      { label: "사용자 관리", keywords: "users admin", icon: IconAdminBureau, href: "/erp/admin/users" },
+      { label: "크레딧 운영", keywords: "credits admin grant op pool 작전풀", icon: IconFinance, href: "/erp/admin/credits" },
+      { label: "주식 운영", keywords: "stocks admin market price 주식 시세", icon: IconTransactions, href: "/erp/admin/stocks" },
+      { label: "대사 비프 테스트", keywords: "dialogue beep audio npc hud undertale", icon: IconRegulation, href: "/erp/admin/dialogue-beep" },
       { label: "인벤토리 운영", keywords: "inventory admin grant items 지급 마스터", icon: IconInventory, href: "/erp/admin/inventory" },
       { label: "캐릭터 등록", keywords: "character person register import", icon: IconPersonCard, href: "/erp/admin/characters/import" },
     ],

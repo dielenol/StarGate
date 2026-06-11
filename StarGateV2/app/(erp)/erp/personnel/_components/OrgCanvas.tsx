@@ -49,6 +49,9 @@ export default function OrgCanvas({
   const externalFactions = FACTIONS.filter(
     (f) => f.scope === "external" && f.code !== "HOSTILE",
   );
+  const hostileSubOrgs = EXTERNAL_SUB_ORGS.filter(
+    (org) => org.parentCode === "HOSTILE",
+  );
   const factionsOrdered = [...externalFactions].sort((a, b) => {
     const order = (code: string) =>
       code === "COUNCIL" ? 0 : code === "MILITARY" ? 1 : 2;
@@ -441,6 +444,82 @@ export default function OrgCanvas({
             </div>
           </div>
         </div>
+
+        {hostileSubOrgs.length > 0 ? (
+          <div className={styles.hostileArea}>
+            <div className={styles.sectionTitle}>
+              적대세력 · HOSTILE FACTIONS
+            </div>
+            <div className={styles.hostileNodes}>
+              {hostileSubOrgs.map((org) => {
+                const logo = preferOptimizedPublicImagePath(org.logoUrl);
+                const count = groupCounts[org.code] ?? 0;
+                return (
+                  <button
+                    key={org.code}
+                    type="button"
+                    className={[
+                      styles.node,
+                      styles["node--lg"],
+                      styles.subOrgNode,
+                      styles.hostileNode,
+                    ].join(" ")}
+                    data-suborg={org.code}
+                    onClick={() => onSelect(org.parentCode, org.code)}
+                    aria-label={`${org.label} (${count}명)`}
+                  >
+                    <span className={styles.tl} />
+                    <span className={styles.br} />
+
+                    {logo ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={logo}
+                          alt=""
+                          className={styles.node__watermark}
+                          aria-hidden
+                        />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={logo}
+                          alt=""
+                          className={styles.subOrgLogo}
+                          aria-hidden
+                        />
+                      </>
+                    ) : null}
+
+                    <div className={styles.node__header}>
+                      <div className={styles.node__headerTop}>
+                        <OrgIcon
+                          code="HOSTILE"
+                          size={20}
+                          className={styles.node__headerIcon}
+                        />
+                        <div className={styles.code}>
+                          {displayCode(org.code)}
+                        </div>
+                      </div>
+                      <div className={styles.label}>{org.label}</div>
+                      <div className={styles.subOrgParent}>
+                        {org.parentLabel}
+                      </div>
+                    </div>
+
+                    <div className={styles.node__section}>
+                      <div className={styles.node__sectionLabel}>HEADCOUNT</div>
+                      <div className={styles.headcount}>
+                        <span className={styles.headcount__n}>{count}</span>
+                        <span className={styles.headcount__u}>MEMBERS</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         {/* 미배정 — 본부/외부 어느 영역에도 속하지 않는 별도 박스. 두 컬럼 span. */}
         {hasUnassigned && (

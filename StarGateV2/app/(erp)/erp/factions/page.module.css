@@ -6,7 +6,7 @@
 
 .board {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.75fr);
+  grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.68fr);
   gap: var(--gap);
   align-items: start;
 }
@@ -29,7 +29,11 @@
 }
 
 .orgInner {
-  max-width: 760px;
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) minmax(230px, 0.42fr);
+  gap: 24px;
+  align-items: stretch;
+  max-width: 1120px;
   margin-inline: auto;
 }
 
@@ -43,13 +47,6 @@
 .orgNodeActive {
   border-color: var(--gold);
   box-shadow: 0 0 0 1px rgba(201, 162, 74, 0.18);
-}
-
-.hostileNetwork {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 18px;
 }
 
 .briefing {
@@ -348,11 +345,16 @@
   }
 }
 
+@media (max-width: 980px) {
+  .orgInner {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 760px) {
   .detailStats,
   .actionGrid,
-  .favorabilityEditor__field,
-  .hostileNetwork {
+  .favorabilityEditor__field {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -369,8 +371,7 @@
 @media (max-width: 520px) {
   .detailStats,
   .actionGrid,
-  .favorabilityEditor__field,
-  .hostileNetwork {
+  .favorabilityEditor__field {
     grid-template-columns: 1fr;
   }
 }
