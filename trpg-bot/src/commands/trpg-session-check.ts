@@ -87,7 +87,7 @@ function buildSessionFields(sessions: TrpgSession[]) {
     return [
       {
         name: "세션 목록",
-        value: "이번 달에 등록된 세션이 없습니다.",
+        value: "표시할 세션이 없습니다.",
         inline: false,
       },
     ];
@@ -141,16 +141,16 @@ function buildSessionFields(sessions: TrpgSession[]) {
 
 function buildMonthlySummary(sessions: TrpgSession[], todayKey: string): string {
   const todayCount = sessions.filter((s) => s.date === todayKey).length;
-  const upcomingCount = sessions.filter((s) => s.date >= todayKey).length;
+  const upcomingCount = sessions.filter((s) => s.date > todayKey).length;
   const participantTotal = sessions.reduce(
     (sum, s) => sum + s.participantDiscordIds.length,
     0,
   );
 
   return [
-    `총 세션: **${sessions.length}건**`,
+    `표시 세션: **${sessions.length}건**`,
     `오늘 일정: **${todayCount}건**`,
-    `예정 일정: **${upcomingCount}건**`,
+    `이후 일정: **${upcomingCount}건**`,
     `참가 대상 누적: **${participantTotal}명**`,
   ].join("\n");
 }
@@ -175,8 +175,8 @@ function buildCalendarResponse({
   const title = `${year}년 ${month}월 TRPG 세션`;
   const description =
     sessions.length === 0
-      ? "등록된 세션이 없습니다. 새 일정이 생기면 이곳에 표시됩니다."
-      : `이번 달 등록된 세션은 총 ${sessions.length}건입니다.`;
+      ? "오늘 이후 표시할 세션이 없습니다."
+      : `오늘 이후 표시되는 세션은 총 ${sessions.length}건입니다.`;
 
   const embed = new EmbedBuilder()
     .setColor(CALENDAR_EMBED_COLOR)
@@ -253,10 +253,14 @@ export async function handleTrpgSessionCheck(
   const todayDay = year === now.year && month === now.month ? now.day : null;
 
   try {
-    const sessions = await findTrpgSessionsByMonth(
+    const monthlySessions = await findTrpgSessionsByMonth(
       config.trpgGuildId,
       year,
       month,
+    );
+    // date는 YYYY-MM-DD라 문자열 비교로 KST 기준 오늘 이전 일정을 제외할 수 있다.
+    const sessions = monthlySessions.filter(
+      (session) => session.date >= todayKey,
     );
 
     const baseUrl = config.trpgWebBaseUrl;
