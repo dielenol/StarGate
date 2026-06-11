@@ -231,7 +231,7 @@ function buildHtml(params: {
   }
   .grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 3px;
     background: #11121a;
     padding: 3px;
@@ -239,6 +239,7 @@ function buildHtml(params: {
     border: 1px solid #2f303a;
   }
   .wd {
+    min-width: 0;
     text-align: center;
     font-size: 11px;
     padding: 5px 0;
@@ -249,6 +250,7 @@ function buildHtml(params: {
   .wd:nth-child(1) { color: #ff7676; }
   .wd:nth-child(7) { color: #76aaff; }
   .cell {
+    min-width: 0;
     min-height: 76px;
     background: #181923;
     border-radius: 4px;
@@ -283,6 +285,7 @@ function buildHtml(params: {
     gap: 2px;
   }
   .entry {
+    min-width: 0;
     display: flex;
     gap: 3px;
     align-items: baseline;
@@ -298,6 +301,7 @@ function buildHtml(params: {
     flex-shrink: 0;
   }
   .entry .ti {
+    min-width: 0;
     color: #e5e7ee;
     overflow: hidden;
     text-overflow: ellipsis;
