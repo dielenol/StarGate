@@ -1,0 +1,126 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "EXPERIMENT_88",
+      "type": "NPC",
+      "role": "아넨에르베 \"광명회\" 관련 실험체",
+      "department": "AHNENERBE",
+      "factionCode": "AHNENERBE",
+      "previewImage": "/assets/npcs/Experiment-88-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "실험체 88",
+        "nameEn": "Experiment 88",
+        "nickname": "크리스",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "금발을 가진 인물형 실험체. 검은 장식복과 금색 문양, 비인간적이거나 개조된 것으로 보이는 신체 요소가 함께 확인된다. 기록상 혈청 교체 작업 이후 인간의 흔적이 거의 남지 않은 상태로 분류되었다.",
+        "personality": "의식은 명료하지만 극심한 고통과 자기혐오가 확인된다. 자신이 괴물로 만들어졌다고 인식하며, 실험을 계속하려는 연구진을 향해 살해 또는 중지를 요구했다.",
+        "background": "3화 기록의 83년 전 실험실 장면에서 실험체 88은 극장에서 찾아낸 인물로 보고되었다. 연구진은 모든 혈청 교체 작업이 성공했으며 인간의 흔적을 찾기 어렵다고 보고했고, 오틸리아는 그를 크리스라고 불렀다. 현재 시점에서 생존 여부, 자율성, 광명회 내 지위는 확정되지 않았다.",
+        "quote": "널 심판하는 것은 미래가 아니야. 과거의 망령이지.",
+        "mainImage": "/assets/npcs/Experiment-88-profile.webp",
+        "loreTags": ["적대세력", "아넨에르베", "광명회", "실험체", "망령", "크리스"],
+        "appearsInEvents": ["NOSB-S1E3-PHANTOM"],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E3-PHANTOM",
+            "role": "아넨에르베 \"광명회\" 관련 실험체",
+            "summary": "83년 전 실험실 장면에서 혈청 교체 실험을 거쳐 인간성을 상실한 실험체로 확인되었다. 오틸리아는 그를 크리스라고 불렀고, 실험체 88은 자신이 괴물이 되었다고 말하며 죽음을 요구했다.",
+            "sourceLabel": "NOVUS ORDO 보존기록 S1E3 망령",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 관리 대상: 아넨에르베 \"광명회\" 관련 적대 개체 후보\n- 업무 범위: 없음. 작전상 추적 및 교전 가능 대상으로 분류\n- NPC 특성: 실험체, 적대세력 관련 인물, 과거 연구 기록의 핵심 피험체\n- 등장 방식: S1E3 망령 기록의 83년 전 실험실 장면",
+        "notes": "EXPERIMENT_88은 기록상 호명된 실험체 번호를 그대로 보존한 코드네임이다. 크리스는 오틸리아가 사용한 호칭으로, 본명 또는 실험 이전의 이름일 가능성이 있으나 현재 확정 기록은 부족하다."
+      },
+      "loreMd": "## 대사\n> 그냥 죽여...\n\n> 널 심판하는 것은 미래가 아니야. 과거의 망령이지.\n\n## 외형\n금발을 가진 인물형 실험체. 검은 장식복과 금색 문양, 비인간적이거나 개조된 것으로 보이는 신체 요소가 함께 확인된다.\n\n## 성격\n의식은 명료하지만 극심한 고통과 자기혐오가 확인된다.\n\n## 배경\n3화 기록의 83년 전 실험실 장면에서 실험체 88은 극장에서 찾아낸 인물로 보고되었다. 오틸리아는 그를 크리스라고 불렀다.",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "factions",
+    "type": "hostile-classification",
+    "payload": {
+      "code": "HOSTILE",
+      "slug": "hostile",
+      "label": "적대세력",
+      "labelEn": "Hostile Forces",
+      "scope": "external",
+      "summary": "노부스 오르도 작전 기록에서 적대 또는 충돌 대상으로 분류되는 비정규 세력군.",
+      "ideology": "단일 이념 조직이 아니라 작전상 충돌 대상으로 묶이는 행정 분류다.",
+      "relationships": [
+        { "targetCode": "NOVUS_ORDO", "type": "rival", "note": "작전상 대응 주체" },
+        { "targetCode": "GOLDEN_DAWN", "type": "subordinate", "note": "적대세력 하위 분류" },
+        { "targetCode": "AHNENERBE", "type": "subordinate", "note": "적대세력 하위 분류" }
+      ],
+      "notableMembers": ["EXPERIMENT_88"],
+      "tags": ["적대세력", "위협", "작전대상"],
+      "isPublic": true,
+      "source": "manual",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "factions",
+    "type": "hostile-faction",
+    "payload": {
+      "code": "GOLDEN_DAWN",
+      "slug": "golden-dawn",
+      "label": "황금여명회",
+      "labelEn": "Golden Dawn",
+      "scope": "external",
+      "summary": "NOSB S1E3 망령 기록에서 적대 컬트 세력으로 분류된 비정규 조직.",
+      "ideology": "정확한 교리와 조직 계통은 확정되지 않았으나, 연극적 의식과 생사박탈권을 이용한 심리전을 작전 방식으로 드러냈다.",
+      "relationships": [
+        { "targetCode": "HOSTILE", "type": "parent", "note": "적대세력 분류" },
+        { "targetCode": "NOVUS_ORDO", "type": "rival", "note": "작전상 대응 주체" }
+      ],
+      "notableMembers": [],
+      "tags": ["황금여명회", "적대세력", "컬트", "S1E3", "망령"],
+      "isPublic": true,
+      "source": "manual",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "faction-wiki",
+    "payload": {
+      "slug": "golden-dawn",
+      "title": "황금여명회",
+      "category": "세력",
+      "tags": ["GOLDEN_DAWN", "황금여명회", "적대세력", "S1E3", "망령"],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제국 문서관",
+      "content": "# 황금여명회\n\n황금여명회는 NOSB S1E3 망령 기록에서 적대 컬트 세력으로 분류된 비정규 조직이다. 현재 공개 기록상 정확한 교리와 지휘 계통은 확정되지 않았으며, 노부스 오르도 세력도에서는 `적대세력` 하위 분류로 추적된다.\n\n## 요약 정보\n분류: 적대세력 / 비정규 컬트 조직\n관련 작전: NOSB-S1E3-PHANTOM\n확인 인물: 지휘자\n상태: 조직 구조, 교리, 후속 작전 목표 조사 필요\n\n## S1E3 기록 보강\n오페라 하우스 주변에서 황금여명회 컬트원이 확인되었고, 이후 `지휘자`가 무대와 관객석을 연상시키는 연출 속에서 노부스 오르도에게 모습을 드러냈다. 그는 48시간 안에 시드니 파괴를 막아보라는 도전을 고지했고, 이후 포로와 세계이사회 VIP를 내세워 생사박탈권을 논하는 심리전을 제안했다.\n\n## 주요 인물\n- 지휘자: 황금여명회 측 지휘 개체. 연극적 연출과 협상 판 설계, 포로를 이용한 심리전을 수행했다. 현재 본명과 조직 내 정식 계급은 미확정이다.\n\n## 기록 출처\nNOVUS ORDO 보존기록 S1E3 망령.",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki",
+    "payload": {
+      "slug": "montauk-project-slaughter-hound",
+      "title": "#몬탁 프로젝트 - 도살견",
+      "category": "개체",
+      "tags": ["몬탁 프로젝트", "도살견", "아르고 기지", "S1E3", "망령"],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제국 문서관",
+      "content": "# #몬탁 프로젝트 - 도살견\n\n`#몬탁 프로젝트 - 도살견`은 NOSB S1E3 망령 기록에서 확인된 아르고 기지 탈주 전술병기다. 현재 기록상 몬탁 프로젝트의 전모, 회수 후 처리 경로, 책임 소재가 확정되지 않아 미해결 개체로 유지한다.\n\n## 요약 정보\n분류: 적대세력 / 탈주 전략병기\n관련 작전: NOSB-S1E3-PHANTOM\n관련 장소: 네바다 주 아르고 기지\n관측 장치: 이마 부위 행동물질 제어기\n상태: 미군 인도 보고, 후속 처리 미확정\n\n## 관측 기록\n광명회 금괴 추적과 내부 첩자 조사 과정에서 아르고 기지의 별도 문제가 드러났고, 도살견 프로그램은 기지 인원을 전멸시킨 뒤 도주한 것으로 보고되었다. 교전 중 개체는 목표를 발견하면 흥분 상태로 돌진했고, 행동물질 제어기와 관련된 반응이 확인되었다.\n\n## 사후 처리\n작전 후 마리아는 도살견을 미군에 넘겼다고 보고했다. 다만 해당 인도가 몬탁 프로젝트 문제를 해결했다는 의미는 아니며, 프로그램의 책임자, 통제 기술, 회수 후 재운용 가능성은 후속 조사 대상으로 남긴다.\n\n## 기록 출처\nNOVUS ORDO 보존기록 S1E3 망령.",
+      "createdAt": "2026-04-27T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  }
+]
