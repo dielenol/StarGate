@@ -1,0 +1,323 @@
+[
+  {
+    "collection": "characters",
+    "filter": {
+      "$or": [
+        {
+          "codename": "PUCK_ASSHOLE"
+        },
+        {
+          "codename": "PERK_ESHHALL"
+        }
+      ]
+    },
+    "update": {
+      "$set": {
+        "codename": "PERK_ESHHALL",
+        "role": "NOGA단 수장",
+        "factionCode": "MILITARY",
+        "institutionCode": "",
+        "department": "MILITARY",
+        "isPublic": true,
+        "previewImage": "/assets/npcs/Puck-Asshole-profile.webp",
+        "source": "manual",
+        "updatedAt": "2026-06-11T00:00:00.000Z",
+        "lore": {
+          "name": "퍼크슈타인 에스홀",
+          "nameEn": "Perk Esshall",
+          "nickname": "",
+          "gender": "남성",
+          "age": "41",
+          "height": "189cm",
+          "weight": "미상",
+          "appearance": "기본적으로 상의를 탈의하고 노란색으로 물들인 머리가 눈에 띄는 초로의 남성. 근육이 매우 많다.",
+          "personality": "욕심이 많고 자기실현 욕구가 출중한 남성. NOGA단을 운영하면서 여러 세력에게 돈과 무기를 지원받아 자신의 세를 불리고자 한다.",
+          "background": "퍼크슈타인 에스홀은 영국 출신의 폭력배다. 영국의 가난한 노동자 계층 출신인 퍼크슈타인은 NOGA 사상에 전도되어 자신의 모든 불행이 비인간 괴물들에게 비롯됐다고 판단했다. 그는 뉴 더블린으로 건너가 NOGA 조직을 차리고 자신들의 사상을 퍼뜨려 뉴 더블린을 순수한 인간의 도시로 바꾸려 한다.",
+          "quote": "\"인간은 지배하는 생물. 비인간은 지배당하는 노예다.\"",
+          "mainImage": "/assets/npcs/Puck-Asshole-profile.webp",
+          "loreTags": [
+            "군부",
+            "뉴더블린",
+            "NOGA",
+            "NovusOrdoGreatAgain",
+            "인류우월주의",
+            "폭력단체",
+            "MAKEHUMANGREATAGAIN",
+            "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "MINI-S1E1"
+          ],
+          "appearsInEvents": [
+            "NOSB-MINI-S1E1-NEW-DUBLIN"
+          ],
+          "sessionAppearances": [
+            {
+              "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+              "role": "NOGA단 수장",
+              "summary": "퍼크슈타인 에스홀은 뉴 더블린 NOGA 조직을 이끈 영국 출신 폭력배로, 인류 우월주의 구호를 내세워 현장팀과 교전한 뒤 현장에서 사망했다.",
+              "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI B1 : 뉴 더블린」",
+              "updatedAt": "2026-06-11T00:00:00.000Z"
+            }
+          ],
+          "relations": [],
+          "roleDetail": "- 직업: NOGA단 수장\n- 출신: 영국 노동자 계층\n- 활동지: 뉴 더블린\n- 목표: NOGA 사상 확산, 뉴 더블린을 순수한 인간의 도시로 전환\n- 최종 상태: 뉴 더블린 NOGA 거점 진압 중 사망\n- 후속 단서: 무기와 지시를 제공한 미확인 여성 / 이그리트 라인\n- 능력명: MAKE HUMAN GREAT AGAIN\n- A1: 야구빠따를 강력한 힘으로 휘두른다.\n- A2: 눈빛으로 특정 대상의 의지를 꺾는다.",
+          "notes": "어느 인물과 똑 닮았지만 아무런 관계도 없다."
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "filter": {
+      "codename": "IGRIT"
+    },
+    "update": [
+      {
+        "$set": {
+          "updatedAt": "2026-06-11T00:00:00.000Z",
+          "lore.background": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": "$lore.background",
+                  "find": "퍼크슈타인 애스홀",
+                  "replacement": "퍼크슈타인 에스홀"
+                }
+              },
+              "find": "퍽 애스홀",
+              "replacement": "퍼크슈타인 에스홀"
+            }
+          },
+          "lore.sessionAppearances": {
+            "$map": {
+              "input": {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              "as": "appearance",
+              "in": {
+                "$mergeObjects": [
+                  "$$appearance",
+                  {
+                    "summary": {
+                      "$replaceAll": {
+                        "input": {
+                          "$replaceAll": {
+                            "input": {
+                              "$ifNull": [
+                                "$$appearance.summary",
+                                ""
+                              ]
+                            },
+                            "find": "퍼크슈타인 애스홀",
+                            "replacement": "퍼크슈타인 에스홀"
+                          }
+                        },
+                        "find": "퍽 애스홀",
+                        "replacement": "퍼크슈타인 에스홀"
+                      }
+                    },
+                    "updatedAt": "2026-06-11T00:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "lore.relations": {
+            "$map": {
+              "input": {
+                "$ifNull": [
+                  "$lore.relations",
+                  []
+                ]
+              },
+              "as": "relation",
+              "in": {
+                "$mergeObjects": [
+                  "$$relation",
+                  {
+                    "targetCodename": {
+                      "$cond": [
+                        {
+                          "$eq": [
+                            "$$relation.targetCodename",
+                            "PUCK_ASSHOLE"
+                          ]
+                        },
+                        "PERK_ESHHALL",
+                        "$$relation.targetCodename"
+                      ]
+                    },
+                    "targetName": {
+                      "$replaceAll": {
+                        "input": {
+                          "$replaceAll": {
+                            "input": {
+                              "$ifNull": [
+                                "$$relation.targetName",
+                                ""
+                              ]
+                            },
+                            "find": "퍼크슈타인 애스홀",
+                            "replacement": "퍼크슈타인 에스홀"
+                          }
+                        },
+                        "find": "퍽 애스홀",
+                        "replacement": "퍼크슈타인 에스홀"
+                      }
+                    },
+                    "summary": {
+                      "$replaceAll": {
+                        "input": {
+                          "$replaceAll": {
+                            "input": {
+                              "$ifNull": [
+                                "$$relation.summary",
+                                ""
+                              ]
+                            },
+                            "find": "퍼크슈타인 애스홀",
+                            "replacement": "퍼크슈타인 에스홀"
+                          }
+                        },
+                        "find": "퍽 애스홀",
+                        "replacement": "퍼크슈타인 에스홀"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "filter": {
+      "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN"
+    },
+    "update": [
+      {
+        "$set": {
+          "updatedAt": "2026-06-11T00:00:00.000Z",
+          "summary": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": "$summary",
+                      "find": "퍼크슈타인 애스홀",
+                      "replacement": "퍼크슈타인 에스홀"
+                    }
+                  },
+                  "find": "퍽 애스홀",
+                  "replacement": "퍼크슈타인 에스홀"
+                }
+              },
+              "find": "Puck Asshole",
+              "replacement": "Perk Esshall"
+            }
+          },
+          "highlights": {
+            "$map": {
+              "input": {
+                "$ifNull": [
+                  "$highlights",
+                  []
+                ]
+              },
+              "as": "highlight",
+              "in": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": {
+                        "$replaceAll": {
+                          "input": "$$highlight",
+                          "find": "퍼크슈타인 애스홀",
+                          "replacement": "퍼크슈타인 에스홀"
+                        }
+                      },
+                      "find": "퍽 애스홀",
+                      "replacement": "퍼크슈타인 에스홀"
+                    }
+                  },
+                  "find": "Puck Asshole",
+                  "replacement": "Perk Esshall"
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "filter": {
+      "slug": "mini-s1e1-new-dublin"
+    },
+    "update": [
+      {
+        "$set": {
+          "updatedAt": "2026-06-11T00:00:00.000Z",
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": "$content",
+                      "find": "퍼크슈타인 애스홀",
+                      "replacement": "퍼크슈타인 에스홀"
+                    }
+                  },
+                  "find": "퍽 애스홀",
+                  "replacement": "퍼크슈타인 에스홀"
+                }
+              },
+              "find": "Puck Asshole",
+              "replacement": "Perk Esshall"
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "filter": {
+      "slug": "noga"
+    },
+    "update": [
+      {
+        "$set": {
+          "updatedAt": "2026-06-11T00:00:00.000Z",
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": "$content",
+                      "find": "퍼크슈타인 애스홀",
+                      "replacement": "퍼크슈타인 에스홀"
+                    }
+                  },
+                  "find": "퍽 애스홀",
+                  "replacement": "퍼크슈타인 에스홀"
+                }
+              },
+              "find": "Puck Asshole",
+              "replacement": "Perk Esshall"
+            }
+          }
+        }
+      }
+    ]
+  }
+]
