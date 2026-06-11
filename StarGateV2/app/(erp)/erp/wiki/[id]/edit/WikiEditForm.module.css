@@ -4,7 +4,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  max-width: 1100px;
+  width: 100%;
+  max-width: none;
 }
 
 /* Field layout */
@@ -60,7 +61,7 @@
 
 .editor {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
   gap: 14px;
 }
 
@@ -88,7 +89,7 @@
   font-size: 14px;
   line-height: 1.6;
   letter-spacing: 0.02em;
-  min-height: 484px;
+  min-height: clamp(520px, 58vh, 760px);
   resize: vertical;
 }
 
@@ -102,7 +103,7 @@
 }
 
 .preview {
-  min-height: 484px;
+  min-height: clamp(520px, 58vh, 760px);
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
