@@ -26,7 +26,7 @@ import { renderTrpgCalendarPng } from "../utils/trpg-calendar-image.js";
 
 const CALENDAR_EMBED_COLOR = 0xc5a059;
 const CALENDAR_FOOTER = "다채로운 TRPG Calendar";
-const EMBED_FIELD_VALUE_MAX = 1024;
+const EMBED_FIELD_NAME_MAX = 256;
 const MAX_LISTED_SESSIONS = 12;
 const MAX_PARTICIPANT_MENTIONS = 16;
 
@@ -68,17 +68,23 @@ function formatParticipantMentions(userIds: string[]): string {
   return `${userIds.length}명 - ${listed.map((id) => `<@${id}>`).join(" ")}${suffix}`;
 }
 
-function formatSessionBlock(session: TrpgSession): string {
+function formatSessionFieldName(session: TrpgSession, index: number): string {
+  const monthDay = session.date.slice(5).replace("-", "/");
+  const name = `${String(index + 1).padStart(2, "0")}. ${monthDay} ${session.startTime} · ${session.title}`;
+  if (name.length <= EMBED_FIELD_NAME_MAX) return name;
+  return `${name.slice(0, EMBED_FIELD_NAME_MAX - 1)}…`;
+}
+
+function formatSessionFieldValue(session: TrpgSession): string {
   const unix = sessionDateTimeToUnix(session.date, session.startTime);
   const when =
     unix === null
       ? `${session.date} ${session.startTime} (KST)`
       : `<t:${unix}:F> · <t:${unix}:R>`;
   return [
-    `**${session.title}**`,
-    `일시: ${when}`,
-    `마스터: ${session.createdByUsername}`,
-    `참가: ${formatParticipantMentions(session.participantDiscordIds)}`,
+    `\`일시\` ${when}`,
+    `\`마스터\` ${session.createdByUsername}`,
+    `\`참가\` ${formatParticipantMentions(session.participantDiscordIds)}`,
   ].join("\n");
 }
 
@@ -95,43 +101,20 @@ function buildSessionFields(sessions: TrpgSession[]) {
 
   const listed = sessions.slice(0, MAX_LISTED_SESSIONS);
   const fields: { name: string; value: string; inline: false }[] = [];
-  let current = "";
 
-  for (const session of listed) {
-    const block = formatSessionBlock(session);
-    const next = current.length === 0 ? block : `${current}\n\n${block}`;
-    if (next.length > EMBED_FIELD_VALUE_MAX && current.length > 0) {
-      fields.push({
-        name: fields.length === 0 ? "세션 목록" : `세션 목록 ${fields.length + 1}`,
-        value: current,
-        inline: false,
-      });
-      current = block;
-    } else {
-      current = next;
-    }
+  for (const [index, session] of listed.entries()) {
+    fields.push({
+      name: formatSessionFieldName(session, index),
+      value: formatSessionFieldValue(session),
+      inline: false,
+    });
   }
 
   const rest = sessions.length - listed.length;
   if (rest > 0) {
-    const restLine = `외 ${rest}건은 웹 캘린더에서 확인할 수 있습니다.`;
-    const next = current.length === 0 ? restLine : `${current}\n\n${restLine}`;
-    if (next.length > EMBED_FIELD_VALUE_MAX && current.length > 0) {
-      fields.push({
-        name: fields.length === 0 ? "세션 목록" : `세션 목록 ${fields.length + 1}`,
-        value: current,
-        inline: false,
-      });
-      current = restLine;
-    } else {
-      current = next;
-    }
-  }
-
-  if (current.length > 0) {
     fields.push({
-      name: fields.length === 0 ? "세션 목록" : `세션 목록 ${fields.length + 1}`,
-      value: current,
+      name: "더 보기",
+      value: `외 ${rest}건은 웹 캘린더에서 확인할 수 있습니다.`,
       inline: false,
     });
   }
