@@ -150,6 +150,13 @@ function getDisplaySubUnits(groupCode: string): readonly SubUnitItem[] {
   return getSubUnits(groupCode);
 }
 
+function getOrgTone(code: string | null | undefined): "hostile" | undefined {
+  if (code === "HOSTILE") return "hostile";
+  return getExternalSubOrg(code ?? "")?.parentCode === "HOSTILE"
+    ? "hostile"
+    : undefined;
+}
+
 /** 같은 그룹/서브유닛 내부 카드 정렬: 등급 내림차순 → codename 오름차순 */
 function compareForCardOrder(a: Character, b: Character): number {
   if (characterUsesAgentLevels(a) && characterUsesAgentLevels(b)) {
@@ -661,6 +668,7 @@ export default function PersonnelClient({
       items.push({
         key: "group",
         label,
+        tone: getOrgTone(selectedGroup),
         iconCode:
           kind === "faction"
             ? isExternalSubOrg(selectedGroup)
@@ -687,6 +695,7 @@ export default function PersonnelClient({
       items.push({
         key: "sub",
         label: `하위: ${subLabel}`,
+        tone: getOrgTone(expandedSubUnit),
         iconCode: externalSubOrg ? undefined : getSubUnitIcon(expandedSubUnit),
         logoUrl: externalSubOrg?.logoUrl,
         logoVariant: externalSubOrg?.logoVariant,

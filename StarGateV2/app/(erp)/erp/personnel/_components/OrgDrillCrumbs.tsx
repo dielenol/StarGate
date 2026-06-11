@@ -17,6 +17,7 @@ import styles from "./OrgDrillCrumbs.module.css";
 export interface DrillCrumbItem {
   key: string;
   label: string;
+  tone?: "hostile";
   /** 강조(현재 위치). 마지막 chip 에 부여. */
   on?: boolean;
   href?: string;
@@ -87,6 +88,7 @@ export default function OrgDrillCrumbs({
               <Link
                 href={c.href}
                 className={chipClass}
+                data-tone={c.tone}
                 data-logo-variant={c.logoVariant}
                 aria-current={c.on ? "location" : undefined}
               >
@@ -96,6 +98,7 @@ export default function OrgDrillCrumbs({
               <button
                 type="button"
                 className={chipClass}
+                data-tone={c.tone}
                 data-logo-variant={c.logoVariant}
                 onClick={c.onClick}
                 aria-current={c.on ? "location" : undefined}
@@ -105,6 +108,7 @@ export default function OrgDrillCrumbs({
             ) : (
               <span
                 className={chipClass}
+                data-tone={c.tone}
                 data-logo-variant={c.logoVariant}
                 aria-current={c.on ? "location" : undefined}
               >

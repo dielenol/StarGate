@@ -12,10 +12,23 @@
   );
 }
 
+.hero[data-group-code="HOSTILE"] {
+  border-color: color-mix(in oklab, var(--danger) 76%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--danger) 9%, transparent),
+    color-mix(in oklab, var(--danger) 2%, transparent) 80%
+  );
+}
+
 .corner {
   position: absolute;
   width: 14px;
   height: 14px;
+}
+
+.hero[data-group-code="HOSTILE"] .corner {
+  border-color: var(--danger);
 }
 
 .corner--tl {
@@ -108,6 +121,10 @@
 .titleIcon {
   flex-shrink: 0;
   color: var(--gold);
+}
+
+.hero[data-group-code="HOSTILE"] .titleIcon {
+  color: var(--danger);
 }
 
 .titleLogo {
@@ -206,13 +223,27 @@
   background: rgba(201, 168, 90, 0.06);
 }
 
+.hero[data-group-code="HOSTILE"] .subUnitChip--clickable:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
+}
+
 .subUnitChip--clickable:hover svg {
   color: var(--gold);
+}
+
+.hero[data-group-code="HOSTILE"] .subUnitChip--clickable:hover svg {
+  color: var(--danger);
 }
 
 .subUnitChip--clickable:focus-visible {
   outline: 1px solid var(--gold);
   outline-offset: 2px;
+}
+
+.hero[data-group-code="HOSTILE"] .subUnitChip--clickable:focus-visible {
+  outline-color: var(--danger);
 }
 
 .subUnitChip--on {
@@ -221,8 +252,18 @@
   background: rgba(201, 168, 90, 0.12);
 }
 
+.hero[data-group-code="HOSTILE"] .subUnitChip--on {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: color-mix(in oklab, var(--danger) 12%, transparent);
+}
+
 .subUnitChip--on svg {
   color: var(--gold);
+}
+
+.hero[data-group-code="HOSTILE"] .subUnitChip--on svg {
+  color: var(--danger);
 }
 
 .subtitle {
@@ -253,6 +294,10 @@
   display: grid;
   grid-template-columns: 0.8fr 1.2fr 2fr 0.6fr;
   gap: 14px 20px;
+}
+
+.hero[data-group-code="HOSTILE"] .sections {
+  border-top-color: color-mix(in oklab, var(--danger) 48%, transparent);
 }
 
 @media (max-width: 1100px) {
@@ -336,6 +381,10 @@
   font-size: 28px;
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+
+.hero[data-group-code="HOSTILE"] .headcountN {
+  color: var(--danger);
 }
 
 .headcountU {

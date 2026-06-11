@@ -8,6 +8,21 @@
   overflow: hidden;
 }
 
+.subunit[data-tone="hostile"] {
+  border-color: color-mix(in oklab, var(--danger) 66%, transparent);
+  background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--danger) 5%, transparent),
+      transparent 70%
+    ),
+    var(--bg-1);
+}
+
+.subunit[data-tone="hostile"].subunit--open {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--danger) 18%, transparent);
+}
+
 .subunit + .subunit {
   margin-top: 10px;
 }
@@ -43,9 +58,22 @@
   background: var(--bg-2);
 }
 
+.subunit[data-tone="hostile"].subunit--open > .head {
+  border-bottom-color: color-mix(in oklab, var(--danger) 48%, transparent);
+  background: color-mix(in oklab, var(--danger) 8%, var(--bg-2));
+}
+
+.subunit[data-tone="hostile"] > .head:hover {
+  background: color-mix(in oklab, var(--danger) 6%, transparent);
+}
+
 .head:focus-visible {
   outline: 1px solid var(--gold-dim);
   outline-offset: -1px;
+}
+
+.subunit[data-tone="hostile"] .head:focus-visible {
+  outline-color: var(--danger);
 }
 
 .arrow {
@@ -54,6 +82,10 @@
   font-size: 14px;
   transition: transform 0.15s ease;
   flex: 0 0 auto;
+}
+
+.subunit[data-tone="hostile"] .arrow {
+  color: var(--danger);
 }
 
 .subunit--open .arrow {
@@ -65,6 +97,10 @@
   z-index: 1;
   flex: 0 0 auto;
   color: var(--gold-dim);
+}
+
+.subunit[data-tone="hostile"] .icon {
+  color: var(--danger);
 }
 
 .logo {
@@ -120,6 +156,10 @@
   color: var(--gold);
 }
 
+.subunit[data-tone="hostile"].subunit--open .icon {
+  color: var(--danger);
+}
+
 .code {
   position: relative;
   z-index: 1;
@@ -127,6 +167,10 @@
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.22em;
+}
+
+.subunit[data-tone="hostile"] .code {
+  color: var(--danger);
 }
 
 .label {

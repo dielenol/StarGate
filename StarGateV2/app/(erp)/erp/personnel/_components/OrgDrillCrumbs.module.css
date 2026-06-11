@@ -67,15 +67,31 @@
   background: rgba(201, 168, 90, 0.06);
 }
 
+.crumb[data-tone="hostile"].crumb--clickable:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
+}
+
 .crumb--clickable:focus-visible {
   outline: 1px solid var(--gold);
   outline-offset: 2px;
+}
+
+.crumb[data-tone="hostile"].crumb--clickable:focus-visible {
+  outline-color: var(--danger);
 }
 
 .crumb--on {
   border-color: var(--gold-dim);
   color: var(--gold);
   background: rgba(201, 168, 90, 0.06);
+}
+
+.crumb[data-tone="hostile"].crumb--on {
+  border-color: color-mix(in oklab, var(--danger) 76%, transparent);
+  color: var(--danger);
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
 }
 
 /* compact chip — 기본은 아이콘만, hover/focus 시 라벨 가로 expand.

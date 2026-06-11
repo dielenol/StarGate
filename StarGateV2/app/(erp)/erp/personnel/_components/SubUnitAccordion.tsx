@@ -46,11 +46,14 @@ export default function SubUnitAccordion({
     ? preferOptimizedPublicImagePath(subLogo)
     : undefined;
   const displayLabel = externalSubOrg?.label ?? label;
+  const tone =
+    externalSubOrg?.parentCode === "HOSTILE" ? ("hostile" as const) : undefined;
 
   return (
     <div
       id={`subunit-${code}`}
       data-subunit={code}
+      data-tone={tone}
       className={[styles.subunit, expanded ? styles["subunit--open"] : ""]
         .filter(Boolean)
         .join(" ")}
