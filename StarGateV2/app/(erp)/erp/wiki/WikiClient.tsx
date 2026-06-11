@@ -67,6 +67,7 @@ function pushWikiListUrl(category?: string, q?: string): void {
 const WIKI_CATEGORY_ICONS: Record<string, IconComponent> = {
   개념: IconConcept,
   개체: IconContainment,
+  줄루: IconContainment,
   기관: IconInstitution,
   사건: IconFactionBriefing,
   세력: IconWikiFaction,

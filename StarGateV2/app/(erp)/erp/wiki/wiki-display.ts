@@ -22,6 +22,7 @@ export interface WikiRelatedLink {
 const CATEGORY_TONES: Record<string, TagTone> = {
   개념: "info",
   개체: "danger",
+  줄루: "danger",
   기관: "p2",
   사건: "p1",
   세력: "rank-v",
@@ -39,6 +40,7 @@ const CATEGORY_TONES: Record<string, TagTone> = {
 const WIKI_CATEGORY_ORDER = [
   "작전 보고서",
   "개체",
+  "줄루",
   "개념",
   "세력",
   "기관",
