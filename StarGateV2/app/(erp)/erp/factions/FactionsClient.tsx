@@ -5,12 +5,15 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import Link from "next/link";
+
 import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
 import {
   IconAffinity,
+  IconArrowRight,
   IconFactionBriefing,
   IconFactionMap,
   IconHostile,
@@ -529,6 +532,13 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                       </Tag>
                     ) : null}
                   </div>
+                  <Link
+                    className={styles.briefing__detailLink}
+                    href={`/erp/factions/${selectedNode.code.toLowerCase()}`}
+                  >
+                    <span>접선 페이지</span>
+                    <IconArrowRight aria-hidden />
+                  </Link>
                 </div>
               </div>
 
