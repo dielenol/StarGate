@@ -1,0 +1,750 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "SANDMAN",
+      "type": "NPC",
+      "role": "뉴 더블린 지부 관리자",
+      "department": "SECRETARIAT",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "SECRETARIAT",
+      "previewImage": "",
+      "isPublic": true,
+      "lore": {
+        "name": "데이빗 오 캘러핸",
+        "nameEn": "David O'Callahan",
+        "nickname": "샌드맨",
+        "gender": "남",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "휠체어를 탄 남성으로 기록된다. 현장 관찰자는 데이빗의 인상이 키아나 오 캘러핸과 닮았다고 남겼으며, 본인은 키아나를 누나로 부른다.",
+        "personality": "부드럽고 예의 있는 말투를 유지하지만, 뉴 더블린 지부 존립과 NOGA 문제 앞에서는 냉정하게 수단을 위임한다. 약속과 혈맹이라는 표현을 중요하게 다룬다.",
+        "background": "데이빗 오 캘러핸은 코드네임 샌드맨으로 활동하는 노부스 오르도 뉴 더블린 지부 관리자다. 그는 신생 지부가 적성 세력의 사보타주로 위태롭다고 본부에 지원을 요청했고, 파견팀을 공항에서 맞이했다. 뉴 더블린 지부는 네온 발키리에 기대어 운영되는 단계로 기록된다.",
+        "quote": "\"제 이름은 데이빗 오 캘러핸. 뉴 더블린 지부의 관리자에요. 코드네임은 샌드맨.\"",
+        "mainImage": "",
+        "loreTags": [
+          "노부스오르도",
+          "뉴더블린",
+          "샌드맨",
+          "키아나오캘러핸",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "뉴 더블린 지부 관리자 및 현장 안내자",
+            "summary": "데이빗 오 캘러핸은 뉴 더블린 지부의 유일한 인원으로 파견팀을 맞이했고, 네온 발키리를 임시 거점으로 소개한 뒤 NOGA 세력 진압을 요청했다.",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "네베드",
+            "targetName": "키아나 오 캘러핸",
+            "label": "혈연 관계",
+            "summary": "데이빗은 키아나 오 캘러핸을 누나로 호칭했고, 외형도 키아나와 닮은 인물로 관찰되었다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "CASEY_RACER",
+            "targetName": "케이시 레이서",
+            "label": "지부 협력자",
+            "summary": "데이빗은 케이시가 과거 자신의 손을 빌린 적이 있고, 그 덕분에 네온 발키리에 뉴 더블린 지부를 둘 수 있었다고 설명했다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 관리 대상: 노부스 오르도 뉴 더블린 지부\n- 현장 역할: 파견팀 안내, 정보 제공, 키미테 지급, NOGA 거점 감시 지원\n- 보류 사항: 케이시 레이서와의 피로 맹세 세부 내용",
+        "notes": "샌드맨은 본인이 밝힌 코드네임이며, 뉴 더블린 지부의 임시 기반은 네온 발키리로 기록된다."
+      },
+      "source": "create-lore",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "CASEY_RACER",
+      "type": "NPC",
+      "role": "네온 발키리 사장",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "institutionCode": "",
+      "previewImage": "",
+      "isPublic": true,
+      "lore": {
+        "name": "케이시 레이서",
+        "nameEn": "Casey Racer",
+        "gender": "여성",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "몸의 상당 부분이 기계로 대체된 사이보그성 인물로 관찰된다. 현장 기록에서는 기계로 이루어진 무쇠팔과 강한 완력이 먼저 부각된다.",
+        "personality": "말투가 직설적이고 공격적이며, 자신의 가게와 도나도나를 해치는 대상에게 강하게 반응한다. 동시에 뉴 더블린 지부와 데이빗을 받아들인 협력자다.",
+        "background": "케이시 레이서는 뉴 더블린 지하 펑크 바 네온 발키리의 사장이다. NOGA가 네온 발키리와 주변 가게 장사를 방해하자 데이빗에게 약속 이행을 요구했고, 이 요구가 파견팀의 NOGA 거점 진압으로 이어졌다.",
+        "quote": "\"난 케이시 레이서. 칵테일.. 이 아니라, '펑크 바' 네온 발키리의 사장이야.\"",
+        "mainImage": "",
+        "loreTags": [
+          "시민사회",
+          "뉴더블린",
+          "네온발키리",
+          "펑크바",
+          "도나도나",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "네온 발키리 사장 및 지부 협력자",
+            "summary": "케이시 레이서는 네온 발키리 앞에서 NOGA 폭력배와 충돌했고, 이후 데이빗에게 약속 이행을 요구해 NOGA 진압 임무가 구체화되었다.",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "ORSIS_201",
+            "targetName": "도나도나",
+            "label": "보호자 / 마스터",
+            "summary": "도나도나는 케이시를 마스터로 부르며, 케이시 덕분에 다른 합성인간보다 자유로운 삶을 살고 있다고 설명했다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "SANDMAN",
+            "targetName": "데이빗 오 캘러핸",
+            "label": "지부 협력자",
+            "summary": "케이시는 데이빗에게 약속 이행을 요구했고, 네온 발키리는 뉴 더블린 지부의 임시 거점으로 쓰였다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 관리 대상: 네온 발키리\n- 협력 대상: 데이빗 오 캘러핸 / 뉴 더블린 지부\n- 보호 대상: 도나도나, 네온 발키리 이용자\n- 보류 사항: 데이빗과의 혈맹 및 과거 손을 빌린 사건의 구체적 내용",
+        "notes": "네온 발키리는 칵테일 바가 아니라 펑크 바로 정정해 기록한다."
+      },
+      "source": "create-lore",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "ORSIS_201",
+      "type": "NPC",
+      "role": "합성인간 바텐더",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "institutionCode": "",
+      "previewImage": "",
+      "isPublic": true,
+      "lore": {
+        "name": "도나도나",
+        "nameEn": "DonaDona",
+        "nameNative": "ORSIS-201",
+        "nickname": "도나",
+        "gender": "여성형",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "여성형 합성인간으로 등장한다. 앞치마를 두르고 네온 발키리 카운터에 서며, 칵테일 제조 과정에서 매우 정밀하고 빠른 동작을 보인다.",
+        "personality": "정중하고 규칙 기반의 응대를 유지한다. 케이시 레이서를 마스터로 부르고, 네온 발키리 손님에게 칵테일과 무알코올 음료를 제공한다.",
+        "background": "도나도나는 네온 발키리의 바텐더로 활동하는 합성인간 ORSIS-201이다. 본인은 합성인간이 기본적으로 인간 주인의 소유물이며, 스페이스 제로가 합성인간을 비활성화할 수 있는 기술을 가지고 있다고 설명했다.",
+        "quote": "\"저는 ORSIS-201. 네온 발키리의 바텐더입니다. 다들 저를 도나도나 라고 부릅니다.\"",
+        "mainImage": "",
+        "loreTags": [
+          "시민사회",
+          "뉴더블린",
+          "네온발키리",
+          "합성인간",
+          "ORSIS-201",
+          "스페이스제로",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "네온 발키리 바텐더",
+            "summary": "도나도나는 ORSIS-201 합성인간으로 자신을 소개했고, 합성인간의 소유 구조와 스페이스 제로의 비활성화 기술을 언급했다.",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "CASEY_RACER",
+            "targetName": "케이시 레이서",
+            "label": "마스터 / 보호자",
+            "summary": "도나도나는 케이시 레이서 덕분에 다른 합성인간보다 자유로운 삶을 살고 있다고 설명했다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 근무지: 네온 발키리\n- 식별명: ORSIS-201\n- 별칭: 도나도나, 도나\n- 관련 기업: 스페이스 제로\n- 대표 제조 기록: 발키리의 기행, 피아노걸",
+        "notes": "스페이스 제로 관련 정보는 도나도나의 설명에 근거한 합성인간 일반 구조로만 기록한다."
+      },
+      "source": "create-lore",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "PUCK_ASSHOLE",
+      "type": "NPC",
+      "role": "NOGA 거점 지휘자",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "institutionCode": "",
+      "previewImage": "",
+      "isPublic": true,
+      "lore": {
+        "name": "퍼크슈타인 애스홀",
+        "nameEn": "Puck Asshole",
+        "nickname": "퍽 애스홀",
+        "gender": "남",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "거구의 남자로 기록되며, 처음에는 가면을 쓴 채 NOGA 거점 안에서 무장 조직원을 지휘한다. 전투 중 야구배트를 휘두르고 강한 완력을 보였다.",
+        "personality": "과장된 영어 표현과 선동적 구호를 반복한다. 인류 우월주의를 공공연히 주장하며, 인간이 아닌 지성체를 물건 또는 괴물로 낮춰 부른다.",
+        "background": "퍼크슈타인 애스홀, 통칭 퍽 애스홀은 뉴 더블린에서 NOGA 거점을 이끌던 현장 지휘자로 기록된다. 그는 권총과 탄약을 받은 뒤 비인간 대상 린치와 가게 방해를 계속하기로 했고, 파견팀의 진압 작전에서 사망했다.",
+        "quote": "\"내 이름 퍼크슈타인 애스홀. 다들 나를 퍽 애스홀이라 부르지.\"",
+        "mainImage": "",
+        "loreTags": [
+          "시민사회",
+          "뉴더블린",
+          "NOGA",
+          "NovusOrdoGreatAgain",
+          "인류우월주의",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "NOGA 거점 지휘자",
+            "summary": "퍽 애스홀은 NOGA 거점에서 무장 폭력배를 지휘했고, 인류 우월주의 구호를 내세워 파견팀과 교전한 뒤 현장에서 사망했다.",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 소속: NOGA\n- 현장 역할: 무장 폭력배 지휘, 네온 발키리 방해, 비인간 린치 선동\n- 최종 상태: 뉴 더블린 NOGA 거점 진압 중 사망\n- 후속 단서: 무기와 지시를 제공한 미확인 여성 / 이그리트 라인",
+        "notes": "현장 발화상 이름은 퍼크슈타인 애스홀이며, 통용 호칭은 퍽 애스홀로 기록한다."
+      },
+      "source": "create-lore",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "IGRIT",
+      "type": "NPC",
+      "role": "뉴 더블린 야간세력 배후 인물",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "institutionCode": "",
+      "previewImage": "",
+      "isPublic": true,
+      "lore": {
+        "name": "이그리트",
+        "nameEn": "Igrit",
+        "gender": "여성",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "후속 장면에서 와인잔을 들고 등장한 여성으로 기록된다. 붉고 걸쭉한 액체를 마시는 장면이 남아 있으나, 정체 분류는 확정되지 않았다.",
+        "personality": "부하에게 간결하게 명령하며 증거 은폐와 보복을 지시한다. 노부스 오르도와 직접 충돌할 의사를 드러낸다.",
+        "background": "이그리트는 뉴 더블린 사건 종료 직후 등장한 배후 인물이다. 그는 퍼크슈타인의 잔당 처리를 명령하고, 자신들이 관여했다는 증거가 남지 않게 하라고 지시했다. 이어 노부스 오르도까지 모두 죽이라고 명령한다.",
+        "quote": "\"누가 이 도시의 밤을 지배하는지 알려줄테니.\"",
+        "mainImage": "",
+        "loreTags": [
+          "시민사회",
+          "뉴더블린",
+          "야간세력",
+          "NOGA",
+          "쾌락의천국",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "후속 위협 및 배후 인물",
+            "summary": "이그리트는 퍼크슈타인 잔당 처리와 증거 은폐를 지시하고, 노부스 오르도를 모두 죽이라고 명령하며 다음 사건의 핵심 위협으로 남았다.",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "PUCK_ASSHOLE",
+            "targetName": "퍽 애스홀",
+            "label": "배후 연결",
+            "summary": "이그리트는 퍼크슈타인을 기대 이하라고 평가하고, 남은 잔당 처리와 증거 은폐를 명령했다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 활동지: 뉴 더블린\n- 확인 행동: 퍼크슈타인 잔당 처리 지시, 증거 은폐 지시, 노부스 오르도 적대 선언\n- 현재 분류: 후속 조사 대상\n- 관련 후속 제목: 쾌락의 천국",
+        "notes": "흡혈귀, 줄루, 범죄조직 수장 등 구체 분류는 아직 확정하지 않는다."
+      },
+      "source": "create-lore",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-link",
+    "filter": {
+      "codename": "네베드"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "SANDMAN",
+          "targetName": "데이빗 오 캘러핸",
+          "label": "혈연 관계",
+          "summary": "데이빗 오 캘러핸은 키아나 오 캘러핸을 누나로 호칭했고, 외형도 키아나와 닮은 인물로 관찰되었다.",
+          "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+          "confidence": "confirmed",
+          "updatedAt": "2026-06-11T00:00:00.000Z"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "YUHOE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "lore.loreTags": {
+          "$each": [
+            "뉴더블린",
+            "NOGA",
+            "MINI-S1E1"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "role": "현장 판단 및 NOGA 진압 승인",
+          "summary": "유회는 쿠즈하로서 뉴 더블린 지원 요청을 해석하고, NOGA 진압의 정당성과 데이빗의 약속 문제를 따져 묻은 뒤 작전을 수락했다.",
+          "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+          "updatedAt": "2026-06-11T00:00:00.000Z"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "PIPETTE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "lore.loreTags": {
+          "$each": [
+            "뉴더블린",
+            "NOGA",
+            "MINI-S1E1"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "role": "현장 관찰자 및 전투 지원",
+          "summary": "휘트모어 핀치(피펫)는 뉴 더블린 파견팀에 참여했고, 네온 발키리 및 NOGA 거점에서 관찰·지원 사격·비살상 심문 논의에 관여했다.",
+          "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+          "updatedAt": "2026-06-11T00:00:00.000Z"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "TIME"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "lore.loreTags": {
+          "$each": [
+            "뉴더블린",
+            "NOGA",
+            "MINI-S1E1"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "role": "시간 계열 정찰 및 방어 지원",
+          "summary": "크로노스는 뉴 더블린 현장에서 미래 관측과 시간 감속을 활용했고, NOGA 거점 전투 중 시유를 향한 총격을 저지했다.",
+          "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+          "updatedAt": "2026-06-11T00:00:00.000Z"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "OTILIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "lore.loreTags": {
+          "$each": [
+            "뉴더블린",
+            "NOGA",
+            "MINI-S1E1"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "role": "현장 과학자 및 후방 진입조",
+          "summary": "오틸리아 발트만은 뉴 더블린 파견팀에 참여했고, 네온 발키리 접촉과 NOGA 거점 후방 진입조 활동, 전투 중 공포 유도 지원에 관여했다.",
+          "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+          "updatedAt": "2026-06-11T00:00:00.000Z"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "TIGER298"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "lore.loreTags": {
+          "$each": [
+            "뉴더블린",
+            "NOGA",
+            "MINI-S1E1"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "role": "근접 대응 및 전투 참여",
+          "summary": "시유는 뉴 더블린 파견팀에 참여해 초반 폭력배를 단검으로 제압했고, NOGA 거점 전투에서도 근접 대응과 최종 처분에 관여했다.",
+          "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+          "updatedAt": "2026-06-11T00:00:00.000Z"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "WD-(𝓃)"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "lore.loreTags": {
+          "$each": [
+            "뉴더블린",
+            "NOGA",
+            "무디",
+            "MINI-S1E1"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "role": "분신체 무디 생성 및 후방 진입 지원",
+          "summary": "우디는 뉴 더블린 파견팀에 참여했고, NOGA 거점 진입 전 무디를 강화 생성해 후방 진입조 지원에 투입했다.",
+          "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+          "updatedAt": "2026-06-11T00:00:00.000Z"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "MARGARET"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "lore.loreTags": {
+          "$each": [
+            "뉴더블린",
+            "NOGA",
+            "네온발키리",
+            "MINI-S1E1"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "role": "사령 계열 전장 통제 지원",
+          "summary": "마가렛은 뉴 더블린 파견팀에 참여했고, NOGA 거점 돌파 과정에서 공포 유도와 사령 계열 구속으로 폭력배 무력화에 기여했다.",
+          "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+          "updatedAt": "2026-06-11T00:00:00.000Z"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-06-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report",
+    "payload": {
+      "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+      "sessionTitle": "작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요",
+      "summary": "# 작전 기록 미니 시리즈 1화: 뉴 더블린에 어서오세요\n\n노부스 오르도 본부 호출로 시작된 미니 시리즈 제1화 기록은 아일랜드 뉴 더블린 신생 지부 지원 요청을 다룬다. 기록상 진행일은 2026년 5월 6일에서 5월 7일이며, 현장팀은 뉴 더블린 지부 관리자 데이빗 오 캘러핸, 네온 발키리, NOGA 폭력조직, 그리고 이그리트로 이어지는 후속 위협을 확인했다.\n\n## 진행 정보\n분류: 지부 지원 / 도시 잠입 / 폭력조직 진압\n세션 ID: NOSB-MINI-S1E1-NEW-DUBLIN\n진행일: 2026년 5월 6일 ~ 2026년 5월 7일\n작전지: 노부스 오르도 본부, 아일랜드 뉴 더블린, 네온 발키리, NOGA 거점\n기록 등급: 사무국 기록통제실 보존본\n\n## 본부 브리핑\nMr. 오드는 파견팀에게 뉴 더블린 지부 관리자 샌드맨의 지원 요청서를 전달했다. 요청서에는 뉴 더블린 지부가 적성 세력의 사보타주로 존립 위기에 놓였고, 본부의 직접 물리력 및 비용 지원이 필요하다는 내용이 담겼다. 별첨 위험 평가는 뉴 더블린을 A- 위험 지역으로 분류하며, 다수의 미등록 줄루, 낮은 사회안정도, 극단적인 법집행 기관과 폭력단체 공존을 경고했다.\n\n## 뉴 더블린 도착\n현장팀은 항공편으로 뉴 더블린에 도착했고, 공항에서 휠체어를 탄 지부 관리자 데이빗 오 캘러핸을 만났다. 데이빗은 코드네임 샌드맨을 밝히고, 자신이 키아나 오 캘러핸의 동생임을 암시했다. 그는 도시를 화려하지만 어두운 곳으로 소개하며, 현장팀을 네온 발키리로 안내했다.\n\n## 네온 발키리와 협력자\n네온 발키리 앞에서는 폭력배들이 케이시 레이서를 위협하고 있었다. 현장팀은 개입해 충돌을 정리했고, 케이시는 자신을 펑크 바 네온 발키리의 사장으로 소개했다. 바텐더 도나도나는 ORSIS-201 합성인간으로 자신을 밝히고, 합성인간의 소유 구조와 스페이스 제로의 비활성화 기술을 설명했다.\n\n데이빗은 네온 발키리가 뉴 더블린 지부의 임시 기반이라고 설명했다. 케이시 레이서는 NOGA가 지속적으로 장사를 방해한다고 말했고, 데이빗은 NOGA가 Novus Ordo Great Again의 약자이며 극단적 인류 우월주의 폭력단체라고 설명했다.\n\n## NOGA 거점 진입\n데이빗은 NOGA가 단순한 깡패가 아니라 목적을 가진 집단이며, 줄루와 합성인간을 포함한 비인간 지성체를 혐오한다고 보고했다. 현장팀은 키미테를 지급받아 시야 공유와 지시 전달을 확보한 뒤 NOGA 거점에 접근했다. 쿠즈하는 WIFI 장치 정보를 데이빗에게 전달했고, 피드에서는 가죽 재킷의 미확인 여성이 NOGA 측 거구에게 권총과 탄약을 건네는 장면이 확인되었다.\n\n## 교전과 결과\n마가렛은 공포 유도로 폭력배들의 사기를 꺾었고, 우디는 무디를 강화 생성해 후방 진입조를 지원했다. 시유, 핀치, 크로노스, 오틸리아, 헌터가 각자 전투와 통제에 참여했으며, 크로노스는 총격을 시간 감속으로 저지했다. NOGA 거점 지휘자 퍼크슈타인 애스홀, 통칭 퍽 애스홀은 인류 우월주의 구호를 반복하며 저항했지만 최종적으로 현장에서 사망했다.\n\n작전 후 현장팀은 네온 발키리로 복귀했고, 데이빗과 가게 사람들의 환대를 받았다. 작전 자체는 성공으로 정리되지만, 같은 시각 이그리트가 퍼크슈타인의 잔당 처리와 증거 은폐, 노부스 오르도 살해를 지시하며 다음 사건의 핵심 위협으로 남았다.\n\n## 후속 훅\n이그리트의 정체, 케이시와 데이빗의 혈맹, 데이빗과 키아나 오 캘러핸의 관계 세부, 뉴 더블린 내 미등록 줄루 운용, NOGA 잔존 세력은 후속 조사 대상으로 남긴다. 다음 기록 제목은 「쾌락의 천국」으로 예고되었다.\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」.",
+      "highlights": [
+        "Mr. 오드는 샌드맨의 지원 요청서를 전달했고, 뉴 더블린은 A- 위험 지역으로 분류되었다.",
+        "데이빗 오 캘러핸은 뉴 더블린 지부 관리자이자 코드네임 샌드맨으로 확인되었다.",
+        "네온 발키리는 뉴 더블린 지부의 임시 기반이며, 케이시 레이서와 도나도나가 주요 협력자로 확인되었다.",
+        "도나도나는 ORSIS-201 합성인간으로 자신을 소개했고, 스페이스 제로의 합성인간 비활성화 기술을 언급했다.",
+        "NOGA는 Novus Ordo Great Again의 약자로, 비인간 지성체를 혐오하는 극단적 인류 우월주의 폭력단체로 기록되었다.",
+        "현장팀은 키미테를 지급받아 NOGA 거점 감시와 진입을 수행했다.",
+        "퍼크슈타인 애스홀은 NOGA 거점 지휘자로 저항했으나 현장에서 사망했다.",
+        "이그리트가 퍼크슈타인 잔당 처리와 노부스 오르도 살해를 지시하며 다음 화 「쾌락의 천국」의 위협으로 남았다."
+      ],
+      "participants": [
+        "YUHOE",
+        "PIPETTE",
+        "TIME",
+        "OTILIA",
+        "TIGER298",
+        "WD-(𝓃)",
+        "MARGARET",
+        "헌터"
+      ],
+      "locationLabel": "아일랜드 뉴 더블린 / 네온 발키리-NOGA 거점",
+      "mapX": 47.7,
+      "mapY": 31.8,
+      "mapPrecision": "estimated",
+      "gmId": "novus-ordo-record-control",
+      "gmName": "NOVUS ORDO 기록통제실 분석관 K. Adler",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki",
+    "payload": {
+      "slug": "mini-s1e1-new-dublin",
+      "title": "작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요",
+      "category": "작전 보고서",
+      "content": "# 작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요\n\n이 문서는 노부스 오르도 미니 시리즈 제1화, 뉴 더블린 지부 지원 기록을 보존한다. 현장팀은 아일랜드 뉴 더블린에 파견되어 신생 지부의 임시 기반과 협력자, NOGA 폭력조직, 그리고 이그리트로 이어지는 후속 위협을 확인했다.\n\n## 요약 정보\n분류: 작전 보고서\n세션 ID: NOSB-MINI-S1E1-NEW-DUBLIN\n진행일: 2026년 5월 6일 ~ 2026년 5월 7일\n작전지: 뉴 더블린, 네온 발키리, NOGA 거점\n주요 인물: 데이빗 오 캘러핸, 케이시 레이서, 도나도나, 퍽 애스홀, 이그리트\n주요 장비: 키미테\n결과: NOGA 거점 진압 성공, 이그리트 후속 위협 확인\n\n## 사건 개요\nMr. 오드는 뉴 더블린 지부 관리자 샌드맨의 지원 요청서를 전달했다. 뉴 더블린은 다수의 미등록 줄루, 낮은 사회안정도, 극단적인 법집행 기관과 폭력단체가 공존하는 A- 위험 지역으로 분류되었다.\n\n현장팀은 공항에서 데이빗 오 캘러핸을 만나 네온 발키리로 이동했다. 데이빗은 뉴 더블린 지부의 유일한 인원이며, 케이시 레이서의 네온 발키리가 임시 지부 기반이라고 설명했다.\n\n## 네온 발키리\n네온 발키리는 케이시 레이서가 운영하는 지하 펑크 바다. 현장팀은 바 앞에서 케이시를 위협하던 폭력배들을 제압했고, 이후 ORSIS-201 도나도나와 접촉했다. 도나도나는 합성인간의 소유 구조와 스페이스 제로의 비활성화 기술을 설명했다.\n\n## NOGA\nNOGA는 Novus Ordo Great Again의 약자로, 비인간 지성체를 혐오하는 인류 우월주의 폭력단체다. 데이빗은 NOGA가 노부스 오르도 뉴 더블린 지부의 활동을 방해하고 줄루 감시를 사보타주한다고 보고했다.\n\n현장팀은 키미테를 지급받아 NOGA 거점에 접근했다. 피드에는 미확인 여성이 권총과 탄약을 전달하고, NOGA가 비인간 린치와 가게 방해를 이어가기로 약속하는 장면이 남았다.\n\n## 결과와 후속 기록\n퍼크슈타인 애스홀은 NOGA 거점 지휘자로 전투에 나섰고, 최종적으로 현장에서 사망했다. 작전 후 네온 발키리는 안전을 되찾았고, 데이빗과 협력자들은 현장팀을 환대했다.\n\n그러나 이그리트가 퍼크슈타인 잔당 처리, 증거 은폐, 노부스 오르도 살해를 지시하며 후속 위협으로 등장했다. 다음 기록 제목은 「쾌락의 천국」으로 예고된다.\n\n## 관련 문서\n뉴 더블린, NOGA, 네온 발키리, 키미테, 데이빗 오 캘러핸, 케이시 레이서, 도나도나, 퍽 애스홀, 이그리트.\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」.",
+      "tags": [
+        "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "MINI-S1E1",
+        "뉴더블린",
+        "NOGA",
+        "네온발키리",
+        "샌드맨",
+        "키미테",
+        "쾌락의천국"
+      ],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제실",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "place-wiki",
+    "payload": {
+      "slug": "new-dublin",
+      "title": "뉴 더블린",
+      "category": "장소",
+      "content": "# 뉴 더블린\n\n뉴 더블린은 아일랜드에 위치한 신생 도시로, 노부스 오르도 미니 시리즈 제1화의 주요 작전지다. 기록상 재건된 지 10년도 되지 않았지만 소득과 기술 수준은 매우 높고, 유흥과 쾌락의 도시로 묘사된다.\n\n## 요약 정보\n분류: 도시 / 작전지\n지역: 아일랜드\n관련 지부: 노부스 오르도 뉴 더블린 지부\n위험 평가: A-\n관련 세션: NOSB-MINI-S1E1-NEW-DUBLIN\n주요 장소: 네온 발키리, NOGA 거점\n\n## 도시 성격\n뉴 더블린은 형형색색의 고층 빌딩, 네온사인, 광고 비행선, 밤거리 인파가 이어지는 화려한 도시로 기록된다. 동시에 본부 브리핑은 이 도시가 다수의 미등록 줄루, 낮은 사회안정도, 극단적 법집행 기관과 폭력단체가 공존하는 위험지라고 경고했다.\n\nMr. 오드는 도시 행정부가 줄루를 노부스 오르도에 신고하지 않고 도시 발전에 이용한다는 의심이 있다고 언급했다. 이 내용은 현 시점에서 조사 의혹으로만 보존한다.\n\n## 노부스 오르도 지부\n뉴 더블린 지부의 관리자는 데이빗 오 캘러핸, 코드네임 샌드맨이다. 기록상 지부는 독립 시설을 갖추기 전이며, 케이시 레이서의 네온 발키리에 기대어 운영된다.\n\n## 현장 위협\nNOGA는 뉴 더블린에서 비인간 지성체를 혐오하는 폭력조직으로 활동했다. 네온 발키리와 주변 가게를 방해하고, 줄루와 합성인간에 대한 린치를 계획한 정황이 확인되었다.\n\n이그리트는 작전 종료 후 등장한 후속 위협으로, 뉴 더블린 밤을 지배하는 세력의 존재를 암시한다.\n\n## 관련 문서\n작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요, NOGA, 네온 발키리, 데이빗 오 캘러핸, 이그리트.\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」.",
+      "tags": [
+        "뉴더블린",
+        "아일랜드",
+        "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "MINI-S1E1",
+        "네온발키리",
+        "NOGA",
+        "미등록줄루"
+      ],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제실",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "faction-wiki",
+    "payload": {
+      "slug": "noga",
+      "title": "NOGA",
+      "category": "세력",
+      "content": "# NOGA\n\nNOGA는 Novus Ordo Great Again의 약자로, 뉴 더블린에서 확인된 극단적 인류 우월주의 폭력단체다. 기록상 이들은 줄루, 합성인간, 기타 비인간 지성체를 혐오하며 노부스 오르도 뉴 더블린 지부 활동을 방해했다.\n\n## 요약 정보\n정식 표기: Novus Ordo Great Again\n약칭: NOGA\n분류: 폭력단체 / 인류 우월주의 조직\n활동지: 뉴 더블린\n관련 세션: NOSB-MINI-S1E1-NEW-DUBLIN\n주요 확인 인물: 퍼크슈타인 애스홀\n\n## 이념과 활동\n데이빗 오 캘러핸은 NOGA를 극단적인 인류 우월주의를 주장하는 폭력단체로 설명했다. 이들은 합성인간과 줄루를 포함한 비인간 지성체를 혐오하며, 통제되지 않은 줄루 확보와 감시를 방해하는 사보타주를 일삼았다.\n\n퍼크슈타인 애스홀은 인간만이 세계를 지배할 수 있고, 인간이 아닌 존재는 인간에게 사용되는 물건에 불과하다는 구호를 반복했다. 이 발화는 NOGA의 현장 이념을 보여주는 핵심 기록이다.\n\n## 뉴 더블린 거점 사건\n현장팀은 키미테를 이용해 NOGA 거점 내부를 감시했고, 미확인 여성이 권총과 탄약을 전달하는 장면을 확인했다. 이후 파견팀은 거점을 돌파해 폭력배들을 제압하고, 지휘자 퍼크슈타인 애스홀을 사망 처리했다.\n\n## 후속 위험\n작전 종료 후 이그리트는 퍼크슈타인의 남은 잔당을 모두 처리하고 증거를 남기지 말라고 지시했다. 이는 NOGA가 독립 폭력집단을 넘어 뉴 더블린 야간세력의 하위 도구였을 가능성을 남긴다.\n\n## 관련 문서\n작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요, 뉴 더블린, 네온 발키리, 퍽 애스홀, 이그리트.\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」.",
+      "tags": [
+        "NOGA",
+        "NovusOrdoGreatAgain",
+        "뉴더블린",
+        "인류우월주의",
+        "폭력단체",
+        "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "MINI-S1E1"
+      ],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제실",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "place-wiki",
+    "payload": {
+      "slug": "neon-valkyrie",
+      "title": "네온 발키리",
+      "category": "장소",
+      "content": "# 네온 발키리\n\n네온 발키리는 뉴 더블린에 위치한 지하 펑크 바다. 케이시 레이서가 운영하며, 노부스 오르도 뉴 더블린 지부의 임시 기반으로 사용된다.\n\n## 요약 정보\n분류: 펑크 바 / 임시 지부 기반\n위치: 뉴 더블린\n운영자: 케이시 레이서\n바텐더: 도나도나 / ORSIS-201\n관련 세션: NOSB-MINI-S1E1-NEW-DUBLIN\n\n## 공간 기록\n네온 발키리는 보라색과 파란색 조명, 카운터 너머 캐비넷, 다양한 위스키와 칵테일 재료가 있는 지하 바다. 케이시 레이서는 이곳을 칵테일 바가 아니라 펑크 바라고 정정했다.\n\n## 뉴 더블린 지부와의 관계\n데이빗 오 캘러핸은 케이시 레이서가 과거 자신의 손을 빌린 적이 있고, 그 덕분에 네온 발키리에 뉴 더블린 지부를 둘 수 있었다고 설명했다. 예산이 확보되기 전까지 지부는 이 장소에 기대어 운영되는 것으로 기록된다.\n\n## 주요 인물\n케이시 레이서는 네온 발키리의 사장이다. 도나도나는 ORSIS-201 합성인간으로, 네온 발키리의 바텐더 역할을 수행한다. 도나도나는 합성인간의 소유 구조와 스페이스 제로의 비활성화 기술을 설명했다.\n\n## NOGA 사건\nNOGA는 네온 발키리와 주변 가게를 지속적으로 방해했다. 현장팀은 네온 발키리 앞에서 폭력배 충돌을 정리했고, 이후 데이빗의 요청에 따라 NOGA 거점을 진압했다.\n\n## 관련 문서\n작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요, 뉴 더블린, NOGA, 케이시 레이서, 도나도나, 키미테.\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」.",
+      "tags": [
+        "네온발키리",
+        "뉴더블린",
+        "케이시레이서",
+        "도나도나",
+        "ORSIS-201",
+        "NOGA",
+        "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "MINI-S1E1"
+      ],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제실",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-item",
+    "payload": {
+      "slug": "kimite",
+      "name": "키미테",
+      "nameEn": "KiMiTe",
+      "category": "SPECIAL",
+      "description": "뉴 더블린 NOGA 거점 진입 전 데이빗 오 캘러핸이 지급한 착용형 이어폰. 초소형 카메라와 통신 기능으로 현장 피드와 지시 전달을 지원한다.",
+      "price": 0,
+      "effect": "귀 밑에 부착하는 초소형 통신·시야 공유 장비. 카메라와 소통 시스템을 탑재한다.",
+      "damage": "",
+      "shopMeta": {
+        "stockMin": 0,
+        "stockMax": 0,
+        "appearRate": 0,
+        "pageGroup": "RARE"
+      },
+      "isAvailable": false,
+      "tags": [
+        "NOSB-MINI-S1E1-NEW-DUBLIN",
+        "MINI-S1E1",
+        "뉴더블린",
+        "NOGA",
+        "지니어스33",
+        "통신장비"
+      ],
+      "previewImage": "",
+      "isPublic": true,
+      "lore": {
+        "background": "키미테는 뉴 더블린 지부 관리자 데이빗 오 캘러핸이 NOGA 거점 진입 직전 지급한 현장 지원 장비다. 기록상 지니어스 33 제품으로 언급된다.",
+        "acquisition": "뉴 더블린 지부의 현장 임무 지급품으로 확인된다.",
+        "notes": "장기 지급품 또는 개인 소유 장비 여부는 후속 보급 기록 확인이 필요하다."
+      },
+      "loreMd": "## 설명\n키미테는 귀 밑에 부착하는 착용형 이어폰 형태의 현장 지원 장비다. 초소형 카메라와 소통 시스템이 탑재되어 있으며, 착용자의 시야 공유와 지시 전달을 지원한다.\n\n## 배경\n뉴 더블린 지부 관리자 데이빗 오 캘러핸은 NOGA 거점 진입 직전 파견팀에게 키미테를 1인당 1개씩 지급했다. 기록상 제품 계열은 지니어스 33 제품으로 언급된다.\n\n## 획득 경로\n현장 임무 지급품. 일반 구매 또는 개인 보유 가능 여부는 확인되지 않았다.\n\n## 비고\n이번 기록에서는 임무 중 사용된 통신 장비로 보존한다. 장기 지급품 또는 개인 소유 장비 여부는 후속 보급 기록 확인이 필요하다.",
+      "source": "create-lore",
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제실",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  }
+]

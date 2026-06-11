@@ -1,0 +1,291 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "SANDMAN",
+      "type": "NPC",
+      "role": "노부스 오르도 연락관",
+      "department": "SECRETARIAT",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "SECRETARIAT",
+      "previewImage": "/assets/npcs/David-O-Callahan-Sandman-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "데이빗 오 캘러핸",
+        "nameEn": "David O'Callahan",
+        "nickname": "샌드맨",
+        "gender": "남",
+        "age": "24",
+        "height": "171cm",
+        "weight": "미상",
+        "appearance": "금발의 짧은 머리와 주근깨가 특징인 작은 체구의 청년. 어릴 때 욤스비킹의 습격을 받아 하반신 마비 판정을 받았으며, 휠체어를 타고 다닌다.",
+        "personality": "밝고 사교적이며 꼼꼼하다. 남들과 잘 어울리지만 항상 자신만의 계획을 따로 생각한다.",
+        "background": "노부스 오르도 뉴 더블린 지부의 연락관이자 첩보원. 뉴 더블린의 펑크 바 NeON Valkyrie에 지부를 두고 줄루 활동을 감시하며, 갈로글라 용병과 노부스 오르도의 연락을 조율한다.",
+        "quote": "\"잊지마세요. 사방이 막힌 미로에도 탈출구는 분명히 있다는 걸.\"",
+        "mainImage": "/assets/npcs/David-O-Callahan-Sandman-profile.webp",
+        "loreTags": [
+          "노부스오르도",
+          "뉴더블린",
+          "샌드맨",
+          "연락관",
+          "첩보원",
+          "키아나오캘러핸",
+          "네온발키리",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "뉴 더블린 지부 연락관 및 현장 안내자",
+            "summary": "데이빗 오 캘러핸은 샌드맨이라는 코드네임으로 현장팀을 맞이하고, 네온 발키리를 임시 지부 기반으로 소개한 뒤 NOGA 진압을 요청했다.",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "네베드",
+            "targetName": "키아나 오 캘러핸",
+            "label": "혈연 관계",
+            "summary": "데이빗은 키아나 오 캘러핸의 동생이며, 키아나를 병적으로 좋아하는 것으로 기록된다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "사용자 제공 프로필 및 기록통제실 보존본 「미니 시리즈 제1화」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "CASEY_RACER",
+            "targetName": "케이시 레이서",
+            "label": "지부 협력자",
+            "summary": "데이빗은 과거 케이시의 신상 문제를 해결하고 신분 세탁을 도왔다. 그 답례로 네온 발키리에 노부스 오르도 뉴 더블린 지부를 설치할 수 있었다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "사용자 제공 프로필 및 기록통제실 보존본 「미니 시리즈 제1화」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 직업: 노부스 오르도 연락관\n- 현장 역할: 뉴 더블린 지부 연락관, 첩보원, 줄루 활동 감시\n- 능력명: 비능력자\n- 거점: NeON Valkyrie / 네온 발키리\n- 관련 임무: 갈로글라 용병과 노부스 오르도 간 연락 조율",
+        "notes": "케이시는 데이빗을 꼬맹이라고 부른다. 데이빗은 도나도나를 거북군이라고 부르며, 이는 너구리가 나오는 비디오게임의 거북이 캐릭터를 닮았기 때문이다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "CASEY_RACER",
+      "type": "NPC",
+      "role": "네온 발키리 사장",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "institutionCode": "",
+      "previewImage": "/assets/npcs/Casey-Racer-Valkyrie-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "케이시 레이서",
+        "nameEn": "Casey Racer",
+        "nickname": "발키리",
+        "gender": "여",
+        "age": "국가급 기밀",
+        "height": "163cm",
+        "weight": "미상",
+        "appearance": "정열적인 색깔의 짧은 보브컷 머리를 한 여성. 양쪽 팔이 기계팔로 개조된 사이보그이며, 다른 신체 부위도 무기체로 상당수 개수되어 있다.",
+        "personality": "4차원적이면서 기분파다. 정의와 명예를 추앙하고 비겁한 행동을 싫어한다.",
+        "background": "뉴 더블린의 펑크 바 NeON Valkyrie의 사장. 전직 욤스비킹 용병으로, 조직 성향이 오염된 뒤 고향을 떠나 뉴 더블린에 정착했다.",
+        "quote": "\"걱정마! 힘으로 해결되지 않는 건 없어!\"",
+        "mainImage": "/assets/npcs/Casey-Racer-Valkyrie-profile.webp",
+        "loreTags": [
+          "시민사회",
+          "뉴더블린",
+          "네온발키리",
+          "발키리",
+          "사이보그",
+          "전직욤스비킹",
+          "펑크바",
+          "도나도나",
+          "줄루인권",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "네온 발키리 사장 및 지부 협력자",
+            "summary": "케이시 레이서는 네온 발키리 앞에서 NOGA 폭력배와 충돌했고, 이후 데이빗에게 약속 이행을 요구해 NOGA 진압 임무가 구체화되었다.",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "ORSIS_201",
+            "targetName": "도나도나",
+            "label": "보호자 / 동거 관계",
+            "summary": "케이시는 버려진 도나도나를 발견해 데려왔고, 거금을 들여 바텐딩 모듈을 설치했다. 도나도나를 아끼고 사랑한다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "사용자 제공 프로필 및 기록통제실 보존본 「미니 시리즈 제1화」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "SANDMAN",
+            "targetName": "데이빗 오 캘러핸",
+            "label": "지부 협력자",
+            "summary": "케이시는 데이빗을 꼬맹이이자 식객처럼 대하지만 능력을 높이 산다. 과거 데이빗의 도움에 대한 답례로 네온 발키리에 뉴 더블린 지부 설치를 허가했다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "사용자 제공 프로필 및 기록통제실 보존본 「미니 시리즈 제1화」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 직업: 네온 발키리 사장\n- 능력명: 사이보그\n- 전직: 욤스비킹 용병\n- 현 거점: NeON Valkyrie / 네온 발키리\n- 신체 특성: 양팔 기계팔, 다수의 무기체 개조",
+        "notes": "줄루 인권 보호에 찬성하는 입장이다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "ORSIS_201",
+      "type": "NPC",
+      "role": "네온 발키리 바텐더",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "institutionCode": "",
+      "previewImage": "/assets/npcs/ORSIS-201-DonaDona-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "도나도나",
+        "nameEn": "DonaDona",
+        "nameNative": "ORSIS-201",
+        "nickname": "도나도나",
+        "gender": "여",
+        "age": "18",
+        "height": "151cm",
+        "weight": "미상",
+        "appearance": "인간의 형상을 본떠 만든 합성인간. 피부와 근육은 유기체로 구성되어 있지만 나머지 필수 부품은 무기체이며, 연결 부위가 군데군데 보인다. 자주색과 핑크색 투톤 헤어를 갖고 있다.",
+        "personality": "건조하고 차가운 인상과 무미건조한 목소리를 지녔다. 바텐딩 실력은 뛰어나며, 손님들의 이야기를 잘 듣고 공감하는 능력이 좋다.",
+        "background": "합성인간 ORSIS 시리즈의 초기 모델 중 하나. 예전 주인에게 버림받아 쓰레기장에 있었으나, 케이시 레이서가 발견해 데려왔다. 케이시가 바텐딩 모듈을 설치한 덕분에 뛰어난 바텐더가 되었다.",
+        "quote": "\"제가 받은 명령은 술을 섞고 인생을 바꿔주는 것입니다.\"",
+        "mainImage": "/assets/npcs/ORSIS-201-DonaDona-profile.webp",
+        "loreTags": [
+          "시민사회",
+          "뉴더블린",
+          "네온발키리",
+          "도나도나",
+          "ORSIS-201",
+          "합성인간",
+          "SyntheticHuman",
+          "바텐더",
+          "케이시레이서",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "네온 발키리 바텐더 / ORSIS-201 합성인간",
+            "summary": "도나도나는 ORSIS-201 합성인간으로 자신을 소개했고, 합성인간의 소유 구조와 스페이스 제로의 비활성화 기술을 언급했다.",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "CASEY_RACER",
+            "targetName": "케이시 레이서",
+            "label": "보호자 / 마스터",
+            "summary": "도나도나는 케이시를 마스터로 부르며, 케이시가 자신을 발견해 데려오고 바텐딩 모듈을 설치해 준 인물로 기록된다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "사용자 제공 프로필 및 기록통제실 보존본 「미니 시리즈 제1화」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 직업: 네온 발키리 바텐더\n- 능력명: 합성인간\n- 모델: ORSIS-201\n- 유형: Synthetic Human / 초기형 합성인간\n- 현 거점: NeON Valkyrie / 네온 발키리",
+        "notes": "식사나 수면은 필요하지 않지만 인간을 모방하기 위해 따라한다. 가끔 수면 중 꿈을 꾼다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "PUCK_ASSHOLE",
+      "type": "NPC",
+      "role": "NOGA 거점 지휘자",
+      "department": "MILITARY",
+      "factionCode": "MILITARY",
+      "institutionCode": "",
+      "previewImage": "/assets/npcs/Puck-Asshole-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "퍼크슈타인 애스홀",
+        "nameEn": "Puck Asshole",
+        "nickname": "퍽 애스홀",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "사용자 제공 도판 기준, 금발 머리와 과장된 미소, 펑크 계열 장식과 과시적인 의상이 특징인 인물이다.",
+        "personality": "상세 성격은 별도 프로필로 확정되지 않았다. 세션 기록상으로는 비인간 지성체를 혐오하는 NOGA의 현장 구호와 폭력 노선을 반복하는 지휘자로 관찰되었다.",
+        "background": "NOGA 거점의 현장 지휘자로 확인된 인물. NOGA의 비인간 지성체 혐오와 인류 우월주의 노선을 현장에서 대변했다.",
+        "quote": "\"인간만이 세계를 지배할 수 있다.\"",
+        "mainImage": "/assets/npcs/Puck-Asshole-profile.webp",
+        "loreTags": [
+          "군부",
+          "뉴더블린",
+          "NOGA",
+          "NovusOrdoGreatAgain",
+          "인류우월주의",
+          "폭력단체",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "NOGA 거점 지휘자",
+            "summary": "퍼크슈타인 애스홀은 NOGA 거점에서 무장 폭력배를 지휘했고, 인류 우월주의 구호를 내세워 현장팀과 교전한 뒤 현장에서 사망했다.",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "relations": [],
+        "roleDetail": "- 소속: NOGA\n- 현장 역할: 무장 폭력배 지휘, 네온 발키리 방해, 비인간 린치 선동\n- 최종 상태: 뉴 더블린 NOGA 거점 진압 중 사망\n- 후속 단서: 무기와 지시를 제공한 미확인 여성 / 이그리트 라인",
+        "notes": "텍스트 설정은 세션 기록 기반 최소 정보만 유지한다. 별도 사용자 제공 프로필이 들어오면 성격과 배경을 보강한다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "collection": "wiki_pages",
+    "type": "zulu-269-punk-cat-image",
+    "filter": { "slug": "zulu-269-punk-cat" },
+    "update": [
+      {
+        "$set": {
+          "imageUrl": "/assets/wiki/entities/zulu-269-punk-cat.webp",
+          "updatedAt": "2026-06-11T00:00:00.000Z"
+        }
+      },
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "ZULU-269 펑크 캣은 뉴 더블린의 네온 발키리에서 확인된 줄루 고양이 개체다. 인간 언어 구사와 인간 수준 사고가 가능하며, 노부스 오르도 뉴 더블린 지부의 비공식 정보 협력 개체 및 네온 발키리 마스코트로 기록된다.\n\n## 요약 정보",
+              "replacement": "ZULU-269 펑크 캣은 뉴 더블린의 네온 발키리에서 확인된 줄루 고양이 개체다. 인간 언어 구사와 인간 수준 사고가 가능하며, 노부스 오르도 뉴 더블린 지부의 비공식 정보 협력 개체 및 네온 발키리 마스코트로 기록된다.\n\n![ZULU-269 펑크 캣](/assets/wiki/entities/zulu-269-punk-cat.webp \"ZULU-269 펑크 캣 도판\")\n\n## 요약 정보"
+            }
+          }
+        }
+      }
+    ]
+  }
+]

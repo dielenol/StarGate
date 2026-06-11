@@ -1,0 +1,68 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "IGRIT",
+      "type": "NPC",
+      "role": "뉴 더블린 야간세력 배후 인물",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "institutionCode": "",
+      "previewImage": "/assets/npcs/Igrit-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "이그리트",
+        "nameEn": "Igrit",
+        "gender": "여",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "사용자 제공 도판 기준, 어두운 청색 계열의 머리와 붉은 눈, 붉은 재킷이 특징인 여성 인물이다.",
+        "personality": "상세 성격은 아직 별도 프로필로 확정되지 않았다. 세션 기록상으로는 부하에게 냉정하게 명령하고, 증거 은폐와 노부스 오르도에 대한 적의를 드러낸 인물로 관찰된다.",
+        "background": "이그리트는 뉴 더블린 사건 종료 직후 등장한 배후 인물이다. 퍼크슈타인 애스홀의 잔당 처리를 명령하고, 관련 증거가 남지 않게 하라고 지시했다.",
+        "quote": "\"누가 이 도시의 밤을 지배하는지 알려줄테니.\"",
+        "mainImage": "/assets/npcs/Igrit-profile.webp",
+        "loreTags": [
+          "시민사회",
+          "뉴더블린",
+          "야간세력",
+          "NOGA",
+          "쾌락의천국",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "후속 위협 / 뉴 더블린 야간세력 배후 인물",
+            "summary": "이그리트는 퍼크슈타인 애스홀의 잔당 처리와 증거 은폐를 지시하고, 노부스 오르도를 모두 죽이라고 명령하며 다음 사건의 핵심 위협으로 남았다.",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "PUCK_ASSHOLE",
+            "targetName": "퍼크슈타인 애스홀",
+            "label": "잔당 처리 대상",
+            "summary": "이그리트는 퍼크슈타인을 기대 이하라고 평가하고, 남은 잔당 처리와 증거 은폐를 명령했다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "기록통제실 보존본 「미니 시리즈 제1화: 뉴 더블린에 어서오세요」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 활동지: 뉴 더블린\n- 확인 행동: 퍼크슈타인 잔당 처리 지시, 증거 은폐 지시, 노부스 오르도에 대한 적대 발언\n- 현재 분류: 후속 조사 대상\n- 관련 후속 제목: 쾌락의 천국",
+        "notes": "이미지는 사용자 제공 도판을 사용한다. 조직, 능력, 상세 프로필은 후속 세션 또는 사용자 제공 설정 확인이 필요하다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  }
+]
