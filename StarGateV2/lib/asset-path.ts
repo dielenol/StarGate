@@ -7,6 +7,7 @@ const CACHE_BUSTED_PUBLIC_IMAGES = new Set([
   "/assets/npcs/David-O-Callahan-Sandman-profile.webp",
   "/assets/npcs/Igrit-profile.webp",
   "/assets/npcs/ORSIS-201-DonaDona-profile.webp",
+  "/assets/npcs/Puck-Asshole-profile.webp",
   "/assets/npcs/Zulu-269-Punk-Cat-profile.webp",
 ]);
 
