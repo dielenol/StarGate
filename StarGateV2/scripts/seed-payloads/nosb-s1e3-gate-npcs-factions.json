@@ -1,0 +1,194 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "ARBITER",
+      "type": "NPC",
+      "role": "노부스 오르도 재무위 및 시장조율기구 의장",
+      "department": "FINANCE",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "SECRETARIAT",
+      "previewImage": "/assets/npcs/Jeremiah-Paul-profile.webp",
+      "agentLevel": "V",
+      "isPublic": true,
+      "lore": {
+        "name": "제레마이어 폴",
+        "nameEn": "Jeremiah Paul",
+        "gender": "남",
+        "age": "54",
+        "height": "188cm",
+        "weight": "미상",
+        "appearance": "날렵하고 날카로운 외관의 남성. 깔끔하게 다듬은 수염과 헤어스타일, 은색 안경, 호리호리하고 큰 키가 인상적이다.",
+        "personality": "침착하고 감정 기복이 적은 인물 유형이다. 공개 발언에서도 정서적 동요를 거의 드러내지 않고, 시장 안정성과 의사결정의 연속성을 우선한다.",
+        "background": "제레마이어 폴은 노부스 오르도 재무위 및 시장조율기구 의장이다. 미 대통령을 포함한 몇몇 핵심 인사들은 그를 근거 없는 비방으로 공격하지만, 국제 사회는 그의 능력과 결단 덕분에 광원화 사태 이후의 역동적인 경제 유동성을 넘어가고 있다고 평가한다.",
+        "quote": "그럼에도 소비는 견고하며 투자 심리와 시장 안전성은 회복되고 있습니다.",
+        "mainImage": "/assets/npcs/Jeremiah-Paul-profile.webp",
+        "loreTags": ["재무위원장", "재무기구", "시장조율기구", "비능력자"],
+        "appearsInEvents": ["NOSB-S1E3-PHANTOM"],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E3-PHANTOM",
+            "role": "재무위 및 시장조율기구 의장",
+            "summary": "3화 망령 기록에서 광원화 사태 이후 경제 유동성과 시장 안정성에 관한 공식 발언 주체로 등록되었다.",
+            "sourceLabel": "NOVUS ORDO 보존기록 S1E3 망령",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 관리 대상: 노부스 오르도 재무위, 시장조율기구, 국제 경제 안정화 의사결정\n- 업무 범위: 광원화 사태 이후 시장 안정성, 투자 심리, 자금 흐름 조율\n- NPC 특성: 비능력자\n- 등장 방식: 공식 발표, 재무위 보고, 국제 의사결정 라인",
+        "notes": "코드네임 ARBITER는 충돌하는 이해관계와 시장 판단 사이에서 조율과 판정을 수행하는 직무를 가리킨다."
+      },
+      "loreMd": "## 대사\n> 그럼에도 소비는 견고하며 투자 심리와 시장 안전성은 회복되고 있습니다.\n\n## 외형\n날렵하고 날카로운 외관의 남성. 깔끔하게 다듬은 수염과 헤어스타일, 은색 안경, 호리호리하고 큰 키가 인상적이다.\n\n## 성격\n침착하고 감정 기복이 적은 인물 유형이다.\n\n## 배경\n노부스 오르도 재무위 및 시장조율기구 의장. 광원화 사태 이후의 경제 유동성과 시장 안정성에 관한 공식 판단 라인에 선다.",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-04-25T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "EXPERIMENT_88",
+      "type": "NPC",
+      "role": "아넨에르베 \"광명회\" 관련 실험체",
+      "department": "AHNENERBE",
+      "factionCode": "AHNENERBE",
+      "previewImage": "/assets/npcs/Experiment-88-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "실험체 88",
+        "nameEn": "Experiment 88",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "금발을 가진 인물형 실험체. 검은 장식복과 금색 문양, 비인간적이거나 개조된 것으로 보이는 신체 요소가 함께 확인된다.",
+        "personality": "현재 확정된 성격 기록은 부족하다. 3화 기록에서는 과거의 망령이라는 표현과 함께 실험체로 호명되며, 직접적 동기나 자의식은 추가 확인이 필요하다.",
+        "background": "3화 기록에서 실험체 88은 아넨에르베 \"광명회\" 관련 단서와 함께 등장한 인물형 실험체로 분류된다. 기록에는 오래된 연구, 인간성 상실, 과거의 망령이라는 표현이 연결되어 있으나, 현재 조직 내 지위와 자율성은 확정되지 않았다.",
+        "quote": "망령이 아님을 증명하세요.",
+        "mainImage": "/assets/npcs/Experiment-88-profile.webp",
+        "loreTags": ["적대세력", "아넨에르베", "광명회", "실험체", "망령"],
+        "appearsInEvents": ["NOSB-S1E3-PHANTOM"],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E3-PHANTOM",
+            "role": "아넨에르베 \"광명회\" 관련 실험체",
+            "summary": "3화 망령 기록에서 실험체 88로 확인된 적대세력 관련 인물형 실험체.",
+            "sourceLabel": "NOVUS ORDO 보존기록 S1E3 망령",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 관리 대상: 아넨에르베 \"광명회\" 관련 적대 개체 후보\n- 업무 범위: 없음. 작전상 추적 및 교전 가능 대상으로 분류\n- NPC 특성: 실험체, 적대세력 관련 인물\n- 등장 방식: S1E3 망령 기록의 핵심 적대 단서",
+        "notes": "EXPERIMENT_88은 기록상 호명된 실험체 번호를 그대로 보존한 코드네임이다."
+      },
+      "loreMd": "## 대사\n> 망령이 아님을 증명하세요.\n\n## 외형\n금발을 가진 인물형 실험체. 검은 장식복과 금색 문양, 비인간적이거나 개조된 것으로 보이는 신체 요소가 함께 확인된다.\n\n## 성격\n현재 확정된 성격 기록은 부족하다.\n\n## 배경\n3화 기록에서 아넨에르베 \"광명회\" 관련 단서와 함께 등장한 인물형 실험체로 분류된다.",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "factions",
+    "type": "hostile-classification",
+    "payload": {
+      "code": "HOSTILE",
+      "slug": "hostile",
+      "label": "적대세력",
+      "labelEn": "Hostile Forces",
+      "scope": "external",
+      "summary": "노부스 오르도 작전 기록에서 적대 또는 충돌 대상으로 분류되는 비정규 세력군.",
+      "ideology": "단일 이념 조직이 아니라 작전상 충돌 대상으로 묶이는 행정 분류다.",
+      "relationships": [
+        { "targetCode": "NOVUS_ORDO", "type": "rival", "note": "작전상 대응 주체" },
+        { "targetCode": "GOLDEN_DAWN", "type": "subordinate", "note": "적대세력 하위 분류" },
+        { "targetCode": "AHNENERBE", "type": "subordinate", "note": "적대세력 하위 분류" }
+      ],
+      "notableMembers": [],
+      "tags": ["적대세력", "위협", "작전대상"],
+      "isPublic": true,
+      "source": "manual",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "factions",
+    "type": "hostile-faction",
+    "payload": {
+      "code": "GOLDEN_DAWN",
+      "slug": "golden-dawn",
+      "label": "황금여명회",
+      "labelEn": "Golden Dawn",
+      "scope": "external",
+      "summary": "NOSB S1E3 망령 기록에서 적대 컬트 세력으로 분류된 비정규 조직.",
+      "ideology": "세부 교리와 조직 계통은 확정되지 않았으며, 작전 기록에서는 비정규 적대 조직으로 우선 관리한다.",
+      "relationships": [
+        { "targetCode": "HOSTILE", "type": "parent", "note": "적대세력 분류" },
+        { "targetCode": "NOVUS_ORDO", "type": "rival", "note": "작전상 대응 주체" }
+      ],
+      "notableMembers": [],
+      "tags": ["황금여명회", "적대세력", "컬트", "S1E3", "망령"],
+      "isPublic": true,
+      "source": "manual",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "factions",
+    "type": "hostile-faction",
+    "payload": {
+      "code": "AHNENERBE",
+      "slug": "ahnenerbe",
+      "label": "아넨에르베 \"광명회\"",
+      "labelEn": "Ahnenerbe Illuminati",
+      "scope": "external",
+      "summary": "광명회 및 아넨에르베 계열로 추적되는 적대 연구 세력.",
+      "ideology": "광명회 단서와 아넨에르베 계열 연구 흔적이 연결된 적대 연구 세력으로 추적된다. 현재 조직의 정확한 현행 구조와 지휘 계통은 추가 검증 대상이다.",
+      "relationships": [
+        { "targetCode": "HOSTILE", "type": "parent", "note": "적대세력 분류" },
+        { "targetCode": "NOVUS_ORDO", "type": "rival", "note": "작전상 대응 주체" }
+      ],
+      "notableMembers": ["EXPERIMENT_88"],
+      "tags": ["아넨에르베", "아르넨엘베", "광명회", "적대세력", "S1E2", "S1E3", "망령"],
+      "isPublic": true,
+      "source": "manual",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "faction-wiki",
+    "payload": {
+      "slug": "golden-dawn",
+      "title": "황금여명회",
+      "category": "세력",
+      "tags": ["GOLDEN_DAWN", "황금여명회", "적대세력", "S1E3", "망령"],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제국 문서관",
+      "content": "# 황금여명회\n\n황금여명회는 NOSB S1E3 망령 기록에서 적대 컬트 세력으로 분류된 비정규 조직이다. 현재 공개 기록상 세부 교리와 지휘 계통은 확정되지 않았으며, 노부스 오르도 세력도에서는 `적대세력` 하위 분류로 추적한다.\n\n## 요약 정보\n분류: 적대세력 / 비정규 컬트 조직\n관련 작전: NOSB-S1E3-PHANTOM\n상태: 추가 신원 및 조직 구조 조사 필요\n\n## 기록 상태\n황금여명회는 정식 우호·중립 외부 권력 블록이 아니라 작전상 충돌 가능성이 있는 적대세력으로 분리 관리된다. 소속 인물, 의식, 장비, 교전 기록이 확인되면 본 문서와 신원조회 기록에 추가 연결한다.\n\n## 관련 문서\n적대세력, 아넨에르베 \"광명회\", 실험체 88, 작전 보고서 S1E3: 망령.\n\n## 기록 출처\nNOVUS ORDO 보존기록 S1E3 망령.",
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "faction-wiki",
+    "payload": {
+      "slug": "illuminati",
+      "title": "광명회",
+      "category": "세력",
+      "tags": ["AHNENERBE", "광명회", "아넨에르베", "아르넨엘베", "적대세력", "NOSB-S1E2-CHOICE", "NOSB-S1E3-PHANTOM"],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 기록통제국 문서관",
+      "content": "# 광명회\n\n광명회는 NOSB S1E2 선택 기록에서 아넨에르베 관련 단서와 함께 조사 대상으로 부상했고, NOSB S1E3 망령 기록에서 아넨에르베 \"광명회\" 계열 적대 연구 세력으로 재분류된 세력이다. 현재 기록상 조직의 정확한 현행 구조와 지휘 계통은 추가 검증 대상이다.\n\n## 요약 정보\n분류: 적대세력 / 아넨에르베 계열 연구 세력\n관련 작전: NOSB-S1E2-CHOICE, NOSB-S1E3-PHANTOM\n관련 신원: 실험체 88\n상태: 조사 진행 중\n\n## S1E2 기록 보강\nS1E2 선택 기록에서는 오디세이 시설 증거와 증언을 통해 광명회 및 아넨에르베 관련 문서 단서가 확인되었다. 이 단계의 기록은 조직 실체를 확정하기보다는 후속 조사 대상으로 분류했다.\n\n## S1E3 기록 보강\nS1E3 망령 기록에서는 광명회 단서가 아넨에르베 계열 연구 흔적과 실험체 88로 확장되었다. 이에 따라 세력도에는 `AHNENERBE` 하위 적대세력으로 등록하고, 신원조회에는 실험체 88을 관련 인물형 실험체로 연결한다.\n\n## 관련 문서\n황금여명회, 실험체 88, 작전 보고서 S1E2: 선택, 작전 보고서 S1E3: 망령.\n\n## 기록 출처\nNOVUS ORDO 보존기록 S1E2 선택 및 S1E3 망령.",
+      "createdAt": "2026-04-06T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  }
+]
