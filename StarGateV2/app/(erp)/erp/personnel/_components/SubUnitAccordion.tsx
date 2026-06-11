@@ -6,7 +6,7 @@ import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import { getExternalSubOrg } from "../_constants";
 
-import OrgIcon, { getSubUnitIcon } from "./OrgIcon";
+import OrgIcon, { getInstitutionIcon, getSubUnitIcon } from "./OrgIcon";
 
 import styles from "./SubUnitAccordion.module.css";
 
@@ -40,7 +40,7 @@ export default function SubUnitAccordion({
     metaParts.push(`부서장 ${leadCount}`);
   }
 
-  const subIcon = getSubUnitIcon(code);
+  const subIcon = getSubUnitIcon(code) ?? getInstitutionIcon(code);
   const subLogo = externalSubOrg?.logoUrl;
   const optimizedSubLogo = subLogo
     ? preferOptimizedPublicImagePath(subLogo)

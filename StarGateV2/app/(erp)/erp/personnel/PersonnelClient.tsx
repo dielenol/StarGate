@@ -118,7 +118,18 @@ function resolveExternalSubOrg(c: Character) {
 }
 
 function resolveSubUnitCode(c: Character): string | null {
-  return resolveExternalSubOrg(c)?.code ?? c.department ?? null;
+  const externalSubOrg = resolveExternalSubOrg(c);
+  if (externalSubOrg) return externalSubOrg.code;
+
+  if (c.department && c.department !== UNASSIGNED_CODE) {
+    return c.department;
+  }
+
+  if (c.institutionCode && isInstitution(c.institutionCode)) {
+    return c.institutionCode;
+  }
+
+  return null;
 }
 
 function characterUsesAgentLevels(c: Character): boolean {
@@ -296,6 +307,7 @@ export default function PersonnelClient({
   const subUnitIndex = useMemo(() => {
     const map = new Map<string, Character[]>();
     for (const inst of INSTITUTIONS) {
+      map.set(inst.code, []);
       for (const sub of inst.subUnits) {
         map.set(sub.code, []);
       }
@@ -308,6 +320,7 @@ export default function PersonnelClient({
       if (!subUnitCode) continue;
       const bucket = map.get(subUnitCode);
       if (bucket) bucket.push(c);
+      else map.set(subUnitCode, [c]);
     }
     return map;
   }, [characters]);
@@ -534,12 +547,20 @@ export default function PersonnelClient({
   const selectedSubUnits = useMemo(() => {
     if (!selectedGroup) return [];
     if (selectedGroup === INTERNAL_FACTION_CODE) {
-      return INSTITUTIONS.flatMap((inst) =>
-        inst.subUnits.map((u) => ({ code: u.code, label: u.label })),
-      );
+      return INSTITUTIONS.flatMap((inst) => {
+        const directCount = groupIndex.get(inst.code)?.length ?? 0;
+        const directUnit =
+          directCount > 0
+            ? [{ code: inst.code, label: `${inst.label} 직속` }]
+            : [];
+        return [
+          ...directUnit,
+          ...inst.subUnits.map((u) => ({ code: u.code, label: u.label })),
+        ];
+      });
     }
     return getDisplaySubUnits(selectedGroup);
-  }, [selectedGroup]);
+  }, [groupIndex, selectedGroup]);
 
   const selectedSubUnitCodes = useMemo(
     () => new Set(selectedSubUnits.map((u) => u.code)),
