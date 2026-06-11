@@ -9,6 +9,13 @@ import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
+import {
+  IconAffinity,
+  IconFactionBriefing,
+  IconFactionMap,
+  IconHostile,
+  IconRelations,
+} from "@/components/icons";
 
 import orgStyles from "../personnel/_components/OrgCanvas.module.css";
 import styles from "./page.module.css";
@@ -110,6 +117,13 @@ function formatFavorability(value: number | null): string {
 
 function displayCode(code: string): string {
   return code.replace(/_/g, " ");
+}
+
+function favorabilityToneClass(value: number | null): string {
+  if (value === null) return styles["favorability--neutral"];
+  if (value > 0) return styles["favorability--positive"];
+  if (value < 0) return styles["favorability--negative"];
+  return styles["favorability--neutral"];
 }
 
 export default function FactionsClient({ data }: FactionsClientProps) {
@@ -243,7 +257,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
         <span className={orgStyles.tl} />
         <span className={orgStyles.br} />
 
-        {node.logoUrl ? (
+        {node.logoUrl && !isHostile ? (
           <img
             src={node.logoUrl}
             alt=""
@@ -252,7 +266,14 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           />
         ) : null}
 
-        {isSubOrg && node.logoUrl ? (
+        {isHostile ? (
+          <IconHostile
+            className={[orgStyles.subOrgLogo, styles.hostileNodeIcon].join(
+              " ",
+            )}
+            aria-hidden
+          />
+        ) : isSubOrg && node.logoUrl ? (
           <img
             src={node.logoUrl}
             alt=""
@@ -279,8 +300,23 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           ) : null}
         </div>
 
-        <div className={orgStyles.node__section}>
-          <div className={orgStyles.node__sectionLabel}>우호도</div>
+        <div
+          className={[
+            orgStyles.node__section,
+            favorabilityToneClass(node.favorability),
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <div
+            className={[
+              orgStyles.node__sectionLabel,
+              styles.nodeSectionLabel,
+            ].join(" ")}
+          >
+            <IconAffinity className={styles.nodeMetricIcon} aria-hidden />
+            <span>우호도</span>
+          </div>
           <div className={orgStyles.headcount}>
             <span className={orgStyles.headcount__n}>
               {formatFavorability(node.favorability)}
@@ -307,7 +343,12 @@ export default function FactionsClient({ data }: FactionsClientProps) {
       <div className={styles.page}>
         <div className={styles.board}>
           <Box className={styles.networkPanel}>
-            <PanelTitle>세력 관계도</PanelTitle>
+            <PanelTitle>
+              <span className={styles.panelLabel}>
+                <IconFactionMap className={styles.panelIcon} aria-hidden />
+                <span>세력 관계도</span>
+              </span>
+            </PanelTitle>
 
             <div className={[orgStyles.canvas, styles.orgCanvas].join(" ")}>
               <div className={styles.orgInner}>
@@ -433,7 +474,13 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           {selectedNode ? (
             <Box className={styles.detailPanel} variant="gold">
               <PanelTitle right={<Tag tone="info">{selectedNode.scopeLabel}</Tag>}>
-                세력 브리핑
+                <span className={styles.panelLabel}>
+                  <IconFactionBriefing
+                    className={styles.panelIcon}
+                    aria-hidden
+                  />
+                  <span>세력 브리핑</span>
+                </span>
               </PanelTitle>
 
               <div className={styles.briefing}>
@@ -474,7 +521,10 @@ export default function FactionsClient({ data }: FactionsClientProps) {
 
               <div className={styles.density}>
                 <div className={styles.density__head}>
-                  <span>관계 연결도</span>
+                  <span className={styles.metricLabel}>
+                    <IconRelations className={styles.metricIcon} aria-hidden />
+                    <span>관계 연결도</span>
+                  </span>
                   <b>{density}%</b>
                 </div>
                 <div className={styles.density__bar} aria-hidden>
@@ -483,8 +533,11 @@ export default function FactionsClient({ data }: FactionsClientProps) {
               </div>
 
               <div className={styles.detailStats}>
-                <div>
-                  <span>우호도</span>
+                <div className={favorabilityToneClass(selectedNode.favorability)}>
+                  <span className={styles.metricLabel}>
+                    <IconAffinity className={styles.metricIcon} aria-hidden />
+                    <span>우호도</span>
+                  </span>
                   <b>{formatFavorability(selectedNode.favorability)}</b>
                 </div>
                 <div>

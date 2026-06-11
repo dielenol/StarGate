@@ -15,6 +15,23 @@ import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
+import {
+  IconConcept,
+  IconContainment,
+  IconCoreArchive,
+  IconFactionBriefing,
+  IconFinance,
+  IconGoods,
+  IconGridAll,
+  IconInstitution,
+  IconInventoryConsumable,
+  IconInventoryEquipment,
+  IconPersonCard,
+  IconPlace,
+  IconRegulation,
+  IconWikiFaction,
+  type IconComponent,
+} from "@/components/icons";
 
 import WikiSearchBar from "./WikiSearchBar";
 import {
@@ -45,6 +62,32 @@ function wikiListHref(category?: string, q?: string): string {
 
 function pushWikiListUrl(category?: string, q?: string): void {
   window.history.pushState(null, "", wikiListHref(category, q));
+}
+
+const WIKI_CATEGORY_ICONS: Record<string, IconComponent> = {
+  개념: IconConcept,
+  개체: IconContainment,
+  기관: IconInstitution,
+  사건: IconFactionBriefing,
+  세력: IconWikiFaction,
+  세션: IconFactionBriefing,
+  장소: IconPlace,
+  예산: IconFinance,
+  규정: IconRegulation,
+  작전기록: IconCoreArchive,
+  "작전 보고서": IconFactionBriefing,
+  인물: IconPersonCard,
+  장비: IconInventoryEquipment,
+  소모품: IconInventoryConsumable,
+  물품: IconGoods,
+};
+
+function iconForWikiCategory(category: string): IconComponent {
+  return (
+    WIKI_CATEGORY_ICONS[category] ??
+    WIKI_CATEGORY_ICONS[category.replace(/\s+/g, "")] ??
+    IconGoods
+  );
 }
 
 function shouldUseClientNavigation(
@@ -227,7 +270,7 @@ export default function WikiClient({
                 aria-current={noFilter ? "page" : undefined}
               >
                 <span className={styles.nav__label}>
-                  <span className={styles.nav__marker} />
+                  <IconGridAll className={styles.nav__icon} aria-hidden />
                   <span>전체</span>
                 </span>
                 <span className={styles.nav__count}>{totalCount}</span>
@@ -235,6 +278,7 @@ export default function WikiClient({
             </li>
             {sortedCategories.map((cat) => {
               const active = activeCategory === cat;
+              const CategoryIcon = iconForWikiCategory(cat);
               return (
                 <li key={cat}>
                   <Link
@@ -249,7 +293,7 @@ export default function WikiClient({
                     aria-current={active ? "page" : undefined}
                   >
                     <span className={styles.nav__label}>
-                      <span className={styles.nav__marker} />
+                      <CategoryIcon className={styles.nav__icon} aria-hidden />
                       <span>{cat}</span>
                     </span>
                     <span className={styles.nav__count}>

@@ -15,9 +15,9 @@ import {
   IconCredit,
   IconInfo,
   IconNotes,
-  IconReportDocument,
   IconStock,
   IconTimeline,
+  IconTransactions,
   type IconComponent,
 } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
@@ -571,7 +571,7 @@ export default function CreditsClient({
 
       <Box>
         <PanelTitle right={<span className={styles.mono}>{filtered.length}건</span>}>
-          <PanelLabel icon={IconReportDocument}>거래 내역</PanelLabel>
+          <PanelLabel icon={IconTransactions}>거래 내역</PanelLabel>
         </PanelTitle>
 
         <div className={styles.controls}>

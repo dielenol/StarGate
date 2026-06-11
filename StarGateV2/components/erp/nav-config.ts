@@ -10,10 +10,12 @@ import {
   IconAccount,
   IconApply,
   IconArchive,
+  IconCoreArchive,
   IconCredit,
   IconCrown,
   IconDashboard,
   IconEquipment,
+  IconFactionMap,
   IconInventory,
   IconMembers,
   IconNotification,
@@ -76,7 +78,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "캐릭터", keywords: "characters person", icon: IconPersonCard, href: "/erp/characters" },
       { label: "신원조회", keywords: "identity personnel", icon: IconMembers, href: "/erp/personnel" },
-      { label: "세력도", keywords: "factions diplomacy influence 세력 관계도 외교", icon: IconWorld, href: "/erp/factions" },
+      { label: "세력도", keywords: "factions diplomacy influence 세력 관계도 외교", icon: IconFactionMap, href: "/erp/factions" },
       /* 명예의 전당 — 콘텐츠 준비중. */
       { label: "명예의 전당", keywords: "hall of fame", icon: IconCrown, href: null },
     ],
@@ -99,7 +101,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "위키", keywords: "wiki", icon: IconWiki, href: "/erp/wiki" },
       { label: "작전 보고서", keywords: "report session archive operation 작전 보고서 세션 리포트 작전 기록", icon: IconReportDocument, href: "/erp/sessions/report" },
-      { label: "기록보관소", keywords: "catalog archive records equipment weapon armor consumable material sample evidence special 기록보관소 장비 소모품 샘플 물증 특수", icon: IconArchive, href: "/erp/wiki/catalog/all" },
+      { label: "기록보관소", keywords: "catalog archive records equipment weapon armor consumable material sample evidence special 기록보관소 장비 소모품 샘플 물증 특수", icon: IconCoreArchive, href: "/erp/wiki/catalog/all" },
       /* 갤러리 · 연대기 — 콘텐츠 준비중. */
       { label: "갤러리", keywords: "gallery", icon: IconArchive, href: null },
       { label: "연대기", keywords: "chronicle", icon: IconWorld, href: null },

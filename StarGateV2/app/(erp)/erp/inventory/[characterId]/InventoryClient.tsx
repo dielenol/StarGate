@@ -5,10 +5,10 @@ import { useMemo, useState } from "react";
 import type { ItemCategory } from "@/types/inventory";
 
 import {
-  IconArchive,
-  IconConsumable,
-  IconEquipment,
   IconInventory,
+  IconInventoryConsumable,
+  IconInventoryEquipment,
+  IconInventoryMisc,
   IconSharedInventory,
   type IconComponent,
 } from "@/components/icons";
@@ -44,9 +44,9 @@ type InventoryTab = "ALL" | "EQUIPMENT" | "CONSUMABLE" | "OTHER";
 const TAB_DEFS: { value: InventoryTab; label: string; icon: IconComponent }[] =
   [
     { value: "ALL", label: "전체", icon: IconInventory },
-    { value: "EQUIPMENT", label: "장비", icon: IconEquipment },
-    { value: "CONSUMABLE", label: "소모품", icon: IconConsumable },
-    { value: "OTHER", label: "기타", icon: IconArchive },
+    { value: "EQUIPMENT", label: "장비", icon: IconInventoryEquipment },
+    { value: "CONSUMABLE", label: "소모품", icon: IconInventoryConsumable },
+    { value: "OTHER", label: "기타", icon: IconInventoryMisc },
   ];
 
 const SECTION_ICONS: Record<"personal" | "shared", IconComponent> = {
@@ -116,12 +116,22 @@ function CategoryIcon({
     return <ShopItemIcon slug={slug} size={40} />;
   }
   if (category === "CONSUMABLE") {
-    return <IconConsumable className={styles.slot__iconSvg} aria-hidden />;
+    return (
+      <IconInventoryConsumable
+        className={styles.slot__iconSvg}
+        aria-hidden
+      />
+    );
   }
   if (category === "WEAPON" || category === "ARMOR") {
-    return <IconEquipment className={styles.slot__iconSvg} aria-hidden />;
+    return (
+      <IconInventoryEquipment
+        className={styles.slot__iconSvg}
+        aria-hidden
+      />
+    );
   }
-  return <IconInventory className={styles.slot__iconSvg} aria-hidden />;
+  return <IconInventoryMisc className={styles.slot__iconSvg} aria-hidden />;
 }
 
 export default function InventoryClient({

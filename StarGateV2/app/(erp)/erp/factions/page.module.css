@@ -23,6 +23,51 @@
   letter-spacing: 0;
 }
 
+.panelLabel,
+.metricLabel,
+.nodeSectionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.panelIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--gold);
+}
+
+.metricIcon,
+.nodeMetricIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.nodeSectionLabel {
+  display: flex;
+  color: inherit;
+}
+
+.hostileNodeIcon {
+  color: var(--danger);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--danger) 34%, transparent));
+}
+
+.favorability--positive {
+  color: var(--gold);
+}
+
+.favorability--negative {
+  color: var(--danger);
+}
+
+.favorability--neutral {
+  color: var(--ink-2);
+}
+
 .orgCanvas {
   margin-top: 16px;
   min-height: 0;
@@ -143,6 +188,10 @@
   font-weight: 600;
 }
 
+.density__head .metricIcon {
+  color: var(--gold);
+}
+
 .density__bar {
   height: 8px;
   margin-top: 8px;
@@ -180,6 +229,11 @@
   letter-spacing: 0;
 }
 
+.detailStats .metricLabel {
+  display: inline-flex;
+  color: inherit;
+}
+
 .detailStats b {
   display: block;
   margin-top: 4px;
@@ -187,6 +241,14 @@
   font-family: var(--font-mono);
   font-size: 22px;
   font-weight: 600;
+}
+
+.detailStats .favorability--negative b {
+  color: var(--danger);
+}
+
+.detailStats .favorability--neutral b {
+  color: var(--ink-1);
 }
 
 .favorabilityEditor {
