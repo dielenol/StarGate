@@ -118,6 +118,11 @@
   object-fit: contain;
 }
 
+.briefing__logo--spaceZero {
+  filter: invert(1) grayscale(1) contrast(1.35)
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.16));
+}
+
 .briefing__sigil {
   color: var(--gold);
   font-family: var(--font-mono);
@@ -162,11 +167,18 @@
   max-width: 100%;
 }
 
-.briefing__tag {
+.briefing__tags .briefing__tag {
+  display: inline-flex;
+  min-width: 0;
   max-width: 100%;
   line-height: 1.45;
   overflow-wrap: anywhere;
+  word-break: keep-all;
   white-space: normal;
+}
+
+.briefing__tags .briefing__summaryTag {
+  flex: 1 1 100%;
 }
 
 .density {

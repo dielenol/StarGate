@@ -489,7 +489,14 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                     <img
                       src={selectedNode.logoUrl}
                       alt=""
-                      className={styles.briefing__logo}
+                      className={[
+                        styles.briefing__logo,
+                        selectedNode.code === "SPACE_ZERO"
+                          ? styles["briefing__logo--spaceZero"]
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                     />
                   ) : (
                     <span className={styles.briefing__sigil}>
@@ -502,7 +509,13 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                   <h2>{selectedNode.label}</h2>
                   <p>{selectedNode.doctrine}</p>
                   <div className={styles.briefing__tags}>
-                    <Tag tone="gold" className={styles.briefing__tag}>
+                    <Tag
+                      tone="gold"
+                      className={[
+                        styles.briefing__tag,
+                        styles.briefing__summaryTag,
+                      ].join(" ")}
+                    >
                       {selectedNode.summary}
                     </Tag>
                     {selectedNode.parentLabel ? (
