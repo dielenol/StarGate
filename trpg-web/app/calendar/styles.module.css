@@ -45,6 +45,32 @@
   border-color: var(--border-strong);
 }
 
+.calendar__mine-toggle {
+  padding: 6px 12px;
+  background: rgba(88, 101, 242, 0.1);
+  color: #c7d0ff;
+  border: 1px solid rgba(88, 101, 242, 0.34);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.calendar__mine-toggle:hover {
+  background: rgba(88, 101, 242, 0.16);
+  border-color: rgba(142, 155, 255, 0.56);
+  color: #eef1ff;
+}
+
+.calendar__mine-toggle--active {
+  background: rgba(88, 101, 242, 0.24);
+  border-color: #8ea0ff;
+  color: #fff;
+}
+
 .calendar__create-btn {
   padding: 7px 12px;
   background: var(--accent);
@@ -352,6 +378,7 @@
   --session-panel-bg: rgba(88, 101, 242, 0.08);
   --session-panel-bg-hover: rgba(88, 101, 242, 0.14);
   --session-panel-border: rgba(88, 101, 242, 0.5);
+  --session-panel-time: #8ea0ff;
 
   display: flex;
   align-items: center;
@@ -375,28 +402,54 @@
   --session-panel-bg: rgba(35, 165, 90, 0.08);
   --session-panel-bg-hover: rgba(35, 165, 90, 0.14);
   --session-panel-border: rgba(35, 165, 90, 0.55);
+  --session-panel-time: #69e8a1;
 }
 
 .calendar__cell-sessions li:nth-child(4n + 3) .calendar__chip {
   --session-panel-bg: rgba(250, 166, 26, 0.08);
   --session-panel-bg-hover: rgba(250, 166, 26, 0.14);
   --session-panel-border: rgba(250, 166, 26, 0.55);
+  --session-panel-time: #ffc45c;
 }
 
 .calendar__cell-sessions li:nth-child(4n) .calendar__chip {
   --session-panel-bg: rgba(237, 66, 69, 0.08);
   --session-panel-bg-hover: rgba(237, 66, 69, 0.14);
   --session-panel-border: rgba(237, 66, 69, 0.52);
+  --session-panel-time: #ff8588;
 }
 
 .calendar__chip:hover {
   background: var(--session-panel-bg-hover);
 }
 
+.calendar__chip--mine {
+  background: rgba(88, 101, 242, 0.22);
+  border-left-color: #c7d0ff;
+  box-shadow: inset 0 0 0 1px rgba(199, 208, 255, 0.26);
+}
+
+.calendar__chip--mine:hover {
+  background: rgba(88, 101, 242, 0.3);
+}
+
+.calendar__chip--mine::after {
+  content: "내";
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(199, 208, 255, 0.4);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
 .calendar__chip-time {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--session-panel-border);
+  color: var(--session-panel-time);
   flex-shrink: 0;
   font-weight: 700;
 }
@@ -564,6 +617,7 @@
   --session-panel-bg: rgba(88, 101, 242, 0.08);
   --session-panel-bg-hover: rgba(88, 101, 242, 0.14);
   --session-panel-border: rgba(88, 101, 242, 0.5);
+  --session-panel-time: #8ea0ff;
 
   background: var(--session-panel-bg);
   border: 1px solid rgba(88, 101, 242, 0.22);
@@ -579,6 +633,7 @@
   --session-panel-bg: rgba(35, 165, 90, 0.08);
   --session-panel-bg-hover: rgba(35, 165, 90, 0.14);
   --session-panel-border: rgba(35, 165, 90, 0.55);
+  --session-panel-time: #69e8a1;
 
   border-color: rgba(35, 165, 90, 0.22);
 }
@@ -587,6 +642,7 @@
   --session-panel-bg: rgba(250, 166, 26, 0.08);
   --session-panel-bg-hover: rgba(250, 166, 26, 0.14);
   --session-panel-border: rgba(250, 166, 26, 0.55);
+  --session-panel-time: #ffc45c;
 
   border-color: rgba(250, 166, 26, 0.24);
 }
@@ -595,6 +651,7 @@
   --session-panel-bg: rgba(237, 66, 69, 0.08);
   --session-panel-bg-hover: rgba(237, 66, 69, 0.14);
   --session-panel-border: rgba(237, 66, 69, 0.52);
+  --session-panel-time: #ff8588;
 
   border-color: rgba(237, 66, 69, 0.22);
 }
@@ -607,6 +664,18 @@
 .dayPanel__item--focused {
   border-color: var(--session-panel-border);
   background: var(--session-panel-bg-hover);
+}
+
+.dayPanel__item--mine {
+  background: rgba(88, 101, 242, 0.18);
+  border-color: #8ea0ff;
+  box-shadow: inset 0 0 0 1px rgba(142, 160, 255, 0.26);
+}
+
+.dayPanel__item--mine:hover,
+.dayPanel__item--mine.dayPanel__item--focused {
+  background: rgba(88, 101, 242, 0.26);
+  border-color: #c7d0ff;
 }
 
 .dayPanel__sessionButton {
@@ -636,7 +705,7 @@
 
 .dayPanel__time {
   flex: 0 0 auto;
-  color: var(--session-panel-border);
+  color: var(--session-panel-time);
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 700;
@@ -1326,6 +1395,7 @@
   }
 
   .calendar__today,
+  .calendar__mine-toggle,
   .calendar__create-btn,
   .calendar__sign-out {
     padding: 7px 10px;

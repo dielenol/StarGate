@@ -39,6 +39,16 @@ interface Props {
   initialFocusedSessionId?: string | null;
 }
 
+function isUserSession(
+  session: TrpgSessionView,
+  currentUserDiscordId: string,
+): boolean {
+  return (
+    session.createdByDiscordId === currentUserDiscordId ||
+    session.participantDiscordIds.includes(currentUserDiscordId)
+  );
+}
+
 export function CalendarClient({
   currentUserDiscordId,
   initialYear,
@@ -59,6 +69,7 @@ export function CalendarClient({
   const [focusedSessionId, setFocusedSessionId] = useState<string | null>(
     initialFocusedSessionId,
   );
+  const [showMineOnly, setShowMineOnly] = useState(false);
   const [detailModalSession, setDetailModalSession] =
     useState<TrpgSessionView | null>(
       () =>
@@ -81,6 +92,15 @@ export function CalendarClient({
     () => sessionsQuery.data ?? [],
     [sessionsQuery.data],
   );
+  const displaySessions = useMemo(
+    () =>
+      showMineOnly
+        ? sessions.filter((session) =>
+            isUserSession(session, currentUserDiscordId),
+          )
+        : sessions,
+    [currentUserDiscordId, sessions, showMineOnly],
+  );
   const members = useMemo(
     () => membersQuery.data ?? [],
     [membersQuery.data],
@@ -93,7 +113,7 @@ export function CalendarClient({
 
   const sessionsByDate = useMemo(() => {
     const map = new Map<string, TrpgSessionView[]>();
-    for (const s of sessions) {
+    for (const s of displaySessions) {
       const arr = map.get(s.date) ?? [];
       arr.push(s);
       map.set(s.date, arr);
@@ -103,7 +123,7 @@ export function CalendarClient({
       arr.sort((a, b) => a.startTime.localeCompare(b.startTime));
     }
     return map;
-  }, [sessions]);
+  }, [displaySessions]);
 
   const grid: CalendarCell[] = useMemo(
     () => buildCalendarGrid(year, month),
@@ -168,6 +188,16 @@ export function CalendarClient({
             onClick={handleToday}
           >
             오늘로
+          </button>
+          <button
+            className={`${styles["calendar__mine-toggle"]} ${
+              showMineOnly ? styles["calendar__mine-toggle--active"] : ""
+            }`}
+            type="button"
+            aria-pressed={showMineOnly}
+            onClick={() => setShowMineOnly((prev) => !prev)}
+          >
+            {showMineOnly ? "전체 세션 보기" : "내 세션만 보기"}
           </button>
           <button
             className={styles["calendar__create-btn"]}
@@ -319,26 +349,31 @@ export function CalendarClient({
                   </div>
 
                   <ul className={styles["calendar__cell-sessions"]}>
-                    {visible.map((s) => (
-                      <li key={s.id}>
-                        <button
-                          type="button"
-                          className={styles.calendar__chip}
-                          onClick={() => handleOpenSessionDetail(s)}
-                          aria-label={`${s.startTime} ${s.title} 세션 상세 열기`}
-                        >
-                          <span className={styles["calendar__chip-time"]}>
-                            {s.startTime}
-                          </span>
-                          <span className={styles["calendar__chip-count"]}>
-                            {s.participantDiscordIds.length}명
-                          </span>
-                          <span className={styles["calendar__chip-title"]}>
-                            {s.title}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
+                    {visible.map((s) => {
+                      const isMine = isUserSession(s, currentUserDiscordId);
+                      return (
+                        <li key={s.id}>
+                          <button
+                            type="button"
+                            className={`${styles.calendar__chip} ${
+                              isMine ? styles["calendar__chip--mine"] : ""
+                            }`}
+                            onClick={() => handleOpenSessionDetail(s)}
+                            aria-label={`${s.startTime} ${s.title} 세션 상세 열기`}
+                          >
+                            <span className={styles["calendar__chip-time"]}>
+                              {s.startTime}
+                            </span>
+                            <span className={styles["calendar__chip-count"]}>
+                              {s.participantDiscordIds.length}명
+                            </span>
+                            <span className={styles["calendar__chip-title"]}>
+                              {s.title}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
                     {overflow > 0 ? (
                       <li>
                         <button
@@ -461,6 +496,7 @@ function DateSessionsPanel({
             const participantIds = session.participantDiscordIds.filter(
               (pid) => pid !== session.createdByDiscordId,
             );
+            const isMine = isUserSession(session, currentUserDiscordId);
 
             return (
               <li
@@ -469,7 +505,7 @@ function DateSessionsPanel({
                   session.id === focusedSessionId
                     ? styles["dayPanel__item--focused"]
                     : ""
-                }`}
+                } ${isMine ? styles["dayPanel__item--mine"] : ""}`}
               >
                 <button
                   className={styles.dayPanel__sessionButton}
