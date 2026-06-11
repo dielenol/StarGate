@@ -744,7 +744,10 @@ export default function PersonnelClient({
     const directNpcCount = selectedDirectMembers.filter(
       (m) => m.type === "NPC",
     ).length;
-    const directLabel = `${selectedGroupLabel} 직속`;
+    const directLabel =
+      selectedGroup === "CIVIL"
+        ? selectedGroupLabel
+        : `${selectedGroupLabel} 직속`;
 
     return (
       <div className={styles.subunitGroup}>
