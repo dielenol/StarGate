@@ -4,14 +4,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import {
-  IconAffinity,
   IconArrowLeft,
-  IconArrowRight,
-  IconContact,
   IconCredit,
-  IconFactionBriefing,
   IconRelations,
-  IconReportDocument,
 } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -33,6 +28,7 @@ import {
   isHostileFaction,
 } from "../_game";
 
+import FactionContactClient from "./FactionContactClient";
 import styles from "./page.module.css";
 
 interface FactionDetailPageProps {
@@ -191,60 +187,15 @@ export default async function FactionDetailPage({
           </Box>
         </div>
 
-        <Box className={styles.contactPanel}>
-          <PanelTitle
-            right={<span className={styles.panelCode}>{profile.operatorLabel}</span>}
-          >
-            <span className={styles.panelLabel}>
-              <IconContact aria-hidden />
-              <span>접선 콘솔</span>
-            </span>
-          </PanelTitle>
-
-          <div className={styles.contactLead}>
-            <IconFactionBriefing aria-hidden />
-            <p>{profile.contactLine}</p>
-          </div>
-
-          <div className={styles.actionGrid}>
-            {profile.actions.map((action) => (
-              <button key={action.id} type="button" className={styles.actionCard}>
-                <span>{action.channel}</span>
-                <strong>{action.label}</strong>
-                <p>{action.detail}</p>
-                <small>{action.effectLabel}</small>
-              </button>
-            ))}
-          </div>
-        </Box>
-
-        <Box className={styles.questPanel}>
-          <PanelTitle right={<span className={styles.panelCode}>CANDIDATE</span>}>
-            <span className={styles.panelLabel}>
-              <IconReportDocument aria-hidden />
-              <span>퀘스트 후보</span>
-            </span>
-          </PanelTitle>
-
-          <div className={styles.questGrid}>
-            {profile.quests.map((quest) => (
-              <article key={quest.id} className={styles.questCard}>
-                <div className={styles.questCard__head}>
-                  <span>{quest.minimumFavorability}+</span>
-                  <strong>{quest.title}</strong>
-                </div>
-                <p>{quest.summary}</p>
-                <small>{quest.reward}</small>
-              </article>
-            ))}
-          </div>
-
-          <Link className={styles.returnCta} href="/erp/factions">
-            <IconAffinity aria-hidden />
-            <span>세력도에서 우호도 조정</span>
-            <IconArrowRight aria-hidden />
-          </Link>
-        </Box>
+        <FactionContactClient
+          code={node.code}
+          label={node.label}
+          logoUrl={node.logoUrl}
+          favorability={node.favorability}
+          hostile={hostile}
+          canEditFavorability={data.canEditFavorability}
+          profile={profile}
+        />
       </div>
     </>
   );

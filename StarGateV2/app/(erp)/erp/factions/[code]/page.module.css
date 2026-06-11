@@ -37,7 +37,8 @@
 .backLink svg,
 .returnCta svg,
 .panelLabel svg,
-.contactLead svg {
+.contactLead svg,
+.applyConsole svg {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
@@ -182,7 +183,8 @@
 }
 
 .panelLabel svg,
-.contactLead svg {
+.contactLead svg,
+.applyConsole svg {
   color: var(--faction-accent);
 }
 
@@ -318,6 +320,120 @@
   line-height: 1.6;
 }
 
+.contactSimulator {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.operatorCard {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  min-width: 0;
+  min-height: 160px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.operatorCard__sigil {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--faction-accent-dim);
+  border-radius: var(--radius-sm);
+}
+
+.operatorCard__sigil span {
+  color: var(--faction-accent);
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.operatorCard__logo {
+  max-width: 54px;
+  max-height: 54px;
+  object-fit: contain;
+}
+
+.operatorCard__logo--spaceZero {
+  filter: invert(1) grayscale(1) contrast(1.35)
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.18));
+}
+
+.operatorCard > span,
+.dialoguePanel__head span {
+  color: var(--faction-accent);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.operatorCard strong {
+  color: var(--ink-0);
+  font-size: 17px;
+  line-height: 1.28;
+}
+
+.dialoguePanel {
+  display: grid;
+  gap: 12px;
+  align-content: center;
+  min-width: 0;
+  min-height: 160px;
+  padding: 16px;
+  background:
+    linear-gradient(120deg, var(--faction-glow), transparent 48%),
+    rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--faction-accent-dim);
+  border-radius: var(--radius-sm);
+}
+
+.dialoguePanel__head {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.dialoguePanel__head strong {
+  color: var(--ink-0);
+  font-size: 18px;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.dialoguePanel p {
+  margin: 0;
+  color: var(--ink-1);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.dialoguePanel__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dialoguePanel__meta span {
+  padding: 5px 8px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
 .actionGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -330,13 +446,18 @@
   background: var(--bg-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  cursor: default;
+  cursor: pointer;
 }
 
 .actionCard:hover,
-.actionCard:focus-visible {
+.actionCard:focus-visible,
+.actionCard--active {
   border-color: var(--faction-accent-dim);
   outline: none;
+}
+
+.actionCard--active {
+  background: var(--faction-glow);
 }
 
 .actionCard strong,
@@ -346,6 +467,121 @@
   margin-top: 6px;
 }
 
+.supportGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.supportCard {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 6px 8px;
+  align-items: center;
+  min-width: 0;
+  min-height: 78px;
+  padding: 12px;
+  color: var(--ink-2);
+  text-align: left;
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.supportCard:hover,
+.supportCard:focus-visible,
+.supportCard--active {
+  border-color: var(--faction-accent-dim);
+  outline: none;
+}
+
+.supportCard--active {
+  background: var(--faction-glow);
+}
+
+.supportCard svg {
+  width: 18px;
+  height: 18px;
+  color: var(--faction-accent);
+}
+
+.supportCard span {
+  min-width: 0;
+  color: var(--ink-0);
+  font-size: 14px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.supportCard strong,
+.supportCard small {
+  color: var(--faction-accent);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.supportCard small {
+  grid-column: 2 / -1;
+}
+
+.applyConsole {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.applyConsole strong {
+  color: var(--ink-0);
+  font-size: 15px;
+}
+
+.applyConsole p,
+.applyMessage {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.applyConsole button {
+  min-height: 40px;
+  padding: 8px 13px;
+  color: var(--ink-0);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  background: var(--faction-glow);
+  border: 1px solid var(--faction-accent-dim);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.applyConsole button:hover:not(:disabled),
+.applyConsole button:focus-visible {
+  border-color: var(--faction-accent);
+  outline: none;
+}
+
+.applyConsole button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.applyMessage {
+  color: var(--faction-accent);
+}
+
 .questGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -353,9 +589,27 @@
 .questCard {
   min-width: 0;
   padding: 14px;
+  color: inherit;
+  text-align: left;
   background: rgba(0, 0, 0, 0.14);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.questCard:hover,
+.questCard:focus-visible,
+.questCard--active {
+  border-color: var(--faction-accent-dim);
+  outline: none;
+}
+
+.questCard--active {
+  background: var(--faction-glow);
+}
+
+.questCard--locked {
+  opacity: 0.58;
 }
 
 .questCard__head {
@@ -385,7 +639,9 @@
   .hero,
   .layout,
   .actionGrid,
-  .questGrid {
+  .questGrid,
+  .contactSimulator,
+  .supportGrid {
     grid-template-columns: 1fr;
   }
 
@@ -410,7 +666,9 @@
 
   .hero__score,
   .benefit,
-  .contactLead {
+  .contactLead,
+  .applyConsole,
+  .supportCard {
     grid-template-columns: 1fr;
   }
 
