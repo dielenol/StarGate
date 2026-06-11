@@ -1,0 +1,95 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "ZULU_269",
+      "type": "NPC",
+      "role": "노부스 오르도 첩보원 / 네온 발키리 마스코트",
+      "department": "SECRETARIAT",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "SECRETARIAT",
+      "previewImage": "/assets/npcs/Zulu-269-Punk-Cat-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "펑크 캣",
+        "nameEn": "Punk Cat",
+        "nameNative": "Zulu-269",
+        "nickname": "펑크캣",
+        "gender": "수컷",
+        "age": "4",
+        "height": "40cm",
+        "weight": "미상",
+        "appearance": "노르웨이 숲 고양이 품종으로 추정되는 수컷 고양이. 요상한 펑크 선글라스를 끼고 있어서 펑크 캣이라 불린다.",
+        "personality": "사람 말을 할 줄 알지만 사람들을 놀라게 하는 것을 좋아해 평소에는 이를 숨긴다. 기본적으로 도도하고 시니컬하며, 의외로 목소리는 굵다.",
+        "background": "어느 날 네온 발키리에 기어들어와 자연스럽게 둥지를 튼 줄루 고양이. 케이시 레이서에게 쥐 담당 청소부로 고용되었고, 노부스 오르도의 실험체 신분으로 샌드맨을 위해 뉴 더블린 거리 정보를 수집한다.",
+        "quote": "\"야옹. 이라고 할 줄 알았나? 좋은 구경 했으면 캣닢.\"",
+        "mainImage": "/assets/npcs/Zulu-269-Punk-Cat-profile.webp",
+        "loreTags": [
+          "노부스오르도",
+          "사무국",
+          "뉴더블린",
+          "네온발키리",
+          "펑크캣",
+          "ZULU-269",
+          "줄루고양이",
+          "첩보원",
+          "마스코트",
+          "샌드맨",
+          "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "MINI-S1E1"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-S1E1-NEW-DUBLIN"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "role": "뉴 더블린 지부 비공식 정보 협력 개체",
+            "summary": "ZULU-269 펑크 캣은 네온 발키리에 둥지를 튼 줄루 고양이로, 샌드맨을 위해 뉴 더블린 거리 정보를 수집하는 사무국 직속 협력 개체로 등록된다.",
+            "sourceLabel": "사용자 제공 프로필",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "SANDMAN",
+            "targetName": "데이빗 오 캘러핸",
+            "label": "정보 협력 대상",
+            "summary": "펑크 캣은 샌드맨을 위해 뉴 더블린 거리에서 흘러나오는 각종 정보를 수집한다.",
+            "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+            "sourceLabel": "사용자 제공 프로필",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 소속: 노부스 오르도 사무국\n- 직업: 노부스 오르도 첩보원 / 네온 발키리 마스코트\n- 활동지: 뉴 더블린, 네온 발키리\n- 능력명: 줄루 고양이\n- 능력 C1: 인간 말을 한다.\n- 능력 C2: 인간처럼 생각한다.\n- 능력 C3: 임금을 체불당한다.\n- 특이 사항: 미등록 줄루로 감시망을 교묘하게 빠져나간다.",
+        "notes": "위키 개체 항목 zulu-269-punk-cat과 병행 보존한다. Dossier/personnel에서는 샌드맨과 같은 사무국 직속 협력 개체로 노출한다."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-11T00:00:00.000Z",
+      "updatedAt": "2026-06-11T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC-relation",
+    "filter": { "codename": "SANDMAN" },
+    "update": {
+      "$set": { "updatedAt": "2026-06-11T00:00:00.000Z" },
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "ZULU_269",
+          "targetName": "펑크 캣",
+          "label": "정보 협력 개체",
+          "summary": "펑크 캣은 샌드맨을 위해 뉴 더블린 거리에서 흘러나오는 각종 정보를 수집하는 사무국 직속 줄루 고양이로 등록된다.",
+          "sourceEvent": "NOSB-MINI-S1E1-NEW-DUBLIN",
+          "sourceLabel": "사용자 제공 프로필",
+          "confidence": "confirmed",
+          "updatedAt": "2026-06-11T00:00:00.000Z"
+        }
+      }
+    }
+  }
+]
