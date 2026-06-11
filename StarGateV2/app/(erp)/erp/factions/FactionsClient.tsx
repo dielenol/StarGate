@@ -62,6 +62,8 @@ interface FactionsClientProps {
 }
 
 const DEFAULT_NODE: FactionBoardCode = "COUNCIL";
+const FAVORABILITY_MIN = -10;
+const FAVORABILITY_MAX = 10;
 
 const ACTIONS = [
   {
@@ -166,10 +168,10 @@ export default function FactionsClient({ data }: FactionsClientProps) {
     const nextFavorability = Number(favorabilityDraft);
     if (
       !Number.isInteger(nextFavorability) ||
-      nextFavorability < 0 ||
-      nextFavorability > 10
+      nextFavorability < FAVORABILITY_MIN ||
+      nextFavorability > FAVORABILITY_MAX
     ) {
-      setFavorabilityMessage("0부터 10까지의 정수만 저장할 수 있습니다.");
+      setFavorabilityMessage("-10부터 10까지의 정수만 저장할 수 있습니다.");
       return;
     }
 
@@ -453,12 +455,18 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                   <h2>{selectedNode.label}</h2>
                   <p>{selectedNode.doctrine}</p>
                   <div className={styles.briefing__tags}>
-                    <Tag tone="gold">{selectedNode.summary}</Tag>
+                    <Tag tone="gold" className={styles.briefing__tag}>
+                      {selectedNode.summary}
+                    </Tag>
                     {selectedNode.parentLabel ? (
-                      <Tag>{selectedNode.parentLabel}</Tag>
+                      <Tag className={styles.briefing__tag}>
+                        {selectedNode.parentLabel}
+                      </Tag>
                     ) : null}
                     {selectedNode.subUnitCount ? (
-                      <Tag>{selectedNode.subUnitCount} 하위 기구</Tag>
+                      <Tag className={styles.briefing__tag}>
+                        {selectedNode.subUnitCount} 하위 기구
+                      </Tag>
                     ) : null}
                   </div>
                 </div>
@@ -505,8 +513,8 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                     <span>{selectedNode.label}</span>
                     <input
                       type="number"
-                      min="0"
-                      max="10"
+                      min={FAVORABILITY_MIN}
+                      max={FAVORABILITY_MAX}
                       step="1"
                       value={favorabilityDraft}
                       onChange={(event) =>
@@ -516,7 +524,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                     />
                   </label>
                   <div className={styles.favorabilityEditor__actions}>
-                    <span>0-10</span>
+                    <span>-10~10</span>
                     <button type="submit" disabled={isSavingFavorability}>
                       {isSavingFavorability ? "저장 중" : "저장"}
                     </button>

@@ -4,12 +4,18 @@ import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { setFactionFavorability } from "@/lib/db/faction-favorability";
 
+const FAVORABILITY_MIN = -10;
+const FAVORABILITY_MAX = 10;
+
 const EDITABLE_FACTION_CODES = new Set([
   "COUNCIL",
   "MILITARY",
   "CIVIL",
+  "HOSTILE",
   "WHITE_ROSE",
   "SPACE_ZERO",
+  "GOLDEN_DAWN",
+  "AHNENERBE",
   "NOVUS_ORDO",
   "SECRETARIAT",
   "MANUS",
@@ -51,11 +57,11 @@ export async function PATCH(request: Request) {
   if (
     typeof favorability !== "number" ||
     !Number.isInteger(favorability) ||
-    favorability < 0 ||
-    favorability > 10
+    favorability < FAVORABILITY_MIN ||
+    favorability > FAVORABILITY_MAX
   ) {
     return NextResponse.json(
-      { error: "favorability must be an integer from 0 to 10" },
+      { error: "favorability must be an integer from -10 to 10" },
       { status: 400 },
     );
   }
