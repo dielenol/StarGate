@@ -17,9 +17,11 @@ import { isResultCardImageEnabled } from "../config.js";
 
 /** 한 셀에 표시할 최대 세션 — 초과 시 "+N more" */
 const MAX_PER_CELL = 3;
-const CARD_WIDTH = 760;
+const CARD_WIDTH = 640;
+const VIEWPORT_PADDING = 24;
+const DEVICE_SCALE_FACTOR = 1;
 /** 셀 제목 길이 한도 (초과 시 …) */
-const MAX_TITLE_LEN = 14;
+const MAX_TITLE_LEN = 12;
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 
 /* ── Puppeteer 직렬 큐 ──
@@ -207,39 +209,39 @@ function buildHtml(params: {
   }
   .card {
     width: ${CARD_WIDTH}px;
-    padding: 20px 18px 18px 18px;
+    padding: 16px 14px 14px 14px;
     background: #1f2029;
     border: 1px solid #2f303a;
-    border-radius: 14px;
+    border-radius: 12px;
   }
   .head {
     display: flex;
     align-items: baseline;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   .title {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     letter-spacing: -0.01em;
   }
   .sub {
-    font-size: 12px;
+    font-size: 11px;
     color: #9aa0aa;
   }
   .grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    gap: 3px;
     background: #11121a;
-    padding: 4px;
+    padding: 3px;
     border-radius: 8px;
     border: 1px solid #2f303a;
   }
   .wd {
     text-align: center;
-    font-size: 12px;
-    padding: 6px 0;
+    font-size: 11px;
+    padding: 5px 0;
     color: #9aa0aa;
     background: #161721;
     border-radius: 4px;
@@ -247,14 +249,14 @@ function buildHtml(params: {
   .wd:nth-child(1) { color: #ff7676; }
   .wd:nth-child(7) { color: #76aaff; }
   .cell {
-    min-height: 86px;
+    min-height: 76px;
     background: #181923;
     border-radius: 4px;
-    padding: 4px 5px;
-    font-size: 11px;
+    padding: 4px;
+    font-size: 10px;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
   }
   .cell.empty {
     background: #131420;
@@ -282,17 +284,17 @@ function buildHtml(params: {
   }
   .entry {
     display: flex;
-    gap: 4px;
+    gap: 3px;
     align-items: baseline;
     background: rgba(255,255,255,0.05);
     border-radius: 3px;
-    padding: 2px 4px;
+    padding: 2px 3px;
     line-height: 1.2;
   }
   .entry .t {
     color: #9ec0ff;
     font-weight: 600;
-    font-size: 10px;
+    font-size: 9px;
     flex-shrink: 0;
   }
   .entry .ti {
@@ -348,9 +350,9 @@ export async function renderTrpgCalendarPng(
       const browser = await getBrowser();
       page = await browser.newPage();
       await page.setViewport({
-        width: CARD_WIDTH + 40,
-        height: 900,
-        deviceScaleFactor: 1.5,
+        width: CARD_WIDTH + VIEWPORT_PADDING,
+        height: 780,
+        deviceScaleFactor: DEVICE_SCALE_FACTOR,
       });
       await page.setContent(html, { waitUntil: "domcontentloaded" });
       const cardEl = await page.$(".card");
