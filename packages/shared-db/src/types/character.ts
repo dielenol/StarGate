@@ -219,6 +219,7 @@ export const FACTIONS = [
   { code: "MILITARY", label: "군부", labelEn: "Military", scope: "external" },
   { code: "COUNCIL", label: "세계이사회", labelEn: "World Council", scope: "external" },
   { code: "CIVIL", label: "시민사회", labelEn: "Civil Society", scope: "external" },
+  { code: "HOSTILE", label: "적대세력", labelEn: "Hostile Forces", scope: "external" },
   { code: "NOVUS_ORDO", label: "노부스 오르도", labelEn: "Novus Ordo", scope: "internal" },
 ] as const;
 

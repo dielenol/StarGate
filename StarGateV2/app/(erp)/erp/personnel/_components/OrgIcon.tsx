@@ -44,6 +44,7 @@ export type OrgIconCode =
   | "COUNCIL"
   | "MILITARY"
   | "CIVIL"
+  | "HOSTILE"
   // 본부 (Faction · scope=internal)
   | "NOVUS_ORDO"
   // 내부 기관 (Institution)
@@ -79,6 +80,7 @@ export const FACTION_ICON_MAP: Record<FactionCode, OrgIconCode> = {
   COUNCIL: "COUNCIL",
   MILITARY: "MILITARY",
   CIVIL: "CIVIL",
+  HOSTILE: "HOSTILE",
   NOVUS_ORDO: "NOVUS_ORDO",
 };
 
@@ -140,6 +142,9 @@ const ICONS: Record<OrgIconCode, IconPath> = {
   },
   CIVIL: {
     body: `<circle cx="6" cy="8.5" r="2.3"/><path d="M2 17c0-2.4 1.7-4.2 4-4.2"/><circle cx="12" cy="7.5" r="2.8"/><path d="M7.7 18c0-2.8 1.9-4.7 4.3-4.7s4.3 1.9 4.3 4.7"/><circle cx="18" cy="8.5" r="2.3"/><path d="M22 17c0-2.4-1.7-4.2-4-4.2"/>`,
+  },
+  HOSTILE: {
+    body: `<path d="M12 2.8L21.2 12 12 21.2 2.8 12z"/><path d="M8 8l8 8M16 8l-8 8"/><circle cx="12" cy="12" r="2.4"/>`,
   },
   NOVUS_ORDO: {
     /* 본부 — UN 로고 모티프(중앙 십자+원+격자) 단순화. 본부의 지구·통할 상징. */

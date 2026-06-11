@@ -137,6 +137,10 @@ export default function FactionsClient({ data }: FactionsClientProps) {
   const civilNode = nodesByCode.get("CIVIL");
   const whiteRoseNode = nodesByCode.get("WHITE_ROSE");
   const spaceZeroNode = nodesByCode.get("SPACE_ZERO");
+  const hostileNode = nodesByCode.get("HOSTILE");
+  const hostileBranchNodes = boardNodes.filter(
+    (node) => node.parentCode === "HOSTILE",
+  );
 
   useEffect(() => {
     setFavorabilityDraft(
@@ -235,14 +239,16 @@ export default function FactionsClient({ data }: FactionsClientProps) {
         <span className={orgStyles.tl} />
         <span className={orgStyles.br} />
 
-        <img
-          src={node.logoUrl}
-          alt=""
-          className={orgStyles.node__watermark}
-          aria-hidden
-        />
+        {node.logoUrl ? (
+          <img
+            src={node.logoUrl}
+            alt=""
+            className={orgStyles.node__watermark}
+            aria-hidden
+          />
+        ) : null}
 
-        {isSubOrg ? (
+        {isSubOrg && node.logoUrl ? (
           <img
             src={node.logoUrl}
             alt=""
@@ -253,7 +259,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
 
         <div className={orgStyles.node__header}>
           <div className={orgStyles.node__headerTop}>
-            {!isSubOrg ? (
+            {!isSubOrg && node.logoUrl ? (
               <img
                 src={node.logoUrl}
                 alt=""
@@ -390,6 +396,18 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                         ? renderOrgNode(spaceZeroNode, { subOrg: true })
                         : null}
                     </div>
+
+                    {hostileNode || hostileBranchNodes.length > 0 ? (
+                      <div
+                        className={styles.hostileNetwork}
+                        aria-label="적대세력 하위 조직"
+                      >
+                        {hostileNode ? renderOrgNode(hostileNode) : null}
+                        {hostileBranchNodes.map((node) =>
+                          renderOrgNode(node, { subOrg: true }),
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -404,11 +422,17 @@ export default function FactionsClient({ data }: FactionsClientProps) {
 
               <div className={styles.briefing}>
                 <div className={styles.briefing__logoWrap}>
-                  <img
-                    src={selectedNode.logoUrl}
-                    alt=""
-                    className={styles.briefing__logo}
-                  />
+                  {selectedNode.logoUrl ? (
+                    <img
+                      src={selectedNode.logoUrl}
+                      alt=""
+                      className={styles.briefing__logo}
+                    />
+                  ) : (
+                    <span className={styles.briefing__sigil}>
+                      {displayCode(selectedNode.code).slice(0, 2)}
+                    </span>
+                  )}
                 </div>
                 <div className={styles.briefing__body}>
                   <span className={styles.briefing__code}>{selectedNode.code}</span>

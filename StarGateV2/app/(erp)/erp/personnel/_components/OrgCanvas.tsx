@@ -46,7 +46,9 @@ export default function OrgCanvas({
   const hasUnassigned = unassignedCount > 0;
 
   // 외부 권력 블록만 좌측 삼각형 배치 (scope=external). NOVUS_ORDO 는 우측 본부 영역에서 별도 렌더.
-  const externalFactions = FACTIONS.filter((f) => f.scope === "external");
+  const externalFactions = FACTIONS.filter(
+    (f) => f.scope === "external" && f.code !== "HOSTILE",
+  );
   const factionsOrdered = [...externalFactions].sort((a, b) => {
     const order = (code: string) =>
       code === "COUNCIL" ? 0 : code === "MILITARY" ? 1 : 2;
@@ -374,7 +376,9 @@ export default function OrgCanvas({
                 />
               </svg>
 
-              {EXTERNAL_SUB_ORGS.map((org) => {
+              {EXTERNAL_SUB_ORGS.filter(
+                (org) => org.parentCode === "CIVIL",
+              ).map((org) => {
                 const logo = preferOptimizedPublicImagePath(org.logoUrl);
                 const count = groupCounts[org.code] ?? 0;
                 return (

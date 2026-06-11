@@ -35,10 +35,12 @@ import type {
 } from "./FactionsClient";
 
 const EXTERNAL_FACTION_CODES = ["COUNCIL", "MILITARY", "CIVIL"] as const;
+const HOSTILE_FACTION_CODE = "HOSTILE" as const;
 const INTERNAL_NODE_CODES = ["NOVUS_ORDO", "SECRETARIAT", "MANUS"] as const;
 
 const TRACKED_NODE_CODES = [
   ...EXTERNAL_FACTION_CODES,
+  HOSTILE_FACTION_CODE,
   ...EXTERNAL_SUB_ORGS.map((org) => org.code),
   ...INTERNAL_NODE_CODES,
 ] as const;
@@ -49,8 +51,11 @@ const FAVORABILITY_BY_CODE: Record<string, number> = {
   COUNCIL: 3,
   MILITARY: 4,
   CIVIL: 5,
+  HOSTILE: 0,
   WHITE_ROSE: 10,
   SPACE_ZERO: 3,
+  GOLDEN_DAWN: 0,
+  AHNENERBE: 0,
 };
 
 const BOARD_LOGO_BY_CODE: Record<string, string> = {
@@ -124,7 +129,17 @@ function keywordSetFor(code: string): string[] {
   ].filter((value): value is string => Boolean(value));
 
   if (code === "CIVIL") {
-    for (const org of EXTERNAL_SUB_ORGS) {
+    for (const org of EXTERNAL_SUB_ORGS.filter(
+      (entry) => entry.parentCode === "CIVIL",
+    )) {
+      keywords.push(org.code, org.label, org.labelEn, org.summary, org.doctrine);
+    }
+  }
+
+  if (code === HOSTILE_FACTION_CODE) {
+    for (const org of EXTERNAL_SUB_ORGS.filter(
+      (entry) => entry.parentCode === HOSTILE_FACTION_CODE,
+    )) {
       keywords.push(org.code, org.label, org.labelEn, org.summary, org.doctrine);
     }
   }
@@ -192,7 +207,9 @@ function buildBoardNodes(
     );
   });
 
-  const branchNodes = EXTERNAL_SUB_ORGS.map((org) =>
+  const branchNodes = EXTERNAL_SUB_ORGS.filter(
+    (org) => org.parentCode === "CIVIL",
+  ).map((org) =>
     addStats(
       {
         code: org.code,
@@ -200,6 +217,48 @@ function buildBoardNodes(
         labelEn: org.labelEn,
         kind: "branch",
         scopeLabel: "시민사회 하위 세력",
+        parentCode: org.parentCode,
+        parentLabel: org.parentLabel,
+        summary: org.summary,
+        doctrine: org.doctrine,
+        logoUrl: BOARD_LOGO_BY_CODE[org.code] ?? org.logoUrl,
+      },
+      groupCounts,
+      wikiCounts,
+      signalCounts,
+      favorabilityByCode,
+    ),
+  );
+
+  const hostileFaction = FACTIONS.find((f) => f.code === HOSTILE_FACTION_CODE);
+  const hostileNode = addStats(
+    {
+      code: HOSTILE_FACTION_CODE,
+      label: hostileFaction?.label ?? "적대세력",
+      labelEn: hostileFaction?.labelEn ?? "Hostile Forces",
+      kind: "hostile",
+      scopeLabel: "적대세력 분류",
+      parentCode: null,
+      summary: "작전상 적대 또는 충돌 대상으로 분류되는 세력",
+      doctrine: FACTION_DOCTRINE[HOSTILE_FACTION_CODE],
+      logoUrl: FACTION_LOGO[HOSTILE_FACTION_CODE],
+    },
+    groupCounts,
+    wikiCounts,
+    signalCounts,
+    favorabilityByCode,
+  );
+
+  const hostileBranchNodes = EXTERNAL_SUB_ORGS.filter(
+    (org) => org.parentCode === HOSTILE_FACTION_CODE,
+  ).map((org) =>
+    addStats(
+      {
+        code: org.code,
+        label: org.label,
+        labelEn: org.labelEn,
+        kind: "hostile",
+        scopeLabel: "적대 하위 세력",
         parentCode: org.parentCode,
         parentLabel: org.parentLabel,
         summary: org.summary,
@@ -255,7 +314,13 @@ function buildBoardNodes(
     ),
   ];
 
-  return [...externalNodes, ...branchNodes, ...internalNodes];
+  return [
+    ...externalNodes,
+    ...branchNodes,
+    hostileNode,
+    ...hostileBranchNodes,
+    ...internalNodes,
+  ];
 }
 
 async function FactionsBody({ role }: { role: UserRole }) {
@@ -328,7 +393,7 @@ async function FactionsBody({ role }: { role: UserRole }) {
   );
   const totals: FactionBoardTotals = {
     nodeCount: boardNodes.length,
-    factionCount: EXTERNAL_FACTION_CODES.length,
+    factionCount: EXTERNAL_FACTION_CODES.length + 1,
     internalCount: INTERNAL_NODE_CODES.length,
     subOrgCount: EXTERNAL_SUB_ORGS.length,
     memberCount: visibleTrackedMemberCount,

@@ -35,6 +35,28 @@ export const EXTERNAL_SUB_ORGS: readonly ExternalSubOrg[] = [
     logoVariant: "wide",
     doctrine: "기술 자본 · 글로벌 시장",
   },
+  {
+    code: "GOLDEN_DAWN",
+    label: "황금여명회",
+    labelEn: "Golden Dawn",
+    summary: "작전 기록상 적대 컬트 세력으로 분류된 비정규 조직",
+    parentCode: "HOSTILE",
+    parentLabel: "적대세력",
+    logoUrl: "",
+    logoVariant: "badge",
+    doctrine: "오컬트 컬트 · 무장 적대",
+  },
+  {
+    code: "AHNENERBE",
+    label: "아넨에르베 \"광명회\"",
+    labelEn: "Ahnenerbe Illuminati",
+    summary: "광명회 및 아넨에르베 계열로 추적되는 적대 연구 세력",
+    parentCode: "HOSTILE",
+    parentLabel: "적대세력",
+    logoUrl: "",
+    logoVariant: "badge",
+    doctrine: "비밀 연구 · 침투 의혹",
+  },
 ] as const;
 
 export function getExternalSubOrg(code: string): ExternalSubOrg | undefined {
@@ -54,6 +76,7 @@ export const FACTION_LOGO: Record<FactionCode, string> = {
   COUNCIL: "/assets/faction/world_council_logo.webp",
   MILITARY: "/assets/faction/military_logo.webp",
   CIVIL: "/assets/faction/civil_society_logo.webp",
+  HOSTILE: "",
   // NOVUS_ORDO 는 본부 자체 — 메인 로고를 직접 사용.
   NOVUS_ORDO: "/assets/StarGate_logo.webp",
 } as const;
@@ -62,6 +85,7 @@ export const FACTION_DOCTRINE: Record<FactionCode, string> = {
   COUNCIL: "최고 의결 · 3권 균형 감시",
   MILITARY: "무력 통제 · 외적 방위",
   CIVIL: "시민 대표 · 사회 기반",
+  HOSTILE: "위협 분류 · 작전상 적대",
   NOVUS_ORDO: "본부 통할 · 내부 기관 총괄",
 } as const;
 
