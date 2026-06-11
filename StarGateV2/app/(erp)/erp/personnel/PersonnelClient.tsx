@@ -142,6 +142,11 @@ function getDisplaySubUnits(groupCode: string): readonly SubUnitItem[] {
       (org) => ({ code: org.code, label: org.label }),
     );
   }
+  if (groupCode === "HOSTILE") {
+    return EXTERNAL_SUB_ORGS.filter((org) => org.parentCode === groupCode).map(
+      (org) => ({ code: org.code, label: org.label }),
+    );
+  }
   return getSubUnits(groupCode);
 }
 
@@ -642,7 +647,7 @@ export default function PersonnelClient({
       const prefix =
         kind === "faction"
           ? isExternalSubOrg(selectedGroup)
-            ? "시민사회 하위 조직"
+            ? getExternalSubOrg(selectedGroup)?.parentLabel ?? "외부 하위 조직"
             : getFactionScope(selectedGroup) === "internal"
               ? "본부"
               : "외부 기관"
