@@ -28,11 +28,11 @@ export const CATALOG_SCOPE_LABEL: Record<CatalogScope, string> = {
 };
 
 export const CATALOG_SCOPE_TITLE: Record<CatalogScope, string> = {
-  all: "카탈로그",
-  equipment: "장비 카탈로그",
-  consumable: "소모품 카탈로그",
-  sample: "샘플 카탈로그",
-  special: "특수 카탈로그",
+  all: "기록보관소",
+  equipment: "장비 기록보관소",
+  consumable: "소모품 기록보관소",
+  sample: "샘플 기록보관소",
+  special: "특수 기록보관소",
 };
 
 export const CATALOG_SCOPE_HREF: Record<CatalogScope, string> = {

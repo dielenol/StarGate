@@ -666,11 +666,21 @@
 }
 
 .unassigned__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 12px;
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.22em;
+}
+
+.unassigned__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--gold);
 }
 
 .unassigned__samples {

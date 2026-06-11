@@ -6,6 +6,14 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
 import type { MasterItem } from "@/types/inventory";
 
+import {
+  IconArchive,
+  IconCaution,
+  IconConsumable,
+  IconEquipment,
+  IconSample,
+  type IconComponent,
+} from "@/components/icons";
 import { useInventoryItems } from "@/hooks/queries/useInventoryQuery";
 
 import {
@@ -26,6 +34,22 @@ type CatalogItem = Omit<MasterItem, "_id" | "createdAt" | "updatedAt"> & {
   _id?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
+};
+
+const CATALOG_TAB_ICONS: Record<CatalogScope, IconComponent> = {
+  all: IconArchive,
+  equipment: IconEquipment,
+  consumable: IconConsumable,
+  sample: IconSample,
+  special: IconCaution,
+};
+
+const ITEM_CATEGORY_ICONS: Record<CatalogItem["category"], IconComponent> = {
+  WEAPON: IconEquipment,
+  ARMOR: IconEquipment,
+  CONSUMABLE: IconConsumable,
+  MATERIAL: IconSample,
+  SPECIAL: IconCaution,
 };
 
 interface Props {
@@ -167,9 +191,10 @@ export default function CatalogClient({ category, initialItems }: Props) {
         </p>
       </header>
 
-      <nav className={styles.catalog__tabs} aria-label="카탈로그 분류">
+      <nav className={styles.catalog__tabs} aria-label="기록보관소 분류">
         {CATALOG_TABS.map((tab) => {
           const isActive = tab.key === activeScope;
+          const TabIcon = CATALOG_TAB_ICONS[tab.key];
           return (
             <Link
               key={tab.key}
@@ -183,7 +208,8 @@ export default function CatalogClient({ category, initialItems }: Props) {
               aria-current={isActive ? "page" : undefined}
               onClick={(event) => handleTabClick(tab.key, event)}
             >
-              {tab.label}
+              <TabIcon className={styles.catalog__tabIcon} aria-hidden />
+              <span>{tab.label}</span>
             </Link>
           );
         })}
@@ -223,6 +249,7 @@ export default function CatalogClient({ category, initialItems }: Props) {
         <ul className={styles.catalog__grid}>
           {filtered.map((item) => {
             const imageSrc = itemImageSrc(item);
+            const CategoryIcon = ITEM_CATEGORY_ICONS[item.category];
             return (
               <li key={itemId(item)}>
                 <Link
@@ -255,7 +282,11 @@ export default function CatalogClient({ category, initialItems }: Props) {
                         styles[`card__category--${categoryTone(item.category)}`],
                       ].join(" ")}
                     >
-                      {ITEM_CATEGORY_LABEL[item.category]}
+                      <CategoryIcon
+                        className={styles.card__categoryIcon}
+                        aria-hidden
+                      />
+                      <span>{ITEM_CATEGORY_LABEL[item.category]}</span>
                     </span>
                   </div>
                   <p className={styles.card__description}>

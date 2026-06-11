@@ -442,7 +442,12 @@ export default function OrgCanvas({
         {hasUnassigned && (
           <div className={styles.unassignedArea}>
             <div className={styles.unassigned__title}>
-              UNASSIGNED · 미배정 · {unassignedCount}명
+              <OrgIcon
+                code="UNASSIGNED"
+                size={18}
+                className={styles.unassigned__icon}
+              />
+              <span>UNASSIGNED · 미배정 · {unassignedCount}명</span>
             </div>
             <button
               type="button"

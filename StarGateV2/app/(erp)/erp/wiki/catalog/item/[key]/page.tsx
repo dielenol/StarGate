@@ -115,7 +115,7 @@ export default async function CatalogItemPage({
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
-          { label: "CATALOG", href: "/erp/wiki/catalog/all" },
+          { label: "기록보관소", href: "/erp/wiki/catalog/all" },
           { label: ITEM_CATEGORY_LABEL[item.category] },
         ]}
         title={item.name}
@@ -188,7 +188,7 @@ export default async function CatalogItemPage({
 
             <footer className={styles.footer}>
               <Link href={CATALOG_SCOPE_HREF[scope]} className={styles.back}>
-                ← 카탈로그 목록
+                ← 기록보관소 목록
               </Link>
             </footer>
           </Box>
@@ -196,7 +196,7 @@ export default async function CatalogItemPage({
 
         <aside className={styles.aside}>
           <Box className={styles.panel}>
-            <Eyebrow tone="gold">CATALOG DATA</Eyebrow>
+            <Eyebrow tone="gold">기록보관소 정보</Eyebrow>
             <dl className={styles.infoList}>
               <InfoRow label="분류" value={ITEM_CATEGORY_LABEL[item.category]} />
               <InfoRow label="가격" value={formatPrice(item.price)} />

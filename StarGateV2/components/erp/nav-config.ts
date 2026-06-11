@@ -10,7 +10,6 @@ import {
   IconAccount,
   IconApply,
   IconArchive,
-  IconCharacter,
   IconCredit,
   IconCrown,
   IconDashboard,
@@ -18,6 +17,7 @@ import {
   IconInventory,
   IconMembers,
   IconNotification,
+  IconPersonCard,
   IconReportDocument,
   IconSession,
   IconShop,
@@ -74,7 +74,7 @@ export const NAV_GROUPS: NavGroup[] = [
     key: "people",
     label: "인물·조직",
     items: [
-      { label: "캐릭터", keywords: "characters", icon: IconCharacter, href: "/erp/characters" },
+      { label: "캐릭터", keywords: "characters person", icon: IconPersonCard, href: "/erp/characters" },
       { label: "신원조회", keywords: "identity personnel", icon: IconMembers, href: "/erp/personnel" },
       { label: "세력도", keywords: "factions diplomacy influence 세력 관계도 외교", icon: IconWorld, href: "/erp/factions" },
       /* 명예의 전당 — 콘텐츠 준비중. */
@@ -99,7 +99,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "위키", keywords: "wiki", icon: IconWiki, href: "/erp/wiki" },
       { label: "작전 보고서", keywords: "report session archive operation 작전 보고서 세션 리포트 작전 기록", icon: IconReportDocument, href: "/erp/sessions/report" },
-      { label: "카탈로그", keywords: "catalog equipment weapon armor consumable material sample evidence special 장비 소모품 샘플 물증 특수", icon: IconInventory, href: "/erp/wiki/catalog/all" },
+      { label: "기록보관소", keywords: "catalog archive records equipment weapon armor consumable material sample evidence special 기록보관소 장비 소모품 샘플 물증 특수", icon: IconArchive, href: "/erp/wiki/catalog/all" },
       /* 갤러리 · 연대기 — 콘텐츠 준비중. */
       { label: "갤러리", keywords: "gallery", icon: IconArchive, href: null },
       { label: "연대기", keywords: "chronicle", icon: IconWorld, href: null },
@@ -117,7 +117,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "주식 운영", keywords: "stocks admin market price 주식 시세", icon: IconStock, href: "/erp/admin/stocks" },
       { label: "대사 비프 테스트", keywords: "dialogue beep audio npc hud undertale", icon: IconSystem, href: "/erp/admin/dialogue-beep" },
       { label: "인벤토리 운영", keywords: "inventory admin grant items 지급 마스터", icon: IconInventory, href: "/erp/admin/inventory" },
-      { label: "캐릭터 등록", keywords: "character register import", icon: IconCharacter, href: "/erp/admin/characters/import" },
+      { label: "캐릭터 등록", keywords: "character person register import", icon: IconPersonCard, href: "/erp/admin/characters/import" },
     ],
   },
 ];
