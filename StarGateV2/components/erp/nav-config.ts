@@ -1,8 +1,8 @@
 /**
  * ERP 사이드바 / Command-K 공용 네비게이션 정의.
  *
- * `href` 가 null 이면 아직 라우트가 준비되지 않은 메뉴 — 사이드바에서는 "준비중"
- * 배지와 함께 비활성 렌더, Command-K 에서는 클릭해도 push 되지 않는다.
+ * `href` 가 null 이면 일반 사용자에게는 "준비중" 메뉴다.
+ * `gmHref` 가 있으면 GM만 해당 준비중 페이지를 열어볼 수 있다.
  */
 
 import type { IconComponent } from "@/components/icons";
@@ -41,6 +41,8 @@ export interface NavItem {
   icon: IconComponent;
   /** 활성 경로. null 이면 "준비중". */
   href: string | null;
+  /** 준비중 메뉴를 GM에게만 열어줄 내부 경로. */
+  gmHref?: string;
   /** 이 메뉴를 보기 위해 필요한 최소 역할. */
   minRole?: UserRole;
 }
@@ -51,6 +53,24 @@ export interface NavGroup {
   /** 그룹 전체를 감출 최소 역할 (예: "관리" 는 GM 전용). */
   minRole?: UserRole;
   items: NavItem[];
+}
+
+export function isPreparingNavItem(item: NavItem): boolean {
+  return item.href === null;
+}
+
+export function getNavItemHref(
+  item: NavItem,
+  role?: UserRole | null,
+): string | null {
+  if (item.href !== null) return item.href;
+  return role === "GM" ? (item.gmHref ?? null) : null;
+}
+
+export function getNavItemActiveHrefs(item: NavItem): string[] {
+  return [item.href, item.gmHref].filter(
+    (href): href is string => href !== null && href !== undefined,
+  );
 }
 
 export const NAV_GROUPS: NavGroup[] = [
@@ -69,7 +89,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "세션", keywords: "sessions", icon: IconSession, href: "/erp/sessions" },
       /* 미션 보드 — 콘텐츠 준비중 (page.tsx 는 placeholder). */
-      { label: "미션 보드", keywords: "missions", icon: IconApply, href: null },
+      { label: "미션 보드", keywords: "missions", icon: IconApply, href: null, gmHref: "/erp/missions" },
     ],
   },
   {
@@ -80,7 +100,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "신원조회", keywords: "identity personnel", icon: IconMembers, href: "/erp/personnel" },
       { label: "세력도", keywords: "factions diplomacy influence 세력 관계도 외교", icon: IconFactionMap, href: "/erp/factions" },
       /* 명예의 전당 — 콘텐츠 준비중. */
-      { label: "명예의 전당", keywords: "hall of fame", icon: IconCrown, href: null },
+      { label: "명예의 전당", keywords: "hall of fame", icon: IconCrown, href: null, gmHref: "/erp/hall-of-fame" },
     ],
   },
   {
@@ -91,7 +111,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "크레딧", keywords: "credits", icon: IconCredit, href: "/erp/credits" },
       /* 편의점 · 주식 — M1 stub. M2/M3 에서 본 구현 활성화. */
       { label: "편의점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconShop, href: "/erp/shop" },
-      { label: "장비 판매점", keywords: "equipment shop armory weapon armor gear 장비 판매점 무기 방어구 토와스키", icon: IconEquipment, href: "/erp/equipment-shop" },
+      { label: "장비 판매점", keywords: "equipment shop armory weapon armor gear 장비 판매점 무기 방어구 토와스키", icon: IconEquipment, href: null, gmHref: "/erp/equipment-shop" },
       { label: "주식", keywords: "stock market 주식 증권", icon: IconStock, href: "/erp/stock" },
     ],
   },
@@ -103,8 +123,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "작전 보고서", keywords: "report session archive operation 작전 보고서 세션 리포트 작전 기록", icon: IconReportDocument, href: "/erp/sessions/report" },
       { label: "기록보관소", keywords: "catalog archive records equipment weapon armor consumable material sample evidence special 기록보관소 장비 소모품 샘플 물증 특수", icon: IconCoreArchive, href: "/erp/wiki/catalog/all" },
       /* 갤러리 · 연대기 — 콘텐츠 준비중. */
-      { label: "갤러리", keywords: "gallery", icon: IconArchive, href: null },
-      { label: "연대기", keywords: "chronicle", icon: IconWorld, href: null },
+      { label: "갤러리", keywords: "gallery", icon: IconArchive, href: null, gmHref: "/erp/gallery" },
+      { label: "연대기", keywords: "chronicle", icon: IconWorld, href: null, gmHref: "/erp/chronicle" },
     ],
   },
   {
@@ -113,7 +133,7 @@ export const NAV_GROUPS: NavGroup[] = [
     minRole: "GM",
     items: [
       /* 관리자 대시보드 — 콘텐츠 준비중. 계정 메뉴(IconSystem)와 시각 충돌 회피 위해 IconCrown 사용. */
-      { label: "관리자", keywords: "admin", icon: IconCrown, href: null },
+      { label: "관리자", keywords: "admin", icon: IconCrown, href: null, gmHref: "/erp/admin" },
       { label: "사용자 관리", keywords: "users admin", icon: IconUserAdmin, href: "/erp/admin/users" },
       { label: "크레딧 운영", keywords: "credits admin grant op pool 작전풀", icon: IconCredit, href: "/erp/admin/credits" },
       { label: "주식 운영", keywords: "stocks admin market price 주식 시세", icon: IconStock, href: "/erp/admin/stocks" },

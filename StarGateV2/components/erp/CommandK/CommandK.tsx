@@ -15,7 +15,11 @@ import { useSession } from "next-auth/react";
 import { hasRole } from "@/lib/auth/rbac";
 
 import type { NavGroup, NavItem } from "@/components/erp/nav-config";
-import { NAV_GROUPS } from "@/components/erp/nav-config";
+import {
+  getNavItemHref,
+  isPreparingNavItem,
+  NAV_GROUPS,
+} from "@/components/erp/nav-config";
 import { useNavPending } from "@/components/erp/NavPending/NavPendingProvider";
 
 import styles from "./CommandK.module.css";
@@ -167,7 +171,7 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
   }
 
   function handleSelect(entry: FlatEntry) {
-    const href = entry.item.href;
+    const href = getNavItemHref(entry.item, role);
     if (!href) return;
     router.prefetch(href);
     startNavTransition(() => {
@@ -240,7 +244,9 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
                       entry.item.label === item.label,
                   );
                   const active = flatIdx === activeIndex;
-                  const disabled = item.href === null;
+                  const href = getNavItemHref(item, role);
+                  const preparing = isPreparingNavItem(item);
+                  const disabled = href === null;
                   const Icon = item.icon;
 
                   return (
@@ -266,7 +272,7 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
                       }
                       onMouseEnter={() => {
                         if (flatIdx >= 0) setActiveIndex(flatIdx);
-                        if (!disabled && item.href) router.prefetch(item.href);
+                        if (href) router.prefetch(href);
                       }}
                       disabled={disabled}
                       aria-disabled={disabled}
@@ -278,7 +284,7 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
                         {item.label}
                       </span>
                       <span className={styles.row__kind}>
-                        {disabled ? "준비중" : "menu"}
+                        {preparing ? "준비중" : "menu"}
                       </span>
                     </button>
                   );

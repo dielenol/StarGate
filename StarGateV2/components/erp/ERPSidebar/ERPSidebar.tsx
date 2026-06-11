@@ -10,7 +10,12 @@ import type { NavItem } from "@/components/erp/nav-config";
 
 import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
 
-import { NAV_GROUPS } from "@/components/erp/nav-config";
+import {
+  getNavItemActiveHrefs,
+  getNavItemHref,
+  isPreparingNavItem,
+  NAV_GROUPS,
+} from "@/components/erp/nav-config";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import { IconCheckDot, IconChevronLeft } from "@/components/icons";
 
@@ -21,9 +26,7 @@ import styles from "./ERPSidebar.module.css";
 const SIDEBAR_OPEN_EVENT = "no:sidebar-open";
 
 const ALL_NAV_HREFS: string[] = NAV_GROUPS.flatMap((group) =>
-  group.items
-    .map((item) => item.href)
-    .filter((href): href is string => href !== null),
+  group.items.flatMap(getNavItemActiveHrefs),
 );
 
 export default function ERPSidebar() {
@@ -72,7 +75,7 @@ export default function ERPSidebar() {
   }, [pathname]);
 
   function isItemActive(item: NavItem): boolean {
-    return item.href !== null && item.href === activeHref;
+    return activeHref !== null && getNavItemActiveHrefs(item).includes(activeHref);
   }
 
   const role = session?.user?.role;
@@ -116,11 +119,13 @@ export default function ERPSidebar() {
             <div key={group.key} className={styles.sidebar__group}>
               <div className={styles.sidebar__groupLabel}>{group.label}</div>
               {visibleItems.map((item) => {
+                const href = getNavItemHref(item, role);
                 const active = isItemActive(item);
-                const disabled = item.href === null;
+                const preparing = isPreparingNavItem(item);
+                const disabled = href === null;
                 const Icon = item.icon;
                 const notificationBadge =
-                  item.href === "/erp/notifications" &&
+                  href === "/erp/notifications" &&
                   unreadNotificationCount > 0
                     ? unreadNotificationLabel
                     : null;
@@ -151,7 +156,7 @@ export default function ERPSidebar() {
                 return (
                   <Link
                     key={`${group.key}-${item.label}`}
-                    href={item.href as string}
+                    href={href}
                     className={[
                       styles.sidebar__item,
                       active ? styles["sidebar__item--active"] : "",
@@ -159,8 +164,8 @@ export default function ERPSidebar() {
                       .filter(Boolean)
                       .join(" ")}
                     onClick={close}
-                    onFocus={() => prefetchHref(item.href as string)}
-                    onMouseEnter={() => prefetchHref(item.href as string)}
+                    onFocus={() => prefetchHref(href)}
+                    onMouseEnter={() => prefetchHref(href)}
                     prefetch
                   >
                     <LinkPendingProbe />
@@ -179,6 +184,8 @@ export default function ERPSidebar() {
                       >
                         {notificationBadge}
                       </span>
+                    ) : preparing ? (
+                      <span className={styles.sidebar__badge}>준비중</span>
                     ) : active ? (
                       <IconCheckDot
                         className={styles.sidebar__activeMark}
