@@ -11,11 +11,6 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
 
 import orgStyles from "../personnel/_components/OrgCanvas.module.css";
-import OrgIcon, {
-  getFactionIcon,
-  getInstitutionIcon,
-  type OrgIconCode,
-} from "../personnel/_components/OrgIcon";
 import styles from "./page.module.css";
 
 export type FactionBoardCode = string;
@@ -113,14 +108,6 @@ function formatFavorability(value: number | null): string {
 
 function displayCode(code: string): string {
   return code.replace(/_/g, " ");
-}
-
-function iconForNode(node: FactionBoardNode): OrgIconCode | undefined {
-  return (
-    getFactionIcon(node.code) ??
-    getInstitutionIcon(node.code) ??
-    (node.parentCode === "HOSTILE" ? "HOSTILE" : undefined)
-  );
 }
 
 export default function FactionsClient({ data }: FactionsClientProps) {
@@ -228,12 +215,10 @@ export default function FactionsClient({ data }: FactionsClientProps) {
 
   function renderOrgNode(
     node: FactionBoardNode,
-    options: { subOrg?: boolean; hostile?: boolean } = {},
+    options: { subOrg?: boolean } = {},
   ) {
     const isActive = selectedCode === node.code;
     const isSubOrg = options.subOrg === true;
-    const isHostile = options.hostile === true;
-    const iconCode = iconForNode(node);
 
     return (
       <button
@@ -243,7 +228,6 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           orgStyles.node,
           orgStyles["node--lg"],
           isSubOrg ? orgStyles.subOrgNode : "",
-          isHostile ? orgStyles.hostileNode : "",
           isActive ? styles.orgNodeActive : "",
         ]
           .filter(Boolean)
@@ -275,13 +259,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
 
         <div className={orgStyles.node__header}>
           <div className={orgStyles.node__headerTop}>
-            {iconCode ? (
-              <OrgIcon
-                code={iconCode}
-                size={20}
-                className={orgStyles.node__headerIcon}
-              />
-            ) : !isSubOrg && node.logoUrl ? (
+            {!isSubOrg && node.logoUrl ? (
               <img
                 src={node.logoUrl}
                 alt=""
@@ -419,31 +397,19 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                         : null}
                     </div>
 
+                    {hostileNode || hostileBranchNodes.length > 0 ? (
+                      <div
+                        className={styles.hostileNetwork}
+                        aria-label="적대세력 하위 조직"
+                      >
+                        {hostileNode ? renderOrgNode(hostileNode) : null}
+                        {hostileBranchNodes.map((node) =>
+                          renderOrgNode(node, { subOrg: true }),
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
-
-                {hostileNode || hostileBranchNodes.length > 0 ? (
-                  <div
-                    className={orgStyles.hostileArea}
-                    aria-label="적대세력"
-                  >
-                    <div className={orgStyles.sectionTitle}>
-                      적대세력 · HOSTILE FACTIONS
-                    </div>
-                    <div className={orgStyles.hostileNodes}>
-                      {hostileBranchNodes.length > 0
-                        ? hostileBranchNodes.map((node) =>
-                            renderOrgNode(node, {
-                              subOrg: true,
-                              hostile: true,
-                            }),
-                          )
-                        : hostileNode
-                          ? renderOrgNode(hostileNode, { hostile: true })
-                          : null}
-                    </div>
-                  </div>
-                ) : null}
               </div>
             </div>
           </Box>

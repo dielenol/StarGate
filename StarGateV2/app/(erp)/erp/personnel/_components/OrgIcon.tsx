@@ -144,10 +144,11 @@ const ICONS: Record<OrgIconCode, IconPath> = {
     body: `<circle cx="6" cy="8.5" r="2.3"/><path d="M2 17c0-2.4 1.7-4.2 4-4.2"/><circle cx="12" cy="7.5" r="2.8"/><path d="M7.7 18c0-2.8 1.9-4.7 4.3-4.7s4.3 1.9 4.3 4.7"/><circle cx="18" cy="8.5" r="2.3"/><path d="M22 17c0-2.4-1.7-4.2-4-4.2"/>`,
   },
   HOSTILE: {
-    body: `<path d="M5 4l11 11M14.2 16.8l3.6-3.6M16.9 15.9L19 18"/><path d="M19 4L8 15M9.8 16.8L6.2 13.2M7.1 15.9L5 18"/>`,
+    body: `<path d="M12 2.8L21.2 12 12 21.2 2.8 12z"/><path d="M8 8l8 8M16 8l-8 8"/><circle cx="12" cy="12" r="2.4"/>`,
   },
   NOVUS_ORDO: {
-    body: `<path d="M12 2.5l8 9.5-8 9.5L4 12z"/><path d="M12 7l4.2 5L12 17l-4.2-5z"/>`,
+    /* 본부 — UN 로고 모티프(중앙 십자+원+격자) 단순화. 본부의 지구·통할 상징. */
+    body: `<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M3.5 12h17"/><path d="M5.5 7.5h13"/><path d="M5.5 16.5h13"/><circle cx="12" cy="12" r="3"/>`,
   },
   SECRETARIAT: {
     body: `<rect x="5" y="3" width="14" height="18" rx="0.8"/><path d="M5 9h14"/><path d="M5 15h14"/><path d="M10 6h4"/><path d="M10 12h4"/><path d="M10 18h4"/>`,

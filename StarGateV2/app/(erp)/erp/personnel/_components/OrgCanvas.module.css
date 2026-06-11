@@ -23,14 +23,13 @@
   position: relative;
   z-index: 2;
   display: grid;
-  /* 좌측: 본부 + 산하 INSTITUTIONS, 중앙: 외부 3대, 우측: 적대세력. */
-  grid-template-columns:
-    minmax(340px, 0.95fr)
-    minmax(520px, 1.3fr)
-    minmax(240px, 0.58fr);
+  /* 좌측: 본부 + 산하 INSTITUTIONS (세로 스택)
+     우측: 외부 3대 삼각 배치 (.factions)
+     canvas 풀폭을 다 채우지 않고 max-width 로 가운데 정렬 — 카드 자체는 정보 밀도 위주, 여백은 양 옆에. */
+  grid-template-columns: 1fr 1.3fr;
   gap: 28px;
   align-items: start;
-  max-width: 1480px;
+  max-width: 1120px;
   margin-inline: auto;
 }
 
@@ -80,77 +79,6 @@
 
 .externalNetwork {
   position: relative;
-}
-
-.hostileArea {
-  position: relative;
-  align-self: stretch;
-  min-height: 100%;
-  padding: 8px 12px 12px;
-  border: 1px dashed color-mix(in oklab, var(--danger) 76%, transparent);
-  border-radius: 8px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--danger) 9%, transparent) 0%,
-      color-mix(in oklab, var(--danger) 2%, transparent) 68%,
-      transparent 100%
-    ),
-    repeating-linear-gradient(0deg, #0000 0 23px, rgba(255, 59, 48, 0.04) 23px 24px),
-    repeating-linear-gradient(90deg, #0000 0 23px, rgba(255, 59, 48, 0.035) 23px 24px);
-}
-
-.hostileArea .sectionTitle {
-  color: var(--danger);
-  border-bottom-color: color-mix(in oklab, var(--danger) 48%, transparent);
-}
-
-.hostileNodes {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 34px;
-  padding: 12px 12px 6px;
-}
-
-.hostileNode {
-  min-height: 156px;
-  border-color: color-mix(in oklab, var(--danger) 66%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--danger) 8%, transparent),
-      color-mix(in oklab, var(--danger) 2%, transparent) 72%,
-      transparent
-    ),
-    repeating-linear-gradient(0deg, #0000 0 15px, rgba(255, 59, 48, 0.05) 15px 16px),
-    repeating-linear-gradient(90deg, #0000 0 15px, rgba(255, 59, 48, 0.045) 15px 16px),
-    var(--bg-1);
-}
-
-.hostileNode:hover,
-.hostileNode:focus-visible {
-  border-color: var(--danger);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--danger) 12%, transparent),
-      color-mix(in oklab, var(--danger) 3%, transparent) 72%,
-      transparent
-    ),
-    repeating-linear-gradient(0deg, #0000 0 15px, rgba(255, 59, 48, 0.07) 15px 16px),
-    repeating-linear-gradient(90deg, #0000 0 15px, rgba(255, 59, 48, 0.06) 15px 16px),
-    var(--bg-2);
-}
-
-.hostileNode .node__headerIcon,
-.hostileNode .code,
-.hostileNode .headcount__n {
-  color: var(--danger);
-}
-
-.hostileNode .tl,
-.hostileNode .br {
-  border-color: var(--danger);
 }
 
 /* 본부 영역 — 금색 강조. NOVUS_ORDO 가 외부 3대 위에 별개 권위로 서는
@@ -797,10 +725,6 @@
     width: min(100%, 520px);
     margin-inline: auto;
   }
-
-  .hostileNodes {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 768px) {
@@ -830,12 +754,6 @@
     margin-top: 16px;
     padding-top: 0;
     width: 100%;
-  }
-
-  .hostileNodes {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding-inline: 0;
   }
 
   /* 세로 1열에선 상호 견제 오버레이/라벨 비활성 */

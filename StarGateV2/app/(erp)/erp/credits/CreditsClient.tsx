@@ -12,10 +12,12 @@ import { CREDIT_TRANSACTION_TYPES } from "@/types/credit";
 import {
   IconArrowLeft,
   IconArrowRight,
-  IconFinance,
-  IconGridAll,
-  IconRegulation,
-  IconTransactions,
+  IconCredit,
+  IconInfo,
+  IconNotes,
+  IconReportDocument,
+  IconStock,
+  IconTimeline,
   type IconComponent,
 } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
@@ -405,7 +407,7 @@ export default function CreditsClient({
       {isGm ? (
         <Box className={styles.adminHintBox}>
           <div className={styles.adminHeading}>
-            <IconRegulation className={styles.adminIcon} aria-hidden />
+            <IconInfo className={styles.adminIcon} aria-hidden />
             <Eyebrow>관리자 안내</Eyebrow>
           </div>
           <div className={styles.adminHint}>
@@ -421,7 +423,7 @@ export default function CreditsClient({
       <div className={styles.walletGrid}>
         <Box variant="gold" className={styles.balancePanel}>
           <PanelTitle right={<span className={styles.mono}>지갑</span>}>
-            <PanelLabel icon={IconFinance}>현재 잔액</PanelLabel>
+            <PanelLabel icon={IconCredit}>현재 잔액</PanelLabel>
           </PanelTitle>
           <div className={styles.balanceValue}>{formatCredit(balance)}</div>
           <div className={styles.identityLine}>
@@ -450,7 +452,7 @@ export default function CreditsClient({
 
         <Box className={styles.flowPanel}>
           <PanelTitle right={<span className={styles.mono}>최근 6개월</span>}>
-            <PanelLabel icon={IconTransactions}>월별 입출금 흐름</PanelLabel>
+            <PanelLabel icon={IconTimeline}>월별 입출금 흐름</PanelLabel>
           </PanelTitle>
           <div className={styles.flowChart}>
             {buckets.map((bucket) => {
@@ -482,7 +484,7 @@ export default function CreditsClient({
       <div className={styles.kpiGrid}>
         <Box>
           <PanelTitle>
-            <PanelLabel icon={IconTransactions}>이번 달 순변동</PanelLabel>
+            <PanelLabel icon={IconTimeline}>이번 달 순변동</PanelLabel>
           </PanelTitle>
           <div
             className={
@@ -516,7 +518,7 @@ export default function CreditsClient({
         </Box>
         <Box>
           <PanelTitle>
-            <PanelLabel icon={IconTransactions}>가장 큰 변동</PanelLabel>
+            <PanelLabel icon={IconStock}>가장 큰 변동</PanelLabel>
           </PanelTitle>
           <div
             className={
@@ -537,7 +539,7 @@ export default function CreditsClient({
 
       <Box>
         <PanelTitle right={<span className={styles.mono}>요약</span>}>
-          <PanelLabel icon={IconGridAll}>거래 유형 요약</PanelLabel>
+          <PanelLabel icon={IconNotes}>거래 유형 요약</PanelLabel>
         </PanelTitle>
         {typeBreakdown.length === 0 ? (
           <div className={styles.empty}>집계할 거래 기록이 없습니다.</div>
@@ -569,7 +571,7 @@ export default function CreditsClient({
 
       <Box>
         <PanelTitle right={<span className={styles.mono}>{filtered.length}건</span>}>
-          <PanelLabel icon={IconTransactions}>거래 내역</PanelLabel>
+          <PanelLabel icon={IconReportDocument}>거래 내역</PanelLabel>
         </PanelTitle>
 
         <div className={styles.controls}>

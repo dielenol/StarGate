@@ -21,8 +21,8 @@ import { resolvePublicAssetPath } from "@/lib/asset-path";
 import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
 
 import {
-  IconBriefing,
   IconMenu,
+  IconNotification,
   IconPause,
   IconPlay,
   IconShuffle,
@@ -599,7 +599,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
               title="알림"
               prefetch
             >
-              <IconBriefing aria-hidden />
+              <IconNotification aria-hidden />
               {unreadNotificationCount > 0 ? (
                 <span className={styles.header__notificationBadge}>
                   {notificationBadge}

@@ -15,7 +15,7 @@ import {
 
 import Box from "@/components/ui/Box/Box";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
-import { IconBriefing } from "@/components/icons";
+import { IconReportDocument } from "@/components/icons";
 
 import styles from "./page.module.css";
 
@@ -169,7 +169,7 @@ export default function ReportsClient({ initialReports }: Props) {
                 aria-label={`${point.label} ${formatDate(report.createdAt, "padded")} ${displayTitle} 열기`}
               >
                 <span className={styles.mapPin__report}>
-                  <IconBriefing
+                  <IconReportDocument
                     className={styles.reportIcon}
                     aria-hidden
                   />
