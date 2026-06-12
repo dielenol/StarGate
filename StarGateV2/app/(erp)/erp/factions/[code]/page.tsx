@@ -230,7 +230,6 @@ export default async function FactionDetailPage({
 
         <FactionContactClient
           code={node.code}
-          label={node.label}
           logoUrl={node.logoUrl}
           favorability={node.favorability}
           hostile={hostile}

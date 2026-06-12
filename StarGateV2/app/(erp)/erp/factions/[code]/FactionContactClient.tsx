@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,7 +27,6 @@ import styles from "./page.module.css";
 
 interface FactionContactClientProps {
   code: string;
-  label: string;
   logoUrl: string;
   favorability: number | null;
   hostile: boolean;
@@ -80,6 +79,7 @@ interface ContactSelection {
   cost?: number;
   minimumFavorability?: number;
   questStatus?: SerializedFactionQuestProgress["status"];
+  effectLabel?: string;
 }
 
 const FAVORABILITY_MIN = -10;
@@ -147,6 +147,17 @@ function activityTypeLabel(kind: FactionActivityKind) {
   }
 }
 
+function selectionKindLabel(kind: ContactSelection["kind"]) {
+  switch (kind) {
+    case "action":
+      return "접선";
+    case "support":
+      return "후원";
+    case "quest":
+      return "의뢰";
+  }
+}
+
 function actionSelection(action: FactionActionPreview): ContactSelection {
   return {
     id: action.id,
@@ -155,6 +166,7 @@ function actionSelection(action: FactionActionPreview): ContactSelection {
     label: action.label,
     detail: action.detail,
     delta: 1,
+    effectLabel: action.effectLabel,
   };
 }
 
@@ -173,12 +185,16 @@ function questSelection(
     delta: active ? 2 : 0,
     minimumFavorability: quest.minimumFavorability,
     questStatus: completed ? "COMPLETED" : active ? "ACTIVE" : undefined,
+    effectLabel: completed
+      ? "완료 기록"
+      : active
+        ? "완료 반영 가능"
+        : quest.reward,
   };
 }
 
 export default function FactionContactClient({
   code,
-  label,
   logoUrl,
   favorability,
   hostile,
@@ -219,6 +235,7 @@ export default function FactionContactClient({
           : `${option.amount.toLocaleString()} CR을 관계 개선 예산으로 책정합니다.`,
         delta: option.delta,
         cost: option.amount,
+        effectLabel: `${formatDelta(option.delta)} / ${option.amount.toLocaleString()} CR`,
       })),
     [hostile],
   );
@@ -238,6 +255,21 @@ export default function FactionContactClient({
     (selected.kind === "quest"
       ? !questLocked && !questCompleted
       : cappedDelta !== 0 && selected.delta > 0);
+  const sceneStyle = {
+    "--scene-bg-image": profile.scene.sceneBackgroundUrl
+      ? `url(${JSON.stringify(profile.scene.sceneBackgroundUrl)})`
+      : "none",
+  } as CSSProperties;
+  const dialogueLine = questLocked
+    ? profile.scene.lockedLine
+    : selected.kind === "quest" && selected.questStatus === "COMPLETED"
+      ? profile.scene.successLine
+      : selected.detail;
+  const resultLabel = questCompleted
+    ? "완료"
+    : questLocked
+      ? "잠김"
+      : selected.effectLabel ?? formatDelta(cappedDelta);
 
   function getActivityType(): FactionActivityKind {
     if (selected.kind === "support") return "SUPPORT";
@@ -329,100 +361,136 @@ export default function FactionContactClient({
           </span>
         </PanelTitle>
 
-        <div className={styles.contactSimulator}>
-          <div className={styles.operatorCard}>
-            <div className={styles.operatorCard__sigil}>
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt=""
-                  className={[
-                    styles.operatorCard__logo,
-                    code === "SPACE_ZERO"
-                      ? styles["operatorCard__logo--spaceZero"]
-                      : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                />
-              ) : (
-                <span>{sigilFor(code)}</span>
-              )}
-            </div>
-            <span>{displayCode(code)}</span>
-            <strong>{label}</strong>
-          </div>
+        <section
+          className={styles.sceneFrame}
+          data-tone={profile.scene.sceneTone}
+          style={sceneStyle}
+        >
+          <div className={styles.sceneFrame__backdrop} aria-hidden />
+          <div className={styles.sceneFrame__scanline} aria-hidden />
 
-          <div className={styles.dialoguePanel}>
-            <div className={styles.dialoguePanel__head}>
-              <span>{selected.channel}</span>
-              <strong>
-                {label} · {selected.label}
+          <div className={styles.sceneFrame__main}>
+            <div className={styles.scenePortrait}>
+              <div className={styles.scenePortrait__plate}>
+                {profile.scene.operatorPortraitUrl ? (
+                  <img
+                    src={profile.scene.operatorPortraitUrl}
+                    alt=""
+                    className={styles.scenePortrait__image}
+                  />
+                ) : logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    className={[
+                      styles.scenePortrait__logo,
+                      code === "SPACE_ZERO"
+                        ? styles["scenePortrait__logo--spaceZero"]
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  />
+                ) : (
+                  <span>{sigilFor(code)}</span>
+                )}
+              </div>
+              <div className={styles.scenePortrait__caption}>
+                <span>{profile.scene.operatorRole}</span>
+                <strong>{profile.scene.operatorName}</strong>
+              </div>
+            </div>
+
+            <div className={styles.sceneDialogue}>
+              <div className={styles.sceneDialogue__top}>
+                <span>{profile.scene.operatorCodename}</span>
+                <b>{selectionKindLabel(selected.kind)}</b>
+              </div>
+              <strong className={styles.sceneDialogue__title}>
+                {selected.channel} · {selected.label}
               </strong>
-            </div>
-            <p>{selected.detail}</p>
-            <div className={styles.dialoguePanel__meta}>
-              <span>현재 {currentFavorability}</span>
-              <span>
-                예상 {projectedFavorability} ({formatDelta(cappedDelta)})
-              </span>
-              {selected.cost ? (
-                <span>{selected.cost.toLocaleString()} CR</span>
-              ) : null}
+              <p className={styles.sceneDialogue__line}>{dialogueLine}</p>
+              <p className={styles.sceneDialogue__sub}>{profile.contactLine}</p>
+
+              <div className={styles.sceneDialogue__meta}>
+                <span>현재 {currentFavorability}</span>
+                <span>
+                  예상 {projectedFavorability} ({formatDelta(cappedDelta)})
+                </span>
+                <span>{resultLabel}</span>
+                {selected.cost ? (
+                  <span>{selected.cost.toLocaleString()} CR</span>
+                ) : null}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className={styles.actionGrid}>
-          {profile.actions.map((action) => {
-            const active = selected.kind === "action" && selected.id === action.id;
-            return (
-              <button
-                key={action.id}
-                type="button"
-                className={[
-                  styles.actionCard,
-                  active ? styles["actionCard--active"] : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                onClick={() => setSelected(actionSelection(action))}
-                aria-pressed={active}
-              >
-                <span>{action.channel}</span>
-                <strong>{action.label}</strong>
-                <p>{action.detail}</p>
-                <small>{action.effectLabel}</small>
-              </button>
-            );
-          })}
-        </div>
+          <div className={styles.choiceDeck}>
+            <div className={styles.choiceGroup}>
+              <div className={styles.choiceGroup__head}>
+                <span>CONTACT</span>
+                <b>{profile.scene.openingLine}</b>
+              </div>
+              <div className={styles.actionGrid}>
+                {profile.actions.map((action) => {
+                  const active =
+                    selected.kind === "action" && selected.id === action.id;
+                  return (
+                    <button
+                      key={action.id}
+                      type="button"
+                      className={[
+                        styles.actionCard,
+                        active ? styles["actionCard--active"] : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => setSelected(actionSelection(action))}
+                      aria-pressed={active}
+                    >
+                      <span>{action.channel}</span>
+                      <strong>{action.label}</strong>
+                      <p>{action.detail}</p>
+                      <small>{action.effectLabel}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-        <div className={styles.supportGrid}>
-          {supportSelections.map((option) => {
-            const active =
-              selected.kind === "support" && selected.id === option.id;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                className={[
-                  styles.supportCard,
-                  active ? styles["supportCard--active"] : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                onClick={() => setSelected(option)}
-                aria-pressed={active}
-              >
-                <IconCredit aria-hidden />
-                <span>{option.label}</span>
-                <strong>{option.cost?.toLocaleString()} CR</strong>
-                <small>{formatDelta(option.delta)}</small>
-              </button>
-            );
-          })}
-        </div>
+            <div className={styles.choiceGroup}>
+              <div className={styles.choiceGroup__head}>
+                <span>SUPPORT</span>
+                <b>{hostile ? "추적 자원을 투입합니다." : "관계 개선 예산을 투입합니다."}</b>
+              </div>
+              <div className={styles.supportGrid}>
+                {supportSelections.map((option) => {
+                  const active =
+                    selected.kind === "support" && selected.id === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={[
+                        styles.supportCard,
+                        active ? styles["supportCard--active"] : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => setSelected(option)}
+                      aria-pressed={active}
+                    >
+                      <IconCredit aria-hidden />
+                      <span>{option.label}</span>
+                      <strong>{option.cost?.toLocaleString()} CR</strong>
+                      <small>{formatDelta(option.delta)}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
 
         <div className={styles.applyConsole}>
           <IconFactionBriefing aria-hidden />
@@ -472,10 +540,10 @@ export default function FactionContactClient({
       </Box>
 
       <Box className={styles.questPanel}>
-        <PanelTitle right={<span className={styles.panelCode}>CANDIDATE</span>}>
+        <PanelTitle right={<span className={styles.panelCode}>QUEST</span>}>
           <span className={styles.panelLabel}>
             <IconReportDocument aria-hidden />
-            <span>퀘스트 후보</span>
+            <span>의뢰 게시판</span>
           </span>
         </PanelTitle>
 

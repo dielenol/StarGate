@@ -320,118 +320,223 @@
   line-height: 1.6;
 }
 
-.contactSimulator {
+.sceneFrame {
+  position: relative;
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 12px;
+  gap: 16px;
+  min-height: 520px;
   margin-top: 14px;
+  padding: 16px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(6, 7, 9, 0.94), rgba(6, 7, 9, 0.62)),
+    var(--scene-bg-image),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 54%);
+  background-position: center;
+  background-size: cover;
+  border: 1px solid var(--faction-accent-dim);
+  border-radius: var(--radius-sm);
 }
 
-.operatorCard {
+.sceneFrame__backdrop,
+.sceneFrame__scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sceneFrame__backdrop {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.4;
+}
+
+.sceneFrame__scanline {
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.035) 0,
+    rgba(255, 255, 255, 0.035) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+  mix-blend-mode: screen;
+  opacity: 0.2;
+}
+
+.sceneFrame__main {
+  position: relative;
   display: grid;
-  gap: 8px;
-  align-content: center;
+  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 300px;
+}
+
+.scenePortrait {
+  display: grid;
+  align-content: end;
+  gap: 10px;
   min-width: 0;
-  min-height: 160px;
-  padding: 14px;
-  background: rgba(0, 0, 0, 0.18);
+}
+
+.scenePortrait__plate {
+  display: grid;
+  width: min(100%, 280px);
+  min-height: 300px;
+  place-items: end center;
+  justify-self: center;
+  padding: 16px;
+  background:
+    linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.52)),
+    rgba(0, 0, 0, 0.18);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
 
-.operatorCard__sigil {
-  display: grid;
-  width: 76px;
-  height: 76px;
-  place-items: center;
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid var(--faction-accent-dim);
+.scenePortrait__plate span {
+  align-self: center;
+  color: var(--faction-accent);
+  font-family: var(--font-mono);
+  font-size: clamp(42px, 8vw, 76px);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.scenePortrait__image {
+  width: 100%;
+  max-height: 330px;
+  object-fit: contain;
+  object-position: bottom center;
+}
+
+.scenePortrait__logo {
+  align-self: center;
+  max-width: 176px;
+  max-height: 176px;
+  object-fit: contain;
+  opacity: 0.72;
+}
+
+.scenePortrait__logo--spaceZero {
+  filter: invert(1) grayscale(1) contrast(1.35)
+    drop-shadow(0 0 12px rgba(255, 255, 255, 0.2));
+}
+
+.scenePortrait__caption,
+.sceneDialogue,
+.choiceGroup {
+  background: rgba(7, 8, 10, 0.78);
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
 
-.operatorCard__sigil span {
+.scenePortrait__caption {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.scenePortrait__caption span,
+.sceneDialogue__top span,
+.sceneDialogue__top b,
+.choiceGroup__head span {
   color: var(--faction-accent);
   font-family: var(--font-mono);
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 13px;
   letter-spacing: 0;
 }
 
-.operatorCard__logo {
-  max-width: 54px;
-  max-height: 54px;
-  object-fit: contain;
-}
-
-.operatorCard__logo--spaceZero {
-  filter: invert(1) grayscale(1) contrast(1.35)
-    drop-shadow(0 0 8px rgba(255, 255, 255, 0.18));
-}
-
-.operatorCard > span,
-.dialoguePanel__head span {
-  color: var(--faction-accent);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0;
-}
-
-.operatorCard strong {
+.scenePortrait__caption strong {
   color: var(--ink-0);
   font-size: 17px;
-  line-height: 1.28;
+  line-height: 1.25;
 }
 
-.dialoguePanel {
+.sceneDialogue {
+  align-self: end;
   display: grid;
   gap: 12px;
-  align-content: center;
   min-width: 0;
-  min-height: 160px;
-  padding: 16px;
-  background:
-    linear-gradient(120deg, var(--faction-glow), transparent 48%),
-    rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--faction-accent-dim);
-  border-radius: var(--radius-sm);
+  padding: 18px;
+  border-color: var(--faction-accent-dim);
+  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.32);
 }
 
-.dialoguePanel__head {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
+.sceneDialogue__top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.dialoguePanel__head strong {
+.sceneDialogue__title {
   color: var(--ink-0);
-  font-size: 18px;
-  line-height: 1.28;
+  font-size: 22px;
+  line-height: 1.25;
   overflow-wrap: anywhere;
   word-break: keep-all;
 }
 
-.dialoguePanel p {
+.sceneDialogue__line {
+  min-height: 52px;
   margin: 0;
-  color: var(--ink-1);
-  font-size: 15px;
-  line-height: 1.6;
+  color: var(--ink-0);
+  font-size: 17px;
+  line-height: 1.65;
+  word-break: keep-all;
 }
 
-.dialoguePanel__meta {
+.sceneDialogue__sub {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.sceneDialogue__meta {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.dialoguePanel__meta span {
+.sceneDialogue__meta span {
   padding: 5px 8px;
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 13px;
   letter-spacing: 0;
-  background: rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.28);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
+}
+
+.choiceDeck {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 12px;
+}
+
+.choiceGroup {
+  min-width: 0;
+  padding: 12px;
+}
+
+.choiceGroup__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.choiceGroup__head b {
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: right;
 }
 
 .actionGrid {
@@ -707,7 +812,8 @@
   .layout,
   .actionGrid,
   .questGrid,
-  .contactSimulator,
+  .sceneFrame__main,
+  .choiceDeck,
   .supportGrid {
     grid-template-columns: 1fr;
   }
@@ -735,7 +841,8 @@
   .benefit,
   .contactLead,
   .applyConsole,
-  .supportCard {
+  .supportCard,
+  .sceneFrame {
     grid-template-columns: 1fr;
   }
 
@@ -748,6 +855,28 @@
   }
 
   .nextTier strong {
+    text-align: left;
+  }
+
+  .sceneFrame {
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .scenePortrait__plate {
+    width: 100%;
+    min-height: 220px;
+  }
+
+  .sceneDialogue {
+    padding: 14px;
+  }
+
+  .sceneDialogue__title {
+    font-size: 19px;
+  }
+
+  .choiceGroup__head b {
     text-align: left;
   }
 }

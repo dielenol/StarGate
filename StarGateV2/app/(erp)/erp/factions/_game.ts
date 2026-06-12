@@ -30,9 +30,23 @@ export interface FactionBenefitRule {
   description: string;
 }
 
+export interface FactionContactScene {
+  operatorName: string;
+  operatorRole: string;
+  operatorCodename: string;
+  openingLine: string;
+  idleLine: string;
+  successLine: string;
+  lockedLine: string;
+  sceneTone: "council" | "military" | "civil" | "tech" | "hostile" | "novus";
+  operatorPortraitUrl?: string;
+  sceneBackgroundUrl?: string;
+}
+
 export interface FactionGameProfile {
   operatorLabel: string;
   contactLine: string;
+  scene: FactionContactScene;
   actions: FactionActionPreview[];
   quests: FactionQuestPreview[];
   benefits: readonly FactionBenefitRule[];
@@ -119,10 +133,36 @@ const HOSTILE_BENEFITS: readonly FactionBenefitRule[] = [
   },
 ] as const;
 
+const DEFAULT_SCENE: FactionContactScene = {
+  operatorName: "사무국 조율자",
+  operatorRole: "NOVUS ORDO RELAY",
+  operatorCodename: "LOCAL",
+  openingLine: "현재 세력 정보와 접선 후보를 정리합니다.",
+  idleLine: "선택지를 고르면 실행 전 브리핑을 갱신합니다.",
+  successLine: "기록이 갱신되었습니다. 다음 신호를 대기합니다.",
+  lockedLine: "관계 단계가 부족합니다. 다른 접선부터 진행하십시오.",
+  sceneTone: "novus",
+};
+
+function scene(input: Partial<FactionContactScene>): FactionContactScene {
+  return {
+    ...DEFAULT_SCENE,
+    ...input,
+  };
+}
+
 const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
   COUNCIL: {
     operatorLabel: "고위 의결 라인",
     contactLine: "예산 승인, 정치적 보호, 고위 정보 접근을 협의합니다.",
+    scene: scene({
+      operatorName: "이사회 연락관",
+      operatorRole: "COUNCIL LIAISON",
+      operatorCodename: "COUNCIL",
+      openingLine: "의결 라인이 열렸습니다. 제출할 안건을 선택하십시오.",
+      successLine: "의결 라인에 반영되었습니다. 후속 검토를 기다립니다.",
+      sceneTone: "council",
+    }),
     actions: [
       {
         id: "petition",
@@ -153,6 +193,14 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
   MILITARY: {
     operatorLabel: "합동 작전 라인",
     contactLine: "무장 지원, 격리 작전, 군사 정보 교환을 조율합니다.",
+    scene: scene({
+      operatorName: "군부 연락장교",
+      operatorRole: "MILITARY DESK",
+      operatorCodename: "MIL",
+      openingLine: "작전 채널이 연결되었습니다. 요청할 지원 유형을 지정하십시오.",
+      successLine: "작전 라인에 전송되었습니다. 승인 여부를 대기합니다.",
+      sceneTone: "military",
+    }),
     actions: [
       {
         id: "joint-op",
@@ -183,6 +231,14 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
   CIVIL: {
     operatorLabel: "민간 조율 라인",
     contactLine: "여론, 민간 제보, 피해자 보호, 시장 루트를 조율합니다.",
+    scene: scene({
+      operatorName: "민간 조율자",
+      operatorRole: "CIVIL CONTACT",
+      operatorCodename: "CIV",
+      openingLine: "민간 네트워크가 응답했습니다. 조율할 접점을 고르십시오.",
+      successLine: "민간 접점 기록이 갱신되었습니다.",
+      sceneTone: "civil",
+    }),
     actions: [
       {
         id: "witness",
@@ -213,6 +269,14 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
   WHITE_ROSE: {
     operatorLabel: "급진 시민 접촉",
     contactLine: "민간 인권, 정보 공개, 피해자 증언을 중심으로 접촉합니다.",
+    scene: scene({
+      operatorName: "백장미단 연락책",
+      operatorRole: "WHITE ROSE CELL",
+      operatorCodename: "ROSE",
+      openingLine: "익명 회선이 연결되었습니다. 보호할 증언을 지정하십시오.",
+      successLine: "민간 기록망에 반영되었습니다. 공개 시점을 검토합니다.",
+      sceneTone: "civil",
+    }),
     actions: [
       {
         id: "testimony",
@@ -243,6 +307,14 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
   SPACE_ZERO: {
     operatorLabel: "기술 계약 라인",
     contactLine: "기술 자본, 특수 장비, 글로벌 시장 루트를 거래합니다.",
+    scene: scene({
+      operatorName: "스페이스 제로 중개자",
+      operatorRole: "SPACE ZERO BROKER",
+      operatorCodename: "SPZ",
+      openingLine: "계약 채널이 활성화되었습니다. 거래 조건을 선택하십시오.",
+      successLine: "계약 후보가 갱신되었습니다. 장비 검토 라인을 확인하십시오.",
+      sceneTone: "tech",
+    }),
     actions: [
       {
         id: "prototype",
@@ -273,6 +345,15 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
   GOLDEN_DAWN: {
     operatorLabel: "차단/추적 라인",
     contactLine: "커트 의식, 은닉 루트, 침투 흔적을 추적합니다.",
+    scene: scene({
+      operatorName: "의식 추적 분석관",
+      operatorRole: "COUNTER-RITUAL DESK",
+      operatorCodename: "DAWN",
+      openingLine: "직접 접촉이 아닙니다. 추적할 흔적을 선택하십시오.",
+      successLine: "차단 기록이 갱신되었습니다. 다음 의식 신호를 감시합니다.",
+      lockedLine: "단서가 부족합니다. 기본 추적부터 진행하십시오.",
+      sceneTone: "hostile",
+    }),
     actions: [
       {
         id: "ritual-trace",
@@ -303,6 +384,15 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
   AHNENERBE: {
     operatorLabel: "적대 연구 추적",
     contactLine: "비밀 연구, 시설 흔적, 광명회 계열 침투 의혹을 추적합니다.",
+    scene: scene({
+      operatorName: "적대 연구 분석관",
+      operatorRole: "HOSTILE RESEARCH DESK",
+      operatorCodename: "AH",
+      openingLine: "분석 회선이 열렸습니다. 확보할 연구 흔적을 지정하십시오.",
+      successLine: "연구 추적 파일이 갱신되었습니다.",
+      lockedLine: "검증된 단서가 부족합니다. 관측 기록부터 확보하십시오.",
+      sceneTone: "hostile",
+    }),
     actions: [
       {
         id: "facility-audit",
@@ -335,6 +425,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
 const DEFAULT_PROFILE: FactionGameProfile = {
   operatorLabel: "사무국 조율 라인",
   contactLine: "세력 정보를 정리하고 다음 접선 후보를 검토합니다.",
+  scene: DEFAULT_SCENE,
   actions: [
     {
       id: "briefing",
@@ -414,6 +505,15 @@ export function getFactionGameProfile(
       ...DEFAULT_PROFILE,
       operatorLabel: "위협 통제 라인",
       contactLine: "직접 협상이 아니라 감시, 차단, 역추적 중심으로 관리합니다.",
+      scene: scene({
+        operatorName: "위협 통제 분석관",
+        operatorRole: "HOSTILE CONTROL",
+        operatorCodename: "WATCH",
+        openingLine: "적대세력 통제 화면입니다. 추적 대상을 선택하십시오.",
+        successLine: "통제 기록이 갱신되었습니다.",
+        lockedLine: "추적 근거가 부족합니다. 기본 감시부터 진행하십시오.",
+        sceneTone: "hostile",
+      }),
       benefits: HOSTILE_BENEFITS,
     };
   }
