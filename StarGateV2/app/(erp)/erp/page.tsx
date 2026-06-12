@@ -149,6 +149,44 @@ const SESSION_STATUS_TAG: Record<
   CANCELED: { label: "취소", tone: "danger" },
 };
 
+type ActionTone = "gold" | "info" | "success" | "danger" | "default";
+
+interface ActionItem {
+  label: string;
+  title: string;
+  detail: string;
+  href: string;
+  cta: string;
+  tone: ActionTone;
+}
+
+function daysUntil(targetAt: Date | string): number {
+  const target = typeof targetAt === "string" ? new Date(targetAt) : targetAt;
+  const targetMidnight = new Date(
+    target.getFullYear(),
+    target.getMonth(),
+    target.getDate(),
+  ).getTime();
+  const now = new Date();
+  const todayMidnight = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  return Math.round((targetMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+}
+
+function ddayLabel(targetAt: Date | string): string {
+  const diff = daysUntil(targetAt);
+  if (diff === 0) return "TODAY";
+  if (diff > 0) return `D-${diff}`;
+  return `D+${Math.abs(diff)}`;
+}
+
+function dateTimeLabel(targetAt: Date | string): string {
+  return `${formatDate(targetAt, "compact")} · ${formatTime(targetAt)}`;
+}
+
 export default async function ERPDashboardPage() {
   const session = await auth();
 
@@ -254,6 +292,73 @@ export default async function ERPDashboardPage() {
     )
     .slice(0, 3);
 
+  const todayMissionCount = enrichedUpcoming.filter(
+    ({ raw }) => raw.status !== "CANCELED" && daysUntil(raw.targetDateTime) === 0,
+  ).length;
+  const openMissionCount = enrichedUpcoming.filter(
+    ({ raw }) => raw.status === "OPEN" || raw.status === "CLOSING",
+  ).length;
+  const notificationPreview = notifications.slice(0, 5);
+  const nextMission = myRsvpUpcoming[0]?.raw ?? null;
+  const nextMissionMeta = nextMission
+    ? (SESSION_STATUS_TAG[nextMission.status] ?? {
+        label: nextMission.status,
+        tone: "default" as const,
+      })
+    : null;
+  const actionItems: ActionItem[] = [
+    mainIntegrityError
+      ? {
+          label: "캐릭터",
+          title: "메인 캐릭터 정합성 확인 필요",
+          detail: mainIntegrityError,
+          href: "/erp/characters",
+          cta: "캐릭터 확인",
+          tone: "danger",
+        }
+      : null,
+    !viewerDiscordId
+      ? {
+          label: "계정",
+          title: "Discord 연동 필요",
+          detail: "세션 RSVP와 내 작전 표시가 Discord 계정 기준으로 동작합니다.",
+          href: "/erp/account",
+          cta: "계정 설정",
+          tone: "danger",
+        }
+      : null,
+    pendingResponse.length > 0
+      ? {
+          label: "응답",
+          title: `${pendingResponse.length}건의 세션 응답 대기`,
+          detail: "모집중 또는 마감 임박 세션에 아직 RSVP가 없습니다.",
+          href: "/erp/sessions",
+          cta: "세션 확인",
+          tone: "gold",
+        }
+      : null,
+    unreadCount > 0
+      ? {
+          label: "알림",
+          title: `${unreadCount}건의 미확인 알림`,
+          detail: "최근 시스템/보상/리포트 알림을 확인하세요.",
+          href: "/erp/notifications",
+          cta: "알림 확인",
+          tone: "info",
+        }
+      : null,
+    nextMission
+      ? {
+          label: "작전",
+          title: `${ddayLabel(nextMission.targetDateTime)} · ${nextMission.title}`,
+          detail: `${dateTimeLabel(nextMission.targetDateTime)} KST 예정`,
+          href: "/erp/sessions",
+          cta: "작전 보기",
+          tone: nextMissionMeta?.tone ?? "default",
+        }
+      : null,
+  ].filter((item): item is ActionItem => item !== null);
+
   const lastSync = formatTime(new Date());
 
   return (
@@ -267,6 +372,68 @@ export default async function ERPDashboardPage() {
           </>
         }
       />
+
+      <div className={styles.commandGrid}>
+        <Box variant="gold" className={styles.actionCenter}>
+          <PanelTitle
+            right={<span className={styles.mono}>{actionItems.length} ACTIVE</span>}
+          >
+            ACTION CENTER
+          </PanelTitle>
+          {actionItems.length === 0 ? (
+            <div className={styles.actionEmpty}>
+              <Tag tone="success">CLEAR</Tag>
+              <span>지금 처리해야 할 항목이 없습니다.</span>
+            </div>
+          ) : (
+            <div className={styles.actionList}>
+              {actionItems.slice(0, 4).map((item) => (
+                <Link
+                  key={`${item.label}-${item.title}`}
+                  href={item.href}
+                  className={styles.actionItem}
+                >
+                  <Tag tone={item.tone}>{item.label}</Tag>
+                  <span className={styles.actionItem__body}>
+                    <span className={styles.actionItem__title}>{item.title}</span>
+                    <span className={styles.actionItem__detail}>{item.detail}</span>
+                  </span>
+                  <span className={styles.actionItem__cta}>{item.cta} →</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Box>
+
+        <Box className={styles.briefPanel}>
+          <PanelTitle right={<span className={styles.mono}>NEXT</span>}>
+            MISSION BRIEF
+          </PanelTitle>
+          {nextMission && nextMissionMeta ? (
+            <div className={styles.brief}>
+              <div className={styles.brief__stamp}>
+                <span>{ddayLabel(nextMission.targetDateTime)}</span>
+                <small>{formatTime(nextMission.targetDateTime)}</small>
+              </div>
+              <div className={styles.brief__body}>
+                <div className={styles.brief__title}>{nextMission.title}</div>
+                <div className={styles.brief__meta}>
+                  <Tag tone={nextMissionMeta.tone}>{nextMissionMeta.label}</Tag>
+                  <span>{formatDate(nextMission.targetDateTime, "long")}</span>
+                </div>
+              </div>
+              <Button as="a" href="/erp/sessions" size="sm">
+                달력 →
+              </Button>
+            </div>
+          ) : (
+            <div className={styles.actionEmpty}>
+              <Tag>STANDBY</Tag>
+              <span>참여 예정 작전이 없습니다.</span>
+            </div>
+          )}
+        </Box>
+      </div>
 
       <div className={styles.row3}>
         {/* MY CHARACTER — pixel-character avatar + tier/level + HP/SAN mini bar */}
@@ -354,6 +521,18 @@ export default async function ERPDashboardPage() {
                 ¤ {balance.toLocaleString()}
               </span>
             </Link>
+            <Link href="/erp/sessions" className={styles.metric}>
+              <span className={styles.metric__label}>응답 대기</span>
+              <span className={styles.metric__value}>{pendingResponse.length}</span>
+            </Link>
+            <Link href="/erp/sessions" className={styles.metric}>
+              <span className={styles.metric__label}>진행 세션</span>
+              <span className={styles.metric__value}>{openMissionCount}</span>
+            </Link>
+            <Link href="/erp/notifications" className={styles.metric}>
+              <span className={styles.metric__label}>미확인</span>
+              <span className={styles.metric__value}>{unreadCount}</span>
+            </Link>
           </div>
           {mainIntegrityError ? (
             <div className={styles.empty}>
@@ -379,6 +558,10 @@ export default async function ERPDashboardPage() {
               <span className={styles.metric__value}>
                 {mySessionCount !== null ? mySessionCount : "—"}
               </span>
+            </Link>
+            <Link href="/erp/sessions" className={styles.metric}>
+              <span className={styles.metric__label}>오늘 작전</span>
+              <span className={styles.metric__value}>{todayMissionCount}</span>
             </Link>
             <div className={styles.metric}>
               <span className={styles.metric__label}>가입 후</span>
@@ -407,18 +590,30 @@ export default async function ERPDashboardPage() {
               </span>
             ) : null}
           </PanelTitle>
-          {notifications.length === 0 ? (
+          {notificationPreview.length === 0 ? (
             <div className={styles.empty}>새 알림 없음</div>
           ) : (
             <Stack gap={10} className={styles.notifList}>
-              {notifications.map((n) => {
+              {notificationPreview.map((n) => {
                 const meta = NOTIFICATION_TAG[n.type];
                 return (
-                  <Spread key={String(n._id)} gap={10}>
-                    <span className={styles.notifLine}>
+                  <Spread
+                    key={String(n._id)}
+                    gap={10}
+                    className={[
+                      styles.notifRow,
+                      n.isRead ? styles["notifRow--read"] : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    <Link
+                      href={n.link ?? "/erp/notifications"}
+                      className={styles.notifLine}
+                    >
                       <Tag tone={meta.tone}>{meta.label}</Tag>
                       <span className={styles.notifText}>{n.title}</span>
-                    </span>
+                    </Link>
                     <span className={styles.mono}>{formatTime(n.createdAt)}</span>
                   </Spread>
                 );
