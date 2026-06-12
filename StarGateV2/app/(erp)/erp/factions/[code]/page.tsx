@@ -20,6 +20,7 @@ import {
   type FactionQuestProgressDoc,
   type FactionRelationLogDoc,
 } from "@/lib/db/faction-activity";
+import { findMainCharacterLiteByOwner } from "@/lib/db/characters";
 
 import {
   findFactionBoardNode,
@@ -106,9 +107,19 @@ export default async function FactionDetailPage({
   const nextTier = getNextRelationTier(node.favorability, hostile);
   const relationProgress = getRelationProgress(node.favorability);
   const pageToneClass = hostile ? styles["page--hostile"] : "";
-  const [activityLogs, questProgress] = await Promise.all([
+  const [activityLogs, questProgress, contactActor] = await Promise.all([
     listFactionRelationLogs(node.code).catch(() => []),
     listFactionQuestProgress(node.code).catch(() => []),
+    findMainCharacterLiteByOwner(session.user.id)
+      .then((character) =>
+        character
+          ? {
+              codename: character.codename,
+              agentLevel: character.agentLevel ?? null,
+            }
+          : null,
+      )
+      .catch(() => null),
   ]);
 
   return (
@@ -234,6 +245,7 @@ export default async function FactionDetailPage({
           favorability={node.favorability}
           hostile={hostile}
           canEditFavorability={data.canEditFavorability}
+          contactActor={contactActor}
           profile={profile}
           initialLogs={activityLogs.map(serializeActivityLog)}
           initialQuestProgress={questProgress.map(serializeQuestProgress)}

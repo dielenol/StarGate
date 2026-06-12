@@ -1,5 +1,12 @@
 import type { FactionBoardNode, FactionBoardNodeKind } from "./FactionsClient";
 
+export type FactionAccessBand =
+  | "command"
+  | "senior"
+  | "field"
+  | "junior"
+  | "unassigned";
+
 export interface RelationTier {
   min: number;
   max: number;
@@ -36,6 +43,15 @@ export interface FactionDialogueLine {
   mood: string;
   line: string;
   afterActionLine: string;
+  lineVariants?: readonly string[];
+  afterActionLineVariants?: readonly string[];
+}
+
+export interface FactionRankDialogue {
+  band: FactionAccessBand;
+  label: string;
+  line: string;
+  afterActionLine: string;
 }
 
 export interface FactionStoryChoice {
@@ -58,6 +74,7 @@ export interface FactionContactScene {
   lockedLine: string;
   sceneTone: "council" | "military" | "civil" | "tech" | "hostile" | "novus";
   dialogue: readonly FactionDialogueLine[];
+  rankDialogues: readonly FactionRankDialogue[];
   storyChoices: readonly FactionStoryChoice[];
   operatorPortraitUrl?: string;
   sceneBackgroundUrl?: string;
@@ -70,6 +87,55 @@ export interface FactionGameProfile {
   actions: FactionActionPreview[];
   quests: FactionQuestPreview[];
   benefits: readonly FactionBenefitRule[];
+}
+
+export interface FactionSupportOption {
+  id: string;
+  label: string;
+  hostileLabel: string;
+  amount: number;
+  improvesUntil: number;
+}
+
+export const FACTION_SUPPORT_OPTIONS: readonly FactionSupportOption[] = [
+  {
+    id: "support-small",
+    label: "현장 후원",
+    hostileLabel: "추적 예산",
+    amount: 150,
+    improvesUntil: 0,
+  },
+  {
+    id: "support-mid",
+    label: "장기 협조금",
+    hostileLabel: "감시망 확장",
+    amount: 450,
+    improvesUntil: 3,
+  },
+  {
+    id: "support-large",
+    label: "전략 후원",
+    hostileLabel: "침투 작전비",
+    amount: 900,
+    improvesUntil: 6,
+  },
+] as const;
+
+export function getFactionActionDelta(favorability: number): number {
+  return favorability < 3 ? 1 : 0;
+}
+
+export function getFactionQuestCompletionDelta(favorability: number): number {
+  return favorability < 10 ? 1 : 0;
+}
+
+export function getFactionSupportDelta(
+  optionId: string,
+  favorability: number,
+): number {
+  const option = FACTION_SUPPORT_OPTIONS.find((entry) => entry.id === optionId);
+  if (!option) return 0;
+  return favorability < option.improvesUntil ? 1 : 0;
 }
 
 export const RELATION_TIERS: readonly RelationTier[] = [
@@ -160,6 +226,13 @@ const DEFAULT_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "냉담",
     line: "연결은 허가됐지만, 이쪽에서는 아직 당신을 믿지 않습니다. 필요한 말만 하십시오.",
     afterActionLine: "불필요한 움직임은 기록됩니다. 다음 선택은 더 신중해야 합니다.",
+    lineVariants: [
+      "당신 쪽 기록은 아직 위험 등급입니다. 회선 유지 자체가 양보라는 점을 잊지 마십시오.",
+      "신원은 확인했습니다. 신뢰는 별개의 문제입니다.",
+    ],
+    afterActionLineVariants: [
+      "움직임은 남겼습니다. 다만 우호적 기록이라고 부르기는 어렵습니다.",
+    ],
   },
   {
     min: -6,
@@ -167,6 +240,13 @@ const DEFAULT_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "경계",
     line: "보고서는 읽었습니다. 다만 신뢰를 맡기기에는 아직 근거가 부족합니다.",
     afterActionLine: "작은 협조부터 쌓아 보죠. 이번 선택의 결과를 보겠습니다.",
+    lineVariants: [
+      "당신의 접근은 허가됐지만, 내부 공유 범위는 제한됩니다.",
+      "말보다 기록이 먼저입니다. 확인 가능한 결과를 보여주십시오.",
+    ],
+    afterActionLineVariants: [
+      "기록은 남겼습니다. 다음 접선에서 같은 실수를 반복하지 않는지 보겠습니다.",
+    ],
   },
   {
     min: -2,
@@ -174,6 +254,13 @@ const DEFAULT_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "중립",
     line: "용건을 들을 준비는 되어 있습니다. 어떤 방식으로 관계를 정리할까요?",
     afterActionLine: "기록은 남겼습니다. 이제 다음 접선으로 이어갈 수 있습니다.",
+    lineVariants: [
+      "현재 관계는 보류 상태입니다. 설득도, 경고도 아직 이릅니다.",
+      "기본 회선은 열려 있습니다. 선택은 당신 쪽에서 먼저 하십시오.",
+    ],
+    afterActionLineVariants: [
+      "접수됐습니다. 의미 있는 변화는 누적된 다음 판단하겠습니다.",
+    ],
   },
   {
     min: 3,
@@ -181,6 +268,13 @@ const DEFAULT_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "호의",
     line: "당신 쪽 제안이라면 검토할 이유가 있습니다. 이번에는 조금 더 편하게 말해도 됩니다.",
     afterActionLine: "괜찮은 선택이었습니다. 다음에는 더 깊은 이야기도 가능하겠군요.",
+    lineVariants: [
+      "최근 기록은 나쁘지 않습니다. 이번 안건은 조금 더 열어 두죠.",
+      "당신 이름은 내부 메모에 올라와 있습니다. 좋은 의미로요.",
+    ],
+    afterActionLineVariants: [
+      "이 정도 협조라면 담당 라인을 한 단계 올릴 수 있습니다.",
+    ],
   },
   {
     min: 6,
@@ -188,6 +282,13 @@ const DEFAULT_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "신뢰",
     line: "이미 여러 번 증명했죠. 필요한 게 있다면 먼저 말해 보세요.",
     afterActionLine: "이 정도면 내부 라인에도 올릴 수 있습니다. 계속 이어가죠.",
+    lineVariants: [
+      "당신이라면 예외를 검토할 수 있습니다. 단, 기록은 남깁니다.",
+      "회선 우선순위를 올려 두었습니다. 요청을 말하십시오.",
+    ],
+    afterActionLineVariants: [
+      "내부 반려 가능성은 낮습니다. 당신 이름이면 충분히 통합니다.",
+    ],
   },
   {
     min: 9,
@@ -195,6 +296,13 @@ const DEFAULT_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "핵심 협력",
     line: "당신을 기다리고 있었습니다. 이번 안건은 우리 쪽에서도 우선순위로 다루겠습니다.",
     afterActionLine: "결정권자에게 직접 전달하겠습니다. 신뢰는 이미 충분합니다.",
+    lineVariants: [
+      "이 회선은 당신에게 우선 배정되어 있습니다. 바로 본론으로 가죠.",
+      "당신 요청이라면 검토가 아니라 조율부터 시작하겠습니다.",
+    ],
+    afterActionLineVariants: [
+      "상위 라인으로 올리겠습니다. 이 정도 신뢰는 쉽게 주어지지 않습니다.",
+    ],
   },
 ] as const;
 
@@ -205,6 +313,13 @@ const HOSTILE_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "접촉 실패",
     line: "신호가 흔들립니다. 상대가 눈치챘습니다. 더 깊이 들어가면 역추적됩니다.",
     afterActionLine: "흔적을 지우는 데 시간이 필요합니다. 다음 접근은 우회하십시오.",
+    lineVariants: [
+      "상대가 우리보다 먼저 보고 있습니다. 이 회선은 오래 버티지 못합니다.",
+      "접근 흔적이 너무 큽니다. 지금은 정보보다 생존이 우선입니다.",
+    ],
+    afterActionLineVariants: [
+      "일단 끊습니다. 다음에는 더 낮은 노이즈로 들어가야 합니다.",
+    ],
   },
   {
     min: -6,
@@ -212,6 +327,13 @@ const HOSTILE_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "위협 고조",
     line: "감시망이 얕습니다. 아직은 이름과 그림자만 붙잡은 상태입니다.",
     afterActionLine: "단서 하나를 더 확보했습니다. 하지만 아직 안전하지 않습니다.",
+    lineVariants: [
+      "대상은 멀지 않습니다. 문제는 우리 쪽 흔적도 남고 있다는 점입니다.",
+      "반응은 있습니다. 접촉이라고 부르기엔 아직 이릅니다.",
+    ],
+    afterActionLineVariants: [
+      "신호가 한 번 더 튀었습니다. 상대도 이쪽을 의식하기 시작했습니다.",
+    ],
   },
   {
     min: -2,
@@ -219,6 +341,13 @@ const HOSTILE_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "관측",
     line: "대상은 움직이고 있습니다. 지금은 접촉이 아니라 관측과 차단이 우선입니다.",
     afterActionLine: "관측 로그가 갱신됐습니다. 다음에는 더 좁은 경로를 고를 수 있습니다.",
+    lineVariants: [
+      "흐름이 잡혔습니다. 아직 칼을 뽑을 때는 아니지만, 방향은 보입니다.",
+      "대상의 윤곽이 보입니다. 성급한 접근은 경로를 태울 수 있습니다.",
+    ],
+    afterActionLineVariants: [
+      "관측 창이 안정화됐습니다. 다음 선택지는 조금 더 날카로워질 겁니다.",
+    ],
   },
   {
     min: 3,
@@ -226,6 +355,13 @@ const HOSTILE_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "단서 확보",
     line: "패턴이 보입니다. 이제 단순 감시가 아니라 유도와 차단을 시도할 수 있습니다.",
     afterActionLine: "상대의 반응을 끌어냈습니다. 작전 선택지가 늘어납니다.",
+    lineVariants: [
+      "추적선이 겹쳤습니다. 이제 상대의 다음 움직임을 유도할 수 있습니다.",
+      "단서가 충분히 모였습니다. 여기서부터는 작전입니다.",
+    ],
+    afterActionLineVariants: [
+      "좋습니다. 상대가 숨긴 문 중 하나가 열렸습니다.",
+    ],
   },
   {
     min: 6,
@@ -233,6 +369,13 @@ const HOSTILE_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "침투",
     line: "내부 회선에 걸렸습니다. 말 한마디보다 침묵 하나가 더 많은 정보를 줍니다.",
     afterActionLine: "침투 기록이 안정화됐습니다. 다음 단계는 약점 확인입니다.",
+    lineVariants: [
+      "상대 내부의 리듬을 읽고 있습니다. 지금은 조용히 오래 보는 쪽이 이깁니다.",
+      "거의 닿았습니다. 질문보다 대기 시간이 더 큰 단서가 됩니다.",
+    ],
+    afterActionLineVariants: [
+      "침투가 유지됩니다. 다음에는 핵심 약점을 건드릴 수 있습니다.",
+    ],
   },
   {
     min: 9,
@@ -240,6 +383,79 @@ const HOSTILE_DIALOGUE: readonly FactionDialogueLine[] = [
     mood: "약점 포착",
     line: "대상의 핵심 약점이 드러났습니다. 이제는 추적이 아니라 선택의 문제입니다.",
     afterActionLine: "결정적 단서를 확보했습니다. 작전 카드로 전환할 수 있습니다.",
+    lineVariants: [
+      "약점이 보입니다. 이 지점부터는 한 번의 결정이 전체 판을 바꿉니다.",
+      "대상은 아직 모릅니다. 우리가 어디까지 들어왔는지.",
+    ],
+    afterActionLineVariants: [
+      "결정적입니다. 이건 브리핑이 아니라 작전 개시 조건입니다.",
+    ],
+  },
+] as const;
+
+const DEFAULT_RANK_DIALOGUES: readonly FactionRankDialogue[] = [
+  {
+    band: "command",
+    label: "상위 권한 회선",
+    line: "상위 등급 접근으로 확인됩니다. 담당자는 형식 절차를 줄이고 본론부터 받습니다.",
+    afterActionLine: "상위 권한으로 접수됐습니다. 반려되더라도 검토 라인은 남습니다.",
+  },
+  {
+    band: "senior",
+    label: "정규 작전 회선",
+    line: "정규 작전 등급으로 확인됩니다. 현장 기록과 권한 범위가 함께 검토됩니다.",
+    afterActionLine: "현장 신뢰도는 충분합니다. 다만 결정권자 승인은 별도입니다.",
+  },
+  {
+    band: "field",
+    label: "현장 실무 회선",
+    line: "현장 실무 등급으로 접속했습니다. 상대는 결과 중심의 짧은 답을 기대합니다.",
+    afterActionLine: "실무 기록으로 반영됩니다. 작은 성공을 여러 번 쌓는 쪽이 유리합니다.",
+  },
+  {
+    band: "junior",
+    label: "저위 권한 회선",
+    line: "낮은 등급 접근입니다. 회선은 열렸지만, 상대가 먼저 신뢰하지는 않습니다.",
+    afterActionLine: "기록은 남았지만, 상위 승인 없이 깊은 협조를 끌어내긴 어렵습니다.",
+  },
+  {
+    band: "unassigned",
+    label: "대리 접속",
+    line: "접근 요원 등급이 확인되지 않았습니다. 사무국 대리 회선으로 처리합니다.",
+    afterActionLine: "대리 기록으로 남깁니다. 실제 요원 등급이 확인되면 반응이 달라질 수 있습니다.",
+  },
+] as const;
+
+const HOSTILE_RANK_DIALOGUES: readonly FactionRankDialogue[] = [
+  {
+    band: "command",
+    label: "상위 통제 권한",
+    line: "상위 권한으로 추적 절차를 생략합니다. 분석관은 곧장 핵심 단서부터 꺼냅니다.",
+    afterActionLine: "상위 통제 기록으로 잠겼습니다. 차단 판단까지 올릴 수 있습니다.",
+  },
+  {
+    band: "senior",
+    label: "작전 분석 권한",
+    line: "정규 작전 권한입니다. 상대가 남긴 흔적을 작전 자료와 대조합니다.",
+    afterActionLine: "분석 기록이 안정적입니다. 다음 접근 때 더 깊은 신호를 열 수 있습니다.",
+  },
+  {
+    band: "field",
+    label: "현장 추적 권한",
+    line: "현장 권한으로 접근합니다. 지금은 빠른 판단보다 흔적 보존이 중요합니다.",
+    afterActionLine: "현장 추적 로그가 남았습니다. 다음엔 더 작은 흔적도 잡힐 겁니다.",
+  },
+  {
+    band: "junior",
+    label: "제한 추적 권한",
+    line: "낮은 권한의 추적 요청입니다. 위험 신호가 감지되면 즉시 회선이 차단됩니다.",
+    afterActionLine: "제한 로그로 처리했습니다. 깊은 침투는 상위 승인이 필요합니다.",
+  },
+  {
+    band: "unassigned",
+    label: "감시 대리 회선",
+    line: "요원 등급이 확인되지 않아 감시 대리 회선으로 전환합니다.",
+    afterActionLine: "대리 감시 기록으로 남깁니다. 신원 확정 전에는 접근 깊이가 제한됩니다.",
   },
 ] as const;
 
@@ -327,6 +543,7 @@ const DEFAULT_SCENE: FactionContactScene = {
   lockedLine: "관계 단계가 부족합니다. 다른 접선부터 진행하십시오.",
   sceneTone: "novus",
   dialogue: DEFAULT_DIALOGUE,
+  rankDialogues: DEFAULT_RANK_DIALOGUES,
   storyChoices: DEFAULT_STORY_CHOICES,
 };
 
@@ -355,7 +572,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
         channel: "FORMAL",
         label: "예산 청원",
         detail: "사무국 보고서를 제출해 후원 후보를 엽니다.",
-        effectLabel: "우호도 +1 후보",
+        effectLabel: "초기 관계 +1 후보",
       },
       {
         id: "clearance",
@@ -540,6 +757,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       lockedLine: "단서가 부족합니다. 기본 추적부터 진행하십시오.",
       sceneTone: "hostile",
       dialogue: HOSTILE_DIALOGUE,
+      rankDialogues: HOSTILE_RANK_DIALOGUES,
       storyChoices: HOSTILE_STORY_CHOICES,
     }),
     actions: [
@@ -548,7 +766,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
         channel: "TRACE",
         label: "의식 흔적 추적",
         detail: "최근 보고서와 위키 기록에서 반복되는 상징을 대조합니다.",
-        effectLabel: "단서 +1 후보",
+        effectLabel: "초기 통제 +1 후보",
       },
       {
         id: "intercept",
@@ -581,6 +799,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       lockedLine: "검증된 단서가 부족합니다. 관측 기록부터 확보하십시오.",
       sceneTone: "hostile",
       dialogue: HOSTILE_DIALOGUE,
+      rankDialogues: HOSTILE_RANK_DIALOGUES,
       storyChoices: HOSTILE_STORY_CHOICES,
     }),
     actions: [
@@ -704,6 +923,7 @@ export function getFactionGameProfile(
         lockedLine: "추적 근거가 부족합니다. 기본 감시부터 진행하십시오.",
         sceneTone: "hostile",
         dialogue: HOSTILE_DIALOGUE,
+        rankDialogues: HOSTILE_RANK_DIALOGUES,
         storyChoices: HOSTILE_STORY_CHOICES,
       }),
       benefits: HOSTILE_BENEFITS,

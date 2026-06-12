@@ -17,11 +17,20 @@ import {
 } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
+import type { AgentLevel } from "@/types/character";
 
+import {
+  FACTION_SUPPORT_OPTIONS,
+  getFactionActionDelta,
+  getFactionQuestCompletionDelta,
+  getFactionSupportDelta,
+} from "../_game";
 import type {
+  FactionAccessBand,
   FactionActionPreview,
   FactionDialogueLine,
   FactionGameProfile,
+  FactionRankDialogue,
   FactionQuestPreview,
   FactionStoryChoice,
 } from "../_game";
@@ -33,6 +42,7 @@ interface FactionContactClientProps {
   favorability: number | null;
   hostile: boolean;
   canEditFavorability: boolean;
+  contactActor: ContactActor | null;
   profile: FactionGameProfile;
   initialLogs: SerializedFactionRelationLog[];
   initialQuestProgress: SerializedFactionQuestProgress[];
@@ -84,32 +94,13 @@ interface ContactSelection {
   effectLabel?: string;
 }
 
+interface ContactActor {
+  codename: string;
+  agentLevel: AgentLevel | null;
+}
+
 const FAVORABILITY_MIN = -10;
 const FAVORABILITY_MAX = 10;
-
-const SUPPORT_OPTIONS = [
-  {
-    id: "support-small",
-    label: "현장 후원",
-    hostileLabel: "추적 예산",
-    amount: 150,
-    delta: 1,
-  },
-  {
-    id: "support-mid",
-    label: "장기 협조금",
-    hostileLabel: "감시망 확장",
-    amount: 450,
-    delta: 2,
-  },
-  {
-    id: "support-large",
-    label: "전략 후원",
-    hostileLabel: "침투 작전비",
-    amount: 900,
-    delta: 3,
-  },
-] as const;
 
 function clampFavorability(value: number) {
   return Math.max(FAVORABILITY_MIN, Math.min(FAVORABILITY_MAX, value));
@@ -173,6 +164,74 @@ function dialogueForFavorability(
   );
 }
 
+function accessBandForAgentLevel(
+  agentLevel: AgentLevel | null | undefined,
+): FactionAccessBand {
+  switch (agentLevel) {
+    case "V":
+    case "A":
+      return "command";
+    case "M":
+    case "H":
+      return "senior";
+    case "G":
+      return "field";
+    case "J":
+    case "U":
+      return "junior";
+    default:
+      return "unassigned";
+  }
+}
+
+function rankDialogueForActor(
+  lines: readonly FactionRankDialogue[],
+  actor: ContactActor | null,
+) {
+  const band = accessBandForAgentLevel(actor?.agentLevel);
+  return (
+    lines.find((line) => line.band === band) ??
+    lines.find((line) => line.band === "unassigned") ??
+    lines[0]
+  );
+}
+
+function stableIndex(seed: string, length: number) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return hash % length;
+}
+
+function pickDialogueText(
+  primary: string,
+  variants: readonly string[] | undefined,
+  seed: string,
+) {
+  const lines = variants?.length ? [primary, ...variants] : [primary];
+  return lines[stableIndex(seed, lines.length)];
+}
+
+function selectionDelta(
+  selection: ContactSelection,
+  currentFavorability: number,
+) {
+  if (selection.kind === "action") {
+    return getFactionActionDelta(currentFavorability);
+  }
+
+  if (selection.kind === "support") {
+    return getFactionSupportDelta(selection.id, currentFavorability);
+  }
+
+  if (selection.kind === "quest" && selection.questStatus === "ACTIVE") {
+    return getFactionQuestCompletionDelta(currentFavorability);
+  }
+
+  return 0;
+}
+
 function storyChoiceSelection(choice: FactionStoryChoice): ContactSelection {
   return {
     id: choice.id,
@@ -193,7 +252,7 @@ function actionSelection(action: FactionActionPreview): ContactSelection {
     channel: action.channel,
     label: action.label,
     detail: action.detail,
-    delta: 1,
+    delta: 0,
     effectLabel: action.effectLabel,
   };
 }
@@ -210,13 +269,13 @@ function questSelection(
     channel: "QUEST",
     label: quest.title,
     detail: quest.summary,
-    delta: active ? 2 : 0,
+    delta: 0,
     minimumFavorability: quest.minimumFavorability,
     questStatus: completed ? "COMPLETED" : active ? "ACTIVE" : undefined,
     effectLabel: completed
       ? "완료 기록"
       : active
-        ? "완료 반영 가능"
+        ? "완료 시 +1"
         : quest.reward,
   };
 }
@@ -227,6 +286,7 @@ export default function FactionContactClient({
   favorability,
   hostile,
   canEditFavorability,
+  contactActor,
   profile,
   initialLogs,
   initialQuestProgress,
@@ -253,29 +313,40 @@ export default function FactionContactClient({
 
   const supportSelections = useMemo(
     () =>
-      SUPPORT_OPTIONS.map<ContactSelection>((option) => ({
+      FACTION_SUPPORT_OPTIONS.map<ContactSelection>((option) => ({
         id: option.id,
         kind: "support",
         channel: hostile ? "COUNTER-FUND" : "CREDIT",
         label: hostile ? option.hostileLabel : option.label,
         detail: hostile
-          ? `${option.amount.toLocaleString()} CR을 작전 예산으로 책정해 추적/차단망을 강화합니다.`
-          : `${option.amount.toLocaleString()} CR을 관계 개선 예산으로 책정합니다.`,
-        delta: option.delta,
+          ? `${option.amount.toLocaleString()} CR을 추적 예산으로 책정합니다. 우호도 ${option.improvesUntil} 미만에서만 통제도가 1 상승합니다.`
+          : `${option.amount.toLocaleString()} CR을 관계 개선 예산으로 책정합니다. 우호도 ${option.improvesUntil} 미만에서만 관계가 1 상승합니다.`,
+        delta: 0,
         cost: option.amount,
-        effectLabel: `${formatDelta(option.delta)} / ${option.amount.toLocaleString()} CR`,
+        effectLabel: `조건부 +1 · ${option.improvesUntil} 미만`,
       })),
     [hostile],
   );
 
+  const selectedDelta = selectionDelta(selected, currentFavorability);
   const projectedFavorability = clampFavorability(
-    currentFavorability + selected.delta,
+    currentFavorability + selectedDelta,
   );
   const cappedDelta = projectedFavorability - currentFavorability;
   const activeDialogue = dialogueForFavorability(
     profile.scene.dialogue,
     currentFavorability,
   );
+  const activeRankDialogue = rankDialogueForActor(
+    profile.scene.rankDialogues,
+    contactActor,
+  );
+  const dialogueSeed = [
+    code,
+    currentFavorability,
+    selected.id,
+    contactActor?.agentLevel ?? "NO_LEVEL",
+  ].join(":");
   const selectionLocked =
     currentFavorability < (selected.minimumFavorability ?? FAVORABILITY_MIN);
   const questLocked =
@@ -289,14 +360,28 @@ export default function FactionContactClient({
     selected.kind !== "talk" &&
     (selected.kind === "quest"
       ? !questLocked && !questCompleted
-      : cappedDelta !== 0 && selected.delta > 0);
+      : cappedDelta !== 0 && selectedDelta > 0);
   const sceneStyle = {
     "--scene-bg-image": profile.scene.sceneBackgroundUrl
       ? `url(${JSON.stringify(profile.scene.sceneBackgroundUrl)})`
       : "none",
   } as CSSProperties;
   const baseDialogueLine =
-    selected.kind === "talk" ? activeDialogue.line : activeDialogue.afterActionLine;
+    selected.kind === "talk"
+      ? pickDialogueText(
+          activeDialogue.line,
+          activeDialogue.lineVariants,
+          `${dialogueSeed}:idle`,
+        )
+      : pickDialogueText(
+          activeDialogue.afterActionLine,
+          activeDialogue.afterActionLineVariants,
+          `${dialogueSeed}:action`,
+        );
+  const rankDialogueLine =
+    selected.kind === "talk"
+      ? activeRankDialogue.line
+      : activeRankDialogue.afterActionLine;
   const dialogueLine = talkLocked || questLocked
     ? profile.scene.lockedLine
     : selected.kind === "quest" && selected.questStatus === "COMPLETED"
@@ -306,7 +391,9 @@ export default function FactionContactClient({
     ? "완료"
     : questLocked || talkLocked
       ? "잠김"
-      : selected.effectLabel ?? formatDelta(cappedDelta);
+      : selected.kind !== "talk" && cappedDelta === 0
+        ? "관계 변화 없음"
+        : selected.effectLabel ?? formatDelta(cappedDelta);
 
   function getActivityType(): FactionActivityKind {
     if (selected.kind === "talk") {
@@ -373,7 +460,7 @@ export default function FactionContactClient({
       if (selected.kind === "quest") {
         setSelected((prev) => ({
           ...prev,
-          delta: activityType === "QUEST_ACCEPT" ? 2 : 0,
+          delta: 0,
           questStatus:
             activityType === "QUEST_ACCEPT" ? "ACTIVE" : "COMPLETED",
         }));
@@ -462,6 +549,7 @@ export default function FactionContactClient({
                 {profile.scene.operatorName}
               </strong>
               <p className={styles.sceneDialogue__line}>{baseDialogueLine}</p>
+              <p className={styles.sceneDialogue__rank}>{rankDialogueLine}</p>
               <div className={styles.sceneDialogue__reply}>
                 <span>
                   {selectionKindLabel(selected.kind)} · {selected.channel}
@@ -472,6 +560,12 @@ export default function FactionContactClient({
               <p className={styles.sceneDialogue__sub}>{profile.contactLine}</p>
 
               <div className={styles.sceneDialogue__meta}>
+                <span>
+                  {contactActor
+                    ? `${contactActor.codename} · ${contactActor.agentLevel ?? "등급 미등록"}`
+                    : "접근 요원 미확인"}
+                </span>
+                <span>{activeRankDialogue.label}</span>
                 <span>현재 {currentFavorability}</span>
                 <span>
                   {selected.kind === "talk"
@@ -532,6 +626,7 @@ export default function FactionContactClient({
                 {profile.actions.map((action) => {
                   const active =
                     selected.kind === "action" && selected.id === action.id;
+                  const actionDelta = getFactionActionDelta(currentFavorability);
                   return (
                     <button
                       key={action.id}
@@ -548,7 +643,11 @@ export default function FactionContactClient({
                       <span>{action.channel}</span>
                       <strong>{action.label}</strong>
                       <p>{action.detail}</p>
-                      <small>{action.effectLabel}</small>
+                      <small>
+                        {actionDelta > 0
+                          ? action.effectLabel
+                          : "협조 단계 이후 기록만"}
+                      </small>
                     </button>
                   );
                 })}
@@ -564,6 +663,10 @@ export default function FactionContactClient({
                 {supportSelections.map((option) => {
                   const active =
                     selected.kind === "support" && selected.id === option.id;
+                  const optionDelta = selectionDelta(
+                    option,
+                    currentFavorability,
+                  );
                   return (
                     <button
                       key={option.id}
@@ -580,7 +683,9 @@ export default function FactionContactClient({
                       <IconCredit aria-hidden />
                       <span>{option.label}</span>
                       <strong>{option.cost?.toLocaleString()} CR</strong>
-                      <small>{formatDelta(option.delta)}</small>
+                      <small>
+                        {optionDelta > 0 ? formatDelta(optionDelta) : "조건 미달"}
+                      </small>
                     </button>
                   );
                 })}
@@ -595,7 +700,7 @@ export default function FactionContactClient({
             <strong>{canEditFavorability ? "GM 반영 대기" : "GM 검토 후보"}</strong>
             <p>
               {canEditFavorability
-                ? "선택한 접선 결과를 현재 세력 우호도에 반영할 수 있습니다."
+                ? "선택한 접선 결과를 현재 보상 규칙에 따라 세력 우호도에 반영할 수 있습니다."
                 : "접선 결과는 후보로만 표시됩니다."}
             </p>
           </div>
@@ -677,7 +782,7 @@ export default function FactionContactClient({
                   {completed
                     ? "완료됨"
                     : inProgress
-                      ? "진행 중 · 완료 반영 가능"
+                      ? "진행 중 · 완료 시 +1"
                       : locked
                         ? "관계 단계 부족"
                         : quest.reward}

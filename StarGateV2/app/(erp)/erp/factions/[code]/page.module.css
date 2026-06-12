@@ -526,6 +526,14 @@
   word-break: keep-all;
 }
 
+.sceneDialogue__rank {
+  margin: -4px 0 0;
+  color: var(--faction-accent);
+  font-size: 14px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
 .sceneDialogue__reply {
   display: grid;
   gap: 6px;

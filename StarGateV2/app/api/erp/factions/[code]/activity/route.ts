@@ -21,7 +21,13 @@ import {
 import { findUserById } from "@/lib/db/users";
 
 import { DEFAULT_FACTION_FAVORABILITY_BY_CODE } from "@/app/(erp)/erp/factions/_data";
-import { getFactionGameProfile } from "@/app/(erp)/erp/factions/_game";
+import {
+  FACTION_SUPPORT_OPTIONS,
+  getFactionActionDelta,
+  getFactionGameProfile,
+  getFactionQuestCompletionDelta,
+  getFactionSupportDelta,
+} from "@/app/(erp)/erp/factions/_game";
 
 const FAVORABILITY_MIN = -10;
 const FAVORABILITY_MAX = 10;
@@ -44,11 +50,9 @@ const HOSTILE_CODES = new Set(["HOSTILE", "GOLDEN_DAWN", "AHNENERBE"]);
 const BRANCH_CODES = new Set(["WHITE_ROSE", "SPACE_ZERO"]);
 const INTERNAL_CODES = new Set(["NOVUS_ORDO", "SECRETARIAT", "MANUS"]);
 
-const SUPPORT_OPTIONS = new Map([
-  ["support-small", { amount: 150, delta: 1 }],
-  ["support-mid", { amount: 450, delta: 2 }],
-  ["support-large", { amount: 900, delta: 3 }],
-]);
+const SUPPORT_OPTIONS = new Map(
+  FACTION_SUPPORT_OPTIONS.map((option) => [option.id, option] as const),
+);
 
 interface ActivityBody {
   type?: unknown;
@@ -193,6 +197,21 @@ export async function POST(request: Request, context: ActivityRouteContext) {
   let characterCodename: string | undefined;
   let creditTransactionId: string | undefined;
   let questProgress: FactionQuestProgressDoc | null = null;
+  let mainChar: Awaited<ReturnType<typeof findMainCharacterByOwner>> | null =
+    null;
+  let mainCharacterLookupError: string | null = null;
+
+  try {
+    mainChar = await findMainCharacterByOwner(session.user.id);
+  } catch (err) {
+    mainCharacterLookupError =
+      err instanceof Error ? err.message : "메인 캐릭터 조회에 실패했습니다.";
+  }
+
+  if (mainChar?._id) {
+    characterId = String(mainChar._id);
+    characterCodename = mainChar.codename;
+  }
 
   if (activityType === "ACTION") {
     const action = profile.actions.find((entry) => entry.id === id);
@@ -201,7 +220,7 @@ export async function POST(request: Request, context: ActivityRouteContext) {
     }
     title = action.label;
     detail = action.detail;
-    delta = 1;
+    delta = getFactionActionDelta(before);
   } else if (activityType === "SUPPORT") {
     const option = SUPPORT_OPTIONS.get(id);
     if (!option) {
@@ -211,14 +230,9 @@ export async function POST(request: Request, context: ActivityRouteContext) {
       );
     }
 
-    let mainChar;
-    try {
-      mainChar = await findMainCharacterByOwner(session.user.id);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "메인 캐릭터 조회에 실패했습니다.";
+    if (mainCharacterLookupError) {
       return NextResponse.json(
-        { error: message, code: "MAIN_CHARACTER_INTEGRITY" },
+        { error: mainCharacterLookupError, code: "MAIN_CHARACTER_INTEGRITY" },
         { status: 409 },
       );
     }
@@ -244,7 +258,7 @@ export async function POST(request: Request, context: ActivityRouteContext) {
 
     const ownerName = owner.discordUsername ?? owner.displayName;
     creditCost = option.amount;
-    delta = option.delta;
+    delta = getFactionSupportDelta(id, before);
     characterId = String(mainChar._id);
     characterCodename = mainChar.codename;
 
@@ -309,6 +323,8 @@ export async function POST(request: Request, context: ActivityRouteContext) {
         title: quest.title,
         actorId: session.user.id,
         actorName: session.user.displayName,
+        ...(characterId ? { characterId } : {}),
+        ...(characterCodename ? { characterCodename } : {}),
       });
     } else {
       if (existing?.status !== "ACTIVE") {
@@ -317,7 +333,7 @@ export async function POST(request: Request, context: ActivityRouteContext) {
           { status: 400 },
         );
       }
-      delta = 2;
+      delta = getFactionQuestCompletionDelta(before);
       questProgress = await setFactionQuestProgress({
         code,
         questId: quest.id,
@@ -325,6 +341,8 @@ export async function POST(request: Request, context: ActivityRouteContext) {
         title: quest.title,
         actorId: session.user.id,
         actorName: session.user.displayName,
+        ...(characterId ? { characterId } : {}),
+        ...(characterCodename ? { characterCodename } : {}),
       });
     }
   } else {
