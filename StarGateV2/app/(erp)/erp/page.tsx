@@ -359,18 +359,11 @@ export default async function ERPDashboardPage() {
       : null,
   ].filter((item): item is ActionItem => item !== null);
 
-  const lastSync = formatTime(new Date());
-
   return (
     <>
       <PageHead
         breadcrumb={[{ label: "ERP" }, { label: "HOME" }]}
         title="대시보드"
-        right={
-          <>
-            <Tag>LAST SYNC · {lastSync} KST</Tag>
-          </>
-        }
       />
 
       <div className={styles.commandGrid}>
