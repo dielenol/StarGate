@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   type CreditsResponse,
@@ -21,12 +21,11 @@ import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
-import {
-  DialogueBeepEngine,
-  type DialogueBeepOptions,
-} from "@/lib/audio/dialogue-beep-engine";
+import type { DialogueBeepOptions } from "@/lib/audio/dialogue-beep-engine";
 import { describeApiError } from "@/lib/api/describe-error";
 import { formatCredits } from "@/lib/format/credit";
+
+import { useNpcDialogue } from "@/hooks/useNpcDialogue";
 
 import ShopItemIcon from "../shop/ShopItemIcon";
 
@@ -43,15 +42,6 @@ type TowaskiMood =
   | "doodle"
   | "purchase"
   | "nap";
-
-interface TowaskiLineOptions
-  extends Pick<
-    DialogueBeepOptions,
-    "initialDelay" | "pitch" | "preset" | "speed" | "volume" | "wave"
-  > {
-  sound?: boolean;
-  returnToIdle?: boolean;
-}
 
 const MAX_CART_QUANTITY_PER_ITEM = 1;
 const SHOP_ENTRY_SFX_SRC = "/assets/shop/sfx/convenience-chime.mp3";
@@ -178,27 +168,37 @@ export default function EquipmentShopClient({
   const [cart, setCart] = useState<CartState>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
-  const entrySfxPlayedRef = useRef(false);
-  const entrySfxPendingRef = useRef(false);
-  const entrySfxAutoAttemptedRef = useRef(false);
-  const dialogueEngineRef = useRef<DialogueBeepEngine | null>(null);
-  const dialogueReadyRef = useRef(false);
-  const lineSequenceRef = useRef(0);
-  const idleLineIndexRef = useRef(0);
-  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const playLineRef = useRef<
-    (mood: TowaskiMood, text: string, options?: TowaskiLineOptions) => void
-  >(() => undefined);
-  const [towaskiMood, setTowaskiMood] = useState<TowaskiMood>("welcome");
-  const [towaskiLine, setTowaskiLine] = useState<string>(
-    TOWASKI_DIALOGUE_LINES.welcome,
-  );
-  const [visibleLine, setVisibleLine] = useState<string>(
-    TOWASKI_DIALOGUE_LINES.welcome,
-  );
-  const [typing, setTyping] = useState(false);
 
   const catalog = catalogQuery.data ?? initialCatalog;
+  const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
+
+  const {
+    mood: towaskiMood,
+    line: towaskiLine,
+    visibleLine,
+    typing,
+    playLine,
+    clearIdleTimer,
+    scheduleIdle,
+    showLineImmediately: showTowaskiLineImmediately,
+    resetIdleCycle: resetTowaskiIdleCycle,
+    stopEngine: stopTowaskiEngine,
+  } = useNpcDialogue<TowaskiMood>({
+    isOpen: catalog.isOpen,
+    hasMainCharacter,
+    idleDelayMs: TOWASKI_IDLE_DELAY_MS,
+    idleLines: TOWASKI_IDLE_LINES,
+    closedMood: "nap",
+    closedLine: TOWASKI_DIALOGUE_LINES.closed,
+    noAgentMood: "tired",
+    noAgentLine: TOWASKI_DIALOGUE_LINES.noAgent,
+    welcomeMood: "welcome",
+    welcomeLine: TOWASKI_DIALOGUE_LINES.welcome,
+    beepDefaults: { pitch: 760, speed: 38, volume: 0.62 },
+    engineVolume: 0.62,
+    entrySfxSrc: SHOP_ENTRY_SFX_SRC,
+    entrySfxVolume: SHOP_ENTRY_SFX_VOLUME,
+  });
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -245,7 +245,6 @@ export default function EquipmentShopClient({
   const cartOverBalance = cartTotal > balance;
   const shopStatusLabel = catalog.isOpen ? "영업 중" : "영업 종료";
 
-  const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
   const canUseShop = hasMainCharacter && catalog.isOpen;
   const canCheckout =
     canUseShop &&
@@ -269,113 +268,11 @@ export default function EquipmentShopClient({
     .filter(Boolean)
     .join(" ");
 
-  const clearIdleTimer = useCallback(() => {
-    if (idleTimerRef.current) {
-      clearTimeout(idleTimerRef.current);
-      idleTimerRef.current = null;
-    }
-  }, []);
-
-  const scheduleIdle = useCallback(() => {
-    clearIdleTimer();
-    idleTimerRef.current = setTimeout(() => {
-      if (!catalog.isOpen) {
-        setTowaskiMood("nap");
-        setTowaskiLine(TOWASKI_DIALOGUE_LINES.closed);
-        setVisibleLine(TOWASKI_DIALOGUE_LINES.closed);
-        setTyping(false);
-        return;
-      }
-
-      if (!hasMainCharacter) {
-        playLineRef.current("tired", TOWASKI_DIALOGUE_LINES.noAgent, {
-          returnToIdle: false,
-        });
-        return;
-      }
-
-      const idleLine =
-        TOWASKI_IDLE_LINES[idleLineIndexRef.current % TOWASKI_IDLE_LINES.length];
-      idleLineIndexRef.current += 1;
-      playLineRef.current(idleLine.mood, idleLine.text);
-    }, TOWASKI_IDLE_DELAY_MS);
-  }, [catalog.isOpen, clearIdleTimer, hasMainCharacter]);
-
-  const playLine = useCallback(
-    (mood: TowaskiMood, text: string, options: TowaskiLineOptions = {}) => {
-      const engine = dialogueEngineRef.current;
-      const shouldSound = options.sound ?? dialogueReadyRef.current;
-
-      clearIdleTimer();
-      lineSequenceRef.current += 1;
-      setTowaskiMood(mood);
-      setTowaskiLine(text);
-      setVisibleLine("");
-      setTyping(true);
-      engine?.stop();
-
-      if (!engine) {
-        setVisibleLine(text);
-        setTyping(false);
-        if (options.returnToIdle !== false) scheduleIdle();
-        return;
-      }
-
-      void engine
-        .typeText(
-          text,
-          {
-            onChar: (event) => {
-              setVisibleLine(event.visible);
-            },
-            onDone: () => {
-              setVisibleLine(text);
-              setTyping(false);
-              if (options.returnToIdle !== false) scheduleIdle();
-            },
-            onCancel: () => {
-              setTyping(false);
-            },
-          },
-          {
-            preset: options.preset ?? "tia",
-            pitch: options.pitch ?? 760,
-            speed: options.speed ?? 38,
-            volume: shouldSound ? (options.volume ?? 0.62) : 0,
-            wave: options.wave ?? "soft",
-            initialDelay: options.initialDelay ?? 55,
-          },
-        )
-        .catch(() => {
-          setVisibleLine(text);
-          setTyping(false);
-          if (options.returnToIdle !== false) scheduleIdle();
-        });
-    },
-    [clearIdleTimer, scheduleIdle],
-  );
-
-  useEffect(() => {
-    playLineRef.current = playLine;
-  }, [playLine]);
-
-  useEffect(() => {
-    dialogueEngineRef.current = new DialogueBeepEngine({
-      preset: "tia",
-      volume: 0.62,
-    });
-
-    return () => {
-      clearIdleTimer();
-      void dialogueEngineRef.current?.destroy();
-      dialogueEngineRef.current = null;
-    };
-  }, [clearIdleTimer]);
-
   useEffect(() => {
     if (!catalog.isOpen) {
       clearIdleTimer();
-      dialogueEngineRef.current?.stop();
+      stopTowaskiEngine();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCart({});
       setSelectedKey(null);
       setErrorMessage(null);
@@ -393,82 +290,19 @@ export default function EquipmentShopClient({
       return;
     }
 
-    setTowaskiMood("welcome");
-    setTowaskiLine(TOWASKI_DIALOGUE_LINES.welcome);
-    setVisibleLine(TOWASKI_DIALOGUE_LINES.welcome);
-    setTyping(false);
-    idleLineIndexRef.current = 0;
+    showTowaskiLineImmediately("welcome", TOWASKI_DIALOGUE_LINES.welcome);
+    resetTowaskiIdleCycle();
     scheduleIdle();
   }, [
     catalog.isOpen,
     clearIdleTimer,
     hasMainCharacter,
     playLine,
+    resetTowaskiIdleCycle,
     scheduleIdle,
+    showTowaskiLineImmediately,
+    stopTowaskiEngine,
   ]);
-
-  useEffect(() => {
-    if (!catalog.isOpen || entrySfxPlayedRef.current) return;
-
-    let canceled = false;
-    let audio: HTMLAudioElement | null = null;
-
-    const play = async () => {
-      if (
-        canceled ||
-        entrySfxPlayedRef.current ||
-        entrySfxPendingRef.current
-      ) {
-        return;
-      }
-
-      entrySfxPendingRef.current = true;
-      const sequenceBeforePlay = lineSequenceRef.current;
-      audio ??= new Audio(SHOP_ENTRY_SFX_SRC);
-      audio.volume = SHOP_ENTRY_SFX_VOLUME;
-      audio.currentTime = 0;
-
-      try {
-        await audio.play();
-        entrySfxPlayedRef.current = true;
-        dialogueReadyRef.current = true;
-        void dialogueEngineRef.current?.prime();
-        if (lineSequenceRef.current === sequenceBeforePlay) {
-          playLine("welcome", TOWASKI_DIALOGUE_LINES.welcome, { sound: true });
-        }
-        window.removeEventListener("pointerdown", playOnGesture);
-        window.removeEventListener("keydown", playOnGesture);
-      } catch {
-        // 브라우저가 자동재생을 막으면 사용자 제스처에서 한 번 재시도한다.
-      } finally {
-        entrySfxPendingRef.current = false;
-      }
-    };
-
-    const playOnGesture = () => {
-      dialogueReadyRef.current = true;
-      void dialogueEngineRef.current?.prime();
-      void play();
-    };
-
-    if (!entrySfxAutoAttemptedRef.current) {
-      entrySfxAutoAttemptedRef.current = true;
-      void play();
-    }
-    window.addEventListener("pointerdown", playOnGesture, { once: true });
-    window.addEventListener("keydown", playOnGesture, { once: true });
-
-    return () => {
-      canceled = true;
-      entrySfxPendingRef.current = false;
-      window.removeEventListener("pointerdown", playOnGesture);
-      window.removeEventListener("keydown", playOnGesture);
-      if (audio) {
-        audio.pause();
-        audio = null;
-      }
-    };
-  }, [catalog.isOpen, playLine]);
 
   function setCartQuantity(key: string, quantity: number) {
     const item = catalogByKey.get(key);

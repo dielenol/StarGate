@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { ShopPageGroup } from "@stargate/shared-db/types";
 
@@ -36,12 +36,11 @@ import {
   type IconComponent,
 } from "@/components/icons";
 
-import {
-  DialogueBeepEngine,
-  type DialogueBeepOptions,
-} from "@/lib/audio/dialogue-beep-engine";
+import type { DialogueBeepOptions } from "@/lib/audio/dialogue-beep-engine";
 import { describeApiError } from "@/lib/api/describe-error";
 import { formatCredits } from "@/lib/format/credit";
+
+import { useNpcDialogue } from "@/hooks/useNpcDialogue";
 
 import ShopAdminStockModal from "./ShopAdminStockModal";
 import ShopItemIcon from "./ShopItemIcon";
@@ -59,15 +58,6 @@ type TiaMood =
   | "doodle"
   | "purchase"
   | "nap";
-
-interface TiaLineOptions
-  extends Pick<
-    DialogueBeepOptions,
-    "initialDelay" | "pitch" | "preset" | "speed" | "volume" | "wave"
-  > {
-  sound?: boolean;
-  returnToIdle?: boolean;
-}
 
 const MAX_CART_QUANTITY_PER_ITEM = 9;
 const SHOP_ENTRY_SFX_SRC = "/assets/shop/sfx/convenience-chime.mp3";
@@ -220,25 +210,36 @@ export default function ShopClient({
   const [adminOpen, setAdminOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
-  const entrySfxPlayedRef = useRef(false);
-  const entrySfxPendingRef = useRef(false);
-  const entrySfxAutoAttemptedRef = useRef(false);
-  const dialogueEngineRef = useRef<DialogueBeepEngine | null>(null);
-  const dialogueReadyRef = useRef(false);
-  const tiaLineSequenceRef = useRef(0);
-  const tiaIdleLineIndexRef = useRef(0);
-  const tiaIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const playTiaLineRef = useRef<
-    (mood: TiaMood, text: string, options?: TiaLineOptions) => void
-  >(() => undefined);
-  const [tiaMood, setTiaMood] = useState<TiaMood>("welcome");
-  const [tiaLine, setTiaLine] = useState<string>(TIA_DIALOGUE_LINES.welcome);
-  const [tiaVisibleLine, setTiaVisibleLine] = useState<string>(
-    TIA_DIALOGUE_LINES.welcome,
-  );
-  const [tiaTyping, setTiaTyping] = useState(false);
-
   const catalog = catalogQuery.data ?? initialCatalog;
+  const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
+
+  const {
+    mood: tiaMood,
+    line: tiaLine,
+    visibleLine: tiaVisibleLine,
+    typing: tiaTyping,
+    playLine: playTiaLine,
+    clearIdleTimer: clearTiaIdleTimer,
+    scheduleIdle: scheduleTiaIdle,
+    showLineImmediately: showTiaLineImmediately,
+    resetIdleCycle: resetTiaIdleCycle,
+    stopEngine: stopTiaEngine,
+  } = useNpcDialogue<TiaMood>({
+    isOpen: catalog.isOpen,
+    hasMainCharacter,
+    idleDelayMs: TIA_IDLE_DELAY_MS,
+    idleLines: TIA_IDLE_LINES,
+    closedMood: "nap",
+    closedLine: TIA_DIALOGUE_LINES.closed,
+    noAgentMood: "tired",
+    noAgentLine: TIA_DIALOGUE_LINES.noAgent,
+    welcomeMood: "welcome",
+    welcomeLine: TIA_DIALOGUE_LINES.welcome,
+    beepDefaults: { pitch: 900, speed: 42, volume: 0.68 },
+    engineVolume: 0.68,
+    entrySfxSrc: SHOP_ENTRY_SFX_SRC,
+    entrySfxVolume: SHOP_ENTRY_SFX_VOLUME,
+  });
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -291,7 +292,6 @@ export default function ShopClient({
       ? "영업 중"
       : "영업 종료";
 
-  const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
   const canUseShop = hasMainCharacter && catalog.isOpen;
   const canCheckout =
     canUseShop &&
@@ -314,113 +314,10 @@ export default function ShopClient({
     .filter(Boolean)
     .join(" ");
 
-  const clearTiaIdleTimer = useCallback(() => {
-    if (tiaIdleTimerRef.current) {
-      clearTimeout(tiaIdleTimerRef.current);
-      tiaIdleTimerRef.current = null;
-    }
-  }, []);
-
-  const scheduleTiaIdle = useCallback(() => {
-    clearTiaIdleTimer();
-    tiaIdleTimerRef.current = setTimeout(() => {
-      if (!catalog.isOpen) {
-        setTiaMood("nap");
-        setTiaLine(TIA_DIALOGUE_LINES.closed);
-        setTiaVisibleLine(TIA_DIALOGUE_LINES.closed);
-        setTiaTyping(false);
-        return;
-      }
-
-      if (!hasMainCharacter) {
-        playTiaLineRef.current("tired", TIA_DIALOGUE_LINES.noAgent, {
-          returnToIdle: false,
-        });
-        return;
-      }
-
-      const idleLine =
-        TIA_IDLE_LINES[tiaIdleLineIndexRef.current % TIA_IDLE_LINES.length];
-      tiaIdleLineIndexRef.current += 1;
-      playTiaLineRef.current(idleLine.mood, idleLine.text);
-    }, TIA_IDLE_DELAY_MS);
-  }, [catalog.isOpen, clearTiaIdleTimer, hasMainCharacter]);
-
-  const playTiaLine = useCallback(
-    (mood: TiaMood, text: string, options: TiaLineOptions = {}) => {
-      const engine = dialogueEngineRef.current;
-      const shouldSound = options.sound ?? dialogueReadyRef.current;
-
-      clearTiaIdleTimer();
-      tiaLineSequenceRef.current += 1;
-      setTiaMood(mood);
-      setTiaLine(text);
-      setTiaVisibleLine("");
-      setTiaTyping(true);
-      engine?.stop();
-
-      if (!engine) {
-        setTiaVisibleLine(text);
-        setTiaTyping(false);
-        if (options.returnToIdle !== false) scheduleTiaIdle();
-        return;
-      }
-
-      void engine
-        .typeText(
-          text,
-          {
-            onChar: (event) => {
-              setTiaVisibleLine(event.visible);
-            },
-            onDone: () => {
-              setTiaVisibleLine(text);
-              setTiaTyping(false);
-              if (options.returnToIdle !== false) scheduleTiaIdle();
-            },
-            onCancel: () => {
-              setTiaTyping(false);
-            },
-          },
-          {
-            preset: options.preset ?? "tia",
-            pitch: options.pitch ?? 900,
-            speed: options.speed ?? 42,
-            volume: shouldSound ? (options.volume ?? 0.68) : 0,
-            wave: options.wave ?? "soft",
-            initialDelay: options.initialDelay ?? 55,
-          },
-        )
-        .catch(() => {
-          setTiaVisibleLine(text);
-          setTiaTyping(false);
-          if (options.returnToIdle !== false) scheduleTiaIdle();
-        });
-    },
-    [clearTiaIdleTimer, scheduleTiaIdle],
-  );
-
-  useEffect(() => {
-    playTiaLineRef.current = playTiaLine;
-  }, [playTiaLine]);
-
-  useEffect(() => {
-    dialogueEngineRef.current = new DialogueBeepEngine({
-      preset: "tia",
-      volume: 0.68,
-    });
-
-    return () => {
-      clearTiaIdleTimer();
-      void dialogueEngineRef.current?.destroy();
-      dialogueEngineRef.current = null;
-    };
-  }, [clearTiaIdleTimer]);
-
   useEffect(() => {
     if (!catalog.isOpen) {
       clearTiaIdleTimer();
-      dialogueEngineRef.current?.stop();
+      stopTiaEngine();
       setCart({});
       setSelectedSlug(null);
       setErrorMessage(null);
@@ -438,82 +335,19 @@ export default function ShopClient({
       return;
     }
 
-    setTiaMood("welcome");
-    setTiaLine(TIA_DIALOGUE_LINES.welcome);
-    setTiaVisibleLine(TIA_DIALOGUE_LINES.welcome);
-    setTiaTyping(false);
-    tiaIdleLineIndexRef.current = 0;
+    showTiaLineImmediately("welcome", TIA_DIALOGUE_LINES.welcome);
+    resetTiaIdleCycle();
     scheduleTiaIdle();
   }, [
     catalog.isOpen,
     clearTiaIdleTimer,
     hasMainCharacter,
     playTiaLine,
+    resetTiaIdleCycle,
     scheduleTiaIdle,
+    showTiaLineImmediately,
+    stopTiaEngine,
   ]);
-
-  useEffect(() => {
-    if (!catalog.isOpen || entrySfxPlayedRef.current) return;
-
-    let canceled = false;
-    let audio: HTMLAudioElement | null = null;
-
-    const play = async () => {
-      if (
-        canceled ||
-        entrySfxPlayedRef.current ||
-        entrySfxPendingRef.current
-      ) {
-        return;
-      }
-
-      entrySfxPendingRef.current = true;
-      const sequenceBeforePlay = tiaLineSequenceRef.current;
-      audio ??= new Audio(SHOP_ENTRY_SFX_SRC);
-      audio.volume = SHOP_ENTRY_SFX_VOLUME;
-      audio.currentTime = 0;
-
-      try {
-        await audio.play();
-        entrySfxPlayedRef.current = true;
-        dialogueReadyRef.current = true;
-        void dialogueEngineRef.current?.prime();
-        if (tiaLineSequenceRef.current === sequenceBeforePlay) {
-          playTiaLine("welcome", TIA_DIALOGUE_LINES.welcome, { sound: true });
-        }
-        window.removeEventListener("pointerdown", playOnGesture);
-        window.removeEventListener("keydown", playOnGesture);
-      } catch {
-        // 브라우저가 자동재생을 막으면 사용자 제스처에서 한 번 재시도한다.
-      } finally {
-        entrySfxPendingRef.current = false;
-      }
-    };
-
-    const playOnGesture = () => {
-      dialogueReadyRef.current = true;
-      void dialogueEngineRef.current?.prime();
-      void play();
-    };
-
-    if (!entrySfxAutoAttemptedRef.current) {
-      entrySfxAutoAttemptedRef.current = true;
-      void play();
-    }
-    window.addEventListener("pointerdown", playOnGesture, { once: true });
-    window.addEventListener("keydown", playOnGesture, { once: true });
-
-    return () => {
-      canceled = true;
-      entrySfxPendingRef.current = false;
-      window.removeEventListener("pointerdown", playOnGesture);
-      window.removeEventListener("keydown", playOnGesture);
-      if (audio) {
-        audio.pause();
-        audio = null;
-      }
-    };
-  }, [catalog.isOpen, playTiaLine]);
 
   function setCartQuantity(slug: string, quantity: number) {
     const item = catalogBySlug.get(slug);
