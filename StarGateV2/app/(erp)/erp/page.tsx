@@ -369,7 +369,18 @@ export default async function ERPDashboardPage() {
       <div className={styles.commandGrid}>
         <Box variant="gold" className={styles.actionCenter}>
           <PanelTitle
-            right={<span className={styles.mono}>{actionItems.length} ACTIVE</span>}
+            right={
+              <span
+                className={[
+                  styles.statusChip,
+                  actionItems.length === 0 ? styles["statusChip--idle"] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                {actionItems.length} ACTIVE
+              </span>
+            }
           >
             ACTION CENTER
           </PanelTitle>
@@ -380,18 +391,26 @@ export default async function ERPDashboardPage() {
             </div>
           ) : (
             <div className={styles.actionList}>
-              {actionItems.slice(0, 4).map((item) => (
+              {actionItems.slice(0, 4).map((item, index) => (
                 <Link
                   key={`${item.label}-${item.title}`}
                   href={item.href}
-                  className={styles.actionItem}
+                  className={[
+                    styles.actionItem,
+                    styles[`actionItem--${item.tone}`] ?? "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                 >
+                  <span className={styles.actionItem__index}>
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
                   <Tag tone={item.tone}>{item.label}</Tag>
                   <span className={styles.actionItem__body}>
                     <span className={styles.actionItem__title}>{item.title}</span>
                     <span className={styles.actionItem__detail}>{item.detail}</span>
                   </span>
-                  <span className={styles.actionItem__cta}>{item.cta} →</span>
+                  <span className={styles.actionItem__cta}>{item.cta}</span>
                 </Link>
               ))}
             </div>
@@ -586,7 +605,7 @@ export default async function ERPDashboardPage() {
           {notificationPreview.length === 0 ? (
             <div className={styles.empty}>새 알림 없음</div>
           ) : (
-            <Stack gap={10} className={styles.notifList}>
+            <Stack gap={0} className={styles.notifList}>
               {notificationPreview.map((n) => {
                 const meta = NOTIFICATION_TAG[n.type];
                 return (
@@ -701,7 +720,15 @@ export default async function ERPDashboardPage() {
                 const link = buildDiscordLink(s);
                 const tone = s.status === "CLOSING" ? "danger" : "gold";
                 return (
-                  <div key={String(s._id)} className={styles.taskRow}>
+                  <div
+                    key={String(s._id)}
+                    className={[
+                      styles.taskRow,
+                      s.status === "CLOSING" ? styles["taskRow--urgent"] : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
                     <Tag tone={tone}>
                       {s.status === "CLOSING" ? "마감 임박" : "모집중"}
                     </Tag>
@@ -743,9 +770,9 @@ export default async function ERPDashboardPage() {
         {recentWikis.length === 0 ? (
           <div className={styles.empty}>최근 변경 내역 없음</div>
         ) : (
-          <Stack gap={8}>
+          <Stack gap={0}>
             {recentWikis.map((w) => (
-              <Spread key={String(w._id)} gap={10}>
+              <Spread key={String(w._id)} gap={10} className={styles.wikiRow}>
                 <Link
                   href={`/erp/wiki/${String(w._id)}`}
                   className={styles.wikiLink}
