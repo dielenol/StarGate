@@ -260,11 +260,20 @@ interface RewardOperation {
 async function resolveParticipants(
   targets: SessionRewardTarget[],
 ): Promise<ResolvedParticipant[]> {
+  // resolve 는 읽기 전용 조회 — 병렬 실행 후 입력 순서대로 판정해
+  // 직렬 실행과 동일한 "앞선 참여자의 오류 우선" 의미론을 유지한다.
+  const settled = await Promise.allSettled(
+    targets.map((target) => resolveParticipant(target)),
+  );
+
   const seen = new Set<string>();
   const resolved: ResolvedParticipant[] = [];
 
-  for (const target of targets) {
-    const participant = await resolveParticipant(target);
+  for (const result of settled) {
+    if (result.status === "rejected") {
+      throw result.reason;
+    }
+    const participant = result.value;
     if (seen.has(participant.characterId)) continue;
     seen.add(participant.characterId);
     resolved.push(participant);

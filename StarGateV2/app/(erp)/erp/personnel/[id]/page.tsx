@@ -40,35 +40,41 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
       .map((relation) => relation.targetCodename)
       .filter((codename): codename is string => codename.trim().length > 0),
   );
-  const relatedReports = eventIds.size > 0
-    ? (await listSessionReports().catch(() => []))
-        .filter((report) => eventIds.has(report.sessionId))
-        .map((report) => ({
-          id: report._id?.toString() ?? "",
-          sessionId: report.sessionId,
-          sessionTitle: report.sessionTitle,
-          locationLabel: report.locationLabel,
-          createdAt: report.createdAt,
-        }))
-        .filter((report) => report.id.length > 0)
-    : [];
+  // 두 조회는 서로 독립 — 병렬 로드 (조건 미충족 시 fetch 자체를 스킵, 빈 배열이면
+  // 아래 filter 체인이 그대로 빈 결과를 내 기존 분기와 동일).
+  const [reportsForEvents, charactersForRelations] = await Promise.all([
+    eventIds.size > 0
+      ? listSessionReports().catch(() => [])
+      : Promise.resolve([]),
+    relationTargetCodes.size > 0
+      ? listCharacters().catch(() => [])
+      : Promise.resolve([]),
+  ]);
+  const relatedReports = reportsForEvents
+    .filter((report) => eventIds.has(report.sessionId))
+    .map((report) => ({
+      id: report._id?.toString() ?? "",
+      sessionId: report.sessionId,
+      sessionTitle: report.sessionTitle,
+      locationLabel: report.locationLabel,
+      createdAt: report.createdAt,
+    }))
+    .filter((report) => report.id.length > 0);
   const serializedRelatedReports = JSON.parse(JSON.stringify(relatedReports));
-  const relatedCharacters = relationTargetCodes.size > 0
-    ? (await listCharacters().catch(() => []))
-        .filter((candidate) => {
-          if (!relationTargetCodes.has(candidate.codename)) return false;
-          return canEditDossier || candidate.isPublic !== false;
-        })
-        .map((candidate) => ({
-          id: candidate._id?.toString() ?? "",
-          codename: candidate.codename,
-          displayName:
-            candidate.lore.nickname || candidate.lore.name || candidate.codename,
-          type: candidate.type,
-          agentLevel: candidate.agentLevel,
-        }))
-        .filter((candidate) => candidate.id.length > 0)
-    : [];
+  const relatedCharacters = charactersForRelations
+    .filter((candidate) => {
+      if (!relationTargetCodes.has(candidate.codename)) return false;
+      return canEditDossier || candidate.isPublic !== false;
+    })
+    .map((candidate) => ({
+      id: candidate._id?.toString() ?? "",
+      codename: candidate.codename,
+      displayName:
+        candidate.lore.nickname || candidate.lore.name || candidate.codename,
+      type: candidate.type,
+      agentLevel: candidate.agentLevel,
+    }))
+    .filter((candidate) => candidate.id.length > 0);
   const serializedRelatedCharacters = JSON.parse(JSON.stringify(relatedCharacters));
 
   return (

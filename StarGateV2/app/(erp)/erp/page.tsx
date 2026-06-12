@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import {
   findCharacterById,
-  findMainCharacterByOwner,
+  findMainCharacterByOwnerCached as findMainCharacterByOwner,
   listCharactersByOwner,
 } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";

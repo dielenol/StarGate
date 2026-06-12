@@ -114,9 +114,12 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const reportLead = report.locationLabel
     ? `${mapLocationLabel}에서 기록된 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.`
     : "작전지 좌표가 아직 등록되지 않은 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.";
-  const allPages = await listWikiPages().catch(() => []);
-  const allCharacters = await listCharacters().catch(() => []);
-  const allItems = await listMasterItems().catch(() => []);
+  // 자동링크/연관 문서용 컬렉션 3종 — 서로 독립 조회라 병렬 로드 (실패 시 빈 목록).
+  const [allPages, allCharacters, allItems] = await Promise.all([
+    listWikiPages().catch(() => []),
+    listCharacters().catch(() => []),
+    listMasterItems().catch(() => []),
+  ]);
   const visibleCharacters = isAdmin
     ? allCharacters
     : allCharacters.filter((character) => character.isPublic !== false);

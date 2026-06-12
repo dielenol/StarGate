@@ -17,7 +17,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
-import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
 import { STOCK_CATALOG } from "@/lib/stocks/catalog";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
@@ -80,32 +80,34 @@ export default async function StockPage() {
     (): StockPricesResponse => ({ items: [] }),
   );
 
-  const [initialSparklines, initialHoldings, initialBalance] = await Promise.all([
-    buildSparklinesResponse(SPARKLINE_DAYS).catch(
-      (): StockSparklinesResponse => ({ items: [], days: SPARKLINE_DAYS }),
-    ),
-    mainCharacterId
-      ? buildHoldingsResponse(mainCharacterId, initialPrices).catch(
-          (): StockHoldingsResponse => ({
+  const [initialSparklines, initialHoldings, initialBalance, initialMarketWire] =
+    await Promise.all([
+      buildSparklinesResponse(SPARKLINE_DAYS).catch(
+        (): StockSparklinesResponse => ({ items: [], days: SPARKLINE_DAYS }),
+      ),
+      mainCharacterId
+        ? buildHoldingsResponse(mainCharacterId, initialPrices).catch(
+            (): StockHoldingsResponse => ({
+              items: [],
+              hasMainCharacter: true,
+            }),
+          )
+        : Promise.resolve<StockHoldingsResponse>({
             items: [],
-            hasMainCharacter: true,
+            hasMainCharacter: false,
           }),
-        )
-      : Promise.resolve<StockHoldingsResponse>({
+      mainCharacterId
+        ? getCharacterBalance(mainCharacterId).catch(() => 0)
+        : Promise.resolve(0),
+      // marketWire 는 어떤 선행 결과에도 의존하지 않음 — 같은 배치에서 병렬 로드.
+      buildMarketWireResponse(7, 12).catch(
+        (): StockMarketWireResponse => ({
           items: [],
-          hasMainCharacter: false,
+          days: 7,
+          limit: 12,
         }),
-    mainCharacterId
-      ? getCharacterBalance(mainCharacterId).catch(() => 0)
-      : Promise.resolve(0),
-  ]);
-  const initialMarketWire = await buildMarketWireResponse(7, 12).catch(
-    (): StockMarketWireResponse => ({
-      items: [],
-      days: 7,
-      limit: 12,
-    }),
-  );
+      ),
+    ]);
 
   return (
     <StockListClient

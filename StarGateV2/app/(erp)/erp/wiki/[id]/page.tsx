@@ -101,8 +101,14 @@ export default async function WikiDetailPage({
   const isAdmin = hasRole(session.user.role, "GM");
   const pageId = page._id!.toString();
 
-  // 카테고리 네비를 위해 전체 페이지 목록 로드 (실패 시 빈 목록)
-  const allPages = await listWikiPages().catch(() => []);
+  // 카테고리 네비 + 자동링크/연관 문서용 컬렉션 4종 — 서로 독립 조회라 병렬 로드
+  // (실패 시 빈 목록). 직렬 4 RTT → 1 RTT.
+  const [allPages, allReports, allCharacters, allItems] = await Promise.all([
+    listWikiPages().catch(() => []),
+    listSessionReports().catch(() => []),
+    listCharacters().catch(() => []),
+    listMasterItems().catch(() => []),
+  ]);
   const categories = sortWikiCategories([
     ...new Set(allPages.map((p) => p.category)),
   ]);
@@ -121,9 +127,6 @@ export default async function WikiDetailPage({
   const infoRows = wikiInfoRows(page);
   const relatedLinks = wikiRelatedLinks(page, allPages);
   const sourceLines = wikiSourceLines(page.content);
-  const allReports = await listSessionReports().catch(() => []);
-  const allCharacters = await listCharacters().catch(() => []);
-  const allItems = await listMasterItems().catch(() => []);
   const userClearance = getUserClearance(session.user.role);
   const visibleCharacters = isAdmin
     ? allCharacters

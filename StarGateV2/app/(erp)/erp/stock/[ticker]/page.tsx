@@ -15,7 +15,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
-import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
