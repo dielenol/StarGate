@@ -8,7 +8,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import {
   addToInventory,

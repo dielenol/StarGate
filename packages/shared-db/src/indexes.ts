@@ -254,6 +254,26 @@ export async function ensureAllIndexes(): Promise<void> {
       },
     ]),
 
+    /* ── faction_relation_logs / faction_quest_progress / faction_favorability
+     * (StarGateV2 세력 접선 활동) ──
+     *
+     * activity 라우트가 요청마다 code 단위로 조회 — code 기반 인덱스 보장.
+     * 유일성은 라우트의 upsert 키({code} / {code, questId})가 보장하므로
+     * 기존 데이터 호환을 위해 unique 제약은 걸지 않는다.
+     */
+    db.collection("faction_relation_logs").createIndex(
+      { code: 1, createdAt: -1 },
+      { name: "faction_relation_logs_code_createdAt" },
+    ),
+    db.collection("faction_quest_progress").createIndex(
+      { code: 1, questId: 1 },
+      { name: "faction_quest_progress_code_questId" },
+    ),
+    db.collection("faction_favorability").createIndex(
+      { code: 1 },
+      { name: "faction_favorability_code" },
+    ),
+
     /* ── credit_pools (tia_bot 통합) ── */
     db.collection("credit_pools").createIndex(
       { poolId: 1 },

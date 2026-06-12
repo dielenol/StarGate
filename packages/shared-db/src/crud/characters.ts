@@ -175,6 +175,54 @@ export async function findMainCharacterByOwner(
   return docs[0] as AgentCharacter;
 }
 
+/** `findMainCharacterLiteByOwner` 의 경량 projection 결과 타입. */
+export type AgentCharacterIdentity = Pick<
+  AgentCharacter,
+  "_id" | "codename" | "ownerId" | "type" | "tier" | "agentLevel" | "isPublic"
+>;
+
+/**
+ * `findMainCharacterByOwner` 의 경량 projection 변형.
+ *
+ * 트랜잭션성 API 라우트(상점/주식/크레딧 등)는 메인 캐릭터의 식별 필드
+ * (_id / codename / ownerId / type)만 사용하므로, lore(수 KB 텍스트)·play 시트
+ * 전체를 매 요청 전송할 필요가 없다. 조회 조건·0건 null·2건 이상 throw(1인 1 MAIN
+ * 정합성)의 의미론은 원본과 동일하다.
+ *
+ * lore/play 가 필요한 호출처(페이지 렌더 경로)는 원본을 그대로 사용할 것.
+ */
+export async function findMainCharacterLiteByOwner(
+  ownerId: string
+): Promise<AgentCharacterIdentity | null> {
+  const col = await charactersCol();
+  const docs = await col
+    .find({
+      type: "AGENT",
+      ownerId,
+      $or: [{ tier: "MAIN" }, { tier: { $exists: false } }],
+    })
+    .project<AgentCharacterIdentity>({
+      _id: 1,
+      codename: 1,
+      ownerId: 1,
+      type: 1,
+      tier: 1,
+      agentLevel: 1,
+      isPublic: 1,
+    })
+    .toArray();
+
+  if (docs.length === 0) return null;
+  if (docs.length > 1) {
+    const codenames = docs.map((d) => d.codename).join(", ");
+    throw new Error(
+      `findMainCharacterByOwner: owner=${ownerId} has ${docs.length} MAIN agents (${codenames}). ` +
+        `1인 1 MAIN 정책 위반 — 운영자 정리 필요.`
+    );
+  }
+  return docs[0];
+}
+
 /**
  * 여러 소유자(users._id)의 캐릭터를 한 번에 조회한다.
  *

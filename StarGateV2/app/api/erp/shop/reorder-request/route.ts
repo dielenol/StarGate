@@ -11,7 +11,7 @@ import { getDb } from "@stargate/shared-db";
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getStock } from "@/lib/db/shop";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";

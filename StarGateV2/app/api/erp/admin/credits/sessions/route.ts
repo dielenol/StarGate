@@ -37,7 +37,7 @@ import {
 } from "@/lib/db/character-points";
 import {
   findCharacterById,
-  findMainCharacterByOwner,
+  findMainCharacterLiteByOwner as findMainCharacterByOwner,
 } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import {

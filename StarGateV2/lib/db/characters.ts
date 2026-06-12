@@ -22,6 +22,7 @@ export {
   listCharactersByOwner,
   listCharactersByOwnerIds,
   findMainCharacterByOwner,
+  findMainCharacterLiteByOwner,
   createCharacter,
   updateCharacter,
   deleteCharacter,

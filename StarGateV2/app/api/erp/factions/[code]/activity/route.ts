@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import {
   createFactionRelationLog,

@@ -12,7 +12,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import {
   findMasterItemBySlug,
   removeFromInventory,

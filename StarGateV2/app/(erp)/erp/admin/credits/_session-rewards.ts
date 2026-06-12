@@ -15,7 +15,7 @@ import type {
   SessionRewardCandidate,
 } from "@/types/credit-admin";
 
-import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { listChangeLogRewardedCharacterIdsBySession } from "@/lib/db/character-points";
 import { findTransactionsBySessionMetadata } from "@/lib/db/credits";
 import {

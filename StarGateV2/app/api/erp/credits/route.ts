@@ -6,7 +6,10 @@ import { GM_DIRECT_GRANT_TYPES, isGmDirectGrantType } from "@/types/credit";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
-import { findCharacterById, findMainCharacterByOwner } from "@/lib/db/characters";
+import {
+  findCharacterById,
+  findMainCharacterLiteByOwner as findMainCharacterByOwner,
+} from "@/lib/db/characters";
 import {
   addCredit,
   getCharacterBalance,

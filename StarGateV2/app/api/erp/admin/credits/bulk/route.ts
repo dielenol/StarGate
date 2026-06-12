@@ -34,7 +34,7 @@ import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import {
   findCharacterById,
-  findMainCharacterByOwner,
+  findMainCharacterLiteByOwner as findMainCharacterByOwner,
 } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import { adjustCharacterPoints } from "@/lib/db/character-points";
