@@ -40,6 +40,7 @@ export interface FactionBoardNode {
   parentLabel?: string;
   summary: string;
   doctrine: string;
+  briefingPoints?: readonly string[];
   logoUrl: string;
   favorability: number | null;
   memberCount: number;
@@ -298,6 +299,9 @@ export default function FactionsClient({ data }: FactionsClientProps) {
             <div className={orgStyles.code}>{displayCode(node.code)}</div>
           </div>
           <div className={orgStyles.label}>{node.label}</div>
+          {!isSubOrg && node.kind === "external" ? (
+            <p className={styles.orgNodeSummary}>{node.scopeLabel}</p>
+          ) : null}
           {isSubOrg && node.parentLabel ? (
             <div className={orgStyles.subOrgParent}>{node.parentLabel}</div>
           ) : null}
@@ -511,6 +515,13 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                   <span className={styles.briefing__code}>{selectedNode.code}</span>
                   <h2>{selectedNode.label}</h2>
                   <p>{selectedNode.doctrine}</p>
+                  {selectedNode.briefingPoints?.length ? (
+                    <ul className={styles.briefing__loreList}>
+                      {selectedNode.briefingPoints.map((point) => (
+                        <li key={point}>{point}</li>
+                      ))}
+                    </ul>
+                  ) : null}
                   <div className={styles.briefing__tags}>
                     <Tag
                       tone="gold"

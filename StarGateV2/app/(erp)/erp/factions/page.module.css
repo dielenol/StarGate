@@ -94,6 +94,16 @@
   box-shadow: 0 0 0 1px rgba(201, 162, 74, 0.18);
 }
 
+.orgNodeSummary {
+  position: relative;
+  z-index: 1;
+  margin: 7px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
 .briefing {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
@@ -157,6 +167,34 @@
   color: var(--ink-2);
   font-size: 15px;
   line-height: 1.6;
+}
+
+.briefing__loreList {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.briefing__loreList li {
+  position: relative;
+  padding-left: 14px;
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.briefing__loreList li::before {
+  position: absolute;
+  top: 0.72em;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  background: var(--gold);
+  border-radius: 50%;
+  content: "";
 }
 
 .briefing__tags {

@@ -52,6 +52,50 @@ const BOARD_LOGO_BY_CODE: Record<string, string> = {
   SPACE_ZERO: "/assets/faction/space_zero_logo.webp",
 };
 
+const EXTERNAL_FACTION_BRIEFING: Record<
+  (typeof EXTERNAL_FACTION_CODES)[number],
+  {
+    scopeLabel: string;
+    doctrine: string;
+    summary: string;
+    briefingPoints: readonly string[];
+  }
+> = {
+  COUNCIL: {
+    scopeLabel: "후원·의결 권력",
+    doctrine: "현상 유지 · 공리주의 · 후원/의결 압력",
+    summary:
+      "세계의 부 98%와 각 정부 실세의 권력망을 배경으로 노부스 오르도에 후원금, 정치적 승인, 의결 압력을 제공한다.",
+    briefingPoints: [
+      "후원금과 의결 보고 라인을 통해 본부 정책 방향에 압력을 행사한다.",
+      "노부스 오르도가 자신들의 권력을 지켜주길 원하지만, 본부 권한 비대화는 경계한다.",
+      "블랑셰 데 로랑과 로샹 재단은 이사회 재정 영향력의 대표 사례로 기록된다.",
+    ],
+  },
+  MILITARY: {
+    scopeLabel: "군사·봉쇄 권력",
+    doctrine: "전통 복고 · 권위주의 · 선제 격리",
+    summary:
+      "광원화 사태 이전부터 이어진 국가 군사 권력의 총합. 각국 군부와 정보기관의 영향력을 바탕으로 무장 대응과 선제 격리를 선호한다.",
+    briefingPoints: [
+      "노부스 오르도의 조율주의와 MANUS 중심 현장 대응 체계를 불편하게 여긴다.",
+      "Zulu 및 이상 현상에는 봉쇄, 선제 격리, 무장 대응을 우선한다.",
+      "오로라 바이러스 이후 독자 대응 국가 움직임을 군부 주도 재편의 명분으로 활용한다.",
+    ],
+  },
+  CIVIL: {
+    scopeLabel: "민간·여론 권력",
+    doctrine: "진보주의 · 인본주의 · 여론/시장 압력",
+    summary:
+      "지구 대부분을 차지하는 민간 권위의 총칭. 여론, 시장, NGO, 언론, 기업 집단을 통해 본부와 군부 양쪽을 견제한다.",
+    briefingPoints: [
+      "기술 진보와 생존을 바라지만, 통제주의와 비인도적 선택에는 여론으로 반발한다.",
+      "공식 지휘권보다 자본, 언론, 피해자 운동, 시민 외교 채널로 영향력을 행사한다.",
+      "백장미단은 공개와 권리를, 스페이스 제로는 기술 자본과 시장 확장을 대표한다.",
+    ],
+  },
+} as const;
+
 function resolveExternalSubOrg(c: Character) {
   return (
     getExternalSubOrg(c.department ?? "") ??
@@ -178,16 +222,18 @@ function buildBoardNodes(
 ): FactionBoardNode[] {
   const externalNodes = EXTERNAL_FACTION_CODES.map((code) => {
     const faction = FACTIONS.find((f) => f.code === code);
+    const briefing = EXTERNAL_FACTION_BRIEFING[code];
     return addStats(
       {
         code,
         label: faction?.label ?? code,
         labelEn: faction?.labelEn ?? code,
         kind: "external",
-        scopeLabel: "외부 권력 블록",
+        scopeLabel: briefing.scopeLabel,
         parentCode: null,
-        summary: "외부 권력 블록",
-        doctrine: FACTION_DOCTRINE[code],
+        summary: briefing.summary,
+        doctrine: briefing.doctrine,
+        briefingPoints: briefing.briefingPoints,
         logoUrl: FACTION_LOGO[code],
       },
       groupCounts,
