@@ -87,7 +87,7 @@ function CharAvatar({
           src={src}
           alt=""
           fill
-          sizes="96px"
+          sizes="112px"
           className={styles.charMini__avatarImg}
         />
       </div>
@@ -366,6 +366,65 @@ export default async function ERPDashboardPage() {
         title="대시보드"
       />
 
+      {/* HUD 스트립 — 요원 식별/다음 작전/잔액/응답 대기 한눈 요약 (페이지 내 데이터 재표시) */}
+      <section className={styles.hudStrip} aria-label="요원 상태 요약">
+        <div className={styles.hudCell}>
+          <span className={styles.hudCell__label}>IDENT</span>
+          <span className={styles.hudCell__value}>
+            {mainCharacter ? (
+              <>
+                <span className={styles.hudCell__primary}>
+                  {mainCharacter.codename}
+                </span>
+                {mainCharacter.agentLevel ? (
+                  <Tag tone={rankTone(mainCharacter.agentLevel) ?? "default"}>
+                    {mainCharacter.agentLevel}
+                  </Tag>
+                ) : null}
+              </>
+            ) : (
+              <span className={styles.hudCell__muted}>UNREGISTERED</span>
+            )}
+          </span>
+        </div>
+        <div className={styles.hudCell}>
+          <span className={styles.hudCell__label}>NEXT OP</span>
+          <span className={styles.hudCell__value}>
+            {nextMission ? (
+              <>
+                <span className={styles.hudCell__primary}>
+                  {ddayLabel(nextMission.targetDateTime)}
+                </span>
+                <span className={styles.hudCell__sub}>
+                  {formatTime(nextMission.targetDateTime)}
+                </span>
+              </>
+            ) : (
+              <span className={styles.hudCell__muted}>STANDBY</span>
+            )}
+          </span>
+        </div>
+        <div className={styles.hudCell}>
+          <span className={styles.hudCell__label}>BALANCE</span>
+          <span className={styles.hudCell__value}>
+            <span
+              className={`${styles.hudCell__primary} ${styles["hudCell__primary--gold"]}`}
+            >
+              ¤ {balance.toLocaleString()}
+            </span>
+          </span>
+        </div>
+        <div className={styles.hudCell}>
+          <span className={styles.hudCell__label}>PENDING</span>
+          <span className={styles.hudCell__value}>
+            <span className={styles.hudCell__primary}>
+              {pendingResponse.length}
+            </span>
+            <span className={styles.hudCell__sub}>응답 대기</span>
+          </span>
+        </div>
+      </section>
+
       <div className={styles.commandGrid}>
         <Box variant="gold" className={styles.actionCenter}>
           <PanelTitle
@@ -527,7 +586,10 @@ export default async function ERPDashboardPage() {
             RESOURCES
           </PanelTitle>
           <div className={styles.metricsGrid}>
-            <Link href="/erp/credits" className={styles.metric}>
+            <Link
+              href="/erp/credits"
+              className={`${styles.metric} ${styles["metric--wide"]}`}
+            >
               <span className={styles.metric__label}>잔액</span>
               <span className={`${styles.metric__value} ${styles.metric__valueGold}`}>
                 ¤ {balance.toLocaleString()}
