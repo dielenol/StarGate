@@ -14,6 +14,12 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { auth } from "@/lib/auth/config";
+import {
+  listFactionQuestProgress,
+  listFactionRelationLogs,
+  type FactionQuestProgressDoc,
+  type FactionRelationLogDoc,
+} from "@/lib/db/faction-activity";
 
 import {
   findFactionBoardNode,
@@ -51,6 +57,37 @@ function sigilFor(code: string) {
     .slice(0, 2);
 }
 
+function serializeActivityLog(doc: FactionRelationLogDoc) {
+  return {
+    id: doc._id ? String(doc._id) : `${doc.code}-${doc.createdAt.toISOString()}`,
+    kind: doc.kind,
+    title: doc.title,
+    detail: doc.detail,
+    delta: doc.delta,
+    favorabilityBefore: doc.favorabilityBefore,
+    favorabilityAfter: doc.favorabilityAfter,
+    actorName: doc.actorName,
+    createdAt: doc.createdAt.toISOString(),
+    characterCodename: doc.characterCodename ?? null,
+    creditCost: doc.creditCost ?? null,
+    questId: doc.questId ?? null,
+  };
+}
+
+function serializeQuestProgress(doc: FactionQuestProgressDoc) {
+  return {
+    id: doc._id ? String(doc._id) : `${doc.code}-${doc.questId}`,
+    questId: doc.questId,
+    status: doc.status,
+    title: doc.title,
+    actorName: doc.actorName,
+    startedAt: doc.startedAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
+    characterCodename: doc.characterCodename ?? null,
+    completedAt: doc.completedAt?.toISOString() ?? null,
+  };
+}
+
 export default async function FactionDetailPage({
   params,
 }: FactionDetailPageProps) {
@@ -69,6 +106,10 @@ export default async function FactionDetailPage({
   const nextTier = getNextRelationTier(node.favorability, hostile);
   const relationProgress = getRelationProgress(node.favorability);
   const pageToneClass = hostile ? styles["page--hostile"] : "";
+  const [activityLogs, questProgress] = await Promise.all([
+    listFactionRelationLogs(node.code).catch(() => []),
+    listFactionQuestProgress(node.code).catch(() => []),
+  ]);
 
   return (
     <>
@@ -195,6 +236,8 @@ export default async function FactionDetailPage({
           hostile={hostile}
           canEditFavorability={data.canEditFavorability}
           profile={profile}
+          initialLogs={activityLogs.map(serializeActivityLog)}
+          initialQuestProgress={questProgress.map(serializeQuestProgress)}
         />
       </div>
     </>

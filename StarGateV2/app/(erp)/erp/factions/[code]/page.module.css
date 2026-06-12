@@ -582,6 +582,68 @@
   color: var(--faction-accent);
 }
 
+.activityLogList {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.activityLogList__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.activityLogList__head span,
+.activityLogList__head b,
+.activityLog span,
+.activityLog small {
+  color: var(--faction-accent);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.activityLog {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.activityLog div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.activityLog strong {
+  color: var(--ink-0);
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.activityLog p,
+.activityLogEmpty {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.activityLog small {
+  color: var(--ink-3);
+}
+
 .questGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -610,6 +672,11 @@
 
 .questCard--locked {
   opacity: 0.58;
+}
+
+.questCard--completed {
+  border-color: var(--faction-accent-dim);
+  opacity: 0.72;
 }
 
 .questCard__head {

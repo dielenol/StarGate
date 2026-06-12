@@ -33,6 +33,41 @@ interface FactionContactClientProps {
   hostile: boolean;
   canEditFavorability: boolean;
   profile: FactionGameProfile;
+  initialLogs: SerializedFactionRelationLog[];
+  initialQuestProgress: SerializedFactionQuestProgress[];
+}
+
+type FactionActivityKind =
+  | "ACTION"
+  | "SUPPORT"
+  | "QUEST_ACCEPT"
+  | "QUEST_COMPLETE";
+
+interface SerializedFactionRelationLog {
+  id: string;
+  kind: FactionActivityKind;
+  title: string;
+  detail: string;
+  delta: number;
+  favorabilityBefore: number;
+  favorabilityAfter: number;
+  actorName: string;
+  createdAt: string;
+  characterCodename: string | null;
+  creditCost: number | null;
+  questId: string | null;
+}
+
+interface SerializedFactionQuestProgress {
+  id: string;
+  questId: string;
+  status: "ACTIVE" | "COMPLETED";
+  title: string;
+  actorName: string;
+  startedAt: string;
+  updatedAt: string;
+  characterCodename: string | null;
+  completedAt: string | null;
 }
 
 interface ContactSelection {
@@ -43,6 +78,8 @@ interface ContactSelection {
   detail: string;
   delta: number;
   cost?: number;
+  minimumFavorability?: number;
+  questStatus?: SerializedFactionQuestProgress["status"];
 }
 
 const FAVORABILITY_MIN = -10;
@@ -93,6 +130,23 @@ function formatDelta(delta: number) {
   return delta.toString();
 }
 
+function formatActivityDate(value: string) {
+  return value.slice(5, 16).replace("T", " ");
+}
+
+function activityTypeLabel(kind: FactionActivityKind) {
+  switch (kind) {
+    case "ACTION":
+      return "접선";
+    case "SUPPORT":
+      return "후원";
+    case "QUEST_ACCEPT":
+      return "수락";
+    case "QUEST_COMPLETE":
+      return "완료";
+  }
+}
+
 function actionSelection(action: FactionActionPreview): ContactSelection {
   return {
     id: action.id,
@@ -104,14 +158,21 @@ function actionSelection(action: FactionActionPreview): ContactSelection {
   };
 }
 
-function questSelection(quest: FactionQuestPreview): ContactSelection {
+function questSelection(
+  quest: FactionQuestPreview,
+  progress?: SerializedFactionQuestProgress,
+): ContactSelection {
+  const completed = progress?.status === "COMPLETED";
+  const active = progress?.status === "ACTIVE";
   return {
     id: quest.id,
     kind: "quest",
     channel: "QUEST",
     label: quest.title,
     detail: quest.summary,
-    delta: 2,
+    delta: active ? 2 : 0,
+    minimumFavorability: quest.minimumFavorability,
+    questStatus: completed ? "COMPLETED" : active ? "ACTIVE" : undefined,
   };
 }
 
@@ -123,16 +184,28 @@ export default function FactionContactClient({
   hostile,
   canEditFavorability,
   profile,
+  initialLogs,
+  initialQuestProgress,
 }: FactionContactClientProps) {
   const router = useRouter();
   const [currentFavorability, setCurrentFavorability] = useState(
     favorability ?? 0,
   );
+  const [logs, setLogs] = useState(initialLogs);
+  const [questProgress, setQuestProgress] = useState(initialQuestProgress);
   const [selected, setSelected] = useState<ContactSelection>(() =>
     actionSelection(profile.actions[0]),
   );
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const questProgressById = useMemo(
+    () =>
+      new Map(
+        questProgress.map((progress) => [progress.questId, progress] as const),
+      ),
+    [questProgress],
+  );
 
   const supportSelections = useMemo(
     () =>
@@ -154,8 +227,38 @@ export default function FactionContactClient({
     currentFavorability + selected.delta,
   );
   const cappedDelta = projectedFavorability - currentFavorability;
+  const questLocked =
+    selected.kind === "quest" &&
+    currentFavorability < (selected.minimumFavorability ?? FAVORABILITY_MIN);
+  const questCompleted =
+    selected.kind === "quest" && selected.questStatus === "COMPLETED";
   const canApply =
-    canEditFavorability && !isSaving && cappedDelta !== 0 && selected.delta > 0;
+    canEditFavorability &&
+    !isSaving &&
+    (selected.kind === "quest"
+      ? !questLocked && !questCompleted
+      : cappedDelta !== 0 && selected.delta > 0);
+
+  function getActivityType(): FactionActivityKind {
+    if (selected.kind === "support") return "SUPPORT";
+    if (selected.kind === "quest") {
+      return selected.questStatus === "ACTIVE"
+        ? "QUEST_COMPLETE"
+        : "QUEST_ACCEPT";
+    }
+    return "ACTION";
+  }
+
+  function getApplyLabel() {
+    if (isSaving) return "실행 중";
+    if (selected.kind === "support") return "후원 실행";
+    if (selected.kind === "quest") {
+      if (questCompleted) return "완료됨";
+      if (selected.questStatus === "ACTIVE") return "완료 반영";
+      return "의뢰 수락";
+    }
+    return "접선 실행";
+  }
 
   async function handleApply() {
     if (!canApply) return;
@@ -164,31 +267,50 @@ export default function FactionContactClient({
     setMessage(null);
 
     try {
-      const res = await fetch("/api/erp/factions/favorability", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code,
-          favorability: projectedFavorability,
-        }),
-      });
+      const activityType = getActivityType();
+      const res = await fetch(
+        `/api/erp/factions/${code.toLowerCase()}/activity`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: activityType,
+            id: selected.id,
+            label: selected.label,
+            detail: selected.detail,
+          }),
+        },
+      );
 
       const payload = (await res.json()) as {
-        code?: string;
         favorability?: number;
+        logs?: SerializedFactionRelationLog[];
+        questProgress?: SerializedFactionQuestProgress[];
         error?: string;
       };
 
       if (!res.ok || typeof payload.favorability !== "number") {
-        throw new Error(payload.error ?? "우호도 반영에 실패했습니다.");
+        throw new Error(payload.error ?? "세력 활동 반영에 실패했습니다.");
       }
 
       setCurrentFavorability(payload.favorability);
-      setMessage("우호도 변경이 반영되었습니다.");
+      if (payload.logs) setLogs(payload.logs);
+      if (payload.questProgress) setQuestProgress(payload.questProgress);
+
+      if (selected.kind === "quest") {
+        setSelected((prev) => ({
+          ...prev,
+          delta: activityType === "QUEST_ACCEPT" ? 2 : 0,
+          questStatus:
+            activityType === "QUEST_ACCEPT" ? "ACTIVE" : "COMPLETED",
+        }));
+      }
+
+      setMessage("세력 활동이 기록되었습니다.");
       router.refresh();
     } catch (err) {
       setMessage(
-        err instanceof Error ? err.message : "우호도 반영에 실패했습니다.",
+        err instanceof Error ? err.message : "세력 활동 반영에 실패했습니다.",
       );
     } finally {
       setIsSaving(false);
@@ -313,10 +435,40 @@ export default function FactionContactClient({
             </p>
           </div>
           <button type="button" onClick={handleApply} disabled={!canApply}>
-            {isSaving ? "반영 중" : "우호도 반영"}
+            {getApplyLabel()}
           </button>
         </div>
         {message ? <p className={styles.applyMessage}>{message}</p> : null}
+
+        <div className={styles.activityLogList}>
+          <div className={styles.activityLogList__head}>
+            <span>최근 신호</span>
+            <b>{logs.length}</b>
+          </div>
+          {logs.length > 0 ? (
+            logs.map((log) => (
+              <div key={log.id} className={styles.activityLog}>
+                <div>
+                  <span>{activityTypeLabel(log.kind)}</span>
+                  <strong>{log.title}</strong>
+                </div>
+                <p>{log.detail}</p>
+                <small>
+                  {formatActivityDate(log.createdAt)} · {log.actorName}
+                  {log.characterCodename ? ` · ${log.characterCodename}` : ""}
+                  {log.creditCost
+                    ? ` · ${log.creditCost.toLocaleString()} CR`
+                    : ""}
+                  {log.delta !== 0 ? ` · ${formatDelta(log.delta)}` : ""}
+                </small>
+              </div>
+            ))
+          ) : (
+            <p className={styles.activityLogEmpty}>
+              아직 기록된 접선 신호가 없습니다.
+            </p>
+          )}
+        </div>
       </Box>
 
       <Box className={styles.questPanel}>
@@ -329,10 +481,13 @@ export default function FactionContactClient({
 
         <div className={styles.questGrid}>
           {profile.quests.map((quest) => {
-            const selection = questSelection(quest);
+            const progress = questProgressById.get(quest.id);
+            const selection = questSelection(quest, progress);
             const active =
               selected.kind === "quest" && selected.id === selection.id;
             const locked = currentFavorability < quest.minimumFavorability;
+            const completed = progress?.status === "COMPLETED";
+            const inProgress = progress?.status === "ACTIVE";
             return (
               <button
                 key={quest.id}
@@ -341,6 +496,7 @@ export default function FactionContactClient({
                   styles.questCard,
                   active ? styles["questCard--active"] : "",
                   locked ? styles["questCard--locked"] : "",
+                  completed ? styles["questCard--completed"] : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -352,7 +508,15 @@ export default function FactionContactClient({
                   <strong>{quest.title}</strong>
                 </div>
                 <p>{quest.summary}</p>
-                <small>{locked ? "관계 단계 부족" : quest.reward}</small>
+                <small>
+                  {completed
+                    ? "완료됨"
+                    : inProgress
+                      ? "진행 중 · 완료 반영 가능"
+                      : locked
+                        ? "관계 단계 부족"
+                        : quest.reward}
+                </small>
               </button>
             );
           })}

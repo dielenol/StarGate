@@ -37,7 +37,7 @@ const TRACKED_NODE_CODES = [
 
 const TRACKED_NODE_CODE_SET = new Set<string>(TRACKED_NODE_CODES);
 
-const FAVORABILITY_BY_CODE: Record<string, number> = {
+export const DEFAULT_FACTION_FAVORABILITY_BY_CODE: Record<string, number> = {
   COUNCIL: 3,
   MILITARY: 4,
   CIVIL: 5,
@@ -377,7 +377,7 @@ export async function getFactionBoardData(
   }
 
   const boardNodes = buildBoardNodes(groupCounts, wikiCounts, signalCounts, {
-    ...FAVORABILITY_BY_CODE,
+    ...DEFAULT_FACTION_FAVORABILITY_BY_CODE,
     ...favorabilityOverrides,
   });
   const totals: FactionBoardTotals = {
