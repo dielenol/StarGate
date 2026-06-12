@@ -28,6 +28,21 @@ export async function listFactionFavorabilityOverrides(): Promise<
   return Object.fromEntries(docs.map((doc) => [doc.code, doc.value]));
 }
 
+/**
+ * 단일 세력 보정값 조회 — 전체 override fetch 없이 findOne.
+ * 미설정(문서 없음) 시 null — 호출자가 기본값 폴백.
+ */
+export async function getFactionFavorabilityOverride(
+  code: string,
+): Promise<number | null> {
+  const col = await factionFavorabilityCol();
+  const doc = await col.findOne(
+    { code },
+    { projection: { _id: 0, value: 1 } },
+  );
+  return doc ? doc.value : null;
+}
+
 export async function setFactionFavorability(input: {
   code: string;
   value: number;

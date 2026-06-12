@@ -20,6 +20,7 @@ export {
   findMasterItemBySlug,
   findMasterItemsBySlugs,
   findMasterItemsByIds,
+  findMasterItemsBySlugsOrIds,
   createMasterItem,
   updateMasterItem,
   deleteMasterItem,

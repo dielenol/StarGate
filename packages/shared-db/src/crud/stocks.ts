@@ -345,6 +345,37 @@ export async function listStockPriceHistory(
 }
 
 /**
+ * 다수 ticker 의 최근 N 일 scheduled-source 시계열 행을 일괄 조회.
+ *
+ * 정기 틱(scheduled-tick)의 "오늘 슬롯 기처리 여부" 검사용 — 종목별
+ * `listStockPriceHistory` 개별 호출(N+1)을 단일 `$in` 쿼리로 대체한다.
+ * source 필터를 DB 로 내렸을 뿐, 판정(슬롯 태그 비교)은 호출자가 수행한다.
+ *
+ * - 빈 배열 입력은 즉시 short-circuit.
+ * - 인덱스: `{ ticker: 1, createdAt: -1 }` 활용.
+ */
+export async function listScheduledStockPriceHistoryBulk(
+  tickers: string[],
+  days: number = 2,
+): Promise<Pick<StockPriceHistory, "ticker" | "createdAt" | "source">[]> {
+  if (tickers.length === 0) return [];
+  const col = await stockPriceHistoryCol();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  return col
+    .find({
+      ticker: { $in: tickers },
+      createdAt: { $gte: since },
+      source: "scheduled",
+    })
+    .project<Pick<StockPriceHistory, "ticker" | "createdAt" | "source">>({
+      ticker: 1,
+      createdAt: 1,
+      source: 1,
+    })
+    .toArray();
+}
+
+/**
  * 다수 ticker 의 최근 N 일 sparkline 시계열을 일괄 조회 (카드 미니 차트용).
  *
  * 단일 호출로 N 종목 시계열을 반환해 카드별 N+1 fetch 함정을 회피한다.

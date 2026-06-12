@@ -12,7 +12,7 @@ import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import {
   addToInventory,
-  findMasterItemBySlugOrId,
+  findMasterItemsBySlugsOrIds,
   removeFromInventory,
 } from "@/lib/db/inventory";
 import {
@@ -151,9 +151,23 @@ export async function POST(request: Request) {
   }
   const ownerName = owner.discordUsername ?? owner.displayName;
 
+  // 품목별 단건 조회(findMasterItemBySlugOrId × N)를 단일 $in 쿼리로 대체.
+  // key 별 판정은 단건 함수와 동일 — slug 우선, ObjectId hex 폴백.
+  const masterItems = await findMasterItemsBySlugsOrIds(
+    normalizedItems.map((item) => item.key),
+  );
+  type ResolvedMasterItem = (typeof masterItems)[number];
+  const masterBySlug = new Map<string, ResolvedMasterItem>();
+  const masterById = new Map<string, ResolvedMasterItem>();
+  for (const masterItem of masterItems) {
+    if (masterItem.slug) masterBySlug.set(masterItem.slug, masterItem);
+    if (masterItem._id) masterById.set(String(masterItem._id), masterItem);
+  }
+
   const lines: CheckoutLine[] = [];
   for (const item of normalizedItems) {
-    const masterItem = await findMasterItemBySlugOrId(item.key);
+    const masterItem =
+      masterBySlug.get(item.key) ?? masterById.get(item.key) ?? null;
     if (
       !masterItem ||
       !masterItem._id ||

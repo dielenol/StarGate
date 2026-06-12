@@ -211,6 +211,48 @@ export async function sumLatestBalancesByCharacterIds(
 }
 
 /**
+ * 다중 캐릭터의 latest 트랜잭션 스냅샷 (balance + createdAt) 일괄 조회.
+ *
+ * 잔액 보드의 캐릭터별 `getCharacterBalance` + `listCreditTransactions(id, 1)`
+ * N+1 호출(캐릭 수 × 2 왕복)을 단일 aggregation 으로 대체한다.
+ *
+ * - 트랜잭션이 없는 캐릭터는 결과 Record 에서 누락 — 호출자가
+ *   `?? { balance: 0, lastTxAt: null }` 폴백 (getCharacterBalance 의 0 폴백과 동일).
+ * - 빈 배열 입력 시 mongo 호출 없이 `{}` 반환.
+ * - 인덱스: `credit_transactions_characterId_createdAt` 활용 ($match + $sort).
+ *
+ * 사용처: /api/erp/admin/credits/balances + admin/credits/_data (잔액 보드).
+ */
+export async function getLatestCreditSnapshotsByCharacterIds(
+  characterIds: string[]
+): Promise<Record<string, { balance: number; lastTxAt: Date }>> {
+  if (characterIds.length === 0) {
+    return {};
+  }
+
+  const col = await creditTransactionsCol();
+  const rows = await col
+    .aggregate<{ _id: string; balance: number; lastTxAt: Date }>([
+      { $match: { characterId: { $in: characterIds } } },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: "$characterId",
+          balance: { $first: "$balance" },
+          lastTxAt: { $first: "$createdAt" },
+        },
+      },
+    ])
+    .toArray();
+
+  const snapshots: Record<string, { balance: number; lastTxAt: Date }> = {};
+  for (const row of rows) {
+    snapshots[row._id] = { balance: row.balance, lastTxAt: row.lastTxAt };
+  }
+  return snapshots;
+}
+
+/**
  * 최근 24시간 발급/차감 활동 합계.
  *
  * - granted: amount > 0 의 합 (양수)

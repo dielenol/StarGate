@@ -15,7 +15,7 @@ import {
   type FactionRelationLogDoc,
 } from "@/lib/db/faction-activity";
 import {
-  listFactionFavorabilityOverrides,
+  getFactionFavorabilityOverride,
   setFactionFavorability,
 } from "@/lib/db/faction-favorability";
 import { findUserById } from "@/lib/db/users";
@@ -116,8 +116,9 @@ function serializeQuestProgress(doc: FactionQuestProgressDoc) {
 }
 
 async function getCurrentFavorability(code: string) {
-  const overrides = await listFactionFavorabilityOverrides();
-  return overrides[code] ?? DEFAULT_FACTION_FAVORABILITY_BY_CODE[code] ?? 0;
+  // 단일 코드만 필요 — 전체 override 컬렉션 fetch 대신 findOne.
+  const override = await getFactionFavorabilityOverride(code);
+  return override ?? DEFAULT_FACTION_FAVORABILITY_BY_CODE[code] ?? 0;
 }
 
 async function getSnapshot(code: string) {

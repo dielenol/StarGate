@@ -30,6 +30,7 @@ export {
   recordStockPriceHistory,
   listStockPriceHistory,
   listStockPriceHistoryBulk,
+  listScheduledStockPriceHistoryBulk,
 } from "@stargate/shared-db";
 
 export type {

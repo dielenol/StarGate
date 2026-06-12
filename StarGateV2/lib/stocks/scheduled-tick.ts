@@ -1,7 +1,7 @@
 import {
   ensureStockPrice,
-  getStockPrice,
-  listStockPriceHistory,
+  getStockPrices,
+  listScheduledStockPriceHistoryBulk,
   recordStockPriceHistory,
   updateStockPrice,
 } from "@/lib/db/stocks";
@@ -97,16 +97,6 @@ function changePercent(prevPrice: number, price: number): number {
   return prevPrice > 0 ? ((price - prevPrice) / prevPrice) * 100 : 0;
 }
 
-async function hasScheduledTickInSlot(
-  ticker: string,
-  slot: string,
-): Promise<boolean> {
-  const history = await listStockPriceHistory(ticker, 2);
-  return history.some(
-    (row) => row.source === "scheduled" && slotTagForDate(row.createdAt) === slot,
-  );
-}
-
 export async function applyScheduledStockTick(
   options: ApplyScheduledStockTickOptions = {},
 ): Promise<ScheduledStockTickSummary> {
@@ -115,10 +105,28 @@ export async function applyScheduledStockTick(
   const lastUpdate = kstNowTag();
   const results: ScheduledStockTickResult[] = [];
 
+  // 종목별 개별 조회(슬롯 검사 1 + 가격 1 왕복)를 사전 일괄 조회 2회로 대체.
+  // 루프는 종목당 자기 가격만 1회 갱신하므로 선조회 값과 루프 시점 값이 동일하다.
+  const tickers = STOCK_CATALOG.map((meta) => meta.ticker);
+  const [prices, scheduledRows] = await Promise.all([
+    getStockPrices(),
+    options.force
+      ? Promise.resolve([])
+      : listScheduledStockPriceHistoryBulk(tickers, 2),
+  ]);
+  const priceByTicker = new Map(prices.map((price) => [price.ticker, price]));
+  // 기존 종목별 hasScheduledTickInSlot 과 동일 판정 —
+  // 최근 2일 내 scheduled 행 중 오늘 슬롯 태그와 일치하는 종목은 스킵.
+  const tickedInSlot = new Set(
+    scheduledRows
+      .filter((row) => slotTagForDate(row.createdAt) === slot)
+      .map((row) => row.ticker),
+  );
+
   for (const meta of STOCK_CATALOG) {
     const direction = rollDirection();
-    if (!options.force && (await hasScheduledTickInSlot(meta.ticker, slot))) {
-      const current = await getStockPrice(meta.ticker);
+    if (!options.force && tickedInSlot.has(meta.ticker)) {
+      const current = priceByTicker.get(meta.ticker) ?? null;
       results.push({
         ticker: meta.ticker,
         previousPrice: current?.prevPrice ?? meta.basePrice,
@@ -131,7 +139,7 @@ export async function applyScheduledStockTick(
       continue;
     }
 
-    const current = await getStockPrice(meta.ticker);
+    const current = priceByTicker.get(meta.ticker) ?? null;
     if (!current) {
       const initialized = await ensureStockPrice(
         meta.ticker,

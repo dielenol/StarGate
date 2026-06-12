@@ -120,6 +120,36 @@ export async function findMasterItemsByIds(
     .toArray();
 }
 
+/**
+ * 여러 key(slug 또는 ObjectId hex)의 master_items 풀 도큐먼트를 한 번에 조회.
+ *
+ * `findMasterItemBySlugOrId` 의 루프 호출(N+1) 대체용 — slug `$in` + _id `$in`
+ * 합집합을 단일 쿼리로 가져온다. key 별 "slug 우선, id 폴백" 우선순위 판정은
+ * 호출자가 결과를 slug/id Map 으로 인덱싱해 수행한다.
+ *
+ * - 빈/공백 key, 무효 hex 는 사전 필터링 (단건 함수의 null 반환과 동일하게 누락).
+ * - 빈 입력은 즉시 short-circuit.
+ */
+export async function findMasterItemsBySlugsOrIds(
+  keys: string[]
+): Promise<MasterItem[]> {
+  const slugs: string[] = [];
+  const objectIds: ObjectId[] = [];
+  for (const key of keys) {
+    const trimmed = key?.trim();
+    if (!trimmed) continue;
+    slugs.push(trimmed);
+    if (ObjectId.isValid(trimmed)) objectIds.push(new ObjectId(trimmed));
+  }
+  if (slugs.length === 0 && objectIds.length === 0) return [];
+
+  const col = await masterItemsCol();
+  const conditions: Filter<MasterItem>[] = [];
+  if (slugs.length > 0) conditions.push({ slug: { $in: slugs } });
+  if (objectIds.length > 0) conditions.push({ _id: { $in: objectIds } });
+  return col.find({ $or: conditions }).toArray();
+}
+
 export async function createMasterItem(
   input: CreateMasterItemInput
 ): Promise<MasterItem> {

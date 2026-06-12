@@ -17,19 +17,18 @@ import type {
 import type { AgentCharacter } from "@stargate/shared-db";
 
 import {
-  findMainCharacterByOwner,
   listAgentCharacters,
+  listCharactersByOwnerIds,
 } from "@/lib/db/characters";
 import { OPERATION_POOL_ID, getCreditPool } from "@/lib/db/credit-pools";
 import {
   countCreditTransactionsFiltered,
-  getCharacterBalance,
   getCreditsActivity24h,
-  listCreditTransactions,
+  getLatestCreditSnapshotsByCharacterIds,
   listCreditTransactionsFiltered,
   sumLatestBalancesByCharacterIds,
 } from "@/lib/db/credits";
-import { findUserById, listUsers } from "@/lib/db/users";
+import { findUsersByIds, listUsers } from "@/lib/db/users";
 
 import type { OpPoolResponse } from "@/hooks/queries/useCreditsAdminQuery";
 
@@ -90,27 +89,19 @@ export async function buildInitialKpi(): Promise<CreditKpiSnapshot> {
 
 /* ── Agent Balances 보드 ── */
 
-export async function buildInitialBalances(): Promise<{
+/**
+ * 잔액 보드 행 빌더 — 서버 초기 데이터(`buildInitialBalances`)와
+ * `/api/erp/admin/credits/balances` 라우트가 공유하는 단일 구현.
+ *
+ * 캐릭터별 balance + lastTxAt 은 단일 aggregation, owner 는 단일 `$in` 쿼리로
+ * 조회한다 (기존 캐릭 수 × 3 왕복 N+1 제거).
+ */
+export async function buildAgentBalanceRows(): Promise<{
   rows: AgentBalanceRow[];
   generatedAt: string;
 }> {
   const mains = await listPublicMainAgentCharacters();
-
-  const characterAggregates = await Promise.all(
-    mains.map(async (character) => {
-      const characterId = String(character._id);
-      const [balance, latestTxs] = await Promise.all([
-        getCharacterBalance(characterId),
-        listCreditTransactions(characterId, 1),
-      ]);
-      const lastTxAt = latestTxs[0]?.createdAt
-        ? new Date(latestTxs[0].createdAt).toISOString()
-        : null;
-      return { character, balance, lastTxAt };
-    }),
-  );
-
-  // owner user batch 조회.
+  const characterIds = mains.map((c) => String(c._id));
   const uniqueOwnerIds = Array.from(
     new Set(
       mains
@@ -118,34 +109,35 @@ export async function buildInitialBalances(): Promise<{
         .filter((id): id is string => typeof id === "string" && id.length > 0),
     ),
   );
-  const ownerEntries = await Promise.all(
-    uniqueOwnerIds.map(async (ownerId) => {
-      const user = await findUserById(ownerId);
-      return [ownerId, user] as const;
-    }),
-  );
-  const ownerById = new Map(ownerEntries);
 
-  const rows: AgentBalanceRow[] = characterAggregates.map(
-    ({ character, balance, lastTxAt }) => {
-      const ownerId = character.ownerId ?? null;
-      const owner = ownerId ? ownerById.get(ownerId) ?? null : null;
+  const [snapshots, owners] = await Promise.all([
+    getLatestCreditSnapshotsByCharacterIds(characterIds),
+    findUsersByIds(uniqueOwnerIds),
+  ]);
+  const ownerById = new Map(owners.map((user) => [String(user._id), user]));
 
-      return {
-        characterId: String(character._id),
-        characterCodename: character.codename,
-        ownerId,
-        ownerName: owner
-          ? owner.discordUsername ?? owner.displayName ?? null
-          : null,
-        ownerDiscordId: owner?.discordId ?? null,
-        agentLevel: character.agentLevel ?? "U",
-        balance,
-        pointBalance: character.play.points ?? 0,
-        lastTxAt,
-      };
-    },
-  );
+  const rows: AgentBalanceRow[] = mains.map((character) => {
+    const characterId = String(character._id);
+    // 트랜잭션이 없는 캐릭터는 snapshot 누락 — balance 0 / lastTxAt null 폴백
+    // (기존 getCharacterBalance 0 폴백과 동일).
+    const snapshot = snapshots[characterId] ?? null;
+    const ownerId = character.ownerId ?? null;
+    const owner = ownerId ? ownerById.get(ownerId) ?? null : null;
+
+    return {
+      characterId,
+      characterCodename: character.codename,
+      ownerId,
+      ownerName: owner
+        ? owner.discordUsername ?? owner.displayName ?? null
+        : null,
+      ownerDiscordId: owner?.discordId ?? null,
+      agentLevel: character.agentLevel ?? "U",
+      balance: snapshot?.balance ?? 0,
+      pointBalance: character.play.points ?? 0,
+      lastTxAt: snapshot ? new Date(snapshot.lastTxAt).toISOString() : null,
+    };
+  });
 
   rows.sort((a, b) => {
     if (b.balance !== a.balance) return b.balance - a.balance;
@@ -153,6 +145,13 @@ export async function buildInitialBalances(): Promise<{
   });
 
   return { rows, generatedAt: new Date().toISOString() };
+}
+
+export async function buildInitialBalances(): Promise<{
+  rows: AgentBalanceRow[];
+  generatedAt: string;
+}> {
+  return buildAgentBalanceRows();
 }
 
 /* ── 초기 로그 페이지 ── */
@@ -227,25 +226,31 @@ export async function buildGrantTargets(): Promise<GrantTargetUser[]> {
   // GM 이 실수로 더미를 고르지 않도록 시각적으로 구분 (KPI/잔액 보드/로그는 여전히 제외).
   const users = await listUsers();
 
-  // 1인 1 MAIN 정합성 위반 시 findMainCharacterByOwner 가 throw — 그 경우 null 처리.
-  const targets: GrantTargetUser[] = await Promise.all(
-    users.map(async (u) => {
-      let main = null;
-      try {
-        main = await findMainCharacterByOwner(u._id);
-      } catch {
-        main = null;
-      }
-      return {
-        userId: u._id,
-        username: u.username,
-        displayName: u.displayName,
-        mainCharacterId: main ? String(main._id) : null,
-        mainCharacterCodename: main?.codename ?? null,
-        isDummy: main ? main.isPublic === false : false,
-      };
-    }),
-  );
+  // owner 별 메인 캐릭 일괄 조회 — user 수 × findMainCharacterByOwner N+1 제거.
+  // findMainCharacterByOwner 와 동일 판정: AGENT + (tier "MAIN" 또는 미설정).
+  // 후보 0 = 메인 미보유(null), 2+ = 1인 1 MAIN 정합성 위반 — 기존 try/catch 가
+  // throw 를 null 로 흡수하던 동작과 동일하게 null 처리.
+  const characters = await listCharactersByOwnerIds(users.map((u) => u._id));
+  const mainsByOwner = new Map<string, typeof characters>();
+  for (const character of characters) {
+    if (character.type !== "AGENT") continue;
+    if (character.tier !== undefined && character.tier !== "MAIN") continue;
+    if (!character.ownerId) continue;
+    const list = mainsByOwner.get(character.ownerId);
+    if (list) list.push(character);
+    else mainsByOwner.set(character.ownerId, [character]);
+  }
 
-  return targets;
+  return users.map((u) => {
+    const candidates = mainsByOwner.get(u._id) ?? [];
+    const main = candidates.length === 1 ? candidates[0] : null;
+    return {
+      userId: u._id,
+      username: u.username,
+      displayName: u.displayName,
+      mainCharacterId: main ? String(main._id) : null,
+      mainCharacterCodename: main?.codename ?? null,
+      isDummy: main ? main.isPublic === false : false,
+    };
+  });
 }

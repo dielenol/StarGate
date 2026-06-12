@@ -57,6 +57,23 @@ export async function findUserById(id: string): Promise<User | null> {
   return col.findOne({ _id: new ObjectId(id) });
 }
 
+/**
+ * 여러 users._id(hex 문자열)를 한 번에 조회한다.
+ *
+ * `findUserById` 의 N+1 호출 대체용 — 유효하지 않은 hex 는 사전에 필터링
+ * (findUserById 의 null 반환과 동일하게 결과에서 누락된다).
+ * 빈 배열/전부 무효 입력은 즉시 short-circuit.
+ */
+export async function findUsersByIds(ids: string[]): Promise<User[]> {
+  const objectIds: ObjectId[] = [];
+  for (const id of ids) {
+    if (ObjectId.isValid(id)) objectIds.push(new ObjectId(id));
+  }
+  if (objectIds.length === 0) return [];
+  const col = await usersCol();
+  return col.find({ _id: { $in: objectIds } }).toArray();
+}
+
 export async function updateUserRole(
   userId: string,
   role: UserRole

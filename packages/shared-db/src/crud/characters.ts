@@ -179,21 +179,36 @@ export async function findMainCharacterByOwner(
  * 여러 소유자(users._id)의 캐릭터를 한 번에 조회한다.
  *
  * `ownerId` 는 `users._id` 의 string 표현.
- * UI에서 참여자 표시용으로 codename / lore.name / agentLevel 만 필요하므로 projection 적용.
+ * 표시/판별용 경량 projection — codename / lore / agentLevel 에 더해
+ * type / tier / isPublic 포함 (owner 별 MAIN 판별 호출처용. 시트 본문 play 등은 제외).
  * 빈 배열 입력은 즉시 short-circuit.
  */
 export async function listCharactersByOwnerIds(
   ownerIds: string[]
 ): Promise<
-  Pick<Character, "_id" | "codename" | "lore" | "agentLevel" | "ownerId">[]
+  Pick<
+    Character,
+    "_id" | "codename" | "lore" | "agentLevel" | "ownerId" | "type" | "tier" | "isPublic"
+  >[]
 > {
   if (ownerIds.length === 0) return [];
   const col = await charactersCol();
   return col
     .find({ ownerId: { $in: ownerIds } })
     .project<
-      Pick<Character, "_id" | "codename" | "lore" | "agentLevel" | "ownerId">
-    >({ codename: 1, lore: 1, agentLevel: 1, ownerId: 1 })
+      Pick<
+        Character,
+        "_id" | "codename" | "lore" | "agentLevel" | "ownerId" | "type" | "tier" | "isPublic"
+      >
+    >({
+      codename: 1,
+      lore: 1,
+      agentLevel: 1,
+      ownerId: 1,
+      type: 1,
+      tier: 1,
+      isPublic: 1,
+    })
     .toArray();
 }
 

@@ -11,17 +11,10 @@
 
 import { NextResponse } from "next/server";
 
-import type { AgentBalanceRow } from "@/types/credit-admin";
-
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import {
-  getCharacterBalance,
-  listCreditTransactions,
-} from "@/lib/db/credits";
-import { findUserById } from "@/lib/db/users";
 
-import { listPublicMainAgentCharacters } from "@/app/(erp)/erp/admin/credits/_data";
+import { buildAgentBalanceRows } from "@/app/(erp)/erp/admin/credits/_data";
 
 export async function GET() {
   const session = await auth();
@@ -36,73 +29,13 @@ export async function GET() {
   }
 
   try {
-    // 운영 MAIN AGENT (isPublic !== false) 만 잔액 보드에 노출 — 테스트 더미 제외.
-    const mainCharacters = await listPublicMainAgentCharacters();
+    // 행 구성은 admin/credits/_data 의 buildAgentBalanceRows 와 단일 구현 공유 —
+    // balance+lastTxAt 단일 aggregation + owner 단일 $in 조회 (N+1 제거).
+    const payload = await buildAgentBalanceRows();
 
-    // 캐릭별 balance + lastTxAt 동시 조회.
-    // TODO: balance + lastTxAt 을 batch aggregation 으로 전환 시 N+1 호출 제거.
-    // 현재 운영 캐릭 수 50 미만 가정으로 Promise.all 유지.
-    const characterAggregates = await Promise.all(
-      mainCharacters.map(async (character) => {
-        const characterId = String(character._id);
-        const [balance, latestTxs] = await Promise.all([
-          getCharacterBalance(characterId),
-          listCreditTransactions(characterId, 1),
-        ]);
-        const lastTxAt = latestTxs[0]?.createdAt
-          ? new Date(latestTxs[0].createdAt).toISOString()
-          : null;
-        return { character, balance, lastTxAt };
-      }),
-    );
-
-    // owner user 정보 batch 조회. ownerId 가 null 인 캐릭터는 fetch 자체를 스킵.
-    // TODO: lib/db/users 에 batch (ids → users) 함수 신설 시 단일 $in 쿼리로 전환.
-    const uniqueOwnerIds = Array.from(
-      new Set(
-        mainCharacters
-          .map((c) => c.ownerId)
-          .filter((id): id is string => typeof id === "string" && id.length > 0),
-      ),
-    );
-    const ownerEntries = await Promise.all(
-      uniqueOwnerIds.map(async (ownerId) => {
-        const user = await findUserById(ownerId);
-        return [ownerId, user] as const;
-      }),
-    );
-    const ownerById = new Map(ownerEntries);
-
-    const rows: AgentBalanceRow[] = characterAggregates.map(
-      ({ character, balance, lastTxAt }) => {
-        const ownerId = character.ownerId ?? null;
-        const owner = ownerId ? ownerById.get(ownerId) ?? null : null;
-
-        return {
-          characterId: String(character._id),
-          characterCodename: character.codename,
-          ownerId,
-          ownerName: owner
-            ? owner.discordUsername ?? owner.displayName ?? null
-            : null,
-          ownerDiscordId: owner?.discordId ?? null,
-          agentLevel: character.agentLevel ?? "U",
-          balance,
-          pointBalance: character.play.points ?? 0,
-          lastTxAt,
-        };
-      },
-    );
-
-    rows.sort((a, b) => {
-      if (b.balance !== a.balance) return b.balance - a.balance;
-      return a.characterCodename.localeCompare(b.characterCodename);
+    return NextResponse.json(payload, {
+      headers: { "Cache-Control": "no-store" },
     });
-
-    return NextResponse.json(
-      { rows, generatedAt: new Date().toISOString() },
-      { headers: { "Cache-Control": "no-store" } },
-    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "잔액 보드 조회 실패";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -23,6 +23,7 @@ export {
   getUserBalance,
   // Phase 3 — GM 운영 대시보드.
   sumLatestBalancesByCharacterIds,
+  getLatestCreditSnapshotsByCharacterIds,
   getCreditsActivity24h,
   listCreditTransactionsFiltered,
   countCreditTransactionsFiltered,

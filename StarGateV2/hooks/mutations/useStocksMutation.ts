@@ -123,11 +123,25 @@ async function throwStocksError(res: Response): Promise<never> {
   );
 }
 
-function invalidateStockMarketQueries(
+/**
+ * 매매(buy/sell) 후 invalidate — 시세 + 보유만.
+ * history/sparklines/market-wire 는 매매로 변동 없음 (M3-A: 가격 영향 무) —
+ * "stocks" prefix 전체 invalidate 시 불필요한 시계열 refetch 가 발생해 제외.
+ */
+function invalidateTradeQueries(
   queryClient: ReturnType<typeof useQueryClient>,
 ) {
   queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
   queryClient.invalidateQueries({ queryKey: stocksKeys.holdings });
+}
+
+/**
+ * 가격 자체가 변하는 운영 액션(GM 가격 설정 / 정기 틱) 후 invalidate —
+ * history/sparklines/market-wire 포함 "stocks" prefix 전체.
+ */
+function invalidateStockMarketQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
   queryClient.invalidateQueries({ queryKey: stocksKeys.all });
 }
 
@@ -147,9 +161,9 @@ export function useBuyStock() {
       return res.json();
     },
     onSuccess: () => {
-      // 시세 + 보유 + 잔액/ledger 모두 변동.
-      // history 는 매매로 변동 없음 (M3-A: 가격 영향 무) → 제외.
-      invalidateStockMarketQueries(queryClient);
+      // 시세 + 보유 + 잔액/ledger invalidate. history/sparklines/wire 는
+      // 매매로 변동 없음 → 제외 (invalidateTradeQueries).
+      invalidateTradeQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
@@ -177,7 +191,7 @@ export function useSellStock() {
       return res.json();
     },
     onSuccess: () => {
-      invalidateStockMarketQueries(queryClient);
+      invalidateTradeQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
     },
     onError: (err) => {
