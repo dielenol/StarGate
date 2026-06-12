@@ -249,6 +249,7 @@
 }
 
 .benefitList,
+.talkGrid,
 .actionGrid,
 .questGrid {
   display: grid;
@@ -273,6 +274,8 @@
 }
 
 .benefit span,
+.talkCard span,
+.talkCard small,
 .actionCard span,
 .actionCard small,
 .questCard__head span,
@@ -284,6 +287,7 @@
 }
 
 .benefit strong,
+.talkCard strong,
 .actionCard strong,
 .questCard strong {
   color: var(--ink-0);
@@ -292,6 +296,7 @@
 }
 
 .benefit p,
+.talkCard p,
 .actionCard p,
 .questCard p {
   grid-column: 2;
@@ -324,12 +329,13 @@
   position: relative;
   display: grid;
   gap: 16px;
-  min-height: 520px;
+  min-height: 650px;
   margin-top: 14px;
-  padding: 16px;
+  padding: 20px;
   overflow: hidden;
   background:
-    linear-gradient(90deg, rgba(6, 7, 9, 0.94), rgba(6, 7, 9, 0.62)),
+    linear-gradient(180deg, rgba(6, 7, 9, 0.22), rgba(6, 7, 9, 0.96)),
+    linear-gradient(90deg, rgba(6, 7, 9, 0.96), rgba(6, 7, 9, 0.5)),
     var(--scene-bg-image),
     linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 54%);
   background-position: center;
@@ -368,9 +374,9 @@
 .sceneFrame__main {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr);
-  gap: 16px;
-  min-height: 300px;
+  grid-template-columns: minmax(250px, 0.38fr) minmax(0, 1fr);
+  gap: 20px;
+  min-height: 390px;
 }
 
 .scenePortrait {
@@ -382,8 +388,8 @@
 
 .scenePortrait__plate {
   display: grid;
-  width: min(100%, 280px);
-  min-height: 300px;
+  width: min(100%, 340px);
+  min-height: 390px;
   place-items: end center;
   justify-self: center;
   padding: 16px;
@@ -405,7 +411,7 @@
 
 .scenePortrait__image {
   width: 100%;
-  max-height: 330px;
+  max-height: 420px;
   object-fit: contain;
   object-position: bottom center;
 }
@@ -440,7 +446,8 @@
 .scenePortrait__caption span,
 .sceneDialogue__top span,
 .sceneDialogue__top b,
-.choiceGroup__head span {
+.choiceGroup__head span,
+.sceneDialogue__reply span {
   color: var(--faction-accent);
   font-family: var(--font-mono);
   font-size: 13px;
@@ -458,9 +465,9 @@
   display: grid;
   gap: 12px;
   min-width: 0;
-  padding: 18px;
+  padding: 22px;
   border-color: var(--faction-accent-dim);
-  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 22px 90px rgba(0, 0, 0, 0.45);
 }
 
 .sceneDialogue__top {
@@ -470,9 +477,41 @@
   gap: 10px;
 }
 
-.sceneDialogue__title {
+.affectionRail {
+  display: grid;
+  grid-template-columns: auto minmax(90px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.affectionRail span,
+.affectionRail b {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.affectionRail b {
+  color: var(--faction-accent);
+}
+
+.affectionRail__bar {
+  height: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+}
+
+.affectionRail__bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--danger), var(--faction-accent));
+}
+
+.sceneDialogue__speaker {
   color: var(--ink-0);
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1.25;
   overflow-wrap: anywhere;
   word-break: keep-all;
@@ -482,8 +521,34 @@
   min-height: 52px;
   margin: 0;
   color: var(--ink-0);
-  font-size: 17px;
+  font-size: 19px;
   line-height: 1.65;
+  word-break: keep-all;
+}
+
+.sceneDialogue__reply {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.26);
+  border: 1px solid var(--faction-accent-dim);
+  border-radius: var(--radius-sm);
+}
+
+.sceneDialogue__reply strong {
+  color: var(--ink-0);
+  font-size: 17px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.sceneDialogue__reply p {
+  margin: 0;
+  color: var(--ink-1);
+  font-size: 15px;
+  line-height: 1.55;
   word-break: keep-all;
 }
 
@@ -514,7 +579,7 @@
 .choiceDeck {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(330px, 1.18fr) minmax(270px, 0.82fr) minmax(220px, 0.62fr);
   gap: 12px;
 }
 
@@ -539,10 +604,16 @@
   text-align: right;
 }
 
-.actionGrid {
+.talkGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.actionGrid,
+.supportGrid {
+  grid-template-columns: 1fr;
+}
+
+.talkCard,
 .actionCard {
   min-width: 0;
   padding: 14px;
@@ -554,6 +625,9 @@
   cursor: pointer;
 }
 
+.talkCard:hover,
+.talkCard:focus-visible,
+.talkCard--active,
 .actionCard:hover,
 .actionCard:focus-visible,
 .actionCard--active {
@@ -561,10 +635,18 @@
   outline: none;
 }
 
+.talkCard--active,
 .actionCard--active {
   background: var(--faction-glow);
 }
 
+.talkCard--locked {
+  opacity: 0.54;
+}
+
+.talkCard strong,
+.talkCard p,
+.talkCard small,
 .actionCard strong,
 .actionCard p,
 .actionCard small {
@@ -574,7 +656,6 @@
 
 .supportGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 10px;
 }

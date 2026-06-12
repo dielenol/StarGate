@@ -30,6 +30,24 @@ export interface FactionBenefitRule {
   description: string;
 }
 
+export interface FactionDialogueLine {
+  min: number;
+  max: number;
+  mood: string;
+  line: string;
+  afterActionLine: string;
+}
+
+export interface FactionStoryChoice {
+  id: string;
+  label: string;
+  tone: string;
+  prompt: string;
+  response: string;
+  effectLabel: string;
+  minimumFavorability?: number;
+}
+
 export interface FactionContactScene {
   operatorName: string;
   operatorRole: string;
@@ -39,6 +57,8 @@ export interface FactionContactScene {
   successLine: string;
   lockedLine: string;
   sceneTone: "council" | "military" | "civil" | "tech" | "hostile" | "novus";
+  dialogue: readonly FactionDialogueLine[];
+  storyChoices: readonly FactionStoryChoice[];
   operatorPortraitUrl?: string;
   sceneBackgroundUrl?: string;
 }
@@ -133,6 +153,170 @@ const HOSTILE_BENEFITS: readonly FactionBenefitRule[] = [
   },
 ] as const;
 
+const DEFAULT_DIALOGUE: readonly FactionDialogueLine[] = [
+  {
+    min: -10,
+    max: -7,
+    mood: "냉담",
+    line: "연결은 허가됐지만, 이쪽에서는 아직 당신을 믿지 않습니다. 필요한 말만 하십시오.",
+    afterActionLine: "불필요한 움직임은 기록됩니다. 다음 선택은 더 신중해야 합니다.",
+  },
+  {
+    min: -6,
+    max: -3,
+    mood: "경계",
+    line: "보고서는 읽었습니다. 다만 신뢰를 맡기기에는 아직 근거가 부족합니다.",
+    afterActionLine: "작은 협조부터 쌓아 보죠. 이번 선택의 결과를 보겠습니다.",
+  },
+  {
+    min: -2,
+    max: 2,
+    mood: "중립",
+    line: "용건을 들을 준비는 되어 있습니다. 어떤 방식으로 관계를 정리할까요?",
+    afterActionLine: "기록은 남겼습니다. 이제 다음 접선으로 이어갈 수 있습니다.",
+  },
+  {
+    min: 3,
+    max: 5,
+    mood: "호의",
+    line: "당신 쪽 제안이라면 검토할 이유가 있습니다. 이번에는 조금 더 편하게 말해도 됩니다.",
+    afterActionLine: "괜찮은 선택이었습니다. 다음에는 더 깊은 이야기도 가능하겠군요.",
+  },
+  {
+    min: 6,
+    max: 8,
+    mood: "신뢰",
+    line: "이미 여러 번 증명했죠. 필요한 게 있다면 먼저 말해 보세요.",
+    afterActionLine: "이 정도면 내부 라인에도 올릴 수 있습니다. 계속 이어가죠.",
+  },
+  {
+    min: 9,
+    max: 10,
+    mood: "핵심 협력",
+    line: "당신을 기다리고 있었습니다. 이번 안건은 우리 쪽에서도 우선순위로 다루겠습니다.",
+    afterActionLine: "결정권자에게 직접 전달하겠습니다. 신뢰는 이미 충분합니다.",
+  },
+] as const;
+
+const HOSTILE_DIALOGUE: readonly FactionDialogueLine[] = [
+  {
+    min: -10,
+    max: -7,
+    mood: "접촉 실패",
+    line: "신호가 흔들립니다. 상대가 눈치챘습니다. 더 깊이 들어가면 역추적됩니다.",
+    afterActionLine: "흔적을 지우는 데 시간이 필요합니다. 다음 접근은 우회하십시오.",
+  },
+  {
+    min: -6,
+    max: -3,
+    mood: "위협 고조",
+    line: "감시망이 얕습니다. 아직은 이름과 그림자만 붙잡은 상태입니다.",
+    afterActionLine: "단서 하나를 더 확보했습니다. 하지만 아직 안전하지 않습니다.",
+  },
+  {
+    min: -2,
+    max: 2,
+    mood: "관측",
+    line: "대상은 움직이고 있습니다. 지금은 접촉이 아니라 관측과 차단이 우선입니다.",
+    afterActionLine: "관측 로그가 갱신됐습니다. 다음에는 더 좁은 경로를 고를 수 있습니다.",
+  },
+  {
+    min: 3,
+    max: 5,
+    mood: "단서 확보",
+    line: "패턴이 보입니다. 이제 단순 감시가 아니라 유도와 차단을 시도할 수 있습니다.",
+    afterActionLine: "상대의 반응을 끌어냈습니다. 작전 선택지가 늘어납니다.",
+  },
+  {
+    min: 6,
+    max: 8,
+    mood: "침투",
+    line: "내부 회선에 걸렸습니다. 말 한마디보다 침묵 하나가 더 많은 정보를 줍니다.",
+    afterActionLine: "침투 기록이 안정화됐습니다. 다음 단계는 약점 확인입니다.",
+  },
+  {
+    min: 9,
+    max: 10,
+    mood: "약점 포착",
+    line: "대상의 핵심 약점이 드러났습니다. 이제는 추적이 아니라 선택의 문제입니다.",
+    afterActionLine: "결정적 단서를 확보했습니다. 작전 카드로 전환할 수 있습니다.",
+  },
+] as const;
+
+const DEFAULT_STORY_CHOICES: readonly FactionStoryChoice[] = [
+  {
+    id: "greet",
+    label: "조심스럽게 안부를 묻는다",
+    tone: "SOFT",
+    prompt: "상대의 현재 분위기를 살피며 대화를 연다.",
+    response: "형식적인 인사였지만, 회선의 긴장이 조금 낮아졌습니다. 상대는 다음 말을 기다립니다.",
+    effectLabel: "분위기 확인",
+  },
+  {
+    id: "share-field-note",
+    label: "최근 작전 이야기를 꺼낸다",
+    tone: "FIELD",
+    prompt: "현장에서 확인한 단서와 위험을 먼저 공유한다.",
+    response: "상대가 보고서보다 현장 묘사에 더 오래 반응합니다. 신뢰를 쌓을 실마리가 보입니다.",
+    effectLabel: "신뢰 반응",
+  },
+  {
+    id: "personal-concern",
+    label: "개인적인 배려를 건넨다",
+    tone: "PERSONAL",
+    prompt: "일이 아니라 사람을 향한 말로 거리를 좁힌다.",
+    response: "잠깐의 침묵 뒤, 상대의 말투가 부드러워집니다. 이제 단순 업무 회선은 아닌 듯합니다.",
+    effectLabel: "우호 3+ 대화",
+    minimumFavorability: 3,
+  },
+  {
+    id: "quiet-promise",
+    label: "다음 도움을 약속한다",
+    tone: "COMMIT",
+    prompt: "말뿐인 협조가 아니라 다음 행동을 약속한다.",
+    response: "상대가 당신의 약속을 따로 기록합니다. 깊은 의뢰를 맡길지 검토하는 눈치입니다.",
+    effectLabel: "우호 6+ 대화",
+    minimumFavorability: 6,
+  },
+] as const;
+
+const HOSTILE_STORY_CHOICES: readonly FactionStoryChoice[] = [
+  {
+    id: "listen-signal",
+    label: "신호를 조용히 듣는다",
+    tone: "SCAN",
+    prompt: "말을 걸지 않고 잡음과 반복 패턴을 분석한다.",
+    response: "신호의 끝에 같은 리듬이 반복됩니다. 누군가 의도적으로 흔적을 남긴 듯합니다.",
+    effectLabel: "패턴 확인",
+  },
+  {
+    id: "bait-phrase",
+    label: "미끼 문장을 흘린다",
+    tone: "BAIT",
+    prompt: "상대가 반응할 만한 단어를 회선에 섞는다.",
+    response: "짧은 반응이 돌아왔습니다. 상대는 대화를 피했지만, 위치를 완전히 숨기지는 못했습니다.",
+    effectLabel: "반응 유도",
+  },
+  {
+    id: "shadow-contact",
+    label: "위장 접촉을 시도한다",
+    tone: "COVER",
+    prompt: "아군 신분을 드러내지 않은 채 접근 경로를 만든다.",
+    response: "가짜 신분이 1차 검문을 통과했습니다. 아직은 말보다 침묵이 유리합니다.",
+    effectLabel: "우호 3+ 침투",
+    minimumFavorability: 3,
+  },
+  {
+    id: "pressure-point",
+    label: "약점을 찌르는 질문을 던진다",
+    tone: "PRESS",
+    prompt: "이미 확보한 단서를 이용해 상대의 균열을 시험한다.",
+    response: "상대의 응답이 한 박자 늦었습니다. 핵심 약점에 닿은 것이 분명합니다.",
+    effectLabel: "우호 6+ 압박",
+    minimumFavorability: 6,
+  },
+] as const;
+
 const DEFAULT_SCENE: FactionContactScene = {
   operatorName: "사무국 조율자",
   operatorRole: "NOVUS ORDO RELAY",
@@ -142,6 +326,8 @@ const DEFAULT_SCENE: FactionContactScene = {
   successLine: "기록이 갱신되었습니다. 다음 신호를 대기합니다.",
   lockedLine: "관계 단계가 부족합니다. 다른 접선부터 진행하십시오.",
   sceneTone: "novus",
+  dialogue: DEFAULT_DIALOGUE,
+  storyChoices: DEFAULT_STORY_CHOICES,
 };
 
 function scene(input: Partial<FactionContactScene>): FactionContactScene {
@@ -353,6 +539,8 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       successLine: "차단 기록이 갱신되었습니다. 다음 의식 신호를 감시합니다.",
       lockedLine: "단서가 부족합니다. 기본 추적부터 진행하십시오.",
       sceneTone: "hostile",
+      dialogue: HOSTILE_DIALOGUE,
+      storyChoices: HOSTILE_STORY_CHOICES,
     }),
     actions: [
       {
@@ -392,6 +580,8 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       successLine: "연구 추적 파일이 갱신되었습니다.",
       lockedLine: "검증된 단서가 부족합니다. 관측 기록부터 확보하십시오.",
       sceneTone: "hostile",
+      dialogue: HOSTILE_DIALOGUE,
+      storyChoices: HOSTILE_STORY_CHOICES,
     }),
     actions: [
       {
@@ -513,6 +703,8 @@ export function getFactionGameProfile(
         successLine: "통제 기록이 갱신되었습니다.",
         lockedLine: "추적 근거가 부족합니다. 기본 감시부터 진행하십시오.",
         sceneTone: "hostile",
+        dialogue: HOSTILE_DIALOGUE,
+        storyChoices: HOSTILE_STORY_CHOICES,
       }),
       benefits: HOSTILE_BENEFITS,
     };

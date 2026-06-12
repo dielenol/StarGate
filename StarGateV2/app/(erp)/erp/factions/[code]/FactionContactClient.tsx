@@ -20,8 +20,10 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
 import type {
   FactionActionPreview,
+  FactionDialogueLine,
   FactionGameProfile,
   FactionQuestPreview,
+  FactionStoryChoice,
 } from "../_game";
 import styles from "./page.module.css";
 
@@ -71,7 +73,7 @@ interface SerializedFactionQuestProgress {
 
 interface ContactSelection {
   id: string;
-  kind: "action" | "support" | "quest";
+  kind: "talk" | "action" | "support" | "quest";
   channel: string;
   label: string;
   detail: string;
@@ -149,6 +151,8 @@ function activityTypeLabel(kind: FactionActivityKind) {
 
 function selectionKindLabel(kind: ContactSelection["kind"]) {
   switch (kind) {
+    case "talk":
+      return "대화";
     case "action":
       return "접선";
     case "support":
@@ -156,6 +160,30 @@ function selectionKindLabel(kind: ContactSelection["kind"]) {
     case "quest":
       return "의뢰";
   }
+}
+
+function dialogueForFavorability(
+  lines: readonly FactionDialogueLine[],
+  favorability: number,
+) {
+  return (
+    lines.find(
+      (line) => favorability >= line.min && favorability <= line.max,
+    ) ?? lines[0]
+  );
+}
+
+function storyChoiceSelection(choice: FactionStoryChoice): ContactSelection {
+  return {
+    id: choice.id,
+    kind: "talk",
+    channel: choice.tone,
+    label: choice.label,
+    detail: choice.response,
+    delta: 0,
+    minimumFavorability: choice.minimumFavorability,
+    effectLabel: choice.effectLabel,
+  };
 }
 
 function actionSelection(action: FactionActionPreview): ContactSelection {
@@ -210,7 +238,7 @@ export default function FactionContactClient({
   const [logs, setLogs] = useState(initialLogs);
   const [questProgress, setQuestProgress] = useState(initialQuestProgress);
   const [selected, setSelected] = useState<ContactSelection>(() =>
-    actionSelection(profile.actions[0]),
+    storyChoiceSelection(profile.scene.storyChoices[0]),
   );
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -244,14 +272,21 @@ export default function FactionContactClient({
     currentFavorability + selected.delta,
   );
   const cappedDelta = projectedFavorability - currentFavorability;
-  const questLocked =
-    selected.kind === "quest" &&
+  const activeDialogue = dialogueForFavorability(
+    profile.scene.dialogue,
+    currentFavorability,
+  );
+  const selectionLocked =
     currentFavorability < (selected.minimumFavorability ?? FAVORABILITY_MIN);
+  const questLocked =
+    selected.kind === "quest" && selectionLocked;
+  const talkLocked = selected.kind === "talk" && selectionLocked;
   const questCompleted =
     selected.kind === "quest" && selected.questStatus === "COMPLETED";
   const canApply =
     canEditFavorability &&
     !isSaving &&
+    selected.kind !== "talk" &&
     (selected.kind === "quest"
       ? !questLocked && !questCompleted
       : cappedDelta !== 0 && selected.delta > 0);
@@ -260,18 +295,23 @@ export default function FactionContactClient({
       ? `url(${JSON.stringify(profile.scene.sceneBackgroundUrl)})`
       : "none",
   } as CSSProperties;
-  const dialogueLine = questLocked
+  const baseDialogueLine =
+    selected.kind === "talk" ? activeDialogue.line : activeDialogue.afterActionLine;
+  const dialogueLine = talkLocked || questLocked
     ? profile.scene.lockedLine
     : selected.kind === "quest" && selected.questStatus === "COMPLETED"
       ? profile.scene.successLine
       : selected.detail;
   const resultLabel = questCompleted
     ? "완료"
-    : questLocked
+    : questLocked || talkLocked
       ? "잠김"
       : selected.effectLabel ?? formatDelta(cappedDelta);
 
   function getActivityType(): FactionActivityKind {
+    if (selected.kind === "talk") {
+      throw new Error("대화 선택지는 활동 로그로 반영하지 않습니다.");
+    }
     if (selected.kind === "support") return "SUPPORT";
     if (selected.kind === "quest") {
       return selected.questStatus === "ACTIVE"
@@ -283,6 +323,7 @@ export default function FactionContactClient({
 
   function getApplyLabel() {
     if (isSaving) return "실행 중";
+    if (selected.kind === "talk") return "대화 선택됨";
     if (selected.kind === "support") return "후원 실행";
     if (selected.kind === "quest") {
       if (questCompleted) return "완료됨";
@@ -404,18 +445,38 @@ export default function FactionContactClient({
             <div className={styles.sceneDialogue}>
               <div className={styles.sceneDialogue__top}>
                 <span>{profile.scene.operatorCodename}</span>
-                <b>{selectionKindLabel(selected.kind)}</b>
+                <b>{activeDialogue.mood}</b>
               </div>
-              <strong className={styles.sceneDialogue__title}>
-                {selected.channel} · {selected.label}
+              <div className={styles.affectionRail}>
+                <span>RELATION</span>
+                <div className={styles.affectionRail__bar} aria-hidden>
+                  <i
+                    style={{
+                      width: `${((currentFavorability + 10) / 20) * 100}%`,
+                    }}
+                  />
+                </div>
+                <b>{currentFavorability} / 10</b>
+              </div>
+              <strong className={styles.sceneDialogue__speaker}>
+                {profile.scene.operatorName}
               </strong>
-              <p className={styles.sceneDialogue__line}>{dialogueLine}</p>
+              <p className={styles.sceneDialogue__line}>{baseDialogueLine}</p>
+              <div className={styles.sceneDialogue__reply}>
+                <span>
+                  {selectionKindLabel(selected.kind)} · {selected.channel}
+                </span>
+                <strong>{selected.label}</strong>
+                <p>{dialogueLine}</p>
+              </div>
               <p className={styles.sceneDialogue__sub}>{profile.contactLine}</p>
 
               <div className={styles.sceneDialogue__meta}>
                 <span>현재 {currentFavorability}</span>
                 <span>
-                  예상 {projectedFavorability} ({formatDelta(cappedDelta)})
+                  {selected.kind === "talk"
+                    ? "대화 선택"
+                    : `예상 ${projectedFavorability} (${formatDelta(cappedDelta)})`}
                 </span>
                 <span>{resultLabel}</span>
                 {selected.cost ? (
@@ -426,6 +487,42 @@ export default function FactionContactClient({
           </div>
 
           <div className={styles.choiceDeck}>
+            <div className={styles.choiceGroup}>
+              <div className={styles.choiceGroup__head}>
+                <span>TALK</span>
+                <b>{profile.scene.idleLine}</b>
+              </div>
+              <div className={styles.talkGrid}>
+                {profile.scene.storyChoices.map((choice) => {
+                  const active =
+                    selected.kind === "talk" && selected.id === choice.id;
+                  const locked =
+                    currentFavorability <
+                    (choice.minimumFavorability ?? FAVORABILITY_MIN);
+                  return (
+                    <button
+                      key={choice.id}
+                      type="button"
+                      className={[
+                        styles.talkCard,
+                        active ? styles["talkCard--active"] : "",
+                        locked ? styles["talkCard--locked"] : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => setSelected(storyChoiceSelection(choice))}
+                      aria-pressed={active}
+                    >
+                      <span>{choice.tone}</span>
+                      <strong>{choice.label}</strong>
+                      <p>{locked ? profile.scene.lockedLine : choice.prompt}</p>
+                      <small>{choice.effectLabel}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className={styles.choiceGroup}>
               <div className={styles.choiceGroup__head}>
                 <span>CONTACT</span>
