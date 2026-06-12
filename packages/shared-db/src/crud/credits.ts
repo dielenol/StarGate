@@ -181,7 +181,8 @@ export async function sumLatestBalancesByCharacterIds(
       items: { id: string; balance: number }[];
     }>([
       { $match: { characterId: { $in: characterIds } } },
-      { $sort: { createdAt: -1 } },
+      // createdAt 동률(동일 ms 배치 적재) 시 _id 로 tie-break — $first 결정론 보장.
+      { $sort: { createdAt: -1, _id: -1 } },
       {
         $group: {
           _id: "$characterId",
@@ -234,7 +235,8 @@ export async function getLatestCreditSnapshotsByCharacterIds(
   const rows = await col
     .aggregate<{ _id: string; balance: number; lastTxAt: Date }>([
       { $match: { characterId: { $in: characterIds } } },
-      { $sort: { createdAt: -1 } },
+      // createdAt 동률 시 _id tie-break — sumLatestBalancesByCharacterIds 와 동일 규칙.
+      { $sort: { createdAt: -1, _id: -1 } },
       {
         $group: {
           _id: "$characterId",

@@ -95,6 +95,16 @@ export function useNpcDialogue<TMood extends string>(
   const hasMainCharacterRef = useRef(hasMainCharacter);
   isOpenRef.current = isOpen;
   hasMainCharacterRef.current = hasMainCharacter;
+  // 진입 SFX/웰컴 설정도 ref 동기화 — SFX effect 가 isOpen 에만 반응하면서
+  // (제네릭 인터페이스상 동적 값이 올 수 있는) 최신 config 를 stale 없이 사용.
+  const entrySfxSrcRef = useRef(entrySfxSrc);
+  const entrySfxVolumeRef = useRef(entrySfxVolume);
+  const welcomeMoodRef = useRef(welcomeMood);
+  const welcomeLineRef = useRef(welcomeLine);
+  entrySfxSrcRef.current = entrySfxSrc;
+  entrySfxVolumeRef.current = entrySfxVolume;
+  welcomeMoodRef.current = welcomeMood;
+  welcomeLineRef.current = welcomeLine;
 
   const clearIdleTimer = useCallback(() => {
     if (idleTimerRef.current) {
@@ -224,8 +234,8 @@ export function useNpcDialogue<TMood extends string>(
 
       entrySfxPendingRef.current = true;
       const sequenceBeforePlay = lineSequenceRef.current;
-      audio ??= new Audio(entrySfxSrc);
-      audio.volume = entrySfxVolume;
+      audio ??= new Audio(entrySfxSrcRef.current);
+      audio.volume = entrySfxVolumeRef.current;
       audio.currentTime = 0;
 
       try {
@@ -234,7 +244,9 @@ export function useNpcDialogue<TMood extends string>(
         dialogueReadyRef.current = true;
         void dialogueEngineRef.current?.prime();
         if (lineSequenceRef.current === sequenceBeforePlay) {
-          playLineRef.current(welcomeMood, welcomeLine, { sound: true });
+          playLineRef.current(welcomeMoodRef.current, welcomeLineRef.current, {
+            sound: true,
+          });
         }
         window.removeEventListener("pointerdown", playOnGesture);
         window.removeEventListener("keydown", playOnGesture);
@@ -268,7 +280,6 @@ export function useNpcDialogue<TMood extends string>(
         audio = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const showLineImmediately = useCallback(
