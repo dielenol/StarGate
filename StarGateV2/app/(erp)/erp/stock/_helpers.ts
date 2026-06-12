@@ -10,6 +10,8 @@ import {
   type StocksErrorCode,
 } from "@/hooks/queries/useStocksQuery";
 
+import { describeApiError } from "@/lib/api/describe-error";
+
 /* ── 방향 ── */
 
 export type Direction = "up" | "down" | "flat";
@@ -53,10 +55,5 @@ export const ERROR_MESSAGE: Record<StocksErrorCode, string> = {
 };
 
 export function describeStocksError(err: unknown): string {
-  if (err instanceof StocksApiError) {
-    if (err.code) return ERROR_MESSAGE[err.code] ?? err.message;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return "알 수 없는 오류가 발생했습니다.";
+  return describeApiError(err, StocksApiError, ERROR_MESSAGE);
 }

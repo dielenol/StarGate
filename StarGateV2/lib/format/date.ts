@@ -6,7 +6,9 @@ const NULL_PLACEHOLDER = "—";
 
 function toDate(d: DateInput): Date | null {
   if (d == null) return null;
-  return typeof d === "string" ? new Date(d) : d;
+  const date = typeof d === "string" ? new Date(d) : d;
+  // Invalid Date 가 "Invalid Date" 텍스트로 노출되지 않도록 placeholder 로 통일.
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export function formatDate(d: DateInput, fmt: DateFormat = "short"): string {

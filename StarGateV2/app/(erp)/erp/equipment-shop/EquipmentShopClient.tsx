@@ -25,6 +25,8 @@ import {
   DialogueBeepEngine,
   type DialogueBeepOptions,
 } from "@/lib/audio/dialogue-beep-engine";
+import { describeApiError } from "@/lib/api/describe-error";
+import { formatCredits } from "@/lib/format/credit";
 
 import ShopItemIcon from "../shop/ShopItemIcon";
 
@@ -157,16 +159,7 @@ interface Props {
 }
 
 function describeEquipmentShopError(err: unknown): string {
-  if (err instanceof EquipmentShopApiError) {
-    if (err.code) return ERROR_MESSAGE[err.code] ?? err.message;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return "알 수 없는 오류가 발생했습니다.";
-}
-
-function formatCredits(value: number): string {
-  return `¤ ${value.toLocaleString("ko-KR")}`;
+  return describeApiError(err, EquipmentShopApiError, ERROR_MESSAGE);
 }
 
 export default function EquipmentShopClient({

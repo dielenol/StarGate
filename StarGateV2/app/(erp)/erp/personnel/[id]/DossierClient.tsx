@@ -43,6 +43,7 @@ import {
   isInternalOrgCode,
 } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { formatDate as formatLibDate } from "@/lib/format/date";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
@@ -82,15 +83,9 @@ function getInitial(c: Character): string {
   return source.charAt(0).toUpperCase() || "?";
 }
 
+/** dossier 날짜 표기 — 공통 formatDate 의 "numeric"(yyyy.mm.dd) 포맷 고정. */
 function formatDate(value: string | Date | undefined | null): string {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
+  return formatLibDate(value, "numeric");
 }
 
 /**

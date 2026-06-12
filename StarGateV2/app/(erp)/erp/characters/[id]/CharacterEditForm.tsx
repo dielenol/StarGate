@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type {
   Ability,
-  AbilitySlot,
   AgentCharacter,
   CharacterTier,
   Equipment,
@@ -21,11 +21,16 @@ import {
   useCharacterEditQuota,
 } from "@/hooks/queries/useCharacterEditQuota";
 
-import DiffPreviewModal, {
-  type DiffEntry,
-} from "./DiffPreviewModal";
+import type { DiffEntry } from "./DiffPreviewModal";
+
+import { emptyEquipment, initAbilities, stringToTags } from "../_form-utils";
 
 import styles from "./CharacterEditForm.module.css";
+
+/** diff-match-patch(~14KB)를 끌고 오는 프리뷰 모달 — 저장 프리뷰를 열 때만 로드. */
+const DiffPreviewModal = dynamic(() => import("./DiffPreviewModal"), {
+  ssr: false,
+});
 
 /**
  * 'admin' = V+ 모든 필드 편집 가능, 'player' = 본인 캐릭터의 안전한 lore/play 자가편집 필드.
@@ -48,20 +53,6 @@ interface Props {
   onCancel: () => void;
   onSaved: () => void;
 }
-
-const ABILITY_SLOTS: readonly AbilitySlot[] = [
-  "C1",
-  "C2",
-  "C3",
-  "C4",
-  "C5",
-  "P",
-  "A1",
-  "A2",
-  "A3",
-  "A4",
-  "A5",
-] as const;
 
 /**
  * 플레이어 자가편집에서 허용되는 lore 필드 (sub-document key 명, prefix 없음).
@@ -266,27 +257,9 @@ const ADMIN_DIFF_FIELDS: ReadonlyArray<string> = [
 
 /* ── Default factories ── */
 
-function emptyEquipment(): Equipment {
-  return { name: "", price: "", damage: "", ammo: "", grip: "", description: "" };
-}
-
-/** 11-슬롯 ability 초기화. 기존 ability 가 슬롯에 없으면 빈 슬롯으로 채움. */
-function initAbilities(existing: Ability[]): Ability[] {
-  const map = new Map(existing.map((a) => [a.slot, a]));
-  return ABILITY_SLOTS.map(
-    (slot) => map.get(slot) ?? { slot, name: "" },
-  );
-}
-
-/** 콤마/공백 구분 string ↔ string[] 변환 */
+/** string[] → 콤마 구분 문자열 (입력 표시용 — 공유 `stringToTags` 의 역방향). */
 function tagsToString(arr: string[] | undefined): string {
   return (arr ?? []).join(", ");
-}
-function stringToTags(s: string): string[] {
-  return s
-    .split(/[,\n]/)
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0);
 }
 
 function emptyToUndefined(value: string): string | undefined {

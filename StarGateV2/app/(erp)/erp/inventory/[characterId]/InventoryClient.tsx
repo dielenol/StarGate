@@ -17,6 +17,8 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
 import ShopItemIcon from "../../shop/ShopItemIcon";
 
+import { formatDate } from "@/lib/format/date";
+
 import styles from "./page.module.css";
 
 export interface InventoryClientEntry {
@@ -77,15 +79,6 @@ function matchesTab(
     );
   }
   return false;
-}
-
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  return date.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
 }
 
 function categoryLabel(category: ItemCategory | null): string {
@@ -246,7 +239,7 @@ export default function InventoryClient({
                     <div className={styles.slot__meta}>
                       <span>{categoryLabel(entry.category)}</span>
                       <span className={styles.mono}>
-                        {formatDate(entry.acquiredAt)}
+                        {formatDate(entry.acquiredAt, "numeric")}
                       </span>
                     </div>
                   ) : null}

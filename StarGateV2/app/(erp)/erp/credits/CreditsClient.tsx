@@ -28,6 +28,7 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { CREDIT_TYPE_META } from "@/lib/credit-meta";
+import { formatCredits } from "@/lib/format/credit";
 import { formatDateTime } from "@/lib/format/date";
 
 import styles from "./page.module.css";
@@ -87,9 +88,6 @@ const SORT_LABEL: Record<SortMode, string> = {
   AMOUNT_ASC: "금액 작은 순",
 };
 
-function formatCredit(value: number): string {
-  return `¤ ${value.toLocaleString()}`;
-}
 
 function formatSignedCredit(value: number): string {
   const sign = value > 0 ? "+" : "";
@@ -425,7 +423,7 @@ export default function CreditsClient({
           <PanelTitle right={<span className={styles.mono}>지갑</span>}>
             <PanelLabel icon={IconCredit}>현재 잔액</PanelLabel>
           </PanelTitle>
-          <div className={styles.balanceValue}>{formatCredit(balance)}</div>
+          <div className={styles.balanceValue}>{formatCredits(balance)}</div>
           <div className={styles.identityLine}>
             <span>
               {character

@@ -5,7 +5,6 @@ import { useState } from "react";
 
 import type {
   Ability,
-  AbilitySlot,
   AgentCharacter,
   AgentLevel,
   Equipment,
@@ -27,38 +26,9 @@ import Input from "@/components/ui/Input/Input";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Select from "@/components/ui/Select/Select";
 
+import { emptyEquipment, initAbilities, stringToTags } from "../_form-utils";
+
 import styles from "../[id]/CharacterEditForm.module.css";
-
-/* ── Default factories ── */
-
-const ABILITY_SLOTS: readonly AbilitySlot[] = [
-  "C1",
-  "C2",
-  "C3",
-  "C4",
-  "C5",
-  "P",
-  "A1",
-  "A2",
-  "A3",
-  "A4",
-  "A5",
-] as const;
-
-function emptyEquipment(): Equipment {
-  return { name: "", price: "", damage: "", ammo: "", grip: "", description: "" };
-}
-
-function initAbilities(): Ability[] {
-  return ABILITY_SLOTS.map((slot) => ({ slot, name: "" }));
-}
-
-function stringToTags(s: string): string[] {
-  return s
-    .split(/[,\n]/)
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0);
-}
 
 /**
  * `/erp/characters/new` — AGENT 신규 생성 전용 폼.
