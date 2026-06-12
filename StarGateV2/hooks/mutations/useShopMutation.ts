@@ -161,6 +161,8 @@ export function useCheckoutShopCart() {
 }
 
 export function useRequestShopReorder() {
+  const queryClient = useQueryClient();
+
   return useMutation<ReorderResponse, ShopApiError, ReorderInput>({
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/shop/reorder-request", {
@@ -170,6 +172,9 @@ export function useRequestShopReorder() {
       });
       if (!res.ok) await throwShopError(res);
       return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 }
@@ -188,8 +193,9 @@ export function useConsumeShopItem() {
       return res.json();
     },
     onSuccess: () => {
-      // 보유 인벤만 변동.
+      // 보유 인벤 + 알림 변동.
       queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 }

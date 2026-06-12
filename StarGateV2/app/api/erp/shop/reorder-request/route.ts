@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getStock } from "@/lib/db/shop";
+import { notifyUser } from "@/lib/notifications/events";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 
@@ -120,6 +121,18 @@ export async function POST(request: Request) {
     }
     throw error;
   }
+
+  await notifyUser({
+    userId: session.user.id,
+    type: "SYSTEM",
+    title: "편의점 발주 요청이 접수되었습니다",
+    message: [
+      mainChar?.codename ? `${mainChar.codename} · ${item.name}` : item.name,
+      "품절 상품 발주 요청",
+      "운영자 확인 대기",
+    ].join(" · "),
+    link: "/erp/shop",
+  });
 
   return NextResponse.json(
     {

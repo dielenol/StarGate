@@ -11,6 +11,7 @@ import {
   listCharacterInventory,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
+import { notifyUser } from "@/lib/notifications/events";
 
 export async function GET(
   _request: Request,
@@ -108,6 +109,19 @@ export async function POST(
       acquiredAt: new Date(),
       note: body.note ?? "",
     });
+
+    if (character.ownerId) {
+      await notifyUser({
+        userId: character.ownerId,
+        type: "SYSTEM",
+        title: "아이템이 지급되었습니다",
+        message: [
+          `${character.codename} · ${masterItem.name} x${body.quantity}`,
+          `지급자 ${session.user.displayName}`,
+        ].join(" · "),
+        link: `/erp/inventory/${characterId}`,
+      });
+    }
 
     return NextResponse.json({ entry }, { status: 201 });
   } catch (err) {

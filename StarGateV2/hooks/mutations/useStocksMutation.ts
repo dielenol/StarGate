@@ -193,6 +193,7 @@ export function useSellStock() {
     onSuccess: () => {
       invalidateTradeQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
     onError: (err) => {
       if (err.code && REFUND_AFFECTING_CODES.has(err.code)) {

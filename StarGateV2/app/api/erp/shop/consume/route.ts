@@ -17,6 +17,7 @@ import {
   findMasterItemBySlug,
   removeFromInventory,
 } from "@/lib/db/inventory";
+import { notifyUser } from "@/lib/notifications/events";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 
 /* ── 상수 ── */
@@ -129,6 +130,18 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+
+  await notifyUser({
+    userId: mainChar.ownerId ?? session.user.id,
+    type: "CONSUMABLE_USED",
+    title: `${masterItem.name} 사용이 기록되었습니다`,
+    message: [
+      `${mainChar.codename} · ${masterItem.name} x${quantity}`,
+      `잔여 ${remaining}`,
+      "ERP 편의점",
+    ].join(" · "),
+    link: `/erp/inventory/${characterId}`,
+  });
 
   return NextResponse.json({ remaining });
 }
