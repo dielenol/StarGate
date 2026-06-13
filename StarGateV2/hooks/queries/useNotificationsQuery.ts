@@ -6,6 +6,9 @@ export const notificationKeys = {
   all: ["notifications"] as const,
 };
 
+const NOTIFICATION_STALE_TIME_MS = 30 * 1000;
+const NOTIFICATION_REFETCH_INTERVAL_MS = 60 * 1000;
+
 async function fetchNotifications(): Promise<Notification[]> {
   const res = await fetch("/api/erp/notifications", { cache: "no-store" });
   if (!res.ok) throw new Error("알림을 불러올 수 없습니다.");
@@ -19,7 +22,10 @@ export function useNotifications(options?: {
   return useQuery({
     queryKey: notificationKeys.all,
     queryFn: fetchNotifications,
-    staleTime: 2 * 60 * 1000,
+    staleTime: NOTIFICATION_STALE_TIME_MS,
+    refetchInterval: NOTIFICATION_REFETCH_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     initialData: options?.initialData,
   });
 }

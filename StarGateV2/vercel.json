@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/shop/refresh",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/sessions/reminders",
+      "schedule": "0 * * * *"
     }
   ]
 }
