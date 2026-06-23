@@ -1,10 +1,11 @@
 /**
  * Validator 검증 — personnel 마스킹 (영역 D)
  *
- * 시나리오:
- *   D-1: clearance G 미만 (J/U) → lore.name/nameNative/nickname/nameEn 마스킹
- *   D-2: clearance H 미만 (G/J/U) → lore.appearance/personality/background/quote 마스킹
- *   D-3: clearance M 미만 (H/G/J/U) → AGENT play 의 equipment/abilities 마스킹
+ * 시나리오 (2026-05 등급 재조정 + 실명 열람 정책 기준):
+ *   D-1: 실명 그룹(name/nameNative/nameEn)은 G 미만 (J/U) → REDACTED.
+ *        identity 그룹(nickname/gender/age/height/weight/이미지)은 최소 등급 U — 전원 노출
+ *   D-2: profile 그룹(appearance/personality/background/quote/roleDetail/notes)은 J 미만 (U) → REDACTED
+ *   D-3: AGENT play — combatStats 는 G 미만 (J/U) → 0, abilities 는 H 미만 (G/J/U) → 마스킹
  *   D-5: GM → 마스킹 없음 (모든 필드 보존)
  *   D-6: AGENT/NPC 양쪽에서 ownerId 가 V+ 만 노출되는지
  *
@@ -12,7 +13,7 @@
  *   D-7 (Strict #6): redactLore 가 원본에 부재한 optional 필드를 REDACTED 로 채우는 부작용
  *
  * 실행:
- *   cd StarGateV2 && node --experimental-strip-types --test lib/__tests__/personnel-redaction.test.mjs
+ *   cd StarGateV2 && node --test lib/__tests__/personnel-redaction.test.mjs
  */
 
 import { test } from "node:test";
@@ -105,37 +106,38 @@ function npcChar(overrides = {}) {
   };
 }
 
-/* ── D-1: J/U 사용자 → identity 그룹 마스킹 ── */
+/* ── D-1: 실명 그룹 — G 미만(J/U) 마스킹, identity 그룹은 U 부터 노출 ── */
 
-test("D-1: clearance U → lore.name/nameNative/nickname/nameEn 모두 REDACTED", () => {
+test("D-1: clearance U → 실명(name/nameNative/nameEn)만 REDACTED, identity 그룹은 노출", () => {
   const filtered = filterCharacterByClearance(agentChar(), "U");
   assert.equal(filtered.lore.name, REDACTED);
   assert.equal(filtered.lore.nameNative, REDACTED);
-  assert.equal(filtered.lore.nickname, REDACTED);
   assert.equal(filtered.lore.nameEn, REDACTED);
-  assert.equal(filtered.lore.gender, REDACTED);
-  assert.equal(filtered.lore.age, REDACTED);
-  assert.equal(filtered.lore.height, REDACTED);
-  assert.equal(filtered.lore.weight, REDACTED);
-  assert.equal(filtered.lore.mainImage, "", "이미지 마스킹은 빈 문자열");
+  // identity 그룹은 최소 등급이 U 라 전원 노출 (nickname 은 실명 그룹이 아님)
+  assert.equal(filtered.lore.nickname, "JJ");
+  assert.equal(filtered.lore.gender, "male");
+  assert.equal(filtered.lore.age, "30");
+  assert.equal(filtered.lore.height, "180");
+  assert.equal(filtered.lore.weight, "75");
+  assert.equal(filtered.lore.mainImage, "/m.png");
 });
 
-test("D-1b: clearance J → identity 그룹 동일 마스킹", () => {
+test("D-1b: clearance J → 실명 동일 마스킹 (real-name 은 G 부터)", () => {
   const filtered = filterCharacterByClearance(agentChar(), "J");
   assert.equal(filtered.lore.name, REDACTED);
 });
 
-test("D-1c: clearance G → identity 노출 (G 가 cutoff)", () => {
+test("D-1c: clearance G → 실명 노출 (G 가 real-name cutoff)", () => {
   const filtered = filterCharacterByClearance(agentChar(), "G");
-  assert.equal(filtered.lore.name, "John", "G 는 identity 그룹 통과");
-  // profile 그룹은 H 부터라 G 는 미달
-  assert.equal(filtered.lore.appearance, REDACTED);
+  assert.equal(filtered.lore.name, "John", "G 는 실명 통과");
+  // profile 그룹은 J 부터라 G 도 통과
+  assert.equal(filtered.lore.appearance, "tall");
 });
 
-/* ── D-2: G/J/U → profile 그룹 마스킹 ── */
+/* ── D-2: U → profile 그룹 마스킹 (J 부터 노출) ── */
 
-test("D-2: clearance G → appearance/personality/background/quote 마스킹 (profile 미달)", () => {
-  const filtered = filterCharacterByClearance(agentChar(), "G");
+test("D-2: clearance U → appearance/personality/background/quote 마스킹 (profile 미달)", () => {
+  const filtered = filterCharacterByClearance(agentChar(), "U");
   assert.equal(filtered.lore.appearance, REDACTED);
   assert.equal(filtered.lore.personality, REDACTED);
   assert.equal(filtered.lore.background, REDACTED);
@@ -144,35 +146,35 @@ test("D-2: clearance G → appearance/personality/background/quote 마스킹 (pr
   assert.equal(filtered.lore.notes, REDACTED);
 });
 
-test("D-2b: clearance H → profile 노출", () => {
-  const filtered = filterCharacterByClearance(agentChar(), "H");
+test("D-2b: clearance J → profile 노출 (J 가 cutoff)", () => {
+  const filtered = filterCharacterByClearance(agentChar(), "J");
   assert.equal(filtered.lore.appearance, "tall");
   assert.equal(filtered.lore.background, "ex-soldier");
 });
 
-/* ── D-3: H/G/J/U → AGENT play 의 abilities/equipment 마스킹 ── */
+/* ── D-3: AGENT play — combatStats 는 G 미만 0, abilities 는 H 미만 마스킹 ── */
 
-test("D-3: clearance H → play.equipment/abilities/credit/abilityType 모두 마스킹 (abilities 미달)", () => {
-  const filtered = filterCharacterByClearance(agentChar(), "H");
+test("D-3: clearance G → play.equipment/abilities/credit/abilityType 모두 마스킹 (abilities 미달)", () => {
+  const filtered = filterCharacterByClearance(agentChar(), "G");
   assert.equal(filtered.play.abilityType, REDACTED);
   assert.equal(filtered.play.credit, REDACTED);
   assert.deepEqual(filtered.play.weaponTraining, []);
   assert.deepEqual(filtered.play.skillTraining, []);
   assert.deepEqual(filtered.play.equipment, []);
   assert.deepEqual(filtered.play.abilities, []);
-  // combatStats 는 H 통과
+  // combatStats 는 G 부터 통과
   assert.equal(filtered.play.hp, 80);
 });
 
-test("D-3b: clearance M → play 모두 노출", () => {
-  const filtered = filterCharacterByClearance(agentChar(), "M");
+test("D-3b: clearance H → play 모두 노출 (H 가 abilities cutoff)", () => {
+  const filtered = filterCharacterByClearance(agentChar(), "H");
   assert.equal(filtered.play.abilityType, "강화");
   assert.equal(filtered.play.credit, "1000");
   assert.deepEqual(filtered.play.equipment, [{ name: "Pistol" }]);
 });
 
-test("D-3c: clearance G → combatStats(hp/san/def/atk/Delta) 모두 0 마스킹", () => {
-  const filtered = filterCharacterByClearance(agentChar(), "G");
+test("D-3c: clearance J → combatStats(hp/san/def/atk/Delta) 모두 0 마스킹 (combatStats 미달)", () => {
+  const filtered = filterCharacterByClearance(agentChar(), "J");
   assert.equal(filtered.play.hp, 0);
   assert.equal(filtered.play.san, 0);
   assert.equal(filtered.play.def, 0);
@@ -212,7 +214,7 @@ test("D-7: redactLore — 원본 optional 필드 undefined 면 결과도 undefin
   // NPC 처럼 nameNative 가 없는 캐릭터를 U 사용자가 봤을 때
   const npcWithoutNative = npcChar(); // nameNative/nickname/nameEn/roleDetail/notes 없음
   const filtered = filterCharacterByClearance(npcWithoutNative, "U");
-  // canIdentity=false 라도 원본 undefined 면 결과도 undefined.
+  // 실명/profile 미달이라도 원본 undefined 면 결과도 undefined.
   // "[CLASSIFIED]" 채움이 사라져 "필드 자체 부재" 와 "마스킹됨" 이 구분된다.
   assert.equal(
     filtered.lore.nameNative,
@@ -223,40 +225,49 @@ test("D-7: redactLore — 원본 optional 필드 undefined 면 결과도 undefin
   assert.equal(filtered.lore.nameEn, undefined);
   assert.equal(filtered.lore.roleDetail, undefined);
   assert.equal(filtered.lore.notes, undefined);
-  // 필수 필드는 그대로 REDACTED
+  // 실명은 그대로 REDACTED (U < G), identity 그룹은 U 부터 노출
   assert.equal(filtered.lore.name, REDACTED);
-  assert.equal(filtered.lore.gender, REDACTED);
+  assert.equal(filtered.lore.gender, "female");
 });
 
 test("D-7b: 인증된 GM 사용자 — optional 필드 부재 시 undefined 유지", () => {
   const npcWithoutNative = npcChar();
   const filtered = filterCharacterByClearance(npcWithoutNative, "GM");
-  // canIdentity=true 분기는 lore.nameNative 그대로 → undefined
+  // canRealName=true 분기는 lore.nameNative 그대로 → undefined
   assert.equal(filtered.lore.nameNative, undefined);
   assert.equal(filtered.lore.nickname, undefined);
   assert.equal(filtered.lore.nameEn, undefined);
 });
 
-test("D-7c: 원본에 optional 값 존재 + clearance 미달 → REDACTED 마스킹", () => {
+test("D-7c: 원본에 optional 값 존재 + 그룹 미달 → REDACTED 마스킹", () => {
   // AGENT 는 nameNative/nickname/nameEn/roleDetail/notes 모두 채워둠
   const filtered = filterCharacterByClearance(agentChar(), "U");
-  // 원본이 정의돼 있을 때만 REDACTED
+  // 원본이 정의돼 있고 그룹 미달일 때만 REDACTED — 실명(G 미만)/profile(J 미만)
   assert.equal(filtered.lore.nameNative, REDACTED);
-  assert.equal(filtered.lore.nickname, REDACTED);
   assert.equal(filtered.lore.nameEn, REDACTED);
   assert.equal(filtered.lore.roleDetail, REDACTED);
   assert.equal(filtered.lore.notes, REDACTED);
-  assert.equal(filtered.lore.posterImage, "");
+  // identity 그룹(U 부터)에 속한 optional 은 노출
+  assert.equal(filtered.lore.nickname, "JJ");
+  assert.equal(filtered.lore.posterImage, "/p.png");
 });
 
-test("D-7d: posterImage optional — 원본 부재 시 undefined, 존재 + 미달 시 빈 문자열", () => {
+test("D-7d: posterImage optional — 부재 시 undefined, identity 노출 시 원본, override 미달 시 빈 문자열", () => {
   // NPC 는 posterImage 부재
   const filteredNpc = filterCharacterByClearance(npcChar(), "U");
   assert.equal(filteredNpc.lore.posterImage, undefined, "원본 부재 → undefined");
 
-  // AGENT 는 posterImage 존재
+  // identity 기본 cutoff 가 U 라 default 정책에서는 전원에게 원본 경로 노출
   const filteredAgent = filterCharacterByClearance(agentChar(), "U");
-  assert.equal(filteredAgent.lore.posterImage, "", "원본 존재 + 미달 → 빈 문자열");
+  assert.equal(filteredAgent.lore.posterImage, "/p.png", "identity 노출 → 원본 경로");
+
+  // 빈 문자열 마스킹 분기는 clearanceOverrides 로 identity 를 상향했을 때만 도달
+  const overridden = filterCharacterByClearance(
+    agentChar({ clearanceOverrides: { identity: "G" } }),
+    "U",
+  );
+  assert.equal(overridden.lore.posterImage, "", "override 미달 → 빈 문자열");
+  assert.equal(overridden.lore.mainImage, "", "mainImage 도 동일 규칙");
 });
 
 /* ── D-8: NPC 의 play 가 마스킹 결과에 절대 포함되지 않음 ── */
@@ -281,11 +292,11 @@ test("D-9: filterCharacterForList — U 사용자: name 만 REDACTED, 나머지 
   assert.equal(filtered.lore.background, "ex-soldier");
 });
 
-test("D-9b: filterCharacterForList — G 사용자(identity 통과): 원본 그대로 반환", () => {
+test("D-9b: filterCharacterForList — G 사용자(실명 통과): 원본 그대로 반환", () => {
   const original = agentChar();
   const filtered = filterCharacterForList(original, "G");
-  // identity 통과 시 원본 그대로 returned (얕은 비교가 아닌 동일 reference)
-  assert.equal(filtered, original, "identity 통과 시 동일 reference 반환");
+  // 실명 통과 시 원본 그대로 returned (얕은 비교가 아닌 동일 reference)
+  assert.equal(filtered, original, "실명 통과 시 동일 reference 반환");
 });
 
 /* ── D-10: clearance 등급 함수 ── */
