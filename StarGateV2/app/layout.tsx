@@ -31,14 +31,10 @@ const metadataBase = process.env.NEXT_PUBLIC_SITE_URL
 const stripInjectedUserSelectScript = `
 (() => {
   const USER_SELECT_PATTERN = /(?:^|;)\\s*(?:-webkit-|-ms-)?user-select\\s*:/i;
-  const USER_SELECT_PROPERTIES = [
-    "user-select",
-    "-webkit-user-select",
-    "-ms-user-select",
-  ];
+  const USER_SELECT_DECLARATION = /(?:^|;)\\s*(?:-webkit-|-ms-)?user-select\\s*:[^;]*/gi;
 
   const stripElement = (element) => {
-    if (!(element instanceof Element) || !("style" in element)) {
+    if (!(element instanceof Element)) {
       return;
     }
 
@@ -47,12 +43,17 @@ const stripInjectedUserSelectScript = `
       return;
     }
 
-    USER_SELECT_PROPERTIES.forEach((property) => {
-      element.style.removeProperty(property);
-    });
+    // style.removeProperty() 는 남은 선언 전체를 CSSOM 형식("width: 100%;")으로
+    // 재직렬화해 React SSR 원본("width:100%")과 raw 문자열이 달라진다 →
+    // hydration mismatch 경고. user-select 선언만 도려내 나머지 바이트를 보존한다.
+    const stripped = style
+      .replace(USER_SELECT_DECLARATION, "")
+      .replace(/^\\s*;\\s*/, "");
 
-    if (!element.getAttribute("style")?.trim()) {
+    if (!stripped.trim()) {
       element.removeAttribute("style");
+    } else if (stripped !== style) {
+      element.setAttribute("style", stripped);
     }
   };
 
