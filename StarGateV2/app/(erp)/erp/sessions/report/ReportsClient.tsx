@@ -46,7 +46,16 @@ function normalizeReportText(report: ClientSessionReport): string {
     .toLowerCase();
 }
 
-function getReportNumber(index: number): string {
+function getReportNumber(report: ClientSessionReport, index: number): string {
+  const maybeFixedReport = report as ClientSessionReport & {
+    reportNumber?: unknown;
+  };
+  const fixedNumber =
+    typeof maybeFixedReport.reportNumber === "string"
+      ? maybeFixedReport.reportNumber.trim()
+      : "";
+  if (fixedNumber) return fixedNumber;
+
   return String(index + 1).padStart(2, "0");
 }
 
@@ -139,7 +148,7 @@ export default function ReportsClient({ initialReports }: Props) {
           {orderedReports.map((report, index) => {
             const id = String(report._id);
             const point = getReportMapPoint(report, index);
-            const reportNumber = getReportNumber(index);
+            const reportNumber = getReportNumber(report, index);
             const offset = REPORT_PIN_OFFSETS[reportNumber];
             const reporterName = formatShortReporterName(report.gmName);
             const displayTitle = formatOperationReportTitle(

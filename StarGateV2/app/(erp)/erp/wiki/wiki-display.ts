@@ -368,7 +368,11 @@ function explicitRelatedNames(content: string): string[] {
 function sessionTags(page: Pick<WikiPage, "tags">): string[] {
   return page.tags
     .map((tag) => tag.trim().toUpperCase())
-    .filter((tag) => /^S\d+E\d+$/.test(tag));
+    .filter(
+      (tag) =>
+        /^S\d+E\d+$/.test(tag) ||
+        /^NOSB-[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(tag),
+    );
 }
 
 function pageId(page: Pick<WikiPage, "_id">): string | null {

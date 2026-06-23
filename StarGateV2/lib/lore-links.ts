@@ -47,7 +47,7 @@ const WIKI_CATEGORY_ORDER = [
 ];
 
 const EXACT_SESSION_KEY_PATTERN =
-  /(?:[A-Z0-9]+-)?S\d+E\d+(?:-[A-Z0-9]+)+/giu;
+  /NOSB-[A-Z0-9]+(?:-[A-Z0-9]+)*|(?:[A-Z0-9]+-)?S\d+E\d+(?:-[A-Z0-9]+)+/giu;
 
 export function extractSessionKeys(...values: string[]): string[] {
   const keys = new Set<string>();

@@ -7,6 +7,8 @@ export interface SessionReport {
   /** sessions._id 참조 */
   sessionId: string;
   sessionTitle: string;
+  /** 지도/목록에 표시할 고정 보고서 번호. 없으면 날짜순 위치로 계산한다. */
+  reportNumber?: string;
   summary: string;
   highlights: string[];
   participants: string[];
