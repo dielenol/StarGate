@@ -1,0 +1,273 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "ANTONIO_ORSINO",
+      "type": "NPC",
+      "role": "세계이사회 회원 / 노부스 오르도 후원자",
+      "department": "COUNCIL",
+      "factionCode": "COUNCIL",
+      "institutionCode": "",
+      "agentLevel": "V",
+      "previewImage": "/assets/npcs/Antonio-Orsino-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "안토니오 오르시노",
+        "nameEn": "Antonio Orsino",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "사용자 제공 초상 기준으로, 검은 곱슬머리와 붉은 상의, 어두운 외투가 함께 기록된 인물이다. 공식 Dossier에는 세계이사회 VIP 의뢰인으로 분류된다.",
+        "personality": "샤또 브리엥의 이상 현상을 노부스 오르도에 직접 의뢰할 만큼 실무적이다. 사건 해결 이후에는 노부스 오르도 측 대응을 수용하고 신뢰를 보이는 쪽으로 정리된다.",
+        "background": "안토니오 오르시노는 세계이사회 회원이자 노부스 오르도의 후원자로 확인된다. 크로아티아 소재 시골 저택 샤또 브리엥을 소유하고 있으며, 저택에서 발생한 \"귀신\" 소동의 처리를 노부스 오르도에 직접 요청했다.\n\n저택은 오르시노 가문이 경매를 통해 확보한 뒤 상속된 자산으로 설명된다. 사건 현장에서는 세르히오가 저택의 소유권을 주장하며 안토니오 측을 몰아내려 했고, 안토니오는 노부스 오르도의 처리가 끝난 뒤 곧 미국으로 향할 예정이라고 말했다.",
+        "quote": "\"귀신이 나오는 저택이라고 들었습니다.\"",
+        "mainImage": "/assets/npcs/Antonio-Orsino-profile.webp",
+        "loreTags": ["세계이사회", "후원자", "샤또브리엥", "오르시노", "MINI-MINI", "유산", "NOSB-MINI-MINI-LEGACY"],
+        "appearsInEvents": ["NOSB-MINI-MINI-LEGACY"],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-MINI-LEGACY",
+            "role": "세계이사회 VIP 의뢰인",
+            "summary": "샤또 브리엥에서 발생한 귀신 소동의 처리를 노부스 오르도에 직접 요청했고, 사건 후 노부스 오르도의 대응을 수용했다.",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "NATHAN",
+            "targetName": "네이선",
+            "label": "저택 관리 라인",
+            "summary": "네이선은 샤또 브리엥에서 안토니오 오르시노 측 저택 관리와 현장 접견을 맡은 집사로 기록된다.",
+            "sourceEvent": "NOSB-MINI-MINI-LEGACY",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "SERGIO",
+            "targetName": "세르히오",
+            "label": "저택 소유권 충돌",
+            "summary": "안토니오가 의뢰한 귀신 소동은 세르히오가 샤또 브리엥을 자기 소유로 주장하며 안토니오 측을 몰아내려 한 사건으로 정리된다.",
+            "sourceEvent": "NOSB-MINI-MINI-LEGACY",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 직위: 세계이사회 회원\n- 작전상 역할: 샤또 브리엥 이상 현상 의뢰인\n- 관련 장소: 샤또 브리엥\n- 관련 인물: 네이선, 세르히오\n- 등장 방식: VIP 직접 의뢰, 저택 소유권 분쟁, 노부스 오르도 후원자 접점",
+        "notes": "ANTONIO_ORSINO는 사용자 제공 이름 안토니오 오르시노의 영문 표기를 신원조회용 UPPER_SNAKE_CASE로 정규화한 코드다."
+      },
+      "loreMd": "## 대사\n> 귀신이 나오는 저택이라고 들었습니다.\n\n## 외형\n사용자 제공 초상 기준으로, 검은 곱슬머리와 붉은 상의, 어두운 외투가 함께 기록된 인물이다. 공식 Dossier에는 세계이사회 VIP 의뢰인으로 분류된다.\n\n## 성격\n샤또 브리엥의 이상 현상을 노부스 오르도에 직접 의뢰할 만큼 실무적이다. 사건 해결 이후에는 노부스 오르도 측 대응을 수용하고 신뢰를 보이는 쪽으로 정리된다.\n\n## 배경\n안토니오 오르시노는 세계이사회 회원이자 노부스 오르도의 후원자로 확인된다. 크로아티아 소재 시골 저택 샤또 브리엥을 소유하고 있으며, 저택에서 발생한 \"귀신\" 소동의 처리를 노부스 오르도에 직접 요청했다.\n\n저택은 오르시노 가문이 경매를 통해 확보한 뒤 상속된 자산으로 설명된다. 사건 현장에서는 세르히오가 저택의 소유권을 주장하며 안토니오 측을 몰아내려 했고, 안토니오는 노부스 오르도의 처리가 끝난 뒤 곧 미국으로 향할 예정이라고 말했다.",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-12T00:00:00.000Z",
+      "updatedAt": "2026-06-12T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "NATHAN",
+      "type": "NPC",
+      "role": "샤또 브리엥 집사",
+      "department": "COUNCIL",
+      "factionCode": "COUNCIL",
+      "institutionCode": "",
+      "previewImage": "/assets/npcs/Nathan-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "네이선",
+        "nameEn": "Nathan",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "사용자 제공 초상 기준으로, 백발과 흰 수염, 정장 차림이 특징인 노년의 집사형 인물이다. 공식 Dossier에는 샤또 브리엥의 현장 관리 인력으로 등록된다.",
+        "personality": "외부인에게는 예의를 갖추지만, 세르히오와 관련된 정보에는 민감하게 반응한다. 현장 기록상 저택의 안전과 세르히오의 처리를 동시에 고민하는 인물로 남는다.",
+        "background": "네이선은 샤또 브리엥에서 노부스 오르도 일행을 맞이한 집사다. 현장팀에게 휴식과 응급 처치를 제공했고, 저택 내 초상화와 세르히오 관련 단서가 드러날 때 정보 접근을 통제하려 했다.\n\n사건 후반부에는 세르히오를 정지시킬 수 있는 리모컨을 보유하고 있었으나, 해당 장치는 현장에서 파괴되었다. 이후 네이선은 마리아에게 세르히오를 먼 곳으로 데려가 달라고 요청했다.",
+        "quote": "\"도련님을 먼 곳으로 데려가 주십시오.\"",
+        "mainImage": "/assets/npcs/Nathan-profile.webp",
+        "loreTags": ["세계이사회", "집사", "샤또브리엥", "세르히오", "MINI-MINI", "유산", "NOSB-MINI-MINI-LEGACY"],
+        "appearsInEvents": ["NOSB-MINI-MINI-LEGACY"],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-MINI-LEGACY",
+            "role": "샤또 브리엥 집사",
+            "summary": "노부스 오르도 일행을 맞이하고 저택 내부 접근을 관리했으며, 사건 후반에는 세르히오를 먼 곳으로 데려가 달라고 요청했다.",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "ANTONIO_ORSINO",
+            "targetName": "안토니오 오르시노",
+            "label": "저택 관리 라인",
+            "summary": "네이선은 샤또 브리엥에서 안토니오 오르시노 측 저택 관리와 현장 접견을 맡은 집사로 기록된다.",
+            "sourceEvent": "NOSB-MINI-MINI-LEGACY",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "SERGIO",
+            "targetName": "세르히오",
+            "label": "보호와 통제",
+            "summary": "네이선은 세르히오를 도련님으로 부르며 관련 정보를 숨기려 했고, 세르히오를 정지시킬 수 있는 리모컨을 보유하고 있었다.",
+            "sourceEvent": "NOSB-MINI-MINI-LEGACY",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 직위: 샤또 브리엥 집사\n- 업무 범위: 저택 안내, 현장 관리, 세르히오 관련 통제\n- 관련 인물: 안토니오 오르시노, 세르히오\n- 등장 방식: 현장 접견, 저택 내부 접근 통제, 세르히오 사후 처리 요청",
+        "notes": "NATHAN은 사용자 제공 이름 네이선의 영문 표기를 신원조회용 코드로 보존한 값이다."
+      },
+      "loreMd": "## 대사\n> 도련님을 먼 곳으로 데려가 주십시오.\n\n## 외형\n사용자 제공 초상 기준으로, 백발과 흰 수염, 정장 차림이 특징인 노년의 집사형 인물이다. 공식 Dossier에는 샤또 브리엥의 현장 관리 인력으로 등록된다.\n\n## 성격\n외부인에게는 예의를 갖추지만, 세르히오와 관련된 정보에는 민감하게 반응한다. 현장 기록상 저택의 안전과 세르히오의 처리를 동시에 고민하는 인물로 남는다.\n\n## 배경\n네이선은 샤또 브리엥에서 노부스 오르도 일행을 맞이한 집사다. 현장팀에게 휴식과 응급 처치를 제공했고, 저택 내 초상화와 세르히오 관련 단서가 드러날 때 정보 접근을 통제하려 했다.\n\n사건 후반부에는 세르히오를 정지시킬 수 있는 리모컨을 보유하고 있었으나, 해당 장치는 현장에서 파괴되었다. 이후 네이선은 마리아에게 세르히오를 먼 곳으로 데려가 달라고 요청했다.",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-12T00:00:00.000Z",
+      "updatedAt": "2026-06-12T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "SERGIO",
+      "type": "NPC",
+      "role": "ORSIS-9800 / 스페이스 33 안드로이드",
+      "department": "CIVIL",
+      "factionCode": "CIVIL",
+      "institutionCode": "",
+      "previewImage": "/assets/npcs/Sergio-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "세르히오",
+        "nameEn": "Sergio",
+        "nameNative": "ORSIS-9800",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "사용자 제공 초상 기준으로, 붉은 머리와 검은 예복형 군복, 훈장과 견장이 함께 기록된 젊은 인물형 안드로이드다. 저택 초상화의 붉은 머리 남성과 연결되는 단서로 보존된다.",
+        "personality": "세르히오는 샤또 브리엥을 자기 소유로 인식하며, 안토니오 오르시노 일가를 몰아내려 했다. 노부스 오르도 일행에게는 적대적으로 나타났지만, 현장 후반에는 마리아의 명함을 받는 접점도 남겼다.",
+        "background": "세르히오는 샤또 브리엥에서 \"귀신\"으로 오인된 존재다. 마거릿의 엑토플라즘에는 반응하지 않았고, 대신 정전, 전자기기 이상, 샹들리에 반응 같은 전기적 현상과 연결되었다.\n\n현장 진술에 따르면 세르히오는 인간 유령이 아니라 `ORSIS-9800`으로 식별되는 안드로이드이며, 스페이스 33 및 도나텔로와 연결된다. 저택에서 안토니오 오르시노 측을 몰아내려 했으나 노부스 오르도 개입 후 즉시 파괴되지는 않았다.",
+        "quote": "\"이 집은 내 것이다.\"",
+        "mainImage": "/assets/npcs/Sergio-profile.webp",
+        "loreTags": ["시민사회", "스페이스33", "ORSIS-9800", "안드로이드", "샤또브리엥", "MINI-MINI", "유산", "NOSB-MINI-MINI-LEGACY"],
+        "appearsInEvents": ["NOSB-MINI-MINI-LEGACY"],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-MINI-LEGACY",
+            "role": "귀신으로 오인된 ORSIS-9800 안드로이드",
+            "summary": "샤또 브리엥에서 정전과 전자기기 이상을 일으키며 안토니오 측을 몰아내려 했고, 이후 ORSIS-9800 안드로이드로 확인되었다.",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "ANTONIO_ORSINO",
+            "targetName": "안토니오 오르시노",
+            "label": "저택 소유권 충돌",
+            "summary": "세르히오는 샤또 브리엥을 자기 소유로 주장하며 안토니오 오르시노 측을 몰아내려 했다.",
+            "sourceEvent": "NOSB-MINI-MINI-LEGACY",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "NATHAN",
+            "targetName": "네이선",
+            "label": "보호와 통제",
+            "summary": "네이선은 세르히오를 도련님으로 부르며 관련 정보를 숨기려 했고, 세르히오를 정지시킬 수 있는 리모컨을 보유하고 있었다.",
+            "sourceEvent": "NOSB-MINI-MINI-LEGACY",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "confidence": "confirmed",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "DONATELLO",
+            "targetName": "도나텔로",
+            "label": "기원 증언",
+            "summary": "현장 증언에 따르면 세르히오는 도나텔로가 잃은 아들을 대체하기 위해 만들어진 ORSIS-9800 안드로이드로 설명된다.",
+            "sourceEvent": "NOSB-MINI-MINI-LEGACY",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "confidence": "testimony",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 식별명: ORSIS-9800\n- 분류: 안드로이드 / 합성 인물형 개체\n- 관련 조직 단서: 스페이스 33\n- 관련 장소: 샤또 브리엥\n- 관련 인물: 도나텔로, 네이선, 안토니오 오르시노\n- 등장 방식: 귀신 오인, 저택 소유권 주장, 전기적 이상 현상",
+        "notes": "SERGIO는 현장 기록에서 호명된 이름 세르히오를 신원조회용 코드로 보존한 값이다. ORSIS-9800은 현장 발언에서 확인된 모델 또는 식별명이다."
+      },
+      "loreMd": "## 대사\n> 이 집은 내 것이다.\n\n## 외형\n사용자 제공 초상 기준으로, 붉은 머리와 검은 예복형 군복, 훈장과 견장이 함께 기록된 젊은 인물형 안드로이드다. 저택 초상화의 붉은 머리 남성과 연결되는 단서로 보존된다.\n\n## 성격\n세르히오는 샤또 브리엥을 자기 소유로 인식하며, 안토니오 오르시노 일가를 몰아내려 했다. 노부스 오르도 일행에게는 적대적으로 나타났지만, 현장 후반에는 마리아의 명함을 받는 접점도 남겼다.\n\n## 배경\n세르히오는 샤또 브리엥에서 \"귀신\"으로 오인된 존재다. 마거릿의 엑토플라즘에는 반응하지 않았고, 대신 정전, 전자기기 이상, 샹들리에 반응 같은 전기적 현상과 연결되었다.\n\n현장 진술에 따르면 세르히오는 인간 유령이 아니라 `ORSIS-9800`으로 식별되는 안드로이드이며, 스페이스 33 및 도나텔로와 연결된다. 저택에서 안토니오 오르시노 측을 몰아내려 했으나 노부스 오르도 개입 후 즉시 파괴되지는 않았다.",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-12T00:00:00.000Z",
+      "updatedAt": "2026-06-12T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "DONATELLO",
+      "type": "NPC",
+      "role": "샤또 브리엥 전 소유자",
+      "department": "COUNCIL",
+      "factionCode": "COUNCIL",
+      "institutionCode": "",
+      "previewImage": "/assets/npcs/Donatello-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "도나텔로",
+        "nameEn": "Donatello",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "사용자 제공 초상 기준으로, 정장과 외투를 갖춘 중년 이상의 남성형 인물로 기록된다. 샤또 브리엥의 과거 소유권과 세르히오의 기원을 설명하는 핵심 인물이다.",
+        "personality": "현재 확정된 성격 기록은 부족하다. 다만 세르히오와 샤또 브리엥의 과거가 도나텔로의 선택과 연결되어 있었다는 증언이 남아 있다.",
+        "background": "도나텔로는 샤또 브리엥의 전 소유자로 언급된다. 현장 기록에서는 네이선의 설명과 세르히오의 주장 속에서 도나텔로, 세르히오, 저택의 소유권 문제가 함께 드러난다.\n\n세르히오는 도나텔로가 잃은 아들을 대체하기 위해 만들어졌다는 증언과 연결되며, 이 정보는 현재 `증언` 상태의 Dossier 단서로 보존한다. 도나텔로의 생존 여부, 정확한 직위, 세르히오 제작 경로는 추가 확인 대상이다.",
+        "quote": "기록된 직접 대사는 아직 확정되지 않았다.",
+        "mainImage": "/assets/npcs/Donatello-profile.webp",
+        "loreTags": ["세계이사회", "샤또브리엥", "전소유자", "세르히오", "MINI-MINI", "유산", "NOSB-MINI-MINI-LEGACY"],
+        "appearsInEvents": ["NOSB-MINI-MINI-LEGACY"],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-MINI-LEGACY",
+            "role": "샤또 브리엥 전 소유자",
+            "summary": "세르히오의 기원과 샤또 브리엥 과거 소유권을 설명하는 인물로 언급되었다.",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "SERGIO",
+            "targetName": "세르히오",
+            "label": "기원 증언",
+            "summary": "현장 증언에 따르면 세르히오는 도나텔로가 잃은 아들을 대체하기 위해 만들어진 ORSIS-9800 안드로이드로 설명된다.",
+            "sourceEvent": "NOSB-MINI-MINI-LEGACY",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI MINI: 유산」",
+            "confidence": "testimony",
+            "updatedAt": "2026-06-12T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 지위: 샤또 브리엥 전 소유자\n- 관련 인물: 세르히오, 네이선\n- 관련 장소: 샤또 브리엥\n- 기록 상태: 세르히오의 기원과 연결되는 증언 중심 인물\n- 등장 방식: 저택 초상화 및 과거 소유권 단서",
+        "notes": "DONATELLO는 현장 기록과 사용자 제공 초상 이름을 신원조회용 코드로 보존한 값이다."
+      },
+      "loreMd": "## 대사\n> 기록된 직접 대사는 아직 확정되지 않았다.\n\n## 외형\n사용자 제공 초상 기준으로, 정장과 외투를 갖춘 중년 이상의 남성형 인물로 기록된다. 샤또 브리엥의 과거 소유권과 세르히오의 기원을 설명하는 핵심 인물이다.\n\n## 성격\n현재 확정된 성격 기록은 부족하다. 다만 세르히오와 샤또 브리엥의 과거가 도나텔로의 선택과 연결되어 있었다는 증언이 남아 있다.\n\n## 배경\n도나텔로는 샤또 브리엥의 전 소유자로 언급된다. 현장 기록에서는 네이선의 설명과 세르히오의 주장 속에서 도나텔로, 세르히오, 저택의 소유권 문제가 함께 드러난다.\n\n세르히오는 도나텔로가 잃은 아들을 대체하기 위해 만들어졌다는 증언과 연결되며, 이 정보는 현재 `증언` 상태의 Dossier 단서로 보존한다. 도나텔로의 생존 여부, 정확한 직위, 세르히오 제작 경로는 추가 확인 대상이다.",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-12T00:00:00.000Z",
+      "updatedAt": "2026-06-12T00:00:00.000Z"
+    }
+  }
+]
+
