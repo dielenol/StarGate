@@ -115,6 +115,8 @@
 }
 
 .header__bgm {
+  --bgm-panel-offset: 14px;
+
   position: relative;
   display: flex;
   align-items: center;
@@ -196,7 +198,7 @@
 
 .header__bgmPanel {
   position: absolute;
-  top: calc(100% + 14px);
+  top: calc(100% + var(--bgm-panel-offset));
   left: 0;
   z-index: 80;
   width: 304px;
@@ -213,6 +215,15 @@
     opacity 0.15s ease,
     transform 0.15s ease,
     visibility 0.15s ease;
+}
+
+.header__bgmPanel::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: var(--bgm-panel-offset);
 }
 
 .header__bgm:hover .header__bgmPanel,
@@ -729,6 +740,8 @@
   }
 
   .header__bgm {
+    --bgm-panel-offset: 8px;
+
     width: auto;
     min-width: 0;
     padding: 4px;
@@ -736,7 +749,7 @@
 
   .header__bgmPanel {
     position: fixed;
-    top: calc(var(--topbar-h) + 8px);
+    top: calc(var(--topbar-h) + var(--bgm-panel-offset));
     right: 10px;
     left: 10px;
     width: auto;
