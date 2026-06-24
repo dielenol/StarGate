@@ -19,6 +19,7 @@ import { ChannelType, Client, Events, GatewayIntentBits, Partials } from "discor
 import { config } from "./config.js";
 import { closeDb, connectDb } from "./db/client.js";
 
+import { handleDiceRoll, isDiceRollCommandName } from "./commands/dice-roll.js";
 import { registerCommands } from "./commands/register.js";
 import { handleTrpgSessionCheck } from "./commands/trpg-session-check.js";
 import { startTrpgCancellationNotificationChecker } from "./scheduler/trpg-cancellation-notification-checker.js";
@@ -95,7 +96,7 @@ client.once(Events.ClientReady, async (readyClient) => {
 
   try {
     await registerCommands();
-    console.log("[TRPG Bot] 슬래시 커맨드 등록 완료 (/세션확인)");
+    console.log("[TRPG Bot] 슬래시 커맨드 등록 완료 (/세션확인, /roll, /r)");
   } catch (err) {
     console.error("[TRPG Bot] 커맨드 등록 실패:", err);
   }
@@ -128,8 +129,13 @@ client.once(Events.ClientReady, async (readyClient) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-  if (interaction.commandName !== SESSION_CHECK_NAME) return;
-  await handleTrpgSessionCheck(interaction);
+  if (interaction.commandName === SESSION_CHECK_NAME) {
+    await handleTrpgSessionCheck(interaction);
+    return;
+  }
+  if (isDiceRollCommandName(interaction.commandName)) {
+    await handleDiceRoll(interaction);
+  }
 });
 
 client.on(Events.GuildMemberAdd, async (member) => {

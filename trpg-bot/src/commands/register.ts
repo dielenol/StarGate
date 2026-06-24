@@ -13,7 +13,11 @@
 import { REST, Routes } from "discord.js";
 
 import { config } from "../config.js";
-import { SESSION_CHECK_NAME } from "../slash/ko-names.js";
+import {
+  ROLL_NAME,
+  ROLL_SHORT_NAME,
+  SESSION_CHECK_NAME,
+} from "../slash/ko-names.js";
 
 const CURRENT_YEAR = 2026;
 
@@ -60,6 +64,40 @@ const SESSION_CHECK_CMD = {
   ],
 };
 
+const DICE_ROLL_OPTIONS = [
+  {
+    type: 3,
+    name: "식",
+    description: "주사위 식. 예: 2d6+3, 4d6 k3, 6d10 t7",
+    max_length: 500,
+    required: true,
+  },
+  {
+    type: 5,
+    name: "비공개",
+    description: "나에게만 보이도록 응답합니다",
+    required: false,
+  },
+];
+
+/** `/roll` — Dice Maiden 계열 핵심 주사위 문법 처리 */
+const ROLL_CMD = {
+  type: 1 as const,
+  name: ROLL_NAME,
+  description: "TRPG 주사위를 굴립니다",
+  default_member_permissions: null,
+  options: DICE_ROLL_OPTIONS,
+};
+
+/** `/r` — `/roll` 단축 명령 */
+const ROLL_SHORT_CMD = {
+  type: 1 as const,
+  name: ROLL_SHORT_NAME,
+  description: "TRPG 주사위를 굴립니다",
+  default_member_permissions: null,
+  options: DICE_ROLL_OPTIONS,
+};
+
 /**
  * 슬래시 커맨드를 Discord 에 등록합니다.
  *
@@ -68,7 +106,7 @@ const SESSION_CHECK_CMD = {
  */
 export async function registerCommands(): Promise<void> {
   const rest = new REST().setToken(config.discordToken);
-  const body = [SESSION_CHECK_CMD];
+  const body = [SESSION_CHECK_CMD, ROLL_CMD, ROLL_SHORT_CMD];
 
   if (config.guildId) {
     await rest.put(

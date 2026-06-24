@@ -9,6 +9,10 @@
 /** Phase 2 신규 슬래시 — `/세션확인`. 이번 달 TRPG 세션 캘린더 + 웹 링크 응답. */
 export const SESSION_CHECK_NAME = "세션확인";
 
+/** Dice Maiden 계열 주사위 슬래시 — `/roll`, `/r`. */
+export const ROLL_NAME = "roll";
+export const ROLL_SHORT_NAME = "r";
+
 export const SCHEDULE_ROOT = "일정";
 
 export const Sub = {
