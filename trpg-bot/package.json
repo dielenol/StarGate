@@ -7,7 +7,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "run": "pnpm build && pnpm start",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "dev:local": "DOTENV_CONFIG_PATH=.env.local tsx src/index.ts",
+    "start:local": "DOTENV_CONFIG_PATH=.env.local node dist/index.js"
   },
   "dependencies": {
     "@stargate/shared-db": "workspace:*",

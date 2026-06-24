@@ -14,7 +14,14 @@
  * @module index
  */
 
-import { ChannelType, Client, Events, GatewayIntentBits, Partials } from "discord.js";
+import {
+  ChannelType,
+  Client,
+  Events,
+  GatewayIntentBits,
+  MessageFlags,
+  Partials,
+} from "discord.js";
 
 import { config } from "./config.js";
 import { closeDb, connectDb } from "./db/client.js";
@@ -96,9 +103,17 @@ client.once(Events.ClientReady, async (readyClient) => {
 
   try {
     await registerCommands();
-    console.log("[TRPG Bot] 슬래시 커맨드 등록 완료 (/세션확인, /roll, /r)");
+    const commandLog = config.diceOnly
+      ? "/roll, /r"
+      : "/세션확인, /roll, /r";
+    console.log(`[TRPG Bot] 슬래시 커맨드 등록 완료 (${commandLog})`);
   } catch (err) {
     console.error("[TRPG Bot] 커맨드 등록 실패:", err);
+  }
+
+  if (config.diceOnly) {
+    console.log("[TRPG Bot] 주사위 전용 모드 — DB/스케줄러/멤버 동기화 생략");
+    return;
   }
 
   // 폴백 채널 사전 검증 (잘못된 설정 조기 알림)
@@ -130,6 +145,13 @@ client.once(Events.ClientReady, async (readyClient) => {
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
   if (interaction.commandName === SESSION_CHECK_NAME) {
+    if (config.diceOnly) {
+      await interaction.reply({
+        content: "주사위 전용 모드에서는 `/세션확인`을 사용할 수 없습니다.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
     await handleTrpgSessionCheck(interaction);
     return;
   }
@@ -139,6 +161,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 client.on(Events.GuildMemberAdd, async (member) => {
+  if (config.diceOnly) return;
   if (member.guild.id !== config.trpgGuildId) return;
   if (member.user.bot) return;
   try {
@@ -149,6 +172,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
 });
 
 client.on(Events.GuildMemberUpdate, async (_old, member) => {
+  if (config.diceOnly) return;
   if (member.guild.id !== config.trpgGuildId) return;
   if (member.user.bot) return;
   try {
@@ -159,6 +183,7 @@ client.on(Events.GuildMemberUpdate, async (_old, member) => {
 });
 
 client.on(Events.GuildMemberRemove, async (member) => {
+  if (config.diceOnly) return;
   if (member.guild.id !== config.trpgGuildId) return;
   // partial user 의 bot 필드는 undefined 가능 → user 캐시된 경우만 bot 가드 적용.
   // partial 이면 어차피 봇 여부 알 수 없으므로 일단 markLeft 진행 (DB 측이 idempotent).
@@ -201,7 +226,9 @@ async function shutdown(signal: string): Promise<void> {
 
   // 4) 외부 자원 정리
   await closeTrpgCalendarBrowser();
-  await closeDb();
+  if (!config.diceOnly) {
+    await closeDb();
+  }
   process.exit(0);
 }
 
@@ -214,7 +241,11 @@ process.on("SIGTERM", () => {
 });
 
 async function main(): Promise<void> {
-  await connectDb();
+  if (!config.diceOnly) {
+    await connectDb();
+  } else {
+    console.log("[TRPG Bot] 주사위 전용 모드 — MongoDB 연결 생략");
+  }
   await client.login(config.discordToken);
 }
 

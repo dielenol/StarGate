@@ -106,7 +106,9 @@ const ROLL_SHORT_CMD = {
  */
 export async function registerCommands(): Promise<void> {
   const rest = new REST().setToken(config.discordToken);
-  const body = [SESSION_CHECK_CMD, ROLL_CMD, ROLL_SHORT_CMD];
+  const body = config.diceOnly
+    ? [ROLL_CMD, ROLL_SHORT_CMD]
+    : [SESSION_CHECK_CMD, ROLL_CMD, ROLL_SHORT_CMD];
 
   if (config.guildId) {
     await rest.put(

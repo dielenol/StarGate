@@ -11,6 +11,14 @@
 
 import "dotenv/config";
 
+/** 로컬 주사위 테스트 전용 모드. DB/스케줄러 없이 `/roll`, `/r`만 켠다. */
+function isDiceOnlyMode(): boolean {
+  const v = (process.env.TRPG_BOT_DICE_ONLY ?? process.env.DICE_ONLY)
+    ?.trim()
+    .toLowerCase();
+  return v === "1" || v === "true" || v === "on";
+}
+
 /** 환경변수에서 Discord 봇 토큰을 읽어 반환합니다. */
 function getDiscordToken(): string {
   const token = process.env.DISCORD_TOKEN;
@@ -30,9 +38,10 @@ function getDiscordClientId(): string {
 }
 
 /** 환경변수에서 MongoDB 연결 문자열을 읽어 반환합니다. */
-function getMongoUri(): string {
+function getMongoUri(required: boolean): string {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
+    if (!required) return "";
     throw new Error("MONGODB_URI 환경변수가 설정되지 않았습니다.");
   }
   return uri;
@@ -76,9 +85,10 @@ function getTrpgGuildId(): string {
  * 운영자가 길드 안의 텍스트 채널 하나를 지정해야 한다. DM 차단 사용자에게
  * `<@userId>` 멘션 + 동일 내용으로 안내.
  */
-function getTrpgFallbackChannelId(): string {
+function getTrpgFallbackChannelId(required: boolean): string {
   const id = process.env.TRPG_FALLBACK_CHANNEL_ID?.trim();
   if (!id) {
+    if (!required) return "";
     throw new Error("TRPG_FALLBACK_CHANNEL_ID 환경변수가 설정되지 않았습니다.");
   }
   return id;
@@ -89,9 +99,10 @@ function getTrpgFallbackChannelId(): string {
  *
  * `/세션확인` 응답 + DM 알림 본문에 첨부할 외부 캘린더 링크 (예: `${base}/calendar`).
  */
-function getTrpgWebBaseUrl(): string {
+function getTrpgWebBaseUrl(required: boolean): string {
   const url = process.env.TRPG_WEB_BASE_URL?.trim();
   if (!url) {
+    if (!required) return "";
     throw new Error("TRPG_WEB_BASE_URL 환경변수가 설정되지 않았습니다.");
   }
   return url.replace(/\/+$/, "");
@@ -125,15 +136,18 @@ export function isResultCardImageEnabled(): boolean {
 }
 
 /** 검증된 환경 설정 객체 */
+const diceOnly = isDiceOnlyMode();
+
 export const config = {
+  diceOnly,
   discordToken: getDiscordToken(),
   discordClientId: getDiscordClientId(),
-  mongoUri: getMongoUri(),
+  mongoUri: getMongoUri(!diceOnly),
   mongoDbName: getMongoDbName(),
   guildId: getGuildId(),
   trpgGuildId: getTrpgGuildId(),
-  trpgFallbackChannelId: getTrpgFallbackChannelId(),
-  trpgWebBaseUrl: getTrpgWebBaseUrl(),
+  trpgFallbackChannelId: getTrpgFallbackChannelId(!diceOnly),
+  trpgWebBaseUrl: getTrpgWebBaseUrl(!diceOnly),
   trpgPollingIntervalMs: getTrpgPollingIntervalMs(),
   trpgReminderIntervalMs: getTrpgReminderIntervalMs(),
 } as const;
