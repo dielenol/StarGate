@@ -227,7 +227,8 @@
 }
 
 .header__bgm:hover .header__bgmPanel,
-.header__bgm:focus-within .header__bgmPanel {
+.header__bgm:has(.header__bgmButton:focus-visible) .header__bgmPanel,
+.header__bgm:has(.header__bgmRange:focus-visible) .header__bgmPanel {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
