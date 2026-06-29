@@ -395,7 +395,7 @@ export default async function ERPDashboardPage() {
           </div>
 
           <div className={styles.agentStage__content}>
-            <span className={styles.sectionLabel}>오늘의 운용 요원</span>
+            <span className={styles.sectionLabel}>요원 프로필</span>
             <h2 className={styles.agentStage__name}>
               {displayCharacter
                 ? displayCharacter.lore.name || displayCharacter.codename
