@@ -18,7 +18,9 @@
   container-name: poster-hero;
 }
 
-@container poster-hero (max-width: 760px) {
+/* `.hero` 자체는 자신의 container query 대상으로 잡히지 않으므로 viewport
+   breakpoint 로 1열 전환을 보강한다. 내부 요소는 아래 container query 유지. */
+@media (max-width: 760px) {
   .hero {
     grid-template-columns: 1fr;
     gap: 14px;
