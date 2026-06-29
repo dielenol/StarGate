@@ -131,7 +131,7 @@ export default function CharacterDetailClient({
   }
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "CHARACTERS", href: "/erp/characters" },
@@ -214,7 +214,7 @@ export default function CharacterDetailClient({
           />
         ) : null}
       </div>
-    </>
+    </div>
   );
 }
 

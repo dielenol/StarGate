@@ -133,7 +133,7 @@ export default function ReportsClient({ initialReports }: Props) {
   );
 
   return (
-    <Box className={styles.mapBox}>
+    <Box className={styles.mapBox} data-pixel-font="ui">
       <PanelTitle
         right={<span className={styles.mono}>{orderedReports.length} 건</span>}
       >

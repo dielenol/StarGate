@@ -811,7 +811,7 @@ export default function PersonnelClient({
   };
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -982,6 +982,6 @@ export default function PersonnelClient({
         </Box>
       ) : null}
 
-    </>
+    </div>
   );
 }

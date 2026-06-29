@@ -401,7 +401,7 @@ export default function CreditsClient({
   }
 
   return (
-    <div className={styles.credits}>
+    <div className={styles.credits} data-pixel-font="ui">
       {isGm ? (
         <Box className={styles.adminHintBox}>
           <div className={styles.adminHeading}>

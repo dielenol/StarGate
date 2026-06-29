@@ -1483,7 +1483,7 @@ export default function DossierClient({
   /* ── 렌더 ── */
 
   return (
-    <>
+    <div data-pixel-font={isEditing ? undefined : "ui"}>
       <PageHead
         breadcrumb={<OrgDrillCrumbs items={drillItems} />}
         title={pageTitle}
@@ -1862,6 +1862,6 @@ export default function DossierClient({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

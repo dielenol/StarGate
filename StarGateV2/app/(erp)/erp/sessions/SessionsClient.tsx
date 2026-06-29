@@ -194,7 +194,7 @@ export default function SessionsClient({
   );
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead breadcrumb="ERP / SESSIONS" title={titleNode} />
 
       <div className={styles.ctrl}>
@@ -348,7 +348,7 @@ export default function SessionsClient({
           </span>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
 

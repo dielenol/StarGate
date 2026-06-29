@@ -338,7 +338,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
   }
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         title="세력 현황"
         breadcrumb={[
@@ -661,6 +661,6 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           ) : null}
         </div>
       </div>
-    </>
+    </div>
   );
 }

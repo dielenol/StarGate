@@ -186,6 +186,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
         }
       />
 
+      <div data-pixel-font="ui">
       <section className={styles.dossierHero} aria-label="작전 보고서 요약">
         <div className={styles.dossierHero__icon} aria-hidden="true">
           <IconReportDocument />
@@ -428,6 +429,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
             </Box>
           ) : null}
         </div>
+      </div>
       </div>
     </>
   );

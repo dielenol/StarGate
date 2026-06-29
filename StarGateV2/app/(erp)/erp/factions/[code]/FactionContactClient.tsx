@@ -478,7 +478,7 @@ export default function FactionContactClient({
   }
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <Box className={styles.contactPanel}>
         <PanelTitle
           right={<span className={styles.panelCode}>{profile.operatorLabel}</span>}
@@ -798,6 +798,6 @@ export default function FactionContactClient({
           <IconArrowRight aria-hidden />
         </Link>
       </Box>
-    </>
+    </div>
   );
 }
