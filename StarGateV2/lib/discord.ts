@@ -133,23 +133,29 @@ function getCharacterPageUrl(characterId: string): string {
   return `${getSiteBaseUrl()}/erp/characters/${characterId}`;
 }
 
-function isOwnerSelfEdit(payload: CharacterEditWebhookPayload): boolean {
-  return payload.actorIsOwner;
+function isPlayerSelfEdit(payload: CharacterEditWebhookPayload): boolean {
+  return payload.source === "player";
 }
 
 function getCharacterEditWebhookUrl(
   payload: CharacterEditWebhookPayload,
 ): string | undefined {
-  if (isOwnerSelfEdit(payload)) {
-    return (
-      process.env.DISCORD_WEBHOOK_URL ||
-      process.env.DISCORD_WEBHOOK_CHAR_SELF_EDIT_URL ||
-      process.env.DISCORD_WEBHOOK_CHARACTER_SELF_EDIT_URL ||
-      process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL
-    );
+  return (
+    process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL ||
+    (isPlayerSelfEdit(payload)
+      ? process.env.DISCORD_WEBHOOK_CHAR_SELF_EDIT_URL ||
+        process.env.DISCORD_WEBHOOK_CHARACTER_SELF_EDIT_URL
+      : undefined) ||
+    process.env.DISCORD_WEBHOOK_URL
+  );
+}
+
+function getCharacterEditWarning(payload: CharacterEditWebhookPayload): string {
+  if (isPlayerSelfEdit(payload)) {
+    return "유저 자가편집입니다. GM 확인 전까지 변경 내용을 검토해 주세요.";
   }
 
-  return process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL;
+  return "GM/운영진 직접 수정입니다. 변경 내용은 즉시 반영되었고 감사 로그에 기록됩니다.";
 }
 
 /**
@@ -354,11 +360,8 @@ export async function notifyCharacterEdit(
 ): Promise<void> {
   const webhookUrl = getCharacterEditWebhookUrl(payload);
   if (!webhookUrl) {
-    const envName = isOwnerSelfEdit(payload)
-      ? "DISCORD_WEBHOOK_URL"
-      : "DISCORD_WEBHOOK_CHAR_EDIT_URL";
     console.warn(
-      `[notifyCharacterEdit] ${envName} 미설정 — silent skip`,
+      "[notifyCharacterEdit] DISCORD_WEBHOOK_CHAR_EDIT_URL/DISCORD_WEBHOOK_URL 미설정 — silent skip",
     );
     return;
   }
@@ -366,17 +369,23 @@ export async function notifyCharacterEdit(
   try {
     const { character, actor, source, actorIsOwner, changes, reason, timestamp } =
       payload;
-    const selfEdit = isOwnerSelfEdit(payload);
-    const editKind = selfEdit ? "자가편집" : "관리자 편집";
+    const playerEdit = isPlayerSelfEdit(payload);
+    const editKind = playerEdit ? "유저 자가편집" : "GM 직접 수정";
 
     const total = changes.length;
     const visibleChanges = changes.slice(0, MAX_CHANGE_FIELDS);
     const overflow = total - visibleChanges.length;
 
-    const fields: DiscordEmbedField[] = visibleChanges.map((change) => ({
-      name: change.field.slice(0, 256), // Discord field name 256자 제한
-      value: formatChange(change),
-    }));
+    const fields: DiscordEmbedField[] = [
+      {
+        name: "경고",
+        value: getCharacterEditWarning(payload),
+      },
+      ...visibleChanges.map((change) => ({
+        name: change.field.slice(0, 256), // Discord field name 256자 제한
+        value: formatChange(change),
+      })),
+    ];
 
     if (overflow > 0) {
       fields.push({
@@ -405,7 +414,7 @@ export async function notifyCharacterEdit(
       ),
       url: getCharacterPageUrl(character.id),
       description,
-      color: selfEdit
+      color: playerEdit
         ? DISCORD_COLORS.charEditPlayer
         : source === "admin"
           ? DISCORD_COLORS.charEditAdmin
@@ -416,7 +425,7 @@ export async function notifyCharacterEdit(
     };
 
     const discordPayload: DiscordPayload = {
-      username: selfEdit ? "StarGate Character Watch" : "StarGate Audit Bot",
+      username: playerEdit ? "StarGate Character Watch" : "StarGate Audit Bot",
       allowed_mentions: { parse: [] },
       embeds: [embed],
     };
