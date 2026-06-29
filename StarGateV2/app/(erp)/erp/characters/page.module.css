@@ -81,6 +81,12 @@
     border-color 0.12s ease,
     background 0.12s ease;
 }
+.filters__tab:first-child {
+  border-top-left-radius: var(--radius-sm);
+}
+.filters__tab:last-child {
+  border-top-right-radius: var(--radius-sm);
+}
 /* OrgIcon SVG 가 시각 표식을 대체. ::before 더미 점은 hidden 처리 (active 발광 효과 포함). */
 .filters__tab::before { display: none; }
 
@@ -152,12 +158,22 @@
 
 /* ---------- card (form__box 자매 — 더블 보더) ---------- */
 .card {
+  --card-pattern: repeating-linear-gradient(
+    135deg,
+    rgba(201, 169, 97, 0.035) 0 1px,
+    transparent 1px 10px
+  );
   position: relative;
-  background: var(--bg-1);
+  background-color: var(--bg-1);
+  background-image:
+    linear-gradient(rgba(201,169,97,0.018), transparent 54%),
+    var(--card-pattern);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
   transition:
     border-color 140ms ease,
     background 140ms ease;
@@ -165,8 +181,10 @@
 .card::before {
   content: ""; position: absolute; inset: 4px;
   border: 1px solid rgba(201,169,97,0.05);
+  border-radius: calc(var(--radius-sm) - 3px);
   pointer-events: none;
   transition: border-color 140ms ease;
+  z-index: 2;
 }
 /* 좌상단 코너 틱 — dossier 강화 */
 .card::after {
@@ -182,9 +200,9 @@
 .cardLink:hover .card,
 .cardLink:focus-visible .card {
   border-color: var(--gold-dim);
-  background:
+  background-image:
     linear-gradient(rgba(201,169,97,0.025), rgba(201,169,97,0.025)),
-    var(--bg-1);
+    var(--card-pattern);
 }
 .cardLink:hover .card::before,
 .cardLink:focus-visible .card::before {
@@ -196,6 +214,55 @@
   opacity: 1;
 }
 
+.card[data-pattern="grid"] {
+  --card-pattern:
+    linear-gradient(rgba(201,169,97,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,169,97,0.025) 1px, transparent 1px);
+  background-size: auto, 22px 22px, 22px 22px;
+}
+
+.card[data-pattern="diagonal"] {
+  --card-pattern: repeating-linear-gradient(
+    135deg,
+    rgba(201,169,97,0.04) 0 1px,
+    transparent 1px 12px
+  );
+}
+
+.card[data-pattern="circuit"] {
+  --card-pattern:
+    linear-gradient(90deg, transparent 0 82%, rgba(106,135,168,0.08) 82% 83%, transparent 83%),
+    linear-gradient(180deg, transparent 0 68%, rgba(201,169,97,0.06) 68% 69%, transparent 69%);
+  background-size: auto, 34px 34px, 34px 34px;
+}
+
+.card[data-pattern="scan"] {
+  --card-pattern: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.018) 0 1px,
+    transparent 1px 5px
+  );
+}
+
+.card[data-pattern="mine"] {
+  --card-pattern:
+    radial-gradient(circle at 88% 18%, rgba(201,169,97,0.12), transparent 30%),
+    repeating-linear-gradient(90deg, rgba(201,169,97,0.045) 0 1px, transparent 1px 14px);
+  border-color: rgba(201,169,97,0.62);
+}
+
+.card[data-pattern="risk"] {
+  --card-pattern:
+    repeating-linear-gradient(135deg, rgba(192,106,90,0.07) 0 1px, transparent 1px 10px),
+    linear-gradient(90deg, rgba(192,106,90,0.05), transparent 46%);
+}
+
+.card[data-pattern="mini"] {
+  --card-pattern:
+    radial-gradient(circle at 20% 22%, rgba(106,135,168,0.1), transparent 28%),
+    repeating-linear-gradient(45deg, rgba(106,135,168,0.045) 0 1px, transparent 1px 12px);
+}
+
 /* ---------- card head ---------- */
 .card__head {
   display: grid;
@@ -204,6 +271,7 @@
   gap: 14px;
   padding: 18px 20px 14px;
   position: relative;
+  z-index: 1;
 }
 
 /* thumbnail wrapper (이미지 또는 fallback Seal 둘 다 동일 사이즈) */
@@ -212,6 +280,8 @@
   width: 54px;
   height: 72px;
   flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 /* thumbnail — 3:4 비율 */
@@ -222,6 +292,7 @@
   flex-shrink: 0;
   background-color: var(--bg-2);
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   object-fit: cover;
   display: block;
 }
@@ -245,6 +316,7 @@
   display: inline-flex;
   align-items: center; justify-content: center;
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   background-color: var(--bg-2);
   background-image: repeating-linear-gradient(
     135deg, transparent 0, transparent 6px,
@@ -257,6 +329,7 @@
 .card__seal::before {
   content: ""; position: absolute; inset: 3px;
   border: 1px solid rgba(201,169,97,0.18);
+  border-radius: calc(var(--radius-sm) - 3px);
   pointer-events: none;
 }
 .card__seal__tick {
@@ -394,6 +467,7 @@
   border-top: 1px dashed var(--line);
   margin-top: auto;
   position: relative;
+  z-index: 1;
 }
 .card__stats::before {
   content: "";
@@ -425,6 +499,7 @@
   height: 6px;
   background: var(--bg-2);
   border: 1px solid var(--line);
+  border-radius: 2px;
   overflow: hidden;
 }
 .card__statBar::before {
@@ -448,6 +523,7 @@
   position: absolute;
   inset: 0 auto 0 0;
   background: var(--gold);
+  border-radius: inherit;
   z-index: 1;
 }
 .card__statBar--info .card__statBar__fill {

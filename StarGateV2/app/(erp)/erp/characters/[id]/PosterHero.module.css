@@ -176,6 +176,8 @@
   display: inline-flex;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 .hero__viewToggleBtn {
   padding: 6px 12px;
@@ -422,6 +424,7 @@
   margin: 0;
   padding: 14px 18px 14px 20px;
   border-left: 2px solid var(--gold);
+  border-radius: var(--radius-sm);
   background: rgba(0, 0, 0, 0.42);
   align-self: end;
 }

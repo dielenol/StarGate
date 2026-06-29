@@ -34,6 +34,8 @@ const FILTER_LABEL: Record<"ALL" | CharacterTier, string> = {
 
 const HP_MAX = 300;
 const SAN_MAX = 100;
+const CARD_PATTERNS = ["grid", "diagonal", "circuit", "scan"] as const;
+type CardPattern = (typeof CARD_PATTERNS)[number] | "mine" | "risk" | "mini";
 
 interface Props {
   initialCharacters: AgentCharacterCardDto[];
@@ -103,6 +105,26 @@ function getSearchText(c: AgentCharacterCardDto): string {
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+function hashPatternSeed(value: string): number {
+  return Array.from(value).reduce(
+    (acc, char) => (acc * 31 + char.charCodeAt(0)) >>> 0,
+    0,
+  );
+}
+
+function getCardPattern(
+  c: AgentCharacterCardDto,
+  id: string,
+  viewerUserId: string,
+): CardPattern {
+  if (c.ownerId === viewerUserId) return "mine";
+  if (c.play.hp <= 0 || c.play.san < 30) return "risk";
+  if (tierOf(c) === "MINI") return "mini";
+
+  const seed = [id, c.codename, c.department ?? "", c.role].join("|");
+  return CARD_PATTERNS[hashPatternSeed(seed) % CARD_PATTERNS.length];
 }
 
 function shouldUseClientNavigation(event: MouseEvent<HTMLAnchorElement>) {
@@ -302,6 +324,7 @@ export default function CharactersClient({
             const subLine = [c.role, departmentLabel].filter(Boolean).join(" / ");
             const displayName = getDisplayName(c);
             const tier = tierOf(c);
+            const pattern = getCardPattern(c, id, viewerUserId);
 
             return (
               <Link
@@ -309,7 +332,7 @@ export default function CharactersClient({
                 href={`/erp/characters/${id}`}
                 className={styles.cardLink}
               >
-                <div className={styles.card}>
+                <div className={styles.card} data-pattern={pattern}>
                   <div className={styles.card__head}>
                     <CharacterCardThumb
                       src={c.previewImage}
