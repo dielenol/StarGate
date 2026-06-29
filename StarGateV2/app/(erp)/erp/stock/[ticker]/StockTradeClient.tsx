@@ -432,7 +432,7 @@ export default function StockTradeClient({
   }
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -1217,6 +1217,6 @@ export default function StockTradeClient({
           </div>
         </aside>
       </div>
-    </>
+    </div>
   );
 }

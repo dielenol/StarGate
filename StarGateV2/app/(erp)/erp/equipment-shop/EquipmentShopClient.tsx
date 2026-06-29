@@ -393,7 +393,7 @@ export default function EquipmentShopClient({
   }
 
   return (
-    <div className={styles.shopRoot}>
+    <div className={styles.shopRoot} data-pixel-font="full">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },

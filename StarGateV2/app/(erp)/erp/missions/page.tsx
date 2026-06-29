@@ -16,7 +16,7 @@ export default async function MissionsPage() {
   }
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -37,6 +37,6 @@ export default async function MissionsPage() {
           </p>
         </div>
       </Box>
-    </>
+    </div>
   );
 }

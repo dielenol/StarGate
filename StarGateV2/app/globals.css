@@ -1,5 +1,5 @@
-/* ── 편의점 도트 폰트 (Pokemon DPPt — CC BY-SA 3.0, aztecwarrior28).
-   /public/fonts/pokemon-dppt-LICENSE.txt 번들. shop scope 한정 사용.
+/* ── ERP 도트 폰트 (Pokemon DPPt — CC BY-SA 3.0, aztecwarrior28).
+   /public/fonts/pokemon-dppt-LICENSE.txt 번들. data-pixel-font opt-in scope 한정 사용.
    size-adjust: 도트 폰트는 cap-height 가 작아 같은 CSS px 에서 글자 작아 보임 →
    ERP 14px floor 정책의 시각적 보장 위해 130% 로 글리프 키움. */
 @font-face {
@@ -52,6 +52,7 @@
 
   /* 폰트 변수 — next/font 가 --font-mono / --font-body 로 주입 */
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-pixel: "PokemonDPPT", ui-monospace, "SF Mono", "Menlo", monospace;
   --font-body: "Noto Sans KR", "Inter", "Pretendard", "Apple SD Gothic Neo",
     sans-serif;
 
@@ -176,6 +177,22 @@ body {
   --font-size-lg: 26px;
   --topbar-h: 64px;
   font-size: 15px;
+}
+
+/* Pixel typography opt-in.
+   ui: existing mono UI only. full: shop-like game screens where the whole surface
+   is intentionally rendered as pixel UI. */
+[data-pixel-font="ui"],
+[data-pixel-font="full"] {
+  --font-mono: var(--font-pixel);
+}
+
+[data-pixel-font="full"] {
+  font-family: var(--font-pixel);
+}
+
+[data-pixel-font="full"] :where(input, button, select, textarea) {
+  font-family: inherit;
 }
 
 /* ── Custom scrollbar ──

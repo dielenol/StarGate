@@ -251,7 +251,7 @@ export default function StockListClient({
   }
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -526,6 +526,6 @@ export default function StockListClient({
           <MarketWirePanel items={marketWire.items} compact />
         </aside>
       </div>
-    </>
+    </div>
   );
 }

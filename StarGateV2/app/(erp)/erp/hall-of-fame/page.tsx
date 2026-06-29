@@ -16,7 +16,7 @@ export default async function HallOfFamePage() {
   }
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -37,6 +37,6 @@ export default async function HallOfFamePage() {
           </p>
         </div>
       </Box>
-    </>
+    </div>
   );
 }

@@ -32,7 +32,7 @@ export default async function InventoryPage() {
         title="인벤토리"
       />
 
-      <Box>
+      <Box data-pixel-font="ui">
         <div
           style={{
             padding: "32px 24px",

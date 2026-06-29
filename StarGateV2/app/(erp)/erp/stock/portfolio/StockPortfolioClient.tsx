@@ -133,7 +133,7 @@ export default function StockPortfolioClient({
   }, [holdings.items, summary.totalEval]);
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -359,6 +359,6 @@ export default function StockPortfolioClient({
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -368,6 +368,7 @@ export default async function ERPDashboardPage() {
         title="대시보드"
       />
 
+      <div data-pixel-font="ui">
       <section className={styles.commandCenter} aria-label="운영 홈">
         <article className={`${styles.commandSurface} ${styles.agentStage}`}>
           <div className={styles.agentStage__portrait} aria-hidden="true">
@@ -771,6 +772,7 @@ export default async function ERPDashboardPage() {
             </div>
           )}
         </section>
+      </div>
       </div>
     </>
   );

@@ -16,7 +16,7 @@ export default async function GalleryPage() {
   }
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -37,6 +37,6 @@ export default async function GalleryPage() {
           </p>
         </div>
       </Box>
-    </>
+    </div>
   );
 }

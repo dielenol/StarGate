@@ -187,7 +187,7 @@ export default function NotificationsClient({
   }, [filtered]);
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -356,6 +356,6 @@ export default function NotificationsClient({
           </div>
         )}
       </Box>
-    </>
+    </div>
   );
 }

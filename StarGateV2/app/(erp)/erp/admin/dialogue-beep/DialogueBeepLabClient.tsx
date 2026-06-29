@@ -206,7 +206,7 @@ export default function DialogueBeepLabClient() {
     : "0 chars · 0 beeps";
 
   return (
-    <>
+    <div data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -455,6 +455,6 @@ export default function DialogueBeepLabClient() {
           </div>
         </section>
       </div>
-    </>
+    </div>
   );
 }

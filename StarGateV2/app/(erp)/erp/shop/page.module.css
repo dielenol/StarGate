@@ -4,21 +4,12 @@
    ========================================================== */
 
 .shopRoot {
-  --font-mono: "PokemonDPPT", ui-monospace, "SF Mono", "Menlo", monospace;
   --shop-scene-bg: url("/assets/shop/store-bg.webp");
   --shop-closed-bg: url("/assets/shop/store-closed.webp");
   --shop-counter-texture: none;
   --tia-fixed-bottom: 14px;
   --tia-fixed-hud-height: 148px;
   padding-bottom: calc(var(--tia-fixed-hud-height) + var(--tia-fixed-bottom) + 12px);
-  font-family: var(--font-mono);
-}
-
-.shopRoot input,
-.shopRoot button,
-.shopRoot select,
-.shopRoot textarea {
-  font-family: inherit;
 }
 
 .headRight {

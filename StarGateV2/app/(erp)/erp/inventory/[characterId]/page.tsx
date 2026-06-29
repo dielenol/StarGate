@@ -122,7 +122,7 @@ export default async function CharacterInventoryPage({
         }
       />
 
-      <div className={styles.inventoryStack}>
+      <div className={styles.inventoryStack} data-pixel-font="ui">
         <InventoryClient
           entries={entries}
           title="개인 인벤토리"
