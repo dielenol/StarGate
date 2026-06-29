@@ -24,16 +24,20 @@
 import "./init";
 
 import {
-  findTrpgSessionsByMonth,
   trpgGuildMembersCol,
   trpgSessionsCol,
+  type SessionStatus,
+  type TrpgSession,
   type TrpgSessionStatus,
 } from "@stargate/shared-db";
 
-import type { SessionStatus } from "@stargate/shared-db";
-
 import type { SerializedSession } from "@/hooks/queries/useSessionsQuery";
 import { getParticipantCodenameOverride } from "@/lib/session-participant-overrides";
+
+interface TrpgMonthRange {
+  start: string;
+  end: string;
+}
 
 /** `process.env.TRPG_GUILD_ID` 정규화 — 비어 있으면 null. */
 export function getTrpgGuildId(): string | null {
@@ -48,9 +52,52 @@ export function getTrpgWebBaseUrl(): string | null {
   return raw.replace(/\/+$/, "");
 }
 
+function trpgMonthRange(year: number, monthIndex: number): TrpgMonthRange {
+  const month = monthIndex + 1;
+  const mm = String(month).padStart(2, "0");
+  const start = `${year}-${mm}-01`;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  const end = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
+  return { start, end };
+}
+
+function toKstDateTime(session: Pick<TrpgSession, "date" | "startTime">): Date {
+  return new Date(`${session.date}T${session.startTime}:00+09:00`);
+}
+
+function mapTrpgStatus(
+  status: TrpgSessionStatus,
+  targetDateTime: Date,
+  now: Date,
+): SessionStatus | null {
+  switch (status) {
+    case "open":
+      return targetDateTime.getTime() <= now.getTime() ? "CLOSED" : "OPEN";
+    case "cancelled":
+      return "CANCELED";
+    default: {
+      const _exhaustive: never = status;
+      void _exhaustive;
+      return null;
+    }
+  }
+}
+
+function currentKstParts(now: Date): { date: string; time: string } {
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return {
+    date: kst.toISOString().slice(0, 10),
+    time: kst.toISOString().slice(11, 16),
+  };
+}
+
 /**
- * trpg_sessions 컬렉션에서 해당 월의 open 세션을 가져와
+ * trpg_sessions 컬렉션에서 해당 월의 세션을 가져와
  * registra 세션과 동일한 `SerializedSession` 형태로 변환한다.
+ *
+ * trpg 모델은 완료 상태가 없으므로, 아직 open 이어도 시작 시각이 지난 세션은
+ * ERP 표시용으로 `CLOSED` 처리한다. cancelled 원천 상태는 그대로 취소로 표시한다.
  *
  * @param year 연 (예: 2026)
  * @param monthIndex 0-11 — JS Date 의 month index 와 동일
@@ -64,12 +111,15 @@ export async function fetchTrpgSessionsAsSerialized(
   const trpgGuildId = getTrpgGuildId();
   if (!trpgGuildId) return [];
 
-  // findTrpgSessionsByMonth 는 month=1-12 기반 — monthIndex+1 로 변환.
-  const raws = await findTrpgSessionsByMonth(
-    trpgGuildId,
-    year,
-    monthIndex + 1,
-  );
+  const { start, end } = trpgMonthRange(year, monthIndex);
+  const col = await trpgSessionsCol();
+  const raws = await col
+    .find({
+      guildId: trpgGuildId,
+      date: { $gte: start, $lt: end },
+    })
+    .sort({ date: 1, startTime: 1 })
+    .toArray();
 
   if (raws.length === 0) return [];
 
@@ -101,9 +151,10 @@ export async function fetchTrpgSessionsAsSerialized(
   }
 
   const serialized: SerializedSession[] = [];
+  const now = new Date();
   for (const raw of raws) {
     // KST 기준 `YYYY-MM-DDTHH:mm:00+09:00` 로 결합 → UTC ISO 변환.
-    const dt = new Date(`${raw.date}T${raw.startTime}:00+09:00`);
+    const dt = toKstDateTime(raw);
     if (Number.isNaN(dt.getTime())) {
       console.warn(
         `[trpg-sessions-bridge] invalid date/time skipped: id=${raw._id?.toString() ?? "?"} date=${raw.date} startTime=${raw.startTime}`,
@@ -112,23 +163,12 @@ export async function fetchTrpgSessionsAsSerialized(
     }
     const targetIso = dt.toISOString();
 
-    // trpg status 2단(open/cancelled) → registra status 5단 중 OPEN / CANCELED 로 매핑.
-    // 알 수 없는 status 가 들어오면 (스키마 확장 등) 컴파일러가 잡아내도록 exhaustive 처리.
-    let mappedStatus: SessionStatus;
-    switch (raw.status) {
-      case "open":
-        mappedStatus = "OPEN";
-        break;
-      case "cancelled":
-        mappedStatus = "CANCELED";
-        break;
-      default: {
-        const _exhaustive: never = raw.status;
-        console.warn(
-          `[trpg-sessions-bridge] unknown status skipped: id=${raw._id?.toString() ?? "?"} status=${_exhaustive as string}`,
-        );
-        continue;
-      }
+    const mappedStatus = mapTrpgStatus(raw.status, dt, now);
+    if (!mappedStatus) {
+      console.warn(
+        `[trpg-sessions-bridge] unknown status skipped: id=${raw._id?.toString() ?? "?"} status=${String(raw.status)}`,
+      );
+      continue;
     }
 
     const participants = raw.participantDiscordIds.map((id) => {
@@ -178,6 +218,7 @@ export async function fetchTrpgSessionsAsSerialized(
 /** registra 측 ActiveSessionCounts 와 동일 shape — 통합 카운트 합산용. */
 export interface TrpgActiveCounts {
   open: number;
+  closed: number;
   cancel: number;
   mine: number;
 }
@@ -185,9 +226,10 @@ export interface TrpgActiveCounts {
 /**
  * trpg_sessions 전역 활성 세션 카운트.
  *
- * trpg 모델은 status 가 open / cancelled 2단만 — closed 개념 없음 →
- * `open` 으로만 합산. cancelled 는 `cancel`. `mine` 은 viewerDiscordId 가
- * participantDiscordIds 에 포함된 open 세션 수.
+ * trpg 모델은 status 가 open / cancelled 2단만이고 완료 상태가 없으므로,
+ * open 중 시작 시각이 지난 세션은 ERP 표시용 `closed` 로 합산한다.
+ * cancelled 는 `cancel`. `mine` 은 viewerDiscordId 가 participantDiscordIds 에
+ * 포함된 open 세션 수이며, 지난 open 세션도 내 참여로 유지한다.
  *
  * TRPG_GUILD_ID 미설정 시 0 카운트 반환.
  */
@@ -195,23 +237,33 @@ export async function countTrpgActiveSessions(
   viewerDiscordId?: string | null,
 ): Promise<TrpgActiveCounts> {
   const trpgGuildId = getTrpgGuildId();
-  if (!trpgGuildId) return { open: 0, cancel: 0, mine: 0 };
+  if (!trpgGuildId) return { open: 0, closed: 0, cancel: 0, mine: 0 };
 
   const col = await trpgSessionsCol();
+  const { date: today, time: nowTime } = currentKstParts(new Date());
 
-  const agg = await col
-    .aggregate<{ _id: TrpgSessionStatus; count: number }>([
-      { $match: { guildId: trpgGuildId } },
-      { $group: { _id: "$status", count: { $sum: 1 } } },
-    ])
-    .toArray();
-
-  let open = 0;
-  let cancel = 0;
-  for (const row of agg) {
-    if (row._id === "open") open += row.count;
-    else if (row._id === "cancelled") cancel += row.count;
-  }
+  const [open, closed, cancel] = await Promise.all([
+    col.countDocuments({
+      guildId: trpgGuildId,
+      status: "open",
+      $or: [
+        { date: { $gt: today } },
+        { date: today, startTime: { $gt: nowTime } },
+      ],
+    }),
+    col.countDocuments({
+      guildId: trpgGuildId,
+      status: "open",
+      $or: [
+        { date: { $lt: today } },
+        { date: today, startTime: { $lte: nowTime } },
+      ],
+    }),
+    col.countDocuments({
+      guildId: trpgGuildId,
+      status: "cancelled",
+    }),
+  ]);
 
   let mine = 0;
   if (typeof viewerDiscordId === "string" && viewerDiscordId.length > 0) {
@@ -222,5 +274,5 @@ export async function countTrpgActiveSessions(
     });
   }
 
-  return { open, cancel, mine };
+  return { open, closed, cancel, mine };
 }

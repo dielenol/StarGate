@@ -16,7 +16,7 @@
  *   M-6: invalid date/time → skip
  *   M-7: viewer YES 판정
  *   M-8: Promise.allSettled 부분 실패 격리
- *   M-9: 통합 카운트 합산 (closed = registra only)
+ *   M-9: 통합 카운트 합산 (trpg 지난 open → closed 포함)
  *   M-10: 시간순 정렬
  *   M-11: source 필드 필수 보존
  *
@@ -118,7 +118,7 @@ async function countMerged({
       ? Promise.reject(new Error("registra count failed"))
       : Promise.resolve(registraCounts),
     !trpgEnabled
-      ? Promise.resolve({ open: 0, cancel: 0, mine: 0 })
+      ? Promise.resolve({ open: 0, closed: 0, cancel: 0, mine: 0 })
       : trpgThrows
       ? Promise.reject(new Error("trpg count failed"))
       : Promise.resolve(trpgCounts),
@@ -138,13 +138,13 @@ async function countMerged({
   const t =
     trpg.status === "fulfilled"
       ? trpg.value
-      : { open: 0, cancel: 0, mine: 0 };
+      : { open: 0, closed: 0, cancel: 0, mine: 0 };
 
-  const trpgAll = t.open + t.cancel;
+  const trpgAll = t.open + t.closed + t.cancel;
   return {
     all: r.all + trpgAll,
     open: r.open + t.open,
-    closed: r.closed, // trpg 미합산 (closed 개념 없음)
+    closed: r.closed + t.closed,
     cancel: r.cancel + t.cancel,
     mine: r.mine + t.mine,
   };
@@ -167,8 +167,26 @@ function getTrpgWebBaseUrl(env = process.env) {
   return raw.replace(/\/+$/, "");
 }
 
+const DEFAULT_TRPG_NOW = new Date("2026-05-20T00:00:00.000Z");
+
+function mapTrpgStatus(status, targetDateTime, now) {
+  switch (status) {
+    case "open":
+      return targetDateTime.getTime() <= now.getTime() ? "CLOSED" : "OPEN";
+    case "cancelled":
+      return "CANCELED";
+    default:
+      return null;
+  }
+}
+
 /** Source: trpg-sessions-bridge.ts:fetchTrpgSessionsAsSerialized(...) — pure mapping. */
-function trpgRawToSerialized(raws, viewer, nameByDiscordId = new Map()) {
+function trpgRawToSerialized(
+  raws,
+  viewer,
+  nameByDiscordId = new Map(),
+  now = DEFAULT_TRPG_NOW,
+) {
   const serialized = [];
   for (const raw of raws) {
     const dt = new Date(`${raw.date}T${raw.startTime}:00+09:00`);
@@ -178,21 +196,12 @@ function trpgRawToSerialized(raws, viewer, nameByDiscordId = new Map()) {
       );
       continue;
     }
-    let mappedStatus;
-    switch (raw.status) {
-      case "open":
-        mappedStatus = "OPEN";
-        break;
-      case "cancelled":
-        mappedStatus = "CANCELED";
-        break;
-      default: {
-        // exhaustive 안전망 — 실제 코드에서는 `const _: never = raw.status`
-        console.warn(
-          `[trpg-sessions-bridge] unknown status skipped: id=${raw._id ?? "?"} status=${raw.status}`,
-        );
-        continue;
-      }
+    const mappedStatus = mapTrpgStatus(raw.status, dt, now);
+    if (!mappedStatus) {
+      console.warn(
+        `[trpg-sessions-bridge] unknown status skipped: id=${raw._id ?? "?"} status=${raw.status}`,
+      );
+      continue;
     }
 
     const participants = raw.participantDiscordIds.map((id) => ({
@@ -438,15 +447,34 @@ describe("M-5/M-6: trpg invalid 입력 skip", () => {
     }
   });
 
-  test("status 매핑 정확성 — open → OPEN, cancelled → CANCELED", () => {
+  test("status 매핑 정확성 — 미래 open → OPEN, 지난 open → CLOSED, cancelled → CANCELED", () => {
     const result = trpgRawToSerialized(
       [
-        rawTrpg({ _id: "a", status: "open" }),
+        rawTrpg({
+          _id: "a",
+          status: "open",
+          date: "2026-05-20",
+          startTime: "20:00",
+        }),
+        rawTrpg({
+          _id: "past",
+          status: "open",
+          date: "2026-05-19",
+          startTime: "20:00",
+        }),
+        rawTrpg({
+          _id: "now",
+          status: "open",
+          date: "2026-05-20",
+          startTime: "09:00",
+        }),
         rawTrpg({ _id: "b", status: "cancelled" }),
       ],
       null,
     );
     assert.equal(result.find((r) => r._id === "a").status, "OPEN");
+    assert.equal(result.find((r) => r._id === "past").status, "CLOSED");
+    assert.equal(result.find((r) => r._id === "now").status, "CLOSED");
     assert.equal(result.find((r) => r._id === "b").status, "CANCELED");
   });
 });
@@ -638,16 +666,16 @@ describe("M-8: Promise.allSettled 부분 실패 격리", () => {
 /* ─────────────────────────────────────────────────────────────────────── */
 
 describe("M-9: 통합 카운트 합산", () => {
-  test("registra + trpg 정상 합산 — closed 는 registra only", async () => {
+  test("registra + trpg 정상 합산 — trpg closed 포함", async () => {
     const counts = await countMerged({
       registraCounts: { all: 10, open: 5, closed: 3, cancel: 2, mine: 1 },
-      trpgCounts: { open: 4, cancel: 1, mine: 2 },
+      trpgCounts: { open: 4, closed: 6, cancel: 1, mine: 2 },
       trpgEnabled: true,
     });
     assert.equal(counts.open, 9, "registra.open(5) + trpg.open(4)");
     assert.equal(counts.cancel, 3, "registra.cancel(2) + trpg.cancel(1)");
-    assert.equal(counts.closed, 3, "trpg 미합산 — closed 개념 부재");
-    assert.equal(counts.all, 15, "registra.all(10) + trpg(open+cancel=5)");
+    assert.equal(counts.closed, 9, "registra.closed(3) + trpg.closed(6)");
+    assert.equal(counts.all, 21, "registra.all(10) + trpg(open+closed+cancel=11)");
     assert.equal(counts.mine, 3, "registra(1) + trpg(2)");
   });
 
@@ -658,13 +686,13 @@ describe("M-9: 통합 카운트 합산", () => {
       const counts = await countMerged({
         registraCounts: null,
         registraThrows: true,
-        trpgCounts: { open: 7, cancel: 0, mine: 2 },
+        trpgCounts: { open: 7, closed: 4, cancel: 0, mine: 2 },
         trpgEnabled: true,
       });
       assert.equal(counts.open, 7);
       assert.equal(counts.cancel, 0);
-      assert.equal(counts.closed, 0);
-      assert.equal(counts.all, 7);
+      assert.equal(counts.closed, 4);
+      assert.equal(counts.all, 11);
       assert.equal(counts.mine, 2);
     } finally {
       console.error = origErr;

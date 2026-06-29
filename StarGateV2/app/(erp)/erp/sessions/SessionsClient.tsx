@@ -398,6 +398,13 @@ function buildTrpgCalendarUrl(base: string | null): string | null {
   return `${base}${TRPG_CALENDAR_PATH}`;
 }
 
+function statusLabelForSession(session: SerializedSession): string {
+  if (session.source === "trpg" && session.status === "CLOSED") {
+    return "마감";
+  }
+  return STATUS_LABEL[session.status];
+}
+
 interface SessionsListProps {
   sessions: SerializedSession[];
   year: number;
@@ -559,7 +566,7 @@ function SessionsListItem({
         onClick={onToggle}
         aria-expanded={expanded}
       >
-        <div className={statCls}>{STATUS_LABEL[s.status]}</div>
+        <div className={statCls}>{statusLabelForSession(s)}</div>
         <div className={styles.listName}>
           <div className={styles.row1}>
             {isAttending(s) ? (
@@ -622,7 +629,7 @@ function SessionsListItem({
             ) : null}
             <div className={styles.listInfo__row}>
               <dt>상태</dt>
-              <dd className={statCls}>{STATUS_LABEL[s.status]}</dd>
+              <dd className={statCls}>{statusLabelForSession(s)}</dd>
             </div>
           </dl>
 

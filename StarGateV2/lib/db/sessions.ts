@@ -304,11 +304,10 @@ export async function findMergedSessionsByGuildInMonth(
 /**
  * registra + trpg 통합 활성 세션 카운트.
  *
- * - trpg 모델은 status 가 open / cancelled 2단만이라 `closed` 매핑이 없다 →
- *   registra `closed` 카운트는 그대로, trpg open 은 `open` 에 합산, cancelled 는
- *   `cancel` 에 합산.
- * - `all` 은 두 출처의 "전체 활성 세션" 합. trpg 측은 closed 개념이 없어
- *   `open + cancel` 을 trpg "전체"로 간주한다.
+ * - trpg 모델은 status 가 open / cancelled 2단만이고 완료 상태가 없으므로,
+ *   시작 시각이 지난 trpg open 세션은 ERP 표시용 `closed` 에 합산한다.
+ * - `all` 은 두 출처의 "전체 활성 세션" 합. trpg 측은 `open + closed + cancel` 을
+ *   trpg "전체"로 간주한다.
  * - `mine` 은 양쪽 모두에서 viewer 의 YES/참여 카운트 합.
  * - TRPG_GUILD_ID 미설정 시 trpg 측은 0 카운트 → registra 와 동일.
  *
@@ -346,15 +345,14 @@ export async function countMergedActiveSessionsByGuild(
   const trpgCounts =
     trpgResult.status === "fulfilled"
       ? trpgResult.value
-      : { open: 0, cancel: 0, mine: 0 };
+      : { open: 0, closed: 0, cancel: 0, mine: 0 };
 
-  // trpg 측 "전체" 정의 = open + cancel (closed 개념 부재).
-  const trpgAll = trpgCounts.open + trpgCounts.cancel;
+  // trpg 측 "전체" 정의 = open + closed + cancel.
+  const trpgAll = trpgCounts.open + trpgCounts.closed + trpgCounts.cancel;
   return {
     all: registraCounts.all + trpgAll,
     open: registraCounts.open + trpgCounts.open,
-    // trpg 미합산 — closed 개념 없음.
-    closed: registraCounts.closed,
+    closed: registraCounts.closed + trpgCounts.closed,
     cancel: registraCounts.cancel + trpgCounts.cancel,
     mine: registraCounts.mine + trpgCounts.mine,
   };
