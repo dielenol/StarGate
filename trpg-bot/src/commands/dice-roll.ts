@@ -6,7 +6,7 @@
  * @module commands/dice-roll
  */
 
-import { EmbedBuilder, MessageFlags } from "discord.js";
+import { MessageFlags } from "discord.js";
 
 import type {
   ChatInputCommandInteraction,
@@ -19,15 +19,11 @@ import {
   DiceRollError,
   formatDiceTotal,
   rollDiceExpression,
-  type DiceRollDetail,
-  type DiceRollFlags,
   type DiceRollResult,
 } from "../utils/dice-roller.js";
 
-const DICE_EMBED_COLOR = 0x7c6f57;
-const MAX_FIELD_COUNT = 20;
-const EMBED_FIELD_VALUE_MAX = 1024;
-const EMBED_FIELD_NAME_MAX = 256;
+const MAX_MESSAGE_LENGTH = 1900;
+const MAX_LISTED_ROLLS = 12;
 
 const HELP_TEXT = [
   "사용: `/roll 식:2d6+3` 또는 `/r 식:4d6 k3`",
@@ -45,79 +41,106 @@ function escapeInlineCode(value: string): string {
   return value.replace(/`/g, "'");
 }
 
-function truncate(value: string, maxLength: number): string {
+function escapeMarkdownText(value: string): string {
+  return value.replace(/([\\*_`~|])/g, "\\$1");
+}
+
+function truncateText(value: string, maxLength: number): string {
   if (value.length <= maxLength) return value;
   return `${value.slice(0, maxLength - 1)}…`;
 }
 
-function formatDetail(detail: DiceRollDetail): string {
-  const label =
-    detail.mode === "success"
-      ? "성공"
-      : detail.mode === "botch"
-        ? "봇치"
-        : "합계";
-  return `\`${escapeInlineCode(detail.notation)}\` ${detail.values} = ${label} ${formatDiceTotal(detail.total)}`;
+function inlineCode(value: string): string {
+  return `\`${escapeInlineCode(value)}\``;
 }
 
-function formatRollFieldValue(
-  roll: DiceRollResult["rolls"][number],
-  flags: DiceRollFlags,
+function formatRollValuesForMessage(values: string): string {
+  if (values.includes("~~") || values.startsWith("(")) return values;
+  return inlineCode(values);
+}
+
+function getInteractionDisplayName(
+  interaction: ChatInputCommandInteraction,
 ): string {
-  if (flags.simplified) {
-    return `총합: **${formatDiceTotal(roll.total)}**`;
+  const member = interaction.member;
+  if (member && "displayName" in member && typeof member.displayName === "string") {
+    return member.displayName;
+  }
+  if (member && "nick" in member && typeof member.nick === "string" && member.nick) {
+    return member.nick;
+  }
+  return interaction.user.globalName ?? interaction.user.username;
+}
+
+function formatRollValues(roll: DiceRollResult["rolls"][number]): string {
+  if (roll.details.length === 1) return roll.details[0].values;
+  return roll.details
+    .map((detail) => `${detail.notation} ${detail.values}`)
+    .join(" + ");
+}
+
+function formatRollLine({
+  roll,
+  index,
+  totalRolls,
+  simplified,
+}: {
+  roll: DiceRollResult["rolls"][number];
+  index: number;
+  totalRolls: number;
+  simplified: boolean;
+}): string {
+  const label = totalRolls === 1 ? "Roll" : `Roll #${index + 1}`;
+  const total = `**${formatDiceTotal(roll.total)}**`;
+  if (simplified) return `${label}: ${total}`;
+
+  const values = formatRollValuesForMessage(formatRollValues(roll));
+  return `${label}: ${values} = ${total}`;
+}
+
+function buildDiceRollContent(
+  result: DiceRollResult,
+  displayName: string,
+): string {
+  const request = inlineCode(truncateText(result.rawInput, 160));
+  const name = escapeMarkdownText(truncateText(displayName, 40));
+  const head = `🎲 ${name} Request: ${request}`;
+
+  if (result.rolls.length === 1) {
+    const line = formatRollLine({
+      roll: result.rolls[0],
+      index: 0,
+      totalRolls: 1,
+      simplified: result.flags.simplified,
+    });
+    const comment = result.comment
+      ? ` Note: ${truncateText(result.comment, 160)}`
+      : "";
+    return truncateText(`${head} ${line}${comment}`, MAX_MESSAGE_LENGTH);
   }
 
-  const detailLines = roll.details.map(formatDetail);
-  return truncate(
-    [...detailLines, `총합: **${formatDiceTotal(roll.total)}**`].join("\n"),
-    EMBED_FIELD_VALUE_MAX,
-  );
-}
-
-function buildDiceRollEmbed(result: DiceRollResult): EmbedBuilder {
-  const totals = result.rolls.map((roll, index) => {
-    const prefix = result.rolls.length === 1 ? "" : `#${index + 1} `;
-    return `${prefix}**${formatDiceTotal(roll.total)}**`;
-  });
-
-  const description = [
-    `입력: \`${escapeInlineCode(result.rawInput)}\``,
-    result.comment ? `메모: ${result.comment}` : null,
-    `결과: ${totals.join(", ")}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  const embed = new EmbedBuilder()
-    .setColor(DICE_EMBED_COLOR)
-    .setTitle("주사위 결과")
-    .setDescription(description)
-    .setTimestamp();
-
-  const listed = result.rolls.slice(0, MAX_FIELD_COUNT);
+  const lines = [head];
+  const listed = result.rolls.slice(0, MAX_LISTED_ROLLS);
   for (const [index, roll] of listed.entries()) {
-    const name =
-      result.rolls.length === 1
-        ? roll.expression
-        : `${String(index + 1).padStart(2, "0")}. ${roll.expression}`;
-    embed.addFields({
-      name: truncate(name, EMBED_FIELD_NAME_MAX),
-      value: formatRollFieldValue(roll, result.flags),
-      inline: false,
-    });
+    lines.push(
+      formatRollLine({
+        roll,
+        index,
+        totalRolls: result.rolls.length,
+        simplified: result.flags.simplified,
+      }),
+    );
   }
 
   const rest = result.rolls.length - listed.length;
   if (rest > 0) {
-    embed.addFields({
-      name: "더 보기",
-      value: `외 ${rest}개 결과는 생략했습니다.`,
-      inline: false,
-    });
+    lines.push(`... 외 ${rest}개 생략`);
+  }
+  if (result.comment) {
+    lines.push(`Note: ${truncateText(result.comment, 160)}`);
   }
 
-  return embed;
+  return truncateText(lines.join("\n"), MAX_MESSAGE_LENGTH);
 }
 
 async function replyEphemeral(
@@ -154,7 +177,8 @@ export async function handleDiceRoll(
     const privateReply =
       (interaction.options.getBoolean("비공개") ?? false) || result.flags.private;
     const reply: InteractionReplyOptions = {
-      embeds: [buildDiceRollEmbed(result)],
+      content: buildDiceRollContent(result, getInteractionDisplayName(interaction)),
+      allowedMentions: { parse: [] },
     };
     if (privateReply) {
       reply.flags = MessageFlags.Ephemeral;
