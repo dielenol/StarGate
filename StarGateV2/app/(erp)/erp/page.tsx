@@ -25,14 +25,9 @@ import type { NotificationType } from "@/types/notification";
 import type { SessionStatus } from "@/types/session";
 
 import Bar from "@/components/ui/Bar/Bar";
-import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
-import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
-import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Seal from "@/components/ui/Seal/Seal";
-import Spread from "@/components/ui/Spread/Spread";
-import Stack from "@/components/ui/Stack/Stack";
 import Tag, { rankTone } from "@/components/ui/Tag/Tag";
 
 import styles from "./page.module.css";
@@ -301,9 +296,6 @@ export default async function ERPDashboardPage() {
     )
     .slice(0, 3);
 
-  const todayMissionCount = enrichedUpcoming.filter(
-    ({ raw }) => raw.status !== "CANCELED" && daysUntil(raw.targetDateTime) === 0,
-  ).length;
   const openMissionCount = enrichedUpcoming.filter(
     ({ raw }) => raw.status === "OPEN" || raw.status === "CLOSING",
   ).length;
@@ -367,14 +359,7 @@ export default async function ERPDashboardPage() {
         }
       : null,
   ].filter((item): item is ActionItem => item !== null);
-  const heroAction = nextMission
-    ? { href: "/erp/sessions", label: "작전 보기" }
-    : actionItems[0]
-      ? { href: actionItems[0].href, label: actionItems[0].cta }
-      : { href: "/erp/characters", label: "캐릭터 확인" };
-  const heroLead = nextMission
-    ? `${ddayLabel(nextMission.targetDateTime)} · ${nextMission.title}`
-    : actionItems[0]?.title ?? "우선 처리 항목 없음";
+  const displayCharacter = myChar ?? mainCharacter;
 
   return (
     <>
@@ -383,152 +368,157 @@ export default async function ERPDashboardPage() {
         title="대시보드"
       />
 
-      <section className={styles.heroTile} aria-label="요원 브리핑">
-        <div className={styles.heroTile__copy}>
-          <span className={styles.heroTile__kicker}>NOVUS ORDO ERP</span>
-          <h2 className={styles.heroTile__title}>
-            {mainCharacter ? `${mainCharacter.codename} 운용 현황` : "운용 대기"}
-          </h2>
-          <p className={styles.heroTile__lead}>{heroLead}</p>
-          <div className={styles.heroTile__actions}>
-            <Button
-              as="a"
-              href={heroAction.href}
-              variant="primary"
-              className={styles.heroTile__button}
-            >
-              {heroAction.label}
-            </Button>
-            <Link href="/erp/wiki" className={styles.heroTile__link}>
-              기록 열람
-            </Link>
-          </div>
-        </div>
-
-        <div className={styles.heroTile__showcase}>
-          <div className={styles.heroTile__portrait} aria-hidden="true">
-            {mainCharacter ? (
+      <section className={styles.commandCenter} aria-label="운영 홈">
+        <article className={`${styles.commandSurface} ${styles.agentStage}`}>
+          <div className={styles.agentStage__portrait} aria-hidden="true">
+            {displayCharacter ? (
               <CharAvatar
-                codename={mainCharacter.codename}
-                previewImage={mainCharacter.previewImage}
-                initial={(mainCharacter.lore.name || mainCharacter.codename)
+                codename={displayCharacter.codename}
+                previewImage={displayCharacter.previewImage}
+                initial={(displayCharacter.lore.name || displayCharacter.codename)
                   .charAt(0)
                   .toUpperCase()}
                 variant="hero"
               />
             ) : (
-              <Seal size="sm">ERP</Seal>
-            )}
-          </div>
-          <div className={styles.heroTile__facts}>
-            <div className={styles.heroTile__fact}>
-              <span>NEXT</span>
-              <strong>
-                {nextMission ? ddayLabel(nextMission.targetDateTime) : "STANDBY"}
-              </strong>
-              <em>
-                {nextMission ? formatTime(nextMission.targetDateTime) : "작전 없음"}
-              </em>
-            </div>
-            <div className={styles.heroTile__fact}>
-              <span>BALANCE</span>
-              <strong>¤ {balance.toLocaleString()}</strong>
-              <em>운용 가능 크레딧</em>
-            </div>
-            <div className={styles.heroTile__fact}>
-              <span>ACTIVE</span>
-              <strong>{actionItems.length}</strong>
-              <em>처리 항목</em>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* HUD 스트립 — 요원 식별/다음 작전/잔액/응답 대기 한눈 요약 (페이지 내 데이터 재표시) */}
-      <section className={styles.hudStrip} aria-label="요원 상태 요약">
-        <div className={styles.hudCell}>
-          <span className={styles.hudCell__label}>IDENT</span>
-          <span className={styles.hudCell__value}>
-            {mainCharacter ? (
-              <>
-                <span className={styles.hudCell__primary}>
-                  {mainCharacter.codename}
-                </span>
-                {mainCharacter.agentLevel ? (
-                  <Tag tone={rankTone(mainCharacter.agentLevel) ?? "default"}>
-                    {mainCharacter.agentLevel}
-                  </Tag>
-                ) : null}
-              </>
-            ) : (
-              <span className={styles.hudCell__muted}>UNREGISTERED</span>
-            )}
-          </span>
-        </div>
-        <div className={styles.hudCell}>
-          <span className={styles.hudCell__label}>NEXT OP</span>
-          <span className={styles.hudCell__value}>
-            {nextMission ? (
-              <>
-                <span className={styles.hudCell__primary}>
-                  {ddayLabel(nextMission.targetDateTime)}
-                </span>
-                <span className={styles.hudCell__sub}>
-                  {formatTime(nextMission.targetDateTime)}
-                </span>
-              </>
-            ) : (
-              <span className={styles.hudCell__muted}>STANDBY</span>
-            )}
-          </span>
-        </div>
-        <div className={styles.hudCell}>
-          <span className={styles.hudCell__label}>BALANCE</span>
-          <span className={styles.hudCell__value}>
-            <span
-              className={`${styles.hudCell__primary} ${styles["hudCell__primary--gold"]}`}
-            >
-              ¤ {balance.toLocaleString()}
-            </span>
-          </span>
-        </div>
-        <div className={styles.hudCell}>
-          <span className={styles.hudCell__label}>PENDING</span>
-          <span className={styles.hudCell__value}>
-            <span className={styles.hudCell__primary}>
-              {pendingResponse.length}
-            </span>
-            <span className={styles.hudCell__sub}>응답 대기</span>
-          </span>
-        </div>
-      </section>
-
-      <div className={styles.commandGrid}>
-        <Box variant="gold" className={styles.actionCenter}>
-          <PanelTitle
-            right={
-              <span
+              <div
                 className={[
-                  styles.statusChip,
-                  actionItems.length === 0 ? styles["statusChip--idle"] : "",
+                  styles.charMini__avatar,
+                  styles["charMini__avatar--hero"],
                 ]
                   .filter(Boolean)
                   .join(" ")}
               >
-                {actionItems.length} ACTIVE
-              </span>
-            }
-          >
-            ACTION CENTER
-          </PanelTitle>
+                <Seal size="sm">ERP</Seal>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.agentStage__content}>
+            <span className={styles.sectionLabel}>오늘의 운용 요원</span>
+            <h2 className={styles.agentStage__name}>
+              {displayCharacter
+                ? displayCharacter.lore.name || displayCharacter.codename
+                : "운용 대기"}
+            </h2>
+            <div className={styles.agentStage__meta}>
+              {displayCharacter ? (
+                <>
+                  <span>{displayCharacter.codename}</span>
+                  <Tag tone="gold">{displayCharacter.type}</Tag>
+                  {displayCharacter.agentLevel ? (
+                    <Tag tone={rankTone(displayCharacter.agentLevel) ?? "default"}>
+                      권한 {displayCharacter.agentLevel}
+                    </Tag>
+                  ) : null}
+                </>
+              ) : (
+                <span>등록된 캐릭터 없음</span>
+              )}
+            </div>
+
+            {displayCharacter?.type === "AGENT" && displayCharacter.play ? (
+              <div className={styles.charMini__vitals}>
+                <CharVital
+                  label="HP"
+                  value={displayCharacter.play.hp}
+                  max={300}
+                  tone="gold"
+                />
+                <CharVital
+                  label="SAN"
+                  value={displayCharacter.play.san}
+                  max={100}
+                  tone={displayCharacter.play.san < 30 ? "danger" : "info"}
+                />
+              </div>
+            ) : null}
+
+            <div className={styles.commandActions}>
+              <Button
+                as="a"
+                href={
+                  displayCharacter
+                    ? `/erp/characters/${String(displayCharacter._id)}`
+                    : "/erp/characters"
+                }
+                variant="primary"
+                className={styles.primaryPill}
+              >
+                {displayCharacter ? "캐릭터 시트" : "캐릭터 확인"}
+              </Button>
+              <Link href="/erp/credits" className={styles.secondaryPill}>
+                크레딧 확인
+              </Link>
+            </div>
+          </div>
+        </article>
+
+        <article className={`${styles.commandSurface} ${styles.missionStage}`}>
+          <div className={styles.sectionHead}>
+            <div>
+              <span className={styles.sectionLabel}>다음 작전</span>
+              <h3>Mission Brief</h3>
+            </div>
+            {nextMissionMeta ? (
+              <Tag tone={nextMissionMeta.tone}>{nextMissionMeta.label}</Tag>
+            ) : null}
+          </div>
+
+          {nextMission ? (
+            <>
+              <div className={styles.missionStage__date}>
+                <strong>{ddayLabel(nextMission.targetDateTime)}</strong>
+                <span>{dateTimeLabel(nextMission.targetDateTime)} KST</span>
+              </div>
+              <h2 className={styles.missionStage__title}>{nextMission.title}</h2>
+              <div className={styles.commandActions}>
+                <Button
+                  as="a"
+                  href="/erp/sessions"
+                  variant="primary"
+                  className={styles.primaryPill}
+                >
+                  작전 보기
+                </Button>
+                <Link
+                  href={buildDiscordLink(nextMission)}
+                  className={styles.secondaryPill}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Discord
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className={styles.softEmpty}>
+              <strong>작전 대기</strong>
+              <span>참여 예정 작전이 없습니다.</span>
+              <Link href="/erp/sessions" className={styles.secondaryPill}>
+                세션 달력
+              </Link>
+            </div>
+          )}
+        </article>
+
+        <aside className={`${styles.commandSurface} ${styles.actionQueue}`}>
+          <div className={styles.sectionHead}>
+            <div>
+              <span className={styles.sectionLabel}>처리할 일</span>
+              <h3>Action Queue</h3>
+            </div>
+            <span className={styles.queueCount}>{actionItems.length}</span>
+          </div>
+
           {actionItems.length === 0 ? (
-            <div className={styles.actionEmpty}>
-              <Tag tone="success">CLEAR</Tag>
-              <span>지금 처리해야 할 항목이 없습니다.</span>
+            <div className={styles.softEmpty}>
+              <strong>정상 운용</strong>
+              <span>즉시 확인할 항목이 없습니다.</span>
             </div>
           ) : (
             <div className={styles.actionList}>
-              {actionItems.slice(0, 4).map((item, index) => (
+              {actionItems.slice(0, 4).map((item) => (
                 <Link
                   key={`${item.label}-${item.title}`}
                   href={item.href}
@@ -539,9 +529,6 @@ export default async function ERPDashboardPage() {
                     .filter(Boolean)
                     .join(" ")}
                 >
-                  <span className={styles.actionItem__index}>
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
                   <Tag tone={item.tone}>{item.label}</Tag>
                   <span className={styles.actionItem__body}>
                     <span className={styles.actionItem__title}>{item.title}</span>
@@ -552,252 +539,78 @@ export default async function ERPDashboardPage() {
               ))}
             </div>
           )}
-        </Box>
+        </aside>
+      </section>
 
-        <Box className={styles.briefPanel}>
-          <PanelTitle right={<span className={styles.mono}>NEXT</span>}>
-            MISSION BRIEF
-          </PanelTitle>
-          {nextMission && nextMissionMeta ? (
-            <div className={styles.brief}>
-              <div className={styles.brief__stamp}>
-                <span>{ddayLabel(nextMission.targetDateTime)}</span>
-                <small>{formatTime(nextMission.targetDateTime)}</small>
-              </div>
-              <div className={styles.brief__body}>
-                <div className={styles.brief__title}>{nextMission.title}</div>
-                <div className={styles.brief__meta}>
-                  <Tag tone={nextMissionMeta.tone}>{nextMissionMeta.label}</Tag>
-                  <span>{formatDate(nextMission.targetDateTime, "long")}</span>
-                </div>
-              </div>
-              <Button as="a" href="/erp/sessions" size="sm">
-                달력 →
-              </Button>
-            </div>
-          ) : (
-            <div className={styles.actionEmpty}>
-              <Tag>STANDBY</Tag>
-              <span>참여 예정 작전이 없습니다.</span>
-            </div>
-          )}
-        </Box>
-      </div>
+      <section className={styles.signalStrip} aria-label="운용 지표">
+        <Link href="/erp/credits" className={styles.signalItem}>
+          <span>운용 크레딧</span>
+          <strong className={styles.signalItem__gold}>¤ {balance.toLocaleString()}</strong>
+        </Link>
+        <Link href="/erp/sessions" className={styles.signalItem}>
+          <span>응답 대기</span>
+          <strong>{pendingResponse.length}</strong>
+        </Link>
+        <Link href="/erp/sessions" className={styles.signalItem}>
+          <span>진행 세션</span>
+          <strong>{openMissionCount}</strong>
+        </Link>
+        <Link href="/erp/notifications" className={styles.signalItem}>
+          <span>미확인 알림</span>
+          <strong>{unreadCount}</strong>
+        </Link>
+        <Link href="/erp/characters" className={styles.signalItem}>
+          <span>보유 캐릭터</span>
+          <strong>{myCharRefs.length}</strong>
+        </Link>
+        <Link href="/erp/wiki" className={styles.signalItem}>
+          <span>작성 위키</span>
+          <strong>{myWikiCount}</strong>
+        </Link>
+        <div className={styles.signalItem}>
+          <span>누적 작전</span>
+          <strong>{mySessionCount !== null ? mySessionCount : "—"}</strong>
+        </div>
+        <div className={styles.signalItem}>
+          <span>가입 후</span>
+          <strong>{joinedDays}D</strong>
+        </div>
+      </section>
 
-      <div className={styles.row3}>
-        {/* MY CHARACTER — pixel-character avatar + tier/level + HP/SAN mini bar */}
-        <Box>
-          <PanelTitle
-            right={
-              myChar ? (
-                <span className={styles.mono}>{myChar.codename}</span>
-              ) : null
-            }
-          >
-            MY CHARACTER
-          </PanelTitle>
-          {myChar ? (
-            <>
-              <div className={styles.charMini}>
-                <CharAvatar
-                  codename={myChar.codename}
-                  previewImage={myChar.previewImage}
-                  initial={(myChar.lore.name || myChar.codename)
-                    .charAt(0)
-                    .toUpperCase()}
-                />
-                <div className={styles.charMini__body}>
-                  <Eyebrow tone="gold">{myChar.codename}</Eyebrow>
-                  <div className={styles.charMini__name}>
-                    {myChar.lore.name || myChar.codename}
-                  </div>
-                  <div className={styles.charMini__tags}>
-                    <Tag tone="gold">{myChar.type}</Tag>
-                    {myChar.agentLevel ? (
-                      <Tag tone={rankTone(myChar.agentLevel) ?? "default"}>
-                        권한 {myChar.agentLevel}
-                      </Tag>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-              {myChar.type === "AGENT" && myChar.play ? (
-                <div className={styles.charMini__vitals}>
-                  <CharVital
-                    label="HP"
-                    value={myChar.play.hp}
-                    max={300}
-                    tone="gold"
-                  />
-                  <CharVital
-                    label="SAN"
-                    value={myChar.play.san}
-                    max={100}
-                    tone={myChar.play.san < 30 ? "danger" : "info"}
-                  />
-                </div>
-              ) : null}
-              <div className={styles.charMini__ctaRow}>
-                <Button
-                  as="a"
-                  href={`/erp/characters/${String(myChar._id)}`}
-                  size="sm"
-                  className={styles.charMini__ctaBtn}
-                >
-                  시트 →
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className={styles.empty}>
-              등록된 캐릭터가 없습니다.
-              <Button as="a" href="/erp/characters" size="sm">
-                캐릭터 목록 →
-              </Button>
-            </div>
-          )}
-        </Box>
+      {mainIntegrityError ? (
+        <section className={styles.alertBand} aria-label="캐릭터 정합성 경고">
+          <strong>메인 캐릭터 정합성 확인 필요</strong>
+          <span>{mainIntegrityError}</span>
+          <Link href="/erp/characters" className={styles.secondaryPill}>
+            캐릭터 확인
+          </Link>
+        </section>
+      ) : null}
 
-        {/* RESOURCES — 지금 운용 가능한 자원 */}
-        <Box>
-          <PanelTitle right={<span className={styles.mono}>NOW</span>}>
-            RESOURCES
-          </PanelTitle>
-          <div className={styles.metricsGrid}>
-            <Link
-              href="/erp/credits"
-              className={`${styles.metric} ${styles["metric--wide"]}`}
-            >
-              <span className={styles.metric__label}>잔액</span>
-              <span className={`${styles.metric__value} ${styles.metric__valueGold}`}>
-                ¤ {balance.toLocaleString()}
-              </span>
-            </Link>
-            <Link href="/erp/sessions" className={styles.metric}>
-              <span className={styles.metric__label}>응답 대기</span>
-              <span className={styles.metric__value}>{pendingResponse.length}</span>
-            </Link>
-            <Link href="/erp/sessions" className={styles.metric}>
-              <span className={styles.metric__label}>진행 세션</span>
-              <span className={styles.metric__value}>{openMissionCount}</span>
-            </Link>
-            <Link href="/erp/notifications" className={styles.metric}>
-              <span className={styles.metric__label}>미확인</span>
-              <span className={styles.metric__value}>{unreadCount}</span>
+      <div className={styles.operationsGrid}>
+        <section className={styles.surfacePanel}>
+          <div className={styles.sectionHead}>
+            <div>
+              <span className={styles.sectionLabel}>내 작전</span>
+              <h3>Mission Queue</h3>
+            </div>
+            <Link href="/erp/sessions" className={styles.panelLink}>
+              달력
             </Link>
           </div>
-          {mainIntegrityError ? (
-            <div className={styles.empty}>
-              <strong>⚠ 정합성 위반</strong>: {mainIntegrityError}
-              <br />
-              운영자에게 문의하세요.
-            </div>
-          ) : null}
-        </Box>
 
-        {/* OPERATIVE STATS — 누적 활동 시그널 */}
-        <Box>
-          <PanelTitle right={<span className={styles.mono}>LIFETIME</span>}>
-            OPERATIVE STATS
-          </PanelTitle>
-          <div className={styles.metricsGrid}>
-            <Link href="/erp/characters" className={styles.metric}>
-              <span className={styles.metric__label}>보유 캐릭터</span>
-              <span className={styles.metric__value}>{myCharRefs.length}</span>
-            </Link>
-            <Link href="/erp/sessions" className={styles.metric}>
-              <span className={styles.metric__label}>누적 작전</span>
-              <span className={styles.metric__value}>
-                {mySessionCount !== null ? mySessionCount : "—"}
-              </span>
-            </Link>
-            <Link href="/erp/sessions" className={styles.metric}>
-              <span className={styles.metric__label}>오늘 작전</span>
-              <span className={styles.metric__value}>{todayMissionCount}</span>
-            </Link>
-            <div className={styles.metric}>
-              <span className={styles.metric__label}>가입 후</span>
-              <span className={styles.metric__value}>{joinedDays}D</span>
-            </div>
-            <Link href="/erp/wiki" className={styles.metric}>
-              <span className={styles.metric__label}>작성한 위키</span>
-              <span className={styles.metric__value}>{myWikiCount}</span>
-            </Link>
-          </div>
-        </Box>
-
-        {/* RECENT NOTIFICATIONS */}
-        <Box>
-          <PanelTitle
-            right={
-              <Link href="/erp/notifications" className={styles.panelLink}>
-                전체 →
-              </Link>
-            }
-          >
-            <span>NOTIFICATIONS</span>
-            {unreadCount > 0 ? (
-              <span className={styles.unreadDot} aria-label={`안 읽은 알림 ${unreadCount}건`}>
-                ● {unreadCount}
-              </span>
-            ) : null}
-          </PanelTitle>
-          {notificationPreview.length === 0 ? (
-            <div className={styles.empty}>새 알림 없음</div>
-          ) : (
-            <Stack gap={0} className={styles.notifList}>
-              {notificationPreview.map((n) => {
-                const meta = NOTIFICATION_TAG[n.type];
-                return (
-                  <Spread
-                    key={String(n._id)}
-                    gap={10}
-                    className={[
-                      styles.notifRow,
-                      n.isRead ? styles["notifRow--read"] : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    <Link
-                      href={n.link ?? "/erp/notifications"}
-                      className={styles.notifLine}
-                    >
-                      <Tag tone={meta.tone}>{meta.label}</Tag>
-                      <span className={styles.notifText}>{n.title}</span>
-                    </Link>
-                    <span className={styles.mono}>{formatTime(n.createdAt)}</span>
-                  </Spread>
-                );
-              })}
-            </Stack>
-          )}
-        </Box>
-      </div>
-
-      <div className={styles.rowWideNarrow}>
-        {/* MISSION QUEUE — 내 RSVP=YES 다가올 작전 */}
-        <Box>
-          <PanelTitle
-            right={
-              <Link href="/erp/sessions" className={styles.panelLink}>
-                달력 →
-              </Link>
-            }
-          >
-            MISSION QUEUE · 내 작전
-          </PanelTitle>
           {!viewerDiscordId ? (
-            <div className={styles.empty}>
-              Discord 연동 후 내 작전이 표시됩니다.
-              <Button as="a" href="/erp/account" size="sm">
-                계정 설정 →
-              </Button>
+            <div className={styles.softEmpty}>
+              <strong>Discord 연동 필요</strong>
+              <span>연동 후 내 작전이 표시됩니다.</span>
+              <Link href="/erp/account" className={styles.secondaryPill}>
+                계정 설정
+              </Link>
             </div>
           ) : myRsvpUpcoming.length === 0 ? (
-            <div className={styles.empty}>예정된 작전 없음</div>
+            <div className={styles.softEmpty}>예정된 작전 없음</div>
           ) : (
-            <Stack gap={10}>
+            <div className={styles.sessionList}>
               {myRsvpUpcoming.map(({ raw: s }) => {
                 const meta = SESSION_STATUS_TAG[s.status] ?? {
                   label: s.status,
@@ -807,55 +620,44 @@ export default async function ERPDashboardPage() {
                 return (
                   <div key={String(s._id)} className={styles.sessionCard}>
                     <div className={styles.sessionCard__code}>
-                      <div className={styles.sessionCard__codeMain}>
-                        {formatDate(s.targetDateTime, "compact")}
-                      </div>
-                      <div className={styles.sessionCard__codeSub}>
-                        {formatTime(s.targetDateTime)}
-                      </div>
+                      <strong>{formatDate(s.targetDateTime, "compact")}</strong>
+                      <span>{formatTime(s.targetDateTime)}</span>
                     </div>
                     <div className={styles.sessionCard__body}>
                       <div className={styles.sessionCard__title}>{s.title}</div>
-                    </div>
-                    <div className={styles.sessionCard__meta}>
                       <Tag tone={meta.tone}>{meta.label}</Tag>
-                      <Button
-                        as="a"
-                        href={link}
-                        size="sm"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`${s.title} · 디스코드에서 열기`}
-                      >
-                        ↗
-                      </Button>
                     </div>
+                    <Link
+                      href={link}
+                      className={styles.iconLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${s.title} · 디스코드에서 열기`}
+                    >
+                      ↗
+                    </Link>
                   </div>
                 );
               })}
-            </Stack>
+            </div>
           )}
-        </Box>
+        </section>
 
-        {/* TASKS · 응답 필요 — 내 응답 없는 OPEN/CLOSING */}
-        <Box>
-          <PanelTitle
-            right={
-              pendingResponse.length > 0 ? (
-                <span className={styles.taskCount}>{pendingResponse.length}</span>
-              ) : (
-                <span className={styles.mono}>—</span>
-              )
-            }
-          >
-            TASKS · 응답 필요
-          </PanelTitle>
+        <section className={styles.surfacePanel}>
+          <div className={styles.sectionHead}>
+            <div>
+              <span className={styles.sectionLabel}>응답 필요</span>
+              <h3>Tasks</h3>
+            </div>
+            <span className={styles.queueCount}>{pendingResponse.length}</span>
+          </div>
+
           {!viewerDiscordId ? (
-            <div className={styles.empty}>Discord 연동 필요</div>
+            <div className={styles.softEmpty}>Discord 연동 필요</div>
           ) : pendingResponse.length === 0 ? (
-            <div className={styles.empty}>응답 필요 작전 없음</div>
+            <div className={styles.softEmpty}>응답 필요 작전 없음</div>
           ) : (
-            <Stack gap={8} className={styles.taskList}>
+            <div className={styles.taskList}>
               {pendingResponse.map(({ raw: s }) => {
                 const link = buildDiscordLink(s);
                 const tone = s.status === "CLOSING" ? "danger" : "gold";
@@ -873,58 +675,103 @@ export default async function ERPDashboardPage() {
                       {s.status === "CLOSING" ? "마감 임박" : "모집중"}
                     </Tag>
                     <Link
-                      href={`/erp/sessions`}
+                      href="/erp/sessions"
                       className={styles.taskTitle}
                       title={s.title}
                     >
                       {s.title}
                     </Link>
-                    <Button
-                      as="a"
+                    <Link
                       href={link}
-                      size="sm"
+                      className={styles.textAction}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      응답 ↗
-                    </Button>
+                      응답
+                    </Link>
                   </div>
                 );
               })}
-            </Stack>
+            </div>
           )}
-        </Box>
+        </section>
       </div>
 
-      {/* RECENT WIKI CHANGES */}
-      <Box>
-        <PanelTitle
-          right={
-            <Link href="/erp/wiki" className={styles.panelLink}>
-              전체 →
+      <div className={styles.intelGrid}>
+        <section className={styles.surfacePanel}>
+          <div className={styles.sectionHead}>
+            <div>
+              <span className={styles.sectionLabel}>알림</span>
+              <h3>Notifications</h3>
+            </div>
+            <Link href="/erp/notifications" className={styles.panelLink}>
+              전체
             </Link>
-          }
-        >
-          RECENT WIKI CHANGES
-        </PanelTitle>
-        {recentWikis.length === 0 ? (
-          <div className={styles.empty}>최근 변경 내역 없음</div>
-        ) : (
-          <Stack gap={0}>
-            {recentWikis.map((w) => (
-              <Spread key={String(w._id)} gap={10} className={styles.wikiRow}>
-                <Link
-                  href={`/erp/wiki/${String(w._id)}`}
-                  className={styles.wikiLink}
-                >
-                  {w.title}
-                </Link>
-                <span className={styles.mono}>{formatDate(w.updatedAt, "compact")}</span>
-              </Spread>
-            ))}
-          </Stack>
-        )}
-      </Box>
+          </div>
+
+          {notificationPreview.length === 0 ? (
+            <div className={styles.softEmpty}>새 알림 없음</div>
+          ) : (
+            <div className={styles.notifList}>
+              {notificationPreview.map((n) => {
+                const meta = NOTIFICATION_TAG[n.type];
+                return (
+                  <div
+                    key={String(n._id)}
+                    className={[
+                      styles.notifRow,
+                      n.isRead ? styles["notifRow--read"] : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    <Link
+                      href={n.link ?? "/erp/notifications"}
+                      className={styles.notifLine}
+                    >
+                      <Tag tone={meta.tone}>{meta.label}</Tag>
+                      <span className={styles.notifText}>{n.title}</span>
+                    </Link>
+                    <span className={styles.timeText}>{formatTime(n.createdAt)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className={styles.surfacePanel}>
+          <div className={styles.sectionHead}>
+            <div>
+              <span className={styles.sectionLabel}>최근 변경</span>
+              <h3>Wiki Changes</h3>
+            </div>
+            <Link href="/erp/wiki" className={styles.panelLink}>
+              전체
+            </Link>
+          </div>
+
+          {recentWikis.length === 0 ? (
+            <div className={styles.softEmpty}>최근 변경 내역 없음</div>
+          ) : (
+            <div className={styles.wikiList}>
+              {recentWikis.map((w) => (
+                <div key={String(w._id)} className={styles.wikiRow}>
+                  <Link
+                    href={`/erp/wiki/${String(w._id)}`}
+                    className={styles.wikiLink}
+                  >
+                    {w.title}
+                  </Link>
+                  <span className={styles.timeText}>
+                    {formatDate(w.updatedAt, "compact")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </>
   );
 }
