@@ -73,28 +73,37 @@ function CharAvatar({
   codename,
   previewImage,
   initial,
+  variant = "mini",
 }: {
   codename: string;
   previewImage: string;
   initial: string;
+  variant?: "mini" | "hero";
 }) {
   const pixelChar = getPixelCharacterPath(codename);
   const src = pixelChar || preferOptimizedPublicImagePath(previewImage) || null;
+  const avatarClassName = [
+    styles.charMini__avatar,
+    variant === "hero" ? styles["charMini__avatar--hero"] : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   if (src) {
     return (
-      <div className={styles.charMini__avatar}>
+      <div className={avatarClassName}>
         <Image
           src={src}
           alt=""
           fill
-          sizes="112px"
+          sizes={variant === "hero" ? "176px" : "112px"}
           className={styles.charMini__avatarImg}
         />
       </div>
     );
   }
   return (
-    <div className={styles.charMini__avatar}>
+    <div className={avatarClassName}>
       <Seal size="sm">{initial}</Seal>
     </div>
   );
@@ -358,6 +367,14 @@ export default async function ERPDashboardPage() {
         }
       : null,
   ].filter((item): item is ActionItem => item !== null);
+  const heroAction = nextMission
+    ? { href: "/erp/sessions", label: "작전 보기" }
+    : actionItems[0]
+      ? { href: actionItems[0].href, label: actionItems[0].cta }
+      : { href: "/erp/characters", label: "캐릭터 확인" };
+  const heroLead = nextMission
+    ? `${ddayLabel(nextMission.targetDateTime)} · ${nextMission.title}`
+    : actionItems[0]?.title ?? "우선 처리 항목 없음";
 
   return (
     <>
@@ -365,6 +382,67 @@ export default async function ERPDashboardPage() {
         breadcrumb={[{ label: "ERP" }, { label: "HOME" }]}
         title="대시보드"
       />
+
+      <section className={styles.heroTile} aria-label="요원 브리핑">
+        <div className={styles.heroTile__copy}>
+          <span className={styles.heroTile__kicker}>NOVUS ORDO ERP</span>
+          <h2 className={styles.heroTile__title}>
+            {mainCharacter ? `${mainCharacter.codename} 운용 현황` : "운용 대기"}
+          </h2>
+          <p className={styles.heroTile__lead}>{heroLead}</p>
+          <div className={styles.heroTile__actions}>
+            <Button
+              as="a"
+              href={heroAction.href}
+              variant="primary"
+              className={styles.heroTile__button}
+            >
+              {heroAction.label}
+            </Button>
+            <Link href="/erp/wiki" className={styles.heroTile__link}>
+              기록 열람
+            </Link>
+          </div>
+        </div>
+
+        <div className={styles.heroTile__showcase}>
+          <div className={styles.heroTile__portrait} aria-hidden="true">
+            {mainCharacter ? (
+              <CharAvatar
+                codename={mainCharacter.codename}
+                previewImage={mainCharacter.previewImage}
+                initial={(mainCharacter.lore.name || mainCharacter.codename)
+                  .charAt(0)
+                  .toUpperCase()}
+                variant="hero"
+              />
+            ) : (
+              <Seal size="sm">ERP</Seal>
+            )}
+          </div>
+          <div className={styles.heroTile__facts}>
+            <div className={styles.heroTile__fact}>
+              <span>NEXT</span>
+              <strong>
+                {nextMission ? ddayLabel(nextMission.targetDateTime) : "STANDBY"}
+              </strong>
+              <em>
+                {nextMission ? formatTime(nextMission.targetDateTime) : "작전 없음"}
+              </em>
+            </div>
+            <div className={styles.heroTile__fact}>
+              <span>BALANCE</span>
+              <strong>¤ {balance.toLocaleString()}</strong>
+              <em>운용 가능 크레딧</em>
+            </div>
+            <div className={styles.heroTile__fact}>
+              <span>ACTIVE</span>
+              <strong>{actionItems.length}</strong>
+              <em>처리 항목</em>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* HUD 스트립 — 요원 식별/다음 작전/잔액/응답 대기 한눈 요약 (페이지 내 데이터 재표시) */}
       <section className={styles.hudStrip} aria-label="요원 상태 요약">
