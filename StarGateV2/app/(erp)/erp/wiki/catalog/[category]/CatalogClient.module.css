@@ -173,22 +173,11 @@
 
 .card {
   --card-tone: var(--gold);
-  --card-pattern:
-    repeating-linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--card-tone) 14%, transparent) 0 2px,
-      transparent 2px 14px
-    ),
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--card-tone) 9%, transparent),
-      transparent 45%
-    );
   --card-media-pattern:
     repeating-linear-gradient(
       135deg,
-      color-mix(in srgb, var(--card-tone) 18%, transparent) 0 2px,
-      transparent 2px 12px
+      color-mix(in srgb, var(--card-tone) 7%, transparent) 0 1px,
+      transparent 1px 16px
     );
 
   position: relative;
@@ -200,12 +189,13 @@
   height: 100%;
   padding: 16px;
   background:
-    var(--card-pattern),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.024), transparent 42%),
     var(--bg-1);
-  border: 1px solid color-mix(in srgb, var(--card-tone) 20%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--card-tone) 16%, var(--line));
   border-radius: var(--radius-sm);
-  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--card-tone) 55%, transparent);
+  box-shadow:
+    inset 0 3px 0 color-mix(in srgb, var(--card-tone) 58%, transparent),
+    0 10px 22px rgb(0 0 0 / 0.12);
   color: inherit;
   text-decoration: none;
   overflow: hidden;
@@ -216,82 +206,51 @@
 
 .card[data-tone="consumable"] {
   --card-tone: var(--info);
-  --card-pattern:
-    repeating-linear-gradient(
-      0deg,
-      color-mix(in srgb, var(--card-tone) 12%, transparent) 0 1px,
-      transparent 1px 10px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 16px,
-      color-mix(in srgb, var(--card-tone) 14%, transparent) 16px 18px
-    );
   --card-media-pattern:
     repeating-linear-gradient(
       0deg,
-      color-mix(in srgb, var(--card-tone) 16%, transparent) 0 2px,
-      transparent 2px 12px
+      color-mix(in srgb, var(--card-tone) 7%, transparent) 0 1px,
+      transparent 1px 12px
     );
 }
 
 .card[data-tone="sample"] {
   --card-tone: var(--success);
-  --card-pattern:
-    repeating-linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--card-tone) 13%, transparent) 0 1px,
-      transparent 1px 14px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      color-mix(in srgb, var(--card-tone) 13%, transparent) 0 1px,
-      transparent 1px 14px
-    );
   --card-media-pattern:
     repeating-linear-gradient(
       90deg,
-      color-mix(in srgb, var(--card-tone) 16%, transparent) 0 1px,
-      transparent 1px 12px
+      color-mix(in srgb, var(--card-tone) 7%, transparent) 0 1px,
+      transparent 1px 14px
     ),
     repeating-linear-gradient(
       0deg,
-      color-mix(in srgb, var(--card-tone) 16%, transparent) 0 1px,
-      transparent 1px 12px
+      color-mix(in srgb, var(--card-tone) 7%, transparent) 0 1px,
+      transparent 1px 14px
     );
 }
 
 .card[data-tone="special"] {
   --card-tone: var(--danger);
-  --card-pattern:
-    repeating-linear-gradient(
-      45deg,
-      color-mix(in srgb, var(--card-tone) 18%, transparent) 0 4px,
-      transparent 4px 12px
-    ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--card-tone) 9%, transparent),
-      transparent 48%
-    );
   --card-media-pattern:
     repeating-linear-gradient(
       45deg,
-      color-mix(in srgb, var(--card-tone) 20%, transparent) 0 3px,
-      transparent 3px 10px
+      color-mix(in srgb, var(--card-tone) 8%, transparent) 0 2px,
+      transparent 2px 12px
     );
 }
 
 .card:hover {
   border-color: color-mix(in srgb, var(--card-tone) 55%, var(--line-strong));
   background:
-    var(--card-pattern),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--card-tone) 9%, transparent),
+      color-mix(in srgb, var(--card-tone) 5%, transparent),
       transparent 48%
     ),
     var(--bg-2);
+  box-shadow:
+    inset 0 3px 0 color-mix(in srgb, var(--card-tone) 70%, transparent),
+    0 12px 24px rgb(0 0 0 / 0.18);
 }
 
 .card__media {
@@ -305,11 +264,12 @@
     var(--card-media-pattern),
     radial-gradient(
       circle at 50% 35%,
-      color-mix(in srgb, var(--card-tone) 16%, transparent),
+      color-mix(in srgb, var(--card-tone) 12%, transparent),
       transparent 62%
     ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent),
     color-mix(in srgb, var(--bg) 88%, #000);
-  border: 1px solid color-mix(in srgb, var(--card-tone) 24%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--card-tone) 18%, var(--line));
   border-radius: var(--radius-sm);
 }
 

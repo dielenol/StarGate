@@ -21,34 +21,24 @@
 
 .article {
   --catalog-tone: var(--gold);
-  --catalog-pattern:
-    repeating-linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--catalog-tone) 10%, transparent) 0 2px,
-      transparent 2px 18px
-    ),
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--catalog-tone) 7%, transparent),
-      transparent 44%
-    );
   --figure-pattern:
     repeating-linear-gradient(
       135deg,
-      color-mix(in srgb, var(--catalog-tone) 18%, transparent) 0 2px,
-      transparent 2px 12px
+      color-mix(in srgb, var(--catalog-tone) 7%, transparent) 0 1px,
+      transparent 1px 16px
     );
 
   position: relative;
   background:
-    var(--catalog-pattern),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--catalog-tone) 6%, transparent),
-      transparent 42%
+      color-mix(in srgb, var(--catalog-tone) 4%, transparent),
+      transparent 38%
     ),
     var(--bg-1);
-  box-shadow: inset 0 3px 0 var(--catalog-tone, var(--gold));
+  box-shadow:
+    inset 0 3px 0 color-mix(in srgb, var(--catalog-tone) 72%, transparent),
+    0 14px 28px rgb(0 0 0 / 0.12);
 }
 
 .article[data-tone="equipment"] {
@@ -57,69 +47,36 @@
 
 .article[data-tone="consumable"] {
   --catalog-tone: var(--info);
-  --catalog-pattern:
-    repeating-linear-gradient(
-      0deg,
-      color-mix(in srgb, var(--catalog-tone) 9%, transparent) 0 1px,
-      transparent 1px 12px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 20px,
-      color-mix(in srgb, var(--catalog-tone) 12%, transparent) 20px 22px
-    );
   --figure-pattern:
     repeating-linear-gradient(
       0deg,
-      color-mix(in srgb, var(--catalog-tone) 16%, transparent) 0 2px,
-      transparent 2px 12px
+      color-mix(in srgb, var(--catalog-tone) 7%, transparent) 0 1px,
+      transparent 1px 12px
     );
 }
 
 .article[data-tone="sample"] {
   --catalog-tone: var(--success);
-  --catalog-pattern:
-    repeating-linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--catalog-tone) 10%, transparent) 0 1px,
-      transparent 1px 16px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      color-mix(in srgb, var(--catalog-tone) 10%, transparent) 0 1px,
-      transparent 1px 16px
-    );
   --figure-pattern:
     repeating-linear-gradient(
       90deg,
-      color-mix(in srgb, var(--catalog-tone) 16%, transparent) 0 1px,
-      transparent 1px 12px
+      color-mix(in srgb, var(--catalog-tone) 7%, transparent) 0 1px,
+      transparent 1px 14px
     ),
     repeating-linear-gradient(
       0deg,
-      color-mix(in srgb, var(--catalog-tone) 16%, transparent) 0 1px,
-      transparent 1px 12px
+      color-mix(in srgb, var(--catalog-tone) 7%, transparent) 0 1px,
+      transparent 1px 14px
     );
 }
 
 .article[data-tone="special"] {
   --catalog-tone: var(--danger);
-  --catalog-pattern:
-    repeating-linear-gradient(
-      45deg,
-      color-mix(in srgb, var(--catalog-tone) 14%, transparent) 0 4px,
-      transparent 4px 13px
-    ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--catalog-tone) 8%, transparent),
-      transparent 48%
-    );
   --figure-pattern:
     repeating-linear-gradient(
       45deg,
-      color-mix(in srgb, var(--catalog-tone) 20%, transparent) 0 3px,
-      transparent 3px 10px
+      color-mix(in srgb, var(--catalog-tone) 8%, transparent) 0 2px,
+      transparent 2px 12px
     );
 }
 
@@ -242,7 +199,7 @@
     var(--figure-pattern),
     radial-gradient(
       circle at 50% 36%,
-      color-mix(in srgb, var(--catalog-tone) 16%, transparent),
+      color-mix(in srgb, var(--catalog-tone) 12%, transparent),
       transparent 62%
     ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
