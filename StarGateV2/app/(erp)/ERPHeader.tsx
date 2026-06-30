@@ -686,18 +686,18 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                   <span>
                     {unreadNotificationCount > 0
                       ? `${notificationBadge} UNREAD`
-                      : "CLEAR"}
+                      : "0 UNREAD"}
                   </span>
-                  {unreadNotificationCount > 0 ? (
-                    <button
-                      type="button"
-                      className={styles.header__notificationReadAll}
-                      onClick={handleMarkAllNotificationsRead}
-                      disabled={!canMarkAllNotificationsRead}
-                    >
-                      {markAllRead.isPending ? "처리중" : "전체 읽음"}
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    className={styles.header__notificationReadAll}
+                    onClick={handleMarkAllNotificationsRead}
+                    disabled={!canMarkAllNotificationsRead}
+                    aria-label="모든 알림 읽음 처리"
+                    title="모든 알림 읽음 처리"
+                  >
+                    {markAllRead.isPending ? "처리중" : "CLEAR"}
+                  </button>
                 </span>
               </div>
               {recentNotifications.length > 0 ? (
