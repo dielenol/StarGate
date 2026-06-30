@@ -111,14 +111,14 @@ export default async function CatalogItemPage({
   const relatedReports = relatedReportsForCatalogItem(item, allReports);
 
   return (
-    <>
+    <div className={styles.page} data-pixel-font="full">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
           { label: "기록보관소", href: "/erp/wiki/catalog/all" },
           { label: ITEM_CATEGORY_LABEL[item.category] },
         ]}
-        title={item.name}
+        title={<span data-pixel-font="full">{item.name}</span>}
         right={
           <Button as="a" href={CATALOG_SCOPE_HREF[scope]}>
             ← {ITEM_CATEGORY_LABEL[item.category]}
@@ -253,7 +253,7 @@ export default async function CatalogItemPage({
           />
         </aside>
       </div>
-    </>
+    </div>
   );
 }
 

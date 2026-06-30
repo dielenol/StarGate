@@ -1,3 +1,7 @@
+.page {
+  font-family: var(--font-pixel);
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -16,7 +20,34 @@
 }
 
 .article {
+  --catalog-tone: var(--gold);
+  --catalog-pattern:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--catalog-tone) 10%, transparent) 0 2px,
+      transparent 2px 18px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--catalog-tone) 7%, transparent),
+      transparent 44%
+    );
+  --figure-pattern:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--catalog-tone) 18%, transparent) 0 2px,
+      transparent 2px 12px
+    );
+
   position: relative;
+  background:
+    var(--catalog-pattern),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--catalog-tone) 6%, transparent),
+      transparent 42%
+    ),
+    var(--bg-1);
   box-shadow: inset 0 3px 0 var(--catalog-tone, var(--gold));
 }
 
@@ -26,14 +57,70 @@
 
 .article[data-tone="consumable"] {
   --catalog-tone: var(--info);
+  --catalog-pattern:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--catalog-tone) 9%, transparent) 0 1px,
+      transparent 1px 12px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 20px,
+      color-mix(in srgb, var(--catalog-tone) 12%, transparent) 20px 22px
+    );
+  --figure-pattern:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--catalog-tone) 16%, transparent) 0 2px,
+      transparent 2px 12px
+    );
 }
 
 .article[data-tone="sample"] {
   --catalog-tone: var(--success);
+  --catalog-pattern:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--catalog-tone) 10%, transparent) 0 1px,
+      transparent 1px 16px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--catalog-tone) 10%, transparent) 0 1px,
+      transparent 1px 16px
+    );
+  --figure-pattern:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--catalog-tone) 16%, transparent) 0 1px,
+      transparent 1px 12px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--catalog-tone) 16%, transparent) 0 1px,
+      transparent 1px 12px
+    );
 }
 
 .article[data-tone="special"] {
   --catalog-tone: var(--danger);
+  --catalog-pattern:
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--catalog-tone) 14%, transparent) 0 4px,
+      transparent 4px 13px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--catalog-tone) 8%, transparent),
+      transparent 48%
+    );
+  --figure-pattern:
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--catalog-tone) 20%, transparent) 0 3px,
+      transparent 3px 10px
+    );
 }
 
 .hero {
@@ -149,50 +236,18 @@
   min-height: 190px;
   aspect-ratio: 1 / 1;
   padding: 18px;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--catalog-tone) 24%, var(--line));
   border-radius: var(--radius-sm);
   background:
+    var(--figure-pattern),
     radial-gradient(
       circle at 50% 36%,
-      color-mix(in srgb, var(--gold) 14%, transparent),
+      color-mix(in srgb, var(--catalog-tone) 16%, transparent),
       transparent 62%
     ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
     color-mix(in srgb, var(--bg) 86%, #000);
   overflow: hidden;
-}
-
-.article[data-tone="consumable"] .figure__frame {
-  background:
-    radial-gradient(
-      circle at 50% 36%,
-      color-mix(in srgb, var(--info) 16%, transparent),
-      transparent 62%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
-    color-mix(in srgb, var(--bg) 86%, #000);
-}
-
-.article[data-tone="sample"] .figure__frame {
-  background:
-    radial-gradient(
-      circle at 50% 36%,
-      color-mix(in srgb, var(--success) 15%, transparent),
-      transparent 62%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
-    color-mix(in srgb, var(--bg) 86%, #000);
-}
-
-.article[data-tone="special"] .figure__frame {
-  background:
-    radial-gradient(
-      circle at 50% 36%,
-      color-mix(in srgb, var(--danger) 13%, transparent),
-      transparent 62%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
-    color-mix(in srgb, var(--bg) 86%, #000);
 }
 
 .figure img {
@@ -202,6 +257,7 @@
   height: auto;
   max-height: 176px;
   object-fit: contain;
+  image-rendering: pixelated;
   filter: drop-shadow(0 14px 18px rgb(0 0 0 / 0.42));
 }
 

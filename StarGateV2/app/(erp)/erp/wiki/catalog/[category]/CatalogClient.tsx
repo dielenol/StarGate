@@ -181,7 +181,11 @@ export default function CatalogClient({ category, initialItems }: Props) {
   }
 
   return (
-    <div className={styles.catalog} data-category={activeScope}>
+    <div
+      className={styles.catalog}
+      data-category={activeScope}
+      data-pixel-font="full"
+    >
       <header className={styles.catalog__header}>
         <h1 className={styles.catalog__title}>
           {CATALOG_SCOPE_TITLE[activeScope]}
@@ -250,11 +254,13 @@ export default function CatalogClient({ category, initialItems }: Props) {
           {filtered.map((item) => {
             const imageSrc = itemImageSrc(item);
             const CategoryIcon = ITEM_CATEGORY_ICONS[item.category];
+            const itemTone = categoryTone(item.category);
             return (
               <li key={itemId(item)}>
                 <Link
                   href={itemDetailHref(item)}
                   className={styles.card}
+                  data-tone={itemTone}
                 >
                   <div className={styles.card__media}>
                     {imageSrc ? (
@@ -279,7 +285,7 @@ export default function CatalogClient({ category, initialItems }: Props) {
                     <span
                       className={[
                         styles.card__category,
-                        styles[`card__category--${categoryTone(item.category)}`],
+                        styles[`card__category--${itemTone}`],
                       ].join(" ")}
                     >
                       <CategoryIcon
