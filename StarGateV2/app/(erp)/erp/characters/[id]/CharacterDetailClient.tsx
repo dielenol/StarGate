@@ -67,6 +67,8 @@ export default function CharacterDetailClient({
 
   const characterId = String(character._id);
   const displayName = getCharacterDisplayName(character);
+  const showActions = canEdit || canDelete;
+  const showAdminSync = isGM && Boolean(character.bulkUpdatedAt);
 
   async function handleDelete() {
     const confirmed = window.confirm(
@@ -140,9 +142,30 @@ export default function CharacterDetailClient({
           { label: character.codename },
         ]}
         title={displayName}
-        right={
-          canEdit || canDelete ? (
-            <>
+      />
+
+      {showAdminSync || showActions ? (
+        <div className={styles.detailToolbar}>
+          {showAdminSync && character.bulkUpdatedAt ? (
+            <div
+              className={styles.adminSync}
+              title="GM 운영진 전용 — Claude/스크립트로 통짜 데이터를 덮어쓴 시점. 사용자 폼 편집은 반영되지 않음."
+            >
+              <span className={styles.adminSync__label}>SYNC · GM</span>
+              <span className={styles.adminSync__value}>
+                통짜 데이터 동기화 ·{" "}
+                {new Date(character.bulkUpdatedAt).toLocaleString("ko-KR", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+          ) : null}
+          {showActions ? (
+            <div className={styles.detailToolbar__actions}>
               {canEdit ? (
                 <Button
                   type="button"
@@ -161,31 +184,12 @@ export default function CharacterDetailClient({
                   {isDeleting ? "삭제 중..." : "삭제"}
                 </Button>
               ) : null}
-            </>
-          ) : undefined
-        }
-      />
-
-      {deleteError ? <div className={styles.error}>{deleteError}</div> : null}
-
-      {isGM && character.bulkUpdatedAt ? (
-        <div
-          className={styles.adminSync}
-          title="GM 운영진 전용 — Claude/스크립트로 통짜 데이터를 덮어쓴 시점. 사용자 폼 편집은 반영되지 않음."
-        >
-          <span className={styles.adminSync__label}>SYNC · GM</span>
-          <span className={styles.adminSync__value}>
-            통짜 데이터 동기화 ·{" "}
-            {new Date(character.bulkUpdatedAt).toLocaleString("ko-KR", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
+            </div>
+          ) : null}
         </div>
       ) : null}
+
+      {deleteError ? <div className={styles.error}>{deleteError}</div> : null}
 
       <PosterHero
         posterImage={character.lore.posterImage}
@@ -227,6 +231,26 @@ function AgentSections({ character }: { character: AgentCharacter }) {
   const { play, lore } = character;
 
   const hasEquipment = play.equipment.length > 0;
+  const profileCards = [
+    {
+      key: "appearance",
+      label: "외모",
+      meta: "PROFILE · VISUAL",
+      value: lore.appearance,
+    },
+    {
+      key: "personality",
+      label: "성격",
+      meta: "PROFILE · MENTAL",
+      value: lore.personality,
+    },
+    {
+      key: "background",
+      label: "배경",
+      meta: "PROFILE · ARCHIVE",
+      value: lore.background,
+    },
+  ].filter((item) => item.value);
   const hasProfile = Boolean(
     lore.appearance || lore.personality || lore.background,
   );
@@ -239,30 +263,22 @@ function AgentSections({ character }: { character: AgentCharacter }) {
             CHARACTER PROFILE
           </PanelTitle>
           <div className={styles.itemList}>
-            {lore.appearance ? (
-              <div className={styles.itemCard}>
+            {profileCards.map((item) => (
+              <div
+                key={item.key}
+                className={`${styles.itemCard} ${styles["itemCard--profile"]}`}
+              >
                 <div className={styles.itemCard__head}>
-                  <div className={styles.itemCard__name}>외모</div>
+                  <div className={styles.itemCard__headText}>
+                    <span className={styles.itemCard__eyebrow}>
+                      {item.meta}
+                    </span>
+                    <div className={styles.itemCard__name}>{item.label}</div>
+                  </div>
                 </div>
-                <div className={styles.itemCard__desc}>{lore.appearance}</div>
+                <div className={styles.itemCard__desc}>{item.value}</div>
               </div>
-            ) : null}
-            {lore.personality ? (
-              <div className={styles.itemCard}>
-                <div className={styles.itemCard__head}>
-                  <div className={styles.itemCard__name}>성격</div>
-                </div>
-                <div className={styles.itemCard__desc}>{lore.personality}</div>
-              </div>
-            ) : null}
-            {lore.background ? (
-              <div className={styles.itemCard}>
-                <div className={styles.itemCard__head}>
-                  <div className={styles.itemCard__name}>배경</div>
-                </div>
-                <div className={styles.itemCard__desc}>{lore.background}</div>
-              </div>
-            ) : null}
+            ))}
           </div>
         </Box>
       ) : null}
@@ -276,9 +292,17 @@ function AgentSections({ character }: { character: AgentCharacter }) {
           </PanelTitle>
           <div className={styles.itemList}>
             {play.equipment.map((eq, i) => (
-              <div key={i} className={styles.itemCard}>
+              <div
+                key={i}
+                className={`${styles.itemCard} ${styles["itemCard--equipment"]}`}
+              >
                 <div className={styles.itemCard__head}>
-                  <div className={styles.itemCard__name}>{eq.name}</div>
+                  <div className={styles.itemCard__headText}>
+                    <span className={styles.itemCard__eyebrow}>
+                      EQUIPMENT · {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div className={styles.itemCard__name}>{eq.name}</div>
+                  </div>
                   {eq.damage ? <Tag tone="danger">DMG {eq.damage}</Tag> : null}
                 </div>
                 <div className={styles.itemCard__meta}>
