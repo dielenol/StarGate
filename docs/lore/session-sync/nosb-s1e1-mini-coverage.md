@@ -35,7 +35,7 @@ source: stargate-lore
 | ZULU-0028 특수 격리 상자 | Existing catalog item linked to entity | `master_items` SPECIAL | Keep linked to report/catalog graph | Applied |
 | 닥터 모스 | Office assignment sequence and existing NPC spec | NPC spec, characters Dossier, official image | Update appearsInEvents and sourced background | Applied |
 | CLAIRVOYANCE / 수잔 | Mini cafeteria/steak shop contact | NPC spec, characters Dossier | Add mini event and note | Applied |
-| 해쉬 태거 / INDEXER | Europe lab emergency call | characters Dossier, report hook | Add event link/tag and preserve as next-operation hook | Applied; no separate operation report until next source |
+| 해쉬 테거 / INDEXER | Europe lab emergency call | characters Dossier, report hook | Add event link/tag and preserve as next-operation hook | Applied; no separate operation report until next source |
 | AGENT participants | Log speakers plus existing codename map | characters Dossier | Add `NOSB-S1E1-MINI` to `lore.appearsInEvents` | Applied for 14 records |
 | 스페이스 제로 | CEO contact and existing SPACE_ZERO spec | institution spec, institution DB, wiki | Update institution with S1E1-MINI contact | Applied |
 | 요한 스미스 | CEO name appears in mini log; GM-provided Dossier profile/image | characters Dossier, SPACE_ZERO leader link, relation narrative | Create Dossier as `JOHAN_SMITH` and link to S1E1-MINI | Applied |
@@ -82,7 +82,7 @@ Stock impact conclusion for `NOSB-S1E1-MINI`: the log contains a Space Zero stor
 | 요한 스미스 | 클라운 / 오틸리아 | ZULU-0028 이전과 연구 기록 확보 제안, 거절 | Dossier `lore.relations` | Applied |
 | 오틸리아 / 이동식 / 키아나 | 서로 간 연구 조합 | 소음, 백색소음, 자극 발화 조합으로 샘플 조건 확인 | report, Dossier `lore.relations`, catalog lore | Applied |
 | 오틸리아 / 이동식 / 키아나 | ZULU-0028 | 소음, 백색소음, 자극 발화 조합으로 샘플 조건 확인 | report, catalog lore | Applied; entity relation remains prose/catalog/wiki |
-| 해쉬 태거 | 마리아 / 클라운 / 오틸리아 | 유럽 연구소 봉쇄/전멸 긴급 호출 | report hook, Dossier `lore.relations`, Dossier event link | Applied; next session pending |
+| 해쉬 테거 | 마리아 / 클라운 / 오틸리아 | 유럽 연구소 봉쇄/전멸 긴급 호출 | report hook, Dossier `lore.relations`, Dossier event link | Applied; next session pending |
 
 ## ERP Gap Map
 

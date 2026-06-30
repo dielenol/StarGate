@@ -2,7 +2,7 @@
 codename: SERGIO
 slug: sergio
 type: NPC
-role: ORSIS-9800 / 스페이스 33 안드로이드
+role: 스페이스 33 안드로이드
 nameKo: 세르히오
 nameEn: Sergio
 nameNative: ORSIS-9800
@@ -46,4 +46,3 @@ updatedAt: 2026-06-12T00:00:00Z
 
 ## 이름 설명
 `SERGIO`는 현장 기록에서 호명된 이름 세르히오를 신원조회용 코드로 보존한 값이다. `ORSIS-9800`은 현장 발언에서 확인된 모델 또는 식별명이다.
-

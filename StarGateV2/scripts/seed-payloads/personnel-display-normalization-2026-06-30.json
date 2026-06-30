@@ -1,0 +1,139 @@
+[
+  {
+    "collection": "characters",
+    "filter": { "codename": "INDEXER" },
+    "update": {
+      "$set": {
+        "role": "과학자 / 수석 정신전문의",
+        "lore.nickname": "인덱서",
+        "lore.loreTags": ["해쉬 테거", "인덱서", "ZULU-5959", "장밋빛시냅스", "블랙피라미드"],
+        "lore.relations.3.targetName": "이동식",
+        "lore.sessionAppearances.0.summary": "종료 직전 해쉬 테거가 유럽 연구소 봉쇄, 지원군 전멸, 단독 고립, 내부 대상 말살 필요를 보고하며 후속 작전을 예고했다.",
+        "updatedAt": "2026-06-30T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "filter": { "codename": "SERGIO" },
+    "update": {
+      "$set": {
+        "role": "스페이스 33 안드로이드",
+        "updatedAt": "2026-06-30T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "filter": { "codename": "CLOWN" },
+    "update": {
+      "$set": {
+        "lore.relations.1.summary": "해쉬 테거의 유럽 연구소 봉쇄 및 전멸 보고가 후속 작전 호출로 이어지며 같은 작전 흐름에 연결되었다.",
+        "updatedAt": "2026-06-30T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "filter": { "codename": "MARIA" },
+    "update": {
+      "$set": {
+        "lore.relations.2.summary": "해쉬 테거가 유럽 연구소 봉쇄와 내부 대상 말살 필요를 보고하면서 후속 작전 호출 축에 연결되었다.",
+        "updatedAt": "2026-06-30T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "filter": { "codename": "OTILIA" },
+    "update": {
+      "$set": {
+        "lore.relations.3.summary": "해쉬 테거의 유럽 연구소 봉쇄 및 전멸 보고가 후속 작전 호출로 이어지며 같은 작전 흐름에 연결되었다.",
+        "updatedAt": "2026-06-30T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "filter": { "codename": "DOCTOR_MOSS" },
+    "update": [
+      {
+        "$set": {
+          "lore.background": {
+            "$replaceAll": {
+              "input": "$lore.background",
+              "find": "해쉬 태거",
+              "replacement": "해쉬 테거"
+            }
+          },
+          "updatedAt": "2026-06-30T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "filter": { "sessionId": "NOSB-S1E1-MINI" },
+    "update": {
+      "$set": {
+        "highlights.0": "닥터 모스가 사후 처리 업무를 현장팀에 배정하고, 해쉬 테거의 유럽 연구소 출장을 확인했다.",
+        "highlights.7": "종료 직전 해쉬 테거가 유럽 연구소 봉쇄 및 전멸 상황을 보고하며 후속 작전을 예고했다.",
+        "updatedAt": "2026-06-30T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "filter": { "sessionId": "NOSB-S1E2-CHOICE" },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "태거 박사",
+              "replacement": "테거 박사"
+            }
+          },
+          "updatedAt": "2026-06-30T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "filter": { "slug": "s1e2-choice" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "태거 박사",
+              "replacement": "테거 박사"
+            }
+          },
+          "updatedAt": "2026-06-30T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "filter": { "slug": "odyssey-facility" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "태거 박사",
+              "replacement": "테거 박사"
+            }
+          },
+          "updatedAt": "2026-06-30T00:00:00.000Z"
+        }
+      }
+    ]
+  }
+]

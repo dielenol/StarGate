@@ -90,7 +90,7 @@
               "targetCodename": "INDEXER",
               "targetName": "해쉬 테거",
               "label": "긴급 통신 수신",
-              "summary": "해쉬 태거가 유럽 연구소 봉쇄와 내부 대상 말살 필요를 보고하면서 후속 작전 호출 축에 연결되었다.",
+              "summary": "해쉬 테거가 유럽 연구소 봉쇄와 내부 대상 말살 필요를 보고하면서 후속 작전 호출 축에 연결되었다.",
               "sourceEvent": "NOSB-S1E1-MINI",
               "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
               "confidence": "confirmed"
@@ -225,7 +225,7 @@
               "targetCodename": "INDEXER",
               "targetName": "해쉬 테거",
               "label": "긴급 통신 수신",
-              "summary": "해쉬 태거의 유럽 연구소 봉쇄 및 전멸 보고가 후속 작전 호출로 이어지며 같은 작전 흐름에 연결되었다.",
+              "summary": "해쉬 테거의 유럽 연구소 봉쇄 및 전멸 보고가 후속 작전 호출로 이어지며 같은 작전 흐름에 연결되었다.",
               "sourceEvent": "NOSB-S1E1-MINI",
               "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
               "confidence": "confirmed"
@@ -285,7 +285,7 @@
               "targetCodename": "INDEXER",
               "targetName": "해쉬 테거",
               "label": "긴급 통신 수신",
-              "summary": "해쉬 태거의 유럽 연구소 봉쇄 및 전멸 보고가 후속 작전 호출로 이어지며 같은 작전 흐름에 연결되었다.",
+              "summary": "해쉬 테거의 유럽 연구소 봉쇄 및 전멸 보고가 후속 작전 호출로 이어지며 같은 작전 흐름에 연결되었다.",
               "sourceEvent": "NOSB-S1E1-MINI",
               "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션",
               "confidence": "confirmed"
@@ -391,7 +391,7 @@
             {
               "sessionId": "NOSB-S1E1-MINI",
               "role": "유럽 연구소 긴급 통신",
-              "summary": "종료 직전 해쉬 태거가 유럽 연구소 봉쇄, 지원군 전멸, 단독 고립, 내부 대상 말살 필요를 보고하며 후속 작전을 예고했다.",
+              "summary": "종료 직전 해쉬 테거가 유럽 연구소 봉쇄, 지원군 전멸, 단독 고립, 내부 대상 말살 필요를 보고하며 후속 작전을 예고했다.",
               "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
             }
           ]

@@ -140,7 +140,7 @@
     "payload": {
       "codename": "SERGIO",
       "type": "NPC",
-      "role": "ORSIS-9800 / 스페이스 33 안드로이드",
+      "role": "스페이스 33 안드로이드",
       "department": "CIVIL",
       "factionCode": "CIVIL",
       "institutionCode": "",
@@ -270,4 +270,3 @@
     }
   }
 ]
-
