@@ -470,14 +470,36 @@
 }
 
 .hero__panel--abilities {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background-image:
-    linear-gradient(rgba(201, 168, 90, 0.025), transparent 58%),
-    linear-gradient(rgba(201, 168, 90, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 168, 90, 0.02) 1px, transparent 1px);
+    linear-gradient(rgba(201, 168, 90, 0.024), transparent 58%),
+    radial-gradient(circle at 12px 12px, rgba(201, 168, 90, 0.05) 0 1px, transparent 2px),
+    linear-gradient(90deg, transparent 0 18px, rgba(201, 168, 90, 0.03) 18px 19px, transparent 19px 36px),
+    linear-gradient(0deg, transparent 0 14px, rgba(201, 168, 90, 0.026) 14px 15px, transparent 15px 32px);
   background-size:
     auto,
-    18px 18px,
-    18px 18px;
+    48px 48px,
+    72px 32px,
+    36px 64px;
+}
+
+.hero__panel--abilities::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.65;
+  background:
+    linear-gradient(90deg, transparent 0 20px, rgba(201, 168, 90, 0.04) 20px 46px, transparent 46px),
+    linear-gradient(0deg, transparent 0 26px, rgba(201, 168, 90, 0.035) 26px 54px, transparent 54px);
+  background-size:
+    96px 72px,
+    112px 88px;
+  mask-image:
+    linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
 }
 
 .hero__panelHead {
@@ -652,6 +674,8 @@
 }
 
 .hero__abilityItem {
+  --ability-circuit: rgba(201, 168, 90, 0.032);
+  --ability-circuit-hover: rgba(201, 168, 90, 0.085);
   position: relative;
   overflow: hidden;
   padding: 11px 12px 12px;
@@ -663,12 +687,20 @@
       color-mix(in srgb, var(--gold) 5%, transparent),
       transparent 70%
     ),
-    repeating-linear-gradient(
-      135deg,
-      rgba(201, 168, 90, 0.028) 0 1px,
-      transparent 1px 10px
-    ),
+    radial-gradient(circle at 14px 12px, rgba(201, 168, 90, 0.06) 0 1px, transparent 2px),
+    linear-gradient(90deg, transparent 0 14px, var(--ability-circuit) 14px 15px, transparent 15px 34px),
+    linear-gradient(0deg, transparent 0 16px, rgba(201, 168, 90, 0.026) 16px 17px, transparent 17px 38px),
     var(--bg-1);
+  background-size:
+    auto,
+    42px 42px,
+    56px 28px,
+    34px 56px,
+    auto;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .hero__abilityItem::before {
@@ -693,27 +725,43 @@
 }
 
 .hero__abilityItem:hover {
+  --ability-circuit: var(--ability-circuit-hover);
   border-color: var(--gold-dim);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 7%, transparent);
 }
 
 .hero__abilityHead {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
-.hero__abilitySlot {
-  flex-shrink: 0;
-  padding: 2px 8px;
-  border: 1px solid var(--gold);
-  border-radius: var(--radius-sm);
+.hero__abilityTitle {
+  min-width: 0;
+}
+
+.hero__abilityCode {
+  display: block;
+  margin-bottom: 3px;
   color: var(--gold);
-  background: transparent;
   font-family: var(--font-mono);
   font-size: 14px;
-  letter-spacing: 0.08em;
-  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+}
+
+.hero__abilityPill {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--gold) 5%, transparent);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
 }
 
 .hero__abilityName {
@@ -729,22 +777,28 @@
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
-  margin-bottom: 6px;
 }
 
 .hero__abilityEffect {
   margin-top: 8px;
-  padding-top: 8px;
+  padding-top: 9px;
   border-top: 1px dashed var(--line);
-  color: var(--ink-2);
   font-size: 14px;
   line-height: 1.5;
-  font-family: var(--font-mono);
 }
 
 .hero__abilityEffectLabel {
+  display: block;
+  margin-bottom: 4px;
   color: var(--gold-dim);
+  font-family: var(--font-mono);
   letter-spacing: 0.08em;
+}
+
+.hero__abilityEffectText {
+  color: var(--ink-1);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .hero__abilityEmpty {

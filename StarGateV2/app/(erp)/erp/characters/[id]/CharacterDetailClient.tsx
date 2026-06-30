@@ -225,8 +225,13 @@ export default function CharacterDetailClient({
   );
 }
 
-/** AGENT 한정 — ABILITIES / EQUIPMENT 섹션. 콘텐츠 없는 박스는 통째로 생략.
- *  순서: ABILITIES 가 AGENT DETAILS 바로 다음에 오도록 EQUIPMENT 앞에 배치. */
+type EquipmentItem = AgentCharacter["play"]["equipment"][number];
+
+function getEquipmentType(eq: EquipmentItem): "WEAPON" | "GEAR" {
+  return eq.damage || eq.ammo || eq.grip ? "WEAPON" : "GEAR";
+}
+
+/** AGENT 한정 — PROFILE / EQUIPMENT 섹션. 콘텐츠 없는 박스는 통째로 생략. */
 function AgentSections({ character }: { character: AgentCharacter }) {
   const { play, lore } = character;
 
@@ -236,18 +241,21 @@ function AgentSections({ character }: { character: AgentCharacter }) {
       key: "appearance",
       label: "외모",
       meta: "PROFILE · VISUAL",
+      pill: "VISUAL",
       value: lore.appearance,
     },
     {
       key: "personality",
       label: "성격",
       meta: "PROFILE · MENTAL",
+      pill: "MENTAL",
       value: lore.personality,
     },
     {
       key: "background",
       label: "배경",
       meta: "PROFILE · ARCHIVE",
+      pill: "ARCHIVE",
       value: lore.background,
     },
   ].filter((item) => item.value);
@@ -275,6 +283,7 @@ function AgentSections({ character }: { character: AgentCharacter }) {
                     </span>
                     <div className={styles.itemCard__name}>{item.label}</div>
                   </div>
+                  <Tag tone="gold">{item.pill}</Tag>
                 </div>
                 <div className={styles.itemCard__desc}>{item.value}</div>
               </div>
@@ -291,34 +300,47 @@ function AgentSections({ character }: { character: AgentCharacter }) {
             EQUIPMENT
           </PanelTitle>
           <div className={styles.itemList}>
-            {play.equipment.map((eq, i) => (
-              <div
-                key={i}
-                className={`${styles.itemCard} ${styles["itemCard--equipment"]}`}
-              >
-                <div className={styles.itemCard__head}>
-                  <div className={styles.itemCard__headText}>
-                    <span className={styles.itemCard__eyebrow}>
-                      EQUIPMENT · {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <div className={styles.itemCard__name}>{eq.name}</div>
+            {play.equipment.map((eq, i) => {
+              const equipmentType = getEquipmentType(eq);
+
+              return (
+                <div
+                  key={i}
+                  className={`${styles.itemCard} ${styles["itemCard--equipment"]}`}
+                >
+                  <div className={styles.itemCard__head}>
+                    <div className={styles.itemCard__headText}>
+                      <span className={styles.itemCard__eyebrow}>
+                        EQUIPMENT · {equipmentType}
+                      </span>
+                      <div className={styles.itemCard__name}>{eq.name}</div>
+                    </div>
+                    <div className={styles.itemCard__pills}>
+                      <Tag tone="gold">{equipmentType}</Tag>
+                      {eq.damage ? (
+                        <Tag tone="danger">DMG {eq.damage}</Tag>
+                      ) : null}
+                    </div>
                   </div>
-                  {eq.damage ? <Tag tone="danger">DMG {eq.damage}</Tag> : null}
-                </div>
-                <div className={styles.itemCard__meta}>
-                  <span className={styles.mono}>PRICE · {eq.price || "—"}</span>
-                  {eq.ammo ? (
-                    <span className={styles.mono}> · AMMO {eq.ammo}</span>
+                  {eq.description ? (
+                    <div className={styles.itemCard__desc}>
+                      {eq.description}
+                    </div>
                   ) : null}
-                  {eq.grip ? (
-                    <span className={styles.mono}> · GRIP {eq.grip}</span>
-                  ) : null}
+                  <div className={styles.itemCard__meta}>
+                    <span className={styles.mono}>
+                      PRICE · {eq.price || "—"}
+                    </span>
+                    {eq.ammo ? (
+                      <span className={styles.mono}> · AMMO {eq.ammo}</span>
+                    ) : null}
+                    {eq.grip ? (
+                      <span className={styles.mono}> · GRIP {eq.grip}</span>
+                    ) : null}
+                  </div>
                 </div>
-                {eq.description ? (
-                  <div className={styles.itemCard__desc}>{eq.description}</div>
-                ) : null}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Box>
       ) : null}

@@ -120,6 +120,17 @@ function getInitial(source: string): string {
   return source.charAt(0).toUpperCase() || "?";
 }
 
+function getAbilityDisplayCode(slot: AbilitySlot, ability: Ability): string {
+  const code = ability.code?.trim();
+  return code && /^[CPA]\d?$/.test(code) ? code : slot;
+}
+
+function getAbilityKind(slot: AbilitySlot): "CANTRIP" | "PASSIVE" | "ACTIVE" {
+  if (slot.startsWith("C")) return "CANTRIP";
+  if (slot === "P") return "PASSIVE";
+  return "ACTIVE";
+}
+
 /**
  * 캐릭터 상세 상단 히어로 (Tower 레이아웃 — Claude Design 슬롯 3, 2단계 본작업).
  *
@@ -509,33 +520,45 @@ export default function PosterHero({
                     </div>
                   ) : (
                     <ul className={styles.hero__abilityList}>
-                      {filled.map(({ slot, ab }) => (
-                        <li key={slot} className={styles.hero__abilityItem}>
-                          <div className={styles.hero__abilityHead}>
-                            <span className={styles.hero__abilitySlot}>
-                              {slot}
-                            </span>
-                            <span className={styles.hero__abilityName}>
-                              {ab.name}
-                            </span>
-                          </div>
-                          {ab.description ? (
-                            <div className={styles.hero__abilityDesc}>
-                              {ab.description}
+                      {filled.map(({ slot, ab }) => {
+                        const abilityCode = getAbilityDisplayCode(slot, ab);
+                        const abilityKind = getAbilityKind(slot);
+
+                        return (
+                          <li key={slot} className={styles.hero__abilityItem}>
+                            <div className={styles.hero__abilityHead}>
+                              <div className={styles.hero__abilityTitle}>
+                                <span className={styles.hero__abilityCode}>
+                                  ABILITY · {abilityCode}
+                                </span>
+                                <span className={styles.hero__abilityName}>
+                                  {ab.name}
+                                </span>
+                              </div>
+                              <span className={styles.hero__abilityPill}>
+                                {abilityKind}
+                              </span>
                             </div>
-                          ) : null}
-                          {ab.effect ? (
-                            <div className={styles.hero__abilityEffect}>
-                              <span
-                                className={styles.hero__abilityEffectLabel}
-                              >
-                                EFFECT ·
-                              </span>{" "}
-                              {ab.effect}
-                            </div>
-                          ) : null}
-                        </li>
-                      ))}
+                            {ab.description ? (
+                              <div className={styles.hero__abilityDesc}>
+                                {ab.description}
+                              </div>
+                            ) : null}
+                            {ab.effect ? (
+                              <div className={styles.hero__abilityEffect}>
+                                <span
+                                  className={styles.hero__abilityEffectLabel}
+                                >
+                                  EFFECT
+                                </span>
+                                <span className={styles.hero__abilityEffectText}>
+                                  {ab.effect}
+                                </span>
+                              </div>
+                            ) : null}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>
