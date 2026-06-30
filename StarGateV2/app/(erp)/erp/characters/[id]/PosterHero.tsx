@@ -494,7 +494,9 @@ export default function PosterHero({
                 return ab && ab.name.trim().length > 0 ? [{ slot, ab }] : [];
               });
               return (
-                <div className={styles.hero__panel}>
+                <div
+                  className={`${styles.hero__panel} ${styles["hero__panel--abilities"]}`}
+                >
                   <div className={styles.hero__panelHead}>
                     <span>ABILITIES</span>
                     <span className={styles.hero__panelHeadSub}>

@@ -469,6 +469,17 @@
   padding: 12px 14px 14px;
 }
 
+.hero__panel--abilities {
+  background-image:
+    linear-gradient(rgba(201, 168, 90, 0.025), transparent 58%),
+    linear-gradient(rgba(201, 168, 90, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 168, 90, 0.02) 1px, transparent 1px);
+  background-size:
+    auto,
+    18px 18px,
+    18px 18px;
+}
+
 .hero__panelHead {
   display: flex;
   justify-content: space-between;
@@ -634,18 +645,55 @@
 .hero__abilityList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .hero__abilityItem {
-  padding: 10px 0;
-  border-bottom: 1px dashed var(--line);
+  position: relative;
+  overflow: hidden;
+  padding: 11px 12px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--gold) 5%, transparent),
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      135deg,
+      rgba(201, 168, 90, 0.028) 0 1px,
+      transparent 1px 10px
+    ),
+    var(--bg-1);
 }
-.hero__abilityItem:last-child {
-  border-bottom: none;
+
+.hero__abilityItem::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid color-mix(in srgb, var(--gold) 9%, transparent);
+  border-radius: calc(var(--radius-sm) - 3px);
+  pointer-events: none;
+}
+
+.hero__abilityItem::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -1px;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid var(--gold-dim);
+  border-right: 1px solid var(--gold-dim);
+  pointer-events: none;
+}
+
+.hero__abilityItem:hover {
+  border-color: var(--gold-dim);
 }
 
 .hero__abilityHead {
@@ -685,6 +733,9 @@
 }
 
 .hero__abilityEffect {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
   color: var(--ink-2);
   font-size: 14px;
   line-height: 1.5;
