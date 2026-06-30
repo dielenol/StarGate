@@ -1,0 +1,13 @@
+{
+  "collection": "master_items",
+  "type": "catalog-image-sync",
+  "filter": {
+    "slug": "hakenkreuz-cabinet"
+  },
+  "update": {
+    "$set": {
+      "previewImage": "/assets/catalog/special/hakenkreuz-cabinet.png",
+      "updatedAt": "2026-06-30T00:00:00.000Z"
+    }
+  }
+}
