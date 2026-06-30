@@ -8,6 +8,10 @@ import type { AgentLevel, Character, CharacterType } from "@/types/character";
 import { getLevelDisplayRank, getLevelDisplayTotal } from "@/lib/personnel";
 import { isInternalOrgCode } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import {
+  getCharacterDisplayNameOrNull,
+  getCharacterRoleLine,
+} from "@/lib/format/character-display";
 
 import Pips from "@/components/ui/Pips/Pips";
 import Tag from "@/components/ui/Tag/Tag";
@@ -17,8 +21,6 @@ import styles from "./PersonnelCard.module.css";
 type MatchState = "matched" | "dimmed" | "default";
 
 const REDACT_NAME = "████████";
-const CLASSIFIED_VALUE = "[CLASSIFIED]";
-
 interface Props {
   character: Character;
   showIdentity: boolean;
@@ -48,7 +50,10 @@ export default function PersonnelCard({
       isInternalOrgCode(character.institutionCode) ||
       isInternalOrgCode(character.factionCode));
   const displayName =
-    showIdentity && !isRedacted ? getDisplayName(character) : null;
+    showIdentity && !isRedacted
+      ? getCharacterDisplayNameOrNull(character)
+      : null;
+  const roleLine = getCharacterRoleLine(character);
 
   const avatarNode = renderAvatar(character, isRedacted);
 
@@ -100,8 +105,8 @@ export default function PersonnelCard({
           >
             {displayName ?? REDACT_NAME}
           </div>
-          {character.role ? (
-            <div className={styles.role}>{character.role}</div>
+          {roleLine ? (
+            <div className={styles.role}>{roleLine}</div>
           ) : null}
         </div>
       </div>
@@ -149,20 +154,6 @@ export default function PersonnelCard({
       ) : null}
     </Link>
   );
-}
-
-function getDisplayName(character: Character): string | null {
-  const nickname = character.lore.nickname;
-  if (isDisplayableName(nickname)) return nickname;
-
-  const realName = character.lore.name;
-  if (isDisplayableName(realName)) return realName;
-
-  return null;
-}
-
-function isDisplayableName(value: string | undefined | null): value is string {
-  return Boolean(value && value !== CLASSIFIED_VALUE);
 }
 
 function renderAvatar(character: Character, isRedacted: boolean) {

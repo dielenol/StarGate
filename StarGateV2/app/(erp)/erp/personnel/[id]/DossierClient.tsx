@@ -43,6 +43,7 @@ import {
   isInternalOrgCode,
 } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { getCharacterRoleLine } from "@/lib/format/character-display";
 import { formatDate as formatLibDate } from "@/lib/format/date";
 
 import Box from "@/components/ui/Box/Box";
@@ -756,6 +757,7 @@ export default function DossierClient({
         ? lore.name
         : null;
 
+  const roleLine = getCharacterRoleLine(character);
   const nameEn =
     canRealName && !isRedactedValue(lore.nameEn) ? lore.nameEn : null;
 
@@ -1552,6 +1554,9 @@ export default function DossierClient({
               )}
             </h2>
             <div className={styles.portraitCode}>{character.codename}</div>
+            {roleLine ? (
+              <div className={styles.portraitRole}>{roleLine}</div>
+            ) : null}
             {nameEn ? (
               <div className={styles.portraitNameEn}>{nameEn}</div>
             ) : null}

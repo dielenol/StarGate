@@ -20,6 +20,10 @@ import { IconClose, IconZoom } from "@/components/icons";
 
 import { getFactionLogo, FACTION_LOGO } from "@/app/(erp)/erp/personnel/_constants";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import {
+  getCharacterDisplayName,
+  getCharacterRoleLine,
+} from "@/lib/format/character-display";
 
 import styles from "./PosterHero.module.css";
 
@@ -28,6 +32,7 @@ interface Props {
   mainImage: string;
   codename: string;
   name: string;
+  nickname?: string;
   role: string;
   agentLevel?: AgentLevel;
   /** 외부 기관 코드 (군부/이사회/시민사회). NPC 위주, 없으면 institutionCode 로 폴백. */
@@ -138,6 +143,7 @@ export default function PosterHero({
   mainImage,
   codename,
   name,
+  nickname,
   role,
   agentLevel,
   factionCode,
@@ -189,7 +195,13 @@ export default function PosterHero({
   }, [zoomOpen]);
   // contain 처리: main 뷰는 다양한 비율 (정사각/세로) → 잘림 방지.
   const isPortraitFallback = view === "main" && hasMain;
-  const displayName = name || codename;
+  const displayName = getCharacterDisplayName({
+    codename,
+    role,
+    department,
+    lore: { name, nickname },
+  });
+  const roleLine = getCharacterRoleLine({ role, department });
 
   const logoSrc = factionCode
     ? getFactionLogo(factionCode) ?? NOVUS_ORDO_LOGO
@@ -306,8 +318,8 @@ export default function PosterHero({
           <div className={styles.hero__captionMain}>
             <div className={styles.hero__captionCode}>{codename}</div>
             <h2 className={styles.hero__captionName}>{displayName}</h2>
-            {role ? (
-              <div className={styles.hero__captionAlias}>{role}</div>
+            {roleLine ? (
+              <div className={styles.hero__captionAlias}>{roleLine}</div>
             ) : null}
             {metaItems.length > 0 ? (
               <div className={styles.hero__captionMeta}>

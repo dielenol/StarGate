@@ -13,6 +13,7 @@ import {
 } from "@/hooks/queries/useCharactersQuery";
 
 import type { CharacterEditMode } from "@/lib/auth/rbac";
+import { getCharacterDisplayName } from "@/lib/format/character-display";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
@@ -65,6 +66,7 @@ export default function CharacterDetailClient({
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const characterId = String(character._id);
+  const displayName = getCharacterDisplayName(character);
 
   async function handleDelete() {
     const confirmed = window.confirm(
@@ -107,7 +109,7 @@ export default function CharacterDetailClient({
             },
             { label: "EDIT" },
           ]}
-          title={`${character.lore.name || character.codename} · 편집`}
+          title={`${displayName} · 편집`}
         />
         <CharacterEditForm
           character={character}
@@ -137,7 +139,7 @@ export default function CharacterDetailClient({
           { label: "CHARACTERS", href: "/erp/characters" },
           { label: character.codename },
         ]}
-        title={character.lore.name || character.codename}
+        title={displayName}
         right={
           canEdit || canDelete ? (
             <>
@@ -190,6 +192,7 @@ export default function CharacterDetailClient({
         mainImage={character.lore.mainImage}
         codename={character.codename}
         name={character.lore.name}
+        nickname={character.lore.nickname}
         role={character.role}
         agentLevel={character.agentLevel}
         factionCode={character.factionCode}

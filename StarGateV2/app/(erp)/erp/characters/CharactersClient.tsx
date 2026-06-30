@@ -9,7 +9,11 @@ import { useAgentCharactersQuery } from "@/hooks/queries/useCharactersQuery";
 import type { CharacterTier } from "@/types/character";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
-import { getDepartmentLabel } from "@/lib/org-structure";
+import {
+  getCharacterDepartmentLabel,
+  getCharacterDisplayName,
+  getCharacterRoleLine,
+} from "@/lib/format/character-display";
 
 import Button from "@/components/ui/Button/Button";
 import Input from "@/components/ui/Input/Input";
@@ -46,7 +50,7 @@ interface Props {
 }
 
 function getInitial(c: AgentCharacterCardDto): string {
-  const source = getDisplayName(c);
+  const source = getCharacterDisplayName(c);
   return source.charAt(0).toUpperCase() || "?";
 }
 
@@ -80,13 +84,9 @@ function normalizeSearchText(value: string): string {
   return value.trim().toLowerCase();
 }
 
-function getDisplayName(c: AgentCharacterCardDto): string {
-  return c.lore.nickname || c.lore.name || c.codename;
-}
-
 function getSearchText(c: AgentCharacterCardDto): string {
   const tier = tierOf(c);
-  const departmentLabel = c.department ? getDepartmentLabel(c.department) : "";
+  const departmentLabel = getCharacterDepartmentLabel(c) ?? "";
   const visibilityText =
     c.isPublic === false ? "private hidden dummy 비공개 더미" : "public 공개";
 
@@ -318,11 +318,8 @@ export default function CharactersClient({
         <div className={styles.grid}>
           {displayedAgents.map((c) => {
             const id = String(c._id);
-            const departmentLabel = c.department
-              ? getDepartmentLabel(c.department)
-              : null;
-            const subLine = [c.role, departmentLabel].filter(Boolean).join(" / ");
-            const displayName = getDisplayName(c);
+            const subLine = getCharacterRoleLine(c);
+            const displayName = getCharacterDisplayName(c);
             const tier = tierOf(c);
             const pattern = getCardPattern(c, id, viewerUserId);
 
