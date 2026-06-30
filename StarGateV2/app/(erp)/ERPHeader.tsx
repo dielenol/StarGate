@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Static header logo avoids next/image hydration attribute noise. */
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   type ChangeEvent,
@@ -67,6 +68,7 @@ const getServerKbdLabel = () => "⌘K";
 const ERP_BGM_MAX_VOLUME = 0.32;
 const ERP_BGM_DEFAULT_VOLUME_LEVEL = 70;
 const ERP_BGM_LAST_TRACK_STORAGE_KEY = "novus-ordo-erp-last-bgm-index";
+const NOTIFICATION_DROPDOWN_ID = "erp-header-notifications";
 const ERP_BGM_TRACKS = [
   {
     label: "NOVUS 01",
@@ -208,7 +210,9 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   );
 
   const { breadcrumb, title } = usePageHead();
+  const pathname = usePathname();
   const { data: notifications = [] } = useNotifications();
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const [activeBgmIndex, setActiveBgmIndex] = useState<number | null>(null);
   const [bgmPlaying, setBgmPlaying] = useState(false);
   const [bgmPending, setBgmPending] = useState(false);
@@ -221,6 +225,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
   const bgmProgressInputRef = useRef<HTMLInputElement | null>(null);
   const bgmVolumeInputRef = useRef<HTMLInputElement | null>(null);
+  const notificationWrapRef = useRef<HTMLDivElement | null>(null);
   const bgmTrackIndexRef = useRef<number | null>(null);
   const bgmAutoStartAttemptedRef = useRef(false);
   const playBgmTrackRef = useRef<(trackIndex: number) => Promise<boolean>>(
@@ -347,6 +352,34 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!notificationOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (notificationWrapRef.current?.contains(target)) return;
+      setNotificationOpen(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setNotificationOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [notificationOpen]);
+
+  useEffect(() => {
+    setNotificationOpen(false);
+  }, [pathname]);
+
   const activeBgm =
     activeBgmIndex === null ? null : ERP_BGM_TRACKS[activeBgmIndex];
   const bgmDurationValue = getFiniteAudioTime(bgmDuration);
@@ -396,6 +429,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
     unreadNotificationCount > 0
       ? styles["header__notification--active"]
       : "",
+    notificationOpen ? styles["header__notification--open"] : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -432,6 +466,14 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   function handleShuffleBgm() {
     const nextIndex = getRandomBgmIndex(bgmTrackIndexRef.current);
     void playBgmTrack(nextIndex);
+  }
+
+  function handleToggleNotifications() {
+    setNotificationOpen((open) => !open);
+  }
+
+  function handleCloseNotifications() {
+    setNotificationOpen(false);
   }
 
   function handleSeekBgm(event: ChangeEvent<HTMLInputElement>) {
@@ -587,17 +629,22 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
             <kbd className={styles.header__cmdkKbd}>{kbdLabel}</kbd>
           </button>
 
-          <div className={styles.header__notificationWrap}>
-            <Link
-              href="/erp/notifications"
+          <div
+            ref={notificationWrapRef}
+            className={styles.header__notificationWrap}
+          >
+            <button
+              type="button"
               className={notificationButtonClassName}
+              onClick={handleToggleNotifications}
+              aria-expanded={notificationOpen}
+              aria-controls={NOTIFICATION_DROPDOWN_ID}
               aria-label={
                 unreadNotificationCount > 0
                   ? `알림 ${unreadNotificationCount}건`
                   : "알림"
               }
               title="알림"
-              prefetch
             >
               <IconNotification aria-hidden />
               {unreadNotificationCount > 0 ? (
@@ -605,11 +652,20 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                   {notificationBadge}
                 </span>
               ) : null}
-            </Link>
+            </button>
 
             <div
-              className={styles.header__notificationDropdown}
+              id={NOTIFICATION_DROPDOWN_ID}
+              className={[
+                styles.header__notificationDropdown,
+                notificationOpen
+                  ? styles["header__notificationDropdown--open"]
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               aria-label="최근 알림"
+              hidden={!notificationOpen}
             >
               <div className={styles.header__notificationDropdownHead}>
                 <span>RECENT</span>
@@ -633,6 +689,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                       ]
                         .filter(Boolean)
                         .join(" ")}
+                      onClick={handleCloseNotifications}
                       prefetch
                     >
                       <span
@@ -665,6 +722,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
               <Link
                 href="/erp/notifications"
                 className={styles.header__notificationAll}
+                onClick={handleCloseNotifications}
                 prefetch
               >
                 전체 알림 보기
