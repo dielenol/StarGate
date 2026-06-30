@@ -530,6 +530,43 @@
   letter-spacing: 0.12em;
 }
 
+.header__notificationDropdownActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header__notificationReadAll {
+  appearance: none;
+  padding: 3px 7px;
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 70%, var(--line));
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.header__notificationReadAll:hover:not(:disabled),
+.header__notificationReadAll:focus-visible {
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+  border-color: var(--gold);
+  color: var(--ink-0);
+}
+
+.header__notificationReadAll:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.header__notificationReadAll:disabled {
+  cursor: default;
+  opacity: 0.52;
+}
+
 .header__notificationList {
   display: flex;
   flex-direction: column;

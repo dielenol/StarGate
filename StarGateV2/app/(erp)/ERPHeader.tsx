@@ -20,6 +20,7 @@ import type { AgentLevel } from "@/types/character";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
 import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
+import { useMarkAllRead } from "@/hooks/mutations/useNotificationMutation";
 
 import {
   IconMenu,
@@ -212,6 +213,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const { breadcrumb, title } = usePageHead();
   const pathname = usePathname();
   const { data: notifications = [] } = useNotifications();
+  const markAllRead = useMarkAllRead();
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [activeBgmIndex, setActiveBgmIndex] = useState<number | null>(null);
   const [bgmPlaying, setBgmPlaying] = useState(false);
@@ -420,6 +422,8 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   );
   const notificationBadge =
     unreadNotificationCount > 99 ? "99+" : String(unreadNotificationCount);
+  const canMarkAllNotificationsRead =
+    unreadNotificationCount > 0 && !markAllRead.isPending;
   const recentNotifications = useMemo(
     () => notifications.slice(0, 3),
     [notifications],
@@ -474,6 +478,15 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
 
   function handleCloseNotifications() {
     setNotificationOpen(false);
+  }
+
+  function handleMarkAllNotificationsRead() {
+    if (!canMarkAllNotificationsRead) return;
+    markAllRead.mutate(undefined, {
+      onError: (error) => {
+        console.error("mark all notifications read failed", error);
+      },
+    });
   }
 
   function handleSeekBgm(event: ChangeEvent<HTMLInputElement>) {
@@ -669,10 +682,22 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
             >
               <div className={styles.header__notificationDropdownHead}>
                 <span>RECENT</span>
-                <span>
-                  {unreadNotificationCount > 0
-                    ? `${notificationBadge} UNREAD`
-                    : "CLEAR"}
+                <span className={styles.header__notificationDropdownActions}>
+                  <span>
+                    {unreadNotificationCount > 0
+                      ? `${notificationBadge} UNREAD`
+                      : "CLEAR"}
+                  </span>
+                  {unreadNotificationCount > 0 ? (
+                    <button
+                      type="button"
+                      className={styles.header__notificationReadAll}
+                      onClick={handleMarkAllNotificationsRead}
+                      disabled={!canMarkAllNotificationsRead}
+                    >
+                      {markAllRead.isPending ? "처리중" : "전체 읽음"}
+                    </button>
+                  ) : null}
                 </span>
               </div>
               {recentNotifications.length > 0 ? (
