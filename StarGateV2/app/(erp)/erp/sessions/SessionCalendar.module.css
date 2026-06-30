@@ -166,15 +166,6 @@
   background: color-mix(in srgb, var(--gold) 10%, transparent);
 }
 
-/* STATUS 강조 모드 — 매칭되는 세션이 0개인 cell 은 흐리게. */
-.cell--dim .day {
-  color: var(--ink-3);
-}
-
-.cell--dim .attendDot {
-  opacity: 0.35;
-}
-
 .day {
   display: flex;
   justify-content: space-between;
@@ -278,16 +269,6 @@
 .chip--cancel .n {
   text-decoration: line-through;
   color: var(--ink-3);
-}
-
-/* STATUS 강조 모드 — 비매칭 chip 은 흐리게. */
-.chip--dim {
-  opacity: 0.28;
-  filter: saturate(0.6);
-}
-
-.chip--dim:hover {
-  opacity: 0.55;
 }
 
 /* trpg 출처 — 좌측 보더만 info 톤으로 덮어쓴다.

@@ -7,11 +7,9 @@ import type { SessionStatus } from "@/types/session";
 
 import {
   formatTime,
-  inGroup,
   isAttending,
   isSameDay,
   pad,
-  type StatusGroup,
 } from "./_utils";
 
 import styles from "./SessionCalendar.module.css";
@@ -20,8 +18,6 @@ interface SessionCalendarProps {
   sessions: SerializedSession[];
   year: number;
   month: number;
-  /** STATUS pill 강조용 — 매칭되지 않는 chip 은 dim 처리. ALL 이면 강조 없음. */
-  highlightGroup?: StatusGroup;
   /** 일자 셀 클릭 시 호출 — 그 일자의 첫 세션 id 를 전달한다. 리스트 뷰로 점프하는 용도. */
   onDayClick: (sessionId: string) => void;
   /** 캘린더 좌측 floating 화살표 — 이전 월로 이동. */
@@ -68,14 +64,12 @@ export default function SessionCalendar({
   sessions,
   year,
   month,
-  highlightGroup = "ALL",
   onDayClick,
   onPrevMonth,
   onNextMonth,
 }: SessionCalendarProps) {
   const cells = useMemo(() => buildGrid(year, month), [year, month]);
   const today = new Date();
-  const isHighlighting = highlightGroup !== "ALL";
 
   const sessionsByDate = useMemo(() => {
     const map = new Map<string, SerializedSession[]>();
@@ -138,21 +132,15 @@ export default function SessionCalendar({
           const key = dateKey(c.date);
           const isToday = isSameDay(c.date, today);
           const events = sessionsByDate.get(key) ?? [];
-          const matchedEvents = isHighlighting
-            ? events.filter((e) => inGroup(e, highlightGroup))
-            : events;
-          const hasAttending = matchedEvents.some(isAttending);
+          const hasAttending = events.some(isAttending);
           const visible = events.slice(0, 3);
           const overflow = events.length - visible.length;
-          const cellDim =
-            isHighlighting && events.length > 0 && matchedEvents.length === 0;
 
           const cls = [
             styles.cell,
             !c.inMonth ? styles["cell--other"] : "",
             isToday ? styles["cell--today"] : "",
             events.length > 0 ? styles["cell--clickable"] : "",
-            cellDim ? styles["cell--dim"] : "",
           ]
             .filter(Boolean)
             .join(" ");
@@ -177,13 +165,11 @@ export default function SessionCalendar({
               </div>
               {visible.map((e) => {
                 const mod = CHIP_MOD[e.status];
-                const dim = isHighlighting && !inGroup(e, highlightGroup);
                 const isTrpg = e.source === "trpg";
                 const chipCls = [
                   styles.chip,
                   mod ? styles[`chip--${mod}`] : "",
                   isTrpg ? styles["chip--trpg"] : "",
-                  dim ? styles["chip--dim"] : "",
                 ]
                   .filter(Boolean)
                   .join(" ");

@@ -15,7 +15,6 @@ import {
   type SerializedSession,
   type SerializedSessionParticipant,
 } from "@/hooks/queries/useSessionsQuery";
-import type { ActiveSessionCounts } from "@/lib/db/sessions";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
 
@@ -53,8 +52,6 @@ interface SessionsClientProps {
   initialMonth: number;
   guildId: string;
   initialUpcoming: UpcomingSessionLink[];
-  /** STATUS 칩 카운트 — 월 무관 전체 활성 세션 기준 (서버에서 1회 fetch) */
-  initialGlobalCounts: ActiveSessionCounts;
   /** 현재 로그인 유저 discord id — 응답 참여자 목록에서 본인 강조용. 미연결 유저는 null. */
   currentUserDiscordId: string | null;
   /**
@@ -91,7 +88,6 @@ export default function SessionsClient({
   initialMonth,
   guildId,
   initialUpcoming,
-  initialGlobalCounts,
   currentUserDiscordId,
   trpgWebBaseUrl,
 }: SessionsClientProps) {
@@ -119,32 +115,45 @@ export default function SessionsClient({
     setMonth((m) => (m === 12 ? 1 : m + 1));
   }, [month]);
 
-  // 뷰 전환 시 STATUS 필터를 ALL 로 초기화 — 뷰별 STATUS 의미가 다르므로 끌고 가지 않는다.
   const changeView = useCallback((next: ViewKey) => {
     setView(next);
-    setStatusGroup("ALL");
   }, []);
 
   // 캘린더 셀 클릭 → 리스트 뷰로 점프 + 해당 세션 자동 펼침. 펼친 row 가 viewport 로 스크롤된다.
   const jumpToListSession = useCallback((sessionId: string) => {
-    setStatusGroup("ALL");
     setListExpandedId(sessionId);
     setView("list");
   }, []);
 
   const normalizedQuery = query.trim().toLowerCase();
 
-  // 검색어만 적용한 결과 — 캘린더 뷰는 STATUS 필터를 강조용으로만 사용한다.
+  // 검색어만 적용한 결과 — STATUS 칩 카운트의 기준이 된다.
   const querySessions = useMemo(() => {
     if (!normalizedQuery) return sessions;
     return sessions.filter((s) => matchesQuery(s, normalizedQuery));
   }, [sessions, normalizedQuery]);
 
-  // 검색어 + STATUS 필터 모두 적용한 결과 — 리스트/어젠다 뷰에서 사용한다.
+  // 검색어 + STATUS 필터 모두 적용한 결과 — 캘린더/리스트 양쪽에서 동일하게 사용한다.
   const filteredSessions = useMemo(() => {
     if (statusGroup === "ALL") return querySessions;
     return querySessions.filter((s) => inGroup(s, statusGroup));
   }, [querySessions, statusGroup]);
+
+  const statusCounts = useMemo<StatusCounts>(() => {
+    let all = 0;
+    let open = 0;
+    let closed = 0;
+    let cancel = 0;
+    let mine = 0;
+    for (const s of querySessions) {
+      all += 1;
+      if (s.status === "OPEN" || s.status === "CLOSING") open += 1;
+      else if (s.status === "CLOSED") closed += 1;
+      else if (s.status === "CANCELING" || s.status === "CANCELED") cancel += 1;
+      if (isAttending(s)) mine += 1;
+    }
+    return { all, open, closed, cancel, mine };
+  }, [querySessions]);
 
   const counts = useMemo<StatusCounts>(() => {
     let all = 0;
@@ -255,42 +264,37 @@ export default function SessionsClient({
                 on={statusGroup === "ALL"}
                 onClick={() => setStatusGroup("ALL")}
               >
-                ALL · {initialGlobalCounts.all}
+                ALL · {statusCounts.all}
               </StatusPill>
               <StatusPill
                 mod="open"
                 on={statusGroup === "open"}
                 onClick={() => setStatusGroup("open")}
               >
-                모집중 · {initialGlobalCounts.open}
+                모집중 · {statusCounts.open}
               </StatusPill>
               <StatusPill
                 mod="closed"
                 on={statusGroup === "closed"}
                 onClick={() => setStatusGroup("closed")}
               >
-                확정 · {initialGlobalCounts.closed}
+                확정 · {statusCounts.closed}
               </StatusPill>
               <StatusPill
                 mod="cancel"
                 on={statusGroup === "cancel"}
                 onClick={() => setStatusGroup("cancel")}
               >
-                취소 · {initialGlobalCounts.cancel}
+                취소 · {statusCounts.cancel}
               </StatusPill>
               <StatusPill
                 mod="mine"
                 on={statusGroup === "mine"}
                 onClick={() => setStatusGroup("mine")}
               >
-                내 참여 · {initialGlobalCounts.mine}
+                내 참여 · {statusCounts.mine}
               </StatusPill>
             </div>
-            {view === "calendar" && statusGroup !== "ALL" ? (
-              <span className={styles.ctrlStatusHint}>
-                캘린더는 매칭 강조만 표시 · 필터 결과는 ≡ 리스트 뷰에서
-              </span>
-            ) : null}
           </div>
         </div>
       </div>
@@ -306,10 +310,9 @@ export default function SessionsClient({
         <main>
           {view === "calendar" ? (
             <SessionCalendar
-              sessions={querySessions}
+              sessions={filteredSessions}
               year={year}
               month={month}
-              highlightGroup={statusGroup}
               onDayClick={jumpToListSession}
               onPrevMonth={handlePrevMonth}
               onNextMonth={handleNextMonth}

@@ -234,20 +234,6 @@
   background: var(--attend-marker);
 }
 
-/* STATUS pill 우측 — 캘린더 뷰에서 강조 모드임을 알리는 hint. */
-.ctrlStatusHint {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 4px;
-  padding-left: 12px;
-  border-left: 1px solid var(--line);
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-}
-
 /* ── BOT-OPS notice ── */
 
 .notice {
@@ -977,11 +963,11 @@
 
 .listParticipants__meTag {
   margin-left: auto;
-  padding: 1px 6px;
+  padding: 1px 7px;
   background: var(--attend-marker);
   color: var(--bg);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   line-height: 1.4;
 }

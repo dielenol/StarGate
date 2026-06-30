@@ -1,10 +1,8 @@
 import { redirect } from "next/navigation";
 
 import {
-  countMergedActiveSessionsByGuild,
   findMergedSessionsByGuildInMonth,
   findUpcomingSessionsByGuild,
-  type ActiveSessionCounts,
 } from "@/lib/db/sessions";
 import { getTrpgWebBaseUrl } from "@/lib/db/trpg-sessions-bridge";
 import { auth } from "@/lib/auth/config";
@@ -44,20 +42,12 @@ export default async function SessionsPage() {
 
   let serializedSessions: SerializedSession[] = [];
   let initialUpcoming: UpcomingSessionLink[] = [];
-  let initialGlobalCounts: ActiveSessionCounts = {
-    all: 0,
-    open: 0,
-    closed: 0,
-    cancel: 0,
-    mine: 0,
-  };
 
   if (guildId) {
     try {
       // findMergedSessionsByGuildInMonth: registra + trpg 합본을 SerializedSession 으로 직렬화.
-      // countMergedActiveSessionsByGuild: 월 무관 합본 카운트 — STATUS 칩 표기 전용.
       // findUpcomingSessionsByGuild: registra 임박 세션 (trpg 는 디스코드 채널 링크 모델이 없어 별도 표시 안 함).
-      const [mergedSessions, rawUpcoming, globalCounts] = await Promise.all([
+      const [mergedSessions, rawUpcoming] = await Promise.all([
         findMergedSessionsByGuildInMonth(
           guildId,
           year,
@@ -65,9 +55,7 @@ export default async function SessionsPage() {
           session.user.discordId,
         ),
         findUpcomingSessionsByGuild(guildId, UPCOMING_OPEN_LIMIT),
-        countMergedActiveSessionsByGuild(guildId, session.user.discordId),
       ]);
-      initialGlobalCounts = globalCounts;
       serializedSessions = mergedSessions;
 
       initialUpcoming = rawUpcoming.map((s) => ({
@@ -103,7 +91,6 @@ export default async function SessionsPage() {
       initialMonth={month}
       guildId={guildId}
       initialUpcoming={initialUpcoming}
-      initialGlobalCounts={initialGlobalCounts}
       currentUserDiscordId={session.user.discordId}
       trpgWebBaseUrl={getTrpgWebBaseUrl()}
     />
