@@ -91,11 +91,11 @@
   border-right: 0;
 }
 
-.sun {
+.head .sun {
   color: var(--danger);
 }
 
-.sat {
+.head .sat {
   color: var(--info);
 }
 
