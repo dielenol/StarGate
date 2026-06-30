@@ -17,6 +17,7 @@ const ASSET_BASE = "/assets/peoples";
 
 /** codename(DB) → 디스크 슬러그 명시 매핑. 정규화로 안 맞는 케이스만 등재. */
 const EXPLICIT_CODENAME_TO_SLUG: Record<string, string> = {
+  AEGIS: "Valeria",
   TIME: "Cronus",
   PIPETTE: "Pinch",
   TIGER298: "Siyu",
@@ -43,6 +44,7 @@ const KNOWN_SLUGS = [
   "Siyu",
   "WD",
   "Unyeon",
+  "Valeria",
   "Yuhoe",
 ] as const;
 

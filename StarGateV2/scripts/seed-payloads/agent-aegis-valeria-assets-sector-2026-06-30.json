@@ -1,0 +1,21 @@
+{
+  "collection": "characters",
+  "filter": {
+    "codename": "AEGIS"
+  },
+  "update": {
+    "$set": {
+      "agentLevel": "J",
+      "department": "SECTOR_C",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "MANUS",
+      "previewImage": "/assets/peoples/Valeria-pixel-profile.png",
+      "pixelCharacterImage": "/assets/peoples/Valeria-pixel-character.png",
+      "lore.mainImage": "/assets/peoples/Valeria-main-image.png",
+      "lore.roleDetail": "- 클래스: 실험체\n- 소속 상태: MANUS 찰리 섹터 소속 실험체\n- 전투 성향: 검과 방패를 사용하는 전열 수호자\n- 능력명: 신성력\n- 핵심 트라우마: 눈앞의 상실과 무력감"
+    },
+    "$currentDate": {
+      "updatedAt": true
+    }
+  }
+}
