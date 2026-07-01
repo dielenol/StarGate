@@ -46,6 +46,7 @@ interface Props {
   tierFilter: CharacterTier | null;
   initialSearchQuery: string;
   isGMOrAbove: boolean;
+  canToggleGmTestCharacters: boolean;
   viewerUserId: string;
 }
 
@@ -84,11 +85,42 @@ function normalizeSearchText(value: string): string {
   return value.trim().toLowerCase();
 }
 
+const GM_TEST_CODENAMES = new Set([
+  "A",
+  "G",
+  "GM",
+  "H",
+  "J",
+  "M",
+  "TEST_DUMMY",
+  "V",
+]);
+
+function normalizeMarker(value: string | undefined | null): string {
+  return (value ?? "").trim().toUpperCase();
+}
+
+function isGmTestCharacter(c: AgentCharacterCardDto): boolean {
+  if (c.isPublic !== false) return false;
+
+  const codename = normalizeMarker(c.codename);
+  if (!GM_TEST_CODENAMES.has(codename)) return false;
+  if (codename === "GM" || codename === "TEST_DUMMY") return true;
+
+  return (
+    normalizeMarker(c.lore.name) === codename ||
+    normalizeMarker(c.lore.nickname) === codename
+  );
+}
+
 function getSearchText(c: AgentCharacterCardDto): string {
   const tier = tierOf(c);
   const departmentLabel = getCharacterDepartmentLabel(c) ?? "";
   const visibilityText =
     c.isPublic === false ? "private hidden dummy 비공개 더미" : "public 공개";
+  const gmTestText = isGmTestCharacter(c)
+    ? "gm test 테스트 테스트계정 운영계정"
+    : "";
 
   return [
     c.codename,
@@ -102,6 +134,7 @@ function getSearchText(c: AgentCharacterCardDto): string {
     tier,
     TIER_LABEL[tier],
     visibilityText,
+    gmTestText,
   ]
     .filter(Boolean)
     .join(" ");
@@ -143,22 +176,35 @@ export default function CharactersClient({
   tierFilter,
   initialSearchQuery,
   isGMOrAbove,
+  canToggleGmTestCharacters,
   viewerUserId,
 }: Props) {
   const [activeTierFilter, setActiveTierFilter] =
     useState<CharacterTier | null>(tierFilter);
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
+  const [hideGmTestCharacters, setHideGmTestCharacters] = useState(true);
 
   const { data: characters = [] } = useAgentCharactersQuery("ALL", {
     initialData: initialCharacters,
   });
 
+  const gmTestCount = useMemo(
+    () => characters.filter(isGmTestCharacter).length,
+    [characters],
+  );
+  const visibleCharacters = useMemo(() => {
+    if (!canToggleGmTestCharacters || !hideGmTestCharacters) {
+      return characters;
+    }
+    return characters.filter((c) => !isGmTestCharacter(c));
+  }, [canToggleGmTestCharacters, characters, hideGmTestCharacters]);
+
   const tierFilteredAgents = useMemo(
     () =>
       activeTierFilter
-        ? characters.filter((c) => tierOf(c) === activeTierFilter)
-        : characters,
-    [characters, activeTierFilter],
+        ? visibleCharacters.filter((c) => tierOf(c) === activeTierFilter)
+        : visibleCharacters,
+    [visibleCharacters, activeTierFilter],
   );
   const searchTerms = useMemo(
     () => normalizeSearchText(searchQuery).split(/\s+/).filter(Boolean),
@@ -264,11 +310,13 @@ export default function CharactersClient({
             />
             {FILTER_LABEL.ALL}
             <span className={styles.filters__tab__count}>
-              · <b>{characters.length}</b>
+              · <b>{visibleCharacters.length}</b>
             </span>
           </Link>
           {VALID_TIERS.map((tier) => {
-            const count = characters.filter((c) => tierOf(c) === tier).length;
+            const count = visibleCharacters.filter(
+              (c) => tierOf(c) === tier,
+            ).length;
             const active = activeTierFilter === tier;
             return (
               <Link
@@ -296,6 +344,25 @@ export default function CharactersClient({
             );
           })}
         </nav>
+        {canToggleGmTestCharacters && gmTestCount > 0 ? (
+          <button
+            type="button"
+            className={[
+              styles.gmTestToggle,
+              hideGmTestCharacters ? styles["gmTestToggle--active"] : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            aria-pressed={hideGmTestCharacters}
+            onClick={() => setHideGmTestCharacters((prev) => !prev)}
+          >
+            <span className={styles.gmTestToggle__dot} aria-hidden />
+            <span>
+              {hideGmTestCharacters ? "GM 테스트 숨김" : "GM 테스트 표시"}
+            </span>
+            <b>{gmTestCount}</b>
+          </button>
+        ) : null}
         {isGMOrAbove ? (
           <Button
             as="a"
@@ -312,7 +379,9 @@ export default function CharactersClient({
         <div className={styles.empty}>
           {isSearchActive
             ? "검색 결과가 없습니다."
-            : "등록된 캐릭터가 없습니다."}
+            : canToggleGmTestCharacters && hideGmTestCharacters && gmTestCount > 0
+              ? "GM 테스트 캐릭터는 숨김 처리 중입니다."
+              : "등록된 캐릭터가 없습니다."}
         </div>
       ) : (
         <div className={styles.grid}>

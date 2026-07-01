@@ -53,6 +53,7 @@ export default async function CharactersPage({ searchParams }: PageProps) {
       tierFilter={tierFilter}
       initialSearchQuery={searchQuery}
       isGMOrAbove={isGMOrAbove}
+      canToggleGmTestCharacters={isGM}
       viewerUserId={session.user.id}
     />
   );

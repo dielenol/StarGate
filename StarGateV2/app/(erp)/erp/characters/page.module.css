@@ -38,9 +38,71 @@
 
 .filterRow__cta {
   align-self: center;
-  margin-left: auto;
   margin-bottom: 6px; /* border-bottom 과의 시각 정렬 보정 */
   flex-shrink: 0;
+}
+
+.gmTestToggle {
+  align-self: center;
+  margin-left: auto;
+  margin-bottom: 6px;
+  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    color 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.gmTestToggle:hover {
+  color: var(--ink-0);
+  border-color: var(--ink-2);
+}
+
+.gmTestToggle:focus-visible {
+  outline: 1px solid var(--gold-dim);
+  outline-offset: 2px;
+}
+
+.gmTestToggle b {
+  color: var(--ink-0);
+  font-weight: 600;
+}
+
+.gmTestToggle__dot {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--ink-3);
+  border-radius: 50%;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.gmTestToggle--active {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background:
+    linear-gradient(rgba(201,169,97,0.06), rgba(201,169,97,0.06)),
+    var(--bg-1);
+}
+
+.gmTestToggle--active .gmTestToggle__dot {
+  border-color: var(--gold);
+  background: var(--gold);
+  box-shadow: 0 0 6px rgba(201,169,97,0.48);
 }
 
 /* ---------- filters (탭 그룹) ---------- */
