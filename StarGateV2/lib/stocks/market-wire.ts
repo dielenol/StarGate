@@ -211,56 +211,190 @@ function stockMarketLinkField(officer: MarketWireOfficer): DiscordEmbedField {
   };
 }
 
-function formatStockLine(result: ScheduledStockTickResult): string {
-  const delta = result.price - result.previousPrice;
-  const statusLabel =
-    result.status === "initialized"
-      ? " / 신규 등록"
-      : result.status === "skipped"
-        ? " / 이미 처리됨"
-        : "";
-
-  return [
-    directionIcon(result),
-    stockName(result.ticker),
-    formatPrice(result.price),
-    `(${formatSignedNumber(delta, "C")}, ${formatPercent(result.changePercent)})`,
-    statusLabel,
-  ].join(" ");
+function priceDelta(result: ScheduledStockTickResult): number {
+  return result.price - result.previousPrice;
 }
 
-function buildRoutineFields(summary: ScheduledStockTickSummary): DiscordEmbedField[] {
-  const changed = summary.results.filter((result) => result.status !== "skipped");
-  const upCount = changed.filter((result) => result.price > result.previousPrice).length;
-  const downCount = changed.filter((result) => result.price < result.previousPrice).length;
-  const flatCount = changed.length - upCount - downCount;
-  const eventRows = changed.filter(
-    (result) => result.eventTier !== "routine" && result.status === "updated",
-  );
+function formatPriceMove(result: ScheduledStockTickResult): string {
+  return `${formatPrice(result.previousPrice)} → ${formatPrice(result.price)}`;
+}
 
-  const priceLines = changed.map(formatStockLine);
-  const eventLines = eventRows.map((result) => {
-    return `${tierLabel(result.eventTier)} · ${stockName(result.ticker)}: ${sanitizeForDiscord(
-      result.eventText,
-    )}`;
-  });
+function formatMoveDelta(result: ScheduledStockTickResult): string {
+  return `${formatSignedNumber(priceDelta(result), "C")} / ${formatPercent(
+    result.changePercent,
+  )}`;
+}
+
+function formatStockLedgerLine(result: ScheduledStockTickResult): string {
+  const statusLabel =
+    result.status === "initialized"
+      ? " · 신규 등록"
+      : result.status === "skipped"
+        ? " · 이미 처리됨"
+        : "";
+
+  return `${directionIcon(result)} **${stockName(result.ticker)}**\n${formatPriceMove(
+    result,
+  )} (${formatMoveDelta(result)})${statusLabel}`;
+}
+
+function formatTopMoveLine(result: ScheduledStockTickResult): string {
+  return `${directionIcon(result)} **${stockName(result.ticker)}** · ${formatMoveDelta(
+    result,
+  )}`;
+}
+
+function marketBiasLabel(input: {
+  upCount: number;
+  downCount: number;
+  flatCount: number;
+}): string {
+  if (input.upCount > input.downCount) return "상승 우세";
+  if (input.downCount > input.upCount) return "하락 우세";
+  if (input.flatCount > 0 && input.upCount === 0 && input.downCount === 0) {
+    return "보합 관측";
+  }
+  return "혼조";
+}
+
+function marketWireColor(input: {
+  upCount: number;
+  downCount: number;
+  netDelta: number;
+}): number {
+  if (input.upCount > input.downCount || input.netDelta > 0) {
+    return MARKET_WIRE_POSITIVE;
+  }
+  if (input.downCount > input.upCount || input.netDelta < 0) {
+    return MARKET_WIRE_NEGATIVE;
+  }
+  return MARKET_WIRE_COLOR;
+}
+
+function topMover(
+  results: readonly ScheduledStockTickResult[],
+): ScheduledStockTickResult | null {
+  let selected: ScheduledStockTickResult | null = null;
+  for (const result of results) {
+    if (
+      !selected ||
+      Math.abs(result.changePercent) > Math.abs(selected.changePercent)
+    ) {
+      selected = result;
+    }
+  }
+  return selected;
+}
+
+function buildEventLines(
+  results: readonly ScheduledStockTickResult[],
+): string[] {
+  return results
+    .filter(
+      (result) => result.eventTier !== "routine" && result.status === "updated",
+    )
+    .map((result) => {
+      return `${tierLabel(result.eventTier)} · **${stockName(
+        result.ticker,
+      )}**\n${sanitizeForDiscord(result.eventText)}`;
+    });
+}
+
+function buildRoutineOverviewFields(
+  summary: ScheduledStockTickSummary,
+  changed: readonly ScheduledStockTickResult[],
+): DiscordEmbedField[] {
+  const upCount = changed.filter(
+    (result) => result.price > result.previousPrice,
+  ).length;
+  const downCount = changed.filter(
+    (result) => result.price < result.previousPrice,
+  ).length;
+  const flatCount = changed.length - upCount - downCount;
+  const initializedCount = changed.filter(
+    (result) => result.status === "initialized",
+  ).length;
+  const netDelta = changed.reduce((sum, result) => sum + priceDelta(result), 0);
+  const averagePercent =
+    changed.length > 0
+      ? changed.reduce((sum, result) => sum + result.changePercent, 0) /
+        changed.length
+      : 0;
+  const strongestMove = topMover(changed);
 
   return [
     {
-      name: "시장 요약",
+      name: "공시 개요",
       value: [
-        `기준: ${summary.slot} KST`,
-        `처리: ${changed.length}건`,
-        `방향: 상승 ${upCount} / 하락 ${downCount} / 보합 ${flatCount}`,
+        `기준 슬롯: ${summary.slot} KST`,
+        `처리 종목: ${changed.length}건`,
+        initializedCount > 0 ? `신규 등록: ${initializedCount}건` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      inline: true,
+    },
+    {
+      name: "시장 방향",
+      value: [
+        marketBiasLabel({ upCount, downCount, flatCount }),
+        `상승 ${upCount} · 하락 ${downCount} · 보합 ${flatCount}`,
+        `평균 변동률 ${formatPercent(averagePercent)}`,
       ].join("\n"),
+      inline: true,
     },
     {
-      name: "종목별 변동",
-      value: truncateField(priceLines.join("\n")),
+      name: "순변동 합계",
+      value: [
+        formatSignedNumber(netDelta, "C"),
+        strongestMove ? `대표 변동: ${formatTopMoveLine(strongestMove)}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    },
+  ];
+}
+
+function buildRoutineLedgerFields(
+  changed: readonly ScheduledStockTickResult[],
+): DiscordEmbedField[] {
+  const rising = changed.filter((result) => result.price > result.previousPrice);
+  const falling = changed.filter((result) => result.price < result.previousPrice);
+  const flat = changed.filter((result) => result.price === result.previousPrice);
+  const eventLines = buildEventLines(changed);
+
+  return [
+    {
+      name: "상승 마감",
+      value: truncateField(
+        rising.length > 0
+          ? rising.map(formatStockLedgerLine).join("\n\n")
+          : "상승 마감 종목 없음",
+      ),
     },
     {
-      name: "특이사항",
-      value: truncateField(eventLines.length > 0 ? eventLines.join("\n") : "특이 공시 없음"),
+      name: "하락 마감",
+      value: truncateField(
+        falling.length > 0
+          ? falling.map(formatStockLedgerLine).join("\n\n")
+          : "하락 마감 종목 없음",
+      ),
+    },
+    ...(flat.length > 0
+      ? [
+          {
+            name: "보합 / 초기화",
+            value: truncateField(flat.map(formatStockLedgerLine).join("\n\n")),
+          },
+        ]
+      : []),
+    {
+      name: "감시실 특이사항",
+      value: truncateField(
+        eventLines.length > 0
+          ? eventLines.join("\n\n")
+          : "특이 공시 없음 · 정기 변동만 반영되었습니다.",
+      ),
     },
   ];
 }
@@ -270,9 +404,18 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
   if (changed.length === 0) return null;
 
   const officer = getOfficerForDate(summary.date);
+  const upCount = changed.filter(
+    (result) => result.price > result.previousPrice,
+  ).length;
+  const downCount = changed.filter(
+    (result) => result.price < result.previousPrice,
+  ).length;
+  const netDelta = changed.reduce((sum, result) => sum + priceDelta(result), 0);
+  const color = marketWireColor({ upCount, downCount, netDelta });
   const description = [
     "ORDO-NET MARKET WIRE",
-    `${officer.weekday} 당직: ${officer.name} (${officer.romanizedName}) / ${officer.code}`,
+    `문서번호: ${officer.code}-${summary.date}`,
+    `${officer.weekday} 당직: ${officer.name} (${officer.romanizedName})`,
     officer.noticeLine,
     officer.linkLine,
   ].join("\n");
@@ -283,12 +426,22 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
     allowed_mentions: { parse: [] },
     embeds: [
       {
-        title: "재무기구 정기 시세 공시",
+        title: `재무기구 정기 시세 공시 · ${summary.date}`,
         url: STOCK_WEB_URL,
         description,
-        color: MARKET_WIRE_COLOR,
-        fields: [...buildRoutineFields(summary), stockMarketLinkField(officer)],
-        footer: { text: `${officer.code} · ${summary.slot} KST · 자동 공시` },
+        color,
+        fields: buildRoutineOverviewFields(summary, changed),
+        footer: { text: `${officer.origin} · ${summary.slot} KST · 자동 공시` },
+        timestamp: new Date().toISOString(),
+      },
+      {
+        title: "종목별 마감 장부",
+        url: STOCK_WEB_URL,
+        description:
+          "가격은 ORDO-NET 거래소 기준입니다. 종목별 상세 차트와 보유 현황은 거래소 화면에서 확인하십시오.",
+        color,
+        fields: [...buildRoutineLedgerFields(changed), stockMarketLinkField(officer)],
+        footer: { text: `${officer.code} · ${summary.slot} KST · 시장감시실` },
         timestamp: new Date().toISOString(),
       },
     ],
