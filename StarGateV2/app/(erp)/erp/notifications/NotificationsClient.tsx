@@ -8,7 +8,6 @@ import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
 
 import type { Notification, NotificationType } from "@/types/notification";
 
-import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
@@ -187,7 +186,7 @@ export default function NotificationsClient({
   }, [filtered]);
 
   return (
-    <div data-pixel-font="ui">
+    <div className={styles.notificationsShell} data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -229,66 +228,74 @@ export default function NotificationsClient({
         </div>
       </section>
 
-      <div className={styles.toolbar}>
-        <div className={styles.statusFilters} aria-label="읽음 상태 필터">
-          {STATUS_FILTERS.map(({ key, label }) => {
-            const active = statusFilter === key;
-            const count =
-              key === "UNREAD"
-                ? unreadCount
-                : key === "READ"
-                  ? readCount
-                  : notifications.length;
+      <section className={styles.controlPanel} aria-label="알림 필터">
+        <div className={styles.toolbar}>
+          <div className={styles.statusFilters} aria-label="읽음 상태 필터">
+            {STATUS_FILTERS.map(({ key, label }) => {
+              const active = statusFilter === key;
+              const count =
+                key === "UNREAD"
+                  ? unreadCount
+                  : key === "READ"
+                    ? readCount
+                    : notifications.length;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={[
+                    styles.statusFilter,
+                    active ? styles["statusFilter--active"] : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  onClick={() => setStatusFilter(key)}
+                >
+                  <span>{label}</span>
+                  <span className={styles.statusFilter__count}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+          <label className={styles.search}>
+            <span className={styles.search__label}>SEARCH</span>
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="제목 또는 메시지"
+              className={styles.search__input}
+            />
+          </label>
+        </div>
+
+        <div className={styles.tabs}>
+          {FILTER_ORDER.map((key) => {
+            const count = countsByType[key] ?? 0;
+            if (key !== "ALL" && count === 0) return null;
+            const active = filter === key;
             return (
               <button
                 key={key}
                 type="button"
-                className={[
-                  styles.statusFilter,
-                  active ? styles["statusFilter--active"] : "",
-                ]
+                className={[styles.tab, active ? styles["tab--active"] : ""]
                   .filter(Boolean)
                   .join(" ")}
-                onClick={() => setStatusFilter(key)}
+                onClick={() => setFilter(key)}
               >
-                <span>{label}</span>
-                <span className={styles.statusFilter__count}>{count}</span>
+                {FILTER_LABEL[key]} · {count}
               </button>
             );
           })}
         </div>
-        <label className={styles.search}>
-          <span className={styles.search__label}>SEARCH</span>
-          <input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="제목 또는 메시지"
-            className={styles.search__input}
-          />
-        </label>
-      </div>
+      </section>
 
-      <div className={styles.tabs}>
-        {FILTER_ORDER.map((key) => {
-          const count = countsByType[key] ?? 0;
-          if (key !== "ALL" && count === 0) return null;
-          const active = filter === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              className={[styles.tab, active ? styles["tab--active"] : ""]
-                .filter(Boolean)
-                .join(" ")}
-              onClick={() => setFilter(key)}
-            >
-              {FILTER_LABEL[key]} · {count}
-            </button>
-          );
-        })}
-      </div>
-
-      <Box>
+      <section className={styles.feedPanel} aria-label="알림 목록">
+        <div className={styles.feedPanel__head}>
+          <span>SIGNAL FEED</span>
+          <span>
+            {filtered.length} / {notifications.length}
+          </span>
+        </div>
         {grouped.length === 0 ? (
           <div className={styles.empty}>
             {initialUnreadCount > 0 || notifications.length > 0
@@ -355,7 +362,7 @@ export default function NotificationsClient({
             ))}
           </div>
         )}
-      </Box>
+      </section>
     </div>
   );
 }

@@ -37,6 +37,7 @@ export default async function AccountPage() {
   const statusActive = user.status === "ACTIVE";
   const discordConnected = Boolean(user.discordId);
   const pwChangedDays = daysSince(user.passwordChangedAt);
+  const accountAgeDays = daysSince(user.createdAt);
 
   return (
     <>
@@ -48,218 +49,275 @@ export default async function AccountPage() {
         title="계정 설정"
       />
 
-      <div className={styles.layout}>
-        {/* ── 좌측 사이드 (신원 dossier) ── */}
-        <aside className={`${styles.box} ${styles.side}`}>
-          <div className={styles.sideHeader}>
-            <div className={styles.sideHeader__seal} aria-hidden>
-              {user.discordAvatar ? (
-                <Image
-                  src={user.discordAvatar}
-                  alt=""
-                  width={88}
-                  height={88}
-                  className={styles.sideHeader__sealImg}
-                />
-              ) : (
-                initial
-              )}
+      <div className={styles.accountShell}>
+        <section className={styles.overviewPanel} aria-label="계정 요약">
+          <div className={styles.overviewPanel__body}>
+            <span className={styles.sectionLabel}>ACCOUNT CONTROL</span>
+            <h2 className={styles.overviewPanel__title}>{user.displayName}</h2>
+            <div className={styles.overviewPanel__meta}>
+              <span>{user.username}</span>
+              <span>{user.role}</span>
+              <span>{user.status}</span>
             </div>
-            <h2 className={styles.sideHeader__name}>{user.displayName}</h2>
-            <div className={styles.sideHeader__sub}>{user.username}</div>
           </div>
-
-          <div className={styles.sideTags}>
-            <span
-              className={`${styles.statusBadge} ${
-                statusActive
-                  ? styles["statusBadge--active"]
-                  : styles["statusBadge--suspended"]
-              }`}
-            >
-              {user.status}
-            </span>
-          </div>
-
-          <dl className={styles.kv}>
-            <div className={styles.kv__row}>
-              <dt>가입일</dt>
-              <dd>
-                <span className={styles.mono}>{formatDate(user.createdAt, "numeric")}</span>
-              </dd>
+          <div className={styles.summaryGrid}>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryItem__label}>STATUS</span>
+              <strong
+                className={[
+                  styles.summaryItem__value,
+                  statusActive ? styles["summaryItem__value--success"] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                {user.status}
+              </strong>
             </div>
-            <div className={styles.kv__row}>
-              <dt>마지막 접속</dt>
-              <dd>
-                {user.lastLoginAt ? (
-                  <span className={styles.kvDateKst}>
-                    <span className={styles.mono}>
-                      {formatDateTime(user.lastLoginAt)}
-                    </span>
-                    <span className={styles.kvKst}>KST</span>
-                  </span>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryItem__label}>DISCORD</span>
+              <strong
+                className={[
+                  styles.summaryItem__value,
+                  discordConnected ? styles["summaryItem__value--gold"] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                {discordConnected ? "LINKED" : "OPEN"}
+              </strong>
+            </div>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryItem__label}>PASSWORD</span>
+              <strong className={styles.summaryItem__value}>
+                {pwChangedDays !== null ? `${pwChangedDays}D` : "N/A"}
+              </strong>
+            </div>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryItem__label}>TENURE</span>
+              <strong className={styles.summaryItem__value}>
+                {accountAgeDays !== null ? `${accountAgeDays}D` : "N/A"}
+              </strong>
+            </div>
+          </div>
+        </section>
+
+        <div className={styles.layout}>
+          {/* ── 좌측 사이드 (신원 dossier) ── */}
+          <aside className={`${styles.box} ${styles.side}`}>
+            <div className={styles.sideHeader}>
+              <div className={styles.sideHeader__seal} aria-hidden>
+                {user.discordAvatar ? (
+                  <Image
+                    src={user.discordAvatar}
+                    alt=""
+                    width={88}
+                    height={88}
+                    className={styles.sideHeader__sealImg}
+                  />
                 ) : (
-                  <span className={styles.kvEmpty}>NEVER</span>
+                  initial
                 )}
-              </dd>
-            </div>
-            {user.passwordChangedAt ? (
-              <div className={styles.kv__row}>
-                <dt>PW 변경</dt>
-                <dd>
-                  <span className={styles.mono}>
-                    {formatDate(user.passwordChangedAt, "numeric")}
-                  </span>
-                </dd>
               </div>
-            ) : null}
-          </dl>
-        </aside>
+              <h2 className={styles.sideHeader__name}>{user.displayName}</h2>
+              <div className={styles.sideHeader__sub}>{user.username}</div>
+            </div>
 
-        {/* ── 우측 메인 ── */}
-        <div className={styles.main}>
-          {/* ACCOUNT */}
-          <section className={styles.box}>
-            <div className={styles.panelTitle}>
-              <span className={styles.panelTitle__label}>
-                ACCOUNT
-                <span className={styles.panelTitle__sub}>시스템 메타데이터</span>
+            <div className={styles.sideTags}>
+              <span className={styles.roleBadge}>{user.role}</span>
+              <span
+                className={`${styles.statusBadge} ${
+                  statusActive
+                    ? styles["statusBadge--active"]
+                    : styles["statusBadge--suspended"]
+                }`}
+              >
+                {user.status}
               </span>
-              <div className={styles.panelTitle__right}>
-                <span
-                  className={`${styles.connectedBadge} ${styles["connectedBadge--on"]}`}
-                >
-                  VERIFIED
-                </span>
-              </div>
             </div>
+
             <dl className={styles.kv}>
               <div className={styles.kv__row}>
-                <dt>USERNAME</dt>
+                <dt>가입일</dt>
                 <dd>
-                  <span className={styles.mono}>{user.username}</span>
-                </dd>
-              </div>
-              <div className={styles.kv__row}>
-                <dt>표시명</dt>
-                <dd>{user.displayName}</dd>
-              </div>
-              <div className={styles.kv__row}>
-                <dt>상태</dt>
-                <dd>
-                  <span
-                    className={`${styles.statusBadge} ${
-                      statusActive
-                        ? styles["statusBadge--active"]
-                        : styles["statusBadge--suspended"]
-                    }`}
-                  >
-                    {user.status}
+                  <span className={styles.mono}>
+                    {formatDate(user.createdAt, "numeric")}
                   </span>
                 </dd>
               </div>
-            </dl>
-          </section>
-
-          {/* DISCORD */}
-          <section className={styles.box}>
-            <div className={styles.panelTitle}>
-              <span className={styles.panelTitle__label}>DISCORD LINK</span>
-              <div className={styles.panelTitle__right}>
-                <span
-                  className={`${styles.connectedBadge} ${
-                    discordConnected
-                      ? styles["connectedBadge--on"]
-                      : styles["connectedBadge--off"]
-                  }`}
-                >
-                  {discordConnected ? "CONNECTED" : "NOT LINKED"}
-                </span>
-              </div>
-            </div>
-
-            {discordConnected ? (
-              <>
-                <div className={styles.discord}>
-                  <div className={styles.discord__avatar}>
-                    {user.discordAvatar ? (
-                      <Image
-                        src={user.discordAvatar}
-                        alt={`${user.discordUsername ?? "Discord"} 아바타`}
-                        width={64}
-                        height={64}
-                      />
-                    ) : (
-                      <div
-                        className={styles.discord__avatarFallback}
-                        aria-hidden
-                      >
-                        {(
-                          user.discordGlobalName?.charAt(0) ??
-                          user.discordUsername?.charAt(0) ??
-                          "D"
-                        ).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <div className={styles.discord__info}>
-                    <div className={styles.discord__name}>
-                      {user.discordGlobalName ??
-                        user.discordUsername ??
-                        "(unknown)"}
-                    </div>
-                    <div className={styles.discord__handle}>
-                      {user.discordUsername
-                        ? `@${user.discordUsername}`
-                        : "—"}
-                    </div>
-                  </div>
-                  <div className={styles.discord__action}>
-                    <DiscordLinkButton variant="ghost">
-                      다시 연동
-                    </DiscordLinkButton>
-                  </div>
-                </div>
-                <dl className={styles.kv}>
-                  <div className={styles.kv__row}>
-                    <dt>USER ID</dt>
-                    <dd>
-                      <span
-                        className={`${styles.mono} ${styles["mono--break"]}`}
-                      >
-                        {user.discordId}
+              <div className={styles.kv__row}>
+                <dt>마지막 접속</dt>
+                <dd>
+                  {user.lastLoginAt ? (
+                    <span className={styles.kvDateKst}>
+                      <span className={styles.mono}>
+                        {formatDateTime(user.lastLoginAt)}
                       </span>
-                    </dd>
-                  </div>
-                </dl>
-              </>
-            ) : (
-              <div className={styles.discord__empty}>
-                <div className={styles.discord__emptyText}>
-                  아직 Discord 계정이 연결되지 않았습니다
+                      <span className={styles.kvKst}>KST</span>
+                    </span>
+                  ) : (
+                    <span className={styles.kvEmpty}>NEVER</span>
+                  )}
+                </dd>
+              </div>
+              {user.passwordChangedAt ? (
+                <div className={styles.kv__row}>
+                  <dt>PW 변경</dt>
+                  <dd>
+                    <span className={styles.mono}>
+                      {formatDate(user.passwordChangedAt, "numeric")}
+                    </span>
+                  </dd>
                 </div>
-                <DiscordLinkButton variant="primary" />
-              </div>
-            )}
-          </section>
+              ) : null}
+            </dl>
+          </aside>
 
-          {/* SECURITY */}
-          <section className={styles.box}>
-            <div className={styles.panelTitle}>
-              <span className={styles.panelTitle__label}>
-                SECURITY
-                <span className={styles.panelTitle__sub}>· 비밀번호 변경</span>
-              </span>
-              <div className={styles.panelTitle__right}>
-                <span className={styles.kvKst}>
-                  {pwChangedDays !== null
-                    ? `최근 변경 ${pwChangedDays}일 전`
-                    : "변경 이력 없음"}
+          {/* ── 우측 메인 ── */}
+          <div className={styles.main}>
+            {/* ACCOUNT */}
+            <section className={styles.box}>
+              <div className={styles.panelTitle}>
+                <span className={styles.panelTitle__label}>
+                  ACCOUNT
+                  <span className={styles.panelTitle__sub}>시스템 메타데이터</span>
                 </span>
+                <div className={styles.panelTitle__right}>
+                  <span
+                    className={`${styles.connectedBadge} ${styles["connectedBadge--on"]}`}
+                  >
+                    VERIFIED
+                  </span>
+                </div>
               </div>
-            </div>
-            <PasswordForm />
-          </section>
+              <dl className={styles.kv}>
+                <div className={styles.kv__row}>
+                  <dt>USERNAME</dt>
+                  <dd>
+                    <span className={styles.mono}>{user.username}</span>
+                  </dd>
+                </div>
+                <div className={styles.kv__row}>
+                  <dt>표시명</dt>
+                  <dd>{user.displayName}</dd>
+                </div>
+                <div className={styles.kv__row}>
+                  <dt>상태</dt>
+                  <dd>
+                    <span
+                      className={`${styles.statusBadge} ${
+                        statusActive
+                          ? styles["statusBadge--active"]
+                          : styles["statusBadge--suspended"]
+                      }`}
+                    >
+                      {user.status}
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            {/* DISCORD */}
+            <section className={styles.box}>
+              <div className={styles.panelTitle}>
+                <span className={styles.panelTitle__label}>DISCORD LINK</span>
+                <div className={styles.panelTitle__right}>
+                  <span
+                    className={`${styles.connectedBadge} ${
+                      discordConnected
+                        ? styles["connectedBadge--on"]
+                        : styles["connectedBadge--off"]
+                    }`}
+                  >
+                    {discordConnected ? "CONNECTED" : "NOT LINKED"}
+                  </span>
+                </div>
+              </div>
+
+              {discordConnected ? (
+                <>
+                  <div className={styles.discord}>
+                    <div className={styles.discord__avatar}>
+                      {user.discordAvatar ? (
+                        <Image
+                          src={user.discordAvatar}
+                          alt={`${user.discordUsername ?? "Discord"} 아바타`}
+                          width={64}
+                          height={64}
+                        />
+                      ) : (
+                        <div
+                          className={styles.discord__avatarFallback}
+                          aria-hidden
+                        >
+                          {(
+                            user.discordGlobalName?.charAt(0) ??
+                            user.discordUsername?.charAt(0) ??
+                            "D"
+                          ).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.discord__info}>
+                      <div className={styles.discord__name}>
+                        {user.discordGlobalName ??
+                          user.discordUsername ??
+                          "(unknown)"}
+                      </div>
+                      <div className={styles.discord__handle}>
+                        {user.discordUsername
+                          ? `@${user.discordUsername}`
+                          : "—"}
+                      </div>
+                    </div>
+                    <div className={styles.discord__action}>
+                      <DiscordLinkButton variant="ghost">
+                        다시 연동
+                      </DiscordLinkButton>
+                    </div>
+                  </div>
+                  <dl className={styles.kv}>
+                    <div className={styles.kv__row}>
+                      <dt>USER ID</dt>
+                      <dd>
+                        <span
+                          className={`${styles.mono} ${styles["mono--break"]}`}
+                        >
+                          {user.discordId}
+                        </span>
+                      </dd>
+                    </div>
+                  </dl>
+                </>
+              ) : (
+                <div className={styles.discord__empty}>
+                  <div className={styles.discord__emptyText}>
+                    아직 Discord 계정이 연결되지 않았습니다
+                  </div>
+                  <DiscordLinkButton variant="primary" />
+                </div>
+              )}
+            </section>
+
+            {/* SECURITY */}
+            <section className={styles.box}>
+              <div className={styles.panelTitle}>
+                <span className={styles.panelTitle__label}>
+                  SECURITY
+                  <span className={styles.panelTitle__sub}>· 비밀번호 변경</span>
+                </span>
+                <div className={styles.panelTitle__right}>
+                  <span className={styles.kvKst}>
+                    {pwChangedDays !== null
+                      ? `최근 변경 ${pwChangedDays}일 전`
+                      : "변경 이력 없음"}
+                  </span>
+                </div>
+              </div>
+              <PasswordForm />
+            </section>
+          </div>
         </div>
       </div>
     </>
