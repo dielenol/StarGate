@@ -17,6 +17,7 @@ import {
 } from "@/lib/format/session-report";
 import {
   type RelatedPersonnelLink,
+  relatedPersonnelLinkMatchesParticipant,
   relatedPersonnelForReport,
   relatedWikiForReport,
 } from "@/lib/lore-links";
@@ -50,42 +51,13 @@ function formatMapPrecision(precision?: string): string {
   return "미등록";
 }
 
-function normalizePersonnelLabel(value: string): string {
-  return value
-    .normalize("NFKC")
-    .toUpperCase()
-    .replace(/[^\p{L}\p{N}]+/gu, "");
-}
-
-function personnelLinkKeys(personnel: RelatedPersonnelLink): string[] {
-  const keys = new Set<string>();
-
-  for (const value of [
-    personnel.codename,
-    personnel.name,
-    ...(personnel.aliases ?? []),
-  ]) {
-    const normalized = normalizePersonnelLabel(value);
-    if (normalized) keys.add(normalized);
-  }
-
-  const baseCodename = personnel.codename.split(/[-(]/u)[0];
-  const normalizedBase = normalizePersonnelLabel(baseCodename);
-  if (normalizedBase) keys.add(normalizedBase);
-
-  return [...keys];
-}
-
 function findPersonnelForParticipant(
   participant: string,
   personnelLinks: RelatedPersonnelLink[],
 ): RelatedPersonnelLink | null {
-  const participantKey = normalizePersonnelLabel(participant);
-  if (!participantKey) return null;
-
   return (
     personnelLinks.find((personnel) =>
-      personnelLinkKeys(personnel).includes(participantKey),
+      relatedPersonnelLinkMatchesParticipant(participant, personnel),
     ) ?? null
   );
 }
