@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
+import { useInternalLinkPendingNavigation } from "@/components/erp/NavPending/useInternalLinkPendingNavigation";
+
 import styles from "./page.module.css";
 
 interface TocEntry {
@@ -23,6 +25,7 @@ interface Props {
  */
 export default function WikiDetailContent({ html, toc }: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const handleInternalLinkClick = useInternalLinkPendingNavigation();
 
   const tocIdMap = useMemo(() => {
     const map = new Map<string, { id: string; level: number }[]>();
@@ -61,6 +64,7 @@ export default function WikiDetailContent({ html, toc }: Props) {
     <div
       ref={rootRef}
       className={styles.content}
+      onClick={handleInternalLinkClick}
       // html 은 `lib/wiki-render.ts` 의 sanitizeHtml 을 통과한 결과물
       dangerouslySetInnerHTML={{ __html: html }}
     />

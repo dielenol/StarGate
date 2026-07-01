@@ -14,6 +14,7 @@ import {
   IconSample,
   type IconComponent,
 } from "@/components/icons";
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import { useInventoryItems } from "@/hooks/queries/useInventoryQuery";
 
 import {
@@ -262,6 +263,7 @@ export default function CatalogClient({ category, initialItems }: Props) {
                   className={styles.card}
                   data-tone={itemTone}
                 >
+                  <LinkPendingProbe />
                   <div className={styles.card__media}>
                     {imageSrc ? (
                       <>

@@ -23,6 +23,7 @@ import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import Box from "@/components/ui/Box/Box";
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -188,6 +189,7 @@ export default async function CatalogItemPage({
 
             <footer className={styles.footer}>
               <Link href={CATALOG_SCOPE_HREF[scope]} className={styles.back}>
+                <LinkPendingProbe />
                 ← 기록보관소 목록
               </Link>
             </footer>
@@ -284,6 +286,7 @@ function RelatedPanel({
         <div className={styles.relatedList}>
           {items.map((item) => (
             <Link key={`${item.href}-${item.title}`} href={item.href} className={styles.related}>
+              <LinkPendingProbe />
               <span className={styles.related__eyebrow}>{item.eyebrow}</span>
               <strong>{item.title}</strong>
               {item.meta ? <small>{item.meta}</small> : null}

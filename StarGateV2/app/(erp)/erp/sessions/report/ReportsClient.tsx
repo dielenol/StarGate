@@ -16,6 +16,7 @@ import {
 import Box from "@/components/ui/Box/Box";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import { IconReportDocument } from "@/components/icons";
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 
 import styles from "./page.module.css";
 
@@ -177,6 +178,7 @@ export default function ReportsClient({ initialReports }: Props) {
                 role="listitem"
                 aria-label={`${point.label} ${formatDate(report.createdAt, "padded")} ${displayTitle} 열기`}
               >
+                <LinkPendingProbe />
                 <span className={styles.mapPin__report}>
                   <IconReportDocument
                     className={styles.reportIcon}

@@ -32,6 +32,7 @@ import {
   IconWikiFaction,
   type IconComponent,
 } from "@/components/icons";
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 
 import WikiSearchBar from "./WikiSearchBar";
 import {
@@ -362,6 +363,7 @@ export default function WikiClient({
                       href={`/erp/wiki/${id}`}
                       className={styles.item}
                     >
+                      <LinkPendingProbe />
                       <div className={styles.item__body}>
                         <div className={styles.item__head}>
                           <Tag tone={wikiCategoryTone(page.category)}>
@@ -424,6 +426,7 @@ export default function WikiClient({
                       href={`/erp/wiki/${String(p._id)}`}
                       className={styles.recentLink}
                     >
+                      <LinkPendingProbe />
                       <span className={styles.recentLink__category}>
                         {p.category}
                       </span>

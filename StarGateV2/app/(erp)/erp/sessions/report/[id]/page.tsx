@@ -23,12 +23,14 @@ import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import { IconReportDocument } from "@/components/icons";
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
 import ReportActions from "./ReportActions";
+import ReportBodyContent from "./ReportBodyContent";
 
 import styles from "./page.module.css";
 
@@ -270,6 +272,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
                     href={`/erp/wiki/${page.id}`}
                     className={styles.relatedWiki__link}
                   >
+                    <LinkPendingProbe />
                     <span className={styles.relatedWiki__category}>
                       {page.category}
                     </span>
@@ -303,6 +306,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
                     href={`/erp/wiki/catalog/item/${encodeURIComponent(item.key)}`}
                     className={styles.relatedWiki__link}
                   >
+                    <LinkPendingProbe />
                     <span className={styles.relatedWiki__category}>
                       {item.categoryLabel}
                     </span>
@@ -341,6 +345,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
                         href={`/erp/personnel/${entry.personnel.id}`}
                         className={styles.participantLink}
                       >
+                        <LinkPendingProbe />
                         <span className={styles.participantLink__label}>
                           {entry.label}
                         </span>
@@ -378,6 +383,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
                         href={`/erp/personnel/${character.id}`}
                         className={styles.relatedWiki__link}
                       >
+                        <LinkPendingProbe />
                         <span className={styles.relatedWiki__category}>
                           {character.type} · {character.agentLevel ?? "U"}
                         </span>
@@ -399,10 +405,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
         <div className={styles.main}>
           <Box className={styles.reportPanel}>
             <PanelTitle>작전 본문</PanelTitle>
-            <div
-              className={styles.reportBody}
-              dangerouslySetInnerHTML={{ __html: summaryHtml }}
-            />
+            <ReportBodyContent html={summaryHtml} />
           </Box>
 
           {report.highlights.length > 0 ? (

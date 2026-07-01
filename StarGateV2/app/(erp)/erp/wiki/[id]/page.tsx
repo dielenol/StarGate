@@ -20,6 +20,7 @@ import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import Box from "@/components/ui/Box/Box";
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -194,6 +195,7 @@ export default async function WikiDetailPage({
           <ul className={styles.nav__list}>
             <li>
               <Link href="/erp/wiki" className={styles.nav__item}>
+                <LinkPendingProbe />
                 <span className={styles.nav__label}>
                   <span className={styles.nav__marker} />
                   <span>전체</span>
@@ -215,6 +217,7 @@ export default async function WikiDetailPage({
                       .join(" ")}
                     aria-current={active ? "page" : undefined}
                   >
+                    <LinkPendingProbe />
                     <span className={styles.nav__label}>
                       <span className={styles.nav__marker} />
                       <span>{cat}</span>
@@ -275,6 +278,7 @@ export default async function WikiDetailPage({
 
               <div className={styles.actions}>
                 <Link href="/erp/wiki" className={styles.back}>
+                  <LinkPendingProbe />
                   ← 위키 목록
                 </Link>
               </div>
@@ -354,6 +358,7 @@ export default async function WikiDetailPage({
                     href={`/erp/wiki/${link.id}`}
                     className={styles.related__link}
                   >
+                    <LinkPendingProbe />
                     <span className={styles.related__meta}>
                       {link.category} · {link.relation}
                     </span>
@@ -376,6 +381,7 @@ export default async function WikiDetailPage({
                     href={`/erp/wiki/catalog/item/${encodeURIComponent(item.key)}`}
                     className={styles.related__link}
                   >
+                    <LinkPendingProbe />
                     <span className={styles.related__meta}>
                       {item.categoryLabel}
                     </span>
@@ -403,6 +409,7 @@ export default async function WikiDetailPage({
                     href={`/erp/sessions/report/${report.id}`}
                     className={styles.related__link}
                   >
+                    <LinkPendingProbe />
                     <span className={styles.related__meta}>
                       {report.sessionId}
                       {report.locationLabel ? ` · ${report.locationLabel}` : ""}
@@ -429,6 +436,7 @@ export default async function WikiDetailPage({
                     href={`/erp/personnel/${character.id}`}
                     className={styles.related__link}
                   >
+                    <LinkPendingProbe />
                     <span className={styles.related__meta}>
                       {character.type} · {character.agentLevel ?? "U"}
                     </span>
