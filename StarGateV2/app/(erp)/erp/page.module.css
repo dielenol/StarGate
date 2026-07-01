@@ -523,7 +523,7 @@
       transparent 1px 5px
     );
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   margin-bottom: 18px;
   background-color: color-mix(in srgb, var(--bg-1) 88%, transparent);
   background-image: var(--signal-pattern);

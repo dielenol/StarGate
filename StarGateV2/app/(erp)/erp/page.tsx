@@ -13,6 +13,7 @@ import { countUnread, listUserNotifications } from "@/lib/db/notifications";
 import {
   countParticipationForUser,
   enrichSessions,
+  findMergedSessionsByGuildInMonth,
   findUpcomingSessionsByGuild,
 } from "@/lib/db/sessions";
 import { findUserById } from "@/lib/db/users";
@@ -37,7 +38,6 @@ import {
   IconSession,
   IconTasks,
   IconTenure,
-  IconWiki,
 } from "@/components/icons";
 import Bar from "@/components/ui/Bar/Bar";
 import Button from "@/components/ui/Button/Button";
@@ -170,6 +170,8 @@ const SESSION_STATUS_TAG: Record<
 
 type ActionTone = "gold" | "info" | "success" | "danger" | "default";
 
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
 interface ActionItem {
   label: string;
   title: string;
@@ -177,6 +179,23 @@ interface ActionItem {
   href: string;
   cta: string;
   tone: ActionTone;
+}
+
+function toKstDateString(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  const kst = new Date(date.getTime() + KST_OFFSET_MS);
+  return kst.toISOString().slice(0, 10);
+}
+
+function currentKstYearMonth(now = new Date()): {
+  year: number;
+  monthIndex: number;
+} {
+  const kst = new Date(now.getTime() + KST_OFFSET_MS);
+  return {
+    year: kst.getUTCFullYear(),
+    monthIndex: kst.getUTCMonth(),
+  };
 }
 
 function daysUntil(targetAt: Date | string): number {
@@ -216,6 +235,8 @@ export default async function ERPDashboardPage() {
   const userId = session.user.id;
   const viewerDiscordId = session.user.discordId ?? null;
   const guildId = process.env.GUILD_ID ?? "";
+  const todayKst = toKstDateString(new Date());
+  const todayKstYearMonth = currentKstYearMonth();
 
   // 다가올 세션은 enrich 후 필터링용으로 더 넉넉히 fetch (기본 limit 20).
   // 누적 참여 수는 현재 사용자만 집계해 전역 session_responses 스캔을 피한다.
@@ -237,6 +258,7 @@ export default async function ERPDashboardPage() {
     notifications,
     unreadCount,
     upcomingRaw,
+    todayMergedSessions,
     mySessionCount,
     wikiPages,
   ] = await Promise.all([
@@ -247,6 +269,14 @@ export default async function ERPDashboardPage() {
     countUnread(userId).catch(() => 0),
     guildId
       ? findUpcomingSessionsByGuild(guildId, 20).catch(() => [])
+      : Promise.resolve([]),
+    guildId
+      ? findMergedSessionsByGuildInMonth(
+          guildId,
+          todayKstYearMonth.year,
+          todayKstYearMonth.monthIndex,
+          viewerDiscordId,
+        ).catch(() => [])
       : Promise.resolve([]),
     viewerDiscordId
       ? countParticipationForUser(viewerDiscordId).catch(() => 0)
@@ -259,7 +289,6 @@ export default async function ERPDashboardPage() {
 
   // 누적 STATS — profile 폐지로 dashboard 에 흡수.
   const joinedDays = user ? daysSinceCreated(user.createdAt) : 0;
-  const myWikiCount = wikiPages.filter((w) => w.createdBy === userId).length;
 
   // 다음 단계의 직렬 await 들을 병렬화:
   //   1) balance — mainCharacter 결정 후 character 단위 ledger 조회.
@@ -311,8 +340,10 @@ export default async function ERPDashboardPage() {
     )
     .slice(0, 3);
 
-  const openMissionCount = enrichedUpcoming.filter(
-    ({ raw }) => raw.status === "OPEN" || raw.status === "CLOSING",
+  const todaySessionCount = todayMergedSessions.filter(
+    (item) =>
+      item.status !== "CANCELED" &&
+      toKstDateString(item.targetDateTime) === todayKst,
   ).length;
   const notificationPreview = notifications.slice(0, 5);
   const nextMission = myRsvpUpcoming[0]?.raw ?? null;
@@ -583,8 +614,8 @@ export default async function ERPDashboardPage() {
           <strong>{pendingResponse.length}</strong>
         </Link>
         <Link href="/erp/sessions" className={styles.signalItem}>
-          <span><IconActiveOps className={styles.signalItem__icon} aria-hidden />진행 세션</span>
-          <strong>{openMissionCount}</strong>
+          <span><IconActiveOps className={styles.signalItem__icon} aria-hidden />금일 진행 세션</span>
+          <strong>{todaySessionCount}</strong>
         </Link>
         <Link href="/erp/notifications" className={styles.signalItem}>
           <span><IconNotification className={styles.signalItem__icon} aria-hidden />미확인 알림</span>
@@ -593,10 +624,6 @@ export default async function ERPDashboardPage() {
         <Link href="/erp/characters" className={styles.signalItem}>
           <span><IconPersonCard className={styles.signalItem__icon} aria-hidden />보유 캐릭터</span>
           <strong>{myCharRefs.length}</strong>
-        </Link>
-        <Link href="/erp/wiki" className={styles.signalItem}>
-          <span><IconWiki className={styles.signalItem__icon} aria-hidden />작성 위키</span>
-          <strong>{myWikiCount}</strong>
         </Link>
         <div className={styles.signalItem}>
           <span><IconServiceRecord className={styles.signalItem__icon} aria-hidden />누적 작전</span>
