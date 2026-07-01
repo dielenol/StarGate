@@ -188,9 +188,9 @@ function formatPercent(value: number): string {
 }
 
 function directionIcon(result: ScheduledStockTickResult): string {
-  if (result.price > result.previousPrice) return "▲";
-  if (result.price < result.previousPrice) return "▼";
-  return "·";
+  if (result.price > result.previousPrice) return "🟢 ▲";
+  if (result.price < result.previousPrice) return "🔴 ▼";
+  return "⚪ ·";
 }
 
 function tierLabel(tier: StockEventTier): string {
@@ -255,6 +255,19 @@ function marketBiasLabel(input: {
     return "보합 관측";
   }
   return "혼조";
+}
+
+function marketBiasIcon(input: {
+  upCount: number;
+  downCount: number;
+  flatCount: number;
+}): string {
+  if (input.upCount > input.downCount) return "🟢";
+  if (input.downCount > input.upCount) return "🔴";
+  if (input.flatCount > 0 && input.upCount === 0 && input.downCount === 0) {
+    return "⚪";
+  }
+  return "🟡";
 }
 
 function marketWireColor(input: {
@@ -324,7 +337,7 @@ function buildRoutineOverviewFields(
 
   return [
     {
-      name: "공시 개요",
+      name: "📌 공시 개요",
       value: [
         `기준 슬롯: ${summary.slot} KST`,
         `처리 종목: ${changed.length}건`,
@@ -335,7 +348,7 @@ function buildRoutineOverviewFields(
       inline: true,
     },
     {
-      name: "시장 방향",
+      name: `${marketBiasIcon({ upCount, downCount, flatCount })} 시장 방향`,
       value: [
         marketBiasLabel({ upCount, downCount, flatCount }),
         `상승 ${upCount} · 하락 ${downCount} · 보합 ${flatCount}`,
@@ -344,7 +357,7 @@ function buildRoutineOverviewFields(
       inline: true,
     },
     {
-      name: "순변동 합계",
+      name: "🧭 순변동 합계",
       value: [
         formatSignedNumber(netDelta, "C"),
         strongestMove ? `대표 변동: ${formatTopMoveLine(strongestMove)}` : null,
@@ -355,48 +368,83 @@ function buildRoutineOverviewFields(
   ];
 }
 
-function buildRoutineLedgerFields(
-  changed: readonly ScheduledStockTickResult[],
-): DiscordEmbedField[] {
+function buildRoutineLedgerEmbeds(input: {
+  changed: readonly ScheduledStockTickResult[];
+  officer: MarketWireOfficer;
+  summary: ScheduledStockTickSummary;
+  timestamp: string;
+}): DiscordEmbed[] {
+  const { changed, officer, summary, timestamp } = input;
   const rising = changed.filter((result) => result.price > result.previousPrice);
   const falling = changed.filter((result) => result.price < result.previousPrice);
   const flat = changed.filter((result) => result.price === result.previousPrice);
   const eventLines = buildEventLines(changed);
+  const embeds: DiscordEmbed[] = [];
 
-  return [
-    {
-      name: "상승 마감",
-      value: truncateField(
-        rising.length > 0
-          ? rising.map(formatStockLedgerLine).join("\n\n")
-          : "상승 마감 종목 없음",
-      ),
-    },
-    {
-      name: "하락 마감",
-      value: truncateField(
-        falling.length > 0
-          ? falling.map(formatStockLedgerLine).join("\n\n")
-          : "하락 마감 종목 없음",
-      ),
-    },
-    ...(flat.length > 0
-      ? [
-          {
-            name: "보합 / 초기화",
-            value: truncateField(flat.map(formatStockLedgerLine).join("\n\n")),
-          },
-        ]
-      : []),
-    {
-      name: "감시실 특이사항",
-      value: truncateField(
-        eventLines.length > 0
-          ? eventLines.join("\n\n")
-          : "특이 공시 없음 · 정기 변동만 반영되었습니다.",
-      ),
-    },
-  ];
+  if (rising.length > 0) {
+    embeds.push({
+      title: "🟢 상승 마감 장부",
+      url: STOCK_WEB_URL,
+      description: "상승 종목은 초록색 공시로 분리 기록합니다.",
+      color: MARKET_WIRE_POSITIVE,
+      fields: [
+        {
+          name: "상승 종목",
+          value: truncateField(rising.map(formatStockLedgerLine).join("\n\n")),
+        },
+      ],
+      footer: { text: `${officer.code} · ${summary.slot} KST · 상승 장부` },
+      timestamp,
+    });
+  }
+
+  if (falling.length > 0) {
+    embeds.push({
+      title: "🔴 하락 마감 장부",
+      url: STOCK_WEB_URL,
+      description: "하락 종목은 적색 공시로 분리 기록합니다.",
+      color: MARKET_WIRE_NEGATIVE,
+      fields: [
+        {
+          name: "하락 종목",
+          value: truncateField(falling.map(formatStockLedgerLine).join("\n\n")),
+        },
+      ],
+      footer: { text: `${officer.code} · ${summary.slot} KST · 하락 장부` },
+      timestamp,
+    });
+  }
+
+  embeds.push({
+    title: "🟡 보합 및 감시실 특이사항",
+    url: STOCK_WEB_URL,
+    description:
+      "가격은 ORDO-NET 거래소 기준입니다. 종목별 상세 차트와 보유 현황은 거래소 화면에서 확인하십시오.",
+    color: MARKET_WIRE_COLOR,
+    fields: [
+      ...(flat.length > 0
+        ? [
+            {
+              name: "⚪ 보합 / 초기화",
+              value: truncateField(flat.map(formatStockLedgerLine).join("\n\n")),
+            },
+          ]
+        : []),
+      {
+        name: "감시실 특이사항",
+        value: truncateField(
+          eventLines.length > 0
+            ? eventLines.join("\n\n")
+            : "특이 공시 없음 · 정기 변동만 반영되었습니다.",
+        ),
+      },
+      stockMarketLinkField(officer),
+    ],
+    footer: { text: `${officer.code} · ${summary.slot} KST · 시장감시실` },
+    timestamp,
+  });
+
+  return embeds;
 }
 
 function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPayload | null {
@@ -412,6 +460,7 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
   ).length;
   const netDelta = changed.reduce((sum, result) => sum + priceDelta(result), 0);
   const color = marketWireColor({ upCount, downCount, netDelta });
+  const timestamp = new Date().toISOString();
   const description = [
     "ORDO-NET MARKET WIRE",
     `문서번호: ${officer.code}-${summary.date}`,
@@ -432,18 +481,14 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
         color,
         fields: buildRoutineOverviewFields(summary, changed),
         footer: { text: `${officer.origin} · ${summary.slot} KST · 자동 공시` },
-        timestamp: new Date().toISOString(),
+        timestamp,
       },
-      {
-        title: "종목별 마감 장부",
-        url: STOCK_WEB_URL,
-        description:
-          "가격은 ORDO-NET 거래소 기준입니다. 종목별 상세 차트와 보유 현황은 거래소 화면에서 확인하십시오.",
-        color,
-        fields: [...buildRoutineLedgerFields(changed), stockMarketLinkField(officer)],
-        footer: { text: `${officer.code} · ${summary.slot} KST · 시장감시실` },
-        timestamp: new Date().toISOString(),
-      },
+      ...buildRoutineLedgerEmbeds({
+        changed,
+        officer,
+        summary,
+        timestamp,
+      }),
     ],
   };
 }
