@@ -98,7 +98,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "캐릭터", keywords: "characters person", icon: IconPersonCard, href: "/erp/characters" },
       { label: "신원조회", keywords: "identity personnel", icon: IconMembers, href: "/erp/personnel" },
-      { label: "세력도", keywords: "factions diplomacy influence 세력 관계도 외교", icon: IconFactionMap, href: "/erp/factions" },
+      { label: "세력도", keywords: "factions diplomacy influence 세력 관계도 외교", icon: IconFactionMap, href: null, gmHref: "/erp/factions" },
       /* 명예의 전당 — 콘텐츠 준비중. */
       { label: "명예의 전당", keywords: "hall of fame", icon: IconCrown, href: null, gmHref: "/erp/hall-of-fame" },
     ],

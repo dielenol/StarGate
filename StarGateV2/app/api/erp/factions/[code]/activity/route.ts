@@ -143,6 +143,12 @@ export async function GET(_request: Request, context: ActivityRouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  try {
+    requireRole(session.user.role, "GM");
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { code: rawCode } = await context.params;
   const code = normalizeCode(rawCode);
   if (!EDITABLE_FACTION_CODES.has(code)) {

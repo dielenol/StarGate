@@ -14,6 +14,7 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { auth } from "@/lib/auth/config";
+import { hasRole } from "@/lib/auth/rbac";
 import {
   listFactionQuestProgress,
   listFactionRelationLogs,
@@ -26,6 +27,7 @@ import {
   findFactionBoardNode,
   getFactionBoardData,
 } from "../_data";
+import FactionsComingSoon from "../FactionsComingSoon";
 import {
   getFactionGameProfile,
   getNextRelationTier,
@@ -94,6 +96,10 @@ export default async function FactionDetailPage({
 }: FactionDetailPageProps) {
   const session = await auth();
   if (!session?.user) redirect("/login");
+
+  if (!hasRole(session.user.role, "GM")) {
+    return <FactionsComingSoon />;
+  }
 
   const { code } = await params;
   const data = await getFactionBoardData(session.user.role);
