@@ -48,6 +48,21 @@ interface Props {
   changeLogsMode: ChangeLogsPanelMode;
   /** GM 운영진 여부 — bulkUpdatedAt SYNC 메타 노출 등 GM 전용 패널 제어용. */
   isGM: boolean;
+  /** 현재 로그인 사용자가 이 캐릭터의 실제 소유자인지 여부. */
+  isOwner: boolean;
+}
+
+function formatCharacterTimestamp(value: Date | string | null | undefined) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function CharacterDetailClient({
@@ -56,6 +71,7 @@ export default function CharacterDetailClient({
   canDelete,
   changeLogsMode,
   isGM,
+  isOwner,
 }: Props) {
   const canEdit = editMode !== "none";
   const router = useRouter();
@@ -68,7 +84,11 @@ export default function CharacterDetailClient({
   const characterId = String(character._id);
   const displayName = getCharacterDisplayName(character);
   const showActions = canEdit || canDelete;
-  const showAdminSync = isGM && Boolean(character.bulkUpdatedAt);
+  const adminSyncAt = formatCharacterTimestamp(character.bulkUpdatedAt);
+  const ownerUpdatedAt = formatCharacterTimestamp(character.updatedAt);
+  const showAdminSync = isGM && Boolean(adminSyncAt);
+  const showOwnerUpdate = !showAdminSync && isOwner && Boolean(ownerUpdatedAt);
+  const showUpdateMeta = showAdminSync || showOwnerUpdate;
 
   async function handleDelete() {
     const confirmed = window.confirm(
@@ -144,23 +164,27 @@ export default function CharacterDetailClient({
         title={displayName}
       />
 
-      {showAdminSync || showActions ? (
+      {showUpdateMeta || showActions ? (
         <div className={styles.detailToolbar}>
-          {showAdminSync && character.bulkUpdatedAt ? (
+          {showAdminSync && adminSyncAt ? (
             <div
               className={styles.adminSync}
               title="GM 운영진 전용 — Claude/스크립트로 통짜 데이터를 덮어쓴 시점. 사용자 폼 편집은 반영되지 않음."
             >
               <span className={styles.adminSync__label}>SYNC · GM</span>
               <span className={styles.adminSync__value}>
-                통짜 데이터 동기화 ·{" "}
-                {new Date(character.bulkUpdatedAt).toLocaleString("ko-KR", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                통짜 데이터 동기화 · {adminSyncAt}
+              </span>
+            </div>
+          ) : null}
+          {showOwnerUpdate && ownerUpdatedAt ? (
+            <div
+              className={styles.ownerUpdate}
+              title="본인 캐릭터의 마지막 저장 시각입니다."
+            >
+              <span className={styles.ownerUpdate__label}>최근 수정 · 본인</span>
+              <span className={styles.ownerUpdate__value}>
+                마지막 저장 · {ownerUpdatedAt}
               </span>
             </div>
           ) : null}
