@@ -1,5 +1,5 @@
 /**
- * 장비 판매점 구매 mutation hook.
+ * 병기부 구매 mutation hook.
  *
  * 카탈로그의 WEAPON/ARMOR 장비를 구매해 크레딧을 차감하고 인벤토리에 적재한다.
  */
@@ -41,7 +41,7 @@ async function throwEquipmentShopError(res: Response): Promise<never> {
     code?: string;
   };
   throw new EquipmentShopApiError(
-    body.error ?? "장비 판매점 요청에 실패했습니다.",
+    body.error ?? "병기부 요청에 실패했습니다.",
     res.status,
     (body.code ?? undefined) as EquipmentShopApiError["code"],
   );

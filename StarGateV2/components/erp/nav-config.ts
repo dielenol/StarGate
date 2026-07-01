@@ -9,13 +9,12 @@ import type { IconComponent } from "@/components/icons";
 import {
   IconAccount,
   IconApply,
-  IconArchive,
   IconCoreArchive,
   IconCredit,
   IconCrown,
   IconDashboard,
-  IconEquipment,
   IconFactionMap,
+  IconGallery,
   IconInventory,
   IconMembers,
   IconNotification,
@@ -31,6 +30,8 @@ import {
 } from "@/components/icons";
 
 import type { UserRole } from "@/types/user";
+
+const IconBlank: IconComponent = () => null;
 
 export interface NavItem {
   /** 사이드바 렌더용 한국어 라벨. */
@@ -111,7 +112,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "크레딧", keywords: "credits", icon: IconCredit, href: "/erp/credits" },
       /* 편의점 · 주식 — M1 stub. M2/M3 에서 본 구현 활성화. */
       { label: "편의점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconShop, href: "/erp/shop" },
-      { label: "장비 판매점", keywords: "equipment shop armory weapon armor gear 장비 판매점 무기 방어구 토와스키", icon: IconEquipment, href: null, gmHref: "/erp/equipment-shop" },
+      { label: "병기부", keywords: "equipment shop armory arsenal weapon armor gear 병기부 무기 방어구 토와스키", icon: IconBlank, href: null, gmHref: "/erp/equipment-shop" },
       { label: "주식", keywords: "stock market 주식 증권", icon: IconStock, href: "/erp/stock" },
     ],
   },
@@ -123,7 +124,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "작전 보고서", keywords: "report session archive operation 작전 보고서 세션 리포트 작전 기록", icon: IconReportDocument, href: "/erp/sessions/report" },
       { label: "기록보관소", keywords: "catalog archive records equipment weapon armor consumable material sample evidence special 기록보관소 장비 소모품 샘플 물증 특수", icon: IconCoreArchive, href: "/erp/wiki/catalog/all" },
       /* 갤러리 · 연대기 — 콘텐츠 준비중. */
-      { label: "갤러리", keywords: "gallery", icon: IconArchive, href: null, gmHref: "/erp/gallery" },
+      { label: "갤러리", keywords: "gallery", icon: IconGallery, href: null, gmHref: "/erp/gallery" },
       { label: "연대기", keywords: "chronicle", icon: IconWorld, href: null, gmHref: "/erp/chronicle" },
     ],
   },

@@ -1,5 +1,5 @@
 /**
- * 장비 판매점 카탈로그 query hook.
+ * 병기부 카탈로그 query hook.
  *
  * - `useEquipmentShopCatalog`: GET /api/erp/equipment-shop/catalog
  * - 카탈로그 대상은 master_items 의 WEAPON/ARMOR 중 판매 가능한 항목.
@@ -53,7 +53,7 @@ async function parseEquipmentShopError(res: Response): Promise<never> {
     code?: EquipmentShopErrorCode;
   };
   throw new EquipmentShopApiError(
-    body.error ?? "장비 판매점 API 호출에 실패했습니다.",
+    body.error ?? "병기부 API 호출에 실패했습니다.",
     res.status,
     body.code,
   );

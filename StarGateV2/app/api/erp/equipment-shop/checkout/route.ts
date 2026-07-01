@@ -1,8 +1,8 @@
 /**
- * POST /api/erp/equipment-shop/checkout — 장비 판매점 장바구니 결제.
+ * POST /api/erp/equipment-shop/checkout — 병기부 장바구니 결제.
  *
  * 장비 카탈로그(WEAPON/ARMOR)의 판매 가능 품목을 구매해 크레딧을 차감하고
- * character_inventory 에 적재한다. 장비점 전용 재고는 아직 없으므로 재고 차감은 하지 않는다.
+ * character_inventory 에 적재한다. 병기부 전용 재고는 아직 없으므로 재고 차감은 하지 않는다.
  */
 
 import { NextResponse } from "next/server";
@@ -74,9 +74,9 @@ function normalizeCartItems(
 
 function formatOrderDescription(lines: CheckoutLine[]): string {
   const [first, ...rest] = lines;
-  if (!first) return "장비 판매점 구매";
+  if (!first) return "병기부 구매";
   const suffix = rest.length > 0 ? ` 외 ${rest.length}종` : "";
-  return `장비 판매점 구매 — ${first.name} x${first.quantity}${suffix}`;
+  return `병기부 구매 — ${first.name} x${first.quantity}${suffix}`;
 }
 
 async function rollbackAddedInventory(
@@ -277,7 +277,7 @@ export async function POST(request: Request) {
       ownerName,
       amount: totalPrice,
       type: "ADMIN_GRANT",
-      description: `장비 판매점 자동 환불 — ${lines.length}종 (인벤토리 적재 실패)`,
+      description: `병기부 자동 환불 — ${lines.length}종 (인벤토리 적재 실패)`,
       metadata: {
         source: "equipment_shop_checkout_refund",
         reason: "inventory_add_failed",
@@ -329,7 +329,7 @@ export async function POST(request: Request) {
   await notifyUser({
     userId: mainChar.ownerId,
     type: "CREDIT_RECEIVED",
-    title: "장비 구매로 크레딧이 사용되었습니다",
+    title: "병기부 구매로 크레딧이 사용되었습니다",
     message: [
       `${mainChar.codename} · ${formatOrderDescription(lines)}`,
       formatSignedAmount(-totalPrice, "CR"),

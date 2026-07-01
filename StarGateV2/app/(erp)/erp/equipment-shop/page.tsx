@@ -1,5 +1,5 @@
 /**
- * 장비 판매점 · Stargate ERP
+ * 병기부 · Stargate ERP
  *
  * 편의점 화면 흐름을 장비 카탈로그(WEAPON/ARMOR) 대상으로 얇게 복제한다.
  * 배경/NPC 이미지 자산은 임시로 편의점 자산을 재사용한다.
@@ -27,7 +27,7 @@ import EquipmentShopClient from "./EquipmentShopClient";
 const INITIAL_LEDGER_LIMIT = 50;
 
 export const metadata = {
-  title: "장비 판매점 · Stargate ERP",
+  title: "병기부 · Stargate ERP",
 };
 
 async function buildCatalogResponse(): Promise<EquipmentShopCatalogResponse> {

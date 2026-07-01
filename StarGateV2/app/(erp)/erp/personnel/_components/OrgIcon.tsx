@@ -31,6 +31,7 @@ export type OrgIconCode =
   | "HQ"
   | "RESEARCH"
   | "ADMIN_BUREAU"
+  | "ARMORY_BUREAU"
   | "INTL"
   | "CONTROL"
   | "FINANCE"
@@ -65,6 +66,7 @@ export const SUBUNIT_ICON_MAP: Record<SubUnitCode, OrgIconCode> = {
   HQ: "HQ",
   RESEARCH: "RESEARCH",
   ADMIN_BUREAU: "ADMIN_BUREAU",
+  ARMORY_BUREAU: "ARMORY_BUREAU",
   INTL: "INTL",
   CONTROL: "CONTROL",
   FINANCE: "FINANCE",
@@ -127,6 +129,10 @@ const ICONS: Record<OrgIconCode, IconPath> = {
   },
   ADMIN_BUREAU: {
     body: `<rect x="5" y="4.5" width="14" height="16.5" rx="1"/><rect x="9" y="2.5" width="6" height="3.5" rx="0.5"/><path d="M8 11h8M8 14h8M8 17h5"/>`,
+  },
+  ARMORY_BUREAU: {
+    // 병기부는 별도 도상이 확정될 때까지 의도적으로 빈 칸으로 둔다.
+    body: ``,
   },
   INTL: {
     body: `<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="6.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="6.5" cy="15" r="1.3" fill="currentColor" stroke="none"/><circle cx="17.5" cy="15" r="1.3" fill="currentColor" stroke="none"/><path d="M12 7.8L7.4 13.8M12 7.8L16.6 13.8M7.8 15h8.4"/>`,

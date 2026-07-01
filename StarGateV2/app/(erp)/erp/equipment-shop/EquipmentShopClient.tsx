@@ -50,7 +50,7 @@ const TOWASKI_IDLE_DELAY_MS = 18000;
 
 const TOWASKI_PROFILE_SRC = "/assets/shop/hud/tia-profile.webp";
 const SHOP_CLOSED_MESSAGE =
-  "장비점 문이 닫혔다.\n작업대 조명만 희미하게 남아 있다...";
+  "병기부 문이 닫혔다.\n작업대 조명만 희미하게 남아 있다...";
 const SHOP_CLOSED_BEEP_OPTIONS = {
   preset: "system",
   pitch: 720,
@@ -397,9 +397,9 @@ export default function EquipmentShopClient({
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
-          { label: "EQUIPMENT SHOP" },
+          { label: "ARMORY BUREAU" },
         ]}
-        title="장비 판매점"
+        title="병기부"
       />
 
       {!hasMainCharacter ? (
@@ -449,10 +449,10 @@ export default function EquipmentShopClient({
         </Box>
       ) : null}
 
-      <section className={shopStageClassName} aria-label="장비 판매점">
+      <section className={shopStageClassName} aria-label="병기부">
         <header className={styles.storeHeader}>
           <div className={styles.storeHeader__titleBlock}>
-            <Eyebrow>EQUIPMENT STORE</Eyebrow>
+            <Eyebrow>ARMORY BUREAU</Eyebrow>
             <div className={styles.storeHeader__title}>TOWASKI</div>
           </div>
           <div className={styles.headRight}>
@@ -488,10 +488,10 @@ export default function EquipmentShopClient({
           </>
         ) : (
           <div className={styles.storeLayout}>
-            <section className={styles.shelfPanel} aria-label="판매 장비">
+            <section className={styles.shelfPanel} aria-label="병기부 판매 장비">
               <div
                 role="tablist"
-                aria-label="장비 카테고리"
+                aria-label="병기부 카테고리"
                 className={styles.filters}
               >
                 {TAB_DEFS.map((tab) => {
@@ -525,7 +525,7 @@ export default function EquipmentShopClient({
 
               {itemsByTab.length === 0 ? (
                 <div className={styles.empty}>
-                  등록된 장비 판매 품목이 없습니다.
+                  등록된 병기부 품목이 없습니다.
                 </div>
               ) : (
                 <div className={styles.productGrid}>
@@ -824,7 +824,7 @@ export default function EquipmentShopClient({
         )}
 
         {catalog.isOpen ? (
-          <section className={styles.tiaHud} aria-label="립 토와스키 상점 HUD">
+          <section className={styles.tiaHud} aria-label="립 토와스키 병기부 HUD">
             <div className={styles.tiaHud__portraitFrame}>
               <Image
                 className={styles.tiaHud__portrait}
@@ -856,7 +856,7 @@ export default function EquipmentShopClient({
             </div>
           </section>
         ) : (
-          <section className={styles.closedHud} aria-label="장비점 폐점 안내">
+          <section className={styles.closedHud} aria-label="병기부 폐점 안내">
             <p aria-live="polite">
               {visibleLine || " "}
               {typing ? (
