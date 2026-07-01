@@ -1,0 +1,97 @@
+[
+  {
+    "collection": "characters",
+    "type": "participant-alias-sync",
+    "filter": { "codename": "MARGARET" },
+    "update": {
+      "$addToSet": {
+        "lore.loreTags": {
+          "$each": ["마거릿"]
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "participant-alias-sync",
+    "filter": { "codename": "YUHOE" },
+    "update": {
+      "$addToSet": {
+        "lore.loreTags": {
+          "$each": ["유회"]
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "participant-alias-sync",
+    "filter": { "codename": "PIPETTE" },
+    "update": {
+      "$addToSet": {
+        "lore.loreTags": {
+          "$each": ["피펫"]
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "wiki-summary-section-sync",
+    "filter": { "slug": "apocalypse-ho" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              { "$gte": [{ "$indexOfCP": ["$content", "## 요약 정보"] }, 0] },
+              "$content",
+              {
+                "$replaceOne": {
+                  "input": "$content",
+                  "find": "\n\n## 확인된 정보",
+                  "replacement": "\n\n## 요약 정보\n분류: 작전지 / 실험선\n관련 작전: NOSB-S1E2-MINI\n표면 식별: 송사리 호\n확인 정체: 아포칼립스 호\n상태: 시간 반복 및 선박 내부 시공간 현상 기록\n\n## 확인된 정보"
+                }
+              }
+            ]
+          },
+          "updatedAt": "2026-07-01T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "wiki-summary-section-sync",
+    "filter": { "slug": "project-dead-hand" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              { "$gte": [{ "$indexOfCP": ["$content", "## 요약 정보"] }, 0] },
+              "$content",
+              {
+                "$replaceOne": {
+                  "input": "$content",
+                  "find": "\n\n## 관찰 기록",
+                  "replacement": "\n\n## 요약 정보\n분류: 연구 후보군 / 잔류 의식 실험\n관련 작전: NOSB-S1E2-MINI\n관련 인물: 해쉬 테거, 마가렛(메리골드)\n핵심 현상: 사망자의 잔류 의식을 물건에 깃들게 하는 능력 시연\n상태: 공식 결과물 및 안정화 절차 미확정\n\n## 관찰 기록"
+                }
+              }
+            ]
+          },
+          "updatedAt": "2026-07-01T00:00:00.000Z"
+        }
+      }
+    ]
+  }
+]
