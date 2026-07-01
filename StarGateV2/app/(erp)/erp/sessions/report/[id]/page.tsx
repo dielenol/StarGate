@@ -6,11 +6,12 @@ import { hasRole } from "@/lib/auth/rbac";
 import { relatedCatalogItemsForReport } from "@/lib/catalog/related";
 import { listCharacters } from "@/lib/db/characters";
 import { listMasterItems } from "@/lib/db/inventory";
-import { findReportById } from "@/lib/db/session-reports";
+import { findReportById, listSessionReports } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
 import { listWikiPages } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
 import {
+  findOperationReportNumberMeta,
   formatOperationReportTitle,
   formatShortReporterName,
 } from "@/lib/format/session-report";
@@ -22,7 +23,7 @@ import {
 import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
 import { renderMarkdown } from "@/lib/wiki-render";
 
-import { IconReportDocument } from "@/components/icons";
+import { IconReportDocument, IconReportMini } from "@/components/icons";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -108,7 +109,6 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const isAdmin = hasRole(session.user.role, "GM");
   const reportId = String(report._id);
   const displayTitle = formatOperationReportTitle(report.sessionTitle);
-  const reportCode = reportId.slice(-6).toUpperCase();
   const shortReporterName = formatShortReporterName(report.gmName);
   const mapLocationLabel = report.locationLabel || "작전지 미등록";
   const mapCoordinate = formatMapCoordinate(report.mapX, report.mapY);
@@ -117,11 +117,19 @@ export default async function SessionReportDetailPage({ params }: Props) {
     ? `${mapLocationLabel}에서 기록된 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.`
     : "작전지 좌표가 아직 등록되지 않은 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.";
   // 자동링크/연관 문서용 컬렉션 3종 — 서로 독립 조회라 병렬 로드 (실패 시 빈 목록).
-  const [allPages, allCharacters, allItems] = await Promise.all([
+  const [allPages, allCharacters, allItems, allReports] = await Promise.all([
     listWikiPages().catch(() => []),
     listCharacters().catch(() => []),
     listMasterItems().catch(() => []),
+    listSessionReports().catch(() => [report]),
   ]);
+  const reportNumberMeta = findOperationReportNumberMeta(report, allReports);
+  const reportCode = reportNumberMeta.number;
+  const isMiniReport = reportNumberMeta.series === "mini";
+  const ReportIcon = isMiniReport ? IconReportMini : IconReportDocument;
+  const reportEyebrow = isMiniReport
+    ? "MINI OPERATION REPORT"
+    : "OPERATION REPORT";
   const visibleCharacters = isAdmin
     ? allCharacters
     : allCharacters.filter((character) => character.isPublic !== false);
@@ -189,12 +197,20 @@ export default async function SessionReportDetailPage({ params }: Props) {
       />
 
       <div data-pixel-font="ui">
-      <section className={styles.dossierHero} aria-label="작전 보고서 요약">
+      <section
+        className={[
+          styles.dossierHero,
+          isMiniReport ? styles["dossierHero--mini"] : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        aria-label="작전 보고서 요약"
+      >
         <div className={styles.dossierHero__icon} aria-hidden="true">
-          <IconReportDocument />
+          <ReportIcon />
         </div>
         <div className={styles.dossierHero__body}>
-          <Eyebrow tone="gold">OPERATION REPORT</Eyebrow>
+          <Eyebrow tone="gold">{reportEyebrow}</Eyebrow>
           <h2 className={styles.dossierHero__title}>{displayTitle}</h2>
           <p className={styles.dossierHero__lead}>{reportLead}</p>
         </div>

@@ -1,6 +1,9 @@
 /* ── Report detail layout ── */
 
 .dossierHero {
+  --report-accent: var(--gold);
+  --report-accent-dim: var(--gold-dim);
+
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) minmax(320px, auto);
   gap: var(--gap);
@@ -12,10 +15,15 @@
   background:
     linear-gradient(
       135deg,
-      color-mix(in srgb, var(--gold) 10%, transparent) 0%,
+      color-mix(in srgb, var(--report-accent) 10%, transparent) 0%,
       rgba(255, 255, 255, 0.02) 44%,
       rgba(255, 255, 255, 0.01) 100%
     );
+}
+
+.dossierHero--mini {
+  --report-accent: color-mix(in srgb, var(--ink-0) 58%, #5fa8bf);
+  --report-accent-dim: color-mix(in srgb, var(--ink-2) 45%, #4e8ea5);
 }
 
 .dossierHero__icon {
@@ -23,10 +31,10 @@
   place-items: center;
   width: 72px;
   min-height: 72px;
-  border: 1px solid var(--gold-dim);
+  border: 1px solid var(--report-accent-dim);
   border-radius: var(--radius-sm);
   background: rgba(0, 0, 0, 0.28);
-  color: var(--gold);
+  color: var(--report-accent);
 }
 
 .dossierHero__icon svg {
@@ -81,7 +89,7 @@
 
 .dossierMetric dd {
   margin: 0;
-  color: var(--gold);
+  color: var(--report-accent);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.35;

@@ -9,13 +9,14 @@ import { useSessionReports } from "@/hooks/queries/useSessionReportsQuery";
 
 import { formatDate } from "@/lib/format/date";
 import {
+  buildOperationReportNumbering,
   formatOperationReportTitle,
   formatShortReporterName,
 } from "@/lib/format/session-report";
 
 import Box from "@/components/ui/Box/Box";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
-import { IconReportDocument } from "@/components/icons";
+import { IconReportDocument, IconReportMini } from "@/components/icons";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 
 import styles from "./page.module.css";
@@ -31,10 +32,41 @@ interface MapPoint {
   precision: "confirmed" | "estimated";
 }
 
-const REPORT_PIN_OFFSETS: Record<string, { x: string; y: string }> = {
-  "02": { x: "-34px", y: "-22px" },
-  "04": { x: "34px", y: "22px" },
+interface PinCardLayout {
+  x: number;
+  y: number;
+}
+
+const REPORT_CARD_SIZE = 66;
+const DEFAULT_PIN_CARD_LAYOUT: PinCardLayout = { x: 0, y: -106 };
+const REPORT_PIN_CARD_LAYOUTS: Record<string, PinCardLayout> = {
+  "01.5": { x: -82, y: -112 },
+  "02": { x: 86, y: -112 },
+  "02.5": { x: 88, y: -92 },
+  MINI01: { x: -92, y: -112 },
+  MINI02: { x: 0, y: -94 },
+  MINI03: { x: 0, y: -112 },
+  MINI04: { x: -92, y: -94 },
 };
+
+function getPinCardLayout(reportNumber: string): PinCardLayout {
+  return REPORT_PIN_CARD_LAYOUTS[reportNumber] ?? DEFAULT_PIN_CARD_LAYOUT;
+}
+
+function getPinLineStyle(layout: PinCardLayout) {
+  const lineX = layout.x;
+  const lineY = layout.y + REPORT_CARD_SIZE;
+  const length = Math.max(18, Math.hypot(lineX, lineY));
+  const angle = Math.atan2(lineX, -lineY) * (180 / Math.PI);
+
+  return {
+    "--pin-card-x": `${layout.x}px`,
+    "--pin-card-y": `${layout.y}px`,
+    "--pin-line-length": `${length}px`,
+    "--pin-line-angle": `${angle}deg`,
+    "--pin-label-x": `${Math.round(layout.x / 2)}px`,
+  };
+}
 
 function normalizeReportText(report: ClientSessionReport): string {
   return [
@@ -45,19 +77,6 @@ function normalizeReportText(report: ClientSessionReport): string {
   ]
     .join(" ")
     .toLowerCase();
-}
-
-function getReportNumber(report: ClientSessionReport, index: number): string {
-  const maybeFixedReport = report as ClientSessionReport & {
-    reportNumber?: unknown;
-  };
-  const fixedNumber =
-    typeof maybeFixedReport.reportNumber === "string"
-      ? maybeFixedReport.reportNumber.trim()
-      : "";
-  if (fixedNumber) return fixedNumber;
-
-  return String(index + 1).padStart(2, "0");
 }
 
 function getCoordinate(value: number): number {
@@ -124,42 +143,39 @@ export default function ReportsClient({ initialReports }: Props) {
     initialData: initialReports,
   });
 
-  const orderedReports = useMemo(
-    () =>
-      [...reports].sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      ),
+  const numberedReports = useMemo(
+    () => buildOperationReportNumbering(reports),
     [reports],
   );
 
   return (
     <Box className={styles.mapBox} data-pixel-font="ui">
       <PanelTitle
-        right={<span className={styles.mono}>{orderedReports.length} 건</span>}
+        right={<span className={styles.mono}>{numberedReports.length} 건</span>}
       >
         OPERATION REPORT MAP
       </PanelTitle>
 
-      {orderedReports.length === 0 ? (
+      {numberedReports.length === 0 ? (
         <div className={styles.empty}>작성된 작전 보고서가 없습니다.</div>
       ) : (
         <div className={styles.mapStage} role="list">
           <div className={styles.mapOverlay} aria-hidden />
-          {orderedReports.map((report, index) => {
+          {numberedReports.map(({ report, series, number }, index) => {
             const id = String(report._id);
             const point = getReportMapPoint(report, index);
-            const reportNumber = getReportNumber(report, index);
-            const offset = REPORT_PIN_OFFSETS[reportNumber];
+            const reportNumber = number;
+            const pinLayout = getPinCardLayout(reportNumber);
             const reporterName = formatShortReporterName(report.gmName);
             const displayTitle = formatOperationReportTitle(
               report.sessionTitle,
             );
+            const ReportIcon =
+              series === "mini" ? IconReportMini : IconReportDocument;
             const style = {
               "--x": `${point.x}%`,
               "--y": `${point.y}%`,
-              "--pin-offset-x": offset?.x ?? "0px",
-              "--pin-offset-y": offset?.y ?? "0px",
+              ...getPinLineStyle(pinLayout),
             } as CSSProperties;
 
             return (
@@ -168,6 +184,8 @@ export default function ReportsClient({ initialReports }: Props) {
                 href={`/erp/sessions/report/${id}`}
                 className={[
                   styles.mapPin,
+                  reportNumber.length > 2 ? styles["mapPin--wideNumber"] : "",
+                  series === "mini" ? styles["mapPin--mini"] : "",
                   point.precision === "estimated"
                     ? styles["mapPin--estimated"]
                     : "",
@@ -180,10 +198,7 @@ export default function ReportsClient({ initialReports }: Props) {
               >
                 <LinkPendingProbe />
                 <span className={styles.mapPin__report}>
-                  <IconReportDocument
-                    className={styles.reportIcon}
-                    aria-hidden
-                  />
+                  <ReportIcon className={styles.reportIcon} aria-hidden />
                   <span className={styles.mapPin__number}>
                     {reportNumber}
                   </span>

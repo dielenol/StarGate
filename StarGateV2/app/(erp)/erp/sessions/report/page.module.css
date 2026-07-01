@@ -41,37 +41,33 @@
 }
 
 .mapPin {
+  --report-accent: var(--gold);
+  --report-accent-dim: var(--gold-dim);
+  --report-accent-glow: rgba(201, 168, 90, 0.24);
+
   position: absolute;
   left: var(--x);
   top: var(--y);
-  display: flex;
-  width: 118px;
-  flex-direction: column;
-  align-items: center;
+  display: block;
+  width: 0;
+  height: 0;
   color: inherit;
   text-align: center;
   text-decoration: none;
-  transform: translate(
-    calc(-50% + var(--pin-offset-x, 0px)),
-    calc(-100% + var(--pin-offset-y, 0px))
-  );
-  transform-origin: 50% 100%;
-  transition:
-    filter 0.15s ease,
-    transform 0.15s ease;
+  pointer-events: none;
+  transition: filter 0.15s ease;
 }
 
 .mapPin:hover,
 .mapPin:focus-visible {
-  z-index: 2;
-  filter: drop-shadow(0 0 14px rgba(201, 168, 90, 0.24));
-  transform:
-    translate(
-      calc(-50% + var(--pin-offset-x, 0px)),
-      calc(-100% + var(--pin-offset-y, 0px))
-    )
-    scale(1.04);
+  z-index: 5;
+  filter: drop-shadow(0 0 14px var(--report-accent-glow));
   outline: none;
+}
+
+.mapPin:hover .mapPin__report,
+.mapPin:focus-visible .mapPin__report {
+  transform: translateX(-50%) scale(1.04);
 }
 
 .mapPin--estimated {
@@ -79,48 +75,77 @@
 }
 
 .mapPin--estimated .mapPin__stem {
-  background: linear-gradient(180deg, var(--gold), transparent 82%);
+  background: linear-gradient(180deg, var(--report-accent), transparent 82%);
 }
 
 .mapPin--estimated .mapPin__dot {
-  background: color-mix(in srgb, var(--gold) 18%, var(--bg-0));
+  background: color-mix(in srgb, var(--report-accent) 18%, var(--bg-0));
+}
+
+.mapPin--mini {
+  --report-accent: color-mix(in srgb, var(--ink-0) 58%, #5fa8bf);
+  --report-accent-dim: color-mix(in srgb, var(--ink-2) 45%, #4e8ea5);
+  --report-accent-glow: rgba(95, 168, 191, 0.26);
 }
 
 .mapPin__report {
-  position: relative;
+  position: absolute;
+  top: var(--pin-card-y, -106px);
+  left: var(--pin-card-x, 0px);
+  z-index: 2;
   display: grid;
   place-items: center;
   width: 66px;
   height: 66px;
-  border: 1px solid var(--gold-dim);
+  border: 1px solid var(--report-accent-dim);
   border-radius: var(--radius-sm);
   background:
-    radial-gradient(circle at center, rgba(201, 168, 90, 0.2), transparent 62%),
+    radial-gradient(circle at center, color-mix(in srgb, var(--report-accent) 20%, transparent), transparent 62%),
     rgba(4, 4, 4, 0.78);
+  pointer-events: auto;
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .mapPin__stem {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
   width: 1px;
-  height: 24px;
-  background: linear-gradient(180deg, var(--gold), var(--gold-dim));
+  height: var(--pin-line-length, 40px);
+  background: linear-gradient(180deg, var(--report-accent), var(--report-accent-dim));
+  pointer-events: none;
+  transform:
+    translate(-50%, -100%)
+    rotate(var(--pin-line-angle, 0deg));
+  transform-origin: 50% 100%;
 }
 
 .mapPin__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
   width: 11px;
   height: 11px;
-  border: 1px solid var(--gold);
+  border: 1px solid var(--report-accent);
   background: var(--bg-0);
+  pointer-events: auto;
   box-shadow:
-    0 0 0 4px rgba(201, 168, 90, 0.14),
-    0 0 14px rgba(201, 168, 90, 0.32);
-  transform: rotate(45deg);
+    0 0 0 4px color-mix(in srgb, var(--report-accent) 14%, transparent),
+    0 0 14px color-mix(in srgb, var(--report-accent) 32%, transparent);
+  transform: translate(-50%, -50%) rotate(45deg);
 }
 
 .reportIcon {
   width: 48px;
   height: 48px;
-  color: var(--gold);
-  filter: drop-shadow(0 0 8px rgba(201, 168, 90, 0.16));
+  color: var(--report-accent);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--report-accent) 16%, transparent));
 }
 
 .mapPin__number {
@@ -128,26 +153,37 @@
   top: 5px;
   right: 5px;
   display: grid;
-  width: 20px;
-  height: 16px;
+  width: 24px;
+  height: 18px;
   place-items: center;
   border: 1px solid rgba(201, 168, 90, 0.56);
   border-radius: 4px;
   background: rgba(4, 4, 4, 0.88);
-  color: var(--gold);
+  color: var(--report-accent);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.04em;
   line-height: 1;
 }
 
+.mapPin--wideNumber .mapPin__number {
+  right: -6px;
+  width: 42px;
+}
+
+.mapPin--mini .mapPin__number {
+  right: -9px;
+  width: 54px;
+}
+
 .mapPin__label {
   position: absolute;
-  top: calc(100% + 13px);
-  left: 50%;
+  top: 18px;
+  left: var(--pin-label-x, 0px);
+  z-index: 6;
   display: flex;
-  width: 180px;
-  max-width: min(180px, 38vw);
+  width: 240px;
+  max-width: min(240px, 64vw);
   flex-direction: column;
   gap: 3px;
   padding: 8px 10px;
@@ -174,20 +210,20 @@
 .mono {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.06em;
   line-height: 1.2;
 }
 
 .mapPin__title {
   color: var(--ink-0);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1.3;
 }
 
 .mapPin__place {
-  color: var(--gold);
+  color: var(--report-accent);
 }
 
 .mapPin__reporter {
@@ -217,10 +253,6 @@
     aspect-ratio: 1625 / 968;
   }
 
-  .mapPin {
-    width: 96px;
-  }
-
   .mapPin__report {
     width: 56px;
     height: 56px;
@@ -229,9 +261,5 @@
   .reportIcon {
     width: 43px;
     height: 43px;
-  }
-
-  .mapPin__stem {
-    height: 18px;
   }
 }
