@@ -5,9 +5,10 @@
     "filter": { "codename": "REGISTRAR" },
     "update": {
       "$set": {
-        "previewImage": "/assets/npcs/Registrar-profile.webp",
-        "lore.mainImage": "/assets/npcs/Registrar-profile.webp",
-        "updatedAt": "2026-06-02T00:00:00.000Z"
+        "previewImage": "/assets/npcs/Registrar-pixel-profile.webp",
+        "pixelCharacterImage": "/assets/npcs/Registrar-pixel-character.webp",
+        "lore.mainImage": "/assets/npcs/Registrar-main-image.webp",
+        "updatedAt": "2026-07-01T00:00:00.000Z"
       }
     }
   }

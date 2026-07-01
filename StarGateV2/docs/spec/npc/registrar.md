@@ -17,9 +17,10 @@ isPublic: true
 loreTags: [사무총장실, 일정관리, 행정, 스웨덴, 보안]
 appearsInEvents: []
 source: manual
-previewImage: /assets/npcs/Registrar-profile.webp
+previewImage: /assets/npcs/Registrar-pixel-profile.webp
+pixelCharacterImage: /assets/npcs/Registrar-pixel-character.webp
 createdAt: 2026-04-20T00:00:00Z
-updatedAt: 2026-06-02T00:00:00Z
+updatedAt: 2026-07-01T00:00:00Z
 ---
 
 ## 대사
@@ -52,4 +53,6 @@ updatedAt: 2026-06-02T00:00:00Z
 - **사무총장 아말리아**: 스웨덴 출신. 레지스트라도 스웨덴 출신으로 설정하여 사무총장실 직속 맥락과 연결.
 
 ## 데이터 연동 (참고)
-- Dossier 이미지: `/assets/npcs/Registrar-profile.webp`
+- Dossier 메인 이미지: `/assets/npcs/Registrar-main-image.webp`
+- Dossier 프리뷰 이미지: `/assets/npcs/Registrar-pixel-profile.webp`
+- Dossier 픽셀 전신 이미지: `/assets/npcs/Registrar-pixel-character.webp`

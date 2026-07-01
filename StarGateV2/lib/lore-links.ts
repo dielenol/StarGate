@@ -97,7 +97,9 @@ function characterId(character: Pick<Character, "_id">): string | null {
   return character._id?.toString() ?? null;
 }
 
-function pageSessionKeys(page: Pick<WikiPage, "tags" | "title" | "content">): string[] {
+function pageSessionKeys(
+  page: Pick<WikiPage, "tags" | "title" | "content">,
+): string[] {
   return extractSessionKeys(page.title, page.content, ...page.tags);
 }
 
@@ -114,23 +116,79 @@ function normalizePersonnelKey(value: string): string {
     .replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
+function addPersonnelKey(keys: Set<string>, value?: string | null): void {
+  const normalized = normalizePersonnelKey(value ?? "");
+  if (normalized) keys.add(normalized);
+}
+
 function characterParticipantKeys(character: Character): string[] {
   const keys = new Set<string>();
 
   for (const value of [
     character.codename,
     character.lore.name,
+    character.lore.nameNative,
+    character.lore.nickname,
+    character.lore.nameEn,
     ...(character.lore.loreTags ?? []),
   ]) {
-    const normalized = normalizePersonnelKey(value);
-    if (normalized) keys.add(normalized);
+    addPersonnelKey(keys, value);
   }
 
   const baseCodename = character.codename.split(/[-(]/u)[0];
-  const normalizedBase = normalizePersonnelKey(baseCodename);
-  if (normalizedBase) keys.add(normalizedBase);
+  addPersonnelKey(keys, baseCodename);
 
   return [...keys];
+}
+
+function participantCandidateKeys(value: string): string[] {
+  const keys = new Set<string>();
+  const normalizedSource = value.normalize("NFKC").trim();
+
+  addPersonnelKey(keys, normalizedSource);
+  addPersonnelKey(
+    keys,
+    normalizedSource.replace(/\[[^\]]+\]|\([^)]+\)/gu, " "),
+  );
+
+  for (const match of normalizedSource.matchAll(/\[([^\]]+)\]|\(([^)]+)\)/gu)) {
+    addPersonnelKey(keys, match[1] ?? match[2]);
+  }
+
+  for (const part of normalizedSource.split(/[\s,/|·]+/u)) {
+    addPersonnelKey(keys, part);
+  }
+
+  return [...keys];
+}
+
+function isBroadEnoughPersonnelKey(key: string): boolean {
+  return key.length >= 3;
+}
+
+function personnelKeySetsMatch(
+  participantKeys: Iterable<string>,
+  personnelKeys: Iterable<string>,
+): boolean {
+  for (const participantKey of participantKeys) {
+    for (const personnelKey of personnelKeys) {
+      if (participantKey === personnelKey) return true;
+      if (
+        isBroadEnoughPersonnelKey(personnelKey) &&
+        participantKey.includes(personnelKey)
+      ) {
+        return true;
+      }
+      if (
+        isBroadEnoughPersonnelKey(participantKey) &&
+        personnelKey.includes(participantKey)
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 function pageMatchesReport(
@@ -220,7 +278,12 @@ export function toRelatedPersonnelLink(
     role: character.role,
     type: character.type,
     agentLevel: character.agentLevel,
-    aliases: character.lore.loreTags ?? [],
+    aliases: [
+      character.lore.nameNative,
+      character.lore.nickname,
+      character.lore.nameEn,
+      ...(character.lore.loreTags ?? []),
+    ].filter((alias): alias is string => Boolean(alias?.trim())),
   };
 }
 
@@ -228,14 +291,17 @@ export function relatedPersonnelForReport(
   report: SessionReport,
   characters: Character[],
 ): RelatedPersonnelLink[] {
-  const participantKeys = new Set(
-    report.participants.map(normalizePersonnelKey).filter(Boolean),
-  );
+  const participantKeySets = report.participants.map(participantCandidateKeys);
 
   return characters
     .filter((character) =>
       character.lore.appearsInEvents?.includes(report.sessionId) ||
-      characterParticipantKeys(character).some((key) => participantKeys.has(key)),
+      participantKeySets.some((participantKeys) =>
+        personnelKeySetsMatch(
+          participantKeys,
+          characterParticipantKeys(character),
+        ),
+      ),
     )
     .map(toRelatedPersonnelLink)
     .filter((character): character is RelatedPersonnelLink => character !== null)
@@ -243,6 +309,18 @@ export function relatedPersonnelForReport(
       if (left.type !== right.type) return left.type.localeCompare(right.type);
       return left.codename.localeCompare(right.codename, "en");
     });
+}
+
+export function relatedPersonnelLinkMatchesParticipant(
+  participant: string,
+  personnel: RelatedPersonnelLink,
+): boolean {
+  return personnelKeySetsMatch(
+    participantCandidateKeys(participant),
+    [personnel.codename, personnel.name, ...(personnel.aliases ?? [])].map(
+      normalizePersonnelKey,
+    ),
+  );
 }
 
 export function toRelatedReportLink(
@@ -302,18 +380,20 @@ export function relatedPersonnelForReports(
   characters: Character[],
 ): RelatedPersonnelLink[] {
   const sessionIds = new Set(reports.map((report) => report.sessionId));
-  const participantKeys = new Set(
-    reports
-      .flatMap((report) => report.participants)
-      .map(normalizePersonnelKey)
-      .filter(Boolean),
+  const participantKeySets = reports.flatMap((report) =>
+    report.participants.map(participantCandidateKeys),
   );
   const seen = new Set<string>();
 
   return characters
     .filter((character) =>
       character.lore.appearsInEvents?.some((event) => sessionIds.has(event)) ||
-      characterParticipantKeys(character).some((key) => participantKeys.has(key)),
+      participantKeySets.some((participantKeys) =>
+        personnelKeySetsMatch(
+          participantKeys,
+          characterParticipantKeys(character),
+        ),
+      ),
     )
     .map(toRelatedPersonnelLink)
     .filter((character): character is RelatedPersonnelLink => {
