@@ -129,7 +129,7 @@ type ResolveTargetResult =
   | { kind: "not_registered" }
   | { kind: "no_main"; owner: DbUser }
   | { kind: "integrity_violation"; message: string }
-  | { kind: "resolved"; owner: DbUser; main: AgentCharacter };
+  | { kind: "resolved"; owner: DbUser; main: Character };
 
 async function resolveTargetMain(discordId: string): Promise<ResolveTargetResult> {
   const owner = await findUserByDiscordId(discordId);
@@ -203,7 +203,7 @@ function formatTransactionLine(tx: CreditTransaction): string {
  * 잔액/거래 임베드 빌드 — 조회/잔액 두 군데에서 공용.
  */
 function buildBalanceEmbed(
-  character: AgentCharacter,
+  character: Character,
   balance: number,
   recent: CreditTransaction[]
 ): EmbedBuilder {

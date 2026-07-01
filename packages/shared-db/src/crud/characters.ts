@@ -12,7 +12,7 @@ import type {
   CreateCharacterInput,
 } from "../types/index.js";
 
-import { charactersCol } from "../collections.js";
+import { charactersCol, usersCol } from "../collections.js";
 
 /* ── 조회 ── */
 
@@ -142,8 +142,65 @@ export async function listCharactersByOwner(
     .toArray();
 }
 
+type MainCharacter = Character;
+
+export type MainCharacterIdentity = Pick<
+  Character,
+  "_id" | "codename" | "ownerId" | "type" | "tier" | "agentLevel" | "isPublic"
+>;
+
 /**
- * owner의 메인 AGENT 캐릭터 조회 — `type=AGENT` + (`tier=MAIN` 또는 미설정) + ownerId 매칭.
+ * Backward-compatible alias for callers that only need the main-character
+ * identity fields. Runtime results may be AGENT records or GM-only NPC fallback
+ * records.
+ */
+export type AgentCharacterIdentity = MainCharacterIdentity;
+
+function mainAgentFilter(ownerId: string): Filter<Character> {
+  return {
+    type: "AGENT",
+    ownerId,
+    $or: [{ tier: "MAIN" }, { tier: { $exists: false } }],
+  };
+}
+
+function ownedNpcFallbackFilter(ownerId: string): Filter<Character> {
+  return {
+    type: "NPC",
+    ownerId,
+  };
+}
+
+function mainCharacterIntegrityError(
+  ownerId: string,
+  docs: Pick<Character, "codename">[],
+  label: string,
+): Error {
+  const codenames = docs.map((d) => d.codename).join(", ");
+  return new Error(
+    `findMainCharacterByOwner: owner=${ownerId} has ${docs.length} ${label} (${codenames}). ` +
+      `1인 1 MAIN 정책 위반 — 운영자 정리 필요.`
+  );
+}
+
+async function canUseOwnedNpcFallback(ownerId: string): Promise<boolean> {
+  if (!ObjectId.isValid(ownerId)) return false;
+
+  const users = await usersCol();
+  const owner = await users.findOne(
+    { _id: new ObjectId(ownerId) },
+    { projection: { role: 1, status: 1 } },
+  );
+
+  return owner?.role === "GM" && owner.status === "ACTIVE";
+}
+
+/**
+ * owner의 메인 캐릭터 조회.
+ *
+ * 기본 정책은 기존과 동일하게 `type=AGENT` + (`tier=MAIN` 또는 미설정) + ownerId 매칭이다.
+ * 단, GM 운영 계정은 테스트/운영용 NPC만 배정되는 경우가 있어 AGENT 메인이 없고
+ * ACTIVE GM 소유 NPC가 정확히 1건이면 그 NPC를 메인 캐릭터 fallback으로 반환한다.
  *
  * 1인 1 MAIN 강제: 여러 개 발견 시 Error throw (운영 데이터 정합성 위반).
  * 미존재 시 null 반환 — 호출자가 "메인 캐릭터 미등록" 으로 거절 처리한다.
@@ -153,55 +210,46 @@ export async function listCharactersByOwner(
  */
 export async function findMainCharacterByOwner(
   ownerId: string
-): Promise<AgentCharacter | null> {
+): Promise<MainCharacter | null> {
   const col = await charactersCol();
-  // tier 가 명시적으로 "MAIN" 이거나 미설정인 AGENT — listAgentCharacters("MAIN") 와 동일 패턴.
-  const docs = await col
-    .find({
-      type: "AGENT",
-      ownerId,
-      $or: [{ tier: "MAIN" }, { tier: { $exists: false } }],
-    })
-    .toArray();
+  const docs = await col.find(mainAgentFilter(ownerId)).toArray();
 
-  if (docs.length === 0) return null;
+  if (docs.length === 1) return docs[0] as MainCharacter;
   if (docs.length > 1) {
-    const codenames = docs.map((d) => d.codename).join(", ");
-    throw new Error(
-      `findMainCharacterByOwner: owner=${ownerId} has ${docs.length} MAIN agents (${codenames}). ` +
-        `1인 1 MAIN 정책 위반 — 운영자 정리 필요.`
+    throw mainCharacterIntegrityError(ownerId, docs, "MAIN agents");
+  }
+
+  if (!(await canUseOwnedNpcFallback(ownerId))) return null;
+
+  const fallbackDocs = await col.find(ownedNpcFallbackFilter(ownerId)).toArray();
+  if (fallbackDocs.length === 0) return null;
+  if (fallbackDocs.length > 1) {
+    throw mainCharacterIntegrityError(
+      ownerId,
+      fallbackDocs,
+      "owned NPC fallback candidates",
     );
   }
-  return docs[0] as AgentCharacter;
-}
 
-/** `findMainCharacterLiteByOwner` 의 경량 projection 결과 타입. */
-export type AgentCharacterIdentity = Pick<
-  AgentCharacter,
-  "_id" | "codename" | "ownerId" | "type" | "tier" | "agentLevel" | "isPublic"
->;
+  return fallbackDocs[0] as MainCharacter;
+}
 
 /**
  * `findMainCharacterByOwner` 의 경량 projection 변형.
  *
- * 트랜잭션성 API 라우트(상점/주식/크레딧 등)는 메인 캐릭터의 식별 필드
- * (_id / codename / ownerId / type)만 사용하므로, lore(수 KB 텍스트)·play 시트
- * 전체를 매 요청 전송할 필요가 없다. 조회 조건·0건 null·2건 이상 throw(1인 1 MAIN
- * 정합성)의 의미론은 원본과 동일하다.
+ * 트랜잭션성 API 라우트(상점/주식/크레딧 등)는 메인 캐릭터의 식별 필드만 사용하므로,
+ * lore(수 KB 텍스트)·play 시트 전체를 매 요청 전송할 필요가 없다. 조회 조건·0건 null·
+ * 2건 이상 throw(1인 1 MAIN 정합성)의 의미론은 원본과 동일하다.
  *
  * lore/play 가 필요한 호출처(페이지 렌더 경로)는 원본을 그대로 사용할 것.
  */
 export async function findMainCharacterLiteByOwner(
   ownerId: string
-): Promise<AgentCharacterIdentity | null> {
+): Promise<MainCharacterIdentity | null> {
   const col = await charactersCol();
   const docs = await col
-    .find({
-      type: "AGENT",
-      ownerId,
-      $or: [{ tier: "MAIN" }, { tier: { $exists: false } }],
-    })
-    .project<AgentCharacterIdentity>({
+    .find(mainAgentFilter(ownerId))
+    .project<MainCharacterIdentity>({
       _id: 1,
       codename: 1,
       ownerId: 1,
@@ -212,15 +260,36 @@ export async function findMainCharacterLiteByOwner(
     })
     .toArray();
 
-  if (docs.length === 0) return null;
+  if (docs.length === 1) return docs[0];
   if (docs.length > 1) {
-    const codenames = docs.map((d) => d.codename).join(", ");
-    throw new Error(
-      `findMainCharacterByOwner: owner=${ownerId} has ${docs.length} MAIN agents (${codenames}). ` +
-        `1인 1 MAIN 정책 위반 — 운영자 정리 필요.`
+    throw mainCharacterIntegrityError(ownerId, docs, "MAIN agents");
+  }
+
+  if (!(await canUseOwnedNpcFallback(ownerId))) return null;
+
+  const fallbackDocs = await col
+    .find(ownedNpcFallbackFilter(ownerId))
+    .project<MainCharacterIdentity>({
+      _id: 1,
+      codename: 1,
+      ownerId: 1,
+      type: 1,
+      tier: 1,
+      agentLevel: 1,
+      isPublic: 1,
+    })
+    .toArray();
+
+  if (fallbackDocs.length === 0) return null;
+  if (fallbackDocs.length > 1) {
+    throw mainCharacterIntegrityError(
+      ownerId,
+      fallbackDocs,
+      "owned NPC fallback candidates",
     );
   }
-  return docs[0];
+
+  return fallbackDocs[0];
 }
 
 /**
