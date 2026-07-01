@@ -24,6 +24,21 @@ import { formatDate, formatTime } from "@/lib/format/date";
 import type { NotificationType } from "@/types/notification";
 import type { SessionStatus } from "@/types/session";
 
+import {
+  IconActiveOps,
+  IconAgentProfile,
+  IconApply,
+  IconAwaiting,
+  IconCredit,
+  IconNotification,
+  IconPersonCard,
+  IconRecentChanges,
+  IconServiceRecord,
+  IconSession,
+  IconTasks,
+  IconTenure,
+  IconWiki,
+} from "@/components/icons";
 import Bar from "@/components/ui/Bar/Bar";
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -360,6 +375,13 @@ export default async function ERPDashboardPage() {
       : null,
   ].filter((item): item is ActionItem => item !== null);
   const displayCharacter = myChar ?? mainCharacter;
+  const characterPointBalance =
+    displayCharacter?.type === "AGENT"
+      ? (displayCharacter.play?.points ?? 0)
+      : null;
+  const characterPointHref = displayCharacter
+    ? `/erp/characters/${String(displayCharacter._id)}`
+    : "/erp/characters";
 
   return (
     <>
@@ -396,7 +418,7 @@ export default async function ERPDashboardPage() {
           </div>
 
           <div className={styles.agentStage__content}>
-            <span className={styles.sectionLabel}>요원 프로필</span>
+            <span className={styles.sectionLabel}><IconAgentProfile className={styles.sectionLabel__icon} aria-hidden />요원 프로필</span>
             <h2 className={styles.agentStage__name}>
               {displayCharacter
                 ? displayCharacter.lore.name || displayCharacter.codename
@@ -458,7 +480,7 @@ export default async function ERPDashboardPage() {
         <article className={`${styles.commandSurface} ${styles.missionStage}`}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}>다음 작전</span>
+              <span className={styles.sectionLabel}><IconApply className={styles.sectionLabel__icon} aria-hidden />다음 작전</span>
               <h3>Mission Brief</h3>
             </div>
             {nextMissionMeta ? (
@@ -506,7 +528,7 @@ export default async function ERPDashboardPage() {
         <aside className={`${styles.commandSurface} ${styles.actionQueue}`}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}>처리할 일</span>
+              <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />처리할 일</span>
               <h3>Action Queue</h3>
             </div>
             <span className={styles.queueCount}>{actionItems.length}</span>
@@ -545,35 +567,43 @@ export default async function ERPDashboardPage() {
 
       <section className={styles.signalStrip} aria-label="운용 지표">
         <Link href="/erp/credits" className={styles.signalItem}>
-          <span>운용 크레딧</span>
+          <span><IconCredit className={styles.signalItem__icon} aria-hidden />운용 크레딧</span>
           <strong className={styles.signalItem__gold}>¤ {balance.toLocaleString()}</strong>
         </Link>
+        <Link href={characterPointHref} className={styles.signalItem}>
+          <span><IconCredit className={styles.signalItem__icon} aria-hidden />잔여 포인트</span>
+          <strong>
+            {characterPointBalance !== null
+              ? `PT ${characterPointBalance.toLocaleString()}`
+              : "—"}
+          </strong>
+        </Link>
         <Link href="/erp/sessions" className={styles.signalItem}>
-          <span>응답 대기</span>
+          <span><IconAwaiting className={styles.signalItem__icon} aria-hidden />응답 대기</span>
           <strong>{pendingResponse.length}</strong>
         </Link>
         <Link href="/erp/sessions" className={styles.signalItem}>
-          <span>진행 세션</span>
+          <span><IconActiveOps className={styles.signalItem__icon} aria-hidden />진행 세션</span>
           <strong>{openMissionCount}</strong>
         </Link>
         <Link href="/erp/notifications" className={styles.signalItem}>
-          <span>미확인 알림</span>
+          <span><IconNotification className={styles.signalItem__icon} aria-hidden />미확인 알림</span>
           <strong>{unreadCount}</strong>
         </Link>
         <Link href="/erp/characters" className={styles.signalItem}>
-          <span>보유 캐릭터</span>
+          <span><IconPersonCard className={styles.signalItem__icon} aria-hidden />보유 캐릭터</span>
           <strong>{myCharRefs.length}</strong>
         </Link>
         <Link href="/erp/wiki" className={styles.signalItem}>
-          <span>작성 위키</span>
+          <span><IconWiki className={styles.signalItem__icon} aria-hidden />작성 위키</span>
           <strong>{myWikiCount}</strong>
         </Link>
         <div className={styles.signalItem}>
-          <span>누적 작전</span>
+          <span><IconServiceRecord className={styles.signalItem__icon} aria-hidden />누적 작전</span>
           <strong>{mySessionCount !== null ? mySessionCount : "—"}</strong>
         </div>
         <div className={styles.signalItem}>
-          <span>가입 후</span>
+          <span><IconTenure className={styles.signalItem__icon} aria-hidden />가입 후</span>
           <strong>{joinedDays}D</strong>
         </div>
       </section>
@@ -592,7 +622,7 @@ export default async function ERPDashboardPage() {
         <section className={styles.surfacePanel}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}>내 작전</span>
+              <span className={styles.sectionLabel}><IconSession className={styles.sectionLabel__icon} aria-hidden />내 작전</span>
               <h3>Mission Queue</h3>
             </div>
             <Link href="/erp/sessions" className={styles.panelLink}>
@@ -647,7 +677,7 @@ export default async function ERPDashboardPage() {
         <section className={styles.surfacePanel}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}>응답 필요</span>
+              <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />응답 필요</span>
               <h3>Tasks</h3>
             </div>
             <span className={styles.queueCount}>{pendingResponse.length}</span>
@@ -702,7 +732,7 @@ export default async function ERPDashboardPage() {
         <section className={styles.surfacePanel}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}>알림</span>
+              <span className={styles.sectionLabel}><IconNotification className={styles.sectionLabel__icon} aria-hidden />알림</span>
               <h3>Notifications</h3>
             </div>
             <Link href="/erp/notifications" className={styles.panelLink}>
@@ -744,7 +774,7 @@ export default async function ERPDashboardPage() {
         <section className={styles.surfacePanel}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}>최근 변경</span>
+              <span className={styles.sectionLabel}><IconRecentChanges className={styles.sectionLabel__icon} aria-hidden />최근 변경</span>
               <h3>Wiki Changes</h3>
             </div>
             <Link href="/erp/wiki" className={styles.panelLink}>
