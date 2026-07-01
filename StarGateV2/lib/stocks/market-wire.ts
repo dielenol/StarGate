@@ -188,9 +188,9 @@ function formatPercent(value: number): string {
 }
 
 function directionIcon(result: ScheduledStockTickResult): string {
-  if (result.price > result.previousPrice) return "🟢 ▲";
-  if (result.price < result.previousPrice) return "🔴 ▼";
-  return "⚪ ·";
+  if (result.price > result.previousPrice) return "▲";
+  if (result.price < result.previousPrice) return "▼";
+  return "·";
 }
 
 function tierLabel(tier: StockEventTier): string {
@@ -255,19 +255,6 @@ function marketBiasLabel(input: {
     return "보합 관측";
   }
   return "혼조";
-}
-
-function marketBiasIcon(input: {
-  upCount: number;
-  downCount: number;
-  flatCount: number;
-}): string {
-  if (input.upCount > input.downCount) return "🟢";
-  if (input.downCount > input.upCount) return "🔴";
-  if (input.flatCount > 0 && input.upCount === 0 && input.downCount === 0) {
-    return "⚪";
-  }
-  return "🟡";
 }
 
 function marketWireColor(input: {
@@ -337,7 +324,7 @@ function buildRoutineOverviewFields(
 
   return [
     {
-      name: "📌 공시 개요",
+      name: "공시 개요",
       value: [
         `기준 슬롯: ${summary.slot} KST`,
         `처리 종목: ${changed.length}건`,
@@ -348,7 +335,7 @@ function buildRoutineOverviewFields(
       inline: true,
     },
     {
-      name: `${marketBiasIcon({ upCount, downCount, flatCount })} 시장 방향`,
+      name: "시장 방향",
       value: [
         marketBiasLabel({ upCount, downCount, flatCount }),
         `상승 ${upCount} · 하락 ${downCount} · 보합 ${flatCount}`,
@@ -357,7 +344,7 @@ function buildRoutineOverviewFields(
       inline: true,
     },
     {
-      name: "🧭 순변동 합계",
+      name: "순변동 합계",
       value: [
         formatSignedNumber(netDelta, "C"),
         strongestMove ? `대표 변동: ${formatTopMoveLine(strongestMove)}` : null,
@@ -383,7 +370,7 @@ function buildRoutineLedgerEmbeds(input: {
 
   if (rising.length > 0) {
     embeds.push({
-      title: "🟢 상승 마감 장부",
+      title: "상승 마감 장부",
       url: STOCK_WEB_URL,
       description: "상승 종목은 초록색 공시로 분리 기록합니다.",
       color: MARKET_WIRE_POSITIVE,
@@ -400,7 +387,7 @@ function buildRoutineLedgerEmbeds(input: {
 
   if (falling.length > 0) {
     embeds.push({
-      title: "🔴 하락 마감 장부",
+      title: "하락 마감 장부",
       url: STOCK_WEB_URL,
       description: "하락 종목은 적색 공시로 분리 기록합니다.",
       color: MARKET_WIRE_NEGATIVE,
@@ -416,7 +403,7 @@ function buildRoutineLedgerEmbeds(input: {
   }
 
   embeds.push({
-    title: "🟡 보합 및 감시실 특이사항",
+    title: "보합 및 감시실 특이사항",
     url: STOCK_WEB_URL,
     description:
       "가격은 ORDO-NET 거래소 기준입니다. 종목별 상세 차트와 보유 현황은 거래소 화면에서 확인하십시오.",
@@ -425,7 +412,7 @@ function buildRoutineLedgerEmbeds(input: {
       ...(flat.length > 0
         ? [
             {
-              name: "⚪ 보합 / 초기화",
+              name: "보합 / 초기화",
               value: truncateField(flat.map(formatStockLedgerLine).join("\n\n")),
             },
           ]
