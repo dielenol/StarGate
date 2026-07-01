@@ -19,7 +19,7 @@ appearsInEvents: []
 source: manual
 previewImage: /assets/npcs/Towaski-profile.webp
 createdAt: 2026-04-20T00:00:00Z
-updatedAt: 2026-06-02T00:00:00Z
+updatedAt: 2026-07-01T00:00:00Z
 ---
 
 ## 대사

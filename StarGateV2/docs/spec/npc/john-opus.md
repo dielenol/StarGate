@@ -14,14 +14,14 @@ height: 181cm
 weight: 미상
 factionCode: CIVIL
 institutionCode:
-department: CIVIL
+department: SONGSARI
 isPublic: true
 loreTags: [시민사회, 송사리, 송사리무법자, 공간조종, 존오푸스, NOSB-S1E2-MINI, S1E2-MINI]
 appearsInEvents: [NOSB-S1E2-MINI]
 source: manual
 previewImage: /assets/npcs/John-Opus-profile.webp
 createdAt: 2026-06-10T00:00:00Z
-updatedAt: 2026-06-10T00:00:00Z
+updatedAt: 2026-07-01T00:00:00Z
 ---
 
 ## 대사

@@ -70,6 +70,20 @@ export async function PATCH(
     summary?: string;
   };
 
+  if (sessionTitle !== undefined && !sessionTitle.trim()) {
+    return NextResponse.json(
+      { error: "sessionTitle은 비워둘 수 없습니다." },
+      { status: 400 },
+    );
+  }
+
+  if (summary !== undefined && !summary.trim()) {
+    return NextResponse.json(
+      { error: "summary는 비워둘 수 없습니다." },
+      { status: 400 },
+    );
+  }
+
   const arrays = validateSessionReportArrays(body);
   if ("error" in arrays) return arrays.error;
   const { highlights, participants } = arrays.value;

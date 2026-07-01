@@ -14,14 +14,14 @@ height: 10cm 미만
 weight: 미상
 factionCode: CIVIL
 institutionCode:
-department: CIVIL
+department: SONGSARI
 isPublic: true
 loreTags: [시민사회, 송사리, 송사리탐정, 금붕어, 제인피쉬, NOSB-S1E2-MINI, S1E2-MINI]
 appearsInEvents: [NOSB-S1E2-MINI]
 source: manual
 previewImage: /assets/npcs/Jane-Fish-profile.webp
 createdAt: 2026-06-10T00:00:00Z
-updatedAt: 2026-06-10T00:00:00Z
+updatedAt: 2026-07-01T00:00:00Z
 ---
 
 ## 대사

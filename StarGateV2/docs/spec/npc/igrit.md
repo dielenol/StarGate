@@ -14,14 +14,14 @@ height: 미상
 weight: 미상
 factionCode: CIVIL
 institutionCode:
-department: CIVIL
+department: NEW_DUBLIN
 isPublic: true
 loreTags: [시민사회, 뉴더블린, 야간세력, NOGA, 쾌락의천국, NOSB-MINI-S1E1-NEW-DUBLIN, MINI-S1E1]
 appearsInEvents: [NOSB-MINI-S1E1-NEW-DUBLIN]
 source: manual
 previewImage: /assets/npcs/Igrit-profile.webp
 createdAt: 2026-06-11T00:00:00Z
-updatedAt: 2026-06-11T00:00:00Z
+updatedAt: 2026-07-01T00:00:00Z
 ---
 
 ## 대사

@@ -14,14 +14,14 @@ height: 151cm
 weight: 미상
 factionCode: CIVIL
 institutionCode:
-department: CIVIL
+department: NEON_VALKYRIE
 isPublic: true
 loreTags: [시민사회, 뉴더블린, 네온발키리, 도나도나, ORSIS-201, 합성인간, SyntheticHuman, 바텐더, 케이시레이서, NOSB-MINI-S1E1-NEW-DUBLIN, MINI-S1E1]
 appearsInEvents: [NOSB-MINI-S1E1-NEW-DUBLIN]
 source: manual
 previewImage: /assets/npcs/ORSIS-201-DonaDona-profile.webp
 createdAt: 2026-06-11T00:00:00Z
-updatedAt: 2026-06-11T00:00:00Z
+updatedAt: 2026-07-01T00:00:00Z
 ---
 
 ## 대사

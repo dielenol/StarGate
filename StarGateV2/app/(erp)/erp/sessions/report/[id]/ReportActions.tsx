@@ -35,7 +35,7 @@ export default function ReportActions({ reportId, canEdit, canDelete }: Props) {
         ← 작전 보고서
       </Button>
       {canEdit ? (
-        <Button onClick={() => alert("수정 기능은 추후 구현됩니다.")}>
+        <Button as="a" href={`/erp/sessions/report/${reportId}/edit`}>
           편집
         </Button>
       ) : null}

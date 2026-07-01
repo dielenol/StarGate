@@ -14,14 +14,14 @@ height: 163cm
 weight: 미상
 factionCode: CIVIL
 institutionCode:
-department: CIVIL
+department: NEON_VALKYRIE
 isPublic: true
 loreTags: [시민사회, 뉴더블린, 네온발키리, 발키리, 사이보그, 전직욤스비킹, 펑크바, 도나도나, 줄루인권, NOSB-MINI-S1E1-NEW-DUBLIN, MINI-S1E1]
 appearsInEvents: [NOSB-MINI-S1E1-NEW-DUBLIN]
 source: manual
 previewImage: /assets/npcs/Casey-Racer-Valkyrie-profile.webp
 createdAt: 2026-06-11T00:00:00Z
-updatedAt: 2026-06-11T00:00:00Z
+updatedAt: 2026-07-01T00:00:00Z
 ---
 
 ## 대사

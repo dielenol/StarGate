@@ -1,0 +1,106 @@
+[
+  {
+    "collection": "characters",
+    "type": "personnel-civil-category-alignment",
+    "filter": { "codename": "CASEY_RACER" },
+    "update": {
+      "$set": {
+        "department": "NEON_VALKYRIE",
+        "factionCode": "CIVIL",
+        "institutionCode": "",
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "personnel-civil-category-alignment",
+    "filter": { "codename": "ORSIS_201" },
+    "update": {
+      "$set": {
+        "department": "NEON_VALKYRIE",
+        "factionCode": "CIVIL",
+        "institutionCode": "",
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "personnel-civil-category-alignment",
+    "filter": { "codename": "IGRIT" },
+    "update": {
+      "$set": {
+        "department": "NEW_DUBLIN",
+        "factionCode": "CIVIL",
+        "institutionCode": "",
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "personnel-civil-category-alignment",
+    "filter": { "codename": "JANE_FISH" },
+    "update": {
+      "$set": {
+        "department": "SONGSARI",
+        "factionCode": "CIVIL",
+        "institutionCode": "",
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "personnel-civil-category-alignment",
+    "filter": { "codename": "JOHN_OPUS" },
+    "update": {
+      "$set": {
+        "department": "SONGSARI",
+        "factionCode": "CIVIL",
+        "institutionCode": "",
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "personnel-civil-category-alignment",
+    "filter": { "codename": "WATER_FIST_RACKY" },
+    "update": {
+      "$set": {
+        "department": "SONGSARI",
+        "factionCode": "CIVIL",
+        "institutionCode": "",
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "personnel-civil-category-alignment",
+    "filter": { "codename": "STAR_MART" },
+    "update": {
+      "$set": {
+        "department": "CIVIL",
+        "factionCode": "CIVIL",
+        "institutionCode": "",
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "personnel-civil-category-alignment",
+    "filter": { "codename": "TOWASKI" },
+    "update": {
+      "$set": {
+        "department": "CIVIL",
+        "factionCode": "CIVIL",
+        "institutionCode": "",
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    }
+  }
+]
