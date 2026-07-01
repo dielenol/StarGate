@@ -85,6 +85,13 @@ export async function ensureAllIndexes(): Promise<void> {
         unique: true,
         partialFilterExpression: { "metadata.autoReward": true },
       },
+      // 재무기구 일일 수당 멱등 검출 — KST date + characterId 당 1회.
+      {
+        key: { "metadata.dailyAllowanceDate": 1, characterId: 1 },
+        name: "credit_transactions_dailyAllowance_unique",
+        unique: true,
+        partialFilterExpression: { "metadata.dailyAllowance": true },
+      },
     ]),
 
     /* ── master_items (from task spec) ── */

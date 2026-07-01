@@ -23,6 +23,7 @@ export const CREDIT_TYPE_META: Record<
   PURCHASE: { label: "구매", tone: "info" },
   ADMIN_GRANT: { label: "관리자 지급", tone: "gold" },
   ADMIN_DEDUCT: { label: "관리자 차감", tone: "danger" },
+  DAILY_ALLOWANCE: { label: "일일 수당", tone: "gold" },
   TRANSFER: { label: "이체", tone: "default" },
   STOCK_BUY: { label: "주식 매수", tone: "info" },
   STOCK_SELL: { label: "주식 매도", tone: "info" },

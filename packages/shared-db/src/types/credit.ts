@@ -7,6 +7,7 @@ import type { ObjectId } from "mongodb";
  * - PURCHASE: 일반 구매 (캐릭터 인벤토리 구매 등)
  * - ADMIN_GRANT: 관리자 수동 지급
  * - ADMIN_DEDUCT: 관리자 수동 차감
+ * - DAILY_ALLOWANCE: 직급별 일일 수당 자동 지급
  * - TRANSFER: 사용자 간 송금
  * - STOCK_BUY: 주식 매수 (tia_bot 통합)
  * - STOCK_SELL: 주식 매도 (tia_bot 통합)
@@ -19,6 +20,7 @@ export const CREDIT_TRANSACTION_TYPES = [
   "PURCHASE",
   "ADMIN_GRANT",
   "ADMIN_DEDUCT",
+  "DAILY_ALLOWANCE",
   "TRANSFER",
   "STOCK_BUY",
   "STOCK_SELL",
@@ -36,6 +38,8 @@ export type CreditTransactionType = (typeof CREDIT_TRANSACTION_TYPES)[number];
  *
  * - ADMIN_GRANT / ADMIN_DEDUCT / SESSION_REWARD: GM 운영자가 발생시키는 직접 발급/차감.
  *   → 라우트: /api/erp/credits (POST). 게이트: GM_DIRECT_GRANT_TYPES.
+ * - DAILY_ALLOWANCE: Vercel cron 이 발생시키는 직급별 일일 수당.
+ *   → 라우트: /api/cron/stocks/tick.
  * - PURCHASE: ERP 편의점 페이지 결제. M2 도입 예정.
  *   → 라우트: /api/erp/shop/* (예정). 자체 가드(재고/잔액/슬롯) 적용.
  * - STOCK_BUY / STOCK_SELL: ERP 주식 페이지 매매. M3 도입 예정.
@@ -45,6 +49,7 @@ export const WEB_ALLOWED_CREDIT_TYPES = [
   "ADMIN_GRANT",
   "ADMIN_DEDUCT",
   "SESSION_REWARD",
+  "DAILY_ALLOWANCE",
   "PURCHASE",
   "STOCK_BUY",
   "STOCK_SELL",
@@ -123,6 +128,7 @@ export interface CreditTransaction {
    *
    * 사용 패턴:
    * - STOCK_BUY/SELL: { ticker, shares, price, profit? }
+   * - DAILY_ALLOWANCE: { dailyAllowance, dailyAllowanceDate, agentLevel }
    * - OP_GRANT/DEDUCT: { poolId }
    * - PURCHASE: { itemId, qty }
    * - TRANSFER: { fromCharacterId, toCharacterId }
