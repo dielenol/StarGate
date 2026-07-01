@@ -1,8 +1,14 @@
+"use client";
+
 import type {
   AnchorHTMLAttributes,
   ButtonHTMLAttributes,
   ReactNode,
 } from "react";
+
+import Link from "next/link";
+
+import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 
 import styles from "./Button.module.css";
 
@@ -30,6 +36,18 @@ type ButtonAsAnchor = BaseProps &
 
 type ButtonProps = ButtonAsButton | ButtonAsAnchor;
 
+function shouldUseNextLink(
+  href: string,
+  props: AnchorHTMLAttributes<HTMLAnchorElement>,
+): boolean {
+  return (
+    href.startsWith("/") &&
+    !href.startsWith("//") &&
+    !props.download &&
+    (!props.target || props.target === "_self")
+  );
+}
+
 export default function Button(props: ButtonProps) {
   const {
     children,
@@ -50,9 +68,24 @@ export default function Button(props: ButtonProps) {
     .join(" ");
 
   if (as === "a") {
-    const anchorProps = rest as AnchorHTMLAttributes<HTMLAnchorElement>;
+    const { href, ...anchorProps } = rest as AnchorHTMLAttributes<HTMLAnchorElement> & {
+      href: string;
+    };
+    if (shouldUseNextLink(href, anchorProps)) {
+      return (
+        <Link
+          href={href}
+          className={classes}
+          {...(anchorProps as Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href">)}
+        >
+          <LinkPendingProbe />
+          {children}
+        </Link>
+      );
+    }
+
     return (
-      <a className={classes} {...anchorProps}>
+      <a className={classes} href={href} {...anchorProps}>
         {children}
       </a>
     );
