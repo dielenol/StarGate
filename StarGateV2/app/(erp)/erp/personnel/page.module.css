@@ -211,6 +211,39 @@
   padding: 18px;
 }
 
+.civilCategoryBranch {
+  margin-top: 14px;
+  padding-left: 16px;
+  border-left: 1px dashed var(--line-strong);
+}
+
+.civilCategoryBranch__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  color: var(--ink-3);
+}
+
+.civilCategoryBranch__label {
+  color: var(--ink-1);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.civilCategoryBranch__meta {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+}
+
+.civilCategoryBranch__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* Card grid */
 
 .cardGrid {

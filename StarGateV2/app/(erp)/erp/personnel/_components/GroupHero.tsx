@@ -7,6 +7,7 @@ import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { getExternalSubOrg, LEVEL_ORDER } from "../_constants";
 
 import OrgIcon, {
+  getFactionIcon,
   getInstitutionIcon,
   getSubUnitIcon,
   type OrgIconCode,
@@ -185,9 +186,14 @@ export default function GroupHero({
             </div>
             <div className={styles.subUnitChips}>
               {subUnits!.map((u) => {
+                const externalSubOrg = getExternalSubOrg(u.code);
                 const subIcon =
-                  getSubUnitIcon(u.code) ?? getInstitutionIcon(u.code);
-                const subLogo = getExternalSubOrg(u.code)?.logoUrl;
+                  getSubUnitIcon(u.code) ??
+                  getInstitutionIcon(u.code) ??
+                  (externalSubOrg
+                    ? getFactionIcon(externalSubOrg.parentCode)
+                    : undefined);
+                const subLogo = externalSubOrg?.logoUrl;
                 const optimizedSubLogo = subLogo
                   ? preferOptimizedPublicImagePath(subLogo)
                   : undefined;

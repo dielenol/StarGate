@@ -159,8 +159,11 @@ export default function PersonnelCard({
 function renderAvatar(character: Character, isRedacted: boolean) {
   if (isRedacted) return <span aria-hidden>☩</span>;
 
-  /* 신원조회 인덱스 카드는 lore.mainImage(메인 일러스트) 우선. 누락 시 previewImage(pixel-profile) 폴백. */
-  const src = character.lore.mainImage || character.previewImage;
+  /* AGENT 인덱스 미리보기는 pixel-profile(previewImage) 우선. NPC는 기존 profile/main 이미지를 유지. */
+  const src =
+    character.type === "AGENT"
+      ? character.previewImage || character.lore.mainImage
+      : character.lore.mainImage || character.previewImage;
   return <PersonnelAvatarImage src={src} type={character.type} />;
 }
 

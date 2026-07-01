@@ -52,6 +52,20 @@ export default function OrgCanvas({
   const hostileSubOrgs = EXTERNAL_SUB_ORGS.filter(
     (org) => org.parentCode === "HOSTILE",
   );
+  const civilSubOrgs = EXTERNAL_SUB_ORGS.filter(
+    (org) => org.parentCode === "CIVIL",
+  );
+  const civilSubOrgRowCount = Math.max(1, Math.ceil(civilSubOrgs.length / 2));
+  const civilConnectorHeight = Math.max(72, civilSubOrgRowCount * 72);
+  const civilConnectorBranchYs = Array.from(
+    { length: civilSubOrgRowCount },
+    (_, index) =>
+      civilSubOrgRowCount === 1
+        ? 28
+        : 36 +
+          (index * (civilConnectorHeight - 36)) /
+            (civilSubOrgRowCount - 1),
+  );
   const factionsOrdered = [...externalFactions].sort((a, b) => {
     const order = (code: string) =>
       code === "COUNCIL" ? 0 : code === "MILITARY" ? 1 : 2;
@@ -365,24 +379,35 @@ export default function OrgCanvas({
             >
               <svg
                 className={styles.civilSubOrgConnector}
-                viewBox="0 0 100 72"
+                viewBox={`0 0 100 ${civilConnectorHeight}`}
                 preserveAspectRatio="none"
                 aria-hidden
               >
                 <path
-                  d="M50 0 V28 M22 28 H78 M22 28 V72 M78 28 V72"
+                  d={`M50 0 V${civilConnectorHeight}`}
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1"
                   strokeDasharray="4 6"
                   vectorEffect="non-scaling-stroke"
                 />
+                {civilConnectorBranchYs.map((y, index) => (
+                  <path
+                    key={index}
+                    d={`M22 ${y} H78`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                    strokeDasharray="4 6"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
               </svg>
 
-              {EXTERNAL_SUB_ORGS.filter(
-                (org) => org.parentCode === "CIVIL",
-              ).map((org) => {
-                const logo = preferOptimizedPublicImagePath(org.logoUrl);
+              {civilSubOrgs.map((org) => {
+                const logo = org.logoUrl
+                  ? preferOptimizedPublicImagePath(org.logoUrl)
+                  : "";
                 const count = groupCounts[org.code] ?? 0;
                 return (
                   <button
@@ -417,7 +442,13 @@ export default function OrgCanvas({
                           aria-hidden
                         />
                       </>
-                    ) : null}
+                    ) : (
+                      <OrgIcon
+                        code="CIVIL"
+                        size={24}
+                        className={styles.subOrgLogo}
+                      />
+                    )}
 
                     <div className={styles.node__header}>
                       <div className={styles.node__headerTop}>
@@ -452,7 +483,9 @@ export default function OrgCanvas({
             </div>
             <div className={styles.hostileNodes}>
               {hostileSubOrgs.map((org) => {
-                const logo = preferOptimizedPublicImagePath(org.logoUrl);
+                const logo = org.logoUrl
+                  ? preferOptimizedPublicImagePath(org.logoUrl)
+                  : "";
                 const count = groupCounts[org.code] ?? 0;
                 return (
                   <button
@@ -488,7 +521,13 @@ export default function OrgCanvas({
                           aria-hidden
                         />
                       </>
-                    ) : null}
+                    ) : (
+                      <OrgIcon
+                        code="HOSTILE"
+                        size={24}
+                        className={styles.subOrgLogo}
+                      />
+                    )}
 
                     <div className={styles.node__header}>
                       <div className={styles.node__headerTop}>

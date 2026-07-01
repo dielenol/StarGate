@@ -4,9 +4,13 @@ import type { ReactNode } from "react";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
-import { getExternalSubOrg } from "../_constants";
+import { getCivilPersonnelCategory, getExternalSubOrg } from "../_constants";
 
-import OrgIcon, { getInstitutionIcon, getSubUnitIcon } from "./OrgIcon";
+import OrgIcon, {
+  getFactionIcon,
+  getInstitutionIcon,
+  getSubUnitIcon,
+} from "./OrgIcon";
 
 import styles from "./SubUnitAccordion.module.css";
 
@@ -34,18 +38,23 @@ export default function SubUnitAccordion({
 }: Props) {
   const memberCount = agentCount + npcCount;
   const externalSubOrg = getExternalSubOrg(code);
+  const civilCategory = getCivilPersonnelCategory(code);
+  const classifiedGroup = externalSubOrg ?? civilCategory;
 
   const metaParts: string[] = [`${memberCount}명`];
   if (leadCount && leadCount > 0) {
     metaParts.push(`부서장 ${leadCount}`);
   }
 
-  const subIcon = getSubUnitIcon(code) ?? getInstitutionIcon(code);
+  const subIcon =
+    getSubUnitIcon(code) ??
+    getInstitutionIcon(code) ??
+    (classifiedGroup ? getFactionIcon(classifiedGroup.parentCode) : undefined);
   const subLogo = externalSubOrg?.logoUrl;
   const optimizedSubLogo = subLogo
     ? preferOptimizedPublicImagePath(subLogo)
     : undefined;
-  const displayLabel = externalSubOrg?.label ?? label;
+  const displayLabel = classifiedGroup?.label ?? label;
   const tone =
     externalSubOrg?.parentCode === "HOSTILE" ? ("hostile" as const) : undefined;
 
@@ -78,13 +87,13 @@ export default function SubUnitAccordion({
         ) : subIcon ? (
           <OrgIcon code={subIcon} size={18} className={styles.icon} />
         ) : null}
-        {externalSubOrg ? (
+        {classifiedGroup ? (
           <>
             <span className={styles.label}>{displayLabel}</span>
             <span className={styles.subCount}>
               / {agentCount} AGENT / {npcCount} NPC
             </span>
-            <span className={styles.summary}>{externalSubOrg.summary}</span>
+            <span className={styles.summary}>{classifiedGroup.summary}</span>
           </>
         ) : (
           <>

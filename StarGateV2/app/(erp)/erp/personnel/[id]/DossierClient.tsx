@@ -43,7 +43,10 @@ import {
   isInternalOrgCode,
 } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
-import { getCharacterRoleLine } from "@/lib/format/character-display";
+import {
+  getCharacterDisplayName,
+  getCharacterRoleLine,
+} from "@/lib/format/character-display";
 import { formatDate as formatLibDate } from "@/lib/format/date";
 
 import Box from "@/components/ui/Box/Box";
@@ -750,16 +753,28 @@ export default function DossierClient({
     ? relatedReportBySessionId.get(lastFieldEvent)
     : undefined;
 
-  const displayName =
-    canIdentity && !isRedactedValue(lore.nickname)
-      ? lore.nickname
-      : canRealName && !isRedactedValue(lore.name)
-        ? lore.name
-        : null;
-
-  const roleLine = getCharacterRoleLine(character);
   const nameEn =
     canRealName && !isRedactedValue(lore.nameEn) ? lore.nameEn : null;
+  const displayName =
+    canIdentity || canRealName
+      ? getCharacterDisplayName({
+          codename: character.codename,
+          role: character.role,
+          department: character.department,
+          lore: {
+            nickname:
+              canIdentity && !isRedactedValue(lore.nickname)
+                ? lore.nickname
+                : null,
+            name: canRealName && !isRedactedValue(lore.name) ? lore.name : null,
+            nameEn,
+          },
+        })
+      : null;
+  const displayNameIncludesNameEn = Boolean(
+    nameEn && displayName?.includes(nameEn),
+  );
+  const roleLine = getCharacterRoleLine(character);
 
   /* 인덱스(PersonnelClient) 의 drill chip 과 동일한 UI 로 통일.
      마지막 chip 은 사용자 요청대로 `이름 (코드네임)` 형태. identity 권한이 없으면 codename 만. */
@@ -804,10 +819,11 @@ export default function DossierClient({
     }
 
     if (subUnitLabel && department !== topGroup) {
+      const subTopGroup = getTopLevelGroup(department);
       items.push({
         key: "sub",
         label: `하위: ${getDepartmentLabel(department)}`,
-        iconCode: getSubUnitIcon(department),
+        iconCode: getSubUnitIcon(department) ?? getFactionIcon(subTopGroup),
         href: `/erp/personnel?group=${topGroup}&sub=${department}`,
       });
     }
@@ -860,12 +876,7 @@ export default function DossierClient({
     </div>
   );
 
-  const pageTitle = (
-    <>
-      {displayName ?? character.codename}
-      {nameEn ? <span className={styles.headTitleEn}>{nameEn}</span> : null}
-    </>
-  );
+  const pageTitle = displayName ?? character.codename;
 
   /* ── 탭 본문: DOSSIER ── */
 
@@ -1557,7 +1568,7 @@ export default function DossierClient({
             {roleLine ? (
               <div className={styles.portraitRole}>{roleLine}</div>
             ) : null}
-            {nameEn ? (
+            {nameEn && !displayNameIncludesNameEn ? (
               <div className={styles.portraitNameEn}>{nameEn}</div>
             ) : null}
 

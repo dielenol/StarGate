@@ -49,13 +49,16 @@ import SearchJumpBanner from "./_components/SearchJumpBanner";
 import SubUnitAccordion from "./_components/SubUnitAccordion";
 
 import {
+  CIVIL_PERSONNEL_CATEGORIES,
   EXTERNAL_SUB_ORGS,
+  getCivilPersonnelCategory,
   getExternalSubOrg,
   getFactionDoctrine,
   getFactionLogo,
   getInstitutionDoctrine,
   INSTITUTION_LOGO,
   INSTITUTION_OVERSIGHT,
+  isCivilPersonnelCategory,
   isExternalSubOrg,
 } from "./_constants";
 
@@ -150,6 +153,18 @@ function getDisplaySubUnits(groupCode: string): readonly SubUnitItem[] {
   return getSubUnits(groupCode);
 }
 
+function getCivilPersonnelCategoryUnits(): readonly SubUnitItem[] {
+  return CIVIL_PERSONNEL_CATEGORIES.map((category) => ({
+    code: category.code,
+    label: category.label,
+  }));
+}
+
+function getDrillSubUnits(groupCode: string): readonly SubUnitItem[] {
+  if (groupCode !== "CIVIL") return getDisplaySubUnits(groupCode);
+  return [...getDisplaySubUnits(groupCode), ...getCivilPersonnelCategoryUnits()];
+}
+
 function getOrgTone(code: string | null | undefined): "hostile" | undefined {
   if (code === "HOSTILE") return "hostile";
   return getExternalSubOrg(code ?? "")?.parentCode === "HOSTILE"
@@ -189,18 +204,25 @@ function getGroupKind(code: string): "faction" | "institution" | "unassigned" {
   if (code === UNASSIGNED_CODE) return "unassigned";
   if (isFaction(code)) return "faction";
   if (isExternalSubOrg(code)) return "faction";
+  if (isCivilPersonnelCategory(code)) return "faction";
   if (isInstitution(code)) return "institution";
   return "unassigned";
 }
 
 function getDisplayGroupLabel(code: string): string {
-  return getExternalSubOrg(code)?.label ?? getGroupLabel(code);
+  return (
+    getExternalSubOrg(code)?.label ??
+    getCivilPersonnelCategory(code)?.label ??
+    getGroupLabel(code)
+  );
 }
 
 /** 그룹의 labelEn 찾기 (subUnit 은 labelEn 이 없으므로 label 반환) */
 function getGroupLabelEn(code: string): string {
   const externalSubOrg = getExternalSubOrg(code);
   if (externalSubOrg) return externalSubOrg.labelEn;
+  const civilCategory = getCivilPersonnelCategory(code);
+  if (civilCategory) return civilCategory.labelEn;
 
   const f = FACTIONS.find((x) => x.code === code);
   if (f) return f.labelEn;
@@ -292,8 +314,13 @@ export default function PersonnelClient({
   useEffect(() => {
     if (!selectedGroup) return;
     const externalSubOrg = getExternalSubOrg(selectedGroup);
-    if (!externalSubOrg) return;
-    navigateDrill(externalSubOrg.parentCode, externalSubOrg.code, true);
+    const civilCategory = getCivilPersonnelCategory(selectedGroup);
+    if (!externalSubOrg && !civilCategory) return;
+    navigateDrill(
+      externalSubOrg?.parentCode ?? civilCategory!.parentCode,
+      externalSubOrg?.code ?? civilCategory!.code,
+      true,
+    );
   }, [navigateDrill, selectedGroup]);
 
   const prevQueryRef = useRef("");
@@ -326,6 +353,9 @@ export default function PersonnelClient({
     }
     for (const org of EXTERNAL_SUB_ORGS) {
       map.set(org.code, []);
+    }
+    for (const category of CIVIL_PERSONNEL_CATEGORIES) {
+      map.set(category.code, []);
     }
     for (const c of characters) {
       const subUnitCode = resolveSubUnitCode(c);
@@ -421,7 +451,7 @@ export default function PersonnelClient({
 
     // 하위 기구가 있는 그룹이면 매칭 최다 subUnit 자동 펼침
     let nextSub: string | null = null;
-    const nextSubUnits = getDisplaySubUnits(nextGroup);
+    const nextSubUnits = getDrillSubUnits(nextGroup);
     if (nextSubUnits.length > 0) {
       const subEntries = [...searchMatches.subUnitCounts.entries()]
         .filter(([code]) => nextSubUnits.some((u) => u.code === code))
@@ -574,9 +604,19 @@ export default function PersonnelClient({
     return getDisplaySubUnits(selectedGroup);
   }, [groupIndex, selectedGroup]);
 
+  const selectedCivilCategories = useMemo(() => {
+    if (selectedGroup !== "CIVIL") return [];
+    return getCivilPersonnelCategoryUnits();
+  }, [selectedGroup]);
+
+  const selectedDrillSubUnits = useMemo(
+    () => [...selectedSubUnits, ...selectedCivilCategories],
+    [selectedCivilCategories, selectedSubUnits],
+  );
+
   const selectedSubUnitCodes = useMemo(
-    () => new Set(selectedSubUnits.map((u) => u.code)),
-    [selectedSubUnits],
+    () => new Set(selectedDrillSubUnits.map((u) => u.code)),
+    [selectedDrillSubUnits],
   );
 
   const selectedDirectMembers = useMemo(() => {
@@ -687,16 +727,21 @@ export default function PersonnelClient({
     }
 
     // 하위 기구가 실제로 펼쳐졌을 때만 sub crumb 추가
-    if (selectedGroup && expandedSubUnit && selectedSubUnits.length > 0) {
+    if (selectedGroup && expandedSubUnit && selectedDrillSubUnits.length > 0) {
       const externalSubOrg = getExternalSubOrg(expandedSubUnit);
+      const civilCategory = getCivilPersonnelCategory(expandedSubUnit);
       const subLabel =
-        selectedSubUnits.find((u) => u.code === expandedSubUnit)?.label ??
+        selectedDrillSubUnits.find((u) => u.code === expandedSubUnit)?.label ??
         expandedSubUnit;
       items.push({
         key: "sub",
         label: `하위: ${subLabel}`,
         tone: getOrgTone(expandedSubUnit),
-        iconCode: externalSubOrg ? undefined : getSubUnitIcon(expandedSubUnit),
+        iconCode:
+          externalSubOrg && !civilCategory
+            ? undefined
+            : getSubUnitIcon(expandedSubUnit) ??
+              (civilCategory ? getFactionIcon(civilCategory.parentCode) : undefined),
         logoUrl: externalSubOrg?.logoUrl,
         logoVariant: externalSubOrg?.logoVariant,
         on: true,
@@ -707,7 +752,7 @@ export default function PersonnelClient({
   }, [
     selectedGroup,
     expandedSubUnit,
-    selectedSubUnits,
+    selectedDrillSubUnits,
     handleBackToOverview,
     navigateDrill,
   ]);
@@ -762,10 +807,37 @@ export default function PersonnelClient({
       selectedGroup === "CIVIL"
         ? selectedGroupLabel
         : `${selectedGroupLabel} 직속`;
+    const renderUnitAccordion = (unit: SubUnitItem) => {
+      const members = subUnitIndex.get(unit.code) ?? [];
+      const agentCount = members.filter((m) => m.type === "AGENT").length;
+      const npcCount = members.filter((m) => m.type === "NPC").length;
+      const leadCount = members.filter(
+        (m) =>
+          characterUsesAgentLevels(m) &&
+          compareLevels(m.agentLevel ?? "J", "A") >= 0,
+      ).length;
+      const sorted = [...members].sort(compareForCardOrder);
+
+      return (
+        <SubUnitAccordion
+          key={unit.code}
+          code={unit.code}
+          label={unit.label}
+          agentCount={agentCount}
+          npcCount={npcCount}
+          leadCount={leadCount}
+          expanded={expandedSubUnit === unit.code}
+          onToggle={() => handleToggleSubUnit(unit.code)}
+        >
+          {renderCardGrid(sorted)}
+        </SubUnitAccordion>
+      );
+    };
 
     return (
       <div className={styles.subunitGroup}>
-        {selectedDirectMembers.length > 0 ? (
+        {(selectedDirectMembers.length > 0 ||
+          selectedCivilCategories.length > 0) ? (
           <section className={styles.directMembers} aria-label={directLabel}>
             <div className={styles.directMembers__head}>
               <span className={styles.directMembers__label}>
@@ -776,36 +848,28 @@ export default function PersonnelClient({
               </span>
             </div>
             <div className={styles.directMembers__body}>
-              {renderCardGrid(selectedDirectMembers)}
+              {selectedDirectMembers.length > 0
+                ? renderCardGrid(selectedDirectMembers)
+                : null}
+              {selectedCivilCategories.length > 0 ? (
+                <div className={styles.civilCategoryBranch}>
+                  <div className={styles.civilCategoryBranch__head}>
+                    <span className={styles.civilCategoryBranch__label}>
+                      시민사회 내부 분류
+                    </span>
+                    <span className={styles.civilCategoryBranch__meta}>
+                      {selectedCivilCategories.length} GROUPS
+                    </span>
+                  </div>
+                  <div className={styles.civilCategoryBranch__body}>
+                    {selectedCivilCategories.map(renderUnitAccordion)}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </section>
         ) : null}
-        {selectedSubUnits.map((unit) => {
-          const members = subUnitIndex.get(unit.code) ?? [];
-          const agentCount = members.filter((m) => m.type === "AGENT").length;
-          const npcCount = members.filter((m) => m.type === "NPC").length;
-          const leadCount = members.filter(
-            (m) =>
-              characterUsesAgentLevels(m) &&
-              compareLevels(m.agentLevel ?? "J", "A") >= 0,
-          ).length;
-          const sorted = [...members].sort(compareForCardOrder);
-
-          return (
-            <SubUnitAccordion
-              key={unit.code}
-              code={unit.code}
-              label={unit.label}
-              agentCount={agentCount}
-              npcCount={npcCount}
-              leadCount={leadCount}
-              expanded={expandedSubUnit === unit.code}
-              onToggle={() => handleToggleSubUnit(unit.code)}
-            >
-              {renderCardGrid(sorted)}
-            </SubUnitAccordion>
-          );
-        })}
+        {selectedSubUnits.map(renderUnitAccordion)}
       </div>
     );
   };

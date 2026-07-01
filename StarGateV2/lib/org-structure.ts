@@ -5,6 +5,10 @@
  */
 
 import { FACTIONS, INSTITUTIONS, INTERNAL_FACTION_CODE } from "@/types/character";
+import {
+  CIVIL_PERSONNEL_CATEGORIES,
+  EXTERNAL_SUB_ORGS,
+} from "@/lib/external-sub-orgs";
 
 /* ── 사무국 하위 기구 코드 → 상위 내부 기관 매핑 ── */
 
@@ -18,6 +22,12 @@ for (const inst of INSTITUTIONS) {
 
 const FACTION_CODES = new Set<string>(FACTIONS.map((f) => f.code));
 const INSTITUTION_CODES = new Set<string>(INSTITUTIONS.map((i) => i.code));
+const EXTERNAL_SUB_ORG_BY_CODE = new Map(
+  EXTERNAL_SUB_ORGS.map((org) => [org.code, org]),
+);
+const CIVIL_PERSONNEL_CATEGORY_BY_CODE = new Map(
+  CIVIL_PERSONNEL_CATEGORIES.map((category) => [category.code, category]),
+);
 
 /** code → scope O(1) lookup. getFactionScope 가 매 호출마다 FACTIONS.find 를 돌지 않도록 사전 인덱싱. */
 const FACTION_SCOPE_BY_CODE = new Map<string, "external" | "internal">(
@@ -47,6 +57,10 @@ export function getTopLevelGroup(dept: string | undefined): string {
   if (FACTION_CODES.has(dept)) return dept;
   if (INSTITUTION_CODES.has(dept)) return dept;
   if (SUB_UNIT_TO_INSTITUTION[dept]) return SUB_UNIT_TO_INSTITUTION[dept];
+  const externalSubOrg = EXTERNAL_SUB_ORG_BY_CODE.get(dept);
+  if (externalSubOrg) return externalSubOrg.parentCode;
+  const civilCategory = CIVIL_PERSONNEL_CATEGORY_BY_CODE.get(dept);
+  if (civilCategory) return civilCategory.parentCode;
   if (LEGACY_DEPT_MAP[dept]) return LEGACY_DEPT_MAP[dept];
   return "UNASSIGNED";
 }
@@ -88,6 +102,12 @@ export function getDepartmentLabel(dept: string | undefined): string {
     const sub = inst.subUnits.find((u) => u.code === dept);
     if (sub) return sub.label;
   }
+
+  const externalSubOrg = EXTERNAL_SUB_ORG_BY_CODE.get(dept);
+  if (externalSubOrg) return externalSubOrg.label;
+
+  const civilCategory = CIVIL_PERSONNEL_CATEGORY_BY_CODE.get(dept);
+  if (civilCategory) return civilCategory.label;
 
   if (LEGACY_DEPT_LABELS[dept]) return LEGACY_DEPT_LABELS[dept];
 
@@ -160,6 +180,8 @@ export function getGroupKind(
 ): "faction" | "institution" | "unassigned" {
   if (code === "UNASSIGNED") return "unassigned";
   if (isFaction(code)) return "faction";
+  if (EXTERNAL_SUB_ORG_BY_CODE.has(code)) return "faction";
+  if (CIVIL_PERSONNEL_CATEGORY_BY_CODE.has(code)) return "faction";
   if (isInstitution(code)) return "institution";
   return "unassigned";
 }

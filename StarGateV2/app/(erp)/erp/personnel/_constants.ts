@@ -1,71 +1,26 @@
 import type { AgentLevel, FactionCode, InstitutionCode } from "@/types/character";
+import {
+  CIVIL_PERSONNEL_CATEGORIES,
+  EXTERNAL_SUB_ORGS,
+  getCivilPersonnelCategory,
+  getExternalSubOrg,
+  isCivilPersonnelCategory,
+  isExternalSubOrg,
+} from "@/lib/external-sub-orgs";
+import type {
+  CivilPersonnelCategory,
+  ExternalSubOrg,
+} from "@/lib/external-sub-orgs";
 
-export interface ExternalSubOrg {
-  code: string;
-  label: string;
-  labelEn: string;
-  summary: string;
-  parentCode: FactionCode;
-  parentLabel: string;
-  logoUrl: string;
-  logoVariant: "badge" | "wide";
-  doctrine: string;
-}
-
-export const EXTERNAL_SUB_ORGS: readonly ExternalSubOrg[] = [
-  {
-    code: "WHITE_ROSE",
-    label: "백장미단",
-    labelEn: "White Rose",
-    summary: "시민사회 급진파",
-    parentCode: "CIVIL",
-    parentLabel: "시민사회",
-    logoUrl: "/assets/faction/white_rose_logo.png",
-    logoVariant: "badge",
-    doctrine: "급진 인권운동 · 정보공개",
-  },
-  {
-    code: "SPACE_ZERO",
-    label: "스페이스 제로",
-    labelEn: "Space Zero",
-    summary: "기술자본 세력",
-    parentCode: "CIVIL",
-    parentLabel: "시민사회",
-    logoUrl: "/assets/faction/space_zero_logo.png",
-    logoVariant: "wide",
-    doctrine: "기술 자본 · 글로벌 시장",
-  },
-  {
-    code: "GOLDEN_DAWN",
-    label: "황금여명회",
-    labelEn: "Golden Dawn",
-    summary: "작전 기록상 적대 컬트 세력으로 분류된 비정규 조직",
-    parentCode: "HOSTILE",
-    parentLabel: "적대세력",
-    logoUrl: "",
-    logoVariant: "badge",
-    doctrine: "오컬트 컬트 · 무장 적대",
-  },
-  {
-    code: "AHNENERBE",
-    label: "아넨에르베 \"광명회\"",
-    labelEn: "Ahnenerbe Illuminati",
-    summary: "광명회 및 아넨에르베 계열로 추적되는 적대 연구 세력",
-    parentCode: "HOSTILE",
-    parentLabel: "적대세력",
-    logoUrl: "",
-    logoVariant: "badge",
-    doctrine: "비밀 연구 · 침투 의혹",
-  },
-] as const;
-
-export function getExternalSubOrg(code: string): ExternalSubOrg | undefined {
-  return EXTERNAL_SUB_ORGS.find((org) => org.code === code);
-}
-
-export function isExternalSubOrg(code: string): boolean {
-  return Boolean(getExternalSubOrg(code));
-}
+export type { CivilPersonnelCategory, ExternalSubOrg };
+export {
+  CIVIL_PERSONNEL_CATEGORIES,
+  EXTERNAL_SUB_ORGS,
+  getCivilPersonnelCategory,
+  getExternalSubOrg,
+  isCivilPersonnelCategory,
+  isExternalSubOrg,
+};
 
 /* ── 외부 기관/내부 기관 보조 메타데이터 ──
    FACTIONS(외부 기관) / INSTITUTIONS(내부 기관) 기본 스키마(`shared-db`)에는 code/label/labelEn 만 있어
