@@ -1,14 +1,36 @@
 .bar {
   position: relative;
-  height: 4px;
-  background: var(--bg-3);
+  height: 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
   overflow: hidden;
+}
+
+.bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right,
+      transparent 0, transparent calc(25% - 1px),
+      rgba(74, 69, 56, 0.55) calc(25% - 1px), rgba(74, 69, 56, 0.55) 25%,
+      transparent 25%, transparent calc(50% - 1px),
+      rgba(74, 69, 56, 0.55) calc(50% - 1px), rgba(74, 69, 56, 0.55) 50%,
+      transparent 50%, transparent calc(75% - 1px),
+      rgba(74, 69, 56, 0.55) calc(75% - 1px), rgba(74, 69, 56, 0.55) 75%,
+      transparent 75%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .bar__fill {
   display: block;
+  position: relative;
   height: 100%;
   background: var(--gold);
+  border-radius: inherit;
+  z-index: 1;
 }
 
 .bar--info .bar__fill {

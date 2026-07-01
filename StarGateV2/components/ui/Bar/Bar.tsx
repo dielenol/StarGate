@@ -6,16 +6,20 @@ type BarTone = "gold" | "info" | "danger";
 
 interface BarProps extends HTMLAttributes<HTMLDivElement> {
   value: number;
+  max?: number;
   tone?: BarTone;
 }
 
 export default function Bar({
   value,
+  max = 100,
   tone = "gold",
   className,
   ...rest
 }: BarProps) {
-  const safeValue = Math.max(0, Math.min(100, value));
+  const safeMax = Number.isFinite(max) && max > 0 ? max : 100;
+  const safeValue = Math.max(0, Math.min(safeMax, value));
+  const percentage = (safeValue / safeMax) * 100;
   const toneClass =
     tone === "info"
       ? styles["bar--info"]
@@ -29,12 +33,12 @@ export default function Bar({
       role="progressbar"
       aria-valuenow={safeValue}
       aria-valuemin={0}
-      aria-valuemax={100}
+      aria-valuemax={safeMax}
       {...rest}
     >
       <span
         className={styles.bar__fill}
-        style={{ width: `${safeValue}%` }}
+        style={{ width: `${percentage}%` }}
       />
     </div>
   );

@@ -662,7 +662,7 @@ function VitalBarRow({
           </span>
         </span>
       </div>
-      <Bar value={value} tone={tone} />
+      <Bar value={value} max={max} tone={tone} />
     </div>
   );
 }

@@ -125,7 +125,7 @@ function CharVital({
           <span className={styles.charMini__vitalMax}>/{max}</span>
         </span>
       </div>
-      <Bar value={value} tone={tone} />
+      <Bar value={value} max={max} tone={tone} />
     </div>
   );
 }
