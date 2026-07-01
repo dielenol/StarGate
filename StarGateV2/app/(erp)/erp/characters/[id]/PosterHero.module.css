@@ -38,6 +38,7 @@
   overflow: hidden;
   background: var(--bg-2);
   border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
   box-shadow:
     inset 0 0 0 1px rgba(201, 161, 74, 0.15),
     0 0 24px rgba(0, 0, 0, 0.6);

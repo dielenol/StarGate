@@ -11,6 +11,7 @@ interface CharacterDisplaySource {
   lore: {
     name?: string | null;
     nickname?: string | null;
+    nameEn?: string | null;
   };
 }
 
@@ -23,11 +24,8 @@ export function isDisplayableCharacterText(
 export function getCharacterDisplayName(
   character: CharacterDisplaySource,
 ): string {
-  const nickname = getTrimmedDisplayText(character.lore.nickname);
-  if (nickname) return nickname;
-
-  const name = getTrimmedDisplayText(character.lore.name);
-  if (name) return name;
+  const displayName = getDisplayNameParts(character);
+  if (displayName) return displayName;
 
   return character.codename;
 }
@@ -35,11 +33,21 @@ export function getCharacterDisplayName(
 export function getCharacterDisplayNameOrNull(
   character: CharacterDisplaySource,
 ): string | null {
+  return getDisplayNameParts(character);
+}
+
+function getDisplayNameParts(character: CharacterDisplaySource): string | null {
   const nickname = getTrimmedDisplayText(character.lore.nickname);
+  const name = getTrimmedDisplayText(character.lore.name);
+  const nameEn = getTrimmedDisplayText(character.lore.nameEn);
+
+  if (nickname && name && !isSameDisplayText(nickname, name)) {
+    return appendEnglishName(`${nickname} / ${name}`, nameEn);
+  }
+
   if (nickname) return nickname;
 
-  const name = getTrimmedDisplayText(character.lore.name);
-  if (name) return name;
+  if (name) return appendEnglishName(name, nameEn);
 
   return null;
 }
@@ -86,4 +94,13 @@ function includesDisplayPart(value: string, part: string): boolean {
     .split("/")
     .map((p) => p.trim().toLowerCase())
     .includes(normalizedPart);
+}
+
+function isSameDisplayText(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+function appendEnglishName(base: string, nameEn: string | null): string {
+  if (!nameEn || includesDisplayPart(base, nameEn)) return base;
+  return `${base} (${nameEn})`;
 }

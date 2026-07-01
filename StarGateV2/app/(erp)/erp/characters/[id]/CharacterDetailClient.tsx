@@ -223,6 +223,7 @@ export default function CharacterDetailClient({
         codename={character.codename}
         name={character.lore.name}
         nickname={character.lore.nickname}
+        nameEn={character.lore.nameEn}
         role={character.role}
         agentLevel={character.agentLevel}
         factionCode={character.factionCode}
@@ -292,7 +293,7 @@ function AgentSections({ character }: { character: AgentCharacter }) {
   return (
     <>
       {hasProfile ? (
-        <Box>
+        <Box className={styles.profilePanel}>
           <PanelTitle right={<span className={styles.mono}>DOSSIER</span>}>
             CHARACTER PROFILE
           </PanelTitle>

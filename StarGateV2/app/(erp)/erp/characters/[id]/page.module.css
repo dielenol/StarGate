@@ -12,6 +12,10 @@
   min-width: 0;
 }
 
+.profilePanel {
+  border-radius: var(--radius-sm);
+}
+
 /* Top action / sync row */
 
 .detailToolbar {

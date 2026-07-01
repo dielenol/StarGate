@@ -52,7 +52,7 @@ interface Props {
    *  외모/성격/배경(appearance/personality/background) 은 본 컴포넌트 외부 (AgentSections)
    *  로 이동했다. */
   abilities?: Ability[];
-  /** NPC 전용 — nameEn / roleDetail / notes. AGENT 면 undefined. */
+  /** nameEn은 표시명 보강에 사용. roleDetail / notes는 NPC 호환 필드. */
   nameEn?: string;
   roleDetail?: string;
   notes?: string;
@@ -210,7 +210,7 @@ export default function PosterHero({
     codename,
     role,
     department,
-    lore: { name, nickname },
+    lore: { name, nickname, nameEn },
   });
   const roleLine = getCharacterRoleLine({ role, department });
 
