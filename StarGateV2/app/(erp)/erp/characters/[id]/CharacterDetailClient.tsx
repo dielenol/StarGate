@@ -89,6 +89,8 @@ export default function CharacterDetailClient({
   const showAdminSync = isGM && Boolean(adminSyncAt);
   const showOwnerUpdate = !showAdminSync && isOwner && Boolean(ownerUpdatedAt);
   const showUpdateMeta = showAdminSync || showOwnerUpdate;
+  const deleteDisabled = !canDelete || isDeleting;
+  const deleteTitle = canDelete ? undefined : "GM만 삭제할 수 있습니다.";
 
   async function handleDelete() {
     const confirmed = window.confirm(
@@ -199,15 +201,15 @@ export default function CharacterDetailClient({
                   편집
                 </Button>
               ) : null}
-              {canDelete ? (
+              <span title={deleteTitle}>
                 <Button
                   type="button"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
+                  onClick={canDelete ? handleDelete : undefined}
+                  disabled={deleteDisabled}
                 >
-                  {isDeleting ? "삭제 중..." : "삭제"}
+                  {isDeleting && canDelete ? "삭제 중..." : "삭제"}
                 </Button>
-              ) : null}
+              </span>
             </div>
           ) : null}
         </div>
