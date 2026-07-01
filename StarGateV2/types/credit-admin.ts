@@ -16,6 +16,7 @@ export interface CreditKpiSnapshot {
 export interface AgentBalanceRow {
   characterId: string;
   characterCodename: string;
+  characterType: "AGENT" | "NPC";
   ownerId: string | null;
   ownerName: string | null;
   ownerDiscordId: string | null;
@@ -100,7 +101,7 @@ export interface BulkGrantResult {
 export type SessionRespondentStatus =
   | "eligible"
   | "no-user" // discordId 매칭되는 user 없음
-  | "no-character" // user 는 있으나 메인 AGENT 미등록
+  | "no-character" // user 는 있으나 운영 메인 캐릭터 미등록
   | "integrity-violation" // 1인 1 MAIN 위반 (findMainCharacterByOwner throw)
   | "already-rewarded"; // 이 세션의 자동 보상 이력 존재
 

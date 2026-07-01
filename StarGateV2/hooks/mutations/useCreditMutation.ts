@@ -11,7 +11,7 @@ import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 /**
  * GM 발급 입력. ownerId 또는 characterId 중 하나가 필수 (백엔드 검증).
  *
- * - ownerId 만 보내면: 백엔드가 메인 AGENT 캐릭터로 자동 라우팅
+ * - ownerId 만 보내면: 백엔드가 운영 메인 캐릭터로 자동 라우팅
  * - characterId 만 보내면: 해당 캐릭터에 직접 발급 (1인 1 MAIN 정책상 메인 캐릭만 허용)
  *
  * 둘 다 보낼 경우 백엔드가 characterId 우선 적용 — 명시적 지정이 우선.

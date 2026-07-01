@@ -14,7 +14,7 @@
  * 응답 코드: 401 / 403 / 400 (입력 검증 실패) / 404 (세션 부재) / 500.
  * Cache: no-store.
  *
- * `enrichSessions()` 사용 X — MAIN AGENT 필터가 부재해 자동 보상 정합성 보장 불가.
+ * `enrichSessions()` 사용 X — 운영 메인 캐릭터 판정이 부재해 자동 보상 정합성 보장 불가.
  */
 
 import { NextResponse } from "next/server";
@@ -31,6 +31,7 @@ import type { UserRole } from "@/types/user";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { isCreditOperationCharacter } from "@/lib/character-operation-targets";
 import {
   adjustCharacterPoints,
   adjustCharacterStat,
@@ -243,6 +244,7 @@ interface ResolvedParticipant {
   ownerName: string;
   characterId: string;
   characterCodename: string;
+  characterType: "AGENT" | "NPC";
 }
 
 type NormalizedReward = Required<
@@ -303,8 +305,8 @@ async function resolveParticipant(
     throw new Error("참여자에는 ownerId 또는 characterId가 필요합니다.");
   }
 
-  if (!character || character.type !== "AGENT") {
-    throw new Error("참여자 AGENT 캐릭터를 찾을 수 없습니다.");
+  if (!character || !(await isCreditOperationCharacter(character))) {
+    throw new Error("참여자 운영 대상 캐릭터를 찾을 수 없습니다.");
   }
   if (!character.ownerId) {
     throw new Error(`${character.codename} 캐릭터에 owner가 연결되어 있지 않습니다.`);
@@ -316,6 +318,7 @@ async function resolveParticipant(
     ownerName: owner?.discordUsername ?? owner?.displayName ?? character.ownerId,
     characterId: String(character._id),
     characterCodename: character.codename,
+    characterType: character.type,
   };
 }
 
@@ -355,6 +358,17 @@ function normalizeRewards(
       !participantIds.has(reward.targetCharacterId)
     ) {
       throw new Error("개별 보상 대상은 참여자 목록 안에 있어야 합니다.");
+    }
+    if (reward.kind !== "CREDIT") {
+      const rewardTargets = reward.targetCharacterId
+        ? participants.filter((p) => p.characterId === reward.targetCharacterId)
+        : participants;
+      const npcTarget = rewardTargets.find((p) => p.characterType === "NPC");
+      if (npcTarget) {
+        throw new Error(
+          `${reward.kind} 보상은 AGENT 캐릭터에만 가능합니다: ${npcTarget.characterCodename}`,
+        );
+      }
     }
 
     return {

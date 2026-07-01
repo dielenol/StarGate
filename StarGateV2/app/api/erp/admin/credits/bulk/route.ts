@@ -32,6 +32,7 @@ import { isGmDirectGrantType } from "@/types/credit";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { isCreditOperationCharacter } from "@/lib/character-operation-targets";
 import {
   findCharacterById,
   findMainCharacterLiteByOwner as findMainCharacterByOwner,
@@ -281,6 +282,7 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
   let targetCharacterId: string;
   let targetCharacterCodename: string;
   let targetOwnerId: string;
+  let targetCharacterType: "AGENT" | "NPC";
 
   if (target.characterId?.trim()) {
     if (!isValidObjectId(target.characterId)) {
@@ -291,10 +293,10 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
       };
     }
     const character = await findCharacterById(target.characterId);
-    if (!character || character.type !== "AGENT") {
+    if (!character || !(await isCreditOperationCharacter(character))) {
       return {
         ...baseEcho,
-        error: "AGENT 캐릭터를 찾을 수 없습니다.",
+        error: "운영 대상 캐릭터를 찾을 수 없습니다.",
         code: "CHARACTER_NOT_FOUND",
       };
     }
@@ -308,6 +310,7 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
     targetCharacterId = String(character._id);
     targetCharacterCodename = character.codename;
     targetOwnerId = character.ownerId;
+    targetCharacterType = character.type;
   } else {
     const ownerId = target.ownerId!;
     if (!isValidObjectId(ownerId)) {
@@ -337,6 +340,7 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
     targetCharacterId = String(mainCharacter._id);
     targetCharacterCodename = mainCharacter.codename;
     targetOwnerId = ownerId;
+    targetCharacterType = mainCharacter.type;
   }
 
   const owner = await findUserById(targetOwnerId);
@@ -353,6 +357,17 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
 
   try {
     if (rewardKind === "POINT") {
+      if (targetCharacterType !== "AGENT") {
+        return {
+          ownerId: targetOwnerId,
+          characterId: targetCharacterId,
+          success: false,
+          characterCodename: targetCharacterCodename,
+          error: "POINT 조정은 AGENT 캐릭터에만 가능합니다.",
+          code: "CHARACTER_NOT_AGENT",
+        };
+      }
+
       const pointResult = await adjustCharacterPoints({
         characterId: targetCharacterId,
         amount: finalAmount,

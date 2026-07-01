@@ -6,6 +6,7 @@ import { GM_DIRECT_GRANT_TYPES, isGmDirectGrantType } from "@/types/credit";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
+import { isCreditOperationCharacter } from "@/lib/character-operation-targets";
 import {
   findCharacterById,
   findMainCharacterLiteByOwner as findMainCharacterByOwner,
@@ -83,9 +84,9 @@ export async function GET(request: Request) {
         );
       }
       const character = await findCharacterById(queryCharacterId);
-      if (!character || character.type !== "AGENT") {
+      if (!character || !(await isCreditOperationCharacter(character))) {
         return NextResponse.json(
-          { error: "AGENT 캐릭터를 찾을 수 없습니다." },
+          { error: "운영 대상 캐릭터를 찾을 수 없습니다." },
           { status: 404 },
         );
       }
@@ -230,7 +231,7 @@ export async function POST(request: Request) {
   const finalAmount =
     validatedType === "ADMIN_DEDUCT" ? -validatedAmount : validatedAmount;
 
-  // 대상 AGENT 캐릭터 해석 — characterId 우선, 미지정 시 ownerId 의 메인 캐릭으로.
+  // 대상 운영 캐릭터 해석 — characterId 우선, 미지정 시 ownerId 의 메인 캐릭으로.
   let targetCharacterId: string;
   let targetCharacterCodename: string;
   let targetOwnerId: string;
@@ -243,9 +244,9 @@ export async function POST(request: Request) {
       );
     }
     const character = await findCharacterById(body.characterId);
-    if (!character || character.type !== "AGENT") {
+    if (!character || !(await isCreditOperationCharacter(character))) {
       return NextResponse.json(
-        { error: "AGENT 캐릭터를 찾을 수 없습니다." },
+        { error: "운영 대상 캐릭터를 찾을 수 없습니다." },
         { status: 404 },
       );
     }
@@ -282,7 +283,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "메인 캐릭터 미등록 — 발급 대상 user 가 메인 AGENT 캐릭터를 가지고 있어야 합니다.",
+            "메인 캐릭터 미등록 — 발급 대상 user 가 운영 메인 캐릭터를 가지고 있어야 합니다.",
           code: "NO_MAIN_CHARACTER",
         },
         { status: 404 },

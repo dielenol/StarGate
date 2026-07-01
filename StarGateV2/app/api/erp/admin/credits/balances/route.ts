@@ -1,5 +1,5 @@
 /**
- * GM 크레딧 운영 대시보드 — 모든 MAIN AGENT 캐릭터 잔액 보드.
+ * GM 크레딧 운영 대시보드 — 모든 크레딧 운영 대상 캐릭터 잔액 보드.
  *
  * 응답: { rows: AgentBalanceRow[]; generatedAt: string }
  * - rows 정렬: balance 내림차순 → codename 오름차순.

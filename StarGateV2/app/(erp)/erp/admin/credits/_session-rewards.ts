@@ -5,7 +5,7 @@
  * 공유하기 위해 추출. 라우트는 클라이언트 useQuery 가 호출하고, _data 는
  * 서버 진입 시 한 번만 호출해 초기 캐시 시드를 만든다.
  *
- * `enrichSessions()` 사용 X — MAIN AGENT 필터 부재로 자동 보상 정합성 보장 불가.
+ * `enrichSessions()` 사용 X — 운영 메인 캐릭터 판정 부재로 자동 보상 정합성 보장 불가.
  *  대신 본 헬퍼가 1인 1 MAIN 정책 / discordId 매칭 / 멱등(already-rewarded) 까지 라벨링.
  */
 
@@ -175,7 +175,7 @@ export async function buildSessionRewardCandidates(
           characterId: null,
           characterCodename: null,
           status: "no-character",
-          reason: "메인 AGENT 캐릭터 미등록",
+          reason: "운영 메인 캐릭터 미등록",
         });
         counts["no-character"] += 1;
         continue;

@@ -41,9 +41,9 @@ export default function CreditKpiBoard({ initialData }: Props) {
       </Box>
 
       <Box>
-        <PanelTitle>ACTIVE AGENTS</PanelTitle>
+        <PanelTitle>ACTIVE TARGETS</PanelTitle>
         <div className={styles.credits__bigNum}>{kpi.activeAgentCount}</div>
-        <Eyebrow>운영 캐릭 수 (MAIN)</Eyebrow>
+        <Eyebrow>운영 캐릭 수 (MAIN + GM NPC)</Eyebrow>
       </Box>
 
       <Box>

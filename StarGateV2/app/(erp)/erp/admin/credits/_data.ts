@@ -14,12 +14,13 @@ import type {
   CreditTransactionPage,
   SessionRewardCandidate,
 } from "@/types/credit-admin";
-import type { AgentCharacter } from "@stargate/shared-db";
 
 import {
-  listAgentCharacters,
-  listCharactersByOwnerIds,
-} from "@/lib/db/characters";
+  getOperationCharacterPointBalance,
+  getOperationCharacterType,
+  listCreditOperationCharacters,
+  listUsersWithOperationMainCharacters,
+} from "@/lib/character-operation-targets";
 import { OPERATION_POOL_ID, getCreditPool } from "@/lib/db/credit-pools";
 import {
   countCreditTransactionsFiltered,
@@ -28,7 +29,7 @@ import {
   listCreditTransactionsFiltered,
   sumLatestBalancesByCharacterIds,
 } from "@/lib/db/credits";
-import { findUsersByIds, listUsers } from "@/lib/db/users";
+import { findUsersByIds } from "@/lib/db/users";
 
 import type { OpPoolResponse } from "@/hooks/queries/useCreditsAdminQuery";
 
@@ -40,30 +41,27 @@ const INITIAL_LOG_LIMIT = 50;
 /* ── 운영 캐릭 추출 helper ── */
 
 /**
- * 운영 MAIN AGENT 캐릭터만 추출 (isPublic !== false).
+ * 크레딧 운영 대상 캐릭터만 추출 (isPublic !== false).
  *
  * GM 크레딧 대시보드의 모든 집계/표시 (KPI / 잔액 보드 / 로그 / grantTargets) 는
- * 본 helper 결과를 기준으로 한다 — 테스트 더미(isPublic === false) 캐릭터는
- * 화면에서 제외하고 GM 이 실수로 더미에 발급하는 사고도 차단.
+ * 본 helper 결과를 기준으로 한다. 일반 AGENT MAIN 에 더해 ACTIVE GM 계정에
+ * 단일 NPC만 배정된 경우 그 NPC를 운영 메인 fallback 으로 포함한다.
  *
  * 더미의 트랜잭션은 DB 에 그대로 보존 (audit 가치 — 삭제 X). 화면 표시에서만 제외.
  * GM 이 명시적으로 `characterId=<dummy_id>` 단건 필터를 입력한 경우는
  * 그 의도를 존중하고 본 helper 의 화이트리스트는 무시 (log 라우트의 정책).
  */
-export async function listPublicMainAgentCharacters(): Promise<AgentCharacter[]> {
-  const all = await listAgentCharacters("MAIN");
-  return all.filter((c): c is AgentCharacter => {
-    return c.type === "AGENT" && c.isPublic !== false;
-  });
+export async function listCreditVisibleOperationCharacters() {
+  return listCreditOperationCharacters();
 }
 
 /* ── KPI ── */
 
 export async function buildInitialKpi(): Promise<CreditKpiSnapshot> {
-  const mains = await listPublicMainAgentCharacters();
+  const mains = await listCreditVisibleOperationCharacters();
   const ids = mains.map((c) => String(c._id));
   const totalPointBalance = mains.reduce(
-    (sum, character) => sum + (character.play.points ?? 0),
+    (sum, character) => sum + getOperationCharacterPointBalance(character),
     0,
   );
 
@@ -100,7 +98,7 @@ export async function buildAgentBalanceRows(): Promise<{
   rows: AgentBalanceRow[];
   generatedAt: string;
 }> {
-  const mains = await listPublicMainAgentCharacters();
+  const mains = await listCreditVisibleOperationCharacters();
   const characterIds = mains.map((c) => String(c._id));
   const uniqueOwnerIds = Array.from(
     new Set(
@@ -127,6 +125,7 @@ export async function buildAgentBalanceRows(): Promise<{
     return {
       characterId,
       characterCodename: character.codename,
+      characterType: getOperationCharacterType(character),
       ownerId,
       ownerName: owner
         ? owner.discordUsername ?? owner.displayName ?? null
@@ -134,7 +133,7 @@ export async function buildAgentBalanceRows(): Promise<{
       ownerDiscordId: owner?.discordId ?? null,
       agentLevel: character.agentLevel ?? "U",
       balance: snapshot?.balance ?? 0,
-      pointBalance: character.play.points ?? 0,
+      pointBalance: getOperationCharacterPointBalance(character),
       lastTxAt: snapshot ? new Date(snapshot.lastTxAt).toISOString() : null,
     };
   });
@@ -159,7 +158,7 @@ export async function buildInitialBalances(): Promise<{
 export async function buildInitialLog(): Promise<CreditTransactionPage> {
   // 운영 캐릭(isPublic !== false) 의 트랜잭션만 노출 — 더미 캐릭의 ledger 는
   // DB 에 보존되지만 GM 대시보드 표시에서는 제외 (log 라우트의 default 동작과 일치).
-  const publicMains = await listPublicMainAgentCharacters();
+  const publicMains = await listCreditVisibleOperationCharacters();
   const characterIds = publicMains.map((c) => String(c._id));
   const filter = { characterIds };
   const [items, total] = await Promise.all([
@@ -220,37 +219,21 @@ export async function buildInitialSessionCandidates(
 /* ── 발급 폼 타깃 (user → 메인 캐릭) ── */
 
 export async function buildGrantTargets(): Promise<GrantTargetUser[]> {
-  // listUsers 는 UserPublic[] (필요 필드만).
   // 메인 캐릭이 없는 user 는 silent drop 금지 — 폼에서 disabled 옵션으로 노출한다.
   // 더미(isPublic === false) 캐릭도 발급 대상에 포함하되, UI 가 [DUMMY] 로 마킹해
   // GM 이 실수로 더미를 고르지 않도록 시각적으로 구분 (KPI/잔액 보드/로그는 여전히 제외).
-  const users = await listUsers();
+  const selections = await listUsersWithOperationMainCharacters();
 
-  // owner 별 메인 캐릭 일괄 조회 — user 수 × findMainCharacterByOwner N+1 제거.
-  // findMainCharacterByOwner 와 동일 판정: AGENT + (tier "MAIN" 또는 미설정).
-  // 후보 0 = 메인 미보유(null), 2+ = 1인 1 MAIN 정합성 위반 — 기존 try/catch 가
-  // throw 를 null 로 흡수하던 동작과 동일하게 null 처리.
-  const characters = await listCharactersByOwnerIds(users.map((u) => u._id));
-  const mainsByOwner = new Map<string, typeof characters>();
-  for (const character of characters) {
-    if (character.type !== "AGENT") continue;
-    if (character.tier !== undefined && character.tier !== "MAIN") continue;
-    if (!character.ownerId) continue;
-    const list = mainsByOwner.get(character.ownerId);
-    if (list) list.push(character);
-    else mainsByOwner.set(character.ownerId, [character]);
-  }
-
-  return users.map((u) => {
-    const candidates = mainsByOwner.get(u._id) ?? [];
-    const main = candidates.length === 1 ? candidates[0] : null;
+  return selections.map(({ user, character: main, isNpcFallback }) => {
     return {
-      userId: u._id,
-      username: u.username,
-      displayName: u.displayName,
+      userId: user._id,
+      username: user.username,
+      displayName: user.displayName,
       mainCharacterId: main ? String(main._id) : null,
       mainCharacterCodename: main?.codename ?? null,
+      mainCharacterType: main?.type ?? null,
       isDummy: main ? main.isPublic === false : false,
+      isNpcFallback,
     };
   });
 }

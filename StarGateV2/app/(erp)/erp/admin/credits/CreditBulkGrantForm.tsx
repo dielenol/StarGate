@@ -57,15 +57,19 @@ export interface GrantTargetUser {
   userId: string;
   username: string;
   displayName: string;
-  /** 메인 AGENT 캐릭터의 _id hex. 미등록이면 null — 발급 불가 표시. */
+  /** 운영 메인 캐릭터의 _id hex. 미등록이면 null — 발급 불가 표시. */
   mainCharacterId: string | null;
-  /** 메인 AGENT 캐릭터의 codename. */
+  /** 운영 메인 캐릭터의 codename. */
   mainCharacterCodename: string | null;
+  /** 운영 메인 캐릭터 타입. GM NPC fallback이면 NPC. */
+  mainCharacterType: "AGENT" | "NPC" | null;
   /**
    * 메인 캐릭이 더미(isPublic === false) 인지 여부. 발급은 가능하지만
    * UI 가 [DUMMY] 로 시각 구분 — GM 오발급 방지용 힌트.
    */
   isDummy?: boolean;
+  /** ACTIVE GM 계정에 배정된 단일 NPC를 운영 메인으로 쓰는 경우. */
+  isNpcFallback?: boolean;
 }
 
 interface CreditBulkGrantFormProps {
@@ -478,7 +482,7 @@ export default function CreditBulkGrantForm({
         </div>
         <div className={styles.bulk__hint}>
           {mode === "picker"
-            ? "메인 AGENT 캐릭터를 보유한 사용자만 선택 가능합니다 ([DUMMY] 표시는 테스트 캐릭 — 발급은 가능)."
+            ? "운영 메인 캐릭터를 보유한 사용자만 선택 가능합니다 ([NPC]는 GM 운영 캐릭터, [DUMMY]는 테스트 캐릭터)."
             : "한 줄에 하나의 ID를 입력하세요. 기본은 ownerId(사용자 _id)이며, 체크 시 characterId 로 해석됩니다."}
         </div>
       </div>
@@ -534,12 +538,15 @@ export default function CreditBulkGrantForm({
                     {t.isDummy ? (
                       <span className={styles.bulk__targetDummy}>DUMMY</span>
                     ) : null}
+                    {t.isNpcFallback ? (
+                      <span className={styles.bulk__targetDummy}>NPC</span>
+                    ) : null}
                     <span className={styles.bulk__targetMeta}>
                       {t.displayName} ({t.username})
                     </span>
                     {!eligible ? (
                       <span className={styles.bulk__targetWarn}>
-                        메인 캐릭터 미등록
+                        운영 메인 미등록
                       </span>
                     ) : null}
                   </label>

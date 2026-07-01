@@ -141,7 +141,7 @@ export function useCreditKpi(opt?: { initialData?: CreditKpiSnapshot }) {
   });
 }
 
-/** 모든 MAIN AGENT 잔액 보드. 60s — 발급 mutation 시 invalidate. */
+/** 모든 크레딧 운영 대상 잔액 보드. 60s — 발급 mutation 시 invalidate. */
 export function useCreditBalances(opt?: { initialData?: BalancesResponse }) {
   return useQuery({
     queryKey: creditsAdminKeys.balances(),

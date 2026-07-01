@@ -131,7 +131,7 @@ export default function CreditBalanceTable({
           <span className={styles.credits__mono}>{rows.length} 명</span>
         }
       >
-        AGENT BALANCES
+        CHARACTER BALANCES
       </PanelTitle>
 
       <div className={styles.credits__tableHeader}>
@@ -184,6 +184,12 @@ export default function CreditBalanceTable({
                   <tr key={row.characterId}>
                     <td className={styles.credits__strong}>
                       {row.characterCodename}
+                      {row.characterType === "NPC" ? (
+                        <>
+                          {" "}
+                          <Tag tone="rank-m">NPC</Tag>
+                        </>
+                      ) : null}
                     </td>
                     <td>{row.ownerName ?? "—"}</td>
                     <td>

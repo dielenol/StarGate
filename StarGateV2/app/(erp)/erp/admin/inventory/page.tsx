@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
-import { listAgentCharacters } from "@/lib/db/characters";
+import { listInventoryOperationCharacters } from "@/lib/character-operation-targets";
 import {
   listAvailableItems,
   listSharedInventory,
@@ -42,7 +42,7 @@ export default async function AdminInventoryHubPage() {
   }
 
   const [characters, availableItems, sharedInventory] = await Promise.all([
-    listAgentCharacters(null).catch(() => []),
+    listInventoryOperationCharacters().catch(() => []),
     listAvailableItems().catch(() => []),
     listSharedInventory().catch(() => []),
   ]);
@@ -125,7 +125,9 @@ export default async function AdminInventoryHubPage() {
                   {character.codename}
                 </span>
                 <span style={{ color: "var(--ink-2)", fontSize: 14 }}>
-                  {character.lore?.name ?? character.codename}
+                  {[character.type, character.lore?.name ?? character.codename]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </span>
               </Link>
             ))
