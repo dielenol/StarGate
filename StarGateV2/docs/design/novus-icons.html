@@ -161,6 +161,11 @@
     margin-top: 1px;
     color: var(--icon-color);
   }
+  .tree-node__blankIcon {
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+  }
   .tree-node__label {
     display: flex;
     align-items: center;
@@ -463,6 +468,16 @@
   <div class="grid" id="grid-catalog"></div>
 </div>
 
+<div class="section" data-group="dashboard">
+  <div class="section-head">대시보드 페이지 · Dashboard <span class="badge">/erp</span></div>
+  <div class="grid" id="grid-dashboard"></div>
+</div>
+
+<div class="section">
+  <div class="section-head">대시보드 위젯 매핑 · Dashboard Widgets <span class="badge">LABEL → ICON</span></div>
+  <div class="hierarchy" id="dashboardMap"></div>
+</div>
+
 <div class="section">
   <div class="section-head">조직도 미리보기 · Layout Preview</div>
   <div class="orgchart" id="chart"></div>
@@ -521,7 +536,7 @@ const ICONS = {
   },
   sample: {
     idx: 5, name: 'SAMPLE · 샘플', key: 'IconSample',
-    svg: '<path d="M9.5 3v13.5a2.5 2.5 0 005 0V3"/><path d="M8 3h8"/><path d="M9.5 11h5"/><circle cx="11.5" cy="14" r="0.6" fill="currentColor" stroke="none"/><circle cx="13" cy="16.5" r="0.5" fill="currentColor" stroke="none"/>'
+    svg: '<path d="M8.8 3.5h6.4"/><path d="M10 3.5v12.8a2 2 0 004 0V3.5"/><path d="M10 12h4"/><path d="M12.6 6h1.4M12.6 8.2h1.4M12.6 10.4h1.4"/><circle cx="11.3" cy="14" r="0.6" fill="currentColor" stroke="none"/><circle cx="12.7" cy="15.2" r="0.5" fill="currentColor" stroke="none"/>'
   },
 
   // ── 조직도 노드 / Organization (ID 6–13) ──
@@ -620,12 +635,12 @@ const ICONS = {
 
   // ── 인벤토리 페이지 / Inventory Page (ID 27–29) ──
   equipment: {
-    idx: 27, name: '장비 · Equipment', key: 'IconEquipment',
-    svg: '<path d="M19 5L9.8 14.2"/><path d="M7.8 12.2l4 4"/><path d="M9.1 14.9l-2.6 2.6"/><circle cx="5.6" cy="18.4" r="0.9" fill="currentColor" stroke="none"/>'
+    idx: 27, name: '장비 · Equipment (아스널)', key: 'IconEquipment',
+    svg: '<rect x="5" y="9" width="14" height="8" rx="1"/><path d="M10 9V8a2 2 0 014 0v1"/><path d="M5 12.5h14"/><path d="M9 14.7h6"/><path d="M3 4l5 5"/><path d="M4.8 8.2l2.4-2.4"/><path d="M16 17l3 3"/><circle cx="19.2" cy="20.2" r="0.7" fill="currentColor" stroke="none"/><path d="M20 5l-4 4"/><path d="M17.2 6.2l1.6 1.6"/><path d="M8 17l-3 3"/>'
   },
   consumable: {
     idx: 28, name: '소모품 · Consumable', key: 'IconConsumable',
-    svg: '<circle cx="12" cy="14" r="6"/><path d="M10.5 4v4.2M13.5 4v4.2"/><path d="M9.3 4h5.4"/><path d="M7.2 15.5h9.6"/><circle cx="10.8" cy="17.8" r="0.6" fill="currentColor" stroke="none"/>'
+    svg: '<rect x="10" y="2.5" width="4" height="2.3" rx="0.6"/><path d="M10.4 4.8v2.2a6 6 0 103.2 0V4.8"/><path d="M8 14.6q2-1.4 4 0t4 0"/><circle cx="10.4" cy="16.8" r="0.6" fill="currentColor" stroke="none"/><circle cx="13" cy="17.9" r="0.5" fill="currentColor" stroke="none"/>'
   },
   misc: {
     idx: 29, name: '기타 · Misc', key: 'IconMisc',
@@ -738,9 +753,13 @@ const ICONS = {
     svg: '<path d="M12 6L3 4v14l9 2 9-2V4l-9 2z"/><path d="M12 6v14"/><path d="M6 8.5l3 .5M6 11.5l3 .5M15 9l3-.5M15 12l3-.5"/>'
   },
   reportDocument: {
-    idx: 54, name: '작전 보고서 · Report Document', key: 'IconReportDocument',
+    idx: 54, name: '작전 보고서 (메인) · Report Document', key: 'IconReportDocument',
     viewBox: '0 0 512 512', fill: 'currentColor', stroke: 'none',
     svg: '<path fill-rule="evenodd" d="M77 59 L73 63 L71 68 L71 500 L74 506 L82 511 L429 511 L435 508 L440 500 L440 68 L438 63 L434 59 L429 57 L369 57 L369 80 L363 95 L351 107 L337 113 L182 114 L165 110 L156 104 L148 95 L142 80 L142 57 L82 57 Z M299 269 L317 268 L333 270 L350 275 L370 286 L387 301 L399 317 L406 331 L411 348 L413 364 L411 388 L405 407 L394 426 L375 446 L365 453 L349 461 L332 466 L301 467 L290 465 L275 460 L258 451 L250 445 L230 423 L221 406 L215 386 L215 349 L223 325 L232 310 L243 297 L264 281 L279 274 Z M250 335 L243 356 L242 372 L244 385 L247 394 L255 409 L268 423 L275 428 L287 434 L301 438 L326 438 L342 433 L357 424 L374 405 L379 395 L382 382 L307 381 L254 329 Z M274 309 L320 354 L382 354 L381 346 L377 336 L366 320 L356 311 L338 301 L321 297 L306 297 L289 301 Z M99 280 L101 275 L105 271 L112 268 L200 268 L206 270 L211 275 L213 280 L213 286 L206 295 L201 297 L111 297 L106 295 L101 290 Z M99 223 L105 214 L114 211 L198 211 L207 214 L211 218 L213 223 L213 229 L211 233 L205 239 L202 240 L110 240 L101 233 Z M99 167 L103 159 L109 155 L260 155 L265 158 L268 162 L270 171 L266 179 L260 183 L109 183 L104 180 L101 176 Z M171 36 L170 73 L174 82 L180 85 L331 85 L337 82 L341 74 L341 40 L339 34 L335 30 L329 28 L280 28 L271 21 L268 7 L259 0 L252 0 L248 2 L242 9 L240 21 L231 28 L182 28 L176 30 Z"/>'
+  },
+  reportMini: {
+    idx: 75, name: '작전 보고서 (미니) · Mini Report', key: 'IconReportMini',
+    svg: '<path d="M6.5 3.5H13l4.5 4.5V19a1.5 1.5 0 01-1.5 1.5H6.5A1.5 1.5 0 015 19V5a1.5 1.5 0 011.5-1.5z"/><path d="M13 3.5V8h4.5"/><path d="M8 11.5h6M8 14.5h6"/><path d="M8 17.8c.7-.7 1.3-.7 2 0s1.3.7 2 0"/>'
   },
   folderArchive: {
     idx: 55, name: '전체 기록 · Archive Folder', key: 'IconArchive',
@@ -759,9 +778,8 @@ const ICONS = {
     svg: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>'
   },
   caution: {
-    idx: 59, name: '특수 / 주의 · Special', key: 'IconCaution',
-    fill: 'none', stroke: 'none',
-    svg: '<path d="M10.875 16.125C10.875 15.5037 11.3787 15 12 15C12.6213 15 13.125 15.5037 13.125 16.125C13.125 16.7463 12.6213 17.25 12 17.25C11.3787 17.25 10.875 16.7463 10.875 16.125Z" fill="#EB342A"/><path d="M12.75 6.75H11.25V12.75H12.75V6.75Z" fill="#EB342A"/><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 12C1.5 6.201 6.201 1.5 12 1.5C17.799 1.5 22.5 6.201 22.5 12C22.5 17.799 17.799 22.5 12 22.5C6.201 22.5 1.5 17.799 1.5 12ZM12 3C7.02943 3 3 7.02943 3 12C3 16.9706 7.02943 21 12 21C16.9706 21 21 16.9706 21 12C21 7.02943 16.9706 3 12 3Z" fill="#EB342A"/>'
+    idx: 59, name: '특수 · Special', key: 'IconSpecial',
+    svg: '<path d="M10.6 3.4a2 2 0 012.8 0l7.2 7.2a2 2 0 010 2.8l-7.2 7.2a2 2 0 01-2.8 0l-7.2-7.2a2 2 0 010-2.8z"/><path d="M12 8v4.3"/><circle cx="12" cy="15.7" r="0.55" fill="currentColor" stroke="none"/>'
   },
 
   // ── 조직도 보강 / Organization Add-on (ID 60–66 · OrgIcon.tsx 기반) ──
@@ -793,11 +811,45 @@ const ICONS = {
     idx: 66, name: 'SECTOR E · 에코 섹터', key: 'IconSectorE',
     svg: '<path d="M12 3L21 12L12 21L3 12Z"/><path d="M14 9.5h-4v7h4"/><path d="M10 13h3"/>'
   },
+
+  // ── 갤러리 & 대시보드 위젯 / Gallery & Dashboard (ID 67–74) ──
+  gallery: {
+    idx: 67, name: '갤러리 · Gallery', key: 'IconGallery',
+    svg: '<rect x="3.5" y="4" width="17" height="16" rx="2"/><circle cx="9" cy="9.5" r="1.8"/><path d="M20.5 16.5l-4-4a2 2 0 00-2.8 0L6 20"/>'
+  },
+  agentProfile: {
+    idx: 68, name: '요원 프로필 · Agent Profile', key: 'IconAgentProfile',
+    svg: '<rect x="4" y="4" width="16" height="16" rx="1.6"/><circle cx="9" cy="10" r="2.4"/><path d="M5.8 16.2c.5-1.8 1.7-2.7 3.2-2.7s2.7.9 3.2 2.7"/><path d="M14 9h3.5M14 12h3.5M14 15h2.5"/>'
+  },
+  tasks: {
+    idx: 69, name: '처리할 일 · Action Queue', key: 'IconTasks',
+    svg: '<rect x="4.5" y="4.5" width="15" height="16" rx="1.6"/><rect x="9" y="2.8" width="6" height="3.4" rx="1"/><path d="M7.8 10.6l1.3 1.3 2.2-2.4"/><path d="M14 10h3"/><path d="M7.8 15.1l1.3 1.3 2.2-2.4"/><path d="M14 14.5h3"/>'
+  },
+  awaitingResponse: {
+    idx: 70, name: '응답 대기 · Awaiting', key: 'IconAwaiting',
+    svg: '<path d="M6.5 3.5h11"/><path d="M6.5 20.5h11"/><path d="M8 3.5v2.5c0 .5.2.9.5 1.2L12 11l3.5-3.8c.3-.3.5-.7.5-1.2V3.5"/><path d="M8 20.5V18c0-.5.2-.9.5-1.2L12 13l3.5 3.8c.3.3.5.7.5 1.2v2.5"/>'
+  },
+  activeOps: {
+    idx: 71, name: '진행 세션 · Active Ops', key: 'IconActiveOps',
+    svg: '<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7"/><path d="M6 6a8.5 8.5 0 000 12M18 6a8.5 8.5 0 010 12"/>'
+  },
+  serviceRecord: {
+    idx: 72, name: '누적 작전 · Service Record', key: 'IconServiceRecord',
+    svg: '<circle cx="12" cy="9" r="5.5"/><path d="M12 6.3l.9 1.9 2.1.3-1.5 1.4.4 2-1.9-1-1.9 1 .4-2-1.5-1.4 2.1-.3z"/><path d="M9 13.8L7.5 21l4.5-2.6L16.5 21 15 13.8"/>'
+  },
+  tenure: {
+    idx: 73, name: '가입 후 · Tenure', key: 'IconTenure',
+    svg: '<path d="M6 11l6-3 6 3"/><path d="M6 15l6-3 6 3"/><path d="M6 19l6-3 6 3"/>'
+  },
+  recentChanges: {
+    idx: 74, name: '최근 변경 · Recent Changes', key: 'IconRecentChanges',
+    svg: '<path d="M3.5 12a8.5 8.5 0 102.8-6.3L3.5 8"/><path d="M3.5 3.5V8H8"/><path d="M12 7.5v5l3.5 2"/>'
+  },
 };
 
 const GROUPS = {
   core:        ['emblem','archive','zulu','containment','clearance','sample'],
-  nav:         ['dashboard','account','notification','session','mission','person','members','factionMap','crown','inventoryHub','credit','shopHub','equipment','stock','wikiHub','reportDocument','archive','folderArchive','world','userAdmin','system'],
+  nav:         ['dashboard','account','notification','session','mission','person','members','factionMap','crown','inventoryHub','credit','shopHub','equipment','stock','wikiHub','reportDocument','reportMini','archive','gallery','world','userAdmin','system'],
   faction:     ['novusOrdo','board','military','civil','hostile'],
   independent: ['secretariat','manus','finance'],
   org:         ['root','novusOrdo','board','military','civil','hostile','secretariat','manus','hq','research','adminBureau','intl','control','finance','sectorA','sectorB','sectorC','sectorD','sectorE','person','all','main','mini','unassigned'],
@@ -807,7 +859,8 @@ const GROUPS = {
   credit:      ['credit','transactions'],
   shop:        ['gridAll','basic','recovery','preference','rare'],
   wiki:        ['gridAll','concept','containment','wikiFaction','institution','place','regulation','person','equipment','consumable','goods','finance','briefing','archive'],
-  catalog:     ['archive','folderArchive','equipment','consumable','sample','caution'],
+  catalog:     ['archive','gridAll','equipment','consumable','sample','caution'],
+  dashboard:   ['agentProfile','mission','tasks','credit','awaitingResponse','activeOps','notification','all','wikiHub','serviceRecord','tenure','session','recentChanges'],
 };
 
 const PAGE_TREE = [
@@ -841,7 +894,7 @@ const PAGE_TREE = [
       { icon: 'inventoryHub', label: '인벤토리', route: '/erp/inventory' },
       { icon: 'credit', label: '크레딧', route: '/erp/credits' },
       { icon: 'shopHub', label: '편의점', route: '/erp/shop' },
-      { icon: 'equipment', label: '장비 판매점', route: '/erp/equipment-shop', badge: 'GM preview' },
+      { icon: null, label: '병기부', route: '/erp/equipment-shop', badge: 'GM preview' },
       { icon: 'stock', label: '주식', route: '/erp/stock' },
       { icon: 'stock', label: '주식 포트폴리오', route: '/erp/stock/portfolio' },
     ],
@@ -856,14 +909,14 @@ const PAGE_TREE = [
         label: '기록보관소',
         route: '/erp/wiki/catalog/all',
         children: [
-          { icon: 'folderArchive', label: '전체', route: '/erp/wiki/catalog/all' },
+          { icon: 'gridAll', label: '전체', route: '/erp/wiki/catalog/all' },
           { icon: 'equipment', label: '장비', route: '/erp/wiki/catalog/equipment', badge: 'WEAPON/ARMOR' },
           { icon: 'consumable', label: '소모품', route: '/erp/wiki/catalog/consumable', badge: 'CONSUMABLE' },
           { icon: 'sample', label: '샘플', route: '/erp/wiki/catalog/sample', badge: 'MATERIAL' },
           { icon: 'caution', label: '특수', route: '/erp/wiki/catalog/special', badge: 'SPECIAL' },
         ],
       },
-      { icon: 'folderArchive', label: '갤러리', route: '/erp/gallery', badge: 'GM preview' },
+      { icon: 'gallery', label: '갤러리', route: '/erp/gallery', badge: 'GM preview' },
       { icon: 'world', label: '연대기', route: '/erp/chronicle', badge: 'GM preview' },
     ],
   },
@@ -877,6 +930,40 @@ const PAGE_TREE = [
       { icon: 'system', label: '대사 비프 테스트', route: '/erp/admin/dialogue-beep', badge: 'GM' },
       { icon: 'inventoryHub', label: '인벤토리 운영', route: '/erp/admin/inventory', badge: 'GM' },
       { icon: 'person', label: '캐릭터 등록', route: '/erp/admin/characters/import', badge: 'GM' },
+    ],
+  },
+];
+
+// 대시보드 페이지 내부 위젯 → 아이콘 매핑 (라우트 아님, 페이지 내 섹션)
+const DASHBOARD_MAP = [
+  {
+    title: '커맨드 센터 · Command',
+    items: [
+      { icon: 'agentProfile', label: '요원 프로필' },
+      { icon: 'mission', label: '다음 작전' },
+      { icon: 'tasks', label: '처리할 일' },
+    ],
+  },
+  {
+    title: '운용 지표 · Signal',
+    items: [
+      { icon: 'credit', label: '운용 크레딧' },
+      { icon: 'awaitingResponse', label: '응답 대기' },
+      { icon: 'activeOps', label: '진행 세션' },
+      { icon: 'notification', label: '미확인 알림' },
+      { icon: 'all', label: '보유 캐릭터' },
+      { icon: 'wikiHub', label: '작성 위키' },
+      { icon: 'serviceRecord', label: '누적 작전' },
+      { icon: 'tenure', label: '가입 후' },
+    ],
+  },
+  {
+    title: '패널 · Panels',
+    items: [
+      { icon: 'session', label: '내 작전' },
+      { icon: 'tasks', label: '응답 필요' },
+      { icon: 'notification', label: '알림' },
+      { icon: 'recentChanges', label: '최근 변경' },
     ],
   },
 ];
@@ -958,6 +1045,7 @@ function render() {
   });
   document.getElementById('count').textContent = Object.keys(ICONS).length;
   renderPageTree();
+  renderDashboardMap();
   renderSizes();
   renderChart();
   applySearch();
@@ -967,13 +1055,33 @@ function renderPageTree() {
   document.getElementById('pageTree').innerHTML = PAGE_TREE.map(group => {
     const nodes = flattenTreeItems(group.items).map(item => `
       <li class="tree-node" style="padding-left:${item.depth * 18}px">
-        ${svgWrap(ICONS[item.icon], 18)}
+        ${item.icon ? svgWrap(ICONS[item.icon], 18) : '<span class="tree-node__blankIcon" aria-hidden="true"></span>'}
         <div>
           <div class="tree-node__label">
             <span>${item.label}</span>
             ${item.badge ? `<span class="tree-node__badge">${item.badge}</span>` : ''}
           </div>
           <div class="tree-node__route">${item.route}</div>
+        </div>
+      </li>
+    `).join('');
+    return `
+      <section class="tree-group">
+        <h2 class="tree-group__title">${group.title}</h2>
+        <ul class="tree-list">${nodes}</ul>
+      </section>
+    `;
+  }).join('');
+}
+
+function renderDashboardMap() {
+  document.getElementById('dashboardMap').innerHTML = DASHBOARD_MAP.map(group => {
+    const nodes = group.items.map(item => `
+      <li class="tree-node">
+        ${svgWrap(ICONS[item.icon], 18)}
+        <div>
+          <div class="tree-node__label"><span>${item.label}</span></div>
+          <div class="tree-node__route">${ICONS[item.icon].key}</div>
         </div>
       </li>
     `).join('');
