@@ -13,6 +13,17 @@ interface ReportMutationBody {
   mapPrecision?: "confirmed" | "estimated";
 }
 
+interface ReportUpdateMutationBody
+  extends Omit<
+    ReportMutationBody,
+    "locationLabel" | "mapX" | "mapY" | "mapPrecision"
+  > {
+  locationLabel?: string | null;
+  mapX?: number | null;
+  mapY?: number | null;
+  mapPrecision?: "confirmed" | "estimated" | null;
+}
+
 export function useCreateReport() {
   const queryClient = useQueryClient();
 
@@ -44,7 +55,7 @@ export function useUpdateReport() {
       input,
     }: {
       id: string;
-      input: ReportMutationBody;
+      input: ReportUpdateMutationBody;
     }) => {
       const res = await fetch(`/api/erp/session-reports/${id}`, {
         method: "PATCH",

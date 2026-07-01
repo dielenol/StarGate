@@ -56,18 +56,28 @@ export async function updateSessionReport(
 ): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
 
-  const sanitized: Record<string, unknown> = {};
+  const toSet: Record<string, unknown> = {};
+  const toUnset: Record<string, ""> = {};
   for (const key of Object.keys(update)) {
-    if (ALLOWED_REPORT_FIELDS.has(key)) sanitized[key] = update[key];
+    if (!ALLOWED_REPORT_FIELDS.has(key)) continue;
+    if (update[key] === null) toUnset[key] = "";
+    else toSet[key] = update[key];
   }
-  if (Object.keys(sanitized).length === 0) return false;
+  if (Object.keys(toSet).length === 0 && Object.keys(toUnset).length === 0) {
+    return false;
+  }
+
+  const updateDoc: Record<string, unknown> = {
+    $set: { ...toSet, updatedAt: new Date() },
+  };
+  if (Object.keys(toUnset).length > 0) updateDoc.$unset = toUnset;
 
   const col = await sessionReportsCol();
   const result = await col.updateOne(
     { _id: new ObjectId(id) },
-    { $set: { ...sanitized, updatedAt: new Date() } as Record<string, unknown> }
+    updateDoc
   );
-  return result.modifiedCount > 0;
+  return result.matchedCount > 0;
 }
 
 export async function deleteSessionReport(id: string): Promise<boolean> {

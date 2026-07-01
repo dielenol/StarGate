@@ -29,6 +29,21 @@ function initialRows(values: string[]): string[] {
   return values.length > 0 ? values : [""];
 }
 
+function hasStoredCoordinate(report: ClientSessionReport): boolean {
+  return (
+    typeof report.mapX === "number" &&
+    Number.isFinite(report.mapX) &&
+    typeof report.mapY === "number" &&
+    Number.isFinite(report.mapY)
+  );
+}
+
+function parseMapCoordinate(value: string): number | null {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0 || numeric > 100) return null;
+  return numeric;
+}
+
 export default function ReportEditForm({ report }: Props) {
   const router = useRouter();
   const updateReport = useUpdateReport();
@@ -90,6 +105,7 @@ export default function ReportEditForm({ report }: Props) {
     const trimmedLocationLabel = locationLabel.trim();
     const trimmedMapX = mapX.trim();
     const trimmedMapY = mapY.trim();
+    const hadStoredCoordinate = hasStoredCoordinate(report);
 
     if (!trimmedTitle || !trimmedSummary) {
       setError("제목과 작전 본문은 비워둘 수 없습니다.");
@@ -101,14 +117,27 @@ export default function ReportEditForm({ report }: Props) {
       return;
     }
 
-    const mapFields =
-      trimmedMapX && trimmedMapY
-        ? {
-            mapX: Number(trimmedMapX),
-            mapY: Number(trimmedMapY),
-            mapPrecision,
-          }
-        : {};
+    const mapFields: {
+      mapX?: number | null;
+      mapY?: number | null;
+      mapPrecision?: "confirmed" | "estimated" | null;
+    } = {};
+
+    if (trimmedMapX && trimmedMapY) {
+      const nextMapX = parseMapCoordinate(trimmedMapX);
+      const nextMapY = parseMapCoordinate(trimmedMapY);
+      if (nextMapX === null || nextMapY === null) {
+        setError("지도 X/Y 좌표는 0부터 100 사이 숫자로 입력해야 합니다.");
+        return;
+      }
+      mapFields.mapX = nextMapX;
+      mapFields.mapY = nextMapY;
+      mapFields.mapPrecision = mapPrecision;
+    } else if (hadStoredCoordinate) {
+      mapFields.mapX = null;
+      mapFields.mapY = null;
+      mapFields.mapPrecision = null;
+    }
 
     updateReport.mutate(
       {
@@ -120,7 +149,9 @@ export default function ReportEditForm({ report }: Props) {
           participants: filteredParticipants,
           ...(trimmedLocationLabel
             ? { locationLabel: trimmedLocationLabel }
-            : {}),
+            : report.locationLabel
+              ? { locationLabel: null }
+              : {}),
           ...mapFields,
         },
       },

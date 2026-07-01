@@ -10,6 +10,38 @@ import {
 } from "@/lib/db/wiki";
 import { isValidObjectId } from "@/lib/db/utils";
 
+function badRequest(message: string) {
+  return NextResponse.json({ error: message }, { status: 400 });
+}
+
+function normalizeWikiUpdate(
+  update: Record<string, unknown>,
+): NextResponse | null {
+  if (typeof update.title === "string") {
+    const title = update.title.trim();
+    if (!title) return badRequest("title은 비워둘 수 없습니다.");
+    update.title = title;
+  }
+
+  if (typeof update.content === "string") {
+    const content = update.content.trim();
+    if (!content) return badRequest("content는 비워둘 수 없습니다.");
+    update.content = content;
+  }
+
+  if (typeof update.category === "string") {
+    update.category = update.category.trim() || "미분류";
+  }
+
+  if (Array.isArray(update.tags)) {
+    update.tags = update.tags
+      .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
+      .filter(Boolean);
+  }
+
+  return null;
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -64,8 +96,10 @@ export async function PATCH(
 
   const sanitized = sanitizeWikiBody(await request.json());
   if ("error" in sanitized) return sanitized.error;
-  const update = { ...sanitized.value };
+  const update: Record<string, unknown> = { ...sanitized.value };
   delete update.slug;
+  const normalizeError = normalizeWikiUpdate(update);
+  if (normalizeError) return normalizeError;
 
   try {
     const updated = await updateWikiPage(

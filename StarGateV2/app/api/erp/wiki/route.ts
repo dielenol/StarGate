@@ -10,6 +10,10 @@ import {
   searchWikiPages,
 } from "@/lib/db/wiki";
 
+function normalizeTags(tags?: string[]): string[] {
+  return tags?.map((tag) => tag.trim()).filter(Boolean) ?? [];
+}
+
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user) {
@@ -75,8 +79,8 @@ export async function POST(request: Request) {
       slug: slug?.trim() ?? "",
       title: title.trim(),
       content: content.trim(),
-      category: category?.trim() ?? "미분류",
-      tags: tags ?? [],
+      category: category?.trim() || "미분류",
+      tags: normalizeTags(tags),
       isPublic: isPublic ?? true,
       authorId: session.user.id,
       authorName: session.user.displayName,

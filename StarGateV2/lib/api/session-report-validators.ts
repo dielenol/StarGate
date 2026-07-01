@@ -30,6 +30,17 @@ export type SessionReportMapCheck =
       };
     };
 
+export type SessionReportMapUpdateCheck =
+  | { error: NextResponse }
+  | {
+      value: {
+        locationLabel?: string | null;
+        mapX?: number | null;
+        mapY?: number | null;
+        mapPrecision?: MapPrecision | null;
+      };
+    };
+
 export function validateSessionReportArrays(body: {
   highlights?: unknown;
   participants?: unknown;
@@ -71,23 +82,47 @@ export function validateSessionReportMap(body: {
   mapY?: unknown;
   mapPrecision?: unknown;
 }): SessionReportMapCheck {
+  return validateMapFields(body, false) as SessionReportMapCheck;
+}
+
+export function validateSessionReportMapUpdate(body: {
+  locationLabel?: unknown;
+  mapX?: unknown;
+  mapY?: unknown;
+  mapPrecision?: unknown;
+}): SessionReportMapUpdateCheck {
+  return validateMapFields(body, true);
+}
+
+function validateMapFields(
+  body: {
+    locationLabel?: unknown;
+    mapX?: unknown;
+    mapY?: unknown;
+    mapPrecision?: unknown;
+  },
+  allowClear: boolean,
+): SessionReportMapUpdateCheck {
   const value: {
-    locationLabel?: string;
-    mapX?: number;
-    mapY?: number;
-    mapPrecision?: MapPrecision;
+    locationLabel?: string | null;
+    mapX?: number | null;
+    mapY?: number | null;
+    mapPrecision?: MapPrecision | null;
   } = {};
 
   if (body.locationLabel !== undefined) {
-    if (typeof body.locationLabel !== "string") {
+    if (allowClear && body.locationLabel === null) {
+      value.locationLabel = null;
+    } else if (typeof body.locationLabel !== "string") {
       return badRequest("locationLabel 형식 오류");
+    } else {
+      const label = body.locationLabel.trim();
+      if (label.length > LOCATION_LABEL_MAX) {
+        return badRequest("locationLabel 길이 초과");
+      }
+      if (label) value.locationLabel = label;
+      else if (allowClear) value.locationLabel = null;
     }
-
-    const label = body.locationLabel.trim();
-    if (label.length > LOCATION_LABEL_MAX) {
-      return badRequest("locationLabel 길이 초과");
-    }
-    if (label) value.locationLabel = label;
   }
 
   const hasMapX = body.mapX !== undefined;
@@ -97,18 +132,27 @@ export function validateSessionReportMap(body: {
   }
 
   if (hasMapX && hasMapY) {
-    const mapX = parseCoordinate(body.mapX);
-    const mapY = parseCoordinate(body.mapY);
+    if (allowClear && isClearValue(body.mapX) && isClearValue(body.mapY)) {
+      value.mapX = null;
+      value.mapY = null;
+    } else {
+      const mapX = parseCoordinate(body.mapX);
+      const mapY = parseCoordinate(body.mapY);
 
-    if (mapX === null || mapY === null) {
-      return badRequest("mapX/mapY 형식 오류");
+      if (mapX === null || mapY === null) {
+        return badRequest("mapX/mapY 형식 오류");
+      }
+
+      value.mapX = mapX;
+      value.mapY = mapY;
     }
-
-    value.mapX = mapX;
-    value.mapY = mapY;
   }
 
   if (body.mapPrecision !== undefined) {
+    if (allowClear && body.mapPrecision === null) {
+      value.mapPrecision = null;
+      return { value };
+    }
     if (
       body.mapPrecision !== "confirmed" &&
       body.mapPrecision !== "estimated"
@@ -116,11 +160,15 @@ export function validateSessionReportMap(body: {
       return badRequest("mapPrecision 형식 오류");
     }
     value.mapPrecision = body.mapPrecision;
-  } else if (value.mapX !== undefined && value.mapY !== undefined) {
+  } else if (typeof value.mapX === "number" && typeof value.mapY === "number") {
     value.mapPrecision = "estimated";
   }
 
   return { value };
+}
+
+function isClearValue(value: unknown): boolean {
+  return value === null || (typeof value === "string" && value.trim() === "");
 }
 
 function parseCoordinate(value: unknown): number | null {

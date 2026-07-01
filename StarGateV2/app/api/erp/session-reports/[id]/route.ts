@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import {
   validateSessionReportArrays,
-  validateSessionReportMap,
+  validateSessionReportMapUpdate,
 } from "@/lib/api/session-report-validators";
 import {
   deleteSessionReport,
@@ -87,7 +87,7 @@ export async function PATCH(
   const arrays = validateSessionReportArrays(body);
   if ("error" in arrays) return arrays.error;
   const { highlights, participants } = arrays.value;
-  const map = validateSessionReportMap(body);
+  const map = validateSessionReportMapUpdate(body);
   if ("error" in map) return map.error;
 
   try {
