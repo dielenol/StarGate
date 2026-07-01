@@ -13,6 +13,10 @@ import { listAgentCharacters } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import { SYSTEM_USER_ID_SENTINEL } from "@/lib/db/system-actor";
 import { findUsersByIds } from "@/lib/db/users";
+import {
+  formatSignedAmount,
+  notifyUser,
+} from "@/lib/notifications/events";
 import { kstDateTag } from "@/lib/stocks/time";
 
 type PayableAgentLevel = (typeof AGENT_LEVELS)[number];
@@ -145,6 +149,19 @@ function resultForSkipped(
   };
 }
 
+function dailyAllowanceNotificationMessage(input: {
+  characterCodename: string;
+  amount: number;
+  balance: number;
+  date: string;
+}): string {
+  return [
+    `${input.characterCodename} · ${formatSignedAmount(input.amount, "CR")}`,
+    `현재 잔액 ${input.balance.toLocaleString()} CR`,
+    `정기 정산 ${input.date}`,
+  ].join(" · ");
+}
+
 export async function grantDailyCreditAllowances(
   now: Date = new Date(),
 ): Promise<DailyCreditAllowanceSummary> {
@@ -214,6 +231,19 @@ export async function grantDailyCreditAllowances(
           policyVersion: DAILY_ALLOWANCE_POLICY_VERSION,
           source: "finance-cron",
         },
+      });
+
+      await notifyUser({
+        userId: character.ownerId,
+        type: "CREDIT_RECEIVED",
+        title: "일일 수당이 지급되었습니다",
+        message: dailyAllowanceNotificationMessage({
+          characterCodename: character.codename,
+          amount: transaction.amount,
+          balance: transaction.balance,
+          date,
+        }),
+        link: "/erp/credits",
       });
 
       results.push({
