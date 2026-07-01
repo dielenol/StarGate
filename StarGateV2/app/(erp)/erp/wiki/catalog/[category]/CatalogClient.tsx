@@ -7,11 +7,11 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import type { MasterItem } from "@/types/inventory";
 
 import {
-  IconArchive,
-  IconCaution,
   IconConsumable,
   IconEquipment,
+  IconGridAll,
   IconSample,
+  IconSpecial,
   type IconComponent,
 } from "@/components/icons";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
@@ -38,11 +38,11 @@ type CatalogItem = Omit<MasterItem, "_id" | "createdAt" | "updatedAt"> & {
 };
 
 const CATALOG_TAB_ICONS: Record<CatalogScope, IconComponent> = {
-  all: IconArchive,
+  all: IconGridAll,
   equipment: IconEquipment,
   consumable: IconConsumable,
   sample: IconSample,
-  special: IconCaution,
+  special: IconSpecial,
 };
 
 const ITEM_CATEGORY_ICONS: Record<CatalogItem["category"], IconComponent> = {
@@ -50,7 +50,7 @@ const ITEM_CATEGORY_ICONS: Record<CatalogItem["category"], IconComponent> = {
   ARMOR: IconEquipment,
   CONSUMABLE: IconConsumable,
   MATERIAL: IconSample,
-  SPECIAL: IconCaution,
+  SPECIAL: IconSpecial,
 };
 
 interface Props {
