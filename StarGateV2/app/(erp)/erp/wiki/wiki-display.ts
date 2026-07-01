@@ -34,6 +34,7 @@ const CATEGORY_TONES: Record<string, TagTone> = {
   "작전 보고서": "gold",
   인물: "rank-a",
   장비: "rank-m",
+  물품: "p2",
   소모품: "rank-u",
 };
 
@@ -48,6 +49,7 @@ const WIKI_CATEGORY_ORDER = [
   "규정",
   "인물",
   "장비",
+  "물품",
   "소모품",
   "문헌",
 ];
