@@ -40,6 +40,11 @@
     var(--credits-card-pattern);
 }
 
+.ledgerPanel {
+  z-index: 2;
+  overflow: visible;
+}
+
 .adminHintBox {
   border-color: var(--line-strong);
 }
