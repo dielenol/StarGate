@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import type { ResponseStatus, SessionStatus } from "@/types/session";
 
@@ -56,6 +56,10 @@ export const sessionKeys = {
     ["sessions", year, month, guildId] as const,
 };
 
+const CURRENT_MONTH_STALE_TIME_MS = 60 * 1000;
+const ARCHIVE_MONTH_STALE_TIME_MS = 10 * 60 * 1000;
+const CURRENT_MONTH_REFETCH_INTERVAL_MS = 60 * 1000;
+
 async function fetchSessionsByMonth(
   year: number,
   month: number,
@@ -78,10 +82,23 @@ export function useSessionsByMonth(
   guildId: string,
   options?: { initialData?: SerializedSession[] },
 ) {
+  const now = new Date();
+  const isCurrentMonth =
+    year === now.getFullYear() && month === now.getMonth() + 1;
+
   return useQuery({
     queryKey: sessionKeys.byMonth(year, month, guildId),
     queryFn: () => fetchSessionsByMonth(year, month, guildId),
-    staleTime: 10 * 60 * 1000,
+    enabled: guildId.length > 0,
+    staleTime: isCurrentMonth
+      ? CURRENT_MONTH_STALE_TIME_MS
+      : ARCHIVE_MONTH_STALE_TIME_MS,
+    refetchInterval: isCurrentMonth
+      ? CURRENT_MONTH_REFETCH_INTERVAL_MS
+      : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: isCurrentMonth,
     initialData: options?.initialData,
+    placeholderData: keepPreviousData,
   });
 }

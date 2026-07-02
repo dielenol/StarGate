@@ -180,6 +180,59 @@
   white-space: nowrap;
 }
 
+.ctrlSync {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.ctrlSync__dot {
+  width: 7px;
+  height: 7px;
+  background: var(--success);
+  border-radius: 50%;
+}
+
+.ctrlSync--loading .ctrlSync__dot {
+  background: var(--info);
+}
+
+.ctrlSync--error {
+  color: var(--danger);
+}
+
+.ctrlSync--error .ctrlSync__dot {
+  background: var(--danger);
+}
+
+.ctrlSync button {
+  padding: 4px 9px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.ctrlSync button:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.ctrlSync button:disabled {
+  opacity: 0.45;
+  cursor: progress;
+}
+
 .pillgroup {
   display: flex;
   flex-wrap: wrap;

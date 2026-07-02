@@ -106,7 +106,14 @@ export default function SessionsClient({
 
   const isInitialMonth = year === initialYear && month === initialMonth;
 
-  const { data: sessions = [] } = useSessionsByMonth(year, month, guildId, {
+  const {
+    data: sessions = [],
+    error: sessionsError,
+    isError: sessionsIsError,
+    isFetching: sessionsIsFetching,
+    isPlaceholderData: sessionsIsPlaceholderData,
+    refetch: refetchSessions,
+  } = useSessionsByMonth(year, month, guildId, {
     initialData: isInitialMonth ? initialSessions : undefined,
   });
 
@@ -197,6 +204,15 @@ export default function SessionsClient({
 
   const prevLabel = `${month === 1 ? 12 : month - 1}월`;
   const nextLabel = `${month === 12 ? 1 : month + 1}월`;
+  const syncMessage = sessionsIsError
+    ? sessionsError instanceof Error
+      ? sessionsError.message
+      : "세션 데이터를 불러올 수 없습니다."
+    : sessionsIsPlaceholderData && sessionsIsFetching
+      ? "이전 월 데이터를 유지한 채 동기화 중"
+      : sessionsIsFetching
+        ? "세션 데이터 동기화 중"
+        : "최신 데이터";
 
   const titleNode: ReactNode = (
     <span className={styles.titleRow}>
@@ -299,6 +315,29 @@ export default function SessionsClient({
               >
                 내 참여 · {statusCounts.mine}
               </StatusPill>
+            </div>
+            <div
+              className={[
+                styles.ctrlSync,
+                sessionsIsError ? styles["ctrlSync--error"] : "",
+                sessionsIsFetching ? styles["ctrlSync--loading"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              role={sessionsIsError ? "alert" : "status"}
+              aria-live="polite"
+            >
+              <span className={styles.ctrlSync__dot} aria-hidden />
+              <span>{syncMessage}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  void refetchSessions();
+                }}
+                disabled={sessionsIsFetching}
+              >
+                새로고침
+              </button>
             </div>
           </div>
         </div>
