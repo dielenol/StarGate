@@ -1,4 +1,4 @@
-<!-- NOSB S1E2 "선택" 보상 기반 소모품 catalog spec. -->
+<!-- NOSB S1E2 "선택" 보상 기반 소모품 spec. -->
 ---
 code: ANTIBIOTIC
 slug: antibiotic
@@ -7,7 +7,6 @@ nameEn: Antibiotic
 category: CONSUMABLE
 price: 0
 effect: S1E2 보상으로 해금된 과학자 직군 감염 대응 소모품
-damage:
 description: S1E2 선택 작전 보상으로 과학자 직군에 해금된 감염 대응 계열 소모품.
 previewImage: /assets/catalog/consumables/antibiotic.webp
 isAvailable: true

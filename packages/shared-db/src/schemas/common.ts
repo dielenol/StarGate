@@ -59,6 +59,9 @@ export const loreSourceSchema = z.enum([
   "legacy-json",
   "manual",
   "create-lore",
+  "session-log",
+  "session-reward",
+  "containment-archive",
 ]);
 
 /* ── Metadata ── */

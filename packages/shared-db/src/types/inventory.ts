@@ -69,7 +69,14 @@ export interface MasterItem {
     notes?: string;
   };
   loreMd?: string;
-  source?: "discord" | "legacy-json" | "manual" | "create-lore";
+  source?:
+    | "discord"
+    | "legacy-json"
+    | "manual"
+    | "create-lore"
+    | "session-log"
+    | "session-reward"
+    | "containment-archive";
   authorId?: string;
   authorName?: string;
 }

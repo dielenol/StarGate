@@ -305,7 +305,14 @@ interface CharacterBase {
   previewImage: string;
   pixelCharacterImage?: string;
   warningVideo?: string;
-  source?: 'discord' | 'legacy-json' | 'manual' | 'create-lore';
+  source?:
+    | "discord"
+    | "legacy-json"
+    | "manual"
+    | "create-lore"
+    | "session-log"
+    | "session-reward"
+    | "containment-archive";
   /** 원본 MD body 보존 (frontmatter 미커버 섹션 복원용). faction/institution과 일관. */
   loreMd?: string;
   rawText?: string;

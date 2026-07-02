@@ -72,7 +72,7 @@ StarGate 세계관 자산은 **핵심 도메인**(NPC / Faction / Institution / 
 | `isPublic` | boolean | ✓ | 공개 노출 여부 |
 | `loreTags` | string[] | | 자유 태그 |
 | `appearsInEvents` | string[] | | 등장 이벤트 |
-| `source` | enum | | `create-lore` / `discord` / `legacy-json` / `manual` |
+| `source` | enum | | `create-lore` / `discord` / `legacy-json` / `manual` / `session-log` / `session-reward` / `containment-archive` |
 | `previewImage` | url | | |
 | `pixelCharacterImage` | string | | 도트/픽셀 스타일 대표 이미지 URL (자유 문자열, URL 권장) |
 | `posterImage` | string | | 캐릭터 상세 히어로 와이드 이미지. lore sub-document 하위(`lore.posterImage`) 로 적재 |
@@ -133,7 +133,7 @@ StarGate 세계관 자산은 **핵심 도메인**(NPC / Faction / Institution / 
 | `isAvailable` | boolean | ✓ | 판매/지급 가능 여부 |
 | `isPublic` | boolean | ✓ | 공개 카탈로그(`/erp/wiki/catalog/equipment`) 노출 |
 | `tags` | string[] | | 각 ≤40자 |
-| `source` | enum | | `create-lore` / `discord` / `legacy-json` / `manual` |
+| `source` | enum | | `create-lore` / `discord` / `legacy-json` / `manual` / `session-log` / `session-reward` / `containment-archive` |
 
 **body 섹션**: `## 설명` (→ description 폴백) / `## 배경` (→ `lore.background`) / `## 획득 경로` (→ `lore.acquisition`) / `## 비고` (→ `lore.notes`). 본문 전체는 `loreMd`에 원문 보존.
 

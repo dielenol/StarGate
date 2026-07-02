@@ -1,4 +1,4 @@
-<!-- NOSB S1E2 "선택" 보상 기반 소모품 catalog spec. -->
+<!-- NOSB S1E2 "선택" 보상 기반 소모품 spec. -->
 ---
 code: STIMPACK
 slug: stimpack
@@ -7,7 +7,6 @@ nameEn: Stimpack
 category: CONSUMABLE
 price: 0
 effect: S1E2 보상으로 해금된 군인 직군 전투 보조 소모품
-damage:
 description: S1E2 선택 작전 보상으로 군인 직군에 해금된 전투 보조 계열 소모품.
 previewImage: /assets/catalog/consumables/stimpack.png
 isAvailable: true
