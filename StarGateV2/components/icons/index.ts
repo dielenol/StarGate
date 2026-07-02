@@ -5,6 +5,7 @@ export type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 // SVG 원본은 public/assets/svg/ic_*.svg 에 단일 소스로 존재하며,
 // next.config.ts의 Turbopack SVGR 규칙을 통해 React 컴포넌트로 직접 import된다.
 // `.tsx` 래퍼는 필요 없다 — 규칙/속성(viewBox, stroke="currentColor", aria-hidden 등)은 SVG 파일 자체에 명시되어 있음.
+export { default as IconAbility } from "@/public/assets/svg/ic_ability.svg";
 export { default as IconAccount } from "@/public/assets/svg/ic_account.svg";
 export { default as IconActiveOps } from "@/public/assets/svg/ic_active-ops.svg";
 export { default as IconAgentProfile } from "@/public/assets/svg/ic_agent-profile.svg";
@@ -14,6 +15,7 @@ export { default as IconAwaiting } from "@/public/assets/svg/ic_awaiting.svg";
 export { default as IconArrowLeft } from "@/public/assets/svg/ic_arrow-left.svg";
 export { default as IconArrowRight } from "@/public/assets/svg/ic_arrow-right.svg";
 export { default as IconBullet } from "@/public/assets/svg/ic_bullet.svg";
+export { default as IconBureaucrat } from "@/public/assets/svg/ic_bureaucrat.svg";
 export { default as IconCaution } from "@/public/assets/svg/ic_caution.svg";
 export { default as IconCharacter } from "@/public/assets/svg/ic_character.svg";
 export { default as IconCheckDot } from "@/public/assets/svg/ic_check-dot.svg";
@@ -72,6 +74,7 @@ export { default as IconRecentChanges } from "@/public/assets/svg/ic_recent-chan
 export { default as IconReturn } from "@/public/assets/svg/ic_return.svg";
 export { default as IconRules } from "@/public/assets/svg/ic_rules.svg";
 export { default as IconSample } from "@/public/assets/svg/ic_sample.svg";
+export { default as IconScientist } from "@/public/assets/svg/ic_scientist.svg";
 export { default as IconSearch } from "@/public/assets/svg/ic_search.svg";
 export { default as IconSecurity } from "@/public/assets/svg/ic_security.svg";
 export { default as IconServiceRecord } from "@/public/assets/svg/ic_service-record.svg";
@@ -79,9 +82,11 @@ export { default as IconSession } from "@/public/assets/svg/ic_session.svg";
 export { default as IconSharedInventory } from "@/public/assets/svg/ic_shared-inventory.svg";
 export { default as IconShop } from "@/public/assets/svg/ic_shop.svg";
 export { default as IconShuffle } from "@/public/assets/svg/ic_shuffle.svg";
+export { default as IconSoldier } from "@/public/assets/svg/ic_soldier.svg";
 export { default as IconSpecial } from "@/public/assets/svg/ic_special.svg";
 export { default as IconStatus } from "@/public/assets/svg/ic_status.svg";
 export { default as IconStock } from "@/public/assets/svg/ic_stock.svg";
+export { default as IconSubject } from "@/public/assets/svg/ic_subject.svg";
 export { default as IconSuccess } from "@/public/assets/svg/ic_success.svg";
 export { default as IconSystem } from "@/public/assets/svg/ic_system.svg";
 export { default as IconTasks } from "@/public/assets/svg/ic_tasks.svg";
@@ -89,6 +94,7 @@ export { default as IconTenure } from "@/public/assets/svg/ic_tenure.svg";
 export { default as IconTimeline } from "@/public/assets/svg/ic_timeline.svg";
 export { default as IconToday } from "@/public/assets/svg/ic_today.svg";
 export { default as IconTransactions } from "@/public/assets/svg/ic_transactions.svg";
+export { default as IconUnassigned } from "@/public/assets/svg/ic_unassigned.svg";
 export { default as IconUnread } from "@/public/assets/svg/ic_unread.svg";
 export { default as IconUserAdmin } from "@/public/assets/svg/ic_user-admin.svg";
 export { default as IconVolume } from "@/public/assets/svg/ic_volume.svg";
