@@ -13,14 +13,26 @@ import Stack from "@/components/ui/Stack/Stack";
 
 import styles from "./page.module.css";
 
-export default function ReportCreateForm() {
+interface ReportCreateFormProps {
+  initialParticipants?: string[];
+  initialSessionId?: string;
+  initialSessionTitle?: string;
+}
+
+export default function ReportCreateForm({
+  initialParticipants = [],
+  initialSessionId = "",
+  initialSessionTitle = "",
+}: ReportCreateFormProps) {
   const router = useRouter();
   const createReport = useCreateReport();
 
-  const [sessionTitle, setSessionTitle] = useState("");
+  const [sessionTitle, setSessionTitle] = useState(initialSessionTitle);
   const [summary, setSummary] = useState("");
   const [highlights, setHighlights] = useState<string[]>([""]);
-  const [participants, setParticipants] = useState<string[]>([""]);
+  const [participants, setParticipants] = useState<string[]>(
+    initialParticipants.length > 0 ? initialParticipants : [""],
+  );
   const [locationLabel, setLocationLabel] = useState("");
   const [mapX, setMapX] = useState("");
   const [mapY, setMapY] = useState("");
@@ -66,6 +78,7 @@ export default function ReportCreateForm() {
     const trimmedLocationLabel = locationLabel.trim();
     const trimmedMapX = mapX.trim();
     const trimmedMapY = mapY.trim();
+    const trimmedSessionId = initialSessionId.trim();
 
     if ((trimmedMapX && !trimmedMapY) || (!trimmedMapX && trimmedMapY)) {
       setError("지도 X/Y 좌표는 함께 입력해야 합니다.");
@@ -83,6 +96,7 @@ export default function ReportCreateForm() {
 
     createReport.mutate(
       {
+        ...(trimmedSessionId ? { sessionId: trimmedSessionId } : {}),
         sessionTitle: sessionTitle.trim(),
         summary: summary.trim(),
         highlights: filteredHighlights,

@@ -10,7 +10,26 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import ReportCreateForm from "./ReportCreateForm";
 import styles from "./page.module.css";
 
-export default async function NewReportPage() {
+interface NewReportPageProps {
+  searchParams: Promise<{
+    participant?: string | string[];
+    sessionId?: string;
+    sessionTitle?: string;
+  }>;
+}
+
+function getSearchValue(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0]?.trim() ?? "" : value?.trim() ?? "";
+}
+
+function getSearchValues(value: string | string[] | undefined): string[] {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return values.map((entry) => entry.trim()).filter(Boolean);
+}
+
+export default async function NewReportPage({
+  searchParams,
+}: NewReportPageProps) {
   const session = await auth();
 
   if (!session?.user) {
@@ -20,6 +39,8 @@ export default async function NewReportPage() {
   if (!hasRole(session.user.role, "V")) {
     redirect("/erp/sessions/report");
   }
+
+  const params = await searchParams;
 
   return (
     <>
@@ -38,7 +59,11 @@ export default async function NewReportPage() {
         }
       />
       <Box className={styles.reportPanel}>
-        <ReportCreateForm />
+        <ReportCreateForm
+          initialParticipants={getSearchValues(params.participant)}
+          initialSessionId={getSearchValue(params.sessionId)}
+          initialSessionTitle={getSearchValue(params.sessionTitle)}
+        />
       </Box>
     </>
   );

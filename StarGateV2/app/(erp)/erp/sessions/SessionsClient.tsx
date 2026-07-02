@@ -59,6 +59,8 @@ interface SessionsClientProps {
   initialUpcoming: UpcomingSessionLink[];
   /** 현재 로그인 유저 discord id — 응답 참여자 목록에서 본인 강조용. 미연결 유저는 null. */
   currentUserDiscordId: string | null;
+  /** 작전 보고서 작성 권한 — V 이상. */
+  canCreateReport: boolean;
   /**
    * trpg-web 캘린더 base URL (env: `TRPG_WEB_BASE_URL`).
    *
@@ -94,6 +96,7 @@ export default function SessionsClient({
   guildId,
   initialUpcoming,
   currentUserDiscordId,
+  canCreateReport,
   trpgWebBaseUrl,
 }: SessionsClientProps) {
   const [view, setView] = useState<ViewKey>("calendar");
@@ -371,6 +374,7 @@ export default function SessionsClient({
               expandedId={listExpandedId}
               onExpandedChange={setListExpandedId}
               currentUserDiscordId={currentUserDiscordId}
+              canCreateReport={canCreateReport}
               trpgWebBaseUrl={trpgWebBaseUrl}
             />
           ) : null}
@@ -445,6 +449,23 @@ function buildTrpgCalendarUrl(base: string | null): string | null {
   return `${base}${TRPG_CALENDAR_PATH}`;
 }
 
+function formatReportParticipant(p: SerializedSessionParticipant): string {
+  return p.codename ? `${p.displayName} · ${p.codename}` : p.displayName;
+}
+
+function buildReportCreateHref(
+  session: SerializedSession,
+  participants: SerializedSessionParticipant[],
+): string {
+  const params = new URLSearchParams();
+  params.set("sessionId", session._id);
+  params.set("sessionTitle", session.title);
+  for (const participant of participants) {
+    params.append("participant", formatReportParticipant(participant));
+  }
+  return `/erp/sessions/report/new?${params.toString()}`;
+}
+
 function statusLabelForSession(session: SerializedSession): string {
   if (session.source === "trpg" && session.status === "CLOSED") {
     return "마감";
@@ -459,6 +480,7 @@ interface SessionsListProps {
   expandedId: string | null;
   onExpandedChange: (next: string | null) => void;
   currentUserDiscordId: string | null;
+  canCreateReport: boolean;
   trpgWebBaseUrl: string | null;
 }
 
@@ -469,6 +491,7 @@ function SessionsList({
   expandedId,
   onExpandedChange,
   currentUserDiscordId,
+  canCreateReport,
   trpgWebBaseUrl,
 }: SessionsListProps) {
   const [upcomingOnly, setUpcomingOnly] = useState(false);
@@ -544,6 +567,7 @@ function SessionsList({
                 onExpandedChange(expandedId === s._id ? null : s._id)
               }
               currentUserDiscordId={currentUserDiscordId}
+              canCreateReport={canCreateReport}
               trpgWebBaseUrl={trpgWebBaseUrl}
             />
           ))}
@@ -558,6 +582,7 @@ interface SessionsListItemProps {
   expanded: boolean;
   onToggle: () => void;
   currentUserDiscordId: string | null;
+  canCreateReport: boolean;
   trpgWebBaseUrl: string | null;
 }
 
@@ -566,6 +591,7 @@ function SessionsListItem({
   expanded,
   onToggle,
   currentUserDiscordId,
+  canCreateReport,
   trpgWebBaseUrl,
 }: SessionsListItemProps) {
   const itemRef = useRef<HTMLDivElement | null>(null);
@@ -604,6 +630,7 @@ function SessionsListItem({
   ].join(" ");
   const sourceBadgeLabel = isTrpg ? "TRPG" : "ORDO";
   const sourceBadgeTitle = isTrpg ? "TRPG 봇 세션" : "NOVUS ORDO 공식 일정";
+  const reportCreateHref = buildReportCreateHref(s, yesParticipants);
 
   return (
     <div ref={itemRef} className={styles.listItem}>
@@ -689,6 +716,11 @@ function SessionsListItem({
           </div>
 
           <div className={styles.listActions}>
+            {canCreateReport ? (
+              <Link href={reportCreateHref} className={styles.listAction}>
+                작전 보고서 작성 →
+              </Link>
+            ) : null}
             {isTrpg ? (
               trpgCalendarUrl ? (
                 <a

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { sessionReportKeys } from "@/hooks/queries/useSessionReportsQuery";
 
 interface ReportMutationBody {
+  sessionId?: string;
   sessionTitle: string;
   summary: string;
   highlights?: string[];

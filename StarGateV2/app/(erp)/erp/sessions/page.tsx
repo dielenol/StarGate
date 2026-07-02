@@ -6,6 +6,7 @@ import {
 } from "@/lib/db/sessions";
 import { getTrpgWebBaseUrl } from "@/lib/db/trpg-sessions-bridge";
 import { auth } from "@/lib/auth/config";
+import { hasRole } from "@/lib/auth/rbac";
 
 import type { SerializedSession } from "@/hooks/queries/useSessionsQuery";
 
@@ -92,6 +93,7 @@ export default async function SessionsPage() {
       guildId={guildId}
       initialUpcoming={initialUpcoming}
       currentUserDiscordId={session.user.discordId}
+      canCreateReport={hasRole(session.user.role, "V")}
       trpgWebBaseUrl={getTrpgWebBaseUrl()}
     />
   );
