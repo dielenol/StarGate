@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { JetBrains_Mono, Noto_Sans_KR } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "./globals.css";
 
@@ -145,6 +146,7 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning>
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
