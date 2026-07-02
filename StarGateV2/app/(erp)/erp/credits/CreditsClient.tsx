@@ -551,7 +551,7 @@ export default function CreditsClient({
       </div>
 
       <div className={styles.kpiGrid}>
-        <Box>
+        <Box className={styles.kpiPanel}>
           <PanelTitle>
             <PanelLabel icon={IconTimeline}>이번 달 순변동</PanelLabel>
           </PanelTitle>
@@ -567,7 +567,7 @@ export default function CreditsClient({
             {monthTotals.spend.toLocaleString()}
           </Eyebrow>
         </Box>
-        <Box>
+        <Box className={styles.kpiPanel}>
           <PanelTitle>
             <PanelLabel icon={IconArrowRight}>총 입금</PanelLabel>
           </PanelTitle>
@@ -576,7 +576,7 @@ export default function CreditsClient({
           </div>
           <Eyebrow>{transactions.filter((row) => row.amount >= 0).length}건</Eyebrow>
         </Box>
-        <Box>
+        <Box className={styles.kpiPanel}>
           <PanelTitle>
             <PanelLabel icon={IconArrowLeft}>총 출금</PanelLabel>
           </PanelTitle>
@@ -585,7 +585,7 @@ export default function CreditsClient({
           </div>
           <Eyebrow>{transactions.filter((row) => row.amount < 0).length}건</Eyebrow>
         </Box>
-        <Box>
+        <Box className={styles.kpiPanel}>
           <PanelTitle>
             <PanelLabel icon={IconStock}>가장 큰 변동</PanelLabel>
           </PanelTitle>
@@ -606,7 +606,7 @@ export default function CreditsClient({
         </Box>
       </div>
 
-      <Box>
+      <Box className={styles.summaryPanel}>
         <PanelTitle right={<span className={styles.mono}>요약</span>}>
           <PanelLabel icon={IconNotes}>거래 유형 요약</PanelLabel>
         </PanelTitle>
@@ -638,7 +638,7 @@ export default function CreditsClient({
         )}
       </Box>
 
-      <Box>
+      <Box className={styles.ledgerPanel}>
         <PanelTitle
           right={
             <span className={styles.mono}>
