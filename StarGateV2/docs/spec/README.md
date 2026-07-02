@@ -23,6 +23,28 @@ StarGate 세계관 자산은 **핵심 도메인**(NPC / Faction / Institution / 
 
 > equipment / consumable / catalog는 **별도 컬렉션이 아니라** 기존 `master_items`를 재활용한다. `ItemCategory` enum(`WEAPON`/`ARMOR`/`CONSUMABLE`/`MATERIAL`/`SPECIAL`)으로 구분하며, SSOT는 `packages/shared-db/src/types/inventory.ts`의 `ITEM_CATEGORIES` const tuple.
 
+## ERP 위키 category 분류
+
+`docs/spec/*` 도메인은 DB 적재와 Zod 검증을 위한 작성 단위이고, `wiki_pages.category`는 ERP 위키의 탐색 탭/정렬/태그 톤을 위한 표시 분류다. 신규 위키 문서는 아래 현행 분류 중 하나를 사용한다.
+
+| category | 사용 기준 |
+|----------|-----------|
+| `작전 보고서` | 정규·미니 세션 보고서 위키 미러 |
+| `개체` | ZULU 외 일반 변칙 개체 또는 개체성 문서 |
+| `줄루` | ZULU 번호가 부여된 격리 개체와 ZULU 계열 개체 문서 |
+| `개념` | 세계관 개념, 프로젝트, 비물질적 현상 |
+| `세력` | 권력 블록과 주요 외부 세력 |
+| `기관` | 노부스 오르도 산하 기관 또는 독립 기관 |
+| `장소` | 도시, 시설, 현장 위치 |
+| `규정` | 사내 규정, 절차성 정책, 프로토콜 |
+| `인물` | 인물 중심 위키 문서 |
+| `장비` | 장비 또는 장비성 카탈로그 항목 |
+| `물품` | 연구 샘플, 비표준 물증, 문헌성 물체처럼 별도 위키 탭이 필요한 물품 |
+| `소모품` | 소비성 카탈로그 항목 |
+| `문헌` | 문서, 기록물, 텍스트 자체가 주제인 항목 |
+
+현재 ERP 정렬 기준은 `app/(erp)/erp/wiki/wiki-display.ts`와 `lib/lore-links.ts`의 `WIKI_CATEGORY_ORDER`를 따른다. `줄루`와 `물품`은 기존 seed와 ERP UI에서 이미 쓰는 현행 분류이므로, 감사 기준에서도 예외가 아니라 정식 category로 취급한다.
+
 ## 템플릿
 
 신규 문서 작성 시 아래 템플릿을 복사해 `{slug}.md` 파일명으로 저장한다.
