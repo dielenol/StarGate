@@ -19,6 +19,11 @@ export interface WikiRelatedLink {
   relation: "문서 언급" | "같은 세션";
 }
 
+interface ExplicitRelatedReference {
+  key: string;
+  kind: "wiki" | "external";
+}
+
 const CATEGORY_TONES: Record<string, TagTone> = {
   개념: "info",
   개체: "danger",
@@ -351,20 +356,53 @@ export function wikiSourceLines(content: string, maxCount = 3): string[] {
     .slice(0, maxCount);
 }
 
+function relatedReferenceFromValue(
+  value: string,
+): ExplicitRelatedReference | null {
+  const trimmed = cleanPlainLine(value);
+  if (!trimmed) return null;
+
+  const qualified = trimmed.match(/^([a-z가-힣]+):(.+)$/iu);
+  if (!qualified) return { kind: "wiki", key: trimmed };
+
+  const prefix = normalizeLabel(qualified[1]);
+  const key = cleanPlainLine(qualified[2]);
+  if (!key) return null;
+
+  if (prefix === "wiki" || prefix === "위키") {
+    return { kind: "wiki", key };
+  }
+
+  return { kind: "external", key };
+}
+
 function explicitRelatedNames(content: string): string[] {
-  const names: string[] = [];
+  const references: ExplicitRelatedReference[] = [];
 
   for (const rawLine of extractSectionLines(content, "관련 문서")) {
     const line = cleanPlainLine(rawLine);
     if (!line) continue;
 
+    const explicitLinks = [
+      ...line.matchAll(/\[\[([^\]|]+?)(?:\|[^\]]+?)?\]\]/g),
+    ];
+    if (explicitLinks.length > 0) {
+      for (const match of explicitLinks) {
+        const reference = relatedReferenceFromValue(match[1]);
+        if (reference) references.push(reference);
+      }
+      continue;
+    }
+
     for (const part of line.split(/[,，、;|·]/)) {
-      const name = cleanPlainLine(part);
-      if (name) names.push(name);
+      const reference = relatedReferenceFromValue(part);
+      if (reference) references.push(reference);
     }
   }
 
-  return names;
+  return references
+    .filter((reference) => reference.kind === "wiki")
+    .map((reference) => reference.key);
 }
 
 function sessionTags(page: Pick<WikiPage, "tags">): string[] {
@@ -388,11 +426,13 @@ export function wikiRelatedLinks(
 ): WikiRelatedLink[] {
   const currentId = pageId(page);
   const byTitle = new Map<string, WikiPage>();
+  const bySlug = new Map<string, WikiPage>();
   const result: WikiRelatedLink[] = [];
   const seenIds = new Set<string>();
 
   for (const candidate of allPages) {
     byTitle.set(normalizePageTitle(candidate.title), candidate);
+    bySlug.set(normalizePageTitle(candidate.slug), candidate);
   }
 
   function push(candidate: WikiPage | undefined, relation: WikiRelatedLink["relation"]) {
@@ -410,7 +450,8 @@ export function wikiRelatedLinks(
   }
 
   for (const name of explicitRelatedNames(page.content)) {
-    push(byTitle.get(normalizePageTitle(name)), "문서 언급");
+    const key = normalizePageTitle(name);
+    push(byTitle.get(key) ?? bySlug.get(key), "문서 언급");
     if (result.length >= maxCount) return result;
   }
 
