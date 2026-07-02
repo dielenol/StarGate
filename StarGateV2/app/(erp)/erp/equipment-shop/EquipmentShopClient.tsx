@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import {
@@ -34,24 +35,37 @@ import ShopItemIcon from "../shop/ShopItemIcon";
 import styles from "./page.module.css";
 
 type ArmoryZone = "lab" | "towaski" | "strategic" | "custom";
+type EquipmentShopMode = "hub" | "zone";
 type EquipmentShopTabValue = "ALL" | "WEAPON" | "ARMOR";
 type CartState = Record<string, number>;
 type NoticeState = { tone: "success" | "info"; text: string } | null;
 type MainCharacterStats = Record<EquipmentResearchStat, number>;
+type ArmoryZoneDef = {
+  value: ArmoryZone;
+  href: string;
+  label: string;
+  eyebrow: string;
+  description: string;
+  npc: string;
+};
 
 const MAX_CART_QUANTITY_PER_ITEM = 1;
 const TOWASKI_PROFILE_SRC = "/assets/shop/hud/tia-profile.webp";
 const TOWASKI_PORTRAIT_SRC = "/assets/shop/hud/tia-welcome.png";
 
-const ZONE_DEFS: Array<{
-  value: ArmoryZone;
-  label: string;
-  eyebrow: string;
-  description: string;
-  npc: string;
-}> = [
+const ARMORY_DESK_META: Pick<
+  ArmoryZoneDef,
+  "label" | "eyebrow" | "npc"
+> = {
+  label: "병기부 안내데스크",
+  eyebrow: "ARMORY BUREAU",
+  npc: "병기부 담당관",
+};
+
+const ZONE_DEFS: ArmoryZoneDef[] = [
   {
     value: "lab",
+    href: "/erp/equipment-shop/lab",
     label: "병기 연구소",
     eyebrow: "RESEARCH LAB",
     description: "개인 강화와 전체 AGENT 팀 강화를 실제 스탯에 반영합니다.",
@@ -59,6 +73,7 @@ const ZONE_DEFS: Array<{
   },
   {
     value: "towaski",
+    href: "/erp/equipment-shop/towaski",
     label: "토와스키 장비 판매점",
     eyebrow: "TOWASKI",
     description: "무기와 방어구를 구매해 인벤토리에 반출합니다.",
@@ -66,6 +81,7 @@ const ZONE_DEFS: Array<{
   },
   {
     value: "strategic",
+    href: "/erp/equipment-shop/strategic",
     label: "전략 장비 판매점",
     eyebrow: "STRATEGIC ASSETS",
     description: "차량, 전략 자산, 전투 보조품을 구매합니다.",
@@ -73,6 +89,7 @@ const ZONE_DEFS: Array<{
   },
   {
     value: "custom",
+    href: "/erp/equipment-shop/custom",
     label: "전용무기 제작소",
     eyebrow: "CUSTOM WORKSHOP",
     description: "전용무기 제작 상담 구역입니다. 요청 저장은 후속 단계에서 연결합니다.",
@@ -120,6 +137,8 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
 };
 
 interface Props {
+  mode: EquipmentShopMode;
+  initialZone?: ArmoryZone;
   initialCatalog: EquipmentShopCatalogResponse;
   mainCharacter: {
     id: string;
@@ -145,6 +164,8 @@ function statLabel(stat: EquipmentResearchStat): string {
 }
 
 export default function EquipmentShopClient({
+  mode,
+  initialZone = "lab",
   initialCatalog,
   mainCharacter,
   initialBalance,
@@ -157,7 +178,6 @@ export default function EquipmentShopClient({
   const checkoutMutation = useCheckoutEquipmentShopCart();
   const researchMutation = useApplyEquipmentResearch();
 
-  const [activeZone, setActiveZone] = useState<ArmoryZone>("lab");
   const [activeTab, setActiveTab] = useState<EquipmentShopTabValue>("ALL");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [cart, setCart] = useState<CartState>({});
@@ -174,7 +194,10 @@ export default function EquipmentShopClient({
 
   const catalog = catalogQuery.data ?? initialCatalog;
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
-  const zoneMeta = activeZoneMeta(activeZone);
+  const isHub = mode === "hub";
+  const activeZone = initialZone;
+  const activeZoneDef = activeZoneMeta(activeZone);
+  const zoneMeta = isHub ? ARMORY_DESK_META : activeZoneDef;
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -201,6 +224,11 @@ export default function EquipmentShopClient({
     [catalog.items],
   );
 
+  const towaskiItemCount = useMemo(
+    () => catalog.items.filter((item) => item.zone === "towaski").length,
+    [catalog.items],
+  );
+  const strategicItemCount = strategicItems.length;
   const salesItems = activeZone === "strategic" ? strategicItems : towaskiItems;
 
   const selectedItem = useMemo(() => {
@@ -266,13 +294,6 @@ export default function EquipmentShopClient({
       next[key] = Math.min(max, Math.floor(quantity));
       return next;
     });
-  }
-
-  function handleZoneChange(zone: ArmoryZone) {
-    setActiveZone(zone);
-    setSelectedKey(null);
-    setErrorMessage(null);
-    setNotice(null);
   }
 
   function handleAddToCart(item: EquipmentShopCatalogEntry, quantity = 1) {
@@ -373,6 +394,112 @@ export default function EquipmentShopClient({
           setErrorMessage(describeEquipmentShopError(err));
         },
       },
+    );
+  }
+
+  function getZoneStatus(zone: ArmoryZone): string {
+    if (zone === "lab") {
+      return hasMainCharacter
+        ? "개인 강화 / 팀 전체 강화 가능"
+        : "팀 전체 강화 가능 · 개인 강화 제한";
+    }
+    if (zone === "towaski") {
+      return towaskiItemCount > 0
+        ? `${towaskiItemCount}종 반출 가능`
+        : "등록 품목 없음";
+    }
+    if (zone === "strategic") {
+      return strategicItemCount > 0
+        ? `${strategicItemCount}종 반출 가능`
+        : "대상 품목 없음";
+    }
+    return "상담 패널 활성 · 요청 저장 후속";
+  }
+
+  function renderHubPanel() {
+    const alerts = [
+      {
+        key: "lab",
+        label: "연구소",
+        value: hasMainCharacter
+          ? "개인/팀 강화 터미널 대기"
+          : "메인 AGENT 미등록 · 개인 강화 제한",
+        warning: !hasMainCharacter,
+      },
+      {
+        key: "towaski",
+        label: "토와스키",
+        value:
+          towaskiItemCount > 0
+            ? `표준 장비 ${towaskiItemCount}종 표시`
+            : "표준 장비 등록 없음",
+        warning: false,
+      },
+      {
+        key: "strategic",
+        label: "전략 장비",
+        value:
+          strategicItemCount > 0
+            ? `전략 장비 ${strategicItemCount}종 표시`
+            : "대상 태그 품목 없음",
+        warning: strategicItemCount === 0,
+      },
+      {
+        key: "custom",
+        label: "제작소",
+        value: "전용무기 상담만 활성",
+        warning: false,
+      },
+    ];
+
+    return (
+      <div className={styles.deskLayout}>
+        <section className={styles.deskConsole} aria-label="병기부 입장 선택">
+          <div className={styles.panelIntro}>
+            <Eyebrow>DESTINATION SELECT</Eyebrow>
+            <strong>구역 선택</strong>
+          </div>
+
+          <div className={styles.choiceGrid}>
+            {ZONE_DEFS.map((zone) => (
+              <Link
+                key={zone.value}
+                href={zone.href}
+                className={styles.choiceCard}
+              >
+                <span>{zone.eyebrow}</span>
+                <strong>{zone.label}</strong>
+                <small>{zone.description}</small>
+                <em>{getZoneStatus(zone.value)}</em>
+                <span className={styles.choiceAction}>입장</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <aside className={styles.alertPanel} aria-label="병기부 기능 알림">
+          <div className={styles.panelIntro}>
+            <Eyebrow>OPERATIONS BOARD</Eyebrow>
+            <strong>기능 알림</strong>
+          </div>
+          <div className={styles.alertList}>
+            {alerts.map((alert) => (
+              <div
+                key={alert.key}
+                className={[
+                  styles.alertItem,
+                  alert.warning ? styles["alertItem--warning"] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <span>{alert.label}</span>
+                <strong>{alert.value}</strong>
+              </div>
+            ))}
+          </div>
+        </aside>
+      </div>
     );
   }
 
@@ -785,11 +912,19 @@ export default function EquipmentShopClient({
   return (
     <div className={styles.armoryRoot} data-pixel-font="full">
       <PageHead
-        breadcrumb={[
-          { label: "ERP", href: "/erp" },
-          { label: "ARMORY BUREAU" },
-        ]}
-        title="병기부"
+        breadcrumb={
+          isHub
+            ? [
+                { label: "ERP", href: "/erp" },
+                { label: "ARMORY BUREAU" },
+              ]
+            : [
+                { label: "ERP", href: "/erp" },
+                { label: "병기부", href: "/erp/equipment-shop" },
+                { label: zoneMeta.label },
+              ]
+        }
+        title={isHub ? "병기부 안내데스크" : zoneMeta.label}
       />
 
       {!hasMainCharacter ? (
@@ -850,39 +985,32 @@ export default function EquipmentShopClient({
               <strong>{formatCredits(balance)}</strong>
             </div>
             <div>
-              <span>카트</span>
-              <strong>{cartCount}개</strong>
+              <span>{isHub ? "구역" : "카트"}</span>
+              <strong>{isHub ? "4구역" : `${cartCount}개`}</strong>
             </div>
           </div>
         </header>
 
-        <nav className={styles.zoneGrid} aria-label="병기부 구역">
-          {ZONE_DEFS.map((zone) => (
-            <button
-              key={zone.value}
-              type="button"
-              className={[
-                styles.zoneCard,
-                activeZone === zone.value ? styles["zoneCard--active"] : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              onClick={() => handleZoneChange(zone.value)}
-            >
-              <span>{zone.eyebrow}</span>
-              <strong>{zone.label}</strong>
-              <small>{zone.description}</small>
-            </button>
-          ))}
-        </nav>
+        {isHub ? (
+          renderHubPanel()
+        ) : (
+          <>
+            <div className={styles.routeBar}>
+              <Link href="/erp/equipment-shop" className={styles.backLink}>
+                안내데스크로 돌아가기
+              </Link>
+              <span>{activeZoneDef.description}</span>
+            </div>
 
-        <div className={styles.zoneBody}>
-          {activeZone === "lab"
-            ? renderLabPanel()
-            : activeZone === "custom"
-              ? renderCustomPanel()
-              : renderSalesPanel()}
-        </div>
+            <div className={styles.zoneBody}>
+              {activeZone === "lab"
+                ? renderLabPanel()
+                : activeZone === "custom"
+                  ? renderCustomPanel()
+                  : renderSalesPanel()}
+            </div>
+          </>
+        )}
 
         <section className={styles.npcHud} aria-label="병기부 응대 HUD">
           <div className={styles.npcPortrait}>
@@ -906,13 +1034,15 @@ export default function EquipmentShopClient({
               <span className={styles.npcMood}>응대 중</span>
             </div>
             <p>
-              {activeZone === "lab"
-                ? "연구 적용은 즉시 기록된다. 개인인지, 팀 전체인지 먼저 확인해."
-                : activeZone === "towaski"
-                  ? "토와스키다. 표준 장비는 여기서 보고, 장난감은 들고 오지 마."
-                  : activeZone === "strategic"
-                    ? "차량과 전략 자산은 태그가 붙은 품목만 반출대에 올라온다."
-                    : "전용무기는 상담부터다. 제작 요청 저장은 다음 단계에서 연결한다."}
+              {isHub
+                ? "병기부 안내데스크다. 목적지를 고르면 해당 구역으로 연결해주겠다."
+                : activeZone === "lab"
+                  ? "연구 적용은 즉시 기록된다. 개인인지, 팀 전체인지 먼저 확인해."
+                  : activeZone === "towaski"
+                    ? "토와스키다. 표준 장비는 여기서 보고, 장난감은 들고 오지 마."
+                    : activeZone === "strategic"
+                      ? "차량과 전략 자산은 태그가 붙은 품목만 반출대에 올라온다."
+                      : "전용무기는 상담부터다. 제작 요청 저장은 다음 단계에서 연결한다."}
             </p>
           </div>
         </section>

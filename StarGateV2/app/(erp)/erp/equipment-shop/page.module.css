@@ -79,7 +79,9 @@
 
 .armoryHeader,
 .zoneGrid,
-.zoneBody {
+.zoneBody,
+.deskLayout,
+.routeBar {
   position: relative;
   z-index: 1;
 }
@@ -185,6 +187,157 @@
   color: var(--ink-2);
   font-size: 14px;
   line-height: 1.45;
+}
+
+.deskLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 12px;
+  align-items: start;
+}
+
+.deskConsole,
+.alertPanel {
+  min-width: 0;
+  padding: 12px;
+  background: rgba(8, 9, 9, 0.78);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(2px);
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.choiceCard {
+  display: grid;
+  gap: 7px;
+  min-height: 154px;
+  padding: 13px;
+  background:
+    linear-gradient(180deg, rgba(201, 168, 90, 0.1), transparent 56%),
+    rgba(12, 14, 14, 0.92);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.choiceCard:hover {
+  border-color: var(--gold-dim);
+  color: var(--ink-0);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 20%, transparent);
+}
+
+.choiceCard span {
+  color: var(--gold-dim);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.choiceCard strong {
+  color: var(--gold);
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.choiceCard small {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.choiceCard em {
+  align-self: end;
+  color: var(--ink-1);
+  font-size: 14px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.choiceAction {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 30px;
+  padding: 5px 9px;
+  background: color-mix(in srgb, var(--gold) 16%, rgba(0, 0, 0, 0.44));
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.alertList {
+  display: grid;
+  gap: 8px;
+}
+
+.alertItem {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.alertItem--warning {
+  border-color: color-mix(in srgb, var(--danger) 38%, var(--line));
+}
+
+.alertItem span {
+  color: var(--gold-dim);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.alertItem strong {
+  color: var(--ink-0);
+  font-size: 15px;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.routeBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 9px 10px;
+  background: rgba(7, 8, 8, 0.68);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.routeBar span {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--gold) 12%, rgba(0, 0, 0, 0.35));
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--ink-0);
 }
 
 .zoneBody {
@@ -890,6 +1043,7 @@
 
 @media (max-width: 1180px) {
   .armoryHeader,
+  .deskLayout,
   .salesLayout,
   .labLayout {
     grid-template-columns: 1fr;
@@ -901,6 +1055,7 @@
   }
 
   .zoneGrid,
+  .choiceGrid,
   .workshopGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -912,6 +1067,7 @@
   }
 
   .zoneGrid,
+  .choiceGrid,
   .statPicker,
   .statsGrid,
   .workshopGrid {
@@ -923,6 +1079,11 @@
   .researchPreview,
   .amountInput {
     grid-template-columns: 1fr;
+  }
+
+  .routeBar {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .npcHud {
