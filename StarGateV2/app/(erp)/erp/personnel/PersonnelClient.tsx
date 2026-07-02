@@ -636,6 +636,7 @@ export default function PersonnelClient({
     : "faction";
   const selectedGroupUsesAgentLevels =
     !selectedGroup || isInternalOrgCode(selectedGroup);
+  const selectedTone = getOrgTone(selectedGroup);
 
   // 검색 배너 표시 조건 (L2 에서 다른 그룹에도 매칭이 있을 때)
   const searchBannerInfo = useMemo(() => {
@@ -838,7 +839,11 @@ export default function PersonnelClient({
       <div className={styles.subunitGroup}>
         {(selectedDirectMembers.length > 0 ||
           selectedCivilCategories.length > 0) ? (
-          <section className={styles.directMembers} aria-label={directLabel}>
+          <section
+            className={styles.directMembers}
+            data-tone={selectedTone}
+            aria-label={directLabel}
+          >
             <div className={styles.directMembers__head}>
               <span className={styles.directMembers__label}>
                 {directLabel}
@@ -875,7 +880,11 @@ export default function PersonnelClient({
   };
 
   return (
-    <div data-pixel-font="ui">
+    <div
+      className={styles.personnelPage}
+      data-pixel-font="ui"
+      data-tone={selectedTone}
+    >
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },

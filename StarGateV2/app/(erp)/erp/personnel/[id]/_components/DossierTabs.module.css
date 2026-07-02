@@ -2,15 +2,23 @@
 
 .bar {
   --dossier-tab-accent: var(--gold);
+  --dossier-tab-accent-bg: color-mix(in srgb, var(--gold) 6%, transparent);
 
   display: flex;
   align-items: stretch;
   gap: 12px;
-  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 56%),
+    var(--bg-1);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.018);
 }
 
 .bar[data-tone="hostile"] {
   --dossier-tab-accent: var(--danger);
+  --dossier-tab-accent-bg: color-mix(in oklab, var(--danger) 7%, transparent);
 }
 
 .slot {
@@ -19,7 +27,6 @@
   gap: 8px;
   flex-wrap: wrap;
   flex-shrink: 0;
-  padding-bottom: 6px;
 }
 
 .tabs {
@@ -32,9 +39,10 @@
 }
 
 .tab {
-  padding: 10px 16px;
-  border: none;
-  border-bottom: 2px solid transparent;
+  min-height: 36px;
+  padding: 9px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ink-2);
   font-family: var(--font-mono);
@@ -47,16 +55,20 @@
   gap: 6px;
   transition:
     color 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .tab:hover {
   color: var(--ink-0);
+  border-color: var(--line-strong);
+  background: var(--bg-2);
 }
 
 .tabActive {
   color: var(--dossier-tab-accent);
-  border-bottom-color: var(--dossier-tab-accent);
+  border-color: color-mix(in srgb, var(--dossier-tab-accent) 55%, var(--line-strong));
+  background: var(--dossier-tab-accent-bg);
 }
 
 .tabLevel {

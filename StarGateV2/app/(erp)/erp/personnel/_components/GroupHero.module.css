@@ -1,24 +1,40 @@
 /* ── GroupHero (L2 그룹 진입 헤더) ── */
 
 .hero {
+  --hero-accent: var(--gold);
+  --hero-accent-dim: var(--gold-dim);
+  --hero-accent-bg: color-mix(in srgb, var(--gold) 6%, transparent);
+  --hero-scanline: repeating-linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--hero-accent) 3%, transparent) 0 1px,
+    transparent 1px 12px
+  );
+
   position: relative;
   overflow: hidden;
   padding: 22px 26px;
-  border: 1px solid var(--gold-dim);
-  background: linear-gradient(
-    180deg,
-    rgba(201, 168, 90, 0.06),
-    transparent 80%
-  );
+  border: 1px solid var(--hero-accent-dim);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, var(--hero-accent-bg), transparent 80%),
+    var(--hero-scanline),
+    var(--bg-1);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.018);
 }
 
 .hero[data-group-code="HOSTILE"] {
-  border-color: color-mix(in oklab, var(--danger) 76%, transparent);
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--danger) 9%, transparent),
-    color-mix(in oklab, var(--danger) 2%, transparent) 80%
-  );
+  --hero-accent: var(--danger);
+  --hero-accent-dim: color-mix(in oklab, var(--danger) 76%, transparent);
+  --hero-accent-bg: color-mix(in oklab, var(--danger) 8%, transparent);
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid color-mix(in srgb, var(--hero-accent) 10%, transparent);
+  border-radius: calc(var(--radius-sm) - 4px);
+  pointer-events: none;
 }
 
 .corner {
@@ -27,36 +43,32 @@
   height: 14px;
 }
 
-.hero[data-group-code="HOSTILE"] .corner {
-  border-color: var(--danger);
-}
-
 .corner--tl {
   top: -1px;
   left: -1px;
-  border-top: 1px solid var(--gold);
-  border-left: 1px solid var(--gold);
+  border-top: 1px solid var(--hero-accent);
+  border-left: 1px solid var(--hero-accent);
 }
 
 .corner--tr {
   top: -1px;
   right: -1px;
-  border-top: 1px solid var(--gold);
-  border-right: 1px solid var(--gold);
+  border-top: 1px solid var(--hero-accent);
+  border-right: 1px solid var(--hero-accent);
 }
 
 .corner--bl {
   bottom: -1px;
   left: -1px;
-  border-bottom: 1px solid var(--gold);
-  border-left: 1px solid var(--gold);
+  border-bottom: 1px solid var(--hero-accent);
+  border-left: 1px solid var(--hero-accent);
 }
 
 .corner--br {
   right: -1px;
   bottom: -1px;
-  border-bottom: 1px solid var(--gold);
-  border-right: 1px solid var(--gold);
+  border-bottom: 1px solid var(--hero-accent);
+  border-right: 1px solid var(--hero-accent);
 }
 
 /* webp 라스터 워터마크 — 그룹 hero 우하단에 옅게 깔리는 세력/기관 로고. */
@@ -115,16 +127,16 @@
   color: var(--ink-0);
   font-size: 28px;
   font-weight: 500;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 .titleIcon {
   flex-shrink: 0;
-  color: var(--gold);
+  color: var(--hero-accent);
 }
 
 .hero[data-group-code="HOSTILE"] .titleIcon {
-  color: var(--danger);
+  color: var(--hero-accent);
 }
 
 .titleLogo {
@@ -218,52 +230,52 @@
 }
 
 .subUnitChip--clickable:hover {
-  border-color: var(--gold-dim);
-  color: var(--gold);
-  background: rgba(201, 168, 90, 0.06);
+  border-color: var(--hero-accent-dim);
+  color: var(--hero-accent);
+  background: var(--hero-accent-bg);
 }
 
 .hero[data-group-code="HOSTILE"] .subUnitChip--clickable:hover {
-  border-color: var(--danger);
-  color: var(--danger);
-  background: color-mix(in oklab, var(--danger) 10%, transparent);
+  border-color: var(--hero-accent);
+  color: var(--hero-accent);
+  background: var(--hero-accent-bg);
 }
 
 .subUnitChip--clickable:hover svg {
-  color: var(--gold);
+  color: var(--hero-accent);
 }
 
 .hero[data-group-code="HOSTILE"] .subUnitChip--clickable:hover svg {
-  color: var(--danger);
+  color: var(--hero-accent);
 }
 
 .subUnitChip--clickable:focus-visible {
-  outline: 1px solid var(--gold);
+  outline: 1px solid var(--hero-accent);
   outline-offset: 2px;
 }
 
 .hero[data-group-code="HOSTILE"] .subUnitChip--clickable:focus-visible {
-  outline-color: var(--danger);
+  outline-color: var(--hero-accent);
 }
 
 .subUnitChip--on {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(201, 168, 90, 0.12);
+  border-color: var(--hero-accent);
+  color: var(--hero-accent);
+  background: color-mix(in srgb, var(--hero-accent) 12%, transparent);
 }
 
 .hero[data-group-code="HOSTILE"] .subUnitChip--on {
-  border-color: var(--danger);
-  color: var(--danger);
-  background: color-mix(in oklab, var(--danger) 12%, transparent);
+  border-color: var(--hero-accent);
+  color: var(--hero-accent);
+  background: color-mix(in oklab, var(--hero-accent) 12%, transparent);
 }
 
 .subUnitChip--on svg {
-  color: var(--gold);
+  color: var(--hero-accent);
 }
 
 .hero[data-group-code="HOSTILE"] .subUnitChip--on svg {
-  color: var(--danger);
+  color: var(--hero-accent);
 }
 
 .subtitle {
@@ -297,7 +309,7 @@
 }
 
 .hero[data-group-code="HOSTILE"] .sections {
-  border-top-color: color-mix(in oklab, var(--danger) 48%, transparent);
+  border-top-color: color-mix(in oklab, var(--hero-accent) 48%, transparent);
 }
 
 @media (max-width: 1100px) {
@@ -319,7 +331,7 @@
 .sectionLabel {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
@@ -376,20 +388,20 @@
 }
 
 .headcountN {
-  color: var(--gold);
+  color: var(--hero-accent);
   font-family: var(--font-mono);
   font-size: 28px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .hero[data-group-code="HOSTILE"] .headcountN {
-  color: var(--danger);
+  color: var(--hero-accent);
 }
 
 .headcountU {
   color: var(--ink-3);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.22em;
 }
