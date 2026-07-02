@@ -2,18 +2,20 @@
 // - 로컬/Vercel 루트 배포: NEXT_PUBLIC_APP_BASE_PATH 미설정(기본값 "")
 // - 서브패스 배포: NEXT_PUBLIC_APP_BASE_PATH="/StarGate" 등으로 설정
 const PUBLIC_IMAGE_EXT_RE = /\.(png|jpe?g)$/i;
-const CACHE_BUSTED_PUBLIC_IMAGES = new Set([
-  "/assets/npcs/Casey-Racer-Valkyrie-profile.webp",
-  "/assets/npcs/David-O-Callahan-Sandman-profile.webp",
-  "/assets/npcs/Igrit-profile.webp",
-  "/assets/npcs/ORSIS-201-DonaDona-profile.webp",
-  "/assets/npcs/Puck-Asshole-profile.webp",
-  "/assets/npcs/Zulu-269-Punk-Cat-profile.webp",
+const CACHE_BUSTED_PUBLIC_IMAGES = new Map([
+  ["/assets/npcs/Casey-Racer-Valkyrie-profile.webp", "20260611-cutout"],
+  ["/assets/npcs/David-O-Callahan-Sandman-profile.webp", "20260611-cutout"],
+  ["/assets/npcs/Igrit-profile.webp", "20260611-cutout"],
+  ["/assets/npcs/ORSIS-201-DonaDona-profile.webp", "20260611-cutout"],
+  ["/assets/npcs/Puck-Asshole-profile.webp", "20260611-cutout"],
+  ["/assets/npcs/Zulu-269-Punk-Cat-profile.webp", "20260611-cutout"],
+  ["/assets/peoples/Valeria-pixel-profile.webp", "20260702-profile"],
 ]);
 
 function applyPublicImageVersion(assetPath: string): string {
-  if (!CACHE_BUSTED_PUBLIC_IMAGES.has(assetPath)) return assetPath;
-  return `${assetPath}?v=20260611-cutout`;
+  const version = CACHE_BUSTED_PUBLIC_IMAGES.get(assetPath);
+  if (!version) return assetPath;
+  return `${assetPath}?v=${version}`;
 }
 
 export function preferOptimizedPublicImagePath(assetPath: string): string {
