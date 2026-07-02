@@ -23,7 +23,10 @@ export type AgentCharacterCard = Pick<
   | "type"
   | "tier"
   | "role"
+  | "agentLevel"
   | "department"
+  | "factionCode"
+  | "institutionCode"
   | "previewImage"
   | "ownerId"
   | "isPublic"
@@ -32,7 +35,7 @@ export type AgentCharacterCard = Pick<
     Character["lore"],
     "name" | "nameNative" | "nickname" | "nameEn" | "loreTags"
   >;
-  play: Pick<AgentCharacter["play"], "hp" | "san">;
+  play: Pick<AgentCharacter["play"], "className" | "hp" | "san">;
 };
 
 export async function listCharacters(): Promise<Character[]> {
@@ -85,7 +88,10 @@ export async function listAgentCharacterCards(
       type: 1,
       tier: 1,
       role: 1,
+      agentLevel: 1,
       department: 1,
+      factionCode: 1,
+      institutionCode: 1,
       previewImage: 1,
       ownerId: 1,
       isPublic: 1,
@@ -94,6 +100,7 @@ export async function listAgentCharacterCards(
       "lore.nickname": 1,
       "lore.nameEn": 1,
       "lore.loreTags": 1,
+      "play.className": 1,
       "play.hp": 1,
       "play.san": 1,
     })

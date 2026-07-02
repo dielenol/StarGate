@@ -6,7 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { AgentCharacterCardDto } from "@/hooks/queries/useCharactersQuery";
 import { useAgentCharactersQuery } from "@/hooks/queries/useCharactersQuery";
-import type { CharacterTier } from "@/types/character";
+import { AGENT_LEVEL_LABELS } from "@/types/character";
+import type { AgentLevel, CharacterTier } from "@/types/character";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import {
@@ -19,7 +20,7 @@ import Button from "@/components/ui/Button/Button";
 import Input from "@/components/ui/Input/Input";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
-import OrgIcon from "../personnel/_components/OrgIcon";
+import OrgIcon, { type OrgIconCode } from "../personnel/_components/OrgIcon";
 
 import styles from "./page.module.css";
 
@@ -40,6 +41,72 @@ const HP_MAX = 300;
 const SAN_MAX = 100;
 const CARD_PATTERNS = ["grid", "diagonal", "circuit", "scan"] as const;
 type CardPattern = (typeof CARD_PATTERNS)[number] | "mine" | "risk" | "mini";
+type KnownRoleClassKey = "military" | "bureaucrat" | "scientist" | "subject";
+type RoleClassKey = KnownRoleClassKey | "unassigned";
+
+interface RoleClassMeta {
+  key: RoleClassKey;
+  label: string;
+  icon: OrgIconCode;
+  keywords: string[];
+}
+
+const ROLE_CLASS_META = {
+  military: {
+    key: "military",
+    label: "군인",
+    icon: "MILITARY",
+    keywords: [
+      "군인",
+      "군부",
+      "군사",
+      "현장",
+      "작전",
+      "manus",
+      "military",
+      "soldier",
+    ],
+  },
+  bureaucrat: {
+    key: "bureaucrat",
+    label: "관료",
+    icon: "ADMIN_BUREAU",
+    keywords: ["관료", "행정", "사무", "bureaucrat", "admin", "secretariat"],
+  },
+  scientist: {
+    key: "scientist",
+    label: "과학자",
+    icon: "RESEARCH",
+    keywords: ["과학", "연구", "분석", "scientist", "research", "lab"],
+  },
+  subject: {
+    key: "subject",
+    label: "실험체",
+    icon: "CONTROL",
+    keywords: [
+      "실험체",
+      "피험자",
+      "개조",
+      "subject",
+      "specimen",
+      "test subject",
+    ],
+  },
+} satisfies Record<KnownRoleClassKey, RoleClassMeta>;
+
+const ROLE_CLASS_ORDER: KnownRoleClassKey[] = [
+  "subject",
+  "scientist",
+  "bureaucrat",
+  "military",
+];
+
+const FALLBACK_ROLE_CLASS: RoleClassMeta = {
+  key: "unassigned",
+  label: "미분류",
+  icon: "UNASSIGNED",
+  keywords: ["미분류", "unassigned"],
+};
 
 interface Props {
   initialCharacters: AgentCharacterCardDto[];
@@ -57,6 +124,10 @@ function getInitial(c: AgentCharacterCardDto): string {
 
 function tierOf(c: AgentCharacterCardDto): CharacterTier {
   return c.tier ?? "MAIN";
+}
+
+function agentLevelOf(c: AgentCharacterCardDto): AgentLevel {
+  return c.agentLevel ?? "U";
 }
 
 function hrefForFilter(filter: "ALL" | CharacterTier, query = "") {
@@ -100,6 +171,59 @@ function normalizeMarker(value: string | undefined | null): string {
   return (value ?? "").trim().toUpperCase();
 }
 
+function findRoleClassByText(
+  value: string | undefined | null,
+): RoleClassMeta | null {
+  const normalized = normalizeSearchText(value ?? "");
+  if (!normalized) return null;
+
+  for (const key of ROLE_CLASS_ORDER) {
+    const meta = ROLE_CLASS_META[key];
+    if (meta.keywords.some((keyword) => normalized.includes(keyword))) {
+      return meta;
+    }
+  }
+
+  return null;
+}
+
+function getRoleClassMeta(c: AgentCharacterCardDto): RoleClassMeta {
+  const classMeta = findRoleClassByText(c.play.className);
+  if (classMeta) return classMeta;
+
+  const department = normalizeMarker(c.department);
+  const institution = normalizeMarker(c.institutionCode);
+  const faction = normalizeMarker(c.factionCode);
+
+  if (department === "RESEARCH") return ROLE_CLASS_META.scientist;
+  if (
+    department === "ADMIN_BUREAU" ||
+    department === "HQ" ||
+    department === "FINANCE" ||
+    institution === "SECRETARIAT"
+  ) {
+    return ROLE_CLASS_META.bureaucrat;
+  }
+  if (
+    department.startsWith("SECTOR_") ||
+    department === "FIELD" ||
+    institution === "MANUS" ||
+    faction === "MILITARY"
+  ) {
+    return ROLE_CLASS_META.military;
+  }
+
+  return (
+    findRoleClassByText(
+      [
+        c.role,
+        getCharacterDepartmentLabel(c) ?? "",
+        ...(c.lore.loreTags ?? []),
+      ].join(" "),
+    ) ?? FALLBACK_ROLE_CLASS
+  );
+}
+
 function isGmTestCharacter(c: AgentCharacterCardDto): boolean {
   if (c.isPublic !== false) return false;
 
@@ -115,6 +239,8 @@ function isGmTestCharacter(c: AgentCharacterCardDto): boolean {
 
 function getSearchText(c: AgentCharacterCardDto): string {
   const tier = tierOf(c);
+  const agentLevel = agentLevelOf(c);
+  const roleClass = getRoleClassMeta(c);
   const departmentLabel = getCharacterDepartmentLabel(c) ?? "";
   const visibilityText =
     c.isPublic === false ? "private hidden dummy 비공개 더미" : "public 공개";
@@ -130,6 +256,11 @@ function getSearchText(c: AgentCharacterCardDto): string {
     c.lore.nameEn,
     ...(c.lore.loreTags ?? []),
     c.role,
+    c.play.className,
+    agentLevel,
+    AGENT_LEVEL_LABELS[agentLevel],
+    roleClass.label,
+    ...roleClass.keywords,
     departmentLabel,
     tier,
     TIER_LABEL[tier],
@@ -390,6 +521,9 @@ export default function CharactersClient({
             const subLine = getCharacterRoleLine(c);
             const displayName = getCharacterDisplayName(c);
             const tier = tierOf(c);
+            const agentLevel = agentLevelOf(c);
+            const agentLevelLabel = AGENT_LEVEL_LABELS[agentLevel];
+            const roleClass = getRoleClassMeta(c);
             const pattern = getCardPattern(c, id, viewerUserId);
 
             return (
@@ -430,6 +564,37 @@ export default function CharactersClient({
                         className={styles.tag__icon}
                       />
                       {TIER_LABEL[tier]}
+                    </span>
+                  </div>
+
+                  <div className={styles.card__metaRow}>
+                    <span
+                      className={styles.card__rankBadge}
+                      title={`등급 ${agentLevel} · ${agentLevelLabel}`}
+                    >
+                      <span className={styles.card__rankBadge__key}>
+                        등급
+                      </span>
+                      <b>{agentLevel}</b>
+                      <span className={styles.card__rankBadge__label}>
+                        {agentLevelLabel}
+                      </span>
+                    </span>
+                    <span
+                      className={[
+                        styles.card__classBadge,
+                        styles[`card__classBadge--${roleClass.key}`],
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      title={`직군 ${roleClass.label}`}
+                    >
+                      <OrgIcon
+                        code={roleClass.icon}
+                        size={14}
+                        className={styles.card__classBadge__icon}
+                      />
+                      <span>{roleClass.label}</span>
                     </span>
                   </div>
 

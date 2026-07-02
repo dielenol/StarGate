@@ -520,6 +520,106 @@
   box-shadow: 0 0 6px rgba(193,74,61,0.5);
 }
 
+/* ---------- character meta badges ---------- */
+.card__metaRow {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 0 20px 14px;
+}
+
+.card__rankBadge,
+.card__classBadge {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  background: rgba(14, 13, 11, 0.36);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.card__rankBadge {
+  color: var(--gold);
+  border-color: rgba(201,169,97,0.44);
+  background:
+    linear-gradient(rgba(201,169,97,0.055), rgba(201,169,97,0.055)),
+    rgba(14, 13, 11, 0.36);
+}
+
+.card__rankBadge__key {
+  color: var(--ink-2);
+  letter-spacing: 0.12em;
+}
+
+.card__rankBadge b {
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.card__rankBadge__label {
+  min-width: 0;
+  color: var(--ink-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__classBadge {
+  color: var(--ink-1);
+  border-color: var(--line-strong);
+}
+
+.card__classBadge__icon {
+  flex-shrink: 0;
+}
+
+.card__classBadge span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__classBadge--military {
+  color: #d7b777;
+  border-color: rgba(201,169,97,0.42);
+  background: rgba(201,169,97,0.055);
+}
+
+.card__classBadge--bureaucrat {
+  color: #d2c6ad;
+  border-color: rgba(160,145,113,0.45);
+  background: rgba(160,145,113,0.07);
+}
+
+.card__classBadge--scientist {
+  color: #94b7d8;
+  border-color: rgba(106,135,168,0.5);
+  background: rgba(106,135,168,0.09);
+}
+
+.card__classBadge--subject {
+  color: #d9938b;
+  border-color: rgba(193,74,61,0.45);
+  background: rgba(193,74,61,0.08);
+}
+
+.card__classBadge--unassigned {
+  color: var(--ink-2);
+  border-color: var(--line-strong);
+  background: rgba(74,69,56,0.08);
+}
+
 /* ---------- agent stats ---------- */
 .card__stats {
   display: flex;
@@ -715,6 +815,7 @@
   }
   .card__seal { font-size: 20px; }
   .card__name { font-size: 16px; }
+  .card__metaRow { padding-left: 16px; padding-right: 16px; }
   .card__stats,
   .card__footer { padding-left: 16px; padding-right: 16px; }
   .card__stats::before,
