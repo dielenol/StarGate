@@ -602,28 +602,13 @@
   background: rgba(106,135,168,0.085);
 }
 
-.card__classBadge--military {
+.card__classBadge--military,
+.card__classBadge--bureaucrat,
+.card__classBadge--scientist,
+.card__classBadge--subject {
   color: #d7b777;
   border-color: rgba(201,169,97,0.42);
   background: rgba(201,169,97,0.055);
-}
-
-.card__classBadge--bureaucrat {
-  color: #d2c6ad;
-  border-color: rgba(160,145,113,0.45);
-  background: rgba(160,145,113,0.07);
-}
-
-.card__classBadge--scientist {
-  color: #94b7d8;
-  border-color: rgba(106,135,168,0.5);
-  background: rgba(106,135,168,0.09);
-}
-
-.card__classBadge--subject {
-  color: #d9938b;
-  border-color: rgba(193,74,61,0.45);
-  background: rgba(193,74,61,0.08);
 }
 
 .card__classBadge--unassigned {
