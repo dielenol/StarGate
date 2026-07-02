@@ -246,13 +246,6 @@ export default function WikiClient({
           { label: "CODEX" },
         ]}
         title="위키"
-        right={
-          isGM ? (
-            <Button as="a" href="/erp/wiki/new" variant="primary">
-              + 새 문서
-            </Button>
-          ) : null
-        }
       />
 
       <div className={styles.layout}>
@@ -397,7 +390,19 @@ export default function WikiClient({
 
         <Box className={`${styles.aside} ${styles.layout__aside}`}>
           <div className={styles.aside__section}>
-            <h2 className={styles.aside__title}>문서 현황</h2>
+            <div className={styles.aside__titleRow}>
+              <h2 className={styles.aside__title}>문서 현황</h2>
+              {isGM ? (
+                <Button
+                  as="a"
+                  href="/erp/wiki/new"
+                  size="sm"
+                  className={styles.aside__action}
+                >
+                  + 새 문서
+                </Button>
+              ) : null}
+            </div>
             <dl className={styles.stats}>
               <div>
                 <dt>전체</dt>

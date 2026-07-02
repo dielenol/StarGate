@@ -345,12 +345,23 @@
   gap: 8px;
 }
 
+.aside__titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .aside__title {
   margin: 0 0 2px;
   color: var(--gold);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0;
+}
+
+.aside__action {
+  flex-shrink: 0;
 }
 
 .stats {
