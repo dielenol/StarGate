@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { type MouseEvent, useMemo, useState } from "react";
 
 import {
   type CreditsResponse,
@@ -173,6 +174,7 @@ export default function EquipmentShopClient({
   mainCharacterError,
   isGM,
 }: Props) {
+  const router = useRouter();
   const catalogQuery = useEquipmentShopCatalog({ initialData: initialCatalog });
   const creditsQuery = useCredits({ initialData: initialCredits });
   const checkoutMutation = useCheckoutEquipmentShopCart();
@@ -397,6 +399,25 @@ export default function EquipmentShopClient({
     );
   }
 
+  function handleZoneLinkClick(
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) {
+    if (
+      event.button !== 0 ||
+      event.defaultPrevented ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    router.push(href);
+  }
+
   function getZoneStatus(zone: ArmoryZone): string {
     if (zone === "lab") {
       return hasMainCharacter
@@ -466,6 +487,7 @@ export default function EquipmentShopClient({
                 key={zone.value}
                 href={zone.href}
                 className={styles.choiceCard}
+                onClick={(event) => handleZoneLinkClick(event, zone.href)}
               >
                 <span>{zone.eyebrow}</span>
                 <strong>{zone.label}</strong>

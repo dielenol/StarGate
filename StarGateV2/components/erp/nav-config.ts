@@ -15,6 +15,7 @@ import {
   IconDashboard,
   IconFactionMap,
   IconGallery,
+  IconEquipment,
   IconInventory,
   IconMembers,
   IconNotification,
@@ -31,8 +32,6 @@ import {
 
 import type { UserRole } from "@/types/user";
 
-const IconBlank: IconComponent = () => null;
-
 export interface NavItem {
   /** 사이드바 렌더용 한국어 라벨. */
   label: string;
@@ -46,6 +45,8 @@ export interface NavItem {
   gmHref?: string;
   /** 이 메뉴를 보기 위해 필요한 최소 역할. */
   minRole?: UserRole;
+  /** 활성화 시 사이드바에 표시할 하위 메뉴. */
+  children?: NavItem[];
 }
 
 export interface NavGroup {
@@ -69,9 +70,11 @@ export function getNavItemHref(
 }
 
 export function getNavItemActiveHrefs(item: NavItem): string[] {
-  return [item.href, item.gmHref].filter(
+  const ownHrefs = [item.href, item.gmHref].filter(
     (href): href is string => href !== null && href !== undefined,
   );
+  const childHrefs = item.children?.flatMap(getNavItemActiveHrefs) ?? [];
+  return [...ownHrefs, ...childHrefs];
 }
 
 export const NAV_GROUPS: NavGroup[] = [
@@ -112,7 +115,43 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "크레딧", keywords: "credits", icon: IconCredit, href: "/erp/credits" },
       /* 편의점 · 주식 — M1 stub. M2/M3 에서 본 구현 활성화. */
       { label: "편의점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconShop, href: "/erp/shop" },
-      { label: "병기부", keywords: "equipment shop armory arsenal weapon armor gear 병기부 무기 방어구 토와스키", icon: IconBlank, href: null, gmHref: "/erp/equipment-shop" },
+      {
+        label: "병기부",
+        keywords: "equipment shop armory arsenal weapon armor gear 병기부 무기 방어구 토와스키",
+        icon: IconEquipment,
+        href: null,
+        gmHref: "/erp/equipment-shop",
+        children: [
+          {
+            label: "병기 연구소",
+            keywords: "research lab enhancement stat 강화 연구소",
+            icon: IconEquipment,
+            href: null,
+            gmHref: "/erp/equipment-shop/lab",
+          },
+          {
+            label: "토와스키 장비 판매점",
+            keywords: "towaski weapon armor 장비 무기 방어구",
+            icon: IconEquipment,
+            href: null,
+            gmHref: "/erp/equipment-shop/towaski",
+          },
+          {
+            label: "전략 장비 판매점",
+            keywords: "strategic assets vehicle support 전략자산 차량 전투보조",
+            icon: IconEquipment,
+            href: null,
+            gmHref: "/erp/equipment-shop/strategic",
+          },
+          {
+            label: "전용무기 제작소",
+            keywords: "custom weapon workshop crafting 전용무기 제작소",
+            icon: IconEquipment,
+            href: null,
+            gmHref: "/erp/equipment-shop/custom",
+          },
+        ],
+      },
       { label: "주식", keywords: "stock market 주식 증권", icon: IconStock, href: "/erp/stock" },
     ],
   },

@@ -124,6 +124,12 @@ export default function ERPSidebar() {
                 const preparing = isPreparingNavItem(item);
                 const disabled = href === null;
                 const Icon = item.icon;
+                const childItems = (item.children ?? []).filter(
+                  (child) =>
+                    !child.minRole ||
+                    (role ? hasRole(role, child.minRole) : false),
+                );
+                const showChildren = active && childItems.length > 0;
                 const notificationBadge =
                   href === "/erp/notifications" &&
                   unreadNotificationCount > 0
@@ -154,45 +160,86 @@ export default function ERPSidebar() {
                 }
 
                 return (
-                  <Link
+                  <div
                     key={`${group.key}-${item.label}`}
-                    href={href}
-                    className={[
-                      styles.sidebar__item,
-                      active ? styles["sidebar__item--active"] : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    onClick={close}
-                    onFocus={() => prefetchHref(href)}
-                    onMouseEnter={() => prefetchHref(href)}
-                    prefetch
+                    className={styles.sidebar__itemBlock}
                   >
-                    <LinkPendingProbe />
-                    <span className={styles.sidebar__itemLeft}>
-                      <span className={styles.sidebar__icon} aria-hidden>
-                        <Icon />
+                    <Link
+                      href={href}
+                      className={[
+                        styles.sidebar__item,
+                        active ? styles["sidebar__item--active"] : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={close}
+                      onFocus={() => prefetchHref(href)}
+                      onMouseEnter={() => prefetchHref(href)}
+                      prefetch
+                    >
+                      <LinkPendingProbe />
+                      <span className={styles.sidebar__itemLeft}>
+                        <span className={styles.sidebar__icon} aria-hidden>
+                          <Icon />
+                        </span>
+                        <span className={styles.sidebar__itemLabel}>
+                          {item.label}
+                        </span>
                       </span>
-                      <span className={styles.sidebar__itemLabel}>
-                        {item.label}
-                      </span>
-                    </span>
-                    {notificationBadge ? (
-                      <span
-                        className={styles.sidebar__countBadge}
-                        aria-label={`안 읽은 알림 ${unreadNotificationCount}건`}
+                      {notificationBadge ? (
+                        <span
+                          className={styles.sidebar__countBadge}
+                          aria-label={`안 읽은 알림 ${unreadNotificationCount}건`}
+                        >
+                          {notificationBadge}
+                        </span>
+                      ) : preparing ? (
+                        <span className={styles.sidebar__badge}>준비중</span>
+                      ) : active ? (
+                        <IconCheckDot
+                          className={styles.sidebar__activeMark}
+                          aria-hidden
+                        />
+                      ) : null}
+                    </Link>
+
+                    {showChildren ? (
+                      <div
+                        className={styles.sidebar__subList}
+                        aria-label={`${item.label} 하위 메뉴`}
                       >
-                        {notificationBadge}
-                      </span>
-                    ) : preparing ? (
-                      <span className={styles.sidebar__badge}>준비중</span>
-                    ) : active ? (
-                      <IconCheckDot
-                        className={styles.sidebar__activeMark}
-                        aria-hidden
-                      />
+                        {childItems.map((child) => {
+                          const childHref = getNavItemHref(child, role);
+                          if (childHref === null) return null;
+                          const childActive =
+                            activeHref !== null &&
+                            getNavItemActiveHrefs(child).includes(activeHref);
+
+                          return (
+                            <Link
+                              key={`${group.key}-${item.label}-${child.label}`}
+                              href={childHref}
+                              className={[
+                                styles.sidebar__subItem,
+                                childActive
+                                  ? styles["sidebar__subItem--active"]
+                                  : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
+                              onClick={close}
+                              onFocus={() => prefetchHref(childHref)}
+                              onMouseEnter={() => prefetchHref(childHref)}
+                              prefetch
+                            >
+                              <LinkPendingProbe />
+                              {child.label}
+                            </Link>
+                          );
+                        })}
+                      </div>
                     ) : null}
-                  </Link>
+                  </div>
                 );
               })}
             </div>

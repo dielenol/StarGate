@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import { hasRole } from "@/lib/auth/rbac";
+import type { UserRole } from "@/types/user";
 
 import type { NavGroup, NavItem } from "@/components/erp/nav-config";
 import {
@@ -32,6 +33,21 @@ interface FlatEntry {
 
 interface CommandKProps {
   defaultOpen?: boolean;
+}
+
+function flattenVisibleItems(
+  items: NavItem[],
+  role?: UserRole | null,
+): NavItem[] {
+  return items.flatMap((item) => {
+    if (item.minRole && (!role || !hasRole(role, item.minRole))) {
+      return [];
+    }
+    return [
+      item,
+      ...flattenVisibleItems(item.children ?? [], role),
+    ];
+  });
 }
 
 export default function CommandK({ defaultOpen = false }: CommandKProps) {
@@ -63,10 +79,7 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
     )
       .map((group) => ({
         ...group,
-        items: group.items.filter(
-          (item) =>
-            !item.minRole || (role ? hasRole(role, item.minRole) : false),
-        ),
+        items: flattenVisibleItems(group.items, role),
       }))
       .filter((group) => group.items.length > 0);
   }, [role]);
