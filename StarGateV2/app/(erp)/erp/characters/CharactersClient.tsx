@@ -15,12 +15,18 @@ import {
   getCharacterDisplayName,
   getCharacterRoleLine,
 } from "@/lib/format/character-display";
+import { getDepartmentLabel } from "@/lib/org-structure";
 
 import Button from "@/components/ui/Button/Button";
 import Input from "@/components/ui/Input/Input";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
-import OrgIcon, { type OrgIconCode } from "../personnel/_components/OrgIcon";
+import OrgIcon, {
+  getFactionIcon,
+  getInstitutionIcon,
+  getSubUnitIcon,
+  type OrgIconCode,
+} from "../personnel/_components/OrgIcon";
 
 import styles from "./page.module.css";
 
@@ -46,6 +52,12 @@ type RoleClassKey = KnownRoleClassKey | "unassigned";
 
 interface RoleClassMeta {
   key: RoleClassKey;
+  label: string;
+  icon: OrgIconCode;
+  keywords: string[];
+}
+
+interface OrgBadgeMeta {
   label: string;
   icon: OrgIconCode;
   keywords: string[];
@@ -191,6 +203,15 @@ function getRoleClassMeta(c: AgentCharacterCardDto): RoleClassMeta {
   const classMeta = findRoleClassByText(c.play.className);
   if (classMeta) return classMeta;
 
+  const textMeta = findRoleClassByText(
+    [
+      c.role,
+      getCharacterDepartmentLabel(c) ?? "",
+      ...(c.lore.loreTags ?? []),
+    ].join(" "),
+  );
+  if (textMeta) return textMeta;
+
   const department = normalizeMarker(c.department);
   const institution = normalizeMarker(c.institutionCode);
   const faction = normalizeMarker(c.factionCode);
@@ -213,15 +234,29 @@ function getRoleClassMeta(c: AgentCharacterCardDto): RoleClassMeta {
     return ROLE_CLASS_META.military;
   }
 
-  return (
-    findRoleClassByText(
-      [
-        c.role,
-        getCharacterDepartmentLabel(c) ?? "",
-        ...(c.lore.loreTags ?? []),
-      ].join(" "),
-    ) ?? FALLBACK_ROLE_CLASS
-  );
+  return FALLBACK_ROLE_CLASS;
+}
+
+function getOrgBadgeMeta(c: AgentCharacterCardDto): OrgBadgeMeta | null {
+  const department = normalizeMarker(c.department);
+  const code =
+    department && department !== "UNASSIGNED"
+      ? department
+      : normalizeMarker(c.institutionCode) || normalizeMarker(c.factionCode);
+  if (!code || code === "UNASSIGNED") return null;
+
+  const label = getDepartmentLabel(code);
+  if (!label || label === "미배정") return null;
+
+  return {
+    label,
+    icon:
+      getSubUnitIcon(code) ??
+      getInstitutionIcon(code) ??
+      getFactionIcon(code) ??
+      "UNASSIGNED",
+    keywords: [code, label],
+  };
 }
 
 function isGmTestCharacter(c: AgentCharacterCardDto): boolean {
@@ -241,6 +276,7 @@ function getSearchText(c: AgentCharacterCardDto): string {
   const tier = tierOf(c);
   const agentLevel = agentLevelOf(c);
   const roleClass = getRoleClassMeta(c);
+  const orgBadge = getOrgBadgeMeta(c);
   const departmentLabel = getCharacterDepartmentLabel(c) ?? "";
   const visibilityText =
     c.isPublic === false ? "private hidden dummy 비공개 더미" : "public 공개";
@@ -261,7 +297,12 @@ function getSearchText(c: AgentCharacterCardDto): string {
     AGENT_LEVEL_LABELS[agentLevel],
     roleClass.label,
     ...roleClass.keywords,
+    orgBadge?.label,
+    ...(orgBadge?.keywords ?? []),
     departmentLabel,
+    c.department,
+    c.institutionCode,
+    c.factionCode,
     tier,
     TIER_LABEL[tier],
     visibilityText,
@@ -524,6 +565,7 @@ export default function CharactersClient({
             const agentLevel = agentLevelOf(c);
             const agentLevelLabel = AGENT_LEVEL_LABELS[agentLevel];
             const roleClass = getRoleClassMeta(c);
+            const orgBadge = getOrgBadgeMeta(c);
             const pattern = getCardPattern(c, id, viewerUserId);
 
             return (
@@ -570,6 +612,7 @@ export default function CharactersClient({
                   <div className={styles.card__metaRow}>
                     <span
                       className={styles.card__rankBadge}
+                      data-rank={agentLevel}
                       title={`등급 ${agentLevel} · ${agentLevelLabel}`}
                     >
                       <span className={styles.card__rankBadge__key}>
@@ -596,6 +639,19 @@ export default function CharactersClient({
                       />
                       <span>{roleClass.label}</span>
                     </span>
+                    {orgBadge ? (
+                      <span
+                        className={styles.card__orgBadge}
+                        title={`소속 ${orgBadge.label}`}
+                      >
+                        <OrgIcon
+                          code={orgBadge.icon}
+                          size={14}
+                          className={styles.card__orgBadge__icon}
+                        />
+                        <span>{orgBadge.label}</span>
+                      </span>
+                    ) : null}
                   </div>
 
                   <div className={styles.card__stats}>

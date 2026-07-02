@@ -532,7 +532,8 @@
 }
 
 .card__rankBadge,
-.card__classBadge {
+.card__classBadge,
+.card__orgBadge {
   min-width: 0;
   max-width: 100%;
   min-height: 24px;
@@ -550,27 +551,30 @@
 }
 
 .card__rankBadge {
-  color: var(--gold);
-  border-color: rgba(201,169,97,0.44);
+  color: var(--rank-active-text, var(--gold));
+  border-color: color-mix(in srgb, var(--rank-active-marker, var(--gold)) 72%, transparent);
   background:
-    linear-gradient(rgba(201,169,97,0.055), rgba(201,169,97,0.055)),
+    linear-gradient(
+      color-mix(in srgb, var(--rank-active-marker, var(--gold)) 12%, transparent),
+      color-mix(in srgb, var(--rank-active-marker, var(--gold)) 12%, transparent)
+    ),
     rgba(14, 13, 11, 0.36);
 }
 
 .card__rankBadge__key {
-  color: var(--ink-2);
+  color: color-mix(in srgb, var(--rank-active-text, var(--ink-2)) 64%, var(--ink-2));
   letter-spacing: 0.12em;
 }
 
 .card__rankBadge b {
-  color: var(--gold);
+  color: var(--rank-active-text, var(--gold));
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .card__rankBadge__label {
   min-width: 0;
-  color: var(--ink-1);
+  color: color-mix(in srgb, var(--rank-active-text, var(--ink-1)) 74%, var(--ink-1));
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -580,14 +584,22 @@
   border-color: var(--line-strong);
 }
 
-.card__classBadge__icon {
+.card__classBadge__icon,
+.card__orgBadge__icon {
   flex-shrink: 0;
 }
 
-.card__classBadge span {
+.card__classBadge span,
+.card__orgBadge span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.card__orgBadge {
+  color: #94b7d8;
+  border-color: rgba(106,135,168,0.48);
+  background: rgba(106,135,168,0.085);
 }
 
 .card__classBadge--military {
