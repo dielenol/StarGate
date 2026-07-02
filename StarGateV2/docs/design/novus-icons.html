@@ -233,6 +233,25 @@
     font-size: 10px;
     color: var(--muted);
   }
+  .uses {
+    font-size: 9px;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.02em;
+    opacity: 0.85;
+  }
+  .sharedMark {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    cursor: help;
+  }
   .acts {
     display: flex;
     gap: 6px;
@@ -408,64 +427,14 @@
   <div class="hierarchy" id="pageTree"></div>
 </div>
 
-<div class="section" data-group="core">
-  <div class="section-head">코어 · Core <span class="badge">NEW · 제안 초안 — 자유롭게 교체</span></div>
-  <div class="grid" id="grid-core"></div>
+<div class="section" data-group="shared">
+  <div class="section-head">공용 · Shared <span class="badge">2개 이상 컨텍스트 재사용 · 자동 집계</span></div>
+  <div class="grid" id="grid-shared"></div>
 </div>
 
 <div class="section" data-group="nav">
-  <div class="section-head">ERP 내비게이션 · Page Icons <span class="badge">SITE SVG</span></div>
+  <div class="section-head">ERP 내비게이션 · Sidebar & Command-K <span class="badge">/erp 전역</span></div>
   <div class="grid" id="grid-nav"></div>
-</div>
-
-<div class="section" data-group="faction">
-  <div class="section-head">세력 · Faction</div>
-  <div class="grid" id="grid-faction"></div>
-</div>
-
-<div class="section" data-group="independent">
-  <div class="section-head">내부기관 / 산하기구 · Institutions</div>
-  <div class="grid" id="grid-independent"></div>
-</div>
-
-<div class="section" data-group="org">
-  <div class="section-head">조직도 노드 · Organization Chart</div>
-  <div class="grid" id="grid-org"></div>
-</div>
-
-<div class="section" data-group="person">
-  <div class="section-head">인물 / 캐릭터 분류 · Person & Scope</div>
-  <div class="grid" id="grid-person"></div>
-</div>
-
-<div class="section" data-group="factionPage">
-  <div class="section-head">세력도 페이지 · Faction Map <span class="badge">NEW</span></div>
-  <div class="grid" id="grid-factionPage"></div>
-</div>
-
-<div class="section" data-group="inventory">
-  <div class="section-head">인벤토리 페이지 · Inventory <span class="badge">NEW</span></div>
-  <div class="grid" id="grid-inventory"></div>
-</div>
-
-<div class="section" data-group="credit">
-  <div class="section-head">크레딧 페이지 · Credit <span class="badge">NEW</span></div>
-  <div class="grid" id="grid-credit"></div>
-</div>
-
-<div class="section" data-group="shop">
-  <div class="section-head">편의점 페이지 · Store <span class="badge">NEW</span></div>
-  <div class="grid" id="grid-shop"></div>
-</div>
-
-<div class="section" data-group="wiki">
-  <div class="section-head">위키 페이지 · Wiki <span class="badge">CATEGORY MAP</span></div>
-  <div class="grid" id="grid-wiki"></div>
-</div>
-
-<div class="section" data-group="catalog">
-  <div class="section-head">기록보관소 페이지 · Catalog <span class="badge">/erp/wiki/catalog</span></div>
-  <div class="grid" id="grid-catalog"></div>
 </div>
 
 <div class="section" data-group="dashboard">
@@ -478,9 +447,69 @@
   <div class="hierarchy" id="dashboardMap"></div>
 </div>
 
+<div class="section" data-group="account">
+  <div class="section-head">계정 페이지 · Account <span class="badge">/erp/account</span></div>
+  <div class="grid" id="grid-account"></div>
+</div>
+
+<div class="section" data-group="notifications">
+  <div class="section-head">알림 페이지 · Notifications <span class="badge">/erp/notifications</span></div>
+  <div class="grid" id="grid-notifications"></div>
+</div>
+
+<div class="section" data-group="characters">
+  <div class="section-head">캐릭터 페이지 · Characters <span class="badge">/erp/characters</span></div>
+  <div class="grid" id="grid-characters"></div>
+</div>
+
+<div class="section" data-group="personnel">
+  <div class="section-head">신원조회 페이지 · Personnel / Org Chart <span class="badge">/erp/personnel</span></div>
+  <div class="grid" id="grid-personnel"></div>
+</div>
+
 <div class="section">
-  <div class="section-head">조직도 미리보기 · Layout Preview</div>
+  <div class="section-head">조직도 미리보기 · Org Chart Preview <span class="badge">/erp/personnel</span></div>
   <div class="orgchart" id="chart"></div>
+</div>
+
+<div class="section" data-group="factionPage">
+  <div class="section-head">세력도 페이지 · Faction Map <span class="badge">/erp/factions</span></div>
+  <div class="grid" id="grid-factionPage"></div>
+</div>
+
+<div class="section" data-group="inventory">
+  <div class="section-head">인벤토리 페이지 · Inventory <span class="badge">/erp/inventory</span></div>
+  <div class="grid" id="grid-inventory"></div>
+</div>
+
+<div class="section" data-group="credit">
+  <div class="section-head">크레딧 페이지 · Credit <span class="badge">/erp/credits</span></div>
+  <div class="grid" id="grid-credit"></div>
+</div>
+
+<div class="section" data-group="shop">
+  <div class="section-head">편의점 페이지 · Store <span class="badge">/erp/shop</span></div>
+  <div class="grid" id="grid-shop"></div>
+</div>
+
+<div class="section" data-group="wiki">
+  <div class="section-head">위키 페이지 · Wiki <span class="badge">/erp/wiki</span></div>
+  <div class="grid" id="grid-wiki"></div>
+</div>
+
+<div class="section" data-group="reports">
+  <div class="section-head">작전 보고서 페이지 · Reports <span class="badge">/erp/sessions/report</span></div>
+  <div class="grid" id="grid-reports"></div>
+</div>
+
+<div class="section" data-group="catalog">
+  <div class="section-head">기록보관소 페이지 · Catalog <span class="badge">/erp/wiki/catalog</span></div>
+  <div class="grid" id="grid-catalog"></div>
+</div>
+
+<div class="section" data-group="reserve">
+  <div class="section-head">예비 · Reserve <span class="badge">ERP 미배치 · 제안 초안 — 자유롭게 교체</span></div>
+  <div class="grid" id="grid-reserve"></div>
 </div>
 
 <div class="section">
@@ -513,7 +542,7 @@
 // ============================================================
 // prettier-ignore
 const ICONS = {
-  // ── 코어 / Core (ID 0–5 · 신규 제안 — Zulu 아카이브 문서 요소 기반) ──
+  // ── 코어 유산 / Core Legacy (ID 0–5 · archive/containment/sample 은 페이지 그룹 사용, emblem/zulu/clearance 는 예비) ──
   emblem: {
     idx: 0, name: 'EMBLEM · 노부스 오르도', key: 'IconEmblem',
     svg: '<path d="M12 2.5l8 9.5-8 9.5L4 12z"/><path d="M12 7l4.2 5L12 17l-4.2-5z"/>'
@@ -539,7 +568,7 @@ const ICONS = {
     svg: '<path d="M8.8 3.5h6.4"/><path d="M10 3.5v12.8a2 2 0 004 0V3.5"/><path d="M10 12h4"/><path d="M12.6 6h1.4M12.6 8.2h1.4M12.6 10.4h1.4"/><circle cx="11.3" cy="14" r="0.6" fill="currentColor" stroke="none"/><circle cx="12.7" cy="15.2" r="0.5" fill="currentColor" stroke="none"/>'
   },
 
-  // ── 조직도 노드 / Organization (ID 6–13) ──
+  // ── 조직도 노드 / Organization (ID 6–13 · 신원조회 /erp/personnel) ──
   hq: {
     idx: 6, name: 'HQ · 사무총장실', key: 'IconHQ',
     svg: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7l1.6 3.3 3.6.5-2.6 2.5.6 3.6L12 15.2l-3.2 1.7.6-3.6-2.6-2.5 3.6-.5L12 7z"/>'
@@ -573,7 +602,7 @@ const ICONS = {
     svg: '<rect x="4" y="3.5" width="16" height="17" rx="1"/><circle cx="12" cy="10" r="3"/><path d="M7 18c.7-2.5 2.7-4 5-4s4.3 1.5 5 4"/>'
   },
 
-  // ── 세력 / Faction (ID 14–16) ──
+  // ── 세력 노드 / Faction (ID 14–16 · 신원조회 조직도) ──
   board: {
     idx: 14, name: '세계이사회 · World Board', key: 'IconBoard',
     svg: '<circle cx="12" cy="12" r="3.2"/><path d="M8.8 12h6.4"/><ellipse cx="12" cy="12" rx="1.3" ry="3.2"/><circle cx="12" cy="4" r="1.4"/><circle cx="12" cy="20" r="1.4"/><circle cx="4" cy="12" r="1.4"/><circle cx="20" cy="12" r="1.4"/>'
@@ -587,7 +616,7 @@ const ICONS = {
     svg: '<circle cx="6" cy="8.5" r="2.3"/><path d="M2 17c0-2.4 1.7-4.2 4-4.2"/><circle cx="12" cy="7.5" r="2.8"/><path d="M7.7 18c0-2.8 1.9-4.7 4.3-4.7s4.3 1.9 4.3 4.7"/><circle cx="18" cy="8.5" r="2.3"/><path d="M22 17c0-2.4-1.7-4.2-4-4.2"/>'
   },
 
-  // ── 캐릭터 분류 / Character Scope (ID 17–19) ──
+  // ── 캐릭터 분류 / Character Scope (ID 17–19 · 캐릭터 /erp/characters + 신원조회 조직도) ──
   all: {
     idx: 17, name: 'ALL · 모든 캐릭터', key: 'IconAll',
     svg: '<rect x="3" y="3" width="8" height="8" rx="0.8"/><circle cx="7" cy="7" r="1.4"/><rect x="13" y="3" width="8" height="8" rx="0.8"/><circle cx="17" cy="7" r="1.4"/><rect x="3" y="13" width="8" height="8" rx="0.8"/><circle cx="7" cy="17" r="1.4"/><rect x="13" y="13" width="8" height="8" rx="0.8"/><circle cx="17" cy="17" r="1.4"/>'
@@ -601,7 +630,7 @@ const ICONS = {
     svg: '<circle cx="9" cy="3.5" r="0.7" fill="currentColor" stroke="none"/><circle cx="12" cy="3.5" r="0.7" fill="currentColor" stroke="none"/><circle cx="15" cy="3.5" r="0.7" fill="currentColor" stroke="none"/><circle cx="12" cy="11.5" r="2.6"/><path d="M6.5 20c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5"/>'
   },
 
-  // ── 독립기관 / Independent (ID 20–21) ──
+  // ── 독립기관 노드 / Independent (ID 20–21 · 신원조회 조직도) ──
   finance: {
     idx: 20, name: '재무국 · Finance', key: 'IconFinance',
     svg: '<path d="M12 4v16"/><path d="M9 20h6"/><path d="M4 8h16"/><path d="M6 8v2.5"/><path d="M3 10.5a3 1.5 0 006 0"/><path d="M18 8v2.5"/><path d="M15 10.5a3 1.5 0 006 0"/>'
@@ -762,7 +791,7 @@ const ICONS = {
     svg: '<path d="M6.5 3.5H13l4.5 4.5V19a1.5 1.5 0 01-1.5 1.5H6.5A1.5 1.5 0 015 19V5a1.5 1.5 0 011.5-1.5z"/><path d="M13 3.5V8h4.5"/><path d="M8 11.5h6M8 14.5h6"/><path d="M8 17.8c.7-.7 1.3-.7 2 0s1.3.7 2 0"/>'
   },
   folderArchive: {
-    idx: 55, name: '전체 기록 · Archive Folder', key: 'IconArchive',
+    idx: 55, name: '기밀 아카이브 (공개 사이트) · Archive Folder', key: 'IconArchive',
     svg: '<path d="M3 7V5a1 1 0 011-1h5l2 2h9a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/><rect x="10" y="12" width="4" height="4" rx="0.3"/><path d="M11 12v-1a1 1 0 012 0v1"/>'
   },
   world: {
@@ -845,23 +874,81 @@ const ICONS = {
     idx: 74, name: '최근 변경 · Recent Changes', key: 'IconRecentChanges',
     svg: '<path d="M3.5 12a8.5 8.5 0 102.8-6.3L3.5 8"/><path d="M3.5 3.5V8H8"/><path d="M12 7.5v5l3.5 2"/>'
   },
+
+  // ── 알림 & 계정 페이지 / Notifications & Account (ID 76–82) ──
+  unread: {
+    idx: 76, name: '미확인 · Unread', key: 'IconUnread',
+    svg: '<rect x="3" y="6" width="15.5" height="12.5" rx="1.5"/><path d="M3 8.2l7.75 5.3L18.5 8.2"/><circle cx="19.7" cy="5.8" r="2.2" fill="currentColor" stroke="none"/>'
+  },
+  today: {
+    idx: 77, name: '금일 · Today', key: 'IconToday',
+    svg: '<rect x="4" y="5" width="16" height="15.5" rx="1.5"/><path d="M4 9.5h16"/><path d="M8.5 3v4M15.5 3v4"/><rect x="7.5" y="12.5" width="4.2" height="4.2" rx="0.6" fill="currentColor" stroke="none"/>'
+  },
+  linked: {
+    idx: 78, name: '연동 / 링크 · Linked', key: 'IconLinked',
+    svg: '<path d="M10.4 13.6a4 4 0 005.66 0l3.1-3.1a4 4 0 00-5.66-5.66l-1.8 1.8"/><path d="M13.6 10.4a4 4 0 00-5.66 0l-3.1 3.1a4 4 0 005.66 5.66l1.8-1.8"/>'
+  },
+  inbox: {
+    idx: 79, name: '수신함 · Signal Feed', key: 'IconInbox',
+    svg: '<path d="M3.5 13.5V18a2 2 0 002 2h13a2 2 0 002-2v-4.5"/><path d="M3.5 13.5h4.2l1.6 2.6h5.4l1.6-2.6h4.2"/><path d="M12 3.5v6.5"/><path d="M9.2 7.5L12 10.3l2.8-2.8"/>'
+  },
+  status: {
+    idx: 80, name: '상태 · Status', key: 'IconStatus',
+    svg: '<path d="M3 12.5h4.2l2-5.2 4.4 10.4 2.2-5.2H21"/>'
+  },
+  passkey: {
+    idx: 81, name: '비밀번호 · Passkey', key: 'IconPasskey',
+    svg: '<circle cx="8" cy="15.8" r="4.2"/><path d="M11.2 12.8L20.5 3.5"/><path d="M17 7l2.6 2.6M14.4 9.6l2 2"/>'
+  },
+  security: {
+    idx: 82, name: '보안 · Security', key: 'IconSecurity',
+    svg: '<path d="M12 2.5l7 2.6v6.4c0 4.6-2.9 7.6-7 9.7-4.1-2.1-7-5.1-7-9.7V5.1z"/><path d="M8.8 11.6l2.3 2.3 4.1-4.8"/>'
+  },
+  read: {
+    idx: 83, name: '읽음 · Read', key: 'IconRead',
+    svg: '<path d="M3.5 10.3L12 4l8.5 6.3V19a1.5 1.5 0 01-1.5 1.5H5A1.5 1.5 0 013.5 19z"/><path d="M3.5 10.3l8.5 5.6 8.5-5.6"/>'
+  },
+  search: {
+    idx: 84, name: '검색 · Search', key: 'IconSearch',
+    svg: '<circle cx="10.5" cy="10.5" r="6.2"/><path d="M15.1 15.1L20.5 20.5"/>'
+  },
 };
 
+// 섹션 = 페이지 단위 통일. 한 아이콘이 여러 페이지에서 쓰이면 각 페이지 그룹에 중복 등재하고,
+// 2개 이상 그룹에 등장하는 아이콘은 아래에서 `shared` 그룹으로 자동 집계된다 (reserve 제외).
 const GROUPS = {
-  core:        ['emblem','archive','zulu','containment','clearance','sample'],
-  nav:         ['dashboard','account','notification','session','mission','person','members','factionMap','crown','inventoryHub','credit','shopHub','equipment','stock','wikiHub','reportDocument','reportMini','archive','gallery','world','userAdmin','system'],
-  faction:     ['novusOrdo','board','military','civil','hostile'],
-  independent: ['secretariat','manus','finance'],
-  org:         ['root','novusOrdo','board','military','civil','hostile','secretariat','manus','hq','research','adminBureau','intl','control','finance','sectorA','sectorB','sectorC','sectorD','sectorE','person','all','main','mini','unassigned'],
-  person:      ['person','all','main','mini'],
+  nav:         ['dashboard','account','notification','session','mission','person','members','factionMap','crown','inventoryHub','credit','shopHub','equipment','stock','wikiHub','reportDocument','archive','gallery','world','userAdmin','system'],
+  dashboard:   ['agentProfile','mission','tasks','credit','awaitingResponse','activeOps','notification','all','wikiHub','serviceRecord','tenure','session','recentChanges'],
+  account:     ['account','status','linked','passkey','security','tenure'],
+  notifications: ['notification','unread','today','linked','gridAll','read','search','session','consumable','credit','reportMini','userAdmin','system','inbox'],
+  characters:  ['person','all','main','mini'],
+  personnel:   ['members','root','novusOrdo','board','military','civil','hostile','secretariat','manus','hq','research','adminBureau','intl','control','finance','sectorA','sectorB','sectorC','sectorD','sectorE','person','all','main','mini','unassigned'],
   factionPage: ['factionMap','hostile','briefing','relations','affinity'],
   inventory:   ['equipment','consumable','misc'],
   credit:      ['credit','transactions'],
   shop:        ['gridAll','basic','recovery','preference','rare'],
   wiki:        ['gridAll','concept','containment','wikiFaction','institution','place','regulation','person','equipment','consumable','goods','finance','briefing','archive'],
+  reports:     ['reportDocument','reportMini'],
   catalog:     ['archive','gridAll','equipment','consumable','sample','caution'],
-  dashboard:   ['agentProfile','mission','tasks','credit','awaitingResponse','activeOps','notification','all','wikiHub','serviceRecord','tenure','session','recentChanges'],
+  reserve:     ['emblem','zulu','clearance','folderArchive'],
 };
+
+const GROUP_LABELS = {
+  shared: '공용', nav: '내비게이션', dashboard: '대시보드', account: '계정',
+  notifications: '알림', characters: '캐릭터', personnel: '신원조회', factionPage: '세력도',
+  inventory: '인벤토리', credit: '크레딧', shop: '편의점', wiki: '위키',
+  reports: '작전 보고서', catalog: '기록보관소', reserve: '예비',
+};
+
+// 공용 자동 집계 — reserve 를 제외한 2개 이상 그룹에서 재사용되는 아이콘 (idx 순)
+const ICON_USES = {};
+Object.entries(GROUPS).forEach(([gid, ids]) => {
+  if (gid === 'reserve') return;
+  ids.forEach(id => (ICON_USES[id] ||= []).push(gid));
+});
+GROUPS.shared = Object.keys(ICONS)
+  .filter(id => (ICON_USES[id] || []).length >= 2)
+  .sort((a, b) => ICONS[a].idx - ICONS[b].idx);
 
 const PAGE_TREE = [
   {
@@ -1029,13 +1116,24 @@ function render() {
     const host = document.getElementById('grid-' + gid);
     host.innerHTML = ids.map(id => {
       const it = ICONS[id];
-      const search = `${it.idx} ${it.name} ${it.key} ${id}`.toLowerCase();
+      const useLabels = (ICON_USES[id] || []).map(g => GROUP_LABELS[g] || g);
+      const isShared = useLabels.length >= 2;
+      const search = `${it.idx} ${it.name} ${it.key} ${id}${isShared ? ' 공용 shared' : ''}`.toLowerCase();
+      const uses = gid === 'shared'
+        ? `<div class="uses">${useLabels.join(' · ')}</div>`
+        : '';
+      // 페이지 그리드에서 공용 아이콘 표식 — 수정 시 파급 범위 확인용
+      const sharedMark = isShared && gid !== 'shared'
+        ? `<span class="sharedMark" title="공용 ${useLabels.length}개 컨텍스트 — ${useLabels.join(' · ')}">공용 ${useLabels.length}</span>`
+        : '';
       return `
         <div class="card" data-search="${search}">
           <span class="idx">${it.idx}</span>
+          ${sharedMark}
           <span class="new">${svgWrap(it, 28)}</span>
           <div class="lbl">${it.name}</div>
           <div class="key">${it.key}</div>
+          ${uses}
           <div class="acts">
             <button onclick="copySvg('${id}')" title="인라인 SVG 복사">SVG</button>
             <button onclick="copyUse('${id}')" title="&lt;use&gt; 스니펫 복사">USE</button>
