@@ -242,7 +242,7 @@ export default function PosterHero({
             src={heroSrc}
             alt={`${displayName} ${view === "poster" ? "포스터" : "메인 이미지"}`}
             fill
-            sizes="(max-width: 760px) 100vw, 540px"
+            sizes="(max-width: 760px) 100vw, (max-width: 1400px) 42vw, 820px"
             className={[
               styles.hero__posterImage,
               isPortraitFallback ? styles["hero__posterImage--portrait"] : "",
