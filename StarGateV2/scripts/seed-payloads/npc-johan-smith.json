@@ -120,8 +120,8 @@
           "summary": {
             "$replaceAll": {
               "input": "$summary",
-              "find": "CEO Dossier codename은 검토필요.",
-              "replacement": "CEO Dossier codename은 JOHAN_SMITH로 확정됨."
+              "find": "요한 스미스 신원조회 기록은 JOHAN_SMITH로 연결된다.",
+              "replacement": "요한 스미스 신원조회 기록은 JOHAN_SMITH로 연결된다."
             }
           },
           "updatedAt": { "$toDate": "2026-06-02T00:00:00.000Z" }
@@ -145,8 +145,8 @@
                   "replacement": "주요 인물: 요한 스미스(JOHAN_SMITH), 스페이스 제로 CEO"
                 }
               },
-              "find": "기록 확정도: 기관 존재와 미니 세션 접촉은 확인됨, CEO Dossier codename은 검토필요",
-              "replacement": "기록 확정도: 기관 존재와 미니 세션 접촉은 확인됨, CEO Dossier codename은 JOHAN_SMITH로 확정됨"
+              "find": "기록 확정도: 기관 존재와 미니 세션 접촉은 확인됨, 요한 스미스 신원조회 기록과 연결됨",
+              "replacement": "기록 확정도: 기관 존재와 미니 세션 접촉은 확인됨, 요한 스미스 신원조회 기록과 연결됨"
             }
           },
           "updatedAt": { "$toDate": "2026-06-02T00:00:00.000Z" }

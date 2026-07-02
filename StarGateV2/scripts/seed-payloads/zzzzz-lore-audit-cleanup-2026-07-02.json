@@ -1,0 +1,817 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "WEXLER",
+      "type": "NPC",
+      "role": "미국 부통령·노부스 오르도 군부 핵심 지도자",
+      "factionCode": "MILITARY",
+      "institutionCode": "",
+      "previewImage": "",
+      "isPublic": true,
+      "lore": {
+        "name": "캘빈 R. 웩슬러",
+        "nameEn": "Calvin R. Wexler",
+        "gender": "male",
+        "age": "76",
+        "height": "188cm",
+        "appearance": "70대 중반이지만 단상에 서면 작게 보이지 않는 편이다. 성조기 핀과 노부스 오르도 군부 금장을 단 양복 차림으로 공개 석상에 선다.",
+        "personality": "자기확신이 곧 세계관인 정치형 NPC. 공개 발언은 거칠고 과장되지만, 자금·공포·충성의 계산은 냉정하게 유지한다.",
+        "background": "미국 정치권에서 두 차례 대통령 임기를 연임한 뒤 부통령으로 자리를 옮긴 이례적 경력을 지닌다. 노부스 오르도 내부에서는 군부 세력 지도부의 일원으로 선제 격리·무장 대응 라인을 주도한다.",
+        "quote": "질서? 누가 만든 질서인가. 내 이름이 빠진 질서는 질서가 아니다.",
+        "mainImage": "",
+        "loreTags": [
+          "미국",
+          "부통령",
+          "전직대통령",
+          "군부",
+          "WASP",
+          "기독교근본주의",
+          "백인우월주의",
+          "그림자권력",
+          "NOSB-S1E3-PHANTOM"
+        ],
+        "appearsInEvents": [
+          "NOSB-S1E3-PHANTOM"
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E3-PHANTOM",
+            "role": "미국 군부·정치 라인의 강경 대응 축",
+            "summary": "S1E3 망령 기록에서 미국 측 예산·격리 정책과 군부 강경 대응 프레임의 핵심 인물로 언급되었다.",
+            "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「S1E3 망령」",
+            "updatedAt": "2026-06-11T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 공식 직함: 미합중국 부통령 / 노부스 오르도 군부 세력 수뇌부\n- 정책 기조: 이상 현상에 대한 선제 격리·무장 대응, 민간·상업 영역에 대한 군 개입 확대\n- NPC 특성: 전투 요원은 아니며 정책 결정·인사·자금 배분·언론 프레임으로 판을 움직인다.",
+        "notes": "docs/spec/npc/wexler.md 기반 DB 승격 기록. 정규 표기는 WEXLER / 캘빈 R. 웩슬러로 통합한다."
+      },
+      "loreMd": "## 대사\n> \"질서? 누가 만든 질서인가. 내 이름이 빠진 질서는 질서가 아니다.\"\n\n## 배경\n미국 정치권과 노부스 오르도 군부 라인의 강경 대응 축으로 기록된다. S1E3 망령에서는 직접 현장에 등장하지 않았지만, 예산·격리 정책과 군부 대응 프레임의 핵심 인물로 언급되었다.\n\n## 세션 기록\nNOSB S1E3 「망령」에서 웩슬러는 직접 현장에 등장하지 않았지만, 재무위원장과 Mr. 오드의 대화에서 미국 측 예산·격리 정책과 군부 강경 대응 프레임의 핵심 인물로 언급되었다.",
+      "source": "create-lore",
+      "ownerId": null,
+      "createdAt": "2026-04-22T00:00:00.000Z",
+      "updatedAt": "2026-07-02T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-image-path-cleanup",
+    "filter": {
+      "slug": "stimpack"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/consumables/stimpack.png",
+        "updatedAt": "2026-07-02T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "institutions",
+    "type": "secretariat-armory-bureau-sync",
+    "filter": {
+      "code": "SECRETARIAT"
+    },
+    "update": {
+      "$set": {
+        "summary": "노부스 오르도의 정규 행정 라인이자 내부 기관. 연구·행정·병기·국제·통제·재무 7개 하위 기구로 본부 실무를 총괄한다.",
+        "subUnits": [
+          {
+            "code": "HQ",
+            "label": "사무총장실"
+          },
+          {
+            "code": "RESEARCH",
+            "label": "연구 기구"
+          },
+          {
+            "code": "ADMIN_BUREAU",
+            "label": "행정 기구"
+          },
+          {
+            "code": "ARMORY_BUREAU",
+            "label": "병기부"
+          },
+          {
+            "code": "INTL",
+            "label": "국제 기구"
+          },
+          {
+            "code": "CONTROL",
+            "label": "통제 기구"
+          },
+          {
+            "code": "FINANCE",
+            "label": "재무 기구"
+          }
+        ],
+        "updatedAt": "2026-07-02T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "true-mini-report-number-cleanup",
+    "filter": {
+      "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": "$summary",
+                  "find": "작전 보고서 MINI B1 : 뉴 더블린",
+                  "replacement": "작전 보고서 MINI01: 네온 발키리 뉴 더블린"
+                }
+              },
+              "find": "미니 시리즈 제1화: 뉴 더블린에 어서오세요",
+              "replacement": "MINI01: 네온 발키리 뉴 더블린"
+            }
+          },
+          "sessionTitle": "작전 보고서 MINI01: 네온 발키리 뉴 더블린",
+          "reportNumber": "MINI01"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "true-mini-report-number-cleanup",
+    "filter": {
+      "sessionId": "NOSB-MINI-MINI-LEGACY"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": "$summary",
+                      "find": "작전 보고서 MINI MINI: 유산",
+                      "replacement": "작전 보고서 MINI02: 미니미니세션 1화 유산"
+                    }
+                  },
+                  "find": "MINI MINI: 유산",
+                  "replacement": "MINI02: 미니미니세션 1화 유산"
+                }
+              },
+              "find": "## 관련 문서\n샤또 브리엥, 세계이사회, 안토니오 오르시노, 네이선, 세르히오, 도나텔로, 존 오푸스, 스페이스 제로.",
+              "replacement": "## 관련 문서\n- [[샤또 브리엥]]\n- [[세계이사회]]\n- [[personnel:ANTONIO_ORSINO|안토니오 오르시노]]\n- [[personnel:NATHAN|네이선]]\n- [[personnel:SERGIO|세르히오]]\n- [[personnel:DONATELLO|도나텔로]]\n- [[personnel:JOHN_OPUS|존 오푸스]]\n- [[스페이스 제로]]"
+            }
+          },
+          "sessionTitle": "작전 보고서 MINI02: 미니미니세션 1화 유산",
+          "reportNumber": "MINI02"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "true-mini-report-number-cleanup",
+    "filter": {
+      "sessionId": "NOSB-MINI-5959-CONTAINMENT"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": {
+                        "$replaceAll": {
+                          "input": {
+                            "$replaceAll": {
+                              "input": "$summary",
+                              "find": "작전 보고서 07: 5959 격리사태",
+                              "replacement": "작전 보고서 MINI03: 5959사태"
+                            }
+                          },
+                          "find": "보고 순번: 07",
+                          "replacement": "보고 순번: MINI03"
+                        }
+                      },
+                      "find": "## 관련 문서\nZULU-5959 장밋빛 시냅스.",
+                      "replacement": "## 관련 문서\n- [[ZULU-5959 장밋빛 시냅스]]"
+                    }
+                  },
+                  "find": "## 관련 항목\nZULU-5959 장밋빛 시냅스 격리 표본.",
+                  "replacement": "## 관련 항목\n- [[catalog:zulu-5959-rose-synapse-specimen|ZULU-5959 장밋빛 시냅스 격리 표본]]"
+                }
+              },
+              "find": "## 관련 인원\n에리안, 휘트모어 핀치, 오틸리아 발트만, 빅보이, 마리아, 츠키시로 쿠즈하 [유회], 스타크 일로니손, 키아나 오캘러핸, 이동식 GP03-RX780, 크로노스, 마가렛, 백진연, 우디(03), 시유, 인덱서, 킴라박.",
+              "replacement": "## 관련 인원\n- [[personnel:ERIAN|에리안]]\n- [[personnel:PIPETTE|휘트모어 핀치]]\n- [[personnel:OTILIA|오틸리아 발트만]]\n- [[personnel:BIG BOY|빅보이]]\n- [[personnel:MARIA|마리아]]\n- [[personnel:YUHOE|츠키시로 쿠즈하 [유회]]] \n- [[personnel:CLOWN|스타크 일로니손]]\n- [[personnel:네베드|키아나 오캘러핸]]\n- [[personnel:LEE DONGSIK|이동식 GP03-RX780]]\n- [[personnel:TIME|크로노스]]\n- [[personnel:MARGARET|마가렛]]\n- [[personnel:UNYEON|백진연]]\n- [[personnel:WD-(𝓃)|우디(03)]]\n- [[personnel:TIGER298|시유]]\n- [[personnel:INDEXER|인덱서]]\n- [[personnel:KIMLEE|킴라박]]"
+            }
+          },
+          "sessionTitle": "작전 보고서 MINI03: 5959사태",
+          "reportNumber": "MINI03"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "related-links-cleanup",
+    "filter": {
+      "sessionId": "NOSB-S1E3-PHANTOM"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "## 관련 문서\n황금여명회, 광명회, #몬탁 프로젝트 - 도살견, 실험체 88, 화이트로즈, 세계이사회, 군부, 캘빈 R. 웩슬러.",
+              "replacement": "## 관련 문서\n- [[황금여명회]]\n- [[광명회]]\n- [[몬탁 프로젝트 - 도살견]]\n- [[personnel:EXPERIMENT_88|실험체 88]]\n- [[화이트로즈]]\n- [[세계이사회]]\n- [[군부]]\n- [[personnel:WEXLER|캘빈 R. 웩슬러]]"
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "public-prose-cleanup",
+    "filter": {
+      "slug": "space-zero"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": "$content",
+                      "find": "CEO Dossier codename은 검토필요",
+                      "replacement": "요한 스미스 신원조회 기록과 연결됨"
+                    }
+                  },
+                  "find": "CEO Dossier codename은 JOHAN_SMITH로 확정됨",
+                  "replacement": "요한 스미스 신원조회 기록과 연결됨"
+                }
+              },
+              "find": "주요 인물: 요한 스미스(JOHAN_SMITH), 스페이스 제로 CEO",
+              "replacement": "주요 인물: [[personnel:JOHAN_SMITH|요한 스미스]], 스페이스 제로 CEO"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "illuminati"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "## 관련 문서\n황금여명회, 실험체 88, 작전 보고서 S1E2: 선택, 작전 보고서 S1E3: 망령.",
+              "replacement": "## 관련 문서\n- [[황금여명회]]\n- [[personnel:EXPERIMENT_88|실험체 88]]\n- [[report:NOSB-S1E2-CHOICE|작전 보고서 S1E2: 선택]]\n- [[report:NOSB-S1E3-PHANTOM|작전 보고서 S1E3: 망령]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "s1e2-mini"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": "$content",
+                  "find": "실제 시세, 재화, 인벤토리 변동은 이 세션 동기화에서 적용하지 않는다.",
+                  "replacement": ""
+                }
+              },
+              "find": "## 관련 문서\n아포칼립스 호, 프로젝트 데드 핸드, 하켄크로이츠 표식의 작은 캐비넷, 송사리, 제인 피쉬, \"물주먹\" 래키, 존 오푸스, 크로노스, 오틸리아, 스타크 일로니손.",
+              "replacement": "## 관련 문서\n- [[아포칼립스 호]]\n- [[프로젝트 데드 핸드]]\n- [[catalog:hakenkreuz-cabinet|하켄크로이츠 표식의 작은 캐비넷]]\n- [[personnel:JANE_FISH|제인 피쉬]]\n- [[personnel:WATER_FIST_RACKY|\"물주먹\" 래키]]\n- [[personnel:JOHN_OPUS|존 오푸스]]\n- [[personnel:TIME|크로노스]]\n- [[personnel:OTILIA|오틸리아]]\n- [[personnel:CLOWN|스타크 일로니손]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "apocalypse-ho"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "## 관련 물증\n하켄크로이츠 표식의 작은 캐비넷은 오틸리아가 잠수 중 회수·은닉한 물건으로, 아포칼립스 호 내부의 별도 장면에서도 다시 연결된다.",
+              "replacement": "## 관련 물증\n[[catalog:hakenkreuz-cabinet|하켄크로이츠 표식의 작은 캐비넷]]은 오틸리아가 잠수 중 회수·은닉한 물건으로, 아포칼립스 호 내부의 별도 장면에서도 다시 연결된다."
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "project-dead-hand"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "## 관련 인물\n해쉬 테거, 마가렛(메리골드), 휘트모어 핀치(피펫), 수잔 델라웨어.",
+              "replacement": "## 관련 인물\n- [[personnel:INDEXER|해쉬 테거]]\n- [[personnel:MARGARET|마가렛(메리골드)]]\n- [[personnel:PIPETTE|휘트모어 핀치(피펫)]]\n- [[personnel:CLAIRVOYANCE|수잔 델라웨어]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "mini-s1e1-new-dublin"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": "$content",
+                      "find": "작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요",
+                      "replacement": "작전 보고서 MINI01: 네온 발키리 뉴 더블린"
+                    }
+                  },
+                  "find": "미니 시리즈 제1화: 뉴 더블린에 어서오세요",
+                  "replacement": "MINI01: 네온 발키리 뉴 더블린"
+                }
+              },
+              "find": "## 관련 문서\n뉴 더블린, NOGA, 네온 발키리, 키미테, 데이빗 오 캘러핸, 케이시 레이서, 도나도나, 퍼크슈타인 에스홀, 이그리트.",
+              "replacement": "## 관련 문서\n- [[뉴 더블린]]\n- [[NOGA]]\n- [[네온 발키리]]\n- [[catalog:kimite|키미테]]\n- [[personnel:SANDMAN|데이빗 오 캘러핸]]\n- [[personnel:CASEY_RACER|케이시 레이서]]\n- [[personnel:ORSIS_201|도나도나]]\n- [[personnel:PERK_ESHHALL|퍼크슈타인 에스홀]]\n- [[personnel:IGRIT|이그리트]]"
+            }
+          },
+          "title": "작전 보고서 MINI01: 네온 발키리 뉴 더블린",
+          "tags": {
+            "$setUnion": [
+              {
+                "$setDifference": [
+                  {
+                    "$ifNull": [
+                      "$tags",
+                      []
+                    ]
+                  },
+                  []
+                ]
+              },
+              [
+                "MINI01"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "new-dublin"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": "$content",
+                  "find": "작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요",
+                  "replacement": "작전 보고서 MINI01: 네온 발키리 뉴 더블린"
+                }
+              },
+              "find": "## 관련 문서\n작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요, NOGA, 네온 발키리, 데이빗 오 캘러핸, 이그리트.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-MINI-S1E1-NEW-DUBLIN|작전 보고서 MINI01: 네온 발키리 뉴 더블린]]\n- [[NOGA]]\n- [[네온 발키리]]\n- [[personnel:SANDMAN|데이빗 오 캘러핸]]\n- [[personnel:IGRIT|이그리트]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "noga"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": "$content",
+                  "find": "작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요",
+                  "replacement": "작전 보고서 MINI01: 네온 발키리 뉴 더블린"
+                }
+              },
+              "find": "## 관련 문서\n작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요, 뉴 더블린, 네온 발키리, 퍼크슈타인 에스홀, 이그리트.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-MINI-S1E1-NEW-DUBLIN|작전 보고서 MINI01: 네온 발키리 뉴 더블린]]\n- [[뉴 더블린]]\n- [[네온 발키리]]\n- [[personnel:PERK_ESHHALL|퍼크슈타인 에스홀]]\n- [[personnel:IGRIT|이그리트]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "neon-valkyrie"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": "$content",
+                  "find": "작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요",
+                  "replacement": "작전 보고서 MINI01: 네온 발키리 뉴 더블린"
+                }
+              },
+              "find": "## 관련 문서\n작전 보고서 미니 시리즈 1화: 뉴 더블린에 어서오세요, 뉴 더블린, NOGA, 케이시 레이서, 도나도나, 키미테.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-MINI-S1E1-NEW-DUBLIN|작전 보고서 MINI01: 네온 발키리 뉴 더블린]]\n- [[뉴 더블린]]\n- [[NOGA]]\n- [[personnel:CASEY_RACER|케이시 레이서]]\n- [[personnel:ORSIS_201|도나도나]]\n- [[catalog:kimite|키미테]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "zulu-269-punk-cat"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "## 관련 문서\n네온 발키리, 뉴 더블린, 데이빗 오 캘러핸, 케이시 레이서, 도나도나.",
+              "replacement": "## 관련 문서\n- [[네온 발키리]]\n- [[뉴 더블린]]\n- [[personnel:SANDMAN|데이빗 오 캘러핸]]\n- [[personnel:CASEY_RACER|케이시 레이서]]\n- [[personnel:ORSIS_201|도나도나]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "s1e3-phantom"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "## 관련 문서\n황금여명회, 광명회, #몬탁 프로젝트 - 도살견, 실험체 88, 화이트로즈, 세계이사회, 군부, 캘빈 R. 웩슬러.",
+              "replacement": "## 관련 문서\n- [[황금여명회]]\n- [[광명회]]\n- [[몬탁 프로젝트 - 도살견]]\n- [[personnel:EXPERIMENT_88|실험체 88]]\n- [[화이트로즈]]\n- [[세계이사회]]\n- [[군부]]\n- [[personnel:WEXLER|캘빈 R. 웩슬러]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "mini-mini-legacy"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": "$content",
+                      "find": "작전 보고서 MINI MINI: 유산",
+                      "replacement": "작전 보고서 MINI02: 미니미니세션 1화 유산"
+                    }
+                  },
+                  "find": "MINI MINI: 유산",
+                  "replacement": "MINI02: 미니미니세션 1화 유산"
+                }
+              },
+              "find": "## 관련 문서\n샤또 브리엥, 세계이사회, 안토니오 오르시노, 네이선, 세르히오, 도나텔로, 존 오푸스.",
+              "replacement": "## 관련 문서\n- [[샤또 브리엥]]\n- [[세계이사회]]\n- [[personnel:ANTONIO_ORSINO|안토니오 오르시노]]\n- [[personnel:NATHAN|네이선]]\n- [[personnel:SERGIO|세르히오]]\n- [[personnel:DONATELLO|도나텔로]]\n- [[personnel:JOHN_OPUS|존 오푸스]]"
+            }
+          },
+          "title": "작전 보고서 MINI02: 미니미니세션 1화 유산",
+          "tags": {
+            "$setUnion": [
+              {
+                "$setDifference": [
+                  {
+                    "$ifNull": [
+                      "$tags",
+                      []
+                    ]
+                  },
+                  [
+                    "MINI-MINI"
+                  ]
+                ]
+              },
+              [
+                "MINI02"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "chateau-brien"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": "$content",
+                      "find": "작전 보고서 MINI MINI: 유산",
+                      "replacement": "작전 보고서 MINI02: 미니미니세션 1화 유산"
+                    }
+                  },
+                  "find": "MINI MINI: 유산",
+                  "replacement": "MINI02: 미니미니세션 1화 유산"
+                }
+              },
+              "find": "## 관련 문서\n작전 보고서 MINI MINI: 유산, 세계이사회, 안토니오 오르시노, 네이선, 세르히오, 도나텔로.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-MINI-MINI-LEGACY|작전 보고서 MINI02: 미니미니세션 1화 유산]]\n- [[세계이사회]]\n- [[personnel:ANTONIO_ORSINO|안토니오 오르시노]]\n- [[personnel:NATHAN|네이선]]\n- [[personnel:SERGIO|세르히오]]\n- [[personnel:DONATELLO|도나텔로]]"
+            }
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$setDifference": [
+                  {
+                    "$ifNull": [
+                      "$tags",
+                      []
+                    ]
+                  },
+                  []
+                ]
+              },
+              [
+                "MINI02"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "5959-containment-incident"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": {
+                        "$replaceAll": {
+                          "input": {
+                            "$replaceAll": {
+                              "input": {
+                                "$replaceAll": {
+                                  "input": "$content",
+                                  "find": "작전 보고서 07: 5959 격리사태",
+                                  "replacement": "작전 보고서 MINI03: 5959사태"
+                                }
+                              },
+                              "find": "보고 순번: 07",
+                              "replacement": "보고 순번: MINI03"
+                            }
+                          },
+                          "find": "OP-07",
+                          "replacement": "MINI03"
+                        }
+                      },
+                      "find": "## 관련 문서\nZULU-5959 장밋빛 시냅스.",
+                      "replacement": "## 관련 문서\n- [[ZULU-5959 장밋빛 시냅스]]"
+                    }
+                  },
+                  "find": "## 관련 항목\nZULU-5959 장밋빛 시냅스 격리 표본.",
+                  "replacement": "## 관련 항목\n- [[catalog:zulu-5959-rose-synapse-specimen|ZULU-5959 장밋빛 시냅스 격리 표본]]"
+                }
+              },
+              "find": "## 관련 인원\n에리안, 휘트모어 핀치, 오틸리아 발트만, 빅보이, 마리아, 츠키시로 쿠즈하 [유회], 스타크 일로니손, 키아나 오캘러핸, 이동식 GP03-RX780, 크로노스, 마가렛, 백진연, 우디(03), 시유, 인덱서, 킴라박.",
+              "replacement": "## 관련 인원\n- [[personnel:ERIAN|에리안]]\n- [[personnel:PIPETTE|휘트모어 핀치]]\n- [[personnel:OTILIA|오틸리아 발트만]]\n- [[personnel:BIG BOY|빅보이]]\n- [[personnel:MARIA|마리아]]\n- [[personnel:YUHOE|츠키시로 쿠즈하 [유회]]] \n- [[personnel:CLOWN|스타크 일로니손]]\n- [[personnel:네베드|키아나 오캘러핸]]\n- [[personnel:LEE DONGSIK|이동식 GP03-RX780]]\n- [[personnel:TIME|크로노스]]\n- [[personnel:MARGARET|마가렛]]\n- [[personnel:UNYEON|백진연]]\n- [[personnel:WD-(𝓃)|우디(03)]]\n- [[personnel:TIGER298|시유]]\n- [[personnel:INDEXER|인덱서]]\n- [[personnel:KIMLEE|킴라박]]"
+            }
+          },
+          "title": "작전 보고서 MINI03: 5959사태",
+          "tags": {
+            "$setUnion": [
+              {
+                "$setDifference": [
+                  {
+                    "$ifNull": [
+                      "$tags",
+                      []
+                    ]
+                  },
+                  [
+                    "OP-07"
+                  ]
+                ]
+              },
+              [
+                "MINI03"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup",
+    "filter": {
+      "slug": "zulu-5959-rose-synapse"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": {
+                        "$replaceAll": {
+                          "input": {
+                            "$replaceAll": {
+                              "input": {
+                                "$replaceAll": {
+                                  "input": "$content",
+                                  "find": "작전 보고서 07: 5959 격리사태",
+                                  "replacement": "작전 보고서 MINI03: 5959사태"
+                                }
+                              },
+                              "find": "OP-07",
+                              "replacement": "MINI03"
+                            }
+                          },
+                          "find": "## 관련 표본\nZULU-5959 장밋빛 시냅스 격리 표본은 `MATERIAL` 카탈로그 항목으로 분리 추적한다.",
+                          "replacement": "## 관련 표본\n[[catalog:zulu-5959-rose-synapse-specimen|ZULU-5959 장밋빛 시냅스 격리 표본]]은 `MATERIAL` 카탈로그 항목으로 분리 추적한다."
+                        }
+                      },
+                      "find": "## 관련 문서\n작전 보고서 07: 5959 격리사태.",
+                      "replacement": "## 관련 문서\n- [[report:NOSB-MINI-5959-CONTAINMENT|작전 보고서 MINI03: 5959사태]]"
+                    }
+                  },
+                  "find": "## 관련 항목\nZULU-5959 장밋빛 시냅스 격리 표본.",
+                  "replacement": "## 관련 항목\n- [[catalog:zulu-5959-rose-synapse-specimen|ZULU-5959 장밋빛 시냅스 격리 표본]]"
+                }
+              },
+              "find": "## 관련 인원\n에리안, 휘트모어 핀치, 오틸리아 발트만, 빅보이, 마리아, 츠키시로 쿠즈하 [유회], 스타크 일로니손, 키아나 오캘러핸, 이동식 GP03-RX780, 크로노스, 마가렛, 백진연, 우디(03), 시유, 인덱서, 킴라박.",
+              "replacement": "## 관련 인원\n- [[personnel:ERIAN|에리안]]\n- [[personnel:PIPETTE|휘트모어 핀치]]\n- [[personnel:OTILIA|오틸리아 발트만]]\n- [[personnel:BIG BOY|빅보이]]\n- [[personnel:MARIA|마리아]]\n- [[personnel:YUHOE|츠키시로 쿠즈하 [유회]]] \n- [[personnel:CLOWN|스타크 일로니손]]\n- [[personnel:네베드|키아나 오캘러핸]]\n- [[personnel:LEE DONGSIK|이동식 GP03-RX780]]\n- [[personnel:TIME|크로노스]]\n- [[personnel:MARGARET|마가렛]]\n- [[personnel:UNYEON|백진연]]\n- [[personnel:WD-(𝓃)|우디(03)]]\n- [[personnel:TIGER298|시유]]\n- [[personnel:INDEXER|인덱서]]\n- [[personnel:KIMLEE|킴라박]]"
+            }
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$setDifference": [
+                  {
+                    "$ifNull": [
+                      "$tags",
+                      []
+                    ]
+                  },
+                  [
+                    "OP-07"
+                  ]
+                ]
+              },
+              [
+                "MINI03"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  }
+]

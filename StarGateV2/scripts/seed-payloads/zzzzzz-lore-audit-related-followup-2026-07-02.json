@@ -1,0 +1,412 @@
+[
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup-followup",
+    "filter": {
+      "slug": "new-dublin"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "## 관련 문서\n작전 보고서 MINI01: 네온 발키리 뉴 더블린, NOGA, 네온 발키리, 데이빗 오 캘러핸, 이그리트.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-MINI-S1E1-NEW-DUBLIN|작전 보고서 MINI01: 네온 발키리 뉴 더블린]]\n- [[NOGA]]\n- [[네온 발키리]]\n- [[personnel:SANDMAN|데이빗 오 캘러핸]]\n- [[personnel:IGRIT|이그리트]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup-followup",
+    "filter": {
+      "slug": "noga"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "## 관련 문서\n작전 보고서 MINI01: 네온 발키리 뉴 더블린, 뉴 더블린, 네온 발키리, 퍼크슈타인 에스홀, 이그리트.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-MINI-S1E1-NEW-DUBLIN|작전 보고서 MINI01: 네온 발키리 뉴 더블린]]\n- [[뉴 더블린]]\n- [[네온 발키리]]\n- [[personnel:PERK_ESHHALL|퍼크슈타인 에스홀]]\n- [[personnel:IGRIT|이그리트]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup-followup",
+    "filter": {
+      "slug": "neon-valkyrie"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "## 관련 문서\n작전 보고서 MINI01: 네온 발키리 뉴 더블린, 뉴 더블린, NOGA, 케이시 레이서, 도나도나, 키미테.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-MINI-S1E1-NEW-DUBLIN|작전 보고서 MINI01: 네온 발키리 뉴 더블린]]\n- [[뉴 더블린]]\n- [[NOGA]]\n- [[personnel:CASEY_RACER|케이시 레이서]]\n- [[personnel:ORSIS_201|도나도나]]\n- [[catalog:kimite|키미테]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup-followup",
+    "filter": {
+      "slug": "chateau-brien"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "## 관련 문서\n작전 보고서 MINI02: 미니미니세션 1화 유산, 세계이사회, 안토니오 오르시노, 네이선, 세르히오, 도나텔로.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-MINI-MINI-LEGACY|작전 보고서 MINI02: 미니미니세션 1화 유산]]\n- [[세계이사회]]\n- [[personnel:ANTONIO_ORSINO|안토니오 오르시노]]\n- [[personnel:NATHAN|네이선]]\n- [[personnel:SERGIO|세르히오]]\n- [[personnel:DONATELLO|도나텔로]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "related-links-cleanup-followup",
+    "filter": {
+      "slug": "zulu-5959-rose-synapse"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "## 관련 문서\n작전 보고서 MINI03: 5959사태.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-MINI-5959-CONTAINMENT|작전 보고서 MINI03: 5959사태]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "explicit-link-alias-cleanup",
+    "filter": {
+      "slug": "s1e1-order"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[검열된 비명]]",
+              "replacement": "[[ZULU-0028 검열된 비명|검열된 비명]]"
+            }
+          }
+        }
+      },
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[전자화 눈물]]",
+              "replacement": "[[ZULU-0113 전자화 눈물|전자화 눈물]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "explicit-link-alias-cleanup",
+    "filter": {
+      "slug": "zulu"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[검열된 비명]]",
+              "replacement": "[[ZULU-0028 검열된 비명|검열된 비명]]"
+            }
+          }
+        }
+      },
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[전자화 눈물]]",
+              "replacement": "[[ZULU-0113 전자화 눈물|전자화 눈물]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "explicit-link-alias-cleanup",
+    "filter": {
+      "slug": "broken-syllable"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[검열된 비명]]",
+              "replacement": "[[ZULU-0028 검열된 비명|검열된 비명]]"
+            }
+          }
+        }
+      },
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[전자화 눈물]]",
+              "replacement": "[[ZULU-0113 전자화 눈물|전자화 눈물]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "explicit-link-alias-cleanup",
+    "filter": {
+      "slug": "zulu-0028-containment-box"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[검열된 비명]]",
+              "replacement": "[[ZULU-0028 검열된 비명|검열된 비명]]"
+            }
+          }
+        }
+      },
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[전자화 눈물]]",
+              "replacement": "[[ZULU-0113 전자화 눈물|전자화 눈물]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "explicit-link-alias-cleanup",
+    "filter": {
+      "slug": "s1e1-mini"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[검열된 비명]]",
+              "replacement": "[[ZULU-0028 검열된 비명|검열된 비명]]"
+            }
+          }
+        }
+      },
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[전자화 눈물]]",
+              "replacement": "[[ZULU-0113 전자화 눈물|전자화 눈물]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "explicit-link-alias-cleanup",
+    "filter": {
+      "slug": "operation-field-protocol"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[검열된 비명]]",
+              "replacement": "[[ZULU-0028 검열된 비명|검열된 비명]]"
+            }
+          }
+        }
+      },
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[전자화 눈물]]",
+              "replacement": "[[ZULU-0113 전자화 눈물|전자화 눈물]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "explicit-link-alias-cleanup",
+    "filter": {
+      "sessionId": "NOSB-S1E1-ORDER"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "[[검열된 비명]]",
+              "replacement": "[[ZULU-0028 검열된 비명|검열된 비명]]"
+            }
+          }
+        }
+      },
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "[[전자화 눈물]]",
+              "replacement": "[[ZULU-0113 전자화 눈물|전자화 눈물]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "explicit-link-alias-cleanup",
+    "filter": {
+      "sessionId": "NOSB-S1E1-MINI"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "[[검열된 비명]]",
+              "replacement": "[[ZULU-0028 검열된 비명|검열된 비명]]"
+            }
+          }
+        }
+      },
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "[[전자화 눈물]]",
+              "replacement": "[[ZULU-0113 전자화 눈물|전자화 눈물]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "explicit-link-alias-cleanup",
+    "filter": {
+      "slug": "space-zero"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[검열된 비명]]",
+              "replacement": "[[ZULU-0028 검열된 비명|검열된 비명]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-02T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  }
+]

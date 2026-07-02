@@ -1,6 +1,6 @@
 ---
 title: 로어북
-updated: 2026-04-22
+updated: 2026-07-02
 ---
 
 # StarGate 로어북
@@ -20,7 +20,8 @@ docs/lore/
 ├── ideology/               # 이념, 사조, 세계관 원리
 ├── concept/                # 개념, 용어, 현상 정의
 ├── faction/                # 세력 스켈레톤 (세부는 롱폼 추가 예정)
-└── place/                  # 장소, 지리 (현재 비어있음)
+├── place/                  # 장소, 지리 (현재 비어있음)
+└── session-sync/           # 세션 동기화 사설 점검/coverage 노트
 ```
 
 ## 현재 문서 인덱스
@@ -40,6 +41,7 @@ docs/lore/
 ### concept/
 
 - [이상 현상 (Anomaly)](concept/anomaly.md)
+- [깨진 음절](concept/broken-syllable.md)
 - [광원화 (Light-sourcing)](concept/light-sourcing.md)
 
 ### faction/
@@ -51,6 +53,11 @@ docs/lore/
 ### place/
 
 (비어있음)
+
+### session-sync/
+
+- [NOSB S1E1 미니 coverage](session-sync/nosb-s1e1-mini-coverage.md)
+- [NOSB S1E2 선택 coverage](session-sync/nosb-s1e2-choice-coverage.md)
 
 ## 문서 추가 방법
 

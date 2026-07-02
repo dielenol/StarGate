@@ -241,12 +241,12 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
   - master_items (equipment/consumable/catalog): `/create-lore` payload JSON → ERP `/erp/inventory/items/new` 폼 또는 직접 insert. catalog 전용 seed 스크립트는 Phase 5-g 대상.
 - **소비**: factions/institutions/characters/master_items 컬렉션을 읽는 공개 사이트 페이지·디스코드 봇·ERP 페이지(`/erp/inventory`, `/erp/wiki/catalog/{all|equipment|consumable|sample|special}`)에서 활용. 기존 `/erp/wiki/catalog/material`은 샘플 탭으로 리다이렉트되는 legacy alias다.
 
-## 현재 DB 상태 (2026-05-14 기준)
+## 현재 DB 상태 (2026-07-02 기준)
 
 | 컬렉션 | 건수 | 내용 |
 |--------|------|------|
 | `factions` | 4 | 외부 3대 (`MILITARY` / `COUNCIL` / `CIVIL` — `scope=external`) + `NOVUS_ORDO` (`scope=internal`, 본부). 외부 3대는 V(VIP) 명목 부여만 일반적, A~U 정규 부여는 원칙적으로 NOVUS_ORDO 내부(사무국·MANUS) 인사에만 적용 (운영 규약, [personnel-spec.md §4 등급 부여 정책](personnel-spec.md) 참조). lore MD: [`faction/novus-ordo.md`](faction/novus-ordo.md) / [`faction/military.md`](faction/military.md) / [`faction/council.md`](faction/council.md) / [`faction/civil.md`](faction/civil.md) |
-| `institutions` | 2 | `SECRETARIAT` (사무국, subUnits 6: HQ/RESEARCH/ADMIN_BUREAU/INTL/CONTROL/FINANCE) / `MANUS` (현장요원, subUnits 5: SECTOR_A~E = NATO phonetic 알파/브라보/찰리/델타/에코) — **노부스 오르도 내부 기관**. `parentFactionCode` 는 모두 `NOVUS_ORDO` (Phase 5-h 에서 COUNCIL → NOVUS_ORDO 로 이전). 권한 8단(GM~U) 모두 정규 부여 대상. lore MD: [`institution/manus.md`](institution/manus.md) / [`institution/secretariat.md`](institution/secretariat.md) |
+| `institutions` | 4 | `SECRETARIAT` (사무국, subUnits 7: HQ/RESEARCH/ADMIN_BUREAU/ARMORY_BUREAU/INTL/CONTROL/FINANCE) / `MANUS` (현장요원, subUnits 5: SECTOR_A~E = NATO phonetic 알파/브라보/찰리/델타/에코) / 외부 기관성 협력 조직 `SPACE_ZERO`, `WHITE_ROSE` — `SECRETARIAT`/`MANUS` 는 **노부스 오르도 내부 기관**. `parentFactionCode` 는 `SECRETARIAT`/`MANUS` 모두 `NOVUS_ORDO` (Phase 5-h 에서 COUNCIL → NOVUS_ORDO 로 이전). 권한 8단(GM~U)은 원칙적으로 NOVUS_ORDO 내부 인사에 정규 부여 대상. lore MD: [`institution/manus.md`](institution/manus.md) / [`institution/secretariat.md`](institution/secretariat.md) / [`institution/space-zero.md`](institution/space-zero.md) / [`institution/white-rose.md`](institution/white-rose.md) |
 | `characters` (NPC) | 기존 N | NPC 이주본 3건(REGISTRAR/STAR_MART/TOWASKI) + ARBITER(제레마이어 폴, 재무위 의장) MD 작성 — DB 적재는 후속. Phase 5-h: SECRETARIAT/MANUS 소속 NPC(ARBITER/REGISTRAR)의 factionCode 가 NOVUS_ORDO 로 백필됨 |
 | `master_items` | 운영 N건 | equipment + consumable + catalog 도메인 mirror. ERP 인벤토리(`/erp/inventory`) + 카탈로그(`/erp/wiki/catalog/{all\|equipment\|consumable\|sample\|special}`)에서 활용 |
 
