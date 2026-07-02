@@ -1,0 +1,67 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "regular-report-number-normalization",
+    "filter": {
+      "sessionId": "NOSB-S1E1-ORDER"
+    },
+    "update": {
+      "$set": {
+        "reportNumber": "01",
+        "updatedAt": "2026-07-02T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "regular-report-number-normalization",
+    "filter": {
+      "sessionId": "NOSB-S1E1-MINI"
+    },
+    "update": {
+      "$set": {
+        "reportNumber": "01.5",
+        "updatedAt": "2026-07-02T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "regular-report-number-normalization",
+    "filter": {
+      "sessionId": "NOSB-S1E2-CHOICE"
+    },
+    "update": {
+      "$set": {
+        "reportNumber": "02",
+        "updatedAt": "2026-07-02T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "regular-report-number-normalization",
+    "filter": {
+      "sessionId": "NOSB-S1E2-MINI"
+    },
+    "update": {
+      "$set": {
+        "reportNumber": "02.5",
+        "updatedAt": "2026-07-02T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "regular-report-number-normalization",
+    "filter": {
+      "sessionId": "NOSB-S1E3-PHANTOM"
+    },
+    "update": {
+      "$set": {
+        "reportNumber": "03",
+        "updatedAt": "2026-07-02T00:00:00.000Z"
+      }
+    }
+  }
+]
