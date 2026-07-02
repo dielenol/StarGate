@@ -8,6 +8,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
+import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import {
   getCharacterBalance,
@@ -53,6 +54,9 @@ export default async function EquipmentShopPage() {
   if (!session?.user) {
     redirect("/login");
   }
+  if (!hasRole(session.user.role, "GM")) {
+    redirect("/erp");
+  }
 
   const userId = session.user.id;
 
@@ -70,7 +74,8 @@ export default async function EquipmentShopPage() {
     mainCharacterError =
       "메인 캐릭터 정합성 위반. 운영자(GM)에게 문의해주세요.";
   }
-  const mainCharacterId = mainCharacter ? String(mainCharacter._id) : null;
+  const mainAgent = mainCharacter?.type === "AGENT" ? mainCharacter : null;
+  const mainCharacterId = mainAgent ? String(mainAgent._id) : null;
 
   const [initialCatalog, initialBalance, initialLedger] = await Promise.all([
     buildCatalogResponse().catch(
@@ -94,7 +99,7 @@ export default async function EquipmentShopPage() {
   ]);
 
   const initialCredits: CreditsResponse | undefined =
-    mainCharacter && mainCharacterId
+    mainAgent && mainCharacterId
       ? {
           transactions: initialLedger.map((t) => ({
             ...t,
@@ -102,7 +107,7 @@ export default async function EquipmentShopPage() {
           })),
           balance: initialBalance,
           characterId: mainCharacterId,
-          characterCodename: mainCharacter.codename,
+          characterCodename: mainAgent.codename,
         }
       : undefined;
 
@@ -110,13 +115,23 @@ export default async function EquipmentShopPage() {
     <EquipmentShopClient
       initialCatalog={initialCatalog}
       mainCharacter={
-        mainCharacter
-          ? { id: String(mainCharacter._id), codename: mainCharacter.codename }
+        mainAgent
+          ? {
+              id: String(mainAgent._id),
+              codename: mainAgent.codename,
+              stats: {
+                hp: mainAgent.play.hp,
+                san: mainAgent.play.san,
+                def: mainAgent.play.def,
+                atk: mainAgent.play.atk,
+              },
+            }
           : null
       }
       initialBalance={initialBalance}
       initialCredits={initialCredits}
       mainCharacterError={mainCharacterError}
+      isGM={true}
     />
   );
 }

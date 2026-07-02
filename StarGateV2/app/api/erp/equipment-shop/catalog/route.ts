@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { requireRole } from "@/lib/auth/rbac";
 import {
   EQUIPMENT_SHOP_CATEGORIES,
   toEquipmentShopCatalogItem,
@@ -18,6 +19,11 @@ export async function GET() {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  try {
+    requireRole(session.user.role, "GM");
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {

@@ -2,7 +2,7 @@
  * 병기부 카탈로그 query hook.
  *
  * - `useEquipmentShopCatalog`: GET /api/erp/equipment-shop/catalog
- * - 카탈로그 대상은 master_items 의 WEAPON/ARMOR 중 판매 가능한 항목.
+ * - 카탈로그 대상은 master_items 의 WEAPON/ARMOR + 전략 태그가 붙은 SPECIAL 항목.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -18,9 +18,11 @@ export type EquipmentShopErrorCode =
   | "INSUFFICIENT_BALANCE"
   | "NO_MAIN_CHARACTER"
   | "MAIN_CHARACTER_INTEGRITY"
+  | "NO_AGENT_TARGETS"
   | "INVENTORY_FAILED_REFUNDED"
   | "REFUND_FAILED"
   | "INVALID_CART"
+  | "INVALID_RESEARCH"
   | "ITEM_NOT_AVAILABLE"
   | "PRICE_NOT_SET";
 

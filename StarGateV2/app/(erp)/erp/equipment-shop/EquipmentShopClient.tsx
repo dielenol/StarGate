@@ -1,13 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   type CreditsResponse,
   useCredits,
 } from "@/hooks/queries/useCreditsQuery";
-import { useCheckoutEquipmentShopCart } from "@/hooks/mutations/useEquipmentShopMutation";
+import {
+  type EquipmentResearchScope,
+  type EquipmentResearchStat,
+  useApplyEquipmentResearch,
+  useCheckoutEquipmentShopCart,
+} from "@/hooks/mutations/useEquipmentShopMutation";
 import {
   EquipmentShopApiError,
   type EquipmentShopCatalogEntry,
@@ -21,98 +26,58 @@ import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
-import type { DialogueBeepOptions } from "@/lib/audio/dialogue-beep-engine";
 import { describeApiError } from "@/lib/api/describe-error";
 import { formatCredits } from "@/lib/format/credit";
 
-import { useNpcDialogue } from "@/hooks/useNpcDialogue";
-
 import ShopItemIcon from "../shop/ShopItemIcon";
 
-import styles from "../shop/page.module.css";
+import styles from "./page.module.css";
 
+type ArmoryZone = "lab" | "towaski" | "strategic" | "custom";
 type EquipmentShopTabValue = "ALL" | "WEAPON" | "ARMOR";
 type CartState = Record<string, number>;
 type NoticeState = { tone: "success" | "info"; text: string } | null;
-type TowaskiMood =
-  | "welcome"
-  | "tired"
-  | "soldout"
-  | "bag"
-  | "doodle"
-  | "purchase"
-  | "nap";
+type MainCharacterStats = Record<EquipmentResearchStat, number>;
 
 const MAX_CART_QUANTITY_PER_ITEM = 1;
-const SHOP_ENTRY_SFX_SRC = "/assets/shop/sfx/convenience-chime.mp3";
-const SHOP_ENTRY_SFX_VOLUME = 0.145;
-const TOWASKI_IDLE_DELAY_MS = 18000;
-
 const TOWASKI_PROFILE_SRC = "/assets/shop/hud/tia-profile.webp";
-const SHOP_CLOSED_MESSAGE =
-  "병기부 문이 닫혔다.\n작업대 조명만 희미하게 남아 있다...";
-const SHOP_CLOSED_BEEP_OPTIONS = {
-  preset: "system",
-  pitch: 720,
-  speed: 46,
-  volume: 0.46,
-  wave: "sine",
-  initialDelay: 180,
-} as const satisfies Pick<
-  DialogueBeepOptions,
-  "initialDelay" | "pitch" | "preset" | "speed" | "volume" | "wave"
->;
+const TOWASKI_PORTRAIT_SRC = "/assets/shop/hud/tia-welcome.png";
 
-const TOWASKI_MOOD_ASSETS: Record<TowaskiMood, string> = {
-  welcome: "/assets/shop/hud/tia-welcome.png",
-  tired: "/assets/shop/hud/tia-tired.png",
-  soldout: "/assets/shop/hud/tia-soldout.png",
-  bag: "/assets/shop/hud/tia-bag.png",
-  doodle: "/assets/shop/hud/tia-doodle.png",
-  purchase: "/assets/shop/hud/tia-purchase-complete.png",
-  nap: "/assets/shop/hud/tia-nap.png",
-};
-
-const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {
-  welcome: "반출 확인",
-  tired: "허가 확인",
-  soldout: "반출 불가",
-  bag: "케이스 확인",
-  doodle: "정비 중",
-  purchase: "거래 완료",
-  nap: "작업 종료",
-};
-
-const TOWASKI_DIALOGUE_LINES = {
-  welcome: "어서 와. 토와스키다. 만질 땐 방아쇠 말고 가격표부터 봐.",
-  newItems:
-    "오늘 올린 건 카탈로그에 있는 장비뿐이야. 허가 안 난 물건은 이 진열대에 안 올라와.",
-  idleBrowse:
-    "천천히 봐. 장비는 고르는 시간보다 들고 나간 뒤가 더 길어야지.",
-  idleDoodle:
-    "대충 만든 물건은 장난감이지. 장난감은 애들한테나 팔아.",
-  idleStockCheck:
-    "반출 허가, 정비 이력, 탄종 호환... 하나라도 틀리면 문 밖 못 나간다.",
-  idleBag:
-    "포장은 해주지. 다만 봉투라고 부르진 마라. 장비 케이스다.",
-  idleSleepy: "시가 끄는 중이었다. 계산은 살아 있어.",
-  soldOut:
-    "그건 지금 반출 불가다. 가격이 없거나 판매 허가가 아직 안 떨어졌다는 뜻이지.",
-  bag: "카트에 올렸다. 이제 네 잔액이 버티는지 보자.",
-  goodbye: "좋아. 가져가. 망가뜨리면 수리비부터 얘기한다.",
-  closed: SHOP_CLOSED_MESSAGE,
-  noAgent: "메인 AGENT부터 확인해. 신원 없는 손엔 쇳덩이 못 넘긴다.",
-  checkoutError:
-    "견적서가 어긋났다. 수량, 잔액, 반출 가능 여부 다시 봐.",
-} as const;
-
-const TOWASKI_IDLE_LINES: readonly { mood: TowaskiMood; text: string }[] = [
-  { mood: "doodle", text: TOWASKI_DIALOGUE_LINES.newItems },
-  { mood: "welcome", text: TOWASKI_DIALOGUE_LINES.idleBrowse },
-  { mood: "doodle", text: TOWASKI_DIALOGUE_LINES.idleDoodle },
-  { mood: "tired", text: TOWASKI_DIALOGUE_LINES.idleStockCheck },
-  { mood: "bag", text: TOWASKI_DIALOGUE_LINES.idleBag },
-  { mood: "nap", text: TOWASKI_DIALOGUE_LINES.idleSleepy },
+const ZONE_DEFS: Array<{
+  value: ArmoryZone;
+  label: string;
+  eyebrow: string;
+  description: string;
+  npc: string;
+}> = [
+  {
+    value: "lab",
+    label: "병기 연구소",
+    eyebrow: "RESEARCH LAB",
+    description: "개인 강화와 전체 AGENT 팀 강화를 실제 스탯에 반영합니다.",
+    npc: "연구 담당관",
+  },
+  {
+    value: "towaski",
+    label: "토와스키 장비 판매점",
+    eyebrow: "TOWASKI",
+    description: "무기와 방어구를 구매해 인벤토리에 반출합니다.",
+    npc: "립 토와스키",
+  },
+  {
+    value: "strategic",
+    label: "전략 장비 판매점",
+    eyebrow: "STRATEGIC ASSETS",
+    description: "차량, 전략 자산, 전투 보조품을 구매합니다.",
+    npc: "전략 자산 담당관",
+  },
+  {
+    value: "custom",
+    label: "전용무기 제작소",
+    eyebrow: "CUSTOM WORKSHOP",
+    description: "전용무기 제작 상담 구역입니다. 요청 저장은 후속 단계에서 연결합니다.",
+    npc: "제작 담당관",
+  },
 ];
 
 const TAB_DEFS: { value: EquipmentShopTabValue; label: string }[] = [
@@ -121,35 +86,62 @@ const TAB_DEFS: { value: EquipmentShopTabValue; label: string }[] = [
   { value: "ARMOR", label: "방어구" },
 ];
 
-const GROUP_LABELS: Record<Exclude<EquipmentShopTabValue, "ALL">, string> = {
+const CATEGORY_LABELS: Record<EquipmentShopCatalogEntry["category"], string> = {
   WEAPON: "WEAPON",
   ARMOR: "ARMOR",
+  SPECIAL: "STRATEGIC",
 };
+
+const STAT_DEFS: Array<{
+  value: EquipmentResearchStat;
+  label: string;
+  hint: string;
+}> = [
+  { value: "hp", label: "HP", hint: "체력" },
+  { value: "san", label: "SAN", hint: "정신력" },
+  { value: "def", label: "DEF", hint: "방어력" },
+  { value: "atk", label: "ATK", hint: "공격력" },
+];
 
 const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   INSUFFICIENT_BALANCE: "잔액이 부족합니다.",
   NO_MAIN_CHARACTER: "메인 AGENT 캐릭터가 등록되지 않았습니다.",
   MAIN_CHARACTER_INTEGRITY:
     "메인 캐릭터 정합성 위반 — 운영자(GM)에게 문의하세요.",
+  NO_AGENT_TARGETS: "강화를 적용할 AGENT 캐릭터가 없습니다.",
   INVENTORY_FAILED_REFUNDED:
     "구매에 실패했습니다. 차감된 잔액은 자동 환불되었습니다.",
   REFUND_FAILED:
     "구매 실패 + 자동 환불 실패. 운영자(GM)에게 문의해 잔액 정정을 요청하세요.",
   INVALID_CART: "장비 장바구니 구성이 올바르지 않습니다.",
-  ITEM_NOT_AVAILABLE: "판매 가능한 장비 카탈로그 품목이 아닙니다.",
+  INVALID_RESEARCH: "연구 적용값이 올바르지 않습니다.",
+  ITEM_NOT_AVAILABLE: "판매 가능한 병기부 카탈로그 품목이 아닙니다.",
   PRICE_NOT_SET: "가격이 확정되지 않은 장비는 구매할 수 없습니다.",
 };
 
 interface Props {
   initialCatalog: EquipmentShopCatalogResponse;
-  mainCharacter: { id: string; codename: string } | null;
+  mainCharacter: {
+    id: string;
+    codename: string;
+    stats: MainCharacterStats;
+  } | null;
   initialBalance: number;
   initialCredits: CreditsResponse | undefined;
   mainCharacterError: string | null;
+  isGM: boolean;
 }
 
 function describeEquipmentShopError(err: unknown): string {
   return describeApiError(err, EquipmentShopApiError, ERROR_MESSAGE);
+}
+
+function activeZoneMeta(zone: ArmoryZone) {
+  return ZONE_DEFS.find((item) => item.value === zone) ?? ZONE_DEFS[0];
+}
+
+function statLabel(stat: EquipmentResearchStat): string {
+  return stat.toUpperCase();
 }
 
 export default function EquipmentShopClient({
@@ -158,47 +150,31 @@ export default function EquipmentShopClient({
   initialBalance,
   initialCredits,
   mainCharacterError,
+  isGM,
 }: Props) {
   const catalogQuery = useEquipmentShopCatalog({ initialData: initialCatalog });
   const creditsQuery = useCredits({ initialData: initialCredits });
   const checkoutMutation = useCheckoutEquipmentShopCart();
+  const researchMutation = useApplyEquipmentResearch();
 
+  const [activeZone, setActiveZone] = useState<ArmoryZone>("lab");
   const [activeTab, setActiveTab] = useState<EquipmentShopTabValue>("ALL");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [cart, setCart] = useState<CartState>({});
+  const [researchScope, setResearchScope] =
+    useState<EquipmentResearchScope>("personal");
+  const [researchStat, setResearchStat] =
+    useState<EquipmentResearchStat>("hp");
+  const [researchAmount, setResearchAmount] = useState(1);
+  const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
+    () => mainCharacter?.stats ?? null,
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
 
   const catalog = catalogQuery.data ?? initialCatalog;
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
-
-  const {
-    mood: towaskiMood,
-    line: towaskiLine,
-    visibleLine,
-    typing,
-    playLine,
-    clearIdleTimer,
-    scheduleIdle,
-    showLineImmediately: showTowaskiLineImmediately,
-    resetIdleCycle: resetTowaskiIdleCycle,
-    stopEngine: stopTowaskiEngine,
-  } = useNpcDialogue<TowaskiMood>({
-    isOpen: catalog.isOpen,
-    hasMainCharacter,
-    idleDelayMs: TOWASKI_IDLE_DELAY_MS,
-    idleLines: TOWASKI_IDLE_LINES,
-    closedMood: "nap",
-    closedLine: TOWASKI_DIALOGUE_LINES.closed,
-    noAgentMood: "tired",
-    noAgentLine: TOWASKI_DIALOGUE_LINES.noAgent,
-    welcomeMood: "welcome",
-    welcomeLine: TOWASKI_DIALOGUE_LINES.welcome,
-    beepDefaults: { pitch: 760, speed: 38, volume: 0.62 },
-    engineVolume: 0.62,
-    entrySfxSrc: SHOP_ENTRY_SFX_SRC,
-    entrySfxVolume: SHOP_ENTRY_SFX_VOLUME,
-  });
+  const zoneMeta = activeZoneMeta(activeZone);
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -211,17 +187,28 @@ export default function EquipmentShopClient({
     return map;
   }, [catalog.items]);
 
-  const itemsByTab = useMemo(() => {
-    if (activeTab === "ALL") return catalog.items;
-    return catalog.items.filter((item) => item.category === activeTab);
-  }, [catalog.items, activeTab]);
+  const towaskiItems = useMemo(() => {
+    if (activeTab === "ALL") {
+      return catalog.items.filter((item) => item.zone === "towaski");
+    }
+    return catalog.items.filter(
+      (item) => item.zone === "towaski" && item.category === activeTab,
+    );
+  }, [activeTab, catalog.items]);
+
+  const strategicItems = useMemo(
+    () => catalog.items.filter((item) => item.zone === "strategic"),
+    [catalog.items],
+  );
+
+  const salesItems = activeZone === "strategic" ? strategicItems : towaskiItems;
 
   const selectedItem = useMemo(() => {
-    const selectedInTab = selectedKey
-      ? itemsByTab.find((item) => item.key === selectedKey)
+    const selectedInZone = selectedKey
+      ? salesItems.find((item) => item.key === selectedKey)
       : undefined;
-    return selectedInTab ?? itemsByTab[0] ?? catalog.items[0];
-  }, [catalog.items, itemsByTab, selectedKey]);
+    return selectedInZone ?? salesItems[0] ?? null;
+  }, [salesItems, selectedKey]);
 
   const cartLines = useMemo(() => {
     return Object.entries(cart)
@@ -243,9 +230,7 @@ export default function EquipmentShopClient({
   const cartTotal = cartLines.reduce((sum, line) => sum + line.total, 0);
   const cartHasStockIssue = cartLines.some((line) => line.stockIssue);
   const cartOverBalance = cartTotal > balance;
-  const shopStatusLabel = catalog.isOpen ? "영업 중" : "영업 종료";
-
-  const canUseShop = hasMainCharacter && catalog.isOpen;
+  const canUseShop = isGM && hasMainCharacter && catalog.isOpen;
   const canCheckout =
     canUseShop &&
     cartLines.length > 0 &&
@@ -257,52 +242,17 @@ export default function EquipmentShopClient({
   const selectedCanAdd =
     Boolean(selectedItem) &&
     canUseShop &&
-    selectedItem.available &&
+    selectedItem?.available === true &&
     selectedItem.stock > 0 &&
     selectedQuantity < selectedItem.stock &&
     selectedQuantity < MAX_CART_QUANTITY_PER_ITEM;
-  const shopStageClassName = [
-    styles.shopStage,
-    !catalog.isOpen ? styles["shopStage--closed"] : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
 
-  useEffect(() => {
-    if (!catalog.isOpen) {
-      clearIdleTimer();
-      stopTowaskiEngine();
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCart({});
-      setSelectedKey(null);
-      setErrorMessage(null);
-      setNotice(null);
-      playLine("nap", TOWASKI_DIALOGUE_LINES.closed, {
-        ...SHOP_CLOSED_BEEP_OPTIONS,
-        returnToIdle: false,
-        sound: true,
-      });
-      return;
-    }
-
-    if (!hasMainCharacter) {
-      playLine("tired", TOWASKI_DIALOGUE_LINES.noAgent, { sound: false });
-      return;
-    }
-
-    showTowaskiLineImmediately("welcome", TOWASKI_DIALOGUE_LINES.welcome);
-    resetTowaskiIdleCycle();
-    scheduleIdle();
-  }, [
-    catalog.isOpen,
-    clearIdleTimer,
-    hasMainCharacter,
-    playLine,
-    resetTowaskiIdleCycle,
-    scheduleIdle,
-    showTowaskiLineImmediately,
-    stopTowaskiEngine,
-  ]);
+  const canApplyResearch =
+    isGM &&
+    !researchMutation.isPending &&
+    researchAmount >= 1 &&
+    researchAmount <= 999 &&
+    (researchScope === "team" || hasMainCharacter);
 
   function setCartQuantity(key: string, quantity: number) {
     const item = catalogByKey.get(key);
@@ -318,34 +268,25 @@ export default function EquipmentShopClient({
     });
   }
 
-  function handleTabChange(tab: EquipmentShopTabValue) {
-    setActiveTab(tab);
-    if (canUseShop) {
-      playLine("doodle", TOWASKI_DIALOGUE_LINES.newItems);
-    }
-  }
-
-  function handleSelectProduct(item: EquipmentShopCatalogEntry) {
-    setSelectedKey(item.key);
-    if (!canUseShop) return;
-    if (item.stock <= 0 || !item.available) {
-      playLine("soldout", TOWASKI_DIALOGUE_LINES.soldOut);
-    }
+  function handleZoneChange(zone: ArmoryZone) {
+    setActiveZone(zone);
+    setSelectedKey(null);
+    setErrorMessage(null);
+    setNotice(null);
   }
 
   function handleAddToCart(item: EquipmentShopCatalogEntry, quantity = 1) {
     if (!canUseShop) {
-      playLine(
-        catalog.isOpen ? "tired" : "nap",
-        catalog.isOpen
-          ? TOWASKI_DIALOGUE_LINES.noAgent
-          : TOWASKI_DIALOGUE_LINES.closed,
+      setErrorMessage(
+        hasMainCharacter
+          ? "GM preview 상태에서만 병기부 구매를 실행할 수 있습니다."
+          : "메인 AGENT 캐릭터가 없어 구매할 수 없습니다.",
       );
       return;
     }
 
     if (item.stock <= 0 || !item.available) {
-      playLine("soldout", TOWASKI_DIALOGUE_LINES.soldOut);
+      setErrorMessage("현재 반출할 수 없는 품목입니다.");
       return;
     }
 
@@ -353,7 +294,6 @@ export default function EquipmentShopClient({
     setErrorMessage(null);
     setNotice(null);
     setCartQuantity(item.key, (cart[item.key] ?? 0) + quantity);
-    playLine("bag", TOWASKI_DIALOGUE_LINES.bag);
   }
 
   function handleRemoveFromCart(key: string) {
@@ -378,22 +318,472 @@ export default function EquipmentShopClient({
       {
         onSuccess: (res) => {
           setCart({});
-          playLine("purchase", TOWASKI_DIALOGUE_LINES.goodbye);
           setNotice({
             tone: "success",
-            text: `${res.order.items.length}종 결제가 완료되었습니다.`,
+            text: `${res.order.items.length}종 반출 결제가 완료되었습니다.`,
           });
         },
         onError: (err) => {
-          playLine("tired", TOWASKI_DIALOGUE_LINES.checkoutError);
           setErrorMessage(describeEquipmentShopError(err));
         },
       },
     );
   }
 
+  function handleResearchAmountChange(value: number) {
+    if (!Number.isFinite(value)) {
+      setResearchAmount(1);
+      return;
+    }
+    setResearchAmount(Math.min(999, Math.max(1, Math.floor(value))));
+  }
+
+  function handleApplyResearch() {
+    if (!canApplyResearch) return;
+    setErrorMessage(null);
+    setNotice(null);
+    researchMutation.mutate(
+      {
+        scope: researchScope,
+        stat: researchStat,
+        amount: researchAmount,
+      },
+      {
+        onSuccess: (res) => {
+          if (mainCharacter) {
+            const ownResult = res.targets.find(
+              (target) => target.id === mainCharacter.id,
+            );
+            if (ownResult) {
+              setLocalStats((prev) =>
+                prev ? { ...prev, [res.stat]: ownResult.after } : prev,
+              );
+            }
+          }
+          setNotice({
+            tone: "success",
+            text:
+              `${res.affected}명에게 ${statLabel(res.stat)} +${res.amount} ` +
+              `강화를 적용했습니다.` +
+              `${res.skipped > 0 ? ` (${res.skipped}명 제외)` : ""}` +
+              `${res.auditFailed > 0 ? ` 감사 로그 실패 ${res.auditFailed}건` : ""}`,
+          });
+        },
+        onError: (err) => {
+          setErrorMessage(describeEquipmentShopError(err));
+        },
+      },
+    );
+  }
+
+  function renderSalesPanel() {
+    const isTowaski = activeZone === "towaski";
+
+    return (
+      <div className={styles.salesLayout}>
+        <section className={styles.shelfPanel} aria-label={zoneMeta.label}>
+          {isTowaski ? (
+            <div
+              role="tablist"
+              aria-label="토와스키 카테고리"
+              className={styles.filters}
+            >
+              {TAB_DEFS.map((tab) => {
+                const isActive = activeTab === tab.value;
+                const count =
+                  tab.value === "ALL"
+                    ? catalog.items.filter((item) => item.zone === "towaski")
+                        .length
+                    : catalog.items.filter(
+                        (item) =>
+                          item.zone === "towaski" &&
+                          item.category === tab.value,
+                      ).length;
+                return (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={[
+                      styles.filterTab,
+                      isActive ? styles["filterTab--active"] : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={() => setActiveTab(tab.value)}
+                  >
+                    {tab.label}
+                    <span>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.panelIntro}>
+              <Eyebrow>STRATEGIC CATALOG</Eyebrow>
+              <strong>전략 자산 반출대</strong>
+            </div>
+          )}
+
+          {salesItems.length === 0 ? (
+            <div className={styles.empty}>
+              {isTowaski
+                ? "등록된 토와스키 장비 품목이 없습니다."
+                : "전략 장비 판매점 대상 품목이 없습니다. SPECIAL 카테고리에 병기부/전략자산/차량/전투보조 태그가 붙으면 이곳에 표시됩니다."}
+            </div>
+          ) : (
+            <div className={styles.productGrid}>
+              {salesItems.map((item) => {
+                const inCart = cart[item.key] ?? 0;
+                const isSelected = selectedItem?.key === item.key;
+                const isSoldOut = item.stock <= 0 || !item.available;
+                const canAdd =
+                  canUseShop &&
+                  !isSoldOut &&
+                  inCart < item.stock &&
+                  inCart < MAX_CART_QUANTITY_PER_ITEM;
+
+                return (
+                  <article
+                    key={item.key}
+                    className={[
+                      styles.productCard,
+                      isSelected ? styles["productCard--selected"] : "",
+                      isSoldOut ? styles["productCard--locked"] : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    <button
+                      type="button"
+                      className={styles.productSelect}
+                      onClick={() => setSelectedKey(item.key)}
+                      aria-pressed={isSelected}
+                    >
+                      <span className={styles.productTop}>
+                        <span>{CATEGORY_LABELS[item.category]}</span>
+                        <span>{isSoldOut ? "LOCKED" : `${item.stock} EA`}</span>
+                      </span>
+                      <span className={styles.productIcon} aria-hidden>
+                        <ShopItemIcon slug={item.slug ?? item.key} size={48} />
+                      </span>
+                      <span className={styles.productName}>{item.name}</span>
+                      <span className={styles.productEffect}>{item.effect}</span>
+                      <strong>{formatCredits(item.price)}</strong>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.productAction}
+                      onClick={() => handleAddToCart(item)}
+                      disabled={!canAdd}
+                    >
+                      {isSoldOut ? "반출 불가" : inCart > 0 ? "카트 등록" : "담기"}
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <aside className={styles.counterPanel} aria-label="반출 계산대">
+          <section className={styles.detailPanel}>
+            {selectedItem ? (
+              <>
+                <div className={styles.detailHead}>
+                  <span className={styles.detailIcon} aria-hidden>
+                    <ShopItemIcon
+                      slug={selectedItem.slug ?? selectedItem.key}
+                      size={58}
+                    />
+                  </span>
+                  <div>
+                    <span>{CATEGORY_LABELS[selectedItem.category]}</span>
+                    <h2>{selectedItem.name}</h2>
+                  </div>
+                </div>
+                <p>{selectedItem.description}</p>
+                <div className={styles.detailStats}>
+                  <span>{selectedItem.effect}</span>
+                  <strong>{formatCredits(selectedItem.price)}</strong>
+                  <span>
+                    {selectedItem.stock <= 0 || !selectedItem.available
+                      ? "LOCKED"
+                      : `STOCK ${selectedItem.stock}`}
+                  </span>
+                </div>
+                <div className={styles.buyBox}>
+                  <div className={styles.qtyStepper}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCartQuantity(selectedItem.key, selectedQuantity - 1)
+                      }
+                      disabled={selectedQuantity <= 0}
+                      aria-label={`${selectedItem.name} 장바구니 수량 감소`}
+                    >
+                      -
+                    </button>
+                    <span>{selectedQuantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCart(selectedItem)}
+                      disabled={!selectedCanAdd}
+                      aria-label={`${selectedItem.name} 장바구니 수량 증가`}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.primaryAction}
+                    onClick={() => handleAddToCart(selectedItem)}
+                    disabled={!selectedCanAdd}
+                  >
+                    장바구니 담기
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className={styles.empty}>선택 가능한 품목이 없습니다.</div>
+            )}
+          </section>
+
+          <section className={styles.receiptPanel}>
+            <div className={styles.receiptHead}>
+              <div>
+                <Eyebrow>CART RECEIPT</Eyebrow>
+                <h2>반출 장바구니</h2>
+              </div>
+              {cartLines.length > 0 ? (
+                <button
+                  type="button"
+                  className={styles.textButton}
+                  onClick={() => setCart({})}
+                  disabled={checkoutMutation.isPending}
+                >
+                  비우기
+                </button>
+              ) : null}
+            </div>
+
+            {cartLines.length === 0 ? (
+              <div className={styles.receiptEmpty}>담긴 장비가 없습니다.</div>
+            ) : (
+              <div className={styles.receiptLines}>
+                {cartLines.map((line) => (
+                  <div
+                    key={line.item.key}
+                    className={[
+                      styles.receiptLine,
+                      line.stockIssue ? styles["receiptLine--warning"] : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    <div>
+                      <span>{line.item.name}</span>
+                      <small>
+                        {formatCredits(line.item.price)} x {line.quantity}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFromCart(line.item.key)}
+                      disabled={checkoutMutation.isPending}
+                      aria-label={`${line.item.name} 제거`}
+                    >
+                      X
+                    </button>
+                    <strong>{formatCredits(line.total)}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className={styles.receiptSummary}>
+              <div>
+                <span>합계</span>
+                <strong>{formatCredits(cartTotal)}</strong>
+              </div>
+              <div>
+                <span>결제 후 잔액</span>
+                <strong className={cartOverBalance ? styles.dangerText : ""}>
+                  {formatCredits(balance - cartTotal)}
+                </strong>
+              </div>
+            </div>
+
+            {cartHasStockIssue ? (
+              <div className={styles.cartWarning}>
+                반출할 수 없는 장비가 있습니다.
+              </div>
+            ) : cartOverBalance ? (
+              <div className={styles.cartWarning}>잔액이 부족합니다.</div>
+            ) : null}
+
+            <button
+              type="button"
+              className={styles.checkoutButton}
+              onClick={handleCheckout}
+              disabled={!canCheckout}
+              aria-busy={checkoutMutation.isPending}
+            >
+              {checkoutMutation.isPending ? "결제 중" : "한번에 결제"}
+            </button>
+          </section>
+        </aside>
+      </div>
+    );
+  }
+
+  function renderLabPanel() {
+    return (
+      <div className={styles.labLayout}>
+        <section className={styles.labConsole}>
+          <div className={styles.panelIntro}>
+            <Eyebrow>ENHANCEMENT TERMINAL</Eyebrow>
+            <strong>신체 강화 적용</strong>
+          </div>
+
+          <div className={styles.scopeSwitch} role="tablist" aria-label="강화 대상">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={researchScope === "personal"}
+              className={researchScope === "personal" ? styles.activeSwitch : ""}
+              onClick={() => setResearchScope("personal")}
+            >
+              개인 적용
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={researchScope === "team"}
+              className={researchScope === "team" ? styles.activeSwitch : ""}
+              onClick={() => setResearchScope("team")}
+            >
+              팀 전체 적용
+            </button>
+          </div>
+
+          <div className={styles.statPicker} aria-label="강화 스탯">
+            {STAT_DEFS.map((stat) => (
+              <button
+                key={stat.value}
+                type="button"
+                className={[
+                  styles.statButton,
+                  researchStat === stat.value ? styles["statButton--active"] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => setResearchStat(stat.value)}
+              >
+                <strong>{stat.label}</strong>
+                <span>{stat.hint}</span>
+              </button>
+            ))}
+          </div>
+
+          <label className={styles.amountInput}>
+            <span>증가량</span>
+            <input
+              type="number"
+              min={1}
+              max={999}
+              value={researchAmount}
+              onChange={(event) =>
+                handleResearchAmountChange(Number(event.target.value))
+              }
+            />
+          </label>
+
+          <div className={styles.researchPreview}>
+            <span>적용 대상</span>
+            <strong>
+              {researchScope === "team"
+                ? "모든 AGENT"
+                : mainCharacter?.codename ?? "UNASSIGNED"}
+            </strong>
+            <span>변경</span>
+            <strong>
+              {statLabel(researchStat)} +{researchAmount}
+            </strong>
+          </div>
+
+          {researchScope === "team" ? (
+            <Box className={styles.warningBox}>
+              모든 AGENT 캐릭터의 실제 스탯이 즉시 영구 변경됩니다.
+            </Box>
+          ) : null}
+
+          <button
+            type="button"
+            className={styles.applyButton}
+            onClick={handleApplyResearch}
+            disabled={!canApplyResearch}
+            aria-busy={researchMutation.isPending}
+          >
+            {researchMutation.isPending ? "적용 중" : "강화 적용"}
+          </button>
+        </section>
+
+        <aside className={styles.statsPanel}>
+          <div className={styles.panelIntro}>
+            <Eyebrow>MAIN AGENT</Eyebrow>
+            <strong>{mainCharacter?.codename ?? "UNASSIGNED"}</strong>
+          </div>
+          {localStats ? (
+            <div className={styles.statsGrid}>
+              {STAT_DEFS.map((stat) => (
+                <div key={stat.value} className={styles.statReadout}>
+                  <span>{stat.label}</span>
+                  <strong>{localStats[stat.value]}</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              메인 AGENT 캐릭터가 없어 개인 강화는 실행할 수 없습니다.
+            </div>
+          )}
+        </aside>
+      </div>
+    );
+  }
+
+  function renderCustomPanel() {
+    return (
+      <div className={styles.customPanel}>
+        <div className={styles.panelIntro}>
+          <Eyebrow>CUSTOM WEAPON</Eyebrow>
+          <strong>전용무기 제작 상담</strong>
+        </div>
+        <div className={styles.workshopGrid}>
+          <div>
+            <span>REQUEST</span>
+            <strong>제작 요청서</strong>
+            <p>전용무기 제작 요청 저장과 GM 승인 흐름은 후속 단계에서 연결합니다.</p>
+          </div>
+          <div>
+            <span>MATERIAL</span>
+            <strong>재료/비용 산정</strong>
+            <p>실제 제작 데이터가 들어오면 요구 재료, 가격, 승인 조건을 표시합니다.</p>
+          </div>
+          <div>
+            <span>OUTPUT</span>
+            <strong>인벤토리 지급</strong>
+            <p>완성품 지급은 기존 `master_items`와 인벤토리 적재 흐름을 재사용합니다.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.shopRoot} data-pixel-font="full">
+    <div className={styles.armoryRoot} data-pixel-font="full">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
@@ -406,27 +796,21 @@ export default function EquipmentShopClient({
         <Box className={styles.notice}>
           {mainCharacterError ? (
             <>
-              <strong className={styles.notice__strong}>정합성 위반</strong>
+              <strong>정합성 위반</strong>
               {": "}
               {mainCharacterError}
-              <br />
-              운영자(GM)에게 문의하세요. 카탈로그는 열람만 가능합니다.
             </>
           ) : (
-            <>
-              메인 AGENT 캐릭터가 없어 구매할 수 없습니다. 캐릭터 등록 후
-              다시 확인하세요. 카탈로그는 열람만 가능합니다.
-            </>
+            "메인 AGENT 캐릭터가 없어 구매와 개인 강화가 제한됩니다. 팀 강화는 GM 권한으로 실행할 수 있습니다."
           )}
         </Box>
       ) : null}
 
       {errorMessage ? (
         <Box className={styles.errorBanner} role="alert">
-          <strong className={styles.notice__strong}>!</strong> {errorMessage}
+          <strong>!</strong> {errorMessage}
           <button
             type="button"
-            className={styles.errorBanner__dismiss}
             onClick={() => setErrorMessage(null)}
             aria-label="에러 메시지 닫기"
           >
@@ -449,422 +833,89 @@ export default function EquipmentShopClient({
         </Box>
       ) : null}
 
-      <section className={shopStageClassName} aria-label="병기부">
-        <header className={styles.storeHeader}>
-          <div className={styles.storeHeader__titleBlock}>
-            <Eyebrow>ARMORY BUREAU</Eyebrow>
-            <div className={styles.storeHeader__title}>TOWASKI</div>
+      <section className={styles.armoryStage} aria-label="병기부">
+        <header className={styles.armoryHeader}>
+          <div>
+            <Eyebrow>{zoneMeta.eyebrow}</Eyebrow>
+            <h1>{zoneMeta.label}</h1>
           </div>
-          <div className={styles.headRight}>
-            <Tag tone={catalog.isOpen ? "gold" : "danger"}>
-              {shopStatusLabel}
-            </Tag>
-          </div>
-          <div className={styles.storeHeader__stats}>
-            <div className={styles.statChip}>
+          <Tag tone="gold">GM PREVIEW</Tag>
+          <div className={styles.headerStats}>
+            <div>
               <span>요원</span>
               <strong>{mainCharacter?.codename ?? "UNASSIGNED"}</strong>
             </div>
-            <div className={styles.statChip}>
+            <div>
               <span>잔액</span>
               <strong>{formatCredits(balance)}</strong>
             </div>
-            <div className={styles.statChip}>
+            <div>
               <span>카트</span>
               <strong>{cartCount}개</strong>
             </div>
           </div>
         </header>
 
-        {!catalog.isOpen ? (
-          <>
-            <div className={styles.closedBanner} role="status">
-              <strong>CLOSED</strong>
-              <span>WORKSHOP LOCKED · 장비 반출 중지</span>
-            </div>
-            <div className={styles.closedScene} aria-hidden="true">
-              <div className={styles.closedScene__stamp}>SEE YOU NEXT TIME</div>
-            </div>
-          </>
-        ) : (
-          <div className={styles.storeLayout}>
-            <section className={styles.shelfPanel} aria-label="병기부 판매 장비">
-              <div
-                role="tablist"
-                aria-label="병기부 카테고리"
-                className={styles.filters}
-              >
-                {TAB_DEFS.map((tab) => {
-                  const isActive = activeTab === tab.value;
-                  const count =
-                    tab.value === "ALL"
-                      ? catalog.items.length
-                      : catalog.items.filter((it) => it.category === tab.value)
-                          .length;
-                  return (
-                    <button
-                      key={tab.value}
-                      type="button"
-                      role="tab"
-                      aria-selected={isActive}
-                      tabIndex={isActive ? 0 : -1}
-                      className={[
-                        styles.filters__tab,
-                        isActive ? styles["filters__tab--active"] : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                      onClick={() => handleTabChange(tab.value)}
-                    >
-                      {tab.label}
-                      <span>{count}</span>
-                    </button>
-                  );
-                })}
-              </div>
+        <nav className={styles.zoneGrid} aria-label="병기부 구역">
+          {ZONE_DEFS.map((zone) => (
+            <button
+              key={zone.value}
+              type="button"
+              className={[
+                styles.zoneCard,
+                activeZone === zone.value ? styles["zoneCard--active"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={() => handleZoneChange(zone.value)}
+            >
+              <span>{zone.eyebrow}</span>
+              <strong>{zone.label}</strong>
+              <small>{zone.description}</small>
+            </button>
+          ))}
+        </nav>
 
-              {itemsByTab.length === 0 ? (
-                <div className={styles.empty}>
-                  등록된 병기부 품목이 없습니다.
-                </div>
-              ) : (
-                <div className={styles.productGrid}>
-                  {itemsByTab.map((item) => {
-                    const inCart = cart[item.key] ?? 0;
-                    const isSelected = selectedItem?.key === item.key;
-                    const isSoldOut = item.stock <= 0 || !item.available;
-                    const canAdd =
-                      canUseShop &&
-                      !isSoldOut &&
-                      inCart < item.stock &&
-                      inCart < MAX_CART_QUANTITY_PER_ITEM;
+        <div className={styles.zoneBody}>
+          {activeZone === "lab"
+            ? renderLabPanel()
+            : activeZone === "custom"
+              ? renderCustomPanel()
+              : renderSalesPanel()}
+        </div>
 
-                    return (
-                      <article
-                        key={item.key}
-                        className={[
-                          styles.productCard,
-                          isSelected ? styles["productCard--selected"] : "",
-                          isSoldOut ? styles["productCard--soldOut"] : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                      >
-                        <button
-                          type="button"
-                          className={styles.productCard__select}
-                          onClick={() => handleSelectProduct(item)}
-                          aria-pressed={isSelected}
-                        >
-                          <span className={styles.productCard__topLine}>
-                            <span className={styles.productCard__group}>
-                              {GROUP_LABELS[item.category]}
-                            </span>
-                            <span className={styles.productCard__stock}>
-                              {isSoldOut ? "LOCKED" : `${item.stock} EA`}
-                            </span>
-                          </span>
-                          <span
-                            className={styles.productCard__icon}
-                            aria-hidden
-                          >
-                            <ShopItemIcon
-                              slug={item.slug ?? item.key}
-                              size={46}
-                            />
-                          </span>
-                          <span className={styles.productCard__name}>
-                            {item.name}
-                          </span>
-                          <span className={styles.productCard__effect}>
-                            {item.effect}
-                          </span>
-                          <span className={styles.productCard__meta}>
-                            <strong>{formatCredits(item.price)}</strong>
-                          </span>
-                        </button>
-                        <div className={styles.productCard__actions}>
-                          {isSoldOut ? (
-                            <button
-                              type="button"
-                              className={styles.reorderBtn}
-                              disabled
-                            >
-                              반출 불가
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className={styles.addBtn}
-                              onClick={() => handleAddToCart(item)}
-                              disabled={!canAdd}
-                            >
-                              {catalog.isOpen
-                                ? `담기${inCart > 0 ? ` ${inCart}` : ""}`
-                                : "영업 종료"}
-                            </button>
-                          )}
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-
-            <aside className={styles.counterPanel} aria-label="계산대">
-              <section className={styles.detailPanel}>
-                {selectedItem ? (
-                  <>
-                    <div className={styles.detailPanel__top}>
-                      <span className={styles.detailPanel__icon} aria-hidden>
-                        <ShopItemIcon
-                          slug={selectedItem.slug ?? selectedItem.key}
-                          size={56}
-                        />
-                      </span>
-                      <div>
-                        <span className={styles.detailPanel__group}>
-                          {GROUP_LABELS[selectedItem.category]}
-                        </span>
-                        <h2 className={styles.detailPanel__name}>
-                          {selectedItem.name}
-                        </h2>
-                      </div>
-                    </div>
-                    <p className={styles.detailPanel__description}>
-                      {selectedItem.description}
-                    </p>
-                    <div className={styles.detailPanel__stats}>
-                      <span>{selectedItem.effect}</span>
-                      <strong>{formatCredits(selectedItem.price)}</strong>
-                      <span>
-                        {selectedItem.stock <= 0 || !selectedItem.available
-                          ? "LOCKED"
-                          : `STOCK ${selectedItem.stock}`}
-                      </span>
-                    </div>
-                    {selectedItem.stock <= 0 || !selectedItem.available ? (
-                      <button
-                        type="button"
-                        className={styles.detailPanel__mainBtn}
-                        disabled
-                      >
-                        반출 불가
-                      </button>
-                    ) : (
-                      <div className={styles.detailPanel__buyBox}>
-                        <div className={styles.qtyStepper}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setCartQuantity(
-                                selectedItem.key,
-                                selectedQuantity - 1,
-                              )
-                            }
-                            disabled={selectedQuantity <= 0}
-                            aria-label={`${selectedItem.name} 장바구니 수량 감소`}
-                          >
-                            -
-                          </button>
-                          <span>{selectedQuantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleAddToCart(selectedItem)}
-                            disabled={!selectedCanAdd}
-                            aria-label={`${selectedItem.name} 장바구니 수량 증가`}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.detailPanel__mainBtn}
-                          onClick={() => handleAddToCart(selectedItem)}
-                          disabled={!selectedCanAdd}
-                        >
-                          {catalog.isOpen ? "장바구니 담기" : "영업 종료"}
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className={styles.empty}>
-                    선택 가능한 장비가 없습니다.
-                  </div>
-                )}
-              </section>
-
-              <section className={styles.receiptPanel}>
-                <div className={styles.receiptPanel__header}>
-                  <div>
-                    <Eyebrow>CART RECEIPT</Eyebrow>
-                    <h2>장바구니</h2>
-                  </div>
-                  {cartLines.length > 0 ? (
-                    <button
-                      type="button"
-                      className={styles.clearCartBtn}
-                      onClick={() => setCart({})}
-                      disabled={checkoutMutation.isPending}
-                    >
-                      비우기
-                    </button>
-                  ) : null}
-                </div>
-
-                {cartLines.length === 0 ? (
-                  <div className={styles.receiptPanel__empty}>
-                    담긴 장비가 없습니다.
-                  </div>
-                ) : (
-                  <div className={styles.receiptLines}>
-                    {cartLines.map((line) => (
-                      <div
-                        key={line.item.key}
-                        className={[
-                          styles.receiptLine,
-                          line.stockIssue
-                            ? styles["receiptLine--warning"]
-                            : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                      >
-                        <div className={styles.receiptLine__name}>
-                          <span>{line.item.name}</span>
-                          <small>
-                            {formatCredits(line.item.price)} x {line.quantity}
-                          </small>
-                        </div>
-                        <div className={styles.receiptLine__controls}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setCartQuantity(line.item.key, line.quantity - 1)
-                            }
-                            disabled={checkoutMutation.isPending}
-                            aria-label={`${line.item.name} 수량 감소`}
-                          >
-                            -
-                          </button>
-                          <span>{line.quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setCartQuantity(line.item.key, line.quantity + 1)
-                            }
-                            disabled={
-                              checkoutMutation.isPending ||
-                              line.quantity >= line.item.stock ||
-                              line.quantity >= MAX_CART_QUANTITY_PER_ITEM
-                            }
-                            aria-label={`${line.item.name} 수량 증가`}
-                          >
-                            +
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.receiptLine__remove}
-                            onClick={() => handleRemoveFromCart(line.item.key)}
-                            disabled={checkoutMutation.isPending}
-                            aria-label={`${line.item.name} 제거`}
-                          >
-                            X
-                          </button>
-                        </div>
-                        <strong>{formatCredits(line.total)}</strong>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className={styles.receiptSummary}>
-                  <div>
-                    <span>합계</span>
-                    <strong>{formatCredits(cartTotal)}</strong>
-                  </div>
-                  <div>
-                    <span>결제 후 잔액</span>
-                    <strong
-                      className={cartOverBalance ? styles.dangerText : undefined}
-                    >
-                      {formatCredits(balance - cartTotal)}
-                    </strong>
-                  </div>
-                </div>
-
-                {cartHasStockIssue ? (
-                  <div className={styles.cartWarning}>
-                    반출할 수 없는 장비가 있습니다.
-                  </div>
-                ) : cartOverBalance ? (
-                  <div className={styles.cartWarning}>
-                    잔액이 부족합니다.
-                  </div>
-                ) : null}
-
-                <button
-                  type="button"
-                  className={styles.checkoutBtn}
-                  onClick={handleCheckout}
-                  disabled={!canCheckout}
-                  aria-busy={checkoutMutation.isPending}
-                >
-                  {!catalog.isOpen
-                    ? "영업 종료"
-                    : checkoutMutation.isPending
-                      ? "결제 중"
-                      : "한번에 결제"}
-                </button>
-              </section>
-            </aside>
+        <section className={styles.npcHud} aria-label="병기부 응대 HUD">
+          <div className={styles.npcPortrait}>
+            <Image
+              src={TOWASKI_PORTRAIT_SRC}
+              alt=""
+              fill
+              sizes="148px"
+              priority
+            />
           </div>
-        )}
-
-        {catalog.isOpen ? (
-          <section className={styles.tiaHud} aria-label="립 토와스키 병기부 HUD">
-            <div className={styles.tiaHud__portraitFrame}>
-              <Image
-                className={styles.tiaHud__portrait}
-                src={TOWASKI_MOOD_ASSETS[towaskiMood]}
-                alt={`립 토와스키 ${TOWASKI_MOOD_LABELS[towaskiMood]} 표정`}
-                fill
-                sizes="(max-width: 720px) 160px, 190px"
-              />
-            </div>
-            <div className={styles.tiaHud__dialogue}>
-              <div className={styles.tiaHud__header}>
-                <span className={styles.tiaHud__profile}>
-                  <Image src={TOWASKI_PROFILE_SRC} alt="" fill sizes="38px" />
-                </span>
-                <div className={styles.tiaHud__speaker} title={towaskiLine}>
-                  <span>TOWASKI ARMORY</span>
-                  <strong>립 토와스키</strong>
-                </div>
-                <span className={styles.tiaHud__mood}>
-                  {TOWASKI_MOOD_LABELS[towaskiMood]}
-                </span>
+          <div className={styles.npcDialogue}>
+            <div className={styles.npcHead}>
+              <span className={styles.npcProfile}>
+                <Image src={TOWASKI_PROFILE_SRC} alt="" fill sizes="38px" />
+              </span>
+              <div>
+                <span>{zoneMeta.eyebrow}</span>
+                <strong>{zoneMeta.npc}</strong>
               </div>
-              <p className={styles.tiaHud__text} aria-live="polite">
-                {visibleLine || " "}
-                {typing ? (
-                  <span className={styles.tiaHud__cursor}>▸</span>
-                ) : null}
-              </p>
+              <span className={styles.npcMood}>응대 중</span>
             </div>
-          </section>
-        ) : (
-          <section className={styles.closedHud} aria-label="병기부 폐점 안내">
-            <p aria-live="polite">
-              {visibleLine || " "}
-              {typing ? (
-                <span className={styles.closedHud__cursor}>▸</span>
-              ) : null}
+            <p>
+              {activeZone === "lab"
+                ? "연구 적용은 즉시 기록된다. 개인인지, 팀 전체인지 먼저 확인해."
+                : activeZone === "towaski"
+                  ? "토와스키다. 표준 장비는 여기서 보고, 장난감은 들고 오지 마."
+                  : activeZone === "strategic"
+                    ? "차량과 전략 자산은 태그가 붙은 품목만 반출대에 올라온다."
+                    : "전용무기는 상담부터다. 제작 요청 저장은 다음 단계에서 연결한다."}
             </p>
-          </section>
-        )}
+          </div>
+        </section>
       </section>
     </div>
   );

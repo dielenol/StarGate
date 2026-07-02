@@ -1,14 +1,20 @@
 import type { ItemCategory, MasterItem } from "@stargate/shared-db/types";
 
-export const EQUIPMENT_SHOP_CATEGORIES = ["WEAPON", "ARMOR"] as const satisfies readonly ItemCategory[];
+export const EQUIPMENT_SHOP_CATEGORIES = [
+  "WEAPON",
+  "ARMOR",
+  "SPECIAL",
+] as const satisfies readonly ItemCategory[];
 
 export type EquipmentShopCategory = (typeof EQUIPMENT_SHOP_CATEGORIES)[number];
+export type EquipmentShopZone = "towaski" | "strategic";
 
 export interface EquipmentShopCatalogItem {
   key: string;
   slug?: string;
   name: string;
   category: EquipmentShopCategory;
+  zone: EquipmentShopZone;
   price: number;
   effect: string;
   description: string;
@@ -21,7 +27,17 @@ export interface EquipmentShopCatalogItem {
 const CATEGORY_LABELS: Record<EquipmentShopCategory, string> = {
   WEAPON: "무기",
   ARMOR: "방어구",
+  SPECIAL: "전략 자산",
 };
+
+const STRATEGIC_TAG_KEYWORDS = [
+  "병기부",
+  "전략자산",
+  "전략 자산",
+  "차량",
+  "전투보조",
+  "전투 보조",
+];
 
 export function isEquipmentShopCategory(
   category: ItemCategory,
@@ -29,6 +45,26 @@ export function isEquipmentShopCategory(
   return (EQUIPMENT_SHOP_CATEGORIES as readonly ItemCategory[]).includes(
     category,
   );
+}
+
+function normalizeTag(value: string): string {
+  return value.trim().replace(/\s+/g, "").toLowerCase();
+}
+
+export function equipmentShopItemZone(
+  item: Pick<MasterItem, "category" | "tags">,
+): EquipmentShopZone | null {
+  if (item.category === "WEAPON" || item.category === "ARMOR") {
+    return "towaski";
+  }
+
+  if (item.category !== "SPECIAL") return null;
+
+  const normalizedTags = new Set((item.tags ?? []).map(normalizeTag));
+  const strategic = STRATEGIC_TAG_KEYWORDS.some((keyword) =>
+    normalizedTags.has(normalizeTag(keyword)),
+  );
+  return strategic ? "strategic" : null;
 }
 
 export function equipmentShopItemKey(item: MasterItem): string | null {
@@ -61,6 +97,9 @@ export function toEquipmentShopCatalogItem(
 ): EquipmentShopCatalogItem | null {
   if (!isEquipmentShopCategory(item.category)) return null;
 
+  const zone = equipmentShopItemZone(item);
+  if (!zone) return null;
+
   const key = equipmentShopItemKey(item);
   if (!key) return null;
 
@@ -73,6 +112,7 @@ export function toEquipmentShopCatalogItem(
     ...(item.slug ? { slug: item.slug } : {}),
     name: item.name,
     category: item.category,
+    zone,
     price: price ?? 0,
     effect: equipmentEffect(item),
     description:

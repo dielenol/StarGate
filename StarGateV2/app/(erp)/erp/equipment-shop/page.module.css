@@ -1,0 +1,945 @@
+.armoryRoot {
+  --armory-hud-height: 148px;
+  --armory-hud-bottom: 14px;
+  padding-bottom: calc(var(--armory-hud-height) + var(--armory-hud-bottom) + 14px);
+}
+
+.notice,
+.errorBanner,
+.noticeBanner {
+  margin-bottom: var(--gap);
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.notice strong,
+.errorBanner strong {
+  color: var(--danger);
+}
+
+.errorBanner {
+  position: relative;
+  padding-right: 40px;
+}
+
+.errorBanner button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.noticeBanner {
+  border-color: color-mix(in srgb, var(--info) 46%, transparent);
+}
+
+.noticeBanner--success {
+  border-color: color-mix(in srgb, var(--success) 46%, transparent);
+  color: var(--success);
+}
+
+.armoryStage {
+  position: relative;
+  min-height: max(
+    700px,
+    calc(100svh - var(--armory-hud-height) - var(--armory-hud-bottom) - 72px)
+  );
+  padding: 14px;
+  background:
+    linear-gradient(180deg, rgba(7, 9, 10, 0.74), rgba(7, 9, 10, 0.94)),
+    url("/assets/shop/store-bg.webp");
+  background-position: center;
+  background-size: cover;
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 52%, var(--line));
+  border-radius: var(--radius-sm);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+    0 18px 42px rgba(0, 0, 0, 0.34);
+  overflow: hidden;
+}
+
+.armoryStage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.48;
+}
+
+.armoryHeader,
+.zoneGrid,
+.zoneBody {
+  position: relative;
+  z-index: 1;
+}
+
+.armoryHeader {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(0, max-content);
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.armoryHeader h1 {
+  margin: 0;
+  color: var(--gold);
+  font-size: 28px;
+  line-height: 1.08;
+  letter-spacing: 0.08em;
+}
+
+.headerStats {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.headerStats div {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 6px 9px;
+  background: rgba(6, 7, 7, 0.78);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.headerStats span {
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.headerStats strong {
+  display: block;
+  max-width: 150px;
+  color: var(--ink-0);
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zoneGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.zoneCard {
+  display: grid;
+  gap: 5px;
+  min-height: 108px;
+  padding: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 54%),
+    rgba(9, 11, 11, 0.86);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.zoneCard:hover,
+.zoneCard--active {
+  border-color: var(--gold-dim);
+  color: var(--ink-0);
+}
+
+.zoneCard--active {
+  background:
+    linear-gradient(180deg, rgba(201, 168, 90, 0.14), transparent 58%),
+    rgba(10, 12, 12, 0.94);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 24%, transparent);
+}
+
+.zoneCard span {
+  color: var(--gold-dim);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.zoneCard strong {
+  color: var(--gold);
+  font-size: 18px;
+  line-height: 1.18;
+}
+
+.zoneCard small {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.zoneBody {
+  min-width: 0;
+}
+
+.salesLayout,
+.labLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  gap: 12px;
+  align-items: start;
+}
+
+.shelfPanel,
+.counterPanel,
+.labConsole,
+.statsPanel,
+.customPanel,
+.detailPanel,
+.receiptPanel {
+  min-width: 0;
+}
+
+.shelfPanel,
+.detailPanel,
+.receiptPanel,
+.labConsole,
+.statsPanel,
+.customPanel {
+  padding: 12px;
+  background: rgba(8, 9, 9, 0.78);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(2px);
+}
+
+.counterPanel {
+  display: grid;
+  gap: 12px;
+}
+
+.panelIntro {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.panelIntro strong {
+  color: var(--gold);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.filterTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 12px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.filterTab span {
+  min-width: 22px;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.filterTab:hover,
+.filterTab--active {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
+  gap: 10px;
+}
+
+.productCard {
+  min-width: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 46%),
+    rgba(13, 15, 14, 0.92);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.productCard--selected {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 25%, transparent);
+}
+
+.productCard--locked {
+  background:
+    linear-gradient(180deg, rgba(130, 41, 41, 0.1), transparent 56%),
+    rgba(12, 12, 12, 0.9);
+}
+
+.productSelect {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  min-height: 190px;
+  padding: 10px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.productSelect:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.productTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.productIcon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.productName {
+  color: var(--ink-0);
+  font-size: 17px;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+
+.productEffect {
+  min-height: 38px;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.productSelect strong {
+  color: var(--gold);
+  font-size: 16px;
+}
+
+.productAction,
+.primaryAction,
+.checkoutButton,
+.applyButton,
+.textButton,
+.scopeSwitch button,
+.statButton {
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.productAction {
+  width: calc(100% - 20px);
+  min-height: 34px;
+  margin: 0 10px 10px;
+  background: color-mix(in srgb, var(--gold) 14%, rgba(0, 0, 0, 0.4));
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+}
+
+.productAction:disabled,
+.primaryAction:disabled,
+.checkoutButton:disabled,
+.applyButton:disabled,
+.textButton:disabled,
+.qtyStepper button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.detailHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.detailIcon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.detailHead span {
+  color: var(--gold-dim);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.detailHead h2,
+.receiptHead h2 {
+  margin: 2px 0 0;
+  color: var(--ink-0);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.detailPanel p {
+  margin: 0 0 10px;
+  color: var(--ink-1);
+  font-size: 15px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.detailStats {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.detailStats span,
+.detailStats strong {
+  min-height: 32px;
+  padding: 7px 8px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-1);
+  font-size: 14px;
+}
+
+.detailStats span:first-child {
+  grid-column: 1 / -1;
+}
+
+.detailStats strong {
+  color: var(--gold);
+}
+
+.buyBox {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 8px;
+}
+
+.qtyStepper {
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
+  min-height: 38px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.qtyStepper button {
+  background: transparent;
+  border: 0;
+  color: var(--gold);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.qtyStepper span {
+  display: grid;
+  place-items: center;
+  color: var(--ink-0);
+  font-size: 15px;
+}
+
+.primaryAction,
+.checkoutButton,
+.applyButton {
+  min-height: 38px;
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  color: var(--bg-0);
+  font-weight: 700;
+}
+
+.receiptHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.textButton {
+  min-height: 30px;
+  padding: 6px 9px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--gold);
+}
+
+.receiptEmpty,
+.empty {
+  padding: 18px;
+  color: var(--ink-2);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.receiptLines {
+  display: grid;
+  gap: 8px;
+}
+
+.receiptLine {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.receiptLine--warning {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+}
+
+.receiptLine span {
+  display: block;
+  color: var(--ink-0);
+  font-size: 15px;
+}
+
+.receiptLine small {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.receiptLine button {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.receiptLine strong {
+  color: var(--gold);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.receiptSummary {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.receiptSummary div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.receiptSummary strong {
+  color: var(--gold);
+  font-size: 16px;
+}
+
+.dangerText,
+.cartWarning {
+  color: var(--danger) !important;
+}
+
+.cartWarning {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.checkoutButton {
+  width: 100%;
+}
+
+.labConsole,
+.statsPanel {
+  min-height: 340px;
+}
+
+.scopeSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.scopeSwitch button {
+  min-height: 38px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+
+.scopeSwitch .activeSwitch {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 12%, var(--bg-1));
+}
+
+.statPicker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.statButton {
+  display: grid;
+  gap: 4px;
+  min-height: 74px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+
+.statButton strong {
+  color: var(--ink-0);
+  font-size: 19px;
+}
+
+.statButton span {
+  font-size: 14px;
+}
+
+.statButton--active {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 24%, transparent);
+}
+
+.amountInput {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 160px);
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.amountInput input {
+  min-height: 38px;
+  padding: 8px 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-0);
+  font-size: 15px;
+}
+
+.researchPreview {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.researchPreview span {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.researchPreview strong {
+  color: var(--gold);
+  font-size: 15px;
+}
+
+.warningBox {
+  margin-bottom: 12px;
+  border-color: color-mix(in srgb, var(--danger) 38%, var(--line));
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.applyButton {
+  width: 100%;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.statReadout {
+  display: grid;
+  gap: 6px;
+  min-height: 90px;
+  padding: 12px;
+  background:
+    linear-gradient(180deg, rgba(201, 168, 90, 0.08), transparent 70%),
+    rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.statReadout span {
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.statReadout strong {
+  color: var(--gold);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.customPanel {
+  min-height: 350px;
+}
+
+.workshopGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workshopGrid div {
+  min-height: 170px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.workshopGrid span {
+  color: var(--gold-dim);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.workshopGrid strong {
+  display: block;
+  margin: 8px 0;
+  color: var(--ink-0);
+  font-size: 18px;
+}
+
+.workshopGrid p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.npcHud {
+  position: fixed;
+  right: 24px;
+  bottom: var(--armory-hud-bottom);
+  left: calc(var(--sidebar-w) + 24px);
+  z-index: 90;
+  display: grid;
+  grid-template-columns: var(--armory-hud-height) minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+  pointer-events: none;
+}
+
+.npcPortrait {
+  position: relative;
+  width: var(--armory-hud-height);
+  height: var(--armory-hud-height);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(201, 168, 90, 0.18), transparent 58%),
+    rgba(5, 7, 8, 0.9);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 58%, var(--line));
+  border-radius: var(--radius-sm);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+
+.npcPortrait img {
+  object-fit: cover;
+  object-position: center top;
+}
+
+.npcDialogue {
+  min-width: 0;
+  height: var(--armory-hud-height);
+  padding: 12px 14px 14px;
+  background:
+    linear-gradient(180deg, rgba(201, 168, 90, 0.08), transparent 30%),
+    rgba(5, 7, 8, 0.94);
+  border: 3px solid color-mix(in srgb, var(--gold) 64%, var(--ink-0) 36%);
+  border-radius: var(--radius-sm);
+  box-shadow:
+    inset 0 0 0 3px rgba(45, 50, 56, 0.82),
+    inset 0 0 18px rgba(201, 168, 90, 0.08);
+}
+
+.npcHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--gold-dim) 45%, transparent);
+}
+
+.npcProfile {
+  position: relative;
+  display: block;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.npcHead div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.npcHead span,
+.npcMood {
+  color: color-mix(in srgb, var(--ink-2) 74%, var(--gold-dim) 26%);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+}
+
+.npcHead strong {
+  color: color-mix(in srgb, var(--gold) 82%, var(--ink-0) 18%);
+  font-size: 20px;
+  line-height: 1.05;
+}
+
+.npcMood {
+  margin-left: auto;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--info) 40%, var(--line));
+  border-radius: var(--radius-sm);
+  color: var(--info);
+  white-space: nowrap;
+}
+
+.npcDialogue p {
+  margin: 0;
+  color: color-mix(in srgb, var(--ink-0) 88%, var(--gold) 12%);
+  font-size: 22px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+@media (max-width: 1180px) {
+  .armoryHeader,
+  .salesLayout,
+  .labLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .headerStats {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .zoneGrid,
+  .workshopGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .armoryRoot {
+    --armory-hud-height: 132px;
+  }
+
+  .zoneGrid,
+  .statPicker,
+  .statsGrid,
+  .workshopGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .buyBox,
+  .receiptLine,
+  .researchPreview,
+  .amountInput {
+    grid-template-columns: 1fr;
+  }
+
+  .npcHud {
+    right: 12px;
+    left: 12px;
+    grid-template-columns: 1fr;
+  }
+
+  .npcPortrait {
+    display: none;
+  }
+
+  .npcDialogue {
+    height: var(--armory-hud-height);
+  }
+
+  .npcDialogue p {
+    font-size: 18px;
+  }
+}

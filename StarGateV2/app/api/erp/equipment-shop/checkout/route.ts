@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { requireRole } from "@/lib/auth/rbac";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import {
@@ -22,7 +23,7 @@ import {
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import {
-  isEquipmentShopCategory,
+  equipmentShopItemZone,
   toEquipmentPriceNumber,
 } from "@/lib/equipment-shop/catalog";
 
@@ -102,6 +103,11 @@ export async function POST(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  try {
+    requireRole(session.user.role, "GM");
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const body = (await request.json().catch(() => null)) as CheckoutBody | null;
   const normalizedItems = normalizeCartItems(body?.items);
@@ -171,7 +177,7 @@ export async function POST(request: Request) {
     if (
       !masterItem ||
       !masterItem._id ||
-      !isEquipmentShopCategory(masterItem.category) ||
+      !equipmentShopItemZone(masterItem) ||
       masterItem.isAvailable === false ||
       masterItem.isPublic === false
     ) {
