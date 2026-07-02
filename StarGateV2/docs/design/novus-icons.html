@@ -433,7 +433,7 @@
 </div>
 
 <div class="section" data-group="nav">
-  <div class="section-head">ERP 내비게이션 · Sidebar & Command-K <span class="badge">/erp 전역</span></div>
+  <div class="section-head">ERP 내비게이션 · Page Icons <span class="badge">/erp 전역 · Sidebar & Command-K</span></div>
   <div class="grid" id="grid-nav"></div>
 </div>
 
@@ -468,7 +468,7 @@
 </div>
 
 <div class="section">
-  <div class="section-head">조직도 미리보기 · Org Chart Preview <span class="badge">/erp/personnel</span></div>
+  <div class="section-head">조직도 노드 · Organization Chart <span class="badge">/erp/personnel · 미리보기</span></div>
   <div class="orgchart" id="chart"></div>
 </div>
 
@@ -912,6 +912,40 @@ const ICONS = {
     idx: 84, name: '검색 · Search', key: 'IconSearch',
     svg: '<circle cx="10.5" cy="10.5" r="6.2"/><path d="M15.1 15.1L20.5 20.5"/>'
   },
+
+  // ── 캐릭터 페이지 보강 / Characters Add-on (ID 85–92 · 목록 직군 배지 + 상세 패널) ──
+  profile: {
+    idx: 85, name: '프로필 · Profile (외모)', key: 'IconProfile',
+    svg: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.5 3.5-8 8-8s8 3.5 8 8"/>'
+  },
+  notes: {
+    idx: 86, name: '노트 · Notes (NPC Details)', key: 'IconNotes',
+    svg: '<path d="M5 3h9l5 5v13H5V3z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 16h8M8 19h5"/>'
+  },
+  inventoryEquipment: {
+    idx: 87, name: '무기 · Weapon (인벤토리 장비)', key: 'IconInventoryEquipment',
+    svg: '<path d="M19 5L9.8 14.2"/><path d="M7.8 12.2l4 4"/><path d="M9.1 14.9l-2.6 2.6"/><circle cx="5.6" cy="18.4" r="0.9" fill="currentColor" stroke="none"/>'
+  },
+  soldier: {
+    idx: 88, name: '군인 · Soldier (직군)', key: 'IconSoldier',
+    svg: '<path d="M5 13v-1.2a7 7 0 0114 0V13"/><path d="M3.5 13h17l-1.2 2.4H4.7z"/><circle cx="12" cy="9" r="0.8" fill="currentColor" stroke="none"/><path d="M9 15.4v1.4a3 3 0 006 0v-1.4"/>'
+  },
+  subject: {
+    idx: 89, name: '실험체 · Subject (직군)', key: 'IconSubject',
+    svg: '<rect x="7.2" y="2.5" width="9.6" height="19" rx="4.8"/><path d="M7.4 6.4h9.2"/><circle cx="12" cy="10.4" r="2.1"/><path d="M8.9 17.5c.5-2.2 1.7-3.3 3.1-3.3s2.6 1.1 3.1 3.3"/>'
+  },
+  bureaucrat: {
+    idx: 90, name: '관료 · Bureaucrat (직군)', key: 'IconBureaucrat',
+    svg: '<rect x="3.5" y="7.5" width="17" height="12" rx="1.5"/><path d="M9.5 7.5V6a1.5 1.5 0 011.5-1.5h2A1.5 1.5 0 0114.5 6v1.5"/><path d="M3.5 12h17"/><path d="M10.5 12v1.8h3V12"/>'
+  },
+  scientist: {
+    idx: 91, name: '과학자 · Scientist (직군)', key: 'IconScientist',
+    svg: '<circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><ellipse cx="12" cy="12" rx="8.5" ry="3.4"/><ellipse cx="12" cy="12" rx="8.5" ry="3.4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="8.5" ry="3.4" transform="rotate(120 12 12)"/>'
+  },
+  ability: {
+    idx: 92, name: '어빌리티 · Ability', key: 'IconAbility',
+    svg: '<path d="M13.2 2.5L5.5 13.5h5l-1.7 8 7.7-11h-5z"/>'
+  },
 };
 
 // 섹션 = 페이지 단위 통일. 한 아이콘이 여러 페이지에서 쓰이면 각 페이지 그룹에 중복 등재하고,
@@ -921,7 +955,7 @@ const GROUPS = {
   dashboard:   ['agentProfile','mission','tasks','credit','awaitingResponse','activeOps','notification','all','wikiHub','serviceRecord','tenure','session','recentChanges'],
   account:     ['account','status','linked','passkey','security','tenure'],
   notifications: ['notification','unread','today','linked','gridAll','read','search','session','consumable','credit','reportMini','userAdmin','system','inbox'],
-  characters:  ['person','all','main','mini'],
+  characters:  ['person','all','main','mini','soldier','subject','bureaucrat','scientist','unassigned','profile','concept','archive','equipment','inventoryEquipment','goods','ability','agentProfile','status','notes','recentChanges'],
   personnel:   ['members','root','novusOrdo','board','military','civil','hostile','secretariat','manus','hq','research','adminBureau','intl','control','finance','sectorA','sectorB','sectorC','sectorD','sectorE','person','all','main','mini','unassigned'],
   factionPage: ['factionMap','hostile','briefing','relations','affinity'],
   inventory:   ['equipment','consumable','misc'],
@@ -981,7 +1015,18 @@ const PAGE_TREE = [
       { icon: 'inventoryHub', label: '인벤토리', route: '/erp/inventory' },
       { icon: 'credit', label: '크레딧', route: '/erp/credits' },
       { icon: 'shopHub', label: '편의점', route: '/erp/shop' },
-      { icon: null, label: '병기부', route: '/erp/equipment-shop', badge: 'GM preview' },
+      {
+        icon: null,
+        label: '병기부',
+        route: '/erp/equipment-shop',
+        badge: 'GM preview',
+        children: [
+          { icon: 'equipment', label: '병기 연구소', route: '/erp/equipment-shop/lab', badge: 'GM preview' },
+          { icon: 'equipment', label: '토와스키 장비 판매점', route: '/erp/equipment-shop/towaski', badge: 'GM preview' },
+          { icon: 'equipment', label: '전략 장비 판매점', route: '/erp/equipment-shop/strategic', badge: 'GM preview' },
+          { icon: 'equipment', label: '전용무기 제작소', route: '/erp/equipment-shop/custom', badge: 'GM preview' },
+        ],
+      },
       { icon: 'stock', label: '주식', route: '/erp/stock' },
       { icon: 'stock', label: '주식 포트폴리오', route: '/erp/stock/portfolio' },
     ],

@@ -13,6 +13,8 @@ import {
   useCharacterChangeLogs,
 } from "@/hooks/queries/useCharacterChangeLogs";
 
+import { IconRecentChanges } from "@/components/icons";
+
 import { labelForCharacterField } from "./_field-labels";
 
 import styles from "./ChangeLogsPanel.module.css";
@@ -184,7 +186,15 @@ export default function ChangeLogsPanel({ characterId, mode }: Props) {
   return (
     <div className={styles.box}>
       <header className={styles.header}>
-        <h3 className={styles.header__title}>변경 이력</h3>
+        <h3 className={styles.header__title}>
+          <IconRecentChanges
+            width={16}
+            height={16}
+            className={styles.header__titleIcon}
+            aria-hidden
+          />
+          변경 이력
+        </h3>
         <span className={styles.headerHint}>AUDIT</span>
       </header>
 

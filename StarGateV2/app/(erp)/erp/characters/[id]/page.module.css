@@ -45,6 +45,19 @@
   }
 }
 
+/* Panel title label (icon + text) */
+
+.panelTitleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panelTitleLabel__icon {
+  flex-shrink: 0;
+  color: var(--gold);
+}
+
 /* Item list (equipment / abilities) */
 
 .itemList {
@@ -158,8 +171,22 @@
   border-bottom: 1px dashed var(--line);
 }
 
+.itemCard__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid color-mix(in srgb, var(--item-accent) 34%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--item-accent) 8%, transparent);
+  color: var(--item-accent);
+}
+
 .itemCard__headText {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .itemCard__pills {

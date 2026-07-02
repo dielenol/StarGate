@@ -21,6 +21,17 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
 
+import type { IconComponent } from "@/components/icons";
+import {
+  IconConcept,
+  IconCoreArchive,
+  IconEquipment,
+  IconGoods,
+  IconInventoryEquipment,
+  IconPersonCard,
+  IconProfile,
+} from "@/components/icons";
+
 import ChangeLogsPanel, {
   type ChangeLogsPanelMode,
 } from "./ChangeLogsPanel";
@@ -258,6 +269,11 @@ function getEquipmentType(eq: EquipmentItem): "WEAPON" | "GEAR" {
   return eq.damage || eq.ammo || eq.grip ? "WEAPON" : "GEAR";
 }
 
+const EQUIPMENT_TYPE_ICON: Record<"WEAPON" | "GEAR", IconComponent> = {
+  WEAPON: IconInventoryEquipment,
+  GEAR: IconGoods,
+};
+
 /** AGENT 한정 — PROFILE / EQUIPMENT 섹션. 콘텐츠 없는 박스는 통째로 생략. */
 function AgentSections({ character }: { character: AgentCharacter }) {
   const { play, lore } = character;
@@ -269,6 +285,7 @@ function AgentSections({ character }: { character: AgentCharacter }) {
       label: "외모",
       meta: "PROFILE · VISUAL",
       pill: "VISUAL",
+      Icon: IconProfile,
       value: lore.appearance,
     },
     {
@@ -276,6 +293,7 @@ function AgentSections({ character }: { character: AgentCharacter }) {
       label: "성격",
       meta: "PROFILE · MENTAL",
       pill: "MENTAL",
+      Icon: IconConcept,
       value: lore.personality,
     },
     {
@@ -283,6 +301,7 @@ function AgentSections({ character }: { character: AgentCharacter }) {
       label: "배경",
       meta: "PROFILE · ARCHIVE",
       pill: "ARCHIVE",
+      Icon: IconCoreArchive,
       value: lore.background,
     },
   ].filter((item) => item.value);
@@ -295,7 +314,14 @@ function AgentSections({ character }: { character: AgentCharacter }) {
       {hasProfile ? (
         <Box className={styles.profilePanel}>
           <PanelTitle right={<span className={styles.mono}>DOSSIER</span>}>
-            CHARACTER PROFILE
+            <span className={styles.panelTitleLabel}>
+              <IconPersonCard
+                width={16}
+                height={16}
+                className={styles.panelTitleLabel__icon}
+              />
+              CHARACTER PROFILE
+            </span>
           </PanelTitle>
           <div className={styles.itemList}>
             {profileCards.map((item) => (
@@ -304,6 +330,9 @@ function AgentSections({ character }: { character: AgentCharacter }) {
                 className={`${styles.itemCard} ${styles["itemCard--profile"]}`}
               >
                 <div className={styles.itemCard__head}>
+                  <span className={styles.itemCard__icon} aria-hidden>
+                    <item.Icon width={18} height={18} />
+                  </span>
                   <div className={styles.itemCard__headText}>
                     <span className={styles.itemCard__eyebrow}>
                       {item.meta}
@@ -324,11 +353,19 @@ function AgentSections({ character }: { character: AgentCharacter }) {
           <PanelTitle
             right={<span className={styles.mono}>{play.equipment.length}</span>}
           >
-            EQUIPMENT
+            <span className={styles.panelTitleLabel}>
+              <IconEquipment
+                width={16}
+                height={16}
+                className={styles.panelTitleLabel__icon}
+              />
+              EQUIPMENT
+            </span>
           </PanelTitle>
           <div className={styles.itemList}>
             {play.equipment.map((eq, i) => {
               const equipmentType = getEquipmentType(eq);
+              const EquipmentTypeIcon = EQUIPMENT_TYPE_ICON[equipmentType];
 
               return (
                 <div
@@ -336,6 +373,9 @@ function AgentSections({ character }: { character: AgentCharacter }) {
                   className={`${styles.itemCard} ${styles["itemCard--equipment"]}`}
                 >
                   <div className={styles.itemCard__head}>
+                    <span className={styles.itemCard__icon} aria-hidden>
+                      <EquipmentTypeIcon width={18} height={18} />
+                    </span>
                     <div className={styles.itemCard__headText}>
                       <span className={styles.itemCard__eyebrow}>
                         EQUIPMENT · {equipmentType}

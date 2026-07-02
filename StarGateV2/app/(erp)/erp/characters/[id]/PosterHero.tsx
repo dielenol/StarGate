@@ -16,7 +16,14 @@ import {
 
 import Bar from "@/components/ui/Bar/Bar";
 import Seal from "@/components/ui/Seal/Seal";
-import { IconClose, IconZoom } from "@/components/icons";
+import {
+  IconAbility,
+  IconAgentProfile,
+  IconClose,
+  IconNotes,
+  IconStatus,
+  IconZoom,
+} from "@/components/icons";
 
 import { getFactionLogo, FACTION_LOGO } from "@/app/(erp)/erp/personnel/_constants";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
@@ -419,7 +426,14 @@ export default function PosterHero({
           {playSheet ? (
             <div className={styles.hero__panel}>
               <div className={styles.hero__panelHead}>
-                <span>VITALS</span>
+                <span className={styles.hero__panelHeadLabel}>
+                  <IconStatus
+                    width={15}
+                    height={15}
+                    className={styles.hero__panelHeadIcon}
+                  />
+                  VITALS
+                </span>
                 <span className={styles.hero__statusDot}>STATUS · ACTIVE</span>
               </div>
               <VitalBarRow
@@ -462,7 +476,14 @@ export default function PosterHero({
           playSheet.skillTraining.length > 0) ? (
           <div className={styles.hero__panel}>
             <div className={styles.hero__panelHead}>
-              <span>AGENT DETAILS</span>
+              <span className={styles.hero__panelHeadLabel}>
+                <IconAgentProfile
+                  width={15}
+                  height={15}
+                  className={styles.hero__panelHeadIcon}
+                />
+                AGENT DETAILS
+              </span>
               <span className={styles.hero__panelHeadSub}>SHEET</span>
             </div>
             {playSheet.className || playSheet.abilityType ? (
@@ -509,7 +530,14 @@ export default function PosterHero({
                   className={`${styles.hero__panel} ${styles["hero__panel--abilities"]}`}
                 >
                   <div className={styles.hero__panelHead}>
-                    <span>ABILITIES</span>
+                    <span className={styles.hero__panelHeadLabel}>
+                      <IconAbility
+                        width={15}
+                        height={15}
+                        className={styles.hero__panelHeadIcon}
+                      />
+                      ABILITIES
+                    </span>
                     <span className={styles.hero__panelHeadSub}>
                       {filled.length} / {ABILITY_SLOT_ORDER.length} SLOTS
                     </span>
@@ -570,7 +598,14 @@ export default function PosterHero({
         {nameEn || roleDetail || notes ? (
           <div className={styles.hero__panel}>
             <div className={styles.hero__panelHead}>
-              <span>NPC DETAILS</span>
+              <span className={styles.hero__panelHeadLabel}>
+                <IconNotes
+                  width={15}
+                  height={15}
+                  className={styles.hero__panelHeadIcon}
+                />
+                NPC DETAILS
+              </span>
               <span className={styles.hero__panelHeadSub}>EXTRAS</span>
             </div>
             <dl className={styles.hero__profileList}>

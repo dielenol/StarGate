@@ -21,6 +21,15 @@ import Button from "@/components/ui/Button/Button";
 import Input from "@/components/ui/Input/Input";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
+import type { IconComponent } from "@/components/icons";
+import {
+  IconBureaucrat,
+  IconScientist,
+  IconSoldier,
+  IconSubject,
+  IconUnassigned,
+} from "@/components/icons";
+
 import OrgIcon, {
   getFactionIcon,
   getInstitutionIcon,
@@ -53,7 +62,7 @@ type RoleClassKey = KnownRoleClassKey | "unassigned";
 interface RoleClassMeta {
   key: RoleClassKey;
   label: string;
-  icon: OrgIconCode;
+  Icon: IconComponent;
   keywords: string[];
 }
 
@@ -67,7 +76,7 @@ const ROLE_CLASS_META = {
   military: {
     key: "military",
     label: "군인",
-    icon: "MILITARY",
+    Icon: IconSoldier,
     keywords: [
       "군인",
       "군부",
@@ -82,19 +91,19 @@ const ROLE_CLASS_META = {
   bureaucrat: {
     key: "bureaucrat",
     label: "관료",
-    icon: "ADMIN_BUREAU",
+    Icon: IconBureaucrat,
     keywords: ["관료", "행정", "사무", "bureaucrat", "admin", "secretariat"],
   },
   scientist: {
     key: "scientist",
     label: "과학자",
-    icon: "RESEARCH",
+    Icon: IconScientist,
     keywords: ["과학", "연구", "분석", "scientist", "research", "lab"],
   },
   subject: {
     key: "subject",
     label: "실험체",
-    icon: "CONTROL",
+    Icon: IconSubject,
     keywords: [
       "실험체",
       "피험자",
@@ -116,7 +125,7 @@ const ROLE_CLASS_ORDER: KnownRoleClassKey[] = [
 const FALLBACK_ROLE_CLASS: RoleClassMeta = {
   key: "unassigned",
   label: "미분류",
-  icon: "UNASSIGNED",
+  Icon: IconUnassigned,
   keywords: ["미분류", "unassigned"],
 };
 
@@ -632,9 +641,9 @@ export default function CharactersClient({
                         .join(" ")}
                       title={`직군 ${roleClass.label}`}
                     >
-                      <OrgIcon
-                        code={roleClass.icon}
-                        size={14}
+                      <roleClass.Icon
+                        width={14}
+                        height={14}
                         className={styles.card__classBadge__icon}
                       />
                       <span>{roleClass.label}</span>

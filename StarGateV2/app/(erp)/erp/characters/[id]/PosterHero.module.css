@@ -490,7 +490,8 @@
 .hero__panelHead {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  /* 좌측 label 이 icon+text inline-flex 가 되며 baseline 대신 center 정렬 (한 줄 소형 텍스트라 시각 차 없음) */
+  align-items: center;
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.22em;
@@ -501,6 +502,14 @@
 }
 .hero__panelHead span:first-child {
   color: var(--gold);
+}
+.hero__panelHeadLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.hero__panelHeadIcon {
+  flex-shrink: 0;
 }
 .hero__panelHeadSub {
   color: var(--ink-3);
