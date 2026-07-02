@@ -10,11 +10,13 @@ import Button from "@/components/ui/Button/Button";
 interface Props {
   notificationId?: string;
   mode?: "single" | "all";
+  size?: "sm" | "md";
 }
 
 export default function NotificationActions({
   notificationId,
   mode = "all",
+  size = "md",
 }: Props) {
   const markRead = useMarkRead();
   const markAllRead = useMarkAllRead();
@@ -50,6 +52,7 @@ export default function NotificationActions({
   return (
     <Button
       type="button"
+      size={size}
       onClick={handleMarkAllRead}
       disabled={loading}
     >

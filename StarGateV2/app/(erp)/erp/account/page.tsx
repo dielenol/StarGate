@@ -5,6 +5,14 @@ import { auth } from "@/lib/auth/config";
 import { findUserById } from "@/lib/db/users";
 import { formatDate, formatDateTime } from "@/lib/format/date";
 
+import {
+  IconAccount,
+  IconLinked,
+  IconPasskey,
+  IconSecurity,
+  IconStatus,
+  IconTenure,
+} from "@/components/icons";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
 import DiscordLinkButton from "./DiscordLinkButton";
@@ -52,7 +60,10 @@ export default async function AccountPage() {
       <div className={styles.accountShell}>
         <section className={styles.overviewPanel} aria-label="계정 요약">
           <div className={styles.overviewPanel__body}>
-            <span className={styles.sectionLabel}>ACCOUNT CONTROL</span>
+            <span className={styles.sectionLabel}>
+              <IconAccount className={styles.sectionLabel__icon} aria-hidden />
+              ACCOUNT CONTROL
+            </span>
             <h2 className={styles.overviewPanel__title}>{user.displayName}</h2>
             <div className={styles.overviewPanel__meta}>
               <span>{user.username}</span>
@@ -62,7 +73,10 @@ export default async function AccountPage() {
           </div>
           <div className={styles.summaryGrid}>
             <div className={styles.summaryItem}>
-              <span className={styles.summaryItem__label}>STATUS</span>
+              <span className={styles.summaryItem__label}>
+                <IconStatus className={styles.summaryItem__icon} aria-hidden />
+                STATUS
+              </span>
               <strong
                 className={[
                   styles.summaryItem__value,
@@ -75,7 +89,10 @@ export default async function AccountPage() {
               </strong>
             </div>
             <div className={styles.summaryItem}>
-              <span className={styles.summaryItem__label}>DISCORD</span>
+              <span className={styles.summaryItem__label}>
+                <IconLinked className={styles.summaryItem__icon} aria-hidden />
+                DISCORD
+              </span>
               <strong
                 className={[
                   styles.summaryItem__value,
@@ -88,13 +105,19 @@ export default async function AccountPage() {
               </strong>
             </div>
             <div className={styles.summaryItem}>
-              <span className={styles.summaryItem__label}>PASSWORD</span>
+              <span className={styles.summaryItem__label}>
+                <IconPasskey className={styles.summaryItem__icon} aria-hidden />
+                PASSWORD
+              </span>
               <strong className={styles.summaryItem__value}>
                 {pwChangedDays !== null ? `${pwChangedDays}D` : "N/A"}
               </strong>
             </div>
             <div className={styles.summaryItem}>
-              <span className={styles.summaryItem__label}>TENURE</span>
+              <span className={styles.summaryItem__label}>
+                <IconTenure className={styles.summaryItem__icon} aria-hidden />
+                TENURE
+              </span>
               <strong className={styles.summaryItem__value}>
                 {accountAgeDays !== null ? `${accountAgeDays}D` : "N/A"}
               </strong>
@@ -179,6 +202,7 @@ export default async function AccountPage() {
             <section className={styles.box}>
               <div className={styles.panelTitle}>
                 <span className={styles.panelTitle__label}>
+                  <IconAccount className={styles.panelTitle__icon} aria-hidden />
                   ACCOUNT
                   <span className={styles.panelTitle__sub}>시스템 메타데이터</span>
                 </span>
@@ -221,7 +245,10 @@ export default async function AccountPage() {
             {/* DISCORD */}
             <section className={styles.box}>
               <div className={styles.panelTitle}>
-                <span className={styles.panelTitle__label}>DISCORD LINK</span>
+                <span className={styles.panelTitle__label}>
+                  <IconLinked className={styles.panelTitle__icon} aria-hidden />
+                  DISCORD LINK
+                </span>
                 <div className={styles.panelTitle__right}>
                   <span
                     className={`${styles.connectedBadge} ${
@@ -304,6 +331,7 @@ export default async function AccountPage() {
             <section className={styles.box}>
               <div className={styles.panelTitle}>
                 <span className={styles.panelTitle__label}>
+                  <IconSecurity className={styles.panelTitle__icon} aria-hidden />
                   SECURITY
                   <span className={styles.panelTitle__sub}>· 비밀번호 변경</span>
                 </span>

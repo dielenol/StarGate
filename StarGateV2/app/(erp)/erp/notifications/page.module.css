@@ -41,12 +41,20 @@
 }
 
 .summaryItem__label {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.summaryItem__icon {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
 }
 
 .summaryItem__value,
@@ -120,7 +128,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
   min-width: 92px;
   padding: 9px 12px;
   background: transparent;
@@ -148,6 +156,12 @@
   color: var(--gold);
 }
 
+.statusFilter__icon {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+}
+
 .statusFilter__count {
   color: var(--ink-3);
 }
@@ -169,10 +183,19 @@
 }
 
 .search__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.14em;
+}
+
+.search__icon {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
 }
 
 .search__input {
@@ -200,6 +223,9 @@
 }
 
 .tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   padding: 9px 14px;
   background: rgba(255, 255, 255, 0.012);
   border: 1px solid transparent;
@@ -212,6 +238,12 @@
   transition:
     color 0.15s ease,
     border-color 0.15s ease;
+}
+
+.tab__icon {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
 }
 
 .tab:hover {
@@ -271,6 +303,24 @@
   text-transform: uppercase;
 }
 
+.feedPanel__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.feedPanel__icon {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+}
+
+.feedPanel__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -297,12 +347,36 @@
 }
 
 .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
   padding: 46px 18px;
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.1em;
   text-align: center;
+}
+
+.resetFilters {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.resetFilters:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
 }
 
 /* ── Notif item ── */

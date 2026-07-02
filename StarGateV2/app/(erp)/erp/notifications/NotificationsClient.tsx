@@ -8,6 +8,23 @@ import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
 
 import type { Notification, NotificationType } from "@/types/notification";
 
+import {
+  IconConsumable,
+  IconCredit,
+  IconGridAll,
+  IconInbox,
+  IconLinked,
+  IconNotification,
+  IconRead,
+  IconReportMini,
+  IconSearch,
+  IconSession,
+  IconSystem,
+  IconToday,
+  IconUnread,
+  IconUserAdmin,
+  type IconComponent,
+} from "@/components/icons";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
@@ -38,6 +55,16 @@ const FILTER_LABEL: Record<FilterKey, string> = {
   SYSTEM: "시스템",
 };
 
+const FILTER_ICON: Record<FilterKey, IconComponent> = {
+  ALL: IconGridAll,
+  SESSION_REMIND: IconSession,
+  CONSUMABLE_USED: IconConsumable,
+  CREDIT_RECEIVED: IconCredit,
+  REPORT_PUBLISHED: IconReportMini,
+  ROLE_CHANGE: IconUserAdmin,
+  SYSTEM: IconSystem,
+};
+
 const TYPE_TAG: Record<
   NotificationType,
   { label: string; tone: "gold" | "info" | "success" | "danger" | "default" }
@@ -50,10 +77,14 @@ const TYPE_TAG: Record<
   SYSTEM: { label: "SYSTEM", tone: "default" },
 };
 
-const STATUS_FILTERS: Array<{ key: StatusFilter; label: string }> = [
-  { key: "ALL", label: "전체" },
-  { key: "UNREAD", label: "안 읽음" },
-  { key: "READ", label: "읽음" },
+const STATUS_FILTERS: Array<{
+  key: StatusFilter;
+  label: string;
+  icon: IconComponent;
+}> = [
+  { key: "ALL", label: "전체", icon: IconGridAll },
+  { key: "UNREAD", label: "안 읽음", icon: IconUnread },
+  { key: "READ", label: "읽음", icon: IconRead },
 ];
 
 function fmtTime(d: Date | string): string {
@@ -132,6 +163,14 @@ export default function NotificationsClient({
   const todayCount = notifications.filter((n) => isToday(n.createdAt)).length;
   const linkedCount = notifications.filter((n) => n.link).length;
   const normalizedSearch = searchQuery.trim().toLowerCase();
+  const hasActiveFilter =
+    filter !== "ALL" || statusFilter !== "ALL" || normalizedSearch.length > 0;
+
+  function resetFilters() {
+    setFilter("ALL");
+    setStatusFilter("ALL");
+    setSearchQuery("");
+  }
 
   const countsByType = useMemo(() => {
     const counts: Record<FilterKey, number> = {
@@ -207,23 +246,35 @@ export default function NotificationsClient({
 
       <section className={styles.summaryGrid} aria-label="알림 요약">
         <div className={styles.summaryItem}>
-          <span className={styles.summaryItem__label}>TOTAL</span>
+          <span className={styles.summaryItem__label}>
+            <IconNotification className={styles.summaryItem__icon} aria-hidden />
+            TOTAL
+          </span>
           <strong className={styles.summaryItem__value}>
             {notifications.length}
           </strong>
         </div>
         <div className={styles.summaryItem}>
-          <span className={styles.summaryItem__label}>UNREAD</span>
+          <span className={styles.summaryItem__label}>
+            <IconUnread className={styles.summaryItem__icon} aria-hidden />
+            UNREAD
+          </span>
           <strong className={styles.summaryItem__valueGold}>
             {unreadCount}
           </strong>
         </div>
         <div className={styles.summaryItem}>
-          <span className={styles.summaryItem__label}>TODAY</span>
+          <span className={styles.summaryItem__label}>
+            <IconToday className={styles.summaryItem__icon} aria-hidden />
+            TODAY
+          </span>
           <strong className={styles.summaryItem__value}>{todayCount}</strong>
         </div>
         <div className={styles.summaryItem}>
-          <span className={styles.summaryItem__label}>LINKED</span>
+          <span className={styles.summaryItem__label}>
+            <IconLinked className={styles.summaryItem__icon} aria-hidden />
+            LINKED
+          </span>
           <strong className={styles.summaryItem__value}>{linkedCount}</strong>
         </div>
       </section>
@@ -231,7 +282,7 @@ export default function NotificationsClient({
       <section className={styles.controlPanel} aria-label="알림 필터">
         <div className={styles.toolbar}>
           <div className={styles.statusFilters} aria-label="읽음 상태 필터">
-            {STATUS_FILTERS.map(({ key, label }) => {
+            {STATUS_FILTERS.map(({ key, label, icon: FilterIcon }) => {
               const active = statusFilter === key;
               const count =
                 key === "UNREAD"
@@ -251,6 +302,7 @@ export default function NotificationsClient({
                     .join(" ")}
                   onClick={() => setStatusFilter(key)}
                 >
+                  <FilterIcon className={styles.statusFilter__icon} aria-hidden />
                   <span>{label}</span>
                   <span className={styles.statusFilter__count}>{count}</span>
                 </button>
@@ -258,7 +310,10 @@ export default function NotificationsClient({
             })}
           </div>
           <label className={styles.search}>
-            <span className={styles.search__label}>SEARCH</span>
+            <span className={styles.search__label}>
+              <IconSearch className={styles.search__icon} aria-hidden />
+              SEARCH
+            </span>
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
@@ -273,6 +328,7 @@ export default function NotificationsClient({
             const count = countsByType[key] ?? 0;
             if (key !== "ALL" && count === 0) return null;
             const active = filter === key;
+            const TabIcon = FILTER_ICON[key];
             return (
               <button
                 key={key}
@@ -282,7 +338,10 @@ export default function NotificationsClient({
                   .join(" ")}
                 onClick={() => setFilter(key)}
               >
-                {FILTER_LABEL[key]} · {count}
+                <TabIcon className={styles.tab__icon} aria-hidden />
+                <span>
+                  {FILTER_LABEL[key]} · {count}
+                </span>
               </button>
             );
           })}
@@ -291,16 +350,33 @@ export default function NotificationsClient({
 
       <section className={styles.feedPanel} aria-label="알림 목록">
         <div className={styles.feedPanel__head}>
-          <span>SIGNAL FEED</span>
-          <span>
-            {filtered.length} / {notifications.length}
+          <span className={styles.feedPanel__title}>
+            <IconInbox className={styles.feedPanel__icon} aria-hidden />
+            SIGNAL FEED
+          </span>
+          <span className={styles.feedPanel__meta}>
+            <span>
+              {filtered.length} / {notifications.length}
+            </span>
+            {unreadCount > 0 ? <NotificationActions size="sm" /> : null}
           </span>
         </div>
         {grouped.length === 0 ? (
           <div className={styles.empty}>
-            {initialUnreadCount > 0 || notifications.length > 0
-              ? "조건에 맞는 알림이 없습니다."
-              : "알림이 없습니다."}
+            <span>
+              {initialUnreadCount > 0 || notifications.length > 0
+                ? "조건에 맞는 알림이 없습니다."
+                : "알림이 없습니다."}
+            </span>
+            {hasActiveFilter ? (
+              <button
+                type="button"
+                className={styles.resetFilters}
+                onClick={resetFilters}
+              >
+                필터 초기화
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className={styles.list}>
