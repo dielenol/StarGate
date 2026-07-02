@@ -7,7 +7,6 @@ import type {
 } from "@/types/inventory";
 
 import { auth } from "@/lib/auth/config";
-import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
   listCharacterInventory,
@@ -15,7 +14,6 @@ import {
   listSharedInventory,
 } from "@/lib/db/inventory";
 
-import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
 import InventoryClient, { type InventoryClientEntry } from "./InventoryClient";
@@ -34,8 +32,6 @@ export default async function CharacterInventoryPage({
     redirect("/login");
   }
 
-  const { role } = session.user;
-  const isGm = hasRole(role, "V");
   const { characterId } = await params;
 
   const character = await findCharacterById(characterId);
@@ -109,17 +105,6 @@ export default async function CharacterInventoryPage({
           { label: character.codename },
         ]}
         title={character.codename}
-        right={
-          isGm ? (
-            <Button
-              as="a"
-              href={`/erp/admin/inventory/${characterId}`}
-              variant="primary"
-            >
-              관리자 모드
-            </Button>
-          ) : null
-        }
       />
 
       <div className={styles.inventoryStack} data-pixel-font="ui">
