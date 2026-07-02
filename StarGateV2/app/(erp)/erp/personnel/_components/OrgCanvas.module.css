@@ -127,8 +127,8 @@
     var(--bg-1);
 }
 
-.hostileNode:hover,
-.hostileNode:focus-visible {
+.node.hostileNode:hover,
+.node.hostileNode:focus-visible {
   border-color: var(--danger);
   background:
     linear-gradient(
