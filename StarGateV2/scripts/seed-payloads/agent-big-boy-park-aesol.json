@@ -1,0 +1,151 @@
+{
+  "collection": "characters",
+  "type": "AGENT",
+  "payload": {
+    "codename": "BIG BOY",
+    "type": "AGENT",
+    "role": "군인 / 현장 돌격 요원",
+    "agentLevel": "J",
+    "department": "SECTOR_A",
+    "factionCode": "NOVUS_ORDO",
+    "institutionCode": "MANUS",
+    "previewImage": "/assets/peoples/BigBoy-pixel-profile.png",
+    "pixelCharacterImage": "/assets/peoples/BigBoy-pixel-character.png",
+    "warningVideo": "/video/%EB%B9%85%EB%B3%B4%EC%9D%B4.mp4",
+    "ownerId": "69f86783ab00507fb07973c5",
+    "isPublic": true,
+    "source": "legacy-json",
+    "createdAt": "2026-04-24T06:39:13.723Z",
+    "updatedAt": "2026-07-02T09:31:48.371Z",
+    "lore": {
+      "name": "박애솔",
+      "gender": "남성",
+      "age": "32세",
+      "height": "231cm",
+      "weight": "108kg",
+      "appearance": "무지막지한 덩치와 매일 일정하게 유지되는 특유의 바가지 머리가 상징.",
+      "personality": "군인으로서 철저한 상명하복을 중시하며 하루속히 임무에서 성과를 내비쳐 출세가도를 노리고 있지만 이런 경향이 개인적이고 은밀한 욕구와 자주 충돌하는 탓에 최근 갈등 중이다.",
+      "background": "꿈에 그리던 노부스 오르도에서 일하면서 자신의 능력을 자각하게 됐고 평범했던 삶이 송두리째 바뀌고 말았다. 아무도 모르는(심지어 노부스 오르도조차!) 큰 힘에 따르는 막중한 책임에 짓눌리면서도 그는 오늘도 최전선으로 나선다.",
+      "quote": "빵을 돈 주고 먹음?",
+      "mainImage": "/assets/peoples/BigBoy-main-image.png",
+      "posterImage": "/assets/peoples/BigBoy-poster.webp",
+      "appearsInEvents": [
+        "NOSB-S1E1-ORDER",
+        "NOSB-S1E1-MINI",
+        "NOSB-S1E2-CHOICE",
+        "NOSB-S1E2-MINI",
+        "NOSB-S1E3-PHANTOM",
+        "NOSB-MINI-5959-CONTAINMENT",
+        "NOSB-S1E4-PRATO-PART1"
+      ],
+      "loreTags": [
+        "빅보이",
+        "ZULU-5959",
+        "격리사고",
+        "블랙피라미드"
+      ],
+      "nickname": "빅보이",
+      "sessionAppearances": [
+        {
+          "sessionId": "NOSB-S1E1-MINI",
+          "role": "현장 출현",
+          "summary": "S1E1 미니 세션 로그 기준 현장 참조 인물로 등재되었다.",
+          "sourceLabel": "작전 기록 S1E1: 질서 - 미니 세션"
+        },
+        {
+          "sessionId": "NOSB-S1E2-CHOICE",
+          "role": "선발조 감염자 및 커룹의 불칼 소지자",
+          "summary": "박애솔은 선발조 감염자로 발견되어 촉수 제거 후 회복되었고, 커룹의 불칼 소지 및 사용 기록이 남았다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 선택」"
+        },
+        {
+          "sessionId": "NOSB-S1E2-MINI",
+          "role": "송사리 호 탑승자 및 선상 사건 참여자",
+          "summary": "빅보이는 닥터 모스와의 별도 장면 이후 송사리 호 워크샵과 아포칼립스 호 반복 사건에 참여했다.",
+          "sourceLabel": "기록통제실 보존본 「S1E2 미니 세션」"
+        },
+        {
+          "sessionId": "NOSB-MINI-5959-CONTAINMENT",
+          "role": "격리 상자 파손 원인",
+          "summary": "빅보이는 복도에서 들고 있던 통나무를 떨어뜨려 ZULU-5959 격리 상자가 파손되는 사고의 직접 원인이 되었다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「5959 격리사태」",
+          "updatedAt": "2026-06-13T00:00:00.000Z"
+        }
+      ],
+      "relations": []
+    },
+    "play": {
+      "className": "군인",
+      "hp": 50,
+      "hpDelta": 0,
+      "san": 30,
+      "sanDelta": 0,
+      "def": 5,
+      "defDelta": 0,
+      "atk": 5,
+      "atkDelta": 0,
+      "weaponTraining": [
+        "화염방사기"
+      ],
+      "skillTraining": [],
+      "credit": "200",
+      "equipment": [
+        {
+          "name": "보급형 화염방사기",
+          "description": "화염방사기 훈련을 받은 현장 돌격 요원이 사용하는 기본 화염 제압 장비. 밀집 지대와 오염 구역에서 접근을 차단하는 운용을 전제로 한다."
+        }
+      ],
+      "abilities": [
+        {
+          "slot": "C1",
+          "name": ""
+        },
+        {
+          "slot": "C2",
+          "name": ""
+        },
+        {
+          "slot": "C3",
+          "name": ""
+        },
+        {
+          "slot": "C4",
+          "name": ""
+        },
+        {
+          "slot": "C5",
+          "name": ""
+        },
+        {
+          "slot": "P",
+          "name": ""
+        },
+        {
+          "slot": "A1",
+          "name": ""
+        },
+        {
+          "slot": "A2",
+          "name": ""
+        },
+        {
+          "slot": "A3",
+          "name": ""
+        },
+        {
+          "slot": "A4",
+          "name": ""
+        },
+        {
+          "slot": "A5",
+          "name": ""
+        }
+      ],
+      "abilityType": "화염방사기를 대폭 할인된 가격에 살 수 있는 능력.",
+      "points": 100
+    },
+    "loreMd": "## 외형\n무지막지한 덩치와 매일 일정하게 유지되는 특유의 바가지 머리가 상징.\n\n## 성격/성향\n군인으로서 철저한 상명하복을 중시하며 하루속히 임무에서 성과를 내비쳐 출세가도를 노리고 있지만 이런 경향이 개인적이고 은밀한 욕구와 자주 충돌하는 탓에 최근 갈등 중이다.\n\n## 배경\n꿈에 그리던 노부스 오르도에서 일하면서 자신의 능력을 자각하게 됐고 평범했던 삶이 송두리째 바뀌고 말았다. 아무도 모르는(심지어 노부스 오르도조차!) 큰 힘에 따르는 막중한 책임에 짓눌리면서도 그는 오늘도 최전선으로 나선다.\n\n## 기본 능력치\n- 클래스: 군인\n- HP: 50\n- SAN: 30\n- DEF: 5\n- ATK: 5\n- 능력: 화염방사기를 대폭 할인된 가격에 살 수 있는 능력.\n- 무기 훈련: 화염방사기\n- 스킬 훈련: 없음\n- 크레딧: 200\n\n## 무기\n### 보급형 화염방사기\n화염방사기 훈련을 받은 현장 돌격 요원이 사용하는 기본 화염 제압 장비. 밀집 지대와 오염 구역에서 접근을 차단하는 운용을 전제로 한다.",
+    "rawText": "[ 빅 보이 / 박애솔 ]\n\n성별 | 남성\n나이 | 32세\n신장 | 231 cm\n체중 | 108 kg\n\n01, 무지막지한 덩치와 매일 일정하게 유지되는 특유의 바가지 머리가 상징.\n\n02, 군인으로서 철저한 상명하복을 중시하며 하루속히 임무에서 성과를 내비쳐 출세가도를 노리고 있지만 이런 경향이 개인적이고 은밀한 욕구와 자주 충돌하는 탓에 최근 갈등 중이다.\n\n03, 꿈에 그리던 노부스 오르도에서 일하면서 자신의 능력을 자각하게 됐고 평범했던 삶이 송두리째 바뀌고 말았다. 아무도 모르는(심지어 노부스 오르도조차!) 큰 힘에 따르는 막중한 책임에 짓눌리면서도 그는 오늘도 최전선으로 나선다.\n\n[기본 능력치]\n\n클래스 : 군인\n\nHP | 50\nSAN | 30\nDEF | 5\nATK | 5\n\n능력 : 화염방사기를 대폭 할인된 가격에 살 수 있는 능력.\n무기 훈련 : 화염방사기\n스킬 훈련 :\n크레딧 : 200\n\n\"빵을 돈 주고 먹음?\"\n\n소속 현장요원 알파 섹터, 등급은 J",
+    "bulkUpdatedAt": "2026-05-30T02:17:53.897Z"
+  }
+}

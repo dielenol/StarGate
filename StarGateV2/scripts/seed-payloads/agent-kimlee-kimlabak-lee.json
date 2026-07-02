@@ -1,0 +1,144 @@
+{
+  "collection": "characters",
+  "type": "AGENT",
+  "payload": {
+    "codename": "KIMLEE",
+    "type": "AGENT",
+    "tier": "MAIN",
+    "role": "군인 / 섹터D 출신 현장 요원",
+    "agentLevel": "J",
+    "department": "SECTOR_A",
+    "factionCode": "NOVUS_ORDO",
+    "institutionCode": "MANUS",
+    "previewImage": "/assets/peoples/Kimlee-pixel-profile.png",
+    "pixelCharacterImage": "/assets/peoples/Kimlee-pixel-character.png",
+    "ownerId": "69f86413ab00507fb079738f",
+    "isPublic": true,
+    "source": "discord",
+    "createdAt": "2026-04-29T11:58:33.095Z",
+    "updatedAt": "2026-07-02T09:31:48.416Z",
+    "lore": {
+      "name": "킴라박 리",
+      "nameNative": "Kimlabak Lee",
+      "gender": "남성",
+      "age": "35세",
+      "height": "182cm",
+      "weight": "74kg",
+      "appearance": "활동성을 위해 짧게 민 머리와 현장에서 생긴 긴 흉터, 진한 눈썹과 차가운 눈빛은 타협이라는 말과 벽을 친 듯하다.",
+      "personality": "'언제나 확실하게!'의 모토를 따르는 단순한 성격. 무언가를 책임지는 것을 극도로 꺼려하며 기본적으로 거리감을 두는 성격이지만 좋아하는 것은 또 한없이 좋아한다. 현장에 대한 자부심이 있다.",
+      "background": "섹터D에서 복무하던 군인인 '킴라박 리'는 자신의 과거를 신경쓰지 않습니다.",
+      "quote": "토마토 파스타는 없나?",
+      "mainImage": "/assets/peoples/Kimlee-main-image.png",
+      "posterImage": "/assets/peoples/Kimlee-poster.webp",
+      "appearsInEvents": [
+        "NOSB-S1E3-PHANTOM",
+        "NOSB-MINI-MINI-LEGACY",
+        "NOSB-MINI-5959-CONTAINMENT",
+        "NOSB-S1E4-PRATO-PART1",
+        "NOSB-S1E4-PRATO-PART2"
+      ],
+      "loreTags": [
+        "MINI-MINI",
+        "샤또브리엥",
+        "ZULU-5959",
+        "장밋빛시냅스",
+        "블랙피라미드"
+      ],
+      "sessionAppearances": [
+        {
+          "sessionId": "NOSB-MINI-MINI-LEGACY",
+          "role": "샤또 브리엥 현장 조사 참여",
+          "summary": "킴라박 리는 샤또 브리엥 귀신 의뢰 조사와 저택 내 단서 확인에 참여했다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「MINI02: 미니미니세션 1화 유산」",
+          "updatedAt": "2026-06-12T00:00:00.000Z"
+        },
+        {
+          "sessionId": "NOSB-MINI-5959-CONTAINMENT",
+          "role": "격리사태 현장 노출 인원",
+          "summary": "킴라박은 5959 격리사태 중 장밋빛 시냅스 노출과 변형 소동에 휘말린 현장 인원으로 기록된다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「5959 격리사태」",
+          "updatedAt": "2026-06-13T00:00:00.000Z"
+        }
+      ]
+    },
+    "play": {
+      "className": "군인",
+      "hp": 50,
+      "hpDelta": 0,
+      "san": 30,
+      "sanDelta": 0,
+      "def": 5,
+      "defDelta": 0,
+      "atk": 0,
+      "atkDelta": 0,
+      "abilityType": "비능력자",
+      "weaponTraining": [
+        "저격소총"
+      ],
+      "skillTraining": [],
+      "credit": "200",
+      "equipment": [
+        {
+          "name": "보급형 저격소총",
+          "description": "저격소총 훈련을 받은 현장 요원이 사용하는 장거리 정밀 사격용 기본 소총. 엄폐 지점에서 원거리 표적을 제압하는 운용을 전제로 한다."
+        }
+      ],
+      "abilities": [
+        {
+          "slot": "C1",
+          "name": ""
+        },
+        {
+          "slot": "C2",
+          "name": ""
+        },
+        {
+          "slot": "C3",
+          "name": ""
+        },
+        {
+          "slot": "C4",
+          "name": ""
+        },
+        {
+          "slot": "C5",
+          "name": ""
+        },
+        {
+          "slot": "P",
+          "name": "재빠른 손",
+          "code": "P1",
+          "description": "오랜 현장 경험은 남들에게 불가능한 것을 가능하게 합니다.",
+          "effect": "장전에 턴을 소모하지 않습니다 / 스팀팩의 사용 횟수가 3회로 늘어납니다."
+        },
+        {
+          "slot": "A1",
+          "name": "떡밥",
+          "code": "A1",
+          "description": "상대에게 맞춤형 미끼를 준비해 투척합니다.",
+          "effect": "정신력 20을 소모해 상대를 최소 거리 2칸 이상으로 지정하여 강제로 이동하게 합니다."
+        },
+        {
+          "slot": "A2",
+          "name": ""
+        },
+        {
+          "slot": "A3",
+          "name": ""
+        },
+        {
+          "slot": "A4",
+          "name": ""
+        },
+        {
+          "slot": "A5",
+          "name": ""
+        }
+      ],
+      "points": 300
+    },
+    "loreMd": "## 외형\n활동성을 위해 짧게 민 머리와 현장에서 생긴 긴 흉터, 진한 눈썹과 차가운 눈빛은 타협이라는 말과 벽을 친 듯하다.\n\n## 성격/성향\n'언제나 확실하게!'의 모토를 따르는 단순한 성격. 무언가를 책임지는 것을 극도로 꺼려하며 기본적으로 거리감을 두는 성격이지만 좋아하는 것은 또 한없이 좋아한다. 현장에 대한 자부심이 있다.\n\n## 배경\n섹터D에서 복무하던 군인인 '킴라박 리'는 자신의 과거를 신경쓰지 않습니다.\n\n## 기본 능력치\n- 클래스: 군인\n- HP: 50\n- SAN: 30\n- DEF: 5\n- ATK: 0\n- 능력: 비능력자\n- 무기 훈련: 저격소총\n- 스킬 훈련: 없음\n- 크레딧: 200\n\n## 무기\n### 보급형 저격소총\n저격소총 훈련을 받은 현장 요원이 사용하는 장거리 정밀 사격용 기본 소총. 엄폐 지점에서 원거리 표적을 제압하는 운용을 전제로 한다.\n\n## 능력 조형\n### P1 재빠른 손\n- 설명: 오랜 현장 경험은 남들에게 불가능한 것을 가능하게 합니다.\n- 효과: 장전에 턴을 소모하지 않습니다 / 스팀팩의 사용 횟수가 3회로 늘어납니다.\n\n### A1 떡밥\n- 설명: 상대에게 맞춤형 미끼를 준비해 투척합니다.\n- 효과: 정신력 20을 소모해 상대를 최소 거리 2칸 이상으로 지정하여 강제로 이동하게 합니다.",
+    "rawText": "[ 킴라박 리 (Kimlabak Lee) ]\n\n성별 | 남성\n나이 | 35세\n신장 | 182cm\n체중 | 74kg\n\n01. 외형\n활동성을 위해 짧게 민 머리와 현장에서 생긴 긴 흉터, 진한 눈썹과 차가운 눈빛은 타협이라는 말과 벽을 친 듯하다.\n\n02. 성격/성향\n'언제나 확실하게!'의 모토를 따르는 단순한 성격. 무언가를 책임지는 것을 극도로 꺼려하며 기본적으로 거리감을 두는 성격이지만 좋아하는 것은 또 한없이 좋아한다. 현장에 대한 자부심이 있다.\n\n03. 배경\n섹터D에서 복무하던 군인인 '킴라박 리'는 자신의 과거를 신경쓰지 않습니다.\n\n[기본 능력치]\n\n클래스 : 군인\n\nHP | 50\nSAN | 30\nDEF | 5\nATK | 0\n\n능력 : 비능력자\n무기 훈련 : 저격소총\n스킬 훈련 :\n크레딧 : 200\n\nP1[재빠른 손] / A1[떡밥]\n\n\"토마토 파스타는 없나?\"",
+    "bulkUpdatedAt": "2026-05-30T02:17:53.897Z"
+  }
+}
