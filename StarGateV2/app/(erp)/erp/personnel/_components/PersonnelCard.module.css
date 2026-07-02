@@ -29,6 +29,34 @@
   background: linear-gradient(180deg, rgba(201, 168, 90, 0.04), transparent);
 }
 
+.card--hostile {
+  border-color: color-mix(in oklab, var(--danger) 44%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--danger) 5%, transparent),
+      transparent 78%
+    ),
+    var(--bg-1);
+}
+
+.card--hostile:hover,
+.card--hostile:focus-visible {
+  border-color: var(--danger);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--danger) 8%, transparent),
+      transparent 78%
+    ),
+    var(--bg-1);
+}
+
+.card--hostile.card--matched {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px var(--danger);
+}
+
 /* 우상단 미니 COMMANDER 배지 — 별 아이콘 + 텍스트. 좌상단 노랑 큰 박스 대신 컴팩트. */
 .commanderBadge {
   position: absolute;
@@ -53,6 +81,12 @@
 
 .commanderBadge svg {
   flex-shrink: 0;
+}
+
+.card--hostile .commanderBadge {
+  border-color: color-mix(in oklab, var(--danger) 70%, transparent);
+  background: color-mix(in oklab, var(--danger) 9%, transparent);
+  color: var(--danger);
 }
 
 .card--matched {
@@ -104,6 +138,10 @@
   font-size: 17px;
 }
 
+.card--hostile .avatar {
+  border-color: color-mix(in oklab, var(--danger) 54%, transparent);
+}
+
 .body {
   flex: 1;
   min-width: 0;
@@ -117,6 +155,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.card--hostile .code {
+  color: var(--danger);
 }
 
 .name {

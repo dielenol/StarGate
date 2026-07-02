@@ -6,7 +6,7 @@ import { useState } from "react";
 import type { AgentLevel, Character, CharacterType } from "@/types/character";
 
 import { getLevelDisplayRank, getLevelDisplayTotal } from "@/lib/personnel";
-import { isInternalOrgCode } from "@/lib/org-structure";
+import { getTopLevelGroup, isInternalOrgCode } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import {
   getCharacterDisplayNameOrNull,
@@ -54,6 +54,7 @@ export default function PersonnelCard({
       ? getCharacterDisplayNameOrNull(character)
       : null;
   const roleLine = getCharacterRoleLine(character);
+  const isHostile = isHostileCharacter(character);
 
   const avatarNode = renderAvatar(character, isRedacted);
 
@@ -63,6 +64,7 @@ export default function PersonnelCard({
     matchState === "matched" ? styles["card--matched"] : "",
     matchState === "dimmed" ? styles["card--dimmed"] : "",
     isRedacted ? styles["card--redacted"] : "",
+    isHostile ? styles["card--hostile"] : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -121,7 +123,15 @@ export default function PersonnelCard({
           </>
         ) : (
           <>
-            <Tag tone={character.type === "AGENT" ? "gold" : "default"}>
+            <Tag
+              tone={
+                isHostile
+                  ? "danger"
+                  : character.type === "AGENT"
+                    ? "gold"
+                    : "default"
+              }
+            >
               {character.type}
             </Tag>
             {canShowAgentLevel ? (
@@ -154,6 +164,14 @@ export default function PersonnelCard({
       ) : null}
     </Link>
   );
+}
+
+function isHostileCharacter(character: Character): boolean {
+  return [
+    character.department,
+    character.factionCode,
+    character.institutionCode,
+  ].some((code) => code === "HOSTILE" || getTopLevelGroup(code) === "HOSTILE");
 }
 
 function renderAvatar(character: Character, isRedacted: boolean) {

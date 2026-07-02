@@ -1,5 +1,19 @@
 /* ── Personnel dossier v2 ── */
 
+.dossierPage {
+  --dossier-accent: var(--gold);
+  --dossier-accent-dim: var(--gold-dim);
+  --dossier-accent-bg: color-mix(in srgb, var(--gold) 5%, transparent);
+  --dossier-accent-bg-strong: color-mix(in srgb, var(--gold) 9%, transparent);
+}
+
+.dossierPage[data-tone="hostile"] {
+  --dossier-accent: var(--danger);
+  --dossier-accent-dim: color-mix(in oklab, var(--danger) 70%, transparent);
+  --dossier-accent-bg: color-mix(in oklab, var(--danger) 7%, transparent);
+  --dossier-accent-bg-strong: color-mix(in oklab, var(--danger) 11%, transparent);
+}
+
 /* Layout (2-column) */
 
 .layout {
@@ -123,7 +137,7 @@
 }
 
 .readOnlyNotice__body strong {
-  color: var(--gold);
+  color: var(--dossier-accent);
 }
 
 .readOnlyNotice__audit {
@@ -234,6 +248,18 @@
   text-align: center;
 }
 
+.dossierPage[data-tone="hostile"] .portraitBox {
+  border-color: var(--dossier-accent-dim);
+  background:
+    linear-gradient(180deg, var(--dossier-accent-bg), transparent 42%),
+    var(--bg-1);
+}
+
+.dossierPage[data-tone="hostile"] .portraitBox::before,
+.dossierPage[data-tone="hostile"] .portraitBox::after {
+  border-color: var(--dossier-accent-dim);
+}
+
 .portraitImg {
   display: block;
   width: 100%;
@@ -242,10 +268,10 @@
   margin: 0 auto;
   object-fit: cover;
   object-position: center top;
-  border: 1px solid var(--gold-dim);
+  border: 1px solid var(--dossier-accent-dim);
   border-radius: var(--radius-sm);
   background: var(--bg-2);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 10%, transparent);
+  box-shadow: 0 0 0 1px var(--dossier-accent-bg-strong);
 }
 
 .portraitPlaceholder {
@@ -271,7 +297,7 @@
 
 .portraitCode {
   margin-top: 4px;
-  color: var(--gold);
+  color: var(--dossier-accent);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.2em;
@@ -382,9 +408,9 @@
 .quote {
   margin-top: 12px;
   padding: 14px 18px;
-  border-left: 2px solid var(--gold);
+  border-left: 2px solid var(--dossier-accent);
   border-radius: var(--radius-sm);
-  background: rgba(201, 168, 90, 0.04);
+  background: var(--dossier-accent-bg);
   color: var(--ink-1);
   font-family: var(--font-mono);
   font-size: 14px;
@@ -431,7 +457,7 @@
 
 .statNumber {
   margin-top: 6px;
-  color: var(--gold);
+  color: var(--dossier-accent);
   font-family: var(--font-mono);
   font-size: 28px;
   font-weight: 500;
@@ -648,7 +674,7 @@
 }
 
 .equipmentLockedCode {
-  color: var(--gold);
+  color: var(--dossier-accent);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.15em;
@@ -711,8 +737,8 @@
 }
 
 .eventCard--linked:hover {
-  border-color: var(--gold-dim);
-  background: color-mix(in srgb, var(--gold) 5%, var(--bg-2));
+  border-color: var(--dossier-accent-dim);
+  background: color-mix(in srgb, var(--dossier-accent) 5%, var(--bg-2));
   transform: translateY(-1px);
 }
 
@@ -725,7 +751,7 @@
 }
 
 .eventCode {
-  color: var(--gold);
+  color: var(--dossier-accent);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.12em;
@@ -788,8 +814,8 @@
 }
 
 .relationCard--linked:hover {
-  border-color: var(--gold-dim);
-  background: color-mix(in srgb, var(--gold) 5%, var(--bg-2));
+  border-color: var(--dossier-accent-dim);
+  background: color-mix(in srgb, var(--dossier-accent) 5%, var(--bg-2));
   transform: translateY(-1px);
 }
 
@@ -813,7 +839,7 @@
 }
 
 .relationCode {
-  color: var(--gold);
+  color: var(--dossier-accent);
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 500;
@@ -844,7 +870,7 @@
 }
 
 .recordLink {
-  color: var(--gold);
+  color: var(--dossier-accent);
   text-decoration: none;
 }
 
@@ -874,7 +900,7 @@
 
 .redactedBar {
   display: inline-block;
-  color: var(--gold-dim);
+  color: var(--dossier-accent-dim);
   letter-spacing: -1px;
   user-select: none;
   font-size: 15px;
@@ -882,7 +908,7 @@
 
 .redactedInline {
   display: inline-block;
-  color: var(--gold-dim);
+  color: var(--dossier-accent-dim);
   letter-spacing: -1px;
   user-select: none;
 }
@@ -921,7 +947,7 @@
 }
 
 .loreTextBulletMarker {
-  color: var(--gold);
+  color: var(--dossier-accent);
   font-family: var(--font-mono);
 }
 
@@ -935,7 +961,7 @@
 }
 
 .monoGold {
-  color: var(--gold);
+  color: var(--dossier-accent);
 }
 
 .empty {

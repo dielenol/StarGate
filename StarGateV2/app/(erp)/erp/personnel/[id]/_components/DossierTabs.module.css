@@ -1,10 +1,16 @@
 /* ── DossierTabs ── */
 
 .bar {
+  --dossier-tab-accent: var(--gold);
+
   display: flex;
   align-items: stretch;
   gap: 12px;
   border-bottom: 1px solid var(--line);
+}
+
+.bar[data-tone="hostile"] {
+  --dossier-tab-accent: var(--danger);
 }
 
 .slot {
@@ -49,8 +55,8 @@
 }
 
 .tabActive {
-  color: var(--gold);
-  border-bottom-color: var(--gold);
+  color: var(--dossier-tab-accent);
+  border-bottom-color: var(--dossier-tab-accent);
 }
 
 .tabLevel {

@@ -685,6 +685,7 @@ export default function DossierClient({
   const isAgent = character.type === "AGENT";
 
   const topGroup = resolveCharacterGroup(character);
+  const isHostile = topGroup === "HOSTILE";
   const usesAgentLevels = isInternalOrgCode(topGroup);
   const departmentLabel =
     topGroup !== "UNASSIGNED" && department === "UNASSIGNED"
@@ -1496,7 +1497,11 @@ export default function DossierClient({
   /* ── 렌더 ── */
 
   return (
-    <div data-pixel-font={isEditing ? undefined : "ui"}>
+    <div
+      className={styles.dossierPage}
+      data-pixel-font={isEditing ? undefined : "ui"}
+      data-tone={isHostile ? "hostile" : undefined}
+    >
       <PageHead
         breadcrumb={<OrgDrillCrumbs items={drillItems} />}
         title={pageTitle}
@@ -1573,9 +1578,13 @@ export default function DossierClient({
             ) : null}
 
             <div className={styles.typeRow}>
-              <Tag tone={isAgent ? "gold" : "default"}>{character.type}</Tag>
+              <Tag tone={isHostile ? "danger" : isAgent ? "gold" : "default"}>
+                {character.type}
+              </Tag>
               {departmentLabel && departmentLabel !== "미배정" ? (
-                <Tag tone="default">{departmentLabel}</Tag>
+                <Tag tone={isHostile ? "danger" : "default"}>
+                  {departmentLabel}
+                </Tag>
               ) : null}
             </div>
 
@@ -1859,6 +1868,7 @@ export default function DossierClient({
           <DossierTabs
             active={activeTab}
             onChange={setActiveTab}
+            tone={isHostile ? "hostile" : "default"}
             counts={{ relations: relationCount, sessions: fieldEventCount }}
             auditLevel="V"
             leftSlot={

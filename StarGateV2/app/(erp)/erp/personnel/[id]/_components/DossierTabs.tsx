@@ -23,6 +23,7 @@ const TABS: TabConfig[] = [
 interface Props {
   active: DossierTabKey;
   onChange: (key: DossierTabKey) => void;
+  tone?: "default" | "hostile";
   counts?: { relations?: number; sessions?: number };
   auditLevel?: AgentLevel;
   /** 좌측 끝 슬롯 (예: 등급 안내 트리거). 탭 row 와 같은 border-bottom 라인에 정렬된다. */
@@ -34,6 +35,7 @@ interface Props {
 export default function DossierTabs({
   active,
   onChange,
+  tone = "default",
   counts,
   auditLevel = "V",
   leftSlot,
@@ -50,7 +52,7 @@ export default function DossierTabs({
   };
 
   return (
-    <div className={styles.bar}>
+    <div className={styles.bar} data-tone={tone}>
       {leftSlot ? <div className={styles.slot}>{leftSlot}</div> : null}
       <div className={styles.tabs} role="tablist">
         {TABS.map((cfg) => {
