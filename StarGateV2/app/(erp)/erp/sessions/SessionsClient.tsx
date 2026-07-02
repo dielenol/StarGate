@@ -154,6 +154,15 @@ export default function SessionsClient({
     return querySessions.filter((s) => inGroup(s, statusGroup));
   }, [querySessions, statusGroup]);
 
+  const mutedCalendarSessionIds = useMemo(() => {
+    if (statusGroup === "ALL") return undefined;
+    return new Set(
+      querySessions
+        .filter((s) => !inGroup(s, statusGroup))
+        .map((s) => s._id),
+    );
+  }, [querySessions, statusGroup]);
+
   const statusCounts = useMemo<StatusCounts>(() => {
     let all = 0;
     let open = 0;
@@ -207,6 +216,7 @@ export default function SessionsClient({
 
   const prevLabel = `${month === 1 ? 12 : month - 1}월`;
   const nextLabel = `${month === 12 ? 1 : month + 1}월`;
+  const hasActiveFilter = normalizedQuery.length > 0 || statusGroup !== "ALL";
   const syncMessage = sessionsIsError
     ? sessionsError instanceof Error
       ? sessionsError.message
@@ -216,6 +226,10 @@ export default function SessionsClient({
       : sessionsIsFetching
         ? "세션 데이터 동기화 중"
         : "최신 데이터";
+  const resetFilters = useCallback(() => {
+    setQuery("");
+    setStatusGroup("ALL");
+  }, []);
 
   const titleNode: ReactNode = (
     <span className={styles.titleRow}>
@@ -319,6 +333,16 @@ export default function SessionsClient({
                 내 참여 · {statusCounts.mine}
               </StatusPill>
             </div>
+            {hasActiveFilter ? (
+              <div className={styles.ctrlFilterMeta}>
+                <span>
+                  FILTER · {filteredSessions.length}/{sessions.length}
+                </span>
+                <button type="button" onClick={resetFilters}>
+                  초기화
+                </button>
+              </div>
+            ) : null}
             <div
               className={[
                 styles.ctrlSync,
@@ -357,7 +381,8 @@ export default function SessionsClient({
         <main>
           {view === "calendar" ? (
             <SessionCalendar
-              sessions={filteredSessions}
+              sessions={querySessions}
+              mutedSessionIds={mutedCalendarSessionIds}
               year={year}
               month={month}
               onDayClick={jumpToListSession}

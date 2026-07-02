@@ -17,6 +17,7 @@ import styles from "./SessionCalendar.module.css";
 
 interface SessionCalendarProps {
   sessions: SerializedSession[];
+  mutedSessionIds?: ReadonlySet<string>;
   year: number;
   month: number;
   /** 일자 셀 클릭 시 호출 — 그 일자의 첫 세션 id 를 전달한다. 리스트 뷰로 점프하는 용도. */
@@ -68,6 +69,7 @@ function formatDayPanelLabel(key: string): string {
 
 export default function SessionCalendar({
   sessions,
+  mutedSessionIds,
   year,
   month,
   onDayClick,
@@ -182,10 +184,12 @@ export default function SessionCalendar({
               {visible.map((e) => {
                 const mod = CHIP_MOD[e.status];
                 const isTrpg = e.source === "trpg";
+                const isMuted = mutedSessionIds?.has(e._id) ?? false;
                 const chipCls = [
                   styles.chip,
                   mod ? styles[`chip--${mod}`] : "",
                   isTrpg ? styles["chip--trpg"] : "",
+                  isMuted ? styles["chip--muted"] : "",
                 ]
                   .filter(Boolean)
                   .join(" ");
@@ -269,6 +273,9 @@ export default function SessionCalendar({
                 styles.dayPanel__item,
                 mod ? styles[`dayPanel__item--${mod}`] : "",
                 event.source === "trpg" ? styles["dayPanel__item--trpg"] : "",
+                mutedSessionIds?.has(event._id)
+                  ? styles["dayPanel__item--muted"]
+                  : "",
               ]
                 .filter(Boolean)
                 .join(" ");

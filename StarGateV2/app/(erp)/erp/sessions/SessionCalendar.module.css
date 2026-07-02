@@ -290,6 +290,10 @@
   border-left-color: var(--info);
 }
 
+.chip--muted {
+  opacity: 0.34;
+}
+
 /* trpg 출처 닷 — chip 좌측에 작은 dot 으로 출처를 표시. */
 .sourceDot {
   flex: 0 0 5px;
@@ -420,6 +424,10 @@
   border-left-color: var(--info);
 }
 
+.dayPanel__item--muted {
+  opacity: 0.42;
+}
+
 .dayPanel__time,
 .dayPanel__status {
   font-family: var(--font-mono);
@@ -533,5 +541,13 @@
 @media (max-width: 767px) {
   .grid {
     grid-auto-rows: 92px;
+  }
+
+  .dayPanel__item {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .dayPanel__status {
+    grid-column: 2;
   }
 }

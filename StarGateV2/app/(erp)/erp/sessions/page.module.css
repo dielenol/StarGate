@@ -192,6 +192,39 @@
   white-space: nowrap;
 }
 
+.ctrlFilterMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.ctrlFilterMeta button {
+  padding: 4px 9px;
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.ctrlFilterMeta button:hover {
+  background: color-mix(in srgb, var(--gold) 13%, transparent);
+  color: var(--ink-0);
+}
+
+.ctrlFilterMeta + .ctrlSync {
+  margin-left: 0;
+}
+
 .ctrlSync__dot {
   width: 7px;
   height: 7px;
@@ -339,6 +372,51 @@
 @media (max-width: 1024px) {
   .body {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .ctrlRow {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .ctrlSeg {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ctrlSeg button {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .ctrlSearch {
+    min-height: 46px;
+    border-right: 0;
+    border-left: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ctrlMonth {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    min-height: 44px;
+  }
+
+  .ctrlMonth button {
+    padding: 0 10px;
+  }
+
+  .ctrlMonth .lbl {
+    justify-content: center;
+  }
+
+  .ctrlFilterMeta,
+  .ctrlSync {
+    margin-left: 0;
+    flex-wrap: wrap;
   }
 }
 
@@ -896,6 +974,62 @@
 @media (max-width: 768px) {
   .listAccordion {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .listMonth {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .listFilter {
+    margin-left: 0;
+  }
+
+  .listHead {
+    display: none;
+  }
+
+  .listRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name rsvp"
+      "stat when";
+    gap: 8px 12px;
+  }
+
+  .listStat {
+    grid-area: stat;
+  }
+
+  .listName {
+    grid-area: name;
+  }
+
+  .listWhen {
+    grid-area: when;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .listRsvp {
+    grid-area: rsvp;
+  }
+
+  .listInfo__row {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .listActions {
+    justify-content: stretch;
+    flex-wrap: wrap;
+  }
+
+  .listAction {
+    flex: 1 1 180px;
+    justify-content: center;
   }
 }
 
