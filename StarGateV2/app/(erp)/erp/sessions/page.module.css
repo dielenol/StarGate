@@ -80,7 +80,10 @@
 }
 
 .ctrlSeg .ico {
-  font-size: 14px;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: currentColor;
 }
 
 .ctrlSearch {
