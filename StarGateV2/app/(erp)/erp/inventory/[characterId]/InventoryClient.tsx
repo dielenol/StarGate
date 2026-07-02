@@ -5,14 +5,20 @@ import { useMemo, useState } from "react";
 import type { ItemCategory } from "@/types/inventory";
 
 import {
+  IconArchive,
+  IconGridAll,
   IconInventory,
   IconInventoryConsumable,
   IconInventoryEquipment,
   IconInventoryMisc,
+  IconSearch,
   IconSharedInventory,
+  IconTimeline,
   type IconComponent,
 } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
+import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
+import Input from "@/components/ui/Input/Input";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
 import ShopItemIcon from "../../shop/ShopItemIcon";
@@ -42,6 +48,7 @@ interface InventoryClientProps {
 }
 
 type InventoryTab = "ALL" | "EQUIPMENT" | "CONSUMABLE" | "OTHER";
+type InventoryView = "GRID" | "DENSE";
 
 const TAB_DEFS: { value: InventoryTab; label: string; icon: IconComponent }[] =
   [
@@ -98,6 +105,27 @@ function tabTone(tab: InventoryTab): string {
   return "all";
 }
 
+function formatQuantity(value: number): string {
+  return value.toLocaleString();
+}
+
+function matchesQuery(entry: InventoryClientEntry, query: string): boolean {
+  if (!query) return true;
+
+  const searchable = [
+    entry.itemName,
+    categoryLabel(entry.category),
+    entry.effect,
+    entry.note,
+    entry.slug,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return searchable.includes(query);
+}
+
 function CategoryIcon({
   category,
   slug,
@@ -135,6 +163,8 @@ export default function InventoryClient({
   filteredEmptyText = "이 카테고리에 보유 아이템이 없습니다.",
 }: InventoryClientProps) {
   const [activeTab, setActiveTab] = useState<InventoryTab>("ALL");
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState<InventoryView>("GRID");
   const SectionIcon = SECTION_ICONS[variant];
 
   const countByTab = useMemo(() => {
@@ -157,19 +187,154 @@ export default function InventoryClient({
     return counts;
   }, [entries]);
 
+  const summary = useMemo(() => {
+    let quantity = 0;
+    let equipment = 0;
+    let consumables = 0;
+    let latest: InventoryClientEntry | null = null;
+
+    for (const entry of entries) {
+      quantity += entry.quantity;
+      if (entry.category === "WEAPON" || entry.category === "ARMOR") {
+        equipment += 1;
+      } else if (entry.category === "CONSUMABLE") {
+        consumables += entry.quantity;
+      }
+
+      const entryTime = new Date(entry.acquiredAt).getTime();
+      const latestTime = latest
+        ? new Date(latest.acquiredAt).getTime()
+        : -Infinity;
+      if (!Number.isNaN(entryTime) && entryTime > latestTime) {
+        latest = entry;
+      }
+    }
+
+    return { quantity, equipment, consumables, latest };
+  }, [entries]);
+
+  const normalizedQuery = query.trim().toLowerCase();
   const filteredEntries = useMemo(
-    () => entries.filter((entry) => matchesTab(entry.category, activeTab)),
-    [entries, activeTab],
+    () =>
+      entries.filter(
+        (entry) =>
+          matchesTab(entry.category, activeTab) &&
+          matchesQuery(entry, normalizedQuery),
+      ),
+    [entries, activeTab, normalizedQuery],
   );
 
+  const filteredQuantity = useMemo(
+    () => filteredEntries.reduce((total, entry) => total + entry.quantity, 0),
+    [filteredEntries],
+  );
+
+  const activeTabLabel =
+    TAB_DEFS.find((tab) => tab.value === activeTab)?.label ?? "전체";
+  const hasQuery = normalizedQuery.length > 0;
+
   return (
-    <Box>
-      <PanelTitle right={<span className={styles.mono}>{entries.length}개</span>}>
+    <Box className={styles.inventoryPanel}>
+      <PanelTitle
+        right={
+          <span className={styles.mono}>
+            {filteredEntries.length}/{entries.length} 슬롯 ·{" "}
+            {formatQuantity(filteredQuantity)}개
+          </span>
+        }
+      >
         <span className={styles.sectionTitle}>
           <SectionIcon className={styles.sectionTitle__icon} aria-hidden />
           <span>{title}</span>
         </span>
       </PanelTitle>
+
+      <div
+        className={styles.summaryGrid}
+        role="group"
+        aria-label={`${title} 요약`}
+      >
+        <div className={styles.summaryCard}>
+          <IconArchive className={styles.summaryCard__icon} aria-hidden />
+          <span className={styles.summaryCard__label}>보유 수량</span>
+          <strong>{formatQuantity(summary.quantity)}</strong>
+        </div>
+        <div className={styles.summaryCard}>
+          <IconInventoryEquipment
+            className={styles.summaryCard__icon}
+            aria-hidden
+          />
+          <span className={styles.summaryCard__label}>장비 슬롯</span>
+          <strong>{formatQuantity(summary.equipment)}</strong>
+        </div>
+        <div className={styles.summaryCard}>
+          <IconInventoryConsumable
+            className={styles.summaryCard__icon}
+            aria-hidden
+          />
+          <span className={styles.summaryCard__label}>소모품 수량</span>
+          <strong>{formatQuantity(summary.consumables)}</strong>
+        </div>
+        <div className={styles.summaryCard}>
+          <IconTimeline className={styles.summaryCard__icon} aria-hidden />
+          <span className={styles.summaryCard__label}>최근 입수</span>
+          <strong title={summary.latest?.itemName}>
+            {summary.latest ? summary.latest.itemName : "기록 없음"}
+          </strong>
+        </div>
+      </div>
+
+      <div className={styles.toolbar}>
+        <label className={styles.searchField}>
+          <Eyebrow>검색</Eyebrow>
+          <span className={styles.searchField__control}>
+            <IconSearch className={styles.searchField__icon} aria-hidden />
+            <Input
+              className={styles.searchField__input}
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="아이템, 효과, 메모"
+            />
+          </span>
+        </label>
+
+        <div className={styles.toolbar__meta}>
+          <span>{activeTabLabel}</span>
+          <strong>{formatQuantity(filteredQuantity)}개</strong>
+        </div>
+
+        <div className={styles.viewToggle} role="group" aria-label="보기 방식">
+          <button
+            type="button"
+            aria-pressed={view === "GRID"}
+            className={[
+              styles.viewToggle__button,
+              view === "GRID" ? styles["viewToggle__button--active"] : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => setView("GRID")}
+          >
+            <IconGridAll className={styles.viewToggle__icon} aria-hidden />
+            카드
+          </button>
+          <button
+            type="button"
+            aria-pressed={view === "DENSE"}
+            className={[
+              styles.viewToggle__button,
+              view === "DENSE" ? styles["viewToggle__button--active"] : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => setView("DENSE")}
+          >
+            <IconInventory className={styles.viewToggle__icon} aria-hidden />
+            간략
+          </button>
+        </div>
+      </div>
 
       <div
         role="tablist"
@@ -206,13 +371,25 @@ export default function InventoryClient({
 
       {filteredEntries.length === 0 ? (
         <div className={styles.empty}>
-          {entries.length === 0 ? emptyText : filteredEmptyText}
+          <strong>
+            {entries.length === 0
+              ? emptyText
+              : hasQuery
+                ? "검색 결과가 없습니다."
+                : filteredEmptyText}
+          </strong>
+          <span>
+            {entries.length === 0
+              ? "아이템이 지급되면 이 영역에 보관 기록이 표시됩니다."
+              : "검색어 또는 카테고리 필터를 조정해보세요."}
+          </span>
         </div>
       ) : (
         <div
           className={[
             styles.slotGrid,
             styles[`slotGrid--${tabTone(activeTab)}`],
+            view === "DENSE" ? styles["slotGrid--dense"] : "",
           ]
             .filter(Boolean)
             .join(" ")}
@@ -231,23 +408,37 @@ export default function InventoryClient({
                   <CategoryIcon category={entry.category} slug={entry.slug} />
                 </div>
                 <div className={styles.slot__body}>
-                  <div className={styles.slot__name}>{entry.itemName}</div>
-                  {isConsumable && entry.effect ? (
+                  <div className={styles.slot__topline}>
+                    <div className={styles.slot__name}>{entry.itemName}</div>
+                    <div className={styles.slot__qty}>
+                      x {formatQuantity(entry.quantity)}
+                    </div>
+                  </div>
+                  <div className={styles.slot__meta}>
+                    <span
+                      className={[
+                        styles.categoryPill,
+                        styles[`categoryPill--${tone}`],
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      {categoryLabel(entry.category)}
+                    </span>
+                    <span className={styles.mono}>
+                      {formatDate(entry.acquiredAt, "numeric")}
+                    </span>
+                  </div>
+                  {entry.effect ? (
                     <div className={styles.slot__effect}>{entry.effect}</div>
                   ) : null}
-                  {!isConsumable ? (
-                    <div className={styles.slot__meta}>
-                      <span>{categoryLabel(entry.category)}</span>
-                      <span className={styles.mono}>
-                        {formatDate(entry.acquiredAt, "numeric")}
-                      </span>
-                    </div>
-                  ) : null}
-                  {!isConsumable && entry.note ? (
+                  {entry.note ? (
                     <div className={styles.slot__note}>{entry.note}</div>
                   ) : null}
+                  {isConsumable && !entry.effect && !entry.note ? (
+                    <div className={styles.slot__note}>효과 정보 미등록</div>
+                  ) : null}
                 </div>
-                <div className={styles.slot__qty}>x {entry.quantity}</div>
               </article>
             );
           })}

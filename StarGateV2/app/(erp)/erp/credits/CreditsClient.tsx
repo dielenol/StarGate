@@ -10,11 +10,14 @@ import type { CreditTransactionType } from "@/types/credit";
 import { CREDIT_TRANSACTION_TYPES } from "@/types/credit";
 
 import {
+  IconArchive,
   IconArrowLeft,
   IconArrowRight,
   IconCredit,
   IconInfo,
   IconNotes,
+  IconReturn,
+  IconSearch,
   IconStock,
   IconTimeline,
   IconTransactions,
@@ -378,6 +381,8 @@ export default function CreditsClient({
     });
   }, [direction, period, query, sortMode, transactions, typeFilter]);
 
+  const filteredTotals = useMemo(() => sumAmounts(filtered), [filtered]);
+
   const largestMovement = useMemo(() => {
     return transactions.reduce<SerializedCreditTransaction | null>(
       (current, row) => {
@@ -387,6 +392,40 @@ export default function CreditsClient({
       null,
     );
   }, [transactions]);
+
+  const latestMovement = useMemo(() => {
+    return transactions.reduce<SerializedCreditTransaction | null>(
+      (current, row) => {
+        if (!current) return row;
+        return new Date(row.createdAt).getTime() >
+          new Date(current.createdAt).getTime()
+          ? row
+          : current;
+      },
+      null,
+    );
+  }, [transactions]);
+
+  const hasActiveFilters =
+    query.trim().length > 0 ||
+    typeFilter !== TYPE_ALL ||
+    direction !== "ALL" ||
+    period !== "ALL";
+
+  const activeFilters = [
+    query.trim() ? `검색: ${query.trim()}` : null,
+    typeFilter !== TYPE_ALL ? `유형: ${getTypeLabel(typeFilter)}` : null,
+    direction !== "ALL" ? `흐름: ${DIRECTION_LABEL[direction]}` : null,
+    period !== "ALL" ? `기간: ${PERIOD_LABEL[period]}` : null,
+  ].filter((value): value is string => Boolean(value));
+
+  function resetFilters() {
+    setQuery("");
+    setTypeFilter(TYPE_ALL);
+    setDirection("ALL");
+    setPeriod("ALL");
+    setSortMode("LATEST");
+  }
 
   function handleExport() {
     const blob = new Blob([`\uFEFF${toCsv(filtered)}`], {
@@ -433,6 +472,28 @@ export default function CreditsClient({
                   : "메인 캐릭터 미등록"}
             </span>
           </div>
+          <div className={styles.balanceStats}>
+            <div>
+              <span>이번 달</span>
+              <strong
+                className={
+                  monthTotals.net >= 0
+                    ? styles.balanceStats__pos
+                    : styles.balanceStats__neg
+                }
+              >
+                {formatSignedCredit(monthTotals.net)}
+              </strong>
+            </div>
+            <div>
+              <span>최근 거래</span>
+              <strong>
+                {latestMovement
+                  ? formatDateTime(latestMovement.createdAt)
+                  : "기록 없음"}
+              </strong>
+            </div>
+          </div>
           {integrityError ? (
             <div className={styles.notice}>
               <strong>정합성 위반</strong>
@@ -452,6 +513,16 @@ export default function CreditsClient({
           <PanelTitle right={<span className={styles.mono}>최근 6개월</span>}>
             <PanelLabel icon={IconTimeline}>월별 입출금 흐름</PanelLabel>
           </PanelTitle>
+          <div className={styles.flowLegend}>
+            <span>
+              <i className={styles.flowLegend__in} aria-hidden />
+              입금
+            </span>
+            <span>
+              <i className={styles.flowLegend__out} aria-hidden />
+              출금
+            </span>
+          </div>
           <div className={styles.flowChart}>
             {buckets.map((bucket) => {
               const incomeRatio = Math.round((bucket.income / max) * 100);
@@ -568,19 +639,29 @@ export default function CreditsClient({
       </Box>
 
       <Box>
-        <PanelTitle right={<span className={styles.mono}>{filtered.length}건</span>}>
+        <PanelTitle
+          right={
+            <span className={styles.mono}>
+              {filtered.length}/{transactions.length}건
+            </span>
+          }
+        >
           <PanelLabel icon={IconTransactions}>거래 내역</PanelLabel>
         </PanelTitle>
 
         <div className={styles.controls}>
           <label className={styles.controlField}>
             <Eyebrow>검색</Eyebrow>
-            <Input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="설명, 유형, 담당자"
-            />
+            <span className={styles.searchControl}>
+              <IconSearch className={styles.searchIcon} aria-hidden />
+              <Input
+                className={styles.searchInput}
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="설명, 유형, 담당자"
+              />
+            </span>
           </label>
           <div className={styles.controlField}>
             <Eyebrow>유형</Eyebrow>
@@ -619,11 +700,59 @@ export default function CreditsClient({
             />
           </div>
           <div className={styles.controlActions}>
-            <Button size="sm" onClick={handleExport} disabled={filtered.length === 0}>
-              내역 받기
+            <Button
+              size="sm"
+              onClick={resetFilters}
+              disabled={!hasActiveFilters && sortMode === "LATEST"}
+            >
+              <IconReturn className={styles.buttonIcon} aria-hidden />
+              초기화
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleExport}
+              disabled={filtered.length === 0}
+            >
+              <IconArchive className={styles.buttonIcon} aria-hidden />
+              CSV
             </Button>
           </div>
         </div>
+
+        <div className={styles.resultStrip}>
+          <div>
+            <span>표시 순변동</span>
+            <strong
+              className={
+                filteredTotals.net >= 0
+                  ? styles.resultStrip__pos
+                  : styles.resultStrip__neg
+              }
+            >
+              {formatSignedCredit(filteredTotals.net)}
+            </strong>
+          </div>
+          <div>
+            <span>표시 입금</span>
+            <strong className={styles.resultStrip__pos}>
+              +{filteredTotals.income.toLocaleString()}
+            </strong>
+          </div>
+          <div>
+            <span>표시 출금</span>
+            <strong className={styles.resultStrip__neg}>
+              -{filteredTotals.spend.toLocaleString()}
+            </strong>
+          </div>
+        </div>
+
+        {activeFilters.length > 0 ? (
+          <div className={styles.activeFilters} aria-label="활성 필터">
+            {activeFilters.map((filter) => (
+              <span key={filter}>{filter}</span>
+            ))}
+          </div>
+        ) : null}
 
         {filtered.length === 0 ? (
           <div className={styles.empty}>조건에 맞는 거래 기록이 없습니다.</div>
@@ -646,7 +775,12 @@ export default function CreditsClient({
                   const meta = CREDIT_TYPE_META[tx.type];
                   const positive = tx.amount >= 0;
                   return (
-                    <tr key={tx.id}>
+                    <tr
+                      key={tx.id}
+                      className={
+                        positive ? styles.tableRowIn : styles.tableRowOut
+                      }
+                    >
                       <td>
                         <Tag tone={meta.tone}>{meta.label}</Tag>
                       </td>
