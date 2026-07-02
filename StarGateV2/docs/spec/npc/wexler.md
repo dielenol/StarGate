@@ -15,9 +15,9 @@ isPublic: true
 loreTags: [미국, 부통령, 전직대통령, 군부, WASP, 기독교근본주의, 백인우월주의, 그림자권력]
 appearsInEvents: [NOSB-S1E3-PHANTOM]
 source: create-lore
-previewImage:
+previewImage: /assets/npcs/Calvin-R-Wexler-profile.webp
 createdAt: 2026-04-22T00:00:00Z
-updatedAt: 2026-06-11T00:00:00Z
+updatedAt: 2026-07-02T00:00:00Z
 ---
 
 ## 대사

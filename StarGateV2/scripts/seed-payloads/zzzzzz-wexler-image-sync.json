@@ -1,0 +1,15 @@
+[
+  {
+    "collection": "characters",
+    "type": "npc-image-sync",
+    "filter": {
+      "codename": "WEXLER"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Calvin-R-Wexler-profile.webp",
+        "updatedAt": "2026-07-02T00:00:00.000Z"
+      }
+    }
+  }
+]

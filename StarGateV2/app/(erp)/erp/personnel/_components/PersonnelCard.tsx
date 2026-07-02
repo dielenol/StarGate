@@ -177,11 +177,11 @@ function isHostileCharacter(character: Character): boolean {
 function renderAvatar(character: Character, isRedacted: boolean) {
   if (isRedacted) return <span aria-hidden>☩</span>;
 
-  /* AGENT 인덱스 미리보기는 pixel-profile(previewImage) 우선. NPC는 기존 profile/main 이미지를 유지. */
-  const src =
-    character.type === "AGENT"
-      ? character.previewImage || character.lore.mainImage
-      : character.lore.mainImage || character.previewImage;
+  /*
+   * 신원조회는 일반/원본 프로필(lore.mainImage)을 우선한다.
+   * previewImage(pixel-profile)는 /erp/characters 전용 미리보기 성격이라 여기서는 폴백만 담당한다.
+   */
+  const src = character.lore.mainImage || character.previewImage;
   return <PersonnelAvatarImage src={src} type={character.type} />;
 }
 
