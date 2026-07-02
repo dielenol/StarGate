@@ -166,6 +166,18 @@
   background: color-mix(in srgb, var(--gold) 10%, transparent);
 }
 
+.cell--selected {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
+
+.cell--selected::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 1px dashed var(--gold-dim);
+  pointer-events: none;
+}
+
 .day {
   display: flex;
   justify-content: space-between;
@@ -309,6 +321,129 @@
 
 .more:hover {
   color: var(--gold);
+}
+
+/* Day detail */
+
+.dayPanel {
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.dayPanel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.dayPanel__head span {
+  display: block;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.16em;
+}
+
+.dayPanel__head strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.dayPanel__close {
+  padding: 4px 9px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.dayPanel__close:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.dayPanel__list {
+  display: grid;
+  gap: 6px;
+}
+
+.dayPanel__item {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--gold);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dayPanel__item:hover {
+  border-color: var(--gold-dim);
+  background: color-mix(in srgb, var(--gold) 11%, transparent);
+}
+
+.dayPanel__item--closing {
+  border-left-color: var(--info);
+  background: color-mix(in srgb, var(--info) 8%, transparent);
+}
+
+.dayPanel__item--closed {
+  border-left-color: var(--success);
+  background: color-mix(in srgb, var(--success) 7%, transparent);
+}
+
+.dayPanel__item--cancel {
+  border-left-color: var(--danger);
+  background: transparent;
+  opacity: 0.62;
+}
+
+.dayPanel__item--trpg {
+  border-left-color: var(--info);
+}
+
+.dayPanel__time,
+.dayPanel__status {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.dayPanel__time {
+  color: var(--gold);
+}
+
+.dayPanel__title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-0);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dayPanel__status {
+  color: var(--ink-3);
 }
 
 /* Legend */

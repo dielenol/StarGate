@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import type { SerializedSession } from "@/hooks/queries/useSessionsQuery";
 import type { SessionStatus } from "@/types/session";
@@ -10,6 +10,7 @@ import {
   isAttending,
   isSameDay,
   pad,
+  STATUS_LABEL,
 } from "./_utils";
 
 import styles from "./SessionCalendar.module.css";
@@ -60,6 +61,11 @@ function dateKey(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+function formatDayPanelLabel(key: string): string {
+  const [, month, day] = key.split("-");
+  return `${Number(month)}월 ${Number(day)}일`;
+}
+
 export default function SessionCalendar({
   sessions,
   year,
@@ -68,6 +74,7 @@ export default function SessionCalendar({
   onPrevMonth,
   onNextMonth,
 }: SessionCalendarProps) {
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const cells = useMemo(() => buildGrid(year, month), [year, month]);
   const today = new Date();
 
@@ -89,6 +96,12 @@ export default function SessionCalendar({
     }
     return map;
   }, [sessions]);
+  const selectedEvents = selectedDateKey
+    ? sessionsByDate.get(selectedDateKey) ?? []
+    : [];
+  const selectedDayLabel = selectedDateKey
+    ? formatDayPanelLabel(selectedDateKey)
+    : "";
 
   return (
     <div className={styles.cal}>
@@ -141,6 +154,9 @@ export default function SessionCalendar({
             !c.inMonth ? styles["cell--other"] : "",
             isToday ? styles["cell--today"] : "",
             events.length > 0 ? styles["cell--clickable"] : "",
+            selectedDateKey === key && events.length > 0
+              ? styles["cell--selected"]
+              : "",
           ]
             .filter(Boolean)
             .join(" ");
@@ -203,14 +219,14 @@ export default function SessionCalendar({
           );
 
           if (events.length > 0) {
-            const firstId = events[0]._id;
             return (
               <button
                 key={key}
                 type="button"
                 className={cls}
-                onClick={() => onDayClick(firstId)}
-                aria-label={`${c.date.getMonth() + 1}월 ${c.date.getDate()}일 · 세션 ${events.length}건 — 리스트로 이동`}
+                onClick={() => setSelectedDateKey(key)}
+                aria-label={`${c.date.getMonth() + 1}월 ${c.date.getDate()}일 · 세션 ${events.length}건 — 날짜 상세 열기`}
+                aria-pressed={selectedDateKey === key}
               >
                 {content}
               </button>
@@ -223,6 +239,62 @@ export default function SessionCalendar({
           );
         })}
       </div>
+
+      {selectedEvents.length > 0 ? (
+        <section
+          className={styles.dayPanel}
+          aria-label={`${selectedDayLabel} 세션 목록`}
+          aria-live="polite"
+        >
+          <div className={styles.dayPanel__head}>
+            <div>
+              <span>DAY DETAIL</span>
+              <strong>
+                {selectedDayLabel} · {selectedEvents.length}건
+              </strong>
+            </div>
+            <button
+              type="button"
+              className={styles.dayPanel__close}
+              onClick={() => setSelectedDateKey(null)}
+              aria-label="날짜 상세 닫기"
+            >
+              닫기
+            </button>
+          </div>
+          <div className={styles.dayPanel__list}>
+            {selectedEvents.map((event) => {
+              const mod = CHIP_MOD[event.status];
+              const itemCls = [
+                styles.dayPanel__item,
+                mod ? styles[`dayPanel__item--${mod}`] : "",
+                event.source === "trpg" ? styles["dayPanel__item--trpg"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+              return (
+                <button
+                  key={event._id}
+                  type="button"
+                  className={itemCls}
+                  onClick={() => onDayClick(event._id)}
+                >
+                  <span className={styles.dayPanel__time}>
+                    {formatTime(event.targetDateTime)}
+                  </span>
+                  <span className={styles.dayPanel__title}>
+                    {event.source === "trpg" ? "[TRPG] " : ""}
+                    {event.title}
+                  </span>
+                  <span className={styles.dayPanel__status}>
+                    {STATUS_LABEL[event.status]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <div className={styles.legend}>
         <div className={styles.legendItem}>
