@@ -165,7 +165,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 8px;
+  gap: 14px;
   margin-bottom: 10px;
   padding-bottom: 8px;
   border-bottom: 1px dashed var(--line);
@@ -176,12 +176,17 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 46px;
+  height: 46px;
   border: 1px solid color-mix(in srgb, var(--item-accent) 34%, transparent);
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--item-accent) 8%, transparent);
   color: var(--item-accent);
+}
+
+.itemCard__icon svg {
+  width: 26px;
+  height: 26px;
 }
 
 .itemCard__headText {
