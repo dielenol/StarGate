@@ -35,7 +35,7 @@ import ShopItemIcon from "../shop/ShopItemIcon";
 
 import styles from "./page.module.css";
 
-type ArmoryZone = "lab" | "towaski" | "strategic" | "custom";
+type ArmoryZone = "lab" | "towaski" | "acheron" | "strategic" | "custom";
 type EquipmentShopMode = "hub" | "zone";
 type EquipmentShopTabValue = "ALL" | "WEAPON" | "ARMOR";
 type CartState = Record<string, number>;
@@ -79,6 +79,14 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
     eyebrow: "TOWASKI",
     description: "무기와 방어구를 구매해 인벤토리에 반출합니다.",
     npc: "립 토와스키",
+  },
+  {
+    value: "acheron",
+    href: "/erp/equipment-shop/acheron",
+    label: "아케론 대장간",
+    eyebrow: "ACHERON FORGE",
+    description: "근접무기와 냉병기류를 구매해 인벤토리에 반출합니다.",
+    npc: "단조 담당관",
   },
   {
     value: "strategic",
@@ -164,6 +172,24 @@ function statLabel(stat: EquipmentResearchStat): string {
   return stat.toUpperCase();
 }
 
+function renderCatalogIcon(item: EquipmentShopCatalogEntry, size: number) {
+  if (item.previewImage) {
+    return (
+      <Image
+        src={item.previewImage}
+        width={size}
+        height={size}
+        alt=""
+        aria-hidden
+        draggable={false}
+        unoptimized
+      />
+    );
+  }
+
+  return <ShopItemIcon slug={item.slug ?? item.key} size={size} />;
+}
+
 export default function EquipmentShopClient({
   mode,
   initialZone = "lab",
@@ -221,6 +247,15 @@ export default function EquipmentShopClient({
     );
   }, [activeTab, catalog.items]);
 
+  const acheronItems = useMemo(() => {
+    if (activeTab === "ALL") {
+      return catalog.items.filter((item) => item.zone === "acheron");
+    }
+    return catalog.items.filter(
+      (item) => item.zone === "acheron" && item.category === activeTab,
+    );
+  }, [activeTab, catalog.items]);
+
   const strategicItems = useMemo(
     () => catalog.items.filter((item) => item.zone === "strategic"),
     [catalog.items],
@@ -230,8 +265,17 @@ export default function EquipmentShopClient({
     () => catalog.items.filter((item) => item.zone === "towaski").length,
     [catalog.items],
   );
+  const acheronItemCount = useMemo(
+    () => catalog.items.filter((item) => item.zone === "acheron").length,
+    [catalog.items],
+  );
   const strategicItemCount = strategicItems.length;
-  const salesItems = activeZone === "strategic" ? strategicItems : towaskiItems;
+  const salesItems =
+    activeZone === "strategic"
+      ? strategicItems
+      : activeZone === "acheron"
+        ? acheronItems
+        : towaskiItems;
 
   const selectedItem = useMemo(() => {
     const selectedInZone = selectedKey
@@ -429,6 +473,11 @@ export default function EquipmentShopClient({
         ? `${towaskiItemCount}종 반출 가능`
         : "등록 품목 없음";
     }
+    if (zone === "acheron") {
+      return acheronItemCount > 0
+        ? `${acheronItemCount}종 반출 가능`
+        : "등록 품목 없음";
+    }
     if (zone === "strategic") {
       return strategicItemCount > 0
         ? `${strategicItemCount}종 반출 가능`
@@ -454,6 +503,15 @@ export default function EquipmentShopClient({
           towaskiItemCount > 0
             ? `표준 장비 ${towaskiItemCount}종 표시`
             : "표준 장비 등록 없음",
+        warning: false,
+      },
+      {
+        key: "acheron",
+        label: "아케론",
+        value:
+          acheronItemCount > 0
+            ? `근접 장비 ${acheronItemCount}종 표시`
+            : "근접 장비 등록 없음",
         warning: false,
       },
       {
@@ -527,25 +585,30 @@ export default function EquipmentShopClient({
 
   function renderSalesPanel() {
     const isTowaski = activeZone === "towaski";
+    const isAcheron = activeZone === "acheron";
+    const isStandardCatalog = isTowaski || isAcheron;
+    const activeCatalogZone = isAcheron ? "acheron" : "towaski";
 
     return (
       <div className={styles.salesLayout}>
         <section className={styles.shelfPanel} aria-label={zoneMeta.label}>
-          {isTowaski ? (
+          {isStandardCatalog ? (
             <div
               role="tablist"
-              aria-label="토와스키 카테고리"
+              aria-label={`${activeZoneDef.label} 카테고리`}
               className={styles.filters}
             >
               {TAB_DEFS.map((tab) => {
                 const isActive = activeTab === tab.value;
                 const count =
                   tab.value === "ALL"
-                    ? catalog.items.filter((item) => item.zone === "towaski")
+                    ? catalog.items.filter(
+                        (item) => item.zone === activeCatalogZone,
+                      )
                         .length
                     : catalog.items.filter(
                         (item) =>
-                          item.zone === "towaski" &&
+                          item.zone === activeCatalogZone &&
                           item.category === tab.value,
                       ).length;
                 return (
@@ -579,7 +642,9 @@ export default function EquipmentShopClient({
             <div className={styles.empty}>
               {isTowaski
                 ? "등록된 토와스키 장비 품목이 없습니다."
-                : "전략 장비 판매점 대상 품목이 없습니다. SPECIAL 카테고리에 병기부/전략자산/차량/전투보조 태그가 붙으면 이곳에 표시됩니다."}
+                : isAcheron
+                  ? "등록된 아케론 대장간 품목이 없습니다."
+                  : "전략 장비 판매점 대상 품목이 없습니다. SPECIAL 카테고리에 병기부/전략자산/차량/전투보조 태그가 붙으면 이곳에 표시됩니다."}
             </div>
           ) : (
             <div className={styles.productGrid}>
@@ -615,7 +680,7 @@ export default function EquipmentShopClient({
                         <span>{isSoldOut ? "LOCKED" : `${item.stock} EA`}</span>
                       </span>
                       <span className={styles.productIcon} aria-hidden>
-                        <ShopItemIcon slug={item.slug ?? item.key} size={48} />
+                        {renderCatalogIcon(item, 48)}
                       </span>
                       <span className={styles.productName}>{item.name}</span>
                       <span className={styles.productEffect}>{item.effect}</span>
@@ -642,10 +707,7 @@ export default function EquipmentShopClient({
               <>
                 <div className={styles.detailHead}>
                   <span className={styles.detailIcon} aria-hidden>
-                    <ShopItemIcon
-                      slug={selectedItem.slug ?? selectedItem.key}
-                      size={58}
-                    />
+                    {renderCatalogIcon(selectedItem, 58)}
                   </span>
                   <div>
                     <span>{CATEGORY_LABELS[selectedItem.category]}</span>
@@ -1008,7 +1070,7 @@ export default function EquipmentShopClient({
             </div>
             <div>
               <span>{isHub ? "구역" : "카트"}</span>
-              <strong>{isHub ? "4구역" : `${cartCount}개`}</strong>
+              <strong>{isHub ? `${ZONE_DEFS.length}구역` : `${cartCount}개`}</strong>
             </div>
           </div>
         </header>
@@ -1062,6 +1124,8 @@ export default function EquipmentShopClient({
                   ? "연구 적용은 즉시 기록된다. 개인인지, 팀 전체인지 먼저 확인해."
                   : activeZone === "towaski"
                     ? "토와스키다. 표준 장비는 여기서 보고, 장난감은 들고 오지 마."
+                    : activeZone === "acheron"
+                      ? "아케론 대장간이다. 날붙이와 타격 장비는 여기서 보고 골라."
                     : activeZone === "strategic"
                       ? "차량과 전략 자산은 태그가 붙은 품목만 반출대에 올라온다."
                       : "전용무기는 상담부터다. 제작 요청 저장은 다음 단계에서 연결한다."}

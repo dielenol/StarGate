@@ -7,7 +7,7 @@ export const EQUIPMENT_SHOP_CATEGORIES = [
 ] as const satisfies readonly ItemCategory[];
 
 export type EquipmentShopCategory = (typeof EQUIPMENT_SHOP_CATEGORIES)[number];
-export type EquipmentShopZone = "towaski" | "strategic";
+export type EquipmentShopZone = "towaski" | "acheron" | "strategic";
 
 export interface EquipmentShopCatalogItem {
   key: string;
@@ -39,6 +39,17 @@ const STRATEGIC_TAG_KEYWORDS = [
   "전투 보조",
 ];
 
+const ACHERON_TAG_KEYWORDS = [
+  "아케론",
+  "아케론대장간",
+  "아케론 대장간",
+  "근접무기",
+  "근접 무기",
+  "냉병기",
+  "장검류",
+  "둔기류",
+];
+
 export function isEquipmentShopCategory(
   category: ItemCategory,
 ): category is EquipmentShopCategory {
@@ -55,6 +66,11 @@ export function equipmentShopItemZone(
   item: Pick<MasterItem, "category" | "tags">,
 ): EquipmentShopZone | null {
   if (item.category === "WEAPON" || item.category === "ARMOR") {
+    const normalizedTags = new Set((item.tags ?? []).map(normalizeTag));
+    const acheron = ACHERON_TAG_KEYWORDS.some((keyword) =>
+      normalizedTags.has(normalizeTag(keyword)),
+    );
+    if (acheron) return "acheron";
     return "towaski";
   }
 

@@ -494,6 +494,12 @@
   border-radius: var(--radius-sm);
 }
 
+.productIcon img,
+.detailIcon img {
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
 .productName {
   color: var(--ink-0);
   font-size: 17px;
