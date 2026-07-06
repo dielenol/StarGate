@@ -111,10 +111,13 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const visibleWikiPages = isGmOrAbove
     ? allPages
     : allPages.filter((page) => page.isPublic !== false);
+  const linkableReports = allReports.filter(
+    (candidate) => String(candidate._id) !== reportId,
+  );
   const autoLinkTargets = buildWikiAutoLinkTargets({
     catalogItems: visibleItems,
     characters: visibleCharacters,
-    reports: [],
+    reports: linkableReports,
     wikiPages: visibleWikiPages,
   });
   const summaryHtml = renderMarkdown(report.summary || "—", {

@@ -200,15 +200,47 @@ function restoreProtectedHtml(value: string, tokens: string[]): string {
   });
 }
 
-function applyExplicitLinks(text: string, context: InlineContext, tokens: string[]): string {
-  return text.replace(/\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g, (match, rawKey, rawLabel) => {
-    const entry = explicitLinkEntry(rawKey, context);
-    if (!entry) return match;
+function explicitLabelHtml(rawLabel: string): string {
+  const markdownLink = rawLabel.match(/^\[([^\]]+)\]\([^)]+\)$/u);
+  return (markdownLink?.[1] ?? rawLabel).trim();
+}
 
-    const label = String(rawLabel ?? rawKey).trim();
-    if (!label) return match;
-    return protectHtml(createAnchor(label, entry), tokens);
-  });
+function applyExplicitLinks(text: string, context: InlineContext, tokens: string[]): string {
+  let result = "";
+  let cursor = 0;
+
+  while (cursor < text.length) {
+    const start = text.indexOf("[[", cursor);
+    if (start === -1) {
+      result += text.slice(cursor);
+      break;
+    }
+
+    let end = text.indexOf("]]", start + 2);
+    while (end !== -1 && text[end + 2] === "]") {
+      end = text.indexOf("]]", end + 1);
+    }
+    if (end === -1) {
+      result += text.slice(cursor);
+      break;
+    }
+
+    result += text.slice(cursor, start);
+
+    const body = text.slice(start + 2, end);
+    const separator = body.indexOf("|");
+    const rawKey = (separator === -1 ? body : body.slice(0, separator)).trim();
+    const rawLabel = (separator === -1 ? rawKey : body.slice(separator + 1)).trim();
+    const entry = explicitLinkEntry(rawKey, context);
+    const label = explicitLabelHtml(rawLabel);
+
+    result += entry && label
+      ? protectHtml(createAnchor(label, entry), tokens)
+      : text.slice(start, end + 2);
+    cursor = end + 2;
+  }
+
+  return result;
 }
 
 function isAsciiBoundarySensitive(keyword: string): boolean {
@@ -302,6 +334,10 @@ function normalizeImageSrc(src: string): string | null {
   return trimmed;
 }
 
+function cssUrlForImage(src: string): string {
+  return encodeURI(src).replace(/"/g, "%22");
+}
+
 function renderImage(line: string): string | null {
   const imageMatch = line.match(/^!\[([^\]]*)\]\((\S+?)(?:\s+"([^"]*)")?\)$/);
   if (!imageMatch) return null;
@@ -312,8 +348,9 @@ function renderImage(line: string): string | null {
   const alt = escapeHtml(imageMatch[1].trim());
   const caption = escapeHtml((imageMatch[3] ?? imageMatch[1]).trim());
   const captionHtml = caption ? `<figcaption>${caption}</figcaption>` : "";
+  const figureStyle = ` style="--wiki-render-image: url(&quot;${escapeHtml(cssUrlForImage(src))}&quot;)"`;
 
-  return `<figure><img src="${escapeHtml(src)}" alt="${alt}" loading="lazy" decoding="async" />${captionHtml}</figure>`;
+  return `<figure${figureStyle}><img src="${escapeHtml(src)}" alt="${alt}" loading="lazy" decoding="async" />${captionHtml}</figure>`;
 }
 
 function isHorizontalRule(line: string): boolean {

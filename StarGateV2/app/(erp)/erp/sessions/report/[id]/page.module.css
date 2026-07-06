@@ -384,14 +384,34 @@
 }
 
 .reportBody figure {
+  position: relative;
+  isolation: isolate;
   margin: 16px 0 18px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background:
+    linear-gradient(rgba(10, 12, 18, 0.78), rgba(10, 12, 18, 0.78)),
+    rgba(255, 255, 255, 0.02);
   overflow: hidden;
 }
 
+.reportBody figure::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--wiki-render-image, none);
+  background-position: center;
+  background-size: cover;
+  filter: blur(18px) saturate(0.86) brightness(0.62);
+  opacity: 0.58;
+  transform: scale(1.06);
+  pointer-events: none;
+}
+
 .reportBody img {
+  position: relative;
+  z-index: 1;
   display: block;
   width: auto;
   max-width: 100%;
@@ -402,8 +422,11 @@
 }
 
 .reportBody figcaption {
+  position: relative;
+  z-index: 1;
   padding: 8px 10px;
   border-top: 1px dashed var(--line);
+  background: color-mix(in srgb, var(--bg-1) 86%, transparent);
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 12px;

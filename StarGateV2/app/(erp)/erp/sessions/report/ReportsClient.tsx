@@ -35,6 +35,7 @@ interface MapPoint {
 interface PinCardLayout {
   x: number;
   y: number;
+  labelX?: number;
 }
 
 const REPORT_CARD_SIZE = 66;
@@ -43,6 +44,8 @@ const REPORT_PIN_CARD_LAYOUTS: Record<string, PinCardLayout> = {
   "01.5": { x: -82, y: -112 },
   "02": { x: 86, y: -112 },
   "02.5": { x: 88, y: -92 },
+  "04": { x: -86, y: -112, labelX: -132 },
+  "04.5": { x: 86, y: -96, labelX: 132 },
   MINI01: { x: -92, y: -112 },
   MINI02: { x: 0, y: -94 },
   MINI03: { x: 0, y: -112 },
@@ -64,7 +67,7 @@ function getPinLineStyle(layout: PinCardLayout) {
     "--pin-card-y": `${layout.y}px`,
     "--pin-line-length": `${length}px`,
     "--pin-line-angle": `${angle}deg`,
-    "--pin-label-x": `${Math.round(layout.x / 2)}px`,
+    "--pin-label-x": `${Math.round(layout.labelX ?? layout.x / 2)}px`,
   };
 }
 
