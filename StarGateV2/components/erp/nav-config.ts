@@ -118,7 +118,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "편의점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconShop, href: "/erp/shop" },
       {
         label: "병기부",
-        keywords: "equipment shop armory arsenal weapon armor gear 병기부 무기 방어구 토와스키",
+        keywords:
+          "equipment shop armory arsenal weapon armor gear forge simulator strategic custom 병기부 무기 방어구 토와스키 아케론 대장간 시뮬레이터 전략 전용무기",
         icon: IconArmory,
         href: null,
         gmHref: "/erp/equipment-shop",
@@ -138,6 +139,13 @@ export const NAV_GROUPS: NavGroup[] = [
             gmHref: "/erp/equipment-shop/towaski",
           },
           {
+            label: "아케론 대장간",
+            keywords: "acheron forge melee cold weapon 대장간 냉병기 근접무기 아케론",
+            icon: IconEquipment,
+            href: null,
+            gmHref: "/erp/equipment-shop/acheron",
+          },
+          {
             label: "전략 장비 판매점",
             keywords: "strategic assets vehicle support 전략자산 차량 전투보조",
             icon: IconEquipment,
@@ -150,6 +158,13 @@ export const NAV_GROUPS: NavGroup[] = [
             icon: IconEquipment,
             href: null,
             gmHref: "/erp/equipment-shop/custom",
+          },
+          {
+            label: "장비 시뮬레이터",
+            keywords: "equipment simulator test range weapon test 장비 시뮬레이터 시험장",
+            icon: IconEquipment,
+            href: null,
+            gmHref: "/erp/equipment-shop/simulator",
           },
         ],
       },
