@@ -9,17 +9,20 @@ import {
   useUpdateStockPrice,
 } from "@/hooks/mutations/useStocksMutation";
 import {
+  type StockAdminHoldingsResponse,
   type StockMarketWireResponse,
   type StockPricesResponse,
+  useStockAdminHoldings,
   useStockMarketWire,
   useStockPrices,
 } from "@/hooks/queries/useStocksQuery";
+import { buildStockMarketIndexSnapshot } from "@/lib/stocks/market-index";
+import { formatDate } from "@/lib/format/date";
 import {
   MIN_STOCK_PRICE,
   formatStockValue,
   roundStockValue,
 } from "@/lib/stocks/pricing";
-import { buildStockMarketIndexSnapshot } from "@/lib/stocks/market-index";
 
 import MarketWirePanel from "../../stock/MarketWirePanel";
 import { ARROW, priceDirection } from "../../stock/_helpers";
@@ -39,19 +42,23 @@ const EVENT_TEMPLATES = [
 interface Props {
   initialPrices: StockPricesResponse;
   initialMarketWire: StockMarketWireResponse;
+  initialHoldings: StockAdminHoldingsResponse;
 }
 
 export default function StockAdminClient({
   initialPrices,
   initialMarketWire,
+  initialHoldings,
 }: Props) {
   const pricesQuery = useStockPrices({ initialData: initialPrices });
+  const holdingsQuery = useStockAdminHoldings({ initialData: initialHoldings });
   const marketWireQuery = useStockMarketWire({
     initialData: initialMarketWire,
     days: 14,
     limit: 20,
   });
   const prices = pricesQuery.data ?? initialPrices;
+  const holdings = holdingsQuery.data ?? initialHoldings;
   const marketWire = marketWireQuery.data ?? initialMarketWire;
   const marketIndex = useMemo(() => {
     return buildStockMarketIndexSnapshot(prices.items);
@@ -67,6 +74,7 @@ export default function StockAdminClient({
     selected ? String(selected.price) : "",
   );
   const [eventText, setEventText] = useState("GM 시세 조정");
+  const [holdingQuery, setHoldingQuery] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +95,40 @@ export default function StockAdminClient({
       absChange >= 25 ? "급등락" : absChange >= 10 ? "주의" : "통상";
     return { nextPrice, direction, changePercent, risk };
   }, [priceInput, selected]);
+
+  const holdingSummary = useMemo(() => {
+    const holderIds = new Set(holdings.rows.map((row) => row.characterId));
+    const totalShares = holdings.rows.reduce((sum, row) => sum + row.shares, 0);
+    const totalEvaluation = holdings.rows.reduce(
+      (sum, row) => sum + row.evaluation,
+      0,
+    );
+    return {
+      holderCount: holderIds.size,
+      rowCount: holdings.rows.length,
+      totalShares,
+      totalEvaluation: roundStockValue(totalEvaluation),
+    };
+  }, [holdings.rows]);
+
+  const filteredHoldings = useMemo(() => {
+    const query = holdingQuery.trim().toLowerCase();
+    const rows = query
+      ? holdings.rows.filter((row) => {
+          return (
+            row.characterCodename.toLowerCase().includes(query) ||
+            row.ownerName?.toLowerCase().includes(query) ||
+            row.ticker.toLowerCase().includes(query) ||
+            row.stockName.toLowerCase().includes(query)
+          );
+        })
+      : holdings.rows;
+    return [...rows].sort((a, b) => {
+      if (b.evaluation !== a.evaluation) return b.evaluation - a.evaluation;
+      if (a.ticker !== b.ticker) return a.ticker.localeCompare(b.ticker);
+      return a.characterCodename.localeCompare(b.characterCodename);
+    });
+  }, [holdingQuery, holdings.rows]);
 
   function handleUpdateSuccess() {
     setError(null);
@@ -339,6 +381,111 @@ export default function StockAdminClient({
             </form>
           ) : (
             <div className={styles.empty}>조정할 종목이 없습니다.</div>
+          )}
+        </section>
+
+        <section className={[styles.panel, styles.holdingsPanel].join(" ")}>
+          <div className={styles.panel__head}>
+            <span>보유 현황</span>
+            <span>
+              보유자 {holdingSummary.holderCount}명 · 항목 {holdingSummary.rowCount}건
+            </span>
+          </div>
+          <div className={styles.holdingSummary}>
+            <span>
+              평가액 <strong>¤ {formatStockValue(holdingSummary.totalEvaluation)}</strong>
+            </span>
+            <span>
+              총 수량 <strong>{holdingSummary.totalShares.toLocaleString()}주</strong>
+            </span>
+            <span>
+              갱신 <strong>{formatDate(new Date(holdings.generatedAt))}</strong>
+            </span>
+          </div>
+          <input
+            type="search"
+            className={styles.holdingSearch}
+            value={holdingQuery}
+            onChange={(e) => setHoldingQuery(e.target.value)}
+            placeholder="코드네임 · 소유자 · 티커 · 종목명 검색"
+          />
+          {filteredHoldings.length === 0 ? (
+            <div className={styles.empty}>
+              {holdings.rows.length === 0
+                ? "보유 중인 주식이 없습니다."
+                : "검색 결과가 없습니다."}
+            </div>
+          ) : (
+            <div className={styles.holdingTableWrap}>
+              <table className={styles.holdingTable}>
+                <thead>
+                  <tr>
+                    <th>보유자</th>
+                    <th>종목</th>
+                    <th className={styles.numCol}>수량</th>
+                    <th className={styles.numCol}>평단</th>
+                    <th className={styles.numCol}>현재가</th>
+                    <th className={styles.numCol}>평가액</th>
+                    <th className={styles.numCol}>손익</th>
+                    <th className={styles.dateCol}>갱신</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredHoldings.map((row) => {
+                    const profitClass =
+                      row.profitLoss > 0
+                        ? styles["holdingTable__profit--up"]
+                        : row.profitLoss < 0
+                          ? styles["holdingTable__profit--down"]
+                          : "";
+                    return (
+                      <tr key={`${row.characterId}-${row.ticker}`}>
+                        <td>
+                          <span className={styles.holdingTable__owner}>
+                            <strong>{row.characterCodename}</strong>
+                            <span>{row.ownerName ?? "owner 미연결"}</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span className={styles.holdingTable__stock}>
+                            <StockLogo ticker={row.ticker} size="sm" />
+                            <span>
+                              <strong>{row.ticker}</strong>
+                              <span>{row.stockName}</span>
+                            </span>
+                          </span>
+                        </td>
+                        <td className={styles.numCol}>
+                          {row.shares.toLocaleString()}주
+                        </td>
+                        <td className={styles.numCol}>
+                          ¤ {formatStockValue(row.avgPrice)}
+                        </td>
+                        <td className={styles.numCol}>
+                          ¤ {formatStockValue(row.currentPrice)}
+                        </td>
+                        <td className={styles.numCol}>
+                          ¤ {formatStockValue(row.evaluation)}
+                        </td>
+                        <td
+                          className={[styles.numCol, profitClass]
+                            .filter(Boolean)
+                            .join(" ")}
+                        >
+                          {row.profitLoss > 0 ? "+" : ""}
+                          {formatStockValue(row.profitLoss)} (
+                          {row.profitPercent > 0 ? "+" : ""}
+                          {row.profitPercent.toFixed(2)}%)
+                        </td>
+                        <td className={styles.dateCol}>
+                          {formatDate(new Date(row.updatedAt))}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
 

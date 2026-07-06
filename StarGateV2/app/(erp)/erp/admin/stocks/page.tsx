@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 
 import { buildMarketWireResponse, buildPricesResponse } from "../../stock/_data";
+import { buildStockAdminHoldingsResponse } from "./_data";
 import StockAdminClient from "./StockAdminClient";
 
 export const metadata = {
@@ -15,12 +16,16 @@ export default async function StockAdminPage() {
   if (!session?.user) redirect("/login");
   if (!hasRole(session.user.role, "GM")) redirect("/erp");
 
-  const [initialPrices, initialMarketWire] = await Promise.all([
+  const [initialPrices, initialMarketWire, initialHoldings] = await Promise.all([
     buildPricesResponse(),
     buildMarketWireResponse(14, 20).catch(() => ({
       items: [],
       days: 14,
       limit: 20,
+    })),
+    buildStockAdminHoldingsResponse().catch(() => ({
+      rows: [],
+      generatedAt: new Date().toISOString(),
     })),
   ]);
 
@@ -28,7 +33,7 @@ export default async function StockAdminPage() {
     <StockAdminClient
       initialPrices={initialPrices}
       initialMarketWire={initialMarketWire}
+      initialHoldings={initialHoldings}
     />
   );
 }
-

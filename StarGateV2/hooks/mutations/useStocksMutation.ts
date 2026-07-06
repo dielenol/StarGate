@@ -133,6 +133,7 @@ function invalidateTradeQueries(
 ) {
   queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
   queryClient.invalidateQueries({ queryKey: stocksKeys.holdings });
+  queryClient.invalidateQueries({ queryKey: stocksKeys.adminHoldings });
 }
 
 /**

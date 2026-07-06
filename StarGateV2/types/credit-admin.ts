@@ -23,6 +23,7 @@ export interface AgentBalanceRow {
   agentLevel: string;
   balance: number;
   pointBalance: number;
+  hasCreditLedger: boolean;
   lastTxAt: string | null; // ISO
 }
 
@@ -59,8 +60,8 @@ export interface BulkGrantTarget {
   characterId?: string;
 }
 
-export type RewardKind = "CREDIT" | "POINT";
-export type SessionRewardLineKind = "CREDIT" | "POINT" | "STAT";
+export type RewardKind = "CREDIT" | "POINT" | "STOCK";
+export type SessionRewardLineKind = "CREDIT" | "POINT" | "STAT" | "STOCK";
 export type SessionRewardStatField = "hp" | "san" | "def" | "atk";
 
 export interface BulkGrantInput {
@@ -69,6 +70,7 @@ export interface BulkGrantInput {
   type: "ADMIN_GRANT" | "ADMIN_DEDUCT" | "SESSION_REWARD";
   description: string;
   rewardKind?: RewardKind;
+  stockTicker?: string;
   metadata?: Record<string, string | number | boolean | null>;
 }
 
@@ -81,9 +83,12 @@ export interface BulkGrantResultItem {
   rewardLabel?: string;
   rewardKind?: SessionRewardLineKind;
   statField?: SessionRewardStatField;
+  stockTicker?: string;
   newBalance?: number;
   newPointBalance?: number;
   newStatValue?: number;
+  newStockShares?: number;
+  newStockAvgPrice?: number;
   error?: string;
   code?: string;
   /** 멱등 검출 등으로 발급을 건너뛴 경우 (세션 자동 보상에서 사용). */
@@ -136,6 +141,7 @@ export interface SessionRewardLineInput {
   kind: SessionRewardLineKind;
   amount: number;
   statField?: SessionRewardStatField;
+  stockTicker?: string;
   targetCharacterId?: string | null;
 }
 

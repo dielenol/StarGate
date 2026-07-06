@@ -110,6 +110,7 @@ export default function CreditBalanceTable({
 
   const rows = data?.rows ?? initialData.rows;
   const generatedAt = data?.generatedAt ?? initialData.generatedAt;
+  const missingLedgerCount = rows.filter((row) => !row.hasCreditLedger).length;
 
   const filteredSorted = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -128,7 +129,10 @@ export default function CreditBalanceTable({
     <Box>
       <PanelTitle
         right={
-          <span className={styles.credits__mono}>{rows.length} 명</span>
+          <span className={styles.credits__mono}>
+            {rows.length} 명
+            {missingLedgerCount > 0 ? ` · 거래 없음 ${missingLedgerCount}` : ""}
+          </span>
         }
       >
         CHARACTER BALANCES
@@ -188,6 +192,12 @@ export default function CreditBalanceTable({
                         <>
                           {" "}
                           <Tag tone="rank-m">NPC</Tag>
+                        </>
+                      ) : null}
+                      {!row.hasCreditLedger ? (
+                        <>
+                          {" "}
+                          <Tag tone="rank-u">신규</Tag>
                         </>
                       ) : null}
                     </td>

@@ -7,6 +7,7 @@ import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
 import { characterKeys, personnelKeys } from "@/hooks/queries/useCharactersQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
+import { stocksKeys } from "@/hooks/queries/useStocksQuery";
 
 /**
  * GM 발급 입력. ownerId 또는 characterId 중 하나가 필수 (백엔드 검증).
@@ -79,6 +80,8 @@ export function useBulkGrantCredit() {
       queryClient.invalidateQueries({ queryKey: characterKeys.all });
       queryClient.invalidateQueries({ queryKey: personnelKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      queryClient.invalidateQueries({ queryKey: stocksKeys.holdings });
+      queryClient.invalidateQueries({ queryKey: stocksKeys.adminHoldings });
     },
   });
 }

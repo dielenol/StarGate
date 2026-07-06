@@ -41,6 +41,7 @@ import { addCredit } from "@/lib/db/credits";
 import { adjustCharacterPoints } from "@/lib/db/character-points";
 import { findUserById } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
+import { grantStockReward } from "@/lib/stocks/rewards";
 import {
   formatSignedAmount,
   notifyUser,
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
     type?: unknown;
     description?: unknown;
     rewardKind?: unknown;
+    stockTicker?: unknown;
   };
 
   if (!Array.isArray(body.targets) || body.targets.length === 0) {
@@ -122,18 +124,38 @@ export async function POST(request: Request) {
   if (
     body.rewardKind !== undefined &&
     body.rewardKind !== "CREDIT" &&
-    body.rewardKind !== "POINT"
+    body.rewardKind !== "POINT" &&
+    body.rewardKind !== "STOCK"
   ) {
     return NextResponse.json(
-      { error: "rewardKind must be CREDIT or POINT." },
+      { error: "rewardKind must be CREDIT, POINT, or STOCK." },
       { status: 400 },
     );
   }
   const rewardKind: RewardKind =
-    body.rewardKind === "POINT" ? "POINT" : "CREDIT";
-  if (rewardKind === "POINT" && !Number.isInteger(body.amount)) {
+    body.rewardKind === "POINT"
+      ? "POINT"
+      : body.rewardKind === "STOCK"
+        ? "STOCK"
+        : "CREDIT";
+  if (
+    (rewardKind === "POINT" || rewardKind === "STOCK") &&
+    !Number.isInteger(body.amount)
+  ) {
     return NextResponse.json(
-      { error: "POINT 조정 amount는 정수여야 합니다." },
+      { error: "POINT/STOCK 조정 amount는 정수여야 합니다." },
+      { status: 400 },
+    );
+  }
+  if (rewardKind === "STOCK" && body.type === "ADMIN_DEDUCT") {
+    return NextResponse.json(
+      { error: "STOCK 보상은 차감 유형으로 처리할 수 없습니다." },
+      { status: 400 },
+    );
+  }
+  if (rewardKind === "STOCK" && typeof body.stockTicker !== "string") {
+    return NextResponse.json(
+      { error: "STOCK 보상에는 stockTicker가 필요합니다." },
       { status: 400 },
     );
   }
@@ -218,6 +240,8 @@ export async function POST(request: Request) {
         finalAmount,
         validatedType,
         rewardKind,
+        stockTicker:
+          rewardKind === "STOCK" ? String(body.stockTicker).trim() : undefined,
         description,
         session: {
           id: session.user.id,
@@ -257,13 +281,21 @@ interface ProcessArgs {
   finalAmount: number;
   validatedType: GmDirectGrantType;
   rewardKind: RewardKind;
+  stockTicker?: string;
   description: string;
   session: { id: string; displayName: string; role: UserRole };
 }
 
 async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
-  const { target, finalAmount, validatedType, rewardKind, description, session } =
-    args;
+  const {
+    target,
+    finalAmount,
+    validatedType,
+    rewardKind,
+    stockTicker,
+    description,
+    session,
+  } = args;
   const baseEcho: BulkGrantResultItem = {
     ownerId: target.ownerId,
     characterId: target.characterId,
@@ -404,6 +436,40 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
         transactionId: pointResult.changeLogId,
         characterCodename: targetCharacterCodename,
         newPointBalance: pointResult.after,
+      };
+    }
+
+    if (rewardKind === "STOCK") {
+      const stockResult = await grantStockReward({
+        characterId: targetCharacterId,
+        ticker: stockTicker ?? "",
+        shares: finalAmount,
+      });
+      await notifyUser({
+        userId: targetOwnerId,
+        type: "SYSTEM",
+        title: "주식 보상이 지급되었습니다",
+        message: appendDescription(
+          [
+            `${targetCharacterCodename} · ${stockResult.stockName} (${stockResult.ticker}) +${stockResult.shares.toLocaleString()}주`,
+            `보유 수량 ${stockResult.holding.shares.toLocaleString()}주`,
+          ],
+          description,
+        ).join(" · "),
+        link: `/erp/stock/${encodeURIComponent(stockResult.ticker)}`,
+      });
+
+      return {
+        ownerId: targetOwnerId,
+        characterId: targetCharacterId,
+        success: true,
+        transactionId: String(stockResult.holding._id ?? ""),
+        characterCodename: targetCharacterCodename,
+        rewardLabel: `주식 ${stockResult.ticker} +${stockResult.shares.toLocaleString()}주`,
+        rewardKind: "STOCK",
+        stockTicker: stockResult.ticker,
+        newStockShares: stockResult.holding.shares,
+        newStockAvgPrice: stockResult.holding.avgPrice,
       };
     }
 

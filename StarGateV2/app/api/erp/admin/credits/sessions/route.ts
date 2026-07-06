@@ -51,6 +51,7 @@ import {
   formatSignedAmount,
   notifyUser,
 } from "@/lib/notifications/events";
+import { grantStockReward } from "@/lib/stocks/rewards";
 
 import { buildSessionRewardCandidates } from "@/app/(erp)/erp/admin/credits/_session-rewards";
 
@@ -250,7 +251,10 @@ interface ResolvedParticipant {
 type NormalizedReward = Required<
   Pick<SessionRewardLineInput, "kind" | "amount">
 > &
-  Pick<SessionRewardLineInput, "statField" | "targetCharacterId"> & {
+  Pick<
+    SessionRewardLineInput,
+    "statField" | "stockTicker" | "targetCharacterId"
+  > & {
     label: string;
   };
 
@@ -328,7 +332,7 @@ function normalizeRewards(
 ): NormalizedReward[] {
   const participantIds = new Set(participants.map((p) => p.characterId));
   return rewards.map((reward, index) => {
-    if (!["CREDIT", "POINT", "STAT"].includes(reward.kind)) {
+    if (!["CREDIT", "POINT", "STAT", "STOCK"].includes(reward.kind)) {
       throw new Error(`rewards[${index}].kind가 올바르지 않습니다.`);
     }
     if (!Number.isFinite(reward.amount) || reward.amount === 0) {
@@ -340,6 +344,14 @@ function normalizeRewards(
     if (reward.kind === "POINT") {
       if (reward.amount <= 0 || !Number.isInteger(reward.amount)) {
         throw new Error("POINT 보상은 0보다 큰 정수여야 합니다.");
+      }
+    }
+    if (reward.kind === "STOCK") {
+      if (reward.amount <= 0 || !Number.isInteger(reward.amount)) {
+        throw new Error("STOCK 보상 수량은 0보다 큰 정수여야 합니다.");
+      }
+      if (typeof reward.stockTicker !== "string" || !reward.stockTicker.trim()) {
+        throw new Error("STOCK 보상에는 stockTicker가 필요합니다.");
       }
     }
     if (reward.kind === "STAT") {
@@ -359,7 +371,7 @@ function normalizeRewards(
     ) {
       throw new Error("개별 보상 대상은 참여자 목록 안에 있어야 합니다.");
     }
-    if (reward.kind !== "CREDIT") {
+    if (reward.kind === "POINT" || reward.kind === "STAT") {
       const rewardTargets = reward.targetCharacterId
         ? participants.filter((p) => p.characterId === reward.targetCharacterId)
         : participants;
@@ -375,6 +387,7 @@ function normalizeRewards(
       kind: reward.kind,
       amount: reward.amount,
       statField: reward.statField,
+      stockTicker: reward.stockTicker?.trim().toUpperCase(),
       targetCharacterId: reward.targetCharacterId ?? null,
       label: formatRewardLabel(reward),
     };
@@ -404,10 +417,13 @@ function coalesceRewardOperations(
   for (const operation of operations) {
     const statKey =
       operation.reward.kind === "STAT" ? operation.reward.statField : "";
+    const stockKey =
+      operation.reward.kind === "STOCK" ? operation.reward.stockTicker : "";
     const key = [
       operation.participant.characterId,
       operation.reward.kind,
       statKey,
+      stockKey,
     ].join(":");
     const prev = byKey.get(key);
     if (!prev) {
@@ -420,9 +436,17 @@ function coalesceRewardOperations(
   return Array.from(byKey.values()).filter((op) => op.reward.amount !== 0);
 }
 
-function formatRewardLabel(reward: Pick<NormalizedReward, "kind" | "amount" | "statField">): string {
+function formatRewardLabel(
+  reward: Pick<
+    NormalizedReward,
+    "kind" | "amount" | "statField" | "stockTicker"
+  >,
+): string {
   if (reward.kind === "CREDIT") return `크레딧 +${reward.amount} CR`;
   if (reward.kind === "POINT") return `포인트 +${reward.amount} PT`;
+  if (reward.kind === "STOCK") {
+    return `주식 ${reward.stockTicker?.trim().toUpperCase() ?? ""} +${reward.amount}주`;
+  }
   const sign = reward.amount > 0 ? "+" : "";
   return `${reward.statField?.toUpperCase()} ${sign}${reward.amount}`;
 }
@@ -526,6 +550,36 @@ async function processRewardOperation(args: {
         success: true,
         transactionId: pointResult.changeLogId,
         newPointBalance: pointResult.after,
+      };
+    }
+
+    if (reward.kind === "STOCK") {
+      const stockResult = await grantStockReward({
+        characterId: participant.characterId,
+        ticker: reward.stockTicker ?? "",
+        shares: reward.amount,
+      });
+      await notifyUser({
+        userId: participant.ownerId,
+        type: "SYSTEM",
+        title: "세션 주식 보상이 지급되었습니다",
+        message: appendDescription(
+          [
+            `${participant.characterCodename} · ${stockResult.stockName} (${stockResult.ticker}) +${stockResult.shares.toLocaleString()}주`,
+            `보유 수량 ${stockResult.holding.shares.toLocaleString()}주`,
+            sessionMeta.sessionTitle,
+          ],
+          description,
+        ).join(" · "),
+        link: `/erp/stock/${encodeURIComponent(stockResult.ticker)}`,
+      });
+      return {
+        ...base,
+        success: true,
+        transactionId: String(stockResult.holding._id ?? ""),
+        stockTicker: stockResult.ticker,
+        newStockShares: stockResult.holding.shares,
+        newStockAvgPrice: stockResult.holding.avgPrice,
       };
     }
 

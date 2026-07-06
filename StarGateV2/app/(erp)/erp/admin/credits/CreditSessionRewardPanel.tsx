@@ -24,6 +24,7 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Select from "@/components/ui/Select/Select";
 
 import { formatDate } from "@/lib/format/date";
+import { STOCK_CATALOG } from "@/lib/stocks/catalog";
 
 import type { GrantTargetUser } from "./CreditBulkGrantForm";
 import styles from "./CreditSessionRewardPanel.module.css";
@@ -35,6 +36,7 @@ const REWARD_KIND_OPTIONS: { value: SessionRewardLineKind; label: string }[] = [
   { value: "CREDIT", label: "크레딧" },
   { value: "POINT", label: "포인트" },
   { value: "STAT", label: "능력치" },
+  { value: "STOCK", label: "주식" },
 ];
 
 const STAT_OPTIONS: { value: SessionRewardStatField; label: string }[] = [
@@ -85,6 +87,7 @@ interface RewardDraft {
   kind: SessionRewardLineKind;
   amount: string;
   statField: SessionRewardStatField;
+  stockTicker: string;
   targetCharacterId: string;
 }
 
@@ -94,6 +97,7 @@ function makeRewardDraft(kind: SessionRewardLineKind = "CREDIT"): RewardDraft {
     kind,
     amount: kind === "CREDIT" ? "40" : "1",
     statField: "san",
+    stockTicker: STOCK_CATALOG[0]?.ticker ?? "",
     targetCharacterId: "",
   };
 }
@@ -238,6 +242,7 @@ export default function CreditSessionRewardPanel({
       kind: reward.kind,
       amount: Number(reward.amount),
       statField: reward.kind === "STAT" ? reward.statField : undefined,
+      stockTicker: reward.kind === "STOCK" ? reward.stockTicker : undefined,
       targetCharacterId: reward.targetCharacterId || null,
     }));
   }
@@ -251,10 +256,13 @@ export default function CreditSessionRewardPanel({
         return "보상 수치가 올바르지 않습니다.";
       }
       if (reward.kind !== "STAT" && amount <= 0) {
-        return "크레딧/포인트 보상은 0보다 커야 합니다.";
+        return "크레딧/포인트/주식 보상은 0보다 커야 합니다.";
       }
       if (reward.kind !== "CREDIT" && !Number.isInteger(amount)) {
-        return "포인트/능력치 보상은 정수여야 합니다.";
+        return "포인트/능력치/주식 보상은 정수여야 합니다.";
+      }
+      if (reward.kind === "STOCK" && !reward.stockTicker) {
+        return "주식 보상에는 종목 선택이 필요합니다.";
       }
     }
     if (description.trim().length === 0) return "설명을 입력하세요.";
@@ -728,6 +736,25 @@ function RewardEditor({
                   ))}
                 </Select>
               </label>
+            ) : reward.kind === "STOCK" ? (
+              <label className={styles.session__field}>
+                <Eyebrow>종목</Eyebrow>
+                <Select
+                  className={styles.session__select}
+                  value={reward.stockTicker}
+                  onChange={(e) =>
+                    onUpdate(reward.id, {
+                      stockTicker: e.target.value,
+                    })
+                  }
+                >
+                  {STOCK_CATALOG.map((stock) => (
+                    <option key={stock.ticker} value={stock.ticker}>
+                      {stock.ticker} · {stock.name}
+                    </option>
+                  ))}
+                </Select>
+              </label>
             ) : (
               <div
                 className={styles.session__rewardStatPlaceholder}
@@ -945,6 +972,9 @@ function formatResultBalance(row: BulkGrantResultItem): string {
   }
   if (row.newStatValue != null) {
     return `${row.statField?.toUpperCase() ?? "STAT"} ${row.newStatValue}`;
+  }
+  if (row.newStockShares != null) {
+    return `${row.stockTicker ?? "STOCK"} ${row.newStockShares.toLocaleString()}주`;
   }
   return "—";
 }

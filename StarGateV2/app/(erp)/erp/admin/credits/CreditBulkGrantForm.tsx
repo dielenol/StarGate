@@ -18,6 +18,8 @@ import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import Input from "@/components/ui/Input/Input";
 import Select from "@/components/ui/Select/Select";
 
+import { STOCK_CATALOG } from "@/lib/stocks/catalog";
+
 import styles from "./CreditBulkGrantForm.module.css";
 
 /* ── 상수 ── */
@@ -31,19 +33,23 @@ const GRANT_TYPES: { value: CreditTransactionType; label: string }[] = [
 const REWARD_KINDS: { value: RewardKind; label: string }[] = [
   { value: "CREDIT", label: "CREDIT" },
   { value: "POINT", label: "POINT" },
+  { value: "STOCK", label: "STOCK" },
 ];
 
 const MAX_TARGETS = 100;
 
 function getRewardUnit(kind: RewardKind): string {
+  if (kind === "STOCK") return "주";
   return kind === "POINT" ? "PT" : "CR";
 }
 
 function getRewardAmountLabel(kind: RewardKind): string {
+  if (kind === "STOCK") return "주식 수량";
   return kind === "POINT" ? "포인트" : "크레딧";
 }
 
 function getBalanceColumnLabel(kind: RewardKind): string {
+  if (kind === "STOCK") return "보유 수량";
   return kind === "POINT" ? "새 포인트" : "새 크레딧";
 }
 
@@ -115,6 +121,7 @@ export default function CreditBulkGrantForm({
 
   /* 공통 입력 */
   const [rewardKind, setRewardKind] = useState<RewardKind>("CREDIT");
+  const [stockTicker, setStockTicker] = useState(STOCK_CATALOG[0]?.ticker ?? "");
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<CreditTransactionType>("ADMIN_GRANT");
   const [description, setDescription] = useState("");
@@ -249,6 +256,17 @@ export default function CreditBulkGrantForm({
     if (!Number.isFinite(numAmount) || numAmount === 0) {
       return `유효한 ${getRewardAmountLabel(rewardKind)}을 입력하세요 (0 또는 NaN 불가).`;
     }
+    if (rewardKind === "STOCK") {
+      if (type === "ADMIN_DEDUCT") {
+        return "주식 보상은 차감 유형으로 처리할 수 없습니다.";
+      }
+      if (!Number.isInteger(numAmount) || numAmount <= 0) {
+        return "주식 보상 수량은 0보다 큰 정수여야 합니다.";
+      }
+      if (!stockTicker) {
+        return "지급할 주식 종목을 선택하세요.";
+      }
+    }
     if (selectedCount === 0) {
       return mode === "picker"
         ? "최소 1명의 대상자를 선택하세요."
@@ -291,6 +309,7 @@ export default function CreditBulkGrantForm({
       amount: Math.abs(Number(amount)),
       type: type as "ADMIN_GRANT" | "ADMIN_DEDUCT" | "SESSION_REWARD",
       rewardKind,
+      stockTicker: rewardKind === "STOCK" ? stockTicker : undefined,
       description,
     };
 
@@ -389,7 +408,11 @@ export default function CreditBulkGrantForm({
                   <th className={styles.bulk__numCol}>
                     {getBalanceColumnLabel(rewardKind)}
                   </th>
-                  <th>{rewardKind === "POINT" ? "사유 / 기록" : "사유 / 거래 ID"}</th>
+                  <th>
+                    {rewardKind === "POINT" || rewardKind === "STOCK"
+                      ? "사유 / 기록"
+                      : "사유 / 거래 ID"}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -417,6 +440,8 @@ export default function CreditBulkGrantForm({
                     <td className={styles.bulk__numCol}>
                       {rewardKind === "POINT" && row.newPointBalance != null
                         ? `${row.newPointBalance.toLocaleString()} PT`
+                        : rewardKind === "STOCK" && row.newStockShares != null
+                          ? `${row.stockTicker ?? ""} ${row.newStockShares.toLocaleString()}주`
                         : row.newBalance != null
                           ? `${row.newBalance.toLocaleString()} CR`
                           : "-"}
@@ -590,7 +615,11 @@ export default function CreditBulkGrantForm({
           <Select
             value={rewardKind}
             onChange={(e) => {
-              setRewardKind(e.target.value as RewardKind);
+              const nextRewardKind = e.target.value as RewardKind;
+              setRewardKind(nextRewardKind);
+              if (nextRewardKind === "STOCK" && type === "ADMIN_DEDUCT") {
+                setType("ADMIN_GRANT");
+              }
               setError("");
               setPendingConfirm(false);
             }}
@@ -620,6 +649,26 @@ export default function CreditBulkGrantForm({
           />
         </label>
 
+        {rewardKind === "STOCK" ? (
+          <label className={styles.bulk__field}>
+            <Eyebrow>종목</Eyebrow>
+            <Select
+              value={stockTicker}
+              onChange={(e) => {
+                setStockTicker(e.target.value);
+                setError("");
+                setPendingConfirm(false);
+              }}
+            >
+              {STOCK_CATALOG.map((stock) => (
+                <option key={stock.ticker} value={stock.ticker}>
+                  {stock.ticker} · {stock.name}
+                </option>
+              ))}
+            </Select>
+          </label>
+        ) : null}
+
         <label className={styles.bulk__field}>
           <Eyebrow>유형</Eyebrow>
           <Select
@@ -630,7 +679,9 @@ export default function CreditBulkGrantForm({
               setPendingConfirm(false);
             }}
           >
-            {GRANT_TYPES.map((t) => (
+            {GRANT_TYPES.filter(
+              (t) => rewardKind !== "STOCK" || t.value !== "ADMIN_DEDUCT",
+            ).map((t) => (
               <option key={t.value} value={t.value}>
                 {t.label}
               </option>

@@ -134,6 +134,7 @@ export async function buildAgentBalanceRows(): Promise<{
       agentLevel: character.agentLevel ?? "U",
       balance: snapshot?.balance ?? 0,
       pointBalance: getOperationCharacterPointBalance(character),
+      hasCreditLedger: snapshot !== null,
       lastTxAt: snapshot ? new Date(snapshot.lastTxAt).toISOString() : null,
     };
   });

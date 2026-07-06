@@ -21,6 +21,7 @@ export const stocksKeys = {
   all: ["stocks"] as const,
   prices: ["stocks", "prices"] as const,
   holdings: ["stocks", "holdings"] as const,
+  adminHoldings: ["stocks", "admin-holdings"] as const,
   history: (ticker: string, days: number) =>
     ["stocks", "history", ticker, days] as const,
   marketWire: (days: number, limit: number) =>
@@ -111,6 +112,28 @@ export interface StockHoldingsResponse {
   hasMainCharacter: boolean;
 }
 
+export interface StockAdminHoldingRow {
+  characterId: string;
+  characterCodename: string;
+  characterType: "AGENT" | "NPC";
+  ownerId: string | null;
+  ownerName: string | null;
+  ticker: string;
+  stockName: string;
+  shares: number;
+  avgPrice: number;
+  currentPrice: number;
+  evaluation: number;
+  profitLoss: number;
+  profitPercent: number;
+  updatedAt: string;
+}
+
+export interface StockAdminHoldingsResponse {
+  rows: StockAdminHoldingRow[];
+  generatedAt: string;
+}
+
 export interface StockHistoryItem {
   price: number;
   prevPrice: number;
@@ -183,6 +206,12 @@ async function fetchStockHoldings(): Promise<StockHoldingsResponse> {
   return res.json();
 }
 
+async function fetchStockAdminHoldings(): Promise<StockAdminHoldingsResponse> {
+  const res = await fetch("/api/erp/admin/stocks/holdings");
+  if (!res.ok) await parseStocksError(res);
+  return res.json();
+}
+
 async function fetchStockHistory(
   ticker: string,
   days: number,
@@ -219,6 +248,7 @@ async function fetchStockMarketWire(
 
 const PRICES_STALE_MS = 60 * 1000;
 const HOLDINGS_STALE_MS = 60 * 1000;
+const ADMIN_HOLDINGS_STALE_MS = 60 * 1000;
 const HISTORY_STALE_MS = 15 * 60 * 1000;
 const MARKET_WIRE_STALE_MS = 60 * 1000;
 const SPARKLINES_STALE_MS = 10 * 60 * 1000;
@@ -247,6 +277,17 @@ export function useStockHoldings(options?: {
       if (err instanceof StocksApiError && err.status === 409) return false;
       return failureCount < 2;
     },
+  });
+}
+
+export function useStockAdminHoldings(options?: {
+  initialData?: StockAdminHoldingsResponse;
+}) {
+  return useQuery({
+    queryKey: stocksKeys.adminHoldings,
+    queryFn: fetchStockAdminHoldings,
+    staleTime: ADMIN_HOLDINGS_STALE_MS,
+    initialData: options?.initialData,
   });
 }
 

@@ -8,6 +8,10 @@
   grid-column: 1 / -1;
 }
 
+.holdingsPanel {
+  grid-column: 1 / -1;
+}
+
 .panel {
   border: 1px solid var(--line);
   background: rgba(10, 14, 22, 0.74);
@@ -211,6 +215,128 @@
 .summary strong {
   color: var(--ink-0);
   font-size: 15px;
+}
+
+.holdingSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.holdingSummary span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.holdingSummary strong {
+  color: var(--gold);
+  font-size: 14px;
+}
+
+.holdingSearch {
+  width: 100%;
+  min-height: 42px;
+  margin-bottom: 12px;
+  padding: 0 12px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink-0);
+  font-size: 14px;
+}
+
+.holdingSearch:focus {
+  outline: 2px solid rgba(120, 130, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.holdingTableWrap {
+  overflow-x: auto;
+}
+
+.holdingTable {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.holdingTable th,
+.holdingTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-1);
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.holdingTable th {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: left;
+}
+
+.holdingTable tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.holdingTable__owner,
+.holdingTable__stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.holdingTable__owner {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.holdingTable__owner strong,
+.holdingTable__stock strong {
+  color: var(--ink-0);
+  font-size: 14px;
+}
+
+.holdingTable__owner span,
+.holdingTable__stock span span {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.holdingTable__stock > span {
+  display: grid;
+  gap: 3px;
+}
+
+.numCol {
+  text-align: right;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.dateCol {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+}
+
+.holdingTable__profit--up {
+  color: var(--gold);
+}
+
+.holdingTable__profit--down {
+  color: var(--danger);
 }
 
 .message,

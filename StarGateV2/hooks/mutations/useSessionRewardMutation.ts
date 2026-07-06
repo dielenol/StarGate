@@ -9,6 +9,7 @@ import { creditKeys } from "@/hooks/queries/useCreditsQuery";
 import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
 import { characterKeys, personnelKeys } from "@/hooks/queries/useCharactersQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
+import { stocksKeys } from "@/hooks/queries/useStocksQuery";
 
 /**
  * GM 세션 자동 보상 발급 — `POST /api/erp/admin/credits/sessions`.
@@ -46,6 +47,8 @@ export function useSessionRewardMutation() {
       queryClient.invalidateQueries({ queryKey: characterKeys.all });
       queryClient.invalidateQueries({ queryKey: personnelKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      queryClient.invalidateQueries({ queryKey: stocksKeys.holdings });
+      queryClient.invalidateQueries({ queryKey: stocksKeys.adminHoldings });
     },
   });
 }
