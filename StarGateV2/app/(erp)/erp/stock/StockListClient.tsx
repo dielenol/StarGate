@@ -33,9 +33,15 @@ import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
+import {
+  buildStockMarketIndexSnapshot,
+  formatIndexValue,
+  formatMarketCapCredits,
+} from "@/lib/stocks/market-index";
 import { formatStockValue } from "@/lib/stocks/pricing";
 
 import StockHoverPreview from "./StockHoverPreview";
+import StockIndexBanner from "./StockIndexBanner";
 import MarketWirePanel from "./MarketWirePanel";
 import StockSparkline from "./StockSparkline";
 import StockTabs from "./StockTabs";
@@ -75,6 +81,11 @@ function renderBriefIdentity(item: { ticker: string; name: string }) {
       <span className={styles.marketBrief__name}>{item.name}</span>
     </span>
   );
+}
+
+function formatSignedPercent(value: number): string {
+  if (Math.abs(value) < 0.005) return "0.00%";
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
 /* ── Props ── */
@@ -166,6 +177,10 @@ export default function StockListClient({
     return prices.items.filter((item) => watchedTickerSet.has(item.ticker));
   }, [prices.items, watchedTickerSet]);
 
+  const marketIndex = useMemo(() => {
+    return buildStockMarketIndexSnapshot(prices.items);
+  }, [prices.items]);
+
   const marketBrief = useMemo(() => {
     const movers = prices.items.map((item) => ({
       ...item,
@@ -191,8 +206,21 @@ export default function StockListClient({
         : downCount > upCount
           ? "하락 우위"
           : "관망";
-    return { upCount, downCount, flatCount, topRise, topFall, latestEvents, bias };
+    return {
+      upCount,
+      downCount,
+      flatCount,
+      topRise,
+      topFall,
+      latestEvents,
+      bias,
+    };
   }, [marketWire.items, prices.items]);
+
+  const marketBreadthPercent =
+    marketIndex.components.length > 0
+      ? (marketIndex.upCount / marketIndex.components.length) * 100
+      : 0;
 
   const triggeredAlerts = useMemo(() => {
     return prices.items
@@ -317,6 +345,8 @@ export default function StockListClient({
         title="주식"
       />
 
+      <StockIndexBanner marketIndex={marketIndex} />
+
       <div className={styles.tabsRow}>
         <StockTabs />
         <Tag tone={marketEnabled ? "gold" : "danger"}>
@@ -345,15 +375,48 @@ export default function StockListClient({
       ) : null}
 
       <div className={styles.marketBrief} aria-label="시장 브리핑">
-        <section className={styles.marketBrief__card}>
+        <section
+          className={[
+            styles.marketBrief__card,
+            styles["marketBrief__card--index"],
+          ].join(" ")}
+        >
           <div className={styles.marketBrief__head}>
             <span>시장 요약</span>
             <strong>{marketBrief.bias}</strong>
+          </div>
+          <div className={styles.marketBrief__indexLine}>
+            <span>{marketIndex.code}</span>
+            <strong>{formatIndexValue(marketIndex.value)}</strong>
+            <em
+              className={
+                marketIndex.changePercent < 0
+                  ? styles["marketBrief__indexDelta--down"]
+                  : styles.marketBrief__indexDelta
+              }
+            >
+              {formatSignedPercent(marketIndex.changePercent)}
+            </em>
           </div>
           <div className={styles.marketBrief__stats}>
             <span>상승 {marketBrief.upCount}</span>
             <span>하락 {marketBrief.downCount}</span>
             <span>보합 {marketBrief.flatCount}</span>
+            <span>
+              시총 ¤ {formatMarketCapCredits(marketIndex.totalMarketCap)}
+            </span>
+            <span>
+              평균 {formatSignedPercent(marketIndex.averageChangePercent)}
+            </span>
+            {marketIndex.dominantComponent ? (
+              <span>
+                주도 {marketIndex.dominantComponent.ticker}{" "}
+                {marketIndex.dominantComponent.weightPercent.toFixed(1)}%
+              </span>
+            ) : null}
+          </div>
+          <div className={styles.marketBrief__breadth} aria-hidden="true">
+            <span style={{ width: `${marketBreadthPercent}%` }} />
           </div>
         </section>
 
@@ -706,7 +769,11 @@ export default function StockListClient({
             </div>
           </div>
 
-          <MarketWirePanel items={marketWire.items} compact />
+          <MarketWirePanel
+            items={marketWire.items}
+            marketIndex={marketIndex}
+            compact
+          />
         </aside>
       </div>
     </div>

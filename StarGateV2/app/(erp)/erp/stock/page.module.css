@@ -124,6 +124,98 @@
   border-bottom: 0;
 }
 
+/* ── NOVEX 종합지수 ── */
+
+.stockIndexBanner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr);
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--gold) 9%, transparent),
+      transparent 58%
+    ),
+    var(--bg-1);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+}
+
+.stockIndexBanner__main,
+.stockIndexBanner__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.stockIndexBanner__label {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+
+.stockIndexBanner__value {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stockIndexBanner__delta {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.stockIndexBanner__delta--up {
+  color: var(--gold);
+}
+
+.stockIndexBanner__delta--down {
+  color: var(--danger);
+}
+
+.stockIndexBanner__meta {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.06em;
+}
+
+.stockIndexBanner__meta span {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .stockIndexBanner {
+    grid-template-columns: 1fr;
+  }
+
+  .stockIndexBanner__meta {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .stockIndexBanner__main {
+    flex-wrap: wrap;
+  }
+}
+
 /* ── 시장 브리핑 ── */
 
 .marketBrief {
@@ -142,6 +234,11 @@
   background: var(--bg-1);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
+}
+
+.marketBrief__card--index {
+  grid-column: span 2;
+  border-color: var(--gold-dim);
 }
 
 .marketBrief__head,
@@ -176,6 +273,59 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: 0.04em;
+}
+
+.marketBrief__indexLine {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  font-family: var(--font-mono);
+}
+
+.marketBrief__indexLine span {
+  color: var(--ink-3);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.16em;
+}
+
+.marketBrief__indexLine strong {
+  color: var(--ink-0);
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+}
+
+.marketBrief__indexLine em {
+  color: var(--gold);
+  font-size: var(--font-size-xs);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.marketBrief__indexDelta {
+  color: var(--gold);
+}
+
+.marketBrief__indexLine .marketBrief__indexDelta--down {
+  color: var(--danger);
+}
+
+.marketBrief__breadth {
+  position: relative;
+  height: 4px;
+  overflow: hidden;
+  background: var(--bg-2);
+  border-radius: 999px;
+}
+
+.marketBrief__breadth span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 3px;
+  background: var(--gold);
+  border-radius: inherit;
 }
 
 .marketBrief__rows {
@@ -271,6 +421,16 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: 0.08em;
+}
+
+@media (max-width: 560px) {
+  .marketBrief__card--index {
+    grid-column: span 1;
+  }
+
+  .marketBrief__indexLine {
+    flex-wrap: wrap;
+  }
 }
 
 /* ── 토스 3-column 레이아웃: 좌 list / 가운데 detail / 우 rail ── */
@@ -573,6 +733,54 @@
 .marketWire__head > span:last-child {
   color: var(--ink-3);
   letter-spacing: 0.08em;
+}
+
+.marketWire__index {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: color-mix(in oklab, var(--gold) 6%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+
+.marketWire__indexTop,
+.marketWire__indexMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.marketWire__indexTop span {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.marketWire__indexTop strong {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.06em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marketWire__indexTop em {
+  margin-left: auto;
+  font-style: normal;
+}
+
+.marketWire__indexMeta {
+  flex-wrap: wrap;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.06em;
 }
 
 .marketWire__list {

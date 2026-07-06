@@ -33,7 +33,9 @@ import {
   formatStockValue,
   roundStockValue,
 } from "@/lib/stocks/pricing";
+import { buildStockMarketIndexSnapshot } from "@/lib/stocks/market-index";
 
+import StockIndexBanner from "../StockIndexBanner";
 import StockTabs from "../StockTabs";
 import { StockLogo } from "../_logos";
 
@@ -81,6 +83,10 @@ export default function StockPortfolioClient({
 
   const holdings = holdingsQuery.data ?? initialHoldings;
   const prices = pricesQuery.data ?? initialPrices;
+
+  const marketIndex = useMemo(() => {
+    return buildStockMarketIndexSnapshot(prices.items);
+  }, [prices.items]);
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -155,6 +161,8 @@ export default function StockPortfolioClient({
         ]}
         title="내 자산"
       />
+
+      <StockIndexBanner marketIndex={marketIndex} />
 
       <StockTabs />
 

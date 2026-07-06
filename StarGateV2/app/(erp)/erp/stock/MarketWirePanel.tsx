@@ -4,6 +4,11 @@ import Link from "next/link";
 
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import type { StockMarketWireItem } from "@/hooks/queries/useStocksQuery";
+import {
+  type StockMarketIndexSnapshot,
+  formatIndexValue,
+  formatMarketCapCredits,
+} from "@/lib/stocks/market-index";
 import { formatStockValue } from "@/lib/stocks/pricing";
 
 import { ARROW, priceDirection } from "./_helpers";
@@ -11,6 +16,7 @@ import styles from "./page.module.css";
 
 interface Props {
   items: StockMarketWireItem[];
+  marketIndex?: StockMarketIndexSnapshot;
   title?: string;
   compact?: boolean;
 }
@@ -33,11 +39,27 @@ function formatWireDate(value: string): string {
   });
 }
 
+function formatSignedPercent(value: number): string {
+  if (Math.abs(value) < 0.005) return "0.00%";
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
 export default function MarketWirePanel({
   items,
+  marketIndex,
   title = "ORDO-NET 공시",
   compact = false,
 }: Props) {
+  const indexDirection = marketIndex
+    ? priceDirection(marketIndex.value, marketIndex.prevValue)
+    : "flat";
+  const indexDirectionMod =
+    indexDirection === "up"
+      ? styles["marketWire__delta--up"]
+      : indexDirection === "down"
+        ? styles["marketWire__delta--down"]
+        : "";
+
   return (
     <section
       className={[
@@ -52,6 +74,31 @@ export default function MarketWirePanel({
         <span>{title}</span>
         <span>{items.length} 건</span>
       </div>
+
+      {marketIndex ? (
+        <div className={styles.marketWire__index}>
+          <div className={styles.marketWire__indexTop}>
+            <span>{marketIndex.name}</span>
+            <strong>
+              {marketIndex.code} {formatIndexValue(marketIndex.value)}
+            </strong>
+            <em
+              className={[styles.marketWire__delta, indexDirectionMod]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {indexDirection === "flat" ? "·" : ARROW[indexDirection]}{" "}
+              {formatSignedPercent(marketIndex.changePercent)}
+            </em>
+          </div>
+          <div className={styles.marketWire__indexMeta}>
+            <span>시총 ¤ {formatMarketCapCredits(marketIndex.totalMarketCap)}</span>
+            <span>
+              상승 {marketIndex.upCount} · 하락 {marketIndex.downCount}
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       {items.length === 0 ? (
         <div className={styles.marketWire__empty}>

@@ -1,0 +1,167 @@
+import {
+  formatBillionToKor,
+  getStockInfo,
+} from "@/app/(erp)/erp/stock/_stockInfo";
+import { STOCK_CATALOG } from "@/lib/stocks/catalog";
+import { roundStockValue } from "@/lib/stocks/pricing";
+
+export const STOCK_MARKET_INDEX_CODE = "NOVEX";
+export const STOCK_MARKET_INDEX_NAME = "NOVEX 종합지수";
+export const STOCK_MARKET_INDEX_BASE_VALUE = 1000;
+
+const MARKET_CAP_UNIT = 100_000_000;
+
+export interface StockMarketIndexQuote {
+  ticker: string;
+  price: number;
+  prevPrice: number;
+}
+
+export interface StockMarketIndexComponent {
+  ticker: string;
+  name: string;
+  price: number;
+  prevPrice: number;
+  basePrice: number;
+  sharesOutstanding: number;
+  marketCap: number;
+  prevMarketCap: number;
+  baseMarketCap: number;
+  weightPercent: number;
+  changePercent: number;
+}
+
+export interface StockMarketIndexSnapshot {
+  code: typeof STOCK_MARKET_INDEX_CODE;
+  name: typeof STOCK_MARKET_INDEX_NAME;
+  value: number;
+  prevValue: number;
+  change: number;
+  changePercent: number;
+  totalMarketCap: number;
+  prevTotalMarketCap: number;
+  baseMarketCap: number;
+  averageChangePercent: number;
+  upCount: number;
+  downCount: number;
+  flatCount: number;
+  dominantComponent: StockMarketIndexComponent | null;
+  components: StockMarketIndexComponent[];
+}
+
+function safePrice(value: number, fallback: number): number {
+  if (Number.isFinite(value) && value > 0) return value;
+  return fallback;
+}
+
+function roundIndexValue(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+export function formatIndexValue(value: number): string {
+  return value.toLocaleString("ko-KR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+export function formatMarketCapCredits(value: number): string {
+  return formatBillionToKor(Math.round(value / MARKET_CAP_UNIT));
+}
+
+export function buildStockMarketIndexSnapshot(
+  quotes: readonly StockMarketIndexQuote[],
+): StockMarketIndexSnapshot {
+  const quoteByTicker = new Map(quotes.map((quote) => [quote.ticker, quote]));
+  const components = STOCK_CATALOG.map((meta) => {
+    const info = getStockInfo(meta.ticker);
+    const sharesOutstanding = info?.sharesOutstanding ?? 0;
+    const quote = quoteByTicker.get(meta.ticker);
+    const price = safePrice(quote?.price ?? meta.basePrice, meta.basePrice);
+    const prevPrice = safePrice(quote?.prevPrice ?? price, price);
+    const marketCap = roundStockValue(price * sharesOutstanding);
+    const prevMarketCap = roundStockValue(prevPrice * sharesOutstanding);
+    const baseMarketCap = roundStockValue(meta.basePrice * sharesOutstanding);
+    const changePercent =
+      prevPrice > 0 ? ((price - prevPrice) / prevPrice) * 100 : 0;
+
+    return {
+      ticker: meta.ticker,
+      name: meta.name,
+      price,
+      prevPrice,
+      basePrice: meta.basePrice,
+      sharesOutstanding,
+      marketCap,
+      prevMarketCap,
+      baseMarketCap,
+      weightPercent: 0,
+      changePercent,
+    };
+  });
+
+  const totalMarketCap = roundStockValue(
+    components.reduce((sum, item) => sum + item.marketCap, 0),
+  );
+  const prevTotalMarketCap = roundStockValue(
+    components.reduce((sum, item) => sum + item.prevMarketCap, 0),
+  );
+  const baseMarketCap = roundStockValue(
+    components.reduce((sum, item) => sum + item.baseMarketCap, 0),
+  );
+
+  const weightedComponents = components.map((item) => ({
+    ...item,
+    weightPercent:
+      totalMarketCap > 0 ? (item.marketCap / totalMarketCap) * 100 : 0,
+  }));
+  const upCount = weightedComponents.filter(
+    (item) => item.price > item.prevPrice,
+  ).length;
+  const downCount = weightedComponents.filter(
+    (item) => item.price < item.prevPrice,
+  ).length;
+  const flatCount = weightedComponents.length - upCount - downCount;
+  const value =
+    baseMarketCap > 0
+      ? roundIndexValue((totalMarketCap / baseMarketCap) * STOCK_MARKET_INDEX_BASE_VALUE)
+      : STOCK_MARKET_INDEX_BASE_VALUE;
+  const prevValue =
+    baseMarketCap > 0
+      ? roundIndexValue((prevTotalMarketCap / baseMarketCap) * STOCK_MARKET_INDEX_BASE_VALUE)
+      : value;
+  const change = roundIndexValue(value - prevValue);
+  const changePercent =
+    prevValue > 0 ? ((value - prevValue) / prevValue) * 100 : 0;
+  const averageChangePercent =
+    weightedComponents.length > 0
+      ? weightedComponents.reduce((sum, item) => sum + item.changePercent, 0) /
+        weightedComponents.length
+      : 0;
+  const dominantComponent =
+    weightedComponents.reduce<StockMarketIndexComponent | null>(
+      (selected, item) => {
+        if (!selected || item.marketCap > selected.marketCap) return item;
+        return selected;
+      },
+      null,
+    );
+
+  return {
+    code: STOCK_MARKET_INDEX_CODE,
+    name: STOCK_MARKET_INDEX_NAME,
+    value,
+    prevValue,
+    change,
+    changePercent,
+    totalMarketCap,
+    prevTotalMarketCap,
+    baseMarketCap,
+    averageChangePercent,
+    upCount,
+    downCount,
+    flatCount,
+    dominantComponent,
+    components: weightedComponents,
+  };
+}

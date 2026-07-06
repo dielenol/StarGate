@@ -19,6 +19,7 @@ import {
   formatStockValue,
   roundStockValue,
 } from "@/lib/stocks/pricing";
+import { buildStockMarketIndexSnapshot } from "@/lib/stocks/market-index";
 
 import MarketWirePanel from "../../stock/MarketWirePanel";
 import { ARROW, priceDirection } from "../../stock/_helpers";
@@ -52,6 +53,9 @@ export default function StockAdminClient({
   });
   const prices = pricesQuery.data ?? initialPrices;
   const marketWire = marketWireQuery.data ?? initialMarketWire;
+  const marketIndex = useMemo(() => {
+    return buildStockMarketIndexSnapshot(prices.items);
+  }, [prices.items]);
   const [selectedTicker, setSelectedTicker] = useState(
     initialPrices.items[0]?.ticker ?? "",
   );
@@ -339,7 +343,11 @@ export default function StockAdminClient({
         </section>
 
         <div className={styles.wirePanel}>
-          <MarketWirePanel items={marketWire.items} title="최근 시장 공시" />
+          <MarketWirePanel
+            items={marketWire.items}
+            marketIndex={marketIndex}
+            title="최근 시장 공시"
+          />
         </div>
       </div>
     </>

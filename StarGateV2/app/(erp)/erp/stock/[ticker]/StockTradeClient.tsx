@@ -42,6 +42,7 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import { buildStockMarketIndexSnapshot } from "@/lib/stocks/market-index";
 import {
   formatStockValue,
   roundStockValue,
@@ -52,6 +53,7 @@ import RangeToggle, {
   RANGE_TO_DAYS,
   type RangeKey,
 } from "../RangeToggle";
+import StockIndexBanner from "../StockIndexBanner";
 import { ChartSkeleton, type ChartPoint } from "../StockHistoryChart";
 import StockTabs from "../StockTabs";
 import WatchlistRailCard from "../WatchlistRailCard";
@@ -198,6 +200,10 @@ export default function StockTradeClient({
   const watchedItems = useMemo(() => {
     return prices.items.filter((item) => watchedTickerSet.has(item.ticker));
   }, [prices.items, watchedTickerSet]);
+
+  const marketIndex = useMemo(() => {
+    return buildStockMarketIndexSnapshot(prices.items);
+  }, [prices.items]);
 
   const chartData: ChartPoint[] = useMemo(() => {
     return history.items.map((row) => ({
@@ -527,6 +533,8 @@ export default function StockTradeClient({
         ]}
         title={`${meta.name} ${meta.ticker}`}
       />
+
+      <StockIndexBanner marketIndex={marketIndex} />
 
       <div className={sharedStyles.tabsRow}>
         <StockTabs />

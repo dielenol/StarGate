@@ -8,6 +8,12 @@ import {
   formatSignedStockValue,
   formatStockValue,
 } from "@/lib/stocks/pricing";
+import {
+  STOCK_MARKET_INDEX_CODE,
+  buildStockMarketIndexSnapshot,
+  formatIndexValue,
+  formatMarketCapCredits,
+} from "@/lib/stocks/market-index";
 import { kstDateTag, kstNowTag } from "@/lib/stocks/time";
 
 type DiscordEmbedField = {
@@ -244,6 +250,12 @@ function formatTopMoveLine(result: ScheduledStockTickResult): string {
   )}`;
 }
 
+function formatIndexMoveIcon(changePercent: number): string {
+  if (changePercent > 0) return "▲";
+  if (changePercent < 0) return "▼";
+  return "·";
+}
+
 function marketBiasLabel(input: {
   upCount: number;
   downCount: number;
@@ -321,6 +333,14 @@ function buildRoutineOverviewFields(
         changed.length
       : 0;
   const strongestMove = topMover(changed);
+  const marketIndex = buildStockMarketIndexSnapshot(
+    summary.results.map((result) => ({
+      ticker: result.ticker,
+      price: result.price,
+      prevPrice: result.previousPrice,
+    })),
+  );
+  const dominant = marketIndex.dominantComponent;
 
   return [
     {
@@ -341,6 +361,23 @@ function buildRoutineOverviewFields(
         `상승 ${upCount} · 하락 ${downCount} · 보합 ${flatCount}`,
         `평균 변동률 ${formatPercent(averagePercent)}`,
       ].join("\n"),
+      inline: true,
+    },
+    {
+      name: `${STOCK_MARKET_INDEX_CODE} 종합지수`,
+      value: [
+        `${formatIndexMoveIcon(marketIndex.changePercent)} ${formatIndexValue(
+          marketIndex.value,
+        )} (${formatPercent(marketIndex.changePercent)})`,
+        `시총 ¤ ${formatMarketCapCredits(marketIndex.totalMarketCap)}`,
+        dominant
+          ? `비중 1위 ${stockName(dominant.ticker)} ${dominant.weightPercent.toFixed(
+              1,
+            )}%`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
       inline: true,
     },
     {
