@@ -17,12 +17,23 @@ import {
 import {
   MIN_STOCK_PRICE,
   formatStockValue,
+  roundStockValue,
 } from "@/lib/stocks/pricing";
 
 import MarketWirePanel from "../../stock/MarketWirePanel";
 import { ARROW, priceDirection } from "../../stock/_helpers";
 import { StockLogo } from "../../stock/_logos";
 import styles from "./page.module.css";
+
+const QUICK_PRICE_MOVES = [-25, -10, -5, 5, 10, 25] as const;
+
+const EVENT_TEMPLATES = [
+  "분기 실적 개선 공시",
+  "대형 계약 체결 루머",
+  "공급망 차질 관측",
+  "정기 변동 처리",
+  "운영진 특별 공시",
+] as const;
 
 interface Props {
   initialPrices: StockPricesResponse;
@@ -67,7 +78,10 @@ export default function StockAdminClient({
       selected.price > 0
         ? ((nextPrice - selected.price) / selected.price) * 100
         : 0;
-    return { nextPrice, direction, changePercent };
+    const absChange = Math.abs(changePercent);
+    const risk =
+      absChange >= 25 ? "급등락" : absChange >= 10 ? "주의" : "통상";
+    return { nextPrice, direction, changePercent, risk };
   }, [priceInput, selected]);
 
   function handleUpdateSuccess() {
@@ -100,6 +114,23 @@ export default function StockAdminClient({
     const next = prices.items.find((item) => item.ticker === ticker);
     setSelectedTicker(ticker);
     setPriceInput(next ? String(next.price) : "");
+    setMessage(null);
+    setError(null);
+  }
+
+  function applyPercentMove(percent: number) {
+    if (!selected) return;
+    const nextPrice = Math.max(
+      MIN_STOCK_PRICE,
+      roundStockValue(selected.price * (1 + percent / 100)),
+    );
+    setPriceInput(String(nextPrice));
+    setMessage(null);
+    setError(null);
+  }
+
+  function applyEventTemplate(template: string) {
+    setEventText(template);
     setMessage(null);
     setError(null);
   }
@@ -234,6 +265,23 @@ export default function StockAdminClient({
                   }}
                 />
               </label>
+              <div className={styles.quickMoves} aria-label="빠른 가격 조정">
+                {QUICK_PRICE_MOVES.map((percent) => (
+                  <button
+                    key={percent}
+                    type="button"
+                    onClick={() => applyPercentMove(percent)}
+                    className={
+                      percent < 0
+                        ? styles["quickMoves__button--down"]
+                        : styles["quickMoves__button--up"]
+                    }
+                  >
+                    {percent > 0 ? "+" : ""}
+                    {percent}%
+                  </button>
+                ))}
+              </div>
               <label className={styles.field}>
                 <span>이벤트 문구</span>
                 <input
@@ -244,6 +292,17 @@ export default function StockAdminClient({
                   placeholder="예: 기업 실적 발표"
                 />
               </label>
+              <div className={styles.templateRow} aria-label="공시 문구 템플릿">
+                {EVENT_TEMPLATES.map((template) => (
+                  <button
+                    key={template}
+                    type="button"
+                    onClick={() => applyEventTemplate(template)}
+                  >
+                    {template}
+                  </button>
+                ))}
+              </div>
               <div className={styles.summary}>
                 <span>현재가</span>
                 <strong>¤ {formatStockValue(selected.price)}</strong>
@@ -257,6 +316,10 @@ export default function StockAdminClient({
                       }`
                     : "입력 대기"}
                 </strong>
+                <span>변동 판정</span>
+                <strong>{pricePreview?.risk ?? "입력 대기"}</strong>
+                <span>공시 길이</span>
+                <strong>{eventText.trim().length}/80</strong>
                 <span>최근 이벤트</span>
                 <strong>{selected.eventText || "미등록"}</strong>
               </div>

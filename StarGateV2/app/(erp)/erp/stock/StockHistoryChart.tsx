@@ -15,6 +15,8 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ReferenceDot,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -71,6 +73,8 @@ function formatTooltipDate(iso: string): string {
 
 interface Props {
   data: ChartPoint[];
+  averagePrice?: number;
+  basePrice?: number;
 }
 
 /* ── Skeleton (loading placeholder) ── */
@@ -85,11 +89,26 @@ export function ChartSkeleton() {
   );
 }
 
+function eventMarkerColor(source: ChartPoint["source"]): string {
+  if (source === "gm-event") return "var(--danger)";
+  if (source === "trade") return "var(--info)";
+  return "var(--gold)";
+}
+
 /* ── 컴포넌트 ── */
 
-export default function StockHistoryChart({ data }: Props) {
+export default function StockHistoryChart({
+  data,
+  averagePrice,
+  basePrice,
+}: Props) {
   // 같은 페이지에 sparkline AreaChart 가 다수 존재 → useId() 로 gradient id 충돌 방지.
   const safeGradientId = useGradientId("g");
+  const eventPoints = data.filter((point) => point.eventText.trim());
+  const showAverageLine =
+    typeof averagePrice === "number" && Number.isFinite(averagePrice) && averagePrice > 0;
+  const showBaseLine =
+    typeof basePrice === "number" && Number.isFinite(basePrice) && basePrice > 0;
 
   return (
     <div className={styles.chartPanel__chart}>
@@ -163,6 +182,22 @@ export default function StockHistoryChart({ data }: Props) {
                 : [v, "가격"];
             }}
           />
+          {showBaseLine ? (
+            <ReferenceLine
+              y={basePrice}
+              stroke="var(--ink-3)"
+              strokeDasharray="3 6"
+              strokeOpacity={0.72}
+            />
+          ) : null}
+          {showAverageLine ? (
+            <ReferenceLine
+              y={averagePrice}
+              stroke="var(--info)"
+              strokeDasharray="6 4"
+              strokeOpacity={0.82}
+            />
+          ) : null}
           <Area
             type="monotone"
             dataKey="price"
@@ -180,6 +215,17 @@ export default function StockHistoryChart({ data }: Props) {
             }}
             isAnimationActive={false}
           />
+          {eventPoints.map((point) => (
+            <ReferenceDot
+              key={`${point.ts}-${point.source}`}
+              x={point.ts}
+              y={point.price}
+              r={4}
+              fill={eventMarkerColor(point.source)}
+              stroke="var(--bg)"
+              strokeWidth={1.5}
+            />
+          ))}
         </AreaChart>
       </ResponsiveContainer>
     </div>

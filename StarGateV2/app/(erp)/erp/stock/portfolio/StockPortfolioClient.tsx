@@ -80,7 +80,7 @@ export default function StockPortfolioClient({
   const creditsQuery = useCredits();
 
   const holdings = holdingsQuery.data ?? initialHoldings;
-  void pricesQuery;
+  const prices = pricesQuery.data ?? initialPrices;
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -131,6 +131,19 @@ export default function StockPortfolioClient({
       }))
       .sort((a, b) => b.evaluation - a.evaluation);
   }, [holdings.items, summary.totalEval]);
+  const holdingSignals = useMemo(() => {
+    const priceByTicker = new Map(prices.items.map((item) => [item.ticker, item]));
+    return holdings.items
+      .map((holding) => {
+        const price = priceByTicker.get(holding.ticker);
+        const absMove = Math.abs(price?.changePercent ?? 0);
+        const hasEvent = Boolean(price?.eventText.trim());
+        return { holding, price, absMove, hasEvent };
+      })
+      .filter((item) => item.hasEvent || item.absMove >= 10)
+      .sort((a, b) => b.absMove - a.absMove)
+      .slice(0, 5);
+  }, [holdings.items, prices.items]);
 
   return (
     <div data-pixel-font="ui">
@@ -261,6 +274,47 @@ export default function StockPortfolioClient({
                   >
                     {item.profitPercent > 0 ? "+" : ""}
                     {item.profitPercent.toFixed(2)}%
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {hasMainCharacter && holdingSignals.length > 0 ? (
+        <div className={styles.portfolioSignals}>
+          <div className={styles.portfolioSignals__head}>
+            <span>보유 종목 신호</span>
+            <span>{holdingSignals.length}건</span>
+          </div>
+          <div className={styles.portfolioSignals__list}>
+            {holdingSignals.map(({ holding, price, absMove, hasEvent }) => {
+              const dir = price ? profitDirection(price.changePercent) : "flat";
+              return (
+                <Link
+                  key={holding.ticker}
+                  href={`/erp/stock/${encodeURIComponent(holding.ticker)}`}
+                  className={styles.portfolioSignals__row}
+                >
+                  <LinkPendingProbe />
+                  <span className={styles.portfolioSignals__ticker}>
+                    <StockLogo ticker={holding.ticker} size="sm" />
+                    <span>{holding.ticker}</span>
+                  </span>
+                  <span
+                    className={directionMod(
+                      dir,
+                      styles.portfolioSignals__move,
+                    )}
+                  >
+                    {price && price.changePercent > 0 ? "+" : ""}
+                    {price ? price.changePercent.toFixed(2) : "0.00"}%
+                  </span>
+                  <span className={styles.portfolioSignals__reason}>
+                    {hasEvent
+                      ? price?.eventText
+                      : `등락률 ${absMove.toFixed(2)}%`}
                   </span>
                 </Link>
               );

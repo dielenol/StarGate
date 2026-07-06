@@ -63,6 +63,11 @@ import {
   priceDirection,
   profitDirection,
 } from "../_helpers";
+import {
+  evaluateStockAlert,
+  hasStockAlertRule,
+  useStockAlertRules,
+} from "../useStockAlerts";
 import { useStockWatchlist } from "../useStockWatchlist";
 import StockInfoPanel from "./StockInfoPanel";
 
@@ -103,6 +108,12 @@ const TRADE_SUCCESS_SOUNDS = {
 
 type TradeTab = "buy" | "sell";
 
+function eventSourceLabel(source: ChartPoint["source"]): string {
+  if (source === "gm-event") return "GM 공시";
+  if (source === "trade") return "체결";
+  return "정기 변동";
+}
+
 /* ── Props ── */
 
 interface Props {
@@ -133,6 +144,7 @@ export default function StockTradeClient({
   const holdingsQuery = useStockHoldings({ initialData: initialHoldings });
   const creditsQuery = useCredits();
   const watchlist = useStockWatchlist();
+  const alertRules = useStockAlertRules();
 
   const buyMutation = useBuyStock();
   const sellMutation = useSellStock();
@@ -236,6 +248,11 @@ export default function StockTradeClient({
   const tradeTotal = roundStockValue(tradeShares * displayPrice);
   const heldShares = holding?.shares ?? 0;
   const heldAvgPrice = holding?.avgPrice ?? 0;
+  const portfolioEvaluation = useMemo(() => {
+    return roundStockValue(
+      holdings.items.reduce((sum, item) => sum + item.evaluation, 0),
+    );
+  }, [holdings.items]);
 
   const isBuyPending = buyMutation.isPending;
   const isSellPending = sellMutation.isPending;
@@ -270,6 +287,7 @@ export default function StockTradeClient({
 
   const tradeProjection = useMemo(() => {
     if (tradeShares <= 0 || displayPrice <= 0) return null;
+    const currentTickerEvaluation = roundStockValue(heldShares * displayPrice);
     if (effectiveTab === "buy") {
       const currentCost = roundStockValue(heldAvgPrice * heldShares);
       const projectedShares = heldShares + tradeShares;
@@ -277,20 +295,41 @@ export default function StockTradeClient({
         projectedShares > 0
           ? roundStockValue((currentCost + tradeTotal) / projectedShares)
           : displayPrice;
+      const projectedTickerEvaluation = roundStockValue(
+        projectedShares * displayPrice,
+      );
+      const projectedPortfolioEvaluation = roundStockValue(
+        portfolioEvaluation + tradeTotal,
+      );
       return {
         kind: "buy" as const,
         projectedShares,
         projectedAvgPrice,
         projectedBalance: roundStockValue(balance - tradeTotal),
+        projectedExposurePercent:
+          projectedPortfolioEvaluation > 0
+            ? (projectedTickerEvaluation / projectedPortfolioEvaluation) * 100
+            : 0,
       };
     }
 
     const projectedShares = Math.max(0, heldShares - tradeShares);
+    const projectedTickerEvaluation = roundStockValue(
+      projectedShares * displayPrice,
+    );
+    const projectedPortfolioEvaluation = Math.max(
+      0,
+      roundStockValue(portfolioEvaluation - Math.min(currentTickerEvaluation, tradeTotal)),
+    );
     return {
       kind: "sell" as const,
       projectedShares,
       projectedBalance: roundStockValue(balance + tradeTotal),
       realizedProfit: roundStockValue((displayPrice - heldAvgPrice) * tradeShares),
+      projectedExposurePercent:
+        projectedPortfolioEvaluation > 0
+          ? (projectedTickerEvaluation / projectedPortfolioEvaluation) * 100
+          : 0,
     };
   }, [
     balance,
@@ -298,11 +337,56 @@ export default function StockTradeClient({
     effectiveTab,
     heldAvgPrice,
     heldShares,
+    portfolioEvaluation,
     tradeShares,
     tradeTotal,
   ]);
 
+  const avgGapPercent =
+    heldAvgPrice > 0 ? ((displayPrice - heldAvgPrice) / heldAvgPrice) * 100 : null;
+
+  const eventTimeline = useMemo(() => {
+    return [...history.items]
+      .filter((row) => row.eventText?.trim())
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
+      .slice(0, 6)
+      .map((row) => {
+        const direction = priceDirection(row.price, row.prevPrice);
+        const changePercent =
+          row.prevPrice > 0 ? ((row.price - row.prevPrice) / row.prevPrice) * 100 : 0;
+        return {
+          ts: row.createdAt,
+          price: row.price,
+          direction,
+          changePercent,
+          eventText: row.eventText?.trim() ?? "",
+          source: row.source,
+        };
+      });
+  }, [history.items]);
+
+  const latestDownEvent = eventTimeline.find((item) => item.direction === "down");
+  const latestUpEvent = eventTimeline.find((item) => item.direction === "up");
+  const gmEventCount = eventTimeline.filter((item) => item.source === "gm-event").length;
+  const alertRule = alertRules.getRule(ticker);
+  const activeAlertReasons = currentPrice
+    ? evaluateStockAlert(alertRule, currentPrice)
+    : [];
+
   /* ── 핸들러 ── */
+
+  function parseOptionalPositive(value: string): number | undefined {
+    const parsed = Number.parseFloat(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+    return parsed;
+  }
+
+  function updateAlertRule(nextRule: Parameters<typeof alertRules.setRule>[1]) {
+    alertRules.setRule(ticker, nextRule);
+  }
 
   /** 빠른 비율 적용 — 매수: floor(balance×ratio / price). 매도: floor(held × ratio). */
   function applyQuickRatio(ratio: number) {
@@ -615,7 +699,11 @@ export default function StockTradeClient({
                 </div>
               </div>
             ) : (
-              <StockHistoryChart data={chartData} />
+              <StockHistoryChart
+                data={chartData}
+                averagePrice={holding?.avgPrice}
+                basePrice={meta.basePrice}
+              />
             )}
             </div>
 
@@ -625,6 +713,78 @@ export default function StockTradeClient({
               currentPrice={displayPrice}
               basePrice={meta.basePrice}
             />
+
+          <div className={sharedStyles.eventInsights}>
+            <div className={sharedStyles.eventInsights__head}>
+              <span className={sharedStyles.eventInsights__title}>
+                변동 사유 분석
+              </span>
+              <span className={sharedStyles.eventInsights__tag}>
+                최근 {eventTimeline.length}건
+              </span>
+            </div>
+            <div className={sharedStyles.eventInsights__summary}>
+              <div className={sharedStyles.eventInsights__metric}>
+                <span>최근 하락 요인</span>
+                <strong>{latestDownEvent?.eventText ?? "기록 없음"}</strong>
+              </div>
+              <div className={sharedStyles.eventInsights__metric}>
+                <span>최근 상승 요인</span>
+                <strong>{latestUpEvent?.eventText ?? "기록 없음"}</strong>
+              </div>
+              <div className={sharedStyles.eventInsights__metric}>
+                <span>GM 개입</span>
+                <strong>{gmEventCount}건</strong>
+              </div>
+            </div>
+            {eventTimeline.length === 0 ? (
+              <div className={sharedStyles.eventInsights__empty}>
+                최근 이벤트 공시가 없습니다.
+              </div>
+            ) : (
+              <ul className={sharedStyles.eventInsights__list}>
+                {eventTimeline.map((item, index) => {
+                  const eventDate = new Date(item.ts);
+                  const eventDateLabel = Number.isFinite(eventDate.getTime())
+                    ? eventDate.toLocaleString("ko-KR", {
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                      })
+                    : "—";
+                  const eventMod =
+                    item.direction === "up"
+                      ? sharedStyles["eventInsights__move--up"]
+                      : item.direction === "down"
+                        ? sharedStyles["eventInsights__move--down"]
+                        : "";
+                  return (
+                    <li
+                      key={`${item.ts}-${index}`}
+                      className={sharedStyles.eventInsights__item}
+                    >
+                      <div className={sharedStyles.eventInsights__itemTop}>
+                        <span>{eventDateLabel}</span>
+                        <strong className={eventMod}>
+                          {ARROW[item.direction]}{" "}
+                          {item.changePercent.toFixed(2)}%
+                        </strong>
+                      </div>
+                      <div className={sharedStyles.eventInsights__body}>
+                        {item.eventText}
+                      </div>
+                      <div className={sharedStyles.eventInsights__source}>
+                        {eventSourceLabel(item.source)} · ¤{" "}
+                        {formatStockValue(item.price)}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
 
             {/* 시세 테이블 — history.items 시계열 (최근 N).
               거래량 컬럼은 데이터 부재로 제거. 변동없는 행은 muted 처리해 시각 노이즈 축소. */}
@@ -757,6 +917,77 @@ export default function StockTradeClient({
                 </span>
               </div>
             ) : null}
+          </div>
+
+          <div className={sharedStyles.alertRules}>
+            <div className={sharedStyles.alertRules__head}>
+              <span>조건 알림</span>
+              <button
+                type="button"
+                onClick={() => alertRules.clearRule(ticker)}
+                disabled={!hasStockAlertRule(alertRule)}
+              >
+                초기화
+              </button>
+            </div>
+            <label className={sharedStyles.alertRules__field}>
+              <span>목표가 이하</span>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={alertRule.belowPrice ?? ""}
+                onChange={(e) =>
+                  updateAlertRule({
+                    ...alertRule,
+                    belowPrice: parseOptionalPositive(e.target.value),
+                  })
+                }
+                placeholder="예: 4.50"
+              />
+            </label>
+            <label className={sharedStyles.alertRules__field}>
+              <span>등락률 절대값</span>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={alertRule.movePercent ?? ""}
+                onChange={(e) =>
+                  updateAlertRule({
+                    ...alertRule,
+                    movePercent: parseOptionalPositive(e.target.value),
+                  })
+                }
+                placeholder="예: 10"
+              />
+            </label>
+            <label className={sharedStyles.alertRules__check}>
+              <input
+                type="checkbox"
+                checked={alertRule.eventOnly === true}
+                onChange={(e) =>
+                  updateAlertRule({
+                    ...alertRule,
+                    eventOnly: e.target.checked,
+                  })
+                }
+              />
+              <span>공시 발생 시 표시</span>
+            </label>
+            {activeAlertReasons.length > 0 ? (
+              <ul className={sharedStyles.alertRules__active}>
+                {activeAlertReasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            ) : (
+              <div className={sharedStyles.alertRules__empty}>
+                {hasStockAlertRule(alertRule)
+                  ? "현재 충족된 조건 없음"
+                  : "조건을 설정하면 목록 브리핑에도 표시됩니다."}
+              </div>
+            )}
           </div>
 
           {/* 매수/매도 폼 카드 */}
@@ -962,6 +1193,27 @@ export default function StockTradeClient({
                       <strong>
                         {tradeProjection.projectedShares.toLocaleString()}주
                       </strong>
+                      <span>종목 비중</span>
+                      <strong>
+                        {tradeProjection.projectedExposurePercent.toFixed(1)}%
+                      </strong>
+                      {avgGapPercent !== null ? (
+                        <>
+                          <span>평단 대비</span>
+                          <strong
+                            className={
+                              avgGapPercent < 0
+                                ? sharedStyles["tradeProjection__value--down"]
+                                : avgGapPercent > 0
+                                  ? sharedStyles["tradeProjection__value--up"]
+                                  : ""
+                            }
+                          >
+                            {avgGapPercent > 0 ? "+" : ""}
+                            {avgGapPercent.toFixed(2)}%
+                          </strong>
+                        </>
+                      ) : null}
                       <span>잔액</span>
                       <strong>
                         ¤ {formatStockValue(tradeProjection.projectedBalance)}

@@ -42,6 +42,10 @@ import StockTabs from "./StockTabs";
 import WatchlistRailCard from "./WatchlistRailCard";
 import { StockLogo } from "./_logos";
 import { ARROW, priceDirection, profitDirection } from "./_helpers";
+import {
+  evaluateStockAlert,
+  useStockAlertRules,
+} from "./useStockAlerts";
 import { useStockWatchlist } from "./useStockWatchlist";
 
 import styles from "./page.module.css";
@@ -98,6 +102,7 @@ export default function StockListClient({
     isWatched,
     toggle: toggleWatch,
   } = useStockWatchlist();
+  const alertRules = useStockAlertRules();
 
   /* 10. 로컬 — 검색 + hover 상태 */
   const [search, setSearch] = useState("");
@@ -147,6 +152,45 @@ export default function StockListClient({
   const watchedItems = useMemo(() => {
     return prices.items.filter((item) => watchedTickerSet.has(item.ticker));
   }, [prices.items, watchedTickerSet]);
+
+  const marketBrief = useMemo(() => {
+    const movers = prices.items.map((item) => ({
+      ...item,
+      direction: priceDirection(item.price, item.prevPrice),
+    }));
+    const upCount = movers.filter((item) => item.direction === "up").length;
+    const downCount = movers.filter((item) => item.direction === "down").length;
+    const flatCount = movers.length - upCount - downCount;
+    const topRise = movers
+      .filter((item) => item.direction === "up")
+      .sort((a, b) => b.changePercent - a.changePercent)
+      .slice(0, 3);
+    const topFall = movers
+      .filter((item) => item.direction === "down")
+      .sort((a, b) => a.changePercent - b.changePercent)
+      .slice(0, 3);
+    const latestEvents = marketWire.items
+      .filter((item) => item.eventText.trim())
+      .slice(0, 3);
+    const bias =
+      upCount > downCount
+        ? "상승 우위"
+        : downCount > upCount
+          ? "하락 우위"
+          : "관망";
+    return { upCount, downCount, flatCount, topRise, topFall, latestEvents, bias };
+  }, [marketWire.items, prices.items]);
+
+  const triggeredAlerts = useMemo(() => {
+    return prices.items
+      .flatMap((item) =>
+        evaluateStockAlert(alertRules.getRule(item.ticker), item).map((reason) => ({
+          item,
+          reason,
+        })),
+      )
+      .slice(0, 5);
+  }, [alertRules, prices.items]);
 
   const filteredItems = useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
@@ -286,6 +330,120 @@ export default function StockListClient({
           )}
         </Box>
       ) : null}
+
+      <div className={styles.marketBrief} aria-label="시장 브리핑">
+        <section className={styles.marketBrief__card}>
+          <div className={styles.marketBrief__head}>
+            <span>시장 요약</span>
+            <strong>{marketBrief.bias}</strong>
+          </div>
+          <div className={styles.marketBrief__stats}>
+            <span>상승 {marketBrief.upCount}</span>
+            <span>하락 {marketBrief.downCount}</span>
+            <span>보합 {marketBrief.flatCount}</span>
+          </div>
+        </section>
+
+        <section className={styles.marketBrief__card}>
+          <div className={styles.marketBrief__head}>
+            <span>급등</span>
+            <strong>{marketBrief.topRise[0]?.ticker ?? "—"}</strong>
+          </div>
+          <div className={styles.marketBrief__rows}>
+            {marketBrief.topRise.length === 0 ? (
+              <span className={styles.marketBrief__empty}>상승 종목 없음</span>
+            ) : (
+              marketBrief.topRise.map((item) => (
+                <Link
+                  key={item.ticker}
+                  href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
+                  className={styles.marketBrief__row}
+                >
+                  <LinkPendingProbe />
+                  <span>{item.ticker}</span>
+                  <strong>▲ {item.changePercent.toFixed(2)}%</strong>
+                </Link>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className={styles.marketBrief__card}>
+          <div className={styles.marketBrief__head}>
+            <span>급락</span>
+            <strong>{marketBrief.topFall[0]?.ticker ?? "—"}</strong>
+          </div>
+          <div className={styles.marketBrief__rows}>
+            {marketBrief.topFall.length === 0 ? (
+              <span className={styles.marketBrief__empty}>하락 종목 없음</span>
+            ) : (
+              marketBrief.topFall.map((item) => (
+                <Link
+                  key={item.ticker}
+                  href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
+                  className={styles.marketBrief__row}
+                >
+                  <LinkPendingProbe />
+                  <span>{item.ticker}</span>
+                  <strong className={styles.marketBrief__down}>
+                    ▼ {item.changePercent.toFixed(2)}%
+                  </strong>
+                </Link>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className={styles.marketBrief__card}>
+          <div className={styles.marketBrief__head}>
+            <span>조건 알림</span>
+            <strong>{triggeredAlerts.length}</strong>
+          </div>
+          <div className={styles.marketBrief__rows}>
+            {triggeredAlerts.length === 0 ? (
+              <span className={styles.marketBrief__empty}>
+                설정 {alertRules.configuredCount}건 · 충족 없음
+              </span>
+            ) : (
+              triggeredAlerts.map(({ item, reason }) => (
+                <Link
+                  key={`${item.ticker}-${reason}`}
+                  href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
+                  className={styles.marketBrief__row}
+                >
+                  <LinkPendingProbe />
+                  <span>{item.ticker}</span>
+                  <strong>{reason}</strong>
+                </Link>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className={styles.marketBrief__card}>
+          <div className={styles.marketBrief__head}>
+            <span>최근 공시</span>
+            <strong>{marketBrief.latestEvents[0]?.ticker ?? "—"}</strong>
+          </div>
+          <div className={styles.marketBrief__rows}>
+            {marketBrief.latestEvents.length === 0 ? (
+              <span className={styles.marketBrief__empty}>공시 없음</span>
+            ) : (
+              marketBrief.latestEvents.map((item) => (
+                <Link
+                  key={`${item.ticker}-${item.createdAt}`}
+                  href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
+                  className={styles.marketBrief__row}
+                >
+                  <LinkPendingProbe />
+                  <span>{item.ticker}</span>
+                  <strong>{item.eventText}</strong>
+                </Link>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
 
       {/* ── 3-column layout: 좌 list / 가운데 hover preview / 우 rail ── */}
       <div className={styles.layout}>

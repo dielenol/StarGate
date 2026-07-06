@@ -146,6 +146,50 @@
   outline-offset: 2px;
 }
 
+.quickMoves,
+.templateRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quickMoves button,
+.templateRow button {
+  min-height: 36px;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.quickMoves button {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-1);
+}
+
+.quickMoves .quickMoves__button--up {
+  border-color: rgba(201, 168, 90, 0.52);
+  color: var(--gold);
+}
+
+.quickMoves .quickMoves__button--down {
+  border-color: rgba(255, 91, 91, 0.42);
+  color: var(--danger);
+}
+
+.templateRow button {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-2);
+}
+
+.quickMoves button:hover,
+.templateRow button:hover {
+  filter: brightness(1.1);
+}
+
 .readonly {
   display: flex;
   align-items: center;
