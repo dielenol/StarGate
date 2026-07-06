@@ -1,0 +1,447 @@
+.simRoot {
+  min-height: 100%;
+}
+
+.simStage {
+  --aim-x: 50%;
+  --aim-y: 50%;
+  --weapon-angle: 0deg;
+  --weapon-lift: 0px;
+  display: grid;
+  gap: 14px;
+  color: var(--ink-1);
+}
+
+.stageHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background:
+    linear-gradient(135deg, rgba(201, 168, 90, 0.14), transparent 46%),
+    rgba(8, 9, 9, 0.86);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.stageHeader h1 {
+  margin: 3px 0 0;
+  color: var(--gold);
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  margin-left: auto;
+  padding: 7px 10px;
+  background: color-mix(in srgb, var(--gold) 12%, rgba(0, 0, 0, 0.36));
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.simLayout {
+  display: grid;
+  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr) minmax(260px, 320px);
+  gap: 12px;
+  align-items: start;
+}
+
+.catalogPanel,
+.rangePanel,
+.telemetryPanel,
+.consolePanel {
+  min-width: 0;
+  background: rgba(8, 9, 9, 0.82);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.catalogPanel,
+.telemetryPanel,
+.consolePanel {
+  padding: 12px;
+}
+
+.panelIntro {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.panelIntro strong {
+  color: var(--gold);
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.itemRail {
+  display: grid;
+  gap: 8px;
+  max-height: 650px;
+  overflow: auto;
+}
+
+.itemButton {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-areas:
+    "thumb name"
+    "thumb type";
+  gap: 5px 9px;
+  width: 100%;
+  min-height: 74px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemButton:hover,
+.itemButton--active {
+  border-color: var(--gold-dim);
+  color: var(--ink-0);
+}
+
+.itemThumb {
+  grid-area: thumb;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.itemThumb img {
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.itemButton strong {
+  display: block;
+  overflow: hidden;
+  color: var(--ink-0);
+  font-size: 15px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemButton small {
+  display: block;
+  margin-top: 3px;
+  color: var(--gold-dim);
+  font-size: 14px;
+}
+
+.itemButton em {
+  grid-area: type;
+  color: var(--ink-3);
+  font-size: 14px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+}
+
+.rangePanel {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.viewport {
+  position: relative;
+  min-height: 430px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(201, 168, 90, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(201, 168, 90, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 50% 42%, rgba(201, 168, 90, 0.18), transparent 36%),
+    #0b0d0d;
+  background-size: 32px 32px, 32px 32px, auto, auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: crosshair;
+}
+
+.rangeGrid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(transparent 72%, rgba(0, 0, 0, 0.42)),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 14px,
+      rgba(255, 255, 255, 0.025) 15px
+    );
+  pointer-events: none;
+}
+
+.target {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 150px;
+  height: 150px;
+  transform: translate(-50%, -50%);
+  border: 2px solid color-mix(in srgb, var(--gold) 64%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 22px rgba(201, 168, 90, 0.06),
+    inset 0 0 0 48px rgba(201, 168, 90, 0.04),
+    0 0 32px rgba(201, 168, 90, 0.1);
+}
+
+.target span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  background: var(--gold);
+  border-radius: 50%;
+}
+
+.crosshair {
+  position: absolute;
+  left: var(--aim-x);
+  top: var(--aim-y);
+  width: 38px;
+  height: 38px;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--ink-0);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8);
+}
+
+.crosshair::before,
+.crosshair::after {
+  position: absolute;
+  content: "";
+  background: var(--ink-0);
+}
+
+.crosshair::before {
+  left: 50%;
+  top: -7px;
+  width: 1px;
+  height: 52px;
+}
+
+.crosshair::after {
+  left: -7px;
+  top: 50%;
+  width: 52px;
+  height: 1px;
+}
+
+.weaponRig {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  width: min(36vw, 300px);
+  aspect-ratio: 1;
+  transform:
+    translateX(-50%)
+    translateY(var(--weapon-lift))
+    rotate(var(--weapon-angle));
+  transform-origin: 50% 80%;
+  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.5));
+  transition: transform 120ms ease;
+}
+
+.weaponRig img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.integrityBar {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: min(260px, calc(100% - 28px));
+  height: 14px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--line);
+}
+
+.integrityBar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #7ecf8c, var(--gold));
+}
+
+.distanceTabs,
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.distanceButton,
+.fireButton,
+.controlButton {
+  min-height: 38px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.distanceButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+
+.distanceButton span {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.distanceButton--active {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.readoutGrid,
+.specSheet {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.specSheet {
+  grid-template-columns: 1fr;
+}
+
+.readoutGrid div,
+.specSheet div {
+  display: grid;
+  gap: 4px;
+  min-height: 66px;
+  padding: 9px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.readoutGrid span,
+.specSheet span {
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.readoutGrid strong,
+.specSheet strong {
+  color: var(--ink-0);
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.fireButton,
+.controlButton {
+  padding: 8px 13px;
+}
+
+.fireButton {
+  min-width: 96px;
+  background: color-mix(in srgb, var(--danger) 28%, rgba(0, 0, 0, 0.54));
+  border: 1px solid color-mix(in srgb, var(--danger) 60%, var(--line));
+  color: var(--ink-0);
+}
+
+.controlButton {
+  background: color-mix(in srgb, var(--gold) 13%, rgba(0, 0, 0, 0.44));
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+}
+
+.fireButton:disabled,
+.controlButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.logList {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.logItem {
+  min-height: 38px;
+  padding: 9px 10px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.logItem--hit {
+  border-color: color-mix(in srgb, #7ecf8c 48%, var(--line));
+  color: #bdecc5;
+}
+
+.logItem--miss {
+  border-color: color-mix(in srgb, var(--danger) 44%, var(--line));
+  color: color-mix(in srgb, var(--danger) 40%, var(--ink-0));
+}
+
+.logItem--info {
+  border-color: var(--gold-dim);
+}
+
+@media (max-width: 1180px) {
+  .simLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .itemRail {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    max-height: none;
+  }
+
+  .telemetryPanel {
+    order: 3;
+  }
+}
+
+@media (max-width: 720px) {
+  .stageHeader {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .backLink {
+    margin-left: 0;
+  }
+
+  .viewport {
+    min-height: 360px;
+  }
+
+  .readoutGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

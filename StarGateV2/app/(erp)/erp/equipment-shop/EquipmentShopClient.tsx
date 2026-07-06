@@ -36,13 +36,14 @@ import ShopItemIcon from "../shop/ShopItemIcon";
 import styles from "./page.module.css";
 
 type ArmoryZone = "lab" | "towaski" | "acheron" | "strategic" | "custom";
+type ArmoryDestination = ArmoryZone | "simulator";
 type EquipmentShopMode = "hub" | "zone";
 type EquipmentShopTabValue = "ALL" | "WEAPON" | "ARMOR";
 type CartState = Record<string, number>;
 type NoticeState = { tone: "success" | "info"; text: string } | null;
 type MainCharacterStats = Record<EquipmentResearchStat, number>;
 type ArmoryZoneDef = {
-  value: ArmoryZone;
+  value: ArmoryDestination;
   href: string;
   label: string;
   eyebrow: string;
@@ -103,6 +104,14 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
     eyebrow: "CUSTOM WORKSHOP",
     description: "전용무기 제작 상담 구역입니다. 요청 저장은 후속 단계에서 연결합니다.",
     npc: "제작 담당관",
+  },
+  {
+    value: "simulator",
+    href: "/erp/equipment-shop/simulator",
+    label: "장비 시뮬레이터",
+    eyebrow: "TEST RANGE",
+    description: "보급형 장비의 사거리와 탄환 운용을 시험합니다.",
+    npc: "시험장 담당관",
   },
 ];
 
@@ -462,7 +471,7 @@ export default function EquipmentShopClient({
     router.push(href);
   }
 
-  function getZoneStatus(zone: ArmoryZone): string {
+  function getZoneStatus(zone: ArmoryDestination): string {
     if (zone === "lab") {
       return hasMainCharacter
         ? "개인 강화 / 팀 전체 강화 가능"
@@ -482,6 +491,9 @@ export default function EquipmentShopClient({
       return strategicItemCount > 0
         ? `${strategicItemCount}종 반출 가능`
         : "대상 품목 없음";
+    }
+    if (zone === "simulator") {
+      return "시험장 모듈 활성";
     }
     return "상담 패널 활성 · 요청 저장 후속";
   }
@@ -527,6 +539,12 @@ export default function EquipmentShopClient({
         key: "custom",
         label: "제작소",
         value: "전용무기 상담만 활성",
+        warning: false,
+      },
+      {
+        key: "simulator",
+        label: "시험장",
+        value: "장비 시뮬레이터 활성",
         warning: false,
       },
     ];
