@@ -203,26 +203,54 @@
   min-height: 260px;
 }
 
-.civilSubOrgs {
+.externalSubOrgGroups {
   position: relative;
   z-index: 2;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  width: min(100%, 470px);
-  margin: 44px 0 0 auto;
-  padding-top: 30px;
+  grid-template-areas: "military civil";
+  gap: 24px;
+  margin-top: 52px;
 }
 
-.civilSubOrgConnector {
+.subOrgGroup {
+  --sub-org-accent: rgba(255, 255, 255, 0.72);
+  --sub-org-bg: rgba(255, 255, 255, 0.035);
+  --sub-org-line: rgba(255, 255, 255, 0.5);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  padding: 22px 12px 12px;
+  border: 1px dashed var(--sub-org-line);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, var(--sub-org-bg), transparent 72%),
+    rgba(255, 255, 255, 0.012);
+}
+
+.subOrgGroup--military {
+  --sub-org-accent: var(--danger);
+  --sub-org-bg: color-mix(in oklab, var(--danger) 8%, transparent);
+  --sub-org-line: color-mix(in oklab, var(--danger) 74%, transparent);
+
+  grid-area: military;
+}
+
+.subOrgGroup--civil {
+  grid-area: civil;
+}
+
+.subOrgGroupConnector {
   position: absolute;
   top: -44px;
   left: 0;
   right: 0;
   z-index: 1;
   width: 100%;
-  height: calc(100% + 44px);
-  color: rgba(255, 255, 255, 0.58);
+  height: 44px;
+  color: var(--sub-org-accent);
   pointer-events: none;
 }
 
@@ -243,6 +271,10 @@
     var(--bg-1);
 }
 
+.subOrgGroup .subOrgNode {
+  border-color: color-mix(in oklab, var(--sub-org-accent) 48%, transparent);
+}
+
 .subOrgNode:hover,
 .subOrgNode:focus-visible {
   border-color: rgba(255, 255, 255, 0.78);
@@ -256,6 +288,45 @@
     repeating-linear-gradient(0deg, #0000 0 15px, #ffffff05 15px 16px),
     repeating-linear-gradient(90deg, #0000 0 15px, #ffffff05 15px 16px),
     var(--bg-2);
+}
+
+.subOrgGroup--military .subOrgNode {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--danger) 8%, transparent),
+      color-mix(in oklab, var(--danger) 2%, transparent) 72%,
+      transparent
+    ),
+    repeating-linear-gradient(0deg, #0000 0 15px, rgba(255, 59, 48, 0.045) 15px 16px),
+    repeating-linear-gradient(90deg, #0000 0 15px, rgba(255, 59, 48, 0.04) 15px 16px),
+    var(--bg-1);
+}
+
+.subOrgGroup--military .subOrgNode:hover,
+.subOrgGroup--military .subOrgNode:focus-visible {
+  border-color: color-mix(in oklab, var(--danger) 82%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--danger) 12%, transparent),
+      color-mix(in oklab, var(--danger) 3%, transparent) 72%,
+      transparent
+    ),
+    repeating-linear-gradient(0deg, #0000 0 15px, rgba(255, 59, 48, 0.065) 15px 16px),
+    repeating-linear-gradient(90deg, #0000 0 15px, rgba(255, 59, 48, 0.055) 15px 16px),
+    var(--bg-2);
+}
+
+.subOrgGroup--military .subOrgLogo,
+.subOrgGroup--military .code,
+.subOrgGroup--military .headcount__n {
+  color: var(--danger);
+}
+
+.subOrgGroup .tl,
+.subOrgGroup .br {
+  border-color: var(--sub-org-accent);
 }
 
 .subOrgNode .node__headerTop,
@@ -798,8 +869,8 @@
     gap: 72px 24px;
   }
 
-  .civilSubOrgs {
-    width: min(100%, 520px);
+  .externalSubOrgGroups {
+    width: min(100%, 920px);
     margin-inline: auto;
   }
 
@@ -829,12 +900,19 @@
     min-height: 0;
   }
 
-  .civilSubOrgs {
+  .externalSubOrgGroups {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "military"
+      "civil";
     gap: 12px;
     margin-top: 16px;
-    padding-top: 0;
     width: 100%;
+  }
+
+  .subOrgGroup {
+    grid-template-columns: 1fr;
+    padding-top: 12px;
   }
 
   .hostileNodes {
@@ -846,7 +924,7 @@
   /* 세로 1열에선 상호 견제 오버레이/라벨 비활성 */
   .crossfire,
   .crossfireLabel,
-  .civilSubOrgConnector {
+  .subOrgGroupConnector {
     display: none;
   }
 

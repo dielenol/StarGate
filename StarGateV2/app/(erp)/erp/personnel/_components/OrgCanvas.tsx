@@ -52,20 +52,18 @@ export default function OrgCanvas({
   const hostileSubOrgs = EXTERNAL_SUB_ORGS.filter(
     (org) => org.parentCode === "HOSTILE",
   );
-  const civilSubOrgs = EXTERNAL_SUB_ORGS.filter(
-    (org) => org.parentCode === "CIVIL",
-  );
-  const civilSubOrgRowCount = Math.max(1, Math.ceil(civilSubOrgs.length / 2));
-  const civilConnectorHeight = Math.max(72, civilSubOrgRowCount * 72);
-  const civilConnectorBranchYs = Array.from(
-    { length: civilSubOrgRowCount },
-    (_, index) =>
-      civilSubOrgRowCount === 1
-        ? 28
-        : 36 +
-          (index * (civilConnectorHeight - 36)) /
-            (civilSubOrgRowCount - 1),
-  );
+  const externalSubOrgGroups = [
+    {
+      key: "military",
+      label: "군부 하위 소속",
+      orgs: EXTERNAL_SUB_ORGS.filter((org) => org.parentCode === "MILITARY"),
+    },
+    {
+      key: "civil",
+      label: "시민사회 하위 소속",
+      orgs: EXTERNAL_SUB_ORGS.filter((org) => org.parentCode === "CIVIL"),
+    },
+  ].filter((group) => group.orgs.length > 0);
   const factionsOrdered = [...externalFactions].sort((a, b) => {
     const order = (code: string) =>
       code === "COUNCIL" ? 0 : code === "MILITARY" ? 1 : 2;
@@ -373,105 +371,110 @@ export default function OrgCanvas({
               })}
             </div>
 
-            <div
-              className={styles.civilSubOrgs}
-              aria-label="시민사회 하위 조직"
-            >
-              <svg
-                className={styles.civilSubOrgConnector}
-                viewBox={`0 0 100 ${civilConnectorHeight}`}
-                preserveAspectRatio="none"
-                aria-hidden
-              >
-                <path
-                  d={`M50 0 V${civilConnectorHeight}`}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  strokeDasharray="4 6"
-                  vectorEffect="non-scaling-stroke"
-                />
-                {civilConnectorBranchYs.map((y, index) => (
-                  <path
-                    key={index}
-                    d={`M22 ${y} H78`}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1"
-                    strokeDasharray="4 6"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                ))}
-              </svg>
-
-              {civilSubOrgs.map((org) => {
-                const logo = org.logoUrl
-                  ? preferOptimizedPublicImagePath(org.logoUrl)
-                  : "";
-                const count = groupCounts[org.code] ?? 0;
-                return (
-                  <button
-                    key={org.code}
-                    type="button"
-                    className={[
-                      styles.node,
-                      styles["node--lg"],
-                      styles.subOrgNode,
-                    ].join(" ")}
-                    data-suborg={org.code}
-                    onClick={() => onSelect(org.parentCode, org.code)}
-                    aria-label={`${org.label} (${count}명)`}
+            <div className={styles.externalSubOrgGroups}>
+              {externalSubOrgGroups.map((group) => (
+                <div
+                  key={group.key}
+                  className={[
+                    styles.subOrgGroup,
+                    styles[`subOrgGroup--${group.key}`],
+                  ].join(" ")}
+                  role="group"
+                  aria-label={group.label}
+                >
+                  <svg
+                    className={styles.subOrgGroupConnector}
+                    viewBox="0 0 100 44"
+                    preserveAspectRatio="none"
+                    aria-hidden
                   >
-                    <span className={styles.tl} />
-                    <span className={styles.br} />
+                    <path
+                      d="M50 0 V26 M18 26 H82 M18 26 V44 M82 26 V44"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1"
+                      strokeDasharray="4 6"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  </svg>
 
-                    {logo ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={logo}
-                          alt=""
-                          className={styles.node__watermark}
-                          aria-hidden
-                        />
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={logo}
-                          alt=""
-                          className={styles.subOrgLogo}
-                          aria-hidden
-                        />
-                      </>
-                    ) : (
-                      <OrgIcon
-                        code="CIVIL"
-                        size={24}
-                        className={styles.subOrgLogo}
-                      />
-                    )}
+                  {group.orgs.map((org) => {
+                    const logo = org.logoUrl
+                      ? preferOptimizedPublicImagePath(org.logoUrl)
+                      : "";
+                    const count = groupCounts[org.code] ?? 0;
+                    const parentIcon = FACTION_ICON_MAP[org.parentCode];
+                    return (
+                      <button
+                        key={org.code}
+                        type="button"
+                        className={[
+                          styles.node,
+                          styles["node--lg"],
+                          styles.subOrgNode,
+                        ].join(" ")}
+                        data-suborg={org.code}
+                        onClick={() => onSelect(org.parentCode, org.code)}
+                        aria-label={`${org.label} (${count}명)`}
+                      >
+                        <span className={styles.tl} />
+                        <span className={styles.br} />
 
-                    <div className={styles.node__header}>
-                      <div className={styles.node__headerTop}>
-                        <div className={styles.code}>
-                          {displayCode(org.code)}
+                        {logo ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={logo}
+                              alt=""
+                              className={styles.node__watermark}
+                              aria-hidden
+                            />
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={logo}
+                              alt=""
+                              className={styles.subOrgLogo}
+                              aria-hidden
+                            />
+                          </>
+                        ) : (
+                          <OrgIcon
+                            code={parentIcon ?? "CIVIL"}
+                            size={24}
+                            className={styles.subOrgLogo}
+                          />
+                        )}
+
+                        <div className={styles.node__header}>
+                          <div className={styles.node__headerTop}>
+                            <div className={styles.code}>
+                              {displayCode(org.code)}
+                            </div>
+                          </div>
+                          <div className={styles.label}>{org.label}</div>
+                          <div className={styles.subOrgParent}>
+                            {org.parentLabel}
+                          </div>
                         </div>
-                      </div>
-                      <div className={styles.label}>{org.label}</div>
-                      <div className={styles.subOrgParent}>
-                        {org.parentLabel}
-                      </div>
-                    </div>
 
-                    <div className={styles.node__section}>
-                      <div className={styles.node__sectionLabel}>HEADCOUNT</div>
-                      <div className={styles.headcount}>
-                        <span className={styles.headcount__n}>{count}</span>
-                        <span className={styles.headcount__u}>MEMBERS</span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+                        <div className={styles.node__section}>
+                          <div className={styles.node__sectionLabel}>
+                            HEADCOUNT
+                          </div>
+                          <div className={styles.headcount}>
+                            <span className={styles.headcount__n}>
+                              {count}
+                            </span>
+                            <span className={styles.headcount__u}>
+                              MEMBERS
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </div>
         </div>
