@@ -1719,8 +1719,8 @@
   text-align: left;
 }
 
-/* 마지막 줄 보더 제거 — :nth-last-child(-n+4) 로 4-cell 한 행 처리 */
-.historyTable__cell:nth-last-child(-n + 4) {
+/* 마지막 줄 보더 제거 — :nth-last-child(-n+3) 로 3-cell 한 행 처리 */
+.historyTable__cell:nth-last-child(-n + 3) {
   border-bottom: 0;
 }
 
@@ -1734,6 +1734,27 @@
 
 .historyTable__cell--muted {
   color: var(--ink-3);
+}
+
+.historyTable__cell--withReason {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  white-space: normal;
+}
+
+.historyTable__reason {
+  max-width: min(100%, 360px);
+  color: var(--ink-2);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .historyTable__empty {

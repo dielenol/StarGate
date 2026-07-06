@@ -412,6 +412,8 @@ export default function StockTradeClient({
         price: row.price,
         direction: dir,
         changePct,
+        eventReason:
+          dir === "down" && row.eventText?.trim() ? row.eventText.trim() : "",
       };
     });
   }, [history.items]);
@@ -651,7 +653,7 @@ export default function StockTradeClient({
                 <span className={sharedStyles.historyTable__cellHead}>
                   등락률
                 </span>
-                {historyRows.map((row) => {
+                {historyRows.map((row, index) => {
                   const isFlat =
                     row.direction === "flat" || row.changePct === 0;
                   const dirMod =
@@ -672,7 +674,7 @@ export default function StockTradeClient({
                       })
                     : "—";
                   return (
-                    <Fragment key={row.ts}>
+                    <Fragment key={`${row.ts}-${index}`}>
                       <span className={sharedStyles.historyTable__cell}>
                         {dateLabel}
                       </span>
@@ -680,15 +682,28 @@ export default function StockTradeClient({
                         ¤ {formatStockValue(row.price)}
                       </span>
                       <span
-                        className={[sharedStyles.historyTable__cell, dirMod]
+                        className={[
+                          sharedStyles.historyTable__cell,
+                          dirMod,
+                          row.eventReason
+                            ? sharedStyles["historyTable__cell--withReason"]
+                            : "",
+                        ]
                           .filter(Boolean)
                           .join(" ")}
                       >
-                        {row.changePct === null
-                          ? "—"
-                          : isFlat
+                        <span>
+                          {row.changePct === null
                             ? "—"
-                            : `${ARROW[row.direction]} ${row.changePct.toFixed(2)}%`}
+                            : isFlat
+                              ? "—"
+                              : `${ARROW[row.direction]} ${row.changePct.toFixed(2)}%`}
+                        </span>
+                        {row.eventReason ? (
+                          <span className={sharedStyles.historyTable__reason}>
+                            사유 · {row.eventReason}
+                          </span>
+                        ) : null}
                       </span>
                     </Fragment>
                   );
