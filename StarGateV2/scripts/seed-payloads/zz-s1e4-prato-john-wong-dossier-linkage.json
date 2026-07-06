@@ -1,0 +1,134 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "payload": {
+      "codename": "JOHN_WONG",
+      "type": "NPC",
+      "role": "CIA 고위 요원",
+      "department": "USA",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/John-Wong-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "존 웡",
+        "nameEn": "John Wong",
+        "gender": "남",
+        "age": "48",
+        "height": "184cm",
+        "weight": "미상",
+        "appearance": "공식 Dossier 이미지는 흑백 누끼 초상으로 보존한다. 존 웡은 넓은 체격의 중년 남성으로, 검은 정장과 넥타이를 단정히 갖춘 채 과장될 정도로 환한 웃음을 보인다.",
+        "personality": "세부 성향은 아직 확정하지 않는다. 프라토 1부 기록에서는 직접적인 압박보다 짧은 접촉, 제한된 단서, 연락처 전달로 상대를 움직이는 정보기관식 접근을 보였다.",
+        "background": "존 웡은 미국 CIA 고위 요원으로 확인된 인물이다. 프라토 1부에서 킴라박 리와 접촉했고, 자신을 국가를 위해 일하는 사람으로 소개한 뒤 섹터 D와 모리어티 대령을 언급했다.\n\n그가 남긴 명함에는 연락처만 적혀 있었다. 이 접촉은 트웰브 잔여망, 미 공군, 브라질 당국을 거친 공식 의뢰 라인과 별개인 미국 측 정보망 접촉으로 보존한다.",
+        "quote": "\"국가를 위해 일하는 사람입니다.\"",
+        "mainImage": "/assets/npcs/John-Wong-profile.webp",
+        "loreTags": [
+          "군부",
+          "CIA",
+          "미국",
+          "정보기관",
+          "섹터D",
+          "모리어티",
+          "NOSB-S1E4-PRATO-PART1"
+        ],
+        "appearsInEvents": ["NOSB-S1E4-PRATO-PART1"],
+        "relations": [
+          {
+            "targetCodename": "KIMLEE",
+            "targetName": "킴라박 리",
+            "label": "정보 접촉",
+            "summary": "프라토 1부에서 식당 접촉을 통해 킴라박 리에게 섹터 D와 모리어티 대령 관련 단서를 남기고 연락처만 적힌 명함을 전달했다.",
+            "sourceEvent": "NOSB-S1E4-PRATO-PART1",
+            "sourceLabel": "작전 보고서 S1E4: 프라토 1부",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E4-PRATO-PART1",
+            "role": "미국 측 정보기관 접촉자",
+            "summary": "킴라박 리와 접촉해 섹터 D와 모리어티 대령을 언급하고, 연락처만 적힌 명함을 남겼다. 이 접촉은 공식 의뢰 라인과 별개인 미국 측 정보망 접촉으로 보존한다.",
+            "sourceLabel": "작전 보고서 S1E4: 프라토 1부"
+          }
+        ],
+        "roleDetail": "- **직업**: CIA 고위 요원\n- **소속**: 군부 산하 미국 정보기관 계열\n- **등장 사건**: NOSB-S1E4-PRATO-PART1\n- **작전상 역할**: 킴라박 리에게 섹터 D와 모리어티 대령 관련 단서를 남긴 미국 측 접촉자\n- **상태**: 신원조회 등록 완료. 세부 권한, 구체적 부서, 모리어티 대령과의 직접 관계는 후속 확인 필요",
+        "notes": "- **존 웡**: 프라토 1부 기록의 표시명.\n- **John Wong**: 로마자 표기.\n- **JOHN_WONG**: Dossier 연결용 내부 식별 코드.\n- **KIMLEE**: 프라토 1부에서 식당 접촉을 통해 명함과 정보를 남긴 대상."
+      },
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-07-03T00:00:00.000Z",
+      "updatedAt": "2026-07-03T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-appearance-and-relations",
+    "filter": { "codename": "KIMLEE" },
+    "update": {
+      "$addToSet": {
+        "lore.sessionAppearances": {
+          "$each": [
+            {
+              "sessionId": "NOSB-S1E4-PRATO-PART1",
+              "role": "존 웡과의 정보 접촉",
+              "summary": "프라토 1부에서 CIA 고위 요원 존 웡과 접촉했고, 섹터 D와 모리어티 대령 관련 단서 및 연락처만 적힌 명함을 받았다.",
+              "sourceLabel": "작전 보고서 S1E4: 프라토 1부"
+            }
+          ]
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "JOHN_WONG",
+              "targetName": "존 웡",
+              "label": "정보 접촉",
+              "summary": "프라토 1부에서 CIA 고위 요원 존 웡에게 섹터 D와 모리어티 대령 관련 단서를 듣고 연락처만 적힌 명함을 받았다.",
+              "sourceEvent": "NOSB-S1E4-PRATO-PART1",
+              "sourceLabel": "작전 보고서 S1E4: 프라토 1부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": { "updatedAt": "2026-07-03T00:00:00.000Z" }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report-john-wong-dossier-link",
+    "filter": { "sessionId": "NOSB-S1E4-PRATO-PART1" },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceOne": {
+              "input": "$summary",
+              "find": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[personnel:MR_ODD|Mr. 오드]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:LEE DONGSIK|이동식]]\n\n존 웡은 신원 확인이 완료되지 않은 미국 측 접촉자로 별도 추적한다.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[personnel:MR_ODD|Mr. 오드]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:JOHN_WONG|존 웡]]"
+            }
+          },
+          "updatedAt": { "$toDate": "2026-07-03T00:00:00.000Z" }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki-john-wong-dossier-link",
+    "filter": { "slug": "s1e4-prato-part1" },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceOne": {
+              "input": "$content",
+              "find": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[personnel:MR_ODD|Mr. 오드]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:LEE DONGSIK|이동식]]",
+              "replacement": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[personnel:MR_ODD|Mr. 오드]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:JOHN_WONG|존 웡]]"
+            }
+          },
+          "updatedAt": { "$toDate": "2026-07-03T00:00:00.000Z" }
+        }
+      }
+    ]
+  }
+]

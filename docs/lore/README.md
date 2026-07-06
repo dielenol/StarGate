@@ -58,6 +58,7 @@ docs/lore/
 
 - [NOSB S1E1 미니 coverage](session-sync/nosb-s1e1-mini-coverage.md)
 - [NOSB S1E2 선택 coverage](session-sync/nosb-s1e2-choice-coverage.md)
+- [NOSB S1E4 프라토 coverage](session-sync/nosb-s1e4-prato-coverage.md)
 
 ## 문서 추가 방법
 

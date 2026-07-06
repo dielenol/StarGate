@@ -1,0 +1,813 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "operation-report-part2-link-and-image-sync",
+    "filter": {
+      "sessionId": "NOSB-S1E4-PRATO-PART2"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": {
+                "$replaceOne": {
+                  "input": "$summary",
+                  "find": "## 관련 문서\n뒤집어진 양말, 광원화 바이러스, 행동교정물질, ZULU-0040 왕관, 광원화 검은 연기 샘플, 닥터 모스, 크로노스, 네베드, 타이거, 이동식, 토와스키.",
+                  "replacement": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART1|작전 보고서 S1E4: 프라토 1부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[wiki:varginha-radio-facility|바르지냐 라디오 시설]]\n- [[wiki:varginha-ordo-relay-base|바르지냐 오르도 중계기지]]\n- [[wiki:zulu-0040-crown|ZULU-0040 왕관]]\n- [[catalog:behavior-correction-substance|행동교정물질]]\n- [[catalog:aurora-virus-black-smoke-sample|광원화 검은 연기 샘플]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:TIME|크로노스]]\n- [[personnel:네베드|키아나 오 캘러핸 / 네베드]]\n- [[personnel:TIGER298|시유 / 타이거]]\n- [[personnel:PIPETTE|휘트모어 핀치]]\n- [[personnel:MARGARET|마가렛]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:TOWASKI|립 토와스키]]"
+                }
+              },
+              "find": "/assets/wiki/entities/inverted-sock.webp",
+              "replacement": "/assets/session-reports/s1e4-prato/inverted-sock-full-frame.webp"
+            }
+          },
+          "relatedWikiSlugs": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$relatedWikiSlugs",
+                  []
+                ]
+              },
+              [
+                "inverted-sock",
+                "aurora-virus",
+                "varginha-radio-facility",
+                "varginha-ordo-relay-base",
+                "zulu-0040-crown"
+              ]
+            ]
+          },
+          "relatedPersonnelCodenames": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$relatedPersonnelCodenames",
+                  []
+                ]
+              },
+              [
+                "INDEXER",
+                "PIPETTE",
+                "MARIA",
+                "MARGARET",
+                "TIME",
+                "네베드",
+                "TIGER298",
+                "DOCTOR_MOSS",
+                "LEE DONGSIK",
+                "TOWASKI"
+              ]
+            ]
+          },
+          "relatedCatalogSlugs": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$relatedCatalogSlugs",
+                  []
+                ]
+              },
+              [
+                "behavior-correction-substance",
+                "aurora-virus-black-smoke-sample"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki-part2-link-and-image-sync",
+    "filter": {
+      "slug": "s1e4-prato-part2"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceOne": {
+                  "input": "$content",
+                  "find": "## 관련 문서\n뒤집어진 양말, 광원화 바이러스, 행동교정물질, ZULU-0040 왕관, 광원화 검은 연기 샘플, 닥터 모스, 크로노스, 네베드, 타이거, 이동식.",
+                  "replacement": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART1|작전 보고서 S1E4: 프라토 1부]]\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[wiki:varginha-radio-facility|바르지냐 라디오 시설]]\n- [[wiki:varginha-ordo-relay-base|바르지냐 오르도 중계기지]]\n- [[wiki:zulu-0040-crown|ZULU-0040 왕관]]\n- [[catalog:behavior-correction-substance|행동교정물질]]\n- [[catalog:aurora-virus-black-smoke-sample|광원화 검은 연기 샘플]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:TIME|크로노스]]\n- [[personnel:네베드|키아나 오 캘러핸 / 네베드]]\n- [[personnel:TIGER298|시유 / 타이거]]\n- [[personnel:PIPETTE|휘트모어 핀치]]\n- [[personnel:MARGARET|마가렛]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:TOWASKI|립 토와스키]]"
+                }
+              },
+              "find": "/assets/wiki/entities/inverted-sock.webp",
+              "replacement": "/assets/session-reports/s1e4-prato/inverted-sock-full-frame.webp"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki-part2-related-links",
+    "filter": {
+      "slug": "inverted-sock"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceOne": {
+              "input": "$content",
+              "find": "## 관련 문서\n작전 보고서 S1E4: 프라토 1부, 작전 보고서 S1E4: 프라토 2부, 광원화 바이러스, 행동교정물질, ZULU-0040 왕관, 광원화 검은 연기 샘플, 이동식.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART1|작전 보고서 S1E4: 프라토 1부]]\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[wiki:varginha-radio-facility|바르지냐 라디오 시설]]\n- [[wiki:varginha-ordo-relay-base|바르지냐 오르도 중계기지]]\n- [[wiki:zulu-0040-crown|ZULU-0040 왕관]]\n- [[catalog:behavior-correction-substance|행동교정물질]]\n- [[catalog:aurora-virus-black-smoke-sample|광원화 검은 연기 샘플]]\n- [[personnel:LEE DONGSIK|이동식]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "concept-wiki-part2-related-links",
+    "filter": {
+      "slug": "aurora-virus"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceOne": {
+              "input": "$content",
+              "find": "## 관련 문서\n작전 보고서 S1E4: 프라토 2부, 뒤집어진 양말, 행동교정물질, ZULU-0040 왕관, 광원화 검은 연기 샘플, 네베드, 타이거.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:varginha-radio-facility|바르지냐 라디오 시설]]\n- [[wiki:varginha-ordo-relay-base|바르지냐 오르도 중계기지]]\n- [[wiki:zulu-0040-crown|ZULU-0040 왕관]]\n- [[catalog:behavior-correction-substance|행동교정물질]]\n- [[catalog:aurora-virus-black-smoke-sample|광원화 검은 연기 샘플]]\n- [[personnel:네베드|키아나 오 캘러핸 / 네베드]]\n- [[personnel:TIGER298|시유 / 타이거]]\n- [[personnel:PIPETTE|휘트모어 핀치]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "place-wiki",
+    "payload": {
+      "slug": "varginha-radio-facility",
+      "title": "바르지냐 라디오 시설",
+      "category": "장소",
+      "tags": [
+        "NOSB-S1E4-PRATO-PART2",
+        "S1E4",
+        "프라토",
+        "바르지냐",
+        "라디오시설",
+        "광원화바이러스",
+        "뒤집어진양말"
+      ],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 L. Moreau",
+      "content": "# 바르지냐 라디오 시설\n\n바르지냐 라디오 시설은 NOSB S1E4 프라토 2부에서 광원화 바이러스 오염과 뒤집어진 양말의 섭취 행동이 동시에 확인된 현장 시설이다. 해쉬 테거가 뒤집어진 양말의 고주파 신호를 분석하면서 바르지냐 좌표 반복이 확인되었고, 이후 실제 표적은 바르지냐 전체가 아니라 오염된 라디오 시설로 좁혀졌다.\n\n![광원화 감염 라디오 시설](/assets/session-reports/s1e4-prato/aurora-infected-radio-facility.webp \"광원화 감염 라디오 시설\")\n\n## 요약 정보\n분류: 광원화 오염 현장 / 라디오 시설\n위치: 브라질 미나스제라이스 바르지냐 일대\n관련 작전: NOSB-S1E4-PRATO-PART2\n관련 개체: 뒤집어진 양말\n관련 현상: 광원화 바이러스, 고주파 좌표 신호, 인버전, 시설 일부 섭취\n처리 상태: 시설 일부 섭취 및 현장 회수 후 후속 조사 대상\n기록 확정도: 보존 기록 기반 확인\n\n## 확인된 사항\n정찰 드론과 소음 측정 이후 뒤집어진 양말이 주기적인 고주파 신호를 발산한다는 사실이 확인되었다. 해쉬 테거는 신호가 좌표 형식의 숫자이며 바르지냐 좌표를 반복한다는 점을 해석했다.\n\n이후 현장 판단은 개체의 실제 유인 대상이 바르지냐 전체가 아니라 광원화 바이러스에 오염된 라디오 시설이라는 쪽으로 좁혀졌다. 개체는 고도 5km 부근에서 비행접시형 광원 위장을 보인 뒤, 하단을 열어 라디오 시설 일부를 끌어올려 섭취했다. 이 과정에서 인버전은 섭취 전 방어 또는 정리 기제로 분류되었다.\n\n## 후속 확인 대상\n시설 전체 피해 규모, 남은 오염원의 격리 상태, 광원화 바이러스가 시설에 최초 유입된 경로는 후속 확인 대상이다. 프라토 2부 기록만으로는 라디오 시설 관리 주체와 생존자 규모를 확정하지 않는다.\n\n## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[wiki:varginha-ordo-relay-base|바르지냐 오르도 중계기지]]\n- [[personnel:INDEXER|해쉬 테거]]\n- [[personnel:LEE DONGSIK|이동식]]\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「S1E4 프라토 2부」.",
+      "imageUrl": "/assets/session-reports/s1e4-prato/aurora-infected-radio-facility.webp",
+      "createdAt": "2026-06-15T00:00:00.000Z",
+      "updatedAt": "2026-07-06T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "place-wiki-part2-confirmation",
+    "filter": {
+      "slug": "varginha-ordo-relay-base"
+    },
+    "update": [
+      {
+        "$set": {
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2",
+                "라디오시설"
+              ]
+            ]
+          },
+          "content": {
+            "$replaceOne": {
+              "input": "$content",
+              "find": "## 추정 또는 후보\n프라토 1부만으로는 중계기지의 정확한 시설 규모, 소속 인원, 연락 두절 원인, 피해 범위를 확정할 수 없다. 광원화 바이러스와 뒤집어진 양말의 실제 연결, 라디오 시설 오염, 교전과 회수 경과는 프라토 2부 및 후속 정리 문서에서 분리해 확인해야 한다.",
+              "replacement": "## 프라토 2부 확인 사항\n프라토 2부에서는 뒤집어진 양말이 바르지냐 좌표를 반복하는 고주파 신호를 발산했고, 실제 유인 대상이 바르지냐 전체가 아니라 광원화 바이러스에 오염된 라디오 시설로 좁혀졌다. 개체는 고도 5km 부근에서 라디오 시설 일부를 끌어올려 섭취했으며, 인버전은 이 섭취 전 방어 또는 정리 기제로 분류되었다.\n\n## 추정 또는 후보\n중계기지 자체의 정확한 시설 규모, 소속 인원, 연락 두절 원인, 피해 범위는 아직 확정하지 않는다. 프라토 2부로 라디오 시설 오염과 개체 섭취 행동은 확인되었지만, 중계기지와 라디오 시설의 행정상 동일성 또는 별도 시설 여부는 후속 확인 대상으로 둔다."
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      },
+      {
+        "$set": {
+          "content": {
+            "$replaceOne": {
+              "input": "$content",
+              "find": "- [[wiki:aurora-virus|광원화 바이러스]]\n- [[personnel:PIPETTE|휘트모어 핀치]]",
+              "replacement": "- [[wiki:aurora-virus|광원화 바이러스]]\n- [[wiki:varginha-radio-facility|바르지냐 라디오 시설]]\n- [[personnel:PIPETTE|휘트모어 핀치]]"
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-part2-behavior-correction-link",
+    "filter": {
+      "slug": "behavior-correction-substance"
+    },
+    "update": [
+      {
+        "$set": {
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2",
+                "S1E4",
+                "프라토",
+                "광원화바이러스",
+                "뒤집어진양말"
+              ]
+            ]
+          },
+          "lore.notes": "기억 소거제 강화 방향은 선택되지 않았다. 현재 보존 기록은 행동 교정 연구 계열만 추적한다.\nNOSB-S1E2-CHOICE: 감염된 이동식에게 행동교정물질이 주입되었고, 이 처리는 ZULU-0040 주 개체 붕괴 및 격리 성공 흐름에 연결되었다.\nNOSB-S1E4-PRATO-PART2: 광원화 바이러스 감염자에게 투입되자 일시적인 정신 회복과 검은 연기 반응이 확인되었고, 행동교정물질 탑재 미사일은 뒤집어진 양말이 섭취한 광원화 바이러스와 충돌해 개체 무력화에 기여했다.",
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-part2-black-smoke-sample-refine",
+    "filter": {
+      "slug": "aurora-virus-black-smoke-sample"
+    },
+    "update": [
+      {
+        "$set": {
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "휘트모어핀치",
+                "피펫",
+                "검체",
+                "부작용추적"
+              ]
+            ]
+          },
+          "lore.background": "프라토 2부에서 네베드와 타이거는 광원화 바이러스 감염 후 행동교정물질을 투입받았다. 두 사람은 일시적으로 정신을 회복했고, 감염 흉터 부위에서는 검은 연기가 흘러나왔다.",
+          "lore.acquisition": "일반 획득 불가. NOSB-S1E4-PRATO-PART2 작전 중 마리아의 요청에 따라 휘트모어 핀치가 현장에서 연기 샘플을 확보했다.",
+          "lore.notes": "장기 부작용, 광원화 잔류 여부, 행동교정물질과의 반응 기전은 후속 연구 대상이다. 네베드와 타이거는 행동교정물질 투입 후 추적 관찰 대상으로 남았다.",
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-part2-indexer",
+    "filter": {
+      "codename": "INDEXER"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.appearsInEvents": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.appearsInEvents",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2"
+              ]
+            ]
+          },
+          "lore.sessionAppearances": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              [
+                {
+                  "sessionId": "NOSB-S1E4-PRATO-PART2",
+                  "role": "뒤집어진 양말 고주파 신호 해석",
+                  "summary": "해쉬 테거는 뒤집어진 양말의 주기적인 고주파를 좌표 신호로 해석했고, 개체가 바르지냐 좌표와 오염 라디오 시설을 반복 추적한다는 현장 판단에 기여했다.",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부"
+                }
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-part2-pipette",
+    "filter": {
+      "codename": "PIPETTE"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.appearsInEvents": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.appearsInEvents",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2"
+              ]
+            ]
+          },
+          "lore.sessionAppearances": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              [
+                {
+                  "sessionId": "NOSB-S1E4-PRATO-PART2",
+                  "role": "광원화 샘플 확보 및 하푼 운용",
+                  "summary": "휘트모어 핀치는 행동교정물질 투입 후 발생한 검은 연기 샘플을 확보했고, 뒤집어진 양말 포획 국면에서는 하푼건을 운용해 개체 결박에 참여했다.",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부"
+                }
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-part2-maria",
+    "filter": {
+      "codename": "MARIA"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.appearsInEvents": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.appearsInEvents",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2"
+              ]
+            ]
+          },
+          "lore.sessionAppearances": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              [
+                {
+                  "sessionId": "NOSB-S1E4-PRATO-PART2",
+                  "role": "포획 지휘 및 후속 격리 결정",
+                  "summary": "마리아는 광원화 대응 가능성이 확인된 뒤 검은 연기 샘플 확보를 지시하고, 하푼 결박과 행동교정물질 탑재 미사일 운용 후 뒤집어진 양말을 블랙 피라미드 격리실로 보내도록 결정했다.",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부"
+                }
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-part2-margaret",
+    "filter": {
+      "codename": "MARGARET"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.appearsInEvents": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.appearsInEvents",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2"
+              ]
+            ]
+          },
+          "lore.sessionAppearances": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              [
+                {
+                  "sessionId": "NOSB-S1E4-PRATO-PART2",
+                  "role": "사망 엔지니어의 배신자 경고 수신",
+                  "summary": "마가렛은 작전 중 사망 엔지니어의 영혼에게서 배신자를 조심하라는 경고를 반복적으로 들었고, 작전 종료 직전에도 닥터 모스 곁에 선 엔지니어의 경고를 확인했다.",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부"
+                }
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-part2-time",
+    "filter": {
+      "codename": "TIME"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.appearsInEvents": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.appearsInEvents",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2"
+              ]
+            ]
+          },
+          "lore.sessionAppearances": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              [
+                {
+                  "sessionId": "NOSB-S1E4-PRATO-PART2",
+                  "role": "시유 사망 시간선 회귀",
+                  "summary": "크로노스는 시유가 사망한 시간선을 되돌리기 위해 무리한 시간 회귀를 수행했고, 회귀 후 행동교정물질과 고주파가 유효했다는 단서를 전달했으나 몸을 잃고 시계 머리만 남은 상태가 되었다.",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부"
+                }
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-part2-neved",
+    "filter": {
+      "codename": "네베드"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.appearsInEvents": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.appearsInEvents",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2"
+              ]
+            ]
+          },
+          "lore.sessionAppearances": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              [
+                {
+                  "sessionId": "NOSB-S1E4-PRATO-PART2",
+                  "role": "광원화 감염 및 행동교정물질 반응",
+                  "summary": "키아나 오 캘러핸은 네베드 감염 상태로 확인되었고, 행동교정물질 투입 뒤 일시적으로 정신을 회복했다. 감염 흉터에서는 검은 연기가 발생해 후속 추적 관찰 대상이 되었다.",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부"
+                }
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-part2-tiger",
+    "filter": {
+      "codename": "TIGER298"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.appearsInEvents": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.appearsInEvents",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2"
+              ]
+            ]
+          },
+          "lore.sessionAppearances": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              [
+                {
+                  "sessionId": "NOSB-S1E4-PRATO-PART2",
+                  "role": "광원화 감염 및 행동교정물질 반응",
+                  "summary": "시유는 광원화 감염 상태와 한 시간선의 사망 위험을 거친 뒤, 행동교정물질 투입으로 정신을 회복했다. 흉터 부위의 검은 연기 반응은 광원화 검은 연기 샘플 확보로 이어졌다.",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부"
+                }
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-part2-doctor-moss",
+    "filter": {
+      "codename": "DOCTOR_MOSS"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.appearsInEvents": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.appearsInEvents",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2"
+              ]
+            ]
+          },
+          "lore.sessionAppearances": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              [
+                {
+                  "sessionId": "NOSB-S1E4-PRATO-PART2",
+                  "role": "광원화 백신 단서 확인 직후 사망",
+                  "summary": "닥터 모스는 행동교정물질과 특정 줄루를 이용한 광원화 파훼 가능성을 섹터 C 성과로 보고하려 했고, 광원화 백신에 대한 해답을 언급한 직후 상부 보고를 시도하다 휴대폰과 함께 머리가 터져 사망했다.",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부"
+                }
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-part2-towaski",
+    "filter": {
+      "codename": "TOWASKI"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.appearsInEvents": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.appearsInEvents",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2"
+              ]
+            ]
+          },
+          "lore.sessionAppearances": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              [
+                {
+                  "sessionId": "NOSB-S1E4-PRATO-PART2",
+                  "role": "스타크 장비 조정 및 시연 보조",
+                  "summary": "립 토와스키는 스타크 일로니손의 시계형 나노테크놀로지 음파 방출기 장착과 시연을 보조했고, 더미 표적을 호출해 발사 각도와 사용법을 안내했다.",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부"
+                }
+              ]
+            ]
+          },
+          "lore.relations": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.relations",
+                  []
+                ]
+              },
+              [
+                {
+                  "targetCodename": "CLOWN",
+                  "targetName": "스타크 일로니손",
+                  "label": "장비 조정",
+                  "summary": "프라토 2부에서 스타크의 시계형 나노테크놀로지 음파 방출기 장착과 시연을 보조했다.",
+                  "sourceEvent": "NOSB-S1E4-PRATO-PART2",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부",
+                  "confidence": "confirmed"
+                }
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-part2-stark-towaski",
+    "filter": {
+      "codename": "CLOWN"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.appearsInEvents": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.appearsInEvents",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E4-PRATO-PART2"
+              ]
+            ]
+          },
+          "lore.sessionAppearances": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              [
+                {
+                  "sessionId": "NOSB-S1E4-PRATO-PART2",
+                  "role": "토와스키 장비 시연 및 현장 교전 참여",
+                  "summary": "스타크 일로니손은 토와스키가 조정한 시계형 나노테크놀로지 음파 방출기를 시연했고, 이후 라디오 시설 감염체 대응과 포획 국면에 참여했다.",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부"
+                }
+              ]
+            ]
+          },
+          "lore.relations": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$lore.relations",
+                  []
+                ]
+              },
+              [
+                {
+                  "targetCodename": "TOWASKI",
+                  "targetName": "립 토와스키",
+                  "label": "장비 조정",
+                  "summary": "프라토 2부에서 토와스키에게 시계형 나노테크놀로지 음파 방출기 장착과 시연 안내를 받았다.",
+                  "sourceEvent": "NOSB-S1E4-PRATO-PART2",
+                  "sourceLabel": "작전 보고서 S1E4: 프라토 2부",
+                  "confidence": "confirmed"
+                }
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  }
+]

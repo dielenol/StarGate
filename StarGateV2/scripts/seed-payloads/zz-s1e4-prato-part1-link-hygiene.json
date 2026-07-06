@@ -1,0 +1,265 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "operation-report-link-hygiene",
+    "filter": {
+      "sessionId": "NOSB-S1E4-PRATO-PART1"
+    },
+    "update": [
+      {
+        "$set": {
+          "reportNumber": "04",
+          "summary": {
+            "$replaceOne": {
+              "input": "$summary",
+              "find": "## 관련 문서\n뒤집어진 양말, 광원화 바이러스, 행동교정물질, ZULU-0040 왕관, 토와스키, Mr. 오드, 닥터 모스, 이동식, 존 웡.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[personnel:MR_ODD|Mr. 오드]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:LEE DONGSIK|이동식]]\n\n존 웡은 신원 확인이 완료되지 않은 미국 측 접촉자로 별도 추적한다."
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-03T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki-link-hygiene",
+    "filter": {
+      "slug": "s1e4-prato-part1"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceOne": {
+              "input": "$content",
+              "find": "## 관련 문서\n뒤집어진 양말, 광원화 바이러스, 행동교정물질, ZULU-0040 왕관, 닥터 모스, 이동식, 토와스키.",
+              "replacement": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[personnel:MR_ODD|Mr. 오드]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:LEE DONGSIK|이동식]]"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-03T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "MR_ODD"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "KIMLEE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "CLOWN"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "YUHOE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "MARIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "MARGARET"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "CLAIRVOYANCE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "PIPETTE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "INDEXER"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "네베드"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "TIGER298"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "TIME"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "UNYEON"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "OTILIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "WD-(𝓃)"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "BIG BOY"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "DOCTOR_MOSS"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-event-link",
+    "filter": {
+      "codename": "LEE DONGSIK"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1"
+      }
+    }
+  }
+]

@@ -1,0 +1,36 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "operation-report-map-numbering",
+    "filter": {
+      "sessionId": "NOSB-S1E4-PRATO-PART1"
+    },
+    "update": [
+      {
+        "$set": {
+          "reportNumber": "04",
+          "updatedAt": {
+            "$toDate": "2026-07-03T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report-map-numbering",
+    "filter": {
+      "sessionId": "NOSB-S1E4-PRATO-PART2"
+    },
+    "update": [
+      {
+        "$set": {
+          "reportNumber": "04.5",
+          "updatedAt": {
+            "$toDate": "2026-07-03T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  }
+]

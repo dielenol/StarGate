@@ -1,0 +1,152 @@
+[
+  {
+    "collection": "wiki_pages",
+    "type": "place-wiki",
+    "payload": {
+      "slug": "varginha-ordo-relay-base",
+      "title": "바르지냐 오르도 중계기지",
+      "category": "장소",
+      "tags": [
+        "NOSB-S1E4-PRATO-PART1",
+        "S1E4",
+        "프라토",
+        "바르지냐",
+        "중계기지",
+        "광원화바이러스"
+      ],
+      "isPublic": true,
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 L. Moreau",
+      "content": "# 바르지냐 오르도 중계기지\n\n바르지냐 오르도 중계기지는 NOSB S1E4 프라토 1부에서 브라질 미나스제라이스 바르지냐 인근의 현장 투입 축으로 확인된 노부스 오르도 현지 작전 거점이다. 1부 기록에서는 작전소 사무국 연락 두절과 중계기지 경유 현장 진입만 확인되며, 시설 구조와 피해 규모는 후속 확인 대상으로 둔다.\n\n## 요약 정보\n분류: 노부스 오르도 현장 작전 거점 / 중계기지\n위치: 브라질 미나스제라이스 바르지냐 인근\n관련 작전: NOSB-S1E4-PRATO-PART1\n연결 지점: 브라질 군 공항, 바르지냐 마을, 이동식 합류 지점\n관련 현상: 광원화 바이러스 냉기 약점 후보, 현지 작전소 연락 두절\n현재 상태: 프라토 1부 기준 연락 두절 및 현장 확인 대상\n기록 확정도: 보존 기록 기반 확인\n\n## 확인된 사항\nA 섹터 브리핑에서는 바르지냐 인근 노부스 오르도 작전소 사무국이 연락 두절 상태라고 보고되었다. 같은 브리핑에서 미국의 `트웰브` 잔여망, 미 공군, 브라질 당국을 경유한 미확인 비행 개체 의뢰가 작전화되었고, 현장팀은 브라질리아를 거쳐 바르지냐 인근으로 투입되었다.\n\n현장 기록은 브라질 군 공항, 바르지냐 마을, 중계기지, 이동식 합류 지점을 같은 작전축에 둔다. 일부 인원은 현지 작전소와 감염성 광원 현상을 먼저 접촉했으며, 휘트모어 핀치가 광원화 바이러스의 약점 후보로 냉기를 확보했다.\n\n## 추정 또는 후보\n프라토 1부만으로는 중계기지의 정확한 시설 규모, 소속 인원, 연락 두절 원인, 피해 범위를 확정할 수 없다. 광원화 바이러스와 뒤집어진 양말의 실제 연결, 라디오 시설 오염, 교전과 회수 경과는 프라토 2부 및 후속 정리 문서에서 분리해 확인해야 한다.\n\n## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART1|작전 보고서 S1E4: 프라토 1부]]\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[personnel:PIPETTE|휘트모어 핀치]]\n- [[personnel:LEE DONGSIK|이동식]]\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「S1E4 프라토 1부」.",
+      "createdAt": "2026-06-01T00:00:00.000Z",
+      "updatedAt": "2026-07-06T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report-varginha-image-fit",
+    "filter": {
+      "sessionId": "NOSB-S1E4-PRATO-PART1"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": {
+                "$replaceOne": {
+                  "input": "$summary",
+                  "find": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[personnel:MR_ODD|Mr. 오드]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:JOHN_WONG|존 웡]]",
+                  "replacement": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[wiki:varginha-ordo-relay-base|바르지냐 오르도 중계기지]]\n- [[personnel:MR_ODD|Mr. 오드]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:JOHN_WONG|존 웡]]"
+                }
+              },
+              "find": "/assets/session-reports/s1e4-prato/inverted-sock-close-contact.webp",
+              "replacement": "/assets/session-reports/s1e4-prato/inverted-sock-full-frame.webp"
+            }
+          },
+          "relatedWikiSlugs": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$relatedWikiSlugs",
+                  []
+                ]
+              },
+              [
+                "inverted-sock",
+                "aurora-virus",
+                "varginha-ordo-relay-base"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki-varginha-image-fit",
+    "filter": {
+      "slug": "s1e4-prato-part1"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceOne": {
+                  "input": "$content",
+                  "find": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[personnel:MR_ODD|Mr. 오드]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:JOHN_WONG|존 웡]]\n- [[personnel:JOHN_WONG|존 웡]]",
+                  "replacement": "## 관련 문서\n- [[report:NOSB-S1E4-PRATO-PART2|작전 보고서 S1E4: 프라토 2부]]\n- [[wiki:inverted-sock|뒤집어진 양말]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[wiki:varginha-ordo-relay-base|바르지냐 오르도 중계기지]]\n- [[personnel:MR_ODD|Mr. 오드]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:DOCTOR_MOSS|닥터 모스]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:JOHN_WONG|존 웡]]"
+                }
+              },
+              "find": "/assets/session-reports/s1e4-prato/inverted-sock-close-contact.webp",
+              "replacement": "/assets/session-reports/s1e4-prato/inverted-sock-full-frame.webp"
+            }
+          },
+          "updatedAt": {
+            "$toDate": "2026-07-06T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "INDEXER"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1",
+        "lore.relations": {
+          "targetCodename": "MARGARET",
+          "targetName": "마가렛",
+          "label": "보호적 동행",
+          "summary": "프라토 1부에서 해쉬 테거는 마가렛의 외부활동 및 행동 풍부화 관찰을 겸해 보호적으로 동행한 것으로 기록된다.",
+          "sourceEvent": "NOSB-S1E4-PRATO-PART1",
+          "sourceLabel": "작전 보고서 S1E4: 프라토 1부",
+          "confidence": "confirmed"
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E4-PRATO-PART1",
+          "role": "마가렛 외부활동 관찰 및 현장 분석",
+          "summary": "해쉬 테거는 프라토 1부의 현장 전개 중 마가렛의 외부활동과 행동 풍부화 관찰을 겸해 보호적으로 동행했고, 뒤집어진 양말의 원거리 관측에도 참여했다.",
+          "sourceLabel": "작전 보고서 S1E4: 프라토 1부"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "MARGARET"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART1",
+        "lore.relations": {
+          "targetCodename": "INDEXER",
+          "targetName": "해쉬 테거",
+          "label": "보호적 동행",
+          "summary": "프라토 1부에서 마가렛은 해쉬 테거의 외부활동 및 행동 풍부화 관찰 동선에 포함되었고, 해쉬는 이를 보호적 동행으로 수행했다.",
+          "sourceEvent": "NOSB-S1E4-PRATO-PART1",
+          "sourceLabel": "작전 보고서 S1E4: 프라토 1부",
+          "confidence": "confirmed"
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E4-PRATO-PART1",
+          "role": "외부활동 및 행동 풍부화 관찰 대상",
+          "summary": "마가렛은 프라토 1부에서 해쉬 테거의 보호적 동행 아래 외부활동과 행동 풍부화 관찰 흐름에 포함되었다.",
+          "sourceLabel": "작전 보고서 S1E4: 프라토 1부"
+        }
+      }
+    }
+  }
+]
