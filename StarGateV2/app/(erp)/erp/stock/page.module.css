@@ -186,26 +186,74 @@
 }
 
 .marketBrief__row {
+  padding: 7px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   color: inherit;
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   letter-spacing: 0.04em;
   text-decoration: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.marketBrief__row:hover {
+.marketBrief__row:hover,
+.marketBrief__row:focus-visible {
+  outline: none;
+}
+
+.marketBrief__row--up:hover,
+.marketBrief__row--up:focus-visible {
+  background: color-mix(in oklab, var(--gold) 10%, transparent);
+  border-color: var(--gold-dim);
   color: var(--gold);
 }
 
-.marketBrief__row span,
+.marketBrief__row--down:hover,
+.marketBrief__row--down:focus-visible {
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
+  border-color: color-mix(in oklab, var(--danger) 54%, transparent);
+  color: var(--danger);
+}
+
+.marketBrief__row--alert:hover,
+.marketBrief__row--alert:focus-visible,
+.marketBrief__row--event:hover,
+.marketBrief__row--event:focus-visible {
+  background: var(--bg-2);
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.marketBrief__identity,
 .marketBrief__row strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.marketBrief__row span {
+.marketBrief__identity {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.marketBrief__ticker {
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.marketBrief__name {
   color: var(--ink-2);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .marketBrief__row strong {

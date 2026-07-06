@@ -64,6 +64,19 @@ const FILTER_OPTIONS: Array<{ value: StockFilter; label: string }> = [
   { value: "holding", label: "보유" },
 ];
 
+function briefHeadLabel(item: { ticker: string; name: string } | undefined) {
+  return item ? `${item.ticker} · ${item.name}` : "—";
+}
+
+function renderBriefIdentity(item: { ticker: string; name: string }) {
+  return (
+    <span className={styles.marketBrief__identity}>
+      <span className={styles.marketBrief__ticker}>{item.ticker}</span>
+      <span className={styles.marketBrief__name}>{item.name}</span>
+    </span>
+  );
+}
+
 /* ── Props ── */
 
 interface Props {
@@ -347,7 +360,7 @@ export default function StockListClient({
         <section className={styles.marketBrief__card}>
           <div className={styles.marketBrief__head}>
             <span>급등</span>
-            <strong>{marketBrief.topRise[0]?.ticker ?? "—"}</strong>
+            <strong>{briefHeadLabel(marketBrief.topRise[0])}</strong>
           </div>
           <div className={styles.marketBrief__rows}>
             {marketBrief.topRise.length === 0 ? (
@@ -357,10 +370,13 @@ export default function StockListClient({
                 <Link
                   key={item.ticker}
                   href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
-                  className={styles.marketBrief__row}
+                  className={[
+                    styles.marketBrief__row,
+                    styles["marketBrief__row--up"],
+                  ].join(" ")}
                 >
                   <LinkPendingProbe />
-                  <span>{item.ticker}</span>
+                  {renderBriefIdentity(item)}
                   <strong>▲ {item.changePercent.toFixed(2)}%</strong>
                 </Link>
               ))
@@ -371,7 +387,7 @@ export default function StockListClient({
         <section className={styles.marketBrief__card}>
           <div className={styles.marketBrief__head}>
             <span>급락</span>
-            <strong>{marketBrief.topFall[0]?.ticker ?? "—"}</strong>
+            <strong>{briefHeadLabel(marketBrief.topFall[0])}</strong>
           </div>
           <div className={styles.marketBrief__rows}>
             {marketBrief.topFall.length === 0 ? (
@@ -381,10 +397,13 @@ export default function StockListClient({
                 <Link
                   key={item.ticker}
                   href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
-                  className={styles.marketBrief__row}
+                  className={[
+                    styles.marketBrief__row,
+                    styles["marketBrief__row--down"],
+                  ].join(" ")}
                 >
                   <LinkPendingProbe />
-                  <span>{item.ticker}</span>
+                  {renderBriefIdentity(item)}
                   <strong className={styles.marketBrief__down}>
                     ▼ {item.changePercent.toFixed(2)}%
                   </strong>
@@ -409,10 +428,13 @@ export default function StockListClient({
                 <Link
                   key={`${item.ticker}-${reason}`}
                   href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
-                  className={styles.marketBrief__row}
+                  className={[
+                    styles.marketBrief__row,
+                    styles["marketBrief__row--alert"],
+                  ].join(" ")}
                 >
                   <LinkPendingProbe />
-                  <span>{item.ticker}</span>
+                  {renderBriefIdentity(item)}
                   <strong>{reason}</strong>
                 </Link>
               ))
@@ -423,7 +445,7 @@ export default function StockListClient({
         <section className={styles.marketBrief__card}>
           <div className={styles.marketBrief__head}>
             <span>최근 공시</span>
-            <strong>{marketBrief.latestEvents[0]?.ticker ?? "—"}</strong>
+            <strong>{briefHeadLabel(marketBrief.latestEvents[0])}</strong>
           </div>
           <div className={styles.marketBrief__rows}>
             {marketBrief.latestEvents.length === 0 ? (
@@ -433,10 +455,13 @@ export default function StockListClient({
                 <Link
                   key={`${item.ticker}-${item.createdAt}`}
                   href={`/erp/stock/${encodeURIComponent(item.ticker)}`}
-                  className={styles.marketBrief__row}
+                  className={[
+                    styles.marketBrief__row,
+                    styles["marketBrief__row--event"],
+                  ].join(" ")}
                 >
                   <LinkPendingProbe />
-                  <span>{item.ticker}</span>
+                  {renderBriefIdentity(item)}
                   <strong>{item.eventText}</strong>
                 </Link>
               ))

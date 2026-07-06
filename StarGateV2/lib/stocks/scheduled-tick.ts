@@ -14,6 +14,8 @@ import {
 import { normalizeStockPrice } from "@/lib/stocks/pricing";
 import { kstDateTag, kstNowTag } from "@/lib/stocks/time";
 
+const UP_DIRECTION_CHANCE = 0.55;
+
 interface ApplyScheduledStockTickOptions {
   /** Re-run even if today's scheduled row already exists. GM manual trigger only. */
   force?: boolean;
@@ -56,7 +58,7 @@ function signForDirection(direction: StockPriceDirection): 1 | -1 {
 }
 
 function rollDirection(): StockPriceDirection {
-  return Math.random() < 0.5 ? "up" : "down";
+  return Math.random() < UP_DIRECTION_CHANCE ? "up" : "down";
 }
 
 function currentKstSlotTag(): string {
