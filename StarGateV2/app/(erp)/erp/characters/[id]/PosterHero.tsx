@@ -16,11 +16,14 @@ import {
 
 import Bar from "@/components/ui/Bar/Bar";
 import Seal from "@/components/ui/Seal/Seal";
+import type { IconComponent } from "@/components/icons";
 import {
   IconAbility,
   IconAgentProfile,
   IconClose,
+  IconHp,
   IconNotes,
+  IconSan,
   IconStatus,
   IconZoom,
 } from "@/components/icons";
@@ -90,6 +93,12 @@ const ABILITY_SLOT_ORDER: AbilitySlot[] = [
  * personnel/_constants 의 FACTION_LOGO.NOVUS_ORDO 와 일치 (SSOT).
  */
 const NOVUS_ORDO_LOGO = FACTION_LOGO.NOVUS_ORDO;
+
+/** HP/SAN 라벨 → 전용 아이콘 (심박 하트 / 두뇌 프로필). DEF/ATK 등 다른 지표는 아이콘 없음. */
+const VITAL_ICON: Record<string, IconComponent> = {
+  HP: IconHp,
+  SAN: IconSan,
+};
 
 /** factionCode → 한글 label (shared-db FACTIONS 매핑). */
 function resolveFactionLabel(code?: string): string | null {
@@ -685,10 +694,20 @@ function VitalBarRow({
   max: number;
   tone: "gold" | "info" | "danger";
 }) {
+  const VitalIcon = VITAL_ICON[label];
   return (
     <div className={styles.hero__vital}>
       <div className={styles.hero__vitalHead}>
-        <span className={styles.hero__vitalLabel}>{label}</span>
+        <span className={styles.hero__vitalLabel}>
+          {VitalIcon ? (
+            <VitalIcon
+              width={14}
+              height={14}
+              className={styles.hero__vitalIcon}
+            />
+          ) : null}
+          {label}
+        </span>
         <span className={styles.hero__vitalValue}>
           <b>{value}</b>
           <span className={styles.hero__vitalMax}>

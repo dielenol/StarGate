@@ -24,6 +24,8 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import type { IconComponent } from "@/components/icons";
 import {
   IconBureaucrat,
+  IconHp,
+  IconSan,
   IconScientist,
   IconSoldier,
   IconSubject,
@@ -54,6 +56,12 @@ const FILTER_LABEL: Record<"ALL" | CharacterTier, string> = {
 
 const HP_MAX = 300;
 const SAN_MAX = 100;
+
+/** HP/SAN 라벨 → 전용 아이콘 (PosterHero VITAL_ICON 과 동일 도안). */
+const VITAL_ICON: Record<string, IconComponent> = {
+  HP: IconHp,
+  SAN: IconSan,
+};
 const CARD_PATTERNS = ["grid", "diagonal", "circuit", "scan"] as const;
 type CardPattern = (typeof CARD_PATTERNS)[number] | "mine" | "risk" | "mini";
 type KnownRoleClassKey = "military" | "bureaucrat" | "scientist" | "subject";
@@ -761,10 +769,20 @@ function StatRow({
   ]
     .filter(Boolean)
     .join(" ");
+  const VitalIcon = VITAL_ICON[label];
 
   return (
     <div className={styles.card__stat}>
-      <span className={styles.card__statLabel}>{label}</span>
+      <span className={styles.card__statLabel}>
+        {VitalIcon ? (
+          <VitalIcon
+            width={13}
+            height={13}
+            className={styles.card__statIcon}
+          />
+        ) : null}
+        {label}
+      </span>
       <span className={barClass} aria-hidden>
         <span
           className={styles.card__statBar__fill}

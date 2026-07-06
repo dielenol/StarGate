@@ -664,8 +664,8 @@ const ICONS = {
 
   // ── 인벤토리 페이지 / Inventory Page (ID 27–29) ──
   equipment: {
-    idx: 27, name: '장비 · Equipment (아스널)', key: 'IconEquipment',
-    svg: '<rect x="5" y="9" width="14" height="8" rx="1"/><path d="M10 9V8a2 2 0 014 0v1"/><path d="M5 12.5h14"/><path d="M9 14.7h6"/><path d="M3 4l5 5"/><path d="M4.8 8.2l2.4-2.4"/><path d="M16 17l3 3"/><circle cx="19.2" cy="20.2" r="0.7" fill="currentColor" stroke="none"/><path d="M20 5l-4 4"/><path d="M17.2 6.2l1.6 1.6"/><path d="M8 17l-3 3"/>'
+    idx: 27, name: '장비 · Equipment (플레이트 캐리어)', key: 'IconEquipment',
+    svg: '<path d="M8.6 3.5L5.5 6.3v14.2h13V6.3L15.4 3.5"/><path d="M8.6 3.5c.2 2 1.6 3.4 3.4 3.4s3.2-1.4 3.4-3.4"/><path d="M5.5 9h3.3M15.2 9h3.3"/><rect x="8.8" y="11" width="6.4" height="6" rx="0.7"/><path d="M8.8 13h6.4M8.8 15h6.4"/>'
   },
   consumable: {
     idx: 28, name: '소모품 · Consumable', key: 'IconConsumable',
@@ -946,17 +946,73 @@ const ICONS = {
     idx: 92, name: '어빌리티 · Ability', key: 'IconAbility',
     svg: '<path d="M13.2 2.5L5.5 13.5h5l-1.7 8 7.7-11h-5z"/>'
   },
+  personality: {
+    idx: 93, name: '성격 · Personality (가면)', key: 'IconPersonality',
+    svg: '<path d="M4 5.2c2.7 1 5.3 1 8 0v5.6c0 3.5-1.7 5.9-4 5.9s-4-2.4-4-5.9z"/><circle cx="6.3" cy="8.9" r="0.55" fill="currentColor" stroke="none"/><circle cx="9.7" cy="8.9" r="0.55" fill="currentColor" stroke="none"/><path d="M6.1 11.9c.6.9 1.3 1.3 1.9 1.3s1.3-.4 1.9-1.3"/><path d="M13.6 3.4c2.2.8 4.4.8 6.4 0v5.4c0 3.4-1.4 5.6-3.2 5.6s-3.2-2.2-3.2-5.6z"/><circle cx="15.5" cy="7" r="0.55" fill="currentColor" stroke="none"/><circle cx="18.1" cy="7" r="0.55" fill="currentColor" stroke="none"/><path d="M15.4 11.2c.4-.7 1-1 1.7-1s1.3.3 1.7 1"/>'
+  },
+  background: {
+    idx: 94, name: '배경 · Background (기록서)', key: 'IconBackground',
+    svg: '<path d="M12 6.1C10.3 4.8 7.9 4.2 4 4.2v13.4c3.9 0 6.3.6 8 1.9 1.7-1.3 4.1-1.9 8-1.9V4.2c-3.9 0-6.3.6-8 1.9z"/><path d="M12 6.1v13.4"/><path d="M6.6 8.3c1.3.1 2.4.4 3.4.8"/><path d="M6.6 11.2c1.3.1 2.4.4 3.4.8"/><path d="M14 9.1c1-.4 2.1-.7 3.4-.8"/><path d="M14 12c1-.4 2.1-.7 3.4-.8"/>'
+  },
+  swordShield: {
+    idx: 95, name: '검+방패 · Sword & Shield (EQUIPMENT 패널)', key: 'IconSwordShield',
+    svg: '<path d="M12 4.5l6 2v4.8c0 3.9-2.4 6.5-6 8.3-3.6-1.8-6-4.4-6-8.3V6.5z"/><path d="M12 9.2l1.9 2.2-1.9 2.2-1.9-2.2z"/><path d="M6.3 5.9L2.5 2.5l3.4 3.8"/><path d="M17 17l1.3 1.3"/><path d="M17.1 19.4l2.3-2.3"/><path d="M19 19l1.6 1.6"/>'
+  },
+  armory: {
+    idx: 96, name: '병기부 · Armory Bureau', key: 'IconArmory',
+    svg: '<rect x="3.5" y="10.5" width="17" height="9.5" rx="1"/><path d="M3.5 14.2h17"/><path d="M10 17.2h4"/><path d="M6.6 10.5V7c0-.9.3-1.8.9-2.5l.7-.8.7.8c.6.7.9 1.6.9 2.5v3.5"/><path d="M6.6 8.2h3.2"/><path d="M14.2 10.5V7c0-.9.3-1.8.9-2.5l.7-.8.7.8c.6.7.9 1.6.9 2.5v3.5"/><path d="M14.2 8.2h3.2"/>'
+  },
+  hp: {
+    idx: 97, name: 'HP · 생명력 (심박 하트)', key: 'IconHp',
+    svg: '<path d="M12 19.5C7.7 16.2 4.5 13.5 4.5 10.2 4.5 8.1 6.2 6.5 8.2 6.5c1.6 0 3 .9 3.8 2.2.8-1.3 2.2-2.2 3.8-2.2 2 0 3.7 1.6 3.7 3.7 0 3.3-3.2 6-7.5 9.3z"/><path d="M7.6 11.7h2.2l1-1.7 1.7 3.3 1-1.6h2.9"/>'
+  },
+  san: {
+    idx: 98, name: 'SAN · 정신력 (두뇌 프로필)', key: 'IconSan',
+    svg: '<path d="M9.3 21v-2.9C7 16.9 5.5 14.6 5.5 12A6.7 6.7 0 0112.2 5.3c3.5 0 6.3 2.5 6.6 5.8l1.4 2.5c.2.3 0 .7-.3.8l-1.2.4v1.9c0 .9-.7 1.6-1.6 1.6h-1.6V21"/><path d="M10 12c0-1.5 1.1-2.7 2.5-2.7 1.2 0 2.1.9 2.1 2.1 0 1-.8 1.7-1.7 1.7-.8 0-1.3-.6-1.3-1.3"/>'
+  },
+
+  // ── 시민사회 내부 분류 / Civil Categories (ID 99–101 · 신원조회 /erp/personnel · OrgIcon.tsx) ──
+  neonValkyrie: {
+    idx: 99, name: '네온 발키리 · NeON Valkyrie (날개 투구)', key: 'IconNeonValkyrie',
+    svg: '<path d="M7.2 13.8a4.8 4.8 0 019.6 0"/><path d="M6 13.8h12"/><path d="M11.2 9.1L12 5.9l.8 3.2"/><path d="M12 13.8v3.6"/><path d="M8.8 13.8v2.4M15.2 13.8v2.4"/><path d="M2 3.4c.2 4.1 1.7 7 4.6 8.7"/><path d="M4.6 4.4c0 3.1 1 5.4 3 6.8"/><path d="M22 3.4c-.2 4.1-1.7 7-4.6 8.7"/><path d="M19.4 4.4c0 3.1-1 5.4-3 6.8"/>'
+  },
+  newDublin: {
+    idx: 100, name: '뉴 더블린 · New Dublin (스카이라인)', key: 'IconNewDublin',
+    svg: '<path d="M3 20.5h18"/><path d="M4.5 20.5v-9.7h3.6v9.7"/><path d="M10.3 20.5v-15h4.6v15"/><path d="M17.1 20.5v-8.2h2.9v8.2"/><path d="M12 8.3h1.2M12 11.3h1.2M12 14.3h1.2M5.9 13.5h.9M5.9 16.2h.9M18.1 15h.9"/>'
+  },
+  songsari: {
+    idx: 101, name: '송사리 · Songsari (셜록 탐정)', key: 'IconSongsari',
+    svg: '<path d="M5.8 9.2C6.1 5.8 8.7 3.4 12 3.4s5.9 2.4 6.2 5.8"/><path d="M12 3.4V2.3"/><path d="M5.8 9.2c-1.2 0-2.3.5-3.1 1.4 1.1.5 2.2.6 3.3.4"/><path d="M18.2 9.2c1.2 0 2.3.5 3.1 1.4-1.1.5-2.2.6-3.3.4"/><path d="M18.3 10.9c0 .8-.2 1.5-.5 2.1l1.3.4-.7 1.1.5 1c-.6 1-1.6 1.6-2.9 1.7"/><path d="M5.9 11c.2 2.6 1.3 4.6 3.2 5.9"/><circle cx="11.6" cy="17.4" r="3.1"/><path d="M9.3 19.7l-3.2 2.6"/>'
+  },
+
+  // ── 외부 세력 산하 조직 / External Sub-Orgs (ID 102–105 · 신원조회 /erp/personnel · OrgIcon.tsx) ──
+  extUsa: {
+    idx: 102, name: '미국 · United States (성조기)', key: 'IconExtUsa',
+    svg: '<path d="M4.5 21.5V3.4"/><circle cx="4.5" cy="2.4" r="0.7" fill="currentColor" stroke="none"/><path d="M4.5 4.3c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3v9.3c-2.7-1.1-5.2-1.1-7.6-.3-2.5.8-4.9.8-7.4-.2z"/><path d="M11.9 4.5v5.1"/><path d="M11.9 7.2c2.4-.8 4.9-.8 7.6.3"/><path d="M4.5 9.4c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3"/><path d="M4.5 11.9c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3"/><circle cx="6.4" cy="6.1" r="0.5" fill="currentColor" stroke="none"/><circle cx="8.6" cy="6.6" r="0.5" fill="currentColor" stroke="none"/><circle cx="6.4" cy="7.9" r="0.5" fill="currentColor" stroke="none"/><circle cx="8.6" cy="8.4" r="0.5" fill="currentColor" stroke="none"/>'
+  },
+  extNoga: {
+    idx: 103, name: 'NOGA · Novus Ordo Great Again (캡모자)', key: 'IconExtNoga',
+    svg: '<path d="M5.2 13.4C5.2 8.9 8 5.9 11.7 5.9s6.5 3 6.5 7.5"/><path d="M11.7 5.9V4.7"/><path d="M11.7 5.9c-1.3 2.3-1.9 4.8-1.8 7.5"/><path d="M5.2 13.4h13"/><path d="M18.2 12.1c2.2 0 4 .8 5.2 2.2-1.4.9-3.1 1.3-5.2 1.1"/><path d="M5.2 13.4c-.2 1.4-.1 2.7.3 3.9"/>'
+  },
+  extGoldenDawn: {
+    idx: 104, name: '황금여명회 · Golden Dawn (여명 문장)', key: 'IconExtGoldenDawn',
+    svg: '<path d="M3 16.5h18"/><path d="M7.5 16.5a4.5 4.5 0 019 0"/><circle cx="12" cy="14.4" r="0.7" fill="currentColor" stroke="none"/><path d="M12 9.8V6.8"/><path d="M8.1 11.4L6 9.3"/><path d="M15.9 11.4L18 9.3"/><path d="M5.6 14.6l-2.8-.8"/><path d="M18.4 14.6l2.8-.8"/><path d="M6.5 19.5h11"/>'
+  },
+  extAhnenerbe: {
+    idx: 105, name: '아넨에르베 "광명회" · Ahnenerbe (피라미드 전시안)', key: 'IconExtAhnenerbe',
+    svg: '<path d="M12 3.8L21 19H3z"/><path d="M8.9 14c.9-1.4 2-2.1 3.1-2.1s2.2.7 3.1 2.1c-.9 1.4-2 2.1-3.1 2.1S9.8 15.4 8.9 14z"/><circle cx="12" cy="14" r="0.8" fill="currentColor" stroke="none"/><path d="M12 3.8V1.8"/>'
+  },
 };
 
 // 섹션 = 페이지 단위 통일. 한 아이콘이 여러 페이지에서 쓰이면 각 페이지 그룹에 중복 등재하고,
 // 2개 이상 그룹에 등장하는 아이콘은 아래에서 `shared` 그룹으로 자동 집계된다 (reserve 제외).
 const GROUPS = {
-  nav:         ['dashboard','account','notification','session','mission','person','members','factionMap','crown','inventoryHub','credit','shopHub','equipment','stock','wikiHub','reportDocument','archive','gallery','world','userAdmin','system'],
-  dashboard:   ['agentProfile','mission','tasks','credit','awaitingResponse','activeOps','notification','all','wikiHub','serviceRecord','tenure','session','recentChanges'],
+  nav:         ['dashboard','account','notification','session','mission','person','members','factionMap','crown','inventoryHub','credit','shopHub','armory','equipment','stock','wikiHub','reportDocument','archive','gallery','world','userAdmin','system'],
+  dashboard:   ['agentProfile','mission','tasks','credit','awaitingResponse','activeOps','notification','all','wikiHub','serviceRecord','tenure','session','recentChanges','hp','san'],
   account:     ['account','status','linked','passkey','security','tenure'],
   notifications: ['notification','unread','today','linked','gridAll','read','search','session','consumable','credit','reportMini','userAdmin','system','inbox'],
-  characters:  ['person','all','main','mini','soldier','subject','bureaucrat','scientist','unassigned','profile','concept','archive','equipment','inventoryEquipment','goods','ability','agentProfile','status','notes','recentChanges'],
-  personnel:   ['members','root','novusOrdo','board','military','civil','hostile','secretariat','manus','hq','research','adminBureau','intl','control','finance','sectorA','sectorB','sectorC','sectorD','sectorE','person','all','main','mini','unassigned'],
+  characters:  ['person','all','main','mini','soldier','subject','bureaucrat','scientist','unassigned','profile','personality','background','swordShield','inventoryEquipment','goods','ability','agentProfile','status','notes','recentChanges','hp','san'],
+  personnel:   ['members','root','novusOrdo','board','military','civil','hostile','secretariat','manus','hq','research','adminBureau','armory','intl','control','finance','sectorA','sectorB','sectorC','sectorD','sectorE','extUsa','extNoga','extGoldenDawn','extAhnenerbe','neonValkyrie','newDublin','songsari','person','all','main','mini','unassigned'],
   factionPage: ['factionMap','hostile','briefing','relations','affinity'],
   inventory:   ['equipment','consumable','misc'],
   credit:      ['credit','transactions'],
@@ -1016,7 +1072,7 @@ const PAGE_TREE = [
       { icon: 'credit', label: '크레딧', route: '/erp/credits' },
       { icon: 'shopHub', label: '편의점', route: '/erp/shop' },
       {
-        icon: null,
+        icon: 'armory',
         label: '병기부',
         route: '/erp/equipment-shop',
         badge: 'GM preview',
@@ -1268,6 +1324,7 @@ function renderChart() {
       ${chip('hq', '사무총장실')}
       ${chip('research', '연구 기구')}
       ${chip('adminBureau', '행정 기구')}
+      ${chip('armory', '병기부')}
       ${chip('intl', '국제 기구')}
       ${chip('control', '통제 기구')}
       ${chip('finance', '재무국')}

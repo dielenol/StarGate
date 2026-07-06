@@ -23,13 +23,13 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import type { IconComponent } from "@/components/icons";
 import {
-  IconConcept,
-  IconCoreArchive,
-  IconEquipment,
+  IconBackground,
   IconGoods,
   IconInventoryEquipment,
   IconPersonCard,
+  IconPersonality,
   IconProfile,
+  IconSwordShield,
 } from "@/components/icons";
 
 import ChangeLogsPanel, {
@@ -293,7 +293,7 @@ function AgentSections({ character }: { character: AgentCharacter }) {
       label: "성격",
       meta: "PROFILE · MENTAL",
       pill: "MENTAL",
-      Icon: IconConcept,
+      Icon: IconPersonality,
       value: lore.personality,
     },
     {
@@ -301,7 +301,7 @@ function AgentSections({ character }: { character: AgentCharacter }) {
       label: "배경",
       meta: "PROFILE · ARCHIVE",
       pill: "ARCHIVE",
-      Icon: IconCoreArchive,
+      Icon: IconBackground,
       value: lore.background,
     },
   ].filter((item) => item.value);
@@ -354,7 +354,7 @@ function AgentSections({ character }: { character: AgentCharacter }) {
             right={<span className={styles.mono}>{play.equipment.length}</span>}
           >
             <span className={styles.panelTitleLabel}>
-              <IconEquipment
+              <IconSwordShield
                 width={16}
                 height={16}
                 className={styles.panelTitleLabel__icon}

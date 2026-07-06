@@ -545,6 +545,11 @@
   letter-spacing: 0.18em;
   color: var(--ink-3);
 }
+.hero__vitalIcon {
+  vertical-align: -2px;
+  margin-right: 5px;
+  color: var(--gold-dim);
+}
 .hero__vitalValue {
   font-family: var(--font-mono);
   font-size: 14px;

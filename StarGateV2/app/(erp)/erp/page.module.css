@@ -256,6 +256,12 @@
   font-weight: 400;
 }
 
+.charMini__vitalIcon {
+  vertical-align: -2px;
+  margin-right: 5px;
+  color: var(--gold-dim);
+}
+
 .charMini__vitalValue {
   color: var(--ink-2);
   font-family: var(--font-pixel);

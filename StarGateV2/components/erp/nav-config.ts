@@ -9,6 +9,7 @@ import type { IconComponent } from "@/components/icons";
 import {
   IconAccount,
   IconApply,
+  IconArmory,
   IconCoreArchive,
   IconCredit,
   IconCrown,
@@ -118,7 +119,7 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: "병기부",
         keywords: "equipment shop armory arsenal weapon armor gear 병기부 무기 방어구 토와스키",
-        icon: IconEquipment,
+        icon: IconArmory,
         href: null,
         gmHref: "/erp/equipment-shop",
         children: [

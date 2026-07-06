@@ -638,17 +638,23 @@
 }
 .card__stat {
   display: grid;
-  grid-template-columns: 32px 1fr auto;
+  grid-template-columns: 52px 1fr auto;
   align-items: center;
   gap: 12px;
 }
 .card__statLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--gold-dim);
   font-weight: 600;
+}
+.card__statIcon {
+  flex-shrink: 0;
 }
 
 /* Bar (PosterHero vitals 자매) */

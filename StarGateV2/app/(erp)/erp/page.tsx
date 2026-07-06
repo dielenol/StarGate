@@ -25,15 +25,18 @@ import { formatDate, formatTime } from "@/lib/format/date";
 import type { NotificationType } from "@/types/notification";
 import type { SessionStatus } from "@/types/session";
 
+import type { IconComponent } from "@/components/icons";
 import {
   IconActiveOps,
   IconAgentProfile,
   IconApply,
   IconAwaiting,
   IconCredit,
+  IconHp,
   IconNotification,
   IconPersonCard,
   IconRecentChanges,
+  IconSan,
   IconServiceRecord,
   IconSession,
   IconTasks,
@@ -120,6 +123,12 @@ function CharAvatar({
 }
 
 /** MY CHARACTER VITALS 한 줄 — 라벨 + 값/max + Bar */
+/** HP/SAN 라벨 → 전용 아이콘 (캐릭터 상세/목록과 동일 도안). */
+const VITAL_ICON: Record<string, IconComponent> = {
+  HP: IconHp,
+  SAN: IconSan,
+};
+
 function CharVital({
   label,
   value,
@@ -131,10 +140,20 @@ function CharVital({
   max: number;
   tone: "gold" | "info" | "danger";
 }) {
+  const VitalIcon = VITAL_ICON[label];
   return (
     <div className={styles.charMini__vital}>
       <div className={styles.charMini__vitalHead}>
-        <span className={styles.charMini__vitalLabel}>{label}</span>
+        <span className={styles.charMini__vitalLabel}>
+          {VitalIcon ? (
+            <VitalIcon
+              width={13}
+              height={13}
+              className={styles.charMini__vitalIcon}
+            />
+          ) : null}
+          {label}
+        </span>
         <span className={styles.charMini__vitalValue}>
           <b>{value}</b>
           <span className={styles.charMini__vitalMax}>/{max}</span>
