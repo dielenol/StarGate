@@ -117,12 +117,6 @@ export const NAV_GROUPS: NavGroup[] = [
       /* 편의점 · 주식 — M1 stub. M2/M3 에서 본 구현 활성화. */
       { label: "편의점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconShop, href: "/erp/shop" },
       {
-        label: "장비 시험장",
-        keywords: "equipment simulator test range tactical board weapon damage 장비 시험장 무기 테스트 전투판",
-        icon: IconEquipment,
-        href: "/erp/equipment-shop/simulator",
-      },
-      {
         label: "병기부",
         keywords:
           "equipment shop armory arsenal weapon armor gear forge simulator strategic custom 병기부 무기 방어구 토와스키 아케론 대장간 시뮬레이터 전략 전용무기",
