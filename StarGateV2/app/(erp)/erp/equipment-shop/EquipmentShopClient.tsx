@@ -249,8 +249,11 @@ function getResearchLane(node: ResearchNodeEntry): number {
 function getResearchNodeMapStatus(
   projects: EquipmentResearchProjectEntry[],
   key: string,
+  scope: EquipmentResearchScope,
 ): ResearchNodeMapStatus {
-  const related = projects.filter((project) => project.key === key);
+  const related = projects.filter(
+    (project) => project.key === key && project.scope === scope,
+  );
   if (related.some((project) => project.computedStatus === "completed")) {
     return "completed";
   }
@@ -286,6 +289,13 @@ function researchNodeClassName(
   }
   if (isSelected) classes.push(styles["techNode--selected"]);
   return classes.join(" ");
+}
+
+function getFirstResearchKeyForScope(
+  tree: EquipmentResearchOverviewResponse["tree"],
+  scope: EquipmentResearchScope,
+): string {
+  return tree.find((node) => node.allowedScopes.includes(scope))?.key ?? "";
 }
 
 function ResearchPixelIcon({
@@ -449,9 +459,14 @@ export default function EquipmentShopClient({
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
     () => mainCharacter?.stats ?? null,
   );
-  const [selectedResearchKey, setSelectedResearchKey] = useState(
-    () => initialResearch.tree[0]?.key ?? "",
-  );
+  const [activeResearchScope, setActiveResearchScope] =
+    useState<EquipmentResearchScope>("personal");
+  const [selectedResearchKeys, setSelectedResearchKeys] = useState<
+    Record<EquipmentResearchScope, string>
+  >(() => ({
+    personal: getFirstResearchKeyForScope(initialResearch.tree, "personal"),
+    team: getFirstResearchKeyForScope(initialResearch.tree, "team"),
+  }));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
 
@@ -459,6 +474,7 @@ export default function EquipmentShopClient({
   const research = researchQuery.data ?? initialResearch;
   const researchTree = research.tree;
   const researchProjects = research.projects;
+  const selectedResearchKey = selectedResearchKeys[activeResearchScope];
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
   const isHub = mode === "hub";
   const activeZone = initialZone;
@@ -559,46 +575,60 @@ export default function EquipmentShopClient({
     selectedQuantity < selectedItem.stock &&
     selectedQuantity < MAX_CART_QUANTITY_PER_ITEM;
 
+  const scopedResearchTree = useMemo(
+    () =>
+      researchTree.filter((node) =>
+        node.allowedScopes.includes(activeResearchScope),
+      ),
+    [activeResearchScope, researchTree],
+  );
+
   const researchTiers = useMemo(() => {
     const grouped = new Map<number, EquipmentResearchOverviewResponse["tree"]>();
-    for (const node of researchTree) {
+    for (const node of scopedResearchTree) {
       const bucket = grouped.get(node.tier);
       if (bucket) bucket.push(node);
       else grouped.set(node.tier, [node]);
     }
     return Array.from(grouped.entries()).sort(([a], [b]) => a - b);
-  }, [researchTree]);
+  }, [scopedResearchTree]);
 
   const activeResearchProjects = useMemo(
     () =>
       researchProjects.filter(
-        (project) => project.computedStatus !== "applied",
+        (project) =>
+          project.scope === activeResearchScope &&
+          project.computedStatus !== "applied",
       ),
-    [researchProjects],
+    [activeResearchScope, researchProjects],
   );
 
   const appliedResearchProjects = useMemo(
     () =>
       researchProjects.filter(
-        (project) => project.computedStatus === "applied",
+        (project) =>
+          project.scope === activeResearchScope &&
+          project.computedStatus === "applied",
       ),
-    [researchProjects],
+    [activeResearchScope, researchProjects],
   );
 
   const selectedResearchNode = useMemo(() => {
     return (
-      researchTree.find((node) => node.key === selectedResearchKey) ??
-      researchTree[0] ??
+      scopedResearchTree.find((node) => node.key === selectedResearchKey) ??
+      scopedResearchTree[0] ??
       null
     );
-  }, [researchTree, selectedResearchKey]);
+  }, [scopedResearchTree, selectedResearchKey]);
 
   const selectedNodeProjects = useMemo(() => {
     if (!selectedResearchNode) return [];
     return researchProjects.filter(
-      (project) => project.key === selectedResearchNode.key,
+      (project) =>
+        project.key === selectedResearchNode.key &&
+        project.scope === activeResearchScope,
     );
-  }, [researchProjects, selectedResearchNode]);
+  }, [activeResearchScope, researchProjects, selectedResearchNode]);
 
   function setCartQuantity(key: string, quantity: number) {
     const item = catalogByKey.get(key);
@@ -703,9 +733,32 @@ export default function EquipmentShopClient({
     );
   }
 
+  function handleResearchScopeChange(scope: EquipmentResearchScope) {
+    setActiveResearchScope(scope);
+    setSelectedResearchKeys((prev) => ({
+      ...prev,
+      [scope]:
+        prev[scope] ||
+        getFirstResearchKeyForScope(research.tree, scope),
+    }));
+  }
+
+  function handleSelectResearchNode(key: string) {
+    setSelectedResearchKeys((prev) => ({
+      ...prev,
+      [activeResearchScope]: key,
+    }));
+  }
+
   function handleStartResearch(key: string, scope: EquipmentResearchScope) {
     const node = research.tree.find((item) => item.key === key);
-    if (!node || !canStartResearch(scope, node.cost)) return;
+    if (
+      !node ||
+      !node.allowedScopes.includes(scope) ||
+      !canStartResearch(scope, node.cost)
+    ) {
+      return;
+    }
     setErrorMessage(null);
     setNotice(null);
     startResearchMutation.mutate(
@@ -1200,8 +1253,15 @@ export default function EquipmentShopClient({
 
   function renderLabPanel() {
     const selectedNodeState = selectedResearchNode
-      ? getResearchNodeMapStatus(researchProjects, selectedResearchNode.key)
+      ? getResearchNodeMapStatus(
+          researchProjects,
+          selectedResearchNode.key,
+          activeResearchScope,
+        )
       : "available";
+    const selectedResearchEffect = selectedResearchNode
+      ? selectedResearchNode.effects[activeResearchScope] ?? null
+      : null;
     const selectedRushRule = selectedResearchNode
       ? research.rushRules.find((rule) => rule.tier === selectedResearchNode.tier)
       : null;
@@ -1214,10 +1274,34 @@ export default function EquipmentShopClient({
               <Eyebrow>HORIZONTAL TECH TREE</Eyebrow>
               <strong>병기 연구소</strong>
             </div>
-            <div className={styles.techTreeLegend}>
-              <span>좌측 T1</span>
-              <span>우측 T5</span>
-              <span>선택 후 연구 시작</span>
+            <div className={styles.techTreeControls}>
+              <div
+                className={styles.techScopeSwitch}
+                role="tablist"
+                aria-label="연구 범위"
+              >
+                {(["personal", "team"] as const).map((scope) => (
+                  <button
+                    key={scope}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeResearchScope === scope}
+                    className={
+                      activeResearchScope === scope
+                        ? styles["techScopeSwitch--active"]
+                        : ""
+                    }
+                    onClick={() => handleResearchScopeChange(scope)}
+                  >
+                    {scope === "personal" ? "개인 연구" : "팀 연구"}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.techTreeLegend}>
+                <span>좌측 T1</span>
+                <span>우측 T5</span>
+                <span>{scopeLabel(activeResearchScope)} 트리</span>
+              </div>
             </div>
           </div>
 
@@ -1267,19 +1351,18 @@ export default function EquipmentShopClient({
                 </div>
               ))}
 
-              {researchTree.map((node) => {
+              {scopedResearchTree.map((node) => {
                 const nodeStatus = getResearchNodeMapStatus(
                   researchProjects,
                   node.key,
+                  activeResearchScope,
                 );
                 const isSelected = selectedResearchNode?.key === node.key;
-                const effectSummary = node.allowedScopes
-                  .map((scope) => node.effects[scope])
-                  .filter((effect): effect is NonNullable<typeof effect> =>
-                    Boolean(effect),
-                  )
-                  .map(describeEquipmentResearchEffect)
-                  .join(" / ");
+                const effectSummary = node.effects[activeResearchScope]
+                  ? describeEquipmentResearchEffect(
+                      node.effects[activeResearchScope],
+                    )
+                  : "-";
 
                 return (
                   <button
@@ -1290,7 +1373,7 @@ export default function EquipmentShopClient({
                       gridColumn: node.tier,
                       gridRow: getResearchLane(node) + 1,
                     }}
-                    onClick={() => setSelectedResearchKey(node.key)}
+                    onClick={() => handleSelectResearchNode(node.key)}
                     aria-pressed={isSelected}
                   >
                     <span className={styles.techNodeKey}>{node.key}</span>
@@ -1358,27 +1441,30 @@ export default function EquipmentShopClient({
               </div>
 
               <div className={styles.techDetailActions}>
-                {selectedResearchNode.allowedScopes.map((scope) => {
-                  const effect = selectedResearchNode.effects[scope];
-                  return (
-                    <button
-                      key={scope}
-                      type="button"
-                      onClick={() =>
-                        handleStartResearch(selectedResearchNode.key, scope)
-                      }
-                      disabled={
-                        !canStartResearch(scope, selectedResearchNode.cost)
-                      }
-                      aria-busy={startResearchMutation.isPending}
-                    >
-                      <span>{scopeLabel(scope)} 연구 시작</span>
-                      <strong>
-                        {effect ? describeEquipmentResearchEffect(effect) : "-"}
-                      </strong>
-                    </button>
-                  );
-                })}
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleStartResearch(
+                      selectedResearchNode.key,
+                      activeResearchScope,
+                    )
+                  }
+                  disabled={
+                    !selectedResearchEffect ||
+                    !canStartResearch(
+                      activeResearchScope,
+                      selectedResearchNode.cost,
+                    )
+                  }
+                  aria-busy={startResearchMutation.isPending}
+                >
+                  <span>{scopeLabel(activeResearchScope)} 연구 시작</span>
+                  <strong>
+                    {selectedResearchEffect
+                      ? describeEquipmentResearchEffect(selectedResearchEffect)
+                      : "-"}
+                  </strong>
+                </button>
               </div>
 
               {selectedNodeProjects.length > 0 ? (

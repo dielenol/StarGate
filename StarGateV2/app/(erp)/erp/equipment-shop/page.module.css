@@ -926,6 +926,41 @@
   line-height: 1.15;
 }
 
+.techTreeControls {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.techScopeSwitch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
+  gap: 4px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.34);
+  border: 1px solid rgba(134, 213, 229, 0.24);
+  border-radius: var(--radius-sm);
+}
+
+.techScopeSwitch button {
+  min-height: 32px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.techScopeSwitch button:hover,
+.techScopeSwitch--active {
+  background: color-mix(in srgb, var(--gold) 14%, rgba(0, 0, 0, 0.42));
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
 .techTreeLegend {
   display: flex;
   flex-wrap: wrap;
