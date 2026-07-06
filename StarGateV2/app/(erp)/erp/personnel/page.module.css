@@ -264,6 +264,11 @@
     var(--bg-2);
 }
 
+.directMembers__icon {
+  flex-shrink: 0;
+  color: var(--gold);
+}
+
 .directMembers__label {
   color: var(--ink-0);
   font-size: 16px;

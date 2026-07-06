@@ -6,12 +6,12 @@ label: 군부
 labelEn: Military
 scope: external
 summary: 광원화 사태 이전부터 존재한 군사 권력 블록. 노부스 오르도의 조율주의에 불만을 품고 전통적 군사 권위와 무장 대응을 중시한다.
-tags: [외부, 군부, 온건파, 전통복고, 권위주의, 군사권력]
-notableMembers: [WEXLER]
+tags: [외부, 군부, 온건파, 전통복고, 권위주의, 군사권력, 미국, NOGA]
+notableMembers: [WEXLER, JOHN_WONG, PERK_ESHHALL]
 isPublic: true
 source: manual
 createdAt: 2026-05-14T00:00:00Z
-updatedAt: 2026-06-02T00:00:00Z
+updatedAt: 2026-07-04T00:00:00Z
 ---
 
 ## 이념/가치관
@@ -37,6 +37,13 @@ updatedAt: 2026-06-02T00:00:00Z
 ## 주요 인물
 
 - `WEXLER` - 미국 부통령 및 군부 핵심 지도자 캘빈 R. 웩슬러.
+- `JOHN_WONG` - 프라토 1부에서 확인된 CIA 고위 요원.
+- `PERK_ESHHALL` - NOGA 더블린 지부 지부장.
+
+## 산하/관계 조직
+
+- `USA` - 미국 정치·군사·정보기관 라인. 웩슬러와 존 웡을 이 하위 분류로 정리한다.
+- `NOGA` - Novus Ordo Great Again. 뉴 더블린 기록에서는 인류 우월주의 폭력조직으로 확인되며, 퍼크슈타인 에스홀을 이 하위 분류로 정리한다.
 
 ## 타 세력/기관 관계
 

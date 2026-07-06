@@ -14,7 +14,7 @@ height: 189cm
 weight: 미상
 factionCode: MILITARY
 institutionCode:
-department: MILITARY
+department: NOGA
 isPublic: true
 loreTags: [군부, 뉴더블린, NOGA, NovusOrdoGreatAgain, 인류우월주의, 폭력단체, MAKEHUMANGREATAGAIN, NOSB-MINI-S1E1-NEW-DUBLIN, MINI-S1E1]
 appearsInEvents: [NOSB-MINI-S1E1-NEW-DUBLIN]

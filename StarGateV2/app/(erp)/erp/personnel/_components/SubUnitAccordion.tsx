@@ -7,6 +7,8 @@ import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { getCivilPersonnelCategory, getExternalSubOrg } from "../_constants";
 
 import OrgIcon, {
+  getCivilCategoryIcon,
+  getExternalSubOrgIcon,
   getFactionIcon,
   getInstitutionIcon,
   getSubUnitIcon,
@@ -49,6 +51,8 @@ export default function SubUnitAccordion({
   const subIcon =
     getSubUnitIcon(code) ??
     getInstitutionIcon(code) ??
+    getCivilCategoryIcon(code) ??
+    getExternalSubOrgIcon(code) ??
     (classifiedGroup ? getFactionIcon(classifiedGroup.parentCode) : undefined);
   const subLogo = externalSubOrg?.logoUrl;
   const optimizedSubLogo = subLogo

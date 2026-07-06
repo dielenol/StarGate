@@ -10,7 +10,7 @@ age: 76
 height: 188cm
 factionCode: MILITARY
 institutionCode:
-department:
+department: USA
 isPublic: true
 loreTags: [미국, 부통령, 전직대통령, 군부, WASP, 기독교근본주의, 백인우월주의, 그림자권력]
 appearsInEvents: [NOSB-S1E3-PHANTOM]
@@ -38,6 +38,7 @@ updatedAt: 2026-07-02T00:00:00Z
 
 ## 역할 상세
 - **공식 직함**: 미합중국 부통령 / 노부스 오르도 군부 세력 수뇌부
+- **소속 분류**: 군부 산하 미국 정치·군사 라인
 - **실질 영향권**: 미국 국방·정보 기관 상당수, NOVUS ORDO 군부 예산·인사 결정 라인, WASP·근본주의 로비 채널
 - **정책 기조**: 이상 현상에 대한 선제 격리·무장 대응, 민간·상업 영역에 대한 군 개입 확대, 시민 사회 및 세계이사회 조율안 견제
 - **외교 스타일**: 협상보다 위협·거래 프레임. 공개 석상에서 즉흥 발언으로 판을 흔든 뒤 측근이 수습

@@ -262,8 +262,12 @@ export function getUserClearance(userRole: UserRole): AgentLevel {
 ```
 FACTIONS (권력 블록)                          INSTITUTIONS (내부 기관)
 ├─ MILITARY    (군부)        [external]       ├─ SECRETARIAT (사무국)  [parent: NOVUS_ORDO]
+│  ├─ USA       (미국)        [external sub-org]
+│  └─ NOGA      (NOGA)       [external sub-org]
 ├─ COUNCIL     (이사회)      [external]       │   ├─ HQ (사무총장실)
 ├─ CIVIL       (시민사회)    [external]       │   ├─ RESEARCH (연구 기구)
+│  ├─ WHITE_ROSE (백장미단) [external sub-org]
+│  └─ SPACE_ZERO (스페이스 제로) [external sub-org]
 └─ NOVUS_ORDO  (노부스 오르도) [internal]      │   ├─ ADMIN_BUREAU (행정 기구)
                                               │   ├─ ARMORY_BUREAU (병기부)
                                               │   ├─ INTL (국제 기구)
@@ -297,7 +301,7 @@ FACTIONS (권력 블록)                          INSTITUTIONS (내부 기관)
 | Depth | 상태 | 내용 |
 |-------|------|------|
 | **L1 조감 뷰** | 초기 진입 상태 | 외부 기관 + 내부 기관 노드를 박스+라인 다이어그램으로 배치. 각 노드에 라벨/영문라벨/소속 인원수. 클릭 시 L2 로 진입 |
-| **L2 그룹 뷰** | `selectedGroup !== null` | 선택된 세력/기관 내부. 하위 기구가 있으면 (`SECRETARIAT`, `MANUS`) 트리 표시, 없으면 (`MILITARY` 등) 멤버 카드 바로 표시 |
+| **L2 그룹 뷰** | `selectedGroup !== null` | 선택된 세력/기관 내부. 하위 기구나 외부 하위 조직이 있으면 (`SECRETARIAT`, `MANUS`, `MILITARY`, `CIVIL`, `HOSTILE`) 트리 표시, 없으면 멤버 카드 바로 표시 |
 | **L3 아코디언** | `expandedSubUnit !== null` | L2 에서 하위 기구 노드 클릭 시 해당 기구의 멤버 카드 그리드 펼침. 토글 (재클릭 시 접힘) |
 
 **공통 UI 요소** (모든 depth 에서 노출):
@@ -310,6 +314,7 @@ FACTIONS (권력 블록)                          INSTITUTIONS (내부 기관)
 
 - **좌측**: 외부 기관 (`FACTIONS · scope=external`) — 삼각형 배치 (COUNCIL 상단, MILITARY 좌하, CIVIL 우하)
 - **우측**: 본부 (`NOVUS_ORDO · scope=internal`) 박스 + 산하 내부 기관 (`INSTITUTIONS` SECRETARIAT/MANUS) 수직 스택
+- **외부 하위 조직**: `EXTERNAL_SUB_ORGS` 기반으로 WHITE_ROSE/SPACE_ZERO/USA/NOGA 등 비적대 하위 조직을 별도 카드로 노출
 - **하단**: `UNASSIGNED` (미배정) — 존재할 때만 카드 그리드로 노출
 - **시각**: 외부 영역은 차가운 톤(회색-녹색 계열) 배경, 본부 영역은 금색 강조 보더로 분리. NOVUS_ORDO 박스는 본부 카드(`node--hq`)로 별도 톤 처리.
 - **구현 수준**: CSS Grid + SVG 라인으로 충분. 현재 노드 규모 (외부 세력 3 + 본부 1 + 내부 기관 2 + 하위 기구 11 = **17개**)에서 react-flow 등 전문 라이브러리는 오버엔지니어링. 노드 50+ 시점에 재검토.

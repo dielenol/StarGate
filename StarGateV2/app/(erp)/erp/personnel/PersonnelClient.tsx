@@ -39,7 +39,7 @@ import GroupHero from "./_components/GroupHero";
 import OrgCanvas from "./_components/OrgCanvas";
 import OrgDrillCrumbs from "./_components/OrgDrillCrumbs";
 import type { DrillCrumbItem } from "./_components/OrgDrillCrumbs";
-import {
+import OrgIcon, {
   getFactionIcon,
   getInstitutionIcon,
   getSubUnitIcon,
@@ -139,17 +139,15 @@ function characterUsesAgentLevels(c: Character): boolean {
   return isInternalOrgCode(resolveGroup(c));
 }
 
+function getExternalSubOrgUnits(groupCode: string): readonly SubUnitItem[] {
+  return EXTERNAL_SUB_ORGS.filter((org) => org.parentCode === groupCode).map(
+    (org) => ({ code: org.code, label: org.label }),
+  );
+}
+
 function getDisplaySubUnits(groupCode: string): readonly SubUnitItem[] {
-  if (groupCode === "CIVIL") {
-    return EXTERNAL_SUB_ORGS.filter((org) => org.parentCode === groupCode).map(
-      (org) => ({ code: org.code, label: org.label }),
-    );
-  }
-  if (groupCode === "HOSTILE") {
-    return EXTERNAL_SUB_ORGS.filter((org) => org.parentCode === groupCode).map(
-      (org) => ({ code: org.code, label: org.label }),
-    );
-  }
+  const externalSubOrgUnits = getExternalSubOrgUnits(groupCode);
+  if (externalSubOrgUnits.length > 0) return externalSubOrgUnits;
   return getSubUnits(groupCode);
 }
 
@@ -808,6 +806,9 @@ export default function PersonnelClient({
       selectedGroup === "CIVIL"
         ? selectedGroupLabel
         : `${selectedGroupLabel} 직속`;
+    const directIcon = selectedGroup
+      ? (getFactionIcon(selectedGroup) ?? getInstitutionIcon(selectedGroup))
+      : undefined;
     const renderUnitAccordion = (unit: SubUnitItem) => {
       const members = subUnitIndex.get(unit.code) ?? [];
       const agentCount = members.filter((m) => m.type === "AGENT").length;
@@ -845,6 +846,13 @@ export default function PersonnelClient({
             aria-label={directLabel}
           >
             <div className={styles.directMembers__head}>
+              {directIcon ? (
+                <OrgIcon
+                  code={directIcon}
+                  size={18}
+                  className={styles.directMembers__icon}
+                />
+              ) : null}
               <span className={styles.directMembers__label}>
                 {directLabel}
               </span>
