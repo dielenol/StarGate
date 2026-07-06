@@ -8,6 +8,7 @@ import {
   addHours,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
+  getEquipmentResearchPrerequisiteTier,
   quoteEquipmentResearchRush,
 } from "../research.ts";
 
@@ -61,6 +62,43 @@ test("DEF is only available through the personal T5 final protocol", () => {
   assert.deepEqual(defNodes[0].allowedScopes, ["personal"]);
   assert.deepEqual(getEquipmentResearchEffect(defNodes[0], "team"), null);
   assert.equal(EQUIPMENT_RESEARCH_CAPS.def, 1);
+});
+
+test("team research now has T2 and T5 options without team DEF or points", () => {
+  const teamNodesByTier = new Map();
+  for (const node of EQUIPMENT_RESEARCH_NODES) {
+    if (!node.allowedScopes.includes("team")) continue;
+    const bucket = teamNodesByTier.get(node.tier) ?? [];
+    bucket.push(node.key);
+    teamNodesByTier.set(node.tier, bucket);
+  }
+
+  assert.ok(teamNodesByTier.get(2)?.includes("BIO-02"));
+  assert.ok(teamNodesByTier.get(2)?.includes("PSY-02"));
+  assert.ok(teamNodesByTier.get(5)?.includes("BIO-05"));
+  assert.ok(teamNodesByTier.get(5)?.includes("PSY-05"));
+  assert.ok(teamNodesByTier.get(5)?.includes("MUN-05"));
+
+  const teamT5Effects = EQUIPMENT_RESEARCH_NODES.filter(
+    (node) => node.tier === 5,
+  )
+    .map((node) => getEquipmentResearchEffect(node, "team"))
+    .filter(Boolean);
+  assert.equal(
+    teamT5Effects.some(
+      (effect) => effect.kind === "stat" && effect.stat === "def",
+    ),
+    false,
+  );
+  assert.equal(teamT5Effects.some((effect) => effect.kind === "point"), false);
+});
+
+test("research tiers require the previous tier after T1", () => {
+  assert.equal(getEquipmentResearchPrerequisiteTier(1), null);
+  assert.equal(getEquipmentResearchPrerequisiteTier(2), 1);
+  assert.equal(getEquipmentResearchPrerequisiteTier(3), 2);
+  assert.equal(getEquipmentResearchPrerequisiteTier(4), 3);
+  assert.equal(getEquipmentResearchPrerequisiteTier(5), 4);
 });
 
 test("T5 rush can reduce 150 days down to 120 days, then stops", () => {

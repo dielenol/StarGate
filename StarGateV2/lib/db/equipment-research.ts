@@ -15,6 +15,7 @@ import {
   type EquipmentResearchTier,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
+  getEquipmentResearchPrerequisiteTier,
 } from "@/lib/equipment-shop/research";
 
 export interface EquipmentResearchProject {
@@ -134,6 +135,30 @@ export async function findEquipmentResearchProjectById(
   if (!objectId) return null;
   const col = await equipmentResearchProjectsCol();
   return col.findOne({ _id: objectId });
+}
+
+export async function hasAppliedEquipmentResearchTierPrerequisite(args: {
+  scope: EquipmentResearchScope;
+  tier: EquipmentResearchTier;
+  targetCharacterIds: string[];
+}): Promise<boolean> {
+  const requiredTier = getEquipmentResearchPrerequisiteTier(args.tier);
+  if (!requiredTier) return true;
+
+  const col = await equipmentResearchProjectsCol();
+  const filter: Filter<EquipmentResearchProject> = {
+    scope: args.scope,
+    tier: requiredTier,
+    status: "applied",
+  };
+
+  if (args.scope === "personal") {
+    if (args.targetCharacterIds.length === 0) return false;
+    filter.targetCharacterIds = { $in: args.targetCharacterIds };
+  }
+
+  const project = await col.findOne(filter, { projection: { _id: 1 } });
+  return Boolean(project);
 }
 
 export async function updateEquipmentResearchProjectRush(args: {

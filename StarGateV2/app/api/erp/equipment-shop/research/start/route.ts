@@ -9,12 +9,14 @@ import {
 import {
   canApplyEquipmentResearchEffect,
   createEquipmentResearchProject,
+  hasAppliedEquipmentResearchTierPrerequisite,
   serializeEquipmentResearchProject,
 } from "@/lib/db/equipment-research";
 import {
   addHours,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
+  getEquipmentResearchPrerequisiteTier,
   isEquipmentResearchScope,
 } from "@/lib/equipment-shop/research";
 
@@ -128,6 +130,25 @@ export async function POST(request: Request) {
     fallbackCharacterId: budgetResult.budget.id,
   });
   if ("response" in targetResult) return targetResult.response;
+  const targetCharacterIds = targetResult.targets.map((target) =>
+    String(target._id),
+  );
+
+  const hasPrerequisite = await hasAppliedEquipmentResearchTierPrerequisite({
+    scope,
+    tier: node.tier,
+    targetCharacterIds,
+  });
+  if (!hasPrerequisite) {
+    const requiredTier = getEquipmentResearchPrerequisiteTier(node.tier);
+    return NextResponse.json(
+      {
+        error: `T${node.tier} 연구는 같은 범위의 T${requiredTier} 연구 적용 후 시작할 수 있습니다.`,
+        code: "RESEARCH_PREREQUISITE_MISSING",
+      },
+      { status: 400 },
+    );
+  }
 
   for (const target of targetResult.targets) {
     const targetId = String(target._id);
@@ -173,9 +194,7 @@ export async function POST(request: Request) {
       durationHours: node.durationHours,
       startedAt,
       completedAt: addHours(startedAt, node.durationHours),
-      targetCharacterIds: targetResult.targets.map((target) =>
-        String(target._id),
-      ),
+      targetCharacterIds,
       createdBy: authResult.session.id,
     });
   } catch (err) {

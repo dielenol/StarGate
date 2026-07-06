@@ -37,6 +37,7 @@ import { describeApiError } from "@/lib/api/describe-error";
 import { formatCredits } from "@/lib/format/credit";
 import {
   describeEquipmentResearchEffect,
+  getEquipmentResearchPrerequisiteTier,
   scopeLabel,
 } from "@/lib/equipment-shop/research";
 
@@ -162,6 +163,8 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   ITEM_NOT_AVAILABLE: "판매 가능한 병기부 카탈로그 품목이 아닙니다.",
   PRICE_NOT_SET: "가격이 확정되지 않은 장비는 구매할 수 없습니다.",
   RESEARCH_CAP_REACHED: "연구 누적 상한에 도달했습니다.",
+  RESEARCH_PREREQUISITE_MISSING:
+    "같은 범위의 이전 티어 연구를 먼저 적용해야 합니다.",
   RESEARCH_NOT_READY: "아직 완료되지 않은 연구입니다.",
   RUSH_LIMIT_REACHED: "더 이상 연구 시간을 단축할 수 없습니다.",
 };
@@ -280,8 +283,10 @@ function researchNodeMapStatusLabel(status: ResearchNodeMapStatus): string {
 function researchNodeClassName(
   status: ResearchNodeMapStatus,
   isSelected: boolean,
+  isLocked: boolean,
 ): string {
   const classes = [styles.techNode];
+  if (isLocked) classes.push(styles["techNode--locked"]);
   if (status === "completed") classes.push(styles["techNode--completed"]);
   if (status === "applied") classes.push(styles["techNode--applied"]);
   if (status === "applying" || status === "in_progress") {
@@ -296,6 +301,30 @@ function getFirstResearchKeyForScope(
   scope: EquipmentResearchScope,
 ): string {
   return tree.find((node) => node.allowedScopes.includes(scope))?.key ?? "";
+}
+
+function isResearchNodeUnlocked(args: {
+  node: ResearchNodeEntry;
+  projects: EquipmentResearchProjectEntry[];
+  scope: EquipmentResearchScope;
+  targetCharacterId: string | null;
+}): boolean {
+  const requiredTier = getEquipmentResearchPrerequisiteTier(args.node.tier);
+  if (!requiredTier) return true;
+  return args.projects.some((project) => {
+    if (project.scope !== args.scope) return false;
+    if (project.tier !== requiredTier) return false;
+    if (project.computedStatus !== "applied") return false;
+    if (args.scope === "team") return true;
+    return args.targetCharacterId
+      ? project.targetCharacterIds.includes(args.targetCharacterId)
+      : false;
+  });
+}
+
+function researchNodeLockLabel(node: ResearchNodeEntry): string | null {
+  const requiredTier = getEquipmentResearchPrerequisiteTier(node.tier);
+  return requiredTier ? `T${requiredTier} 필요` : null;
 }
 
 function ResearchPixelIcon({
@@ -413,10 +442,53 @@ function ResearchPixelIcon({
     }
   }
 
+  function renderTierMark() {
+    switch (node.tier) {
+      case 2:
+        return (
+          <>
+            <rect x="4" y="4" width="4" height="2" />
+            <rect x="16" y="18" width="4" height="2" />
+          </>
+        );
+      case 3:
+        return (
+          <>
+            <rect x="4" y="4" width="3" height="3" />
+            <rect x="17" y="4" width="3" height="3" />
+            <rect x="4" y="17" width="3" height="3" />
+            <rect x="17" y="17" width="3" height="3" />
+          </>
+        );
+      case 4:
+        return (
+          <>
+            <rect x="3" y="11" width="3" height="2" />
+            <rect x="18" y="11" width="3" height="2" />
+            <rect x="11" y="3" width="2" height="3" />
+            <rect x="11" y="18" width="2" height="3" />
+          </>
+        );
+      case 5:
+        return (
+          <>
+            <rect x="7" y="3" width="2" height="3" />
+            <rect x="11" y="2" width="2" height="4" />
+            <rect x="15" y="3" width="2" height="3" />
+            <rect x="7" y="6" width="10" height="2" />
+            <rect x="5" y="19" width="14" height="2" />
+          </>
+        );
+      default:
+        return <rect x="11" y="20" width="2" height="1" />;
+    }
+  }
+
   return (
     <svg
       className={[
         styles.researchPixelIcon,
+        styles[`researchPixelIcon--tier${node.tier}`],
         active ? styles["researchPixelIcon--active"] : "",
       ]
         .filter(Boolean)
@@ -429,6 +501,7 @@ function ResearchPixelIcon({
       <rect x="1" y="1" width="22" height="22" className={styles.iconFrame} />
       <rect x="3" y="3" width="18" height="18" className={styles.iconPlate} />
       <g className={styles.iconGlyph}>{renderGlyph()}</g>
+      <g className={styles.iconTierMark}>{renderTierMark()}</g>
     </svg>
   );
 }
@@ -1252,6 +1325,14 @@ export default function EquipmentShopClient({
   }
 
   function renderLabPanel() {
+    const selectedResearchUnlocked = selectedResearchNode
+      ? isResearchNodeUnlocked({
+          node: selectedResearchNode,
+          projects: researchProjects,
+          scope: activeResearchScope,
+          targetCharacterId: mainCharacter?.id ?? null,
+        })
+      : false;
     const selectedNodeState = selectedResearchNode
       ? getResearchNodeMapStatus(
           researchProjects,
@@ -1264,6 +1345,9 @@ export default function EquipmentShopClient({
       : null;
     const selectedRushRule = selectedResearchNode
       ? research.rushRules.find((rule) => rule.tier === selectedResearchNode.tier)
+      : null;
+    const selectedPrerequisiteLabel = selectedResearchNode
+      ? researchNodeLockLabel(selectedResearchNode)
       : null;
 
     return (
@@ -1352,6 +1436,12 @@ export default function EquipmentShopClient({
               ))}
 
               {scopedResearchTree.map((node) => {
+                const isUnlocked = isResearchNodeUnlocked({
+                  node,
+                  projects: researchProjects,
+                  scope: activeResearchScope,
+                  targetCharacterId: mainCharacter?.id ?? null,
+                });
                 const nodeStatus = getResearchNodeMapStatus(
                   researchProjects,
                   node.key,
@@ -1368,7 +1458,11 @@ export default function EquipmentShopClient({
                   <button
                     key={node.key}
                     type="button"
-                    className={researchNodeClassName(nodeStatus, isSelected)}
+                    className={researchNodeClassName(
+                      nodeStatus,
+                      isSelected,
+                      !isUnlocked,
+                    )}
                     style={{
                       gridColumn: node.tier,
                       gridRow: getResearchLane(node) + 1,
@@ -1381,7 +1475,9 @@ export default function EquipmentShopClient({
                     <strong>{node.name}</strong>
                     <span className={styles.techNodeEffect}>{effectSummary}</span>
                     <span className={styles.techNodeBadge}>
-                      {researchNodeMapStatusLabel(nodeStatus)}
+                      {isUnlocked
+                        ? researchNodeMapStatusLabel(nodeStatus)
+                        : researchNodeLockLabel(node)}
                     </span>
                   </button>
                 );
@@ -1438,6 +1534,16 @@ export default function EquipmentShopClient({
                       : "없음"}
                   </strong>
                 </div>
+                <div>
+                  <span>선행</span>
+                  <strong>
+                    {selectedPrerequisiteLabel
+                      ? selectedResearchUnlocked
+                        ? `${selectedPrerequisiteLabel} 충족`
+                        : selectedPrerequisiteLabel
+                      : "없음"}
+                  </strong>
+                </div>
               </div>
 
               <div className={styles.techDetailActions}>
@@ -1451,6 +1557,7 @@ export default function EquipmentShopClient({
                   }
                   disabled={
                     !selectedResearchEffect ||
+                    !selectedResearchUnlocked ||
                     !canStartResearch(
                       activeResearchScope,
                       selectedResearchNode.cost,

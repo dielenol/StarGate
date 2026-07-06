@@ -1108,6 +1108,16 @@
   border-color: rgba(109, 210, 226, 0.72);
 }
 
+.techNode--locked {
+  border-color: rgba(166, 176, 176, 0.22);
+  color: color-mix(in srgb, var(--ink-3) 70%, transparent);
+  filter: grayscale(0.45);
+}
+
+.techNode--locked .researchPixelIcon {
+  opacity: 0.58;
+}
+
 .techNode--completed {
   border-color: rgba(108, 211, 122, 0.78);
   color: #9fe59a;
@@ -1162,6 +1172,25 @@
   filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.45));
 }
 
+.researchPixelIcon--tier2 {
+  color: #c9dfd8;
+}
+
+.researchPixelIcon--tier3 {
+  color: #9bd8ec;
+}
+
+.researchPixelIcon--tier4 {
+  color: #d7c878;
+}
+
+.researchPixelIcon--tier5 {
+  color: #f0b45e;
+  filter:
+    drop-shadow(0 3px 0 rgba(0, 0, 0, 0.48))
+    drop-shadow(0 0 8px rgba(240, 180, 94, 0.34));
+}
+
 .researchPixelIcon--active {
   color: var(--gold);
 }
@@ -1178,6 +1207,10 @@
 
 .iconGlyph {
   fill: currentColor;
+}
+
+.iconTierMark {
+  fill: color-mix(in srgb, currentColor 70%, var(--gold) 30%);
 }
 
 .techDetailPanel {
