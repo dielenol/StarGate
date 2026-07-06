@@ -34,7 +34,7 @@ export interface ShopCatalogItem {
   description: string;
   stockMin: number;
   stockMax: number;
-  /** 0.0 ~ 1.0. 0 이면 항상 품절(VF혈액팩 같은 fluff). */
+  /** 0.0 ~ 1.0. 0 이면 해당 일자에는 항상 품절. */
   appearRate: number;
   /** #RRGGBB. */
   color: string;
@@ -194,7 +194,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     price: 180,
     effect: "니코틴 5턴",
     description: "한 갑 통째로. 폐가 걱정되지만...",
-    stockMin: 0,
+    stockMin: 1,
     stockMax: 2,
     appearRate: 0.35,
     color: "#686460",
@@ -207,7 +207,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     price: 260,
     effect: "음주 5턴",
     description: "아주 독한 술. 각오하고 드셔야 해요...",
-    stockMin: 0,
+    stockMin: 1,
     stockMax: 1,
     appearRate: 0.25,
     color: "#9b2020",
@@ -220,7 +220,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     price: 240,
     effect: "HP 30 / SAN 10",
     description: "전설의 아이스크림. 한 입이면 세상이 달라져요.",
-    stockMin: 0,
+    stockMin: 1,
     stockMax: 1,
     appearRate: 0.18,
     color: "#dcb43c",
@@ -230,10 +230,10 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     slug: "force_core",
     name: "포스코어",
     icon: "💎",
-    price: 450,
+    price: 1800,
     effect: "???",
     description: "정체불명의 에너지 결정체. 강력한 힘이 느껴진다...",
-    stockMin: 0,
+    stockMin: 1,
     stockMax: 1,
     appearRate: 0.08,
     color: "#643cc8",
@@ -246,9 +246,9 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     price: 900,
     effect: "HP 전회복",
     description: "앙카가 맨날 사가서 항상 매진이에요...",
-    stockMin: 0,
-    stockMax: 0,
-    appearRate: 0.0,
+    stockMin: 1,
+    stockMax: 1,
+    appearRate: 0.04,
     color: "#b41414",
     pageGroup: "RARE",
   },

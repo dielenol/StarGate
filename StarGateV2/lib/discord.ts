@@ -27,6 +27,7 @@ const DISCORD_COLORS = {
   apply: 0xc5a059,
   contact: 0x5ea3c5,
   shopRestock: 0xc5a059,
+  shopReorder: 0xd95f5f,
   /** 캐릭터 편집 — admin 모드 (관리자 편집 강조 색상) */
   charEditAdmin: 0xc5a059,
   /** 캐릭터 편집 — player 모드 (일반 인포 톤) */
@@ -245,6 +246,26 @@ export interface ShopRestockWebhookPayload {
   items: ShopRestockWebhookItem[];
 }
 
+export interface ShopReorderWebhookPayload {
+  today: string;
+  item: {
+    slug: string;
+    name: string;
+    icon: string;
+    price: number;
+    pageGroup: "BASIC" | "RECOVERY" | "LUXURY" | "RARE";
+  };
+  requester: {
+    id: string;
+    displayName: string;
+  };
+  character?: {
+    id: string;
+    codename: string;
+  };
+  requestedAt: Date;
+}
+
 const SHOP_GROUP_ORDER: ShopRestockWebhookItem["pageGroup"][] = [
   "BASIC",
   "RECOVERY",
@@ -344,6 +365,91 @@ export async function notifyShopRestock(
 
   await sendDiscordWebhook(discordPayload, webhookUrl);
   return "sent";
+}
+
+export async function notifyShopReorderRequest(
+  payload: ShopReorderWebhookPayload,
+): Promise<"sent" | "skipped"> {
+  const webhookUrl = process.env.DISCORD_WEBHOOK_SHOP_URL;
+  if (!webhookUrl) {
+    console.warn(
+      "[notifyShopReorderRequest] DISCORD_WEBHOOK_SHOP_URL 미설정 — silent skip",
+    );
+    return "skipped";
+  }
+
+  const fields: DiscordEmbedField[] = [
+    {
+      name: "요청 품목",
+      value: [
+        payload.item.icon,
+        sanitizeForDiscord(payload.item.name),
+        `(${payload.item.slug})`,
+      ].join(" "),
+      inline: true,
+    },
+    {
+      name: "분류 / 가격",
+      value: [
+        SHOP_GROUP_LABELS[payload.item.pageGroup],
+        `${payload.item.price.toLocaleString("ko-KR")}C`,
+      ].join(" · "),
+      inline: true,
+    },
+    {
+      name: "요청자",
+      value: sanitizeForDiscord(payload.requester.displayName),
+      inline: true,
+    },
+  ];
+
+  if (payload.character) {
+    fields.push({
+      name: "대표 캐릭터",
+      value: sanitizeForDiscord(payload.character.codename),
+      inline: true,
+    });
+  }
+
+  fields.push(
+    {
+      name: "요청 시각",
+      value: formatKstTimestamp(payload.requestedAt),
+      inline: true,
+    },
+    {
+      name: "재고 관리",
+      value: `[편의점 재고 확인](${SHOP_WEB_URL})`,
+    },
+  );
+
+  const discordPayload: DiscordPayload = {
+    username: "띠아",
+    avatar_url: process.env.DISCORD_WEBHOOK_SHOP_AVATAR_URL || undefined,
+    allowed_mentions: { parse: [] },
+    embeds: [
+      {
+        title: "편의점 발주 요청",
+        url: SHOP_WEB_URL,
+        description: [
+          "품절 상품 발주 요청이 들어왔어요.",
+          "GM 재고 관리에서 입고 여부를 확인해 주세요.",
+        ].join("\n"),
+        color: DISCORD_COLORS.shopReorder,
+        fields,
+        footer: { text: `${payload.today} KST` },
+        timestamp: payload.requestedAt.toISOString(),
+      },
+    ],
+  };
+
+  try {
+    await sendDiscordWebhook(discordPayload, webhookUrl);
+    return "sent";
+  } catch (error) {
+    console.warn("[notifyShopReorderRequest] Discord 전송 실패:", error);
+    return "skipped";
+  }
 }
 
 /**

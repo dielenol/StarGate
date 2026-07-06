@@ -8,12 +8,14 @@
 import "@/lib/db/init";
 
 import { getDb } from "@stargate/shared-db";
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
+import { listUsers } from "@/lib/db/users";
+import { notifyShopReorderRequest } from "@/lib/discord";
 import { getStock } from "@/lib/db/shop";
-import { notifyUser } from "@/lib/notifications/events";
+import { notifyUser, notifyUsers } from "@/lib/notifications/events";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 
@@ -44,9 +46,46 @@ function isDuplicateKeyError(error: unknown): boolean {
   );
 }
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 async function reorderRequestsCol() {
   const db = await getDb();
   return db.collection<ShopReorderRequestDoc>("shop_reorder_requests");
+}
+
+async function notifyShopReorderOperators(
+  doc: ShopReorderRequestDoc,
+): Promise<void> {
+  try {
+    const users = await listUsers();
+    const gms = users.filter(
+      (user) => user.status === "ACTIVE" && user.role === "GM",
+    );
+
+    await notifyUsers(
+      gms.map((user) => ({
+        userId: user._id,
+        type: "SYSTEM",
+        title: "편의점 발주 요청",
+        message: [
+          doc.characterCodename
+            ? `${doc.characterCodename} · ${doc.itemName}`
+            : doc.itemName,
+          `${doc.userName} 요청`,
+          "GM 재고 관리 확인 필요",
+        ].join(" · "),
+        link: "/erp/shop",
+      })),
+    );
+  } catch (error) {
+    console.warn("[shop reorder] operator notification failed", {
+      requestId: doc._id,
+      error: getErrorMessage(error),
+    });
+  }
 }
 
 export async function POST(request: Request) {
@@ -132,6 +171,33 @@ export async function POST(request: Request) {
       "운영자 확인 대기",
     ].join(" · "),
     link: "/erp/shop",
+  });
+
+  after(async () => {
+    await notifyShopReorderOperators(doc);
+    await notifyShopReorderRequest({
+      today,
+      item: {
+        slug: item.slug,
+        name: item.name,
+        icon: item.icon,
+        price: item.price,
+        pageGroup: item.pageGroup,
+      },
+      requester: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+      },
+      ...(doc.characterId && doc.characterCodename
+        ? {
+            character: {
+              id: doc.characterId,
+              codename: doc.characterCodename,
+            },
+          }
+        : {}),
+      requestedAt: doc.createdAt,
+    });
   });
 
   return NextResponse.json(
