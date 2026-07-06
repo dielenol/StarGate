@@ -44,6 +44,8 @@ export const DEFAULT_FACTION_FAVORABILITY_BY_CODE: Record<string, number> = {
   HOSTILE: 0,
   WHITE_ROSE: 10,
   SPACE_ZERO: 3,
+  USA: 4,
+  NOGA: 0,
   GOLDEN_DAWN: 0,
   AHNENERBE: 0,
 };
@@ -162,9 +164,13 @@ function keywordSetFor(code: string): string[] {
     ...subUnitLabels,
   ].filter((value): value is string => Boolean(value));
 
-  if (code === "CIVIL") {
+  if (
+    EXTERNAL_FACTION_CODES.includes(
+      code as (typeof EXTERNAL_FACTION_CODES)[number],
+    )
+  ) {
     for (const org of EXTERNAL_SUB_ORGS.filter(
-      (entry) => entry.parentCode === "CIVIL",
+      (entry) => entry.parentCode === code,
     )) {
       keywords.push(org.code, org.label, org.labelEn, org.summary, org.doctrine);
     }
@@ -244,7 +250,7 @@ function buildBoardNodes(
   });
 
   const branchNodes = EXTERNAL_SUB_ORGS.filter(
-    (org) => org.parentCode === "CIVIL",
+    (org) => org.parentCode !== HOSTILE_FACTION_CODE,
   ).map((org) =>
     addStats(
       {
@@ -252,7 +258,7 @@ function buildBoardNodes(
         label: org.label,
         labelEn: org.labelEn,
         kind: "branch",
-        scopeLabel: "시민사회 하위 세력",
+        scopeLabel: `${org.parentLabel} 하위 세력`,
         parentCode: org.parentCode,
         parentLabel: org.parentLabel,
         summary: org.summary,

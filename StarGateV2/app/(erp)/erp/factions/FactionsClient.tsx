@@ -20,6 +20,7 @@ import {
   IconRelations,
 } from "@/components/icons";
 
+import OrgIcon, { FACTION_ICON_MAP } from "../personnel/_components/OrgIcon";
 import orgStyles from "../personnel/_components/OrgCanvas.module.css";
 import styles from "./page.module.css";
 
@@ -155,8 +156,22 @@ export default function FactionsClient({ data }: FactionsClientProps) {
   const councilNode = nodesByCode.get("COUNCIL");
   const militaryNode = nodesByCode.get("MILITARY");
   const civilNode = nodesByCode.get("CIVIL");
-  const whiteRoseNode = nodesByCode.get("WHITE_ROSE");
-  const spaceZeroNode = nodesByCode.get("SPACE_ZERO");
+  const externalBranchGroups = [
+    {
+      key: "military",
+      label: "군부 하위 소속",
+      nodes: boardNodes.filter(
+        (node) => node.kind === "branch" && node.parentCode === "MILITARY",
+      ),
+    },
+    {
+      key: "civil",
+      label: "시민사회 하위 소속",
+      nodes: boardNodes.filter(
+        (node) => node.kind === "branch" && node.parentCode === "CIVIL",
+      ),
+    },
+  ].filter((group) => group.nodes.length > 0);
   const hostileNode = nodesByCode.get("HOSTILE");
   const hostileBranchNodes = boardNodes.filter(
     (node) => node.parentCode === "HOSTILE",
@@ -240,6 +255,12 @@ export default function FactionsClient({ data }: FactionsClientProps) {
     const isActive = selectedCode === node.code;
     const isSubOrg = options.subOrg === true;
     const isHostile = options.hostile === true;
+    const parentIcon =
+      isSubOrg && node.parentCode
+        ? FACTION_ICON_MAP[
+            node.parentCode as keyof typeof FACTION_ICON_MAP
+          ]
+        : undefined;
 
     return (
       <button
@@ -281,6 +302,13 @@ export default function FactionsClient({ data }: FactionsClientProps) {
           <img
             src={node.logoUrl}
             alt=""
+            className={orgStyles.subOrgLogo}
+            aria-hidden
+          />
+        ) : isSubOrg && parentIcon ? (
+          <OrgIcon
+            code={parentIcon}
+            size={24}
             className={orgStyles.subOrgLogo}
             aria-hidden
           />
@@ -421,34 +449,39 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                       {civilNode ? renderOrgNode(civilNode) : null}
                     </div>
 
-                    <div
-                      className={orgStyles.civilSubOrgs}
-                      aria-label="시민사회 하위 조직"
-                    >
-                      <svg
-                        className={orgStyles.civilSubOrgConnector}
-                        viewBox="0 0 100 72"
-                        preserveAspectRatio="none"
-                        aria-hidden
-                      >
-                        <path
-                          d="M50 0 V28 M22 28 H78 M22 28 V72 M78 28 V72"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1"
-                          strokeDasharray="4 6"
-                          vectorEffect="non-scaling-stroke"
-                        />
-                      </svg>
+                    <div className={orgStyles.externalSubOrgGroups}>
+                      {externalBranchGroups.map((group) => (
+                        <div
+                          key={group.key}
+                          className={[
+                            orgStyles.subOrgGroup,
+                            orgStyles[`subOrgGroup--${group.key}`],
+                          ].join(" ")}
+                          role="group"
+                          aria-label={group.label}
+                        >
+                          <svg
+                            className={orgStyles.subOrgGroupConnector}
+                            viewBox="0 0 100 44"
+                            preserveAspectRatio="none"
+                            aria-hidden
+                          >
+                            <path
+                              d="M50 0 V26 M18 26 H82 M18 26 V44 M82 26 V44"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1"
+                              strokeDasharray="4 6"
+                              vectorEffect="non-scaling-stroke"
+                            />
+                          </svg>
 
-                      {whiteRoseNode
-                        ? renderOrgNode(whiteRoseNode, { subOrg: true })
-                        : null}
-                      {spaceZeroNode
-                        ? renderOrgNode(spaceZeroNode, { subOrg: true })
-                        : null}
+                          {group.nodes.map((node) =>
+                            renderOrgNode(node, { subOrg: true }),
+                          )}
+                        </div>
+                      ))}
                     </div>
-
                   </div>
                 </div>
 
