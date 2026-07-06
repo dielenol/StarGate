@@ -312,20 +312,97 @@
   color: var(--danger);
 }
 
-.marketBrief__breadth {
+.marketBrief__indexChart {
   position: relative;
-  height: 4px;
+  min-height: 92px;
   overflow: hidden;
-  background: var(--bg-2);
-  border-radius: 999px;
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--gold) 9%, transparent), transparent),
+    var(--bg-2);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
 }
 
-.marketBrief__breadth span {
+.marketBrief__indexChart svg {
+  display: block;
+  width: 100%;
+  height: 92px;
+}
+
+.marketBrief__indexChartArea {
+  fill: color-mix(in oklab, var(--gold) 18%, transparent);
+}
+
+.marketBrief__indexChartLine {
+  fill: none;
+  stroke: var(--gold);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.marketBrief__indexChartDot {
+  fill: var(--gold);
+  stroke: var(--bg-1);
+  stroke-width: 2;
+}
+
+.marketBrief__indexChart--down {
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--danger) 9%, transparent), transparent),
+    var(--bg-2);
+  border-color: color-mix(in oklab, var(--danger) 40%, transparent);
+}
+
+.marketBrief__indexChart--down .marketBrief__indexChartArea {
+  fill: color-mix(in oklab, var(--danger) 16%, transparent);
+}
+
+.marketBrief__indexChart--down .marketBrief__indexChartLine {
+  stroke: var(--danger);
+}
+
+.marketBrief__indexChart--down .marketBrief__indexChartDot {
+  fill: var(--danger);
+}
+
+.marketBrief__indexChartMeta {
   position: absolute;
-  inset: 0 auto 0 0;
-  min-width: 3px;
-  background: var(--gold);
-  border-radius: inherit;
+  right: 10px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 7px;
+  background: color-mix(in oklab, var(--bg-0) 82%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.06em;
+}
+
+.marketBrief__indexChartMeta span {
+  color: var(--ink-2);
+}
+
+.marketBrief__indexChartMeta strong {
+  color: var(--gold);
+  font-size: var(--font-size-xs);
+}
+
+.marketBrief__indexChart--down .marketBrief__indexChartMeta strong {
+  color: var(--danger);
+}
+
+.marketBrief__indexChartEmpty {
+  display: grid;
+  min-height: 92px;
+  place-items: center;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
 }
 
 .marketBrief__rows {

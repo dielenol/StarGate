@@ -17,12 +17,14 @@ import {
   listStockPriceHistory,
   listStockPriceHistoryBulk,
 } from "@/lib/db/stocks";
+import { buildStockMarketIndexHistory } from "@/lib/stocks/market-index";
 import { findStockByTicker, STOCK_CATALOG } from "@/lib/stocks/catalog";
 import { roundStockValue } from "@/lib/stocks/pricing";
 
 import type {
   StockHistoryResponse,
   StockHoldingsResponse,
+  StockMarketIndexHistoryResponse,
   StockMarketWireResponse,
   StockPricesResponse,
   StockSparklinesResponse,
@@ -190,6 +192,48 @@ export async function buildMarketWireResponse(
     .slice(0, safeLimit);
 
   return { items, days: safeDays, limit: safeLimit };
+}
+
+/* ── market index history (NOVEX) ── */
+
+/**
+ * NOVEX 종합지수 시계열 빌더.
+ *
+ * 종목별 가격 이력을 시간순으로 적용하며, 각 시점의 전체 시총 합계를
+ * `buildStockMarketIndexSnapshot` 과 동일한 발행주식수 가중 기준으로 환산한다.
+ */
+export async function buildMarketIndexHistoryResponse(
+  days: number = 7,
+): Promise<StockMarketIndexHistoryResponse> {
+  const safeDays = Math.max(1, Math.min(30, Math.floor(days)));
+  const [prices, rowsByTicker] = await Promise.all([
+    getStockPrices(),
+    Promise.all(
+      STOCK_CATALOG.map(async (meta) => {
+        const rows = await listStockPriceHistory(meta.ticker, safeDays);
+        return rows.map((row) => ({
+          ticker: meta.ticker,
+          price: row.price,
+          prevPrice: row.prevPrice,
+          createdAt: row.createdAt,
+        }));
+      }),
+    ),
+  ]);
+  const priceByTicker = new Map(prices.map((price) => [price.ticker, price]));
+  const currentQuotes = STOCK_CATALOG.map((meta) => {
+    const row = priceByTicker.get(meta.ticker);
+    return {
+      ticker: meta.ticker,
+      price: row?.price ?? meta.basePrice,
+      prevPrice: row?.prevPrice ?? meta.basePrice,
+    };
+  });
+  const points = buildStockMarketIndexHistory(
+    rowsByTicker.flat(),
+    currentQuotes,
+  );
+  return { points, days: safeDays };
 }
 
 /* ── sparklines (전 종목 동시) ── */

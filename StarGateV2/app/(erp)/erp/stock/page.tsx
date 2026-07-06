@@ -24,6 +24,7 @@ import { isStockMarketEnabled } from "@/lib/stocks/market";
 
 import type {
   StockHoldingsResponse,
+  StockMarketIndexHistoryResponse,
   StockMarketWireResponse,
   StockPricesResponse,
   StockSparklinesResponse,
@@ -31,6 +32,7 @@ import type {
 
 import {
   buildHoldingsResponse,
+  buildMarketIndexHistoryResponse,
   buildMarketWireResponse,
   buildPricesResponse,
   buildSparklinesResponse,
@@ -38,6 +40,7 @@ import {
 import StockListClient from "./StockListClient";
 
 const SPARKLINE_DAYS = 7;
+const MARKET_INDEX_HISTORY_DAYS = 7;
 
 export const metadata = {
   title: "주식 — Stargate ERP",
@@ -80,8 +83,13 @@ export default async function StockPage() {
     (): StockPricesResponse => ({ items: [] }),
   );
 
-  const [initialSparklines, initialHoldings, initialBalance, initialMarketWire] =
-    await Promise.all([
+  const [
+    initialSparklines,
+    initialHoldings,
+    initialBalance,
+    initialMarketWire,
+    initialMarketIndexHistory,
+  ] = await Promise.all([
       buildSparklinesResponse(SPARKLINE_DAYS).catch(
         (): StockSparklinesResponse => ({ items: [], days: SPARKLINE_DAYS }),
       ),
@@ -107,6 +115,12 @@ export default async function StockPage() {
           limit: 12,
         }),
       ),
+      buildMarketIndexHistoryResponse(MARKET_INDEX_HISTORY_DAYS).catch(
+        (): StockMarketIndexHistoryResponse => ({
+          points: [],
+          days: MARKET_INDEX_HISTORY_DAYS,
+        }),
+      ),
     ]);
 
   return (
@@ -116,6 +130,7 @@ export default async function StockPage() {
       initialHoldings={initialHoldings}
       initialBalance={initialBalance}
       initialMarketWire={initialMarketWire}
+      initialMarketIndexHistory={initialMarketIndexHistory}
       mainCharacter={
         mainCharacter && mainCharacterId
           ? { id: mainCharacterId, codename: mainCharacter.codename }

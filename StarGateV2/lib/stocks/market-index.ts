@@ -49,6 +49,20 @@ export interface StockMarketIndexSnapshot {
   components: StockMarketIndexComponent[];
 }
 
+export interface StockMarketIndexHistoryEntry {
+  ticker: string;
+  price: number;
+  prevPrice: number;
+  createdAt: Date;
+}
+
+export interface StockMarketIndexHistoryPoint {
+  /** ISO 8601. */
+  ts: string;
+  value: number;
+  totalMarketCap: number;
+}
+
 function safePrice(value: number, fallback: number): number {
   if (Number.isFinite(value) && value > 0) return value;
   return fallback;
@@ -67,6 +81,160 @@ export function formatIndexValue(value: number): string {
 
 export function formatMarketCapCredits(value: number): string {
   return formatBillionToKor(Math.round(value / MARKET_CAP_UNIT));
+}
+
+function buildIndexComponentSeed() {
+  return STOCK_CATALOG.map((meta) => {
+    const info = getStockInfo(meta.ticker);
+    return {
+      ticker: meta.ticker,
+      basePrice: meta.basePrice,
+      sharesOutstanding: info?.sharesOutstanding ?? 0,
+    };
+  });
+}
+
+function calculateTotalMarketCap(
+  prices: ReadonlyMap<string, number>,
+  components = buildIndexComponentSeed(),
+): number {
+  return roundStockValue(
+    components.reduce((sum, item) => {
+      const price = safePrice(
+        prices.get(item.ticker) ?? item.basePrice,
+        item.basePrice,
+      );
+      return sum + price * item.sharesOutstanding;
+    }, 0),
+  );
+}
+
+function calculateBaseMarketCap(
+  components = buildIndexComponentSeed(),
+): number {
+  return roundStockValue(
+    components.reduce(
+      (sum, item) => sum + item.basePrice * item.sharesOutstanding,
+      0,
+    ),
+  );
+}
+
+function buildIndexHistoryPoint(
+  ts: Date,
+  prices: ReadonlyMap<string, number>,
+  baseMarketCap: number,
+  components = buildIndexComponentSeed(),
+): StockMarketIndexHistoryPoint {
+  const totalMarketCap = calculateTotalMarketCap(prices, components);
+  const value =
+    baseMarketCap > 0
+      ? roundIndexValue(
+          (totalMarketCap / baseMarketCap) * STOCK_MARKET_INDEX_BASE_VALUE,
+        )
+      : STOCK_MARKET_INDEX_BASE_VALUE;
+  return {
+    ts: ts.toISOString(),
+    value,
+    totalMarketCap,
+  };
+}
+
+export function buildStockMarketIndexHistory(
+  entries: readonly StockMarketIndexHistoryEntry[],
+  currentQuotes: readonly StockMarketIndexQuote[],
+): StockMarketIndexHistoryPoint[] {
+  const sortedEntries = [...entries].sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+  );
+  const currentByTicker = new Map(
+    currentQuotes.map((quote) => [quote.ticker, quote]),
+  );
+  const firstEntryByTicker = new Map<string, StockMarketIndexHistoryEntry>();
+  for (const entry of sortedEntries) {
+    if (!firstEntryByTicker.has(entry.ticker)) {
+      firstEntryByTicker.set(entry.ticker, entry);
+    }
+  }
+  const metaByTicker = new Map(STOCK_CATALOG.map((meta) => [meta.ticker, meta]));
+  const components = buildIndexComponentSeed();
+  const workingPrices = new Map<string, number>();
+
+  for (const meta of STOCK_CATALOG) {
+    const firstEntry = firstEntryByTicker.get(meta.ticker);
+    const currentQuote = currentByTicker.get(meta.ticker);
+    workingPrices.set(
+      meta.ticker,
+      safePrice(
+        firstEntry?.prevPrice ?? currentQuote?.price ?? meta.basePrice,
+        meta.basePrice,
+      ),
+    );
+  }
+
+  const baseMarketCap = calculateBaseMarketCap(components);
+  const points: StockMarketIndexHistoryPoint[] = [];
+  const firstEntry = sortedEntries[0];
+  const now = new Date();
+  if (firstEntry) {
+    points.push(
+      buildIndexHistoryPoint(
+        new Date(firstEntry.createdAt.getTime() - 1),
+        workingPrices,
+        baseMarketCap,
+        components,
+      ),
+    );
+  } else {
+    const previousPrices = new Map<string, number>();
+    for (const meta of STOCK_CATALOG) {
+      const currentQuote = currentByTicker.get(meta.ticker);
+      previousPrices.set(
+        meta.ticker,
+        safePrice(
+          currentQuote?.prevPrice ?? currentQuote?.price ?? meta.basePrice,
+          meta.basePrice,
+        ),
+      );
+    }
+    points.push(
+      buildIndexHistoryPoint(
+        new Date(now.getTime() - 60 * 1000),
+        previousPrices,
+        baseMarketCap,
+        components,
+      ),
+    );
+  }
+
+  for (const entry of sortedEntries) {
+    const meta = metaByTicker.get(entry.ticker);
+    if (!meta) continue;
+    workingPrices.set(entry.ticker, safePrice(entry.price, meta.basePrice));
+    points.push(
+      buildIndexHistoryPoint(
+        entry.createdAt,
+        workingPrices,
+        baseMarketCap,
+        components,
+      ),
+    );
+  }
+
+  const nowPrices = new Map(workingPrices);
+  for (const meta of STOCK_CATALOG) {
+    const currentQuote = currentByTicker.get(meta.ticker);
+    nowPrices.set(
+      meta.ticker,
+      safePrice(
+        currentQuote?.price ?? nowPrices.get(meta.ticker) ?? meta.basePrice,
+        meta.basePrice,
+      ),
+    );
+  }
+  points.push(buildIndexHistoryPoint(now, nowPrices, baseMarketCap, components));
+
+  return points;
 }
 
 export function buildStockMarketIndexSnapshot(

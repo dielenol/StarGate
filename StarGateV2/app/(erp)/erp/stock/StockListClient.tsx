@@ -19,11 +19,14 @@ import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import { useCredits } from "@/hooks/queries/useCreditsQuery";
 import {
   type StockHoldingsResponse,
+  type StockMarketIndexHistoryPoint,
+  type StockMarketIndexHistoryResponse,
   type StockMarketWireResponse,
   type StockPricesResponse,
   type StockSparkline as StockSparklineDto,
   type StockSparklinesResponse,
   useStockHoldings,
+  useStockMarketIndexHistory,
   useStockMarketWire,
   useStockPrices,
   useStockSparklines,
@@ -59,6 +62,9 @@ import styles from "./page.module.css";
 /* ── 상수 ── */
 
 const SPARKLINE_DAYS = 7;
+const MARKET_INDEX_HISTORY_DAYS = 7;
+const INDEX_CHART_WIDTH = 240;
+const INDEX_CHART_HEIGHT = 72;
 /** 행 hover 시 미리보기 표시까지 대기 시간 (ms). */
 const HOVER_DELAY_MS = 150;
 
@@ -88,6 +94,50 @@ function formatSignedPercent(value: number): string {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
+function buildIndexTrend(points: readonly StockMarketIndexHistoryPoint[]) {
+  if (points.length < 2) return null;
+
+  const chartPoints = points.slice(-120);
+  const values = chartPoints.map((point) => point.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || Math.max(1, Math.abs(max) * 0.01);
+  const topPad = 6;
+  const bottomPad = 8;
+  const usableHeight = INDEX_CHART_HEIGHT - topPad - bottomPad;
+  const coords = chartPoints.map((point, index) => {
+    const x =
+      chartPoints.length > 1
+        ? (index / (chartPoints.length - 1)) * INDEX_CHART_WIDTH
+        : INDEX_CHART_WIDTH;
+    const y = topPad + ((max - point.value) / range) * usableHeight;
+    return { x, y };
+  });
+  const linePath = coords
+    .map((point, index) => {
+      const command = index === 0 ? "M" : "L";
+      return `${command} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+    })
+    .join(" ");
+  const first = coords[0];
+  const last = coords[coords.length - 1];
+  const baselineY = INDEX_CHART_HEIGHT - 1;
+  const areaPath = `${linePath} L ${last.x.toFixed(2)} ${baselineY} L ${first.x.toFixed(2)} ${baselineY} Z`;
+  const firstValue = chartPoints[0].value;
+  const lastValue = chartPoints[chartPoints.length - 1].value;
+  const changePercent =
+    firstValue > 0 ? ((lastValue - firstValue) / firstValue) * 100 : 0;
+
+  return {
+    areaPath,
+    linePath,
+    lastX: last.x,
+    lastY: last.y,
+    changePercent,
+    direction: priceDirection(lastValue, firstValue),
+  };
+}
+
 /* ── Props ── */
 
 interface Props {
@@ -96,6 +146,7 @@ interface Props {
   initialHoldings: StockHoldingsResponse;
   initialBalance: number;
   initialMarketWire: StockMarketWireResponse;
+  initialMarketIndexHistory: StockMarketIndexHistoryResponse;
   mainCharacter: { id: string; codename: string } | null;
   mainCharacterError: string | null;
   marketEnabled: boolean;
@@ -109,6 +160,7 @@ export default function StockListClient({
   initialHoldings,
   initialBalance,
   initialMarketWire,
+  initialMarketIndexHistory,
   mainCharacter,
   mainCharacterError,
   marketEnabled,
@@ -120,6 +172,10 @@ export default function StockListClient({
   });
   const holdingsQuery = useStockHoldings({ initialData: initialHoldings });
   const marketWireQuery = useStockMarketWire({ initialData: initialMarketWire });
+  const marketIndexHistoryQuery = useStockMarketIndexHistory(
+    MARKET_INDEX_HISTORY_DAYS,
+    { initialData: initialMarketIndexHistory },
+  );
   const creditsQuery = useCredits();
   const {
     tickers: watchedTickers,
@@ -149,6 +205,8 @@ export default function StockListClient({
   const prices = pricesQuery.data ?? initialPrices;
   const holdings = holdingsQuery.data ?? initialHoldings;
   const marketWire = marketWireQuery.data ?? initialMarketWire;
+  const marketIndexHistory =
+    marketIndexHistoryQuery.data ?? initialMarketIndexHistory;
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -217,10 +275,9 @@ export default function StockListClient({
     };
   }, [marketWire.items, prices.items]);
 
-  const marketBreadthPercent =
-    marketIndex.components.length > 0
-      ? (marketIndex.upCount / marketIndex.components.length) * 100
-      : 0;
+  const marketIndexTrend = useMemo(() => {
+    return buildIndexTrend(marketIndexHistory.points);
+  }, [marketIndexHistory.points]);
 
   const triggeredAlerts = useMemo(() => {
     return prices.items
@@ -415,8 +472,51 @@ export default function StockListClient({
               </span>
             ) : null}
           </div>
-          <div className={styles.marketBrief__breadth} aria-hidden="true">
-            <span style={{ width: `${marketBreadthPercent}%` }} />
+          <div
+            className={[
+              styles.marketBrief__indexChart,
+              marketIndexTrend?.direction === "down"
+                ? styles["marketBrief__indexChart--down"]
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            {marketIndexTrend ? (
+              <svg
+                viewBox={`0 0 ${INDEX_CHART_WIDTH} ${INDEX_CHART_HEIGHT}`}
+                preserveAspectRatio="none"
+                role="img"
+                aria-label={`NOVEX ${marketIndexHistory.days}일 지수 변동 ${formatSignedPercent(marketIndexTrend.changePercent)}`}
+              >
+                <path
+                  className={styles.marketBrief__indexChartArea}
+                  d={marketIndexTrend.areaPath}
+                />
+                <path
+                  className={styles.marketBrief__indexChartLine}
+                  d={marketIndexTrend.linePath}
+                />
+                <circle
+                  className={styles.marketBrief__indexChartDot}
+                  cx={marketIndexTrend.lastX}
+                  cy={marketIndexTrend.lastY}
+                  r="3"
+                />
+              </svg>
+            ) : (
+              <div className={styles.marketBrief__indexChartEmpty}>
+                지수 이력 대기
+              </div>
+            )}
+            <div className={styles.marketBrief__indexChartMeta}>
+              <span>{marketIndexHistory.days}일 NOVEX</span>
+              <strong>
+                {marketIndexTrend
+                  ? formatSignedPercent(marketIndexTrend.changePercent)
+                  : "데이터 대기"}
+              </strong>
+            </div>
           </div>
         </section>
 

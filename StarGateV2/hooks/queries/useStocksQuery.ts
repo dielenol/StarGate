@@ -4,6 +4,7 @@
  * - `useStockPrices`: GET /api/erp/stocks/prices — 9 종목 시세 + 변동률.
  * - `useStockHoldings`: GET /api/erp/stocks/holdings — 본인 메인 캐릭의 보유 + 평가/손익.
  * - `useStockHistory(ticker)`: GET /api/erp/stocks/history?ticker= — 차트용 30 일 시계열.
+ * - `useStockMarketIndexHistory`: GET /api/erp/stocks/index-history — NOVEX 지수 시계열.
  * - `useStockMarketWire`: GET /api/erp/stocks/wire — 전 종목 최근 공시 피드.
  *
  * 에러 분기 — `StocksApiError.code` 로 클라이언트 분기 가능 (shop/credits 와 동일 패턴).
@@ -24,6 +25,8 @@ export const stocksKeys = {
   adminHoldings: ["stocks", "admin-holdings"] as const,
   history: (ticker: string, days: number) =>
     ["stocks", "history", ticker, days] as const,
+  marketIndexHistory: (days: number) =>
+    ["stocks", "market-index-history", days] as const,
   marketWire: (days: number, limit: number) =>
     ["stocks", "market-wire", days, limit] as const,
   sparklines: (days: number) => ["stocks", "sparklines", days] as const,
@@ -164,6 +167,18 @@ export interface StockMarketWireResponse {
   limit: number;
 }
 
+export interface StockMarketIndexHistoryPoint {
+  /** ISO 8601. */
+  ts: string;
+  value: number;
+  totalMarketCap: number;
+}
+
+export interface StockMarketIndexHistoryResponse {
+  points: StockMarketIndexHistoryPoint[];
+  days: number;
+}
+
 export interface StockSparklinePoint {
   /** ISO 8601. 차트 라이브러리 X 축은 string 그대로 사용해도 무방. */
   ts: string;
@@ -231,6 +246,14 @@ async function fetchStockSparklines(
   return res.json();
 }
 
+async function fetchStockMarketIndexHistory(
+  days: number,
+): Promise<StockMarketIndexHistoryResponse> {
+  const res = await fetch(`/api/erp/stocks/index-history?days=${days}`);
+  if (!res.ok) await parseStocksError(res);
+  return res.json();
+}
+
 async function fetchStockMarketWire(
   days: number,
   limit: number,
@@ -250,6 +273,7 @@ const PRICES_STALE_MS = 60 * 1000;
 const HOLDINGS_STALE_MS = 60 * 1000;
 const ADMIN_HOLDINGS_STALE_MS = 60 * 1000;
 const HISTORY_STALE_MS = 15 * 60 * 1000;
+const MARKET_INDEX_HISTORY_STALE_MS = 60 * 1000;
 const MARKET_WIRE_STALE_MS = 60 * 1000;
 const SPARKLINES_STALE_MS = 10 * 60 * 1000;
 
@@ -325,6 +349,18 @@ export function useStockSparklines(
     queryKey: stocksKeys.sparklines(days),
     queryFn: () => fetchStockSparklines(days),
     staleTime: SPARKLINES_STALE_MS,
+    initialData: options?.initialData,
+  });
+}
+
+export function useStockMarketIndexHistory(
+  days: number = 7,
+  options?: { initialData?: StockMarketIndexHistoryResponse },
+) {
+  return useQuery({
+    queryKey: stocksKeys.marketIndexHistory(days),
+    queryFn: () => fetchStockMarketIndexHistory(days),
+    staleTime: MARKET_INDEX_HISTORY_STALE_MS,
     initialData: options?.initialData,
   });
 }
