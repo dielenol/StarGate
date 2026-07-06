@@ -1,8 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { type CSSProperties, type PointerEvent, useMemo, useState } from "react";
+import {
+  type DragEvent,
+  type KeyboardEvent,
+  useMemo,
+  useState,
+} from "react";
 
 import type {
   EquipmentShopCatalogEntry,
@@ -14,304 +18,341 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { formatCredits } from "@/lib/format/credit";
+import {
+  formatSimulatorCoord,
+  formatSimulatorDamage,
+  getInitialSimulatorResources,
+  getSimulatorRange,
+  getSimulatorWeaponRule,
+  isNewSimulatorCadenceCycle,
+  resolveSimulatorAttack,
+  SIMULATOR_BOARD_COLUMNS,
+  SIMULATOR_BOARD_ROWS,
+  SIMULATOR_RANGE_BANDS,
+  SIMULATOR_RANGE_LABELS,
+  SIMULATOR_STATUS_LABELS,
+  SIMULATOR_TARGET_STAT_LABELS,
+  SIMULATOR_WEAPON_ORDER,
+  type SimulatorAttackerProfile,
+  type SimulatorAttackResult,
+  type SimulatorBoardCoord,
+  type SimulatorStatusKind,
+  type SimulatorTargetStats,
+  type SimulatorWeaponRule,
+  type SimulatorWeaponSlug,
+} from "@/lib/equipment-shop/simulator";
 
 import styles from "./page.module.css";
 
-type Distance = "near" | "mid" | "far";
-type AimPoint = { x: number; y: number };
+type ActiveToken = "attacker" | "target";
+type SimLogTone = "hit" | "miss" | "info";
 type SimLog = {
   id: number;
+  tone: SimLogTone;
   text: string;
-  tone: "hit" | "miss" | "info";
 };
 
-type DamageProfile = {
-  label: string;
-  amount: number;
-  type: string;
-};
-
-type EquipmentRule = {
-  role: "냉병기" | "화기" | "설치화기" | "특수화기";
-  ranges: Partial<Record<Distance, DamageProfile>>;
-  ammoMax?: number;
-  chargeMax?: number;
-  tolerance: Record<Distance, number>;
-  cadence: string;
-};
-
-const DISTANCES: Array<{ value: Distance; label: string }> = [
-  { value: "near", label: "근거리" },
-  { value: "mid", label: "중거리" },
-  { value: "far", label: "장거리" },
-];
-
-const EQUIPMENT_RULES: Record<string, EquipmentRule> = {
-  "basic-dagger": {
-    role: "냉병기",
-    ranges: {
-      near: { label: "근거리", amount: 5, type: "물리" },
-      mid: { label: "중거리", amount: 5, type: "물리" },
-    },
-    tolerance: { near: 30, mid: 22, far: 0 },
-    cadence: "회수 가능",
-  },
-  "basic-katana": {
-    role: "냉병기",
-    ranges: {
-      near: { label: "근거리", amount: 10, type: "물리" },
-    },
-    tolerance: { near: 28, mid: 0, far: 0 },
-    cadence: "근접",
-  },
-  "basic-longsword": {
-    role: "냉병기",
-    ranges: {
-      near: { label: "근거리", amount: 10, type: "물리" },
-    },
-    tolerance: { near: 28, mid: 0, far: 0 },
-    cadence: "근접",
-  },
-  "basic-blunt-weapon": {
-    role: "냉병기",
-    ranges: {
-      near: { label: "근거리", amount: 10, type: "물리" },
-    },
-    tolerance: { near: 26, mid: 0, far: 0 },
-    cadence: "근접",
-  },
-  "basic-chainsaw": {
-    role: "냉병기",
-    ranges: {
-      near: { label: "근거리", amount: 15, type: "물리" },
-    },
-    chargeMax: 5,
-    tolerance: { near: 24, mid: 0, far: 0 },
-    cadence: "5회",
-  },
-  "basic-pistol": {
-    role: "화기",
-    ranges: {
-      near: { label: "근거리", amount: 7, type: "물리" },
-      mid: { label: "중거리", amount: 5, type: "물리" },
-    },
-    ammoMax: 5,
-    tolerance: { near: 24, mid: 18, far: 0 },
-    cadence: "5/5",
-  },
-  "basic-assault-rifle": {
-    role: "화기",
-    ranges: {
-      near: { label: "근거리", amount: 5, type: "물리" },
-      mid: { label: "중거리", amount: 10, type: "물리" },
-      far: { label: "장거리", amount: 7, type: "물리" },
-    },
-    ammoMax: 6,
-    tolerance: { near: 22, mid: 20, far: 15 },
-    cadence: "6/6",
-  },
-  "basic-shotgun": {
-    role: "화기",
-    ranges: {
-      near: { label: "근거리", amount: 15, type: "물리" },
-      mid: { label: "중거리", amount: 5, type: "물리" },
-    },
-    ammoMax: 4,
-    tolerance: { near: 32, mid: 20, far: 0 },
-    cadence: "4/4",
-  },
-  "basic-heavy-machine-gun": {
-    role: "설치화기",
-    ranges: {
-      mid: { label: "중거리", amount: 15, type: "물리" },
-      far: { label: "원거리", amount: 10, type: "물리" },
-    },
-    ammoMax: 10,
-    tolerance: { near: 0, mid: 22, far: 18 },
-    cadence: "10/10",
-  },
-  "basic-sniper-rifle": {
-    role: "화기",
-    ranges: {
-      far: { label: "장거리", amount: 20, type: "물리" },
-    },
-    ammoMax: 3,
-    tolerance: { near: 0, mid: 0, far: 12 },
-    cadence: "3/3",
-  },
-  "basic-flamethrower": {
-    role: "특수화기",
-    ranges: {
-      near: { label: "근거리", amount: 10, type: "화염" },
-      mid: { label: "중거리", amount: 8, type: "화염" },
-    },
-    ammoMax: 4,
-    tolerance: { near: 30, mid: 24, far: 0 },
-    cadence: "4/4",
-  },
-  "basic-sonic-emitter": {
-    role: "특수화기",
-    ranges: {
-      mid: { label: "중거리", amount: 15, type: "소리" },
-      far: { label: "장거리", amount: 3, type: "소리" },
-    },
-    ammoMax: 3,
-    tolerance: { near: 0, mid: 20, far: 18 },
-    cadence: "3/3",
-  },
-};
-
-const FALLBACK_RULE: EquipmentRule = {
-  role: "화기",
-  ranges: {},
-  tolerance: { near: 18, mid: 16, far: 12 },
-  cadence: "등록값",
-};
+interface SimulatorDisplayItem {
+  slug: SimulatorWeaponSlug;
+  name: string;
+  price: number;
+  previewImage?: string;
+  catalogDescription?: string;
+}
 
 interface Props {
+  attacker: SimulatorAttackerProfile;
   initialCatalog: EquipmentShopCatalogResponse;
 }
 
-function ammoStateFor(slug: string): number {
-  const rule = EQUIPMENT_RULES[slug];
-  return rule?.ammoMax ?? rule?.chargeMax ?? 0;
+const DEFAULT_ATTACKER_POSITION: SimulatorBoardCoord = { col: "C", row: 1 };
+const DEFAULT_TARGET_POSITION: SimulatorBoardCoord = { col: "C", row: 3 };
+const DEFAULT_TARGET: SimulatorTargetStats = {
+  hp: 60,
+  maxHp: 60,
+  san: 40,
+  maxSan: 40,
+  def: 2,
+  statuses: [],
+};
+
+function buildSimulatorItems(
+  catalogItems: EquipmentShopCatalogEntry[],
+): SimulatorDisplayItem[] {
+  const catalogBySlug = new Map(
+    catalogItems
+      .filter((item) => item.category === "WEAPON")
+      .map((item) => [item.slug ?? item.key, item]),
+  );
+
+  return SIMULATOR_WEAPON_ORDER.map((slug) => {
+    const rule = getSimulatorWeaponRule(slug);
+    const catalogItem = catalogBySlug.get(slug);
+    return {
+      slug,
+      name: catalogItem?.name ?? rule?.name ?? slug,
+      price: catalogItem?.price ?? rule?.price ?? 0,
+      ...(catalogItem?.previewImage
+        ? { previewImage: catalogItem.previewImage }
+        : {}),
+      ...(catalogItem?.description
+        ? { catalogDescription: catalogItem.description }
+        : {}),
+    };
+  });
 }
 
-function clampPercent(value: number): number {
-  return Math.max(4, Math.min(96, value));
+function uniqueStatuses(
+  statuses: SimulatorStatusKind[],
+  next: SimulatorStatusKind[],
+): SimulatorStatusKind[] {
+  return Array.from(new Set([...statuses, ...next]));
 }
 
-function aimError(aim: AimPoint): number {
-  return Math.hypot(aim.x - 50, aim.y - 50);
+function cellKey(coord: SimulatorBoardCoord): string {
+  return formatSimulatorCoord(coord);
 }
 
-function sortedSimulatorItems(
-  items: EquipmentShopCatalogEntry[],
-): EquipmentShopCatalogEntry[] {
-  return items
-    .filter((item) => item.category === "WEAPON")
-    .sort((a, b) => {
-      const zoneOrder = a.zone.localeCompare(b.zone, "ko");
-      if (zoneOrder !== 0) return zoneOrder;
-      return a.name.localeCompare(b.name, "ko");
-    });
+function sameCoord(a: SimulatorBoardCoord, b: SimulatorBoardCoord): boolean {
+  return a.col === b.col && a.row === b.row;
 }
 
-export default function EquipmentSimulatorClient({ initialCatalog }: Props) {
+function resultTone(result: SimulatorAttackResult): SimLogTone {
+  if (result.ok) return "hit";
+  return result.reason === "SETUP_REQUIRED" || result.reason === "NO_RESOURCE"
+    ? "miss"
+    : "info";
+}
+
+function attackRuntimeFor(
+  rule: SimulatorWeaponRule,
+  resourceBySlug: Record<string, number>,
+  hmgInstalled: boolean,
+  hmgShotsInCycle: number,
+  turn: number,
+) {
+  return {
+    ...(rule.resource
+      ? { resourceRemaining: resourceBySlug[rule.slug] ?? rule.resource.max }
+      : {}),
+    ...(rule.requiresSetup ? { installed: hmgInstalled } : {}),
+    ...(rule.cadence ? { shotsInCycle: hmgShotsInCycle, turn } : {}),
+  };
+}
+
+function resourceLabel(rule: SimulatorWeaponRule, remaining: number): string {
+  if (!rule.resource) return "FREE";
+  return `${remaining}/${rule.resource.max}`;
+}
+
+function controlReloadLabel(rule: SimulatorWeaponRule | null): string {
+  if (!rule?.resource) return "재장전";
+  if (rule.resource.kind === "charge") return "재시동";
+  if (rule.slug === "basic-flamethrower") return "연료 보충";
+  if (rule.slug === "basic-sonic-emitter") return "출력 재충전";
+  return "재장전";
+}
+
+export default function EquipmentSimulatorClient({
+  attacker,
+  initialCatalog,
+}: Props) {
   const simulatorItems = useMemo(
-    () => sortedSimulatorItems(initialCatalog.items),
+    () => buildSimulatorItems(initialCatalog.items),
     [initialCatalog.items],
   );
-  const [selectedSlug, setSelectedSlug] = useState("basic-pistol");
-  const [distance, setDistance] = useState<Distance>("mid");
-  const [aim, setAim] = useState<AimPoint>({ x: 50, y: 50 });
-  const [ammoBySlug, setAmmoBySlug] = useState<Record<string, number>>(() =>
-    Object.fromEntries(
-      Object.keys(EQUIPMENT_RULES).map((slug) => [slug, ammoStateFor(slug)]),
-    ),
+  const [selectedSlug, setSelectedSlug] = useState<SimulatorWeaponSlug>(
+    simulatorItems.find((item) => item.slug === "basic-pistol")?.slug ??
+      simulatorItems[0]?.slug ??
+      "basic-pistol",
   );
-  const [targetIntegrity, setTargetIntegrity] = useState(100);
-  const [heat, setHeat] = useState(0);
+  const [activeToken, setActiveToken] = useState<ActiveToken>("target");
+  const [attackerPosition, setAttackerPosition] = useState(
+    DEFAULT_ATTACKER_POSITION,
+  );
+  const [targetPosition, setTargetPosition] = useState(DEFAULT_TARGET_POSITION);
+  const [targetStats, setTargetStats] =
+    useState<SimulatorTargetStats>(DEFAULT_TARGET);
+  const [resourceBySlug, setResourceBySlug] = useState(() =>
+    getInitialSimulatorResources(),
+  );
+  const [hmgInstalled, setHmgInstalled] = useState(false);
+  const [hmgShotsInCycle, setHmgShotsInCycle] = useState(0);
+  const [turn, setTurn] = useState(1);
   const [sequence, setSequence] = useState(1);
   const [logs, setLogs] = useState<SimLog[]>([
-    { id: 0, text: "시험장 대기", tone: "info" },
+    {
+      id: 0,
+      tone: "info",
+      text: "5x5 장비 시험장 준비. 표적 토큰을 움직여 사거리를 확인하세요.",
+    },
   ]);
 
   const selectedItem =
     simulatorItems.find((item) => item.slug === selectedSlug) ??
-    simulatorItems[0] ??
-    null;
-  const selectedKey = selectedItem?.slug ?? selectedItem?.key ?? "";
-  const selectedRule = selectedKey
-    ? EQUIPMENT_RULES[selectedKey] ?? FALLBACK_RULE
-    : FALLBACK_RULE;
-  const selectedAmmo = selectedKey ? (ammoBySlug[selectedKey] ?? 0) : 0;
-  const selectedProfile = selectedRule.ranges[distance];
-  const selectedTolerance = selectedRule.tolerance[distance] ?? 0;
-  const currentAimError = aimError(aim);
-  const aimQuality = Math.max(0, Math.round(100 - currentAimError * 2));
-  const hasAmmoSystem =
-    selectedRule.ammoMax !== undefined || selectedRule.chargeMax !== undefined;
-  const ammoLabel =
-    selectedRule.chargeMax !== undefined ? "시동" : selectedRule.ammoMax ? "탄환" : "운용";
-  const maxAmmo = selectedRule.ammoMax ?? selectedRule.chargeMax ?? 0;
+    simulatorItems[0];
+  const selectedRule = getSimulatorWeaponRule(selectedSlug);
+  const range = getSimulatorRange(attackerPosition, targetPosition);
+  const selectedRuntime = selectedRule
+    ? attackRuntimeFor(
+        selectedRule,
+        resourceBySlug,
+        hmgInstalled,
+        hmgShotsInCycle,
+        turn,
+      )
+    : undefined;
+  const selectedResult = selectedRule
+    ? resolveSimulatorAttack({
+        weaponSlug: selectedRule.slug,
+        attacker: attackerPosition,
+        target: targetPosition,
+        attackerStats: attacker,
+        targetStats,
+        runtime: selectedRuntime,
+      })
+    : null;
+  const selectedResource =
+    selectedRule?.resource && selectedRule.slug in resourceBySlug
+      ? resourceBySlug[selectedRule.slug]
+      : 0;
+  const rangeRows = [attackerPosition.row, targetPosition.row].sort(
+    (a, b) => a - b,
+  );
 
-  const stageStyle = {
-    "--aim-x": `${aim.x}%`,
-    "--aim-y": `${aim.y}%`,
-    "--weapon-angle": `${(aim.x - 50) / 4}deg`,
-    "--weapon-lift": `${(50 - aim.y) / 6}px`,
-  } as CSSProperties;
-
-  function pushLog(text: string, tone: SimLog["tone"]) {
-    setLogs((prev) => [{ id: sequence, text, tone }, ...prev].slice(0, 6));
+  function pushLog(text: string, tone: SimLogTone) {
+    setLogs((prev) => [{ id: sequence, text, tone }, ...prev].slice(0, 8));
     setSequence((prev) => prev + 1);
   }
 
-  function handleTargetPointer(event: PointerEvent<HTMLDivElement>) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
-    setAim({ x: clampPercent(x), y: clampPercent(y) });
+  function moveToken(token: ActiveToken, coord: SimulatorBoardCoord) {
+    if (token === "attacker") {
+      setAttackerPosition(coord);
+      return;
+    }
+    setTargetPosition(coord);
   }
 
-  function handleSelect(item: EquipmentShopCatalogEntry) {
-    setSelectedSlug(item.slug ?? item.key);
-    setHeat(0);
+  function handleCellActivate(coord: SimulatorBoardCoord) {
+    moveToken(activeToken, coord);
+  }
+
+  function handleCellKeyDown(
+    event: KeyboardEvent<HTMLDivElement>,
+    coord: SimulatorBoardCoord,
+  ) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    handleCellActivate(coord);
+  }
+
+  function handleTokenDragStart(
+    event: DragEvent<HTMLSpanElement>,
+    token: ActiveToken,
+  ) {
+    event.dataTransfer.setData("text/plain", token);
+    event.dataTransfer.effectAllowed = "move";
+  }
+
+  function handleCellDrop(
+    event: DragEvent<HTMLDivElement>,
+    coord: SimulatorBoardCoord,
+  ) {
+    event.preventDefault();
+    const token = event.dataTransfer.getData("text/plain");
+    if (token !== "attacker" && token !== "target") return;
+    setActiveToken(token);
+    moveToken(token, coord);
   }
 
   function handleReload() {
-    if (!selectedKey || !hasAmmoSystem) return;
-    setAmmoBySlug((prev) => ({ ...prev, [selectedKey]: maxAmmo }));
-    setHeat(0);
+    if (!selectedRule?.resource) return;
+    setResourceBySlug((prev) => ({
+      ...prev,
+      [selectedRule.slug]: selectedRule.resource?.max ?? 0,
+    }));
+    pushLog(`${selectedRule.name} ${controlReloadLabel(selectedRule)} 완료`, "info");
+  }
+
+  function handleInstallHmg() {
+    if (selectedRule?.slug !== "basic-heavy-machine-gun") return;
+    setHmgInstalled(true);
+    setHmgShotsInCycle(0);
+    pushLog("중기관총 설치 완료. 현재 3턴 주기에서 2회 사격 가능합니다.", "info");
+  }
+
+  function handleNextTurn() {
+    const nextTurn = turn + 1;
+    const resetCycle = isNewSimulatorCadenceCycle(turn, nextTurn);
+    setTurn(nextTurn);
+    if (resetCycle) {
+      setHmgShotsInCycle(0);
+    }
     pushLog(
-      selectedRule.chargeMax !== undefined ? "재시동 완료" : "장전 완료",
+      resetCycle
+        ? `${nextTurn}턴 진입. 중기관총 사격 주기가 갱신되었습니다.`
+        : `${nextTurn}턴 진입.`,
       "info",
     );
   }
 
-  function handleResetTarget() {
-    setTargetIntegrity(100);
-    setAim({ x: 50, y: 50 });
-    setHeat(0);
-    pushLog("표적 리셋", "info");
+  function handleReset() {
+    setAttackerPosition(DEFAULT_ATTACKER_POSITION);
+    setTargetPosition(DEFAULT_TARGET_POSITION);
+    setTargetStats(DEFAULT_TARGET);
+    setResourceBySlug(getInitialSimulatorResources());
+    setHmgInstalled(false);
+    setHmgShotsInCycle(0);
+    setTurn(1);
+    setActiveToken("target");
+    setLogs([
+      {
+        id: sequence,
+        tone: "info",
+        text: "시험장 상태를 초기화했습니다.",
+      },
+    ]);
+    setSequence((prev) => prev + 1);
   }
 
-  function handleFire() {
-    if (!selectedItem || !selectedKey) return;
-    if (hasAmmoSystem && selectedAmmo <= 0) {
-      pushLog(
-        selectedRule.chargeMax !== undefined ? "재시동 필요" : "탄환 없음",
-        "miss",
-      );
+  function handleAttack() {
+    if (!selectedRule || !selectedResult) return;
+
+    if (!selectedResult.ok) {
+      pushLog(selectedResult.reasonLabel ?? selectedResult.summary, resultTone(selectedResult));
       return;
     }
-    if (hasAmmoSystem) {
-      setAmmoBySlug((prev) => ({
+
+    if (selectedResult.nextResourceRemaining !== undefined) {
+      setResourceBySlug((prev) => ({
         ...prev,
-        [selectedKey]: Math.max(0, (prev[selectedKey] ?? 0) - 1),
+        [selectedRule.slug]: selectedResult.nextResourceRemaining ?? 0,
       }));
     }
-
-    if (!selectedProfile || selectedTolerance <= 0) {
-      setHeat((prev) => Math.min(100, prev + 8));
-      pushLog(`${DISTANCES.find((d) => d.value === distance)?.label} 판정 불가`, "miss");
-      return;
+    if (selectedResult.nextShotsInCycle !== undefined) {
+      setHmgShotsInCycle(selectedResult.nextShotsInCycle);
     }
 
-    const hit = currentAimError <= selectedTolerance;
-    setHeat((prev) => Math.min(100, prev + (hit ? 14 : 9)));
+    setTargetStats((prev) => ({
+      ...prev,
+      hp:
+        selectedResult.targetStat === "hp"
+          ? Math.max(0, prev.hp - selectedResult.damageApplied)
+          : prev.hp,
+      san:
+        selectedResult.targetStat === "san"
+          ? Math.max(0, prev.san - selectedResult.damageApplied)
+          : prev.san,
+      statuses: uniqueStatuses(prev.statuses, selectedResult.statusesApplied),
+    }));
 
-    if (!hit) {
-      pushLog(`${selectedItem.name} 빗나감 · 조준 ${aimQuality}%`, "miss");
-      return;
-    }
-
-    setTargetIntegrity((prev) =>
-      Math.max(0, prev - selectedProfile.amount),
-    );
+    const statusText = selectedResult.statusesApplied.length
+      ? ` · ${selectedResult.statusesApplied
+          .map((status) => SIMULATOR_STATUS_LABELS[status])
+          .join(", ")}`
+      : "";
     pushLog(
-      `${selectedProfile.label} 적중 · ${selectedProfile.amount} ${selectedProfile.type}`,
+      `${selectedRule.name} ${selectedResult.summary}${statusText}`,
       "hit",
     );
   }
@@ -321,207 +362,400 @@ export default function EquipmentSimulatorClient({ initialCatalog }: Props) {
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
-          { label: "병기부", href: "/erp/equipment-shop" },
-          { label: "장비 시뮬레이터" },
+          { label: "자산", href: "/erp/inventory" },
+          { label: "장비 시험장" },
         ]}
-        title="장비 시뮬레이터"
+        title="장비 시험장"
       />
 
-      <section className={styles.simStage} style={stageStyle}>
-        <header className={styles.stageHeader}>
-          <div>
-            <Eyebrow>TEST RANGE</Eyebrow>
-            <h1>{selectedItem?.name ?? "장비 없음"}</h1>
+      <section className={styles.stageHeader}>
+        <div>
+          <Eyebrow>ARMORY TEST GRID</Eyebrow>
+          <h1>5x5 전투판 장비 시험</h1>
+        </div>
+        <div className={styles.stageBadges} aria-label="시험장 상태">
+          <Tag tone="info">READ ONLY</Tag>
+          <Tag tone="gold">세로 사거리 판정</Tag>
+        </div>
+      </section>
+
+      <section className={styles.simLayout} aria-label="장비 시험장">
+        <aside className={styles.catalogPanel} aria-label="보급형 장비 목록">
+          <div className={styles.panelIntro}>
+            <Eyebrow>WEAPON RACK</Eyebrow>
+            <strong>보급형 장비</strong>
           </div>
-          <Tag tone="gold">GM PREVIEW</Tag>
-          <Link href="/erp/equipment-shop" className={styles.backLink}>
-            병기부
-          </Link>
-        </header>
+          <div className={styles.itemRail}>
+            {simulatorItems.map((item) => {
+              const rule = getSimulatorWeaponRule(item.slug);
+              const active = selectedSlug === item.slug;
+              return (
+                <button
+                  key={item.slug}
+                  type="button"
+                  className={[
+                    styles.itemButton,
+                    active ? styles["itemButton--active"] : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  onClick={() => setSelectedSlug(item.slug)}
+                >
+                  <span className={styles.itemThumb}>
+                    {item.previewImage ? (
+                      <Image
+                        src={item.previewImage}
+                        width={54}
+                        height={54}
+                        alt=""
+                        aria-hidden
+                        unoptimized
+                      />
+                    ) : (
+                      <span aria-hidden>{rule?.role.slice(0, 1) ?? "?"}</span>
+                    )}
+                  </span>
+                  <span className={styles.itemMain}>
+                    <strong>{item.name}</strong>
+                    <small>{formatCredits(item.price)}</small>
+                  </span>
+                  <span className={styles.itemMeta}>{rule?.role ?? "장비"}</span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
 
-        <div className={styles.simLayout}>
-          <aside className={styles.catalogPanel} aria-label="장비 선택">
-            <div className={styles.panelIntro}>
-              <Eyebrow>CATALOG</Eyebrow>
-              <strong>장비 선택</strong>
+        <main className={styles.boardPanel} aria-label="5x5 전투판">
+          <div className={styles.boardToolbar}>
+            <div>
+              <Eyebrow>TACTICAL BOARD</Eyebrow>
+              <strong>
+                {formatSimulatorCoord(attackerPosition)} →{" "}
+                {formatSimulatorCoord(targetPosition)}
+              </strong>
             </div>
-            <div className={styles.itemRail}>
-              {simulatorItems.map((item) => {
-                const key = item.slug ?? item.key;
-                const active = selectedItem?.key === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={[
-                      styles.itemButton,
-                      active ? styles["itemButton--active"] : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    onClick={() => handleSelect(item)}
-                  >
-                    <span className={styles.itemThumb}>
-                      {item.previewImage ? (
-                        <Image
-                          src={item.previewImage}
-                          width={48}
-                          height={48}
-                          alt=""
-                          aria-hidden
-                          unoptimized
-                        />
-                      ) : null}
-                    </span>
-                    <span>
-                      <strong>{item.name}</strong>
-                      <small>{formatCredits(item.price)}</small>
-                    </span>
-                    <em>{EQUIPMENT_RULES[key]?.role ?? item.category}</em>
-                  </button>
-                );
-              })}
+            <div className={styles.tokenToggle} aria-label="이동할 토큰 선택">
+              <button
+                type="button"
+                className={activeToken === "attacker" ? styles.activeToggle : ""}
+                onClick={() => setActiveToken("attacker")}
+              >
+                공격자
+              </button>
+              <button
+                type="button"
+                className={activeToken === "target" ? styles.activeToggle : ""}
+                onClick={() => setActiveToken("target")}
+              >
+                표적
+              </button>
             </div>
-          </aside>
+          </div>
 
-          <main className={styles.rangePanel} aria-label="시험장">
-            <div className={styles.viewport} onPointerDown={handleTargetPointer}>
-              <div className={styles.rangeGrid} aria-hidden />
-              <div className={styles.target} aria-hidden>
-                <span />
-              </div>
-              <div className={styles.crosshair} aria-hidden />
-              <div className={styles.weaponRig} aria-hidden>
-                {selectedItem?.previewImage ? (
-                  <Image
-                    src={selectedItem.previewImage}
-                    width={256}
-                    height={256}
-                    alt=""
-                    priority
-                    unoptimized
-                  />
-                ) : null}
-              </div>
-              <div className={styles.integrityBar} aria-label="표적 내구도">
-                <span style={{ width: `${targetIntegrity}%` }} />
-              </div>
-            </div>
+          <div className={styles.rangeStrip} aria-live="polite">
+            <span>{SIMULATOR_RANGE_LABELS[range.band]}</span>
+            <strong>세로 {range.verticalDistance}칸</strong>
+            <em>가로 칸은 사거리 계산에서 제외</em>
+          </div>
 
-            <section className={styles.consolePanel} aria-label="조작 패널">
-              <div className={styles.distanceTabs} role="tablist" aria-label="사거리">
-                {DISTANCES.map((item) => {
-                  const active = distance === item.value;
-                  const enabled =
-                    selectedRule.ranges[item.value] !== undefined &&
-                    (selectedRule.tolerance[item.value] ?? 0) > 0;
+          <div className={styles.boardFrame}>
+            <div className={styles.cornerLabel} aria-hidden />
+            {SIMULATOR_BOARD_COLUMNS.map((col) => (
+              <div key={col} className={styles.columnLabel} aria-hidden>
+                {col}
+              </div>
+            ))}
+            {SIMULATOR_BOARD_ROWS.map((row) => (
+              <div key={`row-${row}`} className={styles.rowLabel} aria-hidden>
+                {row}
+              </div>
+            ))}
+            <div className={styles.boardGrid}>
+              {SIMULATOR_BOARD_ROWS.map((row) =>
+                SIMULATOR_BOARD_COLUMNS.map((col) => {
+                  const coord: SimulatorBoardCoord = { col, row };
+                  const hasAttacker = sameCoord(coord, attackerPosition);
+                  const hasTarget = sameCoord(coord, targetPosition);
+                  const inVerticalLane =
+                    row >= rangeRows[0] && row <= rangeRows[1];
                   return (
-                    <button
-                      key={item.value}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
+                    <div
+                      key={cellKey(coord)}
+                      role="button"
+                      tabIndex={0}
                       className={[
-                        styles.distanceButton,
-                        active ? styles["distanceButton--active"] : "",
+                        styles.boardCell,
+                        inVerticalLane ? styles["boardCell--lane"] : "",
+                        hasAttacker ? styles["boardCell--attacker"] : "",
+                        hasTarget ? styles["boardCell--target"] : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      onClick={() => setDistance(item.value)}
+                      onClick={() => handleCellActivate(coord)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => handleCellDrop(event, coord)}
+                      onKeyDown={(event) => handleCellKeyDown(event, coord)}
+                      aria-label={`${cellKey(coord)} 칸으로 ${activeToken === "attacker" ? "공격자" : "표적"} 이동`}
                     >
-                      {item.label}
-                      <span>{enabled ? "ON" : "OFF"}</span>
-                    </button>
+                      <span className={styles.cellCoord}>{cellKey(coord)}</span>
+                      {hasAttacker ? (
+                        <span
+                          draggable
+                          className={[
+                            styles.token,
+                            styles["token--attacker"],
+                          ].join(" ")}
+                          onDragStart={(event) =>
+                            handleTokenDragStart(event, "attacker")
+                          }
+                          aria-label="공격자 토큰"
+                        >
+                          ATK
+                        </span>
+                      ) : null}
+                      {hasTarget ? (
+                        <span
+                          draggable
+                          className={[
+                            styles.token,
+                            styles["token--target"],
+                          ].join(" ")}
+                          onDragStart={(event) =>
+                            handleTokenDragStart(event, "target")
+                          }
+                          aria-label="표적 토큰"
+                        >
+                          TGT
+                        </span>
+                      ) : null}
+                    </div>
                   );
-                })}
-              </div>
-
-              <div className={styles.readoutGrid}>
-                <div>
-                  <span>피해</span>
-                  <strong>
-                    {selectedProfile
-                      ? `${selectedProfile.amount} ${selectedProfile.type}`
-                      : "--"}
-                  </strong>
-                </div>
-                <div>
-                  <span>{ammoLabel}</span>
-                  <strong>
-                    {hasAmmoSystem ? `${selectedAmmo}/${maxAmmo}` : "FREE"}
-                  </strong>
-                </div>
-                <div>
-                  <span>조준</span>
-                  <strong>{aimQuality}%</strong>
-                </div>
-                <div>
-                  <span>열량</span>
-                  <strong>{heat}%</strong>
-                </div>
-              </div>
-
-              <div className={styles.actionRow}>
-                <button
-                  type="button"
-                  className={styles.fireButton}
-                  onClick={handleFire}
-                  disabled={!selectedItem}
-                >
-                  발사
-                </button>
-                <button
-                  type="button"
-                  className={styles.controlButton}
-                  onClick={handleReload}
-                  disabled={!hasAmmoSystem}
-                >
-                  {selectedRule.chargeMax !== undefined ? "재시동" : "장전"}
-                </button>
-                <button
-                  type="button"
-                  className={styles.controlButton}
-                  onClick={handleResetTarget}
-                >
-                  표적 리셋
-                </button>
-              </div>
-            </section>
-          </main>
-
-          <aside className={styles.telemetryPanel} aria-label="텔레메트리">
-            <div className={styles.panelIntro}>
-              <Eyebrow>TELEMETRY</Eyebrow>
-              <strong>사격 기록</strong>
+                }),
+              )}
             </div>
-            <div className={styles.specSheet}>
+          </div>
+
+          <section className={styles.controlPanel} aria-label="조작 패널">
+            <div className={styles.controlReadouts}>
               <div>
-                <span>분류</span>
-                <strong>{selectedRule.role}</strong>
+                <span>선택 장비</span>
+                <strong>{selectedItem?.name ?? selectedRule?.name ?? "-"}</strong>
               </div>
               <div>
-                <span>운용</span>
-                <strong>{selectedRule.cadence}</strong>
+                <span>피해 판정</span>
+                <strong>
+                  {selectedResult?.ok
+                    ? selectedResult.summary
+                    : selectedResult?.reasonLabel ?? "--"}
+                </strong>
               </div>
               <div>
-                <span>내구</span>
-                <strong>{targetIntegrity}%</strong>
+                <span>{selectedRule?.resource?.label ?? "자원"}</span>
+                <strong>
+                  {selectedRule
+                    ? resourceLabel(selectedRule, selectedResource)
+                    : "--"}
+                </strong>
+              </div>
+              <div>
+                <span>턴</span>
+                <strong>
+                  {turn}턴 · 중기관총 {hmgShotsInCycle}/2
+                </strong>
               </div>
             </div>
-            <div className={styles.logList}>
-              {logs.map((log) => (
+
+            <div className={styles.actionRow}>
+              <button
+                type="button"
+                className={styles.fireButton}
+                onClick={handleAttack}
+                disabled={!selectedRule}
+              >
+                공격
+              </button>
+              <button
+                type="button"
+                className={styles.controlButton}
+                onClick={handleReload}
+                disabled={!selectedRule?.resource}
+              >
+                {controlReloadLabel(selectedRule)}
+              </button>
+              <button
+                type="button"
+                className={styles.controlButton}
+                onClick={handleInstallHmg}
+                disabled={
+                  selectedRule?.slug !== "basic-heavy-machine-gun" ||
+                  hmgInstalled
+                }
+              >
+                중기관총 설치
+              </button>
+              <button
+                type="button"
+                className={styles.controlButton}
+                onClick={handleNextTurn}
+              >
+                다음 턴
+              </button>
+              <button
+                type="button"
+                className={styles.controlButton}
+                onClick={handleReset}
+              >
+                초기화
+              </button>
+            </div>
+          </section>
+        </main>
+
+        <aside className={styles.targetPanel} aria-label="표적 상태와 룰 카드">
+          <div className={styles.panelIntro}>
+            <Eyebrow>RULE CARD</Eyebrow>
+            <strong>{selectedRule?.name ?? "장비 없음"}</strong>
+          </div>
+
+          <div className={styles.profileBlock}>
+            <span>공격자</span>
+            <strong>{attacker.codename}</strong>
+            <em>
+              ATK {attacker.atk} · {attacker.source === "agent" ? "MAIN AGENT" : "SANDBOX"}
+            </em>
+          </div>
+
+          <div className={styles.targetMeters}>
+            <div>
+              <span>HP</span>
+              <strong>
+                {targetStats.hp}/{targetStats.maxHp}
+              </strong>
+              <meter min={0} max={targetStats.maxHp} value={targetStats.hp} />
+            </div>
+            <div>
+              <span>정신력</span>
+              <strong>
+                {targetStats.san}/{targetStats.maxSan}
+              </strong>
+              <meter min={0} max={targetStats.maxSan} value={targetStats.san} />
+            </div>
+            <div>
+              <span>DEF</span>
+              <strong>{targetStats.def}</strong>
+            </div>
+          </div>
+
+          <div className={styles.statusList} aria-label="상태이상">
+            {targetStats.statuses.length > 0 ? (
+              targetStats.statuses.map((status) => (
+                <Tag key={status} tone="danger">
+                  {SIMULATOR_STATUS_LABELS[status]}
+                </Tag>
+              ))
+            ) : (
+              <Tag tone="success">정상</Tag>
+            )}
+            {hmgInstalled ? <Tag tone="gold">중기관총 설치됨</Tag> : null}
+          </div>
+
+          <div className={styles.rangeMatrix} aria-label="사거리별 피해">
+            {SIMULATOR_RANGE_BANDS.map((band) => {
+              const profile = selectedRule?.ranges[band];
+              return (
+                <div key={band}>
+                  <span>{SIMULATOR_RANGE_LABELS[band]}</span>
+                  <strong>{profile ? formatSimulatorDamage(profile) : "--"}</strong>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className={styles.descriptionText}>
+            {selectedItem?.catalogDescription ??
+              selectedRule?.description ??
+              "카탈로그 장비를 선택하면 운용 메모가 표시됩니다."}
+          </p>
+
+          <div className={styles.noteList}>
+            {(selectedRule?.notes ?? []).map((note) => (
+              <span key={note}>{note}</span>
+            ))}
+          </div>
+        </aside>
+      </section>
+
+      <section className={styles.bottomGrid} aria-label="로그와 장비 비교">
+        <div className={styles.logPanel}>
+          <div className={styles.panelIntro}>
+            <Eyebrow>SIM LOG</Eyebrow>
+            <strong>공격 로그</strong>
+          </div>
+          <div className={styles.logList}>
+            {logs.map((log) => (
+              <div
+                key={log.id}
+                className={[styles.logItem, styles[`logItem--${log.tone}`]].join(
+                  " ",
+                )}
+              >
+                {log.text}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.comparePanel}>
+          <div className={styles.panelIntro}>
+            <Eyebrow>EXPECTED OUTPUT</Eyebrow>
+            <strong>현재 배치 기준 비교</strong>
+          </div>
+          <div className={styles.compareTable} role="table">
+            <div className={styles.compareHeader} role="row">
+              <span role="columnheader">장비</span>
+              <span role="columnheader">판정</span>
+              <span role="columnheader">결과</span>
+            </div>
+            {simulatorItems.map((item) => {
+              const rule = getSimulatorWeaponRule(item.slug);
+              if (!rule) return null;
+              const result = resolveSimulatorAttack({
+                weaponSlug: item.slug,
+                attacker: attackerPosition,
+                target: targetPosition,
+                attackerStats: attacker,
+                targetStats,
+                runtime: attackRuntimeFor(
+                  rule,
+                  resourceBySlug,
+                  hmgInstalled,
+                  hmgShotsInCycle,
+                  turn,
+                ),
+              });
+              return (
                 <div
-                  key={log.id}
+                  key={item.slug}
                   className={[
-                    styles.logItem,
-                    styles[`logItem--${log.tone}`],
-                  ].join(" ")}
+                    styles.compareRow,
+                    item.slug === selectedSlug ? styles["compareRow--active"] : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  role="row"
                 >
-                  {log.text}
+                  <span role="cell">{item.name}</span>
+                  <span role="cell">{SIMULATOR_RANGE_LABELS[result.range.band]}</span>
+                  <span role="cell">
+                    {result.ok && result.targetStat
+                      ? `${result.damageApplied} ${SIMULATOR_TARGET_STAT_LABELS[result.targetStat]}`
+                      : result.reasonLabel}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </aside>
+              );
+            })}
+          </div>
         </div>
       </section>
     </div>

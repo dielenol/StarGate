@@ -1,70 +1,61 @@
 .simRoot {
-  min-height: 100%;
-}
-
-.simStage {
-  --aim-x: 50%;
-  --aim-y: 50%;
-  --weapon-angle: 0deg;
-  --weapon-lift: 0px;
   display: grid;
   gap: 14px;
+  min-height: 100%;
   color: var(--ink-1);
+}
+
+.stageHeader,
+.catalogPanel,
+.boardPanel,
+.targetPanel,
+.controlPanel,
+.logPanel,
+.comparePanel {
+  min-width: 0;
+  background: rgba(8, 9, 9, 0.84);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 
 .stageHeader {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 14px;
   background:
-    linear-gradient(135deg, rgba(201, 168, 90, 0.14), transparent 46%),
-    rgba(8, 9, 9, 0.86);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+    linear-gradient(135deg, rgba(201, 168, 90, 0.13), transparent 50%),
+    rgba(8, 9, 9, 0.88);
 }
 
 .stageHeader h1 {
   margin: 3px 0 0;
   color: var(--gold);
   font-size: 26px;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
-.backLink {
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  margin-left: auto;
-  padding: 7px 10px;
-  background: color-mix(in srgb, var(--gold) 12%, rgba(0, 0, 0, 0.36));
-  border: 1px solid var(--gold-dim);
-  border-radius: var(--radius-sm);
-  color: var(--gold);
-  font-size: 14px;
-  text-decoration: none;
+.stageBadges,
+.statusList,
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .simLayout {
   display: grid;
-  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr) minmax(260px, 320px);
+  grid-template-columns: minmax(236px, 286px) minmax(0, 1fr) minmax(270px, 330px);
   gap: 12px;
   align-items: start;
 }
 
 .catalogPanel,
-.rangePanel,
-.telemetryPanel,
-.consolePanel {
-  min-width: 0;
-  background: rgba(8, 9, 9, 0.82);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-}
-
-.catalogPanel,
-.telemetryPanel,
-.consolePanel {
+.boardPanel,
+.targetPanel,
+.logPanel,
+.comparePanel {
   padding: 12px;
 }
 
@@ -83,21 +74,21 @@
 .itemRail {
   display: grid;
   gap: 8px;
-  max-height: 650px;
+  max-height: 720px;
   overflow: auto;
 }
 
 .itemButton {
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-columns: 58px minmax(0, 1fr);
   grid-template-areas:
-    "thumb name"
-    "thumb type";
+    "thumb main"
+    "thumb meta";
   gap: 5px 9px;
   width: 100%;
-  min-height: 74px;
+  min-height: 76px;
   padding: 8px;
-  background: rgba(0, 0, 0, 0.24);
+  background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   color: var(--ink-2);
@@ -115,19 +106,30 @@
   grid-area: thumb;
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
-  background: rgba(0, 0, 0, 0.28);
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.34);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 19px;
+  font-weight: 800;
 }
 
 .itemThumb img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   image-rendering: pixelated;
 }
 
-.itemButton strong {
+.itemMain {
+  grid-area: main;
+  min-width: 0;
+}
+
+.itemMain strong {
   display: block;
   overflow: hidden;
   color: var(--ink-0);
@@ -137,235 +139,292 @@
   white-space: nowrap;
 }
 
-.itemButton small {
+.itemMain small {
   display: block;
   margin-top: 3px;
   color: var(--gold-dim);
   font-size: 14px;
 }
 
-.itemButton em {
-  grid-area: type;
+.itemMeta {
+  grid-area: meta;
   color: var(--ink-3);
   font-size: 14px;
-  font-style: normal;
-  letter-spacing: 0.08em;
+  line-height: 1.2;
 }
 
-.rangePanel {
+.boardPanel {
   display: grid;
   gap: 12px;
-  padding: 12px;
 }
 
-.viewport {
-  position: relative;
-  min-height: 430px;
-  overflow: hidden;
-  background:
-    linear-gradient(90deg, rgba(201, 168, 90, 0.08) 1px, transparent 1px),
-    linear-gradient(rgba(201, 168, 90, 0.08) 1px, transparent 1px),
-    radial-gradient(circle at 50% 42%, rgba(201, 168, 90, 0.18), transparent 36%),
-    #0b0d0d;
-  background-size: 32px 32px, 32px 32px, auto, auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  cursor: crosshair;
-}
-
-.rangeGrid {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(transparent 72%, rgba(0, 0, 0, 0.42)),
-    repeating-linear-gradient(
-      0deg,
-      transparent 0,
-      transparent 14px,
-      rgba(255, 255, 255, 0.025) 15px
-    );
-  pointer-events: none;
-}
-
-.target {
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  width: 150px;
-  height: 150px;
-  transform: translate(-50%, -50%);
-  border: 2px solid color-mix(in srgb, var(--gold) 64%, transparent);
-  border-radius: 50%;
-  box-shadow:
-    inset 0 0 0 22px rgba(201, 168, 90, 0.06),
-    inset 0 0 0 48px rgba(201, 168, 90, 0.04),
-    0 0 32px rgba(201, 168, 90, 0.1);
-}
-
-.target span {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  transform: translate(-50%, -50%);
-  background: var(--gold);
-  border-radius: 50%;
-}
-
-.crosshair {
-  position: absolute;
-  left: var(--aim-x);
-  top: var(--aim-y);
-  width: 38px;
-  height: 38px;
-  transform: translate(-50%, -50%);
-  border: 1px solid var(--ink-0);
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8);
-}
-
-.crosshair::before,
-.crosshair::after {
-  position: absolute;
-  content: "";
-  background: var(--ink-0);
-}
-
-.crosshair::before {
-  left: 50%;
-  top: -7px;
-  width: 1px;
-  height: 52px;
-}
-
-.crosshair::after {
-  left: -7px;
-  top: 50%;
-  width: 52px;
-  height: 1px;
-}
-
-.weaponRig {
-  position: absolute;
-  left: 50%;
-  bottom: 22px;
-  width: min(36vw, 300px);
-  aspect-ratio: 1;
-  transform:
-    translateX(-50%)
-    translateY(var(--weapon-lift))
-    rotate(var(--weapon-angle));
-  transform-origin: 50% 80%;
-  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.5));
-  transition: transform 120ms ease;
-}
-
-.weaponRig img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
-.integrityBar {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  width: min(260px, calc(100% - 28px));
-  height: 14px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid var(--line);
-}
-
-.integrityBar span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, #7ecf8c, var(--gold));
-}
-
-.distanceTabs,
-.actionRow {
+.boardToolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.distanceButton,
-.fireButton,
-.controlButton {
+.boardToolbar strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-0);
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.tokenToggle {
+  display: inline-flex;
   min-height: 38px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
+}
+
+.tokenToggle button {
+  min-height: 30px;
+  padding: 5px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius-sm) - 2px);
+  color: var(--ink-3);
   font-size: 14px;
   cursor: pointer;
 }
 
-.distanceButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  background: rgba(0, 0, 0, 0.24);
-  border: 1px solid var(--line);
-  color: var(--ink-2);
-}
-
-.distanceButton span {
-  color: var(--ink-3);
-  font-size: 14px;
-}
-
-.distanceButton--active {
-  border-color: var(--gold-dim);
+.tokenToggle .activeToggle {
+  background: color-mix(in srgb, var(--gold) 18%, rgba(0, 0, 0, 0.4));
   color: var(--gold);
 }
 
-.readoutGrid,
-.specSheet {
+.rangeStrip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.rangeStrip span {
+  color: var(--gold);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.rangeStrip strong {
+  color: var(--ink-0);
+  font-size: 16px;
+}
+
+.rangeStrip em {
+  color: var(--ink-3);
+  font-size: 14px;
+  font-style: normal;
+}
+
+.boardFrame {
+  display: grid;
+  grid-template-columns: 34px repeat(5, minmax(46px, 1fr));
+  grid-template-rows: 28px repeat(5, minmax(58px, 1fr));
+  gap: 4px;
+  min-height: 440px;
+  padding: 10px;
+  background:
+    linear-gradient(135deg, rgba(201, 168, 90, 0.08), transparent 48%),
+    #0b0d0d;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.cornerLabel,
+.columnLabel,
+.rowLabel {
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.cornerLabel {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.columnLabel {
+  grid-row: 1;
+}
+
+.rowLabel {
+  grid-column: 1;
+}
+
+.rowLabel:nth-of-type(7) {
+  grid-row: 2;
+}
+
+.rowLabel:nth-of-type(8) {
+  grid-row: 3;
+}
+
+.rowLabel:nth-of-type(9) {
+  grid-row: 4;
+}
+
+.rowLabel:nth-of-type(10) {
+  grid-row: 5;
+}
+
+.rowLabel:nth-of-type(11) {
+  grid-row: 6;
+}
+
+.boardGrid {
+  grid-column: 2 / 7;
+  grid-row: 2 / 7;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(46px, 1fr));
+  grid-template-rows: repeat(5, minmax(58px, 1fr));
+  gap: 4px;
+}
+
+.boardCell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 58px;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent),
+    rgba(0, 0, 0, 0.28);
+  border: 1px solid color-mix(in srgb, var(--line) 86%, transparent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+}
+
+.boardCell:hover,
+.boardCell:focus-visible {
+  border-color: var(--gold-dim);
+}
+
+.boardCell--lane {
+  background:
+    linear-gradient(135deg, rgba(201, 168, 90, 0.13), transparent 60%),
+    rgba(0, 0, 0, 0.32);
+}
+
+.boardCell--attacker {
+  border-color: color-mix(in srgb, #80c7ff 72%, var(--line));
+}
+
+.boardCell--target {
+  border-color: color-mix(in srgb, var(--danger) 72%, var(--line));
+}
+
+.cellCoord {
+  position: absolute;
+  left: 6px;
+  top: 5px;
+  color: var(--ink-3);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.token {
+  display: inline-grid;
+  place-items: center;
+  min-width: 42px;
+  min-height: 32px;
+  padding: 5px 7px;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+}
+
+.token--attacker {
+  background: rgba(37, 116, 168, 0.86);
+  border-color: #8fd0ff;
+  color: #e8f6ff;
+}
+
+.token--target {
+  background: color-mix(in srgb, var(--danger) 48%, rgba(0, 0, 0, 0.65));
+  border-color: color-mix(in srgb, var(--danger) 84%, var(--line));
+  color: var(--ink-0);
+}
+
+.controlPanel {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.controlReadouts {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
-.specSheet {
-  grid-template-columns: 1fr;
-}
-
-.readoutGrid div,
-.specSheet div {
+.controlReadouts div,
+.profileBlock,
+.targetMeters div,
+.rangeMatrix div {
   display: grid;
   gap: 4px;
-  min-height: 66px;
+  min-height: 64px;
   padding: 9px;
-  background: rgba(0, 0, 0, 0.24);
+  background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
 
-.readoutGrid span,
-.specSheet span {
+.controlReadouts span,
+.profileBlock span,
+.targetMeters span,
+.rangeMatrix span {
   color: var(--ink-3);
   font-size: 14px;
-  letter-spacing: 0.1em;
 }
 
-.readoutGrid strong,
-.specSheet strong {
+.controlReadouts strong,
+.profileBlock strong,
+.targetMeters strong,
+.rangeMatrix strong {
   color: var(--ink-0);
   font-size: 16px;
   line-height: 1.25;
 }
 
+.profileBlock em {
+  color: var(--gold-dim);
+  font-size: 14px;
+  font-style: normal;
+  line-height: 1.3;
+}
+
 .fireButton,
 .controlButton {
+  min-height: 38px;
   padding: 8px 13px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  cursor: pointer;
 }
 
 .fireButton {
-  min-width: 96px;
-  background: color-mix(in srgb, var(--danger) 28%, rgba(0, 0, 0, 0.54));
-  border: 1px solid color-mix(in srgb, var(--danger) 60%, var(--line));
+  min-width: 86px;
+  background: color-mix(in srgb, var(--danger) 30%, rgba(0, 0, 0, 0.55));
+  border: 1px solid color-mix(in srgb, var(--danger) 64%, var(--line));
   color: var(--ink-0);
 }
 
@@ -378,19 +437,67 @@
 .fireButton:disabled,
 .controlButton:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.52;
+}
+
+.targetPanel {
+  display: grid;
+  gap: 10px;
+}
+
+.targetMeters,
+.rangeMatrix {
+  display: grid;
+  gap: 8px;
+}
+
+.targetMeters meter {
+  width: 100%;
+  height: 12px;
+  accent-color: var(--gold);
+}
+
+.rangeMatrix {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.descriptionText {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.noteList {
+  display: grid;
+  gap: 6px;
+}
+
+.noteList span {
+  padding: 8px 9px;
+  background: rgba(201, 168, 90, 0.07);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 45%, var(--line));
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.bottomGrid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+  gap: 12px;
 }
 
 .logList {
   display: grid;
   gap: 8px;
-  margin-top: 12px;
 }
 
 .logItem {
   min-height: 38px;
   padding: 9px 10px;
-  background: rgba(0, 0, 0, 0.24);
+  background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   color: var(--ink-2);
@@ -399,21 +506,57 @@
 }
 
 .logItem--hit {
-  border-color: color-mix(in srgb, #7ecf8c 48%, var(--line));
+  border-color: color-mix(in srgb, #7ecf8c 50%, var(--line));
   color: #bdecc5;
 }
 
 .logItem--miss {
-  border-color: color-mix(in srgb, var(--danger) 44%, var(--line));
-  color: color-mix(in srgb, var(--danger) 40%, var(--ink-0));
+  border-color: color-mix(in srgb, var(--danger) 48%, var(--line));
+  color: color-mix(in srgb, var(--danger) 42%, var(--ink-0));
 }
 
 .logItem--info {
   border-color: var(--gold-dim);
 }
 
-@media (max-width: 1180px) {
-  .simLayout {
+.compareTable {
+  display: grid;
+  gap: 4px;
+}
+
+.compareHeader,
+.compareRow {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.2fr) 92px minmax(110px, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.compareHeader {
+  min-height: 32px;
+  padding: 0 9px;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.compareRow {
+  min-height: 38px;
+  padding: 8px 9px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.compareRow--active {
+  border-color: var(--gold-dim);
+  color: var(--ink-0);
+}
+
+@media (max-width: 1220px) {
+  .simLayout,
+  .bottomGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -421,27 +564,34 @@
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     max-height: none;
   }
-
-  .telemetryPanel {
-    order: 3;
-  }
 }
 
 @media (max-width: 720px) {
-  .stageHeader {
+  .stageHeader,
+  .boardToolbar {
     align-items: flex-start;
-    flex-wrap: wrap;
+    flex-direction: column;
   }
 
-  .backLink {
-    margin-left: 0;
+  .boardFrame {
+    grid-template-columns: 28px repeat(5, minmax(42px, 1fr));
+    grid-template-rows: 26px repeat(5, minmax(54px, 1fr));
+    min-height: 370px;
+    padding: 8px;
   }
 
-  .viewport {
-    min-height: 360px;
+  .boardGrid {
+    grid-template-columns: repeat(5, minmax(42px, 1fr));
+    grid-template-rows: repeat(5, minmax(54px, 1fr));
   }
 
-  .readoutGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .controlReadouts,
+  .rangeMatrix {
+    grid-template-columns: 1fr;
+  }
+
+  .compareHeader,
+  .compareRow {
+    grid-template-columns: minmax(120px, 1fr) 80px minmax(96px, 1fr);
   }
 }
