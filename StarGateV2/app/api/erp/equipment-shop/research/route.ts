@@ -18,9 +18,23 @@ import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import {
   findMainCharacterByOwner,
+  findMainCharacterLiteByOwner,
   listAgentCharacters,
   updateCharacter,
 } from "@/lib/db/characters";
+import {
+  getEquipmentResearchCapabilities,
+  listEquipmentResearchProjects,
+  serializeEquipmentResearchProject,
+} from "@/lib/db/equipment-research";
+import {
+  EQUIPMENT_RESEARCH_CAPS,
+  EQUIPMENT_RESEARCH_NODES,
+  EQUIPMENT_RESEARCH_RUSH_RULES,
+  getComputedResearchStatus,
+} from "@/lib/equipment-shop/research";
+
+import { requireResearchGm } from "./_lib";
 
 const RESEARCH_SCOPES = ["personal", "team"] as const;
 const RESEARCH_STATS = ["hp", "san", "def", "atk"] as const;
@@ -69,6 +83,41 @@ function statLabel(stat: ResearchStat): string {
 
 function isAgentCharacter(character: Character): character is AgentCharacter {
   return character.type === "AGENT";
+}
+
+export async function GET() {
+  const authResult = await requireResearchGm();
+  if ("response" in authResult) return authResult.response;
+
+  let mainCharacterId: string | null = null;
+  try {
+    const mainCharacter = await findMainCharacterLiteByOwner(
+      authResult.session.id,
+    );
+    mainCharacterId = mainCharacter?._id ? String(mainCharacter._id) : null;
+  } catch {
+    mainCharacterId = null;
+  }
+
+  const [projects, capabilities] = await Promise.all([
+    listEquipmentResearchProjects(),
+    getEquipmentResearchCapabilities(mainCharacterId),
+  ]);
+  const now = new Date();
+
+  return NextResponse.json(
+    {
+      tree: EQUIPMENT_RESEARCH_NODES,
+      rushRules: Object.values(EQUIPMENT_RESEARCH_RUSH_RULES),
+      caps: EQUIPMENT_RESEARCH_CAPS,
+      capabilities,
+      projects: projects.map((project) => ({
+        ...serializeEquipmentResearchProject(project),
+        computedStatus: getComputedResearchStatus(project, now),
+      })),
+    },
+    { status: 200, headers: { "Cache-Control": "private, no-store" } },
+  );
 }
 
 export async function POST(request: Request) {

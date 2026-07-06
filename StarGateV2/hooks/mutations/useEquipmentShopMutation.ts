@@ -17,8 +17,10 @@ import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import {
   EquipmentShopApiError,
+  type EquipmentResearchProjectEntry,
   equipmentShopKeys,
 } from "@/hooks/queries/useEquipmentShopQuery";
+import type { EquipmentResearchScope as EquipmentResearchScopeValue } from "@/lib/equipment-shop/research";
 
 interface CheckoutInput {
   items: Array<{
@@ -41,7 +43,7 @@ interface CheckoutResponse {
   balance: number;
 }
 
-export type EquipmentResearchScope = "personal" | "team";
+export type EquipmentResearchScope = EquipmentResearchScopeValue;
 export type EquipmentResearchStat = "hp" | "san" | "def" | "atk";
 
 interface ResearchInput {
@@ -58,6 +60,49 @@ interface ResearchResponse {
   affected: number;
   skipped: number;
   auditFailed: number;
+  targets: Array<{
+    id: string;
+    codename: string;
+    before: number;
+    after: number;
+  }>;
+}
+
+interface StartResearchInput {
+  key: string;
+  scope: EquipmentResearchScope;
+  targetCharacterId?: string;
+}
+
+interface StartResearchResponse {
+  project: Omit<EquipmentResearchProjectEntry, "computedStatus">;
+  balance: number;
+}
+
+interface RushResearchInput {
+  projectId: string;
+}
+
+interface RushResearchResponse {
+  project: Omit<EquipmentResearchProjectEntry, "computedStatus"> | null;
+  rush: {
+    cost: number;
+    hours: number;
+    discountApplied: boolean;
+  };
+  balance: number;
+}
+
+interface CompleteResearchInput {
+  projectId: string;
+}
+
+interface CompleteResearchResponse {
+  projectId: string;
+  key: string;
+  effect: EquipmentResearchProjectEntry["effect"];
+  affected: number;
+  skipped: Array<{ id: string; reason: string }>;
   targets: Array<{
     id: string;
     codename: string;
@@ -114,6 +159,80 @@ export function useApplyEquipmentResearch() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: characterKeys.all });
+      queryClient.invalidateQueries({ queryKey: personnelKeys.all });
+      queryClient.invalidateQueries({ queryKey: characterChangeLogsKeys.all });
+    },
+  });
+}
+
+export function useStartEquipmentResearch() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    StartResearchResponse,
+    EquipmentShopApiError,
+    StartResearchInput
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/equipment-shop/research/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.research });
+      queryClient.invalidateQueries({ queryKey: creditKeys.all });
+    },
+  });
+}
+
+export function useRushEquipmentResearch() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    RushResearchResponse,
+    EquipmentShopApiError,
+    RushResearchInput
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/equipment-shop/research/rush", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.research });
+      queryClient.invalidateQueries({ queryKey: creditKeys.all });
+    },
+  });
+}
+
+export function useCompleteEquipmentResearch() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    CompleteResearchResponse,
+    EquipmentShopApiError,
+    CompleteResearchInput
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/equipment-shop/research/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.research });
       queryClient.invalidateQueries({ queryKey: characterKeys.all });
       queryClient.invalidateQueries({ queryKey: personnelKeys.all });
       queryClient.invalidateQueries({ queryKey: characterChangeLogsKeys.all });

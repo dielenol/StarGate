@@ -8,10 +8,20 @@
 import { useQuery } from "@tanstack/react-query";
 
 import type { EquipmentShopCatalogItem } from "@/lib/equipment-shop/catalog";
+import type {
+  EquipmentResearchCapabilities,
+  EquipmentResearchNode,
+  EquipmentResearchRushRule,
+  EquipmentResearchStatus,
+  EquipmentResearchStat,
+  EquipmentResearchScope,
+} from "@/lib/equipment-shop/research";
+import type { SerializedEquipmentResearchProject } from "@/lib/db/equipment-research";
 
 export const equipmentShopKeys = {
   all: ["equipment-shop"] as const,
   catalog: ["equipment-shop", "catalog"] as const,
+  research: ["equipment-shop", "research"] as const,
 };
 
 export type EquipmentShopErrorCode =
@@ -24,7 +34,10 @@ export type EquipmentShopErrorCode =
   | "INVALID_CART"
   | "INVALID_RESEARCH"
   | "ITEM_NOT_AVAILABLE"
-  | "PRICE_NOT_SET";
+  | "PRICE_NOT_SET"
+  | "RESEARCH_CAP_REACHED"
+  | "RESEARCH_NOT_READY"
+  | "RUSH_LIMIT_REACHED";
 
 export class EquipmentShopApiError extends Error {
   readonly status: number;
@@ -49,6 +62,19 @@ export interface EquipmentShopCatalogResponse {
   forceClosed: boolean;
 }
 
+export interface EquipmentResearchProjectEntry
+  extends SerializedEquipmentResearchProject {
+  computedStatus: EquipmentResearchStatus | "completed";
+}
+
+export interface EquipmentResearchOverviewResponse {
+  tree: EquipmentResearchNode[];
+  rushRules: EquipmentResearchRushRule[];
+  caps: Record<EquipmentResearchStat | "points", number>;
+  capabilities: EquipmentResearchCapabilities;
+  projects: EquipmentResearchProjectEntry[];
+}
+
 async function parseEquipmentShopError(res: Response): Promise<never> {
   const body = (await res.json().catch(() => ({}))) as {
     error?: string;
@@ -69,7 +95,16 @@ async function fetchEquipmentShopCatalog(): Promise<EquipmentShopCatalogResponse
   return res.json();
 }
 
+async function fetchEquipmentResearch(): Promise<EquipmentResearchOverviewResponse> {
+  const res = await fetch("/api/erp/equipment-shop/research", {
+    cache: "no-store",
+  });
+  if (!res.ok) await parseEquipmentShopError(res);
+  return res.json();
+}
+
 const CATALOG_STALE_TIME_MS = 10 * 60 * 1000;
+const RESEARCH_STALE_TIME_MS = 30 * 1000;
 
 export function useEquipmentShopCatalog(options?: {
   initialData?: EquipmentShopCatalogResponse;
@@ -81,3 +116,17 @@ export function useEquipmentShopCatalog(options?: {
     initialData: options?.initialData,
   });
 }
+
+export function useEquipmentResearch(options?: {
+  initialData?: EquipmentResearchOverviewResponse;
+}) {
+  return useQuery({
+    queryKey: equipmentShopKeys.research,
+    queryFn: fetchEquipmentResearch,
+    staleTime: RESEARCH_STALE_TIME_MS,
+    initialData: options?.initialData,
+    refetchInterval: 60 * 1000,
+  });
+}
+
+export type { EquipmentResearchScope };

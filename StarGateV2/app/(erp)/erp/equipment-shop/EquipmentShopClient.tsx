@@ -12,15 +12,20 @@ import {
 import {
   type EquipmentResearchScope,
   type EquipmentResearchStat,
-  useApplyEquipmentResearch,
+  useCompleteEquipmentResearch,
   useCheckoutEquipmentShopCart,
+  useRushEquipmentResearch,
+  useStartEquipmentResearch,
 } from "@/hooks/mutations/useEquipmentShopMutation";
 import {
   EquipmentShopApiError,
   type EquipmentShopCatalogEntry,
   type EquipmentShopCatalogResponse,
   type EquipmentShopErrorCode,
+  type EquipmentResearchOverviewResponse,
+  type EquipmentResearchProjectEntry,
   useEquipmentShopCatalog,
+  useEquipmentResearch,
 } from "@/hooks/queries/useEquipmentShopQuery";
 
 import Box from "@/components/ui/Box/Box";
@@ -30,6 +35,10 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
 import { formatCredits } from "@/lib/format/credit";
+import {
+  describeEquipmentResearchEffect,
+  scopeLabel,
+} from "@/lib/equipment-shop/research";
 
 import ShopItemIcon from "../shop/ShopItemIcon";
 
@@ -152,12 +161,16 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   INVALID_RESEARCH: "연구 적용값이 올바르지 않습니다.",
   ITEM_NOT_AVAILABLE: "판매 가능한 병기부 카탈로그 품목이 아닙니다.",
   PRICE_NOT_SET: "가격이 확정되지 않은 장비는 구매할 수 없습니다.",
+  RESEARCH_CAP_REACHED: "연구 누적 상한에 도달했습니다.",
+  RESEARCH_NOT_READY: "아직 완료되지 않은 연구입니다.",
+  RUSH_LIMIT_REACHED: "더 이상 연구 시간을 단축할 수 없습니다.",
 };
 
 interface Props {
   mode: EquipmentShopMode;
   initialZone?: ArmoryZone;
   initialCatalog: EquipmentShopCatalogResponse;
+  initialResearch: EquipmentResearchOverviewResponse;
   mainCharacter: {
     id: string;
     codename: string;
@@ -169,16 +182,46 @@ interface Props {
   isGM: boolean;
 }
 
+type ResearchNodeEntry = EquipmentResearchOverviewResponse["tree"][number];
+type ResearchNodeMapStatus =
+  | EquipmentResearchProjectEntry["computedStatus"]
+  | "available";
+
+const RESEARCH_TIER_LABELS: Record<number, string> = {
+  1: "기초 실험",
+  2: "개인 안정화",
+  3: "실전 프로토콜",
+  4: "고급 병기 연구",
+  5: "시즌급 최종 연구",
+};
+
+const RESEARCH_TIER_FEEL: Record<number, string> = {
+  1: "미세 보정",
+  2: "소폭 성장",
+  3: "확실한 성장",
+  4: "대형 해금",
+  5: "피날레 보상",
+};
+
+const RESEARCH_BRANCH_LANES: Record<string, number> = {
+  bio: 1,
+  psy: 2,
+  mun: 3,
+  log: 4,
+  lab: 5,
+  trn: 5,
+  cnt: 5,
+  cst: 5,
+  aeg: 4,
+  pts: 5,
+};
+
 function describeEquipmentShopError(err: unknown): string {
   return describeApiError(err, EquipmentShopApiError, ERROR_MESSAGE);
 }
 
 function activeZoneMeta(zone: ArmoryZone) {
   return ZONE_DEFS.find((item) => item.value === zone) ?? ZONE_DEFS[0];
-}
-
-function statLabel(stat: EquipmentResearchStat): string {
-  return stat.toUpperCase();
 }
 
 function renderCatalogIcon(item: EquipmentShopCatalogEntry, size: number) {
@@ -199,10 +242,192 @@ function renderCatalogIcon(item: EquipmentShopCatalogEntry, size: number) {
   return <ShopItemIcon slug={item.slug ?? item.key} size={size} />;
 }
 
+function getResearchLane(node: ResearchNodeEntry): number {
+  return RESEARCH_BRANCH_LANES[node.branch] ?? 5;
+}
+
+function getResearchNodeMapStatus(
+  projects: EquipmentResearchProjectEntry[],
+  key: string,
+): ResearchNodeMapStatus {
+  const related = projects.filter((project) => project.key === key);
+  if (related.some((project) => project.computedStatus === "completed")) {
+    return "completed";
+  }
+  if (related.some((project) => project.computedStatus === "applying")) {
+    return "applying";
+  }
+  if (related.some((project) => project.computedStatus === "in_progress")) {
+    return "in_progress";
+  }
+  if (related.some((project) => project.computedStatus === "applied")) {
+    return "applied";
+  }
+  return "available";
+}
+
+function researchNodeMapStatusLabel(status: ResearchNodeMapStatus): string {
+  if (status === "completed") return "완료 대기";
+  if (status === "applied") return "적용됨";
+  if (status === "applying") return "적용 중";
+  if (status === "in_progress") return "진행 중";
+  return "연구 가능";
+}
+
+function researchNodeClassName(
+  status: ResearchNodeMapStatus,
+  isSelected: boolean,
+): string {
+  const classes = [styles.techNode];
+  if (status === "completed") classes.push(styles["techNode--completed"]);
+  if (status === "applied") classes.push(styles["techNode--applied"]);
+  if (status === "applying" || status === "in_progress") {
+    classes.push(styles["techNode--active"]);
+  }
+  if (isSelected) classes.push(styles["techNode--selected"]);
+  return classes.join(" ");
+}
+
+function ResearchPixelIcon({
+  node,
+  active,
+}: {
+  node: ResearchNodeEntry;
+  active: boolean;
+}) {
+  function renderGlyph() {
+    switch (node.branch) {
+      case "bio":
+        return (
+          <>
+            <rect x="10" y="5" width="4" height="14" />
+            <rect x="5" y="10" width="14" height="4" />
+            <rect x="6" y="6" width="2" height="2" />
+            <rect x="16" y="16" width="2" height="2" />
+          </>
+        );
+      case "psy":
+        return (
+          <>
+            <rect x="8" y="5" width="8" height="8" />
+            <rect x="7" y="13" width="10" height="4" />
+            <rect x="10" y="17" width="4" height="2" />
+            <rect x="18" y="6" width="2" height="2" />
+            <rect x="20" y="8" width="2" height="2" />
+          </>
+        );
+      case "mun":
+        return (
+          <>
+            <rect x="11" y="4" width="2" height="16" />
+            <rect x="4" y="11" width="16" height="2" />
+            <rect x="8" y="8" width="2" height="2" />
+            <rect x="14" y="8" width="2" height="2" />
+            <rect x="8" y="14" width="2" height="2" />
+            <rect x="14" y="14" width="2" height="2" />
+          </>
+        );
+      case "log":
+        return (
+          <>
+            <rect x="6" y="7" width="12" height="3" />
+            <rect x="5" y="10" width="14" height="7" />
+            <rect x="8" y="12" width="3" height="3" />
+            <rect x="13" y="12" width="3" height="3" />
+            <rect x="9" y="18" width="6" height="2" />
+          </>
+        );
+      case "lab":
+        return (
+          <>
+            <rect x="9" y="4" width="6" height="3" />
+            <rect x="10" y="7" width="4" height="5" />
+            <rect x="7" y="12" width="10" height="7" />
+            <rect x="9" y="14" width="6" height="2" />
+            <rect x="18" y="15" width="2" height="2" />
+          </>
+        );
+      case "trn":
+        return (
+          <>
+            <rect x="6" y="6" width="12" height="4" />
+            <rect x="8" y="10" width="8" height="8" />
+            <rect x="10" y="12" width="4" height="2" />
+            <rect x="6" y="18" width="4" height="2" />
+            <rect x="14" y="18" width="4" height="2" />
+          </>
+        );
+      case "cnt":
+        return (
+          <>
+            <rect x="6" y="5" width="12" height="4" />
+            <rect x="7" y="9" width="10" height="6" />
+            <rect x="9" y="15" width="6" height="3" />
+            <rect x="11" y="18" width="2" height="2" />
+            <rect x="11" y="10" width="2" height="4" />
+          </>
+        );
+      case "cst":
+        return (
+          <>
+            <rect x="6" y="6" width="5" height="3" />
+            <rect x="10" y="9" width="4" height="4" />
+            <rect x="13" y="13" width="5" height="3" />
+            <rect x="5" y="15" width="4" height="4" />
+            <rect x="16" y="5" width="3" height="5" />
+          </>
+        );
+      case "aeg":
+        return (
+          <>
+            <rect x="6" y="5" width="12" height="3" />
+            <rect x="5" y="8" width="14" height="5" />
+            <rect x="7" y="13" width="10" height="4" />
+            <rect x="10" y="17" width="4" height="3" />
+            <rect x="11" y="9" width="2" height="6" />
+          </>
+        );
+      case "pts":
+        return (
+          <>
+            <rect x="11" y="4" width="2" height="4" />
+            <rect x="8" y="8" width="8" height="2" />
+            <rect x="5" y="10" width="14" height="3" />
+            <rect x="8" y="13" width="8" height="2" />
+            <rect x="7" y="15" width="3" height="4" />
+            <rect x="14" y="15" width="3" height="4" />
+          </>
+        );
+      default:
+        return <rect x="7" y="7" width="10" height="10" />;
+    }
+  }
+
+  return (
+    <svg
+      className={[
+        styles.researchPixelIcon,
+        active ? styles["researchPixelIcon--active"] : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      viewBox="0 0 24 24"
+      aria-hidden
+      shapeRendering="crispEdges"
+      focusable="false"
+    >
+      <rect x="1" y="1" width="22" height="22" className={styles.iconFrame} />
+      <rect x="3" y="3" width="18" height="18" className={styles.iconPlate} />
+      <g className={styles.iconGlyph}>{renderGlyph()}</g>
+    </svg>
+  );
+}
+
 export default function EquipmentShopClient({
   mode,
   initialZone = "lab",
   initialCatalog,
+  initialResearch,
   mainCharacter,
   initialBalance,
   initialCredits,
@@ -211,25 +436,29 @@ export default function EquipmentShopClient({
 }: Props) {
   const router = useRouter();
   const catalogQuery = useEquipmentShopCatalog({ initialData: initialCatalog });
+  const researchQuery = useEquipmentResearch({ initialData: initialResearch });
   const creditsQuery = useCredits({ initialData: initialCredits });
   const checkoutMutation = useCheckoutEquipmentShopCart();
-  const researchMutation = useApplyEquipmentResearch();
+  const startResearchMutation = useStartEquipmentResearch();
+  const rushResearchMutation = useRushEquipmentResearch();
+  const completeResearchMutation = useCompleteEquipmentResearch();
 
   const [activeTab, setActiveTab] = useState<EquipmentShopTabValue>("ALL");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [cart, setCart] = useState<CartState>({});
-  const [researchScope, setResearchScope] =
-    useState<EquipmentResearchScope>("personal");
-  const [researchStat, setResearchStat] =
-    useState<EquipmentResearchStat>("hp");
-  const [researchAmount, setResearchAmount] = useState(1);
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
     () => mainCharacter?.stats ?? null,
+  );
+  const [selectedResearchKey, setSelectedResearchKey] = useState(
+    () => initialResearch.tree[0]?.key ?? "",
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
 
   const catalog = catalogQuery.data ?? initialCatalog;
+  const research = researchQuery.data ?? initialResearch;
+  const researchTree = research.tree;
+  const researchProjects = research.projects;
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
   const isHub = mode === "hub";
   const activeZone = initialZone;
@@ -330,12 +559,46 @@ export default function EquipmentShopClient({
     selectedQuantity < selectedItem.stock &&
     selectedQuantity < MAX_CART_QUANTITY_PER_ITEM;
 
-  const canApplyResearch =
-    isGM &&
-    !researchMutation.isPending &&
-    researchAmount >= 1 &&
-    researchAmount <= 999 &&
-    (researchScope === "team" || hasMainCharacter);
+  const researchTiers = useMemo(() => {
+    const grouped = new Map<number, EquipmentResearchOverviewResponse["tree"]>();
+    for (const node of researchTree) {
+      const bucket = grouped.get(node.tier);
+      if (bucket) bucket.push(node);
+      else grouped.set(node.tier, [node]);
+    }
+    return Array.from(grouped.entries()).sort(([a], [b]) => a - b);
+  }, [researchTree]);
+
+  const activeResearchProjects = useMemo(
+    () =>
+      researchProjects.filter(
+        (project) => project.computedStatus !== "applied",
+      ),
+    [researchProjects],
+  );
+
+  const appliedResearchProjects = useMemo(
+    () =>
+      researchProjects.filter(
+        (project) => project.computedStatus === "applied",
+      ),
+    [researchProjects],
+  );
+
+  const selectedResearchNode = useMemo(() => {
+    return (
+      researchTree.find((node) => node.key === selectedResearchKey) ??
+      researchTree[0] ??
+      null
+    );
+  }, [researchTree, selectedResearchKey]);
+
+  const selectedNodeProjects = useMemo(() => {
+    if (!selectedResearchNode) return [];
+    return researchProjects.filter(
+      (project) => project.key === selectedResearchNode.key,
+    );
+  }, [researchProjects, selectedResearchNode]);
 
   function setCartQuantity(key: string, quantity: number) {
     const item = catalogByKey.get(key);
@@ -406,43 +669,111 @@ export default function EquipmentShopClient({
     );
   }
 
-  function handleResearchAmountChange(value: number) {
-    if (!Number.isFinite(value)) {
-      setResearchAmount(1);
-      return;
-    }
-    setResearchAmount(Math.min(999, Math.max(1, Math.floor(value))));
+  function formatDuration(hours: number): string {
+    if (hours % 24 === 0) return `${hours / 24}일`;
+    if (hours > 24) return `${Math.floor(hours / 24)}일 ${hours % 24}시간`;
+    return `${hours}시간`;
   }
 
-  function handleApplyResearch() {
-    if (!canApplyResearch) return;
+  function formatDateTime(value: string): string {
+    return new Intl.DateTimeFormat("ko-KR", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value));
+  }
+
+  function projectStatusLabel(
+    status: EquipmentResearchProjectEntry["computedStatus"],
+  ): string {
+    if (status === "completed") return "완료 대기";
+    if (status === "applied") return "적용됨";
+    if (status === "applying") return "적용 중";
+    return "진행 중";
+  }
+
+  function canStartResearch(scope: EquipmentResearchScope, cost: number): boolean {
+    return (
+      isGM &&
+      hasMainCharacter &&
+      balance >= cost &&
+      !startResearchMutation.isPending &&
+      (scope === "personal" || scope === "team")
+    );
+  }
+
+  function handleStartResearch(key: string, scope: EquipmentResearchScope) {
+    const node = research.tree.find((item) => item.key === key);
+    if (!node || !canStartResearch(scope, node.cost)) return;
     setErrorMessage(null);
     setNotice(null);
-    researchMutation.mutate(
+    startResearchMutation.mutate(
       {
-        scope: researchScope,
-        stat: researchStat,
-        amount: researchAmount,
+        key,
+        scope,
+        ...(mainCharacter ? { targetCharacterId: mainCharacter.id } : {}),
       },
       {
         onSuccess: (res) => {
-          if (mainCharacter) {
+          setNotice({
+            tone: "success",
+            text: `${res.project.key} 연구를 시작했습니다.`,
+          });
+        },
+        onError: (err) => {
+          setErrorMessage(describeEquipmentShopError(err));
+        },
+      },
+    );
+  }
+
+  function handleRushResearch(projectId: string) {
+    if (rushResearchMutation.isPending) return;
+    setErrorMessage(null);
+    setNotice(null);
+    rushResearchMutation.mutate(
+      { projectId },
+      {
+        onSuccess: (res) => {
+          setNotice({
+            tone: "success",
+            text:
+              `연구 시간을 ${formatDuration(res.rush.hours)} 단축했습니다.` +
+              `${res.rush.discountApplied ? " (할인 적용)" : ""}`,
+          });
+        },
+        onError: (err) => {
+          setErrorMessage(describeEquipmentShopError(err));
+        },
+      },
+    );
+  }
+
+  function handleCompleteResearch(project: EquipmentResearchProjectEntry) {
+    if (completeResearchMutation.isPending) return;
+    setErrorMessage(null);
+    setNotice(null);
+    completeResearchMutation.mutate(
+      { projectId: project.id },
+      {
+        onSuccess: (res) => {
+          if (mainCharacter && res.effect.kind === "stat") {
+            const appliedStat = res.effect.stat;
             const ownResult = res.targets.find(
               (target) => target.id === mainCharacter.id,
             );
             if (ownResult) {
               setLocalStats((prev) =>
-                prev ? { ...prev, [res.stat]: ownResult.after } : prev,
+                prev ? { ...prev, [appliedStat]: ownResult.after } : prev,
               );
             }
           }
           setNotice({
             tone: "success",
             text:
-              `${res.affected}명에게 ${statLabel(res.stat)} +${res.amount} ` +
-              `강화를 적용했습니다.` +
-              `${res.skipped > 0 ? ` (${res.skipped}명 제외)` : ""}` +
-              `${res.auditFailed > 0 ? ` 감사 로그 실패 ${res.auditFailed}건` : ""}`,
+              `${res.key} 연구 효과를 적용했습니다.` +
+              `${res.skipped.length > 0 ? ` (${res.skipped.length}명 제외)` : ""}`,
           });
         },
         onError: (err) => {
@@ -868,116 +1199,303 @@ export default function EquipmentShopClient({
   }
 
   function renderLabPanel() {
+    const selectedNodeState = selectedResearchNode
+      ? getResearchNodeMapStatus(researchProjects, selectedResearchNode.key)
+      : "available";
+    const selectedRushRule = selectedResearchNode
+      ? research.rushRules.find((rule) => rule.tier === selectedResearchNode.tier)
+      : null;
+
     return (
       <div className={styles.labLayout}>
-        <section className={styles.labConsole}>
-          <div className={styles.panelIntro}>
-            <Eyebrow>ENHANCEMENT TERMINAL</Eyebrow>
-            <strong>신체 강화 적용</strong>
+        <section className={styles.techTreeConsole}>
+          <div className={styles.techTreeHeader}>
+            <div>
+              <Eyebrow>HORIZONTAL TECH TREE</Eyebrow>
+              <strong>병기 연구소</strong>
+            </div>
+            <div className={styles.techTreeLegend}>
+              <span>좌측 T1</span>
+              <span>우측 T5</span>
+              <span>선택 후 연구 시작</span>
+            </div>
           </div>
 
-          <div className={styles.scopeSwitch} role="tablist" aria-label="강화 대상">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={researchScope === "personal"}
-              className={researchScope === "personal" ? styles.activeSwitch : ""}
-              onClick={() => setResearchScope("personal")}
-            >
-              개인 적용
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={researchScope === "team"}
-              className={researchScope === "team" ? styles.activeSwitch : ""}
-              onClick={() => setResearchScope("team")}
-            >
-              팀 전체 적용
-            </button>
+          <div className={styles.techCapRail}>
+            <div>
+              <span>누적 상한</span>
+              <strong>
+                HP {research.caps.hp} · SAN {research.caps.san} · ATK{" "}
+                {research.caps.atk} · DEF {research.caps.def}
+              </strong>
+            </div>
+            <div>
+              <span>환급</span>
+              <strong>
+                {research.capabilities.refundPercent > 0
+                  ? `${research.capabilities.refundPercent}% / cap ${research.capabilities.refundCap} CR`
+                  : "미해금"}
+              </strong>
+            </div>
+            <div>
+              <span>RUSH 할인</span>
+              <strong>
+                {research.capabilities.rushDiscountPercent > 0
+                  ? `${research.capabilities.rushDiscountPercent}%`
+                  : "미해금"}
+              </strong>
+            </div>
           </div>
 
-          <div className={styles.statPicker} aria-label="강화 스탯">
-            {STAT_DEFS.map((stat) => (
-              <button
-                key={stat.value}
-                type="button"
-                className={[
-                  styles.statButton,
-                  researchStat === stat.value ? styles["statButton--active"] : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                onClick={() => setResearchStat(stat.value)}
-              >
-                <strong>{stat.label}</strong>
-                <span>{stat.hint}</span>
-              </button>
-            ))}
-          </div>
+          <div className={styles.techTreeScroll}>
+            <div className={styles.techTreeMap} aria-label="병기 연구 테크트리">
+              <div className={styles.techLaneGrid} aria-hidden>
+                {[1, 2, 3, 4, 5].map((lane) => (
+                  <span key={lane} style={{ gridRow: lane }} />
+                ))}
+              </div>
 
-          <label className={styles.amountInput}>
-            <span>증가량</span>
-            <input
-              type="number"
-              min={1}
-              max={999}
-              value={researchAmount}
-              onChange={(event) =>
-                handleResearchAmountChange(Number(event.target.value))
-              }
-            />
-          </label>
-
-          <div className={styles.researchPreview}>
-            <span>적용 대상</span>
-            <strong>
-              {researchScope === "team"
-                ? "모든 AGENT"
-                : mainCharacter?.codename ?? "UNASSIGNED"}
-            </strong>
-            <span>변경</span>
-            <strong>
-              {statLabel(researchStat)} +{researchAmount}
-            </strong>
-          </div>
-
-          {researchScope === "team" ? (
-            <Box className={styles.warningBox}>
-              모든 AGENT 캐릭터의 실제 스탯이 즉시 영구 변경됩니다.
-            </Box>
-          ) : null}
-
-          <button
-            type="button"
-            className={styles.applyButton}
-            onClick={handleApplyResearch}
-            disabled={!canApplyResearch}
-            aria-busy={researchMutation.isPending}
-          >
-            {researchMutation.isPending ? "적용 중" : "강화 적용"}
-          </button>
-        </section>
-
-        <aside className={styles.statsPanel}>
-          <div className={styles.panelIntro}>
-            <Eyebrow>MAIN AGENT</Eyebrow>
-            <strong>{mainCharacter?.codename ?? "UNASSIGNED"}</strong>
-          </div>
-          {localStats ? (
-            <div className={styles.statsGrid}>
-              {STAT_DEFS.map((stat) => (
-                <div key={stat.value} className={styles.statReadout}>
-                  <span>{stat.label}</span>
-                  <strong>{localStats[stat.value]}</strong>
+              {researchTiers.map(([tier]) => (
+                <div
+                  key={tier}
+                  className={styles.techTierHeader}
+                  style={{ gridColumn: tier, gridRow: 1 }}
+                >
+                  <span>T{tier}</span>
+                  <strong>{RESEARCH_TIER_LABELS[tier]}</strong>
+                  <em>{RESEARCH_TIER_FEEL[tier]}</em>
                 </div>
               ))}
+
+              {researchTree.map((node) => {
+                const nodeStatus = getResearchNodeMapStatus(
+                  researchProjects,
+                  node.key,
+                );
+                const isSelected = selectedResearchNode?.key === node.key;
+                const effectSummary = node.allowedScopes
+                  .map((scope) => node.effects[scope])
+                  .filter((effect): effect is NonNullable<typeof effect> =>
+                    Boolean(effect),
+                  )
+                  .map(describeEquipmentResearchEffect)
+                  .join(" / ");
+
+                return (
+                  <button
+                    key={node.key}
+                    type="button"
+                    className={researchNodeClassName(nodeStatus, isSelected)}
+                    style={{
+                      gridColumn: node.tier,
+                      gridRow: getResearchLane(node) + 1,
+                    }}
+                    onClick={() => setSelectedResearchKey(node.key)}
+                    aria-pressed={isSelected}
+                  >
+                    <span className={styles.techNodeKey}>{node.key}</span>
+                    <ResearchPixelIcon node={node} active={isSelected} />
+                    <strong>{node.name}</strong>
+                    <span className={styles.techNodeEffect}>{effectSummary}</span>
+                    <span className={styles.techNodeBadge}>
+                      {researchNodeMapStatusLabel(nodeStatus)}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+          </div>
+        </section>
+
+        <aside className={styles.techDetailPanel}>
+          {selectedResearchNode ? (
+            <div className={styles.techDetailHero}>
+              <ResearchPixelIcon node={selectedResearchNode} active />
+              <div>
+                <Eyebrow>SELECTED RESEARCH</Eyebrow>
+                <strong>{selectedResearchNode.name}</strong>
+                <span>{selectedResearchNode.key}</span>
+              </div>
+              <span className={styles.techDetailStatus}>
+                {researchNodeMapStatusLabel(selectedNodeState)}
+              </span>
+            </div>
+          ) : null}
+
+          {selectedResearchNode ? (
+            <>
+              <p className={styles.techDetailSummary}>
+                {selectedResearchNode.summary}
+              </p>
+
+              <div className={styles.techDetailStats}>
+                <div>
+                  <span>비용</span>
+                  <strong>{formatCredits(selectedResearchNode.cost)}</strong>
+                </div>
+                <div>
+                  <span>기본 시간</span>
+                  <strong>
+                    {formatDuration(selectedResearchNode.durationHours)}
+                  </strong>
+                </div>
+                <div>
+                  <span>RUSH</span>
+                  <strong>
+                    {selectedRushRule
+                      ? `${formatCredits(selectedRushRule.cost)} / ${formatDuration(selectedRushRule.hours)}`
+                      : "없음"}
+                  </strong>
+                </div>
+                <div>
+                  <span>하한</span>
+                  <strong>
+                    {selectedResearchNode.minDurationHours
+                      ? formatDuration(selectedResearchNode.minDurationHours)
+                      : "없음"}
+                  </strong>
+                </div>
+              </div>
+
+              <div className={styles.techDetailActions}>
+                {selectedResearchNode.allowedScopes.map((scope) => {
+                  const effect = selectedResearchNode.effects[scope];
+                  return (
+                    <button
+                      key={scope}
+                      type="button"
+                      onClick={() =>
+                        handleStartResearch(selectedResearchNode.key, scope)
+                      }
+                      disabled={
+                        !canStartResearch(scope, selectedResearchNode.cost)
+                      }
+                      aria-busy={startResearchMutation.isPending}
+                    >
+                      <span>{scopeLabel(scope)} 연구 시작</span>
+                      <strong>
+                        {effect ? describeEquipmentResearchEffect(effect) : "-"}
+                      </strong>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {selectedNodeProjects.length > 0 ? (
+                <div className={styles.selectedHistory}>
+                  {selectedNodeProjects.slice(0, 3).map((project) => (
+                    <span key={project.id}>
+                      {scopeLabel(project.scope)} ·{" "}
+                      {projectStatusLabel(project.computedStatus)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </>
           ) : (
-            <div className={styles.empty}>
-              메인 AGENT 캐릭터가 없어 개인 강화는 실행할 수 없습니다.
-            </div>
+            <div className={styles.empty}>선택 가능한 연구가 없습니다.</div>
           )}
+
+          <div className={styles.agentSnapshot}>
+            <div className={styles.panelIntro}>
+              <Eyebrow>MAIN AGENT</Eyebrow>
+              <strong>{mainCharacter?.codename ?? "UNASSIGNED"}</strong>
+            </div>
+            {localStats ? (
+              <div className={styles.statsGrid}>
+                {STAT_DEFS.map((stat) => (
+                  <div key={stat.value} className={styles.statReadout}>
+                    <span>{stat.label}</span>
+                    <strong>{localStats[stat.value]}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.empty}>
+                메인 AGENT 캐릭터가 없어 연구 비용 차감과 개인 연구를 실행할 수 없습니다.
+              </div>
+            )}
+          </div>
+
+          <div className={styles.projectPanel}>
+            <div className={styles.panelIntro}>
+              <Eyebrow>PROJECTS</Eyebrow>
+              <strong>진행 큐</strong>
+            </div>
+            {activeResearchProjects.length === 0 ? (
+              <div className={styles.empty}>진행 중인 연구가 없습니다.</div>
+            ) : (
+              <div className={styles.projectList}>
+                {activeResearchProjects.slice(0, 4).map((project) => {
+                  const rushRule = research.rushRules.find(
+                    (rule) => rule.tier === project.tier,
+                  );
+                  return (
+                    <article key={project.id} className={styles.projectCard}>
+                      <div className={styles.projectCardTop}>
+                        <span>{project.key}</span>
+                        <strong>{projectStatusLabel(project.computedStatus)}</strong>
+                      </div>
+                      <p>{describeEquipmentResearchEffect(project.effect)}</p>
+                      <div className={styles.projectMeta}>
+                        <span>{scopeLabel(project.scope)}</span>
+                        <span>완료 {formatDateTime(project.completedAt)}</span>
+                        <span>
+                          RUSH {project.rushUsed}
+                          {rushRule ? `/${rushRule.maxUses}` : ""}
+                        </span>
+                      </div>
+                      <div className={styles.projectActions}>
+                        <button
+                          type="button"
+                          onClick={() => handleRushResearch(project.id)}
+                          disabled={
+                            project.computedStatus !== "in_progress" ||
+                            rushResearchMutation.isPending
+                          }
+                          aria-busy={rushResearchMutation.isPending}
+                        >
+                          {rushRule
+                            ? `${formatCredits(rushRule.cost)} / ${formatDuration(rushRule.hours)}`
+                            : "단축 불가"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCompleteResearch(project)}
+                          disabled={
+                            project.computedStatus !== "completed" ||
+                            completeResearchMutation.isPending
+                          }
+                          aria-busy={completeResearchMutation.isPending}
+                        >
+                          완료 적용
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className={styles.projectPanel}>
+            <div className={styles.panelIntro}>
+              <Eyebrow>ARCHIVE</Eyebrow>
+              <strong>적용 완료</strong>
+            </div>
+            {appliedResearchProjects.length === 0 ? (
+              <div className={styles.empty}>적용 완료된 연구가 없습니다.</div>
+            ) : (
+              <div className={styles.appliedList}>
+                {appliedResearchProjects.slice(0, 6).map((project) => (
+                  <div key={project.id}>
+                    <span>{project.key}</span>
+                    <strong>{describeEquipmentResearchEffect(project.effect)}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </aside>
       </div>
     );

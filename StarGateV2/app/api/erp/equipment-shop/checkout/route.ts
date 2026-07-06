@@ -21,6 +21,7 @@ import {
   SYSTEM_USER_ID_SENTINEL,
 } from "@/lib/db/system-actor";
 import { findUserById } from "@/lib/db/users";
+import { getEquipmentResearchCapabilities } from "@/lib/db/equipment-research";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import {
   equipmentShopItemZone,
@@ -332,6 +333,46 @@ export async function POST(request: Request) {
     );
   }
 
+  const capabilities = await getEquipmentResearchCapabilities(String(mainChar._id));
+  const refundAmount =
+    capabilities.refundPercent > 0
+      ? Math.min(
+          capabilities.refundCap,
+          Math.floor((totalPrice * capabilities.refundPercent) / 100),
+        )
+      : 0;
+  let finalBalance = creditTx.balance;
+  if (refundAmount > 0) {
+    await addCredit({
+      characterId: String(mainChar._id),
+      characterCodename: mainChar.codename,
+      ownerId: mainChar.ownerId,
+      ownerName,
+      amount: refundAmount,
+      type: "ADMIN_GRANT",
+      description: `병기부 연구 환급 — ${capabilities.refundPercent}%`,
+      metadata: {
+        source: "equipment_shop_research_refund",
+        originalCreditTxId: String(creditTx._id ?? ""),
+        refundPercent: capabilities.refundPercent,
+        refundCap: capabilities.refundCap,
+        totalPrice,
+      },
+      createdById: SYSTEM_USER_ID_SENTINEL,
+      createdByName: SYSTEM_REFUND_NAME,
+      allowNegative: true,
+    })
+      .then((refundTx) => {
+        finalBalance = refundTx.balance;
+      })
+      .catch((refundErr) => {
+        console.error(
+          `[equipment-shop/checkout] research refund failed totalPrice=${totalPrice}:`,
+          refundErr,
+        );
+      });
+  }
+
   await notifyUser({
     userId: mainChar.ownerId,
     type: "CREDIT_RECEIVED",
@@ -339,8 +380,11 @@ export async function POST(request: Request) {
     message: [
       `${mainChar.codename} · ${formatOrderDescription(lines)}`,
       formatSignedAmount(-totalPrice, "CR"),
-      `현재 잔액 ${creditTx.balance.toLocaleString()} CR`,
-    ].join(" · "),
+      refundAmount > 0 ? `연구 환급 +${refundAmount.toLocaleString()} CR` : "",
+      `현재 잔액 ${finalBalance.toLocaleString()} CR`,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     link: "/erp/equipment-shop",
   });
 
@@ -356,7 +400,8 @@ export async function POST(request: Request) {
         })),
         totalPrice,
       },
-      balance: creditTx.balance,
+      balance: finalBalance,
+      researchRefund: refundAmount,
     },
     { status: 201 },
   );
