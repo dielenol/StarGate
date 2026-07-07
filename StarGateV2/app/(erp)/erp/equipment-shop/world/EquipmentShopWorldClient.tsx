@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 
 import styles from "./page.module.css";
 import {
@@ -50,12 +50,13 @@ export default function EquipmentShopWorldClient() {
             <button
               key={zone.key}
               type="button"
-              className={
-                zone.key === selectedZoneKey
-                  ? `${styles.zoneChip} ${styles["zoneChip--active"]}`
-                  : styles.zoneChip
-              }
-              style={{ "--zone-color": zone.color } as CSSProperties}
+              className={[
+                styles.zoneChip,
+                styles[`zoneChip--${zone.key}`],
+                zone.key === selectedZoneKey ? styles["zoneChip--active"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               onClick={() => setSelectedZoneKey(zone.key)}
             >
               <span>{zone.eyebrow}</span>
@@ -70,7 +71,14 @@ export default function EquipmentShopWorldClient() {
               <span>{selectedZone.eyebrow}</span>
               <strong>{selectedZone.title}</strong>
             </div>
-            <i style={{ background: selectedZone.color }} />
+            <i
+              className={[
+                styles.briefingSignal,
+                styles[`briefingSignal--${selectedZone.key}`],
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            />
           </div>
 
           <div className={styles.npcSlot}>

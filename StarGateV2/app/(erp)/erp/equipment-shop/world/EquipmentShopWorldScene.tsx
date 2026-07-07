@@ -4,7 +4,7 @@ import { ContactShadows, OrthographicCamera } from "@react-three/drei";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import type { Group } from "three";
-import { MathUtils, Vector3 } from "three";
+import { MathUtils, PCFShadowMap, Vector3 } from "three";
 
 import {
   ARMORY_WORLD_ZONES,
@@ -27,7 +27,7 @@ export default function EquipmentShopWorldScene({
   return (
     <Canvas
       className="armory-world-canvas"
-      shadows
+      shadows={{ type: PCFShadowMap }}
       dpr={[1, 1.75]}
       gl={{ antialias: true, alpha: false }}
     >

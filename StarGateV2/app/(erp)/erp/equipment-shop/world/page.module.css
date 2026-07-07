@@ -123,6 +123,36 @@
   word-break: keep-all;
 }
 
+.zoneChip--towaski,
+.briefingSignal--towaski {
+  --zone-color: #c9a85a;
+}
+
+.zoneChip--acheron,
+.briefingSignal--acheron {
+  --zone-color: #d46b4a;
+}
+
+.zoneChip--lab,
+.briefingSignal--lab {
+  --zone-color: #62bfd2;
+}
+
+.zoneChip--simulator,
+.briefingSignal--simulator {
+  --zone-color: #78b05a;
+}
+
+.zoneChip--strategic,
+.briefingSignal--strategic {
+  --zone-color: #8a80d6;
+}
+
+.zoneChip--custom,
+.briefingSignal--custom {
+  --zone-color: #d9d3bd;
+}
+
 .briefingPanel {
   top: 92px;
   right: 14px;
@@ -153,11 +183,13 @@
   word-break: keep-all;
 }
 
-.briefingTop i {
+.briefingSignal {
   flex: 0 0 auto;
   width: 13px;
   height: 48px;
+  background: var(--zone-color);
   border-radius: 2px;
+  color: var(--zone-color);
   box-shadow: 0 0 18px currentColor;
 }
 
