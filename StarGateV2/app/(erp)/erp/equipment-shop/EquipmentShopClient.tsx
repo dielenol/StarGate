@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type MouseEvent, useMemo, useState } from "react";
+import { Fragment, type MouseEvent, useMemo, useState } from "react";
 
 import {
   type CreditsResponse,
@@ -208,6 +208,32 @@ const RESEARCH_TIER_FEEL: Record<number, string> = {
   5: "피날레 보상",
 };
 
+const RESEARCH_BRANCH_ORDER = [
+  "bio",
+  "psy",
+  "mun",
+  "log",
+  "lab",
+  "trn",
+  "cnt",
+  "cst",
+  "aeg",
+  "pts",
+] as const;
+
+const RESEARCH_BRANCH_META: Record<string, { label: string; code: string }> = {
+  bio: { label: "생체", code: "BIO" },
+  psy: { label: "정신", code: "PSY" },
+  mun: { label: "화력", code: "MUN" },
+  log: { label: "보급 정산", code: "LOG" },
+  lab: { label: "연구 운영", code: "LAB" },
+  trn: { label: "훈련", code: "TRN" },
+  cnt: { label: "개체 대응", code: "CNT" },
+  cst: { label: "제작", code: "CST" },
+  aeg: { label: "방호", code: "AEG" },
+  pts: { label: "성장 배정", code: "PTS" },
+};
+
 function describeEquipmentShopError(err: unknown): string {
   return describeApiError(err, EquipmentShopApiError, ERROR_MESSAGE);
 }
@@ -232,6 +258,20 @@ function renderCatalogIcon(item: EquipmentShopCatalogEntry, size: number) {
   }
 
   return <ShopItemIcon slug={item.slug ?? item.key} size={size} />;
+}
+
+function getResearchBranchRank(branch: string): number {
+  const index = (RESEARCH_BRANCH_ORDER as readonly string[]).indexOf(branch);
+  return index >= 0 ? index : RESEARCH_BRANCH_ORDER.length;
+}
+
+function getResearchBranchMeta(branch: string): { label: string; code: string } {
+  return (
+    RESEARCH_BRANCH_META[branch] ?? {
+      label: branch.toUpperCase(),
+      code: branch.toUpperCase(),
+    }
+  );
 }
 
 function getResearchNodeMapStatus(
@@ -654,14 +694,71 @@ export default function EquipmentShopClient({
     [activeResearchScope, researchTree],
   );
 
-  const researchTiers = useMemo(() => {
-    const grouped = new Map<number, EquipmentResearchOverviewResponse["tree"]>();
+  const researchTrackLayout = useMemo(() => {
+    const branches = new Map<string, ResearchNodeEntry[]>();
     for (const node of scopedResearchTree) {
-      const bucket = grouped.get(node.tier);
+      const bucket = branches.get(node.branch);
       if (bucket) bucket.push(node);
-      else grouped.set(node.tier, [node]);
+      else branches.set(node.branch, [node]);
     }
-    return Array.from(grouped.entries()).sort(([a], [b]) => a - b);
+
+    const rows = Array.from(branches.entries())
+      .sort(([branchA], [branchB]) => {
+        const rankDiff =
+          getResearchBranchRank(branchA) - getResearchBranchRank(branchB);
+        return rankDiff !== 0 ? rankDiff : branchA.localeCompare(branchB);
+      })
+      .map(([branch, nodes]) => ({
+        branch,
+        meta: getResearchBranchMeta(branch),
+        nodes,
+      }));
+
+    const tierWidths = new Map<number, number>();
+    for (const row of rows) {
+      const tierCounts = new Map<number, number>();
+      for (const node of row.nodes) {
+        tierCounts.set(node.tier, (tierCounts.get(node.tier) ?? 0) + 1);
+      }
+      for (const [tier, count] of tierCounts) {
+        tierWidths.set(tier, Math.max(tierWidths.get(tier) ?? 0, count));
+      }
+    }
+
+    const tierSegments: Array<{
+      tier: number;
+      startColumn: number;
+      span: number;
+    }> = [];
+    const tierStartColumns = new Map<number, number>();
+    let nextColumn = 1;
+    for (const tier of Array.from(tierWidths.keys()).sort((a, b) => a - b)) {
+      const span = Math.max(1, tierWidths.get(tier) ?? 1);
+      tierSegments.push({ tier, startColumn: nextColumn, span });
+      tierStartColumns.set(tier, nextColumn);
+      nextColumn += span;
+    }
+
+    const rowsWithColumns = rows.map((row) => {
+      const tierIndexes = new Map<number, number>();
+      return {
+        ...row,
+        nodes: row.nodes.map((node) => {
+          const indexInTier = tierIndexes.get(node.tier) ?? 0;
+          tierIndexes.set(node.tier, indexInTier + 1);
+          return {
+            node,
+            column: (tierStartColumns.get(node.tier) ?? 1) + indexInTier,
+          };
+        }),
+      };
+    });
+
+    return {
+      columnCount: Math.max(1, nextColumn - 1),
+      rows: rowsWithColumns,
+      tiers: tierSegments,
+    };
   }, [scopedResearchTree]);
 
   const activeResearchProjects = useMemo(
@@ -1464,6 +1561,11 @@ export default function EquipmentShopClient({
           capabilities: research.capabilities,
         })
       : null;
+    const techTreeMapStyle = {
+      gridTemplateColumns: `132px repeat(${researchTrackLayout.columnCount}, minmax(152px, 176px))`,
+      gridTemplateRows: `70px repeat(${Math.max(1, researchTrackLayout.rows.length)}, minmax(118px, auto))`,
+      minWidth: `${164 + researchTrackLayout.columnCount * 184}px`,
+    };
 
     return (
       <div className={styles.labLayout}>
@@ -1555,18 +1657,23 @@ export default function EquipmentShopClient({
           </div>
 
           <div className={styles.techTreeScroll}>
-            <div className={styles.techTreeMap} aria-label="병기 연구 테크트리">
-              <div className={styles.techLaneGrid} aria-hidden>
-                {[1, 2, 3, 4, 5].map((lane) => (
-                  <span key={lane} style={{ gridRow: lane }} />
-                ))}
+            <div
+              className={styles.techTreeMap}
+              style={techTreeMapStyle}
+              aria-label="병기 연구 테크트리"
+            >
+              <div
+                className={styles.techCornerHeader}
+                style={{ gridColumn: 1, gridRow: 1 }}
+              >
+                <span>분류</span>
               </div>
 
-              {researchTiers.map(([tier]) => (
+              {researchTrackLayout.tiers.map(({ tier, startColumn, span }) => (
                 <div
                   key={tier}
                   className={styles.techTierHeader}
-                  style={{ gridColumn: tier, gridRow: 1 }}
+                  style={{ gridColumn: `${startColumn + 1} / span ${span}`, gridRow: 1 }}
                 >
                   <span>T{tier}</span>
                   <strong>{RESEARCH_TIER_LABELS[tier]}</strong>
@@ -1574,13 +1681,17 @@ export default function EquipmentShopClient({
                 </div>
               ))}
 
-              {researchTiers.map(([tier, nodes]) => (
-                <div
-                  key={`${tier}-nodes`}
-                  className={styles.techTierColumn}
-                  style={{ gridColumn: tier, gridRow: "2 / span 5" }}
-                >
-                  {nodes.map((node) => {
+              {researchTrackLayout.rows.map((row, rowIndex) => (
+                <Fragment key={row.branch}>
+                  <div
+                    className={styles.techBranchLabel}
+                    style={{ gridColumn: 1, gridRow: rowIndex + 2 }}
+                  >
+                    <span>{row.meta.code}</span>
+                    <strong>{row.meta.label}</strong>
+                  </div>
+
+                  {row.nodes.map(({ node, column }) => {
                     const isUnlocked = isResearchNodeUnlocked({
                       node,
                       projects: researchProjects,
@@ -1608,6 +1719,10 @@ export default function EquipmentShopClient({
                           isSelected,
                           !isUnlocked,
                         )}
+                        style={{
+                          gridColumn: column + 1,
+                          gridRow: rowIndex + 2,
+                        }}
                         onClick={() => handleSelectResearchNode(node.key)}
                         aria-pressed={isSelected}
                       >
@@ -1625,7 +1740,7 @@ export default function EquipmentShopClient({
                       </button>
                     );
                   })}
-                </div>
+                </Fragment>
               ))}
             </div>
           </div>
