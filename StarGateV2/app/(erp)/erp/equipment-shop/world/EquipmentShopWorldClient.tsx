@@ -1,110 +1,50 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useState } from "react";
 
 import styles from "./page.module.css";
+import ZoneHud from "./ZoneHud";
 import {
-  ARMORY_WORLD_ZONES,
   DEFAULT_ARMORY_WORLD_ZONE,
-  getArmoryWorldZone,
+  type ArmoryTravelRequest,
   type ArmoryWorldZoneKey,
 } from "./world-zones";
 
-const EquipmentShopWorldScene = dynamic(
-  () => import("./EquipmentShopWorldScene"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className={styles.sceneLoading} aria-label="3D 병기부 로딩">
-        <span />
-      </div>
-    ),
-  },
-);
+const WorldScene = dynamic(() => import("./WorldScene"), {
+  ssr: false,
+  loading: () => (
+    <div className={styles.sceneLoading} aria-label="3D 병기부 로딩">
+      <span />
+      <strong>병기부 월드 로딩 중</strong>
+    </div>
+  ),
+});
 
 export default function EquipmentShopWorldClient() {
   const [selectedZoneKey, setSelectedZoneKey] =
     useState<ArmoryWorldZoneKey>(DEFAULT_ARMORY_WORLD_ZONE);
-  const selectedZone = getArmoryWorldZone(selectedZoneKey);
+  const [activeZoneKey, setActiveZoneKey] =
+    useState<ArmoryWorldZoneKey | null>(null);
+  const [travelRequest, setTravelRequest] =
+    useState<ArmoryTravelRequest | null>(null);
 
   return (
-    <div className={styles.worldRoot}>
+    <main className={styles.worldRoot} aria-label="병기부 3D 월드 허브">
       <div className={styles.worldStage}>
-        <EquipmentShopWorldScene
-          selectedZoneKey={selectedZoneKey}
+        <WorldScene
+          activeZoneKey={activeZoneKey}
+          travelRequest={travelRequest}
+          onZoneFocus={setActiveZoneKey}
           onSelectZone={setSelectedZoneKey}
         />
-
-        <header className={styles.worldHeader}>
-          <div>
-            <span>ARMORY WORLD PROTOTYPE</span>
-            <h1>병기부 작전 구역</h1>
-          </div>
-          <Link href="/erp/equipment-shop">기존 병기부</Link>
-        </header>
-
-        <nav className={styles.zoneDock} aria-label="병기부 구역 선택">
-          {ARMORY_WORLD_ZONES.map((zone) => (
-            <button
-              key={zone.key}
-              type="button"
-              className={[
-                styles.zoneChip,
-                styles[`zoneChip--${zone.key}`],
-                zone.key === selectedZoneKey ? styles["zoneChip--active"] : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              onClick={() => setSelectedZoneKey(zone.key)}
-            >
-              <span>{zone.eyebrow}</span>
-              <strong>{zone.title}</strong>
-            </button>
-          ))}
-        </nav>
-
-        <aside className={styles.briefingPanel} aria-label="선택 구역 정보">
-          <div className={styles.briefingTop}>
-            <div>
-              <span>{selectedZone.eyebrow}</span>
-              <strong>{selectedZone.title}</strong>
-            </div>
-            <i
-              className={[
-                styles.briefingSignal,
-                styles[`briefingSignal--${selectedZone.key}`],
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            />
-          </div>
-
-          <div className={styles.npcSlot}>
-            <div className={styles.npcMark} />
-            <div>
-              <span>AREA NPC</span>
-              <strong>{selectedZone.npc}</strong>
-            </div>
-          </div>
-
-          <dl className={styles.zoneMeta}>
-            <div>
-              <dt>상태</dt>
-              <dd>{selectedZone.status}</dd>
-            </div>
-            <div>
-              <dt>기능</dt>
-              <dd>{selectedZone.detail}</dd>
-            </div>
-          </dl>
-
-          <Link className={styles.enterButton} href={selectedZone.href}>
-            구역 진입
-          </Link>
-        </aside>
+        <ZoneHud
+          activeZoneKey={activeZoneKey}
+          selectedZoneKey={selectedZoneKey}
+          onTravelRequest={setTravelRequest}
+          onSelectZone={setSelectedZoneKey}
+        />
       </div>
-    </div>
+    </main>
   );
 }
