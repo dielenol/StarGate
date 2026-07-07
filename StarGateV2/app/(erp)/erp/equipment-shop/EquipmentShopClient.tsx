@@ -741,16 +741,18 @@ export default function EquipmentShopClient({
 
     const rowsWithColumns = rows.map((row) => {
       const tierIndexes = new Map<number, number>();
+      const nodes = row.nodes.map((node) => {
+        const indexInTier = tierIndexes.get(node.tier) ?? 0;
+        tierIndexes.set(node.tier, indexInTier + 1);
+        return {
+          node,
+          column: (tierStartColumns.get(node.tier) ?? 1) + indexInTier,
+        };
+      });
       return {
         ...row,
-        nodes: row.nodes.map((node) => {
-          const indexInTier = tierIndexes.get(node.tier) ?? 0;
-          tierIndexes.set(node.tier, indexInTier + 1);
-          return {
-            node,
-            column: (tierStartColumns.get(node.tier) ?? 1) + indexInTier,
-          };
-        }),
+        lastColumn: Math.max(...nodes.map(({ column }) => column), 1),
+        nodes,
       };
     });
 
@@ -1683,6 +1685,14 @@ export default function EquipmentShopClient({
 
               {researchTrackLayout.rows.map((row, rowIndex) => (
                 <Fragment key={row.branch}>
+                  <div
+                    className={styles.techBranchRail}
+                    style={{
+                      gridColumn: `1 / ${row.lastColumn + 2}`,
+                      gridRow: rowIndex + 2,
+                    }}
+                    aria-hidden
+                  />
                   <div
                     className={styles.techBranchLabel}
                     style={{ gridColumn: 1, gridRow: rowIndex + 2 }}

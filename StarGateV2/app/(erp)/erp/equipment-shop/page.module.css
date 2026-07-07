@@ -1136,6 +1136,37 @@
   word-break: keep-all;
 }
 
+.techBranchRail {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  height: 0;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.techBranchRail::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  left: 12px;
+  border-top: 2px dashed rgba(202, 231, 232, 0.28);
+  filter: drop-shadow(0 0 4px rgba(100, 216, 232, 0.24));
+}
+
+.techBranchRail::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 5px);
+  right: 4px;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid rgba(202, 231, 232, 0.42);
+  border-right: 2px solid rgba(202, 231, 232, 0.42);
+  transform: rotate(45deg);
+}
+
 .techTierHeader span {
   color: var(--gold-dim);
   font-size: 13px;
