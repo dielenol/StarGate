@@ -928,33 +928,6 @@ export default function EquipmentShopClient({
     router.push(href);
   }
 
-  function getZoneStatus(zone: ArmoryDestination): string {
-    if (zone === "lab") {
-      return hasMainCharacter
-        ? "개인 강화 / 팀 전체 강화 가능"
-        : "팀 전체 강화 가능 · 개인 강화 제한";
-    }
-    if (zone === "towaski") {
-      return towaskiItemCount > 0
-        ? `${towaskiItemCount}종 반출 가능`
-        : "등록 품목 없음";
-    }
-    if (zone === "acheron") {
-      return acheronItemCount > 0
-        ? `${acheronItemCount}종 반출 가능`
-        : "등록 품목 없음";
-    }
-    if (zone === "strategic") {
-      return strategicItemCount > 0
-        ? `${strategicItemCount}종 반출 가능`
-        : "대상 품목 없음";
-    }
-    if (zone === "simulator") {
-      return "시험장 모듈 활성";
-    }
-    return "상담 패널 활성 · 요청 저장 후속";
-  }
-
   function renderHubPanel() {
     const totalCatalogItemCount =
       towaskiItemCount + acheronItemCount + strategicItemCount;
@@ -1030,10 +1003,34 @@ export default function EquipmentShopClient({
       {
         key: "catalog",
         eyebrow: "ISSUE COUNTER",
-        title: "장비 반출",
+        title: "토와스키 건샵",
         href: "/erp/equipment-shop/towaski",
-        status: `토와스키 ${towaskiItemCount} · 아케론 ${acheronItemCount}`,
-        detail: "표준 화기, 방어구, 근접 병기를 크레딧 결제 후 인벤토리에 반출합니다.",
+        status:
+          towaskiItemCount > 0
+            ? `${towaskiItemCount}종 반출 가능`
+            : "등록 품목 없음",
+        detail: "표준 화기와 방어구를 크레딧 결제 후 인벤토리에 반출합니다.",
+        warning: towaskiItemCount === 0,
+      },
+      {
+        key: "acheron",
+        eyebrow: "ACHERON FORGE",
+        title: "아케론 대장간",
+        href: "/erp/equipment-shop/acheron",
+        status:
+          acheronItemCount > 0
+            ? `${acheronItemCount}종 반출 가능`
+            : "등록 품목 없음",
+        detail: "근접무기와 냉병기류를 별도 대장간 카탈로그에서 반출합니다.",
+        warning: acheronItemCount === 0,
+      },
+      {
+        key: "simulator",
+        eyebrow: "TEST RANGE",
+        title: "장비 시뮬레이터",
+        href: "/erp/equipment-shop/simulator",
+        status: "시험장 모듈 활성",
+        detail: "보급형 장비의 사거리, 탄환 운용, 공격 흐름을 시험합니다.",
         warning: false,
       },
       {
@@ -1113,27 +1110,6 @@ export default function EquipmentShopClient({
               <em>{card.status}</em>
             </Link>
           ))}
-        </section>
-
-        <section className={styles.routingPanel} aria-label="병기부 구역 라우팅">
-          <div className={styles.panelIntro}>
-            <Eyebrow>ROUTE MATRIX</Eyebrow>
-            <strong>구역 라우팅</strong>
-          </div>
-          <div className={styles.routeMatrix}>
-            {ZONE_DEFS.map((zone) => (
-              <Link
-                key={zone.value}
-                href={zone.href}
-                className={styles.routeRow}
-                onClick={(event) => handleZoneLinkClick(event, zone.href)}
-              >
-                <span>{zone.eyebrow}</span>
-                <strong>{zone.label}</strong>
-                <em>{getZoneStatus(zone.value)}</em>
-              </Link>
-            ))}
-          </div>
         </section>
 
         <aside className={styles.systemPanel} aria-label="병기부 시스템 상태">
@@ -1941,8 +1917,8 @@ export default function EquipmentShopClient({
               <strong>{formatCredits(balance)}</strong>
             </div>
             <div>
-              <span>{isHub ? "구역" : "카트"}</span>
-              <strong>{isHub ? `${ZONE_DEFS.length}구역` : `${cartCount}개`}</strong>
+              <span>{isHub ? "기능" : "카트"}</span>
+              <strong>{isHub ? `${ZONE_DEFS.length}모듈` : `${cartCount}개`}</strong>
             </div>
           </div>
         </header>

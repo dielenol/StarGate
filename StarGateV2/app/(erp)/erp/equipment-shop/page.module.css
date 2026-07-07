@@ -155,14 +155,12 @@
   grid-template-columns: minmax(0, 1.35fr) minmax(310px, 420px);
   grid-template-areas:
     "command system"
-    "operations system"
-    "routes routes";
+    "operations system";
   gap: 12px;
   align-items: stretch;
 }
 
 .commandPanel,
-.routingPanel,
 .systemPanel {
   min-width: 0;
   padding: 12px;
@@ -254,7 +252,6 @@
 
 .commandStat span,
 .operationCard span,
-.routeRow span,
 .systemItem span {
   color: var(--gold-dim);
   font-size: 14px;
@@ -331,50 +328,6 @@
   font-size: 14px;
   font-style: normal;
   line-height: 1.35;
-}
-
-.routingPanel {
-  grid-area: routes;
-}
-
-.routeMatrix {
-  display: grid;
-  gap: 6px;
-}
-
-.routeRow {
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr) minmax(180px, auto);
-  align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 8px 10px;
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  color: var(--ink-2);
-  text-decoration: none;
-}
-
-.routeRow:hover {
-  border-color: var(--gold-dim);
-  color: var(--ink-0);
-}
-
-.routeRow strong {
-  color: var(--ink-0);
-  font-size: 16px;
-  line-height: 1.25;
-}
-
-.routeRow em {
-  justify-self: end;
-  color: var(--ink-2);
-  font-size: 14px;
-  font-style: normal;
-  line-height: 1.35;
-  text-align: right;
-  word-break: keep-all;
 }
 
 .systemPanel {
@@ -1871,8 +1824,7 @@
     grid-template-areas:
       "command"
       "operations"
-      "system"
-      "routes";
+      "system";
   }
 
   .headerStats {
@@ -1906,8 +1858,7 @@
     grid-template-columns: 1fr;
   }
 
-  .commandHero,
-  .routeRow {
+  .commandHero {
     grid-template-columns: 1fr;
   }
 
@@ -1919,11 +1870,6 @@
   .bureauMark span {
     width: 50px;
     height: 50px;
-  }
-
-  .routeRow em {
-    justify-self: start;
-    text-align: left;
   }
 
   .buyBox,
