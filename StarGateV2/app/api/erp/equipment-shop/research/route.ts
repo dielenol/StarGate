@@ -1,5 +1,5 @@
 /**
- * POST /api/erp/equipment-shop/research — 병기 연구소 스탯 강화.
+ * POST /api/erp/equipment-shop/research — 신체증강 연구소 스탯 강화.
  *
  * 1차 구현 정책:
  * - GM preview 단계이므로 GM 전용.
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
   const reason =
     typeof body?.reason === "string" && body.reason.trim()
       ? body.reason.trim()
-      : `병기 연구소 ${scope === "team" ? "팀" : "개인"} 강화 — ${statLabel(stat)} +${amount}`;
+      : `신체증강 연구소 ${scope === "team" ? "팀" : "개인"} 강화 — ${statLabel(stat)} +${amount}`;
 
   let targets: AgentCharacter[];
   try {

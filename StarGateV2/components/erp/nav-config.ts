@@ -125,7 +125,7 @@ export const NAV_GROUPS: NavGroup[] = [
         gmHref: "/erp/equipment-shop",
         children: [
           {
-            label: "병기 연구소",
+            label: "신체증강 연구소",
             keywords: "research lab enhancement stat 강화 연구소",
             icon: IconEquipment,
             href: null,

@@ -80,7 +80,7 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
   {
     value: "lab",
     href: "/erp/equipment-shop/lab",
-    label: "병기 연구소",
+    label: "신체증강 연구소",
     eyebrow: "RESEARCH LAB",
     description: "개인 강화와 전체 AGENT 팀 강화를 실제 스탯에 반영합니다.",
     npc: "연구 담당관",
@@ -1573,7 +1573,7 @@ export default function EquipmentShopClient({
           <div className={styles.techTreeHeader}>
             <div>
               <Eyebrow>HORIZONTAL TECH TREE</Eyebrow>
-              <strong>병기 연구소</strong>
+              <strong>신체증강 연구소</strong>
             </div>
             <div className={styles.techTreeControls}>
               <div
