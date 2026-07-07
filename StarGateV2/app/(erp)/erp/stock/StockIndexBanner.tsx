@@ -1,8 +1,5 @@
 import type { StockMarketIndexSnapshot } from "@/lib/stocks/market-index";
-import {
-  formatIndexValue,
-  formatMarketCapCredits,
-} from "@/lib/stocks/market-index";
+import { formatIndexValue } from "@/lib/stocks/market-index";
 
 import { ARROW, priceDirection } from "./_helpers";
 import styles from "./page.module.css";
@@ -24,8 +21,6 @@ export default function StockIndexBanner({ marketIndex }: Props) {
       : direction === "down"
         ? styles["stockIndexBanner__delta--down"]
         : "";
-  const dominant = marketIndex.dominantComponent;
-
   return (
     <section className={styles.stockIndexBanner} aria-label={marketIndex.name}>
       <div className={styles.stockIndexBanner__main}>
@@ -41,18 +36,6 @@ export default function StockIndexBanner({ marketIndex }: Props) {
           {direction === "flat" ? "·" : ARROW[direction]}{" "}
           {formatSignedPercent(marketIndex.changePercent)}
         </span>
-      </div>
-      <div className={styles.stockIndexBanner__meta}>
-        <span>시총 ¤ {formatMarketCapCredits(marketIndex.totalMarketCap)}</span>
-        <span>
-          상승 {marketIndex.upCount} · 하락 {marketIndex.downCount} · 보합{" "}
-          {marketIndex.flatCount}
-        </span>
-        {dominant ? (
-          <span>
-            비중 1위 {dominant.ticker} {dominant.weightPercent.toFixed(1)}%
-          </span>
-        ) : null}
       </div>
     </section>
   );

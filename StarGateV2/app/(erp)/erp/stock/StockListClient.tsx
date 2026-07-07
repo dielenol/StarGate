@@ -39,7 +39,6 @@ import Tag from "@/components/ui/Tag/Tag";
 import {
   buildStockMarketIndexSnapshot,
   formatIndexValue,
-  formatMarketCapCredits,
 } from "@/lib/stocks/market-index";
 import { formatStockValue } from "@/lib/stocks/pricing";
 
@@ -460,17 +459,8 @@ export default function StockListClient({
             <span>하락 {marketBrief.downCount}</span>
             <span>보합 {marketBrief.flatCount}</span>
             <span>
-              시총 ¤ {formatMarketCapCredits(marketIndex.totalMarketCap)}
-            </span>
-            <span>
               평균 {formatSignedPercent(marketIndex.averageChangePercent)}
             </span>
-            {marketIndex.dominantComponent ? (
-              <span>
-                주도 {marketIndex.dominantComponent.ticker}{" "}
-                {marketIndex.dominantComponent.weightPercent.toFixed(1)}%
-              </span>
-            ) : null}
           </div>
           <div
             className={[

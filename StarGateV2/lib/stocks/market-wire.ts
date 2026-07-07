@@ -12,7 +12,6 @@ import {
   STOCK_MARKET_INDEX_CODE,
   buildStockMarketIndexSnapshot,
   formatIndexValue,
-  formatMarketCapCredits,
 } from "@/lib/stocks/market-index";
 import { kstDateTag, kstNowTag } from "@/lib/stocks/time";
 
@@ -352,7 +351,6 @@ function buildRoutineOverviewFields(
       prevPrice: result.previousPrice,
     })),
   );
-  const dominant = marketIndex.dominantComponent;
 
   return [
     {
@@ -381,12 +379,6 @@ function buildRoutineOverviewFields(
         `${formatIndexMoveIcon(marketIndex.changePercent)} ${formatIndexValue(
           marketIndex.value,
         )} (${formatPercent(marketIndex.changePercent)})`,
-        `시총 ¤ ${formatMarketCapCredits(marketIndex.totalMarketCap)}`,
-        dominant
-          ? `비중 1위 ${stockName(dominant.ticker)} ${dominant.weightPercent.toFixed(
-              1,
-            )}%`
-          : null,
       ]
         .filter(Boolean)
         .join("\n"),

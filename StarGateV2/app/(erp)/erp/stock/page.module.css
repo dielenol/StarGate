@@ -127,10 +127,8 @@
 /* ── NOVEX 종합지수 ── */
 
 .stockIndexBanner {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr);
-  gap: 14px;
-  align-items: center;
+  display: flex;
+  align-items: baseline;
   margin-bottom: 12px;
   padding: 12px 14px;
   background:
@@ -144,10 +142,10 @@
   border-radius: var(--radius-sm);
 }
 
-.stockIndexBanner__main,
-.stockIndexBanner__meta {
+.stockIndexBanner__main {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 10px;
   min-width: 0;
 }
@@ -185,35 +183,6 @@
 
 .stockIndexBanner__delta--down {
   color: var(--danger);
-}
-
-.stockIndexBanner__meta {
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.06em;
-}
-
-.stockIndexBanner__meta span {
-  white-space: nowrap;
-}
-
-@media (max-width: 900px) {
-  .stockIndexBanner {
-    grid-template-columns: 1fr;
-  }
-
-  .stockIndexBanner__meta {
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 560px) {
-  .stockIndexBanner__main {
-    flex-wrap: wrap;
-  }
 }
 
 /* ── 시장 브리핑 ── */
@@ -821,8 +790,7 @@
   border-bottom: 1px solid var(--line);
 }
 
-.marketWire__indexTop,
-.marketWire__indexMeta {
+.marketWire__indexTop {
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -850,14 +818,6 @@
 .marketWire__indexTop em {
   margin-left: auto;
   font-style: normal;
-}
-
-.marketWire__indexMeta {
-  flex-wrap: wrap;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.06em;
 }
 
 .marketWire__list {

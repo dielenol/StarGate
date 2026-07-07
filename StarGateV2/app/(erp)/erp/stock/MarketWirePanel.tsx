@@ -7,7 +7,6 @@ import type { StockMarketWireItem } from "@/hooks/queries/useStocksQuery";
 import {
   type StockMarketIndexSnapshot,
   formatIndexValue,
-  formatMarketCapCredits,
 } from "@/lib/stocks/market-index";
 import { formatStockValue } from "@/lib/stocks/pricing";
 
@@ -90,12 +89,6 @@ export default function MarketWirePanel({
               {indexDirection === "flat" ? "·" : ARROW[indexDirection]}{" "}
               {formatSignedPercent(marketIndex.changePercent)}
             </em>
-          </div>
-          <div className={styles.marketWire__indexMeta}>
-            <span>시총 ¤ {formatMarketCapCredits(marketIndex.totalMarketCap)}</span>
-            <span>
-              상승 {marketIndex.upCount} · 하락 {marketIndex.downCount}
-            </span>
           </div>
         </div>
       ) : null}
