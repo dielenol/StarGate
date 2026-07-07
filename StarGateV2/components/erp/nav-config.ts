@@ -132,7 +132,7 @@ export const NAV_GROUPS: NavGroup[] = [
             gmHref: "/erp/equipment-shop/lab",
           },
           {
-            label: "토와스키 장비 판매점",
+            label: "토와스키 건샵",
             keywords: "towaski weapon armor 장비 무기 방어구",
             icon: IconEquipment,
             href: null,

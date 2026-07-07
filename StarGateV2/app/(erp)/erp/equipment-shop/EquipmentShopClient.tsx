@@ -86,7 +86,7 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
   {
     value: "towaski",
     href: "/erp/equipment-shop/towaski",
-    label: "토와스키 장비 판매점",
+    label: "토와스키 건샵",
     eyebrow: "TOWASKI",
     description: "무기와 방어구를 구매해 인벤토리에 반출합니다.",
     npc: "립 토와스키",
