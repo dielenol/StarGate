@@ -1,0 +1,289 @@
+.worldRoot {
+  min-height: calc(100svh - 92px);
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(7, 9, 10, 0.92), rgba(7, 9, 10, 0.98)),
+    repeating-linear-gradient(90deg, rgba(201, 168, 90, 0.06) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(0deg, rgba(98, 191, 210, 0.04) 0 1px, transparent 1px 64px);
+}
+
+.worldStage {
+  position: relative;
+  min-height: calc(100svh - 94px);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.worldStage :global(canvas) {
+  display: block;
+  width: 100%;
+  min-height: calc(100svh - 94px);
+}
+
+.worldHeader,
+.zoneDock,
+.briefingPanel {
+  position: absolute;
+  z-index: 2;
+}
+
+.worldHeader {
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.worldHeader div {
+  min-width: 0;
+}
+
+.worldHeader span,
+.zoneChip span,
+.briefingTop span,
+.npcSlot span,
+.zoneMeta dt {
+  color: var(--gold-dim);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.worldHeader h1 {
+  margin: 5px 0 0;
+  color: var(--gold);
+  font-size: 42px;
+  line-height: 1.04;
+  letter-spacing: 0;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.65);
+}
+
+.worldHeader a,
+.enterButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  background: rgba(8, 10, 10, 0.82);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 58%, var(--line));
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.zoneDock {
+  left: 14px;
+  right: 410px;
+  bottom: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(136px, 1fr));
+  gap: 8px;
+}
+
+.zoneChip {
+  --zone-color: var(--gold);
+  min-width: 0;
+  min-height: 58px;
+  padding: 8px 10px;
+  background: rgba(8, 10, 10, 0.76);
+  border: 1px solid color-mix(in srgb, var(--zone-color) 38%, var(--line));
+  border-radius: var(--radius-sm);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--zone-color) 80%, transparent);
+  color: var(--ink-1);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.zoneChip:hover,
+.zoneChip--active {
+  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--zone-color) 16%, rgba(8, 10, 10, 0.84));
+  border-color: color-mix(in srgb, var(--zone-color) 74%, var(--line));
+}
+
+.zoneChip strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-0);
+  font-size: 15px;
+  line-height: 1.22;
+  word-break: keep-all;
+}
+
+.briefingPanel {
+  top: 92px;
+  right: 14px;
+  display: grid;
+  gap: 12px;
+  width: min(380px, calc(100% - 28px));
+  padding: 14px;
+  background: rgba(7, 9, 10, 0.84);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 50%, var(--line));
+  border-radius: var(--radius-sm);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(4px);
+}
+
+.briefingTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.briefingTop strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--gold);
+  font-size: 25px;
+  line-height: 1.12;
+  word-break: keep-all;
+}
+
+.briefingTop i {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 48px;
+  border-radius: 2px;
+  box-shadow: 0 0 18px currentColor;
+}
+
+.npcSlot {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 88px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.npcMark {
+  width: 72px;
+  height: 72px;
+  background:
+    linear-gradient(135deg, rgba(201, 168, 90, 0.18), transparent 54%),
+    rgba(0, 0, 0, 0.32);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 52%, var(--line));
+  border-radius: var(--radius-sm);
+  -webkit-mask: url("/assets/svg/org_subunit_armory_bureau.svg") center / 52px 52px no-repeat;
+  mask: url("/assets/svg/org_subunit_armory_bureau.svg") center / 52px 52px no-repeat;
+}
+
+.npcSlot strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink-0);
+  font-size: 18px;
+  line-height: 1.22;
+}
+
+.zoneMeta {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.zoneMeta div {
+  display: grid;
+  gap: 5px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+
+.zoneMeta dd {
+  margin: 0;
+  color: var(--ink-1);
+  font-size: 15px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.enterButton {
+  min-height: 46px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 24%, #111), rgba(6, 7, 7, 0.92));
+  color: var(--gold);
+}
+
+.sceneLoading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(180deg, rgba(7, 9, 10, 0.96), rgba(7, 9, 10, 0.99)),
+    repeating-linear-gradient(90deg, rgba(201, 168, 90, 0.1) 0 1px, transparent 1px 32px);
+}
+
+.sceneLoading span {
+  width: 46px;
+  height: 46px;
+  border: 3px solid rgba(201, 168, 90, 0.22);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: worldSpin 900ms linear infinite;
+}
+
+@keyframes worldSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1180px) {
+  .zoneDock {
+    right: 14px;
+    width: calc(100% - 28px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .briefingPanel {
+    top: auto;
+    right: 14px;
+    bottom: 178px;
+    width: min(380px, calc(100% - 28px));
+  }
+}
+
+@media (max-width: 760px) {
+  .worldRoot,
+  .worldStage,
+  .worldStage :global(canvas) {
+    min-height: 1100px;
+  }
+
+  .worldHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .worldHeader h1 {
+    font-size: 30px;
+  }
+
+  .briefingPanel {
+    top: 132px;
+    left: 14px;
+    right: 14px;
+    bottom: auto;
+  }
+
+  .zoneDock {
+    grid-template-columns: 1fr;
+  }
+}
