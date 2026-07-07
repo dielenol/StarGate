@@ -120,7 +120,7 @@ export const ARMORY_WORLD_ZONES: ArmoryWorldZone[] = [
   {
     key: "simulator",
     eyebrow: "RANGE",
-    title: "장비 시뮬레이터",
+    title: "훈련장",
     href: "/erp/equipment-shop/simulator",
     color: "#78b05a",
     accent: "#c4f28a",
@@ -138,7 +138,7 @@ export const ARMORY_WORLD_ZONES: ArmoryWorldZone[] = [
   {
     key: "strategic",
     eyebrow: "STRATEGIC",
-    title: "전략 장비 판매점",
+    title: "전략 장비 보급소",
     href: "/erp/equipment-shop/strategic",
     color: "#8a80d6",
     accent: "#c0b9ff",
@@ -156,7 +156,7 @@ export const ARMORY_WORLD_ZONES: ArmoryWorldZone[] = [
   {
     key: "custom",
     eyebrow: "CUSTOM",
-    title: "전용무기 제작소",
+    title: "공방",
     href: "/erp/equipment-shop/custom",
     color: "#d9d3bd",
     accent: "#fff3c2",

@@ -104,7 +104,7 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
   {
     value: "strategic",
     href: "/erp/equipment-shop/strategic",
-    label: "전략 장비 판매점",
+    label: "전략 장비 보급소",
     eyebrow: "STRATEGIC ASSETS",
     description: "차량, 전략 자산, 전투 보조품을 구매합니다.",
     npc: "전략 자산 담당관",
@@ -112,15 +112,15 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
   {
     value: "custom",
     href: "/erp/equipment-shop/custom",
-    label: "전용무기 제작소",
+    label: "공방",
     eyebrow: "CUSTOM WORKSHOP",
-    description: "전용무기 제작 상담 구역입니다. 요청 저장은 후속 단계에서 연결합니다.",
+    description: "공방 상담 구역입니다. 전용무기 제작 요청 저장은 후속 단계에서 연결합니다.",
     npc: "제작 담당관",
   },
   {
     value: "simulator",
     href: "/erp/equipment-shop/simulator",
-    label: "장비 시뮬레이터",
+    label: "훈련장",
     eyebrow: "TEST RANGE",
     description: "보급형 장비의 사거리와 탄환 운용을 시험합니다.",
     npc: "시험장 담당관",
@@ -1124,7 +1124,7 @@ export default function EquipmentShopClient({
       {
         key: "simulator",
         eyebrow: "TEST RANGE",
-        title: "장비 시뮬레이터",
+        title: "훈련장",
         href: "/erp/equipment-shop/simulator",
         status: "시험장 모듈 활성",
         detail: "보급형 장비의 사거리, 탄환 운용, 공격 흐름을 시험합니다.",
@@ -1133,7 +1133,7 @@ export default function EquipmentShopClient({
       {
         key: "strategic",
         eyebrow: "SPECIAL ASSETS",
-        title: "전략 자산",
+        title: "전략 장비 보급소",
         href: "/erp/equipment-shop/strategic",
         status:
           strategicItemCount > 0
@@ -1145,9 +1145,9 @@ export default function EquipmentShopClient({
       {
         key: "fabrication",
         eyebrow: "FABRICATION",
-        title: "제작 / 검증",
+        title: "공방",
         href: "/erp/equipment-shop/custom",
-        status: "제작 상담 · 시뮬레이터 연결",
+        status: "공방 상담 · 훈련장 연결",
         detail: "전용무기 상담과 보급형 장비 성능 시험을 병기부 하위 모듈로 분리합니다.",
         warning: false,
       },
@@ -1227,7 +1227,7 @@ export default function EquipmentShopClient({
               },
               {
                 key: "strategic",
-                label: "전략 자산",
+                label: "전략 장비 보급소",
                 value:
                   strategicItemCount > 0
                     ? `${strategicItemCount}종 반출 목록`
@@ -1236,14 +1236,14 @@ export default function EquipmentShopClient({
               },
               {
                 key: "custom",
-                label: "전용무기",
+                label: "공방",
                 value: "상담 패널 활성",
                 warning: false,
               },
               {
                 key: "simulator",
-                label: "시뮬레이터",
-                value: "시험장 모듈 활성",
+                label: "훈련장",
+                value: "훈련 모듈 활성",
                 warning: false,
               },
             ].map((alert) => (
@@ -1327,7 +1327,7 @@ export default function EquipmentShopClient({
                 ? "등록된 토와스키 장비 품목이 없습니다."
                 : isAcheron
                   ? "등록된 아케론 대장간 품목이 없습니다."
-                  : "전략 장비 판매점 대상 품목이 없습니다. SPECIAL 카테고리에 병기부/전략자산/차량/전투보조 태그가 붙으면 이곳에 표시됩니다."}
+                  : "전략 장비 보급소 대상 품목이 없습니다. SPECIAL 카테고리에 병기부/전략자산/차량/전투보조 태그가 붙으면 이곳에 표시됩니다."}
             </div>
           ) : (
             <div className={styles.productGrid}>
@@ -2008,7 +2008,7 @@ export default function EquipmentShopClient({
       <div className={styles.customPanel}>
         <div className={styles.panelIntro}>
           <Eyebrow>CUSTOM WEAPON</Eyebrow>
-          <strong>전용무기 제작 상담</strong>
+          <strong>공방 상담</strong>
         </div>
         <div className={styles.workshopGrid}>
           <div>

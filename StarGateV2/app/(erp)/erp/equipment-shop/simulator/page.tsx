@@ -9,7 +9,7 @@ import { buildEquipmentShopCatalogResponse } from "../_data";
 import EquipmentSimulatorClient from "./EquipmentSimulatorClient";
 
 export const metadata = {
-  title: "장비 시험장 · 병기부 · Stargate ERP",
+  title: "훈련장 · 병기부 · Stargate ERP",
 };
 
 function fallbackAttackerProfile(sessionUser: {

@@ -184,7 +184,7 @@ export default function EquipmentSimulatorClient({
     {
       id: 0,
       tone: "info",
-      text: "5x5 장비 시험장 준비. 표적 토큰을 움직여 사거리를 확인하세요.",
+      text: "5x5 훈련장 준비. 표적 토큰을 움직여 사거리를 확인하세요.",
     },
   ]);
 
@@ -363,23 +363,23 @@ export default function EquipmentSimulatorClient({
         breadcrumb={[
           { label: "ERP", href: "/erp" },
           { label: "자산", href: "/erp/inventory" },
-          { label: "장비 시험장" },
+          { label: "훈련장" },
         ]}
-        title="장비 시험장"
+        title="훈련장"
       />
 
       <section className={styles.stageHeader}>
         <div>
           <Eyebrow>ARMORY TEST GRID</Eyebrow>
-          <h1>5x5 전투판 장비 시험</h1>
+          <h1>5x5 전투판 장비 훈련</h1>
         </div>
-        <div className={styles.stageBadges} aria-label="시험장 상태">
+        <div className={styles.stageBadges} aria-label="훈련장 상태">
           <Tag tone="info">READ ONLY</Tag>
           <Tag tone="gold">세로 사거리 판정</Tag>
         </div>
       </section>
 
-      <section className={styles.simLayout} aria-label="장비 시험장">
+      <section className={styles.simLayout} aria-label="훈련장">
         <aside className={styles.catalogPanel} aria-label="보급형 장비 목록">
           <div className={styles.panelIntro}>
             <Eyebrow>WEAPON RACK</Eyebrow>
