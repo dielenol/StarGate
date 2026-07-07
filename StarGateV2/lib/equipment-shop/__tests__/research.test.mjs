@@ -6,32 +6,36 @@ import {
   EQUIPMENT_RESEARCH_CAPS,
   EQUIPMENT_RESEARCH_NODES,
   addHours,
+  applyEquipmentResearchCapabilityEffect,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
   getEquipmentResearchPrerequisiteTier,
   quoteEquipmentResearchRush,
+  quoteEquipmentResearchStart,
 } from "../research.ts";
 
-test("T1 research only gives tiny HP/SAN bonuses and no direct ATK/DEF node", () => {
+test("T1 research splits HP/SAN into small bonuses without direct ATK/DEF", () => {
   const tierOneEffects = EQUIPMENT_RESEARCH_NODES.filter(
     (node) => node.tier === 1,
   ).flatMap((node) => Object.values(node.effects));
 
-  assert.ok(
-    tierOneEffects.some(
+  assert.equal(
+    tierOneEffects.filter(
       (effect) =>
         effect?.kind === "stat" &&
         effect.stat === "hp" &&
-        effect.amount === 2,
-    ),
+        effect.amount === 1,
+    ).length >= 2,
+    true,
   );
-  assert.ok(
-    tierOneEffects.some(
+  assert.equal(
+    tierOneEffects.filter(
       (effect) =>
         effect?.kind === "stat" &&
         effect.stat === "san" &&
-        effect.amount === 2,
-    ),
+        effect.amount === 1,
+    ).length >= 2,
+    true,
   );
   assert.equal(
     tierOneEffects.some(
@@ -64,7 +68,7 @@ test("DEF is only available through the personal T5 final protocol", () => {
   assert.equal(EQUIPMENT_RESEARCH_CAPS.def, 1);
 });
 
-test("team research now has T2 and T5 options without team DEF or points", () => {
+test("team research has segmented options without team DEF or points", () => {
   const teamNodesByTier = new Map();
   for (const node of EQUIPMENT_RESEARCH_NODES) {
     if (!node.allowedScopes.includes("team")) continue;
@@ -73,8 +77,11 @@ test("team research now has T2 and T5 options without team DEF or points", () =>
     teamNodesByTier.set(node.tier, bucket);
   }
 
+  assert.ok(teamNodesByTier.get(1)?.includes("BIO-01B"));
   assert.ok(teamNodesByTier.get(2)?.includes("BIO-02"));
+  assert.ok(teamNodesByTier.get(2)?.includes("BIO-02B"));
   assert.ok(teamNodesByTier.get(2)?.includes("PSY-02"));
+  assert.ok(teamNodesByTier.get(4)?.includes("BIO-04B"));
   assert.ok(teamNodesByTier.get(5)?.includes("BIO-05"));
   assert.ok(teamNodesByTier.get(5)?.includes("PSY-05"));
   assert.ok(teamNodesByTier.get(5)?.includes("MUN-05"));
@@ -91,6 +98,18 @@ test("team research now has T2 and T5 options without team DEF or points", () =>
     false,
   );
   assert.equal(teamT5Effects.some((effect) => effect.kind === "point"), false);
+});
+
+test("segmented nodes declare same-tier prerequisite keys", () => {
+  assert.deepEqual(getEquipmentResearchNode("BIO-01B")?.prerequisiteKeys, [
+    "BIO-01",
+  ]);
+  assert.deepEqual(getEquipmentResearchNode("BIO-02B")?.prerequisiteKeys, [
+    "BIO-02",
+  ]);
+  assert.deepEqual(getEquipmentResearchNode("LAB-03")?.prerequisiteKeys, [
+    "LAB-02",
+  ]);
 });
 
 test("research tiers require the previous tier after T1", () => {
@@ -163,4 +182,51 @@ test("LAB-01 applies a 10 percent discount to the first rush quote", () => {
   assert.equal(quote.cost, 90);
   assert.equal(quote.hours, 12);
   assert.equal(quote.discountApplied, true);
+});
+
+test("research start quote applies cost and duration discounts with caps", () => {
+  const node = getEquipmentResearchNode("BIO-04");
+  assert.ok(node);
+
+  const quote = quoteEquipmentResearchStart({
+    node,
+    capabilities: {
+      ...DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
+      researchCostDiscountPercent: 8,
+      researchCostDiscountCap: 120,
+      researchTimeDiscountPercent: 10,
+      researchTimeDiscountMaxHours: 72,
+    },
+  });
+
+  assert.equal(quote.cost, node.cost - 120);
+  assert.equal(quote.costDiscount, 120);
+  assert.equal(quote.durationHours, node.durationHours - 72);
+  assert.equal(quote.durationReductionHours, 72);
+});
+
+test("capability effects merge the strongest economy and lab bonuses", () => {
+  let capabilities = { ...DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES };
+  for (const effect of [
+    { kind: "refund", percent: 5, cap: 75 },
+    { kind: "research_cost_discount", percent: 8, cap: 120 },
+    { kind: "research_time_discount", percent: 10, maxHours: 72 },
+    { kind: "rush_discount", percent: 20 },
+    { kind: "credit_bonus", percent: 5, cap: 250 },
+  ]) {
+    capabilities = applyEquipmentResearchCapabilityEffect(
+      capabilities,
+      effect,
+    );
+  }
+
+  assert.equal(capabilities.refundPercent, 5);
+  assert.equal(capabilities.refundCap, 75);
+  assert.equal(capabilities.researchCostDiscountPercent, 8);
+  assert.equal(capabilities.researchCostDiscountCap, 120);
+  assert.equal(capabilities.researchTimeDiscountPercent, 10);
+  assert.equal(capabilities.researchTimeDiscountMaxHours, 72);
+  assert.equal(capabilities.rushDiscountPercent, 20);
+  assert.equal(capabilities.creditBonusPercent, 5);
+  assert.equal(capabilities.creditBonusCap, 250);
 });

@@ -9,15 +9,16 @@ import {
 import {
   canApplyEquipmentResearchEffect,
   createEquipmentResearchProject,
-  hasAppliedEquipmentResearchTierPrerequisite,
+  findMissingAppliedEquipmentResearchPrerequisites,
+  getEquipmentResearchCapabilities,
   serializeEquipmentResearchProject,
 } from "@/lib/db/equipment-research";
 import {
   addHours,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
-  getEquipmentResearchPrerequisiteTier,
   isEquipmentResearchScope,
+  quoteEquipmentResearchStart,
 } from "@/lib/equipment-shop/research";
 
 import {
@@ -134,21 +135,37 @@ export async function POST(request: Request) {
     String(target._id),
   );
 
-  const hasPrerequisite = await hasAppliedEquipmentResearchTierPrerequisite({
-    scope,
-    tier: node.tier,
-    targetCharacterIds,
-  });
-  if (!hasPrerequisite) {
-    const requiredTier = getEquipmentResearchPrerequisiteTier(node.tier);
+  const missingPrerequisites =
+    await findMissingAppliedEquipmentResearchPrerequisites({
+      node,
+      scope,
+      targetCharacterIds,
+    });
+  if (
+    missingPrerequisites.requiredTier !== null ||
+    missingPrerequisites.keys.length > 0
+  ) {
+    const reasons = [
+      missingPrerequisites.requiredTier
+        ? `같은 범위의 T${missingPrerequisites.requiredTier} 연구 적용`
+        : "",
+      missingPrerequisites.keys.length > 0
+        ? `${missingPrerequisites.keys.join(", ")} 적용`
+        : "",
+    ].filter(Boolean);
     return NextResponse.json(
       {
-        error: `T${node.tier} 연구는 같은 범위의 T${requiredTier} 연구 적용 후 시작할 수 있습니다.`,
+        error: `T${node.tier} ${node.key} 연구는 ${reasons.join(" 및 ")} 후 시작할 수 있습니다.`,
         code: "RESEARCH_PREREQUISITE_MISSING",
       },
       { status: 400 },
     );
   }
+
+  const capabilities = await getEquipmentResearchCapabilities(
+    budgetResult.budget.id,
+  );
+  const startQuote = quoteEquipmentResearchStart({ node, capabilities });
 
   for (const target of targetResult.targets) {
     const targetId = String(target._id);
@@ -169,7 +186,7 @@ export async function POST(request: Request) {
 
   const chargeResult = await chargeResearchCredits({
     budget: budgetResult.budget,
-    amount: node.cost,
+    amount: startQuote.cost,
     description: `병기 연구 시작 — ${node.key} ${node.name}`,
     metadata: {
       source: "equipment_shop_research_start",
@@ -177,6 +194,12 @@ export async function POST(request: Request) {
       tier: node.tier,
       scope,
       targetCount: targetResult.targets.length,
+      baseCost: node.cost,
+      costDiscount: startQuote.costDiscount,
+      baseDurationHours: node.durationHours,
+      durationReductionHours: startQuote.durationReductionHours,
+      chargedCost: startQuote.cost,
+      durationHours: startQuote.durationHours,
     },
     session: authResult.session,
   });
@@ -190,17 +213,17 @@ export async function POST(request: Request) {
       tier: node.tier,
       scope,
       effect,
-      cost: node.cost,
-      durationHours: node.durationHours,
+      cost: startQuote.cost,
+      durationHours: startQuote.durationHours,
       startedAt,
-      completedAt: addHours(startedAt, node.durationHours),
+      completedAt: addHours(startedAt, startQuote.durationHours),
       targetCharacterIds,
       createdBy: authResult.session.id,
     });
   } catch (err) {
     await refundResearchCredits({
       budget: budgetResult.budget,
-      amount: node.cost,
+      amount: startQuote.cost,
       description: `병기 연구 자동 환불 — ${node.key} 등록 실패`,
       metadata: {
         source: "equipment_shop_research_start_refund",

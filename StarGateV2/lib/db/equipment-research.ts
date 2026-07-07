@@ -13,9 +13,11 @@ import {
   type EquipmentResearchStat,
   type EquipmentResearchStatus,
   type EquipmentResearchTier,
+  applyEquipmentResearchCapabilityEffect,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
   getEquipmentResearchPrerequisiteTier,
+  type EquipmentResearchNode,
 } from "@/lib/equipment-shop/research";
 
 export interface EquipmentResearchProject {
@@ -159,6 +161,49 @@ export async function hasAppliedEquipmentResearchTierPrerequisite(args: {
 
   const project = await col.findOne(filter, { projection: { _id: 1 } });
   return Boolean(project);
+}
+
+export async function findMissingAppliedEquipmentResearchPrerequisites(args: {
+  node: EquipmentResearchNode;
+  scope: EquipmentResearchScope;
+  targetCharacterIds: string[];
+}): Promise<{ requiredTier: EquipmentResearchTier | null; keys: string[] }> {
+  const requiredTier = getEquipmentResearchPrerequisiteTier(args.node.tier);
+  const hasTier = await hasAppliedEquipmentResearchTierPrerequisite({
+    scope: args.scope,
+    tier: args.node.tier,
+    targetCharacterIds: args.targetCharacterIds,
+  });
+  const missing = {
+    requiredTier: hasTier ? null : requiredTier,
+    keys: [] as string[],
+  };
+
+  const prerequisiteKeys = args.node.prerequisiteKeys ?? [];
+  if (prerequisiteKeys.length === 0) return missing;
+
+  const col = await equipmentResearchProjectsCol();
+  const filter: Filter<EquipmentResearchProject> = {
+    scope: args.scope,
+    key: { $in: prerequisiteKeys },
+    status: "applied",
+  };
+
+  if (args.scope === "personal") {
+    if (args.targetCharacterIds.length === 0) {
+      return { ...missing, keys: prerequisiteKeys };
+    }
+    filter.targetCharacterIds = { $in: args.targetCharacterIds };
+  }
+
+  const projects = await col
+    .find(filter, { projection: { key: 1 } })
+    .toArray();
+  const appliedKeys = new Set(projects.map((project) => project.key));
+  return {
+    ...missing,
+    keys: prerequisiteKeys.filter((key) => !appliedKeys.has(key)),
+  };
 }
 
 export async function updateEquipmentResearchProjectRush(args: {
@@ -330,37 +375,7 @@ export async function getEquipmentResearchCapabilities(
       const effect = node
         ? getEquipmentResearchEffect(node, project.scope) ?? project.effect
         : project.effect;
-      if (effect.kind === "refund") {
-        return {
-          ...capabilities,
-          refundPercent: Math.max(capabilities.refundPercent, effect.percent),
-          refundCap: Math.max(capabilities.refundCap, effect.cap),
-        };
-      }
-      if (effect.kind === "rush_discount") {
-        return {
-          ...capabilities,
-          rushDiscountPercent: Math.max(
-            capabilities.rushDiscountPercent,
-            effect.percent,
-          ),
-        };
-      }
-      if (effect.kind === "unlock") {
-        return {
-          ...capabilities,
-          trainingModule:
-            capabilities.trainingModule ||
-            effect.code === "training_module",
-          zuluCountermeasure:
-            capabilities.zuluCountermeasure ||
-            effect.code === "zulu_countermeasure",
-          customWeaponSlot:
-            capabilities.customWeaponSlot ||
-            effect.code === "custom_weapon_slot",
-        };
-      }
-      return capabilities;
+      return applyEquipmentResearchCapabilityEffect(capabilities, effect);
     },
     { ...DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES },
   );

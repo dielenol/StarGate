@@ -1060,7 +1060,7 @@
 
 .techCapRail {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -1074,10 +1074,10 @@
   position: relative;
   display: grid;
   grid-template-columns: repeat(5, minmax(168px, 1fr));
-  grid-template-rows: 70px repeat(5, 136px);
+  grid-template-rows: 70px minmax(760px, auto);
   gap: 12px 20px;
   min-width: 1060px;
-  min-height: 802px;
+  min-height: 880px;
   padding: 14px 16px 18px;
   background:
     radial-gradient(circle at 18% 28%, rgba(112, 207, 224, 0.16), transparent 32%),
@@ -1135,16 +1135,25 @@
   font-style: normal;
 }
 
+.techTierColumn {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
 .techNode {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-rows: auto 46px auto minmax(16px, auto) auto;
+  grid-template-rows: auto 42px auto minmax(16px, auto) auto;
   justify-items: center;
   align-self: center;
   gap: 5px;
   min-width: 0;
-  min-height: 126px;
+  min-height: 118px;
   padding: 8px;
   background: rgba(7, 9, 10, 0.8);
   border: 2px solid rgba(224, 229, 218, 0.26);
@@ -1366,6 +1375,16 @@
   color: var(--gold);
   font-size: 14px;
   line-height: 1.35;
+}
+
+.techDetailStats em {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
+  word-break: keep-all;
 }
 
 .techDetailActions {

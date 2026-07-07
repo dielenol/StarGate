@@ -38,6 +38,8 @@ import { formatCredits } from "@/lib/format/credit";
 import {
   describeEquipmentResearchEffect,
   getEquipmentResearchPrerequisiteTier,
+  quoteEquipmentResearchRush,
+  quoteEquipmentResearchStart,
   scopeLabel,
 } from "@/lib/equipment-shop/research";
 
@@ -206,19 +208,6 @@ const RESEARCH_TIER_FEEL: Record<number, string> = {
   5: "피날레 보상",
 };
 
-const RESEARCH_BRANCH_LANES: Record<string, number> = {
-  bio: 1,
-  psy: 2,
-  mun: 3,
-  log: 4,
-  lab: 5,
-  trn: 5,
-  cnt: 5,
-  cst: 5,
-  aeg: 4,
-  pts: 5,
-};
-
 function describeEquipmentShopError(err: unknown): string {
   return describeApiError(err, EquipmentShopApiError, ERROR_MESSAGE);
 }
@@ -243,10 +232,6 @@ function renderCatalogIcon(item: EquipmentShopCatalogEntry, size: number) {
   }
 
   return <ShopItemIcon slug={item.slug ?? item.key} size={size} />;
-}
-
-function getResearchLane(node: ResearchNodeEntry): number {
-  return RESEARCH_BRANCH_LANES[node.branch] ?? 5;
 }
 
 function getResearchNodeMapStatus(
@@ -310,21 +295,34 @@ function isResearchNodeUnlocked(args: {
   targetCharacterId: string | null;
 }): boolean {
   const requiredTier = getEquipmentResearchPrerequisiteTier(args.node.tier);
-  if (!requiredTier) return true;
-  return args.projects.some((project) => {
+  const hasAppliedProject = (project: EquipmentResearchProjectEntry) => {
     if (project.scope !== args.scope) return false;
-    if (project.tier !== requiredTier) return false;
     if (project.computedStatus !== "applied") return false;
     if (args.scope === "team") return true;
     return args.targetCharacterId
       ? project.targetCharacterIds.includes(args.targetCharacterId)
       : false;
-  });
+  };
+  const hasRequiredTier =
+    !requiredTier ||
+    args.projects.some(
+      (project) => project.tier === requiredTier && hasAppliedProject(project),
+    );
+  const hasRequiredNodes = (args.node.prerequisiteKeys ?? []).every((key) =>
+    args.projects.some(
+      (project) => project.key === key && hasAppliedProject(project),
+    ),
+  );
+  return hasRequiredTier && hasRequiredNodes;
 }
 
 function researchNodeLockLabel(node: ResearchNodeEntry): string | null {
   const requiredTier = getEquipmentResearchPrerequisiteTier(node.tier);
-  return requiredTier ? `T${requiredTier} 필요` : null;
+  const labels = [
+    requiredTier ? `T${requiredTier} 필요` : "",
+    ...(node.prerequisiteKeys ?? []).map((key) => `${key} 필요`),
+  ].filter(Boolean);
+  return labels.length > 0 ? labels.join(" · ") : null;
 }
 
 function ResearchPixelIcon({
@@ -1460,6 +1458,12 @@ export default function EquipmentShopClient({
     const selectedPrerequisiteLabel = selectedResearchNode
       ? researchNodeLockLabel(selectedResearchNode)
       : null;
+    const selectedStartQuote = selectedResearchNode
+      ? quoteEquipmentResearchStart({
+          node: selectedResearchNode,
+          capabilities: research.capabilities,
+        })
+      : null;
 
     return (
       <div className={styles.labLayout}>
@@ -1524,6 +1528,30 @@ export default function EquipmentShopClient({
                   : "미해금"}
               </strong>
             </div>
+            <div>
+              <span>연구비</span>
+              <strong>
+                {research.capabilities.researchCostDiscountPercent > 0
+                  ? `${research.capabilities.researchCostDiscountPercent}% / cap ${research.capabilities.researchCostDiscountCap} CR`
+                  : "미해금"}
+              </strong>
+            </div>
+            <div>
+              <span>연구 시간</span>
+              <strong>
+                {research.capabilities.researchTimeDiscountPercent > 0
+                  ? `${research.capabilities.researchTimeDiscountPercent}% / max ${research.capabilities.researchTimeDiscountMaxHours}h`
+                  : "미해금"}
+              </strong>
+            </div>
+            <div>
+              <span>크레딧 보너스</span>
+              <strong>
+                {research.capabilities.creditBonusPercent > 0
+                  ? `${research.capabilities.creditBonusPercent}% / cap ${research.capabilities.creditBonusCap} CR`
+                  : "미해금"}
+              </strong>
+            </div>
           </div>
 
           <div className={styles.techTreeScroll}>
@@ -1546,53 +1574,59 @@ export default function EquipmentShopClient({
                 </div>
               ))}
 
-              {scopedResearchTree.map((node) => {
-                const isUnlocked = isResearchNodeUnlocked({
-                  node,
-                  projects: researchProjects,
-                  scope: activeResearchScope,
-                  targetCharacterId: mainCharacter?.id ?? null,
-                });
-                const nodeStatus = getResearchNodeMapStatus(
-                  researchProjects,
-                  node.key,
-                  activeResearchScope,
-                );
-                const isSelected = selectedResearchNode?.key === node.key;
-                const effectSummary = node.effects[activeResearchScope]
-                  ? describeEquipmentResearchEffect(
-                      node.effects[activeResearchScope],
-                    )
-                  : "-";
+              {researchTiers.map(([tier, nodes]) => (
+                <div
+                  key={`${tier}-nodes`}
+                  className={styles.techTierColumn}
+                  style={{ gridColumn: tier, gridRow: "2 / span 5" }}
+                >
+                  {nodes.map((node) => {
+                    const isUnlocked = isResearchNodeUnlocked({
+                      node,
+                      projects: researchProjects,
+                      scope: activeResearchScope,
+                      targetCharacterId: mainCharacter?.id ?? null,
+                    });
+                    const nodeStatus = getResearchNodeMapStatus(
+                      researchProjects,
+                      node.key,
+                      activeResearchScope,
+                    );
+                    const isSelected = selectedResearchNode?.key === node.key;
+                    const effectSummary = node.effects[activeResearchScope]
+                      ? describeEquipmentResearchEffect(
+                          node.effects[activeResearchScope],
+                        )
+                      : "-";
 
-                return (
-                  <button
-                    key={node.key}
-                    type="button"
-                    className={researchNodeClassName(
-                      nodeStatus,
-                      isSelected,
-                      !isUnlocked,
-                    )}
-                    style={{
-                      gridColumn: node.tier,
-                      gridRow: getResearchLane(node) + 1,
-                    }}
-                    onClick={() => handleSelectResearchNode(node.key)}
-                    aria-pressed={isSelected}
-                  >
-                    <span className={styles.techNodeKey}>{node.key}</span>
-                    <ResearchPixelIcon node={node} active={isSelected} />
-                    <strong>{node.name}</strong>
-                    <span className={styles.techNodeEffect}>{effectSummary}</span>
-                    <span className={styles.techNodeBadge}>
-                      {isUnlocked
-                        ? researchNodeMapStatusLabel(nodeStatus)
-                        : researchNodeLockLabel(node)}
-                    </span>
-                  </button>
-                );
-              })}
+                    return (
+                      <button
+                        key={node.key}
+                        type="button"
+                        className={researchNodeClassName(
+                          nodeStatus,
+                          isSelected,
+                          !isUnlocked,
+                        )}
+                        onClick={() => handleSelectResearchNode(node.key)}
+                        aria-pressed={isSelected}
+                      >
+                        <span className={styles.techNodeKey}>{node.key}</span>
+                        <ResearchPixelIcon node={node} active={isSelected} />
+                        <strong>{node.name}</strong>
+                        <span className={styles.techNodeEffect}>
+                          {effectSummary}
+                        </span>
+                        <span className={styles.techNodeBadge}>
+                          {isUnlocked
+                            ? researchNodeMapStatusLabel(nodeStatus)
+                            : researchNodeLockLabel(node)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -1621,13 +1655,32 @@ export default function EquipmentShopClient({
               <div className={styles.techDetailStats}>
                 <div>
                   <span>비용</span>
-                  <strong>{formatCredits(selectedResearchNode.cost)}</strong>
+                  <strong>
+                    {selectedStartQuote
+                      ? formatCredits(selectedStartQuote.cost)
+                      : formatCredits(selectedResearchNode.cost)}
+                  </strong>
+                  {selectedStartQuote?.costDiscount ? (
+                    <em>
+                      정가 {formatCredits(selectedResearchNode.cost)} · 할인{" "}
+                      {formatCredits(selectedStartQuote.costDiscount)}
+                    </em>
+                  ) : null}
                 </div>
                 <div>
-                  <span>기본 시간</span>
+                  <span>실제 시간</span>
                   <strong>
-                    {formatDuration(selectedResearchNode.durationHours)}
+                    {selectedStartQuote
+                      ? formatDuration(selectedStartQuote.durationHours)
+                      : formatDuration(selectedResearchNode.durationHours)}
                   </strong>
+                  {selectedStartQuote?.durationReductionHours ? (
+                    <em>
+                      기본 {formatDuration(selectedResearchNode.durationHours)} ·
+                      단축{" "}
+                      {formatDuration(selectedStartQuote.durationReductionHours)}
+                    </em>
+                  ) : null}
                 </div>
                 <div>
                   <span>RUSH</span>
@@ -1671,7 +1724,7 @@ export default function EquipmentShopClient({
                     !selectedResearchUnlocked ||
                     !canStartResearch(
                       activeResearchScope,
-                      selectedResearchNode.cost,
+                      selectedStartQuote?.cost ?? selectedResearchNode.cost,
                     )
                   }
                   aria-busy={startResearchMutation.isPending}
@@ -1734,6 +1787,23 @@ export default function EquipmentShopClient({
                   const rushRule = research.rushRules.find(
                     (rule) => rule.tier === project.tier,
                   );
+                  const projectNode = research.tree.find(
+                    (node) => node.key === project.key,
+                  );
+                  const rushQuote =
+                    projectNode && rushRule
+                      ? quoteEquipmentResearchRush({
+                          node: projectNode,
+                          project: {
+                            tier: project.tier,
+                            startedAt: new Date(project.startedAt),
+                            completedAt: new Date(project.completedAt),
+                            rushUsed: project.rushUsed,
+                            rushDiscountUsed: project.rushDiscountUsed,
+                          },
+                          capabilities: research.capabilities,
+                        })
+                      : null;
                   return (
                     <article key={project.id} className={styles.projectCard}>
                       <div className={styles.projectCardTop}>
@@ -1755,12 +1825,15 @@ export default function EquipmentShopClient({
                           onClick={() => handleRushResearch(project.id)}
                           disabled={
                             project.computedStatus !== "in_progress" ||
+                            !rushQuote ||
                             rushResearchMutation.isPending
                           }
                           aria-busy={rushResearchMutation.isPending}
                         >
-                          {rushRule
-                            ? `${formatCredits(rushRule.cost)} / ${formatDuration(rushRule.hours)}`
+                          {rushQuote
+                            ? `${formatCredits(rushQuote.cost)} / ${formatDuration(rushQuote.hours)}`
+                            : rushRule
+                              ? `${formatCredits(rushRule.cost)} / ${formatDuration(rushRule.hours)}`
                             : "단축 불가"}
                         </button>
                         <button

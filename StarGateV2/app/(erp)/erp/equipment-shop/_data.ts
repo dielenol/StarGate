@@ -18,6 +18,7 @@ import {
   toEquipmentShopCatalogItem,
 } from "@/lib/equipment-shop/catalog";
 import {
+  DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
   EQUIPMENT_RESEARCH_CAPS,
   EQUIPMENT_RESEARCH_NODES,
   EQUIPMENT_RESEARCH_RUSH_RULES,
@@ -137,14 +138,7 @@ export async function loadEquipmentShopPageData(): Promise<EquipmentShopPageData
           tree: EQUIPMENT_RESEARCH_NODES,
           rushRules: Object.values(EQUIPMENT_RESEARCH_RUSH_RULES),
           caps: EQUIPMENT_RESEARCH_CAPS,
-          capabilities: {
-            refundPercent: 0,
-            refundCap: 0,
-            rushDiscountPercent: 0,
-            trainingModule: false,
-            zuluCountermeasure: false,
-            customWeaponSlot: false,
-          },
+          capabilities: DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
           projects: [],
         }),
       ),
