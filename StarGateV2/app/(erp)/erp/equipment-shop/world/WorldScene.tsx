@@ -98,7 +98,7 @@ export default function WorldScene({
       <pointLight position={[4.8, 2.8, -3.4]} intensity={1.1} color="#8a80d6" />
       <pointLight position={[-3.6, 2.8, -4.2]} intensity={1.05} color="#62bfd2" />
 
-      <OrthographicCamera makeDefault position={[6.4, 7.4, 7.2]} zoom={64} />
+      <OrthographicCamera makeDefault position={[4.8, 5.7, 5.4]} zoom={94} />
       <CameraRig playerPositionRef={playerPositionRef} />
 
       <ArmoryCampus
@@ -134,8 +134,8 @@ function CameraRig({
 
   useFrame(({ camera }) => {
     const player = playerPositionRef.current;
-    lookAt.lerp(new Vector3(player.x, 0.42, player.z), 0.08);
-    desired.set(player.x + 6.4, 7.4, player.z + 7.2);
+    lookAt.lerp(new Vector3(player.x, 0.92, player.z - 0.72), 0.08);
+    desired.set(player.x + 4.8, 5.7, player.z + 5.4);
     camera.position.lerp(desired, 0.06);
     camera.lookAt(lookAt);
     camera.updateProjectionMatrix();
@@ -239,22 +239,380 @@ function WalkwayNetwork() {
 
 function CentralLobby() {
   return (
-    <group position={[0, 0.16, 0.08]}>
-      <mesh receiveShadow position={[0, 0.04, 0]}>
-        <cylinderGeometry args={[1.78, 1.96, 0.16, 8]} />
-        <meshStandardMaterial color="#111918" roughness={0.86} metalness={0.24} />
+    <group position={[0, 0.12, 0.26]}>
+      <ReceptionHallShell />
+      <InformationDesk />
+    </group>
+  );
+}
+
+function ReceptionHallShell() {
+  return (
+    <group>
+      <PolishedLobbyFloor />
+      <BackMarbleWall />
+      <CeilingRingLight />
+      <DirectoryBoard position={[-3.18, 1.08, -0.56]} rotation={0.42} />
+      <GlassRoutePylon position={[3.1, 0.62, 0.54]} rotation={-0.32} />
+      <HangingBanner position={[-1.72, 1.95, -1.08]} />
+      <HangingBanner position={[1.72, 1.95, -1.08]} />
+      <PortalSign
+        position={[-2.08, 1.1, -1.26]}
+        rotation={0.3}
+        title="신체증강 연구소"
+        subtitle="AUGMENTATION LAB"
+        arrow="left"
+      />
+      <PortalSign
+        position={[2.3, 1.02, -1.22]}
+        rotation={-0.32}
+        title="토와스키 건샵"
+        subtitle="TOWASKI GUN SHOP"
+        arrow="right"
+      />
+      <PortalSign
+        position={[2.46, 0.62, -1.0]}
+        rotation={-0.32}
+        title="아케론 대장간"
+        subtitle="ACHERON FORGE"
+        arrow="right"
+      />
+      {[-3.14, -1.12, 1.12, 3.14].map((x) => (
+        <WallButtress key={x} position={[x, 1.2, -1.42]} />
+      ))}
+      {[-2.96, 2.96].map((x) => (
+        <VerticalLight key={x} position={[x, 1.08, -1.18]} />
+      ))}
+    </group>
+  );
+}
+
+function PolishedLobbyFloor() {
+  const seamLines = [
+    [-1.8, 0, 0.018, 3.9],
+    [0, 0, 0.018, 4.2],
+    [1.8, 0, 0.018, 3.9],
+    [0, -0.92, 4.8, 0.018],
+    [0, 0.42, 5.1, 0.018],
+    [0, 1.42, 4.4, 0.018],
+  ] as const;
+
+  return (
+    <group>
+      <mesh receiveShadow position={[0, 0.035, 0.18]}>
+        <boxGeometry args={[5.9, 0.08, 4.65]} />
+        <meshStandardMaterial color="#242524" roughness={0.28} metalness={0.34} />
       </mesh>
-      <mesh position={[0, 0.13, 0]} rotation={[0, Math.PI / 4, 0]}>
-        <torusGeometry args={[1.52, 0.025, 8, 8]} />
+      <mesh receiveShadow position={[0, 0.082, 0.18]}>
+        <boxGeometry args={[5.42, 0.028, 4.12]} />
+        <meshStandardMaterial color="#3d3d39" roughness={0.2} metalness={0.42} />
+      </mesh>
+      {seamLines.map(([x, z, width, depth]) => (
+        <mesh key={`${x}-${z}-${width}-${depth}`} position={[x, 0.106, z]}>
+          <boxGeometry args={[width, 0.014, depth]} />
+          <meshStandardMaterial
+            color="#c9a85a"
+            emissive="#5b421b"
+            emissiveIntensity={0.12}
+            roughness={0.22}
+            metalness={0.58}
+          />
+        </mesh>
+      ))}
+      <FloorMedallion />
+    </group>
+  );
+}
+
+function FloorMedallion() {
+  return (
+    <group position={[0, 0.13, 1.2]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh>
+        <torusGeometry args={[0.55, 0.018, 8, 48]} />
+        <meshStandardMaterial color="#c9a85a" emissive="#5b421b" emissiveIntensity={0.1} />
+      </mesh>
+      <mesh>
+        <torusGeometry args={[0.37, 0.012, 8, 48]} />
+        <meshStandardMaterial color="#c9a85a" roughness={0.3} metalness={0.62} />
+      </mesh>
+      {[0, (Math.PI * 2) / 3, (Math.PI * 4) / 3].map((rotation) => (
+        <mesh key={rotation} rotation={[0, 0, rotation]} position={[0, 0, 0.012]}>
+          <boxGeometry args={[0.78, 0.018, 0.014]} />
+          <meshStandardMaterial color="#c9a85a" roughness={0.32} metalness={0.58} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function BackMarbleWall() {
+  const marbleVeins = [
+    [-0.86, 0.06, 0.04, 2.34, 0.22],
+    [0.74, 0.1, 0.04, 2.05, -0.18],
+    [1.22, 0.0, 0.035, 1.35, 0.3],
+    [-1.34, 0.0, 0.035, 1.42, -0.28],
+  ] as const;
+
+  return (
+    <group position={[0, 0, -1.48]}>
+      <mesh castShadow receiveShadow position={[0, 1.34, 0]}>
+        <boxGeometry args={[3.18, 2.56, 0.18]} />
+        <meshStandardMaterial color="#c8c3b7" roughness={0.38} metalness={0.08} />
+      </mesh>
+      <mesh castShadow receiveShadow position={[0, 1.34, -0.08]}>
+        <boxGeometry args={[3.48, 2.82, 0.12]} />
+        <meshStandardMaterial color="#151717" roughness={0.6} metalness={0.36} />
+      </mesh>
+      <mesh position={[0, 2.62, 0.06]}>
+        <boxGeometry args={[3.34, 0.06, 0.08]} />
+        <meshStandardMaterial color="#f0d486" emissive="#6d501e" emissiveIntensity={0.18} />
+      </mesh>
+      <mesh position={[0, 0.08, 0.06]}>
+        <boxGeometry args={[3.34, 0.06, 0.08]} />
+        <meshStandardMaterial color="#f0d486" emissive="#6d501e" emissiveIntensity={0.12} />
+      </mesh>
+      {marbleVeins.map(([x, z, width, height, rotation]) => (
+        <mesh
+          key={`${x}-${height}`}
+          position={[x, 1.28, 0.105 + z]}
+          rotation={[0, 0, rotation]}
+        >
+          <boxGeometry args={[width, height, 0.012]} />
+          <meshStandardMaterial color="#858178" roughness={0.5} metalness={0.02} />
+        </mesh>
+      ))}
+      <NovusEmblem3D position={[0, 1.74, 0.13]} scale={0.82} />
+      <Html center position={[0, 0.88, 0.17]} className={styles.sceneWallTitle}>
+        <strong>NOVUS ORDO</strong>
+        <span>병기부</span>
+        <small>NOVUS ORDO 산하 기관</small>
+      </Html>
+    </group>
+  );
+}
+
+function NovusEmblem3D({
+  position,
+  scale = 1,
+}: {
+  position: [number, number, number];
+  scale?: number;
+}) {
+  return (
+    <group position={position} scale={scale}>
+      <mesh>
+        <torusGeometry args={[0.45, 0.014, 8, 54]} />
+        <meshStandardMaterial color="#c9a85a" emissive="#6d501e" emissiveIntensity={0.18} />
+      </mesh>
+      <mesh>
+        <torusGeometry args={[0.28, 0.01, 8, 54]} />
+        <meshStandardMaterial color="#c9a85a" roughness={0.28} metalness={0.68} />
+      </mesh>
+      {[0, (Math.PI * 2) / 3, (Math.PI * 4) / 3].map((rotation) => (
+        <mesh key={rotation} rotation={[0, 0, rotation]}>
+          <boxGeometry args={[0.72, 0.025, 0.02]} />
+          <meshStandardMaterial color="#c9a85a" roughness={0.28} metalness={0.66} />
+        </mesh>
+      ))}
+      <mesh>
+        <torusGeometry args={[0.09, 0.012, 8, 32]} />
+        <meshStandardMaterial color="#f0d486" emissive="#6d501e" emissiveIntensity={0.12} />
+      </mesh>
+      {[-0.56, 0.56].map((x) => (
+        <group key={x} position={[x, -0.03, 0]} rotation={[0, 0, x > 0 ? -0.44 : 0.44]}>
+          {[0, 1, 2, 3, 4].map((index) => (
+            <mesh key={index} position={[0, index * 0.07 - 0.14, 0]} rotation={[0, 0, index * 0.08]}>
+              <boxGeometry args={[0.2 - index * 0.018, 0.026, 0.016]} />
+              <meshStandardMaterial color="#c9a85a" roughness={0.32} metalness={0.58} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function CeilingRingLight() {
+  return (
+    <group position={[0, 3.02, -1.92]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh>
+        <torusGeometry args={[0.72, 0.042, 12, 72]} />
         <meshStandardMaterial
-          color="#62bfd2"
-          emissive="#235a66"
-          emissiveIntensity={0.34}
-          roughness={0.5}
-          metalness={0.2}
+          color="#f5f1df"
+          emissive="#f5f1df"
+          emissiveIntensity={1.4}
+          roughness={0.18}
         />
       </mesh>
-      <InformationDesk />
+      <mesh>
+        <torusGeometry args={[0.9, 0.02, 8, 72]} />
+        <meshStandardMaterial color="#393632" roughness={0.46} metalness={0.52} />
+      </mesh>
+      <pointLight position={[0, 0, 0.16]} intensity={1.9} color="#fff3d4" distance={5.2} />
+    </group>
+  );
+}
+
+function WallButtress({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[0.2, 2.35, 0.32]} />
+        <meshStandardMaterial color="#17191a" roughness={0.64} metalness={0.44} />
+      </mesh>
+      <mesh position={[0, 0, 0.18]}>
+        <boxGeometry args={[0.075, 2.05, 0.04]} />
+        <meshStandardMaterial color="#2f2d29" roughness={0.5} metalness={0.54} />
+      </mesh>
+      <mesh position={[0, 1.06, 0.2]}>
+        <boxGeometry args={[0.24, 0.04, 0.05]} />
+        <meshStandardMaterial color="#c9a85a" emissive="#5b421b" emissiveIntensity={0.12} />
+      </mesh>
+    </group>
+  );
+}
+
+function VerticalLight({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh>
+        <boxGeometry args={[0.08, 1.42, 0.035]} />
+        <meshStandardMaterial
+          color="#fff1d2"
+          emissive="#fff1d2"
+          emissiveIntensity={1.05}
+          roughness={0.2}
+        />
+      </mesh>
+      <pointLight position={[0, 0.1, 0.24]} intensity={0.9} color="#ffe3ad" distance={2.6} />
+    </group>
+  );
+}
+
+function DirectoryBoard({
+  position,
+  rotation,
+}: {
+  position: [number, number, number];
+  rotation: number;
+}) {
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[0.9, 1.98, 0.1]} />
+        <meshStandardMaterial color="#0d0f10" roughness={0.54} metalness={0.42} />
+      </mesh>
+      <mesh position={[0, 0.02, -0.07]}>
+        <boxGeometry args={[0.98, 2.08, 0.06]} />
+        <meshStandardMaterial color="#2d2923" roughness={0.42} metalness={0.5} />
+      </mesh>
+      <mesh position={[0, 0.93, 0.06]}>
+        <boxGeometry args={[0.78, 0.035, 0.04]} />
+        <meshStandardMaterial color="#f0d486" emissive="#7a5d23" emissiveIntensity={0.24} />
+      </mesh>
+      <Html center position={[0, 0.05, 0.09]} className={styles.sceneDirectory}>
+        <strong>병기부</strong>
+        <span>내부 구역 안내</span>
+        <ol>
+          <li>병기부</li>
+          <li>준비중</li>
+          <li>신체증강 연구소</li>
+          <li>토와스키 건샵</li>
+          <li>아케론 대장간</li>
+          <li>전략 장비 보급소</li>
+        </ol>
+      </Html>
+    </group>
+  );
+}
+
+function GlassRoutePylon({
+  position,
+  rotation,
+}: {
+  position: [number, number, number];
+  rotation: number;
+}) {
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <mesh castShadow receiveShadow position={[0, 0.02, 0]}>
+        <boxGeometry args={[0.72, 1.58, 0.08]} />
+        <meshPhysicalMaterial
+          color="#d9f7ff"
+          emissive="#62bfd2"
+          emissiveIntensity={0.16}
+          transparent
+          opacity={0.22}
+          roughness={0.08}
+          transmission={0.38}
+          metalness={0.04}
+        />
+      </mesh>
+      <mesh position={[0, 0.78, 0.06]}>
+        <boxGeometry args={[0.66, 0.035, 0.04]} />
+        <meshStandardMaterial color="#f0d486" emissive="#7a5d23" emissiveIntensity={0.22} />
+      </mesh>
+      <mesh position={[0, -0.78, 0.06]}>
+        <boxGeometry args={[0.66, 0.035, 0.04]} />
+        <meshStandardMaterial color="#f0d486" roughness={0.32} metalness={0.54} />
+      </mesh>
+      <Html center position={[0, 0.1, 0.1]} className={styles.sceneGlassPanel}>
+        <strong>전략 장비 보급소</strong>
+        <span>공방</span>
+        <span>훈련장</span>
+        <small>FLOOR MAP</small>
+      </Html>
+    </group>
+  );
+}
+
+function HangingBanner({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[0.44, 1.08, 0.06]} />
+        <meshStandardMaterial color="#161515" roughness={0.64} metalness={0.28} />
+      </mesh>
+      <mesh position={[0, -0.52, 0.035]} rotation={[0, 0, Math.PI / 4]}>
+        <boxGeometry args={[0.28, 0.28, 0.035]} />
+        <meshStandardMaterial color="#161515" roughness={0.64} metalness={0.28} />
+      </mesh>
+      <NovusEmblem3D position={[0, 0.16, 0.055]} scale={0.25} />
+      <mesh position={[0, -0.3, 0.055]}>
+        <boxGeometry args={[0.3, 0.018, 0.018]} />
+        <meshStandardMaterial color="#c9a85a" emissive="#5b421b" emissiveIntensity={0.12} />
+      </mesh>
+    </group>
+  );
+}
+
+function PortalSign({
+  position,
+  rotation,
+  title,
+  subtitle,
+  arrow,
+}: {
+  position: [number, number, number];
+  rotation: number;
+  title: string;
+  subtitle: string;
+  arrow: "left" | "right";
+}) {
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[1.0, 0.28, 0.09]} />
+        <meshStandardMaterial color="#151718" roughness={0.56} metalness={0.42} />
+      </mesh>
+      <mesh position={[arrow === "left" ? -0.42 : 0.42, 0, 0.06]}>
+        <boxGeometry args={[0.2, 0.035, 0.035]} />
+        <meshStandardMaterial color="#c9a85a" emissive="#6d501e" emissiveIntensity={0.2} />
+      </mesh>
+      <Html center position={[0, 0.01, 0.08]} className={styles.scenePortalSign}>
+        <strong>{title}</strong>
+        <span>{subtitle}</span>
+      </Html>
     </group>
   );
 }
@@ -264,81 +622,87 @@ function InformationDesk() {
 
   useFrame((state) => {
     if (!hologramRef.current) return;
-    hologramRef.current.rotation.y = state.clock.elapsedTime * 0.55;
+    hologramRef.current.rotation.y = state.clock.elapsedTime * 0.28;
     hologramRef.current.position.y =
-      0.94 + Math.sin(state.clock.elapsedTime * 2.4) * 0.025;
+      0.92 + Math.sin(state.clock.elapsedTime * 2.4) * 0.018;
   });
 
   return (
     <group>
       <DeskCounter />
-      <DeskAttendant />
       <group ref={hologramRef} position={[0, 0.94, -0.12]}>
         <HologramCampusMap />
       </group>
-      <ArmoryDeskWeaponRack />
+      <DeskTerminalCluster />
       <QueueRails />
-      <DirectionPylon position={[-1.52, 0.18, 0.84]} rotation={0.3} />
-      <DirectionPylon position={[1.52, 0.18, 0.84]} rotation={-0.3} />
-      <mesh position={[0, 1.48, -0.92]}>
-        <boxGeometry args={[1.92, 0.2, 0.1]} />
-        <meshStandardMaterial
-          color="#101314"
-          emissive="#0d3b42"
-          emissiveIntensity={0.26}
-          roughness={0.48}
-          metalness={0.36}
-        />
-      </mesh>
-      <Html
-        center
-        position={[0, 1.5, -0.98]}
-        className={`${styles.sceneLabel} ${styles["sceneLabel--desk"]}`}
-      >
-        <strong>안내 데스크</strong>
-        <span>NOVUS ARMORY</span>
-      </Html>
     </group>
   );
 }
 
 function DeskCounter() {
   return (
-    <group position={[0, 0.32, 0.06]}>
-      <mesh castShadow receiveShadow position={[0, 0.12, 0.2]}>
-        <boxGeometry args={[1.8, 0.42, 0.46]} />
-        <meshStandardMaterial color="#242c2d" roughness={0.7} metalness={0.36} />
+    <group position={[0, 0.36, 0.08]}>
+      <mesh castShadow receiveShadow position={[0, 0.12, 0.16]}>
+        <boxGeometry args={[2.24, 0.48, 0.52]} />
+        <meshStandardMaterial color="#1a1d1e" roughness={0.52} metalness={0.5} />
       </mesh>
-      <mesh castShadow receiveShadow position={[-0.82, 0.08, -0.12]} rotation={[0, 0.22, 0]}>
-        <boxGeometry args={[0.62, 0.36, 0.74]} />
-        <meshStandardMaterial color="#202829" roughness={0.72} metalness={0.38} />
+      <mesh castShadow receiveShadow position={[-1.06, 0.08, -0.02]} rotation={[0, 0.28, 0]}>
+        <boxGeometry args={[0.72, 0.44, 0.78]} />
+        <meshStandardMaterial color="#151718" roughness={0.54} metalness={0.54} />
       </mesh>
-      <mesh castShadow receiveShadow position={[0.82, 0.08, -0.12]} rotation={[0, -0.22, 0]}>
-        <boxGeometry args={[0.62, 0.36, 0.74]} />
-        <meshStandardMaterial color="#202829" roughness={0.72} metalness={0.38} />
+      <mesh castShadow receiveShadow position={[1.06, 0.08, -0.02]} rotation={[0, -0.28, 0]}>
+        <boxGeometry args={[0.72, 0.44, 0.78]} />
+        <meshStandardMaterial color="#151718" roughness={0.54} metalness={0.54} />
       </mesh>
-      <mesh position={[0, 0.39, 0.43]}>
-        <boxGeometry args={[1.92, 0.06, 0.08]} />
+      <mesh castShadow receiveShadow position={[0, 0.39, 0.12]}>
+        <boxGeometry args={[2.46, 0.08, 0.64]} />
+        <meshStandardMaterial color="#e8e1d1" roughness={0.24} metalness={0.12} />
+      </mesh>
+      <mesh position={[0, 0.08, 0.45]}>
+        <boxGeometry args={[1.76, 0.25, 0.04]} />
         <meshStandardMaterial
-          color="#f0d486"
-          emissive="#8a6f28"
-          emissiveIntensity={0.34}
-          roughness={0.42}
-          metalness={0.44}
+          color="#f6f0df"
+          emissive="#f6f0df"
+          emissiveIntensity={0.56}
+          roughness={0.2}
+          metalness={0.04}
         />
       </mesh>
-      <mesh position={[0, 0.03, 0.46]}>
-        <boxGeometry args={[1.54, 0.08, 0.08]} />
-        <meshStandardMaterial
-          color="#62bfd2"
-          emissive="#235a66"
-          emissiveIntensity={0.5}
-          roughness={0.42}
-          metalness={0.2}
-        />
+      <mesh position={[0, 0.25, 0.49]}>
+        <boxGeometry args={[1.94, 0.035, 0.035]} />
+        <meshStandardMaterial color="#c9a85a" emissive="#6d501e" emissiveIntensity={0.18} />
       </mesh>
-      <DeskTerminal position={[-0.54, 0.45, 0.02]} rotation={0.24} />
-      <DeskTerminal position={[0.56, 0.45, 0.02]} rotation={-0.24} />
+      <Html center position={[0, 0.18, 0.525]} className={styles.sceneDeskFront}>
+        <strong>병기부</strong>
+        <span>NOVUS ORDO 산하 기관</span>
+      </Html>
+      <mesh castShadow receiveShadow position={[-1.36, 0.12, 0.18]}>
+        <boxGeometry args={[0.28, 0.54, 0.58]} />
+        <meshStandardMaterial color="#101213" roughness={0.5} metalness={0.52} />
+      </mesh>
+      <mesh castShadow receiveShadow position={[1.36, 0.12, 0.18]}>
+        <boxGeometry args={[0.28, 0.54, 0.58]} />
+        <meshStandardMaterial color="#101213" roughness={0.5} metalness={0.52} />
+      </mesh>
+      <NovusEmblem3D position={[1.36, 0.24, 0.49]} scale={0.2} />
+    </group>
+  );
+}
+
+function DeskTerminalCluster() {
+  return (
+    <group>
+      <DeskTerminal position={[-0.92, 0.84, 0.05]} rotation={0.18} />
+      <DeskTerminal position={[-0.42, 0.86, -0.06]} rotation={0.08} />
+      <DeskTerminal position={[0.52, 0.86, -0.04]} rotation={-0.1} />
+      <DeskTerminal position={[0.98, 0.84, 0.08]} rotation={-0.22} />
+      <mesh position={[0, 0.77, 0.14]}>
+        <boxGeometry args={[0.38, 0.08, 0.14]} />
+        <meshStandardMaterial color="#151718" roughness={0.48} metalness={0.5} />
+      </mesh>
+      <Html center position={[0, 0.83, 0.22]} className={styles.sceneDeskPlate}>
+        INFORMATION
+      </Html>
     </group>
   );
 }
@@ -351,55 +715,23 @@ function DeskTerminal({
   rotation: number;
 }) {
   return (
-    <group position={position} rotation={[0, rotation, -0.12]}>
+    <group position={position} rotation={[0, rotation, -0.1]}>
       <mesh castShadow>
-        <boxGeometry args={[0.36, 0.06, 0.28]} />
-        <meshStandardMaterial color="#0d1213" roughness={0.58} metalness={0.42} />
+        <boxGeometry args={[0.42, 0.04, 0.24]} />
+        <meshStandardMaterial color="#0b0e0f" roughness={0.42} metalness={0.56} />
       </mesh>
-      <mesh position={[0, 0.05, -0.08]} rotation={[-0.52, 0, 0]}>
-        <boxGeometry args={[0.34, 0.04, 0.22]} />
-        <meshStandardMaterial
-          color="#62bfd2"
-          emissive="#235a66"
-          emissiveIntensity={0.55}
-          roughness={0.3}
-          metalness={0.18}
+      <mesh position={[0, 0.09, -0.08]} rotation={[-0.58, 0, 0]}>
+        <boxGeometry args={[0.38, 0.035, 0.24]} />
+        <meshPhysicalMaterial
+          color="#d9f7ff"
+          emissive="#62bfd2"
+          emissiveIntensity={0.42}
+          transparent
+          opacity={0.45}
+          roughness={0.08}
+          transmission={0.28}
         />
       </mesh>
-    </group>
-  );
-}
-
-function DeskAttendant() {
-  return (
-    <group position={[0, 0.55, -0.42]}>
-      <mesh castShadow position={[0, 0.25, 0]}>
-        <boxGeometry args={[0.32, 0.48, 0.2]} />
-        <meshStandardMaterial color="#1e3439" roughness={0.72} metalness={0.12} />
-      </mesh>
-      <mesh castShadow position={[0, 0.58, 0]}>
-        <sphereGeometry args={[0.16, 12, 10]} />
-        <meshStandardMaterial color="#d4b58a" roughness={0.62} metalness={0.02} />
-      </mesh>
-      <mesh castShadow position={[0, 0.74, -0.02]}>
-        <boxGeometry args={[0.34, 0.08, 0.22]} />
-        <meshStandardMaterial color="#101314" roughness={0.6} metalness={0.28} />
-      </mesh>
-      <mesh position={[0, 0.79, -0.05]}>
-        <boxGeometry args={[0.22, 0.03, 0.08]} />
-        <meshStandardMaterial
-          color="#f0d486"
-          emissive="#8a6f28"
-          emissiveIntensity={0.34}
-          roughness={0.4}
-        />
-      </mesh>
-      {[-0.24, 0.24].map((x) => (
-        <mesh key={x} castShadow position={[x, 0.27, 0.02]} rotation={[0, 0, x > 0 ? -0.34 : 0.34]}>
-          <boxGeometry args={[0.08, 0.36, 0.08]} />
-          <meshStandardMaterial color="#263f42" roughness={0.72} metalness={0.16} />
-        </mesh>
-      ))}
     </group>
   );
 }
@@ -463,71 +795,16 @@ function HologramCampusMap() {
   );
 }
 
-function ArmoryDeskWeaponRack() {
-  return (
-    <group position={[0, 0.58, -1.03]}>
-      <mesh castShadow receiveShadow position={[0, 0.34, 0]}>
-        <boxGeometry args={[1.64, 0.78, 0.12]} />
-        <meshStandardMaterial color="#111516" roughness={0.66} metalness={0.34} />
-      </mesh>
-      <mesh position={[0, 0.76, -0.07]}>
-        <boxGeometry args={[1.48, 0.06, 0.08]} />
-        <meshStandardMaterial
-          color="#62bfd2"
-          emissive="#235a66"
-          emissiveIntensity={0.42}
-          roughness={0.34}
-        />
-      </mesh>
-      <MiniWeapon position={[-0.42, 0.46, -0.1]} length={0.62} color="#c9a85a" />
-      <MiniWeapon position={[0.0, 0.32, -0.1]} length={0.82} color="#62bfd2" />
-      <MiniWeapon position={[0.42, 0.5, -0.1]} length={0.68} color="#d46b4a" />
-    </group>
-  );
-}
-
-function MiniWeapon({
-  position,
-  length,
-  color,
-}: {
-  position: [number, number, number];
-  length: number;
-  color: string;
-}) {
-  return (
-    <group position={position} rotation={[0, 0, -0.18]}>
-      <mesh castShadow>
-        <boxGeometry args={[length, 0.07, 0.08]} />
-        <meshStandardMaterial color="#2b3131" roughness={0.48} metalness={0.52} />
-      </mesh>
-      <mesh castShadow position={[length * 0.24, -0.1, 0]}>
-        <boxGeometry args={[0.12, 0.2, 0.07]} />
-        <meshStandardMaterial color="#15191a" roughness={0.58} metalness={0.46} />
-      </mesh>
-      <mesh position={[-length * 0.36, 0.0, 0]}>
-        <boxGeometry args={[0.16, 0.035, 0.09]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.36}
-          roughness={0.36}
-        />
-      </mesh>
-    </group>
-  );
-}
-
 function QueueRails() {
   const posts = [
-    [-1.14, 0.0],
-    [-0.52, 0.54],
-    [0.52, 0.54],
-    [1.14, 0.0],
+    [-1.36, 0.58],
+    [-0.58, 1.02],
+    [0.58, 1.02],
+    [1.36, 0.58],
   ] as const;
 
   return (
-    <group position={[0, 0.18, 1.1]}>
+    <group position={[0, 0.18, 0.88]}>
       {posts.map(([x, z]) => (
         <group key={`${x}-${z}`} position={[x, 0, z]}>
           <mesh castShadow position={[0, 0.28, 0]}>
@@ -545,47 +822,17 @@ function QueueRails() {
           </mesh>
         </group>
       ))}
-      <mesh position={[-0.84, 0.52, 0.28]} rotation={[0, 0.68, Math.PI / 2]}>
+      <mesh position={[-0.98, 0.52, 0.8]} rotation={[0, 0.64, Math.PI / 2]}>
         <cylinderGeometry args={[0.018, 0.018, 0.82, 8]} />
         <meshStandardMaterial color="#c9a85a" roughness={0.44} metalness={0.24} />
       </mesh>
-      <mesh position={[0, 0.52, 0.54]} rotation={[0, Math.PI / 2, Math.PI / 2]}>
-        <cylinderGeometry args={[0.018, 0.018, 1.04, 8]} />
+      <mesh position={[0, 0.52, 1.02]} rotation={[0, Math.PI / 2, Math.PI / 2]}>
+        <cylinderGeometry args={[0.018, 0.018, 1.16, 8]} />
         <meshStandardMaterial color="#c9a85a" roughness={0.44} metalness={0.24} />
       </mesh>
-      <mesh position={[0.84, 0.52, 0.28]} rotation={[0, -0.68, Math.PI / 2]}>
+      <mesh position={[0.98, 0.52, 0.8]} rotation={[0, -0.64, Math.PI / 2]}>
         <cylinderGeometry args={[0.018, 0.018, 0.82, 8]} />
         <meshStandardMaterial color="#c9a85a" roughness={0.44} metalness={0.24} />
-      </mesh>
-    </group>
-  );
-}
-
-function DirectionPylon({
-  position,
-  rotation,
-}: {
-  position: [number, number, number];
-  rotation: number;
-}) {
-  return (
-    <group position={position} rotation={[0, rotation, 0]}>
-      <mesh castShadow>
-        <boxGeometry args={[0.24, 0.84, 0.18]} />
-        <meshStandardMaterial color="#171d1e" roughness={0.64} metalness={0.32} />
-      </mesh>
-      <mesh position={[0, 0.1, -0.095]}>
-        <boxGeometry args={[0.18, 0.46, 0.03]} />
-        <meshStandardMaterial
-          color="#62bfd2"
-          emissive="#235a66"
-          emissiveIntensity={0.46}
-          roughness={0.32}
-        />
-      </mesh>
-      <mesh position={[0, 0.36, -0.12]} rotation={[0, 0, Math.PI / 4]}>
-        <boxGeometry args={[0.12, 0.12, 0.03]} />
-        <meshStandardMaterial color="#f0d486" emissive="#8a6f28" emissiveIntensity={0.26} />
       </mesh>
     </group>
   );
