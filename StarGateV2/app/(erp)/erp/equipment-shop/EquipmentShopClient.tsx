@@ -69,9 +69,9 @@ const ARMORY_DESK_META: Pick<
   ArmoryZoneDef,
   "label" | "eyebrow" | "npc"
 > = {
-  label: "병기부 안내데스크",
+  label: "병기부 통합 관제실",
   eyebrow: "ARMORY BUREAU",
-  npc: "병기부 담당관",
+  npc: "병기부 관제 담당관",
 };
 
 const ZONE_DEFS: ArmoryZoneDef[] = [
@@ -956,94 +956,229 @@ export default function EquipmentShopClient({
   }
 
   function renderHubPanel() {
-    const alerts = [
+    const totalCatalogItemCount =
+      towaskiItemCount + acheronItemCount + strategicItemCount;
+    const availableCatalogItemCount = catalog.items.filter(
+      (item) => item.available && item.stock > 0,
+    ).length;
+    const availableStockCount = catalog.items.reduce(
+      (sum, item) => sum + (item.available ? item.stock : 0),
+      0,
+    );
+    const activeProjectCount = researchProjects.filter(
+      (project) => project.computedStatus !== "applied",
+    ).length;
+    const readyProjectCount = researchProjects.filter(
+      (project) => project.computedStatus === "completed",
+    ).length;
+    const appliedProjectCount = researchProjects.filter(
+      (project) => project.computedStatus === "applied",
+    ).length;
+    const personalResearchCount = research.tree.filter((node) =>
+      node.allowedScopes.includes("personal"),
+    ).length;
+    const teamResearchCount = research.tree.filter((node) =>
+      node.allowedScopes.includes("team"),
+    ).length;
+
+    const commandStats = [
       {
-        key: "lab",
-        label: "연구소",
-        value: hasMainCharacter
-          ? "개인/팀 강화 터미널 대기"
-          : "메인 AGENT 미등록 · 개인 강화 제한",
-        warning: !hasMainCharacter,
-      },
-      {
-        key: "towaski",
-        label: "토와스키",
-        value:
-          towaskiItemCount > 0
-            ? `표준 장비 ${towaskiItemCount}종 표시`
-            : "표준 장비 등록 없음",
+        key: "catalog",
+        label: "반출 카탈로그",
+        value: `${totalCatalogItemCount}종`,
+        detail: `가용 ${availableCatalogItemCount}종 · 재고 ${availableStockCount}EA`,
         warning: false,
       },
       {
-        key: "acheron",
-        label: "아케론",
-        value:
-          acheronItemCount > 0
-            ? `근접 장비 ${acheronItemCount}종 표시`
-            : "근접 장비 등록 없음",
+        key: "research",
+        label: "연구 트리",
+        value: `${personalResearchCount + teamResearchCount}노드`,
+        detail: `개인 ${personalResearchCount} · 팀 ${teamResearchCount}`,
+        warning: false,
+      },
+      {
+        key: "projects",
+        label: "진행 큐",
+        value: `${activeProjectCount}건`,
+        detail: `완료 대기 ${readyProjectCount} · 적용 ${appliedProjectCount}`,
+        warning: false,
+      },
+      {
+        key: "agent",
+        label: "운영 대상",
+        value: mainCharacter?.codename ?? "UNASSIGNED",
+        detail: hasMainCharacter
+          ? `${formatCredits(balance)} 운용 가능`
+          : "개인 연구/구매 제한",
+        warning: !hasMainCharacter,
+      },
+    ];
+
+    const operationCards = [
+      {
+        key: "research",
+        eyebrow: "RESEARCH CONTROL",
+        title: "강화 연구",
+        href: "/erp/equipment-shop/lab",
+        status:
+          activeProjectCount > 0
+            ? `진행 ${activeProjectCount} · 완료 대기 ${readyProjectCount}`
+            : "대기 큐 없음",
+        detail: "개인/팀 연구를 시작하고 완료 연구를 실제 스탯에 적용합니다.",
+        warning: false,
+      },
+      {
+        key: "catalog",
+        eyebrow: "ISSUE COUNTER",
+        title: "장비 반출",
+        href: "/erp/equipment-shop/towaski",
+        status: `토와스키 ${towaskiItemCount} · 아케론 ${acheronItemCount}`,
+        detail: "표준 화기, 방어구, 근접 병기를 크레딧 결제 후 인벤토리에 반출합니다.",
         warning: false,
       },
       {
         key: "strategic",
-        label: "전략 장비",
-        value:
+        eyebrow: "SPECIAL ASSETS",
+        title: "전략 자산",
+        href: "/erp/equipment-shop/strategic",
+        status:
           strategicItemCount > 0
-            ? `전략 장비 ${strategicItemCount}종 표시`
-            : "대상 태그 품목 없음",
+            ? `${strategicItemCount}종 승인 목록`
+            : "승인 목록 없음",
+        detail: "차량, 작전 보조품, 특수 장비처럼 SPECIAL 태그가 붙은 품목을 분리합니다.",
         warning: strategicItemCount === 0,
       },
       {
-        key: "custom",
-        label: "제작소",
-        value: "전용무기 상담만 활성",
-        warning: false,
-      },
-      {
-        key: "simulator",
-        label: "시험장",
-        value: "장비 시뮬레이터 활성",
+        key: "fabrication",
+        eyebrow: "FABRICATION",
+        title: "제작 / 검증",
+        href: "/erp/equipment-shop/custom",
+        status: "제작 상담 · 시뮬레이터 연결",
+        detail: "전용무기 상담과 보급형 장비 성능 시험을 병기부 하위 모듈로 분리합니다.",
         warning: false,
       },
     ];
 
     return (
-      <div className={styles.deskLayout}>
-        <section className={styles.deskConsole} aria-label="병기부 입장 선택">
-          <div className={styles.panelIntro}>
-            <Eyebrow>DESTINATION SELECT</Eyebrow>
-            <strong>구역 선택</strong>
+      <div className={styles.hubLayout}>
+        <section className={styles.commandPanel} aria-label="병기부 운영 현황">
+          <div className={styles.commandHero}>
+            <span className={styles.bureauMark} aria-hidden>
+              <span />
+            </span>
+            <div>
+              <Eyebrow>ARMORY OPERATIONS</Eyebrow>
+              <strong>병기부 통합 관제</strong>
+              <p>
+                연구, 장비 반출, 제작 상담, 성능 검증을 한 화면에서 분기합니다.
+              </p>
+            </div>
           </div>
 
-          <div className={styles.choiceGrid}>
+          <div className={styles.commandStats}>
+            {commandStats.map((stat) => (
+              <div
+                key={stat.key}
+                className={[
+                  styles.commandStat,
+                  stat.warning ? styles["commandStat--warning"] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <span>{stat.label}</span>
+                <strong>{stat.value}</strong>
+                <em>{stat.detail}</em>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.operationGrid} aria-label="병기부 업무 구분">
+          {operationCards.map((card) => (
+            <Link
+              key={card.key}
+              href={card.href}
+              className={[
+                styles.operationCard,
+                card.warning ? styles["operationCard--warning"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={(event) => handleZoneLinkClick(event, card.href)}
+            >
+              <span>{card.eyebrow}</span>
+              <strong>{card.title}</strong>
+              <p>{card.detail}</p>
+              <em>{card.status}</em>
+            </Link>
+          ))}
+        </section>
+
+        <section className={styles.routingPanel} aria-label="병기부 구역 라우팅">
+          <div className={styles.panelIntro}>
+            <Eyebrow>ROUTE MATRIX</Eyebrow>
+            <strong>구역 라우팅</strong>
+          </div>
+          <div className={styles.routeMatrix}>
             {ZONE_DEFS.map((zone) => (
               <Link
                 key={zone.value}
                 href={zone.href}
-                className={styles.choiceCard}
+                className={styles.routeRow}
                 onClick={(event) => handleZoneLinkClick(event, zone.href)}
               >
                 <span>{zone.eyebrow}</span>
                 <strong>{zone.label}</strong>
-                <small>{zone.description}</small>
                 <em>{getZoneStatus(zone.value)}</em>
-                <span className={styles.choiceAction}>입장</span>
               </Link>
             ))}
           </div>
         </section>
 
-        <aside className={styles.alertPanel} aria-label="병기부 기능 알림">
+        <aside className={styles.systemPanel} aria-label="병기부 시스템 상태">
           <div className={styles.panelIntro}>
-            <Eyebrow>OPERATIONS BOARD</Eyebrow>
-            <strong>기능 알림</strong>
+            <Eyebrow>SYSTEM BOARD</Eyebrow>
+            <strong>처리 대기</strong>
           </div>
-          <div className={styles.alertList}>
-            {alerts.map((alert) => (
+          <div className={styles.systemList}>
+            {[
+              {
+                key: "research",
+                label: "완료 연구",
+                value:
+                  readyProjectCount > 0
+                    ? `${readyProjectCount}건 적용 대기`
+                    : "대기 없음",
+                warning: readyProjectCount > 0,
+              },
+              {
+                key: "strategic",
+                label: "전략 자산",
+                value:
+                  strategicItemCount > 0
+                    ? `${strategicItemCount}종 반출 목록`
+                    : "목록 비어 있음",
+                warning: strategicItemCount === 0,
+              },
+              {
+                key: "custom",
+                label: "전용무기",
+                value: "상담 패널 활성",
+                warning: false,
+              },
+              {
+                key: "simulator",
+                label: "시뮬레이터",
+                value: "시험장 모듈 활성",
+                warning: false,
+              },
+            ].map((alert) => (
               <div
                 key={alert.key}
                 className={[
-                  styles.alertItem,
-                  alert.warning ? styles["alertItem--warning"] : "",
+                  styles.systemItem,
+                  alert.warning ? styles["systemItem--warning"] : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -1781,7 +1916,15 @@ export default function EquipmentShopClient({
         </Box>
       ) : null}
 
-      <section className={styles.armoryStage} aria-label="병기부">
+      <section
+        className={[
+          styles.armoryStage,
+          isHub ? styles["armoryStage--hub"] : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        aria-label="병기부"
+      >
         <header className={styles.armoryHeader}>
           <div>
             <Eyebrow>{zoneMeta.eyebrow}</Eyebrow>
@@ -1826,19 +1969,34 @@ export default function EquipmentShopClient({
         )}
 
         <section className={styles.npcHud} aria-label="병기부 응대 HUD">
-          <div className={styles.npcPortrait}>
-            <Image
-              src={TOWASKI_PORTRAIT_SRC}
-              alt=""
-              fill
-              sizes="148px"
-              priority
-            />
+          <div
+            className={[
+              styles.npcPortrait,
+              isHub ? styles["npcPortrait--mark"] : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            {isHub ? (
+              <span className={styles.npcPortraitMark} aria-hidden />
+            ) : (
+              <Image
+                src={TOWASKI_PORTRAIT_SRC}
+                alt=""
+                fill
+                sizes="148px"
+                priority
+              />
+            )}
           </div>
           <div className={styles.npcDialogue}>
             <div className={styles.npcHead}>
               <span className={styles.npcProfile}>
-                <Image src={TOWASKI_PROFILE_SRC} alt="" fill sizes="38px" />
+                {isHub ? (
+                  <span className={styles.npcProfileMark} aria-hidden />
+                ) : (
+                  <Image src={TOWASKI_PROFILE_SRC} alt="" fill sizes="38px" />
+                )}
               </span>
               <div>
                 <span>{zoneMeta.eyebrow}</span>
@@ -1848,7 +2006,7 @@ export default function EquipmentShopClient({
             </div>
             <p>
               {isHub
-                ? "병기부 안내데스크다. 목적지를 고르면 해당 구역으로 연결해주겠다."
+                ? "병기부 통합 관제실이다. 연구, 반출, 제작, 시험 상태를 확인하고 필요한 구역으로 이동해라."
                 : activeZone === "lab"
                   ? "연구 적용은 즉시 기록된다. 개인인지, 팀 전체인지 먼저 확인해."
                   : activeZone === "towaski"

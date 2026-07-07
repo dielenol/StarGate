@@ -1,7 +1,7 @@
 /**
  * 병기부 · Stargate ERP
  *
- * 병기부 안내데스크 허브.
+ * 병기부 통합 관제 허브.
  */
 
 import EquipmentShopClient from "./EquipmentShopClient";
