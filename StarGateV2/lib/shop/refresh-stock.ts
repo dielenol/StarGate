@@ -3,7 +3,7 @@
  *
  * 정책:
  *   - KST `YYYY-MM-DD` 기준 일자 비교. shop_daily_stock.lastRefresh 가 오늘과 다르거나 문서 미존재면 stale.
- *   - 각 item: Math.random() < appearRate 면 stockMin~stockMax 사이 정수, 아니면 0.
+ *   - 각 item: Math.random() < appearRate 면 stockMax, 아니면 최소 1개 입고.
  *   - SHOP_CATALOG 의 모든 품목을 한 번에 처리 (Promise.all 병렬). tia_bot 과 동일.
  *
  * 호출 지점:
@@ -20,7 +20,8 @@ import {
   refreshStock,
 } from "@stargate/shared-db";
 
-import { SHOP_CATALOG, type ShopCatalogItem } from "./catalog";
+import { SHOP_CATALOG } from "./catalog";
+import { rollShopDailyStock } from "./stock-roll";
 
 /**
  * KST 기준 `YYYY-MM-DD` 문자열. `Asia/Seoul` 타임존을 명시해 서버 OS 타임존 의존 회피.
@@ -33,17 +34,6 @@ export function getTodayKst(now: Date = new Date()): string {
     day: "2-digit",
   });
   return fmt.format(now);
-}
-
-/**
- * SHOP_CATALOG 룰로 단일 item 의 재고 결정.
- *   - rand >= appearRate → 0 (오늘 미등장)
- *   - 그 외 → [stockMin, stockMax] 정수 균등분포
- */
-function rollStock(item: ShopCatalogItem): number {
-  if (Math.random() >= item.appearRate) return 0;
-  const span = item.stockMax - item.stockMin;
-  return item.stockMin + Math.floor(Math.random() * (span + 1));
 }
 
 /**
@@ -63,7 +53,7 @@ export async function ensureDailyStockRefresh(
     SHOP_CATALOG.map(async (item) => {
       const current = currentStockBySlug.get(item.slug);
       if (current?.lastRefresh === today) return false;
-      const stock = rollStock(item);
+      const stock = rollShopDailyStock(item);
       await refreshStock(item.slug, stock, today);
       return true;
     }),

@@ -25,7 +25,7 @@ export type ShopPageGroup = "BASIC" | "RECOVERY" | "LUXURY" | "RARE";
  * 편의점 전용 메타.
  *
  * - stockMin/stockMax: 일자별 재고 시드 범위 (KST 일자 단위).
- * - appearRate: 0.0 ~ 1.0. 0 이면 항상 품절(VF혈액팩 같은 fluff).
+ * - appearRate: 0.0 ~ 1.0. 최소 재고 보장 후 stockMax 로 입고될 확률.
  * - color: tia_bot 의 RGB tuple 을 hex 문자열(#RRGGBB) 로 변환.
  * - pageGroup: 페이지 분류. 미지정 시 기본 BASIC 으로 노출 가능.
  */

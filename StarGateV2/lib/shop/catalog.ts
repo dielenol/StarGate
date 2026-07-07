@@ -7,6 +7,7 @@
  * - color 는 tia_bot 의 RGB tuple 을 #RRGGBB 로 변환.
  * - pageGroup 은 SHOP_PAGES 분류와 정합 (BASIC / RECOVERY / LUXURY / RARE).
  * - stockMin / stockMax / appearRate 는 일자별 재고 시드 룰 (M2/M3 에서 활용).
+ *   appearRate 는 최소 재고 보장 후 stockMax 로 입고될 확률이다.
  * - isShopOpen() 은 KST 06:00~20:00 영업 + 일요일 종일 마감 룰을 따른다.
  */
 
@@ -34,7 +35,7 @@ export interface ShopCatalogItem {
   description: string;
   stockMin: number;
   stockMax: number;
-  /** 0.0 ~ 1.0. 0 이면 해당 일자에는 항상 품절. */
+  /** 0.0 ~ 1.0. 최소 재고 보장 후 stockMax 로 입고될 확률. */
   appearRate: number;
   /** #RRGGBB. */
   color: string;
@@ -53,7 +54,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "따뜻한 국물이 마음까지 녹여주는 야전의 벗.",
     stockMin: 8,
     stockMax: 16,
-    appearRate: 0.99,
+    appearRate: 1,
     color: "#2a8b4c",
     pageGroup: "BASIC",
   },
@@ -66,7 +67,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "톡 쏘는 탄산이 정신을 맑게 해줘요.",
     stockMin: 8,
     stockMax: 16,
-    appearRate: 0.99,
+    appearRate: 1,
     color: "#3068b0",
     pageGroup: "BASIC",
   },
@@ -79,7 +80,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "쓴맛이 정신을 깨워줘요... 저도 좋아해요.",
     stockMin: 6,
     stockMax: 12,
-    appearRate: 0.92,
+    appearRate: 0.98,
     color: "#785032",
     pageGroup: "BASIC",
   },
@@ -92,7 +93,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "찢어진 살갗과 떨리는 손을 빠르게 붙잡아주는 소형 응급 패치.",
     stockMin: 3,
     stockMax: 7,
-    appearRate: 0.78,
+    appearRate: 0.9,
     color: "#d95f5f",
     pageGroup: "RECOVERY",
   },
@@ -105,7 +106,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "입안에 남는 박하 향이 호흡과 사고를 천천히 되돌려준다.",
     stockMin: 3,
     stockMax: 7,
-    appearRate: 0.76,
+    appearRate: 0.9,
     color: "#5ea68c",
     pageGroup: "RECOVERY",
   },
@@ -118,7 +119,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "짠맛과 단맛이 묘하게 섞인 휴대용 영양젤. 야전에서 몸과 정신을 동시에 끌어올린다.",
     stockMin: 5,
     stockMax: 10,
-    appearRate: 0.88,
+    appearRate: 0.95,
     color: "#c9a04c",
     pageGroup: "RECOVERY",
   },
@@ -131,7 +132,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "한 입이면 다시 일어설 수 있어요.",
     stockMin: 4,
     stockMax: 8,
-    appearRate: 0.85,
+    appearRate: 0.93,
     color: "#2a8b4c",
     pageGroup: "RECOVERY",
   },
@@ -144,7 +145,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "손이 시려울 때 딱이에요... 따뜻해요.",
     stockMin: 4,
     stockMax: 8,
-    appearRate: 0.88,
+    appearRate: 0.95,
     color: "#c8503c",
     pageGroup: "RECOVERY",
   },
@@ -157,7 +158,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "달콤함이 절망을 잠시 잊게 해줘요.",
     stockMin: 3,
     stockMax: 6,
-    appearRate: 0.78,
+    appearRate: 0.9,
     color: "#c5a255",
     pageGroup: "RECOVERY",
   },
@@ -170,7 +171,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "가볍게 한 캔... 네 캔이지만요.",
     stockMin: 1,
     stockMax: 3,
-    appearRate: 0.65,
+    appearRate: 0.82,
     color: "#b48c3c",
     pageGroup: "LUXURY",
   },
@@ -183,7 +184,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "한 대 태우면 좀 나아질지도...",
     stockMin: 2,
     stockMax: 5,
-    appearRate: 0.7,
+    appearRate: 0.85,
     color: "#686460",
     pageGroup: "LUXURY",
   },
@@ -196,7 +197,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     description: "한 갑 통째로. 폐가 걱정되지만...",
     stockMin: 1,
     stockMax: 2,
-    appearRate: 0.35,
+    appearRate: 0.65,
     color: "#686460",
     pageGroup: "LUXURY",
   },
@@ -208,8 +209,8 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     effect: "음주 5턴",
     description: "아주 독한 술. 각오하고 드셔야 해요...",
     stockMin: 1,
-    stockMax: 1,
-    appearRate: 0.25,
+    stockMax: 2,
+    appearRate: 0.55,
     color: "#9b2020",
     pageGroup: "RARE",
   },
@@ -221,8 +222,8 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     effect: "HP 30 / SAN 10",
     description: "전설의 아이스크림. 한 입이면 세상이 달라져요.",
     stockMin: 1,
-    stockMax: 1,
-    appearRate: 0.18,
+    stockMax: 2,
+    appearRate: 0.5,
     color: "#dcb43c",
     pageGroup: "RARE",
   },
@@ -234,8 +235,8 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     effect: "???",
     description: "정체불명의 에너지 결정체. 강력한 힘이 느껴진다...",
     stockMin: 1,
-    stockMax: 1,
-    appearRate: 0.08,
+    stockMax: 2,
+    appearRate: 0.25,
     color: "#643cc8",
     pageGroup: "RARE",
   },
@@ -247,8 +248,8 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     effect: "HP 전회복",
     description: "앙카가 맨날 사가서 항상 매진이에요...",
     stockMin: 1,
-    stockMax: 1,
-    appearRate: 0.04,
+    stockMax: 2,
+    appearRate: 0.2,
     color: "#b41414",
     pageGroup: "RARE",
   },
