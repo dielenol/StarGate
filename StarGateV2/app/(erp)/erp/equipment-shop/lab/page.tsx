@@ -6,7 +6,7 @@ export const metadata = {
 };
 
 export default async function EquipmentShopLabPage() {
-  const data = await loadEquipmentShopPageData();
+  const data = await loadEquipmentShopPageData({ requireGm: false });
 
   return <EquipmentShopClient {...data} mode="zone" initialZone="lab" />;
 }

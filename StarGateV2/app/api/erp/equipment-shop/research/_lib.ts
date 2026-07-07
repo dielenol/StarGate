@@ -24,15 +24,24 @@ export interface ResearchBudgetCharacter {
 export async function requireResearchGm(): Promise<
   { session: ResearchRouteSession } | { response: NextResponse }
 > {
+  const authResult = await requireResearchUser();
+  if ("response" in authResult) return authResult;
+
+  try {
+    requireRole(authResult.session.role, "GM");
+  } catch {
+    return { response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
+  return authResult;
+}
+
+export async function requireResearchUser(): Promise<
+  { session: ResearchRouteSession } | { response: NextResponse }
+> {
   const session = await auth();
   if (!session?.user) {
     return { response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-
-  try {
-    requireRole(session.user.role, "GM");
-  } catch {
-    return { response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 
   return {

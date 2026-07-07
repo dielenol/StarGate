@@ -13,6 +13,7 @@ import {
   type EquipmentResearchScope,
   type EquipmentResearchStat,
   useCompleteEquipmentResearch,
+  useContributeEquipmentResearch,
   useCheckoutEquipmentShopCart,
   useRushEquipmentResearch,
   useStartEquipmentResearch,
@@ -36,6 +37,7 @@ import Tag from "@/components/ui/Tag/Tag";
 import { describeApiError } from "@/lib/api/describe-error";
 import { formatCredits } from "@/lib/format/credit";
 import {
+  DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
   describeEquipmentResearchEffect,
   getEquipmentResearchPrerequisiteTier,
   quoteEquipmentResearchRush,
@@ -169,6 +171,13 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
     "같은 범위의 이전 티어 연구를 먼저 적용해야 합니다.",
   RESEARCH_NOT_READY: "아직 완료되지 않은 연구입니다.",
   RUSH_LIMIT_REACHED: "더 이상 연구 시간을 단축할 수 없습니다.",
+  TEAM_RESEARCH_REQUIRES_CONTRIBUTION:
+    "팀 연구는 기여 누적을 통해서만 시작할 수 있습니다.",
+  RESEARCH_ALREADY_STARTED: "이미 시작되었거나 적용된 연구입니다.",
+  RESEARCH_FUNDING_CONFLICT:
+    "동시에 다른 기여가 처리되었습니다. 다시 시도해 주세요.",
+  RESEARCH_START_FAILED: "연구 시작 처리에 실패했습니다.",
+  FORBIDDEN_RESEARCH_PROJECT: "이 연구를 조작할 권한이 없습니다.",
 };
 
 interface Props {
@@ -562,6 +571,7 @@ export default function EquipmentShopClient({
   const checkoutMutation = useCheckoutEquipmentShopCart();
   const startResearchMutation = useStartEquipmentResearch();
   const rushResearchMutation = useRushEquipmentResearch();
+  const contributeResearchMutation = useContributeEquipmentResearch();
   const completeResearchMutation = useCompleteEquipmentResearch();
 
   const [activeTab, setActiveTab] = useState<EquipmentShopTabValue>("ALL");
@@ -578,6 +588,7 @@ export default function EquipmentShopClient({
     personal: getFirstResearchKeyForScope(initialResearch.tree, "personal"),
     team: getFirstResearchKeyForScope(initialResearch.tree, "team"),
   }));
+  const [teamContributionAmount, setTeamContributionAmount] = useState("100");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
 
@@ -895,11 +906,10 @@ export default function EquipmentShopClient({
 
   function canStartResearch(scope: EquipmentResearchScope, cost: number): boolean {
     return (
-      isGM &&
+      scope === "personal" &&
       hasMainCharacter &&
       balance >= cost &&
-      !startResearchMutation.isPending &&
-      (scope === "personal" || scope === "team")
+      !startResearchMutation.isPending
     );
   }
 
@@ -922,10 +932,17 @@ export default function EquipmentShopClient({
 
   function handleStartResearch(key: string, scope: EquipmentResearchScope) {
     const node = research.tree.find((item) => item.key === key);
+    const startQuote = node
+      ? quoteEquipmentResearchStart({
+          node,
+          capabilities: research.capabilities,
+        })
+      : null;
     if (
       !node ||
       !node.allowedScopes.includes(scope) ||
-      !canStartResearch(scope, node.cost)
+      !startQuote ||
+      !canStartResearch(scope, startQuote.cost)
     ) {
       return;
     }
@@ -942,6 +959,50 @@ export default function EquipmentShopClient({
           setNotice({
             tone: "success",
             text: `${res.project.key} 연구를 시작했습니다.`,
+          });
+        },
+        onError: (err) => {
+          setErrorMessage(describeEquipmentShopError(err));
+        },
+      },
+    );
+  }
+
+  function handleContributeTeamResearch(key: string, remainingCost: number) {
+    if (contributeResearchMutation.isPending) return;
+    const requestedAmount = Math.floor(Number(teamContributionAmount));
+    const chargePreview = Math.min(requestedAmount, remainingCost);
+    if (
+      !Number.isInteger(requestedAmount) ||
+      requestedAmount <= 0 ||
+      chargePreview <= 0
+    ) {
+      setErrorMessage("기여 금액은 1 CR 이상이어야 합니다.");
+      return;
+    }
+    if (!hasMainCharacter) {
+      setErrorMessage("메인 AGENT 캐릭터가 없어 팀 연구에 기여할 수 없습니다.");
+      return;
+    }
+    if (balance < chargePreview) {
+      setErrorMessage("잔액이 부족합니다.");
+      return;
+    }
+
+    setErrorMessage(null);
+    setNotice(null);
+    contributeResearchMutation.mutate(
+      {
+        key,
+        amount: requestedAmount,
+      },
+      {
+        onSuccess: (res) => {
+          setNotice({
+            tone: "success",
+            text: res.project
+              ? `${res.project.key} 팀 연구 목표액이 충족되어 연구를 시작했습니다.`
+              : `${res.pool.key} 팀 연구에 ${formatCredits(res.chargedAmount)} 기여했습니다.`,
           });
         },
         onError: (err) => {
@@ -1560,9 +1621,40 @@ export default function EquipmentShopClient({
     const selectedStartQuote = selectedResearchNode
       ? quoteEquipmentResearchStart({
           node: selectedResearchNode,
-          capabilities: research.capabilities,
+          capabilities:
+            activeResearchScope === "team"
+              ? DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES
+              : research.capabilities,
         })
       : null;
+    const selectedFundingPool = selectedResearchNode
+      ? research.fundingPools.find((pool) => pool.key === selectedResearchNode.key)
+      : null;
+    const selectedTeamFundedAmount =
+      activeResearchScope === "team" ? (selectedFundingPool?.fundedAmount ?? 0) : 0;
+    const selectedTeamTargetCost =
+      activeResearchScope === "team" && selectedResearchNode
+        ? (selectedFundingPool?.targetCost ?? selectedResearchNode.cost)
+        : 0;
+    const selectedTeamRemainingCost = Math.max(
+      0,
+      selectedTeamTargetCost - selectedTeamFundedAmount,
+    );
+    const parsedContributionAmount = Math.floor(Number(teamContributionAmount));
+    const selectedTeamChargePreview =
+      Number.isInteger(parsedContributionAmount) && parsedContributionAmount > 0
+        ? Math.min(parsedContributionAmount, selectedTeamRemainingCost)
+        : 0;
+    const canContributeTeamResearch =
+      activeResearchScope === "team" &&
+      Boolean(selectedResearchNode) &&
+      Boolean(selectedResearchEffect) &&
+      selectedResearchUnlocked &&
+      selectedTeamRemainingCost > 0 &&
+      selectedTeamChargePreview > 0 &&
+      balance >= selectedTeamChargePreview &&
+      hasMainCharacter &&
+      !contributeResearchMutation.isPending;
     const techTreeMapStyle = {
       gridTemplateColumns: `132px repeat(${researchTrackLayout.columnCount}, minmax(152px, 176px))`,
       gridTemplateRows: `70px repeat(${Math.max(1, researchTrackLayout.rows.length)}, minmax(118px, auto))`,
@@ -1835,33 +1927,105 @@ export default function EquipmentShopClient({
                 </div>
               </div>
 
-              <div className={styles.techDetailActions}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleStartResearch(
-                      selectedResearchNode.key,
-                      activeResearchScope,
-                    )
-                  }
-                  disabled={
-                    !selectedResearchEffect ||
-                    !selectedResearchUnlocked ||
-                    !canStartResearch(
-                      activeResearchScope,
-                      selectedStartQuote?.cost ?? selectedResearchNode.cost,
-                    )
-                  }
-                  aria-busy={startResearchMutation.isPending}
-                >
-                  <span>{scopeLabel(activeResearchScope)} 연구 시작</span>
-                  <strong>
-                    {selectedResearchEffect
-                      ? describeEquipmentResearchEffect(selectedResearchEffect)
-                      : "-"}
-                  </strong>
-                </button>
-              </div>
+              {activeResearchScope === "team" ? (
+                <div className={styles.teamFundingPanel}>
+                  <div className={styles.teamFundingMeter}>
+                    <div>
+                      <span>팀 연구 모금</span>
+                      <strong>
+                        {formatCredits(selectedTeamFundedAmount)} /{" "}
+                        {formatCredits(selectedTeamTargetCost)}
+                      </strong>
+                    </div>
+                    <progress
+                      max={Math.max(1, selectedTeamTargetCost)}
+                      value={selectedTeamFundedAmount}
+                    />
+                    <em>
+                      남은 목표액 {formatCredits(selectedTeamRemainingCost)}
+                    </em>
+                  </div>
+
+                  <div className={styles.teamFundingInput}>
+                    <label htmlFor="team-research-contribution">
+                      기여 금액
+                    </label>
+                    <input
+                      id="team-research-contribution"
+                      type="number"
+                      min={1}
+                      max={Math.max(1, selectedTeamRemainingCost)}
+                      step={1}
+                      value={teamContributionAmount}
+                      onChange={(event) =>
+                        setTeamContributionAmount(event.target.value)
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleContributeTeamResearch(
+                          selectedResearchNode.key,
+                          selectedTeamRemainingCost,
+                        )
+                      }
+                      disabled={!canContributeTeamResearch}
+                      aria-busy={contributeResearchMutation.isPending}
+                    >
+                      {selectedTeamChargePreview > 0
+                        ? `${formatCredits(selectedTeamChargePreview)} 기여`
+                        : "기여 불가"}
+                    </button>
+                  </div>
+
+                  <div className={styles.teamFundingQuick}>
+                    {[50, 100, 200, selectedTeamRemainingCost]
+                      .filter((amount, index, list) => amount > 0 && list.indexOf(amount) === index)
+                      .slice(0, 4)
+                      .map((amount) => (
+                        <button
+                          key={amount}
+                          type="button"
+                          onClick={() =>
+                            setTeamContributionAmount(String(amount))
+                          }
+                        >
+                          {amount === selectedTeamRemainingCost
+                            ? "목표 채우기"
+                            : formatCredits(amount)}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.techDetailActions}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleStartResearch(
+                        selectedResearchNode.key,
+                        activeResearchScope,
+                      )
+                    }
+                    disabled={
+                      !selectedResearchEffect ||
+                      !selectedResearchUnlocked ||
+                      !canStartResearch(
+                        activeResearchScope,
+                        selectedStartQuote?.cost ?? selectedResearchNode.cost,
+                      )
+                    }
+                    aria-busy={startResearchMutation.isPending}
+                  >
+                    <span>{scopeLabel(activeResearchScope)} 연구 시작</span>
+                    <strong>
+                      {selectedResearchEffect
+                        ? describeEquipmentResearchEffect(selectedResearchEffect)
+                        : "-"}
+                    </strong>
+                  </button>
+                </div>
+              )}
 
               {selectedNodeProjects.length > 0 ? (
                 <div className={styles.selectedHistory}>
@@ -1926,7 +2090,10 @@ export default function EquipmentShopClient({
                             rushUsed: project.rushUsed,
                             rushDiscountUsed: project.rushDiscountUsed,
                           },
-                          capabilities: research.capabilities,
+                          capabilities:
+                            project.scope === "team"
+                              ? DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES
+                              : research.capabilities,
                         })
                       : null;
                   return (
@@ -1961,17 +2128,23 @@ export default function EquipmentShopClient({
                               ? `${formatCredits(rushRule.cost)} / ${formatDuration(rushRule.hours)}`
                             : "단축 불가"}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleCompleteResearch(project)}
-                          disabled={
-                            project.computedStatus !== "completed" ||
-                            completeResearchMutation.isPending
-                          }
-                          aria-busy={completeResearchMutation.isPending}
-                        >
-                          완료 적용
-                        </button>
+                        {isGM ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCompleteResearch(project)}
+                            disabled={
+                              project.computedStatus !== "completed" ||
+                              completeResearchMutation.isPending
+                            }
+                            aria-busy={completeResearchMutation.isPending}
+                          >
+                            완료 적용
+                          </button>
+                        ) : (
+                          <span className={styles.projectAutoApply}>
+                            자동 반영
+                          </span>
+                        )}
                       </div>
                     </article>
                   );
@@ -1979,6 +2152,56 @@ export default function EquipmentShopClient({
               </div>
             )}
           </div>
+
+          {activeResearchScope === "team" ? (
+            <div className={styles.teamLedgerGrid}>
+              <section className={styles.projectPanel}>
+                <div className={styles.panelIntro}>
+                  <Eyebrow>CONTRIBUTION LOG</Eyebrow>
+                  <strong>최근 기여</strong>
+                </div>
+                {research.recentContributions.length === 0 ? (
+                  <div className={styles.empty}>팀 연구 기여 기록이 없습니다.</div>
+                ) : (
+                  <div className={styles.contributionList}>
+                    {research.recentContributions.slice(0, 6).map((entry) => (
+                      <div key={entry.id}>
+                        <span>{entry.projectKey}</span>
+                        <strong>{entry.contributorCodename}</strong>
+                        <em>
+                          {entry.amount > 0
+                            ? formatCredits(entry.amount)
+                            : entry.action === "start"
+                              ? "연구 시작"
+                              : "자동 적용"}
+                        </em>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className={styles.projectPanel}>
+                <div className={styles.panelIntro}>
+                  <Eyebrow>RANKING</Eyebrow>
+                  <strong>누적 기여</strong>
+                </div>
+                {research.contributionRankings.length === 0 ? (
+                  <div className={styles.empty}>랭킹 집계가 없습니다.</div>
+                ) : (
+                  <div className={styles.rankingList}>
+                    {research.contributionRankings.slice(0, 5).map((row, index) => (
+                      <div key={row.contributorCharacterId}>
+                        <span>{index + 1}</span>
+                        <strong>{row.contributorCodename}</strong>
+                        <em>{formatCredits(row.totalAmount)}</em>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          ) : null}
 
           <div className={styles.projectPanel}>
             <div className={styles.panelIntro}>
@@ -2104,7 +2327,7 @@ export default function EquipmentShopClient({
             <Eyebrow>{zoneMeta.eyebrow}</Eyebrow>
             <h1>{zoneMeta.label}</h1>
           </div>
-          <Tag tone="gold">GM PREVIEW</Tag>
+          <Tag tone="gold">{isGM ? "GM PREVIEW" : "RESEARCH ACCESS"}</Tag>
           <div className={styles.headerStats}>
             <div>
               <span>요원</span>

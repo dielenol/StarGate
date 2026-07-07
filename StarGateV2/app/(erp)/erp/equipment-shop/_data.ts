@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
+import type { UserRole } from "@stargate/shared-db/types";
+
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
@@ -8,10 +10,16 @@ import {
   listCreditTransactions,
 } from "@/lib/db/credits";
 import {
+  listEquipmentResearchContributionRankings,
+  listEquipmentResearchContributions,
   getEquipmentResearchCapabilities,
+  listTeamFundingPools,
   listEquipmentResearchProjects,
+  serializeEquipmentResearchContribution,
+  serializeEquipmentResearchTeamFundingPool,
   serializeEquipmentResearchProject,
 } from "@/lib/db/equipment-research";
+import { applyReadyEquipmentResearchProjects } from "@/lib/equipment-shop/research-application";
 import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
 import {
   EQUIPMENT_SHOP_CATEGORIES,
@@ -74,10 +82,26 @@ export async function buildEquipmentShopCatalogResponse(): Promise<EquipmentShop
 
 export async function buildEquipmentResearchOverviewResponse(
   mainCharacterId: string | null,
+  actor?: { id: string; role: UserRole; displayName: string },
 ): Promise<EquipmentResearchOverviewResponse> {
-  const [projects, capabilities] = await Promise.all([
+  if (actor) {
+    await applyReadyEquipmentResearchProjects({ actor }).catch((err) => {
+      console.warn("[equipment-shop] auto apply during page load failed:", err);
+    });
+  }
+
+  const [
+    projects,
+    capabilities,
+    fundingPools,
+    recentContributions,
+    contributionRankings,
+  ] = await Promise.all([
     listEquipmentResearchProjects(),
     getEquipmentResearchCapabilities(mainCharacterId),
+    listTeamFundingPools(),
+    listEquipmentResearchContributions(),
+    listEquipmentResearchContributionRankings(),
   ]);
   const now = new Date();
 
@@ -90,15 +114,24 @@ export async function buildEquipmentResearchOverviewResponse(
       ...serializeEquipmentResearchProject(project),
       computedStatus: getComputedResearchStatus(project, now),
     })),
+    fundingPools: fundingPools.map(serializeEquipmentResearchTeamFundingPool),
+    recentContributions: recentContributions.map(
+      serializeEquipmentResearchContribution,
+    ),
+    contributionRankings,
   };
 }
 
-export async function loadEquipmentShopPageData(): Promise<EquipmentShopPageData> {
+export async function loadEquipmentShopPageData(
+  options: { requireGm?: boolean } = {},
+): Promise<EquipmentShopPageData> {
+  const requireGm = options.requireGm ?? true;
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
   }
-  if (!hasRole(session.user.role, "GM")) {
+  const isGM = hasRole(session.user.role, "GM");
+  if (requireGm && !isGM) {
     redirect("/erp");
   }
 
@@ -133,13 +166,20 @@ export async function loadEquipmentShopPageData(): Promise<EquipmentShopPageData
           forceClosed: false,
         }),
       ),
-      buildEquipmentResearchOverviewResponse(mainCharacterId).catch(
+      buildEquipmentResearchOverviewResponse(mainCharacterId, {
+        id: session.user.id,
+        role: session.user.role,
+        displayName: session.user.displayName,
+      }).catch(
         (): EquipmentResearchOverviewResponse => ({
           tree: EQUIPMENT_RESEARCH_NODES,
           rushRules: Object.values(EQUIPMENT_RESEARCH_RUSH_RULES),
           caps: EQUIPMENT_RESEARCH_CAPS,
           capabilities: DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
           projects: [],
+          fundingPools: [],
+          recentContributions: [],
+          contributionRankings: [],
         }),
       ),
       mainCharacterId
@@ -183,6 +223,6 @@ export async function loadEquipmentShopPageData(): Promise<EquipmentShopPageData
     initialBalance,
     initialCredits,
     mainCharacterError,
-    isGM: true,
+    isGM,
   };
 }

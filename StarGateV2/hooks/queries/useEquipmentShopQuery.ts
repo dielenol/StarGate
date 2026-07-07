@@ -16,7 +16,12 @@ import type {
   EquipmentResearchStat,
   EquipmentResearchScope,
 } from "@/lib/equipment-shop/research";
-import type { SerializedEquipmentResearchProject } from "@/lib/db/equipment-research";
+import type {
+  SerializedEquipmentResearchContribution,
+  SerializedEquipmentResearchContributionRanking,
+  SerializedEquipmentResearchProject,
+  SerializedEquipmentResearchTeamFundingPool,
+} from "@/lib/db/equipment-research";
 
 export const equipmentShopKeys = {
   all: ["equipment-shop"] as const,
@@ -38,7 +43,12 @@ export type EquipmentShopErrorCode =
   | "RESEARCH_CAP_REACHED"
   | "RESEARCH_PREREQUISITE_MISSING"
   | "RESEARCH_NOT_READY"
-  | "RUSH_LIMIT_REACHED";
+  | "RUSH_LIMIT_REACHED"
+  | "TEAM_RESEARCH_REQUIRES_CONTRIBUTION"
+  | "RESEARCH_ALREADY_STARTED"
+  | "RESEARCH_FUNDING_CONFLICT"
+  | "RESEARCH_START_FAILED"
+  | "FORBIDDEN_RESEARCH_PROJECT";
 
 export class EquipmentShopApiError extends Error {
   readonly status: number;
@@ -74,6 +84,9 @@ export interface EquipmentResearchOverviewResponse {
   caps: Record<EquipmentResearchStat | "points", number>;
   capabilities: EquipmentResearchCapabilities;
   projects: EquipmentResearchProjectEntry[];
+  fundingPools: SerializedEquipmentResearchTeamFundingPool[];
+  recentContributions: SerializedEquipmentResearchContribution[];
+  contributionRankings: SerializedEquipmentResearchContributionRanking[];
 }
 
 async function parseEquipmentShopError(res: Response): Promise<never> {

@@ -19,6 +19,10 @@ import {
   getEquipmentResearchPrerequisiteTier,
   type EquipmentResearchNode,
 } from "@/lib/equipment-shop/research";
+import {
+  buildResearchContributionRankings,
+  type EquipmentResearchContributionAction,
+} from "@/lib/equipment-shop/research-contributions";
 
 export interface EquipmentResearchProject {
   _id?: ObjectId;
@@ -40,6 +44,30 @@ export interface EquipmentResearchProject {
   updatedAt: Date;
 }
 
+export interface EquipmentResearchTeamFundingPool {
+  _id?: ObjectId;
+  key: string;
+  targetCost: number;
+  fundedAmount: number;
+  status: "funding" | "started" | "cancelled";
+  projectId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface EquipmentResearchContribution {
+  _id?: ObjectId;
+  scope: "team";
+  action: EquipmentResearchContributionAction;
+  projectKey: string;
+  projectId?: string;
+  contributorCharacterId: string;
+  contributorCodename: string;
+  amount: number;
+  rushHours?: number;
+  createdAt: Date;
+}
+
 export interface SerializedEquipmentResearchProject
   extends Omit<
     EquipmentResearchProject,
@@ -51,6 +79,30 @@ export interface SerializedEquipmentResearchProject
   appliedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SerializedEquipmentResearchTeamFundingPool
+  extends Omit<
+    EquipmentResearchTeamFundingPool,
+    "_id" | "createdAt" | "updatedAt"
+  > {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SerializedEquipmentResearchContribution
+  extends Omit<EquipmentResearchContribution, "_id" | "createdAt"> {
+  id: string;
+  createdAt: string;
+}
+
+export interface SerializedEquipmentResearchContributionRanking {
+  contributorCharacterId: string;
+  contributorCodename: string;
+  totalAmount: number;
+  contributionCount: number;
+  lastContributedAt: string;
 }
 
 export interface CreateEquipmentResearchProjectInput {
@@ -67,12 +119,32 @@ export interface CreateEquipmentResearchProjectInput {
 }
 
 const COLLECTION_NAME = "research_projects";
+const TEAM_FUNDING_COLLECTION_NAME = "research_team_funding_pools";
+const CONTRIBUTION_COLLECTION_NAME = "research_contributions";
 
 async function equipmentResearchProjectsCol(): Promise<
   Collection<EquipmentResearchProject>
 > {
   const db = await getDb();
   return db.collection<EquipmentResearchProject>(COLLECTION_NAME);
+}
+
+async function equipmentResearchTeamFundingPoolsCol(): Promise<
+  Collection<EquipmentResearchTeamFundingPool>
+> {
+  const db = await getDb();
+  return db.collection<EquipmentResearchTeamFundingPool>(
+    TEAM_FUNDING_COLLECTION_NAME,
+  );
+}
+
+async function equipmentResearchContributionsCol(): Promise<
+  Collection<EquipmentResearchContribution>
+> {
+  const db = await getDb();
+  return db.collection<EquipmentResearchContribution>(
+    CONTRIBUTION_COLLECTION_NAME,
+  );
 }
 
 function toObjectId(id: string): ObjectId | null {
@@ -103,6 +175,58 @@ export function serializeEquipmentResearchProject(
   };
 }
 
+export function serializeEquipmentResearchTeamFundingPool(
+  pool:
+    | WithId<EquipmentResearchTeamFundingPool>
+    | EquipmentResearchTeamFundingPool,
+): SerializedEquipmentResearchTeamFundingPool {
+  return {
+    id: pool._id ? String(pool._id) : "",
+    key: pool.key,
+    targetCost: pool.targetCost,
+    fundedAmount: pool.fundedAmount,
+    status: pool.status,
+    ...(pool.projectId ? { projectId: pool.projectId } : {}),
+    createdAt: pool.createdAt.toISOString(),
+    updatedAt: pool.updatedAt.toISOString(),
+  };
+}
+
+export function serializeEquipmentResearchContribution(
+  contribution:
+    | WithId<EquipmentResearchContribution>
+    | EquipmentResearchContribution,
+): SerializedEquipmentResearchContribution {
+  return {
+    id: contribution._id ? String(contribution._id) : "",
+    scope: contribution.scope,
+    action: contribution.action,
+    projectKey: contribution.projectKey,
+    ...(contribution.projectId ? { projectId: contribution.projectId } : {}),
+    contributorCharacterId: contribution.contributorCharacterId,
+    contributorCodename: contribution.contributorCodename,
+    amount: contribution.amount,
+    ...(contribution.rushHours ? { rushHours: contribution.rushHours } : {}),
+    createdAt: contribution.createdAt.toISOString(),
+  };
+}
+
+export function serializeEquipmentResearchContributionRanking(input: {
+  contributorCharacterId: string;
+  contributorCodename: string;
+  totalAmount: number;
+  contributionCount: number;
+  lastContributedAt: Date;
+}): SerializedEquipmentResearchContributionRanking {
+  return {
+    contributorCharacterId: input.contributorCharacterId,
+    contributorCodename: input.contributorCodename,
+    totalAmount: input.totalAmount,
+    contributionCount: input.contributionCount,
+    lastContributedAt: input.lastContributedAt.toISOString(),
+  };
+}
+
 export async function createEquipmentResearchProject(
   input: CreateEquipmentResearchProjectInput,
 ): Promise<WithId<EquipmentResearchProject>> {
@@ -130,6 +254,34 @@ export async function listEquipmentResearchProjects(
     .toArray();
 }
 
+export async function listReadyEquipmentResearchProjects(
+  now = new Date(),
+  limit = 20,
+): Promise<Array<WithId<EquipmentResearchProject>>> {
+  const col = await equipmentResearchProjectsCol();
+  return col
+    .find({
+      status: "in_progress",
+      completedAt: { $lte: now },
+    })
+    .sort({ completedAt: 1 })
+    .limit(limit)
+    .toArray();
+}
+
+export async function findEquipmentResearchProjectByKey(args: {
+  key: string;
+  scope: EquipmentResearchScope;
+  statuses?: EquipmentResearchStatus[];
+}): Promise<WithId<EquipmentResearchProject> | null> {
+  const col = await equipmentResearchProjectsCol();
+  return col.findOne({
+    key: args.key,
+    scope: args.scope,
+    ...(args.statuses ? { status: { $in: args.statuses } } : {}),
+  });
+}
+
 export async function findEquipmentResearchProjectById(
   id: string,
 ): Promise<WithId<EquipmentResearchProject> | null> {
@@ -137,6 +289,151 @@ export async function findEquipmentResearchProjectById(
   if (!objectId) return null;
   const col = await equipmentResearchProjectsCol();
   return col.findOne({ _id: objectId });
+}
+
+export async function getOrCreateTeamFundingPool(args: {
+  key: string;
+  targetCost: number;
+}): Promise<WithId<EquipmentResearchTeamFundingPool>> {
+  const now = new Date();
+  const col = await equipmentResearchTeamFundingPoolsCol();
+  const pool = await col.findOneAndUpdate(
+    { key: args.key, status: "funding" },
+    {
+      $setOnInsert: {
+        key: args.key,
+        targetCost: args.targetCost,
+        fundedAmount: 0,
+        status: "funding",
+        createdAt: now,
+      },
+      $set: {
+        targetCost: args.targetCost,
+        updatedAt: now,
+      },
+    },
+    { upsert: true, returnDocument: "after" },
+  );
+  if (!pool) {
+    throw new Error("TEAM_FUNDING_POOL_UPSERT_FAILED");
+  }
+  return pool;
+}
+
+export async function listTeamFundingPools(
+  limit = 100,
+): Promise<Array<WithId<EquipmentResearchTeamFundingPool>>> {
+  const col = await equipmentResearchTeamFundingPoolsCol();
+  return col
+    .find({})
+    .sort({ status: 1, updatedAt: -1 })
+    .limit(limit)
+    .toArray();
+}
+
+export async function addTeamResearchFunding(args: {
+  poolId: string;
+  currentFundedAmount: number;
+  amount: number;
+}): Promise<WithId<EquipmentResearchTeamFundingPool> | null> {
+  const objectId = toObjectId(args.poolId);
+  if (!objectId) return null;
+  const col = await equipmentResearchTeamFundingPoolsCol();
+  return col.findOneAndUpdate(
+    {
+      _id: objectId,
+      status: "funding",
+      fundedAmount: args.currentFundedAmount,
+    },
+    {
+      $inc: { fundedAmount: args.amount },
+      $set: { updatedAt: new Date() },
+    },
+    { returnDocument: "after" },
+  );
+}
+
+export async function rollbackTeamResearchFunding(args: {
+  poolId: string;
+  amount: number;
+}): Promise<void> {
+  const objectId = toObjectId(args.poolId);
+  if (!objectId || args.amount <= 0) return;
+  const col = await equipmentResearchTeamFundingPoolsCol();
+  await col.updateOne(
+    { _id: objectId, status: "funding" },
+    {
+      $inc: { fundedAmount: -args.amount },
+      $set: { updatedAt: new Date() },
+    },
+  );
+}
+
+export async function markTeamFundingPoolStarted(args: {
+  poolId: string;
+  projectId: string;
+}): Promise<boolean> {
+  const objectId = toObjectId(args.poolId);
+  if (!objectId) return false;
+  const col = await equipmentResearchTeamFundingPoolsCol();
+  const result = await col.updateOne(
+    { _id: objectId, status: "funding" },
+    {
+      $set: {
+        status: "started",
+        projectId: args.projectId,
+        updatedAt: new Date(),
+      },
+    },
+  );
+  return result.modifiedCount === 1;
+}
+
+export async function insertEquipmentResearchContribution(input: {
+  scope: "team";
+  action: EquipmentResearchContributionAction;
+  projectKey: string;
+  projectId?: string;
+  contributorCharacterId: string;
+  contributorCodename: string;
+  amount: number;
+  rushHours?: number;
+}): Promise<WithId<EquipmentResearchContribution>> {
+  const col = await equipmentResearchContributionsCol();
+  const contribution: EquipmentResearchContribution = {
+    scope: input.scope,
+    action: input.action,
+    projectKey: input.projectKey,
+    ...(input.projectId ? { projectId: input.projectId } : {}),
+    contributorCharacterId: input.contributorCharacterId,
+    contributorCodename: input.contributorCodename,
+    amount: input.amount,
+    ...(input.rushHours ? { rushHours: input.rushHours } : {}),
+    createdAt: new Date(),
+  };
+  const result = await col.insertOne(contribution);
+  return { ...contribution, _id: result.insertedId };
+}
+
+export async function listEquipmentResearchContributions(
+  limit = 30,
+): Promise<Array<WithId<EquipmentResearchContribution>>> {
+  const col = await equipmentResearchContributionsCol();
+  return col.find({}).sort({ createdAt: -1 }).limit(limit).toArray();
+}
+
+export async function listEquipmentResearchContributionRankings(
+  limit = 10,
+): Promise<SerializedEquipmentResearchContributionRanking[]> {
+  const col = await equipmentResearchContributionsCol();
+  const contributions = await col
+    .find({ amount: { $gt: 0 } })
+    .sort({ createdAt: -1 })
+    .limit(1000)
+    .toArray();
+  return buildResearchContributionRankings(contributions)
+    .slice(0, limit)
+    .map(serializeEquipmentResearchContributionRanking);
 }
 
 export async function hasAppliedEquipmentResearchTierPrerequisite(args: {

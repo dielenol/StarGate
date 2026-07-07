@@ -93,6 +93,35 @@ interface RushResearchResponse {
   balance: number;
 }
 
+interface ContributeResearchInput {
+  key: string;
+  amount: number;
+}
+
+interface ContributeResearchResponse {
+  pool: {
+    id: string;
+    key: string;
+    targetCost: number;
+    fundedAmount: number;
+    status: "funding" | "started" | "cancelled";
+    projectId?: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  contribution: {
+    id: string;
+    projectKey: string;
+    contributorCharacterId: string;
+    contributorCodename: string;
+    amount: number;
+    createdAt: string;
+  };
+  project: Omit<EquipmentResearchProjectEntry, "computedStatus"> | null;
+  balance: number;
+  chargedAmount: number;
+}
+
 interface CompleteResearchInput {
   projectId: string;
 }
@@ -200,6 +229,30 @@ export function useRushEquipmentResearch() {
   >({
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/equipment-shop/research/rush", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.research });
+      queryClient.invalidateQueries({ queryKey: creditKeys.all });
+    },
+  });
+}
+
+export function useContributeEquipmentResearch() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ContributeResearchResponse,
+    EquipmentShopApiError,
+    ContributeResearchInput
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/equipment-shop/research/contribute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),

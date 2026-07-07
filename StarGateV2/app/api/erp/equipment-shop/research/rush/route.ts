@@ -3,10 +3,13 @@ import { NextResponse } from "next/server";
 import {
   findEquipmentResearchProjectById,
   getEquipmentResearchCapabilities,
+  insertEquipmentResearchContribution,
   serializeEquipmentResearchProject,
   updateEquipmentResearchProjectRush,
 } from "@/lib/db/equipment-research";
+import { notifyEquipmentResearchEvent } from "@/lib/discord";
 import {
+  DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
   getEquipmentResearchNode,
   quoteEquipmentResearchRush,
 } from "@/lib/equipment-shop/research";
@@ -14,7 +17,7 @@ import {
 import {
   chargeResearchCredits,
   refundResearchCredits,
-  requireResearchGm,
+  requireResearchUser,
   resolveResearchBudgetCharacter,
 } from "../_lib";
 
@@ -23,7 +26,7 @@ interface RushResearchBody {
 }
 
 export async function POST(request: Request) {
-  const authResult = await requireResearchGm();
+  const authResult = await requireResearchUser();
   if ("response" in authResult) return authResult.response;
 
   const body = (await request.json().catch(() => null)) as
@@ -63,9 +66,24 @@ export async function POST(request: Request) {
   );
   if ("response" in budgetResult) return budgetResult.response;
 
-  const capabilities = await getEquipmentResearchCapabilities(
-    budgetResult.budget.id,
-  );
+  if (
+    project.scope === "personal" &&
+    !project.targetCharacterIds.includes(budgetResult.budget.id) &&
+    authResult.session.role !== "GM"
+  ) {
+    return NextResponse.json(
+      {
+        error: "본인 개인 연구만 시간을 단축할 수 있습니다.",
+        code: "FORBIDDEN_RESEARCH_PROJECT",
+      },
+      { status: 403 },
+    );
+  }
+
+  const capabilities =
+    project.scope === "team"
+      ? DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES
+      : await getEquipmentResearchCapabilities(budgetResult.budget.id);
   const quote = quoteEquipmentResearchRush({
     node,
     project,
@@ -126,6 +144,25 @@ export async function POST(request: Request) {
   }
 
   const nextProject = await findEquipmentResearchProjectById(projectId);
+  if (project.scope === "team") {
+    await insertEquipmentResearchContribution({
+      scope: "team",
+      action: "rush",
+      projectKey: project.key,
+      projectId,
+      contributorCharacterId: budgetResult.budget.id,
+      contributorCodename: budgetResult.budget.codename,
+      amount: quote.cost,
+      rushHours: quote.hours,
+    });
+    void notifyEquipmentResearchEvent({
+      kind: "rush",
+      projectKey: project.key,
+      contributorCodename: budgetResult.budget.codename,
+      amount: quote.cost,
+      rushHours: quote.hours,
+    });
+  }
   return NextResponse.json(
     {
       project: nextProject

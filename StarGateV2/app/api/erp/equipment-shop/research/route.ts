@@ -23,10 +23,16 @@ import {
   updateCharacter,
 } from "@/lib/db/characters";
 import {
+  listEquipmentResearchContributionRankings,
+  listEquipmentResearchContributions,
   getEquipmentResearchCapabilities,
   listEquipmentResearchProjects,
+  listTeamFundingPools,
+  serializeEquipmentResearchContribution,
+  serializeEquipmentResearchTeamFundingPool,
   serializeEquipmentResearchProject,
 } from "@/lib/db/equipment-research";
+import { applyReadyEquipmentResearchProjects } from "@/lib/equipment-shop/research-application";
 import {
   EQUIPMENT_RESEARCH_CAPS,
   EQUIPMENT_RESEARCH_NODES,
@@ -34,7 +40,7 @@ import {
   getComputedResearchStatus,
 } from "@/lib/equipment-shop/research";
 
-import { requireResearchGm } from "./_lib";
+import { requireResearchUser } from "./_lib";
 
 const RESEARCH_SCOPES = ["personal", "team"] as const;
 const RESEARCH_STATS = ["hp", "san", "def", "atk"] as const;
@@ -86,8 +92,14 @@ function isAgentCharacter(character: Character): character is AgentCharacter {
 }
 
 export async function GET() {
-  const authResult = await requireResearchGm();
+  const authResult = await requireResearchUser();
   if ("response" in authResult) return authResult.response;
+
+  await applyReadyEquipmentResearchProjects({
+    actor: authResult.session,
+  }).catch((err) => {
+    console.warn("[equipment-shop/research] auto apply during GET failed:", err);
+  });
 
   let mainCharacterId: string | null = null;
   try {
@@ -99,9 +111,18 @@ export async function GET() {
     mainCharacterId = null;
   }
 
-  const [projects, capabilities] = await Promise.all([
+  const [
+    projects,
+    capabilities,
+    fundingPools,
+    recentContributions,
+    contributionRankings,
+  ] = await Promise.all([
     listEquipmentResearchProjects(),
     getEquipmentResearchCapabilities(mainCharacterId),
+    listTeamFundingPools(),
+    listEquipmentResearchContributions(),
+    listEquipmentResearchContributionRankings(),
   ]);
   const now = new Date();
 
@@ -115,6 +136,11 @@ export async function GET() {
         ...serializeEquipmentResearchProject(project),
         computedStatus: getComputedResearchStatus(project, now),
       })),
+      fundingPools: fundingPools.map(serializeEquipmentResearchTeamFundingPool),
+      recentContributions: recentContributions.map(
+        serializeEquipmentResearchContribution,
+      ),
+      contributionRankings,
     },
     { status: 200, headers: { "Cache-Control": "private, no-store" } },
   );

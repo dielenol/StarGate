@@ -24,7 +24,7 @@ import {
 import {
   chargeResearchCredits,
   refundResearchCredits,
-  requireResearchGm,
+  requireResearchUser,
   resolveResearchBudgetCharacter,
 } from "../_lib";
 
@@ -48,6 +48,7 @@ async function resolveTargets(args: {
   scope: "personal" | "team";
   targetCharacterId: unknown;
   fallbackCharacterId: string;
+  allowTargetOverride: boolean;
 }): Promise<
   | { targets: AgentCharacterWithId[] }
   | { response: NextResponse }
@@ -71,7 +72,9 @@ async function resolveTargets(args: {
   }
 
   const targetId =
-    typeof args.targetCharacterId === "string" && args.targetCharacterId.trim()
+    args.allowTargetOverride &&
+    typeof args.targetCharacterId === "string" &&
+    args.targetCharacterId.trim()
       ? args.targetCharacterId.trim()
       : args.fallbackCharacterId;
   const target = await findCharacterById(targetId);
@@ -90,7 +93,7 @@ async function resolveTargets(args: {
 }
 
 export async function POST(request: Request) {
-  const authResult = await requireResearchGm();
+  const authResult = await requireResearchUser();
   if ("response" in authResult) return authResult.response;
 
   const body = (await request.json().catch(() => null)) as
@@ -104,6 +107,16 @@ export async function POST(request: Request) {
       {
         error: "연구 키 또는 적용 범위가 올바르지 않습니다.",
         code: "INVALID_RESEARCH",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (scope === "team") {
+    return NextResponse.json(
+      {
+        error: "팀 연구는 기여 누적을 통해서만 시작할 수 있습니다.",
+        code: "TEAM_RESEARCH_REQUIRES_CONTRIBUTION",
       },
       { status: 400 },
     );
@@ -129,6 +142,7 @@ export async function POST(request: Request) {
     scope,
     targetCharacterId: body?.targetCharacterId,
     fallbackCharacterId: budgetResult.budget.id,
+    allowTargetOverride: authResult.session.role === "GM",
   });
   if ("response" in targetResult) return targetResult.response;
   const targetCharacterIds = targetResult.targets.map((target) =>
