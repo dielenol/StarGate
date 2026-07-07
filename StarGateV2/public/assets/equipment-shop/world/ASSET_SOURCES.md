@@ -11,6 +11,7 @@
 ## Reference Candidates
 
 - Quaternius Modular Sci-Fi Megakit: https://quaternius.com/packs/modularscifimegakit.html
+- Quaternius Sci-Fi Modular Gun Pack via Poly Pizza: https://poly.pizza/bundle/Sci-Fi-Modular-Gun-Pack-TbRddR9Fsu
 - Kenney Pixel UI Pack: https://kenney.nl/assets/pixel-ui-pack
 
 These are recorded as visual/reference candidates for the NOVUS armory world. The committed runtime GLB files currently come from Kenney City Kit Suburban only.
