@@ -436,11 +436,13 @@
 
 .productGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
   gap: 10px;
 }
 
 .productCard {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 46%),
@@ -463,10 +465,13 @@
 
 .productSelect {
   display: grid;
-  gap: 8px;
+  grid-template-rows: 18px 82px 44px 58px 22px;
+  align-items: start;
+  flex: 1 1 auto;
+  gap: 7px;
   width: 100%;
-  min-height: 190px;
-  padding: 10px;
+  min-height: 248px;
+  padding: 10px 12px;
   background: transparent;
   border: 0;
   color: inherit;
@@ -480,45 +485,63 @@
 
 .productTop {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
   color: var(--ink-3);
   font-size: 14px;
   letter-spacing: 0.08em;
 }
 
+.productTop span {
+  min-width: 0;
+}
+
 .productIcon {
   display: grid;
   place-items: center;
-  width: 64px;
-  height: 64px;
+  width: 82px;
+  height: 82px;
   margin: 0 auto;
-  background: rgba(0, 0, 0, 0.24);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .productIcon img,
 .detailIcon img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   image-rendering: pixelated;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.38));
 }
 
 .productName {
   color: var(--ink-0);
   font-size: 17px;
   line-height: 1.25;
+  overflow: hidden;
   word-break: keep-all;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .productEffect {
-  min-height: 38px;
   color: var(--ink-2);
   font-size: 14px;
   line-height: 1.35;
+  overflow: hidden;
+  word-break: keep-all;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .productSelect strong {
+  align-self: end;
   color: var(--gold);
   font-size: 16px;
 }
@@ -536,9 +559,9 @@
 }
 
 .productAction {
-  width: calc(100% - 20px);
+  width: calc(100% - 24px);
   min-height: 34px;
-  margin: 0 10px 10px;
+  margin: auto 12px 12px;
   background: color-mix(in srgb, var(--gold) 14%, rgba(0, 0, 0, 0.4));
   border: 1px solid var(--gold-dim);
   color: var(--gold);
@@ -564,12 +587,12 @@
 .detailIcon {
   display: grid;
   place-items: center;
-  width: 72px;
-  height: 72px;
-  flex: 0 0 72px;
-  background: rgba(0, 0, 0, 0.24);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  width: 88px;
+  height: 88px;
+  flex: 0 0 88px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .detailHead span {
