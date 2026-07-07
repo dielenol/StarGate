@@ -199,6 +199,18 @@ function directionIcon(result: ScheduledStockTickResult): string {
   return "·";
 }
 
+function directionLabel(result: ScheduledStockTickResult): string {
+  if (result.price > result.previousPrice) return "상승";
+  if (result.price < result.previousPrice) return "하락";
+  return "보합";
+}
+
+function manualDirectionLabel(delta: number): string {
+  if (delta > 0) return "상승";
+  if (delta < 0) return "하락";
+  return "보합";
+}
+
 function tierLabel(tier: StockEventTier): string {
   if (tier === "shock") return "충격";
   if (tier === "scenario") return "특이";
@@ -239,13 +251,13 @@ function formatStockLedgerLine(result: ScheduledStockTickResult): string {
         ? " · 이미 처리됨"
         : "";
 
-  return `${directionIcon(result)} **${stockName(result.ticker)}**\n${formatPriceMove(
+  return `${directionIcon(result)} ${directionLabel(result)} · **${stockName(result.ticker)}**\n${formatPriceMove(
     result,
   )} (${formatMoveDelta(result)})${statusLabel}`;
 }
 
 function formatTopMoveLine(result: ScheduledStockTickResult): string {
-  return `${directionIcon(result)} **${stockName(result.ticker)}** · ${formatMoveDelta(
+  return `${directionIcon(result)} ${directionLabel(result)} · **${stockName(result.ticker)}** · ${formatMoveDelta(
     result,
   )}`;
 }
@@ -306,7 +318,7 @@ function buildEventLines(
       (result) => result.eventTier !== "routine" && result.status === "updated",
     )
     .map((result) => {
-      return `${tierLabel(result.eventTier)} · **${stockName(
+      return `${tierLabel(result.eventTier)} · ${directionLabel(result)} · **${stockName(
         result.ticker,
       )}**\n${sanitizeForDiscord(result.eventText)}`;
     });
@@ -559,7 +571,10 @@ function buildManualPayload(
             name: "조정 가격",
             value: `${formatPrice(notice.previousPrice)} → ${formatPrice(
               notice.price,
-            )}\n${formatSignedNumber(delta, "C")} / ${formatPercent(percent)}`,
+            )}\n${manualDirectionLabel(delta)} · ${formatSignedNumber(
+              delta,
+              "C",
+            )} / ${formatPercent(percent)}`,
             inline: true,
           },
           {

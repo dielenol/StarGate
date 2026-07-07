@@ -924,20 +924,35 @@
 
 .marketWire__meta {
   justify-content: space-between;
+  flex-wrap: wrap;
 }
 
 .marketWire__meta > span:first-child {
+  min-width: min(180px, 100%);
+  flex: 1 1 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.marketWire__direction {
+  flex: 0 0 auto;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
 .marketWire__price {
+  flex: 0 0 auto;
   color: var(--ink-1);
   white-space: nowrap;
 }
 
 .marketWire__delta {
+  flex: 0 0 auto;
   color: var(--ink-2);
   white-space: nowrap;
 }

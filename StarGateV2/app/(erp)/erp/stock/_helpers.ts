@@ -22,6 +22,12 @@ export const ARROW: Record<Direction, string> = {
   flat: "·",
 };
 
+export const DIRECTION_LABEL: Record<Direction, string> = {
+  up: "상승",
+  down: "하락",
+  flat: "보합",
+};
+
 export function priceDirection(price: number, prev: number): Direction {
   if (price > prev) return "up";
   if (price < prev) return "down";

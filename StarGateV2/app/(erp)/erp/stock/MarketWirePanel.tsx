@@ -11,7 +11,7 @@ import {
 } from "@/lib/stocks/market-index";
 import { formatStockValue } from "@/lib/stocks/pricing";
 
-import { ARROW, priceDirection } from "./_helpers";
+import { ARROW, DIRECTION_LABEL, priceDirection } from "./_helpers";
 import styles from "./page.module.css";
 
 interface Props {
@@ -139,8 +139,19 @@ export default function MarketWirePanel({
                 </div>
                 <div className={styles.marketWire__meta}>
                   <span>{item.name}</span>
+                  <span
+                    className={[
+                      styles.marketWire__direction,
+                      directionMod,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    {ARROW[direction]} {DIRECTION_LABEL[direction]}
+                  </span>
                   <span className={styles.marketWire__price}>
-                    ¤ {formatStockValue(item.price)}
+                    ¤ {formatStockValue(item.prevPrice)} → ¤{" "}
+                    {formatStockValue(item.price)}
                   </span>
                   <span
                     className={[styles.marketWire__delta, directionMod]
