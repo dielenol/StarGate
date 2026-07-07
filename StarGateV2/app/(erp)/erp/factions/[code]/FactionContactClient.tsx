@@ -34,6 +34,9 @@ import type {
   FactionQuestPreview,
   FactionStoryChoice,
 } from "../_game";
+import OrgIcon, {
+  getExternalSubOrgIcon,
+} from "../../personnel/_components/OrgIcon";
 import styles from "./page.module.css";
 
 interface FactionContactClientProps {
@@ -518,6 +521,12 @@ export default function FactionContactClient({
                     ]
                       .filter(Boolean)
                       .join(" ")}
+                  />
+                ) : getExternalSubOrgIcon(code) ? (
+                  <OrgIcon
+                    code={getExternalSubOrgIcon(code)!}
+                    size={40}
+                    className={styles.scenePortrait__sigilIcon}
                   />
                 ) : (
                   <span>{sigilFor(code)}</span>

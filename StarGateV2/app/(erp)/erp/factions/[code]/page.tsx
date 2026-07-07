@@ -37,6 +37,10 @@ import {
   isHostileFaction,
 } from "../_game";
 
+import OrgIcon, {
+  getExternalSubOrgIcon,
+} from "../../personnel/_components/OrgIcon";
+
 import FactionContactClient from "./FactionContactClient";
 import styles from "./page.module.css";
 
@@ -157,6 +161,12 @@ export default async function FactionDetailPage({
                 ]
                   .filter(Boolean)
                   .join(" ")}
+              />
+            ) : getExternalSubOrgIcon(node.code) ? (
+              <OrgIcon
+                code={getExternalSubOrgIcon(node.code)!}
+                size={52}
+                className={styles.hero__sigilIcon}
               />
             ) : (
               <span className={styles.hero__sigil}>{sigilFor(node.code)}</span>

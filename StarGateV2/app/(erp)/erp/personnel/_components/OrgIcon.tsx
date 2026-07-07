@@ -246,8 +246,8 @@ const ICONS: Record<OrgIconCode, IconPath> = {
     body: `<path d="M4.5 21.5V3.4"/><circle cx="4.5" cy="2.4" r="0.7" fill="currentColor" stroke="none"/><path d="M4.5 4.3c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3v9.3c-2.7-1.1-5.2-1.1-7.6-.3-2.5.8-4.9.8-7.4-.2z"/><path d="M11.9 4.5v5.1"/><path d="M11.9 7.2c2.4-.8 4.9-.8 7.6.3"/><path d="M4.5 9.4c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3"/><path d="M4.5 11.9c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3"/><circle cx="6.4" cy="6.1" r="0.5" fill="currentColor" stroke="none"/><circle cx="8.6" cy="6.6" r="0.5" fill="currentColor" stroke="none"/><circle cx="6.4" cy="7.9" r="0.5" fill="currentColor" stroke="none"/><circle cx="8.6" cy="8.4" r="0.5" fill="currentColor" stroke="none"/>`,
   },
   NOGA: {
-    /* NOGA (Novus Ordo Great Again) — MAGA 모자 패러디: 야구 캡 실루엣. */
-    body: `<path d="M5.2 13.4C5.2 8.9 8 5.9 11.7 5.9s6.5 3 6.5 7.5"/><path d="M11.7 5.9V4.7"/><path d="M11.7 5.9c-1.3 2.3-1.9 4.8-1.8 7.5"/><path d="M5.2 13.4h13"/><path d="M18.2 12.1c2.2 0 4 .8 5.2 2.2-1.4.9-3.1 1.3-5.2 1.1"/><path d="M5.2 13.4c-.2 1.4-.1 2.7.3 3.9"/>`,
+    /* NOGA (Novus Ordo Great Again) — 군부(MILITARY) 도상에서 꺾쇠를 1단으로 줄인 파생형. 군부 계열 하위 조직 표식. */
+    body: `<path d="M12 2.5l1.4 2.8 3.1.4-2.2 2.2.5 3.1L12 9.5l-2.8 1.5.5-3.1-2.2-2.2 3.1-.4L12 2.5z"/><path d="M4 16l8-4 8 4"/>`,
   },
   GOLDEN_DAWN: {
     /* 황금여명회 — 지평선 위로 떠오르는 황금 여명(반원 태양 + 광선) 컬트 문장. */

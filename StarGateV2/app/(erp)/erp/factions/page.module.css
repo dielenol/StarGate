@@ -141,6 +141,11 @@
   letter-spacing: 0;
 }
 
+/* 로고 이미지가 없는 조직의 브리핑 문장(紋章) — 전용 OrgIcon 도상 */
+.briefing__sigilIcon {
+  color: var(--gold);
+}
+
 .briefing__body {
   min-width: 0;
 }

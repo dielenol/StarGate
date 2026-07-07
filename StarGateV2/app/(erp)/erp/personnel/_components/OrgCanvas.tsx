@@ -13,6 +13,7 @@ import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import OrgIcon, {
   FACTION_ICON_MAP,
+  getExternalSubOrgIcon,
   INSTITUTION_ICON_MAP,
   SUBUNIT_ICON_MAP,
 } from "./OrgIcon";
@@ -439,7 +440,11 @@ export default function OrgCanvas({
                           </>
                         ) : (
                           <OrgIcon
-                            code={parentIcon ?? "CIVIL"}
+                            code={
+                              getExternalSubOrgIcon(org.code) ??
+                              parentIcon ??
+                              "CIVIL"
+                            }
                             size={24}
                             className={styles.subOrgLogo}
                           />
@@ -526,7 +531,7 @@ export default function OrgCanvas({
                       </>
                     ) : (
                       <OrgIcon
-                        code="HOSTILE"
+                        code={getExternalSubOrgIcon(org.code) ?? "HOSTILE"}
                         size={24}
                         className={styles.subOrgLogo}
                       />

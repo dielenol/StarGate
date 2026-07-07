@@ -86,6 +86,11 @@
   letter-spacing: 0;
 }
 
+/* 로고 이미지가 없는 조직의 히어로 문장(紋章) — 전용 OrgIcon 도상 */
+.hero__sigilIcon {
+  color: var(--faction-accent);
+}
+
 .hero__body {
   min-width: 0;
 }
@@ -398,6 +403,12 @@
     rgba(0, 0, 0, 0.18);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
+}
+
+/* 로고/초상 이미지가 없는 조직의 접선 콘솔 문장 — 전용 OrgIcon 도상 */
+.scenePortrait__sigilIcon {
+  color: var(--faction-accent);
+  align-self: center;
 }
 
 .scenePortrait__plate span {

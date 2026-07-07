@@ -40,6 +40,7 @@ import OrgCanvas from "./_components/OrgCanvas";
 import OrgDrillCrumbs from "./_components/OrgDrillCrumbs";
 import type { DrillCrumbItem } from "./_components/OrgDrillCrumbs";
 import OrgIcon, {
+  getExternalSubOrgIcon,
   getFactionIcon,
   getInstitutionIcon,
   getSubUnitIcon,
@@ -970,7 +971,10 @@ export default function PersonnelClient({
             iconCode={
               selectedGroupKind === "faction"
                 ? isExternalSubOrg(selectedGroup)
-                  ? getFactionIcon("CIVIL")
+                  ? getExternalSubOrgIcon(selectedGroup) ??
+                    getFactionIcon(
+                      getExternalSubOrg(selectedGroup)?.parentCode ?? "CIVIL",
+                    )
                   : getFactionIcon(selectedGroup)
                 : selectedGroupKind === "institution"
                   ? getInstitutionIcon(selectedGroup)

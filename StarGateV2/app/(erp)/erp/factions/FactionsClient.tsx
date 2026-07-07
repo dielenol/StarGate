@@ -20,7 +20,10 @@ import {
   IconRelations,
 } from "@/components/icons";
 
-import OrgIcon, { FACTION_ICON_MAP } from "../personnel/_components/OrgIcon";
+import OrgIcon, {
+  FACTION_ICON_MAP,
+  getExternalSubOrgIcon,
+} from "../personnel/_components/OrgIcon";
 import orgStyles from "../personnel/_components/OrgCanvas.module.css";
 import styles from "./page.module.css";
 
@@ -255,6 +258,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
     const isActive = selectedCode === node.code;
     const isSubOrg = options.subOrg === true;
     const isHostile = options.hostile === true;
+    const subOrgIcon = getExternalSubOrgIcon(node.code);
     const parentIcon =
       isSubOrg && node.parentCode
         ? FACTION_ICON_MAP[
@@ -292,12 +296,23 @@ export default function FactionsClient({ data }: FactionsClientProps) {
         ) : null}
 
         {isHostile ? (
-          <IconHostile
-            className={[orgStyles.subOrgLogo, styles.hostileNodeIcon].join(
-              " ",
-            )}
-            aria-hidden
-          />
+          subOrgIcon ? (
+            <OrgIcon
+              code={subOrgIcon}
+              size={24}
+              className={[orgStyles.subOrgLogo, styles.hostileNodeIcon].join(
+                " ",
+              )}
+              aria-hidden
+            />
+          ) : (
+            <IconHostile
+              className={[orgStyles.subOrgLogo, styles.hostileNodeIcon].join(
+                " ",
+              )}
+              aria-hidden
+            />
+          )
         ) : isSubOrg && node.logoUrl ? (
           <img
             src={node.logoUrl}
@@ -305,9 +320,9 @@ export default function FactionsClient({ data }: FactionsClientProps) {
             className={orgStyles.subOrgLogo}
             aria-hidden
           />
-        ) : isSubOrg && parentIcon ? (
+        ) : isSubOrg && (subOrgIcon ?? parentIcon) ? (
           <OrgIcon
-            code={parentIcon}
+            code={(subOrgIcon ?? parentIcon)!}
             size={24}
             className={orgStyles.subOrgLogo}
             aria-hidden
@@ -537,6 +552,12 @@ export default function FactionsClient({ data }: FactionsClientProps) {
                       ]
                         .filter(Boolean)
                         .join(" ")}
+                    />
+                  ) : getExternalSubOrgIcon(selectedNode.code) ? (
+                    <OrgIcon
+                      code={getExternalSubOrgIcon(selectedNode.code)!}
+                      size={44}
+                      className={styles.briefing__sigilIcon}
                     />
                   ) : (
                     <span className={styles.briefing__sigil}>
