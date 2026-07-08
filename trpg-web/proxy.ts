@@ -1,5 +1,5 @@
 /**
- * Edge Runtime 경량 미들웨어.
+ * Edge Runtime 경량 Proxy.
  *
  * mongodb 드라이버는 Edge Runtime 에서 사용 불가하므로, 여기서는
  * 세션 쿠키 존재 여부만 확인하고 실제 인증·길드 멤버 검증은
@@ -14,7 +14,7 @@ const SESSION_COOKIE_NAMES = [
   "__Host-authjs.session-token",
 ] as const;
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const hasSession = SESSION_COOKIE_NAMES.some(
     (name) => request.cookies.get(name)?.value,
   );

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { signOut } from "next-auth/react";
 
 import type { TrpgMemberView } from "@/app/api/trpg/members/route";
+import { yearMonthFromDateKey } from "@/lib/calendar/date-key";
 import {
   getKoreanHolidayInfo,
   getKstWeekday,
@@ -161,7 +162,8 @@ export function CalendarClient({
   }
 
   function handleSelectDate(dateKey: string, sessionId?: string) {
-    const targetYearMonth = getYearMonthFromDateKey(dateKey);
+    const targetYearMonth = yearMonthFromDateKey(dateKey);
+    if (!targetYearMonth) return;
     if (targetYearMonth.year !== year || targetYearMonth.month !== month) {
       setYearMonth(targetYearMonth);
     }
@@ -420,6 +422,7 @@ export function CalendarClient({
           members={members}
           existingSessions={sessions}
           currentUserDiscordId={currentUserDiscordId}
+          minDate={todayKey}
           onClose={() => setDetailModalSession(null)}
         />
       ) : null}
@@ -590,9 +593,4 @@ function formatPanelDate(dateKey: string): string {
     2,
     "0",
   )}일 (${weekday})`;
-}
-
-function getYearMonthFromDateKey(dateKey: string) {
-  const [year, month] = dateKey.split("-").map(Number);
-  return { year, month };
 }

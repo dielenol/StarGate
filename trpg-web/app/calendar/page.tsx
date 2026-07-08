@@ -1,7 +1,7 @@
 /**
  * 월간 캘린더 페이지 (서버 컴포넌트).
  *
- * - middleware 가 쿠키만 검사하므로 여기서 `auth()` 로 실제 세션 검증.
+ * - proxy 가 쿠키만 검사하므로 여기서 `auth()` 로 실제 세션 검증.
  * - 길드 멤버 캐시 + 현재 월 세션을 prefetch 해 클라이언트의 useQuery 초기값으로 전달.
  */
 
@@ -17,6 +17,7 @@ import {
 
 import type { TrpgMemberView } from "@/app/api/trpg/members/route";
 import { auth } from "@/lib/auth/config";
+import { yearMonthFromDateKey } from "@/lib/calendar/date-key";
 import { currentKstYearMonth } from "@/lib/calendar/month";
 import { TRPG_GUILD_ID } from "@/lib/env";
 import { toTrpgSessionView, type TrpgSessionView } from "@/lib/trpg/serializer";
@@ -34,12 +35,6 @@ function firstSearchParam(
   const value = params[key];
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
-}
-
-function yearMonthFromDateKey(dateKey: string): { year: number; month: number } | null {
-  const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(dateKey);
-  if (!match) return null;
-  return { year: Number(match[1]), month: Number(match[2]) };
 }
 
 export default async function CalendarPage({

@@ -23,15 +23,18 @@ import {
 } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
+import { isValidDateKey } from "@/lib/calendar/date-key";
+import { currentKstDateString } from "@/lib/calendar/month";
 import { TRPG_GUILD_ID } from "@/lib/env";
 import { toTrpgSessionView } from "@/lib/trpg/serializer";
 
+const dateKeySchema = z
+  .string()
+  .refine(isValidDateKey, "date 는 실제 YYYY-MM-DD 날짜여야 합니다.");
+
 const patchBodySchema = z.object({
   title: z.string().min(1).max(100).optional(),
-  date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
+  date: dateKeySchema.optional(),
   startTime: z
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
@@ -79,54 +82,61 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const guildId = TRPG_GUILD_ID;
-
-  const existing = await findTrpgSessionById(id);
-  if (!existing) {
-    return NextResponse.json({ error: "Session not found" }, { status: 404 });
-  }
-  if (existing.createdByDiscordId !== requesterDiscordId) {
+  const todayKey = currentKstDateString();
+  if (patch.date && patch.date < todayKey) {
     return NextResponse.json(
-      { error: "생성자만 수정할 수 있습니다." },
-      { status: 403 },
+      { error: "오늘 이전 날짜로는 세션을 수정할 수 없습니다." },
+      { status: 400 },
     );
-  }
-  if (existing.status !== "open") {
-    return NextResponse.json(
-      { error: "이미 취소된 세션입니다." },
-      { status: 409 },
-    );
-  }
-
-  const sourceParticipantIds =
-    patch.participantDiscordIds ?? existing.participantDiscordIds;
-  const normalizedParticipantIds = Array.from(
-    new Set([existing.createdByDiscordId, ...sourceParticipantIds]),
-  );
-  const shouldPatchParticipants =
-    patch.participantDiscordIds !== undefined ||
-    !existing.participantDiscordIds.includes(existing.createdByDiscordId);
-  const normalizedPatch = shouldPatchParticipants
-    ? { ...patch, participantDiscordIds: normalizedParticipantIds }
-    : patch;
-
-  if (shouldPatchParticipants) {
-    const activeMembers = await listActiveTrpgGuildMembers(guildId);
-    const activeIds = new Set(activeMembers.map((m) => m.discordUserId));
-    const invalidIds = normalizedParticipantIds.filter(
-      (pid) => !activeIds.has(pid),
-    );
-    if (invalidIds.length > 0) {
-      return NextResponse.json(
-        {
-          error: "활성 길드 멤버가 아닌 참여자가 포함되어 있습니다.",
-          invalidIds,
-        },
-        { status: 400 },
-      );
-    }
   }
 
   try {
+    const existing = await findTrpgSessionById(id);
+    if (!existing) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+    if (existing.createdByDiscordId !== requesterDiscordId) {
+      return NextResponse.json(
+        { error: "생성자만 수정할 수 있습니다." },
+        { status: 403 },
+      );
+    }
+    if (existing.status !== "open") {
+      return NextResponse.json(
+        { error: "이미 취소된 세션입니다." },
+        { status: 409 },
+      );
+    }
+
+    const sourceParticipantIds =
+      patch.participantDiscordIds ?? existing.participantDiscordIds;
+    const normalizedParticipantIds = Array.from(
+      new Set([existing.createdByDiscordId, ...sourceParticipantIds]),
+    );
+    const shouldPatchParticipants =
+      patch.participantDiscordIds !== undefined ||
+      !existing.participantDiscordIds.includes(existing.createdByDiscordId);
+    const normalizedPatch = shouldPatchParticipants
+      ? { ...patch, participantDiscordIds: normalizedParticipantIds }
+      : patch;
+
+    if (shouldPatchParticipants) {
+      const activeMembers = await listActiveTrpgGuildMembers(guildId);
+      const activeIds = new Set(activeMembers.map((m) => m.discordUserId));
+      const invalidIds = normalizedParticipantIds.filter(
+        (pid) => !activeIds.has(pid),
+      );
+      if (invalidIds.length > 0) {
+        return NextResponse.json(
+          {
+            error: "활성 길드 멤버가 아닌 참여자가 포함되어 있습니다.",
+            invalidIds,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     // shared-db 의 진입 검증 (DB 적재 직전 마지막 가드).
     const validatedPatch = updateTrpgSessionPatchSchema.parse(normalizedPatch);
 
@@ -159,8 +169,8 @@ export async function PATCH(request: Request, context: RouteContext) {
         { status: 400 },
       );
     }
-    const message = err instanceof Error ? err.message : "세션 갱신 실패";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[trpg-web] 세션 갱신 실패", err);
+    return NextResponse.json({ error: "세션 갱신 실패" }, { status: 500 });
   }
 }
 
@@ -199,7 +209,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
         );
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : "세션 취소 실패";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[trpg-web] 세션 취소 실패", err);
+    return NextResponse.json({ error: "세션 취소 실패" }, { status: 500 });
   }
 }

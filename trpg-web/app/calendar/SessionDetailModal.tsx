@@ -15,6 +15,7 @@ interface Props {
   members: TrpgMemberView[];
   existingSessions: TrpgSessionView[];
   currentUserDiscordId: string;
+  minDate: string;
   onClose: () => void;
 }
 
@@ -23,6 +24,7 @@ export function SessionDetailModal({
   members,
   existingSessions,
   currentUserDiscordId,
+  minDate,
   onClose,
 }: Props) {
   const isOwner = session.createdByDiscordId === currentUserDiscordId;
@@ -88,12 +90,30 @@ export function SessionDetailModal({
     });
   }
 
+  function resetDraft() {
+    setTitle(session.title);
+    setDate(session.date);
+    setStartTime(session.startTime);
+    setParticipants(
+      new Set(
+        session.participantDiscordIds.filter(
+          (pid) => pid !== session.createdByDiscordId,
+        ),
+      ),
+    );
+    setErrorMessage(null);
+  }
+
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage(null);
 
     if (title.trim().length === 0) {
       setErrorMessage("제목을 입력하세요.");
+      return;
+    }
+    if (date < minDate) {
+      setErrorMessage("오늘 이전 날짜로는 세션을 수정할 수 없습니다.");
       return;
     }
 
@@ -286,6 +306,7 @@ export function SessionDetailModal({
                   className={styles.modal__input}
                   type="date"
                   value={date}
+                  min={minDate}
                   onChange={(e) => setDate(e.target.value)}
                   required
                 />
@@ -374,7 +395,10 @@ export function SessionDetailModal({
               <button
                 className={styles["modal__btn-secondary"]}
                 type="button"
-                onClick={() => setEditing(false)}
+                onClick={() => {
+                  resetDraft();
+                  setEditing(false);
+                }}
                 disabled={updateMutation.isPending}
               >
                 되돌리기

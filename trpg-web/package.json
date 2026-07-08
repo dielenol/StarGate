@@ -8,6 +8,7 @@
     "build": "pnpm --filter @stargate/shared-db build && next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --experimental-strip-types tests/**/*.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
