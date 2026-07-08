@@ -261,6 +261,12 @@ function formatTopMoveLine(result: ScheduledStockTickResult): string {
   )}`;
 }
 
+function formatCompactMoveLine(result: ScheduledStockTickResult): string {
+  return `${directionIcon(result)} **${stockName(result.ticker)}** · ${formatMoveDelta(
+    result,
+  )}`;
+}
+
 function formatIndexMoveIcon(changePercent: number): string {
   if (changePercent > 0) return "▲";
   if (changePercent < 0) return "▼";
@@ -393,6 +399,32 @@ function buildRoutineOverviewFields(
         .filter(Boolean)
         .join("\n"),
     },
+    ...(upCount > 0
+      ? [
+          {
+            name: "상승 종목",
+            value: truncateField(
+              changed
+                .filter((result) => result.price > result.previousPrice)
+                .map(formatCompactMoveLine)
+                .join("\n"),
+            ),
+          },
+        ]
+      : []),
+    ...(downCount > 0
+      ? [
+          {
+            name: "하락 종목",
+            value: truncateField(
+              changed
+                .filter((result) => result.price < result.previousPrice)
+                .map(formatCompactMoveLine)
+                .join("\n"),
+            ),
+          },
+        ]
+      : []),
   ];
 }
 
