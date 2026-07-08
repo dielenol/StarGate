@@ -32,6 +32,7 @@ type DiscordEmbed = {
 };
 
 type DiscordPayload = {
+  content?: string;
   username: string;
   avatar_url?: string;
   allowed_mentions?: { parse: string[] };
@@ -261,12 +262,6 @@ function formatTopMoveLine(result: ScheduledStockTickResult): string {
   )}`;
 }
 
-function formatCompactMoveLine(result: ScheduledStockTickResult): string {
-  return `${directionIcon(result)} **${stockName(result.ticker)}** · ${formatMoveDelta(
-    result,
-  )}`;
-}
-
 function formatIndexMoveIcon(changePercent: number): string {
   if (changePercent > 0) return "▲";
   if (changePercent < 0) return "▼";
@@ -327,6 +322,10 @@ function buildEventLines(
         result.ticker,
       )}**\n${sanitizeForDiscord(result.eventText)}`;
     });
+}
+
+function stockMarketContent(): string {
+  return `ORDO-NET 주식 거래소 바로가기: ${STOCK_WEB_URL}`;
 }
 
 function buildRoutineOverviewFields(
@@ -399,32 +398,6 @@ function buildRoutineOverviewFields(
         .filter(Boolean)
         .join("\n"),
     },
-    ...(upCount > 0
-      ? [
-          {
-            name: "상승 종목",
-            value: truncateField(
-              changed
-                .filter((result) => result.price > result.previousPrice)
-                .map(formatCompactMoveLine)
-                .join("\n"),
-            ),
-          },
-        ]
-      : []),
-    ...(downCount > 0
-      ? [
-          {
-            name: "하락 종목",
-            value: truncateField(
-              changed
-                .filter((result) => result.price < result.previousPrice)
-                .map(formatCompactMoveLine)
-                .join("\n"),
-            ),
-          },
-        ]
-      : []),
   ];
 }
 
@@ -530,6 +503,7 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
   ].join("\n");
 
   return {
+    content: stockMarketContent(),
     username: "재무기구 시장감시실",
     avatar_url: process.env.DISCORD_WEBHOOK_STOCK_AVATAR_URL || undefined,
     allowed_mentions: { parse: [] },
@@ -571,6 +545,7 @@ function buildManualPayload(
         : MARKET_WIRE_COLOR;
 
   return {
+    content: stockMarketContent(),
     username: "재무기구 시장감시실",
     avatar_url: process.env.DISCORD_WEBHOOK_STOCK_AVATAR_URL || undefined,
     allowed_mentions: { parse: [] },
