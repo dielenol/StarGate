@@ -12,7 +12,7 @@ import {
   IconArrowRight,
   IconContact,
   IconCredit,
-  IconFactionBriefing,
+  IconBriefing,
   IconReportDocument,
 } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
@@ -704,7 +704,7 @@ export default function FactionContactClient({
         </section>
 
         <div className={styles.applyConsole}>
-          <IconFactionBriefing aria-hidden />
+          <IconBriefing aria-hidden />
           <div>
             <strong>{canEditFavorability ? "GM 반영 대기" : "GM 검토 후보"}</strong>
             <p>

@@ -1,0 +1,444 @@
+[
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "MISSILE_GUIDANCE_LASER",
+      "slug": "missile-guidance-laser",
+      "name": "미사일 유도 레이저",
+      "nameEn": "Missile Guidance Laser",
+      "category": "SPECIAL",
+      "price": 1000,
+      "description": "가동 다음 턴에 네 개 라인에 피해를 주는 강력한 미사일을 호출하는 1회용 유도 레이저.",
+      "previewImage": "/assets/catalog/special/missile-guidance-laser.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전투보조",
+        "군인전용",
+        "미사일",
+        "유도레이저"
+      ],
+      "loreMd": "## 설명\n가동 다음 턴에 네 개 라인에 피해를 주는 강력한 미사일을 호출하는 1회용 유도 레이저.\n\n## 배경\n노부스 오르도 병기부가 군인 전용 전투 보조품으로 관리하는 고화력 호출 장비다. 직접 화기가 아니라 표적 지시 장치로 분류하며, 사용 시점과 피격 시점이 분리되는 작전 보조품으로 취급한다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.\n\n## 비고\n1회용 장비다. 유도 레이저를 가동한 다음 턴에 미사일이 도착하며, 피해 범위는 네 개 라인으로 기록한다.\n",
+      "lore": {
+        "background": "노부스 오르도 병기부가 군인 전용 전투 보조품으로 관리하는 고화력 호출 장비다. 직접 화기가 아니라 표적 지시 장치로 분류하며, 사용 시점과 피격 시점이 분리되는 작전 보조품으로 취급한다.",
+        "acquisition": "병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.",
+        "notes": "1회용 장비다. 유도 레이저를 가동한 다음 턴에 미사일이 도착하며, 피해 범위는 네 개 라인으로 기록한다."
+      },
+      "source": "manual",
+      "effect": "1회용 / 다음 턴 네 라인 미사일 호출",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "STEALTH_CLOAK",
+      "slug": "stealth-cloak",
+      "name": "스텔스 망토",
+      "nameEn": "Stealth Cloak",
+      "category": "SPECIAL",
+      "price": 1000,
+      "description": "광학적 설계를 기반으로 은신 상황의 스킬 결과치에 50 보정치를 더하는 투명망토.",
+      "previewImage": "/assets/catalog/special/stealth-cloak.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전투보조",
+        "군인전용",
+        "은신",
+        "스텔스"
+      ],
+      "loreMd": "## 설명\n광학적 설계를 기반으로 은신 상황의 스킬 결과치에 50 보정치를 더하는 투명망토.\n\n## 배경\n노부스 오르도 병기부가 은신 침투와 회피 기동을 위해 관리하는 전투 보조품이다. 화력보다 노출 억제와 현장 은폐를 목적으로 한다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.\n\n## 비고\n효과 지속 시간은 8시간이다. 은신 상황에 이용되는 스킬 결과치에 50의 보정치를 더한다.\n",
+      "lore": {
+        "background": "노부스 오르도 병기부가 은신 침투와 회피 기동을 위해 관리하는 전투 보조품이다. 화력보다 노출 억제와 현장 은폐를 목적으로 한다.",
+        "acquisition": "병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.",
+        "notes": "효과 지속 시간은 8시간이다. 은신 상황에 이용되는 스킬 결과치에 50의 보정치를 더한다."
+      },
+      "source": "manual",
+      "effect": "8시간 은신 판정 +50",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "DRONE_SELF_DESTRUCT_MOD",
+      "slug": "drone-self-destruct-mod",
+      "name": "드론 자폭 개조",
+      "nameEn": "Drone Self-Destruct Modification",
+      "category": "SPECIAL",
+      "price": 1000,
+      "description": "호출되는 정찰 드론을 정찰형 탄약으로 개조해 [자폭] 스킬을 추가하는 전투 보조 개조품.",
+      "previewImage": "/assets/catalog/special/drone-self-destruct-mod.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전투보조",
+        "군인전용",
+        "드론",
+        "개조"
+      ],
+      "loreMd": "## 설명\n호출되는 정찰 드론을 정찰형 탄약으로 개조해 [자폭] 스킬을 추가하는 전투 보조 개조품.\n\n## 배경\n정찰 드론을 단순 감시 장비가 아니라 정찰형 탄약 운용 체계로 전환하는 병기부 개조 패키지다. 기존 드론 호출 체계에 폭발 운용 선택지를 붙이는 방식으로 관리된다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.\n\n## 비고\n호출되는 정찰 드론에 새로운 스킬 [자폭]이 추가된다. 자폭 성공 시 50의 화염 피해를 입힌다.\n",
+      "lore": {
+        "background": "정찰 드론을 단순 감시 장비가 아니라 정찰형 탄약 운용 체계로 전환하는 병기부 개조 패키지다. 기존 드론 호출 체계에 폭발 운용 선택지를 붙이는 방식으로 관리된다.",
+        "acquisition": "병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.",
+        "notes": "호출되는 정찰 드론에 새로운 스킬 [자폭]이 추가된다. 자폭 성공 시 50의 화염 피해를 입힌다."
+      },
+      "source": "manual",
+      "effect": "정찰 드론에 [자폭] 추가 / 성공 시 50 화염",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "PORTABLE_EMP_LAUNCHER",
+      "slug": "portable-emp-launcher",
+      "name": "휴대용 EMP 총",
+      "nameEn": "Portable EMP Launcher",
+      "category": "SPECIAL",
+      "price": 1000,
+      "description": "중거리 내 드론이나 소형 전자 장비를 30초 내에 멈추게 할 수 있는 휴대용 EMP 장비.",
+      "previewImage": "/assets/catalog/special/portable-emp-launcher.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전투보조",
+        "군인전용",
+        "EMP",
+        "전자전"
+      ],
+      "loreMd": "## 설명\n중거리 내 드론이나 소형 전자 장비를 30초 내에 멈추게 할 수 있는 휴대용 EMP 장비.\n\n## 배경\n드론과 소형 전자 장비가 개입하는 전장에 대응하기 위한 병기부 전자전 보조품이다. 살상보다 장비 무력화와 대응 시간 확보에 초점을 둔다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.\n\n## 비고\n탄약은 1회로 기록한다. 중거리 내의 드론이나 소형 전자 장비를 30초 내에 멈추게 할 수 있다.\n",
+      "lore": {
+        "background": "드론과 소형 전자 장비가 개입하는 전장에 대응하기 위한 병기부 전자전 보조품이다. 살상보다 장비 무력화와 대응 시간 확보에 초점을 둔다.",
+        "acquisition": "병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.",
+        "notes": "탄약은 1회로 기록한다. 중거리 내의 드론이나 소형 전자 장비를 30초 내에 멈추게 할 수 있다."
+      },
+      "source": "manual",
+      "effect": "탄약 1회 / 중거리 전자 장비 30초 정지",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "JETPACK",
+      "slug": "jetpack",
+      "name": "제트팩",
+      "nameEn": "Jetpack",
+      "category": "SPECIAL",
+      "price": 1000,
+      "description": "최대 2라운드 동안 다섯 개 라인에서 벗어나 공중에 상주할 수 있는 개인 기동 장비.",
+      "previewImage": "",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전투보조",
+        "군인전용",
+        "기동장비",
+        "공중"
+      ],
+      "loreMd": "## 설명\n최대 2라운드 동안 다섯 개 라인에서 벗어나 공중에 상주할 수 있는 개인 기동 장비.\n\n## 배경\n노부스 오르도 병기부가 고저차와 라인 이탈 운용을 위해 관리하는 개인 기동 장비다. 지상 전투 라인에서 벗어나 공중 위치를 점유하는 전술 보조품으로 분류한다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.\n\n## 비고\n최대 2라운드 동안 다섯 개 라인에서 벗어나 공중에 상주한다. 지상과 공중의 격차는 장거리로 판정한다.\n",
+      "lore": {
+        "background": "노부스 오르도 병기부가 고저차와 라인 이탈 운용을 위해 관리하는 개인 기동 장비다. 지상 전투 라인에서 벗어나 공중 위치를 점유하는 전술 보조품으로 분류한다.",
+        "acquisition": "병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.",
+        "notes": "최대 2라운드 동안 다섯 개 라인에서 벗어나 공중에 상주한다. 지상과 공중의 격차는 장거리로 판정한다."
+      },
+      "source": "manual",
+      "effect": "최대 2라운드 공중 체류 / 지상-공중 장거리 판정",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "ELECTRIC_BARBED_WIRE_MOD",
+      "slug": "electric-barbed-wire-mod",
+      "name": "전기 철조망 개조",
+      "nameEn": "Electric Barbed Wire Modification",
+      "category": "SPECIAL",
+      "price": 1000,
+      "description": "철조망을 전기 철조망으로 개조해 적의 라인 진입 시 감전 효과를 발동시키는 개조품.",
+      "previewImage": "/assets/catalog/special/electric-barbed-wire-mod.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전투보조",
+        "군인전용",
+        "철조망",
+        "개조"
+      ],
+      "loreMd": "## 설명\n철조망을 전기 철조망으로 개조해 적의 라인 진입 시 감전 효과를 발동시키는 개조품.\n\n## 배경\n전장 통제와 접근 차단을 위해 기존 철조망을 감전 장벽으로 바꾸는 병기부 개조 패키지다. 이동 경로를 제한하고 특정 라인의 진입 리스크를 높이는 보조품으로 운용된다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.\n\n## 비고\n전기 철조망이 있는 라인으로 적이 이동하는 경우 1회의 감전 효과가 발동된다. 발동 성공치는 2 이하로 기록한다.\n",
+      "lore": {
+        "background": "전장 통제와 접근 차단을 위해 기존 철조망을 감전 장벽으로 바꾸는 병기부 개조 패키지다. 이동 경로를 제한하고 특정 라인의 진입 리스크를 높이는 보조품으로 운용된다.",
+        "acquisition": "병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.",
+        "notes": "전기 철조망이 있는 라인으로 적이 이동하는 경우 1회의 감전 효과가 발동된다. 발동 성공치는 2 이하로 기록한다."
+      },
+      "source": "manual",
+      "effect": "진입 적 감전 1회 / 성공치 2 이하",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "EXTENDED_MAGAZINE_MOD",
+      "slug": "extended-magazine-mod",
+      "name": "탄창 개조",
+      "nameEn": "Extended Magazine Modification",
+      "category": "SPECIAL",
+      "price": 1000,
+      "description": "소지한 무기 하나를 개조해 기존 공격 횟수에 1회를 더하는 개조 탄창.",
+      "previewImage": "/assets/catalog/special/extended-magazine-mod.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전투보조",
+        "군인전용",
+        "탄창",
+        "개조"
+      ],
+      "loreMd": "## 설명\n소지한 무기 하나를 개조해 기존 공격 횟수에 1회를 더하는 개조 탄창.\n\n## 배경\n화기 운용 지속력을 높이기 위해 병기부가 제공하는 탄창 개조 패키지다. 무기 자체를 새로 지급하지 않고, 기존 보유 무기 하나에 공격 횟수 보정을 부여한다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.\n\n## 비고\n자신이 소지한 무기 중 하나를 개조한다. 해당 무기는 기존 공격 횟수에 1회를 더하는 개조 탄창을 지니게 된다.\n",
+      "lore": {
+        "background": "화기 운용 지속력을 높이기 위해 병기부가 제공하는 탄창 개조 패키지다. 무기 자체를 새로 지급하지 않고, 기존 보유 무기 하나에 공격 횟수 보정을 부여한다.",
+        "acquisition": "병기부 전략 장비 보급소에서 구매할 수 있다. 군인 전용 전투 보조품으로 취급한다.",
+        "notes": "자신이 소지한 무기 중 하나를 개조한다. 해당 무기는 기존 공격 횟수에 1회를 더하는 개조 탄창을 지니게 된다."
+      },
+      "source": "manual",
+      "effect": "소지 무기 1개 공격 횟수 +1",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "HMMWV_HUMVEE",
+      "slug": "hmmwv-humvee",
+      "name": "HMMWV (험비)",
+      "nameEn": "HMMWV Humvee",
+      "category": "SPECIAL",
+      "price": 2000,
+      "description": "중거리까지 단번에 이동하는 4인승 군용 차량이며, 중기관총을 탑재한다.",
+      "previewImage": "/assets/catalog/special/hmmwv-humvee.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전략자산",
+        "차량",
+        "군용차량",
+        "험비"
+      ],
+      "loreMd": "## 설명\n중거리까지 단번에 이동하는 4인승 군용 차량이며, 중기관총을 탑재한다.\n\n## 배경\n노부스 오르도 병기부가 전략 자산으로 관리하는 군용 차량이다. 인원 수송과 이동 화력을 동시에 제공하는 소형 전술 차량으로 분류한다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.\n\n## 비고\n내구도 150, 방어력 10으로 기록한다. 4인승이며 중거리까지 단번에 이동한다. 탑재 중기관총은 숙련도 없이 사용할 수 있다.\n",
+      "lore": {
+        "background": "노부스 오르도 병기부가 전략 자산으로 관리하는 군용 차량이다. 인원 수송과 이동 화력을 동시에 제공하는 소형 전술 차량으로 분류한다.",
+        "acquisition": "병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.",
+        "notes": "내구도 150, 방어력 10으로 기록한다. 4인승이며 중거리까지 단번에 이동한다. 탑재 중기관총은 숙련도 없이 사용할 수 있다."
+      },
+      "source": "manual",
+      "effect": "내구 150 / 방어 10 / 4인승 / 중기관총",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "M977_HEMTT_MILITARY_TRUCK",
+      "slug": "m977-hemtt-military-truck",
+      "name": "M977 HEMTT 군용트럭",
+      "nameEn": "M977 HEMTT Military Truck",
+      "category": "SPECIAL",
+      "price": 3000,
+      "description": "최대 16명의 인원과 대규모 전략 자산을 원하는 위치로 이동시킬 수 있는 군용 트럭.",
+      "previewImage": "/assets/catalog/special/m977-hemtt-military-truck.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전략자산",
+        "차량",
+        "군용트럭",
+        "HEMTT"
+      ],
+      "loreMd": "## 설명\n최대 16명의 인원과 대규모 전략 자산을 원하는 위치로 이동시킬 수 있는 군용 트럭.\n\n## 배경\n대규모 인원과 전략 자산 이동을 위해 병기부가 관리하는 군용 수송 차량이다. 단순 전투 차량보다 작전 전개와 후방 보급 이동에 초점을 둔다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.\n\n## 비고\n내구도 200, 방어력 10으로 기록한다. 최대 16명의 사람과 대규모 전략 자산을 원하는 위치로 이동시킬 수 있다.\n",
+      "lore": {
+        "background": "대규모 인원과 전략 자산 이동을 위해 병기부가 관리하는 군용 수송 차량이다. 단순 전투 차량보다 작전 전개와 후방 보급 이동에 초점을 둔다.",
+        "acquisition": "병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.",
+        "notes": "내구도 200, 방어력 10으로 기록한다. 최대 16명의 사람과 대규모 전략 자산을 원하는 위치로 이동시킬 수 있다."
+      },
+      "source": "manual",
+      "effect": "내구 200 / 방어 10 / 16인 수송",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "M1_ABRAMS",
+      "slug": "m1-abrams",
+      "name": "M1 에이브람스",
+      "nameEn": "M1 Abrams",
+      "category": "SPECIAL",
+      "price": 8000,
+      "description": "4명의 승무원이 필요한 군용 전차이며, 중거리 이동과 고화력 포탄 및 중기관총 운용이 가능하다.",
+      "previewImage": "/assets/catalog/special/m1-abrams.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전략자산",
+        "차량",
+        "전차",
+        "에이브람스"
+      ],
+      "loreMd": "## 설명\n4명의 승무원이 필요한 군용 전차이며, 중거리 이동과 고화력 포탄 및 중기관총 운용이 가능하다.\n\n## 배경\n병기부 전략 자산 중 중장갑 화력 투사용으로 분류되는 군용 전차다. 승무원 편성과 포탄 장전이 전제되는 대형 작전 자산으로 취급한다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.\n\n## 비고\n내구도 300, 방어력 30으로 기록한다. 운용에는 전차장, 포수, 조종수, 탄약수 4명이 필요하다. 중거리까지 단번에 이동하며, 폭약이 장전되면 한 영역에 80 피해를 주는 포탄을 발사한다. 두 정의 중기관총은 숙련도 없이 사용할 수 있다.\n",
+      "lore": {
+        "background": "병기부 전략 자산 중 중장갑 화력 투사용으로 분류되는 군용 전차다. 승무원 편성과 포탄 장전이 전제되는 대형 작전 자산으로 취급한다.",
+        "acquisition": "병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.",
+        "notes": "내구도 300, 방어력 30으로 기록한다. 운용에는 전차장, 포수, 조종수, 탄약수 4명이 필요하다. 중거리까지 단번에 이동하며, 폭약이 장전되면 한 영역에 80 피해를 주는 포탄을 발사한다. 두 정의 중기관총은 숙련도 없이 사용할 수 있다."
+      },
+      "source": "manual",
+      "effect": "내구 300 / 방어 30 / 4인 승무 / 80 피해 포탄",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "UH60_BLACK_HAWK",
+      "slug": "uh-60-black-hawk",
+      "name": "UH-60 블랙 호크",
+      "nameEn": "UH-60 Black Hawk",
+      "category": "SPECIAL",
+      "price": 8000,
+      "description": "4명의 승무원과 추가 탑승자를 운용하는 군용 헬리콥터이며, 비행 상태에서 화력 지원을 수행한다.",
+      "previewImage": "/assets/catalog/special/uh-60-black-hawk.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전략자산",
+        "항공기",
+        "헬리콥터",
+        "블랙호크"
+      ],
+      "loreMd": "## 설명\n4명의 승무원과 추가 탑승자를 운용하는 군용 헬리콥터이며, 비행 상태에서 화력 지원을 수행한다.\n\n## 배경\n병기부가 공중 강습, 탑승자 수송, 화력 지원을 위해 관리하는 군용 헬리콥터다. 작전 시간과 급유 제한이 함께 기록되는 전략 자산으로 취급한다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.\n\n## 비고\n내구도 150, 방어력 10으로 기록한다. 운용에는 조종사 2명과 도어 거너 2명이 필요하며, 최대 7명을 더 탑승시킬 수 있다. 작전 중 최대 4시간, 전투 시 5라운드 동안 투입되며 이후 급유를 위해 후퇴한다. 도어 거너 자리의 거치형 소총 두 정과 차량 중기관총은 숙련도 없이 사용할 수 있다. 최대 3회, 50의 화염 피해를 주는 대지공 미사일을 탑재한다.\n",
+      "lore": {
+        "background": "병기부가 공중 강습, 탑승자 수송, 화력 지원을 위해 관리하는 군용 헬리콥터다. 작전 시간과 급유 제한이 함께 기록되는 전략 자산으로 취급한다.",
+        "acquisition": "병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.",
+        "notes": "내구도 150, 방어력 10으로 기록한다. 운용에는 조종사 2명과 도어 거너 2명이 필요하며, 최대 7명을 더 탑승시킬 수 있다. 작전 중 최대 4시간, 전투 시 5라운드 동안 투입되며 이후 급유를 위해 후퇴한다. 도어 거너 자리의 거치형 소총 두 정과 차량 중기관총은 숙련도 없이 사용할 수 있다. 최대 3회, 50의 화염 피해를 주는 대지공 미사일을 탑재한다."
+      },
+      "source": "manual",
+      "effect": "내구 150 / 방어 10 / 4+7 탑승 / 미사일 3회",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "CH47_CHINOOK",
+      "slug": "ch-47-chinook",
+      "name": "CH-47 치누크",
+      "nameEn": "CH-47 Chinook",
+      "category": "SPECIAL",
+      "price": 4000,
+      "description": "3명의 승무원이 필요한 군용 수송기이며, 장거리 영역까지 이동하고 최대 50명을 후송한다.",
+      "previewImage": "/assets/catalog/special/ch-47-chinook.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전략자산",
+        "항공기",
+        "수송기",
+        "치누크"
+      ],
+      "loreMd": "## 설명\n3명의 승무원이 필요한 군용 수송기이며, 장거리 영역까지 이동하고 최대 50명을 후송한다.\n\n## 배경\n대규모 후송과 장거리 공중 이동을 위해 병기부가 관리하는 군용 수송기다. 화력 투사보다 인원 전개와 철수에 초점을 둔 전략 자산이다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.\n\n## 비고\n내구도 150, 방어력 10으로 기록한다. 운용에는 조종사 2명과 항공 기관사 1명이 필요하다. 장거리 영역까지 단번에 이동하며 비행한다. 작전 중 최대 8시간 상주하고, 한 번에 최대 50명을 후송할 수 있다.\n",
+      "lore": {
+        "background": "대규모 후송과 장거리 공중 이동을 위해 병기부가 관리하는 군용 수송기다. 화력 투사보다 인원 전개와 철수에 초점을 둔 전략 자산이다.",
+        "acquisition": "병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.",
+        "notes": "내구도 150, 방어력 10으로 기록한다. 운용에는 조종사 2명과 항공 기관사 1명이 필요하다. 장거리 영역까지 단번에 이동하며 비행한다. 작전 중 최대 8시간 상주하고, 한 번에 최대 50명을 후송할 수 있다."
+      },
+      "source": "manual",
+      "effect": "내구 150 / 방어 10 / 3인 승무 / 50명 후송",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "armory-strategic-assets-catalog-2026-07-08",
+    "payload": {
+      "code": "MEDICAL_AMBULANCE",
+      "slug": "medical-ambulance",
+      "name": "의료용 앰뷸런스",
+      "nameEn": "Medical Ambulance",
+      "category": "SPECIAL",
+      "price": 3000,
+      "description": "중거리까지 단번에 이동하며, 광역 의료 행위에 의무품 보정치를 사용할 수 있는 의료용 차량.",
+      "previewImage": "/assets/catalog/special/medical-ambulance.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "전략 장비 보급소",
+        "전략자산",
+        "차량",
+        "의료",
+        "앰뷸런스"
+      ],
+      "loreMd": "## 설명\n중거리까지 단번에 이동하며, 광역 의료 행위에 의무품 보정치를 사용할 수 있는 의료용 차량.\n\n## 배경\n작전 중 부상자 대응과 광역 의료 지원을 위해 병기부가 관리하는 의료용 전략 차량이다. 전투 화력보다 생존성 유지와 의료 보정에 초점을 둔다.\n\n## 획득 경로\n병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.\n\n## 비고\n내구도 100, 의무품 200, 방어력 10으로 기록한다. 중거리까지 단번에 이동한다. 광역 의료 행위에 필요한 스킬 및 캔트립 사용 시 의무품을 이용해 결과치에 추가 보정이 가능하다.\n",
+      "lore": {
+        "background": "작전 중 부상자 대응과 광역 의료 지원을 위해 병기부가 관리하는 의료용 전략 차량이다. 전투 화력보다 생존성 유지와 의료 보정에 초점을 둔다.",
+        "acquisition": "병기부 전략 장비 보급소에서 전략 자산으로 구매할 수 있다.",
+        "notes": "내구도 100, 의무품 200, 방어력 10으로 기록한다. 중거리까지 단번에 이동한다. 광역 의료 행위에 필요한 스킬 및 캔트립 사용 시 의무품을 이용해 결과치에 추가 보정이 가능하다."
+      },
+      "source": "manual",
+      "effect": "내구 100 / 의무품 200 / 방어 10",
+      "createdAt": "2026-05-13T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  }
+]

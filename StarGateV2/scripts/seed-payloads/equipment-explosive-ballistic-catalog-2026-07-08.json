@@ -1,0 +1,212 @@
+[
+  {
+    "collection": "master_items",
+    "type": "equipment-explosive-ballistic-catalog-2026-07-08",
+    "payload": {
+      "code": "MILITARY_FRAGMENT_GRENADE",
+      "slug": "military-fragment-grenade",
+      "name": "군용 세열 수류탄",
+      "nameEn": "Military Fragment Grenade",
+      "category": "CONSUMABLE",
+      "price": 120,
+      "description": "토와스키 건샵에서 판매하지만 구매 후 인벤토리에서는 소모품으로 취급되는 일회용 군용 세열 수류탄.",
+      "previewImage": "/assets/catalog/equipment/military-fragment-grenade.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "토와스키",
+        "폭발형무기",
+        "투척무기",
+        "군용",
+        "소모품",
+        "수류탄"
+      ],
+      "loreMd": "## 설명\n군용 세열 수류탄은 최대 중거리 영역까지 투척할 수 있는 폭발형 무기다. 토와스키 건샵에서 판매하지만 구매 후 인벤토리와 VTT 사용 흐름에서는 소모품으로 취급한다. 목표물을 먼저 지정한 뒤, 1d4를 굴려 피격 인원을 결정한다. 피해 대상 우선순위는 목표물, 목표물 주변 적, 목표물 주변 아군 순서로 기록한다.\n\n## 배경\n노부스 오르도 병기부가 토와스키 건샵을 통해 반출하는 표준 폭발 장구류다. 소형 화기만으로 다수의 적을 제압하기 어려운 구획 전투에서 사용하도록 편성된다.\n\n## 획득 경로\n병기부 토와스키 건샵에서 구매할 수 있다.\n\n## 비고\n이 품목은 장착 장비가 아니라 1회 사용 소모품으로 기록한다. 다인 폭발 무기이므로 명중 후 연쇄 피해 인원은 주사위로 결정한다.\n",
+      "lore": {
+        "background": "노부스 오르도 병기부가 토와스키 건샵을 통해 반출하는 표준 폭발 장구류다. 소형 화기만으로 다수의 적을 제압하기 어려운 구획 전투에서 사용하도록 편성된다.",
+        "acquisition": "병기부 토와스키 건샵에서 구매할 수 있다.",
+        "notes": "이 품목은 장착 장비가 아니라 1회 사용 소모품으로 기록한다. 다인 폭발 무기이므로 명중 후 연쇄 피해 인원은 주사위로 결정한다."
+      },
+      "source": "create-lore",
+      "effect": "중거리 15 파편 물리 / 1d4명 / 사용 시 소모",
+      "createdAt": "2026-07-08T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "equipment-explosive-ballistic-catalog-2026-07-08",
+    "payload": {
+      "code": "ROCKET_LAUNCHER",
+      "slug": "rocket-launcher",
+      "name": "로켓 런처",
+      "nameEn": "Rocket Launcher",
+      "category": "WEAPON",
+      "price": 700,
+      "description": "장거리 영역까지 발사해 넓은 구획에 폭발 피해를 입히는 일회용 중화기.",
+      "previewImage": "/assets/catalog/equipment/rocket-launcher.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "토와스키",
+        "폭발형무기",
+        "중화기",
+        "군용",
+        "소모성",
+        "로켓런처"
+      ],
+      "loreMd": "## 설명\n로켓 런처는 최대 장거리 영역까지 발사할 수 있는 폭발형 중화기다. 지정한 폭발 구획을 중심으로 1d8을 굴려 피격 인원을 결정하며, 영역 둘에 걸친 폭발 및 화염 확산 피해를 처리한다.\n\n## 배경\n병기부 토와스키 건샵의 중화기 반출 품목이다. 일반 화기보다 높은 피해와 넓은 피해 범위를 제공하지만, 단발 운용과 높은 반출 비용 때문에 전술적 순간에만 쓰이는 장비로 분류된다.\n\n## 획득 경로\n병기부 토와스키 건샵에서 구매할 수 있다.\n\n## 비고\n탄환은 1회로 기록한다. 다인 폭발 무기이므로 명중 후 연쇄 피해 인원은 주사위로 결정한다.\n",
+      "lore": {
+        "background": "병기부 토와스키 건샵의 중화기 반출 품목이다. 일반 화기보다 높은 피해와 넓은 피해 범위를 제공하지만, 단발 운용과 높은 반출 비용 때문에 전술적 순간에만 쓰이는 장비로 분류된다.",
+        "acquisition": "병기부 토와스키 건샵에서 구매할 수 있다.",
+        "notes": "탄환은 1회로 기록한다. 다인 폭발 무기이므로 명중 후 연쇄 피해 인원은 주사위로 결정한다."
+      },
+      "source": "create-lore",
+      "damage": "장거리 30 파편 물리 / 1d8명",
+      "createdAt": "2026-07-08T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "equipment-explosive-ballistic-catalog-2026-07-08",
+    "payload": {
+      "code": "BALLISTIC_VEST_BASIC",
+      "slug": "basic-standard-ballistic-vest",
+      "name": "보급형 기본 방탄복",
+      "nameEn": "Basic Standard Ballistic Vest",
+      "category": "ARMOR",
+      "price": 120,
+      "description": "원거리 관통 피해를 흡수하는 기본형 방탄 조끼. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다.",
+      "previewImage": "/assets/catalog/equipment/basic-standard-ballistic-vest.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "토와스키",
+        "방탄복",
+        "방어구",
+        "원거리방어",
+        "보급형"
+      ],
+      "loreMd": "## 설명\n보급형 기본 방탄복은 원거리 투사체의 관통 피해를 흡수하는 파괴형 방어구다. 장착 중 방어력 1을 더하고, 원거리 관통 피해를 흡수하는 임시 체력 20을 제공한다. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다.\n\n## 배경\n전투 구획에 처음 투입되는 요원을 위해 병기부가 토와스키 건샵에 배치한 기본 방호 장구다. 사용 후 내구가 소모되는 장비지만, 카탈로그상으로는 방어구로 분류한다.\n\n## 획득 경로\n병기부 토와스키 건샵에서 구매할 수 있다.\n\n## 비고\n피격 1회에 한해 원거리 관통 피해 흡수 장비로 취급한다. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다.\n",
+      "lore": {
+        "background": "전투 구획에 처음 투입되는 요원을 위해 병기부가 토와스키 건샵에 배치한 기본 방호 장구다. 사용 후 내구가 소모되는 장비지만, 카탈로그상으로는 방어구로 분류한다.",
+        "acquisition": "병기부 토와스키 건샵에서 구매할 수 있다.",
+        "notes": "피격 1회에 한해 원거리 관통 피해 흡수 장비로 취급한다. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다."
+      },
+      "source": "create-lore",
+      "damage": "DEF +1 / 관통 임시 HP 20 / 파괴",
+      "createdAt": "2026-07-08T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "equipment-explosive-ballistic-catalog-2026-07-08",
+    "payload": {
+      "code": "BALLISTIC_VEST_INTERMEDIATE",
+      "slug": "basic-intermediate-ballistic-vest",
+      "name": "보급형 중급 방탄복",
+      "nameEn": "Basic Intermediate Ballistic Vest",
+      "category": "ARMOR",
+      "price": 220,
+      "description": "강화 방탄판으로 피해를 흡수하는 중급형 방탄 조끼. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다.",
+      "previewImage": "/assets/catalog/equipment/basic-intermediate-ballistic-vest.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "토와스키",
+        "방탄복",
+        "방어구",
+        "원거리방어",
+        "보급형",
+        "NIJ-RF2"
+      ],
+      "loreMd": "## 설명\n보급형 중급 방탄복은 원거리 투사체의 관통 피해를 흡수하는 파괴형 방어구다. 장착 중 방어력 2를 더하고, 원거리 관통 피해를 흡수하는 임시 체력 30을 제공한다. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다.\n\n## 배경\n기본형보다 더 강한 탄도 충격을 버티도록 보강된 방호 장구다. 병기부는 NIJ RF2에 준하는 방호 수준이 필요한 현장 요원에게 이 등급을 권장한다.\n\n## 획득 경로\n병기부 토와스키 건샵에서 구매할 수 있다.\n\n## 비고\n피격 1회에 한해 원거리 관통 피해 흡수 장비로 취급한다. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다.\n",
+      "lore": {
+        "background": "기본형보다 더 강한 탄도 충격을 버티도록 보강된 방호 장구다. 병기부는 NIJ RF2에 준하는 방호 수준이 필요한 현장 요원에게 이 등급을 권장한다.",
+        "acquisition": "병기부 토와스키 건샵에서 구매할 수 있다.",
+        "notes": "피격 1회에 한해 원거리 관통 피해 흡수 장비로 취급한다. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다."
+      },
+      "source": "create-lore",
+      "damage": "DEF +2 / 관통 임시 HP 30 / 파괴",
+      "createdAt": "2026-07-08T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "equipment-explosive-ballistic-catalog-2026-07-08",
+    "payload": {
+      "code": "BALLISTIC_VEST_ADVANCED",
+      "slug": "basic-advanced-ballistic-vest",
+      "name": "보급형 고급 방탄복",
+      "nameEn": "Basic Advanced Ballistic Vest",
+      "category": "ARMOR",
+      "price": 360,
+      "description": "고위험 교전 피해를 흡수하는 고급형 방탄 조끼. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다.",
+      "previewImage": "/assets/catalog/equipment/basic-advanced-ballistic-vest.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "토와스키",
+        "방탄복",
+        "방어구",
+        "원거리방어",
+        "보급형",
+        "NIJ-RF3"
+      ],
+      "loreMd": "## 설명\n보급형 고급 방탄복은 원거리 투사체의 관통 피해를 흡수하는 파괴형 방어구다. 장착 중 방어력 3을 더하고, 원거리 관통 피해를 흡수하는 임시 체력 40을 제공한다. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다.\n\n## 배경\n병기부가 고위험 임무용으로 제한 반출하는 강화 방호 장구다. NIJ RF3에 준하는 보호 성능을 기준으로 삼아, 회복보다 선제 피해 완화가 중요한 교전에 투입한다.\n\n## 획득 경로\n병기부 토와스키 건샵에서 구매할 수 있다.\n\n## 비고\n피격 1회에 한해 원거리 관통 피해 흡수 장비로 취급한다. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다.\n",
+      "lore": {
+        "background": "병기부가 고위험 임무용으로 제한 반출하는 강화 방호 장구다. NIJ RF3에 준하는 보호 성능을 기준으로 삼아, 회복보다 선제 피해 완화가 중요한 교전에 투입한다.",
+        "acquisition": "병기부 토와스키 건샵에서 구매할 수 있다.",
+        "notes": "피격 1회에 한해 원거리 관통 피해 흡수 장비로 취급한다. 모종의 위대한 법칙으로 인해 1회 피격 시 파괴된다."
+      },
+      "source": "create-lore",
+      "damage": "DEF +3 / 관통 임시 HP 40 / 파괴",
+      "createdAt": "2026-07-08T00:00:00.000Z",
+      "updatedAt": "2026-07-08T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "equipment-explosive-ballistic-catalog-2026-07-08-cleanup",
+    "filter": {
+      "slug": "basic-standard-ballistic-vest"
+    },
+    "update": {
+      "$unset": {
+        "effect": ""
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "equipment-explosive-ballistic-catalog-2026-07-08-cleanup",
+    "filter": {
+      "slug": "basic-intermediate-ballistic-vest"
+    },
+    "update": {
+      "$unset": {
+        "effect": ""
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "equipment-explosive-ballistic-catalog-2026-07-08-cleanup",
+    "filter": {
+      "slug": "basic-advanced-ballistic-vest"
+    },
+    "update": {
+      "$unset": {
+        "effect": ""
+      }
+    }
+  }
+]

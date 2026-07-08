@@ -3,6 +3,7 @@ import type { ItemCategory, MasterItem } from "@stargate/shared-db/types";
 export const EQUIPMENT_SHOP_CATEGORIES = [
   "WEAPON",
   "ARMOR",
+  "CONSUMABLE",
   "SPECIAL",
 ] as const satisfies readonly ItemCategory[];
 
@@ -27,8 +28,22 @@ export interface EquipmentShopCatalogItem {
 const CATEGORY_LABELS: Record<EquipmentShopCategory, string> = {
   WEAPON: "무기",
   ARMOR: "방어구",
+  CONSUMABLE: "소모품",
   SPECIAL: "전략 자산",
 };
+
+const ARMORY_TAG_KEYWORDS = ["병기부"];
+
+const TOWASKI_CONSUMABLE_TAG_KEYWORDS = [
+  "토와스키",
+  "토와스키건샵",
+  "토와스키 건샵",
+  "폭발형무기",
+  "폭발형 무기",
+  "투척무기",
+  "투척 무기",
+  "수류탄",
+];
 
 const STRATEGIC_TAG_KEYWORDS = [
   "병기부",
@@ -62,11 +77,19 @@ function normalizeTag(value: string): string {
   return value.trim().replace(/\s+/g, "").toLowerCase();
 }
 
+function hasNormalizedTag(
+  normalizedTags: Set<string>,
+  keywords: readonly string[],
+): boolean {
+  return keywords.some((keyword) => normalizedTags.has(normalizeTag(keyword)));
+}
+
 export function equipmentShopItemZone(
   item: Pick<MasterItem, "category" | "tags">,
 ): EquipmentShopZone | null {
+  const normalizedTags = new Set((item.tags ?? []).map(normalizeTag));
+
   if (item.category === "WEAPON" || item.category === "ARMOR") {
-    const normalizedTags = new Set((item.tags ?? []).map(normalizeTag));
     const acheron = ACHERON_TAG_KEYWORDS.some((keyword) =>
       normalizedTags.has(normalizeTag(keyword)),
     );
@@ -74,12 +97,21 @@ export function equipmentShopItemZone(
     return "towaski";
   }
 
+  if (item.category === "CONSUMABLE") {
+    const isArmoryConsumable = hasNormalizedTag(
+      normalizedTags,
+      ARMORY_TAG_KEYWORDS,
+    );
+    const isTowaskiConsumable = hasNormalizedTag(
+      normalizedTags,
+      TOWASKI_CONSUMABLE_TAG_KEYWORDS,
+    );
+    return isArmoryConsumable && isTowaskiConsumable ? "towaski" : null;
+  }
+
   if (item.category !== "SPECIAL") return null;
 
-  const normalizedTags = new Set((item.tags ?? []).map(normalizeTag));
-  const strategic = STRATEGIC_TAG_KEYWORDS.some((keyword) =>
-    normalizedTags.has(normalizeTag(keyword)),
-  );
+  const strategic = hasNormalizedTag(normalizedTags, STRATEGIC_TAG_KEYWORDS);
   return strategic ? "strategic" : null;
 }
 
@@ -101,7 +133,11 @@ export function toEquipmentPriceNumber(
 
 function equipmentEffect(item: MasterItem): string {
   const parts = [
-    item.damage ? `피해 ${item.damage}` : null,
+    item.damage
+      ? item.category === "ARMOR"
+        ? item.damage
+        : `피해 ${item.damage}`
+      : null,
     item.effect?.trim() || null,
   ].filter((part): part is string => Boolean(part));
 

@@ -35,6 +35,7 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
+import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
 import { formatCredits } from "@/lib/format/credit";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
@@ -52,7 +53,7 @@ import styles from "./page.module.css";
 type ArmoryZone = "lab" | "towaski" | "acheron" | "strategic" | "custom";
 type ArmoryDestination = ArmoryZone | "simulator";
 type EquipmentShopMode = "hub" | "zone";
-type EquipmentShopTabValue = "ALL" | "WEAPON" | "ARMOR";
+type EquipmentShopTabValue = "ALL" | "WEAPON" | "ARMOR" | "CONSUMABLE";
 type CartState = Record<string, number>;
 type NoticeState = { tone: "success" | "info"; text: string } | null;
 type MainCharacterStats = Record<EquipmentResearchStat, number>;
@@ -92,7 +93,7 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
     href: "/erp/equipment-shop/towaski",
     label: "토와스키 건샵",
     eyebrow: "TOWASKI",
-    description: "무기와 방어구를 구매해 인벤토리에 반출합니다.",
+    description: "화기, 방어구, 전투 소모품을 구매해 인벤토리에 반출합니다.",
     npc: "립 토와스키",
   },
   {
@@ -133,11 +134,13 @@ const TAB_DEFS: { value: EquipmentShopTabValue; label: string }[] = [
   { value: "ALL", label: "전체" },
   { value: "WEAPON", label: "무기" },
   { value: "ARMOR", label: "방어구" },
+  { value: "CONSUMABLE", label: "소모품" },
 ];
 
 const CATEGORY_LABELS: Record<EquipmentShopCatalogEntry["category"], string> = {
   WEAPON: "WEAPON",
   ARMOR: "ARMOR",
+  CONSUMABLE: "CONSUMABLE",
   SPECIAL: "STRATEGIC",
 };
 
@@ -602,6 +605,7 @@ export default function EquipmentShopClient({
   const activeZone = initialZone;
   const activeZoneDef = activeZoneMeta(activeZone);
   const zoneMeta = isHub ? ARMORY_DESK_META : activeZoneDef;
+  const headerZoneKey = isHub ? "hub" : activeZone;
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -1148,6 +1152,7 @@ export default function EquipmentShopClient({
     const operationCards = [
       {
         key: "research",
+        iconKey: "lab" as const,
         eyebrow: "RESEARCH CONTROL",
         title: "강화 연구",
         href: "/erp/equipment-shop/lab",
@@ -1160,6 +1165,7 @@ export default function EquipmentShopClient({
       },
       {
         key: "catalog",
+        iconKey: "towaski" as const,
         eyebrow: "ISSUE COUNTER",
         title: "토와스키 건샵",
         href: "/erp/equipment-shop/towaski",
@@ -1172,6 +1178,7 @@ export default function EquipmentShopClient({
       },
       {
         key: "acheron",
+        iconKey: "acheron" as const,
         eyebrow: "ACHERON FORGE",
         title: "아케론 대장간",
         href: "/erp/equipment-shop/acheron",
@@ -1184,6 +1191,7 @@ export default function EquipmentShopClient({
       },
       {
         key: "simulator",
+        iconKey: "simulator" as const,
         eyebrow: "TEST RANGE",
         title: "훈련장",
         href: "/erp/equipment-shop/simulator",
@@ -1193,6 +1201,7 @@ export default function EquipmentShopClient({
       },
       {
         key: "strategic",
+        iconKey: "strategic" as const,
         eyebrow: "SPECIAL ASSETS",
         title: "전략 장비 보급소",
         href: "/erp/equipment-shop/strategic",
@@ -1205,6 +1214,7 @@ export default function EquipmentShopClient({
       },
       {
         key: "fabrication",
+        iconKey: "custom" as const,
         eyebrow: "FABRICATION",
         title: "공방",
         href: "/erp/equipment-shop/custom",
@@ -1262,6 +1272,9 @@ export default function EquipmentShopClient({
                 .join(" ")}
               onClick={(event) => handleZoneLinkClick(event, card.href)}
             >
+              <span className={styles.operationCard__icon} aria-hidden>
+                <ArmoryZoneIcon zone={card.iconKey} />
+              </span>
               <span>{card.eyebrow}</span>
               <strong>{card.title}</strong>
               <p>{card.detail}</p>
@@ -2323,9 +2336,14 @@ export default function EquipmentShopClient({
         aria-label="병기부"
       >
         <header className={styles.armoryHeader}>
-          <div>
-            <Eyebrow>{zoneMeta.eyebrow}</Eyebrow>
-            <h1>{zoneMeta.label}</h1>
+          <div className={styles.armoryHeader__title}>
+            <span className={styles.armoryHeader__icon} aria-hidden>
+              <ArmoryZoneIcon zone={headerZoneKey} />
+            </span>
+            <div>
+              <Eyebrow>{zoneMeta.eyebrow}</Eyebrow>
+              <h1>{zoneMeta.label}</h1>
+            </div>
           </div>
           <Tag tone="gold">{isGM ? "GM PREVIEW" : "RESEARCH ACCESS"}</Tag>
           <div className={styles.headerStats}>

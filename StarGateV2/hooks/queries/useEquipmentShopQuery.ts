@@ -2,7 +2,8 @@
  * 병기부 카탈로그 query hook.
  *
  * - `useEquipmentShopCatalog`: GET /api/erp/equipment-shop/catalog
- * - 카탈로그 대상은 master_items 의 WEAPON/ARMOR + 전략 태그가 붙은 SPECIAL 항목.
+ * - 카탈로그 대상은 master_items 의 병기부 장비, 토와스키 소모품,
+ *   전략 태그가 붙은 SPECIAL 항목.
  */
 
 import { useQuery } from "@tanstack/react-query";

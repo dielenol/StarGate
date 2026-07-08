@@ -108,6 +108,32 @@
   margin-bottom: 12px;
 }
 
+.armoryHeader__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.armoryHeader__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  color: var(--gold);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent),
+    rgba(0, 0, 0, 0.34);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 68%, var(--line));
+  border-radius: var(--radius-sm);
+}
+
+.armoryHeader__icon svg {
+  width: 24px;
+  height: 24px;
+}
+
 .armoryHeader h1 {
   margin: 0;
   color: var(--gold);
@@ -284,7 +310,7 @@
 
 .operationCard {
   display: grid;
-  grid-template-rows: auto auto minmax(52px, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(52px, 1fr) auto;
   gap: 7px;
   min-height: 154px;
   padding: 13px;
@@ -296,6 +322,22 @@
   border-radius: var(--radius-sm);
   color: var(--ink-2);
   text-decoration: none;
+}
+
+.operationCard__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: var(--gold);
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 52%, var(--line));
+  border-radius: var(--radius-sm);
+}
+
+.operationCard__icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .operationCard:hover {

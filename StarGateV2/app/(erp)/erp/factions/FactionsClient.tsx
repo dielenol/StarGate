@@ -14,7 +14,7 @@ import Tag from "@/components/ui/Tag/Tag";
 import {
   IconAffinity,
   IconArrowRight,
-  IconFactionBriefing,
+  IconBriefing,
   IconFactionMap,
   IconHostile,
   IconRelations,
@@ -530,7 +530,7 @@ export default function FactionsClient({ data }: FactionsClientProps) {
             <Box className={styles.detailPanel} variant="gold">
               <PanelTitle right={<Tag tone="info">{selectedNode.scopeLabel}</Tag>}>
                 <span className={styles.panelLabel}>
-                  <IconFactionBriefing
+                  <IconBriefing
                     className={styles.panelIcon}
                     aria-hidden
                   />

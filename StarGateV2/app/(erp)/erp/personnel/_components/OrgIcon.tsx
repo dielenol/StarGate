@@ -166,8 +166,8 @@ const ICONS: Record<OrgIconCode, IconPath> = {
     body: `<rect x="5" y="4.5" width="14" height="16.5" rx="1"/><rect x="9" y="2.5" width="6" height="3.5" rx="0.5"/><path d="M8 11h8M8 14h8M8 17h5"/>`,
   },
   ARMORY_BUREAU: {
-    /* 병기부 — 탄약 크레이트 + 탄두 2발. barrel IconArmory(ic_armory.svg)와 동일 도면. */
-    body: `<rect x="3.5" y="10.5" width="17" height="9.5" rx="1"/><path d="M3.5 14.2h17"/><path d="M10 17.2h4"/><path d="M6.6 10.5V7c0-.9.3-1.8.9-2.5l.7-.8.7.8c.6.7.9 1.6.9 2.5v3.5"/><path d="M6.6 8.2h3.2"/><path d="M14.2 10.5V7c0-.9.3-1.8.9-2.5l.7-.8.7.8c.6.7.9 1.6.9 2.5v3.5"/><path d="M14.2 8.2h3.2"/>`,
+    /* 병기부 — 교차 화기 + 검. barrel IconArmory(ic_armory.svg)와 동일 도면. */
+    body: `<path d="M5 19L20 4"/><path d="M19 3.4l1.6 1.6"/><path d="M14.1 9.9l1.5 2.7"/><path d="M8.3 17.7L5.1 20.9L5 19"/><path d="M16.2 16.2L4.8 4.8"/><path d="M14.6 17.8l3.2-3.2"/><path d="M17 17l1.8 1.8"/><circle cx="19.7" cy="19.7" r="0.55" fill="currentColor" stroke="none"/>`,
   },
   INTL: {
     body: `<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="6.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="6.5" cy="15" r="1.3" fill="currentColor" stroke="none"/><circle cx="17.5" cy="15" r="1.3" fill="currentColor" stroke="none"/><path d="M12 7.8L7.4 13.8M12 7.8L16.6 13.8M7.8 15h8.4"/>`,
@@ -229,8 +229,8 @@ const ICONS: Record<OrgIconCode, IconPath> = {
   },
   /* ── 시민사회 내부 분류 — mirror: org_civil_*.svg ── */
   NEON_VALKYRIE: {
-    /* 발키리 투구 정면 — 정수리 스파이크 + 돔 + 코/볼 가드 + 위로 치솟는 좌우 깃털 날개. */
-    body: `<path d="M7.2 13.8a4.8 4.8 0 019.6 0"/><path d="M6 13.8h12"/><path d="M11.2 9.1L12 5.9l.8 3.2"/><path d="M12 13.8v3.6"/><path d="M8.8 13.8v2.4M15.2 13.8v2.4"/><path d="M2 3.4c.2 4.1 1.7 7 4.6 8.7"/><path d="M4.6 4.4c0 3.1 1 5.4 3 6.8"/><path d="M22 3.4c-.2 4.1-1.7 7-4.6 8.7"/><path d="M19.4 4.4c0 3.1-1 5.4-3 6.8"/>`,
+    /* 발키리 엠블럼 — 왕관 쓴 발키리 측면 실루엣 + 흐르는 날개 라인 + 초승달 문양 원형 배지. */
+    body: `<path d="M15 8.7C15.2 6 13.5 4.3 11.6 4.3 9.6 4.3 8.2 6.1 8.5 8.6L8.8 10.6"/><path d="M13.4 5.6L15.1 1.9L13.1 3.9L11.5 2.1L10.1 4.5L7.8 3.2L9.1 6.6z"/><path d="M15 8.7c.7.3 1 .9.7 1.3-.2.2-.2.4 0 .7.3.4.1.9-.4 1.1-.4.2-.9.2-1.4.1"/><path d="M8.8 10.6c-1.7.9-2.7 2.5-3 4.6"/><path d="M9.8 11.6c-1.1.6-1.9 1.6-2.3 3.1"/><path d="M6.8 20.5c.1-3.9 1.8-6.3 4.4-7.3"/><path d="M5.1 5.1L3.3 4.5L2.7 2.7L4.5 3.3Z"/><path d="M4.6 6.4l1.8-1.8"/><path d="M5.9 5.9L7.7 7.7"/><path d="M10.6 10.6L13.2 13.2"/><circle cx="17" cy="15.2" r="4.4"/><path d="M17.7 12.6Q13.6 15.2 17.7 17.8Q16.4 15.2 17.7 12.6z"/>`,
   },
   NEW_DUBLIN: {
     /* 도시 스카이라인 — 높낮이 다른 빌딩 3동 + 창문. */

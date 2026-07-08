@@ -1,7 +1,7 @@
 /**
  * POST /api/erp/equipment-shop/checkout — 병기부 장바구니 결제.
  *
- * 장비 카탈로그(WEAPON/ARMOR)의 판매 가능 품목을 구매해 크레딧을 차감하고
+ * 병기부 카탈로그의 판매 가능 품목을 구매해 크레딧을 차감하고
  * character_inventory 에 적재한다. 병기부 전용 재고는 아직 없으므로 재고 차감은 하지 않는다.
  */
 

@@ -1,7 +1,7 @@
 /**
  * GET /api/erp/equipment-shop/catalog — 병기부 카탈로그.
  *
- * master_items 의 WEAPON/ARMOR 중 공개·판매 가능한 항목만 병기부 품목으로 변환한다.
+ * master_items 의 병기부 장비 중 공개·판매 가능한 항목만 병기부 품목으로 변환한다.
  * 별도 재고 시스템은 두지 않고, 카탈로그 가격이 숫자로 확정된 항목만 구매 가능하다.
  */
 

@@ -492,6 +492,11 @@
   <div class="grid" id="grid-shop"></div>
 </div>
 
+<div class="section" data-group="armory">
+  <div class="section-head">병기부 페이지 · Armory Bureau <span class="badge">/erp/equipment-shop</span></div>
+  <div class="grid" id="grid-armory"></div>
+</div>
+
 <div class="section" data-group="wiki">
   <div class="section-head">위키 페이지 · Wiki <span class="badge">/erp/wiki</span></div>
   <div class="grid" id="grid-wiki"></div>
@@ -959,8 +964,8 @@ const ICONS = {
     svg: '<path d="M12 4.5l6 2v4.8c0 3.9-2.4 6.5-6 8.3-3.6-1.8-6-4.4-6-8.3V6.5z"/><path d="M12 9.2l1.9 2.2-1.9 2.2-1.9-2.2z"/><path d="M6.3 5.9L2.5 2.5l3.4 3.8"/><path d="M17 17l1.3 1.3"/><path d="M17.1 19.4l2.3-2.3"/><path d="M19 19l1.6 1.6"/>'
   },
   armory: {
-    idx: 96, name: '병기부 · Armory Bureau', key: 'IconArmory',
-    svg: '<rect x="3.5" y="10.5" width="17" height="9.5" rx="1"/><path d="M3.5 14.2h17"/><path d="M10 17.2h4"/><path d="M6.6 10.5V7c0-.9.3-1.8.9-2.5l.7-.8.7.8c.6.7.9 1.6.9 2.5v3.5"/><path d="M6.6 8.2h3.2"/><path d="M14.2 10.5V7c0-.9.3-1.8.9-2.5l.7-.8.7.8c.6.7.9 1.6.9 2.5v3.5"/><path d="M14.2 8.2h3.2"/>'
+    idx: 96, name: '병기부 · Armory Bureau (교차 화기 + 검)', key: 'IconArmory',
+    svg: '<path d="M5 19L20 4"/><path d="M19 3.4l1.6 1.6"/><path d="M14.1 9.9l1.5 2.7"/><path d="M8.3 17.7L5.1 20.9L5 19"/><path d="M16.2 16.2L4.8 4.8"/><path d="M14.6 17.8l3.2-3.2"/><path d="M17 17l1.8 1.8"/><circle cx="19.7" cy="19.7" r="0.55" fill="currentColor" stroke="none"/>'
   },
   hp: {
     idx: 97, name: 'HP · 생명력 (심박 하트)', key: 'IconHp',
@@ -973,8 +978,8 @@ const ICONS = {
 
   // ── 시민사회 내부 분류 / Civil Categories (ID 99–101 · 신원조회 /erp/personnel · OrgIcon.tsx) ──
   neonValkyrie: {
-    idx: 99, name: '네온 발키리 · NeON Valkyrie (날개 투구)', key: 'IconNeonValkyrie',
-    svg: '<path d="M7.2 13.8a4.8 4.8 0 019.6 0"/><path d="M6 13.8h12"/><path d="M11.2 9.1L12 5.9l.8 3.2"/><path d="M12 13.8v3.6"/><path d="M8.8 13.8v2.4M15.2 13.8v2.4"/><path d="M2 3.4c.2 4.1 1.7 7 4.6 8.7"/><path d="M4.6 4.4c0 3.1 1 5.4 3 6.8"/><path d="M22 3.4c-.2 4.1-1.7 7-4.6 8.7"/><path d="M19.4 4.4c0 3.1-1 5.4-3 6.8"/>'
+    idx: 99, name: '네온 발키리 · NeON Valkyrie (발키리 엠블럼)', key: 'IconNeonValkyrie',
+    svg: '<path d="M15 8.7C15.2 6 13.5 4.3 11.6 4.3 9.6 4.3 8.2 6.1 8.5 8.6L8.8 10.6"/><path d="M13.4 5.6L15.1 1.9L13.1 3.9L11.5 2.1L10.1 4.5L7.8 3.2L9.1 6.6z"/><path d="M15 8.7c.7.3 1 .9.7 1.3-.2.2-.2.4 0 .7.3.4.1.9-.4 1.1-.4.2-.9.2-1.4.1"/><path d="M8.8 10.6c-1.7.9-2.7 2.5-3 4.6"/><path d="M9.8 11.6c-1.1.6-1.9 1.6-2.3 3.1"/><path d="M6.8 20.5c.1-3.9 1.8-6.3 4.4-7.3"/><path d="M5.1 5.1L3.3 4.5L2.7 2.7L4.5 3.3Z"/><path d="M4.6 6.4l1.8-1.8"/><path d="M5.9 5.9L7.7 7.7"/><path d="M10.6 10.6L13.2 13.2"/><circle cx="17" cy="15.2" r="4.4"/><path d="M17.7 12.6Q13.6 15.2 17.7 17.8Q16.4 15.2 17.7 12.6z"/>'
   },
   newDublin: {
     idx: 100, name: '뉴 더블린 · New Dublin (스카이라인)', key: 'IconNewDublin',
@@ -1005,27 +1010,27 @@ const ICONS = {
 
   // ── 병기부 하위 모듈 / Armory Bureau Zones (ID 106–111 · /erp/equipment-shop) ──
   armoryLab: {
-    idx: 106, name: '신체증강 연구소 · Armory Lab (플라스크+증강)', key: 'IconArmoryLab',
-    svg: '<path d="M9 3.5h3v3.2"/><path d="M7.8 6.7l2.2 12.8h4l2.2-12.8"/><path d="M8.5 11.5h7"/><circle cx="17.5" cy="8" r="3"/><path d="M17.5 6.2v3.6"/><path d="M15.7 8h3.6"/>'
+    idx: 106, name: '신체증강 연구소 · Augment Lab (신체 + 증강 모듈)', key: 'IconArmoryLab',
+    svg: '<circle cx="8.6" cy="7" r="2.7"/><path d="M3.5 18.5c0-3.9 2.6-6.4 5.8-6.4 1.4 0 2.7.4 3.7 1.2"/><rect x="13.5" y="12.5" width="7" height="7" rx="1.2"/><path d="M17 14.6v2.8"/><path d="M15.6 16h2.8"/>'
   },
   armoryTowaski: {
-    idx: 107, name: '토와스키 건샵 · Towaski Gun Shop (권총)', key: 'IconArmoryTowaski',
-    svg: '<path d="M4 14.5h7.5l1.2-2.4h3.8l1.5 3.2h2.5"/><path d="M11.5 12.1v-1.8c0-1.5 1-2.5 2.5-2.5h2.5"/><path d="M8 14.5v2.5"/><circle cx="15.2" cy="11.2" r="0.6" fill="currentColor" stroke="none"/>'
+    idx: 107, name: '토와스키 건샵 · Towaski Gun Shop (권총 실루엣)', key: 'IconArmoryTowaski',
+    svg: '<path d="M3.2 6.9H18.6L20.4 6L20 7.7L21.7 17.5L21.4 18.4L18.3 18.9L17 12.2C16.8 14.4 14.9 15.3 13.3 15C12 14.7 11.4 13.3 11.4 9.9H3.2Z"/><path d="M14 10.6c.1 1.3-.6 2.2-1.8 2.5"/><path d="M4.3 6.9V5.9"/><path d="M17.4 6.9V5.9"/>'
   },
   armoryAcheron: {
-    idx: 108, name: '아케론 대장간 · Acheron Forge (모루+망치)', key: 'IconArmoryAcheron',
-    svg: '<path d="M4 18h16"/><path d="M6 18l2-4h8l2 4"/><path d="M8 14h8"/><path d="M14 4l2 6-2 2-4-2 4-6"/>'
+    idx: 108, name: '아케론 대장간 · Acheron Forge (모루 + 불꽃)', key: 'IconArmoryAcheron',
+    svg: '<path d="M4 7.5h10.8c2.3 0 4.2-.9 5.7-2.7-.3 3.4-2.4 5.4-5.7 5.6v2.1l2.7 3H6.5l2.7-3v-2.1C6 10.3 4 9.3 4 8z"/><path d="M5.5 18.5h13"/><path d="M8.4 4.7L7.2 3.2"/><path d="M11.2 4.3V2.6"/>'
   },
   armoryStrategic: {
-    idx: 109, name: '전략 장비 보급소 · Strategic Assets (장갑차)', key: 'IconArmoryStrategic',
-    svg: '<path d="M3 16h18"/><path d="M5 16l1.5-4h11l1.5 4"/><path d="M7.5 12h9"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/><path d="M12 6v4"/><path d="M10 8h4"/>'
+    idx: 109, name: '전략 장비 보급소 · Strategic Supply (전차)', key: 'IconArmoryStrategic',
+    svg: '<rect x="4" y="15.3" width="16" height="4.2" rx="2.1"/><circle cx="8.2" cy="17.4" r="0.65" fill="currentColor" stroke="none"/><circle cx="12" cy="17.4" r="0.65" fill="currentColor" stroke="none"/><circle cx="15.8" cy="17.4" r="0.65" fill="currentColor" stroke="none"/><path d="M4.9 15.3l1.2-2.5h11.8l1.2 2.5"/><path d="M9.3 12.8v-2a1.1 1.1 0 011.1-1.1h3.2a1.1 1.1 0 011.1 1.1v2"/><path d="M14.7 10.8h6.4"/><path d="M20.2 9.9v1.8"/>'
   },
-  armoryCustom: {
-    idx: 110, name: '공방 · Custom Workshop (도면+편집)', key: 'IconArmoryCustom',
-    svg: '<path d="M4 5.5h11v13H4z"/><path d="M4 9h11"/><path d="M7 12.5h5"/><path d="M7 15h5"/><path d="M17.5 7.5l3 3-5 5-3-3z"/><path d="M15.5 9.5l2 2"/>'
+  armoryWorkshop: {
+    idx: 110, name: '공방 · Workshop (장도리)', key: 'IconArmoryWorkshop',
+    svg: '<rect x="3" y="4.2" width="3.2" height="5" rx="1"/><path d="M7.2 4.6H13.4C16.2 4.6 18.9 5.8 21.3 8.9C18.7 7.5 16.1 7.4 13.9 8.6H7.2Z"/><path d="M8.9 8.6L8.4 19a1.6 1.6 0 003.2 0L11.1 8.6z"/>'
   },
-  armorySimulator: {
-    idx: 111, name: '훈련장 · Test Range (표적)', key: 'IconArmorySimulator',
+  armoryTraining: {
+    idx: 111, name: '훈련장 · Training Range (표적)', key: 'IconArmoryTraining',
     svg: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3.5"/><path d="M12 5v3.5"/><path d="M12 15.5V19"/><path d="M5 12h3.5"/><path d="M15.5 12H19"/><circle cx="12" cy="12" r="0.8" fill="currentColor" stroke="none"/>'
   },
 };
@@ -1033,7 +1038,7 @@ const ICONS = {
 // 섹션 = 페이지 단위 통일. 한 아이콘이 여러 페이지에서 쓰이면 각 페이지 그룹에 중복 등재하고,
 // 2개 이상 그룹에 등장하는 아이콘은 아래에서 `shared` 그룹으로 자동 집계된다 (reserve 제외).
 const GROUPS = {
-  nav:         ['dashboard','account','notification','session','mission','person','members','factionMap','crown','inventoryHub','credit','shopHub','armory','armoryLab','armoryTowaski','armoryAcheron','armoryStrategic','armoryCustom','armorySimulator','equipment','stock','wikiHub','reportDocument','archive','gallery','world','userAdmin','system'],
+  nav:         ['dashboard','account','notification','session','mission','person','members','factionMap','crown','inventoryHub','credit','shopHub','armory','armoryLab','armoryTowaski','armoryAcheron','armoryStrategic','armoryWorkshop','armoryTraining','equipment','stock','wikiHub','reportDocument','archive','gallery','world','userAdmin','system'],
   dashboard:   ['agentProfile','mission','tasks','credit','awaitingResponse','activeOps','notification','all','wikiHub','serviceRecord','tenure','session','recentChanges','hp','san'],
   account:     ['account','status','linked','passkey','security','tenure'],
   notifications: ['notification','unread','today','linked','gridAll','read','search','session','consumable','credit','reportMini','userAdmin','system','inbox'],
@@ -1046,7 +1051,7 @@ const GROUPS = {
   wiki:        ['gridAll','concept','containment','wikiFaction','institution','place','regulation','person','equipment','consumable','goods','finance','briefing','archive'],
   reports:     ['reportDocument','reportMini'],
   catalog:     ['archive','gridAll','equipment','consumable','sample','caution'],
-  armory:      ['armory','armoryLab','armoryTowaski','armoryAcheron','armoryStrategic','armoryCustom','armorySimulator'],
+  armory:      ['armory','armoryLab','armoryTowaski','armoryAcheron','armoryStrategic','armoryWorkshop','armoryTraining'],
   reserve:     ['emblem','zulu','clearance','folderArchive'],
 };
 
@@ -1108,8 +1113,8 @@ const PAGE_TREE = [
           { icon: 'armoryTowaski', label: '토와스키 건샵', route: '/erp/equipment-shop/towaski', badge: 'GM preview' },
           { icon: 'armoryAcheron', label: '아케론 대장간', route: '/erp/equipment-shop/acheron', badge: 'GM preview' },
           { icon: 'armoryStrategic', label: '전략 장비 보급소', route: '/erp/equipment-shop/strategic', badge: 'GM preview' },
-          { icon: 'armoryCustom', label: '공방', route: '/erp/equipment-shop/custom', badge: 'GM preview' },
-          { icon: 'armorySimulator', label: '훈련장', route: '/erp/equipment-shop/simulator', badge: 'GM preview' },
+          { icon: 'armoryWorkshop', label: '공방', route: '/erp/equipment-shop/workshop', badge: 'GM preview' },
+          { icon: 'armoryTraining', label: '훈련장', route: '/erp/equipment-shop/training', badge: 'GM preview' },
         ],
       },
       { icon: 'stock', label: '주식', route: '/erp/stock' },
