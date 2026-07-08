@@ -222,13 +222,6 @@ function stockName(ticker: string): string {
   return meta ? `${meta.name} (${ticker})` : ticker;
 }
 
-function stockMarketLinkField(officer: MarketWireOfficer): DiscordEmbedField {
-  return {
-    name: "ORDO-NET 주식 거래소",
-    value: `[${officer.name} 담당 공시판 열람](${STOCK_WEB_URL})`,
-  };
-}
-
 function priceDelta(result: ScheduledStockTickResult): number {
   return result.price - result.previousPrice;
 }
@@ -418,7 +411,6 @@ function buildRoutineLedgerEmbeds(input: {
     embeds.push({
       title: "상승 마감 장부",
       url: STOCK_WEB_URL,
-      description: "상승 종목은 초록색 공시로 분리 기록합니다.",
       color: MARKET_WIRE_POSITIVE,
       fields: [
         {
@@ -435,7 +427,6 @@ function buildRoutineLedgerEmbeds(input: {
     embeds.push({
       title: "하락 마감 장부",
       url: STOCK_WEB_URL,
-      description: "하락 종목은 적색 공시로 분리 기록합니다.",
       color: MARKET_WIRE_NEGATIVE,
       fields: [
         {
@@ -451,8 +442,7 @@ function buildRoutineLedgerEmbeds(input: {
   embeds.push({
     title: "보합 및 감시실 특이사항",
     url: STOCK_WEB_URL,
-    description:
-      "가격은 ORDO-NET 거래소 기준입니다. 종목별 상세 차트와 보유 현황은 거래소 화면에서 확인하십시오.",
+    description: "가격은 ORDO-NET 거래소 기준입니다.",
     color: MARKET_WIRE_COLOR,
     fields: [
       ...(flat.length > 0
@@ -471,7 +461,6 @@ function buildRoutineLedgerEmbeds(input: {
             : "특이 공시 없음 · 정기 변동만 반영되었습니다.",
         ),
       },
-      stockMarketLinkField(officer),
     ],
     footer: { text: `${officer.code} · ${summary.slot} KST · 시장감시실` },
     timestamp,
@@ -499,7 +488,6 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
     `문서번호: ${officer.code}-${summary.date}`,
     `${officer.weekday} 당직: ${officer.name} (${officer.romanizedName})`,
     officer.noticeLine,
-    officer.linkLine,
   ].join("\n");
 
   return {
@@ -514,7 +502,6 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
         description,
         color,
         fields: buildRoutineOverviewFields(summary, changed),
-        footer: { text: `${officer.origin} · ${summary.slot} KST · 자동 공시` },
         timestamp,
       },
       ...buildRoutineLedgerEmbeds({
@@ -556,7 +543,6 @@ function buildManualPayload(
           "ORDO-NET MARKET WIRE",
           `${officer.weekday} 당직: ${officer.name} (${officer.romanizedName}) / ${officer.code}`,
           "시장감시실장 승인에 따라 수동 조정 내역을 공시합니다.",
-          officer.linkLine,
         ].join("\n"),
         color,
         url: STOCK_WEB_URL,
@@ -584,7 +570,6 @@ function buildManualPayload(
             name: "승인 기록",
             value: sanitizeForDiscord(`${notice.actor.displayName} · ${notice.actor.role}`),
           },
-          stockMarketLinkField(officer),
         ],
         footer: {
           text: `${officer.code} · ${kstNowTag(occurredAt)} KST · 특별 공시`,
