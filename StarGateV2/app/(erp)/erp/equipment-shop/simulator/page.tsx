@@ -1,9 +1,8 @@
-import { redirect } from "next/navigation";
-
-import { auth } from "@/lib/auth/config";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import type { SimulatorAttackerProfile } from "@/lib/equipment-shop/simulator";
 
+import EquipmentShopComingSoon from "../EquipmentShopComingSoon";
+import { requireEquipmentShopSession } from "../_access";
 import { buildEquipmentShopCatalogResponse } from "../_data";
 
 import EquipmentSimulatorClient from "./EquipmentSimulatorClient";
@@ -26,9 +25,9 @@ function fallbackAttackerProfile(sessionUser: {
 }
 
 export default async function EquipmentShopSimulatorPage() {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
+  const { session, isGM } = await requireEquipmentShopSession();
+  if (!isGM) {
+    return <EquipmentShopComingSoon />;
   }
 
   let attacker = fallbackAttackerProfile(session.user);

@@ -1,4 +1,6 @@
 import EquipmentShopClient from "../EquipmentShopClient";
+import EquipmentShopComingSoon from "../EquipmentShopComingSoon";
+import { requireEquipmentShopSession } from "../_access";
 import { loadEquipmentShopPageData } from "../_data";
 
 export const metadata = {
@@ -6,6 +8,11 @@ export const metadata = {
 };
 
 export default async function EquipmentShopStrategicPage() {
+  const { isGM } = await requireEquipmentShopSession();
+  if (!isGM) {
+    return <EquipmentShopComingSoon />;
+  }
+
   const data = await loadEquipmentShopPageData();
 
   return <EquipmentShopClient {...data} mode="zone" initialZone="strategic" />;
