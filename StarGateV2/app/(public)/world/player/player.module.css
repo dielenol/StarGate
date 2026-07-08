@@ -170,21 +170,6 @@
   filter: saturate(0.9) contrast(1.04);
 }
 
-.card__pixelBadge {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  line-height: 0;
-}
-
-.card__pixelCharacter {
-  display: block;
-  width: 72px;
-  height: auto;
-  image-rendering: pixelated;
-  object-fit: contain;
-}
-
 .card__meta {
   margin-top: 9px;
   display: flex;
@@ -623,15 +608,6 @@
     height: 320px;
   }
 
-  .card__pixelBadge {
-    right: 16px;
-    bottom: 16px;
-  }
-
-  .card__pixelCharacter {
-    width: 92px;
-  }
-
   .card__meta {
     margin-top: 14px;
     gap: 4px;
@@ -658,11 +634,6 @@
 
   .card__portrait {
     height: 260px;
-  }
-
-  .card__pixelBadge {
-    right: 10px;
-    bottom: 10px;
   }
 
   .sheet__title {

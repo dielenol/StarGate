@@ -311,18 +311,6 @@ export default function PlayerClient({ agents }: { agents: PublicAgentSummary[] 
                       quality={62}
                       sizes="(min-width: 768px) 330px, 100vw"
                     />
-                    <div className={styles.card__pixelBadge} aria-hidden="true">
-                      <Image
-                        className={styles.card__pixelCharacter}
-                        src={agent.pixelCharacterImage}
-                        alt=""
-                        width={96}
-                        height={96}
-                        loading="lazy"
-                        quality={70}
-                        sizes="96px"
-                      />
-                    </div>
                   </div>
                   <div className={styles.card__meta}>
                     <span className={styles.card__name}>{agent.codename}</span>

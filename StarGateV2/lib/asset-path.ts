@@ -9,6 +9,7 @@ const CACHE_BUSTED_PUBLIC_IMAGES = new Map([
   ["/assets/npcs/ORSIS-201-DonaDona-profile.webp", "20260611-cutout"],
   ["/assets/npcs/Puck-Asshole-profile.webp", "20260611-cutout"],
   ["/assets/npcs/Zulu-269-Punk-Cat-profile.webp", "20260611-cutout"],
+  ["/assets/peoples/Siyu-pixel-character.webp", "20260708-sd"],
   ["/assets/peoples/Valeria-pixel-profile.webp", "20260702-profile"],
 ]);
 
