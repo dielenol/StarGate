@@ -153,6 +153,9 @@
 }
 
 .sidebar__subItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-height: 30px;
   padding: 6px 8px;
   color: var(--ink-2);
@@ -160,6 +163,23 @@
   font-size: 14px;
   line-height: 1.25;
   text-decoration: none;
+}
+
+.sidebar__subItemIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  color: var(--ink-3);
+}
+
+.sidebar__subItemIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sidebar__subItemLabel {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -168,6 +188,11 @@
 .sidebar__subItem:hover,
 .sidebar__subItem--active {
   background: color-mix(in srgb, var(--gold) 10%, transparent);
+  color: var(--gold);
+}
+
+.sidebar__subItem:hover .sidebar__subItemIcon,
+.sidebar__subItem--active .sidebar__subItemIcon {
   color: var(--gold);
 }
 

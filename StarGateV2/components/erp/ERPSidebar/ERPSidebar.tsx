@@ -211,6 +211,7 @@ export default function ERPSidebar() {
                         {childItems.map((child) => {
                           const childHref = getNavItemHref(child, role);
                           if (childHref === null) return null;
+                          const ChildIcon = child.icon;
                           const childActive =
                             activeHref !== null &&
                             getNavItemActiveHrefs(child).includes(activeHref);
@@ -233,7 +234,15 @@ export default function ERPSidebar() {
                               prefetch
                             >
                               <LinkPendingProbe />
-                              {child.label}
+                              <span
+                                className={styles.sidebar__subItemIcon}
+                                aria-hidden
+                              >
+                                <ChildIcon />
+                              </span>
+                              <span className={styles.sidebar__subItemLabel}>
+                                {child.label}
+                              </span>
                             </Link>
                           );
                         })}
