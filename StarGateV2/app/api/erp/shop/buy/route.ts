@@ -32,6 +32,7 @@ import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getShopOpenState } from "@/lib/shop/open-state";
+import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 
 /* ── 상수 ── */
 
@@ -172,6 +173,10 @@ export async function POST(request: Request) {
   const totalPrice = catalogItem.price * quantity;
 
   /* ── Saga: reduceStock → addCredit → addToInventory ── */
+
+  await ensureDailyStockRefresh().catch((err) => {
+    console.error("[shop/buy] ensureDailyStockRefresh 실패", err);
+  });
 
   // Step 1: 재고 차감 — atomic. 실패 시 보상 불필요 (상태 미변).
   const stockOk = await reduceStock(slug, quantity);

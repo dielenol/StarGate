@@ -2,7 +2,7 @@
  * GET /api/erp/shop/catalog — 편의점 카탈로그 + 일자별 재고 + 영업 여부.
  *
  * 응답:
- * - items: SHOP_CATALOG 전체 품목 + stock(0 fallback) + available(isOpen && stock>0).
+ * - items: SHOP_CATALOG 전체 품목 + 당일 재고 + available(isOpen && stock>0).
  * - isOpen: 영업 시간 판정 (`isShopOpen` — 06:00~20:00 / 일요일 마감).
  *
  * 권한: ERP 로그인이면 OK (별도 RBAC 게이트 없음).
@@ -17,6 +17,7 @@ import { auth } from "@/lib/auth/config";
 import { getAllDailyStocks } from "@/lib/db/shop";
 import { SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getShopOpenState } from "@/lib/shop/open-state";
+import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 
 export async function GET() {
   const session = await auth();
@@ -25,6 +26,8 @@ export async function GET() {
   }
 
   try {
+    await ensureDailyStockRefresh();
+
     const stocks = await getAllDailyStocks();
     const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
     const openState = await getShopOpenState();

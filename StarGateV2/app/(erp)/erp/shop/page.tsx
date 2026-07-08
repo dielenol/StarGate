@@ -21,6 +21,7 @@ import {
 import { getAllDailyStocks } from "@/lib/db/shop";
 import { SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getShopOpenState } from "@/lib/shop/open-state";
+import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 
 import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type { ShopCatalogResponse } from "@/hooks/queries/useShopQuery";
@@ -36,6 +37,8 @@ export const metadata = {
 /* ── 서버 측 카탈로그 응답 빌더 (catalog API 와 동일 형식) ── */
 
 async function buildCatalogResponse(): Promise<ShopCatalogResponse> {
+  await ensureDailyStockRefresh();
+
   const stocks = await getAllDailyStocks();
   const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
   const openState = await getShopOpenState();
