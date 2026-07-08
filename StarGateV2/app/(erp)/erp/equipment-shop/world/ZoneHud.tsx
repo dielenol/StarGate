@@ -98,8 +98,8 @@ export default function ZoneHud({
       </aside>
 
       <div className={styles.controlHint} aria-hidden="true">
-        <span>WASD / 방향키</span>
         <span>클릭·탭 이동</span>
+        <span>구역 핫스팟 진입</span>
       </div>
     </>
   );
