@@ -249,12 +249,6 @@ function formatStockLedgerLine(result: ScheduledStockTickResult): string {
   )} (${formatMoveDelta(result)})${statusLabel}`;
 }
 
-function formatTopMoveLine(result: ScheduledStockTickResult): string {
-  return `${directionIcon(result)} ${directionLabel(result)} · **${stockName(result.ticker)}** · ${formatMoveDelta(
-    result,
-  )}`;
-}
-
 function formatIndexMoveIcon(changePercent: number): string {
   if (changePercent > 0) return "▲";
   if (changePercent < 0) return "▼";
@@ -286,21 +280,6 @@ function marketWireColor(input: {
     return MARKET_WIRE_NEGATIVE;
   }
   return MARKET_WIRE_COLOR;
-}
-
-function topMover(
-  results: readonly ScheduledStockTickResult[],
-): ScheduledStockTickResult | null {
-  let selected: ScheduledStockTickResult | null = null;
-  for (const result of results) {
-    if (
-      !selected ||
-      Math.abs(result.changePercent) > Math.abs(selected.changePercent)
-    ) {
-      selected = result;
-    }
-  }
-  return selected;
 }
 
 function buildEventLines(
@@ -335,13 +314,11 @@ function buildRoutineOverviewFields(
   const initializedCount = changed.filter(
     (result) => result.status === "initialized",
   ).length;
-  const netDelta = changed.reduce((sum, result) => sum + priceDelta(result), 0);
   const averagePercent =
     changed.length > 0
       ? changed.reduce((sum, result) => sum + result.changePercent, 0) /
         changed.length
       : 0;
-  const strongestMove = topMover(changed);
   const marketIndex = buildStockMarketIndexSnapshot(
     summary.results.map((result) => ({
       ticker: result.ticker,
@@ -381,15 +358,6 @@ function buildRoutineOverviewFields(
         .filter(Boolean)
         .join("\n"),
       inline: true,
-    },
-    {
-      name: "순변동 합계",
-      value: [
-        formatSignedNumber(netDelta, "C"),
-        strongestMove ? `대표 변동: ${formatTopMoveLine(strongestMove)}` : null,
-      ]
-        .filter(Boolean)
-        .join("\n"),
     },
   ];
 }
