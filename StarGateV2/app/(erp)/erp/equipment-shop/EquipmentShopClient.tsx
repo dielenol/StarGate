@@ -79,7 +79,7 @@ type ArmoryZoneDef = {
 const MAX_CART_QUANTITY_PER_ITEM = 1;
 const TOWASKI_PROFILE_SRC = "/assets/npcs/Towaski-profile.webp";
 const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp";
-const TOWASKI_IDLE_DELAY_MS = 16000;
+const TOWASKI_IDLE_DELAY_MS = 12000;
 
 const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {
   welcome: "입점 확인",
@@ -92,56 +92,72 @@ const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {
 };
 
 const TOWASKI_DIALOGUE_LINES = {
-  welcome: "토와스키다. 표준 장비는 여기서 보고, 장난감은 들고 오지 마.",
+  welcome: "토와스키다. 반출 장부에 남길 물건만 손대.",
   noAgent: "메인 AGENT 확인부터 해. 신분 없는 손엔 탄창 안 넘긴다.",
-  closed: "카운터 닫았다. 급하면 결재권자부터 데려와.",
+  closed: "카운터 닫았다. 급하면 반출 승인권자부터 데려와.",
   category:
-    "분류부터 보자. 총, 방어구, 폭발물은 같은 진열대에 올리는 물건이 아니야.",
-  cart: "카트에 넣었다. 네 손에 맞는지는 훈련장에서 먼저 확인해.",
-  removed: "하나 뺐다. 후회는 비용 덜 들 때 하는 게 제일 싸.",
-  checkout:
-    "반출 처리 끝. 영수증보다 네 손가락을 더 잘 챙겨.",
+    "분류부터 보자. 화기, 방호구, 폭발 장구는 허가 줄이 다르다.",
+  cart: "반출대에 올렸다. 손에 맞는지는 훈련장에서 확인해.",
+  removed: "그 줄은 뺐다. 장부에 남기기 전이면 손해도 작지.",
+  cartCleared: "반출대 비웠다. 진열장 앞에서 생각 끝내고 와.",
+  checkout: "반출 처리 끝. 봉인은 뜯지 말고, 작전 전 점검표부터 확인해.",
   checkoutError:
-    "반출 기록이 막혔다. 잔액, 허가, 재고 중 하나는 거짓말을 하고 있어.",
+    "반출 기록이 막혔다. 잔액, 허가, 재고 중 하나가 장부랑 안 맞아.",
   unavailable:
-    "그건 오늘 못 나간다. 비어 있는 칸에 욕해도 탄은 안 생겨.",
-  gmOnly: "여긴 GM 승인 라인이다. 구경은 해도 반출 서명은 따로 받아.",
+    "그건 오늘 못 나간다. 빈 칸 쳐다봐도 창고 문은 안 열린다.",
+  gmOnly: "여긴 승인 라인이다. 구경은 해도 반출 서명은 따로 받아.",
 } as const;
 
 const TOWASKI_IDLE_LINES: readonly { mood: TowaskiMood; text: string }[] = [
   {
     mood: "idle",
-    text: "시가는 꺼도 기름 냄새는 안 빠져. 총도 비슷해, 쓰던 티가 남지.",
+    text: "보고만 있을 거면 유리장에 숨결 남기지 마. 닦는 건 내 일이다.",
   },
   {
     mood: "stock",
-    text: "수량표 믿지 마. 마지막 한 정은 항상 누가 이미 눈독 들이고 있어.",
+    text: "수량표 믿지 마. 마지막 한 정은 늘 누가 먼저 눈독 들이고 있어.",
   },
   {
     mood: "inspect",
-    text: "장난감 같은 물건은 싫어해. 대신 제대로 만든 물건은 값을 받아.",
+    text: "총열 안쪽을 보면 전 주인이 보인다. 그래서 반납품은 오래 본다.",
   },
   {
     mood: "idle",
-    text: "도미니크가 과자 진열하듯 총을 세우라더군. 당연히 무시했지.",
+    text: "안 살 거면 총열 앞 막지 말고 한 발 물러서. 물건도 숨은 쉬어야지.",
+  },
+  {
+    mood: "stock",
+    text: "반출 서류 기다리는 동안 손은 주머니 밖에 둬. 여기선 그게 예의야.",
+  },
+  {
+    mood: "inspect",
+    text: "방호구는 거울 앞에서 고르는 물건이 아니야. 맞기 전에 고르는 물건이지.",
+  },
+  {
+    mood: "idle",
+    text: "도미니크 매장처럼 웃어주진 않는다. 여긴 탄창이 웃는 곳이야.",
+  },
+  {
+    mood: "stock",
+    text: "탄약 냄새 맡는다고 사격 실력 안 는다. 살 거면 용도를 말해.",
   },
 ];
 
 const TOWASKI_PROFILE_LINES: Record<MainCharacterProfile, readonly string[]> = {
   assault: [
     "손부터 앞으로 나가는 타입이군. 반동 잡을 물건부터 봐.",
-    "화력 욕심은 죄가 아니야. 명중 못 하면 낭비일 뿐이지.",
+    "화력 욕심은 죄가 아니야. 명중 못 하면 창고 낭비일 뿐이지.",
   ],
   guard: [
     "맞고 버티는 쪽이면 방어구부터 봐. 영웅 흉내는 비싸게 먹혀.",
-    "방호구는 자존심보다 싸다. 그건 현장에서 빨리 배우게 돼.",
+    "방호구는 자존심보다 싸다. 그 계산은 현장에서 빨리 배우게 돼.",
   ],
   endurance: [
     "오래 구르는 타입이면 소모품을 아끼지 마. 빈손으로 오래 버티는 놈은 없어.",
-    "체력 믿고 들어가도 탄과 장갑은 따로 챙겨. 몸은 창고가 아니니까.",
+    "체력 믿고 들어가도 탄과 장갑은 따로 챙겨. 몸은 보급 상자가 아니니까.",
   ],
   focus: [
-    "머리가 먼저 도는 타입이군. 설명 끝까지 읽는 손님은 오래 살아.",
+    "머리가 먼저 도는 타입이군. 반출 조건 끝까지 읽는 손님은 오래 살아.",
     "침착한 놈일수록 안전장치를 확인하지. 그 버릇은 유지해.",
   ],
   balanced: [
@@ -149,6 +165,162 @@ const TOWASKI_PROFILE_LINES: Record<MainCharacterProfile, readonly string[]> = {
     "특화가 없다는 건 핑계가 아니야. 오늘 필요한 물건만 골라.",
   ],
 };
+
+type TowaskiItemDialogue = {
+  mood: TowaskiMood;
+  inspect: readonly string[];
+  cart: readonly string[];
+  remove?: readonly string[];
+};
+
+const TOWASKI_ITEM_DIALOGUE_LINES = {
+  "basic-pistol": {
+    mood: "inspect",
+    inspect: [
+      "권총은 가장 많이 살아남고, 가장 많이 들킨다. 숨길 생각이면 손버릇부터 고쳐.",
+      "가벼운 총일수록 거짓말을 못 한다. 네 조준이 그대로 드러나거든.",
+    ],
+    cart: [
+      "권총 한 정 올렸다. 예비 탄창은 반출 기록에 맞춰 챙긴다.",
+      "소형 화기 봉인한다. 허리춤에 넣기 전에 안전장치부터 확인해.",
+    ],
+    remove: ["권총은 다시 넣었다. 빈 손이 더 조용할 때도 있지."],
+  },
+  "basic-assault-rifle": {
+    mood: "inspect",
+    inspect: [
+      "돌격소총은 표준품이 제일 무섭다. 누구 손에 쥐어도 제 일을 하니까.",
+      "근거리부터 장거리까지 욕심내는 총이다. 대신 네 어깨가 대가를 치른다.",
+    ],
+    cart: [
+      "소총 케이스째 올렸다. 운반 중 조정간 건드리지 마.",
+      "돌격소총 반출로 잡았다. 사격장 로그도 같이 남겨.",
+    ],
+    remove: ["소총은 창고로 돌린다. 어깨가 고맙다 하겠군."],
+  },
+  "basic-shotgun": {
+    mood: "inspect",
+    inspect: [
+      "샷건은 복도에서 대화가 짧아지는 물건이다. 아군 위치부터 외워.",
+      "산탄은 친절하지 않다. 가까운 쪽부터 똑같이 물어뜯지.",
+    ],
+    cart: [
+      "샷건 올렸다. 산탄은 따로 묶어둔다.",
+      "산탄총 반출 준비한다. 문 열기 전에 뒤에 누가 있는지 봐.",
+    ],
+    remove: ["샷건은 뺐다. 문짝들이 잠깐 안심하겠군."],
+  },
+  "basic-heavy-machine-gun": {
+    mood: "stock",
+    inspect: [
+      "중기관총은 총보다 자리에 가깝다. 설치할 곳을 못 고르면 짐덩이다.",
+      "이건 들고 뛰는 물건이 아니야. 전선을 정하고 눌러앉을 때 꺼내.",
+    ],
+    cart: [
+      "중기관총 반출대에 올렸다. 운반 인원부터 잡아.",
+      "설치화기 한 기 예약한다. 삼각대 빠지면 그냥 비싼 고철이야.",
+    ],
+    remove: ["중기관총은 내려놨다. 바닥이 제일 먼저 좋아하겠군."],
+  },
+  "basic-sniper-rifle": {
+    mood: "inspect",
+    inspect: [
+      "저격소총은 방아쇠보다 기다리는 시간이 더 길다. 조급하면 다른 걸 골라.",
+      "장거리 한 발은 멋있어 보이지. 빗나가면 모두가 네 위치를 안다.",
+    ],
+    cart: [
+      "저격 케이스 올렸다. 렌즈는 닦아뒀고, 흔들리는 건 네 몫이다.",
+      "장거리 화기 반출로 잡는다. 관측자 없이 나가면 반쪽짜리야.",
+    ],
+    remove: ["저격소총은 보관함으로 돌린다. 기다리는 일도 재능이지."],
+  },
+  "basic-flamethrower": {
+    mood: "stock",
+    inspect: [
+      "화염방사기는 적보다 보고서가 먼저 무서워지는 물건이다. 쓸 자리만 골라.",
+      "연료통 달린 장비는 배짱으로 쓰는 게 아니야. 바람 방향부터 봐.",
+    ],
+    cart: [
+      "화염방사기 봉인 확인한다. 새면 임무가 아니라 화재야.",
+      "연료통까지 묶어 올렸다. 실내 사용 승인부터 확인해.",
+    ],
+    remove: ["화염방사기는 뺐다. 소방팀이 멀리서 고개 끄덕이겠군."],
+  },
+  "basic-sonic-emitter": {
+    mood: "inspect",
+    inspect: [
+      "음파 방출기는 귀로 쏘는 총이 아니다. 출력값 틀리면 네 분대가 먼저 운다.",
+      "소리 장비는 조용한 놈이 제일 위험해. 스위치 올리기 전엔 다들 방심하거든.",
+    ],
+    cart: [
+      "음파 장비 반출로 잡았다. 출력 봉인은 연구소 값 그대로 둬.",
+      "방출기 올렸다. 시험장 밖에서 주파수 장난치지 마.",
+    ],
+    remove: ["음파 장비는 뺐다. 귀마개는 그래도 챙겨."],
+  },
+  "military-fragment-grenade": {
+    mood: "stock",
+    inspect: [
+      "수류탄은 작아서 무시하기 좋지. 그래서 사고도 작게 안 끝난다.",
+      "핀은 약속이고 파편은 결과다. 던질 곳을 못 정했으면 들지 마.",
+    ],
+    cart: [
+      "세열탄 한 묶음 올렸다. 핀 상태부터 확인한다.",
+      "수류탄 반출한다. 주머니 속 농담거리로 쓰면 손목부터 날아가.",
+    ],
+    remove: ["수류탄은 다시 잠갔다. 조용한 선택이군."],
+  },
+  "rocket-launcher": {
+    mood: "stock",
+    inspect: [
+      "로켓은 한 발짜리 결정이다. 맞으면 전황이 바뀌고, 빗나가면 예산 회의가 열린다.",
+      "중화기는 허세로 들 수 없다. 후폭풍까지 네 책임으로 적힌다.",
+    ],
+    cart: [
+      "로켓 런처 반출 예약한다. 발사각 잘못 잡으면 아군도 기록에 남아.",
+      "중화기 한 정 올렸다. 탄은 한 발, 변명은 안 받는다.",
+    ],
+    remove: ["로켓 런처는 내렸다. 오늘 천장은 멀쩡하겠군."],
+  },
+  "basic-standard-ballistic-vest": {
+    mood: "stock",
+    inspect: [
+      "기본형 방탄복은 첫 현장용이다. 총알과 정식으로 인사하지 않게 해 주는 정도지.",
+      "가볍고 싸다. 대신 믿을 구석도 그만큼만 잡아.",
+    ],
+    cart: [
+      "기본형 조끼 올렸다. 끈은 네 몸에 맞춰 다시 조여.",
+      "기본 방호구 반출한다. 한 번 막아주면 자기 할 일은 다 한 거야.",
+    ],
+    remove: ["기본형 방탄복은 뺐다. 가벼운 건 몸뿐이겠군."],
+  },
+  "basic-intermediate-ballistic-vest": {
+    mood: "stock",
+    inspect: [
+      "중급형은 보강판이 한 장 더 들어간다. 뛰는 속도보다 살아남는 쪽을 고른 셈이지.",
+      "RF2급 위협을 예상하면 이쪽부터 봐. 기본형으로 버티겠다는 말은 싸게 죽겠다는 말이야.",
+    ],
+    cart: [
+      "중급 방탄판으로 잡았다. 어깨끈 조정은 출동 전에 끝내.",
+      "중급형 조끼 올렸다. 무게는 늘고, 후회는 줄어든다.",
+    ],
+    remove: ["중급형은 내려놨다. 움직임은 편해지겠지."],
+  },
+  "basic-advanced-ballistic-vest": {
+    mood: "stock",
+    inspect: [
+      "고급형은 고위험 반출 칸이다. 이걸 보는 임무면 이미 나쁜 소식이 있다는 뜻이야.",
+      "RF3급 충격을 생각하는 날엔 회복보다 먼저 방호를 계산해.",
+    ],
+    cart: [
+      "고급 방호구 반출 예약했다. 이걸 입는 임무면 농담 줄여.",
+      "고급형 조끼 올렸다. 몸값 높은 작전엔 몸값 높은 방호구가 맞다.",
+    ],
+    remove: ["고급형은 보관함으로 돌린다. 그 판단이 맞길 바라지."],
+  },
+} satisfies Record<string, TowaskiItemDialogue>;
+
+type TowaskiKnownItemKey = keyof typeof TOWASKI_ITEM_DIALOGUE_LINES;
 
 const ARMORY_DESK_META: Pick<
   ArmoryZoneDef,
@@ -377,6 +549,18 @@ function pickStableLine(lines: readonly string[], seed: string): string {
   return lines[stableStringSeed(seed) % lines.length] ?? lines[0] ?? "";
 }
 
+function getTowaskiItemDialogue(
+  item: EquipmentShopCatalogEntry,
+): TowaskiItemDialogue | null {
+  if (
+    Object.prototype.hasOwnProperty.call(TOWASKI_ITEM_DIALOGUE_LINES, item.key)
+  ) {
+    return TOWASKI_ITEM_DIALOGUE_LINES[item.key as TowaskiKnownItemKey];
+  }
+
+  return null;
+}
+
 function getMainCharacterProfile(
   stats: MainCharacterStats | null,
 ): MainCharacterProfile {
@@ -415,26 +599,34 @@ function buildTowaskiItemLine(
     return { mood: "stock", text: TOWASKI_DIALOGUE_LINES.unavailable };
   }
 
+  const itemDialogue = getTowaskiItemDialogue(item);
+  if (itemDialogue) {
+    return {
+      mood: itemDialogue.mood,
+      text: pickStableLine(itemDialogue.inspect, `${item.key}:inspect`),
+    };
+  }
+
   const variants: Record<
     EquipmentShopCatalogEntry["category"] | "ALL",
     readonly string[]
   > = {
     ALL: [TOWASKI_DIALOGUE_LINES.category],
     WEAPON: [
-      `${item.name}. 방아쇠보다 사거리부터 봐. 못 맞히면 비싼 소음이야.`,
-      `${item.name}이면 화력은 충분해. 문제는 네 손목과 판단이지.`,
+      "화기류는 방아쇠보다 사거리부터 봐. 못 맞히면 비싼 소음이야.",
+      "총은 항상 충분히 시끄럽다. 문제는 네 손목과 판단이지.",
     ],
     ARMOR: [
-      `${item.name}. 맞고 버티는 물건이지, 맞으러 가라는 허가는 아니야.`,
-      `${item.name}은 보험에 가깝다. 보험 쓰는 날은 보통 재수 없는 날이고.`,
+      "방호구는 맞고 버티는 물건이지, 맞으러 가라는 허가는 아니야.",
+      "방어구는 보험에 가깝다. 보험 쓰는 날은 보통 재수 없는 날이고.",
     ],
     CONSUMABLE: [
-      `${item.name}은 쓰고 끝이다. 아까우면 애초에 카운터에 올리지 마.`,
-      `${item.name}. 핀 뽑기 전엔 네 편, 던진 뒤엔 모두의 문제야.`,
+      "소모품은 쓰고 끝이다. 아까우면 애초에 카운터에 올리지 마.",
+      "일회성 장구는 결심이 빠른 놈한테만 쓸모가 있다.",
     ],
     SPECIAL: [
-      `${item.name}. 이건 반출 사유가 먼저고, 가격표는 그다음이야.`,
-      `${item.name}은 장비보다 책임에 가깝다. 서명란 비워두지 마.`,
+      "전략 자산은 반출 사유가 먼저고, 가격표는 그다음이야.",
+      "특수 장비는 장비보다 책임에 가깝다. 서명란 비워두지 마.",
     ],
   };
 
@@ -444,12 +636,78 @@ function buildTowaskiItemLine(
   };
 }
 
+function buildTowaskiCartLine(item: EquipmentShopCatalogEntry): string {
+  const itemDialogue = getTowaskiItemDialogue(item);
+  if (itemDialogue) {
+    return pickStableLine(itemDialogue.cart, `${item.key}:cart`);
+  }
+
+  const variants: Record<
+    EquipmentShopCatalogEntry["category"] | "ALL",
+    readonly string[]
+  > = {
+    ALL: [TOWASKI_DIALOGUE_LINES.cart],
+    WEAPON: [
+      "화기 한 정 올렸다. 시리얼 넘버는 장부에 남긴다.",
+      "무기 케이스 잠근다. 훈련장 밖에서 시험하지 마.",
+    ],
+    ARMOR: [
+      "방호구 올렸다. 출동 전에 몸에 맞춰 다시 조여.",
+      "방어구 반출로 잡았다. 멋보다 착용감을 먼저 봐.",
+    ],
+    CONSUMABLE: [
+      "소모품 묶어놨다. 쓸 때 망설이면 들고 나갈 이유가 없어.",
+      "일회성 장구 올렸다. 봉인 훼손하면 반품은 없다.",
+    ],
+    SPECIAL: [
+      "특수 장비 반출대에 올렸다. 승인선 다시 확인해.",
+      "전략 자산으로 잡았다. 이동 동선까지 적어 둬.",
+    ],
+  };
+
+  return pickStableLine(variants[item.category] ?? variants.ALL, item.key);
+}
+
+function buildTowaskiRemoveLine(item: EquipmentShopCatalogEntry | null): string {
+  if (!item) return TOWASKI_DIALOGUE_LINES.removed;
+
+  const itemDialogue = getTowaskiItemDialogue(item);
+  if (itemDialogue?.remove) {
+    return pickStableLine(itemDialogue.remove, `${item.key}:remove`);
+  }
+
+  const variants: Record<
+    EquipmentShopCatalogEntry["category"] | "ALL",
+    readonly string[]
+  > = {
+    ALL: [TOWASKI_DIALOGUE_LINES.removed],
+    WEAPON: [
+      "무기는 다시 잠갔다. 빈손이 조용할 때도 있어.",
+      "화기 줄은 지웠다. 장부엔 아직 흠집도 안 났다.",
+    ],
+    ARMOR: [
+      "방호구는 내려놨다. 맞을 일이 없길 비는 쪽이 싸지.",
+      "방어구 반출 줄은 뺐다. 몸이 가벼운 만큼 판단도 가벼우면 곤란해.",
+    ],
+    CONSUMABLE: [
+      "소모품은 다시 넣었다. 필요할 때 없다고 내 탓은 하지 마.",
+      "그 묶음은 뺐다. 봉인 뜯기 전이면 아직 깨끗해.",
+    ],
+    SPECIAL: [
+      "특수 장비는 반출대에서 내렸다. 서류가 짧아졌군.",
+      "전략 자산 줄은 지웠다. 승인권자도 한숨 돌리겠어.",
+    ],
+  };
+
+  return pickStableLine(variants[item.category] ?? variants.ALL, item.key);
+}
+
 function buildTowaskiTabLine(tab: EquipmentShopTabValue): string {
   switch (tab) {
     case "WEAPON":
-      return "화기 진열대다. 손맛보다 사거리와 탄종부터 봐.";
+      return "화기 진열대다. 손맛보다 사거리, 탄종, 반동부터 봐.";
     case "ARMOR":
-      return "방어구 쪽이군. 살아 돌아오는 장비는 늘 멋없게 생겼어.";
+      return "방호구 쪽이군. 살아 돌아오는 장비는 대체로 멋없게 생겼어.";
     case "CONSUMABLE":
       return "소모품은 쓰고 사라진다. 그래서 필요할 때 없으면 제일 욕먹지.";
     default:
@@ -1125,16 +1383,22 @@ export default function EquipmentShopClient({
     setErrorMessage(null);
     setNotice(null);
     setCartQuantity(item.key, (cart[item.key] ?? 0) + quantity);
-    playTowaskiIfActive("cart", TOWASKI_DIALOGUE_LINES.cart);
+    playTowaskiIfActive("cart", buildTowaskiCartLine(item));
   }
 
   function handleRemoveFromCart(key: string) {
+    const item = catalogByKey.get(key) ?? null;
     setCart((prev) => {
       const next = { ...prev };
       delete next[key];
       return next;
     });
-    playTowaskiIfActive("cart", TOWASKI_DIALOGUE_LINES.removed);
+    playTowaskiIfActive("cart", buildTowaskiRemoveLine(item));
+  }
+
+  function handleClearCart() {
+    setCart({});
+    playTowaskiIfActive("cart", TOWASKI_DIALOGUE_LINES.cartCleared);
   }
 
   function handleCheckout() {
@@ -1801,7 +2065,7 @@ export default function EquipmentShopClient({
                 <button
                   type="button"
                   className={styles.textButton}
-                  onClick={() => setCart({})}
+                  onClick={handleClearCart}
                   disabled={checkoutMutation.isPending}
                 >
                   비우기
