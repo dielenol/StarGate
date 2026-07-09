@@ -172,12 +172,21 @@ function isPlayerSelfEdit(payload: CharacterEditWebhookPayload): boolean {
 function getCharacterEditWebhookUrl(
   payload: CharacterEditWebhookPayload,
 ): string | undefined {
+  if (isPlayerSelfEdit(payload)) {
+    return getCharacterSelfEditWebhookUrl();
+  }
+
   return (
     process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL ||
-    (isPlayerSelfEdit(payload)
-      ? process.env.DISCORD_WEBHOOK_CHAR_SELF_EDIT_URL ||
-        process.env.DISCORD_WEBHOOK_CHARACTER_SELF_EDIT_URL
-      : undefined) ||
+    process.env.DISCORD_WEBHOOK_URL
+  );
+}
+
+function getCharacterSelfEditWebhookUrl(): string | undefined {
+  return (
+    process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL ||
+    process.env.DISCORD_WEBHOOK_CHAR_SELF_EDIT_URL ||
+    process.env.DISCORD_WEBHOOK_CHARACTER_SELF_EDIT_URL ||
     process.env.DISCORD_WEBHOOK_URL
   );
 }
@@ -401,10 +410,10 @@ export async function notifyShopRestock(
 export async function notifyShopReorderRequest(
   payload: ShopReorderWebhookPayload,
 ): Promise<"sent" | "skipped"> {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_SHOP_URL;
+  const webhookUrl = getCharacterSelfEditWebhookUrl();
   if (!webhookUrl) {
     console.warn(
-      "[notifyShopReorderRequest] DISCORD_WEBHOOK_SHOP_URL 미설정 — silent skip",
+      "[notifyShopReorderRequest] DISCORD_WEBHOOK_CHAR_EDIT_URL/DISCORD_WEBHOOK_URL 미설정 — silent skip",
     );
     return "skipped";
   }
