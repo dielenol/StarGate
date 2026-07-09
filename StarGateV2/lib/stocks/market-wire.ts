@@ -48,6 +48,8 @@ type MarketWireStatus =
 export interface MarketWireResult {
   status: MarketWireStatus;
   error?: string;
+  embedCount?: number;
+  messageCount?: number;
 }
 
 interface MarketWireOfficer {
@@ -373,39 +375,42 @@ function buildRoutineLedgerEmbeds(input: {
   const falling = changed.filter((result) => result.price < result.previousPrice);
   const flat = changed.filter((result) => result.price === result.previousPrice);
   const eventLines = buildEventLines(changed);
-  const embeds: DiscordEmbed[] = [];
-
-  if (rising.length > 0) {
-    embeds.push({
+  const embeds: DiscordEmbed[] = [
+    {
       title: "상승 마감 장부",
       url: STOCK_WEB_URL,
       color: MARKET_WIRE_POSITIVE,
       fields: [
         {
           name: "상승 종목",
-          value: truncateField(rising.map(formatStockLedgerLine).join("\n\n")),
+          value: truncateField(
+            rising.length > 0
+              ? rising.map(formatStockLedgerLine).join("\n\n")
+              : "상승 마감 종목 없음",
+          ),
         },
       ],
       footer: { text: `${officer.code} · ${summary.slot} KST · 상승 장부` },
       timestamp,
-    });
-  }
-
-  if (falling.length > 0) {
-    embeds.push({
+    },
+    {
       title: "하락 마감 장부",
       url: STOCK_WEB_URL,
       color: MARKET_WIRE_NEGATIVE,
       fields: [
         {
           name: "하락 종목",
-          value: truncateField(falling.map(formatStockLedgerLine).join("\n\n")),
+          value: truncateField(
+            falling.length > 0
+              ? falling.map(formatStockLedgerLine).join("\n\n")
+              : "하락 마감 종목 없음",
+          ),
         },
       ],
       footer: { text: `${officer.code} · ${summary.slot} KST · 하락 장부` },
       timestamp,
-    });
-  }
+    },
+  ];
 
   embeds.push({
     title: "보합 및 감시실 특이사항",
@@ -435,6 +440,16 @@ function buildRoutineLedgerEmbeds(input: {
   });
 
   return embeds;
+}
+
+function splitPayloadIntoSingleEmbedMessages(
+  payload: DiscordPayload,
+): DiscordPayload[] {
+  return payload.embeds.map((embed, index) => ({
+    ...payload,
+    content: index === 0 ? payload.content : undefined,
+    embeds: [embed],
+  }));
 }
 
 function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPayload | null {
@@ -548,15 +563,10 @@ function buildManualPayload(
   };
 }
 
-async function sendDiscordPayload(payload: DiscordPayload): Promise<MarketWireResult> {
-  const webhookUrl = getWebhookUrl();
-  if (!webhookUrl) {
-    console.warn(
-      "[stock-market-wire] DISCORD_WEBHOOK_STOCK_URL 미설정 — silent skip",
-    );
-    return { status: "skipped-no-webhook" };
-  }
-
+async function postDiscordPayload(
+  webhookUrl: string,
+  payload: DiscordPayload,
+): Promise<MarketWireResult> {
   try {
     const response = await fetch(webhookUrl, {
       method: "POST",
@@ -579,12 +589,57 @@ async function sendDiscordPayload(payload: DiscordPayload): Promise<MarketWireRe
   }
 }
 
+async function sendDiscordPayload(payload: DiscordPayload): Promise<MarketWireResult> {
+  const webhookUrl = getWebhookUrl();
+  if (!webhookUrl) {
+    console.warn(
+      "[stock-market-wire] DISCORD_WEBHOOK_STOCK_URL 미설정 — silent skip",
+    );
+    return { status: "skipped-no-webhook" };
+  }
+
+  const result = await postDiscordPayload(webhookUrl, payload);
+  if (result.status !== "sent") return result;
+  return {
+    status: "sent",
+    embedCount: payload.embeds.length,
+    messageCount: 1,
+  };
+}
+
+async function sendDiscordPayloads(
+  payloads: readonly DiscordPayload[],
+): Promise<MarketWireResult> {
+  const webhookUrl = getWebhookUrl();
+  if (!webhookUrl) {
+    console.warn(
+      "[stock-market-wire] DISCORD_WEBHOOK_STOCK_URL 미설정 — silent skip",
+    );
+    return { status: "skipped-no-webhook" };
+  }
+
+  let messageCount = 0;
+  let embedCount = 0;
+  for (const payload of payloads) {
+    const result = await postDiscordPayload(webhookUrl, payload);
+    if (result.status !== "sent") {
+      return { ...result, embedCount, messageCount };
+    }
+    messageCount += 1;
+    embedCount += payload.embeds.length;
+  }
+
+  return { status: "sent", embedCount, messageCount };
+}
+
 export async function notifyScheduledStockMarketWire(
   summary: ScheduledStockTickSummary,
 ): Promise<MarketWireResult> {
   const payload = buildScheduledPayload(summary);
   if (!payload) return { status: "skipped-no-change" };
-  const result = await sendDiscordPayload(payload);
+  const result = await sendDiscordPayloads(
+    splitPayloadIntoSingleEmbedMessages(payload),
+  );
   if (result.status === "failed") {
     console.warn("[stock-market-wire] 정기 공시 전송 실패:", result.error);
   }
