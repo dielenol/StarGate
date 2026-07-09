@@ -707,7 +707,7 @@ function buildTowaskiTabLine(tab: EquipmentShopTabValue): string {
     case "WEAPON":
       return "화기 진열대다. 손맛보다 사거리, 탄종, 반동부터 봐.";
     case "ARMOR":
-      return "방호구 쪽이군. 살아 돌아오는 장비는 대체로 멋없게 생겼어.";
+      return "방호구 쪽이군. 방탄복은 한 번 피격되면 부서진다. 그래도 스타마트 회복품보다 성능은 낫다. 맞고 나서 고치는 것보다 맞기 전에 막아.";
     case "CONSUMABLE":
       return "소모품은 쓰고 사라진다. 그래서 필요할 때 없으면 제일 욕먹지.";
     default:
