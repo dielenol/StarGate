@@ -10,6 +10,26 @@
   padding-bottom: 0;
 }
 
+@media (min-width: 721px) {
+  .armoryRoot--hub {
+    --armory-hub-page-height: calc(
+      100svh - var(--topbar-h) - (var(--pad) + 12px) - (var(--pad) + 4px)
+    );
+    display: flex;
+    flex-direction: column;
+    height: var(--armory-hub-page-height);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .armoryRoot--hub .notice,
+  .armoryRoot--hub .errorBanner,
+  .armoryRoot--hub .noticeBanner {
+    flex: 0 0 auto;
+    margin-bottom: 10px;
+  }
+}
+
 .notice,
 .errorBanner,
 .noticeBanner {
@@ -89,6 +109,7 @@
 
 .armoryStage--hub {
   width: min(100%, 1320px);
+  flex: 1 1 auto;
   min-height: auto;
   margin-inline: 0 auto;
   padding: 14px;
@@ -2418,6 +2439,20 @@
   }
 }
 
+@media (min-width: 721px) {
+  .armoryStage--hub {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+  }
+
+  .armoryStage--hub .armoryHeader {
+    flex: 0 0 auto;
+    margin-bottom: 8px;
+  }
+}
+
 @media (max-width: 1180px) {
   .armoryHeader,
   .hubLayout,
@@ -2611,6 +2646,14 @@
 
   .npcDialogue p {
     font-size: 18px;
+  }
+}
+
+@media (min-width: 721px) {
+  .armoryStage--hub .hubScene {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
   }
 }
 
