@@ -12,7 +12,7 @@
     "institutionCode": "MANUS",
     "previewImage": "/assets/peoples/Valeria-pixel-profile.png",
     "pixelCharacterImage": "/assets/peoples/Valeria-pixel-character.png",
-    "isPublic": false,
+    "isPublic": true,
     "source": "manual",
     "ownerId": "6a420a5bc9c7c5e221641f2d",
     "lore": {
