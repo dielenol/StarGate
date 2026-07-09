@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
 
 import ShopItemIcon from "./ShopItemIcon";
 
@@ -26,6 +26,22 @@ interface AdminStockItem {
   currentStock: number;
   lastRefresh: string | null;
   isStaleToday: boolean;
+  pendingReorders: AdminReorderRequest[];
+}
+
+interface AdminReorderRequest {
+  id: string;
+  date: string;
+  userName: string;
+  characterCodename: string | null;
+  createdAt: string;
+  defaultQuantity: number;
+}
+
+interface FulfillReorderResponse {
+  stock: number;
+  lastRefresh: string;
+  message: string;
 }
 
 interface Props {
@@ -40,19 +56,26 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
 
   const [items, setItems] = useState<AdminStockItem[]>([]);
   const [editing, setEditing] = useState<Record<string, number>>({});
+  const [fulfillQuantityById, setFulfillQuantityById] = useState<
+    Record<string, number>
+  >({});
   const [today, setToday] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fulfillingRequestId, setFulfillingRequestId] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
+  const busy = saving || fulfillingRequestId !== null;
 
   /* ESC 닫기. saving 중이면 무시. */
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && !saving) onClose();
+      if (e.key === "Escape" && !busy) onClose();
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose, saving]);
+  }, [busy, onClose]);
 
   /* 초기 데이터 fetch. */
   useEffect(() => {
@@ -92,6 +115,31 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
     return editing[item.slug] ?? item.currentStock;
   }
 
+  function fulfillQuantityOf(reorder: AdminReorderRequest): number {
+    return fulfillQuantityById[reorder.id] ?? reorder.defaultQuantity;
+  }
+
+  function setFulfillQuantity(requestId: string, raw: string): void {
+    const n = Number.parseInt(raw, 10);
+    setFulfillQuantityById((prev) => ({
+      ...prev,
+      [requestId]: Number.isFinite(n) && n > 0 ? n : 1,
+    }));
+  }
+
+  function formatRequestedAt(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat("ko-KR", {
+      timeZone: "Asia/Seoul",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  }
+
   async function handleSave(): Promise<void> {
     setSaving(true);
     setError(null);
@@ -123,6 +171,64 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
     });
   }
 
+  async function handleFulfillReorder(
+    item: AdminStockItem,
+    reorder: AdminReorderRequest,
+  ): Promise<void> {
+    const quantity = fulfillQuantityOf(reorder);
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      setError("입고 수량은 1 이상의 정수여야 합니다.");
+      return;
+    }
+
+    setFulfillingRequestId(reorder.id);
+    setError(null);
+    try {
+      const res = await fetch("/api/erp/shop/admin/reorder-requests/fulfill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: reorder.id, quantity }),
+      });
+      const data = (await res.json()) as Partial<FulfillReorderResponse> & {
+        error?: string;
+      };
+      if (!res.ok) {
+        throw new Error(data.error ?? "발주 완료 처리 실패");
+      }
+
+      setItems((prev) =>
+        prev.map((stockItem) =>
+          stockItem.slug === item.slug
+            ? {
+                ...stockItem,
+                currentStock: data.stock ?? stockItem.currentStock,
+                lastRefresh: data.lastRefresh ?? stockItem.lastRefresh,
+                isStaleToday: false,
+                pendingReorders: stockItem.pendingReorders.filter(
+                  (pending) => pending.id !== reorder.id,
+                ),
+              }
+            : stockItem,
+        ),
+      );
+      setEditing((prev) => {
+        const next = { ...prev };
+        delete next[item.slug];
+        return next;
+      });
+      setFulfillQuantityById((prev) => {
+        const next = { ...prev };
+        delete next[reorder.id];
+        return next;
+      });
+      if (onSaved) onSaved();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "발주 완료 처리 실패");
+    } finally {
+      setFulfillingRequestId(null);
+    }
+  }
+
   const dirtyCount = items.filter(
     (item) => valueOf(item) !== item.currentStock,
   ).length;
@@ -131,7 +237,7 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
     <div
       className={styles.overlay}
       onClick={() => {
-        if (!saving) onClose();
+        if (!busy) onClose();
       }}
       role="presentation"
     >
@@ -156,7 +262,7 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
             type="button"
             className={styles.closeBtn}
             onClick={onClose}
-            disabled={saving}
+            disabled={busy}
             aria-label="닫기"
           >
             ✕
@@ -195,56 +301,136 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
                   const v = valueOf(item);
                   const dirty = v !== item.currentStock;
                   return (
-                    <tr
-                      key={item.slug}
-                      className={dirty ? styles.rowDirty : undefined}
-                    >
-                      <td className={styles.cellName}>
-                        <div className={styles.itemCell}>
-                          <span className={styles.icon} aria-hidden>
-                            <ShopItemIcon slug={item.slug} size={20} />
-                          </span>
-                          <span className={styles.itemName}>{item.name}</span>
-                          <code className={styles.slug}>{item.slug}</code>
-                        </div>
-                      </td>
-                      <td className={styles.cellNum}>{item.currentStock}</td>
-                      <td className={styles.cellInput}>
-                        <input
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={v}
-                          onChange={(e) => setStock(item.slug, e.target.value)}
-                          disabled={saving}
-                          className={styles.input}
-                        />
-                      </td>
-                      <td className={styles.cellNum}>
-                        {item.stockMin}~{item.stockMax}
-                      </td>
-                      <td className={styles.cellNum}>
-                        {Math.round(item.appearRate * 100)}%
-                      </td>
-                      <td className={styles.cellRefresh}>
-                        {item.lastRefresh ?? "—"}
-                        {item.isStaleToday ? (
-                          <span className={styles.staleTag}>stale</span>
-                        ) : null}
-                      </td>
-                      <td>
-                        {dirty ? (
-                          <button
-                            type="button"
-                            onClick={() => handleResetRow(item.slug)}
-                            disabled={saving}
-                            className={styles.resetBtn}
-                          >
-                            되돌리기
-                          </button>
-                        ) : null}
-                      </td>
-                    </tr>
+                    <Fragment key={item.slug}>
+                      <tr className={dirty ? styles.rowDirty : undefined}>
+                        <td className={styles.cellName}>
+                          <div className={styles.itemCell}>
+                            <span className={styles.icon} aria-hidden>
+                              <ShopItemIcon slug={item.slug} size={20} />
+                            </span>
+                            <span className={styles.itemName}>{item.name}</span>
+                            <code className={styles.slug}>{item.slug}</code>
+                          </div>
+                        </td>
+                        <td className={styles.cellNum}>{item.currentStock}</td>
+                        <td className={styles.cellInput}>
+                          <input
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={v}
+                            onChange={(e) =>
+                              setStock(item.slug, e.target.value)
+                            }
+                            disabled={busy}
+                            className={styles.input}
+                          />
+                        </td>
+                        <td className={styles.cellNum}>
+                          {item.stockMin}~{item.stockMax}
+                        </td>
+                        <td className={styles.cellNum}>
+                          {Math.round(item.appearRate * 100)}%
+                        </td>
+                        <td className={styles.cellRefresh}>
+                          {item.lastRefresh ?? "—"}
+                          {item.isStaleToday ? (
+                            <span className={styles.staleTag}>stale</span>
+                          ) : null}
+                        </td>
+                        <td>
+                          {dirty ? (
+                            <button
+                              type="button"
+                              onClick={() => handleResetRow(item.slug)}
+                              disabled={busy}
+                              className={styles.resetBtn}
+                            >
+                              되돌리기
+                            </button>
+                          ) : null}
+                        </td>
+                      </tr>
+                      {item.pendingReorders.length > 0 ? (
+                        <tr className={styles.reorderRow}>
+                          <td colSpan={7}>
+                            <div className={styles.reorderPanel}>
+                              <div className={styles.reorderPanel__head}>
+                                <strong>
+                                  대기 발주 {item.pendingReorders.length}건
+                                </strong>
+                                <span>
+                                  기본 수량은 카탈로그 최대 입고량입니다.
+                                </span>
+                              </div>
+                              <div className={styles.reorderList}>
+                                {item.pendingReorders.map((reorder) => {
+                                  const quantity = fulfillQuantityOf(reorder);
+                                  const fulfilling =
+                                    fulfillingRequestId === reorder.id;
+                                  return (
+                                    <div
+                                      key={reorder.id}
+                                      className={styles.reorderRequest}
+                                    >
+                                      <div
+                                        className={
+                                          styles.reorderRequest__meta
+                                        }
+                                      >
+                                        <strong>
+                                          {reorder.characterCodename
+                                            ? `${reorder.characterCodename} · ${reorder.userName}`
+                                            : reorder.userName}
+                                        </strong>
+                                        <span>
+                                          {reorder.date} ·{" "}
+                                          {formatRequestedAt(
+                                            reorder.createdAt,
+                                          )}{" "}
+                                          요청
+                                        </span>
+                                      </div>
+                                      <label
+                                        className={styles.reorderRequest__qty}
+                                      >
+                                        <span>입고 수량</span>
+                                        <input
+                                          type="number"
+                                          min={1}
+                                          max={999}
+                                          step={1}
+                                          value={quantity}
+                                          onChange={(e) =>
+                                            setFulfillQuantity(
+                                              reorder.id,
+                                              e.target.value,
+                                            )
+                                          }
+                                          disabled={busy}
+                                        />
+                                      </label>
+                                      <button
+                                        type="button"
+                                        className={styles.reorderFulfillBtn}
+                                        onClick={() =>
+                                          handleFulfillReorder(item, reorder)
+                                        }
+                                        disabled={busy}
+                                      >
+                                        {fulfilling
+                                          ? "처리 중..."
+                                          : "입고 처리"}
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -260,7 +446,7 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
             <button
               type="button"
               onClick={onClose}
-              disabled={saving}
+              disabled={busy}
               className={styles.btnGhost}
             >
               취소
@@ -268,7 +454,7 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
             <button
               type="button"
               onClick={handleSave}
-              disabled={saving || loading || dirtyCount === 0}
+              disabled={busy || loading || dirtyCount === 0}
               className={styles.btnPrimary}
             >
               {saving ? "저장 중..." : `저장 ${dirtyCount > 0 ? `(${dirtyCount})` : ""}`}

@@ -14,6 +14,7 @@ import { requireRole } from "@/lib/auth/rbac";
 import { getAllDailyStocks, refreshStock } from "@/lib/db/shop";
 import { findShopItemBySlug, SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
+import { listPendingShopReorderRequests } from "@/lib/shop/reorder-requests";
 
 export async function GET() {
   const session = await auth();
@@ -27,12 +28,31 @@ export async function GET() {
   }
 
   try {
-    const stocks = await getAllDailyStocks();
+    const [stocks, reorders] = await Promise.all([
+      getAllDailyStocks(),
+      listPendingShopReorderRequests(),
+    ]);
     const byId = new Map(stocks.map((s) => [s.itemId, s]));
+    const reordersBySlug = new Map<string, typeof reorders>();
+    for (const reorder of reorders) {
+      const list = reordersBySlug.get(reorder.slug) ?? [];
+      list.push(reorder);
+      reordersBySlug.set(reorder.slug, list);
+    }
     const today = getTodayKst();
 
     const items = SHOP_CATALOG.map((item) => {
       const doc = byId.get(item.slug);
+      const pendingReorders = (reordersBySlug.get(item.slug) ?? []).map(
+        (reorder) => ({
+          id: reorder._id,
+          date: reorder.date,
+          userName: reorder.userName,
+          characterCodename: reorder.characterCodename ?? null,
+          createdAt: reorder.createdAt,
+          defaultQuantity: item.stockMax,
+        }),
+      );
       return {
         slug: item.slug,
         name: item.name,
@@ -43,6 +63,7 @@ export async function GET() {
         currentStock: doc?.stock ?? 0,
         lastRefresh: doc?.lastRefresh ?? null,
         isStaleToday: (doc?.lastRefresh ?? null) !== today,
+        pendingReorders,
       };
     });
 

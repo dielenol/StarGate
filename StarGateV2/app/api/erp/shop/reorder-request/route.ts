@@ -5,9 +5,6 @@
  * 실제 재입고 처리는 운영자가 GM 재고 관리에서 수행한다.
  */
 
-import "@/lib/db/init";
-
-import { getDb } from "@stargate/shared-db";
 import { NextResponse, after } from "next/server";
 
 import { auth } from "@/lib/auth/config";
@@ -18,23 +15,14 @@ import { getStock } from "@/lib/db/shop";
 import { notifyUser, notifyUsers } from "@/lib/notifications/events";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
+import {
+  buildShopReorderRequestId,
+  insertShopReorderRequest,
+  type ShopReorderRequestDoc,
+} from "@/lib/shop/reorder-requests";
 
 interface ReorderRequestBody {
   slug?: unknown;
-}
-
-interface ShopReorderRequestDoc {
-  _id: string;
-  kind: "shop-reorder-request";
-  date: string;
-  slug: string;
-  itemName: string;
-  userId: string;
-  userName: string;
-  characterId?: string;
-  characterCodename?: string;
-  status: "REQUESTED";
-  createdAt: Date;
 }
 
 function isDuplicateKeyError(error: unknown): boolean {
@@ -49,11 +37,6 @@ function isDuplicateKeyError(error: unknown): boolean {
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return String(error);
-}
-
-async function reorderRequestsCol() {
-  const db = await getDb();
-  return db.collection<ShopReorderRequestDoc>("shop_reorder_requests");
 }
 
 async function notifyShopReorderOperators(
@@ -127,7 +110,7 @@ export async function POST(request: Request) {
 
   const today = getTodayKst();
   const doc: ShopReorderRequestDoc = {
-    _id: `shop-reorder:${today}:${session.user.id}:${slug}`,
+    _id: buildShopReorderRequestId(today, session.user.id, slug),
     kind: "shop-reorder-request",
     date: today,
     slug,
@@ -145,7 +128,7 @@ export async function POST(request: Request) {
   };
 
   try {
-    await (await reorderRequestsCol()).insertOne(doc);
+    await insertShopReorderRequest(doc);
   } catch (error) {
     if (isDuplicateKeyError(error)) {
       return NextResponse.json(
