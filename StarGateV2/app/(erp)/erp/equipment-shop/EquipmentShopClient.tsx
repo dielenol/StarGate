@@ -93,7 +93,7 @@ const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {
 
 const TOWASKI_DIALOGUE_LINES = {
   welcome: "토와스키다. 반출 장부에 남길 물건만 손대.",
-  noAgent: "메인 AGENT 확인부터 해. 신분 없는 손엔 탄창 안 넘긴다.",
+  noAgent: "반출 명단에 네 이름이 안 뜬다. 사무국에서 신원표부터 갱신하고 와.",
   closed: "카운터 닫았다. 급하면 반출 승인권자부터 데려와.",
   category:
     "분류부터 보자. 화기, 방호구, 폭발 장구는 허가 줄이 다르다.",
