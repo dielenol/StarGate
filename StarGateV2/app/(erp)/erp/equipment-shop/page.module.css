@@ -108,10 +108,10 @@
 }
 
 .armoryStage--hub {
-  width: min(100%, 1320px);
+  width: 100%;
   flex: 1 1 auto;
   min-height: auto;
-  margin-inline: 0 auto;
+  margin-inline: 0;
   padding: 14px;
   background:
     radial-gradient(circle at 18% 14%, rgba(201, 168, 90, 0.16), transparent 28%),
