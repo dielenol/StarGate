@@ -1,0 +1,164 @@
+[
+  {
+    "collection": "master_items",
+    "type": "towaski-weapon-license-catalog-2026-07-09",
+    "payload": {
+      "code": "TOWASKI_LICENSE_BASIC_FIREARM",
+      "slug": "towaski-license-basic-firearm",
+      "name": "토와스키 기본 화기 라이센스",
+      "nameEn": "Towaski Basic Firearm License",
+      "category": "SPECIAL",
+      "price": 80,
+      "description": "권총, 돌격소총, 산탄총 계열 보급 화기의 반출 자격을 등록하는 토와스키 건샵 라이센스.",
+      "effect": "권총·소총·산탄총 반출 자격",
+      "previewImage": "/assets/catalog/equipment/towaski-license-basic-firearm.svg",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": ["병기부", "토와스키", "라이센스", "무기라이센스", "반출자격"],
+      "loreMd": "## 설명\n토와스키 기본 화기 라이센스는 권총, 돌격소총, 산탄총 계열 보급 화기의 반출 자격을 장부에 등록하는 항목이다.\n\n## 배경\n노부스 오르도 병기부가 민간 협력 보급 라인인 토와스키 건샵을 통해 화기류를 반출할 때, 캐릭터 고유 무기 훈련이나 특전이 없는 요원에게 요구하는 기본 자격 등록으로 취급한다.\n\n## 획득 경로\n병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.\n\n## 비고\n이미 캐릭터 시트에 해당 화기 훈련, 특전, 또는 보유 장비 적성이 기록된 경우 별도 구매 없이 통과할 수 있다.\n",
+      "lore": {
+        "background": "노부스 오르도 병기부가 민간 협력 보급 라인인 토와스키 건샵을 통해 화기류를 반출할 때, 캐릭터 고유 무기 훈련이나 특전이 없는 요원에게 요구하는 기본 자격 등록으로 취급한다.",
+        "acquisition": "병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.",
+        "notes": "이미 캐릭터 시트에 해당 화기 훈련, 특전, 또는 보유 장비 적성이 기록된 경우 별도 구매 없이 통과할 수 있다."
+      },
+      "source": "create-lore",
+      "createdAt": "2026-07-09T00:00:00.000Z",
+      "updatedAt": "2026-07-09T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "towaski-weapon-license-catalog-2026-07-09",
+    "payload": {
+      "code": "TOWASKI_LICENSE_PRECISION_FIREARM",
+      "slug": "towaski-license-precision-firearm",
+      "name": "토와스키 정밀 사격 라이센스",
+      "nameEn": "Towaski Precision Firearm License",
+      "category": "SPECIAL",
+      "price": 120,
+      "description": "저격소총과 장거리 정밀 화기의 반출 자격을 등록하는 토와스키 건샵 라이센스.",
+      "effect": "저격소총 반출 자격",
+      "previewImage": "/assets/catalog/equipment/towaski-license-precision-firearm.svg",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": ["병기부", "토와스키", "라이센스", "정밀사격", "반출자격"],
+      "loreMd": "## 설명\n토와스키 정밀 사격 라이센스는 저격소총과 장거리 정밀 화기의 반출 자격을 장부에 등록하는 항목이다.\n\n## 배경\n저격소총은 단순 화기보다 관측, 장거리 교전, 오발 책임이 크게 걸리는 품목이므로 별도 정밀 사격 자격으로 분리한다.\n\n## 획득 경로\n병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.\n\n## 비고\n저격소총 훈련이나 정밀 사격 관련 특전이 캐릭터 시트에 있으면 별도 구매 없이 통과할 수 있다.\n",
+      "lore": {
+        "background": "저격소총은 단순 화기보다 관측, 장거리 교전, 오발 책임이 크게 걸리는 품목이므로 별도 정밀 사격 자격으로 분리한다.",
+        "acquisition": "병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.",
+        "notes": "저격소총 훈련이나 정밀 사격 관련 특전이 캐릭터 시트에 있으면 별도 구매 없이 통과할 수 있다."
+      },
+      "source": "create-lore",
+      "createdAt": "2026-07-09T00:00:00.000Z",
+      "updatedAt": "2026-07-09T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "towaski-weapon-license-catalog-2026-07-09",
+    "payload": {
+      "code": "TOWASKI_LICENSE_HEAVY_WEAPON",
+      "slug": "towaski-license-heavy-weapon",
+      "name": "토와스키 중화기 라이센스",
+      "nameEn": "Towaski Heavy Weapon License",
+      "category": "SPECIAL",
+      "price": 160,
+      "description": "설치화기와 중기관총 계열의 반출 자격을 등록하는 토와스키 건샵 라이센스.",
+      "effect": "중기관총·설치화기 반출 자격",
+      "previewImage": "/assets/catalog/equipment/towaski-license-heavy-weapon.svg",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": ["병기부", "토와스키", "라이센스", "중화기", "반출자격"],
+      "loreMd": "## 설명\n토와스키 중화기 라이센스는 중기관총, 설치화기, 거치화기 계열 반출 자격을 장부에 등록하는 항목이다.\n\n## 배경\n중화기는 무기보다 진지와 운용 인원까지 함께 묶이는 품목이므로, 일반 화기와 다른 반출 허가선으로 취급한다.\n\n## 획득 경로\n병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.\n\n## 비고\n중기관총, 설치화기, 중화기 운용 훈련이나 특전이 캐릭터 시트에 있으면 별도 구매 없이 통과할 수 있다.\n",
+      "lore": {
+        "background": "중화기는 무기보다 진지와 운용 인원까지 함께 묶이는 품목이므로, 일반 화기와 다른 반출 허가선으로 취급한다.",
+        "acquisition": "병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.",
+        "notes": "중기관총, 설치화기, 중화기 운용 훈련이나 특전이 캐릭터 시트에 있으면 별도 구매 없이 통과할 수 있다."
+      },
+      "source": "create-lore",
+      "createdAt": "2026-07-09T00:00:00.000Z",
+      "updatedAt": "2026-07-09T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "towaski-weapon-license-catalog-2026-07-09",
+    "payload": {
+      "code": "TOWASKI_LICENSE_FLAME_WEAPON",
+      "slug": "towaski-license-flame-weapon",
+      "name": "토와스키 화염 장비 라이센스",
+      "nameEn": "Towaski Flame Weapon License",
+      "category": "SPECIAL",
+      "price": 140,
+      "description": "화염방사기 등 연료통 기반 화염 장비의 반출 자격을 등록하는 토와스키 건샵 라이센스.",
+      "effect": "화염방사기 반출 자격",
+      "previewImage": "/assets/catalog/equipment/towaski-license-flame-weapon.svg",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": ["병기부", "토와스키", "라이센스", "화염무기", "반출자격"],
+      "loreMd": "## 설명\n토와스키 화염 장비 라이센스는 화염방사기와 연료통 기반 화염 장비의 반출 자격을 장부에 등록하는 항목이다.\n\n## 배경\n화염방사기는 적보다 보고서가 먼저 무서워지는 장비로 취급된다. 연료, 바람 방향, 실내 사용 승인까지 같이 걸리므로 별도 자격으로 분리한다.\n\n## 획득 경로\n병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.\n\n## 비고\n박애솔(BIG BOY)은 화염방사기 훈련과 토와스키의 개인 예외 설정이 함께 있어 별도 구매 없이 통과할 수 있다.\n",
+      "lore": {
+        "background": "화염방사기는 적보다 보고서가 먼저 무서워지는 장비로 취급된다. 연료, 바람 방향, 실내 사용 승인까지 같이 걸리므로 별도 자격으로 분리한다.",
+        "acquisition": "병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.",
+        "notes": "박애솔(BIG BOY)은 화염방사기 훈련과 토와스키의 개인 예외 설정이 함께 있어 별도 구매 없이 통과할 수 있다."
+      },
+      "source": "create-lore",
+      "createdAt": "2026-07-09T00:00:00.000Z",
+      "updatedAt": "2026-07-09T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "towaski-weapon-license-catalog-2026-07-09",
+    "payload": {
+      "code": "TOWASKI_LICENSE_SONIC_EQUIPMENT",
+      "slug": "towaski-license-sonic-equipment",
+      "name": "토와스키 음파 장비 라이센스",
+      "nameEn": "Towaski Sonic Equipment License",
+      "category": "SPECIAL",
+      "price": 160,
+      "description": "음파 방출기와 청각성 장비의 출력 봉인·반출 자격을 등록하는 토와스키 건샵 라이센스.",
+      "effect": "음파 방출기 반출 자격",
+      "previewImage": "/assets/catalog/equipment/towaski-license-sonic-equipment.svg",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": ["병기부", "토와스키", "라이센스", "음파무기", "반출자격"],
+      "loreMd": "## 설명\n토와스키 음파 장비 라이센스는 음파 방출기와 청각성 장비의 출력 봉인·반출 자격을 장부에 등록하는 항목이다.\n\n## 배경\n음파 장비는 귀로 쏘는 총이 아니라 출력값과 주파수 봉인이 걸린 특수 장비다. 검열된 비명 연구 라인과 연결되는 장비라 반출 자격을 별도로 본다.\n\n## 획득 경로\n병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.\n\n## 비고\n스타크 일로니손(CLOWN)은 나노 테크놀로지 음파 방출기와 토와스키 조정 이력이 기록되어 있어 캐릭터 적성 판정으로 통과할 수 있다.\n",
+      "lore": {
+        "background": "음파 장비는 귀로 쏘는 총이 아니라 출력값과 주파수 봉인이 걸린 특수 장비다. 검열된 비명 연구 라인과 연결되는 장비라 반출 자격을 별도로 본다.",
+        "acquisition": "병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.",
+        "notes": "스타크 일로니손(CLOWN)은 나노 테크놀로지 음파 방출기와 토와스키 조정 이력이 기록되어 있어 캐릭터 적성 판정으로 통과할 수 있다."
+      },
+      "source": "create-lore",
+      "createdAt": "2026-07-09T00:00:00.000Z",
+      "updatedAt": "2026-07-09T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "towaski-weapon-license-catalog-2026-07-09",
+    "payload": {
+      "code": "TOWASKI_LICENSE_EXPLOSIVE_ORDNANCE",
+      "slug": "towaski-license-explosive-ordnance",
+      "name": "토와스키 폭발물 취급 라이센스",
+      "nameEn": "Towaski Explosive Ordnance License",
+      "category": "SPECIAL",
+      "price": 180,
+      "description": "수류탄, 로켓 런처 등 폭발형 장구류의 반출 자격을 등록하는 토와스키 건샵 라이센스.",
+      "effect": "수류탄·로켓 런처 반출 자격",
+      "previewImage": "/assets/catalog/equipment/towaski-license-explosive-ordnance.svg",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": ["병기부", "토와스키", "라이센스", "폭발형무기", "반출자격"],
+      "loreMd": "## 설명\n토와스키 폭발물 취급 라이센스는 수류탄, 로켓 런처 등 폭발형 장구류의 반출 자격을 장부에 등록하는 항목이다.\n\n## 배경\n폭발형 장비는 단일 표적보다 구획 피해와 오발 책임이 크므로 일반 화기와 다른 반출 자격으로 분리한다.\n\n## 획득 경로\n병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.\n\n## 비고\n수류탄, 로켓, 폭발물, 폭약, 투척무기 관련 훈련이나 특전이 캐릭터 시트에 있으면 별도 구매 없이 통과할 수 있다.\n",
+      "lore": {
+        "background": "폭발형 장비는 단일 표적보다 구획 피해와 오발 책임이 크므로 일반 화기와 다른 반출 자격으로 분리한다.",
+        "acquisition": "병기부 토와스키 건샵의 라이센스 탭에서 구매할 수 있다.",
+        "notes": "수류탄, 로켓, 폭발물, 폭약, 투척무기 관련 훈련이나 특전이 캐릭터 시트에 있으면 별도 구매 없이 통과할 수 있다."
+      },
+      "source": "create-lore",
+      "createdAt": "2026-07-09T00:00:00.000Z",
+      "updatedAt": "2026-07-09T00:00:00.000Z"
+    }
+  }
+]

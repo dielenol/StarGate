@@ -9,11 +9,12 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import {
   addToInventory,
   findMasterItemsBySlugsOrIds,
+  listCharacterInventory,
   removeFromInventory,
 } from "@/lib/db/inventory";
 import {
@@ -27,6 +28,12 @@ import {
   equipmentShopItemZone,
   toEquipmentPriceNumber,
 } from "@/lib/equipment-shop/catalog";
+import {
+  getEquipmentLicenseRequirement,
+  isTowaskiLicenseSlug,
+  resolveEquipmentLicenseStatus,
+  type EquipmentLicenseRequirement,
+} from "@/lib/equipment-shop/licenses";
 
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY_PER_ITEM = 1;
@@ -46,6 +53,8 @@ interface CheckoutLine {
   unitPrice: number;
   totalPrice: number;
   itemId: string;
+  slug?: string;
+  licenseRequirement?: EquipmentLicenseRequirement;
 }
 
 function normalizeCartItems(
@@ -202,6 +211,7 @@ export async function POST(request: Request) {
       );
     }
 
+    const licenseRequirement = getEquipmentLicenseRequirement(masterItem);
     lines.push({
       key: item.key,
       name: masterItem.name,
@@ -209,7 +219,55 @@ export async function POST(request: Request) {
       unitPrice,
       totalPrice: unitPrice * item.quantity,
       itemId: String(masterItem._id),
+      ...(masterItem.slug ? { slug: masterItem.slug } : {}),
+      ...(licenseRequirement ? { licenseRequirement } : {}),
     });
+  }
+
+  const cartLicenseSlugs = new Set(
+    lines
+      .map((line) => line.slug)
+      .filter((slug): slug is string => typeof slug === "string")
+      .filter(isTowaskiLicenseSlug),
+  );
+  const licenseGatedLines = lines.filter(
+    (line): line is CheckoutLine & { licenseRequirement: EquipmentLicenseRequirement } =>
+      Boolean(line.licenseRequirement),
+  );
+  if (licenseGatedLines.length > 0) {
+    const inventory = await listCharacterInventory(String(mainChar._id));
+    const inventoryMasterItems = await findMasterItemsBySlugsOrIds(
+      inventory
+        .filter((entry) => entry.quantity > 0)
+        .map((entry) => entry.itemId),
+    );
+    const ownedLicenseSlugs = new Set(
+      inventoryMasterItems
+        .map((item) => item.slug)
+        .filter((slug): slug is string => typeof slug === "string")
+        .filter(isTowaskiLicenseSlug),
+    );
+
+    for (const line of licenseGatedLines) {
+      const licenseStatus = resolveEquipmentLicenseStatus({
+        character: mainChar,
+        requirement: line.licenseRequirement,
+        ownedLicenseSlugs,
+        cartLicenseSlugs,
+      });
+      if (!licenseStatus.satisfied) {
+        return NextResponse.json(
+          {
+            error:
+              `${line.name} 반출에는 ${line.licenseRequirement.licenseName}이 필요합니다. ` +
+              `${line.licenseRequirement.reason} 자격이 캐릭터 특성/특전/무기 훈련에 없으면 ` +
+              `토와스키 라이센스 탭에서 먼저 구매하세요.`,
+            code: "LICENSE_REQUIRED",
+          },
+          { status: 400 },
+        );
+      }
+    }
   }
 
   const totalPrice = lines.reduce((sum, line) => sum + line.totalPrice, 0);

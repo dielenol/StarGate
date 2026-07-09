@@ -54,7 +54,12 @@ import styles from "./page.module.css";
 type ArmoryZone = "lab" | "towaski" | "acheron" | "strategic" | "custom";
 type ArmoryDestination = ArmoryZone | "simulator";
 type EquipmentShopMode = "hub" | "zone";
-type EquipmentShopTabValue = "ALL" | "WEAPON" | "ARMOR" | "CONSUMABLE";
+type EquipmentShopTabValue =
+  | "ALL"
+  | "WEAPON"
+  | "ARMOR"
+  | "CONSUMABLE"
+  | "LICENSE";
 type CartState = Record<string, number>;
 type NoticeState = { tone: "success" | "info"; text: string } | null;
 type MainCharacterStats = Record<EquipmentResearchStat, number>;
@@ -387,6 +392,7 @@ const TAB_DEFS: { value: EquipmentShopTabValue; label: string }[] = [
   { value: "WEAPON", label: "무기" },
   { value: "ARMOR", label: "방어구" },
   { value: "CONSUMABLE", label: "소모품" },
+  { value: "LICENSE", label: "라이센스" },
 ];
 
 const CATEGORY_LABELS: Record<EquipmentShopCatalogEntry["category"], string> = {
@@ -418,6 +424,7 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   REFUND_FAILED:
     "구매 실패 + 자동 환불 실패. 운영자(GM)에게 문의해 잔액 정정을 요청하세요.",
   INVALID_CART: "장비 장바구니 구성이 올바르지 않습니다.",
+  LICENSE_REQUIRED: "반출에 필요한 토와스키 라이센스가 없습니다.",
   INVALID_RESEARCH: "연구 적용값이 올바르지 않습니다.",
   ITEM_NOT_AVAILABLE: "판매 가능한 병기부 카탈로그 품목이 아닙니다.",
   PRICE_NOT_SET: "가격이 확정되지 않은 장비는 구매할 수 없습니다.",
@@ -499,6 +506,9 @@ const RESEARCH_BRANCH_META: Record<string, { label: string; code: string }> = {
 };
 
 function describeEquipmentShopError(err: unknown): string {
+  if (err instanceof EquipmentShopApiError && err.code === "LICENSE_REQUIRED") {
+    return err.message;
+  }
   return describeApiError(err, EquipmentShopApiError, ERROR_MESSAGE);
 }
 
@@ -522,6 +532,30 @@ function renderCatalogIcon(item: EquipmentShopCatalogEntry, size: number) {
   }
 
   return <ShopItemIcon slug={item.slug ?? item.key} size={size} />;
+}
+
+function isTowaskiLicenseCatalogItem(
+  item: EquipmentShopCatalogEntry,
+): boolean {
+  return (
+    item.zone === "towaski" &&
+    item.category === "SPECIAL" &&
+    item.key.startsWith("towaski-license-")
+  );
+}
+
+function matchesEquipmentShopTab(
+  item: EquipmentShopCatalogEntry,
+  tab: EquipmentShopTabValue,
+): boolean {
+  if (tab === "ALL") return true;
+  if (tab === "LICENSE") return isTowaskiLicenseCatalogItem(item);
+  return item.category === tab;
+}
+
+function getCatalogCategoryLabel(item: EquipmentShopCatalogEntry): string {
+  if (isTowaskiLicenseCatalogItem(item)) return "LICENSE";
+  return CATEGORY_LABELS[item.category];
 }
 
 function getResearchBranchRank(branch: string): number {
@@ -594,9 +628,26 @@ function buildTowaskiWelcomeLine(args: {
 
 function buildTowaskiItemLine(
   item: EquipmentShopCatalogEntry,
+  codename?: string | null,
 ): { mood: TowaskiMood; text: string } {
   if (item.stock <= 0 || !item.available) {
     return { mood: "stock", text: TOWASKI_DIALOGUE_LINES.unavailable };
+  }
+
+  if (codename === "BIG BOY" && item.key === "basic-flamethrower") {
+    return {
+      mood: "stock",
+      text:
+        "박애솔 건은 따로 봐둔다. 화염방사기 훈련 기록이랑 내 예외 장부가 같이 움직여.",
+    };
+  }
+
+  if (item.key.startsWith("towaski-license-")) {
+    return {
+      mood: "inspect",
+      text:
+        "라이센스는 물건이 아니라 반출 자격이다. 훈련 기록이 없으면 이 줄부터 처리해.",
+    };
   }
 
   const itemDialogue = getTowaskiItemDialogue(item);
@@ -637,6 +688,10 @@ function buildTowaskiItemLine(
 }
 
 function buildTowaskiCartLine(item: EquipmentShopCatalogEntry): string {
+  if (item.key.startsWith("towaski-license-")) {
+    return "라이센스 장부에 올렸다. 종이 한 장이 총보다 조용해도, 막히면 그게 제일 무겁다.";
+  }
+
   const itemDialogue = getTowaskiItemDialogue(item);
   if (itemDialogue) {
     return pickStableLine(itemDialogue.cart, `${item.key}:cart`);
@@ -670,6 +725,10 @@ function buildTowaskiCartLine(item: EquipmentShopCatalogEntry): string {
 
 function buildTowaskiRemoveLine(item: EquipmentShopCatalogEntry | null): string {
   if (!item) return TOWASKI_DIALOGUE_LINES.removed;
+
+  if (item.key.startsWith("towaski-license-")) {
+    return "라이센스 줄은 지웠다. 자격 없이 나가는 물건도 같이 막힐 거다.";
+  }
 
   const itemDialogue = getTowaskiItemDialogue(item);
   if (itemDialogue?.remove) {
@@ -710,6 +769,8 @@ function buildTowaskiTabLine(tab: EquipmentShopTabValue): string {
       return "방호구 쪽이군. 방탄복은 한 번 피격되면 부서진다. 그래도 스타마트 회복품보다 성능은 낫다. 맞고 나서 고치는 것보다 맞기 전에 막아.";
     case "CONSUMABLE":
       return "소모품은 쓰고 사라진다. 그래서 필요할 때 없으면 제일 욕먹지.";
+    case "LICENSE":
+      return "라이센스는 총이 아니지만, 총보다 먼저 나간다. 자격 없는 반출은 내 카운터에서 끝이야.";
     default:
       return TOWASKI_DIALOGUE_LINES.category;
   }
@@ -1088,20 +1149,14 @@ export default function EquipmentShopClient({
   }, [catalog.items]);
 
   const towaskiItems = useMemo(() => {
-    if (activeTab === "ALL") {
-      return catalog.items.filter((item) => item.zone === "towaski");
-    }
     return catalog.items.filter(
-      (item) => item.zone === "towaski" && item.category === activeTab,
+      (item) => item.zone === "towaski" && matchesEquipmentShopTab(item, activeTab),
     );
   }, [activeTab, catalog.items]);
 
   const acheronItems = useMemo(() => {
-    if (activeTab === "ALL") {
-      return catalog.items.filter((item) => item.zone === "acheron");
-    }
     return catalog.items.filter(
-      (item) => item.zone === "acheron" && item.category === activeTab,
+      (item) => item.zone === "acheron" && matchesEquipmentShopTab(item, activeTab),
     );
   }, [activeTab, catalog.items]);
 
@@ -1352,7 +1407,7 @@ export default function EquipmentShopClient({
   function handleSelectSalesItem(item: EquipmentShopCatalogEntry) {
     setSelectedKey(item.key);
     if (activeZone === "towaski") {
-      const nextLine = buildTowaskiItemLine(item);
+      const nextLine = buildTowaskiItemLine(item, mainCharacter?.codename);
       playTowaskiIfActive(nextLine.mood, nextLine.text);
     }
   }
@@ -1882,6 +1937,9 @@ export default function EquipmentShopClient({
     const isAcheron = activeZone === "acheron";
     const isStandardCatalog = isTowaski || isAcheron;
     const activeCatalogZone = isAcheron ? "acheron" : "towaski";
+    const visibleTabs = isTowaski
+      ? TAB_DEFS
+      : TAB_DEFS.filter((tab) => tab.value !== "LICENSE");
 
     return (
       <div className={styles.salesLayout}>
@@ -1892,19 +1950,13 @@ export default function EquipmentShopClient({
               aria-label={`${activeZoneDef.label} 카테고리`}
               className={styles.filters}
             >
-              {TAB_DEFS.map((tab) => {
+              {visibleTabs.map((tab) => {
                 const isActive = activeTab === tab.value;
-                const count =
-                  tab.value === "ALL"
-                    ? catalog.items.filter(
-                        (item) => item.zone === activeCatalogZone,
-                      )
-                        .length
-                    : catalog.items.filter(
-                        (item) =>
-                          item.zone === activeCatalogZone &&
-                          item.category === tab.value,
-                      ).length;
+                const count = catalog.items.filter(
+                  (item) =>
+                    item.zone === activeCatalogZone &&
+                    matchesEquipmentShopTab(item, tab.value),
+                ).length;
                 return (
                   <button
                     key={tab.value}
@@ -1970,14 +2022,18 @@ export default function EquipmentShopClient({
                       aria-pressed={isSelected}
                     >
                       <span className={styles.productTop}>
-                        <span>{CATEGORY_LABELS[item.category]}</span>
+                        <span>{getCatalogCategoryLabel(item)}</span>
                         <span>{isSoldOut ? "LOCKED" : `${item.stock} EA`}</span>
                       </span>
                       <span className={styles.productIcon} aria-hidden>
                         {renderCatalogIcon(item, 48)}
                       </span>
                       <span className={styles.productName}>{item.name}</span>
-                      <span className={styles.productEffect}>{item.effect}</span>
+                      <span className={styles.productEffect}>
+                        {item.licenseRequirement
+                          ? `${item.effect} · ${item.licenseRequirement.label} 필요`
+                          : item.effect}
+                      </span>
                       <strong>{formatCredits(item.price)}</strong>
                     </button>
                     <button
@@ -2004,11 +2060,17 @@ export default function EquipmentShopClient({
                     {renderCatalogIcon(selectedItem, 58)}
                   </span>
                   <div>
-                    <span>{CATEGORY_LABELS[selectedItem.category]}</span>
+                    <span>{getCatalogCategoryLabel(selectedItem)}</span>
                     <h2>{selectedItem.name}</h2>
                   </div>
                 </div>
                 <p>{selectedItem.description}</p>
+                {selectedItem.licenseRequirement ? (
+                  <p>
+                    필요 자격: {selectedItem.licenseRequirement.licenseName} ·{" "}
+                    {selectedItem.licenseRequirement.reason}
+                  </p>
+                ) : null}
                 <div className={styles.detailStats}>
                   <span>{selectedItem.effect}</span>
                   <strong>{formatCredits(selectedItem.price)}</strong>

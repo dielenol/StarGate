@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Towaski heavy weapon license placeholder">
+  <rect width="256" height="256" fill="#1f1a17"/>
+  <rect x="34" y="28" width="188" height="200" rx="10" fill="#f4eee3"/>
+  <rect x="50" y="48" width="156" height="22" fill="#3b2f2f"/>
+  <rect x="68" y="126" width="94" height="22" rx="3" fill="#4b5563"/>
+  <rect x="156" y="118" width="34" height="38" rx="4" fill="#4b5563"/>
+  <path d="M96 148l-20 36M134 148l20 36" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/>
+  <rect x="76" y="112" width="62" height="12" rx="2" fill="#6b7280"/>
+  <circle cx="178" cy="58" r="20" fill="#a16207"/>
+  <path d="M168 58l7 7 14-16" fill="none" stroke="#fff7ed" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="128" y="102" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1f1a17">HEAVY</text>
+  <text x="128" y="204" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#1f1a17">TOWASKI LICENSE</text>
+</svg>

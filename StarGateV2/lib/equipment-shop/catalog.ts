@@ -1,5 +1,11 @@
 import type { ItemCategory, MasterItem } from "@stargate/shared-db/types";
 
+import {
+  getEquipmentLicenseRequirement,
+  TOWASKI_LICENSE_TAG_KEYWORDS,
+  type EquipmentLicenseRequirement,
+} from "./licenses";
+
 export const EQUIPMENT_SHOP_CATEGORIES = [
   "WEAPON",
   "ARMOR",
@@ -23,6 +29,10 @@ export interface EquipmentShopCatalogItem {
   previewImage?: string;
   stock: number;
   available: boolean;
+  licenseRequirement?: Pick<
+    EquipmentLicenseRequirement,
+    "licenseSlug" | "licenseName" | "label" | "reason"
+  >;
 }
 
 const CATEGORY_LABELS: Record<EquipmentShopCategory, string> = {
@@ -111,6 +121,12 @@ export function equipmentShopItemZone(
 
   if (item.category !== "SPECIAL") return null;
 
+  const towaskiLicense = hasNormalizedTag(
+    normalizedTags,
+    TOWASKI_LICENSE_TAG_KEYWORDS,
+  );
+  if (towaskiLicense) return "towaski";
+
   const strategic = hasNormalizedTag(normalizedTags, STRATEGIC_TAG_KEYWORDS);
   return strategic ? "strategic" : null;
 }
@@ -158,6 +174,7 @@ export function toEquipmentShopCatalogItem(
   const price = toEquipmentPriceNumber(item.price);
   const available =
     item.isAvailable !== false && item.isPublic !== false && price !== null;
+  const licenseRequirement = getEquipmentLicenseRequirement(item);
 
   return {
     key,
@@ -172,6 +189,16 @@ export function toEquipmentShopCatalogItem(
       `${CATEGORY_LABELS[item.category]} 카탈로그에 등록된 장비입니다.`,
     ...(item.damage ? { damage: item.damage } : {}),
     ...(item.previewImage ? { previewImage: item.previewImage } : {}),
+    ...(licenseRequirement
+      ? {
+          licenseRequirement: {
+            licenseSlug: licenseRequirement.licenseSlug,
+            licenseName: licenseRequirement.licenseName,
+            label: licenseRequirement.label,
+            reason: licenseRequirement.reason,
+          },
+        }
+      : {}),
     stock: available ? 1 : 0,
     available,
   };

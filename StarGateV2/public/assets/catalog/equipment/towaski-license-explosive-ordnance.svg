@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Towaski explosive ordnance license placeholder">
+  <rect width="256" height="256" fill="#191512"/>
+  <rect x="34" y="28" width="188" height="200" rx="10" fill="#f6efe7"/>
+  <rect x="50" y="48" width="156" height="22" fill="#3b2a20"/>
+  <path d="M128 82l12 36 38-10-26 30 26 30-38-10-12 36-12-36-38 10 26-30-26-30 38 10z" fill="#f59e0b"/>
+  <circle cx="128" cy="138" r="26" fill="#b3261e"/>
+  <circle cx="178" cy="58" r="20" fill="#7c2d12"/>
+  <path d="M168 58l7 7 14-16" fill="none" stroke="#fff7ed" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="128" y="102" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#191512">ORDNANCE</text>
+  <text x="128" y="204" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#191512">TOWASKI LICENSE</text>
+</svg>
