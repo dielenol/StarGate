@@ -1,0 +1,13 @@
+{
+  "collection": "master_items",
+  "type": "jetpack-image-sync-2026-07-09",
+  "filter": {
+    "slug": "jetpack"
+  },
+  "update": {
+    "$set": {
+      "previewImage": "/assets/catalog/special/jetpack.webp",
+      "updatedAt": "2026-07-09T00:00:00.000Z"
+    }
+  }
+}

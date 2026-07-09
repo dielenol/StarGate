@@ -7,13 +7,13 @@ category: SPECIAL
 price: 1000
 effect: 최대 2라운드 공중 체류 / 지상-공중 장거리 판정
 description: 최대 2라운드 동안 다섯 개 라인에서 벗어나 공중에 상주할 수 있는 개인 기동 장비.
-previewImage:
+previewImage: /assets/catalog/special/jetpack.webp
 isAvailable: true
 isPublic: true
 tags: [병기부, 전략 장비 보급소, 전투보조, 군인전용, 기동장비, 공중]
 source: manual
 createdAt: 2026-05-13T00:00:00Z
-updatedAt: 2026-07-08T00:00:00Z
+updatedAt: 2026-07-09T00:00:00Z
 ---
 
 ## 설명
