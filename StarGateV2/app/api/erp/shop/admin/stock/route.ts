@@ -11,10 +11,11 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { getAllDailyStocks, refreshStock } from "@/lib/db/shop";
+import { getAllDailyStocks, getStock, refreshStock } from "@/lib/db/shop";
 import { findShopItemBySlug, SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import { listPendingShopReorderRequests } from "@/lib/shop/reorder-requests";
+import { recordShopStockAuditLog } from "@/lib/shop/stock-audit";
 
 export async function GET() {
   const session = await auth();
@@ -98,7 +99,8 @@ export async function PATCH(request: Request) {
   if (!itemId) {
     return NextResponse.json({ error: "itemId 누락" }, { status: 400 });
   }
-  if (!findShopItemBySlug(itemId)) {
+  const catalogItem = findShopItemBySlug(itemId);
+  if (!catalogItem) {
     return NextResponse.json(
       { error: `unknown itemId: ${itemId}` },
       { status: 400 },
@@ -113,7 +115,20 @@ export async function PATCH(request: Request) {
 
   try {
     const today = getTodayKst();
+    const before = (await getStock(itemId))?.stock ?? 0;
     await refreshStock(itemId, stock, today);
+    await recordShopStockAuditLog({
+      action: "ADMIN_SET",
+      itemSlug: itemId,
+      itemName: catalogItem.name,
+      delta: stock - before,
+      stockBefore: before,
+      stockAfter: stock,
+      actorId: session.user.id,
+      actorName: session.user.displayName,
+      actorType: "GM",
+      source: "shop_admin_stock",
+    });
     return NextResponse.json({ ok: true, itemId, stock, lastRefresh: today });
   } catch (err) {
     const message = err instanceof Error ? err.message : "재고 업데이트 실패";

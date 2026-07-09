@@ -177,3 +177,103 @@ export async function fulfillShopReorderRequestAndIncrementStock(input: {
 
   return { request: fulfilledRequest, stock: stockDoc };
 }
+
+export async function fulfillShopReorderRequestsAndIncrementStock(input: {
+  requestIds: string[];
+  quantity: number;
+  fulfilledById: string;
+  fulfilledByName: string;
+  fulfilledAt: Date;
+  itemId: string;
+  today: string;
+}): Promise<{
+  requests: ShopReorderRequestDoc[];
+  stock: ShopDailyStockDoc;
+}> {
+  if (input.quantity <= 0) {
+    throw new Error(`fulfillShopReorderRequests: quantity must be positive`);
+  }
+
+  const requestIds = Array.from(new Set(input.requestIds));
+  if (requestIds.length === 0) {
+    throw new Error(`fulfillShopReorderRequests: requestIds required`);
+  }
+
+  const client = await getClient();
+  const db = await getDb();
+  const session = client.startSession();
+  let fulfilledRequests: ShopReorderRequestDoc[] = [];
+  let stockDoc: ShopDailyStockDoc | null = null;
+
+  try {
+    await session.withTransaction(async () => {
+      const requests = await db
+        .collection<ShopReorderRequestDoc>("shop_reorder_requests")
+        .find(
+          {
+            _id: { $in: requestIds },
+            kind: "shop-reorder-request",
+            status: "REQUESTED",
+            slug: input.itemId,
+          },
+          { session },
+        )
+        .toArray();
+
+      if (requests.length !== requestIds.length) {
+        throw new ShopReorderRequestNotPendingError(requestIds.join(","));
+      }
+
+      const updateResult = await db
+        .collection<ShopReorderRequestDoc>("shop_reorder_requests")
+        .updateMany(
+          {
+            _id: { $in: requestIds },
+            kind: "shop-reorder-request",
+            status: "REQUESTED",
+            slug: input.itemId,
+          },
+          {
+            $set: {
+              status: "FULFILLED",
+              fulfilledAt: input.fulfilledAt,
+              fulfilledById: input.fulfilledById,
+              fulfilledByName: input.fulfilledByName,
+              fulfilledQuantity: input.quantity,
+            },
+          },
+          { session },
+        );
+
+      if (updateResult.modifiedCount !== requestIds.length) {
+        throw new ShopReorderRequestNotPendingError(requestIds.join(","));
+      }
+
+      stockDoc = await db
+        .collection<ShopDailyStockDoc>("shop_daily_stock")
+        .findOneAndUpdate(
+          { itemId: input.itemId },
+          {
+            $inc: { stock: input.quantity },
+            $set: { lastRefresh: input.today },
+            $setOnInsert: { itemId: input.itemId },
+          },
+          { upsert: true, returnDocument: "after", session },
+        );
+
+      if (!stockDoc) {
+        throw new Error(`fulfillShopReorderRequests: stock update failed`);
+      }
+
+      fulfilledRequests = requests;
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  if (fulfilledRequests.length === 0 || !stockDoc) {
+    throw new Error(`fulfillShopReorderRequests: transaction failed`);
+  }
+
+  return { requests: fulfilledRequests, stock: stockDoc };
+}

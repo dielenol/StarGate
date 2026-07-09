@@ -1,7 +1,7 @@
 /**
- * POST /api/erp/shop/admin/reorder-requests/fulfill — GM 전용 발주 완료 처리.
+ * POST /api/erp/shop/admin/reorder-requests/fulfill-batch — GM 전용 발주 묶음 처리.
  *
- * 대기 발주 요청을 FULFILLED 로 닫고, 해당 편의점 품목의 당일 재고를 증가시킨다.
+ * 같은 품목의 여러 대기 발주 요청을 한 번에 닫고, 총 입고 수량만큼 재고를 증가시킨다.
  */
 
 import { NextResponse, after } from "next/server";
@@ -9,18 +9,18 @@ import { NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { notifyShopReorderFulfilled } from "@/lib/discord";
-import { notifyUser } from "@/lib/notifications/events";
+import { notifyUsers } from "@/lib/notifications/events";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import {
-  findShopReorderRequestById,
-  fulfillShopReorderRequestAndIncrementStock,
+  fulfillShopReorderRequestsAndIncrementStock,
   ShopReorderRequestNotPendingError,
 } from "@/lib/shop/reorder-requests";
 import { recordShopStockAuditLog } from "@/lib/shop/stock-audit";
 
-interface FulfillRequestBody {
-  requestId?: unknown;
+interface FulfillBatchRequestBody {
+  slug?: unknown;
+  requestIds?: unknown;
   quantity?: unknown;
 }
 
@@ -41,33 +41,33 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => null)) as
-    | FulfillRequestBody
+    | FulfillBatchRequestBody
     | null;
-  const requestId =
-    typeof body?.requestId === "string" ? body.requestId.trim() : "";
+  const slug = typeof body?.slug === "string" ? body.slug.trim() : "";
+  const requestIds = Array.isArray(body?.requestIds)
+    ? Array.from(
+        new Set(
+          body.requestIds
+            .map((id) => (typeof id === "string" ? id.trim() : ""))
+            .filter(Boolean),
+        ),
+      )
+    : [];
 
-  if (!requestId) {
-    return NextResponse.json({ error: "requestId 누락" }, { status: 400 });
+  if (!slug) {
+    return NextResponse.json({ error: "slug 누락" }, { status: 400 });
   }
-
-  const reorder = await findShopReorderRequestById(requestId);
-  if (!reorder) {
+  if (requestIds.length === 0 || requestIds.length > 50) {
     return NextResponse.json(
-      { error: "발주 요청을 찾을 수 없습니다." },
-      { status: 404 },
+      { error: "requestIds 는 1~50개여야 합니다." },
+      { status: 400 },
     );
   }
-  if (reorder.status !== "REQUESTED") {
-    return NextResponse.json(
-      { error: "이미 처리된 발주 요청입니다.", code: "REORDER_ALREADY_FULFILLED" },
-      { status: 409 },
-    );
-  }
 
-  const item = findShopItemBySlug(reorder.slug);
+  const item = findShopItemBySlug(slug);
   if (!item) {
     return NextResponse.json(
-      { error: `편의점 카탈로그에 없는 발주 품목입니다: ${reorder.slug}` },
+      { error: `편의점 카탈로그에 없는 발주 품목입니다: ${slug}` },
       { status: 409 },
     );
   }
@@ -84,9 +84,9 @@ export async function POST(request: Request) {
   try {
     const today = getTodayKst();
     const fulfilledAt = new Date();
-    const { request: fulfilled, stock } =
-      await fulfillShopReorderRequestAndIncrementStock({
-        requestId,
+    const { requests, stock } =
+      await fulfillShopReorderRequestsAndIncrementStock({
+        requestIds,
         quantity,
         fulfilledById: session.user.id,
         fulfilledByName: session.user.displayName,
@@ -94,6 +94,7 @@ export async function POST(request: Request) {
         itemId: item.slug,
         today,
       });
+
     await recordShopStockAuditLog({
       action: "REORDER_FULFILL",
       itemSlug: item.slug,
@@ -103,27 +104,29 @@ export async function POST(request: Request) {
       actorId: session.user.id,
       actorName: session.user.displayName,
       actorType: "GM",
-      source: "shop_reorder_fulfill",
+      source: "shop_reorder_fulfill_batch",
       metadata: {
-        requestId,
-        requesterUserId: fulfilled.userId,
+        requestCount: requests.length,
+        requestIds,
       },
     });
 
     after(async () => {
-      await notifyUser({
-        userId: fulfilled.userId,
-        type: "SYSTEM",
-        title: "편의점 추가 발주가 완료되었습니다",
-        message: [
-          fulfilled.characterCodename
-            ? `${fulfilled.characterCodename} · ${item.name}`
-            : item.name,
-          `+${quantity.toLocaleString("ko-KR")} EA 입고`,
-          "편의점에서 확인하세요",
-        ].join(" · "),
-        link: "/erp/shop",
-      });
+      await notifyUsers(
+        requests.map((fulfilled) => ({
+          userId: fulfilled.userId,
+          type: "SYSTEM",
+          title: "편의점 추가 발주가 완료되었습니다",
+          message: [
+            fulfilled.characterCodename
+              ? `${fulfilled.characterCodename} · ${item.name}`
+              : item.name,
+            `+${quantity.toLocaleString("ko-KR")} EA 입고`,
+            "편의점에서 확인하세요",
+          ].join(" · "),
+          link: "/erp/shop",
+        })),
+      );
 
       await notifyShopReorderFulfilled({
         today,
@@ -143,31 +146,32 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       status: "fulfilled",
-      requestId,
+      requestIds,
       slug: item.slug,
       itemName: item.name,
       quantity,
       stock: stock.stock,
       lastRefresh: stock.lastRefresh,
-      message: "발주 요청에 따라 추가 입고가 완료되었습니다.",
+      message: "발주 요청 묶음에 따라 추가 입고가 완료되었습니다.",
     });
   } catch (error) {
     if (error instanceof ShopReorderRequestNotPendingError) {
       return NextResponse.json(
         {
-          error: "이미 처리된 발주 요청입니다.",
+          error: "이미 처리되었거나 품목이 다른 발주 요청이 포함되어 있습니다.",
           code: "REORDER_ALREADY_FULFILLED",
         },
         { status: 409 },
       );
     }
 
-    console.error("[shop reorder fulfill] stock update failed", {
-      requestId,
+    console.error("[shop reorder fulfill batch] stock update failed", {
+      slug,
+      requestIds,
       error: getErrorMessage(error),
     });
     return NextResponse.json(
-      { error: "발주 완료 처리 중 재고 업데이트에 실패했습니다." },
+      { error: "발주 묶음 처리 중 재고 업데이트에 실패했습니다." },
       { status: 500 },
     );
   }

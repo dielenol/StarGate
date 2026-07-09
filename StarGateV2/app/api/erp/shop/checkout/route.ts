@@ -25,6 +25,7 @@ import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import { findShopItemBySlug, SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getShopOpenState } from "@/lib/shop/open-state";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
+import { recordShopStockAuditLog } from "@/lib/shop/stock-audit";
 
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY_PER_ITEM = 9;
@@ -80,16 +81,33 @@ function formatOrderDescription(lines: CheckoutLine[]): string {
 }
 
 async function restoreReducedStock(
-  reducedLines: Array<{ slug: string; quantity: number }>,
+  reducedLines: Array<{ slug: string; name: string; quantity: number }>,
+  reason: string,
+  metadata: Record<string, unknown> = {},
 ): Promise<void> {
   await Promise.all(
     reducedLines.map((line) =>
-      restoreStock(line.slug, line.quantity).catch((err) => {
-        console.error(
-          `[shop/checkout] restoreStock 보상 실패 slug=${line.slug} qty=${line.quantity}:`,
-          err,
-        );
-      }),
+      restoreStock(line.slug, line.quantity)
+        .then(() =>
+          recordShopStockAuditLog({
+            action: "STOCK_RESTORE",
+            itemSlug: line.slug,
+            itemName: line.name,
+            delta: line.quantity,
+            actorId: SYSTEM_USER_ID_SENTINEL,
+            actorName: SYSTEM_REFUND_NAME,
+            actorType: "SYSTEM",
+            source: "shop_checkout_compensation",
+            reason,
+            metadata,
+          }),
+        )
+        .catch((err) => {
+          console.error(
+            `[shop/checkout] restoreStock 보상 실패 slug=${line.slug} qty=${line.quantity}:`,
+            err,
+          );
+        }),
     ),
   );
 }
@@ -212,7 +230,8 @@ export async function POST(request: Request) {
   }
 
   const totalPrice = lines.reduce((sum, line) => sum + line.totalPrice, 0);
-  const reducedLines: Array<{ slug: string; quantity: number }> = [];
+  const reducedLines: Array<{ slug: string; name: string; quantity: number }> =
+    [];
   const addedInventoryLines: Array<{
     itemId: string;
     quantity: number;
@@ -222,7 +241,9 @@ export async function POST(request: Request) {
   for (const line of lines) {
     const stockOk = await reduceStock(line.slug, line.quantity);
     if (!stockOk) {
-      await restoreReducedStock(reducedLines);
+      await restoreReducedStock(reducedLines, "checkout_stock_failed", {
+        failedSlug: line.slug,
+      });
       return NextResponse.json(
         {
           error: `${line.name} 재고가 부족합니다.`,
@@ -232,7 +253,25 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    reducedLines.push({ slug: line.slug, quantity: line.quantity });
+    reducedLines.push({
+      slug: line.slug,
+      name: line.name,
+      quantity: line.quantity,
+    });
+    await recordShopStockAuditLog({
+      action: "CHECKOUT_REDUCE",
+      itemSlug: line.slug,
+      itemName: line.name,
+      delta: -line.quantity,
+      actorId: session.user.id,
+      actorName: session.user.displayName,
+      actorType: "USER",
+      source: "shop_checkout",
+      metadata: {
+        characterId: String(mainChar._id),
+        characterCodename: mainChar.codename,
+      },
+    });
   }
 
   let creditTx;
@@ -262,7 +301,10 @@ export async function POST(request: Request) {
       createdByName: session.user.displayName,
     });
   } catch (err) {
-    await restoreReducedStock(reducedLines);
+    await restoreReducedStock(reducedLines, "credit_charge_failed", {
+      characterId: String(mainChar._id),
+      characterCodename: mainChar.codename,
+    });
     if (err instanceof Error && err.message.includes("음수 잔액")) {
       return NextResponse.json(
         { error: "잔액이 부족합니다.", code: "INSUFFICIENT_BALANCE" },
@@ -291,7 +333,11 @@ export async function POST(request: Request) {
     }
   } catch (err) {
     await Promise.all([
-      restoreReducedStock(reducedLines),
+      restoreReducedStock(reducedLines, "inventory_add_failed", {
+        characterId: String(mainChar._id),
+        characterCodename: mainChar.codename,
+        creditTxId: String(creditTx._id ?? ""),
+      }),
       rollbackAddedInventory(String(mainChar._id), addedInventoryLines),
     ]);
 

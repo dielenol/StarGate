@@ -104,12 +104,14 @@ async function throwShopError(res: Response): Promise<never> {
   const body = (await res.json().catch(() => ({}))) as {
     error?: string;
     code?: string;
+    slug?: string;
   };
   throw new ShopApiError(
     body.error ?? "편의점 요청에 실패했습니다.",
     res.status,
     // ShopErrorCode 외 값이 와도 string 그대로 보존.
     (body.code ?? undefined) as ShopApiError["code"],
+    body.slug,
   );
 }
 

@@ -33,6 +33,7 @@ import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getShopOpenState } from "@/lib/shop/open-state";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
+import { recordShopStockAuditLog } from "@/lib/shop/stock-audit";
 
 /* ── 상수 ── */
 
@@ -186,6 +187,20 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  await recordShopStockAuditLog({
+    action: "PURCHASE_REDUCE",
+    itemSlug: slug,
+    itemName: catalogItem.name,
+    delta: -quantity,
+    actorId: session.user.id,
+    actorName: session.user.displayName,
+    actorType: "USER",
+    source: "shop_buy",
+    metadata: {
+      characterId: String(mainChar._id),
+      characterCodename: mainChar.codename,
+    },
+  });
 
   // Step 2: 잔액 차감 — 음수 잔액 거부 (allowNegative:false 기본).
   let creditTx;
@@ -204,12 +219,30 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     // Step 1 보상.
-    await restoreStock(slug, quantity).catch((restoreErr) => {
-      console.error(
-        `[shop/buy] restoreStock 보상 실패 (slug=${slug}, qty=${quantity}): `,
-        restoreErr,
-      );
-    });
+    await restoreStock(slug, quantity)
+      .then(() =>
+        recordShopStockAuditLog({
+          action: "STOCK_RESTORE",
+          itemSlug: slug,
+          itemName: catalogItem.name,
+          delta: quantity,
+          actorId: SYSTEM_USER_ID_SENTINEL,
+          actorName: SYSTEM_REFUND_NAME,
+          actorType: "SYSTEM",
+          source: "shop_buy_compensation",
+          reason: "credit_charge_failed",
+          metadata: {
+            characterId: String(mainChar._id),
+            characterCodename: mainChar.codename,
+          },
+        }),
+      )
+      .catch((restoreErr) => {
+        console.error(
+          `[shop/buy] restoreStock 보상 실패 (slug=${slug}, qty=${quantity}): `,
+          restoreErr,
+        );
+      });
 
     if (err instanceof Error && err.message.includes("음수 잔액")) {
       return NextResponse.json(
@@ -233,13 +266,32 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     // Step 1 + Step 2 보상.
-    await restoreStock(slug, quantity).catch((restoreErr) => {
-      console.error(
-        `[shop/buy] restoreStock 보상 실패 (slug=${slug}, qty=${quantity}, ` +
-          `creditTxId=${String(creditTx._id ?? "?")}): `,
-        restoreErr,
-      );
-    });
+    await restoreStock(slug, quantity)
+      .then(() =>
+        recordShopStockAuditLog({
+          action: "STOCK_RESTORE",
+          itemSlug: slug,
+          itemName: catalogItem.name,
+          delta: quantity,
+          actorId: SYSTEM_USER_ID_SENTINEL,
+          actorName: SYSTEM_REFUND_NAME,
+          actorType: "SYSTEM",
+          source: "shop_buy_compensation",
+          reason: "inventory_add_failed",
+          metadata: {
+            characterId: String(mainChar._id),
+            characterCodename: mainChar.codename,
+            creditTxId: String(creditTx._id ?? ""),
+          },
+        }),
+      )
+      .catch((restoreErr) => {
+        console.error(
+          `[shop/buy] restoreStock 보상 실패 (slug=${slug}, qty=${quantity}, ` +
+            `creditTxId=${String(creditTx._id ?? "?")}): `,
+          restoreErr,
+        );
+      });
 
     // 환불 ledger — 실패 시 응답 코드 분리 (REFUND_FAILED).
     // TODO(M3-B): 보상 환불 type 을 SYSTEM_REFUND 로 분리 (ADMIN_GRANT 와 ledger 분류 구분).

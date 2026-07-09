@@ -97,6 +97,45 @@
   text-transform: uppercase;
 }
 
+.summaryBar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-2) 72%, transparent);
+}
+
+.summaryItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.16);
+  font-family: var(--font-mono);
+}
+
+.summaryItem span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.summaryItem strong {
+  color: var(--gold);
+  font-size: 18px;
+  line-height: 1;
+}
+
 .tableWrap {
   overflow: auto;
   flex: 1;
@@ -186,15 +225,58 @@
 .reorderPanel__head {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
   font-family: var(--font-mono);
   font-size: 14px;
   color: var(--ink-2);
 }
 
+.reorderPanel__head > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
 .reorderPanel__head strong {
   color: var(--gold);
   font-weight: 700;
+}
+
+.reorderPanel__head span {
+  font-size: 14px;
+}
+
+.batchControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.batchControls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.batchControls input {
+  width: 72px;
+  padding: 5px 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-align: right;
+}
+
+.batchControls input:focus {
+  outline: none;
+  border-color: var(--gold);
 }
 
 .reorderList {
@@ -331,7 +413,8 @@
 }
 
 .cellInput {
-  white-space: nowrap;
+  display: grid;
+  gap: 6px;
 }
 
 .input {
@@ -344,6 +427,35 @@
   font-family: var(--font-mono);
   font-size: 14px;
   text-align: right;
+}
+
+.quickActions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  width: 112px;
+}
+
+.quickActions button {
+  min-width: 0;
+  padding: 3px 4px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.quickActions button:hover:not(:disabled) {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.quickActions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .input:focus {
@@ -456,6 +568,16 @@
 }
 
 @media (max-width: 760px) {
+  .summaryBar {
+    grid-template-columns: 1fr;
+  }
+
+  .reorderPanel__head,
+  .batchControls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .reorderRequest {
     grid-template-columns: 1fr;
     align-items: stretch;

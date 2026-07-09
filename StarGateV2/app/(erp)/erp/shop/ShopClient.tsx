@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { ShopPageGroup } from "@stargate/shared-db/types";
 
@@ -129,6 +129,8 @@ const TIA_DIALOGUE_LINES = {
   noAgent: "앗... 먼저 메인 AGENT 확인이 필요해요. GM에게 문의해 주세요.",
   checkoutError:
     "잠깐만요... 결제 정보가 맞지 않는 것 같아요. 다시 한번 확인해 주세요.",
+  cartAdjusted:
+    "재고가 방금 바뀌었어요. 장바구니 수량을 최신 재고에 맞춰 다시 정리해뒀습니다.",
 } as const;
 
 const TIA_IDLE_LINES: readonly { mood: TiaMood; text: string }[] = [
@@ -212,6 +214,10 @@ export default function ShopClient({
   const [pendingReorderCount, setPendingReorderCount] = useState(
     initialPendingReorderCount,
   );
+  const [highlightedStockSlugs, setHighlightedStockSlugs] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const highlightTimersRef = useRef<number[]>([]);
   const [adminOpen, setAdminOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
@@ -354,6 +360,15 @@ export default function ShopClient({
     stopTiaEngine,
   ]);
 
+  useEffect(() => {
+    const timers = highlightTimersRef.current;
+    return () => {
+      for (const timer of timers) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, []);
+
   function setCartQuantity(slug: string, quantity: number) {
     const item = catalogBySlug.get(slug);
     const max = item ? Math.min(item.stock, MAX_CART_QUANTITY_PER_ITEM) : 0;
@@ -412,6 +427,26 @@ export default function ShopClient({
       delete next[slug];
       return next;
     });
+  }
+
+  function markStockHighlights(slugs: readonly string[] = []) {
+    const uniqueSlugs = Array.from(new Set(slugs.filter(Boolean)));
+    if (uniqueSlugs.length === 0) return;
+
+    setHighlightedStockSlugs((prev) => {
+      const next = new Set(prev);
+      for (const slug of uniqueSlugs) next.add(slug);
+      return next;
+    });
+
+    const timer = window.setTimeout(() => {
+      setHighlightedStockSlugs((prev) => {
+        const next = new Set(prev);
+        for (const slug of uniqueSlugs) next.delete(slug);
+        return next;
+      });
+    }, 9000);
+    highlightTimersRef.current.push(timer);
   }
 
   function setReorderPending(slug: string, pending: boolean) {
@@ -488,6 +523,7 @@ export default function ShopClient({
         onError: (err) => {
           if (err instanceof ShopApiError && err.code === "OUT_OF_STOCK") {
             playTiaLine("soldout", TIA_DIALOGUE_LINES.soldOut);
+            void reconcileCartWithLatestStock(err.slug);
           } else {
             playTiaLine("tired", TIA_DIALOGUE_LINES.checkoutError);
           }
@@ -495,6 +531,37 @@ export default function ShopClient({
         },
       },
     );
+  }
+
+  async function reconcileCartWithLatestStock(failedSlug?: string) {
+    const result = await catalogQuery.refetch();
+    const latestCatalog = result.data ?? catalog;
+    const latestBySlug = new Map(
+      latestCatalog.items.map((item) => [item.slug, item]),
+    );
+    let changed = false;
+    const nextCart: CartState = {};
+    for (const [slug, quantity] of Object.entries(cart)) {
+      const latest = latestBySlug.get(slug);
+      const nextQuantity = latest
+        ? Math.min(quantity, latest.stock, MAX_CART_QUANTITY_PER_ITEM)
+        : 0;
+      if (nextQuantity > 0) {
+        nextCart[slug] = nextQuantity;
+      }
+      if (nextQuantity !== quantity || slug === failedSlug) {
+        changed = true;
+      }
+    }
+    setCart(nextCart);
+
+    if (changed) {
+      setNotice({
+        tone: "info",
+        text: "재고 변경을 반영해 장바구니 수량을 조정했습니다.",
+      });
+      playTiaLine("tired", TIA_DIALOGUE_LINES.cartAdjusted);
+    }
   }
 
   function handleOpenModeChange(mode: ShopOpenMode) {
@@ -755,6 +822,9 @@ export default function ShopClient({
                         styles.productCard,
                         isSelected ? styles["productCard--selected"] : "",
                         isSoldOut ? styles["productCard--soldOut"] : "",
+                        highlightedStockSlugs.has(item.slug)
+                          ? styles["productCard--restocked"]
+                          : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
@@ -1086,8 +1156,9 @@ export default function ShopClient({
       {adminOpen ? (
         <ShopAdminStockModal
           onClose={() => setAdminOpen(false)}
-          onSaved={() => {
+          onSaved={(changedSlugs) => {
             void catalogQuery.refetch();
+            markStockHighlights(changedSlugs ?? []);
           }}
           onPendingCountChange={setPendingReorderCount}
         />

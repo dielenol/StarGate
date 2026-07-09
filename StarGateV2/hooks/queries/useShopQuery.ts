@@ -36,11 +36,18 @@ export type ShopErrorCode =
 export class ShopApiError extends Error {
   readonly status: number;
   readonly code?: ShopErrorCode;
-  constructor(message: string, status: number, code?: ShopErrorCode) {
+  readonly slug?: string;
+  constructor(
+    message: string,
+    status: number,
+    code?: ShopErrorCode,
+    slug?: string,
+  ) {
     super(message);
     this.name = "ShopApiError";
     this.status = status;
     this.code = code;
+    this.slug = slug;
   }
 }
 
@@ -82,11 +89,13 @@ async function parseShopError(res: Response): Promise<never> {
   const body = (await res.json().catch(() => ({}))) as {
     error?: string;
     code?: ShopErrorCode;
+    slug?: string;
   };
   throw new ShopApiError(
     body.error ?? "편의점 API 호출에 실패했습니다.",
     res.status,
     body.code,
+    body.slug,
   );
 }
 
