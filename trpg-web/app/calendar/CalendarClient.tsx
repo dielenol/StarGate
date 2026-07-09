@@ -28,6 +28,15 @@ import { SessionDetailModal } from "./SessionDetailModal";
 import styles from "./styles.module.css";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
+const WEEKDAY_ICON_ITEMS = [
+  { label: "Sun", ariaLabel: "일요일", toneClass: "calendar__weekday--sun" },
+  { label: "Mon", ariaLabel: "월요일", toneClass: "calendar__weekday--mon" },
+  { label: "Tue", ariaLabel: "화요일", toneClass: "calendar__weekday--tue" },
+  { label: "Wed", ariaLabel: "수요일", toneClass: "calendar__weekday--wed" },
+  { label: "Thu", ariaLabel: "목요일", toneClass: "calendar__weekday--thu" },
+  { label: "Fri", ariaLabel: "금요일", toneClass: "calendar__weekday--fri" },
+  { label: "Sat", ariaLabel: "토요일", toneClass: "calendar__weekday--sat" },
+] as const;
 const MAX_VISIBLE_SESSIONS_PER_CELL = 2;
 
 interface Props {
@@ -268,14 +277,23 @@ export function CalendarClient({
 
         <section className={styles.calendar__board} aria-label="월간 캘린더">
           <div className={styles.calendar__weekdays}>
-            {WEEKDAY_LABELS.map((label, idx) => (
+            {WEEKDAY_ICON_ITEMS.map((item) => (
               <div
-                key={label}
+                key={item.label}
                 className={`${styles.calendar__weekday} ${
-                  idx === 0 ? styles["calendar__weekday--sun"] : ""
-                } ${idx === 6 ? styles["calendar__weekday--sat"] : ""}`}
+                  styles[item.toneClass]
+                }`}
+                aria-label={item.ariaLabel}
               >
-                {label}
+                <span
+                  className={styles["calendar__weekday-card"]}
+                  aria-hidden="true"
+                >
+                  <span className={styles["calendar__weekday-top"]} />
+                  <span className={styles["calendar__weekday-label"]}>
+                    {item.label}
+                  </span>
+                </span>
               </div>
             ))}
           </div>
