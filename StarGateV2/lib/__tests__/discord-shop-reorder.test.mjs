@@ -52,13 +52,6 @@ function makeFulfilledPayload(overrides = {}) {
       price: 1200,
       pageGroup: "BASIC",
     },
-    request: {
-      userName: "Tester",
-      characterCodename: "TEST-01",
-    },
-    fulfilledBy: {
-      displayName: "GM",
-    },
     quantity: 8,
     stock: 8,
     fulfilledAt: new Date("2026-07-09T03:05:00.000Z"),
@@ -143,5 +136,10 @@ test("shop reorder fulfillment uses the shop webhook", async (t) => {
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, "https://discord.test/shop");
   assert.equal(calls[0].body.username, "띠아");
-  assert.equal(calls[0].body.embeds[0].title, "편의점 추가 발주 완료");
+  assert.equal(calls[0].body.embeds[0].title, "편의점 추가 입고 완료");
+  assert.deepEqual(
+    calls[0].body.embeds[0].fields.map((field) => field.name),
+    ["입고 품목", "추가 수량 / 현재 재고", "편의점으로 가기"],
+  );
+  assert.doesNotMatch(JSON.stringify(calls[0].body), /Tester|TEST-01|GM/);
 });

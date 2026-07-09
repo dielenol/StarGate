@@ -118,15 +118,6 @@ export async function POST(request: Request) {
           price: item.price,
           pageGroup: item.pageGroup,
         },
-        request: {
-          userName: fulfilled.userName,
-          ...(fulfilled.characterCodename
-            ? { characterCodename: fulfilled.characterCodename }
-            : {}),
-        },
-        fulfilledBy: {
-          displayName: session.user.displayName,
-        },
         quantity,
         stock: stock.stock,
         fulfilledAt,

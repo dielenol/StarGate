@@ -315,13 +315,6 @@ export interface ShopReorderFulfilledWebhookPayload {
     price: number;
     pageGroup: "BASIC" | "RECOVERY" | "LUXURY" | "RARE";
   };
-  request: {
-    userName: string;
-    characterCodename?: string;
-  };
-  fulfilledBy: {
-    displayName: string;
-  };
   quantity: number;
   stock: number;
   fulfilledAt: Date;
@@ -540,20 +533,6 @@ export async function notifyShopReorderFulfilled(
       inline: true,
     },
     {
-      name: "요청",
-      value: sanitizeForDiscord(
-        payload.request.characterCodename
-          ? `${payload.request.characterCodename} · ${payload.request.userName}`
-          : payload.request.userName,
-      ),
-      inline: true,
-    },
-    {
-      name: "처리",
-      value: sanitizeForDiscord(payload.fulfilledBy.displayName),
-      inline: true,
-    },
-    {
       name: "편의점으로 가기",
       value: `[띠아 편의점 들어가기](${SHOP_WEB_URL})`,
     },
@@ -565,9 +544,9 @@ export async function notifyShopReorderFulfilled(
     allowed_mentions: { parse: [] },
     embeds: [
       {
-        title: "편의점 추가 발주 완료",
+        title: "편의점 추가 입고 완료",
         url: SHOP_WEB_URL,
-        description: "발주 요청에 따라 품목이 추가 입고됐어요.",
+        description: "품목이 추가 입고됐어요.",
         color: DISCORD_COLORS.shopRestock,
         fields,
         footer: { text: `${payload.today} KST` },
