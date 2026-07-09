@@ -4,6 +4,12 @@
   padding-bottom: calc(var(--armory-hud-height) + var(--armory-hud-bottom) + 14px);
 }
 
+.armoryRoot--hub {
+  --armory-hud-height: 0px;
+  --armory-hud-bottom: 0px;
+  padding-bottom: 0;
+}
+
 .notice,
 .errorBanner,
 .noticeBanner {
@@ -46,6 +52,10 @@
 }
 
 .armoryStage {
+  --armory-bg-image: url("/assets/shop/store-bg.webp");
+  --armory-bg-position: center;
+  --armory-bg-overlay:
+    linear-gradient(180deg, rgba(7, 9, 10, 0.74), rgba(7, 9, 10, 0.94));
   position: relative;
   min-height: max(
     700px,
@@ -53,9 +63,9 @@
   );
   padding: 14px;
   background:
-    linear-gradient(180deg, rgba(7, 9, 10, 0.74), rgba(7, 9, 10, 0.94)),
-    url("/assets/shop/store-bg.webp");
-  background-position: center;
+    var(--armory-bg-overlay),
+    var(--armory-bg-image);
+  background-position: var(--armory-bg-position);
   background-size: cover;
   border: 1px solid color-mix(in srgb, var(--gold-dim) 52%, var(--line));
   border-radius: var(--radius-sm);
@@ -78,10 +88,28 @@
 }
 
 .armoryStage--hub {
+  min-height: max(760px, calc(100svh - 94px));
   background:
-    radial-gradient(circle at 18% 14%, rgba(201, 168, 90, 0.18), transparent 28%),
-    radial-gradient(circle at 78% 18%, rgba(82, 142, 161, 0.16), transparent 32%),
-    linear-gradient(135deg, rgba(8, 12, 13, 0.96), rgba(13, 15, 13, 0.98));
+    radial-gradient(circle at 18% 14%, rgba(201, 168, 90, 0.16), transparent 28%),
+    radial-gradient(circle at 78% 18%, rgba(82, 142, 161, 0.12), transparent 32%),
+    linear-gradient(135deg, rgba(8, 9, 9, 0.98), rgba(14, 14, 13, 0.98));
+}
+
+.armoryStage--lab {
+  --armory-bg-image: url("/assets/equipment-shop/rooms/augmentation-lab.jpg");
+  --armory-bg-position: center top;
+  --armory-bg-overlay:
+    linear-gradient(180deg, rgba(245, 242, 230, 0.05), rgba(4, 5, 6, 0.9)),
+    linear-gradient(90deg, rgba(2, 3, 4, 0.28), rgba(2, 3, 4, 0.58));
+}
+
+.armoryStage--acheron {
+  --armory-bg-image: url("/assets/equipment-shop/rooms/acheron-forge.jpg");
+  --armory-bg-position: center top;
+  --armory-bg-overlay:
+    radial-gradient(circle at 78% 58%, rgba(244, 170, 72, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(7, 7, 7, 0.42), rgba(4, 4, 5, 0.92)),
+    linear-gradient(90deg, rgba(2, 3, 4, 0.16), rgba(2, 3, 4, 0.58));
 }
 
 .armoryStage--hub::before {
@@ -95,6 +123,7 @@
 .armoryHeader,
 .zoneBody,
 .hubLayout,
+.hubScene,
 .routeBar {
   position: relative;
   z-index: 1;
@@ -399,6 +428,282 @@
   font-size: 15px;
   line-height: 1.4;
   word-break: keep-all;
+}
+
+.hubScene {
+  position: relative;
+  min-height: 650px;
+  margin-top: 10px;
+  background:
+    linear-gradient(180deg, rgba(4, 4, 5, 0.1), rgba(4, 4, 5, 0.42)),
+    url("/assets/equipment-shop/rooms/armory-information-desk.jpg");
+  background-position: center;
+  background-size: cover;
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 62%, var(--line));
+  border-radius: var(--radius-sm);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 -180px 120px rgba(0, 0, 0, 0.44),
+    0 18px 46px rgba(0, 0, 0, 0.36);
+  overflow: hidden;
+  perspective: 1200px;
+}
+
+.hubScene::before,
+.hubScene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hubScene::before {
+  background:
+    linear-gradient(90deg, rgba(201, 168, 90, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mix-blend-mode: screen;
+  opacity: 0.28;
+}
+
+.hubScene::after {
+  background:
+    radial-gradient(circle at 72% 58%, rgba(245, 236, 210, 0.16), transparent 20%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.42), transparent 22%, transparent 74%, rgba(0, 0, 0, 0.5));
+}
+
+.hubStatusRail {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 8px;
+  width: min(440px, calc(100% - 32px));
+}
+
+.hubStatus {
+  min-width: 0;
+  padding: 9px 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent),
+    rgba(5, 6, 7, 0.74);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 46%, var(--line));
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(3px);
+}
+
+.hubStatus--warning {
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--gold-dim));
+}
+
+.hubStatus span,
+.hubAlert span,
+.hubHotspot__label span {
+  display: block;
+  color: var(--gold-dim);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.hubStatus strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-0);
+  font-size: 18px;
+  line-height: 1.12;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hubStatus em {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-style: normal;
+  line-height: 1.3;
+}
+
+.hubHotspots {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+}
+
+.hubHotspot {
+  position: absolute;
+  display: inline-grid;
+  grid-template-columns: 38px minmax(142px, 210px);
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-0);
+  text-decoration: none;
+  transform: translate(-50%, -50%) rotateX(0deg);
+  transform-origin: 50% 100%;
+  transition:
+    filter 160ms ease,
+    transform 160ms ease;
+}
+
+.hubHotspot:hover,
+.hubHotspot:focus-visible {
+  filter: drop-shadow(0 0 18px rgba(201, 168, 90, 0.38));
+  transform: translate(-50%, calc(-50% - 4px)) rotateX(0deg);
+  outline: none;
+}
+
+.hubHotspot--warning .hubHotspot__pin,
+.hubHotspot--warning .hubHotspot__label {
+  border-color: color-mix(in srgb, var(--danger) 54%, var(--gold-dim));
+}
+
+.hubHotspot--research {
+  top: 47%;
+  left: 32%;
+}
+
+.hubHotspot--catalog {
+  top: 29%;
+  left: 82%;
+}
+
+.hubHotspot--acheron {
+  top: 42%;
+  left: 82%;
+}
+
+.hubHotspot--simulator {
+  top: 62%;
+  left: 10%;
+}
+
+.hubHotspot--strategic {
+  top: 60%;
+  left: 88%;
+}
+
+.hubHotspot--fabrication {
+  top: 73%;
+  left: 88%;
+}
+
+.hubHotspot__pin {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: var(--gold);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(201, 168, 90, 0.2), transparent 64%),
+    rgba(4, 5, 6, 0.78);
+  border: 1px solid color-mix(in srgb, var(--gold) 66%, var(--line));
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px rgba(201, 168, 90, 0.08),
+    0 8px 20px rgba(0, 0, 0, 0.34);
+}
+
+.hubHotspot__pin svg {
+  width: 20px;
+  height: 20px;
+}
+
+.hubHotspot__label {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 10px;
+  background:
+    linear-gradient(90deg, rgba(201, 168, 90, 0.14), transparent 62%),
+    rgba(4, 5, 6, 0.74);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 58%, var(--line));
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(3px);
+}
+
+.hubHotspot__label strong {
+  color: var(--gold);
+  font-size: 16px;
+  line-height: 1.12;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hubHotspot__label em {
+  color: var(--ink-1);
+  font-size: 14px;
+  font-style: normal;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hubDeskConsole {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(260px, 1fr);
+  gap: 10px;
+  width: min(720px, calc(100% - 36px));
+  padding: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent),
+    rgba(5, 6, 7, 0.78);
+  border: 1px solid color-mix(in srgb, var(--gold) 54%, var(--line));
+  border-radius: var(--radius-sm);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 16px 34px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(3px);
+}
+
+.hubDeskConsole strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--gold);
+  font-size: 21px;
+  line-height: 1.15;
+}
+
+.hubDeskConsole p {
+  margin: 7px 0 0;
+  color: var(--ink-1);
+  font-size: 15px;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.hubAlertList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hubAlert {
+  min-width: 0;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 34%, var(--line));
+  border-radius: var(--radius-sm);
+}
+
+.hubAlert--warning {
+  border-color: color-mix(in srgb, var(--danger) 48%, var(--gold-dim));
+}
+
+.hubAlert strong {
+  margin-top: 3px;
+  color: var(--ink-0);
+  font-size: 14px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .routeBar {
@@ -1973,6 +2278,10 @@
   object-position: center top;
 }
 
+.npcPortrait--towaski img {
+  object-position: center 14%;
+}
+
 .npcPortrait--mark {
   display: grid;
   place-items: center;
@@ -2065,6 +2374,26 @@
   word-break: keep-all;
 }
 
+.npcCaret {
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--gold);
+  font-size: 22px;
+  animation: npcCaretBlink 850ms steps(1, end) infinite;
+}
+
+@keyframes npcCaretBlink {
+  0%,
+  48% {
+    opacity: 1;
+  }
+
+  49%,
+  100% {
+    opacity: 0;
+  }
+}
+
 @media (max-width: 1180px) {
   .armoryHeader,
   .hubLayout,
@@ -2086,6 +2415,8 @@
   }
 
   .operationGrid,
+  .hubStatusRail,
+  .hubAlertList,
   .techCapRail,
   .researchCaps,
   .researchNodeGrid,
@@ -2112,6 +2443,55 @@
   }
 
   .commandHero {
+    grid-template-columns: 1fr;
+  }
+
+  .hubScene {
+    display: grid;
+    align-content: end;
+    gap: 12px;
+    min-height: 820px;
+    padding: 260px 12px 12px;
+    background-position: center top;
+  }
+
+  .hubStatusRail,
+  .hubHotspots,
+  .hubDeskConsole {
+    position: relative;
+    inset: auto;
+    width: auto;
+  }
+
+  .hubStatusRail,
+  .hubAlertList {
+    grid-template-columns: 1fr;
+  }
+
+  .hubHotspots {
+    display: grid;
+    gap: 8px;
+  }
+
+  .hubHotspot {
+    position: relative;
+    top: auto;
+    left: auto;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    transform: none;
+  }
+
+  .hubHotspot:hover,
+  .hubHotspot:focus-visible {
+    transform: translateY(-2px);
+  }
+
+  .hubHotspot__label {
+    min-width: 0;
+  }
+
+  .hubDeskConsole {
     grid-template-columns: 1fr;
   }
 

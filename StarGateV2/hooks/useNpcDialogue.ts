@@ -25,9 +25,11 @@ export interface NpcDialogueConfig<TMood extends string> {
   noAgentLine: string;
   welcomeMood: TMood;
   welcomeLine: string;
+  beepPreset?: DialogueBeepOptions["preset"];
+  beepWave?: DialogueBeepOptions["wave"];
   beepDefaults: { pitch: number; speed: number; volume: number };
   engineVolume: number;
-  entrySfxSrc: string;
+  entrySfxSrc?: string | null;
   entrySfxVolume: number;
 }
 
@@ -58,6 +60,8 @@ export function useNpcDialogue<TMood extends string>(
     noAgentLine,
     welcomeMood,
     welcomeLine,
+    beepPreset = "tia",
+    beepWave,
     beepDefaults,
     engineVolume,
     entrySfxSrc,
@@ -101,10 +105,14 @@ export function useNpcDialogue<TMood extends string>(
   const entrySfxVolumeRef = useRef(entrySfxVolume);
   const welcomeMoodRef = useRef(welcomeMood);
   const welcomeLineRef = useRef(welcomeLine);
+  const beepPresetRef = useRef(beepPreset);
+  const beepWaveRef = useRef(beepWave);
   entrySfxSrcRef.current = entrySfxSrc;
   entrySfxVolumeRef.current = entrySfxVolume;
   welcomeMoodRef.current = welcomeMood;
   welcomeLineRef.current = welcomeLine;
+  beepPresetRef.current = beepPreset;
+  beepWaveRef.current = beepWave;
 
   const clearIdleTimer = useCallback(() => {
     if (idleTimerRef.current) {
@@ -165,6 +173,18 @@ export function useNpcDialogue<TMood extends string>(
         return;
       }
 
+      const resolvedWave = options.wave ?? beepWaveRef.current;
+      const typewriterOptions: DialogueBeepOptions = {
+        preset: options.preset ?? beepPresetRef.current,
+        pitch: options.pitch ?? defaultPitch,
+        speed: options.speed ?? defaultSpeed,
+        volume: shouldSound ? (options.volume ?? defaultVolume) : 0,
+        initialDelay: options.initialDelay ?? 55,
+      };
+      if (resolvedWave) {
+        typewriterOptions.wave = resolvedWave;
+      }
+
       void engine
         .typeText(
           text,
@@ -181,14 +201,7 @@ export function useNpcDialogue<TMood extends string>(
               setTyping(false);
             },
           },
-          {
-            preset: options.preset ?? "tia",
-            pitch: options.pitch ?? defaultPitch,
-            speed: options.speed ?? defaultSpeed,
-            volume: shouldSound ? (options.volume ?? defaultVolume) : 0,
-            wave: options.wave ?? "soft",
-            initialDelay: options.initialDelay ?? 55,
-          },
+          typewriterOptions,
         )
         .catch(() => {
           setVisibleLine(text);
@@ -208,7 +221,7 @@ export function useNpcDialogue<TMood extends string>(
   // Engine lifecycle: create on mount, destroy on unmount.
   useEffect(() => {
     dialogueEngineRef.current = new DialogueBeepEngine({
-      preset: "tia",
+      preset: beepPresetRef.current,
       volume: engineVolume,
     });
 
@@ -226,6 +239,28 @@ export function useNpcDialogue<TMood extends string>(
 
     let canceled = false;
     let audio: HTMLAudioElement | null = null;
+    const markDialogueReady = () => {
+      entrySfxPlayedRef.current = true;
+      dialogueReadyRef.current = true;
+      void dialogueEngineRef.current?.prime();
+    };
+
+    const activeEntrySfxSrc = entrySfxSrcRef.current;
+    if (!activeEntrySfxSrc) {
+      const primeOnGesture = () => {
+        markDialogueReady();
+        window.removeEventListener("pointerdown", primeOnGesture);
+        window.removeEventListener("keydown", primeOnGesture);
+      };
+
+      window.addEventListener("pointerdown", primeOnGesture, { once: true });
+      window.addEventListener("keydown", primeOnGesture, { once: true });
+
+      return () => {
+        window.removeEventListener("pointerdown", primeOnGesture);
+        window.removeEventListener("keydown", primeOnGesture);
+      };
+    }
 
     const play = async () => {
       if (canceled || entrySfxPlayedRef.current || entrySfxPendingRef.current) {
@@ -234,15 +269,13 @@ export function useNpcDialogue<TMood extends string>(
 
       entrySfxPendingRef.current = true;
       const sequenceBeforePlay = lineSequenceRef.current;
-      audio ??= new Audio(entrySfxSrcRef.current);
+      audio ??= new Audio(activeEntrySfxSrc);
       audio.volume = entrySfxVolumeRef.current;
       audio.currentTime = 0;
 
       try {
         await audio.play();
-        entrySfxPlayedRef.current = true;
-        dialogueReadyRef.current = true;
-        void dialogueEngineRef.current?.prime();
+        markDialogueReady();
         if (lineSequenceRef.current === sequenceBeforePlay) {
           playLineRef.current(welcomeMoodRef.current, welcomeLineRef.current, {
             sound: true,

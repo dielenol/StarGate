@@ -3,12 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, type MouseEvent, useMemo, useState } from "react";
+import { Fragment, type MouseEvent, useEffect, useMemo, useState } from "react";
 
 import {
   type CreditsResponse,
   useCredits,
 } from "@/hooks/queries/useCreditsQuery";
+import { useNpcDialogue } from "@/hooks/useNpcDialogue";
 import {
   type EquipmentResearchScope,
   type EquipmentResearchStat,
@@ -57,6 +58,15 @@ type EquipmentShopTabValue = "ALL" | "WEAPON" | "ARMOR" | "CONSUMABLE";
 type CartState = Record<string, number>;
 type NoticeState = { tone: "success" | "info"; text: string } | null;
 type MainCharacterStats = Record<EquipmentResearchStat, number>;
+type TowaskiMood =
+  | "welcome"
+  | "inspect"
+  | "stock"
+  | "cart"
+  | "checkout"
+  | "blocked"
+  | "idle";
+type MainCharacterProfile = "assault" | "guard" | "endurance" | "focus" | "balanced";
 type ArmoryZoneDef = {
   value: ArmoryDestination;
   href: string;
@@ -67,16 +77,86 @@ type ArmoryZoneDef = {
 };
 
 const MAX_CART_QUANTITY_PER_ITEM = 1;
-const TOWASKI_PROFILE_SRC = "/assets/shop/hud/tia-profile.webp";
-const TOWASKI_PORTRAIT_SRC = "/assets/shop/hud/tia-welcome.png";
+const TOWASKI_PROFILE_SRC = "/assets/npcs/Towaski-profile.webp";
+const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp";
+const TOWASKI_IDLE_DELAY_MS = 16000;
+
+const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {
+  welcome: "입점 확인",
+  inspect: "품목 감정",
+  stock: "재고 판정",
+  cart: "반출 준비",
+  checkout: "반출 승인",
+  blocked: "반출 거부",
+  idle: "정비 중",
+};
+
+const TOWASKI_DIALOGUE_LINES = {
+  welcome: "토와스키다. 표준 장비는 여기서 보고, 장난감은 들고 오지 마.",
+  noAgent: "메인 AGENT 확인부터 해. 신분 없는 손엔 탄창 안 넘긴다.",
+  closed: "카운터 닫았다. 급하면 결재권자부터 데려와.",
+  category:
+    "분류부터 보자. 총, 방어구, 폭발물은 같은 진열대에 올리는 물건이 아니야.",
+  cart: "카트에 넣었다. 네 손에 맞는지는 훈련장에서 먼저 확인해.",
+  removed: "하나 뺐다. 후회는 비용 덜 들 때 하는 게 제일 싸.",
+  checkout:
+    "반출 처리 끝. 영수증보다 네 손가락을 더 잘 챙겨.",
+  checkoutError:
+    "반출 기록이 막혔다. 잔액, 허가, 재고 중 하나는 거짓말을 하고 있어.",
+  unavailable:
+    "그건 오늘 못 나간다. 비어 있는 칸에 욕해도 탄은 안 생겨.",
+  gmOnly: "여긴 GM 승인 라인이다. 구경은 해도 반출 서명은 따로 받아.",
+} as const;
+
+const TOWASKI_IDLE_LINES: readonly { mood: TowaskiMood; text: string }[] = [
+  {
+    mood: "idle",
+    text: "시가는 꺼도 기름 냄새는 안 빠져. 총도 비슷해, 쓰던 티가 남지.",
+  },
+  {
+    mood: "stock",
+    text: "수량표 믿지 마. 마지막 한 정은 항상 누가 이미 눈독 들이고 있어.",
+  },
+  {
+    mood: "inspect",
+    text: "장난감 같은 물건은 싫어해. 대신 제대로 만든 물건은 값을 받아.",
+  },
+  {
+    mood: "idle",
+    text: "도미니크가 과자 진열하듯 총을 세우라더군. 당연히 무시했지.",
+  },
+];
+
+const TOWASKI_PROFILE_LINES: Record<MainCharacterProfile, readonly string[]> = {
+  assault: [
+    "손부터 앞으로 나가는 타입이군. 반동 잡을 물건부터 봐.",
+    "화력 욕심은 죄가 아니야. 명중 못 하면 낭비일 뿐이지.",
+  ],
+  guard: [
+    "맞고 버티는 쪽이면 방어구부터 봐. 영웅 흉내는 비싸게 먹혀.",
+    "방호구는 자존심보다 싸다. 그건 현장에서 빨리 배우게 돼.",
+  ],
+  endurance: [
+    "오래 구르는 타입이면 소모품을 아끼지 마. 빈손으로 오래 버티는 놈은 없어.",
+    "체력 믿고 들어가도 탄과 장갑은 따로 챙겨. 몸은 창고가 아니니까.",
+  ],
+  focus: [
+    "머리가 먼저 도는 타입이군. 설명 끝까지 읽는 손님은 오래 살아.",
+    "침착한 놈일수록 안전장치를 확인하지. 그 버릇은 유지해.",
+  ],
+  balanced: [
+    "스펙이 고르게 잡혔군. 그러면 임무 성격에 맞춰 고르면 돼.",
+    "특화가 없다는 건 핑계가 아니야. 오늘 필요한 물건만 골라.",
+  ],
+};
 
 const ARMORY_DESK_META: Pick<
   ArmoryZoneDef,
   "label" | "eyebrow" | "npc"
 > = {
-  label: "병기부 통합 관제실",
-  eyebrow: "ARMORY BUREAU",
-  npc: "병기부 관제 담당관",
+  label: "병기부 안내데스크",
+  eyebrow: "INFORMATION",
+  npc: "아메리",
 };
 
 const ZONE_DEFS: ArmoryZoneDef[] = [
@@ -284,6 +364,97 @@ function getResearchBranchMeta(branch: string): { label: string; code: string } 
       code: branch.toUpperCase(),
     }
   );
+}
+
+function stableStringSeed(value: string): number {
+  return Array.from(value).reduce(
+    (sum, char, index) => sum + (char.codePointAt(0) ?? 0) * (index + 1),
+    0,
+  );
+}
+
+function pickStableLine(lines: readonly string[], seed: string): string {
+  return lines[stableStringSeed(seed) % lines.length] ?? lines[0] ?? "";
+}
+
+function getMainCharacterProfile(
+  stats: MainCharacterStats | null,
+): MainCharacterProfile {
+  if (!stats) return "balanced";
+
+  const entries: Array<[MainCharacterProfile, number]> = [
+    ["assault", stats.atk],
+    ["guard", stats.def],
+    ["endurance", stats.hp],
+    ["focus", stats.san],
+  ];
+  const values = entries.map(([, value]) => value);
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  if (max - min <= 1) return "balanced";
+
+  return entries.sort((a, b) => b[1] - a[1])[0]?.[0] ?? "balanced";
+}
+
+function buildTowaskiWelcomeLine(args: {
+  codename: string | null;
+  profile: MainCharacterProfile;
+}) {
+  const callsign = args.codename ? `왔냐, ${args.codename}.` : "왔냐.";
+  const profileLine = pickStableLine(
+    TOWASKI_PROFILE_LINES[args.profile],
+    `${args.codename ?? "UNASSIGNED"}:${args.profile}`,
+  );
+  return `${callsign} ${profileLine}`;
+}
+
+function buildTowaskiItemLine(
+  item: EquipmentShopCatalogEntry,
+): { mood: TowaskiMood; text: string } {
+  if (item.stock <= 0 || !item.available) {
+    return { mood: "stock", text: TOWASKI_DIALOGUE_LINES.unavailable };
+  }
+
+  const variants: Record<
+    EquipmentShopCatalogEntry["category"] | "ALL",
+    readonly string[]
+  > = {
+    ALL: [TOWASKI_DIALOGUE_LINES.category],
+    WEAPON: [
+      `${item.name}. 방아쇠보다 사거리부터 봐. 못 맞히면 비싼 소음이야.`,
+      `${item.name}이면 화력은 충분해. 문제는 네 손목과 판단이지.`,
+    ],
+    ARMOR: [
+      `${item.name}. 맞고 버티는 물건이지, 맞으러 가라는 허가는 아니야.`,
+      `${item.name}은 보험에 가깝다. 보험 쓰는 날은 보통 재수 없는 날이고.`,
+    ],
+    CONSUMABLE: [
+      `${item.name}은 쓰고 끝이다. 아까우면 애초에 카운터에 올리지 마.`,
+      `${item.name}. 핀 뽑기 전엔 네 편, 던진 뒤엔 모두의 문제야.`,
+    ],
+    SPECIAL: [
+      `${item.name}. 이건 반출 사유가 먼저고, 가격표는 그다음이야.`,
+      `${item.name}은 장비보다 책임에 가깝다. 서명란 비워두지 마.`,
+    ],
+  };
+
+  return {
+    mood: item.category === "ARMOR" ? "stock" : "inspect",
+    text: pickStableLine(variants[item.category] ?? variants.ALL, item.key),
+  };
+}
+
+function buildTowaskiTabLine(tab: EquipmentShopTabValue): string {
+  switch (tab) {
+    case "WEAPON":
+      return "화기 진열대다. 손맛보다 사거리와 탄종부터 봐.";
+    case "ARMOR":
+      return "방어구 쪽이군. 살아 돌아오는 장비는 늘 멋없게 생겼어.";
+    case "CONSUMABLE":
+      return "소모품은 쓰고 사라진다. 그래서 필요할 때 없으면 제일 욕먹지.";
+    default:
+      return TOWASKI_DIALOGUE_LINES.category;
+  }
 }
 
 function getResearchNodeMapStatus(
@@ -606,6 +777,46 @@ export default function EquipmentShopClient({
   const activeZoneDef = activeZoneMeta(activeZone);
   const zoneMeta = isHub ? ARMORY_DESK_META : activeZoneDef;
   const headerZoneKey = isHub ? "hub" : activeZone;
+  const mainCharacterProfile = useMemo(
+    () => getMainCharacterProfile(localStats),
+    [localStats],
+  );
+  const towaskiWelcomeLine = useMemo(
+    () =>
+      buildTowaskiWelcomeLine({
+        codename: mainCharacter?.codename ?? null,
+        profile: mainCharacterProfile,
+      }),
+    [mainCharacter?.codename, mainCharacterProfile],
+  );
+
+  const {
+    mood: towaskiMood,
+    visibleLine: towaskiVisibleLine,
+    typing: towaskiTyping,
+    playLine: playTowaskiLine,
+    clearIdleTimer: clearTowaskiIdleTimer,
+    scheduleIdle: scheduleTowaskiIdle,
+    showLineImmediately: showTowaskiLineImmediately,
+    resetIdleCycle: resetTowaskiIdleCycle,
+    stopEngine: stopTowaskiEngine,
+  } = useNpcDialogue<TowaskiMood>({
+    isOpen: activeZone === "towaski" && catalog.isOpen,
+    hasMainCharacter,
+    idleDelayMs: TOWASKI_IDLE_DELAY_MS,
+    idleLines: TOWASKI_IDLE_LINES,
+    closedMood: "blocked",
+    closedLine: TOWASKI_DIALOGUE_LINES.closed,
+    noAgentMood: "blocked",
+    noAgentLine: TOWASKI_DIALOGUE_LINES.noAgent,
+    welcomeMood: "welcome",
+    welcomeLine: towaskiWelcomeLine,
+    beepPreset: "towaski",
+    beepDefaults: { pitch: 510, speed: 50, volume: 0.58 },
+    engineVolume: 0.58,
+    entrySfxSrc: null,
+    entrySfxVolume: 0,
+  });
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -700,6 +911,47 @@ export default function EquipmentShopClient({
     selectedItem.stock > 0 &&
     selectedQuantity < selectedItem.stock &&
     selectedQuantity < MAX_CART_QUANTITY_PER_ITEM;
+
+  useEffect(() => {
+    if (activeZone !== "towaski") {
+      clearTowaskiIdleTimer();
+      stopTowaskiEngine();
+      return;
+    }
+
+    if (!catalog.isOpen) {
+      clearTowaskiIdleTimer();
+      stopTowaskiEngine();
+      playTowaskiLine("blocked", TOWASKI_DIALOGUE_LINES.closed, {
+        returnToIdle: false,
+        sound: false,
+      });
+      return;
+    }
+
+    if (!hasMainCharacter) {
+      playTowaskiLine("blocked", TOWASKI_DIALOGUE_LINES.noAgent, {
+        returnToIdle: false,
+        sound: false,
+      });
+      return;
+    }
+
+    showTowaskiLineImmediately("welcome", towaskiWelcomeLine);
+    resetTowaskiIdleCycle();
+    scheduleTowaskiIdle();
+  }, [
+    activeZone,
+    catalog.isOpen,
+    clearTowaskiIdleTimer,
+    hasMainCharacter,
+    playTowaskiLine,
+    resetTowaskiIdleCycle,
+    scheduleTowaskiIdle,
+    showTowaskiLineImmediately,
+    stopTowaskiEngine,
+    towaskiWelcomeLine,
+  ]);
 
   const scopedResearchTree = useMemo(
     () =>
@@ -829,6 +1081,24 @@ export default function EquipmentShopClient({
     });
   }
 
+  function playTowaskiIfActive(mood: TowaskiMood, text: string) {
+    if (activeZone !== "towaski") return;
+    playTowaskiLine(mood, text, { sound: true });
+  }
+
+  function handleSalesTabChange(tab: EquipmentShopTabValue) {
+    setActiveTab(tab);
+    playTowaskiIfActive("inspect", buildTowaskiTabLine(tab));
+  }
+
+  function handleSelectSalesItem(item: EquipmentShopCatalogEntry) {
+    setSelectedKey(item.key);
+    if (activeZone === "towaski") {
+      const nextLine = buildTowaskiItemLine(item);
+      playTowaskiIfActive(nextLine.mood, nextLine.text);
+    }
+  }
+
   function handleAddToCart(item: EquipmentShopCatalogEntry, quantity = 1) {
     if (!canUseShop) {
       setErrorMessage(
@@ -836,11 +1106,18 @@ export default function EquipmentShopClient({
           ? "GM preview 상태에서만 병기부 구매를 실행할 수 있습니다."
           : "메인 AGENT 캐릭터가 없어 구매할 수 없습니다.",
       );
+      playTowaskiIfActive(
+        "blocked",
+        hasMainCharacter
+          ? TOWASKI_DIALOGUE_LINES.gmOnly
+          : TOWASKI_DIALOGUE_LINES.noAgent,
+      );
       return;
     }
 
     if (item.stock <= 0 || !item.available) {
       setErrorMessage("현재 반출할 수 없는 품목입니다.");
+      playTowaskiIfActive("stock", TOWASKI_DIALOGUE_LINES.unavailable);
       return;
     }
 
@@ -848,6 +1125,7 @@ export default function EquipmentShopClient({
     setErrorMessage(null);
     setNotice(null);
     setCartQuantity(item.key, (cart[item.key] ?? 0) + quantity);
+    playTowaskiIfActive("cart", TOWASKI_DIALOGUE_LINES.cart);
   }
 
   function handleRemoveFromCart(key: string) {
@@ -856,6 +1134,7 @@ export default function EquipmentShopClient({
       delete next[key];
       return next;
     });
+    playTowaskiIfActive("cart", TOWASKI_DIALOGUE_LINES.removed);
   }
 
   function handleCheckout() {
@@ -876,9 +1155,11 @@ export default function EquipmentShopClient({
             tone: "success",
             text: `${res.order.items.length}종 반출 결제가 완료되었습니다.`,
           });
+          playTowaskiIfActive("checkout", TOWASKI_DIALOGUE_LINES.checkout);
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
+          playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.checkoutError);
         },
       },
     );
@@ -1160,7 +1441,7 @@ export default function EquipmentShopClient({
           activeProjectCount > 0
             ? `진행 ${activeProjectCount} · 완료 대기 ${readyProjectCount}`
             : "대기 큐 없음",
-        detail: "개인/팀 연구를 시작하고 완료 연구를 실제 스탯에 적용합니다.",
+        detail: "개인/팀 강화 연구와 완료 적용 대기열을 관리합니다.",
         warning: false,
       },
       {
@@ -1173,7 +1454,7 @@ export default function EquipmentShopClient({
           towaskiItemCount > 0
             ? `${towaskiItemCount}종 반출 가능`
             : "등록 품목 없음",
-        detail: "표준 화기와 방어구를 크레딧 결제 후 인벤토리에 반출합니다.",
+        detail: "화기, 방어구, 전투 소모품을 크레딧 결제 후 반출합니다.",
         warning: towaskiItemCount === 0,
       },
       {
@@ -1224,108 +1505,100 @@ export default function EquipmentShopClient({
       },
     ];
 
+    const systemAlerts = [
+      {
+        key: "research",
+        label: "완료 연구",
+        value:
+          readyProjectCount > 0
+            ? `${readyProjectCount}건 적용 대기`
+            : "대기 없음",
+        warning: readyProjectCount > 0,
+      },
+      {
+        key: "strategic",
+        label: "전략 장비 보급소",
+        value:
+          strategicItemCount > 0
+            ? `${strategicItemCount}종 반출 목록`
+            : "목록 비어 있음",
+        warning: strategicItemCount === 0,
+      },
+      {
+        key: "custom",
+        label: "공방",
+        value: "상담 패널 활성",
+        warning: false,
+      },
+      {
+        key: "simulator",
+        label: "훈련장",
+        value: "훈련 모듈 활성",
+        warning: false,
+      },
+    ];
+
     return (
-      <div className={styles.hubLayout}>
-        <section className={styles.commandPanel} aria-label="병기부 운영 현황">
-          <div className={styles.commandHero}>
-            <span className={styles.bureauMark} aria-hidden>
-              <span />
-            </span>
-            <div>
-              <Eyebrow>ARMORY OPERATIONS</Eyebrow>
-              <strong>병기부 통합 관제</strong>
-              <p>
-                연구, 장비 반출, 제작 상담, 성능 검증을 한 화면에서 분기합니다.
-              </p>
+      <div className={styles.hubScene} aria-label="병기부 안내데스크">
+        <div className={styles.hubStatusRail} aria-label="병기부 운영 현황">
+          {commandStats.map((stat) => (
+            <div
+              key={stat.key}
+              className={[
+                styles.hubStatus,
+                stat.warning ? styles["hubStatus--warning"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <span>{stat.label}</span>
+              <strong>{stat.value}</strong>
+              <em>{stat.detail}</em>
             </div>
-          </div>
+          ))}
+        </div>
 
-          <div className={styles.commandStats}>
-            {commandStats.map((stat) => (
-              <div
-                key={stat.key}
-                className={[
-                  styles.commandStat,
-                  stat.warning ? styles["commandStat--warning"] : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                <span>{stat.label}</span>
-                <strong>{stat.value}</strong>
-                <em>{stat.detail}</em>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className={styles.operationGrid} aria-label="병기부 업무 구분">
+        <nav className={styles.hubHotspots} aria-label="병기부 구역 이동">
           {operationCards.map((card) => (
             <Link
               key={card.key}
               href={card.href}
               className={[
-                styles.operationCard,
-                card.warning ? styles["operationCard--warning"] : "",
+                styles.hubHotspot,
+                styles[`hubHotspot--${card.key}`],
+                card.warning ? styles["hubHotspot--warning"] : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
               onClick={(event) => handleZoneLinkClick(event, card.href)}
             >
-              <span className={styles.operationCard__icon} aria-hidden>
+              <span className={styles.hubHotspot__pin} aria-hidden>
                 <ArmoryZoneIcon zone={card.iconKey} />
               </span>
-              <span>{card.eyebrow}</span>
-              <strong>{card.title}</strong>
-              <p>{card.detail}</p>
-              <em>{card.status}</em>
+              <span className={styles.hubHotspot__label}>
+                <span>{card.eyebrow}</span>
+                <strong>{card.title}</strong>
+                <em>{card.status}</em>
+              </span>
             </Link>
           ))}
-        </section>
+        </nav>
 
-        <aside className={styles.systemPanel} aria-label="병기부 시스템 상태">
-          <div className={styles.panelIntro}>
-            <Eyebrow>SYSTEM BOARD</Eyebrow>
-            <strong>처리 대기</strong>
+        <aside className={styles.hubDeskConsole} aria-label="아메리 안내 패널">
+          <div>
+            <Eyebrow>AMERY / INFORMATION</Eyebrow>
+            <strong>병기부 접수 상태</strong>
+            <p>
+              연구, 반출, 제작, 시험 구역의 대기열을 확인했습니다.
+            </p>
           </div>
-          <div className={styles.systemList}>
-            {[
-              {
-                key: "research",
-                label: "완료 연구",
-                value:
-                  readyProjectCount > 0
-                    ? `${readyProjectCount}건 적용 대기`
-                    : "대기 없음",
-                warning: readyProjectCount > 0,
-              },
-              {
-                key: "strategic",
-                label: "전략 장비 보급소",
-                value:
-                  strategicItemCount > 0
-                    ? `${strategicItemCount}종 반출 목록`
-                    : "목록 비어 있음",
-                warning: strategicItemCount === 0,
-              },
-              {
-                key: "custom",
-                label: "공방",
-                value: "상담 패널 활성",
-                warning: false,
-              },
-              {
-                key: "simulator",
-                label: "훈련장",
-                value: "훈련 모듈 활성",
-                warning: false,
-              },
-            ].map((alert) => (
+          <div className={styles.hubAlertList}>
+            {systemAlerts.map((alert) => (
               <div
                 key={alert.key}
                 className={[
-                  styles.systemItem,
-                  alert.warning ? styles["systemItem--warning"] : "",
+                  styles.hubAlert,
+                  alert.warning ? styles["hubAlert--warning"] : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -1380,7 +1653,7 @@ export default function EquipmentShopClient({
                     ]
                       .filter(Boolean)
                       .join(" ")}
-                    onClick={() => setActiveTab(tab.value)}
+                    onClick={() => handleSalesTabChange(tab.value)}
                   >
                     {tab.label}
                     <span>{count}</span>
@@ -1429,7 +1702,7 @@ export default function EquipmentShopClient({
                     <button
                       type="button"
                       className={styles.productSelect}
-                      onClick={() => setSelectedKey(item.key)}
+                      onClick={() => handleSelectSalesItem(item)}
                       aria-pressed={isSelected}
                     >
                       <span className={styles.productTop}>
@@ -2268,7 +2541,15 @@ export default function EquipmentShopClient({
   }
 
   return (
-    <div className={styles.armoryRoot} data-pixel-font="full">
+    <div
+      className={[
+        styles.armoryRoot,
+        isHub ? styles["armoryRoot--hub"] : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      data-pixel-font="full"
+    >
       <PageHead
         breadcrumb={
           isHub
@@ -2330,6 +2611,10 @@ export default function EquipmentShopClient({
         className={[
           styles.armoryStage,
           isHub ? styles["armoryStage--hub"] : "",
+          !isHub && activeZone === "lab" ? styles["armoryStage--lab"] : "",
+          !isHub && activeZone === "acheron"
+            ? styles["armoryStage--acheron"]
+            : "",
         ]
           .filter(Boolean)
           .join(" ")}
@@ -2383,57 +2668,71 @@ export default function EquipmentShopClient({
           </>
         )}
 
-        <section className={styles.npcHud} aria-label="병기부 응대 HUD">
-          <div
-            className={[
-              styles.npcPortrait,
-              isHub ? styles["npcPortrait--mark"] : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            {isHub ? (
-              <span className={styles.npcPortraitMark} aria-hidden />
-            ) : (
-              <Image
-                src={TOWASKI_PORTRAIT_SRC}
-                alt=""
-                fill
-                sizes="148px"
-                priority
-              />
-            )}
-          </div>
-          <div className={styles.npcDialogue}>
-            <div className={styles.npcHead}>
-              <span className={styles.npcProfile}>
-                {isHub ? (
-                  <span className={styles.npcProfileMark} aria-hidden />
-                ) : (
-                  <Image src={TOWASKI_PROFILE_SRC} alt="" fill sizes="38px" />
-                )}
-              </span>
-              <div>
-                <span>{zoneMeta.eyebrow}</span>
-                <strong>{zoneMeta.npc}</strong>
-              </div>
-              <span className={styles.npcMood}>응대 중</span>
+        {!isHub ? (
+          <section className={styles.npcHud} aria-label="병기부 응대 HUD">
+            <div
+              className={[
+                styles.npcPortrait,
+                activeZone === "towaski" ? styles["npcPortrait--towaski"] : "",
+                activeZone !== "towaski" ? styles["npcPortrait--mark"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {activeZone === "towaski" ? (
+                <Image
+                  src={TOWASKI_PORTRAIT_SRC}
+                  alt=""
+                  fill
+                  sizes="148px"
+                  priority
+                />
+              ) : (
+                <span className={styles.npcPortraitMark} aria-hidden />
+              )}
             </div>
-            <p>
-              {isHub
-                ? "병기부 통합 관제실이다. 연구, 반출, 제작, 시험 상태를 확인하고 필요한 구역으로 이동해라."
-                : activeZone === "lab"
+            <div className={styles.npcDialogue}>
+              <div className={styles.npcHead}>
+                <span className={styles.npcProfile}>
+                  {activeZone === "towaski" ? (
+                    <Image src={TOWASKI_PROFILE_SRC} alt="" fill sizes="38px" />
+                  ) : (
+                    <span className={styles.npcProfileMark} aria-hidden />
+                  )}
+                </span>
+                <div>
+                  <span>{zoneMeta.eyebrow}</span>
+                  <strong>{zoneMeta.npc}</strong>
+                </div>
+                <span className={styles.npcMood}>
+                  {activeZone === "towaski"
+                    ? TOWASKI_MOOD_LABELS[towaskiMood]
+                    : "응대 중"}
+                </span>
+              </div>
+              <p>
+                {activeZone === "lab"
                   ? "연구 적용은 즉시 기록된다. 개인인지, 팀 전체인지 먼저 확인해."
                   : activeZone === "towaski"
-                    ? "토와스키다. 표준 장비는 여기서 보고, 장난감은 들고 오지 마."
+                    ? (
+                        <>
+                          {towaskiVisibleLine}
+                          {towaskiTyping ? (
+                            <span className={styles.npcCaret} aria-hidden>
+                              |
+                            </span>
+                          ) : null}
+                        </>
+                      )
                     : activeZone === "acheron"
                       ? "아케론 대장간이다. 날붙이와 타격 장비는 여기서 보고 골라."
-                    : activeZone === "strategic"
-                      ? "차량과 전략 자산은 태그가 붙은 품목만 반출대에 올라온다."
-                      : "전용무기는 상담부터다. 제작 요청 저장은 다음 단계에서 연결한다."}
-            </p>
-          </div>
-        </section>
+                      : activeZone === "strategic"
+                        ? "차량과 전략 자산은 태그가 붙은 품목만 반출대에 올라온다."
+                        : "전용무기는 상담부터다. 제작 요청 저장은 다음 단계에서 연결한다."}
+              </p>
+            </div>
+          </section>
+        ) : null}
       </section>
     </div>
   );
