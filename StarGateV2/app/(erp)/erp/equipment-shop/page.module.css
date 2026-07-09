@@ -88,7 +88,7 @@
 }
 
 .armoryStage--hub {
-  min-height: max(760px, calc(100svh - 94px));
+  min-height: min(640px, calc(100svh - 94px));
   background:
     radial-gradient(circle at 18% 14%, rgba(201, 168, 90, 0.16), transparent 28%),
     radial-gradient(circle at 78% 18%, rgba(82, 142, 161, 0.12), transparent 32%),
@@ -432,9 +432,10 @@
 
 .hubScene {
   position: relative;
-  aspect-ratio: 1448 / 1086;
+  aspect-ratio: auto;
+  height: clamp(360px, 56svh, 520px);
   min-height: 0;
-  margin-top: 10px;
+  margin-top: 8px;
   background:
     linear-gradient(180deg, rgba(4, 4, 5, 0.1), rgba(4, 4, 5, 0.42)),
     url("/assets/equipment-shop/rooms/armory-information-desk.jpg");
@@ -2426,6 +2427,12 @@
   }
 }
 
+@media (min-width: 721px) and (max-width: 1180px) {
+  .armoryStage--hub .armoryHeader {
+    grid-template-columns: minmax(180px, 1fr) auto minmax(0, max-content);
+  }
+}
+
 @media (max-width: 720px) {
   .armoryRoot {
     --armory-hud-height: 132px;
@@ -2449,11 +2456,12 @@
 
   .hubScene {
     aspect-ratio: auto;
+    height: auto;
     display: grid;
     align-content: end;
-    gap: 12px;
-    min-height: 820px;
-    padding: 260px 12px 12px;
+    gap: 8px;
+    min-height: 0;
+    padding: 140px 10px 10px;
     background-position: center top;
     background-size: 100% auto;
     background-repeat: no-repeat;
@@ -2469,7 +2477,8 @@
 
   .hubStatusRail,
   .hubAlertList {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .hubHotspots {
@@ -2482,7 +2491,8 @@
     top: auto;
     left: auto;
     display: grid;
-    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 6px;
     transform: none;
   }
 
@@ -2495,8 +2505,44 @@
     min-width: 0;
   }
 
+  .hubStatus,
+  .hubHotspot__label,
+  .hubAlert {
+    padding: 7px 8px;
+  }
+
+  .hubStatus strong {
+    font-size: 16px;
+  }
+
+  .hubStatus em,
+  .hubHotspot__label em {
+    line-height: 1.22;
+  }
+
+  .hubHotspot__pin {
+    width: 34px;
+    height: 34px;
+  }
+
+  .hubHotspot__pin svg {
+    width: 18px;
+    height: 18px;
+  }
+
   .hubDeskConsole {
     grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .hubDeskConsole strong {
+    font-size: 18px;
+  }
+
+  .hubDeskConsole p {
+    margin-top: 5px;
+    font-size: 14px;
   }
 
   .bureauMark {
@@ -2537,5 +2583,31 @@
 
   .npcDialogue p {
     font-size: 18px;
+  }
+}
+
+@media (min-width: 340px) and (max-width: 720px) {
+  .hubHotspots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hubHotspot {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .hubHotspot__pin {
+    width: 30px;
+    height: 100%;
+    min-height: 52px;
+    border-radius: var(--radius-sm);
+  }
+
+  .hubHotspot__pin svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .hubHotspot__label strong {
+    font-size: 15px;
   }
 }
