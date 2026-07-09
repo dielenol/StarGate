@@ -9,6 +9,7 @@ import { NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { notifyShopReorderFulfilled } from "@/lib/discord";
+import { notifyUser } from "@/lib/notifications/events";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import {
@@ -94,6 +95,20 @@ export async function POST(request: Request) {
       });
 
     after(async () => {
+      await notifyUser({
+        userId: fulfilled.userId,
+        type: "SYSTEM",
+        title: "편의점 추가 발주가 완료되었습니다",
+        message: [
+          fulfilled.characterCodename
+            ? `${fulfilled.characterCodename} · ${item.name}`
+            : item.name,
+          `+${quantity.toLocaleString("ko-KR")} EA 입고`,
+          "편의점에서 확인하세요",
+        ].join(" · "),
+        link: "/erp/shop",
+      });
+
       await notifyShopReorderFulfilled({
         today,
         item: {

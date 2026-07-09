@@ -178,6 +178,7 @@ interface Props {
   initialCredits: CreditsResponse | undefined;
   mainCharacterError: string | null;
   isGM: boolean;
+  initialPendingReorderCount: number;
 }
 
 function describeShopError(err: unknown): string {
@@ -191,6 +192,7 @@ export default function ShopClient({
   initialCredits,
   mainCharacterError,
   isGM,
+  initialPendingReorderCount,
 }: Props) {
   const catalogQuery = useShopCatalog({ initialData: initialCatalog });
   const creditsQuery = useCredits({ initialData: initialCredits });
@@ -206,6 +208,9 @@ export default function ShopClient({
   );
   const [pendingReorderSlugs, setPendingReorderSlugs] = useState<Set<string>>(
     () => new Set(),
+  );
+  const [pendingReorderCount, setPendingReorderCount] = useState(
+    initialPendingReorderCount,
   );
   const [adminOpen, setAdminOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -438,6 +443,9 @@ export default function ShopClient({
 
     try {
       const res = await reorderMutation.mutateAsync({ slug: item.slug });
+      if (isGM && res.status === "requested") {
+        setPendingReorderCount((count) => count + 1);
+      }
       setRequestedSlugs((prev) => {
         const next = new Set(prev);
         next.add(item.slug);
@@ -642,7 +650,15 @@ export default function ShopClient({
                   onClick={() => setAdminOpen(true)}
                   className={styles.adminBtn}
                 >
-                  재고 관리 · GM
+                  <span>재고 관리 · GM</span>
+                  {pendingReorderCount > 0 ? (
+                    <span
+                      className={styles.adminBtn__badge}
+                      aria-label={`대기 발주 ${pendingReorderCount}건`}
+                    >
+                      {pendingReorderCount}
+                    </span>
+                  ) : null}
                 </button>
               </>
             ) : null}
@@ -1073,6 +1089,7 @@ export default function ShopClient({
           onSaved={() => {
             void catalogQuery.refetch();
           }}
+          onPendingCountChange={setPendingReorderCount}
         />
       ) : null}
     </div>

@@ -22,6 +22,7 @@ import { getAllDailyStocks } from "@/lib/db/shop";
 import { SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getShopOpenState } from "@/lib/shop/open-state";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
+import { countPendingShopReorderRequests } from "@/lib/shop/reorder-requests";
 
 import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type { ShopCatalogResponse } from "@/hooks/queries/useShopQuery";
@@ -71,6 +72,7 @@ export default async function ShopPage() {
   }
 
   const userId = session.user.id;
+  const isGM = hasRole(session.user.role, "GM");
 
   // 메인 캐릭터 — null=정상 미등록, throw=1인 1 MAIN 정합성 위반.
   let mainCharacter: Awaited<
@@ -93,26 +95,30 @@ export default async function ShopPage() {
 
   // 카탈로그/잔액/ledger 병렬 fetch — 각각 독립적이므로 Promise.all + .catch() 폴백.
   // ledger 는 useCredits 의 initialData 시드용 (페이지 진입 시 1회 fetch 절약).
-  const [initialCatalog, initialBalance, initialLedger] = await Promise.all([
-    buildCatalogResponse().catch(
-      (): ShopCatalogResponse => ({
-        items: [],
-        isOpen: false,
-        mode: "auto",
-        scheduledOpen: false,
-        forceOpen: false,
-        forceClosed: false,
-      }),
-    ),
-    mainCharacterId
-      ? getCharacterBalance(mainCharacterId).catch(() => 0)
-      : Promise.resolve(0),
-    mainCharacterId
-      ? listCreditTransactions(mainCharacterId, INITIAL_LEDGER_LIMIT).catch(
-          () => [],
-        )
-      : Promise.resolve([]),
-  ]);
+  const [initialCatalog, initialBalance, initialLedger, pendingReorderCount] =
+    await Promise.all([
+      buildCatalogResponse().catch(
+        (): ShopCatalogResponse => ({
+          items: [],
+          isOpen: false,
+          mode: "auto",
+          scheduledOpen: false,
+          forceOpen: false,
+          forceClosed: false,
+        }),
+      ),
+      mainCharacterId
+        ? getCharacterBalance(mainCharacterId).catch(() => 0)
+        : Promise.resolve(0),
+      mainCharacterId
+        ? listCreditTransactions(mainCharacterId, INITIAL_LEDGER_LIMIT).catch(
+            () => [],
+          )
+        : Promise.resolve([]),
+      isGM
+        ? countPendingShopReorderRequests().catch(() => 0)
+        : Promise.resolve(0),
+    ]);
 
   // useCredits 가 받을 CreditsResponse — 메인 캐릭이 있을 때만 시드.
   // Next.js 16: Server→Client prop 으로 ObjectId(toJSON 가진 객체) 전달 거부 → _id 를 hex string 으로 정규화.
@@ -140,7 +146,8 @@ export default async function ShopPage() {
       initialBalance={initialBalance}
       initialCredits={initialCredits}
       mainCharacterError={mainCharacterError}
-      isGM={hasRole(session.user.role, "GM")}
+      isGM={isGM}
+      initialPendingReorderCount={pendingReorderCount}
     />
   );
 }

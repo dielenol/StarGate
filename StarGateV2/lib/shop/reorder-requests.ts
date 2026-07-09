@@ -1,6 +1,8 @@
-import "@/lib/db/init";
+import "../db/init";
 
 import { getClient, getDb } from "@stargate/shared-db";
+
+export { buildShopReorderRequestId } from "./reorder-request-id";
 
 export type ShopReorderRequestStatus = "REQUESTED" | "FULFILLED";
 
@@ -40,14 +42,6 @@ async function reorderRequestsCol() {
   return db.collection<ShopReorderRequestDoc>("shop_reorder_requests");
 }
 
-export function buildShopReorderRequestId(
-  today: string,
-  userId: string,
-  slug: string,
-): string {
-  return `shop-reorder:${today}:${userId}:${slug}`;
-}
-
 export async function insertShopReorderRequest(
   doc: ShopReorderRequestDoc,
 ): Promise<void> {
@@ -64,6 +58,40 @@ export async function listPendingShopReorderRequests(): Promise<
     })
     .sort({ createdAt: 1 })
     .toArray();
+}
+
+export async function countPendingShopReorderRequests(): Promise<number> {
+  return (await reorderRequestsCol()).countDocuments({
+    kind: "shop-reorder-request",
+    status: "REQUESTED",
+  });
+}
+
+export async function findPendingShopReorderRequestForUserItem(input: {
+  date: string;
+  userId: string;
+  slug: string;
+}): Promise<ShopReorderRequestDoc | null> {
+  return (await reorderRequestsCol()).findOne({
+    kind: "shop-reorder-request",
+    status: "REQUESTED",
+    date: input.date,
+    userId: input.userId,
+    slug: input.slug,
+  });
+}
+
+export async function countShopReorderRequestsForUserItem(input: {
+  date: string;
+  userId: string;
+  slug: string;
+}): Promise<number> {
+  return (await reorderRequestsCol()).countDocuments({
+    kind: "shop-reorder-request",
+    date: input.date,
+    userId: input.userId,
+    slug: input.slug,
+  });
 }
 
 export async function findShopReorderRequestById(

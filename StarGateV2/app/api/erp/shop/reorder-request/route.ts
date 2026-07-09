@@ -17,6 +17,8 @@ import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import {
   buildShopReorderRequestId,
+  countShopReorderRequestsForUserItem,
+  findPendingShopReorderRequestForUserItem,
   insertShopReorderRequest,
   type ShopReorderRequestDoc,
 } from "@/lib/shop/reorder-requests";
@@ -109,8 +111,35 @@ export async function POST(request: Request) {
   }
 
   const today = getTodayKst();
+  const existingPending = await findPendingShopReorderRequestForUserItem({
+    date: today,
+    userId: session.user.id,
+    slug,
+  });
+  if (existingPending) {
+    return NextResponse.json(
+      {
+        ok: true,
+        status: "already-requested",
+        slug,
+        message: "오늘 이미 발주 요청한 상품입니다.",
+      },
+      { status: 200 },
+    );
+  }
+
+  const requestCount = await countShopReorderRequestsForUserItem({
+    date: today,
+    userId: session.user.id,
+    slug,
+  });
   const doc: ShopReorderRequestDoc = {
-    _id: buildShopReorderRequestId(today, session.user.id, slug),
+    _id: buildShopReorderRequestId(
+      today,
+      session.user.id,
+      slug,
+      requestCount + 1,
+    ),
     kind: "shop-reorder-request",
     date: today,
     slug,
@@ -131,6 +160,13 @@ export async function POST(request: Request) {
     await insertShopReorderRequest(doc);
   } catch (error) {
     if (isDuplicateKeyError(error)) {
+      const pending = await findPendingShopReorderRequestForUserItem({
+        date: today,
+        userId: session.user.id,
+        slug,
+      });
+      if (!pending) throw error;
+
       return NextResponse.json(
         {
           ok: true,

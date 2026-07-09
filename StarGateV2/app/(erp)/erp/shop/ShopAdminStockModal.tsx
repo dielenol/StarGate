@@ -48,9 +48,18 @@ interface Props {
   onClose: () => void;
   /** 저장 완료 후 부모(ShopClient) 가 catalog query 를 invalidate 하도록 트리거. */
   onSaved?: () => void;
+  onPendingCountChange?: (count: number) => void;
 }
 
-export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
+function countPendingReorders(items: AdminStockItem[]): number {
+  return items.reduce((sum, item) => sum + item.pendingReorders.length, 0);
+}
+
+export default function ShopAdminStockModal({
+  onClose,
+  onSaved,
+  onPendingCountChange,
+}: Props) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
@@ -76,6 +85,12 @@ export default function ShopAdminStockModal({ onClose, onSaved }: Props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [busy, onClose]);
+
+  useEffect(() => {
+    if (!loading) {
+      onPendingCountChange?.(countPendingReorders(items));
+    }
+  }, [items, loading, onPendingCountChange]);
 
   /* 초기 데이터 fetch. */
   useEffect(() => {
