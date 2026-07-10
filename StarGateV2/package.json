@@ -23,7 +23,9 @@
     "seed:stock-history": "node --experimental-strip-types scripts/seed-stock-history.ts",
     "seed:payload": "node --experimental-strip-types scripts/upsert-seed-payload.ts",
     "premigrate:character-sheet": "pnpm --filter @stargate/shared-db build",
-    "migrate:character-sheet": "node --experimental-strip-types scripts/migrate-character-sheet-to-lore-play.ts"
+    "migrate:character-sheet": "node --experimental-strip-types scripts/migrate-character-sheet-to-lore-play.ts",
+    "premigrate:credit-balances": "pnpm --filter @stargate/shared-db build",
+    "migrate:credit-balances": "node --experimental-strip-types scripts/migrate-credit-balances.ts"
   },
   "engines": {
     "node": ">=22.6.0"

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
 import type { UserRole } from "@stargate/shared-db/types";
+import type { ClientSession } from "mongodb";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { requireRole } from "@/lib/auth/rbac";
 import { findMainCharacterLiteByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
@@ -19,6 +20,17 @@ export interface ResearchBudgetCharacter {
   codename: string;
   ownerId: string;
   ownerName: string;
+}
+
+export class ResearchMutationError extends Error {
+  constructor(
+    public readonly code: string,
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ResearchMutationError";
+  }
 }
 
 export async function requireResearchGm(): Promise<
@@ -39,7 +51,7 @@ export async function requireResearchGm(): Promise<
 export async function requireResearchUser(): Promise<
   { session: ResearchRouteSession } | { response: NextResponse }
 > {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     return { response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
@@ -118,7 +130,9 @@ export async function chargeResearchCredits(args: {
   description: string;
   metadata: Record<string, string | number | boolean | null>;
   session: ResearchRouteSession;
-}): Promise<{ balance: number } | { response: NextResponse }> {
+  requestId: string;
+  mongoSession: ClientSession;
+}): Promise<{ balance: number }> {
   try {
     const tx = await addCredit({
       characterId: args.budget.id,
@@ -131,47 +145,34 @@ export async function chargeResearchCredits(args: {
       metadata: args.metadata,
       createdById: args.session.id,
       createdByName: args.session.displayName,
+      requestId: args.requestId,
+      session: args.mongoSession,
     });
     return { balance: tx.balance };
   } catch (err) {
-    if (err instanceof Error && err.message.includes("음수 잔액")) {
-      return {
-        response: NextResponse.json(
-          { error: "잔액이 부족합니다.", code: "INSUFFICIENT_BALANCE" },
-          { status: 400 },
-        ),
-      };
+    if (
+      err instanceof Error &&
+      (err.message.includes("음수 잔액") ||
+        ("code" in err && err.code === "INSUFFICIENT_BALANCE"))
+    ) {
+      throw new ResearchMutationError(
+        "INSUFFICIENT_BALANCE",
+        400,
+        "잔액이 부족합니다.",
+      );
+    }
+    if (
+      err instanceof Error &&
+      "code" in err &&
+      err.code === "DUPLICATE_REQUEST"
+    ) {
+      throw new ResearchMutationError(
+        "DUPLICATE_REQUEST",
+        409,
+        "동일 Idempotency-Key가 다른 연구 mutation에 사용되었습니다.",
+      );
     }
     const message = err instanceof Error ? err.message : "연구 비용 차감 실패";
-    return {
-      response: NextResponse.json({ error: message }, { status: 500 }),
-    };
+    throw new ResearchMutationError("RESEARCH_CHARGE_FAILED", 500, message);
   }
-}
-
-export async function refundResearchCredits(args: {
-  budget: ResearchBudgetCharacter;
-  amount: number;
-  description: string;
-  metadata: Record<string, string | number | boolean | null>;
-  session: ResearchRouteSession;
-}): Promise<void> {
-  await addCredit({
-    characterId: args.budget.id,
-    characterCodename: args.budget.codename,
-    ownerId: args.budget.ownerId,
-    ownerName: args.budget.ownerName,
-    amount: args.amount,
-    type: "ADMIN_GRANT",
-    description: args.description,
-    metadata: args.metadata,
-    createdById: args.session.id,
-    createdByName: args.session.displayName,
-    allowNegative: true,
-  }).catch((err) => {
-    console.error(
-      `[equipment-shop/research] refund failed amount=${args.amount}:`,
-      err,
-    );
-  });
 }

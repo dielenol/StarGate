@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 
-import type { UserRole } from "@stargate/shared-db/types";
-
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
@@ -19,7 +17,6 @@ import {
   serializeEquipmentResearchTeamFundingPool,
   serializeEquipmentResearchProject,
 } from "@/lib/db/equipment-research";
-import { applyReadyEquipmentResearchProjects } from "@/lib/equipment-shop/research-application";
 import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
 import {
   EQUIPMENT_SHOP_CATEGORIES,
@@ -82,14 +79,7 @@ export async function buildEquipmentShopCatalogResponse(): Promise<EquipmentShop
 
 export async function buildEquipmentResearchOverviewResponse(
   mainCharacterId: string | null,
-  actor?: { id: string; role: UserRole; displayName: string },
 ): Promise<EquipmentResearchOverviewResponse> {
-  if (actor) {
-    await applyReadyEquipmentResearchProjects({ actor }).catch((err) => {
-      console.warn("[equipment-shop] auto apply during page load failed:", err);
-    });
-  }
-
   const [
     projects,
     capabilities,
@@ -166,11 +156,7 @@ export async function loadEquipmentShopPageData(
           forceClosed: false,
         }),
       ),
-      buildEquipmentResearchOverviewResponse(mainCharacterId, {
-        id: session.user.id,
-        role: session.user.role,
-        displayName: session.user.displayName,
-      }).catch(
+      buildEquipmentResearchOverviewResponse(mainCharacterId).catch(
         (): EquipmentResearchOverviewResponse => ({
           tree: EQUIPMENT_RESEARCH_NODES,
           rushRules: Object.values(EQUIPMENT_RESEARCH_RUSH_RULES),

@@ -5,7 +5,7 @@ import type { Session, SessionResponse } from "./types/session.js";
 import type { SessionLog } from "./types/session-log.js";
 import type { RegistrarUserTip } from "./types/user-tip.js";
 import type { Character } from "./types/character.js";
-import type { CreditTransaction } from "./types/credit.js";
+import type { CreditBalance, CreditTransaction } from "./types/credit.js";
 import type {
   MasterItem,
   CharacterInventory,
@@ -35,6 +35,7 @@ const COL = {
   USERS: "users",
   CHARACTERS: "characters",
   CREDIT_TRANSACTIONS: "credit_transactions",
+  CREDIT_BALANCES: "credit_balances",
   MASTER_ITEMS: "master_items",
   CHARACTER_INVENTORY: "character_inventory",
   SHARED_INVENTORY: "shared_inventory",
@@ -94,6 +95,11 @@ export async function charactersCol(): Promise<Collection<Character>> {
 export async function creditTransactionsCol(): Promise<Collection<CreditTransaction>> {
   const db = await getDb();
   return db.collection<CreditTransaction>(COL.CREDIT_TRANSACTIONS);
+}
+
+export async function creditBalancesCol(): Promise<Collection<CreditBalance>> {
+  const db = await getDb();
+  return db.collection<CreditBalance>(COL.CREDIT_BALANCES);
 }
 
 export async function masterItemsCol(): Promise<Collection<MasterItem>> {
@@ -214,6 +220,10 @@ export function charactersColSync(): Collection<Character> {
 
 export function creditTransactionsColSync(): Collection<CreditTransaction> {
   return getDbSync().collection<CreditTransaction>(COL.CREDIT_TRANSACTIONS);
+}
+
+export function creditBalancesColSync(): Collection<CreditBalance> {
+  return getDbSync().collection<CreditBalance>(COL.CREDIT_BALANCES);
 }
 
 export function masterItemsColSync(): Collection<MasterItem> {

@@ -1,8 +1,8 @@
 /**
- * 병기부 구매 / 연구소 적용 mutation hooks.
+ * 병기부 구매 / 연구 프로젝트 mutation hooks.
  *
  * 카탈로그 장비 구매는 크레딧 차감 + 인벤토리 적재를 처리한다.
- * 연구소 적용은 GM 전용 스탯 변경 API를 호출한다.
+ * 연구 프로젝트의 시작·기여·단축·완료 적용 API를 호출한다.
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +21,7 @@ import {
   equipmentShopKeys,
 } from "@/hooks/queries/useEquipmentShopQuery";
 import type { EquipmentResearchScope as EquipmentResearchScopeValue } from "@/lib/equipment-shop/research";
+import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 interface CheckoutInput {
   items: Array<{
@@ -44,29 +45,6 @@ interface CheckoutResponse {
 }
 
 export type EquipmentResearchScope = EquipmentResearchScopeValue;
-export type EquipmentResearchStat = "hp" | "san" | "def" | "atk";
-
-interface ResearchInput {
-  scope: EquipmentResearchScope;
-  stat: EquipmentResearchStat;
-  amount: number;
-  reason?: string;
-}
-
-interface ResearchResponse {
-  scope: EquipmentResearchScope;
-  stat: EquipmentResearchStat;
-  amount: number;
-  affected: number;
-  skipped: number;
-  auditFailed: number;
-  targets: Array<{
-    id: string;
-    codename: string;
-    before: number;
-    after: number;
-  }>;
-}
 
 interface StartResearchInput {
   key: string;
@@ -159,7 +137,13 @@ export function useCheckoutEquipmentShopCart() {
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/equipment-shop/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey(
+            "equipment-checkout",
+            input,
+          ),
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) await throwEquipmentShopError(res);
@@ -170,27 +154,6 @@ export function useCheckoutEquipmentShopCart() {
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-    },
-  });
-}
-
-export function useApplyEquipmentResearch() {
-  const queryClient = useQueryClient();
-
-  return useMutation<ResearchResponse, EquipmentShopApiError, ResearchInput>({
-    mutationFn: async (input) => {
-      const res = await fetch("/api/erp/equipment-shop/research", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
-      if (!res.ok) await throwEquipmentShopError(res);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: characterKeys.all });
-      queryClient.invalidateQueries({ queryKey: personnelKeys.all });
-      queryClient.invalidateQueries({ queryKey: characterChangeLogsKeys.all });
     },
   });
 }
@@ -206,7 +169,10 @@ export function useStartEquipmentResearch() {
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/equipment-shop/research/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey("research-start", input),
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) await throwEquipmentShopError(res);
@@ -230,7 +196,10 @@ export function useRushEquipmentResearch() {
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/equipment-shop/research/rush", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey("research-rush", input),
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) await throwEquipmentShopError(res);
@@ -254,7 +223,13 @@ export function useContributeEquipmentResearch() {
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/equipment-shop/research/contribute", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey(
+            "research-contribute",
+            input,
+          ),
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) await throwEquipmentShopError(res);

@@ -14,13 +14,11 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { readIdempotencyKey } from "@/lib/api/idempotency";
+import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import { buyHolding, getStockPrice } from "@/lib/db/stocks";
-import {
-  SYSTEM_REFUND_NAME,
-  SYSTEM_USER_ID_SENTINEL,
-} from "@/lib/db/system-actor";
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
@@ -60,6 +58,14 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      { error: "유효한 Idempotency-Key 헤더가 필요합니다.", code: "INVALID_IDEMPOTENCY_KEY" },
+      { status: 400 },
+    );
   }
 
   const body = (await request.json().catch(() => null)) as BuyBody | null;
@@ -146,9 +152,10 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const ownerId = mainChar.ownerId;
 
   // owner 비정규화 (ownerName) — credits/shop 라우트와 일관.
-  const owner = await findUserById(mainChar.ownerId);
+  const owner = await findUserById(ownerId);
   if (!owner) {
     return NextResponse.json(
       { error: "캐릭터의 owner user 정보를 찾을 수 없습니다." },
@@ -175,118 +182,63 @@ export async function POST(request: Request) {
   const totalCost = roundStockValue(price * shares);
 
   const characterId = String(mainChar._id);
-
-  // Step 2: 잔액 차감 — 음수 잔액 거부 (allowNegative:false 기본).
-  let creditTx;
+  const committed: { balance: number | null } = { balance: null };
+  let response: NextResponse;
   try {
-    creditTx = await addCredit({
-      characterId,
-      characterCodename: mainChar.codename,
-      ownerId: mainChar.ownerId,
-      ownerName,
-      amount: -totalCost,
-      type: "STOCK_BUY",
-      description: `주식 매수 — ${catalogItem.name} ${shares}주 @${price}¤`,
-      metadata: { ticker, shares, price },
-      createdById: session.user.id,
-      createdByName: session.user.displayName,
+    response = await executeEconomicOperation({
+      requestId,
+      domain: "stock-buy",
+      actorId: session.user.id,
+      payload: { ticker, shares },
+      run: async (mongoSession) => {
+        const creditTx = await addCredit({
+          characterId,
+          characterCodename: mainChar.codename,
+          ownerId,
+          ownerName,
+          amount: -totalCost,
+          type: "STOCK_BUY",
+          description: `주식 매수 — ${catalogItem.name} ${shares}주 @${price}¤`,
+          metadata: { ticker, shares, price },
+          createdById: session.user.id,
+          createdByName: session.user.displayName,
+          requestId,
+          session: mongoSession,
+        });
+        const newHolding = await buyHolding(characterId, ticker, shares, price, {
+          session: mongoSession,
+        });
+        committed.balance = creditTx.balance;
+        const body: BuyResponse = {
+          purchase: { ticker, name: catalogItem.name, shares, price, totalCost },
+          balance: creditTx.balance,
+          newHolding: { shares: newHolding.shares, avgPrice: newHolding.avgPrice },
+        };
+        return { status: 201, body };
+      },
     });
   } catch (err) {
     if (err instanceof Error && err.message.includes("음수 잔액")) {
-      return NextResponse.json(
-        { error: "잔액이 부족합니다.", code: "INSUFFICIENT_BALANCE" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "잔액이 부족합니다.", code: "INSUFFICIENT_BALANCE" }, { status: 400 });
     }
-    const message = err instanceof Error ? err.message : "잔액 차감 실패";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-
-  // Step 3: 보유 적재 — atomic upsert + 가중평균 갱신.
-  let newHolding;
-  try {
-    newHolding = await buyHolding(characterId, ticker, shares, price);
-  } catch (err) {
-    // Step 2 보상 — 환불 ledger.
-    // TODO(M3-B): 보상 환불 type 을 SYSTEM_REFUND 로 분리 (ADMIN_GRANT 와 ledger 분류 구분).
-    let refundOk = true;
-    await addCredit({
-      characterId,
-      characterCodename: mainChar.codename,
-      ownerId: mainChar.ownerId,
-      ownerName,
-      amount: totalCost,
-      type: "ADMIN_GRANT",
-      description: `주식 매수 자동 환불 — ${catalogItem.name} ${shares}주 @${price}¤ (포지션 적재 실패)`,
-      metadata: {
-        reason: "holding_buy_failed",
-        ticker,
-        shares,
-        price,
-        originalCreditTxId: String(creditTx._id ?? ""),
-      },
-      createdById: SYSTEM_USER_ID_SENTINEL,
-      createdByName: SYSTEM_REFUND_NAME,
-      // 환불은 항상 통과해야 함 — race / 음수 잔액 방어.
-      allowNegative: true,
-    }).catch((refundErr) => {
-      console.error(
-        `[stocks/buy] CRITICAL 환불 ledger 실패 — 수동 정정 필요 ` +
-          `(ticker=${ticker}, shares=${shares}, price=${price}, totalCost=${totalCost}, ` +
-          `characterId=${characterId}): `,
-        refundErr,
-      );
-      refundOk = false;
-    });
-
-    if (!refundOk) {
-      return NextResponse.json(
-        {
-          error:
-            `매수 실패 + 자동 환불 실패. 운영자(GM) 정정 필요. ` +
-            `(ticker=${ticker}, shares=${shares}, 차감액=${totalCost})`,
-          code: "REFUND_FAILED",
-        },
-        { status: 500 },
-      );
-    }
-
-    const message =
-      err instanceof Error ? err.message : "주식 보유 적재 실패";
     return NextResponse.json(
-      {
-        error: `매수 실패 (자동 환불 완료): ${message}`,
-        code: "HOLDING_FAILED_REFUNDED",
-      },
+      { error: err instanceof Error ? err.message : "매수 실패", code: "STOCK_BUY_TRANSACTION_FAILED" },
       { status: 500 },
     );
   }
 
-  await notifyUser({
-    userId: mainChar.ownerId,
-    type: "CREDIT_RECEIVED",
-    title: "주식 매수로 크레딧이 사용되었습니다",
-    message: [
-      `${mainChar.codename} · ${catalogItem.name} ${shares}주`,
-      formatSignedAmount(-totalCost, "CR"),
-      `현재 잔액 ${creditTx.balance.toLocaleString()} CR`,
-    ].join(" · "),
-    link: "/erp/stock",
-  });
-
-  const response: BuyResponse = {
-    purchase: {
-      ticker,
-      name: catalogItem.name,
-      shares,
-      price,
-      totalCost,
-    },
-    balance: creditTx.balance,
-    newHolding: {
-      shares: newHolding.shares,
-      avgPrice: newHolding.avgPrice,
-    },
-  };
-  return NextResponse.json(response, { status: 201 });
+  if (committed.balance !== null) {
+    void notifyUser({
+      userId: ownerId,
+      type: "CREDIT_RECEIVED",
+      title: "주식 매수로 크레딧이 사용되었습니다",
+      message: [
+        `${mainChar.codename} · ${catalogItem.name} ${shares}주`,
+        formatSignedAmount(-totalCost, "CR"),
+        `현재 잔액 ${committed.balance.toLocaleString()} CR`,
+      ].join(" · "),
+      link: "/erp/stock",
+    }).catch((error) => console.error("[stocks/buy] notification failed", error));
+  }
+  return response;
 }

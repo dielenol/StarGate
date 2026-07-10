@@ -6,6 +6,7 @@ import { GM_DIRECT_GRANT_TYPES, isGmDirectGrantType } from "@/types/credit";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
+import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { isCreditOperationCharacter } from "@/lib/character-operation-targets";
 import {
   findCharacterById,
@@ -197,6 +198,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      { error: "유효한 Idempotency-Key 헤더가 필요합니다.", code: "INVALID_IDEMPOTENCY_KEY" },
+      { status: 400 },
+    );
+  }
+
   const body = (await request.json()) as PostBody;
 
   // characterId / ownerId 둘 중 하나는 필수. characterId 가 우선.
@@ -321,6 +330,7 @@ export async function POST(request: Request) {
       description: body.description ?? "",
       createdById: session.user.id,
       createdByName: session.user.displayName,
+      requestId,
       allowNegative: validatedType === "ADMIN_DEDUCT",
     });
     await notifyUser({

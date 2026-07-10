@@ -1,7 +1,6 @@
 /**
  * 편의점 구매 / 소비 mutation hooks.
  *
- * - `useBuyShopItem`: POST /api/erp/shop/buy — 재고/잔액/인벤 3-step Saga.
  * - `useCheckoutShopCart`: POST /api/erp/shop/checkout — 장바구니 일괄 결제.
  * - `useRequestShopReorder`: POST /api/erp/shop/reorder-request — 품절 상품 발주 요청.
  * - `useConsumeShopItem`: POST /api/erp/shop/consume — 보유 인벤 차감만.
@@ -9,7 +8,7 @@
  * 에러 — 서버 응답 `{ error, code }` 를 `ShopApiError` 로 wrap (UI 분기 가능).
  *
  * 성공 시 invalidate 정책:
- * - buy: 카탈로그(재고) + 보유 인벤 + 크레딧 잔액/ledger 모두 갱신.
+ * - checkout: 카탈로그(재고) + 보유 인벤 + 크레딧 잔액/ledger 모두 갱신.
  * - consume: 보유 인벤만. 크레딧/카탈로그 변동 없음.
  */
 
@@ -22,23 +21,9 @@ import {
   shopKeys,
   type ShopCatalogResponse,
 } from "@/hooks/queries/useShopQuery";
+import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 /* ── 입력/응답 타입 ── */
-
-interface BuyInput {
-  slug: string;
-  quantity: number;
-}
-
-interface BuyResponse {
-  purchase: {
-    slug: string;
-    name: string;
-    quantity: number;
-    totalPrice: number;
-  };
-  balance: number;
-}
 
 interface CheckoutInput {
   items: Array<{
@@ -117,29 +102,6 @@ async function throwShopError(res: Response): Promise<never> {
 
 /* ── Hooks ── */
 
-export function useBuyShopItem() {
-  const queryClient = useQueryClient();
-
-  return useMutation<BuyResponse, ShopApiError, BuyInput>({
-    mutationFn: async (input) => {
-      const res = await fetch("/api/erp/shop/buy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
-      if (!res.ok) await throwShopError(res);
-      return res.json();
-    },
-    onSuccess: () => {
-      // 재고(catalog) + 보유 인벤 + 잔액/ledger 모두 변동 — 명시 분리.
-      queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
-      queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
-      queryClient.invalidateQueries({ queryKey: creditKeys.all });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-    },
-  });
-}
-
 export function useCheckoutShopCart() {
   const queryClient = useQueryClient();
 
@@ -147,7 +109,10 @@ export function useCheckoutShopCart() {
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/shop/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey("shop-checkout", input),
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) await throwShopError(res);

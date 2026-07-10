@@ -8,18 +8,15 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { readIdempotencyKey } from "@/lib/api/idempotency";
+import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import {
   addToInventory,
   findMasterItemsBySlugs,
-  removeFromInventory,
 } from "@/lib/db/inventory";
-import { reduceStock, restoreStock } from "@/lib/db/shop";
-import {
-  SYSTEM_REFUND_NAME,
-  SYSTEM_USER_ID_SENTINEL,
-} from "@/lib/db/system-actor";
+import { reduceStock } from "@/lib/db/shop";
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import { findShopItemBySlug, SHOP_CATALOG } from "@/lib/shop/catalog";
@@ -80,60 +77,18 @@ function formatOrderDescription(lines: CheckoutLine[]): string {
   return `편의점 장바구니 구매 — ${first.name} x${first.quantity}${suffix}`;
 }
 
-async function restoreReducedStock(
-  reducedLines: Array<{ slug: string; name: string; quantity: number }>,
-  reason: string,
-  metadata: Record<string, unknown> = {},
-): Promise<void> {
-  await Promise.all(
-    reducedLines.map((line) =>
-      restoreStock(line.slug, line.quantity)
-        .then(() =>
-          recordShopStockAuditLog({
-            action: "STOCK_RESTORE",
-            itemSlug: line.slug,
-            itemName: line.name,
-            delta: line.quantity,
-            actorId: SYSTEM_USER_ID_SENTINEL,
-            actorName: SYSTEM_REFUND_NAME,
-            actorType: "SYSTEM",
-            source: "shop_checkout_compensation",
-            reason,
-            metadata,
-          }),
-        )
-        .catch((err) => {
-          console.error(
-            `[shop/checkout] restoreStock 보상 실패 slug=${line.slug} qty=${line.quantity}:`,
-            err,
-          );
-        }),
-    ),
-  );
-}
-
-async function rollbackAddedInventory(
-  characterId: string,
-  addedLines: Array<{ itemId: string; quantity: number; slug: string }>,
-): Promise<void> {
-  await Promise.all(
-    addedLines.map((line) =>
-      removeFromInventory(characterId, line.itemId, line.quantity).catch(
-        (err) => {
-          console.error(
-            `[shop/checkout] inventory rollback 실패 slug=${line.slug} qty=${line.quantity}:`,
-            err,
-          );
-        },
-      ),
-    ),
-  );
-}
-
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      { error: "유효한 Idempotency-Key 헤더가 필요합니다.", code: "INVALID_IDEMPOTENCY_KEY" },
+      { status: 400 },
+    );
   }
 
   const body = (await request.json().catch(() => null)) as CheckoutBody | null;
@@ -184,8 +139,9 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const ownerId = mainChar.ownerId;
 
-  const owner = await findUserById(mainChar.ownerId);
+  const owner = await findUserById(ownerId);
   if (!owner) {
     return NextResponse.json(
       { error: "캐릭터의 owner user 정보를 찾을 수 없습니다." },
@@ -230,200 +186,101 @@ export async function POST(request: Request) {
   }
 
   const totalPrice = lines.reduce((sum, line) => sum + line.totalPrice, 0);
-  const reducedLines: Array<{ slug: string; name: string; quantity: number }> =
-    [];
-  const addedInventoryLines: Array<{
-    itemId: string;
-    quantity: number;
-    slug: string;
-  }> = [];
-
-  for (const line of lines) {
-    const stockOk = await reduceStock(line.slug, line.quantity);
-    if (!stockOk) {
-      await restoreReducedStock(reducedLines, "checkout_stock_failed", {
-        failedSlug: line.slug,
-      });
-      return NextResponse.json(
-        {
-          error: `${line.name} 재고가 부족합니다.`,
-          code: "OUT_OF_STOCK",
-          slug: line.slug,
-        },
-        { status: 400 },
-      );
-    }
-    reducedLines.push({
-      slug: line.slug,
-      name: line.name,
-      quantity: line.quantity,
-    });
-    await recordShopStockAuditLog({
-      action: "CHECKOUT_REDUCE",
-      itemSlug: line.slug,
-      itemName: line.name,
-      delta: -line.quantity,
+  const committed: { balance: number | null } = { balance: null };
+  let response: NextResponse;
+  try {
+    response = await executeEconomicOperation({
+      requestId,
+      domain: "shop-checkout",
       actorId: session.user.id,
-      actorName: session.user.displayName,
-      actorType: "USER",
-      source: "shop_checkout",
-      metadata: {
-        characterId: String(mainChar._id),
-        characterCodename: mainChar.codename,
+      payload: { items: normalizedItems },
+      run: async (mongoSession) => {
+        for (const line of lines) {
+          const ok = await reduceStock(line.slug, line.quantity, { session: mongoSession });
+          if (!ok) throw new Error(`OUT_OF_STOCK:${line.slug}`);
+        }
+        const debit = await addCredit({
+          characterId: String(mainChar._id),
+          characterCodename: mainChar.codename,
+          ownerId,
+          ownerName,
+          amount: -totalPrice,
+          type: "PURCHASE",
+          description: formatOrderDescription(lines),
+          metadata: { source: "shop_checkout", itemCount: lines.length },
+          createdById: session.user.id,
+          createdByName: session.user.displayName,
+          requestId,
+          session: mongoSession,
+        });
+        for (const line of lines) {
+          await addToInventory(
+            {
+              characterId: String(mainChar._id),
+              characterCodename: mainChar.codename,
+              itemId: line.itemId,
+              itemName: line.name,
+              quantity: line.quantity,
+              acquiredAt: new Date(),
+            },
+            { session: mongoSession },
+          );
+        }
+        committed.balance = debit.balance;
+        return {
+          status: 201,
+          body: {
+            order: {
+              items: lines.map((line) => ({
+                slug: line.slug,
+                name: line.name,
+                quantity: line.quantity,
+                unitPrice: line.unitPrice,
+                totalPrice: line.totalPrice,
+              })),
+              totalPrice,
+            },
+            balance: debit.balance,
+          },
+        };
       },
-    });
-  }
-
-  let creditTx;
-  try {
-    creditTx = await addCredit({
-      characterId: String(mainChar._id),
-      characterCodename: mainChar.codename,
-      ownerId: mainChar.ownerId,
-      ownerName,
-      amount: -totalPrice,
-      type: "PURCHASE",
-      description: formatOrderDescription(lines),
-      metadata: {
-        source: "shop_checkout",
-        itemCount: lines.length,
-        itemsJson: JSON.stringify(
-          lines.map((line) => ({
-            slug: line.slug,
-            itemId: line.itemId,
-            qty: line.quantity,
-            unitPrice: line.unitPrice,
-            totalPrice: line.totalPrice,
-          })),
-        ),
-      },
-      createdById: session.user.id,
-      createdByName: session.user.displayName,
     });
   } catch (err) {
-    await restoreReducedStock(reducedLines, "credit_charge_failed", {
-      characterId: String(mainChar._id),
-      characterCodename: mainChar.codename,
-    });
-    if (err instanceof Error && err.message.includes("음수 잔액")) {
-      return NextResponse.json(
-        { error: "잔액이 부족합니다.", code: "INSUFFICIENT_BALANCE" },
-        { status: 400 },
-      );
+    const message = err instanceof Error ? err.message : "결제 실패";
+    if (message.startsWith("OUT_OF_STOCK:")) {
+      const slug = message.slice("OUT_OF_STOCK:".length);
+      return NextResponse.json({ error: "재고가 부족합니다.", code: "OUT_OF_STOCK", slug }, { status: 400 });
     }
-    const message = err instanceof Error ? err.message : "잔액 차감 실패";
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (message.includes("음수 잔액")) {
+      return NextResponse.json({ error: "잔액이 부족합니다.", code: "INSUFFICIENT_BALANCE" }, { status: 400 });
+    }
+    return NextResponse.json({ error: message, code: "CHECKOUT_TRANSACTION_FAILED" }, { status: 500 });
   }
 
-  try {
+  if (committed.balance !== null) {
     for (const line of lines) {
-      await addToInventory({
-        characterId: String(mainChar._id),
-        characterCodename: mainChar.codename,
-        itemId: line.itemId,
+      void recordShopStockAuditLog({
+        action: "CHECKOUT_REDUCE",
+        itemSlug: line.slug,
         itemName: line.name,
-        quantity: line.quantity,
-        acquiredAt: new Date(),
-      });
-      addedInventoryLines.push({
-        itemId: line.itemId,
-        quantity: line.quantity,
-        slug: line.slug,
+        delta: -line.quantity,
+        actorId: session.user.id,
+        actorName: session.user.displayName,
+        actorType: "USER",
+        source: "shop_checkout",
       });
     }
-  } catch (err) {
-    await Promise.all([
-      restoreReducedStock(reducedLines, "inventory_add_failed", {
-        characterId: String(mainChar._id),
-        characterCodename: mainChar.codename,
-        creditTxId: String(creditTx._id ?? ""),
-      }),
-      rollbackAddedInventory(String(mainChar._id), addedInventoryLines),
-    ]);
-
-    let refundOk = true;
-    await addCredit({
-      characterId: String(mainChar._id),
-      characterCodename: mainChar.codename,
-      ownerId: mainChar.ownerId,
-      ownerName,
-      amount: totalPrice,
-      type: "ADMIN_GRANT",
-      description: `편의점 장바구니 자동 환불 — ${lines.length}종 (인벤토리 적재 실패)`,
-      metadata: {
-        source: "shop_checkout_refund",
-        reason: "inventory_add_failed",
-        originalCreditTxId: String(creditTx._id ?? ""),
-        itemCount: lines.length,
-        itemsJson: JSON.stringify(
-          lines.map((line) => ({
-            slug: line.slug,
-            itemId: line.itemId,
-            qty: line.quantity,
-            totalPrice: line.totalPrice,
-          })),
-        ),
-      },
-      createdById: SYSTEM_USER_ID_SENTINEL,
-      createdByName: SYSTEM_REFUND_NAME,
-      allowNegative: true,
-    }).catch((refundErr) => {
-      console.error(
-        `[shop/checkout] CRITICAL 환불 ledger 실패 — 수동 정정 필요 totalPrice=${totalPrice}:`,
-        refundErr,
-      );
-      refundOk = false;
-    });
-
-    if (!refundOk) {
-      return NextResponse.json(
-        {
-          error:
-            `구매 실패 + 자동 환불 실패. 운영자(GM) 정정 필요. ` +
-            `(품목=${lines.length}종, 차감액=${totalPrice})`,
-          code: "REFUND_FAILED",
-        },
-        { status: 500 },
-      );
-    }
-
-    const message =
-      err instanceof Error ? err.message : "인벤토리 적재 실패";
-    return NextResponse.json(
-      {
-        error: `구매 실패 (자동 환불 완료): ${message}`,
-        code: "INVENTORY_FAILED_REFUNDED",
-      },
-      { status: 500 },
-    );
+    void notifyUser({
+      userId: ownerId,
+      type: "CREDIT_RECEIVED",
+      title: "아이템 구매로 크레딧이 사용되었습니다",
+      message: [
+        `${mainChar.codename} · ${formatOrderDescription(lines)}`,
+        formatSignedAmount(-totalPrice, "CR"),
+        `현재 잔액 ${committed.balance.toLocaleString()} CR`,
+      ].join(" · "),
+      link: "/erp/shop",
+    }).catch((error) => console.error("[shop/checkout] notification failed", error));
   }
-
-  await notifyUser({
-    userId: mainChar.ownerId,
-    type: "CREDIT_RECEIVED",
-    title: "아이템 구매로 크레딧이 사용되었습니다",
-    message: [
-      `${mainChar.codename} · ${formatOrderDescription(lines)}`,
-      formatSignedAmount(-totalPrice, "CR"),
-      `현재 잔액 ${creditTx.balance.toLocaleString()} CR`,
-    ].join(" · "),
-    link: "/erp/shop",
-  });
-
-  return NextResponse.json(
-    {
-      order: {
-        items: lines.map((line) => ({
-          slug: line.slug,
-          name: line.name,
-          quantity: line.quantity,
-          unitPrice: line.unitPrice,
-          totalPrice: line.totalPrice,
-        })),
-        totalPrice,
-      },
-      balance: creditTx.balance,
-    },
-    { status: 201 },
-  );
+  return response;
 }

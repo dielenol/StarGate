@@ -8,6 +8,7 @@ import { creditKeys } from "@/hooks/queries/useCreditsQuery";
 import { characterKeys, personnelKeys } from "@/hooks/queries/useCharactersQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import { stocksKeys } from "@/hooks/queries/useStocksQuery";
+import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 /**
  * GM 발급 입력. ownerId 또는 characterId 중 하나가 필수 (백엔드 검증).
@@ -32,7 +33,10 @@ export function useGrantCredit() {
     mutationFn: async (input: GrantCreditInput) => {
       const res = await fetch("/api/erp/credits", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey("credit-grant", input),
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) {
@@ -65,7 +69,10 @@ export function useBulkGrantCredit() {
     mutationFn: async (input: BulkGrantInput): Promise<BulkGrantResult> => {
       const res = await fetch("/api/erp/admin/credits/bulk", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey("credit-bulk", input),
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) {

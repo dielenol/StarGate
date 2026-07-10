@@ -2,7 +2,7 @@
  * master_items + character_inventory CRUD
  */
 
-import { ObjectId, type Filter } from "mongodb";
+import { ObjectId, type ClientSession, type Filter } from "mongodb";
 
 import type {
   CharacterInventory,
@@ -190,7 +190,8 @@ export async function listCharacterInventory(
 }
 
 export async function addToInventory(
-  input: CreateInventoryInput
+  input: CreateInventoryInput,
+  options: { session?: ClientSession } = {},
 ): Promise<CharacterInventory> {
   const col = await characterInventoryCol();
 
@@ -205,7 +206,7 @@ export async function addToInventory(
         note: input.note,
       },
     },
-    { upsert: true, returnDocument: "after" }
+    { upsert: true, returnDocument: "after", session: options.session }
   );
   if (!result) {
     throw new Error(
@@ -228,7 +229,8 @@ export async function addToInventory(
 export async function removeFromInventory(
   characterId: string,
   itemId: string,
-  quantity: number
+  quantity: number,
+  options: { session?: ClientSession } = {},
 ): Promise<{ ok: boolean; remaining: number }> {
   if (!Number.isInteger(quantity) || quantity < 1) {
     throw new Error(
@@ -239,12 +241,15 @@ export async function removeFromInventory(
   const result = await col.findOneAndUpdate(
     { characterId, itemId, quantity: { $gte: quantity } },
     { $inc: { quantity: -quantity } },
-    { returnDocument: "after" }
+    { returnDocument: "after", session: options.session }
   );
   if (!result) return { ok: false, remaining: 0 };
   if (result.quantity === 0) {
     // race-aware: 다른 요청이 이미 inc 했을 수 있으므로 quantity:0 추가 매치.
-    await col.deleteOne({ _id: result._id, quantity: 0 });
+    await col.deleteOne(
+      { _id: result._id, quantity: 0 },
+      { session: options.session },
+    );
   }
   return { ok: true, remaining: result.quantity };
 }

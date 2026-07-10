@@ -55,6 +55,7 @@ export {
 
 export type {
   CreditTransaction,
+  CreditBalance,
   CreditTransactionType,
   CreateCreditTransactionInput,
   WebAllowedCreditType,

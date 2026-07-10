@@ -9,18 +9,15 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { childIdempotencyKey, readIdempotencyKey } from "@/lib/api/idempotency";
+import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import {
   addToInventory,
   findMasterItemsBySlugsOrIds,
   listCharacterInventory,
-  removeFromInventory,
 } from "@/lib/db/inventory";
-import {
-  SYSTEM_REFUND_NAME,
-  SYSTEM_USER_ID_SENTINEL,
-} from "@/lib/db/system-actor";
 import { findUserById } from "@/lib/db/users";
 import { getEquipmentResearchCapabilities } from "@/lib/db/equipment-research";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
@@ -90,28 +87,17 @@ function formatOrderDescription(lines: CheckoutLine[]): string {
   return `병기부 구매 — ${first.name} x${first.quantity}${suffix}`;
 }
 
-async function rollbackAddedInventory(
-  characterId: string,
-  addedLines: Array<{ itemId: string; quantity: number; key: string }>,
-): Promise<void> {
-  await Promise.all(
-    addedLines.map((line) =>
-      removeFromInventory(characterId, line.itemId, line.quantity).catch(
-        (err) => {
-          console.error(
-            `[equipment-shop/checkout] inventory rollback 실패 key=${line.key} qty=${line.quantity}:`,
-            err,
-          );
-        },
-      ),
-    ),
-  );
-}
-
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      { error: "유효한 Idempotency-Key 헤더가 필요합니다.", code: "INVALID_IDEMPOTENCY_KEY" },
+      { status: 400 },
+    );
   }
   try {
     requireRole(session.user.role, "GM");
@@ -157,8 +143,9 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const ownerId = mainChar.ownerId;
 
-  const owner = await findUserById(mainChar.ownerId);
+  const owner = await findUserById(ownerId);
   if (!owner) {
     return NextResponse.json(
       { error: "캐릭터의 owner user 정보를 찾을 수 없습니다." },
@@ -271,32 +258,89 @@ export async function POST(request: Request) {
   }
 
   const totalPrice = lines.reduce((sum, line) => sum + line.totalPrice, 0);
+  const capabilities = await getEquipmentResearchCapabilities(String(mainChar._id));
+  const quotedRefund = capabilities.refundPercent > 0
+    ? Math.min(capabilities.refundCap, Math.floor((totalPrice * capabilities.refundPercent) / 100))
+    : 0;
+  const committed: { notification: { balance: number; refund: number } | null } = {
+    notification: null,
+  };
 
-  let creditTx;
+  let response: NextResponse;
   try {
-    creditTx = await addCredit({
-      characterId: String(mainChar._id),
-      characterCodename: mainChar.codename,
-      ownerId: mainChar.ownerId,
-      ownerName,
-      amount: -totalPrice,
-      type: "PURCHASE",
-      description: formatOrderDescription(lines),
-      metadata: {
-        source: "equipment_shop_checkout",
-        itemCount: lines.length,
-        itemsJson: JSON.stringify(
-          lines.map((line) => ({
-            key: line.key,
-            itemId: line.itemId,
-            qty: line.quantity,
-            unitPrice: line.unitPrice,
-            totalPrice: line.totalPrice,
-          })),
-        ),
+    response = await executeEconomicOperation({
+      requestId,
+      domain: "equipment-shop-checkout",
+      actorId: session.user.id,
+      payload: { items: normalizedItems },
+      run: async (mongoSession) => {
+        const debit = await addCredit({
+          characterId: String(mainChar._id),
+          characterCodename: mainChar.codename,
+          ownerId,
+          ownerName,
+          amount: -totalPrice,
+          type: "PURCHASE",
+          description: formatOrderDescription(lines),
+          metadata: { source: "equipment_shop_checkout", itemCount: lines.length },
+          createdById: session.user.id,
+          createdByName: session.user.displayName,
+          requestId,
+          session: mongoSession,
+        });
+        for (const line of lines) {
+          await addToInventory(
+            {
+              characterId: String(mainChar._id),
+              characterCodename: mainChar.codename,
+              itemId: line.itemId,
+              itemName: line.name,
+              quantity: line.quantity,
+              acquiredAt: new Date(),
+            },
+            { session: mongoSession },
+          );
+        }
+        let balance = debit.balance;
+        let actualRefund = 0;
+        if (quotedRefund > 0) {
+          const refund = await addCredit({
+            characterId: String(mainChar._id),
+            characterCodename: mainChar.codename,
+            ownerId,
+            ownerName,
+            amount: quotedRefund,
+            type: "ADMIN_GRANT",
+            description: `병기부 연구 환급 — ${capabilities.refundPercent}%`,
+            metadata: { source: "equipment_shop_research_refund", totalPrice },
+            createdById: session.user.id,
+            createdByName: session.user.displayName,
+            requestId: childIdempotencyKey(requestId, "research-refund"),
+            allowNegative: true,
+            session: mongoSession,
+          });
+          balance = refund.balance;
+          actualRefund = quotedRefund;
+        }
+        committed.notification = { balance, refund: actualRefund };
+        return {
+          status: 201,
+          body: {
+            order: {
+              items: lines.map((line) => ({
+                key: line.key,
+                name: line.name,
+                quantity: line.quantity,
+                unitPrice: line.unitPrice,
+                totalPrice: line.totalPrice,
+              })),
+              totalPrice,
+            },
+            balance,
+            researchRefund: actualRefund,
+          },
+        };
       },
-      createdById: session.user.id,
-      createdByName: session.user.displayName,
     });
   } catch (err) {
     if (err instanceof Error && err.message.includes("음수 잔액")) {
@@ -305,162 +349,26 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const message = err instanceof Error ? err.message : "잔액 차감 실패";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-
-  const addedInventoryLines: Array<{
-    itemId: string;
-    quantity: number;
-    key: string;
-  }> = [];
-
-  try {
-    for (const line of lines) {
-      await addToInventory({
-        characterId: String(mainChar._id),
-        characterCodename: mainChar.codename,
-        itemId: line.itemId,
-        itemName: line.name,
-        quantity: line.quantity,
-        acquiredAt: new Date(),
-      });
-      addedInventoryLines.push({
-        itemId: line.itemId,
-        quantity: line.quantity,
-        key: line.key,
-      });
-    }
-  } catch (err) {
-    await rollbackAddedInventory(String(mainChar._id), addedInventoryLines);
-
-    let refundOk = true;
-    await addCredit({
-      characterId: String(mainChar._id),
-      characterCodename: mainChar.codename,
-      ownerId: mainChar.ownerId,
-      ownerName,
-      amount: totalPrice,
-      type: "ADMIN_GRANT",
-      description: `병기부 자동 환불 — ${lines.length}종 (인벤토리 적재 실패)`,
-      metadata: {
-        source: "equipment_shop_checkout_refund",
-        reason: "inventory_add_failed",
-        originalCreditTxId: String(creditTx._id ?? ""),
-        itemCount: lines.length,
-        itemsJson: JSON.stringify(
-          lines.map((line) => ({
-            key: line.key,
-            itemId: line.itemId,
-            qty: line.quantity,
-            totalPrice: line.totalPrice,
-          })),
-        ),
-      },
-      createdById: SYSTEM_USER_ID_SENTINEL,
-      createdByName: SYSTEM_REFUND_NAME,
-      allowNegative: true,
-    }).catch((refundErr) => {
-      console.error(
-        `[equipment-shop/checkout] CRITICAL 환불 ledger 실패 — 수동 정정 필요 totalPrice=${totalPrice}:`,
-        refundErr,
-      );
-      refundOk = false;
-    });
-
-    if (!refundOk) {
-      return NextResponse.json(
-        {
-          error:
-            `구매 실패 + 자동 환불 실패. 운영자(GM) 정정 필요. ` +
-            `(품목=${lines.length}종, 차감액=${totalPrice})`,
-          code: "REFUND_FAILED",
-        },
-        { status: 500 },
-      );
-    }
-
-    const message =
-      err instanceof Error ? err.message : "인벤토리 적재 실패";
     return NextResponse.json(
-      {
-        error: `구매 실패 (자동 환불 완료): ${message}`,
-        code: "INVENTORY_FAILED_REFUNDED",
-      },
+      { error: err instanceof Error ? err.message : "결제 실패", code: "CHECKOUT_TRANSACTION_FAILED" },
       { status: 500 },
     );
   }
 
-  const capabilities = await getEquipmentResearchCapabilities(String(mainChar._id));
-  const refundAmount =
-    capabilities.refundPercent > 0
-      ? Math.min(
-          capabilities.refundCap,
-          Math.floor((totalPrice * capabilities.refundPercent) / 100),
-        )
-      : 0;
-  let finalBalance = creditTx.balance;
-  if (refundAmount > 0) {
-    await addCredit({
-      characterId: String(mainChar._id),
-      characterCodename: mainChar.codename,
-      ownerId: mainChar.ownerId,
-      ownerName,
-      amount: refundAmount,
-      type: "ADMIN_GRANT",
-      description: `병기부 연구 환급 — ${capabilities.refundPercent}%`,
-      metadata: {
-        source: "equipment_shop_research_refund",
-        originalCreditTxId: String(creditTx._id ?? ""),
-        refundPercent: capabilities.refundPercent,
-        refundCap: capabilities.refundCap,
-        totalPrice,
-      },
-      createdById: SYSTEM_USER_ID_SENTINEL,
-      createdByName: SYSTEM_REFUND_NAME,
-      allowNegative: true,
-    })
-      .then((refundTx) => {
-        finalBalance = refundTx.balance;
-      })
-      .catch((refundErr) => {
-        console.error(
-          `[equipment-shop/checkout] research refund failed totalPrice=${totalPrice}:`,
-          refundErr,
-        );
-      });
+  if (committed.notification) {
+    const { balance, refund } = committed.notification;
+    void notifyUser({
+      userId: ownerId,
+      type: "CREDIT_RECEIVED",
+      title: "병기부 구매로 크레딧이 사용되었습니다",
+      message: [
+        `${mainChar.codename} · ${formatOrderDescription(lines)}`,
+        formatSignedAmount(-totalPrice, "CR"),
+        refund > 0 ? `연구 환급 +${refund.toLocaleString()} CR` : "",
+        `현재 잔액 ${balance.toLocaleString()} CR`,
+      ].filter(Boolean).join(" · "),
+      link: "/erp/equipment-shop",
+    }).catch((error) => console.error("[equipment-shop/checkout] notification failed", error));
   }
-
-  await notifyUser({
-    userId: mainChar.ownerId,
-    type: "CREDIT_RECEIVED",
-    title: "병기부 구매로 크레딧이 사용되었습니다",
-    message: [
-      `${mainChar.codename} · ${formatOrderDescription(lines)}`,
-      formatSignedAmount(-totalPrice, "CR"),
-      refundAmount > 0 ? `연구 환급 +${refundAmount.toLocaleString()} CR` : "",
-      `현재 잔액 ${finalBalance.toLocaleString()} CR`,
-    ]
-      .filter(Boolean)
-      .join(" · "),
-    link: "/erp/equipment-shop",
-  });
-
-  return NextResponse.json(
-    {
-      order: {
-        items: lines.map((line) => ({
-          key: line.key,
-          name: line.name,
-          quantity: line.quantity,
-          unitPrice: line.unitPrice,
-          totalPrice: line.totalPrice,
-        })),
-        totalPrice,
-      },
-      balance: finalBalance,
-      researchRefund: refundAmount,
-    },
-    { status: 201 },
-  );
+  return response;
 }

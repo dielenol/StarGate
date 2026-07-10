@@ -12,8 +12,8 @@
  * - `findTransactionsBySessionMetadata` — 세션 자동 보상 멱등 검출
  */
 
-import type { Filter } from "mongodb";
-import { ObjectId } from "mongodb";
+import type { ClientSession, Filter } from "mongodb";
+import { MongoServerError, ObjectId } from "mongodb";
 
 import type {
   CreateCreditTransactionInput,
@@ -21,7 +21,8 @@ import type {
   CreditTransactionType,
 } from "../types/index.js";
 
-import { creditTransactionsCol } from "../collections.js";
+import { creditBalancesCol, creditTransactionsCol } from "../collections.js";
+import { getClient } from "../client.js";
 
 const CREDIT_SCALE = 100;
 
@@ -39,24 +40,35 @@ export async function listCreditTransactions(
   return col.find(filter).sort({ createdAt: -1 }).limit(limit).toArray();
 }
 
-/** characterId 단위 latest balance. */
+/** characterId 단위 현재 balance. 마이그레이션 전 row 부재 시 ledger snapshot으로 폴백. */
 export async function getCharacterBalance(
   characterId: string
 ): Promise<number> {
-  const col = await creditTransactionsCol();
-  const doc = await col.findOne(
-    { characterId },
-    { sort: { createdAt: -1 } }
-  );
-  return doc ? doc.balance : 0;
+  const balances = await creditBalancesCol();
+  const transactions = await creditTransactionsCol();
+  const [row, latest] = await Promise.all([
+    balances.findOne({ characterId }),
+    transactions.findOne(
+      { characterId },
+      { sort: { createdAt: -1, _id: -1 } },
+    ),
+  ]);
+  if (!latest) return row?.balance ?? 0;
+  if (row?.lastTransactionId === latest._id?.toString()) return row.balance;
+  return latest?.balance ?? 0;
 }
 
 export async function createCreditTransaction(
-  input: CreateCreditTransactionInput
+  input: CreateCreditTransactionInput,
+  options: { session?: ClientSession; id?: ObjectId } = {},
 ): Promise<CreditTransaction> {
   const col = await creditTransactionsCol();
-  const doc: CreditTransaction = { ...input, createdAt: new Date() };
-  const result = await col.insertOne(doc);
+  const doc: CreditTransaction = {
+    ...input,
+    ...(options.id ? { _id: options.id } : {}),
+    createdAt: new Date(),
+  };
+  const result = await col.insertOne(doc, { session: options.session });
   return { ...doc, _id: result.insertedId };
 }
 
@@ -81,7 +93,7 @@ export async function findTransactionById(
  * named-object 시그니처 — 다인수 positional 호출의 인자 swap 사고를 차단하고
  * 옵션 추가 시 호출처 영향 최소화.
  */
-export async function addCredit(input: {
+export interface AddCreditInput {
   characterId: string;
   characterCodename: string;
   ownerId: string;
@@ -92,46 +104,214 @@ export async function addCredit(input: {
   createdById: string;
   createdByName: string;
   metadata?: CreditTransaction["metadata"];
+  /** 재시도에도 동일하게 유지되는 호출자 생성 멱등 키. */
+  requestId?: string;
   /**
    * 음수 잔액 허용. 기본 false.
    * - ADMIN_DEDUCT (GM 의도 차감) 등에서 true 권장.
    * - 사용자 발급 (구매/매수 등) 은 false 유지 — 잔액 부족 거절.
    */
   allowNegative?: boolean;
-}): Promise<CreditTransaction> {
-  const col = await creditTransactionsCol();
-  const latest = await col.findOne(
-    { characterId: input.characterId },
-    { sort: { createdAt: -1 } }
-  );
-  const currentBalance = latest?.balance ?? 0;
-  const amount = roundCreditValue(input.amount);
-  const newBalance = roundCreditValue(currentBalance + amount);
+  /** 상위 Mongo transaction에 참여할 때 전달. 반드시 이미 transaction 중이어야 한다. */
+  session?: ClientSession;
+}
 
-  if (newBalance < 0 && !input.allowNegative) {
-    throw new Error(
+export class CreditMutationError extends Error {
+  constructor(
+    public readonly code: "INSUFFICIENT_BALANCE" | "DUPLICATE_REQUEST",
+    message: string,
+  ) {
+    super(message);
+    this.name = "CreditMutationError";
+  }
+}
+
+function isDuplicateKeyError(error: unknown): boolean {
+  return error instanceof MongoServerError && error.code === 11000;
+}
+
+async function findByRequestId(
+  requestId: string | undefined,
+  session?: ClientSession,
+): Promise<CreditTransaction | null> {
+  if (!requestId) return null;
+  const col = await creditTransactionsCol();
+  return col.findOne({ requestId }, { session });
+}
+
+function reuseIdempotentTransaction(
+  existing: CreditTransaction,
+  input: AddCreditInput,
+): CreditTransaction {
+  if (
+    existing.characterId !== input.characterId ||
+    existing.type !== input.type ||
+    existing.amount !== roundCreditValue(input.amount) ||
+    existing.description !== input.description
+  ) {
+    throw new CreditMutationError(
+      "DUPLICATE_REQUEST",
+      `addCredit: 동일 requestId가 다른 거래에 사용되었습니다. requestId=${input.requestId}`,
+    );
+  }
+  return existing;
+}
+
+/**
+ * 마이그레이션 전후 배포 호환용 lazy bootstrap. 최초 balance는 기존 ledger의 최신
+ * snapshot에서 가져오며, unique characterId + $setOnInsert로 동시 생성 시 한 행만 남는다.
+ */
+async function ensureBalanceRow(
+  characterId: string,
+  session: ClientSession,
+): Promise<void> {
+  const balances = await creditBalancesCol();
+  const transactions = await creditTransactionsCol();
+  const [existing, latest] = await Promise.all([
+    balances.findOne({ characterId }, { session }),
+    transactions.findOne(
+      { characterId },
+      { sort: { createdAt: -1, _id: -1 }, session },
+    ),
+  ]);
+  if (!latest) {
+    if (existing) return;
+  } else if (existing?.lastTransactionId === latest._id?.toString()) {
+    return;
+  }
+
+  await balances.updateOne(
+    { characterId },
+    existing
+      ? {
+          $set: {
+            balance: latest?.balance ?? existing.balance,
+            lastTransactionId: latest?._id?.toString(),
+            updatedAt: latest?.createdAt ?? new Date(),
+          },
+        }
+      : {
+          $setOnInsert: {
+            characterId,
+            balance: latest?.balance ?? 0,
+            ...(latest?._id
+              ? { lastTransactionId: latest._id.toString() }
+              : {}),
+            updatedAt: latest?.createdAt ?? new Date(),
+          },
+        },
+    { upsert: true, session },
+  );
+}
+
+async function addCreditInTransaction(
+  input: AddCreditInput,
+  session: ClientSession,
+): Promise<CreditTransaction> {
+  const existing = await findByRequestId(input.requestId, session);
+  if (existing) return reuseIdempotentTransaction(existing, input);
+
+  await ensureBalanceRow(input.characterId, session);
+
+  const balances = await creditBalancesCol();
+  const amount = roundCreditValue(input.amount);
+  const transactionId = new ObjectId();
+  const balanceFilter: Filter<{ characterId: string; balance: number }> = {
+    characterId: input.characterId,
+    ...(amount < 0 && !input.allowNegative
+      ? { balance: { $gte: -amount } }
+      : {}),
+  };
+  const balanceRow = await balances.findOneAndUpdate(
+    balanceFilter,
+    [
+      {
+        $set: {
+          balance: { $round: [{ $add: ["$balance", amount] }, 2] },
+          lastTransactionId: { $literal: transactionId.toString() },
+          updatedAt: { $literal: new Date() },
+        },
+      },
+    ],
+    { returnDocument: "after", session },
+  );
+
+  if (!balanceRow) {
+    const current = await balances.findOne(
+      { characterId: input.characterId },
+      { session },
+    );
+    throw new CreditMutationError(
+      "INSUFFICIENT_BALANCE",
       `addCredit: 음수 잔액 거부 — characterId=${input.characterId}, ` +
-        `current=${currentBalance}, delta=${amount}. ` +
-        `allowNegative 옵션이 필요한 호출이면 명시적으로 전달할 것.`
+        `current=${current?.balance ?? 0}, delta=${amount}. ` +
+        `allowNegative 옵션이 필요한 호출이면 명시적으로 전달할 것.`,
     );
   }
 
-  const doc: CreditTransaction = {
+  const doc: CreateCreditTransactionInput = {
     characterId: input.characterId,
     characterCodename: input.characterCodename,
     ownerId: input.ownerId,
     ownerName: input.ownerName,
     type: input.type,
     amount,
-    balance: newBalance,
+    balance: roundCreditValue(balanceRow.balance),
     description: input.description,
     createdById: input.createdById,
     createdByName: input.createdByName,
-    createdAt: new Date(),
+    ...(input.requestId ? { requestId: input.requestId } : {}),
     ...(input.metadata ? { metadata: input.metadata } : {}),
   };
-  const result = await col.insertOne(doc);
-  return { ...doc, _id: result.insertedId };
+  return createCreditTransaction(doc, { session, id: transactionId });
+}
+
+/**
+ * 캐릭터 잔액 변경. balance 조건부 갱신과 ledger insert를 하나의 transaction으로
+ * 커밋한다. 자체 session은 driver `withTransaction`의 transient retry를 사용한다.
+ * 외부 session은 상위 transaction에 참여하며, 중복-key/transaction retry 책임도
+ * 상위 호출자에게 있다.
+ */
+export async function addCredit(input: AddCreditInput): Promise<CreditTransaction> {
+  if (
+    input.requestId !== undefined &&
+    (input.requestId.trim().length === 0 || input.requestId.length > 128)
+  ) {
+    throw new Error("addCredit: requestId는 1~128자 문자열이어야 합니다.");
+  }
+
+  if (input.session) {
+    if (!input.session.inTransaction()) {
+      throw new Error("addCredit: 전달된 ClientSession은 transaction 중이어야 합니다.");
+    }
+    return addCreditInTransaction(input, input.session);
+  }
+
+  const preexisting = await findByRequestId(input.requestId);
+  if (preexisting) return reuseIdempotentTransaction(preexisting, input);
+
+  const client = await getClient();
+  const session = client.startSession();
+  try {
+    let transaction: CreditTransaction | undefined;
+    try {
+      await session.withTransaction(async () => {
+        transaction = await addCreditInTransaction(input, session);
+      });
+    } catch (error) {
+      // 같은 requestId의 경쟁 insert에서 패배한 transaction은 전체 rollback된다.
+      // abort 뒤 session 밖에서 승자의 ledger를 재조회해 멱등 응답으로 재사용한다.
+      if (input.requestId && isDuplicateKeyError(error)) {
+        const existing = await findByRequestId(input.requestId);
+        if (existing) return reuseIdempotentTransaction(existing, input);
+      }
+      throw error;
+    }
+    if (!transaction) throw new Error("addCredit: transaction 결과가 없습니다.");
+    return transaction;
+  } finally {
+    await session.endSession();
+  }
 }
 
 /**

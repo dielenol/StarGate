@@ -6,6 +6,8 @@
  * - shop_daily_stock: 아이템별 당일 재고. lastRefresh 는 KST YYYY-MM-DD 문자열.
  */
 
+import type { ClientSession } from "mongodb";
+
 import type {
   ShopDailyStock,
   ShopInventory,
@@ -166,6 +168,7 @@ export async function getStock(itemId: string): Promise<ShopDailyStock | null> {
 export async function reduceStock(
   itemId: string,
   qty: number,
+  options: { session?: ClientSession } = {},
 ): Promise<boolean> {
   if (qty <= 0) {
     throw new Error(`reduceStock: qty must be positive, got ${qty}`);
@@ -174,6 +177,7 @@ export async function reduceStock(
   const result = await col.updateOne(
     { itemId, stock: { $gte: qty } },
     { $inc: { stock: -qty } },
+    { session: options.session },
   );
   return result.modifiedCount > 0;
 }
@@ -194,6 +198,7 @@ export async function reduceStock(
 export async function restoreStock(
   itemId: string,
   qty: number,
+  options: { session?: ClientSession } = {},
 ): Promise<void> {
   if (qty <= 0) {
     throw new Error(`restoreStock: qty must be positive, got ${qty}`);
@@ -202,6 +207,7 @@ export async function restoreStock(
   const result = await col.updateOne(
     { itemId },
     { $inc: { stock: qty } },
+    { session: options.session },
   );
   if (result.matchedCount === 0) {
     console.warn(

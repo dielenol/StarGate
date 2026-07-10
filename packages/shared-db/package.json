@@ -21,7 +21,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test:credits": "pnpm build && node --test src/crud/__tests__/credits-atomicity.test.mjs"
   },
   "dependencies": {
     "mongodb": "^7.1.1",

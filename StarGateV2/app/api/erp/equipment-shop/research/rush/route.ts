@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { getClient } from "@stargate/shared-db";
 
+import { readIdempotencyKey } from "@/lib/api/idempotency";
 import {
   findEquipmentResearchProjectById,
   getEquipmentResearchCapabilities,
@@ -16,8 +18,8 @@ import {
 
 import {
   chargeResearchCredits,
-  refundResearchCredits,
-  requireResearchUser,
+  ResearchMutationError,
+  requireResearchGm,
   resolveResearchBudgetCharacter,
 } from "../_lib";
 
@@ -26,8 +28,16 @@ interface RushResearchBody {
 }
 
 export async function POST(request: Request) {
-  const authResult = await requireResearchUser();
+  const authResult = await requireResearchGm();
   if ("response" in authResult) return authResult.response;
+
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      { error: "유효한 Idempotency-Key 헤더가 필요합니다.", code: "INVALID_IDEMPOTENCY_KEY" },
+      { status: 400 },
+    );
+  }
 
   const body = (await request.json().catch(() => null)) as
     | RushResearchBody
@@ -99,62 +109,66 @@ export async function POST(request: Request) {
     );
   }
 
-  const chargeResult = await chargeResearchCredits({
-    budget: budgetResult.budget,
-    amount: quote.cost,
-    description: `병기 연구 시간 단축 — ${project.key}`,
-    metadata: {
-      source: "equipment_shop_research_rush",
-      projectId,
-      projectKey: project.key,
-      tier: project.tier,
-      rushHours: quote.hours,
-      discountApplied: quote.discountApplied,
-    },
-    session: authResult.session,
-  });
-  if ("response" in chargeResult) return chargeResult.response;
-
-  const updated = await updateEquipmentResearchProjectRush({
-    id: projectId,
-    currentRushUsed: project.rushUsed,
-    nextCompletedAt: quote.nextCompletedAt,
-    discountApplied: quote.discountApplied,
-  });
-  if (!updated) {
-    await refundResearchCredits({
-      budget: budgetResult.budget,
-      amount: quote.cost,
-      description: `병기 연구 자동 환불 — ${project.key} rush 실패`,
-      metadata: {
-        source: "equipment_shop_research_rush_refund",
-        projectId,
-        projectKey: project.key,
-        reason: "rush_update_failed",
-      },
-      session: authResult.session,
-    });
+  let balance: number | undefined;
+  try {
+    const client = await getClient();
+    const mongoSession = client.startSession();
+    try {
+      await mongoSession.withTransaction(async () => {
+        const chargeResult = await chargeResearchCredits({
+          budget: budgetResult.budget,
+          amount: quote.cost,
+          description: `병기 연구 시간 단축 — ${project.key}`,
+          metadata: {
+            source: "equipment_shop_research_rush",
+            projectId,
+            projectKey: project.key,
+            tier: project.tier,
+            rushHours: quote.hours,
+            discountApplied: quote.discountApplied,
+          },
+          session: authResult.session,
+          requestId,
+          mongoSession,
+        });
+        const updated = await updateEquipmentResearchProjectRush({
+          id: projectId,
+          currentRushUsed: project.rushUsed,
+          nextCompletedAt: quote.nextCompletedAt,
+          discountApplied: quote.discountApplied,
+          session: mongoSession,
+          requestId,
+        });
+        if (!updated) throw new ResearchMutationError("RUSH_UPDATE_FAILED", 409, "연구 시간 단축 상태가 충돌했습니다.");
+        if (project.scope === "team") {
+          await insertEquipmentResearchContribution({
+            scope: "team",
+            action: "rush",
+            projectKey: project.key,
+            projectId,
+            contributorCharacterId: budgetResult.budget.id,
+            contributorCodename: budgetResult.budget.codename,
+            amount: quote.cost,
+            rushHours: quote.hours,
+            requestId,
+            session: mongoSession,
+          });
+        }
+        balance = chargeResult.balance;
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "연구 시간 단축 실패";
     return NextResponse.json(
-      {
-        error: "연구 시간 단축 반영에 실패했습니다. 자동 환불을 시도했습니다.",
-        code: "RUSH_UPDATE_FAILED",
-      },
-      { status: 409 },
+      { error: message, code: err instanceof ResearchMutationError ? err.code : "RUSH_UPDATE_FAILED" },
+      { status: err instanceof ResearchMutationError ? err.status : message.includes("duplicate key") ? 409 : 500 },
     );
   }
 
   const nextProject = await findEquipmentResearchProjectById(projectId);
   if (project.scope === "team") {
-    await insertEquipmentResearchContribution({
-      scope: "team",
-      action: "rush",
-      projectKey: project.key,
-      projectId,
-      contributorCharacterId: budgetResult.budget.id,
-      contributorCodename: budgetResult.budget.codename,
-      amount: quote.cost,
-      rushHours: quote.hours,
-    });
     void notifyEquipmentResearchEvent({
       kind: "rush",
       projectKey: project.key,
@@ -173,7 +187,7 @@ export async function POST(request: Request) {
         hours: quote.hours,
         discountApplied: quote.discountApplied,
       },
-      balance: chargeResult.balance,
+      balance,
     },
     { status: 200, headers: { "Cache-Control": "private, no-store" } },
   );

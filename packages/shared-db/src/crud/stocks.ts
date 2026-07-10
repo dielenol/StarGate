@@ -9,6 +9,8 @@
  * Phase 2 ledger 가 character 단위로 전환되어 holdings 도 characterId 단위.
  */
 
+import type { ClientSession } from "mongodb";
+
 import type {
   CreateStockPriceHistoryInput,
   StockHolding,
@@ -175,6 +177,7 @@ export async function buyHolding(
   ticker: string,
   shares: number,
   buyPrice: number,
+  options: { session?: ClientSession } = {},
 ): Promise<StockHolding> {
   if (shares <= 0) {
     throw new Error(`buyHolding: shares must be positive, got ${shares}`);
@@ -226,7 +229,7 @@ export async function buyHolding(
         },
       },
     ],
-    { upsert: true, returnDocument: "after" },
+    { upsert: true, returnDocument: "after", session: options.session },
   );
 
   // upsert + returnDocument:"after" → result 는 항상 truthy. 단, 드라이버 타입은 nullable.
@@ -254,6 +257,7 @@ export async function sellHolding(
   characterId: string,
   ticker: string,
   shares: number,
+  options: { session?: ClientSession } = {},
 ): Promise<{ ok: boolean; remainingShares: number; avgPrice: number }> {
   if (shares <= 0) {
     throw new Error(`sellHolding: shares must be positive, got ${shares}`);
@@ -266,11 +270,14 @@ export async function sellHolding(
       $inc: { shares: -shares },
       $set: { updatedAt: new Date() },
     },
-    { returnDocument: "after" },
+    { returnDocument: "after", session: options.session },
   );
 
   if (!result) {
-    const current = await col.findOne({ characterId, ticker });
+    const current = await col.findOne(
+      { characterId, ticker },
+      { session: options.session },
+    );
     return {
       ok: false,
       remainingShares: current?.shares ?? 0,
@@ -279,7 +286,10 @@ export async function sellHolding(
   }
   if (result.shares === 0) {
     // race-aware delete: 다른 호출이 그 사이 +shares 했으면 매치 안 되어 보존됨.
-    await col.deleteOne({ _id: result._id, shares: 0 });
+    await col.deleteOne(
+      { _id: result._id, shares: 0 },
+      { session: options.session },
+    );
   }
   return {
     ok: true,

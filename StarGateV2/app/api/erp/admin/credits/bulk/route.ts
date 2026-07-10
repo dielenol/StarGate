@@ -32,6 +32,7 @@ import { isGmDirectGrantType } from "@/types/credit";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { childIdempotencyKey, readIdempotencyKey } from "@/lib/api/idempotency";
 import { isCreditOperationCharacter } from "@/lib/character-operation-targets";
 import {
   findCharacterById,
@@ -74,6 +75,14 @@ export async function POST(request: Request) {
     requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      { error: "유효한 Idempotency-Key 헤더가 필요합니다.", code: "INVALID_IDEMPOTENCY_KEY" },
+      { status: 400 },
+    );
   }
 
   // body 는 신뢰 X — array shape / amount / type / description / targets element 모두 검증.
@@ -248,6 +257,10 @@ export async function POST(request: Request) {
           displayName: session.user.displayName,
           role: session.user.role,
         },
+        requestId: childIdempotencyKey(
+          requestId,
+          target.characterId ?? target.ownerId ?? "unknown",
+        ),
       });
     } catch (err) {
       item = {
@@ -284,6 +297,7 @@ interface ProcessArgs {
   stockTicker?: string;
   description: string;
   session: { id: string; displayName: string; role: UserRole };
+  requestId: string;
 }
 
 async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
@@ -295,6 +309,7 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
     stockTicker,
     description,
     session,
+    requestId,
   } = args;
   const baseEcho: BulkGrantResultItem = {
     ownerId: target.ownerId,
@@ -483,6 +498,7 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
       description,
       createdById: session.id,
       createdByName: session.displayName,
+      requestId,
       // ADMIN_DEDUCT 만 음수 진입 허용. SESSION_REWARD/ADMIN_GRANT 는 양수라 무관.
       allowNegative: validatedType === "ADMIN_DEDUCT",
       // metadata 는 본 라우트에서 받지 않음 — 외부 주입 시 자동 보상 멱등 검사 오염 가능.

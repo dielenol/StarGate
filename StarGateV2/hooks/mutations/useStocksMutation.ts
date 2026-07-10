@@ -23,6 +23,7 @@ import {
   isKnownStocksErrorCode,
   stocksKeys,
 } from "@/hooks/queries/useStocksQuery";
+import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 /**
  * 자동 환불/복구가 발생한 에러 코드 — onSuccess 와 동일하게 holdings/credit 캐시를 무효화해야
@@ -155,7 +156,10 @@ export function useBuyStock() {
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/stocks/buy", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey("stock-buy", input),
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) await throwStocksError(res);
@@ -185,7 +189,10 @@ export function useSellStock() {
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/stocks/sell", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey("stock-sell", input),
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) await throwStocksError(res);

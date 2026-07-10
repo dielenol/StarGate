@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 
 import type { AgentCharacter, Character } from "@stargate/shared-db/types";
+import { getClient } from "@stargate/shared-db";
 
+import { readIdempotencyKey } from "@/lib/api/idempotency";
 import {
   findCharacterById,
   listAgentCharacters,
 } from "@/lib/db/characters";
 import {
   canApplyEquipmentResearchEffect,
+  buildEquipmentResearchIdentityKey,
   createEquipmentResearchProject,
   findMissingAppliedEquipmentResearchPrerequisites,
   getEquipmentResearchCapabilities,
@@ -23,8 +26,8 @@ import {
 
 import {
   chargeResearchCredits,
-  refundResearchCredits,
-  requireResearchUser,
+  ResearchMutationError,
+  requireResearchGm,
   resolveResearchBudgetCharacter,
 } from "../_lib";
 
@@ -93,8 +96,16 @@ async function resolveTargets(args: {
 }
 
 export async function POST(request: Request) {
-  const authResult = await requireResearchUser();
+  const authResult = await requireResearchGm();
   if ("response" in authResult) return authResult.response;
+
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      { error: "유효한 Idempotency-Key 헤더가 필요합니다.", code: "INVALID_IDEMPOTENCY_KEY" },
+      { status: 400 },
+    );
+  }
 
   const body = (await request.json().catch(() => null)) as
     | StartResearchBody
@@ -198,69 +209,97 @@ export async function POST(request: Request) {
     }
   }
 
-  const chargeResult = await chargeResearchCredits({
-    budget: budgetResult.budget,
-    amount: startQuote.cost,
-    description: `병기 연구 시작 — ${node.key} ${node.name}`,
-    metadata: {
-      source: "equipment_shop_research_start",
-      projectKey: node.key,
-      tier: node.tier,
-      scope,
-      targetCount: targetResult.targets.length,
-      baseCost: node.cost,
-      costDiscount: startQuote.costDiscount,
-      baseDurationHours: node.durationHours,
-      durationReductionHours: startQuote.durationReductionHours,
-      chargedCost: startQuote.cost,
-      durationHours: startQuote.durationHours,
-    },
-    session: authResult.session,
-  });
-  if ("response" in chargeResult) return chargeResult.response;
-
-  let project;
+  let result:
+    | { project: Awaited<ReturnType<typeof createEquipmentResearchProject>>; balance: number }
+    | undefined;
   try {
-    const startedAt = new Date();
-    project = await createEquipmentResearchProject({
-      key: node.key,
-      tier: node.tier,
-      scope,
-      effect,
-      cost: startQuote.cost,
-      durationHours: startQuote.durationHours,
-      startedAt,
-      completedAt: addHours(startedAt, startQuote.durationHours),
-      targetCharacterIds,
-      createdBy: authResult.session.id,
-    });
+    const client = await getClient();
+    const mongoSession = client.startSession();
+    try {
+      await mongoSession.withTransaction(async () => {
+        const chargeResult = await chargeResearchCredits({
+          budget: budgetResult.budget,
+          amount: startQuote.cost,
+          description: `병기 연구 시작 — ${node.key} ${node.name}`,
+          metadata: {
+            source: "equipment_shop_research_start",
+            projectKey: node.key,
+            tier: node.tier,
+            scope,
+            targetCount: targetResult.targets.length,
+            baseCost: node.cost,
+            costDiscount: startQuote.costDiscount,
+            baseDurationHours: node.durationHours,
+            durationReductionHours: startQuote.durationReductionHours,
+            chargedCost: startQuote.cost,
+            durationHours: startQuote.durationHours,
+          },
+          session: authResult.session,
+          requestId,
+          mongoSession,
+        });
+        const startedAt = new Date();
+        const project = await createEquipmentResearchProject(
+          {
+            key: node.key,
+            tier: node.tier,
+            scope,
+            effect,
+            cost: startQuote.cost,
+            durationHours: startQuote.durationHours,
+            startedAt,
+            completedAt: addHours(startedAt, startQuote.durationHours),
+            targetCharacterIds,
+            createdBy: authResult.session.id,
+            identityKey: buildEquipmentResearchIdentityKey({
+              key: node.key,
+              scope,
+              targetCharacterIds,
+            }),
+            requestId,
+          },
+          { session: mongoSession },
+        );
+        result = { project, balance: chargeResult.balance };
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
   } catch (err) {
-    await refundResearchCredits({
-      budget: budgetResult.budget,
-      amount: startQuote.cost,
-      description: `병기 연구 자동 환불 — ${node.key} 등록 실패`,
-      metadata: {
-        source: "equipment_shop_research_start_refund",
-        projectKey: node.key,
-        reason: "project_create_failed",
-      },
-      session: authResult.session,
-    });
     const message =
       err instanceof Error ? err.message : "연구 프로젝트 등록 실패";
+    const status =
+      err instanceof ResearchMutationError
+        ? err.status
+        : message.includes("duplicate key")
+          ? 409
+          : 500;
+    const code =
+      err instanceof ResearchMutationError
+        ? err.code
+        : message.includes("duplicate key")
+          ? "DUPLICATE_REQUEST"
+          : "RESEARCH_START_FAILED";
     return NextResponse.json(
       {
-        error: `연구 시작 실패 (자동 환불 시도 완료): ${message}`,
-        code: "RESEARCH_START_FAILED",
+        error: `연구 시작 실패: ${message}`,
+        code,
       },
+      { status },
+    );
+  }
+
+  if (!result) {
+    return NextResponse.json(
+      { error: "연구 트랜잭션이 완료되지 않았습니다.", code: "RESEARCH_START_FAILED" },
       { status: 500 },
     );
   }
 
   return NextResponse.json(
     {
-      project: serializeEquipmentResearchProject(project),
-      balance: chargeResult.balance,
+      project: serializeEquipmentResearchProject(result.project),
+      balance: result.balance,
     },
     { status: 201, headers: { "Cache-Control": "private, no-store" } },
   );

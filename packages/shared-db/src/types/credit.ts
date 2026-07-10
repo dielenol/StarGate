@@ -102,11 +102,17 @@ export type BotOnlyCreditType = (typeof BOT_ONLY_CREDIT_TYPES)[number];
  * - NPC/MINI 는 ledger 대상 ❌ (AGENT + MAIN tier 만)
  * - `ownerId` 는 GM audit 추적 + owner 단위 조회용 역참조 인덱스
  *
- * 단일 봇 프로세스 + 일반적 웹 mutation 빈도 환경에서 race 영향 적음.
- * mongo transaction 도입은 후속 phase 에서 재검토.
+ * 현재 잔액은 credit_balances SSOT에서 관리하고 ledger insert와 같은 transaction으로
+ * 커밋한다. `balance` 필드는 거래 직후 감사 snapshot이다.
  */
 export interface CreditTransaction {
   _id?: ObjectId;
+
+  /**
+   * 호출자 생성 멱등 키. 동일 키의 재시도는 새 거래를 만들지 않고 기존 거래를 반환한다.
+   * 레거시 거래와 아직 안정 키가 없는 내부 호출처 호환을 위해 optional이다.
+   */
+  requestId?: string;
 
   /** Character._id hex (AGENT/MAIN 만). NPC/MINI 는 ledger 대상 ❌. */
   characterId: string;
@@ -141,6 +147,16 @@ export interface CreditTransaction {
   createdById: string;
   createdByName: string;
   createdAt: Date;
+}
+
+/** 캐릭터별 현재 잔액 SSOT. ledger의 `balance`는 거래 시점 감사 스냅샷이다. */
+export interface CreditBalance {
+  _id?: ObjectId;
+  characterId: string;
+  balance: number;
+  /** balance와 같은 transaction에서 커밋된 최신 ledger _id hex. */
+  lastTransactionId?: string;
+  updatedAt: Date;
 }
 
 export type CreateCreditTransactionInput = Omit<

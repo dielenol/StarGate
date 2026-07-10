@@ -50,6 +50,12 @@ export async function ensureAllIndexes(): Promise<void> {
 
     /* ── credit_transactions (Phase 2: character 단위 ledger) ── */
     db.collection("credit_transactions").createIndexes([
+      {
+        key: { requestId: 1 },
+        name: "credit_transactions_requestId_partial_unique",
+        unique: true,
+        partialFilterExpression: { requestId: { $type: "string" } },
+      },
       // characterId 단위 ledger 조회 + balance 조회.
       {
         key: { characterId: 1, createdAt: -1 },
@@ -93,6 +99,40 @@ export async function ensureAllIndexes(): Promise<void> {
         partialFilterExpression: { "metadata.dailyAllowance": true },
       },
     ]),
+
+    /* ── credit_balances (현재 잔액 SSOT) ── */
+    db.collection("credit_balances").createIndex(
+      { characterId: 1 },
+      { name: "credit_balances_characterId_unique", unique: true },
+    ),
+
+    /* ── equipment research (경제 mutation 멱등성/중복 시작 방지) ── */
+    db.collection("research_projects").createIndexes([
+      {
+        key: { identityKey: 1 },
+        name: "research_projects_identityKey_partial_unique",
+        unique: true,
+        partialFilterExpression: { identityKey: { $type: "string" } },
+      },
+      {
+        key: { requestId: 1 },
+        name: "research_projects_requestId_partial_unique",
+        unique: true,
+        partialFilterExpression: { requestId: { $type: "string" } },
+      },
+    ]),
+    db.collection("research_contributions").createIndex(
+      { requestId: 1 },
+      {
+        name: "research_contributions_requestId_partial_unique",
+        unique: true,
+        partialFilterExpression: { requestId: { $type: "string" } },
+      },
+    ),
+    db.collection("economic_operations").createIndex(
+      { status: 1, updatedAt: 1 },
+      { name: "economic_operations_status_updatedAt" },
+    ),
 
     /* ── master_items (from task spec) ── */
     db.collection("master_items").createIndexes([

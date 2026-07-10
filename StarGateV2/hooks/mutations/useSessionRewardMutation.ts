@@ -10,6 +10,7 @@ import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
 import { characterKeys, personnelKeys } from "@/hooks/queries/useCharactersQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import { stocksKeys } from "@/hooks/queries/useStocksQuery";
+import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 /**
  * GM 세션 자동 보상 발급 — `POST /api/erp/admin/credits/sessions`.
@@ -31,7 +32,10 @@ export function useSessionRewardMutation() {
     ): Promise<BulkGrantResult> => {
       const res = await fetch("/api/erp/admin/credits/sessions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey("session-reward", input),
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) {

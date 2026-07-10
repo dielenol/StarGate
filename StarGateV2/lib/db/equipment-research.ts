@@ -1,4 +1,10 @@
-import { ObjectId, type Collection, type Filter, type WithId } from "mongodb";
+import {
+  ObjectId,
+  type ClientSession,
+  type Collection,
+  type Filter,
+  type WithId,
+} from "mongodb";
 
 import "./init";
 
@@ -34,11 +40,14 @@ export interface EquipmentResearchProject {
   durationHours: number;
   rushUsed: number;
   rushDiscountUsed?: boolean;
+  rushRequestIds?: string[];
   status: EquipmentResearchStatus;
   startedAt: Date;
   completedAt: Date;
   targetCharacterIds: string[];
   createdBy: string;
+  identityKey: string;
+  requestId: string;
   appliedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -65,6 +74,7 @@ export interface EquipmentResearchContribution {
   contributorCodename: string;
   amount: number;
   rushHours?: number;
+  requestId: string;
   createdAt: Date;
 }
 
@@ -116,6 +126,20 @@ export interface CreateEquipmentResearchProjectInput {
   completedAt: Date;
   targetCharacterIds: string[];
   createdBy: string;
+  identityKey: string;
+  requestId: string;
+}
+
+export function buildEquipmentResearchIdentityKey(args: {
+  key: string;
+  scope: EquipmentResearchScope;
+  targetCharacterIds: string[];
+}): string {
+  const targets =
+    args.scope === "team"
+      ? "team"
+      : [...args.targetCharacterIds].sort().join(",");
+  return `${args.key}:${args.scope}:${targets}`;
 }
 
 const COLLECTION_NAME = "research_projects";
@@ -169,6 +193,14 @@ export function serializeEquipmentResearchProject(
     completedAt: project.completedAt.toISOString(),
     targetCharacterIds: project.targetCharacterIds,
     createdBy: project.createdBy,
+    identityKey:
+      project.identityKey ??
+      buildEquipmentResearchIdentityKey({
+        key: project.key,
+        scope: project.scope,
+        targetCharacterIds: project.targetCharacterIds,
+      }),
+    requestId: project.requestId ?? "",
     ...(project.appliedAt ? { appliedAt: project.appliedAt.toISOString() } : {}),
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
@@ -207,6 +239,7 @@ export function serializeEquipmentResearchContribution(
     contributorCodename: contribution.contributorCodename,
     amount: contribution.amount,
     ...(contribution.rushHours ? { rushHours: contribution.rushHours } : {}),
+    requestId: contribution.requestId ?? "",
     createdAt: contribution.createdAt.toISOString(),
   };
 }
@@ -229,6 +262,7 @@ export function serializeEquipmentResearchContributionRanking(input: {
 
 export async function createEquipmentResearchProject(
   input: CreateEquipmentResearchProjectInput,
+  options: { session?: ClientSession } = {},
 ): Promise<WithId<EquipmentResearchProject>> {
   const now = new Date();
   const project: EquipmentResearchProject = {
@@ -239,7 +273,7 @@ export async function createEquipmentResearchProject(
     updatedAt: now,
   };
   const col = await equipmentResearchProjectsCol();
-  const result = await col.insertOne(project);
+  const result = await col.insertOne(project, { session: options.session });
   return { ...project, _id: result.insertedId };
 }
 
@@ -335,6 +369,7 @@ export async function addTeamResearchFunding(args: {
   poolId: string;
   currentFundedAmount: number;
   amount: number;
+  session?: ClientSession;
 }): Promise<WithId<EquipmentResearchTeamFundingPool> | null> {
   const objectId = toObjectId(args.poolId);
   if (!objectId) return null;
@@ -349,7 +384,7 @@ export async function addTeamResearchFunding(args: {
       $inc: { fundedAmount: args.amount },
       $set: { updatedAt: new Date() },
     },
-    { returnDocument: "after" },
+    { returnDocument: "after", session: args.session },
   );
 }
 
@@ -372,6 +407,7 @@ export async function rollbackTeamResearchFunding(args: {
 export async function markTeamFundingPoolStarted(args: {
   poolId: string;
   projectId: string;
+  session?: ClientSession;
 }): Promise<boolean> {
   const objectId = toObjectId(args.poolId);
   if (!objectId) return false;
@@ -385,6 +421,7 @@ export async function markTeamFundingPoolStarted(args: {
         updatedAt: new Date(),
       },
     },
+    { session: args.session },
   );
   return result.modifiedCount === 1;
 }
@@ -398,6 +435,8 @@ export async function insertEquipmentResearchContribution(input: {
   contributorCodename: string;
   amount: number;
   rushHours?: number;
+  requestId: string;
+  session?: ClientSession;
 }): Promise<WithId<EquipmentResearchContribution>> {
   const col = await equipmentResearchContributionsCol();
   const contribution: EquipmentResearchContribution = {
@@ -409,9 +448,10 @@ export async function insertEquipmentResearchContribution(input: {
     contributorCodename: input.contributorCodename,
     amount: input.amount,
     ...(input.rushHours ? { rushHours: input.rushHours } : {}),
+    requestId: input.requestId,
     createdAt: new Date(),
   };
-  const result = await col.insertOne(contribution);
+  const result = await col.insertOne(contribution, { session: input.session });
   return { ...contribution, _id: result.insertedId };
 }
 
@@ -508,6 +548,8 @@ export async function updateEquipmentResearchProjectRush(args: {
   currentRushUsed: number;
   nextCompletedAt: Date;
   discountApplied: boolean;
+  session?: ClientSession;
+  requestId: string;
 }): Promise<boolean> {
   const objectId = toObjectId(args.id);
   if (!objectId) return false;
@@ -522,11 +564,14 @@ export async function updateEquipmentResearchProjectRush(args: {
       _id: objectId,
       status: "in_progress",
       rushUsed: args.currentRushUsed,
+      rushRequestIds: { $ne: args.requestId },
     },
     {
       $inc: { rushUsed: 1 },
+      $addToSet: { rushRequestIds: args.requestId },
       $set,
     },
+    { session: args.session },
   );
   return result.modifiedCount === 1;
 }
@@ -556,6 +601,7 @@ export async function reserveEquipmentResearchProjectForApply(
 
 export async function markEquipmentResearchProjectApplied(
   id: string,
+  options: { session?: ClientSession } = {},
 ): Promise<boolean> {
   const objectId = toObjectId(id);
   if (!objectId) return false;
@@ -570,6 +616,7 @@ export async function markEquipmentResearchProjectApplied(
         updatedAt: now,
       },
     },
+    { session: options.session },
   );
   return result.modifiedCount === 1;
 }

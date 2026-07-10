@@ -1,6 +1,6 @@
-import type { WithId } from "mongodb";
+import type { ClientSession, WithId } from "mongodb";
 
-import type { RoleLevel } from "@stargate/shared-db";
+import { getClient, type RoleLevel } from "@stargate/shared-db";
 
 import { findCharacterById } from "@/lib/db/characters";
 import {
@@ -44,6 +44,7 @@ export interface ApplyEquipmentResearchProjectResult {
 async function applyReservedProject(
   project: WithId<EquipmentResearchProject>,
   actor: EquipmentResearchActor,
+  session: ClientSession,
 ): Promise<ApplyEquipmentResearchProjectResult> {
   const projectId = String(project._id);
   const targets: AppliedResearchTargetResult[] = [];
@@ -81,6 +82,7 @@ async function applyReservedProject(
           stat: project.effect.stat,
           amount: project.effect.amount,
         },
+        session,
       });
       targets.push({
         id: targetId,
@@ -120,6 +122,7 @@ async function applyReservedProject(
           scope: project.scope,
           amount: project.effect.amount,
         },
+        session,
       });
       targets.push({
         id: targetId,
@@ -137,7 +140,9 @@ async function applyReservedProject(
     throw new Error("NO_AGENT_TARGETS");
   }
 
-  const marked = await markEquipmentResearchProjectApplied(projectId);
+  const marked = await markEquipmentResearchProjectApplied(projectId, {
+    session,
+  });
   if (!marked) {
     throw new Error("RESEARCH_APPLY_MARK_FAILED");
   }
@@ -151,12 +156,8 @@ async function applyReservedProject(
       contributorCharacterId: "system",
       contributorCodename: "연구소 자동 적용",
       amount: 0,
-    });
-    void notifyEquipmentResearchEvent({
-      kind: "apply",
-      projectKey: project.key,
-      actorName: actor.displayName,
-      affected: targets.length,
+      requestId: `research-apply:${projectId}`,
+      session,
     });
   }
 
@@ -178,11 +179,30 @@ export async function applyEquipmentResearchProjectNow(args: {
   const project = await reserveEquipmentResearchProjectForApply(args.projectId);
   if (!project) return null;
 
+  const client = await getClient();
+  const session = client.startSession();
   try {
-    return await applyReservedProject(project, args.actor);
+    let result: ApplyEquipmentResearchProjectResult | undefined;
+    await session.withTransaction(async () => {
+      result = await applyReservedProject(project, args.actor, session);
+    });
+    if (!result) throw new Error("RESEARCH_APPLY_TRANSACTION_EMPTY");
+    if (project.scope === "team") {
+      void notifyEquipmentResearchEvent({
+        kind: "apply",
+        projectKey: project.key,
+        actorName: args.actor.displayName,
+        affected: result.affected,
+      }).catch((error) =>
+        console.error("[equipment-shop/research] apply notification failed", error),
+      );
+    }
+    return result;
   } catch (err) {
     await releaseEquipmentResearchProjectApplyReservation(args.projectId);
     throw err;
+  } finally {
+    await session.endSession();
   }
 }
 

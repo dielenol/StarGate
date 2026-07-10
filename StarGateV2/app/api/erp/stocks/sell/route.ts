@@ -13,9 +13,11 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { readIdempotencyKey } from "@/lib/api/idempotency";
+import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
-import { buyHolding, getStockPrice, sellHolding } from "@/lib/db/stocks";
+import { getStockPrice, sellHolding } from "@/lib/db/stocks";
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
@@ -54,6 +56,14 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      { error: "유효한 Idempotency-Key 헤더가 필요합니다.", code: "INVALID_IDEMPOTENCY_KEY" },
+      { status: 400 },
+    );
   }
 
   const body = (await request.json().catch(() => null)) as SellBody | null;
@@ -139,8 +149,9 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const ownerId = mainChar.ownerId;
 
-  const owner = await findUserById(mainChar.ownerId);
+  const owner = await findUserById(ownerId);
   if (!owner) {
     return NextResponse.json(
       { error: "캐릭터의 owner user 정보를 찾을 수 없습니다." },
@@ -167,110 +178,67 @@ export async function POST(request: Request) {
   const totalProceeds = roundStockValue(price * shares);
 
   const characterId = String(mainChar._id);
-
-  // Step 2: 보유 차감 — atomic. ok=false 면 보유 부족 (상태 미변, 보상 불필요).
-  // sellHolding 이 매도 직전 보유의 avgPrice 를 같이 반환 → ledger profit 산출에 사용.
-  const sellResult = await sellHolding(characterId, ticker, shares);
-  if (!sellResult.ok) {
-    return NextResponse.json(
-      {
-        error: "보유 주식이 부족합니다.",
-        code: "INSUFFICIENT_SHARES",
-      },
-      { status: 400 },
-    );
-  }
-  // sellHolding 반환의 avgPrice 는 매도 직전 row 의 avgPrice 스냅샷.
-  // 전량 매도 케이스에서 row 가 deleteOne 되더라도, 보상 buyHolding 호출 시
-  // 신규 row 가 buyPrice=avgPrice 로 정확히 복원되므로 안전.
-  // 본 변수를 다른 값(예: post-fetch lookup)으로 교체하면 전량 매도 보상에서
-  // avgPrice=0 오염되므로 절대 변경 금지.
-  const avgPrice = sellResult.avgPrice;
-  const profit = roundStockValue((price - avgPrice) * shares);
-
-  // Step 3: 잔액 적립 — STOCK_SELL ledger entry. allowNegative:true (양수 적립이라 영향 없으나
-  // 안전하게 명시 — 음수가 발생할 일은 없음).
-  let creditTx;
+  const committed: { notification: { balance: number; profit: number } | null } = {
+    notification: null,
+  };
+  let response: NextResponse;
   try {
-    creditTx = await addCredit({
-      characterId,
-      characterCodename: mainChar.codename,
-      ownerId: mainChar.ownerId,
-      ownerName,
-      amount: totalProceeds,
-      type: "STOCK_SELL",
-      description: `주식 매도 — ${catalogItem.name} ${shares}주 @${price}¤`,
-      metadata: { ticker, shares, price, avgPrice, profit },
-      createdById: session.user.id,
-      createdByName: session.user.displayName,
-      allowNegative: true,
+    response = await executeEconomicOperation({
+      requestId,
+      domain: "stock-sell",
+      actorId: session.user.id,
+      payload: { ticker, shares },
+      run: async (mongoSession) => {
+        const sellResult = await sellHolding(characterId, ticker, shares, {
+          session: mongoSession,
+        });
+        if (!sellResult.ok) throw new Error("INSUFFICIENT_SHARES");
+        const profit = roundStockValue((price - sellResult.avgPrice) * shares);
+        const creditTx = await addCredit({
+          characterId,
+          characterCodename: mainChar.codename,
+          ownerId,
+          ownerName,
+          amount: totalProceeds,
+          type: "STOCK_SELL",
+          description: `주식 매도 — ${catalogItem.name} ${shares}주 @${price}¤`,
+          metadata: { ticker, shares, price, avgPrice: sellResult.avgPrice, profit },
+          createdById: session.user.id,
+          createdByName: session.user.displayName,
+          requestId,
+          allowNegative: true,
+          session: mongoSession,
+        });
+        committed.notification = { balance: creditTx.balance, profit };
+        const body: SellResponse = {
+          sale: { ticker, name: catalogItem.name, shares, price, totalProceeds, profit },
+          balance: creditTx.balance,
+          remainingShares: sellResult.remainingShares,
+        };
+        return { status: 200, body };
+      },
     });
   } catch (err) {
-    // Step 2 보상 — buyHolding 으로 차감분 복구 (avgPrice 는 매도 직전 값으로 복원 시도).
-    //
-    // 보상 race window: 동일 character 의 동시 매수가 본 sell 의
-    // sellHolding(차감) 과 addCredit(throw) 사이에 끼면, buyHolding(보상)
-    // 호출이 다른 매수와 합쳐져 가중평균 avgPrice 가 의도치 않게 변동될 수 있음.
-    // mongo session 도입 전까지 운영 모니터링. 빈도 매우 낮음.
-    let restoreOk = true;
-    await buyHolding(characterId, ticker, shares, avgPrice).catch(
-      (restoreErr) => {
-        console.error(
-          `[stocks/sell] CRITICAL holding 복구 실패 — 수동 정정 필요 ` +
-            `(ticker=${ticker}, shares=${shares}, avgPrice=${avgPrice}, ` +
-            `characterId=${characterId}): `,
-          restoreErr,
-        );
-        restoreOk = false;
-      },
-    );
-
-    if (!restoreOk) {
-      return NextResponse.json(
-        {
-          error:
-            `매도 실패 + 보유 복구 실패. 운영자(GM) 정정 필요. ` +
-            `(ticker=${ticker}, shares=${shares}, 매도가=${price})`,
-          code: "RESTORE_FAILED",
-        },
-        { status: 500 },
-      );
+    const message = err instanceof Error ? err.message : "매도 실패";
+    if (message === "INSUFFICIENT_SHARES") {
+      return NextResponse.json({ error: "보유 주식이 부족합니다.", code: message }, { status: 400 });
     }
-
-    const message =
-      err instanceof Error ? err.message : "잔액 적립 실패";
-    return NextResponse.json(
-      {
-        error: `매도 실패 (보유 복구 완료): ${message}`,
-        code: "SELL_LEDGER_FAILED_RESTORED",
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: message, code: "STOCK_SELL_TRANSACTION_FAILED" }, { status: 500 });
   }
 
-  await notifyUser({
-    userId: mainChar.ownerId,
-    type: "CREDIT_RECEIVED",
-    title: "주식 매도로 크레딧이 적립되었습니다",
-    message: [
-      `${mainChar.codename} · ${catalogItem.name} ${shares}주`,
-      formatSignedAmount(totalProceeds, "CR"),
-      `현재 잔액 ${creditTx.balance.toLocaleString()} CR`,
-    ].join(" · "),
-    link: "/erp/stock",
-  });
-
-  const response: SellResponse = {
-    sale: {
-      ticker,
-      name: catalogItem.name,
-      shares,
-      price,
-      totalProceeds,
-      profit,
-    },
-    balance: creditTx.balance,
-    remainingShares: sellResult.remainingShares,
-  };
-  return NextResponse.json(response);
+  if (committed.notification) {
+    const { balance } = committed.notification;
+    void notifyUser({
+      userId: ownerId,
+      type: "CREDIT_RECEIVED",
+      title: "주식 매도로 크레딧이 적립되었습니다",
+      message: [
+        `${mainChar.codename} · ${catalogItem.name} ${shares}주`,
+        formatSignedAmount(totalProceeds, "CR"),
+        `현재 잔액 ${balance.toLocaleString()} CR`,
+      ].join(" · "),
+      link: "/erp/stock",
+    }).catch((error) => console.error("[stocks/sell] notification failed", error));
+  }
+  return response;
 }

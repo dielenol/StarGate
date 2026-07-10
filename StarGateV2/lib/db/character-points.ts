@@ -1,4 +1,4 @@
-import { ObjectId, type Filter } from "mongodb";
+import { ObjectId, type ClientSession, type Filter } from "mongodb";
 
 import "./init";
 
@@ -11,7 +11,6 @@ import type { SessionRewardStatField } from "@/types/credit-admin";
 import {
   characterChangeLogsCol,
   charactersCol,
-  findCharacterById,
   insertChangeLog,
 } from "@stargate/shared-db";
 
@@ -25,6 +24,7 @@ interface AdjustCharacterPointsInput {
   reason?: string;
   allowNegative?: boolean;
   metadata?: PointMetadata;
+  session?: ClientSession;
 }
 
 interface AdjustCharacterStatInput {
@@ -35,6 +35,7 @@ interface AdjustCharacterStatInput {
   actorRole: RoleLevel;
   reason?: string;
   metadata?: PointMetadata;
+  session?: ClientSession;
 }
 
 export interface AdjustCharacterPointsResult {
@@ -69,7 +70,11 @@ export async function adjustCharacterPoints(
     throw new Error("INVALID_POINT_AMOUNT");
   }
 
-  const character = await findCharacterById(input.characterId);
+  const characters = await charactersCol();
+  const character = await characters.findOne(
+    { _id: new ObjectId(input.characterId) },
+    { session: input.session },
+  );
   if (!character || character.type !== "AGENT") {
     throw new Error("CHARACTER_NOT_FOUND");
   }
@@ -102,10 +107,10 @@ export async function adjustCharacterPoints(
   // 세션 포인트 보상은 change_logs 의 unique index가 멱등 backstop이다.
   // 먼저 로그를 예약해 두 GM 동시 발급 시 두 번째 요청이 포인트를 올리기 전에 실패하게 한다.
   const reservedLog = isSessionPointReward
-    ? await insertChangeLog(changeLogInput)
+    ? await insertChangeLog(changeLogInput, { session: input.session })
     : null;
 
-  const col = await charactersCol();
+  const col = characters;
   const filter: Filter<Character> = {
     _id: new ObjectId(input.characterId),
     type: "AGENT",
@@ -122,15 +127,21 @@ export async function adjustCharacterPoints(
       $inc: { "play.points": input.amount },
       $set: { updatedAt: new Date() },
     },
-    { returnDocument: "after" },
+    { returnDocument: "after", session: input.session },
   )) as AgentCharacter | null;
 
   if (!updated) {
     if (reservedLog?._id) {
       const logsCol = await characterChangeLogsCol();
-      await logsCol.deleteOne({ _id: reservedLog._id });
+      await logsCol.deleteOne(
+        { _id: reservedLog._id },
+        { session: input.session },
+      );
     }
-    const current = await findCharacterById(input.characterId);
+    const current = await col.findOne(
+      { _id: new ObjectId(input.characterId) },
+      { session: input.session },
+    );
     if (current && input.amount < 0 && !input.allowNegative) {
       throw new Error("INSUFFICIENT_POINTS");
     }
@@ -148,15 +159,19 @@ export async function adjustCharacterPoints(
     await logsCol.updateOne(
       { _id: reservedLog._id },
       { $set: { changes: actualChanges } },
+      { session: input.session },
     );
   }
 
   const changeLog =
     reservedLog ??
-    (await insertChangeLog({
-      ...changeLogInput,
-      changes: actualChanges,
-    }));
+    (await insertChangeLog(
+      {
+        ...changeLogInput,
+        changes: actualChanges,
+      },
+      { session: input.session },
+    ));
 
   return {
     character: updated,
@@ -177,7 +192,11 @@ export async function adjustCharacterStat(
   }
 
   const path = STAT_FIELD_TO_PLAY_PATH[input.field];
-  const character = await findCharacterById(input.characterId);
+  const characters = await charactersCol();
+  const character = await characters.findOne(
+    { _id: new ObjectId(input.characterId) },
+    { session: input.session },
+  );
   if (!character || character.type !== "AGENT") {
     throw new Error("CHARACTER_NOT_FOUND");
   }
@@ -206,23 +225,26 @@ export async function adjustCharacterStat(
     typeof input.metadata.statField === "string";
 
   const reservedLog = isSessionStatReward
-    ? await insertChangeLog(changeLogInput)
+    ? await insertChangeLog(changeLogInput, { session: input.session })
     : null;
 
-  const col = await charactersCol();
+  const col = characters;
   const updated = (await col.findOneAndUpdate(
     { _id: new ObjectId(input.characterId), type: "AGENT" },
     {
       $inc: { [path]: input.amount },
       $set: { updatedAt: new Date() },
     },
-    { returnDocument: "after" },
+    { returnDocument: "after", session: input.session },
   )) as AgentCharacter | null;
 
   if (!updated) {
     if (reservedLog?._id) {
       const logsCol = await characterChangeLogsCol();
-      await logsCol.deleteOne({ _id: reservedLog._id });
+      await logsCol.deleteOne(
+        { _id: reservedLog._id },
+        { session: input.session },
+      );
     }
     throw new Error("STAT_UPDATE_FAILED");
   }
@@ -236,15 +258,19 @@ export async function adjustCharacterStat(
     await logsCol.updateOne(
       { _id: reservedLog._id },
       { $set: { changes: actualChanges } },
+      { session: input.session },
     );
   }
 
   const changeLog =
     reservedLog ??
-    (await insertChangeLog({
-      ...changeLogInput,
-      changes: actualChanges,
-    }));
+    (await insertChangeLog(
+      {
+        ...changeLogInput,
+        changes: actualChanges,
+      },
+      { session: input.session },
+    ));
 
   return {
     character: updated,

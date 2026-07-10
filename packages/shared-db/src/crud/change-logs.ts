@@ -8,7 +8,7 @@
  * 멱등성을 위해 다시 마킹하지 않고 null 을 반환한다.
  */
 
-import { type Collection, ObjectId } from "mongodb";
+import { type ClientSession, type Collection, ObjectId } from "mongodb";
 
 import { getDb, getDbSync } from "../client.js";
 
@@ -43,7 +43,8 @@ function toObjectId(id: ObjectId | string): ObjectId | null {
 /* ── 생성 ── */
 
 export async function insertChangeLog(
-  input: NewCharacterChangeLog
+  input: NewCharacterChangeLog,
+  options: { session?: ClientSession } = {},
 ): Promise<CharacterChangeLog> {
   const col = await characterChangeLogsCol();
   const now = new Date();
@@ -55,7 +56,9 @@ export async function insertChangeLog(
     revertedBy: null,
   };
 
-  const result = await col.insertOne(doc as CharacterChangeLog);
+  const result = await col.insertOne(doc as CharacterChangeLog, {
+    session: options.session,
+  });
   return { ...doc, _id: result.insertedId } as CharacterChangeLog;
 }
 
