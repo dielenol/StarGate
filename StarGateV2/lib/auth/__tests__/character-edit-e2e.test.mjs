@@ -49,6 +49,7 @@ if (!HAS_MODULE_MOCK) {
   testApi.mock.module(new URL("collections.js", sharedDbRoot).href, {
     namedExports: {
       charactersCol: async () => fakeCol,
+      usersCol: async () => ({}),
     },
   });
 
