@@ -1,0 +1,7 @@
+# StarGateV2 local default. Explicit composer/CLI selections still take precedence.
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+
+[agents]
+max_threads = 4
+max_depth = 1
