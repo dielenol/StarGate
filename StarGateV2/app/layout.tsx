@@ -91,15 +91,17 @@ const stripInjectedUserSelectScript = `
       childList: true,
       subtree: true,
     });
-    window.setTimeout(() => observer.disconnect(), 3000);
   };
 
+  startBoundedObserver();
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", startBoundedObserver, {
-      once: true,
-    });
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => window.setTimeout(() => observer.disconnect(), 3000),
+      { once: true },
+    );
   } else {
-    startBoundedObserver();
+    window.setTimeout(() => observer.disconnect(), 3000);
   }
   window.addEventListener("pageshow", stripDocumentOnce);
 })();
