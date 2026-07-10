@@ -3,7 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, type MouseEvent, useEffect, useMemo, useState } from "react";
+import {
+  Fragment,
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   type CreditsResponse,
@@ -12,7 +19,6 @@ import {
 import { useNpcDialogue } from "@/hooks/useNpcDialogue";
 import {
   type EquipmentResearchScope,
-  type EquipmentResearchStat,
   useCompleteEquipmentResearch,
   useContributeEquipmentResearch,
   useCheckoutEquipmentShopCart,
@@ -41,6 +47,7 @@ import { formatCredits } from "@/lib/format/credit";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
   describeEquipmentResearchEffect,
+  type EquipmentResearchStat,
   getEquipmentResearchPrerequisiteTier,
   quoteEquipmentResearchRush,
   quoteEquipmentResearchStart,
@@ -49,6 +56,7 @@ import {
 
 import ShopItemIcon from "../shop/ShopItemIcon";
 
+import TowaskiLicenseTest from "./TowaskiLicenseTest";
 import styles from "./page.module.css";
 
 type ArmoryZone = "lab" | "towaski" | "acheron" | "strategic" | "custom";
@@ -86,6 +94,16 @@ const TOWASKI_PROFILE_SRC = "/assets/npcs/Towaski-profile.webp";
 const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp";
 const TOWASKI_IDLE_DELAY_MS = 12000;
 
+const TOWASKI_MOOD_ASSETS: Record<TowaskiMood, string> = {
+  welcome: "/assets/npcs/Towaski-welcome.webp",
+  inspect: "/assets/npcs/Towaski-inspect.webp",
+  stock: "/assets/npcs/Towaski-stock.webp",
+  cart: "/assets/npcs/Towaski-cart.webp",
+  checkout: "/assets/npcs/Towaski-checkout.webp",
+  blocked: "/assets/npcs/Towaski-blocked.webp",
+  idle: "/assets/npcs/Towaski-idle.webp",
+};
+
 const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {
   welcome: "입점 확인",
   inspect: "품목 감정",
@@ -111,6 +129,10 @@ const TOWASKI_DIALOGUE_LINES = {
   unavailable:
     "그건 오늘 못 나간다. 빈 칸 쳐다봐도 창고 문은 안 열린다.",
   gmOnly: "여긴 승인 라인이다. 구경은 해도 반출 서명은 따로 받아.",
+  qualification:
+    "기본 화기 라이센스가 없군. 진열장은 나중이다. 먼저 사격선에서 식별과 명중부터 증명해.",
+  qualificationPassed:
+    "합격. 기본 화기 라이센스 발급했다. 이제 장부에 이름 올리고 물건을 봐.",
 } as const;
 
 const TOWASKI_IDLE_LINES: readonly { mood: TowaskiMood; text: string }[] = [
@@ -425,6 +447,19 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
     "구매 실패 + 자동 환불 실패. 운영자(GM)에게 문의해 잔액 정정을 요청하세요.",
   INVALID_CART: "장비 장바구니 구성이 올바르지 않습니다.",
   LICENSE_REQUIRED: "반출에 필요한 토와스키 라이센스가 없습니다.",
+  LICENSE_ALREADY_OWNED:
+    "이미 보유한 라이선스입니다. 장바구니에서 제거해 주세요.",
+  INVALID_LICENSE_TEST: "사격 시험 기록 형식이 올바르지 않습니다.",
+  LICENSE_TEST_FAILED: "기본 화기 자격시험 합격 기준에 미달했습니다.",
+  LICENSE_TEST_EXPIRED: "사격 시험 시간이 만료되었습니다. 다시 시작해 주세요.",
+  LICENSE_TEST_STALE_ROUND: "이미 처리됐거나 순서가 맞지 않는 표적입니다.",
+  LICENSE_TEST_TOO_FAST: "표적 반응 시간이 시험 범위를 벗어났습니다.",
+  LICENSE_TEST_CONFLICT: "사격 기록이 동시에 처리되었습니다. 다시 시도해 주세요.",
+  LICENSE_ITEM_MISSING: "기본 화기 라이센스 마스터 품목이 없습니다.",
+  LICENSE_GRANT_FAILED: "기본 화기 라이센스 지급에 실패했습니다.",
+  BASIC_LICENSE_REQUIRED: "토와스키 기본 화기 자격시험을 먼저 통과해야 합니다.",
+  FORBIDDEN_EQUIPMENT_ZONE:
+    "플레이어 반출은 토와스키 건샵 품목으로 제한됩니다.",
   INVALID_RESEARCH: "연구 적용값이 올바르지 않습니다.",
   ITEM_NOT_AVAILABLE: "판매 가능한 병기부 카탈로그 품목이 아닙니다.",
   PRICE_NOT_SET: "가격이 확정되지 않은 장비는 구매할 수 없습니다.",
@@ -451,6 +486,7 @@ interface Props {
     id: string;
     codename: string;
     stats: MainCharacterStats;
+    hasBasicFirearmLicense: boolean;
   } | null;
   initialBalance: number;
   initialCredits: CreditsResponse | undefined;
@@ -1058,7 +1094,10 @@ export default function EquipmentShopClient({
   isGM,
 }: Props) {
   const router = useRouter();
-  const catalogQuery = useEquipmentShopCatalog({ initialData: initialCatalog });
+  const catalogQuery = useEquipmentShopCatalog({
+    initialData: initialCatalog,
+    scope: initialZone === "towaski" ? "towaski" : "all",
+  });
   const researchQuery = useEquipmentResearch({
     initialData: initialResearch,
     enabled: isGM,
@@ -1087,6 +1126,9 @@ export default function EquipmentShopClient({
   const [teamContributionAmount, setTeamContributionAmount] = useState("100");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
+  const [hasBasicFirearmLicense, setHasBasicFirearmLicense] = useState(
+    () => mainCharacter?.hasBasicFirearmLicense ?? false,
+  );
   const [activeHubDestination, setActiveHubDestination] =
     useState<ArmoryDestination>("towaski");
 
@@ -1101,17 +1143,24 @@ export default function EquipmentShopClient({
   const activeZoneDef = activeZoneMeta(activeZone);
   const zoneMeta = isHub ? ARMORY_DESK_META : activeZoneDef;
   const headerZoneKey = isHub ? "hub" : activeZone;
+  const requiresTowaskiLicenseTest =
+    activeZone === "towaski" &&
+    !isGM &&
+    hasMainCharacter &&
+    !hasBasicFirearmLicense;
   const mainCharacterProfile = useMemo(
     () => getMainCharacterProfile(localStats),
     [localStats],
   );
   const towaskiWelcomeLine = useMemo(
     () =>
-      buildTowaskiWelcomeLine({
-        codename: mainCharacter?.codename ?? null,
-        profile: mainCharacterProfile,
-      }),
-    [mainCharacter?.codename, mainCharacterProfile],
+      requiresTowaskiLicenseTest
+        ? TOWASKI_DIALOGUE_LINES.qualification
+        : buildTowaskiWelcomeLine({
+            codename: mainCharacter?.codename ?? null,
+            profile: mainCharacterProfile,
+          }),
+    [mainCharacter?.codename, mainCharacterProfile, requiresTowaskiLicenseTest],
   );
 
   const {
@@ -1133,7 +1182,7 @@ export default function EquipmentShopClient({
     closedLine: TOWASKI_DIALOGUE_LINES.closed,
     noAgentMood: "blocked",
     noAgentLine: TOWASKI_DIALOGUE_LINES.noAgent,
-    welcomeMood: "welcome",
+    welcomeMood: requiresTowaskiLicenseTest ? "blocked" : "welcome",
     welcomeLine: towaskiWelcomeLine,
     beepPreset: "towaski",
     beepDefaults: { pitch: 510, speed: 50, volume: 0.58 },
@@ -1141,6 +1190,8 @@ export default function EquipmentShopClient({
     entrySfxSrc: null,
     entrySfxVolume: 0,
   });
+  const towaskiPortraitSrc =
+    TOWASKI_MOOD_ASSETS[towaskiMood] ?? TOWASKI_PORTRAIT_SRC;
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -1213,7 +1264,10 @@ export default function EquipmentShopClient({
   const cartTotal = cartLines.reduce((sum, line) => sum + line.total, 0);
   const cartHasStockIssue = cartLines.some((line) => line.stockIssue);
   const cartOverBalance = cartTotal > balance;
-  const canUseShop = isGM && hasMainCharacter && catalog.isOpen;
+  const canUseShop =
+    hasMainCharacter &&
+    catalog.isOpen &&
+    (isGM || (activeZone === "towaski" && hasBasicFirearmLicense));
   const canCheckout =
     canUseShop &&
     cartLines.length > 0 &&
@@ -1488,6 +1542,21 @@ export default function EquipmentShopClient({
       },
     );
   }
+
+  const handleTowaskiLicenseGranted = useCallback(
+    (licenseName: string) => {
+      setHasBasicFirearmLicense(true);
+      setErrorMessage(null);
+      setNotice({
+        tone: "success",
+        text: `${licenseName}가 발급되었습니다. 토와스키 건샵 반출대가 개방됩니다.`,
+      });
+      playTowaskiLine("checkout", TOWASKI_DIALOGUE_LINES.qualificationPassed, {
+        sound: true,
+      });
+    },
+    [playTowaskiLine],
+  );
 
   function formatDuration(hours: number): string {
     if (hours % 24 === 0) return `${hours / 24}일`;
@@ -2946,7 +3015,15 @@ export default function EquipmentShopClient({
               <h1>{zoneMeta.label}</h1>
             </div>
           </div>
-          <Tag tone="gold">{isGM ? "GM PREVIEW" : "RESEARCH ACCESS"}</Tag>
+          <Tag tone="gold">
+            {isGM
+              ? "GM PREVIEW"
+              : activeZone === "towaski"
+                ? hasBasicFirearmLicense
+                  ? "LICENSE ACTIVE"
+                  : "RANGE TEST"
+                : "RESEARCH ACCESS"}
+          </Tag>
           <div className={styles.headerStats}>
             <div>
               <span>요원</span>
@@ -2975,7 +3052,12 @@ export default function EquipmentShopClient({
             </div>
 
             <div className={styles.zoneBody}>
-              {activeZone === "lab"
+              {requiresTowaskiLicenseTest && mainCharacter ? (
+                <TowaskiLicenseTest
+                  characterCodename={mainCharacter.codename}
+                  onGranted={handleTowaskiLicenseGranted}
+                />
+              ) : activeZone === "lab"
                 ? renderLabPanel()
                 : activeZone === "custom"
                   ? renderCustomPanel()
@@ -2997,7 +3079,7 @@ export default function EquipmentShopClient({
             >
               {activeZone === "towaski" ? (
                 <Image
-                  src={TOWASKI_PORTRAIT_SRC}
+                  src={towaskiPortraitSrc}
                   alt=""
                   fill
                   sizes="148px"

@@ -8,15 +8,18 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { requireRole } from "@/lib/auth/rbac";
+import { hasRole } from "@/lib/auth/rbac";
 import { childIdempotencyKey, readIdempotencyKey } from "@/lib/api/idempotency";
 import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
+import { hasOwnedTowaskiLicense } from "@/lib/db/equipment-licenses";
 import {
   addToInventory,
   findMasterItemsBySlugsOrIds,
   listCharacterInventory,
+  lockCharacterInventoryItems,
+  prepareCharacterInventoryItemLocks,
 } from "@/lib/db/inventory";
 import { findUserById } from "@/lib/db/users";
 import { getEquipmentResearchCapabilities } from "@/lib/db/equipment-research";
@@ -25,12 +28,14 @@ import {
   equipmentShopItemZone,
   toEquipmentPriceNumber,
 } from "@/lib/equipment-shop/catalog";
+import { containsDuplicateEquipmentItemIds } from "@/lib/equipment-shop/checkout-lines";
 import {
   getEquipmentLicenseRequirement,
   isTowaskiLicenseSlug,
   resolveEquipmentLicenseStatus,
   type EquipmentLicenseRequirement,
 } from "@/lib/equipment-shop/licenses";
+import { TOWASKI_BASIC_FIREARM_LICENSE_SLUG } from "@/lib/equipment-shop/license-test";
 
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY_PER_ITEM = 1;
@@ -52,6 +57,13 @@ interface CheckoutLine {
   itemId: string;
   slug?: string;
   licenseRequirement?: EquipmentLicenseRequirement;
+}
+
+class EquipmentLicenseAlreadyOwnedError extends Error {
+  constructor(readonly licenseName: string) {
+    super(`이미 보유한 라이선스입니다: ${licenseName}`);
+    this.name = "EquipmentLicenseAlreadyOwnedError";
+  }
 }
 
 function normalizeCartItems(
@@ -99,11 +111,7 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  try {
-    requireRole(session.user.role, "GM");
-  } catch {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const isGM = hasRole(session.user.role, "GM");
 
   const body = (await request.json().catch(() => null)) as CheckoutBody | null;
   const normalizedItems = normalizeCartItems(body?.items);
@@ -145,6 +153,22 @@ export async function POST(request: Request) {
   }
   const ownerId = mainChar.ownerId;
 
+  if (
+    !isGM &&
+    !(await hasOwnedTowaskiLicense(
+      String(mainChar._id),
+      TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+    ))
+  ) {
+    return NextResponse.json(
+      {
+        error: "토와스키 기본 화기 자격시험을 먼저 통과해야 합니다.",
+        code: "BASIC_LICENSE_REQUIRED",
+      },
+      { status: 403 },
+    );
+  }
+
   const owner = await findUserById(ownerId);
   if (!owner) {
     return NextResponse.json(
@@ -171,16 +195,37 @@ export async function POST(request: Request) {
   for (const item of normalizedItems) {
     const masterItem =
       masterBySlug.get(item.key) ?? masterById.get(item.key) ?? null;
+    const zone = masterItem ? equipmentShopItemZone(masterItem) : null;
     if (
       !masterItem ||
       !masterItem._id ||
-      !equipmentShopItemZone(masterItem) ||
+      !zone ||
       masterItem.isAvailable === false ||
       masterItem.isPublic === false
     ) {
       return NextResponse.json(
         {
           error: `판매 가능한 장비 카탈로그 품목을 찾을 수 없습니다: ${item.key}`,
+          code: "ITEM_NOT_AVAILABLE",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!isGM && zone !== "towaski") {
+      return NextResponse.json(
+        {
+          error: "플레이어 반출은 토와스키 건샵 품목으로 제한됩니다.",
+          code: "FORBIDDEN_EQUIPMENT_ZONE",
+        },
+        { status: 403 },
+      );
+    }
+
+    if (masterItem.slug === TOWASKI_BASIC_FIREARM_LICENSE_SLUG) {
+      return NextResponse.json(
+        {
+          error: "기본 화기 라이선스는 사격 자격시험 합격 시에만 발급됩니다.",
           code: "ITEM_NOT_AVAILABLE",
         },
         { status: 400 },
@@ -211,11 +256,25 @@ export async function POST(request: Request) {
     });
   }
 
+  if (containsDuplicateEquipmentItemIds(lines.map((line) => line.itemId))) {
+    return NextResponse.json(
+      {
+        error: "동일 장비를 slug와 ID로 중복 요청할 수 없습니다.",
+        code: "INVALID_CART",
+      },
+      { status: 400 },
+    );
+  }
+
   const cartLicenseSlugs = new Set(
     lines
       .map((line) => line.slug)
       .filter((slug): slug is string => typeof slug === "string")
       .filter(isTowaskiLicenseSlug),
+  );
+  const purchasedLicenseLines = lines.filter(
+    (line): line is CheckoutLine & { slug: string } =>
+      isTowaskiLicenseSlug(line.slug),
   );
   const licenseGatedLines = lines.filter(
     (line): line is CheckoutLine & { licenseRequirement: EquipmentLicenseRequirement } =>
@@ -258,6 +317,7 @@ export async function POST(request: Request) {
   }
 
   const totalPrice = lines.reduce((sum, line) => sum + line.totalPrice, 0);
+  const characterId = String(mainChar._id);
   const capabilities = await getEquipmentResearchCapabilities(String(mainChar._id));
   const quotedRefund = capabilities.refundPercent > 0
     ? Math.min(capabilities.refundCap, Math.floor((totalPrice * capabilities.refundPercent) / 100))
@@ -268,14 +328,41 @@ export async function POST(request: Request) {
 
   let response: NextResponse;
   try {
+    await prepareCharacterInventoryItemLocks(
+      characterId,
+      lines.map((line) => line.itemId),
+    );
     response = await executeEconomicOperation({
       requestId,
       domain: "equipment-shop-checkout",
       actorId: session.user.id,
       payload: { items: normalizedItems },
       run: async (mongoSession) => {
+        await lockCharacterInventoryItems(
+          characterId,
+          lines.map((line) => line.itemId),
+          mongoSession,
+        );
+
+        if (purchasedLicenseLines.length > 0) {
+          const inventory = await listCharacterInventory(characterId, {
+            session: mongoSession,
+          });
+          const ownedItemIds = new Set(
+            inventory
+              .filter((entry) => entry.quantity > 0)
+              .map((entry) => entry.itemId),
+          );
+          const alreadyOwned = purchasedLicenseLines.find((line) =>
+            ownedItemIds.has(line.itemId),
+          );
+          if (alreadyOwned) {
+            throw new EquipmentLicenseAlreadyOwnedError(alreadyOwned.name);
+          }
+        }
+
         const debit = await addCredit({
-          characterId: String(mainChar._id),
+          characterId,
           characterCodename: mainChar.codename,
           ownerId,
           ownerName,
@@ -291,7 +378,7 @@ export async function POST(request: Request) {
         for (const line of lines) {
           await addToInventory(
             {
-              characterId: String(mainChar._id),
+              characterId,
               characterCodename: mainChar.codename,
               itemId: line.itemId,
               itemName: line.name,
@@ -343,6 +430,15 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
+    if (err instanceof EquipmentLicenseAlreadyOwnedError) {
+      return NextResponse.json(
+        {
+          error: `${err.licenseName}은 이미 보유 중입니다. 장바구니에서 제거해 주세요.`,
+          code: "LICENSE_ALREADY_OWNED",
+        },
+        { status: 409 },
+      );
+    }
     if (err instanceof Error && err.message.includes("음수 잔액")) {
       return NextResponse.json(
         { error: "잔액이 부족합니다.", code: "INSUFFICIENT_BALANCE" },
@@ -367,7 +463,7 @@ export async function POST(request: Request) {
         refund > 0 ? `연구 환급 +${refund.toLocaleString()} CR` : "",
         `현재 잔액 ${balance.toLocaleString()} CR`,
       ].filter(Boolean).join(" · "),
-      link: "/erp/equipment-shop",
+      link: "/erp/equipment-shop/towaski",
     }).catch((error) => console.error("[equipment-shop/checkout] notification failed", error));
   }
   return response;

@@ -21,6 +21,10 @@ import {
   equipmentShopKeys,
 } from "@/hooks/queries/useEquipmentShopQuery";
 import type { EquipmentResearchScope as EquipmentResearchScopeValue } from "@/lib/equipment-shop/research";
+import type {
+  TowaskiLicenseTestRequest,
+  TowaskiLicenseTestResponse,
+} from "@/lib/equipment-shop/license-test";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 interface CheckoutInput {
@@ -153,6 +157,37 @@ export function useCheckoutEquipmentShopCart() {
       queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    },
+  });
+}
+
+export function useCompleteTowaskiLicenseTest() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    TowaskiLicenseTestResponse,
+    EquipmentShopApiError,
+    TowaskiLicenseTestRequest
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/equipment-shop/license-test", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey(
+            "towaski-license-test",
+            input,
+          ),
+        },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
+      queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });

@@ -8,23 +8,27 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { requireRole } from "@/lib/auth/rbac";
+import { hasRole } from "@/lib/auth/rbac";
 import {
   EQUIPMENT_SHOP_CATEGORIES,
   toEquipmentShopCatalogItem,
 } from "@/lib/equipment-shop/catalog";
 import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  try {
-    requireRole(session.user.role, "GM");
-  } catch {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const isGM = hasRole(session.user.role, "GM");
+  const requestedScope = new URL(request.url).searchParams.get("scope");
+  if (requestedScope !== null && !["all", "towaski"].includes(requestedScope)) {
+    return NextResponse.json(
+      { error: "지원하지 않는 카탈로그 scope입니다." },
+      { status: 400 },
+    );
   }
+  const scope = !isGM || requestedScope === "towaski" ? "towaski" : "all";
 
   try {
     const masterItems = await listMasterItemsByCategoryFilter(
@@ -32,7 +36,8 @@ export async function GET() {
     );
     const items = masterItems
       .map(toEquipmentShopCatalogItem)
-      .filter((item): item is NonNullable<typeof item> => item !== null);
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .filter((item) => scope === "all" || item.zone === "towaski");
 
     return NextResponse.json(
       {

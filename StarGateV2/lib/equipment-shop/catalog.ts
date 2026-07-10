@@ -5,6 +5,7 @@ import {
   TOWASKI_LICENSE_TAG_KEYWORDS,
   type EquipmentLicenseRequirement,
 } from "./licenses";
+import { TOWASKI_BASIC_FIREARM_LICENSE_SLUG } from "./license-test";
 
 export const EQUIPMENT_SHOP_CATEGORIES = [
   "WEAPON",
@@ -164,6 +165,7 @@ export function toEquipmentShopCatalogItem(
   item: MasterItem,
 ): EquipmentShopCatalogItem | null {
   if (!isEquipmentShopCategory(item.category)) return null;
+  if (item.slug === TOWASKI_BASIC_FIREARM_LICENSE_SLUG) return null;
 
   const zone = equipmentShopItemZone(item);
   if (!zone) return null;

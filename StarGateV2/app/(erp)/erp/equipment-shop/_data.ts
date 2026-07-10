@@ -18,10 +18,13 @@ import {
   serializeEquipmentResearchProject,
 } from "@/lib/db/equipment-research";
 import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
+import { hasOwnedTowaskiLicense } from "@/lib/db/equipment-licenses";
 import {
   EQUIPMENT_SHOP_CATEGORIES,
+  type EquipmentShopZone,
   toEquipmentShopCatalogItem,
 } from "@/lib/equipment-shop/catalog";
+import { TOWASKI_BASIC_FIREARM_LICENSE_SLUG } from "@/lib/equipment-shop/license-test";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
   EQUIPMENT_RESEARCH_CAPS,
@@ -52,6 +55,7 @@ export interface EquipmentShopPageData {
     id: string;
     codename: string;
     stats: MainCharacterStats;
+    hasBasicFirearmLicense: boolean;
   } | null;
   initialBalance: number;
   initialCredits: CreditsResponse | undefined;
@@ -59,13 +63,16 @@ export interface EquipmentShopPageData {
   isGM: boolean;
 }
 
-export async function buildEquipmentShopCatalogResponse(): Promise<EquipmentShopCatalogResponse> {
+export async function buildEquipmentShopCatalogResponse(options: {
+  zone?: EquipmentShopZone;
+} = {}): Promise<EquipmentShopCatalogResponse> {
   const masterItems = await listMasterItemsByCategoryFilter(
     EQUIPMENT_SHOP_CATEGORIES,
   );
   const items = masterItems
     .map(toEquipmentShopCatalogItem)
-    .filter((item): item is NonNullable<typeof item> => item !== null);
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .filter((item) => !options.zone || item.zone === options.zone);
 
   return {
     items,
@@ -113,9 +120,14 @@ export async function buildEquipmentResearchOverviewResponse(
 }
 
 export async function loadEquipmentShopPageData(
-  options: { requireGm?: boolean } = {},
+  options: {
+    requireGm?: boolean;
+    includeResearch?: boolean;
+    catalogZone?: EquipmentShopZone;
+  } = {},
 ): Promise<EquipmentShopPageData> {
   const requireGm = options.requireGm ?? true;
+  const includeResearch = options.includeResearch ?? true;
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
@@ -144,9 +156,15 @@ export async function loadEquipmentShopPageData(
   const mainAgent = mainCharacter?.type === "AGENT" ? mainCharacter : null;
   const mainCharacterId = mainAgent ? String(mainAgent._id) : null;
 
-  const [initialCatalog, initialResearch, initialBalance, initialLedger] =
+  const [
+    initialCatalog,
+    initialResearch,
+    initialBalance,
+    initialLedger,
+    hasBasicFirearmLicense,
+  ] =
     await Promise.all([
-      buildEquipmentShopCatalogResponse().catch(
+      buildEquipmentShopCatalogResponse({ zone: options.catalogZone }).catch(
         (): EquipmentShopCatalogResponse => ({
           items: [],
           isOpen: true,
@@ -156,8 +174,20 @@ export async function loadEquipmentShopPageData(
           forceClosed: false,
         }),
       ),
-      buildEquipmentResearchOverviewResponse(mainCharacterId).catch(
-        (): EquipmentResearchOverviewResponse => ({
+      includeResearch
+        ? buildEquipmentResearchOverviewResponse(mainCharacterId).catch(
+            (): EquipmentResearchOverviewResponse => ({
+              tree: EQUIPMENT_RESEARCH_NODES,
+              rushRules: Object.values(EQUIPMENT_RESEARCH_RUSH_RULES),
+              caps: EQUIPMENT_RESEARCH_CAPS,
+              capabilities: DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
+              projects: [],
+              fundingPools: [],
+              recentContributions: [],
+              contributionRankings: [],
+            }),
+          )
+        : Promise.resolve<EquipmentResearchOverviewResponse>({
           tree: EQUIPMENT_RESEARCH_NODES,
           rushRules: Object.values(EQUIPMENT_RESEARCH_RUSH_RULES),
           caps: EQUIPMENT_RESEARCH_CAPS,
@@ -167,7 +197,6 @@ export async function loadEquipmentShopPageData(
           recentContributions: [],
           contributionRankings: [],
         }),
-      ),
       mainCharacterId
         ? getCharacterBalance(mainCharacterId).catch(() => 0)
         : Promise.resolve(0),
@@ -176,6 +205,12 @@ export async function loadEquipmentShopPageData(
             () => [],
           )
         : Promise.resolve([]),
+      mainCharacterId
+        ? hasOwnedTowaskiLicense(
+            mainCharacterId,
+            TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+          ).catch(() => false)
+        : Promise.resolve(false),
     ]);
 
   const initialCredits: CreditsResponse | undefined =
@@ -204,6 +239,7 @@ export async function loadEquipmentShopPageData(
             def: mainAgent.play.def,
             atk: mainAgent.play.atk,
           },
+          hasBasicFirearmLicense,
         }
       : null,
     initialBalance,

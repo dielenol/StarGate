@@ -127,7 +127,7 @@ export const NAV_GROUPS: NavGroup[] = [
         keywords:
           "equipment shop armory arsenal weapon armor gear forge simulator strategic custom 병기부 무기 방어구 토와스키 아케론 대장간 시뮬레이터 전략 전용무기",
         icon: IconArmory,
-        href: null,
+        href: "/erp/equipment-shop/towaski",
         gmHref: "/erp/equipment-shop",
         children: [
           {
@@ -141,7 +141,7 @@ export const NAV_GROUPS: NavGroup[] = [
             label: "토와스키 건샵",
             keywords: "towaski weapon armor 장비 무기 방어구",
             icon: IconArmoryTowaski,
-            href: null,
+            href: "/erp/equipment-shop/towaski",
             gmHref: "/erp/equipment-shop/towaski",
           },
           {

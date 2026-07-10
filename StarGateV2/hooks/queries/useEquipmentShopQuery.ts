@@ -27,8 +27,12 @@ import type {
 export const equipmentShopKeys = {
   all: ["equipment-shop"] as const,
   catalog: ["equipment-shop", "catalog"] as const,
+  catalogScope: (scope: EquipmentShopCatalogScope) =>
+    ["equipment-shop", "catalog", scope] as const,
   research: ["equipment-shop", "research"] as const,
 };
+
+export type EquipmentShopCatalogScope = "all" | "towaski";
 
 export type EquipmentShopErrorCode =
   | "INSUFFICIENT_BALANCE"
@@ -39,6 +43,17 @@ export type EquipmentShopErrorCode =
   | "REFUND_FAILED"
   | "INVALID_CART"
   | "LICENSE_REQUIRED"
+  | "LICENSE_ALREADY_OWNED"
+  | "INVALID_LICENSE_TEST"
+  | "LICENSE_TEST_FAILED"
+  | "LICENSE_TEST_EXPIRED"
+  | "LICENSE_TEST_STALE_ROUND"
+  | "LICENSE_TEST_TOO_FAST"
+  | "LICENSE_TEST_CONFLICT"
+  | "LICENSE_ITEM_MISSING"
+  | "LICENSE_GRANT_FAILED"
+  | "BASIC_LICENSE_REQUIRED"
+  | "FORBIDDEN_EQUIPMENT_ZONE"
   | "INVALID_RESEARCH"
   | "ITEM_NOT_AVAILABLE"
   | "PRICE_NOT_SET"
@@ -103,8 +118,11 @@ async function parseEquipmentShopError(res: Response): Promise<never> {
   );
 }
 
-async function fetchEquipmentShopCatalog(): Promise<EquipmentShopCatalogResponse> {
-  const res = await fetch("/api/erp/equipment-shop/catalog", {
+async function fetchEquipmentShopCatalog(
+  scope: EquipmentShopCatalogScope,
+): Promise<EquipmentShopCatalogResponse> {
+  const query = scope === "towaski" ? "?scope=towaski" : "";
+  const res = await fetch(`/api/erp/equipment-shop/catalog${query}`, {
     cache: "no-store",
   });
   if (!res.ok) await parseEquipmentShopError(res);
@@ -124,10 +142,12 @@ const RESEARCH_STALE_TIME_MS = 30 * 1000;
 
 export function useEquipmentShopCatalog(options?: {
   initialData?: EquipmentShopCatalogResponse;
+  scope?: EquipmentShopCatalogScope;
 }) {
+  const scope = options?.scope ?? "all";
   return useQuery({
-    queryKey: equipmentShopKeys.catalog,
-    queryFn: fetchEquipmentShopCatalog,
+    queryKey: equipmentShopKeys.catalogScope(scope),
+    queryFn: () => fetchEquipmentShopCatalog(scope),
     staleTime: CATALOG_STALE_TIME_MS,
     initialData: options?.initialData,
   });
