@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CharacterSheetData } from "./components/CharacterSheet";
 import type {
   PublicAgentDetail,
+  PublicAgentSheet,
   PublicAgentSummary,
 } from "@/types/public-player";
 
@@ -26,11 +27,26 @@ const WARNING_DURATION_MS = 1700;
 const RECOVERY_DURATION_MS = 1600;
 const RECOVERY_SOUND_DURATION_MS = 1300;
 
-export default function PlayerClient({ agents }: { agents: PublicAgentSummary[] }) {
-  const [selectedAgentId, setSelectedAgentId] = useState(agents[0]?.id ?? "");
-  const [sheetCache, setSheetCache] = useState<SheetCache>({});
+interface PlayerClientProps {
+  agents: PublicAgentSummary[];
+  initialAgentId: string;
+  initialSheet?: PublicAgentSheet;
+}
+
+export default function PlayerClient({
+  agents,
+  initialAgentId,
+  initialSheet,
+}: PlayerClientProps) {
+  const [selectedAgentId, setSelectedAgentId] = useState(
+    initialAgentId || agents[0]?.id || "",
+  );
+  const [sheetCache, setSheetCache] = useState<SheetCache>(() =>
+    initialAgentId && initialSheet ? { [initialAgentId]: initialSheet } : {},
+  );
   const [loadingSheetId, setLoadingSheetId] = useState<string | null>(null);
   const [sheetError, setSheetError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
   const [warningPhase, setWarningPhase] = useState<"idle" | "warning" | "video" | "recovery">("idle");
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? agents[0];
   const selectedSheet = selectedAgent ? sheetCache[selectedAgent.id] : undefined;
@@ -40,6 +56,13 @@ export default function PlayerClient({ agents }: { agents: PublicAgentSummary[] 
   const warningAudioRef = useRef<HTMLAudioElement | null>(null);
   const recoveryAudioRef = useRef<HTMLAudioElement | null>(null);
   const paperAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const requestedId = new URL(window.location.href).searchParams.get("agent");
+    if (requestedId && agents.some((agent) => agent.id === requestedId)) {
+      setSelectedAgentId(requestedId);
+    }
+  }, [agents]);
 
   useEffect(() => {
     if (!selectedAgent || selectedSheet) return;
@@ -83,7 +106,7 @@ export default function PlayerClient({ agents }: { agents: PublicAgentSummary[] 
     return () => {
       controller.abort();
     };
-  }, [selectedAgent, selectedSheet]);
+  }, [retryNonce, selectedAgent, selectedSheet]);
 
   useEffect(() => {
     if (warningPhase !== "video" || !videoRef.current) {
@@ -178,6 +201,11 @@ export default function PlayerClient({ agents }: { agents: PublicAgentSummary[] 
     }
 
     setSelectedAgentId(agent.id);
+    const nextUrl = new URL(window.location.href);
+    const nextParams = nextUrl.searchParams;
+    nextParams.set("agent", agent.id);
+    nextUrl.search = nextParams.toString();
+    window.history.replaceState(window.history.state, "", nextUrl);
 
     if (paperAudioRef.current) {
       paperAudioRef.current.volume = 1;
@@ -326,11 +354,25 @@ export default function PlayerClient({ agents }: { agents: PublicAgentSummary[] 
               <CharacterSheet key={selectedAgent.id} record={selectedSheet} />
             ) : (
               <div className={styles.sheetStatus} role="status">
-                {sheetError
-                  ? sheetError
-                  : loadingSheetId === selectedAgent?.id
-                    ? "LOADING DOSSIER..."
-                    : "STANDBY"}
+                {sheetError ? (
+                  <>
+                    <span>요원 기록을 불러오지 못했습니다.</span>
+                    <button
+                      className={styles.sheetStatus__retry}
+                      onClick={() => {
+                        setSheetError(null);
+                        setRetryNonce((value) => value + 1);
+                      }}
+                      type="button"
+                    >
+                      다시 시도
+                    </button>
+                  </>
+                ) : loadingSheetId === selectedAgent?.id ? (
+                  "LOADING DOSSIER..."
+                ) : (
+                  "STANDBY"
+                )}
               </div>
             )}
           </section>

@@ -69,7 +69,7 @@ const stripInjectedUserSelectScript = `
     }
   };
 
-  stripTree(document.documentElement);
+  const stripDocumentOnce = () => stripTree(document.documentElement);
 
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
@@ -77,23 +77,31 @@ const stripInjectedUserSelectScript = `
         stripElement(mutation.target);
         continue;
       }
-
       mutation.addedNodes.forEach((node) => {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          stripTree(node);
-        }
+        if (node.nodeType === Node.ELEMENT_NODE) stripTree(node);
       });
     }
   });
 
-  observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["style"],
-    childList: true,
-    subtree: true,
-  });
+  const startBoundedObserver = () => {
+    stripDocumentOnce();
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["style"],
+      childList: true,
+      subtree: true,
+    });
+    window.setTimeout(() => observer.disconnect(), 3000);
+  };
 
-  window.addEventListener("pageshow", () => stripTree(document.documentElement));
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startBoundedObserver, {
+      once: true,
+    });
+  } else {
+    startBoundedObserver();
+  }
+  window.addEventListener("pageshow", stripDocumentOnce);
 })();
 `;
 
@@ -135,7 +143,6 @@ export default function RootLayout({
     <html
       lang="ko"
       className={`${jetbrainsMono.variable} ${notoSansKr.variable}`}
-      suppressHydrationWarning
     >
       <head>
         <script
@@ -143,9 +150,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: stripInjectedUserSelectScript }}
         />
       </head>
-      <body suppressHydrationWarning>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

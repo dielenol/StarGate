@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
@@ -77,11 +77,66 @@ export default function Sidebar() {
   const brandLogoSrc = resolvePublicAssetPath("/assets/StarGate_logo.png");
   const sidebarFlipSrc = resolvePublicAssetPath("/sound/sidebar_flip.wav");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [worldExpanded, setWorldExpanded] = useState(() => pathname.startsWith("/world"));
   const sidebarAudioRef = useRef<HTMLAudioElement | null>(null);
+  const sidebarRef = useRef<HTMLElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const worldSectionOpen = pathname.startsWith("/world");
   const worldActive = pathname === "/world";
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1279px)");
+    const syncViewport = () => {
+      setIsMobileViewport(media.matches);
+      if (!media.matches) setMobileOpen(false);
+    };
+    syncViewport();
+    media.addEventListener("change", syncViewport);
+    return () => media.removeEventListener("change", syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileViewport || !mobileOpen) return;
+
+    const trigger = menuButtonRef.current;
+    closeButtonRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMobileOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !sidebarRef.current) return;
+
+      const focusable = Array.from(
+        sidebarRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute("inert"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus();
+    };
+  }, [isMobileViewport, mobileOpen]);
 
   function closeMobileMenu() {
     setMobileOpen(false);
@@ -106,19 +161,31 @@ export default function Sidebar() {
   return (
     <>
       <button
+        ref={menuButtonRef}
         aria-expanded={mobileOpen}
+        aria-controls="public-navigation-drawer"
+        aria-haspopup="dialog"
         aria-label="메뉴 열기"
         className={`${styles["sidebar__hamburger"]} ${mobileOpen ? styles["sidebar__hamburger--hidden"] : ""}`}
         onClick={() => {
           playSidebarFlip();
-          setMobileOpen((prev) => !prev);
+          setMobileOpen(true);
         }}
         type="button"
       >
         <IconMenu aria-hidden />
       </button>
 
-      <aside className={`${styles.sidebar} ${mobileOpen ? styles["sidebar--mobile-open"] : ""}`}>
+      <aside
+        id="public-navigation-drawer"
+        ref={sidebarRef}
+        aria-label="주요 메뉴"
+        aria-hidden={isMobileViewport && !mobileOpen}
+        aria-modal={isMobileViewport ? mobileOpen : undefined}
+        className={`${styles.sidebar} ${mobileOpen ? styles["sidebar--mobile-open"] : ""}`}
+        inert={isMobileViewport && !mobileOpen}
+        role={isMobileViewport ? "dialog" : undefined}
+      >
         <div className={styles["sidebar__header"]}>
           <span className={styles["sidebar__brand-icon"]}>
             <img
@@ -133,6 +200,7 @@ export default function Sidebar() {
           </span>
           <span className={styles["sidebar__brand-text"]}>NOVUS ORDO</span>
           <button
+            ref={closeButtonRef}
             aria-label="메뉴 닫기"
             className={styles["sidebar__close"]}
             onClick={() => {

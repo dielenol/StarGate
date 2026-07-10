@@ -135,12 +135,14 @@ export function useEquipmentShopCatalog(options?: {
 
 export function useEquipmentResearch(options?: {
   initialData?: EquipmentResearchOverviewResponse;
+  enabled?: boolean;
 }) {
   return useQuery({
     queryKey: equipmentShopKeys.research,
     queryFn: fetchEquipmentResearch,
     staleTime: RESEARCH_STALE_TIME_MS,
     initialData: options?.initialData,
+    enabled: options?.enabled,
     refetchInterval: 60 * 1000,
   });
 }

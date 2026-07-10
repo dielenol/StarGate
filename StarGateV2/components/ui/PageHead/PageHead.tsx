@@ -1,9 +1,7 @@
-"use client";
-
 import type { ReactNode } from "react";
 
 import type { BreadcrumbItem } from "./Breadcrumb";
-import { useSetPageHead } from "./PageHeadContext";
+import PageHeadRegistrar from "./PageHeadRegistrar";
 import styles from "./PageHead.module.css";
 
 interface PageHeadProps {
@@ -16,30 +14,36 @@ interface PageHeadProps {
   breadcrumb?: ReactNode | BreadcrumbItem[];
   right?: ReactNode;
   className?: string;
+  /** 페이지 본문이 별도의 visible H1을 렌더할 때 중복 heading 생성을 막는다. */
+  hasVisibleHeading?: boolean;
 }
 
 /**
- * 페이지 헤딩을 ERP topbar 가운데 슬롯에 위임한다.
+ * 페이지의 실제 H1 을 SSR하고, topbar 표시는 client registrar 에 위임한다.
  *
- * - `title` / `breadcrumb` 는 DOM 에 렌더되지 않고 PageHeadContext 에 등록 →
- *   ERPHeader 가 그 값을 받아 한 줄로 표시.
+ * - `title` 은 시각적으로 숨긴 H1 으로 SSR되어 문서 outline 을 유지한다.
+ * - `title` / `breadcrumb` 은 PageHeadRegistrar 가 PageHeadContext 에 등록한다.
  * - `right` 가 있을 때만 페이지 컨텐츠 위에 컴팩트한 우측 액션 바를 렌더.
- * - `right` 가 없으면 DOM 산출 자체를 생략 (null).
- * - 기존 호출처(13개)는 props 변경 없이 자동 적응.
+ * - 기존 호출처는 props 변경 없이 자동 적응한다.
  */
 export default function PageHead({
   title,
   breadcrumb,
   right,
   className,
+  hasVisibleHeading = false,
 }: PageHeadProps) {
-  useSetPageHead({ breadcrumb, title });
-
-  if (!right) return null;
-
   return (
-    <div className={[styles.pageHead, className].filter(Boolean).join(" ")}>
-      <div className={styles.pageHead__right}>{right}</div>
-    </div>
+    <>
+      <PageHeadRegistrar breadcrumb={breadcrumb} title={title} />
+      {hasVisibleHeading ? null : (
+        <h1 className={styles.pageHead__title}>{title}</h1>
+      )}
+      {right ? (
+        <div className={[styles.pageHead, className].filter(Boolean).join(" ")}>
+          <div className={styles.pageHead__right}>{right}</div>
+        </div>
+      ) : null}
+    </>
   );
 }

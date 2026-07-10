@@ -276,6 +276,7 @@ const HISTORY_STALE_MS = 15 * 60 * 1000;
 const MARKET_INDEX_HISTORY_STALE_MS = 60 * 1000;
 const MARKET_WIRE_STALE_MS = 60 * 1000;
 const SPARKLINES_STALE_MS = 10 * 60 * 1000;
+const MARKET_REFETCH_INTERVAL_MS = 60 * 1000;
 
 export function useStockPrices(options?: {
   initialData?: StockPricesResponse;
@@ -284,6 +285,9 @@ export function useStockPrices(options?: {
     queryKey: stocksKeys.prices,
     queryFn: fetchStockPrices,
     staleTime: PRICES_STALE_MS,
+    refetchInterval: MARKET_REFETCH_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     initialData: options?.initialData,
   });
 }
@@ -361,6 +365,9 @@ export function useStockMarketIndexHistory(
     queryKey: stocksKeys.marketIndexHistory(days),
     queryFn: () => fetchStockMarketIndexHistory(days),
     staleTime: MARKET_INDEX_HISTORY_STALE_MS,
+    refetchInterval: MARKET_REFETCH_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     initialData: options?.initialData,
   });
 }
@@ -384,6 +391,9 @@ export function useStockMarketWire(
     queryKey: stocksKeys.marketWire(days, limit),
     queryFn: () => fetchStockMarketWire(days, limit),
     staleTime: MARKET_WIRE_STALE_MS,
+    refetchInterval: MARKET_REFETCH_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     initialData: options?.initialData,
   });
 }

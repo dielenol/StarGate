@@ -135,6 +135,7 @@ export default async function FactionDetailPage({
   return (
     <>
       <PageHead
+        hasVisibleHeading
         title={`${node.label} 접선`}
         breadcrumb={[
           { label: "ERP", href: "/erp" },

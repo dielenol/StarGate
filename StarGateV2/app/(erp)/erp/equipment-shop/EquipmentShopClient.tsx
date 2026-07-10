@@ -1059,7 +1059,10 @@ export default function EquipmentShopClient({
 }: Props) {
   const router = useRouter();
   const catalogQuery = useEquipmentShopCatalog({ initialData: initialCatalog });
-  const researchQuery = useEquipmentResearch({ initialData: initialResearch });
+  const researchQuery = useEquipmentResearch({
+    initialData: initialResearch,
+    enabled: isGM,
+  });
   const creditsQuery = useCredits({ initialData: initialCredits });
   const checkoutMutation = useCheckoutEquipmentShopCart();
   const startResearchMutation = useStartEquipmentResearch();
@@ -2863,6 +2866,7 @@ export default function EquipmentShopClient({
       data-pixel-font="full"
     >
       <PageHead
+        hasVisibleHeading
         breadcrumb={
           isHub
             ? [

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -8,7 +8,7 @@ import { useSession } from "next-auth/react";
 
 import type { NavItem } from "@/components/erp/nav-config";
 
-import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
+import { useNotificationSummary } from "@/hooks/queries/useNotificationsQuery";
 
 import {
   getNavItemActiveHrefs,
@@ -24,6 +24,7 @@ import { hasRole } from "@/lib/auth/rbac";
 import styles from "./ERPSidebar.module.css";
 
 const SIDEBAR_OPEN_EVENT = "no:sidebar-open";
+const SIDEBAR_STATE_EVENT = "no:sidebar-state";
 
 const ALL_NAV_HREFS: string[] = NAV_GROUPS.flatMap((group) =>
   group.items.flatMap(getNavItemActiveHrefs),
@@ -33,9 +34,11 @@ export default function ERPSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
-  const { data: notifications = [] } = useNotifications();
+  const { data: notificationSummary } = useNotificationSummary();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const sidebarRef = useRef<HTMLElement | null>(null);
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -60,6 +63,66 @@ export default function ERPSidebar() {
     };
   }, []);
 
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent(SIDEBAR_STATE_EVENT, { detail: { open: isOpen } }),
+    );
+  }, [isOpen]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1279px)");
+    const syncViewport = () => {
+      setIsMobileViewport(media.matches);
+      if (!media.matches) setIsOpen(false);
+    };
+    syncViewport();
+    media.addEventListener("change", syncViewport);
+    return () => media.removeEventListener("change", syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileViewport || !isOpen || !sidebarRef.current) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusable = sidebarRef.current.querySelector<HTMLElement>(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    focusable?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        return;
+      }
+      if (event.key !== "Tab" || !sidebarRef.current) return;
+      const items = Array.from(
+        sidebarRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      document.getElementById("erp-sidebar-trigger")?.focus();
+    };
+  }, [close, isMobileViewport, isOpen]);
+
   const activeHref = useMemo(() => {
     let best: string | null = null;
     for (const href of ALL_NAV_HREFS) {
@@ -79,10 +142,7 @@ export default function ERPSidebar() {
   }
 
   const role = session?.user?.role;
-  const unreadNotificationCount = useMemo(
-    () => notifications.filter((notification) => !notification.isRead).length,
-    [notifications],
-  );
+  const unreadNotificationCount = notificationSummary?.unreadCount ?? 0;
   const unreadNotificationLabel =
     unreadNotificationCount > 99 ? "99+" : String(unreadNotificationCount);
 
@@ -99,10 +159,25 @@ export default function ERPSidebar() {
         aria-hidden
       />
       <aside
+        id="erp-navigation-drawer"
+        ref={sidebarRef}
+        aria-label="ERP 주요 메뉴"
+        aria-hidden={isMobileViewport && !isOpen}
+        aria-modal={isMobileViewport ? isOpen : undefined}
         className={[styles.sidebar, isOpen ? styles["sidebar--open"] : ""]
           .filter(Boolean)
           .join(" ")}
+        inert={isMobileViewport && !isOpen}
+        role={isMobileViewport ? "dialog" : undefined}
       >
+        <button
+          aria-label="메뉴 닫기"
+          className={styles.sidebar__close}
+          onClick={close}
+          type="button"
+        >
+          <IconChevronLeft aria-hidden />
+        </button>
         {NAV_GROUPS.map((group) => {
           if (group.minRole && (!role || !hasRole(role, group.minRole))) {
             return null;

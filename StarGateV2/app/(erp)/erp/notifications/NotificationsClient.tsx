@@ -143,12 +143,10 @@ function matchesSearch(notification: Notification, query: string): boolean {
 
 interface Props {
   initialNotifications: Notification[];
-  initialUnreadCount: number;
 }
 
 export default function NotificationsClient({
   initialNotifications,
-  initialUnreadCount,
 }: Props) {
   const { data: notifications = [] } = useNotifications({
     initialData: initialNotifications,
@@ -364,7 +362,7 @@ export default function NotificationsClient({
         {grouped.length === 0 ? (
           <div className={styles.empty}>
             <span>
-              {initialUnreadCount > 0 || notifications.length > 0
+              {notifications.length > 0
                 ? "조건에 맞는 알림이 없습니다."
                 : "알림이 없습니다."}
             </span>

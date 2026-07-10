@@ -1,6 +1,15 @@
-/* PageHead 는 이제 ERP topbar 슬롯에 title/breadcrumb 을 위임한다.
-   이 모듈은 페이지 상단의 우측 액션 바 (right slot) 전용 컨테이너 + Breadcrumb
-   링크 스타일만 유지한다. (Breadcrumb 컴포넌트는 ERPHeader 에서 재사용) */
+/* 실제 H1 은 SSR하되 시각 표시는 ERP topbar 가 담당한다. */
+.pageHead__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 .pageHead {
   display: flex;

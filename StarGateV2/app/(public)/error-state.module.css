@@ -1,0 +1,48 @@
+.state {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+  background: #0a0a0d;
+  color: #e6e1d6;
+}
+
+.state__panel {
+  width: min(620px, 100%);
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  padding: 36px;
+  text-align: center;
+  background: rgba(18, 18, 23, 0.96);
+}
+
+.state__code {
+  color: #c9a961;
+  font-family: var(--font-mono);
+  letter-spacing: 0.16em;
+}
+
+.state__title {
+  margin: 14px 0 10px;
+}
+
+.state__description {
+  margin: 0;
+  color: #aaa59b;
+  line-height: 1.7;
+}
+
+.state__actions {
+  margin-top: 24px;
+}
+
+.state__button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  padding: 10px 18px;
+  border: 1px solid rgba(201, 169, 97, 0.55);
+  background: rgba(201, 169, 97, 0.08);
+  color: #c9a961;
+  text-decoration: none;
+  cursor: pointer;
+}

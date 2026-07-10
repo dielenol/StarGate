@@ -7,7 +7,8 @@
  * 에러 분기 — `ShopApiError.code` 로 클라이언트가 분기 가능 (creditKeys 와 동일 패턴).
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { ShopCatalogItem } from "@/lib/shop/catalog";
 
@@ -115,16 +116,42 @@ async function fetchShopInventory(): Promise<ShopInventoryResponse> {
 
 const CATALOG_STALE_TIME_MS = 10 * 60 * 1000;
 const INVENTORY_STALE_TIME_MS = 5 * 60 * 1000;
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+function getMsUntilNextShopBoundary(now = new Date()): number {
+  const kstNow = new Date(now.getTime() + KST_OFFSET_MS);
+  const year = kstNow.getUTCFullYear();
+  const month = kstNow.getUTCMonth();
+  const day = kstNow.getUTCDate();
+  const hour = kstNow.getUTCHours();
+  const boundaryHour = hour < 6 ? 6 : hour < 20 ? 20 : 6;
+  const boundaryDay = hour < 20 ? day : day + 1;
+  const boundaryAsUtc = Date.UTC(year, month, boundaryDay, boundaryHour);
+  const boundary = boundaryAsUtc - KST_OFFSET_MS;
+  return Math.max(1_000, boundary - now.getTime() + 1_000);
+}
 
 export function useShopCatalog(options?: {
   initialData?: ShopCatalogResponse;
 }) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const query = useQuery({
     queryKey: shopKeys.catalog,
     queryFn: fetchShopCatalog,
     staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnWindowFocus: true,
     initialData: options?.initialData,
   });
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
+    }, getMsUntilNextShopBoundary());
+
+    return () => window.clearTimeout(timeoutId);
+  }, [queryClient]);
+
+  return query;
 }
 
 export function useShopInventory(options?: {

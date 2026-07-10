@@ -9,7 +9,6 @@ import {
   type ChangeEvent,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -19,7 +18,7 @@ import type { AgentLevel } from "@/types/character";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
-import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
+import { useNotificationSummary } from "@/hooks/queries/useNotificationsQuery";
 import { useMarkAllRead } from "@/hooks/mutations/useNotificationMutation";
 
 import {
@@ -212,9 +211,10 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
 
   const { breadcrumb, title } = usePageHead();
   const pathname = usePathname();
-  const { data: notifications = [] } = useNotifications();
+  const { data: notificationSummary } = useNotificationSummary();
   const markAllRead = useMarkAllRead();
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeBgmIndex, setActiveBgmIndex] = useState<number | null>(null);
   const [bgmPlaying, setBgmPlaying] = useState(false);
   const [bgmPending, setBgmPending] = useState(false);
@@ -229,15 +229,25 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const bgmVolumeInputRef = useRef<HTMLInputElement | null>(null);
   const notificationWrapRef = useRef<HTMLDivElement | null>(null);
   const bgmTrackIndexRef = useRef<number | null>(null);
-  const bgmAutoStartAttemptedRef = useRef(false);
   const playBgmTrackRef = useRef<(trackIndex: number) => Promise<boolean>>(
     async () => false,
   );
 
+  useEffect(() => {
+    const handleSidebarState = (event: Event) => {
+      setSidebarOpen(
+        Boolean((event as CustomEvent<{ open?: boolean }>).detail?.open),
+      );
+    };
+    window.addEventListener("no:sidebar-state", handleSidebarState);
+    return () =>
+      window.removeEventListener("no:sidebar-state", handleSidebarState);
+  }, []);
+
   const getBgmAudio = useCallback(() => {
     if (!bgmAudioRef.current) {
       const audio = new Audio();
-      audio.preload = "auto";
+      audio.preload = "none";
       audio.onended = () => {
         const nextIndex = getRandomBgmIndex(bgmTrackIndexRef.current);
         void playBgmTrackRef.current(nextIndex);
@@ -299,40 +309,6 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
 
   useEffect(() => {
     playBgmTrackRef.current = playBgmTrack;
-  }, [playBgmTrack]);
-
-  useEffect(() => {
-    if (bgmAutoStartAttemptedRef.current) return;
-    bgmAutoStartAttemptedRef.current = true;
-
-    let canceled = false;
-
-    function removeGestureListeners() {
-      window.removeEventListener("pointerdown", retryOnGesture);
-      window.removeEventListener("keydown", retryOnGesture);
-    }
-
-    function retryOnGesture() {
-      const nextIndex = bgmTrackIndexRef.current ?? getRandomBgmIndex();
-      void playBgmTrack(nextIndex).then((played) => {
-        if (played) removeGestureListeners();
-      });
-    }
-
-    const startAutoplay = async () => {
-      const played = await playBgmTrack(getRandomBgmIndex(readLastBgmIndex()));
-      if (played || canceled) return;
-      setBgmError(false);
-      window.addEventListener("pointerdown", retryOnGesture, { once: true });
-      window.addEventListener("keydown", retryOnGesture, { once: true });
-    };
-
-    void startAutoplay();
-
-    return () => {
-      canceled = true;
-      removeGestureListeners();
-    };
   }, [playBgmTrack]);
 
   useEffect(() => {
@@ -416,18 +392,12 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
     ? "bgm 중지"
     : "bgm 재생";
   const bgmShuffleLabel = "랜덤 bgm으로 변경";
-  const unreadNotificationCount = useMemo(
-    () => notifications.filter((notification) => !notification.isRead).length,
-    [notifications],
-  );
+  const unreadNotificationCount = notificationSummary?.unreadCount ?? 0;
   const notificationBadge =
     unreadNotificationCount > 99 ? "99+" : String(unreadNotificationCount);
   const canMarkAllNotificationsRead =
     unreadNotificationCount > 0 && !markAllRead.isPending;
-  const recentNotifications = useMemo(
-    () => notifications.slice(0, 3),
-    [notifications],
-  );
+  const recentNotifications = notificationSummary?.recent ?? [];
   const notificationButtonClassName = [
     styles.header__notification,
     unreadNotificationCount > 0
@@ -505,10 +475,14 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   return (
     <header className={styles.header}>
       <button
+        id="erp-sidebar-trigger"
         type="button"
         className={styles.header__burger}
         onClick={handleOpenSidebar}
         aria-label="메뉴 열기"
+        aria-controls="erp-navigation-drawer"
+        aria-expanded={sidebarOpen}
+        aria-haspopup="dialog"
       >
         <IconMenu aria-hidden />
       </button>
@@ -542,7 +516,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
           </div>
         ) : null}
         {title ? (
-          <h1 className={styles.header__pageHeadTitle}>{title}</h1>
+          <div className={styles.header__pageHeadTitle}>{title}</div>
         ) : null}
       </div>
 

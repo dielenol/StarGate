@@ -360,6 +360,7 @@ export default function EquipmentSimulatorClient({
   return (
     <div className={styles.simRoot} data-pixel-font="full">
       <PageHead
+        hasVisibleHeading
         breadcrumb={[
           { label: "ERP", href: "/erp" },
           { label: "자산", href: "/erp/inventory" },
@@ -426,7 +427,7 @@ export default function EquipmentSimulatorClient({
           </div>
         </aside>
 
-        <main className={styles.boardPanel} aria-label="5x5 전투판">
+        <section className={styles.boardPanel} aria-label="5x5 전투판">
           <div className={styles.boardToolbar}>
             <div>
               <Eyebrow>TACTICAL BOARD</Eyebrow>
@@ -610,7 +611,7 @@ export default function EquipmentSimulatorClient({
               </button>
             </div>
           </section>
-        </main>
+        </section>
 
         <aside className={styles.targetPanel} aria-label="표적 상태와 룰 카드">
           <div className={styles.panelIntro}>

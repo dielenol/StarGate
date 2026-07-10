@@ -214,6 +214,18 @@
   text-align: center;
 }
 
+.sheetStatus__retry {
+  display: block;
+  margin: 16px auto 0;
+  min-height: 40px;
+  padding: 9px 16px;
+  border: 1px solid var(--gold-dim);
+  background: rgba(201, 169, 97, 0.08);
+  color: var(--gold);
+  font: inherit;
+  cursor: pointer;
+}
+
 .securityOverlay,
 .videoOverlay,
 .recoveryOverlay {

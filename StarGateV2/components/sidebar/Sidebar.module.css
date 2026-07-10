@@ -47,7 +47,8 @@
   transition: width 0.25s ease;
 }
 
-.sidebar:hover {
+.sidebar:hover,
+.sidebar:focus-within {
   width: 258px;
 }
 
@@ -119,13 +120,19 @@
 .sidebar:hover .sidebar__label,
 .sidebar:hover .sidebar__child-label,
 .sidebar:hover .sidebar__caret,
-.sidebar:hover .sidebar__closed-stamp {
+.sidebar:hover .sidebar__closed-stamp,
+.sidebar:focus-within .sidebar__brand-text,
+.sidebar:focus-within .sidebar__label,
+.sidebar:focus-within .sidebar__child-label,
+.sidebar:focus-within .sidebar__caret,
+.sidebar:focus-within .sidebar__closed-stamp {
   opacity: 1;
   transform: translateX(0);
 }
 
 /* 마감 항목은 hover 후에도 label 이 감쇠된 상태 유지 */
-.sidebar:hover .sidebar__item--closed .sidebar__label {
+.sidebar:hover .sidebar__item--closed .sidebar__label,
+.sidebar:focus-within .sidebar__item--closed .sidebar__label {
   opacity: 0.45;
 }
 

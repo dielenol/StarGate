@@ -231,8 +231,26 @@
   display: none;
 }
 
+.sidebar__close {
+  display: none;
+}
+
 /* 모바일: fixed drawer */
 @media (max-width: 1279px) {
+  .sidebar__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-end;
+    width: 36px;
+    height: 36px;
+    color: var(--ink-1);
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+
   .sidebar {
     position: fixed;
     top: 0;
