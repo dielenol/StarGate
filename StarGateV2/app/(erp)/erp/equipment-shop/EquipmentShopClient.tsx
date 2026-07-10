@@ -2951,7 +2951,7 @@ export default function EquipmentShopClient({
         title={isHub ? "병기부 안내데스크" : zoneMeta.label}
       />
 
-      {!hasMainCharacter ? (
+      {!hasMainCharacter && !(mode === "zone" && activeZone === "towaski") ? (
         <Box className={styles.notice}>
           {mainCharacterError ? (
             <>
