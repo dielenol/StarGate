@@ -1,0 +1,36 @@
+.state {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: min(560px, calc(100vh - var(--topbar-h) - 80px));
+  padding: 32px;
+  color: var(--ink-2);
+  text-align: center;
+  border: 1px dashed var(--line-strong);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-2) 75%, transparent),
+    transparent
+  );
+}
+
+.state__eyebrow {
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.16em;
+}
+
+.state h1 {
+  margin: 0;
+  color: var(--ink-0);
+  font-size: clamp(26px, 4vw, 42px);
+}
+
+.state p {
+  max-width: 520px;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+}

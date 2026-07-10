@@ -1,0 +1,101 @@
+.control {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 180;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(360px, calc(100vw - 28px));
+  padding: 9px 10px 9px 12px;
+  background: color-mix(in srgb, var(--bg-1) 94%, transparent);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(10px);
+}
+
+.control__copy {
+  display: grid;
+  min-width: 0;
+}
+
+.control__copy small {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.control__copy strong {
+  overflow: hidden;
+  color: var(--ink-1);
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.control__switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 7px;
+  min-width: 68px;
+  padding: 7px 9px;
+  color: var(--ink-2);
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.control__switch span {
+  width: 10px;
+  height: 10px;
+  background: var(--ink-3);
+  border-radius: 50%;
+}
+
+.control__switch--locked {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--line-strong));
+}
+
+.control__switch--locked span {
+  background: var(--danger);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--danger) 70%, transparent);
+}
+
+.control__switch:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.control__switch:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.control__error {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: max-content;
+  max-width: min(360px, calc(100vw - 28px));
+  padding: 8px 10px;
+  color: var(--danger);
+  background: var(--bg-1);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+@media (max-width: 1279px) {
+  .control {
+    right: 14px;
+    bottom: 14px;
+  }
+}

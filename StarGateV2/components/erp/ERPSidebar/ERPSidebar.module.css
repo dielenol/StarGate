@@ -155,6 +155,7 @@
 .sidebar__subItem {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   min-height: 30px;
   padding: 6px 8px;
@@ -163,6 +164,25 @@
   font-size: 14px;
   line-height: 1.25;
   text-decoration: none;
+}
+
+.sidebar__subItemLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sidebar__subItem--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sidebar__subBadge {
+  flex-shrink: 0;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
 }
 
 .sidebar__subItemIcon {

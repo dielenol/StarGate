@@ -38,6 +38,15 @@ import {
 
 import type { UserRole } from "@/types/user";
 
+import {
+  flattenLockableNavItems,
+  getPageLockKey,
+  isPageLocked,
+  isResolvedPageLocked,
+  resolvePageLockItem,
+  type ErpPageLockOverrides,
+} from "@/lib/erp/page-lock-policy";
+
 export interface NavItem {
   /** 사이드바 렌더용 한국어 라벨. */
   label: string;
@@ -49,6 +58,8 @@ export interface NavItem {
   href: string | null;
   /** 준비중 메뉴를 GM에게만 열어줄 내부 경로. */
   gmHref?: string;
+  /** 상세 경로까지 묶는 운영 잠금 식별자. 기본값은 gmHref 또는 href. */
+  lockKey?: string;
   /** 링크가 열려 있어도 메뉴에 "준비중" 상태를 표시한다. */
   preparing?: boolean;
   /** 이 메뉴를 보기 위해 필요한 최소 역할. */
@@ -66,16 +77,33 @@ export interface NavGroup {
 }
 
 export function isPreparingNavItem(item: NavItem): boolean {
-  return item.preparing === true || item.href === null;
+  return isPageLocked(item);
+}
+
+export function getNavItemLockKey(item: NavItem): string | null {
+  return getPageLockKey(item);
+}
+
+export function isNavItemLocked(
+  item: NavItem,
+  overrides?: ErpPageLockOverrides,
+): boolean {
+  const lockKey = getNavItemLockKey(item);
+  return isPageLocked(
+    item,
+    lockKey ? overrides?.[lockKey] : undefined,
+  );
 }
 
 export function getNavItemHref(
   item: NavItem,
   role?: UserRole | null,
+  overrides?: ErpPageLockOverrides,
 ): string | null {
   if (role === "GM" && item.gmHref) return item.gmHref;
+  if (role !== "GM" && isNavItemLocked(item, overrides)) return null;
   if (item.href !== null) return item.href;
-  return role === "GM" ? (item.gmHref ?? null) : null;
+  return item.gmHref ?? null;
 }
 
 export function getNavItemActiveHrefs(item: NavItem): string[] {
@@ -84,6 +112,36 @@ export function getNavItemActiveHrefs(item: NavItem): string[] {
   );
   const childHrefs = item.children?.flatMap(getNavItemActiveHrefs) ?? [];
   return [...ownHrefs, ...childHrefs];
+}
+
+export function getAllNavItems(): NavItem[] {
+  return flattenLockableNavItems(
+    NAV_GROUPS.flatMap((group) => group.items),
+  ) as NavItem[];
+}
+
+export function findNavItemByLockKey(lockKey: string): NavItem | null {
+  return (
+    getAllNavItems().find((item) => getNavItemLockKey(item) === lockKey) ?? null
+  );
+}
+
+export function resolveNavItemForPath(pathname: string): NavItem | null {
+  return resolvePageLockItem(
+    NAV_GROUPS.flatMap((group) => group.items),
+    pathname,
+  ) as NavItem | null;
+}
+
+export function isNavPathLocked(
+  pathname: string,
+  overrides?: ErpPageLockOverrides,
+): boolean {
+  return isResolvedPageLocked(
+    NAV_GROUPS.flatMap((group) => group.items),
+    pathname,
+    overrides,
+  );
 }
 
 export const NAV_GROUPS: NavGroup[] = [
@@ -186,7 +244,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "위키", keywords: "wiki", icon: IconWiki, href: "/erp/wiki" },
       { label: "작전 보고서", keywords: "report session archive operation 작전 보고서 세션 리포트 작전 기록", icon: IconReportDocument, href: "/erp/sessions/report" },
-      { label: "기록보관소", keywords: "catalog archive records equipment weapon armor consumable material sample evidence special 기록보관소 장비 소모품 샘플 물증 특수", icon: IconCoreArchive, href: "/erp/wiki/catalog/all" },
+      { label: "기록보관소", keywords: "catalog archive records equipment weapon armor consumable material sample evidence special 기록보관소 장비 소모품 샘플 물증 특수", icon: IconCoreArchive, href: "/erp/wiki/catalog/all", lockKey: "/erp/wiki/catalog" },
       /* 갤러리 · 연대기 — 콘텐츠 준비중. */
       { label: "갤러리", keywords: "gallery", icon: IconGallery, href: null, gmHref: "/erp/gallery" },
       { label: "연대기", keywords: "chronicle", icon: IconWorld, href: null, gmHref: "/erp/chronicle" },

@@ -18,10 +18,11 @@ import type { UserRole } from "@/types/user";
 import type { NavGroup, NavItem } from "@/components/erp/nav-config";
 import {
   getNavItemHref,
-  isPreparingNavItem,
+  isNavItemLocked,
   NAV_GROUPS,
 } from "@/components/erp/nav-config";
 import { useNavPending } from "@/components/erp/NavPending/NavPendingProvider";
+import { usePageLocks } from "@/hooks/queries/usePageLocksQuery";
 
 import styles from "./CommandK.module.css";
 
@@ -54,6 +55,7 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const { begin, end } = useNavPending();
+  const { data: pageLocks } = usePageLocks();
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const rowRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -64,6 +66,7 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
   const [isNavPending, startNavTransition] = useTransition();
 
   const role = session?.user?.role;
+  const pageLockOverrides = pageLocks?.overrides ?? {};
 
   /* router.push 의 transition pending 을 전역 NavPending 카운터에 bridge */
   useEffect(() => {
@@ -184,7 +187,7 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
   }
 
   function handleSelect(entry: FlatEntry) {
-    const href = getNavItemHref(entry.item, role);
+    const href = getNavItemHref(entry.item, role, pageLockOverrides);
     if (!href) return;
     router.prefetch(href);
     startNavTransition(() => {
@@ -257,8 +260,15 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
                       entry.item.label === item.label,
                   );
                   const active = flatIdx === activeIndex;
-                  const href = getNavItemHref(item, role);
-                  const preparing = isPreparingNavItem(item);
+                  const href = getNavItemHref(
+                    item,
+                    role,
+                    pageLockOverrides,
+                  );
+                  const preparing = isNavItemLocked(
+                    item,
+                    pageLockOverrides,
+                  );
                   const disabled = href === null;
                   const Icon = item.icon;
 

@@ -1,13 +1,18 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { isNavPathLocked } from "@/components/erp/nav-config";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
+import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
 
 import SessionWrapper from "@/components/erp/SessionWrapper";
 import QueryProvider from "@/components/erp/QueryProvider";
 import ERPSidebar from "@/components/erp/ERPSidebar/ERPSidebar";
 import CommandKDeferred from "@/components/erp/CommandK/CommandKDeferred";
 import NavPendingProvider from "@/components/erp/NavPending/NavPendingProvider";
+import PageLockControl from "@/components/erp/PageLockControl/PageLockControl";
+import PageLockGate from "@/components/erp/PageLockControl/PageLockGate";
 import { PageHeadProvider } from "@/components/ui/PageHead/PageHeadContext";
 
 import styles from "./layout.module.css";
@@ -31,13 +36,22 @@ export default async function ERPLayout({
     redirect("/login");
   }
 
-  const mainCharacter = await findMainCharacterByOwner(session.user.id);
+  const requestHeaders = await headers();
+  const pathname = requestHeaders.get("x-stargate-erp-pathname") ?? "/erp";
+  const [mainCharacter, pageLockOverrides] = await Promise.all([
+    findMainCharacterByOwner(session.user.id),
+    getErpPageLockOverrides(),
+  ]);
   const headerIdentity = mainCharacter
     ? {
         name: mainCharacter.lore.name || mainCharacter.codename,
         agentLevel: mainCharacter.agentLevel ?? null,
       }
     : null;
+  const pageLocked =
+    session.user.role !== "GM" &&
+    isNavPathLocked(pathname, pageLockOverrides);
+  const initialPageLocks = { overrides: pageLockOverrides };
 
   return (
     <SessionWrapper session={session}>
@@ -47,9 +61,21 @@ export default async function ERPLayout({
             <div className={styles.erp} data-scope="erp">
               <ERPHeader user={session.user} identity={headerIdentity} />
               <div className={styles.erp__body}>
-                <ERPSidebar />
-                <main className={styles.erp__main}>{children}</main>
+                <ERPSidebar initialPageLocks={initialPageLocks} />
+                <main className={styles.erp__main}>
+                  <PageLockGate
+                    initialPageLocks={initialPageLocks}
+                    role={session.user.role}
+                    serverBlocked={pageLocked}
+                    serverPathname={pathname}
+                  >
+                    {children}
+                  </PageLockGate>
+                </main>
               </div>
+              {session.user.role === "GM" ? (
+                <PageLockControl initialPageLocks={initialPageLocks} />
+              ) : null}
               <CommandKDeferred />
             </div>
           </NavPendingProvider>

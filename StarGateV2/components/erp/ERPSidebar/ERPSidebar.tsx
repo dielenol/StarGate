@@ -7,13 +7,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import type { NavItem } from "@/components/erp/nav-config";
+import type { PageLocksResponse } from "@/hooks/queries/usePageLocksQuery";
 
 import { useNotificationSummary } from "@/hooks/queries/useNotificationsQuery";
+import { usePageLocks } from "@/hooks/queries/usePageLocksQuery";
 
 import {
   getNavItemActiveHrefs,
   getNavItemHref,
-  isPreparingNavItem,
+  isNavItemLocked,
   NAV_GROUPS,
 } from "@/components/erp/nav-config";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
@@ -30,11 +32,16 @@ const ALL_NAV_HREFS: string[] = NAV_GROUPS.flatMap((group) =>
   group.items.flatMap(getNavItemActiveHrefs),
 );
 
-export default function ERPSidebar() {
+interface ERPSidebarProps {
+  initialPageLocks: PageLocksResponse;
+}
+
+export default function ERPSidebar({ initialPageLocks }: ERPSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
   const { data: notificationSummary } = useNotificationSummary();
+  const { data: pageLocks } = usePageLocks({ initialData: initialPageLocks });
 
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
@@ -142,6 +149,7 @@ export default function ERPSidebar() {
   }
 
   const role = session?.user?.role;
+  const pageLockOverrides = pageLocks?.overrides ?? {};
   const unreadNotificationCount = notificationSummary?.unreadCount ?? 0;
   const unreadNotificationLabel =
     unreadNotificationCount > 99 ? "99+" : String(unreadNotificationCount);
@@ -194,9 +202,9 @@ export default function ERPSidebar() {
             <div key={group.key} className={styles.sidebar__group}>
               <div className={styles.sidebar__groupLabel}>{group.label}</div>
               {visibleItems.map((item) => {
-                const href = getNavItemHref(item, role);
+                const href = getNavItemHref(item, role, pageLockOverrides);
                 const active = isItemActive(item);
-                const preparing = isPreparingNavItem(item);
+                const preparing = isNavItemLocked(item, pageLockOverrides);
                 const disabled = href === null;
                 const Icon = item.icon;
                 const childItems = (item.children ?? []).filter(
@@ -204,79 +212,77 @@ export default function ERPSidebar() {
                     !child.minRole ||
                     (role ? hasRole(role, child.minRole) : false),
                 );
-                const showChildren = active && childItems.length > 0;
+                const showChildren =
+                  childItems.length > 0 && (active || disabled);
                 const notificationBadge =
                   href === "/erp/notifications" &&
                   unreadNotificationCount > 0
                     ? unreadNotificationLabel
                     : null;
 
-                if (disabled) {
-                  return (
-                    <span
-                      key={`${group.key}-${item.label}`}
-                      className={[
-                        styles.sidebar__item,
-                        styles["sidebar__item--disabled"],
-                      ].join(" ")}
-                      aria-disabled
-                    >
-                      <span className={styles.sidebar__itemLeft}>
-                        <span className={styles.sidebar__icon} aria-hidden>
-                          <Icon />
-                        </span>
-                        <span className={styles.sidebar__itemLabel}>
-                          {item.label}
-                        </span>
-                      </span>
-                      <span className={styles.sidebar__badge}>준비중</span>
-                    </span>
-                  );
-                }
-
                 return (
                   <div
                     key={`${group.key}-${item.label}`}
                     className={styles.sidebar__itemBlock}
                   >
-                    <Link
-                      href={href}
-                      className={[
-                        styles.sidebar__item,
-                        active ? styles["sidebar__item--active"] : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                      onClick={close}
-                      onFocus={() => prefetchHref(href)}
-                      onMouseEnter={() => prefetchHref(href)}
-                      prefetch
-                    >
-                      <LinkPendingProbe />
-                      <span className={styles.sidebar__itemLeft}>
-                        <span className={styles.sidebar__icon} aria-hidden>
-                          <Icon />
+                    {disabled ? (
+                      <span
+                        className={[
+                          styles.sidebar__item,
+                          styles["sidebar__item--disabled"],
+                        ].join(" ")}
+                        aria-disabled
+                      >
+                        <span className={styles.sidebar__itemLeft}>
+                          <span className={styles.sidebar__icon} aria-hidden>
+                            <Icon />
+                          </span>
+                          <span className={styles.sidebar__itemLabel}>
+                            {item.label}
+                          </span>
                         </span>
-                        <span className={styles.sidebar__itemLabel}>
-                          {item.label}
-                        </span>
-                      </span>
-                      {notificationBadge ? (
-                        <span
-                          className={styles.sidebar__countBadge}
-                          aria-label={`안 읽은 알림 ${unreadNotificationCount}건`}
-                        >
-                          {notificationBadge}
-                        </span>
-                      ) : preparing ? (
                         <span className={styles.sidebar__badge}>준비중</span>
-                      ) : active ? (
-                        <IconCheckDot
-                          className={styles.sidebar__activeMark}
-                          aria-hidden
-                        />
-                      ) : null}
-                    </Link>
+                      </span>
+                    ) : (
+                      <Link
+                        href={href}
+                        className={[
+                          styles.sidebar__item,
+                          active ? styles["sidebar__item--active"] : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        onClick={close}
+                        onFocus={() => prefetchHref(href)}
+                        onMouseEnter={() => prefetchHref(href)}
+                        prefetch
+                      >
+                        <LinkPendingProbe />
+                        <span className={styles.sidebar__itemLeft}>
+                          <span className={styles.sidebar__icon} aria-hidden>
+                            <Icon />
+                          </span>
+                          <span className={styles.sidebar__itemLabel}>
+                            {item.label}
+                          </span>
+                        </span>
+                        {notificationBadge ? (
+                          <span
+                            className={styles.sidebar__countBadge}
+                            aria-label={`안 읽은 알림 ${unreadNotificationCount}건`}
+                          >
+                            {notificationBadge}
+                          </span>
+                        ) : preparing ? (
+                          <span className={styles.sidebar__badge}>준비중</span>
+                        ) : active ? (
+                          <IconCheckDot
+                            className={styles.sidebar__activeMark}
+                            aria-hidden
+                          />
+                        ) : null}
+                      </Link>
+                    )}
 
                     {showChildren ? (
                       <div
@@ -284,12 +290,47 @@ export default function ERPSidebar() {
                         aria-label={`${item.label} 하위 메뉴`}
                       >
                         {childItems.map((child) => {
-                          const childHref = getNavItemHref(child, role);
-                          if (childHref === null) return null;
+                          const childHref = getNavItemHref(
+                            child,
+                            role,
+                            pageLockOverrides,
+                          );
+                          const childLocked = isNavItemLocked(
+                            child,
+                            pageLockOverrides,
+                          );
                           const ChildIcon = child.icon;
                           const childActive =
                             activeHref !== null &&
                             getNavItemActiveHrefs(child).includes(activeHref);
+
+                          if (childHref === null) {
+                            return (
+                              <span
+                                key={`${group.key}-${item.label}-${child.label}`}
+                                className={[
+                                  styles.sidebar__subItem,
+                                  styles["sidebar__subItem--disabled"],
+                                ].join(" ")}
+                                aria-disabled
+                              >
+                                <span className={styles.sidebar__subItemLeft}>
+                                  <span
+                                    className={styles.sidebar__subItemIcon}
+                                    aria-hidden
+                                  >
+                                    <ChildIcon />
+                                  </span>
+                                  <span className={styles.sidebar__subItemLabel}>
+                                    {child.label}
+                                  </span>
+                                </span>
+                                <span className={styles.sidebar__subBadge}>
+                                  준비중
+                                </span>
+                              </span>
+                            );
+                          }
 
                           return (
                             <Link
@@ -309,15 +350,22 @@ export default function ERPSidebar() {
                               prefetch
                             >
                               <LinkPendingProbe />
-                              <span
-                                className={styles.sidebar__subItemIcon}
-                                aria-hidden
-                              >
-                                <ChildIcon />
+                              <span className={styles.sidebar__subItemLeft}>
+                                <span
+                                  className={styles.sidebar__subItemIcon}
+                                  aria-hidden
+                                >
+                                  <ChildIcon />
+                                </span>
+                                <span className={styles.sidebar__subItemLabel}>
+                                  {child.label}
+                                </span>
                               </span>
-                              <span className={styles.sidebar__subItemLabel}>
-                                {child.label}
-                              </span>
+                              {childLocked ? (
+                                <span className={styles.sidebar__subBadge}>
+                                  준비중
+                                </span>
+                              ) : null}
                             </Link>
                           );
                         })}
