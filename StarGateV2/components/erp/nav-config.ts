@@ -1,7 +1,7 @@
 /**
  * ERP 사이드바 / Command-K 공용 네비게이션 정의.
  *
- * `href` 가 null 이면 일반 사용자에게는 "준비중" 메뉴다.
+ * `href` 가 null 이거나 `preparing` 이 true면 "준비중" 메뉴다.
  * `gmHref` 가 있으면 GM만 해당 준비중 페이지를 열어볼 수 있다.
  */
 
@@ -49,6 +49,8 @@ export interface NavItem {
   href: string | null;
   /** 준비중 메뉴를 GM에게만 열어줄 내부 경로. */
   gmHref?: string;
+  /** 링크가 열려 있어도 메뉴에 "준비중" 상태를 표시한다. */
+  preparing?: boolean;
   /** 이 메뉴를 보기 위해 필요한 최소 역할. */
   minRole?: UserRole;
   /** 활성화 시 사이드바에 표시할 하위 메뉴. */
@@ -64,7 +66,7 @@ export interface NavGroup {
 }
 
 export function isPreparingNavItem(item: NavItem): boolean {
-  return item.href === null;
+  return item.preparing === true || item.href === null;
 }
 
 export function getNavItemHref(
@@ -129,6 +131,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: IconArmory,
         href: "/erp/equipment-shop/towaski",
         gmHref: "/erp/equipment-shop",
+        preparing: true,
         children: [
           {
             label: "신체증강 연구소",
