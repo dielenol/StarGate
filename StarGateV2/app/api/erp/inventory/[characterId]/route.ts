@@ -14,6 +14,8 @@ import {
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
 
+const MAX_GRANT_QUANTITY = 999;
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ characterId: string }> },
@@ -74,7 +76,10 @@ export async function POST(
   }
 
   const character = await findCharacterById(characterId);
-  if (!character) {
+  if (
+    !character ||
+    !canViewPersonalInventory(session.user.id, session.user.role, character)
+  ) {
     return NextResponse.json(
       { error: "캐릭터를 찾을 수 없습니다." },
       { status: 404 },
@@ -84,16 +89,25 @@ export async function POST(
   const body = (await request.json()) as Partial<CreateInventoryInput>;
 
   // itemId 형식 검증 — ObjectId 가 아니면 400. master_items _id 는 ObjectId.
-  if (!body.itemId?.trim() || !isValidObjectId(body.itemId)) {
+  if (
+    typeof body.itemId !== "string" ||
+    !body.itemId.trim() ||
+    !isValidObjectId(body.itemId)
+  ) {
     return NextResponse.json(
       { error: "itemId가 올바른 ObjectId 형식이 아닙니다." },
       { status: 400 },
     );
   }
 
-  if (typeof body.quantity !== "number" || body.quantity < 1) {
+  if (
+    typeof body.quantity !== "number" ||
+    !Number.isSafeInteger(body.quantity) ||
+    body.quantity < 1 ||
+    body.quantity > MAX_GRANT_QUANTITY
+  ) {
     return NextResponse.json(
-      { error: "quantity는 1 이상이어야 합니다." },
+      { error: `quantity는 1~${MAX_GRANT_QUANTITY} 사이의 정수여야 합니다.` },
       { status: 400 },
     );
   }
@@ -136,6 +150,8 @@ export async function POST(
           `지급자 ${session.user.displayName}`,
         ].join(" · "),
         link: `/erp/inventory/${characterId}`,
+      }).catch((error) => {
+        console.error("[inventory/grant] notification failed:", error);
       });
     }
 

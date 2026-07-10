@@ -25,6 +25,8 @@ export {
   updateMasterItem,
   deleteMasterItem,
   listCharacterInventory,
+  prepareCharacterInventoryItemLocks,
+  lockCharacterInventoryItems,
   addToInventory,
   removeFromInventory,
   deleteInventoryEntry,

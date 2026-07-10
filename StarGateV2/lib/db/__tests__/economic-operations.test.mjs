@@ -9,17 +9,33 @@ if (HAS_DB) process.env.MONGODB_URI = TEST_URI;
 process.env.DB_NAME = TEST_DB_NAME;
 
 let executeEconomicOperationResult;
+let addToInventory;
+let prepareCharacterInventoryItemLocks;
 let getDb;
 let getClient;
+
+const INVENTORY_CHARACTER_ID = "economic-inventory-character";
+const INVENTORY_ITEM_ID = "economic-inventory-item";
 
 before(async () => {
   if (!HAS_DB) return;
   ({ executeEconomicOperationResult } = await import("../execute-economic-operation.ts"));
-  ({ getDb, getClient } = await import("@stargate/shared-db"));
+  ({
+    addToInventory,
+    prepareCharacterInventoryItemLocks,
+    getDb,
+    getClient,
+  } = await import("@stargate/shared-db"));
   const db = await getDb();
   await Promise.all([
     db.collection("economic_operations").deleteMany({}),
     db.collection("economic_test_side_effects").deleteMany({}),
+    db.collection("character_inventory").deleteMany({
+      characterId: INVENTORY_CHARACTER_ID,
+    }),
+    db.collection("character_inventory_locks").deleteMany({
+      characterId: INVENTORY_CHARACTER_ID,
+    }),
   ]);
 });
 
@@ -29,6 +45,12 @@ after(async () => {
   await Promise.all([
     db.collection("economic_operations").deleteMany({}),
     db.collection("economic_test_side_effects").deleteMany({}),
+    db.collection("character_inventory").deleteMany({
+      characterId: INVENTORY_CHARACTER_ID,
+    }),
+    db.collection("character_inventory_locks").deleteMany({
+      characterId: INVENTORY_CHARACTER_ID,
+    }),
   ]);
   await (await getClient()).close();
 });
@@ -98,5 +120,49 @@ test(
     await Promise.reject(new Error("NOTIFICATION_FAILED")).catch(() => undefined);
     const operation = await (await getDb()).collection("economic_operations").findOne({ _id: "economic-notification" });
     assert.equal(operation?.status, "completed");
+  },
+);
+
+test(
+  "서로 다른 주문의 동일 inventory upsert도 lock 문서로 한 행에 직렬화된다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const purchase = async (requestId) => {
+      await prepareCharacterInventoryItemLocks(
+        INVENTORY_CHARACTER_ID,
+        [INVENTORY_ITEM_ID],
+      );
+      return executeEconomicOperationResult({
+        requestId,
+        domain: "test-inventory-checkout",
+        actorId: "test-actor",
+        payload: { itemId: INVENTORY_ITEM_ID },
+        run: async (session) => {
+          await addToInventory(
+            {
+              characterId: INVENTORY_CHARACTER_ID,
+              characterCodename: "LOCK TEST",
+              itemId: INVENTORY_ITEM_ID,
+              itemName: "동시성 시험 품목",
+              quantity: 1,
+              acquiredAt: new Date(),
+            },
+            { session },
+          );
+          return { status: 201, body: { ok: true } };
+        },
+      });
+    };
+
+    await Promise.all([purchase("inventory-lock-a"), purchase("inventory-lock-b")]);
+    const rows = await (await getDb())
+      .collection("character_inventory")
+      .find({
+        characterId: INVENTORY_CHARACTER_ID,
+        itemId: INVENTORY_ITEM_ID,
+      })
+      .toArray();
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.quantity, 2);
   },
 );

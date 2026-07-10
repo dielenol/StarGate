@@ -16,6 +16,8 @@ import Select from "@/components/ui/Select/Select";
 
 import styles from "./InventoryGrantForm.module.css";
 
+const MAX_GRANT_QUANTITY = 999;
+
 export interface InventoryGrantItem {
   id: string;
   name: string;
@@ -67,8 +69,12 @@ export default function InventoryGrantForm({
     }
 
     const numQuantity = Number(quantity);
-    if (isNaN(numQuantity) || numQuantity < 1) {
-      setError("수량은 1 이상이어야 합니다.");
+    if (
+      !Number.isSafeInteger(numQuantity) ||
+      numQuantity < 1 ||
+      numQuantity > MAX_GRANT_QUANTITY
+    ) {
+      setError(`수량은 1~${MAX_GRANT_QUANTITY} 사이의 정수여야 합니다.`);
       return;
     }
 
@@ -140,6 +146,8 @@ export default function InventoryGrantForm({
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             min="1"
+            max={String(MAX_GRANT_QUANTITY)}
+            step="1"
             required
           />
         </label>

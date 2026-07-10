@@ -2,7 +2,7 @@
  * POST /api/erp/shop/checkout — 편의점 장바구니 결제.
  *
  * 여러 품목을 하나의 주문으로 검증하고, 총액을 한 번 차감한 뒤 인벤토리에 적재한다.
- * Mongo transaction 대신 기존 편의점 단품 구매와 같은 Saga 보상 패턴을 사용한다.
+ * 크레딧·재고·인벤토리·멱등 응답을 하나의 Mongo transaction으로 커밋한다.
  */
 
 import { NextResponse } from "next/server";
@@ -15,6 +15,8 @@ import { addCredit } from "@/lib/db/credits";
 import {
   addToInventory,
   findMasterItemsBySlugs,
+  lockCharacterInventoryItems,
+  prepareCharacterInventoryItemLocks,
 } from "@/lib/db/inventory";
 import { reduceStock } from "@/lib/db/shop";
 import { findUserById } from "@/lib/db/users";
@@ -186,21 +188,31 @@ export async function POST(request: Request) {
   }
 
   const totalPrice = lines.reduce((sum, line) => sum + line.totalPrice, 0);
+  const characterId = String(mainChar._id);
   const committed: { balance: number | null } = { balance: null };
   let response: NextResponse;
   try {
+    await prepareCharacterInventoryItemLocks(
+      characterId,
+      lines.map((line) => line.itemId),
+    );
     response = await executeEconomicOperation({
       requestId,
       domain: "shop-checkout",
       actorId: session.user.id,
       payload: { items: normalizedItems },
       run: async (mongoSession) => {
+        await lockCharacterInventoryItems(
+          characterId,
+          lines.map((line) => line.itemId),
+          mongoSession,
+        );
         for (const line of lines) {
           const ok = await reduceStock(line.slug, line.quantity, { session: mongoSession });
           if (!ok) throw new Error(`OUT_OF_STOCK:${line.slug}`);
         }
         const debit = await addCredit({
-          characterId: String(mainChar._id),
+          characterId,
           characterCodename: mainChar.codename,
           ownerId,
           ownerName,
@@ -216,7 +228,7 @@ export async function POST(request: Request) {
         for (const line of lines) {
           await addToInventory(
             {
-              characterId: String(mainChar._id),
+              characterId,
               characterCodename: mainChar.codename,
               itemId: line.itemId,
               itemName: line.name,

@@ -61,7 +61,10 @@ export async function executeEconomicOperationResult<T>(args: {
           replayed: true,
         };
       }
-      throw new EconomicOperationConflictError("processing");
+      if (replay?.kind === "processing" || replay?.kind === "conflict") {
+        throw new EconomicOperationConflictError(replay.kind);
+      }
+      throw error;
     }
     throw error;
   } finally {

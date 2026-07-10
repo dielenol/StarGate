@@ -2,7 +2,12 @@
  * master_items + character_inventory CRUD
  */
 
-import { ObjectId, type ClientSession, type Filter } from "mongodb";
+import {
+  MongoServerError,
+  ObjectId,
+  type ClientSession,
+  type Filter,
+} from "mongodb";
 
 import type {
   CharacterInventory,
@@ -20,6 +25,7 @@ import {
   masterItemsCol,
   sharedInventoryCol,
 } from "../collections.js";
+import { getClient, getDb } from "../client.js";
 
 /* ── Master Items ── */
 
@@ -182,17 +188,144 @@ export async function deleteMasterItem(id: string): Promise<boolean> {
 
 /* ── Character Inventory ── */
 
+const MAX_CHARACTER_INVENTORY_MUTATION_QUANTITY = 999;
+
 export async function listCharacterInventory(
-  characterId: string
+  characterId: string,
+  options: { session?: ClientSession } = {},
 ): Promise<CharacterInventory[]> {
   const col = await characterInventoryCol();
-  return col.find({ characterId }).sort({ acquiredAt: -1 }).toArray();
+  return col
+    .find({ characterId }, { session: options.session })
+    .sort({ acquiredAt: -1 })
+    .toArray();
+}
+
+interface CharacterInventoryLock {
+  _id: string;
+  characterId: string;
+  itemId: string;
+  updatedAt: Date;
+  version?: number;
+}
+
+function characterInventoryLockIds(itemIds: readonly string[]): string[] {
+  return [...new Set(itemIds)].sort();
+}
+
+/**
+ * inventory transaction이 시작되기 전에 고유 lock anchor를 준비한다.
+ *
+ * 최초 두 요청의 동시 upsert에서 한쪽이 E11000을 받더라도 이미 생성된 anchor를
+ * 다시 갱신해 정상 완료한다. 이 쓰기는 inventory/credit 상태를 바꾸지 않는다.
+ */
+export async function prepareCharacterInventoryItemLocks(
+  characterId: string,
+  itemIds: readonly string[],
+): Promise<void> {
+  const db = await getDb();
+  const locks = db.collection<CharacterInventoryLock>(
+    "character_inventory_locks",
+  );
+
+  for (const itemId of characterInventoryLockIds(itemIds)) {
+    const _id = `${characterId}:${itemId}`;
+    const updatedAt = new Date();
+    try {
+      await locks.updateOne(
+        { _id },
+        { $set: { characterId, itemId, updatedAt } },
+        { upsert: true },
+      );
+    } catch (error) {
+      if (!(error instanceof MongoServerError) || error.code !== 11000) {
+        throw error;
+      }
+      await locks.updateOne(
+        { _id },
+        { $set: { characterId, itemId, updatedAt } },
+      );
+    }
+  }
+}
+
+/**
+ * transaction 안에서 동일 캐릭터·품목 inventory mutation을 직렬화한다.
+ *
+ * 호출자는 transaction 시작 전에 prepareCharacterInventoryItemLocks()로 anchor를
+ * 준비해야 한다. transaction 내부에서는 upsert를 하지 않아 lock anchor의 E11000이
+ * 경제 작업의 멱등성 충돌로 오인되는 경로를 차단한다.
+ */
+export async function lockCharacterInventoryItems(
+  characterId: string,
+  itemIds: readonly string[],
+  session: ClientSession,
+): Promise<void> {
+  if (!session.inTransaction()) {
+    throw new Error("Inventory item locks require an active transaction");
+  }
+  const db = await getDb();
+  const locks = db.collection<CharacterInventoryLock>(
+    "character_inventory_locks",
+  );
+
+  for (const itemId of characterInventoryLockIds(itemIds)) {
+    const result = await locks.updateOne(
+      { _id: `${characterId}:${itemId}` },
+      {
+        $set: { characterId, itemId, updatedAt: new Date() },
+        $inc: { version: 1 },
+      },
+      { session },
+    );
+    if (result.matchedCount !== 1) {
+      throw new Error(
+        `Inventory lock anchor is missing: characterId=${characterId}, itemId=${itemId}`,
+      );
+    }
+  }
 }
 
 export async function addToInventory(
   input: CreateInventoryInput,
   options: { session?: ClientSession } = {},
 ): Promise<CharacterInventory> {
+  if (
+    typeof input.characterId !== "string" ||
+    !input.characterId.trim() ||
+    typeof input.itemId !== "string" ||
+    !input.itemId.trim() ||
+    !Number.isSafeInteger(input.quantity) ||
+    input.quantity < 1 ||
+    input.quantity > MAX_CHARACTER_INVENTORY_MUTATION_QUANTITY
+  ) {
+    throw new Error("Invalid character inventory mutation input");
+  }
+
+  if (!options.session) {
+    await prepareCharacterInventoryItemLocks(input.characterId, [input.itemId]);
+    const client = await getClient();
+    const session = client.startSession();
+    try {
+      const entry = await session.withTransaction(() =>
+        addToInventory(input, { session }),
+      );
+      if (!entry) {
+        throw new Error(
+          `Inventory transaction did not commit: characterId=${input.characterId}, itemId=${input.itemId}`,
+        );
+      }
+      return entry;
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  await lockCharacterInventoryItems(
+    input.characterId,
+    [input.itemId],
+    options.session,
+  );
   const col = await characterInventoryCol();
 
   const result = await col.findOneAndUpdate(
@@ -236,6 +369,9 @@ export async function removeFromInventory(
     throw new Error(
       `removeFromInventory: quantity must be a positive integer, got ${quantity}`
     );
+  }
+  if (options.session) {
+    await lockCharacterInventoryItems(characterId, [itemId], options.session);
   }
   const col = await characterInventoryCol();
   const result = await col.findOneAndUpdate(
