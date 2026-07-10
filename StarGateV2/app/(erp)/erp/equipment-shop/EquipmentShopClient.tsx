@@ -1084,6 +1084,8 @@ export default function EquipmentShopClient({
   const [teamContributionAmount, setTeamContributionAmount] = useState("100");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
+  const [activeHubDestination, setActiveHubDestination] =
+    useState<ArmoryDestination>("towaski");
 
   const catalog = catalogQuery.data ?? initialCatalog;
   const research = researchQuery.data ?? initialResearch;
@@ -1718,40 +1720,37 @@ export default function EquipmentShopClient({
 
     const commandStats = [
       {
-        key: "catalog",
-        label: "반출 카탈로그",
-        value: `${totalCatalogItemCount}종`,
-        detail: `가용 ${availableCatalogItemCount}종 · 재고 ${availableStockCount}EA`,
+        key: "issue",
+        label: "반출 준비",
+        value: `${availableCatalogItemCount}종`,
+        detail: `전체 ${totalCatalogItemCount}종 · 재고 ${availableStockCount}EA`,
         warning: false,
       },
       {
         key: "research",
-        label: "연구 트리",
-        value: `${personalResearchCount + teamResearchCount}노드`,
-        detail: `개인 ${personalResearchCount} · 팀 ${teamResearchCount}`,
+        label: "연구 관제",
+        value: activeProjectCount > 0 ? `${activeProjectCount}건 진행` : "대기 없음",
+        detail: `완료 ${readyProjectCount} · 적용 ${appliedProjectCount}`,
         warning: false,
       },
       {
-        key: "projects",
-        label: "진행 큐",
-        value: `${activeProjectCount}건`,
-        detail: `완료 대기 ${readyProjectCount} · 적용 ${appliedProjectCount}`,
-        warning: false,
-      },
-      {
-        key: "agent",
-        label: "운영 대상",
-        value: mainCharacter?.codename ?? "UNASSIGNED",
-        detail: hasMainCharacter
-          ? `${formatCredits(balance)} 운용 가능`
-          : "개인 연구/구매 제한",
-        warning: !hasMainCharacter,
+        key: "attention",
+        label: "즉시 확인",
+        value: !hasMainCharacter
+          ? "요원 미지정"
+          : readyProjectCount > 0
+            ? `완료 연구 ${readyProjectCount}건`
+            : "이상 없음",
+        detail: !hasMainCharacter
+          ? "개인 연구·반출 제한"
+          : `${personalResearchCount + teamResearchCount}개 연구 노드 감시 중`,
+        warning: !hasMainCharacter || readyProjectCount > 0,
       },
     ];
 
     const operationCards = [
       {
-        key: "research",
+        key: "lab" as const,
         iconKey: "lab" as const,
         eyebrow: "RESEARCH CONTROL",
         title: "강화 연구",
@@ -1764,7 +1763,7 @@ export default function EquipmentShopClient({
         warning: false,
       },
       {
-        key: "catalog",
+        key: "towaski" as const,
         iconKey: "towaski" as const,
         eyebrow: "ISSUE COUNTER",
         title: "토와스키 건샵",
@@ -1777,7 +1776,7 @@ export default function EquipmentShopClient({
         warning: towaskiItemCount === 0,
       },
       {
-        key: "acheron",
+        key: "acheron" as const,
         iconKey: "acheron" as const,
         eyebrow: "ACHERON FORGE",
         title: "아케론 대장간",
@@ -1790,7 +1789,7 @@ export default function EquipmentShopClient({
         warning: acheronItemCount === 0,
       },
       {
-        key: "simulator",
+        key: "simulator" as const,
         iconKey: "simulator" as const,
         eyebrow: "TEST RANGE",
         title: "훈련장",
@@ -1800,7 +1799,7 @@ export default function EquipmentShopClient({
         warning: false,
       },
       {
-        key: "strategic",
+        key: "strategic" as const,
         iconKey: "strategic" as const,
         eyebrow: "SPECIAL ASSETS",
         title: "전략 장비 보급소",
@@ -1813,7 +1812,7 @@ export default function EquipmentShopClient({
         warning: strategicItemCount === 0,
       },
       {
-        key: "fabrication",
+        key: "custom" as const,
         iconKey: "custom" as const,
         eyebrow: "FABRICATION",
         title: "공방",
@@ -1823,39 +1822,9 @@ export default function EquipmentShopClient({
         warning: false,
       },
     ];
-
-    const systemAlerts = [
-      {
-        key: "research",
-        label: "완료 연구",
-        value:
-          readyProjectCount > 0
-            ? `${readyProjectCount}건 적용 대기`
-            : "대기 없음",
-        warning: readyProjectCount > 0,
-      },
-      {
-        key: "strategic",
-        label: "전략 장비 보급소",
-        value:
-          strategicItemCount > 0
-            ? `${strategicItemCount}종 반출 목록`
-            : "목록 비어 있음",
-        warning: strategicItemCount === 0,
-      },
-      {
-        key: "custom",
-        label: "공방",
-        value: "상담 패널 활성",
-        warning: false,
-      },
-      {
-        key: "simulator",
-        label: "훈련장",
-        value: "훈련 모듈 활성",
-        warning: false,
-      },
-    ];
+    const selectedOperation =
+      operationCards.find((card) => card.key === activeHubDestination) ??
+      operationCards[0];
 
     return (
       <div className={styles.hubScene} aria-label="병기부 안내데스크">
@@ -1884,12 +1853,17 @@ export default function EquipmentShopClient({
               href={card.href}
               className={[
                 styles.hubHotspot,
-                styles[`hubHotspot--${card.key}`],
+                card.key === selectedOperation.key
+                  ? styles["hubHotspot--active"]
+                  : "",
                 card.warning ? styles["hubHotspot--warning"] : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
               onClick={(event) => handleZoneLinkClick(event, card.href)}
+              onMouseEnter={() => setActiveHubDestination(card.key)}
+              onFocus={() => setActiveHubDestination(card.key)}
+              aria-describedby="hub-destination-description"
             >
               <span className={styles.hubHotspot__pin} aria-hidden>
                 <ArmoryZoneIcon zone={card.iconKey} />
@@ -1903,29 +1877,41 @@ export default function EquipmentShopClient({
           ))}
         </nav>
 
-        <aside className={styles.hubDeskConsole} aria-label="아메리 안내 패널">
-          <div>
-            <Eyebrow>AMERY / INFORMATION</Eyebrow>
-            <strong>병기부 접수 상태</strong>
-            <p>
-              연구, 반출, 제작, 시험 구역의 대기열을 확인했습니다.
-            </p>
+        <aside
+          className={styles.hubDeskConsole}
+          aria-label="선택 구역 안내"
+        >
+          <div className={styles.hubDeskConsole__summary}>
+            <span className={styles.hubDeskConsole__icon} aria-hidden>
+              <ArmoryZoneIcon zone={selectedOperation.iconKey} />
+            </span>
+            <div>
+              <Eyebrow>{selectedOperation.eyebrow}</Eyebrow>
+              <strong>{selectedOperation.title}</strong>
+              <p id="hub-destination-description">{selectedOperation.detail}</p>
+            </div>
           </div>
-          <div className={styles.hubAlertList}>
-            {systemAlerts.map((alert) => (
-              <div
-                key={alert.key}
-                className={[
-                  styles.hubAlert,
-                  alert.warning ? styles["hubAlert--warning"] : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                <span>{alert.label}</span>
-                <strong>{alert.value}</strong>
-              </div>
-            ))}
+          <div className={styles.hubDeskConsole__action}>
+            <span>현재 상태</span>
+            <strong
+              className={
+                selectedOperation.warning
+                  ? styles["hubDeskConsole__status--warning"]
+                  : ""
+              }
+            >
+              {selectedOperation.status}
+            </strong>
+            <Link
+              href={selectedOperation.href}
+              className={styles.hubDeskConsole__link}
+              onClick={(event) =>
+                handleZoneLinkClick(event, selectedOperation.href)
+              }
+            >
+              구역 열기
+              <span aria-hidden>→</span>
+            </Link>
           </div>
         </aside>
       </div>
