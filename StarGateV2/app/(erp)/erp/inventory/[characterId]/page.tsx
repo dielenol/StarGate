@@ -6,13 +6,15 @@ import type {
   SharedInventory,
 } from "@/types/inventory";
 
-import { auth } from "@/lib/auth/config";
+import { canViewPersonalInventory } from "@/lib/auth/access-policy";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { findCharacterById } from "@/lib/db/characters";
 import {
   listCharacterInventory,
   listMasterItems,
   listSharedInventory,
 } from "@/lib/db/inventory";
+import { isValidObjectId } from "@/lib/db/utils";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
 
@@ -26,16 +28,28 @@ interface CharacterInventoryPageProps {
 export default async function CharacterInventoryPage({
   params,
 }: CharacterInventoryPageProps) {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");
   }
 
   const { characterId } = await params;
+  if (!isValidObjectId(characterId)) {
+    notFound();
+  }
 
   const character = await findCharacterById(characterId);
   if (!character) {
+    notFound();
+  }
+  if (
+    !canViewPersonalInventory(
+      session.user.id,
+      session.user.role,
+      character,
+    )
+  ) {
     notFound();
   }
 

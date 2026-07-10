@@ -92,7 +92,6 @@ export default async function SessionsPage() {
       initialMonth={month}
       guildId={guildId}
       initialUpcoming={initialUpcoming}
-      currentUserDiscordId={session.user.discordId}
       canCreateReport={hasRole(session.user.role, "V")}
       trpgWebBaseUrl={getTrpgWebBaseUrl()}
     />

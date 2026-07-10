@@ -9,8 +9,19 @@
 export function safeCallbackUrl(raw: string | null | undefined): string {
   if (!raw) return "/erp";
   if (typeof raw !== "string") return "/erp";
-  if (!raw.startsWith("/")) return "/erp"; // protocol-relative / absolute 차단
-  if (raw.startsWith("//")) return "/erp"; // network-path 차단
-  if (raw === "/erp" || raw.startsWith("/erp/")) return raw;
-  return "/erp";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/erp";
+
+  try {
+    // WHATWG URL은 역슬래시를 슬래시로 정규화하므로, 검증 전에 거부한다.
+    if (raw.includes("\\")) return "/erp";
+    const base = new URL("https://stargate.invalid");
+    const parsed = new URL(raw, base);
+    if (parsed.origin !== base.origin) return "/erp";
+    if (parsed.pathname !== "/erp" && !parsed.pathname.startsWith("/erp/")) {
+      return "/erp";
+    }
+    return `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return "/erp";
+  }
 }

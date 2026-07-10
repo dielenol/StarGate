@@ -19,6 +19,7 @@
   white-space: nowrap;
   flex-shrink: 0;
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  text-decoration: none;
 }
 .ghostBtn {
   color: var(--ink-1);

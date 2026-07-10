@@ -11,10 +11,10 @@ import type { ResponseStatus, SessionStatus } from "@/types/session";
  * codename 은 서버 enrich 실패(미연결 유저 등) 시 undefined 일 수 있다.
  */
 export interface SerializedSessionParticipant {
-  userId: string;
   status: ResponseStatus;
   displayName: string;
   codename?: string;
+  isMe?: boolean;
 }
 
 /**
@@ -35,11 +35,7 @@ export interface SerializedSession {
   title: string;
   targetDateTime: string;
   closeDateTime: string;
-  targetRoleId: string;
   status: SessionStatus;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
   /** 응답자 목록 (YES/NO 전부) */
   participants: SerializedSessionParticipant[];
   /** 응답 상태별 카운트 */

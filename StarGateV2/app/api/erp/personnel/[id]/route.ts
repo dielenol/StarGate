@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth/config";
+import { canViewCharacter } from "@/lib/auth/access-policy";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { findCharacterById } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
 import {
@@ -13,7 +14,7 @@ interface RouteContext {
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -25,7 +26,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   try {
     const character = await findCharacterById(id);
-    if (!character) {
+    if (!character || !canViewCharacter(session.user.role, character)) {
       return NextResponse.json(
         { error: "캐릭터를 찾을 수 없습니다." },
         { status: 404 },

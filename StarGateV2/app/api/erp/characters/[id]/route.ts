@@ -10,7 +10,8 @@ import {
   loreSheetSchema,
 } from "@stargate/shared-db";
 
-import { auth } from "@/lib/auth/config";
+import { canViewCharacter } from "@/lib/auth/access-policy";
+import { getActiveSession } from "@/lib/auth/active-session";
 import {
   canEditLore,
   canEditPlay,
@@ -32,7 +33,7 @@ interface RouteContext {
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -44,7 +45,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   try {
     const character = await findCharacterById(id);
-    if (!character) {
+    if (!character || !canViewCharacter(session.user.role, character)) {
       return NextResponse.json(
         { error: "캐릭터를 찾을 수 없습니다." },
         { status: 404 },
@@ -127,7 +128,7 @@ function sanitizeClearanceOverrides(input: unknown): Record<string, string> | nu
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -144,7 +145,11 @@ export async function PATCH(request: Request, context: RouteContext) {
     session.user.role,
     before ?? { type: "AGENT", ownerId: null },
   );
-  if (!before || loreDecision.mode === "none") {
+  if (
+    !before ||
+    !canViewCharacter(session.user.role, before) ||
+    loreDecision.mode === "none"
+  ) {
     if (before && loreDecision.mode === "none") {
       console.warn(
         `[characters PATCH] denied user=${session.user.id} character=${id} reason=${loreDecision.reason}`,
@@ -304,7 +309,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

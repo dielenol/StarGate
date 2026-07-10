@@ -24,7 +24,9 @@ export function proxy(request: NextRequest) {
 
   if (!hasSession) {
     const loginUrl = new URL("/login", request.url);
-    const next = safeCallbackUrl(request.nextUrl.pathname);
+    const next = safeCallbackUrl(
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    );
     // 디폴트 폴백("/erp")인 경우는 query 생략 — login page 도 동일 디폴트.
     if (next !== "/erp") {
       loginUrl.searchParams.set("callbackUrl", next);

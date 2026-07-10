@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import type { CreateInventoryInput } from "@/types/inventory";
 
-import { auth } from "@/lib/auth/config";
+import { canViewPersonalInventory } from "@/lib/auth/access-policy";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { requireRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
@@ -17,7 +18,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ characterId: string }> },
 ) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -28,6 +29,21 @@ export async function GET(
   }
 
   try {
+    const character = await findCharacterById(characterId);
+    if (
+      !character ||
+      !canViewPersonalInventory(
+        session.user.id,
+        session.user.role,
+        character,
+      )
+    ) {
+      return NextResponse.json(
+        { error: "캐릭터를 찾을 수 없습니다." },
+        { status: 404 },
+      );
+    }
+
     const inventory = await listCharacterInventory(characterId);
     return NextResponse.json({ inventory });
   } catch (err) {
@@ -41,7 +57,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ characterId: string }> },
 ) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

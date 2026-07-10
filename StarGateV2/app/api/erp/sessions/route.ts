@@ -1,20 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth/config";
-import { requireRole } from "@/lib/auth/rbac";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { findMergedSessionsByGuildInMonth } from "@/lib/db/sessions";
 
 // 단일 길드 전제. 다중 길드 확장 시 세션 유저의 소속 길드 화이트리스트 검증 추가.
 export async function GET(request: Request) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
-    requireRole(session.user.role, "G");
-  } catch {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const guildId = process.env.GUILD_ID;

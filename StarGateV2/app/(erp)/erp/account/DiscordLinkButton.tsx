@@ -1,7 +1,3 @@
-"use client";
-
-import { signIn } from "next-auth/react";
-
 import styles from "./DiscordLinkButton.module.css";
 
 interface Props {
@@ -18,22 +14,17 @@ export default function DiscordLinkButton({
   variant = "primary",
   children,
 }: Props) {
-  function handleClick() {
-    signIn("discord", { callbackUrl: "/erp/account" });
-  }
-
   const label =
     children ?? (variant === "ghost" ? "다시 연동" : "Discord 연동");
 
   return (
-    <button
-      type="button"
+    <a
+      href="/api/erp/account/discord/link/start"
       className={
         variant === "primary" ? styles.primaryBtn : styles.ghostBtn
       }
-      onClick={handleClick}
     >
       {label}
-    </button>
+    </a>
   );
 }

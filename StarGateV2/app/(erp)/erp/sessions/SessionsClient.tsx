@@ -57,8 +57,6 @@ interface SessionsClientProps {
   initialMonth: number;
   guildId: string;
   initialUpcoming: UpcomingSessionLink[];
-  /** 현재 로그인 유저 discord id — 응답 참여자 목록에서 본인 강조용. 미연결 유저는 null. */
-  currentUserDiscordId: string | null;
   /** 작전 보고서 작성 권한 — V 이상. */
   canCreateReport: boolean;
   /**
@@ -95,7 +93,6 @@ export default function SessionsClient({
   initialMonth,
   guildId,
   initialUpcoming,
-  currentUserDiscordId,
   canCreateReport,
   trpgWebBaseUrl,
 }: SessionsClientProps) {
@@ -378,7 +375,7 @@ export default function SessionsClient({
           .filter(Boolean)
           .join(" ")}
       >
-        <main>
+        <section aria-label="세션 조회 결과">
           {view === "calendar" ? (
             <SessionCalendar
               sessions={querySessions}
@@ -398,12 +395,11 @@ export default function SessionsClient({
               month={month}
               expandedId={listExpandedId}
               onExpandedChange={setListExpandedId}
-              currentUserDiscordId={currentUserDiscordId}
               canCreateReport={canCreateReport}
               trpgWebBaseUrl={trpgWebBaseUrl}
             />
           ) : null}
-        </main>
+        </section>
 
         {view !== "calendar" ? (
           <SessionsRail
@@ -504,7 +500,6 @@ interface SessionsListProps {
   month: number;
   expandedId: string | null;
   onExpandedChange: (next: string | null) => void;
-  currentUserDiscordId: string | null;
   canCreateReport: boolean;
   trpgWebBaseUrl: string | null;
 }
@@ -515,7 +510,6 @@ function SessionsList({
   month,
   expandedId,
   onExpandedChange,
-  currentUserDiscordId,
   canCreateReport,
   trpgWebBaseUrl,
 }: SessionsListProps) {
@@ -591,7 +585,6 @@ function SessionsList({
               onToggle={() =>
                 onExpandedChange(expandedId === s._id ? null : s._id)
               }
-              currentUserDiscordId={currentUserDiscordId}
               canCreateReport={canCreateReport}
               trpgWebBaseUrl={trpgWebBaseUrl}
             />
@@ -606,7 +599,6 @@ interface SessionsListItemProps {
   session: SerializedSession;
   expanded: boolean;
   onToggle: () => void;
-  currentUserDiscordId: string | null;
   canCreateReport: boolean;
   trpgWebBaseUrl: string | null;
 }
@@ -615,7 +607,6 @@ function SessionsListItem({
   session: s,
   expanded,
   onToggle,
-  currentUserDiscordId,
   canCreateReport,
   trpgWebBaseUrl,
 }: SessionsListItemProps) {
@@ -736,7 +727,6 @@ function SessionsListItem({
             <ParticipantGroup
               label={isTrpg ? "참가자" : "응답 참여자"}
               items={yesParticipants}
-              currentUserDiscordId={currentUserDiscordId}
             />
           </div>
 
@@ -788,13 +778,11 @@ function SessionsListItem({
 interface ParticipantGroupProps {
   label: string;
   items: SerializedSessionParticipant[];
-  currentUserDiscordId: string | null;
 }
 
 function ParticipantGroup({
   label,
   items,
-  currentUserDiscordId,
 }: ParticipantGroupProps) {
   return (
     <div className={styles.listParticipants__group}>
@@ -806,10 +794,8 @@ function ParticipantGroup({
         <div className={styles.listParticipants__empty}>—</div>
       ) : (
         <ul className={styles.listParticipants__list}>
-          {items.map((p) => {
-            const isMe =
-              currentUserDiscordId !== null &&
-              p.userId === currentUserDiscordId;
+          {items.map((p, index) => {
+            const isMe = p.isMe === true;
             const itemCls = [
               styles.listParticipants__item,
               isMe ? styles["listParticipants__item--me"] : "",
@@ -817,7 +803,7 @@ function ParticipantGroup({
               .filter(Boolean)
               .join(" ");
             return (
-              <li key={p.userId} className={itemCls}>
+              <li key={`${p.displayName}:${p.codename ?? ""}:${index}`} className={itemCls}>
                 <span className={styles.listParticipants__name}>
                   {p.displayName}
                 </span>

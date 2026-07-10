@@ -12,6 +12,7 @@ import DiscordProvider from "next-auth/providers/discord";
 import {
   findUserByUsername,
   findUserByDiscordId,
+  findUserById,
   upsertDiscordUser,
   verifyPassword,
   updateLastLogin,
@@ -147,6 +148,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.displayName = user.displayName;
         token.role = user.role;
         token.discordId = user.discordId;
+        token.active = true;
+      } else if (typeof token.id === "string") {
+        // JWT role/status는 로그인 시점 스냅샷이므로 매 요청에서 DB 최신값으로 갱신한다.
+        // 정지·삭제·강등은 다음 auth() 호출부터 즉시 반영된다.
+        const dbUser = await findUserById(token.id);
+        if (!dbUser || dbUser.status !== "ACTIVE") {
+          delete token.id;
+          delete token.username;
+          delete token.displayName;
+          delete token.role;
+          delete token.discordId;
+          token.active = false;
+          return token;
+        }
+
+        token.username = dbUser.username;
+        token.displayName = dbUser.displayName;
+        token.role = dbUser.role;
+        token.discordId = dbUser.discordId;
+        token.active = true;
       }
       return token;
     },
@@ -156,12 +177,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // 모듈 augmentation 으로 추가한 필드도 키 접근 시 unknown 으로 떨어진다.
       // 빈 토큰(이전 세션 잔재)이면 즉시 반환 — 캐스팅 대신 명시적 가드.
       if (
+        token.active === false ||
         typeof token.id !== "string" ||
         typeof token.username !== "string" ||
         typeof token.displayName !== "string" ||
         typeof token.role !== "string"
       ) {
-        return session;
+        return { ...session, user: undefined } as unknown as typeof session;
       }
       session.user = {
         ...session.user,

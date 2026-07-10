@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
+
 import { notifyApplySubmission } from "@/lib/discord";
+import { getFeatureClosedBody, isPublicIntakeOpen } from "@/lib/public-intake";
 import { validateApplyForm, type ApplyFormInput } from "@/lib/validators";
 
 const BAD_REQUEST_MESSAGE = "기록 양식이 올바르지 않습니다.";
 const SERVER_ERROR_MESSAGE = "심사 기록 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 
 export async function POST(request: Request) {
+  if (!isPublicIntakeOpen("apply")) {
+    return NextResponse.json(getFeatureClosedBody("apply"), { status: 410 });
+  }
+
   let payload: ApplyFormInput;
 
   try {

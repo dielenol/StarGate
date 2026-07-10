@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 
 /**
@@ -13,7 +13,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) redirect("/login");
   if (!hasRole(session.user.role, "GM")) redirect("/erp");
   return <>{children}</>;

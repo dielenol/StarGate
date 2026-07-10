@@ -20,6 +20,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { canEditLore } from "../rbac.ts";
+import { canViewCharacter } from "../access-policy.ts";
 import {
   ADMIN_ALLOWED_CHARACTER_FIELDS,
   PLAYER_ALLOWED_CHARACTER_FIELDS,
@@ -46,7 +47,11 @@ function decidePatchResponse({ session, character, idValid }) {
   );
 
   // 4. character 미존재 또는 mode === 'none' → 통합 404 (oracle 차단)
-  if (!character || decision.mode === "none") {
+  if (
+    !character ||
+    !canViewCharacter(session.user.role, character) ||
+    decision.mode === "none"
+  ) {
     return { status: 404 };
   }
 
@@ -59,7 +64,11 @@ function decidePatchResponse({ session, character, idValid }) {
 }
 
 const validSession = (id, role) => ({ user: { id, role } });
-const charDoc = (ownerId, type = "AGENT") => ({ type, ownerId });
+const charDoc = (ownerId, type = "AGENT", isPublic = true) => ({
+  type,
+  ownerId,
+  isPublic,
+});
 
 /* ────────────────────────────────────────────────────────────────────── */
 /* S2: PATCH 라우트 응답 정합성                                            */
@@ -164,6 +173,34 @@ test("S2-9: 응답에 reason 노출 안 됨 (route handler 응답 스키마 미�
   assert.equal(res.status, 404);
   assert.equal("reason" in res, false, "응답에 reason 노출 금지");
   assert.equal("mode" in res, false, "404 응답에 mode 노출 금지");
+});
+
+test("S2-10: 비공개 캐릭터 PATCH는 GM만 허용한다", () => {
+  const privateCharacter = charDoc("owner", "AGENT", false);
+  assert.equal(
+    decidePatchResponse({
+      session: validSession("owner", "U"),
+      character: privateCharacter,
+      idValid: true,
+    }).status,
+    404,
+  );
+  assert.equal(
+    decidePatchResponse({
+      session: validSession("v-user", "V"),
+      character: privateCharacter,
+      idValid: true,
+    }).status,
+    404,
+  );
+  assert.equal(
+    decidePatchResponse({
+      session: validSession("gm-user", "GM"),
+      character: privateCharacter,
+      idValid: true,
+    }).status,
+    200,
+  );
 });
 
 /* ────────────────────────────────────────────────────────────────────── */

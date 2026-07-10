@@ -2,7 +2,8 @@ import { notFound, redirect } from "next/navigation";
 
 import type { AgentCharacter } from "@/types/character";
 
-import { auth } from "@/lib/auth/config";
+import { canViewCharacter } from "@/lib/auth/access-policy";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { canEditLore, hasRole, isCharacterOwner } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
@@ -15,7 +16,7 @@ interface PageProps {
 }
 
 export default async function CharacterDetailPage({ params }: PageProps) {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");
@@ -26,6 +27,10 @@ export default async function CharacterDetailPage({ params }: PageProps) {
   const character = await findCharacterById(id);
 
   if (!character) {
+    notFound();
+  }
+
+  if (!canViewCharacter(session.user.role, character)) {
     notFound();
   }
 

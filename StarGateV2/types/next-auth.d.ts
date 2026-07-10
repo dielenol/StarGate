@@ -25,10 +25,11 @@ declare module "next-auth" {
 
 declare module "@auth/core/jwt" {
   interface JWT {
-    id: string;
-    username: string;
-    displayName: string;
-    role: UserRole;
-    discordId: string | null;
+    active?: boolean;
+    id?: string;
+    username?: string;
+    displayName?: string;
+    role?: UserRole;
+    discordId?: string | null;
   }
 }

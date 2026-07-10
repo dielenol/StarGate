@@ -56,6 +56,7 @@ export interface EnrichedParticipant {
   status: ResponseStatus;
   displayName: string;
   codename?: string;
+  isMe?: boolean;
 }
 
 /** 세션 + 참여자/집계/myRsvp 가 부가된 enrich 형태 */
@@ -187,6 +188,7 @@ export async function enrichSessions(
         status: r.status,
         displayName,
         codename,
+        isMe: Boolean(viewerDiscordId && r.userId === viewerDiscordId),
       };
     });
 
@@ -233,12 +235,13 @@ function serializeEnrichedSessions(
     title: s.title,
     targetDateTime: safeIso(s.targetDateTime),
     closeDateTime: safeIso(s.closeDateTime),
-    targetRoleId: s.targetRoleId,
     status: s.status,
-    createdBy: s.createdBy,
-    createdAt: safeIso(s.createdAt),
-    updatedAt: safeIso(s.updatedAt),
-    participants,
+    participants: participants.map(({ status, displayName, codename, isMe }) => ({
+      status,
+      displayName,
+      ...(codename ? { codename } : {}),
+      ...(isMe ? { isMe: true } : {}),
+    })),
     counts,
     myRsvp,
     source: "registra" as const,

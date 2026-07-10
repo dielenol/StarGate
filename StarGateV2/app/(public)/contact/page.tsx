@@ -1,8 +1,12 @@
 import RecruitmentClosedPanel from "../_components/recruitment-closed/RecruitmentClosedPanel";
 
+import { PUBLIC_INTAKE_CONFIG } from "@/lib/public-intake";
+
 import frameStyles from "../page.module.css";
 
 export default function ContactPage() {
+  const intake = PUBLIC_INTAKE_CONFIG.contact;
+
   return (
     <main className={frameStyles["stargate-page"]}>
       <div className={frameStyles.stargate}>
@@ -13,7 +17,7 @@ export default function ContactPage() {
             dossierRows={[
               { k: "DOSSIER", v: "#04 · CLASSIFIED-INQUIRY" },
               { k: "STATUS", v: "SEALED · 창구 폐쇄", status: true },
-              { k: "SEALED AT", v: "2026 · 04 · 24 · 23:59 KST" },
+              { k: "SEALED AT", v: intake.sealedAtLabel },
               { k: "AUTHORITY", v: "OPS · COMMAND" },
             ]}
             dossierNote={

@@ -178,6 +178,7 @@ export async function fetchTrpgSessionsAsSerialized(
         status: "YES" as const,
         displayName,
         codename: getParticipantCodenameOverride(displayName),
+        isMe: id === viewerDiscordId,
       };
     });
 
@@ -189,20 +190,19 @@ export async function fetchTrpgSessionsAsSerialized(
     serialized.push({
       _id: raw._id?.toString() ?? "",
       guildId: raw.guildId,
-      // trpg 모델에는 디스코드 공지 채널/메시지 개념이 없다 — 클라이언트에서
-      // source === "trpg" 분기로 buildDiscordLink 자체를 호출하지 않는다.
       channelId: "",
       messageId: "",
-      targetRoleId: "",
       title: raw.title,
       targetDateTime: targetIso,
       // close 시점이 모델에 없음 — 빈 문자열. _utils.formatDuration 은 NaN 으로 빈값 반환.
       closeDateTime: "",
       status: mappedStatus,
-      createdBy: raw.createdByDiscordId,
-      createdAt: raw.createdAt.toISOString(),
-      updatedAt: raw.updatedAt.toISOString(),
-      participants,
+      participants: participants.map(({ status, displayName, codename, isMe }) => ({
+        status,
+        displayName,
+        ...(codename ? { codename } : {}),
+        ...(isMe ? { isMe: true } : {}),
+      })),
       counts: {
         yes: raw.participantDiscordIds.length,
         no: 0,

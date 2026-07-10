@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 
 import SessionWrapper from "@/components/erp/SessionWrapper";
@@ -25,7 +25,7 @@ export default async function ERPLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");
