@@ -127,7 +127,7 @@ const SUTURE_MOOD_ASSETS: Record<SutureMood, string> = {
   funding: "/assets/npcs/Irena-Vukovic-Suture-funding.webp",
   procedure: "/assets/npcs/Irena-Vukovic-Suture-procedure.webp",
   recovery: "/assets/npcs/Irena-Vukovic-Suture-recovery.webp",
-  blocked: "/assets/npcs/Irena-Vukovic-Suture-blocked.webp",
+  blocked: "/assets/npcs/Irena-Vukovic-Suture-blocked.webp?v=clean-stop-2",
   idle: "/assets/npcs/Irena-Vukovic-Suture-idle.webp",
 };
 
