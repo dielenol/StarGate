@@ -115,6 +115,17 @@ const TOWASKI_IDLE_DELAY_MS = 12000;
 const SUTURE_PROFILE_SRC = "/assets/npcs/Irena-Vukovic-Suture-profile.webp";
 const SUTURE_IDLE_DELAY_MS = 14000;
 
+const SUTURE_MOOD_ASSETS: Record<SutureMood, string> = {
+  welcome: "/assets/npcs/Irena-Vukovic-Suture-welcome.webp",
+  assessment: "/assets/npcs/Irena-Vukovic-Suture-assessment.webp",
+  protocol: "/assets/npcs/Irena-Vukovic-Suture-protocol.webp",
+  funding: "/assets/npcs/Irena-Vukovic-Suture-funding.webp",
+  procedure: "/assets/npcs/Irena-Vukovic-Suture-procedure.webp",
+  recovery: "/assets/npcs/Irena-Vukovic-Suture-recovery.webp",
+  blocked: "/assets/npcs/Irena-Vukovic-Suture-blocked.webp",
+  idle: "/assets/npcs/Irena-Vukovic-Suture-idle.webp",
+};
+
 const TOWASKI_DEBUG_MODES: readonly {
   value: TowaskiDebugMode;
   label: string;
@@ -1397,6 +1408,8 @@ export default function EquipmentShopClient({
     entrySfxSrc: null,
     entrySfxVolume: 0,
   });
+  const suturePortraitSrc =
+    SUTURE_MOOD_ASSETS[sutureMood] ?? SUTURE_PROFILE_SRC;
   const handleTowaskiQualificationDialogue = useCallback(
     (event: TowaskiQualificationDialogueEvent) => {
       clearTowaskiIdleTimer();
@@ -3569,7 +3582,7 @@ export default function EquipmentShopClient({
                 />
               ) : activeZone === "lab" ? (
                 <Image
-                  src={SUTURE_PROFILE_SRC}
+                  src={suturePortraitSrc}
                   alt=""
                   fill
                   sizes="148px"
