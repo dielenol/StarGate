@@ -19,6 +19,45 @@ test("passes a clean basic firearm qualification result", () => {
   assert.equal(result.accuracy, 0.8);
 });
 
+test("basic difficulty accepts an introductory six-hit result", () => {
+  const basic = evaluateTowaskiBasicLicenseTest(
+    {
+      hostileHits: 6,
+      civilianHits: 0,
+      shots: 10,
+      durationMs: 12_000,
+    },
+    "basic",
+  );
+  const standard = evaluateTowaskiBasicLicenseTest(
+    {
+      hostileHits: 6,
+      civilianHits: 0,
+      shots: 10,
+      durationMs: 12_000,
+    },
+    "standard",
+  );
+
+  assert.equal(basic.passed, true);
+  assert.equal(standard.passed, false);
+});
+
+test("expert difficulty requires all hostile targets and eighty percent accuracy", () => {
+  const result = evaluateTowaskiBasicLicenseTest(
+    {
+      hostileHits: 9,
+      civilianHits: 0,
+      shots: 10,
+      durationMs: 8_000,
+    },
+    "expert",
+  );
+
+  assert.equal(result.passed, false);
+  assert.deepEqual(result.reasons, ["hostile_hits"]);
+});
+
 test("fails when a civilian target is hit", () => {
   const result = evaluateTowaskiBasicLicenseTest({
     hostileHits: 10,
@@ -69,7 +108,25 @@ test("requires a server-issued challenge protocol instead of final client scores
   );
   assert.deepEqual(parseTowaskiLicenseTestRequest({ action: "start" }), {
     action: "start",
+    difficulty: "basic",
   });
+  assert.deepEqual(
+    parseTowaskiLicenseTestRequest({
+      action: "start",
+      difficulty: "expert",
+    }),
+    {
+      action: "start",
+      difficulty: "expert",
+    },
+  );
+  assert.equal(
+    parseTowaskiLicenseTestRequest({
+      action: "start",
+      difficulty: "impossible",
+    }),
+    null,
+  );
 });
 
 test("accepts only bounded round resolution events", () => {
@@ -98,5 +155,22 @@ test("accepts only bounded round resolution events", () => {
       shots: 0,
     }),
     null,
+  );
+  assert.deepEqual(
+    parseTowaskiLicenseTestRequest({
+      action: "resolve",
+      challengeId: "challenge-id",
+      round: 4,
+      hit: true,
+      shots: 1,
+      difficulty: "basic",
+    }),
+    {
+      action: "resolve",
+      challengeId: "challenge-id",
+      round: 4,
+      hit: true,
+      shots: 1,
+    },
   );
 });

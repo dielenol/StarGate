@@ -45,6 +45,23 @@ test("license inventory grant and redeemed transition share one transaction", as
   assert.match(route, /if \(!redeemed\)[\s\S]*LICENSE_TEST_CONFLICT/);
 });
 
+test("license difficulty is fixed on the server challenge", async () => {
+  const [route, challengeDb] = await Promise.all([
+    readFile(LICENSE_ROUTE, "utf8"),
+    readFile(CHALLENGE_DB, "utf8"),
+  ]);
+
+  assert.match(challengeDb, /difficulty: args\.difficulty/);
+  assert.match(
+    challengeDb,
+    /getTowaskiLicenseTestRules\([\s\S]*challenge\.difficulty \?\? "standard"/,
+  );
+  assert.match(
+    route,
+    /evaluateTowaskiBasicLicenseTest\([\s\S]*challenge\.difficulty \?\? "standard"/,
+  );
+});
+
 test("equipment checkout serializes inventory and rejects owned licenses", async () => {
   const [checkout, inventory] = await Promise.all([
     readFile(CHECKOUT_ROUTE, "utf8"),

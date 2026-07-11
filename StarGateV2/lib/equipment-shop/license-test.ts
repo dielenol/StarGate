@@ -1,21 +1,78 @@
 export const TOWASKI_BASIC_FIREARM_LICENSE_SLUG =
   "towaski-license-basic-firearm" as const;
 
-export const TOWASKI_BASIC_LICENSE_TEST_RULES = {
+const COMMON_LICENSE_TEST_RULES = {
   hostileTargets: 10,
   civilianTargets: 2,
-  requiredHostileHits: 8,
   maxCivilianHits: 0,
-  minAccuracy: 0.6,
   maxShots: 24,
   maxShotsPerRound: 3,
   minDurationMs: 3_000,
   maxDurationMs: 60_000,
-  minHitReactionMs: 120,
-  minMissWindowMs: 700,
   maxRoundDurationMs: 5_000,
   challengeTtlMs: 120_000,
 } as const;
+
+export const TOWASKI_LICENSE_TEST_DIFFICULTIES = {
+  basic: {
+    ...COMMON_LICENSE_TEST_RULES,
+    label: "기초",
+    description: "넓은 표적과 여유 있는 판정 시간",
+    requiredHostileHits: 6,
+    minAccuracy: 0.5,
+    minHitReactionMs: 120,
+    minMissWindowMs: 1_200,
+    targetWindowMs: 1_800,
+    targetScale: 1.15,
+  },
+  standard: {
+    ...COMMON_LICENSE_TEST_RULES,
+    label: "표준",
+    description: "기존 자격시험 기준",
+    requiredHostileHits: 8,
+    minAccuracy: 0.6,
+    minHitReactionMs: 120,
+    minMissWindowMs: 700,
+    targetWindowMs: 950,
+    targetScale: 1,
+  },
+  expert: {
+    ...COMMON_LICENSE_TEST_RULES,
+    label: "숙련",
+    description: "빠른 식별과 정밀 사격",
+    requiredHostileHits: 10,
+    minAccuracy: 0.8,
+    minHitReactionMs: 120,
+    minMissWindowMs: 500,
+    targetWindowMs: 700,
+    targetScale: 0.9,
+  },
+} as const;
+
+export type TowaskiLicenseTestDifficulty =
+  keyof typeof TOWASKI_LICENSE_TEST_DIFFICULTIES;
+
+export function isTowaskiLicenseTestDifficulty(
+  value: unknown,
+): value is TowaskiLicenseTestDifficulty {
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(
+      TOWASKI_LICENSE_TEST_DIFFICULTIES,
+      value,
+    )
+  );
+}
+
+export function getTowaskiLicenseTestRules(
+  difficulty: TowaskiLicenseTestDifficulty,
+) {
+  return TOWASKI_LICENSE_TEST_DIFFICULTIES[difficulty];
+}
+
+// 기존 진행 중 challenge는 배포 전 기준인 표준 난이도로 판정한다.
+export const TOWASKI_BASIC_LICENSE_TEST_RULES =
+  TOWASKI_LICENSE_TEST_DIFFICULTIES.standard;
 
 export type TowaskiLicenseTargetKind = "hostile" | "civilian";
 export type TowaskiLicenseTargetLane = "near" | "mid" | "far";
@@ -66,7 +123,7 @@ export interface TowaskiLicenseTestStats {
 }
 
 export type TowaskiLicenseTestRequest =
-  | { action: "start" }
+  | { action: "start"; difficulty: TowaskiLicenseTestDifficulty }
   | {
       action: "resolve";
       challengeId: string;
@@ -81,11 +138,13 @@ export type TowaskiLicenseTestResponse =
       challengeId: string;
       round: number;
       target: TowaskiLicenseTarget;
+      difficulty: TowaskiLicenseTestDifficulty;
       stats: TowaskiLicenseTestStats;
     }
   | {
       status: "failed";
       challengeId: string;
+      difficulty: TowaskiLicenseTestDifficulty;
       stats: TowaskiLicenseTestStats;
       evaluation: TowaskiBasicLicenseTestEvaluation;
     }
@@ -97,6 +156,7 @@ export type TowaskiLicenseTestResponse =
         label: string;
         effect: string;
       };
+      difficulty?: TowaskiLicenseTestDifficulty;
       evaluation?: TowaskiBasicLicenseTestEvaluation;
     };
 
@@ -105,7 +165,14 @@ export function parseTowaskiLicenseTestRequest(
 ): TowaskiLicenseTestRequest | null {
   if (!value || typeof value !== "object") return null;
   const body = value as Record<string, unknown>;
-  if (body.action === "start") return { action: "start" };
+  if (body.action === "start") {
+    if (body.difficulty === undefined) {
+      return { action: "start", difficulty: "basic" };
+    }
+    return isTowaskiLicenseTestDifficulty(body.difficulty)
+      ? { action: "start", difficulty: body.difficulty }
+      : null;
+  }
   if (
     body.action !== "resolve" ||
     typeof body.challengeId !== "string" ||
@@ -146,8 +213,9 @@ function isIntegerInRange(
 
 export function evaluateTowaskiBasicLicenseTest(
   value: unknown,
+  difficulty: TowaskiLicenseTestDifficulty = "standard",
 ): TowaskiBasicLicenseTestEvaluation {
-  const rules = TOWASKI_BASIC_LICENSE_TEST_RULES;
+  const rules = getTowaskiLicenseTestRules(difficulty);
   if (!value || typeof value !== "object") {
     return { valid: false, passed: false, accuracy: 0, reasons: ["invalid"] };
   }
@@ -185,6 +253,7 @@ const DEBUG_CIVILIAN_ROUNDS = new Set([3, 8]);
 
 export interface TowaskiDebugLicenseSession {
   challengeId: string;
+  difficulty: TowaskiLicenseTestDifficulty;
   round: number;
   startedAtMs: number;
   stats: TowaskiLicenseTestStats;
@@ -201,11 +270,13 @@ function debugActiveResponse(
     challengeId: session.challengeId,
     round: session.round,
     target,
+    difficulty: session.difficulty,
     stats: session.stats,
   };
 }
 
 export function startTowaskiDebugLicenseTest(
+  difficulty: TowaskiLicenseTestDifficulty = "basic",
   nowMs = Date.now(),
 ): {
   session: TowaskiDebugLicenseSession;
@@ -213,6 +284,7 @@ export function startTowaskiDebugLicenseTest(
 } {
   const session: TowaskiDebugLicenseSession = {
     challengeId: `towaski-debug-${nowMs}`,
+    difficulty,
     round: 0,
     startedAtMs: nowMs,
     stats: { hostileHits: 0, civilianHits: 0, shots: 0 },
@@ -236,7 +308,8 @@ export function resolveTowaskiDebugLicenseTest(
     input.challengeId !== session.challengeId ||
     input.round !== session.round ||
     input.shots < 0 ||
-    input.shots > TOWASKI_BASIC_LICENSE_TEST_RULES.maxShotsPerRound ||
+    input.shots >
+      getTowaskiLicenseTestRules(session.difficulty).maxShotsPerRound ||
     (input.hit && input.shots < 1)
   ) {
     throw new Error("DEBUG_LICENSE_STALE_ROUND");
@@ -264,16 +337,20 @@ export function resolveTowaskiDebugLicenseTest(
     return { session: nextSession, response: debugActiveResponse(nextSession) };
   }
 
-  const evaluation = evaluateTowaskiBasicLicenseTest({
-    ...stats,
-    durationMs: nowMs - session.startedAtMs,
-  });
+  const evaluation = evaluateTowaskiBasicLicenseTest(
+    {
+      ...stats,
+      durationMs: nowMs - session.startedAtMs,
+    },
+    session.difficulty,
+  );
   if (!evaluation.passed) {
     return {
       session: nextSession,
       response: {
         status: "failed",
         challengeId: session.challengeId,
+        difficulty: session.difficulty,
         stats,
         evaluation,
       },
@@ -284,6 +361,7 @@ export function resolveTowaskiDebugLicenseTest(
     session: nextSession,
     response: {
       status: "granted",
+      difficulty: session.difficulty,
       license: {
         slug: TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
         name: "토와스키 기본 화기 라이센스",

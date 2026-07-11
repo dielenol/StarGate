@@ -102,6 +102,52 @@
   line-height: 1.75;
 }
 
+.difficultySelector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 26px;
+  overflow: hidden;
+  border: 1px solid rgba(84, 203, 232, 0.42);
+  border-radius: 3px;
+  background: rgba(84, 203, 232, 0.18);
+}
+
+.difficultySelector button {
+  min-height: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  padding: 9px 12px;
+  border: 0;
+  background: #121a1c;
+  color: #aeb8b8;
+  cursor: pointer;
+}
+
+.difficultySelector button:hover,
+.difficultySelector button:focus-visible {
+  background: #1b292c;
+  color: #ffffff;
+  outline: none;
+}
+
+.difficultySelector button[data-active="true"] {
+  background: #275b66;
+  color: #ffffff;
+}
+
+.difficultySelector strong {
+  font-size: 16px;
+}
+
+.difficultySelector span {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+}
+
 .criteria {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -128,7 +174,8 @@
 }
 
 .startButton,
-.retryButton {
+.retryButton,
+.secondaryButton {
   min-height: 48px;
   padding: 0 24px;
   border: 1px solid #e0bd47;
@@ -147,12 +194,14 @@
 
 .startButton:focus-visible,
 .retryButton:focus-visible,
+.secondaryButton:focus-visible,
 .target:focus-visible {
   outline: 3px solid #54cbe8;
   outline-offset: 3px;
 }
 
 .range {
+  --difficulty-target-scale: 1;
   position: relative;
   min-height: 520px;
   aspect-ratio: 16 / 8.4;
@@ -288,6 +337,7 @@
 
 .target {
   --target-color: #a9292b;
+  --lane-scale: 1;
   position: absolute;
   z-index: 12;
   width: 92px;
@@ -297,13 +347,15 @@
   background: transparent;
   color: #ffffff;
   cursor: crosshair;
-  transform: translateY(0);
+  transform: scale(
+    calc(var(--lane-scale) * var(--difficulty-target-scale))
+  );
   animation: target-rise 150ms steps(3, end) both;
 }
 
-.target--far { transform: scale(0.74); transform-origin: bottom center; }
-.target--mid { transform: scale(0.88); transform-origin: bottom center; }
-.target--near { transform: scale(1); transform-origin: bottom center; }
+.target--far { --lane-scale: 0.74; transform-origin: bottom center; }
+.target--mid { --lane-scale: 0.88; transform-origin: bottom center; }
+.target--near { --lane-scale: 1; transform-origin: bottom center; }
 .target--civilian { --target-color: #27848d; }
 .target--resolved { filter: brightness(0.7); }
 
@@ -451,6 +503,22 @@
   font-size: 19px;
 }
 
+.resultActions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.secondaryButton {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #d5d8d6;
+}
+
+.secondaryButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 @keyframes target-rise {
   from { margin-top: 64px; opacity: 0; }
   to { margin-top: 0; opacity: 1; }
@@ -509,6 +577,7 @@
   }
 
   .criteria,
+  .difficultySelector,
   .resultStats {
     grid-template-columns: 1fr;
   }
@@ -516,6 +585,11 @@
   .criteria span,
   .resultStats span {
     min-height: 62px;
+  }
+
+  .resultActions {
+    width: 100%;
+    flex-direction: column;
   }
 
   .target {

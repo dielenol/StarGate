@@ -53,16 +53,20 @@ function activeResponse(
     challengeId,
     round: challenge.currentRound,
     target,
+    difficulty: challenge.difficulty ?? "standard",
     stats: challengeStats(challenge),
   };
 }
 
 function challengeEvaluation(challenge: TowaskiLicenseChallenge) {
   const completedAt = challenge.completedAt ?? new Date();
-  return evaluateTowaskiBasicLicenseTest({
-    ...challengeStats(challenge),
-    durationMs: completedAt.getTime() - challenge.startedAt.getTime(),
-  });
+  return evaluateTowaskiBasicLicenseTest(
+    {
+      ...challengeStats(challenge),
+      durationMs: completedAt.getTime() - challenge.startedAt.getTime(),
+    },
+    challenge.difficulty ?? "standard",
+  );
 }
 
 function challengeErrorResponse(error: TowaskiLicenseChallengeError) {
@@ -151,6 +155,7 @@ export async function POST(request: Request) {
           userId: session.user.id,
           characterId,
           characterCodename: mainCharacter.codename,
+          difficulty: body.difficulty,
         });
         const response = activeResponse(created);
         if (!response) throw new Error("첫 사격 표적 발급에 실패했습니다.");
@@ -217,6 +222,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       status: "failed",
       challengeId,
+      difficulty: challenge.difficulty ?? "standard",
       stats: challengeStats(challenge),
       evaluation,
     } satisfies TowaskiLicenseTestResponse);
@@ -292,6 +298,7 @@ export async function POST(request: Request) {
       {
         status: result.granted ? "granted" : "already_owned",
         license,
+        difficulty: challenge.difficulty ?? "standard",
         evaluation,
       } satisfies TowaskiLicenseTestResponse,
       { status: result.granted ? 201 : 200 },

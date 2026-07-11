@@ -8,9 +8,11 @@ import { ObjectId, type ClientSession, type Collection } from "mongodb";
 import "./init";
 
 import {
+  getTowaskiLicenseTestRules,
   TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
   TOWASKI_BASIC_LICENSE_TEST_RULES,
   TOWASKI_LICENSE_TARGET_LAYOUTS,
+  type TowaskiLicenseTestDifficulty,
   type TowaskiLicenseTarget,
 } from "@/lib/equipment-shop/license-test";
 
@@ -32,6 +34,7 @@ export interface TowaskiLicenseChallenge {
   characterId: string;
   characterCodename: string;
   licenseSlug: typeof TOWASKI_BASIC_FIREARM_LICENSE_SLUG;
+  difficulty?: TowaskiLicenseTestDifficulty;
   sequence: TowaskiLicenseTarget[];
   currentRound: number;
   hostileHits: number;
@@ -119,6 +122,7 @@ export async function createTowaskiLicenseChallenge(args: {
   userId: string;
   characterId: string;
   characterCodename: string;
+  difficulty: TowaskiLicenseTestDifficulty;
 }): Promise<TowaskiLicenseChallenge> {
   const collection = await challengeCollection();
   const now = new Date();
@@ -136,6 +140,7 @@ export async function createTowaskiLicenseChallenge(args: {
     characterId: args.characterId,
     characterCodename: args.characterCodename,
     licenseSlug: TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+    difficulty: args.difficulty,
     sequence: createTargetSequence(),
     currentRound: 0,
     hostileHits: 0,
@@ -183,6 +188,9 @@ export async function resolveTowaskiLicenseChallengeRound(args: {
     );
   }
   if (challenge.status !== "active") return challenge;
+  const rules = getTowaskiLicenseTestRules(
+    challenge.difficulty ?? "standard",
+  );
 
   const now = new Date();
   if (challenge.expiresAt.getTime() <= now.getTime()) {
@@ -205,7 +213,7 @@ export async function resolveTowaskiLicenseChallengeRound(args: {
   if (
     !Number.isInteger(args.shots) ||
     args.shots < 0 ||
-    args.shots > TOWASKI_BASIC_LICENSE_TEST_RULES.maxShotsPerRound ||
+    args.shots > rules.maxShotsPerRound ||
     (args.hit && args.shots < 1)
   ) {
     throw new TowaskiLicenseChallengeError(
@@ -218,11 +226,11 @@ export async function resolveTowaskiLicenseChallengeRound(args: {
   if (!target) return challenge;
   const elapsedMs = now.getTime() - challenge.roundStartedAt.getTime();
   const minElapsedMs = args.hit
-    ? TOWASKI_BASIC_LICENSE_TEST_RULES.minHitReactionMs
-    : TOWASKI_BASIC_LICENSE_TEST_RULES.minMissWindowMs;
+    ? rules.minHitReactionMs
+    : rules.minMissWindowMs;
   if (
     elapsedMs < minElapsedMs ||
-    elapsedMs > TOWASKI_BASIC_LICENSE_TEST_RULES.maxRoundDurationMs
+    elapsedMs > rules.maxRoundDurationMs
   ) {
     throw new TowaskiLicenseChallengeError(
       "LICENSE_TEST_TOO_FAST",

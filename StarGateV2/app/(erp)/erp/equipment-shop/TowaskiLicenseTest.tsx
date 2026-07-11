@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import {
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
@@ -13,12 +14,14 @@ import {
 import { useCompleteTowaskiLicenseTest } from "@/hooks/mutations/useEquipmentShopMutation";
 import { DialogueBeepEngine } from "@/lib/audio/dialogue-beep-engine";
 import {
+  getTowaskiLicenseTestRules,
   resolveTowaskiDebugLicenseTest,
   startTowaskiDebugLicenseTest,
-  TOWASKI_BASIC_LICENSE_TEST_RULES,
+  TOWASKI_LICENSE_TEST_DIFFICULTIES,
   TOWASKI_LICENSE_TARGET_LAYOUTS,
   type TowaskiBasicLicenseTestEvaluation,
   type TowaskiDebugLicenseSession,
+  type TowaskiLicenseTestDifficulty,
   type TowaskiLicenseTarget,
   type TowaskiLicenseTestRequest,
   type TowaskiLicenseTestResponse,
@@ -47,12 +50,11 @@ interface TestSubmissionCallbacks {
   onError: (error: Error) => void;
 }
 
-const TARGET_WINDOW_MS = 950;
-const HIT_ADVANCE_MS =
-  Math.ceil(
-    TOWASKI_BASIC_LICENSE_TEST_RULES.minDurationMs /
-      TOWASKI_LICENSE_TARGET_LAYOUTS.length,
-  ) + 20;
+const DIFFICULTY_ORDER: readonly TowaskiLicenseTestDifficulty[] = [
+  "basic",
+  "standard",
+  "expert",
+];
 const EMPTY_STATS: TowaskiLicenseTestStats = {
   hostileHits: 0,
   civilianHits: 0,
@@ -66,13 +68,14 @@ function formatAccuracy(hostileHits: number, shots: number): string {
 
 function failureMessage(
   evaluation: TowaskiBasicLicenseTestEvaluation | null,
+  requiredHostileHits: number,
 ): string {
   if (!evaluation) return "사격 기록 전송이 중단됐다. 다시 시험선을 잡아.";
   if (evaluation.reasons.includes("civilian_hit")) {
     return "민간 표적을 건드렸군. 방아쇠보다 식별이 먼저다. 다시.";
   }
   if (evaluation.reasons.includes("hostile_hits")) {
-    return "표적을 너무 많이 흘렸다. 여덟은 맞혀야 총을 내준다.";
+    return `표적을 너무 많이 흘렸다. 적어도 ${requiredHostileHits}개는 맞혀야 총을 내준다.`;
   }
   return "탄을 뿌리는 건 사격이 아니야. 명중률부터 다시 맞춰.";
 }
@@ -84,6 +87,8 @@ export default function TowaskiLicenseTest({
 }: TowaskiLicenseTestProps) {
   const { mutate: submitLiveTest } = useCompleteTowaskiLicenseTest();
   const [phase, setPhase] = useState<TestPhase>("briefing");
+  const [difficulty, setDifficulty] =
+    useState<TowaskiLicenseTestDifficulty>("basic");
   const [countdown, setCountdown] = useState(3);
   const [challenge, setChallenge] = useState<ActiveChallenge | null>(null);
   const [stats, setStats] = useState<TowaskiLicenseTestStats>(EMPTY_STATS);
@@ -101,7 +106,10 @@ export default function TowaskiLicenseTest({
   const roundShotsRef = useRef(0);
   const resolvingRef = useRef(false);
 
-  const rules = TOWASKI_BASIC_LICENSE_TEST_RULES;
+  const rules = getTowaskiLicenseTestRules(difficulty);
+  const hitAdvanceMs =
+    Math.ceil(rules.minDurationMs / TOWASKI_LICENSE_TARGET_LAYOUTS.length) +
+    20;
   const currentTarget = challenge?.target ?? null;
   const displayedShots = stats.shots + roundShots;
   const liveAccuracy = formatAccuracy(stats.hostileHits, displayedShots);
@@ -138,6 +146,7 @@ export default function TowaskiLicenseTest({
     (response: TowaskiLicenseTestResponse) => {
       resolvingRef.current = false;
       if (response.status === "active") {
+        setDifficulty(response.difficulty);
         setChallenge(response);
         setStats(response.stats);
         setRoundShots(0);
@@ -177,7 +186,7 @@ export default function TowaskiLicenseTest({
       debugTimerRef.current = setTimeout(() => {
         try {
           if (input.action === "start") {
-            const result = startTowaskiDebugLicenseTest();
+            const result = startTowaskiDebugLicenseTest(input.difficulty);
             debugSessionRef.current = result.session;
             callbacks.onSuccess(result.response);
             return;
@@ -204,19 +213,24 @@ export default function TowaskiLicenseTest({
   const startChallenge = useCallback(() => {
     setPhase("starting");
     submitTest(
-      { action: "start" },
+      { action: "start", difficulty },
       {
         onSuccess: handleResponse,
         onError: handleMutationError,
       },
     );
-  }, [handleMutationError, handleResponse, submitTest]);
+  }, [difficulty, handleMutationError, handleResponse, submitTest]);
 
   const beginTest = useCallback(() => {
     resetTest();
     setCountdown(3);
     setPhase("countdown");
     void audioRef.current?.prime();
+  }, [resetTest]);
+
+  const returnToBriefing = useCallback(() => {
+    resetTest();
+    setPhase("briefing");
   }, [resetTest]);
 
   useEffect(() => {
@@ -267,9 +281,9 @@ export default function TowaskiLicenseTest({
     if (phase !== "active" || !challenge) return;
     const timer = setTimeout(() => {
       resolveRound(false, roundShotsRef.current);
-    }, TARGET_WINDOW_MS);
+    }, rules.targetWindowMs);
     return () => clearTimeout(timer);
-  }, [challenge, phase, resolveRound]);
+  }, [challenge, phase, resolveRound, rules.targetWindowMs]);
 
   const handleRangePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -327,8 +341,8 @@ export default function TowaskiLicenseTest({
 
       advanceTimerRef.current = setTimeout(() => {
         resolveRound(true, nextShots);
-      }, HIT_ADVANCE_MS);
-    }, [phase, playShot, resolveRound, rules.maxShotsPerRound]);
+      }, hitAdvanceMs);
+    }, [hitAdvanceMs, phase, playShot, resolveRound, rules.maxShotsPerRound]);
 
   const resultStats = useMemo(
     () => [
@@ -364,12 +378,38 @@ export default function TowaskiLicenseTest({
             />
           </div>
           <div className={styles.briefingCopy}>
-            <span className={styles.statusLine}>LICENSE STATUS / NOT ISSUED</span>
+            <span className={styles.statusLine}>
+              LICENSE STATUS / NOT ISSUED / {rules.label}
+            </span>
             <h3>“기본 자격도 없이 진열장부터 보려고?”</h3>
             <p>
               사격선에 서. 적성 표적은 확실히 끊고, 민간 표적에는 손가락도
               걸지 마. 그 정도 식별도 안 되면 총은 못 내준다.
             </p>
+            <div
+              className={styles.difficultySelector}
+              role="group"
+              aria-label="사격시험 난이도"
+            >
+              {DIFFICULTY_ORDER.map((value) => {
+                const option = TOWASKI_LICENSE_TEST_DIFFICULTIES[value];
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    data-active={difficulty === value}
+                    aria-pressed={difficulty === value}
+                    onClick={() => setDifficulty(value)}
+                  >
+                    <strong>{option.label}</strong>
+                    <span>
+                      {(option.targetWindowMs / 1_000).toFixed(2)}초 · 적중{" "}
+                      {option.requiredHostileHits}/10
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
             <div className={styles.criteria} aria-label="합격 기준">
               <span>
                 적성 적중 <strong>{rules.requiredHostileHits} / {rules.hostileTargets}</strong>
@@ -390,7 +430,10 @@ export default function TowaskiLicenseTest({
         <div className={styles.resultPanel}>
           <span className={styles.resultCode}>QUALIFICATION / FAILED</span>
           <h3>반출 자격 미달</h3>
-          <p>{submissionError ?? failureMessage(lastEvaluation)}</p>
+          <p>
+            {submissionError ??
+              failureMessage(lastEvaluation, rules.requiredHostileHits)}
+          </p>
           <div className={styles.resultStats}>
             {resultStats.map((stat) => (
               <span key={stat.label}>
@@ -398,13 +441,31 @@ export default function TowaskiLicenseTest({
               </span>
             ))}
           </div>
-          <button type="button" className={styles.retryButton} onClick={beginTest}>
-            재시험 시작
-          </button>
+          <div className={styles.resultActions}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={returnToBriefing}
+            >
+              난이도 변경
+            </button>
+            <button
+              type="button"
+              className={styles.retryButton}
+              onClick={beginTest}
+            >
+              같은 난이도로 재시험
+            </button>
+          </div>
         </div>
       ) : (
         <div
-          className={styles.range}
+          className={[styles.range, styles[`range--${difficulty}`]].join(" ")}
+          style={
+            {
+              "--difficulty-target-scale": rules.targetScale,
+            } as CSSProperties
+          }
           onPointerMove={handleRangePointerMove}
           onPointerLeave={() => setReticle((value) => ({ ...value, visible: false }))}
           onPointerDown={registerShot}

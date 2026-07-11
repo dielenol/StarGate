@@ -7,15 +7,16 @@ import {
 } from "../license-test.ts";
 
 test("debug qualification reproduces ten hostile and two civilian targets", () => {
-  const { session, response } = startTowaskiDebugLicenseTest(1_000);
+  const { session, response } = startTowaskiDebugLicenseTest("basic", 1_000);
 
   assert.equal(response.status, "active");
+  assert.equal(response.difficulty, "basic");
   assert.equal(session.targets.filter((target) => target.kind === "hostile").length, 10);
   assert.equal(session.targets.filter((target) => target.kind === "civilian").length, 2);
 });
 
 test("debug qualification grants locally after a clean run", () => {
-  let { session } = startTowaskiDebugLicenseTest(1_000);
+  let { session } = startTowaskiDebugLicenseTest("basic", 1_000);
   let response;
 
   for (const target of [...session.targets]) {
@@ -37,7 +38,7 @@ test("debug qualification grants locally after a clean run", () => {
 });
 
 test("debug qualification fails on a civilian hit", () => {
-  let { session } = startTowaskiDebugLicenseTest(1_000);
+  let { session } = startTowaskiDebugLicenseTest("basic", 1_000);
   let response;
 
   for (let index = 0; index < session.targets.length; index += 1) {
@@ -59,7 +60,7 @@ test("debug qualification fails on a civilian hit", () => {
 });
 
 test("debug qualification rejects a stale round", () => {
-  const { session } = startTowaskiDebugLicenseTest(1_000);
+  const { session } = startTowaskiDebugLicenseTest("basic", 1_000);
 
   assert.throws(
     () =>
