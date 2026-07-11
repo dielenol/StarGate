@@ -37,7 +37,12 @@ export interface EquipmentLicenseStatus {
   note?: string;
 }
 
-interface EquipmentLicenseCharacter {
+export interface EquipmentCatalogLicenseContext {
+  licenseStatus?: EquipmentLicenseStatus;
+  licenseOwned?: boolean;
+}
+
+export interface EquipmentLicenseCharacter {
   codename?: string;
   lore?: {
     name?: string;
@@ -319,6 +324,33 @@ export function resolveEquipmentLicenseStatus(args: {
   }
 
   return { satisfied: false, source: null };
+}
+
+export function resolveEquipmentCatalogLicenseContext(
+  item: Pick<MasterItem, "slug" | "name">,
+  context: {
+    character: EquipmentLicenseCharacter | null;
+    ownedLicenseSlugs: ReadonlySet<string>;
+  },
+): EquipmentCatalogLicenseContext {
+  const licenseOwned = isTowaskiLicenseSlug(item.slug)
+    ? context.ownedLicenseSlugs.has(item.slug)
+    : undefined;
+  const requirement = getEquipmentLicenseRequirement(item);
+  const licenseStatus = requirement
+    ? context.character
+      ? resolveEquipmentLicenseStatus({
+          character: context.character,
+          requirement,
+          ownedLicenseSlugs: context.ownedLicenseSlugs,
+        })
+      : { satisfied: false as const, source: null }
+    : undefined;
+
+  return {
+    ...(licenseOwned !== undefined ? { licenseOwned } : {}),
+    ...(licenseStatus ? { licenseStatus } : {}),
+  };
 }
 
 function findCharacterLicenseException(

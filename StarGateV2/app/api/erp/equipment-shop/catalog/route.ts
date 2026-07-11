@@ -9,11 +9,14 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
+import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { listOwnedTowaskiLicenseSlugs } from "@/lib/db/equipment-licenses";
+import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
 import {
+  applyEquipmentShopLicenseContext,
   EQUIPMENT_SHOP_CATEGORIES,
   toEquipmentShopCatalogItem,
 } from "@/lib/equipment-shop/catalog";
-import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -31,13 +34,22 @@ export async function GET(request: Request) {
   const scope = !isGM || requestedScope === "towaski" ? "towaski" : "all";
 
   try {
-    const masterItems = await listMasterItemsByCategoryFilter(
-      EQUIPMENT_SHOP_CATEGORIES,
-    );
-    const items = masterItems
+    const mainCharacter = await findMainCharacterByOwner(session.user.id);
+    const mainAgent = mainCharacter?.type === "AGENT" ? mainCharacter : null;
+    const [masterItems, ownedLicenseSlugs] = await Promise.all([
+      listMasterItemsByCategoryFilter(EQUIPMENT_SHOP_CATEGORIES),
+      mainAgent?._id
+        ? listOwnedTowaskiLicenseSlugs(String(mainAgent._id))
+        : Promise.resolve(new Set<string>()),
+    ]);
+    const catalogItems = masterItems
       .map(toEquipmentShopCatalogItem)
       .filter((item): item is NonNullable<typeof item> => item !== null)
       .filter((item) => scope === "all" || item.zone === "towaski");
+    const items = applyEquipmentShopLicenseContext(catalogItems, {
+      character: mainAgent,
+      ownedLicenseSlugs,
+    });
 
     return NextResponse.json(
       {
@@ -55,8 +67,10 @@ export async function GET(request: Request) {
       },
     );
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "장비 카탈로그 조회 실패";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[equipment-shop/catalog] failed to build catalog", err);
+    return NextResponse.json(
+      { error: "장비 카탈로그를 불러올 수 없습니다." },
+      { status: 500 },
+    );
   }
 }

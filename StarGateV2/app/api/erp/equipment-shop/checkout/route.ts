@@ -6,6 +6,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { charactersCol } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
@@ -13,7 +14,6 @@ import { childIdempotencyKey, readIdempotencyKey } from "@/lib/api/idempotency";
 import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
-import { hasOwnedTowaskiLicense } from "@/lib/db/equipment-licenses";
 import {
   addToInventory,
   findMasterItemsBySlugsOrIds,
@@ -63,6 +63,31 @@ class EquipmentLicenseAlreadyOwnedError extends Error {
   constructor(readonly licenseName: string) {
     super(`이미 보유한 라이선스입니다: ${licenseName}`);
     this.name = "EquipmentLicenseAlreadyOwnedError";
+  }
+}
+
+class EquipmentLicenseRequiredError extends Error {
+  constructor(
+    readonly line: CheckoutLine & {
+      licenseRequirement: EquipmentLicenseRequirement;
+    },
+  ) {
+    super(`장비 반출 라이선스가 필요합니다: ${line.name}`);
+    this.name = "EquipmentLicenseRequiredError";
+  }
+}
+
+class EquipmentBasicLicenseRequiredError extends Error {
+  constructor() {
+    super("토와스키 기본 화기 자격시험을 먼저 통과해야 합니다.");
+    this.name = "EquipmentBasicLicenseRequiredError";
+  }
+}
+
+class EquipmentAgentRequiredError extends Error {
+  constructor() {
+    super("메인 AGENT 캐릭터가 등록되어 있지 않아 구매할 수 없습니다.");
+    this.name = "EquipmentAgentRequiredError";
   }
 }
 
@@ -136,7 +161,7 @@ export async function POST(request: Request) {
       { status: 409 },
     );
   }
-  if (!mainChar) {
+  if (!mainChar || mainChar.type !== "AGENT") {
     return NextResponse.json(
       {
         error: "메인 AGENT 캐릭터가 등록되어 있지 않아 구매할 수 없습니다.",
@@ -152,22 +177,6 @@ export async function POST(request: Request) {
     );
   }
   const ownerId = mainChar.ownerId;
-
-  if (
-    !isGM &&
-    !(await hasOwnedTowaskiLicense(
-      String(mainChar._id),
-      TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
-    ))
-  ) {
-    return NextResponse.json(
-      {
-        error: "토와스키 기본 화기 자격시험을 먼저 통과해야 합니다.",
-        code: "BASIC_LICENSE_REQUIRED",
-      },
-      { status: 403 },
-    );
-  }
 
   const owner = await findUserById(ownerId);
   if (!owner) {
@@ -266,12 +275,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const cartLicenseSlugs = new Set(
-    lines
-      .map((line) => line.slug)
-      .filter((slug): slug is string => typeof slug === "string")
-      .filter(isTowaskiLicenseSlug),
-  );
   const purchasedLicenseLines = lines.filter(
     (line): line is CheckoutLine & { slug: string } =>
       isTowaskiLicenseSlug(line.slug),
@@ -280,41 +283,26 @@ export async function POST(request: Request) {
     (line): line is CheckoutLine & { licenseRequirement: EquipmentLicenseRequirement } =>
       Boolean(line.licenseRequirement),
   );
-  if (licenseGatedLines.length > 0) {
-    const inventory = await listCharacterInventory(String(mainChar._id));
-    const inventoryMasterItems = await findMasterItemsBySlugsOrIds(
-      inventory
-        .filter((entry) => entry.quantity > 0)
-        .map((entry) => entry.itemId),
-    );
-    const ownedLicenseSlugs = new Set(
-      inventoryMasterItems
-        .map((item) => item.slug)
-        .filter((slug): slug is string => typeof slug === "string")
-        .filter(isTowaskiLicenseSlug),
-    );
-
-    for (const line of licenseGatedLines) {
-      const licenseStatus = resolveEquipmentLicenseStatus({
-        character: mainChar,
-        requirement: line.licenseRequirement,
-        ownedLicenseSlugs,
-        cartLicenseSlugs,
-      });
-      if (!licenseStatus.satisfied) {
-        return NextResponse.json(
-          {
-            error:
-              `${line.name} 반출에는 ${line.licenseRequirement.licenseName}이 필요합니다. ` +
-              `${line.licenseRequirement.reason} 자격이 캐릭터 특성/특전/무기 훈련에 없으면 ` +
-              `토와스키 라이센스 탭에서 먼저 구매하세요.`,
-            code: "LICENSE_REQUIRED",
-          },
-          { status: 400 },
-        );
-      }
-    }
-  }
+  const requiredLicenseSlugs = new Set([
+    ...licenseGatedLines.map(
+      (line) => line.licenseRequirement.licenseSlug,
+    ),
+    ...(!isGM ? [TOWASKI_BASIC_FIREARM_LICENSE_SLUG] : []),
+  ]);
+  const requiredLicenseItems = await findMasterItemsBySlugsOrIds([
+    ...requiredLicenseSlugs,
+  ]);
+  const licenseSlugByItemId = new Map(
+    requiredLicenseItems.flatMap((item) =>
+      item._id && isTowaskiLicenseSlug(item.slug)
+        ? [[String(item._id), item.slug] as const]
+        : [],
+    ),
+  );
+  const inventoryLockItemIds = [
+    ...lines.map((line) => line.itemId),
+    ...licenseSlugByItemId.keys(),
+  ];
 
   const totalPrice = lines.reduce((sum, line) => sum + line.totalPrice, 0);
   const characterId = String(mainChar._id);
@@ -330,7 +318,7 @@ export async function POST(request: Request) {
   try {
     await prepareCharacterInventoryItemLocks(
       characterId,
-      lines.map((line) => line.itemId),
+      inventoryLockItemIds,
     );
     response = await executeEconomicOperation({
       requestId,
@@ -340,19 +328,56 @@ export async function POST(request: Request) {
       run: async (mongoSession) => {
         await lockCharacterInventoryItems(
           characterId,
-          lines.map((line) => line.itemId),
+          inventoryLockItemIds,
           mongoSession,
         );
 
-        if (purchasedLicenseLines.length > 0) {
-          const inventory = await listCharacterInventory(characterId, {
-            session: mongoSession,
+        const characterCollection = await charactersCol();
+        const transactionCharacter = await characterCollection.findOne(
+          {
+            _id: mainChar._id,
+            ownerId,
+            type: "AGENT",
+          },
+          { session: mongoSession },
+        );
+        if (!transactionCharacter || transactionCharacter.type !== "AGENT") {
+          throw new EquipmentAgentRequiredError();
+        }
+
+        const inventory = await listCharacterInventory(characterId, {
+          session: mongoSession,
+        });
+        const ownedItemIds = new Set(
+          inventory
+            .filter((entry) => entry.quantity > 0)
+            .map((entry) => entry.itemId),
+        );
+        const ownedLicenseSlugs = new Set(
+          [...ownedItemIds]
+            .map((itemId) => licenseSlugByItemId.get(itemId))
+            .filter(isTowaskiLicenseSlug),
+        );
+
+        if (
+          !isGM &&
+          !ownedLicenseSlugs.has(TOWASKI_BASIC_FIREARM_LICENSE_SLUG)
+        ) {
+          throw new EquipmentBasicLicenseRequiredError();
+        }
+
+        for (const line of licenseGatedLines) {
+          const licenseStatus = resolveEquipmentLicenseStatus({
+            character: transactionCharacter,
+            requirement: line.licenseRequirement,
+            ownedLicenseSlugs,
           });
-          const ownedItemIds = new Set(
-            inventory
-              .filter((entry) => entry.quantity > 0)
-              .map((entry) => entry.itemId),
-          );
+          if (!licenseStatus.satisfied) {
+            throw new EquipmentLicenseRequiredError(line);
+          }
+        }
+
+        if (purchasedLicenseLines.length > 0) {
           const alreadyOwned = purchasedLicenseLines.find((line) =>
             ownedItemIds.has(line.itemId),
           );
@@ -363,7 +388,7 @@ export async function POST(request: Request) {
 
         const debit = await addCredit({
           characterId,
-          characterCodename: mainChar.codename,
+          characterCodename: transactionCharacter.codename,
           ownerId,
           ownerName,
           amount: -totalPrice,
@@ -379,7 +404,7 @@ export async function POST(request: Request) {
           await addToInventory(
             {
               characterId,
-              characterCodename: mainChar.codename,
+              characterCodename: transactionCharacter.codename,
               itemId: line.itemId,
               itemName: line.name,
               quantity: line.quantity,
@@ -392,8 +417,8 @@ export async function POST(request: Request) {
         let actualRefund = 0;
         if (quotedRefund > 0) {
           const refund = await addCredit({
-            characterId: String(mainChar._id),
-            characterCodename: mainChar.codename,
+            characterId,
+            characterCodename: transactionCharacter.codename,
             ownerId,
             ownerName,
             amount: quotedRefund,
@@ -430,10 +455,34 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
+    if (err instanceof EquipmentAgentRequiredError) {
+      return NextResponse.json(
+        { error: err.message, code: "NO_MAIN_CHARACTER" },
+        { status: 400 },
+      );
+    }
+    if (err instanceof EquipmentBasicLicenseRequiredError) {
+      return NextResponse.json(
+        { error: err.message, code: "BASIC_LICENSE_REQUIRED" },
+        { status: 403 },
+      );
+    }
+    if (err instanceof EquipmentLicenseRequiredError) {
+      return NextResponse.json(
+        {
+          error:
+            `${err.line.name} 반출에는 ${err.line.licenseRequirement.licenseName}이 필요합니다. ` +
+            `${err.line.licenseRequirement.reason} 자격이 캐릭터 특성/특전/무기 훈련에 없으면 ` +
+            `토와스키 라이센스 탭에서 먼저 발급하세요.`,
+          code: "LICENSE_REQUIRED",
+        },
+        { status: 400 },
+      );
+    }
     if (err instanceof EquipmentLicenseAlreadyOwnedError) {
       return NextResponse.json(
         {
-          error: `${err.licenseName}은 이미 보유 중입니다. 장바구니에서 제거해 주세요.`,
+          error: `${err.licenseName}은 이미 보유 중입니다.`,
           code: "LICENSE_ALREADY_OWNED",
         },
         { status: 409 },

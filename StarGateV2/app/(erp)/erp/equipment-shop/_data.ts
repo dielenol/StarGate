@@ -18,12 +18,17 @@ import {
   serializeEquipmentResearchProject,
 } from "@/lib/db/equipment-research";
 import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
-import { hasOwnedTowaskiLicense } from "@/lib/db/equipment-licenses";
 import {
+  hasOwnedTowaskiLicense,
+  listOwnedTowaskiLicenseSlugs,
+} from "@/lib/db/equipment-licenses";
+import {
+  applyEquipmentShopLicenseContext,
   EQUIPMENT_SHOP_CATEGORIES,
   type EquipmentShopZone,
   toEquipmentShopCatalogItem,
 } from "@/lib/equipment-shop/catalog";
+import type { EquipmentLicenseCharacter } from "@/lib/equipment-shop/licenses";
 import { TOWASKI_BASIC_FIREARM_LICENSE_SLUG } from "@/lib/equipment-shop/license-test";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
@@ -65,14 +70,23 @@ export interface EquipmentShopPageData {
 
 export async function buildEquipmentShopCatalogResponse(options: {
   zone?: EquipmentShopZone;
+  character?: EquipmentLicenseCharacter | null;
+  characterId?: string | null;
 } = {}): Promise<EquipmentShopCatalogResponse> {
-  const masterItems = await listMasterItemsByCategoryFilter(
-    EQUIPMENT_SHOP_CATEGORIES,
-  );
-  const items = masterItems
+  const [masterItems, ownedLicenseSlugs] = await Promise.all([
+    listMasterItemsByCategoryFilter(EQUIPMENT_SHOP_CATEGORIES),
+    options.characterId
+      ? listOwnedTowaskiLicenseSlugs(options.characterId)
+      : Promise.resolve(new Set<string>()),
+  ]);
+  const catalogItems = masterItems
     .map(toEquipmentShopCatalogItem)
     .filter((item): item is NonNullable<typeof item> => item !== null)
     .filter((item) => !options.zone || item.zone === options.zone);
+  const items = applyEquipmentShopLicenseContext(catalogItems, {
+    character: options.character ?? null,
+    ownedLicenseSlugs,
+  });
 
   return {
     items,
@@ -164,7 +178,11 @@ export async function loadEquipmentShopPageData(
     hasBasicFirearmLicense,
   ] =
     await Promise.all([
-      buildEquipmentShopCatalogResponse({ zone: options.catalogZone }).catch(
+      buildEquipmentShopCatalogResponse({
+        zone: options.catalogZone,
+        character: mainAgent,
+        characterId: mainCharacterId,
+      }).catch(
         (): EquipmentShopCatalogResponse => ({
           items: [],
           isOpen: true,

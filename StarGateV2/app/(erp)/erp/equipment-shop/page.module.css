@@ -1242,6 +1242,20 @@
   word-break: keep-all;
 }
 
+.detailPanel .licenseAccessNotice {
+  padding: 9px 10px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, rgba(0, 0, 0, 0.24));
+  border: 1px solid color-mix(in srgb, var(--danger) 42%, var(--line));
+  border-radius: var(--radius-sm);
+}
+
+.detailPanel .licenseAccessNotice[data-satisfied="true"] {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 8%, rgba(0, 0, 0, 0.24));
+  border-color: color-mix(in srgb, var(--success) 42%, var(--line));
+}
+
 .detailStats {
   display: grid;
   grid-template-columns: 1fr auto;

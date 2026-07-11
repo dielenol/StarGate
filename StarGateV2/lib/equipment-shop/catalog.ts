@@ -2,8 +2,11 @@ import type { ItemCategory, MasterItem } from "@stargate/shared-db/types";
 
 import {
   getEquipmentLicenseRequirement,
+  resolveEquipmentCatalogLicenseContext,
   TOWASKI_LICENSE_TAG_KEYWORDS,
+  type EquipmentLicenseCharacter,
   type EquipmentLicenseRequirement,
+  type EquipmentLicenseStatus,
 } from "./licenses";
 import { TOWASKI_BASIC_FIREARM_LICENSE_SLUG } from "./license-test";
 
@@ -34,6 +37,8 @@ export interface EquipmentShopCatalogItem {
     EquipmentLicenseRequirement,
     "licenseSlug" | "licenseName" | "label" | "reason"
   >;
+  licenseStatus?: EquipmentLicenseStatus;
+  licenseOwned?: boolean;
 }
 
 const CATEGORY_LABELS: Record<EquipmentShopCategory, string> = {
@@ -204,4 +209,17 @@ export function toEquipmentShopCatalogItem(
     stock: available ? 1 : 0,
     available,
   };
+}
+
+export function applyEquipmentShopLicenseContext(
+  items: EquipmentShopCatalogItem[],
+  context: {
+    character: EquipmentLicenseCharacter | null;
+    ownedLicenseSlugs: ReadonlySet<string>;
+  },
+): EquipmentShopCatalogItem[] {
+  return items.map((item) => ({
+    ...item,
+    ...resolveEquipmentCatalogLicenseContext(item, context),
+  }));
 }

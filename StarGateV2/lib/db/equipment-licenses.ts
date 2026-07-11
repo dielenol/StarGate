@@ -10,9 +10,16 @@ import type { ClientSession } from "mongodb";
 
 import "./init";
 
-import type { TowaskiLicenseSlug } from "@/lib/equipment-shop/licenses";
+import {
+  isTowaskiLicenseSlug,
+  type TowaskiLicenseSlug,
+} from "@/lib/equipment-shop/licenses";
 
-import { findMasterItemBySlug } from "./inventory";
+import {
+  findMasterItemBySlug,
+  findMasterItemsBySlugsOrIds,
+  listCharacterInventory,
+} from "./inventory";
 
 async function resolveTowaskiLicenseItem(licenseSlug: TowaskiLicenseSlug) {
   const item = await findMasterItemBySlug(licenseSlug);
@@ -42,6 +49,23 @@ export async function hasOwnedTowaskiLicense(
   licenseSlug: TowaskiLicenseSlug,
 ): Promise<boolean> {
   return Boolean(await findOwnedTowaskiLicense(characterId, licenseSlug));
+}
+
+export async function listOwnedTowaskiLicenseSlugs(
+  characterId: string,
+): Promise<Set<TowaskiLicenseSlug>> {
+  const inventory = await listCharacterInventory(characterId);
+  const masterItems = await findMasterItemsBySlugsOrIds(
+    inventory
+      .filter((entry) => entry.quantity > 0)
+      .map((entry) => entry.itemId),
+  );
+
+  return new Set(
+    masterItems
+      .map((item) => item.slug)
+      .filter(isTowaskiLicenseSlug),
+  );
 }
 
 export async function prepareTowaskiLicenseGrant(

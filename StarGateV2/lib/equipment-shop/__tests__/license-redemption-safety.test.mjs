@@ -20,6 +20,10 @@ const CATALOG_QUERY = new URL(
   "../../../hooks/queries/useEquipmentShopQuery.ts",
   import.meta.url,
 );
+const CATALOG_ROUTE = new URL(
+  "../../../app/api/erp/equipment-shop/catalog/route.ts",
+  import.meta.url,
+);
 const EQUIPMENT_MUTATIONS = new URL(
   "../../../hooks/mutations/useEquipmentShopMutation.ts",
   import.meta.url,
@@ -80,6 +84,17 @@ test("equipment checkout serializes inventory and rejects owned licenses", async
   assert.match(checkout, /prepareCharacterInventoryItemLocks/);
   assert.match(checkout, /LICENSE_ALREADY_OWNED/);
   assert.match(checkout, /listCharacterInventory\(characterId, \{[\s\S]*session: mongoSession/);
+  assert.match(checkout, /mainChar\.type !== "AGENT"/);
+  assert.match(
+    checkout,
+    /charactersCol\(\)[\s\S]*type: "AGENT"[\s\S]*session: mongoSession/,
+  );
+  assert.match(checkout, /inventoryLockItemIds[\s\S]*licenseSlugByItemId\.keys/);
+  assert.match(
+    checkout,
+    /resolveEquipmentLicenseStatus\(\{[\s\S]*character: transactionCharacter[\s\S]*ownedLicenseSlugs/,
+  );
+  assert.doesNotMatch(checkout, /cartLicenseSlugs/);
   assert.match(inventory, /character_inventory_locks/);
   assert.match(inventory, /prepareCharacterInventoryItemLocks/);
   assert.doesNotMatch(inventory, /\{ upsert: true, session \}/);
@@ -114,11 +129,22 @@ test("slug와 ObjectId가 같은 장비를 가리키면 canonical 중복으로 �
   );
 });
 
-test("catalog query cache is isolated by all and towaski scope", async () => {
+test("catalog query cache is isolated by scope and character", async () => {
   const query = await readFile(CATALOG_QUERY, "utf8");
 
   assert.match(query, /EquipmentShopCatalogScope = "all" \| "towaski"/);
-  assert.match(query, /catalogScope: \(scope: EquipmentShopCatalogScope\)/);
-  assert.match(query, /queryKey: equipmentShopKeys\.catalogScope\(scope\)/);
+  assert.match(query, /catalogScope:[\s\S]*characterId: string \| null/);
+  assert.match(
+    query,
+    /queryKey: equipmentShopKeys\.catalogScope\(scope, characterId\)/,
+  );
   assert.match(query, /scope === "towaski" \? "\?scope=towaski" : ""/);
+});
+
+test("catalog license access is resolved from the authenticated main character", async () => {
+  const route = await readFile(CATALOG_ROUTE, "utf8");
+
+  assert.match(route, /findMainCharacterByOwner\(session\.user\.id\)/);
+  assert.match(route, /listOwnedTowaskiLicenseSlugs/);
+  assert.match(route, /applyEquipmentShopLicenseContext/);
 });

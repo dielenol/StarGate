@@ -27,8 +27,10 @@ import type {
 export const equipmentShopKeys = {
   all: ["equipment-shop"] as const,
   catalog: ["equipment-shop", "catalog"] as const,
-  catalogScope: (scope: EquipmentShopCatalogScope) =>
-    ["equipment-shop", "catalog", scope] as const,
+  catalogScope: (
+    scope: EquipmentShopCatalogScope,
+    characterId: string | null,
+  ) => ["equipment-shop", "catalog", scope, characterId ?? "unassigned"] as const,
   research: ["equipment-shop", "research"] as const,
 };
 
@@ -143,10 +145,12 @@ const RESEARCH_STALE_TIME_MS = 30 * 1000;
 export function useEquipmentShopCatalog(options?: {
   initialData?: EquipmentShopCatalogResponse;
   scope?: EquipmentShopCatalogScope;
+  characterId?: string | null;
 }) {
   const scope = options?.scope ?? "all";
+  const characterId = options?.characterId ?? null;
   return useQuery({
-    queryKey: equipmentShopKeys.catalogScope(scope),
+    queryKey: equipmentShopKeys.catalogScope(scope, characterId),
     queryFn: () => fetchEquipmentShopCatalog(scope),
     staleTime: CATALOG_STALE_TIME_MS,
     initialData: options?.initialData,

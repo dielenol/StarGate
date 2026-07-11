@@ -43,6 +43,7 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
+import { isTowaskiLicenseSlug } from "@/lib/equipment-shop/licenses";
 import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
 import { formatCredits } from "@/lib/format/credit";
 import {
@@ -580,11 +581,45 @@ function renderCatalogIcon(item: EquipmentShopCatalogEntry, size: number) {
 function isTowaskiLicenseCatalogItem(
   item: EquipmentShopCatalogEntry,
 ): boolean {
-  return (
-    item.zone === "towaski" &&
-    item.category === "SPECIAL" &&
-    item.key.startsWith("towaski-license-")
+  return item.zone === "towaski" && isTowaskiLicenseSlug(item.slug);
+}
+
+function isEquipmentLicenseBlocked(item: EquipmentShopCatalogEntry): boolean {
+  return Boolean(
+    item.licenseRequirement && item.licenseStatus?.satisfied !== true,
   );
+}
+
+function describeEquipmentLicenseAccess(
+  item: EquipmentShopCatalogEntry,
+): string | null {
+  if (!item.licenseRequirement) return null;
+  if (item.licenseStatus?.source === "character_qualification") {
+    return `적성 승인 · ${item.licenseStatus.matchedKeyword ?? item.licenseRequirement.label}`;
+  }
+  if (item.licenseStatus?.source === "owned_license") {
+    return `${item.licenseRequirement.label} 라이센스 보유`;
+  }
+  return `${item.licenseRequirement.label} 라이센스 필요`;
+}
+
+function describeEquipmentLicenseDetail(
+  item: EquipmentShopCatalogEntry,
+): string | null {
+  if (item.licenseOwned) {
+    return "이미 발급되어 인벤토리에 등록된 라이센스입니다.";
+  }
+  if (!item.licenseRequirement) return null;
+  if (item.licenseStatus?.source === "character_qualification") {
+    return (
+      item.licenseStatus.note ??
+      `캐릭터 적성 승인: ${item.licenseStatus.matchedKeyword ?? item.licenseRequirement.label}`
+    );
+  }
+  if (item.licenseStatus?.source === "owned_license") {
+    return `보유 중인 ${item.licenseRequirement.licenseName}로 구매할 수 있습니다.`;
+  }
+  return `${item.licenseRequirement.licenseName}를 발급받으면 구매할 수 있습니다. 해당 화기 적성이 캐릭터 기록에 있으면 라이센스 없이 승인됩니다.`;
 }
 
 function matchesEquipmentShopTab(
@@ -1073,6 +1108,7 @@ export default function EquipmentShopClient({
   const catalogQuery = useEquipmentShopCatalog({
     initialData: initialCatalog,
     scope: initialZone === "towaski" ? "towaski" : "all",
+    characterId: mainCharacter?.id ?? null,
   });
   const researchQuery = useEquipmentResearch({
     initialData: initialResearch,
@@ -1230,10 +1266,21 @@ export default function EquipmentShopClient({
   const canUseShop =
     effectiveHasMainCharacter &&
     catalog.isOpen &&
+    !catalogQuery.isError &&
+    !catalogQuery.isRefetchError &&
     (effectiveTowaskiGm ||
       (activeZone === "towaski" && effectiveHasBasicLicense));
   const purchasingKey = purchaseMutation.isPending
     ? (purchaseMutation.variables?.key ?? null)
+    : null;
+  const selectedIsLicenseItem = Boolean(
+    selectedItem && isTowaskiLicenseCatalogItem(selectedItem),
+  );
+  const selectedLicenseBlocked = Boolean(
+    selectedItem && isEquipmentLicenseBlocked(selectedItem),
+  );
+  const selectedLicenseDetail = selectedItem
+    ? describeEquipmentLicenseDetail(selectedItem)
     : null;
   const selectedCanPurchase =
     Boolean(selectedItem) &&
@@ -1241,6 +1288,8 @@ export default function EquipmentShopClient({
     !isTowaskiDebug &&
     selectedItem?.available === true &&
     selectedItem.stock > 0 &&
+    selectedItem.licenseOwned !== true &&
+    !selectedLicenseBlocked &&
     selectedItem.price <= balance &&
     !purchaseMutation.isPending;
 
@@ -1520,6 +1569,23 @@ export default function EquipmentShopClient({
     if (item.stock <= 0 || !item.available) {
       setErrorMessage("현재 반출할 수 없는 품목입니다.");
       playTowaskiIfActive("stock", TOWASKI_DIALOGUE_LINES.unavailable);
+      return;
+    }
+
+    if (item.licenseOwned) {
+      setErrorMessage("이미 발급된 라이센스입니다.");
+      playTowaskiIfActive("blocked", "이미 장부에 올라간 라이센스다. 중복 발급은 안 해.");
+      return;
+    }
+
+    if (isEquipmentLicenseBlocked(item) && item.licenseRequirement) {
+      setErrorMessage(
+        `${item.licenseRequirement.licenseName}가 있거나 해당 화기 적성이 확인되어야 구매할 수 있습니다.`,
+      );
+      playTowaskiIfActive(
+        "blocked",
+        `${item.licenseRequirement.label} 자격이 없다. 라이센스를 발급받거나 네 적성 기록부터 확인해.`,
+      );
       return;
     }
 
@@ -2073,10 +2139,15 @@ export default function EquipmentShopClient({
               {salesItems.map((item) => {
                 const isSelected = selectedItem?.key === item.key;
                 const isSoldOut = item.stock <= 0 || !item.available;
+                const isLicenseItem = isTowaskiLicenseCatalogItem(item);
+                const licenseBlocked = isEquipmentLicenseBlocked(item);
+                const licenseAccess = describeEquipmentLicenseAccess(item);
                 const canPurchase =
                   canUseShop &&
                   !isTowaskiDebug &&
                   !isSoldOut &&
+                  !item.licenseOwned &&
+                  !licenseBlocked &&
                   item.price <= balance &&
                   !purchaseMutation.isPending;
 
@@ -2086,7 +2157,9 @@ export default function EquipmentShopClient({
                     className={[
                       styles.productCard,
                       isSelected ? styles["productCard--selected"] : "",
-                      isSoldOut ? styles["productCard--locked"] : "",
+                      isSoldOut || licenseBlocked || item.licenseOwned
+                        ? styles["productCard--locked"]
+                        : "",
                     ]
                       .filter(Boolean)
                       .join(" ")}
@@ -2106,8 +2179,8 @@ export default function EquipmentShopClient({
                       </span>
                       <span className={styles.productName}>{item.name}</span>
                       <span className={styles.productEffect}>
-                        {item.licenseRequirement
-                          ? `${item.effect} · ${item.licenseRequirement.label} 필요`
+                        {licenseAccess
+                          ? `${item.effect} · ${licenseAccess}`
                           : item.effect}
                       </span>
                       <strong>{formatCredits(item.price)}</strong>
@@ -2122,12 +2195,20 @@ export default function EquipmentShopClient({
                       {isSoldOut
                         ? "반출 불가"
                         : purchasingKey === item.key
-                          ? "처리 중"
+                          ? isLicenseItem
+                            ? "발급 처리 중"
+                            : "처리 중"
                           : isTowaskiDebug
                             ? "샌드박스 차단"
+                            : item.licenseOwned
+                              ? "발급 완료"
+                              : licenseBlocked
+                                ? `${item.licenseRequirement?.label ?? "라이센스"} 필요`
                             : item.price > balance
                               ? "잔액 부족"
-                              : "즉시 반출"}
+                              : isLicenseItem
+                                ? "라이센스 발급"
+                                : "즉시 반출"}
                     </button>
                   </article>
                 );
@@ -2156,6 +2237,17 @@ export default function EquipmentShopClient({
                     {selectedItem.licenseRequirement.reason}
                   </p>
                 ) : null}
+                {selectedLicenseDetail ? (
+                  <p
+                    className={styles.licenseAccessNotice}
+                    data-satisfied={
+                      selectedItem.licenseOwned === true ||
+                      selectedItem.licenseStatus?.satisfied === true
+                    }
+                  >
+                    {selectedLicenseDetail}
+                  </p>
+                ) : null}
                 <div className={styles.detailStats}>
                   <span>{selectedItem.effect}</span>
                   <strong>{formatCredits(selectedItem.price)}</strong>
@@ -2167,7 +2259,11 @@ export default function EquipmentShopClient({
                 </div>
                 <div className={styles.purchaseBox}>
                   <div className={styles.purchaseSummary}>
-                    <span>단건 반출 · 1개</span>
+                    <span>
+                      {selectedIsLicenseItem
+                        ? "라이센스 발급 · 1회"
+                        : "단건 반출 · 1개"}
+                    </span>
                     <strong>
                       결제 후 {formatCredits(balance - selectedItem.price)}
                     </strong>
@@ -2180,12 +2276,20 @@ export default function EquipmentShopClient({
                     aria-busy={purchasingKey === selectedItem.key}
                   >
                     {purchasingKey === selectedItem.key
-                      ? "반출 처리 중"
+                      ? selectedIsLicenseItem
+                        ? "발급 처리 중"
+                        : "반출 처리 중"
                       : isTowaskiDebug
                         ? "샌드박스 구매 차단"
+                        : selectedItem.licenseOwned
+                          ? "발급 완료"
+                          : selectedLicenseBlocked
+                            ? `${selectedItem.licenseRequirement?.label ?? "라이센스"} 필요`
                         : selectedItem.price > balance
                           ? "잔액 부족"
-                          : "1개 즉시 반출"}
+                          : selectedIsLicenseItem
+                            ? "라이센스 발급"
+                            : "1개 즉시 반출"}
                   </button>
                 </div>
               </>
@@ -3019,6 +3123,13 @@ export default function EquipmentShopClient({
           ) : (
             "메인 AGENT 캐릭터가 없어 구매와 개인 강화가 제한됩니다. 팀 강화는 GM 권한으로 실행할 수 있습니다."
           )}
+        </Box>
+      ) : null}
+
+      {catalogQuery.isError || catalogQuery.isRefetchError ? (
+        <Box className={styles.errorBanner} role="alert">
+          라이센스 자격 정보를 갱신할 수 없어 구매 기능을 잠갔습니다. 잠시 후 다시
+          시도해 주세요.
         </Box>
       ) : null}
 

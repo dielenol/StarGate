@@ -6,6 +6,7 @@ import {
   characterKeys,
   personnelKeys,
 } from "@/hooks/queries/useCharactersQuery";
+import { equipmentShopKeys } from "@/hooks/queries/useEquipmentShopQuery";
 
 /**
  * 캐릭터 생성 — POST /api/erp/characters.
@@ -30,6 +31,7 @@ export function useCreateCharacter() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: characterKeys.all });
       queryClient.invalidateQueries({ queryKey: personnelKeys.all });
+      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
     },
   });
 }
@@ -70,6 +72,7 @@ export function useUpdatePlayMutation() {
       queryClient.invalidateQueries({
         queryKey: characterKeys.agent.byId(vars.id),
       });
+      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
     },
   });
 }
@@ -104,6 +107,7 @@ export function useUpdateLoreMutation() {
       });
       queryClient.invalidateQueries({ queryKey: personnelKeys.all });
       queryClient.invalidateQueries({ queryKey: personnelKeys.byId(vars.id) });
+      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
     },
   });
 }
