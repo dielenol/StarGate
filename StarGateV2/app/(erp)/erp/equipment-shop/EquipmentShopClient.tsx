@@ -2955,6 +2955,7 @@ export default function EquipmentShopClient({
       className={[
         styles.armoryRoot,
         isHub ? styles["armoryRoot--hub"] : "",
+        !isHub && activeZone === "lab" ? styles["armoryRoot--lab"] : "",
       ]
         .filter(Boolean)
         .join(" ")}
