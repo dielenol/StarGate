@@ -1,0 +1,57 @@
+[
+  {
+    "collection": "master_items",
+    "type": "towaski-license-image-sync-2026-07-11",
+    "filter": { "slug": "towaski-license-precision-firearm" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/equipment/towaski-license-precision-firearm.webp",
+        "updatedAt": "2026-07-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "towaski-license-image-sync-2026-07-11",
+    "filter": { "slug": "towaski-license-heavy-weapon" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/equipment/towaski-license-heavy-weapon.webp",
+        "updatedAt": "2026-07-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "towaski-license-image-sync-2026-07-11",
+    "filter": { "slug": "towaski-license-flame-weapon" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/equipment/towaski-license-flame-weapon.webp",
+        "updatedAt": "2026-07-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "towaski-license-image-sync-2026-07-11",
+    "filter": { "slug": "towaski-license-sonic-equipment" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/equipment/towaski-license-sonic-equipment.webp",
+        "updatedAt": "2026-07-11T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "towaski-license-image-sync-2026-07-11",
+    "filter": { "slug": "towaski-license-explosive-ordnance" },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/equipment/towaski-license-explosive-ordnance.webp",
+        "updatedAt": "2026-07-11T00:00:00.000Z"
+      }
+    }
+  }
+]
