@@ -19,10 +19,10 @@ test("passes a clean basic firearm qualification result", () => {
   assert.equal(result.accuracy, 0.8);
 });
 
-test("basic difficulty accepts an introductory six-hit result", () => {
+test("basic difficulty accepts an introductory four-hit result", () => {
   const basic = evaluateTowaskiBasicLicenseTest(
     {
-      hostileHits: 6,
+      hostileHits: 4,
       civilianHits: 0,
       shots: 10,
       durationMs: 12_000,
@@ -31,7 +31,7 @@ test("basic difficulty accepts an introductory six-hit result", () => {
   );
   const standard = evaluateTowaskiBasicLicenseTest(
     {
-      hostileHits: 6,
+      hostileHits: 4,
       civilianHits: 0,
       shots: 10,
       durationMs: 12_000,

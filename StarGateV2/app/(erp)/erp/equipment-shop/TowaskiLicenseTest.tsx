@@ -422,7 +422,7 @@ export default function TowaskiLicenseTest({
               </span>
             </div>
             <button type="button" className={styles.startButton} onClick={beginTest}>
-              사격선 진입
+              사격장 진입
             </button>
           </div>
         </div>

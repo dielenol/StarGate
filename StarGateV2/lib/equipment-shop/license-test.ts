@@ -17,13 +17,13 @@ export const TOWASKI_LICENSE_TEST_DIFFICULTIES = {
   basic: {
     ...COMMON_LICENSE_TEST_RULES,
     label: "기초",
-    description: "넓은 표적과 여유 있는 판정 시간",
-    requiredHostileHits: 6,
-    minAccuracy: 0.5,
+    description: "큰 표적과 충분한 판정 시간",
+    requiredHostileHits: 4,
+    minAccuracy: 0.4,
     minHitReactionMs: 120,
     minMissWindowMs: 1_200,
-    targetWindowMs: 1_800,
-    targetScale: 1.15,
+    targetWindowMs: 3_000,
+    targetScale: 1.35,
   },
   standard: {
     ...COMMON_LICENSE_TEST_RULES,
