@@ -1,6 +1,8 @@
 export const TOWASKI_BASIC_FIREARM_LICENSE_SLUG =
   "towaski-license-basic-firearm" as const;
 
+export const TOWASKI_LICENSE_REDEMPTION_LEASE_MS = 20_000;
+
 const COMMON_LICENSE_TEST_RULES = {
   hostileTargets: 10,
   civilianTargets: 2,
@@ -143,6 +145,11 @@ export type TowaskiLicenseTestResponse =
       difficulty: TowaskiLicenseTestDifficulty;
       stats: TowaskiLicenseTestStats;
       roundDeadlineAt: string;
+    }
+  | {
+      status: "processing";
+      challengeId: string;
+      difficulty: TowaskiLicenseTestDifficulty;
     }
   | {
       status: "failed";

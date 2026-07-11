@@ -48,6 +48,7 @@ export default async function EquipmentShopSimulatorPage() {
 
   const catalog = await buildEquipmentShopCatalogResponse().catch(() => ({
     items: [],
+    recentActivity: [],
     isOpen: true,
     mode: "open" as const,
     scheduledOpen: true,

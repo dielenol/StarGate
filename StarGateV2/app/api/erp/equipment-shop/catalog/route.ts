@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { listRecentEquipmentShopActivity } from "@/lib/db/equipment-shop-activity";
 import { listOwnedTowaskiLicenseSlugs } from "@/lib/db/equipment-licenses";
 import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
 import {
@@ -36,11 +37,14 @@ export async function GET(request: Request) {
   try {
     const mainCharacter = await findMainCharacterByOwner(session.user.id);
     const mainAgent = mainCharacter?.type === "AGENT" ? mainCharacter : null;
-    const [masterItems, ownedLicenseSlugs] = await Promise.all([
+    const [masterItems, ownedLicenseSlugs, recentActivity] = await Promise.all([
       listMasterItemsByCategoryFilter(EQUIPMENT_SHOP_CATEGORIES),
       mainAgent?._id
         ? listOwnedTowaskiLicenseSlugs(String(mainAgent._id))
         : Promise.resolve(new Set<string>()),
+      mainAgent?._id
+        ? listRecentEquipmentShopActivity(String(mainAgent._id)).catch(() => [])
+        : Promise.resolve([]),
     ]);
     const catalogItems = masterItems
       .map(toEquipmentShopCatalogItem)
@@ -54,6 +58,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         items,
+        recentActivity,
         isOpen: true,
         mode: "open",
         scheduledOpen: true,

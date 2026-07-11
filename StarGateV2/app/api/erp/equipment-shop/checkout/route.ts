@@ -29,9 +29,9 @@ import {
   toEquipmentPriceNumber,
 } from "@/lib/equipment-shop/catalog";
 import { containsDuplicateEquipmentItemIds } from "@/lib/equipment-shop/checkout-lines";
+import { evaluateEquipmentPurchaseEligibility } from "@/lib/equipment-shop/purchase-eligibility";
 import {
   getEquipmentLicenseRequirement,
-  hasTowaskiBasicPurchaseAccess,
   isTowaskiLicenseSlug,
   resolveEquipmentLicenseStatus,
   type EquipmentLicenseRequirement,
@@ -276,10 +276,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const purchasedLicenseLines = lines.filter(
-    (line): line is CheckoutLine & { slug: string } =>
-      isTowaskiLicenseSlug(line.slug),
-  );
   const licenseGatedLines = lines.filter(
     (line): line is CheckoutLine & { licenseRequirement: EquipmentLicenseRequirement } =>
       Boolean(line.licenseRequirement),
@@ -372,29 +368,30 @@ export async function POST(request: Request) {
                 ownedLicenseSlugs,
               })
             : undefined;
-          if (
-            !hasTowaskiBasicPurchaseAccess({
-              isGM,
-              hasBasicLicense,
-              licenseStatus,
-            })
-          ) {
+          const eligibility = evaluateEquipmentPurchaseEligibility({
+            isGM,
+            hasBasicLicense,
+            available: true,
+            price: line.unitPrice,
+            balance: Number.POSITIVE_INFINITY,
+            licenseOwned:
+              isTowaskiLicenseSlug(line.slug) && ownedItemIds.has(line.itemId),
+            ...(line.licenseRequirement
+              ? { licenseRequirement: line.licenseRequirement }
+              : {}),
+            ...(licenseStatus ? { licenseStatus } : {}),
+          });
+          if (eligibility.code === "BASIC_LICENSE_REQUIRED") {
             throw new EquipmentBasicLicenseRequiredError();
           }
-          if (line.licenseRequirement && !licenseStatus?.satisfied) {
+          if (eligibility.code === "LICENSE_REQUIRED" && line.licenseRequirement) {
             throw new EquipmentLicenseRequiredError({
               ...line,
               licenseRequirement: line.licenseRequirement,
             });
           }
-        }
-
-        if (purchasedLicenseLines.length > 0) {
-          const alreadyOwned = purchasedLicenseLines.find((line) =>
-            ownedItemIds.has(line.itemId),
-          );
-          if (alreadyOwned) {
-            throw new EquipmentLicenseAlreadyOwnedError(alreadyOwned.name);
+          if (eligibility.code === "LICENSE_ALREADY_OWNED") {
+            throw new EquipmentLicenseAlreadyOwnedError(line.name);
           }
         }
 
@@ -484,7 +481,7 @@ export async function POST(request: Request) {
         {
           error:
             `${err.line.name} 반출에는 ${err.line.licenseRequirement.licenseName}이 필요합니다. ` +
-            `${err.line.licenseRequirement.reason} 자격이 캐릭터 특성/특전/무기 훈련에 없으면 ` +
+            `${err.line.licenseRequirement.reason} 명시 적성 예외가 없으면 ` +
             `토와스키 라이센스 탭에서 먼저 발급하세요.`,
           code: "LICENSE_REQUIRED",
         },

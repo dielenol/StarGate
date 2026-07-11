@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
+import { listRecentEquipmentShopActivity } from "@/lib/db/equipment-shop-activity";
 import {
   getCharacterBalance,
   listCreditTransactions,
@@ -73,11 +74,14 @@ export async function buildEquipmentShopCatalogResponse(options: {
   character?: EquipmentLicenseCharacter | null;
   characterId?: string | null;
 } = {}): Promise<EquipmentShopCatalogResponse> {
-  const [masterItems, ownedLicenseSlugs] = await Promise.all([
+  const [masterItems, ownedLicenseSlugs, recentActivity] = await Promise.all([
     listMasterItemsByCategoryFilter(EQUIPMENT_SHOP_CATEGORIES),
     options.characterId
       ? listOwnedTowaskiLicenseSlugs(options.characterId)
       : Promise.resolve(new Set<string>()),
+    options.characterId
+      ? listRecentEquipmentShopActivity(options.characterId).catch(() => [])
+      : Promise.resolve([]),
   ]);
   const catalogItems = masterItems
     .map(toEquipmentShopCatalogItem)
@@ -90,6 +94,7 @@ export async function buildEquipmentShopCatalogResponse(options: {
 
   return {
     items,
+    recentActivity,
     isOpen: true,
     mode: "open",
     scheduledOpen: true,
@@ -185,6 +190,7 @@ export async function loadEquipmentShopPageData(
       }).catch(
         (): EquipmentShopCatalogResponse => ({
           items: [],
+          recentActivity: [],
           isOpen: true,
           mode: "open",
           scheduledOpen: true,

@@ -9,6 +9,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import type { EquipmentShopCatalogItem } from "@/lib/equipment-shop/catalog";
+import type { EquipmentShopActivityEntry } from "@/lib/equipment-shop/activity";
 import type {
   EquipmentResearchCapabilities,
   EquipmentResearchNode,
@@ -88,6 +89,7 @@ export type EquipmentShopCatalogEntry = EquipmentShopCatalogItem;
 
 export interface EquipmentShopCatalogResponse {
   items: EquipmentShopCatalogEntry[];
+  recentActivity: EquipmentShopActivityEntry[];
   isOpen: boolean;
   mode: "auto" | "open" | "closed";
   scheduledOpen: boolean;

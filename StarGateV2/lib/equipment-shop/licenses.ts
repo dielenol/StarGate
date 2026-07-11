@@ -267,6 +267,16 @@ const EQUIPMENT_LICENSE_RULES: Record<string, EquipmentLicenseRule> = {
   },
 };
 
+export function isTowaskiCatalogAllowlistedSlug(
+  slug: string | null | undefined,
+): boolean {
+  return Boolean(
+    slug &&
+      (Object.prototype.hasOwnProperty.call(EQUIPMENT_LICENSE_RULES, slug) ||
+        isTowaskiLicenseSlug(slug)),
+  );
+}
+
 export function isTowaskiLicenseSlug(
   value: string | null | undefined,
 ): value is TowaskiLicenseSlug {

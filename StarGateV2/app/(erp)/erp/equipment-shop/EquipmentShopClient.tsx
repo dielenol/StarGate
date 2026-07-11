@@ -22,6 +22,7 @@ import {
   type EquipmentResearchScope,
   useCompleteEquipmentResearch,
   useContributeEquipmentResearch,
+  useEquipmentShopQuote,
   usePurchaseEquipmentShopItem,
   useRushEquipmentResearch,
   useStartEquipmentResearch,
@@ -901,7 +902,7 @@ function buildTowaskiItemLine(
   item: EquipmentShopCatalogEntry,
   codename?: string | null,
 ): { mood: TowaskiMood; text: string } {
-  if (item.stock <= 0 || !item.available) {
+  if (!item.available) {
     return { mood: "stock", text: TOWASKI_DIALOGUE_LINES.unavailable };
   }
 
@@ -1309,6 +1310,7 @@ export default function EquipmentShopClient({
   });
   const creditsQuery = useCredits({ initialData: initialCredits });
   const purchaseMutation = usePurchaseEquipmentShopItem();
+  const quoteMutation = useEquipmentShopQuote();
   const startResearchMutation = useStartEquipmentResearch();
   const rushResearchMutation = useRushEquipmentResearch();
   const contributeResearchMutation = useContributeEquipmentResearch();
@@ -1557,7 +1559,6 @@ export default function EquipmentShopClient({
     canUseShop &&
     !isTowaskiDebug &&
     selectedItem?.available === true &&
-    selectedItem.stock > 0 &&
     selectedHasBasicPurchaseAccess &&
     selectedItem.licenseOwned !== true &&
     !selectedLicenseBlocked &&
@@ -1885,6 +1886,7 @@ export default function EquipmentShopClient({
 
   function handleSelectSalesItem(item: EquipmentShopCatalogEntry) {
     setSelectedKey(item.key);
+    quoteMutation.reset();
     if (activeZone === "towaski") {
       const nextLine = buildTowaskiItemLine(item, mainCharacter?.codename);
       playTowaskiIfActive(nextLine.mood, nextLine.text);
@@ -1931,7 +1933,7 @@ export default function EquipmentShopClient({
       return;
     }
 
-    if (item.stock <= 0 || !item.available) {
+    if (!item.available) {
       setErrorMessage("현재 반출할 수 없는 품목입니다.");
       playTowaskiIfActive("stock", TOWASKI_DIALOGUE_LINES.unavailable);
       return;
@@ -2344,12 +2346,8 @@ export default function EquipmentShopClient({
     const totalCatalogItemCount =
       towaskiItemCount + acheronItemCount + strategicItemCount;
     const availableCatalogItemCount = catalog.items.filter(
-      (item) => item.available && item.stock > 0,
+      (item) => item.available,
     ).length;
-    const availableStockCount = catalog.items.reduce(
-      (sum, item) => sum + (item.available ? item.stock : 0),
-      0,
-    );
     const activeProjectCount = researchProjects.filter(
       (project) => project.computedStatus !== "applied",
     ).length;
@@ -2371,7 +2369,7 @@ export default function EquipmentShopClient({
         key: "issue",
         label: "반출 준비",
         value: `${availableCatalogItemCount}종`,
-        detail: `전체 ${totalCatalogItemCount}종 · 재고 ${availableStockCount}EA`,
+        detail: `전체 ${totalCatalogItemCount}종 · 가용성 기준`,
         warning: false,
       },
       {
@@ -2652,7 +2650,7 @@ export default function EquipmentShopClient({
             <div className={styles.productGrid}>
               {salesItems.map((item) => {
                 const isSelected = selectedItem?.key === item.key;
-                const isSoldOut = item.stock <= 0 || !item.available;
+                const isSoldOut = !item.available;
                 const isLicenseItem = isTowaskiLicenseCatalogItem(item);
                 const licenseBlocked = isEquipmentLicenseBlocked(item);
                 const licenseAccess = describeEquipmentLicenseAccess(item);
@@ -2695,7 +2693,7 @@ export default function EquipmentShopClient({
                     >
                       <span className={styles.productTop}>
                         <span>{getCatalogCategoryLabel(item)}</span>
-                        <span>{isSoldOut ? "LOCKED" : `${item.stock} EA`}</span>
+                        <span>{isSoldOut ? "LOCKED" : "AVAILABLE"}</span>
                       </span>
                       <span className={styles.productIcon} aria-hidden>
                         {renderCatalogIcon(item, 48)}
@@ -2773,13 +2771,42 @@ export default function EquipmentShopClient({
                     {selectedLicenseDetail}
                   </p>
                 ) : null}
+                {activeZone === "towaski" ? (
+                  <div className={styles.qualificationPanel}>
+                    <span>
+                      <small>기본 화기</small>
+                      <strong>
+                        {effectiveTowaskiGm
+                          ? "GM 면제"
+                          : effectiveHasBasicLicense
+                            ? "라이센스 보유"
+                            : selectedItem.licenseStatus?.source ===
+                                "character_qualification"
+                              ? "품목 한정 적성 승인"
+                              : "미발급"}
+                      </strong>
+                    </span>
+                    <span>
+                      <small>품목 판정</small>
+                      <strong>
+                        {selectedItem.licenseStatus?.source === "owned_license"
+                          ? "보유 라이센스"
+                          : selectedItem.licenseStatus?.source ===
+                              "character_qualification"
+                            ? (selectedItem.licenseStatus.matchedKeyword ??
+                              "명시 적성 예외")
+                            : selectedItem.licenseRequirement
+                              ? "추가 라이센스 필요"
+                              : "기본 자격 적용"}
+                      </strong>
+                    </span>
+                  </div>
+                ) : null}
                 <div className={styles.detailStats}>
                   <span>{selectedItem.effect}</span>
                   <strong>{formatCredits(selectedItem.price)}</strong>
                   <span>
-                    {selectedItem.stock <= 0 || !selectedItem.available
-                      ? "LOCKED"
-                      : `STOCK ${selectedItem.stock}`}
+                    {selectedItem.available ? "상시 반출" : "LOCKED"}
                   </span>
                 </div>
                 <div className={styles.purchaseBox}>
@@ -2818,13 +2845,79 @@ export default function EquipmentShopClient({
                             ? "라이센스 발급"
                             : "1개 즉시 반출"}
                   </button>
+                  {isGM && activeZone === "towaski" ? (
+                    <button
+                      type="button"
+                      className={styles.quoteAction}
+                      onClick={() =>
+                        quoteMutation.mutate({
+                          key: selectedItem.key,
+                          simulatePlayerRules: true,
+                          basicLicenseOverride: effectiveHasBasicLicense,
+                          balanceOverride: balance,
+                        })
+                      }
+                      disabled={quoteMutation.isPending}
+                    >
+                      {quoteMutation.isPending ? "판정 중" : "GM 구매 드라이런"}
+                    </button>
+                  ) : null}
+                  {isGM && quoteMutation.data?.key === selectedItem.key ? (
+                    <div
+                      className={styles.quoteResult}
+                      data-eligible={quoteMutation.data.eligibility.eligible}
+                    >
+                      <strong>
+                        {quoteMutation.data.eligibility.eligible
+                          ? "PLAYER RULES / PASS"
+                          : `PLAYER RULES / ${quoteMutation.data.eligibility.code ?? "BLOCKED"}`}
+                      </strong>
+                      <span>{quoteMutation.data.eligibility.reason}</span>
+                      <span>
+                        {formatCredits(quoteMutation.data.balance)} →{" "}
+                        {formatCredits(quoteMutation.data.balanceAfter)}
+                      </span>
+                    </div>
+                  ) : null}
+                  {isGM && quoteMutation.isError ? (
+                    <p className={styles.quoteError}>
+                      {describeEquipmentShopError(quoteMutation.error)}
+                    </p>
+                  ) : null}
                 </div>
               </>
             ) : (
               <div className={styles.empty}>선택 가능한 품목이 없습니다.</div>
             )}
           </section>
-
+          {activeZone === "towaski" ? (
+            <section className={styles.activityPanel} aria-label="최근 반출 기록">
+              <div className={styles.activityHead}>
+                <Eyebrow>RECENT LEDGER</Eyebrow>
+                <strong>최근 반출·자격 등록</strong>
+              </div>
+              {catalog.recentActivity.length > 0 ? (
+                <ol className={styles.activityList}>
+                  {catalog.recentActivity.map((entry) => (
+                    <li key={entry.id}>
+                      <span data-kind={entry.kind}>
+                        {entry.kind === "license" ? "LICENSE" : "ISSUE"}
+                      </span>
+                      <div>
+                        <strong>{entry.title}</strong>
+                        <small>{entry.detail}</small>
+                      </div>
+                      <time dateTime={entry.createdAt}>
+                        {formatDateTime(entry.createdAt)}
+                      </time>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className={styles.activityEmpty}>최근 반출 기록이 없습니다.</p>
+              )}
+            </section>
+          ) : null}
         </aside>
       </div>
     );

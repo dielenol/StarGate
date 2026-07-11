@@ -84,6 +84,8 @@ test("license challenge retries are idempotent per start and resolve request", a
   ]);
 
   assert.match(route, /readIdempotencyKey\(request\)/);
+  assert.match(route, /export async function GET/);
+  assert.match(route, /findTowaskiLicenseTestRequestChallenge/);
   assert.match(route, /startOrResumeTowaskiLicenseChallenge/);
   assert.match(route, /requestId/);
   assert.match(challengeDb, /startRequestId: args\.requestId/);
@@ -101,6 +103,10 @@ test("license challenge retries are idempotent per start and resolve request", a
   assert.doesNotMatch(challengeDb, /lastResolution/);
   assert.match(challengeDb, /expiresAt: \{ \$lte: now \}/);
   assert.match(challengeDb, /\(args\.hit && elapsedMs > rules\.maxRoundDurationMs\)/);
+  const mutations = await readFile(EQUIPMENT_MUTATIONS, "utf8");
+  assert.match(mutations, /license-test\?requestId=/);
+  assert.match(mutations, /status\.status !== "processing"/);
+  assert.match(mutations, /TOWASKI_LICENSE_REDEMPTION_LEASE_MS \+ 5_000/);
 });
 
 test("equipment checkout serializes inventory and rejects owned licenses", async () => {
@@ -123,7 +129,7 @@ test("equipment checkout serializes inventory and rejects owned licenses", async
     checkout,
     /resolveEquipmentLicenseStatus\(\{[\s\S]*character: transactionCharacter[\s\S]*ownedLicenseSlugs/,
   );
-  assert.match(checkout, /hasTowaskiBasicPurchaseAccess/);
+  assert.match(checkout, /evaluateEquipmentPurchaseEligibility/);
   assert.doesNotMatch(checkout, /cartLicenseSlugs/);
   assert.match(inventory, /character_inventory_locks/);
   assert.match(inventory, /prepareCharacterInventoryItemLocks/);

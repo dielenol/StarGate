@@ -2,6 +2,7 @@ import type { ItemCategory, MasterItem } from "@stargate/shared-db/types";
 
 import {
   getEquipmentLicenseRequirement,
+  isTowaskiCatalogAllowlistedSlug,
   resolveEquipmentCatalogLicenseContext,
   TOWASKI_LICENSE_TAG_KEYWORDS,
   type EquipmentLicenseCharacter,
@@ -31,7 +32,7 @@ export interface EquipmentShopCatalogItem {
   description: string;
   damage?: string;
   previewImage?: string;
-  stock: number;
+  stock: number | null;
   available: boolean;
   licenseRequirement?: Pick<
     EquipmentLicenseRequirement,
@@ -49,6 +50,7 @@ const CATEGORY_LABELS: Record<EquipmentShopCategory, string> = {
 };
 
 const ARMORY_TAG_KEYWORDS = ["병기부"];
+const TOWASKI_ZONE_TAG_KEYWORDS = ["토와스키", "토와스키건샵", "토와스키 건샵"];
 
 const TOWASKI_CONSUMABLE_TAG_KEYWORDS = [
   "토와스키",
@@ -101,7 +103,7 @@ function hasNormalizedTag(
 }
 
 export function equipmentShopItemZone(
-  item: Pick<MasterItem, "category" | "tags">,
+  item: Pick<MasterItem, "category" | "slug" | "tags">,
 ): EquipmentShopZone | null {
   const normalizedTags = new Set((item.tags ?? []).map(normalizeTag));
 
@@ -110,7 +112,12 @@ export function equipmentShopItemZone(
       normalizedTags.has(normalizeTag(keyword)),
     );
     if (acheron) return "acheron";
-    return "towaski";
+    const explicitlyTagged =
+      hasNormalizedTag(normalizedTags, ARMORY_TAG_KEYWORDS) &&
+      hasNormalizedTag(normalizedTags, TOWASKI_ZONE_TAG_KEYWORDS);
+    return explicitlyTagged || isTowaskiCatalogAllowlistedSlug(item.slug)
+      ? "towaski"
+      : null;
   }
 
   if (item.category === "CONSUMABLE") {
@@ -206,7 +213,7 @@ export function toEquipmentShopCatalogItem(
           },
         }
       : {}),
-    stock: available ? 1 : 0,
+    stock: null,
     available,
   };
 }

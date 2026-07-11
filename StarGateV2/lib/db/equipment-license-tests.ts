@@ -12,6 +12,7 @@ import {
   getTowaskiLicenseTestRules,
   TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
   TOWASKI_BASIC_LICENSE_TEST_RULES,
+  TOWASKI_LICENSE_REDEMPTION_LEASE_MS,
   TOWASKI_LICENSE_TARGET_LAYOUTS,
   type TowaskiLicenseTestDifficulty,
   type TowaskiLicenseTarget,
@@ -19,7 +20,6 @@ import {
 
 const COLLECTION_NAME = "equipment_license_tests";
 const REQUEST_COLLECTION_NAME = "equipment_license_test_requests";
-const REDEMPTION_LEASE_MS = 20_000;
 
 export type TowaskiLicenseChallengeStatus =
   | "active"
@@ -442,6 +442,32 @@ export async function startOrResumeTowaskiLicenseChallenge(args: {
   );
 }
 
+export async function findTowaskiLicenseTestRequestChallenge(args: {
+  userId: string;
+  characterId: string;
+  requestId: string;
+}): Promise<{
+  action: TowaskiLicenseTestRequestRecord["action"];
+  challenge: TowaskiLicenseChallenge;
+} | null> {
+  const [requests, challenges] = await Promise.all([
+    requestCollection(),
+    challengeCollection(),
+  ]);
+  const request = await requests.findOne({
+    userId: args.userId,
+    characterId: args.characterId,
+    requestId: args.requestId,
+  });
+  if (!request) return null;
+  const challenge = await challenges.findOne({ _id: request.challengeId });
+  if (!challenge) return null;
+  return {
+    action: request.action,
+    challenge: applyChallengeOutcome(challenge, request.outcome),
+  };
+}
+
 export async function resolveTowaskiLicenseChallengeRound(args: {
   challengeId: string;
   userId: string;
@@ -706,7 +732,9 @@ export async function claimTowaskiLicenseChallengeRedemption(
       $set: {
         status: "redeeming",
         redemptionToken,
-        redemptionLeaseExpiresAt: new Date(now.getTime() + REDEMPTION_LEASE_MS),
+        redemptionLeaseExpiresAt: new Date(
+          now.getTime() + TOWASKI_LICENSE_REDEMPTION_LEASE_MS,
+        ),
         expiresAt: new Date(
           now.getTime() + TOWASKI_BASIC_LICENSE_TEST_RULES.challengeTtlMs,
         ),

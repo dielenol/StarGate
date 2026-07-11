@@ -24,14 +24,44 @@ import {
   equipmentShopKeys,
 } from "@/hooks/queries/useEquipmentShopQuery";
 import type { EquipmentResearchScope as EquipmentResearchScopeValue } from "@/lib/equipment-shop/research";
-import type {
-  TowaskiLicenseTestRequest,
-  TowaskiLicenseTestResponse,
+import type { EquipmentPurchaseBlockCode } from "@/lib/equipment-shop/purchase-eligibility";
+import {
+  TOWASKI_LICENSE_REDEMPTION_LEASE_MS,
+  type TowaskiLicenseTestRequest,
+  type TowaskiLicenseTestResponse,
 } from "@/lib/equipment-shop/license-test";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
 
+const LICENSE_TEST_RECOVERY_POLL_INTERVAL_MS = 250;
+const LICENSE_TEST_RECOVERY_WINDOW_MS =
+  TOWASKI_LICENSE_REDEMPTION_LEASE_MS + 5_000;
+const LICENSE_TEST_RECOVERY_ATTEMPTS = Math.ceil(
+  LICENSE_TEST_RECOVERY_WINDOW_MS / LICENSE_TEST_RECOVERY_POLL_INTERVAL_MS,
+);
+
 interface PurchaseEquipmentInput {
   key: string;
+}
+
+export interface EquipmentShopQuoteResponse {
+  key: string;
+  name: string;
+  simulatePlayerRules: boolean;
+  eligibility: {
+    eligible: boolean;
+    code: EquipmentPurchaseBlockCode | null;
+    reason: string;
+  };
+  balance: number;
+  price: number;
+  balanceAfter: number;
+  source: "live_character" | "gm_sandbox";
+  licenseStatus: {
+    satisfied: boolean;
+    source: string | null;
+    matchedKeyword?: string;
+    note?: string;
+  } | null;
 }
 
 interface CheckoutResponse {
@@ -171,6 +201,29 @@ export function usePurchaseEquipmentShopItem() {
   });
 }
 
+export function useEquipmentShopQuote() {
+  return useMutation<
+    EquipmentShopQuoteResponse,
+    EquipmentShopApiError,
+    {
+      key: string;
+      simulatePlayerRules?: boolean;
+      basicLicenseOverride?: boolean;
+      balanceOverride?: number;
+    }
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/equipment-shop/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+  });
+}
+
 export function useCompleteTowaskiLicenseTest() {
   const queryClient = useQueryClient();
 
@@ -180,17 +233,33 @@ export function useCompleteTowaskiLicenseTest() {
     TowaskiLicenseTestRequest
   >({
     mutationFn: async (input) => {
+      const requestId = createIdempotencyKey("towaski-license-test", input);
       const res = await fetch("/api/erp/equipment-shop/license-test", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": createIdempotencyKey(
-            "towaski-license-test",
-            input,
-          ),
+          "Idempotency-Key": requestId,
         },
         body: JSON.stringify(input),
       });
+      if (res.status === 409) {
+        for (
+          let attempt = 0;
+          attempt < LICENSE_TEST_RECOVERY_ATTEMPTS;
+          attempt += 1
+        ) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, LICENSE_TEST_RECOVERY_POLL_INTERVAL_MS),
+          );
+          const statusRes = await fetch(
+            `/api/erp/equipment-shop/license-test?requestId=${encodeURIComponent(requestId)}`,
+            { cache: "no-store" },
+          );
+          if (!statusRes.ok) continue;
+          const status = (await statusRes.json()) as TowaskiLicenseTestResponse;
+          if (status.status !== "processing") return status;
+        }
+      }
       if (!res.ok) await throwEquipmentShopError(res);
       return res.json();
     },

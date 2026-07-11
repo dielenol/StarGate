@@ -162,6 +162,10 @@ export default function TowaskiLicenseTest({
   const handleResponse = useCallback(
     (response: TowaskiLicenseTestResponse) => {
       resolvingRef.current = false;
+      if (response.status === "processing") {
+        setPhase("resolving");
+        return;
+      }
       if (response.status === "active") {
         setDifficulty(response.difficulty);
         setChallenge(response);
