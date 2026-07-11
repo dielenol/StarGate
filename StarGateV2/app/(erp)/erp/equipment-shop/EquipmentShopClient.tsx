@@ -109,8 +109,8 @@ type ArmoryZoneDef = {
   npc: string;
 };
 
-const TOWASKI_PROFILE_SRC = "/assets/npcs/Towaski-profile.webp";
-const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp";
+const TOWASKI_PROFILE_SRC = "/assets/npcs/Towaski-profile.webp?v=cutout-1";
+const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp?v=cutout-1";
 const TOWASKI_IDLE_DELAY_MS = 12000;
 const SUTURE_PROFILE_SRC = "/assets/npcs/Irena-Vukovic-Suture-profile.webp";
 const SUTURE_IDLE_DELAY_MS = 14000;
@@ -126,16 +126,16 @@ const TOWASKI_DEBUG_MODES: readonly {
 ];
 
 const TOWASKI_MOOD_ASSETS: Record<TowaskiMood, string> = {
-  welcome: "/assets/npcs/Towaski-welcome.webp",
-  inspect: "/assets/npcs/Towaski-inspect.webp",
-  stock: "/assets/npcs/Towaski-stock.webp",
-  cart: "/assets/npcs/Towaski-cart.webp",
-  license: "/assets/npcs/Towaski-checkout.webp",
-  checkout: "/assets/npcs/Towaski-checkout.webp",
-  range: "/assets/npcs/Towaski-blocked.webp",
-  rangeFailed: "/assets/npcs/Towaski-blocked.webp",
-  blocked: "/assets/npcs/Towaski-blocked.webp",
-  idle: "/assets/npcs/Towaski-idle.webp",
+  welcome: "/assets/npcs/Towaski-welcome.webp?v=cutout-1",
+  inspect: "/assets/npcs/Towaski-inspect.webp?v=cutout-1",
+  stock: "/assets/npcs/Towaski-stock.webp?v=cutout-1",
+  cart: "/assets/npcs/Towaski-cart.webp?v=cutout-1",
+  license: "/assets/npcs/Towaski-checkout.webp?v=cutout-1",
+  checkout: "/assets/npcs/Towaski-checkout.webp?v=cutout-1",
+  range: "/assets/npcs/Towaski-blocked.webp?v=cutout-1",
+  rangeFailed: "/assets/npcs/Towaski-blocked.webp?v=cutout-1",
+  blocked: "/assets/npcs/Towaski-blocked.webp?v=cutout-1",
+  idle: "/assets/npcs/Towaski-idle.webp?v=cutout-1",
 };
 
 const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {

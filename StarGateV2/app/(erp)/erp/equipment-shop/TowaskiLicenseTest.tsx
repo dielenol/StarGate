@@ -408,7 +408,7 @@ export default function TowaskiLicenseTest({
         <div className={styles.briefing}>
           <div className={styles.instructorPortrait}>
             <Image
-              src="/assets/npcs/Towaski-blocked.webp"
+              src="/assets/npcs/Towaski-blocked.webp?v=cutout-1"
               alt="사격 시험을 제지하며 설명하는 립 토와스키"
               fill
               sizes="(max-width: 720px) 100vw, 360px"
