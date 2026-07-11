@@ -854,6 +854,13 @@ function researchNodeMapStatusLabel(status: ResearchNodeMapStatus): string {
   return "연구 가능";
 }
 
+function researchNodeMapStatusTone(status: ResearchNodeMapStatus): string {
+  if (status === "completed") return "ready";
+  if (status === "applied") return "applied";
+  if (status === "applying" || status === "in_progress") return "progress";
+  return "available";
+}
+
 function researchNodeClassName(
   status: ResearchNodeMapStatus,
   isSelected: boolean,
@@ -2335,6 +2342,12 @@ export default function EquipmentShopClient({
     const selectedPrerequisiteLabel = selectedResearchNode
       ? researchNodeLockLabel(selectedResearchNode)
       : null;
+    const selectedResearchStatusTone = selectedResearchUnlocked
+      ? researchNodeMapStatusTone(selectedNodeState)
+      : "locked";
+    const selectedResearchStatusLabel = selectedResearchUnlocked
+      ? researchNodeMapStatusLabel(selectedNodeState)
+      : (selectedPrerequisiteLabel ?? "잠김");
     const selectedStartQuote = selectedResearchNode
       ? quoteEquipmentResearchStart({
           node: selectedResearchNode,
@@ -2372,6 +2385,82 @@ export default function EquipmentShopClient({
       balance >= selectedTeamChargePreview &&
       hasMainCharacter &&
       !contributeResearchMutation.isPending;
+    const selectedResearchCost =
+      selectedStartQuote?.cost ?? selectedResearchNode?.cost ?? 0;
+    const researchBonuses = [
+      {
+        key: "refund",
+        label: "환급",
+        active: research.capabilities.refundPercent > 0,
+        value:
+          research.capabilities.refundPercent > 0
+            ? `${research.capabilities.refundPercent}% / cap ${research.capabilities.refundCap} CR`
+            : "미해금",
+      },
+      {
+        key: "rush",
+        label: "RUSH 할인",
+        active: research.capabilities.rushDiscountPercent > 0,
+        value:
+          research.capabilities.rushDiscountPercent > 0
+            ? `${research.capabilities.rushDiscountPercent}%`
+            : "미해금",
+      },
+      {
+        key: "cost",
+        label: "연구비",
+        active: research.capabilities.researchCostDiscountPercent > 0,
+        value:
+          research.capabilities.researchCostDiscountPercent > 0
+            ? `${research.capabilities.researchCostDiscountPercent}% / cap ${research.capabilities.researchCostDiscountCap} CR`
+            : "미해금",
+      },
+      {
+        key: "time",
+        label: "연구 시간",
+        active: research.capabilities.researchTimeDiscountPercent > 0,
+        value:
+          research.capabilities.researchTimeDiscountPercent > 0
+            ? `${research.capabilities.researchTimeDiscountPercent}% / max ${research.capabilities.researchTimeDiscountMaxHours}h`
+            : "미해금",
+      },
+      {
+        key: "credit",
+        label: "크레딧 보너스",
+        active: research.capabilities.creditBonusPercent > 0,
+        value:
+          research.capabilities.creditBonusPercent > 0
+            ? `${research.capabilities.creditBonusPercent}% / cap ${research.capabilities.creditBonusCap} CR`
+            : "미해금",
+      },
+    ];
+    const activeResearchBonuses = researchBonuses.filter((bonus) => bonus.active);
+    const personalResearchDisabledReason = !selectedResearchEffect
+      ? "개인 연구 효과가 없는 항목입니다."
+      : !selectedResearchUnlocked
+        ? `${selectedPrerequisiteLabel ?? "선행 연구"}가 필요합니다.`
+        : !hasMainCharacter
+          ? "메인 AGENT 지정이 필요합니다."
+          : startResearchMutation.isPending
+            ? "연구 시작 요청을 처리하고 있습니다."
+            : balance < selectedResearchCost
+              ? `${formatCredits(selectedResearchCost - balance)}이 부족합니다.`
+              : null;
+    const teamContributionDisabledReason = !selectedResearchEffect
+      ? "팀 연구 효과가 없는 항목입니다."
+      : !selectedResearchUnlocked
+        ? `${selectedPrerequisiteLabel ?? "선행 연구"}가 필요합니다.`
+        : selectedTeamRemainingCost <= 0
+          ? "모금 목표가 이미 충족되었습니다."
+          : !Number.isInteger(parsedContributionAmount) || parsedContributionAmount <= 0
+            ? "기여 금액을 1 CR 이상 입력하세요."
+            : !hasMainCharacter
+              ? "메인 AGENT 지정이 필요합니다."
+              : contributeResearchMutation.isPending
+                ? "기여 요청을 처리하고 있습니다."
+                : balance < selectedTeamChargePreview
+                  ? `${formatCredits(selectedTeamChargePreview - balance)}이 부족합니다.`
+                  : null;
     const techTreeMapStyle = {
       gridTemplateColumns: `132px repeat(${researchTrackLayout.columnCount}, minmax(152px, 176px))`,
       gridTemplateRows: `70px repeat(${Math.max(1, researchTrackLayout.rows.length)}, minmax(118px, auto))`,
@@ -2389,15 +2478,14 @@ export default function EquipmentShopClient({
             <div className={styles.techTreeControls}>
               <div
                 className={styles.techScopeSwitch}
-                role="tablist"
+                role="group"
                 aria-label="연구 범위"
               >
                 {(["personal", "team"] as const).map((scope) => (
                   <button
                     key={scope}
                     type="button"
-                    role="tab"
-                    aria-selected={activeResearchScope === scope}
+                    aria-pressed={activeResearchScope === scope}
                     className={
                       activeResearchScope === scope
                         ? styles["techScopeSwitch--active"]
@@ -2418,58 +2506,40 @@ export default function EquipmentShopClient({
           </div>
 
           <div className={styles.techCapRail}>
-            <div>
+            <div className={styles.techCapPrimary}>
               <span>누적 상한</span>
               <strong>
                 HP {research.caps.hp} · SAN {research.caps.san} · ATK{" "}
                 {research.caps.atk} · DEF {research.caps.def}
               </strong>
             </div>
-            <div>
-              <span>환급</span>
-              <strong>
-                {research.capabilities.refundPercent > 0
-                  ? `${research.capabilities.refundPercent}% / cap ${research.capabilities.refundCap} CR`
-                  : "미해금"}
-              </strong>
-            </div>
-            <div>
-              <span>RUSH 할인</span>
-              <strong>
-                {research.capabilities.rushDiscountPercent > 0
-                  ? `${research.capabilities.rushDiscountPercent}%`
-                  : "미해금"}
-              </strong>
-            </div>
-            <div>
-              <span>연구비</span>
-              <strong>
-                {research.capabilities.researchCostDiscountPercent > 0
-                  ? `${research.capabilities.researchCostDiscountPercent}% / cap ${research.capabilities.researchCostDiscountCap} CR`
-                  : "미해금"}
-              </strong>
-            </div>
-            <div>
-              <span>연구 시간</span>
-              <strong>
-                {research.capabilities.researchTimeDiscountPercent > 0
-                  ? `${research.capabilities.researchTimeDiscountPercent}% / max ${research.capabilities.researchTimeDiscountMaxHours}h`
-                  : "미해금"}
-              </strong>
-            </div>
-            <div>
-              <span>크레딧 보너스</span>
-              <strong>
-                {research.capabilities.creditBonusPercent > 0
-                  ? `${research.capabilities.creditBonusPercent}% / cap ${research.capabilities.creditBonusCap} CR`
-                  : "미해금"}
-              </strong>
-            </div>
+            <details className={styles.techCapDisclosure}>
+              <summary>
+                <span>활성 보너스</span>
+                <strong>
+                  {activeResearchBonuses.length > 0
+                    ? activeResearchBonuses
+                        .map((bonus) => `${bonus.label} ${bonus.value}`)
+                        .join(" · ")
+                    : "없음"}
+                </strong>
+                <em>전체 항목</em>
+              </summary>
+              <div className={styles.techCapDetails}>
+                {researchBonuses.map((bonus) => (
+                  <div key={bonus.key} data-active={bonus.active}>
+                    <span>{bonus.label}</span>
+                    <strong>{bonus.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </details>
           </div>
 
           <div className={styles.techTreeScroll}>
             <div
               className={styles.techTreeMap}
+              role="region"
               style={techTreeMapStyle}
               aria-label="병기 연구 테크트리"
             >
@@ -2538,6 +2608,11 @@ export default function EquipmentShopClient({
                           isSelected,
                           !isUnlocked,
                         )}
+                        data-status={
+                          isUnlocked
+                            ? researchNodeMapStatusTone(nodeStatus)
+                            : "locked"
+                        }
                         style={{
                           gridColumn: column + 1,
                           gridRow: rowIndex + 2,
@@ -2565,7 +2640,20 @@ export default function EquipmentShopClient({
           </div>
         </section>
 
-        <aside className={styles.techDetailPanel}>
+        {selectedResearchNode ? (
+          <div className={styles.mobileResearchBar}>
+            <div>
+              <span>선택 연구 · {selectedResearchStatusLabel}</span>
+              <strong>{selectedResearchNode.name}</strong>
+            </div>
+            <a href="#selected-research-detail">상세·실행</a>
+          </div>
+        ) : null}
+
+        <aside
+          id="selected-research-detail"
+          className={styles.techDetailPanel}
+        >
           {selectedResearchNode ? (
             <div className={styles.techDetailHero}>
               <ResearchPixelIcon node={selectedResearchNode} active />
@@ -2574,8 +2662,11 @@ export default function EquipmentShopClient({
                 <strong>{selectedResearchNode.name}</strong>
                 <span>{selectedResearchNode.key}</span>
               </div>
-              <span className={styles.techDetailStatus}>
-                {researchNodeMapStatusLabel(selectedNodeState)}
+              <span
+                className={styles.techDetailStatus}
+                data-status={selectedResearchStatusTone}
+              >
+                {selectedResearchStatusLabel}
               </span>
             </div>
           ) : null}
@@ -2694,6 +2785,11 @@ export default function EquipmentShopClient({
                         : "기여 불가"}
                     </button>
                   </div>
+                  {teamContributionDisabledReason ? (
+                    <p className={styles.actionHint} role="status">
+                      {teamContributionDisabledReason}
+                    </p>
+                  ) : null}
 
                   <div className={styles.teamFundingQuick}>
                     {[50, 100, 200, selectedTeamRemainingCost]
@@ -2725,12 +2821,8 @@ export default function EquipmentShopClient({
                       )
                     }
                     disabled={
-                      !selectedResearchEffect ||
-                      !selectedResearchUnlocked ||
-                      !canStartResearch(
-                        activeResearchScope,
-                        selectedStartQuote?.cost ?? selectedResearchNode.cost,
-                      )
+                      Boolean(personalResearchDisabledReason) ||
+                      !canStartResearch(activeResearchScope, selectedResearchCost)
                     }
                     aria-busy={startResearchMutation.isPending}
                   >
@@ -2741,6 +2833,11 @@ export default function EquipmentShopClient({
                         : "-"}
                     </strong>
                   </button>
+                  {personalResearchDisabledReason ? (
+                    <p className={styles.actionHint} role="status">
+                      {personalResearchDisabledReason}
+                    </p>
+                  ) : null}
                 </div>
               )}
 

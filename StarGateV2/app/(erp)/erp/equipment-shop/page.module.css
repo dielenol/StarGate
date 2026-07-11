@@ -889,6 +889,14 @@
   align-items: start;
 }
 
+.labLayout {
+  --lab-muted: #a9b1ad;
+  --lab-progress: #79d9e8;
+  --lab-ready: #f0b45e;
+  --lab-applied: #8ed69a;
+  --lab-locked: #87908c;
+}
+
 .shelfPanel,
 .counterPanel,
 .labConsole,
@@ -1521,6 +1529,17 @@
   color: var(--gold);
 }
 
+.techScopeSwitch button:focus-visible,
+.techNode:focus-visible,
+.techDetailActions button:focus-visible,
+.teamFundingInput input:focus-visible,
+.teamFundingInput button:focus-visible,
+.teamFundingQuick button:focus-visible,
+.mobileResearchBar a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
 .techTreeLegend {
   display: flex;
   flex-wrap: wrap;
@@ -1535,16 +1554,78 @@
   background: rgba(0, 0, 0, 0.32);
   border: 1px solid rgba(134, 213, 229, 0.22);
   border-radius: var(--radius-sm);
-  color: var(--ink-2);
-  font-size: 13px;
+  color: var(--lab-muted);
+  font-size: 14px;
   letter-spacing: 0.04em;
 }
 
 .techCapRail {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.techCapDisclosure {
+  min-width: 0;
+}
+
+.techCapDisclosure summary {
+  display: grid;
+  grid-template-columns: minmax(92px, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 100%;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.techCapDisclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.techCapDisclosure summary span {
+  color: var(--lab-muted);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.techCapDisclosure summary strong {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  color: var(--gold);
+  font-size: 14px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.techCapDisclosure summary em {
+  color: var(--lab-muted);
+  font-size: 14px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.techCapDisclosure[open] summary {
+  border-color: color-mix(in srgb, var(--gold-dim) 70%, var(--line));
+}
+
+.techCapDetails {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.techCapDetails > div:not([data-active="true"]) strong {
+  color: var(--lab-muted);
 }
 
 .techTreeScroll {
@@ -1601,13 +1682,13 @@
 .techCornerHeader {
   justify-items: center;
   color: var(--gold-dim);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.16em;
 }
 
 .techBranchLabel span {
-  color: var(--gold-dim);
-  font-size: 12px;
+  color: var(--lab-muted);
+  font-size: 14px;
   letter-spacing: 0.14em;
 }
 
@@ -1650,8 +1731,8 @@
 }
 
 .techTierHeader span {
-  color: var(--gold-dim);
-  font-size: 13px;
+  color: var(--gold);
+  font-size: 14px;
   letter-spacing: 0.16em;
 }
 
@@ -1662,8 +1743,8 @@
 }
 
 .techTierHeader em {
-  color: var(--ink-3);
-  font-size: 12px;
+  color: var(--lab-muted);
+  font-size: 14px;
   font-style: normal;
 }
 
@@ -1705,8 +1786,7 @@
   right: -18px;
 }
 
-.techNode:hover,
-.techNode--selected {
+.techNode:hover {
   border-color: var(--gold);
   color: var(--gold);
   box-shadow:
@@ -1714,13 +1794,23 @@
     0 0 18px color-mix(in srgb, var(--gold) 35%, transparent);
 }
 
+.techNode--selected {
+  color: var(--gold);
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.38),
+    0 0 18px color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
 .techNode--active {
-  border-color: rgba(109, 210, 226, 0.72);
+  border-color: var(--lab-progress);
+  color: var(--lab-progress);
 }
 
 .techNode--locked {
-  border-color: rgba(166, 176, 176, 0.22);
-  color: color-mix(in srgb, var(--ink-3) 70%, transparent);
+  border-color: color-mix(in srgb, var(--lab-locked) 48%, transparent);
+  color: var(--lab-locked);
   filter: grayscale(0.45);
 }
 
@@ -1729,17 +1819,18 @@
 }
 
 .techNode--completed {
-  border-color: rgba(108, 211, 122, 0.78);
-  color: #9fe59a;
+  border-color: var(--lab-ready);
+  color: var(--lab-ready);
 }
 
 .techNode--applied {
-  border-color: rgba(189, 166, 95, 0.72);
+  border-color: var(--lab-applied);
+  color: var(--lab-applied);
 }
 
 .techNodeKey {
-  color: var(--gold-dim);
-  font-size: 12px;
+  color: var(--lab-muted);
+  font-size: 14px;
   letter-spacing: 0.12em;
 }
 
@@ -1756,12 +1847,18 @@
 .techNodeEffect {
   display: -webkit-box;
   max-width: 100%;
-  color: var(--ink-3);
-  font-size: 12px;
+  color: var(--lab-muted);
+  font-size: 14px;
   line-height: 1.25;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
+}
+
+.techNode--locked strong,
+.techNode--locked .techNodeKey,
+.techNode--locked .techNodeEffect {
+  color: var(--lab-locked);
 }
 
 .techNodeBadge {
@@ -1771,7 +1868,33 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-sm);
   color: currentColor;
-  font-size: 12px;
+  font-size: 14px;
+}
+
+.techNodeBadge::before {
+  display: inline-block;
+  margin-right: 5px;
+  font-weight: 700;
+}
+
+.techNode[data-status="available"] .techNodeBadge::before {
+  content: "○";
+}
+
+.techNode[data-status="progress"] .techNodeBadge::before {
+  content: "▶";
+}
+
+.techNode[data-status="ready"] .techNodeBadge::before {
+  content: "!";
+}
+
+.techNode[data-status="applied"] .techNodeBadge::before {
+  content: "✓";
+}
+
+.techNode[data-status="locked"] .techNodeBadge::before {
+  content: "×";
 }
 
 .researchPixelIcon {
@@ -1829,6 +1952,7 @@
   background:
     linear-gradient(180deg, rgba(32, 63, 77, 0.86), rgba(9, 11, 13, 0.9)),
     rgba(8, 9, 9, 0.78);
+  scroll-margin-top: calc(var(--topbar-h) + 12px);
 }
 
 .techDetailHero {
@@ -1849,8 +1973,8 @@
 }
 
 .techDetailHero span {
-  color: var(--ink-2);
-  font-size: 13px;
+  color: var(--lab-muted);
+  font-size: 14px;
   letter-spacing: 0.08em;
 }
 
@@ -1862,6 +1986,26 @@
   border-radius: var(--radius-sm);
   color: var(--gold);
   white-space: nowrap;
+}
+
+.techDetailStatus[data-status="progress"] {
+  border-color: var(--lab-progress);
+  color: var(--lab-progress);
+}
+
+.techDetailStatus[data-status="ready"] {
+  border-color: var(--lab-ready);
+  color: var(--lab-ready);
+}
+
+.techDetailStatus[data-status="applied"] {
+  border-color: var(--lab-applied);
+  color: var(--lab-applied);
+}
+
+.techDetailStatus[data-status="locked"] {
+  border-color: var(--lab-locked);
+  color: var(--lab-locked);
 }
 
 .techDetailSummary {
@@ -1887,7 +2031,7 @@
 }
 
 .techDetailStats span {
-  color: var(--ink-3);
+  color: var(--lab-muted);
   font-size: 14px;
   letter-spacing: 0.08em;
 }
@@ -1903,8 +2047,8 @@
 .techDetailStats em {
   display: block;
   margin-top: 4px;
-  color: var(--ink-3);
-  font-size: 12px;
+  color: var(--lab-muted);
+  font-size: 14px;
   font-style: normal;
   line-height: 1.35;
   word-break: keep-all;
@@ -1938,8 +2082,8 @@
 }
 
 .techDetailActions span {
-  color: var(--ink-2);
-  font-size: 13px;
+  color: var(--lab-muted);
+  font-size: 14px;
   letter-spacing: 0.08em;
 }
 
@@ -1974,7 +2118,7 @@
 
 .teamFundingMeter span,
 .teamFundingInput label {
-  color: var(--ink-3);
+  color: var(--lab-muted);
   font-size: 14px;
   letter-spacing: 0.08em;
 }
@@ -2047,11 +2191,23 @@
   gap: 6px;
 }
 
+.actionHint {
+  margin: 0;
+  color: var(--lab-ready);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.mobileResearchBar {
+  display: none;
+}
+
 .agentSnapshot {
   padding-top: 4px;
 }
 
-.techCapRail div,
+.techCapPrimary,
+.techCapDetails > div,
 .researchCaps div,
 .researchNode,
 .projectCard,
@@ -2070,7 +2226,7 @@
 .projectCardTop span,
 .projectMeta span,
 .appliedList span {
-  color: var(--ink-3);
+  color: var(--lab-muted);
   font-size: 14px;
   letter-spacing: 0.08em;
 }
@@ -2578,7 +2734,6 @@
   }
 
   .operationGrid,
-  .techCapRail,
   .researchCaps,
   .researchNodeGrid,
   .workshopGrid {
@@ -2622,7 +2777,6 @@
 
   .commandStats,
   .operationGrid,
-  .techCapRail,
   .techDetailStats,
   .researchCaps,
   .researchNodeGrid,
@@ -2630,6 +2784,85 @@
   .statsGrid,
   .workshopGrid {
     grid-template-columns: 1fr;
+  }
+
+  .labLayout {
+    margin-bottom: 70px;
+  }
+
+  .techTreeHeader,
+  .techCapDisclosure summary {
+    grid-template-columns: 1fr;
+  }
+
+  .techTreeHeader {
+    display: grid;
+  }
+
+  .techTreeControls {
+    justify-items: stretch;
+  }
+
+  .techTreeLegend {
+    justify-content: flex-start;
+  }
+
+  .techCapRail {
+    grid-template-columns: 1fr;
+  }
+
+  .techCapDisclosure summary strong {
+    white-space: normal;
+  }
+
+  .mobileResearchBar {
+    position: fixed;
+    right: 12px;
+    bottom: calc(var(--armory-hud-height) + var(--armory-hud-bottom) + 8px);
+    left: 12px;
+    z-index: 91;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 60px;
+    padding: 9px 10px;
+    background: rgba(7, 16, 20, 0.96);
+    border: 1px solid var(--gold);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.42);
+  }
+
+  .mobileResearchBar div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .mobileResearchBar span {
+    color: var(--lab-muted);
+    font-size: 14px;
+  }
+
+  .mobileResearchBar strong {
+    color: var(--ink-0);
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobileResearchBar a {
+    min-height: 38px;
+    padding: 8px 10px;
+    background: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: var(--radius-sm);
+    color: var(--bg);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
   }
 
   .commandHero {
