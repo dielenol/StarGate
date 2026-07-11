@@ -154,10 +154,18 @@ export async function ensureAllIndexes(): Promise<void> {
     ]),
 
     /* ── character_inventory (from task spec) ── */
-    db.collection("character_inventory").createIndex(
-      { characterId: 1, itemId: 1 },
-      { name: "character_inventory_characterId_itemId" },
-    ),
+    db.collection("character_inventory").createIndexes([
+      {
+        key: { characterId: 1, itemId: 1 },
+        name: "character_inventory_characterId_itemId",
+      },
+      {
+        key: { characterId: 1, equippedSlot: 1 },
+        name: "character_inventory_equipped_slot_unique",
+        unique: true,
+        partialFilterExpression: { equippedSlot: { $type: "string" } },
+      },
+    ]),
 
     /* ── shared_inventory (party/common reward storage) ── */
     db.collection("shared_inventory").createIndex(

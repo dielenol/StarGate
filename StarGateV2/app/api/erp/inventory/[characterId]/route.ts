@@ -9,7 +9,8 @@ import { findCharacterById } from "@/lib/db/characters";
 import {
   addToInventory,
   findMasterItemById,
-  listCharacterInventory,
+  listCharacterInventoryEntries,
+  serializeCharacterInventory,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
@@ -47,8 +48,18 @@ export async function GET(
       );
     }
 
-    const inventory = await listCharacterInventory(characterId);
-    return NextResponse.json({ inventory });
+    const { inventory, entries } =
+      await listCharacterInventoryEntries(characterId);
+    const equipped = Object.fromEntries(
+      entries
+        .filter((entry) => entry.equippedSlot)
+        .map((entry) => [entry.equippedSlot, entry]),
+    );
+    return NextResponse.json({
+      inventory: serializeCharacterInventory(inventory),
+      entries,
+      equipped,
+    });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "인벤토리 조회 실패";

@@ -52,6 +52,7 @@ if (!HAS_MODULE_MOCK) {
     {
       namedExports: {
         charactersCol: async () => fakeCol,
+        usersCol: async () => ({}),
       },
     }
   );

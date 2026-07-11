@@ -25,7 +25,8 @@
     "premigrate:character-sheet": "pnpm --filter @stargate/shared-db build",
     "migrate:character-sheet": "node --experimental-strip-types scripts/migrate-character-sheet-to-lore-play.ts",
     "premigrate:credit-balances": "pnpm --filter @stargate/shared-db build",
-    "migrate:credit-balances": "node --experimental-strip-types scripts/migrate-credit-balances.ts"
+    "migrate:credit-balances": "node --experimental-strip-types scripts/migrate-credit-balances.ts",
+    "migrate:character-equipment": "node --experimental-strip-types scripts/migrate-character-equipment-to-inventory.ts"
   },
   "engines": {
     "node": ">=22.6.0"

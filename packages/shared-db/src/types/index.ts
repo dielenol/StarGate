@@ -76,13 +76,14 @@ export type {
   SharedInventory,
   SharedInventoryScope,
   ItemCategory,
+  EquipmentSlot,
   ShopMeta,
   ShopPageGroup,
   CreateMasterItemInput,
   CreateInventoryInput,
   CreateSharedInventoryInput,
 } from "./inventory.js";
-export { ITEM_CATEGORIES } from "./inventory.js";
+export { EQUIPMENT_SLOTS, ITEM_CATEGORIES } from "./inventory.js";
 
 export type {
   WikiPage,

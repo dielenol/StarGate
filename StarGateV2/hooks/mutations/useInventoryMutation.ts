@@ -12,6 +12,12 @@ interface GrantInventoryBody {
   note?: string;
 }
 
+interface EquipInventoryResponse {
+  success: true;
+  slot: "WEAPON" | "ARMOR";
+  previousItemId?: string;
+}
+
 export function useCreateItem() {
   const queryClient = useQueryClient();
 
@@ -82,6 +88,35 @@ export function useGrantSharedInventory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    },
+  });
+}
+
+export function useEquipInventoryItem(characterId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation<EquipInventoryResponse, Error, { itemId: string }>({
+    mutationFn: async ({ itemId }) => {
+      const res = await fetch(
+        `/api/erp/inventory/${characterId}/equipment`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ itemId }),
+        },
+      );
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(data.error ?? "장비 교체에 실패했습니다.");
+      }
+      return res.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: inventoryKeys.byCharacter(characterId),
+      });
     },
   });
 }

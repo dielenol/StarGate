@@ -471,7 +471,8 @@ export const ALLOWED_LORE_FIELDS_PLAYER = new Set<string>([
 /**
  * play sub-document 의 admin 편집 가능 키 (sub-document 단위 부분 업데이트용).
  *
- * 게임 시트(능력치/장비/어빌리티)는 admin 권한자만 직접 수정 가능.
+ * 게임 시트 능력치/어빌리티는 admin 권한자만 직접 수정 가능.
+ * 장비는 character_inventory 교체 API만 사용하므로 play.equipment를 제외한다.
  * stat delta 메모(`hpDelta` 등)와 base 값을 모두 노출.
  */
 export const ALLOWED_PLAY_FIELDS_ADMIN = new Set<string>([
@@ -489,7 +490,6 @@ export const ALLOWED_PLAY_FIELDS_ADMIN = new Set<string>([
   "play.weaponTraining",
   "play.skillTraining",
   "play.credit",
-  "play.equipment",
   "play.abilities",
 ]);
 

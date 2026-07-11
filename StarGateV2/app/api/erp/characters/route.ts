@@ -118,6 +118,15 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    if (playResult.data.equipment.length > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "초기 장비는 캐릭터 생성 후 인벤토리에서 지급·장착해야 합니다.",
+        },
+        { status: 400 },
+      );
+    }
     createPayload.play = playResult.data;
   } else if (bodyRecord.play !== undefined) {
     return NextResponse.json(

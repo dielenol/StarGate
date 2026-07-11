@@ -15,6 +15,11 @@ export const ITEM_CATEGORIES = [
 
 export type ItemCategory = (typeof ITEM_CATEGORIES)[number];
 
+/** 캐릭터 전투 장비 슬롯. 마스터 아이템 category 와 1:1로 대응한다. */
+export const EQUIPMENT_SLOTS = ["WEAPON", "ARMOR"] as const;
+
+export type EquipmentSlot = (typeof EQUIPMENT_SLOTS)[number];
+
 /**
  * 편의점 페이지 그룹 — tia_bot `SHOP_PAGES` 와 정합.
  * 신규 카탈로그 인입 시에만 채움. 비편의점 아이템은 undefined.
@@ -90,6 +95,10 @@ export interface CharacterInventory {
   quantity: number;
   acquiredAt: Date;
   note?: string;
+  /** 장착 중인 전투 슬롯. 미설정이면 보유만 하고 장착하지 않은 상태다. */
+  equippedSlot?: EquipmentSlot;
+  /** 마지막 장착/교체 시각. equippedSlot 과 함께 설정·해제한다. */
+  equippedAt?: Date;
 }
 
 export type SharedInventoryScope = "GLOBAL";

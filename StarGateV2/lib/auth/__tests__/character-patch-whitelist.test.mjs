@@ -130,7 +130,7 @@ if (!HAS_MODULE_MOCK) {
     // lore + play 동시 patch
     const body = {
       lore: { appearance: "변경됨", personality: "냉정" },
-      play: { hp: 99, atk: 50 },
+      play: { hp: 99, atk: 50, equipment: [{ name: "forbidden" }] },
       role: "agent",
     };
     await updateCharacter(VALID_ID, body, { allowedFields: compose.allowedFields });
@@ -139,6 +139,7 @@ if (!HAS_MODULE_MOCK) {
     assert.equal(capturedSetPayload["lore.personality"], "냉정");
     assert.equal(capturedSetPayload["play.hp"], 99);
     assert.equal(capturedSetPayload["play.atk"], 50);
+    assert.ok(!("play.equipment" in capturedSetPayload));
     assert.equal(capturedSetPayload.role, "agent");
   });
 
@@ -347,7 +348,7 @@ if (!HAS_MODULE_MOCK) {
     // PLAY
     assert.ok(compose.allowedFields.has("play.hp"));
     assert.ok(compose.allowedFields.has("play.hpDelta"));
-    assert.ok(compose.allowedFields.has("play.equipment"));
+    assert.ok(!compose.allowedFields.has("play.equipment"));
     assert.ok(compose.allowedFields.has("play.abilities"));
     assert.ok(compose.allowedFields.has("play.weaponTraining"));
     // 루트 'lore'/'play' 키는 미포함 (dot path only — 부분 patch 안전)

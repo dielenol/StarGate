@@ -5,12 +5,20 @@
 import "./init";
 
 import {
+  findMasterItemsBySlugsOrIds as findMasterItemsBySlugsOrIdsShared,
   findMasterItemById,
   findMasterItemBySlug,
+  listCharacterInventory as listCharacterInventoryShared,
   listMasterItemsByCategories,
+  type CharacterInventory,
   type ItemCategory,
   type MasterItem,
 } from "@stargate/shared-db";
+
+import type {
+  CharacterInventoryDto,
+  InventoryEntryDto,
+} from "@/types/inventory";
 
 export {
   listMasterItems,
@@ -27,6 +35,7 @@ export {
   listCharacterInventory,
   prepareCharacterInventoryItemLocks,
   lockCharacterInventoryItems,
+  equipCharacterInventoryItem,
   addToInventory,
   removeFromInventory,
   deleteInventoryEntry,
@@ -35,6 +44,77 @@ export {
   addToSharedInventory,
   removeFromSharedInventory,
 } from "@stargate/shared-db";
+
+function dateToIso(value: Date | string | undefined): string | undefined {
+  if (!value) return undefined;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+export function serializeCharacterInventory(
+  inventory: CharacterInventory[],
+): CharacterInventoryDto[] {
+  return inventory.map((entry) => {
+    const { _id, acquiredAt, equippedAt, ...rest } = entry;
+    const equippedAtIso = dateToIso(equippedAt);
+    return {
+      ...rest,
+      _id: _id ? String(_id) : undefined,
+      acquiredAt: dateToIso(acquiredAt) ?? new Date(0).toISOString(),
+      ...(equippedAtIso ? { equippedAt: equippedAtIso } : {}),
+    };
+  });
+}
+
+export function normalizedInventoryCategory(
+  item: Pick<MasterItem, "slug" | "category">,
+): ItemCategory {
+  // live DB의 과거 드리프트를 migration 실행 전에도 안전하게 차단한다.
+  if (item.slug === "military-fragment-grenade") return "CONSUMABLE";
+  return item.category;
+}
+
+export async function listCharacterInventoryEntries(
+  characterId: string,
+): Promise<{
+  inventory: CharacterInventory[];
+  entries: InventoryEntryDto[];
+}> {
+  const inventory = await listCharacterInventoryShared(characterId);
+  const masters = await findMasterItemsBySlugsOrIdsShared(
+    inventory.map((entry) => entry.itemId),
+  );
+  const masterById = new Map(
+    masters
+      .filter((item) => item._id)
+      .map((item) => [String(item._id), item]),
+  );
+
+  const entries = inventory.map((entry): InventoryEntryDto => {
+    const master = masterById.get(entry.itemId);
+    return {
+      _id: String(entry._id),
+      itemId: entry.itemId,
+      itemName: master?.name ?? entry.itemName,
+      quantity: entry.quantity,
+      acquiredAt: dateToIso(entry.acquiredAt) ?? new Date(0).toISOString(),
+      ...(entry.note ? { note: entry.note } : {}),
+      category: master ? normalizedInventoryCategory(master) : null,
+      ...(master?.slug ? { slug: master.slug } : {}),
+      ...(master?.effect ? { effect: master.effect } : {}),
+      ...(master?.damage ? { damage: master.damage } : {}),
+      ...(master?.description ? { description: master.description } : {}),
+      ...(master?.price !== undefined ? { price: master.price } : {}),
+      ...(master?.previewImage ? { previewImage: master.previewImage } : {}),
+      ...(entry.equippedSlot ? { equippedSlot: entry.equippedSlot } : {}),
+      ...(dateToIso(entry.equippedAt)
+        ? { equippedAt: dateToIso(entry.equippedAt) }
+        : {}),
+    };
+  });
+
+  return { inventory, entries };
+}
 
 export async function findMasterItemBySlugOrId(
   key: string,

@@ -14,6 +14,7 @@ import type {
   CreateInventoryInput,
   CreateMasterItemInput,
   CreateSharedInventoryInput,
+  EquipmentSlot,
   ItemCategory,
   MasterItem,
   SharedInventory,
@@ -190,6 +191,10 @@ export async function deleteMasterItem(id: string): Promise<boolean> {
 
 const MAX_CHARACTER_INVENTORY_MUTATION_QUANTITY = 999;
 
+function equipmentSlotLockId(slot: EquipmentSlot): string {
+  return `@equipment-slot:${slot}`;
+}
+
 export async function listCharacterInventory(
   characterId: string,
   options: { session?: ClientSession } = {},
@@ -349,6 +354,88 @@ export async function addToInventory(
   return result;
 }
 
+export type EquipCharacterInventoryResult =
+  | { ok: true; entry: CharacterInventory; previousItemId?: string }
+  | { ok: false; reason: "NOT_OWNED" };
+
+/**
+ * 보유 중인 인벤토리 품목을 캐릭터의 전투 슬롯에 원자적으로 장착한다.
+ *
+ * 품목 category → slot 판정은 master_items 를 조회한 호출자가 수행한다. 이 함수는
+ * 동일 캐릭터·슬롯 lock을 잡고 기존 장비 해제와 신규 장착을 한 transaction에서 처리한다.
+ */
+export async function equipCharacterInventoryItem(
+  characterId: string,
+  itemId: string,
+  slot: EquipmentSlot,
+  options: { session?: ClientSession } = {},
+): Promise<EquipCharacterInventoryResult> {
+  if (!characterId.trim() || !itemId.trim()) {
+    throw new Error("Invalid character equipment input");
+  }
+
+  const slotLockId = equipmentSlotLockId(slot);
+  if (!options.session) {
+    await prepareCharacterInventoryItemLocks(characterId, [slotLockId]);
+    const client = await getClient();
+    const session = client.startSession();
+    try {
+      const result = await session.withTransaction(() =>
+        equipCharacterInventoryItem(characterId, itemId, slot, { session }),
+      );
+      if (!result) {
+        throw new Error(
+          `Equipment transaction did not commit: characterId=${characterId}, slot=${slot}`,
+        );
+      }
+      return result;
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  await lockCharacterInventoryItems(characterId, [slotLockId], options.session);
+  const col = await characterInventoryCol();
+  const target = await col.findOne(
+    { characterId, itemId, quantity: { $gte: 1 } },
+    { session: options.session },
+  );
+  if (!target) return { ok: false, reason: "NOT_OWNED" };
+
+  const previous = await col.findOne(
+    {
+      characterId,
+      equippedSlot: slot,
+      _id: { $ne: target._id },
+    },
+    { session: options.session, projection: { itemId: 1 } },
+  );
+
+  await col.updateMany(
+    {
+      characterId,
+      equippedSlot: slot,
+      _id: { $ne: target._id },
+    },
+    { $unset: { equippedSlot: "", equippedAt: "" } },
+    { session: options.session },
+  );
+
+  const equippedAt = new Date();
+  const entry = await col.findOneAndUpdate(
+    { _id: target._id, characterId, itemId, quantity: { $gte: 1 } },
+    { $set: { equippedSlot: slot, equippedAt } },
+    { returnDocument: "after", session: options.session },
+  );
+  if (!entry) return { ok: false, reason: "NOT_OWNED" };
+
+  return {
+    ok: true,
+    entry,
+    ...(previous?.itemId ? { previousItemId: previous.itemId } : {}),
+  };
+}
+
 /**
  * character_inventory 에서 quantity 만큼 atomic 차감.
  *
@@ -375,7 +462,12 @@ export async function removeFromInventory(
   }
   const col = await characterInventoryCol();
   const result = await col.findOneAndUpdate(
-    { characterId, itemId, quantity: { $gte: quantity } },
+    {
+      characterId,
+      itemId,
+      quantity: { $gte: quantity },
+      equippedSlot: { $exists: false },
+    },
     { $inc: { quantity: -quantity } },
     { returnDocument: "after", session: options.session }
   );
@@ -393,7 +485,10 @@ export async function removeFromInventory(
 export async function deleteInventoryEntry(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const col = await characterInventoryCol();
-  const result = await col.deleteOne({ _id: new ObjectId(id) });
+  const result = await col.deleteOne({
+    _id: new ObjectId(id),
+    equippedSlot: { $exists: false },
+  });
   return result.deletedCount > 0;
 }
 

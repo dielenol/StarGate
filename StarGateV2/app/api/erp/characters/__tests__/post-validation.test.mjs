@@ -71,6 +71,12 @@ function decidePostResponse(body, role = "V") {
         error: "AGENT 생성에는 유효한 play sub-document가 필요합니다.",
       };
     }
+    if (playResult.data.equipment.length > 0) {
+      return {
+        status: 400,
+        error: "초기 장비는 캐릭터 생성 후 인벤토리에서 지급·장착해야 합니다.",
+      };
+    }
     payload.play = playResult.data;
   } else if (body.play !== undefined) {
     return {
@@ -307,4 +313,17 @@ test("E-12b: AGENT play.abilities[i].slot enum — 잘못된 slot 거부", () =>
   play.abilities = [{ slot: "X9", name: "evil" }];
   const result = playSheetSchema.safeParse(play);
   assert.equal(result.success, false, "C1/C2/C3/P/A1/A2/A3 외 slot 거부");
+});
+
+test("E-13: AGENT 생성 payload의 초기 장비는 거부한다", () => {
+  const play = validPlay();
+  play.equipment = [{ name: "직접 주입 무기" }];
+  const res = decidePostResponse({
+    codename: "AGENT_X",
+    type: "AGENT",
+    lore: validLore(),
+    play,
+  });
+  assert.equal(res.status, 400);
+  assert.match(res.error, /인벤토리/);
 });
