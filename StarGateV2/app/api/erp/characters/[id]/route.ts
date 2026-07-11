@@ -27,6 +27,7 @@ import {
 } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyCharacterEdit } from "@/lib/discord";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -326,6 +327,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   try {
+    const target = await findCharacterById(id);
+    if (!target) {
+      return NextResponse.json(
+        { error: "캐릭터를 찾을 수 없습니다." },
+        { status: 404 },
+      );
+    }
     const deleted = await deleteCharacter(id);
     if (!deleted) {
       return NextResponse.json(
@@ -333,6 +341,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
         { status: 404 },
       );
     }
+    scheduleGmAdminAudit({
+      action: "캐릭터 삭제",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${target.type} 캐릭터 영구 삭제`,
+      target: `${target.codename} · ${target.lore.name}`,
+      timestamp: new Date(),
+    });
     return NextResponse.json({ success: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "캐릭터 삭제 실패";

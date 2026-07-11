@@ -23,6 +23,7 @@ import {
   isEquipmentResearchScope,
   quoteEquipmentResearchStart,
 } from "@/lib/equipment-shop/research";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 import {
   chargeResearchCredits,
@@ -295,6 +296,18 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  scheduleGmAdminAudit({
+    action: "개인 장비 연구 시작",
+    actor: {
+      id: authResult.session.id,
+      displayName: authResult.session.displayName,
+      role: authResult.session.role,
+    },
+    summary: `${startQuote.cost.toLocaleString()} CR · ${startQuote.durationHours}시간`,
+    target: `${node.key} · ${targetResult.targets.map((target) => target.codename).join(", ")}`,
+    timestamp: new Date(),
+  });
 
   return NextResponse.json(
     {

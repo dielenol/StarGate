@@ -13,6 +13,7 @@ import {
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 const MAX_GRANT_QUANTITY = 999;
 
@@ -138,6 +139,19 @@ export async function POST(
       quantity: body.quantity,
       acquiredAt: new Date(),
       note: body.note ?? "",
+    });
+
+    scheduleGmAdminAudit({
+      action: "캐릭터 아이템 지급",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${masterItem.name} x${body.quantity}`,
+      target: character.codename,
+      details: body.note ? [{ name: "메모", value: body.note }] : undefined,
+      timestamp: new Date(),
     });
 
     if (character.ownerId) {

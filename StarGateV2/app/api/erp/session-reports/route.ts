@@ -11,6 +11,7 @@ import {
   listSessionReports,
 } from "@/lib/db/session-reports";
 import { notifyActiveUsers } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 export async function GET() {
   const session = await auth();
@@ -78,6 +79,17 @@ export async function POST(request: Request) {
       ...map.value,
       gmId: session.user.id,
       gmName: session.user.displayName,
+    });
+    scheduleGmAdminAudit({
+      action: "세션 리포트 발행",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `참여자 ${report.participants.length}명 · 하이라이트 ${report.highlights.length}건`,
+      target: report.sessionTitle,
+      timestamp: new Date(),
     });
     await notifyActiveUsers(
       {

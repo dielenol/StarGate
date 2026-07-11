@@ -9,6 +9,7 @@ import {
   updateWikiPage,
 } from "@/lib/db/wiki";
 import { isValidObjectId } from "@/lib/db/utils";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
@@ -116,6 +117,18 @@ export async function PATCH(
       );
     }
 
+    scheduleGmAdminAudit({
+      action: "위키 문서 수정",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `변경 필드: ${Object.keys(update).join(", ")}`,
+      target: typeof update.title === "string" ? update.title : id,
+      timestamp: new Date(),
+    });
+
     return NextResponse.json({ success: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "문서 수정 실패";
@@ -151,6 +164,18 @@ export async function DELETE(
         { status: 404 },
       );
     }
+
+    scheduleGmAdminAudit({
+      action: "위키 문서 삭제",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: "위키 문서 영구 삭제",
+      target: id,
+      timestamp: new Date(),
+    });
 
     return NextResponse.json({ success: true });
   } catch {

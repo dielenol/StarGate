@@ -12,6 +12,7 @@ import {
   updateSessionReport,
 } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 export async function GET(
   _request: Request,
@@ -106,6 +107,18 @@ export async function PATCH(
       );
     }
 
+    scheduleGmAdminAudit({
+      action: "세션 리포트 수정",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `변경 필드: ${Object.keys(update).join(", ")}`,
+      target: sessionTitle?.trim() || id,
+      timestamp: new Date(),
+    });
+
     return NextResponse.json({ success: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "리포트 수정 실패";
@@ -141,6 +154,18 @@ export async function DELETE(
         { status: 404 },
       );
     }
+
+    scheduleGmAdminAudit({
+      action: "세션 리포트 삭제",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: "세션 리포트 영구 삭제",
+      target: id,
+      timestamp: new Date(),
+    });
 
     return NextResponse.json({ success: true });
   } catch {

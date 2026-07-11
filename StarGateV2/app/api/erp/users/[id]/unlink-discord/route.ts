@@ -5,6 +5,7 @@ import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { findUserById, unlinkDiscord } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -65,6 +66,17 @@ export async function POST(_request: Request, context: RouteContext) {
 
   try {
     await unlinkDiscord(id);
+    scheduleGmAdminAudit({
+      action: "사용자 Discord 연동 해제",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: "Discord 계정 연결 해제",
+      target: `${target.displayName} (${target.username})`,
+      timestamp: new Date(),
+    });
     await notifyUser({
       userId: id,
       type: "SYSTEM",

@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { notifyShopReorderFulfilled } from "@/lib/discord";
 import { notifyUser } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import {
@@ -94,6 +95,23 @@ export async function POST(request: Request) {
         itemId: item.slug,
         today,
       });
+    scheduleGmAdminAudit({
+      action: "편의점 발주 완료 처리",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `+${quantity.toLocaleString()} EA · 현재 ${stock.stock.toLocaleString()} EA`,
+      target: item.name,
+      details: [
+        {
+          name: "요청자",
+          value: fulfilled.characterCodename ?? fulfilled.userName,
+        },
+      ],
+      timestamp: fulfilledAt,
+    });
     await recordShopStockAuditLog({
       action: "REORDER_FULFILL",
       itemSlug: item.slug,
@@ -139,7 +157,6 @@ export async function POST(request: Request) {
         fulfilledAt,
       });
     });
-
     return NextResponse.json({
       ok: true,
       status: "fulfilled",

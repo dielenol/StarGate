@@ -13,6 +13,7 @@ import {
   listAgentCharacterCards,
   createCharacter,
 } from "@/lib/db/characters";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 const VALID_TIER_PARAMS = new Set(["MAIN", "MINI", "ALL"]);
 
@@ -131,6 +132,17 @@ export async function POST(request: Request) {
     const character = await createCharacter(
       createPayload as unknown as CreateCharacterInput,
     );
+    scheduleGmAdminAudit({
+      action: "캐릭터 생성",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${character.type} 캐릭터 생성`,
+      target: `${character.codename} · ${character.lore.name}`,
+      timestamp: new Date(),
+    });
     return NextResponse.json({ character }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "캐릭터 생성 실패";

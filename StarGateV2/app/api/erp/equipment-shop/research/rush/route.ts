@@ -10,6 +10,7 @@ import {
   updateEquipmentResearchProjectRush,
 } from "@/lib/db/equipment-research";
 import { notifyEquipmentResearchEvent } from "@/lib/discord";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
   getEquipmentResearchNode,
@@ -177,6 +178,17 @@ export async function POST(request: Request) {
       rushHours: quote.hours,
     });
   }
+  scheduleGmAdminAudit({
+    action: "장비 연구 가속",
+    actor: {
+      id: authResult.session.id,
+      displayName: authResult.session.displayName,
+      role: authResult.session.role,
+    },
+    summary: `${quote.cost.toLocaleString()} CR · ${quote.hours}시간 단축`,
+    target: project.key,
+    timestamp: new Date(),
+  });
   return NextResponse.json(
     {
       project: nextProject

@@ -16,6 +16,7 @@ import { findShopItemBySlug, SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import { listPendingShopReorderRequests } from "@/lib/shop/reorder-requests";
 import { recordShopStockAuditLog } from "@/lib/shop/stock-audit";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 export async function GET() {
   const session = await auth();
@@ -117,6 +118,17 @@ export async function PATCH(request: Request) {
     const today = getTodayKst();
     const before = (await getStock(itemId))?.stock ?? 0;
     await refreshStock(itemId, stock, today);
+    scheduleGmAdminAudit({
+      action: "편의점 재고 직접 조정",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${before.toLocaleString()} → ${stock.toLocaleString()} EA`,
+      target: `${catalogItem.name} (${itemId})`,
+      timestamp: new Date(),
+    });
     await recordShopStockAuditLog({
       action: "ADMIN_SET",
       itemSlug: itemId,

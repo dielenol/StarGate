@@ -8,6 +8,7 @@ import {
   type ShopOpenMode,
   type ShopOpenState,
 } from "@/lib/shop/open-state";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface OpenStateBody {
   forceOpen?: unknown;
@@ -89,6 +90,17 @@ export async function PATCH(request: Request) {
       mode,
       updatedById: session.user.id,
       updatedByName: session.user.displayName,
+    });
+    scheduleGmAdminAudit({
+      action: "편의점 영업 상태 변경",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `영업 모드 → ${mode}`,
+      target: "띠아 편의점",
+      timestamp: state.updatedAt ?? new Date(),
     });
     return NextResponse.json(serializeOpenState(state), {
       headers: NO_STORE_HEADERS,

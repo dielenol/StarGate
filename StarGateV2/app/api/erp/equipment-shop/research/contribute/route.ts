@@ -20,6 +20,7 @@ import {
   serializeEquipmentResearchTeamFundingPool,
 } from "@/lib/db/equipment-research";
 import { notifyEquipmentResearchEvent } from "@/lib/discord";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { clampTeamResearchContribution } from "@/lib/equipment-shop/research-contributions";
 import {
   addHours,
@@ -311,6 +312,17 @@ export async function POST(request: Request) {
       durationHours: node.durationHours,
     });
   }
+  scheduleGmAdminAudit({
+    action: project ? "팀 장비 연구 기여 및 시작" : "팀 장비 연구 기여",
+    actor: {
+      id: authResult.session.id,
+      displayName: authResult.session.displayName,
+      role: authResult.session.role,
+    },
+    summary: `${chargeAmount.toLocaleString()} CR · ${updatedPool.fundedAmount.toLocaleString()} / ${updatedPool.targetCost.toLocaleString()} CR`,
+    target: node.key,
+    timestamp: new Date(),
+  });
 
   return NextResponse.json(
     {

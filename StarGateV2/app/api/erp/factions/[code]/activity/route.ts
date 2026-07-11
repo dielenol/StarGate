@@ -19,6 +19,7 @@ import {
   setFactionFavorability,
 } from "@/lib/db/faction-favorability";
 import { findUserById } from "@/lib/db/users";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 import { DEFAULT_FACTION_FAVORABILITY_BY_CODE } from "@/app/(erp)/erp/factions/_data";
 import {
@@ -383,6 +384,22 @@ export async function POST(request: Request, context: ActivityRouteContext) {
     ...(creditCost ? { creditCost } : {}),
     ...(creditTransactionId ? { creditTransactionId } : {}),
     ...(activityType.startsWith("QUEST") ? { questId: id } : {}),
+  });
+
+  scheduleGmAdminAudit({
+    action: "세력 활동 처리",
+    actor: {
+      id: session.user.id,
+      displayName: session.user.displayName,
+      role: session.user.role,
+    },
+    summary: `${activityType} · 우호도 ${before} → ${after}`,
+    target: `${code} · ${title}`,
+    details:
+      creditCost !== undefined
+        ? [{ name: "크레딧 비용", value: `${creditCost.toLocaleString()} CR` }]
+        : undefined,
+    timestamp: new Date(),
   });
 
   const snapshot = await getSnapshot(code);

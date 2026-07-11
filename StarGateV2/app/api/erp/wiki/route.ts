@@ -9,6 +9,7 @@ import {
   listWikiPagesByCategory,
   searchWikiPages,
 } from "@/lib/db/wiki";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 function normalizeTags(tags?: string[]): string[] {
   return tags?.map((tag) => tag.trim()).filter(Boolean) ?? [];
@@ -84,6 +85,18 @@ export async function POST(request: Request) {
       isPublic: isPublic ?? true,
       authorId: session.user.id,
       authorName: session.user.displayName,
+    });
+
+    scheduleGmAdminAudit({
+      action: "위키 문서 생성",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${page.category} · ${page.isPublic ? "공개" : "비공개"}`,
+      target: page.title,
+      timestamp: new Date(),
     });
 
     return NextResponse.json({ page }, { status: 201 });

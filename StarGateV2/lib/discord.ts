@@ -124,6 +124,15 @@ export interface CharacterEditWebhookPayload {
   timestamp: Date;
 }
 
+export interface GmAdminAuditWebhookPayload {
+  action: string;
+  actor: { id: string; displayName: string; role: string };
+  summary: string;
+  target?: string;
+  details?: DiscordEmbedField[];
+  timestamp: Date;
+}
+
 export type EquipmentResearchWebhookPayload =
   | {
       kind: "fund";
@@ -654,6 +663,84 @@ export async function notifyCharacterEdit(
       `[notifyCharacterEdit] 전송 실패 character=${payload.character.id} actor=${payload.actor.id}:`,
       err,
     );
+  }
+}
+
+/**
+ * GM 관리 작업 공용 감사 알림.
+ *
+ * 지급·권한·재고 등 관리 API 1회당 메시지 1개를 남긴다. 호출부는 성공한
+ * mutation 뒤에서만 예약하며, 본 함수는 Discord 장애가 원래 작업 결과를
+ * 뒤집지 않도록 모든 실패를 흡수한다.
+ */
+export async function notifyGmAdminAudit(
+  payload: GmAdminAuditWebhookPayload,
+): Promise<"sent" | "skipped"> {
+  if (payload.actor.role !== "GM") return "skipped";
+
+  const webhookUrl = process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL;
+  if (!webhookUrl) {
+    console.warn(
+      "[notifyGmAdminAudit] DISCORD_WEBHOOK_CHAR_EDIT_URL 미설정 — silent skip",
+    );
+    return "skipped";
+  }
+
+  const fields: DiscordEmbedField[] = [
+    {
+      name: "작업 요약",
+      value: sanitizeForDiscord(payload.summary).slice(
+        0,
+        DISCORD_FIELD_VALUE_MAX,
+      ),
+    },
+  ];
+
+  if (payload.target?.trim()) {
+    fields.push({
+      name: "대상",
+      value: sanitizeForDiscord(payload.target).slice(
+        0,
+        DISCORD_FIELD_VALUE_MAX,
+      ),
+    });
+  }
+
+  for (const detail of payload.details?.slice(0, 8) ?? []) {
+    fields.push({
+      ...detail,
+      name: sanitizeForDiscord(detail.name).slice(0, 256),
+      value: sanitizeForDiscord(detail.value).slice(
+        0,
+        DISCORD_FIELD_VALUE_MAX,
+      ),
+    });
+  }
+
+  const discordPayload: DiscordPayload = {
+    username: "StarGate Admin Watch",
+    allowed_mentions: { parse: [] },
+    embeds: [
+      {
+        title: `GM 관리 작업: ${sanitizeForDiscord(payload.action)}`.slice(
+          0,
+          256,
+        ),
+        description: `${sanitizeForDiscord(payload.actor.displayName)} · GM`,
+        color: DISCORD_COLORS.charEditAdmin,
+        fields,
+        footer: { text: `actor ${payload.actor.id}` },
+        timestamp: payload.timestamp.toISOString(),
+      },
+    ],
+  };
+
+  try {
+    await sendDiscordWebhook(discordPayload, webhookUrl);
+    return "sent";
+  } catch (error) {
+    console.warn("[notifyGmAdminAudit] Discord 전송 실패:", error);
+    return "skipped";
   }
 }
 

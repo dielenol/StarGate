@@ -23,6 +23,7 @@ import {
   formatSignedAmount,
   notifyUser,
 } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 function getCreditNotificationTitle(
   type: CreditTransactionType,
@@ -332,6 +333,21 @@ export async function POST(request: Request) {
       createdByName: session.user.displayName,
       requestId,
       allowNegative: validatedType === "ADMIN_DEDUCT",
+    });
+    scheduleGmAdminAudit({
+      action:
+        validatedType === "ADMIN_DEDUCT" ? "크레딧 차감" : "크레딧 지급",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${formatSignedAmount(transaction.amount, "CR")} · 잔액 ${transaction.balance.toLocaleString()} CR`,
+      target: `${targetCharacterCodename} · ${ownerName}`,
+      details: transaction.description
+        ? [{ name: "사유", value: transaction.description }]
+        : undefined,
+      timestamp: transaction.createdAt,
     });
     await notifyUser({
       userId: targetOwnerId,

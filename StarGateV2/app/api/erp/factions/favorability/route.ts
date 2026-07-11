@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { setFactionFavorability } from "@/lib/db/faction-favorability";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 const FAVORABILITY_MIN = -10;
 const FAVORABILITY_MAX = 10;
@@ -72,6 +73,18 @@ export async function PATCH(request: Request) {
       value: favorability,
       updatedById: session.user.id,
       updatedByName: session.user.displayName,
+    });
+
+    scheduleGmAdminAudit({
+      action: "세력 우호도 직접 조정",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `우호도 → ${updated.value}`,
+      target: updated.code,
+      timestamp: updated.updatedAt,
     });
 
     return NextResponse.json({

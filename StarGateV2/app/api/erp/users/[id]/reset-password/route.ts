@@ -5,6 +5,7 @@ import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { findUserById, resetUserPassword } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -57,6 +58,17 @@ export async function POST(_request: Request, context: RouteContext) {
 
   try {
     const { plainPassword } = await resetUserPassword(id);
+    scheduleGmAdminAudit({
+      action: "사용자 비밀번호 초기화",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: "임시 비밀번호 발급 완료",
+      target: `${target.displayName} (${target.username})`,
+      timestamp: new Date(),
+    });
     await notifyUser({
       userId: id,
       type: "SYSTEM",

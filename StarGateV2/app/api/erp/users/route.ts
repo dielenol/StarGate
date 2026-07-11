@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { createUser, listUsers } from "@/lib/db/users";
 import { notifyUser } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { USER_ROLES, type UserRole } from "@/types/user";
 
 export async function GET() {
@@ -68,6 +69,17 @@ export async function POST(request: Request) {
       username: username.trim(),
       displayName: displayName.trim(),
       role: role as UserRole,
+    });
+    scheduleGmAdminAudit({
+      action: "사용자 계정 생성",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${role} 등급 계정 생성`,
+      target: `${displayName.trim()} (${username.trim()})`,
+      timestamp: new Date(),
     });
     await notifyUser({
       userId: result.userId,

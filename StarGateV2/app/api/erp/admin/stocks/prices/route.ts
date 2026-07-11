@@ -14,6 +14,7 @@ import {
 } from "@/lib/db/stocks";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 import { notifyStockManualIntervention } from "@/lib/stocks/market-wire";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import {
   MAX_STOCK_PRICE,
   MIN_STOCK_PRICE,
@@ -87,6 +88,19 @@ export async function POST(request: Request) {
     ? await updateStockPrice(ticker, price, eventText, lastUpdate)
     : await ensureStockPrice(ticker, price, lastUpdate, eventText);
 
+  scheduleGmAdminAudit({
+    action: "주식 시세 수동 조정",
+    actor: {
+      id: session.user.id,
+      displayName: session.user.displayName,
+      role: session.user.role,
+    },
+    summary: `${formatStockValue(previous?.price ?? updated.prevPrice)} → ${formatStockValue(updated.price)}`,
+    target: ticker,
+    details: [{ name: "공시 문구", value: eventText }],
+    timestamp: new Date(),
+  });
+
   await recordStockPriceHistory({
     ticker,
     price: updated.price,
@@ -104,7 +118,6 @@ export async function POST(request: Request) {
       role: session.user.role,
     },
   });
-
   return NextResponse.json({
     item: {
       ticker: updated.ticker,
@@ -116,4 +129,3 @@ export async function POST(request: Request) {
     marketWire,
   });
 }
-

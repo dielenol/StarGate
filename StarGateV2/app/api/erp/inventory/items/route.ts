@@ -6,6 +6,7 @@ import type { CreateMasterItemInput, ItemCategory } from "@/types/inventory";
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { listMasterItems, createMasterItem } from "@/lib/db/inventory";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 function isItemCategory(value: unknown): value is ItemCategory {
   return (
@@ -120,6 +121,18 @@ export async function POST(request: Request) {
       source: body.source ?? "manual",
       authorId: trimOptional(body.authorId),
       authorName: trimOptional(body.authorName),
+    });
+
+    scheduleGmAdminAudit({
+      action: "마스터 아이템 생성",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${item.category} · ${item.isAvailable === false ? "지급 불가" : "지급 가능"}`,
+      target: `${item.name} (${item.slug})`,
+      timestamp: new Date(),
     });
 
     return NextResponse.json({ item }, { status: 201 });

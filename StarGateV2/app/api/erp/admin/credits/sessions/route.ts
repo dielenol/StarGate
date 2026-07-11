@@ -52,6 +52,7 @@ import {
   formatSignedAmount,
   notifyUser,
 } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { grantStockReward } from "@/lib/stocks/rewards";
 
 import { buildSessionRewardCandidates } from "@/app/(erp)/erp/admin/credits/_session-rewards";
@@ -242,6 +243,27 @@ export async function POST(request: Request) {
       failed,
       skipped,
     };
+
+    if (succeeded > 0) {
+      scheduleGmAdminAudit({
+        action: "세션 보상 지급",
+        actor: {
+          id: session.user.id,
+          displayName: session.user.displayName,
+          role: session.user.role,
+        },
+        summary: `성공 ${succeeded}건 · 실패 ${failed}건 · 스킵 ${skipped}건`,
+        target: `${sessionTitle} · 참여자 ${participants.length}명`,
+        details: [
+          {
+            name: "보상 구성",
+            value: rewards.map((reward) => reward.label).join("\n"),
+          },
+          { name: "사유", value: description },
+        ],
+        timestamp: new Date(),
+      });
+    }
 
     return NextResponse.json(response, {
       headers: { "Cache-Control": "no-store" },

@@ -5,6 +5,7 @@ import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { findUserById, updateUserStatus } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { USER_STATUSES, type UserStatus } from "@/types/user";
 
 interface RouteContext {
@@ -76,6 +77,17 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     await updateUserStatus(id, status as UserStatus);
+    scheduleGmAdminAudit({
+      action: "사용자 상태 변경",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${target.status} → ${status}`,
+      target: `${target.displayName} (${target.username})`,
+      timestamp: new Date(),
+    });
     await notifyUser({
       userId: id,
       type: "SYSTEM",

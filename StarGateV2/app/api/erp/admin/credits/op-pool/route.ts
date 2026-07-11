@@ -25,6 +25,7 @@ import type { OpPoolDto } from "@/hooks/queries/useCreditsAdminQuery";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import {
   OPERATION_POOL_DEFAULT_NAME,
   OPERATION_POOL_ID,
@@ -117,6 +118,17 @@ export async function POST(request: Request) {
         OPERATION_POOL_DEFAULT_NAME,
         OPERATION_POOL_INITIAL_BALANCE,
       );
+      scheduleGmAdminAudit({
+        action: "작전 크레딧 풀 초기화",
+        actor: {
+          id: session.user.id,
+          displayName: session.user.displayName,
+          role: session.user.role,
+        },
+        summary: `초기 잔액 ${OPERATION_POOL_INITIAL_BALANCE.toLocaleString()} CR`,
+        target: OPERATION_POOL_DEFAULT_NAME,
+        timestamp: new Date(),
+      });
       return NextResponse.json(
         {
           pool: toOpPoolDto(pool),
@@ -177,6 +189,21 @@ export async function POST(request: Request) {
       }
       throw err;
     }
+
+    scheduleGmAdminAudit({
+      action: "작전 크레딧 풀 조정",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${amount > 0 ? "+" : ""}${amount.toLocaleString()} CR · 잔액 ${updated.balance.toLocaleString()} CR`,
+      target: OPERATION_POOL_DEFAULT_NAME,
+      details: body.description
+        ? [{ name: "사유", value: body.description }]
+        : undefined,
+      timestamp: new Date(),
+    });
 
     return NextResponse.json(
       { pool: toOpPoolDto(updated), action: "adjust", applied: amount },

@@ -25,6 +25,7 @@ import { deleteChangeLog, getChangeLogById } from "@stargate/shared-db";
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { isValidObjectId } from "@/lib/db/utils";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface RouteContext {
   params: Promise<{ id: string; logId: string }>;
@@ -72,6 +73,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
         { status: 404 },
       );
     }
+    scheduleGmAdminAudit({
+      action: "캐릭터 변경 로그 삭제",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `감사 로그 ${logId} 영구 삭제`,
+      target: id,
+      timestamp: new Date(),
+    });
     return NextResponse.json({ success: true });
   } catch (err) {
     const message =

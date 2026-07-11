@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { USER_ROLES, type UserRole } from "@/types/user";
 
 interface RouteContext {
@@ -81,6 +82,17 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     await updateUserRole(id, role as UserRole);
+    scheduleGmAdminAudit({
+      action: "사용자 역할 변경",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${target.role} → ${role}`,
+      target: `${target.displayName} (${target.username})`,
+      timestamp: new Date(),
+    });
     await notifyUser({
       userId: id,
       type: "ROLE_CHANGE",

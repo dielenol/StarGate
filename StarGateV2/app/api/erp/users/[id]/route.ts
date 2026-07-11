@@ -10,6 +10,7 @@ import {
   findUserById,
 } from "@/lib/db/users";
 import { isValidObjectId } from "@/lib/db/utils";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -80,6 +81,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
       targetId: id,
       targetUsername: target.username,
       at: new Date().toISOString(),
+    });
+    scheduleGmAdminAudit({
+      action: "사용자 계정 삭제",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: "계정 삭제 및 캐릭터 소유자 연결 해제",
+      target: `${target.displayName} (${target.username})`,
+      timestamp: new Date(),
     });
 
     return NextResponse.json({ deletedCount });

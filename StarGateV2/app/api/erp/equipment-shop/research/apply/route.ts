@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { applyEquipmentResearchProjectNow } from "@/lib/equipment-shop/research-application";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 import { requireResearchGm } from "../_lib";
 
@@ -38,6 +39,18 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    scheduleGmAdminAudit({
+      action: "장비 연구 효과 적용",
+      actor: {
+        id: authResult.session.id,
+        displayName: authResult.session.displayName,
+        role: authResult.session.role,
+      },
+      summary: `적용 ${result.affected}명 · 스킵 ${result.skipped}명`,
+      target: result.key,
+      timestamp: new Date(),
+    });
 
     return NextResponse.json(
       {

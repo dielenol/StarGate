@@ -11,6 +11,7 @@ import {
   SHARED_INVENTORY_SCOPE,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 export async function GET() {
   const session = await auth();
@@ -78,6 +79,19 @@ export async function POST(request: Request) {
       quantity: body.quantity,
       acquiredAt: new Date(),
       note: body.note ?? "",
+    });
+
+    scheduleGmAdminAudit({
+      action: "공용 인벤토리 지급",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${masterItem.name} x${body.quantity}`,
+      target: "공용 인벤토리",
+      details: body.note ? [{ name: "메모", value: body.note }] : undefined,
+      timestamp: new Date(),
     });
 
     return NextResponse.json({ entry }, { status: 201 });

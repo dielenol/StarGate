@@ -47,6 +47,7 @@ import {
   formatSignedAmount,
   notifyUser,
 } from "@/lib/notifications/events";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 const MAX_TARGETS = 100;
 
@@ -283,6 +284,24 @@ export async function POST(request: Request) {
     failed,
     skipped: 0,
   };
+
+  if (succeeded > 0) {
+    scheduleGmAdminAudit({
+      action: "보상 일괄 조정",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `성공 ${succeeded}건 · 실패 ${failed}건`,
+      target: `${targets.length}명 · ${rewardKind} ${finalAmount > 0 ? "+" : ""}${finalAmount.toLocaleString()}`,
+      details: [
+        { name: "유형", value: validatedType, inline: true },
+        ...(description ? [{ name: "사유", value: description }] : []),
+      ],
+      timestamp: new Date(),
+    });
+  }
 
   return NextResponse.json(response, {
     headers: { "Cache-Control": "no-store" },

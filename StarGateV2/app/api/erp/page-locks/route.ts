@@ -6,6 +6,7 @@ import {
   getErpPageLockOverrides,
   setErpPageLockOverride,
 } from "@/lib/db/erp-page-locks";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 const NO_STORE_HEADERS = { "Cache-Control": "private, no-store" } as const;
 
@@ -44,7 +45,8 @@ export async function PATCH(request: Request) {
   const body = (await request.json().catch(() => null)) as PageLockBody | null;
   const lockKey = typeof body?.lockKey === "string" ? body.lockKey : null;
   const locked = typeof body?.locked === "boolean" ? body.locked : null;
-  if (!lockKey || locked === null || !findNavItemByLockKey(lockKey)) {
+  const navItem = lockKey ? findNavItemByLockKey(lockKey) : null;
+  if (!lockKey || locked === null || !navItem) {
     return NextResponse.json(
       { error: "유효한 사이드바 페이지와 잠금 상태가 필요합니다." },
       { status: 400 },
@@ -57,6 +59,17 @@ export async function PATCH(request: Request) {
       locked,
       updatedById: session.user.id,
       updatedByName: session.user.displayName,
+    });
+    scheduleGmAdminAudit({
+      action: "ERP 페이지 잠금 변경",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: locked ? "페이지 잠금" : "페이지 잠금 해제",
+      target: `${navItem.label} (${lockKey})`,
+      timestamp: new Date(),
     });
     return NextResponse.json(
       { lockKey, locked },
