@@ -53,3 +53,10 @@
 - `refactor-performance`: 변경 전 baseline과 성공 기준을 먼저 기록하고, 변경 후 동일 지표와 `pnpm typecheck`, `pnpm lint`, 필요 시 `pnpm build`를 비교한다.
 
 추론 강도나 agent 리뷰는 테스트, DB 재조회, 브라우저 관찰, 성능 측정을 대체하지 않는다.
+
+## Authenticated Browser QA
+
+- 로컬 ERP 인증 브라우저 테스트는 `http://localhost:3000`을 사용한다. `AUTH_URL`과 쿠키 호스트가 달라지는 `127.0.0.1`은 사용하지 않는다.
+- 테스트 계정 값은 Git 비추적 파일인 `.env.local`의 `E2E_TEST_USERNAME` / `E2E_TEST_PASSWORD`에서 읽는다. 기준 주소는 `E2E_TEST_BASE_URL`을 사용한다.
+- 테스트 자격증명, 해시, URI를 명령 인자·로그·스크린샷·커밋·대화 응답에 출력하지 않는다.
+- 계정은 인증 UI 검증용 GM 테스트 계정이다. 메인 캐릭터·크레딧·인벤토리·경제 상태가 필요하면 기존 데이터를 임의 생성하지 말고 `critical` 변경 절차와 사용자 범위를 다시 확인한다.
