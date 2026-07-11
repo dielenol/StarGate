@@ -70,6 +70,7 @@ type EquipmentShopTabValue =
   | "LICENSE";
 type CartState = Record<string, number>;
 type NoticeState = { tone: "success" | "info"; text: string } | null;
+type TowaskiDebugMode = "live" | "unlicensed" | "licensed" | "no-agent";
 type MainCharacterStats = Record<EquipmentResearchStat, number>;
 type TowaskiMood =
   | "welcome"
@@ -93,6 +94,16 @@ const MAX_CART_QUANTITY_PER_ITEM = 1;
 const TOWASKI_PROFILE_SRC = "/assets/npcs/Towaski-profile.webp";
 const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp";
 const TOWASKI_IDLE_DELAY_MS = 12000;
+
+const TOWASKI_DEBUG_MODES: readonly {
+  value: TowaskiDebugMode;
+  label: string;
+}[] = [
+  { value: "live", label: "실제 GM" },
+  { value: "unlicensed", label: "무면허" },
+  { value: "licensed", label: "면허 보유" },
+  { value: "no-agent", label: "AGENT 없음" },
+];
 
 const TOWASKI_MOOD_ASSETS: Record<TowaskiMood, string> = {
   welcome: "/assets/npcs/Towaski-welcome.webp",
@@ -1129,6 +1140,9 @@ export default function EquipmentShopClient({
   const [hasBasicFirearmLicense, setHasBasicFirearmLicense] = useState(
     () => mainCharacter?.hasBasicFirearmLicense ?? false,
   );
+  const [towaskiDebugMode, setTowaskiDebugMode] =
+    useState<TowaskiDebugMode>("live");
+  const [towaskiDebugRevision, setTowaskiDebugRevision] = useState(0);
   const [activeHubDestination, setActiveHubDestination] =
     useState<ArmoryDestination>("towaski");
 
@@ -1140,14 +1154,23 @@ export default function EquipmentShopClient({
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
   const isHub = mode === "hub";
   const activeZone = initialZone;
+  const isTowaskiDebug =
+    isGM && activeZone === "towaski" && towaskiDebugMode !== "live";
+  const effectiveHasMainCharacter = isTowaskiDebug
+    ? towaskiDebugMode !== "no-agent"
+    : hasMainCharacter;
+  const effectiveHasBasicLicense = isTowaskiDebug
+    ? towaskiDebugMode === "licensed"
+    : hasBasicFirearmLicense;
+  const effectiveTowaskiGm = isGM && !isTowaskiDebug;
   const activeZoneDef = activeZoneMeta(activeZone);
   const zoneMeta = isHub ? ARMORY_DESK_META : activeZoneDef;
   const headerZoneKey = isHub ? "hub" : activeZone;
   const requiresTowaskiLicenseTest =
     activeZone === "towaski" &&
-    !isGM &&
-    hasMainCharacter &&
-    !hasBasicFirearmLicense;
+    !effectiveTowaskiGm &&
+    effectiveHasMainCharacter &&
+    !effectiveHasBasicLicense;
   const mainCharacterProfile = useMemo(
     () => getMainCharacterProfile(localStats),
     [localStats],
@@ -1175,7 +1198,7 @@ export default function EquipmentShopClient({
     stopEngine: stopTowaskiEngine,
   } = useNpcDialogue<TowaskiMood>({
     isOpen: activeZone === "towaski" && catalog.isOpen,
-    hasMainCharacter,
+    hasMainCharacter: effectiveHasMainCharacter,
     idleDelayMs: TOWASKI_IDLE_DELAY_MS,
     idleLines: TOWASKI_IDLE_LINES,
     closedMood: "blocked",
@@ -1265,11 +1288,13 @@ export default function EquipmentShopClient({
   const cartHasStockIssue = cartLines.some((line) => line.stockIssue);
   const cartOverBalance = cartTotal > balance;
   const canUseShop =
-    hasMainCharacter &&
+    effectiveHasMainCharacter &&
     catalog.isOpen &&
-    (isGM || (activeZone === "towaski" && hasBasicFirearmLicense));
+    (effectiveTowaskiGm ||
+      (activeZone === "towaski" && effectiveHasBasicLicense));
   const canCheckout =
     canUseShop &&
+    !isTowaskiDebug &&
     cartLines.length > 0 &&
     !cartHasStockIssue &&
     !cartOverBalance &&
@@ -1301,7 +1326,7 @@ export default function EquipmentShopClient({
       return;
     }
 
-    if (!hasMainCharacter) {
+    if (!effectiveHasMainCharacter) {
       playTowaskiLine("blocked", TOWASKI_DIALOGUE_LINES.noAgent, {
         returnToIdle: false,
         sound: false,
@@ -1316,7 +1341,7 @@ export default function EquipmentShopClient({
     activeZone,
     catalog.isOpen,
     clearTowaskiIdleTimer,
-    hasMainCharacter,
+    effectiveHasMainCharacter,
     playTowaskiLine,
     resetTowaskiIdleCycle,
     scheduleTowaskiIdle,
@@ -1453,6 +1478,18 @@ export default function EquipmentShopClient({
     });
   }
 
+  function handleTowaskiDebugMode(nextMode: TowaskiDebugMode) {
+    setTowaskiDebugMode(nextMode);
+    setTowaskiDebugRevision((value) => value + 1);
+    setCart({});
+    setErrorMessage(null);
+    setNotice(
+      nextMode === "live"
+        ? null
+        : { tone: "info", text: "TOWASKI DEBUG SANDBOX / DB WRITE 0" },
+    );
+  }
+
   function playTowaskiIfActive(mood: TowaskiMood, text: string) {
     if (activeZone !== "towaski") return;
     playTowaskiLine(mood, text, { sound: true });
@@ -1474,13 +1511,13 @@ export default function EquipmentShopClient({
   function handleAddToCart(item: EquipmentShopCatalogEntry, quantity = 1) {
     if (!canUseShop) {
       setErrorMessage(
-        hasMainCharacter
+        effectiveHasMainCharacter
           ? "GM preview 상태에서만 병기부 구매를 실행할 수 있습니다."
           : "메인 AGENT 캐릭터가 없어 구매할 수 없습니다.",
       );
       playTowaskiIfActive(
         "blocked",
-        hasMainCharacter
+        effectiveHasMainCharacter
           ? TOWASKI_DIALOGUE_LINES.gmOnly
           : TOWASKI_DIALOGUE_LINES.noAgent,
       );
@@ -1545,17 +1582,23 @@ export default function EquipmentShopClient({
 
   const handleTowaskiLicenseGranted = useCallback(
     (licenseName: string) => {
-      setHasBasicFirearmLicense(true);
+      if (isTowaskiDebug) {
+        setTowaskiDebugMode("licensed");
+      } else {
+        setHasBasicFirearmLicense(true);
+      }
       setErrorMessage(null);
       setNotice({
         tone: "success",
-        text: `${licenseName}가 발급되었습니다. 토와스키 건샵 반출대가 개방됩니다.`,
+        text: isTowaskiDebug
+          ? `DEBUG PASS / ${licenseName} / DB WRITE 0`
+          : `${licenseName}가 발급되었습니다. 토와스키 건샵 반출대가 개방됩니다.`,
       });
       playTowaskiLine("checkout", TOWASKI_DIALOGUE_LINES.qualificationPassed, {
         sound: true,
       });
     },
-    [playTowaskiLine],
+    [isTowaskiDebug, playTowaskiLine],
   );
 
   function formatDuration(hours: number): string {
@@ -2255,7 +2298,11 @@ export default function EquipmentShopClient({
               disabled={!canCheckout}
               aria-busy={checkoutMutation.isPending}
             >
-              {checkoutMutation.isPending ? "결제 중" : "한번에 결제"}
+              {isTowaskiDebug
+                ? "샌드박스 결제 차단"
+                : checkoutMutation.isPending
+                  ? "결제 중"
+                  : "한번에 결제"}
             </button>
           </section>
         </aside>
@@ -3016,10 +3063,12 @@ export default function EquipmentShopClient({
             </div>
           </div>
           <Tag tone="gold">
-            {isGM
-              ? "GM PREVIEW"
+            {isTowaskiDebug
+              ? `DEBUG / ${TOWASKI_DEBUG_MODES.find((mode) => mode.value === towaskiDebugMode)?.label ?? "SANDBOX"}`
+              : isGM
+                ? "GM PREVIEW"
               : activeZone === "towaski"
-                ? hasBasicFirearmLicense
+                ? effectiveHasBasicLicense
                   ? "LICENSE ACTIVE"
                   : "RANGE TEST"
                 : "RESEARCH ACCESS"}
@@ -3027,7 +3076,11 @@ export default function EquipmentShopClient({
           <div className={styles.headerStats}>
             <div>
               <span>요원</span>
-              <strong>{mainCharacter?.codename ?? "UNASSIGNED"}</strong>
+              <strong>
+                {effectiveHasMainCharacter
+                  ? (mainCharacter?.codename ?? "DEBUG AGENT")
+                  : "UNASSIGNED"}
+              </strong>
             </div>
             <div>
               <span>잔액</span>
@@ -3044,6 +3097,36 @@ export default function EquipmentShopClient({
           renderHubPanel()
         ) : (
           <>
+            {isGM && activeZone === "towaski" ? (
+              <div
+                className={styles.debugBar}
+                aria-label="토와스키 건샵 디버그 모드"
+              >
+                <div className={styles.debugBar__label}>
+                  <strong>GM DEBUG</strong>
+                  <span>
+                    {isTowaskiDebug ? "SANDBOX / DB WRITE 0" : "LIVE DATA"}
+                  </span>
+                </div>
+                <div
+                  className={styles.debugModes}
+                  role="group"
+                  aria-label="테스트할 사용자 상태"
+                >
+                  {TOWASKI_DEBUG_MODES.map((debugMode) => (
+                    <button
+                      key={debugMode.value}
+                      type="button"
+                      data-active={towaskiDebugMode === debugMode.value}
+                      aria-pressed={towaskiDebugMode === debugMode.value}
+                      onClick={() => handleTowaskiDebugMode(debugMode.value)}
+                    >
+                      {debugMode.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div className={styles.routeBar}>
               <Link href="/erp/equipment-shop" className={styles.backLink}>
                 안내데스크로 돌아가기
@@ -3052,9 +3135,11 @@ export default function EquipmentShopClient({
             </div>
 
             <div className={styles.zoneBody}>
-              {requiresTowaskiLicenseTest && mainCharacter ? (
+              {requiresTowaskiLicenseTest ? (
                 <TowaskiLicenseTest
-                  characterCodename={mainCharacter.codename}
+                  key={`towaski-license-${towaskiDebugRevision}`}
+                  characterCodename={mainCharacter?.codename ?? "DEBUG AGENT"}
+                  debugSandbox={isTowaskiDebug}
                   onGranted={handleTowaskiLicenseGranted}
                 />
               ) : activeZone === "lab"

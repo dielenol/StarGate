@@ -180,3 +180,117 @@ export function evaluateTowaskiBasicLicenseTest(
     reasons,
   };
 }
+
+const DEBUG_CIVILIAN_ROUNDS = new Set([3, 8]);
+
+export interface TowaskiDebugLicenseSession {
+  challengeId: string;
+  round: number;
+  startedAtMs: number;
+  stats: TowaskiLicenseTestStats;
+  targets: TowaskiLicenseTarget[];
+}
+
+function debugActiveResponse(
+  session: TowaskiDebugLicenseSession,
+): TowaskiLicenseTestResponse {
+  const target = session.targets[session.round];
+  if (!target) throw new Error("DEBUG_LICENSE_TARGET_MISSING");
+  return {
+    status: "active",
+    challengeId: session.challengeId,
+    round: session.round,
+    target,
+    stats: session.stats,
+  };
+}
+
+export function startTowaskiDebugLicenseTest(
+  nowMs = Date.now(),
+): {
+  session: TowaskiDebugLicenseSession;
+  response: TowaskiLicenseTestResponse;
+} {
+  const session: TowaskiDebugLicenseSession = {
+    challengeId: `towaski-debug-${nowMs}`,
+    round: 0,
+    startedAtMs: nowMs,
+    stats: { hostileHits: 0, civilianHits: 0, shots: 0 },
+    targets: TOWASKI_LICENSE_TARGET_LAYOUTS.map((layout, index) => ({
+      ...layout,
+      kind: DEBUG_CIVILIAN_ROUNDS.has(index) ? "civilian" : "hostile",
+    })),
+  };
+  return { session, response: debugActiveResponse(session) };
+}
+
+export function resolveTowaskiDebugLicenseTest(
+  session: TowaskiDebugLicenseSession,
+  input: Extract<TowaskiLicenseTestRequest, { action: "resolve" }>,
+  nowMs = Date.now(),
+): {
+  session: TowaskiDebugLicenseSession;
+  response: TowaskiLicenseTestResponse;
+} {
+  if (
+    input.challengeId !== session.challengeId ||
+    input.round !== session.round ||
+    input.shots < 0 ||
+    input.shots > TOWASKI_BASIC_LICENSE_TEST_RULES.maxShotsPerRound ||
+    (input.hit && input.shots < 1)
+  ) {
+    throw new Error("DEBUG_LICENSE_STALE_ROUND");
+  }
+
+  const target = session.targets[session.round];
+  if (!target) throw new Error("DEBUG_LICENSE_TARGET_MISSING");
+
+  const stats: TowaskiLicenseTestStats = {
+    hostileHits:
+      session.stats.hostileHits +
+      (target.kind === "hostile" && input.hit ? 1 : 0),
+    civilianHits:
+      session.stats.civilianHits +
+      (target.kind === "civilian" && input.hit ? 1 : 0),
+    shots: session.stats.shots + input.shots,
+  };
+  const nextSession = {
+    ...session,
+    round: session.round + 1,
+    stats,
+  };
+
+  if (nextSession.round < nextSession.targets.length) {
+    return { session: nextSession, response: debugActiveResponse(nextSession) };
+  }
+
+  const evaluation = evaluateTowaskiBasicLicenseTest({
+    ...stats,
+    durationMs: nowMs - session.startedAtMs,
+  });
+  if (!evaluation.passed) {
+    return {
+      session: nextSession,
+      response: {
+        status: "failed",
+        challengeId: session.challengeId,
+        stats,
+        evaluation,
+      },
+    };
+  }
+
+  return {
+    session: nextSession,
+    response: {
+      status: "granted",
+      license: {
+        slug: TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+        name: "토와스키 기본 화기 라이센스",
+        label: "기본 화기",
+        effect: "권총·소총·산탄총 반출 자격",
+      },
+      evaluation,
+    },
+  };
+}

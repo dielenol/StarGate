@@ -13,10 +13,14 @@ import {
 import { useCompleteTowaskiLicenseTest } from "@/hooks/mutations/useEquipmentShopMutation";
 import { DialogueBeepEngine } from "@/lib/audio/dialogue-beep-engine";
 import {
+  resolveTowaskiDebugLicenseTest,
+  startTowaskiDebugLicenseTest,
   TOWASKI_BASIC_LICENSE_TEST_RULES,
   TOWASKI_LICENSE_TARGET_LAYOUTS,
   type TowaskiBasicLicenseTestEvaluation,
+  type TowaskiDebugLicenseSession,
   type TowaskiLicenseTarget,
+  type TowaskiLicenseTestRequest,
   type TowaskiLicenseTestResponse,
   type TowaskiLicenseTestStats,
 } from "@/lib/equipment-shop/license-test";
@@ -34,7 +38,13 @@ type ActiveChallenge = Extract<TowaskiLicenseTestResponse, { status: "active" }>
 
 interface TowaskiLicenseTestProps {
   characterCodename: string;
+  debugSandbox?: boolean;
   onGranted: (licenseName: string) => void;
+}
+
+interface TestSubmissionCallbacks {
+  onSuccess: (response: TowaskiLicenseTestResponse) => void;
+  onError: (error: Error) => void;
 }
 
 const TARGET_WINDOW_MS = 950;
@@ -69,9 +79,10 @@ function failureMessage(
 
 export default function TowaskiLicenseTest({
   characterCodename,
+  debugSandbox = false,
   onGranted,
 }: TowaskiLicenseTestProps) {
-  const { mutate: submitTest } = useCompleteTowaskiLicenseTest();
+  const { mutate: submitLiveTest } = useCompleteTowaskiLicenseTest();
   const [phase, setPhase] = useState<TestPhase>("briefing");
   const [countdown, setCountdown] = useState(3);
   const [challenge, setChallenge] = useState<ActiveChallenge | null>(null);
@@ -85,6 +96,8 @@ export default function TowaskiLicenseTest({
 
   const audioRef = useRef<DialogueBeepEngine | null>(null);
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debugTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debugSessionRef = useRef<TowaskiDebugLicenseSession | null>(null);
   const roundShotsRef = useRef(0);
   const resolvingRef = useRef(false);
 
@@ -101,6 +114,7 @@ export default function TowaskiLicenseTest({
     });
     return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+      if (debugTimerRef.current) clearTimeout(debugTimerRef.current);
       void audioRef.current?.destroy();
       audioRef.current = null;
     };
@@ -108,6 +122,8 @@ export default function TowaskiLicenseTest({
 
   const resetTest = useCallback(() => {
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    if (debugTimerRef.current) clearTimeout(debugTimerRef.current);
+    debugSessionRef.current = null;
     setChallenge(null);
     setStats(EMPTY_STATS);
     setRoundShots(0);
@@ -146,6 +162,44 @@ export default function TowaskiLicenseTest({
     setSubmissionError(error.message);
     setPhase("failed");
   }, []);
+
+  const submitTest = useCallback(
+    (input: TowaskiLicenseTestRequest, callbacks: TestSubmissionCallbacks) => {
+      if (!debugSandbox) {
+        submitLiveTest(input, {
+          onSuccess: (response) => callbacks.onSuccess(response),
+          onError: (error) => callbacks.onError(error),
+        });
+        return;
+      }
+
+      if (debugTimerRef.current) clearTimeout(debugTimerRef.current);
+      debugTimerRef.current = setTimeout(() => {
+        try {
+          if (input.action === "start") {
+            const result = startTowaskiDebugLicenseTest();
+            debugSessionRef.current = result.session;
+            callbacks.onSuccess(result.response);
+            return;
+          }
+          if (!debugSessionRef.current) {
+            throw new Error("DEBUG_LICENSE_SESSION_MISSING");
+          }
+          const result = resolveTowaskiDebugLicenseTest(
+            debugSessionRef.current,
+            input,
+          );
+          debugSessionRef.current = result.session;
+          callbacks.onSuccess(result.response);
+        } catch (error) {
+          callbacks.onError(
+            error instanceof Error ? error : new Error("DEBUG_LICENSE_FAILED"),
+          );
+        }
+      }, 80);
+    },
+    [debugSandbox, submitLiveTest],
+  );
 
   const startChallenge = useCallback(() => {
     setPhase("starting");
