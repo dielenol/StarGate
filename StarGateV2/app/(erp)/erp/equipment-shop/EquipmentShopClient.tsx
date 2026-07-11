@@ -2350,7 +2350,36 @@ export default function EquipmentShopClient({
     };
 
     return (
-      <div className={styles.labLayout}>
+      <div className={styles.labWorkspace}>
+        <section className={styles.labScene} aria-label="신체증강 연구소 현황">
+          <div className={styles.labScene__summary}>
+            <div>
+              <Eyebrow>AUGMENTATION LAB</Eyebrow>
+              <strong>{scopeLabel(activeResearchScope)} 관제</strong>
+              <p>{mainCharacter?.codename ?? "UNASSIGNED"} 대상 연구 현황</p>
+            </div>
+            <div className={styles.labScene__metrics}>
+              <div>
+                <span>연구 노드</span>
+                <strong>{research.tree.length}</strong>
+              </div>
+              <div>
+                <span>진행 큐</span>
+                <strong>{activeResearchProjects.length}</strong>
+              </div>
+              <div>
+                <span>적용 완료</span>
+                <strong>{appliedResearchProjects.length}</strong>
+              </div>
+              <div>
+                <span>운용 잔액</span>
+                <strong>{formatCredits(balance)}</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className={styles.labLayout}>
         <section className={styles.techTreeConsole}>
           <div className={styles.techTreeHeader}>
             <div>
@@ -2918,6 +2947,7 @@ export default function EquipmentShopClient({
             )}
           </div>
         </aside>
+        </div>
       </div>
     );
   }
