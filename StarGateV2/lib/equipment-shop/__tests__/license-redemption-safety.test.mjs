@@ -41,7 +41,8 @@ test("license redemption recovers an interrupted passed challenge", async () => 
   const route = await readFile(LICENSE_ROUTE, "utf8");
   const challengeDb = await readFile(CHALLENGE_DB, "utf8");
 
-  assert.match(route, /findRecoverableTowaskiLicenseChallenge/);
+  assert.match(route, /startOrResumeTowaskiLicenseChallenge/);
+  assert.match(challengeDb, /status: \{ \$in: \["passed", "redeeming"\] \}/);
   assert.match(challengeDb, /redemptionLeaseExpiresAt: \{ \$lte: now \}/);
   assert.match(challengeDb, /redemptionToken/);
 });
@@ -55,6 +56,8 @@ test("license inventory grant and redeemed transition share one transaction", as
     /grantTowaskiLicenseOnce\([\s\S]*session: mongoSession[\s\S]*markTowaskiLicenseChallengeRedeemed\([\s\S]*session: mongoSession/,
   );
   assert.match(route, /if \(!redeemed\)[\s\S]*LICENSE_TEST_CONFLICT/);
+  assert.match(route, /waitForOwnedTowaskiLicense/);
+  assert.match(route, /status: "already_owned"/);
 });
 
 test("license difficulty is fixed on the server challenge", async () => {
@@ -72,6 +75,32 @@ test("license difficulty is fixed on the server challenge", async () => {
     route,
     /evaluateTowaskiBasicLicenseTest\([\s\S]*challenge\.difficulty \?\? "standard"/,
   );
+});
+
+test("license challenge retries are idempotent per start and resolve request", async () => {
+  const [route, challengeDb] = await Promise.all([
+    readFile(LICENSE_ROUTE, "utf8"),
+    readFile(CHALLENGE_DB, "utf8"),
+  ]);
+
+  assert.match(route, /readIdempotencyKey\(request\)/);
+  assert.match(route, /startOrResumeTowaskiLicenseChallenge/);
+  assert.match(route, /requestId/);
+  assert.match(challengeDb, /startRequestId: args\.requestId/);
+  assert.match(challengeDb, /equipment_license_test_requests/);
+  assert.match(challengeDb, /equipment_license_test_requests_unique/);
+  assert.match(challengeDb, /request\.action !== "start"/);
+  assert.match(challengeDb, /request\.action !== "resolve"/);
+  assert.match(challengeDb, /outcome: challengeOutcome\(next\)/);
+  assert.match(
+    challengeDb,
+    /status: finalEvaluation\.passed \? "passed" : "failed"[\s\S]*completedAt: now/,
+  );
+  assert.match(challengeDb, /applyChallengeOutcome\(replay, request\.outcome\)/);
+  assert.match(challengeDb, /session\.withTransaction/);
+  assert.doesNotMatch(challengeDb, /lastResolution/);
+  assert.match(challengeDb, /expiresAt: \{ \$lte: now \}/);
+  assert.match(challengeDb, /\(args\.hit && elapsedMs > rules\.maxRoundDurationMs\)/);
 });
 
 test("equipment checkout serializes inventory and rejects owned licenses", async () => {
@@ -94,6 +123,7 @@ test("equipment checkout serializes inventory and rejects owned licenses", async
     checkout,
     /resolveEquipmentLicenseStatus\(\{[\s\S]*character: transactionCharacter[\s\S]*ownedLicenseSlugs/,
   );
+  assert.match(checkout, /hasTowaskiBasicPurchaseAccess/);
   assert.doesNotMatch(checkout, /cartLicenseSlugs/);
   assert.match(inventory, /character_inventory_locks/);
   assert.match(inventory, /prepareCharacterInventoryItemLocks/);

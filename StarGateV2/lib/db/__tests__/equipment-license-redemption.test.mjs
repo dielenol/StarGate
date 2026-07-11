@@ -14,6 +14,7 @@ let claimTowaskiLicenseChallengeRedemption;
 let grantTowaskiLicenseOnce;
 let markTowaskiLicenseChallengeRedeemed;
 let prepareTowaskiLicenseGrant;
+let resolveTowaskiLicenseChallengeRound;
 let getClient;
 let getDb;
 let ObjectId;
@@ -25,6 +26,7 @@ before(async () => {
   ({
     claimTowaskiLicenseChallengeRedemption,
     markTowaskiLicenseChallengeRedeemed,
+    resolveTowaskiLicenseChallengeRound,
   } = await import("../equipment-license-tests.ts"));
   ({ grantTowaskiLicenseOnce, prepareTowaskiLicenseGrant } = await import(
     "../equipment-licenses.ts"
@@ -36,6 +38,7 @@ beforeEach(async () => {
   const db = await getDb();
   await Promise.all([
     db.collection("equipment_license_tests").deleteMany({}),
+    db.collection("equipment_license_test_requests").deleteMany({}),
     db.collection("character_inventory").deleteMany({}),
     db.collection("character_inventory_locks").deleteMany({}),
     db.collection("master_items").deleteMany({}),
@@ -53,6 +56,7 @@ after(async () => {
   const db = await getDb();
   await Promise.all([
     db.collection("equipment_license_tests").deleteMany({}),
+    db.collection("equipment_license_test_requests").deleteMany({}),
     db.collection("character_inventory").deleteMany({}),
     db.collection("character_inventory_locks").deleteMany({}),
     db.collection("master_items").deleteMany({}),
@@ -109,6 +113,118 @@ async function commitRedemption(challengeId, token, characterId) {
     await session.endSession();
   }
 }
+
+test(
+  "동일 resolve 요청 재전송은 라운드와 사격 수를 한 번만 반영한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const now = new Date();
+    const challenge = {
+      _id: new ObjectId(),
+      userId: "license-idempotent-user",
+      characterId: "license-idempotent-character",
+      characterCodename: "IDEMPOTENT",
+      licenseSlug: LICENSE_SLUG,
+      difficulty: "basic",
+      startRequestId: "license-start-idempotent",
+      sequence: [
+        { kind: "hostile", x: 50, y: 50, lane: "near" },
+        { kind: "hostile", x: 60, y: 50, lane: "mid" },
+        { kind: "hostile", x: 70, y: 50, lane: "far" },
+      ],
+      currentRound: 0,
+      hostileHits: 0,
+      civilianHits: 0,
+      shots: 0,
+      status: "active",
+      startedAt: new Date(now.getTime() - 1_000),
+      roundStartedAt: new Date(now.getTime() - 500),
+      expiresAt: new Date(now.getTime() + 120_000),
+    };
+    await (await getDb()).collection("equipment_license_tests").insertOne(challenge);
+    const input = {
+      challengeId: String(challenge._id),
+      userId: challenge.userId,
+      characterId: challenge.characterId,
+      round: 0,
+      hit: true,
+      shots: 1,
+      requestId: "license-resolve-idempotent",
+    };
+
+    const first = await resolveTowaskiLicenseChallengeRound(input);
+    const replay = await resolveTowaskiLicenseChallengeRound(input);
+    assert.equal(first.currentRound, 1);
+    assert.equal(replay.currentRound, 1);
+    assert.equal(replay.hostileHits, 1);
+    assert.equal(replay.shots, 1);
+    await (await getDb()).collection("equipment_license_tests").updateOne(
+      { _id: challenge._id },
+      { $set: { roundStartedAt: new Date(Date.now() - 500) } },
+    );
+    const second = await resolveTowaskiLicenseChallengeRound({
+      ...input,
+      round: 1,
+      requestId: "license-resolve-second",
+    });
+    const nonConsecutiveReplay = await resolveTowaskiLicenseChallengeRound(input);
+    assert.equal(second.currentRound, 2);
+    assert.equal(nonConsecutiveReplay.currentRound, 1);
+    assert.equal(nonConsecutiveReplay.hostileHits, 1);
+    assert.equal(nonConsecutiveReplay.shots, 1);
+    await assert.rejects(
+      resolveTowaskiLicenseChallengeRound({ ...input, round: 2 }),
+      /동일한 요청 키/,
+    );
+  },
+);
+
+test(
+  "마지막 resolve는 판정 상태와 요청 결과를 같은 transaction에 확정한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const now = new Date();
+    const challenge = {
+      _id: new ObjectId(),
+      userId: "license-final-user",
+      characterId: "license-final-character",
+      characterCodename: "FINAL",
+      licenseSlug: LICENSE_SLUG,
+      difficulty: "basic",
+      sequence: [{ kind: "hostile", x: 50, y: 50, lane: "near" }],
+      currentRound: 0,
+      hostileHits: 0,
+      civilianHits: 0,
+      shots: 0,
+      status: "active",
+      startedAt: new Date(now.getTime() - 4_000),
+      roundStartedAt: new Date(now.getTime() - 500),
+      expiresAt: new Date(now.getTime() + 120_000),
+    };
+    const db = await getDb();
+    await db.collection("equipment_license_tests").insertOne(challenge);
+
+    const resolved = await resolveTowaskiLicenseChallengeRound({
+      challengeId: String(challenge._id),
+      userId: challenge.userId,
+      characterId: challenge.characterId,
+      round: 0,
+      hit: true,
+      shots: 1,
+      requestId: "license-final-resolve",
+    });
+    const request = await db.collection("equipment_license_test_requests").findOne({
+      userId: challenge.userId,
+      characterId: challenge.characterId,
+      requestId: "license-final-resolve",
+    });
+
+    assert.equal(resolved.status, "failed");
+    assert.ok(resolved.completedAt instanceof Date);
+    assert.equal(request?.outcome.status, "failed");
+    assert.ok(request?.outcome.completedAt instanceof Date);
+  },
+);
 
 test(
   "claim 뒤 crash는 만료 lease 재청구 후 라이선스를 한 번만 지급한다",

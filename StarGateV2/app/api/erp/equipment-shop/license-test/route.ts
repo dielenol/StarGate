@@ -3,17 +3,15 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getClient } from "@stargate/shared-db";
 
+import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth/config";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import {
-  completeTowaskiLicenseChallenge,
   claimTowaskiLicenseChallengeRedemption,
-  createTowaskiLicenseChallenge,
-  findRecoverableTowaskiLicenseChallenge,
-  findTowaskiLicenseChallenge,
   markTowaskiLicenseChallengeRedeemed,
   releaseTowaskiLicenseChallengeRedemption,
   resolveTowaskiLicenseChallengeRound,
+  startOrResumeTowaskiLicenseChallenge,
   TowaskiLicenseChallengeError,
   type TowaskiLicenseChallenge,
 } from "@/lib/db/equipment-license-tests";
@@ -24,6 +22,7 @@ import {
 } from "@/lib/db/equipment-licenses";
 import {
   evaluateTowaskiBasicLicenseTest,
+  getTowaskiLicenseTestRules,
   parseTowaskiLicenseTestRequest,
   TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
   type TowaskiLicenseTestResponse,
@@ -55,6 +54,11 @@ function activeResponse(
     target,
     difficulty: challenge.difficulty ?? "standard",
     stats: challengeStats(challenge),
+    roundDeadlineAt: new Date(
+      challenge.roundStartedAt.getTime() +
+        getTowaskiLicenseTestRules(challenge.difficulty ?? "standard")
+          .targetWindowMs,
+    ).toISOString(),
   };
 }
 
@@ -84,10 +88,35 @@ function challengeErrorResponse(error: TowaskiLicenseChallengeError) {
   );
 }
 
+async function waitForOwnedTowaskiLicense(characterId: string): Promise<boolean> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    if (
+      await hasOwnedTowaskiLicense(
+        characterId,
+        TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+      )
+    ) {
+      return true;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return false;
+}
+
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      {
+        error: "유효한 Idempotency-Key 헤더가 필요합니다.",
+        code: "INVALID_IDEMPOTENCY_KEY",
+      },
+      { status: 400 },
+    );
   }
 
   const body = parseTowaskiLicenseTestRequest(
@@ -142,26 +171,29 @@ export async function POST(request: Request) {
 
   if (body.action === "start") {
     try {
-      const recoverable = await findRecoverableTowaskiLicenseChallenge({
+      challenge = await startOrResumeTowaskiLicenseChallenge({
         userId: session.user.id,
         characterId,
+        characterCodename: mainCharacter.codename,
+        difficulty: body.difficulty,
+        requestId,
       });
-
-      if (recoverable?._id && challengeEvaluation(recoverable).passed) {
-        challenge = recoverable;
-        challengeId = recoverable._id.toString();
-      } else {
-        const created = await createTowaskiLicenseChallenge({
-          userId: session.user.id,
-          characterId,
-          characterCodename: mainCharacter.codename,
-          difficulty: body.difficulty,
-        });
-        const response = activeResponse(created);
-        if (!response) throw new Error("첫 사격 표적 발급에 실패했습니다.");
-        return NextResponse.json(response, { status: 201 });
+      if (!challenge._id) throw new Error("사격 시험 challenge ID 발급 실패");
+      challengeId = challenge._id.toString();
+      if (challenge.status === "expired" || challenge.status === "superseded") {
+        throw new TowaskiLicenseChallengeError(
+          challenge.status === "expired"
+            ? "LICENSE_TEST_EXPIRED"
+            : "LICENSE_TEST_CONFLICT",
+          "이미 종료된 사격 시험 시작 요청입니다.",
+        );
       }
+      const response = activeResponse(challenge);
+      if (response) return NextResponse.json(response);
     } catch (error) {
+      if (error instanceof TowaskiLicenseChallengeError) {
+        return challengeErrorResponse(error);
+      }
       const message =
         error instanceof Error ? error.message : "사격 시험 세션 발급 실패";
       return NextResponse.json(
@@ -176,6 +208,7 @@ export async function POST(request: Request) {
         ...body,
         userId: session.user.id,
         characterId,
+        requestId,
       });
     } catch (error) {
       if (error instanceof TowaskiLicenseChallengeError) {
@@ -197,23 +230,6 @@ export async function POST(request: Request) {
       if (response) return NextResponse.json(response);
     }
 
-    const initialEvaluation = challengeEvaluation(challenge);
-    if (challenge.status === "active") {
-      const completed = await completeTowaskiLicenseChallenge({
-        challengeId,
-        status: initialEvaluation.passed ? "passed" : "failed",
-      });
-      if (completed) {
-        challenge = completed;
-      } else {
-        const latest = await findTowaskiLicenseChallenge({
-          challengeId,
-          userId: session.user.id,
-          characterId,
-        });
-        if (latest) challenge = latest;
-      }
-    }
   }
 
   const evaluation = challengeEvaluation(challenge);
@@ -229,13 +245,21 @@ export async function POST(request: Request) {
   }
 
   const redemptionToken = randomUUID();
-  if (
-    !["passed", "redeeming"].includes(challenge.status) ||
-    !(await claimTowaskiLicenseChallengeRedemption(
+  const redemptionClaimed =
+    ["passed", "redeeming"].includes(challenge.status) &&
+    (await claimTowaskiLicenseChallengeRedemption(
       challengeId,
       redemptionToken,
-    ))
-  ) {
+    ));
+  if (!redemptionClaimed) {
+    if (await waitForOwnedTowaskiLicense(characterId)) {
+      return NextResponse.json({
+        status: "already_owned",
+        license,
+        difficulty: challenge.difficulty ?? "standard",
+        evaluation,
+      } satisfies TowaskiLicenseTestResponse);
+    }
     return NextResponse.json(
       {
         error: "라이선스 발급이 이미 처리 중이거나 완료되었습니다.",

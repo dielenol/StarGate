@@ -11,6 +11,7 @@ test("debug qualification reproduces ten hostile and two civilian targets", () =
 
   assert.equal(response.status, "active");
   assert.equal(response.difficulty, "basic");
+  assert.equal(response.roundDeadlineAt, new Date(4_000).toISOString());
   assert.equal(session.targets.filter((target) => target.kind === "hostile").length, 10);
   assert.equal(session.targets.filter((target) => target.kind === "civilian").length, 2);
 });

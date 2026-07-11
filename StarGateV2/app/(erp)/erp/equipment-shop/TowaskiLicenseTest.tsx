@@ -45,6 +45,7 @@ interface TowaskiLicenseTestProps {
   debugSandbox?: boolean;
   onBusyChange?: (busy: boolean) => void;
   onDialogueEvent?: (event: TowaskiQualificationDialogueEvent) => void;
+  onCancel?: () => void;
   onGranted: (licenseName: string) => void;
 }
 
@@ -88,6 +89,7 @@ export default function TowaskiLicenseTest({
   debugSandbox = false,
   onBusyChange,
   onDialogueEvent,
+  onCancel,
   onGranted,
 }: TowaskiLicenseTestProps) {
   const { mutate: submitLiveTest } = useCompleteTowaskiLicenseTest();
@@ -106,6 +108,7 @@ export default function TowaskiLicenseTest({
 
   const audioRef = useRef<DialogueBeepEngine | null>(null);
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deadlineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debugTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debugSessionRef = useRef<TowaskiDebugLicenseSession | null>(null);
   const roundShotsRef = useRef(0);
@@ -134,6 +137,7 @@ export default function TowaskiLicenseTest({
     });
     return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+      if (deadlineTimerRef.current) clearTimeout(deadlineTimerRef.current);
       if (debugTimerRef.current) clearTimeout(debugTimerRef.current);
       void audioRef.current?.destroy();
       audioRef.current = null;
@@ -142,6 +146,7 @@ export default function TowaskiLicenseTest({
 
   const resetTest = useCallback(() => {
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    if (deadlineTimerRef.current) clearTimeout(deadlineTimerRef.current);
     if (debugTimerRef.current) clearTimeout(debugTimerRef.current);
     debugSessionRef.current = null;
     setChallenge(null);
@@ -317,11 +322,19 @@ export default function TowaskiLicenseTest({
 
   useEffect(() => {
     if (phase !== "active" || !challenge) return;
+    const remainingMs = Math.max(
+      0,
+      Date.parse(challenge.roundDeadlineAt) - Date.now(),
+    );
     const timer = setTimeout(() => {
       resolveRound(false, roundShotsRef.current);
-    }, rules.targetWindowMs);
-    return () => clearTimeout(timer);
-  }, [challenge, phase, resolveRound, rules.targetWindowMs]);
+    }, remainingMs);
+    deadlineTimerRef.current = timer;
+    return () => {
+      clearTimeout(timer);
+      if (deadlineTimerRef.current === timer) deadlineTimerRef.current = null;
+    };
+  }, [challenge, phase, resolveRound]);
 
   const handleRangePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -372,6 +385,10 @@ export default function TowaskiLicenseTest({
         return;
       }
       const nextShots = roundShotsRef.current + 1;
+      if (deadlineTimerRef.current) {
+        clearTimeout(deadlineTimerRef.current);
+        deadlineTimerRef.current = null;
+      }
       roundShotsRef.current = nextShots;
       setRoundShots(nextShots);
       setTargetResolved(true);
@@ -459,9 +476,20 @@ export default function TowaskiLicenseTest({
                 최소 명중률 <strong>{Math.round(rules.minAccuracy * 100)}%</strong>
               </span>
             </div>
-            <button type="button" className={styles.startButton} onClick={beginTest}>
-              사격장 진입
-            </button>
+            <div className={styles.resultActions}>
+              {onCancel ? (
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={onCancel}
+                >
+                  건샵으로 돌아가기
+                </button>
+              ) : null}
+              <button type="button" className={styles.startButton} onClick={beginTest}>
+                사격장 진입
+              </button>
+            </div>
           </div>
         </div>
       ) : phase === "failed" ? (

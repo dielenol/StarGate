@@ -37,6 +37,18 @@ export interface EquipmentLicenseStatus {
   note?: string;
 }
 
+export function hasTowaskiBasicPurchaseAccess(args: {
+  isGM: boolean;
+  hasBasicLicense: boolean;
+  licenseStatus?: EquipmentLicenseStatus;
+}): boolean {
+  return (
+    args.isGM ||
+    args.hasBasicLicense ||
+    args.licenseStatus?.source === "character_qualification"
+  );
+}
+
 export interface EquipmentCatalogLicenseContext {
   licenseStatus?: EquipmentLicenseStatus;
   licenseOwned?: boolean;
@@ -311,18 +323,6 @@ export function resolveEquipmentLicenseStatus(args: {
     };
   }
 
-  const matchedKeyword = findCharacterQualificationKeyword(
-    character,
-    requirement.qualificationKeywords,
-  );
-  if (matchedKeyword) {
-    return {
-      satisfied: true,
-      source: "character_qualification",
-      matchedKeyword,
-    };
-  }
-
   return { satisfied: false, source: null };
 }
 
@@ -369,6 +369,13 @@ function findCharacterLicenseException(
     };
   }
 
+  if (requirement.itemSlug === "basic-sonic-emitter" && isStarckIlonison(character)) {
+    return {
+      matchedKeyword: "스타크 일로니손 / 음파 방출기 특전",
+      note: "스타크 일로니손의 전용 음파 방출기 운용 설정을 반영합니다.",
+    };
+  }
+
   return null;
 }
 
@@ -388,63 +395,19 @@ function isParkAesol(character: EquipmentLicenseCharacter): boolean {
   );
 }
 
-function findCharacterQualificationKeyword(
-  character: EquipmentLicenseCharacter,
-  keywords: readonly string[],
-): string | null {
-  const haystacks = collectCharacterQualificationText(character);
-  for (const keyword of keywords) {
-    const normalizedKeyword = normalizeSearchText(keyword);
-    if (!normalizedKeyword) continue;
-    if (haystacks.some((value) => value.includes(normalizedKeyword))) {
-      return keyword;
-    }
-  }
+function isStarckIlonison(character: EquipmentLicenseCharacter): boolean {
+  const tokens = [
+    character.codename,
+    character.lore?.name,
+    character.lore?.nickname,
+  ].map(normalizeSearchText);
 
-  return null;
-}
-
-function collectCharacterQualificationText(
-  character: EquipmentLicenseCharacter,
-): string[] {
-  const values: string[] = [];
-  const push = (value: string | undefined) => {
-    if (value?.trim()) values.push(value);
-  };
-
-  push(character.codename);
-  push(character.lore?.name);
-  push(character.lore?.nickname);
-  push(character.lore?.background);
-  push(character.lore?.personality);
-  push(character.lore?.roleDetail);
-  push(character.play?.className);
-  push(character.play?.abilityType);
-  for (const value of character.lore?.loreTags ?? []) push(value);
-  for (const value of character.play?.weaponTraining ?? []) push(value);
-  for (const value of character.play?.skillTraining ?? []) push(value);
-
-  for (const equipment of character.play?.equipment ?? []) {
-    push(equipment.name);
-    push(equipment.description);
-    push(equipment.damage);
-    push(equipment.effect);
-  }
-
-  for (const ability of character.play?.abilities ?? []) {
-    push(ability.name);
-    push(ability.description);
-    push(ability.effect);
-  }
-
-  for (const relation of character.lore?.relations ?? []) {
-    push(relation.targetCodename);
-    push(relation.targetName);
-    push(relation.label);
-    push(relation.summary);
-  }
-
-  return values.map(normalizeSearchText).filter(Boolean);
+  return tokens.some(
+    (token) =>
+      token.includes("스타크일로니손") ||
+      token.includes("starckilonison") ||
+      token === "clown",
+  );
 }
 
 function normalizeSearchText(value: string | undefined): string {

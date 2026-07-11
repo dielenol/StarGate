@@ -31,6 +31,7 @@ import {
 import { containsDuplicateEquipmentItemIds } from "@/lib/equipment-shop/checkout-lines";
 import {
   getEquipmentLicenseRequirement,
+  hasTowaskiBasicPurchaseAccess,
   isTowaskiLicenseSlug,
   resolveEquipmentLicenseStatus,
   type EquipmentLicenseRequirement,
@@ -359,21 +360,32 @@ export async function POST(request: Request) {
             .filter(isTowaskiLicenseSlug),
         );
 
-        if (
-          !isGM &&
-          !ownedLicenseSlugs.has(TOWASKI_BASIC_FIREARM_LICENSE_SLUG)
-        ) {
-          throw new EquipmentBasicLicenseRequiredError();
-        }
+        const hasBasicLicense = ownedLicenseSlugs.has(
+          TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+        );
 
-        for (const line of licenseGatedLines) {
-          const licenseStatus = resolveEquipmentLicenseStatus({
-            character: transactionCharacter,
-            requirement: line.licenseRequirement,
-            ownedLicenseSlugs,
-          });
-          if (!licenseStatus.satisfied) {
-            throw new EquipmentLicenseRequiredError(line);
+        for (const line of lines) {
+          const licenseStatus = line.licenseRequirement
+            ? resolveEquipmentLicenseStatus({
+                character: transactionCharacter,
+                requirement: line.licenseRequirement,
+                ownedLicenseSlugs,
+              })
+            : undefined;
+          if (
+            !hasTowaskiBasicPurchaseAccess({
+              isGM,
+              hasBasicLicense,
+              licenseStatus,
+            })
+          ) {
+            throw new EquipmentBasicLicenseRequiredError();
+          }
+          if (line.licenseRequirement && !licenseStatus?.satisfied) {
+            throw new EquipmentLicenseRequiredError({
+              ...line,
+              licenseRequirement: line.licenseRequirement,
+            });
           }
         }
 

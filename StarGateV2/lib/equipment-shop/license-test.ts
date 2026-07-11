@@ -9,7 +9,6 @@ const COMMON_LICENSE_TEST_RULES = {
   maxShotsPerRound: 3,
   minDurationMs: 3_000,
   maxDurationMs: 60_000,
-  maxRoundDurationMs: 5_000,
   challengeTtlMs: 120_000,
 } as const;
 
@@ -23,6 +22,7 @@ export const TOWASKI_LICENSE_TEST_DIFFICULTIES = {
     minHitReactionMs: 120,
     minMissWindowMs: 1_200,
     targetWindowMs: 3_000,
+    maxRoundDurationMs: 8_000,
     targetScale: 1.35,
   },
   standard: {
@@ -34,6 +34,7 @@ export const TOWASKI_LICENSE_TEST_DIFFICULTIES = {
     minHitReactionMs: 120,
     minMissWindowMs: 700,
     targetWindowMs: 1_500,
+    maxRoundDurationMs: 6_500,
     targetScale: 1,
   },
   expert: {
@@ -45,6 +46,7 @@ export const TOWASKI_LICENSE_TEST_DIFFICULTIES = {
     minHitReactionMs: 120,
     minMissWindowMs: 500,
     targetWindowMs: 750,
+    maxRoundDurationMs: 5_750,
     targetScale: 0.9,
   },
 } as const;
@@ -140,6 +142,7 @@ export type TowaskiLicenseTestResponse =
       target: TowaskiLicenseTarget;
       difficulty: TowaskiLicenseTestDifficulty;
       stats: TowaskiLicenseTestStats;
+      roundDeadlineAt: string;
     }
   | {
       status: "failed";
@@ -256,6 +259,7 @@ export interface TowaskiDebugLicenseSession {
   difficulty: TowaskiLicenseTestDifficulty;
   round: number;
   startedAtMs: number;
+  roundStartedAtMs: number;
   stats: TowaskiLicenseTestStats;
   targets: TowaskiLicenseTarget[];
 }
@@ -272,6 +276,10 @@ function debugActiveResponse(
     target,
     difficulty: session.difficulty,
     stats: session.stats,
+    roundDeadlineAt: new Date(
+      session.roundStartedAtMs +
+        getTowaskiLicenseTestRules(session.difficulty).targetWindowMs,
+    ).toISOString(),
   };
 }
 
@@ -287,6 +295,7 @@ export function startTowaskiDebugLicenseTest(
     difficulty,
     round: 0,
     startedAtMs: nowMs,
+    roundStartedAtMs: nowMs,
     stats: { hostileHits: 0, civilianHits: 0, shots: 0 },
     targets: TOWASKI_LICENSE_TARGET_LAYOUTS.map((layout, index) => ({
       ...layout,
@@ -330,6 +339,7 @@ export function resolveTowaskiDebugLicenseTest(
   const nextSession = {
     ...session,
     round: session.round + 1,
+    roundStartedAtMs: nowMs,
     stats,
   };
 

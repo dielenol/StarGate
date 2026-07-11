@@ -43,7 +43,10 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
-import { isTowaskiLicenseSlug } from "@/lib/equipment-shop/licenses";
+import {
+  hasTowaskiBasicPurchaseAccess,
+  isTowaskiLicenseSlug,
+} from "@/lib/equipment-shop/licenses";
 import {
   getTowaskiDialogueContext,
   getTowaskiQualificationDialogueLine,
@@ -615,6 +618,10 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   LICENSE_TEST_EXPIRED: "사격 시험 시간이 만료되었습니다. 다시 시작해 주세요.",
   LICENSE_TEST_STALE_ROUND: "이미 처리됐거나 순서가 맞지 않는 표적입니다.",
   LICENSE_TEST_TOO_FAST: "표적 반응 시간이 시험 범위를 벗어났습니다.",
+  INVALID_IDEMPOTENCY_KEY: "요청 식별자가 올바르지 않습니다. 다시 시도해 주세요.",
+  DUPLICATE_REQUEST: "동일한 요청이 처리 중입니다. 잠시 후 다시 시도해 주세요.",
+  CHECKOUT_TRANSACTION_FAILED:
+    "반출 결제를 완료하지 못했습니다. 결제 내역을 확인한 뒤 다시 시도해 주세요.",
   LICENSE_TEST_CONFLICT: "사격 기록이 동시에 처리되었습니다. 다시 시도해 주세요.",
   LICENSE_ITEM_MISSING: "기본 화기 라이센스 마스터 품목이 없습니다.",
   LICENSE_GRANT_FAILED: "기본 화기 라이센스 지급에 실패했습니다.",
@@ -1330,6 +1337,7 @@ export default function EquipmentShopClient({
   );
   const [towaskiDebugMode, setTowaskiDebugMode] =
     useState<TowaskiDebugMode>("live");
+  const [towaskiLicenseTestOpen, setTowaskiLicenseTestOpen] = useState(false);
   const [sutureDebugMode, setSutureDebugMode] =
     useState<SutureDebugMode>("live");
   const [towaskiDebugRevision, setTowaskiDebugRevision] = useState(0);
@@ -1357,6 +1365,13 @@ export default function EquipmentShopClient({
   const effectiveHasBasicLicense = isTowaskiDebug
     ? towaskiDebugMode === "licensed"
     : hasBasicFirearmLicense;
+  const hasCharacterQualificationAccess = catalog.items.some(
+    (item) =>
+      item.zone === "towaski" &&
+      item.licenseStatus?.source === "character_qualification",
+  );
+  const effectiveHasQualificationAccess =
+    !isTowaskiDebug && hasCharacterQualificationAccess;
   const effectiveTowaskiGm = isGM && !isTowaskiDebug;
   const activeZoneDef = activeZoneMeta(activeZone);
   const zoneMeta = isHub ? ARMORY_DESK_META : activeZoneDef;
@@ -1366,8 +1381,11 @@ export default function EquipmentShopClient({
     !effectiveTowaskiGm &&
     effectiveHasMainCharacter &&
     !effectiveHasBasicLicense;
+  const showTowaskiLicenseTest =
+    requiresTowaskiLicenseTest &&
+    (!effectiveHasQualificationAccess || towaskiLicenseTestOpen);
   const towaskiDialogueContext = getTowaskiDialogueContext(
-    requiresTowaskiLicenseTest,
+    showTowaskiLicenseTest,
   );
   const mainCharacterProfile = useMemo(
     () => getMainCharacterProfile(localStats),
@@ -1375,13 +1393,13 @@ export default function EquipmentShopClient({
   );
   const towaskiWelcomeLine = useMemo(
     () =>
-      requiresTowaskiLicenseTest
+      showTowaskiLicenseTest
         ? TOWASKI_DIALOGUE_LINES.qualification
         : buildTowaskiWelcomeLine({
             codename: mainCharacter?.codename ?? null,
             profile: mainCharacterProfile,
           }),
-    [mainCharacter?.codename, mainCharacterProfile, requiresTowaskiLicenseTest],
+    [mainCharacter?.codename, mainCharacterProfile, showTowaskiLicenseTest],
   );
   const sutureWelcomeLine = useMemo(
     () =>
@@ -1411,7 +1429,7 @@ export default function EquipmentShopClient({
     closedLine: TOWASKI_DIALOGUE_LINES.closed,
     noAgentMood: "blocked",
     noAgentLine: TOWASKI_DIALOGUE_LINES.noAgent,
-    welcomeMood: requiresTowaskiLicenseTest ? "range" : "welcome",
+    welcomeMood: showTowaskiLicenseTest ? "range" : "welcome",
     welcomeLine: towaskiWelcomeLine,
     beepPreset: "towaski",
     beepDefaults: { pitch: 510, speed: 50, volume: 0.58 },
@@ -1513,7 +1531,8 @@ export default function EquipmentShopClient({
     !catalogQuery.isError &&
     !catalogQuery.isRefetchError &&
     (effectiveTowaskiGm ||
-      (activeZone === "towaski" && effectiveHasBasicLicense));
+      (activeZone === "towaski" &&
+        (effectiveHasBasicLicense || effectiveHasQualificationAccess)));
   const purchasingKey = purchaseMutation.isPending
     ? (purchaseMutation.variables?.key ?? null)
     : null;
@@ -1526,12 +1545,20 @@ export default function EquipmentShopClient({
   const selectedLicenseDetail = selectedItem
     ? describeEquipmentLicenseDetail(selectedItem)
     : null;
+  const selectedHasBasicPurchaseAccess = selectedItem
+    ? hasTowaskiBasicPurchaseAccess({
+        isGM: effectiveTowaskiGm,
+        hasBasicLicense: effectiveHasBasicLicense,
+        licenseStatus: selectedItem.licenseStatus,
+      })
+    : false;
   const selectedCanPurchase =
     Boolean(selectedItem) &&
     canUseShop &&
     !isTowaskiDebug &&
     selectedItem?.available === true &&
     selectedItem.stock > 0 &&
+    selectedHasBasicPurchaseAccess &&
     selectedItem.licenseOwned !== true &&
     !selectedLicenseBlocked &&
     selectedItem.price <= balance &&
@@ -1746,6 +1773,8 @@ export default function EquipmentShopClient({
             ? "GM OVERRIDE"
             : effectiveHasBasicLicense
               ? "LICENSE ACTIVE"
+              : effectiveHasQualificationAccess
+                ? "APTITUDE ACCESS"
               : "RANGE TEST"
           : activeZone === "acheron"
             ? "FORGE CATALOG"
@@ -1776,6 +1805,8 @@ export default function EquipmentShopClient({
                   : "GM 면제"
                 : effectiveHasBasicLicense
                   ? "승인"
+                  : effectiveHasQualificationAccess
+                    ? "적성 승인"
                   : "미발급",
             },
           ]
@@ -1817,6 +1848,7 @@ export default function EquipmentShopClient({
   function handleTowaskiDebugMode(nextMode: TowaskiDebugMode) {
     if (purchaseMutation.isPending || towaskiLicenseTestBusy) return;
     setTowaskiDebugMode(nextMode);
+    setTowaskiLicenseTestOpen(false);
     setTowaskiDebugRevision((value) => value + 1);
     setErrorMessage(null);
     setNotice(
@@ -1882,6 +1914,23 @@ export default function EquipmentShopClient({
       return;
     }
 
+    if (
+      !hasTowaskiBasicPurchaseAccess({
+        isGM: effectiveTowaskiGm,
+        hasBasicLicense: effectiveHasBasicLicense,
+        licenseStatus: item.licenseStatus,
+      })
+    ) {
+      setErrorMessage(
+        "기본 화기 라이센스가 없으면 캐릭터 적성이 확인된 품목만 구매할 수 있습니다.",
+      );
+      playTowaskiIfActive(
+        "blocked",
+        "기본 자격이 없으면 네 적성 기록에 찍힌 물건만 내줄 수 있다.",
+      );
+      return;
+    }
+
     if (item.stock <= 0 || !item.available) {
       setErrorMessage("현재 반출할 수 없는 품목입니다.");
       playTowaskiIfActive("stock", TOWASKI_DIALOGUE_LINES.unavailable);
@@ -1926,7 +1975,9 @@ export default function EquipmentShopClient({
         onSuccess: (res) => {
           setNotice({
             tone: "success",
-            text: `${res.order.items[0]?.name ?? item.name} 1개 반출 결제가 완료되었습니다.`,
+            text: isLicenseItem
+              ? `${res.order.items[0]?.name ?? item.name} 발급이 완료되었습니다.`
+              : `${res.order.items[0]?.name ?? item.name} 1개 반출 결제가 완료되었습니다.`,
           });
           playTowaskiIfActive(
             isLicenseItem ? "license" : "checkout",
@@ -1949,6 +2000,7 @@ export default function EquipmentShopClient({
   const handleTowaskiLicenseGranted = useCallback(
     (licenseName: string) => {
       towaskiQualificationPassedRef.current = true;
+      setTowaskiLicenseTestOpen(false);
       if (isTowaskiDebug) {
         setTowaskiDebugMode("licensed");
       } else {
@@ -2526,6 +2578,28 @@ export default function EquipmentShopClient({
     return (
       <div className={styles.salesLayout}>
         <section className={styles.shelfPanel} aria-label={zoneMeta.label}>
+          {isTowaski &&
+          requiresTowaskiLicenseTest &&
+          effectiveHasQualificationAccess ? (
+            <div className={styles.panelIntro}>
+              <Eyebrow>BASIC FIREARM LICENSE</Eyebrow>
+              <strong>적성 외 품목 반출 자격</strong>
+              <button
+                type="button"
+                className={styles.primaryAction}
+                onClick={() => {
+                  setTowaskiLicenseTestOpen(true);
+                  playTowaskiLine(
+                    "range",
+                    TOWASKI_DIALOGUE_LINES.qualification,
+                    { returnToIdle: false, sound: true },
+                  );
+                }}
+              >
+                기본 화기 라이센스 발급
+              </button>
+            </div>
+          ) : null}
           {isStandardCatalog ? (
             <div
               role="tablist"
@@ -2582,10 +2656,16 @@ export default function EquipmentShopClient({
                 const isLicenseItem = isTowaskiLicenseCatalogItem(item);
                 const licenseBlocked = isEquipmentLicenseBlocked(item);
                 const licenseAccess = describeEquipmentLicenseAccess(item);
+                const hasBasicPurchaseAccess = hasTowaskiBasicPurchaseAccess({
+                  isGM: effectiveTowaskiGm,
+                  hasBasicLicense: effectiveHasBasicLicense,
+                  licenseStatus: item.licenseStatus,
+                });
                 const canPurchase =
                   canUseShop &&
                   !isTowaskiDebug &&
                   !isSoldOut &&
+                  hasBasicPurchaseAccess &&
                   !item.licenseOwned &&
                   !licenseBlocked &&
                   item.price <= balance &&
@@ -2597,7 +2677,10 @@ export default function EquipmentShopClient({
                     className={[
                       styles.productCard,
                       isSelected ? styles["productCard--selected"] : "",
-                      isSoldOut || licenseBlocked || item.licenseOwned
+                      isSoldOut ||
+                      !hasBasicPurchaseAccess ||
+                      licenseBlocked ||
+                      item.licenseOwned
                         ? styles["productCard--locked"]
                         : "",
                     ]
@@ -2642,6 +2725,8 @@ export default function EquipmentShopClient({
                             ? "샌드박스 차단"
                             : item.licenseOwned
                               ? "발급 완료"
+                              : !hasBasicPurchaseAccess
+                                ? "기본 화기 필요"
                               : licenseBlocked
                                 ? `${item.licenseRequirement?.label ?? "라이센스"} 필요`
                             : item.price > balance
@@ -2723,6 +2808,8 @@ export default function EquipmentShopClient({
                         ? "샌드박스 구매 차단"
                         : selectedItem.licenseOwned
                           ? "발급 완료"
+                          : !selectedHasBasicPurchaseAccess
+                            ? "기본 화기 필요"
                           : selectedLicenseBlocked
                             ? `${selectedItem.licenseRequirement?.label ?? "라이센스"} 필요`
                         : selectedItem.price > balance
@@ -3746,13 +3833,18 @@ export default function EquipmentShopClient({
             </div>
 
             <div className={styles.zoneBody}>
-              {requiresTowaskiLicenseTest ? (
+              {showTowaskiLicenseTest ? (
                 <TowaskiLicenseTest
                   key={`towaski-license-${towaskiDebugRevision}`}
                   characterCodename={mainCharacter?.codename ?? "DEBUG AGENT"}
                   debugSandbox={isTowaskiDebug}
                   onBusyChange={setTowaskiLicenseTestBusy}
                   onDialogueEvent={handleTowaskiQualificationDialogue}
+                  onCancel={
+                    effectiveHasQualificationAccess
+                      ? () => setTowaskiLicenseTestOpen(false)
+                      : undefined
+                  }
                   onGranted={handleTowaskiLicenseGranted}
                 />
               ) : activeZone === "lab"

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   getEquipmentLicenseRequirement,
+  hasTowaskiBasicPurchaseAccess,
   resolveEquipmentCatalogLicenseContext,
   resolveEquipmentLicenseStatus,
 } from "../licenses.ts";
@@ -68,7 +69,7 @@ test("Park Aesol passes flamethrower license through Towaski exception", () => {
   assert.equal(status.matchedKeyword, "박애솔 / 토와스키 화염방사기 특전");
 });
 
-test("character weapon training only satisfies matching weapon requirements", () => {
+test("player-editable training text never grants equipment purchase authority", () => {
   const pistolRequirement = getEquipmentLicenseRequirement({
     slug: "basic-pistol",
     name: "보급형 권총",
@@ -85,7 +86,7 @@ test("character weapon training only satisfies matching weapon requirements", ()
       character: clown,
       requirement: pistolRequirement,
     }).satisfied,
-    true,
+    false,
   );
   assert.equal(
     resolveEquipmentLicenseStatus({
@@ -96,7 +97,7 @@ test("character weapon training only satisfies matching weapon requirements", ()
   );
 });
 
-test("Starck's sonic emitter ability and Towaski relation satisfy sonic equipment", () => {
+test("Starck's sonic emitter ability satisfies sonic equipment aptitude", () => {
   const requirement = getEquipmentLicenseRequirement({
     slug: "basic-sonic-emitter",
     name: "보급형 음파 방출기",
@@ -136,6 +137,66 @@ test("owned or same-cart license satisfies a missing character qualification", (
     }).source,
     "cart_license",
   );
+});
+
+test("matching character aptitude grants only item-scoped basic purchase access", () => {
+  const sonicRequirement = getEquipmentLicenseRequirement({
+    slug: "basic-sonic-emitter",
+    name: "보급형 음파 방출기",
+  });
+  assert.ok(sonicRequirement);
+  const sonicStatus = resolveEquipmentLicenseStatus({
+    character: clown,
+    requirement: sonicRequirement,
+  });
+
+  assert.equal(
+    hasTowaskiBasicPurchaseAccess({
+      isGM: false,
+      hasBasicLicense: false,
+      licenseStatus: sonicStatus,
+    }),
+    true,
+  );
+  assert.equal(
+    hasTowaskiBasicPurchaseAccess({
+      isGM: false,
+      hasBasicLicense: false,
+    }),
+    false,
+  );
+});
+
+test("narrative mentions alone never grant weapon aptitude", () => {
+  const explosiveRequirement = getEquipmentLicenseRequirement({
+    slug: "rocket-launcher",
+    name: "로켓 런처",
+  });
+  assert.ok(explosiveRequirement);
+
+  const status = resolveEquipmentLicenseStatus({
+    character: {
+      codename: "UNTRAINED",
+      lore: {
+        background: "폭발물 사고 이후 로켓을 다루지 못한다.",
+        relations: [{ summary: "중화기 담당 요원과 아는 사이다." }],
+      },
+      play: {
+        abilityType: "폭발물 대응",
+        abilities: [
+          {
+            name: "대폭발 방호",
+            description: "폭발물 피해를 받으면 방어력이 증가한다.",
+            effect: "로켓과 수류탄 피해를 절반으로 줄인다.",
+          },
+        ],
+      },
+    },
+    requirement: explosiveRequirement,
+  });
+
+  assert.equal(status.satisfied, false);
+  assert.equal(status.source, null);
 });
 
 test("catalog context locks unqualified items and exposes character aptitude exceptions", () => {

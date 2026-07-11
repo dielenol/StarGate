@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   evaluateTowaskiBasicLicenseTest,
   parseTowaskiLicenseTestRequest,
+  TOWASKI_LICENSE_TEST_DIFFICULTIES,
 } from "../license-test.ts";
 
 test("passes a clean basic firearm qualification result", () => {
@@ -56,6 +57,12 @@ test("expert difficulty requires all hostile targets and eighty percent accuracy
 
   assert.equal(result.passed, false);
   assert.deepEqual(result.reasons, ["hostile_hits"]);
+});
+
+test("every difficulty reserves five seconds of network grace per round", () => {
+  for (const rules of Object.values(TOWASKI_LICENSE_TEST_DIFFICULTIES)) {
+    assert.ok(rules.maxRoundDurationMs >= rules.targetWindowMs + 5_000);
+  }
 });
 
 test("fails when a civilian target is hit", () => {
