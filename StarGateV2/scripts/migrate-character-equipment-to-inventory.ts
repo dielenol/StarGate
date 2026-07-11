@@ -29,12 +29,21 @@ const CORRECT_GRENADE = process.argv.includes("--correct-grenade");
 const LEGACY_DEFAULT_ITEM_SLUG = new Map<string, string>([
   [
     "보급형 구식 전술 도검 & 경량 티타늄 합금 방패",
-    "basic-longsword",
+    "old-tactical-sword-titanium-shield",
   ],
   ["보급형 사냥용 소총", "basic-assault-rifle"],
-  ["보급형 공격 방패", "basic-blunt-weapon"],
+  ["보급형 공격 방패", "basic-assault-shield"],
   ["악식의 콘치타", "basic-dagger"],
   ["CMMG Mk.47 Mutant (N.O.S.B Mod.)", "basic-assault-rifle"],
+]);
+
+/** 새 고유 장비가 등록되기 전에 임시 지급했던 표준 장비 slug. */
+const REPLACED_DEFAULT_ITEM_SLUG = new Map<string, string>([
+  [
+    "보급형 구식 전술 도검 & 경량 티타늄 합금 방패",
+    "basic-longsword",
+  ],
+  ["보급형 공격 방패", "basic-blunt-weapon"],
 ]);
 
 if (EXECUTE && !YES) {
@@ -56,9 +65,15 @@ interface MigrationPlan {
   itemName: string;
   slot: EquipmentSlot;
   match: "exact-name" | "default-alias";
-  action: "grant-and-equip" | "equip-existing" | "already-equipped" | "conflict";
+  action:
+    | "grant-and-equip"
+    | "equip-existing"
+    | "replace-default"
+    | "already-equipped"
+    | "conflict";
   existingInventory?: CharacterInventory | null;
   currentSlotItemId?: string;
+  replacedItemId?: string;
 }
 
 interface CharacterInventoryLock {
@@ -148,9 +163,18 @@ try {
       const existing = inventoryByCharacterItem.get(`${characterId}:${itemId}`);
       const slotKey = `${characterId}:${slot}`;
       const current = claimedSlots.get(slotKey);
+      const replacedDefaultSlug = REPLACED_DEFAULT_ITEM_SLUG.get(legacy.name);
+      const replacedDefault = replacedDefaultSlug
+        ? masterBySlug.get(replacedDefaultSlug)
+        : undefined;
+      const replacedItemId = replacedDefault?._id
+        ? String(replacedDefault._id)
+        : undefined;
       const action =
         current?.itemId === itemId
           ? "already-equipped"
+          : current && current.itemId === replacedItemId
+            ? "replace-default"
           : current
             ? "conflict"
             : existing
@@ -167,8 +191,15 @@ try {
         action,
         existingInventory: existing ?? null,
         ...(current?.itemId ? { currentSlotItemId: current.itemId } : {}),
+        ...(action === "replace-default" && replacedItemId
+          ? { replacedItemId }
+          : {}),
       });
-      if (!current && (action === "grant-and-equip" || action === "equip-existing")) {
+      if (
+        action === "grant-and-equip" ||
+        action === "equip-existing" ||
+        action === "replace-default"
+      ) {
         claimedSlots.set(slotKey, { itemId });
       }
     }
@@ -178,7 +209,9 @@ try {
   const grenadeNeedsCorrection = grenade?.category === "WEAPON";
   const actionable = plans.filter(
     (plan) =>
-      plan.action === "grant-and-equip" || plan.action === "equip-existing",
+      plan.action === "grant-and-equip" ||
+      plan.action === "equip-existing" ||
+      plan.action === "replace-default",
   );
 
   console.log(`[character-equipment] mode=${EXECUTE ? "EXECUTE" : "DRY-RUN"}`);
@@ -254,7 +287,11 @@ try {
     const lockAnchors = Array.from(
       new Map(
         actionable.flatMap((plan) =>
-          [plan.itemId, `@equipment-slot:${plan.slot}`].map((itemId) => {
+          [
+            plan.itemId,
+            `@equipment-slot:${plan.slot}`,
+            ...(plan.replacedItemId ? [plan.replacedItemId] : []),
+          ].map((itemId) => {
             const _id = `${plan.characterId}:${itemId}`;
             return [
               _id,
@@ -319,8 +356,50 @@ try {
 
           for (const plan of actionable) {
             const now = new Date();
+            const targetInventory = await inventory.findOne(
+              { characterId: plan.characterId, itemId: plan.itemId },
+              { session },
+            );
+            if (
+              plan.action === "equip-existing" &&
+              (!targetInventory || targetInventory.quantity < 1)
+            ) {
+              throw new Error(
+                `기존 보유 장비 상태 변경 감지: ${plan.codename}`,
+              );
+            }
+            if (targetInventory && targetInventory.quantity < 1) {
+              throw new Error(
+                `대상 장비 수량 오류: ${plan.codename} / ${plan.itemName}`,
+              );
+            }
+
+            if (plan.action === "replace-default") {
+              if (!plan.replacedItemId) {
+                throw new Error(
+                  `교체 대상 기본 장비 ID 누락: ${plan.codename}`,
+                );
+              }
+              const removed = await inventory.deleteOne(
+                {
+                  characterId: plan.characterId,
+                  itemId: plan.replacedItemId,
+                  quantity: 1,
+                  note: "기존 캐릭터 시트 장비 이관",
+                  equippedSlot: plan.slot,
+                },
+                { session },
+              );
+              if (removed.deletedCount !== 1) {
+                throw new Error(
+                  `임시 지급 장비 상태 변경 감지: ${plan.codename}`,
+                );
+              }
+            }
+
+            const shouldGrant = !targetInventory;
             const result =
-              plan.action === "grant-and-equip"
+              shouldGrant
                 ? await inventory.updateOne(
                     { characterId: plan.characterId, itemId: plan.itemId },
                     {

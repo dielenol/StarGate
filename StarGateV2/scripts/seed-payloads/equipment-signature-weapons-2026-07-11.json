@@ -1,0 +1,72 @@
+[
+  {
+    "collection": "master_items",
+    "type": "equipment-signature-weapons-2026-07-11",
+    "payload": {
+      "code": "OLD_TACTICAL_SWORD_SHIELD",
+      "slug": "old-tactical-sword-titanium-shield",
+      "name": "보급형 구식 전술 도검 & 경량 티타늄 합금 방패",
+      "nameEn": "Old Tactical Sword & Lightweight Titanium Shield",
+      "category": "WEAPON",
+      "price": 200,
+      "damage": "10 물리",
+      "description": "고탄소강 전술 도검과 경량 티타늄 합금 방패로 구성된 노부스 오르도 구식 보급 무장 세트.",
+      "previewImage": "/assets/catalog/equipment/old-tactical-sword-titanium-shield.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "기본장비",
+        "근접무기",
+        "냉병기",
+        "방패",
+        "AEGIS",
+        "발레리아아젠트"
+      ],
+      "loreMd": "## 설명\n구식 전술 도검과 경량 티타늄 합금 방패를 한 세트로 운용하는 근접 무장이다. 피해량은 10 물리로 기록한다.\n\n## 배경\n노부스 오르도 병기부에서 구금된 실험체나 현장 요원들에게 지급하던 구식 무장 세트다. 검은 현대적인 고탄소강으로 벼려졌고, 방패는 두꺼운 판자에 경량화된 티타늄 합금을 둘렀다. 발레리아가 이세계에서 다루던 성스러운 유물들에 비하면 볼품없는 수준이지만, 현대 지구에서 그녀의 의지를 실현하는 기본 무장으로 사용되고 있다.\n\n## 획득 경로\n노부스 오르도 병기부에서 AEGIS, 발레리아 아젠트의 기본 무기로 지급한다.\n\n## 비고\n검과 방패는 하나의 보급 세트로 반출·관리한다.\n",
+      "lore": {
+        "background": "노부스 오르도 병기부에서 구금된 실험체나 현장 요원들에게 지급하던 구식 무장 세트다. 검은 현대적인 고탄소강으로 벼려졌고, 방패는 두꺼운 판자에 경량화된 티타늄 합금을 둘렀다. 발레리아가 이세계에서 다루던 성스러운 유물들에 비하면 볼품없는 수준이지만, 현대 지구에서 그녀의 의지를 실현하는 기본 무장으로 사용되고 있다.",
+        "acquisition": "노부스 오르도 병기부에서 AEGIS, 발레리아 아젠트의 기본 무기로 지급한다.",
+        "notes": "검과 방패는 하나의 보급 세트로 반출·관리한다."
+      },
+      "source": "manual",
+      "createdAt": "2026-07-11T11:53:13.000Z",
+      "updatedAt": "2026-07-11T11:53:13.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "equipment-signature-weapons-2026-07-11",
+    "payload": {
+      "code": "BASIC_ASSAULT_SHIELD",
+      "slug": "basic-assault-shield",
+      "name": "보급형 공격 방패",
+      "nameEn": "Basic Assault Shield",
+      "category": "WEAPON",
+      "price": 200,
+      "damage": "10 물리",
+      "description": "타격면과 충격 구조를 강화해 망치류처럼 운용하는 보급형 공격 방패.",
+      "previewImage": "/assets/catalog/equipment/basic-assault-shield.webp",
+      "isAvailable": true,
+      "isPublic": true,
+      "tags": [
+        "병기부",
+        "기본장비",
+        "근접무기",
+        "둔기류",
+        "방패",
+        "LEE_DONGSIK",
+        "이동식"
+      ],
+      "loreMd": "## 설명\n보급형 공격 방패는 방어면을 둔기처럼 휘둘러 대상을 타격하는 근접 무장이다. 피해량은 10 물리로 기록한다.\n\n## 배경\n방어 자체가 타격 수단이 되도록 설계된 보급형 장비로, 기존 장비 기록에서 망치류로 분류된다.\n\n## 획득 경로\n노부스 오르도 병기부에서 LEE DONGSIK, 이동식의 기본 무기로 지급한다.\n\n## 비고\n강화된 방어면과 충격 구조를 이용하는 둔기류 무장으로 취급한다.\n",
+      "lore": {
+        "background": "방어 자체가 타격 수단이 되도록 설계된 보급형 장비로, 기존 장비 기록에서 망치류로 분류된다.",
+        "acquisition": "노부스 오르도 병기부에서 LEE DONGSIK, 이동식의 기본 무기로 지급한다.",
+        "notes": "강화된 방어면과 충격 구조를 이용하는 둔기류 무장으로 취급한다."
+      },
+      "source": "manual",
+      "createdAt": "2026-07-11T11:53:13.000Z",
+      "updatedAt": "2026-07-11T11:53:13.000Z"
+    }
+  }
+]
