@@ -521,6 +521,59 @@
   overflow: hidden;
 }
 
+.slot__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.equipButton,
+.equippedBadge {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.equipButton {
+  background: color-mix(in srgb, var(--gold) 14%, var(--bg-2));
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  cursor: pointer;
+}
+
+.equipButton:hover:not(:disabled),
+.equipButton:focus-visible {
+  background: color-mix(in srgb, var(--gold) 22%, var(--bg-2));
+  outline: none;
+}
+
+.equipButton:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.equippedBadge {
+  border: 1px solid color-mix(in srgb, var(--gold) 68%, var(--line));
+  color: var(--gold);
+}
+
+.equipmentNotice {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  color: var(--danger);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .slot__qty {
   align-self: start;
   min-width: 34px;

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type { AgentCharacter } from "@/types/character";
+import type { CharacterInventoryResponse } from "@/types/inventory";
 
 import { characterChangeLogsKeys } from "@/hooks/queries/useCharacterChangeLogs";
 import {
@@ -21,20 +22,17 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
 
-import type { IconComponent } from "@/components/icons";
 import {
   IconBackground,
-  IconGoods,
-  IconInventoryEquipment,
   IconPersonCard,
   IconPersonality,
   IconProfile,
-  IconSwordShield,
 } from "@/components/icons";
 
 import ChangeLogsPanel, {
   type ChangeLogsPanelMode,
 } from "./ChangeLogsPanel";
+import CharacterEquipmentPanel from "./CharacterEquipmentPanel";
 import CharacterEditForm from "./CharacterEditForm";
 import PosterHero from "./PosterHero";
 
@@ -43,6 +41,8 @@ import styles from "./page.module.css";
 interface Props {
   /** AGENT 전용. server (page.tsx) 가 NPC 를 personnel 로 redirect 하므로 여기엔 항상 AGENT 만 도달. */
   character: AgentCharacter;
+  initialInventory: CharacterInventoryResponse;
+  linkedLegacyEquipmentNames: string[];
   /**
    * 'admin' = V+ 모든 필드 편집, 'player' = 본인 캐릭터의 안전한 lore/play 자가편집 필드,
    * 'none' = 편집 불가 (편집 버튼/폼 모두 숨김).
@@ -61,6 +61,7 @@ interface Props {
   isGM: boolean;
   /** 현재 로그인 사용자가 이 캐릭터의 실제 소유자인지 여부. */
   isOwner: boolean;
+  canManageEquipment: boolean;
 }
 
 function formatCharacterTimestamp(value: Date | string | null | undefined) {
@@ -78,11 +79,14 @@ function formatCharacterTimestamp(value: Date | string | null | undefined) {
 
 export default function CharacterDetailClient({
   character,
+  initialInventory,
+  linkedLegacyEquipmentNames,
   editMode,
   canDelete,
   changeLogsMode,
   isGM,
   isOwner,
+  canManageEquipment,
 }: Props) {
   const canEdit = editMode !== "none";
   const router = useRouter();
@@ -251,6 +255,14 @@ export default function CharacterDetailClient({
       <div className={styles.main}>
         <AgentSections character={character} />
 
+        <CharacterEquipmentPanel
+          characterId={characterId}
+          initialInventory={initialInventory}
+          legacyEquipment={character.play.equipment}
+          linkedLegacyEquipmentNames={linkedLegacyEquipmentNames}
+          canManage={canManageEquipment}
+        />
+
         {/* P8 — 변경 이력 패널. GM 또는 본인일 때만 노출. */}
         {changeLogsMode !== "none" ? (
           <ChangeLogsPanel
@@ -263,22 +275,9 @@ export default function CharacterDetailClient({
   );
 }
 
-type EquipmentItem = AgentCharacter["play"]["equipment"][number];
-
-function getEquipmentType(eq: EquipmentItem): "WEAPON" | "GEAR" {
-  return eq.damage || eq.ammo || eq.grip ? "WEAPON" : "GEAR";
-}
-
-const EQUIPMENT_TYPE_ICON: Record<"WEAPON" | "GEAR", IconComponent> = {
-  WEAPON: IconInventoryEquipment,
-  GEAR: IconGoods,
-};
-
 /** AGENT 한정 — PROFILE / EQUIPMENT 섹션. 콘텐츠 없는 박스는 통째로 생략. */
 function AgentSections({ character }: { character: AgentCharacter }) {
-  const { play, lore } = character;
-
-  const hasEquipment = play.equipment.length > 0;
+  const { lore } = character;
   const profileCards = [
     {
       key: "appearance",
@@ -348,69 +347,6 @@ function AgentSections({ character }: { character: AgentCharacter }) {
         </Box>
       ) : null}
 
-      {hasEquipment ? (
-        <Box>
-          <PanelTitle
-            right={<span className={styles.mono}>{play.equipment.length}</span>}
-          >
-            <span className={styles.panelTitleLabel}>
-              <IconSwordShield
-                width={16}
-                height={16}
-                className={styles.panelTitleLabel__icon}
-              />
-              EQUIPMENT
-            </span>
-          </PanelTitle>
-          <div className={styles.itemList}>
-            {play.equipment.map((eq, i) => {
-              const equipmentType = getEquipmentType(eq);
-              const EquipmentTypeIcon = EQUIPMENT_TYPE_ICON[equipmentType];
-
-              return (
-                <div
-                  key={i}
-                  className={`${styles.itemCard} ${styles["itemCard--equipment"]}`}
-                >
-                  <div className={styles.itemCard__head}>
-                    <span className={styles.itemCard__icon} aria-hidden>
-                      <EquipmentTypeIcon width={18} height={18} />
-                    </span>
-                    <div className={styles.itemCard__headText}>
-                      <span className={styles.itemCard__eyebrow}>
-                        EQUIPMENT · {equipmentType}
-                      </span>
-                      <div className={styles.itemCard__name}>{eq.name}</div>
-                    </div>
-                    <div className={styles.itemCard__pills}>
-                      <Tag tone="gold">{equipmentType}</Tag>
-                      {eq.damage ? (
-                        <Tag tone="danger">DMG {eq.damage}</Tag>
-                      ) : null}
-                    </div>
-                  </div>
-                  {eq.description ? (
-                    <div className={styles.itemCard__desc}>
-                      {eq.description}
-                    </div>
-                  ) : null}
-                  <div className={styles.itemCard__meta}>
-                    <span className={styles.mono}>
-                      PRICE · {eq.price || "—"}
-                    </span>
-                    {eq.ammo ? (
-                      <span className={styles.mono}> · AMMO {eq.ammo}</span>
-                    ) : null}
-                    {eq.grip ? (
-                      <span className={styles.mono}> · GRIP {eq.grip}</span>
-                    ) : null}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Box>
-      ) : null}
     </>
   );
 }

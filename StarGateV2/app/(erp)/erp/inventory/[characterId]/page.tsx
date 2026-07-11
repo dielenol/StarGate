@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import type {
-  CharacterInventory,
+  CharacterInventoryResponse,
   ItemCategory,
   SharedInventory,
 } from "@/types/inventory";
@@ -10,9 +10,10 @@ import { canViewPersonalInventory } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { findCharacterById } from "@/lib/db/characters";
 import {
-  listCharacterInventory,
+  listCharacterInventoryEntries,
   listMasterItems,
   listSharedInventory,
+  serializeCharacterInventory,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
 
@@ -53,21 +54,38 @@ export default async function CharacterInventoryPage({
     notFound();
   }
 
-  let inventory: CharacterInventory[] = [];
+  let inventoryResponse: CharacterInventoryResponse = {
+    inventory: [],
+    entries: [],
+    equipped: {},
+  };
   let sharedInventory: SharedInventory[] = [];
   let masterByItemId = new Map<
     string,
     { category: ItemCategory; slug?: string; effect?: string }
   >();
 
-  [inventory, sharedInventory] = await Promise.all([
-    listCharacterInventory(characterId).catch(() => []),
+  const [personalResult, sharedResult] = await Promise.all([
+    listCharacterInventoryEntries(characterId).catch(() => ({
+      inventory: [],
+      entries: [],
+    })),
     listSharedInventory().catch(() => []),
   ]);
+  sharedInventory = sharedResult;
+  inventoryResponse = {
+    inventory: serializeCharacterInventory(personalResult.inventory),
+    entries: personalResult.entries,
+    equipped: Object.fromEntries(
+      personalResult.entries
+        .filter((entry) => entry.equippedSlot)
+        .map((entry) => [entry.equippedSlot, entry]),
+    ),
+  };
 
   const uniqueItemIds = Array.from(
     new Set(
-      [...inventory, ...sharedInventory]
+      sharedInventory
         .map((entry) => entry.itemId)
         .filter(Boolean),
     ),
@@ -91,7 +109,7 @@ export default async function CharacterInventoryPage({
   }
 
   const toClientEntry = (
-    entry: CharacterInventory | SharedInventory,
+    entry: SharedInventory,
   ): InventoryClientEntry => ({
     _id: String(entry._id),
     itemId: entry.itemId,
@@ -107,7 +125,6 @@ export default async function CharacterInventoryPage({
     effect: masterByItemId.get(entry.itemId)?.effect,
   });
 
-  const entries = inventory.map(toClientEntry);
   const sharedEntries = sharedInventory.map(toClientEntry);
 
   return (
@@ -123,7 +140,9 @@ export default async function CharacterInventoryPage({
 
       <div className={styles.inventoryStack} data-pixel-font="ui">
         <InventoryClient
-          entries={entries}
+          entries={inventoryResponse.entries}
+          characterId={characterId}
+          initialResponse={inventoryResponse}
           title="개인 인벤토리"
           variant="personal"
         />

@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from "react";
 
-import type { ItemCategory } from "@/types/inventory";
+import type {
+  CharacterInventoryResponse,
+  InventoryEntryDto,
+  ItemCategory,
+} from "@/types/inventory";
+
+import { useEquipInventoryItem } from "@/hooks/mutations/useInventoryMutation";
+import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
 
 import {
   IconArchive,
@@ -27,20 +34,12 @@ import { formatDate } from "@/lib/format/date";
 
 import styles from "./page.module.css";
 
-export interface InventoryClientEntry {
-  _id: string;
-  itemId: string;
-  itemName: string;
-  quantity: number;
-  acquiredAt: string;
-  note?: string;
-  category: ItemCategory | null;
-  slug?: string;
-  effect?: string;
-}
+export type InventoryClientEntry = InventoryEntryDto;
 
 interface InventoryClientProps {
   entries: InventoryClientEntry[];
+  characterId?: string;
+  initialResponse?: CharacterInventoryResponse;
   title?: string;
   variant?: "personal" | "shared";
   emptyText?: string;
@@ -156,7 +155,9 @@ function CategoryIcon({
 }
 
 export default function InventoryClient({
-  entries,
+  entries: initialEntries,
+  characterId,
+  initialResponse,
   title = "INVENTORY",
   variant = "personal",
   emptyText = "보유 아이템이 없습니다.",
@@ -165,7 +166,37 @@ export default function InventoryClient({
   const [activeTab, setActiveTab] = useState<InventoryTab>("ALL");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<InventoryView>("GRID");
+  const [equipmentError, setEquipmentError] = useState<string | null>(null);
+  const inventoryQuery = useCharacterInventory(characterId ?? "", {
+    initialData: initialResponse,
+    enabled: variant === "personal" && Boolean(characterId),
+  });
+  const equipMutation = useEquipInventoryItem(characterId ?? "");
+  const entries = inventoryQuery.data?.entries ?? initialEntries;
   const SectionIcon = SECTION_ICONS[variant];
+
+  function handleEquip(entry: InventoryClientEntry) {
+    if (!characterId || !entry.category) return;
+    const current = entries.find(
+      (candidate) => candidate.equippedSlot === entry.category,
+    );
+    if (current?.itemId === entry.itemId) return;
+
+    const confirmed = current
+      ? window.confirm(
+          `${current.itemName}에서 ${entry.itemName}(으)로 교체하시겠습니까?`,
+        )
+      : window.confirm(`${entry.itemName}을(를) 장착하시겠습니까?`);
+    if (!confirmed) return;
+
+    setEquipmentError(null);
+    equipMutation.mutate(
+      { itemId: entry.itemId },
+      {
+        onError: (error) => setEquipmentError(error.message),
+      },
+    );
+  }
 
   const countByTab = useMemo(() => {
     const counts: Record<InventoryTab, number> = {
@@ -284,6 +315,17 @@ export default function InventoryClient({
         </div>
       </div>
 
+      {inventoryQuery.isError ? (
+        <div className={styles.equipmentNotice} role="alert">
+          {inventoryQuery.error.message}
+        </div>
+      ) : null}
+      {equipmentError ? (
+        <div className={styles.equipmentNotice} role="alert">
+          {equipmentError}
+        </div>
+      ) : null}
+
       <div className={styles.toolbar}>
         <label className={styles.searchField}>
           <Eyebrow>검색</Eyebrow>
@@ -397,6 +439,19 @@ export default function InventoryClient({
           {filteredEntries.map((entry) => {
             const tone = categoryTone(entry.category);
             const isConsumable = entry.category === "CONSUMABLE";
+            const isEquippable =
+              variant === "personal" &&
+              Boolean(characterId) &&
+              (entry.category === "WEAPON" || entry.category === "ARMOR");
+            const isEquipped = entry.equippedSlot === entry.category;
+            const slotHasOtherItem = entries.some(
+              (candidate) =>
+                candidate.equippedSlot === entry.category &&
+                candidate.itemId !== entry.itemId,
+            );
+            const isPending =
+              equipMutation.isPending &&
+              equipMutation.variables?.itemId === entry.itemId;
             return (
               <article
                 key={entry._id}
@@ -437,6 +492,27 @@ export default function InventoryClient({
                   ) : null}
                   {isConsumable && !entry.effect && !entry.note ? (
                     <div className={styles.slot__note}>효과 정보 미등록</div>
+                  ) : null}
+                  {isEquippable ? (
+                    <div className={styles.slot__actions}>
+                      {isEquipped ? (
+                        <span className={styles.equippedBadge}>장착 중</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.equipButton}
+                          disabled={equipMutation.isPending}
+                          aria-busy={isPending}
+                          onClick={() => handleEquip(entry)}
+                        >
+                          {isPending
+                            ? "교체 중"
+                            : slotHasOtherItem
+                              ? "교체"
+                              : "장착"}
+                        </button>
+                      )}
+                    </div>
                   ) : null}
                 </div>
               </article>

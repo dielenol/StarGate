@@ -7,7 +7,6 @@ import type {
   Ability,
   AgentCharacter,
   AgentLevel,
-  Equipment,
   LoreSheet,
   PlaySheet,
 } from "@/types/character";
@@ -26,7 +25,7 @@ import Input from "@/components/ui/Input/Input";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Select from "@/components/ui/Select/Select";
 
-import { emptyEquipment, initAbilities, stringToTags } from "../_form-utils";
+import { initAbilities, stringToTags } from "../_form-utils";
 
 import styles from "../[id]/CharacterEditForm.module.css";
 
@@ -83,29 +82,11 @@ export default function CharacterCreateForm() {
   const [credit, setCredit] = useState("");
   const [weaponTrainingStr, setWeaponTrainingStr] = useState("");
   const [skillTrainingStr, setSkillTrainingStr] = useState("");
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [abilities, setAbilities] = useState<Ability[]>(initAbilities());
 
   /* ── Form state ── */
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  /* ── Equipment helpers ── */
-  function addEquipment() {
-    setEquipment((prev) => [...prev, emptyEquipment()]);
-  }
-  function removeEquipment(index: number) {
-    setEquipment((prev) => prev.filter((_, i) => i !== index));
-  }
-  function updateEquipment(
-    index: number,
-    field: keyof Equipment,
-    value: string,
-  ) {
-    setEquipment((prev) =>
-      prev.map((eq, i) => (i === index ? { ...eq, [field]: value } : eq)),
-    );
-  }
 
   /* ── Ability helpers — 11-슬롯 고정 ── */
   function updateAbility(index: number, field: keyof Ability, value: string) {
@@ -151,7 +132,7 @@ export default function CharacterCreateForm() {
       weaponTraining: stringToTags(weaponTrainingStr),
       skillTraining: stringToTags(skillTrainingStr),
       credit,
-      equipment,
+      equipment: [],
       abilities,
     };
 
@@ -575,101 +556,11 @@ export default function CharacterCreateForm() {
         </div>
       </Box>
 
-      {/* Equipment */}
       <Box className={styles.form__box}>
-        <PanelTitle
-          right={
-            <Button type="button" size="sm" onClick={addEquipment}>
-              + 추가
-            </Button>
-          }
-        >
-          EQUIPMENT
-        </PanelTitle>
-        {equipment.length === 0 ? (
-          <div className={styles.empty}>장비 없음</div>
-        ) : (
-          <div className={styles.list}>
-            {equipment.map((eq, i) => (
-              <div key={i} className={styles.listItem}>
-                <div className={styles.listItem__head}>
-                  <span className={styles.listItem__title}>ITEM #{i + 1}</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => removeEquipment(i)}
-                  >
-                    삭제
-                  </Button>
-                </div>
-                <div className={styles.grid}>
-                  <Field id={`eq-name-${i}`} label="NAME">
-                    <Input
-                      id={`eq-name-${i}`}
-                      type="text"
-                      value={eq.name}
-                      onChange={(e) =>
-                        updateEquipment(i, "name", e.target.value)
-                      }
-                    />
-                  </Field>
-                  <Field id={`eq-price-${i}`} label="PRICE">
-                    <Input
-                      id={`eq-price-${i}`}
-                      type="text"
-                      value={String(eq.price ?? "")}
-                      onChange={(e) =>
-                        updateEquipment(i, "price", e.target.value)
-                      }
-                    />
-                  </Field>
-                  <Field id={`eq-damage-${i}`} label="DAMAGE">
-                    <Input
-                      id={`eq-damage-${i}`}
-                      type="text"
-                      value={eq.damage ?? ""}
-                      onChange={(e) =>
-                        updateEquipment(i, "damage", e.target.value)
-                      }
-                    />
-                  </Field>
-                  <Field id={`eq-ammo-${i}`} label="AMMO">
-                    <Input
-                      id={`eq-ammo-${i}`}
-                      type="text"
-                      value={eq.ammo ?? ""}
-                      onChange={(e) =>
-                        updateEquipment(i, "ammo", e.target.value)
-                      }
-                      placeholder="5/5"
-                    />
-                  </Field>
-                  <Field id={`eq-grip-${i}`} label="GRIP">
-                    <Input
-                      id={`eq-grip-${i}`}
-                      type="text"
-                      value={eq.grip ?? ""}
-                      onChange={(e) =>
-                        updateEquipment(i, "grip", e.target.value)
-                      }
-                      placeholder="양손, 혹은 한손"
-                    />
-                  </Field>
-                  <Field id={`eq-desc-${i}`} label="DESCRIPTION">
-                    <Input
-                      id={`eq-desc-${i}`}
-                      type="text"
-                      value={eq.description ?? ""}
-                      onChange={(e) =>
-                        updateEquipment(i, "description", e.target.value)
-                      }
-                    />
-                  </Field>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <PanelTitle>EQUIPMENT · INVENTORY LINKED</PanelTitle>
+        <div className={styles.empty}>
+          캐릭터 생성 후 인벤토리에서 보유 장비를 장착할 수 있습니다.
+        </div>
       </Box>
 
       {/* Abilities — 7 슬롯 */}

@@ -1,11 +1,19 @@
 import { notFound, redirect } from "next/navigation";
 
 import type { AgentCharacter } from "@/types/character";
+import type { CharacterInventoryResponse } from "@/types/inventory";
 
-import { canViewCharacter } from "@/lib/auth/access-policy";
+import {
+  canViewCharacter,
+  canViewPersonalInventory,
+} from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { canEditLore, hasRole, isCharacterOwner } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
+import {
+  listCharacterInventoryEntries,
+  serializeCharacterInventory,
+} from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
 
 import type { ChangeLogsPanelMode } from "./ChangeLogsPanel";
@@ -64,15 +72,51 @@ export default async function CharacterDetailPage({ params }: PageProps) {
 
   // MongoDB ObjectId -> string 직렬화 (client 전달용). 위 type guard 로 AgentCharacter 확정.
   const serialized = JSON.parse(JSON.stringify(character)) as AgentCharacter;
+  const inventoryResult = await listCharacterInventoryEntries(id).catch(() => ({
+    inventory: [],
+    entries: [],
+  }));
+  const canManageEquipment = canViewPersonalInventory(userId, role, character);
+  const visibleInventoryEntries = canManageEquipment
+    ? inventoryResult.entries
+    : inventoryResult.entries.filter((entry) => entry.equippedSlot);
+  const legacyEquipmentNames = new Set(
+    serialized.play.equipment.map((entry) => entry.name),
+  );
+  const linkedLegacyEquipmentNames = Array.from(
+    new Set(
+      inventoryResult.entries
+        .filter(
+          (entry) =>
+            (entry.category === "WEAPON" || entry.category === "ARMOR") &&
+            legacyEquipmentNames.has(entry.itemName),
+        )
+        .map((entry) => entry.itemName),
+    ),
+  );
+  const initialInventory: CharacterInventoryResponse = {
+    inventory: canManageEquipment
+      ? serializeCharacterInventory(inventoryResult.inventory)
+      : [],
+    entries: visibleInventoryEntries,
+    equipped: Object.fromEntries(
+      visibleInventoryEntries
+        .filter((entry) => entry.equippedSlot)
+        .map((entry) => [entry.equippedSlot, entry]),
+    ),
+  };
 
   return (
     <CharacterDetailClient
       character={serialized}
+      initialInventory={initialInventory}
+      linkedLegacyEquipmentNames={linkedLegacyEquipmentNames}
       editMode={decision.mode}
       canDelete={canDelete}
       changeLogsMode={changeLogsMode}
       isGM={hasRole(role, "GM")}
       isOwner={isOwner}
+      canManageEquipment={canManageEquipment}
     />
   );
 }

@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type {
   Ability,
   AgentCharacter,
   CharacterTier,
-  Equipment,
 } from "@/types/character";
 import {
   CHARACTER_TIERS,
@@ -23,7 +23,7 @@ import {
 
 import type { DiffEntry } from "./DiffPreviewModal";
 
-import { emptyEquipment, initAbilities, stringToTags } from "../_form-utils";
+import { initAbilities, stringToTags } from "../_form-utils";
 
 import styles from "./CharacterEditForm.module.css";
 
@@ -43,7 +43,6 @@ type SectionId =
   | "lore"
   | "combat"
   | "agentDetails"
-  | "equipment"
   | "abilities";
 
 interface Props {
@@ -251,7 +250,6 @@ const ADMIN_DIFF_FIELDS: ReadonlyArray<string> = [
   "play.weaponTraining",
   "play.skillTraining",
   "play.credit",
-  "play.equipment",
   "play.abilities",
 ];
 
@@ -364,7 +362,6 @@ export default function CharacterEditForm({
   const [skillTrainingStr, setSkillTrainingStr] = useState(
     tagsToString(play.skillTraining),
   );
-  const [equipment, setEquipment] = useState<Equipment[]>(play.equipment);
   const [abilities, setAbilities] = useState<Ability[]>(initAbilities(play.abilities));
 
   /* ── Form state ── */
@@ -407,23 +404,6 @@ export default function CharacterEditForm({
       ...prev,
       [sectionId]: !prev[sectionId],
     }));
-  }
-
-  /* ── Equipment helpers ── */
-  function addEquipment() {
-    setEquipment((prev) => [...prev, emptyEquipment()]);
-  }
-  function removeEquipment(index: number) {
-    setEquipment((prev) => prev.filter((_, i) => i !== index));
-  }
-  function updateEquipment(
-    index: number,
-    field: keyof Equipment,
-    value: string,
-  ) {
-    setEquipment((prev) =>
-      prev.map((eq, i) => (i === index ? { ...eq, [field]: value } : eq)),
-    );
   }
 
   /* ── Ability helpers (9-slot 고정, 슬롯 자체는 추가/삭제 불가) ── */
@@ -477,7 +457,6 @@ export default function CharacterEditForm({
         weaponTraining: stringToTags(weaponTrainingStr),
         skillTraining: stringToTags(skillTrainingStr),
         credit,
-        equipment,
         abilities,
       },
     };
@@ -601,7 +580,7 @@ export default function CharacterEditForm({
             <b>{isPlayer ? "플레이어 편집 모드" : "관리자 편집 모드"}</b>
             {isPlayer
               ? "서사, 능력치, 포인트, 스킬을 수정할 수 있습니다. 저장 내역은 관리자에게 전달됩니다."
-              : "lore + play 모든 필드를 수정할 수 있습니다."}
+              : "장비를 제외한 lore + play 필드를 수정할 수 있습니다."}
           </div>
           <span
             className={`${styles.modeBadge} ${
@@ -1153,124 +1132,15 @@ export default function CharacterEditForm({
               </div>
           </CollapsiblePanel>
 
-          {/* Equipment list */}
-          {!isPlayer ? (
-            <CollapsiblePanel
-            sectionId="equipment"
-            title="EQUIPMENT"
-            collapsed={isSectionCollapsed("equipment")}
-            onToggle={() => toggleSection("equipment")}
-            right={
-                <button
-                  type="button"
-                  className={`${styles.ghostBtn} ${styles["ghostBtn--add"]}`}
-                  onClick={() => {
-                    addEquipment();
-                    if (isSectionCollapsed("equipment")) {
-                      toggleSection("equipment");
-                    }
-                  }}
-                >
-                  추가
-                </button>
-            }
-          >
-              {equipment.length === 0 ? (
-                <div className={styles.empty}>장비 없음</div>
-              ) : (
-                <div className={styles.list}>
-                  {equipment.map((eq, i) => (
-                    <div key={i} className={styles.listItem}>
-                      <div className={styles.listItem__head}>
-                        <span className={styles.listItem__title}>
-                          ITEM <b>#{String(i + 1).padStart(2, "0")}</b>
-                        </span>
-                        <button
-                          type="button"
-                          className={`${styles.ghostBtn} ${styles["ghostBtn--remove"]}`}
-                          onClick={() => removeEquipment(i)}
-                        >
-                          삭제
-                        </button>
-                      </div>
-                      <div className={styles.listItem__body}>
-                        <div className={styles.grid}>
-                          <Field id={`eq-name-${i}`} label="NAME">
-                            <input
-                              id={`eq-name-${i}`}
-                              type="text"
-                              className={styles.input}
-                              value={eq.name}
-                              onChange={(e) =>
-                                updateEquipment(i, "name", e.target.value)
-                              }
-                            />
-                          </Field>
-                          <Field id={`eq-price-${i}`} label="PRICE">
-                            <input
-                              id={`eq-price-${i}`}
-                              type="text"
-                              className={styles.input}
-                              value={String(eq.price ?? "")}
-                              onChange={(e) =>
-                                updateEquipment(i, "price", e.target.value)
-                              }
-                            />
-                          </Field>
-                          <Field id={`eq-damage-${i}`} label="DAMAGE">
-                            <input
-                              id={`eq-damage-${i}`}
-                              type="text"
-                              className={styles.input}
-                              value={eq.damage ?? ""}
-                              onChange={(e) =>
-                                updateEquipment(i, "damage", e.target.value)
-                              }
-                            />
-                          </Field>
-                          <Field id={`eq-ammo-${i}`} label="AMMO">
-                            <input
-                              id={`eq-ammo-${i}`}
-                              type="text"
-                              className={styles.input}
-                              value={eq.ammo ?? ""}
-                              onChange={(e) =>
-                                updateEquipment(i, "ammo", e.target.value)
-                              }
-                              placeholder="5/5"
-                            />
-                          </Field>
-                          <Field id={`eq-grip-${i}`} label="GRIP">
-                            <input
-                              id={`eq-grip-${i}`}
-                              type="text"
-                              className={styles.input}
-                              value={eq.grip ?? ""}
-                              onChange={(e) =>
-                                updateEquipment(i, "grip", e.target.value)
-                              }
-                              placeholder="양손, 혹은 한손"
-                            />
-                          </Field>
-                          <Field id={`eq-desc-${i}`} label="DESCRIPTION" full>
-                            <input
-                              id={`eq-desc-${i}`}
-                              type="text"
-                              className={styles.input}
-                              value={eq.description ?? ""}
-                              onChange={(e) =>
-                                updateEquipment(i, "description", e.target.value)
-                              }
-                            />
-                          </Field>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CollapsiblePanel>
-          ) : null}
+          <div className={styles.equipmentLocked}>
+            <div>
+              <strong>EQUIPMENT · INVENTORY LINKED</strong>
+              <span>
+                장비 수치는 직접 수정할 수 없습니다. 보유 장비에서 교체해 주세요.
+              </span>
+            </div>
+            <Link href={`/erp/inventory/${characterId}`}>인벤토리 장비 관리</Link>
+          </div>
 
           {/* Abilities — 11-슬롯 고정 그리드 */}
           <CollapsiblePanel

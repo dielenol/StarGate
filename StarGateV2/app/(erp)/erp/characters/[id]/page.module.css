@@ -310,3 +310,157 @@
   color: var(--ink-1);
   letter-spacing: 0.06em;
 }
+/* ── Inventory-linked equipment loadout ── */
+
+.loadoutGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.loadoutSlot {
+  display: flex;
+  min-height: 126px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.loadoutSlot__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.loadoutSlot__head :last-child {
+  margin-left: auto;
+}
+
+.loadoutSlot strong {
+  color: var(--ink-0);
+  font-size: 17px;
+}
+
+.loadoutSlot p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.loadoutPicker,
+.legacyEquipment {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.loadoutPicker__title {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.loadoutPicker__items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+}
+
+.loadoutPicker__button {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--ink-1);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.loadoutPicker__button b {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.loadoutPicker__button:hover:not(:disabled),
+.loadoutPicker__button:focus-visible {
+  border-color: var(--gold-dim);
+  outline: none;
+}
+
+.loadoutPicker__button:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.legacyEquipment__item {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.35fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--bg-2) 88%, transparent);
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+}
+
+.legacyEquipment__item strong,
+.legacyEquipment__item span,
+.loadoutEmpty,
+.loadoutError {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.legacyEquipment__item strong {
+  color: var(--ink-1);
+}
+
+.legacyEquipment__item span,
+.loadoutEmpty {
+  color: var(--ink-3);
+}
+
+.loadoutEmpty,
+.loadoutError {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.loadoutEmpty {
+  border: 1px dashed var(--line);
+}
+
+.loadoutError {
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .loadoutGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .legacyEquipment__item {
+    grid-template-columns: 1fr;
+  }
+}

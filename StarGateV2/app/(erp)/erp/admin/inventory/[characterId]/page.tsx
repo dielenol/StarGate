@@ -1,8 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 
 import type {
-  CharacterInventory,
-  ItemCategory,
+  CharacterInventoryResponse,
   MasterItem,
 } from "@/types/inventory";
 
@@ -10,9 +9,9 @@ import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
-  findMasterItemsByIds,
   listAvailableItems,
-  listCharacterInventory,
+  listCharacterInventoryEntries,
+  serializeCharacterInventory,
 } from "@/lib/db/inventory";
 
 import Box from "@/components/ui/Box/Box";
@@ -20,9 +19,7 @@ import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
-import InventoryClient, {
-  type InventoryClientEntry,
-} from "../../../inventory/[characterId]/InventoryClient";
+import InventoryClient from "../../../inventory/[characterId]/InventoryClient";
 import InventoryGrantForm, {
   type InventoryGrantItem,
 } from "../../../inventory/[characterId]/InventoryGrantForm";
@@ -71,28 +68,26 @@ export default async function AdminCharacterInventoryPage({
     notFound();
   }
 
-  let inventory: CharacterInventory[] = [];
+  let inventoryResponse: CharacterInventoryResponse = {
+    inventory: [],
+    entries: [],
+    equipped: {},
+  };
   let availableItems: MasterItem[] = [];
-  let categoryByItemId = new Map<string, ItemCategory>();
 
   try {
-    inventory = await listCharacterInventory(characterId);
+    const result = await listCharacterInventoryEntries(characterId);
+    inventoryResponse = {
+      inventory: serializeCharacterInventory(result.inventory),
+      entries: result.entries,
+      equipped: Object.fromEntries(
+        result.entries
+          .filter((entry) => entry.equippedSlot)
+          .map((entry) => [entry.equippedSlot, entry]),
+      ),
+    };
   } catch {
-    /* DB 실패 시 빈 배열 */
-  }
-
-  if (inventory.length > 0) {
-    try {
-      const uniqueItemIds = Array.from(
-        new Set(inventory.map((entry) => entry.itemId)),
-      );
-      const masters = await findMasterItemsByIds(uniqueItemIds);
-      categoryByItemId = new Map(
-        masters.map((m) => [String(m._id), m.category]),
-      );
-    } catch {
-      /* master 조회 실패 → 빈 Map */
-    }
+    /* DB 실패 시 빈 응답 */
   }
 
   try {
@@ -101,18 +96,6 @@ export default async function AdminCharacterInventoryPage({
     /* 아이템 목록 실패 → 빈 배열 */
   }
 
-  const entries: InventoryClientEntry[] = inventory.map((entry) => ({
-    _id: String(entry._id),
-    itemId: entry.itemId,
-    itemName: entry.itemName,
-    quantity: entry.quantity,
-    acquiredAt:
-      entry.acquiredAt instanceof Date
-        ? entry.acquiredAt.toISOString()
-        : new Date(entry.acquiredAt).toISOString(),
-    note: entry.note,
-    category: categoryByItemId.get(entry.itemId) ?? null,
-  }));
   const grantItems = toInventoryGrantItems(availableItems);
 
   return (
@@ -145,7 +128,11 @@ export default async function AdminCharacterInventoryPage({
         />
       </Box>
 
-      <InventoryClient entries={entries} />
+      <InventoryClient
+        entries={inventoryResponse.entries}
+        characterId={characterId}
+        initialResponse={inventoryResponse}
+      />
     </>
   );
 }
