@@ -33,7 +33,7 @@ export const TOWASKI_LICENSE_TEST_DIFFICULTIES = {
     minAccuracy: 0.6,
     minHitReactionMs: 120,
     minMissWindowMs: 700,
-    targetWindowMs: 950,
+    targetWindowMs: 1_500,
     targetScale: 1,
   },
   expert: {
@@ -44,7 +44,7 @@ export const TOWASKI_LICENSE_TEST_DIFFICULTIES = {
     minAccuracy: 0.8,
     minHitReactionMs: 120,
     minMissWindowMs: 500,
-    targetWindowMs: 700,
+    targetWindowMs: 750,
     targetScale: 0.9,
   },
 } as const;
