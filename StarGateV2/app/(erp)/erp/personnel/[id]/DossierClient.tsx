@@ -1002,7 +1002,7 @@ export default function DossierClient({
         ? `${character.type} · 외부 기관 인사`
         : character.type === "AGENT"
           ? "AGENT · 현장 요원"
-          : "NPC · 외부 인사";
+          : "NPC · 내부 기관 인사";
     return (
       <Box>
         <PanelTitle right={<ReqClrBadge required={reqIdentity} locked={!canIdentity} />}>
