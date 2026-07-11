@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
-import type { Equipment } from "@/types/character";
 import type {
   CharacterInventoryResponse,
   EquipmentSlot,
@@ -25,8 +25,6 @@ import styles from "./page.module.css";
 interface Props {
   characterId: string;
   initialInventory: CharacterInventoryResponse;
-  legacyEquipment: Equipment[];
-  linkedLegacyEquipmentNames: string[];
   canManage: boolean;
 }
 
@@ -39,11 +37,14 @@ function itemDescription(item: InventoryEntryDto): string {
   return item.damage || item.effect || item.description || "상세 정보 미등록";
 }
 
+function itemImageSrc(item: InventoryEntryDto): string | null {
+  const src = item.previewImage?.trim();
+  return src?.startsWith("/assets/") ? src : null;
+}
+
 export default function CharacterEquipmentPanel({
   characterId,
   initialInventory,
-  legacyEquipment,
-  linkedLegacyEquipmentNames,
   canManage,
 }: Props) {
   const [error, setError] = useState<string | null>(null);
@@ -55,10 +56,6 @@ export default function CharacterEquipmentPanel({
   const entries = inventoryQuery.data?.entries ?? initialInventory.entries;
   const equippable = entries.filter(
     (entry) => entry.category === "WEAPON" || entry.category === "ARMOR",
-  );
-  const normalizedNames = new Set(linkedLegacyEquipmentNames);
-  const preservedLegacy = legacyEquipment.filter(
-    (entry) => !normalizedNames.has(entry.name),
   );
 
   function handleEquip(item: InventoryEntryDto) {
@@ -98,6 +95,7 @@ export default function CharacterEquipmentPanel({
       <div className={styles.loadoutGrid}>
         {(["WEAPON", "ARMOR"] as const).map((slot) => {
           const item = entries.find((entry) => entry.equippedSlot === slot);
+          const imageSrc = item ? itemImageSrc(item) : null;
           return (
             <div key={slot} className={styles.loadoutSlot}>
               <div className={styles.loadoutSlot__head}>
@@ -108,10 +106,28 @@ export default function CharacterEquipmentPanel({
                 </Tag>
               </div>
               {item ? (
-                <>
-                  <strong>{item.itemName}</strong>
-                  <p>{itemDescription(item)}</p>
-                </>
+                <div className={styles.loadoutSlot__content}>
+                  {imageSrc ? (
+                    <Image
+                      src={imageSrc}
+                      width={72}
+                      height={72}
+                      alt=""
+                      aria-hidden
+                      draggable={false}
+                      className={styles.loadoutSlot__image}
+                      unoptimized
+                    />
+                  ) : (
+                    <span className={styles.loadoutSlot__imageFallback} aria-hidden>
+                      <IconInventoryEquipment width={32} height={32} />
+                    </span>
+                  )}
+                  <div>
+                    <strong>{item.itemName}</strong>
+                    <p>{itemDescription(item)}</p>
+                  </div>
+                </div>
               ) : (
                 <p>장착된 {slot === "WEAPON" ? "무기" : "방어구"}가 없습니다.</p>
               )}
@@ -126,6 +142,7 @@ export default function CharacterEquipmentPanel({
           <div className={styles.loadoutPicker__items}>
             {equippable.map((item) => {
               const isEquipped = item.equippedSlot === item.category;
+              const imageSrc = itemImageSrc(item);
               const isPending =
                 equipMutation.isPending &&
                 equipMutation.variables?.itemId === item.itemId;
@@ -138,7 +155,21 @@ export default function CharacterEquipmentPanel({
                   aria-busy={isPending}
                   onClick={() => handleEquip(item)}
                 >
-                  <span>{item.itemName}</span>
+                  <span className={styles.loadoutPicker__itemLabel}>
+                    {imageSrc ? (
+                      <Image
+                        src={imageSrc}
+                        width={36}
+                        height={36}
+                        alt=""
+                        aria-hidden
+                        draggable={false}
+                        className={styles.loadoutPicker__image}
+                        unoptimized
+                      />
+                    ) : null}
+                    <span>{item.itemName}</span>
+                  </span>
                   <b>{isEquipped ? "장착 중" : isPending ? "교체 중" : "교체"}</b>
                 </button>
               );
@@ -148,20 +179,6 @@ export default function CharacterEquipmentPanel({
       ) : canManage ? (
         <div className={styles.loadoutEmpty}>
           인벤토리에 장착 가능한 무기 또는 방어구가 없습니다.
-        </div>
-      ) : null}
-
-      {preservedLegacy.length > 0 ? (
-        <div className={styles.legacyEquipment}>
-          <div className={styles.loadoutPicker__title}>
-            기존 시트 장비 · 읽기 전용
-          </div>
-          {preservedLegacy.map((item, index) => (
-            <div key={`${item.name}-${index}`} className={styles.legacyEquipment__item}>
-              <strong>{item.name}</strong>
-              <span>{item.damage || item.description || "상세 정보 미등록"}</span>
-            </div>
-          ))}
         </div>
       ) : null}
 

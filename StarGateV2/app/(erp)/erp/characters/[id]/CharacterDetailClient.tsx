@@ -42,7 +42,6 @@ interface Props {
   /** AGENT 전용. server (page.tsx) 가 NPC 를 personnel 로 redirect 하므로 여기엔 항상 AGENT 만 도달. */
   character: AgentCharacter;
   initialInventory: CharacterInventoryResponse;
-  linkedLegacyEquipmentNames: string[];
   /**
    * 'admin' = V+ 모든 필드 편집, 'player' = 본인 캐릭터의 안전한 lore/play 자가편집 필드,
    * 'none' = 편집 불가 (편집 버튼/폼 모두 숨김).
@@ -80,7 +79,6 @@ function formatCharacterTimestamp(value: Date | string | null | undefined) {
 export default function CharacterDetailClient({
   character,
   initialInventory,
-  linkedLegacyEquipmentNames,
   editMode,
   canDelete,
   changeLogsMode,
@@ -258,8 +256,6 @@ export default function CharacterDetailClient({
         <CharacterEquipmentPanel
           characterId={characterId}
           initialInventory={initialInventory}
-          legacyEquipment={character.play.equipment}
-          linkedLegacyEquipmentNames={linkedLegacyEquipmentNames}
           canManage={canManageEquipment}
         />
 
