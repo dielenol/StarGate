@@ -81,6 +81,15 @@ type TowaskiMood =
   | "checkout"
   | "blocked"
   | "idle";
+type SutureMood =
+  | "welcome"
+  | "assessment"
+  | "protocol"
+  | "funding"
+  | "procedure"
+  | "recovery"
+  | "blocked"
+  | "idle";
 type MainCharacterProfile = "assault" | "guard" | "endurance" | "focus" | "balanced";
 type ArmoryZoneDef = {
   value: ArmoryDestination;
@@ -94,6 +103,8 @@ type ArmoryZoneDef = {
 const TOWASKI_PROFILE_SRC = "/assets/npcs/Towaski-profile.webp";
 const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp";
 const TOWASKI_IDLE_DELAY_MS = 12000;
+const SUTURE_PROFILE_SRC = "/assets/npcs/Irena-Vukovic-Suture-profile.webp";
+const SUTURE_IDLE_DELAY_MS = 14000;
 
 const TOWASKI_DEBUG_MODES: readonly {
   value: TowaskiDebugMode;
@@ -123,6 +134,17 @@ const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {
   checkout: "반출 승인",
   blocked: "반출 거부",
   idle: "정비 중",
+};
+
+const SUTURE_MOOD_LABELS: Record<SutureMood, string> = {
+  welcome: "초진 접수",
+  assessment: "적합성 판독",
+  protocol: "프로토콜 검토",
+  funding: "연구 재원 확인",
+  procedure: "시술 준비",
+  recovery: "회복 관찰",
+  blocked: "승인 보류",
+  idle: "생체신호 대기",
 };
 
 const TOWASKI_DIALOGUE_LINES = {
@@ -178,6 +200,75 @@ const TOWASKI_IDLE_LINES: readonly { mood: TowaskiMood; text: string }[] = [
     text: "탄약 냄새 맡는다고 사격 실력 안 는다. 살 거면 용도를 말해.",
   },
 ];
+
+const SUTURE_DIALOGUE_LINES = {
+  welcome:
+    "이레나 부코비치입니다. 강화 수치보다 먼저 현재 신체와 부작용 기록을 확인하겠습니다.",
+  noAgent:
+    "주 대상 AGENT가 지정되지 않았습니다. 신체 데이터 없이는 개인 프로토콜을 승인할 수 없습니다.",
+  personalScope:
+    "개인 연구는 당신의 신경계에 맞춘 시술입니다. 다른 요원의 성공 사례는 안전 보증이 되지 않아요.",
+  teamScope:
+    "팀 연구는 모두가 공유할 생존 프로토콜입니다. 최고 출력보다 재현성과 회수 가능성을 봅니다.",
+  startError:
+    "승인을 보류하겠습니다. 잔액보다 먼저 선행 연구와 생체 적합성 기록을 다시 확인하세요.",
+  contributionError:
+    "기여 기록을 접수하지 못했습니다. 대상 AGENT, 잔액, 남은 목표액을 다시 확인하세요.",
+  rushError:
+    "검증 시간을 더 줄일 수 없습니다. 빠른 시술과 안전한 시술은 같은 말이 아니에요.",
+  completeError:
+    "적용 기록이 잠겼습니다. 완료 시각과 대상자 상태를 다시 대조하겠습니다.",
+} as const;
+
+const SUTURE_IDLE_LINES: readonly { mood: SutureMood; text: string }[] = [
+  {
+    mood: "idle",
+    text: "기다리는 동안 손가락을 한 번씩 움직여 보세요. 미세한 감각 지연도 기록 대상입니다.",
+  },
+  {
+    mood: "assessment",
+    text: "통증이 없다는 말보다 통증이 언제 사라졌는지가 더 중요합니다.",
+  },
+  {
+    mood: "protocol",
+    text: "강한 출력은 만들기 쉽습니다. 그 출력을 견딜 사람을 남기는 일이 어렵죠.",
+  },
+  {
+    mood: "recovery",
+    text: "시술이 끝난 뒤부터가 연구입니다. 몸이 새 부품을 어떻게 기억하는지 지켜봐야 해요.",
+  },
+  {
+    mood: "idle",
+    text: "고장을 숨기는 외장재는 쓰지 않습니다. 아름다움보다 먼저 발견되어야 할 결함이 있으니까요.",
+  },
+  {
+    mood: "funding",
+    text: "크레딧은 재료를 삽니다. 적합성과 동의까지 사는 것은 아닙니다.",
+  },
+];
+
+const SUTURE_PROFILE_LINES: Record<MainCharacterProfile, readonly string[]> = {
+  assault: [
+    "공격 출력이 높군요. 관절보다 신경 반응이 먼저 과열되는 유형인지 확인하겠습니다.",
+    "힘을 더하는 건 쉽습니다. 그 힘을 멈출 수 있는 회로부터 보죠.",
+  ],
+  guard: [
+    "방호 편향이 보입니다. 충격을 버티는 것과 손상이 없는 것은 다르니 내부 출혈 기록부터 보죠.",
+    "단단한 신체일수록 손상을 늦게 알아차립니다. 감각 피드백을 우선 검사하겠습니다.",
+  ],
+  endurance: [
+    "생체 지속력이 좋군요. 장시간 접속에서 생기는 피로 누적을 중심으로 보겠습니다.",
+    "오래 버티는 몸에는 더 긴 관찰이 필요합니다. 이상 반응도 늦게 나타나니까요.",
+  ],
+  focus: [
+    "정신 안정성이 높습니다. 다만 새 감각이 기억과 충돌하는 경우까지 배제할 수는 없어요.",
+    "신경 접속 적응에는 유리하겠군요. 감각 소유권 검사부터 시작하겠습니다.",
+  ],
+  balanced: [
+    "수치 편향은 크지 않습니다. 임무 습관과 기존 손상 이력을 기준으로 설계하죠.",
+    "균형이 좋군요. 무엇을 더할지보다 무엇을 보존할지 먼저 정하겠습니다.",
+  ],
+};
 
 const TOWASKI_PROFILE_LINES: Record<MainCharacterProfile, readonly string[]> = {
   assault: [
@@ -374,7 +465,7 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
     label: "신체증강 연구소",
     eyebrow: "RESEARCH LAB",
     description: "개인 강화와 전체 AGENT 팀 강화를 실제 스탯에 반영합니다.",
-    npc: "연구 담당관",
+    npc: "이레나 부코비치",
   },
   {
     value: "towaski",
@@ -702,6 +793,39 @@ function buildTowaskiWelcomeLine(args: {
     `${args.codename ?? "UNASSIGNED"}:${args.profile}`,
   );
   return `${callsign} ${profileLine}`;
+}
+
+function buildSutureWelcomeLine(args: {
+  codename: string | null;
+  profile: MainCharacterProfile;
+}) {
+  const subject = args.codename
+    ? `${args.codename}, 생체 기록을 열었습니다.`
+    : SUTURE_DIALOGUE_LINES.welcome;
+  const profileLine = pickStableLine(
+    SUTURE_PROFILE_LINES[args.profile],
+    `${args.codename ?? "UNASSIGNED"}:${args.profile}:SUTURE`,
+  );
+  return `${subject} ${profileLine}`;
+}
+
+function buildSutureScopeLine(scope: EquipmentResearchScope): string {
+  return scope === "personal"
+    ? SUTURE_DIALOGUE_LINES.personalScope
+    : SUTURE_DIALOGUE_LINES.teamScope;
+}
+
+function buildSutureNodeLine(
+  node: ResearchNodeEntry,
+  scope: EquipmentResearchScope,
+): string {
+  const branch = getResearchBranchMeta(node.branch).label;
+  const effect = node.effects[scope];
+  const effectText = effect
+    ? describeEquipmentResearchEffect(effect)
+    : "적용 효과 미지정";
+  const scopeText = scope === "personal" ? "개인 적합성" : "팀 재현성";
+  return `${node.name}, T${node.tier} ${branch} 프로토콜입니다. ${scopeText} 기준으로 ${effectText}를 검토하겠습니다.`;
 }
 
 function buildTowaskiItemLine(
@@ -1187,6 +1311,14 @@ export default function EquipmentShopClient({
           }),
     [mainCharacter?.codename, mainCharacterProfile, requiresTowaskiLicenseTest],
   );
+  const sutureWelcomeLine = useMemo(
+    () =>
+      buildSutureWelcomeLine({
+        codename: mainCharacter?.codename ?? null,
+        profile: mainCharacterProfile,
+      }),
+    [mainCharacter?.codename, mainCharacterProfile],
+  );
 
   const {
     mood: towaskiMood,
@@ -1217,6 +1349,33 @@ export default function EquipmentShopClient({
   });
   const towaskiPortraitSrc =
     TOWASKI_MOOD_ASSETS[towaskiMood] ?? TOWASKI_PORTRAIT_SRC;
+  const {
+    mood: sutureMood,
+    visibleLine: sutureVisibleLine,
+    typing: sutureTyping,
+    playLine: playSutureLine,
+    clearIdleTimer: clearSutureIdleTimer,
+    scheduleIdle: scheduleSutureIdle,
+    showLineImmediately: showSutureLineImmediately,
+    resetIdleCycle: resetSutureIdleCycle,
+    stopEngine: stopSutureEngine,
+  } = useNpcDialogue<SutureMood>({
+    isOpen: activeZone === "lab",
+    hasMainCharacter,
+    idleDelayMs: SUTURE_IDLE_DELAY_MS,
+    idleLines: SUTURE_IDLE_LINES,
+    closedMood: "blocked",
+    closedLine: "연구실 응대 채널이 닫혔습니다.",
+    noAgentMood: "blocked",
+    noAgentLine: SUTURE_DIALOGUE_LINES.noAgent,
+    welcomeMood: "welcome",
+    welcomeLine: sutureWelcomeLine,
+    beepPreset: "suture",
+    beepDefaults: { pitch: 720, speed: 47, volume: 0.46 },
+    engineVolume: 0.46,
+    entrySfxSrc: null,
+    entrySfxVolume: 0,
+  });
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -1332,6 +1491,36 @@ export default function EquipmentShopClient({
     showTowaskiLineImmediately,
     stopTowaskiEngine,
     towaskiWelcomeLine,
+  ]);
+
+  useEffect(() => {
+    if (activeZone !== "lab") {
+      clearSutureIdleTimer();
+      stopSutureEngine();
+      return;
+    }
+
+    if (!hasMainCharacter) {
+      playSutureLine("blocked", SUTURE_DIALOGUE_LINES.noAgent, {
+        returnToIdle: false,
+        sound: false,
+      });
+      return;
+    }
+
+    showSutureLineImmediately("welcome", sutureWelcomeLine);
+    resetSutureIdleCycle();
+    scheduleSutureIdle();
+  }, [
+    activeZone,
+    clearSutureIdleTimer,
+    hasMainCharacter,
+    playSutureLine,
+    resetSutureIdleCycle,
+    scheduleSutureIdle,
+    showSutureLineImmediately,
+    stopSutureEngine,
+    sutureWelcomeLine,
   ]);
 
   const scopedResearchTree = useMemo(
@@ -1530,6 +1719,11 @@ export default function EquipmentShopClient({
     playTowaskiLine(mood, text, { sound: true });
   }
 
+  function playSutureIfActive(mood: SutureMood, text: string) {
+    if (activeZone !== "lab") return;
+    playSutureLine(mood, text, { sound: true });
+  }
+
   function handleSalesTabChange(tab: EquipmentShopTabValue) {
     setActiveTab(tab);
     playTowaskiIfActive("inspect", buildTowaskiTabLine(tab));
@@ -1683,6 +1877,7 @@ export default function EquipmentShopClient({
         prev[scope] ||
         getFirstResearchKeyForScope(research.tree, scope),
     }));
+    playSutureIfActive("protocol", buildSutureScopeLine(scope));
   }
 
   function handleSelectResearchNode(key: string) {
@@ -1690,6 +1885,13 @@ export default function EquipmentShopClient({
       ...prev,
       [activeResearchScope]: key,
     }));
+    const node = research.tree.find((item) => item.key === key);
+    if (node) {
+      playSutureIfActive(
+        "assessment",
+        buildSutureNodeLine(node, activeResearchScope),
+      );
+    }
   }
 
   function handleStartResearch(key: string, scope: EquipmentResearchScope) {
@@ -1706,6 +1908,7 @@ export default function EquipmentShopClient({
       !startQuote ||
       !canStartResearch(scope, startQuote.cost)
     ) {
+      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.startError);
       return;
     }
     setErrorMessage(null);
@@ -1722,9 +1925,14 @@ export default function EquipmentShopClient({
             tone: "success",
             text: `${res.project.key} 연구를 시작했습니다.`,
           });
+          playSutureIfActive(
+            "procedure",
+            `${node.name} 프로토콜을 등록했습니다. 완료 전까지 감각 지연, 통증, 수면 변화를 기록하세요.`,
+          );
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
+          playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.startError);
         },
       },
     );
@@ -1740,14 +1948,17 @@ export default function EquipmentShopClient({
       chargePreview <= 0
     ) {
       setErrorMessage("기여 금액은 1 CR 이상이어야 합니다.");
+      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.contributionError);
       return;
     }
     if (!hasMainCharacter) {
       setErrorMessage("메인 AGENT 캐릭터가 없어 팀 연구에 기여할 수 없습니다.");
+      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.noAgent);
       return;
     }
     if (balance < chargePreview) {
       setErrorMessage("잔액이 부족합니다.");
+      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.contributionError);
       return;
     }
 
@@ -1766,9 +1977,19 @@ export default function EquipmentShopClient({
               ? `${res.project.key} 팀 연구 목표액이 충족되어 연구를 시작했습니다.`
               : `${res.pool.key} 팀 연구에 ${formatCredits(res.chargedAmount)} 기여했습니다.`,
           });
+          playSutureIfActive(
+            res.project ? "procedure" : "funding",
+            res.project
+              ? `${res.project.key} 공통 프로토콜이 목표액을 충족했습니다. 이제 재현성 검증을 시작합니다.`
+              : `${formatCredits(res.chargedAmount)} 기여를 기록했습니다. 재원은 재료를 확보하지만 안전 기준을 낮추지는 않습니다.`,
+          );
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
+          playSutureIfActive(
+            "blocked",
+            SUTURE_DIALOGUE_LINES.contributionError,
+          );
         },
       },
     );
@@ -1788,9 +2009,14 @@ export default function EquipmentShopClient({
               `연구 시간을 ${formatDuration(res.rush.hours)} 단축했습니다.` +
               `${res.rush.discountApplied ? " (할인 적용)" : ""}`,
           });
+          playSutureIfActive(
+            "procedure",
+            `${formatDuration(res.rush.hours)} 단축을 반영했습니다. 생략된 대기 시간만큼 관찰 주기를 더 엄격하게 잡겠습니다.`,
+          );
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
+          playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.rushError);
         },
       },
     );
@@ -1821,9 +2047,14 @@ export default function EquipmentShopClient({
               `${res.key} 연구 효과를 적용했습니다.` +
               `${res.skipped.length > 0 ? ` (${res.skipped.length}명 제외)` : ""}`,
           });
+          playSutureIfActive(
+            "recovery",
+            `${res.key} 적용을 확인했습니다. 수치가 올랐다고 회복이 끝난 것은 아닙니다. 이상 감각이 생기면 즉시 돌아오세요.`,
+          );
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
+          playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.completeError);
         },
       },
     );
@@ -3262,7 +3493,10 @@ export default function EquipmentShopClient({
               className={[
                 styles.npcPortrait,
                 activeZone === "towaski" ? styles["npcPortrait--towaski"] : "",
-                activeZone !== "towaski" ? styles["npcPortrait--mark"] : "",
+                activeZone === "lab" ? styles["npcPortrait--suture"] : "",
+                activeZone !== "towaski" && activeZone !== "lab"
+                  ? styles["npcPortrait--mark"]
+                  : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -3270,6 +3504,14 @@ export default function EquipmentShopClient({
               {activeZone === "towaski" ? (
                 <Image
                   src={towaskiPortraitSrc}
+                  alt=""
+                  fill
+                  sizes="148px"
+                  priority
+                />
+              ) : activeZone === "lab" ? (
+                <Image
+                  src={SUTURE_PROFILE_SRC}
                   alt=""
                   fill
                   sizes="148px"
@@ -3284,6 +3526,8 @@ export default function EquipmentShopClient({
                 <span className={styles.npcProfile}>
                   {activeZone === "towaski" ? (
                     <Image src={TOWASKI_PROFILE_SRC} alt="" fill sizes="38px" />
+                  ) : activeZone === "lab" ? (
+                    <Image src={SUTURE_PROFILE_SRC} alt="" fill sizes="38px" />
                   ) : (
                     <span className={styles.npcProfileMark} aria-hidden />
                   )}
@@ -3295,12 +3539,23 @@ export default function EquipmentShopClient({
                 <span className={styles.npcMood}>
                   {activeZone === "towaski"
                     ? TOWASKI_MOOD_LABELS[towaskiMood]
+                    : activeZone === "lab"
+                      ? SUTURE_MOOD_LABELS[sutureMood]
                     : "응대 중"}
                 </span>
               </div>
               <p>
                 {activeZone === "lab"
-                  ? "연구 적용은 즉시 기록된다. 개인인지, 팀 전체인지 먼저 확인해."
+                  ? (
+                      <>
+                        {sutureVisibleLine}
+                        {sutureTyping ? (
+                          <span className={styles.npcCaret} aria-hidden>
+                            |
+                          </span>
+                        ) : null}
+                      </>
+                    )
                   : activeZone === "towaski"
                     ? (
                         <>
