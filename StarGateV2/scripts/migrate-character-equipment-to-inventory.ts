@@ -9,7 +9,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient, MongoServerError, ObjectId } from "mongodb";
 
 import type {
   AgentCharacter,
@@ -20,6 +20,22 @@ import type {
 
 const EXECUTE = process.argv.includes("--execute");
 const YES = process.argv.includes("--yes");
+const CORRECT_GRENADE = process.argv.includes("--correct-grenade");
+
+/**
+ * 기존 시트의 고유 명칭을 현재 병기부 카탈로그의 표준 보급 장비에 대응한다.
+ * exact-name 항목은 아래 표 없이 기존 이름 그대로 매칭된다.
+ */
+const LEGACY_DEFAULT_ITEM_SLUG = new Map<string, string>([
+  [
+    "보급형 구식 전술 도검 & 경량 티타늄 합금 방패",
+    "basic-longsword",
+  ],
+  ["보급형 사냥용 소총", "basic-assault-rifle"],
+  ["보급형 공격 방패", "basic-blunt-weapon"],
+  ["악식의 콘치타", "basic-dagger"],
+  ["CMMG Mk.47 Mutant (N.O.S.B Mod.)", "basic-assault-rifle"],
+]);
 
 if (EXECUTE && !YES) {
   throw new Error("실행 모드는 --execute --yes를 함께 전달해야 합니다.");
@@ -35,12 +51,22 @@ await client.connect();
 interface MigrationPlan {
   characterId: string;
   codename: string;
+  legacyItemName: string;
   itemId: string;
   itemName: string;
   slot: EquipmentSlot;
+  match: "exact-name" | "default-alias";
   action: "grant-and-equip" | "equip-existing" | "already-equipped" | "conflict";
   existingInventory?: CharacterInventory | null;
   currentSlotItemId?: string;
+}
+
+interface CharacterInventoryLock {
+  _id: string;
+  characterId: string;
+  itemId: string;
+  updatedAt: Date;
+  version?: number;
 }
 
 function slotForMaster(master: MasterItem): EquipmentSlot | null {
@@ -54,6 +80,9 @@ try {
   const characters = db.collection<AgentCharacter>("characters");
   const masters = db.collection<MasterItem>("master_items");
   const inventory = db.collection<CharacterInventory>("character_inventory");
+  const inventoryLocks = db.collection<CharacterInventoryLock>(
+    "character_inventory_locks",
+  );
 
   const [agents, masterItems, inventoryRows] = await Promise.all([
     characters
@@ -62,11 +91,22 @@ try {
         { projection: { codename: 1, type: 1, play: 1 } },
       )
       .toArray(),
-    masters.find({ category: { $in: ["WEAPON", "ARMOR"] } }).toArray(),
+    masters
+      .find({
+        category: { $in: ["WEAPON", "ARMOR"] },
+        isAvailable: { $ne: false },
+        isPublic: { $ne: false },
+      })
+      .toArray(),
     inventory.find({}).toArray(),
   ]);
 
   const masterByName = new Map(masterItems.map((item) => [item.name, item]));
+  const masterBySlug = new Map(
+    masterItems
+      .filter((item) => item.slug)
+      .map((item) => [item.slug as string, item]),
+  );
   const inventoryByCharacterItem = new Map(
     inventoryRows.map((entry) => [
       `${entry.characterId}:${entry.itemId}`,
@@ -94,7 +134,10 @@ try {
   for (const character of agents) {
     const characterId = String(character._id);
     for (const legacy of character.play.equipment) {
-      const master = masterByName.get(legacy.name);
+      const exactMaster = masterByName.get(legacy.name);
+      const aliasSlug = LEGACY_DEFAULT_ITEM_SLUG.get(legacy.name);
+      const master =
+        exactMaster ?? (aliasSlug ? masterBySlug.get(aliasSlug) : undefined);
       const slot = master ? slotForMaster(master) : null;
       if (!master?._id || !slot) {
         unmapped.push({ codename: character.codename, itemName: legacy.name });
@@ -116,9 +159,11 @@ try {
       plans.push({
         characterId,
         codename: character.codename,
+        legacyItemName: legacy.name,
         itemId,
         itemName: master.name,
         slot,
+        match: exactMaster ? "exact-name" : "default-alias",
         action,
         existingInventory: existing ?? null,
         ...(current?.itemId ? { currentSlotItemId: current.itemId } : {}),
@@ -145,12 +190,19 @@ try {
   );
   console.log(
     `[character-equipment] grenadeCategory=${grenade?.category ?? "missing"} ` +
-      `correction=${grenadeNeedsCorrection ? "required" : "none"}`,
+      `correction=${
+        grenadeNeedsCorrection
+          ? CORRECT_GRENADE
+            ? "requested"
+            : "required-not-requested"
+          : "none"
+      }`,
   );
 
   for (const plan of plans) {
     console.log(
-      `[character-equipment] ${plan.action} ${plan.codename} / ${plan.itemName} / ${plan.slot}`,
+      `[character-equipment] ${plan.action} ${plan.codename} / ` +
+        `${plan.legacyItemName} -> ${plan.itemName} / ${plan.slot} / ${plan.match}`,
     );
   }
   for (const entry of unmapped) {
@@ -199,34 +251,114 @@ try {
     );
     console.log(`[character-equipment] backup=${backupPath}`);
 
-    for (const plan of actionable) {
+    const lockAnchors = Array.from(
+      new Map(
+        actionable.flatMap((plan) =>
+          [plan.itemId, `@equipment-slot:${plan.slot}`].map((itemId) => {
+            const _id = `${plan.characterId}:${itemId}`;
+            return [
+              _id,
+              {
+                _id,
+                characterId: plan.characterId,
+                itemId,
+              },
+            ] as const;
+          }),
+        ),
+      ).values(),
+    ).sort((a, b) => a._id.localeCompare(b._id));
+
+    for (const anchor of lockAnchors) {
+      try {
+        await inventoryLocks.updateOne(
+          { _id: anchor._id },
+          {
+            $set: {
+              characterId: anchor.characterId,
+              itemId: anchor.itemId,
+              updatedAt: new Date(),
+            },
+          },
+          { upsert: true },
+        );
+      } catch (error) {
+        if (!(error instanceof MongoServerError) || error.code !== 11000) {
+          throw error;
+        }
+        await inventoryLocks.updateOne(
+          { _id: anchor._id },
+          {
+            $set: {
+              characterId: anchor.characterId,
+              itemId: anchor.itemId,
+              updatedAt: new Date(),
+            },
+          },
+        );
+      }
+    }
+
+    if (actionable.length > 0) {
       const session = client.startSession();
       try {
         await session.withTransaction(async () => {
-          const now = new Date();
-          await inventory.updateOne(
-            { characterId: plan.characterId, itemId: plan.itemId },
-            {
-              $max: { quantity: 1 },
-              $set: { equippedSlot: plan.slot, equippedAt: now },
-              $setOnInsert: {
-                characterId: plan.characterId,
-                characterCodename: plan.codename,
-                itemId: plan.itemId,
-                itemName: plan.itemName,
-                acquiredAt: now,
-                note: "기존 캐릭터 시트 장비 이관",
+          for (const anchor of lockAnchors) {
+            const result = await inventoryLocks.updateOne(
+              { _id: anchor._id },
+              {
+                $set: { updatedAt: new Date() },
+                $inc: { version: 1 },
               },
-            },
-            { upsert: true, session },
-          );
+              { session },
+            );
+            if (result.matchedCount !== 1) {
+              throw new Error(`인벤토리 lock anchor 누락: ${anchor._id}`);
+            }
+          }
+
+          for (const plan of actionable) {
+            const now = new Date();
+            const result =
+              plan.action === "grant-and-equip"
+                ? await inventory.updateOne(
+                    { characterId: plan.characterId, itemId: plan.itemId },
+                    {
+                      $inc: { quantity: 1 },
+                      $set: { equippedSlot: plan.slot, equippedAt: now },
+                      $setOnInsert: {
+                        characterId: plan.characterId,
+                        characterCodename: plan.codename,
+                        itemId: plan.itemId,
+                        itemName: plan.itemName,
+                        acquiredAt: now,
+                        note: "기존 캐릭터 시트 장비 이관",
+                      },
+                    },
+                    { upsert: true, session },
+                  )
+                : await inventory.updateOne(
+                    {
+                      characterId: plan.characterId,
+                      itemId: plan.itemId,
+                      quantity: { $gte: 1 },
+                    },
+                    { $set: { equippedSlot: plan.slot, equippedAt: now } },
+                    { session },
+                  );
+            if (result.matchedCount + result.upsertedCount !== 1) {
+              throw new Error(
+                `장비 이관 대상 변경 감지: ${plan.codename} / ${plan.itemName}`,
+              );
+            }
+          }
         });
       } finally {
         await session.endSession();
       }
     }
 
-    if (grenadeNeedsCorrection && grenade?._id) {
+    if (CORRECT_GRENADE && grenadeNeedsCorrection && grenade?._id) {
       await masters.updateOne(
         { _id: new ObjectId(String(grenade._id)), category: "WEAPON" },
         { $set: { category: "CONSUMABLE", updatedAt: new Date() } },
