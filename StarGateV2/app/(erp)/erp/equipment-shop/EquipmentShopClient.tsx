@@ -44,6 +44,12 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
 import { isTowaskiLicenseSlug } from "@/lib/equipment-shop/licenses";
+import {
+  getTowaskiDialogueContext,
+  getTowaskiQualificationDialogueLine,
+  shouldScheduleTowaskiShopIdle,
+  type TowaskiQualificationDialogueEvent,
+} from "@/lib/equipment-shop/towaski-dialogue";
 import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
 import { formatCredits } from "@/lib/format/credit";
 import {
@@ -78,7 +84,10 @@ type TowaskiMood =
   | "inspect"
   | "stock"
   | "cart"
+  | "license"
   | "checkout"
+  | "range"
+  | "rangeFailed"
   | "blocked"
   | "idle";
 type SutureMood =
@@ -121,7 +130,10 @@ const TOWASKI_MOOD_ASSETS: Record<TowaskiMood, string> = {
   inspect: "/assets/npcs/Towaski-inspect.webp",
   stock: "/assets/npcs/Towaski-stock.webp",
   cart: "/assets/npcs/Towaski-cart.webp",
+  license: "/assets/npcs/Towaski-checkout.webp",
   checkout: "/assets/npcs/Towaski-checkout.webp",
+  range: "/assets/npcs/Towaski-blocked.webp",
+  rangeFailed: "/assets/npcs/Towaski-blocked.webp",
   blocked: "/assets/npcs/Towaski-blocked.webp",
   idle: "/assets/npcs/Towaski-idle.webp",
 };
@@ -131,7 +143,10 @@ const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {
   inspect: "품목 감정",
   stock: "재고 판정",
   cart: "반출 준비",
+  license: "라이센스 발급",
   checkout: "반출 승인",
+  range: "사격 감독",
+  rangeFailed: "시험 탈락",
   blocked: "반출 거부",
   idle: "정비 중",
 };
@@ -155,6 +170,8 @@ const TOWASKI_DIALOGUE_LINES = {
     "분류부터 보자. 화기, 방호구, 폭발 장구는 허가 줄이 다르다.",
   cart: "반출대에 올렸다. 손에 맞는지는 훈련장에서 확인해.",
   checkout: "반출 처리 끝. 봉인은 뜯지 말고, 작전 전 점검표부터 확인해.",
+  licenseIssued:
+    "라이센스 발급 끝. 자격 장부 갱신됐으니 해당 품목 반출 조건을 다시 확인해.",
   checkoutError:
     "반출 기록이 막혔다. 잔액, 허가, 재고 중 하나가 장부랑 안 맞아.",
   unavailable:
@@ -846,7 +863,7 @@ function buildTowaskiItemLine(
 
   if (item.key.startsWith("towaski-license-")) {
     return {
-      mood: "inspect",
+      mood: "license",
       text:
         "라이센스는 물건이 아니라 반출 자격이다. 훈련 기록이 없으면 이 줄부터 처리해.",
     };
@@ -1248,6 +1265,7 @@ export default function EquipmentShopClient({
   const [activeTab, setActiveTab] = useState<EquipmentShopTabValue>("ALL");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const purchaseLockRef = useRef(false);
+  const towaskiQualificationPassedRef = useRef(false);
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
     () => mainCharacter?.stats ?? null,
   );
@@ -1297,6 +1315,9 @@ export default function EquipmentShopClient({
     !effectiveTowaskiGm &&
     effectiveHasMainCharacter &&
     !effectiveHasBasicLicense;
+  const towaskiDialogueContext = getTowaskiDialogueContext(
+    requiresTowaskiLicenseTest,
+  );
   const mainCharacterProfile = useMemo(
     () => getMainCharacterProfile(localStats),
     [localStats],
@@ -1339,7 +1360,7 @@ export default function EquipmentShopClient({
     closedLine: TOWASKI_DIALOGUE_LINES.closed,
     noAgentMood: "blocked",
     noAgentLine: TOWASKI_DIALOGUE_LINES.noAgent,
-    welcomeMood: requiresTowaskiLicenseTest ? "blocked" : "welcome",
+    welcomeMood: requiresTowaskiLicenseTest ? "range" : "welcome",
     welcomeLine: towaskiWelcomeLine,
     beepPreset: "towaski",
     beepDefaults: { pitch: 510, speed: 50, volume: 0.58 },
@@ -1376,6 +1397,17 @@ export default function EquipmentShopClient({
     entrySfxSrc: null,
     entrySfxVolume: 0,
   });
+  const handleTowaskiQualificationDialogue = useCallback(
+    (event: TowaskiQualificationDialogueEvent) => {
+      clearTowaskiIdleTimer();
+      playTowaskiLine(
+        event.type === "failed" ? "rangeFailed" : "range",
+        getTowaskiQualificationDialogueLine(event),
+        { returnToIdle: false, sound: true },
+      );
+    },
+    [clearTowaskiIdleTimer, playTowaskiLine],
+  );
 
   const balance = useMemo(() => {
     if (creditsQuery.data) return creditsQuery.data.balance;
@@ -1477,6 +1509,19 @@ export default function EquipmentShopClient({
       return;
     }
 
+    if (!shouldScheduleTowaskiShopIdle(towaskiDialogueContext)) {
+      clearTowaskiIdleTimer();
+      stopTowaskiEngine();
+      showTowaskiLineImmediately("range", towaskiWelcomeLine);
+      return;
+    }
+
+    if (towaskiQualificationPassedRef.current) {
+      towaskiQualificationPassedRef.current = false;
+      resetTowaskiIdleCycle();
+      return;
+    }
+
     showTowaskiLineImmediately("welcome", towaskiWelcomeLine);
     resetTowaskiIdleCycle();
     scheduleTowaskiIdle();
@@ -1490,6 +1535,7 @@ export default function EquipmentShopClient({
     scheduleTowaskiIdle,
     showTowaskiLineImmediately,
     stopTowaskiEngine,
+    towaskiDialogueContext,
     towaskiWelcomeLine,
   ]);
 
@@ -1715,7 +1761,7 @@ export default function EquipmentShopClient({
   }
 
   function playTowaskiIfActive(mood: TowaskiMood, text: string) {
-    if (activeZone !== "towaski") return;
+    if (activeZone !== "towaski" || towaskiDialogueContext !== "shop") return;
     playTowaskiLine(mood, text, { sound: true });
   }
 
@@ -1790,10 +1836,14 @@ export default function EquipmentShopClient({
     }
 
     purchaseLockRef.current = true;
+    const isLicenseItem = isTowaskiLicenseCatalogItem(item);
     setSelectedKey(item.key);
     setErrorMessage(null);
     setNotice(null);
-    playTowaskiIfActive("cart", buildTowaskiCartLine(item));
+    playTowaskiIfActive(
+      isLicenseItem ? "license" : "cart",
+      buildTowaskiCartLine(item),
+    );
     purchaseMutation.mutate(
       { key: item.key },
       {
@@ -1802,7 +1852,12 @@ export default function EquipmentShopClient({
             tone: "success",
             text: `${res.order.items[0]?.name ?? item.name} 1개 반출 결제가 완료되었습니다.`,
           });
-          playTowaskiIfActive("checkout", TOWASKI_DIALOGUE_LINES.checkout);
+          playTowaskiIfActive(
+            isLicenseItem ? "license" : "checkout",
+            isLicenseItem
+              ? TOWASKI_DIALOGUE_LINES.licenseIssued
+              : TOWASKI_DIALOGUE_LINES.checkout,
+          );
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
@@ -1817,6 +1872,7 @@ export default function EquipmentShopClient({
 
   const handleTowaskiLicenseGranted = useCallback(
     (licenseName: string) => {
+      towaskiQualificationPassedRef.current = true;
       if (isTowaskiDebug) {
         setTowaskiDebugMode("licensed");
       } else {
@@ -1830,6 +1886,7 @@ export default function EquipmentShopClient({
           : `${licenseName}가 발급되었습니다. 토와스키 건샵 반출대가 개방됩니다.`,
       });
       playTowaskiLine("checkout", TOWASKI_DIALOGUE_LINES.qualificationPassed, {
+        returnToIdle: true,
         sound: true,
       });
     },
@@ -3476,6 +3533,7 @@ export default function EquipmentShopClient({
                   characterCodename={mainCharacter?.codename ?? "DEBUG AGENT"}
                   debugSandbox={isTowaskiDebug}
                   onBusyChange={setTowaskiLicenseTestBusy}
+                  onDialogueEvent={handleTowaskiQualificationDialogue}
                   onGranted={handleTowaskiLicenseGranted}
                 />
               ) : activeZone === "lab"

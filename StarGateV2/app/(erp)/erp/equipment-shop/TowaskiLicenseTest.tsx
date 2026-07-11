@@ -27,6 +27,7 @@ import {
   type TowaskiLicenseTestResponse,
   type TowaskiLicenseTestStats,
 } from "@/lib/equipment-shop/license-test";
+import type { TowaskiQualificationDialogueEvent } from "@/lib/equipment-shop/towaski-dialogue";
 
 import styles from "./TowaskiLicenseTest.module.css";
 
@@ -43,6 +44,7 @@ interface TowaskiLicenseTestProps {
   characterCodename: string;
   debugSandbox?: boolean;
   onBusyChange?: (busy: boolean) => void;
+  onDialogueEvent?: (event: TowaskiQualificationDialogueEvent) => void;
   onGranted: (licenseName: string) => void;
 }
 
@@ -85,6 +87,7 @@ export default function TowaskiLicenseTest({
   characterCodename,
   debugSandbox = false,
   onBusyChange,
+  onDialogueEvent,
   onGranted,
 }: TowaskiLicenseTestProps) {
   const { mutate: submitLiveTest } = useCompleteTowaskiLicenseTest();
@@ -107,6 +110,7 @@ export default function TowaskiLicenseTest({
   const debugSessionRef = useRef<TowaskiDebugLicenseSession | null>(null);
   const roundShotsRef = useRef(0);
   const resolvingRef = useRef(false);
+  const attemptRef = useRef(0);
 
   const rules = getTowaskiLicenseTestRules(difficulty);
   const hitAdvanceMs =
@@ -167,18 +171,33 @@ export default function TowaskiLicenseTest({
         setStats(response.stats);
         setLastEvaluation(response.evaluation);
         setPhase("failed");
+        onDialogueEvent?.({
+          type: "failed",
+          difficulty: response.difficulty,
+          attempt: attemptRef.current,
+          reasons: response.evaluation.reasons,
+        });
         return;
       }
       onGranted(response.license.name);
     },
-    [onGranted],
+    [onDialogueEvent, onGranted],
   );
 
-  const handleMutationError = useCallback((error: Error) => {
-    resolvingRef.current = false;
-    setSubmissionError(error.message);
-    setPhase("failed");
-  }, []);
+  const handleMutationError = useCallback(
+    (error: Error) => {
+      resolvingRef.current = false;
+      setSubmissionError(error.message);
+      setPhase("failed");
+      onDialogueEvent?.({
+        type: "failed",
+        difficulty,
+        attempt: attemptRef.current,
+        reasons: ["invalid"],
+      });
+    },
+    [difficulty, onDialogueEvent],
+  );
 
   const submitTest = useCallback(
     (input: TowaskiLicenseTestRequest, callbacks: TestSubmissionCallbacks) => {
@@ -230,16 +249,27 @@ export default function TowaskiLicenseTest({
   }, [difficulty, handleMutationError, handleResponse, submitTest]);
 
   const beginTest = useCallback(() => {
+    attemptRef.current += 1;
     resetTest();
     setCountdown(3);
     setPhase("countdown");
+    onDialogueEvent?.({
+      type: "start",
+      difficulty,
+      attempt: attemptRef.current,
+    });
     void audioRef.current?.prime();
-  }, [resetTest]);
+  }, [difficulty, onDialogueEvent, resetTest]);
 
   const returnToBriefing = useCallback(() => {
     resetTest();
     setPhase("briefing");
-  }, [resetTest]);
+    onDialogueEvent?.({
+      type: "briefing",
+      difficulty,
+      attempt: attemptRef.current,
+    });
+  }, [difficulty, onDialogueEvent, resetTest]);
 
   useEffect(() => {
     if (phase !== "countdown") return;
