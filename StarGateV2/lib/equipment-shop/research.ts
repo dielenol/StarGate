@@ -7,6 +7,7 @@ export const EQUIPMENT_RESEARCH_STATUS = [
 export const EQUIPMENT_RESEARCH_SCOPES = ["personal", "team"] as const;
 export const EQUIPMENT_RESEARCH_STATS = ["hp", "san", "atk", "def"] as const;
 export const EQUIPMENT_RESEARCH_TIERS = [1, 2, 3, 4, 5] as const;
+export const EQUIPMENT_RESEARCH_APPLY_LEASE_MS = 5 * 60 * 1000;
 
 export type EquipmentResearchStatus = (typeof EQUIPMENT_RESEARCH_STATUS)[number];
 export type EquipmentResearchScope = (typeof EQUIPMENT_RESEARCH_SCOPES)[number];
@@ -105,6 +106,17 @@ export interface EquipmentResearchStartQuote {
   durationHours: number;
   costDiscount: number;
   durationReductionHours: number;
+}
+
+export function isEquipmentResearchApplyLeaseStale(
+  updatedAt: Date | string,
+  now = new Date(),
+): boolean {
+  const updatedAtTime = new Date(updatedAt).getTime();
+  return (
+    Number.isFinite(updatedAtTime) &&
+    now.getTime() - updatedAtTime >= EQUIPMENT_RESEARCH_APPLY_LEASE_MS
+  );
 }
 
 export interface EquipmentResearchRushQuote {

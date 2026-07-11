@@ -10,9 +10,24 @@ import {
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
   getEquipmentResearchPrerequisiteTier,
+  isEquipmentResearchApplyLeaseStale,
   quoteEquipmentResearchRush,
   quoteEquipmentResearchStart,
 } from "../research.ts";
+
+test("applying reservation becomes recoverable only after its lease expires", () => {
+  const now = new Date("2026-07-11T08:00:00.000Z");
+
+  assert.equal(
+    isEquipmentResearchApplyLeaseStale("2026-07-11T07:55:01.000Z", now),
+    false,
+  );
+  assert.equal(
+    isEquipmentResearchApplyLeaseStale("2026-07-11T07:55:00.000Z", now),
+    true,
+  );
+  assert.equal(isEquipmentResearchApplyLeaseStale("invalid", now), false);
+});
 
 test("T1 research splits HP/SAN into small bonuses without direct ATK/DEF", () => {
   const tierOneEffects = EQUIPMENT_RESEARCH_NODES.filter(

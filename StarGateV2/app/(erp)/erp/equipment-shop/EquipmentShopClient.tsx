@@ -57,6 +57,7 @@ import {
   describeEquipmentResearchEffect,
   type EquipmentResearchStat,
   getEquipmentResearchPrerequisiteTier,
+  isEquipmentResearchApplyLeaseStale,
   quoteEquipmentResearchRush,
   quoteEquipmentResearchStart,
   scopeLabel,
@@ -99,6 +100,7 @@ type SutureMood =
   | "recovery"
   | "blocked"
   | "idle";
+type SutureDebugMode = "live" | SutureMood;
 type MainCharacterProfile = "assault" | "guard" | "endurance" | "focus" | "balanced";
 type ArmoryZoneDef = {
   value: ArmoryDestination;
@@ -125,6 +127,21 @@ const SUTURE_MOOD_ASSETS: Record<SutureMood, string> = {
   blocked: "/assets/npcs/Irena-Vukovic-Suture-blocked.webp",
   idle: "/assets/npcs/Irena-Vukovic-Suture-idle.webp",
 };
+
+const SUTURE_DEBUG_MODES: readonly {
+  value: SutureDebugMode;
+  label: string;
+}[] = [
+  { value: "live", label: "실제 상태" },
+  { value: "welcome", label: "입장 인사" },
+  { value: "assessment", label: "생체 판독" },
+  { value: "protocol", label: "연구 설명" },
+  { value: "funding", label: "재원 검토" },
+  { value: "procedure", label: "시술 준비" },
+  { value: "recovery", label: "회복 관찰" },
+  { value: "blocked", label: "승인 거부" },
+  { value: "idle", label: "의체 정비" },
+];
 
 const TOWASKI_DEBUG_MODES: readonly {
   value: TowaskiDebugMode;
@@ -247,6 +264,23 @@ const SUTURE_DIALOGUE_LINES = {
   completeError:
     "적용 기록이 잠겼습니다. 완료 시각과 대상자 상태를 다시 대조하겠습니다.",
 } as const;
+
+const SUTURE_DEBUG_LINES: Record<SutureMood, string> = {
+  welcome: SUTURE_DIALOGUE_LINES.welcome,
+  assessment:
+    "생체 판독을 시작합니다. 통증 역치와 신경 반응을 기준선부터 다시 잡겠습니다.",
+  protocol:
+    "연구 설명 단계입니다. 기대 효과와 회복 비용, 중단 조건을 순서대로 확인하세요.",
+  funding:
+    "재원 검토 중입니다. 확보된 재료와 남은 목표액을 대조하겠습니다.",
+  procedure:
+    "시술 준비 단계입니다. 신경 접속부를 고정하고 마지막 안전 검사를 진행합니다.",
+  recovery:
+    "회복 관찰 단계입니다. 수치보다 감각 지연과 통증 변화를 먼저 보고하세요.",
+  blocked:
+    "승인을 거부합니다. 선행 연구, 재원, 생체 적합성 중 하나가 기준을 충족하지 못했습니다.",
+  idle: "의체 정비 중입니다. 관절 구동부와 감각 피드백을 순서대로 교정하겠습니다.",
+};
 
 const SUTURE_IDLE_LINES: readonly { mood: SutureMood; text: string }[] = [
   {
@@ -1296,6 +1330,8 @@ export default function EquipmentShopClient({
   );
   const [towaskiDebugMode, setTowaskiDebugMode] =
     useState<TowaskiDebugMode>("live");
+  const [sutureDebugMode, setSutureDebugMode] =
+    useState<SutureDebugMode>("live");
   const [towaskiDebugRevision, setTowaskiDebugRevision] = useState(0);
   const [towaskiLicenseTestBusy, setTowaskiLicenseTestBusy] = useState(false);
   const [activeHubDestination, setActiveHubDestination] =
@@ -1303,6 +1339,8 @@ export default function EquipmentShopClient({
 
   const catalog = catalogQuery.data ?? initialCatalog;
   const research = researchQuery.data ?? initialResearch;
+  const researchDataUnavailable =
+    isGM && (researchQuery.isError || researchQuery.isRefetchError);
   const researchTree = research.tree;
   const researchProjects = research.projects;
   const selectedResearchKey = selectedResearchKeys[activeResearchScope];
@@ -1311,6 +1349,8 @@ export default function EquipmentShopClient({
   const activeZone = initialZone;
   const isTowaskiDebug =
     isGM && activeZone === "towaski" && towaskiDebugMode !== "live";
+  const isSutureDebug =
+    isGM && activeZone === "lab" && sutureDebugMode !== "live";
   const effectiveHasMainCharacter = isTowaskiDebug
     ? towaskiDebugMode !== "no-agent"
     : hasMainCharacter;
@@ -1559,6 +1599,16 @@ export default function EquipmentShopClient({
       return;
     }
 
+    if (sutureDebugMode !== "live") {
+      clearSutureIdleTimer();
+      stopSutureEngine();
+      showSutureLineImmediately(
+        sutureDebugMode,
+        SUTURE_DEBUG_LINES[sutureDebugMode],
+      );
+      return;
+    }
+
     if (!hasMainCharacter) {
       playSutureLine("blocked", SUTURE_DIALOGUE_LINES.noAgent, {
         returnToIdle: false,
@@ -1579,6 +1629,7 @@ export default function EquipmentShopClient({
     scheduleSutureIdle,
     showSutureLineImmediately,
     stopSutureEngine,
+    sutureDebugMode,
     sutureWelcomeLine,
   ]);
 
@@ -1684,6 +1735,8 @@ export default function EquipmentShopClient({
     : "UNASSIGNED";
   const headerTag = isTowaskiDebug
     ? `DEBUG / ${TOWASKI_DEBUG_MODES.find((debugMode) => debugMode.value === towaskiDebugMode)?.label ?? "SANDBOX"}`
+    : isSutureDebug
+      ? `DEBUG / ${SUTURE_DEBUG_MODES.find((debugMode) => debugMode.value === sutureDebugMode)?.label ?? "SANDBOX"}`
     : isHub
       ? "BUREAU CONTROL"
       : activeZone === "lab"
@@ -1773,13 +1826,23 @@ export default function EquipmentShopClient({
     );
   }
 
+  function handleSutureDebugMode(nextMode: SutureDebugMode) {
+    setSutureDebugMode(nextMode);
+    setErrorMessage(null);
+    setNotice(
+      nextMode === "live"
+        ? null
+        : { tone: "info", text: "SUTURE PORTRAIT SANDBOX / DB WRITE 0" },
+    );
+  }
+
   function playTowaskiIfActive(mood: TowaskiMood, text: string) {
     if (activeZone !== "towaski" || towaskiDialogueContext !== "shop") return;
     playTowaskiLine(mood, text, { sound: true });
   }
 
   function playSutureIfActive(mood: SutureMood, text: string) {
-    if (activeZone !== "lab") return;
+    if (activeZone !== "lab" || isSutureDebug) return;
     playSutureLine(mood, text, { sound: true });
   }
 
@@ -1934,6 +1997,7 @@ export default function EquipmentShopClient({
     return (
       scope === "personal" &&
       hasMainCharacter &&
+      !researchDataUnavailable &&
       balance >= cost &&
       !startResearchMutation.isPending
     );
@@ -1981,6 +2045,19 @@ export default function EquipmentShopClient({
       playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.startError);
       return;
     }
+    if (
+      !window.confirm(
+        [
+          `${node.name} (${key}) 개인 연구를 시작합니다.`,
+          `대상: ${mainCharacter?.codename ?? "UNASSIGNED"}`,
+          `비용: ${formatCredits(startQuote.cost)}`,
+          `예상 기간: ${formatDuration(startQuote.durationHours)}`,
+          "시작 후 사용한 연구비는 자동 환불되지 않습니다.",
+        ].join("\n"),
+      )
+    ) {
+      return;
+    }
     setErrorMessage(null);
     setNotice(null);
     startResearchMutation.mutate(
@@ -2010,6 +2087,11 @@ export default function EquipmentShopClient({
 
   function handleContributeTeamResearch(key: string, remainingCost: number) {
     if (contributeResearchMutation.isPending) return;
+    if (researchDataUnavailable) {
+      setErrorMessage("연구 정보를 갱신하지 못해 변경 기능을 잠갔습니다.");
+      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.contributionError);
+      return;
+    }
     const requestedAmount = Math.floor(Number(teamContributionAmount));
     const chargePreview = Math.min(requestedAmount, remainingCost);
     if (
@@ -2029,6 +2111,18 @@ export default function EquipmentShopClient({
     if (balance < chargePreview) {
       setErrorMessage("잔액이 부족합니다.");
       playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.contributionError);
+      return;
+    }
+    if (
+      !window.confirm(
+        [
+          `${key} 팀 연구에 기여합니다.`,
+          `기여액: ${formatCredits(chargePreview)}`,
+          `기여 후 예상 잔액: ${formatCredits(balance - chargePreview)}`,
+          "기여금은 접수 후 자동 환불되지 않습니다.",
+        ].join("\n"),
+      )
+    ) {
       return;
     }
 
@@ -2065,12 +2159,33 @@ export default function EquipmentShopClient({
     );
   }
 
-  function handleRushResearch(projectId: string) {
+  function handleRushResearch(
+    project: EquipmentResearchProjectEntry,
+    cost: number,
+    hours: number,
+  ) {
     if (rushResearchMutation.isPending) return;
+    if (researchDataUnavailable) {
+      setErrorMessage("연구 정보를 갱신하지 못해 변경 기능을 잠갔습니다.");
+      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.rushError);
+      return;
+    }
+    if (
+      !window.confirm(
+        [
+          `${project.key} 연구 시간을 단축합니다.`,
+          `비용: ${formatCredits(cost)}`,
+          `단축 시간: ${formatDuration(hours)}`,
+          "단축 비용은 접수 후 자동 환불되지 않습니다.",
+        ].join("\n"),
+      )
+    ) {
+      return;
+    }
     setErrorMessage(null);
     setNotice(null);
     rushResearchMutation.mutate(
-      { projectId },
+      { projectId: project.id },
       {
         onSuccess: (res) => {
           setNotice({
@@ -2094,6 +2209,30 @@ export default function EquipmentShopClient({
 
   function handleCompleteResearch(project: EquipmentResearchProjectEntry) {
     if (completeResearchMutation.isPending) return;
+    if (researchDataUnavailable) {
+      setErrorMessage("연구 정보를 갱신하지 못해 변경 기능을 잠갔습니다.");
+      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.completeError);
+      return;
+    }
+    const isLeaseRecovery =
+      project.computedStatus === "applying" &&
+      isEquipmentResearchApplyLeaseStale(project.updatedAt);
+    if (
+      !window.confirm(
+        [
+          `${project.key} ${scopeLabel(project.scope)} 연구 효과를 적용합니다.`,
+          `효과: ${describeEquipmentResearchEffect(project.effect)}`,
+          project.scope === "team"
+            ? `대상: 연구 시작 시 확정된 ${project.targetCharacterIds.length}명`
+            : `대상: ${project.targetCharacterIds.length}명`,
+          isLeaseRecovery
+            ? "중단된 적용 예약을 회수한 뒤 다시 적용합니다."
+            : "적용 후 대상 캐릭터의 실제 수치가 변경됩니다.",
+        ].join("\n"),
+      )
+    ) {
+      return;
+    }
     setErrorMessage(null);
     setNotice(null);
     completeResearchMutation.mutate(
@@ -2671,6 +2810,7 @@ export default function EquipmentShopClient({
       selectedTeamChargePreview > 0 &&
       balance >= selectedTeamChargePreview &&
       hasMainCharacter &&
+      !researchDataUnavailable &&
       !contributeResearchMutation.isPending;
     const selectedResearchCost =
       selectedStartQuote?.cost ?? selectedResearchNode?.cost ?? 0;
@@ -2722,7 +2862,9 @@ export default function EquipmentShopClient({
       },
     ];
     const activeResearchBonuses = researchBonuses.filter((bonus) => bonus.active);
-    const personalResearchDisabledReason = !selectedResearchEffect
+    const personalResearchDisabledReason = researchDataUnavailable
+      ? "연구 정보를 갱신할 수 없어 변경 기능을 잠갔습니다."
+      : !selectedResearchEffect
       ? "개인 연구 효과가 없는 항목입니다."
       : !selectedResearchUnlocked
         ? `${selectedPrerequisiteLabel ?? "선행 연구"}가 필요합니다.`
@@ -2733,7 +2875,9 @@ export default function EquipmentShopClient({
             : balance < selectedResearchCost
               ? `${formatCredits(selectedResearchCost - balance)}이 부족합니다.`
               : null;
-    const teamContributionDisabledReason = !selectedResearchEffect
+    const teamContributionDisabledReason = researchDataUnavailable
+      ? "연구 정보를 갱신할 수 없어 변경 기능을 잠갔습니다."
+      : !selectedResearchEffect
       ? "팀 연구 효과가 없는 항목입니다."
       : !selectedResearchUnlocked
         ? `${selectedPrerequisiteLabel ?? "선행 연구"}가 필요합니다.`
@@ -3188,7 +3332,7 @@ export default function EquipmentShopClient({
               </div>
             ) : (
               <div className={styles.empty}>
-                메인 AGENT 캐릭터가 없어 연구 비용 차감과 개인 연구를 실행할 수 없습니다.
+                메인 AGENT 캐릭터가 없어 연구 비용 차감, 개인 연구, 팀 연구 기여를 실행할 수 없습니다.
               </div>
             )}
           </div>
@@ -3202,7 +3346,7 @@ export default function EquipmentShopClient({
               <div className={styles.empty}>진행 중인 연구가 없습니다.</div>
             ) : (
               <div className={styles.projectList}>
-                {activeResearchProjects.slice(0, 4).map((project) => {
+                {activeResearchProjects.map((project) => {
                   const rushRule = research.rushRules.find(
                     (rule) => rule.tier === project.tier,
                   );
@@ -3226,6 +3370,9 @@ export default function EquipmentShopClient({
                               : research.capabilities,
                         })
                       : null;
+                  const canRecoverApply =
+                    project.computedStatus === "applying" &&
+                    isEquipmentResearchApplyLeaseStale(project.updatedAt);
                   return (
                     <article key={project.id} className={styles.projectCard}>
                       <div className={styles.projectCardTop}>
@@ -3244,10 +3391,19 @@ export default function EquipmentShopClient({
                       <div className={styles.projectActions}>
                         <button
                           type="button"
-                          onClick={() => handleRushResearch(project.id)}
+                          onClick={() =>
+                            rushQuote
+                              ? handleRushResearch(
+                                  project,
+                                  rushQuote.cost,
+                                  rushQuote.hours,
+                                )
+                              : undefined
+                          }
                           disabled={
                             project.computedStatus !== "in_progress" ||
                             !rushQuote ||
+                            researchDataUnavailable ||
                             rushResearchMutation.isPending
                           }
                           aria-busy={rushResearchMutation.isPending}
@@ -3263,12 +3419,14 @@ export default function EquipmentShopClient({
                             type="button"
                             onClick={() => handleCompleteResearch(project)}
                             disabled={
-                              project.computedStatus !== "completed" ||
+                              (project.computedStatus !== "completed" &&
+                                !canRecoverApply) ||
+                              researchDataUnavailable ||
                               completeResearchMutation.isPending
                             }
                             aria-busy={completeResearchMutation.isPending}
                           >
-                            완료 적용
+                            {canRecoverApply ? "적용 복구" : "완료 적용"}
                           </button>
                         ) : (
                           <span className={styles.projectAutoApply}>
@@ -3422,7 +3580,7 @@ export default function EquipmentShopClient({
               {mainCharacterError}
             </>
           ) : (
-            "메인 AGENT 캐릭터가 없어 구매와 개인 강화가 제한됩니다. 팀 강화는 GM 권한으로 실행할 수 있습니다."
+            "메인 AGENT 캐릭터가 없어 구매, 개인 연구, 팀 연구 기여가 제한됩니다. 연구 현황은 조회할 수 있습니다."
           )}
         </Box>
       ) : null}
@@ -3431,6 +3589,21 @@ export default function EquipmentShopClient({
         <Box className={styles.errorBanner} role="alert">
           라이센스 자격 정보를 갱신할 수 없어 구매 기능을 잠갔습니다. 잠시 후 다시
           시도해 주세요.
+        </Box>
+      ) : null}
+
+      {researchDataUnavailable && activeZone === "lab" ? (
+        <Box className={styles.errorBanner} role="alert">
+          연구 정보를 갱신할 수 없어 시작·기여·단축·적용 기능을 잠갔습니다. 기존
+          화면은 마지막 정상 데이터입니다.
+          <button
+            type="button"
+            className={styles.errorRetry}
+            onClick={() => void researchQuery.refetch()}
+            disabled={researchQuery.isFetching}
+          >
+            {researchQuery.isFetching ? "재시도 중" : "다시 시도"}
+          </button>
         </Box>
       ) : null}
 
@@ -3525,6 +3698,39 @@ export default function EquipmentShopClient({
                         purchaseMutation.isPending || towaskiLicenseTestBusy
                       }
                       onClick={() => handleTowaskiDebugMode(debugMode.value)}
+                    >
+                      {debugMode.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {isGM && activeZone === "lab" ? (
+              <div
+                className={styles.debugBar}
+                aria-label="수처 연구소 초상 상태 샌드박스"
+              >
+                <div className={styles.debugBar__label}>
+                  <strong>GM PORTRAIT TEST</strong>
+                  <span>
+                    {isSutureDebug ? "SANDBOX / DB WRITE 0" : "LIVE DATA"}
+                  </span>
+                </div>
+                <div
+                  className={[
+                    styles.debugModes,
+                    styles["debugModes--suture"],
+                  ].join(" ")}
+                  role="group"
+                  aria-label="테스트할 연구소 NPC 상태"
+                >
+                  {SUTURE_DEBUG_MODES.map((debugMode) => (
+                    <button
+                      key={debugMode.value}
+                      type="button"
+                      data-active={sutureDebugMode === debugMode.value}
+                      aria-pressed={sutureDebugMode === debugMode.value}
+                      onClick={() => handleSutureDebugMode(debugMode.value)}
                     >
                       {debugMode.label}
                     </button>

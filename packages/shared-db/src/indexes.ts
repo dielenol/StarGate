@@ -129,6 +129,14 @@ export async function ensureAllIndexes(): Promise<void> {
         partialFilterExpression: { requestId: { $type: "string" } },
       },
     ),
+    db.collection("research_team_funding_pools").createIndex(
+      { key: 1 },
+      {
+        name: "research_team_funding_pools_key_funding_unique",
+        unique: true,
+        partialFilterExpression: { status: "funding" },
+      },
+    ),
     db.collection("economic_operations").createIndex(
       { status: 1, updatedAt: 1 },
       { name: "economic_operations_status_updatedAt" },

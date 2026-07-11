@@ -1,4 +1,5 @@
 import {
+  MongoServerError,
   ObjectId,
   type ClientSession,
   type Collection,
@@ -12,6 +13,7 @@ import { getDb } from "@stargate/shared-db";
 
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
+  EQUIPMENT_RESEARCH_APPLY_LEASE_MS,
   EQUIPMENT_RESEARCH_CAPS,
   type EquipmentResearchCapabilities,
   type EquipmentResearchEffect,
@@ -331,27 +333,40 @@ export async function getOrCreateTeamFundingPool(args: {
 }): Promise<WithId<EquipmentResearchTeamFundingPool>> {
   const now = new Date();
   const col = await equipmentResearchTeamFundingPoolsCol();
-  const pool = await col.findOneAndUpdate(
-    { key: args.key, status: "funding" },
-    {
-      $setOnInsert: {
-        key: args.key,
-        targetCost: args.targetCost,
-        fundedAmount: 0,
-        status: "funding",
-        createdAt: now,
+  try {
+    const pool = await col.findOneAndUpdate(
+      { key: args.key, status: "funding" },
+      {
+        $setOnInsert: {
+          key: args.key,
+          targetCost: args.targetCost,
+          fundedAmount: 0,
+          status: "funding",
+          createdAt: now,
+        },
+        $set: {
+          targetCost: args.targetCost,
+          updatedAt: now,
+        },
       },
-      $set: {
-        targetCost: args.targetCost,
-        updatedAt: now,
-      },
-    },
-    { upsert: true, returnDocument: "after" },
-  );
-  if (!pool) {
-    throw new Error("TEAM_FUNDING_POOL_UPSERT_FAILED");
+      { upsert: true, returnDocument: "after" },
+    );
+    if (!pool) {
+      throw new Error("TEAM_FUNDING_POOL_UPSERT_FAILED");
+    }
+    return pool;
+  } catch (error) {
+    if (!(error instanceof MongoServerError) || error.code !== 11000) {
+      throw error;
+    }
+
+    const concurrentPool = await col.findOne({
+      key: args.key,
+      status: "funding",
+    });
+    if (!concurrentPool) throw error;
+    return concurrentPool;
   }
-  return pool;
 }
 
 export async function listTeamFundingPools(
@@ -583,11 +598,17 @@ export async function reserveEquipmentResearchProjectForApply(
   const objectId = toObjectId(id);
   if (!objectId) return null;
   const col = await equipmentResearchProjectsCol();
+  const staleBefore = new Date(
+    now.getTime() - EQUIPMENT_RESEARCH_APPLY_LEASE_MS,
+  );
   return col.findOneAndUpdate(
     {
       _id: objectId,
-      status: "in_progress",
       completedAt: { $lte: now },
+      $or: [
+        { status: "in_progress" },
+        { status: "applying", updatedAt: { $lte: staleBefore } },
+      ],
     },
     {
       $set: {
