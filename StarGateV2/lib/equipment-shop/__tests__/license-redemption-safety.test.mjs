@@ -20,6 +20,14 @@ const CATALOG_QUERY = new URL(
   "../../../hooks/queries/useEquipmentShopQuery.ts",
   import.meta.url,
 );
+const EQUIPMENT_MUTATIONS = new URL(
+  "../../../hooks/mutations/useEquipmentShopMutation.ts",
+  import.meta.url,
+);
+const EQUIPMENT_SHOP_CLIENT = new URL(
+  "../../../app/(erp)/erp/equipment-shop/EquipmentShopClient.tsx",
+  import.meta.url,
+);
 const SHARED_INVENTORY = new URL(
   "../../../../packages/shared-db/src/crud/inventory.ts",
   import.meta.url,
@@ -75,6 +83,24 @@ test("equipment checkout serializes inventory and rejects owned licenses", async
   assert.match(inventory, /character_inventory_locks/);
   assert.match(inventory, /prepareCharacterInventoryItemLocks/);
   assert.doesNotMatch(inventory, /\{ upsert: true, session \}/);
+});
+
+test("equipment shop purchases one item at a time without cart controls", async () => {
+  const [mutations, client] = await Promise.all([
+    readFile(EQUIPMENT_MUTATIONS, "utf8"),
+    readFile(EQUIPMENT_SHOP_CLIENT, "utf8"),
+  ]);
+
+  assert.match(mutations, /usePurchaseEquipmentShopItem/);
+  assert.match(
+    mutations,
+    /JSON\.stringify\(\{ items: \[\{ key: input\.key, quantity: 1 \}\] \}\)/,
+  );
+  assert.match(mutations, /setQueryData<CreditsResponse>[\s\S]*data\.balance/);
+  assert.match(client, /purchaseLockRef\.current/);
+  assert.match(client, /purchaseMutation\.isPending \|\| towaskiLicenseTestBusy/);
+  assert.doesNotMatch(client, /type CartState/);
+  assert.doesNotMatch(client, /반출 장바구니|한번에 결제|장바구니 담기/);
 });
 
 test("slug와 ObjectId가 같은 장비를 가리키면 canonical 중복으로 거부한다", () => {

@@ -42,6 +42,7 @@ type ActiveChallenge = Extract<TowaskiLicenseTestResponse, { status: "active" }>
 interface TowaskiLicenseTestProps {
   characterCodename: string;
   debugSandbox?: boolean;
+  onBusyChange?: (busy: boolean) => void;
   onGranted: (licenseName: string) => void;
 }
 
@@ -83,6 +84,7 @@ function failureMessage(
 export default function TowaskiLicenseTest({
   characterCodename,
   debugSandbox = false,
+  onBusyChange,
   onGranted,
 }: TowaskiLicenseTestProps) {
   const { mutate: submitLiveTest } = useCompleteTowaskiLicenseTest();
@@ -114,6 +116,12 @@ export default function TowaskiLicenseTest({
   const displayedShots = stats.shots + roundShots;
   const liveAccuracy = formatAccuracy(stats.hostileHits, displayedShots);
   const completedRounds = challenge?.round ?? 0;
+  const isTestBusy = phase !== "briefing" && phase !== "failed";
+
+  useEffect(() => {
+    onBusyChange?.(isTestBusy);
+    return () => onBusyChange?.(false);
+  }, [isTestBusy, onBusyChange]);
 
   useEffect(() => {
     audioRef.current = new DialogueBeepEngine({

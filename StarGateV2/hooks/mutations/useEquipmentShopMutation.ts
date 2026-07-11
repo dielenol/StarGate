@@ -1,7 +1,7 @@
 /**
  * 병기부 구매 / 연구 프로젝트 mutation hooks.
  *
- * 카탈로그 장비 구매는 크레딧 차감 + 인벤토리 적재를 처리한다.
+ * 카탈로그 장비 단건 구매는 크레딧 차감 + 인벤토리 적재를 처리한다.
  * 연구 프로젝트의 시작·기여·단축·완료 적용 API를 호출한다.
  */
 
@@ -12,7 +12,10 @@ import {
   personnelKeys,
 } from "@/hooks/queries/useCharactersQuery";
 import { characterChangeLogsKeys } from "@/hooks/queries/useCharacterChangeLogs";
-import { creditKeys } from "@/hooks/queries/useCreditsQuery";
+import {
+  type CreditsResponse,
+  creditKeys,
+} from "@/hooks/queries/useCreditsQuery";
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import {
@@ -27,11 +30,8 @@ import type {
 } from "@/lib/equipment-shop/license-test";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
 
-interface CheckoutInput {
-  items: Array<{
-    key: string;
-    quantity: number;
-  }>;
+interface PurchaseEquipmentInput {
+  key: string;
 }
 
 interface CheckoutResponse {
@@ -134,10 +134,14 @@ async function throwEquipmentShopError(res: Response): Promise<never> {
   );
 }
 
-export function useCheckoutEquipmentShopCart() {
+export function usePurchaseEquipmentShopItem() {
   const queryClient = useQueryClient();
 
-  return useMutation<CheckoutResponse, EquipmentShopApiError, CheckoutInput>({
+  return useMutation<
+    CheckoutResponse,
+    EquipmentShopApiError,
+    PurchaseEquipmentInput
+  >({
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/equipment-shop/checkout", {
         method: "POST",
@@ -148,16 +152,21 @@ export function useCheckoutEquipmentShopCart() {
             input,
           ),
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify({ items: [{ key: input.key, quantity: 1 }] }),
       });
       if (!res.ok) await throwEquipmentShopError(res);
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
-      queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
-      queryClient.invalidateQueries({ queryKey: creditKeys.all });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    onSuccess: async (data) => {
+      queryClient.setQueryData<CreditsResponse>(creditKeys.all, (current) =>
+        current ? { ...current, balance: data.balance } : current,
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog }),
+        queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: creditKeys.all }),
+        queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+      ]);
     },
   });
 }

@@ -9,6 +9,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -21,7 +22,7 @@ import {
   type EquipmentResearchScope,
   useCompleteEquipmentResearch,
   useContributeEquipmentResearch,
-  useCheckoutEquipmentShopCart,
+  usePurchaseEquipmentShopItem,
   useRushEquipmentResearch,
   useStartEquipmentResearch,
 } from "@/hooks/mutations/useEquipmentShopMutation";
@@ -68,7 +69,6 @@ type EquipmentShopTabValue =
   | "ARMOR"
   | "CONSUMABLE"
   | "LICENSE";
-type CartState = Record<string, number>;
 type NoticeState = { tone: "success" | "info"; text: string } | null;
 type TowaskiDebugMode = "live" | "unlicensed" | "licensed" | "no-agent";
 type MainCharacterStats = Record<EquipmentResearchStat, number>;
@@ -90,7 +90,6 @@ type ArmoryZoneDef = {
   npc: string;
 };
 
-const MAX_CART_QUANTITY_PER_ITEM = 1;
 const TOWASKI_PROFILE_SRC = "/assets/npcs/Towaski-profile.webp";
 const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp";
 const TOWASKI_IDLE_DELAY_MS = 12000;
@@ -132,8 +131,6 @@ const TOWASKI_DIALOGUE_LINES = {
   category:
     "분류부터 보자. 화기, 방호구, 폭발 장구는 허가 줄이 다르다.",
   cart: "반출대에 올렸다. 손에 맞는지는 훈련장에서 확인해.",
-  removed: "그 줄은 뺐다. 장부에 남기기 전이면 손해도 작지.",
-  cartCleared: "반출대 비웠다. 진열장 앞에서 생각 끝내고 와.",
   checkout: "반출 처리 끝. 봉인은 뜯지 말고, 작전 전 점검표부터 확인해.",
   checkoutError:
     "반출 기록이 막혔다. 잔액, 허가, 재고 중 하나가 장부랑 안 맞아.",
@@ -456,10 +453,9 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
     "구매에 실패했습니다. 차감된 잔액은 자동 환불되었습니다.",
   REFUND_FAILED:
     "구매 실패 + 자동 환불 실패. 운영자(GM)에게 문의해 잔액 정정을 요청하세요.",
-  INVALID_CART: "장비 장바구니 구성이 올바르지 않습니다.",
+  INVALID_CART: "장비 구매 요청이 올바르지 않습니다.",
   LICENSE_REQUIRED: "반출에 필요한 토와스키 라이센스가 없습니다.",
-  LICENSE_ALREADY_OWNED:
-    "이미 보유한 라이선스입니다. 장바구니에서 제거해 주세요.",
+  LICENSE_ALREADY_OWNED: "이미 보유한 라이선스입니다.",
   INVALID_LICENSE_TEST: "사격 시험 기록 형식이 올바르지 않습니다.",
   LICENSE_TEST_FAILED: "기본 화기 자격시험 합격 기준에 미달했습니다.",
   LICENSE_TEST_EXPIRED: "사격 시험 시간이 만료되었습니다. 다시 시작해 주세요.",
@@ -764,44 +760,6 @@ function buildTowaskiCartLine(item: EquipmentShopCatalogEntry): string {
     SPECIAL: [
       "특수 장비 반출대에 올렸다. 승인선 다시 확인해.",
       "전략 자산으로 잡았다. 이동 동선까지 적어 둬.",
-    ],
-  };
-
-  return pickStableLine(variants[item.category] ?? variants.ALL, item.key);
-}
-
-function buildTowaskiRemoveLine(item: EquipmentShopCatalogEntry | null): string {
-  if (!item) return TOWASKI_DIALOGUE_LINES.removed;
-
-  if (item.key.startsWith("towaski-license-")) {
-    return "라이센스 줄은 지웠다. 자격 없이 나가는 물건도 같이 막힐 거다.";
-  }
-
-  const itemDialogue = getTowaskiItemDialogue(item);
-  if (itemDialogue?.remove) {
-    return pickStableLine(itemDialogue.remove, `${item.key}:remove`);
-  }
-
-  const variants: Record<
-    EquipmentShopCatalogEntry["category"] | "ALL",
-    readonly string[]
-  > = {
-    ALL: [TOWASKI_DIALOGUE_LINES.removed],
-    WEAPON: [
-      "무기는 다시 잠갔다. 빈손이 조용할 때도 있어.",
-      "화기 줄은 지웠다. 장부엔 아직 흠집도 안 났다.",
-    ],
-    ARMOR: [
-      "방호구는 내려놨다. 맞을 일이 없길 비는 쪽이 싸지.",
-      "방어구 반출 줄은 뺐다. 몸이 가벼운 만큼 판단도 가벼우면 곤란해.",
-    ],
-    CONSUMABLE: [
-      "소모품은 다시 넣었다. 필요할 때 없다고 내 탓은 하지 마.",
-      "그 묶음은 뺐다. 봉인 뜯기 전이면 아직 깨끗해.",
-    ],
-    SPECIAL: [
-      "특수 장비는 반출대에서 내렸다. 서류가 짧아졌군.",
-      "전략 자산 줄은 지웠다. 승인권자도 한숨 돌리겠어.",
     ],
   };
 
@@ -1121,7 +1079,7 @@ export default function EquipmentShopClient({
     enabled: isGM,
   });
   const creditsQuery = useCredits({ initialData: initialCredits });
-  const checkoutMutation = useCheckoutEquipmentShopCart();
+  const purchaseMutation = usePurchaseEquipmentShopItem();
   const startResearchMutation = useStartEquipmentResearch();
   const rushResearchMutation = useRushEquipmentResearch();
   const contributeResearchMutation = useContributeEquipmentResearch();
@@ -1129,7 +1087,7 @@ export default function EquipmentShopClient({
 
   const [activeTab, setActiveTab] = useState<EquipmentShopTabValue>("ALL");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [cart, setCart] = useState<CartState>({});
+  const purchaseLockRef = useRef(false);
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
     () => mainCharacter?.stats ?? null,
   );
@@ -1150,6 +1108,7 @@ export default function EquipmentShopClient({
   const [towaskiDebugMode, setTowaskiDebugMode] =
     useState<TowaskiDebugMode>("live");
   const [towaskiDebugRevision, setTowaskiDebugRevision] = useState(0);
+  const [towaskiLicenseTestBusy, setTowaskiLicenseTestBusy] = useState(false);
   const [activeHubDestination, setActiveHubDestination] =
     useState<ArmoryDestination>("towaski");
 
@@ -1228,12 +1187,6 @@ export default function EquipmentShopClient({
     return initialBalance;
   }, [creditsQuery.data, initialBalance]);
 
-  const catalogByKey = useMemo(() => {
-    const map = new Map<string, EquipmentShopCatalogEntry>();
-    for (const item of catalog.items) map.set(item.key, item);
-    return map;
-  }, [catalog.items]);
-
   const towaskiItems = useMemo(() => {
     return catalog.items.filter(
       (item) => item.zone === "towaski" && matchesEquipmentShopTab(item, activeTab),
@@ -1274,47 +1227,22 @@ export default function EquipmentShopClient({
     return selectedInZone ?? salesItems[0] ?? null;
   }, [salesItems, selectedKey]);
 
-  const cartLines = useMemo(() => {
-    return Object.entries(cart)
-      .map(([key, quantity]) => {
-        const item = catalogByKey.get(key);
-        if (!item || quantity <= 0) return null;
-        const safeQuantity = Math.min(quantity, MAX_CART_QUANTITY_PER_ITEM);
-        return {
-          item,
-          quantity: safeQuantity,
-          total: item.price * safeQuantity,
-          stockIssue: item.stock < safeQuantity || item.stock <= 0,
-        };
-      })
-      .filter((line): line is NonNullable<typeof line> => line !== null);
-  }, [cart, catalogByKey]);
-
-  const cartCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);
-  const cartTotal = cartLines.reduce((sum, line) => sum + line.total, 0);
-  const cartHasStockIssue = cartLines.some((line) => line.stockIssue);
-  const cartOverBalance = cartTotal > balance;
   const canUseShop =
     effectiveHasMainCharacter &&
     catalog.isOpen &&
     (effectiveTowaskiGm ||
       (activeZone === "towaski" && effectiveHasBasicLicense));
-  const canCheckout =
-    canUseShop &&
-    !isTowaskiDebug &&
-    cartLines.length > 0 &&
-    !cartHasStockIssue &&
-    !cartOverBalance &&
-    !checkoutMutation.isPending;
-
-  const selectedQuantity = selectedItem ? cart[selectedItem.key] ?? 0 : 0;
-  const selectedCanAdd =
+  const purchasingKey = purchaseMutation.isPending
+    ? (purchaseMutation.variables?.key ?? null)
+    : null;
+  const selectedCanPurchase =
     Boolean(selectedItem) &&
     canUseShop &&
+    !isTowaskiDebug &&
     selectedItem?.available === true &&
     selectedItem.stock > 0 &&
-    selectedQuantity < selectedItem.stock &&
-    selectedQuantity < MAX_CART_QUANTITY_PER_ITEM;
+    selectedItem.price <= balance &&
+    !purchaseMutation.isPending;
 
   useEffect(() => {
     if (activeZone !== "towaski") {
@@ -1454,6 +1382,71 @@ export default function EquipmentShopClient({
     [activeResearchScope, researchProjects],
   );
 
+  const assignedAgent = effectiveHasMainCharacter
+    ? (mainCharacter?.codename ?? "DEBUG AGENT")
+    : "UNASSIGNED";
+  const headerTag = isTowaskiDebug
+    ? `DEBUG / ${TOWASKI_DEBUG_MODES.find((debugMode) => debugMode.value === towaskiDebugMode)?.label ?? "SANDBOX"}`
+    : isHub
+      ? "BUREAU CONTROL"
+      : activeZone === "lab"
+        ? "RESEARCH CONTROL"
+        : activeZone === "towaski"
+          ? effectiveTowaskiGm
+            ? "GM OVERRIDE"
+            : effectiveHasBasicLicense
+              ? "LICENSE ACTIVE"
+              : "RANGE TEST"
+          : activeZone === "acheron"
+            ? "FORGE CATALOG"
+            : activeZone === "strategic"
+              ? "REQUISITION"
+              : "WORKSHOP INTAKE";
+  const headerStats = isHub
+    ? [
+        { label: "담당 요원", value: assignedAgent },
+        { label: "운영 구역", value: `${ZONE_DEFS.length}개` },
+        { label: "접근 권한", value: isGM ? "GM" : "AGENT" },
+      ]
+    : activeZone === "lab"
+      ? [
+          { label: "연구 대상", value: assignedAgent },
+          { label: "연구 범위", value: scopeLabel(activeResearchScope) },
+          { label: "진행 과제", value: `${activeResearchProjects.length}건` },
+        ]
+      : activeZone === "towaski"
+        ? [
+            { label: "반출 요원", value: assignedAgent },
+            { label: "보유 크레딧", value: formatCredits(balance) },
+            {
+              label: "화기 자격",
+              value: effectiveTowaskiGm
+                ? hasBasicFirearmLicense
+                  ? "승인"
+                  : "GM 면제"
+                : effectiveHasBasicLicense
+                  ? "승인"
+                  : "미발급",
+            },
+          ]
+        : activeZone === "acheron"
+          ? [
+              { label: "제작 대상", value: assignedAgent },
+              { label: "보유 크레딧", value: formatCredits(balance) },
+              { label: "등록 품목", value: `${acheronItemCount}종` },
+            ]
+          : activeZone === "strategic"
+            ? [
+                { label: "보급 대상", value: assignedAgent },
+                { label: "보유 크레딧", value: formatCredits(balance) },
+                { label: "보급 품목", value: `${strategicItemCount}종` },
+              ]
+            : [
+                { label: "제작 대상", value: assignedAgent },
+                { label: "제작 구분", value: "전용 무기" },
+                { label: "접수 상태", value: "준비 중" },
+              ];
+
   const selectedResearchNode = useMemo(() => {
     return (
       scopedResearchTree.find((node) => node.key === selectedResearchKey) ??
@@ -1471,24 +1464,10 @@ export default function EquipmentShopClient({
     );
   }, [activeResearchScope, researchProjects, selectedResearchNode]);
 
-  function setCartQuantity(key: string, quantity: number) {
-    const item = catalogByKey.get(key);
-    const max = item ? Math.min(item.stock, MAX_CART_QUANTITY_PER_ITEM) : 0;
-    setCart((prev) => {
-      const next = { ...prev };
-      if (!item || max <= 0 || quantity <= 0) {
-        delete next[key];
-        return next;
-      }
-      next[key] = Math.min(max, Math.floor(quantity));
-      return next;
-    });
-  }
-
   function handleTowaskiDebugMode(nextMode: TowaskiDebugMode) {
+    if (purchaseMutation.isPending || towaskiLicenseTestBusy) return;
     setTowaskiDebugMode(nextMode);
     setTowaskiDebugRevision((value) => value + 1);
-    setCart({});
     setErrorMessage(null);
     setNotice(
       nextMode === "live"
@@ -1515,7 +1494,9 @@ export default function EquipmentShopClient({
     }
   }
 
-  function handleAddToCart(item: EquipmentShopCatalogEntry, quantity = 1) {
+  function handlePurchase(item: EquipmentShopCatalogEntry) {
+    if (purchaseLockRef.current || purchaseMutation.isPending) return;
+
     if (!canUseShop) {
       setErrorMessage(
         effectiveHasMainCharacter
@@ -1531,57 +1512,44 @@ export default function EquipmentShopClient({
       return;
     }
 
+    if (isTowaskiDebug) {
+      setErrorMessage("디버그 샌드박스에서는 실제 구매를 실행할 수 없습니다.");
+      return;
+    }
+
     if (item.stock <= 0 || !item.available) {
       setErrorMessage("현재 반출할 수 없는 품목입니다.");
       playTowaskiIfActive("stock", TOWASKI_DIALOGUE_LINES.unavailable);
       return;
     }
 
+    if (item.price > balance) {
+      setErrorMessage("잔액이 부족합니다.");
+      playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.checkoutError);
+      return;
+    }
+
+    purchaseLockRef.current = true;
     setSelectedKey(item.key);
     setErrorMessage(null);
     setNotice(null);
-    setCartQuantity(item.key, (cart[item.key] ?? 0) + quantity);
     playTowaskiIfActive("cart", buildTowaskiCartLine(item));
-  }
-
-  function handleRemoveFromCart(key: string) {
-    const item = catalogByKey.get(key) ?? null;
-    setCart((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-    playTowaskiIfActive("cart", buildTowaskiRemoveLine(item));
-  }
-
-  function handleClearCart() {
-    setCart({});
-    playTowaskiIfActive("cart", TOWASKI_DIALOGUE_LINES.cartCleared);
-  }
-
-  function handleCheckout() {
-    if (!canCheckout) return;
-    setErrorMessage(null);
-    setNotice(null);
-    checkoutMutation.mutate(
-      {
-        items: cartLines.map((line) => ({
-          key: line.item.key,
-          quantity: line.quantity,
-        })),
-      },
+    purchaseMutation.mutate(
+      { key: item.key },
       {
         onSuccess: (res) => {
-          setCart({});
           setNotice({
             tone: "success",
-            text: `${res.order.items.length}종 반출 결제가 완료되었습니다.`,
+            text: `${res.order.items[0]?.name ?? item.name} 1개 반출 결제가 완료되었습니다.`,
           });
           playTowaskiIfActive("checkout", TOWASKI_DIALOGUE_LINES.checkout);
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
           playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.checkoutError);
+        },
+        onSettled: () => {
+          purchaseLockRef.current = false;
         },
       },
     );
@@ -2103,14 +2071,14 @@ export default function EquipmentShopClient({
           ) : (
             <div className={styles.productGrid}>
               {salesItems.map((item) => {
-                const inCart = cart[item.key] ?? 0;
                 const isSelected = selectedItem?.key === item.key;
                 const isSoldOut = item.stock <= 0 || !item.available;
-                const canAdd =
+                const canPurchase =
                   canUseShop &&
+                  !isTowaskiDebug &&
                   !isSoldOut &&
-                  inCart < item.stock &&
-                  inCart < MAX_CART_QUANTITY_PER_ITEM;
+                  item.price <= balance &&
+                  !purchaseMutation.isPending;
 
                 return (
                   <article
@@ -2147,10 +2115,19 @@ export default function EquipmentShopClient({
                     <button
                       type="button"
                       className={styles.productAction}
-                      onClick={() => handleAddToCart(item)}
-                      disabled={!canAdd}
+                      onClick={() => handlePurchase(item)}
+                      disabled={!canPurchase}
+                      aria-busy={purchasingKey === item.key}
                     >
-                      {isSoldOut ? "반출 불가" : inCart > 0 ? "카트 등록" : "담기"}
+                      {isSoldOut
+                        ? "반출 불가"
+                        : purchasingKey === item.key
+                          ? "처리 중"
+                          : isTowaskiDebug
+                            ? "샌드박스 차단"
+                            : item.price > balance
+                              ? "잔액 부족"
+                              : "즉시 반출"}
                     </button>
                   </article>
                 );
@@ -2159,7 +2136,7 @@ export default function EquipmentShopClient({
           )}
         </section>
 
-        <aside className={styles.counterPanel} aria-label="반출 계산대">
+        <aside className={styles.counterPanel} aria-label="선택 품목 반출">
           <section className={styles.detailPanel}>
             {selectedItem ? (
               <>
@@ -2188,35 +2165,27 @@ export default function EquipmentShopClient({
                       : `STOCK ${selectedItem.stock}`}
                   </span>
                 </div>
-                <div className={styles.buyBox}>
-                  <div className={styles.qtyStepper}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCartQuantity(selectedItem.key, selectedQuantity - 1)
-                      }
-                      disabled={selectedQuantity <= 0}
-                      aria-label={`${selectedItem.name} 장바구니 수량 감소`}
-                    >
-                      -
-                    </button>
-                    <span>{selectedQuantity}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleAddToCart(selectedItem)}
-                      disabled={!selectedCanAdd}
-                      aria-label={`${selectedItem.name} 장바구니 수량 증가`}
-                    >
-                      +
-                    </button>
+                <div className={styles.purchaseBox}>
+                  <div className={styles.purchaseSummary}>
+                    <span>단건 반출 · 1개</span>
+                    <strong>
+                      결제 후 {formatCredits(balance - selectedItem.price)}
+                    </strong>
                   </div>
                   <button
                     type="button"
                     className={styles.primaryAction}
-                    onClick={() => handleAddToCart(selectedItem)}
-                    disabled={!selectedCanAdd}
+                    onClick={() => handlePurchase(selectedItem)}
+                    disabled={!selectedCanPurchase}
+                    aria-busy={purchasingKey === selectedItem.key}
                   >
-                    장바구니 담기
+                    {purchasingKey === selectedItem.key
+                      ? "반출 처리 중"
+                      : isTowaskiDebug
+                        ? "샌드박스 구매 차단"
+                        : selectedItem.price > balance
+                          ? "잔액 부족"
+                          : "1개 즉시 반출"}
                   </button>
                 </div>
               </>
@@ -2225,93 +2194,6 @@ export default function EquipmentShopClient({
             )}
           </section>
 
-          <section className={styles.receiptPanel}>
-            <div className={styles.receiptHead}>
-              <div>
-                <Eyebrow>CART RECEIPT</Eyebrow>
-                <h2>반출 장바구니</h2>
-              </div>
-              {cartLines.length > 0 ? (
-                <button
-                  type="button"
-                  className={styles.textButton}
-                  onClick={handleClearCart}
-                  disabled={checkoutMutation.isPending}
-                >
-                  비우기
-                </button>
-              ) : null}
-            </div>
-
-            {cartLines.length === 0 ? (
-              <div className={styles.receiptEmpty}>담긴 장비가 없습니다.</div>
-            ) : (
-              <div className={styles.receiptLines}>
-                {cartLines.map((line) => (
-                  <div
-                    key={line.item.key}
-                    className={[
-                      styles.receiptLine,
-                      line.stockIssue ? styles["receiptLine--warning"] : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    <div>
-                      <span>{line.item.name}</span>
-                      <small>
-                        {formatCredits(line.item.price)} x {line.quantity}
-                      </small>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFromCart(line.item.key)}
-                      disabled={checkoutMutation.isPending}
-                      aria-label={`${line.item.name} 제거`}
-                    >
-                      X
-                    </button>
-                    <strong>{formatCredits(line.total)}</strong>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className={styles.receiptSummary}>
-              <div>
-                <span>합계</span>
-                <strong>{formatCredits(cartTotal)}</strong>
-              </div>
-              <div>
-                <span>결제 후 잔액</span>
-                <strong className={cartOverBalance ? styles.dangerText : ""}>
-                  {formatCredits(balance - cartTotal)}
-                </strong>
-              </div>
-            </div>
-
-            {cartHasStockIssue ? (
-              <div className={styles.cartWarning}>
-                반출할 수 없는 장비가 있습니다.
-              </div>
-            ) : cartOverBalance ? (
-              <div className={styles.cartWarning}>잔액이 부족합니다.</div>
-            ) : null}
-
-            <button
-              type="button"
-              className={styles.checkoutButton}
-              onClick={handleCheckout}
-              disabled={!canCheckout}
-              aria-busy={checkoutMutation.isPending}
-            >
-              {isTowaskiDebug
-                ? "샌드박스 결제 차단"
-                : checkoutMutation.isPending
-                  ? "결제 중"
-                  : "한번에 결제"}
-            </button>
-          </section>
         </aside>
       </div>
     );
@@ -3159,34 +3041,14 @@ export default function EquipmentShopClient({
               <h1>{zoneMeta.label}</h1>
             </div>
           </div>
-          <Tag tone="gold">
-            {isTowaskiDebug
-              ? `DEBUG / ${TOWASKI_DEBUG_MODES.find((mode) => mode.value === towaskiDebugMode)?.label ?? "SANDBOX"}`
-              : isGM
-                ? "GM PREVIEW"
-              : activeZone === "towaski"
-                ? effectiveHasBasicLicense
-                  ? "LICENSE ACTIVE"
-                  : "RANGE TEST"
-                : "RESEARCH ACCESS"}
-          </Tag>
+          <Tag tone="gold">{headerTag}</Tag>
           <div className={styles.headerStats}>
-            <div>
-              <span>요원</span>
-              <strong>
-                {effectiveHasMainCharacter
-                  ? (mainCharacter?.codename ?? "DEBUG AGENT")
-                  : "UNASSIGNED"}
-              </strong>
-            </div>
-            <div>
-              <span>잔액</span>
-              <strong>{formatCredits(balance)}</strong>
-            </div>
-            <div>
-              <span>{isHub ? "기능" : "카트"}</span>
-              <strong>{isHub ? `${ZONE_DEFS.length}모듈` : `${cartCount}개`}</strong>
-            </div>
+            {headerStats.map((stat) => (
+              <div key={stat.label}>
+                <span>{stat.label}</span>
+                <strong>{stat.value}</strong>
+              </div>
+            ))}
           </div>
         </header>
 
@@ -3216,6 +3078,9 @@ export default function EquipmentShopClient({
                       type="button"
                       data-active={towaskiDebugMode === debugMode.value}
                       aria-pressed={towaskiDebugMode === debugMode.value}
+                      disabled={
+                        purchaseMutation.isPending || towaskiLicenseTestBusy
+                      }
                       onClick={() => handleTowaskiDebugMode(debugMode.value)}
                     >
                       {debugMode.label}
@@ -3237,6 +3102,7 @@ export default function EquipmentShopClient({
                   key={`towaski-license-${towaskiDebugRevision}`}
                   characterCodename={mainCharacter?.codename ?? "DEBUG AGENT"}
                   debugSandbox={isTowaskiDebug}
+                  onBusyChange={setTowaskiLicenseTestBusy}
                   onGranted={handleTowaskiLicenseGranted}
                 />
               ) : activeZone === "lab"
