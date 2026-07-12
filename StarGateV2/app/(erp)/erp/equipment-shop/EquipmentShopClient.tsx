@@ -1340,6 +1340,9 @@ export default function EquipmentShopClient({
   );
   const [activeResearchScope, setActiveResearchScope] =
     useState<EquipmentResearchScope>("personal");
+  const [isResearchBonusMenuOpen, setIsResearchBonusMenuOpen] =
+    useState(false);
+  const researchBonusMenuRef = useRef<HTMLDivElement>(null);
   const [selectedResearchKeys, setSelectedResearchKeys] = useState<
     Record<EquipmentResearchScope, string>
   >(() => ({
@@ -1615,6 +1618,31 @@ export default function EquipmentShopClient({
     !selectedLicenseBlocked &&
     selectedItem.price <= balance &&
     !purchaseMutation.isPending;
+
+  useEffect(() => {
+    if (!isResearchBonusMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !researchBonusMenuRef.current?.contains(event.target)
+      ) {
+        setIsResearchBonusMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsResearchBonusMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isResearchBonusMenuOpen]);
 
   useEffect(() => {
     if (activeZone !== "towaski") {
@@ -3280,8 +3308,20 @@ export default function EquipmentShopClient({
                 {research.caps.atk} · DEF {research.caps.def}
               </strong>
             </div>
-            <details className={styles.techCapDisclosure}>
-              <summary>
+            <div
+              ref={researchBonusMenuRef}
+              className={styles.techCapDisclosure}
+              data-open={isResearchBonusMenuOpen}
+            >
+              <button
+                type="button"
+                className={styles.techCapSummary}
+                aria-expanded={isResearchBonusMenuOpen}
+                aria-controls="research-bonus-menu"
+                onClick={() =>
+                  setIsResearchBonusMenuOpen((isOpen) => !isOpen)
+                }
+              >
                 <span>활성 보너스</span>
                 <strong>
                   {activeResearchBonuses.length > 0
@@ -3290,17 +3330,40 @@ export default function EquipmentShopClient({
                         .join(" · ")
                     : "없음"}
                 </strong>
-                <em>전체 항목</em>
-              </summary>
-              <div className={styles.techCapDetails}>
-                {researchBonuses.map((bonus) => (
-                  <div key={bonus.key} data-active={bonus.active}>
-                    <span>{bonus.label}</span>
-                    <strong>{bonus.value}</strong>
-                  </div>
-                ))}
-              </div>
-            </details>
+                <span className={styles.techCapToggle}>
+                  {isResearchBonusMenuOpen ? "접기" : "펼쳐보기"}
+                  <svg
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path
+                      d="m4 6 4 4 4-4"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+              {isResearchBonusMenuOpen ? (
+                <div
+                  id="research-bonus-menu"
+                  className={styles.techCapDetails}
+                  role="region"
+                  aria-label="전체 연구 보너스"
+                >
+                  {researchBonuses.map((bonus) => (
+                    <div key={bonus.key} data-active={bonus.active}>
+                      <span>{bonus.label}</span>
+                      <strong>{bonus.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className={styles.techTreeScroll}>
