@@ -338,12 +338,11 @@
 }
 
 .target {
-  --target-color: #a9292b;
   --lane-scale: 1;
   position: absolute;
   z-index: 12;
-  width: 92px;
-  height: 148px;
+  width: 112px;
+  height: 196px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -358,50 +357,41 @@
 .target--far { --lane-scale: 0.74; transform-origin: bottom center; }
 .target--mid { --lane-scale: 0.88; transform-origin: bottom center; }
 .target--near { --lane-scale: 1; transform-origin: bottom center; }
-.target--civilian { --target-color: #27848d; }
-.target--resolved { filter: brightness(0.7); }
 
-.targetHead {
-  position: absolute;
-  top: 2px;
-  left: 31px;
-  width: 30px;
-  height: 30px;
-  border: 4px solid #dde1de;
-  border-radius: 50%;
-  background: #1a1d1d;
+.targetImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 8px 5px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
 }
 
-.targetBody {
-  position: absolute;
-  top: 35px;
-  left: 13px;
-  width: 66px;
-  height: 88px;
-  border: 4px solid #dde1de;
-  border-radius: 4px 4px 2px 2px;
-  background: var(--target-color);
+.target--civilian .targetImage {
+  filter:
+    hue-rotate(145deg)
+    saturate(0.82)
+    drop-shadow(0 8px 5px rgba(0, 0, 0, 0.45));
 }
 
-.targetBody::before,
-.targetBody::after {
-  content: "";
-  position: absolute;
-  top: 22px;
-  width: 16px;
-  height: 50px;
-  border: 3px solid #dde1de;
-  background: var(--target-color);
+.target--resolved .targetImage {
+  filter: brightness(0.68) drop-shadow(0 8px 5px rgba(0, 0, 0, 0.45));
 }
 
-.targetBody::before { left: -20px; }
-.targetBody::after { right: -20px; }
+.target--civilian.target--resolved .targetImage {
+  filter:
+    hue-rotate(145deg)
+    saturate(0.82)
+    brightness(0.68)
+    drop-shadow(0 8px 5px rgba(0, 0, 0, 0.45));
+}
 
 .targetLabel {
   position: absolute;
   left: 4px;
   right: 4px;
-  bottom: 0;
+  bottom: -7px;
   min-height: 24px;
   display: flex;
   align-items: center;
@@ -413,16 +403,28 @@
   font-weight: 800;
 }
 
+.target--hostile .targetLabel {
+  border-color: #e5c255;
+  color: #fff2bd;
+}
+
+.target--civilian .targetLabel {
+  border-color: #54cbe8;
+  color: #bcefff;
+}
+
 .hitMark {
   position: absolute;
-  inset: 18px 0 auto;
+  left: 50%;
+  top: 47%;
   z-index: 4;
   color: #fff06b;
   font-family: var(--font-mono), monospace;
-  font-size: 76px;
+  font-size: 58px;
   font-weight: 900;
   line-height: 1;
   text-shadow: 3px 3px 0 #151515;
+  transform: translate(-50%, -50%);
 }
 
 .reticle {
@@ -595,12 +597,9 @@
   }
 
   .target {
-    width: 78px;
-    height: 132px;
+    width: 92px;
+    height: 172px;
   }
-
-  .targetHead { left: 25px; }
-  .targetBody { left: 10px; width: 58px; height: 76px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -65,6 +65,103 @@ const EMPTY_STATS: TowaskiLicenseTestStats = {
   shots: 0,
 };
 
+type RangeShotResult = "miss" | TowaskiLicenseTarget["kind"];
+
+function createShotNoiseBuffer(context: AudioContext): AudioBuffer {
+  const buffer = context.createBuffer(
+    1,
+    Math.ceil(context.sampleRate * 0.36),
+    context.sampleRate,
+  );
+  const channel = buffer.getChannelData(0);
+  for (let index = 0; index < channel.length; index += 1) {
+    channel[index] = Math.random() * 2 - 1;
+  }
+  return buffer;
+}
+
+function playRangeShotSound(
+  context: AudioContext,
+  noiseBuffer: AudioBuffer,
+  result: RangeShotResult,
+) {
+  const now = context.currentTime + 0.008;
+  const master = context.createGain();
+  master.gain.setValueAtTime(0.3, now);
+  master.connect(context.destination);
+
+  const crack = context.createBufferSource();
+  const crackFilter = context.createBiquadFilter();
+  const crackGain = context.createGain();
+  crack.buffer = noiseBuffer;
+  crackFilter.type = "highpass";
+  crackFilter.frequency.setValueAtTime(720, now);
+  crackGain.gain.setValueAtTime(0.0001, now);
+  crackGain.gain.exponentialRampToValueAtTime(0.42, now + 0.004);
+  crackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+  crack.connect(crackFilter);
+  crackFilter.connect(crackGain);
+  crackGain.connect(master);
+  crack.start(now);
+  crack.stop(now + 0.12);
+
+  const body = context.createOscillator();
+  const bodyGain = context.createGain();
+  body.type = "triangle";
+  body.frequency.setValueAtTime(108, now);
+  body.frequency.exponentialRampToValueAtTime(46, now + 0.13);
+  bodyGain.gain.setValueAtTime(0.0001, now);
+  bodyGain.gain.exponentialRampToValueAtTime(0.2, now + 0.006);
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+  body.connect(bodyGain);
+  bodyGain.connect(master);
+  body.start(now);
+  body.stop(now + 0.16);
+
+  const tail = context.createBufferSource();
+  const tailFilter = context.createBiquadFilter();
+  const tailGain = context.createGain();
+  tail.buffer = noiseBuffer;
+  tailFilter.type = "lowpass";
+  tailFilter.frequency.setValueAtTime(2_400, now + 0.025);
+  tailFilter.frequency.exponentialRampToValueAtTime(680, now + 0.3);
+  tailGain.gain.setValueAtTime(0.1, now + 0.025);
+  tailGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+  tail.connect(tailFilter);
+  tailFilter.connect(tailGain);
+  tailGain.connect(master);
+  tail.start(now + 0.025);
+  tail.stop(now + 0.33);
+
+  if (result === "miss") return;
+
+  const impactStart = now + 0.04;
+  const impact = context.createOscillator();
+  const impactGain = context.createGain();
+  impact.type = result === "hostile" ? "triangle" : "sine";
+  impact.frequency.setValueAtTime(
+    result === "hostile" ? 185 : 760,
+    impactStart,
+  );
+  impact.frequency.exponentialRampToValueAtTime(
+    result === "hostile" ? 72 : 390,
+    impactStart + 0.13,
+  );
+  impactGain.gain.setValueAtTime(0.0001, impactStart);
+  impactGain.gain.exponentialRampToValueAtTime(
+    result === "hostile" ? 0.16 : 0.09,
+    impactStart + 0.006,
+  );
+  impactGain.gain.exponentialRampToValueAtTime(
+    0.0001,
+    impactStart + 0.15,
+  );
+  impact.connect(impactGain);
+  impactGain.connect(master);
+  impact.start(impactStart);
+  impact.stop(impactStart + 0.16);
+}
+
 function formatAccuracy(hostileHits: number, shots: number): string {
   if (shots === 0) return "0%";
   return `${Math.round((hostileHits / shots) * 100)}%`;
@@ -107,6 +204,8 @@ export default function TowaskiLicenseTest({
   const [reticle, setReticle] = useState({ x: 50, y: 50, visible: false });
 
   const audioRef = useRef<DialogueBeepEngine | null>(null);
+  const shotAudioContextRef = useRef<AudioContext | null>(null);
+  const shotNoiseBufferRef = useRef<AudioBuffer | null>(null);
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deadlineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debugTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -141,6 +240,12 @@ export default function TowaskiLicenseTest({
       if (debugTimerRef.current) clearTimeout(debugTimerRef.current);
       void audioRef.current?.destroy();
       audioRef.current = null;
+      const shotContext = shotAudioContextRef.current;
+      shotAudioContextRef.current = null;
+      shotNoiseBufferRef.current = null;
+      if (shotContext && shotContext.state !== "closed") {
+        void shotContext.close().catch(() => undefined);
+      }
     };
   }, []);
 
@@ -352,19 +457,34 @@ export default function TowaskiLicenseTest({
     [],
   );
 
-  const playShot = useCallback(
-    (pitch: number) => {
-      void audioRef.current?.beep("F", displayedShots, {
-        pitch,
-        wave: "square",
-        duration: 0.06,
-        volume: 0.52,
-        frequencyVariance: 0,
-        wobble: 0,
-      });
-    },
-    [displayedShots],
-  );
+  const playShot = useCallback((result: RangeShotResult) => {
+    try {
+      const audioWindow = window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const AudioContextConstructor =
+        audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
+      if (!AudioContextConstructor) return;
+
+      const context =
+        shotAudioContextRef.current ?? new AudioContextConstructor();
+      shotAudioContextRef.current = context;
+      const play = () => {
+        const noiseBuffer =
+          shotNoiseBufferRef.current ?? createShotNoiseBuffer(context);
+        shotNoiseBufferRef.current = noiseBuffer;
+        playRangeShotSound(context, noiseBuffer, result);
+      };
+
+      if (context.state === "suspended") {
+        void context.resume().then(play).catch(() => undefined);
+        return;
+      }
+      play();
+    } catch {
+      // Ignore browser audio policy and unsupported Web Audio environments.
+    }
+  }, []);
 
   const registerShot = useCallback(() => {
     if (
@@ -376,7 +496,7 @@ export default function TowaskiLicenseTest({
     const nextShots = roundShotsRef.current + 1;
     roundShotsRef.current = nextShots;
     setRoundShots(nextShots);
-    playShot(150);
+    playShot("miss");
   }, [phase, playShot, rules.maxShotsPerRound]);
 
   const handleTargetHit = useCallback(
@@ -396,7 +516,7 @@ export default function TowaskiLicenseTest({
       roundShotsRef.current = nextShots;
       setRoundShots(nextShots);
       setTargetResolved(true);
-      playShot(target.kind === "hostile" ? 220 : 92);
+      playShot(target.kind);
 
       advanceTimerRef.current = setTimeout(() => {
         resolveRound(true, nextShots);
@@ -589,8 +709,16 @@ export default function TowaskiLicenseTest({
                   : "민간 표적, 사격 금지"
               }
             >
-              <span className={styles.targetHead} />
-              <span className={styles.targetBody} />
+              <Image
+                className={styles.targetImage}
+                src="/assets/equipment-shop/training-target.png"
+                width={226}
+                height={438}
+                alt=""
+                aria-hidden
+                draggable={false}
+                unoptimized
+              />
               <span className={styles.targetLabel}>
                 {currentTarget.kind === "hostile" ? "THREAT" : "NO FIRE"}
               </span>
