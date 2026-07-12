@@ -2191,6 +2191,32 @@ export default function EquipmentShopClient({
     [activeResearchScope, researchProjects],
   );
 
+  const personalResearchStatTotals = useMemo<
+    Record<EquipmentResearchStat, number>
+  >(() => {
+    const totals: Record<EquipmentResearchStat, number> = {
+      hp: 0,
+      san: 0,
+      atk: 0,
+      def: 0,
+    };
+    const targetCharacterId = mainCharacter?.id;
+    if (!targetCharacterId) return totals;
+
+    for (const project of researchProjects) {
+      if (
+        project.scope !== "personal" ||
+        project.computedStatus !== "applied" ||
+        !project.targetCharacterIds.includes(targetCharacterId) ||
+        project.effect.kind !== "stat"
+      ) {
+        continue;
+      }
+      totals[project.effect.stat] += project.effect.amount;
+    }
+    return totals;
+  }, [mainCharacter?.id, researchProjects]);
+
   const assignedAgent = effectiveHasMainCharacter
     ? (mainCharacter?.codename ?? "DEBUG AGENT")
     : "UNASSIGNED";
@@ -3808,10 +3834,12 @@ export default function EquipmentShopClient({
 
           <div className={styles.techCapRail}>
             <div className={styles.techCapPrimary}>
-              <span>누적 상한</span>
+              <span>개인 연구 누적</span>
               <strong>
-                HP {research.caps.hp} · SAN {research.caps.san} · ATK{" "}
-                {research.caps.atk} · DEF {research.caps.def}
+                HP +{personalResearchStatTotals.hp} · SAN +
+                {personalResearchStatTotals.san} · ATK +
+                {personalResearchStatTotals.atk} · DEF +
+                {personalResearchStatTotals.def}
               </strong>
             </div>
             <div
