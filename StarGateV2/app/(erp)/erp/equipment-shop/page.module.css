@@ -3322,6 +3322,18 @@
   object-position: center 8%;
 }
 
+.npcPortrait--vernier {
+  background:
+    radial-gradient(circle at 50% 24%, rgba(35, 210, 224, 0.22), transparent 56%),
+    linear-gradient(180deg, rgba(201, 168, 90, 0.08), transparent 44%),
+    rgba(5, 9, 11, 0.94);
+  border-color: color-mix(in srgb, #23d2e0 54%, var(--gold-dim));
+}
+
+.npcPortrait--vernier img {
+  object-position: center 7%;
+}
+
 .npcPortrait--temper {
   background:
     radial-gradient(circle at 50% 28%, rgba(176, 73, 55, 0.2), transparent 54%),
@@ -3480,6 +3492,11 @@
   object-position: center 8%;
 }
 
+.npcProfile--vernier img {
+  object-fit: cover;
+  object-position: center 7%;
+}
+
 .npcProfile--ameri img {
   object-fit: cover;
   object-position: center 8%;
@@ -3498,6 +3515,20 @@
 }
 
 .npcHud[data-strategic-mood="blocked"] .npcDialogue {
+  border-color: color-mix(in srgb, var(--danger) 58%, var(--gold-dim));
+}
+
+.npcHud[data-vernier-mood="measure"] .npcDialogue,
+.npcHud[data-vernier-mood="clarify"] .npcDialogue,
+.npcHud[data-vernier-mood="intake"] .npcDialogue {
+  border-color: color-mix(in srgb, #23d2e0 46%, var(--gold));
+}
+
+.npcHud[data-vernier-mood="accepted"] .npcDialogue {
+  border-color: color-mix(in srgb, var(--success) 58%, var(--gold));
+}
+
+.npcHud[data-vernier-mood="blocked"] .npcDialogue {
   border-color: color-mix(in srgb, var(--danger) 58%, var(--gold-dim));
 }
 

@@ -120,6 +120,14 @@ import {
   type SutureBlockReason,
   type SutureMood,
 } from "@/lib/equipment-shop/suture-dialogue";
+import {
+  buildVernierEquipmentLine,
+  buildVernierWelcomeLine,
+  VERNIER_DIALOGUE_LINES,
+  VERNIER_IDLE_LINES,
+  VERNIER_MOOD_LABELS,
+  type VernierMood,
+} from "@/lib/equipment-shop/vernier-dialogue";
 import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
 import { WORKSHOP_REQUEST_DETAIL_MIN_LENGTH } from "@/lib/equipment-shop/workshop-request";
 import { formatCredits } from "@/lib/format/credit";
@@ -197,6 +205,8 @@ const TEMPER_ENTRY_SFX_SRC =
   "/assets/equipment-shop/sfx/temper-forge-double-strike.m4a";
 const RATCHET_PROFILE_SRC = "/assets/npcs/Mateo-Rivas-Ratchet-profile.webp";
 const RATCHET_IDLE_DELAY_MS = 12500;
+const VERNIER_PROFILE_SRC = "/assets/npcs/Ada-Schreiber-Vernier-profile.webp";
+const VERNIER_IDLE_DELAY_MS = 13200;
 
 const RATCHET_MOOD_ASSETS: Record<StrategicMood, string> = {
   welcome: RATCHET_PROFILE_SRC,
@@ -570,7 +580,7 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
     eyebrow: "CUSTOM WORKSHOP",
     description:
       "장착 장비 강화와 커스텀 장비 제작 문의를 접수합니다. 전용 장비 제작은 정비 중입니다.",
-    npc: "공방 접수 단말",
+    npc: "에이다 슈라이버",
   },
   {
     value: "simulator",
@@ -1619,6 +1629,10 @@ export default function EquipmentShopClient({
       }),
     [mainCharacter?.codename, mainCharacterProfile],
   );
+  const vernierWelcomeLine = useMemo(
+    () => buildVernierWelcomeLine(mainCharacter?.codename ?? null),
+    [mainCharacter?.codename],
+  );
   const ameriWelcomeLine = useMemo(
     () => buildAmeriWelcomeLine(mainCharacter?.codename ?? null),
     [mainCharacter?.codename],
@@ -1761,6 +1775,33 @@ export default function EquipmentShopClient({
     entrySfxVolume: 0,
   });
   const ratchetPortraitSrc = RATCHET_MOOD_ASSETS[strategicMood];
+  const {
+    mood: vernierMood,
+    visibleLine: vernierVisibleLine,
+    typing: vernierTyping,
+    playLine: playVernierLine,
+    clearIdleTimer: clearVernierIdleTimer,
+    scheduleIdle: scheduleVernierIdle,
+    showLineImmediately: showVernierLineImmediately,
+    resetIdleCycle: resetVernierIdleCycle,
+    stopEngine: stopVernierEngine,
+  } = useNpcDialogue<VernierMood>({
+    isOpen: activeZone === "custom",
+    hasMainCharacter,
+    idleDelayMs: VERNIER_IDLE_DELAY_MS,
+    idleLines: VERNIER_IDLE_LINES,
+    closedMood: "blocked",
+    closedLine: VERNIER_DIALOGUE_LINES.closed,
+    noAgentMood: "blocked",
+    noAgentLine: VERNIER_DIALOGUE_LINES.noAgent,
+    welcomeMood: "welcome",
+    welcomeLine: vernierWelcomeLine,
+    beepPreset: "operator",
+    beepDefaults: { pitch: 640, speed: 45, volume: 0.46 },
+    engineVolume: 0.46,
+    entrySfxSrc: null,
+    entrySfxVolume: 0,
+  });
   const handleTowaskiQualificationDialogue = useCallback(
     (event: TowaskiQualificationDialogueEvent) => {
       clearTowaskiIdleTimer();
@@ -2120,6 +2161,36 @@ export default function EquipmentShopClient({
     showStrategicLineImmediately,
     stopStrategicEngine,
     strategicWelcomeLine,
+  ]);
+
+  useEffect(() => {
+    if (activeZone !== "custom") {
+      clearVernierIdleTimer();
+      stopVernierEngine();
+      return;
+    }
+
+    if (!hasMainCharacter) {
+      playVernierLine("blocked", VERNIER_DIALOGUE_LINES.noAgent, {
+        returnToIdle: false,
+        sound: false,
+      });
+      return;
+    }
+
+    showVernierLineImmediately("welcome", vernierWelcomeLine);
+    resetVernierIdleCycle();
+    scheduleVernierIdle();
+  }, [
+    activeZone,
+    clearVernierIdleTimer,
+    hasMainCharacter,
+    playVernierLine,
+    resetVernierIdleCycle,
+    scheduleVernierIdle,
+    showVernierLineImmediately,
+    stopVernierEngine,
+    vernierWelcomeLine,
   ]);
 
   const scopedResearchTree = useMemo(
@@ -4611,6 +4682,9 @@ export default function EquipmentShopClient({
         {
           onSuccess: (response) => {
             showFeedback("success", "공방 요청 접수", response.message);
+            playVernierLine("accepted", VERNIER_DIALOGUE_LINES.accepted, {
+              sound: true,
+            });
             if (kind === "upgrade") {
               setUpgradeEntryId("");
               setUpgradeRequestDetails("");
@@ -4619,6 +4693,9 @@ export default function EquipmentShopClient({
             }
           },
           onError: (error) => {
+            playVernierLine("blocked", VERNIER_DIALOGUE_LINES.rejected, {
+              sound: true,
+            });
             showFeedback(
               "error",
               "공방 요청 접수 실패",
@@ -4670,7 +4747,23 @@ export default function EquipmentShopClient({
               <span>강화 대상</span>
               <select
                 value={upgradeEntryId}
-                onChange={(event) => setUpgradeEntryId(event.target.value)}
+                onChange={(event) => {
+                  const nextEntryId = event.target.value;
+                  setUpgradeEntryId(nextEntryId);
+                  const nextEntry = equippedEntries.find(
+                    (entry) => entry._id === nextEntryId,
+                  );
+                  if (nextEntry) {
+                    playVernierLine(
+                      "measure",
+                      buildVernierEquipmentLine({
+                        equipmentName: nextEntry.itemName,
+                        codename: mainCharacter?.codename ?? null,
+                      }),
+                      { sound: true },
+                    );
+                  }
+                }}
                 disabled={
                   !hasMainCharacter ||
                   characterInventoryQuery.isPending ||
@@ -4696,6 +4789,13 @@ export default function EquipmentShopClient({
               <span>강화 요청</span>
               <textarea
                 value={upgradeRequestDetails}
+                onFocus={() =>
+                  playVernierLine(
+                    "clarify",
+                    VERNIER_DIALOGUE_LINES.upgradePrompt,
+                    { sound: true },
+                  )
+                }
                 onChange={(event) =>
                   setUpgradeRequestDetails(event.target.value)
                 }
@@ -4726,6 +4826,13 @@ export default function EquipmentShopClient({
               <span>제작 요청서</span>
               <textarea
                 value={customRequestDetails}
+                onFocus={() =>
+                  playVernierLine(
+                    "intake",
+                    VERNIER_DIALOGUE_LINES.customPrompt,
+                    { sound: true },
+                  )
+                }
                 onChange={(event) => setCustomRequestDetails(event.target.value)}
                 minLength={WORKSHOP_REQUEST_DETAIL_MIN_LENGTH}
                 maxLength={1000}
@@ -5023,6 +5130,9 @@ export default function EquipmentShopClient({
             data-strategic-mood={
               activeZone === "strategic" ? strategicMood : undefined
             }
+            data-vernier-mood={
+              activeZone === "custom" ? vernierMood : undefined
+            }
           >
             <div
               className={[
@@ -5040,11 +5150,15 @@ export default function EquipmentShopClient({
                 !isHub && activeZone === "strategic"
                   ? styles["npcPortrait--strategic"]
                   : "",
+                !isHub && activeZone === "custom"
+                  ? styles["npcPortrait--vernier"]
+                  : "",
                 !isHub &&
                 activeZone !== "towaski" &&
                 activeZone !== "lab" &&
                 activeZone !== "acheron" &&
-                activeZone !== "strategic"
+                activeZone !== "strategic" &&
+                activeZone !== "custom"
                   ? styles["npcPortrait--mark"]
                   : "",
               ]
@@ -5098,6 +5212,14 @@ export default function EquipmentShopClient({
                   sizes="148px"
                   priority
                 />
+              ) : activeZone === "custom" ? (
+                <Image
+                  src={VERNIER_PROFILE_SRC}
+                  alt=""
+                  fill
+                  sizes="148px"
+                  priority
+                />
               ) : (
                 <span className={styles.npcPortraitMark} aria-hidden />
               )}
@@ -5113,6 +5235,8 @@ export default function EquipmentShopClient({
                       ? styles["npcProfile--temper"]
                       : activeZone === "strategic"
                         ? styles["npcProfile--strategic"]
+                        : activeZone === "custom"
+                          ? styles["npcProfile--vernier"]
                       : "",
                   ]
                     .filter(Boolean)
@@ -5128,6 +5252,8 @@ export default function EquipmentShopClient({
                     <Image src={TEMPER_PROFILE_SRC} alt="" fill sizes="38px" />
                   ) : activeZone === "strategic" ? (
                     <Image src={ratchetPortraitSrc} alt="" fill sizes="38px" />
+                  ) : activeZone === "custom" ? (
+                    <Image src={VERNIER_PROFILE_SRC} alt="" fill sizes="38px" />
                   ) : (
                     <span className={styles.npcProfileMark} aria-hidden />
                   )}
@@ -5147,7 +5273,9 @@ export default function EquipmentShopClient({
                         ? TEMPER_MOOD_LABELS[temperMood]
                         : activeZone === "strategic"
                           ? STRATEGIC_MOOD_LABELS[strategicMood]
-                        : "응대 중"}
+                          : activeZone === "custom"
+                            ? VERNIER_MOOD_LABELS[vernierMood]
+                            : "응대 중"}
                 </span>
               </div>
               <p>
@@ -5206,7 +5334,18 @@ export default function EquipmentShopClient({
                               ) : null}
                             </>
                           )
-                        : "공방 접수 채널입니다. 강화 또는 제작 요청서를 선택해 내용을 입력하세요."}
+                        : activeZone === "custom"
+                          ? (
+                              <>
+                                {vernierVisibleLine}
+                                {vernierTyping ? (
+                                  <span className={styles.npcCaret} aria-hidden>
+                                    |
+                                  </span>
+                                ) : null}
+                              </>
+                            )
+                          : "응대 담당자가 배정되지 않았습니다."}
               </p>
             </div>
           </section>
