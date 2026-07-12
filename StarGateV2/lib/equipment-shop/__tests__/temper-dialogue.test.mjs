@@ -4,6 +4,7 @@ import test from "node:test";
 import { DialogueBeepEngine } from "../../audio/dialogue-beep-engine.ts";
 import {
   buildTemperArmorReferralLine,
+  buildTemperBlockedLine,
   buildTemperCartLine,
   buildTemperCheckoutLine,
   buildTemperItemLine,
@@ -96,13 +97,55 @@ test("Towaski armor referral has distinct Temper lines and cart handling", () =>
     ),
   );
   const checkoutLines = new Set(
-    [0, 1, 2].map((variant) => buildTemperCheckoutLine(variant)),
+    [0, 1, 2].map((variant) => buildTemperCheckoutLine(item, variant)),
   );
 
   assert.equal(referralLines.size, 3);
   assert.equal(checkoutLines.size, 3);
   assert.match(buildTemperCartLine(item, 0), /10%|할인/);
   assert.match(buildTemperItemLine(item, 0).text, /중급|RF2/);
+});
+
+test("blocked shop states rotate without losing the exact refusal reason", () => {
+  const reasons = {
+    noAgent: /사용자|주인|체격/,
+    closed: /작업대|화로|반출선/,
+    unavailable: /재고|검수대|반출/,
+    gmOnly: /사용자|적합성|대리/,
+    qualification: /훈련|기록|관성/,
+    insufficient: /크레딧|잔액|결제선/,
+    checkoutError: /기록|봉인|절차/,
+  };
+
+  for (const [reason, pattern] of Object.entries(reasons)) {
+    const lines = new Set(
+      [0, 1, 2].map((variant) => buildTemperBlockedLine(reason, variant)),
+    );
+    assert.equal(lines.size, 3);
+    for (const line of lines) assert.match(line, pattern);
+  }
+});
+
+test("checkout dialogue follows armor, power-tool, and weapon handling", () => {
+  const armor = buildTemperCheckoutLine({
+    key: "basic-standard-ballistic-vest",
+    name: "보급형 기본 방탄복",
+    category: "ARMOR",
+  });
+  const chainsaw = buildTemperCheckoutLine({
+    key: "basic-chainsaw",
+    name: "보급형 전기톱",
+    category: "WEAPON",
+  });
+  const sword = buildTemperCheckoutLine({
+    key: "basic-longsword",
+    name: "보급형 롱소드",
+    category: "WEAPON",
+  });
+
+  assert.match(armor, /체결|판재|방호구/);
+  assert.match(chainsaw, /구동부|비상 정지/);
+  assert.match(sword, /날|손목|중심/);
 });
 
 test("unavailable and future catalog items use safe fallback dialogue", () => {

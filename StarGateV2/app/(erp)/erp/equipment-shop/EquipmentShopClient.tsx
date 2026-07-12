@@ -57,6 +57,7 @@ import {
 } from "@/lib/equipment-shop/towaski-dialogue";
 import {
   buildTemperArmorReferralLine,
+  buildTemperBlockedLine,
   buildTemperCartLine,
   buildTemperCheckoutLine,
   buildTemperItemLine,
@@ -1551,7 +1552,6 @@ export default function EquipmentShopClient({
     SUTURE_MOOD_ASSETS[sutureMood] ?? SUTURE_PROFILE_SRC;
   const {
     mood: temperMood,
-    line: temperLine,
     visibleLine: temperVisibleLine,
     typing: temperTyping,
     playLine: playTemperLine,
@@ -1836,18 +1836,32 @@ export default function EquipmentShopClient({
     if (!catalog.isOpen) {
       clearTemperIdleTimer();
       stopTemperEngine();
-      playTemperLine("blocked", TEMPER_DIALOGUE_LINES.closed, {
-        returnToIdle: false,
-        sound: false,
-      });
+      playTemperLine(
+        "blocked",
+        buildTemperBlockedLine(
+          "closed",
+          temperDialogueRevisionRef.current++,
+        ),
+        {
+          returnToIdle: false,
+          sound: false,
+        },
+      );
       return;
     }
 
     if (!hasMainCharacter) {
-      playTemperLine("blocked", TEMPER_DIALOGUE_LINES.noAgent, {
-        returnToIdle: false,
-        sound: false,
-      });
+      playTemperLine(
+        "blocked",
+        buildTemperBlockedLine(
+          "noAgent",
+          temperDialogueRevisionRef.current++,
+        ),
+        {
+          returnToIdle: false,
+          sound: false,
+        },
+      );
       return;
     }
 
@@ -2222,9 +2236,10 @@ export default function EquipmentShopClient({
       );
       playTemperIfActive(
         "blocked",
-        effectiveHasMainCharacter
-          ? TEMPER_DIALOGUE_LINES.gmOnly
-          : TEMPER_DIALOGUE_LINES.noAgent,
+        buildTemperBlockedLine(
+          effectiveHasMainCharacter ? "gmOnly" : "noAgent",
+          temperDialogueRevisionRef.current++,
+        ),
       );
       playStrategicIfActive(
         "blocked",
@@ -2255,14 +2270,26 @@ export default function EquipmentShopClient({
         "blocked",
         "기본 자격이 없으면 네 적성 기록에 찍힌 물건만 내줄 수 있다.",
       );
-      playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.qualification);
+      playTemperIfActive(
+        "blocked",
+        buildTemperBlockedLine(
+          "qualification",
+          temperDialogueRevisionRef.current++,
+        ),
+      );
       return;
     }
 
     if (!item.available) {
       setErrorMessage("현재 반출할 수 없는 품목입니다.");
       playTowaskiIfActive("stock", TOWASKI_DIALOGUE_LINES.unavailable);
-      playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.unavailable);
+      playTemperIfActive(
+        "blocked",
+        buildTemperBlockedLine(
+          "unavailable",
+          temperDialogueRevisionRef.current++,
+        ),
+      );
       playStrategicIfActive("blocked", STRATEGIC_DIALOGUE_LINES.unavailable);
       return;
     }
@@ -2281,7 +2308,13 @@ export default function EquipmentShopClient({
         "blocked",
         `${item.licenseRequirement.label} 자격이 없다. 라이센스를 발급받거나 네 적성 기록부터 확인해.`,
       );
-      playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.qualification);
+      playTemperIfActive(
+        "blocked",
+        buildTemperBlockedLine(
+          "qualification",
+          temperDialogueRevisionRef.current++,
+        ),
+      );
       playStrategicIfActive("blocked", STRATEGIC_DIALOGUE_LINES.gmOnly);
       return;
     }
@@ -2289,7 +2322,13 @@ export default function EquipmentShopClient({
     if (item.price > balance) {
       setErrorMessage("잔액이 부족합니다.");
       playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.checkoutError);
-      playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.insufficient);
+      playTemperIfActive(
+        "blocked",
+        buildTemperBlockedLine(
+          "insufficient",
+          temperDialogueRevisionRef.current++,
+        ),
+      );
       playStrategicIfActive("blocked", STRATEGIC_DIALOGUE_LINES.insufficient);
       return;
     }
@@ -2330,7 +2369,10 @@ export default function EquipmentShopClient({
           );
           playTemperIfActive(
             "checkout",
-            buildTemperCheckoutLine(temperDialogueRevisionRef.current++),
+            buildTemperCheckoutLine(
+              item,
+              temperDialogueRevisionRef.current++,
+            ),
           );
           playStrategicIfActive(
             "checkout",
@@ -2340,7 +2382,13 @@ export default function EquipmentShopClient({
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
           playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.checkoutError);
-          playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.checkoutError);
+          playTemperIfActive(
+            "blocked",
+            buildTemperBlockedLine(
+              "checkoutError",
+              temperDialogueRevisionRef.current++,
+            ),
+          );
           playStrategicIfActive(
             "blocked",
             STRATEGIC_DIALOGUE_LINES.checkoutError,
@@ -4432,7 +4480,7 @@ export default function EquipmentShopClient({
                   priority
                 />
               ) : activeZone === "acheron" ? (
-                <Fragment key={`${temperMood}:${temperLine}`}>
+                <Fragment>
                   <Image
                     src={TEMPER_PROFILE_SRC}
                     alt=""

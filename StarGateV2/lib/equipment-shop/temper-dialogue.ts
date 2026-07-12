@@ -14,6 +14,15 @@ export type TemperCharacterProfile =
   | "focus"
   | "balanced";
 
+export type TemperBlockReason =
+  | "noAgent"
+  | "closed"
+  | "unavailable"
+  | "gmOnly"
+  | "qualification"
+  | "insufficient"
+  | "checkoutError";
+
 type TemperCatalogItem = {
   key: string;
   name: string;
@@ -34,25 +43,50 @@ type TemperItemDialogue = {
   cart: readonly string[];
 };
 
+const TEMPER_BLOCKED_LINES: Record<TemperBlockReason, readonly string[]> = {
+  noAgent: [
+    "주 사용자가 지정되지 않았네. 손도 자세도 모르는 사람한테 무기를 맞춰 줄 수는 없어.",
+    "사용자 기록이 비어 있어. 이름 없는 장비는 만들 수 있어도, 주인 없는 반출은 승인 못 해.",
+    "누가 쓸지부터 정하고 와. 체격도 습관도 모른 채 맞춘 장비는 잘 만든 사고일 뿐이야.",
+  ],
+  closed: [
+    "오늘 작업대는 닫았어. 식은 쇠를 두드려 봐야 금만 늘어나니까 다음 점검 때 와.",
+    "화로 온도 내렸어. 급하다고 열처리 순서를 건너뛰면 현장에서 대가를 치러.",
+    "반출선까지 봉인했다. 오늘은 장비보다 네 계획을 다시 벼려 오는 편이 낫겠네.",
+  ],
+  unavailable: [
+    "그건 지금 작업대에 못 올려. 빈 재고보다 상태가 나쁜 물건을 내보내는 게 더 위험해.",
+    "재고표에는 있어도 검수대는 통과 못 했어. 숫자보다 균열 하나가 더 정확한 답이지.",
+    "반출 보류. 쓸 수 없는 장비를 쓸 수 있다고 말하는 건 판매가 아니라 사고 은폐야.",
+  ],
+  gmOnly: [
+    "구경은 괜찮아. 하지만 반출은 실제 사용자가 와야 해. 무기는 서류보다 손에 맞춰야 하거든.",
+    "승인 권한과 사용 적합성은 다른 문제야. 실제로 쥘 사람이 없으면 여기서 멈춘다.",
+    "대리 반출은 안 받아. 이 무게를 감당할 손목이 직접 검수대 앞에 서야 해.",
+  ],
+  qualification: [
+    "훈련 기록이 없는 장비는 못 내줘. 날이 손보다 빠른 사람은 파단 기록벽보다 의무실에 먼저 남거든.",
+    "이 규격을 다룬 기록이 부족해. 용기는 자격이 아니고, 무기는 그 차이를 아주 빨리 증명해.",
+    "반출은 불가합니다. 손목보다 장비의 관성이 더 빠르니, 훈련장에서 순서부터 다시 맞추고 오세요.",
+  ],
+  insufficient: [
+    "크레딧보다 장비를 먼저 골랐네. 가격표 다시 보고 와. 외상은 금속보다 빨리 휘어.",
+    "잔액이 모자라. 재료비를 깎으면 가장 먼저 줄어드는 건 네가 믿을 수 있는 시간이고.",
+    "결제선이 안 맞아. 값싼 약속으로 합금값을 대신할 수는 없으니 장부부터 정리해.",
+  ],
+  checkoutError: [
+    "반출 기록이 막혔네. 잔액, 재고, 승인선 중 하나가 어긋났어. 억지로 밀면 장부도 금속도 부러져.",
+    "봉인 직전에 기록이 틀어졌어. 원인을 찾기 전에는 한 발짝도 밖으로 못 나가.",
+    "반출을 중지하겠습니다. 실패한 절차를 반복하는 건 검수가 아니라 고집이니, 장부부터 다시 맞추세요.",
+  ],
+};
+
 export const TEMPER_DIALOGUE_LINES = {
   welcome:
     "어서 와. 무기부터 보지 말고 손부터 보여줘. 네 손이 뭘 버틸 수 있는지 먼저 봐야 하니까.",
-  noAgent:
-    "주 사용자가 지정되지 않았네. 손도 자세도 모르는 사람한테 무기를 맞춰 줄 수는 없어.",
-  closed:
-    "오늘 작업대는 닫았어. 식은 쇠를 두드려 봐야 금만 늘어나니까 다음 점검 때 와.",
-  unavailable:
-    "그건 지금 작업대에 못 올려. 빈 재고보다 상태가 나쁜 물건을 내보내는 게 더 위험해.",
-  gmOnly:
-    "구경은 괜찮아. 하지만 반출은 실제 사용자가 와야 해. 무기는 서류보다 손에 맞춰야 하거든.",
-  qualification:
-    "훈련 기록이 없는 장비는 못 내줘. 날이 손보다 빠른 사람은 파단 기록벽보다 의무실에 먼저 남거든.",
-  insufficient:
-    "크레딧보다 장비를 먼저 골랐네. 가격표 다시 보고 와. 외상은 금속보다 빨리 휘어.",
-  checkout:
-    "반출 검수 끝. 첫 사용 뒤에는 날과 손목을 둘 다 확인해. 망가지는 쪽은 늘 먼저 신호를 보내니까.",
-  checkoutError:
-    "반출 기록이 막혔네. 잔액, 재고, 승인선 중 하나가 어긋났어. 억지로 밀면 장부도 금속도 부러져.",
+  noAgent: TEMPER_BLOCKED_LINES.noAgent[0],
+  closed: TEMPER_BLOCKED_LINES.closed[0],
+  unavailable: TEMPER_BLOCKED_LINES.unavailable[0],
 } as const;
 
 export const TEMPER_MOOD_LABELS: Record<TemperMood, string> = {
@@ -287,10 +321,28 @@ const TEMPER_REFERRAL_CART_LINES = [
   "탄약 장사꾼 표식 확인. 조율비 10%는 덜었고, 판재 유격은 내가 다시 잡았어. 할인과 대충은 다른 말이니까.",
 ] as const;
 
-const TEMPER_CHECKOUT_LINES = [
-  "반출 검수 끝. 첫 사용 뒤에는 판재와 몸을 둘 다 확인해. 망가지는 쪽은 늘 먼저 신호를 보내니까.",
-  "봉인과 체결 기록 끝냈어. 피격이나 파손이 생기면 닦지 말고 그대로 가져와. 흔적이 다음 장비를 살린다.",
+const TEMPER_WEAPON_CHECKOUT_LINES = [
+  "반출 검수 끝. 첫 사용 뒤에는 날과 손목을 둘 다 확인해. 망가지는 쪽은 늘 먼저 신호를 보내니까.",
+  "중심 표시와 봉인 기록 끝냈어. 파손되면 닦지 말고 그대로 가져와. 흔적이 다음 장비를 살린다.",
   "반출 승인. 장비가 널 살렸다면 기록을 남기고, 못 살렸다면 더 정확히 남겨. 둘 다 다음 단조에 필요해.",
+] as const;
+
+const TEMPER_ARMOR_CHECKOUT_LINES = [
+  "체결과 판재 검수 끝. 첫 피격 뒤에는 겉보다 몸부터 확인하고, 방호구는 바로 회수해.",
+  "몸에 맞춘 위치를 표시했어. 다른 사람이 입거나 끈을 다시 조이면 처음부터 재검수다.",
+  "반출 승인. 충격 자국은 닦지 말고 그대로 가져와. 어느 방향으로 힘이 빠졌는지 봐야 하니까.",
+] as const;
+
+const TEMPER_POWER_TOOL_CHECKOUT_LINES = [
+  "구동부와 비상 정지까지 확인했어. 소리가 한 번 달라지면 즉시 손 떼. 두 번째 경고는 없어.",
+  "체인 장력, 열, 오일 전부 정상. 멈추는 절차를 잊는 순간부터 이건 무기가 아니라 사고야.",
+  "반출 승인. 힘으로 밀지 말고 회전수가 일을 하게 둬. 걸리면 정지부터, 판단은 그다음이야.",
+] as const;
+
+const TEMPER_REFERRAL_CHECKOUT_LINES = [
+  "토와스키 열람 기록까지 반영했어. 조율비는 덜었지만 판재와 체결 검수는 전부 마쳤다.",
+  "중복 측정값은 빼고 네 몸에 맞춘 위치만 다시 잡았어. 할인받은 건 절차지, 안전이 아니야.",
+  "연계 반출 승인. 가격은 10% 줄었고 검수 항목은 하나도 안 줄었어. 그 차이는 기억해 둬.",
 ] as const;
 
 function stableLine(lines: readonly string[], seed: string): string {
@@ -305,6 +357,13 @@ function stableLine(lines: readonly string[], seed: string): string {
 function cycleLine(lines: readonly string[], variant: number): string {
   const index = Math.abs(Math.trunc(variant)) % lines.length;
   return lines[index] ?? lines[0] ?? "";
+}
+
+export function buildTemperBlockedLine(
+  reason: TemperBlockReason,
+  variant = 0,
+): string {
+  return cycleLine(TEMPER_BLOCKED_LINES[reason], variant);
 }
 
 export function buildTemperWelcomeLine(args: {
@@ -324,7 +383,10 @@ export function buildTemperItemLine(
   variant = 0,
 ): { mood: TemperMood; text: string } {
   if (!item.available) {
-    return { mood: "blocked", text: TEMPER_DIALOGUE_LINES.unavailable };
+    return {
+      mood: "blocked",
+      text: buildTemperBlockedLine("unavailable", variant),
+    };
   }
 
   const dialogue = TEMPER_ITEM_DIALOGUE[item.key];
@@ -369,8 +431,18 @@ export function buildTemperArmorReferralLine(
   return `${item.name}. ${cycleLine(TEMPER_ARMOR_REFERRAL_LINES, variant)}`;
 }
 
-export function buildTemperCheckoutLine(variant = 0): string {
-  return cycleLine(TEMPER_CHECKOUT_LINES, variant);
+export function buildTemperCheckoutLine(
+  item: Pick<TemperCatalogItem, "key" | "name" | "category" | "discount">,
+  variant = 0,
+): string {
+  const lines = item.discount
+    ? TEMPER_REFERRAL_CHECKOUT_LINES
+    : item.key === "basic-chainsaw"
+      ? TEMPER_POWER_TOOL_CHECKOUT_LINES
+      : item.category === "ARMOR"
+        ? TEMPER_ARMOR_CHECKOUT_LINES
+        : TEMPER_WEAPON_CHECKOUT_LINES;
+  return `${item.name}. ${cycleLine(lines, variant)}`;
 }
 
 const TEMPER_TAB_LINES: Record<TemperTab, readonly string[]> = {
