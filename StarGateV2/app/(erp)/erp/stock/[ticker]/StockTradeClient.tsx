@@ -929,7 +929,7 @@ export default function StockTradeClient({
 
           <div className={sharedStyles.alertRules}>
             <div className={sharedStyles.alertRules__head}>
-              <span>조건 알림</span>
+              <span>브라우저 조건 표시</span>
               <button
                 type="button"
                 onClick={() => alertRules.clearRule(ticker)}
@@ -992,8 +992,8 @@ export default function StockTradeClient({
             ) : (
               <div className={sharedStyles.alertRules__empty}>
                 {hasStockAlertRule(alertRule)
-                  ? "현재 충족된 조건 없음"
-                  : "조건을 설정하면 목록 브리핑에도 표시됩니다."}
+                  ? "현재 충족된 조건 없음 · 이 브라우저에서만 확인"
+                  : "조건을 설정하면 이 브라우저의 목록 브리핑에 표시됩니다."}
               </div>
             )}
           </div>

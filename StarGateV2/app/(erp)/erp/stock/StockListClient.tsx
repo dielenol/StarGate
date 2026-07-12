@@ -568,13 +568,13 @@ export default function StockListClient({
 
         <section className={styles.marketBrief__card}>
           <div className={styles.marketBrief__head}>
-            <span>조건 알림</span>
+            <span>브라우저 조건 표시</span>
             <strong>{triggeredAlerts.length}</strong>
           </div>
           <div className={styles.marketBrief__rows}>
             {triggeredAlerts.length === 0 ? (
               <span className={styles.marketBrief__empty}>
-                설정 {alertRules.configuredCount}건 · 충족 없음
+                이 브라우저 설정 {alertRules.configuredCount}건 · 충족 없음
               </span>
             ) : (
               triggeredAlerts.map(({ item, reason }) => (
