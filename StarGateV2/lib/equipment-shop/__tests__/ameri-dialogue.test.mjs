@@ -32,6 +32,20 @@ test("every armory destination has an Ameri routing line", () => {
   }
 });
 
+test("revisiting a destination cycles through Ameri dialogue variations", () => {
+  for (const [destination] of DESTINATIONS) {
+    const variations = Array.from({ length: 5 }, (_, variant) =>
+      buildAmeriDestinationLine(destination, "TEST AGENT", variant).text,
+    );
+
+    assert.equal(new Set(variations).size, 5);
+    assert.equal(
+      buildAmeriDestinationLine(destination, "TEST AGENT", 5).text,
+      variations[0],
+    );
+  }
+});
+
 test("idle dialogue preserves Ameri's paperwork and caffeine pattern", () => {
   const idleText = AMERI_IDLE_LINES.map(({ text }) => text).join(" ");
   assert.match(idleText, /커피|식는/);

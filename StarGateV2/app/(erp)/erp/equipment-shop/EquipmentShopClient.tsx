@@ -1359,6 +1359,7 @@ export default function EquipmentShopClient({
   const sutureDialogueRevisionRef = useRef(0);
   const temperDialogueRevisionRef = useRef(0);
   const strategicDialogueRevisionRef = useRef(0);
+  const ameriDialogueRevisionRef = useRef(0);
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
     () => mainCharacter?.stats ?? null,
   );
@@ -3024,6 +3025,7 @@ export default function EquipmentShopClient({
     const nextLine = buildAmeriDestinationLine(
       destination,
       mainCharacter?.codename ?? null,
+      ameriDialogueRevisionRef.current++,
     );
     playAmeriLine(nextLine.mood, nextLine.text, { sound: true });
   }
