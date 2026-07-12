@@ -296,10 +296,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (masterItem.slug === TOWASKI_BASIC_FIREARM_LICENSE_SLUG) {
+    if (isTowaskiLicenseSlug(masterItem.slug)) {
       return NextResponse.json(
         {
-          error: "기본 화기 라이선스는 사격 자격시험 합격 시에만 발급됩니다.",
+          error: "토와스키 라이선스는 자격시험 합격 시에만 발급됩니다.",
           code: "ITEM_NOT_AVAILABLE",
         },
         { status: 400 },

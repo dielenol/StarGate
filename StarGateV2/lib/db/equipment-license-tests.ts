@@ -17,6 +17,7 @@ import {
   type TowaskiLicenseTestDifficulty,
   type TowaskiLicenseTarget,
 } from "@/lib/equipment-shop/license-test";
+import type { TowaskiLicenseSlug } from "@/lib/equipment-shop/licenses";
 
 const COLLECTION_NAME = "equipment_license_tests";
 const REQUEST_COLLECTION_NAME = "equipment_license_test_requests";
@@ -35,7 +36,7 @@ export interface TowaskiLicenseChallenge {
   userId: string;
   characterId: string;
   characterCodename: string;
-  licenseSlug: typeof TOWASKI_BASIC_FIREARM_LICENSE_SLUG;
+  licenseSlug: TowaskiLicenseSlug;
   difficulty?: TowaskiLicenseTestDifficulty;
   startRequestId?: string;
   sequence: TowaskiLicenseTarget[];
@@ -70,6 +71,7 @@ type TowaskiLicenseTestRequestRecord =
       characterId: string;
       requestId: string;
       action: "start";
+      licenseSlug?: TowaskiLicenseSlug;
       difficulty: TowaskiLicenseTestDifficulty;
       challengeId: ObjectId;
       outcome: TowaskiLicenseChallengeOutcome;
@@ -222,6 +224,7 @@ function createTowaskiLicenseChallengeDocument(args: {
   userId: string;
   characterId: string;
   characterCodename: string;
+  licenseSlug: TowaskiLicenseSlug;
   difficulty: TowaskiLicenseTestDifficulty;
   requestId: string;
 }): TowaskiLicenseChallenge {
@@ -230,7 +233,7 @@ function createTowaskiLicenseChallengeDocument(args: {
     userId: args.userId,
     characterId: args.characterId,
     characterCodename: args.characterCodename,
-    licenseSlug: TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+    licenseSlug: args.licenseSlug,
     difficulty: args.difficulty,
     startRequestId: args.requestId,
     sequence: createTargetSequence(),
@@ -261,6 +264,7 @@ async function findStartRequestReplay(
     userId: string;
     characterId: string;
     requestId: string;
+    licenseSlug: TowaskiLicenseSlug;
     difficulty: TowaskiLicenseTestDifficulty;
   },
   session?: ClientSession,
@@ -278,7 +282,12 @@ async function findStartRequestReplay(
     { session },
   );
   if (request) {
-    if (request.action !== "start" || request.difficulty !== args.difficulty) {
+    if (
+      request.action !== "start" ||
+      (request.licenseSlug ?? TOWASKI_BASIC_FIREARM_LICENSE_SLUG) !==
+        args.licenseSlug ||
+      request.difficulty !== args.difficulty
+    ) {
       throw new TowaskiLicenseChallengeError(
         "LICENSE_TEST_CONFLICT",
         "동일한 요청 키를 다른 사격 시험 요청에 사용할 수 없습니다.",
@@ -305,7 +314,11 @@ async function findStartRequestReplay(
     },
     { session },
   );
-  if (legacy && (legacy.difficulty ?? "standard") !== args.difficulty) {
+  if (
+    legacy &&
+    (legacy.licenseSlug !== args.licenseSlug ||
+      (legacy.difficulty ?? "standard") !== args.difficulty)
+  ) {
     throw new TowaskiLicenseChallengeError(
       "LICENSE_TEST_CONFLICT",
       "동일한 요청 키를 다른 시험 난이도에 사용할 수 없습니다.",
@@ -318,6 +331,7 @@ export async function startOrResumeTowaskiLicenseChallenge(args: {
   userId: string;
   characterId: string;
   characterCodename: string;
+  licenseSlug: TowaskiLicenseSlug;
   difficulty: TowaskiLicenseTestDifficulty;
   requestId: string;
 }): Promise<TowaskiLicenseChallenge> {
@@ -357,10 +371,17 @@ export async function startOrResumeTowaskiLicenseChallenge(args: {
           },
           { session },
         );
+        if (selected && selected.licenseSlug !== args.licenseSlug) {
+          throw new TowaskiLicenseChallengeError(
+            "LICENSE_TEST_CONFLICT",
+            "다른 자격시험이 진행 중입니다. 해당 시험을 먼저 종료해 주세요.",
+          );
+        }
         selected ??= await challenges.findOne(
           {
             userId: args.userId,
             characterId: args.characterId,
+            licenseSlug: args.licenseSlug,
             status: { $in: ["passed", "redeeming"] },
           },
           { session, sort: { startedAt: -1 } },
@@ -410,6 +431,7 @@ export async function startOrResumeTowaskiLicenseChallenge(args: {
             characterId: args.characterId,
             requestId: args.requestId,
             action: "start",
+            licenseSlug: args.licenseSlug,
             difficulty: args.difficulty,
             challengeId: selected._id,
             outcome: challengeOutcome(selected),

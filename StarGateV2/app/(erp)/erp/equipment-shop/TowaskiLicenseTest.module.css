@@ -104,52 +104,6 @@
   line-height: 1.75;
 }
 
-.difficultySelector {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  margin-top: 26px;
-  overflow: hidden;
-  border: 1px solid rgba(84, 203, 232, 0.42);
-  border-radius: 3px;
-  background: rgba(84, 203, 232, 0.18);
-}
-
-.difficultySelector button {
-  min-height: 62px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 4px;
-  padding: 9px 12px;
-  border: 0;
-  background: #121a1c;
-  color: #aeb8b8;
-  cursor: pointer;
-}
-
-.difficultySelector button:hover,
-.difficultySelector button:focus-visible {
-  background: #1b292c;
-  color: #ffffff;
-  outline: none;
-}
-
-.difficultySelector button[data-active="true"] {
-  background: #275b66;
-  color: #ffffff;
-}
-
-.difficultySelector strong {
-  font-size: 16px;
-}
-
-.difficultySelector span {
-  font-family: var(--font-mono), monospace;
-  font-size: 12px;
-}
-
 .criteria {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -581,7 +535,6 @@
   }
 
   .criteria,
-  .difficultySelector,
   .resultStats {
     grid-template-columns: 1fr;
   }

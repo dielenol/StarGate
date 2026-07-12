@@ -4,10 +4,14 @@ import test from "node:test";
 import {
   resolveTowaskiDebugLicenseTest,
   startTowaskiDebugLicenseTest,
+  TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
 } from "../license-test.ts";
 
 test("debug qualification reproduces ten hostile and two civilian targets", () => {
-  const { session, response } = startTowaskiDebugLicenseTest("basic", 1_000);
+  const { session, response } = startTowaskiDebugLicenseTest(
+    TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+    1_000,
+  );
 
   assert.equal(response.status, "active");
   assert.equal(response.difficulty, "basic");
@@ -17,7 +21,10 @@ test("debug qualification reproduces ten hostile and two civilian targets", () =
 });
 
 test("debug qualification grants locally after a clean run", () => {
-  let { session } = startTowaskiDebugLicenseTest("basic", 1_000);
+  let { session } = startTowaskiDebugLicenseTest(
+    TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+    1_000,
+  );
   let response;
 
   for (const target of [...session.targets]) {
@@ -38,8 +45,37 @@ test("debug qualification grants locally after a clean run", () => {
   assert.equal(response.evaluation.passed, true);
 });
 
+test("debug qualification grants the selected specialist license", () => {
+  let { session } = startTowaskiDebugLicenseTest(
+    "towaski-license-precision-firearm",
+    1_000,
+  );
+  let response;
+
+  for (const target of [...session.targets]) {
+    ({ session, response } = resolveTowaskiDebugLicenseTest(
+      session,
+      {
+        action: "resolve",
+        challengeId: session.challengeId,
+        round: session.round,
+        hit: target.kind === "hostile",
+        shots: target.kind === "hostile" ? 1 : 0,
+      },
+      6_000,
+    ));
+  }
+
+  assert.equal(response.status, "granted");
+  assert.equal(response.license.slug, "towaski-license-precision-firearm");
+  assert.equal(response.difficulty, "standard");
+});
+
 test("debug qualification fails on a civilian hit", () => {
-  let { session } = startTowaskiDebugLicenseTest("basic", 1_000);
+  let { session } = startTowaskiDebugLicenseTest(
+    TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+    1_000,
+  );
   let response;
 
   for (let index = 0; index < session.targets.length; index += 1) {
@@ -61,7 +97,10 @@ test("debug qualification fails on a civilian hit", () => {
 });
 
 test("debug qualification rejects a stale round", () => {
-  const { session } = startTowaskiDebugLicenseTest("basic", 1_000);
+  const { session } = startTowaskiDebugLicenseTest(
+    TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+    1_000,
+  );
 
   assert.throws(
     () =>

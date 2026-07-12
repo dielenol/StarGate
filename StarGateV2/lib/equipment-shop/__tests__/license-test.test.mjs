@@ -3,9 +3,12 @@ import assert from "node:assert/strict";
 
 import {
   evaluateTowaskiBasicLicenseTest,
+  getTowaskiLicenseTestProgram,
   parseTowaskiLicenseTestRequest,
+  TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
   TOWASKI_LICENSE_TEST_DIFFICULTIES,
 } from "../license-test.ts";
+import { TOWASKI_LICENSE_DEFINITIONS } from "../licenses.ts";
 
 test("passes a clean basic firearm qualification result", () => {
   const result = evaluateTowaskiBasicLicenseTest({
@@ -115,25 +118,59 @@ test("requires a server-issued challenge protocol instead of final client scores
   );
   assert.deepEqual(parseTowaskiLicenseTestRequest({ action: "start" }), {
     action: "start",
-    difficulty: "basic",
+    licenseSlug: TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
   });
   assert.deepEqual(
     parseTowaskiLicenseTestRequest({
       action: "start",
+      licenseSlug: "towaski-license-precision-firearm",
       difficulty: "expert",
     }),
     {
       action: "start",
-      difficulty: "expert",
+      licenseSlug: "towaski-license-precision-firearm",
     },
   );
   assert.equal(
     parseTowaskiLicenseTestRequest({
       action: "start",
-      difficulty: "impossible",
+      licenseSlug: "towaski-license-impossible",
     }),
     null,
   );
+});
+
+test("license programs fix progression and server-side difficulty", () => {
+  const basic = getTowaskiLicenseTestProgram(
+    "towaski-license-basic-firearm",
+  );
+  const precision = getTowaskiLicenseTestProgram(
+    "towaski-license-precision-firearm",
+  );
+  const heavy = getTowaskiLicenseTestProgram(
+    "towaski-license-heavy-weapon",
+  );
+
+  assert.equal(basic.tier, "basic");
+  assert.equal(basic.difficulty, "basic");
+  assert.equal(basic.requiresBasicLicense, false);
+  assert.equal(precision.tier, "intermediate");
+  assert.equal(precision.difficulty, "standard");
+  assert.equal(precision.requiresBasicLicense, true);
+  assert.equal(heavy.tier, "advanced");
+  assert.equal(heavy.difficulty, "expert");
+  assert.equal(heavy.requiresBasicLicense, true);
+});
+
+test("license program labels stay aligned with catalog definitions", () => {
+  for (const [licenseSlug, definition] of Object.entries(
+    TOWASKI_LICENSE_DEFINITIONS,
+  )) {
+    const program = getTowaskiLicenseTestProgram(licenseSlug);
+    assert.equal(program.licenseName, definition.name);
+    assert.equal(program.licenseLabel, definition.label);
+    assert.equal(program.licenseEffect, definition.effect);
+  }
 });
 
 test("accepts only bounded round resolution events", () => {

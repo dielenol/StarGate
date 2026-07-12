@@ -56,10 +56,14 @@ import {
   buildAmeriWelcomeLine,
   type AmeriMood,
 } from "@/lib/equipment-shop/ameri-dialogue";
-
+import {
+  getTowaskiLicenseTestProgram,
+  TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+} from "@/lib/equipment-shop/license-test";
 import {
   hasTowaskiBasicPurchaseAccess,
   isTowaskiLicenseSlug,
+  type TowaskiLicenseSlug,
 } from "@/lib/equipment-shop/licenses";
 import {
   hasEquipmentShopZonePurchaseAccess,
@@ -1380,6 +1384,8 @@ export default function EquipmentShopClient({
   const [towaskiDebugMode, setTowaskiDebugMode] =
     useState<TowaskiDebugMode>("live");
   const [towaskiLicenseTestOpen, setTowaskiLicenseTestOpen] = useState(false);
+  const [selectedTowaskiLicenseTestSlug, setSelectedTowaskiLicenseTestSlug] =
+    useState<TowaskiLicenseSlug | null>(null);
   const [sutureDebugMode, setSutureDebugMode] =
     useState<SutureDebugMode>("live");
   const [towaskiDebugRevision, setTowaskiDebugRevision] = useState(0);
@@ -1537,9 +1543,14 @@ export default function EquipmentShopClient({
     !effectiveTowaskiGm &&
     effectiveHasMainCharacter &&
     !effectiveHasBasicLicense;
-  const showTowaskiLicenseTest =
+  const showTowaskiBasicLicenseTest =
     requiresTowaskiLicenseTest &&
     (!effectiveHasQualificationAccess || towaskiLicenseTestOpen);
+  const showTowaskiLicenseTest =
+    showTowaskiBasicLicenseTest || selectedTowaskiLicenseTestSlug !== null;
+  const activeTowaskiLicenseTestSlug = showTowaskiBasicLicenseTest
+    ? TOWASKI_BASIC_FIREARM_LICENSE_SLUG
+    : (selectedTowaskiLicenseTestSlug ?? TOWASKI_BASIC_FIREARM_LICENSE_SLUG);
   const towaskiDialogueContext = getTowaskiDialogueContext(
     showTowaskiLicenseTest,
   );
@@ -1548,14 +1559,30 @@ export default function EquipmentShopClient({
     [localStats],
   );
   const towaskiWelcomeLine = useMemo(
-    () =>
-      showTowaskiLicenseTest
-        ? TOWASKI_DIALOGUE_LINES.qualification
-        : buildTowaskiWelcomeLine({
-            codename: mainCharacter?.codename ?? null,
-            profile: mainCharacterProfile,
-          }),
-    [mainCharacter?.codename, mainCharacterProfile, showTowaskiLicenseTest],
+    () => {
+      if (showTowaskiLicenseTest) {
+        if (
+          activeTowaskiLicenseTestSlug ===
+          TOWASKI_BASIC_FIREARM_LICENSE_SLUG
+        ) {
+          return TOWASKI_DIALOGUE_LINES.qualification;
+        }
+        const program = getTowaskiLicenseTestProgram(
+          activeTowaskiLicenseTestSlug,
+        );
+        return `${program.licenseName} 시험선이다. ${program.briefing}`;
+      }
+      return buildTowaskiWelcomeLine({
+        codename: mainCharacter?.codename ?? null,
+        profile: mainCharacterProfile,
+      });
+    },
+    [
+      activeTowaskiLicenseTestSlug,
+      mainCharacter?.codename,
+      mainCharacterProfile,
+      showTowaskiLicenseTest,
+    ],
   );
   const sutureWelcomeLine = useMemo(
     () =>
@@ -1790,6 +1817,10 @@ export default function EquipmentShopClient({
   const selectedIsLicenseItem = Boolean(
     selectedItem && isTowaskiLicenseCatalogItem(selectedItem),
   );
+  const selectedLicenseProgram =
+    selectedItem && isTowaskiLicenseSlug(selectedItem.slug)
+      ? getTowaskiLicenseTestProgram(selectedItem.slug)
+      : null;
   const selectedLicenseBlocked = Boolean(
     selectedItem && isEquipmentLicenseBlocked(selectedItem),
   );
@@ -1813,17 +1844,28 @@ export default function EquipmentShopClient({
         category: selectedItem.category,
       }),
   );
-  const selectedCanPurchase =
-    Boolean(selectedItem) &&
-    canUseShop &&
-    !isTowaskiDebug &&
-    selectedItem?.available === true &&
-    selectedHasZonePurchaseAccess &&
-    selectedHasBasicPurchaseAccess &&
-    selectedItem.licenseOwned !== true &&
-    !selectedLicenseBlocked &&
-    selectedItem.price <= balance &&
-    !purchaseMutation.isPending;
+  const selectedCanStartLicenseTest = Boolean(
+    selectedItem &&
+      selectedLicenseProgram &&
+      canUseShop &&
+      selectedItem.available &&
+      selectedItem.licenseOwned !== true &&
+      (!selectedLicenseProgram.requiresBasicLicense ||
+        effectiveHasBasicLicense) &&
+      !towaskiLicenseTestBusy,
+  );
+  const selectedCanPurchase = selectedIsLicenseItem
+    ? selectedCanStartLicenseTest
+    : Boolean(selectedItem) &&
+      canUseShop &&
+      !isTowaskiDebug &&
+      selectedItem?.available === true &&
+      selectedHasZonePurchaseAccess &&
+      selectedHasBasicPurchaseAccess &&
+      selectedItem.licenseOwned !== true &&
+      !selectedLicenseBlocked &&
+      selectedItem.price <= balance &&
+      !purchaseMutation.isPending;
 
   useEffect(() => {
     if (!isResearchBonusMenuOpen) return;
@@ -2265,6 +2307,7 @@ export default function EquipmentShopClient({
     if (purchaseMutation.isPending || towaskiLicenseTestBusy) return;
     setTowaskiDebugMode(nextMode);
     setTowaskiLicenseTestOpen(false);
+    setSelectedTowaskiLicenseTestSlug(null);
     setTowaskiDebugRevision((value) => value + 1);
     setErrorMessage(null);
     setNotice(
@@ -2331,6 +2374,32 @@ export default function EquipmentShopClient({
     }
   }
 
+  function handleStartTowaskiLicenseTest(item: EquipmentShopCatalogEntry) {
+    if (!isTowaskiLicenseSlug(item.slug) || item.licenseOwned) return;
+    const program = getTowaskiLicenseTestProgram(item.slug);
+    if (
+      program.requiresBasicLicense &&
+      !effectiveHasBasicLicense
+    ) {
+      setErrorMessage("전문 자격시험은 기본 화기 라이센스 취득 후 응시할 수 있습니다.");
+      playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.qualification);
+      return;
+    }
+    setSelectedKey(item.key);
+    setSelectedTowaskiLicenseTestSlug(item.slug);
+    setTowaskiLicenseTestOpen(true);
+    setErrorMessage(null);
+    setNotice({
+      tone: "info",
+      title: `${program.tierLabel} 자격시험`,
+      text: `${item.name} 시험 안내를 불러왔습니다.`,
+    });
+    playTowaskiLine("range", `${item.name} 시험선 열었다. 기준부터 확인해.`, {
+      returnToIdle: false,
+      sound: true,
+    });
+  }
+
   function handleSelectSalesItem(item: EquipmentShopCatalogEntry) {
     setSelectedKey(item.key);
     quoteMutation.reset();
@@ -2381,6 +2450,10 @@ export default function EquipmentShopClient({
   }
 
   function handlePurchase(item: EquipmentShopCatalogEntry) {
+    if (isTowaskiLicenseCatalogItem(item)) {
+      handleStartTowaskiLicenseTest(item);
+      return;
+    }
     if (purchaseLockRef.current || purchaseMutation.isPending) return;
 
     const hasZonePurchaseAccess = hasEquipmentShopZonePurchaseAccess({
@@ -2576,12 +2649,17 @@ export default function EquipmentShopClient({
   }
 
   const handleTowaskiLicenseGranted = useCallback(
-    (licenseName: string) => {
+    (license: { slug: string; name: string }) => {
+      const isBasicLicense =
+        license.slug === TOWASKI_BASIC_FIREARM_LICENSE_SLUG;
       towaskiQualificationPassedRef.current = true;
       setTowaskiLicenseTestOpen(false);
-      if (isTowaskiDebug) {
+      setSelectedTowaskiLicenseTestSlug(null);
+      setActiveTab("LICENSE");
+      setSelectedKey(null);
+      if (isTowaskiDebug && isBasicLicense) {
         setTowaskiDebugMode("licensed");
-      } else {
+      } else if (isBasicLicense) {
         setHasBasicFirearmLicense(true);
       }
       setErrorMessage(null);
@@ -2589,13 +2667,21 @@ export default function EquipmentShopClient({
         tone: "success",
         title: isTowaskiDebug ? "사격 시험 디버그 통과" : "사격 자격 승인",
         text: isTowaskiDebug
-          ? `DEBUG PASS / ${licenseName} / DB WRITE 0`
-          : `${licenseName}가 발급되었습니다. 토와스키 건샵 반출대가 개방됩니다.`,
+          ? `DEBUG PASS / ${license.name} / DB WRITE 0`
+          : isBasicLicense
+            ? `${license.name}가 발급되었습니다. 자격 관리 화면에서 중급·고급 시험을 선택할 수 있습니다.`
+            : `${license.name}가 발급되었습니다. 해당 전문 장비 반출 조건이 해제되었습니다.`,
       });
-      playTowaskiLine("checkout", TOWASKI_DIALOGUE_LINES.qualificationPassed, {
-        returnToIdle: true,
-        sound: true,
-      });
+      playTowaskiLine(
+        "checkout",
+        isBasicLicense
+          ? TOWASKI_DIALOGUE_LINES.qualificationPassed
+          : TOWASKI_DIALOGUE_LINES.licenseIssued,
+        {
+          returnToIdle: true,
+          sound: true,
+        },
+      );
     },
     [isTowaskiDebug, playTowaskiLine, setErrorMessage, setNotice],
   );
@@ -3256,6 +3342,17 @@ export default function EquipmentShopClient({
             </div>
           )}
 
+          {isTowaski && activeTab === "LICENSE" ? (
+            <div className={styles.panelIntro}>
+              <Eyebrow>QUALIFICATION CENTER</Eyebrow>
+              <strong>토와스키 자격 관리</strong>
+              <span>
+                기초 화기 취득 후 중급 정밀 사격과 고급 전문 장비 시험에
+                응시할 수 있습니다. 합격한 자격은 즉시 인벤토리에 등록됩니다.
+              </span>
+            </div>
+          ) : null}
+
           {salesItems.length === 0 ? (
             <div className={styles.empty}>
               {isTowaski
@@ -3270,6 +3367,10 @@ export default function EquipmentShopClient({
                 const isSelected = selectedItem?.key === item.key;
                 const isSoldOut = !item.available;
                 const isLicenseItem = isTowaskiLicenseCatalogItem(item);
+                const licenseProgram =
+                  isLicenseItem && isTowaskiLicenseSlug(item.slug)
+                    ? getTowaskiLicenseTestProgram(item.slug)
+                    : null;
                 const licenseBlocked = isEquipmentLicenseBlocked(item);
                 const licenseAccess = describeEquipmentLicenseAccess(item);
                 const hasZonePurchaseAccess =
@@ -3286,16 +3387,26 @@ export default function EquipmentShopClient({
                     hasBasicLicense: effectiveHasBasicLicense,
                     licenseStatus: item.licenseStatus,
                   });
-                const canPurchase =
-                  canUseShop &&
-                  !isTowaskiDebug &&
-                  !isSoldOut &&
-                  hasZonePurchaseAccess &&
-                  hasBasicPurchaseAccess &&
-                  !item.licenseOwned &&
-                  !licenseBlocked &&
-                  item.price <= balance &&
-                  !purchaseMutation.isPending;
+                const canStartLicenseTest = Boolean(
+                  licenseProgram &&
+                    canUseShop &&
+                    !isSoldOut &&
+                    !item.licenseOwned &&
+                    (!licenseProgram.requiresBasicLicense ||
+                      effectiveHasBasicLicense) &&
+                    !towaskiLicenseTestBusy,
+                );
+                const canPurchase = isLicenseItem
+                  ? canStartLicenseTest
+                  : canUseShop &&
+                    !isTowaskiDebug &&
+                    !isSoldOut &&
+                    hasZonePurchaseAccess &&
+                    hasBasicPurchaseAccess &&
+                    !item.licenseOwned &&
+                    !licenseBlocked &&
+                    item.price <= balance &&
+                    !purchaseMutation.isPending;
 
                 return (
                   <article
@@ -3325,6 +3436,8 @@ export default function EquipmentShopClient({
                         <span>
                           {isSoldOut
                             ? "LOCKED"
+                            : licenseProgram
+                              ? licenseProgram.testCode
                             : item.discount
                               ? `TOWASKI -${item.discount.percent}%`
                               : "AVAILABLE"}
@@ -3340,10 +3453,14 @@ export default function EquipmentShopClient({
                           : item.effect}
                       </span>
                       <span className={styles.productPrice}>
-                        {item.listPrice ? (
+                        {!licenseProgram && item.listPrice ? (
                           <del>{formatCredits(item.listPrice)}</del>
                         ) : null}
-                        <strong>{formatCredits(item.price)}</strong>
+                        <strong>
+                          {licenseProgram
+                            ? `${licenseProgram.tierLabel} · 시험 발급`
+                            : formatCredits(item.price)}
+                        </strong>
                       </span>
                     </button>
                     <button
@@ -3351,14 +3468,25 @@ export default function EquipmentShopClient({
                       className={styles.productAction}
                       onClick={() => handlePurchase(item)}
                       disabled={!canPurchase}
-                      aria-busy={purchasingKey === item.key}
+                      aria-busy={
+                        isLicenseItem
+                          ? towaskiLicenseTestBusy
+                          : purchasingKey === item.key
+                      }
                     >
                       {isSoldOut
                         ? "반출 불가"
+                        : isLicenseItem
+                          ? item.licenseOwned
+                            ? "발급 완료"
+                            : licenseProgram?.requiresBasicLicense &&
+                                !effectiveHasBasicLicense
+                              ? "기초 화기 필요"
+                              : towaskiLicenseTestBusy
+                                ? "시험 진행 중"
+                                : "자격시험 시작"
                         : purchasingKey === item.key
-                          ? isLicenseItem
-                            ? "발급 처리 중"
-                            : "처리 중"
+                          ? "처리 중"
                           : isTowaskiDebug
                             ? "샌드박스 차단"
                             : !hasZonePurchaseAccess
@@ -3371,9 +3499,7 @@ export default function EquipmentShopClient({
                                 ? `${item.licenseRequirement?.label ?? "라이센스"} 필요`
                             : item.price > balance
                               ? "잔액 부족"
-                              : isLicenseItem
-                                ? "라이센스 발급"
-                                : "즉시 반출"}
+                              : "즉시 반출"}
                     </button>
                   </article>
                 );
@@ -3445,7 +3571,13 @@ export default function EquipmentShopClient({
                     <span>
                       <small>품목 판정</small>
                       <strong>
-                        {selectedItem.licenseStatus?.source === "owned_license"
+                        {selectedIsLicenseItem
+                          ? selectedItem.licenseOwned
+                            ? "자격 발급 완료"
+                            : selectedLicenseProgram
+                              ? `${selectedLicenseProgram.tierLabel} 시험 응시`
+                              : "자격시험 확인"
+                          : selectedItem.licenseStatus?.source === "owned_license"
                           ? "보유 라이센스"
                           : selectedItem.licenseStatus?.source ===
                               "character_qualification"
@@ -3460,22 +3592,32 @@ export default function EquipmentShopClient({
                 ) : null}
                 <div className={styles.detailStats}>
                   <span>{selectedItem.effect}</span>
-                  <strong>{formatCredits(selectedItem.price)}</strong>
+                  <strong>
+                    {selectedLicenseProgram
+                      ? `${selectedLicenseProgram.tierLabel} · ${selectedLicenseProgram.testCode}`
+                      : formatCredits(selectedItem.price)}
+                  </strong>
                   <span>
-                    {selectedItem.available ? "상시 반출" : "LOCKED"}
+                    {selectedLicenseProgram
+                      ? "시험 합격 시 발급"
+                      : selectedItem.available
+                        ? "상시 반출"
+                        : "LOCKED"}
                   </span>
                 </div>
                 <div className={styles.purchaseBox}>
                   <div className={styles.purchaseSummary}>
                     <span>
                       {selectedIsLicenseItem
-                        ? "라이센스 발급 · 1회"
+                        ? "자격시험 · 합격 시 1회 발급"
                         : selectedItem.discount
                           ? "토와스키 연계 반출 · 1개"
                           : "단건 반출 · 1개"}
                     </span>
                     <strong>
-                      결제 후 {formatCredits(balance - selectedItem.price)}
+                      {selectedIsLicenseItem
+                        ? "응시료 없음 · 크레딧 차감 없음"
+                        : `결제 후 ${formatCredits(balance - selectedItem.price)}`}
                     </strong>
                   </div>
                   <button
@@ -3483,12 +3625,23 @@ export default function EquipmentShopClient({
                     className={styles.primaryAction}
                     onClick={() => handlePurchase(selectedItem)}
                     disabled={!selectedCanPurchase}
-                    aria-busy={purchasingKey === selectedItem.key}
+                    aria-busy={
+                      selectedIsLicenseItem
+                        ? towaskiLicenseTestBusy
+                        : purchasingKey === selectedItem.key
+                    }
                   >
-                    {purchasingKey === selectedItem.key
-                      ? selectedIsLicenseItem
-                        ? "발급 처리 중"
-                        : "반출 처리 중"
+                    {selectedIsLicenseItem
+                      ? selectedItem.licenseOwned
+                        ? "발급 완료"
+                        : selectedLicenseProgram?.requiresBasicLicense &&
+                            !effectiveHasBasicLicense
+                          ? "기본 화기 필요"
+                          : towaskiLicenseTestBusy
+                            ? "시험 진행 중"
+                            : "자격시험 시작"
+                      : purchasingKey === selectedItem.key
+                        ? "반출 처리 중"
                       : isTowaskiDebug
                         ? "샌드박스 구매 차단"
                         : !selectedHasZonePurchaseAccess
@@ -3501,11 +3654,9 @@ export default function EquipmentShopClient({
                             ? `${selectedItem.licenseRequirement?.label ?? "라이센스"} 필요`
                         : selectedItem.price > balance
                           ? "잔액 부족"
-                          : selectedIsLicenseItem
-                            ? "라이센스 발급"
-                            : "1개 즉시 반출"}
+                          : "1개 즉시 반출"}
                   </button>
-                  {isGM && activeZone === "towaski" ? (
+                  {isGM && activeZone === "towaski" && !selectedIsLicenseItem ? (
                     <button
                       type="button"
                       className={styles.quoteAction}
@@ -4787,14 +4938,19 @@ export default function EquipmentShopClient({
             <div className={styles.zoneBody}>
               {showTowaskiLicenseTest ? (
                 <TowaskiLicenseTest
-                  key={`towaski-license-${towaskiDebugRevision}`}
+                  key={`towaski-license-${activeTowaskiLicenseTestSlug}-${towaskiDebugRevision}`}
                   characterCodename={mainCharacter?.codename ?? "DEBUG AGENT"}
+                  licenseSlug={activeTowaskiLicenseTestSlug}
                   debugSandbox={isTowaskiDebug}
                   onBusyChange={setTowaskiLicenseTestBusy}
                   onDialogueEvent={handleTowaskiQualificationDialogue}
                   onCancel={
+                    selectedTowaskiLicenseTestSlug !== null ||
                     effectiveHasQualificationAccess
-                      ? () => setTowaskiLicenseTestOpen(false)
+                      ? () => {
+                          setTowaskiLicenseTestOpen(false);
+                          setSelectedTowaskiLicenseTestSlug(null);
+                        }
                       : undefined
                   }
                   onGranted={handleTowaskiLicenseGranted}

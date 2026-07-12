@@ -68,6 +68,10 @@ test("license difficulty is fixed on the server challenge", async () => {
 
   assert.match(challengeDb, /difficulty: args\.difficulty/);
   assert.match(
+    route,
+    /getTowaskiLicenseTestProgram\(body\.licenseSlug\)[\s\S]*difficulty: program\.difficulty/,
+  );
+  assert.match(
     challengeDb,
     /getTowaskiLicenseTestRules\([\s\S]*challenge\.difficulty \?\? "standard"/,
   );
@@ -75,6 +79,39 @@ test("license difficulty is fixed on the server challenge", async () => {
     route,
     /evaluateTowaskiBasicLicenseTest\([\s\S]*challenge\.difficulty \?\? "standard"/,
   );
+});
+
+test("specialist license tests require the basic license and grant only their challenge slug", async () => {
+  const [route, challengeDb, checkout] = await Promise.all([
+    readFile(LICENSE_ROUTE, "utf8"),
+    readFile(CHALLENGE_DB, "utf8"),
+    readFile(CHECKOUT_ROUTE, "utf8"),
+  ]);
+
+  assert.match(
+    route,
+    /program\.requiresBasicLicense[\s\S]*TOWASKI_BASIC_FIREARM_LICENSE_SLUG/,
+  );
+  assert.match(
+    route,
+    /isTowaskiLicenseTestAvailable\(body\.licenseSlug\)[\s\S]*LICENSE_TEST_UNAVAILABLE/,
+  );
+  assert.match(route, /equipmentShopItemZone\(item\) === "towaski"/);
+  assert.match(route, /const licenseSlug = challenge\.licenseSlug/);
+  assert.match(
+    route,
+    /prepareTowaskiLicenseGrant\([\s\S]*licenseSlug[\s\S]*grantTowaskiLicenseOnce\([\s\S]*licenseSlug/,
+  );
+  assert.match(
+    route,
+    /mongoSession\.withTransaction[\s\S]*hasOwnedTowaskiLicense\([\s\S]*TOWASKI_BASIC_FIREARM_LICENSE_SLUG[\s\S]*session: mongoSession[\s\S]*grantTowaskiLicenseOnce/,
+  );
+  assert.match(challengeDb, /licenseSlug: args\.licenseSlug/);
+  assert.match(
+    challengeDb,
+    /selected && selected\.licenseSlug !== args\.licenseSlug/,
+  );
+  assert.match(checkout, /isTowaskiLicenseSlug\(masterItem\.slug\)/);
 });
 
 test("license challenge retries are idempotent per start and resolve request", async () => {

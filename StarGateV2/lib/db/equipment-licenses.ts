@@ -32,23 +32,30 @@ async function resolveTowaskiLicenseItem(licenseSlug: TowaskiLicenseSlug) {
 export async function findOwnedTowaskiLicense(
   characterId: string,
   licenseSlug: TowaskiLicenseSlug,
+  options: { session?: ClientSession } = {},
 ): Promise<CharacterInventory | null> {
   const item = await findMasterItemBySlug(licenseSlug);
   if (!item?._id) return null;
 
   const col = await characterInventoryCol();
-  return col.findOne({
-    characterId,
-    itemId: String(item._id),
-    quantity: { $gt: 0 },
-  });
+  return col.findOne(
+    {
+      characterId,
+      itemId: String(item._id),
+      quantity: { $gt: 0 },
+    },
+    { session: options.session },
+  );
 }
 
 export async function hasOwnedTowaskiLicense(
   characterId: string,
   licenseSlug: TowaskiLicenseSlug,
+  options: { session?: ClientSession } = {},
 ): Promise<boolean> {
-  return Boolean(await findOwnedTowaskiLicense(characterId, licenseSlug));
+  return Boolean(
+    await findOwnedTowaskiLicense(characterId, licenseSlug, options),
+  );
 }
 
 export async function listOwnedTowaskiLicenseSlugs(

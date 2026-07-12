@@ -14,19 +14,22 @@ import {
 import { useCompleteTowaskiLicenseTest } from "@/hooks/mutations/useEquipmentShopMutation";
 import { DialogueBeepEngine } from "@/lib/audio/dialogue-beep-engine";
 import {
+  getTowaskiLicenseTestProgram,
   getTowaskiLicenseTestRules,
   resolveTowaskiDebugLicenseTest,
   startTowaskiDebugLicenseTest,
-  TOWASKI_LICENSE_TEST_DIFFICULTIES,
   TOWASKI_LICENSE_TARGET_LAYOUTS,
   type TowaskiBasicLicenseTestEvaluation,
   type TowaskiDebugLicenseSession,
-  type TowaskiLicenseTestDifficulty,
   type TowaskiLicenseTarget,
   type TowaskiLicenseTestRequest,
   type TowaskiLicenseTestResponse,
   type TowaskiLicenseTestStats,
 } from "@/lib/equipment-shop/license-test";
+import {
+  TOWASKI_LICENSE_DEFINITIONS,
+  type TowaskiLicenseSlug,
+} from "@/lib/equipment-shop/licenses";
 import type { TowaskiQualificationDialogueEvent } from "@/lib/equipment-shop/towaski-dialogue";
 
 import styles from "./TowaskiLicenseTest.module.css";
@@ -42,11 +45,15 @@ type ActiveChallenge = Extract<TowaskiLicenseTestResponse, { status: "active" }>
 
 interface TowaskiLicenseTestProps {
   characterCodename: string;
+  licenseSlug: TowaskiLicenseSlug;
   debugSandbox?: boolean;
   onBusyChange?: (busy: boolean) => void;
   onDialogueEvent?: (event: TowaskiQualificationDialogueEvent) => void;
   onCancel?: () => void;
-  onGranted: (licenseName: string) => void;
+  onGranted: (license: Extract<
+    TowaskiLicenseTestResponse,
+    { status: "granted" | "already_owned" }
+  >["license"]) => void;
 }
 
 interface TestSubmissionCallbacks {
@@ -54,11 +61,6 @@ interface TestSubmissionCallbacks {
   onError: (error: Error) => void;
 }
 
-const DIFFICULTY_ORDER: readonly TowaskiLicenseTestDifficulty[] = [
-  "basic",
-  "standard",
-  "expert",
-];
 const EMPTY_STATS: TowaskiLicenseTestStats = {
   hostileHits: 0,
   civilianHits: 0,
@@ -183,6 +185,7 @@ function failureMessage(
 
 export default function TowaskiLicenseTest({
   characterCodename,
+  licenseSlug,
   debugSandbox = false,
   onBusyChange,
   onDialogueEvent,
@@ -191,8 +194,6 @@ export default function TowaskiLicenseTest({
 }: TowaskiLicenseTestProps) {
   const { mutate: submitLiveTest } = useCompleteTowaskiLicenseTest();
   const [phase, setPhase] = useState<TestPhase>("briefing");
-  const [difficulty, setDifficulty] =
-    useState<TowaskiLicenseTestDifficulty>("basic");
   const [countdown, setCountdown] = useState(3);
   const [challenge, setChallenge] = useState<ActiveChallenge | null>(null);
   const [stats, setStats] = useState<TowaskiLicenseTestStats>(EMPTY_STATS);
@@ -214,7 +215,10 @@ export default function TowaskiLicenseTest({
   const resolvingRef = useRef(false);
   const attemptRef = useRef(0);
 
-  const rules = getTowaskiLicenseTestRules(difficulty);
+  const program = getTowaskiLicenseTestProgram(licenseSlug);
+  const license = TOWASKI_LICENSE_DEFINITIONS[licenseSlug];
+  const difficulty = program.difficulty;
+  const rules = getTowaskiLicenseTestRules(program.difficulty);
   const hitAdvanceMs =
     Math.ceil(rules.minDurationMs / TOWASKI_LICENSE_TARGET_LAYOUTS.length) +
     20;
@@ -272,7 +276,6 @@ export default function TowaskiLicenseTest({
         return;
       }
       if (response.status === "active") {
-        setDifficulty(response.difficulty);
         setChallenge(response);
         setStats(response.stats);
         setRoundShots(0);
@@ -293,7 +296,7 @@ export default function TowaskiLicenseTest({
         });
         return;
       }
-      onGranted(response.license.name);
+      onGranted(response.license);
     },
     [onDialogueEvent, onGranted],
   );
@@ -327,7 +330,7 @@ export default function TowaskiLicenseTest({
       debugTimerRef.current = setTimeout(() => {
         try {
           if (input.action === "start") {
-            const result = startTowaskiDebugLicenseTest(input.difficulty);
+            const result = startTowaskiDebugLicenseTest(input.licenseSlug);
             debugSessionRef.current = result.session;
             callbacks.onSuccess(result.response);
             return;
@@ -354,13 +357,13 @@ export default function TowaskiLicenseTest({
   const startChallenge = useCallback(() => {
     setPhase("starting");
     submitTest(
-      { action: "start", difficulty },
+      { action: "start", licenseSlug },
       {
         onSuccess: handleResponse,
         onError: handleMutationError,
       },
     );
-  }, [difficulty, handleMutationError, handleResponse, submitTest]);
+  }, [handleMutationError, handleResponse, licenseSlug, submitTest]);
 
   const beginTest = useCallback(() => {
     attemptRef.current += 1;
@@ -533,11 +536,14 @@ export default function TowaskiLicenseTest({
   );
 
   return (
-    <section className={styles.licenseTest} aria-label="토와스키 기본 화기 자격시험">
+    <section
+      className={styles.licenseTest}
+      aria-label={`토와스키 ${program.title}`}
+    >
       <header className={styles.testHeader}>
         <div>
-          <span>TOWASKI RANGE CONTROL / B-01</span>
-          <h2>기본 화기 자격시험</h2>
+          <span>TOWASKI RANGE CONTROL / {program.testCode}</span>
+          <h2>{program.title}</h2>
         </div>
         <div className={styles.candidate}>
           <span>응시 요원</span>
@@ -558,37 +564,11 @@ export default function TowaskiLicenseTest({
           </div>
           <div className={styles.briefingCopy}>
             <span className={styles.statusLine}>
-              LICENSE STATUS / NOT ISSUED / {rules.label}
+              {program.tierLabel.toUpperCase()} QUALIFICATION / {license.label} /{" "}
+              {rules.label}
             </span>
-            <h3>“기본 자격도 없이 진열장부터 보려고?”</h3>
-            <p>
-              사격선에 서. 적성 표적은 확실히 끊고, 민간 표적에는 손가락도
-              걸지 마. 그 정도 식별도 안 되면 총은 못 내준다.
-            </p>
-            <div
-              className={styles.difficultySelector}
-              role="group"
-              aria-label="사격시험 난이도"
-            >
-              {DIFFICULTY_ORDER.map((value) => {
-                const option = TOWASKI_LICENSE_TEST_DIFFICULTIES[value];
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    data-active={difficulty === value}
-                    aria-pressed={difficulty === value}
-                    onClick={() => setDifficulty(value)}
-                  >
-                    <strong>{option.label}</strong>
-                    <span>
-                      {(option.targetWindowMs / 1_000).toFixed(2)}초 · 적중{" "}
-                      {option.requiredHostileHits}/10
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <h3>“{license.label} 자격 기준을 확인해.”</h3>
+            <p>{program.briefing}</p>
             <div className={styles.criteria} aria-label="합격 기준">
               <span>
                 적성 적중 <strong>{rules.requiredHostileHits} / {rules.hostileTargets}</strong>
@@ -637,14 +617,14 @@ export default function TowaskiLicenseTest({
               className={styles.secondaryButton}
               onClick={returnToBriefing}
             >
-              난이도 변경
+              시험 안내
             </button>
             <button
               type="button"
               className={styles.retryButton}
               onClick={beginTest}
             >
-              같은 난이도로 재시험
+              같은 자격 재시험
             </button>
           </div>
         </div>

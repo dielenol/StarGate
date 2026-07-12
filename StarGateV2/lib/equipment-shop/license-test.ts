@@ -1,3 +1,5 @@
+import type { TowaskiLicenseSlug } from "./licenses";
+
 export const TOWASKI_BASIC_FIREARM_LICENSE_SLUG =
   "towaski-license-basic-firearm" as const;
 
@@ -55,6 +57,125 @@ export const TOWASKI_LICENSE_TEST_DIFFICULTIES = {
 
 export type TowaskiLicenseTestDifficulty =
   keyof typeof TOWASKI_LICENSE_TEST_DIFFICULTIES;
+
+export type TowaskiLicenseTestTier = "basic" | "intermediate" | "advanced";
+
+export interface TowaskiLicenseTestProgram {
+  licenseSlug: TowaskiLicenseSlug;
+  licenseName: string;
+  licenseLabel: string;
+  licenseEffect: string;
+  testCode: string;
+  title: string;
+  tier: TowaskiLicenseTestTier;
+  tierLabel: string;
+  difficulty: TowaskiLicenseTestDifficulty;
+  briefing: string;
+  requiresBasicLicense: boolean;
+}
+
+export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
+  TowaskiLicenseSlug,
+  TowaskiLicenseTestProgram
+> = {
+  "towaski-license-basic-firearm": {
+    licenseSlug: "towaski-license-basic-firearm",
+    licenseName: "토와스키 기본 화기 라이센스",
+    licenseLabel: "기본 화기",
+    licenseEffect: "권총·소총·산탄총 반출 자격",
+    testCode: "B-01",
+    title: "기본 화기 자격시험",
+    tier: "basic",
+    tierLabel: "기초",
+    difficulty: "basic",
+    briefing:
+      "적성 표적을 식별해 사격하고 민간 표적에는 사격하지 마십시오.",
+    requiresBasicLicense: false,
+  },
+  "towaski-license-precision-firearm": {
+    licenseSlug: "towaski-license-precision-firearm",
+    licenseName: "토와스키 정밀 사격 라이센스",
+    licenseLabel: "정밀 사격",
+    licenseEffect: "저격소총 반출 자격",
+    testCode: "M-02",
+    title: "정밀 사격 자격시험",
+    tier: "intermediate",
+    tierLabel: "중급",
+    difficulty: "standard",
+    briefing:
+      "축소된 원거리 표적을 빠르게 식별하고 제한 시간 안에 정밀 사격하십시오.",
+    requiresBasicLicense: true,
+  },
+  "towaski-license-heavy-weapon": {
+    licenseSlug: "towaski-license-heavy-weapon",
+    licenseName: "토와스키 중화기 라이센스",
+    licenseLabel: "중화기",
+    licenseEffect: "중기관총·설치화기 반출 자격",
+    testCode: "A-11",
+    title: "중화기 운용 자격시험",
+    tier: "advanced",
+    tierLabel: "고급",
+    difficulty: "expert",
+    briefing:
+      "고출력 화기 운용을 가정해 모든 적성 표적을 식별하고 오사를 방지하십시오.",
+    requiresBasicLicense: true,
+  },
+  "towaski-license-flame-weapon": {
+    licenseSlug: "towaski-license-flame-weapon",
+    licenseName: "토와스키 화염 장비 라이센스",
+    licenseLabel: "화염 장비",
+    licenseEffect: "화염방사기 반출 자격",
+    testCode: "A-12",
+    title: "화염 장비 운용 자격시험",
+    tier: "advanced",
+    tierLabel: "고급",
+    difficulty: "expert",
+    briefing:
+      "확산 피해를 가정해 적성 표적만 선별하고 민간 표적 노출 시 즉시 사격을 중지하십시오.",
+    requiresBasicLicense: true,
+  },
+  "towaski-license-sonic-equipment": {
+    licenseSlug: "towaski-license-sonic-equipment",
+    licenseName: "토와스키 음파 장비 라이센스",
+    licenseLabel: "음파 장비",
+    licenseEffect: "음파 방출기 반출 자격",
+    testCode: "A-13",
+    title: "음파 장비 운용 자격시험",
+    tier: "advanced",
+    tierLabel: "고급",
+    difficulty: "expert",
+    briefing:
+      "광역 출력 장비 운용을 가정해 짧은 노출 시간 안에 표적을 식별하십시오.",
+    requiresBasicLicense: true,
+  },
+  "towaski-license-explosive-ordnance": {
+    licenseSlug: "towaski-license-explosive-ordnance",
+    licenseName: "토와스키 폭발물 취급 라이센스",
+    licenseLabel: "폭발물 취급",
+    licenseEffect: "수류탄·로켓 런처 반출 자격",
+    testCode: "A-14",
+    title: "폭발물 취급 자격시험",
+    tier: "advanced",
+    tierLabel: "고급",
+    difficulty: "expert",
+    briefing:
+      "폭발 반경을 고려해 모든 적성 표적을 확인하고 민간 표적에는 절대 사격하지 마십시오.",
+    requiresBasicLicense: true,
+  },
+};
+
+export function getTowaskiLicenseTestProgram(
+  licenseSlug: TowaskiLicenseSlug,
+): TowaskiLicenseTestProgram {
+  return TOWASKI_LICENSE_TEST_PROGRAMS[licenseSlug];
+}
+
+function isTowaskiLicenseTestSlug(value: unknown): value is TowaskiLicenseSlug {
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(TOWASKI_LICENSE_TEST_PROGRAMS, value)
+  );
+}
 
 export function isTowaskiLicenseTestDifficulty(
   value: unknown,
@@ -127,7 +248,7 @@ export interface TowaskiLicenseTestStats {
 }
 
 export type TowaskiLicenseTestRequest =
-  | { action: "start"; difficulty: TowaskiLicenseTestDifficulty }
+  | { action: "start"; licenseSlug: TowaskiLicenseSlug }
   | {
       action: "resolve";
       challengeId: string;
@@ -142,6 +263,7 @@ export type TowaskiLicenseTestResponse =
       challengeId: string;
       round: number;
       target: TowaskiLicenseTarget;
+      licenseSlug: TowaskiLicenseSlug;
       difficulty: TowaskiLicenseTestDifficulty;
       stats: TowaskiLicenseTestStats;
       roundDeadlineAt: string;
@@ -149,11 +271,13 @@ export type TowaskiLicenseTestResponse =
   | {
       status: "processing";
       challengeId: string;
+      licenseSlug: TowaskiLicenseSlug;
       difficulty: TowaskiLicenseTestDifficulty;
     }
   | {
       status: "failed";
       challengeId: string;
+      licenseSlug: TowaskiLicenseSlug;
       difficulty: TowaskiLicenseTestDifficulty;
       stats: TowaskiLicenseTestStats;
       evaluation: TowaskiBasicLicenseTestEvaluation;
@@ -176,11 +300,10 @@ export function parseTowaskiLicenseTestRequest(
   if (!value || typeof value !== "object") return null;
   const body = value as Record<string, unknown>;
   if (body.action === "start") {
-    if (body.difficulty === undefined) {
-      return { action: "start", difficulty: "basic" };
-    }
-    return isTowaskiLicenseTestDifficulty(body.difficulty)
-      ? { action: "start", difficulty: body.difficulty }
+    const licenseSlug =
+      body.licenseSlug ?? TOWASKI_BASIC_FIREARM_LICENSE_SLUG;
+    return isTowaskiLicenseTestSlug(licenseSlug)
+      ? { action: "start", licenseSlug }
       : null;
   }
   if (
@@ -263,6 +386,7 @@ const DEBUG_CIVILIAN_ROUNDS = new Set([3, 8]);
 
 export interface TowaskiDebugLicenseSession {
   challengeId: string;
+  licenseSlug: TowaskiLicenseSlug;
   difficulty: TowaskiLicenseTestDifficulty;
   round: number;
   startedAtMs: number;
@@ -281,6 +405,7 @@ function debugActiveResponse(
     challengeId: session.challengeId,
     round: session.round,
     target,
+    licenseSlug: session.licenseSlug,
     difficulty: session.difficulty,
     stats: session.stats,
     roundDeadlineAt: new Date(
@@ -291,14 +416,16 @@ function debugActiveResponse(
 }
 
 export function startTowaskiDebugLicenseTest(
-  difficulty: TowaskiLicenseTestDifficulty = "basic",
+  licenseSlug: TowaskiLicenseSlug = TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
   nowMs = Date.now(),
 ): {
   session: TowaskiDebugLicenseSession;
   response: TowaskiLicenseTestResponse;
 } {
+  const difficulty = getTowaskiLicenseTestProgram(licenseSlug).difficulty;
   const session: TowaskiDebugLicenseSession = {
     challengeId: `towaski-debug-${nowMs}`,
+    licenseSlug,
     difficulty,
     round: 0,
     startedAtMs: nowMs,
@@ -367,6 +494,7 @@ export function resolveTowaskiDebugLicenseTest(
       response: {
         status: "failed",
         challengeId: session.challengeId,
+        licenseSlug: session.licenseSlug,
         difficulty: session.difficulty,
         stats,
         evaluation,
@@ -374,16 +502,18 @@ export function resolveTowaskiDebugLicenseTest(
     };
   }
 
+  const program = getTowaskiLicenseTestProgram(session.licenseSlug);
+
   return {
     session: nextSession,
     response: {
       status: "granted",
       difficulty: session.difficulty,
       license: {
-        slug: TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
-        name: "토와스키 기본 화기 라이센스",
-        label: "기본 화기",
-        effect: "권총·소총·산탄총 반출 자격",
+        slug: session.licenseSlug,
+        name: program.licenseName,
+        label: program.licenseLabel,
+        effect: program.licenseEffect,
       },
       evaluation,
     },

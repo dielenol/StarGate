@@ -24,16 +24,35 @@ import {
   hasOwnedTowaskiLicense,
   prepareTowaskiLicenseGrant,
 } from "@/lib/db/equipment-licenses";
+import { findMasterItemBySlug } from "@/lib/db/inventory";
+import { equipmentShopItemZone } from "@/lib/equipment-shop/catalog";
 import {
   evaluateTowaskiBasicLicenseTest,
+  getTowaskiLicenseTestProgram,
   getTowaskiLicenseTestRules,
   parseTowaskiLicenseTestRequest,
   TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
   type TowaskiLicenseTestResponse,
   type TowaskiLicenseTestStats,
 } from "@/lib/equipment-shop/license-test";
-import { TOWASKI_LICENSE_DEFINITIONS } from "@/lib/equipment-shop/licenses";
+import {
+  TOWASKI_LICENSE_DEFINITIONS,
+  type TowaskiLicenseSlug,
+} from "@/lib/equipment-shop/licenses";
 import { notifyUser } from "@/lib/notifications/events";
+
+async function isTowaskiLicenseTestAvailable(
+  licenseSlug: TowaskiLicenseSlug,
+): Promise<boolean> {
+  const item = await findMasterItemBySlug(licenseSlug);
+  return Boolean(
+    item?._id &&
+      item.slug === licenseSlug &&
+      item.isPublic !== false &&
+      item.isAvailable !== false &&
+      equipmentShopItemZone(item) === "towaski",
+  );
+}
 
 function challengeStats(
   challenge: TowaskiLicenseChallenge,
@@ -56,6 +75,7 @@ function activeResponse(
     challengeId,
     round: challenge.currentRound,
     target,
+    licenseSlug: challenge.licenseSlug,
     difficulty: challenge.difficulty ?? "standard",
     stats: challengeStats(challenge),
     roundDeadlineAt: new Date(
@@ -112,16 +132,6 @@ export async function GET(request: Request) {
     );
   }
   const characterId = String(mainCharacter._id);
-  const license = TOWASKI_LICENSE_DEFINITIONS[TOWASKI_BASIC_FIREARM_LICENSE_SLUG];
-  if (
-    await hasOwnedTowaskiLicense(
-      characterId,
-      TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
-    )
-  ) {
-    return NextResponse.json({ status: "already_owned", license });
-  }
-
   const result = await findTowaskiLicenseTestRequestChallenge({
     userId: session.user.id,
     characterId,
@@ -134,6 +144,10 @@ export async function GET(request: Request) {
     );
   }
   const { challenge } = result;
+  const license = TOWASKI_LICENSE_DEFINITIONS[challenge.licenseSlug];
+  if (await hasOwnedTowaskiLicense(characterId, challenge.licenseSlug)) {
+    return NextResponse.json({ status: "already_owned", license });
+  }
   const challengeId = challenge._id?.toString();
   if (!challengeId) {
     return NextResponse.json(
@@ -150,6 +164,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       status: "failed",
       challengeId,
+      licenseSlug: challenge.licenseSlug,
       difficulty: challenge.difficulty ?? "standard",
       stats: challengeStats(challenge),
       evaluation,
@@ -158,18 +173,17 @@ export async function GET(request: Request) {
   return NextResponse.json({
     status: "processing",
     challengeId,
+    licenseSlug: challenge.licenseSlug,
     difficulty: challenge.difficulty ?? "standard",
   } satisfies TowaskiLicenseTestResponse);
 }
 
-async function waitForOwnedTowaskiLicense(characterId: string): Promise<boolean> {
+async function waitForOwnedTowaskiLicense(
+  characterId: string,
+  licenseSlug: TowaskiLicenseSlug,
+): Promise<boolean> {
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    if (
-      await hasOwnedTowaskiLicense(
-        characterId,
-        TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
-      )
-    ) {
+    if (await hasOwnedTowaskiLicense(characterId, licenseSlug)) {
       return true;
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -230,26 +244,47 @@ export async function POST(request: Request) {
   }
 
   const characterId = String(mainCharacter._id);
-  const license = TOWASKI_LICENSE_DEFINITIONS[TOWASKI_BASIC_FIREARM_LICENSE_SLUG];
-  if (
-    await hasOwnedTowaskiLicense(
-      characterId,
-      TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
-    )
-  ) {
-    return NextResponse.json({ status: "already_owned", license });
-  }
 
   let challenge: TowaskiLicenseChallenge;
   let challengeId: string;
 
   if (body.action === "start") {
+    const program = getTowaskiLicenseTestProgram(body.licenseSlug);
+    const license = TOWASKI_LICENSE_DEFINITIONS[body.licenseSlug];
+    if (!(await isTowaskiLicenseTestAvailable(body.licenseSlug))) {
+      return NextResponse.json(
+        {
+          error: "현재 운영 중인 자격시험이 아닙니다.",
+          code: "LICENSE_TEST_UNAVAILABLE",
+        },
+        { status: 404 },
+      );
+    }
+    if (await hasOwnedTowaskiLicense(characterId, body.licenseSlug)) {
+      return NextResponse.json({ status: "already_owned", license });
+    }
+    if (
+      program.requiresBasicLicense &&
+      !(await hasOwnedTowaskiLicense(
+        characterId,
+        TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+      ))
+    ) {
+      return NextResponse.json(
+        {
+          error: "전문 자격시험은 기본 화기 라이센스 취득 후 응시할 수 있습니다.",
+          code: "BASIC_LICENSE_REQUIRED",
+        },
+        { status: 403 },
+      );
+    }
     try {
       challenge = await startOrResumeTowaskiLicenseChallenge({
         userId: session.user.id,
         characterId,
         characterCodename: mainCharacter.codename,
-        difficulty: body.difficulty,
+        licenseSlug: body.licenseSlug,
+        difficulty: program.difficulty,
         requestId,
       });
       if (!challenge._id) throw new Error("사격 시험 challenge ID 발급 실패");
@@ -306,12 +341,40 @@ export async function POST(request: Request) {
 
   }
 
+  const licenseSlug = challenge.licenseSlug;
+  const license = TOWASKI_LICENSE_DEFINITIONS[licenseSlug];
+  const program = getTowaskiLicenseTestProgram(licenseSlug);
+  if (!(await isTowaskiLicenseTestAvailable(licenseSlug))) {
+    return NextResponse.json(
+      {
+        error: "자격시험 운영 상태가 변경되어 발급을 중단했습니다.",
+        code: "LICENSE_TEST_UNAVAILABLE",
+      },
+      { status: 409 },
+    );
+  }
+  if (
+    program.requiresBasicLicense &&
+    !(await hasOwnedTowaskiLicense(
+      characterId,
+      TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+    ))
+  ) {
+    return NextResponse.json(
+      {
+        error: "전문 자격 발급에는 유효한 기본 화기 라이센스가 필요합니다.",
+        code: "BASIC_LICENSE_REQUIRED",
+      },
+      { status: 403 },
+    );
+  }
   const evaluation = challengeEvaluation(challenge);
 
   if (challenge.status === "failed" || !evaluation.passed) {
     return NextResponse.json({
       status: "failed",
       challengeId,
+      licenseSlug,
       difficulty: challenge.difficulty ?? "standard",
       stats: challengeStats(challenge),
       evaluation,
@@ -326,7 +389,7 @@ export async function POST(request: Request) {
       redemptionToken,
     ));
   if (!redemptionClaimed) {
-    if (await waitForOwnedTowaskiLicense(characterId)) {
+    if (await waitForOwnedTowaskiLicense(characterId, licenseSlug)) {
       return NextResponse.json({
         status: "already_owned",
         license,
@@ -346,19 +409,32 @@ export async function POST(request: Request) {
   try {
     await prepareTowaskiLicenseGrant(
       characterId,
-      TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+      licenseSlug,
     );
     const client = await getClient();
     const mongoSession = client.startSession();
     let result;
     try {
       result = await mongoSession.withTransaction(async () => {
+        if (
+          program.requiresBasicLicense &&
+          !(await hasOwnedTowaskiLicense(
+            characterId,
+            TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+            { session: mongoSession },
+          ))
+        ) {
+          throw new TowaskiLicenseChallengeError(
+            "LICENSE_TEST_CONFLICT",
+            "기본 화기 라이센스가 회수되어 전문 자격을 발급할 수 없습니다.",
+          );
+        }
         const granted = await grantTowaskiLicenseOnce(
           {
             characterId,
             characterCodename: mainCharacter.codename,
-            licenseSlug: TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
-            note: "토와스키 기본 화기 자격시험 합격",
+            licenseSlug,
+            note: `${license.name} 자격시험 합격`,
           },
           { session: mongoSession },
         );
@@ -384,8 +460,8 @@ export async function POST(request: Request) {
       await notifyUser({
         userId: mainCharacter.ownerId,
         type: "SYSTEM",
-        title: "기본 화기 라이선스가 발급되었습니다",
-        message: `${mainCharacter.codename} · 토와스키 사격 자격시험 합격`,
+        title: `${license.label} 라이선스가 발급되었습니다`,
+        message: `${mainCharacter.codename} · ${license.name} 시험 합격`,
         link: "/erp/equipment-shop/towaski",
       }).catch((error) => {
         console.error("[equipment-shop/license-test] notification failed:", error);
