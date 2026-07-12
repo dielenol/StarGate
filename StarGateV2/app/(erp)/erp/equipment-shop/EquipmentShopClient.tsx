@@ -50,6 +50,10 @@ import {
   isTowaskiLicenseSlug,
 } from "@/lib/equipment-shop/licenses";
 import {
+  hasEquipmentShopZonePurchaseAccess,
+  requiresTowaskiBasicLicense,
+} from "@/lib/equipment-shop/purchase-zone-access";
+import {
   getTowaskiDialogueContext,
   getTowaskiQualificationDialogueLine,
   shouldScheduleTowaskiShopIdle,
@@ -922,14 +926,6 @@ function pickStableLine(lines: readonly string[], seed: string): string {
 
 function pickCyclingLine(lines: readonly string[], variant: number): string {
   return lines[Math.abs(Math.trunc(variant)) % lines.length] ?? lines[0] ?? "";
-}
-
-function isAcheronSharedArmor(item: EquipmentShopCatalogEntry): boolean {
-  return (
-    item.zone === "acheron" &&
-    item.sourceZone === "towaski" &&
-    item.category === "ARMOR"
-  );
 }
 
 function buildTowaskiArmorReferralLine(
@@ -1850,7 +1846,7 @@ export default function EquipmentShopClient({
     ? describeEquipmentLicenseDetail(selectedItem)
     : null;
   const selectedHasBasicPurchaseAccess = selectedItem
-    ? isAcheronSharedArmor(selectedItem) ||
+    ? !requiresTowaskiBasicLicense(selectedItem.zone) ||
       hasTowaskiBasicPurchaseAccess({
         isGM: effectiveTowaskiGm,
         hasBasicLicense: effectiveHasBasicLicense,
@@ -1859,9 +1855,12 @@ export default function EquipmentShopClient({
     : false;
   const selectedHasZonePurchaseAccess = Boolean(
     selectedItem &&
-      (effectiveTowaskiGm ||
-        activeZone === "towaski" ||
-        isAcheronSharedArmor(selectedItem)),
+      hasEquipmentShopZonePurchaseAccess({
+        isGM: effectiveTowaskiGm,
+        purchaseZone: selectedItem.zone,
+        sourceZone: selectedItem.sourceZone,
+        category: selectedItem.category,
+      }),
   );
   const selectedCanPurchase =
     Boolean(selectedItem) &&
@@ -2397,10 +2396,12 @@ export default function EquipmentShopClient({
   function handlePurchase(item: EquipmentShopCatalogEntry) {
     if (purchaseLockRef.current || purchaseMutation.isPending) return;
 
-    const hasZonePurchaseAccess =
-      effectiveTowaskiGm ||
-      activeZone === "towaski" ||
-      isAcheronSharedArmor(item);
+    const hasZonePurchaseAccess = hasEquipmentShopZonePurchaseAccess({
+      isGM: effectiveTowaskiGm,
+      purchaseZone: item.zone,
+      sourceZone: item.sourceZone,
+      category: item.category,
+    });
     if (!canUseShop || !hasZonePurchaseAccess) {
       setErrorMessage(
         effectiveHasMainCharacter
@@ -2435,7 +2436,7 @@ export default function EquipmentShopClient({
     }
 
     if (
-      !isAcheronSharedArmor(item) &&
+      requiresTowaskiBasicLicense(item.zone) &&
       !hasTowaskiBasicPurchaseAccess({
         isGM: effectiveTowaskiGm,
         hasBasicLicense: effectiveHasBasicLicense,
@@ -3259,11 +3260,15 @@ export default function EquipmentShopClient({
                 const isLicenseItem = isTowaskiLicenseCatalogItem(item);
                 const licenseBlocked = isEquipmentLicenseBlocked(item);
                 const licenseAccess = describeEquipmentLicenseAccess(item);
-                const sharedAcheronArmor = isAcheronSharedArmor(item);
                 const hasZonePurchaseAccess =
-                  effectiveTowaskiGm || isTowaski || sharedAcheronArmor;
+                  hasEquipmentShopZonePurchaseAccess({
+                    isGM: effectiveTowaskiGm,
+                    purchaseZone: item.zone,
+                    sourceZone: item.sourceZone,
+                    category: item.category,
+                  });
                 const hasBasicPurchaseAccess =
-                  sharedAcheronArmor ||
+                  !requiresTowaskiBasicLicense(item.zone) ||
                   hasTowaskiBasicPurchaseAccess({
                     isGM: effectiveTowaskiGm,
                     hasBasicLicense: effectiveHasBasicLicense,

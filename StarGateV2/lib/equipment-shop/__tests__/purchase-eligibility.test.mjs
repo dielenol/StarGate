@@ -55,10 +55,16 @@ test("Acheron armor discount is recalculated by checkout instead of trusting cli
   const checkoutRoute = await readFile(CHECKOUT_ROUTE, "utf8");
 
   assert.match(checkoutRoute, /quoteAcheronArmorReferral/);
+  assert.match(checkoutRoute, /hasEquipmentShopZonePurchaseAccess/);
   assert.match(checkoutRoute, /purchaseZone === "acheron"/);
-  assert.match(checkoutRoute, /line\.sourceZone === "towaski"/);
-  assert.match(checkoutRoute, /line\.category === "ARMOR"/);
+  assert.match(
+    checkoutRoute,
+    /!requiresTowaskiBasicLicense\(purchaseZone\) \|\| hasBasicLicense/,
+  );
+  assert.match(checkoutRoute, /isAcheronSharedArmorZone/);
+  assert.match(checkoutRoute, /isSharedAcheronArmor && referralSecret/);
   assert.match(checkoutRoute, /unitPrice > item\.expectedUnitPrice/);
   assert.match(checkoutRoute, /code: "PRICE_CHANGED"/);
   assert.doesNotMatch(checkoutRoute, /body\?\.price|rawItem\.price/);
+  assert.doesNotMatch(checkoutRoute, /purchaseZone !== "towaski"/);
 });

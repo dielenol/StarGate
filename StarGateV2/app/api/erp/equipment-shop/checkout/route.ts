@@ -40,6 +40,12 @@ import {
 import { containsDuplicateEquipmentItemIds } from "@/lib/equipment-shop/checkout-lines";
 import { evaluateEquipmentPurchaseEligibility } from "@/lib/equipment-shop/purchase-eligibility";
 import {
+  hasEquipmentShopZonePurchaseAccess,
+  isAcheronSharedArmorZone,
+  isEquipmentShopCatalogZoneMatch,
+  requiresTowaskiBasicLicense,
+} from "@/lib/equipment-shop/purchase-zone-access";
+import {
   getEquipmentLicenseRequirement,
   isTowaskiLicenseSlug,
   resolveEquipmentLicenseStatus,
@@ -264,11 +270,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isSharedAcheronArmor =
-      purchaseZone === "acheron" &&
-      zone === "towaski" &&
-      masterItem.category === "ARMOR";
-    const isCatalogZoneMatch = zone === purchaseZone || isSharedAcheronArmor;
+    const zoneInput = {
+      purchaseZone,
+      sourceZone: zone,
+      category: masterItem.category,
+    } as const;
+    const isSharedAcheronArmor = isAcheronSharedArmorZone(zoneInput);
+    const isCatalogZoneMatch = isEquipmentShopCatalogZoneMatch(zoneInput);
     if (!isCatalogZoneMatch) {
       return NextResponse.json(
         {
@@ -278,7 +286,7 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
-    if (!isGM && purchaseZone !== "towaski" && !isSharedAcheronArmor) {
+    if (!hasEquipmentShopZonePurchaseAccess({ isGM, ...zoneInput })) {
       return NextResponse.json(
         {
           error: "플레이어는 해당 병기부 구역의 품목을 반출할 수 없습니다.",
@@ -460,12 +468,9 @@ export async function POST(request: NextRequest) {
               })
             : undefined;
           const eligibility = evaluateEquipmentPurchaseEligibility({
-            isGM:
-              isGM ||
-              (purchaseZone === "acheron" &&
-                line.sourceZone === "towaski" &&
-                line.category === "ARMOR"),
-            hasBasicLicense,
+            isGM,
+            hasBasicLicense:
+              !requiresTowaskiBasicLicense(purchaseZone) || hasBasicLicense,
             available: true,
             price: line.unitPrice,
             balance: Number.POSITIVE_INFINITY,
