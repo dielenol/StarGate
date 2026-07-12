@@ -195,14 +195,14 @@ test("non-GM admin audit is skipped", async (t) => {
   assert.equal(called, false);
 });
 
-test("GM admin audit never falls back to the intake webhook", async (t) => {
+test("GM admin audit uses the same fallback as GM character edits", async (t) => {
   const originalFetch = globalThis.fetch;
-  let called = false;
+  const calls = [];
 
   resetWebhookEnv();
   process.env.DISCORD_WEBHOOK_URL = "https://discord.test/intake";
-  globalThis.fetch = async () => {
-    called = true;
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, body: JSON.parse(init.body) });
     return new Response(null, { status: 204 });
   };
 
@@ -218,6 +218,8 @@ test("GM admin audit never falls back to the intake webhook", async (t) => {
     timestamp: new Date("2026-07-11T00:00:00.000Z"),
   });
 
-  assert.equal(result, "skipped");
-  assert.equal(called, false);
+  assert.equal(result, "sent");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://discord.test/intake");
+  assert.equal(calls[0].body.username, "StarGate Admin Watch");
 });

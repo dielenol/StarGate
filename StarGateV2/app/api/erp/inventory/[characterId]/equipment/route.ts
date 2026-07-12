@@ -12,6 +12,7 @@ import {
   normalizedInventoryCategory,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface RouteContext {
   params: Promise<{ characterId: string }>;
@@ -104,6 +105,25 @@ export async function PUT(request: Request, context: RouteContext) {
         { status: 409 },
       );
     }
+
+    scheduleGmAdminAudit({
+      action: "캐릭터 장비 교체",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${slot} 슬롯에 ${masterItem.name} 장착`,
+      target: `${character.codename} (${characterId})`,
+      details: [
+        {
+          name: "이전 아이템 ID",
+          value: result.previousItemId ?? "없음",
+        },
+        { name: "신규 아이템 ID", value: itemId },
+      ],
+      timestamp: new Date(),
+    });
 
     const { entries } = await listCharacterInventoryEntries(characterId);
     const equipped = Object.fromEntries(

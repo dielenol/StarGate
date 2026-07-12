@@ -187,6 +187,14 @@ function isPlayerSelfEdit(payload: CharacterEditWebhookPayload): boolean {
   return payload.source === "player";
 }
 
+/** GM 캐릭터 편집과 GM 관리 감사가 공유하는 알림 채널. */
+function getCharacterAdminEditWebhookUrl(): string | undefined {
+  return (
+    process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL ||
+    process.env.DISCORD_WEBHOOK_URL
+  );
+}
+
 function getCharacterEditWebhookUrl(
   payload: CharacterEditWebhookPayload,
 ): string | undefined {
@@ -194,10 +202,7 @@ function getCharacterEditWebhookUrl(
     return getCharacterSelfEditWebhookUrl();
   }
 
-  return (
-    process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL ||
-    process.env.DISCORD_WEBHOOK_URL
-  );
+  return getCharacterAdminEditWebhookUrl();
 }
 
 function getCharacterSelfEditWebhookUrl(): string | undefined {
@@ -585,8 +590,8 @@ export async function notifyShopReorderFulfilled(
 /**
  * P7 — 캐릭터 편집 GM 채널 알림.
  *
- * 환경변수 `DISCORD_WEBHOOK_CHAR_EDIT_URL` 미설정 시 silent skip (warning log).
- * 기존 `DISCORD_WEBHOOK_URL` 과 별개 채널 (GM 전용 가시성).
+ * `DISCORD_WEBHOOK_CHAR_EDIT_URL`을 우선하고, 없으면 기존
+ * `DISCORD_WEBHOOK_URL`로 fallback한다. 두 값이 모두 없을 때만 silent skip한다.
  *
  * fire-and-forget 호출 가정 — 본 함수는 throw 하지 않고 모든 실패를 console.warn 으로 흡수.
  * 호출자가 `.catch()` 등록만 해도 안전하지만 본 함수가 swallow 해 두 번째 안전망 제공.
@@ -745,18 +750,19 @@ export async function notifyEquipmentWorkshopRequest(
  * GM 관리 작업 공용 감사 알림.
  *
  * 지급·권한·재고 등 관리 API 1회당 메시지 1개를 남긴다. 호출부는 성공한
- * mutation 뒤에서만 예약하며, 본 함수는 Discord 장애가 원래 작업 결과를
- * 뒤집지 않도록 모든 실패를 흡수한다.
+ * mutation 뒤에서만 예약하며, GM 캐릭터 편집과 같은 webhook resolver를
+ * 사용한다. Discord 장애가 원래 작업 결과를 뒤집지 않도록 모든 실패를
+ * 흡수한다.
  */
 export async function notifyGmAdminAudit(
   payload: GmAdminAuditWebhookPayload,
 ): Promise<"sent" | "skipped"> {
   if (payload.actor.role !== "GM") return "skipped";
 
-  const webhookUrl = process.env.DISCORD_WEBHOOK_CHAR_EDIT_URL;
+  const webhookUrl = getCharacterAdminEditWebhookUrl();
   if (!webhookUrl) {
     console.warn(
-      "[notifyGmAdminAudit] DISCORD_WEBHOOK_CHAR_EDIT_URL 미설정 — silent skip",
+      "[notifyGmAdminAudit] DISCORD_WEBHOOK_CHAR_EDIT_URL/DISCORD_WEBHOOK_URL 미설정 — silent skip",
     );
     return "skipped";
   }
