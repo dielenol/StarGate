@@ -198,6 +198,16 @@ const TEMPER_ENTRY_SFX_SRC =
 const RATCHET_PROFILE_SRC = "/assets/npcs/Mateo-Rivas-Ratchet-profile.webp";
 const RATCHET_IDLE_DELAY_MS = 12500;
 
+const RATCHET_MOOD_ASSETS: Record<StrategicMood, string> = {
+  welcome: RATCHET_PROFILE_SRC,
+  inspect: "/assets/npcs/Mateo-Rivas-Ratchet-inspect.webp",
+  systems: "/assets/npcs/Mateo-Rivas-Ratchet-systems.webp",
+  dispatch: "/assets/npcs/Mateo-Rivas-Ratchet-dispatch.webp",
+  checkout: "/assets/npcs/Mateo-Rivas-Ratchet-checkout.webp",
+  blocked: "/assets/npcs/Mateo-Rivas-Ratchet-blocked.webp",
+  idle: "/assets/npcs/Mateo-Rivas-Ratchet-idle.webp",
+};
+
 const TEMPER_MOOD_ASSETS: Record<TemperMood, string> = {
   welcome: TEMPER_PROFILE_SRC,
   inspect: "/assets/npcs/Brigid-Kane-Temper-inspect.webp",
@@ -1750,6 +1760,7 @@ export default function EquipmentShopClient({
     entrySfxSrc: null,
     entrySfxVolume: 0,
   });
+  const ratchetPortraitSrc = RATCHET_MOOD_ASSETS[strategicMood];
   const handleTowaskiQualificationDialogue = useCallback(
     (event: TowaskiQualificationDialogueEvent) => {
       clearTowaskiIdleTimer();
@@ -5049,7 +5060,7 @@ export default function EquipmentShopClient({
                 </Fragment>
               ) : activeZone === "strategic" ? (
                 <Image
-                  src={RATCHET_PROFILE_SRC}
+                  src={ratchetPortraitSrc}
                   alt=""
                   fill
                   sizes="148px"
