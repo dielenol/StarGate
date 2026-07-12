@@ -20,6 +20,7 @@ import {
   addHours,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
+  isEquipmentResearchEffectOperational,
   isEquipmentResearchScope,
   quoteEquipmentResearchStart,
 } from "@/lib/equipment-shop/research";
@@ -140,6 +141,15 @@ export async function POST(request: Request) {
       {
         error: "해당 연구는 선택한 적용 범위를 지원하지 않습니다.",
         code: "INVALID_RESEARCH",
+      },
+      { status: 400 },
+    );
+  }
+  if (!isEquipmentResearchEffectOperational(effect)) {
+    return NextResponse.json(
+      {
+        error: "후속 기능이 준비되지 않은 연구는 아직 시작할 수 없습니다.",
+        code: "RESEARCH_NOT_READY",
       },
       { status: 400 },
     );

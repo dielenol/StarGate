@@ -1,6 +1,6 @@
+import { getEquipmentResearchCapabilities } from "@/lib/db/equipment-research";
+
 import EquipmentShopClient from "../EquipmentShopClient";
-import EquipmentShopComingSoon from "../EquipmentShopComingSoon";
-import { requireEquipmentShopSession } from "../_access";
 import { loadEquipmentShopPageData } from "../_data";
 
 export const metadata = {
@@ -8,12 +8,21 @@ export const metadata = {
 };
 
 export default async function EquipmentShopCustomPage() {
-  const { canPreview } = await requireEquipmentShopSession();
-  if (!canPreview) {
-    return <EquipmentShopComingSoon />;
-  }
+  const data = await loadEquipmentShopPageData({
+    requireGm: false,
+    includeCatalog: false,
+    includeResearch: false,
+  });
+  const capabilities = await getEquipmentResearchCapabilities(
+    data.mainCharacter?.id ?? null,
+  );
 
-  const data = await loadEquipmentShopPageData({ requireGm: false });
-
-  return <EquipmentShopClient {...data} mode="zone" initialZone="custom" />;
+  return (
+    <EquipmentShopClient
+      {...data}
+      initialResearch={{ ...data.initialResearch, capabilities }}
+      mode="zone"
+      initialZone="custom"
+    />
+  );
 }

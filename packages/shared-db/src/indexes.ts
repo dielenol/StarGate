@@ -141,6 +141,16 @@ export async function ensureAllIndexes(): Promise<void> {
       { status: 1, updatedAt: 1 },
       { name: "economic_operations_status_updatedAt" },
     ),
+    db.collection("equipment_workshop_requests").createIndexes([
+      {
+        key: { userId: 1, createdAt: -1 },
+        name: "equipment_workshop_requests_userId_createdAt",
+      },
+      {
+        key: { status: 1, createdAt: -1 },
+        name: "equipment_workshop_requests_status_createdAt",
+      },
+    ]),
 
     /* ── master_items (from task spec) ── */
     db.collection("master_items").createIndexes([

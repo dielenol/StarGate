@@ -41,7 +41,11 @@ import {
   findCharacterById,
   findMainCharacterLiteByOwner as findMainCharacterByOwner,
 } from "@/lib/db/characters";
-import { addCredit } from "@/lib/db/credits";
+import {
+  addCredit,
+  findTransactionsBySessionMetadata,
+} from "@/lib/db/credits";
+import { getEquipmentResearchCapabilities } from "@/lib/db/equipment-research";
 import {
   findSessionById,
   listRecentCompletedSessions,
@@ -53,6 +57,7 @@ import {
   notifyUser,
 } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { quoteEquipmentResearchCreditBonus } from "@/lib/equipment-shop/research";
 import { grantStockReward } from "@/lib/stocks/rewards";
 
 import { buildSessionRewardCandidates } from "@/app/(erp)/erp/admin/credits/_session-rewards";
@@ -209,9 +214,33 @@ export async function POST(request: Request) {
     const sessionIdStr = String(sessionDoc._id);
     const participants = await resolveParticipants(body.participants);
     const rewards = normalizeRewards(body.rewards, participants);
+    const existingCreditRewards = new Map(
+      (await findTransactionsBySessionMetadata(sessionIdStr)).map(
+        (transaction) => [transaction.characterId, transaction] as const,
+      ),
+    );
 
     const results: BulkGrantResultItem[] = [];
     for (const item of buildRewardOperations(participants, rewards)) {
+      const existingCreditReward =
+        item.reward.kind === "CREDIT"
+          ? existingCreditRewards.get(item.participant.characterId)
+          : null;
+      if (existingCreditReward) {
+        results.push({
+          ownerId: item.participant.ownerId,
+          characterId: item.participant.characterId,
+          characterCodename: item.participant.characterCodename,
+          rewardLabel: `크레딧 +${existingCreditReward.amount} CR`,
+          rewardKind: "CREDIT",
+          success: false,
+          skipped: true,
+          skipReason: "이미 해당 세션 보상 발급됨",
+          transactionId: String(existingCreditReward._id),
+          newBalance: existingCreditReward.balance,
+        });
+        continue;
+      }
       const row = await processRewardOperation({
         operation: item,
         description,
@@ -510,12 +539,19 @@ async function processRewardOperation(args: {
 
   try {
     if (reward.kind === "CREDIT") {
+      const capabilities = await getEquipmentResearchCapabilities(
+        participant.characterId,
+      );
+      const rewardQuote = quoteEquipmentResearchCreditBonus({
+        baseAmount: reward.amount,
+        capabilities,
+      });
       const transaction = await addCredit({
         characterId: participant.characterId,
         characterCodename: participant.characterCodename,
         ownerId: participant.ownerId,
         ownerName: participant.ownerName,
-        amount: reward.amount,
+        amount: rewardQuote.totalAmount,
         type: "SESSION_REWARD",
         description,
         createdById: session.id,
@@ -528,6 +564,9 @@ async function processRewardOperation(args: {
           sessionDate: sessionMeta.sessionDate,
           autoReward: true,
           rewardKind: "CREDIT",
+          baseRewardAmount: rewardQuote.baseAmount,
+          researchBonusAmount: rewardQuote.bonusAmount,
+          researchBonusPercent: capabilities.creditBonusPercent,
         },
       });
       await notifyUser({
@@ -537,6 +576,11 @@ async function processRewardOperation(args: {
         message: appendDescription(
           [
             `${participant.characterCodename} · ${formatSignedAmount(transaction.amount, "CR")}`,
+            ...(rewardQuote.bonusAmount > 0
+              ? [
+                  `병기 연구 보너스 +${rewardQuote.bonusAmount.toLocaleString()} CR`,
+                ]
+              : []),
             `현재 잔액 ${transaction.balance.toLocaleString()} CR`,
             sessionMeta.sessionTitle,
           ],
@@ -546,6 +590,7 @@ async function processRewardOperation(args: {
       });
       return {
         ...base,
+        rewardLabel: `크레딧 +${transaction.amount} CR`,
         success: true,
         transactionId: String(transaction._id),
         newBalance: transaction.balance,

@@ -13,7 +13,9 @@ import { notifyEquipmentResearchEvent } from "@/lib/discord";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
+  getEquipmentResearchEffect,
   getEquipmentResearchNode,
+  isEquipmentResearchEffectOperational,
   quoteEquipmentResearchRush,
 } from "@/lib/equipment-shop/research";
 
@@ -69,6 +71,16 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "연구 트리에서 프로젝트 키를 찾을 수 없습니다." },
       { status: 409 },
+    );
+  }
+  const effect = getEquipmentResearchEffect(node, project.scope) ?? project.effect;
+  if (!isEquipmentResearchEffectOperational(effect)) {
+    return NextResponse.json(
+      {
+        error: "후속 기능이 준비되지 않은 연구에는 추가 비용을 사용할 수 없습니다.",
+        code: "RESEARCH_NOT_READY",
+      },
+      { status: 400 },
     );
   }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { findCharacterById } from "@/lib/db/characters";
+import { listCharacterInventoryEntries } from "@/lib/db/inventory";
 import {
   isPublicAgentWithSheet,
   toPublicAgentDetail,
@@ -21,8 +22,10 @@ export async function GET(_request: Request, context: RouteContext) {
     );
   }
 
+  const inventory = await listCharacterInventoryEntries(id);
+
   return NextResponse.json(
-    { agent: toPublicAgentDetail(character) },
+    { agent: toPublicAgentDetail(character, inventory.entries) },
     {
       headers: {
         "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",

@@ -11,6 +11,8 @@ import {
   getEquipmentResearchNode,
   getEquipmentResearchPrerequisiteTier,
   isEquipmentResearchApplyLeaseStale,
+  isEquipmentResearchEffectOperational,
+  quoteEquipmentResearchCreditBonus,
   quoteEquipmentResearchRush,
   quoteEquipmentResearchStart,
 } from "../research.ts";
@@ -244,4 +246,55 @@ test("capability effects merge the strongest economy and lab bonuses", () => {
   assert.equal(capabilities.rushDiscountPercent, 20);
   assert.equal(capabilities.creditBonusPercent, 5);
   assert.equal(capabilities.creditBonusCap, 250);
+});
+
+test("credit bonus quote applies percentage and cap to session rewards", () => {
+  assert.deepEqual(
+    quoteEquipmentResearchCreditBonus({
+      baseAmount: 100.75,
+      capabilities: { creditBonusPercent: 5, creditBonusCap: 250 },
+    }),
+    { baseAmount: 100.75, bonusAmount: 5, totalAmount: 105.75 },
+  );
+  assert.deepEqual(
+    quoteEquipmentResearchCreditBonus({
+      baseAmount: 2_000,
+      capabilities: { creditBonusPercent: 5, creditBonusCap: 250 },
+    }),
+    { baseAmount: 2_000, bonusAmount: 100, totalAmount: 2_100 },
+  );
+  assert.deepEqual(
+    quoteEquipmentResearchCreditBonus({
+      baseAmount: 10_000,
+      capabilities: { creditBonusPercent: 5, creditBonusCap: 250 },
+    }),
+    { baseAmount: 10_000, bonusAmount: 250, totalAmount: 10_250 },
+  );
+});
+
+test("research cannot charge for unlock effects without an operational consumer", () => {
+  assert.equal(
+    isEquipmentResearchEffectOperational({
+      kind: "unlock",
+      code: "training_module",
+      label: "훈련 추가권",
+    }),
+    false,
+  );
+  assert.equal(
+    isEquipmentResearchEffectOperational({
+      kind: "unlock",
+      code: "zulu_countermeasure",
+      label: "개체 대응 장비 후보",
+    }),
+    false,
+  );
+  assert.equal(
+    isEquipmentResearchEffectOperational({
+      kind: "unlock",
+      code: "custom_weapon_slot",
+      label: "전용무기 제작 슬롯",
+    }),
+    true,
+  );
 });

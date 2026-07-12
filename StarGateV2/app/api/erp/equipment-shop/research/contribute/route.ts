@@ -26,6 +26,7 @@ import {
   addHours,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
+  isEquipmentResearchEffectOperational,
 } from "@/lib/equipment-shop/research";
 
 import {
@@ -90,6 +91,15 @@ export async function POST(request: Request) {
       {
         error: "해당 연구는 팀 연구 기여를 지원하지 않습니다.",
         code: "INVALID_RESEARCH",
+      },
+      { status: 400 },
+    );
+  }
+  if (!isEquipmentResearchEffectOperational(effect)) {
+    return NextResponse.json(
+      {
+        error: "후속 기능이 준비되지 않은 연구에는 아직 기여할 수 없습니다.",
+        code: "RESEARCH_NOT_READY",
       },
       { status: 400 },
     );

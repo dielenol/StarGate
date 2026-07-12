@@ -1,4 +1,5 @@
 import type { AgentCharacter, Character } from "@/types/character";
+import type { InventoryEntryDto } from "@/types/inventory";
 import type {
   PublicAgentDetail,
   PublicAgentSheet,
@@ -6,6 +7,7 @@ import type {
 } from "@/types/public-player";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { mergePublicEquipment } from "@/lib/equipment/public-equipment";
 import { getPixelCharacterPath } from "@/lib/format/character-asset";
 
 export function isPublicAgentWithSheet(
@@ -37,7 +39,10 @@ export function toPublicAgentSummary(
   };
 }
 
-export function toPublicAgentSheet(character: AgentCharacter): PublicAgentSheet {
+export function toPublicAgentSheet(
+  character: AgentCharacter,
+  inventoryEntries?: InventoryEntryDto[],
+): PublicAgentSheet {
   return {
     codename: character.codename,
     name: character.lore.name,
@@ -59,12 +64,10 @@ export function toPublicAgentSheet(character: AgentCharacter): PublicAgentSheet 
     credit: character.play.credit,
     weaponTraining: character.play.weaponTraining.join(", "),
     skillTraining: character.play.skillTraining.join(", "),
-    equipment: character.play.equipment.map((equipment) => ({
-      name: equipment.name,
-      price: equipment.price ?? "",
-      damage: equipment.damage ?? "",
-      description: equipment.description ?? "",
-    })),
+    equipment: mergePublicEquipment({
+      inventoryEntries,
+      legacyEquipment: character.play.equipment,
+    }),
     abilities: character.play.abilities.map((ability) => ({
       code: ability.code ?? ability.slot,
       name: ability.name,
@@ -74,9 +77,12 @@ export function toPublicAgentSheet(character: AgentCharacter): PublicAgentSheet 
   };
 }
 
-export function toPublicAgentDetail(character: AgentCharacter): PublicAgentDetail {
+export function toPublicAgentDetail(
+  character: AgentCharacter,
+  inventoryEntries?: InventoryEntryDto[],
+): PublicAgentDetail {
   return {
     ...toPublicAgentSummary(character),
-    sheet: toPublicAgentSheet(character),
+    sheet: toPublicAgentSheet(character, inventoryEntries),
   };
 }

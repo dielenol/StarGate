@@ -12,5 +12,7 @@ export function readIdempotencyKey(request: Request): string | null {
 
 export function childIdempotencyKey(parent: string, suffix: string): string {
   const normalizedSuffix = suffix.replace(/[^A-Za-z0-9:_-]/g, "-");
-  return `${parent}:${normalizedSuffix}`.slice(0, 128);
+  const suffixPart = `:${normalizedSuffix}`.slice(0, 64);
+  const parentPart = parent.slice(0, 128 - suffixPart.length);
+  return `${parentPart}${suffixPart}`;
 }

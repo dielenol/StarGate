@@ -28,6 +28,7 @@ export interface InventoryEntryDto {
   description?: string;
   price?: number | string;
   previewImage?: string;
+  isPublic?: boolean;
   equippedSlot?: import("@stargate/shared-db/types").EquipmentSlot;
   equippedAt?: string;
 }

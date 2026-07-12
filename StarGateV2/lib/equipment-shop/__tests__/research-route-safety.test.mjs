@@ -61,6 +61,19 @@ test("research rush stores the requestId on the project update", async () => {
   assert.match(source, /updateEquipmentResearchProjectRush\([\s\S]*requestId/);
 });
 
+test("research rush blocks effects without an operational consumer", async () => {
+  const source = await readFile(
+    new URL(
+      "../../../app/api/erp/equipment-shop/research/rush/route.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(source, /isEquipmentResearchEffectOperational/);
+  assert.match(source, /RESEARCH_NOT_READY/);
+});
+
 test("research apply commits target effects and project status in one transaction", async () => {
   const source = await readFile(
     new URL("../research-application.ts", import.meta.url),

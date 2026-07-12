@@ -25,6 +25,7 @@ import {
   useContributeEquipmentResearch,
   useEquipmentShopQuote,
   useEquipmentWorkshopRequest,
+  useUpdateEquipmentWorkshopRequest,
   usePurchaseEquipmentShopItem,
   useRegisterTowaskiArmorReferral,
   useRushEquipmentResearch,
@@ -39,6 +40,7 @@ import {
   type EquipmentResearchProjectEntry,
   useEquipmentShopCatalog,
   useEquipmentResearch,
+  useEquipmentWorkshopRequests,
 } from "@/hooks/queries/useEquipmentShopQuery";
 import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
 
@@ -48,6 +50,10 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
+import {
+  requiresEquipmentWorkshopOperatorNote,
+  type EquipmentWorkshopRequestStatus,
+} from "@/lib/equipment-shop/workshop-request";
 import {
   AMERI_DIALOGUE_LINES,
   AMERI_IDLE_LINES,
@@ -137,6 +143,7 @@ import {
   type EquipmentResearchStat,
   getEquipmentResearchPrerequisiteTier,
   isEquipmentResearchApplyLeaseStale,
+  isEquipmentResearchEffectOperational,
   quoteEquipmentResearchRush,
   quoteEquipmentResearchStart,
   scopeLabel,
@@ -156,6 +163,27 @@ type EquipmentShopTabValue =
   | "ARMOR"
   | "CONSUMABLE"
   | "LICENSE";
+
+const WORKSHOP_STATUS_LABELS: Record<
+  EquipmentWorkshopRequestStatus,
+  string
+> = {
+  REQUESTED: "접수",
+  IN_REVIEW: "검토 중",
+  APPROVED: "승인",
+  REJECTED: "반려",
+  COMPLETED: "완료",
+};
+const WORKSHOP_NEXT_STATUSES: Record<
+  EquipmentWorkshopRequestStatus,
+  readonly EquipmentWorkshopRequestStatus[]
+> = {
+  REQUESTED: ["IN_REVIEW", "APPROVED", "REJECTED"],
+  IN_REVIEW: ["APPROVED", "REJECTED"],
+  APPROVED: ["COMPLETED", "REJECTED"],
+  REJECTED: [],
+  COMPLETED: [],
+};
 type FeedbackTone = "success" | "info" | "error";
 type NoticeState = {
   tone: Exclude<FeedbackTone, "error">;
@@ -207,6 +235,14 @@ const RATCHET_PROFILE_SRC = "/assets/npcs/Mateo-Rivas-Ratchet-profile.webp";
 const RATCHET_IDLE_DELAY_MS = 12500;
 const VERNIER_PROFILE_SRC = "/assets/npcs/Ada-Schreiber-Vernier-profile.webp";
 const VERNIER_IDLE_DELAY_MS = 13200;
+
+const AMERI_MOOD_ASSETS: Record<AmeriMood, string> = {
+  welcome: "/assets/npcs/Ameri-welcome.webp",
+  routing: "/assets/npcs/Ameri-routing.webp",
+  review: "/assets/npcs/Ameri-review.webp",
+  blocked: "/assets/npcs/Ameri-blocked.webp",
+  idle: "/assets/npcs/Ameri-idle.webp",
+};
 
 const RATCHET_MOOD_ASSETS: Record<StrategicMood, string> = {
   welcome: RATCHET_PROFILE_SRC,
@@ -662,6 +698,8 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
     "동시에 다른 기여가 처리되었습니다. 다시 시도해 주세요.",
   RESEARCH_START_FAILED: "연구 시작 처리에 실패했습니다.",
   FORBIDDEN_RESEARCH_PROJECT: "이 연구를 조작할 권한이 없습니다.",
+  CUSTOM_WEAPON_SLOT_REQUIRED:
+    "전용무기 설계 슬롯 연구를 완료해야 제작 의뢰를 보낼 수 있습니다.",
 };
 
 const FEEDBACK_SOUND_PATTERNS: Record<
@@ -1350,10 +1388,11 @@ export default function EquipmentShopClient({
         ? initialZone
         : "all",
     characterId: mainCharacter?.id ?? null,
+    enabled: initialZone !== "custom",
   });
   const researchQuery = useEquipmentResearch({
     initialData: initialResearch,
-    enabled: isGM,
+    enabled: isGM && (mode === "hub" || initialZone === "lab"),
   });
   const creditsQuery = useCredits({ initialData: initialCredits });
   const characterInventoryQuery = useCharacterInventory(
@@ -1370,6 +1409,11 @@ export default function EquipmentShopClient({
   const contributeResearchMutation = useContributeEquipmentResearch();
   const completeResearchMutation = useCompleteEquipmentResearch();
   const workshopRequestMutation = useEquipmentWorkshopRequest();
+  const workshopRequestsQuery = useEquipmentWorkshopRequests({
+    viewerKey: isGM ? "gm" : (mainCharacter?.id ?? "unassigned"),
+    enabled: initialZone === "custom",
+  });
+  const updateWorkshopRequestMutation = useUpdateEquipmentWorkshopRequest();
 
   const [activeTab, setActiveTab] = useState<EquipmentShopTabValue>("ALL");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -1419,6 +1463,9 @@ export default function EquipmentShopClient({
   const [upgradeEntryId, setUpgradeEntryId] = useState("");
   const [upgradeRequestDetails, setUpgradeRequestDetails] = useState("");
   const [customRequestDetails, setCustomRequestDetails] = useState("");
+  const [workshopOperatorNotes, setWorkshopOperatorNotes] = useState<
+    Record<string, string>
+  >({});
 
   const catalog = catalogQuery.data ?? initialCatalog;
   const research = researchQuery.data ?? initialResearch;
@@ -1660,6 +1707,7 @@ export default function EquipmentShopClient({
     entrySfxSrc: null,
     entrySfxVolume: 0,
   });
+  const ameriPortraitSrc = AMERI_MOOD_ASSETS[ameriMood];
 
   const {
     mood: towaskiMood,
@@ -3866,6 +3914,9 @@ export default function EquipmentShopClient({
     const selectedResearchEffect = selectedResearchNode
       ? selectedResearchNode.effects[activeResearchScope] ?? null
       : null;
+    const selectedResearchOperational = selectedResearchEffect
+      ? isEquipmentResearchEffectOperational(selectedResearchEffect)
+      : false;
     const selectedRushRule = selectedResearchNode
       ? research.rushRules.find((rule) => rule.tier === selectedResearchNode.tier)
       : null;
@@ -3909,6 +3960,7 @@ export default function EquipmentShopClient({
       activeResearchScope === "team" &&
       Boolean(selectedResearchNode) &&
       Boolean(selectedResearchEffect) &&
+      selectedResearchOperational &&
       selectedResearchUnlocked &&
       selectedTeamRemainingCost > 0 &&
       selectedTeamChargePreview > 0 &&
@@ -3970,6 +4022,8 @@ export default function EquipmentShopClient({
       ? "연구 정보를 갱신할 수 없어 변경 기능을 잠갔습니다."
       : !selectedResearchEffect
       ? "개인 연구 효과가 없는 항목입니다."
+      : !selectedResearchOperational
+        ? "연결될 후속 기능이 준비되지 않아 연구를 시작할 수 없습니다."
       : !selectedResearchUnlocked
         ? `${selectedPrerequisiteLabel ?? "선행 연구"}가 필요합니다.`
         : !hasMainCharacter
@@ -3983,6 +4037,8 @@ export default function EquipmentShopClient({
       ? "연구 정보를 갱신할 수 없어 변경 기능을 잠갔습니다."
       : !selectedResearchEffect
       ? "팀 연구 효과가 없는 항목입니다."
+      : !selectedResearchOperational
+        ? "연결될 후속 기능이 준비되지 않아 연구에 기여할 수 없습니다."
       : !selectedResearchUnlocked
         ? `${selectedPrerequisiteLabel ?? "선행 연구"}가 필요합니다.`
         : selectedTeamRemainingCost <= 0
@@ -4666,6 +4722,7 @@ export default function EquipmentShopClient({
   }
 
   function renderCustomPanel() {
+    const workshopRequests = workshopRequestsQuery.data?.requests ?? [];
     const submitWorkshopRequest = (
       event: FormEvent<HTMLFormElement>,
       kind: "upgrade" | "custom",
@@ -4711,7 +4768,8 @@ export default function EquipmentShopClient({
       upgradeRequestDetails.trim().length >=
         WORKSHOP_REQUEST_DETAIL_MIN_LENGTH;
     const customReady =
-      customRequestDetails.trim().length >= WORKSHOP_REQUEST_DETAIL_MIN_LENGTH;
+      customRequestDetails.trim().length >= WORKSHOP_REQUEST_DETAIL_MIN_LENGTH &&
+      (isGM || research.capabilities.customWeaponSlot);
 
     return (
       <div className={styles.customPanel}>
@@ -4822,6 +4880,9 @@ export default function EquipmentShopClient({
             <span>CUSTOM ORDER</span>
             <strong>커스텀 장비 제작 의뢰</strong>
             <p>원하는 장비의 형태, 용도, 작동 방식과 핵심 요구사항을 적어주세요.</p>
+            {!isGM && !research.capabilities.customWeaponSlot ? (
+              <small>전용무기 설계 슬롯 연구를 완료해야 제작 의뢰를 보낼 수 있습니다.</small>
+            ) : null}
             <label>
               <span>제작 요청서</span>
               <textarea
@@ -4850,6 +4911,100 @@ export default function EquipmentShopClient({
               {workshopRequestMutation.isPending ? "접수 중" : "제작 의뢰 보내기"}
             </button>
           </form>
+
+          <section className={styles.workshopRequestCard}>
+            <span>REQUEST LEDGER</span>
+            <strong>{isGM ? "공방 요청 처리 현황" : "내 공방 요청"}</strong>
+            {workshopRequestsQuery.isPending ? (
+              <p>접수 기록을 불러오는 중입니다.</p>
+            ) : workshopRequestsQuery.isError ? (
+              <p role="alert">접수 기록을 불러오지 못했습니다.</p>
+            ) : workshopRequests.length === 0 ? (
+              <p>아직 접수된 공방 요청이 없습니다.</p>
+            ) : (
+              workshopRequests.map((request) => (
+                <article key={request._id}>
+                  <span>
+                    {request.characterCodename} · {request.kind === "upgrade" ? "강화" : "제작"}
+                  </span>
+                  <strong>{request.equipmentName ?? request.details}</strong>
+                  <small>
+                    {WORKSHOP_STATUS_LABELS[request.status]} ·{" "}
+                    {formatDateTime(request.createdAt)}
+                  </small>
+                  {request.operatorNote ? <p>{request.operatorNote}</p> : null}
+                  {request.history && request.history.length > 1 ? (
+                    <ol>
+                      {request.history.map((entry) => (
+                        <li key={`${entry.status}:${entry.at}`}>
+                          {WORKSHOP_STATUS_LABELS[entry.status]} ·{" "}
+                          {formatDateTime(entry.at)} · {entry.actorName}
+                          {entry.note ? ` · ${entry.note}` : ""}
+                        </li>
+                      ))}
+                    </ol>
+                  ) : null}
+                  {isGM ? (
+                    <div>
+                      <label>
+                        <span>운영자 메모</span>
+                        <input
+                          type="text"
+                          maxLength={1000}
+                          value={workshopOperatorNotes[request._id] ?? ""}
+                          onChange={(event) =>
+                            setWorkshopOperatorNotes((current) => ({
+                              ...current,
+                              [request._id]: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                      {WORKSHOP_NEXT_STATUSES[request.status].map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          disabled={
+                            updateWorkshopRequestMutation.isPending ||
+                            (requiresEquipmentWorkshopOperatorNote(status) &&
+                              !(workshopOperatorNotes[request._id] ?? "").trim())
+                          }
+                          onClick={() =>
+                            updateWorkshopRequestMutation.mutate(
+                              {
+                                requestId: request._id,
+                                status,
+                                ...((workshopOperatorNotes[request._id] ?? "").trim()
+                                  ? {
+                                      operatorNote: (
+                                        workshopOperatorNotes[request._id] ?? ""
+                                      ).trim(),
+                                    }
+                                  : {}),
+                              },
+                              {
+                                onSuccess: () =>
+                                  setWorkshopOperatorNotes((current) => ({
+                                    ...current,
+                                    [request._id]: "",
+                                  })),
+                                onError: (error) =>
+                                  setErrorMessage(
+                                    describeEquipmentShopError(error),
+                                  ),
+                              },
+                            )
+                          }
+                        >
+                          {WORKSHOP_STATUS_LABELS[status]}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              ))
+            )}
+          </section>
         </div>
       </div>
     );
@@ -5167,7 +5322,7 @@ export default function EquipmentShopClient({
             >
               {isHub ? (
                 <Image
-                  src={AMERI_PROFILE_SRC}
+                  src={ameriPortraitSrc}
                   alt=""
                   fill
                   sizes="148px"

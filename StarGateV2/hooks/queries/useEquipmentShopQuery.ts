@@ -24,6 +24,7 @@ import type {
   SerializedEquipmentResearchProject,
   SerializedEquipmentResearchTeamFundingPool,
 } from "@/lib/db/equipment-research";
+import type { SerializedEquipmentWorkshopRequest } from "@/lib/equipment-shop/workshop-request";
 
 export const equipmentShopKeys = {
   all: ["equipment-shop"] as const,
@@ -33,6 +34,9 @@ export const equipmentShopKeys = {
     characterId: string | null,
   ) => ["equipment-shop", "catalog", scope, characterId ?? "unassigned"] as const,
   research: ["equipment-shop", "research"] as const,
+  workshopRequestsRoot: ["equipment-shop", "workshop-requests"] as const,
+  workshopRequests: (viewerKey: string) =>
+    ["equipment-shop", "workshop-requests", viewerKey] as const,
 };
 
 export type EquipmentShopCatalogScope =
@@ -76,7 +80,8 @@ export type EquipmentShopErrorCode =
   | "RESEARCH_ALREADY_STARTED"
   | "RESEARCH_FUNDING_CONFLICT"
   | "RESEARCH_START_FAILED"
-  | "FORBIDDEN_RESEARCH_PROJECT";
+  | "FORBIDDEN_RESEARCH_PROJECT"
+  | "CUSTOM_WEAPON_SLOT_REQUIRED";
 
 export class EquipmentShopApiError extends Error {
   readonly status: number;
@@ -118,6 +123,10 @@ export interface EquipmentResearchOverviewResponse {
   contributionRankings: SerializedEquipmentResearchContributionRanking[];
 }
 
+export interface EquipmentWorkshopRequestsResponse {
+  requests: SerializedEquipmentWorkshopRequest[];
+}
+
 async function parseEquipmentShopError(res: Response): Promise<never> {
   const body = (await res.json().catch(() => ({}))) as {
     error?: string;
@@ -149,6 +158,14 @@ async function fetchEquipmentResearch(): Promise<EquipmentResearchOverviewRespon
   return res.json();
 }
 
+async function fetchEquipmentWorkshopRequests(): Promise<EquipmentWorkshopRequestsResponse> {
+  const res = await fetch("/api/erp/equipment-shop/workshop-request", {
+    cache: "no-store",
+  });
+  if (!res.ok) await parseEquipmentShopError(res);
+  return res.json();
+}
+
 const CATALOG_STALE_TIME_MS = 10 * 60 * 1000;
 const RESEARCH_STALE_TIME_MS = 30 * 1000;
 
@@ -156,6 +173,7 @@ export function useEquipmentShopCatalog(options?: {
   initialData?: EquipmentShopCatalogResponse;
   scope?: EquipmentShopCatalogScope;
   characterId?: string | null;
+  enabled?: boolean;
 }) {
   const scope = options?.scope ?? "all";
   const characterId = options?.characterId ?? null;
@@ -164,6 +182,7 @@ export function useEquipmentShopCatalog(options?: {
     queryFn: () => fetchEquipmentShopCatalog(scope),
     staleTime: CATALOG_STALE_TIME_MS,
     initialData: options?.initialData,
+    enabled: options?.enabled,
   });
 }
 
@@ -178,6 +197,18 @@ export function useEquipmentResearch(options?: {
     initialData: options?.initialData,
     enabled: options?.enabled,
     refetchInterval: 60 * 1000,
+  });
+}
+
+export function useEquipmentWorkshopRequests(options: {
+  viewerKey: string;
+  enabled?: boolean;
+}) {
+  return useQuery({
+    queryKey: equipmentShopKeys.workshopRequests(options.viewerKey),
+    queryFn: fetchEquipmentWorkshopRequests,
+    staleTime: 30 * 1000,
+    enabled: options?.enabled,
   });
 }
 

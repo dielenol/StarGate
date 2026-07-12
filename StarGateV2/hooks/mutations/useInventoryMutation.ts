@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CreateMasterItemInput } from "@/types/inventory";
 
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
+import { equipmentShopKeys } from "@/hooks/queries/useEquipmentShopQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 
 interface GrantInventoryBody {
@@ -36,6 +37,7 @@ export function useCreateItem() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });

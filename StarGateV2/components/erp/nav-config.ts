@@ -228,7 +228,7 @@ export const NAV_GROUPS: NavGroup[] = [
             label: "공방",
             keywords: "custom weapon workshop crafting 공방",
             icon: IconArmoryWorkshop,
-            href: null,
+            href: "/erp/equipment-shop/custom",
             gmHref: "/erp/equipment-shop/custom",
           },
           {

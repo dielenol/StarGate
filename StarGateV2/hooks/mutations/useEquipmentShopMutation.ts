@@ -32,8 +32,10 @@ import {
   type TowaskiLicenseTestResponse,
 } from "@/lib/equipment-shop/license-test";
 import type {
+  EquipmentWorkshopRequestStatus,
   EquipmentWorkshopRequestInput,
   EquipmentWorkshopRequestResponse,
+  SerializedEquipmentWorkshopRequest,
 } from "@/lib/equipment-shop/workshop-request";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
 
@@ -292,6 +294,42 @@ export function useEquipmentWorkshopRequest() {
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/equipment-shop/workshop-request", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey(
+            "equipment-workshop-request",
+            input,
+          ),
+        },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: equipmentShopKeys.workshopRequestsRoot,
+      });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    },
+  });
+}
+
+export function useUpdateEquipmentWorkshopRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { request: SerializedEquipmentWorkshopRequest },
+    EquipmentShopApiError,
+    {
+      requestId: string;
+      status: EquipmentWorkshopRequestStatus;
+      operatorNote?: string;
+    }
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/equipment-shop/workshop-request", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
@@ -299,6 +337,9 @@ export function useEquipmentWorkshopRequest() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: equipmentShopKeys.workshopRequestsRoot,
+      });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });

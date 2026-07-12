@@ -1,6 +1,7 @@
 import type { PublicAgentSheet, PublicAgentSummary } from "@/types/public-player";
 
 import { listPublicCharactersByType } from "@/lib/db/characters";
+import { listCharacterInventoryEntries } from "@/lib/db/inventory";
 import {
   isPublicAgentWithSheet,
   toPublicAgentDetail,
@@ -19,11 +20,16 @@ async function getAgents(): Promise<{
   const dbResult = await listPublicCharactersByType("AGENT");
   const publicAgents = dbResult.filter(isPublicAgentWithSheet);
   const selected = publicAgents[0];
+  const selectedInventory = selected?._id
+    ? await listCharacterInventoryEntries(String(selected._id))
+    : null;
 
   return {
     agents: publicAgents.map(toPublicAgentSummary),
     initialAgentId: selected?._id?.toString() ?? "",
-    initialSheet: selected ? toPublicAgentDetail(selected).sheet : undefined,
+    initialSheet: selected
+      ? toPublicAgentDetail(selected, selectedInventory?.entries).sheet
+      : undefined,
   };
 }
 

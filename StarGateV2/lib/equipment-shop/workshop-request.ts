@@ -1,7 +1,43 @@
+export const EQUIPMENT_WORKSHOP_REQUEST_STATUSES = [
+  "REQUESTED",
+  "IN_REVIEW",
+  "APPROVED",
+  "REJECTED",
+  "COMPLETED",
+] as const;
+
 export const WORKSHOP_REQUEST_DETAIL_MIN_LENGTH = 10;
 export const WORKSHOP_REQUEST_DETAIL_MAX_LENGTH = 1000;
 
 export type EquipmentWorkshopRequestKind = "upgrade" | "custom";
+export type EquipmentWorkshopRequestStatus =
+  (typeof EQUIPMENT_WORKSHOP_REQUEST_STATUSES)[number];
+
+export interface SerializedEquipmentWorkshopRequest {
+  _id: string;
+  kind: EquipmentWorkshopRequestKind;
+  userId: string;
+  userName: string;
+  characterId: string;
+  characterCodename: string;
+  inventoryEntryId?: string;
+  equipmentName?: string;
+  details: string;
+  status: EquipmentWorkshopRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+  reviewedAt?: string;
+  reviewedById?: string;
+  reviewedByName?: string;
+  operatorNote?: string;
+  history?: Array<{
+    status: EquipmentWorkshopRequestStatus;
+    at: string;
+    actorId: string;
+    actorName: string;
+    note?: string;
+  }>;
+}
 
 export interface EquipmentWorkshopRequestInput {
   kind: EquipmentWorkshopRequestKind;
@@ -13,11 +49,61 @@ export interface EquipmentWorkshopRequestResponse {
   ok: true;
   kind: EquipmentWorkshopRequestKind;
   message: string;
+  request: SerializedEquipmentWorkshopRequest;
 }
 
 export type EquipmentWorkshopRequestValidation =
   | { ok: true; input: EquipmentWorkshopRequestInput }
   | { ok: false; error: string };
+
+export function isEquipmentWorkshopRequestStatus(
+  value: unknown,
+): value is EquipmentWorkshopRequestStatus {
+  return (
+    typeof value === "string" &&
+    (EQUIPMENT_WORKSHOP_REQUEST_STATUSES as readonly string[]).includes(value)
+  );
+}
+
+export function canTransitionEquipmentWorkshopRequestStatus(
+  current: EquipmentWorkshopRequestStatus,
+  next: EquipmentWorkshopRequestStatus,
+): boolean {
+  const transitions: Record<
+    EquipmentWorkshopRequestStatus,
+    readonly EquipmentWorkshopRequestStatus[]
+  > = {
+    REQUESTED: ["IN_REVIEW", "APPROVED", "REJECTED"],
+    IN_REVIEW: ["APPROVED", "REJECTED"],
+    APPROVED: ["COMPLETED", "REJECTED"],
+    REJECTED: [],
+    COMPLETED: [],
+  };
+  return transitions[current].includes(next);
+}
+
+export function requiresEquipmentWorkshopOperatorNote(
+  status: EquipmentWorkshopRequestStatus,
+): boolean {
+  return status === "REJECTED" || status === "COMPLETED";
+}
+
+export function isSameEquipmentWorkshopRequestPayload(
+  left: Pick<
+    EquipmentWorkshopRequestInput,
+    "kind" | "details" | "inventoryEntryId"
+  >,
+  right: Pick<
+    EquipmentWorkshopRequestInput,
+    "kind" | "details" | "inventoryEntryId"
+  >,
+): boolean {
+  return (
+    left.kind === right.kind &&
+    left.details === right.details &&
+    left.inventoryEntryId === right.inventoryEntryId
+  );
+}
 
 export function parseEquipmentWorkshopRequest(
   body: unknown,

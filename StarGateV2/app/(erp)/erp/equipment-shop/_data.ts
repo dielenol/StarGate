@@ -164,11 +164,13 @@ export async function loadEquipmentShopPageData(
   options: {
     requireGm?: boolean;
     includeResearch?: boolean;
+    includeCatalog?: boolean;
     catalogZone?: EquipmentShopZone;
   } = {},
 ): Promise<EquipmentShopPageData> {
   const requireGm = options.requireGm ?? true;
   const includeResearch = options.includeResearch ?? true;
+  const includeCatalog = options.includeCatalog ?? true;
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
@@ -208,7 +210,7 @@ export async function loadEquipmentShopPageData(
     hasBasicFirearmLicense,
   ] =
     await Promise.all([
-      buildEquipmentShopCatalogResponse({
+      includeCatalog ? buildEquipmentShopCatalogResponse({
         zone: options.catalogZone,
         character: mainAgent,
         characterId: mainCharacterId,
@@ -232,7 +234,15 @@ export async function loadEquipmentShopPageData(
           forceOpen: true,
           forceClosed: false,
         }),
-      ),
+      ) : Promise.resolve<EquipmentShopCatalogResponse>({
+        items: [],
+        recentActivity: [],
+        isOpen: true,
+        mode: "open",
+        scheduledOpen: true,
+        forceOpen: true,
+        forceClosed: false,
+      }),
       includeResearch
         ? buildEquipmentResearchOverviewResponse(mainCharacterId).catch(
             (): EquipmentResearchOverviewResponse => ({

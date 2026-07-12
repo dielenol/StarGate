@@ -108,6 +108,12 @@ export interface EquipmentResearchStartQuote {
   durationReductionHours: number;
 }
 
+export interface EquipmentResearchCreditBonusQuote {
+  baseAmount: number;
+  bonusAmount: number;
+  totalAmount: number;
+}
+
 export function isEquipmentResearchApplyLeaseStale(
   updatedAt: Date | string,
   now = new Date(),
@@ -842,6 +848,38 @@ export function applyEquipmentResearchCapabilityEffect(
     };
   }
   return capabilities;
+}
+
+export function quoteEquipmentResearchCreditBonus(args: {
+  baseAmount: number;
+  capabilities: Pick<
+    EquipmentResearchCapabilities,
+    "creditBonusPercent" | "creditBonusCap"
+  >;
+}): EquipmentResearchCreditBonusQuote {
+  const baseAmount = args.baseAmount;
+  const bonusAmount =
+    baseAmount > 0 && args.capabilities.creditBonusPercent > 0
+      ? Math.min(
+          args.capabilities.creditBonusCap,
+          Math.floor(
+            (baseAmount * args.capabilities.creditBonusPercent) / 100,
+          ),
+        )
+      : 0;
+
+  return {
+    baseAmount,
+    bonusAmount,
+    totalAmount: baseAmount + bonusAmount,
+  };
+}
+
+export function isEquipmentResearchEffectOperational(
+  effect: EquipmentResearchEffect,
+): boolean {
+  if (effect.kind !== "unlock") return true;
+  return effect.code === "custom_weapon_slot";
 }
 
 export function quoteEquipmentResearchStart(args: {

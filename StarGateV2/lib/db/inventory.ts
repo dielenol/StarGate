@@ -106,6 +106,7 @@ export async function listCharacterInventoryEntries(
       ...(master?.description ? { description: master.description } : {}),
       ...(master?.price !== undefined ? { price: master.price } : {}),
       ...(master?.previewImage ? { previewImage: master.previewImage } : {}),
+      ...(master?.isPublic !== undefined ? { isPublic: master.isPublic } : {}),
       ...(entry.equippedSlot ? { equippedSlot: entry.equippedSlot } : {}),
       ...(dateToIso(entry.equippedAt)
         ? { equippedAt: dateToIso(entry.equippedAt) }

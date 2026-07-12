@@ -25,6 +25,7 @@ const CORRECT_GRENADE = process.argv.includes("--correct-grenade");
 /**
  * 기존 시트의 고유 명칭을 현재 병기부 카탈로그의 표준 보급 장비에 대응한다.
  * exact-name 항목은 아래 표 없이 기존 이름 그대로 매칭된다.
+ * 공개 시트 호환표(`lib/equipment/public-equipment.ts`)와 함께 갱신한다.
  */
 const LEGACY_DEFAULT_ITEM_SLUG = new Map<string, string>([
   [
