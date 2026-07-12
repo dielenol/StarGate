@@ -129,7 +129,7 @@
 }
 
 .armoryStage--lab {
-  --armory-bg-image: url("/assets/equipment-shop/rooms/augmentation-lab.jpg");
+  --armory-bg-image: url("/assets/equipment-shop/rooms/augmentation-lab.webp");
   --armory-bg-position: center top;
   --armory-bg-overlay:
     linear-gradient(180deg, rgba(4, 5, 6, 0.58), rgba(4, 5, 6, 0.94)),
