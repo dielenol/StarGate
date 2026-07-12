@@ -52,6 +52,12 @@ type SimLog = {
   text: string;
 };
 
+type GuideStep = {
+  label: string;
+  title: string;
+  dialogue: string;
+};
+
 interface SimulatorDisplayItem {
   slug: SimulatorWeaponSlug;
   name: string;
@@ -75,6 +81,39 @@ const DEFAULT_TARGET: SimulatorTargetStats = {
   def: 2,
   statuses: [],
 };
+
+const GUIDE_STEPS: GuideStep[] = [
+  {
+    label: "01 장비",
+    title: "시험 장비 선택",
+    dialogue:
+      "왼쪽 보급형 장비 목록에서 시험할 장비를 선택하십시오. 선택한 장비의 피해와 운용 조건은 오른쪽 룰 카드에 표시됩니다.",
+  },
+  {
+    label: "02 배치",
+    title: "공격자와 표적 배치",
+    dialogue:
+      "공격자 또는 표적을 선택한 뒤 전투판의 칸을 누르십시오. 토큰을 직접 끌어서 이동할 수도 있습니다. 사거리는 두 토큰의 세로 칸 차이만 사용합니다.",
+  },
+  {
+    label: "03 판정",
+    title: "예상 피해 확인",
+    dialogue:
+      "공격 전 조작 패널의 피해 판정과 오른쪽 사거리별 피해를 확인하십시오. 냉병기는 공격자의 ATK를 사용하고, 물리 피해는 표적의 DEF를 적용합니다.",
+  },
+  {
+    label: "04 운용",
+    title: "자원과 특수 조건 시험",
+    dialogue:
+      "공격을 실행하면 표적의 HP 또는 정신력과 상태가 갱신됩니다. 재장전, 중기관총 설치, 다음 턴 기능으로 탄환과 사격 주기를 시험할 수 있습니다.",
+  },
+  {
+    label: "05 비교",
+    title: "장비 비교와 초기화",
+    dialogue:
+      "아래 비교표는 현재 배치에서 모든 장비의 예상 결과를 보여줍니다. 장비 이름을 누르면 바로 선택됩니다. 초기화는 훈련장 상태만 되돌립니다.",
+  },
+];
 
 function buildSimulatorItems(
   catalogItems: EquipmentShopCatalogEntry[],
@@ -180,6 +219,7 @@ export default function EquipmentSimulatorClient({
   const [hmgShotsInCycle, setHmgShotsInCycle] = useState(0);
   const [turn, setTurn] = useState(1);
   const [sequence, setSequence] = useState(1);
+  const [guideStepIndex, setGuideStepIndex] = useState(0);
   const [logs, setLogs] = useState<SimLog[]>([
     {
       id: 0,
@@ -219,6 +259,7 @@ export default function EquipmentSimulatorClient({
   const rangeRows = [attackerPosition.row, targetPosition.row].sort(
     (a, b) => a - b,
   );
+  const guideStep = GUIDE_STEPS[guideStepIndex];
 
   function pushLog(text: string, tone: SimLogTone) {
     setLogs((prev) => [{ id: sequence, text, tone }, ...prev].slice(0, 8));
@@ -375,8 +416,44 @@ export default function EquipmentSimulatorClient({
           <h1>5x5 전투판 장비 훈련</h1>
         </div>
         <div className={styles.stageBadges} aria-label="훈련장 상태">
-          <Tag tone="info">READ ONLY</Tag>
+          <Tag tone="info">실데이터 미반영</Tag>
           <Tag tone="gold">세로 사거리 판정</Tag>
+        </div>
+      </section>
+
+      <section className={styles.guidePanel} aria-labelledby="range-guide-title">
+        <div className={styles.guideNpc} aria-hidden>
+          <span>R-05</span>
+        </div>
+        <div className={styles.guideContent}>
+          <div className={styles.guideHeading}>
+            <div>
+              <Eyebrow>VIRTUAL RANGE INSTRUCTOR</Eyebrow>
+              <strong id="range-guide-title">가상 교관 R-05</strong>
+            </div>
+            <span>
+              {guideStepIndex + 1} / {GUIDE_STEPS.length}
+            </span>
+          </div>
+          <p className={styles.guideDialogue} aria-live="polite">
+            <strong>{guideStep?.title}</strong>
+            {guideStep?.dialogue}
+          </p>
+          <div className={styles.guideSteps} aria-label="훈련장 기능 안내 단계">
+            {GUIDE_STEPS.map((step, index) => (
+              <button
+                key={step.label}
+                type="button"
+                aria-pressed={index === guideStepIndex}
+                className={
+                  index === guideStepIndex ? styles.guideStepActive : ""
+                }
+                onClick={() => setGuideStepIndex(index)}
+              >
+                {step.label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -400,6 +477,7 @@ export default function EquipmentSimulatorClient({
                   ]
                     .filter(Boolean)
                     .join(" ")}
+                  aria-pressed={active}
                   onClick={() => setSelectedSlug(item.slug)}
                 >
                   <span className={styles.itemThumb}>
@@ -440,6 +518,7 @@ export default function EquipmentSimulatorClient({
               <button
                 type="button"
                 className={activeToken === "attacker" ? styles.activeToggle : ""}
+                aria-pressed={activeToken === "attacker"}
                 onClick={() => setActiveToken("attacker")}
               >
                 공격자
@@ -447,6 +526,7 @@ export default function EquipmentSimulatorClient({
               <button
                 type="button"
                 className={activeToken === "target" ? styles.activeToggle : ""}
+                aria-pressed={activeToken === "target"}
                 onClick={() => setActiveToken("target")}
               >
                 표적
@@ -693,7 +773,7 @@ export default function EquipmentSimulatorClient({
             <Eyebrow>SIM LOG</Eyebrow>
             <strong>공격 로그</strong>
           </div>
-          <div className={styles.logList}>
+          <div className={styles.logList} aria-live="polite">
             {logs.map((log) => (
               <div
                 key={log.id}
@@ -746,7 +826,16 @@ export default function EquipmentSimulatorClient({
                     .join(" ")}
                   role="row"
                 >
-                  <span role="cell">{item.name}</span>
+                  <span role="cell">
+                    <button
+                      type="button"
+                      className={styles.compareSelectButton}
+                      aria-pressed={item.slug === selectedSlug}
+                      onClick={() => setSelectedSlug(item.slug)}
+                    >
+                      {item.name}
+                    </button>
+                  </span>
                   <span role="cell">{SIMULATOR_RANGE_LABELS[result.range.band]}</span>
                   <span role="cell">
                     {result.ok && result.targetStat

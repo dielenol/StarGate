@@ -6,6 +6,7 @@
 }
 
 .stageHeader,
+.guidePanel,
 .catalogPanel,
 .boardPanel,
 .targetPanel,
@@ -42,6 +43,96 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.guidePanel {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+  background:
+    linear-gradient(120deg, rgba(37, 116, 168, 0.13), transparent 46%),
+    rgba(8, 9, 9, 0.88);
+}
+
+.guideNpc {
+  display: grid;
+  place-items: center;
+  width: 86px;
+  min-height: 86px;
+  background:
+    linear-gradient(135deg, rgba(128, 199, 255, 0.18), transparent 58%),
+    rgba(0, 0, 0, 0.32);
+  border: 1px solid color-mix(in srgb, #80c7ff 58%, var(--line));
+  border-radius: var(--radius-sm);
+  color: #bfe4ff;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.guideContent {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.guideHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.guideHeading strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-0);
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.guideHeading > span {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.guideDialogue {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.guideDialogue strong {
+  color: var(--gold);
+  font-size: 16px;
+}
+
+.guideSteps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.guideSteps button {
+  min-height: 34px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-3);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.guideSteps button:hover,
+.guideSteps button:focus-visible,
+.guideSteps .guideStepActive {
+  border-color: var(--gold-dim);
+  color: var(--gold);
 }
 
 .simLayout {
@@ -554,6 +645,28 @@
   color: var(--ink-0);
 }
 
+.compareSelectButton {
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.compareSelectButton:hover,
+.compareSelectButton:focus-visible {
+  color: var(--gold);
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 @media (max-width: 1220px) {
   .simLayout,
   .bottomGrid {
@@ -571,6 +684,15 @@
   .boardToolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .guidePanel {
+    grid-template-columns: 1fr;
+  }
+
+  .guideNpc {
+    width: 100%;
+    min-height: 54px;
   }
 
   .boardFrame {
