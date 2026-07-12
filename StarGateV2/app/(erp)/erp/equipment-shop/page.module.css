@@ -1097,7 +1097,7 @@
   position: relative;
   isolation: isolate;
   min-height: 0;
-  padding: 12px;
+  padding: 8px 10px;
   background: rgba(5, 8, 9, 0.78);
   border: 1px solid color-mix(in srgb, var(--gold-dim) 52%, var(--line));
   border-radius: var(--radius-sm);
@@ -1109,38 +1109,56 @@
 
 .labScene__summary {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(320px, 480px);
+  grid-template-columns: minmax(300px, 0.75fr) minmax(0, 1.25fr);
   align-items: center;
-  gap: 18px;
+  gap: 12px;
   min-width: 0;
 }
 
+.labScene__summary > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.labScene__summary > div:first-child > :first-child {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .labScene__summary > div:first-child > strong {
-  display: block;
-  margin-top: 5px;
+  flex: 0 0 auto;
   color: var(--gold);
-  font-size: 24px;
+  font-size: 18px;
   line-height: 1.15;
 }
 
 .labScene__summary p {
-  margin: 7px 0 0;
+  min-width: 0;
+  margin: 0;
   color: var(--ink-1);
-  font-size: 15px;
-  line-height: 1.45;
+  font-size: 14px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .labScene__metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(95px, 1fr));
+  gap: 6px;
 }
 
 .labScene__metrics > div {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   min-width: 0;
-  padding: 9px 10px;
+  min-height: 36px;
+  padding: 6px 8px;
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid color-mix(in srgb, var(--gold-dim) 30%, var(--line));
   border-radius: var(--radius-sm);
@@ -1148,12 +1166,13 @@
 
 .labScene__metrics span {
   color: var(--lab-muted);
-  font-size: 14px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .labScene__metrics strong {
   color: var(--ink-0);
-  font-size: 17px;
+  font-size: 15px;
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2052,7 +2071,7 @@
 }
 
 .techScopeSwitch button:hover,
-.techScopeSwitch--active {
+.techScopeSwitch button[aria-pressed="true"] {
   background: color-mix(in srgb, var(--gold) 14%, rgba(0, 0, 0, 0.42));
   border-color: var(--gold-dim);
   color: var(--gold);
@@ -3520,6 +3539,10 @@
     flex-wrap: wrap;
   }
 
+  .labScene__summary {
+    grid-template-columns: 1fr;
+  }
+
   .panelIntro--strategic {
     grid-template-columns: 1fr;
   }
@@ -3636,6 +3659,16 @@
   .labScene__summary {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .labScene__summary > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .labScene__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .techTreeHeader,
