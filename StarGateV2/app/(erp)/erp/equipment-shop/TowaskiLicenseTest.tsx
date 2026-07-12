@@ -569,6 +569,10 @@ export default function TowaskiLicenseTest({
             </span>
             <h3>“{license.label} 자격 기준을 확인해.”</h3>
             <p>{program.briefing}</p>
+            <p className={styles.noFireHint}>
+              <strong>NO FIRE</strong> 민간 표적은 사격하지 말고 노출 시간이
+              끝날 때까지 기다리면 정상 통과합니다.
+            </p>
             <div className={styles.criteria} aria-label="합격 기준">
               <span>
                 적성 적중 <strong>{rules.requiredHostileHits} / {rules.hostileTargets}</strong>

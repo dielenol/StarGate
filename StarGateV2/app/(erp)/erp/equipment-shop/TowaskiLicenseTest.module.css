@@ -104,6 +104,18 @@
   line-height: 1.75;
 }
 
+.briefingCopy .noFireHint {
+  margin-top: 12px;
+  color: #e0c878;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.noFireHint strong {
+  color: #f0cb55;
+  font-family: var(--font-mono), monospace;
+}
+
 .criteria {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -159,6 +171,8 @@
 .range {
   --difficulty-target-scale: 1;
   position: relative;
+  width: 100%;
+  min-width: 0;
   min-height: 520px;
   aspect-ratio: 16 / 8.4;
   overflow: hidden;
@@ -503,7 +517,7 @@
 
   .range {
     min-height: 560px;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: auto;
   }
 
   .rangeHud {

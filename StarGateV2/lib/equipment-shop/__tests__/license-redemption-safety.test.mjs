@@ -32,6 +32,14 @@ const EQUIPMENT_SHOP_CLIENT = new URL(
   "../../../app/(erp)/erp/equipment-shop/EquipmentShopClient.tsx",
   import.meta.url,
 );
+const LICENSE_TEST_CLIENT = new URL(
+  "../../../app/(erp)/erp/equipment-shop/TowaskiLicenseTest.tsx",
+  import.meta.url,
+);
+const LICENSE_TEST_STYLES = new URL(
+  "../../../app/(erp)/erp/equipment-shop/TowaskiLicenseTest.module.css",
+  import.meta.url,
+);
 const SHARED_INVENTORY = new URL(
   "../../../../packages/shared-db/src/crud/inventory.ts",
   import.meta.url,
@@ -189,6 +197,30 @@ test("equipment shop purchases one item at a time without cart controls", async 
   assert.match(client, /purchaseMutation\.isPending \|\| towaskiLicenseTestBusy/);
   assert.doesNotMatch(client, /type CartState/);
   assert.doesNotMatch(client, /반출 장바구니|한번에 결제|장바구니 담기/);
+});
+
+test("Towaski qualification keeps mobile HUD visible and explains every outcome", async () => {
+  const [client, licenseTest, styles] = await Promise.all([
+    readFile(EQUIPMENT_SHOP_CLIENT, "utf8"),
+    readFile(LICENSE_TEST_CLIENT, "utf8"),
+    readFile(LICENSE_TEST_STYLES, "utf8"),
+  ]);
+
+  assert.match(
+    styles,
+    /@media \(max-width: 800px\)[\s\S]*\.range \{[\s\S]*aspect-ratio: auto/,
+  );
+  assert.match(licenseTest, /NO FIRE[\s\S]*민간 표적은 사격하지 말고/);
+  assert.match(
+    client,
+    /event\.type === "start"[\s\S]*title: "자격시험 시작"/,
+  );
+  assert.match(
+    client,
+    /event\.type === "failed"[\s\S]*showFeedback\([\s\S]*"error"[\s\S]*"자격시험 불합격"/,
+  );
+  assert.match(client, /tab\.value === "ALL" \|\| tab\.count > 0/);
+  assert.match(client, /!effectiveHasMainCharacter[\s\S]*\? "AGENT 필요"/);
 });
 
 test("slug와 ObjectId가 같은 장비를 가리키면 canonical 중복으로 거부한다", () => {

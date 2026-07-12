@@ -1764,13 +1764,31 @@ export default function EquipmentShopClient({
   const handleTowaskiQualificationDialogue = useCallback(
     (event: TowaskiQualificationDialogueEvent) => {
       clearTowaskiIdleTimer();
+      const line = getTowaskiQualificationDialogueLine(event);
+      if (event.type === "start") {
+        setNotice({
+          tone: "info",
+          title: "자격시험 시작",
+          text: "카운트다운 후 표적 판정이 시작됩니다. 민간 표적에는 사격하지 마십시오.",
+        });
+      } else if (event.type === "failed") {
+        showFeedback(
+          "error",
+          event.reasons.includes("invalid")
+            ? "자격시험 처리 오류"
+            : "자격시험 불합격",
+          event.reasons.includes("invalid")
+            ? "시험 결과를 처리하지 못했습니다. 시험 안내에서 다시 시도해 주십시오."
+            : line,
+        );
+      }
       playTowaskiLine(
         event.type === "failed" ? "rangeFailed" : "range",
-        getTowaskiQualificationDialogueLine(event),
+        line,
         { returnToIdle: false, sound: true },
       );
     },
-    [clearTowaskiIdleTimer, playTowaskiLine],
+    [clearTowaskiIdleTimer, playTowaskiLine, setNotice, showFeedback],
   );
 
   const balance = useMemo(() => {
@@ -3268,9 +3286,19 @@ export default function EquipmentShopClient({
     const isAcheron = activeZone === "acheron";
     const isStandardCatalog = isTowaski || isAcheron;
     const activeCatalogZone = isAcheron ? "acheron" : "towaski";
-    const visibleTabs = isTowaski
+    const candidateTabs = isTowaski
       ? TAB_DEFS
       : TAB_DEFS.filter((tab) => tab.value !== "LICENSE");
+    const visibleTabs = candidateTabs
+      .map((tab) => ({
+        ...tab,
+        count: catalog.items.filter(
+          (item) =>
+            item.zone === activeCatalogZone &&
+            matchesEquipmentShopTab(item, tab.value),
+        ).length,
+      }))
+      .filter((tab) => tab.value === "ALL" || tab.count > 0);
 
     return (
       <div className={styles.salesLayout}>
@@ -3305,11 +3333,6 @@ export default function EquipmentShopClient({
             >
               {visibleTabs.map((tab) => {
                 const isActive = activeTab === tab.value;
-                const count = catalog.items.filter(
-                  (item) =>
-                    item.zone === activeCatalogZone &&
-                    matchesEquipmentShopTab(item, tab.value),
-                ).length;
                 return (
                   <button
                     key={tab.value}
@@ -3325,7 +3348,7 @@ export default function EquipmentShopClient({
                     onClick={() => handleSalesTabChange(tab.value)}
                   >
                     {tab.label}
-                    <span>{count}</span>
+                    <span>{tab.count}</span>
                   </button>
                 );
               })}
@@ -3489,6 +3512,8 @@ export default function EquipmentShopClient({
                     >
                       {isSoldOut
                         ? "반출 불가"
+                        : !effectiveHasMainCharacter
+                          ? "AGENT 필요"
                         : isLicenseItem
                           ? item.licenseOwned
                             ? "발급 완료"
@@ -3647,6 +3672,8 @@ export default function EquipmentShopClient({
                     {selectedIsLicenseItem
                       ? selectedItem.licenseOwned
                         ? "발급 완료"
+                        : !effectiveHasMainCharacter
+                          ? "AGENT 필요"
                         : selectedLicenseProgram?.requiresBasicLicense &&
                             !effectiveHasBasicLicense
                           ? "기본 화기 필요"
@@ -3655,6 +3682,8 @@ export default function EquipmentShopClient({
                             : "자격시험 시작"
                       : purchasingKey === selectedItem.key
                         ? "반출 처리 중"
+                      : !effectiveHasMainCharacter
+                        ? "AGENT 필요"
                       : isTowaskiDebug
                         ? "샌드박스 구매 차단"
                         : !selectedHasZonePurchaseAccess
