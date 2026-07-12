@@ -14,12 +14,12 @@ export const metadata = {
 };
 
 export default async function EquipmentShopPage() {
-  const { isGM } = await requireEquipmentShopSession();
-  if (!isGM) {
+  const { canPreview } = await requireEquipmentShopSession();
+  if (!canPreview) {
     return <EquipmentShopComingSoon />;
   }
 
-  const data = await loadEquipmentShopPageData();
+  const data = await loadEquipmentShopPageData({ requireGm: false });
 
   return (
     <EquipmentShopClient

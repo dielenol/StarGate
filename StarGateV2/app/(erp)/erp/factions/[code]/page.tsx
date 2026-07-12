@@ -15,6 +15,7 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
+import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
 import {
   listFactionQuestProgress,
   listFactionRelationLogs,
@@ -101,7 +102,9 @@ export default async function FactionDetailPage({
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  if (!hasRole(session.user.role, "GM")) {
+  const canPreview =
+    hasRole(session.user.role, "GM") || (await hasLocalErpPreviewAccess());
+  if (!canPreview) {
     return <FactionsComingSoon />;
   }
 

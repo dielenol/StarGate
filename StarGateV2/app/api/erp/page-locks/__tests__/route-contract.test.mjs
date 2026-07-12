@@ -28,11 +28,12 @@ test("ERP pathname은 proxy가 신뢰 헤더로 덮어쓴다", async () => {
 
   assert.match(
     source,
-    /requestHeaders\.set\("x-stargate-erp-pathname", request\.nextUrl\.pathname\)/,
+    /buildTrustedErpRequestHeaders\(request\.headers/,
   );
-  assert.match(source, /requestHeaders\.set\([\s\S]*"x-stargate-erp-local-access"/);
-  assert.match(source, /shouldBypassPageLocks/);
+  assert.match(source, /pathname: request\.nextUrl\.pathname/);
+  assert.match(source, /hostname: request\.nextUrl\.hostname/);
   assert.match(source, /NextResponse\.next\(\{[\s\S]*request: \{ headers: requestHeaders \}/);
+  assert.match(source, /matcher: \["\/erp", "\/erp\/:path\*"\]/);
 });
 
 test("client navigation과 polling 상태 변경도 페이지 잠금 gate를 통과한다", async () => {
@@ -46,7 +47,8 @@ test("client navigation과 polling 상태 변경도 페이지 잠금 gate를 통
 });
 
 test("로컬 잠금 우회는 development localhost 요청에만 적용한다", async () => {
-  const { shouldBypassPageLocks } = await import(LOCAL_BYPASS.href);
+  const { buildTrustedErpRequestHeaders, shouldBypassPageLocks } =
+    await import(LOCAL_BYPASS.href);
 
   assert.equal(
     shouldBypassPageLocks({ hostname: "localhost", nodeEnv: "development" }),
@@ -64,6 +66,28 @@ test("로컬 잠금 우회는 development localhost 요청에만 적용한다", 
     shouldBypassPageLocks({ hostname: "stargate.example", nodeEnv: "development" }),
     false,
   );
+
+  const spoofed = new Headers({ "x-stargate-erp-local-access": "1" });
+  const production = buildTrustedErpRequestHeaders(spoofed, {
+    pathname: "/erp/factions",
+    hostname: "localhost",
+    nodeEnv: "production",
+  });
+  const remoteDevelopment = buildTrustedErpRequestHeaders(spoofed, {
+    pathname: "/erp/factions",
+    hostname: "192.168.0.5",
+    nodeEnv: "development",
+  });
+  const localDevelopment = buildTrustedErpRequestHeaders(new Headers(), {
+    pathname: "/erp/factions",
+    hostname: "localhost",
+    nodeEnv: "development",
+  });
+
+  assert.equal(production.get("x-stargate-erp-local-access"), "0");
+  assert.equal(remoteDevelopment.get("x-stargate-erp-local-access"), "0");
+  assert.equal(localDevelopment.get("x-stargate-erp-local-access"), "1");
+  assert.equal(localDevelopment.get("x-stargate-erp-pathname"), "/erp/factions");
 });
 
 test("ERP 레이아웃은 신뢰된 로컬 플래그를 모든 잠금 UI에 전달한다", async () => {

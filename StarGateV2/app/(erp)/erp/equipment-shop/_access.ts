@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
+import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
 
 export async function requireEquipmentShopSession() {
   const session = await auth();
@@ -9,8 +10,10 @@ export async function requireEquipmentShopSession() {
     redirect("/login");
   }
 
+  const isGM = hasRole(session.user.role, "GM");
   return {
     session,
-    isGM: hasRole(session.user.role, "GM"),
+    isGM,
+    canPreview: isGM || (await hasLocalErpPreviewAccess()),
   };
 }

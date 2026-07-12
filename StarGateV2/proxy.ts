@@ -11,7 +11,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { safeCallbackUrl } from "@/lib/auth/callback-url";
-import { shouldBypassPageLocks } from "@/lib/erp/local-page-lock-bypass";
+import { buildTrustedErpRequestHeaders } from "@/lib/erp/local-page-lock-bypass";
 
 const SESSION_COOKIE_NAMES = [
   "authjs.session-token",
@@ -35,17 +35,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-stargate-erp-pathname", request.nextUrl.pathname);
-  requestHeaders.set(
-    "x-stargate-erp-local-access",
-    shouldBypassPageLocks({
-      hostname: request.nextUrl.hostname,
-      nodeEnv: process.env.NODE_ENV,
-    })
-      ? "1"
-      : "0",
-  );
+  const requestHeaders = buildTrustedErpRequestHeaders(request.headers, {
+    pathname: request.nextUrl.pathname,
+    hostname: request.nextUrl.hostname,
+    nodeEnv: process.env.NODE_ENV,
+  });
 
   return NextResponse.next({
     request: { headers: requestHeaders },

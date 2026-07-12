@@ -6,6 +6,7 @@ import type { UserRole } from "@/types/user";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
+import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
 
 import ERPLoading from "../loading";
 
@@ -22,7 +23,9 @@ export default async function FactionsPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  if (!hasRole(session.user.role, "GM")) {
+  const canPreview =
+    hasRole(session.user.role, "GM") || (await hasLocalErpPreviewAccess());
+  if (!canPreview) {
     return <FactionsComingSoon />;
   }
 

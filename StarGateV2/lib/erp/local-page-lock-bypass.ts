@@ -9,3 +9,20 @@ export function shouldBypassPageLocks(args: {
     LOCAL_HOSTNAMES.has(args.hostname.toLowerCase())
   );
 }
+
+export function buildTrustedErpRequestHeaders(
+  requestHeaders: Headers,
+  args: {
+    pathname: string;
+    hostname: string;
+    nodeEnv: string | undefined;
+  },
+): Headers {
+  const trustedHeaders = new Headers(requestHeaders);
+  trustedHeaders.set("x-stargate-erp-pathname", args.pathname);
+  trustedHeaders.set(
+    "x-stargate-erp-local-access",
+    shouldBypassPageLocks(args) ? "1" : "0",
+  );
+  return trustedHeaders;
+}
