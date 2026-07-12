@@ -4754,6 +4754,9 @@ export default function EquipmentShopClient({
         styles.armoryRoot,
         isHub ? styles["armoryRoot--hub"] : "",
         !isHub && activeZone === "lab" ? styles["armoryRoot--lab"] : "",
+        !isHub && activeZone === "strategic"
+          ? styles["armoryRoot--strategic"]
+          : "",
         !isHub && activeZone === "acheron"
           ? styles["armoryRoot--acheron"]
           : "",
@@ -5124,7 +5127,7 @@ export default function EquipmentShopClient({
                   ) : activeZone === "acheron" ? (
                     <Image src={TEMPER_PROFILE_SRC} alt="" fill sizes="38px" />
                   ) : activeZone === "strategic" ? (
-                    <Image src={RATCHET_PROFILE_SRC} alt="" fill sizes="38px" />
+                    <Image src={ratchetPortraitSrc} alt="" fill sizes="38px" />
                   ) : (
                     <span className={styles.npcProfileMark} aria-hidden />
                   )}
