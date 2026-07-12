@@ -54,6 +54,16 @@ import {
   shouldScheduleTowaskiShopIdle,
   type TowaskiQualificationDialogueEvent,
 } from "@/lib/equipment-shop/towaski-dialogue";
+import {
+  buildTemperCartLine,
+  buildTemperItemLine,
+  buildTemperTabLine,
+  buildTemperWelcomeLine,
+  TEMPER_DIALOGUE_LINES,
+  TEMPER_IDLE_LINES,
+  TEMPER_MOOD_LABELS,
+  type TemperMood,
+} from "@/lib/equipment-shop/temper-dialogue";
 import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
 import { formatCredits } from "@/lib/format/credit";
 import {
@@ -120,6 +130,8 @@ const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp?v=cutout-1";
 const TOWASKI_IDLE_DELAY_MS = 12000;
 const SUTURE_PROFILE_SRC = "/assets/npcs/Irena-Vukovic-Suture-profile.webp";
 const SUTURE_IDLE_DELAY_MS = 14000;
+const TEMPER_PROFILE_SRC = "/assets/npcs/Brigid-Kane-Temper-profile.webp";
+const TEMPER_IDLE_DELAY_MS = 13000;
 
 const SUTURE_MOOD_ASSETS: Record<SutureMood, string> = {
   welcome: "/assets/npcs/Irena-Vukovic-Suture-welcome.webp",
@@ -547,7 +559,7 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
     label: "아케론 대장간",
     eyebrow: "ACHERON FORGE",
     description: "근접무기와 냉병기류를 구매해 인벤토리에 반출합니다.",
-    npc: "단조 담당관",
+    npc: "브리짓 케인",
   },
   {
     value: "strategic",
@@ -1411,6 +1423,14 @@ export default function EquipmentShopClient({
       }),
     [mainCharacter?.codename, mainCharacterProfile],
   );
+  const temperWelcomeLine = useMemo(
+    () =>
+      buildTemperWelcomeLine({
+        codename: mainCharacter?.codename ?? null,
+        profile: mainCharacterProfile,
+      }),
+    [mainCharacter?.codename, mainCharacterProfile],
+  );
 
   const {
     mood: towaskiMood,
@@ -1470,6 +1490,33 @@ export default function EquipmentShopClient({
   });
   const suturePortraitSrc =
     SUTURE_MOOD_ASSETS[sutureMood] ?? SUTURE_PROFILE_SRC;
+  const {
+    mood: temperMood,
+    visibleLine: temperVisibleLine,
+    typing: temperTyping,
+    playLine: playTemperLine,
+    clearIdleTimer: clearTemperIdleTimer,
+    scheduleIdle: scheduleTemperIdle,
+    showLineImmediately: showTemperLineImmediately,
+    resetIdleCycle: resetTemperIdleCycle,
+    stopEngine: stopTemperEngine,
+  } = useNpcDialogue<TemperMood>({
+    isOpen: activeZone === "acheron" && catalog.isOpen,
+    hasMainCharacter,
+    idleDelayMs: TEMPER_IDLE_DELAY_MS,
+    idleLines: TEMPER_IDLE_LINES,
+    closedMood: "blocked",
+    closedLine: TEMPER_DIALOGUE_LINES.closed,
+    noAgentMood: "blocked",
+    noAgentLine: TEMPER_DIALOGUE_LINES.noAgent,
+    welcomeMood: "welcome",
+    welcomeLine: temperWelcomeLine,
+    beepPreset: "temper",
+    beepDefaults: { pitch: 440, speed: 46, volume: 0.54 },
+    engineVolume: 0.54,
+    entrySfxSrc: null,
+    entrySfxVolume: 0,
+  });
   const handleTowaskiQualificationDialogue = useCallback(
     (event: TowaskiQualificationDialogueEvent) => {
       clearTowaskiIdleTimer();
@@ -1660,6 +1707,47 @@ export default function EquipmentShopClient({
     stopSutureEngine,
     sutureDebugMode,
     sutureWelcomeLine,
+  ]);
+
+  useEffect(() => {
+    if (activeZone !== "acheron") {
+      clearTemperIdleTimer();
+      stopTemperEngine();
+      return;
+    }
+
+    if (!catalog.isOpen) {
+      clearTemperIdleTimer();
+      stopTemperEngine();
+      playTemperLine("blocked", TEMPER_DIALOGUE_LINES.closed, {
+        returnToIdle: false,
+        sound: false,
+      });
+      return;
+    }
+
+    if (!hasMainCharacter) {
+      playTemperLine("blocked", TEMPER_DIALOGUE_LINES.noAgent, {
+        returnToIdle: false,
+        sound: false,
+      });
+      return;
+    }
+
+    showTemperLineImmediately("welcome", temperWelcomeLine);
+    resetTemperIdleCycle();
+    scheduleTemperIdle();
+  }, [
+    activeZone,
+    catalog.isOpen,
+    clearTemperIdleTimer,
+    hasMainCharacter,
+    playTemperLine,
+    resetTemperIdleCycle,
+    scheduleTemperIdle,
+    showTemperLineImmediately,
+    stopTemperEngine,
+    temperWelcomeLine,
   ]);
 
   const scopedResearchTree = useMemo(
@@ -1880,9 +1968,18 @@ export default function EquipmentShopClient({
     playSutureLine(mood, text, { sound: true });
   }
 
+  function playTemperIfActive(mood: TemperMood, text: string) {
+    if (activeZone !== "acheron") return;
+    playTemperLine(mood, text, { sound: true });
+  }
+
   function handleSalesTabChange(tab: EquipmentShopTabValue) {
     setActiveTab(tab);
-    playTowaskiIfActive("inspect", buildTowaskiTabLine(tab));
+    if (activeZone === "towaski") {
+      playTowaskiIfActive("inspect", buildTowaskiTabLine(tab));
+    } else if (activeZone === "acheron") {
+      playTemperIfActive("inspect", buildTemperTabLine(tab));
+    }
   }
 
   function handleSelectSalesItem(item: EquipmentShopCatalogEntry) {
@@ -1891,6 +1988,9 @@ export default function EquipmentShopClient({
     if (activeZone === "towaski") {
       const nextLine = buildTowaskiItemLine(item, mainCharacter?.codename);
       playTowaskiIfActive(nextLine.mood, nextLine.text);
+    } else if (activeZone === "acheron") {
+      const nextLine = buildTemperItemLine(item);
+      playTemperIfActive(nextLine.mood, nextLine.text);
     }
   }
 
@@ -1908,6 +2008,12 @@ export default function EquipmentShopClient({
         effectiveHasMainCharacter
           ? TOWASKI_DIALOGUE_LINES.gmOnly
           : TOWASKI_DIALOGUE_LINES.noAgent,
+      );
+      playTemperIfActive(
+        "blocked",
+        effectiveHasMainCharacter
+          ? TEMPER_DIALOGUE_LINES.gmOnly
+          : TEMPER_DIALOGUE_LINES.noAgent,
       );
       return;
     }
@@ -1931,12 +2037,14 @@ export default function EquipmentShopClient({
         "blocked",
         "기본 자격이 없으면 네 적성 기록에 찍힌 물건만 내줄 수 있다.",
       );
+      playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.qualification);
       return;
     }
 
     if (!item.available) {
       setErrorMessage("현재 반출할 수 없는 품목입니다.");
       playTowaskiIfActive("stock", TOWASKI_DIALOGUE_LINES.unavailable);
+      playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.unavailable);
       return;
     }
 
@@ -1954,12 +2062,14 @@ export default function EquipmentShopClient({
         "blocked",
         `${item.licenseRequirement.label} 자격이 없다. 라이센스를 발급받거나 네 적성 기록부터 확인해.`,
       );
+      playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.qualification);
       return;
     }
 
     if (item.price > balance) {
       setErrorMessage("잔액이 부족합니다.");
       playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.checkoutError);
+      playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.insufficient);
       return;
     }
 
@@ -1972,6 +2082,7 @@ export default function EquipmentShopClient({
       isLicenseItem ? "license" : "cart",
       buildTowaskiCartLine(item),
     );
+    playTemperIfActive("cart", buildTemperCartLine(item));
     purchaseMutation.mutate(
       { key: item.key },
       {
@@ -1988,10 +2099,12 @@ export default function EquipmentShopClient({
               ? TOWASKI_DIALOGUE_LINES.licenseIssued
               : TOWASKI_DIALOGUE_LINES.checkout,
           );
+          playTemperIfActive("checkout", TEMPER_DIALOGUE_LINES.checkout);
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
           playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.checkoutError);
+          playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.checkoutError);
         },
         onSettled: () => {
           purchaseLockRef.current = false;
@@ -3958,7 +4071,10 @@ export default function EquipmentShopClient({
                 styles.npcPortrait,
                 activeZone === "towaski" ? styles["npcPortrait--towaski"] : "",
                 activeZone === "lab" ? styles["npcPortrait--suture"] : "",
-                activeZone !== "towaski" && activeZone !== "lab"
+                activeZone === "acheron" ? styles["npcPortrait--temper"] : "",
+                activeZone !== "towaski" &&
+                activeZone !== "lab" &&
+                activeZone !== "acheron"
                   ? styles["npcPortrait--mark"]
                   : "",
               ]
@@ -3981,17 +4097,36 @@ export default function EquipmentShopClient({
                   sizes="148px"
                   priority
                 />
+              ) : activeZone === "acheron" ? (
+                <Image
+                  src={TEMPER_PROFILE_SRC}
+                  alt=""
+                  fill
+                  sizes="148px"
+                  priority
+                />
               ) : (
                 <span className={styles.npcPortraitMark} aria-hidden />
               )}
             </div>
             <div className={styles.npcDialogue}>
               <div className={styles.npcHead}>
-                <span className={styles.npcProfile}>
+                <span
+                  className={[
+                    styles.npcProfile,
+                    activeZone === "acheron"
+                      ? styles["npcProfile--temper"]
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
                   {activeZone === "towaski" ? (
                     <Image src={TOWASKI_PROFILE_SRC} alt="" fill sizes="38px" />
                   ) : activeZone === "lab" ? (
                     <Image src={SUTURE_PROFILE_SRC} alt="" fill sizes="38px" />
+                  ) : activeZone === "acheron" ? (
+                    <Image src={TEMPER_PROFILE_SRC} alt="" fill sizes="38px" />
                   ) : (
                     <span className={styles.npcProfileMark} aria-hidden />
                   )}
@@ -4005,7 +4140,9 @@ export default function EquipmentShopClient({
                     ? TOWASKI_MOOD_LABELS[towaskiMood]
                     : activeZone === "lab"
                       ? SUTURE_MOOD_LABELS[sutureMood]
-                    : "응대 중"}
+                      : activeZone === "acheron"
+                        ? TEMPER_MOOD_LABELS[temperMood]
+                        : "응대 중"}
                 </span>
               </div>
               <p>
@@ -4020,19 +4157,28 @@ export default function EquipmentShopClient({
                         ) : null}
                       </>
                     )
-                  : activeZone === "towaski"
+                  : activeZone === "acheron"
                     ? (
                         <>
-                          {towaskiVisibleLine}
-                          {towaskiTyping ? (
+                          {temperVisibleLine}
+                          {temperTyping ? (
                             <span className={styles.npcCaret} aria-hidden>
                               |
                             </span>
                           ) : null}
                         </>
                       )
-                    : activeZone === "acheron"
-                      ? "아케론 대장간이다. 날붙이와 타격 장비는 여기서 보고 골라."
+                    : activeZone === "towaski"
+                      ? (
+                          <>
+                            {towaskiVisibleLine}
+                            {towaskiTyping ? (
+                              <span className={styles.npcCaret} aria-hidden>
+                                |
+                              </span>
+                            ) : null}
+                          </>
+                        )
                       : activeZone === "strategic"
                         ? "차량과 전략 자산은 태그가 붙은 품목만 반출대에 올라온다."
                         : "전용무기는 상담부터다. 제작 요청 저장은 다음 단계에서 연결한다."}
