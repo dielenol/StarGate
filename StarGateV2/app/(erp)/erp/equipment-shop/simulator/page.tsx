@@ -25,7 +25,7 @@ function fallbackAttackerProfile(sessionUser: {
 }
 
 export default async function EquipmentShopSimulatorPage() {
-  const { session, canPreview } = await requireEquipmentShopSession();
+  const { session, canPreview } = await requireEquipmentShopSession("/erp/equipment-shop/simulator");
   if (!canPreview) {
     return <EquipmentShopComingSoon />;
   }

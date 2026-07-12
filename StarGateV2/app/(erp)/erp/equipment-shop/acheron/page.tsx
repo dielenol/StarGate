@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default async function EquipmentShopAcheronPage() {
-  const { canPreview } = await requireEquipmentShopSession();
+  const { canPreview } = await requireEquipmentShopSession("/erp/equipment-shop/acheron");
   if (!canPreview) {
     return <EquipmentShopComingSoon />;
   }

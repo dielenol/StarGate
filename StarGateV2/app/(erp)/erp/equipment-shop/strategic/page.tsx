@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default async function EquipmentShopStrategicPage() {
-  const { canPreview } = await requireEquipmentShopSession();
+  const { canPreview } = await requireEquipmentShopSession("/erp/equipment-shop/strategic");
   if (!canPreview) {
     return <EquipmentShopComingSoon />;
   }

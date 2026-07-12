@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default async function EquipmentShopLabPage() {
-  const { canPreview } = await requireEquipmentShopSession();
+  const { canPreview } = await requireEquipmentShopSession("/erp/equipment-shop/lab");
   if (!canPreview) {
     return <EquipmentShopComingSoon />;
   }
