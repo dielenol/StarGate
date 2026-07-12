@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 
 import { useNotifications } from "@/hooks/queries/useNotificationsQuery";
 
-import type { Notification, NotificationType } from "@/types/notification";
+import type {
+  ClientNotification,
+  NotificationType,
+} from "@/types/notification";
 
 import {
   IconConsumable,
@@ -34,6 +37,17 @@ import styles from "./page.module.css";
 
 type FilterKey = "ALL" | NotificationType;
 type StatusFilter = "ALL" | "UNREAD" | "READ";
+
+const KST_TIME_ZONE = "Asia/Seoul";
+const KST_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: KST_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
 
 const FILTER_ORDER: FilterKey[] = [
   "ALL",
@@ -87,66 +101,80 @@ const STATUS_FILTERS: Array<{
   { key: "READ", label: "읽음", icon: IconRead },
 ];
 
-function fmtTime(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  const today = new Date();
-  const isToday =
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate();
+interface KstDateTimeParts {
+  year: string;
+  month: string;
+  day: string;
+  hour: string;
+  minute: string;
+}
 
-  if (isToday) {
-    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+function getKstDateTimeParts(d: Date | string): KstDateTimeParts {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const parts = Object.fromEntries(
+    KST_DATE_TIME_FORMATTER.formatToParts(date).map((part) => [
+      part.type,
+      part.value,
+    ]),
+  );
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    hour: parts.hour,
+    minute: parts.minute,
+  };
+}
+
+function fmtTime(d: Date | string, now: Date): string {
+  const date = getKstDateTimeParts(d);
+  if (getDateGroupKey(d) === getDateGroupKey(now)) {
+    return `${date.hour}:${date.minute}`;
   }
-  return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
+  return `${date.month}/${date.day}`;
 }
 
 function formatLongDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  const date = getKstDateTimeParts(d);
+  return `${date.year}.${date.month}.${date.day} ${date.hour}:${date.minute}`;
 }
 
-function getDateGroupLabel(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-
-  if (isSameDay(date, today)) return "TODAY";
-  if (isSameDay(date, yesterday)) return "YESTERDAY";
-  return `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+function getDateGroupLabel(d: Date | string, now: Date): string {
+  const date = getKstDateTimeParts(d);
+  const key = getDateGroupKey(d);
+  if (key === getDateGroupKey(now)) return "TODAY";
+  if (key === getDateGroupKey(new Date(now.getTime() - 86_400_000))) {
+    return "YESTERDAY";
+  }
+  return `${date.month}.${date.day}`;
 }
 
 function getDateGroupKey(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  const date = getKstDateTimeParts(d);
+  return `${date.year}-${date.month}-${date.day}`;
 }
 
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+function isToday(d: Date | string, now: Date): boolean {
+  return getDateGroupKey(d) === getDateGroupKey(now);
 }
 
-function isToday(d: Date | string): boolean {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return isSameDay(date, new Date());
-}
-
-function matchesSearch(notification: Notification, query: string): boolean {
+function matchesSearch(
+  notification: ClientNotification,
+  query: string,
+): boolean {
   if (!query) return true;
   const haystack = `${notification.title} ${notification.message}`.toLowerCase();
   return haystack.includes(query);
 }
 
 interface Props {
-  initialNotifications: Notification[];
+  initialNotifications: ClientNotification[];
+  initialNow: string;
 }
 
 export default function NotificationsClient({
   initialNotifications,
+  initialNow,
 }: Props) {
   const { data: notifications = [] } = useNotifications({
     initialData: initialNotifications,
@@ -155,10 +183,20 @@ export default function NotificationsClient({
   const [filter, setFilter] = useState<FilterKey>("ALL");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [now, setNow] = useState(() => new Date(initialNow));
+
+  useEffect(() => {
+    const updateNow = () => setNow(new Date());
+    updateNow();
+    const intervalId = window.setInterval(updateNow, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
   const readCount = notifications.length - unreadCount;
-  const todayCount = notifications.filter((n) => isToday(n.createdAt)).length;
+  const todayCount = notifications.filter((n) =>
+    isToday(n.createdAt, now),
+  ).length;
   const linkedCount = notifications.filter((n) => n.link).length;
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const hasActiveFilter =
@@ -199,7 +237,7 @@ export default function NotificationsClient({
     const groups: Array<{
       key: string;
       label: string;
-      notifications: Notification[];
+      notifications: ClientNotification[];
     }> = [];
     const groupIndex = new Map<string, number>();
 
@@ -214,13 +252,13 @@ export default function NotificationsClient({
       groupIndex.set(key, groups.length);
       groups.push({
         key,
-        label: getDateGroupLabel(notification.createdAt),
+        label: getDateGroupLabel(notification.createdAt, now),
         notifications: [notification],
       });
     }
 
     return groups;
-  }, [filtered]);
+  }, [filtered, now]);
 
   return (
     <div className={styles.notificationsShell} data-pixel-font="ui">
@@ -407,7 +445,7 @@ export default function NotificationsClient({
                             className={styles.notif__time}
                             title={formatLongDate(n.createdAt)}
                           >
-                            {fmtTime(n.createdAt)}
+                            {fmtTime(n.createdAt, now)}
                           </span>
                         </div>
                         {n.message ? (

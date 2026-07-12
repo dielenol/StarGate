@@ -141,7 +141,13 @@ export default function CreditBulkGrantForm({
       if (Boolean(a.mainCharacterId) !== Boolean(b.mainCharacterId)) {
         return a.mainCharacterId ? -1 : 1;
       }
-      return a.displayName.localeCompare(b.displayName);
+      // SSR/CSR locale 차이로 hydration 순서가 바뀌지 않도록
+      // 코드 포인트 비교와 userId tie-breaker를 사용한다.
+      if (a.displayName !== b.displayName) {
+        return a.displayName < b.displayName ? -1 : 1;
+      }
+      if (a.userId === b.userId) return 0;
+      return a.userId < b.userId ? -1 : 1;
     });
     return copy;
   }, [targets]);

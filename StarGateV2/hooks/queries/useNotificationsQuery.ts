@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import type { Notification } from "@/types/notification";
+import type { ClientNotification } from "@/types/notification";
 
 export const notificationKeys = {
   all: ["notifications"] as const,
@@ -9,14 +9,14 @@ export const notificationKeys = {
 };
 
 export interface NotificationSummaryResponse {
-  recent: Notification[];
+  recent: ClientNotification[];
   unreadCount: number;
 }
 
 const NOTIFICATION_STALE_TIME_MS = 30 * 1000;
 const NOTIFICATION_REFETCH_INTERVAL_MS = 60 * 1000;
 
-async function fetchNotifications(): Promise<Notification[]> {
+async function fetchNotifications(): Promise<ClientNotification[]> {
   const res = await fetch("/api/erp/notifications", { cache: "no-store" });
   if (!res.ok) throw new Error("알림을 불러올 수 없습니다.");
   const data = await res.json();
@@ -32,7 +32,7 @@ async function fetchNotificationSummary(): Promise<NotificationSummaryResponse> 
 }
 
 export function useNotifications(options?: {
-  initialData?: Notification[];
+  initialData?: ClientNotification[];
 }) {
   return useQuery({
     queryKey: notificationKeys.list,

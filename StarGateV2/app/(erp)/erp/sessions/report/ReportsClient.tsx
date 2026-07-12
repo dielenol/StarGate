@@ -65,8 +65,8 @@ function getPinLineStyle(layout: PinCardLayout) {
   return {
     "--pin-card-x": `${layout.x}px`,
     "--pin-card-y": `${layout.y}px`,
-    "--pin-line-length": `${length}px`,
-    "--pin-line-angle": `${angle}deg`,
+    "--pin-line-length": `${length.toFixed(4)}px`,
+    "--pin-line-angle": `${angle.toFixed(4)}deg`,
     "--pin-label-x": `${Math.round(layout.labelX ?? layout.x / 2)}px`,
   };
 }
