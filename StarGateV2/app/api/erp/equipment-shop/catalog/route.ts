@@ -5,7 +5,7 @@
  * 별도 재고 시스템은 두지 않고, 카탈로그 가격이 숫자로 확정된 항목만 구매 가능하다.
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
@@ -14,25 +14,38 @@ import { listRecentEquipmentShopActivity } from "@/lib/db/equipment-shop-activit
 import { listOwnedTowaskiLicenseSlugs } from "@/lib/db/equipment-licenses";
 import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
 import {
+  applyAcheronArmorReferrals,
+  ARMOR_REFERRAL_COOKIE_NAME,
+} from "@/lib/equipment-shop/armor-referral";
+import {
   applyEquipmentShopLicenseContext,
   EQUIPMENT_SHOP_CATEGORIES,
+  expandEquipmentShopCatalogZones,
   toEquipmentShopCatalogItem,
 } from "@/lib/equipment-shop/catalog";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const isGM = hasRole(session.user.role, "GM");
   const requestedScope = new URL(request.url).searchParams.get("scope");
-  if (requestedScope !== null && !["all", "towaski"].includes(requestedScope)) {
+  if (
+    requestedScope !== null &&
+    !["all", "towaski", "acheron"].includes(requestedScope)
+  ) {
     return NextResponse.json(
       { error: "지원하지 않는 카탈로그 scope입니다." },
       { status: 400 },
     );
   }
-  const scope = !isGM || requestedScope === "towaski" ? "towaski" : "all";
+  const scope =
+    requestedScope === "acheron"
+      ? "acheron"
+      : !isGM || requestedScope === "towaski"
+        ? "towaski"
+        : "all";
 
   try {
     const mainCharacter = await findMainCharacterByOwner(session.user.id);
@@ -46,14 +59,29 @@ export async function GET(request: Request) {
         ? listRecentEquipmentShopActivity(String(mainAgent._id)).catch(() => [])
         : Promise.resolve([]),
     ]);
-    const catalogItems = masterItems
-      .map(toEquipmentShopCatalogItem)
-      .filter((item): item is NonNullable<typeof item> => item !== null)
-      .filter((item) => scope === "all" || item.zone === "towaski");
-    const items = applyEquipmentShopLicenseContext(catalogItems, {
+    const catalogItems = expandEquipmentShopCatalogZones(
+      masterItems
+        .map(toEquipmentShopCatalogItem)
+        .filter((item): item is NonNullable<typeof item> => item !== null),
+    );
+    const scopedItems = catalogItems.filter(
+      (item) => scope === "all" || item.zone === scope,
+    );
+    const licensedItems = applyEquipmentShopLicenseContext(scopedItems, {
       character: mainAgent,
       ownedLicenseSlugs,
     });
+    const secret = process.env.AUTH_SECRET;
+    const characterId = mainAgent?._id ? String(mainAgent._id) : null;
+    const items =
+      secret && characterId
+        ? applyAcheronArmorReferrals(licensedItems, {
+            token: request.cookies.get(ARMOR_REFERRAL_COOKIE_NAME)?.value,
+            userId: session.user.id,
+            characterId,
+            secret,
+          })
+        : licensedItems;
 
     return NextResponse.json(
       {

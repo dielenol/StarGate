@@ -5,7 +5,7 @@
  * character_inventory 에 적재한다. 병기부 전용 재고는 아직 없으므로 재고 차감은 하지 않는다.
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { charactersCol } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
@@ -25,7 +25,16 @@ import { findUserById } from "@/lib/db/users";
 import { getEquipmentResearchCapabilities } from "@/lib/db/equipment-research";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import {
+  ARMOR_REFERRAL_COOKIE_NAME,
+  quoteAcheronArmorReferral,
+} from "@/lib/equipment-shop/armor-referral";
+import {
+  equipmentShopItemKey,
   equipmentShopItemZone,
+  isEquipmentShopCategory,
+  type EquipmentShopCatalogItem,
+  type EquipmentShopCategory,
+  type EquipmentShopZone,
   toEquipmentPriceNumber,
 } from "@/lib/equipment-shop/catalog";
 import { containsDuplicateEquipmentItemIds } from "@/lib/equipment-shop/checkout-lines";
@@ -43,9 +52,11 @@ const MAX_QUANTITY_PER_ITEM = 1;
 const MAX_CART_LINES = 20;
 
 interface CheckoutBody {
+  purchaseZone?: unknown;
   items?: Array<{
     key?: unknown;
     quantity?: unknown;
+    expectedUnitPrice?: unknown;
   }>;
 }
 
@@ -54,8 +65,12 @@ interface CheckoutLine {
   name: string;
   quantity: number;
   unitPrice: number;
+  listPrice: number;
   totalPrice: number;
   itemId: string;
+  category: EquipmentShopCategory;
+  sourceZone: EquipmentShopZone;
+  discount?: EquipmentShopCatalogItem["discount"];
   slug?: string;
   licenseRequirement?: EquipmentLicenseRequirement;
 }
@@ -94,25 +109,37 @@ class EquipmentAgentRequiredError extends Error {
 
 function normalizeCartItems(
   rawItems: CheckoutBody["items"],
-): Array<{ key: string; quantity: number }> | null {
+): Array<{ key: string; quantity: number; expectedUnitPrice: number }> | null {
   if (!Array.isArray(rawItems) || rawItems.length === 0) return null;
 
-  const merged = new Map<string, number>();
+  const merged = new Map<
+    string,
+    { quantity: number; expectedUnitPrice: number }
+  >();
   for (const raw of rawItems) {
     const key = typeof raw.key === "string" ? raw.key.trim() : "";
     const quantity = raw.quantity;
+    const expectedUnitPrice = raw.expectedUnitPrice;
     if (
       !key ||
       typeof quantity !== "number" ||
       !Number.isInteger(quantity) ||
-      quantity < MIN_QUANTITY
+      quantity < MIN_QUANTITY ||
+      typeof expectedUnitPrice !== "number" ||
+      !Number.isInteger(expectedUnitPrice) ||
+      expectedUnitPrice < 0
     ) {
       return null;
     }
-    merged.set(key, (merged.get(key) ?? 0) + quantity);
+    const current = merged.get(key);
+    if (current && current.expectedUnitPrice !== expectedUnitPrice) return null;
+    merged.set(key, {
+      quantity: (current?.quantity ?? 0) + quantity,
+      expectedUnitPrice,
+    });
   }
 
-  const items = Array.from(merged, ([key, quantity]) => ({ key, quantity }));
+  const items = Array.from(merged, ([key, value]) => ({ key, ...value }));
   if (items.length === 0 || items.length > MAX_CART_LINES) return null;
   if (items.some((item) => item.quantity > MAX_QUANTITY_PER_ITEM)) return null;
   return items;
@@ -125,7 +152,7 @@ function formatOrderDescription(lines: CheckoutLine[]): string {
   return `병기부 구매 — ${first.name} x${first.quantity}${suffix}`;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -140,6 +167,18 @@ export async function POST(request: Request) {
   const isGM = hasRole(session.user.role, "GM");
 
   const body = (await request.json().catch(() => null)) as CheckoutBody | null;
+  const purchaseZone =
+    body?.purchaseZone === "towaski" ||
+    body?.purchaseZone === "acheron" ||
+    body?.purchaseZone === "strategic"
+      ? body.purchaseZone
+      : null;
+  if (!purchaseZone) {
+    return NextResponse.json(
+      { error: "유효한 구매 구역이 필요합니다.", code: "INVALID_CART" },
+      { status: 400 },
+    );
+  }
   const normalizedItems = normalizeCartItems(body?.items);
   if (!normalizedItems) {
     return NextResponse.json(
@@ -201,6 +240,8 @@ export async function POST(request: Request) {
     if (masterItem._id) masterById.set(String(masterItem._id), masterItem);
   }
 
+  const referralSecret = process.env.AUTH_SECRET;
+  const referralToken = request.cookies.get(ARMOR_REFERRAL_COOKIE_NAME)?.value;
   const lines: CheckoutLine[] = [];
   for (const item of normalizedItems) {
     const masterItem =
@@ -210,6 +251,7 @@ export async function POST(request: Request) {
       !masterItem ||
       !masterItem._id ||
       !zone ||
+      !isEquipmentShopCategory(masterItem.category) ||
       masterItem.isAvailable === false ||
       masterItem.isPublic === false
     ) {
@@ -222,10 +264,24 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!isGM && zone !== "towaski") {
+    const isSharedAcheronArmor =
+      purchaseZone === "acheron" &&
+      zone === "towaski" &&
+      masterItem.category === "ARMOR";
+    const isCatalogZoneMatch = zone === purchaseZone || isSharedAcheronArmor;
+    if (!isCatalogZoneMatch) {
       return NextResponse.json(
         {
-          error: "플레이어 반출은 토와스키 건샵 품목으로 제한됩니다.",
+          error: "요청한 구역에서 판매하는 품목이 아닙니다.",
+          code: "FORBIDDEN_EQUIPMENT_ZONE",
+        },
+        { status: 403 },
+      );
+    }
+    if (!isGM && purchaseZone !== "towaski" && !isSharedAcheronArmor) {
+      return NextResponse.json(
+        {
+          error: "플레이어는 해당 병기부 구역의 품목을 반출할 수 없습니다.",
           code: "FORBIDDEN_EQUIPMENT_ZONE",
         },
         { status: 403 },
@@ -242,8 +298,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const unitPrice = toEquipmentPriceNumber(masterItem.price);
-    if (unitPrice === null) {
+    const listPrice = toEquipmentPriceNumber(masterItem.price);
+    if (listPrice === null) {
       return NextResponse.json(
         {
           error: `${masterItem.name} 가격이 확정되지 않아 구매할 수 없습니다.`,
@@ -253,14 +309,43 @@ export async function POST(request: Request) {
       );
     }
 
+    const canonicalKey = equipmentShopItemKey(masterItem);
+    const referralQuote =
+      isSharedAcheronArmor && referralSecret && canonicalKey
+        ? quoteAcheronArmorReferral({
+            itemKey: canonicalKey,
+            listPrice,
+            token: referralToken,
+            userId: session.user.id,
+            characterId: String(mainChar._id),
+            secret: referralSecret,
+          })
+        : { price: listPrice, listPrice, discount: null };
+    const unitPrice = referralQuote.price;
+    if (unitPrice > item.expectedUnitPrice) {
+      return NextResponse.json(
+        {
+          error: `${masterItem.name} 가격 또는 할인 상태가 변경되었습니다. 카탈로그를 갱신한 뒤 다시 시도하세요.`,
+          code: "PRICE_CHANGED",
+        },
+        { status: 409 },
+      );
+    }
+
     const licenseRequirement = getEquipmentLicenseRequirement(masterItem);
     lines.push({
       key: item.key,
       name: masterItem.name,
       quantity: item.quantity,
       unitPrice,
+      listPrice,
       totalPrice: unitPrice * item.quantity,
       itemId: String(masterItem._id),
+      category: masterItem.category,
+      sourceZone: zone,
+      ...(referralQuote.discount
+        ? { discount: referralQuote.discount }
+        : {}),
       ...(masterItem.slug ? { slug: masterItem.slug } : {}),
       ...(licenseRequirement ? { licenseRequirement } : {}),
     });
@@ -284,7 +369,9 @@ export async function POST(request: Request) {
     ...licenseGatedLines.map(
       (line) => line.licenseRequirement.licenseSlug,
     ),
-    ...(!isGM ? [TOWASKI_BASIC_FIREARM_LICENSE_SLUG] : []),
+    ...(!isGM && purchaseZone === "towaski"
+      ? [TOWASKI_BASIC_FIREARM_LICENSE_SLUG]
+      : []),
   ]);
   const requiredLicenseItems = await findMasterItemsBySlugsOrIds([
     ...requiredLicenseSlugs,
@@ -302,6 +389,10 @@ export async function POST(request: Request) {
   ];
 
   const totalPrice = lines.reduce((sum, line) => sum + line.totalPrice, 0);
+  const totalDiscount = lines.reduce(
+    (sum, line) => sum + (line.listPrice - line.unitPrice) * line.quantity,
+    0,
+  );
   const characterId = String(mainChar._id);
   const capabilities = await getEquipmentResearchCapabilities(String(mainChar._id));
   const quotedRefund = capabilities.refundPercent > 0
@@ -321,7 +412,7 @@ export async function POST(request: Request) {
       requestId,
       domain: "equipment-shop-checkout",
       actorId: session.user.id,
-      payload: { items: normalizedItems },
+      payload: { items: normalizedItems, purchaseZone },
       run: async (mongoSession) => {
         await lockCharacterInventoryItems(
           characterId,
@@ -369,7 +460,11 @@ export async function POST(request: Request) {
               })
             : undefined;
           const eligibility = evaluateEquipmentPurchaseEligibility({
-            isGM,
+            isGM:
+              isGM ||
+              (purchaseZone === "acheron" &&
+                line.sourceZone === "towaski" &&
+                line.category === "ARMOR"),
             hasBasicLicense,
             available: true,
             price: line.unitPrice,
@@ -403,7 +498,12 @@ export async function POST(request: Request) {
           amount: -totalPrice,
           type: "PURCHASE",
           description: formatOrderDescription(lines),
-          metadata: { source: "equipment_shop_checkout", itemCount: lines.length },
+          metadata: {
+            source: "equipment_shop_checkout",
+            itemCount: lines.length,
+            purchaseZone,
+            totalDiscount,
+          },
           createdById: session.user.id,
           createdByName: session.user.displayName,
           requestId,
@@ -453,9 +553,12 @@ export async function POST(request: Request) {
                 name: line.name,
                 quantity: line.quantity,
                 unitPrice: line.unitPrice,
+                listPrice: line.listPrice,
                 totalPrice: line.totalPrice,
+                discount: line.discount ?? null,
               })),
               totalPrice,
+              totalDiscount,
             },
             balance,
             researchRefund: actualRefund,
@@ -518,10 +621,13 @@ export async function POST(request: Request) {
       message: [
         `${mainChar.codename} · ${formatOrderDescription(lines)}`,
         formatSignedAmount(-totalPrice, "CR"),
+        totalDiscount > 0
+          ? `토와스키 열람 연계 -${totalDiscount.toLocaleString()} CR`
+          : "",
         refund > 0 ? `연구 환급 +${refund.toLocaleString()} CR` : "",
         `현재 잔액 ${balance.toLocaleString()} CR`,
       ].filter(Boolean).join(" · "),
-      link: "/erp/equipment-shop/towaski",
+      link: `/erp/equipment-shop/${purchaseZone}`,
     }).catch((error) => console.error("[equipment-shop/checkout] notification failed", error));
   }
   return response;

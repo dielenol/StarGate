@@ -35,7 +35,7 @@ export const equipmentShopKeys = {
   research: ["equipment-shop", "research"] as const,
 };
 
-export type EquipmentShopCatalogScope = "all" | "towaski";
+export type EquipmentShopCatalogScope = "all" | "towaski" | "acheron";
 
 export type EquipmentShopErrorCode =
   | "INSUFFICIENT_BALANCE"
@@ -63,6 +63,7 @@ export type EquipmentShopErrorCode =
   | "INVALID_RESEARCH"
   | "ITEM_NOT_AVAILABLE"
   | "PRICE_NOT_SET"
+  | "PRICE_CHANGED"
   | "RESEARCH_CAP_REACHED"
   | "RESEARCH_PREREQUISITE_MISSING"
   | "RESEARCH_NOT_READY"
@@ -128,7 +129,7 @@ async function parseEquipmentShopError(res: Response): Promise<never> {
 async function fetchEquipmentShopCatalog(
   scope: EquipmentShopCatalogScope,
 ): Promise<EquipmentShopCatalogResponse> {
-  const query = scope === "towaski" ? "?scope=towaski" : "";
+  const query = scope === "all" ? "" : `?scope=${scope}`;
   const res = await fetch(`/api/erp/equipment-shop/catalog${query}`, {
     cache: "no-store",
   });

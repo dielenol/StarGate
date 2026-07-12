@@ -3,7 +3,9 @@ import test from "node:test";
 
 import { DialogueBeepEngine } from "../../audio/dialogue-beep-engine.ts";
 import {
+  buildTemperArmorReferralLine,
   buildTemperCartLine,
+  buildTemperCheckoutLine,
   buildTemperItemLine,
   buildTemperTabLine,
   buildTemperWelcomeLine,
@@ -22,6 +24,9 @@ const ACHERON_ITEMS = [
   ["basic-longsword", "보급형 롱소드", /롱소드|긴 칼/],
   ["basic-blunt-weapon", "보급형 둔기", /둔기|무게/],
   ["basic-chainsaw", "보급형 전기톱", /전기톱|시동/],
+  ["basic-standard-ballistic-vest", "보급형 기본 방탄복", /방탄복|조끼/],
+  ["basic-intermediate-ballistic-vest", "보급형 중급 방탄복", /중급|RF2/],
+  ["basic-advanced-ballistic-vest", "보급형 고급 방탄복", /고급|RF3/],
 ];
 
 test("welcome dialogue addresses the assigned AGENT and reflects profile", () => {
@@ -71,6 +76,33 @@ test("repeated Acheron interactions rotate through distinct dialogue", () => {
   assert.equal(inspections.size, 3);
   assert.equal(cartLines.size, 3);
   assert.equal(tabLines.size, 3);
+});
+
+test("Towaski armor referral has distinct Temper lines and cart handling", () => {
+  const item = {
+    key: "basic-intermediate-ballistic-vest",
+    name: "보급형 중급 방탄복",
+    category: "ARMOR",
+    available: true,
+    discount: {
+      type: "towaski-armor-referral",
+      percent: 10,
+      amount: 22,
+    },
+  };
+  const referralLines = new Set(
+    [0, 1, 2].map((variant) =>
+      buildTemperArmorReferralLine(item, variant),
+    ),
+  );
+  const checkoutLines = new Set(
+    [0, 1, 2].map((variant) => buildTemperCheckoutLine(variant)),
+  );
+
+  assert.equal(referralLines.size, 3);
+  assert.equal(checkoutLines.size, 3);
+  assert.match(buildTemperCartLine(item, 0), /10%|할인/);
+  assert.match(buildTemperItemLine(item, 0).text, /중급|RF2/);
 });
 
 test("unavailable and future catalog items use safe fallback dialogue", () => {

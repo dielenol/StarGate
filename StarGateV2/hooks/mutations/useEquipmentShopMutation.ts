@@ -25,6 +25,7 @@ import {
 } from "@/hooks/queries/useEquipmentShopQuery";
 import type { EquipmentResearchScope as EquipmentResearchScopeValue } from "@/lib/equipment-shop/research";
 import type { EquipmentPurchaseBlockCode } from "@/lib/equipment-shop/purchase-eligibility";
+import type { EquipmentShopZone } from "@/lib/equipment-shop/catalog";
 import {
   TOWASKI_LICENSE_REDEMPTION_LEASE_MS,
   type TowaskiLicenseTestRequest,
@@ -41,6 +42,18 @@ const LICENSE_TEST_RECOVERY_ATTEMPTS = Math.ceil(
 
 interface PurchaseEquipmentInput {
   key: string;
+  zone: EquipmentShopZone;
+  expectedUnitPrice: number;
+}
+
+interface RegisterArmorReferralInput {
+  key: string;
+}
+
+interface RegisterArmorReferralResponse {
+  key: string;
+  discountPercent: number;
+  expiresAt: string;
 }
 
 export interface EquipmentShopQuoteResponse {
@@ -71,9 +84,17 @@ interface CheckoutResponse {
       name: string;
       quantity: number;
       unitPrice: number;
+      listPrice: number;
       totalPrice: number;
+      discount: {
+        type: "towaski-armor-referral";
+        percent: number;
+        amount: number;
+        expiresAt: string;
+      } | null;
     }>;
     totalPrice: number;
+    totalDiscount: number;
   };
   balance: number;
 }
@@ -182,7 +203,16 @@ export function usePurchaseEquipmentShopItem() {
             input,
           ),
         },
-        body: JSON.stringify({ items: [{ key: input.key, quantity: 1 }] }),
+        body: JSON.stringify({
+          items: [
+            {
+              key: input.key,
+              quantity: 1,
+              expectedUnitPrice: input.expectedUnitPrice,
+            },
+          ],
+          purchaseZone: input.zone,
+        }),
       });
       if (!res.ok) await throwEquipmentShopError(res);
       return res.json();
@@ -197,6 +227,29 @@ export function usePurchaseEquipmentShopItem() {
         queryClient.invalidateQueries({ queryKey: creditKeys.all }),
         queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
       ]);
+    },
+  });
+}
+
+export function useRegisterTowaskiArmorReferral() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    RegisterArmorReferralResponse,
+    EquipmentShopApiError,
+    RegisterArmorReferralInput
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/equipment-shop/armor-referral", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
     },
   });
 }

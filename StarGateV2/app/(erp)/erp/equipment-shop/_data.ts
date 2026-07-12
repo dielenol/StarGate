@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
@@ -24,8 +25,13 @@ import {
   listOwnedTowaskiLicenseSlugs,
 } from "@/lib/db/equipment-licenses";
 import {
+  applyAcheronArmorReferrals,
+  ARMOR_REFERRAL_COOKIE_NAME,
+} from "@/lib/equipment-shop/armor-referral";
+import {
   applyEquipmentShopLicenseContext,
   EQUIPMENT_SHOP_CATEGORIES,
+  expandEquipmentShopCatalogZones,
   type EquipmentShopZone,
   toEquipmentShopCatalogItem,
 } from "@/lib/equipment-shop/catalog";
@@ -73,6 +79,12 @@ export async function buildEquipmentShopCatalogResponse(options: {
   zone?: EquipmentShopZone;
   character?: EquipmentLicenseCharacter | null;
   characterId?: string | null;
+  armorReferral?: {
+    token?: string | null;
+    userId: string;
+    characterId: string;
+    secret: string;
+  };
 } = {}): Promise<EquipmentShopCatalogResponse> {
   const [masterItems, ownedLicenseSlugs, recentActivity] = await Promise.all([
     listMasterItemsByCategoryFilter(EQUIPMENT_SHOP_CATEGORIES),
@@ -83,14 +95,19 @@ export async function buildEquipmentShopCatalogResponse(options: {
       ? listRecentEquipmentShopActivity(options.characterId).catch(() => [])
       : Promise.resolve([]),
   ]);
-  const catalogItems = masterItems
-    .map(toEquipmentShopCatalogItem)
-    .filter((item): item is NonNullable<typeof item> => item !== null)
+  const catalogItems = expandEquipmentShopCatalogZones(
+    masterItems
+      .map(toEquipmentShopCatalogItem)
+      .filter((item): item is NonNullable<typeof item> => item !== null),
+  )
     .filter((item) => !options.zone || item.zone === options.zone);
-  const items = applyEquipmentShopLicenseContext(catalogItems, {
+  const licensedItems = applyEquipmentShopLicenseContext(catalogItems, {
     character: options.character ?? null,
     ownedLicenseSlugs,
   });
+  const items = options.armorReferral
+    ? applyAcheronArmorReferrals(licensedItems, options.armorReferral)
+    : licensedItems;
 
   return {
     items,
@@ -174,6 +191,9 @@ export async function loadEquipmentShopPageData(
   }
   const mainAgent = mainCharacter?.type === "AGENT" ? mainCharacter : null;
   const mainCharacterId = mainAgent ? String(mainAgent._id) : null;
+  const cookieStore = await cookies();
+  const referralToken = cookieStore.get(ARMOR_REFERRAL_COOKIE_NAME)?.value;
+  const referralSecret = process.env.AUTH_SECRET;
 
   const [
     initialCatalog,
@@ -187,6 +207,16 @@ export async function loadEquipmentShopPageData(
         zone: options.catalogZone,
         character: mainAgent,
         characterId: mainCharacterId,
+        ...(mainCharacterId && referralSecret
+          ? {
+              armorReferral: {
+                token: referralToken,
+                userId,
+                characterId: mainCharacterId,
+                secret: referralSecret,
+              },
+            }
+          : {}),
       }).catch(
         (): EquipmentShopCatalogResponse => ({
           items: [],

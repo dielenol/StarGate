@@ -24,6 +24,7 @@ import {
   useContributeEquipmentResearch,
   useEquipmentShopQuote,
   usePurchaseEquipmentShopItem,
+  useRegisterTowaskiArmorReferral,
   useRushEquipmentResearch,
   useStartEquipmentResearch,
 } from "@/hooks/mutations/useEquipmentShopMutation";
@@ -55,7 +56,9 @@ import {
   type TowaskiQualificationDialogueEvent,
 } from "@/lib/equipment-shop/towaski-dialogue";
 import {
+  buildTemperArmorReferralLine,
   buildTemperCartLine,
+  buildTemperCheckoutLine,
   buildTemperItemLine,
   buildTemperTabLine,
   buildTemperWelcomeLine,
@@ -239,6 +242,12 @@ const TOWASKI_DIALOGUE_LINES = {
   qualificationPassed:
     "합격. 기본 화기 라이센스 발급했다. 이제 장부에 이름 올리고 물건을 봐.",
 } as const;
+
+const TOWASKI_ARMOR_REFERRAL_LINES = [
+  "쇳덩이 성직자 쪽에서도 같은 방호구를 맞춘다. 여기서 규격 봤다고 해. 조율비 10%는 뺄 거야.",
+  "입어봤으면 기록 남긴다. TEMPER한테 가도 같은 물건 나온다. 내 열람표가 있으면 중복 측정값은 안 받을 거다.",
+  "방호구는 양쪽에서 판다. 난 재고를 보고, 그 여자는 네 몸을 봐. 둘 다 거치면 적어도 같은 값 두 번 내진 않아.",
+] as const;
 
 const TOWASKI_IDLE_LINES: readonly { mood: TowaskiMood; text: string }[] = [
   {
@@ -653,10 +662,11 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   LICENSE_GRANT_FAILED: "기본 화기 라이센스 지급에 실패했습니다.",
   BASIC_LICENSE_REQUIRED: "토와스키 기본 화기 자격시험을 먼저 통과해야 합니다.",
   FORBIDDEN_EQUIPMENT_ZONE:
-    "플레이어 반출은 토와스키 건샵 품목으로 제한됩니다.",
+    "현재 구역에서 반출할 수 없는 병기부 품목입니다.",
   INVALID_RESEARCH: "연구 적용값이 올바르지 않습니다.",
   ITEM_NOT_AVAILABLE: "판매 가능한 병기부 카탈로그 품목이 아닙니다.",
   PRICE_NOT_SET: "가격이 확정되지 않은 장비는 구매할 수 없습니다.",
+  PRICE_CHANGED: "가격 또는 할인 상태가 변경되었습니다. 다시 확인해 주세요.",
   RESEARCH_CAP_REACHED: "연구 누적 상한에 도달했습니다.",
   RESEARCH_PREREQUISITE_MISSING:
     "같은 범위의 이전 티어 연구를 먼저 적용해야 합니다.",
@@ -845,6 +855,25 @@ function stableStringSeed(value: string): number {
 
 function pickStableLine(lines: readonly string[], seed: string): string {
   return lines[stableStringSeed(seed) % lines.length] ?? lines[0] ?? "";
+}
+
+function pickCyclingLine(lines: readonly string[], variant: number): string {
+  return lines[Math.abs(Math.trunc(variant)) % lines.length] ?? lines[0] ?? "";
+}
+
+function isAcheronSharedArmor(item: EquipmentShopCatalogEntry): boolean {
+  return (
+    item.zone === "acheron" &&
+    item.sourceZone === "towaski" &&
+    item.category === "ARMOR"
+  );
+}
+
+function buildTowaskiArmorReferralLine(
+  item: EquipmentShopCatalogEntry,
+  variant: number,
+): string {
+  return `${item.name}. ${pickCyclingLine(TOWASKI_ARMOR_REFERRAL_LINES, variant)}`;
 }
 
 function getTowaskiItemDialogue(
@@ -1326,7 +1355,10 @@ export default function EquipmentShopClient({
   const router = useRouter();
   const catalogQuery = useEquipmentShopCatalog({
     initialData: initialCatalog,
-    scope: initialZone === "towaski" ? "towaski" : "all",
+    scope:
+      initialZone === "towaski" || initialZone === "acheron"
+        ? initialZone
+        : "all",
     characterId: mainCharacter?.id ?? null,
   });
   const researchQuery = useEquipmentResearch({
@@ -1335,6 +1367,7 @@ export default function EquipmentShopClient({
   });
   const creditsQuery = useCredits({ initialData: initialCredits });
   const purchaseMutation = usePurchaseEquipmentShopItem();
+  const armorReferralMutation = useRegisterTowaskiArmorReferral();
   const quoteMutation = useEquipmentShopQuote();
   const startResearchMutation = useStartEquipmentResearch();
   const rushResearchMutation = useRushEquipmentResearch();
@@ -1345,6 +1378,7 @@ export default function EquipmentShopClient({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const purchaseLockRef = useRef(false);
   const towaskiQualificationPassedRef = useRef(false);
+  const towaskiDialogueRevisionRef = useRef(0);
   const temperDialogueRevisionRef = useRef(0);
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
     () => mainCharacter?.stats ?? null,
@@ -1631,10 +1665,7 @@ export default function EquipmentShopClient({
     effectiveHasMainCharacter &&
     catalog.isOpen &&
     !catalogQuery.isError &&
-    !catalogQuery.isRefetchError &&
-    (effectiveTowaskiGm ||
-      (activeZone === "towaski" &&
-        (effectiveHasBasicLicense || effectiveHasQualificationAccess)));
+    !catalogQuery.isRefetchError;
   const purchasingKey = purchaseMutation.isPending
     ? (purchaseMutation.variables?.key ?? null)
     : null;
@@ -1648,17 +1679,25 @@ export default function EquipmentShopClient({
     ? describeEquipmentLicenseDetail(selectedItem)
     : null;
   const selectedHasBasicPurchaseAccess = selectedItem
-    ? hasTowaskiBasicPurchaseAccess({
+    ? isAcheronSharedArmor(selectedItem) ||
+      hasTowaskiBasicPurchaseAccess({
         isGM: effectiveTowaskiGm,
         hasBasicLicense: effectiveHasBasicLicense,
         licenseStatus: selectedItem.licenseStatus,
       })
     : false;
+  const selectedHasZonePurchaseAccess = Boolean(
+    selectedItem &&
+      (effectiveTowaskiGm ||
+        activeZone === "towaski" ||
+        isAcheronSharedArmor(selectedItem)),
+  );
   const selectedCanPurchase =
     Boolean(selectedItem) &&
     canUseShop &&
     !isTowaskiDebug &&
     selectedItem?.available === true &&
+    selectedHasZonePurchaseAccess &&
     selectedHasBasicPurchaseAccess &&
     selectedItem.licenseOwned !== true &&
     !selectedLicenseBlocked &&
@@ -2122,11 +2161,39 @@ export default function EquipmentShopClient({
     if (activeZone === "towaski") {
       const nextLine = buildTowaskiItemLine(item, mainCharacter?.codename);
       playTowaskiIfActive(nextLine.mood, nextLine.text);
+      if (
+        item.category === "ARMOR" &&
+        effectiveHasMainCharacter &&
+        !isTowaskiDebug
+      ) {
+        armorReferralMutation.mutate(
+          { key: item.key },
+          {
+            onSuccess: () => {
+              playTowaskiIfActive(
+                "stock",
+                buildTowaskiArmorReferralLine(
+                  item,
+                  towaskiDialogueRevisionRef.current++,
+                ),
+              );
+            },
+            onError: (err) => {
+              setErrorMessage(describeEquipmentShopError(err));
+            },
+          },
+        );
+      }
     } else if (activeZone === "acheron") {
-      const nextLine = buildTemperItemLine(
-        item,
-        temperDialogueRevisionRef.current++,
-      );
+      const nextLine = item.discount
+        ? {
+            mood: "balance" as const,
+            text: buildTemperArmorReferralLine(
+              item,
+              temperDialogueRevisionRef.current++,
+            ),
+          }
+        : buildTemperItemLine(item, temperDialogueRevisionRef.current++);
       playTemperIfActive(nextLine.mood, nextLine.text);
     } else if (activeZone === "strategic") {
       const nextLine = buildStrategicItemLine(item);
@@ -2137,7 +2204,11 @@ export default function EquipmentShopClient({
   function handlePurchase(item: EquipmentShopCatalogEntry) {
     if (purchaseLockRef.current || purchaseMutation.isPending) return;
 
-    if (!canUseShop) {
+    const hasZonePurchaseAccess =
+      effectiveTowaskiGm ||
+      activeZone === "towaski" ||
+      isAcheronSharedArmor(item);
+    if (!canUseShop || !hasZonePurchaseAccess) {
       setErrorMessage(
         effectiveHasMainCharacter
           ? "GM preview 상태에서만 병기부 구매를 실행할 수 있습니다."
@@ -2170,6 +2241,7 @@ export default function EquipmentShopClient({
     }
 
     if (
+      !isAcheronSharedArmor(item) &&
       !hasTowaskiBasicPurchaseAccess({
         isGM: effectiveTowaskiGm,
         hasBasicLicense: effectiveHasBasicLicense,
@@ -2237,14 +2309,18 @@ export default function EquipmentShopClient({
     );
     playStrategicIfActive("dispatch", buildStrategicDispatchLine(item));
     purchaseMutation.mutate(
-      { key: item.key },
+      { key: item.key, zone: item.zone, expectedUnitPrice: item.price },
       {
         onSuccess: (res) => {
           setNotice({
             tone: "success",
             text: isLicenseItem
               ? `${res.order.items[0]?.name ?? item.name} 발급이 완료되었습니다.`
-              : `${res.order.items[0]?.name ?? item.name} 1개 반출 결제가 완료되었습니다.`,
+              : `${res.order.items[0]?.name ?? item.name} 1개 반출 결제가 완료되었습니다.${
+                  res.order.totalDiscount > 0
+                    ? ` 토와스키 열람 연계로 ${formatCredits(res.order.totalDiscount)} 할인되었습니다.`
+                    : ""
+                }`,
           });
           playTowaskiIfActive(
             isLicenseItem ? "license" : "checkout",
@@ -2252,7 +2328,10 @@ export default function EquipmentShopClient({
               ? TOWASKI_DIALOGUE_LINES.licenseIssued
               : TOWASKI_DIALOGUE_LINES.checkout,
           );
-          playTemperIfActive("checkout", TEMPER_DIALOGUE_LINES.checkout);
+          playTemperIfActive(
+            "checkout",
+            buildTemperCheckoutLine(temperDialogueRevisionRef.current++),
+          );
           playStrategicIfActive(
             "checkout",
             STRATEGIC_DIALOGUE_LINES.checkout,
@@ -2929,15 +3008,21 @@ export default function EquipmentShopClient({
                 const isLicenseItem = isTowaskiLicenseCatalogItem(item);
                 const licenseBlocked = isEquipmentLicenseBlocked(item);
                 const licenseAccess = describeEquipmentLicenseAccess(item);
-                const hasBasicPurchaseAccess = hasTowaskiBasicPurchaseAccess({
-                  isGM: effectiveTowaskiGm,
-                  hasBasicLicense: effectiveHasBasicLicense,
-                  licenseStatus: item.licenseStatus,
-                });
+                const sharedAcheronArmor = isAcheronSharedArmor(item);
+                const hasZonePurchaseAccess =
+                  effectiveTowaskiGm || isTowaski || sharedAcheronArmor;
+                const hasBasicPurchaseAccess =
+                  sharedAcheronArmor ||
+                  hasTowaskiBasicPurchaseAccess({
+                    isGM: effectiveTowaskiGm,
+                    hasBasicLicense: effectiveHasBasicLicense,
+                    licenseStatus: item.licenseStatus,
+                  });
                 const canPurchase =
                   canUseShop &&
                   !isTowaskiDebug &&
                   !isSoldOut &&
+                  hasZonePurchaseAccess &&
                   hasBasicPurchaseAccess &&
                   !item.licenseOwned &&
                   !licenseBlocked &&
@@ -2951,6 +3036,7 @@ export default function EquipmentShopClient({
                       styles.productCard,
                       isSelected ? styles["productCard--selected"] : "",
                       isSoldOut ||
+                      !hasZonePurchaseAccess ||
                       !hasBasicPurchaseAccess ||
                       licenseBlocked ||
                       item.licenseOwned
@@ -2968,7 +3054,13 @@ export default function EquipmentShopClient({
                     >
                       <span className={styles.productTop}>
                         <span>{getCatalogCategoryLabel(item)}</span>
-                        <span>{isSoldOut ? "LOCKED" : "AVAILABLE"}</span>
+                        <span>
+                          {isSoldOut
+                            ? "LOCKED"
+                            : item.discount
+                              ? `TOWASKI -${item.discount.percent}%`
+                              : "AVAILABLE"}
+                        </span>
                       </span>
                       <span className={styles.productIcon} aria-hidden>
                         {renderCatalogIcon(item, 48)}
@@ -2979,7 +3071,12 @@ export default function EquipmentShopClient({
                           ? `${item.effect} · ${licenseAccess}`
                           : item.effect}
                       </span>
-                      <strong>{formatCredits(item.price)}</strong>
+                      <span className={styles.productPrice}>
+                        {item.listPrice ? (
+                          <del>{formatCredits(item.listPrice)}</del>
+                        ) : null}
+                        <strong>{formatCredits(item.price)}</strong>
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -2996,7 +3093,9 @@ export default function EquipmentShopClient({
                             : "처리 중"
                           : isTowaskiDebug
                             ? "샌드박스 차단"
-                            : item.licenseOwned
+                            : !hasZonePurchaseAccess
+                              ? "GM 반출 전용"
+                              : item.licenseOwned
                               ? "발급 완료"
                               : !hasBasicPurchaseAccess
                                 ? "기본 화기 필요"
@@ -3046,6 +3145,20 @@ export default function EquipmentShopClient({
                     {selectedLicenseDetail}
                   </p>
                 ) : null}
+                {selectedItem.discount ? (
+                  <div className={styles.discountNotice}>
+                    <span>토와스키 열람 연계</span>
+                    <strong>
+                      {formatCredits(
+                        selectedItem.listPrice ?? selectedItem.price,
+                      )} →{" "}
+                      {formatCredits(selectedItem.price)}
+                    </strong>
+                    <em>
+                      조율비 {selectedItem.discount.percent}% 절감 · 안전 검수 유지
+                    </em>
+                  </div>
+                ) : null}
                 {activeZone === "towaski" ? (
                   <div className={styles.qualificationPanel}>
                     <span>
@@ -3089,7 +3202,9 @@ export default function EquipmentShopClient({
                     <span>
                       {selectedIsLicenseItem
                         ? "라이센스 발급 · 1회"
-                        : "단건 반출 · 1개"}
+                        : selectedItem.discount
+                          ? "토와스키 연계 반출 · 1개"
+                          : "단건 반출 · 1개"}
                     </span>
                     <strong>
                       결제 후 {formatCredits(balance - selectedItem.price)}
@@ -3108,7 +3223,9 @@ export default function EquipmentShopClient({
                         : "반출 처리 중"
                       : isTowaskiDebug
                         ? "샌드박스 구매 차단"
-                        : selectedItem.licenseOwned
+                        : !selectedHasZonePurchaseAccess
+                          ? "GM 반출 전용"
+                          : selectedItem.licenseOwned
                           ? "발급 완료"
                           : !selectedHasBasicPurchaseAccess
                             ? "기본 화기 필요"

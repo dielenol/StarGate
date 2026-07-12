@@ -19,6 +19,11 @@ type TemperCatalogItem = {
   name: string;
   category: "WEAPON" | "ARMOR" | "CONSUMABLE" | "SPECIAL";
   available: boolean;
+  discount?: {
+    type: "towaski-armor-referral";
+    percent: number;
+    amount: number;
+  };
 };
 
 type TemperTab = "ALL" | "WEAPON" | "ARMOR" | "CONSUMABLE" | "LICENSE";
@@ -229,7 +234,64 @@ const TEMPER_ITEM_DIALOGUE: Record<string, TemperItemDialogue> = {
       "구동부 열과 체인 오일 확인했어. 이상음 한 번이면 바로 정지, 두 번은 없어.",
     ],
   },
+  "basic-standard-ballistic-vest": {
+    mood: "inspect",
+    inspect: [
+      "기본형 방탄복이네. 판재보다 먼저 어깨끈을 봐. 몸에서 뜨면 충격이 빈틈으로 파고들어.",
+      "한 발 막고 끝나는 장비야. 아깝다고 두 번째 피격까지 입고 있으면 장례복이 된다.",
+      "가벼운 조끼일수록 체형 차이가 크게 나. 가슴판이 뜨지 않게 숨 쉬는 자세부터 맞춰 봐.",
+    ],
+    cart: [
+      "기본 방탄판과 체결부 확인했어. 첫 피격 뒤에는 미련 두지 말고 바로 폐기해.",
+      "기본형 조끼 조율 끝. 어깨끈에 표시한 선을 넘겨 조이면 움직임부터 막힌다.",
+      "판재 모서리와 봉제선까지 봤어. 돌아오면 어디를 맞았는지 표시해서 가져와.",
+    ],
+  },
+  "basic-intermediate-ballistic-vest": {
+    mood: "balance",
+    inspect: [
+      "중급형은 판이 두꺼워진 만큼 중심이 올라가. 팔을 들었을 때 목을 누르면 규격이 안 맞는 거야.",
+      "RF2급 충격은 막아도 반동까지 사라지는 건 아니야. 갈비뼈와 판 사이 여유를 먼저 보자.",
+      "보강판 무게가 앞에 몰렸네. 등판을 당겨서 달릴 때 조끼가 따로 놀지 않게 맞춰야 해.",
+    ],
+    cart: [
+      "중급 방탄판 균형 잡았어. 피격 뒤 숨이 쉬어진다고 멀쩡한 건 아니니 의무실부터 가.",
+      "어깨와 옆구리 체결선 표시했다. 다른 사람이 입으면 처음부터 다시 조율해야 해.",
+      "판재 유격과 봉제부 확인 끝. 충격 자국은 닦지 말고 그대로 가져와.",
+    ],
+  },
+  "basic-advanced-ballistic-vest": {
+    mood: "balance",
+    inspect: [
+      "고급형을 찾는 임무면 이미 위험도 계산은 끝났겠지. 그럼 난 네가 이 무게로 움직일 수 있는지만 본다.",
+      "RF3급 판재는 단단하지만 사람은 아니야. 몸통을 지키겠다고 목과 관절을 내주면 계산이 틀려.",
+      "두꺼운 판은 안심을 팔기 좋아. 난 안심 말고 체결 각도와 파단 방향을 팔아.",
+    ],
+    cart: [
+      "고급 방호구 최종 검수 끝. 한 발 막았으면 임무보다 교체가 먼저야.",
+      "목 가동 범위와 어깨 간섭까지 맞췄어. 무게 때문에 자세가 무너지면 바로 돌아와.",
+      "고위험 규격으로 봉인한다. 피격 위치와 자세를 기록해 와야 다음 판을 더 낫게 만든다.",
+    ],
+  },
 };
+
+const TEMPER_ARMOR_REFERRAL_LINES = [
+  "탄약 장사꾼 쪽에서 규격은 보고 왔네. 같은 치수를 두 번 잴 필요는 없으니 조율비는 10% 빼 줄게. 안전 검수는 그대로고.",
+  "토와스키가 열람표에 네 이름을 남겼군. 그 사람 말은 깎아 들어도 치수 기록은 쓸 만해. 중복 측정비는 덜어낸다.",
+  "쇳덩이 성직자한테 왔다고 전했나 보네. 좋아, 연계 할인은 넣어 줄게. 대신 판재와 체결부 검사는 한 줄도 안 줄여.",
+] as const;
+
+const TEMPER_REFERRAL_CART_LINES = [
+  "열람 연계 확인했어. 중복 측정값은 빼고, 안전 검수는 전부 다시 했다. 10% 조율 할인으로 반출대에 올린다.",
+  "토와스키 기록과 내 측정값이 맞아. 가격은 줄였지만 검수 항목은 안 줄였어. 이제 네 몸에 맞춰 봉인한다.",
+  "탄약 장사꾼 표식 확인. 조율비 10%는 덜었고, 판재 유격은 내가 다시 잡았어. 할인과 대충은 다른 말이니까.",
+] as const;
+
+const TEMPER_CHECKOUT_LINES = [
+  "반출 검수 끝. 첫 사용 뒤에는 판재와 몸을 둘 다 확인해. 망가지는 쪽은 늘 먼저 신호를 보내니까.",
+  "봉인과 체결 기록 끝냈어. 피격이나 파손이 생기면 닦지 말고 그대로 가져와. 흔적이 다음 장비를 살린다.",
+  "반출 승인. 장비가 널 살렸다면 기록을 남기고, 못 살렸다면 더 정확히 남겨. 둘 다 다음 단조에 필요해.",
+] as const;
 
 function stableLine(lines: readonly string[], seed: string): string {
   const index = Array.from(seed).reduce(
@@ -290,11 +352,25 @@ export function buildTemperCartLine(
   item: TemperCatalogItem,
   variant = 0,
 ): string {
+  if (item.discount?.type === "towaski-armor-referral") {
+    return cycleLine(TEMPER_REFERRAL_CART_LINES, variant);
+  }
   const dialogue = TEMPER_ITEM_DIALOGUE[item.key];
   if (dialogue) {
     return cycleLine(dialogue.cart, variant);
   }
   return `${item.name} 반출대에 올렸어. 봉인 전에 손에 맞는지 마지막으로 확인해.`;
+}
+
+export function buildTemperArmorReferralLine(
+  item: Pick<TemperCatalogItem, "name">,
+  variant = 0,
+): string {
+  return `${item.name}. ${cycleLine(TEMPER_ARMOR_REFERRAL_LINES, variant)}`;
+}
+
+export function buildTemperCheckoutLine(variant = 0): string {
+  return cycleLine(TEMPER_CHECKOUT_LINES, variant);
 }
 
 const TEMPER_TAB_LINES: Record<TemperTab, readonly string[]> = {

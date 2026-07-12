@@ -27,7 +27,15 @@ export interface EquipmentShopCatalogItem {
   name: string;
   category: EquipmentShopCategory;
   zone: EquipmentShopZone;
+  sourceZone: EquipmentShopZone;
   price: number;
+  listPrice?: number;
+  discount?: {
+    type: "towaski-armor-referral";
+    percent: number;
+    amount: number;
+    expiresAt: string;
+  };
   effect: string;
   description: string;
   damage?: string;
@@ -196,6 +204,7 @@ export function toEquipmentShopCatalogItem(
     name: item.name,
     category: item.category,
     zone,
+    sourceZone: zone,
     price: price ?? 0,
     effect: equipmentEffect(item),
     description:
@@ -216,6 +225,16 @@ export function toEquipmentShopCatalogItem(
     stock: null,
     available,
   };
+}
+
+export function expandEquipmentShopCatalogZones(
+  items: EquipmentShopCatalogItem[],
+): EquipmentShopCatalogItem[] {
+  return items.flatMap((item) =>
+    item.zone === "towaski" && item.category === "ARMOR"
+      ? [item, { ...item, zone: "acheron" as const }]
+      : [item],
+  );
 }
 
 export function applyEquipmentShopLicenseContext(

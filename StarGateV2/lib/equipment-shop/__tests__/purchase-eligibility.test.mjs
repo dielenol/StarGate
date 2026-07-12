@@ -27,6 +27,11 @@ test("Towaski catalog requires explicit tags or canonical slug allowlist", async
   const source = await readFile(CATALOG, "utf8");
   assert.match(source, /explicitlyTagged \|\| isTowaskiCatalogAllowlistedSlug/);
   assert.doesNotMatch(source, /if \(acheron\) return "acheron";\s*return "towaski"/);
+  assert.match(
+    source,
+    /item\.zone === "towaski" && item\.category === "ARMOR"/,
+  );
+  assert.match(source, /zone: "acheron" as const/);
 });
 
 test("catalog availability no longer invents one unit of stock", async () => {
@@ -44,4 +49,16 @@ test("GM quote reuses checkout eligibility without mutation primitives", async (
   assert.match(checkoutRoute, /evaluateEquipmentPurchaseEligibility/);
   assert.match(quoteRoute, /candidate\.slug === key/);
   assert.doesNotMatch(quoteRoute, /addCredit|addToInventory|executeEconomicOperation/);
+});
+
+test("Acheron armor discount is recalculated by checkout instead of trusting client price", async () => {
+  const checkoutRoute = await readFile(CHECKOUT_ROUTE, "utf8");
+
+  assert.match(checkoutRoute, /quoteAcheronArmorReferral/);
+  assert.match(checkoutRoute, /purchaseZone === "acheron"/);
+  assert.match(checkoutRoute, /line\.sourceZone === "towaski"/);
+  assert.match(checkoutRoute, /line\.category === "ARMOR"/);
+  assert.match(checkoutRoute, /unitPrice > item\.expectedUnitPrice/);
+  assert.match(checkoutRoute, /code: "PRICE_CHANGED"/);
+  assert.doesNotMatch(checkoutRoute, /body\?\.price|rawItem\.price/);
 });
