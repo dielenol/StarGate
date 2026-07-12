@@ -110,7 +110,18 @@ type EquipmentShopTabValue =
   | "ARMOR"
   | "CONSUMABLE"
   | "LICENSE";
-type NoticeState = { tone: "success" | "info"; text: string } | null;
+type FeedbackTone = "success" | "info" | "error";
+type NoticeState = {
+  tone: Exclude<FeedbackTone, "error">;
+  title: string;
+  text: string;
+} | null;
+type FeedbackState = {
+  id: number;
+  tone: FeedbackTone;
+  title: string;
+  detail: string;
+} | null;
 type TowaskiDebugMode = "live" | "unlicensed" | "licensed" | "no-agent";
 type MainCharacterStats = Record<EquipmentResearchStat, number>;
 type TowaskiMood =
@@ -687,6 +698,50 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   RESEARCH_START_FAILED: "연구 시작 처리에 실패했습니다.",
   FORBIDDEN_RESEARCH_PROJECT: "이 연구를 조작할 권한이 없습니다.",
 };
+
+const FEEDBACK_SOUND_PATTERNS: Record<
+  FeedbackTone,
+  readonly { delay: number; duration: number; frequency: number }[]
+> = {
+  info: [{ delay: 0, duration: 0.06, frequency: 520 }],
+  success: [
+    { delay: 0, duration: 0.07, frequency: 620 },
+    { delay: 0.08, duration: 0.08, frequency: 780 },
+    { delay: 0.17, duration: 0.12, frequency: 1040 },
+  ],
+  error: [
+    { delay: 0, duration: 0.11, frequency: 210 },
+    { delay: 0.1, duration: 0.15, frequency: 150 },
+  ],
+};
+
+const FEEDBACK_LABELS: Record<FeedbackTone, string> = {
+  info: "병기부 안내",
+  success: "처리 완료",
+  error: "처리 실패",
+};
+
+function playFeedbackTone(context: AudioContext, tone: FeedbackTone) {
+  const baseTime = context.currentTime + 0.01;
+  const peakGain = tone === "info" ? 0.025 : 0.04;
+
+  FEEDBACK_SOUND_PATTERNS[tone].forEach((note) => {
+    const start = baseTime + note.delay;
+    const end = start + note.duration;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = tone === "error" ? "triangle" : "sine";
+    oscillator.frequency.setValueAtTime(note.frequency, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(peakGain, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(start);
+    oscillator.stop(end + 0.02);
+  });
+}
 
 interface Props {
   mode: EquipmentShopMode;
@@ -1406,8 +1461,10 @@ export default function EquipmentShopClient({
     team: getFirstResearchKeyForScope(initialResearch.tree, "team"),
   }));
   const [teamContributionAmount, setTeamContributionAmount] = useState("100");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [notice, setNotice] = useState<NoticeState>(null);
+  const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const feedbackSequenceRef = useRef(0);
+  const feedbackTimerRef = useRef<number | null>(null);
+  const feedbackAudioContextRef = useRef<AudioContext | null>(null);
   const [hasBasicFirearmLicense, setHasBasicFirearmLicense] = useState(
     () => mainCharacter?.hasBasicFirearmLicense ?? false,
   );
@@ -1439,6 +1496,99 @@ export default function EquipmentShopClient({
   const isSutureDebug =
     isGM && activeZone === "lab" && sutureDebugMode !== "live";
   const strategicSceneInfo = STRATEGIC_SCENE_INFO[strategicScene];
+
+  const playFeedbackSound = useCallback((tone: FeedbackTone) => {
+    try {
+      const audioWindow = window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const AudioContextConstructor =
+        audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
+      if (!AudioContextConstructor) return;
+
+      const context =
+        feedbackAudioContextRef.current ?? new AudioContextConstructor();
+      feedbackAudioContextRef.current = context;
+      if (context.state === "suspended") {
+        void context
+          .resume()
+          .then(() => playFeedbackTone(context, tone))
+          .catch(() => undefined);
+        return;
+      }
+      playFeedbackTone(context, tone);
+    } catch {
+      // Ignore unsupported audio environments and browser playback policies.
+    }
+  }, []);
+
+  const dismissFeedback = useCallback(() => {
+    if (feedbackTimerRef.current !== null) {
+      window.clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = null;
+    }
+    setFeedback(null);
+  }, []);
+
+  const showFeedback = useCallback(
+    (tone: FeedbackTone, title: string, detail: string) => {
+      const id = feedbackSequenceRef.current + 1;
+      feedbackSequenceRef.current = id;
+      setFeedback({ id, tone, title, detail });
+      playFeedbackSound(tone);
+
+      if (feedbackTimerRef.current !== null) {
+        window.clearTimeout(feedbackTimerRef.current);
+      }
+      feedbackTimerRef.current = window.setTimeout(
+        () => {
+          setFeedback((current) => (current?.id === id ? null : current));
+          feedbackTimerRef.current = null;
+        },
+        tone === "error" ? 7000 : 5000,
+      );
+    },
+    [playFeedbackSound],
+  );
+
+  const setErrorMessage = useCallback(
+    (message: string | null) => {
+      if (message) {
+        showFeedback("error", "요청을 처리하지 못했습니다", message);
+        return;
+      }
+      setFeedback((current) =>
+        current?.tone === "error" ? null : current,
+      );
+    },
+    [showFeedback],
+  );
+
+  const setNotice = useCallback(
+    (notice: NoticeState) => {
+      if (notice) {
+        showFeedback(notice.tone, notice.title, notice.text);
+        return;
+      }
+      setFeedback((current) =>
+        current?.tone !== "error" ? null : current,
+      );
+    },
+    [showFeedback],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current !== null) {
+        window.clearTimeout(feedbackTimerRef.current);
+      }
+      const context = feedbackAudioContextRef.current;
+      feedbackAudioContextRef.current = null;
+      if (context && context.state !== "closed") {
+        void context.close().catch(() => undefined);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (activeZone !== "strategic") return;
@@ -2137,7 +2287,11 @@ export default function EquipmentShopClient({
     setNotice(
       nextMode === "live"
         ? null
-        : { tone: "info", text: "TOWASKI DEBUG SANDBOX / DB WRITE 0" },
+        : {
+            tone: "info",
+            title: "토와스키 디버그 모드",
+            text: "TOWASKI DEBUG SANDBOX / DB WRITE 0",
+          },
     );
   }
 
@@ -2147,7 +2301,11 @@ export default function EquipmentShopClient({
     setNotice(
       nextMode === "live"
         ? null
-        : { tone: "info", text: "SUTURE PORTRAIT SANDBOX / DB WRITE 0" },
+        : {
+            tone: "info",
+            title: "수처 디버그 모드",
+            text: "SUTURE PORTRAIT SANDBOX / DB WRITE 0",
+          },
     );
   }
 
@@ -2374,6 +2532,7 @@ export default function EquipmentShopClient({
         onSuccess: (res) => {
           setNotice({
             tone: "success",
+            title: isLicenseItem ? "라이센스 발급 완료" : "병기 반출 체결 완료",
             text: isLicenseItem
               ? `${res.order.items[0]?.name ?? item.name} 발급이 완료되었습니다.`
               : `${res.order.items[0]?.name ?? item.name} 1개 반출 결제가 완료되었습니다.${
@@ -2434,6 +2593,7 @@ export default function EquipmentShopClient({
       setErrorMessage(null);
       setNotice({
         tone: "success",
+        title: isTowaskiDebug ? "사격 시험 디버그 통과" : "사격 자격 승인",
         text: isTowaskiDebug
           ? `DEBUG PASS / ${licenseName} / DB WRITE 0`
           : `${licenseName}가 발급되었습니다. 토와스키 건샵 반출대가 개방됩니다.`,
@@ -2443,7 +2603,7 @@ export default function EquipmentShopClient({
         sound: true,
       });
     },
-    [isTowaskiDebug, playTowaskiLine],
+    [isTowaskiDebug, playTowaskiLine, setErrorMessage, setNotice],
   );
 
   function formatDuration(hours: number): string {
@@ -2547,6 +2707,7 @@ export default function EquipmentShopClient({
         onSuccess: (res) => {
           setNotice({
             tone: "success",
+            title: "개인 연구 접수 완료",
             text: `${res.project.key} 연구를 시작했습니다.`,
           });
           playSutureIfActive(
@@ -2614,6 +2775,7 @@ export default function EquipmentShopClient({
         onSuccess: (res) => {
           setNotice({
             tone: "success",
+            title: res.project ? "팀 연구 개시" : "연구 기여금 접수",
             text: res.project
               ? `${res.project.key} 팀 연구 목표액이 충족되어 연구를 시작했습니다.`
               : `${res.pool.key} 팀 연구에 ${formatCredits(res.chargedAmount)} 기여했습니다.`,
@@ -2667,6 +2829,7 @@ export default function EquipmentShopClient({
         onSuccess: (res) => {
           setNotice({
             tone: "success",
+            title: "연구 일정 단축 완료",
             text:
               `연구 시간을 ${formatDuration(res.rush.hours)} 단축했습니다.` +
               `${res.rush.discountApplied ? " (할인 적용)" : ""}`,
@@ -2729,6 +2892,7 @@ export default function EquipmentShopClient({
           }
           setNotice({
             tone: "success",
+            title: "연구 효과 적용 완료",
             text:
               `${res.key} 연구 효과를 적용했습니다.` +
               `${res.skipped.length > 0 ? ` (${res.skipped.length}명 제외)` : ""}`,
@@ -4310,31 +4474,39 @@ export default function EquipmentShopClient({
         </Box>
       ) : null}
 
-      {errorMessage ? (
-        <Box className={styles.errorBanner} role="alert">
-          <strong>!</strong> {errorMessage}
-          <button
-            type="button"
-            onClick={() => setErrorMessage(null)}
-            aria-label="에러 메시지 닫기"
-          >
-            X
-          </button>
-        </Box>
-      ) : null}
-
-      {notice ? (
-        <Box
+      {feedback ? (
+        <div
+          key={feedback.id}
           className={[
-            styles.noticeBanner,
-            notice.tone === "success" ? styles["noticeBanner--success"] : "",
+            styles.feedbackToast,
+            styles[`feedbackToast--${feedback.tone}`],
           ]
             .filter(Boolean)
             .join(" ")}
-          role="status"
+          role={feedback.tone === "error" ? "alert" : "status"}
+          aria-live={feedback.tone === "error" ? "assertive" : "polite"}
         >
-          {notice.text}
-        </Box>
+          <span className={styles.feedbackToast__icon} aria-hidden>
+            {feedback.tone === "success"
+              ? "✓"
+              : feedback.tone === "error"
+                ? "!"
+                : "i"}
+          </span>
+          <div className={styles.feedbackToast__body}>
+            <span>{FEEDBACK_LABELS[feedback.tone]}</span>
+            <strong>{feedback.title}</strong>
+            <p>{feedback.detail}</p>
+          </div>
+          <button
+            type="button"
+            className={styles.feedbackToast__dismiss}
+            onClick={dismissFeedback}
+            aria-label="병기부 알림 닫기"
+          >
+            ×
+          </button>
+        </div>
       ) : null}
 
       <section
