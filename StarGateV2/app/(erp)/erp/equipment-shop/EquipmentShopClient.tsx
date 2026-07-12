@@ -73,6 +73,7 @@ import {
   type TemperMood,
 } from "@/lib/equipment-shop/temper-dialogue";
 import {
+  buildStrategicCheckoutLine,
   buildStrategicDispatchLine,
   buildStrategicItemLine,
   buildStrategicWelcomeLine,
@@ -1442,6 +1443,7 @@ export default function EquipmentShopClient({
   const towaskiQualificationPassedRef = useRef(false);
   const towaskiDialogueRevisionRef = useRef(0);
   const temperDialogueRevisionRef = useRef(0);
+  const strategicDialogueRevisionRef = useRef(0);
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
     () => mainCharacter?.stats ?? null,
   );
@@ -2325,13 +2327,6 @@ export default function EquipmentShopClient({
 
   function playStrategicIfActive(mood: StrategicMood, text: string) {
     if (activeZone !== "strategic") return;
-    if (!hasMainCharacter) {
-      playStrategicLine("blocked", STRATEGIC_DIALOGUE_LINES.noAgent, {
-        returnToIdle: false,
-        sound: true,
-      });
-      return;
-    }
     playStrategicLine(mood, text, { sound: true });
   }
 
@@ -2388,7 +2383,10 @@ export default function EquipmentShopClient({
         : buildTemperItemLine(item, temperDialogueRevisionRef.current++);
       playTemperIfActive(nextLine.mood, nextLine.text);
     } else if (activeZone === "strategic") {
-      const nextLine = buildStrategicItemLine(item);
+      const nextLine = buildStrategicItemLine(
+        item,
+        strategicDialogueRevisionRef.current++,
+      );
       playStrategicIfActive(nextLine.mood, nextLine.text);
     }
   }
@@ -2526,7 +2524,10 @@ export default function EquipmentShopClient({
       "cart",
       buildTemperCartLine(item, temperDialogueRevisionRef.current++),
     );
-    playStrategicIfActive("dispatch", buildStrategicDispatchLine(item));
+    playStrategicIfActive(
+      "dispatch",
+      buildStrategicDispatchLine(item),
+    );
     purchaseMutation.mutate(
       { key: item.key, zone: item.zone, expectedUnitPrice: item.price },
       {
@@ -2557,7 +2558,10 @@ export default function EquipmentShopClient({
           );
           playStrategicIfActive(
             "checkout",
-            STRATEGIC_DIALOGUE_LINES.checkout,
+            buildStrategicCheckoutLine(
+              item,
+              strategicDialogueRevisionRef.current++,
+            ),
           );
         },
         onError: (err) => {
