@@ -25,6 +25,7 @@ export default function PageLockControl({
   initialPageLocks,
 }: PageLockControlProps) {
   const pathname = usePathname();
+  const isAcheronForge = pathname.startsWith("/erp/equipment-shop/acheron");
   const { data: pageLocks } = usePageLocks({ initialData: initialPageLocks });
   const setPageLock = useSetPageLock();
 
@@ -37,7 +38,15 @@ export default function PageLockControl({
   if (!item || !lockKey) return null;
 
   return (
-    <aside className={styles.control} aria-label="운영 페이지 잠금 설정">
+    <aside
+      className={[
+        styles.control,
+        isAcheronForge ? styles["control--acheron"] : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      aria-label="운영 페이지 잠금 설정"
+    >
       <span className={styles.control__copy}>
         <small>운영 잠금</small>
         <strong>{item.label}</strong>
