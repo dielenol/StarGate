@@ -313,6 +313,21 @@
   --armory-bg-image: url("/assets/equipment-shop/rooms/strategic-supply-staffed.webp");
 }
 
+.armoryStage--custom {
+  --armory-bg-image: url("/assets/equipment-shop/rooms/custom-workshop.webp");
+  --armory-bg-position: center top;
+  --armory-bg-overlay:
+    linear-gradient(
+      180deg,
+      rgba(4, 5, 6, 0.5),
+      rgba(4, 5, 6, 0.78) 46%,
+      rgba(4, 5, 6, 0.94)
+    ),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.2), transparent 52%, rgba(0, 0, 0, 0.3));
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
 .armoryStage--hub::before {
   background:
     linear-gradient(90deg, rgba(201, 168, 90, 0.055) 1px, transparent 1px),
@@ -2029,6 +2044,7 @@
 
 .techTreeHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
@@ -2041,6 +2057,7 @@
   color: var(--gold);
   font-size: 22px;
   line-height: 1.15;
+  white-space: nowrap;
 }
 
 .techTreeControls {
