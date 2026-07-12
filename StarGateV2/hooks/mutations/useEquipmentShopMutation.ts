@@ -31,6 +31,10 @@ import {
   type TowaskiLicenseTestRequest,
   type TowaskiLicenseTestResponse,
 } from "@/lib/equipment-shop/license-test";
+import type {
+  EquipmentWorkshopRequestInput,
+  EquipmentWorkshopRequestResponse,
+} from "@/lib/equipment-shop/workshop-request";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 const LICENSE_TEST_RECOVERY_POLL_INTERVAL_MS = 250;
@@ -273,6 +277,29 @@ export function useEquipmentShopQuote() {
       });
       if (!res.ok) await throwEquipmentShopError(res);
       return res.json();
+    },
+  });
+}
+
+export function useEquipmentWorkshopRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    EquipmentWorkshopRequestResponse,
+    EquipmentShopApiError,
+    EquipmentWorkshopRequestInput
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/equipment-shop/workshop-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 }

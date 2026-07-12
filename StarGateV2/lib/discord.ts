@@ -124,6 +124,15 @@ export interface CharacterEditWebhookPayload {
   timestamp: Date;
 }
 
+export interface EquipmentWorkshopRequestWebhookPayload {
+  kind: "upgrade" | "custom";
+  character: { id: string; codename: string; name: string };
+  requester: { id: string; displayName: string };
+  details: string;
+  equipmentName?: string;
+  timestamp: Date;
+}
+
 export interface GmAdminAuditWebhookPayload {
   action: string;
   actor: { id: string; displayName: string; role: string };
@@ -662,6 +671,72 @@ export async function notifyCharacterEdit(
     console.warn(
       `[notifyCharacterEdit] 전송 실패 character=${payload.character.id} actor=${payload.actor.id}:`,
       err,
+    );
+  }
+}
+
+/** 공방 문의를 캐릭터 자가편집과 같은 GM 검토 채널에 전달한다. */
+export async function notifyEquipmentWorkshopRequest(
+  payload: EquipmentWorkshopRequestWebhookPayload,
+): Promise<void> {
+  const webhookUrl = getCharacterSelfEditWebhookUrl();
+  if (!webhookUrl) {
+    console.warn(
+      "[notifyEquipmentWorkshopRequest] DISCORD_WEBHOOK_CHAR_EDIT_URL/DISCORD_WEBHOOK_URL 미설정 — silent skip",
+    );
+    return;
+  }
+
+  const requestLabel =
+    payload.kind === "upgrade"
+      ? "장착 장비 강화 문의"
+      : "커스텀 장비 제작 의뢰";
+  const fields: DiscordEmbedField[] = [
+    {
+      name: "신청자",
+      value: `${sanitizeForDiscord(payload.requester.displayName)} · ${sanitizeForDiscord(payload.character.codename)}`,
+    },
+    ...(payload.equipmentName
+      ? [
+          {
+            name: "대상 장비",
+            value: sanitizeForDiscord(payload.equipmentName),
+          },
+        ]
+      : []),
+    {
+      name: "요청 내용",
+      value: sanitizeForDiscord(payload.details).slice(
+        0,
+        DISCORD_FIELD_VALUE_MAX,
+      ),
+    },
+  ];
+  const discordPayload: DiscordPayload = {
+    username: "StarGate Workshop Intake",
+    allowed_mentions: { parse: [] },
+    embeds: [
+      {
+        title: `공방 ${requestLabel}: ${sanitizeForDiscord(payload.character.codename)}`.slice(
+          0,
+          256,
+        ),
+        url: getCharacterPageUrl(payload.character.id),
+        description: `${sanitizeForDiscord(payload.character.name)} 캐릭터 편집 검토 필요`,
+        color: DISCORD_COLORS.charEditPlayer,
+        fields,
+        footer: { text: formatKstTimestamp(payload.timestamp) },
+        timestamp: payload.timestamp.toISOString(),
+      },
+    ],
+  };
+
+  try {
+    await sendDiscordWebhook(discordPayload, webhookUrl);
+  } catch (error) {
+    console.warn(
+      `[notifyEquipmentWorkshopRequest] 전송 실패 character=${payload.character.id} requester=${payload.requester.id}:`,
+      error,
     );
   }
 }

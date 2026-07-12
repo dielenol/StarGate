@@ -5,9 +5,7 @@
 }
 
 .armoryRoot--hub {
-  --armory-hud-height: 0px;
-  --armory-hud-bottom: 0px;
-  padding-bottom: 0;
+  padding-bottom: calc(var(--armory-hud-height) + var(--armory-hud-bottom) + 14px);
 }
 
 @media (min-width: 721px) {
@@ -17,7 +15,10 @@
     );
     display: flex;
     flex-direction: column;
-    height: var(--armory-hub-page-height);
+    height: calc(
+      var(--armory-hub-page-height) + var(--armory-hud-height) +
+        var(--armory-hud-bottom) + 14px
+    );
     min-height: 0;
     overflow: hidden;
   }
@@ -3128,37 +3129,110 @@
 
 .workshopGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(220px, 0.8fr) repeat(2, minmax(0, 1.1fr));
   gap: 10px;
 }
 
-.workshopGrid div {
-  min-height: 170px;
+.workshopMaintenanceCard,
+.workshopRequestCard {
+  min-width: 0;
+  min-height: 360px;
   padding: 12px;
   background: rgba(0, 0, 0, 0.24);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
 
-.workshopGrid span {
+.workshopMaintenanceCard > span,
+.workshopRequestCard > span {
   color: var(--gold-dim);
   font-size: 14px;
   letter-spacing: 0.12em;
 }
 
-.workshopGrid strong {
+.workshopMaintenanceCard > strong,
+.workshopRequestCard > strong {
   display: block;
   margin: 8px 0;
   color: var(--ink-0);
   font-size: 18px;
 }
 
-.workshopGrid p {
+.workshopMaintenanceCard p,
+.workshopRequestCard p {
   margin: 0;
   color: var(--ink-2);
   font-size: 15px;
   line-height: 1.55;
   word-break: keep-all;
+}
+
+.workshopMaintenanceCard {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  background:
+    linear-gradient(180deg, rgba(201, 168, 90, 0.08), transparent 52%),
+    rgba(0, 0, 0, 0.3);
+  border-style: dashed;
+}
+
+.workshopMaintenanceCard > span:last-child {
+  justify-self: start;
+  margin-top: auto;
+}
+
+.workshopRequestCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workshopRequestCard label {
+  display: grid;
+  gap: 6px;
+}
+
+.workshopRequestCard label > span,
+.workshopRequestCard small {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.workshopRequestCard select,
+.workshopRequestCard textarea {
+  width: 100%;
+  padding: 9px 10px;
+  background: rgba(3, 4, 5, 0.78);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-0);
+  font: inherit;
+  font-size: 15px;
+}
+
+.workshopRequestCard textarea {
+  min-height: 100px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.workshopRequestCard select:focus-visible,
+.workshopRequestCard textarea:focus-visible {
+  border-color: var(--gold-dim);
+  outline: 1px solid color-mix(in srgb, var(--gold) 48%, transparent);
+}
+
+.workshopRequestCard select:disabled,
+.workshopRequestCard textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.workshopRequestCard button {
+  width: 100%;
+  margin-top: auto;
 }
 
 .npcHud {
@@ -3190,6 +3264,18 @@
 .npcPortrait img {
   object-fit: cover;
   object-position: center top;
+}
+
+.npcPortrait--ameri {
+  background:
+    radial-gradient(circle at 50% 26%, rgba(118, 151, 128, 0.2), transparent 58%),
+    linear-gradient(180deg, rgba(201, 168, 90, 0.07), transparent 44%),
+    rgba(5, 9, 7, 0.94);
+  border-color: color-mix(in srgb, #768f78 56%, var(--gold-dim));
+}
+
+.npcPortrait--ameri img {
+  object-position: center 9%;
 }
 
 .npcPortrait--towaski img {
@@ -3375,6 +3461,19 @@
 .npcProfile--strategic img {
   object-fit: cover;
   object-position: center 8%;
+}
+
+.npcProfile--ameri img {
+  object-fit: cover;
+  object-position: center 8%;
+}
+
+.npcHud[data-ameri-mood="review"] .npcDialogue {
+  border-color: color-mix(in srgb, #768f78 58%, var(--gold));
+}
+
+.npcHud[data-ameri-mood="blocked"] .npcDialogue {
+  border-color: color-mix(in srgb, var(--danger) 58%, var(--gold-dim));
 }
 
 .npcHud[data-strategic-mood="checkout"] .npcDialogue {

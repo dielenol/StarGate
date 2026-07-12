@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Fragment,
+  type FormEvent,
   type MouseEvent,
   useCallback,
   useEffect,
@@ -23,6 +24,7 @@ import {
   useCompleteEquipmentResearch,
   useContributeEquipmentResearch,
   useEquipmentShopQuote,
+  useEquipmentWorkshopRequest,
   usePurchaseEquipmentShopItem,
   useRegisterTowaskiArmorReferral,
   useRushEquipmentResearch,
@@ -38,6 +40,7 @@ import {
   useEquipmentShopCatalog,
   useEquipmentResearch,
 } from "@/hooks/queries/useEquipmentShopQuery";
+import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
 
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -45,6 +48,15 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
+import {
+  AMERI_DIALOGUE_LINES,
+  AMERI_IDLE_LINES,
+  AMERI_MOOD_LABELS,
+  buildAmeriDestinationLine,
+  buildAmeriWelcomeLine,
+  type AmeriMood,
+} from "@/lib/equipment-shop/ameri-dialogue";
+
 import {
   hasTowaskiBasicPurchaseAccess,
   isTowaskiLicenseSlug,
@@ -105,6 +117,7 @@ import {
   type SutureMood,
 } from "@/lib/equipment-shop/suture-dialogue";
 import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
+import { WORKSHOP_REQUEST_DETAIL_MIN_LENGTH } from "@/lib/equipment-shop/workshop-request";
 import { formatCredits } from "@/lib/format/credit";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
@@ -170,6 +183,8 @@ type ArmoryZoneDef = {
 const TOWASKI_PROFILE_SRC = "/assets/npcs/Towaski-profile.webp?v=cutout-1";
 const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp?v=cutout-1";
 const TOWASKI_IDLE_DELAY_MS = 12000;
+const AMERI_PROFILE_SRC = "/assets/npcs/Ameri-main-image.webp";
+const AMERI_IDLE_DELAY_MS = 13500;
 const SUTURE_PROFILE_SRC = "/assets/npcs/Irena-Vukovic-Suture-profile.webp";
 const SUTURE_IDLE_DELAY_MS = 14000;
 const TEMPER_PROFILE_SRC = "/assets/npcs/Brigid-Kane-Temper-profile.webp";
@@ -539,8 +554,9 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
     href: "/erp/equipment-shop/custom",
     label: "공방",
     eyebrow: "CUSTOM WORKSHOP",
-    description: "공방 상담 구역입니다. 전용무기 제작 요청 저장은 후속 단계에서 연결합니다.",
-    npc: "제작 담당관",
+    description:
+      "장착 장비 강화와 커스텀 장비 제작 문의를 접수합니다. 전용 장비 제작은 정비 중입니다.",
+    npc: "공방 접수 단말",
   },
   {
     value: "simulator",
@@ -1316,6 +1332,12 @@ export default function EquipmentShopClient({
     enabled: isGM,
   });
   const creditsQuery = useCredits({ initialData: initialCredits });
+  const characterInventoryQuery = useCharacterInventory(
+    mainCharacter?.id ?? "",
+    {
+      enabled: initialZone === "custom" && mainCharacter !== null,
+    },
+  );
   const purchaseMutation = usePurchaseEquipmentShopItem();
   const armorReferralMutation = useRegisterTowaskiArmorReferral();
   const quoteMutation = useEquipmentShopQuote();
@@ -1323,6 +1345,7 @@ export default function EquipmentShopClient({
   const rushResearchMutation = useRushEquipmentResearch();
   const contributeResearchMutation = useContributeEquipmentResearch();
   const completeResearchMutation = useCompleteEquipmentResearch();
+  const workshopRequestMutation = useEquipmentWorkshopRequest();
 
   const [activeTab, setActiveTab] = useState<EquipmentShopTabValue>("ALL");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -1366,6 +1389,9 @@ export default function EquipmentShopClient({
   const [strategicScene, setStrategicScene] = useState<StrategicScene>(
     initialStrategicScene,
   );
+  const [upgradeEntryId, setUpgradeEntryId] = useState("");
+  const [upgradeRequestDetails, setUpgradeRequestDetails] = useState("");
+  const [customRequestDetails, setCustomRequestDetails] = useState("");
 
   const catalog = catalogQuery.data ?? initialCatalog;
   const research = researchQuery.data ?? initialResearch;
@@ -1382,6 +1408,13 @@ export default function EquipmentShopClient({
   const isSutureDebug =
     isGM && activeZone === "lab" && sutureDebugMode !== "live";
   const strategicSceneInfo = STRATEGIC_SCENE_INFO[strategicScene];
+  const equippedEntries = useMemo(
+    () =>
+      Object.values(characterInventoryQuery.data?.equipped ?? {}).filter(
+        (entry): entry is NonNullable<typeof entry> => Boolean(entry),
+      ),
+    [characterInventoryQuery.data?.equipped],
+  );
 
   const playFeedbackSound = useCallback((tone: FeedbackTone) => {
     try {
@@ -1548,6 +1581,33 @@ export default function EquipmentShopClient({
       }),
     [mainCharacter?.codename, mainCharacterProfile],
   );
+  const ameriWelcomeLine = useMemo(
+    () => buildAmeriWelcomeLine(mainCharacter?.codename ?? null),
+    [mainCharacter?.codename],
+  );
+
+  const {
+    mood: ameriMood,
+    visibleLine: ameriVisibleLine,
+    typing: ameriTyping,
+    playLine: playAmeriLine,
+  } = useNpcDialogue<AmeriMood>({
+    isOpen: isHub,
+    hasMainCharacter,
+    idleDelayMs: AMERI_IDLE_DELAY_MS,
+    idleLines: AMERI_IDLE_LINES,
+    closedMood: "blocked",
+    closedLine: AMERI_DIALOGUE_LINES.closed,
+    noAgentMood: "blocked",
+    noAgentLine: AMERI_DIALOGUE_LINES.noAgent,
+    welcomeMood: "welcome",
+    welcomeLine: ameriWelcomeLine,
+    beepPreset: "operator",
+    beepDefaults: { pitch: 680, speed: 48, volume: 0.44 },
+    engineVolume: 0.44,
+    entrySfxSrc: null,
+    entrySfxVolume: 0,
+  });
 
   const {
     mood: towaskiMood,
@@ -2873,6 +2933,15 @@ export default function EquipmentShopClient({
     router.push(href);
   }
 
+  function handleHubDestinationChange(destination: ArmoryDestination) {
+    setActiveHubDestination(destination);
+    const nextLine = buildAmeriDestinationLine(
+      destination,
+      mainCharacter?.codename ?? null,
+    );
+    playAmeriLine(nextLine.mood, nextLine.text, { sound: true });
+  }
+
   function renderHubPanel() {
     const totalCatalogItemCount =
       towaskiItemCount + acheronItemCount + strategicItemCount;
@@ -3038,8 +3107,8 @@ export default function EquipmentShopClient({
                 .filter(Boolean)
                 .join(" ")}
               onClick={(event) => handleZoneLinkClick(event, card.href)}
-              onMouseEnter={() => setActiveHubDestination(card.key)}
-              onFocus={() => setActiveHubDestination(card.key)}
+              onMouseEnter={() => handleHubDestinationChange(card.key)}
+              onFocus={() => handleHubDestinationChange(card.key)}
               aria-describedby="hub-destination-description"
             >
               <span className={styles.hubHotspot__pin} aria-hidden>
@@ -4333,28 +4402,154 @@ export default function EquipmentShopClient({
   }
 
   function renderCustomPanel() {
+    const submitWorkshopRequest = (
+      event: FormEvent<HTMLFormElement>,
+      kind: "upgrade" | "custom",
+    ) => {
+      event.preventDefault();
+      const details =
+        kind === "upgrade" ? upgradeRequestDetails : customRequestDetails;
+      workshopRequestMutation.mutate(
+        {
+          kind,
+          details,
+          ...(kind === "upgrade" ? { inventoryEntryId: upgradeEntryId } : {}),
+        },
+        {
+          onSuccess: (response) => {
+            showFeedback("success", "공방 요청 접수", response.message);
+            if (kind === "upgrade") {
+              setUpgradeEntryId("");
+              setUpgradeRequestDetails("");
+            } else {
+              setCustomRequestDetails("");
+            }
+          },
+          onError: (error) => {
+            showFeedback(
+              "error",
+              "공방 요청 접수 실패",
+              describeEquipmentShopError(error),
+            );
+          },
+        },
+      );
+    };
+
+    const upgradeReady =
+      Boolean(upgradeEntryId) &&
+      upgradeRequestDetails.trim().length >=
+        WORKSHOP_REQUEST_DETAIL_MIN_LENGTH;
+    const customReady =
+      customRequestDetails.trim().length >= WORKSHOP_REQUEST_DETAIL_MIN_LENGTH;
+
     return (
       <div className={styles.customPanel}>
         <div className={styles.panelIntro}>
-          <Eyebrow>CUSTOM WEAPON</Eyebrow>
-          <strong>공방 상담</strong>
+          <div>
+            <Eyebrow>WORKSHOP INTAKE</Eyebrow>
+            <strong>공방 제작·강화 문의</strong>
+            <p>
+              장비 변경은 자동 적용되지 않습니다. 접수된 내용은 캐릭터 편집 검토
+              채널로 전달되며 운영자 확인 후 별도로 처리됩니다.
+            </p>
+          </div>
         </div>
         <div className={styles.workshopGrid}>
-          <div>
-            <span>REQUEST</span>
-            <strong>제작 요청서</strong>
-            <p>전용무기 제작 요청 저장과 GM 승인 흐름은 후속 단계에서 연결합니다.</p>
-          </div>
-          <div>
-            <span>MATERIAL</span>
-            <strong>재료/비용 산정</strong>
-            <p>실제 제작 데이터가 들어오면 요구 재료, 가격, 승인 조건을 표시합니다.</p>
-          </div>
-          <div>
-            <span>OUTPUT</span>
-            <strong>인벤토리 지급</strong>
-            <p>완성품 지급은 기존 `master_items`와 인벤토리 적재 흐름을 재사용합니다.</p>
-          </div>
+          <section className={styles.workshopMaintenanceCard}>
+            <span>EXCLUSIVE EQUIPMENT</span>
+            <strong>전용 장비 제작</strong>
+            <p>
+              개인 전용 장비의 설계·제작 절차를 준비하고 있습니다. 현재는 정비
+              중으로 신규 제작을 접수하지 않습니다.
+            </p>
+            <Tag tone="gold">정비 중</Tag>
+          </section>
+
+          <form
+            className={styles.workshopRequestCard}
+            onSubmit={(event) => submitWorkshopRequest(event, "upgrade")}
+          >
+            <span>EQUIPPED GEAR</span>
+            <strong>장착 장비 강화 문의</strong>
+            <p>현재 메인 AGENT가 장착 중인 장비만 선택할 수 있습니다.</p>
+            <label>
+              <span>강화 대상</span>
+              <select
+                value={upgradeEntryId}
+                onChange={(event) => setUpgradeEntryId(event.target.value)}
+                disabled={
+                  !hasMainCharacter ||
+                  characterInventoryQuery.isPending ||
+                  equippedEntries.length === 0 ||
+                  workshopRequestMutation.isPending
+                }
+              >
+                <option value="">장착 장비 선택</option>
+                {equippedEntries.map((entry) => (
+                  <option key={entry._id} value={entry._id}>
+                    {entry.itemName} · {entry.equippedSlot}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {characterInventoryQuery.isError ? (
+              <small role="alert">장착 장비를 불러오지 못했습니다.</small>
+            ) : equippedEntries.length === 0 &&
+              !characterInventoryQuery.isPending ? (
+              <small>현재 장착 중인 장비가 없습니다.</small>
+            ) : null}
+            <label>
+              <span>강화 요청</span>
+              <textarea
+                value={upgradeRequestDetails}
+                onChange={(event) =>
+                  setUpgradeRequestDetails(event.target.value)
+                }
+                minLength={WORKSHOP_REQUEST_DETAIL_MIN_LENGTH}
+                maxLength={1000}
+                rows={4}
+                placeholder="어떤 성능을 어떤 방향으로 강화하고 싶은지 적어주세요."
+                disabled={!hasMainCharacter || workshopRequestMutation.isPending}
+              />
+            </label>
+            <button
+              type="submit"
+              className={styles.primaryAction}
+              disabled={!upgradeReady || workshopRequestMutation.isPending}
+            >
+              {workshopRequestMutation.isPending ? "접수 중" : "강화 문의 보내기"}
+            </button>
+          </form>
+
+          <form
+            className={styles.workshopRequestCard}
+            onSubmit={(event) => submitWorkshopRequest(event, "custom")}
+          >
+            <span>CUSTOM ORDER</span>
+            <strong>커스텀 장비 제작 의뢰</strong>
+            <p>원하는 장비의 형태, 용도, 작동 방식과 핵심 요구사항을 적어주세요.</p>
+            <label>
+              <span>제작 요청서</span>
+              <textarea
+                value={customRequestDetails}
+                onChange={(event) => setCustomRequestDetails(event.target.value)}
+                minLength={WORKSHOP_REQUEST_DETAIL_MIN_LENGTH}
+                maxLength={1000}
+                rows={8}
+                placeholder="예: 접이식 창과 와이어 회수 장치를 결합한 중거리 제압 무기. 휴대 시에는 단축 형태를 원합니다."
+                disabled={!hasMainCharacter || workshopRequestMutation.isPending}
+              />
+            </label>
+            <small>{customRequestDetails.length} / 1000</small>
+            <button
+              type="submit"
+              className={styles.primaryAction}
+              disabled={!customReady || workshopRequestMutation.isPending}
+            >
+              {workshopRequestMutation.isPending ? "접수 중" : "제작 의뢰 보내기"}
+            </button>
+          </form>
         </div>
       </div>
     );
@@ -4613,10 +4808,11 @@ export default function EquipmentShopClient({
           </>
         )}
 
-        {!isHub ? (
+        {isHub || mode === "zone" ? (
           <section
             className={styles.npcHud}
             aria-label="병기부 응대 HUD"
+            data-ameri-mood={isHub ? ameriMood : undefined}
             data-temper-mood={
               activeZone === "acheron" ? temperMood : undefined
             }
@@ -4627,12 +4823,20 @@ export default function EquipmentShopClient({
             <div
               className={[
                 styles.npcPortrait,
-                activeZone === "towaski" ? styles["npcPortrait--towaski"] : "",
-                activeZone === "lab" ? styles["npcPortrait--suture"] : "",
-                activeZone === "acheron" ? styles["npcPortrait--temper"] : "",
-                activeZone === "strategic"
+                isHub ? styles["npcPortrait--ameri"] : "",
+                !isHub && activeZone === "towaski"
+                  ? styles["npcPortrait--towaski"]
+                  : "",
+                !isHub && activeZone === "lab"
+                  ? styles["npcPortrait--suture"]
+                  : "",
+                !isHub && activeZone === "acheron"
+                  ? styles["npcPortrait--temper"]
+                  : "",
+                !isHub && activeZone === "strategic"
                   ? styles["npcPortrait--strategic"]
                   : "",
+                !isHub &&
                 activeZone !== "towaski" &&
                 activeZone !== "lab" &&
                 activeZone !== "acheron" &&
@@ -4643,7 +4847,15 @@ export default function EquipmentShopClient({
                 .filter(Boolean)
                 .join(" ")}
             >
-              {activeZone === "towaski" ? (
+              {isHub ? (
+                <Image
+                  src={AMERI_PROFILE_SRC}
+                  alt=""
+                  fill
+                  sizes="148px"
+                  priority
+                />
+              ) : activeZone === "towaski" ? (
                 <Image
                   src={towaskiPortraitSrc}
                   alt=""
@@ -4691,7 +4903,9 @@ export default function EquipmentShopClient({
                 <span
                   className={[
                     styles.npcProfile,
-                    activeZone === "acheron"
+                    isHub
+                      ? styles["npcProfile--ameri"]
+                      : activeZone === "acheron"
                       ? styles["npcProfile--temper"]
                       : activeZone === "strategic"
                         ? styles["npcProfile--strategic"]
@@ -4700,7 +4914,9 @@ export default function EquipmentShopClient({
                     .filter(Boolean)
                     .join(" ")}
                 >
-                  {activeZone === "towaski" ? (
+                  {isHub ? (
+                    <Image src={AMERI_PROFILE_SRC} alt="" fill sizes="38px" />
+                  ) : activeZone === "towaski" ? (
                     <Image src={TOWASKI_PROFILE_SRC} alt="" fill sizes="38px" />
                   ) : activeZone === "lab" ? (
                     <Image src={SUTURE_PROFILE_SRC} alt="" fill sizes="38px" />
@@ -4717,7 +4933,9 @@ export default function EquipmentShopClient({
                   <strong>{zoneMeta.npc}</strong>
                 </div>
                 <span className={styles.npcMood}>
-                  {activeZone === "towaski"
+                  {isHub
+                    ? AMERI_MOOD_LABELS[ameriMood]
+                    : activeZone === "towaski"
                     ? TOWASKI_MOOD_LABELS[towaskiMood]
                     : activeZone === "lab"
                       ? SUTURE_MOOD_LABELS[sutureMood]
@@ -4729,7 +4947,18 @@ export default function EquipmentShopClient({
                 </span>
               </div>
               <p>
-                {activeZone === "lab"
+                {isHub
+                  ? (
+                      <>
+                        {ameriVisibleLine}
+                        {ameriTyping ? (
+                          <span className={styles.npcCaret} aria-hidden>
+                            |
+                          </span>
+                        ) : null}
+                      </>
+                    )
+                  : activeZone === "lab"
                   ? (
                       <>
                         {sutureVisibleLine}
@@ -4773,7 +5002,7 @@ export default function EquipmentShopClient({
                               ) : null}
                             </>
                           )
-                        : "전용무기는 상담부터다. 제작 요청 저장은 다음 단계에서 연결한다."}
+                        : "공방 접수 채널입니다. 강화 또는 제작 요청서를 선택해 내용을 입력하세요."}
               </p>
             </div>
           </section>
