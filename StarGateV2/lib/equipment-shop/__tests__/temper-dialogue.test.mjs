@@ -99,19 +99,41 @@ test("Towaski armor referral has distinct Temper lines and cart handling", () =>
   const checkoutLines = new Set(
     [0, 1, 2].map((variant) => buildTemperCheckoutLine(item, variant)),
   );
+  const cartLines = new Set(
+    [0, 1, 2].map((variant) => buildTemperCartLine(item, variant)),
+  );
 
   assert.equal(referralLines.size, 3);
+  assert.equal(cartLines.size, 3);
   assert.equal(checkoutLines.size, 3);
-  assert.match(buildTemperCartLine(item, 0), /10%|할인/);
+  assert.match([...referralLines].join(" "), /바가지|말값|10%/);
+  assert.match([...cartLines].join(" "), /대출혈|서비스|10%/);
+  assert.match([...checkoutLines].join(" "), /손님|검수|박살/);
   assert.match(buildTemperItemLine(item, 0).text, /중급|RF2/);
+});
+
+test("Temper keeps a friendly service pitch around technical warnings", () => {
+  const item = {
+    key: "basic-blunt-weapon",
+    name: "보급형 둔기",
+    category: "WEAPON",
+    available: true,
+  };
+  const lines = [0, 1, 2].flatMap((variant) => [
+    buildTemperItemLine(item, variant).text,
+    buildTemperCartLine(item, variant),
+  ]);
+
+  assert.match(lines.join(" "), /손님|상품|서비스|봐봐|알지/);
+  assert.match(lines.join(" "), /어깨|반동|손잡이|균열|그립/);
 });
 
 test("blocked shop states rotate without losing the exact refusal reason", () => {
   const reasons = {
     noAgent: /사용자|주인|체격/,
     closed: /작업대|화로|반출선/,
-    unavailable: /재고|검수대|반출/,
-    gmOnly: /사용자|적합성|대리/,
+    unavailable: /재고|검수대|반출|불량품/,
+    gmOnly: /사용자|적합성|대리|실제로 쓸 사람/,
     qualification: /훈련|기록|관성/,
     insufficient: /크레딧|잔액|결제선/,
     checkoutError: /기록|봉인|절차/,
