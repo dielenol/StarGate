@@ -4827,6 +4827,9 @@ export default function EquipmentShopClient({
           !isHub && activeZone === "strategic"
             ? styles["armoryStage--strategic"]
             : "",
+          !isHub && activeZone === "custom"
+            ? styles["armoryStage--custom"]
+            : "",
         ]
           .filter(Boolean)
           .join(" ")}
