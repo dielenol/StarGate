@@ -2043,8 +2043,10 @@
 }
 
 .techTreeControls {
-  display: grid;
-  justify-items: end;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -2106,6 +2108,25 @@
   color: var(--lab-muted);
   font-size: 14px;
   letter-spacing: 0.04em;
+}
+
+.techTreeLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.techTreeLegend small {
+  color: var(--ink-3);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.techTreeLegend b {
+  color: var(--ink-1);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .techCapRail {
@@ -3681,7 +3702,7 @@
   }
 
   .techTreeControls {
-    justify-items: stretch;
+    justify-content: flex-start;
   }
 
   .techTreeLegend {

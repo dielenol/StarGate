@@ -3785,10 +3785,19 @@ export default function EquipmentShopClient({
                   </button>
                 ))}
               </div>
-              <div className={styles.techTreeLegend}>
-                <span>좌측 T1</span>
-                <span>우측 T5</span>
-                <span>{scopeLabel(activeResearchScope)} 트리</span>
+              <div className={styles.techTreeLegend} aria-label="테크트리 안내">
+                <span>
+                  <small>진행 단계</small>
+                  <b>T1 기초 → T5 최종</b>
+                </span>
+                <span>
+                  <small>적용 범위</small>
+                  <b>
+                    {activeResearchScope === "personal"
+                      ? "개인 능력 강화"
+                      : "팀 공용 강화"}
+                  </b>
+                </span>
               </div>
             </div>
           </div>
