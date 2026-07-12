@@ -35,7 +35,11 @@ export const equipmentShopKeys = {
   research: ["equipment-shop", "research"] as const,
 };
 
-export type EquipmentShopCatalogScope = "all" | "towaski" | "acheron";
+export type EquipmentShopCatalogScope =
+  | "all"
+  | "towaski"
+  | "acheron"
+  | "strategic";
 
 export type EquipmentShopErrorCode =
   | "INSUFFICIENT_BALANCE"

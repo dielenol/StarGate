@@ -13,7 +13,10 @@ export default async function EquipmentShopStrategicPage() {
     return <EquipmentShopComingSoon />;
   }
 
-  const data = await loadEquipmentShopPageData({ requireGm: false });
+  const data = await loadEquipmentShopPageData({
+    requireGm: false,
+    catalogZone: "strategic",
+  });
 
   return <EquipmentShopClient {...data} mode="zone" initialZone="strategic" />;
 }

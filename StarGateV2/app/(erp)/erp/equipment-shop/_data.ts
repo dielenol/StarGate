@@ -44,6 +44,10 @@ import {
   EQUIPMENT_RESEARCH_RUSH_RULES,
   getComputedResearchStatus,
 } from "@/lib/equipment-shop/research";
+import {
+  getStrategicScene,
+  type StrategicScene,
+} from "@/lib/equipment-shop/strategic-scene";
 
 import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type {
@@ -73,6 +77,7 @@ export interface EquipmentShopPageData {
   initialCredits: CreditsResponse | undefined;
   mainCharacterError: string | null;
   isGM: boolean;
+  initialStrategicScene: StrategicScene;
 }
 
 export async function buildEquipmentShopCatalogResponse(options: {
@@ -300,5 +305,6 @@ export async function loadEquipmentShopPageData(
     initialCredits,
     mainCharacterError,
     isGM,
+    initialStrategicScene: getStrategicScene(),
   };
 }

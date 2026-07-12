@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   const requestedScope = new URL(request.url).searchParams.get("scope");
   if (
     requestedScope !== null &&
-    !["all", "towaski", "acheron"].includes(requestedScope)
+    !["all", "towaski", "acheron", "strategic"].includes(requestedScope)
   ) {
     return NextResponse.json(
       { error: "지원하지 않는 카탈로그 scope입니다." },
@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
     );
   }
   const scope =
-    requestedScope === "acheron"
-      ? "acheron"
+    requestedScope === "acheron" || requestedScope === "strategic"
+      ? requestedScope
       : !isGM || requestedScope === "towaski"
         ? "towaski"
         : "all";

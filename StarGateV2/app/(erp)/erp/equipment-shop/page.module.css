@@ -176,6 +176,21 @@
     linear-gradient(90deg, rgba(2, 3, 4, 0.16), rgba(2, 3, 4, 0.58));
 }
 
+.armoryStage--strategic {
+  --armory-bg-image: url("/assets/equipment-shop/rooms/strategic-supply-quiet.webp");
+  --armory-bg-position: center top;
+  --armory-bg-overlay:
+    linear-gradient(180deg, rgba(3, 5, 7, 0.3), rgba(4, 6, 8, 0.72) 48%, rgba(4, 5, 7, 0.94)),
+    linear-gradient(90deg, rgba(2, 3, 4, 0.18), rgba(2, 3, 4, 0.46));
+  background-color: #06080a;
+  background-size: 100% 100%, 100% 100%, 100% auto;
+  background-repeat: no-repeat;
+}
+
+.armoryStage--strategic[data-strategic-scene="staffed"] {
+  --armory-bg-image: url("/assets/equipment-shop/rooms/strategic-supply-staffed.webp");
+}
+
 .armoryStage--hub::before {
   background:
     linear-gradient(90deg, rgba(201, 168, 90, 0.055) 1px, transparent 1px),
@@ -1055,6 +1070,67 @@
   color: var(--gold);
   font-size: 20px;
   line-height: 1.2;
+}
+
+.panelIntro--strategic {
+  grid-template-columns: minmax(180px, 1fr) minmax(300px, auto);
+  align-items: center;
+  gap: 12px;
+}
+
+.panelIntro--strategic > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.strategicSceneStatus {
+  display: grid;
+  grid-template-columns: 10px minmax(130px, auto) minmax(210px, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 8px 10px;
+  background: rgba(4, 8, 12, 0.76);
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 54%, var(--line));
+  border-radius: var(--radius-sm);
+}
+
+.strategicSceneStatus__signal {
+  width: 9px;
+  height: 9px;
+  background: var(--ink-3);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink-3) 18%, transparent);
+}
+
+.strategicSceneStatus[data-scene="staffed"] .strategicSceneStatus__signal {
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 18%, transparent);
+}
+
+.strategicSceneStatus div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.strategicSceneStatus small {
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.strategicSceneStatus strong {
+  color: var(--ink-0);
+  font-size: 15px;
+}
+
+.strategicSceneStatus p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: right;
 }
 
 .filters {
@@ -3298,6 +3374,10 @@
     flex-wrap: wrap;
   }
 
+  .panelIntro--strategic {
+    grid-template-columns: 1fr;
+  }
+
   .debugBar {
     align-items: stretch;
     flex-direction: column;
@@ -3360,6 +3440,20 @@
 
   .armoryRoot--lab {
     --armory-hud-height: 108px;
+  }
+
+  .armoryStage--strategic {
+    --armory-bg-position: 58% top;
+    background-size: 100% 100%, 100% 100%, auto 480px;
+  }
+
+  .strategicSceneStatus {
+    grid-template-columns: 10px minmax(0, 1fr);
+  }
+
+  .strategicSceneStatus p {
+    grid-column: 2;
+    text-align: left;
   }
 
   .commandStats,

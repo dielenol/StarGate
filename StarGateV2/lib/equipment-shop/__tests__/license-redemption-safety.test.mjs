@@ -145,7 +145,7 @@ test("equipment shop purchases one item at a time without cart controls", async 
   assert.match(mutations, /usePurchaseEquipmentShopItem/);
   assert.match(
     mutations,
-    /JSON\.stringify\(\{ items: \[\{ key: input\.key, quantity: 1 \}\] \}\)/,
+    /body: JSON\.stringify\(\{[\s\S]*key: input\.key,[\s\S]*quantity: 1,[\s\S]*expectedUnitPrice: input\.expectedUnitPrice,[\s\S]*purchaseZone: input\.zone/,
   );
   assert.match(mutations, /setQueryData<CreditsResponse>[\s\S]*data\.balance/);
   assert.match(client, /purchaseLockRef\.current/);
@@ -168,13 +168,19 @@ test("slug와 ObjectId가 같은 장비를 가리키면 canonical 중복으로 �
 test("catalog query cache is isolated by scope and character", async () => {
   const query = await readFile(CATALOG_QUERY, "utf8");
 
-  assert.match(query, /EquipmentShopCatalogScope = "all" \| "towaski"/);
+  assert.match(
+    query,
+    /EquipmentShopCatalogScope =[\s\S]*"all"[\s\S]*"towaski"[\s\S]*"acheron"[\s\S]*"strategic"/,
+  );
   assert.match(query, /catalogScope:[\s\S]*characterId: string \| null/);
   assert.match(
     query,
     /queryKey: equipmentShopKeys\.catalogScope\(scope, characterId\)/,
   );
-  assert.match(query, /scope === "towaski" \? "\?scope=towaski" : ""/);
+  assert.match(
+    query,
+    /const query = scope === "all" \? "" : `\?scope=\$\{scope\}`/,
+  );
 });
 
 test("catalog license access is resolved from the authenticated main character", async () => {

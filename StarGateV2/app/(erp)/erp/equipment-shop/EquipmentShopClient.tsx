@@ -77,6 +77,12 @@ import {
   STRATEGIC_MOOD_LABELS,
   type StrategicMood,
 } from "@/lib/equipment-shop/strategic-dialogue";
+import {
+  getStrategicScene,
+  STRATEGIC_SCENE_INFO,
+  STRATEGIC_SCENE_REFRESH_MS,
+  type StrategicScene,
+} from "@/lib/equipment-shop/strategic-scene";
 import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
 import { formatCredits } from "@/lib/format/credit";
 import {
@@ -697,6 +703,7 @@ interface Props {
   initialCredits: CreditsResponse | undefined;
   mainCharacterError: string | null;
   isGM: boolean;
+  initialStrategicScene: StrategicScene;
 }
 
 type ResearchNodeEntry = EquipmentResearchOverviewResponse["tree"][number];
@@ -1352,12 +1359,15 @@ export default function EquipmentShopClient({
   initialCredits,
   mainCharacterError,
   isGM,
+  initialStrategicScene,
 }: Props) {
   const router = useRouter();
   const catalogQuery = useEquipmentShopCatalog({
     initialData: initialCatalog,
     scope:
-      initialZone === "towaski" || initialZone === "acheron"
+      initialZone === "towaski" ||
+      initialZone === "acheron" ||
+      initialZone === "strategic"
         ? initialZone
         : "all",
     characterId: mainCharacter?.id ?? null,
@@ -1410,6 +1420,9 @@ export default function EquipmentShopClient({
   const [towaskiLicenseTestBusy, setTowaskiLicenseTestBusy] = useState(false);
   const [activeHubDestination, setActiveHubDestination] =
     useState<ArmoryDestination>("towaski");
+  const [strategicScene, setStrategicScene] = useState<StrategicScene>(
+    initialStrategicScene,
+  );
 
   const catalog = catalogQuery.data ?? initialCatalog;
   const research = researchQuery.data ?? initialResearch;
@@ -1425,6 +1438,14 @@ export default function EquipmentShopClient({
     isGM && activeZone === "towaski" && towaskiDebugMode !== "live";
   const isSutureDebug =
     isGM && activeZone === "lab" && sutureDebugMode !== "live";
+  const strategicSceneInfo = STRATEGIC_SCENE_INFO[strategicScene];
+
+  useEffect(() => {
+    if (activeZone !== "strategic") return;
+    const refreshScene = () => setStrategicScene(getStrategicScene());
+    const timer = window.setInterval(refreshScene, STRATEGIC_SCENE_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [activeZone]);
   const effectiveHasMainCharacter = isTowaskiDebug
     ? towaskiDebugMode !== "no-agent"
     : hasMainCharacter;
@@ -3034,9 +3055,27 @@ export default function EquipmentShopClient({
               })}
             </div>
           ) : (
-            <div className={styles.panelIntro}>
-              <Eyebrow>STRATEGIC CATALOG</Eyebrow>
-              <strong>전략 자산 반출대</strong>
+            <div
+              className={[
+                styles.panelIntro,
+                styles["panelIntro--strategic"],
+              ].join(" ")}
+            >
+              <div>
+                <Eyebrow>STRATEGIC CATALOG</Eyebrow>
+                <strong>전략 자산 반출대</strong>
+              </div>
+              <div
+                className={styles.strategicSceneStatus}
+                data-scene={strategicScene}
+              >
+                <span className={styles.strategicSceneStatus__signal} aria-hidden />
+                <div>
+                  <small>{strategicSceneInfo.tag}</small>
+                  <strong>{strategicSceneInfo.label}</strong>
+                </div>
+                <p>{strategicSceneInfo.detail}</p>
+              </div>
             </div>
           )}
 
@@ -4306,10 +4345,16 @@ export default function EquipmentShopClient({
           !isHub && activeZone === "acheron"
             ? styles["armoryStage--acheron"]
             : "",
+          !isHub && activeZone === "strategic"
+            ? styles["armoryStage--strategic"]
+            : "",
         ]
           .filter(Boolean)
           .join(" ")}
         aria-label="병기부"
+        data-strategic-scene={
+          activeZone === "strategic" ? strategicScene : undefined
+        }
       >
         <header className={styles.armoryHeader}>
           <div className={styles.armoryHeader__title}>
