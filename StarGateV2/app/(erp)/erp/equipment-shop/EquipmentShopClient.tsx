@@ -4363,7 +4363,14 @@ export default function EquipmentShopClient({
             </span>
             <div>
               <Eyebrow>{zoneMeta.eyebrow}</Eyebrow>
-              <h1>{zoneMeta.label}</h1>
+              <div className={styles.armoryHeader__headingRow}>
+                <h1>{zoneMeta.label}</h1>
+                {!isHub ? (
+                  <Link href="/erp/equipment-shop" className={styles.backLink}>
+                    안내데스크로 돌아가기
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </div>
           <Tag tone="gold">{headerTag}</Tag>
@@ -4448,9 +4455,6 @@ export default function EquipmentShopClient({
               </div>
             ) : null}
             <div className={styles.routeBar}>
-              <Link href="/erp/equipment-shop" className={styles.backLink}>
-                안내데스크로 돌아가기
-              </Link>
               <span>{activeZoneDef.description}</span>
             </div>
 

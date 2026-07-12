@@ -223,6 +223,13 @@
   min-width: 0;
 }
 
+.armoryHeader__headingRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 .armoryHeader__icon {
   display: grid;
   place-items: center;
@@ -248,6 +255,7 @@
   font-size: 28px;
   line-height: 1.08;
   letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 .headerStats {
@@ -935,6 +943,11 @@
 
 .backLink:hover {
   color: var(--ink-0);
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 
 .zoneBody {
@@ -3354,6 +3367,18 @@
   }
 }
 
+@media (max-width: 1380px) {
+  .armoryHeader {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .headerStats {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 1180px) {
   .armoryHeader,
   .hubLayout,
@@ -3473,6 +3498,11 @@
 
   .labScene {
     padding: 10px;
+  }
+
+  .armoryHeader__headingRow {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .labScene__summary {
