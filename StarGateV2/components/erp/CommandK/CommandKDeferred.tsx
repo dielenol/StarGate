@@ -7,7 +7,13 @@ const CommandK = dynamic(() => import("./CommandK"), {
   ssr: false,
 });
 
-export default function CommandKDeferred() {
+interface CommandKDeferredProps {
+  bypassPageLocks: boolean;
+}
+
+export default function CommandKDeferred({
+  bypassPageLocks,
+}: CommandKDeferredProps) {
   const [mounted, setMounted] = useState(false);
 
   const mount = useCallback(() => {
@@ -34,5 +40,7 @@ export default function CommandKDeferred() {
     };
   }, [mount]);
 
-  return mounted ? <CommandK defaultOpen /> : null;
+  return mounted ? (
+    <CommandK defaultOpen bypassPageLocks={bypassPageLocks} />
+  ) : null;
 }

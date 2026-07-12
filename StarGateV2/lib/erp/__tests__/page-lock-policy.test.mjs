@@ -5,6 +5,7 @@ import {
   getPageLockKey,
   isPageLocked,
   isResolvedPageLocked,
+  resolvePageLockHref,
   resolvePageLockItem,
 } from "../page-lock-policy.ts";
 
@@ -37,6 +38,39 @@ test("준비중 또는 href null 메뉴는 기본 잠금이고 override로 해�
   assert.equal(isPageLocked(preparing, false), false);
   assert.equal(isPageLocked(unavailable), true);
   assert.equal(isPageLocked(unavailable, false), false);
+});
+
+test("로컬 우회는 준비중 실제 경로를 열되 GM 경로 우선순위를 보존한다", () => {
+  const preparing = { href: null, gmHref: "/erp/missions" };
+  const splitRoute = {
+    href: "/erp/equipment-shop/towaski",
+    gmHref: "/erp/equipment-shop",
+  };
+
+  assert.equal(
+    resolvePageLockHref(preparing, {
+      isGM: false,
+      locked: true,
+      bypassLocks: false,
+    }),
+    null,
+  );
+  assert.equal(
+    resolvePageLockHref(preparing, {
+      isGM: false,
+      locked: true,
+      bypassLocks: true,
+    }),
+    "/erp/missions",
+  );
+  assert.equal(
+    resolvePageLockHref(splitRoute, {
+      isGM: true,
+      locked: true,
+      bypassLocks: true,
+    }),
+    "/erp/equipment-shop",
+  );
 });
 
 test("잠금 키는 명시값, GM 경로, 일반 경로 순서로 결정된다", () => {

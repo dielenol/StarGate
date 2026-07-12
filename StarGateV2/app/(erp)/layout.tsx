@@ -38,6 +38,8 @@ export default async function ERPLayout({
 
   const requestHeaders = await headers();
   const pathname = requestHeaders.get("x-stargate-erp-pathname") ?? "/erp";
+  const bypassPageLocks =
+    requestHeaders.get("x-stargate-erp-local-access") === "1";
   const [mainCharacter, pageLockOverrides] = await Promise.all([
     findMainCharacterByOwner(session.user.id),
     getErpPageLockOverrides(),
@@ -49,6 +51,7 @@ export default async function ERPLayout({
       }
     : null;
   const pageLocked =
+    !bypassPageLocks &&
     session.user.role !== "GM" &&
     isNavPathLocked(pathname, pageLockOverrides);
   const initialPageLocks = { overrides: pageLockOverrides };
@@ -61,11 +64,15 @@ export default async function ERPLayout({
             <div className={styles.erp} data-scope="erp">
               <ERPHeader user={session.user} identity={headerIdentity} />
               <div className={styles.erp__body}>
-                <ERPSidebar initialPageLocks={initialPageLocks} />
+                <ERPSidebar
+                  initialPageLocks={initialPageLocks}
+                  bypassPageLocks={bypassPageLocks}
+                />
                 <main className={styles.erp__main}>
                   <PageLockGate
                     initialPageLocks={initialPageLocks}
                     role={session.user.role}
+                    bypassPageLocks={bypassPageLocks}
                     serverBlocked={pageLocked}
                     serverPathname={pathname}
                   >
@@ -76,7 +83,7 @@ export default async function ERPLayout({
               {session.user.role === "GM" ? (
                 <PageLockControl initialPageLocks={initialPageLocks} />
               ) : null}
-              <CommandKDeferred />
+              <CommandKDeferred bypassPageLocks={bypassPageLocks} />
             </div>
           </NavPendingProvider>
         </PageHeadProvider>

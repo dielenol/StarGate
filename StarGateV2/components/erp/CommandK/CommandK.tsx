@@ -34,6 +34,7 @@ interface FlatEntry {
 
 interface CommandKProps {
   defaultOpen?: boolean;
+  bypassPageLocks?: boolean;
 }
 
 function flattenVisibleItems(
@@ -51,7 +52,10 @@ function flattenVisibleItems(
   });
 }
 
-export default function CommandK({ defaultOpen = false }: CommandKProps) {
+export default function CommandK({
+  defaultOpen = false,
+  bypassPageLocks = false,
+}: CommandKProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const { begin, end } = useNavPending();
@@ -187,7 +191,12 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
   }
 
   function handleSelect(entry: FlatEntry) {
-    const href = getNavItemHref(entry.item, role, pageLockOverrides);
+    const href = getNavItemHref(
+      entry.item,
+      role,
+      pageLockOverrides,
+      bypassPageLocks,
+    );
     if (!href) return;
     router.prefetch(href);
     startNavTransition(() => {
@@ -264,10 +273,12 @@ export default function CommandK({ defaultOpen = false }: CommandKProps) {
                     item,
                     role,
                     pageLockOverrides,
+                    bypassPageLocks,
                   );
                   const preparing = isNavItemLocked(
                     item,
                     pageLockOverrides,
+                    bypassPageLocks,
                   );
                   const disabled = href === null;
                   const Icon = item.icon;

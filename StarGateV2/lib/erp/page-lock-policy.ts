@@ -13,6 +13,20 @@ export interface LockableNavItem {
   children?: LockableNavItem[];
 }
 
+export function resolvePageLockHref(
+  item: Pick<LockableNavItem, "href" | "gmHref">,
+  options: {
+    isGM: boolean;
+    locked: boolean;
+    bypassLocks: boolean;
+  },
+): string | null {
+  if (options.isGM && item.gmHref) return item.gmHref;
+  if (options.bypassLocks) return item.href ?? item.gmHref ?? null;
+  if (options.locked) return null;
+  return item.href ?? item.gmHref ?? null;
+}
+
 function pathMatches(pathname: string, candidate: string): boolean {
   if (candidate === "/erp") return pathname === candidate;
   return pathname === candidate || pathname.startsWith(`${candidate}/`);

@@ -34,9 +34,13 @@ const ALL_NAV_HREFS: string[] = NAV_GROUPS.flatMap((group) =>
 
 interface ERPSidebarProps {
   initialPageLocks: PageLocksResponse;
+  bypassPageLocks: boolean;
 }
 
-export default function ERPSidebar({ initialPageLocks }: ERPSidebarProps) {
+export default function ERPSidebar({
+  initialPageLocks,
+  bypassPageLocks,
+}: ERPSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
@@ -202,9 +206,18 @@ export default function ERPSidebar({ initialPageLocks }: ERPSidebarProps) {
             <div key={group.key} className={styles.sidebar__group}>
               <div className={styles.sidebar__groupLabel}>{group.label}</div>
               {visibleItems.map((item) => {
-                const href = getNavItemHref(item, role, pageLockOverrides);
+                const href = getNavItemHref(
+                  item,
+                  role,
+                  pageLockOverrides,
+                  bypassPageLocks,
+                );
                 const active = isItemActive(item);
-                const preparing = isNavItemLocked(item, pageLockOverrides);
+                const preparing = isNavItemLocked(
+                  item,
+                  pageLockOverrides,
+                  bypassPageLocks,
+                );
                 const disabled = href === null;
                 const Icon = item.icon;
                 const childItems = (item.children ?? []).filter(
@@ -294,10 +307,12 @@ export default function ERPSidebar({ initialPageLocks }: ERPSidebarProps) {
                             child,
                             role,
                             pageLockOverrides,
+                            bypassPageLocks,
                           );
                           const childLocked = isNavItemLocked(
                             child,
                             pageLockOverrides,
+                            bypassPageLocks,
                           );
                           const ChildIcon = child.icon;
                           const childActive =

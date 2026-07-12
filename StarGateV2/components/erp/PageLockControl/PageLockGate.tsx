@@ -20,6 +20,7 @@ interface PageLockGateProps {
   children: React.ReactNode;
   initialPageLocks: PageLocksResponse;
   role: UserRole;
+  bypassPageLocks: boolean;
   serverBlocked: boolean;
   serverPathname: string;
 }
@@ -28,6 +29,7 @@ export default function PageLockGate({
   children,
   initialPageLocks,
   role,
+  bypassPageLocks,
   serverBlocked,
   serverPathname,
 }: PageLockGateProps) {
@@ -40,6 +42,7 @@ export default function PageLockGate({
     [pathname],
   );
   const clientLocked =
+    !bypassPageLocks &&
     role !== "GM" && isNavPathLocked(pathname, pageLocks?.overrides);
   const waitingForServerRefresh =
     serverBlocked && pathname === serverPathname && !clientLocked;

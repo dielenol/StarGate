@@ -43,6 +43,7 @@ import {
   getPageLockKey,
   isPageLocked,
   isResolvedPageLocked,
+  resolvePageLockHref,
   resolvePageLockItem,
   type ErpPageLockOverrides,
 } from "@/lib/erp/page-lock-policy";
@@ -56,7 +57,7 @@ export interface NavItem {
   icon: IconComponent;
   /** 활성 경로. null 이면 "준비중". */
   href: string | null;
-  /** 준비중 메뉴를 GM에게만 열어줄 내부 경로. */
+  /** 잠금 중에는 GM 미리보기, 잠금 해제 후에는 일반 접근에 사용할 실제 경로. */
   gmHref?: string;
   /** 상세 경로까지 묶는 운영 잠금 식별자. 기본값은 gmHref 또는 href. */
   lockKey?: string;
@@ -87,7 +88,9 @@ export function getNavItemLockKey(item: NavItem): string | null {
 export function isNavItemLocked(
   item: NavItem,
   overrides?: ErpPageLockOverrides,
+  bypassLocks = false,
 ): boolean {
+  if (bypassLocks) return false;
   const lockKey = getNavItemLockKey(item);
   return isPageLocked(
     item,
@@ -99,11 +102,13 @@ export function getNavItemHref(
   item: NavItem,
   role?: UserRole | null,
   overrides?: ErpPageLockOverrides,
+  bypassLocks = false,
 ): string | null {
-  if (role === "GM" && item.gmHref) return item.gmHref;
-  if (role !== "GM" && isNavItemLocked(item, overrides)) return null;
-  if (item.href !== null) return item.href;
-  return item.gmHref ?? null;
+  return resolvePageLockHref(item, {
+    isGM: role === "GM",
+    locked: isNavItemLocked(item, overrides),
+    bypassLocks,
+  });
 }
 
 export function getNavItemActiveHrefs(item: NavItem): string[] {

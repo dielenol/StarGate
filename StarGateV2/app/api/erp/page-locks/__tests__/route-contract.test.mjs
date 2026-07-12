@@ -8,6 +8,12 @@ const CLIENT_GATE = new URL(
   "../../../../../components/erp/PageLockControl/PageLockGate.tsx",
   import.meta.url,
 );
+const LAYOUT = new URL("../../../../../app/(erp)/layout.tsx", import.meta.url);
+const LOCAL_BYPASS = new URL(
+  "../../../../../lib/erp/local-page-lock-bypass.ts",
+  import.meta.url,
+);
+const PACKAGE_JSON = new URL("../../../../../package.json", import.meta.url);
 
 test("페이지 잠금 변경은 최신 세션의 GM만 허용한다", async () => {
   const source = await readFile(ROUTE, "utf8");
@@ -24,6 +30,8 @@ test("ERP pathname은 proxy가 신뢰 헤더로 덮어쓴다", async () => {
     source,
     /requestHeaders\.set\("x-stargate-erp-pathname", request\.nextUrl\.pathname\)/,
   );
+  assert.match(source, /requestHeaders\.set\([\s\S]*"x-stargate-erp-local-access"/);
+  assert.match(source, /shouldBypassPageLocks/);
   assert.match(source, /NextResponse\.next\(\{[\s\S]*request: \{ headers: requestHeaders \}/);
 });
 
@@ -32,6 +40,44 @@ test("client navigation과 polling 상태 변경도 페이지 잠금 gate를 통
 
   assert.match(source, /usePathname\(\)/);
   assert.match(source, /usePageLocks\(/);
+  assert.match(source, /!bypassPageLocks &&[\s\S]*isNavPathLocked/);
   assert.match(source, /isNavPathLocked\(pathname, pageLocks\?\.overrides\)/);
   assert.match(source, /return <PageLockedState/);
+});
+
+test("로컬 잠금 우회는 development localhost 요청에만 적용한다", async () => {
+  const { shouldBypassPageLocks } = await import(LOCAL_BYPASS.href);
+
+  assert.equal(
+    shouldBypassPageLocks({ hostname: "localhost", nodeEnv: "development" }),
+    true,
+  );
+  assert.equal(
+    shouldBypassPageLocks({ hostname: "127.0.0.1", nodeEnv: "development" }),
+    true,
+  );
+  assert.equal(
+    shouldBypassPageLocks({ hostname: "localhost", nodeEnv: "production" }),
+    false,
+  );
+  assert.equal(
+    shouldBypassPageLocks({ hostname: "stargate.example", nodeEnv: "development" }),
+    false,
+  );
+});
+
+test("ERP 레이아웃은 신뢰된 로컬 플래그를 모든 잠금 UI에 전달한다", async () => {
+  const source = await readFile(LAYOUT, "utf8");
+
+  assert.match(source, /get\("x-stargate-erp-local-access"\) === "1"/);
+  assert.match(source, /!bypassPageLocks &&[\s\S]*isNavPathLocked/);
+  assert.match(source, /<ERPSidebar[\s\S]*bypassPageLocks=\{bypassPageLocks\}/);
+  assert.match(source, /<PageLockGate[\s\S]*bypassPageLocks=\{bypassPageLocks\}/);
+  assert.match(source, /<CommandKDeferred bypassPageLocks=\{bypassPageLocks\}/);
+});
+
+test("로컬 개발 서버는 loopback 인터페이스에만 바인딩한다", async () => {
+  const packageJson = JSON.parse(await readFile(PACKAGE_JSON, "utf8"));
+
+  assert.match(packageJson.scripts.dev, /--hostname 127\.0\.0\.1/);
 });
