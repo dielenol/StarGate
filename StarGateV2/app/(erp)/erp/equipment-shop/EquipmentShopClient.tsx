@@ -3843,6 +3843,9 @@ export default function EquipmentShopClient({
         styles.armoryRoot,
         isHub ? styles["armoryRoot--hub"] : "",
         !isHub && activeZone === "lab" ? styles["armoryRoot--lab"] : "",
+        !isHub && activeZone === "acheron"
+          ? styles["armoryRoot--acheron"]
+          : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -3866,7 +3869,12 @@ export default function EquipmentShopClient({
       />
 
       {!hasMainCharacter &&
-      !(mode === "zone" && (activeZone === "towaski" || activeZone === "lab")) ? (
+      !(
+        mode === "zone" &&
+        (activeZone === "towaski" ||
+          activeZone === "lab" ||
+          activeZone === "acheron")
+      ) ? (
         <Box className={styles.notice}>
           {mainCharacterError ? (
             <>

@@ -30,6 +30,35 @@
   }
 }
 
+@media (min-width: 1800px) and (min-height: 850px) {
+  .armoryRoot--acheron {
+    --armory-acheron-page-height: calc(
+      100svh - var(--topbar-h) - (var(--pad) + 12px) - (var(--pad) + 4px)
+    );
+    display: flex;
+    flex-direction: column;
+    height: var(--armory-acheron-page-height);
+    min-height: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+
+  .armoryRoot--acheron .errorBanner,
+  .armoryRoot--acheron .noticeBanner {
+    flex: 0 0 auto;
+    margin-bottom: 10px;
+  }
+
+  .armoryRoot--acheron .armoryStage--acheron {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .armoryStage--acheron .productGrid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
 .notice,
 .errorBanner,
 .noticeBanner {
