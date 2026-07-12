@@ -172,6 +172,16 @@ const TEMPER_ENTRY_SFX_SRC =
 const RATCHET_PROFILE_SRC = "/assets/npcs/Mateo-Rivas-Ratchet-profile.webp";
 const RATCHET_IDLE_DELAY_MS = 12500;
 
+const TEMPER_MOOD_ASSETS: Record<TemperMood, string> = {
+  welcome: TEMPER_PROFILE_SRC,
+  inspect: "/assets/npcs/Brigid-Kane-Temper-inspect.webp",
+  balance: "/assets/npcs/Brigid-Kane-Temper-balance.webp",
+  cart: "/assets/npcs/Brigid-Kane-Temper-cart.webp",
+  checkout: "/assets/npcs/Brigid-Kane-Temper-checkout.webp",
+  blocked: "/assets/npcs/Brigid-Kane-Temper-blocked.webp",
+  idle: "/assets/npcs/Brigid-Kane-Temper-idle.webp",
+};
+
 const SUTURE_MOOD_ASSETS: Record<SutureMood, string> = {
   welcome: "/assets/npcs/Irena-Vukovic-Suture-welcome.webp",
   assessment: "/assets/npcs/Irena-Vukovic-Suture-assessment.webp",
@@ -1746,6 +1756,7 @@ export default function EquipmentShopClient({
     entrySfxSrc: TEMPER_ENTRY_SFX_SRC,
     entrySfxVolume: 0.34,
   });
+  const temperPortraitSrc = TEMPER_MOOD_ASSETS[temperMood];
   const {
     mood: strategicMood,
     visibleLine: strategicVisibleLine,
@@ -4749,7 +4760,7 @@ export default function EquipmentShopClient({
               ) : activeZone === "acheron" ? (
                 <Fragment>
                   <Image
-                    src={TEMPER_PROFILE_SRC}
+                    src={temperPortraitSrc}
                     alt=""
                     fill
                     sizes="148px"
