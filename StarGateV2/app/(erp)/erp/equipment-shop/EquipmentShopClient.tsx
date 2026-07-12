@@ -88,6 +88,22 @@ import {
   STRATEGIC_SCENE_REFRESH_MS,
   type StrategicScene,
 } from "@/lib/equipment-shop/strategic-scene";
+import {
+  buildSutureBlockedLine,
+  buildSutureContributionLine,
+  buildSutureNodeLine,
+  buildSutureRecoveryLine,
+  buildSutureResearchStartedLine,
+  buildSutureRushLine,
+  buildSutureScopeLine,
+  buildSutureWelcomeLine,
+  SUTURE_DEBUG_LINES,
+  SUTURE_DIALOGUE_LINES,
+  SUTURE_IDLE_LINES,
+  SUTURE_MOOD_LABELS,
+  type SutureBlockReason,
+  type SutureMood,
+} from "@/lib/equipment-shop/suture-dialogue";
 import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
 import { formatCredits } from "@/lib/format/credit";
 import {
@@ -138,15 +154,6 @@ type TowaskiMood =
   | "checkout"
   | "range"
   | "rangeFailed"
-  | "blocked"
-  | "idle";
-type SutureMood =
-  | "welcome"
-  | "assessment"
-  | "protocol"
-  | "funding"
-  | "procedure"
-  | "recovery"
   | "blocked"
   | "idle";
 type SutureDebugMode = "live" | SutureMood;
@@ -244,17 +251,6 @@ const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {
   idle: "정비 중",
 };
 
-const SUTURE_MOOD_LABELS: Record<SutureMood, string> = {
-  welcome: "초진 접수",
-  assessment: "적합성 판독",
-  protocol: "프로토콜 검토",
-  funding: "연구 재원 확인",
-  procedure: "시술 준비",
-  recovery: "회복 관찰",
-  blocked: "승인 보류",
-  idle: "생체신호 대기",
-};
-
 const TOWASKI_DIALOGUE_LINES = {
   welcome: "토와스키다. 반출 장부에 남길 물건만 손대.",
   noAgent: "반출 명단에 네 이름이 안 뜬다. 사무국에서 신원표부터 갱신하고 와.",
@@ -316,92 +312,6 @@ const TOWASKI_IDLE_LINES: readonly { mood: TowaskiMood; text: string }[] = [
     text: "탄약 냄새 맡는다고 사격 실력 안 는다. 살 거면 용도를 말해.",
   },
 ];
-
-const SUTURE_DIALOGUE_LINES = {
-  welcome:
-    "이레나 부코비치입니다. 강화 수치보다 먼저 현재 신체와 부작용 기록을 확인하겠습니다.",
-  noAgent:
-    "주 대상 AGENT가 지정되지 않았습니다. 신체 데이터 없이는 개인 프로토콜을 승인할 수 없습니다.",
-  personalScope:
-    "개인 연구는 당신의 신경계에 맞춘 시술입니다. 다른 요원의 성공 사례는 안전 보증이 되지 않아요.",
-  teamScope:
-    "팀 연구는 모두가 공유할 생존 프로토콜입니다. 최고 출력보다 재현성과 회수 가능성을 봅니다.",
-  startError:
-    "승인을 보류하겠습니다. 잔액보다 먼저 선행 연구와 생체 적합성 기록을 다시 확인하세요.",
-  contributionError:
-    "기여 기록을 접수하지 못했습니다. 대상 AGENT, 잔액, 남은 목표액을 다시 확인하세요.",
-  rushError:
-    "검증 시간을 더 줄일 수 없습니다. 빠른 시술과 안전한 시술은 같은 말이 아니에요.",
-  completeError:
-    "적용 기록이 잠겼습니다. 완료 시각과 대상자 상태를 다시 대조하겠습니다.",
-} as const;
-
-const SUTURE_DEBUG_LINES: Record<SutureMood, string> = {
-  welcome: SUTURE_DIALOGUE_LINES.welcome,
-  assessment:
-    "생체 판독을 시작합니다. 통증 역치와 신경 반응을 기준선부터 다시 잡겠습니다.",
-  protocol:
-    "연구 설명 단계입니다. 기대 효과와 회복 비용, 중단 조건을 순서대로 확인하세요.",
-  funding:
-    "재원 검토 중입니다. 확보된 재료와 남은 목표액을 대조하겠습니다.",
-  procedure:
-    "시술 준비 단계입니다. 신경 접속부를 고정하고 마지막 안전 검사를 진행합니다.",
-  recovery:
-    "회복 관찰 단계입니다. 수치보다 감각 지연과 통증 변화를 먼저 보고하세요.",
-  blocked:
-    "승인을 거부합니다. 선행 연구, 재원, 생체 적합성 중 하나가 기준을 충족하지 못했습니다.",
-  idle: "의체 정비 중입니다. 관절 구동부와 감각 피드백을 순서대로 교정하겠습니다.",
-};
-
-const SUTURE_IDLE_LINES: readonly { mood: SutureMood; text: string }[] = [
-  {
-    mood: "idle",
-    text: "기다리는 동안 손가락을 한 번씩 움직여 보세요. 미세한 감각 지연도 기록 대상입니다.",
-  },
-  {
-    mood: "assessment",
-    text: "통증이 없다는 말보다 통증이 언제 사라졌는지가 더 중요합니다.",
-  },
-  {
-    mood: "protocol",
-    text: "강한 출력은 만들기 쉽습니다. 그 출력을 견딜 사람을 남기는 일이 어렵죠.",
-  },
-  {
-    mood: "recovery",
-    text: "시술이 끝난 뒤부터가 연구입니다. 몸이 새 부품을 어떻게 기억하는지 지켜봐야 해요.",
-  },
-  {
-    mood: "idle",
-    text: "고장을 숨기는 외장재는 쓰지 않습니다. 아름다움보다 먼저 발견되어야 할 결함이 있으니까요.",
-  },
-  {
-    mood: "funding",
-    text: "크레딧은 재료를 삽니다. 적합성과 동의까지 사는 것은 아닙니다.",
-  },
-];
-
-const SUTURE_PROFILE_LINES: Record<MainCharacterProfile, readonly string[]> = {
-  assault: [
-    "공격 출력이 높군요. 관절보다 신경 반응이 먼저 과열되는 유형인지 확인하겠습니다.",
-    "힘을 더하는 건 쉽습니다. 그 힘을 멈출 수 있는 회로부터 보죠.",
-  ],
-  guard: [
-    "방호 편향이 보입니다. 충격을 버티는 것과 손상이 없는 것은 다르니 내부 출혈 기록부터 보죠.",
-    "단단한 신체일수록 손상을 늦게 알아차립니다. 감각 피드백을 우선 검사하겠습니다.",
-  ],
-  endurance: [
-    "생체 지속력이 좋군요. 장시간 접속에서 생기는 피로 누적을 중심으로 보겠습니다.",
-    "오래 버티는 몸에는 더 긴 관찰이 필요합니다. 이상 반응도 늦게 나타나니까요.",
-  ],
-  focus: [
-    "정신 안정성이 높습니다. 다만 새 감각이 기억과 충돌하는 경우까지 배제할 수는 없어요.",
-    "신경 접속 적응에는 유리하겠군요. 감각 소유권 검사부터 시작하겠습니다.",
-  ],
-  balanced: [
-    "수치 편향은 크지 않습니다. 임무 습관과 기존 손상 이력을 기준으로 설계하죠.",
-    "균형이 좋군요. 무엇을 더할지보다 무엇을 보존할지 먼저 정하겠습니다.",
-  ],
-};
 
 const TOWASKI_PROFILE_LINES: Record<MainCharacterProfile, readonly string[]> = {
   assault: [
@@ -989,39 +899,6 @@ function buildTowaskiWelcomeLine(args: {
   return `${callsign} ${profileLine}`;
 }
 
-function buildSutureWelcomeLine(args: {
-  codename: string | null;
-  profile: MainCharacterProfile;
-}) {
-  const subject = args.codename
-    ? `${args.codename}, 생체 기록을 열었습니다.`
-    : SUTURE_DIALOGUE_LINES.welcome;
-  const profileLine = pickStableLine(
-    SUTURE_PROFILE_LINES[args.profile],
-    `${args.codename ?? "UNASSIGNED"}:${args.profile}:SUTURE`,
-  );
-  return `${subject} ${profileLine}`;
-}
-
-function buildSutureScopeLine(scope: EquipmentResearchScope): string {
-  return scope === "personal"
-    ? SUTURE_DIALOGUE_LINES.personalScope
-    : SUTURE_DIALOGUE_LINES.teamScope;
-}
-
-function buildSutureNodeLine(
-  node: ResearchNodeEntry,
-  scope: EquipmentResearchScope,
-): string {
-  const branch = getResearchBranchMeta(node.branch).label;
-  const effect = node.effects[scope];
-  const effectText = effect
-    ? describeEquipmentResearchEffect(effect)
-    : "적용 효과 미지정";
-  const scopeText = scope === "personal" ? "개인 적합성" : "팀 재현성";
-  return `${node.name}, T${node.tier} ${branch} 프로토콜입니다. ${scopeText} 기준으로 ${effectText}를 검토하겠습니다.`;
-}
-
 function buildTowaskiItemLine(
   item: EquipmentShopCatalogEntry,
   codename?: string | null,
@@ -1452,6 +1329,7 @@ export default function EquipmentShopClient({
   const purchaseLockRef = useRef(false);
   const towaskiQualificationPassedRef = useRef(false);
   const towaskiDialogueRevisionRef = useRef(0);
+  const sutureDialogueRevisionRef = useRef(0);
   const temperDialogueRevisionRef = useRef(0);
   const strategicDialogueRevisionRef = useRef(0);
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
@@ -1986,10 +1864,17 @@ export default function EquipmentShopClient({
     }
 
     if (!hasMainCharacter) {
-      playSutureLine("blocked", SUTURE_DIALOGUE_LINES.noAgent, {
-        returnToIdle: false,
-        sound: true,
-      });
+      playSutureLine(
+        "blocked",
+        buildSutureBlockedLine(
+          "noAgent",
+          sutureDialogueRevisionRef.current++,
+        ),
+        {
+          returnToIdle: false,
+          sound: true,
+        },
+      );
       return;
     }
 
@@ -2357,6 +2242,13 @@ export default function EquipmentShopClient({
     playSutureLine(mood, text, { sound: true });
   }
 
+  function nextSutureBlockedLine(reason: SutureBlockReason): string {
+    return buildSutureBlockedLine(
+      reason,
+      sutureDialogueRevisionRef.current++,
+    );
+  }
+
   function playTemperIfActive(mood: TemperMood, text: string) {
     if (activeZone !== "acheron") return;
     playTemperLine(mood, text, { sound: true });
@@ -2700,9 +2592,17 @@ export default function EquipmentShopClient({
     }));
     const node = research.tree.find((item) => item.key === key);
     if (node) {
+      const effect = node.effects[activeResearchScope] ?? null;
       playSutureIfActive(
         "assessment",
-        buildSutureNodeLine(node, activeResearchScope),
+        buildSutureNodeLine({
+          nodeName: node.name,
+          scope: activeResearchScope,
+          effect,
+          effectText: effect
+            ? describeEquipmentResearchEffect(effect)
+            : "효과 미지정",
+        }),
       );
     }
   }
@@ -2721,7 +2621,7 @@ export default function EquipmentShopClient({
       !startQuote ||
       !canStartResearch(scope, startQuote.cost)
     ) {
-      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.startError);
+      playSutureIfActive("blocked", nextSutureBlockedLine("start"));
       return;
     }
     if (
@@ -2754,12 +2654,12 @@ export default function EquipmentShopClient({
           });
           playSutureIfActive(
             "procedure",
-            `${node.name} 프로토콜을 등록했습니다. 완료 전까지 감각 지연, 통증, 수면 변화를 기록하세요.`,
+            buildSutureResearchStartedLine(node.name),
           );
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
-          playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.startError);
+          playSutureIfActive("blocked", nextSutureBlockedLine("start"));
         },
       },
     );
@@ -2769,7 +2669,7 @@ export default function EquipmentShopClient({
     if (contributeResearchMutation.isPending) return;
     if (researchDataUnavailable) {
       setErrorMessage("연구 정보를 갱신하지 못해 변경 기능을 잠갔습니다.");
-      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.contributionError);
+      playSutureIfActive("blocked", nextSutureBlockedLine("contribution"));
       return;
     }
     const requestedAmount = Math.floor(Number(teamContributionAmount));
@@ -2780,17 +2680,17 @@ export default function EquipmentShopClient({
       chargePreview <= 0
     ) {
       setErrorMessage("기여 금액은 1 CR 이상이어야 합니다.");
-      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.contributionError);
+      playSutureIfActive("blocked", nextSutureBlockedLine("contribution"));
       return;
     }
     if (!hasMainCharacter) {
       setErrorMessage("메인 AGENT 캐릭터가 없어 팀 연구에 기여할 수 없습니다.");
-      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.noAgent);
+      playSutureIfActive("blocked", nextSutureBlockedLine("noAgent"));
       return;
     }
     if (balance < chargePreview) {
       setErrorMessage("잔액이 부족합니다.");
-      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.contributionError);
+      playSutureIfActive("blocked", nextSutureBlockedLine("contribution"));
       return;
     }
     if (
@@ -2824,16 +2724,18 @@ export default function EquipmentShopClient({
           });
           playSutureIfActive(
             res.project ? "procedure" : "funding",
-            res.project
-              ? `${res.project.key} 공통 프로토콜이 목표액을 충족했습니다. 이제 재현성 검증을 시작합니다.`
-              : `${formatCredits(res.chargedAmount)} 기여를 기록했습니다. 재원은 재료를 확보하지만 안전 기준을 낮추지는 않습니다.`,
+            buildSutureContributionLine({
+              projectKey: res.project?.key ?? res.pool.key,
+              chargedAmount: formatCredits(res.chargedAmount),
+              started: Boolean(res.project),
+            }),
           );
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
           playSutureIfActive(
             "blocked",
-            SUTURE_DIALOGUE_LINES.contributionError,
+            nextSutureBlockedLine("contribution"),
           );
         },
       },
@@ -2848,7 +2750,7 @@ export default function EquipmentShopClient({
     if (rushResearchMutation.isPending) return;
     if (researchDataUnavailable) {
       setErrorMessage("연구 정보를 갱신하지 못해 변경 기능을 잠갔습니다.");
-      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.rushError);
+      playSutureIfActive("blocked", nextSutureBlockedLine("rush"));
       return;
     }
     if (
@@ -2878,12 +2780,12 @@ export default function EquipmentShopClient({
           });
           playSutureIfActive(
             "procedure",
-            `${formatDuration(res.rush.hours)} 단축을 반영했습니다. 생략된 대기 시간만큼 관찰 주기를 더 엄격하게 잡겠습니다.`,
+            buildSutureRushLine(formatDuration(res.rush.hours)),
           );
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
-          playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.rushError);
+          playSutureIfActive("blocked", nextSutureBlockedLine("rush"));
         },
       },
     );
@@ -2893,7 +2795,7 @@ export default function EquipmentShopClient({
     if (completeResearchMutation.isPending) return;
     if (researchDataUnavailable) {
       setErrorMessage("연구 정보를 갱신하지 못해 변경 기능을 잠갔습니다.");
-      playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.completeError);
+      playSutureIfActive("blocked", nextSutureBlockedLine("complete"));
       return;
     }
     const isLeaseRecovery =
@@ -2941,12 +2843,12 @@ export default function EquipmentShopClient({
           });
           playSutureIfActive(
             "recovery",
-            `${res.key} 적용을 확인했습니다. 수치가 올랐다고 회복이 끝난 것은 아닙니다. 이상 감각이 생기면 즉시 돌아오세요.`,
+            buildSutureRecoveryLine(res.key),
           );
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
-          playSutureIfActive("blocked", SUTURE_DIALOGUE_LINES.completeError);
+          playSutureIfActive("blocked", nextSutureBlockedLine("complete"));
         },
       },
     );
