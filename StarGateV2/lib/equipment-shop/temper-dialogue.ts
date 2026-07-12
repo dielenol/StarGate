@@ -88,6 +88,22 @@ export const TEMPER_IDLE_LINES: readonly {
     mood: "balance",
     text: "비싼 무기가 널 살리는 게 아니야. 끝까지 네 손에 남아 있는 무기가 살리는 거지.",
   },
+  {
+    mood: "idle",
+    text: "두 번 두드렸을 때 울림이 다르면 속에 빈 곳이 있다는 뜻이야. 사람도 크게 다르진 않고.",
+  },
+  {
+    mood: "inspect",
+    text: "손잡이의 닳은 방향을 보면 자세가 보여. 장비를 속이는 사람은 있어도 마모를 속이진 못해.",
+  },
+  {
+    mood: "balance",
+    text: "무게중심은 표시해 줄 수 있어. 그 자리를 매번 찾아가는 건 네 몫이고.",
+  },
+  {
+    mood: "idle",
+    text: "열은 금속을 부드럽게 만들고, 냉각은 성질을 남겨. 어느 쪽도 급하게 하면 깨져.",
+  },
 ] as const;
 
 const TEMPER_PROFILE_LINES: Record<
@@ -97,22 +113,27 @@ const TEMPER_PROFILE_LINES: Record<
   assault: [
     "손이 먼저 나가는 타입이네. 무게중심이 앞으로 쏠리지 않는 걸로 보자.",
     "힘은 충분해 보여. 이제 휘두른 뒤에 멈출 수 있는 무기를 골라야지.",
+    "첫 동작은 빠르네. 회수할 때 자세가 무너지지 않는 길이부터 맞춰 보자.",
   ],
   guard: [
     "버티는 데 익숙한 몸이네. 충격을 받아낼지 흘려낼지부터 정하자.",
     "방호 자세가 몸에 배었어. 손을 묶지 않으면서 중심을 지킬 장비가 맞겠네.",
+    "충격을 정면으로 받는 습관이 있어. 관절까지 밀리지 않는 손잡이를 찾아야겠군.",
   ],
   endurance: [
     "오래 버티는 타입이군. 첫 타격보다 열 번째 타격에서 균형이 남는 걸로 보자.",
     "지구력은 좋아 보여. 손잡이 마찰과 관절 피로를 먼저 맞춰 줄게.",
+    "긴 임무에선 작은 불편이 먼저 사람을 망가뜨려. 쥔 채로 오래 버틸 규격을 보자.",
   ],
   focus: [
     "눈이 손보다 먼저 움직이네. 정밀한 날과 짧은 회수 동작이 잘 맞겠어.",
     "서두르지 않는 타입이군. 무게보다 궤적을 읽을 수 있는 걸 골라 봐.",
+    "손끝이 섬세하네. 반응이 빠른 대신 흔들림까지 그대로 전하는 장비가 맞겠어.",
   ],
   balanced: [
     "치우친 습관은 안 보이네. 임무와 자세에 맞춰 중심부터 잡자.",
     "균형은 괜찮아. 무엇을 더할지보다 끝까지 쥘 수 있는지를 먼저 보자.",
+    "기본 자세는 안정적이야. 이제 임무에서 가장 자주 반복할 동작을 기준으로 고르자.",
   ],
 };
 
@@ -122,10 +143,12 @@ const TEMPER_ITEM_DIALOGUE: Record<string, TemperItemDialogue> = {
     inspect: [
       "공격 방패라. 막는 판에 타격면까지 얹었네. 손목 각도가 틀리면 적보다 팔꿈치를 먼저 부숴.",
       "방패로 때릴 생각이면 팔힘보다 발부터 봐. 중심을 못 받치면 네가 먼저 밀려나니까.",
+      "타격면은 멀쩡해도 손잡이가 틀어지면 힘이 옆으로 샌다. 팔에 붙여서 중심부터 느껴 봐.",
     ],
     cart: [
       "타격면과 손잡이 체결 확인했어. 방패로 밀기 전에 발부터 고정해.",
       "공격 방패 올린다. 막는 동작과 치는 동작 사이에 손목을 세우지 마.",
+      "충격 흡수층까지 조였어. 첫 훈련 뒤 체결부가 울면 바로 가져와.",
     ],
   },
   "old-tactical-sword-titanium-shield": {
@@ -133,10 +156,12 @@ const TEMPER_ITEM_DIALOGUE: Record<string, TemperItemDialogue> = {
     inspect: [
       "구식이라고 얕보지 마. 도검과 방패를 한 몸처럼 못 쓰면 무게가 두 배로 돌아와.",
       "검과 방패를 같이 들면 어느 손이 먼저 움직일지 정해 둬. 둘 다 욕심내면 둘 다 늦어.",
+      "이 규격은 단순해서 오래 살아남았어. 대신 자세가 틀리면 장비가 대신 숨겨 주지 않지.",
     ],
     cart: [
       "도검 날과 방패 체결부 모두 확인했어. 두 장비의 간격을 흐트러뜨리지 마.",
       "구식 전술 세트 올린다. 오래된 규격일수록 기본 자세를 더 정확히 지켜.",
+      "세트 균형 다시 맞췄어. 한쪽만 교체하면 중심도 처음부터 다시 봐야 해.",
     ],
   },
   "basic-dagger": {
@@ -144,10 +169,12 @@ const TEMPER_ITEM_DIALOGUE: Record<string, TemperItemDialogue> = {
     inspect: [
       "단검은 짧아서 정직해. 거리를 잘못 잡으면 칼보다 네 손이 먼저 들어가.",
       "작은 날일수록 손버릇이 그대로 보여. 역수로 잡기 전에 손목부터 풀어.",
+      "날이 짧으면 실수도 가까이서 돌아와. 손가락이 가드 앞으로 나가지 않게 잡아.",
     ],
     cart: [
       "단검 칼집 잠금 확인했어. 허리에 달기 전에 뽑는 방향부터 정해.",
       "단검 한 자루 올린다. 작다고 주머니에 함부로 넣지는 마.",
+      "칼끝과 칼집 입구 정렬했어. 급하게 넣다가 손등 긁는 일은 없게 해.",
     ],
   },
   "basic-katana": {
@@ -155,10 +182,12 @@ const TEMPER_ITEM_DIALOGUE: Record<string, TemperItemDialogue> = {
     inspect: [
       "카타나는 날보다 궤적이 중요해. 베겠다고 힘주면 날이 먼저 비틀려.",
       "칼끝만 보지 마. 손잡이에서 시작한 움직임이 끝까지 이어져야 제대로 베어.",
+      "날의 휨은 정상 범위야. 억지로 곧게 만들려 하지 말고 베는 선을 곧게 써.",
     ],
     cart: [
       "날과 칼집 간격 맞췄어. 뽑는 동작에서 손가락 잃지 않게 조심해.",
       "카타나 균형 잡아서 올린다. 첫 사용 뒤에는 날 휨부터 확인해.",
+      "날각 정리 끝. 단단한 표적에 걸렸으면 두 번째 타격 전에 반드시 확인해.",
     ],
   },
   "basic-longsword": {
@@ -166,10 +195,12 @@ const TEMPER_ITEM_DIALOGUE: Record<string, TemperItemDialogue> = {
     inspect: [
       "롱소드는 양손으로 잡아도 판단은 하나여야 해. 중심 놓치면 칼이 널 휘두른다.",
       "긴 칼은 사거리만 늘리는 게 아니야. 실수할 공간도 같이 늘어나지.",
+      "양손 간격이 좁으면 힘이 남고, 넓으면 방향이 늦어져. 네 자세에 맞는 지점을 찾아.",
     ],
     cart: [
       "롱소드 중심점 표시해 뒀어. 장갑 낀 손으로도 같은 자리를 잡아.",
       "장검 한 자루 반출대에 올린다. 좁은 복도에서는 길이부터 기억해.",
+      "가드와 손잡이 유격 잡았어. 한 손으로 버틸 생각은 훈련장에 두고 와.",
     ],
   },
   "basic-blunt-weapon": {
@@ -177,10 +208,12 @@ const TEMPER_ITEM_DIALOGUE: Record<string, TemperItemDialogue> = {
     inspect: [
       "둔기는 날을 세울 필요가 없지. 대신 어디까지 부수면 되는지는 알아야 해.",
       "무게만 믿고 휘두르면 어깨부터 망가져. 충격은 목표에 남기고 반동은 흘려.",
+      "타격면보다 손잡이 끝을 봐. 회수할 때 흔들리면 다음 동작이 전부 늦어진다.",
     ],
     cart: [
       "타격면 균열 없고 손잡이 고정도 끝났어. 이제 부술 곳만 제대로 골라.",
       "둔기 올린다. 무게는 충분하니 힘까지 과하게 보태지 마.",
+      "완충 그립 새로 감았어. 젖으면 미끄러우니 임무 전 장갑과 같이 확인해.",
     ],
   },
   "basic-chainsaw": {
@@ -188,10 +221,12 @@ const TEMPER_ITEM_DIALOGUE: Record<string, TemperItemDialogue> = {
     inspect: [
       "그건 무기라 부르기 전에 시동 절차부터 외워. 멈추는 법은 그보다 먼저고.",
       "전기톱은 날보다 구동부가 먼저 배신해. 소리가 달라지면 바로 손 떼.",
+      "체인 속도가 흔들리면 힘으로 밀지 마. 걸린 순간부터는 무기가 아니라 사고야.",
     ],
     cart: [
       "체인 장력과 비상 정지 확인했어. 다섯 번 쓰면 욕심내지 말고 다시 시동 걸어.",
       "전기톱 반출 준비 끝. 연료보다 비상 정지 손잡이 위치부터 외워.",
+      "구동부 열과 체인 오일 확인했어. 이상음 한 번이면 바로 정지, 두 번은 없어.",
     ],
   },
 };
@@ -203,6 +238,11 @@ function stableLine(lines: readonly string[], seed: string): string {
     0,
   );
   return lines[index % lines.length] ?? lines[0] ?? "";
+}
+
+function cycleLine(lines: readonly string[], variant: number): string {
+  const index = Math.abs(Math.trunc(variant)) % lines.length;
+  return lines[index] ?? lines[0] ?? "";
 }
 
 export function buildTemperWelcomeLine(args: {
@@ -219,6 +259,7 @@ export function buildTemperWelcomeLine(args: {
 
 export function buildTemperItemLine(
   item: TemperCatalogItem,
+  variant = 0,
 ): { mood: TemperMood; text: string } {
   if (!item.available) {
     return { mood: "blocked", text: TEMPER_DIALOGUE_LINES.unavailable };
@@ -228,7 +269,7 @@ export function buildTemperItemLine(
   if (dialogue) {
     return {
       mood: dialogue.mood,
-      text: stableLine(dialogue.inspect, `${item.key}:inspect:TEMPER`),
+      text: cycleLine(dialogue.inspect, variant),
     };
   }
 
@@ -245,23 +286,45 @@ export function buildTemperItemLine(
   };
 }
 
-export function buildTemperCartLine(item: TemperCatalogItem): string {
+export function buildTemperCartLine(
+  item: TemperCatalogItem,
+  variant = 0,
+): string {
   const dialogue = TEMPER_ITEM_DIALOGUE[item.key];
   if (dialogue) {
-    return stableLine(dialogue.cart, `${item.key}:cart:TEMPER`);
+    return cycleLine(dialogue.cart, variant);
   }
   return `${item.name} 반출대에 올렸어. 봉인 전에 손에 맞는지 마지막으로 확인해.`;
 }
 
-export function buildTemperTabLine(tab: TemperTab): string {
-  switch (tab) {
-    case "WEAPON":
-      return "근접무기 쪽이네. 피해량보다 길이, 중심, 회수 동작을 먼저 봐.";
-    case "ARMOR":
-      return "방호 장비는 충격을 버티는 물건이 아니라 흘려보내는 물건이야. 관절부터 확인해.";
-    case "CONSUMABLE":
-      return "소모품은 토와스키 쪽이 더 많아. 여기서는 현장에서 다시 손볼 수 있는 장비를 우선해.";
-    default:
-      return "전부 훑어봐도 좋아. 하지만 마지막에는 네 손에 맞는 하나만 남겨.";
-  }
+const TEMPER_TAB_LINES: Record<TemperTab, readonly string[]> = {
+  ALL: [
+    "전부 훑어봐도 좋아. 하지만 마지막에는 네 손에 맞는 하나만 남겨.",
+    "진열 순서는 중요하지 않아. 쥐었을 때 중심이 어디에 남는지만 기억해.",
+    "종류가 많아 보여도 기준은 셋이야. 길이, 중심, 그리고 놓치지 않는 손.",
+  ],
+  WEAPON: [
+    "근접무기 쪽이네. 피해량보다 길이, 중심, 회수 동작을 먼저 봐.",
+    "날과 타격면만 보지 마. 빗나간 뒤 다시 자세를 잡는 시간까지가 무기 성능이야.",
+    "손에 쥐는 장비는 숫자보다 습관을 먼저 타. 자주 쓰는 동작부터 생각해.",
+  ],
+  ARMOR: [
+    "방호 장비는 충격을 버티는 물건이 아니라 흘려보내는 물건이야. 관절부터 확인해.",
+    "두꺼운 장갑이 다 좋은 건 아니야. 움직임을 막으면 충격보다 먼저 널 늦춰.",
+    "방호구는 멀쩡해 보여도 체결부부터 늙어. 버클과 관절을 먼저 살펴.",
+  ],
+  CONSUMABLE: [
+    "소모품은 토와스키 쪽이 더 많아. 여기서는 현장에서 다시 손볼 수 있는 장비를 우선해.",
+    "한 번 쓰고 버릴 물건보다 계속 살아남을 도구를 만드는 게 내 일이야.",
+    "소모품 목록은 짧아. 대신 장비를 오래 쓰게 만드는 정비재는 따로 챙겨 둘게.",
+  ],
+  LICENSE: [
+    "허가증은 금속을 강하게 만들지 않아. 반출선이 필요하면 토와스키 장부부터 확인해.",
+    "여기서는 서류보다 파단 기록을 봐. 면허 관련 품목은 건샵 카운터로 가.",
+    "자격은 장부가 확인하고, 장비는 내가 확인해. 둘을 같은 일로 생각하지 마.",
+  ],
+};
+
+export function buildTemperTabLine(tab: TemperTab, variant = 0): string {
+  return cycleLine(TEMPER_TAB_LINES[tab], variant);
 }

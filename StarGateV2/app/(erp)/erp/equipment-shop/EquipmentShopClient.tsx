@@ -132,6 +132,8 @@ const SUTURE_PROFILE_SRC = "/assets/npcs/Irena-Vukovic-Suture-profile.webp";
 const SUTURE_IDLE_DELAY_MS = 14000;
 const TEMPER_PROFILE_SRC = "/assets/npcs/Brigid-Kane-Temper-profile.webp";
 const TEMPER_IDLE_DELAY_MS = 13000;
+const TEMPER_ENTRY_SFX_SRC =
+  "/assets/equipment-shop/sfx/temper-forge-double-strike.m4a";
 
 const SUTURE_MOOD_ASSETS: Record<SutureMood, string> = {
   welcome: "/assets/npcs/Irena-Vukovic-Suture-welcome.webp",
@@ -1332,6 +1334,7 @@ export default function EquipmentShopClient({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const purchaseLockRef = useRef(false);
   const towaskiQualificationPassedRef = useRef(false);
+  const temperDialogueRevisionRef = useRef(0);
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
     () => mainCharacter?.stats ?? null,
   );
@@ -1492,6 +1495,7 @@ export default function EquipmentShopClient({
     SUTURE_MOOD_ASSETS[sutureMood] ?? SUTURE_PROFILE_SRC;
   const {
     mood: temperMood,
+    line: temperLine,
     visibleLine: temperVisibleLine,
     typing: temperTyping,
     playLine: playTemperLine,
@@ -1514,8 +1518,8 @@ export default function EquipmentShopClient({
     beepPreset: "temper",
     beepDefaults: { pitch: 440, speed: 46, volume: 0.54 },
     engineVolume: 0.54,
-    entrySfxSrc: null,
-    entrySfxVolume: 0,
+    entrySfxSrc: TEMPER_ENTRY_SFX_SRC,
+    entrySfxVolume: 0.34,
   });
   const handleTowaskiQualificationDialogue = useCallback(
     (event: TowaskiQualificationDialogueEvent) => {
@@ -1978,7 +1982,10 @@ export default function EquipmentShopClient({
     if (activeZone === "towaski") {
       playTowaskiIfActive("inspect", buildTowaskiTabLine(tab));
     } else if (activeZone === "acheron") {
-      playTemperIfActive("inspect", buildTemperTabLine(tab));
+      playTemperIfActive(
+        "inspect",
+        buildTemperTabLine(tab, temperDialogueRevisionRef.current++),
+      );
     }
   }
 
@@ -1989,7 +1996,10 @@ export default function EquipmentShopClient({
       const nextLine = buildTowaskiItemLine(item, mainCharacter?.codename);
       playTowaskiIfActive(nextLine.mood, nextLine.text);
     } else if (activeZone === "acheron") {
-      const nextLine = buildTemperItemLine(item);
+      const nextLine = buildTemperItemLine(
+        item,
+        temperDialogueRevisionRef.current++,
+      );
       playTemperIfActive(nextLine.mood, nextLine.text);
     }
   }
@@ -2082,7 +2092,10 @@ export default function EquipmentShopClient({
       isLicenseItem ? "license" : "cart",
       buildTowaskiCartLine(item),
     );
-    playTemperIfActive("cart", buildTemperCartLine(item));
+    playTemperIfActive(
+      "cart",
+      buildTemperCartLine(item, temperDialogueRevisionRef.current++),
+    );
     purchaseMutation.mutate(
       { key: item.key },
       {
@@ -4073,7 +4086,13 @@ export default function EquipmentShopClient({
         )}
 
         {!isHub ? (
-          <section className={styles.npcHud} aria-label="병기부 응대 HUD">
+          <section
+            className={styles.npcHud}
+            aria-label="병기부 응대 HUD"
+            data-temper-mood={
+              activeZone === "acheron" ? temperMood : undefined
+            }
+          >
             <div
               className={[
                 styles.npcPortrait,
@@ -4106,13 +4125,20 @@ export default function EquipmentShopClient({
                   priority
                 />
               ) : activeZone === "acheron" ? (
-                <Image
-                  src={TEMPER_PROFILE_SRC}
-                  alt=""
-                  fill
-                  sizes="148px"
-                  priority
-                />
+                <Fragment key={`${temperMood}:${temperLine}`}>
+                  <Image
+                    src={TEMPER_PROFILE_SRC}
+                    alt=""
+                    fill
+                    sizes="148px"
+                    priority
+                  />
+                  <span className={styles.temperForgeFx} aria-hidden>
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                </Fragment>
               ) : (
                 <span className={styles.npcPortraitMark} aria-hidden />
               )}

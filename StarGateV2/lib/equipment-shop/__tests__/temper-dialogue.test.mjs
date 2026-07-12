@@ -50,6 +50,29 @@ test("all current Acheron items have specific inspection and cart dialogue", () 
   }
 });
 
+test("repeated Acheron interactions rotate through distinct dialogue", () => {
+  const item = {
+    key: "basic-blunt-weapon",
+    name: "보급형 둔기",
+    category: "WEAPON",
+    available: true,
+  };
+
+  const inspections = new Set(
+    [0, 1, 2].map((variant) => buildTemperItemLine(item, variant).text),
+  );
+  const cartLines = new Set(
+    [0, 1, 2].map((variant) => buildTemperCartLine(item, variant)),
+  );
+  const tabLines = new Set(
+    [0, 1, 2].map((variant) => buildTemperTabLine("WEAPON", variant)),
+  );
+
+  assert.equal(inspections.size, 3);
+  assert.equal(cartLines.size, 3);
+  assert.equal(tabLines.size, 3);
+});
+
 test("unavailable and future catalog items use safe fallback dialogue", () => {
   const unavailable = buildTemperItemLine({
     key: "future-blade",
