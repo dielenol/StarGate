@@ -4,7 +4,9 @@ import Image from "next/image";
 import {
   type DragEvent,
   type KeyboardEvent,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -50,6 +52,14 @@ type SimLog = {
   id: number;
   tone: SimLogTone;
   text: string;
+};
+
+type TrainingFeedbackTone = "info" | "success" | "error";
+type TrainingFeedback = {
+  id: number;
+  tone: TrainingFeedbackTone;
+  title: string;
+  detail: string;
 };
 
 type TrainingEvent =
@@ -114,6 +124,52 @@ const TRAINING_STEPS: TrainingStep[] = [
     hint: "피해·자원 확인 후 계속 진행",
   },
 ];
+
+const TRAINING_SOUND_PATTERNS: Record<
+  TrainingFeedbackTone,
+  readonly { delay: number; duration: number; frequency: number }[]
+> = {
+  info: [{ delay: 0, duration: 0.06, frequency: 520 }],
+  success: [
+    { delay: 0, duration: 0.07, frequency: 660 },
+    { delay: 0.09, duration: 0.09, frequency: 880 },
+  ],
+  error: [
+    { delay: 0, duration: 0.11, frequency: 220 },
+    { delay: 0.1, duration: 0.14, frequency: 165 },
+  ],
+};
+
+const TRAINING_FEEDBACK_LABELS: Record<TrainingFeedbackTone, string> = {
+  info: "훈련 안내",
+  success: "실행 완료",
+  error: "실행 실패",
+};
+
+function playTrainingTone(
+  context: AudioContext,
+  tone: TrainingFeedbackTone,
+) {
+  const baseTime = context.currentTime + 0.01;
+  const peakGain = tone === "info" ? 0.025 : 0.035;
+
+  TRAINING_SOUND_PATTERNS[tone].forEach((note) => {
+    const start = baseTime + note.delay;
+    const end = start + note.duration;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = tone === "error" ? "triangle" : "sine";
+    oscillator.frequency.setValueAtTime(note.frequency, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(peakGain, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(start);
+    oscillator.stop(end + 0.02);
+  });
+}
 
 function buildSimulatorItems(
   catalogItems: EquipmentShopCatalogEntry[],
@@ -221,6 +277,10 @@ export default function EquipmentSimulatorClient({
   const [sequence, setSequence] = useState(1);
   const [trainingEvent, setTrainingEvent] = useState<TrainingEvent>("ready");
   const [activeStep, setActiveStep] = useState(0);
+  const [feedback, setFeedback] = useState<TrainingFeedback | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const feedbackSequenceRef = useRef(0);
+  const feedbackTimerRef = useRef<number | null>(null);
   const [logs, setLogs] = useState<SimLog[]>([
     {
       id: 0,
@@ -228,6 +288,19 @@ export default function EquipmentSimulatorClient({
       text: "5x5 훈련장 준비. 표적 토큰을 움직여 사거리를 확인하세요.",
     },
   ]);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current !== null) {
+        window.clearTimeout(feedbackTimerRef.current);
+      }
+      const context = audioContextRef.current;
+      audioContextRef.current = null;
+      if (context && context.state !== "closed") {
+        void context.close().catch(() => undefined);
+      }
+    };
+  }, []);
 
   const selectedItem =
     simulatorItems.find((item) => item.slug === selectedSlug) ??
@@ -264,17 +337,20 @@ export default function EquipmentSimulatorClient({
   const resultSummary = selectedResult?.ok
     ? selectedResult.summary
     : selectedResult?.reasonLabel ?? "판정 대기";
+  const resultSentence = /[.!?]$/.test(resultSummary)
+    ? resultSummary
+    : `${resultSummary}.`;
   const instructorBrief = (() => {
     switch (trainingEvent) {
       case "weapon":
         return {
           title: `${selectedName} 선택 완료`,
-          text: `현재 ${SIMULATOR_RANGE_LABELS[range.band]}, 예상 결과는 ${resultSummary}입니다. 토큰 위치를 조정하거나 공격을 실행하십시오.`,
+          text: `현재 ${SIMULATOR_RANGE_LABELS[range.band]}입니다. 예상 판정: ${resultSentence} 토큰 위치를 조정하거나 공격을 실행하십시오.`,
         };
       case "position":
         return {
           title: `${formatSimulatorCoord(attackerPosition)} → ${formatSimulatorCoord(targetPosition)} 배치 확인`,
-          text: `세로 ${range.verticalDistance}칸은 ${SIMULATOR_RANGE_LABELS[range.band]} 판정입니다. 예상 결과 ${resultSummary}. 준비되면 공격을 실행하십시오.`,
+          text: `세로 ${range.verticalDistance}칸은 ${SIMULATOR_RANGE_LABELS[range.band]} 판정입니다. 예상 판정: ${resultSentence} 준비되면 공격을 실행하십시오.`,
         };
       case "attack":
         return {
@@ -314,7 +390,66 @@ export default function EquipmentSimulatorClient({
     setSequence((prev) => prev + 1);
   }
 
+  function playFeedbackSound(tone: TrainingFeedbackTone) {
+    try {
+      const audioWindow = window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const AudioContextConstructor =
+        audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
+      if (!AudioContextConstructor) return;
+
+      const context =
+        audioContextRef.current ?? new AudioContextConstructor();
+      audioContextRef.current = context;
+      if (context.state === "suspended") {
+        void context
+          .resume()
+          .then(() => playTrainingTone(context, tone))
+          .catch(() => undefined);
+        return;
+      }
+      playTrainingTone(context, tone);
+    } catch {
+      // Ignore unsupported audio environments and browser playback policies.
+    }
+  }
+
+  function showFeedback(
+    tone: TrainingFeedbackTone,
+    title: string,
+    detail: string,
+  ) {
+    const id = feedbackSequenceRef.current + 1;
+    feedbackSequenceRef.current = id;
+    setFeedback({ id, tone, title, detail });
+    playFeedbackSound(tone);
+
+    if (feedbackTimerRef.current !== null) {
+      window.clearTimeout(feedbackTimerRef.current);
+    }
+    feedbackTimerRef.current = window.setTimeout(
+      () => {
+        setFeedback((current) => (current?.id === id ? null : current));
+        feedbackTimerRef.current = null;
+      },
+      tone === "error" ? 4200 : 2800,
+    );
+  }
+
+  function dismissFeedback() {
+    if (feedbackTimerRef.current !== null) {
+      window.clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = null;
+    }
+    setFeedback(null);
+  }
+
   function moveToken(token: ActiveToken, coord: SimulatorBoardCoord) {
+    const currentCoord = token === "attacker" ? attackerPosition : targetPosition;
+    const nextAttacker = token === "attacker" ? coord : attackerPosition;
+    const nextTarget = token === "target" ? coord : targetPosition;
+    const nextRange = getSimulatorRange(nextAttacker, nextTarget);
     if (token === "attacker") {
       setAttackerPosition(coord);
     } else {
@@ -322,12 +457,35 @@ export default function EquipmentSimulatorClient({
     }
     setTrainingEvent("position");
     setActiveStep(2);
+    showFeedback(
+      "info",
+      `${token === "attacker" ? "공격자" : "표적"} ${sameCoord(currentCoord, coord) ? "위치 확인" : "이동 완료"}`,
+      `${formatSimulatorCoord(coord)} · ${SIMULATOR_RANGE_LABELS[nextRange.band]} · 세로 ${nextRange.verticalDistance}칸`,
+    );
   }
 
   function handleSelectWeapon(slug: SimulatorWeaponSlug) {
     setSelectedSlug(slug);
     setTrainingEvent("weapon");
     setActiveStep(1);
+    const itemName =
+      simulatorItems.find((item) => item.slug === slug)?.name ??
+      getSimulatorWeaponRule(slug)?.name ??
+      "장비";
+    showFeedback(
+      "info",
+      "장비 선택 완료",
+      `${itemName}을 시험 장비로 설정했습니다.`,
+    );
+  }
+
+  function handleSelectActiveToken(token: ActiveToken) {
+    setActiveToken(token);
+    showFeedback(
+      "info",
+      "이동 대상 변경",
+      `${token === "attacker" ? "공격자" : "표적"} 토큰을 이동할 칸을 선택하십시오.`,
+    );
   }
 
   function handleCellActivate(coord: SimulatorBoardCoord) {
@@ -370,6 +528,11 @@ export default function EquipmentSimulatorClient({
     }));
     setTrainingEvent("reload");
     setActiveStep(2);
+    showFeedback(
+      "success",
+      `${controlReloadLabel(selectedRule)} 완료`,
+      `${selectedRule.name} ${selectedRule.resource.label} ${selectedRule.resource.max}/${selectedRule.resource.max}`,
+    );
     pushLog(`${selectedRule.name} ${controlReloadLabel(selectedRule)} 완료`, "info");
   }
 
@@ -379,6 +542,11 @@ export default function EquipmentSimulatorClient({
     setHmgShotsInCycle(0);
     setTrainingEvent("install");
     setActiveStep(2);
+    showFeedback(
+      "success",
+      "중기관총 설치 완료",
+      "3턴 주기에서 2회 사격할 수 있습니다.",
+    );
     pushLog("중기관총 설치 완료. 현재 3턴 주기에서 2회 사격 가능합니다.", "info");
   }
 
@@ -391,6 +559,13 @@ export default function EquipmentSimulatorClient({
     }
     setTrainingEvent("turn");
     setActiveStep(2);
+    showFeedback(
+      resetCycle ? "success" : "info",
+      `${nextTurn}턴 시작`,
+      resetCycle
+        ? "중기관총 사격 주기가 갱신되었습니다."
+        : "장비와 배치를 유지한 채 다음 행동을 진행합니다.",
+    );
     pushLog(
       resetCycle
         ? `${nextTurn}턴 진입. 중기관총 사격 주기가 갱신되었습니다.`
@@ -418,6 +593,11 @@ export default function EquipmentSimulatorClient({
       },
     ]);
     setSequence((prev) => prev + 1);
+    showFeedback(
+      "info",
+      "훈련장 초기화 완료",
+      "1턴 기본 배치와 모든 장비 자원을 복구했습니다.",
+    );
   }
 
   function handleAttack() {
@@ -426,6 +606,11 @@ export default function EquipmentSimulatorClient({
     if (!selectedResult.ok) {
       setTrainingEvent("blocked");
       setActiveStep(2);
+      showFeedback(
+        "error",
+        "공격 실행 실패",
+        selectedResult.reasonLabel ?? selectedResult.summary,
+      );
       pushLog(selectedResult.reasonLabel ?? selectedResult.summary, resultTone(selectedResult));
       return;
     }
@@ -460,6 +645,11 @@ export default function EquipmentSimulatorClient({
           .map((status) => SIMULATOR_STATUS_LABELS[status])
           .join(", ")}`
       : "";
+    showFeedback(
+      "success",
+      "공격 실행 완료",
+      `${selectedRule.name} · ${selectedResult.summary}${statusText}`,
+    );
     pushLog(
       `${selectedRule.name} ${selectedResult.summary}${statusText}`,
       "hit",
@@ -477,6 +667,38 @@ export default function EquipmentSimulatorClient({
         ]}
         title="훈련장"
       />
+
+      {feedback ? (
+        <div
+          className={[
+            styles.feedbackToast,
+            styles[`feedbackToast--${feedback.tone}`],
+          ].join(" ")}
+          role={feedback.tone === "error" ? "alert" : "status"}
+          aria-live={feedback.tone === "error" ? "assertive" : "polite"}
+        >
+          <span className={styles.feedbackToast__icon} aria-hidden>
+            {feedback.tone === "success"
+              ? "✓"
+              : feedback.tone === "error"
+                ? "!"
+                : "i"}
+          </span>
+          <div className={styles.feedbackToast__body}>
+            <span>{TRAINING_FEEDBACK_LABELS[feedback.tone]}</span>
+            <strong>{feedback.title}</strong>
+            <p>{feedback.detail}</p>
+          </div>
+          <button
+            type="button"
+            className={styles.feedbackToast__dismiss}
+            onClick={dismissFeedback}
+            aria-label="훈련 알림 닫기"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
 
       <section className={styles.stageHeader}>
         <div className={styles.stageIntro}>
@@ -597,7 +819,7 @@ export default function EquipmentSimulatorClient({
                   type="button"
                   className={activeToken === "attacker" ? styles.activeToggle : ""}
                   aria-pressed={activeToken === "attacker"}
-                  onClick={() => setActiveToken("attacker")}
+                  onClick={() => handleSelectActiveToken("attacker")}
                 >
                   공격자 이동
                 </button>
@@ -605,7 +827,7 @@ export default function EquipmentSimulatorClient({
                   type="button"
                   className={activeToken === "target" ? styles.activeToggle : ""}
                   aria-pressed={activeToken === "target"}
-                  onClick={() => setActiveToken("target")}
+                  onClick={() => handleSelectActiveToken("target")}
                 >
                   표적 이동
                 </button>
