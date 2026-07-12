@@ -1630,9 +1630,10 @@ export default function EquipmentShopClient({
     if (sutureDebugMode !== "live") {
       clearSutureIdleTimer();
       stopSutureEngine();
-      showSutureLineImmediately(
+      playSutureLine(
         sutureDebugMode,
         SUTURE_DEBUG_LINES[sutureDebugMode],
+        { returnToIdle: false, sound: true },
       );
       return;
     }
@@ -1640,7 +1641,7 @@ export default function EquipmentShopClient({
     if (!hasMainCharacter) {
       playSutureLine("blocked", SUTURE_DIALOGUE_LINES.noAgent, {
         returnToIdle: false,
-        sound: false,
+        sound: true,
       });
       return;
     }
@@ -3751,7 +3752,8 @@ export default function EquipmentShopClient({
         title={isHub ? "병기부 안내데스크" : zoneMeta.label}
       />
 
-      {!hasMainCharacter && !(mode === "zone" && activeZone === "towaski") ? (
+      {!hasMainCharacter &&
+      !(mode === "zone" && (activeZone === "towaski" || activeZone === "lab")) ? (
         <Box className={styles.notice}>
           {mainCharacterError ? (
             <>
