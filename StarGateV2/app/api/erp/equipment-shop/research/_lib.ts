@@ -3,8 +3,11 @@ import { NextResponse } from "next/server";
 import type { UserRole } from "@stargate/shared-db/types";
 import type { ClientSession } from "mongodb";
 
+import { isNavPathLocked } from "@/components/erp/nav-config";
 import { getActiveSession } from "@/lib/auth/active-session";
-import { requireRole } from "@/lib/auth/rbac";
+import { hasRole } from "@/lib/auth/rbac";
+import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
+import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
 import { findMainCharacterLiteByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import { findUserById } from "@/lib/db/users";
@@ -33,16 +36,27 @@ export class ResearchMutationError extends Error {
   }
 }
 
-export async function requireResearchGm(): Promise<
+/**
+ * 연구소 API 공통 가드 — 페이지 가드(requireEquipmentShopSession)와 동일 정책.
+ * GM/로컬 프리뷰가 아니어도 연구소 운영 잠금(erp_page_locks)이 해제되어 있으면 허용한다.
+ */
+export async function requireResearchAccess(): Promise<
   { session: ResearchRouteSession } | { response: NextResponse }
 > {
   const authResult = await requireResearchUser();
   if ("response" in authResult) return authResult;
 
-  try {
-    requireRole(authResult.session.role, "GM");
-  } catch {
-    return { response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  if (hasRole(authResult.session.role, "GM")) return authResult;
+  if (await hasLocalErpPreviewAccess()) return authResult;
+
+  const locked = isNavPathLocked(
+    "/erp/equipment-shop/lab",
+    await getErpPageLockOverrides(),
+  );
+  if (locked) {
+    return {
+      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
   }
 
   return authResult;

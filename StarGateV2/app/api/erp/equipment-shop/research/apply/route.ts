@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 
+import { hasRole } from "@/lib/auth/rbac";
+import { findEquipmentResearchProjectById } from "@/lib/db/equipment-research";
 import { applyEquipmentResearchProjectNow } from "@/lib/equipment-shop/research-application";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
-import { requireResearchGm } from "../_lib";
+import { requireResearchAccess } from "../_lib";
 
 interface ApplyResearchBody {
   projectId?: unknown;
 }
 
 export async function POST(request: Request) {
-  const authResult = await requireResearchGm();
+  const authResult = await requireResearchAccess();
   if ("response" in authResult) return authResult.response;
 
   const body = (await request.json().catch(() => null)) as
@@ -23,6 +25,20 @@ export async function POST(request: Request) {
       { error: "projectId가 필요합니다.", code: "INVALID_RESEARCH" },
       { status: 400 },
     );
+  }
+
+  if (!hasRole(authResult.session.role, "GM")) {
+    const project = await findEquipmentResearchProjectById(projectId);
+    if (
+      project &&
+      project.scope === "personal" &&
+      project.createdBy !== authResult.session.id
+    ) {
+      return NextResponse.json(
+        { error: "본인이 시작한 연구만 적용할 수 있습니다." },
+        { status: 403 },
+      );
+    }
   }
 
   try {

@@ -18,10 +18,10 @@ import {
   getComputedResearchStatus,
 } from "@/lib/equipment-shop/research";
 
-import { requireResearchGm } from "./_lib";
+import { requireResearchAccess } from "./_lib";
 
 export async function GET() {
-  const authResult = await requireResearchGm();
+  const authResult = await requireResearchAccess();
   if ("response" in authResult) return authResult.response;
 
   let mainCharacterId: string | null = null;

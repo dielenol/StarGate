@@ -20,10 +20,10 @@ const RESEARCH_CLIENT = new URL(
   import.meta.url,
 );
 
-test("research GET is GM-only and read-only", async () => {
+test("research GET is lock-gated and read-only", async () => {
   const source = await readFile(RESEARCH_ROUTE, "utf8");
 
-  assert.match(source, /requireResearchGm\(\)/);
+  assert.match(source, /requireResearchAccess\(\)/);
   assert.doesNotMatch(source, /applyReadyEquipmentResearchProjects/);
   assert.doesNotMatch(source, /export async function POST/);
 });
@@ -35,7 +35,7 @@ test("equipment-shop page loader never applies completed research", async () => 
 });
 
 for (const action of ["start", "contribute", "rush"]) {
-  test(`research ${action} mutation is GM-only`, async () => {
+  test(`research ${action} mutation is lock-gated`, async () => {
     const source = await readFile(
       new URL(
         `../../../app/api/erp/equipment-shop/research/${action}/route.ts`,
@@ -44,7 +44,7 @@ for (const action of ["start", "contribute", "rush"]) {
       "utf8",
     );
 
-    assert.match(source, /requireResearchGm\(\)/);
+    assert.match(source, /requireResearchAccess\(\)/);
     assert.match(source, /readIdempotencyKey\(request\)/);
     assert.doesNotMatch(source, /requireResearchUser\(\)/);
   });

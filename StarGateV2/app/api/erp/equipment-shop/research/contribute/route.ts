@@ -32,7 +32,7 @@ import {
 import {
   chargeResearchCredits,
   ResearchMutationError,
-  requireResearchGm,
+  requireResearchAccess,
   resolveResearchBudgetCharacter,
 } from "../_lib";
 
@@ -58,7 +58,7 @@ function parseContributionAmount(value: unknown): number | null {
 }
 
 export async function POST(request: Request) {
-  const authResult = await requireResearchGm();
+  const authResult = await requireResearchAccess();
   if ("response" in authResult) return authResult.response;
 
   const requestId = readIdempotencyKey(request);
