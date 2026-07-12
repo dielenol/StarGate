@@ -52,10 +52,20 @@ type SimLog = {
   text: string;
 };
 
-type GuideStep = {
+type TrainingEvent =
+  | "ready"
+  | "weapon"
+  | "position"
+  | "attack"
+  | "blocked"
+  | "reload"
+  | "install"
+  | "turn";
+
+type TrainingStep = {
   label: string;
   title: string;
-  dialogue: string;
+  hint: string;
 };
 
 interface SimulatorDisplayItem {
@@ -82,36 +92,26 @@ const DEFAULT_TARGET: SimulatorTargetStats = {
   statuses: [],
 };
 
-const GUIDE_STEPS: GuideStep[] = [
+const TRAINING_STEPS: TrainingStep[] = [
   {
-    label: "01 장비",
-    title: "시험 장비 선택",
-    dialogue:
-      "왼쪽 보급형 장비 목록에서 시험할 장비를 선택하십시오. 선택한 장비의 피해와 운용 조건은 오른쪽 룰 카드에 표시됩니다.",
+    label: "STEP 01",
+    title: "장비 선택",
+    hint: "왼쪽 목록에서 시험 장비 선택",
   },
   {
-    label: "02 배치",
-    title: "공격자와 표적 배치",
-    dialogue:
-      "공격자 또는 표적을 선택한 뒤 전투판의 칸을 누르십시오. 토큰을 직접 끌어서 이동할 수도 있습니다. 사거리는 두 토큰의 세로 칸 차이만 사용합니다.",
+    label: "STEP 02",
+    title: "거리 배치",
+    hint: "공격자·표적 토큰 이동",
   },
   {
-    label: "03 판정",
-    title: "예상 피해 확인",
-    dialogue:
-      "공격 전 조작 패널의 피해 판정과 오른쪽 사거리별 피해를 확인하십시오. 냉병기는 공격자의 ATK를 사용하고, 물리 피해는 표적의 DEF를 적용합니다.",
+    label: "STEP 03",
+    title: "공격 실행",
+    hint: "예상 피해 확인 후 공격",
   },
   {
-    label: "04 운용",
-    title: "자원과 특수 조건 시험",
-    dialogue:
-      "공격을 실행하면 표적의 HP 또는 정신력과 상태가 갱신됩니다. 재장전, 중기관총 설치, 다음 턴 기능으로 탄환과 사격 주기를 시험할 수 있습니다.",
-  },
-  {
-    label: "05 비교",
-    title: "장비 비교와 초기화",
-    dialogue:
-      "아래 비교표는 현재 배치에서 모든 장비의 예상 결과를 보여줍니다. 장비 이름을 누르면 바로 선택됩니다. 초기화는 훈련장 상태만 되돌립니다.",
+    label: "STEP 04",
+    title: "결과·다음 턴",
+    hint: "피해·자원 확인 후 계속 진행",
   },
 ];
 
@@ -219,7 +219,8 @@ export default function EquipmentSimulatorClient({
   const [hmgShotsInCycle, setHmgShotsInCycle] = useState(0);
   const [turn, setTurn] = useState(1);
   const [sequence, setSequence] = useState(1);
-  const [guideStepIndex, setGuideStepIndex] = useState(0);
+  const [trainingEvent, setTrainingEvent] = useState<TrainingEvent>("ready");
+  const [activeStep, setActiveStep] = useState(0);
   const [logs, setLogs] = useState<SimLog[]>([
     {
       id: 0,
@@ -259,7 +260,54 @@ export default function EquipmentSimulatorClient({
   const rangeRows = [attackerPosition.row, targetPosition.row].sort(
     (a, b) => a - b,
   );
-  const guideStep = GUIDE_STEPS[guideStepIndex];
+  const selectedName = selectedItem?.name ?? selectedRule?.name ?? "장비";
+  const resultSummary = selectedResult?.ok
+    ? selectedResult.summary
+    : selectedResult?.reasonLabel ?? "판정 대기";
+  const instructorBrief = (() => {
+    switch (trainingEvent) {
+      case "weapon":
+        return {
+          title: `${selectedName} 선택 완료`,
+          text: `현재 ${SIMULATOR_RANGE_LABELS[range.band]}, 예상 결과는 ${resultSummary}입니다. 토큰 위치를 조정하거나 공격을 실행하십시오.`,
+        };
+      case "position":
+        return {
+          title: `${formatSimulatorCoord(attackerPosition)} → ${formatSimulatorCoord(targetPosition)} 배치 확인`,
+          text: `세로 ${range.verticalDistance}칸은 ${SIMULATOR_RANGE_LABELS[range.band]} 판정입니다. 예상 결과 ${resultSummary}. 준비되면 공격을 실행하십시오.`,
+        };
+      case "attack":
+        return {
+          title: "공격 결과 반영 완료",
+          text: `${resultSummary}. 표적 상태와 남은 자원을 확인한 뒤 다시 공격하거나 다음 턴으로 진행하십시오.`,
+        };
+      case "blocked":
+        return {
+          title: "현재 조건에서는 공격할 수 없습니다",
+          text: `${resultSummary} 오른쪽 룰 카드와 조작 버튼에서 필요한 조건을 확인하십시오.`,
+        };
+      case "reload":
+        return {
+          title: `${controlReloadLabel(selectedRule)} 완료`,
+          text: `${selectedName} 자원이 복구되었습니다. 현재 배치에서 공격을 다시 실행할 수 있습니다.`,
+        };
+      case "install":
+        return {
+          title: "중기관총 설치 완료",
+          text: "3턴 주기마다 2회 사격할 수 있습니다. 현재 거리의 피해 판정을 확인하고 공격을 실행하십시오.",
+        };
+      case "turn":
+        return {
+          title: `${turn}턴 행동 대기`,
+          text: "일반 장비는 같은 턴에도 반복 시험할 수 있습니다. 턴 진행은 중기관총의 3턴 사격 주기를 갱신할 때 사용합니다.",
+        };
+      default:
+        return {
+          title: "장비를 선택하고 공격 조건을 확인하십시오",
+          text: `기본 배치는 ${formatSimulatorCoord(attackerPosition)} → ${formatSimulatorCoord(targetPosition)}, ${SIMULATOR_RANGE_LABELS[range.band]}입니다. 왼쪽에서 장비를 고른 뒤 토큰을 옮기거나 바로 공격할 수 있습니다.`,
+        };
+    }
+  })();
 
   function pushLog(text: string, tone: SimLogTone) {
     setLogs((prev) => [{ id: sequence, text, tone }, ...prev].slice(0, 8));
@@ -269,9 +317,17 @@ export default function EquipmentSimulatorClient({
   function moveToken(token: ActiveToken, coord: SimulatorBoardCoord) {
     if (token === "attacker") {
       setAttackerPosition(coord);
-      return;
+    } else {
+      setTargetPosition(coord);
     }
-    setTargetPosition(coord);
+    setTrainingEvent("position");
+    setActiveStep(2);
+  }
+
+  function handleSelectWeapon(slug: SimulatorWeaponSlug) {
+    setSelectedSlug(slug);
+    setTrainingEvent("weapon");
+    setActiveStep(1);
   }
 
   function handleCellActivate(coord: SimulatorBoardCoord) {
@@ -312,6 +368,8 @@ export default function EquipmentSimulatorClient({
       ...prev,
       [selectedRule.slug]: selectedRule.resource?.max ?? 0,
     }));
+    setTrainingEvent("reload");
+    setActiveStep(2);
     pushLog(`${selectedRule.name} ${controlReloadLabel(selectedRule)} 완료`, "info");
   }
 
@@ -319,6 +377,8 @@ export default function EquipmentSimulatorClient({
     if (selectedRule?.slug !== "basic-heavy-machine-gun") return;
     setHmgInstalled(true);
     setHmgShotsInCycle(0);
+    setTrainingEvent("install");
+    setActiveStep(2);
     pushLog("중기관총 설치 완료. 현재 3턴 주기에서 2회 사격 가능합니다.", "info");
   }
 
@@ -329,6 +389,8 @@ export default function EquipmentSimulatorClient({
     if (resetCycle) {
       setHmgShotsInCycle(0);
     }
+    setTrainingEvent("turn");
+    setActiveStep(2);
     pushLog(
       resetCycle
         ? `${nextTurn}턴 진입. 중기관총 사격 주기가 갱신되었습니다.`
@@ -346,6 +408,8 @@ export default function EquipmentSimulatorClient({
     setHmgShotsInCycle(0);
     setTurn(1);
     setActiveToken("target");
+    setTrainingEvent("ready");
+    setActiveStep(0);
     setLogs([
       {
         id: sequence,
@@ -360,6 +424,8 @@ export default function EquipmentSimulatorClient({
     if (!selectedRule || !selectedResult) return;
 
     if (!selectedResult.ok) {
+      setTrainingEvent("blocked");
+      setActiveStep(2);
       pushLog(selectedResult.reasonLabel ?? selectedResult.summary, resultTone(selectedResult));
       return;
     }
@@ -373,6 +439,8 @@ export default function EquipmentSimulatorClient({
     if (selectedResult.nextShotsInCycle !== undefined) {
       setHmgShotsInCycle(selectedResult.nextShotsInCycle);
     }
+    setTrainingEvent("attack");
+    setActiveStep(3);
 
     setTargetStats((prev) => ({
       ...prev,
@@ -411,14 +479,36 @@ export default function EquipmentSimulatorClient({
       />
 
       <section className={styles.stageHeader}>
-        <div>
+        <div className={styles.stageIntro}>
           <Eyebrow>ARMORY TEST GRID</Eyebrow>
           <h1>5x5 전투판 장비 훈련</h1>
+          <p>
+            장비의 거리·피해·자원 소모를 턴 단위로 시험하는 모의 전투입니다.
+            실제 캐릭터와 인벤토리는 변경되지 않습니다.
+          </p>
+          <div className={styles.stageBadges} aria-label="훈련장 상태">
+            <Tag tone="gold">턴 단위 모의훈련</Tag>
+            <Tag tone="info">실데이터 미반영</Tag>
+          </div>
         </div>
-        <div className={styles.stageBadges} aria-label="훈련장 상태">
-          <Tag tone="info">실데이터 미반영</Tag>
-          <Tag tone="gold">세로 사거리 판정</Tag>
-        </div>
+        <ol className={styles.trainingFlow} aria-label="훈련 진행 순서">
+          {TRAINING_STEPS.map((step, index) => (
+            <li
+              key={step.label}
+              className={[
+                index === activeStep ? styles["trainingFlow__step--active"] : "",
+                index < activeStep ? styles["trainingFlow__step--done"] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              aria-current={index === activeStep ? "step" : undefined}
+            >
+              <span>{step.label}</span>
+              <strong>{step.title}</strong>
+              <em>{step.hint}</em>
+            </li>
+          ))}
+        </ol>
       </section>
 
       <section className={styles.guidePanel} aria-labelledby="range-guide-title">
@@ -428,32 +518,15 @@ export default function EquipmentSimulatorClient({
         <div className={styles.guideContent}>
           <div className={styles.guideHeading}>
             <div>
-              <Eyebrow>VIRTUAL RANGE INSTRUCTOR</Eyebrow>
-              <strong id="range-guide-title">가상 교관 R-05</strong>
+              <Eyebrow>LIVE TRAINING ASSIST</Eyebrow>
+              <strong id="range-guide-title">R-05 · 실시간 훈련 안내</strong>
             </div>
-            <span>
-              {guideStepIndex + 1} / {GUIDE_STEPS.length}
-            </span>
+            <span>선택·거리·판정을 읽고 다음 행동을 안내합니다.</span>
           </div>
           <p className={styles.guideDialogue} aria-live="polite">
-            <strong>{guideStep?.title}</strong>
-            {guideStep?.dialogue}
+            <strong>{instructorBrief.title}</strong>
+            {instructorBrief.text}
           </p>
-          <div className={styles.guideSteps} aria-label="훈련장 기능 안내 단계">
-            {GUIDE_STEPS.map((step, index) => (
-              <button
-                key={step.label}
-                type="button"
-                aria-pressed={index === guideStepIndex}
-                className={
-                  index === guideStepIndex ? styles.guideStepActive : ""
-                }
-                onClick={() => setGuideStepIndex(index)}
-              >
-                {step.label}
-              </button>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -478,7 +551,7 @@ export default function EquipmentSimulatorClient({
                     .filter(Boolean)
                     .join(" ")}
                   aria-pressed={active}
-                  onClick={() => setSelectedSlug(item.slug)}
+                  onClick={() => handleSelectWeapon(item.slug)}
                 >
                   <span className={styles.itemThumb}>
                     {item.previewImage ? (
@@ -514,23 +587,29 @@ export default function EquipmentSimulatorClient({
                 {formatSimulatorCoord(targetPosition)}
               </strong>
             </div>
-            <div className={styles.tokenToggle} aria-label="이동할 토큰 선택">
-              <button
-                type="button"
-                className={activeToken === "attacker" ? styles.activeToggle : ""}
-                aria-pressed={activeToken === "attacker"}
-                onClick={() => setActiveToken("attacker")}
-              >
-                공격자
-              </button>
-              <button
-                type="button"
-                className={activeToken === "target" ? styles.activeToggle : ""}
-                aria-pressed={activeToken === "target"}
-                onClick={() => setActiveToken("target")}
-              >
-                표적
-              </button>
+            <div className={styles.boardToolbarActions}>
+              <div className={styles.turnClock} aria-label={`현재 ${turn}턴`}>
+                <span>TURN</span>
+                <strong>{String(turn).padStart(2, "0")}</strong>
+              </div>
+              <div className={styles.tokenToggle} aria-label="이동할 토큰 선택">
+                <button
+                  type="button"
+                  className={activeToken === "attacker" ? styles.activeToggle : ""}
+                  aria-pressed={activeToken === "attacker"}
+                  onClick={() => setActiveToken("attacker")}
+                >
+                  공격자 이동
+                </button>
+                <button
+                  type="button"
+                  className={activeToken === "target" ? styles.activeToggle : ""}
+                  aria-pressed={activeToken === "target"}
+                  onClick={() => setActiveToken("target")}
+                >
+                  표적 이동
+                </button>
+              </div>
             </div>
           </div>
 
@@ -538,7 +617,81 @@ export default function EquipmentSimulatorClient({
             <span>{SIMULATOR_RANGE_LABELS[range.band]}</span>
             <strong>세로 {range.verticalDistance}칸</strong>
             <em>가로 칸은 사거리 계산에서 제외</em>
+            <small>0칸 근거리 · 1–2칸 중거리 · 3–4칸 장거리</small>
           </div>
+
+          <section className={styles.controlPanel} aria-label="전투 조작 패널">
+            <div className={styles.actionRow}>
+              <button
+                type="button"
+                className={styles.fireButton}
+                onClick={handleAttack}
+                disabled={!selectedRule}
+              >
+                공격 실행
+              </button>
+              <button
+                type="button"
+                className={styles.controlButton}
+                onClick={handleReload}
+                disabled={!selectedRule?.resource}
+              >
+                {controlReloadLabel(selectedRule)}
+              </button>
+              <button
+                type="button"
+                className={styles.controlButton}
+                onClick={handleInstallHmg}
+                disabled={
+                  selectedRule?.slug !== "basic-heavy-machine-gun" ||
+                  hmgInstalled
+                }
+              >
+                중기관총 설치
+              </button>
+              <button
+                type="button"
+                className={styles.nextTurnButton}
+                onClick={handleNextTurn}
+              >
+                턴 종료 → {turn + 1}턴
+              </button>
+              <button
+                type="button"
+                className={styles.resetButton}
+                onClick={handleReset}
+              >
+                초기화
+              </button>
+            </div>
+
+            <div className={styles.controlReadouts}>
+              <div>
+                <span>선택 장비</span>
+                <strong>{selectedName}</strong>
+              </div>
+              <div>
+                <span>공격 예상</span>
+                <strong>{resultSummary}</strong>
+              </div>
+              <div>
+                <span>{selectedRule?.resource?.label ?? "자원"}</span>
+                <strong>
+                  {selectedRule
+                    ? resourceLabel(selectedRule, selectedResource)
+                    : "--"}
+                </strong>
+              </div>
+              <div>
+                <span>턴 사용 규칙</span>
+                <strong>
+                  {selectedRule?.cadence
+                    ? `3턴당 ${selectedRule.cadence.shotsPerCycle}회 · 현재 ${hmgShotsInCycle}/2`
+                    : "같은 턴 연속 시험 가능"}
+                </strong>
+              </div>
+            </div>
+          </section>
 
           <div className={styles.boardFrame}>
             <div className={styles.cornerLabel} aria-hidden />
@@ -617,80 +770,6 @@ export default function EquipmentSimulatorClient({
             </div>
           </div>
 
-          <section className={styles.controlPanel} aria-label="조작 패널">
-            <div className={styles.controlReadouts}>
-              <div>
-                <span>선택 장비</span>
-                <strong>{selectedItem?.name ?? selectedRule?.name ?? "-"}</strong>
-              </div>
-              <div>
-                <span>피해 판정</span>
-                <strong>
-                  {selectedResult?.ok
-                    ? selectedResult.summary
-                    : selectedResult?.reasonLabel ?? "--"}
-                </strong>
-              </div>
-              <div>
-                <span>{selectedRule?.resource?.label ?? "자원"}</span>
-                <strong>
-                  {selectedRule
-                    ? resourceLabel(selectedRule, selectedResource)
-                    : "--"}
-                </strong>
-              </div>
-              <div>
-                <span>턴</span>
-                <strong>
-                  {turn}턴 · 중기관총 {hmgShotsInCycle}/2
-                </strong>
-              </div>
-            </div>
-
-            <div className={styles.actionRow}>
-              <button
-                type="button"
-                className={styles.fireButton}
-                onClick={handleAttack}
-                disabled={!selectedRule}
-              >
-                공격
-              </button>
-              <button
-                type="button"
-                className={styles.controlButton}
-                onClick={handleReload}
-                disabled={!selectedRule?.resource}
-              >
-                {controlReloadLabel(selectedRule)}
-              </button>
-              <button
-                type="button"
-                className={styles.controlButton}
-                onClick={handleInstallHmg}
-                disabled={
-                  selectedRule?.slug !== "basic-heavy-machine-gun" ||
-                  hmgInstalled
-                }
-              >
-                중기관총 설치
-              </button>
-              <button
-                type="button"
-                className={styles.controlButton}
-                onClick={handleNextTurn}
-              >
-                다음 턴
-              </button>
-              <button
-                type="button"
-                className={styles.controlButton}
-                onClick={handleReset}
-              >
-                초기화
-              </button>
-            </div>
-          </section>
         </section>
 
         <aside className={styles.targetPanel} aria-label="표적 상태와 룰 카드">
@@ -831,7 +910,7 @@ export default function EquipmentSimulatorClient({
                       type="button"
                       className={styles.compareSelectButton}
                       aria-pressed={item.slug === selectedSlug}
-                      onClick={() => setSelectedSlug(item.slug)}
+                      onClick={() => handleSelectWeapon(item.slug)}
                     >
                       {item.name}
                     </button>

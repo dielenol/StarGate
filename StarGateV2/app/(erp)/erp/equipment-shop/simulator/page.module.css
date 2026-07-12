@@ -20,21 +20,35 @@
 }
 
 .stageHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.7fr) minmax(620px, 1.3fr);
+  align-items: stretch;
+  gap: 16px;
   padding: 14px;
   background:
     linear-gradient(135deg, rgba(201, 168, 90, 0.13), transparent 50%),
     rgba(8, 9, 9, 0.88);
 }
 
+.stageIntro {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+}
+
 .stageHeader h1 {
-  margin: 3px 0 0;
+  margin: 0;
   color: var(--gold);
   font-size: 26px;
   line-height: 1.15;
+}
+
+.stageIntro p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .stageBadges,
@@ -45,11 +59,81 @@
   gap: 8px;
 }
 
+.trainingFlow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trainingFlow li {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-height: 88px;
+  padding: 10px 11px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.trainingFlow li:not(:last-child)::after {
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  z-index: 1;
+  color: var(--ink-3);
+  content: "→";
+  transform: translateY(-50%);
+}
+
+.trainingFlow span,
+.trainingFlow em {
+  color: var(--ink-3);
+  font-size: 14px;
+  font-style: normal;
+  line-height: 1.25;
+}
+
+.trainingFlow strong {
+  color: var(--ink-1);
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.trainingFlow__step--active {
+  background: color-mix(in srgb, var(--gold) 12%, rgba(0, 0, 0, 0.3)) !important;
+  border-color: var(--gold-dim) !important;
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.trainingFlow__step--active span,
+.trainingFlow__step--active strong {
+  color: var(--gold);
+}
+
+.trainingFlow__step--done {
+  border-color: color-mix(in srgb, #7ecf8c 45%, var(--line)) !important;
+}
+
+.trainingFlow__step--done::before {
+  position: absolute;
+  right: 8px;
+  top: 7px;
+  color: #7ecf8c;
+  content: "✓";
+  font-size: 14px;
+}
+
 .guidePanel {
   display: grid;
-  grid-template-columns: 86px minmax(0, 1fr);
-  gap: 14px;
-  padding: 14px;
+  grid-template-columns: 66px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 12px;
   background:
     linear-gradient(120deg, rgba(37, 116, 168, 0.13), transparent 46%),
     rgba(8, 9, 9, 0.88);
@@ -58,8 +142,8 @@
 .guideNpc {
   display: grid;
   place-items: center;
-  width: 86px;
-  min-height: 86px;
+  width: 66px;
+  min-height: 66px;
   background:
     linear-gradient(135deg, rgba(128, 199, 255, 0.18), transparent 58%),
     rgba(0, 0, 0, 0.32);
@@ -73,7 +157,7 @@
 
 .guideContent {
   display: grid;
-  gap: 10px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -93,13 +177,18 @@
 }
 
 .guideHeading > span {
+  max-width: 360px;
   color: var(--ink-3);
   font-size: 14px;
+  line-height: 1.35;
+  text-align: right;
 }
 
 .guideDialogue {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px 10px;
   margin: 0;
   color: var(--ink-2);
   font-size: 15px;
@@ -109,30 +198,6 @@
 .guideDialogue strong {
   color: var(--gold);
   font-size: 16px;
-}
-
-.guideSteps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.guideSteps button {
-  min-height: 34px;
-  padding: 6px 10px;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  color: var(--ink-3);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.guideSteps button:hover,
-.guideSteps button:focus-visible,
-.guideSteps .guideStepActive {
-  border-color: var(--gold-dim);
-  color: var(--gold);
 }
 
 .simLayout {
@@ -256,6 +321,34 @@
   gap: 12px;
 }
 
+.boardToolbarActions {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.turnClock {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 104px;
+  padding: 5px 9px;
+  background: color-mix(in srgb, var(--gold) 10%, rgba(0, 0, 0, 0.32));
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+}
+
+.turnClock span {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.turnClock strong {
+  margin: 0;
+  color: var(--gold);
+  font-size: 19px;
+}
+
 .boardToolbar strong {
   display: block;
   margin-top: 4px;
@@ -316,6 +409,12 @@
   color: var(--ink-3);
   font-size: 14px;
   font-style: normal;
+}
+
+.rangeStrip small {
+  margin-left: auto;
+  color: var(--ink-2);
+  font-size: 14px;
 }
 
 .boardFrame {
@@ -458,6 +557,10 @@
   display: grid;
   gap: 10px;
   padding: 10px;
+  background:
+    linear-gradient(110deg, rgba(201, 168, 90, 0.1), transparent 55%),
+    rgba(0, 0, 0, 0.26);
+  border-color: color-mix(in srgb, var(--gold-dim) 70%, var(--line));
 }
 
 .controlReadouts {
@@ -504,7 +607,9 @@
 }
 
 .fireButton,
-.controlButton {
+.controlButton,
+.nextTurnButton,
+.resetButton {
   min-height: 38px;
   padding: 8px 13px;
   border-radius: var(--radius-sm);
@@ -513,10 +618,13 @@
 }
 
 .fireButton {
-  min-width: 86px;
-  background: color-mix(in srgb, var(--danger) 30%, rgba(0, 0, 0, 0.55));
-  border: 1px solid color-mix(in srgb, var(--danger) 64%, var(--line));
+  min-width: 126px;
+  min-height: 44px;
+  background: color-mix(in srgb, var(--danger) 42%, rgba(0, 0, 0, 0.5));
+  border: 1px solid color-mix(in srgb, var(--danger) 76%, var(--line));
   color: var(--ink-0);
+  font-size: 16px;
+  font-weight: 800;
 }
 
 .controlButton {
@@ -525,8 +633,23 @@
   color: var(--gold);
 }
 
+.nextTurnButton {
+  margin-left: auto;
+  background: color-mix(in srgb, #80c7ff 13%, rgba(0, 0, 0, 0.44));
+  border: 1px solid color-mix(in srgb, #80c7ff 55%, var(--line));
+  color: #bfe4ff;
+}
+
+.resetButton {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+
 .fireButton:disabled,
-.controlButton:disabled {
+.controlButton:disabled,
+.nextTurnButton:disabled,
+.resetButton:disabled {
   cursor: not-allowed;
   opacity: 0.52;
 }
@@ -668,6 +791,10 @@
 }
 
 @media (max-width: 1220px) {
+  .stageHeader {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .simLayout,
   .bottomGrid {
     grid-template-columns: minmax(0, 1fr);
@@ -693,6 +820,51 @@
   .guideNpc {
     width: 100%;
     min-height: 54px;
+  }
+
+  .trainingFlow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trainingFlow li {
+    min-height: 82px;
+  }
+
+  .guideHeading,
+  .guideDialogue,
+  .boardToolbarActions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .guideHeading > span {
+    text-align: left;
+  }
+
+  .boardToolbarActions,
+  .tokenToggle {
+    width: 100%;
+  }
+
+  .tokenToggle button {
+    flex: 1;
+  }
+
+  .rangeStrip small {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .actionRow button {
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .actionRow .fireButton {
+    flex-basis: 100%;
+  }
+
+  .nextTurnButton {
+    margin-left: 0;
   }
 
   .boardFrame {
