@@ -2912,6 +2912,18 @@
   object-position: center 10%;
 }
 
+.npcPortrait--strategic {
+  background:
+    radial-gradient(circle at 50% 28%, rgba(54, 96, 224, 0.22), transparent 58%),
+    linear-gradient(180deg, rgba(201, 168, 90, 0.08), transparent 44%),
+    rgba(5, 8, 14, 0.94);
+  border-color: color-mix(in srgb, #365fe0 58%, var(--gold-dim));
+}
+
+.npcPortrait--strategic img {
+  object-position: center 8%;
+}
+
 .npcPortrait--temper {
   background:
     radial-gradient(circle at 50% 28%, rgba(176, 73, 55, 0.2), transparent 54%),
@@ -3090,6 +3102,19 @@
   object-position: center 8%;
   transform: scale(1.85);
   transform-origin: 50% 12%;
+}
+
+.npcProfile--strategic img {
+  object-fit: cover;
+  object-position: center 8%;
+}
+
+.npcHud[data-strategic-mood="checkout"] .npcDialogue {
+  border-color: color-mix(in srgb, var(--info) 58%, var(--gold));
+}
+
+.npcHud[data-strategic-mood="blocked"] .npcDialogue {
+  border-color: color-mix(in srgb, var(--danger) 58%, var(--gold-dim));
 }
 
 .npcHead div {

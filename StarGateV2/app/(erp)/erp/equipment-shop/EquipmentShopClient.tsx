@@ -64,6 +64,15 @@ import {
   TEMPER_MOOD_LABELS,
   type TemperMood,
 } from "@/lib/equipment-shop/temper-dialogue";
+import {
+  buildStrategicDispatchLine,
+  buildStrategicItemLine,
+  buildStrategicWelcomeLine,
+  STRATEGIC_DIALOGUE_LINES,
+  STRATEGIC_IDLE_LINES,
+  STRATEGIC_MOOD_LABELS,
+  type StrategicMood,
+} from "@/lib/equipment-shop/strategic-dialogue";
 import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
 import { formatCredits } from "@/lib/format/credit";
 import {
@@ -134,6 +143,8 @@ const TEMPER_PROFILE_SRC = "/assets/npcs/Brigid-Kane-Temper-profile.webp";
 const TEMPER_IDLE_DELAY_MS = 13000;
 const TEMPER_ENTRY_SFX_SRC =
   "/assets/equipment-shop/sfx/temper-forge-double-strike.m4a";
+const RATCHET_PROFILE_SRC = "/assets/npcs/Mateo-Rivas-Ratchet-profile.webp";
+const RATCHET_IDLE_DELAY_MS = 12500;
 
 const SUTURE_MOOD_ASSETS: Record<SutureMood, string> = {
   welcome: "/assets/npcs/Irena-Vukovic-Suture-welcome.webp",
@@ -569,7 +580,7 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
     label: "전략 장비 보급소",
     eyebrow: "STRATEGIC ASSETS",
     description: "차량, 전략 자산, 전투 보조품을 구매합니다.",
-    npc: "전략 자산 담당관",
+    npc: "마테오 리바스",
   },
   {
     value: "custom",
@@ -1437,6 +1448,14 @@ export default function EquipmentShopClient({
       }),
     [mainCharacter?.codename, mainCharacterProfile],
   );
+  const strategicWelcomeLine = useMemo(
+    () =>
+      buildStrategicWelcomeLine({
+        codename: mainCharacter?.codename ?? null,
+        profile: mainCharacterProfile,
+      }),
+    [mainCharacter?.codename, mainCharacterProfile],
+  );
 
   const {
     mood: towaskiMood,
@@ -1523,6 +1542,33 @@ export default function EquipmentShopClient({
     engineVolume: 0.54,
     entrySfxSrc: TEMPER_ENTRY_SFX_SRC,
     entrySfxVolume: 0.34,
+  });
+  const {
+    mood: strategicMood,
+    visibleLine: strategicVisibleLine,
+    typing: strategicTyping,
+    playLine: playStrategicLine,
+    clearIdleTimer: clearStrategicIdleTimer,
+    scheduleIdle: scheduleStrategicIdle,
+    showLineImmediately: showStrategicLineImmediately,
+    resetIdleCycle: resetStrategicIdleCycle,
+    stopEngine: stopStrategicEngine,
+  } = useNpcDialogue<StrategicMood>({
+    isOpen: activeZone === "strategic" && catalog.isOpen,
+    hasMainCharacter,
+    idleDelayMs: RATCHET_IDLE_DELAY_MS,
+    idleLines: STRATEGIC_IDLE_LINES,
+    closedMood: "blocked",
+    closedLine: STRATEGIC_DIALOGUE_LINES.closed,
+    noAgentMood: "blocked",
+    noAgentLine: STRATEGIC_DIALOGUE_LINES.noAgent,
+    welcomeMood: "welcome",
+    welcomeLine: strategicWelcomeLine,
+    beepPreset: "ratchet",
+    beepDefaults: { pitch: 590, speed: 43, volume: 0.5 },
+    engineVolume: 0.5,
+    entrySfxSrc: null,
+    entrySfxVolume: 0,
   });
   const handleTowaskiQualificationDialogue = useCallback(
     (event: TowaskiQualificationDialogueEvent) => {
@@ -1782,6 +1828,47 @@ export default function EquipmentShopClient({
     temperWelcomeLine,
   ]);
 
+  useEffect(() => {
+    if (activeZone !== "strategic") {
+      clearStrategicIdleTimer();
+      stopStrategicEngine();
+      return;
+    }
+
+    if (!catalog.isOpen) {
+      clearStrategicIdleTimer();
+      stopStrategicEngine();
+      playStrategicLine("blocked", STRATEGIC_DIALOGUE_LINES.closed, {
+        returnToIdle: false,
+        sound: false,
+      });
+      return;
+    }
+
+    if (!hasMainCharacter) {
+      playStrategicLine("blocked", STRATEGIC_DIALOGUE_LINES.noAgent, {
+        returnToIdle: false,
+        sound: false,
+      });
+      return;
+    }
+
+    showStrategicLineImmediately("welcome", strategicWelcomeLine);
+    resetStrategicIdleCycle();
+    scheduleStrategicIdle();
+  }, [
+    activeZone,
+    catalog.isOpen,
+    clearStrategicIdleTimer,
+    hasMainCharacter,
+    playStrategicLine,
+    resetStrategicIdleCycle,
+    scheduleStrategicIdle,
+    showStrategicLineImmediately,
+    stopStrategicEngine,
+    strategicWelcomeLine,
+  ]);
+
   const scopedResearchTree = useMemo(
     () =>
       researchTree.filter((node) =>
@@ -2005,6 +2092,18 @@ export default function EquipmentShopClient({
     playTemperLine(mood, text, { sound: true });
   }
 
+  function playStrategicIfActive(mood: StrategicMood, text: string) {
+    if (activeZone !== "strategic") return;
+    if (!hasMainCharacter) {
+      playStrategicLine("blocked", STRATEGIC_DIALOGUE_LINES.noAgent, {
+        returnToIdle: false,
+        sound: true,
+      });
+      return;
+    }
+    playStrategicLine(mood, text, { sound: true });
+  }
+
   function handleSalesTabChange(tab: EquipmentShopTabValue) {
     setActiveTab(tab);
     if (activeZone === "towaski") {
@@ -2029,6 +2128,9 @@ export default function EquipmentShopClient({
         temperDialogueRevisionRef.current++,
       );
       playTemperIfActive(nextLine.mood, nextLine.text);
+    } else if (activeZone === "strategic") {
+      const nextLine = buildStrategicItemLine(item);
+      playStrategicIfActive(nextLine.mood, nextLine.text);
     }
   }
 
@@ -2052,6 +2154,12 @@ export default function EquipmentShopClient({
         effectiveHasMainCharacter
           ? TEMPER_DIALOGUE_LINES.gmOnly
           : TEMPER_DIALOGUE_LINES.noAgent,
+      );
+      playStrategicIfActive(
+        "blocked",
+        effectiveHasMainCharacter
+          ? STRATEGIC_DIALOGUE_LINES.gmOnly
+          : STRATEGIC_DIALOGUE_LINES.noAgent,
       );
       return;
     }
@@ -2083,6 +2191,7 @@ export default function EquipmentShopClient({
       setErrorMessage("현재 반출할 수 없는 품목입니다.");
       playTowaskiIfActive("stock", TOWASKI_DIALOGUE_LINES.unavailable);
       playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.unavailable);
+      playStrategicIfActive("blocked", STRATEGIC_DIALOGUE_LINES.unavailable);
       return;
     }
 
@@ -2101,6 +2210,7 @@ export default function EquipmentShopClient({
         `${item.licenseRequirement.label} 자격이 없다. 라이센스를 발급받거나 네 적성 기록부터 확인해.`,
       );
       playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.qualification);
+      playStrategicIfActive("blocked", STRATEGIC_DIALOGUE_LINES.gmOnly);
       return;
     }
 
@@ -2108,6 +2218,7 @@ export default function EquipmentShopClient({
       setErrorMessage("잔액이 부족합니다.");
       playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.checkoutError);
       playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.insufficient);
+      playStrategicIfActive("blocked", STRATEGIC_DIALOGUE_LINES.insufficient);
       return;
     }
 
@@ -2124,6 +2235,7 @@ export default function EquipmentShopClient({
       "cart",
       buildTemperCartLine(item, temperDialogueRevisionRef.current++),
     );
+    playStrategicIfActive("dispatch", buildStrategicDispatchLine(item));
     purchaseMutation.mutate(
       { key: item.key },
       {
@@ -2141,11 +2253,19 @@ export default function EquipmentShopClient({
               : TOWASKI_DIALOGUE_LINES.checkout,
           );
           playTemperIfActive("checkout", TEMPER_DIALOGUE_LINES.checkout);
+          playStrategicIfActive(
+            "checkout",
+            STRATEGIC_DIALOGUE_LINES.checkout,
+          );
         },
         onError: (err) => {
           setErrorMessage(describeEquipmentShopError(err));
           playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.checkoutError);
           playTemperIfActive("blocked", TEMPER_DIALOGUE_LINES.checkoutError);
+          playStrategicIfActive(
+            "blocked",
+            STRATEGIC_DIALOGUE_LINES.checkoutError,
+          );
         },
         onSettled: () => {
           purchaseLockRef.current = false;
@@ -4155,6 +4275,9 @@ export default function EquipmentShopClient({
             data-temper-mood={
               activeZone === "acheron" ? temperMood : undefined
             }
+            data-strategic-mood={
+              activeZone === "strategic" ? strategicMood : undefined
+            }
           >
             <div
               className={[
@@ -4162,9 +4285,13 @@ export default function EquipmentShopClient({
                 activeZone === "towaski" ? styles["npcPortrait--towaski"] : "",
                 activeZone === "lab" ? styles["npcPortrait--suture"] : "",
                 activeZone === "acheron" ? styles["npcPortrait--temper"] : "",
+                activeZone === "strategic"
+                  ? styles["npcPortrait--strategic"]
+                  : "",
                 activeZone !== "towaski" &&
                 activeZone !== "lab" &&
-                activeZone !== "acheron"
+                activeZone !== "acheron" &&
+                activeZone !== "strategic"
                   ? styles["npcPortrait--mark"]
                   : "",
               ]
@@ -4202,6 +4329,14 @@ export default function EquipmentShopClient({
                     <span />
                   </span>
                 </Fragment>
+              ) : activeZone === "strategic" ? (
+                <Image
+                  src={RATCHET_PROFILE_SRC}
+                  alt=""
+                  fill
+                  sizes="148px"
+                  priority
+                />
               ) : (
                 <span className={styles.npcPortraitMark} aria-hidden />
               )}
@@ -4213,6 +4348,8 @@ export default function EquipmentShopClient({
                     styles.npcProfile,
                     activeZone === "acheron"
                       ? styles["npcProfile--temper"]
+                      : activeZone === "strategic"
+                        ? styles["npcProfile--strategic"]
                       : "",
                   ]
                     .filter(Boolean)
@@ -4224,6 +4361,8 @@ export default function EquipmentShopClient({
                     <Image src={SUTURE_PROFILE_SRC} alt="" fill sizes="38px" />
                   ) : activeZone === "acheron" ? (
                     <Image src={TEMPER_PROFILE_SRC} alt="" fill sizes="38px" />
+                  ) : activeZone === "strategic" ? (
+                    <Image src={RATCHET_PROFILE_SRC} alt="" fill sizes="38px" />
                   ) : (
                     <span className={styles.npcProfileMark} aria-hidden />
                   )}
@@ -4239,6 +4378,8 @@ export default function EquipmentShopClient({
                       ? SUTURE_MOOD_LABELS[sutureMood]
                       : activeZone === "acheron"
                         ? TEMPER_MOOD_LABELS[temperMood]
+                        : activeZone === "strategic"
+                          ? STRATEGIC_MOOD_LABELS[strategicMood]
                         : "응대 중"}
                 </span>
               </div>
@@ -4273,11 +4414,20 @@ export default function EquipmentShopClient({
                               <span className={styles.npcCaret} aria-hidden>
                                 |
                               </span>
-                            ) : null}
-                          </>
-                        )
+                          ) : null}
+                        </>
+                      )
                       : activeZone === "strategic"
-                        ? "차량과 전략 자산은 태그가 붙은 품목만 반출대에 올라온다."
+                        ? (
+                            <>
+                              {strategicVisibleLine}
+                              {strategicTyping ? (
+                                <span className={styles.npcCaret} aria-hidden>
+                                  |
+                                </span>
+                              ) : null}
+                            </>
+                          )
                         : "전용무기는 상담부터다. 제작 요청 저장은 다음 단계에서 연결한다."}
               </p>
             </div>
