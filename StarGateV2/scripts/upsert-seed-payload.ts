@@ -12,6 +12,7 @@
  * Envelopes may either contain:
  *   - payload: full/partial $set upsert payload keyed by the collection filter
  *   - update: explicit MongoDB update document plus filter for additive updates
+ *   - allowQuestionMarkPlaceholder: 사용자 승인 literal "???"를 허용하는 opt-in
  *
  * Economy mutations are intentionally not supported here. Use reviewed,
  * domain-specific scripts/API paths for credit ledgers, inventory grants, shop
@@ -111,6 +112,7 @@ interface SeedPayloadEnvelope {
   filter?: Record<string, unknown>;
   update?: Record<string, unknown> | Record<string, unknown>[];
   upsert?: boolean;
+  allowQuestionMarkPlaceholder?: boolean;
 }
 
 interface UpsertPlan {
@@ -121,6 +123,7 @@ interface UpsertPlan {
   payload?: Record<string, unknown>;
   update?: Record<string, unknown> | Record<string, unknown>[];
   upsert?: boolean;
+  allowQuestionMarkPlaceholder?: boolean;
 }
 
 interface UpsertResultSummary {
@@ -213,6 +216,8 @@ function parseEnvelope(file: string): SeedPayloadEnvelope[] {
         ? (entry.update as Record<string, unknown> | Record<string, unknown>[])
         : undefined,
       upsert: typeof entry.upsert === "boolean" ? entry.upsert : undefined,
+      allowQuestionMarkPlaceholder:
+        entry.allowQuestionMarkPlaceholder === true,
     };
   });
 }
@@ -315,6 +320,8 @@ function buildPlans(files: string[]): UpsertPlan[] {
             | Record<string, unknown>
             | Record<string, unknown>[],
           upsert: envelope.upsert === true,
+          allowQuestionMarkPlaceholder:
+            envelope.allowQuestionMarkPlaceholder === true,
         });
         continue;
       }
@@ -327,6 +334,8 @@ function buildPlans(files: string[]): UpsertPlan[] {
         mode: "payload",
         filter,
         payload,
+        allowQuestionMarkPlaceholder:
+          envelope.allowQuestionMarkPlaceholder === true,
       });
     }
   }
@@ -342,6 +351,15 @@ function hasBadText(value: unknown): boolean {
   if (Array.isArray(value)) return value.some((item) => hasBadText(item));
   if (!isRecord(value)) return false;
   return Object.values(value).some((item) => hasBadText(item));
+}
+
+function hasReplacementCharacter(value: unknown): boolean {
+  if (typeof value === "string") return value.includes("\uFFFD");
+  if (Array.isArray(value)) {
+    return value.some((item) => hasReplacementCharacter(item));
+  }
+  if (!isRecord(value)) return false;
+  return Object.values(value).some((item) => hasReplacementCharacter(item));
 }
 
 function summarizeSavedDoc(
@@ -522,9 +540,20 @@ async function writeWithDb(
       verification,
     });
 
-    if (verification.textIntegrity === "warning") {
+    if (
+      verification.textIntegrity === "warning" &&
+      !(
+        plan.allowQuestionMarkPlaceholder &&
+        !hasReplacementCharacter(saved)
+      )
+    ) {
       throw new Error(
         `[seed-payload] text integrity warning: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+      );
+    }
+    if (verification.textIntegrity === "warning") {
+      console.warn(
+        `[seed-payload] 사용자 승인 literal "???" 허용: ${plan.collection} ${JSON.stringify(plan.filter)}`,
       );
     }
   }
