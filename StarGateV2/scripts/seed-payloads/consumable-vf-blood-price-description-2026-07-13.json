@@ -1,0 +1,17 @@
+[
+  {
+    "collection": "master_items",
+    "type": "consumable-vf-blood-price-description-2026-07-13",
+    "allowQuestionMarkPlaceholder": true,
+    "filter": {
+      "slug": "vf_blood"
+    },
+    "update": {
+      "$set": {
+        "price": 2700,
+        "description": "???",
+        "updatedAt": "2026-07-13T00:00:00.000Z"
+      }
+    }
+  }
+]

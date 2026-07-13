@@ -247,8 +247,8 @@ SHOP_ITEMS = [
     {"id":"force_core", "name":"포스코어",            "icon":"💎","price":350, "effect":"???",
      "desc":"정체불명의 에너지 결정체. 강력한 힘이 느껴진다...",
      "stock_min":0,"stock_max":1,"appear":0.15,"color":(100,60,200)},
-    {"id":"vf_blood",  "name":"VF혈액팩",            "icon":"🩸","price":500, "effect":"HP 전회복",
-     "desc":"앙카가 맨날 사가서 항상 매진이에요...",
+    {"id":"vf_blood",  "name":"VF혈액팩",            "icon":"🩸","price":2700, "effect":"HP 전회복",
+     "desc":"???",
      "stock_min":0,"stock_max":0,"appear":0.0,"color":(180,20,20)},
 ]
 
