@@ -1,7 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { type FormEvent, useMemo, useState } from "react";
+import {
+  type FocusEvent,
+  type FormEvent,
+  useId,
+  useMemo,
+  useState,
+} from "react";
 
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -24,8 +30,14 @@ import styles from "./page.module.css";
 
 interface Props {
   initialRequests: EquipmentWorkshopRequestsResponse;
-  items: Array<{ id: string; name: string; category: string }>;
+  items: MaterialOption[];
   blobUploadEnabled: boolean;
+}
+
+interface MaterialOption {
+  id: string;
+  name: string;
+  category: string;
 }
 
 interface QuoteDraft {
@@ -84,6 +96,97 @@ function errorMessage(error: unknown): string {
   return error instanceof EquipmentShopApiError || error instanceof Error
     ? error.message
     : "공방 요청 처리에 실패했습니다.";
+}
+
+function SearchableMaterialSelect({
+  excludedItemId,
+  items,
+  onChange,
+  value,
+}: {
+  excludedItemId?: string;
+  items: MaterialOption[];
+  onChange: (itemId: string) => void;
+  value: string;
+}) {
+  const listboxId = useId();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const selected = items.find((item) => item.id === value);
+  const filteredItems = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return items
+      .filter((item) => item.id !== excludedItemId)
+      .filter(
+        (item) =>
+          !normalized ||
+          item.name.toLowerCase().includes(normalized) ||
+          item.category.toLowerCase().includes(normalized),
+      );
+  }, [excludedItemId, items, query]);
+
+  const close = () => {
+    setOpen(false);
+    setQuery("");
+  };
+
+  const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
+    const nextFocus = event.relatedTarget;
+    if (nextFocus instanceof Node && event.currentTarget.contains(nextFocus)) return;
+    close();
+  };
+
+  return (
+    <div className={styles.materialPicker} onBlur={handleBlur}>
+      <input
+        type="text"
+        role="combobox"
+        aria-controls={listboxId}
+        aria-expanded={open}
+        aria-label="재료 검색 및 선택"
+        aria-autocomplete="list"
+        autoComplete="off"
+        placeholder="재료 이름 또는 분류 검색"
+        value={open ? query : selected ? `${selected.name} · ${selected.category}` : ""}
+        onFocus={() => {
+          setOpen(true);
+          setQuery("");
+        }}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setOpen(true);
+          if (value) onChange("");
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") close();
+        }}
+      />
+      {open ? (
+        <div id={listboxId} className={styles.materialPicker__menu} role="listbox" aria-label="재료 검색 결과">
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="option"
+                aria-selected={item.id === value}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  onChange(item.id);
+                  close();
+                }}
+              >
+                <strong>{item.name}</strong>
+                <span>{item.category}</span>
+              </button>
+            ))
+          ) : (
+            <p>검색 결과가 없습니다.</p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export default function EquipmentWorkshopAdminClient({
@@ -145,6 +248,10 @@ export default function EquipmentWorkshopAdminClient({
 
   const submitQuote = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (draft.materials.some((material) => !material.itemId)) {
+      setFeedback({ tone: "error", text: "추가한 모든 재료를 검색해 선택해 주세요." });
+      return;
+    }
     quoteMutation.mutate(
       {
         requestId: selected._id,
@@ -265,11 +372,13 @@ export default function EquipmentWorkshopAdminClient({
                 <div className={styles.sectionTitle}><Eyebrow>MATERIALS</Eyebrow><button type="button" onClick={() => setDraft((current) => ({ ...current, materials: [...current.materials, { itemId: "", quantity: "1" }] }))}>재료 추가</button></div>
                 <div className={styles.materialRows}>
                   {draft.materials.map((material, index) => (
-                    <div key={`${index}:${material.itemId}`}>
-                      <select required value={material.itemId} onChange={(event) => updateMaterial(index, { itemId: event.target.value })}>
-                        <option value="">재료 선택</option>
-                        {items.filter((item) => item.id !== selected.sourceItemId).map((item) => <option key={item.id} value={item.id}>{item.name} · {item.category}</option>)}
-                      </select>
+                    <div className={styles.materialRow} key={`${index}:${material.itemId}`}>
+                      <SearchableMaterialSelect
+                        excludedItemId={selected.sourceItemId}
+                        items={items}
+                        value={material.itemId}
+                        onChange={(itemId) => updateMaterial(index, { itemId })}
+                      />
                       <input type="number" min="1" max="999" step="1" required value={material.quantity} onChange={(event) => updateMaterial(index, { quantity: event.target.value })} />
                       <button type="button" aria-label="재료 제거" onClick={() => setDraft((current) => ({ ...current, materials: current.materials.filter((_, rowIndex) => rowIndex !== index) }))}>제거</button>
                     </div>

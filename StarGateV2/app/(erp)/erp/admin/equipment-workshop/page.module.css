@@ -151,10 +151,69 @@
   margin-top: 10px;
 }
 
-.materialRows > div {
+.materialRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 100px auto;
   gap: 8px;
+}
+
+.materialPicker {
+  position: relative;
+  min-width: 0;
+}
+
+.materialPicker > input {
+  width: 100%;
+}
+
+.materialPicker__menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  display: grid;
+  max-height: 280px;
+  padding: 6px;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--bg-1) 94%, black);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.42);
+}
+
+.materialPicker__menu button {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 42px;
+  text-align: left;
+  border-color: transparent;
+}
+
+.materialPicker__menu button:hover,
+.materialPicker__menu button:focus-visible,
+.materialPicker__menu button[aria-selected="true"] {
+  background: color-mix(in srgb, var(--gold) 10%, var(--bg-1));
+  border-color: var(--gold-dim);
+}
+
+.materialPicker__menu button strong {
+  overflow: hidden;
+  color: var(--ink-0);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.materialPicker__menu button span,
+.materialPicker__menu p {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.materialPicker__menu p {
+  margin: 0;
+  padding: 12px;
 }
 
 .resultForm {
@@ -203,11 +262,11 @@
     max-height: 280px;
   }
 
-  .materialRows > div {
+  .materialRow {
     grid-template-columns: 1fr 90px;
   }
 
-  .materialRows button {
+  .materialRow > button {
     grid-column: 1 / -1;
   }
 }

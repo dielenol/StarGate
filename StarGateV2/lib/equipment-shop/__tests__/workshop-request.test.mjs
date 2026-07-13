@@ -228,3 +228,14 @@ test("only one in-progress request can escrow an inventory entry", () => {
   const indexes = readFileSync(new URL("../../../../packages/shared-db/src/indexes.ts", import.meta.url), "utf8");
   assert.match(indexes, /equipment_workshop_requests_inventoryEntry_in_progress_unique[\s\S]*unique: true[\s\S]*status: "IN_PROGRESS"/);
 });
+
+test("GM material picker supports name and category search", () => {
+  const adminClient = readFileSync(
+    new URL("../../../app/(erp)/erp/admin/equipment-workshop/EquipmentWorkshopAdminClient.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(adminClient, /role="combobox"/);
+  assert.match(adminClient, /item\.name\.toLowerCase\(\)\.includes\(normalized\)/);
+  assert.match(adminClient, /item\.category\.toLowerCase\(\)\.includes\(normalized\)/);
+  assert.match(adminClient, /추가한 모든 재료를 검색해 선택해 주세요/);
+});
