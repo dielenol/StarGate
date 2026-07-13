@@ -32,6 +32,8 @@ import {
   type TowaskiLicenseTestResponse,
 } from "@/lib/equipment-shop/license-test";
 import type {
+  AdminSerializedEquipmentWorkshopRequest,
+  EquipmentWorkshopQuoteInput,
   EquipmentWorkshopRequestStatus,
   EquipmentWorkshopRequestInput,
   EquipmentWorkshopRequestResponse,
@@ -342,6 +344,98 @@ export function useUpdateEquipmentWorkshopRequest() {
       });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
+  });
+}
+
+async function invalidateWorkshopEconomy(queryClient: ReturnType<typeof useQueryClient>) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: equipmentShopKeys.workshopRequestsRoot }),
+    queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: creditKeys.all }),
+    queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+  ]);
+}
+
+function useEquipmentWorkshopAction(action: "accept" | "decline" | "claim") {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { request: SerializedEquipmentWorkshopRequest },
+    EquipmentShopApiError,
+    { requestId: string; expectedQuoteVersion?: number }
+  >({
+    mutationFn: async (input) => {
+      const { requestId, expectedQuoteVersion } = input;
+      const res = await fetch(
+        `/api/erp/equipment-shop/workshop-request/${requestId}/${action}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": createIdempotencyKey(`equipment-workshop-${action}`, input),
+          },
+          body: JSON.stringify({ expectedQuoteVersion }),
+        },
+      );
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => invalidateWorkshopEconomy(queryClient),
+  });
+}
+
+export function useAcceptEquipmentWorkshopQuote() {
+  return useEquipmentWorkshopAction("accept");
+}
+
+export function useDeclineEquipmentWorkshopQuote() {
+  return useEquipmentWorkshopAction("decline");
+}
+
+export function useClaimEquipmentWorkshopResult() {
+  return useEquipmentWorkshopAction("claim");
+}
+
+export function useQuoteEquipmentWorkshopRequest() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { request: AdminSerializedEquipmentWorkshopRequest },
+    EquipmentShopApiError,
+    { requestId: string; quote: EquipmentWorkshopQuoteInput }
+  >({
+    mutationFn: async ({ requestId, quote }) => {
+      const res = await fetch(`/api/erp/admin/equipment-workshop/${requestId}/quote`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(quote),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => invalidateWorkshopEconomy(queryClient),
+  });
+}
+
+export function useCancelEquipmentWorkshopRequest() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { request: AdminSerializedEquipmentWorkshopRequest },
+    EquipmentShopApiError,
+    { requestId: string; note: string }
+  >({
+    mutationFn: async (input) => {
+      const { requestId, note } = input;
+      const res = await fetch(`/api/erp/admin/equipment-workshop/${requestId}/cancel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey("equipment-workshop-cancel", input),
+        },
+        body: JSON.stringify({ note }),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => invalidateWorkshopEconomy(queryClient),
   });
 }
 

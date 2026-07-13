@@ -15,7 +15,10 @@ export async function executeEconomicOperation<T>(args: {
 }): Promise<NextResponse> {
   try {
     const result = await executeEconomicOperationResult(args);
-    return NextResponse.json(result.body, { status: result.status });
+    return NextResponse.json(result.body, {
+      status: result.status,
+      headers: result.replayed ? { "X-Idempotency-Replayed": "true" } : undefined,
+    });
   } catch (error) {
     if (error instanceof EconomicOperationConflictError) {
       return NextResponse.json(

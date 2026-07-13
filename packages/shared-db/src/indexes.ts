@@ -150,6 +150,15 @@ export async function ensureAllIndexes(): Promise<void> {
         key: { status: 1, createdAt: -1 },
         name: "equipment_workshop_requests_status_createdAt",
       },
+      {
+        key: { inventoryEntryId: 1 },
+        name: "equipment_workshop_requests_inventoryEntry_in_progress_unique",
+        unique: true,
+        partialFilterExpression: {
+          status: "IN_PROGRESS",
+          inventoryEntryId: { $type: "string" },
+        },
+      },
     ]),
 
     /* ── master_items (from task spec) ── */

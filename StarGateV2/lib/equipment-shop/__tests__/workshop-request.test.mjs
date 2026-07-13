@@ -4,10 +4,13 @@ import test from "node:test";
 
 import {
   canTransitionEquipmentWorkshopRequestStatus,
+  getEquipmentWorkshopComputedStatus,
   getEquipmentWorkshopRequestLabel,
   isSameEquipmentWorkshopRequestPayload,
+  parseEquipmentWorkshopQuote,
   parseEquipmentWorkshopRequest,
   requiresEquipmentWorkshopOperatorNote,
+  resolveEquipmentWorkshopSpecialist,
   WORKSHOP_REQUEST_DETAIL_MAX_LENGTH,
 } from "../workshop-request.ts";
 
@@ -83,6 +86,10 @@ test("workshop request status transitions keep terminal states closed", () => {
     canTransitionEquipmentWorkshopRequestStatus("APPROVED", "COMPLETED"),
     true,
   );
+  assert.equal(canTransitionEquipmentWorkshopRequestStatus("APPROVED", "QUOTED"), true);
+  assert.equal(canTransitionEquipmentWorkshopRequestStatus("QUOTED", "IN_PROGRESS"), true);
+  assert.equal(canTransitionEquipmentWorkshopRequestStatus("QUOTED", "DECLINED"), true);
+  assert.equal(canTransitionEquipmentWorkshopRequestStatus("IN_PROGRESS", "CANCELLED"), true);
   assert.equal(
     canTransitionEquipmentWorkshopRequestStatus("COMPLETED", "IN_REVIEW"),
     false,
@@ -94,6 +101,39 @@ test("workshop request status transitions keep terminal states closed", () => {
   assert.equal(requiresEquipmentWorkshopOperatorNote("COMPLETED"), true);
   assert.equal(requiresEquipmentWorkshopOperatorNote("REJECTED"), true);
   assert.equal(requiresEquipmentWorkshopOperatorNote("IN_REVIEW"), false);
+});
+
+test("quote validation enforces cost precision, material quantities, duration and image URL", () => {
+  const valid = {
+    expectedVersion: 0,
+    creditCost: 125.5,
+    durationMinutes: 60,
+    materials: [{ itemId: "64b64c1f4b13a06f4d0f0001", quantity: 2 }],
+    result: {
+      name: "개조형 장검",
+      description: "균형추와 날 정렬을 조정한 캐릭터 전용 장검입니다.",
+      tags: ["냉병기"],
+      previewImage: "/assets/items/upgraded-sword.webp",
+    },
+  };
+  assert.equal(parseEquipmentWorkshopQuote(valid).ok, true);
+  assert.equal(parseEquipmentWorkshopQuote({ ...valid, creditCost: 0.29 }).ok, true);
+  assert.equal(parseEquipmentWorkshopQuote({ ...valid, creditCost: 1.001 }).ok, false);
+  assert.equal(parseEquipmentWorkshopQuote({ ...valid, durationMinutes: 43_201 }).ok, false);
+  assert.equal(parseEquipmentWorkshopQuote({ ...valid, materials: [{ ...valid.materials[0], quantity: 1000 }] }).ok, false);
+  assert.equal(parseEquipmentWorkshopQuote({ ...valid, result: { ...valid.result, previewImage: "http://unsafe.test/item.png" } }).ok, false);
+});
+
+test("specialist routing is deterministic and READY is derived from server time", () => {
+  assert.equal(resolveEquipmentWorkshopSpecialist({ tags: ["냉병기"] }), "TEMPER");
+  assert.equal(resolveEquipmentWorkshopSpecialist({ tags: ["화기", "소총"] }), "TOWASKI");
+  assert.equal(resolveEquipmentWorkshopSpecialist({ tags: ["신체증강"] }), "SUTURE");
+  assert.equal(resolveEquipmentWorkshopSpecialist({ tags: ["전략장비", "드론"] }), "RATCHET");
+  assert.equal(resolveEquipmentWorkshopSpecialist({ tags: ["미분류"] }), "VERNIER");
+  const now = new Date("2026-07-13T10:00:00.000Z");
+  assert.equal(getEquipmentWorkshopComputedStatus("IN_PROGRESS", "2026-07-13T09:59:59.000Z", now), "READY");
+  assert.equal(getEquipmentWorkshopComputedStatus("IN_PROGRESS", "2026-07-13T10:00:01.000Z", now), "IN_PROGRESS");
+  assert.equal(getEquipmentWorkshopComputedStatus("COMPLETED", "2026-07-13T09:00:00.000Z", now), "COMPLETED");
 });
 
 test("workshop idempotency accepts only the same normalized payload", () => {
@@ -129,6 +169,7 @@ test("workshop route derives ownership and equipped gear on the server", () => {
   assert.match(route, /getEquipmentResearchCapabilities/);
   assert.match(route, /export async function GET/);
   assert.match(route, /export async function PATCH/);
+  assert.match(route, /장착 장비 강화는 견적·수락·수령 또는 제작 취소 전용 API/);
 });
 
 test("workshop requests use idempotency and invalidate their request ledger", () => {
@@ -142,4 +183,48 @@ test("workshop requests use idempotency and invalidate their request ledger", ()
 
   assert.match(mutation, /equipment-workshop-request/);
   assert.match(mutation, /equipmentShopKeys\.workshopRequests/);
+  assert.match(mutation, /inventoryKeys\.all/);
+  assert.match(mutation, /creditKeys\.all/);
+  assert.match(mutation, /notificationKeys\.all/);
+});
+
+test("player/admin DTOs are separated and economy routes require ownership and idempotency", () => {
+  const db = readFileSync(new URL("../../db/equipment-workshop-requests.ts", import.meta.url), "utf8");
+  const playerRoute = readFileSync(new URL("../../../app/api/erp/equipment-shop/workshop-request/[requestId]/[action]/route.ts", import.meta.url), "utf8");
+  const adminRoute = readFileSync(new URL("../../../app/api/erp/admin/equipment-workshop/[requestId]/[action]/route.ts", import.meta.url), "utf8");
+  assert.match(db, /internalNote: _internalNote/);
+  assert.match(db, /serializeAdminEquipmentWorkshopRequest[\s\S]*request\.internalNote/);
+  assert.match(playerRoute, /current\.userId !== session\.user\.id/);
+  assert.match(playerRoute, /readIdempotencyKey\(request\)/);
+  assert.match(adminRoute, /hasRole\(session\.user\.role, "GM"\)/);
+  assert.match(adminRoute, /expectedVersion/);
+});
+
+test("image upload verifies GM role, declared MIME, file size and magic bytes", () => {
+  const uploadRoute = readFileSync(new URL("../../../app/api/erp/admin/equipment-workshop/assets/route.ts", import.meta.url), "utf8");
+  assert.match(uploadRoute, /hasRole\(session\.user\.role, "GM"\)/);
+  assert.match(uploadRoute, /MAX_IMAGE_BYTES = 5 \* 1024 \* 1024/);
+  assert.match(uploadRoute, /detectImageType\(bytes\)/);
+  assert.match(uploadRoute, /detectedType !== file\.type/);
+  assert.match(uploadRoute, /BLOB_NOT_CONFIGURED/);
+});
+
+test("accept, claim and cancel keep every economy mutation inside the supplied transaction", () => {
+  const operations = readFileSync(new URL("../workshop-operations.ts", import.meta.url), "utf8");
+  const playerRoute = readFileSync(new URL("../../../app/api/erp/equipment-shop/workshop-request/[requestId]/[action]/route.ts", import.meta.url), "utf8");
+  const adminRoute = readFileSync(new URL("../../../app/api/erp/admin/equipment-workshop/[requestId]/[action]/route.ts", import.meta.url), "utf8");
+  assert.match(playerRoute, /executeEconomicOperation\([\s\S]*acceptWorkshopQuoteInTransaction/);
+  assert.match(playerRoute, /executeEconomicOperation\([\s\S]*claimWorkshopResultInTransaction/);
+  assert.match(adminRoute, /executeEconomicOperation\([\s\S]*cancelWorkshopInTransaction/);
+  assert.match(operations, /escrowEquippedSource\(request, input\.session\)[\s\S]*consumeMaterials\(request, input\.session\)[\s\S]*addCredit\([\s\S]*session: input\.session/);
+  assert.match(operations, /isAvailable: false/);
+  assert.match(operations, /isPublic: false/);
+  assert.match(operations, /price: 0/);
+  assert.match(operations, /balanceStatus: "balance-candidate"/);
+  assert.match(operations, /equipCharacterInventoryItem\(request\.characterId, request\.quote\.result\.itemId, request\.sourceSlot/);
+});
+
+test("only one in-progress request can escrow an inventory entry", () => {
+  const indexes = readFileSync(new URL("../../../../packages/shared-db/src/indexes.ts", import.meta.url), "utf8");
+  assert.match(indexes, /equipment_workshop_requests_inventoryEntry_in_progress_unique[\s\S]*unique: true[\s\S]*status: "IN_PROGRESS"/);
 });

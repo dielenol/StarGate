@@ -9,6 +9,7 @@ import {
   insertEquipmentWorkshopRequest,
   listActiveEquipmentWorkshopRequests,
   listEquipmentWorkshopRequests,
+  serializeAdminEquipmentWorkshopRequest,
   serializeEquipmentWorkshopRequest,
   updateEquipmentWorkshopRequestStatus,
   type EquipmentWorkshopRequestDoc,
@@ -24,6 +25,7 @@ import {
   isSameEquipmentWorkshopRequestPayload,
   parseEquipmentWorkshopRequest,
   requiresEquipmentWorkshopOperatorNote,
+  type EquipmentWorkshopRequestStatus,
   type EquipmentWorkshopRequestResponse,
 } from "@/lib/equipment-shop/workshop-request";
 import { notifyUser, notifyUsers } from "@/lib/notifications/events";
@@ -34,6 +36,21 @@ interface UpdateWorkshopRequestBody {
   status?: unknown;
   operatorNote?: unknown;
 }
+
+const CUSTOM_WORKSHOP_MANUAL_TRANSITIONS: Record<
+  EquipmentWorkshopRequestStatus,
+  readonly EquipmentWorkshopRequestStatus[]
+> = {
+  REQUESTED: ["IN_REVIEW", "APPROVED", "REJECTED"],
+  IN_REVIEW: ["APPROVED", "REJECTED"],
+  APPROVED: ["COMPLETED", "REJECTED"],
+  QUOTED: [],
+  IN_PROGRESS: [],
+  DECLINED: [],
+  REJECTED: [],
+  CANCELLED: [],
+  COMPLETED: [],
+};
 
 function isDuplicateKeyError(error: unknown): boolean {
   return (
@@ -63,7 +80,13 @@ export async function GET() {
       ])
     : await listEquipmentWorkshopRequests({ userId: session.user.id });
   return NextResponse.json(
-    { requests: requests.map(serializeEquipmentWorkshopRequest) },
+    {
+      requests: requests.map((entry) =>
+        isGM
+          ? serializeAdminEquipmentWorkshopRequest(entry)
+          : serializeEquipmentWorkshopRequest(entry),
+      ),
+    },
     { headers: { "Cache-Control": "private, no-store" } },
   );
 }
@@ -115,6 +138,11 @@ export async function POST(request: Request) {
   }
 
   let equipmentName: string | undefined;
+  let sourceItemId: string | undefined;
+  let sourceCategory: EquipmentWorkshopRequestDoc["sourceCategory"];
+  let sourceSlot: EquipmentWorkshopRequestDoc["sourceSlot"];
+  let sourceDamage: string | undefined;
+  let sourcePreviewImage: string | undefined;
   if (validation.input.kind === "upgrade") {
     const { entries } = await listCharacterInventoryEntries(
       String(mainCharacter._id),
@@ -131,6 +159,11 @@ export async function POST(request: Request) {
       );
     }
     equipmentName = equippedEntry.itemName;
+    sourceItemId = equippedEntry.itemId;
+    sourceCategory = equippedEntry.category ?? undefined;
+    sourceSlot = equippedEntry.equippedSlot;
+    sourceDamage = equippedEntry.damage;
+    sourcePreviewImage = equippedEntry.previewImage;
   }
 
   const characterId = String(mainCharacter._id);
@@ -167,6 +200,11 @@ export async function POST(request: Request) {
       ? { inventoryEntryId: validation.input.inventoryEntryId }
       : {}),
     ...(equipmentName ? { equipmentName } : {}),
+    ...(sourceItemId ? { sourceItemId } : {}),
+    ...(sourceCategory ? { sourceCategory } : {}),
+    ...(sourceSlot ? { sourceSlot } : {}),
+    ...(sourceDamage ? { sourceDamage } : {}),
+    ...(sourcePreviewImage ? { sourcePreviewImage } : {}),
     details: validation.input.details,
     status: "REQUESTED",
     createdAt: now,
@@ -293,6 +331,21 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       { error: "공방 요청을 찾을 수 없습니다." },
       { status: 404 },
+    );
+  }
+  const canManuallyTransition = existing.kind === "upgrade"
+    ? (existing.status === "REQUESTED" && body.status === "IN_REVIEW") ||
+      (["REQUESTED", "IN_REVIEW", "APPROVED", "QUOTED"].includes(existing.status) &&
+        body.status === "REJECTED")
+    : CUSTOM_WORKSHOP_MANUAL_TRANSITIONS[existing.status].includes(body.status);
+  if (!canManuallyTransition) {
+    return NextResponse.json(
+      {
+        error: existing.kind === "upgrade"
+          ? "장착 장비 강화는 견적·수락·수령 또는 제작 취소 전용 API로 처리해야 합니다."
+          : "커스텀 제작 요청의 기존 처리 흐름에서 허용되지 않는 상태 변경입니다.",
+      },
+      { status: 409 },
     );
   }
   if (!canTransitionEquipmentWorkshopRequestStatus(existing.status, body.status)) {

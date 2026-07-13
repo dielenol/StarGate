@@ -3252,6 +3252,175 @@
   margin-top: auto;
 }
 
+.workshopRequestCard:last-child {
+  grid-column: 1 / -1;
+}
+
+.workshopRequestCard article {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(3, 4, 5, 0.58);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.workshopRequestCard article > span {
+  color: var(--gold-dim);
+  font-size: 14px;
+}
+
+.workshopQuote {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--gold) 5%, rgba(0, 0, 0, 0.36));
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 48%, var(--line));
+  border-radius: var(--radius-sm);
+}
+
+.workshopNpcReply {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.workshopNpcReply__portrait {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  background: var(--bg-1);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.workshopNpcReply__portrait img {
+  object-fit: cover;
+  object-position: center top;
+}
+
+.workshopNpcReply strong,
+.workshopComparison strong {
+  color: var(--ink-0);
+  font-size: 15px;
+}
+
+.workshopComparison {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.workshopComparison > div {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.workshopComparison > b {
+  align-self: center;
+  color: var(--gold);
+  font-size: 20px;
+}
+
+.workshopResultPreview {
+  position: relative;
+  display: block;
+  width: 96px;
+  height: 96px;
+  background: rgba(0, 0, 0, 0.26);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.workshopResultPreview img {
+  object-fit: contain;
+}
+
+.workshopComparison span,
+.workshopQuoteSummary dt {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.workshopQuoteSummary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.workshopQuoteSummary > div {
+  padding: 9px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+}
+
+.workshopQuoteSummary dd {
+  margin: 4px 0 0;
+  color: var(--danger);
+  font-size: 15px;
+}
+
+.workshopQuoteSummary dd[data-ready="true"] {
+  color: var(--success);
+}
+
+.workshopMaterials {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workshopMaterials li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  color: var(--ink-2);
+  font-size: 14px;
+  border-left: 3px solid var(--danger);
+}
+
+.workshopMaterials li[data-ready="true"] {
+  border-left-color: var(--success);
+}
+
+.workshopCountdown {
+  padding: 10px;
+  color: var(--gold) !important;
+  text-align: center;
+  border: 1px solid var(--gold-dim);
+}
+
+.workshopQuoteActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .workshopComparison,
+  .workshopQuoteActions {
+    grid-template-columns: 1fr;
+  }
+
+  .workshopComparison > b {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+}
+
 .npcHud {
   position: fixed;
   right: 24px;

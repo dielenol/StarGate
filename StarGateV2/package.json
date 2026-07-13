@@ -43,6 +43,7 @@
     "@auth/core": "^0.41.0",
     "@stargate/shared-db": "workspace:*",
     "@tanstack/react-query": "^5.99.0",
+    "@vercel/blob": "^2.6.1",
     "bcryptjs": "^3.0.3",
     "diff-match-patch": "^1.0.5",
     "mongodb": "^7.1.1",

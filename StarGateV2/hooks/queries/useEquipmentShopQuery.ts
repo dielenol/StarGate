@@ -81,7 +81,13 @@ export type EquipmentShopErrorCode =
   | "RESEARCH_FUNDING_CONFLICT"
   | "RESEARCH_START_FAILED"
   | "FORBIDDEN_RESEARCH_PROJECT"
-  | "CUSTOM_WEAPON_SLOT_REQUIRED";
+  | "CUSTOM_WEAPON_SLOT_REQUIRED"
+  | "QUOTE_CHANGED"
+  | "INSUFFICIENT_MATERIALS"
+  | "SOURCE_ITEM_CHANGED"
+  | "REQUEST_STATE_CHANGED"
+  | "WORKSHOP_NOT_READY"
+  | "BLOB_NOT_CONFIGURED";
 
 export class EquipmentShopApiError extends Error {
   readonly status: number;
@@ -203,12 +209,15 @@ export function useEquipmentResearch(options?: {
 export function useEquipmentWorkshopRequests(options: {
   viewerKey: string;
   enabled?: boolean;
+  initialData?: EquipmentWorkshopRequestsResponse;
 }) {
   return useQuery({
     queryKey: equipmentShopKeys.workshopRequests(options.viewerKey),
     queryFn: fetchEquipmentWorkshopRequests,
     staleTime: 30 * 1000,
     enabled: options?.enabled,
+    initialData: options.initialData,
+    refetchInterval: 30 * 1000,
   });
 }
 

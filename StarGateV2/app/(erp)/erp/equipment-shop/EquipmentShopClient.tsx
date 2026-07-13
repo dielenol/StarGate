@@ -23,6 +23,9 @@ import {
   type EquipmentResearchScope,
   useCompleteEquipmentResearch,
   useContributeEquipmentResearch,
+  useAcceptEquipmentWorkshopQuote,
+  useClaimEquipmentWorkshopResult,
+  useDeclineEquipmentWorkshopQuote,
   useEquipmentShopQuote,
   useEquipmentWorkshopRequest,
   useUpdateEquipmentWorkshopRequest,
@@ -52,7 +55,9 @@ import Tag from "@/components/ui/Tag/Tag";
 import { describeApiError } from "@/lib/api/describe-error";
 import {
   requiresEquipmentWorkshopOperatorNote,
+  type EquipmentWorkshopComputedStatus,
   type EquipmentWorkshopRequestStatus,
+  type EquipmentWorkshopSpecialist,
 } from "@/lib/equipment-shop/workshop-request";
 import {
   AMERI_DIALOGUE_LINES,
@@ -170,8 +175,12 @@ const WORKSHOP_STATUS_LABELS: Record<
 > = {
   REQUESTED: "접수",
   IN_REVIEW: "검토 중",
-  APPROVED: "승인",
+  APPROVED: "기존 승인",
+  QUOTED: "견적 도착",
+  IN_PROGRESS: "제작 중",
+  DECLINED: "견적 거절",
   REJECTED: "반려",
+  CANCELLED: "제작 취소",
   COMPLETED: "완료",
 };
 const WORKSHOP_NEXT_STATUSES: Record<
@@ -181,7 +190,11 @@ const WORKSHOP_NEXT_STATUSES: Record<
   REQUESTED: ["IN_REVIEW", "APPROVED", "REJECTED"],
   IN_REVIEW: ["APPROVED", "REJECTED"],
   APPROVED: ["COMPLETED", "REJECTED"],
+  QUOTED: ["REJECTED"],
+  IN_PROGRESS: [],
+  DECLINED: [],
   REJECTED: [],
+  CANCELLED: [],
   COMPLETED: [],
 };
 type FeedbackTone = "success" | "info" | "error";
@@ -234,6 +247,74 @@ const TEMPER_ENTRY_SFX_SRC =
 const RATCHET_PROFILE_SRC = "/assets/npcs/Mateo-Rivas-Ratchet-profile.webp";
 const RATCHET_IDLE_DELAY_MS = 12500;
 const VERNIER_PROFILE_SRC = "/assets/npcs/Ada-Schreiber-Vernier-profile.webp";
+
+const WORKSHOP_SPECIALISTS: Record<
+  EquipmentWorkshopSpecialist,
+  { label: string; portrait: string }
+> = {
+  VERNIER: { label: "VERNIER · 접수/종합", portrait: VERNIER_PROFILE_SRC },
+  TEMPER: { label: "TEMPER · 냉병기", portrait: TEMPER_PROFILE_SRC },
+  TOWASKI: { label: "TOWASKI · 화기", portrait: TOWASKI_PROFILE_SRC },
+  SUTURE: { label: "SUTURE · 증강체", portrait: SUTURE_PROFILE_SRC },
+  RATCHET: { label: "RATCHET · 전략 장비", portrait: RATCHET_PROFILE_SRC },
+};
+
+function workshopDialogue(
+  specialist: EquipmentWorkshopSpecialist,
+  status: EquipmentWorkshopComputedStatus,
+): string {
+  const name = WORKSHOP_SPECIALISTS[specialist].label.split(" · ")[0];
+  if (status === "QUOTED") return `${name}: 견적과 납품 목록을 확인해. 수락하면 바로 분해 공정에 들어간다.`;
+  if (status === "IN_PROGRESS") return `${name}: 작업대에 올라갔다. 완료 시각 전에는 장비를 되돌릴 수 없다.`;
+  if (status === "READY") return `${name}: 개조 완료. 수령하면 현재 슬롯을 정리하고 결과 장비를 장착한다.`;
+  if (status === "COMPLETED") return `${name}: 인계 기록 완료. 현장에서 다시 점검해.`;
+  if (status === "DECLINED") return `${name}: 견적 거절 확인. 원본 장비에는 손대지 않았다.`;
+  if (status === "CANCELLED") return `${name}: 제작 취소 처리. 에스크로 물품과 비용을 반환했다.`;
+  if (status === "REJECTED") return `${name}: 현재 조건으로는 작업을 진행할 수 없다.`;
+  return "VERNIER: 요청을 접수했다. 담당 기술자 배정과 견적을 기다려 줘.";
+}
+
+function workshopPortrait(
+  specialist: EquipmentWorkshopSpecialist,
+  status: EquipmentWorkshopComputedStatus,
+): string {
+  const blocked = status === "DECLINED" || status === "REJECTED" || status === "CANCELLED";
+  if (specialist === "TEMPER") {
+    return blocked
+      ? "/assets/npcs/Brigid-Kane-Temper-blocked.webp"
+      : status === "QUOTED"
+        ? "/assets/npcs/Brigid-Kane-Temper-balance.webp"
+        : status === "IN_PROGRESS"
+          ? "/assets/npcs/Brigid-Kane-Temper-cart.webp"
+          : "/assets/npcs/Brigid-Kane-Temper-checkout.webp";
+  }
+  if (specialist === "TOWASKI") {
+    return blocked
+      ? "/assets/npcs/Towaski-blocked.webp?v=cutout-1"
+      : status === "QUOTED"
+        ? "/assets/npcs/Towaski-inspect.webp?v=cutout-1"
+        : "/assets/npcs/Towaski-checkout.webp?v=cutout-1";
+  }
+  if (specialist === "SUTURE") {
+    return blocked
+      ? "/assets/npcs/Irena-Vukovic-Suture-blocked.webp?v=clean-stop-2"
+      : status === "QUOTED"
+        ? "/assets/npcs/Irena-Vukovic-Suture-assessment.webp"
+        : status === "IN_PROGRESS"
+          ? "/assets/npcs/Irena-Vukovic-Suture-procedure.webp"
+          : "/assets/npcs/Irena-Vukovic-Suture-recovery.webp";
+  }
+  if (specialist === "RATCHET") {
+    return blocked
+      ? "/assets/npcs/Mateo-Rivas-Ratchet-blocked.webp"
+      : status === "QUOTED"
+        ? "/assets/npcs/Mateo-Rivas-Ratchet-inspect.webp"
+        : status === "IN_PROGRESS"
+          ? "/assets/npcs/Mateo-Rivas-Ratchet-dispatch.webp"
+          : "/assets/npcs/Mateo-Rivas-Ratchet-checkout.webp";
+  }
+  return VERNIER_PROFILE_SRC;
+}
 const VERNIER_IDLE_DELAY_MS = 13200;
 
 const AMERI_MOOD_ASSETS: Record<AmeriMood, string> = {
@@ -700,6 +781,12 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   FORBIDDEN_RESEARCH_PROJECT: "이 연구를 조작할 권한이 없습니다.",
   CUSTOM_WEAPON_SLOT_REQUIRED:
     "전용무기 설계 슬롯 연구를 완료해야 제작 의뢰를 보낼 수 있습니다.",
+  QUOTE_CHANGED: "견적이 수정되었습니다. 최신 내용을 다시 확인해 주세요.",
+  INSUFFICIENT_MATERIALS: "납품할 재료가 부족합니다.",
+  SOURCE_ITEM_CHANGED: "강화 대상 장비의 장착 상태가 변경되었습니다.",
+  REQUEST_STATE_CHANGED: "공방 요청 상태가 변경되었습니다. 다시 확인해 주세요.",
+  WORKSHOP_NOT_READY: "아직 제작이 완료되지 않았습니다.",
+  BLOB_NOT_CONFIGURED: "이미지 업로드 저장소가 설정되지 않았습니다.",
 };
 
 const FEEDBACK_SOUND_PATTERNS: Record<
@@ -1409,6 +1496,9 @@ export default function EquipmentShopClient({
   const contributeResearchMutation = useContributeEquipmentResearch();
   const completeResearchMutation = useCompleteEquipmentResearch();
   const workshopRequestMutation = useEquipmentWorkshopRequest();
+  const acceptWorkshopQuoteMutation = useAcceptEquipmentWorkshopQuote();
+  const declineWorkshopQuoteMutation = useDeclineEquipmentWorkshopQuote();
+  const claimWorkshopResultMutation = useClaimEquipmentWorkshopResult();
   const workshopRequestsQuery = useEquipmentWorkshopRequests({
     viewerKey: isGM ? "gm" : (mainCharacter?.id ?? "unassigned"),
     enabled: initialZone === "custom",
@@ -1443,6 +1533,7 @@ export default function EquipmentShopClient({
   const feedbackSequenceRef = useRef(0);
   const feedbackTimerRef = useRef<number | null>(null);
   const feedbackAudioContextRef = useRef<AudioContext | null>(null);
+  const workshopStatusRef = useRef<Map<string, EquipmentWorkshopComputedStatus> | null>(null);
   const [hasBasicFirearmLicense, setHasBasicFirearmLicense] = useState(
     () => mainCharacter?.hasBasicFirearmLicense ?? false,
   );
@@ -1466,6 +1557,13 @@ export default function EquipmentShopClient({
   const [workshopOperatorNotes, setWorkshopOperatorNotes] = useState<
     Record<string, string>
   >({});
+  const [workshopClock, setWorkshopClock] = useState(0);
+
+  useEffect(() => {
+    if (initialZone !== "custom") return;
+    const timer = window.setInterval(() => setWorkshopClock(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [initialZone]);
 
   const catalog = catalogQuery.data ?? initialCatalog;
   const research = researchQuery.data ?? initialResearch;
@@ -1514,6 +1612,27 @@ export default function EquipmentShopClient({
       // Ignore unsupported audio environments and browser playback policies.
     }
   }, []);
+
+  useEffect(() => {
+    if (activeZone !== "custom" || !workshopRequestsQuery.data) return;
+    const nextStatuses = new Map(
+      workshopRequestsQuery.data.requests.map((request) => [request._id, request.computedStatus]),
+    );
+    const previousStatuses = workshopStatusRef.current;
+    workshopStatusRef.current = nextStatuses;
+    if (!previousStatuses) return;
+    const changed = workshopRequestsQuery.data.requests.find(
+      (request) => previousStatuses.get(request._id) !== request.computedStatus,
+    );
+    if (!changed) return;
+    playFeedbackSound(
+      changed.computedStatus === "READY" || changed.computedStatus === "COMPLETED"
+        ? "success"
+        : changed.computedStatus === "REJECTED" || changed.computedStatus === "CANCELLED"
+          ? "error"
+          : "info",
+    );
+  }, [activeZone, playFeedbackSound, workshopRequestsQuery.data]);
 
   const dismissFeedback = useCallback(() => {
     if (feedbackTimerRef.current !== null) {
@@ -2848,6 +2967,22 @@ export default function EquipmentShopClient({
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date(value));
+  }
+
+  function formatWorkshopCountdown(readyAt: string): string {
+    if (!workshopClock) return "남은 시간 계산 중";
+    const remainingSeconds = Math.max(
+      0,
+      Math.ceil((new Date(readyAt).getTime() - workshopClock) / 1000),
+    );
+    if (remainingSeconds === 0) return "제작 완료 · 수령 가능";
+    const days = Math.floor(remainingSeconds / 86_400);
+    const hours = Math.floor((remainingSeconds % 86_400) / 3_600);
+    const minutes = Math.floor((remainingSeconds % 3_600) / 60);
+    const seconds = remainingSeconds % 60;
+    return [days ? `${days}일` : "", hours ? `${hours}시간` : "", `${minutes}분`, `${seconds}초`]
+      .filter(Boolean)
+      .join(" ");
   }
 
   function projectStatusLabel(
@@ -4778,8 +4913,8 @@ export default function EquipmentShopClient({
             <Eyebrow>WORKSHOP INTAKE</Eyebrow>
             <strong>공방 제작·강화 문의</strong>
             <p>
-              장비 변경은 자동 적용되지 않습니다. 접수된 내용은 캐릭터 편집 검토
-              채널로 전달되며 운영자 확인 후 별도로 처리됩니다.
+              장착 장비 강화는 운영자 견적을 수락해 재료를 납품한 뒤 제작됩니다.
+              완료된 장비를 수령하면 기존 슬롯이 정리되고 결과 장비가 자동 장착됩니다.
             </p>
           </div>
         </div>
@@ -4915,6 +5050,11 @@ export default function EquipmentShopClient({
           <section className={styles.workshopRequestCard}>
             <span>REQUEST LEDGER</span>
             <strong>{isGM ? "공방 요청 처리 현황" : "내 공방 요청"}</strong>
+            {isGM ? (
+              <Link className={styles.primaryAction} href="/erp/admin/equipment-workshop">
+                GM 공방 관리 페이지 열기
+              </Link>
+            ) : null}
             {workshopRequestsQuery.isPending ? (
               <p>접수 기록을 불러오는 중입니다.</p>
             ) : workshopRequestsQuery.isError ? (
@@ -4929,22 +5069,149 @@ export default function EquipmentShopClient({
                   </span>
                   <strong>{request.equipmentName ?? request.details}</strong>
                   <small>
-                    {WORKSHOP_STATUS_LABELS[request.status]} ·{" "}
+                    {request.computedStatus === "READY"
+                      ? "수령 가능"
+                      : WORKSHOP_STATUS_LABELS[request.status]} ·{" "}
                     {formatDateTime(request.createdAt)}
                   </small>
                   {request.operatorNote ? <p>{request.operatorNote}</p> : null}
+                  {request.quote ? (() => {
+                    const quote = request.quote;
+                    const specialist = WORKSHOP_SPECIALISTS[quote.specialistCodename];
+                    const availableByItemId = new Map<string, number>();
+                    for (const entry of characterInventoryQuery.data?.entries ?? []) {
+                      if (entry.equippedSlot) continue;
+                      availableByItemId.set(
+                        entry.itemId,
+                        (availableByItemId.get(entry.itemId) ?? 0) + entry.quantity,
+                      );
+                    }
+                    const materialsReady = quote.materials.every(
+                      (material) =>
+                        (availableByItemId.get(material.itemId) ?? 0) >= material.quantity,
+                    );
+                    const creditReady = balance >= quote.creditCost;
+                    return (
+                      <section className={styles.workshopQuote}>
+                        <div className={styles.workshopNpcReply}>
+                          <span className={styles.workshopNpcReply__portrait}>
+                            <Image src={workshopPortrait(quote.specialistCodename, request.computedStatus)} alt="" fill sizes="64px" />
+                          </span>
+                          <div>
+                            <strong>{specialist.label}</strong>
+                            <p>{workshopDialogue(quote.specialistCodename, request.computedStatus)}</p>
+                          </div>
+                        </div>
+                        <div className={styles.workshopComparison}>
+                          <div>
+                            <span>원본 장비</span>
+                            <strong>{request.equipmentName}</strong>
+                            <small>{request.sourceDamage ?? "피해 정보 없음"}</small>
+                          </div>
+                          <b aria-hidden>→</b>
+                          <div>
+                            <span>결과 장비</span>
+                            {quote.result.previewImage ? (
+                              <span className={styles.workshopResultPreview}>
+                                <Image src={quote.result.previewImage} alt="" fill sizes="96px" unoptimized />
+                              </span>
+                            ) : null}
+                            <strong>{quote.result.name}</strong>
+                            <small>{quote.result.damage ?? "피해 정보 없음"}</small>
+                            <p>{quote.result.description}</p>
+                          </div>
+                        </div>
+                        <dl className={styles.workshopQuoteSummary}>
+                          <div>
+                            <dt>비용</dt>
+                            <dd data-ready={creditReady}>{formatCredits(quote.creditCost)}</dd>
+                          </div>
+                          <div>
+                            <dt>제작 시간</dt>
+                            <dd>{quote.durationMinutes.toLocaleString()}분</dd>
+                          </div>
+                        </dl>
+                        {quote.materials.length > 0 ? (
+                          <ul className={styles.workshopMaterials}>
+                            {quote.materials.map((material) => {
+                              const available = availableByItemId.get(material.itemId) ?? 0;
+                              return (
+                                <li key={material.itemId} data-ready={available >= material.quantity}>
+                                  <span>{material.itemName}</span>
+                                  <strong>{available} / {material.quantity}</strong>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : null}
+                        {request.readyAt && ["IN_PROGRESS", "READY"].includes(request.computedStatus) ? (
+                          <p className={styles.workshopCountdown}>
+                            {formatWorkshopCountdown(request.readyAt)} · 완료 예정 {formatDateTime(request.readyAt)}
+                          </p>
+                        ) : null}
+                        {!isGM && request.status === "QUOTED" ? (
+                          <div className={styles.workshopQuoteActions}>
+                            <button
+                              type="button"
+                              className={styles.primaryAction}
+                              disabled={!materialsReady || !creditReady || acceptWorkshopQuoteMutation.isPending}
+                              onClick={() => acceptWorkshopQuoteMutation.mutate(
+                                { requestId: request._id, expectedQuoteVersion: quote.version },
+                                {
+                                  onSuccess: () => showFeedback("success", "견적 수락 완료", "비용과 재료를 납품하고 제작을 시작했습니다."),
+                                  onError: (error) => showFeedback("error", "견적 수락 실패", describeEquipmentShopError(error)),
+                                },
+                              )}
+                            >
+                              {acceptWorkshopQuoteMutation.isPending ? "납품 처리 중" : "견적 수락·납품"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={declineWorkshopQuoteMutation.isPending}
+                              onClick={() => declineWorkshopQuoteMutation.mutate(
+                                { requestId: request._id, expectedQuoteVersion: quote.version },
+                                {
+                                  onSuccess: () => showFeedback("info", "견적 거절 완료", "장비와 재화는 변경되지 않았습니다."),
+                                  onError: (error) => showFeedback("error", "견적 거절 실패", describeEquipmentShopError(error)),
+                                },
+                              )}
+                            >
+                              견적 거절
+                            </button>
+                          </div>
+                        ) : null}
+                        {!isGM && request.computedStatus === "READY" ? (
+                          <button
+                            type="button"
+                            className={styles.primaryAction}
+                            disabled={claimWorkshopResultMutation.isPending}
+                            onClick={() => claimWorkshopResultMutation.mutate(
+                              { requestId: request._id },
+                              {
+                                onSuccess: () => showFeedback("success", "개조 장비 수령 완료", "결과 장비를 지급하고 해당 슬롯에 장착했습니다."),
+                                onError: (error) => showFeedback("error", "장비 수령 실패", describeEquipmentShopError(error)),
+                              },
+                            )}
+                          >
+                            {claimWorkshopResultMutation.isPending ? "장착 처리 중" : "개조 장비 수령·장착"}
+                          </button>
+                        ) : null}
+                      </section>
+                    );
+                  })() : null}
                   {request.history && request.history.length > 1 ? (
                     <ol>
                       {request.history.map((entry) => (
                         <li key={`${entry.status}:${entry.at}`}>
                           {WORKSHOP_STATUS_LABELS[entry.status]} ·{" "}
-                          {formatDateTime(entry.at)} · {entry.actorName}
+                          {formatDateTime(entry.at)}
+                          {entry.actorName ? ` · ${entry.actorName}` : ""}
                           {entry.note ? ` · ${entry.note}` : ""}
                         </li>
                       ))}
                     </ol>
                   ) : null}
-                  {isGM ? (
+                  {isGM && request.kind === "custom" ? (
                     <div>
                       <label>
                         <span>운영자 메모</span>
