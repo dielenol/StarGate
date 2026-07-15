@@ -1,0 +1,398 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "INDEXER"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "광원화 임시 백신 개발자",
+          "summary": "보랏빛 물질을 네베드와 타이거에게 투여해 감염 상태 해제를 확인했고, 종료 시점에 광원화 예방제 5인분을 확보했다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "CLOWN"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "섹터 C 권한 협상 및 비상 대응 관료",
+          "summary": "루빈 인근의 이상음으로 얻은 실어증을 운연의 접백연으로 회복했고, 사보타주 뒤 유지시설 우선 대응 결정에 참여했다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        },
+        "lore.relations": {
+          "targetCodename": "UNYEON",
+          "targetName": "백진연 / 운연",
+          "label": "응급 회복 지원",
+          "summary": "운연의 접백연으로 루빈 인근에서 얻은 실어증 상태를 해제하고 발화를 회복했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부",
+          "confidence": "confirmed"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "BIG BOY"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "지휘권 협상 및 ZULU-0103 웬디고 대응자",
+          "summary": "페초린의 즉결처형 장치 회수 요구를 무마했고, 최고 격리구역에서 화염방사기로 웬디고에 불을 붙인 뒤 포효로 실어증을 얻었다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "YUHOE"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "섹터 간 권한 협상 및 대응 분기 결정자",
+          "summary": "섹터 C의 지휘권과 A 섹터 자산 통제를 두고 협상했고, 사보타주 뒤 감염자 수용 임무를 근거로 유지시설 우선 대응을 지지했다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "PIPETTE"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "임시 백신 관측 및 연구 구역 탈출 참여자",
+          "summary": "네베드와 타이거의 임시 백신 반응을 확인했고, 발레리나가 소리를 추적하는 구역에서 단말 해제와 무음 탈출에 참여했다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "네베드"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "광원화 임시 백신 시험 대상 및 연구 구역 생존자",
+          "summary": "섹터 C에 격리되어 보랏빛 물질을 투여받고 광원화 상태가 해제되었으며, 발레리나의 공격 직전 해쉬를 끌어내 회피시켰다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        },
+        "lore.relations": {
+          "targetCodename": "MARIA",
+          "targetName": "마리아",
+          "label": "보호적 재회",
+          "summary": "임시 백신 시험과 격리에서 풀려난 뒤 마리아의 보호와 위로를 받으며 현장에 복귀했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부",
+          "confidence": "confirmed"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "TIGER298"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "광원화 임시 백신 시험 대상 및 연구 구역 생존자",
+          "summary": "섹터 C에 격리되어 보랏빛 물질을 투여받고 광원화 상태가 해제되었으며, 발레리나의 공격 직전 해쉬를 끌어내 회피시켰다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        },
+        "lore.relations": {
+          "targetCodename": "MARIA",
+          "targetName": "마리아",
+          "label": "보호적 재회",
+          "summary": "임시 백신 시험과 격리에서 풀려난 뒤 마리아의 보호와 위로를 받으며 현장에 복귀했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부",
+          "confidence": "confirmed"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "TIME"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "곰사냥 갑옷 최초 피격자",
+          "summary": "정전된 통제실에서 광원을 켠 직후 곰사냥 갑옷의 공격으로 목이 꺾여 의식을 잃었고, 이후 알 수 없는 음성을 듣고 깨어났다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "MARGARET"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "유지시설 기밀 목격자 및 닥터 모스 사후 관측자",
+          "summary": "페초린과 함께 냉동 감염자 유지시설을 확인했고, 정전 직전 마가렛의 관측 속 닥터 모스에게 위험 경고를 받았다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        },
+        "lore.relations": {
+          "targetCodename": "DOCTOR_MOSS",
+          "targetName": "닥터 모스",
+          "label": "사후 경고",
+          "summary": "섹터 C 유지시설을 떠나던 중 마가렛의 관측 속 닥터 모스가 나타나 위험을 경고했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부",
+          "confidence": "testimony"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "MARIA"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "러시아 측 조정 및 임시 백신 회복자 보호",
+          "summary": "시설 국영화를 요구한 러시아 장군과 협력 창구를 만들고, 임시 백신 시험 뒤 풀려난 네베드와 타이거를 보호하며 연구 구역 탈출에 참여했다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "네베드",
+              "targetName": "키아나 오 캘러핸",
+              "label": "보호적 재회",
+              "summary": "임시 백신 시험과 격리에서 풀려난 네베드를 끌어안고 홀대에 항의하며 보호 의사를 드러냈다.",
+              "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+              "sourceLabel": "작전 보고서 S1E5: 악 1부",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "TIGER298",
+              "targetName": "시유",
+              "label": "보호적 재회",
+              "summary": "임시 백신 시험과 격리에서 풀려난 타이거를 끌어안고 홀대에 항의하며 보호 의사를 드러냈다.",
+              "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+              "sourceLabel": "작전 보고서 S1E5: 악 1부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "LEE DONGSIK"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "유지시설 기밀 기록 및 웬디고 추격자",
+          "summary": "32km 유지시설과 냉동 감염자 현장을 화면으로 저장했고, 웬디고의 포효에 청각 모듈을 차단한 뒤 도주 개체를 추격했다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "KIMLEE"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "유지시설 기밀 목격 및 현장 대응 요원",
+          "summary": "페초린과 함께 32km 심부 유지시설과 최소 수십만 명의 냉동 감염자를 확인하고, 비밀 보고 요청을 들은 뒤 복귀와 비상 대응에 참여했다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "CLAIRVOYANCE"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "격리 전 감염자 지원 및 심부 시설 정보 제공자",
+          "summary": "격리 전 네베드와 타이거에게 초콜릿을 건네고, 소련 심부 굴착과 다른 차원 물품에 관한 내부 소문을 현장팀에 전달했다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "UNYEON"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "실어증 해제 및 통제실 생존 지원",
+          "summary": "접백연으로 스타크의 실어증을 해제했고, 정전된 통제실에서 광원을 유지하며 곰사냥 갑옷의 공격을 받은 크로노스를 이동시켰다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        },
+        "lore.relations": {
+          "targetCodename": "CLOWN",
+          "targetName": "스타크 일로니손",
+          "label": "실어증 해제",
+          "summary": "접백연을 사용해 루빈 인근에서 얻은 스타크의 실어증 상태를 해제했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부",
+          "confidence": "confirmed"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "WD-(𝓃)"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "로드리온 음주 승부 승자 및 냉기 방사기 발견자",
+          "summary": "로드리온과의 음주 승부에서 이긴 뒤 사무실로 이동하는 과정에 화염방사기 개조품 냉기 방사기를 발견해 가져갔다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        },
+        "lore.relations": {
+          "targetCodename": "RODION",
+          "targetName": "로드리온 로마노비치 라스콜니코프",
+          "label": "음주 경쟁",
+          "summary": "섹터 C에서 로드리온과 반복 음주 승부를 벌여 이겼고, 이후 그의 사무실에서 냉기 방사기를 발견했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부",
+          "confidence": "confirmed"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "AEGIS"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "격리 해제 후 유지시설 대응 합류자",
+          "summary": "로드리온의 강압적 격리에서 바자로프에게 해방되어 갑주를 돌려받고, 유지시설을 선택한 현장팀의 비상 대응에 합류했다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        },
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "RODION",
+              "targetName": "로드리온 로마노비치 라스콜니코프",
+              "label": "격리와 강압",
+              "summary": "로드리온에게 명령 거부를 배신으로 규정당하고 동료와의 생존 선택을 강요받은 뒤 다층차원관측실에 격리되었다.",
+              "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+              "sourceLabel": "작전 보고서 S1E5: 악 1부",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "BAZAROV",
+              "targetName": "바자로프 교수",
+              "label": "해방과 복귀 지원",
+              "summary": "바자로프가 정전 중 격리를 해제하고 갑주를 돌려주어 무고한 사람을 지키는 현장 임무에 복귀했다.",
+              "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+              "sourceLabel": "작전 보고서 S1E5: 악 1부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {"codename": "DOCTOR_MOSS"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART1",
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E5-EVIL-PART1",
+          "role": "마가렛의 사후 관측 속 위험 경고자",
+          "summary": "마가렛의 관측 기록에서 사후 영체로 동행했고, 유지시설에서 정전이 발생하기 직전 위험하다고 경고했다.",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부"
+        },
+        "lore.relations": {
+          "targetCodename": "MARGARET",
+          "targetName": "마가렛",
+          "label": "사후 경고",
+          "summary": "마가렛의 관측 속 사후 영체로 나타나 섹터 C 유지시설의 위험을 경고했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부",
+          "confidence": "testimony"
+        }
+      },
+      "$set": {"updatedAt": "2026-07-15T00:00:00.000Z"}
+    }
+  }
+]

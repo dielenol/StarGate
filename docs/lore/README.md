@@ -1,6 +1,6 @@
 ---
 title: 로어북
-updated: 2026-07-02
+updated: 2026-07-15
 ---
 
 # StarGate 로어북
@@ -59,6 +59,7 @@ docs/lore/
 - [NOSB S1E1 미니 coverage](session-sync/nosb-s1e1-mini-coverage.md)
 - [NOSB S1E2 선택 coverage](session-sync/nosb-s1e2-choice-coverage.md)
 - [NOSB S1E4 프라토 coverage](session-sync/nosb-s1e4-prato-coverage.md)
+- [NOSB S1E5 악 1부 coverage](session-sync/nosb-s1e5-evil-part1-coverage.md)
 
 ## 문서 추가 방법
 
