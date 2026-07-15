@@ -1,0 +1,45 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {"codename": "RODION"},
+    "update": {
+      "$set": {
+        "agentLevel": "M",
+        "previewImage": "/assets/npcs/Rodion-profile.webp",
+        "updatedAt": "2026-07-15T08:15:47.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {"codename": "BAZAROV"},
+    "update": {
+      "$set": {
+        "role": "연구 기구 소속 / 섹터 C 파견 수석 연구원",
+        "institutionCode": "SECRETARIAT",
+        "department": "RESEARCH",
+        "agentLevel": "H",
+        "previewImage": "/assets/npcs/Bazarov-profile.webp",
+        "lore.background": "노부스 오르도 사무국 연구 기구 소속으로 섹터 C에 파견된 수석 연구원이다. 전력 장애가 냉동 개체들의 해동으로 이어질 것을 경고하고 발레리아 아젠트를 해방해 갑주를 돌려주었다. 현장팀이 유지시설을 선택하자 발레리아에게 그들을 지원하도록 요청했다.",
+        "lore.roleDetail": "- 정규 소속: 노부스 오르도 사무국 연구 기구\n- 파견지: 섹터 C 연구 시설\n- 업무 범위: 격리 대상 관리, 비상 상황 분석, 현장 연구 지원\n- 확인된 조치: 발레리아 아젠트 격리 해제와 장비 반환\n- 비상 판단: 전력 시설 파괴 시 냉동 개체 해동",
+        "lore.loreTags": ["연구기구", "섹터C", "파견", "수석연구원", "비상대응", "다층차원관측실"],
+        "loreMd": "## 대사\n> 색출과 책임 소재는 그 다음이오.\n\n## 외형\n촛불을 들고 정전된 연구 시설을 이동한 노년의 남성 과학자다.\n\n## 배경\n노부스 오르도 사무국 연구 기구 소속으로 섹터 C에 파견된 수석 연구원이며, 발레리아를 해방하고 사보타주 대응을 조정했다.",
+        "updatedAt": "2026-07-15T08:15:47.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {"codename": "PECHORIN"},
+    "update": {
+      "$set": {
+        "agentLevel": "H",
+        "previewImage": "/assets/npcs/Pechorin-profile.webp",
+        "updatedAt": "2026-07-15T08:15:47.000Z"
+      }
+    }
+  }
+]

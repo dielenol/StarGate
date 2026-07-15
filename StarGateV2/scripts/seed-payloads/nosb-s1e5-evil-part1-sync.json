@@ -211,7 +211,8 @@
       "department": "SECTOR_C",
       "factionCode": "NOVUS_ORDO",
       "institutionCode": "MANUS",
-      "previewImage": "",
+      "agentLevel": "H",
+      "previewImage": "/assets/npcs/Pechorin-profile.webp",
       "isPublic": true,
       "source": "session-log",
       "ownerId": null,
@@ -254,7 +255,7 @@
       },
       "loreMd": "## 대사\n> 자네들이라면 블랙 피라미드에 가서 새로운 보고서를 올릴 수 있을 거야.\n\n## 외형\n보존 기록에서는 군복을 입고 섹터 C 수호대를 통솔하는 대령으로 등장한다.\n\n## 배경\n유지시설 지하의 광원화 감염자와 냉각 부하 증가를 현장팀에 공개하고 외부 보고와 아들 구조를 요청했다.",
       "createdAt": "2026-06-28T00:00:00.000Z",
-      "updatedAt": "2026-07-15T00:00:00.000Z"
+      "updatedAt": "2026-07-15T08:15:47.000Z"
     }
   },
   {
@@ -267,7 +268,8 @@
       "department": "SECTOR_C",
       "factionCode": "NOVUS_ORDO",
       "institutionCode": "MANUS",
-      "previewImage": "",
+      "agentLevel": "M",
+      "previewImage": "/assets/npcs/Rodion-profile.webp",
       "isPublic": true,
       "source": "session-log",
       "ownerId": null,
@@ -310,7 +312,7 @@
       },
       "loreMd": "## 대사\n> 피와 철. 여긴 그게 아니면 돌아가지 않아.\n\n## 외형\n두족류와 뇌를 연상시키는 변이 형태와 푸른 점액질이 관측되었다.\n\n## 배경\n소련 심부 굴착 시설의 유일한 생존자라고 증언했고 현재 섹터 C를 감독한다.",
       "createdAt": "2026-06-28T00:00:00.000Z",
-      "updatedAt": "2026-07-15T00:00:00.000Z"
+      "updatedAt": "2026-07-15T08:15:47.000Z"
     }
   },
   {
@@ -319,11 +321,12 @@
     "payload": {
       "codename": "BAZAROV",
       "type": "NPC",
-      "role": "섹터 C 수석 연구원",
-      "department": "SECTOR_C",
+      "role": "연구 기구 소속 / 섹터 C 파견 수석 연구원",
+      "department": "RESEARCH",
       "factionCode": "NOVUS_ORDO",
-      "institutionCode": "MANUS",
-      "previewImage": "",
+      "institutionCode": "SECRETARIAT",
+      "agentLevel": "H",
+      "previewImage": "/assets/npcs/Bazarov-profile.webp",
       "isPublic": true,
       "source": "session-log",
       "ownerId": null,
@@ -337,10 +340,10 @@
         "weight": "미상",
         "appearance": "보존 기록에서는 촛불을 들고 정전된 연구 시설을 이동한 노년의 남성 과학자로 묘사된다. 그 밖의 상세 신체 정보는 확인되지 않았다.",
         "personality": "책임 추궁보다 즉시 위험을 막는 일을 우선하는 실무형 연구자다. 로드리온의 응답이 끊기자 독자적으로 발레리아의 격리를 해제하고 대응 우선순위를 정리했다.",
-        "background": "섹터 C 수석 연구원이다. 전력 장애가 냉동 개체들의 해동으로 이어질 것을 경고하고 발레리아 아젠트를 해방해 갑주를 돌려주었다. 현장팀이 유지시설을 선택하자 발레리아에게 그들을 지원하도록 요청했다.",
+        "background": "노부스 오르도 사무국 연구 기구 소속으로 섹터 C에 파견된 수석 연구원이다. 전력 장애가 냉동 개체들의 해동으로 이어질 것을 경고하고 발레리아 아젠트를 해방해 갑주를 돌려주었다. 현장팀이 유지시설을 선택하자 발레리아에게 그들을 지원하도록 요청했다.",
         "quote": "> 색출과 책임 소재는 그 다음이오.",
         "mainImage": "",
-        "loreTags": ["섹터C", "수석연구원", "비상대응", "다층차원관측실"],
+        "loreTags": ["연구기구", "섹터C", "파견", "수석연구원", "비상대응", "다층차원관측실"],
         "appearsInEvents": ["NOSB-S1E5-EVIL-PART1"],
         "sessionAppearances": [
           {
@@ -361,12 +364,12 @@
             "confidence": "confirmed"
           }
         ],
-        "roleDetail": "- 업무 범위: 섹터 C 연구 시설 운영, 격리 대상 관리, 비상 상황 분석\n- 확인된 조치: 발레리아 아젠트 격리 해제와 장비 반환\n- 비상 판단: 전력 시설 파괴 시 냉동 개체 해동",
+        "roleDetail": "- 정규 소속: 노부스 오르도 사무국 연구 기구\n- 파견지: 섹터 C 연구 시설\n- 업무 범위: 격리 대상 관리, 비상 상황 분석, 현장 연구 지원\n- 확인된 조치: 발레리아 아젠트 격리 해제와 장비 반환\n- 비상 판단: 전력 시설 파괴 시 냉동 개체 해동",
         "notes": "보존 기록에서는 바자로프 교수와 바자로프로만 확인된다. 이름 전체가 없어 성을 기준으로 Dossier codename을 정규화했다."
       },
-      "loreMd": "## 대사\n> 색출과 책임 소재는 그 다음이오.\n\n## 외형\n촛불을 들고 정전된 연구 시설을 이동한 노년의 남성 과학자다.\n\n## 배경\n섹터 C 수석 연구원으로 발레리아를 해방하고 사보타주 대응을 조정했다.",
+      "loreMd": "## 대사\n> 색출과 책임 소재는 그 다음이오.\n\n## 외형\n촛불을 들고 정전된 연구 시설을 이동한 노년의 남성 과학자다.\n\n## 배경\n노부스 오르도 사무국 연구 기구 소속으로 섹터 C에 파견된 수석 연구원이며, 발레리아를 해방하고 사보타주 대응을 조정했다.",
       "createdAt": "2026-06-28T00:00:00.000Z",
-      "updatedAt": "2026-07-15T00:00:00.000Z"
+      "updatedAt": "2026-07-15T08:15:47.000Z"
     }
   }
 ]

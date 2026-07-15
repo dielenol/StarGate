@@ -14,13 +14,14 @@ weight: 미상
 factionCode: NOVUS_ORDO
 institutionCode: MANUS
 department: SECTOR_C
+agentLevel: H
 isPublic: true
 loreTags: [섹터C, 전방수호대, 노릴스크, 냉동격리, 광원화]
 appearsInEvents: [NOSB-S1E5-EVIL-PART1]
 source: session-log
-previewImage:
+previewImage: /assets/npcs/Pechorin-profile.webp
 createdAt: 2026-06-28T00:00:00.000Z
-updatedAt: 2026-07-15T00:00:00.000Z
+updatedAt: 2026-07-15T08:15:47.000Z
 ---
 
 ## 대사
