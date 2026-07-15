@@ -194,4 +194,5 @@ source: stargate-lore
 - 실행 전 critical risk review는 blocker 없이 조건부 통과했다. 반드시 3건 전용 `nosb-s1e5-evil-part1-npc-approval.json`만 실행하고, 12건·5개 컬렉션을 포함하는 전체 sync payload는 이번 교정에 사용하지 않는다.
 - 후속 변경에 대해 신원조회 테스트 23건, `pnpm typecheck`, `pnpm lint`, `git diff --check`를 통과했다.
 - 로컬 서버에서 세 WebP URL이 모두 `200 image/webp`로 응답했다. 인증된 로드리온 Dossier 상세에서 풀네임과 `로쟈` 별칭이 분리되고 별칭 계산 글꼴 크기가 14px이며, live 적용 전이라 인물 초상은 아직 렌더되지 않음을 확인했다. 콘솔 경고·오류는 0건이다.
+- 새 WebP를 포함한 로컬 브랜치는 `origin/main`보다 앞서 있어 배포본의 정적 자산 제공 여부는 아직 검증되지 않았다. asset 배포 전에 live DB의 `previewImage`부터 바꾸면 프로덕션 초상이 일시적으로 깨질 수 있으므로 실행 승인 시 이 부작용을 함께 확인한다.
 - 첫 교정 패스에서는 live DB 값을 다시 쓰지 않았다. 후속 사용자 지시로 등급·초상·바자로프 소속/파견은 durable 반영했고, 별도 live 실행 승인을 기다린다. 공개 여부·정규화 식별자·직함/별칭 필드는 계속 검토 대상이다.
