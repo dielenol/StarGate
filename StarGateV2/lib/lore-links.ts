@@ -118,8 +118,21 @@ function normalizePersonnelKey(value: string): string {
 }
 
 function addPersonnelKey(keys: Set<string>, value?: string | null): void {
-  const normalized = normalizePersonnelKey(value ?? "");
-  if (normalized) keys.add(normalized);
+  const source = (value ?? "").normalize("NFKC").trim();
+  const variants = [source];
+  const englishDoctorPrefix = source.match(/^DR\.?\s*/iu)?.[0];
+  const koreanDoctorPrefix = source.match(/^닥터\s*/u)?.[0];
+
+  if (englishDoctorPrefix) {
+    variants.push(`닥터 ${source.slice(englishDoctorPrefix.length)}`);
+  } else if (koreanDoctorPrefix) {
+    variants.push(`Dr. ${source.slice(koreanDoctorPrefix.length)}`);
+  }
+
+  for (const variant of variants) {
+    const normalized = normalizePersonnelKey(variant);
+    if (normalized) keys.add(normalized);
+  }
 }
 
 function characterParticipantKeys(character: Character): string[] {
@@ -131,7 +144,6 @@ function characterParticipantKeys(character: Character): string[] {
     character.lore.nameNative,
     character.lore.nickname,
     character.lore.nameEn,
-    ...(character.lore.loreTags ?? []),
   ]) {
     addPersonnelKey(keys, value);
   }
@@ -283,7 +295,6 @@ export function toRelatedPersonnelLink(
       character.lore.nameNative,
       character.lore.nickname,
       character.lore.nameEn,
-      ...(character.lore.loreTags ?? []),
     ].filter((alias): alias is string => Boolean(alias?.trim())),
   };
 }
