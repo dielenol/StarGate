@@ -38,9 +38,9 @@ source: stargate-lore
 | 루빈 마을 교수형 | p.3-p.5 | report/wiki | 민간인 교수형, 발바닥의 미네르바의 눈, 섹터 C의 경고 방식 기록 | Applied + Verified |
 | 섹터 C | p.18-p.22, p.32-p.69, p.101-p.111 | `wiki_pages.sector-c` | 조직·시설·냉동 격리·사보타주 현황을 장소/시설 문서로 등록 | Applied + Verified |
 | MANUS 찰리 섹터 역할 | p.63-p.68, p.107 + 기존 MANUS spec/DB | institution spec + `institutions.MANUS.subUnits` | 기존 잠입 임무 설명을 보존하면서 광원화 감염자 수용·극저온 격리 임무를 source-backed로 보강 | Applied + DB re-read |
-| 그리고리 페초린 대령 | p.18-p.22, p.61-p.70 | NPC spec + Dossier | 수호대 통솔, 비밀 유지시설 공개, 블랙 피라미드 보고·아들 구조 요청 기록 | 부분 반영 · 승인 대기 |
-| 로드리온 로마노비치 라스콜니코프 | p.32-p.60, p.77, p.101-p.109 | NPC spec + Dossier | 섹터 C 감독관, 심부 굴착 생존자, 변이, 숙청·격리 통제, 사보타주 대응 기록 | 부분 반영 · 승인 대기 |
-| 바자로프 교수 | p.76-p.79, p.101-p.108 | NPC spec + Dossier | 섹터 C 수석 연구원, 발레리아 해방·복귀, 비상 대응 기록 | 부분 반영 · 승인 대기 |
+| 그리고리 페초린 대령 | p.18-p.22, p.61-p.70 + 사용자 등급·초상 지정 | NPC spec + Dossier | 수호대 통솔 기록에 H등급과 제공 초상 반영 | durable updated · live apply pending |
+| 로드리온 로마노비치 라스콜니코프 | p.32-p.60, p.77, p.101-p.109 + 사용자 등급·초상 지정 | NPC spec + Dossier | 감독관 기록에 M등급과 제공 초상 반영 | durable updated · live apply pending |
+| 바자로프 교수 | p.76-p.79, p.101-p.108 + 사용자 등급·소속·초상 지정 | NPC spec + Dossier | 연구 기구 정규 소속·섹터 C 파견, H등급과 제공 초상 반영 | durable updated · live apply pending |
 | 발레리아 아젠트 / AEGIS | p.76-p.79, p.101-p.108 | existing Dossier | 로드리온의 강압적 격리, 바자로프의 해방, 유지시설 대응 합류 기록 | Applied + DB re-read |
 | 광원화 임시 백신 | p.57-p.60, p.111 | `wiki_pages.aurora-virus`, report | 보랏빛 물질 투여 후 상처 회복, 감염력 `0.000000392`, 상태 해제, 5인분 예방제 확보 기록 | Applied + Verified |
 | 광원화 냉동 감염자 | p.66-p.69, p.109-p.111 | `wiki_pages.aurora-virus`, `wiki_pages.sector-c` | 최소 수십만 명 생존 냉동, 냉기 적응, 무기 감염·전략적 사고 증언, 해동 개시 기록 | Applied + Verified |
@@ -76,36 +76,34 @@ source: stargate-lore
 | 우디 | `WD-(𝓃)` | 로드리온 음주 승부·냉기 방사기 획득 장면 | Applied + DB re-read |
 | 발레리아 아젠트 | `AEGIS` | 격리 해제·유지시설 대응 합류 | Applied + DB re-read |
 | 닥터 모스 | `DOCTOR_MOSS` | 마가렛의 관측 속 사후 경고 | Applied + DB re-read |
-| 그리고리 페초린 | `PECHORIN` | 신규 NPC Dossier | 부분 반영 · 승인 대기 |
-| 로드리온 라스콜니코프 | `RODION` | 신규 NPC Dossier | 부분 반영 · 승인 대기 |
-| 바자로프 교수 | `BAZAROV` | 신규 NPC Dossier | 부분 반영 · 승인 대기 |
+| 그리고리 페초린 | `PECHORIN` | H등급·초상 durable 반영 | live apply pending |
+| 로드리온 라스콜니코프 | `RODION` | M등급·초상 durable 반영 | live apply pending |
+| 바자로프 교수 | `BAZAROV` | H등급·연구 기구 소속·섹터 C 파견·초상 durable 반영 | live apply pending |
 
 ## NPC Manual Review Gate
 
-신규 NPC의 생성 자체와 로그 기반 서술이 schema를 통과했다는 사실은, Dossier가 사용자 승인까지 끝났다는 뜻이 아니다. 아래 항목은 세 NPC를 live ERP에 반영하기 전에 사용자에게 명시적으로 확인받았어야 한다. 이번 교정에서는 소스에 없는 등급·이미지를 만들지 않고, 미승인 값을 그대로 `미지정` 또는 승인 대기로 유지한다.
+신규 NPC의 생성 자체와 로그 기반 서술이 schema를 통과했다는 사실은, Dossier가 사용자 승인까지 끝났다는 뜻이 아니다. 2026-07-15 사용자 지시로 세 NPC의 등급과 정확한 Dossier 초상, 바자로프의 정규 소속·파견 상태가 추가 확정됐다. durable spec/payload와 로컬 자산에는 반영하되, live ERP mutation은 별도 실행 승인 전까지 보류한다.
 
 | 검토 항목 | `PECHORIN` | `RODION` | `BAZAROV` | 근거 등급 | 현재 판정 |
 |---|---|---|---|---|---|
 | 신원조회 실명 | `그리고리 페초린` | `로드리온 로마노비치 라스콜니코프` | `바자로프`만 확인 | PDF 직접 진술·호명 | 실명 필드 반영. 바자로프의 전체 이름은 소스 부족 |
 | 별칭 | `페초린 대령`은 별칭이 아니라 직함을 붙인 호칭 | `로쟈`는 본인이 제안한 확인된 별칭 | `바자로프 교수`는 별칭이 아니라 직함을 붙인 호칭 | p.18, p.33, p.82 | `로쟈`만 확정. 나머지 두 `nickname` 값은 필드 재분류 여부 사용자 결정 필요 |
 | ERP 식별자 | `PECHORIN` | `RODION` | `BAZAROV` | 기존 ERP 키 규칙에 따른 정규화 | 원문 코드네임 아님. 사용자 승인 필요 |
-| 역할 | 섹터 C 군인·전방 수호대 통솔 대령 | 섹터 C 감독관·심부 굴착 생존자 | 섹터 C 수석 연구원 | PDF 직접 진술·행동 | source-confirmed |
-| 조직 | `NOVUS_ORDO` / `SECTOR_C` / `MANUS` | 동일 | 동일 | `NOVUS_ORDO`·`SECTOR_C`는 로그, `MANUS`는 기존 ERP 조직도 매핑 | `MANUS` 귀속은 derived. 사용자 승인 필요 |
-| 권한등급 | 미지정 | 미지정 | 미지정 | PDF에 `V~U` 등급 없음 | 사용자/GM 지정 필요. 기존 UI의 `J` 표시는 fallback 오류이며 DB 저장값이 아님 |
-| Dossier 초상 | 없음 | 없음 | 없음 | 독립 초상 소스 없음 | 정확한 사용자 제공 이미지 필요. 컷신을 초상으로 전용하거나 임의 생성하지 않음 |
+| 역할 | 섹터 C 군인·전방 수호대 통솔 대령 | 섹터 C 감독관·심부 굴착 생존자 | 연구 기구 소속 / 섹터 C 파견 수석 연구원 | PDF 역할 + 사용자 소속 보정 | 바자로프의 role·배경·역할 상세에 파견 상태 durable 반영 |
+| 조직 | `NOVUS_ORDO` / `MANUS` / `SECTOR_C` | 동일 | `NOVUS_ORDO` / `SECRETARIAT` / `RESEARCH`; 섹터 C 파견 | 기존 조직도 + 사용자 직접 지정 | 바자로프의 기존 `MANUS / SECTOR_C` 소속을 교정 payload에 반영 |
+| 권한등급 | `H` | `M` | `H` | 사용자 직접 지정 | durable 반영, live apply pending |
+| Dossier 초상 | `/assets/npcs/Pechorin-profile.webp` | `/assets/npcs/Rodion-profile.webp` | `/assets/npcs/Bazarov-profile.webp` | 사용자 제공 exact portrait | 로컬 WebP 자산·`previewImage` durable 반영, live apply pending |
 | 공개 여부 | `isPublic: true` | `isPublic: true` | `isPublic: true` | 동기화 당시 수동 게시 선택 | 사용자 승인 없음. 공개 유지/비공개 전환 결정 필요 |
 | 인적 정보 | 남성, 나이·신장·체중 미상 | 남성, 나이·신장·체중 미상 | 남성, 나이·신장·체중 미상 | 로그의 인칭·묘사, 수치 없음 | 미상 수치는 유지. 성별 표기 검토 가능 |
 | 성격·배경 요약 | 규정 중시와 기밀 제보를 압축 서술 | 호쾌함과 강압적 통제를 압축 서술 | 실무 우선 비상 대응을 압축 서술 | 세션 행동을 편집 요약 | 사실 문장 기반이지만 해석적 압축이므로 사용자 검토 필요 |
 | 관계 서술 | `RODION` 불신 | `AEGIS` 강압적 격리 | `AEGIS` 격리 해제 | 세션 행동 직접 근거 | 사건은 confirmed, 관계 라벨·요약 문구는 사용자 검토 필요 |
 
-### NPC Approval Inputs
+### Remaining NPC Approval Inputs
 
-- 등급: `PECHORIN`, `RODION`, `BAZAROV` 각각 `V/A/M/H/G/J/U` 중 하나 또는 계속 `미지정`.
-- 초상: 세 NPC 각각의 정확한 원본 이미지. 전달 전에는 `previewImage`와 `lore.mainImage`를 빈 값으로 유지한다.
 - 공개 상태: 세 NPC 각각 `공개 유지` 또는 `비공개 전환`.
 - 필드 의미: `페초린 대령`, `바자로프 교수`를 별칭으로 유지할지, 별칭에서는 제거하고 역할·직함으로만 표시할지 결정.
 - 정규화 승인: 원문 코드네임이 아닌 `PECHORIN`, `RODION`, `BAZAROV`를 ERP 식별자로 유지할지 결정.
-- 조직 귀속 승인: 기존 조직도에서 파생한 `institutionCode: MANUS`를 유지할지 결정.
+- live ERP 실행 승인: 세 NPC `characters` 레코드에 등급·초상·바자로프 소속/파견 보정을 지금 적용할지 결정.
 
 ## Relationship Narrative Candidates
 
@@ -152,9 +150,9 @@ source: stargate-lore
 | entity visual | p.90 발레리나 | 정확한 개체 도판으로 wiki asset 등록 | Applied + browser verified |
 | entity visual | p.99 웬디고 | 정확한 개체 도판으로 wiki asset 등록 | Applied + browser verified |
 | report cutscene | p.32 로드리온, p.76-p.78 발레리아/바자로프 | 독립 인물 초상이 아니므로 Dossier 이미지로 사용 안 함 | skipped |
-| Dossier portrait | 그리고리 페초린 | 독립 초상 소스 없음; 사용자 제공 이미지 대기 | missing-source |
-| Dossier portrait | 로드리온 로마노비치 라스콜니코프 | 독립 초상 소스 없음; 사용자 제공 이미지 대기 | missing-source |
-| Dossier portrait | 바자로프 | 독립 초상 소스 없음; 사용자 제공 이미지 대기 | missing-source |
+| Dossier portrait | 그리고리 페초린 | 제공 PNG를 `Pechorin-profile.webp`로 최적화해 `previewImage` 후보에 연결 | durable applied · live pending |
+| Dossier portrait | 로드리온 로마노비치 라스콜니코프 | 제공 PNG를 `Rodion-profile.webp`로 최적화해 `previewImage` 후보에 연결 | durable applied · live pending |
+| Dossier portrait | 바자로프 | 제공 PNG를 `Bazarov-profile.webp`로 최적화해 `previewImage` 후보에 연결 | durable applied · live pending |
 
 ## ERP Gap Map
 
@@ -162,7 +160,7 @@ source: stargate-lore
 |---|---|---|---|
 | `/erp/sessions/report` | verified | 05 보고서·추정 지도 포인트·20명 참가자·6개 본문 자산 등록 | 목록, 지도, 상세 렌더와 참가자 링크 확인 |
 | `/erp/wiki` | verified | 세션 mirror·섹터 C·3개 개체 문서 등록 | 상호 링크, 본문, 이미지 렌더 확인 |
-| `/erp/personnel` | partial | 신규 NPC 3명의 로그 기반 서술과 세션 연결은 등록됐으나, 등급·초상·공개 여부·정규화 식별자·일부 `nickname` 필드가 미승인 | 누락 등급의 `J` fallback 제거, Rodion 실명/별칭 분리 표시; NPC Manual Review Gate 승인 후 최종화 |
+| `/erp/personnel` | partial | 등급·초상·바자로프 연구 기구 소속/섹터 C 파견은 durable 반영됐지만 live DB 적용 전; 공개 여부·정규화 식별자·일부 `nickname` 필드는 미승인 | 교정 payload dry-run과 risk review 뒤 별도 live 실행 승인 필요 |
 | `/erp/wiki/catalog` | verified/partial | 냉기 방사기는 `SPECIAL`·비매품·보관 전용으로 등록, 임시 백신은 정체·장기 효능 미확정 | `cold-emitter`만 등록하고 임시 백신은 후보-only 유지 |
 | `/erp/stock` | no-action | 기업 귀속·공시 없는 비공개 연구 성과 | `ART` watchlist만 기록 |
 | relation graph | verified/partial | 확인된 인물 간 관계만 구조화 가능 | 신규 NPC 3개 관계와 기존 Dossier 11개 방향성 관계를 재조회; entity 관계는 wiki/report prose 유지 |
@@ -173,7 +171,7 @@ source: stargate-lore
 - `TIGER298`의 기존 `NOSB-MINI-5959-CONTAINMENT` 요약에는 `백진연`, `UNYEON`의 같은 세션 요약에는 `시유`가 들어 있는 상호 오염 후보가 보인다. 이번 원본과 직접 관련 없는 기존 데이터이므로 자동 교정하지 않았다.
 - 루빈의 바부슈카와 페초린 가족의 동일인·가족관계, 보랏빛 물질과 기존 행동교정물질의 동일성, 사보타주 배후는 현 소스만으로 확정하지 않았다.
 - 바자로프와 운연의 과거 관계는 호칭만 확인되므로 구조화 관계로 넣지 않았다.
-- `PECHORIN`, `RODION`, `BAZAROV`의 권한등급, 초상, 공개 여부와 정규화 식별자는 사용자 승인 전까지 확정으로 취급하지 않는다.
+- `PECHORIN`, `RODION`, `BAZAROV`의 권한등급과 초상은 사용자 확정으로 durable 반영했다. 공개 여부와 정규화 식별자는 계속 사용자 승인 전까지 확정으로 취급하지 않는다.
 - `페초린 대령`, `바자로프 교수`는 현재 `nickname`에 저장되어 있으나 실제 별칭이라는 근거가 없다. 필드 이동 여부를 사용자 결정 전까지 자동 교정하지 않는다.
 
 ## Actual Verification
@@ -190,4 +188,10 @@ source: stargate-lore
 - PDF p.18의 `그리고리 페초린 대령`·`감독관 로드리온 로마노비치`, p.33의 전체 이름·`로쟈` 별칭 제안, p.82의 `바자로프, 수석 연구원`을 다시 대조했다.
 - 교정 코드에 대해 `node --experimental-strip-types --test lib/__tests__/personnel-identity-display.test.mjs` 3건과 `node --test lib/__tests__/personnel-redaction.test.mjs` 20건, `pnpm typecheck`, `pnpm lint`를 통과했다.
 - 인증된 ERP 브라우저에서 세 NPC 카드가 실명을 기본 이름으로, 기존 `nickname`을 별도 `ALIAS` 줄로 표시하고 `권한등급 : 미지정`을 유지함을 확인했다. 로드리온 Dossier 제목·실명 필드는 전체 이름, `ALIAS`·별칭 필드는 `로쟈`로 분리됐으며, 편집 폼의 누락 등급 기본값도 `미지정 · GM 확인 필요`였다. Dossier 초상 `<img>`는 생성되지 않았고 콘솔 경고·오류는 0건이다.
-- 이번 교정 패스에서는 live DB 값을 다시 쓰지 않았다. 등급·초상·공개 여부·정규화 식별자·직함/별칭 필드는 사용자 승인 전까지 부분 반영 상태다.
+- 후속 사용자 제공 PNG 3장을 내용 변경 없이 WebP로 최적화했다. `Rodion-profile.webp`와 `Bazarov-profile.webp`는 832×1216, `Pechorin-profile.webp`는 1086×1448이며 세 파일 모두 alpha 범위 0–1을 유지한다.
+- `@stargate/shared-db` 빌드 후 세 NPC spec을 `parseFrontmatter` → `parseMdBody` → `toDbNpc`로 검증했다. 등급, `institutionCode`/`department`, `previewImage`가 사용자 지정값과 일치하고 `lore.mainImage`는 빈 값으로 보존됐다.
+- 전용 교정 payload dry-run에서 `RODION`, `BAZAROV`, `PECHORIN` 기존 문서 3건만 `예상 update`로 확인됐다. live 재조회 기준 세 문서 모두 `agentLevel` 미지정·`previewImage` 빈 값이며, 바자로프는 아직 `MANUS / SECTOR_C`다.
+- 실행 전 critical risk review는 blocker 없이 조건부 통과했다. 반드시 3건 전용 `nosb-s1e5-evil-part1-npc-approval.json`만 실행하고, 12건·5개 컬렉션을 포함하는 전체 sync payload는 이번 교정에 사용하지 않는다.
+- 후속 변경에 대해 신원조회 테스트 23건, `pnpm typecheck`, `pnpm lint`, `git diff --check`를 통과했다.
+- 로컬 서버에서 세 WebP URL이 모두 `200 image/webp`로 응답했다. 인증된 로드리온 Dossier 상세에서 풀네임과 `로쟈` 별칭이 분리되고 별칭 계산 글꼴 크기가 14px이며, live 적용 전이라 인물 초상은 아직 렌더되지 않음을 확인했다. 콘솔 경고·오류는 0건이다.
+- 첫 교정 패스에서는 live DB 값을 다시 쓰지 않았다. 후속 사용자 지시로 등급·초상·바자로프 소속/파견은 durable 반영했고, 별도 live 실행 승인을 기다린다. 공개 여부·정규화 식별자·직함/별칭 필드는 계속 검토 대상이다.
