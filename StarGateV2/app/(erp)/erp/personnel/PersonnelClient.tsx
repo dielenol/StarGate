@@ -174,8 +174,14 @@ function getOrgTone(code: string | null | undefined): "hostile" | undefined {
 /** 같은 그룹/서브유닛 내부 카드 정렬: 등급 내림차순 → codename 오름차순 */
 function compareForCardOrder(a: Character, b: Character): number {
   if (characterUsesAgentLevels(a) && characterUsesAgentLevels(b)) {
-    const levelCmp = compareLevels(b.agentLevel ?? "J", a.agentLevel ?? "J");
-    if (levelCmp !== 0) return levelCmp;
+    if (a.agentLevel && b.agentLevel) {
+      const levelCmp = compareLevels(b.agentLevel, a.agentLevel);
+      if (levelCmp !== 0) return levelCmp;
+    } else if (a.agentLevel) {
+      return -1;
+    } else if (b.agentLevel) {
+      return 1;
+    }
   }
   return a.codename.localeCompare(b.codename, "en");
 }
@@ -780,7 +786,11 @@ export default function PersonnelClient({
               showIdentity={showIdentity}
               showAgentLevel={usesAgentLevels}
               isLead={
-                usesAgentLevels && compareLevels(c.agentLevel ?? "J", "A") >= 0
+                Boolean(
+                  usesAgentLevels &&
+                    c.agentLevel &&
+                    compareLevels(c.agentLevel, "A") >= 0,
+                )
               }
               isRedacted={
                 !canViewField(clearance, "identity") &&
@@ -817,7 +827,7 @@ export default function PersonnelClient({
       const leadCount = members.filter(
         (m) =>
           characterUsesAgentLevels(m) &&
-          compareLevels(m.agentLevel ?? "J", "A") >= 0,
+          Boolean(m.agentLevel && compareLevels(m.agentLevel, "A") >= 0),
       ).length;
       const sorted = [...members].sort(compareForCardOrder);
 
