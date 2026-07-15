@@ -21,7 +21,7 @@ appearsInEvents: [NOSB-S1E5-EVIL-PART1]
 source: session-log
 previewImage: /assets/npcs/Rodion-profile.webp
 createdAt: 2026-06-28T00:00:00.000Z
-updatedAt: 2026-07-15T08:15:47.000Z
+updatedAt: 2026-07-15T08:44:59.000Z
 ---
 
 ## 대사

@@ -5,7 +5,7 @@ type: NPC
 role: 섹터 C 전방 수호대 통솔 대령
 nameKo: 그리고리 페초린
 nameNative:
-nickname: 페초린 대령
+nickname:
 nameEn:
 gender: 남성
 age: 미상
@@ -21,7 +21,7 @@ appearsInEvents: [NOSB-S1E5-EVIL-PART1]
 source: session-log
 previewImage: /assets/npcs/Pechorin-profile.webp
 createdAt: 2026-06-28T00:00:00.000Z
-updatedAt: 2026-07-15T08:15:47.000Z
+updatedAt: 2026-07-15T08:44:59.000Z
 ---
 
 ## 대사
