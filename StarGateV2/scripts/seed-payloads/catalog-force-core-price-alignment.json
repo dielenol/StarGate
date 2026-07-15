@@ -1,0 +1,14 @@
+{
+  "collection": "master_items",
+  "type": "catalog-price-alignment",
+  "filter": {
+    "slug": "force_core"
+  },
+  "update": {
+    "$set": {
+      "price": 1800,
+      "updatedAt": "2026-07-15T00:00:00.000Z"
+    }
+  },
+  "allowQuestionMarkPlaceholder": true
+}

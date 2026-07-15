@@ -411,6 +411,7 @@ function summarizeSavedDoc(
         slug: doc.slug,
         name: doc.name,
         category: doc.category,
+        price: doc.price,
         isPublic: doc.isPublic,
         isAvailable: doc.isAvailable,
         tags: doc.tags,
