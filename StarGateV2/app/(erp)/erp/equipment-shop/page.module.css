@@ -339,8 +339,7 @@
 .armoryHeader,
 .zoneBody,
 .hubLayout,
-.hubScene,
-.routeBar {
+.hubScene {
   position: relative;
   z-index: 1;
 }
@@ -1044,24 +1043,6 @@
 .debugModes--suture {
   grid-template-columns: repeat(5, minmax(84px, 1fr));
   min-width: min(100%, 760px);
-}
-
-.routeBar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding: 9px 10px;
-  background: rgba(7, 8, 8, 0.68);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-}
-
-.routeBar span {
-  color: var(--ink-2);
-  font-size: 14px;
-  line-height: 1.45;
-  word-break: keep-all;
 }
 
 .backLink {
@@ -3277,6 +3258,38 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 8%, transparent);
 }
 
+.workshopAdminLink {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  justify-content: center;
+  min-height: 36px;
+  padding: 7px 12px;
+  background: color-mix(in srgb, var(--gold) 9%, rgba(3, 4, 5, 0.92));
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 76%, var(--line));
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.workshopAdminLink:hover,
+.workshopAdminLink:focus-visible {
+  background: color-mix(in srgb, var(--gold) 17%, rgba(3, 4, 5, 0.88));
+  border-color: var(--gold);
+  color: var(--ink-0);
+}
+
+.workshopAdminLink:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--gold) 72%, transparent);
+  outline-offset: 2px;
+}
+
 .workshopRequestCard:last-child {
   grid-column: 1 / -1;
 }
@@ -4244,11 +4257,6 @@
   .researchPreview,
   .amountInput {
     grid-template-columns: 1fr;
-  }
-
-  .routeBar {
-    align-items: stretch;
-    flex-direction: column;
   }
 
   .npcHud {

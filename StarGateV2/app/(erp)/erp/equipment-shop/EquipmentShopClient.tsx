@@ -5112,7 +5112,7 @@ export default function EquipmentShopClient({
             <span>REQUEST LEDGER</span>
             <strong>{isGM ? "공방 요청 처리 현황" : "내 공방 요청"}</strong>
             {isGM ? (
-              <Link className={styles.primaryAction} href="/erp/admin/equipment-workshop">
+              <Link className={styles.workshopAdminLink} href="/erp/admin/equipment-workshop">
                 GM 공방 관리 페이지 열기
               </Link>
             ) : null}
@@ -5594,10 +5594,6 @@ export default function EquipmentShopClient({
                 </div>
               </div>
             ) : null}
-            <div className={styles.routeBar}>
-              <span>{activeZoneDef.description}</span>
-            </div>
-
             <div className={styles.zoneBody}>
               {showTowaskiLicenseTest ? (
                 <TowaskiLicenseTest
