@@ -42,6 +42,25 @@ export interface ShopMeta {
   pageGroup?: ShopPageGroup;
 }
 
+/** 캐릭터 능력 슬롯과 분리되어 장착 장비가 제공하는 전용 액션. */
+export interface EquipmentAction {
+  code: string;
+  name: string;
+  description: string;
+  effect: string;
+  actionCost: number;
+  chargeCost: number;
+  maxCharges: number;
+  reloadCreditCost: number;
+  reloadApproval: "GM";
+}
+
+/** 인벤토리 장비 인스턴스의 현재/최대 충전 상태. */
+export interface EquipmentChargeState {
+  current: number;
+  maximum: number;
+}
+
 export interface MasterItem {
   _id?: ObjectId;
   /**
@@ -84,6 +103,8 @@ export interface MasterItem {
     | "containment-archive";
   authorId?: string;
   authorName?: string;
+  /** 장착 중일 때만 ERP/VTT에 노출되는 장비 전용 액션. */
+  equipmentAction?: EquipmentAction;
   /** GM 공방에서 생성한 캐릭터 전용 강화 결과의 추적 메타데이터. */
   workshop?: {
     requestId: string;
@@ -111,6 +132,8 @@ export interface CharacterInventory {
   equippedSlot?: EquipmentSlot;
   /** 마지막 장착/교체 시각. equippedSlot 과 함께 설정·해제한다. */
   equippedAt?: Date;
+  /** equipmentAction을 가진 장비 인스턴스의 충전 상태. */
+  equipmentCharge?: EquipmentChargeState;
 }
 
 export type SharedInventoryScope = "GLOBAL";

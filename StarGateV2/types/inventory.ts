@@ -30,6 +30,8 @@ export interface InventoryEntryDto {
   previewImage?: string;
   isPublic?: boolean;
   tags?: string[];
+  equipmentAction?: import("@stargate/shared-db/types").EquipmentAction;
+  equipmentCharge?: import("@stargate/shared-db/types").EquipmentChargeState;
   workshop?: import("@stargate/shared-db/types").MasterItem["workshop"];
   equippedSlot?: import("@stargate/shared-db/types").EquipmentSlot;
   equippedAt?: string;

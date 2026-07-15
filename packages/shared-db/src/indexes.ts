@@ -159,6 +159,14 @@ export async function ensureAllIndexes(): Promise<void> {
           inventoryEntryId: { $type: "string" },
         },
       },
+      {
+        key: { activeOperationKey: 1 },
+        name: "equipment_workshop_requests_active_operation_unique",
+        unique: true,
+        partialFilterExpression: {
+          activeOperationKey: { $type: "string" },
+        },
+      },
     ]),
 
     /* ── master_items (from task spec) ── */

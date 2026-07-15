@@ -6,6 +6,7 @@ import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import {
   findEquipmentWorkshopRequestById,
+  findEquipmentWorkshopRequestByActiveOperationKey,
   insertEquipmentWorkshopRequest,
   listActiveEquipmentWorkshopRequests,
   listEquipmentWorkshopRequests,
@@ -143,7 +144,9 @@ export async function POST(request: Request) {
   let sourceSlot: EquipmentWorkshopRequestDoc["sourceSlot"];
   let sourceDamage: string | undefined;
   let sourcePreviewImage: string | undefined;
-  if (validation.input.kind === "upgrade") {
+  let reload: EquipmentWorkshopRequestDoc["reload"];
+  let activeOperationKey: string | undefined;
+  if (validation.input.kind === "upgrade" || validation.input.kind === "reload") {
     const { entries } = await listCharacterInventoryEntries(
       String(mainCharacter._id),
     );
@@ -154,9 +157,37 @@ export async function POST(request: Request) {
     );
     if (!equippedEntry) {
       return NextResponse.json(
-        { error: "현재 장착 중인 장비만 강화 문의를 보낼 수 있습니다." },
+        {
+          error: validation.input.kind === "reload"
+            ? "현재 장착 중인 장비만 재장전 결재를 요청할 수 있습니다."
+            : "현재 장착 중인 장비만 강화 문의를 보낼 수 있습니다.",
+        },
         { status: 400 },
       );
+    }
+    if (validation.input.kind === "reload") {
+      const action = equippedEntry.equipmentAction;
+      const charge = equippedEntry.equipmentCharge;
+      if (!action || !charge || action.reloadApproval !== "GM") {
+        return NextResponse.json(
+          { error: "GM 승인형 재장전을 지원하는 장비 액션이 없습니다." },
+          { status: 400 },
+        );
+      }
+      if (
+        charge.current !== 0 ||
+        charge.maximum !== action.maxCharges
+      ) {
+        return NextResponse.json(
+          { error: "충전이 완전히 소진된 장비만 재장전을 요청할 수 있습니다." },
+          { status: 409 },
+        );
+      }
+      reload = {
+        actionCode: action.code,
+        creditCost: action.reloadCreditCost,
+      };
+      activeOperationKey = `reload:${equippedEntry._id}`;
     }
     equipmentName = equippedEntry.itemName;
     sourceItemId = equippedEntry.itemId;
@@ -196,7 +227,7 @@ export async function POST(request: Request) {
     userName: requesterName,
     characterId,
     characterCodename: mainCharacter.codename,
-    ...(validation.input.kind === "upgrade"
+    ...(validation.input.kind === "upgrade" || validation.input.kind === "reload"
       ? { inventoryEntryId: validation.input.inventoryEntryId }
       : {}),
     ...(equipmentName ? { equipmentName } : {}),
@@ -205,6 +236,8 @@ export async function POST(request: Request) {
     ...(sourceSlot ? { sourceSlot } : {}),
     ...(sourceDamage ? { sourceDamage } : {}),
     ...(sourcePreviewImage ? { sourcePreviewImage } : {}),
+    ...(reload ? { reload } : {}),
+    ...(activeOperationKey ? { activeOperationKey } : {}),
     details: validation.input.details,
     status: "REQUESTED",
     createdAt: now,
@@ -224,6 +257,21 @@ export async function POST(request: Request) {
   } catch (error) {
     if (!isDuplicateKeyError(error)) throw error;
     const existing = await findEquipmentWorkshopRequestById(requestId);
+    if (!existing && activeOperationKey) {
+      const active = await findEquipmentWorkshopRequestByActiveOperationKey(
+        activeOperationKey,
+      );
+      if (active?.userId === session.user.id) {
+        return NextResponse.json(
+          {
+            error: "이미 결재 대기 중인 재장전 요청이 있습니다.",
+            code: "RELOAD_REQUEST_EXISTS",
+            request: serializeEquipmentWorkshopRequest(active),
+          },
+          { status: 409 },
+        );
+      }
+    }
     if (!existing || existing.userId !== session.user.id) throw error;
     if (!isSameEquipmentWorkshopRequestPayload(existing, requestDoc)) {
       return NextResponse.json(
@@ -337,12 +385,17 @@ export async function PATCH(request: Request) {
     ? (existing.status === "REQUESTED" && body.status === "IN_REVIEW") ||
       (["REQUESTED", "IN_REVIEW", "APPROVED", "QUOTED"].includes(existing.status) &&
         body.status === "REJECTED")
+    : existing.kind === "reload"
+      ? (["REQUESTED", "IN_REVIEW", "APPROVED"].includes(existing.status) &&
+          (body.status === "IN_REVIEW" || body.status === "REJECTED"))
     : CUSTOM_WORKSHOP_MANUAL_TRANSITIONS[existing.status].includes(body.status);
   if (!canManuallyTransition) {
     return NextResponse.json(
       {
         error: existing.kind === "upgrade"
           ? "장착 장비 강화는 견적·수락·수령 또는 제작 취소 전용 API로 처리해야 합니다."
+          : existing.kind === "reload"
+            ? "재장전은 검토·반려 또는 GM 결재 승인 전용 API로 처리해야 합니다."
           : "커스텀 제작 요청의 기존 처리 흐름에서 허용되지 않는 상태 변경입니다.",
       },
       { status: 409 },

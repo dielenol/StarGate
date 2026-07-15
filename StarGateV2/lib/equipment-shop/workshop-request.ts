@@ -1,4 +1,9 @@
-import type { EquipmentSlot, ItemCategory } from "@stargate/shared-db/types";
+import type {
+  EquipmentAction,
+  EquipmentChargeState,
+  EquipmentSlot,
+  ItemCategory,
+} from "@stargate/shared-db/types";
 
 export const EQUIPMENT_WORKSHOP_REQUEST_STATUSES = [
   "REQUESTED",
@@ -16,8 +21,15 @@ export const WORKSHOP_REQUEST_DETAIL_MIN_LENGTH = 10;
 export const WORKSHOP_REQUEST_DETAIL_MAX_LENGTH = 1000;
 export const WORKSHOP_QUOTE_MAX_DURATION_MINUTES = 43_200;
 export const WORKSHOP_QUOTE_MAX_MATERIAL_QUANTITY = 999;
+export const WORKSHOP_RELOAD_REQUEST_DETAILS = "장착 장비 액션 재장전 승인 요청";
 
-export type EquipmentWorkshopRequestKind = "upgrade" | "custom";
+export const WORKSHOP_COST_POLICY = {
+  utilityCreditRange: [200, 500],
+  actionLaborRateRange: [0.2, 0.4],
+  advancedCreditRange: [1_500, 2_200],
+} as const;
+
+export type EquipmentWorkshopRequestKind = "upgrade" | "custom" | "reload";
 export type EquipmentWorkshopRequestStatus =
   (typeof EQUIPMENT_WORKSHOP_REQUEST_STATUSES)[number];
 export type EquipmentWorkshopComputedStatus =
@@ -29,12 +41,18 @@ export type EquipmentWorkshopSpecialist =
   | "TOWASKI"
   | "SUTURE"
   | "RATCHET";
+export type EquipmentWorkshopModificationDomain =
+  | "GENERAL"
+  | "ENERGY_EXPLOSIVE_OUTPUT"
+  | "BIO_REGEN_REPAIR";
 
 export interface EquipmentWorkshopMaterial {
   itemId: string;
   itemName: string;
   category: ItemCategory;
   quantity: number;
+  unitPrice: number;
+  subtotal: number;
 }
 
 export interface EquipmentWorkshopResultBlueprint {
@@ -47,6 +65,7 @@ export interface EquipmentWorkshopResultBlueprint {
   effect?: string;
   tags: string[];
   previewImage?: string;
+  equipmentAction?: EquipmentAction;
   generation: number;
 }
 
@@ -55,7 +74,11 @@ export interface EquipmentWorkshopQuote {
   creditCost: number;
   durationMinutes: number;
   specialistCodename: EquipmentWorkshopSpecialist;
+  specialistNote?: string;
+  modificationDomain: EquipmentWorkshopModificationDomain;
   materials: EquipmentWorkshopMaterial[];
+  materialCost: number;
+  totalCost: number;
   result: EquipmentWorkshopResultBlueprint;
   issuedAt: string;
   issuedById?: string;
@@ -67,6 +90,13 @@ export interface EquipmentWorkshopEscrow {
   sourceItemName: string;
   sourceSlot: EquipmentSlot;
   materials: EquipmentWorkshopMaterial[];
+  creditCost: number;
+  sourceEquipmentCharge?: EquipmentChargeState;
+  sourceNote?: string;
+}
+
+export interface EquipmentWorkshopReload {
+  actionCode: string;
   creditCost: number;
 }
 
@@ -89,9 +119,11 @@ export interface SerializedEquipmentWorkshopRequest {
   computedStatus: EquipmentWorkshopComputedStatus;
   quote?: EquipmentWorkshopQuote;
   escrow?: EquipmentWorkshopEscrow;
+  reload?: EquipmentWorkshopReload;
   startedAt?: string;
   readyAt?: string;
   claimedAt?: string;
+  reloadedAt?: string;
   createdAt: string;
   updatedAt: string;
   reviewedAt?: string;
@@ -130,6 +162,9 @@ export interface EquipmentWorkshopQuoteInput {
   expectedVersion: number;
   creditCost: number;
   durationMinutes: number;
+  specialistCodename?: EquipmentWorkshopSpecialist;
+  specialistNote?: string;
+  modificationDomain: EquipmentWorkshopModificationDomain;
   materials: Array<{ itemId: string; quantity: number }>;
   result: {
     name: string;
@@ -138,6 +173,7 @@ export interface EquipmentWorkshopQuoteInput {
     effect?: string;
     tags?: string[];
     previewImage?: string;
+    equipmentAction?: EquipmentAction;
   };
   internalNote?: string;
 }
@@ -167,7 +203,7 @@ export function canTransitionEquipmentWorkshopRequestStatus(
     EquipmentWorkshopRequestStatus,
     readonly EquipmentWorkshopRequestStatus[]
   > = {
-    REQUESTED: ["IN_REVIEW", "APPROVED", "QUOTED", "REJECTED"],
+    REQUESTED: ["IN_REVIEW", "APPROVED", "QUOTED", "COMPLETED", "REJECTED"],
     IN_REVIEW: ["APPROVED", "QUOTED", "REJECTED"],
     APPROVED: ["QUOTED", "COMPLETED", "REJECTED"],
     QUOTED: ["QUOTED", "IN_PROGRESS", "DECLINED", "REJECTED"],
@@ -223,7 +259,15 @@ export function parseEquipmentWorkshopRequest(body: unknown): EquipmentWorkshopR
   }
   const source = body as Record<string, unknown>;
   const kind = source.kind;
-  if (kind !== "upgrade" && kind !== "custom") return { ok: false, error: "지원하지 않는 공방 요청입니다." };
+  if (kind !== "upgrade" && kind !== "custom" && kind !== "reload") return { ok: false, error: "지원하지 않는 공방 요청입니다." };
+  if (kind === "reload") {
+    const inventoryEntryId = typeof source.inventoryEntryId === "string" ? source.inventoryEntryId.trim() : "";
+    if (!inventoryEntryId) return { ok: false, error: "재장전할 장착 장비를 선택해 주세요." };
+    return {
+      ok: true,
+      input: { kind, details: WORKSHOP_RELOAD_REQUEST_DETAILS, inventoryEntryId },
+    };
+  }
   const details = typeof source.details === "string" ? source.details.trim() : "";
   if (details.length < WORKSHOP_REQUEST_DETAIL_MIN_LENGTH) return { ok: false, error: `요청 내용을 ${WORKSHOP_REQUEST_DETAIL_MIN_LENGTH}자 이상 입력해 주세요.` };
   if (details.length > WORKSHOP_REQUEST_DETAIL_MAX_LENGTH) return { ok: false, error: `요청 내용은 ${WORKSHOP_REQUEST_DETAIL_MAX_LENGTH}자 이하여야 합니다.` };
@@ -233,6 +277,61 @@ export function parseEquipmentWorkshopRequest(body: unknown): EquipmentWorkshopR
     return { ok: true, input: { kind, details, inventoryEntryId } };
   }
   return { ok: true, input: { kind, details } };
+}
+
+function isEquipmentWorkshopSpecialist(
+  value: unknown,
+): value is EquipmentWorkshopSpecialist {
+  return ["VERNIER", "TEMPER", "TOWASKI", "SUTURE", "RATCHET"].includes(
+    String(value),
+  );
+}
+
+function isEquipmentWorkshopModificationDomain(
+  value: unknown,
+): value is EquipmentWorkshopModificationDomain {
+  return ["GENERAL", "ENERGY_EXPLOSIVE_OUTPUT", "BIO_REGEN_REPAIR"].includes(
+    String(value),
+  );
+}
+
+function parseEquipmentAction(value: unknown): EquipmentAction | undefined | null {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) return null;
+  const source = value as Record<string, unknown>;
+  const code = typeof source.code === "string" ? source.code.trim().toUpperCase() : "";
+  const name = typeof source.name === "string" ? source.name.trim() : "";
+  const description = typeof source.description === "string" ? source.description.trim() : "";
+  const effect = typeof source.effect === "string" ? source.effect.trim() : "";
+  const actionCost = source.actionCost;
+  const chargeCost = source.chargeCost;
+  const maxCharges = source.maxCharges;
+  const reloadCreditCost = source.reloadCreditCost;
+  if (
+    !/^U[1-9][0-9]?$/.test(code) ||
+    !name || name.length > 80 ||
+    !description || description.length > 500 ||
+    !effect || effect.length > 1000 ||
+    !Number.isSafeInteger(actionCost) || Number(actionCost) < 1 ||
+    !Number.isSafeInteger(chargeCost) || Number(chargeCost) < 1 ||
+    !Number.isSafeInteger(maxCharges) || Number(maxCharges) < Number(chargeCost) || Number(maxCharges) > 99 ||
+    typeof reloadCreditCost !== "number" || !Number.isFinite(reloadCreditCost) ||
+    reloadCreditCost < 0 || Number(reloadCreditCost.toFixed(2)) !== reloadCreditCost ||
+    source.reloadApproval !== "GM"
+  ) {
+    return null;
+  }
+  return {
+    code,
+    name,
+    description,
+    effect,
+    actionCost: Number(actionCost),
+    chargeCost: Number(chargeCost),
+    maxCharges: Number(maxCharges),
+    reloadCreditCost,
+    reloadApproval: "GM",
+  };
 }
 
 function optionalText(value: unknown, max: number): string | undefined | null {
@@ -249,16 +348,23 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
   const expectedVersion = source.expectedVersion;
   const creditCost = source.creditCost;
   const durationMinutes = source.durationMinutes;
+  const specialistCodename = source.specialistCodename;
+  const modificationDomain = source.modificationDomain ?? "GENERAL";
   if (!Number.isInteger(expectedVersion) || Number(expectedVersion) < 0) return { ok: false, error: "견적 버전이 올바르지 않습니다." };
   if (typeof creditCost !== "number" || !Number.isFinite(creditCost) || creditCost < 0 || Number(creditCost.toFixed(2)) !== creditCost) return { ok: false, error: "크레딧은 0 이상, 소수점 둘째 자리까지 입력해 주세요." };
   if (!Number.isInteger(durationMinutes) || Number(durationMinutes) < 1 || Number(durationMinutes) > WORKSHOP_QUOTE_MAX_DURATION_MINUTES) return { ok: false, error: "제작 시간은 1~43,200분이어야 합니다." };
+  if (specialistCodename !== undefined && !isEquipmentWorkshopSpecialist(specialistCodename)) return { ok: false, error: "주 담당 specialist가 올바르지 않습니다." };
+  if (!isEquipmentWorkshopModificationDomain(modificationDomain)) return { ok: false, error: "개조 계통이 올바르지 않습니다." };
   if (!result || typeof result.name !== "string" || !result.name.trim() || result.name.trim().length > 80) return { ok: false, error: "결과 장비 이름은 1~80자여야 합니다." };
   if (typeof result.description !== "string" || !result.description.trim() || result.description.trim().length > 500) return { ok: false, error: "결과 장비 설명은 1~500자여야 합니다." };
   const damage = optionalText(result.damage, 80);
   const effect = optionalText(result.effect, 120);
   const previewImage = optionalText(result.previewImage, 500);
+  const specialistNote = optionalText(source.specialistNote, 200);
   const internalNote = optionalText(source.internalNote, 1000);
-  if (damage === null || effect === null || previewImage === null || internalNote === null) return { ok: false, error: "견적의 선택 입력값 길이가 올바르지 않습니다." };
+  const equipmentAction = parseEquipmentAction(result.equipmentAction);
+  if (damage === null || effect === null || previewImage === null || specialistNote === null || internalNote === null) return { ok: false, error: "견적의 선택 입력값 길이가 올바르지 않습니다." };
+  if (equipmentAction === null) return { ok: false, error: "장비 액션은 U 코드, 설명, 효과, 액션·충전 비용, 최대 충전과 GM 재장전 비용을 확인해 주세요." };
   if (previewImage && !previewImage.startsWith("/assets/") && !/^https:\/\//i.test(previewImage)) return { ok: false, error: "이미지는 /assets 경로 또는 HTTPS URL이어야 합니다." };
   const rawTags = Array.isArray(result.tags) ? result.tags : [];
   const tags = rawTags.filter((tag): tag is string => typeof tag === "string").map((tag) => tag.trim()).filter(Boolean);
@@ -280,6 +386,9 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
       expectedVersion: Number(expectedVersion),
       creditCost,
       durationMinutes: Number(durationMinutes),
+      ...(specialistCodename ? { specialistCodename } : {}),
+      ...(specialistNote ? { specialistNote } : {}),
+      modificationDomain,
       materials,
       result: {
         name: result.name.trim(),
@@ -288,6 +397,7 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
         ...(effect ? { effect } : {}),
         tags,
         ...(previewImage ? { previewImage } : {}),
+        ...(equipmentAction ? { equipmentAction } : {}),
       },
       ...(internalNote ? { internalNote } : {}),
     },
@@ -295,5 +405,7 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
 }
 
 export function getEquipmentWorkshopRequestLabel(kind: EquipmentWorkshopRequestKind): string {
-  return kind === "upgrade" ? "장착 장비 강화 문의" : "커스텀 장비 제작 의뢰";
+  if (kind === "upgrade") return "장착 장비 강화 문의";
+  if (kind === "reload") return "장비 액션 재장전 결재 요청";
+  return "커스텀 장비 제작 의뢰";
 }

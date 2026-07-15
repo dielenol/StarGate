@@ -439,6 +439,35 @@ export function useCancelEquipmentWorkshopRequest() {
   });
 }
 
+export function useApproveEquipmentWorkshopReload() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { request: AdminSerializedEquipmentWorkshopRequest },
+    EquipmentShopApiError,
+    { requestId: string }
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch(
+        `/api/erp/admin/equipment-workshop/${input.requestId}/approve-reload`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": createIdempotencyKey(
+              "equipment-workshop-reload",
+              input,
+            ),
+          },
+          body: JSON.stringify({}),
+        },
+      );
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () => invalidateWorkshopEconomy(queryClient),
+  });
+}
+
 export function useCompleteTowaskiLicenseTest() {
   const queryClient = useQueryClient();
 

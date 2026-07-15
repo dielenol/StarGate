@@ -34,7 +34,11 @@ const SLOT_LABEL: Record<EquipmentSlot, string> = {
 };
 
 function itemDescription(item: InventoryEntryDto): string {
-  return item.damage || item.effect || item.description || "상세 정보 미등록";
+  const details = [item.damage, item.effect, item.description].filter(
+    (value, index, values): value is string =>
+      Boolean(value) && values.indexOf(value) === index,
+  );
+  return details.join(" · ") || "상세 정보 미등록";
 }
 
 function itemImageSrc(item: InventoryEntryDto): string | null {
@@ -126,6 +130,19 @@ export default function CharacterEquipmentPanel({
                   <div>
                     <strong>{item.itemName}</strong>
                     <p>{itemDescription(item)}</p>
+                    {item.equipmentAction && item.equipmentCharge ? (
+                      <div>
+                        <strong>
+                          {item.equipmentAction.code} [{item.equipmentAction.name}]
+                        </strong>
+                        <p>{item.equipmentAction.effect}</p>
+                        <small>
+                          장비 충전 {item.equipmentCharge.current}/{item.equipmentCharge.maximum}
+                          {" · "}재장전 {item.equipmentAction.reloadCreditCost.toLocaleString()} CR
+                          {" · "}GM 승인
+                        </small>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ) : (

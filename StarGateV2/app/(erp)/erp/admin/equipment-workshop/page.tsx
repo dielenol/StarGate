@@ -8,6 +8,7 @@ import {
   listEquipmentWorkshopRequests,
   serializeAdminEquipmentWorkshopRequest,
 } from "@/lib/db/equipment-workshop-requests";
+import { findShopItemBySlug } from "@/lib/shop/catalog";
 
 import EquipmentWorkshopAdminClient from "./EquipmentWorkshopAdminClient";
 
@@ -19,7 +20,7 @@ export default async function EquipmentWorkshopAdminPage() {
   const [requests, itemDocuments] = await Promise.all([
     listEquipmentWorkshopRequests({ limit: 100 }),
     (await masterItemsCol())
-      .find({}, { projection: { name: 1, category: 1 } })
+      .find({}, { projection: { name: 1, category: 1, slug: 1, price: 1 } })
       .sort({ name: 1 })
       .toArray(),
   ]);
@@ -40,6 +41,9 @@ export default async function EquipmentWorkshopAdminPage() {
           id: String(item._id),
           name: item.name,
           category: item.category,
+          unitPrice: item.slug
+            ? (Number(findShopItemBySlug(item.slug)?.price ?? item.price) || 0)
+            : (Number(item.price) || 0),
         }))}
         blobUploadEnabled={Boolean(process.env.BLOB_READ_WRITE_TOKEN)}
       />

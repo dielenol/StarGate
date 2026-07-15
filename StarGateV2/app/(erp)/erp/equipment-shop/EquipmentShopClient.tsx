@@ -55,6 +55,8 @@ import Tag from "@/components/ui/Tag/Tag";
 import { describeApiError } from "@/lib/api/describe-error";
 import {
   requiresEquipmentWorkshopOperatorNote,
+  WORKSHOP_RELOAD_REQUEST_DETAILS,
+  WORKSHOP_REQUEST_DETAIL_MIN_LENGTH,
   type EquipmentWorkshopComputedStatus,
   type EquipmentWorkshopRequestStatus,
   type EquipmentWorkshopSpecialist,
@@ -140,7 +142,6 @@ import {
   type VernierMood,
 } from "@/lib/equipment-shop/vernier-dialogue";
 import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
-import { WORKSHOP_REQUEST_DETAIL_MIN_LENGTH } from "@/lib/equipment-shop/workshop-request";
 import { formatCredits } from "@/lib/format/credit";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
@@ -258,6 +259,12 @@ const WORKSHOP_SPECIALISTS: Record<
   SUTURE: { label: "SUTURE · 증강체", portrait: SUTURE_PROFILE_SRC },
   RATCHET: { label: "RATCHET · 전략 장비", portrait: RATCHET_PROFILE_SRC },
 };
+
+const WORKSHOP_MODIFICATION_DOMAIN_LABELS = {
+  GENERAL: "일반 개조",
+  ENERGY_EXPLOSIVE_OUTPUT: "에너지장·폭발·출력",
+  BIO_REGEN_REPAIR: "생체 접속·재생·자기수복",
+} as const;
 
 function workshopDialogue(
   specialist: EquipmentWorkshopSpecialist,
@@ -4858,6 +4865,9 @@ export default function EquipmentShopClient({
 
   function renderCustomPanel() {
     const workshopRequests = workshopRequestsQuery.data?.requests ?? [];
+    const actionEquipment = equippedEntries.filter(
+      (entry) => entry.equipmentAction && entry.equipmentCharge,
+    );
     const submitWorkshopRequest = (
       event: FormEvent<HTMLFormElement>,
       kind: "upgrade" | "custom",
@@ -4906,6 +4916,30 @@ export default function EquipmentShopClient({
       customRequestDetails.trim().length >= WORKSHOP_REQUEST_DETAIL_MIN_LENGTH &&
       (isGM || research.capabilities.customWeaponSlot);
 
+    const requestReload = (inventoryEntryId: string) => {
+      workshopRequestMutation.mutate(
+        {
+          kind: "reload",
+          details: WORKSHOP_RELOAD_REQUEST_DETAILS,
+          inventoryEntryId,
+        },
+        {
+          onSuccess: (response) =>
+            showFeedback(
+              "success",
+              "관료 결재 요청 접수",
+              `${response.request.reload?.creditCost.toLocaleString() ?? "0"} CR 재장전 결재를 요청했습니다.`,
+            ),
+          onError: (error) =>
+            showFeedback(
+              "error",
+              "재장전 요청 실패",
+              describeEquipmentShopError(error),
+            ),
+        },
+      );
+    };
+
     return (
       <div className={styles.customPanel}>
         <div className={styles.panelIntro}>
@@ -4921,12 +4955,39 @@ export default function EquipmentShopClient({
         <div className={styles.workshopGrid}>
           <section className={styles.workshopMaintenanceCard}>
             <span>EXCLUSIVE EQUIPMENT</span>
-            <strong>전용 장비 제작</strong>
+            <strong>전용 장비 액션</strong>
             <p>
-              개인 전용 장비의 설계·제작 절차를 준비하고 있습니다. 현재는 정비
-              중으로 신규 제작을 접수하지 않습니다.
+              장착 중인 공방 장비 액션과 충전 상태입니다. 완전히 소진된 장비는
+              관료 결재를 거쳐 정액 재장전할 수 있습니다.
             </p>
-            <Tag tone="gold">정비 중</Tag>
+            {actionEquipment.length === 0 ? (
+              <Tag tone="gold">장착 액션 없음</Tag>
+            ) : (
+              actionEquipment.map((entry) => {
+                const action = entry.equipmentAction;
+                const charge = entry.equipmentCharge;
+                if (!action || !charge || !entry._id) return null;
+                const depleted = charge.current === 0;
+                return (
+                  <article key={entry._id}>
+                    <strong>{action.code} [{action.name}]</strong>
+                    <p>{action.description}</p>
+                    <small>
+                      충전 {charge.current}/{charge.maximum} · 재장전 {formatCredits(action.reloadCreditCost)} · GM 승인
+                    </small>
+                    {depleted ? (
+                      <button
+                        type="button"
+                        disabled={workshopRequestMutation.isPending}
+                        onClick={() => requestReload(entry._id)}
+                      >
+                        관료 결재 요청
+                      </button>
+                    ) : null}
+                  </article>
+                );
+              })
+            )}
           </section>
 
           <form
@@ -5065,7 +5126,7 @@ export default function EquipmentShopClient({
               workshopRequests.map((request) => (
                 <article key={request._id}>
                   <span>
-                    {request.characterCodename} · {request.kind === "upgrade" ? "강화" : "제작"}
+                    {request.characterCodename} · {request.kind === "upgrade" ? "강화" : request.kind === "reload" ? "재장전" : "제작"}
                   </span>
                   <strong>{request.equipmentName ?? request.details}</strong>
                   <small>
@@ -5075,6 +5136,11 @@ export default function EquipmentShopClient({
                     {formatDateTime(request.createdAt)}
                   </small>
                   {request.operatorNote ? <p>{request.operatorNote}</p> : null}
+                  {request.reload ? (
+                    <p>
+                      {request.reload.actionCode} · 전용 장약·검수 정액 {formatCredits(request.reload.creditCost)} · 관료 결재 대기
+                    </p>
+                  ) : null}
                   {request.quote ? (() => {
                     const quote = request.quote;
                     const specialist = WORKSHOP_SPECIALISTS[quote.specialistCodename];
@@ -5100,6 +5166,7 @@ export default function EquipmentShopClient({
                           <div>
                             <strong>{specialist.label}</strong>
                             <p>{workshopDialogue(quote.specialistCodename, request.computedStatus)}</p>
+                            {quote.specialistNote ? <small>{quote.specialistNote}</small> : null}
                           </div>
                         </div>
                         <div className={styles.workshopComparison}>
@@ -5119,16 +5186,35 @@ export default function EquipmentShopClient({
                             <strong>{quote.result.name}</strong>
                             <small>{quote.result.damage ?? "피해 정보 없음"}</small>
                             <p>{quote.result.description}</p>
+                            {quote.result.equipmentAction ? (
+                              <p>
+                                <strong>{quote.result.equipmentAction.code} [{quote.result.equipmentAction.name}]</strong><br />
+                                {quote.result.equipmentAction.effect}<br />
+                                충전 {quote.result.equipmentAction.maxCharges}/{quote.result.equipmentAction.maxCharges} · 재장전 {formatCredits(quote.result.equipmentAction.reloadCreditCost)}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                         <dl className={styles.workshopQuoteSummary}>
                           <div>
-                            <dt>비용</dt>
+                            <dt>공방 공임</dt>
                             <dd data-ready={creditReady}>{formatCredits(quote.creditCost)}</dd>
+                          </div>
+                          <div>
+                            <dt>재료 조달가</dt>
+                            <dd>{formatCredits(quote.materialCost)}</dd>
+                          </div>
+                          <div>
+                            <dt>총 경제 부담</dt>
+                            <dd>{formatCredits(quote.totalCost)}</dd>
                           </div>
                           <div>
                             <dt>제작 시간</dt>
                             <dd>{quote.durationMinutes.toLocaleString()}분</dd>
+                          </div>
+                          <div>
+                            <dt>개조 계통</dt>
+                            <dd>{WORKSHOP_MODIFICATION_DOMAIN_LABELS[quote.modificationDomain]}</dd>
                           </div>
                         </dl>
                         {quote.materials.length > 0 ? (
@@ -5137,8 +5223,8 @@ export default function EquipmentShopClient({
                               const available = availableByItemId.get(material.itemId) ?? 0;
                               return (
                                 <li key={material.itemId} data-ready={available >= material.quantity}>
-                                  <span>{material.itemName}</span>
-                                  <strong>{available} / {material.quantity}</strong>
+                                  <span>{material.itemName} · {formatCredits(material.unitPrice)} × {material.quantity}</span>
+                                  <strong>{available} / {material.quantity} · {formatCredits(material.subtotal)}</strong>
                                 </li>
                               );
                             })}

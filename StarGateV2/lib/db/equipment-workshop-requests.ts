@@ -7,8 +7,10 @@ import type { EquipmentSlot, ItemCategory } from "@stargate/shared-db/types";
 
 import type {
   EquipmentWorkshopRequestStatus,
+  EquipmentWorkshopRequestKind,
   EquipmentWorkshopEscrow,
   EquipmentWorkshopQuote,
+  EquipmentWorkshopReload,
   SerializedEquipmentWorkshopRequest,
   AdminSerializedEquipmentWorkshopRequest,
 } from "@/lib/equipment-shop/workshop-request";
@@ -16,7 +18,7 @@ import { getEquipmentWorkshopComputedStatus } from "@/lib/equipment-shop/worksho
 
 export interface EquipmentWorkshopRequestDoc {
   _id: string;
-  kind: "upgrade" | "custom";
+  kind: EquipmentWorkshopRequestKind;
   userId: string;
   userName: string;
   characterId: string;
@@ -39,9 +41,13 @@ export interface EquipmentWorkshopRequestDoc {
   internalNote?: string;
   quote?: Omit<EquipmentWorkshopQuote, "issuedAt"> & { issuedAt: Date };
   escrow?: EquipmentWorkshopEscrow;
+  reload?: EquipmentWorkshopReload;
+  /** 진행 중인 동일 장비 작업을 막는 내부 unique key. */
+  activeOperationKey?: string;
   startedAt?: Date;
   readyAt?: Date;
   claimedAt?: Date;
+  reloadedAt?: Date;
   history?: EquipmentWorkshopRequestHistoryEntry[];
 }
 
@@ -61,6 +67,40 @@ export async function equipmentWorkshopRequestsCol() {
   );
 }
 
+function serializeEquipmentWorkshopQuote(
+  quote: NonNullable<EquipmentWorkshopRequestDoc["quote"]>,
+  includeIssuer: boolean,
+): EquipmentWorkshopQuote {
+  const materials = quote.materials.map((material) => {
+    const unitPrice = Number(material.unitPrice ?? 0);
+    const subtotal = Number(
+      (material.subtotal ?? unitPrice * material.quantity).toFixed(2),
+    );
+    return { ...material, unitPrice, subtotal };
+  });
+  const materialCost = Number(
+    (quote.materialCost
+      ?? materials.reduce((total, material) => total + material.subtotal, 0)
+    ).toFixed(2),
+  );
+  const totalCost = Number(
+    (quote.totalCost ?? materialCost + quote.creditCost).toFixed(2),
+  );
+  const serialized: EquipmentWorkshopQuote = {
+    ...quote,
+    modificationDomain: quote.modificationDomain ?? "GENERAL",
+    materials,
+    materialCost,
+    totalCost,
+    issuedAt: quote.issuedAt.toISOString(),
+  };
+  if (!includeIssuer) {
+    delete serialized.issuedById;
+    delete serialized.issuedByName;
+  }
+  return serialized;
+}
+
 export function serializeEquipmentWorkshopRequest(
   request: EquipmentWorkshopRequestDoc,
 ): SerializedEquipmentWorkshopRequest {
@@ -73,6 +113,8 @@ export function serializeEquipmentWorkshopRequest(
     startedAt,
     readyAt,
     claimedAt,
+    reloadedAt,
+    activeOperationKey: _activeOperationKey,
     internalNote: _internalNote,
     reviewedById: _reviewedById,
     reviewedByName: _reviewedByName,
@@ -81,17 +123,9 @@ export function serializeEquipmentWorkshopRequest(
   void _internalNote;
   void _reviewedById;
   void _reviewedByName;
+  void _activeOperationKey;
   const playerQuote = quote
-    ? (() => {
-        const {
-          issuedById: _issuedById,
-          issuedByName: _issuedByName,
-          ...publicQuote
-        } = quote;
-        void _issuedById;
-        void _issuedByName;
-        return { ...publicQuote, issuedAt: quote.issuedAt.toISOString() };
-      })()
+    ? serializeEquipmentWorkshopQuote(quote, false)
     : undefined;
   return {
     ...rest,
@@ -115,6 +149,7 @@ export function serializeEquipmentWorkshopRequest(
     ...(startedAt ? { startedAt: startedAt.toISOString() } : {}),
     ...(readyAt ? { readyAt: readyAt.toISOString() } : {}),
     ...(claimedAt ? { claimedAt: claimedAt.toISOString() } : {}),
+    ...(reloadedAt ? { reloadedAt: reloadedAt.toISOString() } : {}),
   };
 }
 
@@ -126,7 +161,7 @@ export function serializeAdminEquipmentWorkshopRequest(
     ...(request.reviewedById ? { reviewedById: request.reviewedById } : {}),
     ...(request.reviewedByName ? { reviewedByName: request.reviewedByName } : {}),
     ...(request.quote
-      ? { quote: { ...request.quote, issuedAt: request.quote.issuedAt.toISOString() } }
+      ? { quote: serializeEquipmentWorkshopQuote(request.quote, true) }
       : {}),
     ...(request.history
       ? {
@@ -154,6 +189,12 @@ export async function findEquipmentWorkshopRequestById(
     { _id: requestId },
     { session: options.session },
   );
+}
+
+export async function findEquipmentWorkshopRequestByActiveOperationKey(
+  activeOperationKey: string,
+): Promise<EquipmentWorkshopRequestDoc | null> {
+  return (await equipmentWorkshopRequestsCol()).findOne({ activeOperationKey });
 }
 
 export async function listEquipmentWorkshopRequests(options: {
@@ -186,6 +227,9 @@ export async function updateEquipmentWorkshopRequestStatus(input: {
   reviewedByName: string;
 }): Promise<EquipmentWorkshopRequestDoc | null> {
   const now = new Date();
+  const closesOperation = ["DECLINED", "REJECTED", "CANCELLED", "COMPLETED"].includes(
+    input.status,
+  );
   return (await equipmentWorkshopRequestsCol()).findOneAndUpdate(
     { _id: input.requestId, status: input.currentStatus },
     {
@@ -208,6 +252,7 @@ export async function updateEquipmentWorkshopRequestStatus(input: {
           ...(input.operatorNote ? { note: input.operatorNote } : {}),
         },
       },
+      ...(closesOperation ? { $unset: { activeOperationKey: "" } } : {}),
     },
     { returnDocument: "after" },
   );
@@ -219,6 +264,14 @@ export async function updateEquipmentWorkshopQuote(input: {
   expectedVersion: number;
   quote: EquipmentWorkshopRequestDoc["quote"];
   internalNote?: string;
+  sourceSnapshot?: Pick<
+    EquipmentWorkshopRequestDoc,
+    | "sourceItemId"
+    | "sourceCategory"
+    | "sourceSlot"
+    | "sourceDamage"
+    | "sourcePreviewImage"
+  >;
   actorId: string;
   actorName: string;
 }): Promise<EquipmentWorkshopRequestDoc | null> {
@@ -240,6 +293,7 @@ export async function updateEquipmentWorkshopQuote(input: {
         reviewedAt: now,
         reviewedById: input.actorId,
         reviewedByName: input.actorName,
+        ...(input.sourceSnapshot ?? {}),
         ...(input.internalNote !== undefined ? { internalNote: input.internalNote } : {}),
       },
       $push: {
@@ -265,9 +319,17 @@ export async function transitionEquipmentWorkshopRequest(input: {
   note?: string;
   set?: Record<string, unknown>;
   expectedQuoteVersion?: number;
+  unset?: Record<string, "">;
   session?: ClientSession;
 }): Promise<EquipmentWorkshopRequestDoc | null> {
   const now = new Date();
+  const closesOperation = ["DECLINED", "REJECTED", "CANCELLED", "COMPLETED"].includes(
+    input.status,
+  );
+  const unset = {
+    ...(input.unset ?? {}),
+    ...(closesOperation ? { activeOperationKey: "" as const } : {}),
+  };
   return (await equipmentWorkshopRequestsCol()).findOneAndUpdate(
     {
       _id: input.requestId,
@@ -292,6 +354,7 @@ export async function transitionEquipmentWorkshopRequest(input: {
           ...(input.note ? { note: input.note } : {}),
         },
       },
+      ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
     },
     { returnDocument: "after", session: input.session },
   );

@@ -11,6 +11,7 @@ import {
   listAgentCharacters,
   listCharacterInventory,
   masterItemsCol,
+  consumeEquippedEquipmentCharge,
   removeFromInventory,
   type Ability,
   type AgentCharacter,
@@ -31,6 +32,22 @@ export interface NochichimConsumableSnapshot {
   previewImage: string;
   note?: string;
   acquiredAt: SerializedDate;
+}
+
+export interface NochichimEquipmentActionSnapshot {
+  itemId: string;
+  inventoryEntryId: string;
+  itemName: string;
+  code: string;
+  name: string;
+  description: string;
+  effect: string;
+  actionCost: number;
+  chargeCost: number;
+  currentCharges: number;
+  maxCharges: number;
+  reloadCreditCost: number;
+  reloadApproval: "GM";
 }
 
 export interface NochichimCharacterListItem {
@@ -80,6 +97,7 @@ export interface NochichimCharacterSnapshot extends NochichimCharacterListItem {
       stargateSlot: string;
       stargateCode?: string;
     }>;
+    equipmentActions: NochichimEquipmentActionSnapshot[];
   };
   consumables: NochichimConsumableSnapshot[];
 }
@@ -232,6 +250,37 @@ export async function loadCharacterConsumables(
   });
 }
 
+export async function loadCharacterEquipmentActions(
+  characterId: string,
+): Promise<NochichimEquipmentActionSnapshot[]> {
+  const inventory = (await listCharacterInventory(characterId)).filter(
+    (entry) => entry.quantity > 0 && Boolean(entry.equippedSlot),
+  );
+  const itemMap = await loadMasterItemMap(inventory);
+
+  return inventory.flatMap((entry) => {
+    const item = itemMap.get(entry.itemId);
+    const action = item?.equipmentAction;
+    const charge = entry.equipmentCharge;
+    if (!item || !action || !charge || !entry._id) return [];
+    return [{
+      itemId: entry.itemId,
+      inventoryEntryId: objectIdString(entry._id),
+      itemName: item.name || entry.itemName,
+      code: action.code,
+      name: action.name,
+      description: action.description,
+      effect: action.effect,
+      actionCost: action.actionCost,
+      chargeCost: action.chargeCost,
+      currentCharges: charge.current,
+      maxCharges: charge.maximum,
+      reloadCreditCost: action.reloadCreditCost,
+      reloadApproval: action.reloadApproval,
+    }];
+  });
+}
+
 export async function loadCharacterSnapshot(
   key: string,
 ): Promise<NochichimCharacterSnapshot | null> {
@@ -239,7 +288,10 @@ export async function loadCharacterSnapshot(
   if (!character) return null;
 
   const id = objectIdString(character._id);
-  const consumables = await loadCharacterConsumables(id);
+  const [consumables, equipmentActions] = await Promise.all([
+    loadCharacterConsumables(id),
+    loadCharacterEquipmentActions(id),
+  ]);
   const play = character.play;
   const stats = {
     hp: finalStat(play.hp, play.hpDelta),
@@ -275,8 +327,49 @@ export async function loadCharacterSnapshot(
       cantrips: play.abilities
         .filter(abilityHasContent)
         .map(toNochichimCantrip),
+      equipmentActions,
     },
     consumables,
+  };
+}
+
+export async function consumeCharacterEquipmentAction(input: {
+  characterId: string;
+  itemId: string;
+  actionCode: string;
+}): Promise<{
+  ok: boolean;
+  currentCharges: number;
+  equipmentActions: NochichimEquipmentActionSnapshot[];
+}> {
+  const character = await findAgentCharacterByKey(input.characterId);
+  if (!character) throw new Error("Character not found");
+  const characterId = objectIdString(character._id);
+  const item = (await loadMasterItemMap([
+    {
+      characterId,
+      characterCodename: character.codename,
+      itemId: input.itemId,
+      itemName: "",
+      quantity: 1,
+      acquiredAt: new Date(),
+    },
+  ])).get(input.itemId);
+  const action = item?.equipmentAction;
+  if (!item || !action || action.code !== input.actionCode) {
+    throw new Error("Equipment action not found");
+  }
+
+  const result = await consumeEquippedEquipmentCharge(
+    characterId,
+    input.itemId,
+    action.chargeCost,
+    action.maxCharges,
+  );
+  return {
+    ok: result.ok,
+    currentCharges: result.current,
+    equipmentActions: await loadCharacterEquipmentActions(characterId),
   };
 }
 

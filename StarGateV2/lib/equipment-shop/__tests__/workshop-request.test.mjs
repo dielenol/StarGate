@@ -57,6 +57,26 @@ test("custom requests normalize whitespace without accepting empty prose", () =>
   );
 });
 
+test("reload requests require an equipped entry and use a server-owned description", () => {
+  assert.equal(parseEquipmentWorkshopRequest({ kind: "reload" }).ok, false);
+  assert.deepEqual(
+    parseEquipmentWorkshopRequest({
+      kind: "reload",
+      inventoryEntryId: "entry-1",
+      details: "클라이언트가 바꾸려는 설명",
+    }),
+    {
+      ok: true,
+      input: {
+        kind: "reload",
+        inventoryEntryId: "entry-1",
+        details: "장착 장비 액션 재장전 승인 요청",
+      },
+    },
+  );
+  assert.equal(getEquipmentWorkshopRequestLabel("reload"), "장비 액션 재장전 결재 요청");
+});
+
 test("request validation rejects unknown kinds and oversized details", () => {
   assert.equal(
     parseEquipmentWorkshopRequest({ kind: "exclusive", details: "충분히 긴 요청 내용입니다." }).ok,
@@ -122,6 +142,39 @@ test("quote validation enforces cost precision, material quantities, duration an
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, durationMinutes: 43_201 }).ok, false);
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, materials: [{ ...valid.materials[0], quantity: 1000 }] }).ok, false);
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, result: { ...valid.result, previewImage: "http://unsafe.test/item.png" } }).ok, false);
+});
+
+test("quote validation accepts specialist override and a charge-backed U action", () => {
+  const parsed = parseEquipmentWorkshopQuote({
+    expectedVersion: 0,
+    creditCost: 400,
+    durationMinutes: 4_320,
+    specialistCodename: "TOWASKI",
+    specialistNote: "VERNIER 접수·통합 / TOWASKI 폭발물 검수",
+    modificationDomain: "ENERGY_EXPLOSIVE_OUTPUT",
+    materials: [{ itemId: "6a00b417585bb4a1ce48b64f", quantity: 1 }],
+    result: {
+      name: "보급형 공격 방패 · 크레모아 개조형",
+      description: "기존 공격 방패에 크레모아 반응장갑을 통합한 전용 개조형입니다.",
+      damage: "10 물리",
+      equipmentAction: {
+        code: "U1",
+        name: "크레모아 반응장갑",
+        description: "방패 전면 장약을 기폭합니다.",
+        effect: "자신의 액션과 장비 충전 1회를 소모해 전장 규격에 따른 범위에 30 화염 피해를 줍니다.",
+        actionCost: 1,
+        chargeCost: 1,
+        maxCharges: 1,
+        reloadCreditCost: 200,
+        reloadApproval: "GM",
+      },
+    },
+  });
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.input.specialistCodename, "TOWASKI");
+  assert.equal(parsed.input.modificationDomain, "ENERGY_EXPLOSIVE_OUTPUT");
+  assert.equal(parsed.input.result.equipmentAction.code, "U1");
+  assert.equal(parsed.input.result.equipmentAction.reloadCreditCost, 200);
 });
 
 test("specialist routing is deterministic and READY is derived from server time", () => {
@@ -198,6 +251,8 @@ test("player/admin DTOs are separated and economy routes require ownership and i
   assert.match(playerRoute, /readIdempotencyKey\(request\)/);
   assert.match(adminRoute, /hasRole\(session\.user\.role, "GM"\)/);
   assert.match(adminRoute, /expectedVersion/);
+  assert.match(adminRoute, /characterInventoryCol\(\)[\s\S]*sourceEntry/);
+  assert.match(adminRoute, /sourceSnapshot/);
 });
 
 test("image upload verifies GM role, declared MIME, file size and magic bytes", () => {
@@ -222,11 +277,47 @@ test("accept, claim and cancel keep every economy mutation inside the supplied t
   assert.match(operations, /price: 0/);
   assert.match(operations, /balanceStatus: "balance-candidate"/);
   assert.match(operations, /equipCharacterInventoryItem\(request\.characterId, request\.quote\.result\.itemId, request\.sourceSlot/);
+  assert.match(operations, /equipmentAction: request\.quote\.result\.equipmentAction/);
+  assert.match(operations, /equipmentCharge:[\s\S]*current: request\.quote\.result\.equipmentAction\.maxCharges/);
+  assert.match(operations, /const existingResult = await inventory\.findOne/);
+  assert.match(operations, /결과 장비가 이미 인벤토리에 있어 안전하게 수령할 수 없습니다/);
+  assert.match(operations, /sourceEquipmentCharge/);
+});
+
+test("reload approval revalidates ownership and empty equipped charge in one economy transaction", () => {
+  const operations = readFileSync(new URL("../workshop-operations.ts", import.meta.url), "utf8");
+  const adminRoute = readFileSync(new URL("../../../app/api/erp/admin/equipment-workshop/[requestId]/[action]/route.ts", import.meta.url), "utf8");
+  assert.match(adminRoute, /executeEconomicOperation\([\s\S]*approveWorkshopReloadInTransaction/);
+  assert.match(operations, /ownerId: request\.userId/);
+  assert.match(operations, /equippedSlot: request\.sourceSlot/);
+  assert.match(operations, /"equipmentCharge\.current": 0/);
+  assert.match(operations, /amount: -request\.reload\.creditCost[\s\S]*"equipmentCharge\.current": action\.maxCharges/);
+  assert.match(operations, /childIdempotencyKey\(input\.requestId, "reload-credit"\)/);
+  assert.match(operations, /childIdempotencyKey\(input\.requestId, "credit"\)/);
+  assert.match(operations, /childIdempotencyKey\(input\.requestId, "refund"\)/);
 });
 
 test("only one in-progress request can escrow an inventory entry", () => {
   const indexes = readFileSync(new URL("../../../../packages/shared-db/src/indexes.ts", import.meta.url), "utf8");
   assert.match(indexes, /equipment_workshop_requests_inventoryEntry_in_progress_unique[\s\S]*unique: true[\s\S]*status: "IN_PROGRESS"/);
+  assert.match(indexes, /equipment_workshop_requests_active_operation_unique[\s\S]*unique: true[\s\S]*activeOperationKey/);
+});
+
+test("quotes snapshot procurement cost and Nochichim exposes equipped actions separately", () => {
+  const adminRoute = readFileSync(new URL("../../../app/api/erp/admin/equipment-workshop/[requestId]/[action]/route.ts", import.meta.url), "utf8");
+  const playerClient = readFileSync(new URL("../../../app/(erp)/erp/equipment-shop/EquipmentShopClient.tsx", import.meta.url), "utf8");
+  const snapshots = readFileSync(new URL("../../../app/api/vtt/nochichim/_lib/snapshots.ts", import.meta.url), "utf8");
+  const actionRoute = readFileSync(new URL("../../../app/api/vtt/nochichim/characters/[id]/equipment-action/route.ts", import.meta.url), "utf8");
+  assert.match(adminRoute, /findShopItemBySlug/);
+  assert.match(adminRoute, /포스코어는 에너지장·폭발·출력 계통 개조에만/);
+  assert.match(adminRoute, /VF혈액팩은 생체 접속·재생·자기수복 계통 개조에만/);
+  assert.match(adminRoute, /materialCost/);
+  assert.match(adminRoute, /totalCost/);
+  assert.match(playerClient, /총 경제 부담/);
+  assert.match(playerClient, /관료 결재 요청/);
+  assert.match(snapshots, /equipmentActions/);
+  assert.match(snapshots, /consumeEquippedEquipmentCharge/);
+  assert.match(actionRoute, /requireNochichimSyncAuth/);
 });
 
 test("GM material picker supports name and category search", () => {

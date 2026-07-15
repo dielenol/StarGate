@@ -1,5 +1,5 @@
 import { NextResponse, after } from "next/server";
-import { masterItemsCol } from "@stargate/shared-db";
+import { characterInventoryCol, masterItemsCol } from "@stargate/shared-db";
 import { ObjectId } from "mongodb";
 
 import { isValidIdempotencyKey, readIdempotencyKey } from "@/lib/api/idempotency";
@@ -16,15 +16,28 @@ import {
   resolveEquipmentWorkshopSpecialist,
 } from "@/lib/equipment-shop/workshop-request";
 import {
+  approveWorkshopReloadInTransaction,
   cancelWorkshopInTransaction,
+  prepareWorkshopReloadLocks,
   prepareWorkshopOperationLocks,
   WorkshopOperationError,
 } from "@/lib/equipment-shop/workshop-operations";
 import { notifyUser } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { findShopItemBySlug } from "@/lib/shop/catalog";
 
 interface RouteContext {
   params: Promise<{ requestId: string; action: string }>;
+}
+
+function procurementUnitPrice(item: {
+  slug?: string;
+  price: number | string;
+}): number | null {
+  const shopPrice = item.slug ? findShopItemBySlug(item.slug)?.price : undefined;
+  const numeric = shopPrice ?? Number(item.price);
+  if (!Number.isFinite(numeric) || numeric < 0) return null;
+  return Number(numeric.toFixed(2));
 }
 
 async function requireGm() {
@@ -43,29 +56,92 @@ export async function PUT(request: Request, context: RouteContext) {
   if (!validation.ok) return NextResponse.json({ error: validation.error }, { status: 400 });
   const current = await findEquipmentWorkshopRequestById(requestId);
   if (!current) return NextResponse.json({ error: "공방 요청을 찾을 수 없습니다." }, { status: 404 });
-  if (current.kind !== "upgrade" || !current.sourceItemId || !current.sourceCategory || !current.sourceSlot) return NextResponse.json({ error: "장착 장비 강화 요청만 견적을 발행할 수 있습니다." }, { status: 400 });
+  if (current.kind !== "upgrade" || !current.inventoryEntryId) return NextResponse.json({ error: "장착 장비 강화 요청만 견적을 발행할 수 있습니다." }, { status: 400 });
   if (!["REQUESTED", "IN_REVIEW", "APPROVED", "QUOTED"].includes(current.status)) return NextResponse.json({ error: "견적을 발행할 수 없는 요청 상태입니다." }, { status: 409 });
   if (validation.input.expectedVersion !== (current.quote?.version ?? 0)) return NextResponse.json({ error: "다른 운영자가 견적을 먼저 수정했습니다.", code: "QUOTE_CHANGED" }, { status: 409 });
 
-  const itemIds = [current.sourceItemId, ...validation.input.materials.map((item) => item.itemId)];
+  let sourceItemId = current.sourceItemId;
+  let sourceSlot = current.sourceSlot;
+  if (!sourceItemId || !sourceSlot) {
+    if (!ObjectId.isValid(current.inventoryEntryId)) {
+      return NextResponse.json({ error: "강화 대상 인벤토리 식별자가 올바르지 않습니다." }, { status: 409 });
+    }
+    const sourceEntry = await (await characterInventoryCol()).findOne({
+      _id: new ObjectId(current.inventoryEntryId),
+      characterId: current.characterId,
+      equippedSlot: { $in: ["WEAPON", "ARMOR"] },
+      quantity: { $gte: 1 },
+    });
+    if (!sourceEntry?.equippedSlot) {
+      return NextResponse.json({ error: "접수된 강화 대상 장비가 더 이상 장착되어 있지 않습니다.", code: "SOURCE_ITEM_CHANGED" }, { status: 409 });
+    }
+    sourceItemId = sourceEntry.itemId;
+    sourceSlot = sourceEntry.equippedSlot;
+  }
+
+  const itemIds = [sourceItemId, ...validation.input.materials.map((item) => item.itemId)];
   const items = await masterItemsCol();
   const masters = await items.find({ _id: { $in: itemIds.map((id) => new ObjectId(id)) } }).toArray();
   const byId = new Map(masters.map((item) => [String(item._id), item]));
-  const source = byId.get(current.sourceItemId);
+  const source = byId.get(sourceItemId);
   if (
     !source ||
     (source.category !== "WEAPON" && source.category !== "ARMOR") ||
-    source.category !== current.sourceCategory ||
-    source.category !== current.sourceSlot
+    (current.sourceCategory !== undefined && source.category !== current.sourceCategory) ||
+    source.category !== sourceSlot
   ) return NextResponse.json({ error: "원본 마스터 장비 분류가 접수 시점과 다릅니다.", code: "SOURCE_ITEM_CHANGED" }, { status: 409 });
-  if (validation.input.materials.some((item) => item.itemId === current.sourceItemId)) return NextResponse.json({ error: "강화 대상 장비를 재료로 지정할 수 없습니다." }, { status: 400 });
+  if (validation.input.materials.some((item) => item.itemId === sourceItemId)) return NextResponse.json({ error: "강화 대상 장비를 재료로 지정할 수 없습니다." }, { status: 400 });
+  const incompatibleSpecialMaterial = validation.input.materials.find((material) => {
+    const slug = byId.get(material.itemId)?.slug;
+    return (
+      (slug === "force_core" && validation.input.modificationDomain !== "ENERGY_EXPLOSIVE_OUTPUT") ||
+      (slug === "vf_blood" && validation.input.modificationDomain !== "BIO_REGEN_REPAIR")
+    );
+  });
+  if (incompatibleSpecialMaterial) {
+    const slug = byId.get(incompatibleSpecialMaterial.itemId)?.slug;
+    return NextResponse.json(
+      {
+        error: slug === "force_core"
+          ? "포스코어는 에너지장·폭발·출력 계통 개조에만 사용할 수 있습니다."
+          : "VF혈액팩은 생체 접속·재생·자기수복 계통 개조에만 사용할 수 있습니다.",
+      },
+      { status: 400 },
+    );
+  }
+  const invalidPriceMaterial = validation.input.materials.find((material) => {
+    const item = byId.get(material.itemId);
+    return item ? procurementUnitPrice(item) === null : false;
+  });
+  if (invalidPriceMaterial) {
+    return NextResponse.json(
+      { error: "재료의 현재 조달가가 올바르지 않아 견적을 발행할 수 없습니다." },
+      { status: 409 },
+    );
+  }
   const materials = validation.input.materials.map((material) => {
     const item = byId.get(material.itemId);
-    return item ? { itemId: material.itemId, itemName: item.name, category: item.category, quantity: material.quantity } : null;
+    if (!item) return null;
+    const unitPrice = procurementUnitPrice(item);
+    if (unitPrice === null) return null;
+    return {
+      itemId: material.itemId,
+      itemName: item.name,
+      category: item.category,
+      quantity: material.quantity,
+      unitPrice,
+      subtotal: Number((unitPrice * material.quantity).toFixed(2)),
+    };
   });
   if (materials.some((item) => item === null)) return NextResponse.json({ error: "등록되지 않은 재료가 포함되어 있습니다." }, { status: 400 });
 
-  const specialistCodename = resolveEquipmentWorkshopSpecialist({ category: source.category, tags: source.tags });
+  const specialistCodename = validation.input.specialistCodename
+    ?? resolveEquipmentWorkshopSpecialist({ category: source.category, tags: source.tags });
+  const materialCost = materials.reduce(
+    (total, item) => total + (item?.subtotal ?? 0),
+    0,
+  );
+  const totalCost = Number((materialCost + validation.input.creditCost).toFixed(2));
   const resultItemId = current.quote?.result.itemId ?? new ObjectId().toHexString();
   const generation = (source.workshop?.generation ?? 0) + 1;
   const now = new Date();
@@ -74,7 +150,13 @@ export async function PUT(request: Request, context: RouteContext) {
     creditCost: validation.input.creditCost,
     durationMinutes: validation.input.durationMinutes,
     specialistCodename,
+    ...(validation.input.specialistNote
+      ? { specialistNote: validation.input.specialistNote }
+      : {}),
+    modificationDomain: validation.input.modificationDomain,
     materials: materials.filter((item): item is NonNullable<typeof item> => item !== null),
+    materialCost,
+    totalCost,
     result: {
       itemId: resultItemId,
       slug: `workshop-${resultItemId}`,
@@ -85,6 +167,9 @@ export async function PUT(request: Request, context: RouteContext) {
       ...(validation.input.result.effect ? { effect: validation.input.result.effect } : {}),
       tags: [...new Set([...(validation.input.result.tags ?? []), "공방개조", specialistCodename])],
       ...(validation.input.result.previewImage ? { previewImage: validation.input.result.previewImage } : {}),
+      ...(validation.input.result.equipmentAction
+        ? { equipmentAction: validation.input.result.equipmentAction }
+        : {}),
       generation,
     },
     issuedAt: now,
@@ -97,6 +182,13 @@ export async function PUT(request: Request, context: RouteContext) {
     expectedVersion: validation.input.expectedVersion,
     quote,
     internalNote: validation.input.internalNote,
+    sourceSnapshot: {
+      sourceItemId,
+      sourceCategory: source.category,
+      sourceSlot,
+      ...(source.damage ? { sourceDamage: source.damage } : {}),
+      ...(source.previewImage ? { sourcePreviewImage: source.previewImage } : {}),
+    },
     actorId: auth.session.id,
     actorName: auth.session.displayName,
   });
@@ -104,11 +196,11 @@ export async function PUT(request: Request, context: RouteContext) {
   scheduleGmAdminAudit({
     action: "공방 강화 견적 발행",
     actor: { id: auth.session.id, displayName: auth.session.displayName, role: auth.session.role },
-    summary: `${quote.creditCost.toLocaleString()} CR · ${quote.durationMinutes}분 · v${quote.version}`,
+    summary: `총 ${quote.totalCost.toLocaleString()} CR · 공임 ${quote.creditCost.toLocaleString()} CR · ${quote.durationMinutes}분 · v${quote.version}`,
     target: `${updated.characterCodename} · ${updated.equipmentName ?? quote.result.name}`,
     timestamp: now,
   });
-  after(() => notifyUser({ userId: updated.userId, type: "SYSTEM", title: "공방 강화 견적이 도착했습니다", message: `${updated.characterCodename} · ${quote.result.name} · ${specialistCodename}`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] quote notification failed", error)));
+  after(() => notifyUser({ userId: updated.userId, type: "SYSTEM", title: "공방 강화 견적이 도착했습니다", message: `${updated.characterCodename} · ${quote.result.name} · 총부담 ${quote.totalCost.toLocaleString()} CR · ${specialistCodename}`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] quote notification failed", error)));
   return NextResponse.json({ request: serializeAdminEquipmentWorkshopRequest(updated) });
 }
 
@@ -116,14 +208,80 @@ export async function POST(request: Request, context: RouteContext) {
   const auth = await requireGm();
   if ("response" in auth) return auth.response;
   const { requestId, action } = await context.params;
-  if (!isValidIdempotencyKey(requestId) || action !== "cancel") return NextResponse.json({ error: "잘못된 공방 취소 경로입니다." }, { status: 400 });
+  if (
+    !isValidIdempotencyKey(requestId) ||
+    !["cancel", "approve-reload"].includes(action)
+  ) {
+    return NextResponse.json({ error: "잘못된 공방 운영 경로입니다." }, { status: 400 });
+  }
   const operationId = readIdempotencyKey(request);
   if (!operationId) return NextResponse.json({ error: "유효한 Idempotency-Key 헤더가 필요합니다." }, { status: 400 });
+  const current = await findEquipmentWorkshopRequestById(requestId);
+  if (!current) return NextResponse.json({ error: "공방 요청을 찾을 수 없습니다." }, { status: 404 });
+
+  if (action === "approve-reload") {
+    try {
+      await prepareWorkshopReloadLocks(current);
+      const response = await executeEconomicOperation({
+        requestId: operationId,
+        domain: "equipment-workshop-reload",
+        actorId: auth.session.id,
+        payload: { workshopRequestId: requestId },
+        run: async (mongoSession) => {
+          const updated = await approveWorkshopReloadInTransaction({
+            requestId,
+            actorId: auth.session.id,
+            actorName: auth.session.displayName,
+            session: mongoSession,
+          });
+          return {
+            status: 200,
+            body: { request: serializeAdminEquipmentWorkshopRequest(updated) },
+          };
+        },
+      });
+      if (response.ok && response.headers.get("X-Idempotency-Replayed") !== "true") {
+        scheduleGmAdminAudit({
+          action: "공방 재장전 관료 결재 승인",
+          actor: {
+            id: auth.session.id,
+            displayName: auth.session.displayName,
+            role: auth.session.role,
+          },
+          summary: `${current.reload?.creditCost.toLocaleString() ?? "0"} CR · ${current.reload?.actionCode ?? "장비 액션"}`,
+          target: `${current.characterCodename} · ${current.equipmentName ?? "장비"}`,
+          timestamp: new Date(),
+        });
+        after(() => notifyUser({
+          userId: current.userId,
+          type: "SYSTEM",
+          title: "공방 재장전 결재가 승인되었습니다",
+          message: `${current.characterCodename} · ${current.equipmentName ?? "장비"} · ${current.reload?.actionCode ?? "장비 액션"} 충전 복구`,
+          link: "/erp/equipment-shop/custom",
+        }).catch((error) => console.error("[equipment-workshop] reload notification failed", error)));
+      }
+      return response;
+    } catch (error) {
+      if (error instanceof WorkshopOperationError) {
+        return NextResponse.json(
+          { error: error.message, code: error.code },
+          { status: error.code === "REQUEST_NOT_FOUND" ? 404 : error.code === "FORBIDDEN" ? 403 : 409 },
+        );
+      }
+      if (error instanceof Error && error.message.includes("음수 잔액")) {
+        return NextResponse.json(
+          { error: "재장전 비용을 결제할 잔액이 부족합니다.", code: "INSUFFICIENT_BALANCE" },
+          { status: 400 },
+        );
+      }
+      console.error("[equipment-workshop] reload approval failed", error);
+      return NextResponse.json({ error: "재장전 결재를 처리하지 못했습니다." }, { status: 500 });
+    }
+  }
+
   const body = (await request.json().catch(() => null)) as { note?: unknown } | null;
   const note = typeof body?.note === "string" ? body.note.trim() : "";
   if (!note || note.length > 1000) return NextResponse.json({ error: "취소 사유를 1~1000자로 입력해 주세요." }, { status: 400 });
-  const current = await findEquipmentWorkshopRequestById(requestId);
-  if (!current) return NextResponse.json({ error: "공방 요청을 찾을 수 없습니다." }, { status: 404 });
   try {
     await prepareWorkshopOperationLocks(current);
     const response = await executeEconomicOperation({

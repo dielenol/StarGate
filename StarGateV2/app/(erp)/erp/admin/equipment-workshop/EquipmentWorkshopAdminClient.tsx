@@ -12,6 +12,7 @@ import {
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import {
+  useApproveEquipmentWorkshopReload,
   useCancelEquipmentWorkshopRequest,
   useQuoteEquipmentWorkshopRequest,
   useUpdateEquipmentWorkshopRequest,
@@ -23,8 +24,11 @@ import {
 } from "@/hooks/queries/useEquipmentShopQuery";
 import type {
   AdminSerializedEquipmentWorkshopRequest,
+  EquipmentWorkshopModificationDomain,
+  EquipmentWorkshopSpecialist,
   EquipmentWorkshopRequestStatus,
 } from "@/lib/equipment-shop/workshop-request";
+import { WORKSHOP_COST_POLICY } from "@/lib/equipment-shop/workshop-request";
 
 import styles from "./page.module.css";
 
@@ -38,12 +42,16 @@ interface MaterialOption {
   id: string;
   name: string;
   category: string;
+  unitPrice: number;
 }
 
 interface QuoteDraft {
   expectedVersion: number;
   creditCost: string;
   durationMinutes: string;
+  specialistCodename: EquipmentWorkshopSpecialist;
+  specialistNote: string;
+  modificationDomain: EquipmentWorkshopModificationDomain;
   materials: Array<{ itemId: string; quantity: string }>;
   resultName: string;
   resultDescription: string;
@@ -51,8 +59,31 @@ interface QuoteDraft {
   resultEffect: string;
   resultTags: string;
   resultPreviewImage: string;
+  actionCode: string;
+  actionName: string;
+  actionDescription: string;
+  actionEffect: string;
+  actionMaxCharges: string;
+  actionReloadCreditCost: string;
   internalNote: string;
 }
+
+const SPECIALISTS: EquipmentWorkshopSpecialist[] = [
+  "VERNIER",
+  "TEMPER",
+  "TOWASKI",
+  "SUTURE",
+  "RATCHET",
+];
+
+const MODIFICATION_DOMAINS: Array<{
+  value: EquipmentWorkshopModificationDomain;
+  label: string;
+}> = [
+  { value: "GENERAL", label: "일반 개조" },
+  { value: "ENERGY_EXPLOSIVE_OUTPUT", label: "에너지장·폭발·출력" },
+  { value: "BIO_REGEN_REPAIR", label: "생체 접속·재생·자기수복" },
+];
 
 const STATUS_LABELS: Record<EquipmentWorkshopRequestStatus, string> = {
   REQUESTED: "접수",
@@ -78,6 +109,9 @@ function createDraft(request: AdminSerializedEquipmentWorkshopRequest): QuoteDra
     expectedVersion: request.quote?.version ?? 0,
     creditCost: String(request.quote?.creditCost ?? 0),
     durationMinutes: String(request.quote?.durationMinutes ?? 60),
+    specialistCodename: request.quote?.specialistCodename ?? "VERNIER",
+    specialistNote: request.quote?.specialistNote ?? "",
+    modificationDomain: request.quote?.modificationDomain ?? "GENERAL",
     materials: request.quote?.materials.map((material) => ({
       itemId: material.itemId,
       quantity: String(material.quantity),
@@ -88,6 +122,12 @@ function createDraft(request: AdminSerializedEquipmentWorkshopRequest): QuoteDra
     resultEffect: request.quote?.result.effect ?? "",
     resultTags: request.quote?.result.tags.join(", ") ?? "",
     resultPreviewImage: request.quote?.result.previewImage ?? request.sourcePreviewImage ?? "",
+    actionCode: request.quote?.result.equipmentAction?.code ?? "",
+    actionName: request.quote?.result.equipmentAction?.name ?? "",
+    actionDescription: request.quote?.result.equipmentAction?.description ?? "",
+    actionEffect: request.quote?.result.equipmentAction?.effect ?? "",
+    actionMaxCharges: String(request.quote?.result.equipmentAction?.maxCharges ?? 1),
+    actionReloadCreditCost: String(request.quote?.result.equipmentAction?.reloadCreditCost ?? 200),
     internalNote: request.internalNote ?? "",
   };
 }
@@ -147,7 +187,7 @@ function SearchableMaterialSelect({
         aria-autocomplete="list"
         autoComplete="off"
         placeholder="재료 이름 또는 분류 검색"
-        value={open ? query : selected ? `${selected.name} · ${selected.category}` : ""}
+        value={open ? query : selected ? `${selected.name} · ${selected.category} · ${selected.unitPrice.toLocaleString()} CR` : ""}
         onFocus={() => {
           setOpen(true);
           setQuery("");
@@ -177,7 +217,7 @@ function SearchableMaterialSelect({
                 }}
               >
                 <strong>{item.name}</strong>
-                <span>{item.category}</span>
+                <span>{item.category} · {item.unitPrice.toLocaleString()} CR</span>
               </button>
             ))
           ) : (
@@ -204,6 +244,7 @@ export default function EquipmentWorkshopAdminClient({
   );
   const quoteMutation = useQuoteEquipmentWorkshopRequest();
   const cancelMutation = useCancelEquipmentWorkshopRequest();
+  const approveReloadMutation = useApproveEquipmentWorkshopReload();
   const statusMutation = useUpdateEquipmentWorkshopRequest();
   const [selectedId, setSelectedId] = useState(initialRequests.requests[0]?._id ?? "");
   const [search, setSearch] = useState("");
@@ -229,6 +270,12 @@ export default function EquipmentWorkshopAdminClient({
   }, [requests, search, statusFilter]);
 
   if (!selected) return <Box>공방 요청이 없습니다.</Box>;
+
+  const materialCost = draft.materials.reduce((total, material) => {
+    const option = items.find((item) => item.id === material.itemId);
+    return total + (option?.unitPrice ?? 0) * (Number(material.quantity) || 0);
+  }, 0);
+  const totalCost = materialCost + (Number(draft.creditCost) || 0);
 
   const updateMaterial = (index: number, patch: Partial<QuoteDraft["materials"][number]>) => {
     setDraft((current) => ({
@@ -259,6 +306,11 @@ export default function EquipmentWorkshopAdminClient({
           expectedVersion: draft.expectedVersion,
           creditCost: Number(draft.creditCost),
           durationMinutes: Number(draft.durationMinutes),
+          specialistCodename: draft.specialistCodename,
+          ...(draft.specialistNote.trim()
+            ? { specialistNote: draft.specialistNote.trim() }
+            : {}),
+          modificationDomain: draft.modificationDomain,
           materials: draft.materials.map((material) => ({
             itemId: material.itemId,
             quantity: Number(material.quantity),
@@ -270,6 +322,21 @@ export default function EquipmentWorkshopAdminClient({
             ...(draft.resultEffect.trim() ? { effect: draft.resultEffect.trim() } : {}),
             tags: draft.resultTags.split(",").map((tag) => tag.trim()).filter(Boolean),
             ...(draft.resultPreviewImage.trim() ? { previewImage: draft.resultPreviewImage.trim() } : {}),
+            ...(draft.actionCode.trim()
+              ? {
+                  equipmentAction: {
+                    code: draft.actionCode.trim().toUpperCase(),
+                    name: draft.actionName.trim(),
+                    description: draft.actionDescription.trim(),
+                    effect: draft.actionEffect.trim(),
+                    actionCost: 1,
+                    chargeCost: 1,
+                    maxCharges: Number(draft.actionMaxCharges),
+                    reloadCreditCost: Number(draft.actionReloadCreditCost),
+                    reloadApproval: "GM" as const,
+                  },
+                }
+              : {}),
           },
           ...(draft.internalNote.trim() ? { internalNote: draft.internalNote.trim() } : {}),
         },
@@ -338,7 +405,7 @@ export default function EquipmentWorkshopAdminClient({
             <button key={request._id} type="button" data-active={request._id === selected._id} onClick={() => selectRequest(request)}>
               <span>{STATUS_LABELS[request.status]}</span>
               <strong>{request.characterCodename}</strong>
-              <small>{request.equipmentName ?? (request.kind === "custom" ? "커스텀 제작" : "장비 강화")}</small>
+              <small>{request.equipmentName ?? (request.kind === "custom" ? "커스텀 제작" : request.kind === "reload" ? "재장전 결재" : "장비 강화")}</small>
             </button>
           ))}
         </aside>
@@ -367,6 +434,27 @@ export default function EquipmentWorkshopAdminClient({
                   <label><span>크레딧</span><input type="number" min="0" step="0.01" required value={draft.creditCost} onChange={(event) => setDraft((current) => ({ ...current, creditCost: event.target.value }))} /></label>
                   <label><span>제작 시간(분)</span><input type="number" min="1" max="43200" step="1" required value={draft.durationMinutes} onChange={(event) => setDraft((current) => ({ ...current, durationMinutes: event.target.value }))} /></label>
                 </div>
+                <div className={styles.twoColumns}>
+                  <label>
+                    <span>주 specialist</span>
+                    <select value={draft.specialistCodename} onChange={(event) => setDraft((current) => ({ ...current, specialistCodename: event.target.value as EquipmentWorkshopSpecialist }))}>
+                      {SPECIALISTS.map((specialist) => <option key={specialist} value={specialist}>{specialist}</option>)}
+                    </select>
+                  </label>
+                  <label><span>담당 표기</span><input maxLength={200} value={draft.specialistNote} onChange={(event) => setDraft((current) => ({ ...current, specialistNote: event.target.value }))} placeholder="VERNIER 접수·통합 / TOWASKI 폭발물 검수" /></label>
+                </div>
+                <label>
+                  <span>개조 계통</span>
+                  <select value={draft.modificationDomain} onChange={(event) => setDraft((current) => ({ ...current, modificationDomain: event.target.value as EquipmentWorkshopModificationDomain }))}>
+                    {MODIFICATION_DOMAINS.map((domain) => <option key={domain.value} value={domain.value}>{domain.label}</option>)}
+                  </select>
+                </label>
+                <p>
+                  현재 스냅샷 기준 재료 {materialCost.toLocaleString()} CR + 공임 {(Number(draft.creditCost) || 0).toLocaleString()} CR = 총부담 {totalCost.toLocaleString()} CR
+                </p>
+                <small>
+                  경량 개조 {WORKSHOP_COST_POLICY.utilityCreditRange[0]}~{WORKSHOP_COST_POLICY.utilityCreditRange[1]} CR · 액션 부여 희귀 재료 + 재료가의 20~40% · 상위 강화 희귀 재료 + {WORKSHOP_COST_POLICY.advancedCreditRange[0].toLocaleString()}~{WORKSHOP_COST_POLICY.advancedCreditRange[1].toLocaleString()} CR
+                </small>
               </Box>
               <Box>
                 <div className={styles.sectionTitle}><Eyebrow>MATERIALS</Eyebrow><button type="button" onClick={() => setDraft((current) => ({ ...current, materials: [...current.materials, { itemId: "", quantity: "1" }] }))}>재료 추가</button></div>
@@ -397,6 +485,17 @@ export default function EquipmentWorkshopAdminClient({
                 <label><span>결과 이미지 URL</span><input maxLength={500} value={draft.resultPreviewImage} onChange={(event) => setDraft((current) => ({ ...current, resultPreviewImage: event.target.value }))} placeholder="/assets/... 또는 https://..." /></label>
                 <label className={styles.fileInput}><span>이미지 업로드</span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={!blobUploadEnabled || uploading} onChange={(event) => void uploadImage(event.target.files?.[0])} /><small>{blobUploadEnabled ? "PNG/JPEG/WebP · 최대 5MB" : "Blob 미설정 · URL 직접 입력 사용"}</small></label>
                 {draft.resultPreviewImage ? <span className={styles.resultPreview}><Image src={draft.resultPreviewImage} alt="결과 장비 미리보기" fill sizes="240px" unoptimized /></span> : null}
+                <Eyebrow>EQUIPMENT ACTION (OPTIONAL)</Eyebrow>
+                <div className={styles.twoColumns}>
+                  <label><span>액션 코드</span><input maxLength={3} value={draft.actionCode} onChange={(event) => setDraft((current) => ({ ...current, actionCode: event.target.value }))} placeholder="U1" /></label>
+                  <label><span>액션명</span><input maxLength={80} value={draft.actionName} onChange={(event) => setDraft((current) => ({ ...current, actionName: event.target.value }))} /></label>
+                </div>
+                <label><span>액션 설명</span><textarea maxLength={500} rows={3} value={draft.actionDescription} onChange={(event) => setDraft((current) => ({ ...current, actionDescription: event.target.value }))} /></label>
+                <label><span>액션 효과</span><textarea maxLength={1000} rows={6} value={draft.actionEffect} onChange={(event) => setDraft((current) => ({ ...current, actionEffect: event.target.value }))} /></label>
+                <div className={styles.twoColumns}>
+                  <label><span>최대 충전</span><input type="number" min="1" max="99" step="1" value={draft.actionMaxCharges} onChange={(event) => setDraft((current) => ({ ...current, actionMaxCharges: event.target.value }))} /></label>
+                  <label><span>GM 재장전 비용</span><input type="number" min="0" step="0.01" value={draft.actionReloadCreditCost} onChange={(event) => setDraft((current) => ({ ...current, actionReloadCreditCost: event.target.value }))} /></label>
+                </div>
                 <label><span>내부 메모(플레이어 비공개)</span><textarea maxLength={1000} rows={3} value={draft.internalNote} onChange={(event) => setDraft((current) => ({ ...current, internalNote: event.target.value }))} /></label>
               </Box>
               <button className={styles.primaryAction} type="submit" disabled={quoteMutation.isPending || uploading}>{quoteMutation.isPending ? "견적 저장 중" : selected.quote ? "견적 수정 발행" : "견적 발행"}</button>
@@ -410,6 +509,7 @@ export default function EquipmentWorkshopAdminClient({
               {selected.status === "REQUESTED" ? <button type="button" onClick={() => updateStatus("IN_REVIEW")}>검토 시작</button> : null}
               {["REQUESTED", "IN_REVIEW", "APPROVED", "QUOTED"].includes(selected.status) ? <button type="button" disabled={!operatorNote.trim()} onClick={() => updateStatus("REJECTED")}>요청 반려</button> : null}
               {selected.status === "IN_PROGRESS" ? <button type="button" disabled={!operatorNote.trim() || cancelMutation.isPending} onClick={() => cancelMutation.mutate({ requestId: selected._id, note: operatorNote.trim() }, { onSuccess: () => setFeedback({ tone: "success", text: "비용과 물품을 반환하고 제작을 취소했습니다." }), onError: (error) => setFeedback({ tone: "error", text: errorMessage(error) }) })}>제작 취소·전액 복구</button> : null}
+              {selected.kind === "reload" && ["REQUESTED", "IN_REVIEW", "APPROVED"].includes(selected.status) ? <button type="button" disabled={approveReloadMutation.isPending} onClick={() => approveReloadMutation.mutate({ requestId: selected._id }, { onSuccess: () => setFeedback({ tone: "success", text: `${selected.reload?.creditCost.toLocaleString() ?? "0"} CR 결제와 충전 복구를 한 트랜잭션으로 승인했습니다.` }), onError: (error) => setFeedback({ tone: "error", text: errorMessage(error) }) })}>관료 결재 승인·재장전</button> : null}
             </div>
           </Box>
           {feedback ? <p className={styles.feedback} data-tone={feedback.tone} role="status">{feedback.text}</p> : null}

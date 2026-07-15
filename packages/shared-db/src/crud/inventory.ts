@@ -342,6 +342,9 @@ export async function addToInventory(
         itemName: input.itemName,
         acquiredAt: input.acquiredAt,
         note: input.note,
+        ...(input.equipmentCharge
+          ? { equipmentCharge: input.equipmentCharge }
+          : {}),
       },
     },
     { upsert: true, returnDocument: "after", session: options.session }
@@ -480,6 +483,56 @@ export async function removeFromInventory(
     );
   }
   return { ok: true, remaining: result.quantity };
+}
+
+/**
+ * 장착 장비의 충전을 원자적으로 차감한다.
+ *
+ * 장착 해제·충전 부족·최대 충전 드리프트는 모두 매치 실패로 처리한다.
+ */
+export async function consumeEquippedEquipmentCharge(
+  characterId: string,
+  itemId: string,
+  chargeCost: number,
+  expectedMaximum: number,
+): Promise<{ ok: boolean; current: number }> {
+  if (
+    !characterId.trim() ||
+    !itemId.trim() ||
+    !Number.isSafeInteger(chargeCost) ||
+    chargeCost < 1 ||
+    !Number.isSafeInteger(expectedMaximum) ||
+    expectedMaximum < chargeCost
+  ) {
+    throw new Error("Invalid equipment charge consumption input");
+  }
+
+  await prepareCharacterInventoryItemLocks(characterId, [itemId]);
+  const client = await getClient();
+  const session = client.startSession();
+  try {
+    let current: number | undefined;
+    await session.withTransaction(async () => {
+      await lockCharacterInventoryItems(characterId, [itemId], session);
+      const col = await characterInventoryCol();
+      const entry = await col.findOneAndUpdate(
+        {
+          characterId,
+          itemId,
+          quantity: { $gte: 1 },
+          equippedSlot: { $exists: true },
+          "equipmentCharge.current": { $gte: chargeCost },
+          "equipmentCharge.maximum": expectedMaximum,
+        },
+        { $inc: { "equipmentCharge.current": -chargeCost } },
+        { returnDocument: "after", session },
+      );
+      current = entry?.equipmentCharge?.current;
+    });
+    return current === undefined ? { ok: false, current: 0 } : { ok: true, current };
+  } finally {
+    await session.endSession();
+  }
 }
 
 export async function deleteInventoryEntry(id: string): Promise<boolean> {

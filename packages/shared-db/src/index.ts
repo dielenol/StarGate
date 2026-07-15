@@ -48,6 +48,8 @@ export type {
   SharedInventoryScope,
   ItemCategory,
   EquipmentSlot,
+  EquipmentAction,
+  EquipmentChargeState,
   ShopMeta,
   ShopPageGroup,
   CreateMasterItemInput,

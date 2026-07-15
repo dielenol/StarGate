@@ -125,7 +125,7 @@ export interface CharacterEditWebhookPayload {
 }
 
 export interface EquipmentWorkshopRequestWebhookPayload {
-  kind: "upgrade" | "custom";
+  kind: "upgrade" | "custom" | "reload";
   character: { id: string; codename: string; name: string };
   requester: { id: string; displayName: string };
   details: string;
@@ -695,7 +695,9 @@ export async function notifyEquipmentWorkshopRequest(
   const requestLabel =
     payload.kind === "upgrade"
       ? "장착 장비 강화 문의"
-      : "커스텀 장비 제작 의뢰";
+      : payload.kind === "reload"
+        ? "장비 액션 재장전 결재 요청"
+        : "커스텀 장비 제작 의뢰";
   const fields: DiscordEmbedField[] = [
     {
       name: "신청자",

@@ -36,6 +36,7 @@ export {
   prepareCharacterInventoryItemLocks,
   lockCharacterInventoryItems,
   equipCharacterInventoryItem,
+  consumeEquippedEquipmentCharge,
   addToInventory,
   removeFromInventory,
   deleteInventoryEntry,
@@ -108,6 +109,12 @@ export async function listCharacterInventoryEntries(
       ...(master?.previewImage ? { previewImage: master.previewImage } : {}),
       ...(master?.isPublic !== undefined ? { isPublic: master.isPublic } : {}),
       ...(master?.tags ? { tags: master.tags } : {}),
+      ...(master?.equipmentAction
+        ? { equipmentAction: master.equipmentAction }
+        : {}),
+      ...(entry.equipmentCharge
+        ? { equipmentCharge: entry.equipmentCharge }
+        : {}),
       ...(master?.workshop ? { workshop: master.workshop } : {}),
       ...(entry.equippedSlot ? { equippedSlot: entry.equippedSlot } : {}),
       ...(dateToIso(entry.equippedAt)
