@@ -134,26 +134,31 @@ source: stargate-lore
 - `ART` 운영 가격은 쓰기 전후 모두 `137.73`이다.
 - 따라서 이번 패스는 보고서·위키·Dossier·기관 설명·비판매 카탈로그만 변경했고, 경제·인벤토리·상점 재고·주식에는 영속 변경을 만들지 않았다.
 
-## Asset Disposition
+## Visual Asset Ledger
 
-| asset role | source page | action | status |
-|---|---|---|---|
-| report visual | p.61 섹터 C 지도 | 보고서/위키 mirror에만 사용 | Applied + browser verified |
-| report/wiki place visual | p.62 최고 격리구역, p.66 냉동 감염자 | 섹터 C와 보고서에 사용 | Applied + browser verified |
-| entity visual | p.74 곰사냥 갑옷 | 정확한 개체 도판으로 wiki asset 등록 | Applied + browser verified |
-| entity visual | p.90 발레리나 | 정확한 개체 도판으로 wiki asset 등록 | Applied + browser verified |
-| entity visual | p.99 웬디고 | 정확한 개체 도판으로 wiki asset 등록 | Applied + browser verified |
-| report cutscene | p.32 로드리온, p.76-p.78 발레리아/바자로프 | 독립 인물 초상이 아니므로 Dossier 이미지로 사용 안 함 | skipped |
-| Dossier portrait | 그리고리 페초린 | 제공 PNG를 `Pechorin-profile.webp`로 최적화해 `previewImage` 후보에 연결 | durable applied · live pending |
-| Dossier portrait | 로드리온 로마노비치 라스콜니코프 | 제공 PNG를 `Rodion-profile.webp`로 최적화해 `previewImage` 후보에 연결 | durable applied · live pending |
-| Dossier portrait | 바자로프 | 제공 PNG를 `Bazarov-profile.webp`로 최적화해 `previewImage` 후보에 연결 | durable applied · live pending |
+각 자산의 역할 판정은 소비처별로 독립적이다. `Dossier/personnel`에서 부적합한 컷신도 `report`와 `report wiki mirror`에서는 세션 장면으로 유효할 수 있다. `source-frame crop`은 PDF에 들어가기 전 VTT 프레임 자체가 이미 가로로 구성됐는지를 뜻하며, ERP가 추가로 잘랐다는 뜻이 아니다.
+
+| asset | source | source dimensions | source-frame crop | source role | report | report wiki mirror | dedicated wiki | catalog | Dossier/personnel | decision/evidence |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `rodion-supervisor-welcome.webp` | p.32 감독관실 소개 장면 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene | included (durable; live pending) | included (durable; live pending) | not-applicable | not-applicable | excluded: report cutscene, not portrait | Dossier 부적합 판정을 보고서 제외 사유로 잘못 확장했던 누락을 교정 |
+| `sector-c-layout.webp` | p.61 섹터 C 구역 지도 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene + place-archive | included (live; order repair pending) | included (live; order repair pending) | included (`sector-c`) | not-applicable | not-applicable | 장소 개요와 보고서 양쪽의 정확한 시설 도판 |
+| `sector-c-high-containment.webp` | p.62 최고 격리구역 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene + place-archive | included (live; order repair pending) | included (live; order repair pending) | included (`sector-c`) | not-applicable | not-applicable | 장소 개요와 보고서 양쪽의 정확한 시설 도판 |
+| `sector-c-frozen-infected.webp` | p.66 냉동 광원화 감염자 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene + place-archive | included (live; order repair pending) | included (live; order repair pending) | included (`sector-c`) | not-applicable | not-applicable | 장소 상태와 보고서 양쪽의 정확한 현장 도판 |
+| `bear-hunting-armor.webp` | p.74 곰사냥 갑옷 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene + entity-archive | included (live; order repair pending) | included (live; order repair pending) | included (`bear-hunting-armor`) | not-applicable | not-applicable | 해당 개체가 직접 보이는 세션 도판 |
+| `valeria-isolation.webp` | p.76 발레리아 격리 장면 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene | included (durable; live pending) | included (durable; live pending) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 발레리아 격리 사건을 보여 주는 보고서 전용 컷신 |
+| `bazarov-valeria-armor-restoration.webp` | p.78 바자로프의 갑주 반환 장면 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene | included (durable; live pending) | included (durable; live pending) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 바자로프의 격리 해제·복귀 조치를 보여 주는 보고서 전용 컷신 |
+| `sector-c-ballerina.webp` | p.90 발레리나 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene + entity-archive | included (live; order repair pending) | included (live; order repair pending) | included (`sector-c-ballerina`) | not-applicable | not-applicable | 해당 개체가 직접 보이는 세션 도판 |
+| `zulu-0103-wendigo.webp` | p.99 웬디고 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene + entity-archive | included (live; order repair pending) | included (live; order repair pending) | included (`zulu-0103-wendigo`) | not-applicable | not-applicable | 해당 개체가 직접 보이는 세션 도판 |
+| `Pechorin-profile.webp` | 사용자 제공 페초린 초상 | 1086×1448 | no — user-provided full portrait | personnel-image | not-applicable | not-applicable | not-applicable | not-applicable | included (durable; live pending) | exact Dossier portrait; 보고서 컷신 역할과 분리 |
+| `Rodion-profile.webp` | 사용자 제공 로드리온 초상 | 832×1216 | no — user-provided full portrait | personnel-image | not-applicable | not-applicable | not-applicable | not-applicable | included (durable; live pending) | exact Dossier portrait; `로쟈` 별칭과 실명 필드는 별도 |
+| `Bazarov-profile.webp` | 사용자 제공 바자로프 초상 | 832×1216 | no — user-provided full portrait | personnel-image | not-applicable | not-applicable | not-applicable | not-applicable | included (durable; live pending) | exact Dossier portrait; 연구 기구 소속·섹터 C 파견 필드와 별도 |
 
 ## ERP Gap Map
 
 | target | status | issue | action |
 |---|---|---|---|
-| `/erp/sessions/report` | verified | 05 보고서·추정 지도 포인트·20명 참가자·6개 본문 자산 등록 | 목록, 지도, 상세 렌더와 참가자 링크 확인 |
-| `/erp/wiki` | verified | 세션 mirror·섹터 C·3개 개체 문서 등록 | 상호 링크, 본문, 이미지 렌더 확인 |
+| `/erp/sessions/report` | partial | live 보고서는 6개 시각 자료만 포함하고 p.32·p.76·p.78 컷신이 빠져 있음; 9개 ordered set 교정 payload는 durable 준비 상태 | 전용 1건 payload를 live 적용한 뒤 9개 이미지의 natural/rendered 치수, `object-fit: contain`, blurred backdrop, 캡션을 재검증 |
+| `/erp/wiki` | partial | 보고서 wiki mirror도 같은 3개 컷신이 빠져 있음; `sector-c` 3장과 개체 wiki 3장의 전용 소비처는 각각 유지 | mirror 전용 1건 payload를 live 적용해 보고서와 9개 경로·순서·캡션을 1:1 대조하고, 장소/개체 wiki는 별도 렌더 재검증 |
 | `/erp/personnel` | partial | 세 NPC의 등급·초상·조직·실명/별칭 분리는 durable 반영됐지만 live DB 적용 전 | NPC 승인 원장 strict 검사, 교정 payload dry-run, risk review 뒤 별도 live 실행 승인 필요 |
 | `/erp/wiki/catalog` | verified/partial | 냉기 방사기는 `SPECIAL`·비매품·보관 전용으로 등록, 임시 백신은 정체·장기 효능 미확정 | `cold-emitter`만 등록하고 임시 백신은 후보-only 유지 |
 | `/erp/stock` | no-action | 기업 귀속·공시 없는 비공개 연구 성과 | `ART` watchlist만 기록 |
@@ -177,7 +182,7 @@ source: stargate-lore
 - 기존 광원화 바이러스 태그 `뒤집어진양말`, 기존 연계 `varginha-ordo-relay-base`, MANUS `createdAt`을 보존했음을 재조회했다.
 - 공개 본문의 로컬 경로, parser/payload 표현, 대체문자, 원시 `[[...]]` 토큰 검사를 통과했다.
 - `node --test lib/__tests__/lore-links.test.mjs` 3건, `pnpm typecheck`, `pnpm lint`를 통과했다.
-- 인증된 ERP 브라우저에서 보고서 목록·지도·상세, 위키 3면, 카탈로그, 신규 NPC 3명과 AEGIS를 확인했다. 깨진 이미지와 콘솔 경고·오류는 0건이다.
+- 기존 인증 브라우저 검사는 보고서·위키에서 깨진 이미지와 콘솔 오류가 0건인지만 기록했고, natural/rendered 치수·원본 비율·`object-fit`·blurred backdrop·캡션을 남기지 않았다. 따라서 이번 시각 자료 감사에서는 그 기록만으로 `browser verified`를 인정하지 않는다.
 - NPC 승인 누락 교정 감사에서 live DB의 `PECHORIN`, `RODION`, `BAZAROV` 모두 `agentLevel` 필드가 없고 `previewImage`·`lore.mainImage`가 빈 값임을 재확인했다. 기존 화면의 `J`는 DB 값이 아니라 UI fallback이었다.
 - PDF p.18의 `그리고리 페초린 대령`·`감독관 로드리온 로마노비치`, p.33의 전체 이름·`로쟈` 별칭 제안, p.82의 `바자로프, 수석 연구원`을 다시 대조했다.
 - 교정 코드에 대해 `node --experimental-strip-types --test lib/__tests__/personnel-identity-display.test.mjs` 3건과 `node --test lib/__tests__/personnel-redaction.test.mjs` 20건, `pnpm typecheck`, `pnpm lint`를 통과했다.
@@ -191,3 +196,11 @@ source: stargate-lore
 - 로컬 서버에서 세 WebP URL이 모두 `200 image/webp`로 응답했다. 인증된 로드리온 Dossier 상세에서 풀네임과 `로쟈` 별칭이 분리되고 별칭 계산 글꼴 크기가 14px이며, live 적용 전이라 인물 초상은 아직 렌더되지 않음을 확인했다. 콘솔 경고·오류는 0건이다.
 - 새 WebP를 포함한 로컬 브랜치는 `origin/main`보다 앞서 있어 배포본의 정적 자산 제공 여부는 아직 검증되지 않았다. asset 배포 전에 live DB의 `previewImage`부터 바꾸면 프로덕션 초상이 일시적으로 깨질 수 있으므로 실행 승인 시 이 부작용을 함께 확인한다.
 - 이번 후속 교정에서도 live DB 값을 쓰지 않았다. 등급·초상·바자로프 소속/파견과 함께 `PECHORIN`·`BAZAROV` 직함을 `nickname`에서 제거하는 durable 결정을 마쳤고, `RODION`만 전체 실명과 `로쟈` 별칭을 분리 유지한다. 공개 여부는 기존 live 값 보존, 정규화 식별자는 기존 ERP 내부 키 보존으로 결정했으며 별도 live 실행 승인과 자산 배포를 기다린다.
+- S1E4 프라토 1·2부의 현재 보고서 렌더를 비교 기준으로 재확인했다. 1035×503 가로 원본은 662×322, 사용자 제공 1024×1536 세로 원본은 298×446으로 원본 비율을 보존했고, 모두 `object-fit: contain`, `--wiki-render-image` blurred backdrop과 캡션이 적용됐다.
+- S1E5의 9개 보고서 시각 자료는 PDF 내부의 실제 1035×503 JPEG+soft-mask 원본이다. 화면 캡처나 사후 임의 크롭이 아니지만, VTT 원본 프레임 자체가 1035×503 가로 구도라는 사실을 ledger에 분리 기록했다.
+- p.32 로드리온, p.76 발레리아 격리, p.78 바자로프 갑주 반환 프레임을 alpha 보존 WebP 3장으로 추가했다. 세 파일은 모두 1035×503, alpha 범위 0–1이며 Dossier·catalog·전용 entity wiki에는 재사용하지 않는다.
+- 전용 `zz-s1e5-evil-part1-report-wiki-visual-repair.json`은 `session_reports` 1건과 보고서 wiki mirror 1건만 대상으로 하며, 양쪽 모두 같은 9개 이미지 경로·순서·캡션을 가진다. live DB 적용과 S1E5 실제 렌더 치수 검증은 사용자에게 정확한 2건 mutation을 확인받기 전까지 보류한다.
+- 시각 자료 원장, report/wiki parity, 타 소비처 판정 전파 차단까지 포함한 `stargate-lore` 회귀 테스트 25건과 `skill-creator` quick validation을 통과했다. 전용 payload는 upsert 없는 `filter + $set` 2건으로 제한했고, dry-run은 기존 `session_reports` `_id=6a57248f3f2831d09ed5ebf6`와 `wiki_pages` `_id=6a57248f3f2831d09ed5ebf7` 두 문서만 `예상 update`로 확인했다.
+- clean worktree의 인증된 현재 live 보고서 렌더에서 기존 6장은 모두 원본 1035×503, 렌더 662×322, `object-fit: contain`, 동일 자산 blurred backdrop, 캡션 일치, broken 0으로 확인됐다. 즉 S1E4의 전역 렌더 보정은 S1E5에도 작동하며, 이번 결함은 CSS 크롭이 아니라 3개 컷신의 소스 판정 누락이다.
+- 보고서 wiki mirror는 첫 시각 자료를 infobox로 승격하고 나머지를 본문에 렌더한다. 현재 6개 ordered set 가운데 지도는 Next Image infobox에서 `object-fit: contain`, 나머지 5장은 본문에서 1035×503 → 732×356, blurred backdrop·캡션·broken 0으로 확인됐다.
+- 전용 위키 소비처도 별도 확인했다. `sector-c`는 지도 infobox와 최고 격리구역·냉동 감염자 본문 도판, `bear-hunting-armor`, `sector-c-ballerina`, `zulu-0103-wendigo`는 각각 전용 infobox 한 장을 사용하며 모두 `object-fit: contain`·broken 0이었다. 로컬 서버 재시작 이후 새 console warning/error는 0건이다.
