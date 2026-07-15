@@ -8,6 +8,7 @@
  *   - factions        filter: { code }
  *   - institutions    filter: { code }
  *   - session_reports filter: { sessionId }
+ *   - equipment_workshop_blueprints filter: { slug }
  *
  * Envelopes may either contain:
  *   - payload: full/partial $set upsert payload keyed by the collection filter
@@ -103,7 +104,8 @@ type SupportedCollection =
   | "master_items"
   | "factions"
   | "institutions"
-  | "session_reports";
+  | "session_reports"
+  | "equipment_workshop_blueprints";
 
 interface SeedPayloadEnvelope {
   collection: SupportedCollection;
@@ -148,6 +150,7 @@ const SUPPORTED_COLLECTIONS = new Set<SupportedCollection>([
   "factions",
   "institutions",
   "session_reports",
+  "equipment_workshop_blueprints",
 ]);
 
 /* ── input loading ───────────────────────────────────────────────────── */
@@ -284,6 +287,7 @@ function buildFilter(
     case "wiki_pages":
       return { slug: requireString(payload, "slug", collection) };
     case "master_items":
+    case "equipment_workshop_blueprints":
       return { slug: requireString(payload, "slug", collection) };
     case "factions":
     case "institutions":
@@ -415,6 +419,16 @@ function summarizeSavedDoc(
         isPublic: doc.isPublic,
         isAvailable: doc.isAvailable,
         tags: doc.tags,
+      };
+    case "equipment_workshop_blueprints":
+      return {
+        ...base,
+        slug: doc.slug,
+        displayName: doc.displayName,
+        version: doc.version,
+        status: doc.status,
+        sourceClass: doc.sourceClass,
+        balanceStatus: doc.balanceStatus,
       };
     case "factions":
     case "institutions":

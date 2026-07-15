@@ -15,7 +15,7 @@ import {
 } from "@/lib/catalog/related";
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
-import { findMasterItemBySlugOrId } from "@/lib/db/inventory";
+import { findVisibleMasterItemBySlugOrId } from "@/lib/db/inventory";
 import { listSessionReports } from "@/lib/db/session-reports";
 import { listWikiPages } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
@@ -86,13 +86,13 @@ export default async function CatalogItemPage({
   }
 
   const { key } = await params;
-  const item = await findMasterItemBySlugOrId(decodeURIComponent(key));
+  const item = await findVisibleMasterItemBySlugOrId(decodeURIComponent(key), {
+    userId: session.user.id,
+    includePrivate: hasRole(session.user.role, "V"),
+  });
   if (!item) notFound();
 
   const isCurator = hasRole(session.user.role, "V");
-  if (item.isPublic === false && !isCurator) {
-    notFound();
-  }
 
   const scope = catalogScopeForItemCategory(item.category);
   const contentHtml = renderMarkdown(itemMarkdown(item));

@@ -103,7 +103,9 @@ export async function POST(request: Request, context: RouteContext) {
         notifyUser({
           userId: session.user.id,
           type: "SYSTEM",
-          title: action === "accept" ? "공방 강화 제작이 시작되었습니다" : "공방 강화 장비를 수령했습니다",
+          title: action === "accept"
+            ? `공방 ${current.kind === "upgrade" ? "강화" : "신규 제작"}이 시작되었습니다`
+            : `공방 ${current.kind === "upgrade" ? "강화" : "제작"} 장비를 수령했습니다`,
           message: `${current.characterCodename} · ${current.quote?.result.name ?? current.equipmentName ?? "장비"}`,
           link: "/erp/equipment-shop/custom",
         }).catch((error) => console.error("[equipment-workshop] player action notification failed", error)),

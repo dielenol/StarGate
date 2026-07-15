@@ -25,6 +25,7 @@ import type {
   SerializedEquipmentResearchTeamFundingPool,
 } from "@/lib/db/equipment-research";
 import type { SerializedEquipmentWorkshopRequest } from "@/lib/equipment-shop/workshop-request";
+import type { SerializedEquipmentWorkshopBlueprint } from "@/lib/equipment-shop/workshop-blueprint";
 
 export const equipmentShopKeys = {
   all: ["equipment-shop"] as const,
@@ -37,6 +38,9 @@ export const equipmentShopKeys = {
   workshopRequestsRoot: ["equipment-shop", "workshop-requests"] as const,
   workshopRequests: (viewerKey: string) =>
     ["equipment-shop", "workshop-requests", viewerKey] as const,
+  workshopBlueprintsRoot: ["equipment-shop", "workshop-blueprints"] as const,
+  workshopBlueprints: (includeArchived: boolean) =>
+    ["equipment-shop", "workshop-blueprints", includeArchived] as const,
 };
 
 export type EquipmentShopCatalogScope =
@@ -87,7 +91,10 @@ export type EquipmentShopErrorCode =
   | "SOURCE_ITEM_CHANGED"
   | "REQUEST_STATE_CHANGED"
   | "WORKSHOP_NOT_READY"
-  | "BLOB_NOT_CONFIGURED";
+  | "BLOB_NOT_CONFIGURED"
+  | "BLUEPRINT_CHANGED"
+  | "BLUEPRINT_INCOMPATIBLE"
+  | "BLUEPRINT_SLUG_EXISTS";
 
 export class EquipmentShopApiError extends Error {
   readonly status: number;
@@ -133,6 +140,10 @@ export interface EquipmentWorkshopRequestsResponse {
   requests: SerializedEquipmentWorkshopRequest[];
 }
 
+export interface EquipmentWorkshopBlueprintsResponse {
+  blueprints: SerializedEquipmentWorkshopBlueprint[];
+}
+
 async function parseEquipmentShopError(res: Response): Promise<never> {
   const body = (await res.json().catch(() => ({}))) as {
     error?: string;
@@ -168,6 +179,18 @@ async function fetchEquipmentWorkshopRequests(): Promise<EquipmentWorkshopReques
   const res = await fetch("/api/erp/equipment-shop/workshop-request", {
     cache: "no-store",
   });
+  if (!res.ok) await parseEquipmentShopError(res);
+  return res.json();
+}
+
+async function fetchEquipmentWorkshopBlueprints(
+  includeArchived: boolean,
+): Promise<EquipmentWorkshopBlueprintsResponse> {
+  const query = includeArchived ? "?includeArchived=true" : "";
+  const res = await fetch(
+    `/api/erp/admin/equipment-workshop/blueprints${query}`,
+    { cache: "no-store" },
+  );
   if (!res.ok) await parseEquipmentShopError(res);
   return res.json();
 }
@@ -218,6 +241,21 @@ export function useEquipmentWorkshopRequests(options: {
     enabled: options?.enabled,
     initialData: options.initialData,
     refetchInterval: 30 * 1000,
+  });
+}
+
+export function useEquipmentWorkshopBlueprints(options?: {
+  includeArchived?: boolean;
+  enabled?: boolean;
+  initialData?: EquipmentWorkshopBlueprintsResponse;
+}) {
+  const includeArchived = options?.includeArchived ?? false;
+  return useQuery({
+    queryKey: equipmentShopKeys.workshopBlueprints(includeArchived),
+    queryFn: () => fetchEquipmentWorkshopBlueprints(includeArchived),
+    staleTime: 30 * 1000,
+    enabled: options?.enabled,
+    initialData: options?.initialData,
   });
 }
 

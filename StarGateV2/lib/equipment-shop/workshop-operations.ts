@@ -40,24 +40,40 @@ export class WorkshopOperationError extends Error {
   }
 }
 
-function requireUpgradeRequest(
+function requireBuildRequest(
   request: EquipmentWorkshopRequestDoc | null,
 ): asserts request is EquipmentWorkshopRequestDoc & {
   quote: NonNullable<EquipmentWorkshopRequestDoc["quote"]>;
+} {
+  if (!request) throw new WorkshopOperationError("REQUEST_NOT_FOUND", "공방 요청을 찾을 수 없습니다.");
+  if (!request.quote || (request.kind !== "upgrade" && request.kind !== "custom")) {
+    throw new WorkshopOperationError("INVALID_STATE", "제작 견적 정보가 완전하지 않습니다.");
+  }
+  if (
+    request.kind === "upgrade" &&
+    (!request.sourceItemId ||
+      !request.sourceSlot ||
+      !request.inventoryEntryId ||
+      request.quote.result.category !== request.sourceSlot)
+  ) {
+    throw new WorkshopOperationError("INVALID_STATE", "강화 견적 정보가 완전하지 않습니다.");
+  }
+}
+
+function requireUpgradeSource(
+  request: EquipmentWorkshopRequestDoc,
+): asserts request is EquipmentWorkshopRequestDoc & {
   sourceItemId: string;
   sourceSlot: "WEAPON" | "ARMOR";
   inventoryEntryId: string;
 } {
-  if (!request) throw new WorkshopOperationError("REQUEST_NOT_FOUND", "공방 요청을 찾을 수 없습니다.");
   if (
     request.kind !== "upgrade" ||
-    !request.quote ||
     !request.sourceItemId ||
     !request.sourceSlot ||
-    !request.inventoryEntryId ||
-    request.quote.result.category !== request.sourceSlot
+    !request.inventoryEntryId
   ) {
-    throw new WorkshopOperationError("INVALID_STATE", "강화 견적 정보가 완전하지 않습니다.");
+    throw new WorkshopOperationError("INVALID_STATE", "강화 원본 장비 정보가 완전하지 않습니다.");
   }
 }
 
@@ -85,11 +101,11 @@ function requireReloadRequest(
 export async function prepareWorkshopOperationLocks(
   request: EquipmentWorkshopRequestDoc,
 ): Promise<void> {
-  requireUpgradeRequest(request);
+  requireBuildRequest(request);
   await prepareCharacterInventoryItemLocks(request.characterId, [
-    request.sourceItemId,
+    ...(request.sourceItemId ? [request.sourceItemId] : []),
     request.quote.result.itemId,
-    slotLockId(request.sourceSlot),
+    slotLockId(request.quote.result.category),
     ...request.quote.materials.map((material) => material.itemId),
   ]);
 }
@@ -199,14 +215,19 @@ export async function acceptWorkshopQuoteInTransaction(input: {
   session: ClientSession;
 }): Promise<EquipmentWorkshopRequestDoc> {
   const request = await findEquipmentWorkshopRequestById(input.requestId, { session: input.session });
-  requireUpgradeRequest(request);
+  requireBuildRequest(request);
   if (request.userId !== input.actorId) throw new WorkshopOperationError("FORBIDDEN", "본인의 공방 요청만 수락할 수 있습니다.");
   if (request.status !== "QUOTED") throw new WorkshopOperationError("INVALID_STATE", "수락 가능한 견적 상태가 아닙니다.");
   if (request.quote.version !== input.expectedQuoteVersion) throw new WorkshopOperationError("QUOTE_CHANGED", "견적이 변경되었습니다. 내용을 다시 확인해 주세요.");
 
   await lockCharacterInventoryItems(
     request.characterId,
-    [request.sourceItemId, request.quote.result.itemId, slotLockId(request.sourceSlot), ...request.quote.materials.map((item) => item.itemId)],
+    [
+      ...(request.sourceItemId ? [request.sourceItemId] : []),
+      request.quote.result.itemId,
+      slotLockId(request.quote.result.category),
+      ...request.quote.materials.map((item) => item.itemId),
+    ],
     input.session,
   );
   const characters = await charactersCol();
@@ -215,15 +236,21 @@ export async function acceptWorkshopQuoteInTransaction(input: {
     { session: input.session },
   );
   if (!character || character.type !== "AGENT") throw new WorkshopOperationError("FORBIDDEN", "요청 캐릭터 소유권을 확인할 수 없습니다.");
-  const sourceMaster = await (await masterItemsCol()).findOne(
-    { _id: new ObjectId(request.sourceItemId) },
-    { session: input.session, projection: { category: 1 } },
-  );
-  if (!sourceMaster || sourceMaster.category !== request.sourceSlot) {
-    throw new WorkshopOperationError("TARGET_CHANGED", "원본 장비 분류가 견적 발행 이후 변경되었습니다.");
+  let sourceSnapshot: {
+    sourceEquipmentCharge?: EquipmentChargeState;
+    sourceNote?: string;
+  } = {};
+  if (request.kind === "upgrade") {
+    requireUpgradeSource(request);
+    const sourceMaster = await (await masterItemsCol()).findOne(
+      { _id: new ObjectId(request.sourceItemId) },
+      { session: input.session, projection: { category: 1 } },
+    );
+    if (!sourceMaster || sourceMaster.category !== request.sourceSlot) {
+      throw new WorkshopOperationError("TARGET_CHANGED", "원본 장비 분류가 견적 발행 이후 변경되었습니다.");
+    }
+    sourceSnapshot = await escrowEquippedSource(request, input.session);
   }
-
-  const sourceSnapshot = await escrowEquippedSource(request, input.session);
   await consumeMaterials(request, input.session);
   if (request.quote.creditCost > 0) {
     await addCredit({
@@ -233,7 +260,7 @@ export async function acceptWorkshopQuoteInTransaction(input: {
       ownerName: request.userName,
       amount: -request.quote.creditCost,
       type: "PURCHASE",
-      description: `공방 장비 강화 — ${request.equipmentName ?? request.quote.result.name}`,
+      description: `공방 ${request.kind === "upgrade" ? "장비 강화" : "신규 제작"} — ${request.equipmentName ?? request.quote.result.name}`,
       metadata: { source: "equipment_workshop", workshopRequestId: request._id },
       createdById: input.actorId,
       createdByName: input.actorName,
@@ -253,9 +280,13 @@ export async function acceptWorkshopQuoteInTransaction(input: {
       startedAt,
       readyAt,
       escrow: {
-        sourceItemId: request.sourceItemId,
-        sourceItemName: request.equipmentName ?? "장비",
-        sourceSlot: request.sourceSlot,
+        ...(request.kind === "upgrade"
+          ? {
+              sourceItemId: request.sourceItemId,
+              sourceItemName: request.equipmentName ?? "장비",
+              sourceSlot: request.sourceSlot,
+            }
+          : {}),
         materials: request.quote.materials,
         creditCost: request.quote.creditCost,
         ...sourceSnapshot,
@@ -274,21 +305,44 @@ async function restoreInventory(
   },
   session: ClientSession,
 ): Promise<void> {
-  await addToInventory(
-    {
-      characterId: request.characterId,
-      characterCodename: request.characterCodename,
-      itemId: request.escrow.sourceItemId,
-      itemName: request.escrow.sourceItemName,
-      quantity: 1,
-      acquiredAt: new Date(),
-      note: request.escrow.sourceNote ?? `공방 취소 반환 · ${request._id}`,
-      ...(request.escrow.sourceEquipmentCharge
-        ? { equipmentCharge: request.escrow.sourceEquipmentCharge }
-        : {}),
-    },
-    { session },
-  );
+  const inventory = await characterInventoryCol();
+  if (
+    request.escrow.sourceItemId &&
+    request.escrow.sourceItemName &&
+    request.escrow.sourceSlot
+  ) {
+    if (request.escrow.sourceEquipmentCharge) {
+      const reacquiredSource = await inventory.findOne(
+        {
+          characterId: request.characterId,
+          itemId: request.escrow.sourceItemId,
+          quantity: { $gte: 1 },
+        },
+        { session, projection: { _id: 1 } },
+      );
+      if (reacquiredSource) {
+        throw new WorkshopOperationError(
+          "TARGET_CHANGED",
+          "충전 상태가 있는 동종 장비를 제작 중 다시 획득해 원본을 안전하게 복구할 수 없습니다.",
+        );
+      }
+    }
+    await addToInventory(
+      {
+        characterId: request.characterId,
+        characterCodename: request.characterCodename,
+        itemId: request.escrow.sourceItemId,
+        itemName: request.escrow.sourceItemName,
+        quantity: 1,
+        acquiredAt: new Date(),
+        note: request.escrow.sourceNote ?? `공방 취소 반환 · ${request._id}`,
+        ...(request.escrow.sourceEquipmentCharge
+          ? { equipmentCharge: request.escrow.sourceEquipmentCharge }
+          : {}),
+      },
+      { session },
+    );
+  }
   for (const material of request.escrow.materials) {
     await addToInventory(
       {
@@ -303,12 +357,23 @@ async function restoreInventory(
       { session },
     );
   }
-  const inventory = await characterInventoryCol();
-  const occupied = await inventory.findOne(
-    { characterId: request.characterId, equippedSlot: request.escrow.sourceSlot },
-    { session, projection: { _id: 1 } },
-  );
-  if (!occupied) await equipCharacterInventoryItem(request.characterId, request.escrow.sourceItemId, request.escrow.sourceSlot, { session });
+  if (
+    request.escrow.sourceItemId &&
+    request.escrow.sourceSlot
+  ) {
+    const occupied = await inventory.findOne(
+      { characterId: request.characterId, equippedSlot: request.escrow.sourceSlot },
+      { session, projection: { _id: 1 } },
+    );
+    if (!occupied) {
+      await equipCharacterInventoryItem(
+        request.characterId,
+        request.escrow.sourceItemId,
+        request.escrow.sourceSlot,
+        { session },
+      );
+    }
+  }
 }
 
 export async function cancelWorkshopInTransaction(input: {
@@ -319,7 +384,7 @@ export async function cancelWorkshopInTransaction(input: {
   session: ClientSession;
 }): Promise<EquipmentWorkshopRequestDoc> {
   const request = await findEquipmentWorkshopRequestById(input.requestId, { session: input.session });
-  requireUpgradeRequest(request);
+  requireBuildRequest(request);
   if (request.status !== "IN_PROGRESS" || !request.escrow) throw new WorkshopOperationError("INVALID_STATE", "취소 가능한 제작 상태가 아닙니다.");
   await restoreInventory(request as typeof request & { escrow: NonNullable<typeof request.escrow> }, input.session);
   if (request.escrow.creditCost > 0) {
@@ -330,7 +395,7 @@ export async function cancelWorkshopInTransaction(input: {
       ownerName: request.userName,
       amount: request.escrow.creditCost,
       type: "ADMIN_GRANT",
-      description: `공방 강화 취소 환불 — ${request.equipmentName ?? request.quote.result.name}`,
+      description: `공방 ${request.kind === "upgrade" ? "강화" : "제작"} 취소 환불 — ${request.equipmentName ?? request.quote.result.name}`,
       metadata: { source: "equipment_workshop_refund", workshopRequestId: request._id },
       createdById: input.actorId,
       createdByName: input.actorName,
@@ -355,7 +420,6 @@ export async function cancelWorkshopInTransaction(input: {
 async function ensureResultMasterItem(
   request: EquipmentWorkshopRequestDoc & {
     quote: NonNullable<EquipmentWorkshopRequestDoc["quote"]>;
-    sourceItemId: string;
   },
   session: ClientSession,
 ): Promise<MasterItem> {
@@ -381,19 +445,40 @@ async function ensureResultMasterItem(
     source: "manual",
     workshop: {
       requestId: request._id,
-      sourceItemId: request.sourceItemId,
-      sourceItemName: request.equipmentName ?? "장비",
+      ownerId: request.userId,
+      ...(request.sourceItemId ? { sourceItemId: request.sourceItemId } : {}),
+      ...(request.sourceItemId
+        ? { sourceItemName: request.equipmentName ?? "장비" }
+        : {}),
       characterId: request.characterId,
       characterCodename: request.characterCodename,
       specialistCodename: request.quote.specialistCodename,
+      ...(request.quote.blueprintRef
+        ? { blueprintRef: request.quote.blueprintRef }
+        : {}),
       generation: request.quote.result.generation,
-      lifecycle: "design-proposal",
-      balanceStatus: "balance-candidate",
+      lifecycle: "operational",
+      balanceStatus: "approved",
     },
     createdAt: now,
     updatedAt: now,
   };
-  await items.updateOne({ _id: resultId }, { $setOnInsert: doc }, { upsert: true, session });
+  try {
+    await items.insertOne(doc, { session });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: unknown }).code === 11000
+    ) {
+      throw new WorkshopOperationError(
+        "TARGET_CHANGED",
+        "결과 장비 식별자 또는 slug가 기존 마스터 품목과 충돌했습니다.",
+      );
+    }
+    throw error;
+  }
   return doc;
 }
 
@@ -405,19 +490,25 @@ export async function claimWorkshopResultInTransaction(input: {
   session: ClientSession;
 }): Promise<EquipmentWorkshopRequestDoc> {
   const request = await findEquipmentWorkshopRequestById(input.requestId, { session: input.session });
-  requireUpgradeRequest(request);
-  if (request.userId !== input.actorId) throw new WorkshopOperationError("FORBIDDEN", "본인의 강화 장비만 수령할 수 있습니다.");
+  requireBuildRequest(request);
+  if (request.userId !== input.actorId) throw new WorkshopOperationError("FORBIDDEN", "본인의 공방 장비만 수령할 수 있습니다.");
   if (
     request.status !== "IN_PROGRESS" ||
     !request.readyAt ||
     !request.startedAt ||
     !request.escrow ||
-    request.escrow.sourceItemId !== request.sourceItemId ||
-    request.escrow.sourceSlot !== request.sourceSlot
+    (request.kind === "upgrade" &&
+      (request.escrow.sourceItemId !== request.sourceItemId ||
+        request.escrow.sourceSlot !== request.sourceSlot))
   ) throw new WorkshopOperationError("INVALID_STATE", "수령 가능한 제작 상태가 아닙니다.");
   const now = input.now ?? new Date();
   if (request.readyAt.getTime() > now.getTime()) throw new WorkshopOperationError("NOT_READY", "아직 제작이 완료되지 않았습니다.");
-  await lockCharacterInventoryItems(request.characterId, [request.quote.result.itemId, slotLockId(request.sourceSlot)], input.session);
+  const resultSlot = request.quote.result.category;
+  await lockCharacterInventoryItems(
+    request.characterId,
+    [request.quote.result.itemId, slotLockId(resultSlot)],
+    input.session,
+  );
   const characters = await charactersCol();
   const character = await characters.findOne(
     { _id: new ObjectId(request.characterId), ownerId: request.userId, type: "AGENT" },
@@ -447,7 +538,7 @@ export async function claimWorkshopResultInTransaction(input: {
       itemName: request.quote.result.name,
       quantity: 1,
       acquiredAt: now,
-      note: `공방 강화 완료 · ${request._id}`,
+      note: `공방 ${request.kind === "upgrade" ? "강화" : "제작"} 완료 · ${request._id}`,
       ...(request.quote.result.equipmentAction
         ? {
             equipmentCharge: {
@@ -459,7 +550,12 @@ export async function claimWorkshopResultInTransaction(input: {
     },
     { session: input.session },
   );
-  const equipped = await equipCharacterInventoryItem(request.characterId, request.quote.result.itemId, request.sourceSlot, { session: input.session });
+  const equipped = await equipCharacterInventoryItem(
+    request.characterId,
+    request.quote.result.itemId,
+    resultSlot,
+    { session: input.session },
+  );
   if (!equipped.ok) throw new WorkshopOperationError("INVALID_STATE", "결과 장비 지급 후 장착에 실패했습니다.");
   const updated = await transitionEquipmentWorkshopRequest({
     requestId: request._id,

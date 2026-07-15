@@ -28,7 +28,6 @@ import {
   useDeclineEquipmentWorkshopQuote,
   useEquipmentShopQuote,
   useEquipmentWorkshopRequest,
-  useUpdateEquipmentWorkshopRequest,
   usePurchaseEquipmentShopItem,
   useRegisterTowaskiArmorReferral,
   useRushEquipmentResearch,
@@ -54,7 +53,6 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
 import {
-  requiresEquipmentWorkshopOperatorNote,
   WORKSHOP_RELOAD_REQUEST_DETAILS,
   WORKSHOP_REQUEST_DETAIL_MIN_LENGTH,
   type EquipmentWorkshopComputedStatus,
@@ -183,20 +181,6 @@ const WORKSHOP_STATUS_LABELS: Record<
   REJECTED: "반려",
   CANCELLED: "제작 취소",
   COMPLETED: "완료",
-};
-const WORKSHOP_NEXT_STATUSES: Record<
-  EquipmentWorkshopRequestStatus,
-  readonly EquipmentWorkshopRequestStatus[]
-> = {
-  REQUESTED: ["IN_REVIEW", "APPROVED", "REJECTED"],
-  IN_REVIEW: ["APPROVED", "REJECTED"],
-  APPROVED: ["COMPLETED", "REJECTED"],
-  QUOTED: ["REJECTED"],
-  IN_PROGRESS: [],
-  DECLINED: [],
-  REJECTED: [],
-  CANCELLED: [],
-  COMPLETED: [],
 };
 type FeedbackTone = "success" | "info" | "error";
 type NoticeState = {
@@ -794,6 +778,9 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   REQUEST_STATE_CHANGED: "공방 요청 상태가 변경되었습니다. 다시 확인해 주세요.",
   WORKSHOP_NOT_READY: "아직 제작이 완료되지 않았습니다.",
   BLOB_NOT_CONFIGURED: "이미지 업로드 저장소가 설정되지 않았습니다.",
+  BLUEPRINT_CHANGED: "선택한 공방 설계안이 수정되었거나 보관되었습니다.",
+  BLUEPRINT_INCOMPATIBLE: "선택한 설계안은 이 요청 또는 원본 장비와 호환되지 않습니다.",
+  BLUEPRINT_SLUG_EXISTS: "이미 사용 중인 공방 설계안 slug입니다.",
 };
 
 const FEEDBACK_SOUND_PATTERNS: Record<
@@ -1510,7 +1497,6 @@ export default function EquipmentShopClient({
     viewerKey: isGM ? "gm" : (mainCharacter?.id ?? "unassigned"),
     enabled: initialZone === "custom",
   });
-  const updateWorkshopRequestMutation = useUpdateEquipmentWorkshopRequest();
 
   const [activeTab, setActiveTab] = useState<EquipmentShopTabValue>("ALL");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -1561,9 +1547,6 @@ export default function EquipmentShopClient({
   const [upgradeEntryId, setUpgradeEntryId] = useState("");
   const [upgradeRequestDetails, setUpgradeRequestDetails] = useState("");
   const [customRequestDetails, setCustomRequestDetails] = useState("");
-  const [workshopOperatorNotes, setWorkshopOperatorNotes] = useState<
-    Record<string, string>
-  >({});
   const [workshopClock, setWorkshopClock] = useState(0);
 
   useEffect(() => {
@@ -5296,63 +5279,6 @@ export default function EquipmentShopClient({
                         </li>
                       ))}
                     </ol>
-                  ) : null}
-                  {isGM && request.kind === "custom" ? (
-                    <div>
-                      <label>
-                        <span>운영자 메모</span>
-                        <input
-                          type="text"
-                          maxLength={1000}
-                          value={workshopOperatorNotes[request._id] ?? ""}
-                          onChange={(event) =>
-                            setWorkshopOperatorNotes((current) => ({
-                              ...current,
-                              [request._id]: event.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                      {WORKSHOP_NEXT_STATUSES[request.status].map((status) => (
-                        <button
-                          key={status}
-                          type="button"
-                          disabled={
-                            updateWorkshopRequestMutation.isPending ||
-                            (requiresEquipmentWorkshopOperatorNote(status) &&
-                              !(workshopOperatorNotes[request._id] ?? "").trim())
-                          }
-                          onClick={() =>
-                            updateWorkshopRequestMutation.mutate(
-                              {
-                                requestId: request._id,
-                                status,
-                                ...((workshopOperatorNotes[request._id] ?? "").trim()
-                                  ? {
-                                      operatorNote: (
-                                        workshopOperatorNotes[request._id] ?? ""
-                                      ).trim(),
-                                    }
-                                  : {}),
-                              },
-                              {
-                                onSuccess: () =>
-                                  setWorkshopOperatorNotes((current) => ({
-                                    ...current,
-                                    [request._id]: "",
-                                  })),
-                                onError: (error) =>
-                                  setErrorMessage(
-                                    describeEquipmentShopError(error),
-                                  ),
-                              },
-                            )
-                          }
-                        >
-                          {WORKSHOP_STATUS_LABELS[status]}
-                        </button>
-                      ))}
-                    </div>
                   ) : null}
                 </article>
               ))

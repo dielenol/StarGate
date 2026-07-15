@@ -39,6 +39,10 @@ import type {
   EquipmentWorkshopRequestResponse,
   SerializedEquipmentWorkshopRequest,
 } from "@/lib/equipment-shop/workshop-request";
+import type {
+  EquipmentWorkshopBlueprintInput,
+  SerializedEquipmentWorkshopBlueprint,
+} from "@/lib/equipment-shop/workshop-blueprint";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 const LICENSE_TEST_RECOVERY_POLL_INTERVAL_MS = 250;
@@ -350,8 +354,18 @@ export function useUpdateEquipmentWorkshopRequest() {
 async function invalidateWorkshopEconomy(queryClient: ReturnType<typeof useQueryClient>) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: equipmentShopKeys.workshopRequestsRoot }),
+    queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog }),
     queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
     queryClient.invalidateQueries({ queryKey: creditKeys.all }),
+    queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+  ]);
+}
+
+async function invalidateWorkshopRequests(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: equipmentShopKeys.workshopRequestsRoot }),
     queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
   ]);
 }
@@ -411,7 +425,80 @@ export function useQuoteEquipmentWorkshopRequest() {
       if (!res.ok) await throwEquipmentShopError(res);
       return res.json();
     },
-    onSuccess: () => invalidateWorkshopEconomy(queryClient),
+    onSuccess: () => invalidateWorkshopRequests(queryClient),
+  });
+}
+
+export function useCreateEquipmentWorkshopBlueprint() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { blueprint: SerializedEquipmentWorkshopBlueprint },
+    EquipmentShopApiError,
+    EquipmentWorkshopBlueprintInput
+  >({
+    mutationFn: async (blueprint) => {
+      const res = await fetch("/api/erp/admin/equipment-workshop/blueprints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(blueprint),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: equipmentShopKeys.workshopBlueprintsRoot,
+      }),
+  });
+}
+
+export function useUpdateEquipmentWorkshopBlueprint() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { blueprint: SerializedEquipmentWorkshopBlueprint },
+    EquipmentShopApiError,
+    {
+      id: string;
+      expectedVersion: number;
+      blueprint: EquipmentWorkshopBlueprintInput;
+    }
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/admin/equipment-workshop/blueprints", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: equipmentShopKeys.workshopBlueprintsRoot,
+      }),
+  });
+}
+
+export function useArchiveEquipmentWorkshopBlueprint() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { blueprint: SerializedEquipmentWorkshopBlueprint },
+    EquipmentShopApiError,
+    { id: string; expectedVersion: number }
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/admin/equipment-workshop/blueprints", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwEquipmentShopError(res);
+      return res.json();
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: equipmentShopKeys.workshopBlueprintsRoot,
+      }),
   });
 }
 

@@ -108,14 +108,20 @@ export interface MasterItem {
   /** GM 공방에서 생성한 캐릭터 전용 강화 결과의 추적 메타데이터. */
   workshop?: {
     requestId: string;
-    sourceItemId: string;
-    sourceItemName: string;
+    ownerId: string;
+    sourceItemId?: string;
+    sourceItemName?: string;
     characterId: string;
     characterCodename: string;
     specialistCodename: string;
+    blueprintRef?: {
+      id: string;
+      slug: string;
+      version: number;
+    };
     generation: number;
-    lifecycle: "design-proposal";
-    balanceStatus: "balance-candidate";
+    lifecycle: "operational";
+    balanceStatus: "approved";
   };
 }
 

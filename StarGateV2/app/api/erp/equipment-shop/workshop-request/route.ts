@@ -26,7 +26,6 @@ import {
   isSameEquipmentWorkshopRequestPayload,
   parseEquipmentWorkshopRequest,
   requiresEquipmentWorkshopOperatorNote,
-  type EquipmentWorkshopRequestStatus,
   type EquipmentWorkshopRequestResponse,
 } from "@/lib/equipment-shop/workshop-request";
 import { notifyUser, notifyUsers } from "@/lib/notifications/events";
@@ -37,21 +36,6 @@ interface UpdateWorkshopRequestBody {
   status?: unknown;
   operatorNote?: unknown;
 }
-
-const CUSTOM_WORKSHOP_MANUAL_TRANSITIONS: Record<
-  EquipmentWorkshopRequestStatus,
-  readonly EquipmentWorkshopRequestStatus[]
-> = {
-  REQUESTED: ["IN_REVIEW", "APPROVED", "REJECTED"],
-  IN_REVIEW: ["APPROVED", "REJECTED"],
-  APPROVED: ["COMPLETED", "REJECTED"],
-  QUOTED: [],
-  IN_PROGRESS: [],
-  DECLINED: [],
-  REJECTED: [],
-  CANCELLED: [],
-  COMPLETED: [],
-};
 
 function isDuplicateKeyError(error: unknown): boolean {
   return (
@@ -381,22 +365,18 @@ export async function PATCH(request: Request) {
       { status: 404 },
     );
   }
-  const canManuallyTransition = existing.kind === "upgrade"
-    ? (existing.status === "REQUESTED" && body.status === "IN_REVIEW") ||
-      (["REQUESTED", "IN_REVIEW", "APPROVED", "QUOTED"].includes(existing.status) &&
-        body.status === "REJECTED")
-    : existing.kind === "reload"
+  const canManuallyTransition = existing.kind === "reload"
       ? (["REQUESTED", "IN_REVIEW", "APPROVED"].includes(existing.status) &&
           (body.status === "IN_REVIEW" || body.status === "REJECTED"))
-    : CUSTOM_WORKSHOP_MANUAL_TRANSITIONS[existing.status].includes(body.status);
+      : (existing.status === "REQUESTED" && body.status === "IN_REVIEW") ||
+        (["REQUESTED", "IN_REVIEW", "APPROVED", "QUOTED"].includes(existing.status) &&
+          body.status === "REJECTED");
   if (!canManuallyTransition) {
     return NextResponse.json(
       {
-        error: existing.kind === "upgrade"
-          ? "장착 장비 강화는 견적·수락·수령 또는 제작 취소 전용 API로 처리해야 합니다."
-          : existing.kind === "reload"
+        error: existing.kind === "reload"
             ? "재장전은 검토·반려 또는 GM 결재 승인 전용 API로 처리해야 합니다."
-          : "커스텀 제작 요청의 기존 처리 흐름에서 허용되지 않는 상태 변경입니다.",
+            : "장비 강화·신규 제작은 견적·수락·수령 또는 제작 취소 전용 API로 처리해야 합니다.",
       },
       { status: 409 },
     );

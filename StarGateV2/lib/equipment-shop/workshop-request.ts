@@ -48,6 +48,8 @@ export type EquipmentWorkshopModificationDomain =
 
 export interface EquipmentWorkshopMaterial {
   itemId: string;
+  /** 신규 견적의 안정 재료 식별자. 기존 견적은 itemId만 존재할 수 있다. */
+  slug?: string;
   itemName: string;
   category: ItemCategory;
   quantity: number;
@@ -79,16 +81,23 @@ export interface EquipmentWorkshopQuote {
   materials: EquipmentWorkshopMaterial[];
   materialCost: number;
   totalCost: number;
+  blueprintRef?: EquipmentWorkshopBlueprintRef;
   result: EquipmentWorkshopResultBlueprint;
   issuedAt: string;
   issuedById?: string;
   issuedByName?: string;
 }
 
+export interface EquipmentWorkshopBlueprintRef {
+  id: string;
+  slug: string;
+  version: number;
+}
+
 export interface EquipmentWorkshopEscrow {
-  sourceItemId: string;
-  sourceItemName: string;
-  sourceSlot: EquipmentSlot;
+  sourceItemId?: string;
+  sourceItemName?: string;
+  sourceSlot?: EquipmentSlot;
   materials: EquipmentWorkshopMaterial[];
   creditCost: number;
   sourceEquipmentCharge?: EquipmentChargeState;
@@ -165,8 +174,14 @@ export interface EquipmentWorkshopQuoteInput {
   specialistCodename?: EquipmentWorkshopSpecialist;
   specialistNote?: string;
   modificationDomain: EquipmentWorkshopModificationDomain;
-  materials: Array<{ itemId: string; quantity: number }>;
+  blueprintRef?: EquipmentWorkshopBlueprintRef;
+  materials: Array<{
+    slug?: string;
+    itemId?: string;
+    quantity: number;
+  }>;
   result: {
+    category?: "WEAPON" | "ARMOR";
     name: string;
     description: string;
     damage?: string;
@@ -370,15 +385,48 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
   const tags = rawTags.filter((tag): tag is string => typeof tag === "string").map((tag) => tag.trim()).filter(Boolean);
   if (tags.length > 20 || tags.some((tag) => tag.length > 40) || tags.length !== rawTags.length) return { ok: false, error: "태그는 40자 이하 문자열 20개까지 입력할 수 있습니다." };
   if (!Array.isArray(source.materials)) return { ok: false, error: "재료 목록이 올바르지 않습니다." };
-  const materials: Array<{ itemId: string; quantity: number }> = [];
+  const category = result.category;
+  if (category !== undefined && category !== "WEAPON" && category !== "ARMOR") {
+    return { ok: false, error: "결과 장비 분류는 무기 또는 방어구여야 합니다." };
+  }
+  const blueprintRefSource = source.blueprintRef;
+  let blueprintRef: EquipmentWorkshopBlueprintRef | undefined;
+  if (blueprintRefSource !== undefined) {
+    if (!blueprintRefSource || typeof blueprintRefSource !== "object" || Array.isArray(blueprintRefSource)) {
+      return { ok: false, error: "설계안 참조가 올바르지 않습니다." };
+    }
+    const ref = blueprintRefSource as Record<string, unknown>;
+    const id = typeof ref.id === "string" ? ref.id.trim() : "";
+    const slug = typeof ref.slug === "string" ? ref.slug.trim() : "";
+    const version = ref.version;
+    if (!/^[a-f0-9]{24}$/i.test(id) || !/^[a-z0-9][a-z0-9_-]{1,79}$/.test(slug) || !Number.isInteger(version) || Number(version) < 1) {
+      return { ok: false, error: "설계안 ID, slug 또는 버전이 올바르지 않습니다." };
+    }
+    blueprintRef = { id, slug, version: Number(version) };
+  }
+  const materials: EquipmentWorkshopQuoteInput["materials"] = [];
   const seen = new Set<string>();
   for (const raw of source.materials) {
     if (!raw || typeof raw !== "object") return { ok: false, error: "재료 항목이 올바르지 않습니다." };
-    const itemId = typeof (raw as Record<string, unknown>).itemId === "string" ? String((raw as Record<string, unknown>).itemId).trim() : "";
-    const quantity = (raw as Record<string, unknown>).quantity;
-    if (!/^[a-f0-9]{24}$/i.test(itemId) || !Number.isInteger(quantity) || Number(quantity) < 1 || Number(quantity) > WORKSHOP_QUOTE_MAX_MATERIAL_QUANTITY || seen.has(itemId)) return { ok: false, error: "재료 ID·수량 또는 중복 항목을 확인해 주세요." };
-    seen.add(itemId);
-    materials.push({ itemId, quantity: Number(quantity) });
+    const material = raw as Record<string, unknown>;
+    const itemId = typeof material.itemId === "string" ? material.itemId.trim() : "";
+    const slug = typeof material.slug === "string" ? material.slug.trim() : "";
+    const quantity = material.quantity;
+    const key = slug ? `slug:${slug}` : `id:${itemId}`;
+    if (
+      (Boolean(itemId) === Boolean(slug)) ||
+      (itemId && !/^[a-f0-9]{24}$/i.test(itemId)) ||
+      (slug && !/^[a-z0-9][a-z0-9_-]{1,79}$/.test(slug)) ||
+      !Number.isInteger(quantity) ||
+      Number(quantity) < 1 ||
+      Number(quantity) > WORKSHOP_QUOTE_MAX_MATERIAL_QUANTITY ||
+      seen.has(key)
+    ) return { ok: false, error: "재료 slug·ID·수량 또는 중복 항목을 확인해 주세요." };
+    seen.add(key);
+    materials.push({
+      ...(slug ? { slug } : { itemId }),
+      quantity: Number(quantity),
+    });
   }
   return {
     ok: true,
@@ -390,7 +438,9 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
       ...(specialistNote ? { specialistNote } : {}),
       modificationDomain,
       materials,
+      ...(blueprintRef ? { blueprintRef } : {}),
       result: {
+        ...(category ? { category } : {}),
         name: result.name.trim(),
         description: result.description.trim(),
         ...(damage ? { damage } : {}),

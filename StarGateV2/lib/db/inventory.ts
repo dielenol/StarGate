@@ -10,10 +10,12 @@ import {
   findMasterItemBySlug,
   listCharacterInventory as listCharacterInventoryShared,
   listMasterItemsByCategories,
+  masterItemsCol,
   type CharacterInventory,
   type ItemCategory,
   type MasterItem,
 } from "@stargate/shared-db";
+import { ObjectId, type Filter } from "mongodb";
 
 import type {
   CharacterInventoryDto,
@@ -130,6 +132,53 @@ export async function findMasterItemBySlugOrId(
   key: string,
 ): Promise<MasterItem | null> {
   return (await findMasterItemBySlug(key)) ?? findMasterItemById(key);
+}
+
+function catalogVisibilityFilter(input: {
+  userId: string;
+  includePrivate: boolean;
+}): Filter<MasterItem> {
+  if (input.includePrivate) return {};
+  return {
+    $or: [
+      { isPublic: { $ne: false } },
+      { "workshop.ownerId": input.userId },
+    ],
+  };
+}
+
+export async function findVisibleMasterItemBySlugOrId(
+  key: string,
+  viewer: { userId: string; includePrivate: boolean },
+): Promise<MasterItem | null> {
+  const trimmed = key.trim();
+  if (!trimmed) return null;
+  const identifier: Filter<MasterItem> = ObjectId.isValid(trimmed)
+    ? { $or: [{ slug: trimmed }, { _id: new ObjectId(trimmed) }] }
+    : { slug: trimmed };
+  const collection = await masterItemsCol();
+  return collection.findOne({
+    $and: [identifier, catalogVisibilityFilter(viewer)],
+  });
+}
+
+export async function listVisibleMasterItems(
+  viewer: { userId: string; includePrivate: boolean },
+  options: {
+    categories?: readonly ItemCategory[];
+    availableOnly?: boolean;
+  } = {},
+): Promise<MasterItem[]> {
+  if (options.categories?.length === 0) return [];
+  const filters: Filter<MasterItem>[] = [catalogVisibilityFilter(viewer)];
+  if (options.categories) {
+    filters.push({ category: { $in: [...options.categories] } });
+  }
+  if (options.availableOnly) {
+    filters.push({ isAvailable: { $ne: false } });
+  }
+  const collection = await masterItemsCol();
+  return collection.find({ $and: filters }).sort({ category: 1, name: 1 }).toArray();
 }
 
 /**

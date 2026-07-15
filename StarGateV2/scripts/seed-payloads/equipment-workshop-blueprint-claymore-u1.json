@@ -1,0 +1,60 @@
+{
+  "collection": "equipment_workshop_blueprints",
+  "type": "equipment-workshop-blueprint",
+  "filter": {
+    "slug": "basic-assault-shield-claymore-u1"
+  },
+  "update": {
+    "$setOnInsert": {
+    "slug": "basic-assault-shield-claymore-u1",
+    "displayName": "보급형 공격 방패 · 크레모아 개조형",
+    "version": 1,
+    "status": "DRAFT",
+    "applicability": {
+      "kinds": ["upgrade"],
+      "sourceSlugs": ["basic-assault-shield"],
+      "sourceCategories": ["WEAPON"],
+      "resultCategory": "WEAPON"
+    },
+    "defaults": {
+      "creditCost": 400,
+      "durationMinutes": 4320,
+      "specialistCodename": "TOWASKI",
+      "specialistNote": "에이다 슈라이버 (VERNIER) 접수·통합 / 립 토와스키 (TOWASKI) 폭발물 검수",
+      "modificationDomain": "ENERGY_EXPLOSIVE_OUTPUT",
+      "materials": [
+        {
+          "slug": "force_core",
+          "quantity": 1
+        }
+      ],
+      "result": {
+        "name": "보급형 공격 방패 · 크레모아 개조형",
+        "description": "보급형 공격 방패 전면에 전용 크레모아 장약과 기폭 계통을 통합한 이동식 전용 개조형이다. 기본 공격은 기존 10 물리를 유지한다.",
+        "damage": "10 물리",
+        "tags": ["공방개조", "전용장비", "방패", "폭발물", "크레모아", "U1"],
+        "equipmentAction": {
+          "code": "U1",
+          "name": "크레모아 반응장갑",
+          "description": "방패 전면의 크레모아 장약을 기폭해 사용자 주변을 포함한 범위에 화염 피해를 준다.",
+          "effect": "자신의 액션과 장비 충전 1회를 소모한다. 1×5 전장에서는 자신과 좌우 인접 1칸의 모든 대상에게 30 화염 피해를 준다. 5×5 전장에서는 자신 중심 3×3 영역의 모든 대상에게 30 화염 피해를 준 뒤 사용자가 후방 1칸 이동하며, 이동할 수 없으면 제자리에 남는다. 사용자와 아군도 피해를 받으며 충전이 0이면 사용할 수 없다.",
+          "actionCost": 1,
+          "chargeCost": 1,
+          "maxCharges": 1,
+          "reloadCreditCost": 200,
+          "reloadApproval": "GM"
+        }
+      }
+    },
+    "sourceClass": "design-proposal",
+    "balanceStatus": "balance-candidate",
+    "createdById": "system:seed",
+    "createdByName": "공방 설계안 seed",
+    "updatedById": "system:seed",
+    "updatedByName": "공방 설계안 seed",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+      "updatedAt": "2026-07-15T00:00:00.000Z"
+    }
+  },
+  "upsert": true
+}

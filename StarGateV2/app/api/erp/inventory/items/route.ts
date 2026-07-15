@@ -4,8 +4,8 @@ import { ITEM_CATEGORIES } from "@stargate/shared-db";
 import type { CreateMasterItemInput, ItemCategory } from "@/types/inventory";
 
 import { auth } from "@/lib/auth/config";
-import { requireRole } from "@/lib/auth/rbac";
-import { listMasterItems, createMasterItem } from "@/lib/db/inventory";
+import { hasRole, requireRole } from "@/lib/auth/rbac";
+import { createMasterItem, listVisibleMasterItems } from "@/lib/db/inventory";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 function isItemCategory(value: unknown): value is ItemCategory {
@@ -59,7 +59,10 @@ export async function GET() {
   }
 
   try {
-    const items = await listMasterItems();
+    const items = await listVisibleMasterItems({
+      userId: session.user.id,
+      includePrivate: hasRole(session.user.role, "V"),
+    });
     return NextResponse.json(
       { items },
       {

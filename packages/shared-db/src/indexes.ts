@@ -168,6 +168,17 @@ export async function ensureAllIndexes(): Promise<void> {
         },
       },
     ]),
+    db.collection("equipment_workshop_blueprints").createIndexes([
+      {
+        key: { slug: 1 },
+        name: "equipment_workshop_blueprints_slug_unique",
+        unique: true,
+      },
+      {
+        key: { status: 1, updatedAt: -1 },
+        name: "equipment_workshop_blueprints_status_updatedAt",
+      },
+    ]),
 
     /* ── master_items (from task spec) ── */
     db.collection("master_items").createIndexes([

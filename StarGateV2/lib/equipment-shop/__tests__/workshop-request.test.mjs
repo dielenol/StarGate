@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { registerHooks } from "node:module";
 import test from "node:test";
 
 import {
@@ -13,6 +14,19 @@ import {
   resolveEquipmentWorkshopSpecialist,
   WORKSHOP_REQUEST_DETAIL_MAX_LENGTH,
 } from "../workshop-request.ts";
+
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier === "@/lib/equipment-shop/workshop-request") {
+      return nextResolve(new URL("../workshop-request.ts", import.meta.url).href, context);
+    }
+    return nextResolve(specifier, context);
+  },
+});
+
+const { parseEquipmentWorkshopBlueprint } = await import(
+  "../workshop-blueprint.ts"
+);
 
 test("upgrade requests require an equipped inventory entry and enough detail", () => {
   assert.deepEqual(
@@ -177,6 +191,47 @@ test("quote validation accepts specialist override and a charge-backed U action"
   assert.equal(parsed.input.result.equipmentAction.reloadCreditCost, 200);
 });
 
+test("quote validation accepts stable material slugs and explicit custom result category", () => {
+  const parsed = parseEquipmentWorkshopQuote({
+    expectedVersion: 0,
+    creditCost: 400,
+    durationMinutes: 4_320,
+    specialistCodename: "TOWASKI",
+    modificationDomain: "ENERGY_EXPLOSIVE_OUTPUT",
+    materials: [{ slug: "force_core", quantity: 1 }],
+    result: {
+      category: "WEAPON",
+      name: "커스텀 폭발 방패",
+      description: "신규 제작용 결과 장비 분류와 slug 재료를 검증합니다.",
+      tags: ["공방제작"],
+    },
+  });
+  assert.equal(parsed.ok, true);
+  assert.deepEqual(parsed.input.materials, [{ slug: "force_core", quantity: 1 }]);
+  assert.equal(parsed.input.result.category, "WEAPON");
+});
+
+test("workshop blueprint parser keeps reusable defaults separate from quote snapshots", () => {
+  const blueprint = readFileSync(new URL("../workshop-blueprint.ts", import.meta.url), "utf8");
+  const seed = JSON.parse(
+    readFileSync(
+      new URL(
+        "../../../scripts/seed-payloads/equipment-workshop-blueprint-claymore-u1.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  assert.match(blueprint, /parseEquipmentWorkshopBlueprint/);
+  assert.match(blueprint, /materials: Array<\{ slug: string; quantity: number \}>/);
+  assert.equal(
+    parseEquipmentWorkshopBlueprint(seed.update.$setOnInsert).ok,
+    true,
+  );
+  assert.equal(seed.update.$setOnInsert.defaults.result.previewImage, undefined);
+  assert.deepEqual(seed.update.$setOnInsert.defaults.materials, [{ slug: "force_core", quantity: 1 }]);
+});
+
 test("specialist routing is deterministic and READY is derived from server time", () => {
   assert.equal(resolveEquipmentWorkshopSpecialist({ tags: ["냉병기"] }), "TEMPER");
   assert.equal(resolveEquipmentWorkshopSpecialist({ tags: ["화기", "소총"] }), "TOWASKI");
@@ -222,7 +277,7 @@ test("workshop route derives ownership and equipped gear on the server", () => {
   assert.match(route, /getEquipmentResearchCapabilities/);
   assert.match(route, /export async function GET/);
   assert.match(route, /export async function PATCH/);
-  assert.match(route, /장착 장비 강화는 견적·수락·수령 또는 제작 취소 전용 API/);
+  assert.match(route, /장비 강화·신규 제작은 견적·수락·수령 또는 제작 취소 전용 API/);
 });
 
 test("workshop requests use idempotency and invalidate their request ledger", () => {
@@ -271,12 +326,15 @@ test("accept, claim and cancel keep every economy mutation inside the supplied t
   assert.match(playerRoute, /executeEconomicOperation\([\s\S]*acceptWorkshopQuoteInTransaction/);
   assert.match(playerRoute, /executeEconomicOperation\([\s\S]*claimWorkshopResultInTransaction/);
   assert.match(adminRoute, /executeEconomicOperation\([\s\S]*cancelWorkshopInTransaction/);
-  assert.match(operations, /escrowEquippedSource\(request, input\.session\)[\s\S]*consumeMaterials\(request, input\.session\)[\s\S]*addCredit\([\s\S]*session: input\.session/);
+  assert.match(operations, /request\.kind === "upgrade"[\s\S]*escrowEquippedSource\(request, input\.session\)[\s\S]*consumeMaterials\(request, input\.session\)[\s\S]*addCredit\([\s\S]*session: input\.session/);
   assert.match(operations, /isAvailable: false/);
   assert.match(operations, /isPublic: false/);
   assert.match(operations, /price: 0/);
-  assert.match(operations, /balanceStatus: "balance-candidate"/);
-  assert.match(operations, /equipCharacterInventoryItem\(request\.characterId, request\.quote\.result\.itemId, request\.sourceSlot/);
+  assert.match(operations, /ownerId: request\.userId/);
+  assert.match(operations, /lifecycle: "operational"/);
+  assert.match(operations, /balanceStatus: "approved"/);
+  assert.match(operations, /const resultSlot = request\.quote\.result\.category/);
+  assert.match(operations, /equipCharacterInventoryItem\([\s\S]*request\.quote\.result\.itemId,[\s\S]*resultSlot/);
   assert.match(operations, /equipmentAction: request\.quote\.result\.equipmentAction/);
   assert.match(operations, /equipmentCharge:[\s\S]*current: request\.quote\.result\.equipmentAction\.maxCharges/);
   assert.match(operations, /const existingResult = await inventory\.findOne/);
@@ -301,6 +359,58 @@ test("only one in-progress request can escrow an inventory entry", () => {
   const indexes = readFileSync(new URL("../../../../packages/shared-db/src/indexes.ts", import.meta.url), "utf8");
   assert.match(indexes, /equipment_workshop_requests_inventoryEntry_in_progress_unique[\s\S]*unique: true[\s\S]*status: "IN_PROGRESS"/);
   assert.match(indexes, /equipment_workshop_requests_active_operation_unique[\s\S]*unique: true[\s\S]*activeOperationKey/);
+  assert.match(indexes, /equipment_workshop_blueprints_slug_unique[\s\S]*unique: true/);
+});
+
+test("blueprint API is GM-only and uses versioned soft archive semantics", () => {
+  const route = readFileSync(
+    new URL(
+      "../../../app/api/erp/admin/equipment-workshop/blueprints/route.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const db = readFileSync(
+    new URL("../../db/equipment-workshop-blueprints.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(route, /hasRole\(session\.user\.role, "GM"\)/);
+  assert.match(route, /export async function POST/);
+  assert.match(route, /export async function PUT/);
+  assert.match(route, /export async function DELETE/);
+  assert.match(db, /expectedVersion/);
+  assert.match(db, /status: "ARCHIVED"/);
+  assert.match(db, /\$inc: \{ version: 1 \}/);
+});
+
+test("private workshop catalog items are visible only to their owner or V+", () => {
+  const listPage = readFileSync(
+    new URL(
+      "../../../app/(erp)/erp/wiki/catalog/[category]/page.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const detailPage = readFileSync(
+    new URL(
+      "../../../app/(erp)/erp/wiki/catalog/item/[key]/page.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const itemsRoute = readFileSync(
+    new URL("../../../app/api/erp/inventory/items/route.ts", import.meta.url),
+    "utf8",
+  );
+  const inventoryDb = readFileSync(
+    new URL("../../db/inventory.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(listPage, /listVisibleMasterItems/);
+  assert.match(detailPage, /findVisibleMasterItemBySlugOrId/);
+  assert.match(itemsRoute, /listVisibleMasterItems/);
+  assert.match(inventoryDb, /"workshop\.ownerId": input\.userId/);
+  assert.match(inventoryDb, /includePrivate/);
 });
 
 test("quotes snapshot procurement cost and Nochichim exposes equipped actions separately", () => {
@@ -313,6 +423,7 @@ test("quotes snapshot procurement cost and Nochichim exposes equipped actions se
   assert.match(adminRoute, /VF혈액팩은 생체 접속·재생·자기수복 계통 개조에만/);
   assert.match(adminRoute, /materialCost/);
   assert.match(adminRoute, /totalCost/);
+  assert.match(adminRoute, /slug: item\.slug/);
   assert.match(playerClient, /총 경제 부담/);
   assert.match(playerClient, /관료 결재 요청/);
   assert.match(snapshots, /equipmentActions/);
@@ -327,6 +438,7 @@ test("GM material picker supports name and category search", () => {
   );
   assert.match(adminClient, /role="combobox"/);
   assert.match(adminClient, /item\.name\.toLowerCase\(\)\.includes\(normalized\)/);
+  assert.match(adminClient, /item\.slug\.toLowerCase\(\)\.includes\(normalized\)/);
   assert.match(adminClient, /item\.category\.toLowerCase\(\)\.includes\(normalized\)/);
-  assert.match(adminClient, /추가한 모든 재료를 검색해 선택해 주세요/);
+  assert.match(adminClient, /현재 공개 마스터 품목에서 선택해 주세요/);
 });
