@@ -33,7 +33,7 @@
 - `wide`: 서로 다른 파일 소유권과 검증 기준을 가진 독립 lane이 둘 이상이다.
 - `inseparable`: 하나의 상태 불변 조건이나 canon 판정에 모든 근거가 강하게 결합된다.
 
-`critical` 변경은 구현 뒤 `stargate_risk_reviewer`의 읽기 전용 리뷰를 거친다. migration, seed, live DB, economy mutation은 dry-run 또는 실행 직전 상태까지 구현한 뒤 사전 risk review를 통과하고, 사용자 권한 범위 안에서 실행한 다음 DB 재조회와 후속 검증을 수행한다. `wide`만 병렬화하며 최대 3개 하위 작업으로 나누고 파일 소유권을 겹치지 않게 한다. `inseparable`은 병렬 구현하지 않고 루트가 순차적으로 해결한다.
+`critical` 변경은 구현 뒤 `stargate_risk_reviewer`의 읽기 전용 리뷰를 거친다. migration, seed, live DB, economy mutation은 dry-run 또는 실행 직전 상태까지만 구현한다. 실제 라이브 실행은 상위 `AGENTS.md`의 **라이브 운영 권한 경계**에 따라 정확한 대상과 mutation에 대한 별도 명시 승인을 받은 경우에만 수행하고, 실행 뒤 DB 재조회와 후속 검증을 진행한다. risk review 통과나 사용자의 일반적인 권한 범위는 라이브 실행 승인을 대신하지 않는다. `wide`만 병렬화하며 최대 3개 하위 작업으로 나누고 파일 소유권을 겹치지 않게 한다. `inseparable`은 병렬 구현하지 않고 루트가 순차적으로 해결한다.
 
 ## Delegation Rules
 
