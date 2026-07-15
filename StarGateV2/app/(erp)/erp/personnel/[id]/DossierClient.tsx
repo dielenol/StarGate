@@ -44,9 +44,12 @@ import {
 } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import {
-  getCharacterDisplayName,
   getCharacterRoleLine,
 } from "@/lib/format/character-display";
+import {
+  getPersonnelAliasOrNull,
+  getPersonnelPrimaryName,
+} from "@/lib/format/personnel-name";
 import { formatDate as formatLibDate } from "@/lib/format/date";
 
 import Box from "@/components/ui/Box/Box";
@@ -279,7 +282,7 @@ interface EditDraft {
   /* root */
   codename: string;
   tier: CharacterTier;
-  agentLevel: AgentLevel;
+  agentLevel: AgentLevel | "";
   department: string;
   /* lore */
   loreName: string;
@@ -324,7 +327,7 @@ function buildInitialDraft(c: Character): EditDraft {
   return {
     codename: c.codename ?? "",
     tier: (c.tier ?? "MAIN") as CharacterTier,
-    agentLevel: (c.agentLevel ?? "J") as AgentLevel,
+    agentLevel: c.agentLevel ?? "",
     department: c.department ?? "",
     loreName: dropRedacted(c.lore.name),
     loreNameNative: dropRedacted(c.lore.nameNative),
@@ -413,7 +416,12 @@ function buildDossierPatchBody(
 
   if (current.codename !== initial.codename) body.codename = current.codename;
   if (current.tier !== initial.tier) body.tier = current.tier;
-  if (current.agentLevel !== initial.agentLevel) body.agentLevel = current.agentLevel;
+  if (
+    current.agentLevel &&
+    current.agentLevel !== initial.agentLevel
+  ) {
+    body.agentLevel = current.agentLevel;
+  }
   if (current.department !== initial.department) body.department = current.department;
 
   const lore: Record<string, unknown> = {};
@@ -680,7 +688,7 @@ export default function DossierClient({
     }
   };
 
-  const level: AgentLevel = character.agentLevel ?? "J";
+  const level = character.agentLevel;
   const department = character.department ?? "UNASSIGNED";
   const isAgent = character.type === "AGENT";
 
@@ -756,22 +764,22 @@ export default function DossierClient({
 
   const nameEn =
     canRealName && !isRedactedValue(lore.nameEn) ? lore.nameEn : null;
+  const personnelNameSource = {
+    codename: character.codename,
+    lore: {
+      nickname:
+        canIdentity && !isRedactedValue(lore.nickname)
+          ? lore.nickname
+          : null,
+      name: canRealName && !isRedactedValue(lore.name) ? lore.name : null,
+      nameEn,
+    },
+  };
   const displayName =
     canIdentity || canRealName
-      ? getCharacterDisplayName({
-          codename: character.codename,
-          role: character.role,
-          department: character.department,
-          lore: {
-            nickname:
-              canIdentity && !isRedactedValue(lore.nickname)
-                ? lore.nickname
-                : null,
-            name: canRealName && !isRedactedValue(lore.name) ? lore.name : null,
-            nameEn,
-          },
-        })
+      ? getPersonnelPrimaryName(personnelNameSource)
       : null;
+  const displayAlias = getPersonnelAliasOrNull(personnelNameSource);
   const displayNameIncludesNameEn = Boolean(
     nameEn && displayName?.includes(nameEn),
   );
@@ -1019,7 +1027,9 @@ export default function DossierClient({
             {usesAgentLevels ? (
               <KVRow label="권한등급">
                 <span className={styles.mono}>
-                  {level} · {AGENT_LEVEL_LABELS[level]}
+                  {level
+                    ? `${level} · ${AGENT_LEVEL_LABELS[level]}`
+                    : "미지정 · GM 확인 필요"}
                 </span>
               </KVRow>
             ) : (
@@ -1570,6 +1580,11 @@ export default function DossierClient({
               )}
             </h2>
             <div className={styles.portraitCode}>{character.codename}</div>
+            {displayAlias ? (
+              <div className={styles.portraitNameEn}>
+                ALIAS · {displayAlias}
+              </div>
+            ) : null}
             {roleLine ? (
               <div className={styles.portraitRole}>{roleLine}</div>
             ) : null}
@@ -1595,13 +1610,17 @@ export default function DossierClient({
                     대상 권한등급
                   </span>
                   <span className={styles.clrPill__value}>
-                    {level} · {AGENT_LEVEL_LABELS[level]}
+                    {level
+                      ? `${level} · ${AGENT_LEVEL_LABELS[level]}`
+                      : "미지정 · GM 확인 필요"}
                   </span>
-                  <Pips
-                    className={styles.clrPill__pips}
-                    total={getLevelDisplayTotal(level)}
-                    filled={getLevelDisplayRank(level)}
-                  />
+                  {level ? (
+                    <Pips
+                      className={styles.clrPill__pips}
+                      total={getLevelDisplayTotal(level)}
+                      filled={getLevelDisplayRank(level)}
+                    />
+                  ) : null}
                 </span>
               </div>
             ) : null}
@@ -1673,11 +1692,23 @@ export default function DossierClient({
                   <KVEditSelectRow
                     label="권한등급"
                     value={draft.agentLevel}
-                    onChange={(v) => updateDraft("agentLevel", v as AgentLevel)}
-                    options={AGENT_LEVELS.map((l) => ({
-                      value: l,
-                      label: `${l} · ${AGENT_LEVEL_LABELS[l]}`,
-                    }))}
+                    onChange={(v) =>
+                      updateDraft("agentLevel", v as AgentLevel | "")
+                    }
+                    options={[
+                      ...(!character.agentLevel
+                        ? [
+                            {
+                              value: "",
+                              label: "미지정 · GM 확인 필요",
+                            },
+                          ]
+                        : []),
+                      ...AGENT_LEVELS.map((l) => ({
+                        value: l,
+                        label: `${l} · ${AGENT_LEVEL_LABELS[l]}`,
+                      })),
+                    ]}
                   />
                 ) : null}
                 <KVEditSelectRow

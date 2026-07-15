@@ -219,6 +219,17 @@
   user-select: none;
 }
 
+.alias {
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .role {
   margin-top: 2px;
   color: var(--ink-2);

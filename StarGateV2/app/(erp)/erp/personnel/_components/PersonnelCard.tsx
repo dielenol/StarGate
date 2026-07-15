@@ -8,10 +8,11 @@ import type { AgentLevel, Character, CharacterType } from "@/types/character";
 import { getLevelDisplayRank, getLevelDisplayTotal } from "@/lib/personnel";
 import { getTopLevelGroup, isInternalOrgCode } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { getCharacterRoleLine } from "@/lib/format/character-display";
 import {
-  getCharacterDisplayNameOrNull,
-  getCharacterRoleLine,
-} from "@/lib/format/character-display";
+  getPersonnelAliasOrNull,
+  getPersonnelPrimaryNameOrNull,
+} from "@/lib/format/personnel-name";
 
 import Pips from "@/components/ui/Pips/Pips";
 import Tag from "@/components/ui/Tag/Tag";
@@ -43,7 +44,7 @@ export default function PersonnelCard({
   showAgentLevel = true,
 }: Props) {
   const id = String(character._id);
-  const level: AgentLevel = character.agentLevel ?? "J";
+  const level = character.agentLevel;
   const canShowAgentLevel =
     showAgentLevel &&
     (isInternalOrgCode(character.department) ||
@@ -51,7 +52,11 @@ export default function PersonnelCard({
       isInternalOrgCode(character.factionCode));
   const displayName =
     showIdentity && !isRedacted
-      ? getCharacterDisplayNameOrNull(character)
+      ? getPersonnelPrimaryNameOrNull(character)
+      : null;
+  const displayAlias =
+    showIdentity && !isRedacted
+      ? getPersonnelAliasOrNull(character)
       : null;
   const roleLine = getCharacterRoleLine(character);
   const isHostile = isHostileCharacter(character);
@@ -107,6 +112,9 @@ export default function PersonnelCard({
           >
             {displayName ?? REDACT_NAME}
           </div>
+          {displayAlias ? (
+            <div className={styles.alias}>ALIAS · {displayAlias}</div>
+          ) : null}
           {roleLine ? (
             <div className={styles.role}>{roleLine}</div>
           ) : null}
@@ -136,11 +144,15 @@ export default function PersonnelCard({
             </Tag>
             {canShowAgentLevel ? (
               <span className={styles.clrPill} data-rank={level}>
-                <span>권한등급 : {level}</span>
-                <Pips
-                  total={getLevelDisplayTotal(level)}
-                  filled={getLevelDisplayRank(level)}
-                />
+                <span>
+                  {level ? `권한등급 : ${level}` : "권한등급 : 미지정"}
+                </span>
+                {level ? (
+                  <Pips
+                    total={getLevelDisplayTotal(level)}
+                    filled={getLevelDisplayRank(level)}
+                  />
+                ) : null}
               </span>
             ) : null}
           </>
