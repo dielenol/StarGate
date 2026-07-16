@@ -49,14 +49,13 @@ export async function GET(request: NextRequest) {
 
   try {
     const mainCharacter = await findMainCharacterByOwner(session.user.id);
-    const mainAgent = mainCharacter?.type === "AGENT" ? mainCharacter : null;
     const [masterItems, ownedLicenseSlugs, recentActivity] = await Promise.all([
       listMasterItemsByCategoryFilter(EQUIPMENT_SHOP_CATEGORIES),
-      mainAgent?._id
-        ? listOwnedTowaskiLicenseSlugs(String(mainAgent._id))
+      mainCharacter?._id
+        ? listOwnedTowaskiLicenseSlugs(String(mainCharacter._id))
         : Promise.resolve(new Set<string>()),
-      mainAgent?._id
-        ? listRecentEquipmentShopActivity(String(mainAgent._id)).catch(() => [])
+      mainCharacter?._id
+        ? listRecentEquipmentShopActivity(String(mainCharacter._id)).catch(() => [])
         : Promise.resolve([]),
     ]);
     const catalogItems = expandEquipmentShopCatalogZones(
@@ -68,11 +67,11 @@ export async function GET(request: NextRequest) {
       (item) => scope === "all" || item.zone === scope,
     );
     const licensedItems = applyEquipmentShopLicenseContext(scopedItems, {
-      character: mainAgent,
+      character: mainCharacter,
       ownedLicenseSlugs,
     });
     const secret = process.env.AUTH_SECRET;
-    const characterId = mainAgent?._id ? String(mainAgent._id) : null;
+    const characterId = mainCharacter?._id ? String(mainCharacter._id) : null;
     const items =
       secret && characterId
         ? applyAcheronArmorReferrals(licensedItems, {

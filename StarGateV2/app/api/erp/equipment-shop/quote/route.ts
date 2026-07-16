@@ -44,7 +44,6 @@ export async function POST(request: Request) {
   }
 
   const character = await findMainCharacterByOwner(session.user.id);
-  const agent = character?.type === "AGENT" ? character : null;
 
   const itemCandidates = await findMasterItemsBySlugsOrIds([key]);
   const item =
@@ -60,7 +59,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const characterId = agent?._id ? String(agent._id) : null;
+  const characterId = character?._id ? String(character._id) : null;
   const [ownedLicenseSlugs, liveBalance] = await Promise.all([
     characterId
       ? listOwnedTowaskiLicenseSlugs(characterId)
@@ -81,7 +80,7 @@ export async function POST(request: Request) {
   const requirement = getEquipmentLicenseRequirement(item);
   const licenseStatus = requirement
     ? resolveEquipmentLicenseStatus({
-        character: agent ?? { codename: "DEBUG AGENT" },
+        character: character ?? { codename: "DEBUG CHARACTER" },
         requirement,
         ownedLicenseSlugs,
       })

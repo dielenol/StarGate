@@ -57,6 +57,16 @@ export type EquipmentResearchEffect =
       label: string;
     };
 
+export function canCharacterReceivePersonalEquipmentResearchEffect(
+  characterType: "AGENT" | "NPC",
+  effect: EquipmentResearchEffect,
+): boolean {
+  return (
+    characterType === "AGENT" ||
+    (effect.kind !== "stat" && effect.kind !== "point")
+  );
+}
+
 export interface EquipmentResearchNode {
   key: string;
   tier: EquipmentResearchTier;

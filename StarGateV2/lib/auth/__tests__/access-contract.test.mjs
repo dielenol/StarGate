@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
+  canManageCharacterEquipment,
   canViewCharacter,
   canViewPersonalInventory,
   isActiveUserStatus,
@@ -37,6 +39,42 @@ test("개인 인벤토리는 소유자 또는 V+만 볼 수 있다", () => {
   assert.equal(
     canViewPersonalInventory("user-a", "GM", { ownerId: "user-b", isPublic: false }),
     true,
+  );
+});
+
+test("장비 교체는 AGENT 또는 GM 본인 소유 NPC만 허용한다", () => {
+  const ownAgent = { ownerId: "user-a", type: "AGENT" };
+  const otherAgent = { ownerId: "user-b", type: "AGENT" };
+  const ownNpc = { ownerId: "user-a", type: "NPC" };
+  const otherNpc = { ownerId: "user-b", type: "NPC" };
+
+  assert.equal(canManageCharacterEquipment("user-a", "U", ownAgent), true);
+  assert.equal(canManageCharacterEquipment("user-a", "V", otherAgent), true);
+  assert.equal(canManageCharacterEquipment("user-a", "GM", otherAgent), true);
+  assert.equal(canManageCharacterEquipment("user-a", "U", ownNpc), false);
+  assert.equal(canManageCharacterEquipment("user-a", "V", ownNpc), false);
+  assert.equal(canManageCharacterEquipment("user-a", "GM", ownNpc), true);
+  assert.equal(canManageCharacterEquipment("user-a", "GM", otherNpc), false);
+});
+
+test("장비 교체 mutation은 트랜잭션 안에서 최신 권한을 다시 확인한다", async () => {
+  const source = await readFile(
+    new URL(
+      "../../../app/api/erp/inventory/[characterId]/equipment/route.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(source, /mongoSession\.withTransaction/);
+  assert.match(source, /status: "ACTIVE"/);
+  assert.match(
+    source,
+    /canManageCharacterEquipment\([\s\S]*transactionViewer\.role[\s\S]*transactionCharacter/,
+  );
+  assert.match(
+    source,
+    /equipCharacterInventoryItem\([\s\S]*session: mongoSession/,
   );
 });
 

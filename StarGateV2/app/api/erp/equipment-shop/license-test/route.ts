@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 
 import { NextResponse } from "next/server";
-import { getClient } from "@stargate/shared-db";
+import { charactersCol, getClient, usersCol } from "@stargate/shared-db";
+import { ObjectId } from "mongodb";
 
 import {
   isValidIdempotencyKey,
@@ -125,9 +126,9 @@ export async function GET(request: Request) {
     );
   }
   const mainCharacter = await findMainCharacterByOwner(session.user.id);
-  if (!mainCharacter || mainCharacter.type !== "AGENT" || !mainCharacter._id) {
+  if (!mainCharacter?._id) {
     return NextResponse.json(
-      { error: "메인 AGENT 캐릭터가 필요합니다.", code: "NO_MAIN_CHARACTER" },
+      { error: "대표 캐릭터가 필요합니다.", code: "NO_MAIN_CHARACTER" },
       { status: 400 },
     );
   }
@@ -233,10 +234,10 @@ export async function POST(request: Request) {
       { status: 409 },
     );
   }
-  if (!mainCharacter || mainCharacter.type !== "AGENT") {
+  if (!mainCharacter?._id) {
     return NextResponse.json(
       {
-        error: "메인 AGENT 캐릭터가 등록되어 있지 않습니다.",
+        error: "대표 캐릭터가 등록되어 있지 않습니다.",
         code: "NO_MAIN_CHARACTER",
       },
       { status: 400 },
@@ -416,6 +417,39 @@ export async function POST(request: Request) {
     let result;
     try {
       result = await mongoSession.withTransaction(async () => {
+        const transactionCharacter = await (await charactersCol()).findOne(
+          {
+            _id: new ObjectId(characterId),
+            ownerId: session.user.id,
+            type: mainCharacter.type,
+          },
+          { session: mongoSession, projection: { type: 1 } },
+        );
+        if (!transactionCharacter) {
+          throw new TowaskiLicenseChallengeError(
+            "LICENSE_TEST_CONFLICT",
+            "대표 캐릭터 소유권이 변경되어 라이선스를 발급할 수 없습니다.",
+          );
+        }
+        if (transactionCharacter.type === "NPC") {
+          const activeGmOwner =
+            ObjectId.isValid(session.user.id) &&
+            (await (await usersCol()).findOne(
+              {
+                _id: new ObjectId(session.user.id),
+                role: "GM",
+                status: "ACTIVE",
+              },
+              { session: mongoSession, projection: { _id: 1 } },
+            ));
+          if (!activeGmOwner) {
+            throw new TowaskiLicenseChallengeError(
+              "LICENSE_TEST_CONFLICT",
+              "GM 소유 NPC만 라이선스를 발급받을 수 있습니다.",
+            );
+          }
+        }
+
         if (
           program.requiresBasicLicense &&
           !(await hasOwnedTowaskiLicense(

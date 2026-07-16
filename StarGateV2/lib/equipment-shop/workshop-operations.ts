@@ -9,6 +9,7 @@ import {
   lockCharacterInventoryItems,
   masterItemsCol,
   prepareCharacterInventoryItemLocks,
+  usersCol,
   type EquipmentChargeState,
   type MasterItem,
 } from "@stargate/shared-db";
@@ -95,6 +96,50 @@ function requireReloadRequest(
     !request.inventoryEntryId
   ) {
     throw new WorkshopOperationError("INVALID_STATE", "재장전 요청 정보가 완전하지 않습니다.");
+  }
+}
+
+async function requireWorkshopCharacterOwnership(
+  characterId: string,
+  userId: string,
+  session: ClientSession,
+): Promise<void> {
+  if (!ObjectId.isValid(characterId) || !ObjectId.isValid(userId)) {
+    throw new WorkshopOperationError(
+      "FORBIDDEN",
+      "요청 캐릭터 소유권을 확인할 수 없습니다.",
+    );
+  }
+
+  const character = await (await charactersCol()).findOne(
+    {
+      _id: new ObjectId(characterId),
+      ownerId: userId,
+      type: { $in: ["AGENT", "NPC"] },
+    },
+    { session, projection: { type: 1 } },
+  );
+  if (!character) {
+    throw new WorkshopOperationError(
+      "FORBIDDEN",
+      "요청 캐릭터 소유권을 확인할 수 없습니다.",
+    );
+  }
+  if (character.type === "AGENT") return;
+
+  const owner = await (await usersCol()).findOne(
+    {
+      _id: new ObjectId(userId),
+      role: "GM",
+      status: "ACTIVE",
+    },
+    { session, projection: { _id: 1 } },
+  );
+  if (!owner) {
+    throw new WorkshopOperationError(
+      "FORBIDDEN",
+      "GM 소유 NPC만 공방 장비를 처리할 수 있습니다.",
+    );
   }
 }
 
@@ -230,12 +275,11 @@ export async function acceptWorkshopQuoteInTransaction(input: {
     ],
     input.session,
   );
-  const characters = await charactersCol();
-  const character = await characters.findOne(
-    { _id: new ObjectId(request.characterId), ownerId: request.userId, type: "AGENT" },
-    { session: input.session },
+  await requireWorkshopCharacterOwnership(
+    request.characterId,
+    request.userId,
+    input.session,
   );
-  if (!character || character.type !== "AGENT") throw new WorkshopOperationError("FORBIDDEN", "요청 캐릭터 소유권을 확인할 수 없습니다.");
   let sourceSnapshot: {
     sourceEquipmentCharge?: EquipmentChargeState;
     sourceNote?: string;
@@ -509,12 +553,11 @@ export async function claimWorkshopResultInTransaction(input: {
     [request.quote.result.itemId, slotLockId(resultSlot)],
     input.session,
   );
-  const characters = await charactersCol();
-  const character = await characters.findOne(
-    { _id: new ObjectId(request.characterId), ownerId: request.userId, type: "AGENT" },
-    { session: input.session, projection: { _id: 1 } },
+  await requireWorkshopCharacterOwnership(
+    request.characterId,
+    request.userId,
+    input.session,
   );
-  if (!character) throw new WorkshopOperationError("FORBIDDEN", "요청 캐릭터 소유권을 확인할 수 없습니다.");
   const inventory = await characterInventoryCol();
   const existingResult = await inventory.findOne(
     {
@@ -596,18 +639,11 @@ export async function approveWorkshopReloadInTransaction(input: {
     [request.sourceItemId, slotLockId(request.sourceSlot)],
     input.session,
   );
-  const characters = await charactersCol();
-  const character = await characters.findOne(
-    {
-      _id: new ObjectId(request.characterId),
-      ownerId: request.userId,
-      type: "AGENT",
-    },
-    { session: input.session, projection: { _id: 1 } },
+  await requireWorkshopCharacterOwnership(
+    request.characterId,
+    request.userId,
+    input.session,
   );
-  if (!character) {
-    throw new WorkshopOperationError("FORBIDDEN", "요청 캐릭터 소유권을 확인할 수 없습니다.");
-  }
 
   const item = await (await masterItemsCol()).findOne(
     { _id: new ObjectId(request.sourceItemId) },

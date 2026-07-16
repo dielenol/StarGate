@@ -18,11 +18,13 @@ import {
 } from "@/lib/db/equipment-research";
 import {
   addHours,
+  canCharacterReceivePersonalEquipmentResearchEffect,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
   isEquipmentResearchEffectOperational,
   isEquipmentResearchScope,
   quoteEquipmentResearchStart,
+  type EquipmentResearchEffect,
 } from "@/lib/equipment-shop/research";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
@@ -43,19 +45,30 @@ type AgentCharacterWithId = AgentCharacter & {
   _id: NonNullable<AgentCharacter["_id"]>;
 };
 
+type CharacterWithId = Character & {
+  _id: NonNullable<Character["_id"]>;
+};
+
 function isAgentCharacterWithId(
   character: Character | null,
 ): character is AgentCharacterWithId {
   return character?.type === "AGENT" && Boolean(character._id);
 }
 
+function isCharacterWithId(
+  character: Character | null,
+): character is CharacterWithId {
+  return Boolean(character?._id);
+}
+
 async function resolveTargets(args: {
   scope: "personal" | "team";
+  effect: EquipmentResearchEffect;
   targetCharacterId: unknown;
   fallbackCharacterId: string;
   allowTargetOverride: boolean;
 }): Promise<
-  | { targets: AgentCharacterWithId[] }
+  | { targets: CharacterWithId[] }
   | { response: NextResponse }
 > {
   if (args.scope === "team") {
@@ -83,11 +96,21 @@ async function resolveTargets(args: {
       ? args.targetCharacterId.trim()
       : args.fallbackCharacterId;
   const target = await findCharacterById(targetId);
-  if (!isAgentCharacterWithId(target)) {
+  if (
+    !isCharacterWithId(target) ||
+    (target.type === "NPC" && targetId !== args.fallbackCharacterId) ||
+    !canCharacterReceivePersonalEquipmentResearchEffect(
+      target.type,
+      args.effect,
+    )
+  ) {
     return {
       response: NextResponse.json(
         {
-          error: "개인 연구 대상 AGENT 캐릭터를 찾을 수 없습니다.",
+          error:
+            args.effect.kind === "stat" || args.effect.kind === "point"
+              ? "능력치·포인트 개인 연구는 AGENT 캐릭터에만 적용할 수 있습니다."
+              : "개인 연구 대상 캐릭터를 찾을 수 없습니다.",
           code: "NO_AGENT_TARGETS",
         },
         { status: 400 },
@@ -162,6 +185,7 @@ export async function POST(request: Request) {
 
   const targetResult = await resolveTargets({
     scope,
+    effect,
     targetCharacterId: body?.targetCharacterId,
     fallbackCharacterId: budgetResult.budget.id,
     allowTargetOverride: authResult.session.role === "GM",

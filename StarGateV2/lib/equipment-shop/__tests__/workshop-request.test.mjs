@@ -270,6 +270,7 @@ test("workshop route derives ownership and equipped gear on the server", () => {
   );
 
   assert.match(route, /findMainCharacterByOwner\(session\.user\.id\)/);
+  assert.doesNotMatch(route, /mainCharacter\.type !== "AGENT"/);
   assert.match(route, /entry\.equippedSlot/);
   assert.match(route, /notifyEquipmentWorkshopRequest/);
   assert.match(route, /notifyUsers/);
@@ -340,6 +341,11 @@ test("accept, claim and cancel keep every economy mutation inside the supplied t
   assert.match(operations, /const existingResult = await inventory\.findOne/);
   assert.match(operations, /결과 장비가 이미 인벤토리에 있어 안전하게 수령할 수 없습니다/);
   assert.match(operations, /sourceEquipmentCharge/);
+  assert.match(operations, /requireWorkshopCharacterOwnership/);
+  assert.match(
+    operations,
+    /type: \{ \$in: \["AGENT", "NPC"\] \}[\s\S]*role: "GM"[\s\S]*status: "ACTIVE"/,
+  );
 });
 
 test("reload approval revalidates ownership and empty equipped charge in one economy transaction", () => {

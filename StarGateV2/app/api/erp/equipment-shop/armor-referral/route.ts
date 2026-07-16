@@ -40,9 +40,9 @@ export async function POST(request: NextRequest) {
   }
 
   const mainCharacter = await findMainCharacterByOwner(session.user.id);
-  if (!mainCharacter?._id || mainCharacter.type !== "AGENT") {
+  if (!mainCharacter?._id) {
     return NextResponse.json(
-      { error: "메인 AGENT 캐릭터가 필요합니다.", code: "NO_MAIN_CHARACTER" },
+      { error: "대표 캐릭터가 필요합니다.", code: "NO_MAIN_CHARACTER" },
       { status: 400 },
     );
   }

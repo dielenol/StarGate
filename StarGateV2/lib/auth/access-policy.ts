@@ -3,6 +3,7 @@ import type { UserRole, UserStatus } from "@/types/user";
 type CharacterAccessSubject = {
   isPublic?: boolean;
   ownerId?: unknown;
+  type?: unknown;
 };
 
 function normalizeId(value: unknown): string | null {
@@ -33,4 +34,18 @@ export function canViewPersonalInventory(
   if (!canViewCharacter(viewerRole, character)) return false;
   if (viewerRole === "GM" || viewerRole === "V") return true;
   return normalizeId(character.ownerId) === viewerId;
+}
+
+export function canManageCharacterEquipment(
+  viewerId: string,
+  viewerRole: UserRole,
+  character: CharacterAccessSubject,
+): boolean {
+  if (!canViewPersonalInventory(viewerId, viewerRole, character)) return false;
+  if (character.type === "AGENT") return true;
+  return (
+    character.type === "NPC" &&
+    viewerRole === "GM" &&
+    normalizeId(character.ownerId) === viewerId
+  );
 }

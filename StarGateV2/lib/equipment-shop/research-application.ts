@@ -1,6 +1,11 @@
-import type { ClientSession, WithId } from "mongodb";
+import { ObjectId, type ClientSession, type WithId } from "mongodb";
 
-import { getClient, type RoleLevel } from "@stargate/shared-db";
+import {
+  charactersCol,
+  getClient,
+  usersCol,
+  type RoleLevel,
+} from "@stargate/shared-db";
 
 import { findCharacterById } from "@/lib/db/characters";
 import {
@@ -49,6 +54,45 @@ async function applyReservedProject(
   const projectId = String(project._id);
   const targets: AppliedResearchTargetResult[] = [];
   const skipped: Array<{ id: string; reason: string }> = [];
+
+  if (
+    project.scope === "personal" &&
+    project.effect.kind !== "stat" &&
+    project.effect.kind !== "point"
+  ) {
+    if (project.targetCharacterIds.length !== 1) {
+      throw new Error("INVALID_PERSONAL_RESEARCH_TARGET");
+    }
+    const [targetId] = project.targetCharacterIds;
+    if (!targetId || !ObjectId.isValid(targetId)) {
+      throw new Error("INVALID_PERSONAL_RESEARCH_TARGET");
+    }
+    const character = await (await charactersCol()).findOne(
+      { _id: new ObjectId(targetId) },
+      { session, projection: { type: 1, ownerId: 1 } },
+    );
+    if (!character) {
+      throw new Error("PERSONAL_RESEARCH_TARGET_NOT_FOUND");
+    }
+    if (character.type === "NPC") {
+      const ownerId =
+        typeof character.ownerId === "string" ? character.ownerId : "";
+      const activeGmOwner =
+        ownerId === project.createdBy &&
+        ObjectId.isValid(ownerId) &&
+        (await (await usersCol()).findOne(
+          {
+            _id: new ObjectId(ownerId),
+            role: "GM",
+            status: "ACTIVE",
+          },
+          { session, projection: { _id: 1 } },
+        ));
+      if (!activeGmOwner) {
+        throw new Error("GM_NPC_RESEARCH_TARGET_ACCESS_CHANGED");
+      }
+    }
+  }
 
   if (project.effect.kind === "stat") {
     for (const targetId of project.targetCharacterIds) {

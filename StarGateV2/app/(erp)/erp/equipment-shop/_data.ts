@@ -71,7 +71,8 @@ export interface EquipmentShopPageData {
   mainCharacter: {
     id: string;
     codename: string;
-    stats: MainCharacterStats;
+    type: "AGENT" | "NPC";
+    stats: MainCharacterStats | null;
     hasBasicFirearmLicense: boolean;
   } | null;
   initialBalance: number;
@@ -197,8 +198,7 @@ export async function loadEquipmentShopPageData(
     mainCharacterError =
       "메인 캐릭터 정합성 위반. 운영자(GM)에게 문의해주세요.";
   }
-  const mainAgent = mainCharacter?.type === "AGENT" ? mainCharacter : null;
-  const mainCharacterId = mainAgent ? String(mainAgent._id) : null;
+  const mainCharacterId = mainCharacter ? String(mainCharacter._id) : null;
   const cookieStore = await cookies();
   const referralToken = cookieStore.get(ARMOR_REFERRAL_COOKIE_NAME)?.value;
   const referralSecret = process.env.AUTH_SECRET;
@@ -213,7 +213,7 @@ export async function loadEquipmentShopPageData(
     await Promise.all([
       includeCatalog ? buildEquipmentShopCatalogResponse({
         zone: options.catalogZone,
-        character: mainAgent,
+        character: mainCharacter,
         characterId: mainCharacterId,
         ...(mainCharacterId && referralSecret
           ? {
@@ -284,7 +284,7 @@ export async function loadEquipmentShopPageData(
     ]);
 
   const initialCredits: CreditsResponse | undefined =
-    mainAgent && mainCharacterId
+    mainCharacter && mainCharacterId
       ? {
           transactions: initialLedger.map((t) => ({
             ...t,
@@ -292,7 +292,7 @@ export async function loadEquipmentShopPageData(
           })),
           balance: initialBalance,
           characterId: mainCharacterId,
-          characterCodename: mainAgent.codename,
+          characterCodename: mainCharacter.codename,
         }
       : undefined;
 
@@ -300,16 +300,20 @@ export async function loadEquipmentShopPageData(
     initialCatalog,
     initialResearch,
     viewerUserId: userId,
-    mainCharacter: mainAgent
+    mainCharacter: mainCharacter
       ? {
-          id: String(mainAgent._id),
-          codename: mainAgent.codename,
-          stats: {
-            hp: mainAgent.play.hp,
-            san: mainAgent.play.san,
-            def: mainAgent.play.def,
-            atk: mainAgent.play.atk,
-          },
+          id: String(mainCharacter._id),
+          codename: mainCharacter.codename,
+          type: mainCharacter.type,
+          stats:
+            mainCharacter.type === "AGENT"
+              ? {
+                  hp: mainCharacter.play.hp,
+                  san: mainCharacter.play.san,
+                  def: mainCharacter.play.def,
+                  atk: mainCharacter.play.atk,
+                }
+              : null,
           hasBasicFirearmLicense,
         }
       : null,

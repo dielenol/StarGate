@@ -6,7 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { charactersCol } from "@stargate/shared-db";
+import { charactersCol, usersCol } from "@stargate/shared-db";
+import { ObjectId } from "mongodb";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
@@ -106,10 +107,10 @@ class EquipmentBasicLicenseRequiredError extends Error {
   }
 }
 
-class EquipmentAgentRequiredError extends Error {
+class EquipmentCharacterRequiredError extends Error {
   constructor() {
-    super("메인 AGENT 캐릭터가 등록되어 있지 않아 구매할 수 없습니다.");
-    this.name = "EquipmentAgentRequiredError";
+    super("대표 캐릭터가 등록되어 있지 않아 구매할 수 없습니다.");
+    this.name = "EquipmentCharacterRequiredError";
   }
 }
 
@@ -207,10 +208,10 @@ export async function POST(request: NextRequest) {
       { status: 409 },
     );
   }
-  if (!mainChar || mainChar.type !== "AGENT") {
+  if (!mainChar?._id) {
     return NextResponse.json(
       {
-        error: "메인 AGENT 캐릭터가 등록되어 있지 않아 구매할 수 없습니다.",
+        error: "대표 캐릭터가 등록되어 있지 않아 구매할 수 없습니다.",
         code: "NO_MAIN_CHARACTER",
       },
       { status: 400 },
@@ -433,12 +434,27 @@ export async function POST(request: NextRequest) {
           {
             _id: mainChar._id,
             ownerId,
-            type: "AGENT",
+            type: mainChar.type,
           },
           { session: mongoSession },
         );
-        if (!transactionCharacter || transactionCharacter.type !== "AGENT") {
-          throw new EquipmentAgentRequiredError();
+        if (!transactionCharacter) {
+          throw new EquipmentCharacterRequiredError();
+        }
+        if (transactionCharacter.type === "NPC") {
+          const activeGmOwner =
+            ObjectId.isValid(ownerId) &&
+            (await (await usersCol()).findOne(
+              {
+                _id: new ObjectId(ownerId),
+                role: "GM",
+                status: "ACTIVE",
+              },
+              { session: mongoSession, projection: { _id: 1 } },
+            ));
+          if (!activeGmOwner) {
+            throw new EquipmentCharacterRequiredError();
+          }
         }
 
         const inventory = await listCharacterInventory(characterId, {
@@ -572,7 +588,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    if (err instanceof EquipmentAgentRequiredError) {
+    if (err instanceof EquipmentCharacterRequiredError) {
       return NextResponse.json(
         { error: err.message, code: "NO_MAIN_CHARACTER" },
         { status: 400 },

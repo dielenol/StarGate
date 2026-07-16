@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
+import {
+  charactersCol,
+  getClient,
+  prepareCharacterInventoryItemLocks,
+  usersCol,
+} from "@stargate/shared-db";
+import { ObjectId } from "mongodb";
 
 import type { EquipmentSlot } from "@/types/inventory";
 
-import { canViewPersonalInventory } from "@/lib/auth/access-policy";
+import { canManageCharacterEquipment } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { findCharacterById } from "@/lib/db/characters";
 import {
@@ -20,6 +27,13 @@ interface RouteContext {
 
 interface EquipmentRequestBody {
   itemId?: unknown;
+}
+
+class EquipmentAccessChangedError extends Error {
+  constructor() {
+    super("장비 교체 권한 또는 캐릭터 소유권이 변경되었습니다.");
+    this.name = "EquipmentAccessChangedError";
+  }
 }
 
 function equipmentSlotForCategory(
@@ -47,8 +61,7 @@ export async function PUT(request: Request, context: RouteContext) {
   const character = await findCharacterById(characterId);
   if (
     !character ||
-    character.type !== "AGENT" ||
-    !canViewPersonalInventory(
+    !canManageCharacterEquipment(
       session.user.id,
       session.user.role,
       character,
@@ -91,11 +104,53 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   try {
-    const result = await equipCharacterInventoryItem(
-      characterId,
-      itemId,
-      slot,
-    );
+    await prepareCharacterInventoryItemLocks(characterId, [
+      `@equipment-slot:${slot}`,
+    ]);
+    const client = await getClient();
+    const mongoSession = client.startSession();
+    let result;
+    let characterCodename = character.codename;
+    try {
+      result = await mongoSession.withTransaction(async () => {
+        if (!ObjectId.isValid(session.user.id)) {
+          throw new EquipmentAccessChangedError();
+        }
+        const [transactionCharacter, transactionViewer] = await Promise.all([
+          (await charactersCol()).findOne(
+            { _id: new ObjectId(characterId) },
+            { session: mongoSession },
+          ),
+          (await usersCol()).findOne(
+            {
+              _id: new ObjectId(session.user.id),
+              status: "ACTIVE",
+            },
+            { session: mongoSession, projection: { role: 1 } },
+          ),
+        ]);
+        if (
+          !transactionCharacter ||
+          !transactionViewer ||
+          !canManageCharacterEquipment(
+            session.user.id,
+            transactionViewer.role,
+            transactionCharacter,
+          )
+        ) {
+          throw new EquipmentAccessChangedError();
+        }
+        characterCodename = transactionCharacter.codename;
+        return equipCharacterInventoryItem(characterId, itemId, slot, {
+          session: mongoSession,
+        });
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
+    if (!result) {
+      throw new Error("장비 교체 트랜잭션 결과가 없습니다.");
+    }
     if (!result.ok) {
       return NextResponse.json(
         {
@@ -114,7 +169,7 @@ export async function PUT(request: Request, context: RouteContext) {
         role: session.user.role,
       },
       summary: `${slot} 슬롯에 ${masterItem.name} 장착`,
-      target: `${character.codename} (${characterId})`,
+      target: `${characterCodename} (${characterId})`,
       details: [
         {
           name: "이전 아이템 ID",
@@ -140,6 +195,12 @@ export async function PUT(request: Request, context: RouteContext) {
       equipped,
     });
   } catch (error) {
+    if (error instanceof EquipmentAccessChangedError) {
+      return NextResponse.json(
+        { error: error.message, code: "EQUIPMENT_ACCESS_CHANGED" },
+        { status: 403 },
+      );
+    }
     const message = error instanceof Error ? error.message : "장비 교체 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import type { UserRole } from "@stargate/shared-db/types";
-import type { ClientSession } from "mongodb";
+import { charactersCol, usersCol } from "@stargate/shared-db";
+import { ObjectId, type ClientSession } from "mongodb";
 
 import { isNavPathLocked } from "@/components/erp/nav-config";
 import { getActiveSession } from "@/lib/auth/active-session";
@@ -21,6 +22,7 @@ export interface ResearchRouteSession {
 export interface ResearchBudgetCharacter {
   id: string;
   codename: string;
+  type: "AGENT" | "NPC";
   ownerId: string;
   ownerName: string;
 }
@@ -102,7 +104,7 @@ export async function resolveResearchBudgetCharacter(
     return {
       response: NextResponse.json(
         {
-          error: "메인 AGENT 캐릭터가 없어 연구 비용을 차감할 수 없습니다.",
+          error: "대표 캐릭터가 없어 연구 비용을 차감할 수 없습니다.",
           code: "NO_MAIN_CHARACTER",
         },
         { status: 400 },
@@ -132,6 +134,7 @@ export async function resolveResearchBudgetCharacter(
     budget: {
       id: String(mainChar._id),
       codename: mainChar.codename,
+      type: mainChar.type,
       ownerId: mainChar.ownerId,
       ownerName: owner.discordUsername ?? owner.displayName,
     },
@@ -148,6 +151,48 @@ export async function chargeResearchCredits(args: {
   mongoSession: ClientSession;
 }): Promise<{ balance: number }> {
   try {
+    if (!ObjectId.isValid(args.budget.id)) {
+      throw new ResearchMutationError(
+        "NO_MAIN_CHARACTER",
+        400,
+        "대표 캐릭터 소유권을 확인할 수 없습니다.",
+      );
+    }
+    const character = await (await charactersCol()).findOne(
+      {
+        _id: new ObjectId(args.budget.id),
+        ownerId: args.budget.ownerId,
+        type: args.budget.type,
+      },
+      { session: args.mongoSession, projection: { type: 1 } },
+    );
+    if (!character) {
+      throw new ResearchMutationError(
+        "NO_MAIN_CHARACTER",
+        400,
+        "대표 캐릭터 소유권을 확인할 수 없습니다.",
+      );
+    }
+    if (character.type === "NPC") {
+      const activeGmOwner =
+        ObjectId.isValid(args.budget.ownerId) &&
+        (await (await usersCol()).findOne(
+          {
+            _id: new ObjectId(args.budget.ownerId),
+            role: "GM",
+            status: "ACTIVE",
+          },
+          { session: args.mongoSession, projection: { _id: 1 } },
+        ));
+      if (!activeGmOwner) {
+        throw new ResearchMutationError(
+          "NO_MAIN_CHARACTER",
+          400,
+          "GM 소유 NPC만 연구 비용을 사용할 수 있습니다.",
+        );
+      }
+    }
+
     const tx = await addCredit({
       characterId: args.budget.id,
       characterCodename: args.budget.codename,
@@ -164,6 +209,7 @@ export async function chargeResearchCredits(args: {
     });
     return { balance: tx.balance };
   } catch (err) {
+    if (err instanceof ResearchMutationError) throw err;
     if (
       err instanceof Error &&
       (err.message.includes("음수 잔액") ||

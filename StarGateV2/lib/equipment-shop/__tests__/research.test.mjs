@@ -7,6 +7,7 @@ import {
   EQUIPMENT_RESEARCH_NODES,
   addHours,
   applyEquipmentResearchCapabilityEffect,
+  canCharacterReceivePersonalEquipmentResearchEffect,
   canViewerApplyEquipmentResearchProject,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
@@ -17,6 +18,48 @@ import {
   quoteEquipmentResearchRush,
   quoteEquipmentResearchStart,
 } from "../research.ts";
+
+test("GM NPC는 경제·해금 연구만 개인 대상으로 받을 수 있다", () => {
+  assert.equal(
+    canCharacterReceivePersonalEquipmentResearchEffect("NPC", {
+      kind: "refund",
+      percent: 3,
+      cap: 30,
+    }),
+    true,
+  );
+  assert.equal(
+    canCharacterReceivePersonalEquipmentResearchEffect("NPC", {
+      kind: "unlock",
+      code: "custom_weapon_slot",
+      label: "전용무기 설계 슬롯",
+    }),
+    true,
+  );
+  assert.equal(
+    canCharacterReceivePersonalEquipmentResearchEffect("NPC", {
+      kind: "stat",
+      stat: "hp",
+      amount: 1,
+    }),
+    false,
+  );
+  assert.equal(
+    canCharacterReceivePersonalEquipmentResearchEffect("NPC", {
+      kind: "point",
+      amount: 1,
+    }),
+    false,
+  );
+  assert.equal(
+    canCharacterReceivePersonalEquipmentResearchEffect("AGENT", {
+      kind: "stat",
+      stat: "atk",
+      amount: 1,
+    }),
+    true,
+  );
+});
 
 test("GMs, personal research owners, or team participants can apply a project", () => {
   const personalProject = { scope: "personal", createdBy: "owner-1" };

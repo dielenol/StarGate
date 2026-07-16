@@ -41,6 +41,11 @@ export default async function EquipmentShopSimulatorPage() {
         san: mainCharacter.play.san,
         source: "agent",
       };
+    } else if (mainCharacter) {
+      attacker = {
+        ...attacker,
+        codename: mainCharacter.codename,
+      };
     }
   } catch (err) {
     console.error("[equipment-simulator] failed to load main character", err);

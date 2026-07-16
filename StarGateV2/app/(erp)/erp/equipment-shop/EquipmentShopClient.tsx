@@ -143,8 +143,10 @@ import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
 import { formatCredits } from "@/lib/format/credit";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
+  canCharacterReceivePersonalEquipmentResearchEffect,
   canViewerApplyEquipmentResearchProject,
   describeEquipmentResearchEffect,
+  type EquipmentResearchEffect,
   type EquipmentResearchStat,
   getEquipmentResearchPrerequisiteTier,
   isEquipmentResearchApplyLeaseStale,
@@ -729,10 +731,10 @@ const STAT_DEFS: Array<{
 
 const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   INSUFFICIENT_BALANCE: "잔액이 부족합니다.",
-  NO_MAIN_CHARACTER: "메인 AGENT 캐릭터가 등록되지 않았습니다.",
+  NO_MAIN_CHARACTER: "대표 캐릭터가 등록되지 않았습니다.",
   MAIN_CHARACTER_INTEGRITY:
     "메인 캐릭터 정합성 위반 — 운영자(GM)에게 문의하세요.",
-  NO_AGENT_TARGETS: "강화를 적용할 AGENT 캐릭터가 없습니다.",
+  NO_AGENT_TARGETS: "연구 적용 대상 캐릭터 조건을 충족하지 못했습니다.",
   INVENTORY_FAILED_REFUNDED:
     "구매에 실패했습니다. 차감된 잔액은 자동 환불되었습니다.",
   REFUND_FAILED:
@@ -837,7 +839,8 @@ interface Props {
   mainCharacter: {
     id: string;
     codename: string;
-    stats: MainCharacterStats;
+    type: "AGENT" | "NPC";
+    stats: MainCharacterStats | null;
     hasBasicFirearmLicense: boolean;
   } | null;
   initialBalance: number;
@@ -2727,7 +2730,7 @@ export default function EquipmentShopClient({
       setErrorMessage(
         effectiveHasMainCharacter
           ? "GM preview 상태에서만 병기부 구매를 실행할 수 있습니다."
-          : "메인 AGENT 캐릭터가 없어 구매할 수 없습니다.",
+          : "대표 캐릭터가 없어 구매할 수 없습니다.",
       );
       playTowaskiIfActive(
         "blocked",
@@ -2987,10 +2990,22 @@ export default function EquipmentShopClient({
     return "진행 중";
   }
 
-  function canStartResearch(scope: EquipmentResearchScope, cost: number): boolean {
+  function canStartResearch(
+    scope: EquipmentResearchScope,
+    cost: number,
+    effect: EquipmentResearchEffect | null | undefined,
+  ): boolean {
     return (
       scope === "personal" &&
       hasMainCharacter &&
+      Boolean(
+        mainCharacter &&
+          effect &&
+          canCharacterReceivePersonalEquipmentResearchEffect(
+            mainCharacter.type,
+            effect,
+          ),
+      ) &&
       !researchDataUnavailable &&
       balance >= cost &&
       !startResearchMutation.isPending
@@ -3042,7 +3057,7 @@ export default function EquipmentShopClient({
       !node ||
       !node.allowedScopes.includes(scope) ||
       !startQuote ||
-      !canStartResearch(scope, startQuote.cost)
+      !canStartResearch(scope, startQuote.cost, node.effects[scope])
     ) {
       playSutureIfActive("blocked", nextSutureBlockedLine("start"));
       return;
@@ -3108,7 +3123,7 @@ export default function EquipmentShopClient({
       return;
     }
     if (!hasMainCharacter) {
-      setErrorMessage("메인 AGENT 캐릭터가 없어 팀 연구에 기여할 수 없습니다.");
+      setErrorMessage("대표 캐릭터가 없어 팀 연구에 기여할 수 없습니다.");
       playSutureIfActive("blocked", nextSutureBlockedLine("noAgent"));
       return;
     }
@@ -4155,10 +4170,16 @@ export default function EquipmentShopClient({
       ? "개인 연구 효과가 없는 항목입니다."
       : !selectedResearchOperational
         ? "연결될 후속 기능이 준비되지 않아 연구를 시작할 수 없습니다."
+      : mainCharacter &&
+          !canCharacterReceivePersonalEquipmentResearchEffect(
+            mainCharacter.type,
+            selectedResearchEffect,
+          )
+        ? "NPC 대표 캐릭터에는 능력치·포인트 개인 연구를 적용할 수 없습니다. 팀 연구 기여는 가능합니다."
       : !selectedResearchUnlocked
         ? `${selectedPrerequisiteLabel ?? "선행 연구"}가 필요합니다.`
         : !hasMainCharacter
-          ? "메인 AGENT 지정이 필요합니다."
+          ? "대표 캐릭터 지정이 필요합니다."
           : startResearchMutation.isPending
             ? "연구 시작 요청을 처리하고 있습니다."
             : balance < selectedResearchCost
@@ -4177,7 +4198,7 @@ export default function EquipmentShopClient({
           : !Number.isInteger(parsedContributionAmount) || parsedContributionAmount <= 0
             ? "기여 금액을 1 CR 이상 입력하세요."
             : !hasMainCharacter
-              ? "메인 AGENT 지정이 필요합니다."
+              ? "대표 캐릭터 지정이 필요합니다."
               : contributeResearchMutation.isPending
                 ? "기여 요청을 처리하고 있습니다."
                 : balance < selectedTeamChargePreview
@@ -4621,7 +4642,11 @@ export default function EquipmentShopClient({
                     }
                     disabled={
                       Boolean(personalResearchDisabledReason) ||
-                      !canStartResearch(activeResearchScope, selectedResearchCost)
+                      !canStartResearch(
+                        activeResearchScope,
+                        selectedResearchCost,
+                        selectedResearchEffect,
+                      )
                     }
                     aria-busy={startResearchMutation.isPending}
                   >
@@ -4657,7 +4682,9 @@ export default function EquipmentShopClient({
 
           <div className={styles.agentSnapshot}>
             <div className={styles.panelIntro}>
-              <Eyebrow>MAIN AGENT</Eyebrow>
+              <Eyebrow>
+                {mainCharacter?.type === "NPC" ? "GM NPC" : "MAIN AGENT"}
+              </Eyebrow>
               <strong>{mainCharacter?.codename ?? "UNASSIGNED"}</strong>
             </div>
             {localStats ? (
@@ -4671,7 +4698,9 @@ export default function EquipmentShopClient({
               </div>
             ) : (
               <div className={styles.empty}>
-                메인 AGENT 캐릭터가 없어 연구 비용 차감, 개인 연구, 팀 연구 기여를 실행할 수 없습니다.
+                {mainCharacter?.type === "NPC"
+                  ? "GM NPC 대표 캐릭터입니다. 경제·해금형 개인 연구와 팀 연구 기여를 사용할 수 있습니다."
+                  : "대표 캐릭터가 없어 연구 비용 차감, 개인 연구, 팀 연구 기여를 실행할 수 없습니다."}
               </div>
             )}
           </div>
@@ -4993,7 +5022,7 @@ export default function EquipmentShopClient({
           >
             <span>EQUIPPED GEAR</span>
             <strong>장착 장비 강화 문의</strong>
-            <p>현재 메인 AGENT가 장착 중인 장비만 선택할 수 있습니다.</p>
+            <p>현재 대표 캐릭터가 장착 중인 장비만 선택할 수 있습니다.</p>
             <label>
               <span>강화 대상</span>
               <select
@@ -5352,7 +5381,7 @@ export default function EquipmentShopClient({
               {mainCharacterError}
             </>
           ) : (
-            "메인 AGENT 캐릭터가 없어 구매, 개인 연구, 팀 연구 기여가 제한됩니다. 연구 현황은 조회할 수 있습니다."
+            "대표 캐릭터가 없어 구매, 개인 연구, 팀 연구 기여가 제한됩니다. 연구 현황은 조회할 수 있습니다."
           )}
         </Box>
       ) : null}

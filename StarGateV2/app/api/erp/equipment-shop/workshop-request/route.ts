@@ -97,9 +97,9 @@ export async function POST(request: Request) {
   }
 
   const mainCharacter = await findMainCharacterByOwner(session.user.id);
-  if (!mainCharacter || mainCharacter.type !== "AGENT") {
+  if (!mainCharacter?._id) {
     return NextResponse.json(
-      { error: "메인 AGENT가 없어 공방 요청을 접수할 수 없습니다." },
+      { error: "대표 캐릭터가 없어 공방 요청을 접수할 수 없습니다." },
       { status: 400 },
     );
   }

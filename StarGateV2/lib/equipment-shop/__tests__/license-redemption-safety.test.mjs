@@ -154,7 +154,7 @@ test("license challenge retries are idempotent per start and resolve request", a
   assert.match(mutations, /TOWASKI_LICENSE_REDEMPTION_LEASE_MS \+ 5_000/);
 });
 
-test("equipment checkout serializes inventory and rejects owned licenses", async () => {
+test("equipment checkout serializes inventory, accepts the authenticated fallback type, and rejects owned licenses", async () => {
   const [checkout, inventory] = await Promise.all([
     readFile(CHECKOUT_ROUTE, "utf8"),
     readFile(SHARED_INVENTORY, "utf8"),
@@ -164,10 +164,14 @@ test("equipment checkout serializes inventory and rejects owned licenses", async
   assert.match(checkout, /prepareCharacterInventoryItemLocks/);
   assert.match(checkout, /LICENSE_ALREADY_OWNED/);
   assert.match(checkout, /listCharacterInventory\(characterId, \{[\s\S]*session: mongoSession/);
-  assert.match(checkout, /mainChar\.type !== "AGENT"/);
+  assert.doesNotMatch(checkout, /mainChar\.type !== "AGENT"/);
   assert.match(
     checkout,
-    /charactersCol\(\)[\s\S]*type: "AGENT"[\s\S]*session: mongoSession/,
+    /charactersCol\(\)[\s\S]*type: mainChar\.type[\s\S]*session: mongoSession/,
+  );
+  assert.match(
+    checkout,
+    /transactionCharacter\.type === "NPC"[\s\S]*role: "GM"[\s\S]*status: "ACTIVE"[\s\S]*session: mongoSession/,
   );
   assert.match(checkout, /inventoryLockItemIds[\s\S]*licenseSlugByItemId\.keys/);
   assert.match(
@@ -258,4 +262,17 @@ test("catalog license access is resolved from the authenticated main character",
   assert.match(route, /findMainCharacterByOwner\(session\.user\.id\)/);
   assert.match(route, /listOwnedTowaskiLicenseSlugs/);
   assert.match(route, /applyEquipmentShopLicenseContext/);
+  assert.doesNotMatch(route, /const mainAgent =/);
+  assert.match(route, /character: mainCharacter/);
+});
+
+test("license tests accept the authenticated GM NPC fallback character", async () => {
+  const route = await readFile(LICENSE_ROUTE, "utf8");
+
+  assert.doesNotMatch(route, /mainCharacter\.type !== "AGENT"/);
+  assert.match(route, /if \(!mainCharacter\?\._id\)/);
+  assert.match(
+    route,
+    /transactionCharacter\.type === "NPC"[\s\S]*role: "GM"[\s\S]*status: "ACTIVE"[\s\S]*session: mongoSession/,
+  );
 });

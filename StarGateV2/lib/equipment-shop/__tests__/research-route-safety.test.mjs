@@ -19,6 +19,10 @@ const RESEARCH_CLIENT = new URL(
   "../../../app/(erp)/erp/equipment-shop/EquipmentShopClient.tsx",
   import.meta.url,
 );
+const RESEARCH_ROUTE_LIB = new URL(
+  "../../../app/api/erp/equipment-shop/research/_lib.ts",
+  import.meta.url,
+);
 
 test("research GET is lock-gated and read-only", async () => {
   const source = await readFile(RESEARCH_ROUTE, "utf8");
@@ -32,6 +36,9 @@ test("equipment-shop page loader never applies completed research", async () => 
   const source = await readFile(PAGE_DATA, "utf8");
 
   assert.doesNotMatch(source, /applyReadyEquipmentResearchProjects/);
+  assert.doesNotMatch(source, /const mainAgent =/);
+  assert.match(source, /type: mainCharacter\.type/);
+  assert.match(source, /mainCharacter\.type === "AGENT"/);
 });
 
 for (const action of ["start", "contribute", "rush"]) {
@@ -81,6 +88,38 @@ test("research apply commits target effects and project status in one transactio
   );
   assert.match(source, /session\.withTransaction/);
   assert.match(source, /markEquipmentResearchProjectApplied\(projectId,[\s\S]*session/);
+  assert.match(
+    source,
+    /character\.type === "NPC"[\s\S]*ownerId === project\.createdBy[\s\S]*role: "GM"[\s\S]*status: "ACTIVE"[\s\S]*session/,
+  );
+});
+
+test("personal research accepts GM NPC economy effects but keeps stat effects AGENT-only", async () => {
+  const source = await readFile(
+    new URL(
+      "../../../app/api/erp/equipment-shop/research/start/route.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(source, /canCharacterReceivePersonalEquipmentResearchEffect/);
+  assert.match(
+    source,
+    /target\.type === "NPC" && targetId !== args\.fallbackCharacterId/,
+  );
+  assert.match(source, /능력치·포인트 개인 연구는 AGENT 캐릭터에만 적용/);
+});
+
+test("research credit charge revalidates GM NPC ownership in the transaction", async () => {
+  const source = await readFile(RESEARCH_ROUTE_LIB, "utf8");
+
+  assert.match(source, /type: args\.budget\.type/);
+  assert.match(
+    source,
+    /character\.type === "NPC"[\s\S]*role: "GM"[\s\S]*status: "ACTIVE"[\s\S]*session: args\.mongoSession/,
+  );
+  assert.match(source, /if \(err instanceof ResearchMutationError\) throw err/);
 });
 
 test("research apply lets participants apply team projects and owners apply personal projects", async () => {
