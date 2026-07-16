@@ -67,6 +67,7 @@ interface MainCharacterStats {
 export interface EquipmentShopPageData {
   initialCatalog: EquipmentShopCatalogResponse;
   initialResearch: EquipmentResearchOverviewResponse;
+  viewerUserId: string;
   mainCharacter: {
     id: string;
     codename: string;
@@ -298,6 +299,7 @@ export async function loadEquipmentShopPageData(
   return {
     initialCatalog,
     initialResearch,
+    viewerUserId: userId,
     mainCharacter: mainAgent
       ? {
           id: String(mainAgent._id),

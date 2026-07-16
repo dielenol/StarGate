@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { hasRole } from "@/lib/auth/rbac";
 import { findEquipmentResearchProjectById } from "@/lib/db/equipment-research";
 import { applyEquipmentResearchProjectNow } from "@/lib/equipment-shop/research-application";
+import { canViewerApplyEquipmentResearchProject } from "@/lib/equipment-shop/research";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 import { requireResearchAccess } from "../_lib";
@@ -27,15 +28,22 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!hasRole(authResult.session.role, "GM")) {
+  const isGm = hasRole(authResult.session.role, "GM");
+  if (!isGm) {
     const project = await findEquipmentResearchProjectById(projectId);
     if (
-      project &&
-      project.scope === "personal" &&
-      project.createdBy !== authResult.session.id
+      !project ||
+      !canViewerApplyEquipmentResearchProject({
+        viewerId: authResult.session.id,
+        isGm,
+        project,
+      })
     ) {
       return NextResponse.json(
-        { error: "본인이 시작한 연구만 적용할 수 있습니다." },
+        {
+          error: "본인이 시작한 개인 연구만 적용할 수 있습니다.",
+          code: "FORBIDDEN_RESEARCH_PROJECT",
+        },
         { status: 403 },
       );
     }

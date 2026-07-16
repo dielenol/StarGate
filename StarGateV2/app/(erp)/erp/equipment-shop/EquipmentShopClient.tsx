@@ -143,6 +143,7 @@ import { ArmoryZoneIcon } from "@/lib/equipment-shop/zone-icons";
 import { formatCredits } from "@/lib/format/credit";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
+  canViewerApplyEquipmentResearchProject,
   describeEquipmentResearchEffect,
   type EquipmentResearchStat,
   getEquipmentResearchPrerequisiteTier,
@@ -832,6 +833,7 @@ interface Props {
   initialZone?: ArmoryZone;
   initialCatalog: EquipmentShopCatalogResponse;
   initialResearch: EquipmentResearchOverviewResponse;
+  viewerUserId: string;
   mainCharacter: {
     id: string;
     codename: string;
@@ -1452,6 +1454,7 @@ export default function EquipmentShopClient({
   initialZone = "lab",
   initialCatalog,
   initialResearch,
+  viewerUserId,
   mainCharacter,
   initialBalance,
   initialCredits,
@@ -1473,7 +1476,7 @@ export default function EquipmentShopClient({
   });
   const researchQuery = useEquipmentResearch({
     initialData: initialResearch,
-    enabled: isGM && (mode === "hub" || initialZone === "lab"),
+    enabled: mode === "hub" || initialZone === "lab",
   });
   const creditsQuery = useCredits({ initialData: initialCredits });
   const characterInventoryQuery = useCharacterInventory(
@@ -3094,6 +3097,7 @@ export default function EquipmentShopClient({
     }
     const requestedAmount = Math.floor(Number(teamContributionAmount));
     const chargePreview = Math.min(requestedAmount, remainingCost);
+    const willStartResearch = chargePreview >= remainingCost;
     if (
       !Number.isInteger(requestedAmount) ||
       requestedAmount <= 0 ||
@@ -3116,7 +3120,9 @@ export default function EquipmentShopClient({
     if (
       !window.confirm(
         [
-          `${key} 팀 연구에 기여합니다.`,
+          willStartResearch
+            ? `${key} 팀 연구 목표액을 채우고 연구를 시작합니다.`
+            : `${key} 팀 연구에 기여합니다.`,
           `기여액: ${formatCredits(chargePreview)}`,
           `기여 후 예상 잔액: ${formatCredits(balance - chargePreview)}`,
           "기여금은 접수 후 자동 환불되지 않습니다.",
@@ -4572,7 +4578,9 @@ export default function EquipmentShopClient({
                       aria-busy={contributeResearchMutation.isPending}
                     >
                       {selectedTeamChargePreview > 0
-                        ? `${formatCredits(selectedTeamChargePreview)} 기여`
+                        ? selectedTeamChargePreview >= selectedTeamRemainingCost
+                          ? `팀 연구 시작 · ${formatCredits(selectedTeamChargePreview)}`
+                          : `${formatCredits(selectedTeamChargePreview)} 기여`
                         : "기여 불가"}
                     </button>
                   </div>
@@ -4704,6 +4712,12 @@ export default function EquipmentShopClient({
                   const canRecoverApply =
                     project.computedStatus === "applying" &&
                     isEquipmentResearchApplyLeaseStale(project.updatedAt);
+                  const canApplyProject =
+                    canViewerApplyEquipmentResearchProject({
+                      viewerId: viewerUserId,
+                      isGm: isGM,
+                      project,
+                    });
                   return (
                     <article key={project.id} className={styles.projectCard}>
                       <div className={styles.projectCardTop}>
@@ -4745,7 +4759,7 @@ export default function EquipmentShopClient({
                               ? `${formatCredits(rushRule.cost)} / ${formatDuration(rushRule.hours)}`
                             : "단축 불가"}
                         </button>
-                        {isGM ? (
+                        {canApplyProject ? (
                           <button
                             type="button"
                             onClick={() => handleCompleteResearch(project)}
@@ -4761,7 +4775,7 @@ export default function EquipmentShopClient({
                           </button>
                         ) : (
                           <span className={styles.projectAutoApply}>
-                            자동 반영
+                            소유자 적용 대기
                           </span>
                         )}
                       </div>

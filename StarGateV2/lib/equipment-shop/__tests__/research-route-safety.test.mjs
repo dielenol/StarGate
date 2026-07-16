@@ -83,6 +83,19 @@ test("research apply commits target effects and project status in one transactio
   assert.match(source, /markEquipmentResearchProjectApplied\(projectId,[\s\S]*session/);
 });
 
+test("research apply lets participants apply team projects and owners apply personal projects", async () => {
+  const source = await readFile(
+    new URL(
+      "../../../app/api/erp/equipment-shop/research/apply/route.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(source, /canViewerApplyEquipmentResearchProject/);
+  assert.match(source, /FORBIDDEN_RESEARCH_PROJECT/);
+});
+
 test("team funding pools enforce one active pool per research key", async () => {
   const [dbSource, indexSource] = await Promise.all([
     readFile(RESEARCH_DB, "utf8"),
@@ -115,6 +128,13 @@ test("research UI keeps every active project reachable and blocks stale-data mut
   assert.match(source, /researchDataUnavailable/);
   assert.match(source, /researchQuery\.isRefetchError/);
   assert.match(source, /isEquipmentResearchApplyLeaseStale\(project\.updatedAt\)/);
+  assert.match(source, /canViewerApplyEquipmentResearchProject/);
+  assert.match(
+    source,
+    /enabled: mode === "hub" \|\| initialZone === "lab"/,
+  );
+  assert.match(source, /팀 연구 시작 ·/);
+  assert.doesNotMatch(source, />\s*자동 반영\s*</);
 });
 
 test("research economy mutations require confirmation and GM can preview every Suture mood", async () => {

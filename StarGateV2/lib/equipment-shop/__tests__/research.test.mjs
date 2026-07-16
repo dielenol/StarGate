@@ -7,6 +7,7 @@ import {
   EQUIPMENT_RESEARCH_NODES,
   addHours,
   applyEquipmentResearchCapabilityEffect,
+  canViewerApplyEquipmentResearchProject,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
   getEquipmentResearchPrerequisiteTier,
@@ -16,6 +17,44 @@ import {
   quoteEquipmentResearchRush,
   quoteEquipmentResearchStart,
 } from "../research.ts";
+
+test("GMs, personal research owners, or team participants can apply a project", () => {
+  const personalProject = { scope: "personal", createdBy: "owner-1" };
+  const teamProject = { scope: "team", createdBy: "owner-1" };
+
+  assert.equal(
+    canViewerApplyEquipmentResearchProject({
+      viewerId: "owner-1",
+      isGm: false,
+      project: personalProject,
+    }),
+    true,
+  );
+  assert.equal(
+    canViewerApplyEquipmentResearchProject({
+      viewerId: "owner-2",
+      isGm: false,
+      project: personalProject,
+    }),
+    false,
+  );
+  assert.equal(
+    canViewerApplyEquipmentResearchProject({
+      viewerId: "owner-1",
+      isGm: false,
+      project: teamProject,
+    }),
+    true,
+  );
+  assert.equal(
+    canViewerApplyEquipmentResearchProject({
+      viewerId: "gm-1",
+      isGm: true,
+      project: teamProject,
+    }),
+    true,
+  );
+});
 
 test("applying reservation becomes recoverable only after its lease expires", () => {
   const now = new Date("2026-07-11T08:00:00.000Z");
@@ -182,6 +221,7 @@ test("LAB-01 applies a 10 percent discount to the first rush quote", () => {
   const startedAt = new Date("2026-07-06T00:00:00.000Z");
   const quote = quoteEquipmentResearchRush({
     node,
+    now: startedAt,
     project: {
       tier: 2,
       startedAt,

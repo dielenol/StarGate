@@ -114,6 +114,22 @@ export interface EquipmentResearchCreditBonusQuote {
   totalAmount: number;
 }
 
+export function canViewerApplyEquipmentResearchProject(args: {
+  viewerId: string;
+  isGm: boolean;
+  project: {
+    scope: EquipmentResearchScope;
+    createdBy: string;
+  };
+}): boolean {
+  return (
+    args.isGm ||
+    args.project.scope === "team" ||
+    (args.project.scope === "personal" &&
+      args.project.createdBy === args.viewerId)
+  );
+}
+
 export function isEquipmentResearchApplyLeaseStale(
   updatedAt: Date | string,
   now = new Date(),
