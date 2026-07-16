@@ -111,6 +111,31 @@ test("team funding pools enforce one active pool per research key", async () => 
   assert.match(dbSource, /concurrentPool = await col\.findOne/);
 });
 
+test("team funding pool upsert does not update targetCost through conflicting operators", async () => {
+  const source = await readFile(RESEARCH_DB, "utf8");
+  const functionStart = source.indexOf(
+    "export async function getOrCreateTeamFundingPool",
+  );
+  const functionEnd = source.indexOf(
+    "export async function listTeamFundingPools",
+    functionStart,
+  );
+  const functionSource = source.slice(functionStart, functionEnd);
+  const setOnInsertStart = functionSource.indexOf("$setOnInsert:");
+  const setStart = functionSource.indexOf("$set:", setOnInsertStart);
+  const setOnInsertSource = functionSource.slice(setOnInsertStart, setStart);
+
+  assert.ok(functionStart >= 0);
+  assert.ok(functionEnd > functionStart);
+  assert.ok(setOnInsertStart >= 0);
+  assert.ok(setStart > setOnInsertStart);
+  assert.doesNotMatch(setOnInsertSource, /targetCost/);
+  assert.match(
+    functionSource.slice(setStart),
+    /targetCost:\s*args\.targetCost/,
+  );
+});
+
 test("stale applying reservations can be claimed without mutating research GET", async () => {
   const source = await readFile(RESEARCH_DB, "utf8");
 

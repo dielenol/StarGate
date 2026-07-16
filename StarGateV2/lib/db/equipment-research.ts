@@ -339,7 +339,6 @@ export async function getOrCreateTeamFundingPool(args: {
       {
         $setOnInsert: {
           key: args.key,
-          targetCost: args.targetCost,
           fundedAmount: 0,
           status: "funding",
           createdAt: now,
