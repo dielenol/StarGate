@@ -286,13 +286,13 @@ export function CalendarClient({
                 aria-label={item.ariaLabel}
               >
                 <span
-                  className={styles["calendar__weekday-card"]}
+                  className={styles["calendar__weekday-icon"]}
                   aria-hidden="true"
                 >
-                  <span className={styles["calendar__weekday-top"]} />
-                  <span className={styles["calendar__weekday-label"]}>
-                    {item.label}
-                  </span>
+                  <span className={styles["calendar__weekday-icon-top"]} />
+                </span>
+                <span className={styles["calendar__weekday-text"]}>
+                  {item.label}
                 </span>
               </div>
             ))}

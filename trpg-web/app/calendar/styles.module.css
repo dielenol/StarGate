@@ -166,21 +166,31 @@
 .calendar__weekdays {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-  padding: 18px 6px 12px;
-  margin-bottom: 6px;
+  gap: 1px;
+  padding: 0 1px;
+  margin-bottom: 4px;
 }
 
 .calendar__weekday {
   --weekday-accent: #5865f2;
+  --weekday-text: var(--text-muted);
 
   display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 6px;
   min-width: 0;
+  padding: 8px 6px;
+  color: var(--weekday-text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
 }
 
 .calendar__weekday--sun {
   --weekday-accent: #ef3b30;
+  --weekday-text: #e26b6f;
 }
 
 .calendar__weekday--mon {
@@ -205,66 +215,57 @@
 
 .calendar__weekday--sat {
   --weekday-accent: #955fd2;
+  --weekday-text: #6e8bff;
 }
 
-.calendar__weekday-card {
+.calendar__weekday-icon {
   position: relative;
-  width: min(100%, 132px);
-  height: 76px;
-  display: block;
+  flex: 0 0 auto;
+  width: 21px;
+  height: 19px;
+  overflow: visible;
   background: #fff;
-  border: 7px solid #050505;
-  border-radius: 22px;
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.28),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  border: 2px solid #050505;
+  border-radius: 5px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.16);
 }
 
-.calendar__weekday-card::before,
-.calendar__weekday-card::after {
+.calendar__weekday-icon::before,
+.calendar__weekday-icon::after {
   position: absolute;
-  top: -24px;
+  top: -6px;
   z-index: 2;
-  width: 10px;
-  height: 42px;
+  width: 3px;
+  height: 9px;
   background: #050505;
   border-radius: 999px;
   content: "";
 }
 
-.calendar__weekday-card::before {
-  left: 22%;
+.calendar__weekday-icon::before {
+  left: 5px;
 }
 
-.calendar__weekday-card::after {
-  right: 22%;
+.calendar__weekday-icon::after {
+  right: 5px;
 }
 
-.calendar__weekday-top {
+.calendar__weekday-icon-top {
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
-  height: 30px;
+  height: 7px;
   background: var(--weekday-accent);
-  border-bottom: 7px solid #050505;
-  border-radius: 14px 14px 0 0;
+  border-bottom: 2px solid #050505;
+  border-radius: 3px 3px 0 0;
 }
 
-.calendar__weekday-label {
-  position: absolute;
-  right: 4px;
-  bottom: 0;
-  left: 4px;
-  height: 39px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #050505;
-  font-size: 28px;
-  font-weight: 900;
-  line-height: 1;
+.calendar__weekday-text {
+  overflow: hidden;
   letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .calendar__grid {
@@ -1446,31 +1447,6 @@
     grid-template-rows: repeat(6, 112px);
   }
 
-  .calendar__weekday-card {
-    width: min(100%, 112px);
-    height: 66px;
-    border-width: 6px;
-    border-radius: 19px;
-  }
-
-  .calendar__weekday-card::before,
-  .calendar__weekday-card::after {
-    top: -21px;
-    width: 9px;
-    height: 36px;
-  }
-
-  .calendar__weekday-top {
-    height: 26px;
-    border-bottom-width: 6px;
-    border-radius: 12px 12px 0 0;
-  }
-
-  .calendar__weekday-label {
-    height: 34px;
-    font-size: 23px;
-  }
-
   .modal {
     max-width: 560px;
   }
@@ -1547,43 +1523,40 @@
   }
 
   .calendar__weekdays {
-    gap: 2px;
-    padding: 12px 0 8px;
+    gap: 1px;
+    padding: 0 1px;
   }
 
-  .calendar__weekday-card {
-    width: 100%;
-    height: 50px;
-    border-width: 4px;
-    border-radius: 14px;
+  .calendar__weekday {
+    gap: 3px;
+    padding: 6px 2px;
+    font-size: 11px;
   }
 
-  .calendar__weekday-card::before,
-  .calendar__weekday-card::after {
-    top: -15px;
-    width: 6px;
-    height: 27px;
+  .calendar__weekday-icon {
+    width: 16px;
+    height: 15px;
+    border-radius: 4px;
   }
 
-  .calendar__weekday-card::before {
-    left: 21%;
+  .calendar__weekday-icon::before,
+  .calendar__weekday-icon::after {
+    top: -5px;
+    width: 3px;
+    height: 7px;
   }
 
-  .calendar__weekday-card::after {
-    right: 21%;
+  .calendar__weekday-icon::before {
+    left: 3px;
   }
 
-  .calendar__weekday-top {
-    height: 19px;
-    border-bottom-width: 4px;
-    border-radius: 9px 9px 0 0;
+  .calendar__weekday-icon::after {
+    right: 3px;
   }
 
-  .calendar__weekday-label {
-    right: 1px;
-    left: 1px;
-    height: 27px;
-    font-size: 14px;
+  .calendar__weekday-icon-top {
+    height: 6px;
+    border-radius: 2px 2px 0 0;
   }
 
   .calendar__grid {
