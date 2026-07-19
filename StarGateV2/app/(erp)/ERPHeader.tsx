@@ -99,6 +99,10 @@ const ERP_BGM_TRACKS = [
     label: "NOVUS 07",
     src: resolvePublicAssetPath("/sound/erp/novus-07.mp3"),
   },
+  {
+    label: "NOVUS 08",
+    src: resolvePublicAssetPath("/sound/erp/novus-08.mp3"),
+  },
 ] as const;
 
 type ErpBgmTrack = (typeof ERP_BGM_TRACKS)[number];
