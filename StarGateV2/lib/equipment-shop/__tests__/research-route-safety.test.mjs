@@ -23,6 +23,19 @@ const RESEARCH_ROUTE_LIB = new URL(
   "../../../app/api/erp/equipment-shop/research/_lib.ts",
   import.meta.url,
 );
+const RESEARCH_APPLICATION = new URL(
+  "../research-application.ts",
+  import.meta.url,
+);
+const RESEARCH_DISCORD_SYNC = new URL(
+  "../../notifications/equipment-research-discord.ts",
+  import.meta.url,
+);
+const RESEARCH_DISCORD_CRON = new URL(
+  "../../../app/api/cron/research/discord-cards/route.ts",
+  import.meta.url,
+);
+const VERCEL_CONFIG = new URL("../../../vercel.json", import.meta.url);
 
 test("research GET is lock-gated and read-only", async () => {
   const source = await readFile(RESEARCH_ROUTE, "utf8");
@@ -66,6 +79,70 @@ test("research rush stores the requestId on the project update", async () => {
     "utf8",
   );
   assert.match(source, /updateEquipmentResearchProjectRush\([\s\S]*requestId/);
+});
+
+test("team research mutations queue one durable Discord card revision in their transaction", async () => {
+  const [contribute, rush, apply] = await Promise.all([
+    readFile(
+      new URL(
+        "../../../app/api/erp/equipment-shop/research/contribute/route.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../../../app/api/erp/equipment-shop/research/rush/route.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(RESEARCH_APPLICATION, "utf8"),
+  ]);
+
+  assert.equal(
+    (contribute.match(/requestEquipmentResearchDiscordCardSync\(/g) ?? [])
+      .length,
+    1,
+  );
+  assert.match(
+    contribute,
+    /withTransaction[\s\S]*requestEquipmentResearchDiscordCardSync\(node\.key,[\s\S]*session: mongoSession/,
+  );
+  assert.match(
+    rush,
+    /withTransaction[\s\S]*requestEquipmentResearchDiscordCardSync\(project\.key,[\s\S]*session: mongoSession/,
+  );
+  assert.match(
+    apply,
+    /insertEquipmentResearchContribution\([\s\S]*requestEquipmentResearchDiscordCardSync\(project\.key, \{ session \}\)/,
+  );
+  for (const source of [contribute, rush, apply]) {
+    assert.doesNotMatch(source, /notifyEquipmentResearchEvent/);
+    assert.match(source, /scheduleEquipmentResearchDiscordCardSync/);
+  }
+});
+
+test("research Discord cards have a secured recurring retry consumer", async () => {
+  const [syncSource, cronSource, vercelConfig] = await Promise.all([
+    readFile(RESEARCH_DISCORD_SYNC, "utf8"),
+    readFile(RESEARCH_DISCORD_CRON, "utf8"),
+    readFile(VERCEL_CONFIG, "utf8"),
+  ]);
+
+  assert.match(syncSource, /syncPendingEquipmentResearchDiscordCards/);
+  assert.match(syncSource, /listPendingEquipmentResearchDiscordCardKeys/);
+  assert.match(cronSource, /authorization/);
+  assert.match(cronSource, /CRON_SECRET/);
+  assert.match(vercelConfig, /\/api\/cron\/research\/discord-cards/);
+});
+
+test("legacy team projects without funding pools use project cost fallback", async () => {
+  const source = await readFile(RESEARCH_DISCORD_SYNC, "utf8");
+
+  assert.match(source, /if \(!pool && !project\)/);
+  assert.match(source, /targetCost: pool\?\.targetCost \?\? project!\.cost/);
+  assert.match(source, /fundedAmount: pool\?\.fundedAmount \?\? project!\.cost/);
 });
 
 test("research rush blocks effects without an operational consumer", async () => {

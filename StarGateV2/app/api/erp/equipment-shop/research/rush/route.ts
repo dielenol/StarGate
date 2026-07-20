@@ -6,10 +6,11 @@ import {
   findEquipmentResearchProjectById,
   getEquipmentResearchCapabilities,
   insertEquipmentResearchContribution,
+  requestEquipmentResearchDiscordCardSync,
   serializeEquipmentResearchProject,
   updateEquipmentResearchProjectRush,
 } from "@/lib/db/equipment-research";
-import { notifyEquipmentResearchEvent } from "@/lib/discord";
+import { scheduleEquipmentResearchDiscordCardSync } from "@/lib/notifications/equipment-research-discord-schedule";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
@@ -166,6 +167,9 @@ export async function POST(request: Request) {
             requestId,
             session: mongoSession,
           });
+          await requestEquipmentResearchDiscordCardSync(project.key, {
+            session: mongoSession,
+          });
         }
         balance = chargeResult.balance;
       });
@@ -182,13 +186,7 @@ export async function POST(request: Request) {
 
   const nextProject = await findEquipmentResearchProjectById(projectId);
   if (project.scope === "team") {
-    void notifyEquipmentResearchEvent({
-      kind: "rush",
-      projectKey: project.key,
-      contributorCodename: budgetResult.budget.codename,
-      amount: quote.cost,
-      rushHours: quote.hours,
-    });
+    scheduleEquipmentResearchDiscordCardSync(project.key);
   }
   scheduleGmAdminAudit({
     action: "장비 연구 가속",

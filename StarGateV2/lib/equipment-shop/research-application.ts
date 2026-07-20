@@ -18,10 +18,11 @@ import {
   listReadyEquipmentResearchProjects,
   markEquipmentResearchProjectApplied,
   releaseEquipmentResearchProjectApplyReservation,
+  requestEquipmentResearchDiscordCardSync,
   reserveEquipmentResearchProjectForApply,
   type EquipmentResearchProject,
 } from "@/lib/db/equipment-research";
-import { notifyEquipmentResearchEvent } from "@/lib/discord";
+import { scheduleEquipmentResearchDiscordCardSync } from "@/lib/notifications/equipment-research-discord-schedule";
 
 export interface EquipmentResearchActor {
   id: string;
@@ -203,6 +204,7 @@ async function applyReservedProject(
       requestId: `research-apply:${projectId}`,
       session,
     });
+    await requestEquipmentResearchDiscordCardSync(project.key, { session });
   }
 
   return {
@@ -232,14 +234,7 @@ export async function applyEquipmentResearchProjectNow(args: {
     });
     if (!result) throw new Error("RESEARCH_APPLY_TRANSACTION_EMPTY");
     if (project.scope === "team") {
-      void notifyEquipmentResearchEvent({
-        kind: "apply",
-        projectKey: project.key,
-        actorName: args.actor.displayName,
-        affected: result.affected,
-      }).catch((error) =>
-        console.error("[equipment-shop/research] apply notification failed", error),
-      );
+      scheduleEquipmentResearchDiscordCardSync(project.key);
     }
     return result;
   } catch (err) {

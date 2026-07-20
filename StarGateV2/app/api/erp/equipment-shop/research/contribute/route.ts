@@ -15,11 +15,12 @@ import {
   getOrCreateTeamFundingPool,
   insertEquipmentResearchContribution,
   markTeamFundingPoolStarted,
+  requestEquipmentResearchDiscordCardSync,
   serializeEquipmentResearchContribution,
   serializeEquipmentResearchProject,
   serializeEquipmentResearchTeamFundingPool,
 } from "@/lib/db/equipment-research";
-import { notifyEquipmentResearchEvent } from "@/lib/discord";
+import { scheduleEquipmentResearchDiscordCardSync } from "@/lib/notifications/equipment-research-discord-schedule";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { clampTeamResearchContribution } from "@/lib/equipment-shop/research-contributions";
 import {
@@ -288,6 +289,9 @@ export async function POST(request: Request) {
             session: mongoSession,
           });
         }
+        await requestEquipmentResearchDiscordCardSync(node.key, {
+          session: mongoSession,
+        });
         transactionResult = { balance: chargeResult.balance, updatedPool, contribution, project };
       });
     } finally {
@@ -305,23 +309,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "연구 트랜잭션이 완료되지 않았습니다.", code: "RESEARCH_START_FAILED" }, { status: 500 });
   }
   const { balance, updatedPool, contribution, project } = transactionResult;
-  void notifyEquipmentResearchEvent({
-    kind: "fund",
-    projectKey: node.key,
-    contributorCodename: budgetResult.budget.codename,
-    amount: chargeAmount,
-    fundedAmount: updatedPool.fundedAmount,
-    targetCost: updatedPool.targetCost,
-  });
-  if (project) {
-    void notifyEquipmentResearchEvent({
-      kind: "start",
-      projectKey: node.key,
-      contributorCodename: budgetResult.budget.codename,
-      targetCost: updatedPool.targetCost,
-      durationHours: node.durationHours,
-    });
-  }
+  scheduleEquipmentResearchDiscordCardSync(node.key);
   scheduleGmAdminAudit({
     action: project ? "팀 장비 연구 기여 및 시작" : "팀 장비 연구 기여",
     actor: {

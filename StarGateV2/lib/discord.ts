@@ -1,12 +1,12 @@
 import type { ApplyFormInput, ContactFormInput } from "@/lib/validators";
 
-type DiscordEmbedField = {
+export type DiscordEmbedField = {
   name: string;
   value: string;
   inline?: boolean;
 };
 
-type DiscordEmbed = {
+export type DiscordEmbed = {
   title: string;
   url?: string;
   description?: string;
@@ -16,7 +16,7 @@ type DiscordEmbed = {
   timestamp: string;
 };
 
-type DiscordPayload = {
+export type DiscordPayload = {
   username: string;
   avatar_url?: string;
   allowed_mentions?: { parse: string[] };
@@ -28,7 +28,6 @@ const DISCORD_COLORS = {
   contact: 0x5ea3c5,
   shopRestock: 0xc5a059,
   shopReorder: 0xd95f5f,
-  research: 0x9bd8ec,
   /** 캐릭터 편집 — admin 모드 (관리자 편집 강조 색상) */
   charEditAdmin: 0xc5a059,
   /** 캐릭터 편집 — player 모드 (일반 인포 톤) */
@@ -74,6 +73,62 @@ async function sendDiscordWebhook(payload: DiscordPayload, urlOverride?: string)
     const errorText = await response.text();
     throw new Error(`Discord Webhook 전송 실패 (${response.status}): ${errorText}`);
   }
+}
+
+function getEquipmentResearchWebhookUrl(): string {
+  const webhookUrl = process.env.DISCORD_WEBHOOK_RESEARCH_URL;
+  if (!webhookUrl) {
+    throw new Error("DISCORD_WEBHOOK_RESEARCH_URL 환경변수가 설정되지 않았습니다.");
+  }
+  return webhookUrl;
+}
+
+function buildWebhookMessageUrl(webhookUrl: string, messageId: string): string {
+  const url = new URL(webhookUrl);
+  url.pathname = `${url.pathname.replace(/\/+$/, "")}/messages/${encodeURIComponent(messageId)}`;
+  url.search = "";
+  return url.toString();
+}
+
+export async function createEquipmentResearchDiscordCard(
+  payload: DiscordPayload,
+): Promise<string> {
+  const url = new URL(getEquipmentResearchWebhookUrl());
+  url.searchParams.set("wait", "true");
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Discord 연구 카드 생성 실패 (${response.status}): ${errorText}`,
+    );
+  }
+  const message = (await response.json()) as { id?: unknown };
+  if (typeof message.id !== "string" || message.id.length === 0) {
+    throw new Error("Discord 연구 카드 생성 응답에 message id가 없습니다.");
+  }
+  return message.id;
+}
+
+export async function deleteEquipmentResearchDiscordCard(
+  messageId: string,
+): Promise<void> {
+  const response = await fetch(
+    buildWebhookMessageUrl(getEquipmentResearchWebhookUrl(), messageId),
+    {
+      method: "DELETE",
+      cache: "no-store",
+    },
+  );
+  if (response.status === 404 || response.ok) return;
+  const errorText = await response.text();
+  throw new Error(
+    `Discord 연구 카드 삭제 실패 (${response.status}): ${errorText}`,
+  );
 }
 
 export async function notifyApplySubmission(input: ApplyFormInput) {
@@ -141,36 +196,6 @@ export interface GmAdminAuditWebhookPayload {
   details?: DiscordEmbedField[];
   timestamp: Date;
 }
-
-export type EquipmentResearchWebhookPayload =
-  | {
-      kind: "fund";
-      projectKey: string;
-      contributorCodename: string;
-      amount: number;
-      fundedAmount: number;
-      targetCost: number;
-    }
-  | {
-      kind: "start";
-      projectKey: string;
-      contributorCodename: string;
-      targetCost: number;
-      durationHours: number;
-    }
-  | {
-      kind: "rush";
-      projectKey: string;
-      contributorCodename: string;
-      amount: number;
-      rushHours: number;
-    }
-  | {
-      kind: "apply";
-      projectKey: string;
-      actorName: string;
-      affected: number;
-    };
 
 function getSiteBaseUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://www.ordonet.co.kr").replace(
@@ -823,136 +848,6 @@ export async function notifyGmAdminAudit(
     return "sent";
   } catch (error) {
     console.warn("[notifyGmAdminAudit] Discord 전송 실패:", error);
-    return "skipped";
-  }
-}
-
-function formatResearchDuration(hours: number): string {
-  if (hours % 24 === 0) return `${hours / 24}일`;
-  if (hours > 24) return `${Math.floor(hours / 24)}일 ${hours % 24}시간`;
-  return `${hours}시간`;
-}
-
-function getResearchWebhookTitle(payload: EquipmentResearchWebhookPayload): string {
-  if (payload.kind === "fund") return "팀 연구 기여";
-  if (payload.kind === "start") return "팀 연구 시작";
-  if (payload.kind === "rush") return "팀 연구 가속";
-  return "팀 연구 자동 적용";
-}
-
-function getResearchWebhookFields(
-  payload: EquipmentResearchWebhookPayload,
-): DiscordEmbedField[] {
-  if (payload.kind === "fund") {
-    return [
-      { name: "연구", value: sanitizeForDiscord(payload.projectKey), inline: true },
-      {
-        name: "기여자",
-        value: sanitizeForDiscord(payload.contributorCodename),
-        inline: true,
-      },
-      {
-        name: "투입",
-        value: `${payload.amount.toLocaleString("ko-KR")} CR`,
-        inline: true,
-      },
-      {
-        name: "진행",
-        value: `${payload.fundedAmount.toLocaleString("ko-KR")} / ${payload.targetCost.toLocaleString("ko-KR")} CR`,
-      },
-    ];
-  }
-
-  if (payload.kind === "start") {
-    return [
-      { name: "연구", value: sanitizeForDiscord(payload.projectKey), inline: true },
-      {
-        name: "완료 기여자",
-        value: sanitizeForDiscord(payload.contributorCodename),
-        inline: true,
-      },
-      {
-        name: "목표액",
-        value: `${payload.targetCost.toLocaleString("ko-KR")} CR`,
-        inline: true,
-      },
-      {
-        name: "연구 시간",
-        value: formatResearchDuration(payload.durationHours),
-        inline: true,
-      },
-    ];
-  }
-
-  if (payload.kind === "rush") {
-    return [
-      { name: "연구", value: sanitizeForDiscord(payload.projectKey), inline: true },
-      {
-        name: "기여자",
-        value: sanitizeForDiscord(payload.contributorCodename),
-        inline: true,
-      },
-      {
-        name: "투입",
-        value: `${payload.amount.toLocaleString("ko-KR")} CR`,
-        inline: true,
-      },
-      {
-        name: "단축",
-        value: formatResearchDuration(payload.rushHours),
-        inline: true,
-      },
-    ];
-  }
-
-  return [
-    { name: "연구", value: sanitizeForDiscord(payload.projectKey), inline: true },
-    {
-      name: "적용 대상",
-      value: `${payload.affected.toLocaleString("ko-KR")}명`,
-      inline: true,
-    },
-    {
-      name: "처리",
-      value: sanitizeForDiscord(payload.actorName),
-      inline: true,
-    },
-  ];
-}
-
-export async function notifyEquipmentResearchEvent(
-  payload: EquipmentResearchWebhookPayload,
-): Promise<"sent" | "skipped"> {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_RESEARCH_URL;
-  if (!webhookUrl) {
-    console.warn(
-      "[notifyEquipmentResearchEvent] DISCORD_WEBHOOK_RESEARCH_URL 미설정 — silent skip",
-    );
-    return "skipped";
-  }
-
-  const now = new Date();
-  const discordPayload: DiscordPayload = {
-    username: "NOVUS Research Lab",
-    avatar_url: process.env.DISCORD_WEBHOOK_RESEARCH_AVATAR_URL || undefined,
-    allowed_mentions: { parse: [] },
-    embeds: [
-      {
-        title: getResearchWebhookTitle(payload),
-        url: `${getSiteBaseUrl()}/erp/equipment-shop/lab`,
-        color: DISCORD_COLORS.research,
-        fields: getResearchWebhookFields(payload),
-        footer: { text: formatKstTimestamp(now) },
-        timestamp: now.toISOString(),
-      },
-    ],
-  };
-
-  try {
-    await sendDiscordWebhook(discordPayload, webhookUrl);
-    return "sent";
-  } catch (error) {
-    console.warn("[notifyEquipmentResearchEvent] Discord 전송 실패:", error);
     return "skipped";
   }
 }

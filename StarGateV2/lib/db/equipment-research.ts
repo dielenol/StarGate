@@ -80,6 +80,19 @@ export interface EquipmentResearchContribution {
   createdAt: Date;
 }
 
+export interface EquipmentResearchDiscordCard {
+  _id: string;
+  requestedRevision: number;
+  syncedRevision: number;
+  messageId?: string;
+  leaseToken?: string;
+  leaseExpiresAt?: Date;
+  nextAttemptAt?: Date;
+  lastError?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface SerializedEquipmentResearchProject
   extends Omit<
     EquipmentResearchProject,
@@ -147,6 +160,8 @@ export function buildEquipmentResearchIdentityKey(args: {
 const COLLECTION_NAME = "research_projects";
 const TEAM_FUNDING_COLLECTION_NAME = "research_team_funding_pools";
 const CONTRIBUTION_COLLECTION_NAME = "research_contributions";
+const DISCORD_CARD_COLLECTION_NAME = "research_discord_cards";
+export const EQUIPMENT_RESEARCH_DISCORD_CARD_LEASE_MS = 60_000;
 
 async function equipmentResearchProjectsCol(): Promise<
   Collection<EquipmentResearchProject>
@@ -170,6 +185,15 @@ async function equipmentResearchContributionsCol(): Promise<
   const db = await getDb();
   return db.collection<EquipmentResearchContribution>(
     CONTRIBUTION_COLLECTION_NAME,
+  );
+}
+
+async function equipmentResearchDiscordCardsCol(): Promise<
+  Collection<EquipmentResearchDiscordCard>
+> {
+  const db = await getDb();
+  return db.collection<EquipmentResearchDiscordCard>(
+    DISCORD_CARD_COLLECTION_NAME,
   );
 }
 
@@ -379,6 +403,13 @@ export async function listTeamFundingPools(
     .toArray();
 }
 
+export async function findTeamFundingPoolByKey(
+  key: string,
+): Promise<WithId<EquipmentResearchTeamFundingPool> | null> {
+  const col = await equipmentResearchTeamFundingPoolsCol();
+  return col.findOne({ key }, { sort: { createdAt: -1 } });
+}
+
 export async function addTeamResearchFunding(args: {
   poolId: string;
   currentFundedAmount: number;
@@ -474,6 +505,198 @@ export async function listEquipmentResearchContributions(
 ): Promise<Array<WithId<EquipmentResearchContribution>>> {
   const col = await equipmentResearchContributionsCol();
   return col.find({}).sort({ createdAt: -1 }).limit(limit).toArray();
+}
+
+export async function listEquipmentResearchContributionsByProjectKey(
+  projectKey: string,
+): Promise<Array<WithId<EquipmentResearchContribution>>> {
+  const col = await equipmentResearchContributionsCol();
+  return col.find({ projectKey }).sort({ createdAt: 1 }).toArray();
+}
+
+export async function requestEquipmentResearchDiscordCardSync(
+  projectKey: string,
+  options: { session?: ClientSession } = {},
+): Promise<void> {
+  const now = new Date();
+  const col = await equipmentResearchDiscordCardsCol();
+  await col.updateOne(
+    { _id: projectKey },
+    {
+      $inc: { requestedRevision: 1 },
+      $setOnInsert: {
+        syncedRevision: 0,
+        createdAt: now,
+      },
+      $set: { updatedAt: now },
+      $unset: { lastError: "", nextAttemptAt: "" },
+    },
+    { upsert: true, session: options.session },
+  );
+}
+
+export async function acquireEquipmentResearchDiscordCardLease(args: {
+  projectKey: string;
+  leaseToken: string;
+  now?: Date;
+}): Promise<EquipmentResearchDiscordCard | null> {
+  const now = args.now ?? new Date();
+  const col = await equipmentResearchDiscordCardsCol();
+  return col.findOneAndUpdate(
+    {
+      _id: args.projectKey,
+      $expr: { $gt: ["$requestedRevision", "$syncedRevision"] },
+      $and: [
+        {
+          $or: [
+            { leaseToken: { $exists: false } },
+            { leaseExpiresAt: { $exists: false } },
+            { leaseExpiresAt: { $lte: now } },
+          ],
+        },
+        {
+          $or: [
+            { nextAttemptAt: { $exists: false } },
+            { nextAttemptAt: { $lte: now } },
+          ],
+        },
+      ],
+    },
+    {
+      $set: {
+        leaseToken: args.leaseToken,
+        leaseExpiresAt: new Date(
+          now.getTime() + EQUIPMENT_RESEARCH_DISCORD_CARD_LEASE_MS,
+        ),
+        updatedAt: now,
+      },
+    },
+    { returnDocument: "after" },
+  );
+}
+
+export async function completeEquipmentResearchDiscordCardSync(args: {
+  projectKey: string;
+  leaseToken: string;
+  syncedRevision: number;
+  messageId: string;
+}): Promise<boolean> {
+  const col = await equipmentResearchDiscordCardsCol();
+  const result = await col.updateOne(
+    {
+      _id: args.projectKey,
+      leaseToken: args.leaseToken,
+    },
+    {
+      $set: {
+        syncedRevision: args.syncedRevision,
+        messageId: args.messageId,
+        updatedAt: new Date(),
+      },
+      $unset: {
+        leaseToken: "",
+        leaseExpiresAt: "",
+        lastError: "",
+        nextAttemptAt: "",
+      },
+    },
+  );
+  return result.modifiedCount === 1;
+}
+
+export async function failEquipmentResearchDiscordCardSync(args: {
+  projectKey: string;
+  leaseToken: string;
+  error: string;
+}): Promise<void> {
+  const col = await equipmentResearchDiscordCardsCol();
+  await col.updateOne(
+    {
+      _id: args.projectKey,
+      leaseToken: args.leaseToken,
+    },
+    {
+      $set: {
+        lastError: args.error.slice(0, 1000),
+        nextAttemptAt: new Date(Date.now() + 5 * 60 * 1000),
+        updatedAt: new Date(),
+      },
+      $unset: {
+        leaseToken: "",
+        leaseExpiresAt: "",
+      },
+    },
+  );
+}
+
+export async function isEquipmentResearchDiscordCardSyncComplete(args: {
+  projectKey: string;
+  syncedRevision: number;
+  messageId: string;
+}): Promise<boolean> {
+  const col = await equipmentResearchDiscordCardsCol();
+  const card = await col.findOne(
+    {
+      _id: args.projectKey,
+      syncedRevision: { $gte: args.syncedRevision },
+      messageId: args.messageId,
+    },
+    { projection: { _id: 1 } },
+  );
+  return Boolean(card);
+}
+
+export async function listPendingEquipmentResearchDiscordCardKeys(
+  now = new Date(),
+  limit = 20,
+): Promise<string[]> {
+  const col = await equipmentResearchDiscordCardsCol();
+  const cards = await col
+    .find(
+      {
+        $expr: { $gt: ["$requestedRevision", "$syncedRevision"] },
+        $and: [
+          {
+            $or: [
+              { leaseToken: { $exists: false } },
+              { leaseExpiresAt: { $exists: false } },
+              { leaseExpiresAt: { $lte: now } },
+            ],
+          },
+          {
+            $or: [
+              { nextAttemptAt: { $exists: false } },
+              { nextAttemptAt: { $lte: now } },
+            ],
+          },
+        ],
+      },
+      { projection: { _id: 1 } },
+    )
+    .sort({ updatedAt: 1 })
+    .limit(limit)
+    .toArray();
+  return cards.map((card) => card._id);
+}
+
+export async function findEquipmentResearchDiscordCard(
+  projectKey: string,
+): Promise<EquipmentResearchDiscordCard | null> {
+  const col = await equipmentResearchDiscordCardsCol();
+  return col.findOne({ _id: projectKey });
+}
+
+export async function listEquipmentResearchDiscordProjectKeys(): Promise<
+  string[]
+> {
+  const [projects, pools, contributions] = await Promise.all([
+    (await equipmentResearchProjectsCol()).distinct("key", { scope: "team" }),
+    (await equipmentResearchTeamFundingPoolsCol()).distinct("key"),
+    (await equipmentResearchContributionsCol()).distinct("projectKey", {
+      scope: "team",
+    }),
+  ]);
+  return Array.from(new Set([...projects, ...pools, ...contributions])).sort();
 }
 
 export async function listEquipmentResearchContributionRankings(
