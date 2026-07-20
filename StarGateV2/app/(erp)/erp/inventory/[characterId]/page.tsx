@@ -62,7 +62,12 @@ export default async function CharacterInventoryPage({
   let sharedInventory: SharedInventory[] = [];
   let masterByItemId = new Map<
     string,
-    { category: ItemCategory; slug?: string; effect?: string }
+    {
+      category: ItemCategory;
+      slug?: string;
+      effect?: string;
+      previewImage?: string;
+    }
   >();
 
   const [personalResult, sharedResult] = await Promise.all([
@@ -100,7 +105,12 @@ export default async function CharacterInventoryPage({
       masterByItemId = new Map(
         masters.map((item) => [
           String(item._id),
-          { category: item.category, slug: item.slug, effect: item.effect },
+          {
+            category: item.category,
+            slug: item.slug,
+            effect: item.effect,
+            previewImage: item.previewImage,
+          },
         ]),
       );
     } catch {
@@ -123,6 +133,7 @@ export default async function CharacterInventoryPage({
     category: masterByItemId.get(entry.itemId)?.category ?? null,
     slug: masterByItemId.get(entry.itemId)?.slug,
     effect: masterByItemId.get(entry.itemId)?.effect,
+    previewImage: masterByItemId.get(entry.itemId)?.previewImage,
   });
 
   const sharedEntries = sharedInventory.map(toClientEntry);

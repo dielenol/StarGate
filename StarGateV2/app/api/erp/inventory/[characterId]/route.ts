@@ -1,15 +1,25 @@
 import { NextResponse } from "next/server";
 
-import type { CreateInventoryInput } from "@/types/inventory";
+import type {
+  CreateInventoryInput,
+  RemoveInventoryInput,
+} from "@/types/inventory";
 
+import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { canViewPersonalInventory } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { requireRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
+  EconomicOperationConflictError,
+  executeEconomicOperationResult,
+} from "@/lib/db/execute-economic-operation";
+import {
   addToInventory,
   findMasterItemById,
   listCharacterInventoryEntries,
+  prepareCharacterInventoryItemLocks,
+  removeFromInventory,
   serializeCharacterInventory,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
@@ -17,6 +27,14 @@ import { notifyUser } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 const MAX_GRANT_QUANTITY = 999;
+const MAX_REMOVE_QUANTITY = 999;
+
+interface RemoveInventoryOperationBody {
+  remaining?: number;
+  itemName?: string;
+  error?: string;
+  code?: string;
+}
 
 export async function GET(
   _request: Request,
@@ -185,5 +203,203 @@ export async function POST(
     const message =
       err instanceof Error ? err.message : "아이템 지급 실패";
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ characterId: string }> },
+) {
+  const session = await getActiveSession();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    requireRole(session.user.role, "GM");
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      {
+        error: "유효한 Idempotency-Key 헤더가 필요합니다.",
+        code: "INVALID_IDEMPOTENCY_KEY",
+      },
+      { status: 400 },
+    );
+  }
+
+  const { characterId } = await params;
+  if (!isValidObjectId(characterId)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
+
+  const character = await findCharacterById(characterId);
+  if (
+    !character ||
+    !canViewPersonalInventory(session.user.id, session.user.role, character)
+  ) {
+    return NextResponse.json(
+      { error: "캐릭터를 찾을 수 없습니다." },
+      { status: 404 },
+    );
+  }
+
+  let body: Partial<RemoveInventoryInput>;
+  try {
+    body = (await request.json()) as Partial<RemoveInventoryInput>;
+  } catch {
+    return NextResponse.json(
+      { error: "요청 본문이 올바른 JSON 형식이 아닙니다." },
+      { status: 400 },
+    );
+  }
+
+  if (
+    typeof body.itemId !== "string" ||
+    !body.itemId.trim() ||
+    !isValidObjectId(body.itemId.trim())
+  ) {
+    return NextResponse.json(
+      { error: "itemId가 올바른 ObjectId 형식이 아닙니다." },
+      { status: 400 },
+    );
+  }
+  const itemId = body.itemId.trim();
+
+  if (
+    typeof body.quantity !== "number" ||
+    !Number.isSafeInteger(body.quantity) ||
+    body.quantity < 1 ||
+    body.quantity > MAX_REMOVE_QUANTITY
+  ) {
+    return NextResponse.json(
+      { error: `quantity는 1~${MAX_REMOVE_QUANTITY} 사이의 정수여야 합니다.` },
+      { status: 400 },
+    );
+  }
+  const quantity = body.quantity;
+
+  try {
+    await prepareCharacterInventoryItemLocks(characterId, [itemId]);
+    const operation =
+      await executeEconomicOperationResult<RemoveInventoryOperationBody>({
+        requestId,
+        domain: "inventory-remove",
+        actorId: session.user.id,
+        payload: { characterId, itemId, quantity },
+        run: async (dbSession) => {
+          const { entries } =
+            await listCharacterInventoryEntries(characterId);
+          const targetEntry = entries.find((entry) => entry.itemId === itemId);
+          if (!targetEntry) {
+            return {
+              status: 404,
+              body: { error: "보유 중인 아이템을 찾을 수 없습니다." },
+            };
+          }
+          if (targetEntry.equippedSlot) {
+            return {
+              status: 409,
+              body: {
+                error: "장착 중인 아이템은 제거할 수 없습니다.",
+                code: "INVENTORY_REMOVE_CONFLICT",
+              },
+            };
+          }
+
+          const { ok, remaining } = await removeFromInventory(
+            characterId,
+            itemId,
+            quantity,
+            { session: dbSession },
+          );
+          if (!ok) {
+            return {
+              status: 409,
+              body: {
+                error: "보유 수량이 부족하거나 장착 중인 아이템입니다.",
+                code: "INVENTORY_REMOVE_CONFLICT",
+              },
+            };
+          }
+          return {
+            status: 200,
+            body: { remaining, itemName: targetEntry.itemName },
+          };
+        },
+      });
+
+    const headers = operation.replayed
+      ? { "X-Idempotency-Replayed": "true" }
+      : undefined;
+    if (
+      operation.status !== 200 ||
+      operation.body.remaining === undefined ||
+      !operation.body.itemName
+    ) {
+      return NextResponse.json(operation.body, {
+        status: operation.status,
+        headers,
+      });
+    }
+
+    if (!operation.replayed) {
+      const remaining = operation.body.remaining;
+      const itemName = operation.body.itemName;
+      scheduleGmAdminAudit({
+        action: "캐릭터 아이템 제거",
+        actor: {
+          id: session.user.id,
+          displayName: session.user.displayName,
+          role: session.user.role,
+        },
+        summary: `${itemName} x${quantity} · 잔여 ${remaining}`,
+        target: character.codename,
+        timestamp: new Date(),
+      });
+
+      if (character.ownerId) {
+        await notifyUser({
+          userId: character.ownerId,
+          type: "SYSTEM",
+          title: "아이템이 제거되었습니다",
+          message: [
+            `${character.codename} · ${itemName} x${quantity}`,
+            `제거자 ${session.user.displayName}`,
+            `잔여 ${remaining}`,
+          ].join(" · "),
+          link: `/erp/inventory/${characterId}`,
+        }).catch((error) => {
+          console.error("[inventory/remove] notification failed:", error);
+        });
+      }
+    }
+
+    return NextResponse.json(operation.body, {
+      status: operation.status,
+      headers,
+    });
+  } catch (error) {
+    if (error instanceof EconomicOperationConflictError) {
+      return NextResponse.json(
+        {
+          error:
+            error.reason === "processing"
+              ? "동일한 제거 요청이 처리 중입니다."
+              : "동일 Idempotency-Key가 다른 요청에 사용되었습니다.",
+          code: "DUPLICATE_REQUEST",
+        },
+        { status: 409 },
+      );
+    }
+    console.error("[inventory/remove] failed:", error);
+    return NextResponse.json(
+      { error: "아이템 제거에 실패했습니다." },
+      { status: 500 },
+    );
   }
 }

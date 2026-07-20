@@ -1,16 +1,24 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import type { CreateMasterItemInput } from "@/types/inventory";
+import type {
+  CreateMasterItemInput,
+  RemoveInventoryInput,
+} from "@/types/inventory";
 
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { equipmentShopKeys } from "@/hooks/queries/useEquipmentShopQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
+import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 interface GrantInventoryBody {
   itemId: string;
   itemName: string;
   quantity: number;
   note?: string;
+}
+
+interface RemoveInventoryResponse {
+  remaining: number;
 }
 
 interface EquipInventoryResponse {
@@ -67,6 +75,39 @@ export function useGrantInventory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
+    },
+  });
+}
+
+export function useRemoveInventory(characterId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation<RemoveInventoryResponse, Error, RemoveInventoryInput>({
+    mutationFn: async (data) => {
+      const res = await fetch(`/api/erp/inventory/${characterId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey(
+            "inventory-remove",
+            data,
+          ),
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(err.error ?? "인벤토리 제거에 실패했습니다.");
+      }
+      return res.json();
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+      ]);
     },
   });
 }

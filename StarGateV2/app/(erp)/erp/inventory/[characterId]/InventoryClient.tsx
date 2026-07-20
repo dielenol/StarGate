@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import type {
@@ -8,7 +9,10 @@ import type {
   ItemCategory,
 } from "@/types/inventory";
 
-import { useEquipInventoryItem } from "@/hooks/mutations/useInventoryMutation";
+import {
+  useEquipInventoryItem,
+  useRemoveInventory,
+} from "@/hooks/mutations/useInventoryMutation";
 import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
 
 import {
@@ -28,9 +32,8 @@ import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import Input from "@/components/ui/Input/Input";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
-import ShopItemIcon from "../../shop/ShopItemIcon";
-
 import { formatDate } from "@/lib/format/date";
+import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 
 import styles from "./page.module.css";
 
@@ -44,6 +47,7 @@ interface InventoryClientProps {
   variant?: "personal" | "shared";
   emptyText?: string;
   filteredEmptyText?: string;
+  canRemove?: boolean;
 }
 
 type InventoryTab = "ALL" | "EQUIPMENT" | "CONSUMABLE" | "OTHER";
@@ -71,6 +75,7 @@ const CATEGORY_LABEL: Record<ItemCategory, string> = {
 };
 
 const UNKNOWN_CATEGORY_LABEL = "분류 없음";
+const MAX_REMOVE_QUANTITY = 999;
 
 function matchesTab(
   category: ItemCategory | null,
@@ -128,12 +133,36 @@ function matchesQuery(entry: InventoryClientEntry, query: string): boolean {
 function CategoryIcon({
   category,
   slug,
+  previewImage,
 }: {
   category: ItemCategory | null;
   slug?: string;
+  previewImage?: string;
 }) {
-  if (category === "CONSUMABLE" && slug) {
-    return <ShopItemIcon slug={slug} size={40} />;
+  const [imageFailed, setImageFailed] = useState(false);
+  const canonicalImage =
+    category === "CONSUMABLE" && slug
+      ? getConsumableItemImageSrc(slug)
+      : undefined;
+  const previewImageSrc = previewImage?.trim();
+  const imageSrc =
+    canonicalImage ??
+    (previewImageSrc?.startsWith("/assets/") ? previewImageSrc : undefined);
+
+  if (imageSrc && !imageFailed) {
+    return (
+      <Image
+        src={imageSrc}
+        width={54}
+        height={54}
+        alt=""
+        aria-hidden
+        draggable={false}
+        className={styles.slot__image}
+        unoptimized
+        onError={() => setImageFailed(true)}
+      />
+    );
   }
   if (category === "CONSUMABLE") {
     return (
@@ -162,16 +191,19 @@ export default function InventoryClient({
   variant = "personal",
   emptyText = "보유 아이템이 없습니다.",
   filteredEmptyText = "이 카테고리에 보유 아이템이 없습니다.",
+  canRemove = false,
 }: InventoryClientProps) {
   const [activeTab, setActiveTab] = useState<InventoryTab>("ALL");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<InventoryView>("GRID");
   const [equipmentError, setEquipmentError] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const inventoryQuery = useCharacterInventory(characterId ?? "", {
     initialData: initialResponse,
     enabled: variant === "personal" && Boolean(characterId),
   });
   const equipMutation = useEquipInventoryItem(characterId ?? "");
+  const removeMutation = useRemoveInventory(characterId ?? "");
   const entries = inventoryQuery.data?.entries ?? initialEntries;
   const SectionIcon = SECTION_ICONS[variant];
 
@@ -195,6 +227,47 @@ export default function InventoryClient({
       {
         onError: (error) => setEquipmentError(error.message),
       },
+    );
+  }
+
+  function handleRemove(entry: InventoryClientEntry) {
+    if (!characterId || !canRemove) return;
+    if (entry.equippedSlot) {
+      setRemoveError("장착 중인 아이템은 제거할 수 없습니다.");
+      return;
+    }
+
+    const rawQuantity = window.prompt(
+      `${entry.itemName}에서 제거할 수량을 입력하세요. (보유 ${formatQuantity(entry.quantity)}개)`,
+      String(Math.min(entry.quantity, MAX_REMOVE_QUANTITY)),
+    );
+    if (rawQuantity === null) return;
+
+    const quantity = Number(rawQuantity);
+    if (
+      !Number.isSafeInteger(quantity) ||
+      quantity < 1 ||
+      quantity > entry.quantity ||
+      quantity > MAX_REMOVE_QUANTITY
+    ) {
+      setRemoveError(
+        `제거 수량은 1~${formatQuantity(Math.min(entry.quantity, MAX_REMOVE_QUANTITY))} 사이의 정수여야 합니다.`,
+      );
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `${entry.itemName} ${formatQuantity(quantity)}개를 제거하시겠습니까?`,
+      )
+    ) {
+      return;
+    }
+
+    setRemoveError(null);
+    removeMutation.mutate(
+      { itemId: entry.itemId, quantity },
+      { onError: (error) => setRemoveError(error.message) },
     );
   }
 
@@ -323,6 +396,11 @@ export default function InventoryClient({
       {equipmentError ? (
         <div className={styles.equipmentNotice} role="alert">
           {equipmentError}
+        </div>
+      ) : null}
+      {removeError ? (
+        <div className={styles.equipmentNotice} role="alert">
+          {removeError}
         </div>
       ) : null}
 
@@ -460,7 +538,12 @@ export default function InventoryClient({
                   .join(" ")}
               >
                 <div className={styles.slot__art} aria-hidden>
-                  <CategoryIcon category={entry.category} slug={entry.slug} />
+                  <CategoryIcon
+                    key={`${entry.itemId}:${entry.category ?? ""}:${entry.slug ?? ""}:${entry.previewImage ?? ""}`}
+                    category={entry.category}
+                    slug={entry.slug}
+                    previewImage={entry.previewImage}
+                  />
                 </div>
                 <div className={styles.slot__body}>
                   <div className={styles.slot__topline}>
@@ -493,25 +576,51 @@ export default function InventoryClient({
                   {isConsumable && !entry.effect && !entry.note ? (
                     <div className={styles.slot__note}>효과 정보 미등록</div>
                   ) : null}
-                  {isEquippable ? (
+                  {isEquippable || canRemove ? (
                     <div className={styles.slot__actions}>
-                      {isEquipped ? (
-                        <span className={styles.equippedBadge}>장착 중</span>
-                      ) : (
+                      {isEquippable ? (
+                        isEquipped ? (
+                          <span className={styles.equippedBadge}>장착 중</span>
+                        ) : (
+                          <button
+                            type="button"
+                            className={styles.equipButton}
+                            disabled={equipMutation.isPending}
+                            aria-busy={isPending}
+                            onClick={() => handleEquip(entry)}
+                          >
+                            {isPending
+                              ? "교체 중"
+                              : slotHasOtherItem
+                                ? "교체"
+                                : "장착"}
+                          </button>
+                        )
+                      ) : null}
+                      {canRemove ? (
                         <button
                           type="button"
-                          className={styles.equipButton}
-                          disabled={equipMutation.isPending}
-                          aria-busy={isPending}
-                          onClick={() => handleEquip(entry)}
+                          className={styles.removeButton}
+                          disabled={
+                            removeMutation.isPending || Boolean(entry.equippedSlot)
+                          }
+                          aria-busy={
+                            removeMutation.isPending &&
+                            removeMutation.variables?.itemId === entry.itemId
+                          }
+                          title={
+                            entry.equippedSlot
+                              ? "장착 중인 아이템은 제거할 수 없습니다."
+                              : undefined
+                          }
+                          onClick={() => handleRemove(entry)}
                         >
-                          {isPending
-                            ? "교체 중"
-                            : slotHasOtherItem
-                              ? "교체"
-                              : "장착"}
+                          {removeMutation.isPending &&
+                          removeMutation.variables?.itemId === entry.itemId
+                            ? "제거 중"
+                            : "제거"}
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   ) : null}
                 </div>

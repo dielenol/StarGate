@@ -132,6 +132,7 @@ export default async function AdminCharacterInventoryPage({
         entries={inventoryResponse.entries}
         characterId={characterId}
         initialResponse={inventoryResponse}
+        canRemove={role === "GM"}
       />
     </>
   );

@@ -37,6 +37,11 @@ export interface InventoryEntryDto {
   equippedAt?: string;
 }
 
+export interface RemoveInventoryInput {
+  itemId: string;
+  quantity: number;
+}
+
 export type CharacterInventoryDto = Omit<
   import("@stargate/shared-db/types").CharacterInventory,
   "_id" | "acquiredAt" | "equippedAt"

@@ -431,6 +431,13 @@
   color: var(--ink-1);
 }
 
+.slot__image {
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+  object-fit: contain;
+}
+
 .slot--equipment .slot__iconSvg {
   color: var(--gold);
 }
@@ -523,12 +530,14 @@
 
 .slot__actions {
   display: flex;
+  gap: 8px;
   justify-content: flex-end;
   margin-top: auto;
   padding-top: 4px;
 }
 
 .equipButton,
+.removeButton,
 .equippedBadge {
   display: inline-flex;
   min-height: 32px;
@@ -539,6 +548,24 @@
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.06em;
+}
+
+.removeButton {
+  background: color-mix(in srgb, var(--danger) 10%, var(--bg-2));
+  border: 1px solid color-mix(in srgb, var(--danger) 66%, var(--line));
+  color: var(--danger);
+  cursor: pointer;
+}
+
+.removeButton:hover:not(:disabled),
+.removeButton:focus-visible {
+  background: color-mix(in srgb, var(--danger) 18%, var(--bg-2));
+  outline: none;
+}
+
+.removeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .equipButton {
