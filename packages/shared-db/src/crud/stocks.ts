@@ -386,6 +386,25 @@ export async function listScheduledStockPriceHistoryBulk(
 }
 
 /**
+ * KST 일자 복구처럼 명시적인 UTC 구간이 필요한 호출자를 위한 scheduled 장부 조회.
+ * 정기 틱의 Discord 공시 요청 저장이 실패해도 가격을 다시 굴리지 않고 당시 결과를
+ * 재구성할 수 있도록 가격·문구·eventTier를 포함한 원본 행을 반환한다.
+ */
+export async function listScheduledStockPriceHistoryRange(
+  start: Date,
+  end: Date,
+): Promise<StockPriceHistory[]> {
+  const col = await stockPriceHistoryCol();
+  return col
+    .find({
+      source: "scheduled",
+      createdAt: { $gte: start, $lt: end },
+    })
+    .sort({ createdAt: 1 })
+    .toArray();
+}
+
+/**
  * 다수 ticker 의 최근 N 일 sparkline 시계열을 일괄 조회 (카드 미니 차트용).
  *
  * 단일 호출로 N 종목 시계열을 반환해 카드별 N+1 fetch 함정을 회피한다.

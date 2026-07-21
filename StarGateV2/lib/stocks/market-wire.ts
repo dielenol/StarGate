@@ -14,6 +14,7 @@ import {
   formatIndexValue,
 } from "@/lib/stocks/market-index";
 import { kstDateTag, kstNowTag } from "@/lib/stocks/time";
+import type { StockMarketWireSyncResult } from "@/lib/stocks/market-wire-sync";
 
 type DiscordEmbedField = {
   name: string;
@@ -31,7 +32,7 @@ type DiscordEmbed = {
   timestamp: string;
 };
 
-type DiscordPayload = {
+export type DiscordPayload = {
   content?: string;
   username: string;
   avatar_url?: string;
@@ -41,6 +42,7 @@ type DiscordPayload = {
 
 type MarketWireStatus =
   | "sent"
+  | "queued"
   | "skipped-no-webhook"
   | "skipped-no-change"
   | "failed";
@@ -151,6 +153,26 @@ function getWebhookUrl(): string | undefined {
     process.env.DISCORD_WEBHOOK_STOCK_URL ||
     process.env.DISCORD_STOCK_WEBHOOK_URL
   );
+}
+
+function requireWebhookUrl(): string {
+  const webhookUrl = getWebhookUrl();
+  if (!webhookUrl) {
+    throw new Error(
+      "DISCORD_WEBHOOK_STOCK_URL/DISCORD_STOCK_WEBHOOK_URL 환경변수가 설정되지 않았습니다.",
+    );
+  }
+  return webhookUrl;
+}
+
+function buildWebhookMessageUrl(
+  webhookUrl: string,
+  messageId: string,
+): string {
+  const url = new URL(webhookUrl);
+  url.pathname = `${url.pathname.replace(/\/+$/, "")}/messages/${encodeURIComponent(messageId)}`;
+  url.search = "";
+  return url.toString();
 }
 
 function getErrorMessage(error: unknown): string {
@@ -589,6 +611,49 @@ async function postDiscordPayload(
   }
 }
 
+export async function createScheduledStockMarketWireMessage(
+  payload: DiscordPayload,
+): Promise<string> {
+  const url = new URL(requireWebhookUrl());
+  url.searchParams.set("wait", "true");
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Discord 주식 공시 생성 실패 (${response.status}): ${errorText}`,
+    );
+  }
+  const message = (await response.json()) as { id?: unknown };
+  if (typeof message.id !== "string" || message.id.length === 0) {
+    throw new Error("Discord 주식 공시 생성 응답에 message id가 없습니다.");
+  }
+  return message.id;
+}
+
+export async function deleteScheduledStockMarketWireMessage(
+  messageId: string,
+): Promise<void> {
+  const response = await fetch(
+    buildWebhookMessageUrl(requireWebhookUrl(), messageId),
+    {
+      method: "DELETE",
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
+  if (response.status === 404 || response.ok) return;
+  const errorText = await response.text();
+  throw new Error(
+    `Discord 주식 공시 삭제 실패 (${response.status}): ${errorText}`,
+  );
+}
+
 async function sendDiscordPayload(payload: DiscordPayload): Promise<MarketWireResult> {
   const webhookUrl = getWebhookUrl();
   if (!webhookUrl) {
@@ -607,43 +672,124 @@ async function sendDiscordPayload(payload: DiscordPayload): Promise<MarketWireRe
   };
 }
 
-async function sendDiscordPayloads(
-  payloads: readonly DiscordPayload[],
+export async function syncScheduledStockMarketWireMessages(): Promise<StockMarketWireSyncResult> {
+  const { syncScheduledStockMarketWireMessages: sync } = await import(
+    "@/lib/notifications/stock-market-wire-discord"
+  );
+  return sync();
+}
+
+export async function recoverScheduledStockMarketWireForToday(): Promise<
+  "requested" | "current" | "no-history" | "skipped-no-webhook"
+> {
+  if (!getWebhookUrl()) return "skipped-no-webhook";
+
+  const date = kstDateTag();
+  const {
+    findScheduledStockMarketWireState,
+    requestScheduledStockMarketWireSync,
+  } = await import("@/lib/db/stock-market-wire");
+  const state = await findScheduledStockMarketWireState();
+
+  const { rebuildScheduledStockTickSummary } = await import(
+    "@/lib/stocks/scheduled-tick"
+  );
+  const summary = await rebuildScheduledStockTickSummary(date);
+  if (!summary) {
+    return state?.desiredDate === date ? "current" : "no-history";
+  }
+  if (
+    state?.desiredDate === date &&
+    state.desiredSourceRevision === summary.sourceRevision
+  ) {
+    return "current";
+  }
+  const payload = buildScheduledPayload(summary);
+  if (!payload) return "no-history";
+
+  await requestScheduledStockMarketWireSync({
+    date,
+    sourceRevision: summary.sourceRevision,
+    payloads: splitPayloadIntoSingleEmbedMessages(payload),
+  });
+  return "requested";
+}
+
+interface ScheduledStockMarketWireDependencies {
+  request(args: {
+    date: string;
+    sourceRevision?: string;
+    payloads: DiscordPayload[];
+  }): Promise<void>;
+  sync(): Promise<StockMarketWireSyncResult>;
+  rebuild?(summary: ScheduledStockTickSummary): Promise<ScheduledStockTickSummary>;
+}
+
+const scheduledStockMarketWireDependencies: ScheduledStockMarketWireDependencies = {
+  request: async (args) => {
+    const { requestScheduledStockMarketWireSync } = await import(
+      "@/lib/db/stock-market-wire"
+    );
+    await requestScheduledStockMarketWireSync(args);
+  },
+  sync: syncScheduledStockMarketWireMessages,
+  rebuild: async (summary) => {
+    const { rebuildScheduledStockTickSummary } = await import(
+      "@/lib/stocks/scheduled-tick"
+    );
+    return (await rebuildScheduledStockTickSummary(summary.date)) ?? summary;
+  },
+};
+
+export async function notifyScheduledStockMarketWire(
+  summary: ScheduledStockTickSummary,
+  dependencies: ScheduledStockMarketWireDependencies = scheduledStockMarketWireDependencies,
 ): Promise<MarketWireResult> {
-  const webhookUrl = getWebhookUrl();
-  if (!webhookUrl) {
+  if (summary.results.every((result) => result.status === "skipped")) {
+    return { status: "skipped-no-change" };
+  }
+  if (!getWebhookUrl()) {
     console.warn(
       "[stock-market-wire] DISCORD_WEBHOOK_STOCK_URL 미설정 — silent skip",
     );
     return { status: "skipped-no-webhook" };
   }
 
-  let messageCount = 0;
-  let embedCount = 0;
-  for (const payload of payloads) {
-    const result = await postDiscordPayload(webhookUrl, payload);
-    if (result.status !== "sent") {
-      return { ...result, embedCount, messageCount };
+  try {
+    const canonicalSummary = dependencies.rebuild
+      ? await dependencies.rebuild(summary)
+      : summary;
+    const payload = buildScheduledPayload(canonicalSummary);
+    if (!payload) return { status: "skipped-no-change" };
+    const payloads = splitPayloadIntoSingleEmbedMessages(payload);
+    await dependencies.request({
+      date: summary.date,
+      sourceRevision: canonicalSummary.sourceRevision,
+      payloads,
+    });
+    const result = await dependencies.sync();
+    if (result === "synced") {
+      return {
+        status: "sent",
+        embedCount: payload.embeds.length,
+        messageCount: payloads.length,
+      };
     }
-    messageCount += 1;
-    embedCount += payload.embeds.length;
+    if (result === "idle") {
+      return {
+        status: "queued",
+        embedCount: payload.embeds.length,
+        messageCount: payloads.length,
+      };
+    }
+    const error = `Discord 정기 공시 동기화 실패 (${result})`;
+    console.warn(`[stock-market-wire] ${error}`);
+    return { status: "failed", error };
+  } catch (error) {
+    const message = getErrorMessage(error);
+    console.warn("[stock-market-wire] 정기 공시 상태 요청 실패:", message);
+    return { status: "failed", error: message };
   }
-
-  return { status: "sent", embedCount, messageCount };
-}
-
-export async function notifyScheduledStockMarketWire(
-  summary: ScheduledStockTickSummary,
-): Promise<MarketWireResult> {
-  const payload = buildScheduledPayload(summary);
-  if (!payload) return { status: "skipped-no-change" };
-  const result = await sendDiscordPayloads(
-    splitPayloadIntoSingleEmbedMessages(payload),
-  );
-  if (result.status === "failed") {
-    console.warn("[stock-market-wire] 정기 공시 전송 실패:", result.error);
-  }
-  return result;
 }
 
 export async function notifyStockManualIntervention(

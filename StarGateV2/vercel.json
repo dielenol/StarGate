@@ -5,6 +5,10 @@
       "schedule": "0 3 * * *"
     },
     {
+      "path": "/api/cron/stocks/discord-wire",
+      "schedule": "2-57/5 * * * *"
+    },
+    {
       "path": "/api/cron/shop/refresh",
       "schedule": "0 2 * * *"
     },

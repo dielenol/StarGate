@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { registerHooks } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -19,7 +19,9 @@ function resolveLocalModule(specifier, parentURL) {
 
   for (const extension of extensionCandidates) {
     const candidate = `${basePath}${extension}`;
-    if (existsSync(candidate)) return pathToFileURL(candidate).href;
+    if (existsSync(candidate) && statSync(candidate).isFile()) {
+      return pathToFileURL(candidate).href;
+    }
   }
 
   return null;
@@ -69,21 +71,14 @@ function makeResult(overrides) {
   };
 }
 
-test("scheduled stock market wire posts four visible one-embed messages", async (t) => {
-  const originalFetch = globalThis.fetch;
+test("scheduled stock market wire requests one durable four-message batch", async (t) => {
   const envSnapshot = snapshotEnv();
-  const calls = [];
+  const requests = [];
 
   process.env.DISCORD_WEBHOOK_STOCK_URL = "https://discord.test/stock";
   delete process.env.DISCORD_STOCK_WEBHOOK_URL;
 
-  globalThis.fetch = async (url, init) => {
-    calls.push({ url, body: JSON.parse(init.body) });
-    return new Response(null, { status: 204 });
-  };
-
   t.after(() => {
-    globalThis.fetch = originalFetch;
     restoreEnv(envSnapshot);
   });
 
@@ -96,18 +91,25 @@ test("scheduled stock market wire posts four visible one-embed messages", async 
       makeResult({ ticker: "SSR", previousPrice: 30, price: 31, changePercent: 3.33 }),
       makeResult({ ticker: "MSF", previousPrice: 80, price: 78, changePercent: -2.5 }),
     ],
+  }, {
+    request: async (request) => requests.push(request),
+    sync: async () => "synced",
   });
 
   assert.deepEqual(result, { status: "sent", embedCount: 4, messageCount: 4 });
-  assert.equal(calls.length, 4);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].date, "2026-07-09");
   assert.deepEqual(
-    calls.map((call) => call.body.embeds.length),
+    requests[0].payloads.map((payload) => payload.embeds.length),
     [1, 1, 1, 1],
   );
-  assert.match(calls[0].body.content, /ORDO-NET 주식 거래소 바로가기/);
-  assert.equal(Object.hasOwn(calls[1].body, "content"), false);
+  assert.match(
+    requests[0].payloads[0].content,
+    /ORDO-NET 주식 거래소 바로가기/,
+  );
+  assert.equal(requests[0].payloads[1].content, undefined);
   assert.deepEqual(
-    calls.map((call) => call.body.embeds[0].title),
+    requests[0].payloads.map((payload) => payload.embeds[0].title),
     [
       "재무기구 정기 시세 공시 · 2026-07-09",
       "상승 마감 장부",
@@ -115,4 +117,48 @@ test("scheduled stock market wire posts four visible one-embed messages", async 
       "보합 및 감시실 특이사항",
     ],
   );
+});
+
+test("scheduled stock market wire leaves a concurrent request queued", async (t) => {
+  const envSnapshot = snapshotEnv();
+  process.env.DISCORD_WEBHOOK_STOCK_URL = "https://discord.test/stock";
+  t.after(() => restoreEnv(envSnapshot));
+
+  const result = await notifyScheduledStockMarketWire(
+    {
+      date: "2026-07-09",
+      slot: "2026-07-09 12:00",
+      results: [makeResult({})],
+    },
+    {
+      request: async () => {},
+      sync: async () => "idle",
+    },
+  );
+
+  assert.deepEqual(result, {
+    status: "queued",
+    embedCount: 4,
+    messageCount: 4,
+  });
+});
+
+test("a fully skipped tick does not create a Discord revision", async () => {
+  let requested = false;
+  const result = await notifyScheduledStockMarketWire(
+    {
+      date: "2026-07-09",
+      slot: "2026-07-09 12:00",
+      results: [makeResult({ status: "skipped" })],
+    },
+    {
+      request: async () => {
+        requested = true;
+      },
+      sync: async () => "synced",
+    },
+  );
+
+  assert.deepEqual(result, { status: "skipped-no-change" });
+  assert.equal(requested, false);
 });

@@ -55,6 +55,7 @@ export interface StockPriceHistory {
   price: number;
   prevPrice: number;
   eventText?: string;
+  eventTier?: "routine" | "scenario" | "shock";
   source: "scheduled" | "trade" | "gm-event";
   createdAt: Date;
 }

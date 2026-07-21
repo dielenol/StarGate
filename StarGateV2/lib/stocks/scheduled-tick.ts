@@ -2,8 +2,10 @@ import {
   ensureStockPrice,
   getStockPrices,
   listScheduledStockPriceHistoryBulk,
+  listScheduledStockPriceHistoryRange,
   recordStockPriceHistory,
   updateStockPrice,
+  type StockPriceHistory,
 } from "@/lib/db/stocks";
 import { STOCK_CATALOG } from "@/lib/stocks/catalog";
 import {
@@ -34,6 +36,7 @@ export interface ScheduledStockTickResult {
 export interface ScheduledStockTickSummary {
   date: string;
   slot: string;
+  sourceRevision?: string;
   results: ScheduledStockTickResult[];
 }
 
@@ -67,6 +70,11 @@ function currentKstSlotTag(): string {
 
 function slotTagForDate(date: Date): string {
   return `${kstDateTag(date)} 12:00`;
+}
+
+function kstDateBounds(dateTag: string): { start: Date; end: Date } {
+  const start = new Date(`${dateTag}T00:00:00+09:00`);
+  return { start, end: new Date(start.getTime() + 24 * 60 * 60 * 1000) };
 }
 
 function calculateRoutinePercent(
@@ -154,6 +162,7 @@ export async function applyScheduledStockTick(
         price: initialized.price,
         prevPrice: initialized.prevPrice,
         eventText: initialized.eventText,
+        eventTier: "routine",
         source: "scheduled",
       });
       results.push({
@@ -196,6 +205,7 @@ export async function applyScheduledStockTick(
       price: updated.price,
       prevPrice: current.price,
       eventText,
+      eventTier: rolledEvent.tier,
       source: "scheduled",
     });
     results.push({
@@ -210,4 +220,67 @@ export async function applyScheduledStockTick(
   }
 
   return { date: today, slot, results };
+}
+
+/**
+ * 오늘 가격은 이미 반영됐지만 Discord desired-state 저장만 실패한 경우를 복구한다.
+ * force 실행으로 같은 ticker의 scheduled 행이 여러 개면 가장 최근 행을 사용한다.
+ */
+export async function rebuildScheduledStockTickSummary(
+  date = kstDateTag(),
+): Promise<ScheduledStockTickSummary | null> {
+  const { start, end } = kstDateBounds(date);
+  const rows = await listScheduledStockPriceHistoryRange(start, end);
+  return buildScheduledStockTickSummaryFromHistory(date, rows);
+}
+
+export function buildScheduledStockTickSummaryFromHistory(
+  date: string,
+  rows: readonly StockPriceHistory[],
+  options: { requireComplete?: boolean } = {},
+): ScheduledStockTickSummary | null {
+  if (rows.length === 0) return null;
+
+  const latestByTicker = new Map(rows.map((row) => [row.ticker, row]));
+  const results: ScheduledStockTickResult[] = [];
+  for (const meta of STOCK_CATALOG) {
+    const row = latestByTicker.get(meta.ticker);
+    if (!row) continue;
+    const percent = changePercent(row.prevPrice, row.price);
+    const fallbackTier: StockEventTier =
+      row.eventText?.startsWith("정기 변동") ||
+      row.eventText === "정기 시세 초기화"
+        ? "routine"
+        : "scenario";
+    results.push({
+      ticker: row.ticker,
+      previousPrice: row.prevPrice,
+      price: row.price,
+      changePercent: percent,
+      eventText: row.eventText ?? "정기 변동",
+      eventTier: row.eventTier ?? fallbackTier,
+      status:
+        row.eventText === "정기 시세 초기화" ? "initialized" : "updated",
+    });
+  }
+
+  if (results.length === 0) return null;
+  if (
+    options.requireComplete !== false &&
+    results.length !== STOCK_CATALOG.length
+  ) {
+    return null;
+  }
+  const sourceRevision = results
+    .map((result) => {
+      const row = latestByTicker.get(result.ticker)!;
+      return [
+        result.ticker,
+        row._id ? String(row._id) : "no-id",
+        row.createdAt.toISOString(),
+        row.price,
+      ].join(":");
+    })
+    .join("|");
+  return { date, slot: `${date} 12:00`, sourceRevision, results };
 }
