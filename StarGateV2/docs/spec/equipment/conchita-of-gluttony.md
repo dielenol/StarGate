@@ -6,6 +6,7 @@ category: WEAPON
 price: 100
 damage: "근거리 5 물리 / 중거리 5 물리"
 description: 붉은 기가 돌며 시유의 손에 맞게 제작된 소재 불명의 경량 고유 단검.
+previewImage: /assets/catalog/equipment/conchita-of-gluttony.webp
 isAvailable: false
 isPublic: true
 tags: [병기부, 고유장비, 근접무기, 냉병기, 단검, TIGER298, 시유]

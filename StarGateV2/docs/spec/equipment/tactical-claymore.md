@@ -6,6 +6,7 @@ category: WEAPON
 price: 200
 damage: "10 물리"
 description: 키아나가 갈로글라 전사의 전통에 따라 운용하는 현대전 맞춤형 전술 클레이모어.
+previewImage: /assets/catalog/equipment/tactical-claymore.webp
 isAvailable: false
 isPublic: true
 tags: [병기부, 고유장비, 근접무기, 냉병기, 장검류, 클레이모어, 네베드, 키아나오캘러핸]

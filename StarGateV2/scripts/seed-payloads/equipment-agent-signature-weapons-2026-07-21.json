@@ -10,6 +10,7 @@
       "price": 100,
       "damage": "근거리 5 물리 / 중거리 5 물리",
       "description": "붉은 기가 돌며 시유의 손에 맞게 제작된 소재 불명의 경량 고유 단검.",
+      "previewImage": "/assets/catalog/equipment/conchita-of-gluttony.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": [
@@ -44,6 +45,7 @@
       "price": 200,
       "damage": "근거리 5 물리 / 중거리 10 물리 / 장거리 7 물리",
       "description": "키아나와 노부스 오르도 병기부가 공동 제작한 7.62×39mm Mk.47 Mutant 개조 돌격소총.",
+      "previewImage": "/assets/catalog/equipment/cmmg-mk47-mutant-nosb-mod.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": [
@@ -77,6 +79,7 @@
       "price": 200,
       "damage": "10 물리",
       "description": "키아나가 갈로글라 전사의 전통에 따라 운용하는 현대전 맞춤형 전술 클레이모어.",
+      "previewImage": "/assets/catalog/equipment/tactical-claymore.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": [

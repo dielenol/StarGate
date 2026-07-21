@@ -7,6 +7,7 @@ category: WEAPON
 price: 200
 damage: "근거리 5 물리 / 중거리 10 물리 / 장거리 7 물리"
 description: 키아나와 노부스 오르도 병기부가 공동 제작한 7.62×39mm Mk.47 Mutant 개조 돌격소총.
+previewImage: /assets/catalog/equipment/cmmg-mk47-mutant-nosb-mod.webp
 isAvailable: false
 isPublic: true
 tags: [병기부, 고유장비, 원거리무기, 화기, 돌격소총, 네베드, 키아나오캘러핸]
