@@ -7,7 +7,7 @@
   "update": {
     "$setOnInsert": {
     "slug": "basic-assault-shield-claymore-u1",
-    "displayName": "보급형 공격 방패 · 크레모아 개조형",
+    "displayName": "공격 방패 - 크레모아 개조형",
     "version": 1,
     "status": "DRAFT",
     "applicability": {
@@ -19,8 +19,18 @@
     "defaults": {
       "creditCost": 400,
       "durationMinutes": 4320,
-      "specialistCodename": "TOWASKI",
-      "specialistNote": "에이다 슈라이버 (VERNIER) 접수·통합 / 립 토와스키 (TOWASKI) 폭발물 검수",
+      "specialistCodename": "TEMPER",
+      "specialistWorkflow": [
+        {
+          "specialistCodename": "TEMPER",
+          "task": "아케론 대장간에서 방패 본체 보강과 크레모아 장착부를 선행 제작한다."
+        },
+        {
+          "specialistCodename": "TOWASKI",
+          "task": "전용 크레모아 장약과 기폭 계통을 통합하고 폭발물 최종 검수로 마감한다."
+        }
+      ],
+      "specialistNote": "브리짓 케인 (TEMPER) 아케론 대장간 선행 제작 / 립 토와스키 (TOWASKI) 폭발물 최종 마감",
       "modificationDomain": "ENERGY_EXPLOSIVE_OUTPUT",
       "materials": [
         {
@@ -29,10 +39,10 @@
         }
       ],
       "result": {
-        "name": "보급형 공격 방패 · 크레모아 개조형",
-        "description": "보급형 공격 방패 전면에 전용 크레모아 장약과 기폭 계통을 통합한 이동식 전용 개조형이다. 기본 공격은 기존 10 물리를 유지한다.",
-        "damage": "10 물리",
-        "tags": ["공방개조", "전용장비", "방패", "폭발물", "크레모아", "U1"],
+        "name": "공격 방패 - 크레모아 개조형",
+        "description": "아케론 대장간에서 방패 본체와 장약 마운트를 보강한 뒤 토와스키가 전용 크레모아 장약과 기폭 계통을 통합한 이동식 전용 개조형이다. 기본 공격은 12 물리로 상향한다.",
+        "damage": "12 물리",
+        "tags": ["공방개조", "전용장비", "방패", "폭발물", "크레모아", "아케론대장간", "TEMPER", "TOWASKI", "U1"],
         "equipmentAction": {
           "code": "U1",
           "name": "크레모아 반응장갑",

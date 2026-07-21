@@ -5169,7 +5169,22 @@ export default function EquipmentShopClient({
                   ) : null}
                   {request.quote ? (() => {
                     const quote = request.quote;
-                    const specialist = WORKSHOP_SPECIALISTS[quote.specialistCodename];
+                    const specialistWorkflow = quote.specialistWorkflow ?? [
+                      {
+                        specialistCodename: quote.specialistCodename,
+                        task: "주 담당",
+                      },
+                    ];
+                    const activeStep =
+                      request.computedStatus === "READY" ||
+                      request.computedStatus === "COMPLETED"
+                        ? specialistWorkflow.at(-1)
+                        : specialistWorkflow[0];
+                    const activeSpecialistCodename =
+                      activeStep?.specialistCodename ??
+                      quote.specialistCodename;
+                    const specialist =
+                      WORKSHOP_SPECIALISTS[activeSpecialistCodename];
                     const availableByItemId = new Map<string, number>();
                     for (const entry of characterInventoryQuery.data?.entries ?? []) {
                       if (entry.equippedSlot) continue;
@@ -5187,11 +5202,22 @@ export default function EquipmentShopClient({
                       <section className={styles.workshopQuote}>
                         <div className={styles.workshopNpcReply}>
                           <span className={styles.workshopNpcReply__portrait}>
-                            <Image src={workshopPortrait(quote.specialistCodename, request.computedStatus)} alt="" fill sizes="64px" />
+                            <Image src={workshopPortrait(activeSpecialistCodename, request.computedStatus)} alt="" fill sizes="64px" />
                           </span>
                           <div>
                             <strong>{specialist.label}</strong>
-                            <p>{workshopDialogue(quote.specialistCodename, request.computedStatus)}</p>
+                            <p>{workshopDialogue(activeSpecialistCodename, request.computedStatus)}</p>
+                            <ol className={styles.workshopSpecialistWorkflow}>
+                              {specialistWorkflow.map((step, index) => (
+                                <li key={`${index}:${step.specialistCodename}`}>
+                                  <span>{index + 1}단계</span>
+                                  <strong>
+                                    {WORKSHOP_SPECIALISTS[step.specialistCodename].label}
+                                  </strong>
+                                  <small>{step.task}</small>
+                                </li>
+                              ))}
+                            </ol>
                             {quote.specialistNote ? <small>{quote.specialistNote}</small> : null}
                           </div>
                         </div>

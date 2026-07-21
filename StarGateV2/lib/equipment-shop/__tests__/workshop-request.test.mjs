@@ -5,6 +5,8 @@ import test from "node:test";
 
 import {
   canTransitionEquipmentWorkshopRequestStatus,
+  buildEquipmentWorkshopResultTags,
+  getEquipmentWorkshopUserTags,
   getEquipmentWorkshopComputedStatus,
   getEquipmentWorkshopRequestLabel,
   isSameEquipmentWorkshopRequestPayload,
@@ -163,14 +165,24 @@ test("quote validation accepts specialist override and a charge-backed U action"
     expectedVersion: 0,
     creditCost: 400,
     durationMinutes: 4_320,
-    specialistCodename: "TOWASKI",
-    specialistNote: "VERNIER 접수·통합 / TOWASKI 폭발물 검수",
+    specialistCodename: "TEMPER",
+    specialistWorkflow: [
+      {
+        specialistCodename: "TEMPER",
+        task: "아케론 대장간에서 방패 본체와 장약 마운트를 선행 제작한다.",
+      },
+      {
+        specialistCodename: "TOWASKI",
+        task: "크레모아 장약과 기폭 계통을 통합하고 최종 검수한다.",
+      },
+    ],
+    specialistNote: "아케론 대장간 선행 제작 / TOWASKI 최종 마감",
     modificationDomain: "ENERGY_EXPLOSIVE_OUTPUT",
     materials: [{ itemId: "6a00b417585bb4a1ce48b64f", quantity: 1 }],
     result: {
-      name: "보급형 공격 방패 · 크레모아 개조형",
+      name: "공격 방패 - 크레모아 개조형",
       description: "기존 공격 방패에 크레모아 반응장갑을 통합한 전용 개조형입니다.",
-      damage: "10 물리",
+      damage: "12 물리",
       equipmentAction: {
         code: "U1",
         name: "크레모아 반응장갑",
@@ -185,10 +197,115 @@ test("quote validation accepts specialist override and a charge-backed U action"
     },
   });
   assert.equal(parsed.ok, true);
-  assert.equal(parsed.input.specialistCodename, "TOWASKI");
+  assert.equal(parsed.input.specialistCodename, "TEMPER");
+  assert.deepEqual(
+    parsed.input.specialistWorkflow.map((step) => step.specialistCodename),
+    ["TEMPER", "TOWASKI"],
+  );
   assert.equal(parsed.input.modificationDomain, "ENERGY_EXPLOSIVE_OUTPUT");
+  assert.equal(parsed.input.result.damage, "12 물리");
   assert.equal(parsed.input.result.equipmentAction.code, "U1");
   assert.equal(parsed.input.result.equipmentAction.reloadCreditCost, 200);
+});
+
+test("quote validation rejects a mismatched primary specialist or duplicated workflow", () => {
+  const base = {
+    expectedVersion: 0,
+    creditCost: 400,
+    durationMinutes: 4_320,
+    specialistCodename: "TEMPER",
+    modificationDomain: "ENERGY_EXPLOSIVE_OUTPUT",
+    materials: [{ slug: "force_core", quantity: 1 }],
+    result: {
+      category: "WEAPON",
+      name: "공격 방패 - 크레모아 개조형",
+      description: "복합 담당 공정 검증용 결과 장비입니다.",
+    },
+  };
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      ...base,
+      specialistWorkflow: [
+        { specialistCodename: "TOWASKI", task: "최종 마감" },
+      ],
+    }).ok,
+    false,
+  );
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      ...base,
+      specialistWorkflow: [
+        { specialistCodename: "TEMPER", task: "선행 제작" },
+        { specialistCodename: "TEMPER", task: "중복 검수" },
+      ],
+    }).ok,
+    false,
+  );
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      ...base,
+      specialistWorkflow: [
+        { specialistCodename: "TEMPER", task: "" },
+      ],
+    }).ok,
+    false,
+  );
+});
+
+test("requoting replaces system specialist tags while preserving operator tags", () => {
+  const tags = buildEquipmentWorkshopResultTags({
+    tags: [
+      "전용장비",
+      "공방개조",
+      "TEMPER",
+      "TOWASKI",
+      "LEE DONGSIK",
+    ],
+    kind: "upgrade",
+    specialistWorkflow: [
+      { specialistCodename: "TEMPER", task: "방패 본체 보강" },
+    ],
+    characterCodename: "LEE DONGSIK",
+  });
+  assert.deepEqual(tags, [
+    "전용장비",
+    "공방개조",
+    "TEMPER",
+    "LEE DONGSIK",
+  ]);
+  assert.equal(tags.includes("TOWASKI"), false);
+});
+
+test("twenty operator tags remain valid after a multi-specialist quote round trip", () => {
+  const operatorTags = Array.from({ length: 20 }, (_, index) => `태그-${index + 1}`);
+  const workflow = [
+    { specialistCodename: "TEMPER", task: "방패 본체 보강" },
+    { specialistCodename: "TOWASKI", task: "폭발물 최종 마감" },
+  ];
+  const storedTags = buildEquipmentWorkshopResultTags({
+    tags: operatorTags,
+    kind: "upgrade",
+    specialistWorkflow: workflow,
+    characterCodename: "LEE DONGSIK",
+  });
+  assert.equal(storedTags.length, 24);
+  const reparsed = parseEquipmentWorkshopQuote({
+    expectedVersion: 1,
+    creditCost: 400,
+    durationMinutes: 4_320,
+    specialistCodename: "TEMPER",
+    specialistWorkflow: workflow,
+    modificationDomain: "ENERGY_EXPLOSIVE_OUTPUT",
+    materials: [{ slug: "force_core", quantity: 1 }],
+    result: {
+      category: "WEAPON",
+      name: "공격 방패 - 크레모아 개조형",
+      description: "복합 담당 공정 재견적 태그 경계 검증용 장비입니다.",
+      tags: getEquipmentWorkshopUserTags(storedTags, "LEE DONGSIK"),
+    },
+  });
+  assert.equal(reparsed.ok, true);
+  assert.deepEqual(reparsed.input.result.tags, operatorTags);
 });
 
 test("quote validation accepts stable material slugs and explicit custom result category", () => {
@@ -230,6 +347,14 @@ test("workshop blueprint parser keeps reusable defaults separate from quote snap
   );
   assert.equal(seed.update.$setOnInsert.defaults.result.previewImage, undefined);
   assert.deepEqual(seed.update.$setOnInsert.defaults.materials, [{ slug: "force_core", quantity: 1 }]);
+  assert.equal(seed.update.$setOnInsert.displayName, "공격 방패 - 크레모아 개조형");
+  assert.equal(seed.update.$setOnInsert.defaults.result.damage, "12 물리");
+  assert.deepEqual(
+    seed.update.$setOnInsert.defaults.specialistWorkflow.map(
+      (step) => step.specialistCodename,
+    ),
+    ["TEMPER", "TOWASKI"],
+  );
 });
 
 test("specialist routing is deterministic and READY is derived from server time", () => {
@@ -334,6 +459,7 @@ test("accept, claim and cancel keep every economy mutation inside the supplied t
   assert.match(operations, /ownerId: request\.userId/);
   assert.match(operations, /lifecycle: "operational"/);
   assert.match(operations, /balanceStatus: "approved"/);
+  assert.match(operations, /specialistWorkflow: request\.quote\.specialistWorkflow/);
   assert.match(operations, /const resultSlot = request\.quote\.result\.category/);
   assert.match(operations, /equipCharacterInventoryItem\([\s\S]*request\.quote\.result\.itemId,[\s\S]*resultSlot/);
   assert.match(operations, /equipmentAction: request\.quote\.result\.equipmentAction/);
@@ -428,6 +554,10 @@ test("quotes snapshot procurement cost and Nochichim exposes equipped actions se
   assert.match(adminRoute, /포스코어는 에너지장·폭발·출력 계통 개조에만/);
   assert.match(adminRoute, /VF혈액팩은 생체 접속·재생·자기수복 계통 개조에만/);
   assert.match(adminRoute, /materialCost/);
+  assert.match(adminRoute, /specialistWorkflow/);
+  assert.match(playerClient, /workshopSpecialistWorkflow/);
+  assert.match(playerClient, /specialistWorkflow\.at\(-1\)/);
+  assert.match(playerClient, /activeSpecialistCodename/);
   assert.match(adminRoute, /totalCost/);
   assert.match(adminRoute, /slug: item\.slug/);
   assert.match(playerClient, /총 경제 부담/);
@@ -447,4 +577,7 @@ test("GM material picker supports name and category search", () => {
   assert.match(adminClient, /item\.slug\.toLowerCase\(\)\.includes\(normalized\)/);
   assert.match(adminClient, /item\.category\.toLowerCase\(\)\.includes\(normalized\)/);
   assert.match(adminClient, /현재 공개 마스터 품목에서 선택해 주세요/);
+  assert.match(adminClient, /task: ""/);
+  assert.match(adminClient, /specialistWorkflowError/);
+  assert.match(adminClient, /getEquipmentWorkshopUserTags/);
 });

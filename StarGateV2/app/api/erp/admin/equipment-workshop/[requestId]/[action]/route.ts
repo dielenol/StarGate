@@ -15,6 +15,7 @@ import {
   updateEquipmentWorkshopQuote,
 } from "@/lib/db/equipment-workshop-requests";
 import {
+  buildEquipmentWorkshopResultTags,
   parseEquipmentWorkshopQuote,
   resolveEquipmentWorkshopSpecialist,
 } from "@/lib/equipment-shop/workshop-request";
@@ -230,11 +231,15 @@ export async function PUT(request: Request, context: RouteContext) {
     );
   }
 
-  const specialistCodename = validation.input.specialistCodename
+  const specialistCodename = validation.input.specialistWorkflow?.[0]?.specialistCodename
+    ?? validation.input.specialistCodename
     ?? resolveEquipmentWorkshopSpecialist({
       category: source?.category ?? resultCategory,
       tags: source?.tags,
     });
+  const specialistWorkflow = validation.input.specialistWorkflow ?? [
+    { specialistCodename, task: "주 담당" },
+  ];
   const materialCost = materials.reduce(
     (total, item) => total + (item?.subtotal ?? 0),
     0,
@@ -250,6 +255,7 @@ export async function PUT(request: Request, context: RouteContext) {
     creditCost: validation.input.creditCost,
     durationMinutes: validation.input.durationMinutes,
     specialistCodename,
+    specialistWorkflow,
     ...(validation.input.specialistNote
       ? { specialistNote: validation.input.specialistNote }
       : {}),
@@ -268,14 +274,12 @@ export async function PUT(request: Request, context: RouteContext) {
       category: resultCategory,
       ...(validation.input.result.damage ? { damage: validation.input.result.damage } : {}),
       ...(validation.input.result.effect ? { effect: validation.input.result.effect } : {}),
-      tags: [
-        ...new Set([
-          ...(validation.input.result.tags ?? []),
-          current.kind === "upgrade" ? "공방개조" : "공방제작",
-          specialistCodename,
-          current.characterCodename,
-        ]),
-      ],
+      tags: buildEquipmentWorkshopResultTags({
+        tags: validation.input.result.tags ?? [],
+        kind: current.kind,
+        specialistWorkflow,
+        characterCodename: current.characterCodename,
+      }),
       ...(validation.input.result.previewImage ? { previewImage: validation.input.result.previewImage } : {}),
       ...(validation.input.result.equipmentAction
         ? { equipmentAction: validation.input.result.equipmentAction }
@@ -314,7 +318,7 @@ export async function PUT(request: Request, context: RouteContext) {
     target: `${updated.characterCodename} · ${updated.equipmentName ?? quote.result.name}`,
     timestamp: now,
   });
-  after(() => notifyUser({ userId: updated.userId, type: "SYSTEM", title: `공방 ${current.kind === "upgrade" ? "강화" : "제작"} 견적이 도착했습니다`, message: `${updated.characterCodename} · ${quote.result.name} · 총부담 ${quote.totalCost.toLocaleString()} CR · ${specialistCodename}`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] quote notification failed", error)));
+  after(() => notifyUser({ userId: updated.userId, type: "SYSTEM", title: `공방 ${current.kind === "upgrade" ? "강화" : "제작"} 견적이 도착했습니다`, message: `${updated.characterCodename} · ${quote.result.name} · 총부담 ${quote.totalCost.toLocaleString()} CR · ${specialistWorkflow.map((step) => step.specialistCodename).join(" → ")}`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] quote notification failed", error)));
   return NextResponse.json({ request: serializeAdminEquipmentWorkshopRequest(updated) });
 }
 

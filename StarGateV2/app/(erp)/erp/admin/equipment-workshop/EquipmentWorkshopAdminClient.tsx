@@ -32,11 +32,13 @@ import type {
   SerializedEquipmentWorkshopBlueprint,
 } from "@/lib/equipment-shop/workshop-blueprint";
 import {
+  getEquipmentWorkshopUserTags,
   WORKSHOP_COST_POLICY,
   type AdminSerializedEquipmentWorkshopRequest,
   type EquipmentWorkshopModificationDomain,
   type EquipmentWorkshopRequestStatus,
   type EquipmentWorkshopSpecialist,
+  type EquipmentWorkshopSpecialistStep,
 } from "@/lib/equipment-shop/workshop-request";
 
 import styles from "./page.module.css";
@@ -61,7 +63,7 @@ interface QuoteDraft {
   expectedVersion: number;
   creditCost: string;
   durationMinutes: string;
-  specialistCodename: EquipmentWorkshopSpecialist;
+  specialistWorkflow: EquipmentWorkshopSpecialistStep[];
   specialistNote: string;
   modificationDomain: EquipmentWorkshopModificationDomain;
   materials: Array<{ slug: string; quantity: string }>;
@@ -149,7 +151,14 @@ function createDraft(
     expectedVersion: request.quote?.version ?? 0,
     creditCost: String(request.quote?.creditCost ?? 0),
     durationMinutes: String(request.quote?.durationMinutes ?? 60),
-    specialistCodename: request.quote?.specialistCodename ?? "VERNIER",
+    specialistWorkflow: request.quote?.specialistWorkflow?.map((step) => ({
+      ...step,
+    })) ?? [
+      {
+        specialistCodename: request.quote?.specialistCodename ?? "VERNIER",
+        task: "주 담당",
+      },
+    ],
     specialistNote: request.quote?.specialistNote ?? "",
     modificationDomain: request.quote?.modificationDomain ?? "GENERAL",
     materials:
@@ -167,7 +176,12 @@ function createDraft(
       request.quote?.result.category ?? request.sourceSlot ?? "WEAPON",
     resultDamage: request.quote?.result.damage ?? request.sourceDamage ?? "",
     resultEffect: request.quote?.result.effect ?? "",
-    resultTags: request.quote?.result.tags.join(", ") ?? "",
+    resultTags: request.quote
+      ? getEquipmentWorkshopUserTags(
+          request.quote.result.tags,
+          request.characterCodename,
+        ).join(", ")
+      : "",
     // 정확한 결과 자산만 사용한다. 원본 장비 이미지는 상속하지 않는다.
     resultPreviewImage: request.quote?.result.previewImage ?? "",
     actionCode: request.quote?.result.equipmentAction?.code ?? "",
@@ -194,7 +208,14 @@ function draftFromBlueprint(
     ...current,
     creditCost: String(defaults.creditCost),
     durationMinutes: String(defaults.durationMinutes),
-    specialistCodename: defaults.specialistCodename,
+    specialistWorkflow: defaults.specialistWorkflow?.map((step) => ({
+      ...step,
+    })) ?? [
+      {
+        specialistCodename: defaults.specialistCodename,
+        task: "주 담당",
+      },
+    ],
     specialistNote: defaults.specialistNote ?? "",
     modificationDomain: defaults.modificationDomain,
     materials: defaults.materials.map((material) => ({
@@ -225,6 +246,24 @@ function errorMessage(error: unknown): string {
   return error instanceof EquipmentShopApiError || error instanceof Error
     ? error.message
     : "공방 요청 처리에 실패했습니다.";
+}
+
+function specialistWorkflowError(
+  workflow: readonly EquipmentWorkshopSpecialistStep[],
+): string | null {
+  if (workflow.length < 1 || workflow.length > 5) {
+    return "담당 공정은 1~5단계로 구성해 주세요.";
+  }
+  if (workflow.some((step) => !step.task.trim())) {
+    return "모든 담당 단계의 업무를 입력해 주세요.";
+  }
+  if (
+    new Set(workflow.map((step) => step.specialistCodename)).size !==
+    workflow.length
+  ) {
+    return "같은 담당자를 여러 단계에 중복 배정할 수 없습니다.";
+  }
+  return null;
 }
 
 function SearchableMaterialSelect({
@@ -579,6 +618,64 @@ export default function EquipmentWorkshopAdminClient({
     );
   };
 
+  const updateSpecialistStep = (
+    index: number,
+    patch: Partial<EquipmentWorkshopSpecialistStep>,
+  ) => {
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            specialistWorkflow: current.specialistWorkflow.map(
+              (step, stepIndex) =>
+                stepIndex === index ? { ...step, ...patch } : step,
+            ),
+          }
+        : current,
+    );
+  };
+
+  const moveSpecialistStep = (index: number, direction: -1 | 1) => {
+    setDraft((current) => {
+      if (!current) return current;
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= current.specialistWorkflow.length) {
+        return current;
+      }
+      const specialistWorkflow = [...current.specialistWorkflow];
+      [specialistWorkflow[index], specialistWorkflow[nextIndex]] = [
+        specialistWorkflow[nextIndex],
+        specialistWorkflow[index],
+      ];
+      return { ...current, specialistWorkflow };
+    });
+  };
+
+  const addSpecialistStep = () => {
+    setDraft((current) => {
+      if (!current) return current;
+      const nextSpecialist = (
+        Object.keys(SPECIALIST_LABELS) as EquipmentWorkshopSpecialist[]
+      ).find(
+        (specialistCodename) =>
+          !current.specialistWorkflow.some(
+            (step) => step.specialistCodename === specialistCodename,
+          ),
+      );
+      if (!nextSpecialist) return current;
+      return {
+        ...current,
+        specialistWorkflow: [
+          ...current.specialistWorkflow,
+          {
+            specialistCodename: nextSpecialist,
+            task: "",
+          },
+        ],
+      };
+    });
+  };
+
   const buildBlueprintInput = (): EquipmentWorkshopBlueprintInput => ({
     slug: blueprintSlug.trim(),
     displayName: blueprintDisplayName.trim(),
@@ -597,7 +694,9 @@ export default function EquipmentWorkshopAdminClient({
     defaults: {
       creditCost: Number(draft.creditCost),
       durationMinutes: Number(draft.durationMinutes),
-      specialistCodename: draft.specialistCodename,
+      specialistCodename:
+        draft.specialistWorkflow[0]?.specialistCodename ?? "VERNIER",
+      specialistWorkflow: draft.specialistWorkflow,
       ...(draft.specialistNote.trim()
         ? { specialistNote: draft.specialistNote.trim() }
         : {}),
@@ -642,6 +741,11 @@ export default function EquipmentWorkshopAdminClient({
   });
 
   const saveNewBlueprint = () => {
+    const workflowError = specialistWorkflowError(draft.specialistWorkflow);
+    if (workflowError) {
+      setFeedback({ tone: "error", text: workflowError });
+      return;
+    }
     createBlueprintMutation.mutate(buildBlueprintInput(), {
       onSuccess: ({ blueprint }) => {
         setSelectedBlueprintId(blueprint._id);
@@ -659,6 +763,11 @@ export default function EquipmentWorkshopAdminClient({
 
   const updateSelectedBlueprint = () => {
     if (!selectedBlueprint) return;
+    const workflowError = specialistWorkflowError(draft.specialistWorkflow);
+    if (workflowError) {
+      setFeedback({ tone: "error", text: workflowError });
+      return;
+    }
     updateBlueprintMutation.mutate(
       {
         id: selectedBlueprint._id,
@@ -701,6 +810,11 @@ export default function EquipmentWorkshopAdminClient({
 
   const submitQuote = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const workflowError = specialistWorkflowError(draft.specialistWorkflow);
+    if (workflowError) {
+      setFeedback({ tone: "error", text: workflowError });
+      return;
+    }
     if (missingMaterials.length > 0) {
       setFeedback({
         tone: "error",
@@ -724,7 +838,9 @@ export default function EquipmentWorkshopAdminClient({
             : {}),
           creditCost: Number(draft.creditCost),
           durationMinutes: Number(draft.durationMinutes),
-          specialistCodename: draft.specialistCodename,
+          specialistCodename:
+            draft.specialistWorkflow[0]?.specialistCodename ?? "VERNIER",
+          specialistWorkflow: draft.specialistWorkflow,
           ...(draft.specialistNote.trim()
             ? { specialistNote: draft.specialistNote.trim() }
             : {}),
@@ -1069,23 +1185,21 @@ export default function EquipmentWorkshopAdminClient({
                     />
                   </label>
                   <label>
-                    <span>주 담당자</span>
+                    <span>개조 계통</span>
                     <select
-                      value={draft.specialistCodename}
+                      value={draft.modificationDomain}
                       onChange={(event) =>
                         setDraft({
                           ...draft,
-                          specialistCodename: event.target.value as EquipmentWorkshopSpecialist,
+                          modificationDomain: event.target.value as EquipmentWorkshopModificationDomain,
                         })
                       }
                     >
-                      {Object.entries(SPECIALIST_LABELS).map(
-                        ([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ),
-                      )}
+                      {MODIFICATION_DOMAINS.map((domain) => (
+                        <option key={domain.value} value={domain.value}>
+                          {domain.label}
+                        </option>
+                      ))}
                     </select>
                   </label>
                 </div>
@@ -1129,40 +1243,117 @@ export default function EquipmentWorkshopAdminClient({
                     />
                   </label>
                 </details>
-                <div className={styles.twoColumns}>
-                  <label>
-                    <span>담당 표기</span>
-                    <input
-                      maxLength={200}
-                      value={draft.specialistNote}
-                      onChange={(event) =>
-                        setDraft({
-                          ...draft,
-                          specialistNote: event.target.value,
-                        })
-                      }
-                      placeholder="에이다 슈라이버 (VERNIER) 접수·통합 / 립 토와스키 (TOWASKI) 폭발물 검수"
-                    />
-                  </label>
-                  <label>
-                    <span>개조 계통</span>
-                    <select
-                      value={draft.modificationDomain}
-                      onChange={(event) =>
-                        setDraft({
-                          ...draft,
-                          modificationDomain: event.target.value as EquipmentWorkshopModificationDomain,
-                        })
-                      }
-                    >
-                      {MODIFICATION_DOMAINS.map((domain) => (
-                        <option key={domain.value} value={domain.value}>
-                          {domain.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                <div className={styles.specialistHeading}>
+                  <div>
+                    <strong>복합 담당 공정</strong>
+                    <small>첫 번째 단계가 주 담당자로 기록됩니다.</small>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={draft.specialistWorkflow.length >= 5}
+                    onClick={addSpecialistStep}
+                  >
+                    담당 단계 추가
+                  </button>
                 </div>
+                <div className={styles.specialistRows}>
+                  {draft.specialistWorkflow.map((step, index) => (
+                    <div
+                      className={styles.specialistRow}
+                      key={`${index}:${step.specialistCodename}`}
+                    >
+                      <span className={styles.specialistOrder}>
+                        {index === 0 ? "주 담당 · 1단계" : `${index + 1}단계`}
+                      </span>
+                      <select
+                        aria-label={`${index + 1}단계 담당자`}
+                        value={step.specialistCodename}
+                        onChange={(event) =>
+                          updateSpecialistStep(index, {
+                            specialistCodename: event.target
+                              .value as EquipmentWorkshopSpecialist,
+                          })
+                        }
+                      >
+                        {Object.entries(SPECIALIST_LABELS).map(
+                          ([value, label]) => (
+                            <option
+                              key={value}
+                              value={value}
+                              disabled={
+                                value !== step.specialistCodename &&
+                                draft.specialistWorkflow.some(
+                                  (entry, entryIndex) =>
+                                    entryIndex !== index &&
+                                    entry.specialistCodename === value,
+                                )
+                              }
+                            >
+                              {label}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                      <input
+                        aria-label={`${index + 1}단계 담당 업무`}
+                        maxLength={120}
+                        required
+                        value={step.task}
+                        onChange={(event) =>
+                          updateSpecialistStep(index, {
+                            task: event.target.value,
+                          })
+                        }
+                        placeholder="이 단계에서 맡을 작업"
+                      />
+                      <div className={styles.specialistRowActions}>
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() => moveSpecialistStep(index, -1)}
+                        >
+                          위로
+                        </button>
+                        <button
+                          type="button"
+                          disabled={index === draft.specialistWorkflow.length - 1}
+                          onClick={() => moveSpecialistStep(index, 1)}
+                        >
+                          아래로
+                        </button>
+                        <button
+                          type="button"
+                          disabled={draft.specialistWorkflow.length === 1}
+                          onClick={() =>
+                            setDraft({
+                              ...draft,
+                              specialistWorkflow:
+                                draft.specialistWorkflow.filter(
+                                  (_, stepIndex) => stepIndex !== index,
+                                ),
+                            })
+                          }
+                        >
+                          제거
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <label>
+                  <span>추가 담당 메모 (선택)</span>
+                  <input
+                    maxLength={200}
+                    value={draft.specialistNote}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        specialistNote: event.target.value,
+                      })
+                    }
+                    placeholder="공정 외 인계·검수 메모"
+                  />
+                </label>
               </Box>
 
               <Box className={styles.section}>

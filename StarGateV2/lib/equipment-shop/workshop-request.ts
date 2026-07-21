@@ -41,6 +41,17 @@ export type EquipmentWorkshopSpecialist =
   | "TOWASKI"
   | "SUTURE"
   | "RATCHET";
+export const EQUIPMENT_WORKSHOP_SPECIALISTS: readonly EquipmentWorkshopSpecialist[] = [
+  "VERNIER",
+  "TEMPER",
+  "TOWASKI",
+  "SUTURE",
+  "RATCHET",
+];
+export interface EquipmentWorkshopSpecialistStep {
+  specialistCodename: EquipmentWorkshopSpecialist;
+  task: string;
+}
 export type EquipmentWorkshopModificationDomain =
   | "GENERAL"
   | "ENERGY_EXPLOSIVE_OUTPUT"
@@ -76,6 +87,7 @@ export interface EquipmentWorkshopQuote {
   creditCost: number;
   durationMinutes: number;
   specialistCodename: EquipmentWorkshopSpecialist;
+  specialistWorkflow?: EquipmentWorkshopSpecialistStep[];
   specialistNote?: string;
   modificationDomain: EquipmentWorkshopModificationDomain;
   materials: EquipmentWorkshopMaterial[];
@@ -172,6 +184,7 @@ export interface EquipmentWorkshopQuoteInput {
   creditCost: number;
   durationMinutes: number;
   specialistCodename?: EquipmentWorkshopSpecialist;
+  specialistWorkflow?: EquipmentWorkshopSpecialistStep[];
   specialistNote?: string;
   modificationDomain: EquipmentWorkshopModificationDomain;
   blueprintRef?: EquipmentWorkshopBlueprintRef;
@@ -297,9 +310,38 @@ export function parseEquipmentWorkshopRequest(body: unknown): EquipmentWorkshopR
 function isEquipmentWorkshopSpecialist(
   value: unknown,
 ): value is EquipmentWorkshopSpecialist {
-  return ["VERNIER", "TEMPER", "TOWASKI", "SUTURE", "RATCHET"].includes(
-    String(value),
+  return EQUIPMENT_WORKSHOP_SPECIALISTS.includes(
+    String(value) as EquipmentWorkshopSpecialist,
   );
+}
+
+export function getEquipmentWorkshopUserTags(
+  tags: readonly string[],
+  characterCodename: string,
+): string[] {
+  const reserved = new Set<string>([
+    "공방개조",
+    "공방제작",
+    ...EQUIPMENT_WORKSHOP_SPECIALISTS,
+    characterCodename,
+  ]);
+  return tags.filter((tag) => !reserved.has(tag));
+}
+
+export function buildEquipmentWorkshopResultTags(input: {
+  tags: readonly string[];
+  kind: "upgrade" | "custom";
+  specialistWorkflow: readonly EquipmentWorkshopSpecialistStep[];
+  characterCodename: string;
+}): string[] {
+  return [
+    ...new Set([
+      ...getEquipmentWorkshopUserTags(input.tags, input.characterCodename),
+      input.kind === "upgrade" ? "공방개조" : "공방제작",
+      ...input.specialistWorkflow.map((step) => step.specialistCodename),
+      input.characterCodename,
+    ]),
+  ];
 }
 
 function isEquipmentWorkshopModificationDomain(
@@ -308,6 +350,34 @@ function isEquipmentWorkshopModificationDomain(
   return ["GENERAL", "ENERGY_EXPLOSIVE_OUTPUT", "BIO_REGEN_REPAIR"].includes(
     String(value),
   );
+}
+
+function parseEquipmentWorkshopSpecialistWorkflow(
+  value: unknown,
+): EquipmentWorkshopSpecialistStep[] | undefined | null {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value) || value.length < 1 || value.length > 5) {
+    return null;
+  }
+  const seen = new Set<EquipmentWorkshopSpecialist>();
+  const workflow: EquipmentWorkshopSpecialistStep[] = [];
+  for (const raw of value) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const step = raw as Record<string, unknown>;
+    const specialistCodename = step.specialistCodename;
+    const task = typeof step.task === "string" ? step.task.trim() : "";
+    if (
+      !isEquipmentWorkshopSpecialist(specialistCodename) ||
+      seen.has(specialistCodename) ||
+      !task ||
+      task.length > 120
+    ) {
+      return null;
+    }
+    seen.add(specialistCodename);
+    workflow.push({ specialistCodename, task });
+  }
+  return workflow;
 }
 
 function parseEquipmentAction(value: unknown): EquipmentAction | undefined | null {
@@ -364,11 +434,22 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
   const creditCost = source.creditCost;
   const durationMinutes = source.durationMinutes;
   const specialistCodename = source.specialistCodename;
+  const specialistWorkflow = parseEquipmentWorkshopSpecialistWorkflow(
+    source.specialistWorkflow,
+  );
   const modificationDomain = source.modificationDomain ?? "GENERAL";
   if (!Number.isInteger(expectedVersion) || Number(expectedVersion) < 0) return { ok: false, error: "견적 버전이 올바르지 않습니다." };
   if (typeof creditCost !== "number" || !Number.isFinite(creditCost) || creditCost < 0 || Number(creditCost.toFixed(2)) !== creditCost) return { ok: false, error: "크레딧은 0 이상, 소수점 둘째 자리까지 입력해 주세요." };
   if (!Number.isInteger(durationMinutes) || Number(durationMinutes) < 1 || Number(durationMinutes) > WORKSHOP_QUOTE_MAX_DURATION_MINUTES) return { ok: false, error: "제작 시간은 1~43,200분이어야 합니다." };
   if (specialistCodename !== undefined && !isEquipmentWorkshopSpecialist(specialistCodename)) return { ok: false, error: "주 담당 specialist가 올바르지 않습니다." };
+  if (specialistWorkflow === null) return { ok: false, error: "담당 공정은 서로 다른 담당자 1~5명과 각 담당 업무를 입력해 주세요." };
+  if (
+    specialistWorkflow &&
+    specialistCodename &&
+    specialistWorkflow[0]?.specialistCodename !== specialistCodename
+  ) {
+    return { ok: false, error: "주 담당자는 담당 공정의 첫 번째 담당자와 같아야 합니다." };
+  }
   if (!isEquipmentWorkshopModificationDomain(modificationDomain)) return { ok: false, error: "개조 계통이 올바르지 않습니다." };
   if (!result || typeof result.name !== "string" || !result.name.trim() || result.name.trim().length > 80) return { ok: false, error: "결과 장비 이름은 1~80자여야 합니다." };
   if (typeof result.description !== "string" || !result.description.trim() || result.description.trim().length > 500) return { ok: false, error: "결과 장비 설명은 1~500자여야 합니다." };
@@ -435,6 +516,7 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
       creditCost,
       durationMinutes: Number(durationMinutes),
       ...(specialistCodename ? { specialistCodename } : {}),
+      ...(specialistWorkflow ? { specialistWorkflow } : {}),
       ...(specialistNote ? { specialistNote } : {}),
       modificationDomain,
       materials,

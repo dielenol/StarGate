@@ -5,6 +5,7 @@ import {
   type EquipmentWorkshopModificationDomain,
   type EquipmentWorkshopQuoteInput,
   type EquipmentWorkshopSpecialist,
+  type EquipmentWorkshopSpecialistStep,
 } from "@/lib/equipment-shop/workshop-request";
 
 export const EQUIPMENT_WORKSHOP_BLUEPRINT_STATUSES = [
@@ -26,6 +27,7 @@ export interface EquipmentWorkshopBlueprintDefaults {
   creditCost: number;
   durationMinutes: number;
   specialistCodename: EquipmentWorkshopSpecialist;
+  specialistWorkflow?: EquipmentWorkshopSpecialistStep[];
   specialistNote?: string;
   modificationDomain: EquipmentWorkshopModificationDomain;
   materials: Array<{ slug: string; quantity: number }>;
@@ -158,6 +160,7 @@ export function parseEquipmentWorkshopBlueprint(
     creditCost: defaults.creditCost,
     durationMinutes: defaults.durationMinutes,
     specialistCodename: defaults.specialistCodename,
+    specialistWorkflow: defaults.specialistWorkflow,
     specialistNote: defaults.specialistNote,
     modificationDomain: defaults.modificationDomain,
     materials,
@@ -188,6 +191,9 @@ export function parseEquipmentWorkshopBlueprint(
         creditCost: quoteValidation.input.creditCost,
         durationMinutes: quoteValidation.input.durationMinutes,
         specialistCodename: quoteValidation.input.specialistCodename,
+        ...(quoteValidation.input.specialistWorkflow
+          ? { specialistWorkflow: quoteValidation.input.specialistWorkflow }
+          : {}),
         ...(quoteValidation.input.specialistNote
           ? { specialistNote: quoteValidation.input.specialistNote }
           : {}),

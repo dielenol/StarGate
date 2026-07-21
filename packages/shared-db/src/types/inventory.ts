@@ -114,6 +114,10 @@ export interface MasterItem {
     characterId: string;
     characterCodename: string;
     specialistCodename: string;
+    specialistWorkflow?: Array<{
+      specialistCodename: string;
+      task: string;
+    }>;
     blueprintRef?: {
       id: string;
       slug: string;

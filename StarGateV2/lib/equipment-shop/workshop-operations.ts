@@ -497,6 +497,9 @@ async function ensureResultMasterItem(
       characterId: request.characterId,
       characterCodename: request.characterCodename,
       specialistCodename: request.quote.specialistCodename,
+      ...(request.quote.specialistWorkflow
+        ? { specialistWorkflow: request.quote.specialistWorkflow }
+        : {}),
       ...(request.quote.blueprintRef
         ? { blueprintRef: request.quote.blueprintRef }
         : {}),
