@@ -21,6 +21,15 @@ import type {
 const EXECUTE = process.argv.includes("--execute");
 const YES = process.argv.includes("--yes");
 const CORRECT_GRENADE = process.argv.includes("--correct-grenade");
+const SIGNATURE_WEAPON_REPAIR = process.argv.includes(
+  "--signature-weapon-repair",
+);
+
+const SIGNATURE_WEAPON_REPAIR_TARGETS = new Map<string, string>([
+  ["악식의 콘치타", "TIGER298"],
+  ["CMMG Mk.47 Mutant (N.O.S.B Mod.)", "네베드"],
+  ["택티컬 클레이모어", "네베드"],
+]);
 
 /**
  * 기존 시트의 고유 명칭을 현재 병기부 카탈로그의 표준 보급 장비에 대응한다.
@@ -34,8 +43,9 @@ const LEGACY_DEFAULT_ITEM_SLUG = new Map<string, string>([
   ],
   ["보급형 사냥용 소총", "basic-assault-rifle"],
   ["보급형 공격 방패", "basic-assault-shield"],
-  ["악식의 콘치타", "basic-dagger"],
-  ["CMMG Mk.47 Mutant (N.O.S.B Mod.)", "basic-assault-rifle"],
+  ["악식의 콘치타", "conchita-of-gluttony"],
+  ["CMMG Mk.47 Mutant (N.O.S.B Mod.)", "cmmg-mk47-mutant-nosb-mod"],
+  ["택티컬 클레이모어", "tactical-claymore"],
 ]);
 
 /** 새 고유 장비가 등록되기 전에 임시 지급했던 표준 장비 slug. */
@@ -45,7 +55,14 @@ const REPLACED_DEFAULT_ITEM_SLUG = new Map<string, string>([
     "basic-longsword",
   ],
   ["보급형 공격 방패", "basic-blunt-weapon"],
+  ["악식의 콘치타", "basic-dagger"],
+  ["CMMG Mk.47 Mutant (N.O.S.B Mod.)", "basic-assault-rifle"],
+  ["택티컬 클레이모어", "basic-longsword"],
 ]);
+
+const LEGACY_ALIAS_TARGET_SLUGS = Array.from(
+  new Set(LEGACY_DEFAULT_ITEM_SLUG.values()),
+);
 
 if (EXECUTE && !YES) {
   throw new Error("실행 모드는 --execute --yes를 함께 전달해야 합니다.");
@@ -71,10 +88,17 @@ interface MigrationPlan {
     | "equip-existing"
     | "replace-default"
     | "already-equipped"
+    | "already-owned"
     | "conflict";
   existingInventory?: CharacterInventory | null;
   currentSlotItemId?: string;
   replacedItemId?: string;
+  replacedInventory?: CharacterInventory | null;
+  desiredEquippedSlot?: EquipmentSlot;
+  inventoryRowConflict?: {
+    targetCount: number;
+    replacedCount: number;
+  };
 }
 
 interface CharacterInventoryLock {
@@ -103,15 +127,30 @@ try {
   const [agents, masterItems, inventoryRows] = await Promise.all([
     characters
       .find(
-        { type: "AGENT", "play.equipment.0": { $exists: true } },
+        {
+          type: "AGENT",
+          "play.equipment.0": { $exists: true },
+          ...(SIGNATURE_WEAPON_REPAIR
+            ? {
+                codename: {
+                  $in: Array.from(
+                    new Set(SIGNATURE_WEAPON_REPAIR_TARGETS.values()),
+                  ),
+                },
+              }
+            : {}),
+        },
         { projection: { codename: 1, type: 1, play: 1 } },
       )
       .toArray(),
     masters
       .find({
         category: { $in: ["WEAPON", "ARMOR"] },
-        isAvailable: { $ne: false },
         isPublic: { $ne: false },
+        $or: [
+          { isAvailable: { $ne: false } },
+          { slug: { $in: LEGACY_ALIAS_TARGET_SLUGS } },
+        ],
       })
       .toArray(),
     inventory.find({}).toArray(),
@@ -123,12 +162,13 @@ try {
       .filter((item) => item.slug)
       .map((item) => [item.slug as string, item]),
   );
-  const inventoryByCharacterItem = new Map(
-    inventoryRows.map((entry) => [
-      `${entry.characterId}:${entry.itemId}`,
-      entry,
-    ]),
-  );
+  const inventoryByCharacterItem = new Map<string, CharacterInventory[]>();
+  for (const entry of inventoryRows) {
+    const key = `${entry.characterId}:${entry.itemId}`;
+    const rows = inventoryByCharacterItem.get(key) ?? [];
+    rows.push(entry);
+    inventoryByCharacterItem.set(key, rows);
+  }
   const equippedByCharacterSlot = new Map(
     inventoryRows
       .filter((entry) => entry.equippedSlot)
@@ -150,6 +190,16 @@ try {
   for (const character of agents) {
     const characterId = String(character._id);
     for (const legacy of character.play.equipment) {
+      const signatureOwner = SIGNATURE_WEAPON_REPAIR_TARGETS.get(legacy.name);
+      if (signatureOwner && signatureOwner !== character.codename) {
+        continue;
+      }
+      if (
+        SIGNATURE_WEAPON_REPAIR &&
+        signatureOwner !== character.codename
+      ) {
+        continue;
+      }
       const exactMaster = masterByName.get(legacy.name);
       const aliasSlug = LEGACY_DEFAULT_ITEM_SLUG.get(legacy.name);
       const master =
@@ -161,7 +211,9 @@ try {
       }
 
       const itemId = String(master._id);
-      const existing = inventoryByCharacterItem.get(`${characterId}:${itemId}`);
+      const existingRows =
+        inventoryByCharacterItem.get(`${characterId}:${itemId}`) ?? [];
+      const existing = existingRows[0];
       const slotKey = `${characterId}:${slot}`;
       const current = claimedSlots.get(slotKey);
       const replacedDefaultSlug = REPLACED_DEFAULT_ITEM_SLUG.get(legacy.name);
@@ -171,16 +223,40 @@ try {
       const replacedItemId = replacedDefault?._id
         ? String(replacedDefault._id)
         : undefined;
+      const replacedInventoryRows = replacedItemId
+        ? inventoryByCharacterItem.get(`${characterId}:${replacedItemId}`) ?? []
+        : [];
+      const replacedInventory = replacedInventoryRows[0];
+      const inventoryRowConflict =
+        existingRows.length > 1 || replacedInventoryRows.length > 1;
+      const replacementSlotConflict =
+        Boolean(replacedInventory?.equippedSlot) &&
+        (replacedInventory?.equippedSlot !== slot ||
+          (Boolean(current) && current?.itemId !== replacedItemId));
       const action =
-        current?.itemId === itemId
-          ? "already-equipped"
-          : current && current.itemId === replacedItemId
-            ? "replace-default"
-          : current
+        inventoryRowConflict
+          ? "conflict"
+          : replacedInventory && existing
+          ? "conflict"
+          : replacementSlotConflict
             ? "conflict"
-            : existing
-              ? "equip-existing"
-              : "grant-and-equip";
+            : replacedInventory
+              ? "replace-default"
+              : current?.itemId === itemId
+                ? "already-equipped"
+                : existing && !current
+                  ? "equip-existing"
+                  : existing
+                    ? "already-owned"
+                    : current
+                      ? "conflict"
+                      : "grant-and-equip";
+      const desiredEquippedSlot =
+        action === "replace-default"
+          ? replacedInventory?.equippedSlot
+          : action === "grant-and-equip" || action === "equip-existing"
+            ? slot
+            : undefined;
       plans.push({
         characterId,
         codename: character.codename,
@@ -195,13 +271,26 @@ try {
         ...(action === "replace-default" && replacedItemId
           ? { replacedItemId }
           : {}),
+        ...(action === "replace-default"
+          ? { replacedInventory: replacedInventory ?? null }
+          : {}),
+        ...(desiredEquippedSlot ? { desiredEquippedSlot } : {}),
+        ...(inventoryRowConflict
+          ? {
+              inventoryRowConflict: {
+                targetCount: existingRows.length,
+                replacedCount: replacedInventoryRows.length,
+              },
+            }
+          : {}),
       });
       if (
-        action === "grant-and-equip" ||
-        action === "equip-existing" ||
-        action === "replace-default"
+        (action === "grant-and-equip" ||
+          action === "equip-existing" ||
+          action === "replace-default") &&
+        desiredEquippedSlot
       ) {
-        claimedSlots.set(slotKey, { itemId });
+        claimedSlots.set(`${characterId}:${desiredEquippedSlot}`, { itemId });
       }
     }
   }
@@ -215,10 +304,34 @@ try {
       plan.action === "replace-default",
   );
 
+  if (
+    SIGNATURE_WEAPON_REPAIR &&
+    plans.length !== SIGNATURE_WEAPON_REPAIR_TARGETS.size
+  ) {
+    throw new Error(
+      `고유 장비 복구 대상 불일치: expected=${SIGNATURE_WEAPON_REPAIR_TARGETS.size} actual=${plans.length}`,
+    );
+  }
+  if (
+    SIGNATURE_WEAPON_REPAIR &&
+    plans.some(
+      (plan) =>
+        plan.action === "grant-and-equip" || plan.action === "equip-existing",
+    )
+  ) {
+    throw new Error(
+      "고유 장비 복구는 기존 보급 장비와의 1:1 교체 또는 재실행 no-op만 허용합니다.",
+    );
+  }
+
   console.log(`[character-equipment] mode=${EXECUTE ? "EXECUTE" : "DRY-RUN"}`);
+  console.log(
+    `[character-equipment] scope=${SIGNATURE_WEAPON_REPAIR ? "SIGNATURE-WEAPON-REPAIR" : "ALL-LEGACY-EQUIPMENT"}`,
+  );
   console.log(
     `[character-equipment] matched=${plans.length} actionable=${actionable.length} ` +
       `already=${plans.filter((plan) => plan.action === "already-equipped").length} ` +
+      `owned=${plans.filter((plan) => plan.action === "already-owned").length} ` +
       `conflicts=${plans.filter((plan) => plan.action === "conflict").length} ` +
       `unmapped=${unmapped.length}`,
   );
@@ -236,7 +349,11 @@ try {
   for (const plan of plans) {
     console.log(
       `[character-equipment] ${plan.action} ${plan.codename} / ` +
-        `${plan.legacyItemName} -> ${plan.itemName} / ${plan.slot} / ${plan.match}`,
+        `${plan.legacyItemName} -> ${plan.itemName} / ${plan.slot} / ${plan.match} / ` +
+        `${plan.desiredEquippedSlot ? "equipped" : "owned"}` +
+        (plan.inventoryRowConflict
+          ? ` / duplicate target=${plan.inventoryRowConflict.targetCount} replaced=${plan.inventoryRowConflict.replacedCount}`
+          : ""),
     );
   }
   for (const entry of unmapped) {
@@ -357,13 +474,35 @@ try {
 
           for (const plan of actionable) {
             const now = new Date();
-            const targetInventory = await inventory.findOne(
-              { characterId: plan.characterId, itemId: plan.itemId },
-              { session },
-            );
+            const targetRows = await inventory
+              .find(
+                { characterId: plan.characterId, itemId: plan.itemId },
+                { session },
+              )
+              .toArray();
+            const replacedRows = plan.replacedItemId
+              ? await inventory
+                  .find(
+                    {
+                      characterId: plan.characterId,
+                      itemId: plan.replacedItemId,
+                    },
+                    { session },
+                  )
+                  .toArray()
+              : [];
+            if (targetRows.length > 1 || replacedRows.length > 1) {
+              throw new Error(
+                `인벤토리 중복 row 감지: ${plan.codename} / target=${targetRows.length} replaced=${replacedRows.length}`,
+              );
+            }
+            const targetInventory = targetRows[0];
             if (
               plan.action === "equip-existing" &&
-              (!targetInventory || targetInventory.quantity < 1)
+              (!targetInventory ||
+                targetInventory.quantity < 1 ||
+                targetInventory.quantity !== plan.existingInventory?.quantity ||
+                targetInventory.itemName !== plan.existingInventory?.itemName)
             ) {
               throw new Error(
                 `기존 보유 장비 상태 변경 감지: ${plan.codename}`,
@@ -376,18 +515,30 @@ try {
             }
 
             if (plan.action === "replace-default") {
-              if (!plan.replacedItemId) {
+              if (!plan.replacedItemId || !plan.replacedInventory) {
                 throw new Error(
-                  `교체 대상 기본 장비 ID 누락: ${plan.codename}`,
+                  `교체 대상 기본 장비 상태 누락: ${plan.codename}`,
                 );
               }
-              const removed = await inventory.deleteOne(
+              if (targetInventory) {
+                throw new Error(
+                  `고유 장비 중복 보유 상태 감지: ${plan.codename} / ${plan.itemName}`,
+                );
+              }
+              if (replacedRows.length !== 1) {
+                throw new Error(
+                  `교체 대상 기본 장비 row 변경 감지: ${plan.codename} / expected=1 actual=${replacedRows.length}`,
+                );
+              }
+              const expectedEquipmentState = plan.replacedInventory.equippedSlot
+                ? { equippedSlot: plan.replacedInventory.equippedSlot }
+                : { equippedSlot: { $exists: false } };
+              const removed = await inventory.deleteMany(
                 {
                   characterId: plan.characterId,
                   itemId: plan.replacedItemId,
                   quantity: 1,
-                  note: "기존 캐릭터 시트 장비 이관",
-                  equippedSlot: plan.slot,
+                  ...expectedEquipmentState,
                 },
                 { session },
               );
@@ -399,22 +550,43 @@ try {
             }
 
             const shouldGrant = !targetInventory;
+            const acquiredAt =
+              plan.action === "replace-default"
+                ? plan.replacedInventory?.acquiredAt ?? now
+                : now;
+            const grantUpdate = plan.desiredEquippedSlot
+              ? {
+                  $inc: { quantity: 1 },
+                  $set: {
+                    equippedSlot: plan.desiredEquippedSlot,
+                    equippedAt:
+                      plan.replacedInventory?.equippedAt ?? now,
+                  },
+                  $setOnInsert: {
+                    characterId: plan.characterId,
+                    characterCodename: plan.codename,
+                    itemId: plan.itemId,
+                    itemName: plan.itemName,
+                    acquiredAt,
+                    note: "기존 캐릭터 시트 고유 장비 복구",
+                  },
+                }
+              : {
+                  $inc: { quantity: 1 },
+                  $setOnInsert: {
+                    characterId: plan.characterId,
+                    characterCodename: plan.codename,
+                    itemId: plan.itemId,
+                    itemName: plan.itemName,
+                    acquiredAt,
+                    note: "기존 캐릭터 시트 고유 장비 복구",
+                  },
+                };
             const result =
               shouldGrant
                 ? await inventory.updateOne(
                     { characterId: plan.characterId, itemId: plan.itemId },
-                    {
-                      $inc: { quantity: 1 },
-                      $set: { equippedSlot: plan.slot, equippedAt: now },
-                      $setOnInsert: {
-                        characterId: plan.characterId,
-                        characterCodename: plan.codename,
-                        itemId: plan.itemId,
-                        itemName: plan.itemName,
-                        acquiredAt: now,
-                        note: "기존 캐릭터 시트 장비 이관",
-                      },
-                    },
+                    grantUpdate,
                     { upsert: true, session },
                   )
                 : await inventory.updateOne(
@@ -423,7 +595,12 @@ try {
                       itemId: plan.itemId,
                       quantity: { $gte: 1 },
                     },
-                    { $set: { equippedSlot: plan.slot, equippedAt: now } },
+                    {
+                      $set: {
+                        equippedSlot: plan.desiredEquippedSlot ?? plan.slot,
+                        equippedAt: now,
+                      },
+                    },
                     { session },
                   );
             if (result.matchedCount + result.upsertedCount !== 1) {
@@ -445,24 +622,65 @@ try {
       );
     }
 
-    const verification =
-      actionable.length === 0
-        ? []
-        : await inventory
-            .find({
-              $or: actionable.map((plan) => ({
-                characterId: plan.characterId,
-                itemId: plan.itemId,
-                equippedSlot: plan.slot,
-                quantity: { $gte: 1 },
-              })),
-            })
-            .toArray();
-    if (verification.length !== actionable.length) {
-      throw new Error(
-        `이관 검증 실패: expected=${actionable.length} actual=${verification.length}`,
-      );
-    }
+    const verification = await Promise.all(
+      actionable.map(async (plan) => {
+        const [targetRows, replacedRows] = await Promise.all([
+          inventory
+            .find({ characterId: plan.characterId, itemId: plan.itemId })
+            .toArray(),
+          plan.replacedItemId
+            ? inventory
+                .find({
+                  characterId: plan.characterId,
+                  itemId: plan.replacedItemId,
+                })
+                .toArray()
+            : Promise.resolve([]),
+        ]);
+        const target = targetRows[0];
+        const expectedAcquiredAt =
+          plan.action === "replace-default"
+            ? plan.replacedInventory?.acquiredAt
+            : undefined;
+        const expectedEquippedAt = plan.desiredEquippedSlot
+          ? plan.replacedInventory?.equippedAt
+          : undefined;
+        const expectedQuantity =
+          plan.action === "equip-existing"
+            ? plan.existingInventory?.quantity
+            : 1;
+        const expectedItemName =
+          plan.action === "equip-existing"
+            ? plan.existingInventory?.itemName
+            : plan.itemName;
+        const acquiredAtMatches =
+          !expectedAcquiredAt ||
+          target?.acquiredAt?.getTime() === expectedAcquiredAt.getTime();
+        const equippedAtMatches =
+          !expectedEquippedAt ||
+          target?.equippedAt?.getTime() === expectedEquippedAt.getTime();
+        const equippedStateMatches = plan.desiredEquippedSlot
+          ? target?.equippedSlot === plan.desiredEquippedSlot
+          : !target?.equippedSlot && !target?.equippedAt;
+        if (
+          targetRows.length !== 1 ||
+          replacedRows.length !== 0 ||
+          target?.quantity !== expectedQuantity ||
+          target?.itemName !== expectedItemName ||
+          !equippedStateMatches ||
+          !acquiredAtMatches ||
+          !equippedAtMatches
+        ) {
+          throw new Error(
+              `이관 검증 실패: ${plan.codename} / targetRows=${targetRows.length} ` +
+              `replacedRows=${replacedRows.length} quantity=${target?.quantity ?? "missing"}/${expectedQuantity ?? "missing"} ` +
+              `equipped=${target?.equippedSlot ?? "none"} acquiredAt=${acquiredAtMatches} ` +
+              `equippedAt=${equippedAtMatches}`,
+          );
+        }
+        return target;
+      }),
+    );
     console.log(
       `[character-equipment] execute 완료. verified=${verification.length}`,
     );

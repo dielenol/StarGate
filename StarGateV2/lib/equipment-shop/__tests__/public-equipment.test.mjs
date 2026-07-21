@@ -42,6 +42,60 @@ test("unequipped inventory items do not reappear through mapped legacy data", ()
   );
 });
 
+test("signature inventory replaces the original agent equipment records", () => {
+  assert.deepEqual(
+    mergePublicEquipment({
+      inventoryEntries: [
+        {
+          itemName: "악식의 콘치타",
+          slug: "conchita-of-gluttony",
+          equippedSlot: "WEAPON",
+          damage: "근거리 5 물리 / 중거리 5 물리",
+        },
+      ],
+      legacyEquipment: [{ name: "악식의 콘치타", damage: "근거리/중거리 5" }],
+    }),
+    [
+      {
+        name: "악식의 콘치타",
+        price: "",
+        damage: "근거리 5 물리 / 중거리 5 물리",
+        description: "",
+      },
+    ],
+  );
+});
+
+test("unequipped signature weapon suppresses the duplicated legacy claymore", () => {
+  assert.deepEqual(
+    mergePublicEquipment({
+      inventoryEntries: [
+        {
+          itemName: "CMMG Mk.47 Mutant (N.O.S.B Mod.)",
+          slug: "cmmg-mk47-mutant-nosb-mod",
+          equippedSlot: "WEAPON",
+        },
+        {
+          itemName: "택티컬 클레이모어",
+          slug: "tactical-claymore",
+        },
+      ],
+      legacyEquipment: [
+        { name: "CMMG Mk.47 Mutant (N.O.S.B Mod.)" },
+        { name: "택티컬 클레이모어" },
+      ],
+    }),
+    [
+      {
+        name: "CMMG Mk.47 Mutant (N.O.S.B Mod.)",
+        price: "",
+        damage: "",
+        description: "",
+      },
+    ],
+  );
+});
+
 test("unmapped legacy equipment remains visible while private inventory stays hidden", () => {
   assert.deepEqual(
     mergePublicEquipment({

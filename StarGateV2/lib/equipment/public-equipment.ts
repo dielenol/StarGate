@@ -5,8 +5,9 @@ const LEGACY_DEFAULT_ITEM_SLUG = new Map<string, string>([
   ],
   ["보급형 사냥용 소총", "basic-assault-rifle"],
   ["보급형 공격 방패", "basic-assault-shield"],
-  ["악식의 콘치타", "basic-dagger"],
-  ["CMMG Mk.47 Mutant (N.O.S.B Mod.)", "basic-assault-rifle"],
+  ["악식의 콘치타", "conchita-of-gluttony"],
+  ["CMMG Mk.47 Mutant (N.O.S.B Mod.)", "cmmg-mk47-mutant-nosb-mod"],
+  ["택티컬 클레이모어", "tactical-claymore"],
 ]);
 
 interface PublicInventoryEquipmentInput {
