@@ -13,6 +13,10 @@
       "schedule": "0 2 * * *"
     },
     {
+      "path": "/api/cron/shop/discord-restock",
+      "schedule": "3-58/5 * * * *"
+    },
+    {
       "path": "/api/cron/sessions/reminders",
       "schedule": "0 12 * * *"
     },

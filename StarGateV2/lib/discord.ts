@@ -383,6 +383,14 @@ const SHOP_GROUP_LABELS: Record<ShopRestockWebhookItem["pageGroup"], string> = {
 };
 const SHOP_WEB_URL = "https://www.ordonet.co.kr/erp/shop";
 
+function getShopWebhookUrl(): string {
+  const webhookUrl = process.env.DISCORD_WEBHOOK_SHOP_URL;
+  if (!webhookUrl) {
+    throw new Error("DISCORD_WEBHOOK_SHOP_URL 환경변수가 설정되지 않았습니다.");
+  }
+  return webhookUrl;
+}
+
 function formatShopRestockFields(
   items: ShopRestockWebhookItem[],
 ): DiscordEmbedField[] {
@@ -424,19 +432,11 @@ function formatShopRestockStatusLine(
   return "지금은 영업 시간이 아니라 바로 구매는 어려워요. 새로 들어온 물건은 미리 봐둬도 돼요.";
 }
 
-export async function notifyShopRestock(
+export function buildShopRestockDiscordPayload(
   payload: ShopRestockWebhookPayload,
-): Promise<"sent" | "skipped"> {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_SHOP_URL;
-  if (!webhookUrl) {
-    console.warn(
-      "[notifyShopRestock] DISCORD_WEBHOOK_SHOP_URL 미설정 — silent skip",
-    );
-    return "skipped";
-  }
-
+): DiscordPayload | null {
   const items = payload.items.filter((item) => item.stock > 0);
-  if (items.length === 0) return "skipped";
+  if (items.length === 0) return null;
 
   const fields = [
     ...formatShopRestockFields(items),
@@ -445,7 +445,7 @@ export async function notifyShopRestock(
       value: `[띠아 편의점 들어가기](${SHOP_WEB_URL})`,
     },
   ];
-  const discordPayload: DiscordPayload = {
+  return {
     username: "띠아",
     avatar_url: process.env.DISCORD_WEBHOOK_SHOP_AVATAR_URL || undefined,
     allowed_mentions: { parse: [] },
@@ -464,9 +464,49 @@ export async function notifyShopRestock(
       },
     ],
   };
+}
 
-  await sendDiscordWebhook(discordPayload, webhookUrl);
-  return "sent";
+export async function createDailyShopRestockDiscordMessage(
+  payload: DiscordPayload,
+): Promise<string> {
+  const url = new URL(getShopWebhookUrl());
+  url.searchParams.set("wait", "true");
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Discord 편의점 입고 공지 생성 실패 (${response.status}): ${errorText}`,
+    );
+  }
+  const message = (await response.json()) as { id?: unknown };
+  if (typeof message.id !== "string" || message.id.length === 0) {
+    throw new Error("Discord 편의점 입고 공지 응답에 message id가 없습니다.");
+  }
+  return message.id;
+}
+
+export async function deleteDailyShopRestockDiscordMessage(
+  messageId: string,
+): Promise<void> {
+  const response = await fetch(
+    buildWebhookMessageUrl(getShopWebhookUrl(), messageId),
+    {
+      method: "DELETE",
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
+  if (response.status === 404 || response.ok) return;
+  const errorText = await response.text();
+  throw new Error(
+    `Discord 편의점 입고 공지 삭제 실패 (${response.status}): ${errorText}`,
+  );
 }
 
 export async function notifyShopReorderRequest(

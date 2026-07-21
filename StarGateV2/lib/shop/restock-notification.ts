@@ -1,19 +1,32 @@
+import { randomUUID } from "node:crypto";
+
 import "@/lib/db/init";
 
 import { getDb } from "@stargate/shared-db";
 
 import { getAllDailyStocks } from "@/lib/db/shop";
-import { notifyShopRestock } from "@/lib/discord";
+import {
+  buildShopRestockDiscordPayload,
+  createDailyShopRestockDiscordMessage,
+  deleteDailyShopRestockDiscordMessage,
+  type DiscordPayload,
+  type ShopRestockWebhookPayload,
+} from "@/lib/discord";
+import {
+  drainDiscordMessageBatchSync,
+  type DiscordMessageBatchSyncResult,
+} from "@/lib/discord/message-batch-sync";
 
 import { SHOP_CATALOG } from "./catalog";
 import { getShopOpenState } from "./open-state";
 
 type ShopRestockNotificationStatus =
   | "sent"
-  | "sent-untracked"
+  | "queued"
   | "skipped-no-stock"
+  | "skipped-incomplete"
   | "skipped-no-webhook"
-  | "skipped-already-sent"
+  | "skipped-current"
   | "failed";
 
 export interface ShopRestockNotificationResult {
@@ -22,132 +35,181 @@ export interface ShopRestockNotificationResult {
   error?: string;
 }
 
-interface ShopRestockNotificationDoc {
-  _id: string;
-  kind: "daily-shop-restock";
-  date: string;
-  createdAt: Date;
-  claimedAt?: Date;
-  claimLeaseUntil?: Date;
-  sentAt?: Date;
-  itemCount?: number;
+interface ShopRestockNotificationState {
+  _id: "daily-shop-restock";
+  requestedRevision: number;
+  syncedRevision: number;
+  desiredDate: string;
+  desiredPayloads: DiscordPayload[];
+  messageIds?: string[];
+  cleanupMessageIds?: string[];
+  leaseToken?: string;
+  leaseExpiresAt?: Date;
+  nextAttemptAt?: Date;
   lastError?: string;
-  failedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const COLLECTION_NAME = "shop_restock_notifications";
-const CLAIM_LEASE_MS = 10 * 60 * 1000;
+const STATE_ID = "daily-shop-restock";
+const LEASE_MS = 10 * 60_000;
+const RETRY_DELAY_MS = 5 * 60_000;
 
 async function notificationCollection() {
   const db = await getDb();
-  return db.collection<ShopRestockNotificationDoc>(COLLECTION_NAME);
-}
-
-function getNotificationId(today: string): string {
-  return `daily-shop-restock:${today}`;
-}
-
-function isDuplicateKeyError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === 11000
-  );
+  return db.collection<ShopRestockNotificationState>(COLLECTION_NAME);
 }
 
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
+  return error instanceof Error ? error.message : String(error);
 }
 
-async function claimNotification(today: string, now: Date): Promise<boolean> {
-  const col = await notificationCollection();
-  const _id = getNotificationId(today);
-  const claimLeaseUntil = new Date(now.getTime() + CLAIM_LEASE_MS);
-
-  try {
-    const result = await col.updateOne(
-      {
-        _id,
-        sentAt: { $exists: false },
-        $or: [
-          { claimLeaseUntil: { $exists: false } },
-          { claimLeaseUntil: { $lt: now } },
-        ],
-      },
-      {
-        $setOnInsert: {
-          _id,
-          kind: "daily-shop-restock",
-          date: today,
-          createdAt: now,
-        },
-        $set: {
-          claimedAt: now,
-          claimLeaseUntil,
-        },
-        $unset: {
-          failedAt: "",
-          lastError: "",
-        },
-      },
-      { upsert: true },
-    );
-
-    return result.upsertedCount === 1 || result.modifiedCount === 1;
-  } catch (error) {
-    if (isDuplicateKeyError(error)) return false;
-    throw error;
-  }
+async function findNotificationState(): Promise<ShopRestockNotificationState | null> {
+  return (await notificationCollection()).findOne({ _id: STATE_ID });
 }
 
-async function markNotificationSent(
-  today: string,
-  now: Date,
-  itemCount: number,
-): Promise<void> {
-  const col = await notificationCollection();
-  await col.updateOne(
-    { _id: getNotificationId(today) },
+async function requestNotificationSync(args: {
+  date: string;
+  payload: DiscordPayload;
+}): Promise<void> {
+  const now = new Date();
+  await (await notificationCollection()).updateOne(
+    { _id: STATE_ID },
+    {
+      $inc: { requestedRevision: 1 },
+      $setOnInsert: { syncedRevision: 0, createdAt: now },
+      $set: {
+        desiredDate: args.date,
+        desiredPayloads: [args.payload],
+        updatedAt: now,
+      },
+      $unset: { lastError: "", nextAttemptAt: "" },
+    },
+    { upsert: true },
+  );
+}
+
+async function acquireNotificationLease(args: {
+  leaseToken: string;
+  now?: Date;
+}): Promise<ShopRestockNotificationState | null> {
+  const now = args.now ?? new Date();
+  return (await notificationCollection()).findOneAndUpdate(
+    {
+      _id: STATE_ID,
+      $expr: { $gt: ["$requestedRevision", "$syncedRevision"] },
+      $and: [
+        {
+          $or: [
+            { leaseToken: { $exists: false } },
+            { leaseExpiresAt: { $exists: false } },
+            { leaseExpiresAt: { $lte: now } },
+          ],
+        },
+        {
+          $or: [
+            { nextAttemptAt: { $exists: false } },
+            { nextAttemptAt: { $lte: now } },
+          ],
+        },
+      ],
+    },
     {
       $set: {
-        sentAt: now,
-        itemCount,
+        leaseToken: args.leaseToken,
+        leaseExpiresAt: new Date(now.getTime() + LEASE_MS),
+        updatedAt: now,
+      },
+    },
+    { returnDocument: "after" },
+  );
+}
+
+async function recordInflightMessages(args: {
+  leaseToken: string;
+  messageIds: string[];
+}): Promise<boolean> {
+  const result = await (await notificationCollection()).updateOne(
+    { _id: STATE_ID, leaseToken: args.leaseToken },
+    {
+      $set: {
+        cleanupMessageIds: args.messageIds,
+        updatedAt: new Date(),
+      },
+    },
+  );
+  return result.modifiedCount === 1;
+}
+
+async function completeNotificationSync(args: {
+  leaseToken: string;
+  syncedRevision: number;
+  messageIds: string[];
+}): Promise<boolean> {
+  const result = await (await notificationCollection()).updateOne(
+    { _id: STATE_ID, leaseToken: args.leaseToken },
+    {
+      $set: {
+        syncedRevision: args.syncedRevision,
+        messageIds: args.messageIds,
+        updatedAt: new Date(),
       },
       $unset: {
-        claimLeaseUntil: "",
-        failedAt: "",
+        leaseToken: "",
+        leaseExpiresAt: "",
+        cleanupMessageIds: "",
         lastError: "",
+        nextAttemptAt: "",
       },
     },
   );
+  return result.modifiedCount === 1;
 }
 
-async function releaseNotificationClaim(
-  today: string,
-  now: Date,
-  error: string,
-): Promise<void> {
-  const col = await notificationCollection();
-  await col.updateOne(
-    {
-      _id: getNotificationId(today),
-      sentAt: { $exists: false },
-    },
+async function failNotificationSync(args: {
+  leaseToken: string;
+  error: string;
+  cleanupMessageIds: string[];
+}): Promise<void> {
+  const now = new Date();
+  const cleanupState =
+    args.cleanupMessageIds.length > 0
+      ? { cleanupMessageIds: args.cleanupMessageIds }
+      : {};
+  await (await notificationCollection()).updateOne(
+    { _id: STATE_ID, leaseToken: args.leaseToken },
     {
       $set: {
-        failedAt: now,
-        lastError: error.slice(0, 1000),
+        lastError: args.error.slice(0, 1000),
+        nextAttemptAt: new Date(now.getTime() + RETRY_DELAY_MS),
+        updatedAt: now,
+        ...cleanupState,
       },
-      $unset: {
-        claimLeaseUntil: "",
-      },
+      $unset: { leaseToken: "", leaseExpiresAt: "" },
     },
   );
 }
 
-async function buildRestockPayload(today: string, now: Date) {
+async function isNotificationSyncComplete(args: {
+  syncedRevision: number;
+  messageIds: string[];
+}): Promise<boolean> {
+  const state = await (await notificationCollection()).findOne(
+    {
+      _id: STATE_ID,
+      syncedRevision: { $gte: args.syncedRevision },
+      messageIds: args.messageIds,
+    },
+    { projection: { _id: 1 } },
+  );
+  return Boolean(state);
+}
+
+async function buildRestockPayload(
+  today: string,
+  now: Date,
+): Promise<{ payload: ShopRestockWebhookPayload; complete: boolean }> {
   const openState = await getShopOpenState(now);
   const stocks = await getAllDailyStocks();
   const stockByItemId = new Map(
@@ -157,63 +219,133 @@ async function buildRestockPayload(today: string, now: Date) {
   );
 
   return {
-    today,
-    isOpen: openState.isOpen,
-    openMode: openState.mode,
-    scheduledOpen: openState.scheduledOpen,
-    items: SHOP_CATALOG.map((item) => ({
-      name: item.name,
-      icon: item.icon,
-      stock: stockByItemId.get(item.slug) ?? 0,
-      price: item.price,
-      pageGroup: item.pageGroup,
-    })).filter((item) => item.stock > 0),
+    complete: SHOP_CATALOG.every((item) => stockByItemId.has(item.slug)),
+    payload: {
+      today,
+      isOpen: openState.isOpen,
+      openMode: openState.mode,
+      scheduledOpen: openState.scheduledOpen,
+      items: SHOP_CATALOG.map((item) => ({
+        name: item.name,
+        icon: item.icon,
+        stock: stockByItemId.get(item.slug) ?? 0,
+        price: item.price,
+        pageGroup: item.pageGroup,
+      })).filter((item) => item.stock > 0),
+    },
   };
+}
+
+export async function syncDailyShopRestockDiscordMessage(): Promise<DiscordMessageBatchSyncResult> {
+  return drainDiscordMessageBatchSync({
+    logPrefix: "shop-restock-discord",
+    newLeaseToken: randomUUID,
+    acquire: async (leaseToken) => {
+      const state = await acquireNotificationLease({ leaseToken });
+      return state
+        ? {
+            requestedRevision: state.requestedRevision,
+            messageIds: Array.from(
+              new Set([
+                ...(state.messageIds ?? []),
+                ...(state.cleanupMessageIds ?? []),
+              ]),
+            ),
+            desiredPayloads: state.desiredPayloads,
+            leaseToken,
+          }
+        : null;
+    },
+    deleteMessage: deleteDailyShopRestockDiscordMessage,
+    createMessage: createDailyShopRestockDiscordMessage,
+    recordInflight: recordInflightMessages,
+    complete: completeNotificationSync,
+    confirm: isNotificationSyncComplete,
+    fail: failNotificationSync,
+    warn: (message, error) => console.warn(message, error),
+  });
+}
+
+export async function recoverDailyShopRestockDiscordMessage(
+  today: string,
+  now: Date = new Date(),
+): Promise<{
+  status:
+    | "requested"
+    | "current"
+    | "pending"
+    | "incomplete"
+    | "no-stock"
+    | "skipped-no-webhook";
+  itemCount: number;
+}> {
+  const { payload, complete } = await buildRestockPayload(today, now);
+  const itemCount = payload.items.length;
+  if (!complete) return { status: "incomplete", itemCount };
+  if (itemCount === 0) return { status: "no-stock", itemCount };
+  if (!process.env.DISCORD_WEBHOOK_SHOP_URL) {
+    return { status: "skipped-no-webhook", itemCount };
+  }
+
+  const state = await findNotificationState();
+  if (state?.desiredDate === today) {
+    return {
+      status:
+        state.requestedRevision > state.syncedRevision ? "pending" : "current",
+      itemCount,
+    };
+  }
+
+  const discordPayload = buildShopRestockDiscordPayload(payload);
+  if (!discordPayload) return { status: "no-stock", itemCount: 0 };
+  await requestNotificationSync({ date: today, payload: discordPayload });
+  return { status: "requested", itemCount };
 }
 
 export async function notifyDailyShopRestock(
   today: string,
   now: Date = new Date(),
 ): Promise<ShopRestockNotificationResult> {
-  const payload = await buildRestockPayload(today, now);
-  const itemCount = payload.items.length;
-
-  if (itemCount === 0) {
-    return { status: "skipped-no-stock", itemCount };
-  }
-
-  if (!process.env.DISCORD_WEBHOOK_SHOP_URL) {
-    console.warn(
-      "[notifyDailyShopRestock] DISCORD_WEBHOOK_SHOP_URL 미설정 — silent skip",
-    );
-    return { status: "skipped-no-webhook", itemCount };
-  }
-
-  const claimed = await claimNotification(today, now);
-  if (!claimed) {
-    return { status: "skipped-already-sent", itemCount };
-  }
-
   try {
-    const sendResult = await notifyShopRestock(payload);
-    if (sendResult === "skipped") {
-      await releaseNotificationClaim(today, now, "webhook skipped");
-      return { status: "skipped-no-webhook", itemCount };
+    const recovery = await recoverDailyShopRestockDiscordMessage(today, now);
+    if (recovery.status === "no-stock") {
+      return { status: "skipped-no-stock", itemCount: recovery.itemCount };
     }
+    if (recovery.status === "incomplete") {
+      return {
+        status: "skipped-incomplete",
+        itemCount: recovery.itemCount,
+      };
+    }
+    if (recovery.status === "skipped-no-webhook") {
+      console.warn(
+        "[notifyDailyShopRestock] DISCORD_WEBHOOK_SHOP_URL 미설정 — silent skip",
+      );
+      return {
+        status: "skipped-no-webhook",
+        itemCount: recovery.itemCount,
+      };
+    }
+
+    const result = await syncDailyShopRestockDiscordMessage();
+    if (result === "synced") {
+      return { status: "sent", itemCount: recovery.itemCount };
+    }
+    if (result === "idle") {
+      return {
+        status:
+          recovery.status === "current" ? "skipped-current" : "queued",
+        itemCount: recovery.itemCount,
+      };
+    }
+    return {
+      status: "failed",
+      itemCount: recovery.itemCount,
+      error: `Discord 편의점 입고 공지 동기화 실패 (${result})`,
+    };
   } catch (error) {
     const message = getErrorMessage(error);
-    await releaseNotificationClaim(today, now, message);
-    console.warn("[notifyDailyShopRestock] Discord 전송 실패:", error);
-    return { status: "failed", itemCount, error: message };
+    console.warn("[notifyDailyShopRestock] 공지 상태 요청 실패:", error);
+    return { status: "failed", itemCount: 0, error: message };
   }
-
-  try {
-    await markNotificationSent(today, now, itemCount);
-  } catch (error) {
-    const message = getErrorMessage(error);
-    console.warn("[notifyDailyShopRestock] sentAt 기록 실패:", error);
-    return { status: "sent-untracked", itemCount, error: message };
-  }
-
-  return { status: "sent", itemCount };
 }

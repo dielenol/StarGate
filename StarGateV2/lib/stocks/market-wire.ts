@@ -14,7 +14,7 @@ import {
   formatIndexValue,
 } from "@/lib/stocks/market-index";
 import { kstDateTag, kstNowTag } from "@/lib/stocks/time";
-import type { StockMarketWireSyncResult } from "@/lib/stocks/market-wire-sync";
+import type { DiscordMessageBatchSyncResult } from "@/lib/discord/message-batch-sync";
 
 type DiscordEmbedField = {
   name: string;
@@ -672,7 +672,7 @@ async function sendDiscordPayload(payload: DiscordPayload): Promise<MarketWireRe
   };
 }
 
-export async function syncScheduledStockMarketWireMessages(): Promise<StockMarketWireSyncResult> {
+export async function syncScheduledStockMarketWireMessages(): Promise<DiscordMessageBatchSyncResult> {
   const { syncScheduledStockMarketWireMessages: sync } = await import(
     "@/lib/notifications/stock-market-wire-discord"
   );
@@ -721,7 +721,7 @@ interface ScheduledStockMarketWireDependencies {
     sourceRevision?: string;
     payloads: DiscordPayload[];
   }): Promise<void>;
-  sync(): Promise<StockMarketWireSyncResult>;
+  sync(): Promise<DiscordMessageBatchSyncResult>;
   rebuild?(summary: ScheduledStockTickSummary): Promise<ScheduledStockTickSummary>;
 }
 

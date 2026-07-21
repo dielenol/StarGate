@@ -1,13 +1,14 @@
-export interface StockMarketWireLease<TPayload> {
+export interface DiscordMessageBatchLease<TPayload> {
   requestedRevision: number;
   messageIds: string[];
   desiredPayloads: TPayload[];
   leaseToken: string;
 }
 
-export interface StockMarketWireSyncDependencies<TPayload> {
+export interface DiscordMessageBatchSyncDependencies<TPayload> {
+  logPrefix: string;
   newLeaseToken(): string;
-  acquire(leaseToken: string): Promise<StockMarketWireLease<TPayload> | null>;
+  acquire(leaseToken: string): Promise<DiscordMessageBatchLease<TPayload> | null>;
   deleteMessage(messageId: string): Promise<void>;
   createMessage(payload: TPayload): Promise<string>;
   recordInflight(args: {
@@ -31,7 +32,7 @@ export interface StockMarketWireSyncDependencies<TPayload> {
   warn?(message: string, error?: unknown): void;
 }
 
-export type StockMarketWireSyncResult =
+export type DiscordMessageBatchSyncResult =
   | "synced"
   | "idle"
   | "failed"
@@ -50,19 +51,20 @@ async function deleteMessages(
   }
 }
 
-export async function drainStockMarketWireSync<TPayload>(
-  dependencies: StockMarketWireSyncDependencies<TPayload>,
+export async function drainDiscordMessageBatchSync<TPayload>(
+  dependencies: DiscordMessageBatchSyncDependencies<TPayload>,
   maxPasses = 10,
-): Promise<StockMarketWireSyncResult> {
+): Promise<DiscordMessageBatchSyncResult> {
   let synced = false;
+  const prefix = `[${dependencies.logPrefix}]`;
 
   for (let pass = 0; pass < maxPasses; pass += 1) {
     const leaseToken = dependencies.newLeaseToken();
-    let lease: StockMarketWireLease<TPayload> | null;
+    let lease: DiscordMessageBatchLease<TPayload> | null;
     try {
       lease = await dependencies.acquire(leaseToken);
     } catch (error) {
-      dependencies.warn?.("[stock-market-wire] lease 획득 실패", error);
+      dependencies.warn?.(`${prefix} lease 획득 실패`, error);
       return "failed";
     }
     if (!lease) return synced ? "synced" : "idle";
@@ -78,7 +80,7 @@ export async function drainStockMarketWireSync<TPayload>(
           messageIds: newMessageIds,
         });
         if (!inflightRecorded) {
-          throw new Error("주식 공시 message id 기록 전에 lease를 상실했습니다.");
+          throw new Error("Discord message id 기록 전에 lease를 상실했습니다.");
         }
       }
 
@@ -100,7 +102,7 @@ export async function drainStockMarketWireSync<TPayload>(
         } catch (confirmationError) {
           completionUncertain = true;
           dependencies.warn?.(
-            "[stock-market-wire] 완료 응답 유실 후 상태 확인 실패",
+            `${prefix} 완료 응답 유실 후 상태 확인 실패`,
             confirmationError,
           );
         }
@@ -116,11 +118,11 @@ export async function drainStockMarketWireSync<TPayload>(
         await deleteMessages(newMessageIds, dependencies.deleteMessage).catch(
           (error) =>
             dependencies.warn?.(
-              "[stock-market-wire] lease 상실 후 보상 삭제 실패",
+              `${prefix} lease 상실 후 보상 삭제 실패`,
               error,
             ),
         );
-        throw new Error("주식 공시 동기화 lease를 완료 전에 상실했습니다.");
+        throw new Error("Discord batch 동기화 lease를 완료 전에 상실했습니다.");
       }
       synced = true;
     } catch (error) {
@@ -128,7 +130,7 @@ export async function drainStockMarketWireSync<TPayload>(
         await deleteMessages(newMessageIds, dependencies.deleteMessage).catch(
           (cleanupError) =>
             dependencies.warn?.(
-              "[stock-market-wire] 신규 메시지 보상 삭제 실패",
+              `${prefix} 신규 메시지 보상 삭제 실패`,
               cleanupError,
             ),
         );
@@ -141,11 +143,11 @@ export async function drainStockMarketWireSync<TPayload>(
         })
         .catch((releaseError) =>
           dependencies.warn?.(
-            "[stock-market-wire] 실패 상태 기록 실패",
+            `${prefix} 실패 상태 기록 실패`,
             releaseError,
           ),
         );
-      dependencies.warn?.("[stock-market-wire] 공시 동기화 실패", error);
+      dependencies.warn?.(`${prefix} batch 동기화 실패`, error);
       return "failed";
     }
   }

@@ -12,12 +12,13 @@ import {
   deleteScheduledStockMarketWireMessage,
 } from "@/lib/stocks/market-wire";
 import {
-  drainStockMarketWireSync,
-  type StockMarketWireSyncResult,
-} from "@/lib/stocks/market-wire-sync";
+  drainDiscordMessageBatchSync,
+  type DiscordMessageBatchSyncResult,
+} from "@/lib/discord/message-batch-sync";
 
-export async function syncScheduledStockMarketWireMessages(): Promise<StockMarketWireSyncResult> {
-  return drainStockMarketWireSync({
+export async function syncScheduledStockMarketWireMessages(): Promise<DiscordMessageBatchSyncResult> {
+  return drainDiscordMessageBatchSync({
+    logPrefix: "stock-market-wire",
     newLeaseToken: randomUUID,
     acquire: async (leaseToken) => {
       const state = await acquireScheduledStockMarketWireLease({ leaseToken });

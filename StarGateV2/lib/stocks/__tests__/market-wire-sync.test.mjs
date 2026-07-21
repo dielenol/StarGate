@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { drainStockMarketWireSync } from "../market-wire-sync.ts";
+import { drainDiscordMessageBatchSync } from "../../discord/message-batch-sync.ts";
 
 function makeFakeSync() {
   const state = {
@@ -25,6 +25,7 @@ function makeFakeSync() {
     created,
     deleted,
     dependencies: {
+      logPrefix: "stock-market-wire-test",
       newLeaseToken: () => `lease-${++tokenSequence}`,
       acquire: async (leaseToken) => {
         if (state.leaseToken || state.requestedRevision <= state.syncedRevision) {
@@ -90,11 +91,11 @@ test("a newer revision replaces the first batch before releasing the drain", asy
     return originalCreate(payload);
   };
 
-  const first = drainStockMarketWireSync(fake.dependencies);
+  const first = drainDiscordMessageBatchSync(fake.dependencies);
   await new Promise((resolve) => setImmediate(resolve));
   fake.state.requestedRevision = 2;
   fake.state.desiredPayloads = ["latest-1", "latest-2", "latest-3", "latest-4"];
-  const concurrent = await drainStockMarketWireSync(fake.dependencies);
+  const concurrent = await drainDiscordMessageBatchSync(fake.dependencies);
   releaseFirstCreate();
   const result = await first;
 
@@ -111,7 +112,7 @@ test("old message deletion failure prevents every new post and leaves dirty stat
     throw new Error("DELETE_FAILED");
   };
 
-  const result = await drainStockMarketWireSync(fake.dependencies);
+  const result = await drainDiscordMessageBatchSync(fake.dependencies);
 
   assert.equal(result, "failed");
   assert.equal(fake.created.length, 0);
@@ -130,7 +131,7 @@ test("partial post failure removes newly created messages and keeps the revision
     return originalCreate(payload);
   };
 
-  const result = await drainStockMarketWireSync(fake.dependencies);
+  const result = await drainDiscordMessageBatchSync(fake.dependencies);
 
   assert.equal(result, "failed");
   assert.equal(fake.state.syncedRevision, 0);
@@ -141,7 +142,7 @@ test("partial post failure removes newly created messages and keeps the revision
   assert.deepEqual(fake.deleted.slice(-2), ["new-1", "new-2"]);
 
   fake.dependencies.createMessage = originalCreate;
-  const retry = await drainStockMarketWireSync(fake.dependencies);
+  const retry = await drainDiscordMessageBatchSync(fake.dependencies);
 
   assert.equal(retry, "synced");
   assert.equal(fake.state.syncedRevision, 1);
@@ -163,7 +164,7 @@ test("a lost completion response is confirmed without deleting the live batch", 
     throw new Error("ACK_LOST_AFTER_COMMIT");
   };
 
-  const result = await drainStockMarketWireSync(fake.dependencies);
+  const result = await drainDiscordMessageBatchSync(fake.dependencies);
 
   assert.equal(result, "synced");
   assert.equal(fake.visible.size, 4);
@@ -179,7 +180,7 @@ test("inflight ids remain recoverable when completion and confirmation both fail
     throw new Error("CONFIRM_UNAVAILABLE");
   };
 
-  const first = await drainStockMarketWireSync(fake.dependencies);
+  const first = await drainDiscordMessageBatchSync(fake.dependencies);
 
   assert.equal(first, "failed");
   assert.deepEqual(fake.state.cleanupMessageIds, [
@@ -205,7 +206,7 @@ test("inflight ids remain recoverable when completion and confirmation both fail
   };
   fake.dependencies.confirm = async () => false;
 
-  const retry = await drainStockMarketWireSync(fake.dependencies);
+  const retry = await drainDiscordMessageBatchSync(fake.dependencies);
 
   assert.equal(retry, "synced");
   assert.deepEqual([...fake.visible], ["new-5", "new-6", "new-7", "new-8"]);
