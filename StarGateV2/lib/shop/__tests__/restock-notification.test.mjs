@@ -6,10 +6,6 @@ const REFRESH_ROUTE = new URL(
   "../../../app/api/cron/shop/refresh/route.ts",
   import.meta.url,
 );
-const RETRY_ROUTE = new URL(
-  "../../../app/api/cron/shop/discord-restock/route.ts",
-  import.meta.url,
-);
 const NOTIFICATION = new URL("../restock-notification.ts", import.meta.url);
 const DISCORD = new URL("../../discord.ts", import.meta.url);
 const VERCEL_CONFIG = new URL("../../../vercel.json", import.meta.url);
@@ -38,16 +34,13 @@ test("daily shop restock uses one singleton revision and lease state", async () 
   assert.doesNotMatch(source, /sentAt/);
 });
 
-test("shop restock has a secured recurring recovery consumer", async () => {
-  const [route, config] = await Promise.all([
-    readFile(RETRY_ROUTE, "utf8"),
-    readFile(VERCEL_CONFIG, "utf8"),
-  ]);
-  assert.match(route, /authorization/);
-  assert.match(route, /CRON_SECRET/);
-  assert.match(route, /recoverDailyShopRestockDiscordMessage/);
-  assert.match(route, /syncDailyShopRestockDiscordMessage/);
-  assert.match(config, /\/api\/cron\/shop\/discord-restock/);
+test("shop restock is refreshed only by the daily shop cron", async () => {
+  const config = await readFile(VERCEL_CONFIG, "utf8");
+  assert.match(
+    config,
+    /"path": "\/api\/cron\/shop\/refresh"[\s\S]*"schedule": "0 2 \* \* \*"/,
+  );
+  assert.doesNotMatch(config, /\/api\/cron\/shop\/discord-restock/);
 });
 
 test("manual reorder and fulfillment messages remain outside canonical cleanup", async () => {

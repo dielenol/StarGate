@@ -19,7 +19,7 @@ export function scheduleEquipmentResearchDiscordCardSync(
     after(run);
   } catch (error) {
     console.warn(
-      `[research-discord] after() 예약 실패, cron 재시도 대기 key=${projectKey}`,
+      `[research-discord] after() 예약 실패 key=${projectKey}`,
       error,
     );
   }

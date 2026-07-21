@@ -5,24 +5,12 @@
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/cron/stocks/discord-wire",
-      "schedule": "2-57/5 * * * *"
-    },
-    {
       "path": "/api/cron/shop/refresh",
       "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/cron/shop/discord-restock",
-      "schedule": "3-58/5 * * * *"
-    },
-    {
       "path": "/api/cron/sessions/reminders",
       "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/research/discord-cards",
-      "schedule": "*/5 * * * *"
     }
   ]
 }

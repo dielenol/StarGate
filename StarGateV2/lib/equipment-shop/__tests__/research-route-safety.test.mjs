@@ -31,8 +31,8 @@ const RESEARCH_DISCORD_SYNC = new URL(
   "../../notifications/equipment-research-discord.ts",
   import.meta.url,
 );
-const RESEARCH_DISCORD_CRON = new URL(
-  "../../../app/api/cron/research/discord-cards/route.ts",
+const RESEARCH_DISCORD_SCHEDULE = new URL(
+  "../../notifications/equipment-research-discord-schedule.ts",
   import.meta.url,
 );
 const VERCEL_CONFIG = new URL("../../../vercel.json", import.meta.url);
@@ -123,18 +123,17 @@ test("team research mutations queue one durable Discord card revision in their t
   }
 });
 
-test("research Discord cards have a secured recurring retry consumer", async () => {
-  const [syncSource, cronSource, vercelConfig] = await Promise.all([
+test("research Discord cards sync only from post-commit after() work", async () => {
+  const [syncSource, scheduleSource, vercelConfig] = await Promise.all([
     readFile(RESEARCH_DISCORD_SYNC, "utf8"),
-    readFile(RESEARCH_DISCORD_CRON, "utf8"),
+    readFile(RESEARCH_DISCORD_SCHEDULE, "utf8"),
     readFile(VERCEL_CONFIG, "utf8"),
   ]);
 
-  assert.match(syncSource, /syncPendingEquipmentResearchDiscordCards/);
-  assert.match(syncSource, /listPendingEquipmentResearchDiscordCardKeys/);
-  assert.match(cronSource, /authorization/);
-  assert.match(cronSource, /CRON_SECRET/);
-  assert.match(vercelConfig, /\/api\/cron\/research\/discord-cards/);
+  assert.doesNotMatch(syncSource, /syncPendingEquipmentResearchDiscordCards/);
+  assert.match(scheduleSource, /after\(run\)/);
+  assert.doesNotMatch(scheduleSource, /cron/);
+  assert.doesNotMatch(vercelConfig, /\/api\/cron\/research\/discord-cards/);
 });
 
 test("legacy team projects without funding pools use project cost fallback", async () => {

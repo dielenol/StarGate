@@ -87,7 +87,6 @@ export interface EquipmentResearchDiscordCard {
   messageId?: string;
   leaseToken?: string;
   leaseExpiresAt?: Date;
-  nextAttemptAt?: Date;
   lastError?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -529,7 +528,7 @@ export async function requestEquipmentResearchDiscordCardSync(
         createdAt: now,
       },
       $set: { updatedAt: now },
-      $unset: { lastError: "", nextAttemptAt: "" },
+      $unset: { lastError: "" },
     },
     { upsert: true, session: options.session },
   );
@@ -546,20 +545,10 @@ export async function acquireEquipmentResearchDiscordCardLease(args: {
     {
       _id: args.projectKey,
       $expr: { $gt: ["$requestedRevision", "$syncedRevision"] },
-      $and: [
-        {
-          $or: [
-            { leaseToken: { $exists: false } },
-            { leaseExpiresAt: { $exists: false } },
-            { leaseExpiresAt: { $lte: now } },
-          ],
-        },
-        {
-          $or: [
-            { nextAttemptAt: { $exists: false } },
-            { nextAttemptAt: { $lte: now } },
-          ],
-        },
+      $or: [
+        { leaseToken: { $exists: false } },
+        { leaseExpiresAt: { $exists: false } },
+        { leaseExpiresAt: { $lte: now } },
       ],
     },
     {
@@ -597,7 +586,6 @@ export async function completeEquipmentResearchDiscordCardSync(args: {
         leaseToken: "",
         leaseExpiresAt: "",
         lastError: "",
-        nextAttemptAt: "",
       },
     },
   );
@@ -618,7 +606,6 @@ export async function failEquipmentResearchDiscordCardSync(args: {
     {
       $set: {
         lastError: args.error.slice(0, 1000),
-        nextAttemptAt: new Date(Date.now() + 5 * 60 * 1000),
         updatedAt: new Date(),
       },
       $unset: {
@@ -644,39 +631,6 @@ export async function isEquipmentResearchDiscordCardSyncComplete(args: {
     { projection: { _id: 1 } },
   );
   return Boolean(card);
-}
-
-export async function listPendingEquipmentResearchDiscordCardKeys(
-  now = new Date(),
-  limit = 20,
-): Promise<string[]> {
-  const col = await equipmentResearchDiscordCardsCol();
-  const cards = await col
-    .find(
-      {
-        $expr: { $gt: ["$requestedRevision", "$syncedRevision"] },
-        $and: [
-          {
-            $or: [
-              { leaseToken: { $exists: false } },
-              { leaseExpiresAt: { $exists: false } },
-              { leaseExpiresAt: { $lte: now } },
-            ],
-          },
-          {
-            $or: [
-              { nextAttemptAt: { $exists: false } },
-              { nextAttemptAt: { $lte: now } },
-            ],
-          },
-        ],
-      },
-      { projection: { _id: 1 } },
-    )
-    .sort({ updatedAt: 1 })
-    .limit(limit)
-    .toArray();
-  return cards.map((card) => card._id);
 }
 
 export async function findEquipmentResearchDiscordCard(

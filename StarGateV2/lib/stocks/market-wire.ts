@@ -679,42 +679,6 @@ export async function syncScheduledStockMarketWireMessages(): Promise<DiscordMes
   return sync();
 }
 
-export async function recoverScheduledStockMarketWireForToday(): Promise<
-  "requested" | "current" | "no-history" | "skipped-no-webhook"
-> {
-  if (!getWebhookUrl()) return "skipped-no-webhook";
-
-  const date = kstDateTag();
-  const {
-    findScheduledStockMarketWireState,
-    requestScheduledStockMarketWireSync,
-  } = await import("@/lib/db/stock-market-wire");
-  const state = await findScheduledStockMarketWireState();
-
-  const { rebuildScheduledStockTickSummary } = await import(
-    "@/lib/stocks/scheduled-tick"
-  );
-  const summary = await rebuildScheduledStockTickSummary(date);
-  if (!summary) {
-    return state?.desiredDate === date ? "current" : "no-history";
-  }
-  if (
-    state?.desiredDate === date &&
-    state.desiredSourceRevision === summary.sourceRevision
-  ) {
-    return "current";
-  }
-  const payload = buildScheduledPayload(summary);
-  if (!payload) return "no-history";
-
-  await requestScheduledStockMarketWireSync({
-    date,
-    sourceRevision: summary.sourceRevision,
-    payloads: splitPayloadIntoSingleEmbedMessages(payload),
-  });
-  return "requested";
-}
-
 interface ScheduledStockMarketWireDependencies {
   request(args: {
     date: string;

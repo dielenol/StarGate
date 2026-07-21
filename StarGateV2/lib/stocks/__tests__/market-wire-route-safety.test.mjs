@@ -6,10 +6,6 @@ const TICK_ROUTE = new URL(
   "../../../app/api/cron/stocks/tick/route.ts",
   import.meta.url,
 );
-const RETRY_ROUTE = new URL(
-  "../../../app/api/cron/stocks/discord-wire/route.ts",
-  import.meta.url,
-);
 const ADMIN_PRICE_ROUTE = new URL(
   "../../../app/api/erp/admin/stocks/prices/route.ts",
   import.meta.url,
@@ -25,16 +21,13 @@ test("the scheduled tick applies prices before requesting the canonical wire bat
   );
 });
 
-test("the stock wire has a secured recurring retry consumer", async () => {
-  const [route, config] = await Promise.all([
-    readFile(RETRY_ROUTE, "utf8"),
-    readFile(VERCEL_CONFIG, "utf8"),
-  ]);
-  assert.match(route, /authorization/);
-  assert.match(route, /CRON_SECRET/);
-  assert.match(route, /syncScheduledStockMarketWireMessages/);
-  assert.match(route, /recoverScheduledStockMarketWireForToday/);
-  assert.match(config, /\/api\/cron\/stocks\/discord-wire/);
+test("the stock wire is refreshed only by the daily stock cron", async () => {
+  const config = await readFile(VERCEL_CONFIG, "utf8");
+  assert.match(
+    config,
+    /"path": "\/api\/cron\/stocks\/tick"[\s\S]*"schedule": "0 3 \* \* \*"/,
+  );
+  assert.doesNotMatch(config, /\/api\/cron\/stocks\/discord-wire/);
 });
 
 test("the scheduled wire singleton persists desired payloads and message ids", async () => {

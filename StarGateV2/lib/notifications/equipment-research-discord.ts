@@ -7,7 +7,6 @@ import {
   findEquipmentResearchProjectByKey,
   findTeamFundingPoolByKey,
   isEquipmentResearchDiscordCardSyncComplete,
-  listPendingEquipmentResearchDiscordCardKeys,
   listEquipmentResearchContributionsByProjectKey,
 } from "@/lib/db/equipment-research";
 import {
@@ -92,33 +91,4 @@ export async function syncEquipmentResearchDiscordCard(
     fail: failEquipmentResearchDiscordCardSync,
     warn: (message, error) => console.warn(message, error),
   });
-}
-
-export async function syncPendingEquipmentResearchDiscordCards(
-  limit = 20,
-): Promise<{
-  attempted: number;
-  synced: number;
-  failed: number;
-}> {
-  const projectKeys = await listPendingEquipmentResearchDiscordCardKeys(
-    new Date(),
-    limit,
-  );
-  let synced = 0;
-  let failed = 0;
-  for (const projectKey of projectKeys) {
-    try {
-      const result = await syncEquipmentResearchDiscordCard(projectKey);
-      if (result === "synced" || result === "idle") synced += 1;
-      else failed += 1;
-    } catch (error) {
-      console.warn(
-        `[research-discord] pending 카드 처리 실패 key=${projectKey}`,
-        error,
-      );
-      failed += 1;
-    }
-  }
-  return { attempted: projectKeys.length, synced, failed };
 }
