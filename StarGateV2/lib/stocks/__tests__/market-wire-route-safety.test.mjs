@@ -19,6 +19,8 @@ test("the scheduled tick applies prices before requesting the canonical wire bat
     source,
     /applyScheduledStockTick\(\)[\s\S]*notifyScheduledStockMarketWire\(summary\)/,
   );
+  assert.match(source, /marketWire\.status === "failed"/);
+  assert.match(source, /throw new Error\(marketWire\.error/);
 });
 
 test("the stock wire is refreshed only by the daily stock cron", async () => {

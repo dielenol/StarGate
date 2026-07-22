@@ -10,6 +10,9 @@ export const dynamic = "force-dynamic";
 async function runScheduledStockTick() {
   const summary = await applyScheduledStockTick();
   const marketWire = await notifyScheduledStockMarketWire(summary);
+  if (marketWire.status === "failed") {
+    throw new Error(marketWire.error ?? "Discord 정기 공시 정리에 실패했습니다.");
+  }
   return { ...summary, marketWire };
 }
 

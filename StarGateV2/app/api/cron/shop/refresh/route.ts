@@ -16,6 +16,10 @@ export async function GET(request: Request) {
 
   const summary = await ensureDailyStockRefresh();
   const notification = await notifyDailyShopRestock(summary.today);
+  const ok = notification.status !== "failed";
 
-  return NextResponse.json({ ok: true, ...summary, notification });
+  return NextResponse.json(
+    { ok, ...summary, notification },
+    { status: ok ? 200 : 500 },
+  );
 }

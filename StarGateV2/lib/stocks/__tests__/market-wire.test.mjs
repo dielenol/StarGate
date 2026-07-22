@@ -143,8 +143,13 @@ test("scheduled stock market wire leaves a concurrent request queued", async (t)
   });
 });
 
-test("a fully skipped tick does not create a Discord revision", async () => {
+test("a fully skipped tick retries cleanup without creating a Discord revision", async (t) => {
+  const envSnapshot = snapshotEnv();
   let requested = false;
+  let synced = false;
+  process.env.DISCORD_WEBHOOK_STOCK_URL = "https://discord.test/stock";
+  t.after(() => restoreEnv(envSnapshot));
+
   const result = await notifyScheduledStockMarketWire(
     {
       date: "2026-07-09",
@@ -155,10 +160,37 @@ test("a fully skipped tick does not create a Discord revision", async () => {
       request: async () => {
         requested = true;
       },
-      sync: async () => "synced",
+      sync: async () => {
+        synced = true;
+        return "idle";
+      },
     },
   );
 
   assert.deepEqual(result, { status: "skipped-no-change" });
   assert.equal(requested, false);
+  assert.equal(synced, true);
+});
+
+test("a skipped tick surfaces cleanup recovery failure", async (t) => {
+  const envSnapshot = snapshotEnv();
+  process.env.DISCORD_WEBHOOK_STOCK_URL = "https://discord.test/stock";
+  t.after(() => restoreEnv(envSnapshot));
+
+  const result = await notifyScheduledStockMarketWire(
+    {
+      date: "2026-07-09",
+      slot: "2026-07-09 12:00",
+      results: [makeResult({ status: "skipped" })],
+    },
+    {
+      request: async () => {},
+      sync: async () => "failed",
+    },
+  );
+
+  assert.deepEqual(result, {
+    status: "failed",
+    error: "Discord 정기 공시 복구 실패 (failed)",
+  });
 });

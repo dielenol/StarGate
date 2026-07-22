@@ -710,6 +710,19 @@ export async function notifyScheduledStockMarketWire(
   dependencies: ScheduledStockMarketWireDependencies = scheduledStockMarketWireDependencies,
 ): Promise<MarketWireResult> {
   if (summary.results.every((result) => result.status === "skipped")) {
+    if (getWebhookUrl()) {
+      try {
+        const recovery = await dependencies.sync();
+        if (recovery === "failed" || recovery === "pass_limit") {
+          return {
+            status: "failed",
+            error: `Discord 정기 공시 복구 실패 (${recovery})`,
+          };
+        }
+      } catch (error) {
+        return { status: "failed", error: getErrorMessage(error) };
+      }
+    }
     return { status: "skipped-no-change" };
   }
   if (!getWebhookUrl()) {

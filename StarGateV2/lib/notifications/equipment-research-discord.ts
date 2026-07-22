@@ -4,6 +4,7 @@ import {
   acquireEquipmentResearchDiscordCardLease,
   completeEquipmentResearchDiscordCardSync,
   failEquipmentResearchDiscordCardSync,
+  findEquipmentResearchDiscordCard,
   findEquipmentResearchProjectByKey,
   findTeamFundingPoolByKey,
   isEquipmentResearchDiscordCardSyncComplete,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/equipment-shop/research-discord-card";
 import { drainResearchDiscordCardSync } from "@/lib/equipment-shop/research-discord-sync";
 import { getEquipmentResearchNode } from "@/lib/equipment-shop/research";
+import { cleanupEquipmentResearchCardHistory } from "@/lib/notifications/discord-history-cleanup";
 
 function getSiteBaseUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://www.ordonet.co.kr").replace(
@@ -67,7 +69,7 @@ export async function buildCurrentResearchDiscordPayload(
 export async function syncEquipmentResearchDiscordCard(
   projectKey: string,
 ): Promise<"synced" | "idle" | "failed" | "pass_limit"> {
-  return drainResearchDiscordCardSync(projectKey, {
+  const result = await drainResearchDiscordCardSync(projectKey, {
     newLeaseToken: randomUUID,
     acquire: async (key, leaseToken) => {
       const card = await acquireEquipmentResearchDiscordCardLease({
@@ -91,4 +93,23 @@ export async function syncEquipmentResearchDiscordCard(
     fail: failEquipmentResearchDiscordCardSync,
     warn: (message, error) => console.warn(message, error),
   });
+  if (result !== "synced" && result !== "idle") return result;
+
+  const card = await findEquipmentResearchDiscordCard(projectKey);
+  if (
+    !card?.messageId ||
+    card.requestedRevision > card.syncedRevision
+  ) {
+    return result;
+  }
+  const cleanup = await cleanupEquipmentResearchCardHistory(
+    projectKey,
+    card.messageId,
+  );
+  if (cleanup.deletedCount > 0) {
+    console.info(
+      `[research-discord] 과거 연구 카드 ${cleanup.deletedCount}건 삭제 key=${projectKey}`,
+    );
+  }
+  return result;
 }

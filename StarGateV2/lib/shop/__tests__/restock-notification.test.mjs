@@ -16,6 +16,8 @@ test("shop refresh applies daily stock before requesting the canonical notice", 
     source,
     /ensureDailyStockRefresh\(\)[\s\S]*notifyDailyShopRestock\(summary\.today\)/,
   );
+  assert.match(source, /notification\.status !== "failed"/);
+  assert.match(source, /status: ok \? 200 : 500/);
 });
 
 test("daily shop restock uses one singleton revision and lease state", async () => {
