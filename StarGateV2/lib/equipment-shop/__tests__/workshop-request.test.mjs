@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { registerHooks } from "node:module";
 import test from "node:test";
 
@@ -353,7 +353,10 @@ test("workshop blueprint parser keeps reusable defaults separate from quote snap
     parseEquipmentWorkshopBlueprint(seed.update.$setOnInsert).ok,
     true,
   );
-  assert.equal(seed.update.$setOnInsert.defaults.result.previewImage, undefined);
+  assert.equal(
+    seed.update.$setOnInsert.defaults.result.previewImage,
+    "/assets/catalog/equipment/assault-shield-claymore-modified-v2.png",
+  );
   assert.deepEqual(seed.update.$setOnInsert.defaults.materials, [{ slug: "force_core", quantity: 1 }]);
   assert.equal(seed.update.$setOnInsert.displayName, "공격 방패 - 크레모아 개조형");
   assert.equal(seed.update.$setOnInsert.defaults.result.damage, "12 물리");
@@ -387,6 +390,19 @@ test("claymore shield is available as a built-in editable workshop preset", () =
     { slug: "force_core", quantity: 1 },
   ]);
   assert.equal(preset.blueprint.defaults.result.damage, "12 물리");
+  assert.equal(
+    preset.blueprint.defaults.result.previewImage,
+    "/assets/catalog/equipment/assault-shield-claymore-modified-v2.png",
+  );
+  assert.equal(
+    existsSync(
+      new URL(
+        `../../../public${preset.blueprint.defaults.result.previewImage}`,
+        import.meta.url,
+      ),
+    ),
+    true,
+  );
   assert.equal(
     preset.blueprint.defaults.result.equipmentAction?.reloadCreditCost,
     200,

@@ -48,6 +48,8 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
           description:
             "아케론 대장간에서 방패 본체와 장약 마운트를 보강한 뒤 토와스키가 전용 크레모아 장약과 기폭 계통을 통합한 이동식 전용 개조형이다. 기본 공격은 12 물리로 상향한다.",
           damage: "12 물리",
+          previewImage:
+            "/assets/catalog/equipment/assault-shield-claymore-modified-v2.png",
           tags: [
             "공방개조",
             "전용장비",

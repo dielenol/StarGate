@@ -1584,7 +1584,7 @@ export default function EquipmentWorkshopAdminClient({
                     <small>
                       {blobUploadEnabled
                         ? "PNG/JPEG/WebP · 최대 5MB"
-                        : "Blob 미설정 · URL 직접 입력 사용"}
+                        : "Blob 저장소 미설정 · 파일 업로드 불가 · 프리셋 또는 URL 사용"}
                     </small>
                   </label>
                   {draft.resultPreviewImage ? (
