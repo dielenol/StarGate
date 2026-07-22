@@ -27,10 +27,12 @@ import {
   useEquipmentWorkshopBlueprints,
   useEquipmentWorkshopRequests,
 } from "@/hooks/queries/useEquipmentShopQuery";
-import type {
-  EquipmentWorkshopBlueprintInput,
-  SerializedEquipmentWorkshopBlueprint,
-} from "@/lib/equipment-shop/workshop-blueprint";
+import type { EquipmentWorkshopBlueprintInput } from "@/lib/equipment-shop/workshop-blueprint";
+import {
+  EQUIPMENT_WORKSHOP_PRESETS,
+  findEquipmentWorkshopPreset,
+  getEquipmentWorkshopPresetSelectionValue,
+} from "@/lib/equipment-shop/workshop-presets";
 import {
   getEquipmentWorkshopUserTags,
   WORKSHOP_COST_POLICY,
@@ -131,6 +133,9 @@ const DURATION_PRESETS = [
   { minutes: 10080, label: "168시간 · 7일" },
 ];
 
+const BLUEPRINT_SOURCE_LABEL = "설계 제안 (design-proposal)";
+const BLUEPRINT_BALANCE_LABEL = "밸런스 후보 (balance-candidate)";
+
 function formatDuration(minutes: number): string {
   if (!Number.isFinite(minutes) || minutes < 1) return "시간 미지정";
   const hours = minutes / 60;
@@ -201,7 +206,10 @@ function createDraft(
 
 function draftFromBlueprint(
   current: QuoteDraft,
-  blueprint: SerializedEquipmentWorkshopBlueprint,
+  blueprint: Pick<
+    EquipmentWorkshopBlueprintInput,
+    "applicability" | "defaults"
+  >,
 ): QuoteDraft {
   const { defaults } = blueprint;
   return {
@@ -431,6 +439,8 @@ export default function EquipmentWorkshopAdminClient({
   const selectedBlueprint = blueprints.find(
     (blueprint) => blueprint._id === selectedBlueprintId,
   );
+  const selectedPreset = findEquipmentWorkshopPreset(selectedBlueprintId);
+  const selectedTemplate = selectedBlueprint ?? selectedPreset?.blueprint;
   const sourceItem = selected?.sourceItemId
     ? items.find((item) => item.id === selected.sourceItemId)
     : undefined;
@@ -450,7 +460,7 @@ export default function EquipmentWorkshopAdminClient({
     (!sourceItem?.slug || !sourceEquipmentCategory || !selected.sourceSlot);
 
   const isCompatible = (
-    blueprint: SerializedEquipmentWorkshopBlueprint,
+    blueprint: Pick<EquipmentWorkshopBlueprintInput, "applicability">,
   ): boolean => {
     if (!selected || !buildKind) return false;
     if (!blueprint.applicability.kinds.includes(buildKind)) return false;
@@ -482,6 +492,9 @@ export default function EquipmentWorkshopAdminClient({
 
   const filteredBlueprints = blueprints.filter(
     (blueprint) => !compatibleOnly || isCompatible(blueprint),
+  );
+  const filteredPresets = EQUIPMENT_WORKSHOP_PRESETS.filter(
+    (preset) => !compatibleOnly || isCompatible(preset.blueprint),
   );
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -530,10 +543,10 @@ export default function EquipmentWorkshopAdminClient({
       !material.option || !material.option.isPublic || !material.slug,
   );
   const draftDirty = JSON.stringify(draft) !== baseline;
-  const selectedBlueprintCompatible =
-    !selectedBlueprint ||
-    (isCompatible(selectedBlueprint) &&
-      selectedBlueprint.applicability.resultCategory === draft.resultCategory);
+  const selectedTemplateCompatible =
+    !selectedTemplate ||
+    (isCompatible(selectedTemplate) &&
+      selectedTemplate.applicability.resultCategory === draft.resultCategory);
   const sourceResultDiff = [
     {
       label: "이름",
@@ -583,6 +596,19 @@ export default function EquipmentWorkshopAdminClient({
 
   const applyBlueprint = (blueprintId: string) => {
     setSelectedBlueprintId(blueprintId);
+    const preset = findEquipmentWorkshopPreset(blueprintId);
+    if (preset) {
+      setBlueprintSlug(preset.blueprint.slug);
+      setBlueprintDisplayName(preset.blueprint.displayName);
+      setDraft((current) =>
+        current ? draftFromBlueprint(current, preset.blueprint) : current,
+      );
+      setFeedback({
+        tone: "success",
+        text: `${preset.displayName} 기본 제공 프리셋을 요청 편집본에 불러왔습니다. 아래 항목을 자유롭게 수정할 수 있으며 저장이나 견적 발행은 실행되지 않았습니다.`,
+      });
+      return;
+    }
     const blueprint = blueprints.find((entry) => entry._id === blueprintId);
     if (!blueprint) {
       setBlueprintSlug("");
@@ -1071,7 +1097,7 @@ export default function EquipmentWorkshopAdminClient({
                 <div className={styles.sectionHeading}>
                   <div>
                     <Eyebrow>2 · 결과 장비 설계안 (RESULT BLUEPRINT)</Eyebrow>
-                    <h2>설계안 선택 후 요청별 편집</h2>
+                    <h2>프리셋·설계안 선택 후 요청별 편집</h2>
                   </div>
                   <span
                     className={styles.dirtyBadge}
@@ -1082,17 +1108,35 @@ export default function EquipmentWorkshopAdminClient({
                 </div>
                 <div className={styles.blueprintPicker}>
                   <label>
-                    <span>설계안 라이브러리</span>
+                    <span>프리셋·설계안 라이브러리</span>
                     <select
                       value={selectedBlueprintId}
                       onChange={(event) => applyBlueprint(event.target.value)}
                     >
-                      <option value="">설계안 없이 직접 편집</option>
-                      {filteredBlueprints.map((blueprint) => (
-                        <option key={blueprint._id} value={blueprint._id}>
-                          {blueprint.displayName} · v{blueprint.version}
-                        </option>
-                      ))}
+                      <option value="">프리셋·설계안 없이 직접 편집</option>
+                      {filteredPresets.length > 0 ? (
+                        <optgroup label="기본 제공 프리셋">
+                          {filteredPresets.map((preset) => (
+                            <option
+                              key={preset.key}
+                              value={getEquipmentWorkshopPresetSelectionValue(
+                                preset.key,
+                              )}
+                            >
+                              {preset.displayName} · 프리셋
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : null}
+                      {filteredBlueprints.length > 0 ? (
+                        <optgroup label="저장된 설계안">
+                          {filteredBlueprints.map((blueprint) => (
+                            <option key={blueprint._id} value={blueprint._id}>
+                              {blueprint.displayName} · v{blueprint.version}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : null}
                     </select>
                   </label>
                   <label className={styles.checkboxLabel}>
@@ -1106,13 +1150,17 @@ export default function EquipmentWorkshopAdminClient({
                     현재 요청과 호환되는 설계안만 표시
                   </label>
                 </div>
-                {selectedBlueprint ? (
+                {selectedPreset ? (
                   <p className={styles.blueprintMeta}>
-                    현재 설계안 v{selectedBlueprint.version} · {sourceCompatibilityUnknown ? "호환 미확정 — 견적 발행 시 장착 원본 재검증" : selectedBlueprintCompatible ? "호환" : "비호환 — 견적 발행 전 범위·결과 분류 확인 필요"} · {selectedBlueprint.sourceClass} / {selectedBlueprint.balanceStatus}
+                    기본 제공 프리셋 · 선택 즉시 편집본 자동 입력 · 모든 항목 수정 가능 · {BLUEPRINT_SOURCE_LABEL} / {BLUEPRINT_BALANCE_LABEL}
+                  </p>
+                ) : selectedBlueprint ? (
+                  <p className={styles.blueprintMeta}>
+                    현재 설계안 v{selectedBlueprint.version} · {sourceCompatibilityUnknown ? "호환 미확정 — 견적 발행 시 장착 원본 재검증" : selectedTemplateCompatible ? "호환" : "비호환 — 견적 발행 전 범위·결과 분류 확인 필요"} · {BLUEPRINT_SOURCE_LABEL} / {BLUEPRINT_BALANCE_LABEL}
                   </p>
                 ) : (
                   <p className={styles.emptyHint}>
-                    설계안 선택은 편집본만 채웁니다. 저장·업데이트·견적 발행은 각각 별도 동작입니다.
+                    프리셋·설계안 선택은 편집본만 채웁니다. 이후 모든 항목을 직접 수정할 수 있으며 저장·업데이트·견적 발행은 각각 별도 동작입니다.
                   </p>
                 )}
 
@@ -1693,7 +1741,7 @@ export default function EquipmentWorkshopAdminClient({
                     quoteMutation.isPending ||
                     uploading ||
                     missingMaterials.length > 0 ||
-                    !selectedBlueprintCompatible
+                    !selectedTemplateCompatible
                   }
                 >
                   {quoteMutation.isPending

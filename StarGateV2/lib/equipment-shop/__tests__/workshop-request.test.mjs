@@ -22,6 +22,9 @@ registerHooks({
     if (specifier === "@/lib/equipment-shop/workshop-request") {
       return nextResolve(new URL("../workshop-request.ts", import.meta.url).href, context);
     }
+    if (specifier === "@/lib/equipment-shop/workshop-blueprint") {
+      return nextResolve(new URL("../workshop-blueprint.ts", import.meta.url).href, context);
+    }
     return nextResolve(specifier, context);
   },
 });
@@ -29,6 +32,11 @@ registerHooks({
 const { parseEquipmentWorkshopBlueprint } = await import(
   "../workshop-blueprint.ts"
 );
+const {
+  EQUIPMENT_WORKSHOP_PRESETS,
+  findEquipmentWorkshopPreset,
+  getEquipmentWorkshopPresetSelectionValue,
+} = await import("../workshop-presets.ts");
 
 test("upgrade requests require an equipped inventory entry and enough detail", () => {
   assert.deepEqual(
@@ -357,6 +365,52 @@ test("workshop blueprint parser keeps reusable defaults separate from quote snap
   );
 });
 
+test("claymore shield is available as a built-in editable workshop preset", () => {
+  const seed = JSON.parse(
+    readFileSync(
+      new URL(
+        "../../../scripts/seed-payloads/equipment-workshop-blueprint-claymore-u1.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ).update.$setOnInsert;
+  const preset = EQUIPMENT_WORKSHOP_PRESETS.find(
+    (entry) => entry.key === "claymore-assault-shield-u1",
+  );
+  assert.ok(preset);
+  assert.equal(parseEquipmentWorkshopBlueprint(preset.blueprint).ok, true);
+  assert.equal(preset.blueprint.displayName, "공격 방패 - 크레모아 개조형");
+  assert.equal(preset.blueprint.defaults.creditCost, 400);
+  assert.equal(preset.blueprint.defaults.durationMinutes, 4_320);
+  assert.deepEqual(preset.blueprint.defaults.materials, [
+    { slug: "force_core", quantity: 1 },
+  ]);
+  assert.equal(preset.blueprint.defaults.result.damage, "12 물리");
+  assert.equal(
+    preset.blueprint.defaults.result.equipmentAction?.reloadCreditCost,
+    200,
+  );
+  assert.deepEqual(
+    preset.blueprint.defaults.specialistWorkflow?.map(
+      (step) => step.specialistCodename,
+    ),
+    ["TEMPER", "TOWASKI"],
+  );
+  assert.equal(
+    findEquipmentWorkshopPreset(
+      getEquipmentWorkshopPresetSelectionValue(preset.key),
+    ),
+    preset,
+  );
+  assert.deepEqual(preset.blueprint, {
+    slug: seed.slug,
+    displayName: seed.displayName,
+    applicability: seed.applicability,
+    defaults: seed.defaults,
+  });
+});
+
 test("specialist routing is deterministic and READY is derived from server time", () => {
   assert.equal(resolveEquipmentWorkshopSpecialist({ tags: ["냉병기"] }), "TEMPER");
   assert.equal(resolveEquipmentWorkshopSpecialist({ tags: ["화기", "소총"] }), "TOWASKI");
@@ -580,4 +634,11 @@ test("GM material picker supports name and category search", () => {
   assert.match(adminClient, /task: ""/);
   assert.match(adminClient, /specialistWorkflowError/);
   assert.match(adminClient, /getEquipmentWorkshopUserTags/);
+  assert.match(adminClient, /EQUIPMENT_WORKSHOP_PRESETS/);
+  assert.match(adminClient, /기본 제공 프리셋/);
+  assert.match(adminClient, /모든 항목 수정 가능/);
+  assert.match(
+    adminClient,
+    /selectedBlueprint[\s\S]*blueprintRef:[\s\S]*id: selectedBlueprint\._id/,
+  );
 });
