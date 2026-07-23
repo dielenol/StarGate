@@ -690,3 +690,30 @@ test("GM material picker supports name and category search", () => {
     /selectedBlueprint[\s\S]*blueprintRef:[\s\S]*id: selectedBlueprint\._id/,
   );
 });
+
+test("GM workshop uses the shared accessible dropdown instead of native selects", () => {
+  const adminClient = readFileSync(
+    new URL(
+      "../../../app/(erp)/erp/admin/equipment-workshop/EquipmentWorkshopAdminClient.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const dropdown = readFileSync(
+    new URL(
+      "../../../components/ui/DropdownSelect/DropdownSelect.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.doesNotMatch(adminClient, /<select\b/);
+  assert.match(adminClient, /DropdownSelect/);
+  assert.match(adminClient, /미저장 변경을 버리고 다른 요청으로 전환/);
+  assert.match(adminClient, /조건에 맞는 요청 없음/);
+  assert.match(dropdown, /aria-haspopup="listbox"/);
+  assert.match(dropdown, /role="option"/);
+  assert.match(dropdown, /event\.key === "ArrowDown"/);
+  assert.match(dropdown, /event\.key === "Enter" \|\| event\.key === " "/);
+  assert.match(dropdown, /event\.key === "Escape"/);
+});

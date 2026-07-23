@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import Box from "@/components/ui/Box/Box";
+import DropdownSelect from "@/components/ui/DropdownSelect/DropdownSelect";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import {
   useApproveEquipmentWorkshopReload,
@@ -119,6 +120,12 @@ const STATUS_LABELS: Record<EquipmentWorkshopRequestStatus, string> = {
   CANCELLED: "제작 취소 (CANCELLED)",
   COMPLETED: "수령 완료 (COMPLETED)",
 };
+
+const REQUEST_KIND_LABELS = {
+  upgrade: "강화 (UPGRADE)",
+  custom: "신규 제작 (CUSTOM)",
+  reload: "재장전 (RELOAD)",
+} as const;
 
 const QUOTABLE = new Set<EquipmentWorkshopRequestStatus>([
   "IN_REVIEW",
@@ -288,6 +295,7 @@ function SearchableMaterialSelect({
   const listboxId = useId();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
   const selected = items.find((item) => item.slug === value);
   const filteredItems = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -308,6 +316,7 @@ function SearchableMaterialSelect({
   const close = () => {
     setOpen(false);
     setQuery("");
+    setActiveIndex(0);
   };
   const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
     const nextFocus = event.relatedTarget;
@@ -326,6 +335,11 @@ function SearchableMaterialSelect({
         type="text"
         role="combobox"
         aria-controls={listboxId}
+        aria-activedescendant={
+          open && filteredItems[activeIndex]
+            ? `${listboxId}-option-${filteredItems[activeIndex].id}`
+            : undefined
+        }
         aria-expanded={open}
         aria-label="재료 검색 및 선택"
         aria-autocomplete="list"
@@ -341,14 +355,35 @@ function SearchableMaterialSelect({
         onFocus={() => {
           setOpen(true);
           setQuery("");
+          setActiveIndex(0);
         }}
         onChange={(event) => {
           setQuery(event.target.value);
           setOpen(true);
+          setActiveIndex(0);
           if (value) onChange("");
         }}
         onKeyDown={(event) => {
-          if (event.key === "Escape") close();
+          if (event.key === "Escape") {
+            event.preventDefault();
+            close();
+          } else if (event.key === "ArrowDown") {
+            event.preventDefault();
+            if (filteredItems.length === 0) return;
+            setOpen(true);
+            setActiveIndex((current) =>
+              Math.min(current + 1, filteredItems.length - 1),
+            );
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            if (filteredItems.length === 0) return;
+            setOpen(true);
+            setActiveIndex((current) => Math.max(current - 1, 0));
+          } else if (event.key === "Enter" && filteredItems[activeIndex]) {
+            event.preventDefault();
+            onChange(filteredItems[activeIndex].slug);
+            close();
+          }
         }}
       />
       {open ? (
@@ -359,12 +394,15 @@ function SearchableMaterialSelect({
           aria-label="재료 검색 결과"
         >
           {filteredItems.length > 0 ? (
-            filteredItems.map((item) => (
+            filteredItems.map((item, index) => (
               <button
                 key={item.id}
+                id={`${listboxId}-option-${item.id}`}
                 type="button"
                 role="option"
                 aria-selected={item.slug === value}
+                data-active={index === activeIndex}
+                onMouseMove={() => setActiveIndex(index)}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
                   onChange(item.slug);
@@ -542,7 +580,10 @@ export default function EquipmentWorkshopAdminClient({
     (material) =>
       !material.option || !material.option.isPublic || !material.slug,
   );
-  const draftDirty = JSON.stringify(draft) !== baseline;
+  const draftDirty =
+    JSON.stringify(draft) !== baseline ||
+    blueprintSlug !== (selectedTemplate?.slug ?? "") ||
+    blueprintDisplayName !== (selectedTemplate?.displayName ?? "");
   const selectedTemplateCompatible =
     !selectedTemplate ||
     (isCompatible(selectedTemplate) &&
@@ -555,13 +596,16 @@ export default function EquipmentWorkshopAdminClient({
     },
     {
       label: "분류",
-      before: selected.sourceCategory ?? "원본 없음",
+      before:
+        selected.kind === "custom"
+          ? "원본 없음"
+          : selected.sourceCategory ?? "원본 분류 미기록",
       after: draft.resultCategory,
     },
     {
       label: "피해",
-      before: selected.sourceDamage ?? "기록 없음",
-      after: draft.resultDamage || "기록 없음",
+      before: selected.sourceDamage ?? "피해 정보 미기록",
+      after: draft.resultDamage || "피해 정보 미입력",
     },
     {
       label: "장비 액션",
@@ -575,6 +619,13 @@ export default function EquipmentWorkshopAdminClient({
   const selectRequest = (
     request: AdminSerializedEquipmentWorkshopRequest,
   ) => {
+    if (request._id === selected._id) return;
+    if (
+      draftDirty &&
+      !window.confirm("미저장 변경을 버리고 다른 요청으로 전환하시겠습니까?")
+    ) {
+      return;
+    }
     const nextDraft = createDraft(request, items);
     const quoteBlueprint = request.quote?.blueprintRef;
     const matchedBlueprint = quoteBlueprint
@@ -1006,18 +1057,19 @@ export default function EquipmentWorkshopAdminClient({
         </label>
         <label>
           <span>처리 상태</span>
-          <select
+          <DropdownSelect
+            ariaLabel="처리 상태"
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-          >
-            <option value="ACTIVE">진행 중 전체</option>
-            <option value="ALL">전체</option>
-            {Object.entries(STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+            onChange={setStatusFilter}
+            options={[
+              { value: "ACTIVE", label: "진행 중 전체" },
+              { value: "ALL", label: "전체" },
+              ...Object.entries(STATUS_LABELS).map(([value, label]) => ({
+                value,
+                label,
+              })),
+            ]}
+          />
         </label>
       </Box>
 
@@ -1042,6 +1094,11 @@ export default function EquipmentWorkshopAdminClient({
               </small>
             </button>
           ))}
+          {filtered.length === 0 ? (
+            <p className={styles.requestList__empty}>
+              조건에 맞는 요청 없음
+            </p>
+          ) : null}
         </aside>
 
         <main className={styles.detail}>
@@ -1081,11 +1138,21 @@ export default function EquipmentWorkshopAdminClient({
               ) : null}
               <div>
                 <p>
-                  {selected.characterCodename} · {selected.userName} · {selected.kind}
+                  {selected.characterCodename} · {selected.userName} · {REQUEST_KIND_LABELS[selected.kind]}
                 </p>
                 <p>
-                  {selected.sourceCategory ?? "원본 없음"} · {selected.sourceSlot ?? "슬롯 없음"} · {selected.sourceDamage ?? "피해 정보 없음"}
+                  {selected.kind === "custom"
+                    ? "신규 제작 · 원본 장비 없음"
+                    : `${selected.sourceCategory || "원본 분류 미기록"} · ${selected.sourceSlot || "슬롯 미기록"} · ${selected.sourceDamage || "피해 정보 미기록"}`}
                 </p>
+                {selected.kind === "upgrade" &&
+                (!selected.sourceCategory ||
+                  !selected.sourceSlot ||
+                  !selected.sourceDamage) ? (
+                  <p className={styles.sourceCard__notice}>
+                    원본 장비 스냅샷 일부가 없어, 견적 발행 시 현재 장착 정보를 다시 확인합니다.
+                  </p>
+                ) : null}
                 <blockquote>{selected.details}</blockquote>
               </div>
             </div>
@@ -1099,45 +1166,70 @@ export default function EquipmentWorkshopAdminClient({
                     <Eyebrow>2 · 결과 장비 설계안 (RESULT BLUEPRINT)</Eyebrow>
                     <h2>프리셋·설계안 선택 후 요청별 편집</h2>
                   </div>
-                  <span
-                    className={styles.dirtyBadge}
-                    data-dirty={draftDirty}
-                  >
-                    {draftDirty ? "미저장 변경 있음" : "발행본과 동일"}
-                  </span>
+                  <div className={styles.sectionHeading__actions}>
+                    <span
+                      className={styles.dirtyBadge}
+                      data-dirty={draftDirty}
+                    >
+                      {draftDirty ? "미저장 변경 있음" : "발행본과 동일"}
+                    </span>
+                    {draftDirty ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextDraft = createDraft(selected, items);
+                          const quoteBlueprint = selected.quote?.blueprintRef;
+                          const matchedBlueprint = quoteBlueprint
+                            ? blueprints.find(
+                                (blueprint) =>
+                                  blueprint._id === quoteBlueprint.id &&
+                                  blueprint.version === quoteBlueprint.version,
+                              )
+                            : undefined;
+                          setDraft(nextDraft);
+                          setBaseline(JSON.stringify(nextDraft));
+                          setSelectedBlueprintId(matchedBlueprint?._id ?? "");
+                          setBlueprintSlug(matchedBlueprint?.slug ?? "");
+                          setBlueprintDisplayName(
+                            matchedBlueprint?.displayName ?? "",
+                          );
+                          setFeedback({
+                            tone: "success",
+                            text: "편집본을 현재 발행본 또는 요청 초기값으로 되돌렸습니다.",
+                          });
+                        }}
+                      >
+                        변경 되돌리기
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <div className={styles.blueprintPicker}>
                   <label>
                     <span>프리셋·설계안 라이브러리</span>
-                    <select
+                    <DropdownSelect
+                      ariaLabel="프리셋·설계안 라이브러리"
                       value={selectedBlueprintId}
-                      onChange={(event) => applyBlueprint(event.target.value)}
-                    >
-                      <option value="">프리셋·설계안 없이 직접 편집</option>
-                      {filteredPresets.length > 0 ? (
-                        <optgroup label="기본 제공 프리셋">
-                          {filteredPresets.map((preset) => (
-                            <option
-                              key={preset.key}
-                              value={getEquipmentWorkshopPresetSelectionValue(
-                                preset.key,
-                              )}
-                            >
-                              {preset.displayName} · 프리셋
-                            </option>
-                          ))}
-                        </optgroup>
-                      ) : null}
-                      {filteredBlueprints.length > 0 ? (
-                        <optgroup label="저장된 설계안">
-                          {filteredBlueprints.map((blueprint) => (
-                            <option key={blueprint._id} value={blueprint._id}>
-                              {blueprint.displayName} · v{blueprint.version}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ) : null}
-                    </select>
+                      onChange={applyBlueprint}
+                      options={[
+                        {
+                          value: "",
+                          label: "프리셋·설계안 없이 직접 편집",
+                        },
+                        ...filteredPresets.map((preset) => ({
+                          value: getEquipmentWorkshopPresetSelectionValue(
+                            preset.key,
+                          ),
+                          label: `${preset.displayName} · 프리셋`,
+                          group: "기본 제공 프리셋",
+                        })),
+                        ...filteredBlueprints.map((blueprint) => ({
+                          value: blueprint._id,
+                          label: `${blueprint.displayName} · v${blueprint.version}`,
+                          group: "저장된 설계안",
+                        })),
+                      ]}
+                    />
                   </label>
                   <label className={styles.checkboxLabel}>
                     <input
@@ -1152,7 +1244,7 @@ export default function EquipmentWorkshopAdminClient({
                 </div>
                 {selectedPreset ? (
                   <p className={styles.blueprintMeta}>
-                    기본 제공 프리셋 · 선택 즉시 편집본 자동 입력 · 모든 항목 수정 가능 · {BLUEPRINT_SOURCE_LABEL} / {BLUEPRINT_BALANCE_LABEL}
+                    기본 제공 프리셋 · 선택 즉시 편집본 자동 입력 · 모든 항목 수정 가능 · {sourceCompatibilityUnknown ? "호환 미확정 — 견적 발행 시 장착 원본 재검증" : "현재 요청 기준 호환 여부 확인"} · {BLUEPRINT_SOURCE_LABEL} / {BLUEPRINT_BALANCE_LABEL}
                   </p>
                 ) : selectedBlueprint ? (
                   <p className={styles.blueprintMeta}>
@@ -1234,21 +1326,18 @@ export default function EquipmentWorkshopAdminClient({
                   </label>
                   <label>
                     <span>개조 계통</span>
-                    <select
+                    <DropdownSelect
+                      ariaLabel="개조 계통"
                       value={draft.modificationDomain}
-                      onChange={(event) =>
+                      onChange={(value) =>
                         setDraft({
                           ...draft,
-                          modificationDomain: event.target.value as EquipmentWorkshopModificationDomain,
+                          modificationDomain:
+                            value as EquipmentWorkshopModificationDomain,
                         })
                       }
-                    >
-                      {MODIFICATION_DOMAINS.map((domain) => (
-                        <option key={domain.value} value={domain.value}>
-                          {domain.label}
-                        </option>
-                      ))}
-                    </select>
+                      options={MODIFICATION_DOMAINS}
+                    />
                   </label>
                 </div>
                 <fieldset className={styles.durationPresets}>
@@ -1313,35 +1402,29 @@ export default function EquipmentWorkshopAdminClient({
                       <span className={styles.specialistOrder}>
                         {index === 0 ? "주 담당 · 1단계" : `${index + 1}단계`}
                       </span>
-                      <select
-                        aria-label={`${index + 1}단계 담당자`}
+                      <DropdownSelect
+                        ariaLabel={`${index + 1}단계 담당자`}
                         value={step.specialistCodename}
-                        onChange={(event) =>
+                        onChange={(value) =>
                           updateSpecialistStep(index, {
-                            specialistCodename: event.target
-                              .value as EquipmentWorkshopSpecialist,
+                            specialistCodename:
+                              value as EquipmentWorkshopSpecialist,
                           })
                         }
-                      >
-                        {Object.entries(SPECIALIST_LABELS).map(
-                          ([value, label]) => (
-                            <option
-                              key={value}
-                              value={value}
-                              disabled={
-                                value !== step.specialistCodename &&
-                                draft.specialistWorkflow.some(
-                                  (entry, entryIndex) =>
-                                    entryIndex !== index &&
-                                    entry.specialistCodename === value,
-                                )
-                              }
-                            >
-                              {label}
-                            </option>
-                          ),
+                        options={Object.entries(SPECIALIST_LABELS).map(
+                          ([value, label]) => ({
+                            value,
+                            label,
+                            disabled:
+                              value !== step.specialistCodename &&
+                              draft.specialistWorkflow.some(
+                                (entry, entryIndex) =>
+                                  entryIndex !== index &&
+                                  entry.specialistCodename === value,
+                              ),
+                          }),
                         )}
-                      </select>
+                      />
                       <input
                         aria-label={`${index + 1}단계 담당 업무`}
                         maxLength={120}
@@ -1494,19 +1577,21 @@ export default function EquipmentWorkshopAdminClient({
                   </label>
                   <label>
                     <span>결과 분류</span>
-                    <select
+                    <DropdownSelect
+                      ariaLabel="결과 분류"
                       value={draft.resultCategory}
                       disabled={selected.kind === "upgrade"}
-                      onChange={(event) =>
+                      onChange={(value) =>
                         setDraft({
                           ...draft,
-                          resultCategory: event.target.value as "WEAPON" | "ARMOR",
+                          resultCategory: value as "WEAPON" | "ARMOR",
                         })
                       }
-                    >
-                      <option value="WEAPON">무기 (WEAPON)</option>
-                      <option value="ARMOR">방어구 (ARMOR)</option>
-                    </select>
+                      options={[
+                        { value: "WEAPON", label: "무기 (WEAPON)" },
+                        { value: "ARMOR", label: "방어구 (ARMOR)" },
+                      ]}
+                    />
                   </label>
                 </div>
                 <label>
