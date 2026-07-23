@@ -34,6 +34,11 @@ test("daily shop restock uses one singleton revision and lease state", async () 
   );
   assert.doesNotMatch(source, /daily-shop-restock:\$\{today\}/);
   assert.doesNotMatch(source, /sentAt/);
+  assert.match(
+    source,
+    /deleteMessage: deleteDailyShopRestockDiscordMessage,[\s\S]*createMessage: createDailyShopRestockDiscordMessage/,
+  );
+  assert.doesNotMatch(source, /DISCORD_BOT_TOKEN|webhook-message-pruner/);
 });
 
 test("shop restock is refreshed only by the daily shop cron", async () => {
@@ -45,7 +50,7 @@ test("shop restock is refreshed only by the daily shop cron", async () => {
   assert.doesNotMatch(config, /\/api\/cron\/shop\/discord-restock/);
 });
 
-test("manual reorder and fulfillment messages remain outside canonical cleanup", async () => {
+test("manual reorder and fulfillment messages remain outside canonical replacement", async () => {
   const source = await readFile(DISCORD, "utf8");
   assert.match(source, /notifyShopReorderRequest/);
   assert.match(source, /notifyShopReorderFulfilled/);

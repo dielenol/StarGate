@@ -143,7 +143,7 @@ test("scheduled stock market wire leaves a concurrent request queued", async (t)
   });
 });
 
-test("a fully skipped tick retries cleanup without creating a Discord revision", async (t) => {
+test("a fully skipped tick retries a pending webhook replacement without creating a revision", async (t) => {
   const envSnapshot = snapshotEnv();
   let requested = false;
   let synced = false;
@@ -172,7 +172,7 @@ test("a fully skipped tick retries cleanup without creating a Discord revision",
   assert.equal(synced, true);
 });
 
-test("a skipped tick surfaces cleanup recovery failure", async (t) => {
+test("a skipped tick surfaces webhook replacement recovery failure", async (t) => {
   const envSnapshot = snapshotEnv();
   process.env.DISCORD_WEBHOOK_STOCK_URL = "https://discord.test/stock";
   t.after(() => restoreEnv(envSnapshot));
@@ -191,6 +191,6 @@ test("a skipped tick surfaces cleanup recovery failure", async (t) => {
 
   assert.deepEqual(result, {
     status: "failed",
-    error: "Discord 정기 공시 복구 실패 (failed)",
+    error: "Discord 정기 공시 교체 복구 실패 (failed)",
   });
 });

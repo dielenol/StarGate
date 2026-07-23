@@ -4,7 +4,6 @@ import {
   acquireScheduledStockMarketWireLease,
   completeScheduledStockMarketWireSync,
   failScheduledStockMarketWireSync,
-  findScheduledStockMarketWireState,
   isScheduledStockMarketWireSyncComplete,
   recordScheduledStockMarketWireInflightMessages,
 } from "@/lib/db/stock-market-wire";
@@ -16,10 +15,9 @@ import {
   drainDiscordMessageBatchSync,
   type DiscordMessageBatchSyncResult,
 } from "@/lib/discord/message-batch-sync";
-import { cleanupScheduledStockMarketWireHistory } from "@/lib/notifications/discord-history-cleanup";
 
 export async function syncScheduledStockMarketWireMessages(): Promise<DiscordMessageBatchSyncResult> {
-  const result = await drainDiscordMessageBatchSync({
+  return drainDiscordMessageBatchSync({
     logPrefix: "stock-market-wire",
     newLeaseToken: randomUUID,
     acquire: async (leaseToken) => {
@@ -46,22 +44,4 @@ export async function syncScheduledStockMarketWireMessages(): Promise<DiscordMes
     fail: failScheduledStockMarketWireSync,
     warn: (message, error) => console.warn(message, error),
   });
-  if (result !== "synced" && result !== "idle") return result;
-
-  const state = await findScheduledStockMarketWireState();
-  if (
-    !state?.messageIds?.length ||
-    state.requestedRevision > state.syncedRevision
-  ) {
-    return result;
-  }
-  const cleanup = await cleanupScheduledStockMarketWireHistory(
-    state.messageIds,
-  );
-  if (cleanup.deletedCount > 0) {
-    console.info(
-      `[stock-market-wire] 과거 정기 공시 ${cleanup.deletedCount}건 삭제`,
-    );
-  }
-  return result;
 }

@@ -11,6 +11,10 @@ const ADMIN_PRICE_ROUTE = new URL(
   import.meta.url,
 );
 const STATE_DB = new URL("../../db/stock-market-wire.ts", import.meta.url);
+const MARKET_WIRE_DISCORD = new URL(
+  "../../notifications/stock-market-wire-discord.ts",
+  import.meta.url,
+);
 const VERCEL_CONFIG = new URL("../../../vercel.json", import.meta.url);
 
 test("the scheduled tick applies prices before requesting the canonical wire batch", async () => {
@@ -41,6 +45,15 @@ test("the scheduled wire singleton persists desired payloads and message ids", a
   assert.match(source, /cleanupMessageIds/);
   assert.match(source, /requestedRevision/);
   assert.match(source, /leaseExpiresAt/);
+});
+
+test("the scheduled wire replaces stored messages through the webhook only", async () => {
+  const source = await readFile(MARKET_WIRE_DISCORD, "utf8");
+  assert.match(
+    source,
+    /deleteMessage: deleteScheduledStockMarketWireMessage,[\s\S]*createMessage: createScheduledStockMarketWireMessage/,
+  );
+  assert.doesNotMatch(source, /DISCORD_BOT_TOKEN|webhook-message-pruner/);
 });
 
 test("GM special disclosures remain outside scheduled batch replacement", async () => {

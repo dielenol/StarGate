@@ -16,7 +16,6 @@ import {
   drainDiscordMessageBatchSync,
   type DiscordMessageBatchSyncResult,
 } from "@/lib/discord/message-batch-sync";
-import { cleanupDailyShopRestockHistory } from "@/lib/notifications/discord-history-cleanup";
 
 import { SHOP_CATALOG } from "./catalog";
 import { getShopOpenState } from "./open-state";
@@ -329,28 +328,6 @@ export async function notifyDailyShopRestock(
     }
 
     const result = await syncDailyShopRestockDiscordMessage();
-    if (
-      result === "synced" ||
-      (result === "idle" && recovery.status === "current")
-    ) {
-      const state = await findNotificationState();
-      if (
-        !state?.messageIds?.length ||
-        state.requestedRevision > state.syncedRevision
-      ) {
-        return {
-          status: "failed",
-          itemCount: recovery.itemCount,
-          error: "Discord 편의점 입고 공지의 현재 message id를 확인할 수 없습니다.",
-        };
-      }
-      const cleanup = await cleanupDailyShopRestockHistory(state.messageIds);
-      if (cleanup.deletedCount > 0) {
-        console.info(
-          `[shop-restock-discord] 과거 입고 공지 ${cleanup.deletedCount}건 삭제`,
-        );
-      }
-    }
     if (result === "synced") {
       return { status: "sent", itemCount: recovery.itemCount };
     }

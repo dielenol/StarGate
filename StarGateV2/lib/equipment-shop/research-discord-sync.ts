@@ -2,6 +2,7 @@ export interface ResearchDiscordCardLease {
   projectKey: string;
   requestedRevision: number;
   messageId?: string;
+  cleanupMessageId?: string;
   leaseToken: string;
 }
 
@@ -14,6 +15,11 @@ export interface ResearchDiscordCardSyncDependencies<TPayload> {
   buildPayload(projectKey: string): Promise<TPayload>;
   deleteMessage(messageId: string): Promise<void>;
   createMessage(payload: TPayload): Promise<string>;
+  recordInflight(args: {
+    projectKey: string;
+    leaseToken: string;
+    messageId: string;
+  }): Promise<boolean>;
   complete(args: {
     projectKey: string;
     leaseToken: string;
@@ -67,10 +73,25 @@ export async function drainResearchDiscordCardSync<TPayload>(
     let newMessageId: string | null = null;
     try {
       const payload = await dependencies.buildPayload(projectKey);
-      if (lease.messageId) {
-        await dependencies.deleteMessage(lease.messageId);
+      const previousMessageIds = Array.from(
+        new Set(
+          [lease.messageId, lease.cleanupMessageId].filter(
+            (messageId): messageId is string => Boolean(messageId),
+          ),
+        ),
+      );
+      for (const messageId of previousMessageIds) {
+        await dependencies.deleteMessage(messageId);
       }
       newMessageId = await dependencies.createMessage(payload);
+      const inflightRecorded = await dependencies.recordInflight({
+        projectKey,
+        leaseToken,
+        messageId: newMessageId,
+      });
+      if (!inflightRecorded) {
+        throw new Error("Discord message id 기록 전에 lease를 상실했습니다.");
+      }
       const completion = {
         projectKey,
         leaseToken,

@@ -3,8 +3,8 @@
  *
  * 기본은 DB를 읽어 대상과 현재 동기화 상태만 출력하는 dry-run이다.
  * 라이브 Discord 변경은 --execute --yes를 함께 지정한 경우에만 수행한다.
- * 실행 모드에서는 Discord 채널 기록을 조회해 현재 카드 이외의 구형 중복
- * 메시지를 실제 Discord에서도 삭제한다.
+ * 이 도구는 DB에 저장된 기존 messageId를 웹훅으로 삭제한 뒤 현재 카드를
+ * 다시 게시한다. messageId가 없는 구형 중복 메시지는 별도로 정리해야 한다.
  */
 
 import { readFileSync } from "node:fs";
@@ -59,10 +59,6 @@ async function main(): Promise<void> {
       "실행 모드에는 DISCORD_WEBHOOK_RESEARCH_URL이 필요합니다.",
     );
   }
-  if (execute && !process.env.DISCORD_BOT_TOKEN) {
-    throw new Error("실행 모드에는 DISCORD_BOT_TOKEN이 필요합니다.");
-  }
-
   const {
     findEquipmentResearchDiscordCard,
     listEquipmentResearchDiscordProjectKeys,

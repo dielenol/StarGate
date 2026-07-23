@@ -716,7 +716,7 @@ export async function notifyScheduledStockMarketWire(
         if (recovery === "failed" || recovery === "pass_limit") {
           return {
             status: "failed",
-            error: `Discord 정기 공시 복구 실패 (${recovery})`,
+            error: `Discord 정기 공시 교체 복구 실패 (${recovery})`,
           };
         }
       } catch (error) {

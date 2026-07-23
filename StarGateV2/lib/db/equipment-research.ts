@@ -85,6 +85,7 @@ export interface EquipmentResearchDiscordCard {
   requestedRevision: number;
   syncedRevision: number;
   messageId?: string;
+  cleanupMessageId?: string;
   leaseToken?: string;
   leaseExpiresAt?: Date;
   lastError?: string;
@@ -586,6 +587,28 @@ export async function completeEquipmentResearchDiscordCardSync(args: {
         leaseToken: "",
         leaseExpiresAt: "",
         lastError: "",
+        cleanupMessageId: "",
+      },
+    },
+  );
+  return result.modifiedCount === 1;
+}
+
+export async function recordEquipmentResearchDiscordCardInflightMessage(args: {
+  projectKey: string;
+  leaseToken: string;
+  messageId: string;
+}): Promise<boolean> {
+  const col = await equipmentResearchDiscordCardsCol();
+  const result = await col.updateOne(
+    {
+      _id: args.projectKey,
+      leaseToken: args.leaseToken,
+    },
+    {
+      $set: {
+        cleanupMessageId: args.messageId,
+        updatedAt: new Date(),
       },
     },
   );

@@ -8,6 +8,7 @@ function makeFakeSync() {
     requestedRevision: 1,
     syncedRevision: 0,
     messageId: "old-message",
+    cleanupMessageId: null,
     leaseToken: null,
     lastError: null,
   };
@@ -36,6 +37,9 @@ function makeFakeSync() {
           projectKey,
           requestedRevision: state.requestedRevision,
           messageId: state.messageId,
+          ...(state.cleanupMessageId
+            ? { cleanupMessageId: state.cleanupMessageId }
+            : {}),
           leaseToken,
         };
       },
@@ -53,10 +57,16 @@ function makeFakeSync() {
         visible.add(id);
         return id;
       },
+      recordInflight: async ({ leaseToken, messageId }) => {
+        if (state.leaseToken !== leaseToken) return false;
+        state.cleanupMessageId = messageId;
+        return true;
+      },
       complete: async ({ leaseToken, syncedRevision, messageId }) => {
         if (state.leaseToken !== leaseToken) return false;
         state.syncedRevision = syncedRevision;
         state.messageId = messageId;
+        state.cleanupMessageId = null;
         state.leaseToken = null;
         return true;
       },
@@ -146,4 +156,37 @@ test("기존 카드 삭제 실패 시 새 카드를 게시하지 않고 dirty re
   assert.equal(fake.state.leaseToken, null);
   assert.equal(fake.state.lastError, "DELETE_FAILED");
   assert.deepEqual([...fake.visible], ["old-message"]);
+});
+
+test("저장된 이전 카드를 웹훅으로 삭제한 뒤 새 카드 하나만 남긴다", async () => {
+  const fake = makeFakeSync();
+
+  const result = await drainResearchDiscordCardSync(
+    "BIO-02",
+    fake.dependencies,
+  );
+
+  assert.equal(result, "synced");
+  assert.deepEqual(fake.deleted, ["old-message"]);
+  assert.deepEqual(fake.created, ["new-message-1"]);
+  assert.deepEqual([...fake.visible], ["new-message-1"]);
+  assert.equal(fake.state.messageId, "new-message-1");
+  assert.equal(fake.state.cleanupMessageId, null);
+});
+
+test("완료 전 중단되어 저장된 inflight 카드도 다음 교체에서 함께 삭제한다", async () => {
+  const fake = makeFakeSync();
+  fake.state.cleanupMessageId = "orphan-message";
+  fake.visible.add("orphan-message");
+
+  const result = await drainResearchDiscordCardSync(
+    "BIO-02",
+    fake.dependencies,
+  );
+
+  assert.equal(result, "synced");
+  assert.deepEqual(fake.deleted, ["old-message", "orphan-message"]);
+  assert.deepEqual([...fake.visible], ["new-message-1"]);
+  assert.equal(fake.state.messageId, "new-message-1");
+  assert.equal(fake.state.cleanupMessageId, null);
 });
