@@ -637,6 +637,38 @@ test("quotes snapshot procurement cost and Nochichim exposes equipped actions se
   assert.match(actionRoute, /requireNochichimSyncAuth/);
 });
 
+test("quote issuance schedules ERP notification and best-effort Discord DM only after persistence", () => {
+  const adminRoute = readFileSync(
+    new URL(
+      "../../../app/api/erp/admin/equipment-workshop/[requestId]/[action]/route.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const persistenceIndex = adminRoute.indexOf(
+    "const updated = await updateEquipmentWorkshopQuote",
+  );
+  const erpNotificationIndex = adminRoute.indexOf(
+    "after(() => notifyUser",
+    persistenceIndex,
+  );
+  const discordDmIndex = adminRoute.indexOf(
+    "notifyEquipmentWorkshopQuoteDiscordDm({",
+    persistenceIndex,
+  );
+  const responseIndex = adminRoute.indexOf(
+    "return NextResponse.json({ request:",
+    discordDmIndex,
+  );
+
+  assert.ok(persistenceIndex >= 0);
+  assert.ok(erpNotificationIndex > persistenceIndex);
+  assert.ok(discordDmIndex > persistenceIndex);
+  assert.ok(responseIndex > discordDmIndex);
+  assert.match(adminRoute, /quote Discord DM failed/);
+  assert.match(adminRoute, /requestId,[\s\S]*quoteVersion: quote\.version/);
+});
+
 test("GM material picker supports name and category search", () => {
   const adminClient = readFileSync(
     new URL("../../../app/(erp)/erp/admin/equipment-workshop/EquipmentWorkshopAdminClient.tsx", import.meta.url),

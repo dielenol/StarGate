@@ -26,6 +26,7 @@ import {
   prepareWorkshopOperationLocks,
   WorkshopOperationError,
 } from "@/lib/equipment-shop/workshop-operations";
+import { notifyEquipmentWorkshopQuoteDiscordDm } from "@/lib/notifications/equipment-workshop-discord-dm";
 import { notifyUser } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
@@ -319,6 +320,29 @@ export async function PUT(request: Request, context: RouteContext) {
     timestamp: now,
   });
   after(() => notifyUser({ userId: updated.userId, type: "SYSTEM", title: `공방 ${current.kind === "upgrade" ? "강화" : "제작"} 견적이 도착했습니다`, message: `${updated.characterCodename} · ${quote.result.name} · 총부담 ${quote.totalCost.toLocaleString()} CR · ${specialistWorkflow.map((step) => step.specialistCodename).join(" → ")}`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] quote notification failed", error)));
+  after(() =>
+    notifyEquipmentWorkshopQuoteDiscordDm({
+      requestId,
+      quoteVersion: quote.version,
+      userId: updated.userId,
+      kind: current.kind === "upgrade" ? "upgrade" : "custom",
+      characterCodename: updated.characterCodename,
+      resultName: quote.result.name,
+      totalCost: quote.totalCost,
+      durationMinutes: quote.durationMinutes,
+      specialistWorkflow,
+    })
+      .then((result) => {
+        if (result === "skipped_unconfigured") {
+          console.warn(
+            "[equipment-workshop] quote Discord DM skipped: DISCORD_BOT_TOKEN is not configured",
+          );
+        }
+      })
+      .catch((error) =>
+        console.warn("[equipment-workshop] quote Discord DM failed", error),
+      ),
+  );
   return NextResponse.json({ request: serializeAdminEquipmentWorkshopRequest(updated) });
 }
 
