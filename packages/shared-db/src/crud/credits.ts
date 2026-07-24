@@ -42,10 +42,28 @@ export async function listCreditTransactions(
 
 /** characterId 단위 현재 balance. 마이그레이션 전 row 부재 시 ledger snapshot으로 폴백. */
 export async function getCharacterBalance(
-  characterId: string
+  characterId: string,
+  options: { session?: ClientSession } = {},
 ): Promise<number> {
   const balances = await creditBalancesCol();
   const transactions = await creditTransactionsCol();
+  if (options.session) {
+    const row = await balances.findOne(
+      { characterId },
+      { session: options.session },
+    );
+    const latest = await transactions.findOne(
+      { characterId },
+      {
+        sort: { createdAt: -1, _id: -1 },
+        session: options.session,
+      },
+    );
+    if (!latest) return row?.balance ?? 0;
+    if (row?.lastTransactionId === latest._id?.toString()) return row.balance;
+    return latest.balance;
+  }
+
   const [row, latest] = await Promise.all([
     balances.findOne({ characterId }),
     transactions.findOne(
@@ -55,7 +73,7 @@ export async function getCharacterBalance(
   ]);
   if (!latest) return row?.balance ?? 0;
   if (row?.lastTransactionId === latest._id?.toString()) return row.balance;
-  return latest?.balance ?? 0;
+  return latest.balance;
 }
 
 export async function createCreditTransaction(
@@ -167,13 +185,11 @@ async function ensureBalanceRow(
 ): Promise<void> {
   const balances = await creditBalancesCol();
   const transactions = await creditTransactionsCol();
-  const [existing, latest] = await Promise.all([
-    balances.findOne({ characterId }, { session }),
-    transactions.findOne(
-      { characterId },
-      { sort: { createdAt: -1, _id: -1 }, session },
-    ),
-  ]);
+  const existing = await balances.findOne({ characterId }, { session });
+  const latest = await transactions.findOne(
+    { characterId },
+    { sort: { createdAt: -1, _id: -1 }, session },
+  );
   if (!latest) {
     if (existing) return;
   } else if (existing?.lastTransactionId === latest._id?.toString()) {

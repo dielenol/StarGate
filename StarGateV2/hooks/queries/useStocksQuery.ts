@@ -300,6 +300,8 @@ export function useStockHoldings(options?: {
     queryFn: fetchStockHoldings,
     staleTime: HOLDINGS_STALE_MS,
     initialData: options?.initialData,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
     // 메인 캐릭 정합성 위반은 사용자 인풋으로 회복 불가 → 재시도 비활성.
     retry: (failureCount, err) => {
       if (err instanceof StocksApiError && err.status === 409) return false;

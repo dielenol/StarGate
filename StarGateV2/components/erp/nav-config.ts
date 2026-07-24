@@ -31,6 +31,7 @@ import {
   IconShop,
   IconStock,
   IconSystem,
+  IconTransactions,
   IconUserAdmin,
   IconWiki,
   IconWorld,
@@ -185,6 +186,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "인벤토리", keywords: "inventory equipment gear weapon armor items 장비", icon: IconInventory, href: "/erp/inventory" },
       { label: "크레딧", keywords: "credits", icon: IconCredit, href: "/erp/credits" },
+      { label: "교환·전달", keywords: "trade exchange transfer 거래 교환 전달 송금", icon: IconTransactions, href: "/erp/trades" },
       /* 편의점 · 주식 — M1 stub. M2/M3 에서 본 구현 활성화. */
       { label: "편의점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconShop, href: "/erp/shop" },
       {

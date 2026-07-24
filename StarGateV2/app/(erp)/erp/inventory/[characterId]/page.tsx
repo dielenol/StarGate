@@ -18,6 +18,7 @@ import {
 import { isValidObjectId } from "@/lib/db/utils";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
+import Button from "@/components/ui/Button/Button";
 
 import InventoryClient, { type InventoryClientEntry } from "./InventoryClient";
 import styles from "./page.module.css";
@@ -148,6 +149,9 @@ export default async function CharacterInventoryPage({
         ]}
         title={character.codename}
       />
+      <Button as="a" href="/erp/trades" size="sm">
+        아이템 교환·전달
+      </Button>
 
       <div className={styles.inventoryStack} data-pixel-font="ui">
         <InventoryClient

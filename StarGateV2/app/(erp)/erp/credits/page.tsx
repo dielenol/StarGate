@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/credits";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
+import Button from "@/components/ui/Button/Button";
 
 import CreditsClient, {
   type SerializedCreditTransaction,
@@ -78,6 +79,9 @@ export default async function CreditsPage() {
         ]}
         title="크레딧"
       />
+      <Button as="a" href="/erp/trades" size="sm">
+        교환·전달
+      </Button>
 
       <CreditsClient
         balance={balance}

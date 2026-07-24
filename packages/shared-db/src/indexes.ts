@@ -457,6 +457,22 @@ export async function ensureAllIndexes(): Promise<void> {
       },
     ]),
 
+    /* ── player_trades (플레이어 간 통합 자산 거래) ── */
+    db.collection("player_trades").createIndexes([
+      {
+        key: { "initiator.userId": 1, updatedAt: -1 },
+        name: "player_trades_initiator_updatedAt",
+      },
+      {
+        key: { "counterparty.userId": 1, updatedAt: -1 },
+        name: "player_trades_counterparty_updatedAt",
+      },
+      {
+        key: { status: 1, updatedAt: -1 },
+        name: "player_trades_status_updatedAt",
+      },
+    ]),
+
     /* ── trpg_sessions (trpg-bot 신규 모델) ── */
     db.collection("trpg_sessions").createIndexes([
       {

@@ -28,6 +28,7 @@ import type {
 } from "@/hooks/queries/useStocksQuery";
 
 import Box from "@/components/ui/Box/Box";
+import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import {
   formatStockValue,
@@ -165,6 +166,9 @@ export default function StockPortfolioClient({
       <StockIndexBanner marketIndex={marketIndex} />
 
       <StockTabs />
+      <Button as="a" href="/erp/trades" size="sm">
+        주식 교환·전달
+      </Button>
 
       {/* 메인 캐릭터 안내 */}
       {!hasMainCharacter ? (

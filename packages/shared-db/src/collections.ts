@@ -23,6 +23,7 @@ import type {
   StockHolding,
   StockPriceHistory,
 } from "./types/stock.js";
+import type { PlayerTrade } from "./types/trade.js";
 import type { TrpgSession } from "./types/trpg-session.js";
 import type { TrpgGuildMember } from "./types/trpg-guild-member.js";
 import type { TrpgSessionNotification } from "./types/trpg-session-notification.js";
@@ -55,6 +56,7 @@ const COL = {
   STOCK_PRICES: "stock_prices",
   STOCK_HOLDINGS: "stock_holdings",
   STOCK_PRICE_HISTORY: "stock_price_history",
+  PLAYER_TRADES: "player_trades",
   TRPG_SESSIONS: "trpg_sessions",
   TRPG_GUILD_MEMBERS: "trpg_guild_members",
   TRPG_SESSION_NOTIFICATIONS: "trpg_session_notifications",
@@ -177,6 +179,11 @@ export async function stockPriceHistoryCol(): Promise<Collection<StockPriceHisto
   return db.collection<StockPriceHistory>(COL.STOCK_PRICE_HISTORY);
 }
 
+export async function playerTradesCol(): Promise<Collection<PlayerTrade>> {
+  const db = await getDb();
+  return db.collection<PlayerTrade>(COL.PLAYER_TRADES);
+}
+
 export async function trpgSessionsCol(): Promise<Collection<TrpgSession>> {
   const db = await getDb();
   return db.collection<TrpgSession>(COL.TRPG_SESSIONS);
@@ -284,6 +291,10 @@ export function stockHoldingsColSync(): Collection<StockHolding> {
 
 export function stockPriceHistoryColSync(): Collection<StockPriceHistory> {
   return getDbSync().collection<StockPriceHistory>(COL.STOCK_PRICE_HISTORY);
+}
+
+export function playerTradesColSync(): Collection<PlayerTrade> {
+  return getDbSync().collection<PlayerTrade>(COL.PLAYER_TRADES);
 }
 
 export function trpgSessionsColSync(): Collection<TrpgSession> {

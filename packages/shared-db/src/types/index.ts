@@ -142,6 +142,21 @@ export type {
 } from "./stock.js";
 
 export type {
+  PlayerTrade,
+  PlayerTradeKind,
+  PlayerTradeStatus,
+  PlayerTradeParticipant,
+  PlayerTradeOffer,
+  PlayerTradeItemOffer,
+  PlayerTradeStockOffer,
+  CreatePlayerTradeInput,
+} from "./trade.js";
+export {
+  PLAYER_TRADE_KINDS,
+  PLAYER_TRADE_STATUSES,
+} from "./trade.js";
+
+export type {
   TrpgSession,
   TrpgSessionStatus,
   UpdateTrpgSessionResult,

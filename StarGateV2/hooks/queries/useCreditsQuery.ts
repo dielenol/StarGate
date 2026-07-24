@@ -61,6 +61,8 @@ export function useCredits(options?: { initialData?: CreditsResponse }) {
     queryFn: fetchCredits,
     staleTime: 5 * 60 * 1000,
     initialData: options?.initialData,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
     // 메인 캐릭 미등록 / 정합성 위반은 사용자 인풋으로는 자동 회복 불가 → 재시도 비활성.
     retry: (failureCount, err) => {
       if (err instanceof CreditsApiError && (err.status === 404 || err.status === 409)) {
