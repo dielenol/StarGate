@@ -37,6 +37,11 @@ export interface PlayerTradeAssets {
     itemId: string;
     itemName: string;
     quantity: number;
+    category: import("@stargate/shared-db/types").ItemCategory | null;
+    slug?: string;
+    effect?: string;
+    description?: string;
+    previewImage?: string;
   }>;
   stocks: Array<{
     ticker: string;

@@ -138,3 +138,47 @@ test("새 거래 제출은 렌더 전 빠른 중복 클릭도 동기 차단한�
     /onSettled:[\s\S]*createLockedRef\.current = false/,
   );
 });
+
+test("크레딧 입력은 초기 0을 비우고 방향키만 1 CR 단위로 증감한다", () => {
+  assert.match(
+    tradesClient,
+    /initialOffer\.credits > 0 \? String\(initialOffer\.credits\) : ""/,
+  );
+  assert.match(
+    tradesClient,
+    /event\.key !== "ArrowUp" && event\.key !== "ArrowDown"/,
+  );
+  assert.match(tradesClient, /current \+ direction/);
+  assert.match(tradesClient, /value\.replace\(\/\^0\+\(\?=\\d\)\//);
+  assert.match(tradesClient, /step="any"/);
+  assert.doesNotMatch(tradesClient, /step="0\.01"/);
+});
+
+test("거래 자산은 인벤토리 표시 정보와 카드 UI를 함께 제공한다", () => {
+  for (const field of [
+    "category: entry.category",
+    "slug: entry.slug",
+    "effect: entry.effect",
+    "description: entry.description",
+    "previewImage: entry.previewImage",
+  ]) {
+    assert.match(createRoute, new RegExp(field.replace(".", "\\.")));
+  }
+  assert.match(tradesClient, /getConsumableItemImageSrc\(slug\)/);
+  assert.match(tradesClient, /<Image/);
+  assert.match(tradesClient, /styles\.assetCard/);
+  assert.match(tradesClient, /전달 수량/);
+});
+
+test("거래 성공은 현재 화면을 재조회하고 완료 토스트와 입력 초기화를 제공한다", () => {
+  assert.match(
+    mutations,
+    /queryClient\.invalidateQueries\(\{[\s\S]*queryKey: tradeKeys\.all,[\s\S]*refetchType: "active"/,
+  );
+  assert.match(mutations, /creditsAdminKeys\.all/);
+  assert.match(tradesClient, /자산 전달이 완료되었습니다\./);
+  assert.match(tradesClient, /자산 교환이 완료되었습니다\./);
+  assert.match(tradesClient, /role="status"/);
+  assert.match(tradesClient, /const updateMutation = useUpdateTradeMutation\(\)/);
+  assert.match(tradesClient, /setEditorVersion\(\(current\) => current \+ 1\)/);
+});

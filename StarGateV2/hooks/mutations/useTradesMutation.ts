@@ -6,6 +6,7 @@ import type {
   TradeAction,
 } from "@/types/trade";
 
+import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
@@ -43,7 +44,11 @@ function useInvalidateTradeAssets() {
   const queryClient = useQueryClient();
   return async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: tradeKeys.all }),
+      queryClient.invalidateQueries({
+        queryKey: tradeKeys.all,
+        refetchType: "active",
+      }),
+      queryClient.invalidateQueries({ queryKey: creditsAdminKeys.all }),
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
       queryClient.invalidateQueries({ queryKey: creditKeys.all }),
       queryClient.invalidateQueries({ queryKey: stocksKeys.holdings }),

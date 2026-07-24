@@ -70,7 +70,8 @@
 
 .field input,
 .field select,
-.assetRow input {
+.assetRow input,
+.assetQuantity input {
   min-height: 40px;
   border: 1px solid var(--line);
   background: var(--bg-1);
@@ -90,6 +91,149 @@
   gap: 8px;
   border-top: 1px dashed var(--line);
   padding-top: 12px;
+}
+
+.assetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.assetCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 144px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 70%),
+    var(--bg-1);
+}
+
+.assetCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-top: 2px solid var(--line-strong);
+  pointer-events: none;
+}
+
+.assetCard--equipment::before {
+  border-top-color: var(--gold-dim);
+}
+
+.assetCard--consumable::before {
+  border-top-color: var(--rank-u-text);
+}
+
+.assetCard__art {
+  display: flex;
+  width: 56px;
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-2);
+}
+
+.assetCard__image {
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+  object-fit: contain;
+}
+
+.assetCard__icon {
+  width: 28px;
+  height: 28px;
+  color: var(--ink-1);
+}
+
+.assetCard--equipment .assetCard__icon {
+  color: var(--gold);
+}
+
+.assetCard--consumable .assetCard__icon {
+  color: var(--rank-u-text);
+}
+
+.assetCard__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.assetCard__topline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.assetCard__topline strong {
+  color: var(--ink-0);
+  font-size: 15px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetCard__topline span {
+  color: var(--ink-2);
+  font-size: 14px;
+  font-family: var(--font-mono);
+}
+
+.categoryPill {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 22px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px 7px;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.categoryPill--equipment {
+  border-color: color-mix(in srgb, var(--gold-dim) 64%, var(--line));
+  color: var(--gold);
+}
+
+.categoryPill--consumable {
+  border-color: color-mix(in srgb, var(--rank-u-text) 58%, var(--line));
+  color: var(--rank-u-text);
+}
+
+.assetCard__detail {
+  display: -webkit-box;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.assetQuantity {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  color: var(--ink-2);
+  font-size: 14px;
 }
 
 .assetRow {
@@ -159,7 +303,91 @@
   font-size: 14px;
 }
 
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -54%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.toastOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 32px));
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 18px 22px;
+  background: var(--bg-1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(201, 168, 90, 0.15);
+  color: var(--ink-0);
+  pointer-events: auto;
+  animation: toastIn 180ms ease-out;
+}
+
+.toast__icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.toast__body {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.toast__dismiss {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.toast__dismiss:hover,
+.toast__dismiss:focus-visible {
+  border-color: var(--gold-dim);
+  color: var(--ink-0);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
 @media (max-width: 720px) {
+  .assetGrid {
+    grid-template-columns: 1fr;
+  }
+
   .assetRow,
   .historyRow {
     grid-template-columns: 1fr;

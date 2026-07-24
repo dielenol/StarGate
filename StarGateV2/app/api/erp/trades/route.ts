@@ -123,6 +123,11 @@ export async function GET() {
         itemId: entry.itemId,
         itemName: entry.itemName,
         quantity: entry.quantity,
+        category: entry.category,
+        slug: entry.slug,
+        effect: entry.effect,
+        description: entry.description,
+        previewImage: entry.previewImage,
       }));
     const stocks = holdings.map((holding) => ({
       ticker: holding.ticker,
