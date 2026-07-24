@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import type { ItemCategory } from "@stargate/shared-db/types";
 
@@ -30,6 +30,11 @@ import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 import styles from "./page.module.css";
 
 const EMPTY_OFFER: PlayerTradeOffer = { credits: 0, items: [], stocks: [] };
+const ASSET_TABS = [
+  { value: "CREDITS", label: "크레딧" },
+  { value: "ITEMS", label: "아이템·장비" },
+  { value: "STOCKS", label: "주식" },
+] as const;
 const CATEGORY_LABEL: Record<ItemCategory, string> = {
   WEAPON: "무기",
   ARMOR: "방어구",
@@ -37,12 +42,16 @@ const CATEGORY_LABEL: Record<ItemCategory, string> = {
   MATERIAL: "샘플",
   SPECIAL: "특수",
 };
+type AssetTab = (typeof ASSET_TABS)[number]["value"];
 
 interface OfferEditorProps {
   assets: PlayerTradeAssets;
   busy: boolean;
+  kind?: "GIFT" | "EXCHANGE";
   initialOffer?: PlayerTradeOffer;
   onSubmit: (offer: PlayerTradeOffer) => void;
+  requireAssets?: boolean;
+  submitDisabled?: boolean;
   submitLabel: string;
 }
 
@@ -142,10 +151,16 @@ function TradeItemVisual({
 function OfferEditor({
   assets,
   busy,
+  kind = "EXCHANGE",
   initialOffer = EMPTY_OFFER,
   onSubmit,
+  requireAssets = false,
+  submitDisabled = false,
   submitLabel,
 }: OfferEditorProps) {
+  const tabGroupId = useId();
+  const [activeAssetTab, setActiveAssetTab] =
+    useState<AssetTab>("CREDITS");
   const [credits, setCredits] = useState(
     initialOffer.credits > 0 ? String(initialOffer.credits) : "",
   );
@@ -159,6 +174,51 @@ function OfferEditor({
       initialOffer.stocks.map((stock) => [stock.ticker, stock.shares]),
     ),
   );
+
+  const selectedItems = assets.items.filter(
+    (item) => (itemQuantities[item.itemId] ?? 0) > 0,
+  );
+  const selectedStocks = assets.stocks.filter(
+    (stock) => (stockShares[stock.ticker] ?? 0) > 0,
+  );
+  const selectedCreditAmount = Math.max(0, Number(credits) || 0);
+  const assetLineCount =
+    (selectedCreditAmount > 0 ? 1 : 0) +
+    selectedItems.length +
+    selectedStocks.length;
+
+  function setItemQuantity(itemId: string, quantity: number, maximum: number) {
+    setItemQuantities((current) => ({
+      ...current,
+      [itemId]: Math.min(maximum, Math.max(0, Math.floor(quantity) || 0)),
+    }));
+  }
+
+  function setStockQuantity(ticker: string, shares: number, maximum: number) {
+    setStockShares((current) => ({
+      ...current,
+      [ticker]: Math.min(maximum, Math.max(0, Math.floor(shares) || 0)),
+    }));
+  }
+
+  function selectAssetTab(
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    tab: AssetTab,
+  ) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const currentIndex = ASSET_TABS.findIndex(
+      (candidate) => candidate.value === tab,
+    );
+    const offset = event.key === "ArrowRight" ? 1 : -1;
+    const nextIndex =
+      (currentIndex + offset + ASSET_TABS.length) % ASSET_TABS.length;
+    const nextTab = ASSET_TABS[nextIndex].value;
+    setActiveAssetTab(nextTab);
+    event.currentTarget.parentElement
+      ?.querySelector<HTMLButtonElement>(`[data-asset-tab="${nextTab}"]`)
+      ?.focus();
+  }
 
   function submit() {
     onSubmit({
@@ -187,137 +247,176 @@ function OfferEditor({
 
   return (
     <div className={styles.offerEditor}>
-      <label className={styles.field}>
-        <span>크레딧 · 보유 {assets.credits.toLocaleString()} CR</span>
-        <input
-          type="number"
-          min={0}
-          max={assets.credits}
-          step="any"
-          inputMode="decimal"
-          placeholder="0"
-          value={credits}
-          onChange={(event) =>
-            setCredits(normalizeCreditInput(event.target.value))
-          }
-          onKeyDown={(event) => {
-            if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
-            event.preventDefault();
-            setCredits((current) =>
-              stepCreditInput(
-                current,
-                event.key === "ArrowUp" ? 1 : -1,
-                assets.credits,
-              ),
-            );
-          }}
-        />
-      </label>
+      <div className={styles.offerEditor__main}>
+        <div
+          className={styles.assetTabs}
+          role="tablist"
+          aria-label="전달 자산 종류"
+        >
+          {ASSET_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              role="tab"
+              id={`${tabGroupId}-${tab.value}`}
+              aria-controls={`${tabGroupId}-panel`}
+              aria-selected={activeAssetTab === tab.value}
+              tabIndex={activeAssetTab === tab.value ? 0 : -1}
+              data-asset-tab={tab.value}
+              className={
+                activeAssetTab === tab.value
+                  ? styles.assetTabActive
+                  : styles.assetTab
+              }
+              onClick={() => setActiveAssetTab(tab.value)}
+              onKeyDown={(event) => selectAssetTab(event, tab.value)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      <div className={styles.assetGroup}>
-        <strong>아이템·장비</strong>
-        {assets.items.length === 0 ? (
-          <p className={styles.muted}>
-            거래 가능한 미장착 개인 아이템이 없습니다.
-          </p>
-        ) : (
-          <div className={styles.assetGrid}>
-            {assets.items.map((item) => {
-              const tone = categoryTone(item.category);
-              const detail = item.effect ?? item.description;
-              return (
-                <article
-                  key={item.itemId}
-                  className={[
-                    styles.assetCard,
-                    styles[`assetCard--${tone}`],
-                  ].join(" ")}
-                >
-                  <div className={styles.assetCard__art} aria-hidden>
-                    <TradeItemVisual
-                      key={`${item.itemId}:${item.slug ?? ""}:${item.previewImage ?? ""}`}
-                      category={item.category}
-                      slug={item.slug}
-                      previewImage={item.previewImage}
-                    />
-                  </div>
-                  <div className={styles.assetCard__body}>
-                    <div className={styles.assetCard__topline}>
-                      <strong>{item.itemName}</strong>
-                      <span>x {item.quantity.toLocaleString()}</span>
-                    </div>
-                    <span
-                      className={[
-                        styles.categoryPill,
-                        styles[`categoryPill--${tone}`],
-                      ].join(" ")}
+        <div
+          id={`${tabGroupId}-panel`}
+          className={styles.assetSelection}
+          role="tabpanel"
+          aria-labelledby={`${tabGroupId}-${activeAssetTab}`}
+        >
+          {activeAssetTab === "CREDITS" ? (
+            <div className={styles.creditCard}>
+              <div>
+                <span className={styles.eyebrow}>CREDIT BALANCE</span>
+                <strong>{assets.credits.toLocaleString()} CR</strong>
+                <p>직접 소수 입력하거나 위·아래 화살표로 1 CR씩 조정할 수 있습니다.</p>
+              </div>
+              <label className={styles.creditInput}>
+                <span>전달 크레딧</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={assets.credits}
+                  step="any"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={credits}
+                  onChange={(event) => setCredits(normalizeCreditInput(event.target.value))}
+                  onKeyDown={(event) => {
+                    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                    event.preventDefault();
+                    setCredits((current) =>
+                      stepCreditInput(current, event.key === "ArrowUp" ? 1 : -1, assets.credits),
+                    );
+                  }}
+                />
+              </label>
+            </div>
+          ) : null}
+
+          {activeAssetTab === "ITEMS" ? (
+            assets.items.length === 0 ? (
+              <p className={styles.empty}>거래 가능한 미장착 개인 아이템이 없습니다.</p>
+            ) : (
+              <div className={styles.assetGrid}>
+                {assets.items.map((item) => {
+                  const tone = categoryTone(item.category);
+                  const detail = item.effect ?? item.description;
+                  const quantity = itemQuantities[item.itemId] ?? 0;
+                  return (
+                    <article
+                      key={item.itemId}
+                      className={[styles.assetCard, styles[`assetCard--${tone}`], quantity > 0 ? styles.assetCardSelected : ""].filter(Boolean).join(" ")}
                     >
-                      {categoryLabel(item.category)}
-                    </span>
-                    {detail ? (
-                      <p className={styles.assetCard__detail}>{detail}</p>
-                    ) : null}
-                    <label className={styles.assetQuantity}>
-                      <span>전달 수량</span>
-                      <input
-                        aria-label={`${item.itemName} 수량`}
-                        type="number"
-                        min={0}
-                        max={item.quantity}
-                        step={1}
-                        value={itemQuantities[item.itemId] ?? 0}
-                        onChange={(event) =>
-                          setItemQuantities((current) => ({
-                            ...current,
-                            [item.itemId]: Number(event.target.value),
-                          }))
-                        }
-                      />
-                    </label>
-                  </div>
-                </article>
-              );
-            })}
+                      <div className={styles.assetCard__art} aria-hidden>
+                        <TradeItemVisual
+                          key={`${item.itemId}:${item.slug ?? ""}:${item.previewImage ?? ""}`}
+                          category={item.category}
+                          slug={item.slug}
+                          previewImage={item.previewImage}
+                        />
+                      </div>
+                      <div className={styles.assetCard__body}>
+                        <div className={styles.assetCard__topline}>
+                          <strong>{item.itemName}</strong>
+                          <span>보유 {item.quantity.toLocaleString()}</span>
+                        </div>
+                        <span className={[styles.categoryPill, styles[`categoryPill--${tone}`]].join(" ")}>
+                          {categoryLabel(item.category)}
+                        </span>
+                        {detail ? <p className={styles.assetCard__detail}>{detail}</p> : null}
+                        <div className={styles.quantityControl} aria-label={`${item.itemName} 전달 수량`}>
+                          <button type="button" aria-label={`${item.itemName} 수량 감소`} disabled={quantity <= 0} onClick={() => setItemQuantity(item.itemId, quantity - 1, item.quantity)}>−</button>
+                          <input aria-label={`${item.itemName} 수량`} type="number" min={0} max={item.quantity} step={1} value={quantity} onChange={(event) => setItemQuantity(item.itemId, Number(event.target.value), item.quantity)} />
+                          <button type="button" aria-label={`${item.itemName} 수량 증가`} disabled={quantity >= item.quantity} onClick={() => setItemQuantity(item.itemId, quantity + 1, item.quantity)}>+</button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )
+          ) : null}
+
+          {activeAssetTab === "STOCKS" ? (
+            assets.stocks.length === 0 ? (
+              <p className={styles.empty}>보유 주식이 없습니다.</p>
+            ) : (
+              <div className={styles.stockGrid}>
+                {assets.stocks.map((stock) => {
+                  const shares = stockShares[stock.ticker] ?? 0;
+                  return (
+                    <article key={stock.ticker} className={[styles.stockCard, shares > 0 ? styles.stockCardSelected : ""].filter(Boolean).join(" ")}>
+                      <div className={styles.stockCard__mark} aria-hidden>{stock.ticker.slice(0, 2)}</div>
+                      <div className={styles.stockCard__body}>
+                        <strong>{stock.name}</strong>
+                        <span>{stock.ticker} · 보유 {stock.shares.toLocaleString()}주</span>
+                        <div className={styles.quantityControl} aria-label={`${stock.ticker} 전달 주식 수`}>
+                          <button type="button" aria-label={`${stock.ticker} 수량 감소`} disabled={shares <= 0} onClick={() => setStockQuantity(stock.ticker, shares - 1, stock.shares)}>−</button>
+                          <input aria-label={`${stock.ticker} 주식 수량`} type="number" min={0} max={stock.shares} step={1} value={shares} onChange={(event) => setStockQuantity(stock.ticker, Number(event.target.value), stock.shares)} />
+                          <button type="button" aria-label={`${stock.ticker} 수량 증가`} disabled={shares >= stock.shares} onClick={() => setStockQuantity(stock.ticker, shares + 1, stock.shares)}>+</button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )
+          ) : null}
+        </div>
+      </div>
+
+      <aside className={styles.offerSummaryPanel} aria-label="전송 구성 요약">
+        <div className={styles.offerSummaryPanel__head}>
+          <div>
+            <span className={styles.eyebrow}>TRANSMISSION MANIFEST</span>
+            <strong>전송 구성</strong>
           </div>
-        )}
-      </div>
-
-      <div className={styles.assetGroup}>
-        <strong>주식</strong>
-        {assets.stocks.length === 0 ? (
-          <p className={styles.muted}>보유 주식이 없습니다.</p>
+          <span className={styles.lineCount}>{assetLineCount}개 자산</span>
+        </div>
+        {assetLineCount === 0 ? (
+          <p className={styles.summaryEmpty}>왼쪽 탭에서 전달할 자산과 수량을 선택하세요.</p>
         ) : (
-          assets.stocks.map((stock) => (
-            <label key={stock.ticker} className={styles.assetRow}>
-              <span>
-                {stock.name} ({stock.ticker}) · 보유 {stock.shares}주
-              </span>
-              <input
-                aria-label={`${stock.ticker} 주식 수량`}
-                type="number"
-                min={0}
-                max={stock.shares}
-                value={stockShares[stock.ticker] ?? 0}
-                onChange={(event) =>
-                  setStockShares((current) => ({
-                    ...current,
-                    [stock.ticker]: Number(event.target.value),
-                  }))
-                }
-              />
-            </label>
-          ))
+          <ul className={styles.selectedList}>
+            {selectedCreditAmount > 0 ? <li><span>크레딧</span><strong>{selectedCreditAmount.toLocaleString()} CR</strong><button type="button" onClick={() => setCredits("")} aria-label="크레딧 제거">제거</button></li> : null}
+            {selectedItems.map((item) => <li key={item.itemId}><span>{item.itemName}</span><strong>× {itemQuantities[item.itemId]}</strong><button type="button" onClick={() => setItemQuantity(item.itemId, 0, item.quantity)} aria-label={`${item.itemName} 제거`}>제거</button></li>)}
+            {selectedStocks.map((stock) => <li key={stock.ticker}><span>{stock.ticker}</span><strong>{stockShares[stock.ticker]}주</strong><button type="button" onClick={() => setStockQuantity(stock.ticker, 0, stock.shares)} aria-label={`${stock.ticker} 제거`}>제거</button></li>)}
+          </ul>
         )}
-      </div>
-
-      <button
-        type="button"
-        className={styles.primaryButton}
-        disabled={busy}
-        onClick={submit}
-      >
-        {busy ? "처리 중…" : submitLabel}
-      </button>
+        {kind === "GIFT" ? <p className={styles.caution}>주의: 즉시 전달은 상대 승인 없이 완료되며 취소할 수 없습니다.</p> : <p className={styles.summaryHint}>교환방은 양측이 현재 구성을 확정하면 체결됩니다.</p>}
+        <button
+          type="button"
+          className={
+            kind === "GIFT" ? styles.dangerButton : styles.primaryButton
+          }
+          disabled={
+            busy ||
+            submitDisabled ||
+            (requireAssets && assetLineCount === 0)
+          }
+          onClick={submit}
+        >
+          {busy ? "처리 중…" : submitLabel}
+        </button>
+      </aside>
     </div>
   );
 }
@@ -330,8 +429,8 @@ function TradeCard({
   onUpdate,
   trade,
 }: TradeCardProps) {
+  const [isEditing, setIsEditing] = useState(false);
   const isInitiator = trade.initiator.userId === meUserId;
-  const me = isInitiator ? trade.initiator : trade.counterparty;
   const other = isInitiator ? trade.counterparty : trade.initiator;
   const myOffer = isInitiator
     ? trade.initiatorOffer
@@ -352,37 +451,56 @@ function TradeCard({
     <article className={styles.tradeCard}>
       <div className={styles.tradeCard__head}>
         <div>
+          <span className={styles.eyebrow}>OPEN EXCHANGE · REV {trade.revision}</span>
           <strong>{other.characterCodename}</strong>
-          <span> · revision {trade.revision}</span>
         </div>
-        <span className={styles.status}>
+        <span className={otherConfirmed ? styles.statusConfirmed : styles.status}>
           {otherConfirmed ? "상대 확정" : "상대 구성 중"}
         </span>
       </div>
-      <div className={styles.offerSummary}>
-        <p>
-          <strong>{me.characterCodename}</strong> — {summarizeOffer(myOffer)}
-        </p>
-        <p>
-          <strong>{other.characterCodename}</strong> —{" "}
-          {summarizeOffer(otherOffer)}
-        </p>
+      <div className={styles.offerSummary} aria-label="현재 양측 제안">
+        <div>
+          <span>내 제안 {myConfirmed ? "· 확정" : "· 미확정"}</span>
+          <strong>{summarizeOffer(myOffer)}</strong>
+        </div>
+        <div>
+          <span>{other.characterCodename} 제안 {otherConfirmed ? "· 확정" : "· 미확정"}</span>
+          <strong>{summarizeOffer(otherOffer)}</strong>
+        </div>
       </div>
-      <OfferEditor
-        key={`${trade.id}:${trade.revision}`}
-        assets={assets}
-        busy={busy}
-        initialOffer={myOffer}
-        submitLabel="내 제안 저장"
-        onSubmit={(offer) =>
-          onUpdate(trade.id, {
-            action: "SET_OFFER",
-            expectedRevision: trade.revision,
-            offer,
-          })
-        }
-      />
+      {isEditing ? (
+        <div id={`trade-editor-${trade.id}`} className={styles.tradeEditor}>
+          <p className={styles.tradeCard__guide}>
+            제안을 저장하면 revision이 갱신되어 양측의 확정이 다시
+            필요합니다.
+          </p>
+          <OfferEditor
+            key={`${trade.id}:${trade.revision}`}
+            assets={assets}
+            busy={busy}
+            initialOffer={myOffer}
+            submitLabel="내 제안 저장"
+            onSubmit={(offer) =>
+              onUpdate(trade.id, {
+                action: "SET_OFFER",
+                expectedRevision: trade.revision,
+                offer,
+              })
+            }
+          />
+        </div>
+      ) : null}
       <div className={styles.actions}>
+        <button
+          type="button"
+          className={styles.secondaryButton}
+          aria-controls={`trade-editor-${trade.id}`}
+          aria-expanded={isEditing}
+          disabled={busy}
+          onClick={() => setIsEditing((current) => !current)}
+        >
+          {isEditing ? "편집 닫기" : "내 제안 편집"}
+        </button>
         <button
           type="button"
           className={styles.primaryButton}
@@ -515,29 +633,47 @@ export default function TradesClient() {
       ) : null}
 
       <section className={styles.panel}>
-        <h2>새 거래</h2>
-        <p className={styles.muted}>
-          즉시 전달은 상대 승인 없이 바로 이동합니다. 교환방은 같은 revision을
-          양쪽이 확정해야 체결됩니다.
-        </p>
-        <div className={styles.modeTabs}>
+        <div className={styles.panel__head}>
+          <div>
+            <span className={styles.eyebrow}>PLAYER ASSET TRANSFER</span>
+            <h2>새 거래 작성</h2>
+          </div>
+          <p className={styles.muted}>거래 방식, 상대, 전송 구성을 순서대로 지정합니다.</p>
+        </div>
+        <div className={styles.createSteps}>
+          <section className={styles.createStep} aria-labelledby="trade-kind-label">
+            <div className={styles.createStep__head}>
+              <span>01</span><strong id="trade-kind-label">거래 방식</strong>
+            </div>
+            <div
+              className={styles.modeTabs}
+              role="group"
+              aria-labelledby="trade-kind-label"
+            >
           <button
             type="button"
             className={kind === "EXCHANGE" ? styles.modeActive : styles.mode}
             onClick={() => setKind("EXCHANGE")}
+            aria-pressed={kind === "EXCHANGE"}
           >
-            교환방
+            <span>교환</span><small>양측 확정 후 체결</small>
           </button>
           <button
             type="button"
             className={kind === "GIFT" ? styles.modeActive : styles.mode}
             onClick={() => setKind("GIFT")}
+            aria-pressed={kind === "GIFT"}
           >
-            즉시 전달
+            <span>즉시 전달</span><small>상대 승인 없이 완료</small>
           </button>
-        </div>
+            </div>
+          </section>
+          <section className={styles.createStep} aria-labelledby="counterparty-label">
+            <div className={styles.createStep__head}>
+              <span>02</span><strong id="counterparty-label">거래 상대</strong>
+            </div>
         <label className={styles.field}>
-          <span>거래 상대</span>
+          <span className={styles.srOnly}>거래 상대 선택</span>
           <select
             value={targetUserId}
             onChange={(event) => setTargetUserId(event.target.value)}
@@ -550,10 +686,18 @@ export default function TradesClient() {
             ))}
           </select>
         </label>
+          </section>
+          <section className={styles.createStep} aria-labelledby="asset-compose-label">
+            <div className={styles.createStep__head}>
+              <span>03</span><strong id="asset-compose-label">자산 구성</strong>
+            </div>
         <OfferEditor
           key={`new-trade:${editorVersion}`}
           assets={data.assets}
-          busy={createMutation.isPending || !targetUserId}
+          busy={createMutation.isPending}
+          kind={kind}
+          requireAssets
+          submitDisabled={!targetUserId}
           submitLabel={kind === "GIFT" ? "즉시 전달" : "교환방 만들기"}
           onSubmit={(offer) => {
             if (!targetUserId || createLockedRef.current) return;
@@ -593,8 +737,10 @@ export default function TradesClient() {
             );
           }}
         />
+          </section>
+        </div>
         {!targetUserId ? (
-          <p className={styles.hint}>먼저 거래 상대를 선택해주세요.</p>
+          <p className={styles.hint}>전송을 시작하려면 거래 상대를 먼저 선택해주세요.</p>
         ) : null}
         {createMutation.error ? (
           <p className={styles.error}>{createMutation.error.message}</p>
@@ -602,7 +748,13 @@ export default function TradesClient() {
       </section>
 
       <section className={styles.panel}>
-        <h2>진행 중인 교환</h2>
+        <div className={styles.panel__head}>
+          <div>
+            <span className={styles.eyebrow}>PENDING NEGOTIATIONS</span>
+            <h2>진행 중인 교환</h2>
+          </div>
+          <span className={styles.countBadge}>{openTrades.length}건</span>
+        </div>
         {openTrades.length === 0 ? (
           <p className={styles.empty}>진행 중인 교환이 없습니다.</p>
         ) : (
@@ -627,7 +779,13 @@ export default function TradesClient() {
       </section>
 
       <section className={`${styles.panel} ${styles.history}`}>
-        <h2>거래 이력</h2>
+        <div className={styles.panel__head}>
+          <div>
+            <span className={styles.eyebrow}>TRANSFER ARCHIVE</span>
+            <h2>거래 이력</h2>
+          </div>
+          <span className={styles.countBadge}>{history.length}건</span>
+        </div>
         {history.length === 0 ? (
           <p className={styles.empty}>완료되거나 취소된 거래가 없습니다.</p>
         ) : (
@@ -641,19 +799,19 @@ export default function TradesClient() {
               return (
                 <article key={trade.id} className={styles.historyRow}>
                   <div>
-                    <strong>
-                      {trade.kind === "GIFT" ? "즉시 전달" : "교환"}
-                    </strong>
-                    <span> · {other.characterCodename}</span>
+                    <span className={styles.eyebrow}>
+                      {trade.kind === "GIFT" ? "INSTANT TRANSFER" : "EXCHANGE"}
+                    </span>
+                    <strong>{other.characterCodename}</strong>
                   </div>
-                  <div>
+                  <div className={styles.historyRow__offer}>
                     {summarizeOffer(
                       isInitiator
                         ? trade.initiatorOffer
                         : trade.counterpartyOffer,
                     )}
                   </div>
-                  <span className={styles.status}>
+                  <span className={trade.status === "COMPLETED" ? styles.statusConfirmed : styles.status}>
                     {trade.status === "COMPLETED" ? "완료" : "취소"}
                   </span>
                 </article>

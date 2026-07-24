@@ -182,3 +182,14 @@ test("거래 성공은 현재 화면을 재조회하고 완료 토스트와 입�
   assert.match(tradesClient, /const updateMutation = useUpdateTradeMutation\(\)/);
   assert.match(tradesClient, /setEditorVersion\(\(current\) => current \+ 1\)/);
 });
+
+test("거래 작성기는 선택 상태와 처리 상태를 분리하고 큰 편집기를 접어둔다", () => {
+  assert.match(tradesClient, /role="tablist"/);
+  assert.match(tradesClient, /event\.key !== "ArrowLeft"/);
+  assert.match(tradesClient, /className=\{styles\.offerSummaryPanel\}/);
+  assert.match(tradesClient, /requireAssets/);
+  assert.match(tradesClient, /submitDisabled=\{!targetUserId\}/);
+  assert.match(tradesClient, /busy=\{createMutation\.isPending\}/);
+  assert.match(tradesClient, /const \[isEditing, setIsEditing\] = useState\(false\)/);
+  assert.match(tradesClient, /aria-expanded=\{isEditing\}/);
+});

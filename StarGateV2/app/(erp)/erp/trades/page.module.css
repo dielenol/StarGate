@@ -6,76 +6,183 @@
 .panel,
 .tradeCard {
   border: 1px solid var(--line);
-  background: var(--bg-1);
-  padding: 20px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(201, 168, 90, 0.045), transparent 38%),
+    var(--bg-1);
+}
+
+.panel {
+  padding: 22px;
+}
+
+.panel__head,
+.tradeCard__head,
+.offerSummaryPanel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .panel h2 {
-  margin: 0 0 12px;
-  font-size: 19px;
+  margin: 3px 0 0;
+  color: var(--ink-0);
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.eyebrow {
+  display: block;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
 }
 
 .muted,
 .hint,
-.empty {
+.empty,
+.summaryEmpty,
+.summaryHint,
+.tradeCard__guide {
   color: var(--ink-2);
   font-size: 14px;
+  line-height: 1.55;
 }
 
-.modeTabs,
-.actions {
+.panel__head .muted {
+  max-width: 420px;
+  margin: 3px 0 0;
+  text-align: right;
+}
+
+.countBadge,
+.lineCount,
+.status,
+.statusConfirmed {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  padding: 3px 9px;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusConfirmed {
+  border-color: color-mix(in srgb, var(--gold) 68%, var(--line));
+  color: var(--gold);
+}
+
+.createSteps {
+  display: grid;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.createStep {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.createStep__head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 16px 0;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-0);
+  font-size: 16px;
+}
+
+.createStep__head > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.modeTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .mode,
 .modeActive,
 .primaryButton,
-.secondaryButton {
-  min-height: 40px;
+.secondaryButton,
+.dangerButton,
+.assetTab,
+.assetTabActive,
+.quantityControl button,
+.selectedList button,
+.toast__dismiss {
   border: 1px solid var(--line);
-  padding: 8px 14px;
   font: inherit;
   font-size: 14px;
   cursor: pointer;
 }
 
 .mode,
-.secondaryButton {
-  background: transparent;
+.modeActive {
+  display: grid;
+  min-height: 68px;
+  gap: 3px;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.mode {
+  background: var(--bg-2);
   color: var(--ink-1);
 }
 
-.modeActive,
-.primaryButton {
+.modeActive {
   border-color: var(--gold);
-  background: var(--gold);
-  color: #000;
+  background: color-mix(in srgb, var(--gold) 14%, var(--bg-2));
+  color: var(--ink-0);
+  box-shadow: inset 3px 0 0 var(--gold);
 }
 
-.primaryButton:disabled,
-.secondaryButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+.mode span,
+.modeActive span {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mode small,
+.modeActive small {
+  color: var(--ink-2);
+  font-size: 14px;
 }
 
 .field {
   display: grid;
   gap: 7px;
-  margin: 12px 0;
-  font-size: 14px;
+  margin-top: 12px;
 }
 
-.field input,
 .field select,
-.assetRow input,
-.assetQuantity input {
-  min-height: 40px;
-  border: 1px solid var(--line);
-  background: var(--bg-1);
-  color: var(--ink-1);
+.creditInput input,
+.quantityControl input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--bg-2);
+  color: var(--ink-0);
   padding: 8px 10px;
   font: inherit;
   font-size: 14px;
@@ -83,52 +190,128 @@
 
 .offerEditor {
   display: grid;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.38fr);
+  gap: 16px;
+  margin-top: 12px;
 }
 
-.assetGroup {
-  display: grid;
-  gap: 8px;
-  border-top: 1px dashed var(--line);
+.offerEditor__main {
+  min-width: 0;
+}
+
+.assetTabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.assetTab,
+.assetTabActive {
+  min-height: 42px;
+  padding: 8px 14px;
+  border-bottom: 0;
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.assetTab:first-child,
+.assetTabActive:first-child {
+  border-top-left-radius: 6px;
+}
+
+.assetTab:last-child,
+.assetTabActive:last-child {
+  border-top-right-radius: 6px;
+}
+
+.assetTabActive {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 11%, var(--bg-2));
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.assetSelection {
+  min-height: 216px;
   padding-top: 12px;
 }
 
-.assetGrid {
+.creditCard {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--bg-2);
+}
+
+.creditCard strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 22px;
+}
+
+.creditCard p {
+  margin: 8px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.creditInput {
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  color: var(--ink-1);
+  font-size: 14px;
+}
+
+.assetGrid,
+.stockGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
   gap: 10px;
 }
 
-.assetCard {
+.assetCard,
+.stockCard {
   position: relative;
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  gap: 12px;
-  min-height: 144px;
   border: 1px solid var(--line);
   border-radius: 8px;
+  background: var(--bg-2);
+  transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
+}
+
+.assetCard {
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 170px;
   padding: 12px;
-  overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 70%),
-    var(--bg-1);
 }
 
 .assetCard::before {
-  content: "";
   position: absolute;
   inset: 0;
   border-top: 2px solid var(--line-strong);
+  content: "";
   pointer-events: none;
 }
 
-.assetCard--equipment::before {
-  border-top-color: var(--gold-dim);
+.assetCard--equipment::before { border-top-color: var(--gold-dim); }
+.assetCard--consumable::before { border-top-color: var(--rank-u-text); }
+
+.assetCardSelected,
+.stockCardSelected {
+  border-color: var(--gold-dim);
+  background: color-mix(in srgb, var(--gold) 10%, var(--bg-2));
 }
 
-.assetCard--consumable::before {
-  border-top-color: var(--rank-u-text);
-}
+.assetCard:hover,
+.stockCard:hover { transform: translateY(-1px); }
 
 .assetCard__art {
   display: flex;
@@ -137,37 +320,17 @@
   align-items: center;
   justify-content: center;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--bg-2);
+  border-radius: 6px;
+  background: var(--bg-1);
 }
 
-.assetCard__image {
-  width: 100%;
-  height: 100%;
-  padding: 4px;
-  object-fit: contain;
-}
+.assetCard__image { width: 100%; height: 100%; padding: 4px; object-fit: contain; }
+.assetCard__icon { width: 28px; height: 28px; color: var(--ink-1); }
+.assetCard--equipment .assetCard__icon { color: var(--gold); }
+.assetCard--consumable .assetCard__icon { color: var(--rank-u-text); }
 
-.assetCard__icon {
-  width: 28px;
-  height: 28px;
-  color: var(--ink-1);
-}
-
-.assetCard--equipment .assetCard__icon {
-  color: var(--gold);
-}
-
-.assetCard--consumable .assetCard__icon {
-  color: var(--rank-u-text);
-}
-
-.assetCard__body {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 7px;
-}
+.assetCard__body,
+.stockCard__body { display: flex; min-width: 0; flex-direction: column; gap: 7px; }
 
 .assetCard__topline {
   display: grid;
@@ -176,116 +339,177 @@
   align-items: start;
 }
 
-.assetCard__topline strong {
+.assetCard__topline strong,
+.stockCard__body strong {
+  overflow: hidden;
   color: var(--ink-0);
   font-size: 15px;
   line-height: 1.35;
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.assetCard__topline span {
+.assetCard__topline span,
+.stockCard__body > span {
   color: var(--ink-2);
-  font-size: 14px;
   font-family: var(--font-mono);
+  font-size: 14px;
 }
 
 .categoryPill {
   display: inline-flex;
   width: fit-content;
-  min-height: 22px;
+  min-height: 23px;
   align-items: center;
   border: 1px solid var(--line);
-  border-radius: 8px;
   padding: 2px 7px;
   color: var(--ink-1);
   font-family: var(--font-mono);
   font-size: 14px;
-  line-height: 1;
 }
 
-.categoryPill--equipment {
-  border-color: color-mix(in srgb, var(--gold-dim) 64%, var(--line));
-  color: var(--gold);
-}
-
-.categoryPill--consumable {
-  border-color: color-mix(in srgb, var(--rank-u-text) 58%, var(--line));
-  color: var(--rank-u-text);
-}
+.categoryPill--equipment { border-color: var(--gold-dim); color: var(--gold); }
+.categoryPill--consumable { border-color: var(--rank-u-text); color: var(--rank-u-text); }
 
 .assetCard__detail {
   display: -webkit-box;
   margin: 0;
+  overflow: hidden;
   color: var(--ink-2);
   font-size: 14px;
   line-height: 1.4;
-  overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
-.assetQuantity {
+.quantityControl {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 96px;
-  align-items: center;
-  gap: 8px;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 5px;
   margin-top: auto;
-  color: var(--ink-2);
-  font-size: 14px;
 }
 
-.assetRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 100px;
-  align-items: center;
+.quantityControl button {
+  min-height: 42px;
+  border-radius: 6px;
+  background: var(--bg-1);
+  color: var(--ink-0);
+  font-size: 18px;
+}
+
+.quantityControl button:disabled,
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.stockCard {
+  grid-template-columns: 48px minmax(0, 1fr);
   gap: 12px;
-  font-size: 14px;
+  min-height: 138px;
+  padding: 12px;
 }
 
-.tradeList,
-.historyList {
+.stockCard__mark {
   display: grid;
-  gap: 14px;
-}
-
-.tradeCard {
-  padding: 16px;
-}
-
-.tradeCard__head,
-.historyRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.offerSummary {
-  margin: 14px 0;
-  border-block: 1px dashed var(--line);
-  padding: 10px 0;
-  font-size: 14px;
-}
-
-.offerSummary p {
-  margin: 5px 0;
-}
-
-.status {
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px;
   color: var(--gold);
+  font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 700;
 }
 
-.historyRow {
+.offerSummaryPanel {
+  position: sticky;
+  top: calc(var(--topbar-h) + 16px);
+  align-self: start;
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--bg-1);
+}
+
+.offerSummaryPanel__head strong { display: block; margin-top: 3px; color: var(--ink-0); font-size: 17px; }
+.lineCount { border-color: var(--gold-dim); color: var(--gold); }
+.summaryEmpty { margin: 16px 0; }
+
+.selectedList {
   display: grid;
-  grid-template-columns: minmax(180px, 0.5fr) minmax(0, 1fr) auto;
-  border-bottom: 1px solid var(--line);
-  padding: 12px 0;
+  gap: 7px;
+  margin: 14px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selectedList li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px dashed var(--line);
+  padding-bottom: 7px;
+  color: var(--ink-1);
   font-size: 14px;
 }
+
+.selectedList strong { color: var(--ink-0); font-family: var(--font-mono); font-size: 14px; }
+.selectedList button { min-height: 32px; border-radius: 6px; padding: 3px 7px; background: transparent; color: var(--ink-2); }
+.summaryHint, .caution { margin: 14px 0; font-size: 14px; line-height: 1.5; }
+.caution { border-left: 3px solid var(--danger); padding-left: 9px; color: var(--danger); }
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  min-height: 42px;
+  border-radius: 6px;
+  padding: 9px 14px;
+}
+
+.primaryButton { border-color: var(--gold); background: var(--gold); color: #000; font-weight: 700; }
+.secondaryButton { background: transparent; color: var(--ink-1); }
+.dangerButton { width: 100%; border-color: var(--danger); background: color-mix(in srgb, var(--danger) 15%, var(--bg-1)); color: var(--ink-0); font-weight: 700; }
+.offerSummaryPanel > .primaryButton,
+.offerSummaryPanel > .dangerButton { width: 100%; }
+
+.hint { margin: 14px 0 0; }
+.tradeList, .historyList { display: grid; gap: 12px; margin-top: 16px; }
+.tradeCard { padding: 18px; }
+.tradeCard__head strong { display: block; margin-top: 3px; color: var(--ink-0); font-size: 18px; }
+
+.offerSummary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 15px 0 8px;
+}
+
+.offerSummary > div { display: grid; gap: 5px; border: 1px solid var(--line); border-radius: 6px; padding: 11px; background: var(--bg-2); }
+.offerSummary span { color: var(--ink-2); font-size: 14px; }
+.offerSummary strong { color: var(--ink-0); font-size: 14px; line-height: 1.45; }
+.tradeCard__guide { margin: 0 0 4px; }
+.tradeEditor { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 14px; }
+.tradeCard .offerEditor { margin-top: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+
+.historyRow {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.48fr) minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 13px 0;
+  font-size: 14px;
+}
+
+.historyRow > div:first-child { display: grid; gap: 4px; }
+.historyRow strong { color: var(--ink-0); font-size: 15px; }
+.historyRow__offer { color: var(--ink-1); line-height: 1.45; }
 
 .state,
 .stateError {
@@ -295,36 +519,13 @@
 }
 
 .stateError,
-.error {
-  color: var(--danger);
-}
+.error { color: var(--danger); }
+.error { margin: 14px 0 0; font-size: 14px; }
 
-.error {
-  font-size: 14px;
-}
-
-@keyframes toastIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -54%) scale(0.94);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-.toastOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  pointer-events: none;
-}
-
+.toastOverlay { position: fixed; inset: 0; z-index: 1000; pointer-events: none; }
 .toast {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 50%; left: 50%;
   display: flex;
   min-width: 280px;
   max-width: min(420px, calc(100vw - 32px));
@@ -334,67 +535,39 @@
   border-radius: 8px;
   padding: 18px 22px;
   background: var(--bg-1);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(201, 168, 90, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
   color: var(--ink-0);
   pointer-events: auto;
   animation: toastIn 180ms ease-out;
 }
+.toast__icon { width: 36px; height: 36px; flex-shrink: 0; }
+.toast__body { flex: 1; font-family: var(--font-mono); font-size: 15px; line-height: 1.5; }
+.toast__dismiss { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 6px; background: transparent; color: var(--ink-2); }
 
-.toast__icon {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
+:is(.mode, .modeActive, .secondaryButton, .dangerButton, .assetTab, .assetTabActive, .quantityControl button, .selectedList button, .toast__dismiss):hover:not(:disabled) { border-color: var(--gold); color: var(--ink-0); }
+.primaryButton:hover:not(:disabled) { border-color: var(--gold-dim); background: var(--gold-dim); color: #000; }
+:is(.mode, .modeActive, .primaryButton, .secondaryButton, .dangerButton, .assetTab, .assetTabActive, .quantityControl button, .selectedList button, .toast__dismiss, .field select, .creditInput input, .quantityControl input):focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, -54%) scale(0.94); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .layout *, .layout *::before, .layout *::after { scroll-behavior: auto; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+
+@media (max-width: 760px) {
+  .panel { padding: 16px; }
+  .panel__head { gap: 10px; }
+  .panel__head .muted { display: none; }
+  .offerEditor { grid-template-columns: 1fr; }
+  .offerSummaryPanel { position: static; }
+  .assetGrid, .stockGrid { grid-template-columns: 1fr; }
 }
 
-.toast__body {
-  flex: 1;
-  font-family: var(--font-mono);
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.toast__dismiss {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  place-items: center;
-  border: 1px solid var(--line-strong);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ink-2);
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.toast__dismiss:hover,
-.toast__dismiss:focus-visible {
-  border-color: var(--gold-dim);
-  color: var(--ink-0);
-  outline: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .toast {
-    animation: none;
-  }
-}
-
-@media (max-width: 720px) {
-  .assetGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .assetRow,
-  .historyRow {
-    grid-template-columns: 1fr;
-  }
-
-  .tradeCard__head {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+@media (max-width: 480px) {
+  .panel { padding: 14px; }
+  .modeTabs, .offerSummary, .creditCard { grid-template-columns: 1fr; }
+  .assetTabs { overflow-x: auto; }
+  .assetTab, .assetTabActive { flex: 0 0 auto; }
+  .historyRow { grid-template-columns: 1fr; gap: 7px; }
+  .tradeCard__head { flex-direction: column; }
+  .status, .statusConfirmed { align-self: flex-start; }
 }
