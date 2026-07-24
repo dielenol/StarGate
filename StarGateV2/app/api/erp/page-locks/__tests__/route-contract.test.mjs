@@ -94,7 +94,8 @@ test("ERP 레이아웃은 신뢰된 로컬 플래그를 모든 잠금 UI에 전�
   const source = await readFile(LAYOUT, "utf8");
 
   assert.match(source, /get\("x-stargate-erp-local-access"\) === "1"/);
-  assert.match(source, /!bypassPageLocks &&[\s\S]*isNavPathLocked/);
+  assert.match(source, /hasPlayerServiceTestPathAccess\(session\.user, pathname\)/);
+  assert.match(source, /!bypassCurrentPageLock &&[\s\S]*isNavPathLocked/);
   assert.match(source, /<ERPSidebar[\s\S]*bypassPageLocks=\{bypassPageLocks\}/);
   assert.match(source, /<PageLockGate[\s\S]*bypassPageLocks=\{bypassPageLocks\}/);
   assert.match(source, /<CommandKDeferred bypassPageLocks=\{bypassPageLocks\}/);

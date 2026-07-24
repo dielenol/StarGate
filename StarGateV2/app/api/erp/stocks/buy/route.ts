@@ -14,6 +14,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { resolvePlayerServiceAvailability } from "@/lib/auth/player-service-test-access";
 import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
@@ -76,7 +77,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!isStockMarketEnabled()) {
+  if (
+    !resolvePlayerServiceAvailability(isStockMarketEnabled(), session.user)
+  ) {
     return NextResponse.json(
       { error: "현재 주식 거래가 일시 중지되어 있습니다.", code: "MARKET_CLOSED" },
       { status: 423 },

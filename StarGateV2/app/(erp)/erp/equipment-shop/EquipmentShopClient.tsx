@@ -847,6 +847,7 @@ interface Props {
   initialCredits: CreditsResponse | undefined;
   mainCharacterError: string | null;
   isGM: boolean;
+  playerServiceTestAccess: boolean;
   initialStrategicScene: StrategicScene;
 }
 
@@ -1463,6 +1464,7 @@ export default function EquipmentShopClient({
   initialCredits,
   mainCharacterError,
   isGM,
+  playerServiceTestAccess,
   initialStrategicScene,
 }: Props) {
   const router = useRouter();
@@ -1717,13 +1719,14 @@ export default function EquipmentShopClient({
   );
   const effectiveHasQualificationAccess =
     !isTowaskiDebug && hasCharacterQualificationAccess;
-  const effectiveTowaskiGm = isGM && !isTowaskiDebug;
+  const canBypassPlayerServiceRestrictions =
+    !isTowaskiDebug && (isGM || playerServiceTestAccess);
   const activeZoneDef = activeZoneMeta(activeZone);
   const zoneMeta = isHub ? ARMORY_DESK_META : activeZoneDef;
   const headerZoneKey = isHub ? "hub" : activeZone;
   const requiresTowaskiLicenseTest =
     activeZone === "towaski" &&
-    !effectiveTowaskiGm &&
+    !canBypassPlayerServiceRestrictions &&
     effectiveHasMainCharacter &&
     !effectiveHasBasicLicense;
   const showTowaskiBasicLicenseTest =
@@ -2056,7 +2059,9 @@ export default function EquipmentShopClient({
       ? getTowaskiLicenseTestProgram(selectedItem.slug)
       : null;
   const selectedLicenseBlocked = Boolean(
-    selectedItem && isEquipmentLicenseBlocked(selectedItem),
+    selectedItem &&
+      !canBypassPlayerServiceRestrictions &&
+      isEquipmentLicenseBlocked(selectedItem),
   );
   const selectedLicenseDetail = selectedItem
     ? describeEquipmentLicenseDetail(selectedItem)
@@ -2064,7 +2069,7 @@ export default function EquipmentShopClient({
   const selectedHasBasicPurchaseAccess = selectedItem
     ? !requiresTowaskiBasicLicense(selectedItem.zone) ||
       hasTowaskiBasicPurchaseAccess({
-        isGM: effectiveTowaskiGm,
+        isGM: canBypassPlayerServiceRestrictions,
         hasBasicLicense: effectiveHasBasicLicense,
         licenseStatus: selectedItem.licenseStatus,
       })
@@ -2072,7 +2077,7 @@ export default function EquipmentShopClient({
   const selectedHasZonePurchaseAccess = Boolean(
     selectedItem &&
       hasEquipmentShopZonePurchaseAccess({
-        isGM: effectiveTowaskiGm,
+        isGM: canBypassPlayerServiceRestrictions,
         purchaseZone: selectedItem.zone,
         sourceZone: selectedItem.sourceZone,
         category: selectedItem.category,
@@ -2491,8 +2496,10 @@ export default function EquipmentShopClient({
       : activeZone === "lab"
         ? "RESEARCH CONTROL"
         : activeZone === "towaski"
-          ? effectiveTowaskiGm
+          ? isGM
             ? "GM OVERRIDE"
+            : playerServiceTestAccess
+              ? "TEST ACCESS"
             : effectiveHasBasicLicense
               ? "LICENSE ACTIVE"
               : effectiveHasQualificationAccess
@@ -2507,7 +2514,10 @@ export default function EquipmentShopClient({
     ? [
         { label: "담당 요원", value: assignedAgent },
         { label: "운영 구역", value: `${ZONE_DEFS.length}개` },
-        { label: "접근 권한", value: isGM ? "GM" : "AGENT" },
+        {
+          label: "접근 권한",
+          value: isGM ? "GM" : playerServiceTestAccess ? "TEST AGENT" : "AGENT",
+        },
       ]
     : activeZone === "lab"
       ? [
@@ -2521,10 +2531,12 @@ export default function EquipmentShopClient({
             { label: "보유 크레딧", value: formatCredits(balance) },
             {
               label: "화기 자격",
-              value: effectiveTowaskiGm
+              value: isGM
                 ? hasBasicFirearmLicense
                   ? "승인"
                   : "GM 면제"
+                : playerServiceTestAccess
+                  ? "테스트 면제"
                 : effectiveHasBasicLicense
                   ? "승인"
                   : effectiveHasQualificationAccess
@@ -2721,7 +2733,7 @@ export default function EquipmentShopClient({
     if (purchaseLockRef.current || purchaseMutation.isPending) return;
 
     const hasZonePurchaseAccess = hasEquipmentShopZonePurchaseAccess({
-      isGM: effectiveTowaskiGm,
+      isGM: canBypassPlayerServiceRestrictions,
       purchaseZone: item.zone,
       sourceZone: item.sourceZone,
       category: item.category,
@@ -2762,7 +2774,7 @@ export default function EquipmentShopClient({
     if (
       requiresTowaskiBasicLicense(item.zone) &&
       !hasTowaskiBasicPurchaseAccess({
-        isGM: effectiveTowaskiGm,
+        isGM: canBypassPlayerServiceRestrictions,
         hasBasicLicense: effectiveHasBasicLicense,
         licenseStatus: item.licenseStatus,
       })
@@ -2804,7 +2816,11 @@ export default function EquipmentShopClient({
       return;
     }
 
-    if (isEquipmentLicenseBlocked(item) && item.licenseRequirement) {
+    if (
+      !canBypassPlayerServiceRestrictions &&
+      isEquipmentLicenseBlocked(item) &&
+      item.licenseRequirement
+    ) {
       setErrorMessage(
         `${item.licenseRequirement.licenseName}가 있거나 해당 화기 적성이 확인되어야 구매할 수 있습니다.`,
       );
@@ -3672,11 +3688,13 @@ export default function EquipmentShopClient({
                   isLicenseItem && isTowaskiLicenseSlug(item.slug)
                     ? getTowaskiLicenseTestProgram(item.slug)
                     : null;
-                const licenseBlocked = isEquipmentLicenseBlocked(item);
+                const licenseBlocked =
+                  !canBypassPlayerServiceRestrictions &&
+                  isEquipmentLicenseBlocked(item);
                 const licenseAccess = describeEquipmentLicenseAccess(item);
                 const hasZonePurchaseAccess =
                   hasEquipmentShopZonePurchaseAccess({
-                    isGM: effectiveTowaskiGm,
+                    isGM: canBypassPlayerServiceRestrictions,
                     purchaseZone: item.zone,
                     sourceZone: item.sourceZone,
                     category: item.category,
@@ -3684,7 +3702,7 @@ export default function EquipmentShopClient({
                 const hasBasicPurchaseAccess =
                   !requiresTowaskiBasicLicense(item.zone) ||
                   hasTowaskiBasicPurchaseAccess({
-                    isGM: effectiveTowaskiGm,
+                    isGM: canBypassPlayerServiceRestrictions,
                     hasBasicLicense: effectiveHasBasicLicense,
                     licenseStatus: item.licenseStatus,
                   });
@@ -3861,8 +3879,10 @@ export default function EquipmentShopClient({
                     <span>
                       <small>기본 화기</small>
                       <strong>
-                        {effectiveTowaskiGm
+                        {isGM
                           ? "GM 면제"
+                          : playerServiceTestAccess
+                            ? "테스트 면제"
                           : effectiveHasBasicLicense
                             ? "라이센스 보유"
                             : selectedItem.licenseStatus?.source ===
@@ -4940,7 +4960,9 @@ export default function EquipmentShopClient({
         WORKSHOP_REQUEST_DETAIL_MIN_LENGTH;
     const customReady =
       customRequestDetails.trim().length >= WORKSHOP_REQUEST_DETAIL_MIN_LENGTH &&
-      (isGM || research.capabilities.customWeaponSlot);
+      (isGM ||
+        playerServiceTestAccess ||
+        research.capabilities.customWeaponSlot);
 
     const requestReload = (inventoryEntryId: string) => {
       workshopRequestMutation.mutate(
@@ -5102,7 +5124,9 @@ export default function EquipmentShopClient({
             <span>CUSTOM ORDER</span>
             <strong>커스텀 장비 제작 의뢰</strong>
             <p>원하는 장비의 형태, 용도, 작동 방식과 핵심 요구사항을 적어주세요.</p>
-            {!isGM && !research.capabilities.customWeaponSlot ? (
+            {!isGM &&
+            !playerServiceTestAccess &&
+            !research.capabilities.customWeaponSlot ? (
               <small>전용무기 설계 슬롯 연구를 완료해야 제작 의뢰를 보낼 수 있습니다.</small>
             ) : null}
             <label>

@@ -14,6 +14,10 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import {
+  hasPlayerServiceTestAccess,
+  resolvePlayerServiceAvailability,
+} from "@/lib/auth/player-service-test-access";
 import { getAllDailyStocks } from "@/lib/db/shop";
 import { SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getShopOpenState } from "@/lib/shop/open-state";
@@ -31,24 +35,32 @@ export async function GET() {
     const stocks = await getAllDailyStocks();
     const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
     const openState = await getShopOpenState();
+    const playerServiceTestAccess = hasPlayerServiceTestAccess(session.user);
+    const isOpen = resolvePlayerServiceAvailability(
+      openState.isOpen,
+      session.user,
+    );
 
     const items = SHOP_CATALOG.map((item) => {
       const stock = stockBySlug.get(item.slug) ?? 0;
       return {
         ...item,
         stock,
-        available: openState.isOpen && stock > 0,
+        available: isOpen && stock > 0,
       };
     });
 
     return NextResponse.json(
       {
         items,
-        isOpen: openState.isOpen,
-        mode: openState.mode,
+        isOpen,
+        mode:
+          playerServiceTestAccess && !openState.isOpen
+            ? "open"
+            : openState.mode,
         scheduledOpen: openState.scheduledOpen,
-        forceOpen: openState.forceOpen,
-        forceClosed: openState.forceClosed,
+        forceOpen: openState.forceOpen || playerServiceTestAccess,
+        forceClosed: openState.forceClosed && !playerServiceTestAccess,
       },
       {
         headers: {

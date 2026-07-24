@@ -13,6 +13,7 @@ import {
   isNavPathLocked,
   resolveNavItemForPath,
 } from "@/components/erp/nav-config";
+import { isPlayerServiceTestPath } from "@/lib/auth/player-service-test-access";
 
 import PageLockedState from "./PageLockedState";
 
@@ -21,6 +22,7 @@ interface PageLockGateProps {
   initialPageLocks: PageLocksResponse;
   role: UserRole;
   bypassPageLocks: boolean;
+  playerServiceTestAccess: boolean;
   serverBlocked: boolean;
   serverPathname: string;
 }
@@ -30,6 +32,7 @@ export default function PageLockGate({
   initialPageLocks,
   role,
   bypassPageLocks,
+  playerServiceTestAccess,
   serverBlocked,
   serverPathname,
 }: PageLockGateProps) {
@@ -43,6 +46,7 @@ export default function PageLockGate({
   );
   const clientLocked =
     !bypassPageLocks &&
+    !(playerServiceTestAccess && isPlayerServiceTestPath(pathname)) &&
     role !== "GM" && isNavPathLocked(pathname, pageLocks?.overrides);
   const waitingForServerRefresh =
     serverBlocked && pathname === serverPathname && !clientLocked;

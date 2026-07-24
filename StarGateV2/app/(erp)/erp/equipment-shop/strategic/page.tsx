@@ -15,6 +15,7 @@ export default async function EquipmentShopStrategicPage() {
 
   const data = await loadEquipmentShopPageData({
     requireGm: false,
+    includeResearch: false,
     catalogZone: "strategic",
   });
 

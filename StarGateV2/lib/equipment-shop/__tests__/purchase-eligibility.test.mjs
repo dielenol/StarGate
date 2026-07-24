@@ -23,6 +23,24 @@ test("purchase eligibility keeps ordered blocking reasons", async () => {
   assert.ok(specific < owned && owned < balance);
 });
 
+test("JTEST checkout bypasses only equipment license requirements", async () => {
+  const [eligibility, checkoutRoute, quoteRoute] = await Promise.all([
+    readFile(ELIGIBILITY, "utf8"),
+    readFile(CHECKOUT_ROUTE, "utf8"),
+    readFile(QUOTE_ROUTE, "utf8"),
+  ]);
+
+  assert.match(eligibility, /!args\.bypassLicenseRequirements/);
+  assert.match(
+    checkoutRoute,
+    /bypassLicenseRequirements: canBypassPlayerServiceRestrictions/,
+  );
+  assert.match(
+    quoteRoute,
+    /bypassLicenseRequirements: !simulatePlayerRules/,
+  );
+});
+
 test("Towaski catalog requires explicit tags or canonical slug allowlist", async () => {
   const source = await readFile(CATALOG, "utf8");
   assert.match(source, /explicitlyTagged \|\| isTowaskiCatalogAllowlistedSlug/);

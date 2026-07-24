@@ -88,6 +88,7 @@ export async function POST(request: Request) {
   const simulatePlayerRules = body?.simulatePlayerRules !== false;
   const eligibility = evaluateEquipmentPurchaseEligibility({
     isGM: !simulatePlayerRules,
+    bypassLicenseRequirements: !simulatePlayerRules,
     hasBasicLicense,
     available: item.isAvailable !== false && item.isPublic !== false,
     price,

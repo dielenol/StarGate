@@ -10,6 +10,7 @@ import { charactersCol, usersCol } from "@stargate/shared-db";
 import { ObjectId } from "mongodb";
 
 import { auth } from "@/lib/auth/config";
+import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { childIdempotencyKey, readIdempotencyKey } from "@/lib/api/idempotency";
 import { executeEconomicOperation } from "@/lib/api/economic-operation";
@@ -172,6 +173,8 @@ export async function POST(request: NextRequest) {
     );
   }
   const isGM = hasRole(session.user.role, "GM");
+  const canBypassPlayerServiceRestrictions =
+    isGM || hasPlayerServiceTestAccess(session.user);
 
   const body = (await request.json().catch(() => null)) as CheckoutBody | null;
   const purchaseZone =
@@ -287,7 +290,12 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
-    if (!hasEquipmentShopZonePurchaseAccess({ isGM, ...zoneInput })) {
+    if (
+      !hasEquipmentShopZonePurchaseAccess({
+        isGM: canBypassPlayerServiceRestrictions,
+        ...zoneInput,
+      })
+    ) {
       return NextResponse.json(
         {
           error: "플레이어는 해당 병기부 구역의 품목을 반출할 수 없습니다.",
@@ -378,7 +386,7 @@ export async function POST(request: NextRequest) {
     ...licenseGatedLines.map(
       (line) => line.licenseRequirement.licenseSlug,
     ),
-    ...(!isGM && purchaseZone === "towaski"
+    ...(!canBypassPlayerServiceRestrictions && purchaseZone === "towaski"
       ? [TOWASKI_BASIC_FIREARM_LICENSE_SLUG]
       : []),
   ]);
@@ -484,7 +492,7 @@ export async function POST(request: NextRequest) {
               })
             : undefined;
           const eligibility = evaluateEquipmentPurchaseEligibility({
-            isGM,
+            isGM: canBypassPlayerServiceRestrictions,
             hasBasicLicense:
               !requiresTowaskiBasicLicense(purchaseZone) || hasBasicLicense,
             available: true,
@@ -492,6 +500,7 @@ export async function POST(request: NextRequest) {
             balance: Number.POSITIVE_INFINITY,
             licenseOwned:
               isTowaskiLicenseSlug(line.slug) && ownedItemIds.has(line.itemId),
+            bypassLicenseRequirements: canBypassPlayerServiceRestrictions,
             ...(line.licenseRequirement
               ? { licenseRequirement: line.licenseRequirement }
               : {}),

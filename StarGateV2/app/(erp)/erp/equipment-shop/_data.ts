@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
 import { auth } from "@/lib/auth/config";
+import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { listRecentEquipmentShopActivity } from "@/lib/db/equipment-shop-activity";
@@ -79,6 +80,7 @@ export interface EquipmentShopPageData {
   initialCredits: CreditsResponse | undefined;
   mainCharacterError: string | null;
   isGM: boolean;
+  playerServiceTestAccess: boolean;
   initialStrategicScene: StrategicScene;
 }
 
@@ -178,6 +180,7 @@ export async function loadEquipmentShopPageData(
     redirect("/login");
   }
   const isGM = hasRole(session.user.role, "GM");
+  const playerServiceTestAccess = hasPlayerServiceTestAccess(session.user);
   if (requireGm && !isGM) {
     redirect("/erp");
   }
@@ -321,6 +324,7 @@ export async function loadEquipmentShopPageData(
     initialCredits,
     mainCharacterError,
     isGM,
+    playerServiceTestAccess,
     initialStrategicScene: getStrategicScene(),
   };
 }

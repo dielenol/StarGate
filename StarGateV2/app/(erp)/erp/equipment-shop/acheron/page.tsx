@@ -13,7 +13,10 @@ export default async function EquipmentShopAcheronPage() {
     return <EquipmentShopComingSoon />;
   }
 
-  const data = await loadEquipmentShopPageData({ requireGm: false });
+  const data = await loadEquipmentShopPageData({
+    requireGm: false,
+    includeResearch: false,
+  });
 
   return <EquipmentShopClient {...data} mode="zone" initialZone="acheron" />;
 }

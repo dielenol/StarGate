@@ -2,6 +2,7 @@ import { NextResponse, after } from "next/server";
 
 import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { getActiveSession } from "@/lib/auth/active-session";
+import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import {
@@ -106,7 +107,8 @@ export async function POST(request: Request) {
 
   if (
     validation.input.kind === "custom" &&
-    !hasRole(session.user.role, "GM")
+    !hasRole(session.user.role, "GM") &&
+    !hasPlayerServiceTestAccess(session.user)
   ) {
     const capabilities = await getEquipmentResearchCapabilities(
       String(mainCharacter._id),

@@ -24,6 +24,7 @@ export function evaluateEquipmentPurchaseEligibility(args: {
   price: number;
   balance: number;
   licenseOwned: boolean;
+  bypassLicenseRequirements?: boolean;
   licenseRequirement?: EquipmentLicenseRequirement;
   licenseStatus?: EquipmentLicenseStatus;
 }): EquipmentPurchaseEligibility {
@@ -47,7 +48,11 @@ export function evaluateEquipmentPurchaseEligibility(args: {
       reason: "기본 화기 라이센스 또는 해당 품목의 명시 적성 승인이 필요합니다.",
     };
   }
-  if (args.licenseRequirement && !args.licenseStatus?.satisfied) {
+  if (
+    !args.bypassLicenseRequirements &&
+    args.licenseRequirement &&
+    !args.licenseStatus?.satisfied
+  ) {
     return {
       eligible: false,
       code: "LICENSE_REQUIRED",

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { isNavPathLocked } from "@/components/erp/nav-config";
 import { auth } from "@/lib/auth/config";
+import { hasPlayerServiceTestPathAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
 import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
@@ -20,7 +21,10 @@ export async function requireEquipmentShopSession(
   }
 
   const isGM = hasRole(session.user.role, "GM");
-  let canPreview = isGM || (await hasLocalErpPreviewAccess());
+  let canPreview =
+    isGM ||
+    hasPlayerServiceTestPathAccess(session.user, lockPath) ||
+    (await hasLocalErpPreviewAccess());
   if (!canPreview) {
     canPreview = !isNavPathLocked(lockPath, await getErpPageLockOverrides());
   }

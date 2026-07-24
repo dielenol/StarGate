@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { resolvePlayerServiceAvailability } from "@/lib/auth/player-service-test-access";
 import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
@@ -105,7 +106,8 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!(await getShopOpenState()).isOpen) {
+  const shopOpen = (await getShopOpenState()).isOpen;
+  if (!resolvePlayerServiceAvailability(shopOpen, session.user)) {
     return NextResponse.json(
       {
         error: "영업 시간이 아닙니다 (06:00~20:00·일요일 마감).",

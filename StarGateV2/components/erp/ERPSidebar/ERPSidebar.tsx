@@ -15,6 +15,7 @@ import { usePageLocks } from "@/hooks/queries/usePageLocksQuery";
 import {
   getNavItemActiveHrefs,
   getNavItemHref,
+  getNavItemLockKey,
   isNavItemLocked,
   NAV_GROUPS,
 } from "@/components/erp/nav-config";
@@ -22,6 +23,10 @@ import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import { IconCheckDot, IconChevronLeft } from "@/components/icons";
 
 import { hasRole } from "@/lib/auth/rbac";
+import {
+  hasPlayerServiceTestAccess,
+  isPlayerServiceTestPath,
+} from "@/lib/auth/player-service-test-access";
 
 import styles from "./ERPSidebar.module.css";
 
@@ -153,6 +158,7 @@ export default function ERPSidebar({
   }
 
   const role = session?.user?.role;
+  const playerServiceTestAccess = hasPlayerServiceTestAccess(session?.user);
   const pageLockOverrides = pageLocks?.overrides ?? {};
   const unreadNotificationCount = notificationSummary?.unreadCount ?? 0;
   const unreadNotificationLabel =
@@ -206,17 +212,21 @@ export default function ERPSidebar({
             <div key={group.key} className={styles.sidebar__group}>
               <div className={styles.sidebar__groupLabel}>{group.label}</div>
               {visibleItems.map((item) => {
+                const bypassItemLock =
+                  bypassPageLocks ||
+                  (playerServiceTestAccess &&
+                    isPlayerServiceTestPath(getNavItemLockKey(item) ?? ""));
                 const href = getNavItemHref(
                   item,
                   role,
                   pageLockOverrides,
-                  bypassPageLocks,
+                  bypassItemLock,
                 );
                 const active = isItemActive(item);
                 const preparing = isNavItemLocked(
                   item,
                   pageLockOverrides,
-                  bypassPageLocks,
+                  bypassItemLock,
                 );
                 const disabled = href === null;
                 const Icon = item.icon;
@@ -303,16 +313,22 @@ export default function ERPSidebar({
                         aria-label={`${item.label} 하위 메뉴`}
                       >
                         {childItems.map((child) => {
+                          const bypassChildLock =
+                            bypassPageLocks ||
+                            (playerServiceTestAccess &&
+                              isPlayerServiceTestPath(
+                                getNavItemLockKey(child) ?? "",
+                              ));
                           const childHref = getNavItemHref(
                             child,
                             role,
                             pageLockOverrides,
-                            bypassPageLocks,
+                            bypassChildLock,
                           );
                           const childLocked = isNavItemLocked(
                             child,
                             pageLockOverrides,
-                            bypassPageLocks,
+                            bypassChildLock,
                           );
                           const ChildIcon = child.icon;
                           const childActive =

@@ -17,6 +17,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
+import { resolvePlayerServiceAvailability } from "@/lib/auth/player-service-test-access";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
 import { STOCK_CATALOG } from "@/lib/stocks/catalog";
@@ -137,7 +138,10 @@ export default async function StockPage() {
           : null
       }
       mainCharacterError={mainCharacterError}
-      marketEnabled={isStockMarketEnabled()}
+      marketEnabled={resolvePlayerServiceAvailability(
+        isStockMarketEnabled(),
+        session.user,
+      )}
     />
   );
 }

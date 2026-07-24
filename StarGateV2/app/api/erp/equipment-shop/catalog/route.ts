@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { listRecentEquipmentShopActivity } from "@/lib/db/equipment-shop-activity";
@@ -30,6 +31,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const isGM = hasRole(session.user.role, "GM");
+  const canUseAllPlayerServices =
+    isGM || hasPlayerServiceTestAccess(session.user);
   const requestedScope = new URL(request.url).searchParams.get("scope");
   if (
     requestedScope !== null &&
@@ -43,7 +46,7 @@ export async function GET(request: NextRequest) {
   const scope =
     requestedScope === "acheron" || requestedScope === "strategic"
       ? requestedScope
-      : !isGM || requestedScope === "towaski"
+      : !canUseAllPlayerServices || requestedScope === "towaski"
         ? "towaski"
         : "all";
 

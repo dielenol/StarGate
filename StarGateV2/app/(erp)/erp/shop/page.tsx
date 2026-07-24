@@ -12,6 +12,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
+import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import {
@@ -37,29 +38,32 @@ export const metadata = {
 
 /* ── 서버 측 카탈로그 응답 빌더 (catalog API 와 동일 형식) ── */
 
-async function buildCatalogResponse(): Promise<ShopCatalogResponse> {
+async function buildCatalogResponse(
+  playerServiceTestAccess: boolean,
+): Promise<ShopCatalogResponse> {
   await ensureDailyStockRefresh();
 
   const stocks = await getAllDailyStocks();
   const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
   const openState = await getShopOpenState();
+  const isOpen = openState.isOpen || playerServiceTestAccess;
 
   const items = SHOP_CATALOG.map((item) => {
     const stock = stockBySlug.get(item.slug) ?? 0;
     return {
       ...item,
       stock,
-      available: openState.isOpen && stock > 0,
+      available: isOpen && stock > 0,
     };
   });
 
   return {
     items,
-    isOpen: openState.isOpen,
-    mode: openState.mode,
+    isOpen,
+    mode: playerServiceTestAccess && !openState.isOpen ? "open" : openState.mode,
     scheduledOpen: openState.scheduledOpen,
-    forceOpen: openState.forceOpen,
-    forceClosed: openState.forceClosed,
+    forceOpen: openState.forceOpen || playerServiceTestAccess,
+    forceClosed: openState.forceClosed && !playerServiceTestAccess,
   };
 }
 
@@ -73,6 +77,7 @@ export default async function ShopPage() {
 
   const userId = session.user.id;
   const isGM = hasRole(session.user.role, "GM");
+  const playerServiceTestAccess = hasPlayerServiceTestAccess(session.user);
 
   // 메인 캐릭터 — null=정상 미등록, throw=1인 1 MAIN 정합성 위반.
   let mainCharacter: Awaited<
@@ -97,7 +102,7 @@ export default async function ShopPage() {
   // ledger 는 useCredits 의 initialData 시드용 (페이지 진입 시 1회 fetch 절약).
   const [initialCatalog, initialBalance, initialLedger, pendingReorderCount] =
     await Promise.all([
-      buildCatalogResponse().catch(
+      buildCatalogResponse(playerServiceTestAccess).catch(
         (): ShopCatalogResponse => ({
           items: [],
           isOpen: false,

@@ -3,6 +3,10 @@ import { redirect } from "next/navigation";
 
 import { isNavPathLocked } from "@/components/erp/nav-config";
 import { getActiveSession } from "@/lib/auth/active-session";
+import {
+  hasPlayerServiceTestAccess,
+  hasPlayerServiceTestPathAccess,
+} from "@/lib/auth/player-service-test-access";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
 
@@ -40,6 +44,10 @@ export default async function ERPLayout({
   const pathname = requestHeaders.get("x-stargate-erp-pathname") ?? "/erp";
   const bypassPageLocks =
     requestHeaders.get("x-stargate-erp-local-access") === "1";
+  const playerServiceTestAccess = hasPlayerServiceTestAccess(session.user);
+  const bypassCurrentPageLock =
+    bypassPageLocks ||
+    hasPlayerServiceTestPathAccess(session.user, pathname);
   const [mainCharacter, pageLockOverrides] = await Promise.all([
     findMainCharacterByOwner(session.user.id),
     getErpPageLockOverrides(),
@@ -51,7 +59,7 @@ export default async function ERPLayout({
       }
     : null;
   const pageLocked =
-    !bypassPageLocks &&
+    !bypassCurrentPageLock &&
     session.user.role !== "GM" &&
     isNavPathLocked(pathname, pageLockOverrides);
   const initialPageLocks = { overrides: pageLockOverrides };
@@ -73,6 +81,7 @@ export default async function ERPLayout({
                     initialPageLocks={initialPageLocks}
                     role={session.user.role}
                     bypassPageLocks={bypassPageLocks}
+                    playerServiceTestAccess={playerServiceTestAccess}
                     serverBlocked={pageLocked}
                     serverPathname={pathname}
                   >
