@@ -19,6 +19,7 @@ import {
   serializePlayerTrade,
 } from "@/lib/db/trades";
 import { notifyUser } from "@/lib/notifications/events";
+import { deliverPlayerTradeDiscordDm } from "@/lib/notifications/player-trade-discord-dm";
 import { isValidObjectId } from "@/lib/db/utils";
 
 interface TradeActionBody {
@@ -178,41 +179,77 @@ export async function PATCH(
         },
       });
 
-    if (!operation.replayed && operation.status === 200 && operation.body.trade) {
+    if (operation.status === 200 && operation.body.trade) {
       const trade = operation.body.trade;
       if (operation.body.completed) {
         after(async () => {
-          await Promise.all([
-            notifyUser({
+          const followUps: Promise<unknown>[] = [
+            deliverPlayerTradeDiscordDm({
+              tradeId: trade.id,
+              event: "EXCHANGE_COMPLETED",
               userId: trade.initiator.userId,
-              type: "SYSTEM",
-              title: "자산 교환이 완료되었습니다",
-              message: `${trade.counterparty.characterCodename} 님과의 교환이 체결되었습니다.`,
-              link: "/erp/trades",
+              recipientCodename: trade.initiator.characterCodename,
+              otherCharacterCodename:
+                trade.counterparty.characterCodename,
             }),
-            notifyUser({
+            deliverPlayerTradeDiscordDm({
+              tradeId: trade.id,
+              event: "EXCHANGE_COMPLETED",
               userId: trade.counterparty.userId,
-              type: "SYSTEM",
-              title: "자산 교환이 완료되었습니다",
-              message: `${trade.initiator.characterCodename} 님과의 교환이 체결되었습니다.`,
-              link: "/erp/trades",
+              recipientCodename: trade.counterparty.characterCodename,
+              otherCharacterCodename: trade.initiator.characterCodename,
             }),
-          ]);
+          ];
+          if (!operation.replayed) {
+            followUps.push(
+              notifyUser({
+                userId: trade.initiator.userId,
+                type: "SYSTEM",
+                title: "자산 교환이 완료되었습니다",
+                message: `${trade.counterparty.characterCodename} 님과의 교환이 체결되었습니다.`,
+                link: "/erp/trades",
+              }),
+              notifyUser({
+                userId: trade.counterparty.userId,
+                type: "SYSTEM",
+                title: "자산 교환이 완료되었습니다",
+                message: `${trade.initiator.characterCodename} 님과의 교환이 체결되었습니다.`,
+                link: "/erp/trades",
+              }),
+            );
+          }
+          await Promise.all(followUps);
         });
       } else if (action.action === "CANCEL") {
-        const otherUserId =
+        const other =
           trade.initiator.userId === session.user.id
-            ? trade.counterparty.userId
-            : trade.initiator.userId;
-        after(() =>
-          notifyUser({
-            userId: otherUserId,
-            type: "SYSTEM",
-            title: "교환 요청이 취소되었습니다",
-            message: "진행 중이던 자산 교환이 취소되었습니다.",
-            link: "/erp/trades",
-          }),
-        );
+            ? trade.counterparty
+            : trade.initiator;
+        const actor =
+          trade.initiator.userId === session.user.id
+            ? trade.initiator
+            : trade.counterparty;
+        after(async () => {
+          const followUps: Promise<unknown>[] = [
+            deliverPlayerTradeDiscordDm({
+              tradeId: trade.id,
+              event: "EXCHANGE_CANCELLED",
+              userId: other.userId,
+              recipientCodename: other.characterCodename,
+              otherCharacterCodename: actor.characterCodename,
+            }),
+          ];
+          if (!operation.replayed) {
+            followUps.push(notifyUser({
+              userId: other.userId,
+              type: "SYSTEM",
+              title: "교환 요청이 취소되었습니다",
+              message: "진행 중이던 자산 교환이 취소되었습니다.",
+              link: "/erp/trades",
+            }));
+          }
+          await Promise.all(followUps);
+        });
       }
     }
     return NextResponse.json(operation.body, {
