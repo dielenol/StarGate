@@ -22,13 +22,37 @@ const PLAYER_SERVICE_TEST_PATH_PREFIXES = [
   "/erp/equipment-shop/simulator",
 ] as const;
 
-export function hasPlayerServiceTestAccess(
+export function isOfficialPlayerTestAccount(
   user: PlayerServiceTestUser | null | undefined,
 ): boolean {
   return Boolean(
     user?.role === "J" &&
       user.username &&
       PLAYER_SERVICE_TEST_USERNAMES.has(user.username),
+  );
+}
+
+export function hasPlayerServiceTestAccess(
+  user: PlayerServiceTestUser | null | undefined,
+): boolean {
+  return isOfficialPlayerTestAccount(user);
+}
+
+/**
+ * GM 또는 공식 플레이어 서비스 테스트 계정만 보호된 거래 상대를 선택할 수 있다.
+ * 보호 대상도 같은 기준을 사용해 GM 및 JTEST 계정으로 한정한다.
+ */
+export function canSelectPlayerTradeCounterparty(
+  actor: PlayerServiceTestUser | null | undefined,
+  target: PlayerServiceTestUser | null | undefined,
+): boolean {
+  if (!actor || !target) return false;
+  const targetIsProtected =
+    target.role === "GM" || isOfficialPlayerTestAccount(target);
+  return (
+    !targetIsProtected ||
+    actor.role === "GM" ||
+    isOfficialPlayerTestAccount(actor)
   );
 }
 

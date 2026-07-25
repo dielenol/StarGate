@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  canSelectPlayerTradeCounterparty,
   hasPlayerServiceTestAccess,
   hasPlayerServiceTestPathAccess,
   isPlayerServiceTestPath,
@@ -28,6 +29,37 @@ test("J 등급의 정확한 JTEST 계정만 플레이어 서비스 테스트 접
     false,
   );
   assert.equal(hasPlayerServiceTestAccess(null), false);
+});
+
+test("GM·JTEST 거래 상대는 GM 또는 정확한 JTEST 계정만 선택할 수 있다", () => {
+  const gm = { username: "GAME_MASTER", role: "GM" };
+  const testUser = { username: "JTEST", role: "J" };
+  const player = { username: "PLAYER", role: "J" };
+
+  assert.equal(canSelectPlayerTradeCounterparty(gm, gm), true);
+  assert.equal(canSelectPlayerTradeCounterparty(gm, testUser), true);
+  assert.equal(canSelectPlayerTradeCounterparty(testUser, gm), true);
+  assert.equal(canSelectPlayerTradeCounterparty(testUser, testUser), true);
+  assert.equal(canSelectPlayerTradeCounterparty(player, gm), false);
+  assert.equal(canSelectPlayerTradeCounterparty(player, testUser), false);
+  assert.equal(canSelectPlayerTradeCounterparty(player, player), true);
+
+  assert.equal(
+    canSelectPlayerTradeCounterparty(player, {
+      username: "jtest",
+      role: "J",
+    }),
+    true,
+  );
+  assert.equal(
+    canSelectPlayerTradeCounterparty(
+      { username: "JTEST", role: "U" },
+      gm,
+    ),
+    false,
+  );
+  assert.equal(canSelectPlayerTradeCounterparty(null, player), false);
+  assert.equal(canSelectPlayerTradeCounterparty(player, null), false);
 });
 
 test("페이지 잠금 우회는 편의점·주식·병기부 서비스 경로로 한정한다", () => {

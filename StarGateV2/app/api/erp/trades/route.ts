@@ -20,6 +20,7 @@ import {
 } from "@/lib/db/inventory";
 import { getHoldings } from "@/lib/db/stocks";
 import {
+  assertPlayerTradeCounterpartyAccess,
   createAndSettleGift,
   createOpenPlayerTrade,
   listPlayerTradeCounterparties,
@@ -230,6 +231,11 @@ export async function POST(request: Request) {
         actorId: session.user.id,
         payload: { kind: body.kind, targetUserId: body.targetUserId, offer },
         run: async (dbSession) => {
+          await assertPlayerTradeCounterpartyAccess(
+            session.user.id,
+            counterparty.userId,
+            dbSession,
+          );
           const trade =
             body.kind === "GIFT"
               ? await createAndSettleGift(

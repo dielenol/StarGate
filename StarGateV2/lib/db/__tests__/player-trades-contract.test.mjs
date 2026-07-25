@@ -17,6 +17,10 @@ const actionRoute = fs.readFileSync(
   ),
   "utf8",
 );
+const tradeDb = fs.readFileSync(
+  new URL("../trades.ts", import.meta.url),
+  "utf8",
+);
 const mutations = fs.readFileSync(
   new URL("../../../hooks/mutations/useTradesMutation.ts", import.meta.url),
   "utf8",
@@ -101,6 +105,30 @@ test("교환방 생성도 transaction 안에서 상대 MAIN 자격을 재검증�
   assert.match(
     createOpenBody,
     /validateOwnedOffer\(counterparty, EMPTY_PLAYER_TRADE_OFFER, session\)/,
+  );
+});
+
+test("GM·JTEST 상대 제한은 목록과 거래 transaction에서 함께 검증한다", () => {
+  assert.match(
+    tradeDb,
+    /listUnrestrictedPlayerTradeCounterparties\(excludeUserId\)/,
+  );
+  assert.match(tradeDb, /canSelectPlayerTradeCounterparty\(actor, target\)/);
+  assert.match(
+    tradeDb,
+    /projection: \{ username: 1, role: 1, status: 1 \}/,
+  );
+
+  const transactionStart = createRoute.indexOf("run: async (dbSession)");
+  const accessCheck = createRoute.indexOf(
+    "await assertPlayerTradeCounterpartyAccess(",
+    transactionStart,
+  );
+  const tradeCreation = createRoute.indexOf("const trade =", accessCheck);
+  assert.ok(
+    transactionStart >= 0 &&
+      accessCheck > transactionStart &&
+      tradeCreation > accessCheck,
   );
 });
 
