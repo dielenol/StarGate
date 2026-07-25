@@ -30,6 +30,7 @@ import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 import styles from "./page.module.css";
 
 const EMPTY_OFFER: PlayerTradeOffer = { credits: 0, items: [], stocks: [] };
+const EMPTY_TRADE_SLOTS = [0, 1, 2, 3] as const;
 const ASSET_TABS = [
   { value: "CREDITS", label: "크레딧" },
   { value: "ITEMS", label: "아이템·장비" },
@@ -146,6 +147,91 @@ function TradeItemVisual({
     );
   }
   return <IconMisc className={styles.assetCard__icon} aria-hidden />;
+}
+
+function OfferManifest({
+  assets,
+  confirmed,
+  label,
+  offer,
+}: {
+  assets: PlayerTradeAssets;
+  confirmed: boolean;
+  label: string;
+  offer: PlayerTradeOffer;
+}) {
+  const lineCount =
+    (offer.credits > 0 ? 1 : 0) +
+    offer.items.length +
+    offer.stocks.length;
+
+  return (
+    <section className={styles.tradeOfferPane}>
+      <div className={styles.tradeOfferPane__head}>
+        <strong>{label}</strong>
+        <span
+          className={
+            confirmed
+              ? styles.tradeOfferPane__confirmed
+              : styles.tradeOfferPane__pending
+          }
+        >
+          {confirmed ? "확정" : "미확정"}
+        </span>
+      </div>
+      {lineCount === 0 ? (
+        <div className={styles.tradeOfferPane__empty}>
+          <div className={styles.emptyOfferSlots} aria-hidden>
+            {EMPTY_TRADE_SLOTS.map((slot) => (
+              <span key={slot} />
+            ))}
+          </div>
+          <p>등록된 자산이 없습니다.</p>
+        </div>
+      ) : (
+        <div className={styles.tradeOfferTokens}>
+          {offer.credits > 0 ? (
+            <div className={styles.tradeOfferToken}>
+              <span className={styles.tradeOfferToken__mark}>CR</span>
+              <span>크레딧</span>
+              <strong>{offer.credits.toLocaleString()}</strong>
+            </div>
+          ) : null}
+          {offer.items.map((item) => {
+            const asset = assets.items.find(
+              (candidate) => candidate.itemId === item.itemId,
+            );
+            return (
+              <div
+                key={item.itemId}
+                className={styles.tradeOfferToken}
+                title={item.itemName}
+              >
+                <span className={styles.tradeOfferToken__art}>
+                  <TradeItemVisual
+                    category={asset?.category ?? null}
+                    previewImage={asset?.previewImage}
+                    slug={asset?.slug}
+                  />
+                </span>
+                <span>{item.itemName}</span>
+                <strong>× {item.quantity}</strong>
+              </div>
+            );
+          })}
+          {offer.stocks.map((stock) => (
+            <div key={stock.ticker} className={styles.tradeOfferToken}>
+              <span className={styles.tradeOfferToken__mark}>
+                {stock.ticker.slice(0, 2)}
+              </span>
+              <span>{stock.ticker}</span>
+              <strong>{stock.shares}주</strong>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 function OfferEditor({
@@ -316,42 +402,72 @@ function OfferEditor({
             assets.items.length === 0 ? (
               <p className={styles.empty}>거래 가능한 미장착 개인 아이템이 없습니다.</p>
             ) : (
-              <div className={styles.assetGrid}>
-                {assets.items.map((item) => {
-                  const tone = categoryTone(item.category);
-                  const detail = item.effect ?? item.description;
-                  const quantity = itemQuantities[item.itemId] ?? 0;
-                  return (
-                    <article
-                      key={item.itemId}
-                      className={[styles.assetCard, styles[`assetCard--${tone}`], quantity > 0 ? styles.assetCardSelected : ""].filter(Boolean).join(" ")}
-                    >
-                      <div className={styles.assetCard__art} aria-hidden>
-                        <TradeItemVisual
-                          key={`${item.itemId}:${item.slug ?? ""}:${item.previewImage ?? ""}`}
-                          category={item.category}
-                          slug={item.slug}
-                          previewImage={item.previewImage}
-                        />
-                      </div>
-                      <div className={styles.assetCard__body}>
-                        <div className={styles.assetCard__topline}>
-                          <strong>{item.itemName}</strong>
-                          <span>보유 {item.quantity.toLocaleString()}</span>
-                        </div>
-                        <span className={[styles.categoryPill, styles[`categoryPill--${tone}`]].join(" ")}>
+              <div className={styles.itemInventory}>
+                <div className={styles.itemInventory__head}>
+                  <div>
+                    <strong>내 보관함</strong>
+                    <span>품목을 눌러 거래 슬롯에 등록·해제</span>
+                  </div>
+                  <span>{assets.items.length}칸 사용</span>
+                </div>
+                <div className={styles.itemSlotGrid}>
+                  {assets.items.map((item) => {
+                    const tone = categoryTone(item.category);
+                    const detail = item.effect ?? item.description;
+                    const quantity = itemQuantities[item.itemId] ?? 0;
+                    const selected = quantity > 0;
+                    return (
+                      <button
+                        key={item.itemId}
+                        type="button"
+                        className={[
+                          styles.itemSlot,
+                          styles[`itemSlot--${tone}`],
+                          selected ? styles.itemSlotSelected : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        aria-pressed={selected}
+                        aria-label={`${item.itemName}, ${categoryLabel(item.category)}, 보유 ${item.quantity}${selected ? `, 거래 ${quantity}개 등록됨. 클릭해 해제` : ", 클릭해 1개 등록"}`}
+                        title={detail || item.itemName}
+                        onClick={() =>
+                          setItemQuantity(
+                            item.itemId,
+                            selected ? 0 : 1,
+                            item.quantity,
+                          )
+                        }
+                      >
+                        <span className={styles.itemSlot__art} aria-hidden>
+                          <TradeItemVisual
+                            key={`${item.itemId}:${item.slug ?? ""}:${item.previewImage ?? ""}`}
+                            category={item.category}
+                            slug={item.slug}
+                            previewImage={item.previewImage}
+                          />
+                        </span>
+                        <span className={styles.itemSlot__name}>
+                          {item.itemName}
+                        </span>
+                        <span className={styles.itemSlot__meta}>
                           {categoryLabel(item.category)}
                         </span>
-                        {detail ? <p className={styles.assetCard__detail}>{detail}</p> : null}
-                        <div className={styles.quantityControl} aria-label={`${item.itemName} 전달 수량`}>
-                          <button type="button" aria-label={`${item.itemName} 수량 감소`} disabled={quantity <= 0} onClick={() => setItemQuantity(item.itemId, quantity - 1, item.quantity)}>−</button>
-                          <input aria-label={`${item.itemName} 수량`} type="number" min={0} max={item.quantity} step={1} value={quantity} onChange={(event) => setItemQuantity(item.itemId, Number(event.target.value), item.quantity)} />
-                          <button type="button" aria-label={`${item.itemName} 수량 증가`} disabled={quantity >= item.quantity} onClick={() => setItemQuantity(item.itemId, quantity + 1, item.quantity)}>+</button>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
+                        <span className={styles.itemSlot__owned}>
+                          × {item.quantity.toLocaleString()}
+                        </span>
+                        {selected ? (
+                          <span className={styles.itemSlot__selectedCount}>
+                            등록 {quantity}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className={styles.itemInventory__hint}>
+                  수량은 오른쪽 거래 슬롯에서 조정할 수 있습니다. 장착 중이거나
+                  공방 처리 중인 장비는 표시되지 않습니다.
+                </p>
               </div>
             )
           ) : null}
@@ -393,12 +509,143 @@ function OfferEditor({
           <span className={styles.lineCount}>{assetLineCount}개 자산</span>
         </div>
         {assetLineCount === 0 ? (
-          <p className={styles.summaryEmpty}>왼쪽 탭에서 전달할 자산과 수량을 선택하세요.</p>
+          <div className={styles.summaryEmpty}>
+            <div className={styles.emptyOfferSlots} aria-hidden>
+              {EMPTY_TRADE_SLOTS.map((slot) => (
+                <span key={slot} />
+              ))}
+            </div>
+            <p>왼쪽 보관함에서 전달할 자산을 거래 슬롯에 등록하세요.</p>
+          </div>
         ) : (
-          <ul className={styles.selectedList}>
-            {selectedCreditAmount > 0 ? <li><span>크레딧</span><strong>{selectedCreditAmount.toLocaleString()} CR</strong><button type="button" onClick={() => setCredits("")} aria-label="크레딧 제거">제거</button></li> : null}
-            {selectedItems.map((item) => <li key={item.itemId}><span>{item.itemName}</span><strong>× {itemQuantities[item.itemId]}</strong><button type="button" onClick={() => setItemQuantity(item.itemId, 0, item.quantity)} aria-label={`${item.itemName} 제거`}>제거</button></li>)}
-            {selectedStocks.map((stock) => <li key={stock.ticker}><span>{stock.ticker}</span><strong>{stockShares[stock.ticker]}주</strong><button type="button" onClick={() => setStockQuantity(stock.ticker, 0, stock.shares)} aria-label={`${stock.ticker} 제거`}>제거</button></li>)}
+          <ul className={styles.offerSlotList}>
+            {selectedCreditAmount > 0 ? (
+              <li className={styles.offerLedgerSlot}>
+                <span className={styles.offerLedgerSlot__mark}>CR</span>
+                <span className={styles.offerLedgerSlot__body}>
+                  <span>크레딧</span>
+                  <strong>
+                    {selectedCreditAmount.toLocaleString()} CR
+                  </strong>
+                </span>
+                <button
+                  type="button"
+                  className={styles.offerSlotRemove}
+                  onClick={() => setCredits("")}
+                  aria-label="크레딧 제거"
+                >
+                  ×
+                </button>
+              </li>
+            ) : null}
+            {selectedItems.map((item) => {
+              const quantity = itemQuantities[item.itemId] ?? 0;
+              return (
+                <li key={item.itemId} className={styles.offerItemSlot}>
+                  <span className={styles.offerItemSlot__art} aria-hidden>
+                    <TradeItemVisual
+                      category={item.category}
+                      slug={item.slug}
+                      previewImage={item.previewImage}
+                    />
+                  </span>
+                  <span className={styles.offerItemSlot__body}>
+                    <span className={styles.offerItemSlot__name}>
+                      {item.itemName}
+                    </span>
+                    <span className={styles.offerItemSlot__meta}>
+                      {categoryLabel(item.category)} · 보유{" "}
+                      {item.quantity.toLocaleString()}
+                    </span>
+                    <span
+                      className={styles.quantityControlCompact}
+                      aria-label={`${item.itemName} 전달 수량`}
+                    >
+                      <button
+                        type="button"
+                        aria-label={`${item.itemName} 수량 감소`}
+                        disabled={quantity <= 1}
+                        onClick={() =>
+                          setItemQuantity(
+                            item.itemId,
+                            quantity - 1,
+                            item.quantity,
+                          )
+                        }
+                      >
+                        −
+                      </button>
+                      <input
+                        aria-label={`${item.itemName} 수량`}
+                        type="number"
+                        min={1}
+                        max={item.quantity}
+                        step={1}
+                        value={quantity}
+                        onChange={(event) => {
+                          const nextQuantity =
+                            event.currentTarget.valueAsNumber;
+                          setItemQuantity(
+                            item.itemId,
+                            Number.isFinite(nextQuantity)
+                              ? nextQuantity
+                              : 1,
+                            item.quantity,
+                          );
+                        }}
+                      />
+                      <button
+                        type="button"
+                        aria-label={`${item.itemName} 수량 증가`}
+                        disabled={quantity >= item.quantity}
+                        onClick={() =>
+                          setItemQuantity(
+                            item.itemId,
+                            quantity + 1,
+                            item.quantity,
+                          )
+                        }
+                      >
+                        +
+                      </button>
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.offerSlotRemove}
+                    onClick={() =>
+                      setItemQuantity(item.itemId, 0, item.quantity)
+                    }
+                    aria-label={`${item.itemName} 제거`}
+                  >
+                    ×
+                  </button>
+                </li>
+              );
+            })}
+            {selectedStocks.map((stock) => (
+              <li key={stock.ticker} className={styles.offerLedgerSlot}>
+                <span className={styles.offerLedgerSlot__mark}>
+                  {stock.ticker.slice(0, 2)}
+                </span>
+                <span className={styles.offerLedgerSlot__body}>
+                  <span>{stock.name}</span>
+                  <strong>
+                    {stock.ticker} · {stockShares[stock.ticker]}주
+                  </strong>
+                </span>
+                <button
+                  type="button"
+                  className={styles.offerSlotRemove}
+                  onClick={() =>
+                    setStockQuantity(stock.ticker, 0, stock.shares)
+                  }
+                  aria-label={`${stock.ticker} 제거`}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
           </ul>
         )}
         {kind === "GIFT" ? <p className={styles.caution}>주의: 즉시 전달은 상대 승인 없이 완료되며 취소할 수 없습니다.</p> : <p className={styles.summaryHint}>교환방은 양측이 현재 구성을 확정하면 체결됩니다.</p>}
@@ -458,15 +705,22 @@ function TradeCard({
           {otherConfirmed ? "상대 확정" : "상대 구성 중"}
         </span>
       </div>
-      <div className={styles.offerSummary} aria-label="현재 양측 제안">
-        <div>
-          <span>내 제안 {myConfirmed ? "· 확정" : "· 미확정"}</span>
-          <strong>{summarizeOffer(myOffer)}</strong>
-        </div>
-        <div>
-          <span>{other.characterCodename} 제안 {otherConfirmed ? "· 확정" : "· 미확정"}</span>
-          <strong>{summarizeOffer(otherOffer)}</strong>
-        </div>
+      <div className={styles.exchangeBoard} aria-label="현재 양측 제안">
+        <OfferManifest
+          assets={assets}
+          confirmed={myConfirmed}
+          label="내 제안"
+          offer={myOffer}
+        />
+        <span className={styles.exchangeBoard__mark} aria-hidden>
+          ⇄
+        </span>
+        <OfferManifest
+          assets={assets}
+          confirmed={otherConfirmed}
+          label={`${other.characterCodename} 제안`}
+          offer={otherOffer}
+        />
       </div>
       {isEditing ? (
         <div id={`trade-editor-${trade.id}`} className={styles.tradeEditor}>

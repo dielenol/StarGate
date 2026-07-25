@@ -28,7 +28,6 @@ const tradesClient = fs.readFileSync(
   ),
   "utf8",
 );
-
 test("모든 거래 mutation은 멱등 경제 operation 경계를 통과한다", () => {
   assert.match(createRoute, /readIdempotencyKey\(request\)/);
   assert.match(createRoute, /executeEconomicOperationResult/);
@@ -166,7 +165,10 @@ test("거래 자산은 인벤토리 표시 정보와 카드 UI를 함께 제공�
   }
   assert.match(tradesClient, /getConsumableItemImageSrc\(slug\)/);
   assert.match(tradesClient, /<Image/);
-  assert.match(tradesClient, /styles\.assetCard/);
+  assert.match(tradesClient, /styles\.itemSlot/);
+  assert.match(tradesClient, /aria-pressed=\{selected\}/);
+  assert.match(tradesClient, /styles\.offerItemSlot/);
+  assert.match(tradesClient, /styles\.exchangeBoard/);
   assert.match(tradesClient, /전달 수량/);
 });
 
