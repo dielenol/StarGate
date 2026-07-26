@@ -3,17 +3,18 @@ import type {
   EquipmentShopZone,
 } from "./catalog";
 
-interface EquipmentShopZoneAccessInput {
-  isGM: boolean;
+interface EquipmentShopZoneMatchInput {
   purchaseZone: EquipmentShopZone;
   sourceZone: EquipmentShopZone;
   category: EquipmentShopCategory;
 }
 
-type EquipmentShopZoneMatchInput = Omit<
-  EquipmentShopZoneAccessInput,
-  "isGM"
->;
+interface EquipmentShopOperationalAccessInput {
+  isGM: boolean;
+  hasPlayerServiceTestAccess: boolean;
+  hasLocalPreviewAccess: boolean;
+  pageLocked: boolean;
+}
 
 export function isAcheronSharedArmorZone(
   input: EquipmentShopZoneMatchInput,
@@ -34,10 +35,20 @@ export function isEquipmentShopCatalogZoneMatch(
 }
 
 export function hasEquipmentShopZonePurchaseAccess(
-  input: EquipmentShopZoneAccessInput,
+  input: EquipmentShopZoneMatchInput,
 ): boolean {
-  if (!isEquipmentShopCatalogZoneMatch(input)) return false;
-  return input.isGM || input.purchaseZone !== "strategic";
+  return isEquipmentShopCatalogZoneMatch(input);
+}
+
+export function hasEquipmentShopOperationalAccess(
+  input: EquipmentShopOperationalAccessInput,
+): boolean {
+  return (
+    input.isGM ||
+    input.hasPlayerServiceTestAccess ||
+    input.hasLocalPreviewAccess ||
+    !input.pageLocked
+  );
 }
 
 export function requiresTowaskiBasicLicense(

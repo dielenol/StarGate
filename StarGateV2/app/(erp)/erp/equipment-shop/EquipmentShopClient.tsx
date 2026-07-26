@@ -2077,7 +2077,6 @@ export default function EquipmentShopClient({
   const selectedHasZonePurchaseAccess = Boolean(
     selectedItem &&
       hasEquipmentShopZonePurchaseAccess({
-        isGM: canBypassPlayerServiceRestrictions,
         purchaseZone: selectedItem.zone,
         sourceZone: selectedItem.sourceZone,
         category: selectedItem.category,
@@ -2733,34 +2732,35 @@ export default function EquipmentShopClient({
     if (purchaseLockRef.current || purchaseMutation.isPending) return;
 
     const hasZonePurchaseAccess = hasEquipmentShopZonePurchaseAccess({
-      isGM: canBypassPlayerServiceRestrictions,
       purchaseZone: item.zone,
       sourceZone: item.sourceZone,
       category: item.category,
     });
     if (!canUseShop || !hasZonePurchaseAccess) {
       setErrorMessage(
-        effectiveHasMainCharacter
-          ? "GM preview 상태에서만 병기부 구매를 실행할 수 있습니다."
-          : "대표 캐릭터가 없어 구매할 수 없습니다.",
+        !effectiveHasMainCharacter
+          ? "대표 캐릭터가 없어 구매할 수 없습니다."
+          : !hasZonePurchaseAccess
+            ? "선택한 병기부 구역에서 반출할 수 없는 품목입니다."
+            : "현재 병기부 구매를 사용할 수 없습니다.",
       );
       playTowaskiIfActive(
         "blocked",
         effectiveHasMainCharacter
-          ? TOWASKI_DIALOGUE_LINES.gmOnly
+          ? TOWASKI_DIALOGUE_LINES.unavailable
           : TOWASKI_DIALOGUE_LINES.noAgent,
       );
       playTemperIfActive(
         "blocked",
         buildTemperBlockedLine(
-          effectiveHasMainCharacter ? "gmOnly" : "noAgent",
+          effectiveHasMainCharacter ? "unavailable" : "noAgent",
           temperDialogueRevisionRef.current++,
         ),
       );
       playStrategicIfActive(
         "blocked",
         effectiveHasMainCharacter
-          ? STRATEGIC_DIALOGUE_LINES.gmOnly
+          ? STRATEGIC_DIALOGUE_LINES.unavailable
           : STRATEGIC_DIALOGUE_LINES.noAgent,
       );
       return;
@@ -3694,7 +3694,6 @@ export default function EquipmentShopClient({
                 const licenseAccess = describeEquipmentLicenseAccess(item);
                 const hasZonePurchaseAccess =
                   hasEquipmentShopZonePurchaseAccess({
-                    isGM: canBypassPlayerServiceRestrictions,
                     purchaseZone: item.zone,
                     sourceZone: item.sourceZone,
                     category: item.category,
@@ -3808,10 +3807,10 @@ export default function EquipmentShopClient({
                                 : "자격시험 시작"
                         : purchasingKey === item.key
                           ? "처리 중"
-                          : isTowaskiDebug
+                            : isTowaskiDebug
                             ? "샌드박스 차단"
                             : !hasZonePurchaseAccess
-                              ? "GM 반출 전용"
+                              ? "해당 구역 반출 불가"
                               : item.licenseOwned
                               ? "발급 완료"
                               : !hasBasicPurchaseAccess
@@ -3972,7 +3971,7 @@ export default function EquipmentShopClient({
                       : isTowaskiDebug
                         ? "샌드박스 구매 차단"
                         : !selectedHasZonePurchaseAccess
-                          ? "GM 반출 전용"
+                          ? "해당 구역 반출 불가"
                           : selectedItem.licenseOwned
                           ? "발급 완료"
                           : !selectedHasBasicPurchaseAccess

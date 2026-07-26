@@ -73,7 +73,7 @@ test("Acheron armor discount is recalculated by checkout instead of trusting cli
   const checkoutRoute = await readFile(CHECKOUT_ROUTE, "utf8");
 
   assert.match(checkoutRoute, /quoteAcheronArmorReferral/);
-  assert.match(checkoutRoute, /hasEquipmentShopZonePurchaseAccess/);
+  assert.match(checkoutRoute, /isEquipmentShopCatalogZoneMatch/);
   assert.match(checkoutRoute, /purchaseZone === "acheron"/);
   assert.match(
     checkoutRoute,
@@ -85,4 +85,26 @@ test("Acheron armor discount is recalculated by checkout instead of trusting cli
   assert.match(checkoutRoute, /code: "PRICE_CHANGED"/);
   assert.doesNotMatch(checkoutRoute, /body\?\.price|rawItem\.price/);
   assert.doesNotMatch(checkoutRoute, /purchaseZone !== "towaski"/);
+});
+
+test("locked equipment zones are rejected before checkout mutates the economy", async () => {
+  const checkoutRoute = await readFile(CHECKOUT_ROUTE, "utf8");
+  const lockGuard = checkoutRoute.indexOf(
+    "!hasEquipmentShopOperationalAccess({",
+  );
+  const economicOperation = checkoutRoute.indexOf(
+    "executeEconomicOperation({",
+  );
+
+  assert.match(checkoutRoute, /hasPlayerServiceTestPathAccess/);
+  assert.match(checkoutRoute, /shouldBypassPageLocks/);
+  assert.match(checkoutRoute, /hostname: request\.nextUrl\.hostname/);
+  assert.doesNotMatch(
+    checkoutRoute,
+    /request\.headers\.get\("x-stargate-erp-local-access"\)|hasLocalErpPreviewAccess/,
+  );
+  assert.match(checkoutRoute, /isNavPathLocked/);
+  assert.match(checkoutRoute, /getErpPageLockOverrides/);
+  assert.match(checkoutRoute, /code: "EQUIPMENT_ZONE_LOCKED"/);
+  assert.ok(lockGuard > 0 && lockGuard < economicOperation);
 });

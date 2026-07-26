@@ -9,13 +9,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { charactersCol, usersCol } from "@stargate/shared-db";
 import { ObjectId } from "mongodb";
 
+import { isNavPathLocked } from "@/components/erp/nav-config";
 import { auth } from "@/lib/auth/config";
-import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
+import {
+  hasPlayerServiceTestAccess,
+  hasPlayerServiceTestPathAccess,
+} from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { childIdempotencyKey, readIdempotencyKey } from "@/lib/api/idempotency";
 import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
+import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
 import {
   addToInventory,
   findMasterItemsBySlugsOrIds,
@@ -42,11 +47,12 @@ import {
 import { containsDuplicateEquipmentItemIds } from "@/lib/equipment-shop/checkout-lines";
 import { evaluateEquipmentPurchaseEligibility } from "@/lib/equipment-shop/purchase-eligibility";
 import {
-  hasEquipmentShopZonePurchaseAccess,
+  hasEquipmentShopOperationalAccess,
   isAcheronSharedArmorZone,
   isEquipmentShopCatalogZoneMatch,
   requiresTowaskiBasicLicense,
 } from "@/lib/equipment-shop/purchase-zone-access";
+import { shouldBypassPageLocks } from "@/lib/erp/local-page-lock-bypass";
 import {
   getEquipmentLicenseRequirement,
   isTowaskiLicenseSlug,
@@ -58,6 +64,12 @@ import { TOWASKI_BASIC_FIREARM_LICENSE_SLUG } from "@/lib/equipment-shop/license
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY_PER_ITEM = 1;
 const MAX_CART_LINES = 20;
+const EQUIPMENT_SHOP_ZONE_LOCK_PATHS: Partial<
+  Record<EquipmentShopZone, string>
+> = {
+  acheron: "/erp/equipment-shop/acheron",
+  strategic: "/erp/equipment-shop/strategic",
+};
 
 interface CheckoutBody {
   purchaseZone?: unknown;
@@ -189,6 +201,40 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+  const purchaseZoneLockPath = EQUIPMENT_SHOP_ZONE_LOCK_PATHS[purchaseZone];
+  if (purchaseZoneLockPath) {
+    const hasTestAccess = hasPlayerServiceTestPathAccess(
+      session.user,
+      purchaseZoneLockPath,
+    );
+    const hasLocalPreviewAccess = shouldBypassPageLocks({
+      hostname: request.nextUrl.hostname,
+      nodeEnv: process.env.NODE_ENV,
+    });
+    const pageLocked =
+      isGM || hasTestAccess || hasLocalPreviewAccess
+        ? true
+        : isNavPathLocked(
+            purchaseZoneLockPath,
+            await getErpPageLockOverrides(),
+          );
+    if (
+      !hasEquipmentShopOperationalAccess({
+        isGM,
+        hasPlayerServiceTestAccess: hasTestAccess,
+        hasLocalPreviewAccess,
+        pageLocked,
+      })
+    ) {
+      return NextResponse.json(
+        {
+          error: "현재 운영 잠금 상태인 병기부 구역입니다.",
+          code: "EQUIPMENT_ZONE_LOCKED",
+        },
+        { status: 403 },
+      );
+    }
+  }
   const normalizedItems = normalizeCartItems(body?.items);
   if (!normalizedItems) {
     return NextResponse.json(
@@ -290,21 +336,6 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
-    if (
-      !hasEquipmentShopZonePurchaseAccess({
-        isGM: canBypassPlayerServiceRestrictions,
-        ...zoneInput,
-      })
-    ) {
-      return NextResponse.json(
-        {
-          error: "플레이어는 해당 병기부 구역의 품목을 반출할 수 없습니다.",
-          code: "FORBIDDEN_EQUIPMENT_ZONE",
-        },
-        { status: 403 },
-      );
-    }
-
     if (isTowaskiLicenseSlug(masterItem.slug)) {
       return NextResponse.json(
         {

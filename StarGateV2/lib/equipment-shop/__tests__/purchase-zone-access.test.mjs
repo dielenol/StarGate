@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  hasEquipmentShopOperationalAccess,
   hasEquipmentShopZonePurchaseAccess,
   isAcheronSharedArmorZone,
   isEquipmentShopCatalogZoneMatch,
@@ -11,7 +12,6 @@ import {
 test("players can purchase Towaski and native Acheron catalog items", () => {
   assert.equal(
     hasEquipmentShopZonePurchaseAccess({
-      isGM: false,
       purchaseZone: "towaski",
       sourceZone: "towaski",
       category: "WEAPON",
@@ -20,7 +20,6 @@ test("players can purchase Towaski and native Acheron catalog items", () => {
   );
   assert.equal(
     hasEquipmentShopZonePurchaseAccess({
-      isGM: false,
       purchaseZone: "acheron",
       sourceZone: "acheron",
       category: "WEAPON",
@@ -37,14 +36,10 @@ test("Acheron accepts shared Towaski armor but not cross-zone weapons", () => {
   };
   assert.equal(isAcheronSharedArmorZone(sharedArmor), true);
   assert.equal(isEquipmentShopCatalogZoneMatch(sharedArmor), true);
-  assert.equal(
-    hasEquipmentShopZonePurchaseAccess({ isGM: false, ...sharedArmor }),
-    true,
-  );
+  assert.equal(hasEquipmentShopZonePurchaseAccess(sharedArmor), true);
 
   assert.equal(
     hasEquipmentShopZonePurchaseAccess({
-      isGM: false,
       purchaseZone: "acheron",
       sourceZone: "towaski",
       category: "WEAPON",
@@ -53,18 +48,54 @@ test("Acheron accepts shared Towaski armor but not cross-zone weapons", () => {
   );
 });
 
-test("strategic catalog remains GM-only", () => {
+test("players can purchase strategic catalog items", () => {
   const strategicItem = {
     purchaseZone: "strategic",
     sourceZone: "strategic",
     category: "SPECIAL",
   };
   assert.equal(
-    hasEquipmentShopZonePurchaseAccess({ isGM: false, ...strategicItem }),
+    hasEquipmentShopZonePurchaseAccess(strategicItem),
+    true,
+  );
+});
+
+test("locked equipment zones require an operational access bypass", () => {
+  const lockedZone = {
+    hasPlayerServiceTestAccess: false,
+    hasLocalPreviewAccess: false,
+    pageLocked: true,
+  };
+  assert.equal(
+    hasEquipmentShopOperationalAccess({ isGM: false, ...lockedZone }),
     false,
   );
   assert.equal(
-    hasEquipmentShopZonePurchaseAccess({ isGM: true, ...strategicItem }),
+    hasEquipmentShopOperationalAccess({
+      isGM: false,
+      ...lockedZone,
+      pageLocked: false,
+    }),
+    true,
+  );
+  assert.equal(
+    hasEquipmentShopOperationalAccess({ isGM: true, ...lockedZone }),
+    true,
+  );
+  assert.equal(
+    hasEquipmentShopOperationalAccess({
+      isGM: false,
+      ...lockedZone,
+      hasPlayerServiceTestAccess: true,
+    }),
+    true,
+  );
+  assert.equal(
+    hasEquipmentShopOperationalAccess({
+      isGM: false,
+      ...lockedZone,
+      hasLocalPreviewAccess: true,
+    }),
     true,
   );
 });
