@@ -151,6 +151,13 @@ export async function ensureAllIndexes(): Promise<void> {
         name: "equipment_workshop_requests_status_createdAt",
       },
       {
+        key: {
+          "discordDmOutbox.availableAt": 1,
+          updatedAt: 1,
+        },
+        name: "equipment_workshop_requests_discord_dm_outbox",
+      },
+      {
         key: { inventoryEntryId: 1 },
         name: "equipment_workshop_requests_inventoryEntry_in_progress_unique",
         unique: true,

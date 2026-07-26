@@ -15,6 +15,11 @@ import type {
   AdminSerializedEquipmentWorkshopRequest,
 } from "@/lib/equipment-shop/workshop-request";
 import { getEquipmentWorkshopComputedStatus } from "@/lib/equipment-shop/workshop-request";
+import {
+  createEquipmentWorkshopDiscordDmOutboxEvent,
+  createEquipmentWorkshopStatusDmOutboxEvents,
+  type EquipmentWorkshopDiscordDmOutboxEvent,
+} from "@/lib/equipment-shop/workshop-discord-dm-outbox";
 
 export interface EquipmentWorkshopRequestDoc {
   _id: string;
@@ -48,6 +53,14 @@ export interface EquipmentWorkshopRequestDoc {
   readyAt?: Date;
   claimedAt?: Date;
   reloadedAt?: Date;
+  discordDmOutbox?: EquipmentWorkshopDiscordDmOutboxEvent[];
+  discordDmDelivery?: {
+    leaseToken?: string;
+    leaseUntil?: Date;
+    nextAttemptAt?: Date;
+    failedAt?: Date;
+    lastError?: string;
+  };
   history?: EquipmentWorkshopRequestHistoryEntry[];
 }
 
@@ -114,6 +127,8 @@ export function serializeEquipmentWorkshopRequest(
     readyAt,
     claimedAt,
     reloadedAt,
+    discordDmOutbox: _discordDmOutbox,
+    discordDmDelivery: _discordDmDelivery,
     activeOperationKey: _activeOperationKey,
     internalNote: _internalNote,
     reviewedById: _reviewedById,
@@ -124,6 +139,8 @@ export function serializeEquipmentWorkshopRequest(
   void _reviewedById;
   void _reviewedByName;
   void _activeOperationKey;
+  void _discordDmOutbox;
+  void _discordDmDelivery;
   const playerQuote = quote
     ? serializeEquipmentWorkshopQuote(quote, false)
     : undefined;
@@ -218,6 +235,126 @@ export async function listActiveEquipmentWorkshopRequests(
     .toArray();
 }
 
+export async function claimDueEquipmentWorkshopDiscordDmDelivery(input: {
+  requestId?: string;
+  leaseToken: string;
+  now: Date;
+  leaseUntil: Date;
+}): Promise<EquipmentWorkshopRequestDoc | null> {
+  return (await equipmentWorkshopRequestsCol()).findOneAndUpdate(
+    {
+      ...(input.requestId ? { _id: input.requestId } : {}),
+      discordDmOutbox: {
+        $elemMatch: {
+          availableAt: { $lte: input.now },
+          sentAt: { $exists: false },
+          skippedAt: { $exists: false },
+        },
+      },
+      $or: [
+        { "discordDmDelivery.leaseUntil": { $exists: false } },
+        { "discordDmDelivery.leaseUntil": { $lte: input.now } },
+      ],
+      $and: [
+        {
+          $or: [
+            { "discordDmDelivery.nextAttemptAt": { $exists: false } },
+            { "discordDmDelivery.nextAttemptAt": { $lte: input.now } },
+          ],
+        },
+      ],
+    },
+    {
+      $set: {
+        "discordDmDelivery.leaseToken": input.leaseToken,
+        "discordDmDelivery.leaseUntil": input.leaseUntil,
+      },
+    },
+    {
+      sort: { updatedAt: 1 },
+      returnDocument: "after",
+    },
+  );
+}
+
+export async function completeEquipmentWorkshopDiscordDmEvent(input: {
+  requestId: string;
+  leaseToken: string;
+  eventId: string;
+  completedAt: Date;
+  result:
+    | "sent"
+    | "skipped_unlinked"
+    | "skipped_inactive"
+    | "skipped_unreachable"
+    | "no_longer_ready";
+}): Promise<boolean> {
+  const completion =
+    input.result === "sent"
+      ? { "discordDmOutbox.$[event].sentAt": input.completedAt }
+      : {
+          "discordDmOutbox.$[event].skippedAt": input.completedAt,
+          "discordDmOutbox.$[event].skippedReason": input.result,
+        };
+  const result = await (await equipmentWorkshopRequestsCol()).updateOne(
+    {
+      _id: input.requestId,
+      "discordDmDelivery.leaseToken": input.leaseToken,
+    },
+    {
+      $set: completion,
+    },
+    {
+      arrayFilters: [
+        {
+          "event.id": input.eventId,
+          "event.sentAt": { $exists: false },
+          "event.skippedAt": { $exists: false },
+        },
+      ],
+    },
+  );
+  return result.modifiedCount === 1;
+}
+
+export async function releaseEquipmentWorkshopDiscordDmDelivery(input: {
+  requestId: string;
+  leaseToken: string;
+  failedAt?: Date;
+  nextAttemptAt?: Date;
+  error?: string;
+}): Promise<boolean> {
+  const result = await (await equipmentWorkshopRequestsCol()).updateOne(
+    {
+      _id: input.requestId,
+      "discordDmDelivery.leaseToken": input.leaseToken,
+    },
+    {
+      ...(input.failedAt && input.nextAttemptAt && input.error
+        ? {
+            $set: {
+              "discordDmDelivery.failedAt": input.failedAt,
+              "discordDmDelivery.nextAttemptAt": input.nextAttemptAt,
+              "discordDmDelivery.lastError": input.error.slice(0, 300),
+            },
+          }
+        : {}),
+      $unset: {
+        "discordDmDelivery.leaseToken": "",
+        "discordDmDelivery.leaseUntil": "",
+        ...(!input.failedAt
+          ? {
+              "discordDmDelivery.nextAttemptAt": "",
+              "discordDmDelivery.failedAt": "",
+              "discordDmDelivery.lastError": "",
+            }
+          : {}),
+      },
+    },
+  );
+  return result.modifiedCount === 1;
+}
+
 export async function updateEquipmentWorkshopRequestStatus(input: {
   requestId: string;
   currentStatus: EquipmentWorkshopRequestStatus;
@@ -251,6 +388,13 @@ export async function updateEquipmentWorkshopRequestStatus(input: {
           actorName: input.reviewedByName,
           ...(input.operatorNote ? { note: input.operatorNote } : {}),
         },
+        discordDmOutbox: {
+          $each: createEquipmentWorkshopStatusDmOutboxEvents({
+            status: input.status,
+            at: now,
+            ...(input.operatorNote ? { note: input.operatorNote } : {}),
+          }),
+        },
       },
       ...(closesOperation ? { $unset: { activeOperationKey: "" } } : {}),
     },
@@ -262,7 +406,7 @@ export async function updateEquipmentWorkshopQuote(input: {
   requestId: string;
   currentStatus: EquipmentWorkshopRequestStatus;
   expectedVersion: number;
-  quote: EquipmentWorkshopRequestDoc["quote"];
+  quote: NonNullable<EquipmentWorkshopRequestDoc["quote"]>;
   internalNote?: string;
   sourceSnapshot?: Pick<
     EquipmentWorkshopRequestDoc,
@@ -302,8 +446,21 @@ export async function updateEquipmentWorkshopQuote(input: {
           at: now,
           actorId: input.actorId,
           actorName: input.actorName,
-          quoteVersion: input.quote?.version,
+          quoteVersion: input.quote.version,
         },
+        discordDmOutbox: createEquipmentWorkshopDiscordDmOutboxEvent({
+          event: "QUOTED",
+          createdAt: now,
+          payload: {
+            equipmentName: input.quote.result.name,
+            quoteVersion: input.quote.version,
+            totalCost: input.quote.totalCost,
+            durationMinutes: input.quote.durationMinutes,
+            ...(input.quote.specialistWorkflow
+              ? { specialistWorkflow: input.quote.specialistWorkflow }
+              : {}),
+          },
+        }),
       },
     },
     { returnDocument: "after" },
@@ -326,6 +483,8 @@ export async function transitionEquipmentWorkshopRequest(input: {
   const closesOperation = ["DECLINED", "REJECTED", "CANCELLED", "COMPLETED"].includes(
     input.status,
   );
+  const waitsForInFlightReadyDm =
+    input.currentStatus === "IN_PROGRESS" && closesOperation;
   const unset = {
     ...(input.unset ?? {}),
     ...(closesOperation ? { activeOperationKey: "" as const } : {}),
@@ -336,6 +495,14 @@ export async function transitionEquipmentWorkshopRequest(input: {
       status: input.currentStatus,
       ...(input.expectedQuoteVersion !== undefined
         ? { "quote.version": input.expectedQuoteVersion }
+        : {}),
+      ...(waitsForInFlightReadyDm
+        ? {
+            $or: [
+              { "discordDmDelivery.leaseUntil": { $exists: false } },
+              { "discordDmDelivery.leaseUntil": { $lte: now } },
+            ],
+          }
         : {}),
     },
     {
@@ -352,6 +519,19 @@ export async function transitionEquipmentWorkshopRequest(input: {
           actorId: input.actorId,
           actorName: input.actorName,
           ...(input.note ? { note: input.note } : {}),
+        },
+        discordDmOutbox: {
+          $each: createEquipmentWorkshopStatusDmOutboxEvents({
+            status: input.status,
+            at: now,
+            ...(input.expectedQuoteVersion !== undefined
+              ? { quoteVersion: input.expectedQuoteVersion }
+              : {}),
+            ...(input.set?.readyAt instanceof Date
+              ? { readyAt: input.set.readyAt }
+              : {}),
+            ...(input.note ? { note: input.note } : {}),
+          }),
         },
       },
       ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),

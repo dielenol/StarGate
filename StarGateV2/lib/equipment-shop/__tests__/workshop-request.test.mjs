@@ -637,7 +637,7 @@ test("quotes snapshot procurement cost and Nochichim exposes equipped actions se
   assert.match(actionRoute, /requireNochichimSyncAuth/);
 });
 
-test("quote issuance schedules ERP notification and best-effort Discord DM only after persistence", () => {
+test("quote issuance persists its outbox event before scheduling Discord delivery", () => {
   const adminRoute = readFileSync(
     new URL(
       "../../../app/api/erp/admin/equipment-workshop/[requestId]/[action]/route.ts",
@@ -653,7 +653,7 @@ test("quote issuance schedules ERP notification and best-effort Discord DM only 
     persistenceIndex,
   );
   const discordDmIndex = adminRoute.indexOf(
-    "notifyEquipmentWorkshopQuoteDiscordDm({",
+    "drainEquipmentWorkshopDiscordDms({",
     persistenceIndex,
   );
   const responseIndex = adminRoute.indexOf(
@@ -665,8 +665,7 @@ test("quote issuance schedules ERP notification and best-effort Discord DM only 
   assert.ok(erpNotificationIndex > persistenceIndex);
   assert.ok(discordDmIndex > persistenceIndex);
   assert.ok(responseIndex > discordDmIndex);
-  assert.match(adminRoute, /quote Discord DM failed/);
-  assert.match(adminRoute, /requestId,[\s\S]*quoteVersion: quote\.version/);
+  assert.match(adminRoute, /drainEquipmentWorkshopDiscordDms/);
 });
 
 test("GM material picker supports name and category search", () => {

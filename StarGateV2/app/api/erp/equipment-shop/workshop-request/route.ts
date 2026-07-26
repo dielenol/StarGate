@@ -29,6 +29,8 @@ import {
   requiresEquipmentWorkshopOperatorNote,
   type EquipmentWorkshopRequestResponse,
 } from "@/lib/equipment-shop/workshop-request";
+import { createEquipmentWorkshopDiscordDmOutboxEvent } from "@/lib/equipment-shop/workshop-discord-dm-outbox";
+import { drainEquipmentWorkshopDiscordDms } from "@/lib/notifications/equipment-workshop-discord-dm-delivery";
 import { notifyUser, notifyUsers } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
@@ -228,6 +230,13 @@ export async function POST(request: Request) {
     status: "REQUESTED",
     createdAt: now,
     updatedAt: now,
+    discordDmOutbox: [
+      createEquipmentWorkshopDiscordDmOutboxEvent({
+        event: "REQUESTED",
+        createdAt: now,
+        ...(equipmentName ? { payload: { equipmentName } } : {}),
+      }),
+    ],
     history: [
       {
         status: "REQUESTED",
@@ -316,6 +325,9 @@ export async function POST(request: Request) {
       ...(equipmentName ? { equipmentName } : {}),
       timestamp: new Date(),
     }),
+  );
+  after(() =>
+    drainEquipmentWorkshopDiscordDms({ requestId }),
   );
 
   const response: EquipmentWorkshopRequestResponse = {
@@ -421,6 +433,9 @@ export async function PATCH(request: Request) {
   }).catch((error) => {
     console.error("[equipment-workshop] status notification failed", error);
   });
+  after(() =>
+    drainEquipmentWorkshopDiscordDms({ requestId }),
+  );
   scheduleGmAdminAudit({
     action: "공방 요청 상태 변경",
     actor: {

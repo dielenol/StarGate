@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { registerHooks } from "node:module";
 import test from "node:test";
 
@@ -16,29 +17,48 @@ registerHooks({
         context,
       );
     }
-    if (specifier === "@/lib/equipment-shop/workshop-request") {
-      return nextResolve(
-        new URL("../../equipment-shop/workshop-request.ts", import.meta.url)
-          .href,
-        context,
-      );
-    }
     return nextResolve(specifier, context);
   },
 });
 
 const {
-  buildEquipmentWorkshopQuoteDiscordDmContent,
-  notifyEquipmentWorkshopQuoteDiscordDm,
+  buildEquipmentWorkshopDiscordDmContent,
+  notifyEquipmentWorkshopDiscordDm,
 } = await import("../equipment-workshop-discord-dm.ts");
+const dmSource = fs.readFileSync(
+  new URL("../equipment-workshop-discord-dm.ts", import.meta.url),
+  "utf8",
+);
+const requestRoute = fs.readFileSync(
+  new URL(
+    "../../../app/api/erp/equipment-shop/workshop-request/route.ts",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const playerActionRoute = fs.readFileSync(
+  new URL(
+    "../../../app/api/erp/equipment-shop/workshop-request/[requestId]/[action]/route.ts",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const adminActionRoute = fs.readFileSync(
+  new URL(
+    "../../../app/api/erp/admin/equipment-workshop/[requestId]/[action]/route.ts",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 const INPUT = {
   requestId: "507f1f77bcf86cd799439011",
+  event: "QUOTED",
   quoteVersion: 1,
   userId: "507f1f77bcf86cd799439012",
   kind: "upgrade",
   characterCodename: "LEE DONGSIK",
-  resultName: "공격 방패 - 크레모아 개조형",
+  equipmentName: "공격 방패 - 크레모아 개조형",
   totalCost: 2_200,
   durationMinutes: 4_320,
   specialistWorkflow: [
@@ -47,13 +67,13 @@ const INPUT = {
   ],
 };
 
-test("공방 견적 DM은 비용·시간·복합 담당·절대 확인 링크를 포함한다", () => {
-  const content = buildEquipmentWorkshopQuoteDiscordDmContent(
+test("공방 견적 DM은 비용·시간·복합 담당·아메리 서명을 포함한다", () => {
+  const content = buildEquipmentWorkshopDiscordDmContent(
     INPUT,
     "https://erp.example.test/base/",
   );
 
-  assert.match(content, /공방 강화 견적이 도착했습니다/);
+  assert.match(content, /공방 장비 강화 견적이 도착했습니다/);
   assert.match(content, /LEE DONGSIK/);
   assert.match(content, /2,200 CR/);
   assert.match(content, /72시간 · 3일/);
@@ -63,12 +83,60 @@ test("공방 견적 DM은 비용·시간·복합 담당·절대 확인 링크를
     content,
     /https:\/\/erp\.example\.test\/base\/erp\/equipment-shop\/custom/,
   );
+  assert.match(content, /NOVUS ORDO · AMERI/);
 });
 
-test("활성 Discord 연결 사용자에게 견적 버전별 deterministic nonce로 DM을 전송한다", async () => {
+test("공방의 모든 절차 단계에 전용 DM 문구가 있다", () => {
+  const cases = [
+    ["REQUESTED", /접수되었습니다/],
+    ["IN_REVIEW", /검토가 시작되었습니다/],
+    ["QUOTED", /견적이 도착했습니다/],
+    ["IN_PROGRESS", /작업이 시작되었습니다/],
+    ["READY", /작업이 완료되었습니다/],
+    ["DECLINED", /견적 거절이 접수되었습니다/],
+    ["REJECTED", /요청이 반려되었습니다/],
+    ["CANCELLED", /작업이 취소되었습니다/],
+    ["COMPLETED", /결과 수령이 완료되었습니다/],
+  ];
+
+  for (const [event, pattern] of cases) {
+    assert.match(
+      buildEquipmentWorkshopDiscordDmContent({
+        ...INPUT,
+        event,
+        note: "검토 사유",
+      }),
+      pattern,
+    );
+  }
+
+  assert.match(
+    buildEquipmentWorkshopDiscordDmContent({
+      ...INPUT,
+      event: "COMPLETED",
+      kind: "reload",
+    }),
+    /재장전 결재가 완료되었습니다/,
+  );
+});
+
+test("공방 상태 전이 라우트가 저장 성공 뒤 아메리 DM을 전달한다", () => {
+  assert.match(requestRoute, /createEquipmentWorkshopDiscordDmOutboxEvent/);
+  assert.match(requestRoute, /event: "REQUESTED"/);
+  assert.match(requestRoute, /drainEquipmentWorkshopDiscordDms/);
+  assert.match(adminActionRoute, /drainEquipmentWorkshopDiscordDms/);
+  assert.match(playerActionRoute, /drainEquipmentWorkshopDiscordDms/);
+});
+
+test("공방 DM은 아메리 전용 봇 토큰으로만 발신한다", () => {
+  assert.match(dmSource, /process\.env\.AMERI_DISCORD_BOT_TOKEN/);
+  assert.doesNotMatch(dmSource, /process\.env\.DISCORD_BOT_TOKEN/);
+});
+
+test("활성 Discord 연결 사용자에게 단계·견적 버전별 nonce로 DM을 전송한다", async () => {
   const calls = [];
   const dependencies = {
-    botToken: "test-bot-token",
+    botToken: "ameri-test-token",
     siteBaseUrl: "https://erp.example.test",
     findUser: async () => ({
       status: "ACTIVE",
@@ -82,29 +150,30 @@ test("활성 Discord 연결 사용자에게 견적 버전별 deterministic nonce
       };
     },
   };
-  const result = await notifyEquipmentWorkshopQuoteDiscordDm(
-    INPUT,
+  const result = await notifyEquipmentWorkshopDiscordDm(INPUT, dependencies);
+  await notifyEquipmentWorkshopDiscordDm(INPUT, dependencies);
+  await notifyEquipmentWorkshopDiscordDm(
+    { ...INPUT, event: "IN_PROGRESS" },
     dependencies,
   );
-  await notifyEquipmentWorkshopQuoteDiscordDm(INPUT, dependencies);
-  await notifyEquipmentWorkshopQuoteDiscordDm(
+  await notifyEquipmentWorkshopDiscordDm(
     { ...INPUT, quoteVersion: INPUT.quoteVersion + 1 },
     dependencies,
   );
 
   assert.equal(result, "sent");
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 4);
   assert.equal(calls[0].input.recipientId, "123456789012345678");
-  assert.equal(calls[0].input.nonce.length, 25);
   assert.match(calls[0].input.nonce, /^[a-f0-9]{25}$/);
-  assert.equal(calls[0].options.botToken, "test-bot-token");
+  assert.equal(calls[0].options.botToken, "ameri-test-token");
   assert.equal(calls[1].input.nonce, calls[0].input.nonce);
   assert.notEqual(calls[2].input.nonce, calls[0].input.nonce);
+  assert.notEqual(calls[3].input.nonce, calls[0].input.nonce);
 });
 
 test("토큰 미설정·Discord 미연결·비활성 사용자는 외부 DM을 건너뛴다", async () => {
   let lookupCount = 0;
-  const noToken = await notifyEquipmentWorkshopQuoteDiscordDm(INPUT, {
+  const noToken = await notifyEquipmentWorkshopDiscordDm(INPUT, {
     botToken: null,
     findUser: async () => {
       lookupCount += 1;
@@ -114,8 +183,8 @@ test("토큰 미설정·Discord 미연결·비활성 사용자는 외부 DM을 �
   assert.equal(noToken, "skipped_unconfigured");
   assert.equal(lookupCount, 0);
 
-  const unlinked = await notifyEquipmentWorkshopQuoteDiscordDm(INPUT, {
-    botToken: "test-bot-token",
+  const unlinked = await notifyEquipmentWorkshopDiscordDm(INPUT, {
+    botToken: "ameri-test-token",
     findUser: async () => ({ status: "ACTIVE", discordId: null }),
     sendDirectMessage: async () => {
       throw new Error("호출되면 안 됨");
@@ -123,8 +192,8 @@ test("토큰 미설정·Discord 미연결·비활성 사용자는 외부 DM을 �
   });
   assert.equal(unlinked, "skipped_unlinked");
 
-  const inactive = await notifyEquipmentWorkshopQuoteDiscordDm(INPUT, {
-    botToken: "test-bot-token",
+  const inactive = await notifyEquipmentWorkshopDiscordDm(INPUT, {
+    botToken: "ameri-test-token",
     findUser: async () => ({
       status: "INACTIVE",
       discordId: "123456789012345678",

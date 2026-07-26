@@ -14,6 +14,7 @@ import {
   prepareWorkshopOperationLocks,
   WorkshopOperationError,
 } from "@/lib/equipment-shop/workshop-operations";
+import { drainEquipmentWorkshopDiscordDms } from "@/lib/notifications/equipment-workshop-discord-dm-delivery";
 import { notifyUser } from "@/lib/notifications/events";
 
 interface RouteContext {
@@ -70,6 +71,9 @@ export async function POST(request: Request, context: RouteContext) {
       expectedQuoteVersion: Number(expectedQuoteVersion),
     });
     if (!updated) return NextResponse.json({ error: "다른 요청이 먼저 견적 상태를 변경했습니다." }, { status: 409 });
+    after(() =>
+      drainEquipmentWorkshopDiscordDms({ requestId }),
+    );
     return NextResponse.json({ request: serializeEquipmentWorkshopRequest(updated) });
   }
 
@@ -109,6 +113,9 @@ export async function POST(request: Request, context: RouteContext) {
           message: `${current.characterCodename} · ${current.quote?.result.name ?? current.equipmentName ?? "장비"}`,
           link: "/erp/equipment-shop/custom",
         }).catch((error) => console.error("[equipment-workshop] player action notification failed", error)),
+      );
+      after(() =>
+        drainEquipmentWorkshopDiscordDms({ requestId }),
       );
     }
     return response;
