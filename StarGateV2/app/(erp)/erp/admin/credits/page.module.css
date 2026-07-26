@@ -6,10 +6,15 @@
   gap: var(--gap);
 }
 
+.credits__kpiGrid > * {
+  min-width: 0;
+  container-type: inline-size;
+}
+
 .credits__bigNum {
   color: var(--gold);
   font-family: var(--font-mono);
-  font-size: clamp(20px, 3vw, 32px);
+  font-size: clamp(20px, 11.5cqi, 32px);
   letter-spacing: -0.02em;
   margin: 6px 0 4px;
 }
@@ -17,7 +22,7 @@
 .credits__bigNumNeg {
   color: var(--danger);
   font-family: var(--font-mono);
-  font-size: clamp(20px, 3vw, 32px);
+  font-size: clamp(20px, 11.5cqi, 32px);
   letter-spacing: -0.02em;
   margin: 6px 0 4px;
 }
