@@ -470,7 +470,10 @@ test("workshop route derives ownership and equipped gear on the server", () => {
   assert.match(route, /notifyEquipmentWorkshopRequest/);
   assert.match(route, /notifyUsers/);
   assert.match(route, /insertEquipmentWorkshopRequest/);
-  assert.match(route, /getEquipmentResearchCapabilities/);
+  assert.doesNotMatch(
+    route,
+    /CUSTOM_WEAPON_SLOT_REQUIRED|getEquipmentResearchCapabilities/,
+  );
   assert.match(route, /export async function GET/);
   assert.match(route, /export async function PATCH/);
   assert.match(route, /장비 강화·신규 제작은 견적·수락·수령 또는 제작 취소 전용 API/);

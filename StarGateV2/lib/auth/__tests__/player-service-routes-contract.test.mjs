@@ -23,7 +23,7 @@ test("편의점과 주식은 JTEST 영업·거래 접근을 UI와 API에 함께 
   }
 });
 
-test("병기부와 공방은 JTEST 플레이어 제한만 우회하고 GM 분기는 유지한다", async () => {
+test("병기부 JTEST 우회와 공방 공개 문의는 GM 분기를 유지한다", async () => {
   const [
     data,
     client,
@@ -44,10 +44,13 @@ test("병기부와 공방은 JTEST 플레이어 제한만 우회하고 GM 분기
 
   assert.match(data, /playerServiceTestAccess/);
   assert.match(client, /canBypassPlayerServiceRestrictions/);
-  assert.match(client, /playerServiceTestAccess \|\|\s*research\.capabilities\.customWeaponSlot/);
+  assert.doesNotMatch(client, /CUSTOM_WEAPON_SLOT_REQUIRED|customWeaponSlot/);
   assert.match(catalog, /hasPlayerServiceTestAccess\(session\.user\)/);
   assert.match(checkout, /canBypassPlayerServiceRestrictions/);
-  assert.match(workshop, /hasPlayerServiceTestAccess\(session\.user\)/);
+  assert.doesNotMatch(
+    workshop,
+    /CUSTOM_WEAPON_SLOT_REQUIRED|getEquipmentResearchCapabilities/,
+  );
 
   assert.match(adminLayout, /hasRole\(session\.user\.role, "GM"\)/);
   assert.doesNotMatch(adminLayout, /PlayerServiceTestAccess/);

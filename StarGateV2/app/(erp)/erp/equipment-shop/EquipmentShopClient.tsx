@@ -689,8 +689,7 @@ const ZONE_DEFS: ArmoryZoneDef[] = [
     href: "/erp/equipment-shop/custom",
     label: "공방",
     eyebrow: "CUSTOM WORKSHOP",
-    description:
-      "장착 장비 강화와 커스텀 장비 제작 문의를 접수합니다. 전용 장비 제작은 정비 중입니다.",
+    description: "장착 장비 강화와 커스텀 장비 제작 문의를 접수합니다.",
     npc: "에이다 슈라이버",
   },
   {
@@ -773,8 +772,6 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
     "동시에 다른 기여가 처리되었습니다. 다시 시도해 주세요.",
   RESEARCH_START_FAILED: "연구 시작 처리에 실패했습니다.",
   FORBIDDEN_RESEARCH_PROJECT: "이 연구를 조작할 권한이 없습니다.",
-  CUSTOM_WEAPON_SLOT_REQUIRED:
-    "전용무기 설계 슬롯 연구를 완료해야 제작 의뢰를 보낼 수 있습니다.",
   QUOTE_CHANGED: "견적이 수정되었습니다. 최신 내용을 다시 확인해 주세요.",
   INSUFFICIENT_MATERIALS: "납품할 재료가 부족합니다.",
   SOURCE_ITEM_CHANGED: "강화 대상 장비의 장착 상태가 변경되었습니다.",
@@ -4958,10 +4955,7 @@ export default function EquipmentShopClient({
       upgradeRequestDetails.trim().length >=
         WORKSHOP_REQUEST_DETAIL_MIN_LENGTH;
     const customReady =
-      customRequestDetails.trim().length >= WORKSHOP_REQUEST_DETAIL_MIN_LENGTH &&
-      (isGM ||
-        playerServiceTestAccess ||
-        research.capabilities.customWeaponSlot);
+      customRequestDetails.trim().length >= WORKSHOP_REQUEST_DETAIL_MIN_LENGTH;
 
     const requestReload = (inventoryEntryId: string) => {
       workshopRequestMutation.mutate(
@@ -5123,11 +5117,6 @@ export default function EquipmentShopClient({
             <span>CUSTOM ORDER</span>
             <strong>커스텀 장비 제작 의뢰</strong>
             <p>원하는 장비의 형태, 용도, 작동 방식과 핵심 요구사항을 적어주세요.</p>
-            {!isGM &&
-            !playerServiceTestAccess &&
-            !research.capabilities.customWeaponSlot ? (
-              <small>전용무기 설계 슬롯 연구를 완료해야 제작 의뢰를 보낼 수 있습니다.</small>
-            ) : null}
             <label>
               <span>제작 요청서</span>
               <textarea

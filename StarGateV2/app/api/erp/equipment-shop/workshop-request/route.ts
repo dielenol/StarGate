@@ -2,7 +2,6 @@ import { NextResponse, after } from "next/server";
 
 import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { getActiveSession } from "@/lib/auth/active-session";
-import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import {
@@ -16,7 +15,6 @@ import {
   updateEquipmentWorkshopRequestStatus,
   type EquipmentWorkshopRequestDoc,
 } from "@/lib/db/equipment-workshop-requests";
-import { getEquipmentResearchCapabilities } from "@/lib/db/equipment-research";
 import { listCharacterInventoryEntries } from "@/lib/db/inventory";
 import { listUsers } from "@/lib/db/users";
 import { notifyEquipmentWorkshopRequest } from "@/lib/discord";
@@ -105,25 +103,6 @@ export async function POST(request: Request) {
       { error: "대표 캐릭터가 없어 공방 요청을 접수할 수 없습니다." },
       { status: 400 },
     );
-  }
-
-  if (
-    validation.input.kind === "custom" &&
-    !hasRole(session.user.role, "GM") &&
-    !hasPlayerServiceTestAccess(session.user)
-  ) {
-    const capabilities = await getEquipmentResearchCapabilities(
-      String(mainCharacter._id),
-    );
-    if (!capabilities.customWeaponSlot) {
-      return NextResponse.json(
-        {
-          error: "전용무기 설계 슬롯 연구를 완료해야 제작 의뢰를 보낼 수 있습니다.",
-          code: "CUSTOM_WEAPON_SLOT_REQUIRED",
-        },
-        { status: 403 },
-      );
-    }
   }
 
   let equipmentName: string | undefined;
