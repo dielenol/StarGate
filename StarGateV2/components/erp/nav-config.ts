@@ -223,7 +223,7 @@ export const NAV_GROUPS: NavGroup[] = [
             label: "전략 장비 보급소",
             keywords: "strategic assets vehicle support 전략자산 차량 전투보조",
             icon: IconArmoryStrategic,
-            href: null,
+            href: "/erp/equipment-shop/strategic",
             gmHref: "/erp/equipment-shop/strategic",
           },
           {

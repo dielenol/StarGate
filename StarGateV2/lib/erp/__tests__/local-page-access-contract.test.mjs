@@ -29,6 +29,10 @@ const ADMIN_LAYOUT = new URL(
   "../../../app/(erp)/erp/admin/layout.tsx",
   import.meta.url,
 );
+const NAV_CONFIG = new URL(
+  "../../../components/erp/nav-config.ts",
+  import.meta.url,
+);
 
 test("병기부 준비중 화면은 GM·JTEST·로컬 미리보기에서 실제 페이지를 연다", async () => {
   const access = await readFile(EQUIPMENT_ACCESS, "utf8");
@@ -67,4 +71,20 @@ test("JTEST·로컬 미리보기는 관리자 RBAC를 우회하지 않는다", a
   assert.match(source, /hasRole\(session\.user\.role, "GM"\)/);
   assert.doesNotMatch(source, /hasLocalErpPreviewAccess/);
   assert.doesNotMatch(source, /hasPlayerServiceTestAccess/);
+});
+
+test("전략 장비 보급소만 일반 사용자에게 기본 개방한다", async () => {
+  const source = await readFile(NAV_CONFIG, "utf8");
+  const acheronStart = source.indexOf('label: "아케론 대장간"');
+  const strategicStart = source.indexOf('label: "전략 장비 보급소"');
+  const workshopStart = source.indexOf('label: "공방"', strategicStart);
+  const acheronBlock = source.slice(acheronStart, strategicStart);
+  const strategicBlock = source.slice(strategicStart, workshopStart);
+
+  assert.ok(acheronStart > 0 && strategicStart > acheronStart);
+  assert.match(acheronBlock, /href: null/);
+  assert.match(
+    strategicBlock,
+    /href: "\/erp\/equipment-shop\/strategic"/,
+  );
 });
