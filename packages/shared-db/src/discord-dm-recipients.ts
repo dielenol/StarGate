@@ -4,15 +4,19 @@ import type { User, UserRole } from "./types/user.js";
 const DISCORD_SNOWFLAKE_PATTERN = /^\d{17,20}$/;
 
 /**
- * 공식 플레이어 테스트 계정의 DM만 GM 운영 계정에 추가 전달한다.
- * 두 ERP 계정의 Discord 연결 자체는 합치지 않아 기존 Registrar 연결을 보존한다.
+ * 아메리 공방이 JTEST에 보내는 DM만 GM 운영 계정에 추가 전달한다.
+ * 두 ERP 계정의 Discord 연결 자체는 합치지 않으며 다른 봇의 DM에는 적용하지 않는다.
  */
-export const JTEST_DISCORD_DM_MIRROR_RULE = {
+export const JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE = {
   sourceUsername: "JTEST",
   sourceRole: "J",
   targetUsername: "admin",
   targetRole: "GM",
 } as const satisfies DiscordDmMirrorRule;
+
+/** @deprecated 아메리 공방 전용 이름으로 이전 중인 호환 export. */
+export const JTEST_DISCORD_DM_MIRROR_RULE =
+  JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE;
 
 export type DiscordDmRecipientKind = "primary" | "mirror";
 export type DiscordDmSourceState = "missing" | "inactive" | "active";

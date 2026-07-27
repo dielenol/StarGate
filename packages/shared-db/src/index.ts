@@ -235,6 +235,7 @@ export { isValidObjectId } from "./utils.js";
 
 export {
   JTEST_DISCORD_DM_MIRROR_RULE,
+  JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE,
   resolveDiscordDmRecipients,
 } from "./discord-dm-recipients.js";
 export type {
