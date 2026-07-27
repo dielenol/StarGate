@@ -1,5 +1,8 @@
 # tia_bot DB 통합 Phase 1 — 검토용 플랜
 
+> [!CAUTION]
+> **보관 문서:** `tia_bot` 운영은 종료되었고 기능은 StarGateV2로 대체되었습니다. 아래 절차는 2026년 5월 이관 이력 보존용이며 현재 운영에 실행하지 않습니다. MongoDB 컬렉션과 ERP 데이터는 유지됩니다.
+
 **Plan ID**: `tia-bot-mongo-integration-phase-1`
 **작성일**: 2026-05-08
 **목적**: tia_bot의 shop/stock SQLite를 stargate MongoDB로 통합. 봇 코드는 Python 유지.
@@ -86,9 +89,9 @@
 
 | 파일 | LOC | 역할 |
 |---|---:|---|
-| `docs/migration-tia-bot-2026-05/PLAN.md` | (this file) | 본 문서 |
-| `docs/migration-tia-bot-2026-05/regression.md` | 80 | 회귀 체크리스트 |
-| `docs/migration-tia-bot-2026-05/cutover-runbook.md` | 100 | 컷오버 절차 |
+| `docs/archive/tia-bot-2026-05/PLAN.md` | (this file) | 본 문서 |
+| `docs/archive/tia-bot-2026-05/regression.md` | 80 | 회귀 체크리스트 |
+| `docs/archive/tia-bot-2026-05/cutover-runbook.md` | 100 | 컷오버 절차 |
 
 ### 총계
 

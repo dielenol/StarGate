@@ -1,5 +1,8 @@
 # tia_bot DB 통합 — 회귀 / 데이터 일관성 체크리스트
 
+> [!CAUTION]
+> **보관 문서:** `tia_bot` 운영은 종료되었고 기능은 StarGateV2로 대체되었습니다. 아래 체크리스트는 2026년 5월 이관 이력 보존용이며 현재 운영 검증에 사용하지 않습니다. MongoDB 컬렉션과 ERP 데이터는 유지됩니다.
+
 **Plan ID**: `tia-bot-mongo-integration-phase-1` (Phase 1E 산출물)
 **작성일**: 2026-05-08
 **대상 컷오버**: Phase 1F (일요일 오후, 다운타임 10–15분)

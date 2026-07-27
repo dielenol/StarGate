@@ -19,7 +19,7 @@
 
 - registra-bot 신규 명령 (Phase C) — `/credit grant` 등의 봇 측 owner→character 라우팅
 - shared-db scripts/migrate-tia-shop 재작성 (Phase D) — character 기준 시드
-- 띠아봇 (tia_bot) 코드 정리/폐기
+- 띠아봇 (`tia_bot`) 코드 정리/폐기 완료 (2026-07-27, 이관 기록은 `docs/archive/tia-bot-2026-05/` 보관)
 
 ## 관련 진입점
 
