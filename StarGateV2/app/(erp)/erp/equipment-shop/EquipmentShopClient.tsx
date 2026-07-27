@@ -235,6 +235,7 @@ const TEMPER_ENTRY_SFX_SRC =
 const RATCHET_PROFILE_SRC = "/assets/npcs/Mateo-Rivas-Ratchet-profile.webp";
 const RATCHET_IDLE_DELAY_MS = 12500;
 const VERNIER_PROFILE_SRC = "/assets/npcs/Ada-Schreiber-Vernier-profile.webp";
+const NPC_HUD_AUTO_COLLAPSE_MS = 4500;
 
 const WORKSHOP_SPECIALISTS: Record<
   EquipmentWorkshopSpecialist,
@@ -1512,6 +1513,7 @@ export default function EquipmentShopClient({
   const temperDialogueRevisionRef = useRef(0);
   const strategicDialogueRevisionRef = useRef(0);
   const ameriDialogueRevisionRef = useRef(0);
+  const npcHudCollapseTimerRef = useRef<number | null>(null);
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
     () => mainCharacter?.stats ?? null,
   );
@@ -1553,6 +1555,9 @@ export default function EquipmentShopClient({
   const [upgradeRequestDetails, setUpgradeRequestDetails] = useState("");
   const [customRequestDetails, setCustomRequestDetails] = useState("");
   const [workshopClock, setWorkshopClock] = useState(0);
+  const [collapsedNpcHudKey, setCollapsedNpcHudKey] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (initialZone !== "custom") return;
@@ -1802,9 +1807,11 @@ export default function EquipmentShopClient({
 
   const {
     mood: ameriMood,
+    revision: ameriRevision,
     visibleLine: ameriVisibleLine,
     typing: ameriTyping,
     playLine: playAmeriLine,
+    clearIdleTimer: clearAmeriIdleTimer,
   } = useNpcDialogue<AmeriMood>({
     isOpen: isHub,
     hasMainCharacter,
@@ -1826,6 +1833,7 @@ export default function EquipmentShopClient({
 
   const {
     mood: towaskiMood,
+    revision: towaskiRevision,
     visibleLine: towaskiVisibleLine,
     typing: towaskiTyping,
     playLine: playTowaskiLine,
@@ -1855,6 +1863,7 @@ export default function EquipmentShopClient({
     TOWASKI_MOOD_ASSETS[towaskiMood] ?? TOWASKI_PORTRAIT_SRC;
   const {
     mood: sutureMood,
+    revision: sutureRevision,
     visibleLine: sutureVisibleLine,
     typing: sutureTyping,
     playLine: playSutureLine,
@@ -1884,6 +1893,7 @@ export default function EquipmentShopClient({
     SUTURE_MOOD_ASSETS[sutureMood] ?? SUTURE_PROFILE_SRC;
   const {
     mood: temperMood,
+    revision: temperRevision,
     visibleLine: temperVisibleLine,
     typing: temperTyping,
     playLine: playTemperLine,
@@ -1912,6 +1922,7 @@ export default function EquipmentShopClient({
   const temperPortraitSrc = TEMPER_MOOD_ASSETS[temperMood];
   const {
     mood: strategicMood,
+    revision: strategicRevision,
     visibleLine: strategicVisibleLine,
     typing: strategicTyping,
     playLine: playStrategicLine,
@@ -1940,6 +1951,7 @@ export default function EquipmentShopClient({
   const ratchetPortraitSrc = RATCHET_MOOD_ASSETS[strategicMood];
   const {
     mood: vernierMood,
+    revision: vernierRevision,
     visibleLine: vernierVisibleLine,
     typing: vernierTyping,
     playLine: playVernierLine,
@@ -1965,6 +1977,113 @@ export default function EquipmentShopClient({
     entrySfxSrc: null,
     entrySfxVolume: 0,
   });
+  const activeNpcLine = isHub
+    ? ameriVisibleLine
+    : activeZone === "towaski"
+      ? towaskiVisibleLine
+      : activeZone === "lab"
+        ? sutureVisibleLine
+        : activeZone === "acheron"
+          ? temperVisibleLine
+          : activeZone === "strategic"
+            ? strategicVisibleLine
+            : activeZone === "custom"
+              ? vernierVisibleLine
+              : "";
+  const isActiveNpcTyping = isHub
+    ? ameriTyping
+    : activeZone === "towaski"
+      ? towaskiTyping
+      : activeZone === "lab"
+        ? sutureTyping
+        : activeZone === "acheron"
+          ? temperTyping
+          : activeZone === "strategic"
+            ? strategicTyping
+            : activeZone === "custom"
+              ? vernierTyping
+              : false;
+  const activeNpcRevision = isHub
+    ? ameriRevision
+    : activeZone === "towaski"
+      ? towaskiRevision
+      : activeZone === "lab"
+        ? sutureRevision
+        : activeZone === "acheron"
+          ? temperRevision
+          : activeZone === "strategic"
+            ? strategicRevision
+            : activeZone === "custom"
+              ? vernierRevision
+              : 0;
+  const activeNpcHudKey = `${isHub ? "hub" : activeZone}:${activeNpcRevision}`;
+  const isNpcHudCollapsed =
+    !isActiveNpcTyping && collapsedNpcHudKey === activeNpcHudKey;
+  const clearActiveNpcIdleTimer = useCallback(() => {
+    if (isHub) {
+      clearAmeriIdleTimer();
+    } else if (activeZone === "towaski") {
+      clearTowaskiIdleTimer();
+    } else if (activeZone === "lab") {
+      clearSutureIdleTimer();
+    } else if (activeZone === "acheron") {
+      clearTemperIdleTimer();
+    } else if (activeZone === "strategic") {
+      clearStrategicIdleTimer();
+    } else if (activeZone === "custom") {
+      clearVernierIdleTimer();
+    }
+  }, [
+    activeZone,
+    clearAmeriIdleTimer,
+    clearStrategicIdleTimer,
+    clearSutureIdleTimer,
+    clearTemperIdleTimer,
+    clearTowaskiIdleTimer,
+    clearVernierIdleTimer,
+    isHub,
+  ]);
+
+  const scheduleNpcHudCollapse = useCallback((npcHudKey: string) => {
+    if (npcHudCollapseTimerRef.current !== null) {
+      window.clearTimeout(npcHudCollapseTimerRef.current);
+    }
+    npcHudCollapseTimerRef.current = window.setTimeout(() => {
+      setCollapsedNpcHudKey(npcHudKey);
+      clearActiveNpcIdleTimer();
+      npcHudCollapseTimerRef.current = null;
+    }, NPC_HUD_AUTO_COLLAPSE_MS);
+  }, [clearActiveNpcIdleTimer]);
+
+  const handleNpcHudRecall = useCallback(() => {
+    setCollapsedNpcHudKey(null);
+    scheduleNpcHudCollapse(activeNpcHudKey);
+  }, [activeNpcHudKey, scheduleNpcHudCollapse]);
+
+  useEffect(() => {
+    if (!activeNpcLine && !isActiveNpcTyping) return;
+
+    if (npcHudCollapseTimerRef.current !== null) {
+      window.clearTimeout(npcHudCollapseTimerRef.current);
+      npcHudCollapseTimerRef.current = null;
+    }
+    if (!isActiveNpcTyping) {
+      scheduleNpcHudCollapse(activeNpcHudKey);
+    }
+
+    return () => {
+      if (npcHudCollapseTimerRef.current !== null) {
+        window.clearTimeout(npcHudCollapseTimerRef.current);
+        npcHudCollapseTimerRef.current = null;
+      }
+    };
+  }, [
+    activeNpcHudKey,
+    activeNpcLine,
+    isActiveNpcTyping,
+    scheduleNpcHudCollapse,
+  ]);
+
   const handleTowaskiQualificationDialogue = useCallback(
     (event: TowaskiQualificationDialogueEvent) => {
       clearTowaskiIdleTimer();
@@ -5382,6 +5501,7 @@ export default function EquipmentShopClient({
         !isHub && activeZone === "acheron"
           ? styles["armoryRoot--acheron"]
           : "",
+        isNpcHudCollapsed ? styles["armoryRoot--hudCollapsed"] : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -5632,7 +5752,12 @@ export default function EquipmentShopClient({
 
         {isHub || mode === "zone" ? (
           <section
-            className={styles.npcHud}
+            className={[
+              styles.npcHud,
+              isNpcHudCollapsed ? styles["npcHud--collapsed"] : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             aria-label="병기부 응대 HUD"
             data-ameri-mood={isHub ? ameriMood : undefined}
             data-temper-mood={
@@ -5859,6 +5984,19 @@ export default function EquipmentShopClient({
                           : "응대 담당자가 배정되지 않았습니다."}
               </p>
             </div>
+            <button
+              type="button"
+              className={styles.npcHudRecall}
+              onClick={handleNpcHudRecall}
+              aria-label={`${zoneMeta.npc}의 최근 대사 다시 보기`}
+            >
+              <span className={styles.npcHudRecall__signal} aria-hidden />
+              <span className={styles.npcHudRecall__identity}>
+                <small>COMM LINK</small>
+                <strong>{zoneMeta.npc}</strong>
+              </span>
+              <span className={styles.npcHudRecall__action}>최근 대사</span>
+            </button>
           </section>
         ) : null}
       </section>
