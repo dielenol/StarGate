@@ -341,7 +341,11 @@ test("기존 IN_PROGRESS 요청 backfill은 dry-run 기본과 이중 실행 확�
   assert.match(backfillSource, /remaining > 0/);
 });
 
-test("DM cron은 인증·5분 간격·실패 상태를 노출하고 내부 outbox는 DTO에서 숨긴다", () => {
+test("DM drain은 전용 인증·실패 상태를 노출하고 Vercel cron 등록 없이 내부 outbox를 숨긴다", () => {
+  assert.match(
+    cronRoute,
+    /process\.env\.WORKSHOP_DM_CRON_SECRET \?\? process\.env\.CRON_SECRET/,
+  );
   assert.match(cronRoute, /authHeader !== `Bearer \$\{secret\}`/);
   assert.match(cronRoute, /drainEquipmentWorkshopDiscordDms/);
   assert.match(
@@ -349,9 +353,9 @@ test("DM cron은 인증·5분 간격·실패 상태를 노출하고 내부 outbo
     /const ok = summary\.configured && summary\.failed === 0/,
   );
   assert.match(cronRoute, /status: ok \? 200 : 503/);
-  assert.match(
+  assert.doesNotMatch(
     vercelConfig,
-    /"path": "\/api\/cron\/equipment-workshop\/dm"[\s\S]*"schedule": "\*\/5 \* \* \* \*"/,
+    /"path": "\/api\/cron\/equipment-workshop\/dm"/,
   );
   assert.match(dbSource, /discordDmOutbox: _discordDmOutbox/);
   assert.match(dbSource, /discordDmDelivery: _discordDmDelivery/);
