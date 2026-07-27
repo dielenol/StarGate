@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  JTEST_DISCORD_DM_MIRROR_RULE,
+  JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE,
   resolveDiscordDmRecipients,
 } from "@stargate/shared-db";
 
@@ -27,10 +27,10 @@ function user(overrides = {}) {
   };
 }
 
-test("Discord 미연결 JTEST는 ACTIVE GM admin의 Discord를 미러 수신자로 사용한다", async () => {
+test("아메리 공방은 Discord 미연결 JTEST의 DM을 ACTIVE GM admin에게 추가 전달한다", async () => {
   const resolution = await resolveDiscordDmRecipients(
     "jtest-id",
-    { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
+    { mirror: JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE },
     {
       async findUserById() {
         return user({ username: "JTEST", role: "J" });
@@ -54,7 +54,7 @@ test("Discord 미연결 JTEST는 ACTIVE GM admin의 Discord를 미러 수신자�
   });
 });
 
-test("JTEST의 원 Discord와 GM Discord가 다르면 둘 다 유지하고 같으면 중복 제거한다", async () => {
+test("아메리 공방은 JTEST와 GM Discord가 다르면 둘 다 유지하고 같으면 중복 제거한다", async () => {
   const source = user({
     username: "JTEST",
     role: "J",
@@ -62,7 +62,7 @@ test("JTEST의 원 Discord와 GM Discord가 다르면 둘 다 유지하고 같�
   });
   const different = await resolveDiscordDmRecipients(
     "jtest-id",
-    { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
+    { mirror: JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE },
     {
       async findUserById() {
         return source;
@@ -78,7 +78,7 @@ test("JTEST의 원 Discord와 GM Discord가 다르면 둘 다 유지하고 같�
   );
   const same = await resolveDiscordDmRecipients(
     "jtest-id",
-    { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
+    { mirror: JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE },
     {
       async findUserById() {
         return source;
@@ -102,11 +102,11 @@ test("JTEST의 원 Discord와 GM Discord가 다르면 둘 다 유지하고 같�
   ]);
 });
 
-test("일반 계정·비활성 JTEST·GM이 아닌 대상은 미러하지 않는다", async () => {
+test("아메리 공방은 일반 계정·비활성 JTEST·GM이 아닌 대상을 미러하지 않는다", async () => {
   let targetLookupCount = 0;
   const regular = await resolveDiscordDmRecipients(
     "regular-id",
-    { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
+    { mirror: JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE },
     {
       async findUserById() {
         return user({
@@ -123,7 +123,7 @@ test("일반 계정·비활성 JTEST·GM이 아닌 대상은 미러하지 않는
   );
   const inactive = await resolveDiscordDmRecipients(
     "jtest-id",
-    { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
+    { mirror: JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE },
     {
       async findUserById() {
         return user({
@@ -140,7 +140,7 @@ test("일반 계정·비활성 JTEST·GM이 아닌 대상은 미러하지 않는
   );
   const wrongTargetRole = await resolveDiscordDmRecipients(
     "jtest-id",
-    { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
+    { mirror: JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE },
     {
       async findUserById() {
         return user({ username: "JTEST", role: "J" });

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import {
-  JTEST_DISCORD_DM_MIRROR_RULE,
+  JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE,
   getDb,
   resolveDiscordDmRecipients,
   type DiscordDmRecipientKind,
@@ -337,7 +337,7 @@ export class AmeriDmConsumer implements DueWorkConsumerPort {
               this.options.resolveRecipients ?? resolveDiscordDmRecipients
             )(
               request.userId,
-              { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
+              { mirror: JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE },
             );
             if (resolution.sourceState === "inactive") {
               result = "skipped_inactive";

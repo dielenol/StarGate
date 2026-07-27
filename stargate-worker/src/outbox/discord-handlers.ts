@@ -2,11 +2,10 @@ import { createHash } from "node:crypto";
 
 import {
   INTEGRATION_OUTBOX_KINDS,
-  JTEST_DISCORD_DM_MIRROR_RULE,
-  resolveDiscordDmRecipients,
-  type DiscordDmRecipientKind,
+  findUserById,
   type IntegrationOutboxEvent,
   type IntegrationOutboxKind,
+  type User,
 } from "@stargate/shared-db";
 import { findStockByTicker } from "@stargate/core/domain/stock-catalog";
 
@@ -22,12 +21,13 @@ import type { IntegrationOutboxDeliveryHandler } from "./port.js";
 const FIELD_VALUE_MAX = 1_000;
 const FIELD_NAME_MAX = 256;
 const SHOP_URL = "https://www.ordonet.co.kr/erp/shop";
+const SNOWFLAKE = /^\d{17,20}$/;
 
 type Environment = NodeJS.ProcessEnv;
 
 interface DiscordHandlerDependencies {
   fetchImpl?: typeof fetch;
-  resolveRecipients?: typeof resolveDiscordDmRecipients;
+  findUser?: (id: string) => Promise<User | null>;
 }
 
 export class IntegrationOutboxConfigurationError extends Error {
@@ -510,25 +510,6 @@ function tradeDmContent(
   }
 }
 
-function tradeDmNonce(
-  payload: Record<string, unknown>,
-  userId: string,
-  recipientKind: DiscordDmRecipientKind,
-): string {
-  return createHash("sha256")
-    .update(
-      [
-        "player-trade",
-        text(payload.tradeId, "tradeId", 200),
-        text(payload.event, "event", 50),
-        userId,
-        ...(recipientKind === "mirror" ? ["mirror"] : []),
-      ].join(":"),
-    )
-    .digest("hex")
-    .slice(0, 25);
-}
-
 function enabledKinds(env: Environment): IntegrationOutboxKind[] {
   const raw = env.WORKER_OUTBOX_KINDS?.trim();
   if (!raw) return [];
@@ -550,8 +531,7 @@ export function createDiscordIntegrationOutboxHandlers(
   dependencies: DiscordHandlerDependencies = {},
 ): IntegrationOutboxHandlerRegistry {
   const fetchImpl = dependencies.fetchImpl ?? fetch;
-  const resolveRecipients =
-    dependencies.resolveRecipients ?? resolveDiscordDmRecipients;
+  const findUser = dependencies.findUser ?? findUserById;
   const handlers: IntegrationOutboxDeliveryHandler[] = [];
 
   for (const kind of enabledKinds(env)) {
@@ -571,50 +551,37 @@ export function createDiscordIntegrationOutboxHandlers(
             );
           }
           const userId = text(event.payload.userId, "userId", 200);
-          const resolution = await resolveRecipients(
-            userId,
-            { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
-          );
+          const user = await findUser(userId);
           if (
-            resolution.sourceState !== "active" ||
-            resolution.recipients.length === 0
+            !user ||
+            user.status !== "ACTIVE" ||
+            !user.discordId ||
+            !SNOWFLAKE.test(user.discordId)
           ) {
             return;
           }
-
-          const content = tradeDmContent(event.payload, env);
-          const errors: unknown[] = [];
-          let sentCount = 0;
-          for (const recipient of resolution.recipients) {
-            try {
-              await sendDiscordDirectMessage(
-                {
-                  recipientId: recipient.discordId,
-                  content,
-                  nonce: tradeDmNonce(
-                    event.payload,
-                    userId,
-                    recipient.kind,
-                  ),
-                  botToken,
-                },
-                fetchImpl,
-              );
-              sentCount += 1;
-            } catch (error) {
-              errors.push(error);
+          const nonce = createHash("sha256")
+            .update(
+              `player-trade:${text(event.payload.tradeId, "tradeId", 200)}:${text(event.payload.event, "event", 50)}:${userId}`,
+            )
+            .digest("hex")
+            .slice(0, 25);
+          try {
+            await sendDiscordDirectMessage(
+              {
+                recipientId: user.discordId,
+                content: tradeDmContent(event.payload, env),
+                nonce,
+                botToken,
+              },
+              fetchImpl,
+            );
+          } catch (error) {
+            if (error instanceof DiscordDeliveryError && error.status === 403) {
+              return;
             }
+            throw error;
           }
-
-          const retryableError = errors.find(
-            (error) =>
-              !(
-                error instanceof DiscordDeliveryError &&
-                error.status === 403
-              ),
-          );
-          if (retryableError) throw retryableError;
-          if (sentCount > 0) return;
         },
       });
       continue;
