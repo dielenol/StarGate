@@ -6,6 +6,8 @@
 .accountShell {
   display: grid;
   gap: 18px;
+  container-name: account-shell;
+  container-type: inline-size;
 }
 
 .overviewPanel {
@@ -604,6 +606,13 @@
 .primaryBtn:focus-visible { outline: 1px solid var(--gold); outline-offset: 2px; }
 
 /* ---------- responsive ---------- */
+/* Sidebar가 유지되는 중간 폭에서는 summary 패널의 4열 최소 폭이 부족하다. */
+@container account-shell (min-width: 1000px) and (max-width: 1168px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1279px) {
   .overviewPanel {
     grid-template-columns: 1fr;
