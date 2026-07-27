@@ -94,6 +94,23 @@ test("원본 자산 전체를 검증한 뒤 mutation을 시작한다", () => {
   assert.match(crud, /entry\.equippedSlot/);
 });
 
+test("토와스키 라이센스 자격증은 거래 목록과 DB 정산에서 모두 제외한다", () => {
+  assert.match(
+    createRoute,
+    /isPlayerTradeItemSlugTransferable\(entry\.slug\)/,
+  );
+  assert.match(crud, /NON_TRANSFERABLE_ITEM_SLUG_PREFIXES/);
+  assert.match(crud, /slug\?\.startsWith\(prefix\)/);
+  assert.match(
+    crud,
+    /!isPlayerTradeItemSlugTransferable\(master\.slug\)/,
+  );
+  assert.match(
+    crud,
+    /ITEM_NOT_TRANSFERABLE[\s\S]*거래할 수 없는 아이템/,
+  );
+});
+
 test("교환방 생성도 transaction 안에서 상대 MAIN 자격을 재검증한다", () => {
   const createOpenStart = crud.indexOf(
     "export async function createOpenPlayerTrade",

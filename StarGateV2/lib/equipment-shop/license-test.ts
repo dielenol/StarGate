@@ -1,4 +1,21 @@
 import type { TowaskiLicenseSlug } from "./licenses";
+import {
+  createTowaskiLicenseV2State,
+  evaluateTowaskiLicenseProgramProgress,
+  getTowaskiLicenseModeForSlug,
+  getTowaskiLicenseStepWindowMs,
+  isTowaskiLicenseV2Complete,
+  parseTowaskiLicenseV2StepInput,
+  resolveTowaskiLicenseProgramStep,
+  TOWASKI_LICENSE_PROGRAM_VERSION,
+  validateTowaskiLicenseV2StepTiming,
+  type TowaskiLicenseTestMode,
+  type TowaskiLicenseV2ChallengeState,
+  type TowaskiLicenseV2Evaluation,
+  type TowaskiLicenseV2Progress,
+  type TowaskiLicenseV2Scenario,
+  type TowaskiLicenseV2StepInput,
+} from "./license-test-v2.ts";
 
 export const TOWASKI_BASIC_FIREARM_LICENSE_SLUG =
   "towaski-license-basic-firearm" as const;
@@ -70,6 +87,8 @@ export interface TowaskiLicenseTestProgram {
   tier: TowaskiLicenseTestTier;
   tierLabel: string;
   difficulty: TowaskiLicenseTestDifficulty;
+  mode: TowaskiLicenseTestMode;
+  programVersion: number;
   briefing: string;
   requiresBasicLicense: boolean;
 }
@@ -88,6 +107,8 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tier: "basic",
     tierLabel: "기초",
     difficulty: "basic",
+    mode: "firearm",
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
       "적성 표적을 식별해 사격하고 민간 표적에는 사격하지 마십시오.",
     requiresBasicLicense: false,
@@ -102,8 +123,10 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tier: "intermediate",
     tierLabel: "중급",
     difficulty: "standard",
+    mode: "precision",
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
-      "축소된 원거리 표적을 빠르게 식별하고 제한 시간 안에 정밀 사격하십시오.",
+      "거리와 풍향을 역산해 여섯 표적의 조준점을 보정하고, 호흡을 안정시킨 뒤 한 발만 발사하십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-heavy-weapon": {
@@ -116,8 +139,10 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tier: "advanced",
     tierLabel: "고급",
     difficulty: "expert",
+    mode: "heavy",
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
-      "고출력 화기 운용을 가정해 모든 적성 표적을 식별하고 오사를 방지하십시오.",
+      "네 제압 구간에서 반동을 억제해 짧게 점사하고, 횡단 인원과 총열 과열을 피하십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-flame-weapon": {
@@ -130,8 +155,10 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tier: "advanced",
     tierLabel: "고급",
     difficulty: "expert",
+    mode: "flame",
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
-      "확산 피해를 가정해 적성 표적만 선별하고 민간 표적 노출 시 즉시 사격을 중지하십시오.",
+      "화염 원뿔을 끊어 분사하며 적성 구역만 소각하고, 민간 구역과 연료통을 피하십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-sonic-equipment": {
@@ -144,8 +171,10 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tier: "advanced",
     tierLabel: "고급",
     difficulty: "expert",
+    mode: "sonic",
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
-      "광역 출력 장비 운용을 가정해 짧은 노출 시간 안에 표적을 식별하십시오.",
+      "상황별 공진 주파수에 파형을 맞춘 뒤 출력과 폭을 안전 범위로 봉인해 펄스를 방출하십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-explosive-ordnance": {
@@ -158,8 +187,10 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tier: "advanced",
     tierLabel: "고급",
     difficulty: "expert",
+    mode: "explosive",
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
-      "폭발 반경을 고려해 모든 적성 표적을 확인하고 민간 표적에는 절대 사격하지 마십시오.",
+      "탄종·착탄점·신관을 선택해 적성 집단만 제압하고, 민간 피해와 로켓 후폭풍을 방지하십시오.",
     requiresBasicLicense: true,
   },
 };
@@ -261,19 +292,35 @@ export interface TowaskiLicenseTestStats {
   shots: number;
 }
 
+export type TowaskiLegacyLicenseTestResolveRequest = {
+  action: "resolve";
+  challengeId: string;
+  round: number;
+  hit: boolean;
+  shots: number;
+};
+
+export type TowaskiLicenseV2ResolveRequest = {
+  action: "resolve";
+  challengeId: string;
+  step: number;
+  input: TowaskiLicenseV2StepInput;
+};
+
 export type TowaskiLicenseTestRequest =
   | { action: "start"; licenseSlug: TowaskiLicenseSlug }
-  | {
-      action: "resolve";
-      challengeId: string;
-      round: number;
-      hit: boolean;
-      shots: number;
-    };
+  | TowaskiLegacyLicenseTestResolveRequest
+  | TowaskiLicenseV2ResolveRequest;
+
+export type TowaskiLicenseTestEvaluation =
+  | TowaskiBasicLicenseTestEvaluation
+  | TowaskiLicenseV2Evaluation;
 
 export type TowaskiLicenseTestResponse =
   | {
       status: "active";
+      programVersion: 1;
+      mode: "firearm";
       challengeId: string;
       round: number;
       target: TowaskiLicenseTarget;
@@ -283,18 +330,44 @@ export type TowaskiLicenseTestResponse =
       roundDeadlineAt: string;
     }
   | {
+      status: "active";
+      programVersion: number;
+      mode: TowaskiLicenseTestMode;
+      challengeId: string;
+      step: number;
+      scenario: TowaskiLicenseV2Scenario;
+      licenseSlug: TowaskiLicenseSlug;
+      difficulty: TowaskiLicenseTestDifficulty;
+      progress: TowaskiLicenseV2Progress;
+      stepDeadlineAt: string;
+    }
+  | {
       status: "processing";
       challengeId: string;
       licenseSlug: TowaskiLicenseSlug;
       difficulty: TowaskiLicenseTestDifficulty;
+      programVersion?: number;
+      mode?: TowaskiLicenseTestMode;
     }
   | {
       status: "failed";
+      programVersion: 1;
+      mode: "firearm";
       challengeId: string;
       licenseSlug: TowaskiLicenseSlug;
       difficulty: TowaskiLicenseTestDifficulty;
       stats: TowaskiLicenseTestStats;
       evaluation: TowaskiBasicLicenseTestEvaluation;
+    }
+  | {
+      status: "failed";
+      programVersion: number;
+      mode: TowaskiLicenseTestMode;
+      challengeId: string;
+      licenseSlug: TowaskiLicenseSlug;
+      difficulty: TowaskiLicenseTestDifficulty;
+      progress: TowaskiLicenseV2Progress;
+      evaluation: TowaskiLicenseV2Evaluation;
     }
   | {
       status: "granted" | "already_owned";
@@ -305,7 +378,9 @@ export type TowaskiLicenseTestResponse =
         effect: string;
       };
       difficulty?: TowaskiLicenseTestDifficulty;
-      evaluation?: TowaskiBasicLicenseTestEvaluation;
+      programVersion?: number;
+      mode?: TowaskiLicenseTestMode;
+      evaluation?: TowaskiLicenseTestEvaluation;
     };
 
 export function parseTowaskiLicenseTestRequest(
@@ -318,6 +393,24 @@ export function parseTowaskiLicenseTestRequest(
       body.licenseSlug ?? TOWASKI_BASIC_FIREARM_LICENSE_SLUG;
     return isTowaskiLicenseTestSlug(licenseSlug)
       ? { action: "start", licenseSlug }
+      : null;
+  }
+  if (
+    body.action === "resolve" &&
+    typeof body.challengeId === "string" &&
+    typeof body.step === "number" &&
+    Number.isInteger(body.step) &&
+    body.step >= 0 &&
+    body.step < TOWASKI_LICENSE_TARGET_LAYOUTS.length
+  ) {
+    const input = parseTowaskiLicenseV2StepInput(body.input);
+    return input
+      ? {
+          action: "resolve",
+          challengeId: body.challengeId,
+          step: body.step,
+          input,
+        }
       : null;
   }
   if (
@@ -416,6 +509,8 @@ function debugActiveResponse(
   if (!target) throw new Error("DEBUG_LICENSE_TARGET_MISSING");
   return {
     status: "active",
+    programVersion: 1,
+    mode: "firearm",
     challengeId: session.challengeId,
     round: session.round,
     target,
@@ -455,7 +550,7 @@ export function startTowaskiDebugLicenseTest(
 
 export function resolveTowaskiDebugLicenseTest(
   session: TowaskiDebugLicenseSession,
-  input: Extract<TowaskiLicenseTestRequest, { action: "resolve" }>,
+  input: TowaskiLegacyLicenseTestResolveRequest,
   nowMs = Date.now(),
 ): {
   session: TowaskiDebugLicenseSession;
@@ -507,6 +602,8 @@ export function resolveTowaskiDebugLicenseTest(
       session: nextSession,
       response: {
         status: "failed",
+        programVersion: 1,
+        mode: "firearm",
         challengeId: session.challengeId,
         licenseSlug: session.licenseSlug,
         difficulty: session.difficulty,
@@ -522,6 +619,142 @@ export function resolveTowaskiDebugLicenseTest(
     session: nextSession,
     response: {
       status: "granted",
+      programVersion: 1,
+      mode: "firearm",
+      difficulty: session.difficulty,
+      license: {
+        slug: session.licenseSlug,
+        name: program.licenseName,
+        label: program.licenseLabel,
+        effect: program.licenseEffect,
+      },
+      evaluation,
+    },
+  };
+}
+
+export interface TowaskiDebugLicenseV2Session {
+  challengeId: string;
+  licenseSlug: TowaskiLicenseSlug;
+  difficulty: TowaskiLicenseTestDifficulty;
+  state: TowaskiLicenseV2ChallengeState;
+  stepStartedAtMs: number;
+}
+
+function debugV2ActiveResponse(
+  session: TowaskiDebugLicenseV2Session,
+): TowaskiLicenseTestResponse {
+  const scenario = session.state.scenarios[session.state.progress.step];
+  if (!scenario) throw new Error("DEBUG_LICENSE_SCENARIO_MISSING");
+  return {
+    status: "active",
+    programVersion: session.state.programVersion,
+    mode: session.state.mode,
+    challengeId: session.challengeId,
+    step: session.state.progress.step,
+    scenario,
+    licenseSlug: session.licenseSlug,
+    difficulty: session.difficulty,
+    progress: session.state.progress,
+    stepDeadlineAt: new Date(
+      session.stepStartedAtMs + getTowaskiLicenseStepWindowMs(scenario),
+    ).toISOString(),
+  };
+}
+
+export function startTowaskiDebugLicenseTestV2(
+  licenseSlug: TowaskiLicenseSlug = TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+  nowMs = Date.now(),
+): {
+  session: TowaskiDebugLicenseV2Session;
+  response: TowaskiLicenseTestResponse;
+} {
+  const program = getTowaskiLicenseTestProgram(licenseSlug);
+  const mode = getTowaskiLicenseModeForSlug(licenseSlug);
+  const session: TowaskiDebugLicenseV2Session = {
+    challengeId: `towaski-debug-v2-${nowMs}`,
+    licenseSlug,
+    difficulty: program.difficulty,
+    state: createTowaskiLicenseV2State(mode, () => 0),
+    stepStartedAtMs: nowMs,
+  };
+  return { session, response: debugV2ActiveResponse(session) };
+}
+
+export function resolveTowaskiDebugLicenseTestV2(
+  session: TowaskiDebugLicenseV2Session,
+  input: TowaskiLicenseV2ResolveRequest,
+  nowMs = Date.now(),
+): {
+  session: TowaskiDebugLicenseV2Session;
+  response: TowaskiLicenseTestResponse;
+} {
+  if (
+    input.challengeId !== session.challengeId ||
+    input.step !== session.state.progress.step ||
+    input.input.mode !== session.state.mode
+  ) {
+    throw new Error("DEBUG_LICENSE_STALE_STEP");
+  }
+  const scenario = session.state.scenarios[session.state.progress.step];
+  if (!scenario) throw new Error("DEBUG_LICENSE_SCENARIO_MISSING");
+  if (
+    !validateTowaskiLicenseV2StepTiming({
+      scenario,
+      input: input.input,
+      elapsedMs: nowMs - session.stepStartedAtMs,
+    })
+  ) {
+    throw new Error("DEBUG_LICENSE_TIMING_INVALID");
+  }
+  const result = resolveTowaskiLicenseProgramStep({
+    programVersion: session.state.programVersion,
+    scenario,
+    input: input.input,
+    progress: session.state.progress,
+  });
+  const state = { ...session.state, progress: result.progress };
+  const nextSession = {
+    ...session,
+    state,
+    stepStartedAtMs: nowMs,
+  };
+  const program = getTowaskiLicenseTestProgram(session.licenseSlug);
+  const completed = isTowaskiLicenseV2Complete(state);
+  const failedEarly = program.tier === "advanced" && result.safetyViolation;
+  if (!completed && !failedEarly) {
+    return {
+      session: nextSession,
+      response: debugV2ActiveResponse(nextSession),
+    };
+  }
+
+  const evaluation = evaluateTowaskiLicenseProgramProgress(
+    state.programVersion,
+    state.progress,
+  );
+  if (!completed || !evaluation.passed) {
+    return {
+      session: nextSession,
+      response: {
+        status: "failed",
+        programVersion: state.programVersion,
+        mode: state.mode,
+        challengeId: session.challengeId,
+        licenseSlug: session.licenseSlug,
+        difficulty: session.difficulty,
+        progress: state.progress,
+        evaluation,
+      },
+    };
+  }
+
+  return {
+    session: nextSession,
+    response: {
+      status: "granted",
+      programVersion: state.programVersion,
+      mode: state.mode,
       difficulty: session.difficulty,
       license: {
         slug: session.licenseSlug,

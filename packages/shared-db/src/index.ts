@@ -50,6 +50,7 @@ export type {
   EquipmentSlot,
   EquipmentAction,
   EquipmentChargeState,
+  LicenseQualification,
   ShopMeta,
   ShopPageGroup,
   CreateMasterItemInput,

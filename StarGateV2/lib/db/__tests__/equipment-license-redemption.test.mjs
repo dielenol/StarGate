@@ -10,11 +10,15 @@ if (HAS_DB) process.env.MONGODB_URI = TEST_URI;
 process.env.DB_NAME = TEST_DB_NAME;
 
 const LICENSE_SLUG = "towaski-license-basic-firearm";
+const HEAVY_LICENSE_SLUG = "towaski-license-heavy-weapon";
 let claimTowaskiLicenseChallengeRedemption;
+let getTowaskiLicenseQualificationStatus;
 let grantTowaskiLicenseOnce;
 let markTowaskiLicenseChallengeRedeemed;
 let prepareTowaskiLicenseGrant;
 let resolveTowaskiLicenseChallengeRound;
+let resolveTowaskiLicenseChallengeStep;
+let startOrResumeTowaskiLicenseChallenge;
 let getClient;
 let getDb;
 let ObjectId;
@@ -27,10 +31,14 @@ before(async () => {
     claimTowaskiLicenseChallengeRedemption,
     markTowaskiLicenseChallengeRedeemed,
     resolveTowaskiLicenseChallengeRound,
+    resolveTowaskiLicenseChallengeStep,
+    startOrResumeTowaskiLicenseChallenge,
   } = await import("../equipment-license-tests.ts"));
-  ({ grantTowaskiLicenseOnce, prepareTowaskiLicenseGrant } = await import(
-    "../equipment-licenses.ts"
-  ));
+  ({
+    getTowaskiLicenseQualificationStatus,
+    grantTowaskiLicenseOnce,
+    prepareTowaskiLicenseGrant,
+  } = await import("../equipment-licenses.ts"));
 });
 
 beforeEach(async () => {
@@ -43,12 +51,20 @@ beforeEach(async () => {
     db.collection("character_inventory_locks").deleteMany({}),
     db.collection("master_items").deleteMany({}),
   ]);
-  await db.collection("master_items").insertOne({
-    slug: LICENSE_SLUG,
-    name: "기본 화기 라이선스",
-    category: "SPECIAL",
-    isAvailable: true,
-  });
+  await db.collection("master_items").insertMany([
+    {
+      slug: LICENSE_SLUG,
+      name: "기본 화기 라이선스",
+      category: "SPECIAL",
+      isAvailable: true,
+    },
+    {
+      slug: HEAVY_LICENSE_SLUG,
+      name: "중화기 라이선스",
+      category: "SPECIAL",
+      isAvailable: true,
+    },
+  ]);
 });
 
 after(async () => {
@@ -98,6 +114,7 @@ async function commitRedemption(challengeId, token, characterId) {
           characterCodename: `AGENT-${characterId}`,
           licenseSlug: LICENSE_SLUG,
           note: "integration test",
+          programVersion: 1,
         },
         { session },
       );
@@ -223,6 +240,113 @@ test(
     assert.ok(resolved.completedAt instanceof Date);
     assert.equal(request?.outcome.status, "failed");
     assert.ok(request?.outcome.completedAt instanceof Date);
+  },
+);
+
+test(
+  "v2 단계 재전송은 동일 진행도를 반환하고 모드·버전을 challenge에 고정한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const challenge = await startOrResumeTowaskiLicenseChallenge({
+      userId: "license-v2-user",
+      characterId: "license-v2-character",
+      characterCodename: "V2",
+      licenseSlug: LICENSE_SLUG,
+      difficulty: "basic",
+      programVersion: 2,
+      mode: "firearm",
+      requestId: "license-v2-start",
+    });
+    assert.equal(challenge.programVersion, 2);
+    assert.equal(challenge.mode, "firearm");
+    assert.equal(challenge.v2?.programVersion, 2);
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const scenario = challenge.v2.scenarios[0];
+    const request = {
+      challengeId: String(challenge._id),
+      userId: challenge.userId,
+      characterId: challenge.characterId,
+      step: 0,
+      input: {
+        mode: "firearm",
+        targetId: scenario.id,
+        fired: true,
+        shots: 1,
+      },
+      requestId: "license-v2-resolve",
+    };
+    const first = await resolveTowaskiLicenseChallengeStep(request);
+    const replay = await resolveTowaskiLicenseChallengeStep(request);
+
+    assert.equal(first.v2.progress.step, 1);
+    assert.equal(replay.v2.progress.step, 1);
+    assert.deepEqual(replay.v2.progress, first.v2.progress);
+  },
+);
+
+test(
+  "기존 고급 자격 갱신은 취득일·메모를 보존하고 자격 메타데이터만 v2로 교체한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const db = await getDb();
+    const master = await db
+      .collection("master_items")
+      .findOne({ slug: HEAVY_LICENSE_SLUG });
+    const acquiredAt = new Date("2025-01-02T03:04:05.000Z");
+    const originalNote = "기존 발급 메모";
+    const characterId = "license-renewal-character";
+    await db.collection("character_inventory").insertOne({
+      characterId,
+      characterCodename: "RENEWAL",
+      itemId: String(master._id),
+      itemName: master.name,
+      quantity: 1,
+      acquiredAt,
+      note: originalNote,
+      licenseQualification: {
+        authority: "TOWASKI",
+        programVersion: 1,
+        qualifiedAt: acquiredAt,
+        renewalDueAt: new Date("2025-02-01T03:04:05.000Z"),
+      },
+    });
+
+    await prepareTowaskiLicenseGrant(characterId, HEAVY_LICENSE_SLUG);
+    const session = (await getClient()).startSession();
+    try {
+      await session.withTransaction(async () => {
+        await grantTowaskiLicenseOnce(
+          {
+            characterId,
+            characterCodename: "RENEWAL",
+            licenseSlug: HEAVY_LICENSE_SLUG,
+            note: "새 메모로 덮어쓰면 안 됨",
+            programVersion: 2,
+          },
+          { session },
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    const entry = await db
+      .collection("character_inventory")
+      .findOne({ characterId });
+    assert.deepEqual(entry.acquiredAt, acquiredAt);
+    assert.equal(entry.note, originalNote);
+    assert.equal(entry.licenseQualification.programVersion, 2);
+    assert.equal(entry.licenseQualification.renewalDueAt, undefined);
+    assert.equal(
+      (
+        await getTowaskiLicenseQualificationStatus(
+          characterId,
+          HEAVY_LICENSE_SLUG,
+        )
+      ).state,
+      "active",
+    );
   },
 );
 

@@ -1062,6 +1062,21 @@ function buildTowaskiWelcomeLine(args: {
   return `${callsign} ${profileLine}`;
 }
 
+function formatTowaskiRenewalLabel(
+  qualification: NonNullable<
+    EquipmentShopCatalogEntry["licenseQualification"]
+  >,
+  detail = false,
+): string {
+  if (qualification.state === "renewal_overdue") {
+    return detail ? "갱신 기한 경과" : "갱신 시험 필요";
+  }
+  if (qualification.renewalDaysRemaining === undefined) {
+    return detail ? "갱신 필요 · 기한 미설정" : "갱신 시험 가능";
+  }
+  return `${detail ? "갱신 필요" : "갱신 시험"} D-${qualification.renewalDaysRemaining}`;
+}
+
 function buildTowaskiItemLine(
   item: EquipmentShopCatalogEntry,
   codename?: string | null,
@@ -2089,10 +2104,24 @@ export default function EquipmentShopClient({
       clearTowaskiIdleTimer();
       const line = getTowaskiQualificationDialogueLine(event);
       if (event.type === "start") {
+        const instruction = {
+          firearm:
+            "적성·민간 표적을 식별하고 민간 표적에는 사격하지 마십시오.",
+          precision:
+            "풍향을 보정해 조준을 안정시킨 뒤 표적마다 한 발만 발사하십시오.",
+          heavy:
+            "반동을 억제해 짧게 점사하고 과열과 횡단 인원을 피하십시오.",
+          flame:
+            "적성 구역만 소각하고 민간 구역과 연료통을 피하십시오.",
+          sonic:
+            "공진 주파수와 출력·파동 폭을 안전 범위에 맞추십시오.",
+          explosive:
+            "탄종·착탄점·신관과 로켓 후폭풍 발사선을 확인하십시오.",
+        }[event.mode ?? "firearm"];
         setNotice({
           tone: "info",
           title: "자격시험 시작",
-          text: "카운트다운 후 표적 판정이 시작됩니다. 민간 표적에는 사격하지 마십시오.",
+          text: `카운트다운 후 종별 판정이 시작됩니다. ${instruction}`,
         });
       } else if (event.type === "failed") {
         showFeedback(
@@ -2174,6 +2203,10 @@ export default function EquipmentShopClient({
     selectedItem && isTowaskiLicenseSlug(selectedItem.slug)
       ? getTowaskiLicenseTestProgram(selectedItem.slug)
       : null;
+  const selectedLicenseCanRenew = Boolean(
+    selectedItem?.licenseOwned &&
+      selectedItem.licenseQualification?.canTakeTest,
+  );
   const selectedLicenseBlocked = Boolean(
     selectedItem &&
       !canBypassPlayerServiceRestrictions &&
@@ -2203,7 +2236,7 @@ export default function EquipmentShopClient({
       selectedLicenseProgram &&
       canUseShop &&
       selectedItem.available &&
-      selectedItem.licenseOwned !== true &&
+      (selectedItem.licenseOwned !== true || selectedLicenseCanRenew) &&
       (!selectedLicenseProgram.requiresBasicLicense ||
         effectiveHasBasicLicense) &&
       !towaskiLicenseTestBusy,
@@ -2766,7 +2799,12 @@ export default function EquipmentShopClient({
   }
 
   function handleStartTowaskiLicenseTest(item: EquipmentShopCatalogEntry) {
-    if (!isTowaskiLicenseSlug(item.slug) || item.licenseOwned) return;
+    if (
+      !isTowaskiLicenseSlug(item.slug) ||
+      (item.licenseOwned && !item.licenseQualification?.canTakeTest)
+    ) {
+      return;
+    }
     const program = getTowaskiLicenseTestProgram(item.slug);
     if (
       program.requiresBasicLicense &&
@@ -3804,6 +3842,10 @@ export default function EquipmentShopClient({
                   isLicenseItem && isTowaskiLicenseSlug(item.slug)
                     ? getTowaskiLicenseTestProgram(item.slug)
                     : null;
+                const licenseCanRenew = Boolean(
+                  item.licenseOwned &&
+                    item.licenseQualification?.canTakeTest,
+                );
                 const licenseBlocked =
                   !canBypassPlayerServiceRestrictions &&
                   isEquipmentLicenseBlocked(item);
@@ -3825,7 +3867,7 @@ export default function EquipmentShopClient({
                   licenseProgram &&
                     canUseShop &&
                     !isSoldOut &&
-                    !item.licenseOwned &&
+                    (!item.licenseOwned || licenseCanRenew) &&
                     (!licenseProgram.requiresBasicLicense ||
                       effectiveHasBasicLicense) &&
                     !towaskiLicenseTestBusy,
@@ -3852,7 +3894,7 @@ export default function EquipmentShopClient({
                       !hasZonePurchaseAccess ||
                       !hasBasicPurchaseAccess ||
                       licenseBlocked ||
-                      item.licenseOwned
+                      (item.licenseOwned && !licenseCanRenew)
                         ? styles["productCard--locked"]
                         : "",
                     ]
@@ -3913,8 +3955,12 @@ export default function EquipmentShopClient({
                         : !effectiveHasMainCharacter
                           ? "AGENT 필요"
                         : isLicenseItem
-                          ? item.licenseOwned
+                          ? item.licenseOwned && !licenseCanRenew
                             ? "발급 완료"
+                            : licenseCanRenew
+                              ? formatTowaskiRenewalLabel(
+                                  item.licenseQualification!,
+                                )
                             : licenseProgram?.requiresBasicLicense &&
                                 !effectiveHasBasicLicense
                               ? "기초 화기 필요"
@@ -4010,8 +4056,14 @@ export default function EquipmentShopClient({
                       <small>품목 판정</small>
                       <strong>
                         {selectedIsLicenseItem
-                          ? selectedItem.licenseOwned
+                          ? selectedItem.licenseOwned &&
+                            !selectedLicenseCanRenew
                             ? "자격 발급 완료"
+                            : selectedLicenseCanRenew
+                              ? formatTowaskiRenewalLabel(
+                                  selectedItem.licenseQualification!,
+                                  true,
+                                )
                             : selectedLicenseProgram
                               ? `${selectedLicenseProgram.tierLabel} 시험 응시`
                               : "자격시험 확인"
@@ -4070,8 +4122,10 @@ export default function EquipmentShopClient({
                     }
                   >
                     {selectedIsLicenseItem
-                      ? selectedItem.licenseOwned
+                      ? selectedItem.licenseOwned && !selectedLicenseCanRenew
                         ? "발급 완료"
+                        : selectedLicenseCanRenew
+                          ? "갱신 자격시험 시작"
                         : !effectiveHasMainCharacter
                           ? "AGENT 필요"
                         : selectedLicenseProgram?.requiresBasicLicense &&

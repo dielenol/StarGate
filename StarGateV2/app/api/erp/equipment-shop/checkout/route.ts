@@ -60,6 +60,7 @@ import {
   type EquipmentLicenseRequirement,
 } from "@/lib/equipment-shop/licenses";
 import { TOWASKI_BASIC_FIREARM_LICENSE_SLUG } from "@/lib/equipment-shop/license-test";
+import { resolveTowaskiLicenseQualificationStatus } from "@/lib/equipment-shop/license-qualification";
 
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY_PER_ITEM = 1;
@@ -509,8 +510,22 @@ export async function POST(request: NextRequest) {
             .map((itemId) => licenseSlugByItemId.get(itemId))
             .filter(isTowaskiLicenseSlug),
         );
+        const entryByLicenseSlug = new Map(
+          inventory.flatMap((entry) => {
+            const slug = licenseSlugByItemId.get(entry.itemId);
+            return slug && entry.quantity > 0 ? [[slug, entry] as const] : [];
+          }),
+        );
+        const activeLicenseSlugs = new Set(
+          [...ownedLicenseSlugs].filter((licenseSlug) =>
+            resolveTowaskiLicenseQualificationStatus({
+              licenseSlug,
+              entry: entryByLicenseSlug.get(licenseSlug) ?? null,
+            }).grantsPurchaseAccess,
+          ),
+        );
 
-        const hasBasicLicense = ownedLicenseSlugs.has(
+        const hasBasicLicense = activeLicenseSlugs.has(
           TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
         );
 
@@ -519,7 +534,7 @@ export async function POST(request: NextRequest) {
             ? resolveEquipmentLicenseStatus({
                 character: transactionCharacter,
                 requirement: line.licenseRequirement,
-                ownedLicenseSlugs,
+                ownedLicenseSlugs: activeLicenseSlugs,
               })
             : undefined;
           const eligibility = evaluateEquipmentPurchaseEligibility({

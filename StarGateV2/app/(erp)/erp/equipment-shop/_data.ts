@@ -23,7 +23,8 @@ import {
 import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
 import {
   hasOwnedTowaskiLicense,
-  listOwnedTowaskiLicenseSlugs,
+  emptyTowaskiLicenseAccess,
+  listTowaskiLicenseAccess,
 } from "@/lib/db/equipment-licenses";
 import {
   applyAcheronArmorReferrals,
@@ -95,11 +96,11 @@ export async function buildEquipmentShopCatalogResponse(options: {
     secret: string;
   };
 } = {}): Promise<EquipmentShopCatalogResponse> {
-  const [masterItems, ownedLicenseSlugs, recentActivity] = await Promise.all([
+  const [masterItems, licenseAccess, recentActivity] = await Promise.all([
     listMasterItemsByCategoryFilter(EQUIPMENT_SHOP_CATEGORIES),
     options.characterId
-      ? listOwnedTowaskiLicenseSlugs(options.characterId)
-      : Promise.resolve(new Set<string>()),
+      ? listTowaskiLicenseAccess(options.characterId)
+      : Promise.resolve(emptyTowaskiLicenseAccess()),
     options.characterId
       ? listRecentEquipmentShopActivity(options.characterId).catch(() => [])
       : Promise.resolve([]),
@@ -112,7 +113,9 @@ export async function buildEquipmentShopCatalogResponse(options: {
     .filter((item) => !options.zone || item.zone === options.zone);
   const licensedItems = applyEquipmentShopLicenseContext(catalogItems, {
     character: options.character ?? null,
-    ownedLicenseSlugs,
+    ownedLicenseSlugs: licenseAccess.ownedLicenseSlugs,
+    activeLicenseSlugs: licenseAccess.activeLicenseSlugs,
+    qualificationStatuses: licenseAccess.qualificationStatuses,
   });
   const items = options.armorReferral
     ? applyAcheronArmorReferrals(licensedItems, options.armorReferral)

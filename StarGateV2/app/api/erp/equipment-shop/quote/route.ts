@@ -4,7 +4,10 @@ import { auth } from "@/lib/auth/config";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
-import { listOwnedTowaskiLicenseSlugs } from "@/lib/db/equipment-licenses";
+import {
+  emptyTowaskiLicenseAccess,
+  listTowaskiLicenseAccess,
+} from "@/lib/db/equipment-licenses";
 import { findMasterItemsBySlugsOrIds } from "@/lib/db/inventory";
 import {
   equipmentShopItemZone,
@@ -60,10 +63,10 @@ export async function POST(request: Request) {
   }
 
   const characterId = character?._id ? String(character._id) : null;
-  const [ownedLicenseSlugs, liveBalance] = await Promise.all([
+  const [licenseAccess, liveBalance] = await Promise.all([
     characterId
-      ? listOwnedTowaskiLicenseSlugs(characterId)
-      : Promise.resolve(new Set<string>()),
+      ? listTowaskiLicenseAccess(characterId)
+      : Promise.resolve(emptyTowaskiLicenseAccess()),
     characterId ? getCharacterBalance(characterId) : Promise.resolve(0),
   ]);
   const balanceOverride =
@@ -76,13 +79,15 @@ export async function POST(request: Request) {
   const hasBasicLicense =
     typeof body?.basicLicenseOverride === "boolean"
       ? body.basicLicenseOverride
-      : ownedLicenseSlugs.has(TOWASKI_BASIC_FIREARM_LICENSE_SLUG);
+      : licenseAccess.activeLicenseSlugs.has(
+          TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
+        );
   const requirement = getEquipmentLicenseRequirement(item);
   const licenseStatus = requirement
     ? resolveEquipmentLicenseStatus({
         character: character ?? { codename: "DEBUG CHARACTER" },
         requirement,
-        ownedLicenseSlugs,
+        ownedLicenseSlugs: licenseAccess.activeLicenseSlugs,
       })
     : undefined;
   const simulatePlayerRules = body?.simulatePlayerRules !== false;
@@ -94,7 +99,8 @@ export async function POST(request: Request) {
     price,
     balance,
     licenseOwned:
-      isTowaskiLicenseSlug(item.slug) && ownedLicenseSlugs.has(item.slug),
+      isTowaskiLicenseSlug(item.slug) &&
+      licenseAccess.ownedLicenseSlugs.has(item.slug),
     ...(requirement ? { licenseRequirement: requirement } : {}),
     ...(licenseStatus ? { licenseStatus } : {}),
   });

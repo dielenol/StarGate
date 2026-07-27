@@ -61,6 +61,13 @@ export interface EquipmentChargeState {
   maximum: number;
 }
 
+export interface LicenseQualification {
+  authority: "TOWASKI";
+  programVersion: number;
+  qualifiedAt: Date;
+  renewalDueAt?: Date;
+}
+
 export interface MasterItem {
   _id?: ObjectId;
   /**
@@ -144,6 +151,8 @@ export interface CharacterInventory {
   equippedAt?: Date;
   /** equipmentAction을 가진 장비 인스턴스의 충전 상태. */
   equipmentCharge?: EquipmentChargeState;
+  /** 라이선스 아이템의 시험 버전과 갱신 기한. 일반 아이템에는 미설정한다. */
+  licenseQualification?: LicenseQualification;
 }
 
 export type SharedInventoryScope = "GLOBAL";

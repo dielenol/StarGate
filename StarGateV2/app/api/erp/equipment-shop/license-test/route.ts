@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 
 import { NextResponse } from "next/server";
-import { charactersCol, getClient, usersCol } from "@stargate/shared-db";
+import {
+  charactersCol,
+  getClient,
+  masterItemsCol,
+  usersCol,
+} from "@stargate/shared-db";
 import { ObjectId } from "mongodb";
 
 import {
@@ -16,13 +21,14 @@ import {
   markTowaskiLicenseChallengeRedeemed,
   releaseTowaskiLicenseChallengeRedemption,
   resolveTowaskiLicenseChallengeRound,
+  resolveTowaskiLicenseChallengeStep,
   startOrResumeTowaskiLicenseChallenge,
   TowaskiLicenseChallengeError,
   type TowaskiLicenseChallenge,
 } from "@/lib/db/equipment-license-tests";
 import {
+  getTowaskiLicenseQualificationStatus,
   grantTowaskiLicenseOnce,
-  hasOwnedTowaskiLicense,
   prepareTowaskiLicenseGrant,
 } from "@/lib/db/equipment-licenses";
 import { findMasterItemBySlug } from "@/lib/db/inventory";
@@ -36,6 +42,11 @@ import {
   type TowaskiLicenseTestResponse,
   type TowaskiLicenseTestStats,
 } from "@/lib/equipment-shop/license-test";
+import {
+  evaluateTowaskiLicenseProgramProgress,
+  getTowaskiLicenseStepWindowMs,
+  TOWASKI_LICENSE_PROGRAM_VERSION,
+} from "@/lib/equipment-shop/license-test-v2";
 import {
   TOWASKI_LICENSE_DEFINITIONS,
   type TowaskiLicenseSlug,
@@ -65,14 +76,53 @@ function challengeStats(
   };
 }
 
+function pinnedChallengeProgramVersion(
+  challenge: TowaskiLicenseChallenge,
+): number {
+  if (
+    !challenge.v2 ||
+    challenge.programVersion !== TOWASKI_LICENSE_PROGRAM_VERSION ||
+    challenge.v2.programVersion !== challenge.programVersion ||
+    challenge.mode !== challenge.v2.mode
+  ) {
+    throw new TowaskiLicenseChallengeError(
+      "INVALID_LICENSE_TEST",
+      "지원하지 않거나 버전 정보가 손상된 자격시험입니다.",
+    );
+  }
+  return challenge.programVersion;
+}
+
 function activeResponse(
   challenge: TowaskiLicenseChallenge,
 ): TowaskiLicenseTestResponse | null {
   const challengeId = challenge._id?.toString();
+  if (challengeId && challenge.v2 && challenge.mode) {
+    const programVersion = pinnedChallengeProgramVersion(challenge);
+    const scenario = challenge.v2.scenarios[challenge.v2.progress.step];
+    if (!scenario) return null;
+    return {
+      status: "active",
+      programVersion,
+      mode: challenge.mode,
+      challengeId,
+      step: challenge.v2.progress.step,
+      scenario,
+      licenseSlug: challenge.licenseSlug,
+      difficulty: challenge.difficulty ?? "standard",
+      progress: challenge.v2.progress,
+      stepDeadlineAt: new Date(
+        challenge.roundStartedAt.getTime() +
+          getTowaskiLicenseStepWindowMs(scenario),
+      ).toISOString(),
+    };
+  }
   const target = challenge.sequence[challenge.currentRound];
   if (!challengeId || !target) return null;
   return {
     status: "active",
+    programVersion: 1,
+    mode: "firearm",
     challengeId,
     round: challenge.currentRound,
     target,
@@ -88,6 +138,12 @@ function activeResponse(
 }
 
 function challengeEvaluation(challenge: TowaskiLicenseChallenge) {
+  if (challenge.v2) {
+    return evaluateTowaskiLicenseProgramProgress(
+      pinnedChallengeProgramVersion(challenge),
+      challenge.v2.progress,
+    );
+  }
   const completedAt = challenge.completedAt ?? new Date();
   return evaluateTowaskiBasicLicenseTest(
     {
@@ -96,6 +152,69 @@ function challengeEvaluation(challenge: TowaskiLicenseChallenge) {
     },
     challenge.difficulty ?? "standard",
   );
+}
+
+function expectedChallengeProgramVersion(
+  challenge: TowaskiLicenseChallenge,
+): number {
+  return challenge.v2
+    ? pinnedChallengeProgramVersion(challenge)
+    : (challenge.programVersion ?? 1);
+}
+
+function qualificationCoversChallenge(
+  qualification: Awaited<
+    ReturnType<typeof getTowaskiLicenseQualificationStatus>
+  >,
+  challenge: TowaskiLicenseChallenge,
+): boolean {
+  return (
+    qualification.owned &&
+    (qualification.programVersion ?? 0) >=
+      expectedChallengeProgramVersion(challenge)
+  );
+}
+
+function failedResponse(
+  challenge: TowaskiLicenseChallenge,
+  challengeId: string,
+): Extract<TowaskiLicenseTestResponse, { status: "failed" }> {
+  if (challenge.v2 && challenge.mode) {
+    const programVersion = pinnedChallengeProgramVersion(challenge);
+    const evaluation = evaluateTowaskiLicenseProgramProgress(
+      programVersion,
+      challenge.v2.progress,
+    );
+    return {
+      status: "failed",
+      programVersion,
+      mode: challenge.mode,
+      challengeId,
+      licenseSlug: challenge.licenseSlug,
+      difficulty: challenge.difficulty ?? "standard",
+      progress: challenge.v2.progress,
+      evaluation,
+    };
+  }
+  const evaluation = evaluateTowaskiBasicLicenseTest(
+    {
+      ...challengeStats(challenge),
+      durationMs:
+        (challenge.completedAt ?? new Date()).getTime() -
+        challenge.startedAt.getTime(),
+    },
+    challenge.difficulty ?? "standard",
+  );
+  return {
+    status: "failed",
+    programVersion: 1,
+    mode: "firearm",
+    challengeId,
+    licenseSlug: challenge.licenseSlug,
+    difficulty: challenge.difficulty ?? "standard",
+    stats: challengeStats(challenge),
+    evaluation,
+  };
 }
 
 function challengeErrorResponse(error: TowaskiLicenseChallengeError) {
@@ -146,8 +265,21 @@ export async function GET(request: Request) {
   }
   const { challenge } = result;
   const license = TOWASKI_LICENSE_DEFINITIONS[challenge.licenseSlug];
-  if (await hasOwnedTowaskiLicense(characterId, challenge.licenseSlug)) {
-    return NextResponse.json({ status: "already_owned", license });
+  const qualification = await getTowaskiLicenseQualificationStatus(
+    characterId,
+    challenge.licenseSlug,
+  );
+  if (
+    (qualification.owned && !qualification.canTakeTest) ||
+    (challenge.status === "redeemed" &&
+      qualificationCoversChallenge(qualification, challenge))
+  ) {
+    return NextResponse.json({
+      status: "already_owned",
+      license,
+      programVersion: expectedChallengeProgramVersion(challenge),
+      mode: challenge.mode ?? "firearm",
+    } satisfies TowaskiLicenseTestResponse);
   }
   const challengeId = challenge._id?.toString();
   if (!challengeId) {
@@ -162,29 +294,32 @@ export async function GET(request: Request) {
   }
   const evaluation = challengeEvaluation(challenge);
   if (challenge.status === "failed" || !evaluation.passed) {
-    return NextResponse.json({
-      status: "failed",
-      challengeId,
-      licenseSlug: challenge.licenseSlug,
-      difficulty: challenge.difficulty ?? "standard",
-      stats: challengeStats(challenge),
-      evaluation,
-    } satisfies TowaskiLicenseTestResponse);
+    return NextResponse.json(failedResponse(challenge, challengeId));
   }
   return NextResponse.json({
     status: "processing",
     challengeId,
     licenseSlug: challenge.licenseSlug,
     difficulty: challenge.difficulty ?? "standard",
+    programVersion: expectedChallengeProgramVersion(challenge),
+    mode: challenge.mode ?? "firearm",
   } satisfies TowaskiLicenseTestResponse);
 }
 
-async function waitForOwnedTowaskiLicense(
+async function waitForCurrentTowaskiLicense(
   characterId: string,
   licenseSlug: TowaskiLicenseSlug,
+  programVersion: number,
 ): Promise<boolean> {
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    if (await hasOwnedTowaskiLicense(characterId, licenseSlug)) {
+    const qualification = await getTowaskiLicenseQualificationStatus(
+      characterId,
+      licenseSlug,
+    );
+    if (
+      qualification.owned &&
+      (qualification.programVersion ?? 0) >= programVersion
+    ) {
       return true;
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -261,15 +396,27 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
-    if (await hasOwnedTowaskiLicense(characterId, body.licenseSlug)) {
-      return NextResponse.json({ status: "already_owned", license });
+    const qualification = await getTowaskiLicenseQualificationStatus(
+      characterId,
+      body.licenseSlug,
+    );
+    if (qualification.owned && !qualification.canTakeTest) {
+      return NextResponse.json({
+        status: "already_owned",
+        license,
+        programVersion: program.programVersion,
+        mode: program.mode,
+      } satisfies TowaskiLicenseTestResponse);
     }
-    if (
-      program.requiresBasicLicense &&
-      !(await hasOwnedTowaskiLicense(
+    const basicQualification = program.requiresBasicLicense
+      ? await getTowaskiLicenseQualificationStatus(
         characterId,
         TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
-      ))
+      )
+      : null;
+    if (
+      program.requiresBasicLicense &&
+      !basicQualification?.grantsPurchaseAccess
     ) {
       return NextResponse.json(
         {
@@ -286,6 +433,8 @@ export async function POST(request: Request) {
         characterCodename: mainCharacter.codename,
         licenseSlug: body.licenseSlug,
         difficulty: program.difficulty,
+        programVersion: program.programVersion,
+        mode: program.mode,
         requestId,
       });
       if (!challenge._id) throw new Error("사격 시험 challenge ID 발급 실패");
@@ -314,12 +463,25 @@ export async function POST(request: Request) {
   } else {
     challengeId = body.challengeId;
     try {
-      challenge = await resolveTowaskiLicenseChallengeRound({
-        ...body,
-        userId: session.user.id,
-        characterId,
-        requestId,
-      });
+      challenge =
+        "step" in body
+          ? await resolveTowaskiLicenseChallengeStep({
+              challengeId: body.challengeId,
+              step: body.step,
+              input: body.input,
+              userId: session.user.id,
+              characterId,
+              requestId,
+            })
+          : await resolveTowaskiLicenseChallengeRound({
+              challengeId: body.challengeId,
+              round: body.round,
+              hit: body.hit,
+              shots: body.shots,
+              userId: session.user.id,
+              characterId,
+              requestId,
+            });
     } catch (error) {
       if (error instanceof TowaskiLicenseChallengeError) {
         return challengeErrorResponse(error);
@@ -332,10 +494,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (
-      challenge.status === "active" &&
-      challenge.currentRound < challenge.sequence.length
-    ) {
+    if (challenge.status === "active") {
       const response = activeResponse(challenge);
       if (response) return NextResponse.json(response);
     }
@@ -345,6 +504,7 @@ export async function POST(request: Request) {
   const licenseSlug = challenge.licenseSlug;
   const license = TOWASKI_LICENSE_DEFINITIONS[licenseSlug];
   const program = getTowaskiLicenseTestProgram(licenseSlug);
+  const challengeProgramVersion = expectedChallengeProgramVersion(challenge);
   if (!(await isTowaskiLicenseTestAvailable(licenseSlug))) {
     return NextResponse.json(
       {
@@ -354,12 +514,15 @@ export async function POST(request: Request) {
       { status: 409 },
     );
   }
-  if (
-    program.requiresBasicLicense &&
-    !(await hasOwnedTowaskiLicense(
+  const basicQualification = program.requiresBasicLicense
+    ? await getTowaskiLicenseQualificationStatus(
       characterId,
       TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
-    ))
+    )
+    : null;
+  if (
+    program.requiresBasicLicense &&
+    !basicQualification?.grantsPurchaseAccess
   ) {
     return NextResponse.json(
       {
@@ -372,14 +535,7 @@ export async function POST(request: Request) {
   const evaluation = challengeEvaluation(challenge);
 
   if (challenge.status === "failed" || !evaluation.passed) {
-    return NextResponse.json({
-      status: "failed",
-      challengeId,
-      licenseSlug,
-      difficulty: challenge.difficulty ?? "standard",
-      stats: challengeStats(challenge),
-      evaluation,
-    } satisfies TowaskiLicenseTestResponse);
+    return NextResponse.json(failedResponse(challenge, challengeId));
   }
 
   const redemptionToken = randomUUID();
@@ -390,11 +546,19 @@ export async function POST(request: Request) {
       redemptionToken,
     ));
   if (!redemptionClaimed) {
-    if (await waitForOwnedTowaskiLicense(characterId, licenseSlug)) {
+    if (
+      await waitForCurrentTowaskiLicense(
+        characterId,
+        licenseSlug,
+        challengeProgramVersion,
+      )
+    ) {
       return NextResponse.json({
         status: "already_owned",
         license,
         difficulty: challenge.difficulty ?? "standard",
+        programVersion: challengeProgramVersion,
+        mode: challenge.mode ?? "firearm",
         evaluation,
       } satisfies TowaskiLicenseTestResponse);
     }
@@ -450,13 +614,32 @@ export async function POST(request: Request) {
           }
         }
 
+        const transactionLicenseItem = await (await masterItemsCol()).findOne(
+          { slug: licenseSlug },
+          { session: mongoSession },
+        );
         if (
-          program.requiresBasicLicense &&
-          !(await hasOwnedTowaskiLicense(
+          !transactionLicenseItem?._id ||
+          transactionLicenseItem.isPublic === false ||
+          transactionLicenseItem.isAvailable === false ||
+          equipmentShopItemZone(transactionLicenseItem) !== "towaski"
+        ) {
+          throw new TowaskiLicenseChallengeError(
+            "LICENSE_TEST_CONFLICT",
+            "자격시험 운영 상태가 변경되어 라이선스를 발급할 수 없습니다.",
+          );
+        }
+
+        const transactionBasicQualification = program.requiresBasicLicense
+          ? await getTowaskiLicenseQualificationStatus(
             characterId,
             TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
             { session: mongoSession },
-          ))
+          )
+          : null;
+        if (
+          program.requiresBasicLicense &&
+          !transactionBasicQualification?.grantsPurchaseAccess
         ) {
           throw new TowaskiLicenseChallengeError(
             "LICENSE_TEST_CONFLICT",
@@ -469,6 +652,7 @@ export async function POST(request: Request) {
             characterCodename: mainCharacter.codename,
             licenseSlug,
             note: `${license.name} 자격시험 합격`,
+            programVersion: challengeProgramVersion,
           },
           { session: mongoSession },
         );
@@ -507,6 +691,8 @@ export async function POST(request: Request) {
         status: result.granted ? "granted" : "already_owned",
         license,
         difficulty: challenge.difficulty ?? "standard",
+        programVersion: challengeProgramVersion,
+        mode: challenge.mode ?? "firearm",
         evaluation,
       } satisfies TowaskiLicenseTestResponse,
       { status: result.granted ? 201 : 200 },

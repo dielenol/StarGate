@@ -26,6 +26,15 @@ const MAX_OFFER_LINES = 50;
 const MAX_ITEM_QUANTITY = 999;
 const MAX_STOCK_SHARES = 1_000_000_000;
 const MAX_CREDITS = 1_000_000_000;
+const NON_TRANSFERABLE_ITEM_SLUG_PREFIXES = ["towaski-license-"] as const;
+
+export function isPlayerTradeItemSlugTransferable(
+  slug: string | null | undefined,
+): boolean {
+  return !NON_TRANSFERABLE_ITEM_SLUG_PREFIXES.some((prefix) =>
+    slug?.startsWith(prefix),
+  );
+}
 
 export const EMPTY_PLAYER_TRADE_OFFER: PlayerTradeOffer = {
   credits: 0,
@@ -270,7 +279,8 @@ async function validateOwnedOffer(
       entry.equipmentCharge ||
       master.equipmentAction ||
       master.isPublic === false ||
-      master.workshop
+      master.workshop ||
+      !isPlayerTradeItemSlugTransferable(master.slug)
     ) {
       throw new PlayerTradeError(
         "ITEM_NOT_TRANSFERABLE",

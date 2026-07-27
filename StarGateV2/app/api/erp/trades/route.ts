@@ -1,3 +1,4 @@
+import { isPlayerTradeItemSlugTransferable } from "@stargate/shared-db";
 import { NextResponse, after } from "next/server";
 
 import type {
@@ -119,7 +120,8 @@ export async function GET() {
           !entry.equipmentCharge &&
           !entry.equipmentAction &&
           !entry.workshop &&
-          entry.isPublic !== false,
+          entry.isPublic !== false &&
+          isPlayerTradeItemSlugTransferable(entry.slug),
       )
       .map((entry) => ({
         itemId: entry.itemId,

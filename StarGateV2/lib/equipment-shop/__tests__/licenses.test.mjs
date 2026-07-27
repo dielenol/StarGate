@@ -293,3 +293,44 @@ test("catalog context marks owned licenses and unlocks their equipment", () => {
   assert.equal(sniper.licenseStatus.satisfied, true);
   assert.equal(sniper.licenseStatus.source, "owned_license");
 });
+
+test("overdue qualification remains owned but no longer unlocks a new purchase", () => {
+  const ownedLicenseSlugs = new Set(["towaski-license-heavy-weapon"]);
+  const qualification = {
+    state: "renewal_overdue",
+    owned: true,
+    grantsPurchaseAccess: false,
+    canTakeTest: true,
+    programVersion: 1,
+    qualifiedAt: "2026-01-01T00:00:00.000Z",
+    renewalDueAt: "2026-02-01T00:00:00.000Z",
+    renewalDaysRemaining: 0,
+  };
+  const context = {
+    character: { codename: "UNTRAINED" },
+    ownedLicenseSlugs,
+    activeLicenseSlugs: new Set(),
+    qualificationStatuses: {
+      "towaski-license-heavy-weapon": qualification,
+    },
+  };
+
+  const license = resolveEquipmentCatalogLicenseContext(
+    {
+      slug: "towaski-license-heavy-weapon",
+      name: "토와스키 중화기 라이센스",
+    },
+    context,
+  );
+  const weapon = resolveEquipmentCatalogLicenseContext(
+    {
+      slug: "basic-heavy-machine-gun",
+      name: "보급형 중기관총",
+    },
+    context,
+  );
+
+  assert.equal(license.licenseOwned, true);
+  assert.equal(license.licenseQualification.state, "renewal_overdue");
+  assert.equal(weapon.licenseStatus.satisfied, false);
+});

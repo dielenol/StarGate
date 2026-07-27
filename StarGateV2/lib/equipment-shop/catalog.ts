@@ -1,5 +1,6 @@
 import type { ItemCategory, MasterItem } from "@stargate/shared-db/types";
 
+import type { TowaskiLicenseQualificationStatus } from "./license-qualification";
 import {
   getEquipmentLicenseRequirement,
   isTowaskiCatalogAllowlistedSlug,
@@ -48,6 +49,7 @@ export interface EquipmentShopCatalogItem {
   >;
   licenseStatus?: EquipmentLicenseStatus;
   licenseOwned?: boolean;
+  licenseQualification?: TowaskiLicenseQualificationStatus;
 }
 
 const CATEGORY_LABELS: Record<EquipmentShopCategory, string> = {
@@ -242,6 +244,10 @@ export function applyEquipmentShopLicenseContext(
   context: {
     character: EquipmentLicenseCharacter | null;
     ownedLicenseSlugs: ReadonlySet<string>;
+    activeLicenseSlugs?: ReadonlySet<string>;
+    qualificationStatuses?: Parameters<
+      typeof resolveEquipmentCatalogLicenseContext
+    >[1]["qualificationStatuses"];
   },
 ): EquipmentShopCatalogItem[] {
   return items.map((item) => ({

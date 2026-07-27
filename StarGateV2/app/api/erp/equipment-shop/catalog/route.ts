@@ -12,7 +12,10 @@ import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-acces
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import { listRecentEquipmentShopActivity } from "@/lib/db/equipment-shop-activity";
-import { listOwnedTowaskiLicenseSlugs } from "@/lib/db/equipment-licenses";
+import {
+  emptyTowaskiLicenseAccess,
+  listTowaskiLicenseAccess,
+} from "@/lib/db/equipment-licenses";
 import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
 import {
   applyAcheronArmorReferrals,
@@ -52,11 +55,11 @@ export async function GET(request: NextRequest) {
 
   try {
     const mainCharacter = await findMainCharacterByOwner(session.user.id);
-    const [masterItems, ownedLicenseSlugs, recentActivity] = await Promise.all([
+    const [masterItems, licenseAccess, recentActivity] = await Promise.all([
       listMasterItemsByCategoryFilter(EQUIPMENT_SHOP_CATEGORIES),
       mainCharacter?._id
-        ? listOwnedTowaskiLicenseSlugs(String(mainCharacter._id))
-        : Promise.resolve(new Set<string>()),
+        ? listTowaskiLicenseAccess(String(mainCharacter._id))
+        : Promise.resolve(emptyTowaskiLicenseAccess()),
       mainCharacter?._id
         ? listRecentEquipmentShopActivity(String(mainCharacter._id)).catch(() => [])
         : Promise.resolve([]),
@@ -71,7 +74,9 @@ export async function GET(request: NextRequest) {
     );
     const licensedItems = applyEquipmentShopLicenseContext(scopedItems, {
       character: mainCharacter,
-      ownedLicenseSlugs,
+      ownedLicenseSlugs: licenseAccess.ownedLicenseSlugs,
+      activeLicenseSlugs: licenseAccess.activeLicenseSlugs,
+      qualificationStatuses: licenseAccess.qualificationStatuses,
     });
     const secret = process.env.AUTH_SECRET;
     const characterId = mainCharacter?._id ? String(mainCharacter._id) : null;

@@ -1,4 +1,5 @@
 import type { MasterItem } from "@stargate/shared-db/types";
+import type { TowaskiLicenseQualificationStatus } from "./license-qualification";
 
 export type TowaskiLicenseSlug =
   | "towaski-license-basic-firearm"
@@ -52,6 +53,7 @@ export function hasTowaskiBasicPurchaseAccess(args: {
 export interface EquipmentCatalogLicenseContext {
   licenseStatus?: EquipmentLicenseStatus;
   licenseOwned?: boolean;
+  licenseQualification?: TowaskiLicenseQualificationStatus;
 }
 
 export interface EquipmentLicenseCharacter {
@@ -341,10 +343,17 @@ export function resolveEquipmentCatalogLicenseContext(
   context: {
     character: EquipmentLicenseCharacter | null;
     ownedLicenseSlugs: ReadonlySet<string>;
+    activeLicenseSlugs?: ReadonlySet<string>;
+    qualificationStatuses?: Partial<
+      Record<TowaskiLicenseSlug, TowaskiLicenseQualificationStatus>
+    >;
   },
 ): EquipmentCatalogLicenseContext {
   const licenseOwned = isTowaskiLicenseSlug(item.slug)
     ? context.ownedLicenseSlugs.has(item.slug)
+    : undefined;
+  const licenseQualification = isTowaskiLicenseSlug(item.slug)
+    ? context.qualificationStatuses?.[item.slug]
     : undefined;
   const requirement = getEquipmentLicenseRequirement(item);
   const licenseStatus = requirement
@@ -352,13 +361,15 @@ export function resolveEquipmentCatalogLicenseContext(
       ? resolveEquipmentLicenseStatus({
           character: context.character,
           requirement,
-          ownedLicenseSlugs: context.ownedLicenseSlugs,
+          ownedLicenseSlugs:
+            context.activeLicenseSlugs ?? context.ownedLicenseSlugs,
         })
       : { satisfied: false as const, source: null }
     : undefined;
 
   return {
     ...(licenseOwned !== undefined ? { licenseOwned } : {}),
+    ...(licenseQualification ? { licenseQualification } : {}),
     ...(licenseStatus ? { licenseStatus } : {}),
   };
 }
