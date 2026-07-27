@@ -17,8 +17,8 @@ import {
 
 import {
   compareIndexSpec,
-  type RequiredIndexSpec,
 } from "./index-spec.ts";
+import { WORKER_REQUIRED_INDEXES } from "./worker-index-specs.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "..");
@@ -36,129 +36,6 @@ interface ExplainCheck {
   filter: (now: Date) => Filter<Document>;
   sort: Sort;
 }
-
-const REQUIRED_INDEXES: RequiredIndexSpec[] = [
-  {
-    collection: "credit_transactions",
-    name: "credit_transactions_dailyAllowance_unique",
-    key: { "metadata.dailyAllowanceDate": 1, characterId: 1 },
-    unique: true,
-    partialFilterExpression: { "metadata.dailyAllowance": true },
-  },
-  {
-    collection: "shared_inventory",
-    name: "shared_inventory_scope_itemId_unique",
-    key: { scope: 1, itemId: 1 },
-    unique: true,
-  },
-  {
-    collection: "shop_daily_stock",
-    name: "shop_daily_stock_itemId_unique",
-    key: { itemId: 1 },
-    unique: true,
-  },
-  {
-    collection: "stock_prices",
-    name: "stock_prices_ticker_unique",
-    key: { ticker: 1 },
-    unique: true,
-  },
-  {
-    collection: "notifications",
-    name: "notifications_dedupeKey_partial_unique",
-    key: { dedupeKey: 1 },
-    unique: true,
-    partialFilterExpression: { dedupeKey: { $type: "string" } },
-  },
-  {
-    collection: "stock_price_history",
-    name: "stock_price_history_operationKey_partial_unique",
-    key: { operationKey: 1 },
-    unique: true,
-    partialFilterExpression: { operationKey: { $type: "string" } },
-  },
-  {
-    collection: "stock_price_history",
-    name: "stock_price_history_ttl",
-    key: { createdAt: 1 },
-    expireAfterSeconds: 30 * 24 * 60 * 60,
-  },
-  {
-    collection: "scheduled_job_runs",
-    name: "scheduled_job_runs_jobName_slotKey_unique",
-    key: { jobName: 1, slotKey: 1 },
-    unique: true,
-  },
-  {
-    collection: "scheduled_job_runs",
-    name: "scheduled_job_runs_status_availableAt_leaseUntil",
-    key: { status: 1, availableAt: 1, leaseUntil: 1 },
-  },
-  {
-    collection: "integration_outbox",
-    name: "integration_outbox_dedupeKey_unique",
-    key: { dedupeKey: 1 },
-    unique: true,
-  },
-  {
-    collection: "integration_outbox",
-    name: "integration_outbox_status_availableAt_createdAt",
-    key: { status: 1, availableAt: 1, createdAt: 1, _id: 1 },
-  },
-  {
-    collection: "integration_outbox",
-    name: "integration_outbox_kind_status_availableAt_createdAt",
-    key: {
-      kind: 1,
-      status: 1,
-      availableAt: 1,
-      createdAt: 1,
-      _id: 1,
-    },
-  },
-  {
-    collection: "integration_outbox",
-    name: "integration_outbox_status_leaseUntil_createdAt",
-    key: { status: 1, leaseUntil: 1, createdAt: 1, _id: 1 },
-  },
-  {
-    collection: "integration_outbox",
-    name: "integration_outbox_kind_status_leaseUntil_createdAt",
-    key: {
-      kind: 1,
-      status: 1,
-      leaseUntil: 1,
-      createdAt: 1,
-      _id: 1,
-    },
-  },
-  {
-    collection: "worker_checkpoints",
-    name: "worker_checkpoints_name_unique",
-    key: { name: 1 },
-    unique: true,
-  },
-  {
-    collection: "research_discord_cards",
-    name: "research_discord_cards_due",
-    key: { nextAttemptAt: 1, leaseExpiresAt: 1, updatedAt: 1 },
-  },
-  {
-    collection: "equipment_workshop_requests",
-    name: "equipment_workshop_requests_discord_dm_outbox",
-    key: { "discordDmOutbox.availableAt": 1, updatedAt: 1 },
-  },
-  {
-    collection: "sessions",
-    name: "sessions_finalization_pending_claimLease",
-    key: {
-      finalizationPending: 1,
-      status: 1,
-      finalizationClaimLeaseUntil: 1,
-      finalizationRequestedAt: 1,
-    },
-  },
-];
 
 const DUPLICATE_CHECKS: DuplicateCheck[] = [
   {
@@ -408,8 +285,9 @@ initServerless({ uri: preflightUri, dbName, maxPoolSize: 5 });
 
 try {
   const db = await getDb();
+  const now = new Date();
   const indexResults = [];
-  for (const required of REQUIRED_INDEXES) {
+  for (const required of WORKER_REQUIRED_INDEXES) {
     try {
       const indexes = await db
         .collection(required.collection)
@@ -434,6 +312,51 @@ try {
         present: false,
         valid: false,
         issues: ["collection_missing"],
+      });
+    }
+  }
+
+  const ttlImpacts = [];
+  for (const required of WORKER_REQUIRED_INDEXES.filter(
+    (index) => index.expireAfterSeconds !== undefined,
+  )) {
+    const field = Object.keys(required.key)[0];
+    if (!field || Object.keys(required.key).length !== 1) {
+      throw new Error(
+        `TTL index must have exactly one key: ${required.collection}.${required.name}`,
+      );
+    }
+    const cutoff = new Date(
+      now.getTime() - required.expireAfterSeconds! * 1_000,
+    );
+    try {
+      const expiredDocuments = await db
+        .collection(required.collection)
+        .countDocuments({ [field]: { $lt: cutoff } });
+      const indexResult = indexResults.find(
+        (result) =>
+          result.collection === required.collection &&
+          result.name === required.name,
+      );
+      ttlImpacts.push({
+        collection: required.collection,
+        name: required.name,
+        present: indexResult?.present ?? false,
+        cutoff: cutoff.toISOString(),
+        expiredDocuments,
+        wouldBeginDeletion:
+          indexResult?.present !== true && expiredDocuments > 0,
+      });
+    } catch (error) {
+      if (!isNamespaceMissing(error)) throw error;
+      ttlImpacts.push({
+        collection: required.collection,
+        name: required.name,
+        present: false,
+        cutoff: cutoff.toISOString(),
+        expiredDocuments: 0,
+        wouldBeginDeletion: false,
+        collectionMissing: true,
       });
     }
   }
@@ -465,7 +388,6 @@ try {
     }
   }
 
-  const now = new Date();
   const explainResults = [];
   for (const check of EXPLAIN_CHECKS) {
     try {
@@ -523,6 +445,7 @@ try {
         checkedAt: now.toISOString(),
         dbName,
         indexes: indexResults,
+        ttlImpacts,
         duplicates: duplicateResults,
         explains: explainResults,
         blockers,

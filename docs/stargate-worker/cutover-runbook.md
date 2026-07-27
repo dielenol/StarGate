@@ -18,10 +18,12 @@
 아래 순서는 바꾸지 않는다.
 
 1. read-only preflight를 실행해 중복과 현재 index spec을 기록한다.
-2. 누락·불일치 index가 있으면 대상 DB, 생성/교체할 정확한 spec, 예상 lock/부하를 제시해 별도 승인을 받는다.
-3. 승인된 경우에만 `pnpm db:ensure-indexes` one-shot을 실행한다. `MONGODB_DB_NAME`과 `DB_NAME` 중 실제 대상 DB 이름을 명시하고 출력의 `dbName`을 대조한다.
-4. read-only preflight를 다시 실행해 blocker 0건과 exact spec 일치를 확인한다.
-5. 그 뒤에만 `integration_outbox` writer가 포함된 StarGateV2와 worker 코드를 배포한다.
+2. 누락·불일치 index가 있으면 대상 DB, 생성할 정확한 spec, 예상 lock/부하를 제시해 별도 승인을 받는다. 기존 동명 index의 spec이 다르면 one-shot은 교체하거나 drop하지 않고 mutation 전에 실패한다.
+3. preflight의 `ttlImpacts`에서 30일 초과 `stock_price_history` 건수와 `wouldBeginDeletion`을 확인한다. TTL index가 누락됐고 삭제 대상이 있으면 예상 삭제량을 별도로 승인받고 `WORKER_INDEX_TTL_PURGE_CONFIRM`에 그 건수를 정확히 지정한다.
+4. 승인된 경우에만 대상 DB 이름을 `MONGODB_DB_NAME` 또는 `DB_NAME`에 명시하고 같은 값을 `WORKER_INDEX_TARGET_DB`에 지정한 뒤 `pnpm db:ensure-worker-indexes` one-shot을 실행한다. 두 DB 변수가 충돌하거나 확인값이 없으면 실행은 mutation 전에 실패한다. 이 명령은 preflight와 같은 18개 worker 필수 index만 생성하며 다른 index를 생성·삭제·교체하지 않는다. TTL index는 마지막에 생성한다.
+5. 여러 컬렉션의 index 생성은 원자적이지 않다. 중간 실패 시 추가 mutation을 중단하고 read-only preflight를 다시 실행해 생성된 항목과 남은 blocker를 확인한 뒤 재시도 승인을 받는다.
+6. read-only preflight를 다시 실행해 blocker 0건과 exact spec 일치를 확인한다.
+7. 그 뒤에만 `integration_outbox` writer가 포함된 StarGateV2와 worker 코드를 배포한다.
 
 운영 index 적용 전에 main merge나 Vercel production 배포를 진행하지 않는다. 코드 구현 승인은 index 생성 승인이 아니며, 이 단계에서 Codex가 live 명령을 자동 실행하지 않는다.
 

@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit && tsc -p scripts/tsconfig.json --noEmit",
     "optimize:images": "node scripts/optimize-public-images.mjs",
     "db:ensure-indexes": "pnpm --filter @stargate/shared-db build && node --experimental-strip-types scripts/ensure-indexes.ts",
+    "db:ensure-worker-indexes": "pnpm --filter @stargate/shared-db build && node --experimental-strip-types scripts/ensure-worker-indexes.ts",
     "db:preflight-worker-indexes": "pnpm --filter @stargate/shared-db build && node --experimental-strip-types scripts/preflight-worker-indexes.ts",
     "preseed:factions": "pnpm --filter @stargate/shared-db build",
     "seed:factions": "node --experimental-strip-types scripts/seed-factions.ts",
