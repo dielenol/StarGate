@@ -47,6 +47,11 @@ import {
   formatStockValue,
   roundStockValue,
 } from "@/lib/stocks/pricing";
+import {
+  clearRetainedIdempotencyOperation,
+  retainIdempotencyOperation,
+  type RetainedIdempotencyOperation,
+} from "@/lib/query/idempotency";
 
 import RangeToggle, {
   INITIAL_RANGE,
@@ -162,6 +167,8 @@ export default function StockTradeClient({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const buySuccessAudioRef = useRef<HTMLAudioElement | null>(null);
   const sellSuccessAudioRef = useRef<HTMLAudioElement | null>(null);
+  const tradeOperationRef =
+    useRef<RetainedIdempotencyOperation | null>(null);
 
   /* 11. 파생 — 시세 / 보유 / 차트 데이터 */
   const days = RANGE_TO_DAYS[range];
@@ -451,10 +458,24 @@ export default function StockTradeClient({
     const soundTab = effectiveTab;
     const submittedShares = tradeShares;
     const action = effectiveTab === "buy" ? "매수" : "매도";
+    const operation = retainIdempotencyOperation(
+      tradeOperationRef.current,
+      effectiveTab === "buy" ? "stock-buy" : "stock-sell",
+      JSON.stringify([
+        effectiveTab,
+        ticker.trim().toUpperCase(),
+        submittedShares,
+      ]),
+    );
+    tradeOperationRef.current = operation;
     mutation.mutate(
-      { ticker, shares: submittedShares },
+      { ticker, shares: submittedShares, operationId: operation.key },
       {
         onSuccess: (result) => {
+          tradeOperationRef.current = clearRetainedIdempotencyOperation(
+            tradeOperationRef.current,
+            operation.key,
+          );
           setQtyInput("");
           setErrorMessage(null);
           playTradeSuccessSound(soundTab);

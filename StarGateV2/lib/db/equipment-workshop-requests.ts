@@ -194,8 +194,11 @@ export function serializeAdminEquipmentWorkshopRequest(
 
 export async function insertEquipmentWorkshopRequest(
   request: EquipmentWorkshopRequestDoc,
+  options: { session?: ClientSession } = {},
 ): Promise<void> {
-  await (await equipmentWorkshopRequestsCol()).insertOne(request);
+  await (await equipmentWorkshopRequestsCol()).insertOne(request, {
+    session: options.session,
+  });
 }
 
 export async function findEquipmentWorkshopRequestById(

@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       authorName: session.user.displayName,
     });
 
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "위키 문서 생성",
       actor: {
         id: session.user.id,

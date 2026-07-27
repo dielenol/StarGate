@@ -1,9 +1,10 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 
 import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
+import { getClient } from "@/lib/db/client";
 import {
   findEquipmentWorkshopRequestById,
   findEquipmentWorkshopRequestByActiveOperationKey,
@@ -17,7 +18,6 @@ import {
 } from "@/lib/db/equipment-workshop-requests";
 import { listCharacterInventoryEntries } from "@/lib/db/inventory";
 import { listUsers } from "@/lib/db/users";
-import { notifyEquipmentWorkshopRequest } from "@/lib/discord";
 import {
   canTransitionEquipmentWorkshopRequestStatus,
   getEquipmentWorkshopRequestLabel,
@@ -28,9 +28,9 @@ import {
   type EquipmentWorkshopRequestResponse,
 } from "@/lib/equipment-shop/workshop-request";
 import { createEquipmentWorkshopDiscordDmOutboxEvent } from "@/lib/equipment-shop/workshop-discord-dm-outbox";
-import { drainEquipmentWorkshopDiscordDms } from "@/lib/notifications/equipment-workshop-discord-dm-delivery";
 import { notifyUser, notifyUsers } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { enqueueEquipmentWorkshopWebhook } from "@/lib/outbox/integration";
 
 interface UpdateWorkshopRequestBody {
   requestId?: unknown;
@@ -225,9 +225,44 @@ export async function POST(request: Request) {
       },
     ],
   };
+  const createWebhookPayload = (
+    savedRequest: EquipmentWorkshopRequestDoc,
+  ) => ({
+    kind: savedRequest.kind,
+    character: {
+      id: savedRequest.characterId,
+      codename: savedRequest.characterCodename,
+      name: mainCharacter.lore.name,
+    },
+    requester: {
+      id: savedRequest.userId,
+      displayName: savedRequest.userName,
+    },
+    details: savedRequest.details,
+    ...(savedRequest.equipmentName
+      ? { equipmentName: savedRequest.equipmentName }
+      : {}),
+    timestamp: savedRequest.createdAt,
+  });
+  const webhookDedupeKey = `workshop-request:${requestId}:submitted`;
 
   try {
-    await insertEquipmentWorkshopRequest(requestDoc);
+    const client = await getClient();
+    const dbSession = client.startSession();
+    try {
+      await dbSession.withTransaction(async () => {
+        await insertEquipmentWorkshopRequest(requestDoc, {
+          session: dbSession,
+        });
+        await enqueueEquipmentWorkshopWebhook(
+          createWebhookPayload(requestDoc),
+          webhookDedupeKey,
+          { session: dbSession },
+        );
+      });
+    } finally {
+      await dbSession.endSession();
+    }
   } catch (error) {
     if (!isDuplicateKeyError(error)) throw error;
     const existing = await findEquipmentWorkshopRequestById(requestId);
@@ -253,6 +288,12 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
+    // 접수 commit 뒤 응답이 유실됐거나 과거 레코드에 outbox가 빠진 경우,
+    // 요청 본문은 다시 쓰지 않고 같은 dedupe key로 전달 이벤트만 복구한다.
+    await enqueueEquipmentWorkshopWebhook(
+      createWebhookPayload(existing),
+      webhookDedupeKey,
+    );
     const response: EquipmentWorkshopRequestResponse = {
       ok: true,
       kind: existing.kind,
@@ -287,27 +328,6 @@ export async function POST(request: Request) {
       console.error("[equipment-workshop] intake notification failed", result.reason);
     }
   }
-
-  after(() =>
-    notifyEquipmentWorkshopRequest({
-      kind: validation.input.kind,
-      character: {
-        id: characterId,
-        codename: mainCharacter.codename,
-        name: mainCharacter.lore.name,
-      },
-      requester: {
-        id: session.user.id,
-        displayName: requesterName,
-      },
-      details: validation.input.details,
-      ...(equipmentName ? { equipmentName } : {}),
-      timestamp: new Date(),
-    }),
-  );
-  after(() =>
-    drainEquipmentWorkshopDiscordDms({ requestId }),
-  );
 
   const response: EquipmentWorkshopRequestResponse = {
     ok: true,
@@ -412,10 +432,7 @@ export async function PATCH(request: Request) {
   }).catch((error) => {
     console.error("[equipment-workshop] status notification failed", error);
   });
-  after(() =>
-    drainEquipmentWorkshopDiscordDms({ requestId }),
-  );
-  scheduleGmAdminAudit({
+  await scheduleGmAdminAudit({
     action: "공방 요청 상태 변경",
     actor: {
       id: session.user.id,

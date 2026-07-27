@@ -161,7 +161,7 @@ export async function PUT(request: Request, context: RouteContext) {
       );
     }
 
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "캐릭터 장비 교체",
       actor: {
         id: session.user.id,

@@ -8,6 +8,7 @@ import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface PostBody {
   force?: boolean;
+  operationId?: unknown;
 }
 
 export async function POST(request: Request) {
@@ -23,16 +24,33 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => ({}))) as PostBody;
-  const summary = await applyScheduledStockTick({ force: Boolean(body.force) });
+  const force = Boolean(body.force);
+  const operationId =
+    typeof body.operationId === "string" ? body.operationId.trim() : "";
+  if (
+    force &&
+    (operationId.length < 1 ||
+      operationId.length > 128 ||
+      !/^[A-Za-z0-9._:-]+$/.test(operationId))
+  ) {
+    return NextResponse.json(
+      { error: "force 실행에는 올바른 operationId가 필요합니다." },
+      { status: 400 },
+    );
+  }
+  const summary = await applyScheduledStockTick({
+    force,
+    ...(force ? { operationId } : {}),
+  });
   if (summary.results.some((result) => result.status !== "skipped")) {
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "주식 정기 변동 수동 실행",
       actor: {
         id: session.user.id,
         displayName: session.user.displayName,
         role: session.user.role,
       },
-      summary: `변동 ${summary.results.filter((result) => result.status !== "skipped").length}종목 · force=${Boolean(body.force)}`,
+      summary: `변동 ${summary.results.filter((result) => result.status !== "skipped").length}종목 · force=${force}`,
       target: `${summary.date} · ${summary.slot}`,
       timestamp: new Date(),
     });

@@ -1,4 +1,4 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { characterInventoryCol, masterItemsCol } from "@stargate/shared-db";
 import { ObjectId } from "mongodb";
 
@@ -26,7 +26,6 @@ import {
   prepareWorkshopOperationLocks,
   WorkshopOperationError,
 } from "@/lib/equipment-shop/workshop-operations";
-import { drainEquipmentWorkshopDiscordDms } from "@/lib/notifications/equipment-workshop-discord-dm-delivery";
 import { notifyUser } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
@@ -312,17 +311,14 @@ export async function PUT(request: Request, context: RouteContext) {
     actorName: auth.session.displayName,
   });
   if (!updated) return NextResponse.json({ error: "다른 운영자가 요청 또는 견적 상태를 변경했습니다." }, { status: 409 });
-  scheduleGmAdminAudit({
+  await scheduleGmAdminAudit({
     action: `공방 ${current.kind === "upgrade" ? "강화" : "신규 제작"} 견적 발행`,
     actor: { id: auth.session.id, displayName: auth.session.displayName, role: auth.session.role },
     summary: `총 ${quote.totalCost.toLocaleString()} CR · 공임 ${quote.creditCost.toLocaleString()} CR · ${quote.durationMinutes}분 · v${quote.version}`,
     target: `${updated.characterCodename} · ${updated.equipmentName ?? quote.result.name}`,
     timestamp: now,
   });
-  after(() => notifyUser({ userId: updated.userId, type: "SYSTEM", title: `공방 ${current.kind === "upgrade" ? "강화" : "제작"} 견적이 도착했습니다`, message: `${updated.characterCodename} · ${quote.result.name} · 총부담 ${quote.totalCost.toLocaleString()} CR · ${specialistWorkflow.map((step) => step.specialistCodename).join(" → ")}`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] quote notification failed", error)));
-  after(() =>
-    drainEquipmentWorkshopDiscordDms({ requestId }),
-  );
+  await notifyUser({ userId: updated.userId, type: "SYSTEM", title: `공방 ${current.kind === "upgrade" ? "강화" : "제작"} 견적이 도착했습니다`, message: `${updated.characterCodename} · ${quote.result.name} · 총부담 ${quote.totalCost.toLocaleString()} CR · ${specialistWorkflow.map((step) => step.specialistCodename).join(" → ")}`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] quote notification failed", error));
   return NextResponse.json({ request: serializeAdminEquipmentWorkshopRequest(updated) });
 }
 
@@ -363,7 +359,7 @@ export async function POST(request: Request, context: RouteContext) {
         },
       });
       if (response.ok && response.headers.get("X-Idempotency-Replayed") !== "true") {
-        scheduleGmAdminAudit({
+        await scheduleGmAdminAudit({
           action: "공방 재장전 관료 결재 승인",
           actor: {
             id: auth.session.id,
@@ -374,16 +370,13 @@ export async function POST(request: Request, context: RouteContext) {
           target: `${current.characterCodename} · ${current.equipmentName ?? "장비"}`,
           timestamp: new Date(),
         });
-        after(() => notifyUser({
+        await notifyUser({
           userId: current.userId,
           type: "SYSTEM",
           title: "공방 재장전 결재가 승인되었습니다",
           message: `${current.characterCodename} · ${current.equipmentName ?? "장비"} · ${current.reload?.actionCode ?? "장비 액션"} 충전 복구`,
           link: "/erp/equipment-shop/custom",
-        }).catch((error) => console.error("[equipment-workshop] reload notification failed", error)));
-        after(() =>
-          drainEquipmentWorkshopDiscordDms({ requestId }),
-        );
+        }).catch((error) => console.error("[equipment-workshop] reload notification failed", error));
       }
       return response;
     } catch (error) {
@@ -420,11 +413,8 @@ export async function POST(request: Request, context: RouteContext) {
       },
     });
     if (response.ok && response.headers.get("X-Idempotency-Replayed") !== "true") {
-      scheduleGmAdminAudit({ action: `공방 ${current.kind === "upgrade" ? "강화" : "신규 제작"} 취소`, actor: { id: auth.session.id, displayName: auth.session.displayName, role: auth.session.role }, summary: note, target: `${current.characterCodename} · ${current.equipmentName ?? current.kind}`, timestamp: new Date() });
-      after(() => notifyUser({ userId: current.userId, type: "SYSTEM", title: `공방 ${current.kind === "upgrade" ? "강화" : "제작"}이 취소되었습니다`, message: `${current.characterCodename} · ${note} · 비용과 물품 반환`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] cancel notification failed", error)));
-      after(() =>
-        drainEquipmentWorkshopDiscordDms({ requestId }),
-      );
+      await scheduleGmAdminAudit({ action: `공방 ${current.kind === "upgrade" ? "강화" : "신규 제작"} 취소`, actor: { id: auth.session.id, displayName: auth.session.displayName, role: auth.session.role }, summary: note, target: `${current.characterCodename} · ${current.equipmentName ?? current.kind}`, timestamp: new Date() });
+      await notifyUser({ userId: current.userId, type: "SYSTEM", title: `공방 ${current.kind === "upgrade" ? "강화" : "제작"}이 취소되었습니다`, message: `${current.characterCodename} · ${note} · 비용과 물품 반환`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] cancel notification failed", error));
     }
     return response;
   } catch (error) {

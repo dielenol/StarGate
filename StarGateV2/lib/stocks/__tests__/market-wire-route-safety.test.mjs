@@ -10,6 +10,14 @@ const ADMIN_PRICE_ROUTE = new URL(
   "../../../app/api/erp/admin/stocks/prices/route.ts",
   import.meta.url,
 );
+const STOCK_MUTATION_HOOK = new URL(
+  "../../../hooks/mutations/useStocksMutation.ts",
+  import.meta.url,
+);
+const STOCK_ADMIN_CLIENT = new URL(
+  "../../../app/(erp)/erp/admin/stocks/StockAdminClient.tsx",
+  import.meta.url,
+);
 const STATE_DB = new URL("../../db/stock-market-wire.ts", import.meta.url);
 const MARKET_WIRE_DISCORD = new URL(
   "../../notifications/stock-market-wire-discord.ts",
@@ -56,9 +64,94 @@ test("the scheduled wire replaces stored messages through the webhook only", asy
   assert.doesNotMatch(source, /DISCORD_BOT_TOKEN|webhook-message-pruner/);
 });
 
-test("GM special disclosures remain outside scheduled batch replacement", async () => {
+test("GM special disclosures enqueue a dedicated outbox event", async () => {
   const source = await readFile(ADMIN_PRICE_ROUTE, "utf8");
-  assert.match(source, /notifyStockManualIntervention/);
+  assert.match(source, /enqueueStockManualInterventionWebhook/);
+  assert.doesNotMatch(source, /notifyStockManualIntervention/);
   assert.doesNotMatch(source, /requestScheduledStockMarketWireSync/);
   assert.doesNotMatch(source, /deleteScheduledStockMarketWireMessage/);
+});
+
+test("GM manual price mutation commits quote, history and outboxes in one idempotent operation", async () => {
+  const [route, hook, client] = await Promise.all([
+    readFile(ADMIN_PRICE_ROUTE, "utf8"),
+    readFile(STOCK_MUTATION_HOOK, "utf8"),
+    readFile(STOCK_ADMIN_CLIENT, "utf8"),
+  ]);
+  const keyIndex = route.indexOf("readIdempotencyKey(request)");
+  const operationIndex = route.indexOf(
+    "executeEconomicOperationResult<ManualStockPriceOperationBody>",
+    keyIndex,
+  );
+  const priceIndex = route.indexOf("await updateStockPrice(", operationIndex);
+  const priceSessionIndex = route.indexOf(
+    "{ session: dbSession }",
+    priceIndex,
+  );
+  const historyIndex = route.indexOf(
+    "await recordStockPriceHistory(",
+    priceSessionIndex,
+  );
+  const historySessionIndex = route.indexOf(
+    "session: dbSession",
+    historyIndex,
+  );
+  const auditIndex = route.indexOf(
+    "await enqueueGmAdminAudit(",
+    historySessionIndex,
+  );
+  const webhookIndex = route.indexOf(
+    "await enqueueStockManualInterventionWebhook(",
+    auditIndex,
+  );
+  const completionIndex = route.indexOf("return {", webhookIndex);
+  const replayIndex = route.indexOf(
+    "if (operation.replayed)",
+    completionIndex,
+  );
+
+  assert.ok(keyIndex > -1, "Idempotency-Key 검증 누락");
+  assert.ok(operationIndex > keyIndex, "경제 operation claim 누락");
+  assert.ok(priceIndex > operationIndex, "가격 mutation 누락");
+  assert.ok(priceSessionIndex > priceIndex, "가격 mutation session 누락");
+  assert.ok(historyIndex > priceSessionIndex, "history append 순서 오류");
+  assert.ok(historySessionIndex > historyIndex, "history session 누락");
+  assert.ok(auditIndex > historySessionIndex, "감사 outbox 누락");
+  assert.ok(webhookIndex > auditIndex, "market-wire outbox 누락");
+  assert.ok(completionIndex > webhookIndex, "outbox 전 operation 완료 금지");
+  assert.ok(replayIndex > completionIndex, "replay outbox 복구 누락");
+  assert.match(route, /operationKey: `stocks\.manual:\$\{requestId\}`/);
+  assert.match(route, /dedupeKey: auditDedupeKey/);
+  assert.match(
+    hook,
+    /useUpdateStockPrice[\s\S]*"Idempotency-Key": operationId/,
+  );
+  assert.match(
+    client,
+    /retainIdempotencyOperation\([\s\S]*"stock-price-update"[\s\S]*priceOperationRef\.current = operation/,
+  );
+  assert.match(
+    client,
+    /onSuccess:[\s\S]*clearRetainedIdempotencyOperation\([\s\S]*operation\.key/,
+  );
+});
+
+test("forced scheduled ticks reuse one operation id until success", async () => {
+  const [hook, client] = await Promise.all([
+    readFile(STOCK_MUTATION_HOOK, "utf8"),
+    readFile(STOCK_ADMIN_CLIENT, "utf8"),
+  ]);
+
+  assert.match(
+    hook,
+    /RunScheduledStockTickInput[\s\S]*force: true; operationId: string/,
+  );
+  assert.match(
+    client,
+    /forceTickOperationIdRef\.current \?\? crypto\.randomUUID\(\)/,
+  );
+  assert.match(
+    client,
+    /tickMutation\.mutate\([\s\S]*\{ force: true, operationId \}[\s\S]*forceTickOperationIdRef\.current = null/,
+  );
 });

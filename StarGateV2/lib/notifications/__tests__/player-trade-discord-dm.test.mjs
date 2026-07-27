@@ -79,12 +79,12 @@ test("교환 요청 DM은 레지스트라 행정 문체와 자산 대장 링크�
   assert.match(content, /NOVUS ORDO · REGISTRAR/);
 });
 
-test("거래 생성·완료·취소 라우트가 레지스트라 DM을 후속 전달한다", () => {
-  assert.match(createRoute, /deliverPlayerTradeDiscordDm\(\{/);
+test("거래 생성·완료·취소 라우트가 레지스트라 DM을 outbox에 기록한다", () => {
+  assert.match(createRoute, /enqueuePlayerTradeDiscordDm\(\{/);
   assert.match(createRoute, /"GIFT_RECEIVED"/);
   assert.match(createRoute, /"EXCHANGE_OPENED"/);
   assert.match(createRoute, /offer: trade\.initiatorOffer/);
-  assert.match(actionRoute, /deliverPlayerTradeDiscordDm\(\{/);
+  assert.match(actionRoute, /enqueuePlayerTradeDiscordDm\(\{/);
   assert.match(actionRoute, /"EXCHANGE_COMPLETED"/);
   assert.match(actionRoute, /"EXCHANGE_CANCELLED"/);
 });

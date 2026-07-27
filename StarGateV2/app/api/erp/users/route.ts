@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       displayName: displayName.trim(),
       role: role as UserRole,
     });
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "사용자 계정 생성",
       actor: {
         id: session.user.id,

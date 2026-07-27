@@ -97,23 +97,43 @@ test("관리자 인벤토리 제거는 GM 권한과 공개 범위·입력 검증
   assert.match(source, /code: "INVENTORY_REMOVE_CONFLICT"/);
 });
 
-test("제거 성공의 최초 처리 뒤에만 감사 로그와 사용자 알림을 남긴다", async () => {
+test("제거 성공과 감사 outbox를 함께 커밋하고 replay에서는 outbox만 복구한다", async () => {
   const source = await readFile(ROUTE, "utf8");
   const deleteIndex = source.indexOf("export async function DELETE(");
   const mutationIndex = source.indexOf("removeFromInventory(", deleteIndex);
   const conflictIndex = source.indexOf("if (!ok)", mutationIndex);
+  const auditIndex = source.indexOf("await enqueueGmAdminAudit(", conflictIndex);
+  const auditSessionIndex = source.indexOf("session: dbSession", auditIndex);
+  const successBodyIndex = source.indexOf("body: { remaining", auditIndex);
   const replayGuardIndex = source.indexOf(
-    "if (!operation.replayed)",
-    conflictIndex,
+    "if (operation.replayed)",
+    successBodyIndex,
   );
-  const auditIndex = source.indexOf("scheduleGmAdminAudit({", replayGuardIndex);
-  const notificationIndex = source.indexOf("await notifyUser({", auditIndex);
+  const repairIndex = source.indexOf("await enqueueGmAdminAudit(", replayGuardIndex);
+  const notificationGuardIndex = source.indexOf(
+    "if (!operation.replayed)",
+    repairIndex,
+  );
+  const notificationIndex = source.indexOf(
+    "await notifyUser({",
+    notificationGuardIndex,
+  );
 
   assert.ok(conflictIndex > mutationIndex, "차감 실패 분기 누락");
-  assert.ok(replayGuardIndex > conflictIndex, "멱등 replay 부수효과 차단 누락");
-  assert.ok(auditIndex > replayGuardIndex, "성공 확인 전 감사 로그 생성 금지");
-  assert.ok(notificationIndex > auditIndex, "성공 확인 전 사용자 알림 생성 금지");
-  assert.match(source.slice(auditIndex), /action: "캐릭터 아이템 제거"/);
+  assert.ok(auditIndex > conflictIndex, "성공 mutation 뒤 감사 outbox 누락");
+  assert.ok(auditSessionIndex > auditIndex, "감사 outbox transaction session 누락");
+  assert.ok(successBodyIndex > auditSessionIndex, "outbox 전 operation 완료 금지");
+  assert.ok(replayGuardIndex > successBodyIndex, "replay 복구 분기 누락");
+  assert.ok(repairIndex > replayGuardIndex, "replay outbox 복구 누락");
+  assert.ok(
+    notificationGuardIndex > repairIndex,
+    "사용자 알림은 최초 처리에만 생성해야 함",
+  );
+  assert.ok(
+    notificationIndex > notificationGuardIndex,
+    "성공 확인 전 사용자 알림 생성 금지",
+  );
+  assert.match(source.slice(deleteIndex), /action: "캐릭터 아이템 제거"/);
   assert.match(source.slice(notificationIndex), /title: "아이템이 제거되었습니다"/);
 });
 

@@ -75,7 +75,7 @@ export async function PATCH(request: Request) {
       updatedByName: session.user.displayName,
     });
 
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "세력 우호도 직접 조정",
       actor: {
         id: session.user.id,

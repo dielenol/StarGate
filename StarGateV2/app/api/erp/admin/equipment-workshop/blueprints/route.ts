@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       actorId: auth.user.id,
       actorName: auth.user.displayName,
     });
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "공방 설계안 생성",
       actor: {
         id: auth.user.id,
@@ -121,7 +121,7 @@ export async function PUT(request: Request) {
         { status: 409 },
       );
     }
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "공방 설계안 수정",
       actor: {
         id: auth.user.id,
@@ -172,7 +172,7 @@ export async function DELETE(request: Request) {
       { status: 409 },
     );
   }
-  scheduleGmAdminAudit({
+  await scheduleGmAdminAudit({
     action: "공방 설계안 보관",
     actor: {
       id: auth.user.id,

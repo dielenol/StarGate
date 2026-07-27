@@ -386,7 +386,7 @@ export async function POST(request: Request, context: ActivityRouteContext) {
     ...(activityType.startsWith("QUEST") ? { questId: id } : {}),
   });
 
-  scheduleGmAdminAudit({
+  await scheduleGmAdminAudit({
     action: "세력 활동 처리",
     actor: {
       id: session.user.id,

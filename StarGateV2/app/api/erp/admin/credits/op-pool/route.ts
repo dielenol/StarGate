@@ -118,7 +118,7 @@ export async function POST(request: Request) {
         OPERATION_POOL_DEFAULT_NAME,
         OPERATION_POOL_INITIAL_BALANCE,
       );
-      scheduleGmAdminAudit({
+      await scheduleGmAdminAudit({
         action: "작전 크레딧 풀 초기화",
         actor: {
           id: session.user.id,
@@ -190,7 +190,7 @@ export async function POST(request: Request) {
       throw err;
     }
 
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "작전 크레딧 풀 조정",
       actor: {
         id: session.user.id,

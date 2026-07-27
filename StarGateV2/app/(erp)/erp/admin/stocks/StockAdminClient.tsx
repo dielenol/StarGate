@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
 import {
@@ -21,8 +21,15 @@ import { formatDate } from "@/lib/format/date";
 import {
   MIN_STOCK_PRICE,
   formatStockValue,
+  isValidStockPrice,
+  normalizeStockPrice,
   roundStockValue,
 } from "@/lib/stocks/pricing";
+import {
+  clearRetainedIdempotencyOperation,
+  retainIdempotencyOperation,
+  type RetainedIdempotencyOperation,
+} from "@/lib/query/idempotency";
 
 import MarketWirePanel from "../../stock/MarketWirePanel";
 import { ARROW, priceDirection } from "../../stock/_helpers";
@@ -80,6 +87,9 @@ export default function StockAdminClient({
 
   const mutation = useUpdateStockPrice();
   const tickMutation = useRunScheduledStockTick();
+  const forceTickOperationIdRef = useRef<string | null>(null);
+  const priceOperationRef =
+    useRef<RetainedIdempotencyOperation | null>(null);
 
   const pricePreview = useMemo(() => {
     if (!selected) return null;
@@ -156,6 +166,23 @@ export default function StockAdminClient({
     );
   }
 
+  function runForcedTick() {
+    const operationId =
+      forceTickOperationIdRef.current ?? crypto.randomUUID();
+    forceTickOperationIdRef.current = operationId;
+    tickMutation.mutate(
+      { force: true, operationId },
+      {
+        onSuccess: (summary) => {
+          forceTickOperationIdRef.current = null;
+          handleTickSuccess(summary);
+        },
+        onError: (err) =>
+          handleMutationError(err, "정기 변동 실행에 실패했습니다."),
+      },
+    );
+  }
+
   function handleSelect(ticker: string) {
     const next = prices.items.find((item) => item.ticker === ticker);
     setSelectedTicker(ticker);
@@ -184,14 +211,32 @@ export default function StockAdminClient({
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const price = Number.parseFloat(priceInput);
+    const fingerprintPrice = isValidStockPrice(price)
+      ? normalizeStockPrice(price)
+      : price;
+    const normalizedTicker = selectedTicker.trim().toUpperCase();
+    const normalizedEventText = eventText.trim() || "GM 시세 조정";
+    const operation = retainIdempotencyOperation(
+      priceOperationRef.current,
+      "stock-price-update",
+      JSON.stringify([normalizedTicker, fingerprintPrice, normalizedEventText]),
+    );
+    priceOperationRef.current = operation;
     mutation.mutate(
       {
-        ticker: selectedTicker,
+        ticker: normalizedTicker,
         price,
-        eventText,
+        eventText: normalizedEventText,
+        operationId: operation.key,
       },
       {
-        onSuccess: handleUpdateSuccess,
+        onSuccess: () => {
+          priceOperationRef.current = clearRetainedIdempotencyOperation(
+            priceOperationRef.current,
+            operation.key,
+          );
+          handleUpdateSuccess();
+        },
         onError: (err) => handleMutationError(err, "주가 변경에 실패했습니다."),
       },
     );
@@ -256,11 +301,17 @@ export default function StockAdminClient({
               type="button"
               className={styles.secondaryBtn}
               onClick={() =>
-                tickMutation.mutate(false, {
-                  onSuccess: handleTickSuccess,
-                  onError: (err) =>
-                    handleMutationError(err, "정기 변동 실행에 실패했습니다."),
-                })
+                tickMutation.mutate(
+                  { force: false },
+                  {
+                    onSuccess: handleTickSuccess,
+                    onError: (err) =>
+                      handleMutationError(
+                        err,
+                        "정기 변동 실행에 실패했습니다.",
+                      ),
+                  },
+                )
               }
               disabled={tickMutation.isPending || mutation.isPending}
             >
@@ -269,13 +320,7 @@ export default function StockAdminClient({
             <button
               type="button"
               className={styles.ghostBtn}
-              onClick={() =>
-                tickMutation.mutate(true, {
-                  onSuccess: handleTickSuccess,
-                  onError: (err) =>
-                    handleMutationError(err, "정기 변동 실행에 실패했습니다."),
-                })
-              }
+              onClick={runForcedTick}
               disabled={tickMutation.isPending || mutation.isPending}
             >
               강제 재실행

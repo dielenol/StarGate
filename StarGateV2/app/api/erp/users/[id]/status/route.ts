@@ -77,7 +77,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     await updateUserStatus(id, status as UserStatus);
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "사용자 상태 변경",
       actor: {
         id: session.user.id,

@@ -334,7 +334,7 @@ export async function POST(request: Request) {
       requestId,
       allowNegative: validatedType === "ADMIN_DEDUCT",
     });
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action:
         validatedType === "ADMIN_DEDUCT" ? "크레딧 차감" : "크레딧 지급",
       actor: {

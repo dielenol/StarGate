@@ -10,7 +10,6 @@ import {
   serializeEquipmentResearchProject,
   updateEquipmentResearchProjectRush,
 } from "@/lib/db/equipment-research";
-import { scheduleEquipmentResearchDiscordCardSync } from "@/lib/notifications/equipment-research-discord-schedule";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
@@ -185,10 +184,7 @@ export async function POST(request: Request) {
   }
 
   const nextProject = await findEquipmentResearchProjectById(projectId);
-  if (project.scope === "team") {
-    scheduleEquipmentResearchDiscordCardSync(project.key);
-  }
-  scheduleGmAdminAudit({
+  await scheduleGmAdminAudit({
     action: "장비 연구 가속",
     actor: {
       id: authResult.session.id,

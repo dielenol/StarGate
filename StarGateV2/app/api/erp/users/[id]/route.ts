@@ -82,7 +82,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       targetUsername: target.username,
       at: new Date().toISOString(),
     });
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "사용자 계정 삭제",
       actor: {
         id: session.user.id,

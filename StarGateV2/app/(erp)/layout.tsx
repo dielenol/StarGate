@@ -12,6 +12,7 @@ import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
 
 import SessionWrapper from "@/components/erp/SessionWrapper";
 import QueryProvider from "@/components/erp/QueryProvider";
+import RealtimeProvider from "@/components/erp/RealtimeProvider";
 import ERPSidebar from "@/components/erp/ERPSidebar/ERPSidebar";
 import CommandKDeferred from "@/components/erp/CommandK/CommandKDeferred";
 import NavPendingProvider from "@/components/erp/NavPending/NavPendingProvider";
@@ -67,35 +68,37 @@ export default async function ERPLayout({
   return (
     <SessionWrapper session={session}>
       <QueryProvider>
-        <PageHeadProvider>
-          <NavPendingProvider>
-            <div className={styles.erp} data-scope="erp">
-              <ERPHeader user={session.user} identity={headerIdentity} />
-              <div className={styles.erp__body}>
-                <ERPSidebar
-                  initialPageLocks={initialPageLocks}
-                  bypassPageLocks={bypassPageLocks}
-                />
-                <main className={styles.erp__main}>
-                  <PageLockGate
+        <RealtimeProvider>
+          <PageHeadProvider>
+            <NavPendingProvider>
+              <div className={styles.erp} data-scope="erp">
+                <ERPHeader user={session.user} identity={headerIdentity} />
+                <div className={styles.erp__body}>
+                  <ERPSidebar
                     initialPageLocks={initialPageLocks}
-                    role={session.user.role}
                     bypassPageLocks={bypassPageLocks}
-                    playerServiceTestAccess={playerServiceTestAccess}
-                    serverBlocked={pageLocked}
-                    serverPathname={pathname}
-                  >
-                    {children}
-                  </PageLockGate>
-                </main>
+                  />
+                  <main className={styles.erp__main}>
+                    <PageLockGate
+                      initialPageLocks={initialPageLocks}
+                      role={session.user.role}
+                      bypassPageLocks={bypassPageLocks}
+                      playerServiceTestAccess={playerServiceTestAccess}
+                      serverBlocked={pageLocked}
+                      serverPathname={pathname}
+                    >
+                      {children}
+                    </PageLockGate>
+                  </main>
+                </div>
+                {session.user.role === "GM" ? (
+                  <PageLockControl initialPageLocks={initialPageLocks} />
+                ) : null}
+                <CommandKDeferred bypassPageLocks={bypassPageLocks} />
               </div>
-              {session.user.role === "GM" ? (
-                <PageLockControl initialPageLocks={initialPageLocks} />
-              ) : null}
-              <CommandKDeferred bypassPageLocks={bypassPageLocks} />
-            </div>
-          </NavPendingProvider>
-        </PageHeadProvider>
+            </NavPendingProvider>
+          </PageHeadProvider>
+        </RealtimeProvider>
       </QueryProvider>
     </SessionWrapper>
   );

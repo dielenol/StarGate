@@ -117,7 +117,7 @@ export async function PATCH(
       );
     }
 
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "위키 문서 수정",
       actor: {
         id: session.user.id,
@@ -165,7 +165,7 @@ export async function DELETE(
       );
     }
 
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "위키 문서 삭제",
       actor: {
         id: session.user.id,

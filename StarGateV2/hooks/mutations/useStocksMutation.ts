@@ -23,8 +23,6 @@ import {
   isKnownStocksErrorCode,
   stocksKeys,
 } from "@/hooks/queries/useStocksQuery";
-import { createIdempotencyKey } from "@/lib/query/idempotency";
-
 /**
  * 자동 환불/복구가 발생한 에러 코드 — onSuccess 와 동일하게 holdings/credit 캐시를 무효화해야
  * UI 의 잔액/보유/ledger 가 실제 DB 상태와 일치한다. (실패는 했지만 ledger row 가 추가됨)
@@ -41,6 +39,7 @@ const REFUND_AFFECTING_CODES: ReadonlySet<StocksErrorCode> = new Set([
 interface BuyInput {
   ticker: string;
   shares: number;
+  operationId: string;
 }
 
 interface BuyResponse {
@@ -61,6 +60,7 @@ interface BuyResponse {
 interface SellInput {
   ticker: string;
   shares: number;
+  operationId: string;
 }
 
 interface SellResponse {
@@ -80,6 +80,7 @@ export interface UpdateStockPriceInput {
   ticker: string;
   price: number;
   eventText: string;
+  operationId: string;
 }
 
 interface UpdateStockPriceResponse {
@@ -107,6 +108,10 @@ export interface RunScheduledStockTickResponse {
   }>;
   marketWire: unknown;
 }
+
+export type RunScheduledStockTickInput =
+  | { force: false }
+  | { force: true; operationId: string };
 
 /* ── 공통 에러 파서 ── */
 
@@ -154,13 +159,14 @@ export function useBuyStock() {
 
   return useMutation<BuyResponse, StocksApiError, BuyInput>({
     mutationFn: async (input) => {
+      const { operationId, ...payload } = input;
       const res = await fetch("/api/erp/stocks/buy", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": createIdempotencyKey("stock-buy", input),
+          "Idempotency-Key": operationId,
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) await throwStocksError(res);
       return res.json();
@@ -187,13 +193,14 @@ export function useSellStock() {
 
   return useMutation<SellResponse, StocksApiError, SellInput>({
     mutationFn: async (input) => {
+      const { operationId, ...payload } = input;
       const res = await fetch("/api/erp/stocks/sell", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": createIdempotencyKey("stock-sell", input),
+          "Idempotency-Key": operationId,
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) await throwStocksError(res);
       return res.json();
@@ -221,10 +228,14 @@ export function useUpdateStockPrice() {
     UpdateStockPriceInput
   >({
     mutationFn: async (input) => {
+      const { operationId, ...payload } = input;
       const res = await fetch("/api/erp/admin/stocks/prices", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": operationId,
+        },
+        body: JSON.stringify(payload),
       });
       if (!res.ok) await throwStocksError(res);
       return res.json();
@@ -238,12 +249,16 @@ export function useUpdateStockPrice() {
 export function useRunScheduledStockTick() {
   const queryClient = useQueryClient();
 
-  return useMutation<RunScheduledStockTickResponse, StocksApiError, boolean>({
-    mutationFn: async (force) => {
+  return useMutation<
+    RunScheduledStockTickResponse,
+    StocksApiError,
+    RunScheduledStockTickInput
+  >({
+    mutationFn: async (input) => {
       const res = await fetch("/api/erp/admin/stocks/tick", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ force }),
+        body: JSON.stringify(input),
       });
       if (!res.ok) await throwStocksError(res);
       return res.json();

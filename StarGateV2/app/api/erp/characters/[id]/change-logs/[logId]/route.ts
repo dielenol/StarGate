@@ -73,7 +73,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
         { status: 404 },
       );
     }
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "캐릭터 변경 로그 삭제",
       actor: {
         id: session.user.id,

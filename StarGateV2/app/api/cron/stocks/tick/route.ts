@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { grantDailyCreditAllowances } from "@/lib/credits/daily-allowance";
+import { isLegacyCronJobEnabled } from "@/lib/runtime/legacy-cron";
 import { notifyScheduledStockMarketWire } from "@/lib/stocks/market-wire";
 import { applyScheduledStockTick } from "@/lib/stocks/scheduled-tick";
 
@@ -29,9 +30,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const stocksEnabled = isLegacyCronJobEnabled(
+    process.env.LEGACY_CRON_STOCKS_ENABLED,
+  );
+  const dailyAllowanceEnabled = isLegacyCronJobEnabled(
+    process.env.LEGACY_CRON_DAILY_ALLOWANCE_ENABLED,
+  );
+
   const [stocks, dailyCredits] = await Promise.allSettled([
-    runScheduledStockTick(),
-    grantDailyCreditAllowances(),
+    stocksEnabled ? runScheduledStockTick() : Promise.resolve(null),
+    dailyAllowanceEnabled
+      ? grantDailyCreditAllowances()
+      : Promise.resolve(null),
   ]);
 
   const errors = [
@@ -48,6 +58,10 @@ export async function GET(request: Request) {
   return NextResponse.json(
     {
       ok: errors.length === 0,
+      owners: {
+        stocks: stocksEnabled ? "vercel" : "disabled",
+        dailyAllowance: dailyAllowanceEnabled ? "vercel" : "disabled",
+      },
       stocks: stocks.status === "fulfilled" ? stocks.value : null,
       dailyCredits:
         dailyCredits.status === "fulfilled" ? dailyCredits.value : null,

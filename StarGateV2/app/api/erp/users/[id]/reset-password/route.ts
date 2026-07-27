@@ -58,7 +58,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
   try {
     const { plainPassword } = await resetUserPassword(id);
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "사용자 비밀번호 초기화",
       actor: {
         id: session.user.id,

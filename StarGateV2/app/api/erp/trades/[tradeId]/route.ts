@@ -1,4 +1,4 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 
 import type { PlayerTradeOffer, TradeAction } from "@/types/trade";
 
@@ -19,8 +19,8 @@ import {
   serializePlayerTrade,
 } from "@/lib/db/trades";
 import { notifyUser } from "@/lib/notifications/events";
-import { deliverPlayerTradeDiscordDm } from "@/lib/notifications/player-trade-discord-dm";
 import { isValidObjectId } from "@/lib/db/utils";
+import { enqueuePlayerTradeDiscordDm } from "@/lib/outbox/integration";
 
 interface TradeActionBody {
   trade?: ReturnType<typeof serializePlayerTrade>;
@@ -182,44 +182,42 @@ export async function PATCH(
     if (operation.status === 200 && operation.body.trade) {
       const trade = operation.body.trade;
       if (operation.body.completed) {
-        after(async () => {
-          const followUps: Promise<unknown>[] = [
-            deliverPlayerTradeDiscordDm({
-              tradeId: trade.id,
-              event: "EXCHANGE_COMPLETED",
+        const followUps: Promise<unknown>[] = [
+          enqueuePlayerTradeDiscordDm({
+            tradeId: trade.id,
+            event: "EXCHANGE_COMPLETED",
+            userId: trade.initiator.userId,
+            recipientCodename: trade.initiator.characterCodename,
+            otherCharacterCodename:
+              trade.counterparty.characterCodename,
+          }),
+          enqueuePlayerTradeDiscordDm({
+            tradeId: trade.id,
+            event: "EXCHANGE_COMPLETED",
+            userId: trade.counterparty.userId,
+            recipientCodename: trade.counterparty.characterCodename,
+            otherCharacterCodename: trade.initiator.characterCodename,
+          }),
+        ];
+        if (!operation.replayed) {
+          followUps.push(
+            notifyUser({
               userId: trade.initiator.userId,
-              recipientCodename: trade.initiator.characterCodename,
-              otherCharacterCodename:
-                trade.counterparty.characterCodename,
+              type: "SYSTEM",
+              title: "자산 교환이 완료되었습니다",
+              message: `${trade.counterparty.characterCodename} 님과의 교환이 체결되었습니다.`,
+              link: "/erp/trades",
             }),
-            deliverPlayerTradeDiscordDm({
-              tradeId: trade.id,
-              event: "EXCHANGE_COMPLETED",
+            notifyUser({
               userId: trade.counterparty.userId,
-              recipientCodename: trade.counterparty.characterCodename,
-              otherCharacterCodename: trade.initiator.characterCodename,
+              type: "SYSTEM",
+              title: "자산 교환이 완료되었습니다",
+              message: `${trade.initiator.characterCodename} 님과의 교환이 체결되었습니다.`,
+              link: "/erp/trades",
             }),
-          ];
-          if (!operation.replayed) {
-            followUps.push(
-              notifyUser({
-                userId: trade.initiator.userId,
-                type: "SYSTEM",
-                title: "자산 교환이 완료되었습니다",
-                message: `${trade.counterparty.characterCodename} 님과의 교환이 체결되었습니다.`,
-                link: "/erp/trades",
-              }),
-              notifyUser({
-                userId: trade.counterparty.userId,
-                type: "SYSTEM",
-                title: "자산 교환이 완료되었습니다",
-                message: `${trade.initiator.characterCodename} 님과의 교환이 체결되었습니다.`,
-                link: "/erp/trades",
-              }),
-            );
-          }
-          await Promise.all(followUps);
-        });
+          );
+        }
+        await Promise.all(followUps);
       } else if (action.action === "CANCEL") {
         const other =
           trade.initiator.userId === session.user.id
@@ -229,27 +227,27 @@ export async function PATCH(
           trade.initiator.userId === session.user.id
             ? trade.initiator
             : trade.counterparty;
-        after(async () => {
-          const followUps: Promise<unknown>[] = [
-            deliverPlayerTradeDiscordDm({
-              tradeId: trade.id,
-              event: "EXCHANGE_CANCELLED",
-              userId: other.userId,
-              recipientCodename: other.characterCodename,
-              otherCharacterCodename: actor.characterCodename,
-            }),
-          ];
-          if (!operation.replayed) {
-            followUps.push(notifyUser({
+        const followUps: Promise<unknown>[] = [
+          enqueuePlayerTradeDiscordDm({
+            tradeId: trade.id,
+            event: "EXCHANGE_CANCELLED",
+            userId: other.userId,
+            recipientCodename: other.characterCodename,
+            otherCharacterCodename: actor.characterCodename,
+          }),
+        ];
+        if (!operation.replayed) {
+          followUps.push(
+            notifyUser({
               userId: other.userId,
               type: "SYSTEM",
               title: "교환 요청이 취소되었습니다",
               message: "진행 중이던 자산 교환이 취소되었습니다.",
               link: "/erp/trades",
-            }));
-          }
-          await Promise.all(followUps);
-        });
+            }),
+          );
+        }
+        await Promise.all(followUps);
       }
     }
     return NextResponse.json(operation.body, {

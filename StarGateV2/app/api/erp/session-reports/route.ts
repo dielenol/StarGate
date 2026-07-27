@@ -80,7 +80,7 @@ export async function POST(request: Request) {
       gmId: session.user.id,
       gmName: session.user.displayName,
     });
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "세션 리포트 발행",
       actor: {
         id: session.user.id,

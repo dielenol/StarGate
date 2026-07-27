@@ -1,5 +1,5 @@
 import { isPlayerTradeItemSlugTransferable } from "@stargate/shared-db";
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 
 import type {
   PlayerTradeOffer,
@@ -31,7 +31,7 @@ import {
   serializePlayerTrade,
 } from "@/lib/db/trades";
 import { notifyUser } from "@/lib/notifications/events";
-import { deliverPlayerTradeDiscordDm } from "@/lib/notifications/player-trade-discord-dm";
+import { enqueuePlayerTradeDiscordDm } from "@/lib/outbox/integration";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 
 interface CreateTradeBody {
@@ -263,37 +263,39 @@ export async function POST(request: Request) {
     if (operation.status === 201 && operation.body.trade) {
       const isGift = body.kind === "GIFT";
       const trade = operation.body.trade;
-      after(async () => {
-        const followUps: Promise<unknown>[] = [
-          deliverPlayerTradeDiscordDm({
-            tradeId: trade.id,
-            event: isGift ? "GIFT_RECEIVED" : "EXCHANGE_OPENED",
-            userId: counterparty.userId,
-            recipientCodename: counterparty.characterCodename,
-            otherCharacterCodename: me.characterCodename,
-            offer: trade.initiatorOffer,
-          }),
-        ];
-        if (!operation.replayed) {
-          followUps.push(notifyUser({
+      const followUps: Promise<unknown>[] = [
+        enqueuePlayerTradeDiscordDm({
+          tradeId: trade.id,
+          event: isGift ? "GIFT_RECEIVED" : "EXCHANGE_OPENED",
+          userId: counterparty.userId,
+          recipientCodename: counterparty.characterCodename,
+          otherCharacterCodename: me.characterCodename,
+          offer: trade.initiatorOffer,
+        }),
+      ];
+      if (!operation.replayed) {
+        followUps.push(
+          notifyUser({
             userId: counterparty.userId,
             type: "SYSTEM",
             title: isGift ? "자산을 전달받았습니다" : "교환 요청이 도착했습니다",
             message: `${me.characterCodename} 님의 ${isGift ? "즉시 전달" : "교환 요청"}`,
             link: "/erp/trades",
-          }));
-          if (isGift) {
-            followUps.push(notifyUser({
+          }),
+        );
+        if (isGift) {
+          followUps.push(
+            notifyUser({
               userId: me.userId,
               type: "SYSTEM",
               title: "자산 전달이 완료되었습니다",
               message: `${counterparty.characterCodename} 님에게 자산을 전달했습니다.`,
               link: "/erp/trades",
-            }));
-          }
+            }),
+          );
         }
-        await Promise.all(followUps);
-      });
+      }
+      await Promise.all(followUps);
     }
     return NextResponse.json(operation.body, {
       status: operation.status,

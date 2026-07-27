@@ -91,7 +91,7 @@ export async function PATCH(request: Request) {
       updatedById: session.user.id,
       updatedByName: session.user.displayName,
     });
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "편의점 영업 상태 변경",
       actor: {
         id: session.user.id,

@@ -14,7 +14,7 @@
  *   8. updateCharacter(id, revertBody, ADMIN 화이트리스트) — 성공 시 새 audit log 기록
  *      (revert 의 결과로 다시 변경이 일어나므로 revert 자체도 변경 이력에 남김)
  *   9. markChangeLogReverted(logId, GM) — 멱등성으로 race 시 null 반환 가능 (silent OK)
- *  10. P7 notifyCharacterEdit fire-and-forget (after())
+ *  10. P7 character edit webhook durable outbox enqueue
  *  11. 200
  *
  * 트랜잭션 정책: 미사용 (전체 P 시리즈 정책). updateCharacter 성공 후 audit insert /
@@ -22,7 +22,7 @@
  */
 
 import { ObjectId } from "mongodb";
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 
 import {
   ALLOWED_LORE_FIELDS_ADMIN,
@@ -38,7 +38,7 @@ import { computeCharacterDiff } from "@/lib/character/diff";
 import { changesToRevertBody } from "@/lib/character/revert";
 import { findCharacterById, updateCharacter } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
-import { notifyCharacterEdit } from "@/lib/discord";
+import { enqueueCharacterEditWebhook } from "@/lib/outbox/integration";
 
 interface RouteContext {
   params: Promise<{ id: string; logId: string }>;
@@ -197,32 +197,26 @@ export async function POST(_request: Request, context: RouteContext) {
         session.user.username ||
         `user-${session.user.id.slice(0, 6)}`;
 
-      after(async () => {
-        try {
-          await notifyCharacterEdit({
-            character: {
-              id,
-              codename: before.codename,
-              name: before.lore.name,
-            },
-            actor: {
-              id: session.user.id,
-              displayName,
-              role: session.user.role,
-            },
-            source: "admin",
-            actorIsOwner,
-            changes: revertChanges,
-            reason: `revert:${logId}`,
-            timestamp: new Date(),
-          });
-        } catch (webhookErr) {
-          console.warn(
-            `[revert POST] webhook scheduling failed log=${logId}:`,
-            webhookErr,
-          );
-        }
-      });
+      await enqueueCharacterEditWebhook(
+        {
+          character: {
+            id,
+            codename: before.codename,
+            name: before.lore.name,
+          },
+          actor: {
+            id: session.user.id,
+            displayName,
+            role: session.user.role,
+          },
+          source: "admin",
+          actorIsOwner,
+          changes: revertChanges,
+          reason: `revert:${logId}`,
+          timestamp: new Date(),
+        },
+        `revert:${logId}`,
+      );
     }
 
     return NextResponse.json({ success: true });

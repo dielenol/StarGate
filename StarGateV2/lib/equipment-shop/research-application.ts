@@ -22,7 +22,6 @@ import {
   reserveEquipmentResearchProjectForApply,
   type EquipmentResearchProject,
 } from "@/lib/db/equipment-research";
-import { scheduleEquipmentResearchDiscordCardSync } from "@/lib/notifications/equipment-research-discord-schedule";
 
 export interface EquipmentResearchActor {
   id: string;
@@ -233,9 +232,6 @@ export async function applyEquipmentResearchProjectNow(args: {
       result = await applyReservedProject(project, args.actor, session);
     });
     if (!result) throw new Error("RESEARCH_APPLY_TRANSACTION_EMPTY");
-    if (project.scope === "team") {
-      scheduleEquipmentResearchDiscordCardSync(project.key);
-    }
     return result;
   } catch (err) {
     await releaseEquipmentResearchProjectApplyReservation(args.projectId);
