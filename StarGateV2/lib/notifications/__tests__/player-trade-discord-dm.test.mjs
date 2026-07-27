@@ -122,11 +122,9 @@ test("활성 Discord 연결 사용자에게 거래 이벤트별 deterministic no
   const dependencies = {
     botToken: "registrar-test-token",
     siteBaseUrl: "https://erp.example.test",
-    resolveRecipients: async () => ({
-      sourceState: "active",
-      recipients: [
-        { kind: "primary", discordId: "123456789012345678" },
-      ],
+    findUser: async () => ({
+      status: "ACTIVE",
+      discordId: "123456789012345678",
     }),
     sendDirectMessage: async (input, options) => {
       calls.push({ input, options });
@@ -159,41 +157,13 @@ test("활성 Discord 연결 사용자에게 거래 이벤트별 deterministic no
   );
 });
 
-test("JTEST 거래 DM은 원 수신자를 유지하면서 DieLenol 미러에 별도 nonce로 전달한다", async () => {
-  const calls = [];
-  const result = await notifyPlayerTradeDiscordDm(BASE_INPUT, {
-    botToken: "registrar-test-token",
-    resolveRecipients: async () => ({
-      sourceState: "active",
-      recipients: [
-        { kind: "primary", discordId: "123456789012345678" },
-        { kind: "mirror", discordId: "423456789012345678" },
-      ],
-    }),
-    sendDirectMessage: async (input) => {
-      calls.push(input);
-      return {
-        channelId: "223456789012345678",
-        messageId: "323456789012345678",
-      };
-    },
-  });
-
-  assert.equal(result, "sent");
-  assert.deepEqual(
-    calls.map(({ recipientId }) => recipientId),
-    ["123456789012345678", "423456789012345678"],
-  );
-  assert.notEqual(calls[0].nonce, calls[1].nonce);
-});
-
 test("토큰 미설정·Discord 미연결·비활성 사용자는 거래 DM을 건너뛴다", async () => {
   let lookupCount = 0;
   const noToken = await notifyPlayerTradeDiscordDm(BASE_INPUT, {
     botToken: null,
-    resolveRecipients: async () => {
+    findUser: async () => {
       lookupCount += 1;
-      return { sourceState: "missing", recipients: [] };
+      return null;
     },
   });
   assert.equal(noToken, "skipped_unconfigured");
@@ -201,10 +171,7 @@ test("토큰 미설정·Discord 미연결·비활성 사용자는 거래 DM을 �
 
   const unlinked = await notifyPlayerTradeDiscordDm(BASE_INPUT, {
     botToken: "registrar-test-token",
-    resolveRecipients: async () => ({
-      sourceState: "active",
-      recipients: [],
-    }),
+    findUser: async () => ({ status: "ACTIVE", discordId: null }),
     sendDirectMessage: async () => {
       throw new Error("호출되면 안 됨");
     },
@@ -213,9 +180,9 @@ test("토큰 미설정·Discord 미연결·비활성 사용자는 거래 DM을 �
 
   const inactive = await notifyPlayerTradeDiscordDm(BASE_INPUT, {
     botToken: "registrar-test-token",
-    resolveRecipients: async () => ({
-      sourceState: "inactive",
-      recipients: [],
+    findUser: async () => ({
+      status: "INACTIVE",
+      discordId: "123456789012345678",
     }),
     sendDirectMessage: async () => {
       throw new Error("호출되면 안 됨");

@@ -14,10 +14,6 @@ export const JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE = {
   targetRole: "GM",
 } as const satisfies DiscordDmMirrorRule;
 
-/** @deprecated 아메리 공방 전용 이름으로 이전 중인 호환 export. */
-export const JTEST_DISCORD_DM_MIRROR_RULE =
-  JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE;
-
 export type DiscordDmRecipientKind = "primary" | "mirror";
 export type DiscordDmSourceState = "missing" | "inactive" | "active";
 

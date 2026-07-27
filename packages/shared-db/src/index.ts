@@ -215,7 +215,6 @@ export { isValidObjectId } from "./utils.js";
 /* ── Discord delivery routing ── */
 
 export {
-  JTEST_DISCORD_DM_MIRROR_RULE,
   JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE,
   resolveDiscordDmRecipients,
 } from "./discord-dm-recipients.js";
