@@ -83,6 +83,7 @@ jobs:
       - name: Trigger Dokploy deploy (registra-bot)
         env:
           WEBHOOK_URL: ${{ secrets.DOKPLOY_REGISTRA_WEBHOOK }}
+          CHANGED_PATH: registra-bot/package.json
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
             echo "❌ DOKPLOY_REGISTRA_WEBHOOK secret이 설정되지 않았습니다."
@@ -90,7 +91,18 @@ jobs:
             echo "  GitHub repo → Settings → Secrets → Actions 에 등록하세요."
             exit 1
           fi
-          curl -fsSL -X POST "$WEBHOOK_URL"
+          payload="$(jq -nc \
+            --arg ref "$GITHUB_REF" \
+            --arg sha "$GITHUB_SHA" \
+            --arg message "GitHub Actions deploy: $GITHUB_WORKFLOW" \
+            --arg path "$CHANGED_PATH" \
+            '{ref: $ref, head_commit: {id: $sha, message: $message}, commits: [{modified: [$path]}]}'
+          )"
+          curl -fsSL -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: push" \
+            --data "$payload" \
+            "$WEBHOOK_URL"
           echo "✅ registra-bot deploy triggered"
 
   # ------------------------------------------------------------
@@ -107,6 +119,7 @@ jobs:
       - name: Trigger Dokploy deploy (trpg-bot)
         env:
           WEBHOOK_URL: ${{ secrets.DOKPLOY_TRPG_WEBHOOK }}
+          CHANGED_PATH: trpg-bot/package.json
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
             echo "❌ DOKPLOY_TRPG_WEBHOOK secret이 설정되지 않았습니다."
@@ -114,7 +127,18 @@ jobs:
             echo "  GitHub repo → Settings → Secrets → Actions 에 등록하세요."
             exit 1
           fi
-          curl -fsSL -X POST "$WEBHOOK_URL"
+          payload="$(jq -nc \
+            --arg ref "$GITHUB_REF" \
+            --arg sha "$GITHUB_SHA" \
+            --arg message "GitHub Actions deploy: $GITHUB_WORKFLOW" \
+            --arg path "$CHANGED_PATH" \
+            '{ref: $ref, head_commit: {id: $sha, message: $message}, commits: [{modified: [$path]}]}'
+          )"
+          curl -fsSL -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: push" \
+            --data "$payload" \
+            "$WEBHOOK_URL"
           echo "✅ trpg-bot deploy triggered"
 
   # ------------------------------------------------------------
@@ -133,6 +157,7 @@ jobs:
       - name: Trigger Dokploy deploy (stargate-worker)
         env:
           WEBHOOK_URL: ${{ secrets.DOKPLOY_STARGATE_WORKER_WEBHOOK }}
+          CHANGED_PATH: stargate-worker/package.json
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
             echo "❌ DOKPLOY_STARGATE_WORKER_WEBHOOK secret이 설정되지 않았습니다."
@@ -140,5 +165,16 @@ jobs:
             echo "  GitHub repo → Settings → Secrets → Actions 에 등록하세요."
             exit 1
           fi
-          curl -fsSL -X POST "$WEBHOOK_URL"
+          payload="$(jq -nc \
+            --arg ref "$GITHUB_REF" \
+            --arg sha "$GITHUB_SHA" \
+            --arg message "GitHub Actions deploy: $GITHUB_WORKFLOW" \
+            --arg path "$CHANGED_PATH" \
+            '{ref: $ref, head_commit: {id: $sha, message: $message}, commits: [{modified: [$path]}]}'
+          )"
+          curl -fsSL -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: push" \
+            --data "$payload" \
+            "$WEBHOOK_URL"
           echo "✅ stargate-worker deploy triggered"
