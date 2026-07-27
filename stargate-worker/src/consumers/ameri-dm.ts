@@ -1,6 +1,11 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import { findUserById, getDb } from "@stargate/shared-db";
+import {
+  JTEST_DISCORD_DM_MIRROR_RULE,
+  getDb,
+  resolveDiscordDmRecipients,
+  type DiscordDmRecipientKind,
+} from "@stargate/shared-db";
 
 import {
   DiscordDeliveryError,
@@ -11,7 +16,6 @@ import type { DueWorkConsumerPort } from "./port.js";
 const LEASE_MS = 10 * 60_000;
 const RETRY_DELAY_MS = 5 * 60_000;
 const MAX_BATCH_SIZE = 50;
-const SNOWFLAKE = /^\d{17,20}$/;
 
 type WorkshopDmEvent =
   | "REQUESTED"
@@ -214,6 +218,7 @@ function content(
 function nonce(
   request: WorkshopRequest,
   event: WorkshopDmOutboxEvent,
+  recipientKind: DiscordDmRecipientKind = "primary",
 ): string {
   return createHash("sha256")
     .update(
@@ -221,6 +226,7 @@ function nonce(
         "equipment-workshop",
         request._id,
         event.id,
+        ...(recipientKind === "mirror" ? ["mirror"] : []),
       ].join(":"),
     )
     .digest("hex")
@@ -239,6 +245,7 @@ export class AmeriDmConsumer implements DueWorkConsumerPort {
       botToken: string;
       siteBaseUrl?: string;
       fetchImpl?: typeof fetch;
+      resolveRecipients?: typeof resolveDiscordDmRecipients;
     },
   ) {}
 
@@ -326,36 +333,51 @@ export class AmeriDmConsumer implements DueWorkConsumerPort {
           if (event.event === "READY" && request.status !== "IN_PROGRESS") {
             result = "no_longer_ready";
           } else {
-            const user = await findUserById(request.userId);
-            if (!user || !user.discordId || !SNOWFLAKE.test(user.discordId)) {
-              result = "skipped_unlinked";
-            } else if (user.status !== "ACTIVE") {
+            const resolution = await (
+              this.options.resolveRecipients ?? resolveDiscordDmRecipients
+            )(
+              request.userId,
+              { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
+            );
+            if (resolution.sourceState === "inactive") {
               result = "skipped_inactive";
+            } else if (resolution.recipients.length === 0) {
+              result = "skipped_unlinked";
             } else {
-              try {
-                await sendDiscordDirectMessage(
-                  {
-                    recipientId: user.discordId,
-                    content: content(
-                      request,
-                      event,
-                      siteBaseUrl(this.options.siteBaseUrl),
-                    ),
-                    nonce: nonce(request, event),
-                    botToken: this.options.botToken,
-                  },
-                  this.options.fetchImpl,
-                );
-              } catch (error) {
-                if (
-                  error instanceof DiscordDeliveryError &&
-                  error.status === 403
-                ) {
-                  result = "skipped_unreachable";
-                } else {
-                  throw error;
+              const message = content(
+                request,
+                event,
+                siteBaseUrl(this.options.siteBaseUrl),
+              );
+              const errors: unknown[] = [];
+              let sentCount = 0;
+              for (const recipient of resolution.recipients) {
+                try {
+                  await sendDiscordDirectMessage(
+                    {
+                      recipientId: recipient.discordId,
+                      content: message,
+                      nonce: nonce(request, event, recipient.kind),
+                      botToken: this.options.botToken,
+                    },
+                    this.options.fetchImpl,
+                  );
+                  sentCount += 1;
+                } catch (error) {
+                  errors.push(error);
                 }
               }
+
+              const retryableError = errors.find(
+                (error) =>
+                  !(
+                    error instanceof DiscordDeliveryError &&
+                    error.status === 403
+                  ),
+              );
+              if (retryableError) throw retryableError;
+              result =
+                sentCount > 0 ? "sent" : "skipped_unreachable";
             }
           }
 
