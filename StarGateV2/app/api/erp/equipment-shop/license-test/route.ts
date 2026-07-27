@@ -168,10 +168,15 @@ function qualificationCoversChallenge(
   >,
   challenge: TowaskiLicenseChallenge,
 ): boolean {
+  const qualifiedAt = qualification.qualifiedAt
+    ? new Date(qualification.qualifiedAt).getTime()
+    : Number.NaN;
   return (
     qualification.owned &&
     (qualification.programVersion ?? 0) >=
-      expectedChallengeProgramVersion(challenge)
+      expectedChallengeProgramVersion(challenge) &&
+    Number.isFinite(qualifiedAt) &&
+    qualifiedAt >= challenge.startedAt.getTime()
   );
 }
 
@@ -310,15 +315,21 @@ async function waitForCurrentTowaskiLicense(
   characterId: string,
   licenseSlug: TowaskiLicenseSlug,
   programVersion: number,
+  qualifiedAfter: Date,
 ): Promise<boolean> {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const qualification = await getTowaskiLicenseQualificationStatus(
       characterId,
       licenseSlug,
     );
+    const qualifiedAt = qualification.qualifiedAt
+      ? new Date(qualification.qualifiedAt).getTime()
+      : Number.NaN;
     if (
       qualification.owned &&
-      (qualification.programVersion ?? 0) >= programVersion
+      (qualification.programVersion ?? 0) >= programVersion &&
+      Number.isFinite(qualifiedAt) &&
+      qualifiedAt >= qualifiedAfter.getTime()
     ) {
       return true;
     }
@@ -551,6 +562,7 @@ export async function POST(request: Request) {
         characterId,
         licenseSlug,
         challengeProgramVersion,
+        challenge.startedAt,
       )
     ) {
       return NextResponse.json({

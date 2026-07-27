@@ -107,6 +107,7 @@ export function TowaskiHeavyGame({
   }
 
   function beginFire() {
+    if (firingRef.current) return;
     firingRef.current = true;
     burstStartedAtRef.current = performance.now();
     setFiring(true);
@@ -247,6 +248,17 @@ export function TowaskiHeavyGame({
             onPointerDown={beginFire}
             onPointerUp={ceaseFire}
             onPointerCancel={ceaseFire}
+            onKeyDown={(event) => {
+              if (
+                (event.key === " " || event.key === "Enter") &&
+                !event.repeat
+              ) {
+                beginFire();
+              }
+            }}
+            onKeyUp={(event) => {
+              if (event.key === " " || event.key === "Enter") ceaseFire();
+            }}
             aria-pressed={firing}
           >
             {firing ? "점사 중 — 떼서 냉각" : "길게 눌러 점사"}

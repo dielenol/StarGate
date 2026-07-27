@@ -44,6 +44,14 @@ const LICENSE_V2_STYLES = new URL(
   "../../../app/(erp)/erp/equipment-shop/license-tests/TowaskiLicenseV2.module.css",
   import.meta.url,
 );
+const HEAVY_LICENSE_GAME = new URL(
+  "../../../app/(erp)/erp/equipment-shop/license-tests/TowaskiHeavyGame.tsx",
+  import.meta.url,
+);
+const EXPLOSIVE_LICENSE_GAME = new URL(
+  "../../../app/(erp)/erp/equipment-shop/license-tests/TowaskiExplosiveGame.tsx",
+  import.meta.url,
+);
 const SHARED_INVENTORY = new URL(
   "../../../../packages/shared-db/src/crud/inventory.ts",
   import.meta.url,
@@ -84,6 +92,14 @@ test("license inventory grant and redeemed transition share one transaction", as
   assert.match(route, /qualificationCoversChallenge/);
   assert.match(route, /challenge\.status === "redeemed"/);
   assert.match(route, /qualification\.programVersion[\s\S]*programVersion/);
+  assert.match(
+    route,
+    /qualifiedAt >= challenge\.startedAt\.getTime\(\)/,
+  );
+  assert.match(
+    route,
+    /waitForCurrentTowaskiLicense\([\s\S]*challenge\.startedAt/,
+  );
   assert.match(
     challengeDb,
     /challenge\.status === "redeeming" \|\| challenge\.status === "redeemed"/,
@@ -241,12 +257,15 @@ test("equipment shop purchases one item at a time without cart controls", async 
 });
 
 test("Towaski qualification keeps accessible mobile controls and explains every outcome", async () => {
-  const [client, licenseTest, styles, v2Styles] = await Promise.all([
-    readFile(EQUIPMENT_SHOP_CLIENT, "utf8"),
-    readFile(LICENSE_TEST_CLIENT, "utf8"),
-    readFile(LICENSE_TEST_STYLES, "utf8"),
-    readFile(LICENSE_V2_STYLES, "utf8"),
-  ]);
+  const [client, licenseTest, styles, v2Styles, heavyGame, explosiveGame] =
+    await Promise.all([
+      readFile(EQUIPMENT_SHOP_CLIENT, "utf8"),
+      readFile(LICENSE_TEST_CLIENT, "utf8"),
+      readFile(LICENSE_TEST_STYLES, "utf8"),
+      readFile(LICENSE_V2_STYLES, "utf8"),
+      readFile(HEAVY_LICENSE_GAME, "utf8"),
+      readFile(EXPLOSIVE_LICENSE_GAME, "utf8"),
+    ]);
 
   assert.match(
     styles,
@@ -263,6 +282,8 @@ test("Towaski qualification keeps accessible mobile controls and explains every 
   assert.match(v2Styles, /min-height: 44px/);
   assert.match(v2Styles, /touch-action: none/);
   assert.match(v2Styles, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(heavyGame, /event\.key === " " \|\| event\.key === "Enter"/);
+  assert.match(explosiveGame, /착탄 수평[\s\S]*착탄 수직/);
   assert.match(
     client,
     /event\.type === "start"[\s\S]*title: "자격시험 시작"/,

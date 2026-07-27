@@ -141,6 +141,38 @@ export function TowaskiExplosiveGame({
           {scenario.safeLaunchLane.toUpperCase()}입니다.
         </p>
         <div className={styles.controlGrid}>
+          <label className={styles.control}>
+            착탄 수평 <strong>{Math.round(impact.x * 100)}</strong>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={Math.round(impact.x * 100)}
+              disabled={disabled}
+              onChange={(event) =>
+                setImpact((current) => ({
+                  ...current,
+                  x: Number(event.target.value) / 100,
+                }))
+              }
+            />
+          </label>
+          <label className={styles.control}>
+            착탄 수직 <strong>{Math.round(impact.y * 100)}</strong>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={Math.round(impact.y * 100)}
+              disabled={disabled}
+              onChange={(event) =>
+                setImpact((current) => ({
+                  ...current,
+                  y: Number(event.target.value) / 100,
+                }))
+              }
+            />
+          </label>
           <div className={styles.control}>
             탄종 <strong>{munition.toUpperCase()}</strong>
             <div className={styles.actionRow}>
