@@ -14,6 +14,7 @@ import {
 import { useCompleteTowaskiLicenseTest } from "@/hooks/mutations/useEquipmentShopMutation";
 import { DialogueBeepEngine } from "@/lib/audio/dialogue-beep-engine";
 import {
+  getTowaskiLicenseTargetRemainingMs,
   getTowaskiLicenseTestProgram,
   getTowaskiLicenseTestRules,
   resolveTowaskiDebugLicenseTest,
@@ -434,9 +435,9 @@ export default function TowaskiLicenseTest({
 
   useEffect(() => {
     if (phase !== "active" || !challenge) return;
-    const remainingMs = Math.max(
-      0,
-      Date.parse(challenge.roundDeadlineAt) - Date.now(),
+    const remainingMs = getTowaskiLicenseTargetRemainingMs(
+      challenge.roundDeadlineAt,
+      rules.targetWindowMs,
     );
     const timer = setTimeout(() => {
       resolveRound(false, roundShotsRef.current);
@@ -446,7 +447,7 @@ export default function TowaskiLicenseTest({
       clearTimeout(timer);
       if (deadlineTimerRef.current === timer) deadlineTimerRef.current = null;
     };
-  }, [challenge, phase, resolveRound]);
+  }, [challenge, phase, resolveRound, rules.targetWindowMs]);
 
   const handleRangePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {

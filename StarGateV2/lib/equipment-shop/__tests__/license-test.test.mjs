@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   evaluateTowaskiBasicLicenseTest,
+  getTowaskiLicenseTargetRemainingMs,
   getTowaskiLicenseTestProgram,
   parseTowaskiLicenseTestRequest,
   TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
@@ -160,6 +161,27 @@ test("license programs fix progression and server-side difficulty", () => {
   assert.equal(heavy.tier, "advanced");
   assert.equal(heavy.difficulty, "expert");
   assert.equal(heavy.requiresBasicLicense, true);
+});
+
+test("expert targets keep a full client interaction window after the response arrives", () => {
+  const nowMs = Date.parse("2026-07-27T00:00:00.000Z");
+
+  assert.equal(
+    getTowaskiLicenseTargetRemainingMs(
+      "2026-07-26T23:59:59.000Z",
+      750,
+      nowMs,
+    ),
+    750,
+  );
+  assert.equal(
+    getTowaskiLicenseTargetRemainingMs(
+      "2026-07-27T00:00:02.000Z",
+      750,
+      nowMs,
+    ),
+    2_000,
+  );
 });
 
 test("license program labels stay aligned with catalog definitions", () => {

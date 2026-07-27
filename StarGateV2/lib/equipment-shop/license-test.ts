@@ -195,6 +195,20 @@ export function getTowaskiLicenseTestRules(
   return TOWASKI_LICENSE_TEST_DIFFICULTIES[difficulty];
 }
 
+export function getTowaskiLicenseTargetRemainingMs(
+  roundDeadlineAt: string,
+  targetWindowMs: number,
+  nowMs = Date.now(),
+): number {
+  const deadlineMs = Date.parse(roundDeadlineAt);
+  const serverRemainingMs = Number.isFinite(deadlineMs)
+    ? Math.max(0, deadlineMs - nowMs)
+    : 0;
+
+  // API 응답 지연이 짧은 숙련 표적의 실제 클릭 시간을 소진하지 않게 한다.
+  return Math.max(targetWindowMs, serverRemainingMs);
+}
+
 // 기존 진행 중 challenge는 배포 전 기준인 표준 난이도로 판정한다.
 export const TOWASKI_BASIC_LICENSE_TEST_RULES =
   TOWASKI_LICENSE_TEST_DIFFICULTIES.standard;
