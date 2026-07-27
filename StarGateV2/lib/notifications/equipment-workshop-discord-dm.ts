@@ -1,11 +1,16 @@
 import { createHash } from "node:crypto";
 
+import {
+  JTEST_DISCORD_DM_MIRROR_RULE,
+  resolveDiscordDmRecipients,
+  type DiscordDmRecipientKind,
+} from "@stargate/shared-db";
+
 import type {
   EquipmentWorkshopRequestKind,
   EquipmentWorkshopSpecialist,
 } from "@/lib/equipment-shop/workshop-request";
 import type { EquipmentWorkshopDiscordDmEvent } from "@/lib/equipment-shop/workshop-discord-dm-outbox";
-import { findUserById } from "@/lib/db/users";
 import {
   sendDiscordDirectMessage,
   type DiscordDirectMessageInput,
@@ -41,14 +46,13 @@ export type EquipmentWorkshopDiscordDmResult =
 interface EquipmentWorkshopDiscordDmDependencies {
   botToken?: string | null;
   siteBaseUrl?: string;
-  findUser?: typeof findUserById;
+  resolveRecipients?: typeof resolveDiscordDmRecipients;
   sendDirectMessage?: (
     input: DiscordDirectMessageInput,
     options?: DiscordDirectMessageOptions,
   ) => Promise<DiscordDirectMessageResult>;
 }
 
-const DISCORD_SNOWFLAKE_PATTERN = /^\d{17,20}$/;
 const DEFAULT_SITE_BASE_URL = "https://www.ordonet.co.kr";
 const AMERI_SIGNATURE = "NOVUS ORDO · AMERI";
 const DISCORD_MARKDOWN_CHARACTERS = new Set(
@@ -113,7 +117,10 @@ function getSiteBaseUrl(override?: string): string {
   }
 }
 
-function buildNonce(input: EquipmentWorkshopDiscordDmInput): string {
+function buildNonce(
+  input: EquipmentWorkshopDiscordDmInput,
+  recipientKind: DiscordDmRecipientKind = "primary",
+): string {
   return createHash("sha256")
     .update(
       [
@@ -121,6 +128,7 @@ function buildNonce(input: EquipmentWorkshopDiscordDmInput): string {
         input.requestId,
         input.event,
         input.quoteVersion ?? 0,
+        ...(recipientKind === "mirror" ? ["mirror"] : []),
       ].join(":"),
     )
     .digest("hex")
@@ -289,26 +297,49 @@ export async function notifyEquipmentWorkshopDiscordDm(
   const normalizedBotToken = botToken?.trim();
   if (!normalizedBotToken) return "skipped_unconfigured";
 
-  const user = await (dependencies.findUser ?? findUserById)(input.userId);
-  if (!user) return "skipped_unlinked";
-  if (user.status !== "ACTIVE") return "skipped_inactive";
-  if (
-    !user.discordId ||
-    !DISCORD_SNOWFLAKE_PATTERN.test(user.discordId)
-  ) {
-    return "skipped_unlinked";
+  const resolution = await (
+    dependencies.resolveRecipients ?? resolveDiscordDmRecipients
+  )(
+    input.userId,
+    { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
+  );
+  if (resolution.sourceState === "inactive") {
+    return "skipped_inactive";
+  }
+  if (resolution.recipients.length === 0) return "skipped_unlinked";
+
+  const content = buildEquipmentWorkshopDiscordDmContent(
+    input,
+    dependencies.siteBaseUrl,
+  );
+  const send = dependencies.sendDirectMessage ?? sendDiscordDirectMessage;
+  const errors: unknown[] = [];
+  let sentCount = 0;
+  for (const recipient of resolution.recipients) {
+    try {
+      await send(
+        {
+          recipientId: recipient.discordId,
+          content,
+          nonce: buildNonce(input, recipient.kind),
+        },
+        { botToken: normalizedBotToken },
+      );
+      sentCount += 1;
+    } catch (error) {
+      errors.push(error);
+    }
   }
 
-  await (dependencies.sendDirectMessage ?? sendDiscordDirectMessage)(
-    {
-      recipientId: user.discordId,
-      content: buildEquipmentWorkshopDiscordDmContent(
-        input,
-        dependencies.siteBaseUrl,
+  const retryableError = errors.find(
+    (error) =>
+      !(
+        error instanceof Error &&
+        /Discord .* 실패 \(403\)/.test(error.message)
       ),
-      nonce: buildNonce(input),
-    },
-    { botToken: normalizedBotToken },
   );
+  if (retryableError) throw retryableError;
+  if (sentCount > 0) return "sent";
+  if (errors.length > 0) throw errors[0];
   return "sent";
 }

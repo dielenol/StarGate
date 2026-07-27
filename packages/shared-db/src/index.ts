@@ -231,6 +231,20 @@ export { ensureChangeLogsIndexes } from "./migrations/ensure-change-logs-indexes
 
 export { isValidObjectId } from "./utils.js";
 
+/* ── Discord delivery routing ── */
+
+export {
+  JTEST_DISCORD_DM_MIRROR_RULE,
+  resolveDiscordDmRecipients,
+} from "./discord-dm-recipients.js";
+export type {
+  DiscordDmMirrorRule,
+  DiscordDmRecipient,
+  DiscordDmRecipientKind,
+  DiscordDmRecipientResolution,
+  DiscordDmSourceState,
+} from "./discord-dm-recipients.js";
+
 /* ── CRUD ── */
 
 export * from "./crud/index.js";
