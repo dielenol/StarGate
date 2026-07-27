@@ -5,7 +5,7 @@
  * @module services/session-close
  */
 
-import type { Client } from "discord.js";
+import type { Client, MessageCreateOptions } from "discord.js";
 import {
   type TextChannel,
   ActionRowBuilder,
@@ -23,13 +23,22 @@ import {
 import { CancelEmbed, D, L, W } from "../constants/registrar-voice.js";
 import {
   beginSessionFinalization,
-  completeSessionFinalization,
-  findSessionById,
-  markSessionFinalizationAnnouncementDone,
-  markSessionFinalizationLogDone,
-  recordSessionFinalizationResultMessage,
   retractClosedSession,
 } from "../db/sessions.js";
+import {
+  appendFinalizationLogOnce,
+  buildFinalizationMessageNonce,
+  claimSessionFinalizationLease,
+  completeFinalizationWithLease,
+  extendSessionFinalizationLease,
+  getFinalizationDeliveryDisposition,
+  markFinalizationAnnouncementDone,
+  markFinalizationDeliveryDispatching,
+  markFinalizationDeliveryUnknown,
+  markFinalizationLogDone,
+  recordFinalizationResultMessage,
+  releaseSessionFinalizationLease,
+} from "../db/finalization-lease.js";
 import { findBySessionId, countByStatus } from "../db/responses.js";
 import {
   buildSessionEmbed,
@@ -52,9 +61,13 @@ export type SessionFinalizeResult = {
 
 type PendingStatus = "CLOSING" | "CANCELING";
 type FinalizationClaim = {
-  session: Session;
-  transitioned: boolean;
+  claimToken: string;
+  session: Session & { finalizationOperationKey: string };
 };
+
+const RESULT_MESSAGE_RECORD_ATTEMPTS = 3;
+const DELIVERY_RECONCILIATION_WARNING =
+  "Discord 결과 공지 전달 상태 확인이 필요합니다.";
 
 function buildDisabledAttendRow(sessionId: string) {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -75,7 +88,9 @@ async function claimOrResumeFinalization(
   session: Session,
   pendingStatus: PendingStatus,
   requestedBy: string | undefined,
-  kind: "CLOSE" | "CANCEL"
+  kind: "CLOSE" | "CANCEL",
+  trigger: "scheduled" | "force" | "cancel",
+  cancelReason?: string | null
 ): Promise<FinalizationClaim | null> {
   if (session._id === undefined || session._id === null) {
     return null;
@@ -83,41 +98,55 @@ async function claimOrResumeFinalization(
 
   const sid = String(session._id);
   if (session.status === "OPEN") {
-    const claimed = await beginSessionFinalization(
+    await beginSessionFinalization(
       sid,
       pendingStatus,
       kind,
-      requestedBy
+      {
+        trigger,
+        requestedBy,
+        cancelReason,
+      }
     );
-    if (claimed) {
-      return {
-        transitioned: true,
-        session: {
-          ...session,
-          status: pendingStatus,
-          updatedAt: new Date(),
-          finalizationPending: true,
-          finalizationKind: kind,
-          finalizationAnnouncementDone: false,
-          finalizationLogDone: false,
-          finalizationRequestedBy: requestedBy,
-          finalizationRequestedAt: new Date(),
-        },
-      };
-    }
   }
 
-  const current = await findSessionById(sid);
-  if (
-    current &&
-    current.status === pendingStatus &&
-    current.finalizationPending &&
-    current.finalizationKind === kind
-  ) {
-    return { transitioned: true, session: current };
-  }
+  const lease = await claimSessionFinalizationLease(
+    sid,
+    pendingStatus,
+    kind
+  );
+  if (!lease?.session.finalizationOperationKey?.trim()) return null;
+  return {
+    claimToken: lease.token,
+    session: lease.session as Session & { finalizationOperationKey: string },
+  };
+}
 
-  return null;
+export function resolveCloseFinalizationContext(
+  session: Session,
+  fallback: { kind: "scheduled" | "force"; actorUserId?: string }
+): { kind: "scheduled" | "force"; actorUserId?: string } {
+  const storedTrigger = session.finalizationTrigger;
+  return {
+    kind:
+      storedTrigger === "scheduled" || storedTrigger === "force"
+        ? storedTrigger
+        : fallback.kind,
+    actorUserId: session.finalizationRequestedBy ?? fallback.actorUserId,
+  };
+}
+
+export function resolveCancelFinalizationContext(
+  session: Session,
+  fallback: { actorUserId: string; reason: string | null }
+): { actorUserId: string; reason: string | null } {
+  return {
+    actorUserId: session.finalizationRequestedBy ?? fallback.actorUserId,
+    reason:
+      session.finalizationCancelReason !== undefined
+        ? session.finalizationCancelReason
+        : fallback.reason,
+  };
 }
 
 function pushStatePersistWarning(
@@ -127,6 +156,150 @@ function pushStatePersistWarning(
 ): void {
   warnings.push(W.statePersistFail);
   console.error(logLabel, sid);
+}
+
+async function renewFinalizationLeaseOrWarn(
+  warnings: string[],
+  sid: string,
+  status: PendingStatus,
+  claimToken: string,
+  logLabel: string
+): Promise<boolean> {
+  try {
+    const renewed = await extendSessionFinalizationLease(
+      sid,
+      status,
+      claimToken
+    );
+    if (renewed) return true;
+  } catch (err) {
+    console.error(logLabel, sid, err);
+  }
+  pushStatePersistWarning(warnings, logLabel, sid);
+  return false;
+}
+
+async function persistResultMessageWithRetry(
+  sid: string,
+  status: PendingStatus,
+  claimToken: string,
+  messageId: string,
+  logLabel: string
+): Promise<boolean> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= RESULT_MESSAGE_RECORD_ATTEMPTS; attempt++) {
+    try {
+      if (
+        await recordFinalizationResultMessage(
+          sid,
+          status,
+          claimToken,
+          messageId
+        )
+      ) {
+        return true;
+      }
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  console.error(logLabel, sid, lastError);
+  return false;
+}
+
+async function releaseFinalizationLeaseSafely(
+  sid: string,
+  claimToken: string
+): Promise<void> {
+  await releaseSessionFinalizationLease(sid, claimToken).catch((err) => {
+    console.error(L.finalizationClaimRelease, sid, err);
+  });
+}
+
+async function prepareFinalizationDelivery(
+  warnings: string[],
+  sid: string,
+  status: PendingStatus,
+  claimToken: string,
+  activeSession: Session,
+  logLabel: string
+): Promise<boolean> {
+  const disposition = getFinalizationDeliveryDisposition(
+    activeSession.finalizationDeliveryState,
+    activeSession.finalizationResultMessageId
+  );
+  if (disposition === "SKIP") return false;
+
+  if (disposition === "RECONCILE") {
+    if (activeSession.finalizationDeliveryState !== "DELIVERY_UNKNOWN") {
+      try {
+        await markFinalizationDeliveryUnknown(sid, status, claimToken);
+      } catch (err) {
+        console.error(logLabel, sid, err);
+      }
+    }
+    warnings.push(DELIVERY_RECONCILIATION_WARNING);
+    return false;
+  }
+
+  try {
+    const marked = await markFinalizationDeliveryDispatching(
+      sid,
+      status,
+      claimToken
+    );
+    if (marked) {
+      activeSession.finalizationDeliveryState = "DISPATCHING";
+      return true;
+    }
+  } catch (err) {
+    console.error(logLabel, sid, err);
+  }
+  pushStatePersistWarning(warnings, logLabel, sid);
+  return false;
+}
+
+async function quarantineUnknownDelivery(
+  warnings: string[],
+  sid: string,
+  status: PendingStatus,
+  claimToken: string,
+  activeSession: Session,
+  logLabel: string,
+  observedMessageId?: string
+): Promise<void> {
+  try {
+    const marked = await markFinalizationDeliveryUnknown(
+      sid,
+      status,
+      claimToken,
+      observedMessageId
+    );
+    if (marked) {
+      activeSession.finalizationDeliveryState = "DELIVERY_UNKNOWN";
+    } else {
+      console.error(logLabel, sid);
+    }
+  } catch (err) {
+    console.error(logLabel, sid, err);
+  }
+  warnings.push(DELIVERY_RECONCILIATION_WARNING);
+}
+
+/**
+ * 결과 카드/문구 생성과 마지막 lease 갱신을 모두 끝낸 뒤에만 전달 상태를
+ * DISPATCHING으로 바꾼다. Discord 요청 전에 실패한 작업은 PENDING에 남아
+ * 다음 lease에서 안전하게 재시도할 수 있다.
+ */
+export async function prepareFinalizationDispatchAttempt<T>(
+  buildPayload: () => Promise<T> | T,
+  renewLease: () => Promise<boolean>,
+  markDispatching: () => Promise<boolean>
+): Promise<T | null> {
+  const payload = await buildPayload();
+  if (!(await renewLease())) return null;
+  if (!(await markDispatching())) return null;
+  return payload;
 }
 
 /**
@@ -149,177 +322,275 @@ export async function executeSessionClose(
     session,
     "CLOSING",
     options.actorUserId,
-    "CLOSE"
+    "CLOSE",
+    options.kind
   );
   if (!claimed) {
     return { transitioned: false, warnings };
   }
 
-  const activeSession = claimed.session;
-  const closedSession: Session = {
-    ...activeSession,
-    status: "CLOSED",
-    updatedAt: new Date(),
-  };
-
   try {
-    const guild = await client.guilds.fetch(closedSession.guildId);
-    const channel = await guild.channels.fetch(closedSession.channelId);
-    if (!channel?.isTextBased() || !("send" in channel)) {
-      warnings.push(W.channelInaccessible);
-    } else {
-      const members = await fetchGuildMembersCached(guild);
-      const responses = await findBySessionId(sid);
-      const counts = await countByStatus(sid);
+    const activeSession = claimed.session;
+    const context = resolveCloseFinalizationContext(activeSession, options);
+    const closedSession: Session = {
+      ...activeSession,
+      status: "CLOSED",
+      updatedAt: new Date(),
+    };
 
-      const noResponseIds = await getNonResponders(
-        guild,
-        closedSession.targetRoleId,
-        responses,
-        members
-      );
-      const yesIds = responses
-        .filter((r) => r.status === "YES")
-        .map((r) => r.userId);
-      const noIds = responses
-        .filter((r) => r.status === "NO")
-        .map((r) => r.userId);
+    try {
+      const guild = await client.guilds.fetch(closedSession.guildId);
+      const channel = await guild.channels.fetch(closedSession.channelId);
+      if (!channel?.isTextBased() || !("send" in channel)) {
+        warnings.push(W.channelInaccessible);
+      } else {
+        const members = await fetchGuildMembersCached(guild);
+        const responses = await findBySessionId(sid);
+        const counts = await countByStatus(sid);
 
-      try {
-        const msg = await channel.messages.fetch(closedSession.messageId);
-        const embed = buildSessionEmbed(
-          closedSession,
-          counts,
-          yesIds,
-          noIds,
-          sid
+        const noResponseIds = await getNonResponders(
+          guild,
+          closedSession.targetRoleId,
+          responses,
+          members
         );
-        embed.setFooter({
-          text: `${EMBED_FOOTER_ANNOUNCE_CLOSED}\n— ${REGISTRAR_SIGNATURE}`,
-        });
+        const yesIds = responses
+          .filter((r) => r.status === "YES")
+          .map((r) => r.userId);
+        const noIds = responses
+          .filter((r) => r.status === "NO")
+          .map((r) => r.userId);
 
-        if (!activeSession.finalizationAnnouncementDone) {
-          await msg.edit({
-            embeds: [embed],
-            components: [buildDisabledAttendRow(sid)],
-          });
-          const persisted = await markSessionFinalizationAnnouncementDone(
-            sid,
-            "CLOSING"
-          );
-          if (!persisted) {
-            pushStatePersistWarning(warnings, L.sessionCloseState, sid);
-          } else {
-            activeSession.finalizationAnnouncementDone = true;
-          }
-        }
-      } catch (err) {
-        if (!activeSession.finalizationAnnouncementDone) {
-          warnings.push(W.announceEditFail);
-          console.error(L.sessionCloseAnnounceEdit, err);
-        }
-      }
-
-      if (warnings.length > 0) {
-        return { transitioned: true, warnings };
-      }
-
-      if (!activeSession.finalizationResultMessageId?.trim()) {
         try {
-          const resultEmbed = buildResultEmbed(
+          const msg = await channel.messages.fetch(closedSession.messageId);
+          const embed = buildSessionEmbed(
             closedSession,
+            counts,
             yesIds,
             noIds,
-            noResponseIds
+            sid
           );
-
-          const cardPng = await buildSessionResultCardBuffer({
-            session: closedSession,
-            guildId: closedSession.guildId,
-            members,
-            responses,
-            yesIds,
-            noIds,
-            noResponseIds,
-            cardMode: "closed",
+          embed.setFooter({
+            text: `${EMBED_FOOTER_ANNOUNCE_CLOSED}\n— ${REGISTRAR_SIGNATURE}`,
           });
 
-          const files =
-            cardPng !== null
-              ? [new AttachmentBuilder(cardPng, { name: "session-result.png" })]
-              : undefined;
-
-          const announceRow = buildAnnounceLinkRow(closedSession);
-          const resultMessage = await (channel as TextChannel).send({
-            content: D.closeChannelAnnounceWithHere(
-              options.kind,
-              safeTitleForAnnouncePing(closedSession.title)
-            ),
-            embeds: [resultEmbed],
-            files,
-            components: announceRow ? [announceRow] : undefined,
-            allowedMentions: { parse: ["everyone"] },
-          });
-
-          const persisted = await recordSessionFinalizationResultMessage(
-            sid,
-            resultMessage.id
-          );
-          if (!persisted) {
-            pushStatePersistWarning(warnings, L.sessionCloseState, sid);
-          } else {
-            activeSession.finalizationResultMessageId = resultMessage.id;
+          if (!activeSession.finalizationAnnouncementDone) {
+            if (
+              !(await renewFinalizationLeaseOrWarn(
+                warnings,
+                sid,
+                "CLOSING",
+                claimed.claimToken,
+                L.sessionCloseState
+              ))
+            ) {
+              return { transitioned: true, warnings };
+            }
+            await msg.edit({
+              embeds: [embed],
+              components: [buildDisabledAttendRow(sid)],
+            });
+            const persisted = await markFinalizationAnnouncementDone(
+              sid,
+              "CLOSING",
+              claimed.claimToken
+            );
+            if (!persisted) {
+              pushStatePersistWarning(warnings, L.sessionCloseState, sid);
+            } else {
+              activeSession.finalizationAnnouncementDone = true;
+            }
           }
         } catch (err) {
-          warnings.push(W.resultSendFail);
-          console.error(L.sessionCloseResultSend, err);
+          if (!activeSession.finalizationAnnouncementDone) {
+            warnings.push(W.announceEditFail);
+            console.error(L.sessionCloseAnnounceEdit, err);
+          }
         }
-      }
-    }
-  } catch (err) {
-    warnings.push(W.discordErr);
-    console.error(L.sessionCloseFollowup, err);
-  }
 
-  if (warnings.length > 0) {
-    return { transitioned: true, warnings };
-  }
-
-  if (!activeSession.finalizationLogDone) {
-    try {
-      await appendSessionLog(
-        sid,
-        options.kind === "force" ? "FORCE_CLOSED" : "CLOSED",
-        {
-          userId: options.actorUserId,
-          payload: {
-            kind: options.kind,
-            repaired: session.status !== "OPEN",
-          },
+        if (warnings.length > 0) {
+          return { transitioned: true, warnings };
         }
-      );
-      const persisted = await markSessionFinalizationLogDone(sid, "CLOSING");
-      if (!persisted) {
-        pushStatePersistWarning(warnings, L.sessionCloseState, sid);
-      } else {
-        activeSession.finalizationLogDone = true;
+
+        if (!activeSession.finalizationResultMessageId?.trim()) {
+          try {
+            const messagePayload =
+              await prepareFinalizationDispatchAttempt<MessageCreateOptions>(
+                async () => {
+                  const resultEmbed = buildResultEmbed(
+                    closedSession,
+                    yesIds,
+                    noIds,
+                    noResponseIds
+                  );
+                  const cardPng = await buildSessionResultCardBuffer({
+                    session: closedSession,
+                    guildId: closedSession.guildId,
+                    members,
+                    responses,
+                    yesIds,
+                    noIds,
+                    noResponseIds,
+                    cardMode: "closed",
+                  });
+                  const files =
+                    cardPng !== null
+                      ? [
+                          new AttachmentBuilder(cardPng, {
+                            name: "session-result.png",
+                          }),
+                        ]
+                      : undefined;
+                  const announceRow = buildAnnounceLinkRow(closedSession);
+                  return {
+                    content: D.closeChannelAnnounceWithHere(
+                      context.kind,
+                      safeTitleForAnnouncePing(closedSession.title)
+                    ),
+                    embeds: [resultEmbed],
+                    files,
+                    components: announceRow ? [announceRow] : undefined,
+                    allowedMentions: { parse: ["everyone"] },
+                    nonce: buildFinalizationMessageNonce(
+                      sid,
+                      "CLOSE",
+                      activeSession.finalizationRequestedAt
+                    ),
+                    enforceNonce: true,
+                  };
+                },
+                () =>
+                  renewFinalizationLeaseOrWarn(
+                    warnings,
+                    sid,
+                    "CLOSING",
+                    claimed.claimToken,
+                    L.sessionCloseState
+                  ),
+                () =>
+                  prepareFinalizationDelivery(
+                    warnings,
+                    sid,
+                    "CLOSING",
+                    claimed.claimToken,
+                    activeSession,
+                    L.sessionCloseState
+                  )
+              );
+            if (!messagePayload) {
+              return { transitioned: true, warnings };
+            }
+
+            const resultMessage = await (channel as TextChannel).send(
+              messagePayload
+            );
+
+            const persisted = await persistResultMessageWithRetry(
+              sid,
+              "CLOSING",
+              claimed.claimToken,
+              resultMessage.id,
+              L.sessionCloseState
+            );
+            if (!persisted) {
+              await quarantineUnknownDelivery(
+                warnings,
+                sid,
+                "CLOSING",
+                claimed.claimToken,
+                activeSession,
+                L.sessionCloseState,
+                resultMessage.id
+              );
+            } else {
+              activeSession.finalizationResultMessageId = resultMessage.id;
+              activeSession.finalizationDeliveryState = "SENT";
+            }
+          } catch (err) {
+            if (activeSession.finalizationDeliveryState === "DISPATCHING") {
+              await quarantineUnknownDelivery(
+                warnings,
+                sid,
+                "CLOSING",
+                claimed.claimToken,
+                activeSession,
+                L.sessionCloseState
+              );
+            }
+            warnings.push(W.resultSendFail);
+            console.error(L.sessionCloseResultSend, err);
+          }
+        }
       }
     } catch (err) {
-      warnings.push(W.logFail);
-      console.error(L.sessionCloseLog, err);
+      warnings.push(W.discordErr);
+      console.error(L.sessionCloseFollowup, err);
     }
-  }
 
-  if (warnings.length > 0) {
+    if (warnings.length > 0) {
+      return { transitioned: true, warnings };
+    }
+
+    if (!activeSession.finalizationLogDone) {
+      try {
+        if (
+          !(await renewFinalizationLeaseOrWarn(
+            warnings,
+            sid,
+            "CLOSING",
+            claimed.claimToken,
+            L.sessionCloseState
+          ))
+        ) {
+          return { transitioned: true, warnings };
+        }
+        await appendFinalizationLogOnce(
+          sid,
+          activeSession.finalizationOperationKey,
+          context.kind === "force" ? "FORCE_CLOSED" : "CLOSED",
+          {
+            userId: context.actorUserId,
+            payload: {
+              kind: context.kind,
+              repaired: session.status !== "OPEN",
+            },
+          }
+        );
+        const persisted = await markFinalizationLogDone(
+          sid,
+          "CLOSING",
+          claimed.claimToken,
+          activeSession.finalizationOperationKey
+        );
+        if (!persisted) {
+          pushStatePersistWarning(warnings, L.sessionCloseState, sid);
+        } else {
+          activeSession.finalizationLogDone = true;
+        }
+      } catch (err) {
+        warnings.push(W.logFail);
+        console.error(L.sessionCloseLog, err);
+      }
+    }
+
+    if (warnings.length > 0) {
+      return { transitioned: true, warnings };
+    }
+
+    const completed = await completeFinalizationWithLease(
+      sid,
+      "CLOSING",
+      "CLOSED",
+      claimed.claimToken
+    );
+    if (!completed) {
+      pushStatePersistWarning(warnings, L.sessionCloseState, sid);
+    }
+
     return { transitioned: true, warnings };
+  } finally {
+    await releaseFinalizationLeaseSafely(sid, claimed.claimToken);
   }
-
-  const completed = await completeSessionFinalization(sid, "CLOSING", "CLOSED");
-  if (!completed) {
-    pushStatePersistWarning(warnings, L.sessionCloseState, sid);
-  }
-
-  return { transitioned: true, warnings };
 }
 
 /**
@@ -347,113 +618,235 @@ export async function executeSessionCancel(
     session,
     "CANCELING",
     actorUserId,
-    "CANCEL"
+    "CANCEL",
+    "cancel",
+    reason
   );
   if (!claimed) {
     return { transitioned: false, warnings };
   }
 
-  const activeSession = claimed.session;
-  const canceledSession: Session = {
-    ...activeSession,
-    status: "CANCELED",
-    updatedAt: new Date(),
-  };
-
   try {
-    const guild = await client.guilds.fetch(canceledSession.guildId);
-    const channel = await guild.channels.fetch(canceledSession.channelId);
-    if (!channel?.isTextBased() || !("send" in channel)) {
-      warnings.push(W.cancelAnnounceInaccessible);
-    } else {
-      if (!activeSession.finalizationAnnouncementDone) {
-        try {
-          const msg = await channel.messages.fetch(canceledSession.messageId);
-          const cancelEmbed = new EmbedBuilder()
-            .setTitle(CancelEmbed.title(canceledSession.title))
-            .setColor(REGISTRAR_COLORS.primary)
-            .setDescription(CancelEmbed.body)
-            .setFooter({ text: CancelEmbed.footer })
-            .setTimestamp();
+    const activeSession = claimed.session;
+    const context = resolveCancelFinalizationContext(activeSession, {
+      actorUserId,
+      reason,
+    });
+    const canceledSession: Session = {
+      ...activeSession,
+      status: "CANCELED",
+      updatedAt: new Date(),
+    };
 
-          await msg.edit({
-            embeds: [cancelEmbed],
-            components: [buildDisabledAttendRow(sid)],
-          });
-          const persisted = await markSessionFinalizationAnnouncementDone(
-            sid,
-            "CANCELING"
-          );
-          if (!persisted) {
-            pushStatePersistWarning(warnings, L.sessionCancelState, sid);
-          } else {
-            activeSession.finalizationAnnouncementDone = true;
+    try {
+      const guild = await client.guilds.fetch(canceledSession.guildId);
+      const channel = await guild.channels.fetch(canceledSession.channelId);
+      if (!channel?.isTextBased() || !("send" in channel)) {
+        warnings.push(W.cancelAnnounceInaccessible);
+      } else {
+        if (!activeSession.finalizationAnnouncementDone) {
+          try {
+            const msg = await channel.messages.fetch(canceledSession.messageId);
+            const cancelEmbed = new EmbedBuilder()
+              .setTitle(CancelEmbed.title(canceledSession.title))
+              .setColor(REGISTRAR_COLORS.primary)
+              .setDescription(CancelEmbed.body)
+              .setFooter({ text: CancelEmbed.footer })
+              .setTimestamp();
+
+            if (
+              !(await renewFinalizationLeaseOrWarn(
+                warnings,
+                sid,
+                "CANCELING",
+                claimed.claimToken,
+                L.sessionCancelState
+              ))
+            ) {
+              return { transitioned: true, warnings };
+            }
+            await msg.edit({
+              embeds: [cancelEmbed],
+              components: [buildDisabledAttendRow(sid)],
+            });
+            const persisted = await markFinalizationAnnouncementDone(
+              sid,
+              "CANCELING",
+              claimed.claimToken
+            );
+            if (!persisted) {
+              pushStatePersistWarning(warnings, L.sessionCancelState, sid);
+            } else {
+              activeSession.finalizationAnnouncementDone = true;
+            }
+          } catch (err) {
+            warnings.push(W.announceEditFail);
+            console.error(L.sessionCancelEdit, err);
           }
-        } catch (err) {
-          warnings.push(W.announceEditFail);
-          console.error(L.sessionCancelEdit, err);
+        }
+
+        if (warnings.length > 0) {
+          return { transitioned: true, warnings };
+        }
+
+        const legacyCancelNoticeAlreadySent =
+          activeSession.finalizationLogDone === true &&
+          !activeSession.finalizationResultMessageId?.trim();
+        if (
+          !activeSession.finalizationResultMessageId?.trim() &&
+          !legacyCancelNoticeAlreadySent
+        ) {
+          try {
+            const messagePayload =
+              await prepareFinalizationDispatchAttempt<MessageCreateOptions>(
+                () => {
+                  const announceRow = buildAnnounceLinkRow(canceledSession);
+                  return {
+                    content: D.cancelChannelAnnounceWithHere(
+                      safeTitleForAnnouncePing(canceledSession.title),
+                      context.reason
+                    ),
+                    components: announceRow ? [announceRow] : undefined,
+                    allowedMentions: { parse: ["everyone"] },
+                    nonce: buildFinalizationMessageNonce(
+                      sid,
+                      "CANCEL",
+                      activeSession.finalizationRequestedAt
+                    ),
+                    enforceNonce: true,
+                  };
+                },
+                () =>
+                  renewFinalizationLeaseOrWarn(
+                    warnings,
+                    sid,
+                    "CANCELING",
+                    claimed.claimToken,
+                    L.sessionCancelState
+                  ),
+                () =>
+                  prepareFinalizationDelivery(
+                    warnings,
+                    sid,
+                    "CANCELING",
+                    claimed.claimToken,
+                    activeSession,
+                    L.sessionCancelState
+                  )
+              );
+            if (!messagePayload) {
+              return { transitioned: true, warnings };
+            }
+            const resultMessage = await (channel as TextChannel).send(
+              messagePayload
+            );
+
+            const persisted = await persistResultMessageWithRetry(
+              sid,
+              "CANCELING",
+              claimed.claimToken,
+              resultMessage.id,
+              L.sessionCancelState
+            );
+            if (!persisted) {
+              await quarantineUnknownDelivery(
+                warnings,
+                sid,
+                "CANCELING",
+                claimed.claimToken,
+                activeSession,
+                L.sessionCancelState,
+                resultMessage.id
+              );
+            } else {
+              activeSession.finalizationResultMessageId = resultMessage.id;
+              activeSession.finalizationDeliveryState = "SENT";
+            }
+          } catch (err) {
+            if (activeSession.finalizationDeliveryState === "DISPATCHING") {
+              await quarantineUnknownDelivery(
+                warnings,
+                sid,
+                "CANCELING",
+                claimed.claimToken,
+                activeSession,
+                L.sessionCancelState
+              );
+            }
+            warnings.push(W.cancelAnnounceInaccessible);
+            console.error(L.sessionCancelAnnounce, err);
+          }
         }
       }
-
-      try {
-        const announceRow = buildAnnounceLinkRow(canceledSession);
-        await (channel as TextChannel).send({
-          content: D.cancelChannelAnnounceWithHere(
-            safeTitleForAnnouncePing(canceledSession.title),
-            reason
-          ),
-          components: announceRow ? [announceRow] : undefined,
-          allowedMentions: { parse: ["everyone"] },
-        });
-      } catch (err) {
-        warnings.push(W.cancelAnnounceInaccessible);
-        console.error(L.sessionCancelAnnounce, err);
-      }
-    }
-  } catch (err) {
-    warnings.push(W.discordErr);
-    console.error(L.sessionCancelFollow, err);
-  }
-
-  if (warnings.length > 0) {
-    return { transitioned: true, warnings };
-  }
-
-  if (!activeSession.finalizationLogDone) {
-    try {
-      await appendSessionLog(sid, "CANCELED", {
-        userId: actorUserId,
-        payload: {
-          repaired: session.status !== "OPEN",
-          reason: reason ?? undefined,
-        },
-      });
-      const persisted = await markSessionFinalizationLogDone(sid, "CANCELING");
-      if (!persisted) {
-        pushStatePersistWarning(warnings, L.sessionCancelState, sid);
-      } else {
-        activeSession.finalizationLogDone = true;
-      }
     } catch (err) {
-      warnings.push(W.logFail);
-      console.error(L.sessionCancelLog, err);
+      warnings.push(W.discordErr);
+      console.error(L.sessionCancelFollow, err);
     }
-  }
 
-  if (warnings.length > 0) {
+    if (warnings.length > 0) {
+      return { transitioned: true, warnings };
+    }
+
+    if (!activeSession.finalizationLogDone) {
+      try {
+        if (
+          !(await renewFinalizationLeaseOrWarn(
+            warnings,
+            sid,
+            "CANCELING",
+            claimed.claimToken,
+            L.sessionCancelState
+          ))
+        ) {
+          return { transitioned: true, warnings };
+        }
+        await appendFinalizationLogOnce(
+          sid,
+          activeSession.finalizationOperationKey,
+          "CANCELED",
+          {
+            userId: context.actorUserId,
+            payload: {
+              repaired: session.status !== "OPEN",
+              reason: context.reason ?? undefined,
+            },
+          }
+        );
+        const persisted = await markFinalizationLogDone(
+          sid,
+          "CANCELING",
+          claimed.claimToken,
+          activeSession.finalizationOperationKey
+        );
+        if (!persisted) {
+          pushStatePersistWarning(warnings, L.sessionCancelState, sid);
+        } else {
+          activeSession.finalizationLogDone = true;
+        }
+      } catch (err) {
+        warnings.push(W.logFail);
+        console.error(L.sessionCancelLog, err);
+      }
+    }
+
+    if (warnings.length > 0) {
+      return { transitioned: true, warnings };
+    }
+
+    const completed = await completeFinalizationWithLease(
+      sid,
+      "CANCELING",
+      "CANCELED",
+      claimed.claimToken
+    );
+    if (!completed) {
+      pushStatePersistWarning(warnings, L.sessionCancelState, sid);
+    }
+
     return { transitioned: true, warnings };
+  } finally {
+    await releaseFinalizationLeaseSafely(sid, claimed.claimToken);
   }
-
-  const completed = await completeSessionFinalization(
-    sid,
-    "CANCELING",
-    "CANCELED"
-  );
-  if (!completed) {
-    pushStatePersistWarning(warnings, L.sessionCancelState, sid);
-  }
-
-  return { transitioned: true, warnings };
 }
 
 /**

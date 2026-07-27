@@ -100,7 +100,8 @@ Discord 봇 **레지스트라**가 실제로 무엇을 하는지, 권한·데이
 
 ### 6.4 인덱스
 
-- `db/client.ts`의 `ensureIndexes` 참고: 마감 스캔·길드별 목록·리마인드 후보 조회·응답 역조회용.
+- 인덱스 정의는 `@stargate/shared-db`가 소유합니다.
+- 봇 시작 시에는 인덱스를 생성하지 않습니다. 배포 전 승인된 one-shot preflight에서 마감 스캔·길드별 목록·리마인드 후보 조회·응답 역조회용 인덱스를 적용·확인합니다.
 
 ---
 
@@ -110,7 +111,11 @@ Discord 봇 **레지스트라**가 실제로 무엇을 하는지, 권한·데이
 
 - **주기:** 약 1분.
 - **대상:** `status=OPEN` 이고 `closeDateTime` ≤ 지금.
-- **처리:** `executeSessionClose` — 낙관적 잠금(`OPEN`→`CLOSED`), 공지 메시지 수정(버튼 비활성·푸터), 확정 보고 채널 전송, 로그, (옵션) PNG.
+- **처리:** `executeSessionClose` — `OPEN`→`CLOSING` 원자 전이 후 세션별 lease/token을 선점하고, 공지 메시지 수정(버튼 비활성·푸터), 확정 보고 채널 전송, 로그, (옵션) PNG를 단계별 저장한 뒤 `CLOSED`로 완료합니다. `CANCELING` 기각 후속 처리도 같은 lease/token을 사용합니다. 최초 trigger(`scheduled`/`force`/`cancel`), 요청자, 취소 사유, operation key는 시작 시 저장하고 resume에서 변경하지 않습니다.
+- **재진입 방지:** 이전 비동기 틱이 끝나지 않았으면 다음 interval 틱을 건너뜁니다. 수동 명령과 스케줄러가 겹쳐도 활성 lease 소유자만 Discord 후속 처리를 수행합니다.
+- **메시지 중복 방지:** 확정·기각 채널 메시지는 등록 ID와 finalization 시작 시각에서 만든 안정적 Discord nonce를 사용합니다. 발송 전에 `DISPATCHING`, 성공 기록 뒤 `SENT`를 저장합니다. 메시지 ID 기록 실패나 중간 재시작으로 전달 결과가 불확실하면 `DELIVERY_UNKNOWN`으로 격리하고 자동 재발송 대상에서 제외하여 운영 reconciliation을 요구합니다.
+- **legacy pending:** 신규 상태 필드가 없는 기존 `CLOSING`/`CANCELING` 문서는 미전송으로 추정하지 않습니다. trigger·취소 사유·operation key·전달 상태 중 하나라도 복원할 수 없으면 `LEGACY_STATE_UNKNOWN`으로 격리해 자동 공지·로그 재생을 중단합니다.
+- **로그 중복 방지:** finalization operation key에서 결정적으로 만든 로그 ID를 사용하므로 append 성공/완료 표시 실패 사이의 재시도도 같은 로그 한 건에 수렴합니다.
 - **재시도:** 레이트리밋 시 `retry_after` 기반 대기, 최대 6회.
 
 ### 7.2 리마인드 (`reminder-checker`)

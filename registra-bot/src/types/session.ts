@@ -9,4 +9,7 @@ export type {
   ResponseStatus,
   ResponseCounts,
   SessionFinalizationKind,
+  SessionFinalizationTrigger,
+  SessionFinalizationDeliveryState,
+  SessionFinalizationReconciliationReason,
 } from "@stargate/shared-db";

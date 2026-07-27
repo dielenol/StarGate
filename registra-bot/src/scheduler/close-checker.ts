@@ -41,10 +41,13 @@ async function processOneWithRetry(
               client,
               session,
               session.finalizationRequestedBy ?? "system",
-              null
+              session.finalizationCancelReason ?? null
             )
           : await executeSessionClose(client, session, {
-              kind: "scheduled",
+              kind:
+                session.finalizationTrigger === "force"
+                  ? "force"
+                  : "scheduled",
               actorUserId: session.finalizationRequestedBy,
             });
       if (result.transitioned && result.warnings.length > 0) {
@@ -69,27 +72,52 @@ async function processOneWithRetry(
   }
 }
 
+async function runCloseCheckerTick(client: Client): Promise<void> {
+  const [sessions, pending] = await Promise.all([
+    findOpenSessionsPastClose(),
+    findSessionsPendingFinalization(),
+  ]);
+  for (const session of [...sessions, ...pending]) {
+    try {
+      await processOneWithRetry(client, session);
+    } catch (err) {
+      console.error(L.closeFail, session._id, err);
+    }
+  }
+}
+
+/**
+ * 이전 비동기 tick이 끝나기 전에 다음 interval이 도착해도 실행을 겹치지 않게 합니다.
+ * 테스트에서는 DB/Discord 없이 mutex 동작만 검증할 수 있도록 runner를 주입받습니다.
+ */
+export function createCloseCheckerTickRunner(
+  runTick: () => Promise<void>,
+  onError: (err: unknown) => void
+): () => void {
+  let running = false;
+
+  return () => {
+    if (running) return;
+    running = true;
+    void runTick()
+      .catch(onError)
+      .finally(() => {
+        running = false;
+      });
+  };
+}
+
 /**
  * 마감 스케줄러를 시작합니다.
  *
  * 반환된 `NodeJS.Timeout` 은 종료 시 `clearInterval` 로 해제해야 합니다.
  */
 export function startCloseChecker(client: Client): NodeJS.Timeout {
-  return setInterval(async () => {
-    try {
-      const [sessions, pending] = await Promise.all([
-        findOpenSessionsPastClose(),
-        findSessionsPendingFinalization(),
-      ]);
-      for (const session of [...sessions, ...pending]) {
-        try {
-          await processOneWithRetry(client, session);
-        } catch (err) {
-          console.error(L.closeFail, session._id, err);
-        }
-      }
-    } catch (err) {
+  const tick = createCloseCheckerTickRunner(
+    () => runCloseCheckerTick(client),
+    (err) => {
       console.error(L.closeTick, err);
     }
-  }, CHECK_INTERVAL_MS);
+  );
+  return setInterval(tick, CHECK_INTERVAL_MS);
 }
