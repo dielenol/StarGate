@@ -138,9 +138,11 @@ test("활성 Discord 연결 사용자에게 단계·견적 버전별 nonce로 DM
   const dependencies = {
     botToken: "ameri-test-token",
     siteBaseUrl: "https://erp.example.test",
-    findUser: async () => ({
-      status: "ACTIVE",
-      discordId: "123456789012345678",
+    resolveRecipients: async () => ({
+      sourceState: "active",
+      recipients: [
+        { kind: "primary", discordId: "123456789012345678" },
+      ],
     }),
     sendDirectMessage: async (input, options) => {
       calls.push({ input, options });
@@ -171,13 +173,41 @@ test("활성 Discord 연결 사용자에게 단계·견적 버전별 nonce로 DM
   assert.notEqual(calls[3].input.nonce, calls[0].input.nonce);
 });
 
+test("JTEST 공방 DM은 원 수신자를 유지하면서 DieLenol 미러에 별도 nonce로 전달한다", async () => {
+  const calls = [];
+  const result = await notifyEquipmentWorkshopDiscordDm(INPUT, {
+    botToken: "ameri-test-token",
+    resolveRecipients: async () => ({
+      sourceState: "active",
+      recipients: [
+        { kind: "primary", discordId: "123456789012345678" },
+        { kind: "mirror", discordId: "423456789012345678" },
+      ],
+    }),
+    sendDirectMessage: async (input) => {
+      calls.push(input);
+      return {
+        channelId: "223456789012345678",
+        messageId: "323456789012345678",
+      };
+    },
+  });
+
+  assert.equal(result, "sent");
+  assert.deepEqual(
+    calls.map(({ recipientId }) => recipientId),
+    ["123456789012345678", "423456789012345678"],
+  );
+  assert.notEqual(calls[0].nonce, calls[1].nonce);
+});
+
 test("토큰 미설정·Discord 미연결·비활성 사용자는 외부 DM을 건너뛴다", async () => {
   let lookupCount = 0;
   const noToken = await notifyEquipmentWorkshopDiscordDm(INPUT, {
     botToken: null,
-    findUser: async () => {
+    resolveRecipients: async () => {
       lookupCount += 1;
-      return null;
+      return { sourceState: "missing", recipients: [] };
     },
   });
   assert.equal(noToken, "skipped_unconfigured");
@@ -185,7 +215,10 @@ test("토큰 미설정·Discord 미연결·비활성 사용자는 외부 DM을 �
 
   const unlinked = await notifyEquipmentWorkshopDiscordDm(INPUT, {
     botToken: "ameri-test-token",
-    findUser: async () => ({ status: "ACTIVE", discordId: null }),
+    resolveRecipients: async () => ({
+      sourceState: "active",
+      recipients: [],
+    }),
     sendDirectMessage: async () => {
       throw new Error("호출되면 안 됨");
     },
@@ -194,9 +227,9 @@ test("토큰 미설정·Discord 미연결·비활성 사용자는 외부 DM을 �
 
   const inactive = await notifyEquipmentWorkshopDiscordDm(INPUT, {
     botToken: "ameri-test-token",
-    findUser: async () => ({
-      status: "INACTIVE",
-      discordId: "123456789012345678",
+    resolveRecipients: async () => ({
+      sourceState: "inactive",
+      recipients: [],
     }),
     sendDirectMessage: async () => {
       throw new Error("호출되면 안 됨");
