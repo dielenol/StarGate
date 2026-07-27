@@ -1,6 +1,21 @@
 /** 마감/기각 후속 처리 종류 */
 export type SessionFinalizationKind = "CLOSE" | "CANCEL";
 
+/** 후속 처리를 최초로 시작한 원인 */
+export type SessionFinalizationTrigger = "scheduled" | "force" | "cancel";
+
+/** Discord 결과 공지 전달 상태 */
+export type SessionFinalizationDeliveryState =
+  | "PENDING"
+  | "DISPATCHING"
+  | "SENT"
+  | "DELIVERY_UNKNOWN";
+
+/** 자동 재개를 중단하고 운영 reconciliation이 필요한 원인 */
+export type SessionFinalizationReconciliationReason =
+  | "DELIVERY_RESULT_UNKNOWN"
+  | "LEGACY_STATE_UNKNOWN";
+
 /** 일정 상태: OPEN(접수 중), CLOSING/CANCELING(후속 처리 중), CLOSED/CANCELED(완료) */
 export type SessionStatus =
   | "OPEN"
@@ -38,10 +53,24 @@ export interface Session {
   finalizationPending?: boolean;
   /** 후속 처리 종류 */
   finalizationKind?: SessionFinalizationKind;
+  /** 최초 시작 원인. 재시작·재시도에서도 변경하지 않습니다. */
+  finalizationTrigger?: SessionFinalizationTrigger;
+  /** 취소 시작 시 전달된 사유. null도 의도된 값으로 보존합니다. */
+  finalizationCancelReason?: string | null;
+  /** 후속 처리 수명주기별 고유 키. 로그 멱등 키로 사용합니다. */
+  finalizationOperationKey?: string;
   /** 원본 공지 수정 완료 여부 */
   finalizationAnnouncementDone?: boolean;
-  /** 마감 확정 보고 메시지 ID (마감 시에만 사용) */
+  /** 마감 확정·기각 결과 공지 메시지 ID */
   finalizationResultMessageId?: string;
+  /** Discord 결과 공지 전달 상태 */
+  finalizationDeliveryState?: SessionFinalizationDeliveryState;
+  /** DELIVERY_UNKNOWN 전환 시 마지막으로 관찰한 Discord 메시지 ID */
+  finalizationDeliveryObservedMessageId?: string;
+  /** 전달 상태를 운영 조정 대상으로 전환한 시각 */
+  finalizationDeliveryUnknownAt?: Date;
+  /** 자동 재개를 중단한 원인 */
+  finalizationReconciliationReason?: SessionFinalizationReconciliationReason;
   /** 운영 로그 기록 완료 여부 */
   finalizationLogDone?: boolean;
   /** 후속 처리를 요청한 사용자 ID */

@@ -1,0 +1,82 @@
+{
+  "name": "@stargate/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./domain/realtime": {
+      "types": "./dist/domain/realtime.d.ts",
+      "import": "./dist/domain/realtime.js"
+    },
+    "./domain/equipment-research": {
+      "types": "./dist/domain/equipment-research.d.ts",
+      "import": "./dist/domain/equipment-research.js"
+    },
+    "./domain/kst-time": {
+      "types": "./dist/domain/kst-time.d.ts",
+      "import": "./dist/domain/kst-time.js"
+    },
+    "./domain/shop-catalog": {
+      "types": "./dist/domain/shop-catalog.d.ts",
+      "import": "./dist/domain/shop-catalog.js"
+    },
+    "./domain/shop-stock": {
+      "types": "./dist/domain/shop-stock.d.ts",
+      "import": "./dist/domain/shop-stock.js"
+    },
+    "./domain/research-discord-card": {
+      "types": "./dist/domain/research-discord-card.d.ts",
+      "import": "./dist/domain/research-discord-card.js"
+    },
+    "./domain/stock-catalog": {
+      "types": "./dist/domain/stock-catalog.d.ts",
+      "import": "./dist/domain/stock-catalog.js"
+    },
+    "./domain/stock-events": {
+      "types": "./dist/domain/stock-events.d.ts",
+      "import": "./dist/domain/stock-events.js"
+    },
+    "./domain/stock-pricing": {
+      "types": "./dist/domain/stock-pricing.d.ts",
+      "import": "./dist/domain/stock-pricing.js"
+    },
+    "./operations/daily-allowance": {
+      "types": "./dist/operations/daily-allowance.d.ts",
+      "import": "./dist/operations/daily-allowance.js"
+    },
+    "./operations/session-reminders": {
+      "types": "./dist/operations/session-reminders.d.ts",
+      "import": "./dist/operations/session-reminders.js"
+    },
+    "./operations/shop-refresh": {
+      "types": "./dist/operations/shop-refresh.d.ts",
+      "import": "./dist/operations/shop-refresh.js"
+    },
+    "./operations/scheduled-job": {
+      "types": "./dist/operations/scheduled-job.d.ts",
+      "import": "./dist/operations/scheduled-job.js"
+    },
+    "./operations/stocks-tick": {
+      "types": "./dist/operations/stocks-tick.d.ts",
+      "import": "./dist/operations/stocks-tick.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm build && node --test test/**/*.test.mjs"
+  },
+  "dependencies": {
+    "@stargate/shared-db": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "typescript": "^5.9.3"
+  }
+}

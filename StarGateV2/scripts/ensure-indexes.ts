@@ -48,7 +48,8 @@ loadEnvFile(resolve(projectRoot, ".env.local"));
 loadEnvFile(resolve(projectRoot, ".env"));
 
 const uri = process.env.MONGODB_URI;
-const dbName = process.env.DB_NAME ?? "stargate";
+const dbName =
+  process.env.MONGODB_DB_NAME ?? process.env.DB_NAME ?? "stargate";
 
 if (!uri) {
   console.error("MONGODB_URI is required.");
@@ -76,9 +77,9 @@ const indexUri = withDefaultUriOptions(uri, {
 initServerless({ uri: indexUri, dbName, maxPoolSize: 5 });
 
 try {
-  console.log("Ensuring MongoDB indexes...");
+  console.log(`Ensuring MongoDB indexes for database "${dbName}"...`);
   await ensureAllIndexes();
-  console.log("MongoDB indexes are up to date.");
+  console.log(`MongoDB indexes are up to date for database "${dbName}".`);
 } finally {
   const client = await getClient().catch(() => null);
   await client?.close();

@@ -9,7 +9,6 @@ import {
   connect as sharedConnect,
   close as sharedClose,
   getClientSync,
-  ensureAllIndexes,
 } from "@stargate/shared-db";
 import { config } from "../config.js";
 
@@ -20,7 +19,6 @@ export async function connectDb(): Promise<void> {
     dbName: config.mongoDbName,
     maxPoolSize: 10,
   });
-  await ensureAllIndexes();
 }
 
 /** MongoDB 연결을 종료합니다. */

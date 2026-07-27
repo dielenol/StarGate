@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit && tsc -p scripts/tsconfig.json --noEmit",
     "optimize:images": "node scripts/optimize-public-images.mjs",
     "db:ensure-indexes": "pnpm --filter @stargate/shared-db build && node --experimental-strip-types scripts/ensure-indexes.ts",
+    "db:preflight-worker-indexes": "pnpm --filter @stargate/shared-db build && node --experimental-strip-types scripts/preflight-worker-indexes.ts",
     "preseed:factions": "pnpm --filter @stargate/shared-db build",
     "seed:factions": "node --experimental-strip-types scripts/seed-factions.ts",
     "preseed:institutions": "pnpm --filter @stargate/shared-db build",
@@ -44,6 +45,7 @@
   "license": "MIT",
   "dependencies": {
     "@auth/core": "^0.41.0",
+    "@stargate/core": "workspace:*",
     "@stargate/shared-db": "workspace:*",
     "@tanstack/react-query": "^5.99.0",
     "@vercel/blob": "^2.6.1",
@@ -52,9 +54,11 @@
     "mongodb": "^7.1.1",
     "next": "^16.1.6",
     "next-auth": "5.0.0-beta.30",
+    "jose": "^6.2.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",

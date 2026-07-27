@@ -14,7 +14,6 @@ import type { MongoClient } from "mongodb";
 import {
   close as sharedClose,
   connect as sharedConnect,
-  ensureAllIndexes,
   getClientSync,
 } from "@stargate/shared-db";
 
@@ -24,8 +23,7 @@ import { config } from "../config.js";
  * MongoDB 에 연결한다. 봇 시작 시 한 번 호출.
  *
  * - long-running 모드로 진입 (Discord bot 은 서버리스 아님).
- * - shared-db 통합 인덱스(`ensureAllIndexes`)를 함께 생성 — trpg_sessions,
- *   trpg_guild_members, trpg_session_notifications 포함.
+ * 인덱스 생성은 배포 전 승인된 one-shot preflight에서만 수행한다.
  */
 export async function connectDb(): Promise<void> {
   await sharedConnect({
@@ -33,7 +31,6 @@ export async function connectDb(): Promise<void> {
     dbName: config.mongoDbName,
     maxPoolSize: 10,
   });
-  await ensureAllIndexes();
 }
 
 /** MongoDB 연결을 종료합니다. 프로세스 종료 시 호출. */

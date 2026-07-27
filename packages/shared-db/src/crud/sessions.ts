@@ -4,11 +4,13 @@
  * sessions 컬렉션에 대한 생성, 조회, 상태 업데이트를 담당합니다.
  */
 
+import { randomUUID } from "node:crypto";
 import { ObjectId, type Filter } from "mongodb";
 
 import type {
   Session,
   SessionFinalizationKind,
+  SessionFinalizationTrigger,
   SessionStatus,
 } from "../types/index.js";
 
@@ -503,9 +505,20 @@ export async function beginSessionFinalization(
   sessionId: string,
   nextStatus: "CLOSING" | "CANCELING",
   kind: SessionFinalizationKind,
-  requestedBy?: string
+  context: {
+    trigger: SessionFinalizationTrigger;
+    requestedBy?: string;
+    cancelReason?: string | null;
+  }
 ): Promise<boolean> {
   if (!ObjectId.isValid(sessionId)) return false;
+  const isCancel = kind === "CANCEL";
+  if (
+    (nextStatus === "CANCELING") !== isCancel ||
+    (context.trigger === "cancel") !== isCancel
+  ) {
+    return false;
+  }
 
   const col = await sessionsCol();
   const result = await col.updateOne(
@@ -519,13 +532,21 @@ export async function beginSessionFinalization(
         updatedAt: new Date(),
         finalizationPending: true,
         finalizationKind: kind,
+        finalizationTrigger: context.trigger,
+        finalizationCancelReason:
+          context.trigger === "cancel" ? context.cancelReason ?? null : null,
+        finalizationOperationKey: randomUUID(),
         finalizationAnnouncementDone: false,
+        finalizationDeliveryState: "PENDING",
         finalizationLogDone: false,
-        finalizationRequestedBy: requestedBy,
+        finalizationRequestedBy: context.requestedBy,
         finalizationRequestedAt: new Date(),
       },
       $unset: {
         finalizationResultMessageId: "",
+        finalizationDeliveryObservedMessageId: "",
+        finalizationDeliveryUnknownAt: "",
+        finalizationReconciliationReason: "",
       },
     }
   );
@@ -571,6 +592,7 @@ export async function recordSessionFinalizationResultMessage(
     {
       $set: {
         finalizationResultMessageId: messageId,
+        finalizationDeliveryState: "SENT",
         updatedAt: new Date(),
       },
     }
@@ -615,9 +637,8 @@ export async function completeSessionFinalization(
       status: currentStatus,
       finalizationPending: true,
       finalizationAnnouncementDone: true,
-      ...(currentStatus === "CLOSING"
-        ? { finalizationResultMessageId: { $exists: true, $ne: "" } }
-        : {}),
+      finalizationDeliveryState: "SENT",
+      finalizationResultMessageId: { $exists: true, $ne: "" },
       finalizationLogDone: true,
     } as unknown as SessionFilter,
     {
@@ -628,8 +649,15 @@ export async function completeSessionFinalization(
       },
       $unset: {
         finalizationKind: "",
+        finalizationTrigger: "",
+        finalizationCancelReason: "",
+        finalizationOperationKey: "",
         finalizationAnnouncementDone: "",
         finalizationResultMessageId: "",
+        finalizationDeliveryState: "",
+        finalizationDeliveryObservedMessageId: "",
+        finalizationDeliveryUnknownAt: "",
+        finalizationReconciliationReason: "",
         finalizationLogDone: "",
         finalizationRequestedBy: "",
         finalizationRequestedAt: "",
@@ -675,6 +703,7 @@ export async function findSessionsPendingFinalization(): Promise<Session[]> {
       finalizationPending: true,
       status: { $in: ["CLOSING", "CANCELING"] },
       finalizationKind: { $in: ["CLOSE", "CANCEL"] },
+      finalizationDeliveryState: { $ne: "DELIVERY_UNKNOWN" },
     } as unknown as SessionFilter)
     .sort({ finalizationRequestedAt: 1, updatedAt: 1 })
     .toArray();

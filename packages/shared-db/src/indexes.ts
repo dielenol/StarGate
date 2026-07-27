@@ -260,10 +260,18 @@ export async function ensureAllIndexes(): Promise<void> {
     ),
 
     /* ── notifications (from task spec) ── */
-    db.collection("notifications").createIndex(
-      { userId: 1, isRead: 1, createdAt: -1 },
-      { name: "notifications_userId_isRead_createdAt" },
-    ),
+    db.collection("notifications").createIndexes([
+      {
+        key: { userId: 1, isRead: 1, createdAt: -1 },
+        name: "notifications_userId_isRead_createdAt",
+      },
+      {
+        key: { dedupeKey: 1 },
+        name: "notifications_dedupeKey_partial_unique",
+        unique: true,
+        partialFilterExpression: { dedupeKey: { $type: "string" } },
+      },
+    ]),
 
     /* ── sessions (from registra-bot) ── */
     db.collection("sessions").createIndexes([
@@ -287,6 +295,15 @@ export async function ensureAllIndexes(): Promise<void> {
           sessionStartReminder24hClaimLeaseUntil: 1,
         },
         name: "sessions_status_targetDateTime_reminderFlag_claimLease",
+      },
+      {
+        key: {
+          finalizationPending: 1,
+          status: 1,
+          finalizationClaimLeaseUntil: 1,
+          finalizationRequestedAt: 1,
+        },
+        name: "sessions_finalization_pending_claimLease",
       },
     ]),
 
@@ -462,6 +479,12 @@ export async function ensureAllIndexes(): Promise<void> {
         key: { ticker: 1, createdAt: -1 },
         name: "stock_price_history_ticker_createdAt",
       },
+      {
+        key: { operationKey: 1 },
+        name: "stock_price_history_operationKey_partial_unique",
+        unique: true,
+        partialFilterExpression: { operationKey: { $type: "string" } },
+      },
     ]),
 
     /* ── player_trades (플레이어 간 통합 자산 거래) ── */
@@ -546,6 +569,64 @@ export async function ensureAllIndexes(): Promise<void> {
     db.collection("trpg_session_notifications").createIndex(
       { sessionId: 1, kind: 1, discordUserId: 1 },
       { name: "trpg_session_notifications_sessionId_kind_userId" },
+    ),
+
+    /* ── long-running worker durable coordination ── */
+    db.collection("scheduled_job_runs").createIndexes([
+      {
+        key: { jobName: 1, slotKey: 1 },
+        name: "scheduled_job_runs_jobName_slotKey_unique",
+        unique: true,
+      },
+      {
+        key: { status: 1, availableAt: 1, leaseUntil: 1 },
+        name: "scheduled_job_runs_status_availableAt_leaseUntil",
+      },
+    ]),
+    db.collection("integration_outbox").createIndexes([
+      {
+        key: { dedupeKey: 1 },
+        name: "integration_outbox_dedupeKey_unique",
+        unique: true,
+      },
+      {
+        key: { status: 1, availableAt: 1, createdAt: 1, _id: 1 },
+        name: "integration_outbox_status_availableAt_createdAt",
+      },
+      {
+        key: {
+          kind: 1,
+          status: 1,
+          availableAt: 1,
+          createdAt: 1,
+          _id: 1,
+        },
+        name: "integration_outbox_kind_status_availableAt_createdAt",
+      },
+      {
+        key: { status: 1, leaseUntil: 1, createdAt: 1, _id: 1 },
+        name: "integration_outbox_status_leaseUntil_createdAt",
+      },
+      {
+        key: {
+          kind: 1,
+          status: 1,
+          leaseUntil: 1,
+          createdAt: 1,
+          _id: 1,
+        },
+        name: "integration_outbox_kind_status_leaseUntil_createdAt",
+      },
+    ]),
+    db.collection("worker_checkpoints").createIndex(
+      { name: 1 },
+      { name: "worker_checkpoints_name_unique", unique: true },
+    ),
+
+    /* ── desired-state consumer due scans ── */
+    db.collection("research_discord_cards").createIndex(
+      { nextAttemptAt: 1, leaseExpiresAt: 1, updatedAt: 1 },
+      { name: "research_discord_cards_due" },
     ),
   ]);
 }

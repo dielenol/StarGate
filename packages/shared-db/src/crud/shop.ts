@@ -6,7 +6,7 @@
  * - shop_daily_stock: 아이템별 당일 재고. lastRefresh 는 KST YYYY-MM-DD 문자열.
  */
 
-import type { ClientSession } from "mongodb";
+import { MongoServerError, type ClientSession } from "mongodb";
 
 import type {
   ShopDailyStock,
@@ -130,6 +130,37 @@ export async function refreshStock(
     },
     { upsert: true },
   );
+}
+
+/**
+ * 해당 품목이 아직 todayKst로 갱신되지 않았을 때만 재고를 교체한다.
+ *
+ * 기존 문서는 `{ itemId, lastRefresh: { $ne: todayKst } }` 조건부 update로 한 호출만
+ * 성공한다. 미존재 문서는 insert를 시도하고, 동시 insert나 이미 당일 갱신된 문서의
+ * itemId unique 충돌은 "다른 호출이 먼저 갱신함"으로 처리한다.
+ */
+export async function refreshStockIfStale(
+  itemId: string,
+  stock: number,
+  todayKst: string,
+): Promise<boolean> {
+  const col = await shopDailyStockCol();
+  const updated = await col.updateOne(
+    { itemId, lastRefresh: { $ne: todayKst } },
+    { $set: { stock, lastRefresh: todayKst } },
+  );
+  if (updated.modifiedCount > 0) return true;
+
+  try {
+    await col.insertOne({ itemId, stock, lastRefresh: todayKst });
+    return true;
+  } catch (error) {
+    if (error instanceof MongoServerError && error.code === 11_000) {
+      const existing = await col.findOne({ itemId });
+      if (existing) return false;
+    }
+    throw error;
+  }
 }
 
 /**

@@ -28,6 +28,7 @@
 **/npm-debug.log*
 **/pnpm-debug.log*
 **/yarn-debug.log*
+**/*.db
 
 # ---- 에디터/OS ----
 .vscode
@@ -49,6 +50,7 @@ scripts
 
 # ---- 모놀로식 웹앱은 봇 빌드 컨텍스트에서 제외 ----
 StarGateV2
+tia_bot
 
 # ---- 리뷰 산출물 ----
 registra-bot-review.md

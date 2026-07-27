@@ -14,6 +14,9 @@ export type {
   ResponseStatus,
   ResponseCounts,
   SessionFinalizationKind,
+  SessionFinalizationTrigger,
+  SessionFinalizationDeliveryState,
+  SessionFinalizationReconciliationReason,
 } from "./session.js";
 
 export type { SessionLog, SessionLogType } from "./session-log.js";
@@ -171,3 +174,16 @@ export type {
   TrpgNotificationKind,
   TrpgNotificationDeliveryMethod,
 } from "./trpg-session-notification.js";
+export {
+  SCHEDULED_JOB_RUN_STATUSES,
+  INTEGRATION_OUTBOX_STATUSES,
+  INTEGRATION_OUTBOX_KINDS,
+} from "./worker.js";
+export type {
+  ScheduledJobRun,
+  ScheduledJobRunStatus,
+  IntegrationOutboxEvent,
+  IntegrationOutboxStatus,
+  IntegrationOutboxKind,
+  WorkerCheckpoint,
+} from "./worker.js";

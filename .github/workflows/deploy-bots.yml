@@ -11,7 +11,21 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - '.github/workflows/deploy-bots.yml'
-  workflow_dispatch: # 수동 트리거 (Actions 탭 → Run workflow)
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '수동 배포 대상'
+        required: true
+        type: choice
+        options:
+          - registra
+          - trpg
+          - worker-shadow
+      confirm_worker_shadow_mode:
+        description: 'worker-shadow 선택 시 Dokploy WORKER_MODE=shadow 확인'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: deploy-bots-${{ github.ref }}
@@ -19,14 +33,15 @@ concurrency:
 
 jobs:
   # ------------------------------------------------------------
-  # 어떤 봇이 변경됐는지 감지 → 해당 봇만 배포
+  # 어떤 장기 실행 서비스가 변경됐는지 감지 → 해당 서비스만 배포
   # ------------------------------------------------------------
   detect-changes:
-    name: Detect changed bots
+    name: Detect changed services
     runs-on: ubuntu-latest
     outputs:
       registra: ${{ steps.filter.outputs.registra }}
       trpg: ${{ steps.filter.outputs.trpg }}
+      worker: ${{ steps.filter.outputs.worker }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +57,17 @@ jobs:
               - 'pnpm-workspace.yaml'
             trpg:
               - 'trpg-bot/**'
+              - 'packages/shared-db/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+            worker:
+              - 'stargate-worker/**'
+              - 'packages/core/**'
+              - 'packages/shared-db/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
 
   # ------------------------------------------------------------
   # registra-bot 배포 (Dokploy webhook 호출)
@@ -50,8 +76,8 @@ jobs:
     name: Deploy registra-bot
     needs: detect-changes
     if: |
-      needs.detect-changes.outputs.registra == 'true' ||
-      github.event_name == 'workflow_dispatch'
+      (github.event_name == 'push' && needs.detect-changes.outputs.registra == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.target == 'registra')
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Dokploy deploy (registra-bot)
@@ -74,8 +100,8 @@ jobs:
     name: Deploy trpg-bot
     needs: detect-changes
     if: |
-      needs.detect-changes.outputs.trpg == 'true' ||
-      github.event_name == 'workflow_dispatch'
+      (github.event_name == 'push' && needs.detect-changes.outputs.trpg == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.target == 'trpg')
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Dokploy deploy (trpg-bot)
@@ -90,3 +116,29 @@ jobs:
           fi
           curl -fsSL -X POST "$WEBHOOK_URL"
           echo "✅ trpg-bot deploy triggered"
+
+  # ------------------------------------------------------------
+  # stargate-worker 배포
+  # ------------------------------------------------------------
+  deploy-worker:
+    name: Deploy stargate-worker
+    needs: detect-changes
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      inputs.target == 'worker-shadow' &&
+      inputs.confirm_worker_shadow_mode == true
+    runs-on: ubuntu-latest
+    environment: stargate-worker-deploy
+    steps:
+      - name: Trigger Dokploy deploy (stargate-worker)
+        env:
+          WEBHOOK_URL: ${{ secrets.DOKPLOY_STARGATE_WORKER_WEBHOOK }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "❌ DOKPLOY_STARGATE_WORKER_WEBHOOK secret이 설정되지 않았습니다."
+            echo "→ Dokploy → stargate-worker → Deployments → Webhook URL 을 복사해서"
+            echo "  GitHub repo → Settings → Secrets → Actions 에 등록하세요."
+            exit 1
+          fi
+          curl -fsSL -X POST "$WEBHOOK_URL"
+          echo "✅ stargate-worker deploy triggered"

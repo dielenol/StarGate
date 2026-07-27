@@ -27,6 +27,11 @@ import type { PlayerTrade } from "./types/trade.js";
 import type { TrpgSession } from "./types/trpg-session.js";
 import type { TrpgGuildMember } from "./types/trpg-guild-member.js";
 import type { TrpgSessionNotification } from "./types/trpg-session-notification.js";
+import type {
+  IntegrationOutboxEvent,
+  ScheduledJobRun,
+  WorkerCheckpoint,
+} from "./types/worker.js";
 
 import { getDb, getDbSync } from "./client.js";
 
@@ -60,6 +65,9 @@ const COL = {
   TRPG_SESSIONS: "trpg_sessions",
   TRPG_GUILD_MEMBERS: "trpg_guild_members",
   TRPG_SESSION_NOTIFICATIONS: "trpg_session_notifications",
+  SCHEDULED_JOB_RUNS: "scheduled_job_runs",
+  INTEGRATION_OUTBOX: "integration_outbox",
+  WORKER_CHECKPOINTS: "worker_checkpoints",
 } as const;
 
 /* ── Async accessors (both modes) ── */
@@ -199,6 +207,21 @@ export async function trpgSessionNotificationsCol(): Promise<Collection<TrpgSess
   return db.collection<TrpgSessionNotification>(COL.TRPG_SESSION_NOTIFICATIONS);
 }
 
+export async function scheduledJobRunsCol(): Promise<Collection<ScheduledJobRun>> {
+  const db = await getDb();
+  return db.collection<ScheduledJobRun>(COL.SCHEDULED_JOB_RUNS);
+}
+
+export async function integrationOutboxCol(): Promise<Collection<IntegrationOutboxEvent>> {
+  const db = await getDb();
+  return db.collection<IntegrationOutboxEvent>(COL.INTEGRATION_OUTBOX);
+}
+
+export async function workerCheckpointsCol(): Promise<Collection<WorkerCheckpoint>> {
+  const db = await getDb();
+  return db.collection<WorkerCheckpoint>(COL.WORKER_CHECKPOINTS);
+}
+
 /* ── Sync accessors (long-running only) ── */
 
 export function usersColSync(): Collection<User> {
@@ -309,4 +332,18 @@ export function trpgSessionNotificationsColSync(): Collection<TrpgSessionNotific
   return getDbSync().collection<TrpgSessionNotification>(
     COL.TRPG_SESSION_NOTIFICATIONS,
   );
+}
+
+export function scheduledJobRunsColSync(): Collection<ScheduledJobRun> {
+  return getDbSync().collection<ScheduledJobRun>(COL.SCHEDULED_JOB_RUNS);
+}
+
+export function integrationOutboxColSync(): Collection<IntegrationOutboxEvent> {
+  return getDbSync().collection<IntegrationOutboxEvent>(
+    COL.INTEGRATION_OUTBOX,
+  );
+}
+
+export function workerCheckpointsColSync(): Collection<WorkerCheckpoint> {
+  return getDbSync().collection<WorkerCheckpoint>(COL.WORKER_CHECKPOINTS);
 }
