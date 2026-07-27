@@ -112,7 +112,11 @@ export default function StockHistoryChart({
 
   return (
     <div className={styles.chartPanel__chart}>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        initialDimension={{ width: 320, height: 280 }}
+      >
         <AreaChart
           data={data}
           margin={{ top: 12, right: 16, bottom: 8, left: 4 }}
