@@ -82,7 +82,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     await updateUserRole(id, role as UserRole);
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "사용자 역할 변경",
       actor: {
         id: session.user.id,

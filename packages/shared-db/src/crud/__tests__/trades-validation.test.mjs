@@ -3,11 +3,26 @@ import test from "node:test";
 
 import {
   assertPlayerTradeOffersCompatible,
+  isPlayerTradeItemSlugTransferable,
   normalizePlayerTradeOffer,
   PlayerTradeError,
 } from "../../../dist/index.js";
 
 const empty = { credits: 0, items: [], stocks: [] };
+
+test("토와스키 자격증 slug는 거래할 수 없다", () => {
+  for (const slug of [
+    "towaski-license-basic-firearm",
+    "towaski-license-precision-firearm",
+    "towaski-license-heavy-weapon",
+    "towaski-license-flame-weapon",
+    "towaski-license-sonic-equipment",
+    "towaski-license-explosive-ordnance",
+  ]) {
+    assert.equal(isPlayerTradeItemSlugTransferable(slug), false, slug);
+  }
+  assert.equal(isPlayerTradeItemSlugTransferable("basic-pistol"), true);
+});
 
 test("거래 제안은 같은 품목과 종목의 중복 행을 거부한다", () => {
   assert.throws(

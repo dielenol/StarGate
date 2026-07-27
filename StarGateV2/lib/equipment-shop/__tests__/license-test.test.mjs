@@ -3,12 +3,14 @@ import assert from "node:assert/strict";
 
 import {
   evaluateTowaskiBasicLicenseTest,
+  getTowaskiLicenseTargetRemainingMs,
   getTowaskiLicenseTestProgram,
   parseTowaskiLicenseTestRequest,
   TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
   TOWASKI_LICENSE_TEST_DIFFICULTIES,
 } from "../license-test.ts";
 import { TOWASKI_LICENSE_DEFINITIONS } from "../licenses.ts";
+import { TOWASKI_LICENSE_PROGRAM_VERSION } from "../license-test-v2.ts";
 
 test("passes a clean basic firearm qualification result", () => {
   const result = evaluateTowaskiBasicLicenseTest({
@@ -153,13 +155,38 @@ test("license programs fix progression and server-side difficulty", () => {
 
   assert.equal(basic.tier, "basic");
   assert.equal(basic.difficulty, "basic");
+  assert.equal(basic.mode, "firearm");
+  assert.equal(basic.programVersion, TOWASKI_LICENSE_PROGRAM_VERSION);
   assert.equal(basic.requiresBasicLicense, false);
   assert.equal(precision.tier, "intermediate");
   assert.equal(precision.difficulty, "standard");
+  assert.equal(precision.mode, "precision");
   assert.equal(precision.requiresBasicLicense, true);
   assert.equal(heavy.tier, "advanced");
   assert.equal(heavy.difficulty, "expert");
+  assert.equal(heavy.mode, "heavy");
   assert.equal(heavy.requiresBasicLicense, true);
+});
+
+test("expert targets keep a full client interaction window after the response arrives", () => {
+  const nowMs = Date.parse("2026-07-27T00:00:00.000Z");
+
+  assert.equal(
+    getTowaskiLicenseTargetRemainingMs(
+      "2026-07-26T23:59:59.000Z",
+      750,
+      nowMs,
+    ),
+    750,
+  );
+  assert.equal(
+    getTowaskiLicenseTargetRemainingMs(
+      "2026-07-27T00:00:02.000Z",
+      750,
+      nowMs,
+    ),
+    2_000,
+  );
 });
 
 test("license program labels stay aligned with catalog definitions", () => {
@@ -216,5 +243,49 @@ test("accepts only bounded round resolution events", () => {
       hit: true,
       shots: 1,
     },
+  );
+});
+
+test("accepts mode-specific v2 step input without client score fields", () => {
+  assert.deepEqual(
+    parseTowaskiLicenseTestRequest({
+      action: "resolve",
+      challengeId: "challenge-v2",
+      step: 2,
+      input: {
+        mode: "sonic",
+        frequencyHz: 460,
+        output: 0.54,
+        width: 0.48,
+        pulseMs: 900,
+      },
+      passed: true,
+      score: 999,
+    }),
+    {
+      action: "resolve",
+      challengeId: "challenge-v2",
+      step: 2,
+      input: {
+        mode: "sonic",
+        frequencyHz: 460,
+        output: 0.54,
+        width: 0.48,
+        pulseMs: 900,
+      },
+    },
+  );
+  assert.equal(
+    parseTowaskiLicenseTestRequest({
+      action: "resolve",
+      challengeId: "challenge-v2",
+      step: 0,
+      input: {
+        mode: "firearm",
+        fired: false,
+        shots: 1,
+      },
+    }),
+    null,
   );
 });

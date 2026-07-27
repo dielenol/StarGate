@@ -274,7 +274,7 @@ export async function POST(request: Request) {
     };
 
     if (succeeded > 0) {
-      scheduleGmAdminAudit({
+      await scheduleGmAdminAudit({
         action: "세션 보상 지급",
         actor: {
           id: session.user.id,

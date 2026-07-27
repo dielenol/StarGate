@@ -286,7 +286,7 @@ export async function POST(request: Request) {
   };
 
   if (succeeded > 0) {
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "보상 일괄 조정",
       actor: {
         id: session.user.id,

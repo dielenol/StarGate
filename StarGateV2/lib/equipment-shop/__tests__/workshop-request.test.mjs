@@ -467,9 +467,18 @@ test("workshop route derives ownership and equipped gear on the server", () => {
   assert.match(route, /findMainCharacterByOwner\(session\.user\.id\)/);
   assert.doesNotMatch(route, /mainCharacter\.type !== "AGENT"/);
   assert.match(route, /entry\.equippedSlot/);
-  assert.match(route, /notifyEquipmentWorkshopRequest/);
+  assert.match(route, /enqueueEquipmentWorkshopWebhook/);
+  assert.doesNotMatch(route, /notifyEquipmentWorkshopRequest/);
   assert.match(route, /notifyUsers/);
   assert.match(route, /insertEquipmentWorkshopRequest/);
+  assert.match(
+    route,
+    /withTransaction\(async \(\) => \{[\s\S]*insertEquipmentWorkshopRequest\(requestDoc,[\s\S]*session: dbSession[\s\S]*enqueueEquipmentWorkshopWebhook\([\s\S]*session: dbSession/,
+  );
+  assert.match(
+    route,
+    /if \(!isSameEquipmentWorkshopRequestPayload\(existing, requestDoc\)\)[\s\S]*enqueueEquipmentWorkshopWebhook\([\s\S]*createWebhookPayload\(existing\),[\s\S]*webhookDedupeKey/,
+  );
   assert.doesNotMatch(
     route,
     /CUSTOM_WEAPON_SLOT_REQUIRED|getEquipmentResearchCapabilities/,
@@ -640,7 +649,7 @@ test("quotes snapshot procurement cost and Nochichim exposes equipped actions se
   assert.match(actionRoute, /requireNochichimSyncAuth/);
 });
 
-test("quote issuance persists its outbox event before scheduling Discord delivery", () => {
+test("quote issuance persists its outbox event without web-process Discord drain", () => {
   const adminRoute = readFileSync(
     new URL(
       "../../../app/api/erp/admin/equipment-workshop/[requestId]/[action]/route.ts",
@@ -652,23 +661,19 @@ test("quote issuance persists its outbox event before scheduling Discord deliver
     "const updated = await updateEquipmentWorkshopQuote",
   );
   const erpNotificationIndex = adminRoute.indexOf(
-    "after(() => notifyUser",
-    persistenceIndex,
-  );
-  const discordDmIndex = adminRoute.indexOf(
-    "drainEquipmentWorkshopDiscordDms({",
+    "await notifyUser",
     persistenceIndex,
   );
   const responseIndex = adminRoute.indexOf(
     "return NextResponse.json({ request:",
-    discordDmIndex,
+    erpNotificationIndex,
   );
 
   assert.ok(persistenceIndex >= 0);
   assert.ok(erpNotificationIndex > persistenceIndex);
-  assert.ok(discordDmIndex > persistenceIndex);
-  assert.ok(responseIndex > discordDmIndex);
-  assert.match(adminRoute, /drainEquipmentWorkshopDiscordDms/);
+  assert.ok(responseIndex > erpNotificationIndex);
+  assert.doesNotMatch(adminRoute, /drainEquipmentWorkshopDiscordDms/);
+  assert.doesNotMatch(adminRoute, /\bafter\(/);
 });
 
 test("GM material picker supports name and category search", () => {

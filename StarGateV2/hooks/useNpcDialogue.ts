@@ -36,6 +36,7 @@ export interface NpcDialogueConfig<TMood extends string> {
 export interface NpcDialogueReturn<TMood extends string> {
   mood: TMood;
   line: string;
+  revision: number;
   visibleLine: string;
   typing: boolean;
   playLine: (mood: TMood, text: string, options?: NpcLineOptions) => void;
@@ -78,6 +79,7 @@ export function useNpcDialogue<TMood extends string>(
 
   const [mood, setMood] = useState<TMood>(welcomeMood);
   const [line, setLine] = useState<string>(welcomeLine);
+  const [revision, setRevision] = useState(0);
   const [visibleLine, setVisibleLine] = useState<string>(welcomeLine);
   const [typing, setTyping] = useState(false);
 
@@ -160,6 +162,7 @@ export function useNpcDialogue<TMood extends string>(
 
       clearIdleTimer();
       lineSequenceRef.current += 1;
+      setRevision(lineSequenceRef.current);
       setMood(npcMood);
       setLine(text);
       setVisibleLine("");
@@ -318,6 +321,8 @@ export function useNpcDialogue<TMood extends string>(
   const showLineImmediately = useCallback(
     (npcMood: TMood, text: string) => {
       clearIdleTimer();
+      lineSequenceRef.current += 1;
+      setRevision(lineSequenceRef.current);
       setMood(npcMood);
       setLine(text);
       setVisibleLine(text);
@@ -337,6 +342,7 @@ export function useNpcDialogue<TMood extends string>(
   return {
     mood,
     line,
+    revision,
     visibleLine,
     typing,
     playLine,

@@ -1,4 +1,4 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 
 import { isValidIdempotencyKey, readIdempotencyKey } from "@/lib/api/idempotency";
 import { executeEconomicOperation } from "@/lib/api/economic-operation";
@@ -14,7 +14,6 @@ import {
   prepareWorkshopOperationLocks,
   WorkshopOperationError,
 } from "@/lib/equipment-shop/workshop-operations";
-import { drainEquipmentWorkshopDiscordDms } from "@/lib/notifications/equipment-workshop-discord-dm-delivery";
 import { notifyUser } from "@/lib/notifications/events";
 
 interface RouteContext {
@@ -71,9 +70,6 @@ export async function POST(request: Request, context: RouteContext) {
       expectedQuoteVersion: Number(expectedQuoteVersion),
     });
     if (!updated) return NextResponse.json({ error: "다른 요청이 먼저 견적 상태를 변경했습니다." }, { status: 409 });
-    after(() =>
-      drainEquipmentWorkshopDiscordDms({ requestId }),
-    );
     return NextResponse.json({ request: serializeEquipmentWorkshopRequest(updated) });
   }
 
@@ -103,19 +99,19 @@ export async function POST(request: Request, context: RouteContext) {
       },
     });
     if (response.ok && response.headers.get("X-Idempotency-Replayed") !== "true") {
-      after(() =>
-        notifyUser({
-          userId: session.user.id,
-          type: "SYSTEM",
-          title: action === "accept"
-            ? `공방 ${current.kind === "upgrade" ? "강화" : "신규 제작"}이 시작되었습니다`
-            : `공방 ${current.kind === "upgrade" ? "강화" : "제작"} 장비를 수령했습니다`,
-          message: `${current.characterCodename} · ${current.quote?.result.name ?? current.equipmentName ?? "장비"}`,
-          link: "/erp/equipment-shop/custom",
-        }).catch((error) => console.error("[equipment-workshop] player action notification failed", error)),
-      );
-      after(() =>
-        drainEquipmentWorkshopDiscordDms({ requestId }),
+      await notifyUser({
+        userId: session.user.id,
+        type: "SYSTEM",
+        title: action === "accept"
+          ? `공방 ${current.kind === "upgrade" ? "강화" : "신규 제작"}이 시작되었습니다`
+          : `공방 ${current.kind === "upgrade" ? "강화" : "제작"} 장비를 수령했습니다`,
+        message: `${current.characterCodename} · ${current.quote?.result.name ?? current.equipmentName ?? "장비"}`,
+        link: "/erp/equipment-shop/custom",
+      }).catch((error) =>
+        console.error(
+          "[equipment-workshop] player action notification failed",
+          error,
+        ),
       );
     }
     return response;

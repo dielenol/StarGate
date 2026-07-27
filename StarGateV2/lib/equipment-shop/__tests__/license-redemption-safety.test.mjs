@@ -40,8 +40,24 @@ const LICENSE_TEST_STYLES = new URL(
   "../../../app/(erp)/erp/equipment-shop/TowaskiLicenseTest.module.css",
   import.meta.url,
 );
+const LICENSE_V2_STYLES = new URL(
+  "../../../app/(erp)/erp/equipment-shop/license-tests/TowaskiLicenseV2.module.css",
+  import.meta.url,
+);
+const HEAVY_LICENSE_GAME = new URL(
+  "../../../app/(erp)/erp/equipment-shop/license-tests/TowaskiHeavyGame.tsx",
+  import.meta.url,
+);
+const EXPLOSIVE_LICENSE_GAME = new URL(
+  "../../../app/(erp)/erp/equipment-shop/license-tests/TowaskiExplosiveGame.tsx",
+  import.meta.url,
+);
 const SHARED_INVENTORY = new URL(
   "../../../../packages/shared-db/src/crud/inventory.ts",
+  import.meta.url,
+);
+const LICENSE_RENEWAL_BACKFILL = new URL(
+  "../../../scripts/backfill-towaski-license-renewals.ts",
   import.meta.url,
 );
 
@@ -56,7 +72,10 @@ test("license redemption recovers an interrupted passed challenge", async () => 
 });
 
 test("license inventory grant and redeemed transition share one transaction", async () => {
-  const route = await readFile(LICENSE_ROUTE, "utf8");
+  const [route, challengeDb] = await Promise.all([
+    readFile(LICENSE_ROUTE, "utf8"),
+    readFile(CHALLENGE_DB, "utf8"),
+  ]);
 
   assert.match(route, /mongoSession\.withTransaction/);
   assert.match(
@@ -64,8 +83,38 @@ test("license inventory grant and redeemed transition share one transaction", as
     /grantTowaskiLicenseOnce\([\s\S]*session: mongoSession[\s\S]*markTowaskiLicenseChallengeRedeemed\([\s\S]*session: mongoSession/,
   );
   assert.match(route, /if \(!redeemed\)[\s\S]*LICENSE_TEST_CONFLICT/);
-  assert.match(route, /waitForOwnedTowaskiLicense/);
+  assert.match(route, /waitForCurrentTowaskiLicense/);
   assert.match(route, /status: "already_owned"/);
+  assert.match(
+    route,
+    /grantTowaskiLicenseOnce\([\s\S]*programVersion: challengeProgramVersion/,
+  );
+  assert.match(route, /qualificationCoversChallenge/);
+  assert.match(route, /challenge\.status === "redeemed"/);
+  assert.match(route, /qualification\.programVersion[\s\S]*programVersion/);
+  assert.match(
+    route,
+    /qualifiedAt >= challenge\.startedAt\.getTime\(\)/,
+  );
+  assert.match(
+    route,
+    /waitForCurrentTowaskiLicense\([\s\S]*challenge\.startedAt/,
+  );
+  assert.match(
+    challengeDb,
+    /challenge\.status === "redeeming" \|\| challenge\.status === "redeemed"/,
+  );
+});
+
+test("v2 challenge timing and judge dispatch are pinned to the stored program", async () => {
+  const challengeDb = await readFile(CHALLENGE_DB, "utf8");
+
+  assert.match(challengeDb, /getPinnedV2ProgramVersion\(challenge\)/);
+  assert.match(challengeDb, /challenge\.v2\?\.programVersion !== challenge\.programVersion/);
+  assert.match(challengeDb, /validateTowaskiLicenseV2StepTiming/);
+  assert.match(challengeDb, /resolveTowaskiLicenseProgramStep/);
+  assert.match(challengeDb, /evaluateTowaskiLicenseProgramProgress/);
+  assert.doesNotMatch(challengeDb, /programVersion: challenge\.programVersion \?\? 2/);
 });
 
 test("license difficulty is fixed on the server challenge", async () => {
@@ -104,6 +153,10 @@ test("specialist license tests require the basic license and grant only their ch
     route,
     /isTowaskiLicenseTestAvailable\(body\.licenseSlug\)[\s\S]*LICENSE_TEST_UNAVAILABLE/,
   );
+  assert.match(
+    route,
+    /masterItemsCol\(\)[\s\S]*slug: licenseSlug[\s\S]*session: mongoSession/,
+  );
   assert.match(route, /equipmentShopItemZone\(item\) === "towaski"/);
   assert.match(route, /const licenseSlug = challenge\.licenseSlug/);
   assert.match(
@@ -112,7 +165,7 @@ test("specialist license tests require the basic license and grant only their ch
   );
   assert.match(
     route,
-    /mongoSession\.withTransaction[\s\S]*hasOwnedTowaskiLicense\([\s\S]*TOWASKI_BASIC_FIREARM_LICENSE_SLUG[\s\S]*session: mongoSession[\s\S]*grantTowaskiLicenseOnce/,
+    /mongoSession\.withTransaction[\s\S]*getTowaskiLicenseQualificationStatus\([\s\S]*TOWASKI_BASIC_FIREARM_LICENSE_SLUG[\s\S]*session: mongoSession[\s\S]*grantsPurchaseAccess[\s\S]*grantTowaskiLicenseOnce/,
   );
   assert.match(challengeDb, /licenseSlug: args\.licenseSlug/);
   assert.match(
@@ -203,18 +256,34 @@ test("equipment shop purchases one item at a time without cart controls", async 
   assert.doesNotMatch(client, /반출 장바구니|한번에 결제|장바구니 담기/);
 });
 
-test("Towaski qualification keeps mobile HUD visible and explains every outcome", async () => {
-  const [client, licenseTest, styles] = await Promise.all([
-    readFile(EQUIPMENT_SHOP_CLIENT, "utf8"),
-    readFile(LICENSE_TEST_CLIENT, "utf8"),
-    readFile(LICENSE_TEST_STYLES, "utf8"),
-  ]);
+test("Towaski qualification keeps accessible mobile controls and explains every outcome", async () => {
+  const [client, licenseTest, styles, v2Styles, heavyGame, explosiveGame] =
+    await Promise.all([
+      readFile(EQUIPMENT_SHOP_CLIENT, "utf8"),
+      readFile(LICENSE_TEST_CLIENT, "utf8"),
+      readFile(LICENSE_TEST_STYLES, "utf8"),
+      readFile(LICENSE_V2_STYLES, "utf8"),
+      readFile(HEAVY_LICENSE_GAME, "utf8"),
+      readFile(EXPLOSIVE_LICENSE_GAME, "utf8"),
+    ]);
 
   assert.match(
     styles,
     /@media \(max-width: 800px\)[\s\S]*\.range \{[\s\S]*aspect-ratio: auto/,
   );
-  assert.match(licenseTest, /NO FIRE[\s\S]*민간 표적은 사격하지 말고/);
+  assert.match(
+    licenseTest,
+    /case "firearm"[\s\S]*민간 표적은 사격하지 않고 NO FIRE/,
+  );
+  assert.match(
+    licenseTest,
+    /TowaskiFirearmGame[\s\S]*TowaskiPrecisionGame[\s\S]*TowaskiHeavyGame[\s\S]*TowaskiFlameGame[\s\S]*TowaskiSonicGame[\s\S]*TowaskiExplosiveGame/,
+  );
+  assert.match(v2Styles, /min-height: 44px/);
+  assert.match(v2Styles, /touch-action: none/);
+  assert.match(v2Styles, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(heavyGame, /event\.key === " " \|\| event\.key === "Enter"/);
+  assert.match(explosiveGame, /착탄 수평[\s\S]*착탄 수직/);
   assert.match(
     client,
     /event\.type === "start"[\s\S]*title: "자격시험 시작"/,
@@ -260,10 +329,15 @@ test("catalog license access is resolved from the authenticated main character",
   const route = await readFile(CATALOG_ROUTE, "utf8");
 
   assert.match(route, /findMainCharacterByOwner\(session\.user\.id\)/);
-  assert.match(route, /listOwnedTowaskiLicenseSlugs/);
+  assert.match(route, /listTowaskiLicenseAccess/);
   assert.match(route, /applyEquipmentShopLicenseContext/);
   assert.doesNotMatch(route, /const mainAgent =/);
   assert.match(route, /character: mainCharacter/);
+  assert.match(route, /activeLicenseSlugs: licenseAccess\.activeLicenseSlugs/);
+  assert.match(
+    route,
+    /qualificationStatuses: licenseAccess\.qualificationStatuses/,
+  );
 });
 
 test("license tests accept the authenticated GM NPC fallback character", async () => {
@@ -275,4 +349,26 @@ test("license tests accept the authenticated GM NPC fallback character", async (
     route,
     /transactionCharacter\.type === "NPC"[\s\S]*role: "GM"[\s\S]*status: "ACTIVE"[\s\S]*session: mongoSession/,
   );
+});
+
+test("advanced renewal backfill is dry-run by default and count-gated on apply", async () => {
+  const migration = await readFile(LICENSE_RENEWAL_BACKFILL, "utf8");
+
+  assert.match(
+    migration,
+    /const apply = argv\.includes\("--apply"\)/,
+  );
+  assert.match(migration, /if \(apply && expectedCount === null\)/);
+  assert.match(migration, /if \(!apply\)[\s\S]*return/);
+  assert.match(
+    migration,
+    /candidates\.length !== expectedCount[\s\S]*달라 중단했습니다/,
+  );
+  assert.match(
+    migration,
+    /programVersion: 1[\s\S]*qualifiedAt:[\s\S]*renewalDueAt/,
+  );
+  assert.match(migration, /session\.withTransaction/);
+  assert.doesNotMatch(migration, /towaski-license-basic-firearm/);
+  assert.doesNotMatch(migration, /towaski-license-precision-firearm/);
 });

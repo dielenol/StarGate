@@ -235,6 +235,7 @@ const TEMPER_ENTRY_SFX_SRC =
 const RATCHET_PROFILE_SRC = "/assets/npcs/Mateo-Rivas-Ratchet-profile.webp";
 const RATCHET_IDLE_DELAY_MS = 12500;
 const VERNIER_PROFILE_SRC = "/assets/npcs/Ada-Schreiber-Vernier-profile.webp";
+const NPC_HUD_AUTO_COLLAPSE_MS = 4500;
 
 const WORKSHOP_SPECIALISTS: Record<
   EquipmentWorkshopSpecialist,
@@ -1061,6 +1062,21 @@ function buildTowaskiWelcomeLine(args: {
   return `${callsign} ${profileLine}`;
 }
 
+function formatTowaskiRenewalLabel(
+  qualification: NonNullable<
+    EquipmentShopCatalogEntry["licenseQualification"]
+  >,
+  detail = false,
+): string {
+  if (qualification.state === "renewal_overdue") {
+    return detail ? "갱신 기한 경과" : "갱신 시험 필요";
+  }
+  if (qualification.renewalDaysRemaining === undefined) {
+    return detail ? "갱신 필요 · 기한 미설정" : "갱신 시험 가능";
+  }
+  return `${detail ? "갱신 필요" : "갱신 시험"} D-${qualification.renewalDaysRemaining}`;
+}
+
 function buildTowaskiItemLine(
   item: EquipmentShopCatalogEntry,
   codename?: string | null,
@@ -1512,6 +1528,7 @@ export default function EquipmentShopClient({
   const temperDialogueRevisionRef = useRef(0);
   const strategicDialogueRevisionRef = useRef(0);
   const ameriDialogueRevisionRef = useRef(0);
+  const npcHudCollapseTimerRef = useRef<number | null>(null);
   const [localStats, setLocalStats] = useState<MainCharacterStats | null>(
     () => mainCharacter?.stats ?? null,
   );
@@ -1553,6 +1570,9 @@ export default function EquipmentShopClient({
   const [upgradeRequestDetails, setUpgradeRequestDetails] = useState("");
   const [customRequestDetails, setCustomRequestDetails] = useState("");
   const [workshopClock, setWorkshopClock] = useState(0);
+  const [collapsedNpcHudKey, setCollapsedNpcHudKey] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (initialZone !== "custom") return;
@@ -1802,9 +1822,11 @@ export default function EquipmentShopClient({
 
   const {
     mood: ameriMood,
+    revision: ameriRevision,
     visibleLine: ameriVisibleLine,
     typing: ameriTyping,
     playLine: playAmeriLine,
+    clearIdleTimer: clearAmeriIdleTimer,
   } = useNpcDialogue<AmeriMood>({
     isOpen: isHub,
     hasMainCharacter,
@@ -1826,6 +1848,7 @@ export default function EquipmentShopClient({
 
   const {
     mood: towaskiMood,
+    revision: towaskiRevision,
     visibleLine: towaskiVisibleLine,
     typing: towaskiTyping,
     playLine: playTowaskiLine,
@@ -1855,6 +1878,7 @@ export default function EquipmentShopClient({
     TOWASKI_MOOD_ASSETS[towaskiMood] ?? TOWASKI_PORTRAIT_SRC;
   const {
     mood: sutureMood,
+    revision: sutureRevision,
     visibleLine: sutureVisibleLine,
     typing: sutureTyping,
     playLine: playSutureLine,
@@ -1884,6 +1908,7 @@ export default function EquipmentShopClient({
     SUTURE_MOOD_ASSETS[sutureMood] ?? SUTURE_PROFILE_SRC;
   const {
     mood: temperMood,
+    revision: temperRevision,
     visibleLine: temperVisibleLine,
     typing: temperTyping,
     playLine: playTemperLine,
@@ -1912,6 +1937,7 @@ export default function EquipmentShopClient({
   const temperPortraitSrc = TEMPER_MOOD_ASSETS[temperMood];
   const {
     mood: strategicMood,
+    revision: strategicRevision,
     visibleLine: strategicVisibleLine,
     typing: strategicTyping,
     playLine: playStrategicLine,
@@ -1940,6 +1966,7 @@ export default function EquipmentShopClient({
   const ratchetPortraitSrc = RATCHET_MOOD_ASSETS[strategicMood];
   const {
     mood: vernierMood,
+    revision: vernierRevision,
     visibleLine: vernierVisibleLine,
     typing: vernierTyping,
     playLine: playVernierLine,
@@ -1965,15 +1992,136 @@ export default function EquipmentShopClient({
     entrySfxSrc: null,
     entrySfxVolume: 0,
   });
+  const activeNpcLine = isHub
+    ? ameriVisibleLine
+    : activeZone === "towaski"
+      ? towaskiVisibleLine
+      : activeZone === "lab"
+        ? sutureVisibleLine
+        : activeZone === "acheron"
+          ? temperVisibleLine
+          : activeZone === "strategic"
+            ? strategicVisibleLine
+            : activeZone === "custom"
+              ? vernierVisibleLine
+              : "";
+  const isActiveNpcTyping = isHub
+    ? ameriTyping
+    : activeZone === "towaski"
+      ? towaskiTyping
+      : activeZone === "lab"
+        ? sutureTyping
+        : activeZone === "acheron"
+          ? temperTyping
+          : activeZone === "strategic"
+            ? strategicTyping
+            : activeZone === "custom"
+              ? vernierTyping
+              : false;
+  const activeNpcRevision = isHub
+    ? ameriRevision
+    : activeZone === "towaski"
+      ? towaskiRevision
+      : activeZone === "lab"
+        ? sutureRevision
+        : activeZone === "acheron"
+          ? temperRevision
+          : activeZone === "strategic"
+            ? strategicRevision
+            : activeZone === "custom"
+              ? vernierRevision
+              : 0;
+  const activeNpcHudKey = `${isHub ? "hub" : activeZone}:${activeNpcRevision}`;
+  const isNpcHudCollapsed =
+    !isActiveNpcTyping && collapsedNpcHudKey === activeNpcHudKey;
+  const clearActiveNpcIdleTimer = useCallback(() => {
+    if (isHub) {
+      clearAmeriIdleTimer();
+    } else if (activeZone === "towaski") {
+      clearTowaskiIdleTimer();
+    } else if (activeZone === "lab") {
+      clearSutureIdleTimer();
+    } else if (activeZone === "acheron") {
+      clearTemperIdleTimer();
+    } else if (activeZone === "strategic") {
+      clearStrategicIdleTimer();
+    } else if (activeZone === "custom") {
+      clearVernierIdleTimer();
+    }
+  }, [
+    activeZone,
+    clearAmeriIdleTimer,
+    clearStrategicIdleTimer,
+    clearSutureIdleTimer,
+    clearTemperIdleTimer,
+    clearTowaskiIdleTimer,
+    clearVernierIdleTimer,
+    isHub,
+  ]);
+
+  const scheduleNpcHudCollapse = useCallback((npcHudKey: string) => {
+    if (npcHudCollapseTimerRef.current !== null) {
+      window.clearTimeout(npcHudCollapseTimerRef.current);
+    }
+    npcHudCollapseTimerRef.current = window.setTimeout(() => {
+      setCollapsedNpcHudKey(npcHudKey);
+      clearActiveNpcIdleTimer();
+      npcHudCollapseTimerRef.current = null;
+    }, NPC_HUD_AUTO_COLLAPSE_MS);
+  }, [clearActiveNpcIdleTimer]);
+
+  const handleNpcHudRecall = useCallback(() => {
+    setCollapsedNpcHudKey(null);
+    scheduleNpcHudCollapse(activeNpcHudKey);
+  }, [activeNpcHudKey, scheduleNpcHudCollapse]);
+
+  useEffect(() => {
+    if (!activeNpcLine && !isActiveNpcTyping) return;
+
+    if (npcHudCollapseTimerRef.current !== null) {
+      window.clearTimeout(npcHudCollapseTimerRef.current);
+      npcHudCollapseTimerRef.current = null;
+    }
+    if (!isActiveNpcTyping) {
+      scheduleNpcHudCollapse(activeNpcHudKey);
+    }
+
+    return () => {
+      if (npcHudCollapseTimerRef.current !== null) {
+        window.clearTimeout(npcHudCollapseTimerRef.current);
+        npcHudCollapseTimerRef.current = null;
+      }
+    };
+  }, [
+    activeNpcHudKey,
+    activeNpcLine,
+    isActiveNpcTyping,
+    scheduleNpcHudCollapse,
+  ]);
+
   const handleTowaskiQualificationDialogue = useCallback(
     (event: TowaskiQualificationDialogueEvent) => {
       clearTowaskiIdleTimer();
       const line = getTowaskiQualificationDialogueLine(event);
       if (event.type === "start") {
+        const instruction = {
+          firearm:
+            "적성·민간 표적을 식별하고 민간 표적에는 사격하지 마십시오.",
+          precision:
+            "풍향을 보정해 조준을 안정시킨 뒤 표적마다 한 발만 발사하십시오.",
+          heavy:
+            "반동을 억제해 짧게 점사하고 과열과 횡단 인원을 피하십시오.",
+          flame:
+            "적성 구역만 소각하고 민간 구역과 연료통을 피하십시오.",
+          sonic:
+            "공진 주파수와 출력·파동 폭을 안전 범위에 맞추십시오.",
+          explosive:
+            "탄종·착탄점·신관과 로켓 후폭풍 발사선을 확인하십시오.",
+        }[event.mode ?? "firearm"];
         setNotice({
           tone: "info",
           title: "자격시험 시작",
-          text: "카운트다운 후 표적 판정이 시작됩니다. 민간 표적에는 사격하지 마십시오.",
+          text: `카운트다운 후 종별 판정이 시작됩니다. ${instruction}`,
         });
       } else if (event.type === "failed") {
         showFeedback(
@@ -2055,6 +2203,10 @@ export default function EquipmentShopClient({
     selectedItem && isTowaskiLicenseSlug(selectedItem.slug)
       ? getTowaskiLicenseTestProgram(selectedItem.slug)
       : null;
+  const selectedLicenseCanRenew = Boolean(
+    selectedItem?.licenseOwned &&
+      selectedItem.licenseQualification?.canTakeTest,
+  );
   const selectedLicenseBlocked = Boolean(
     selectedItem &&
       !canBypassPlayerServiceRestrictions &&
@@ -2084,7 +2236,7 @@ export default function EquipmentShopClient({
       selectedLicenseProgram &&
       canUseShop &&
       selectedItem.available &&
-      selectedItem.licenseOwned !== true &&
+      (selectedItem.licenseOwned !== true || selectedLicenseCanRenew) &&
       (!selectedLicenseProgram.requiresBasicLicense ||
         effectiveHasBasicLicense) &&
       !towaskiLicenseTestBusy,
@@ -2647,7 +2799,12 @@ export default function EquipmentShopClient({
   }
 
   function handleStartTowaskiLicenseTest(item: EquipmentShopCatalogEntry) {
-    if (!isTowaskiLicenseSlug(item.slug) || item.licenseOwned) return;
+    if (
+      !isTowaskiLicenseSlug(item.slug) ||
+      (item.licenseOwned && !item.licenseQualification?.canTakeTest)
+    ) {
+      return;
+    }
     const program = getTowaskiLicenseTestProgram(item.slug);
     if (
       program.requiresBasicLicense &&
@@ -3685,6 +3842,10 @@ export default function EquipmentShopClient({
                   isLicenseItem && isTowaskiLicenseSlug(item.slug)
                     ? getTowaskiLicenseTestProgram(item.slug)
                     : null;
+                const licenseCanRenew = Boolean(
+                  item.licenseOwned &&
+                    item.licenseQualification?.canTakeTest,
+                );
                 const licenseBlocked =
                   !canBypassPlayerServiceRestrictions &&
                   isEquipmentLicenseBlocked(item);
@@ -3706,7 +3867,7 @@ export default function EquipmentShopClient({
                   licenseProgram &&
                     canUseShop &&
                     !isSoldOut &&
-                    !item.licenseOwned &&
+                    (!item.licenseOwned || licenseCanRenew) &&
                     (!licenseProgram.requiresBasicLicense ||
                       effectiveHasBasicLicense) &&
                     !towaskiLicenseTestBusy,
@@ -3733,7 +3894,7 @@ export default function EquipmentShopClient({
                       !hasZonePurchaseAccess ||
                       !hasBasicPurchaseAccess ||
                       licenseBlocked ||
-                      item.licenseOwned
+                      (item.licenseOwned && !licenseCanRenew)
                         ? styles["productCard--locked"]
                         : "",
                     ]
@@ -3794,8 +3955,12 @@ export default function EquipmentShopClient({
                         : !effectiveHasMainCharacter
                           ? "AGENT 필요"
                         : isLicenseItem
-                          ? item.licenseOwned
+                          ? item.licenseOwned && !licenseCanRenew
                             ? "발급 완료"
+                            : licenseCanRenew
+                              ? formatTowaskiRenewalLabel(
+                                  item.licenseQualification!,
+                                )
                             : licenseProgram?.requiresBasicLicense &&
                                 !effectiveHasBasicLicense
                               ? "기초 화기 필요"
@@ -3891,8 +4056,14 @@ export default function EquipmentShopClient({
                       <small>품목 판정</small>
                       <strong>
                         {selectedIsLicenseItem
-                          ? selectedItem.licenseOwned
+                          ? selectedItem.licenseOwned &&
+                            !selectedLicenseCanRenew
                             ? "자격 발급 완료"
+                            : selectedLicenseCanRenew
+                              ? formatTowaskiRenewalLabel(
+                                  selectedItem.licenseQualification!,
+                                  true,
+                                )
                             : selectedLicenseProgram
                               ? `${selectedLicenseProgram.tierLabel} 시험 응시`
                               : "자격시험 확인"
@@ -3951,8 +4122,10 @@ export default function EquipmentShopClient({
                     }
                   >
                     {selectedIsLicenseItem
-                      ? selectedItem.licenseOwned
+                      ? selectedItem.licenseOwned && !selectedLicenseCanRenew
                         ? "발급 완료"
+                        : selectedLicenseCanRenew
+                          ? "갱신 자격시험 시작"
                         : !effectiveHasMainCharacter
                           ? "AGENT 필요"
                         : selectedLicenseProgram?.requiresBasicLicense &&
@@ -5382,6 +5555,7 @@ export default function EquipmentShopClient({
         !isHub && activeZone === "acheron"
           ? styles["armoryRoot--acheron"]
           : "",
+        isNpcHudCollapsed ? styles["armoryRoot--hudCollapsed"] : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -5632,7 +5806,12 @@ export default function EquipmentShopClient({
 
         {isHub || mode === "zone" ? (
           <section
-            className={styles.npcHud}
+            className={[
+              styles.npcHud,
+              isNpcHudCollapsed ? styles["npcHud--collapsed"] : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             aria-label="병기부 응대 HUD"
             data-ameri-mood={isHub ? ameriMood : undefined}
             data-temper-mood={
@@ -5859,6 +6038,19 @@ export default function EquipmentShopClient({
                           : "응대 담당자가 배정되지 않았습니다."}
               </p>
             </div>
+            <button
+              type="button"
+              className={styles.npcHudRecall}
+              onClick={handleNpcHudRecall}
+              aria-label={`${zoneMeta.npc}의 최근 대사 다시 보기`}
+            >
+              <span className={styles.npcHudRecall__signal} aria-hidden />
+              <span className={styles.npcHudRecall__identity}>
+                <small>COMM LINK</small>
+                <strong>{zoneMeta.npc}</strong>
+              </span>
+              <span className={styles.npcHudRecall__action}>최근 대사</span>
+            </button>
           </section>
         ) : null}
       </section>

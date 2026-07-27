@@ -1,17 +1,13 @@
-# Python
+# 생성물
 __pycache__/
 *.py[cod]
-*$py.class
+node_modules/
 
-# 로컬 SQLite DB (운영 환경에서 직접 관리, git에 포함하지 않음)
+# 보존하는 로컬 SQLite 데이터
 *.db
 *.db-journal
 *.sqlite
 *.sqlite3
 
-# 환경변수
-.env
-*.env
-
-# 실수로 생성된 디렉토리/파일
-"python bot.py"/
+# 비밀 환경변수
+.env*

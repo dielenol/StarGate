@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 
 import {
   ALLOWED_LORE_FIELDS_ADMIN,
@@ -26,8 +26,8 @@ import {
   deleteCharacter,
 } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
-import { notifyCharacterEdit } from "@/lib/discord";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { enqueueCharacterEditWebhook } from "@/lib/outbox/integration";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -267,31 +267,22 @@ export async function PATCH(request: Request, context: RouteContext) {
             session.user.username ||
             `user-${session.user.id.slice(0, 6)}`;
 
-          after(async () => {
-            try {
-              await notifyCharacterEdit({
-                character: {
-                  id,
-                  codename: before.codename,
-                  name: before.lore.name,
-                },
-                actor: {
-                  id: session.user.id,
-                  displayName,
-                  role: session.user.role,
-                },
-                source: isAdmin ? "admin" : "player",
-                actorIsOwner,
-                changes,
-                reason,
-                timestamp: new Date(),
-              });
-            } catch (webhookErr) {
-              console.warn(
-                `[characters PATCH] webhook scheduling failed user=${session.user.id} character=${id}:`,
-                webhookErr,
-              );
-            }
+          await enqueueCharacterEditWebhook({
+            character: {
+              id,
+              codename: before.codename,
+              name: before.lore.name,
+            },
+            actor: {
+              id: session.user.id,
+              displayName,
+              role: session.user.role,
+            },
+            source: isAdmin ? "admin" : "player",
+            actorIsOwner,
+            changes,
+            reason,
+            timestamp: new Date(),
           });
         }
       }
@@ -341,7 +332,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
         { status: 404 },
       );
     }
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "캐릭터 삭제",
       actor: {
         id: session.user.id,

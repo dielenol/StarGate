@@ -12,6 +12,9 @@ export type {
   ResponseStatus,
   ResponseCounts,
   SessionFinalizationKind,
+  SessionFinalizationTrigger,
+  SessionFinalizationDeliveryState,
+  SessionFinalizationReconciliationReason,
   SessionLog,
   SessionLogType,
   Character,
@@ -50,6 +53,7 @@ export type {
   EquipmentSlot,
   EquipmentAction,
   EquipmentChargeState,
+  LicenseQualification,
   ShopMeta,
   ShopPageGroup,
   CreateMasterItemInput,
@@ -98,6 +102,12 @@ export type {
   TrpgSessionNotification,
   TrpgNotificationKind,
   TrpgNotificationDeliveryMethod,
+  ScheduledJobRun,
+  ScheduledJobRunStatus,
+  IntegrationOutboxEvent,
+  IntegrationOutboxStatus,
+  IntegrationOutboxKind,
+  WorkerCheckpoint,
 } from "./types/index.js";
 
 export {
@@ -124,6 +134,9 @@ export {
   OPERATION_POOL_INITIAL_BALANCE,
   PLAYER_TRADE_KINDS,
   PLAYER_TRADE_STATUSES,
+  SCHEDULED_JOB_RUN_STATUSES,
+  INTEGRATION_OUTBOX_STATUSES,
+  INTEGRATION_OUTBOX_KINDS,
 } from "./types/index.js";
 
 /* ── Client ── */
@@ -169,6 +182,9 @@ export {
   trpgSessionsCol,
   trpgGuildMembersCol,
   trpgSessionNotificationsCol,
+  scheduledJobRunsCol,
+  integrationOutboxCol,
+  workerCheckpointsCol,
 } from "./collections.js";
 
 /* ── Collections (sync, long-running only) ── */
@@ -201,6 +217,9 @@ export {
   trpgSessionsColSync,
   trpgGuildMembersColSync,
   trpgSessionNotificationsColSync,
+  scheduledJobRunsColSync,
+  integrationOutboxColSync,
+  workerCheckpointsColSync,
 } from "./collections.js";
 
 /* ── Indexes ── */

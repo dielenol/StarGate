@@ -331,7 +331,7 @@ export async function POST(request: Request) {
     );
   }
 
-  scheduleGmAdminAudit({
+  await scheduleGmAdminAudit({
     action: "개인 장비 연구 시작",
     actor: {
       id: authResult.session.id,

@@ -454,6 +454,8 @@ export const L = {
   closeRetryExhausted: "[Registrar] 마감 재시도 한도 초과. 등록 ID:",
   closeFail: "[Registrar] 단일 건 마감 실패:",
   closeTick: "[Registrar] 마감 감시 틱 오류:",
+  finalizationClaimRelease: "[Registrar] 후속 처리 선점 해제 실패:",
+  finalizationLeaseExtend: "[Registrar] 후속 처리 선점 연장 실패:",
 
   remindRow: "[Registrar] 통보 처리 중 오류(등록 ID):",
   remindTick: "[Registrar] 통보 감시 틱 오류:",
@@ -778,4 +780,3 @@ export const Remind = {
   lineMentions: (line: string) => `다음 인원은 가용으로 회신되어 있습니다: ${line}`,
   footer: `변경 사항은 관리자에게 즉시 보고할 것. ${REGISTRAR_SIGNATURE}`,
 } as const;
-

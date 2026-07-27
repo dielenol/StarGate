@@ -1,6 +1,7 @@
 import "../db/init";
 
 import { getClient, getDb } from "@stargate/shared-db";
+import type { ClientSession } from "mongodb";
 
 export { buildShopReorderRequestId } from "./reorder-request-id";
 
@@ -28,6 +29,18 @@ interface ShopDailyStockDoc {
   itemId: string;
   stock: number;
   lastRefresh: string;
+}
+
+interface ShopReorderTransactionContext {
+  request: ShopReorderRequestDoc;
+  stock: ShopDailyStockDoc;
+  session: ClientSession;
+}
+
+interface ShopReorderBatchTransactionContext {
+  requests: ShopReorderRequestDoc[];
+  stock: ShopDailyStockDoc;
+  session: ClientSession;
 }
 
 export class ShopReorderRequestNotPendingError extends Error {
@@ -111,6 +124,9 @@ export async function fulfillShopReorderRequestAndIncrementStock(input: {
   fulfilledAt: Date;
   itemId: string;
   today: string;
+  persistFollowUps?: (
+    context: ShopReorderTransactionContext,
+  ) => Promise<void>;
 }): Promise<{
   request: ShopReorderRequestDoc;
   stock: ShopDailyStockDoc;
@@ -166,6 +182,11 @@ export async function fulfillShopReorderRequestAndIncrementStock(input: {
       if (!stockDoc) {
         throw new Error(`fulfillShopReorderRequest: stock update failed`);
       }
+      await input.persistFollowUps?.({
+        request: fulfilledRequest,
+        stock: stockDoc,
+        session,
+      });
     });
   } finally {
     await session.endSession();
@@ -186,6 +207,9 @@ export async function fulfillShopReorderRequestsAndIncrementStock(input: {
   fulfilledAt: Date;
   itemId: string;
   today: string;
+  persistFollowUps?: (
+    context: ShopReorderBatchTransactionContext,
+  ) => Promise<void>;
 }): Promise<{
   requests: ShopReorderRequestDoc[];
   stock: ShopDailyStockDoc;
@@ -266,6 +290,11 @@ export async function fulfillShopReorderRequestsAndIncrementStock(input: {
       }
 
       fulfilledRequests = requests;
+      await input.persistFollowUps?.({
+        requests,
+        stock: stockDoc,
+        session,
+      });
     });
   } finally {
     await session.endSession();

@@ -392,7 +392,7 @@ export default function StockListClient({
   }
 
   return (
-    <div data-pixel-font="ui">
+    <div className={styles.stockPage} data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },

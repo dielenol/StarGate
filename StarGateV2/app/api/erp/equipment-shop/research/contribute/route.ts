@@ -20,7 +20,6 @@ import {
   serializeEquipmentResearchProject,
   serializeEquipmentResearchTeamFundingPool,
 } from "@/lib/db/equipment-research";
-import { scheduleEquipmentResearchDiscordCardSync } from "@/lib/notifications/equipment-research-discord-schedule";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { clampTeamResearchContribution } from "@/lib/equipment-shop/research-contributions";
 import {
@@ -309,8 +308,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "연구 트랜잭션이 완료되지 않았습니다.", code: "RESEARCH_START_FAILED" }, { status: 500 });
   }
   const { balance, updatedPool, contribution, project } = transactionResult;
-  scheduleEquipmentResearchDiscordCardSync(node.key);
-  scheduleGmAdminAudit({
+  await scheduleGmAdminAudit({
     action: project ? "팀 장비 연구 기여 및 시작" : "팀 장비 연구 기여",
     actor: {
       id: authResult.session.id,

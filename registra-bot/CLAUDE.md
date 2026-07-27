@@ -33,7 +33,7 @@ src/
 ├── scheduler/         # 백그라운드 폴링 (close-checker 1분, reminder-checker 15분)
 ├── services/          # 비즈니스 로직 (session-close)
 ├── db/                # MongoDB 컬렉션별 CRUD (sessions, responses, logs, registrar-user-tips)
-│   ├── client.ts      # MongoClient 싱글톤, 인덱스 자동 생성
+│   ├── client.ts      # MongoClient 싱글톤 연결 (인덱스는 one-shot preflight)
 │   └── index.ts       # 배럴 export
 ├── types/             # session.ts, session-log.ts
 ├── constants/         # 텍스트/상수 (registrar-voice.ts)

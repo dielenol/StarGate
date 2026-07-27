@@ -88,6 +88,7 @@ export interface EquipmentResearchDiscordCard {
   cleanupMessageId?: string;
   leaseToken?: string;
   leaseExpiresAt?: Date;
+  nextAttemptAt?: Date;
   lastError?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -162,6 +163,7 @@ const TEAM_FUNDING_COLLECTION_NAME = "research_team_funding_pools";
 const CONTRIBUTION_COLLECTION_NAME = "research_contributions";
 const DISCORD_CARD_COLLECTION_NAME = "research_discord_cards";
 export const EQUIPMENT_RESEARCH_DISCORD_CARD_LEASE_MS = 60_000;
+export const EQUIPMENT_RESEARCH_DISCORD_CARD_RETRY_MS = 5 * 60_000;
 
 async function equipmentResearchProjectsCol(): Promise<
   Collection<EquipmentResearchProject>
@@ -529,7 +531,7 @@ export async function requestEquipmentResearchDiscordCardSync(
         createdAt: now,
       },
       $set: { updatedAt: now },
-      $unset: { lastError: "" },
+      $unset: { lastError: "", nextAttemptAt: "" },
     },
     { upsert: true, session: options.session },
   );
@@ -546,10 +548,20 @@ export async function acquireEquipmentResearchDiscordCardLease(args: {
     {
       _id: args.projectKey,
       $expr: { $gt: ["$requestedRevision", "$syncedRevision"] },
-      $or: [
-        { leaseToken: { $exists: false } },
-        { leaseExpiresAt: { $exists: false } },
-        { leaseExpiresAt: { $lte: now } },
+      $and: [
+        {
+          $or: [
+            { leaseToken: { $exists: false } },
+            { leaseExpiresAt: { $exists: false } },
+            { leaseExpiresAt: { $lte: now } },
+          ],
+        },
+        {
+          $or: [
+            { nextAttemptAt: { $exists: false } },
+            { nextAttemptAt: { $lte: now } },
+          ],
+        },
       ],
     },
     {
@@ -586,6 +598,7 @@ export async function completeEquipmentResearchDiscordCardSync(args: {
       $unset: {
         leaseToken: "",
         leaseExpiresAt: "",
+        nextAttemptAt: "",
         lastError: "",
         cleanupMessageId: "",
       },
@@ -621,6 +634,7 @@ export async function failEquipmentResearchDiscordCardSync(args: {
   error: string;
 }): Promise<void> {
   const col = await equipmentResearchDiscordCardsCol();
+  const now = new Date();
   await col.updateOne(
     {
       _id: args.projectKey,
@@ -629,7 +643,10 @@ export async function failEquipmentResearchDiscordCardSync(args: {
     {
       $set: {
         lastError: args.error.slice(0, 1000),
-        updatedAt: new Date(),
+        nextAttemptAt: new Date(
+          now.getTime() + EQUIPMENT_RESEARCH_DISCORD_CARD_RETRY_MS,
+        ),
+        updatedAt: now,
       },
       $unset: {
         leaseToken: "",

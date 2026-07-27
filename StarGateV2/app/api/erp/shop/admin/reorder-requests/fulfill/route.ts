@@ -4,13 +4,13 @@
  * 대기 발주 요청을 FULFILLED 로 닫고, 해당 편의점 품목의 당일 재고를 증가시킨다.
  */
 
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { notifyShopReorderFulfilled } from "@/lib/discord";
 import { notifyUser } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { enqueueShopReorderFulfilledWebhook } from "@/lib/outbox/integration";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import {
@@ -94,24 +94,54 @@ export async function POST(request: Request) {
         fulfilledAt,
         itemId: item.slug,
         today,
-      });
-    scheduleGmAdminAudit({
-      action: "편의점 발주 완료 처리",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: `+${quantity.toLocaleString()} EA · 현재 ${stock.stock.toLocaleString()} EA`,
-      target: item.name,
-      details: [
-        {
-          name: "요청자",
-          value: fulfilled.characterCodename ?? fulfilled.userName,
+        persistFollowUps: async ({
+          request: persistedRequest,
+          stock: persistedStock,
+          session: dbSession,
+        }) => {
+          await Promise.all([
+            scheduleGmAdminAudit(
+              {
+                action: "편의점 발주 완료 처리",
+                actor: {
+                  id: session.user.id,
+                  displayName: session.user.displayName,
+                  role: session.user.role,
+                },
+                summary: `+${quantity.toLocaleString()} EA · 현재 ${persistedStock.stock.toLocaleString()} EA`,
+                target: item.name,
+                details: [
+                  {
+                    name: "요청자",
+                    value:
+                      persistedRequest.characterCodename ??
+                      persistedRequest.userName,
+                  },
+                ],
+                timestamp: fulfilledAt,
+              },
+              { session: dbSession },
+            ),
+            enqueueShopReorderFulfilledWebhook(
+              {
+                today,
+                item: {
+                  slug: item.slug,
+                  name: item.name,
+                  icon: item.icon,
+                  price: item.price,
+                  pageGroup: item.pageGroup,
+                },
+                quantity,
+                stock: persistedStock.stock,
+                fulfilledAt,
+              },
+              `shop-reorder:${requestId}:fulfilled`,
+              { session: dbSession },
+            ),
+          ]);
         },
-      ],
-      timestamp: fulfilledAt,
-    });
+      });
     await recordShopStockAuditLog({
       action: "REORDER_FULFILL",
       itemSlug: item.slug,
@@ -128,34 +158,18 @@ export async function POST(request: Request) {
       },
     });
 
-    after(async () => {
-      await notifyUser({
-        userId: fulfilled.userId,
-        type: "SYSTEM",
-        title: "편의점 추가 발주가 완료되었습니다",
-        message: [
-          fulfilled.characterCodename
-            ? `${fulfilled.characterCodename} · ${item.name}`
-            : item.name,
-          `+${quantity.toLocaleString("ko-KR")} EA 입고`,
-          "편의점에서 확인하세요",
-        ].join(" · "),
-        link: "/erp/shop",
-      });
-
-      await notifyShopReorderFulfilled({
-        today,
-        item: {
-          slug: item.slug,
-          name: item.name,
-          icon: item.icon,
-          price: item.price,
-          pageGroup: item.pageGroup,
-        },
-        quantity,
-        stock: stock.stock,
-        fulfilledAt,
-      });
+    await notifyUser({
+      userId: fulfilled.userId,
+      type: "SYSTEM",
+      title: "편의점 추가 발주가 완료되었습니다",
+      message: [
+        fulfilled.characterCodename
+          ? `${fulfilled.characterCodename} · ${item.name}`
+          : item.name,
+        `+${quantity.toLocaleString("ko-KR")} EA 입고`,
+        "편의점에서 확인하세요",
+      ].join(" · "),
+      link: "/erp/shop",
     });
     return NextResponse.json({
       ok: true,

@@ -107,7 +107,7 @@ export async function PATCH(
       );
     }
 
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "세션 리포트 수정",
       actor: {
         id: session.user.id,
@@ -155,7 +155,7 @@ export async function DELETE(
       );
     }
 
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "세션 리포트 삭제",
       actor: {
         id: session.user.id,

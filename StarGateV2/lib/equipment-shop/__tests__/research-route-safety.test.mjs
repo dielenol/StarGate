@@ -31,10 +31,6 @@ const RESEARCH_DISCORD_SYNC = new URL(
   "../../notifications/equipment-research-discord.ts",
   import.meta.url,
 );
-const RESEARCH_DISCORD_SCHEDULE = new URL(
-  "../../notifications/equipment-research-discord-schedule.ts",
-  import.meta.url,
-);
 const VERCEL_CONFIG = new URL("../../../vercel.json", import.meta.url);
 
 test("research GET is lock-gated and read-only", async () => {
@@ -119,20 +115,18 @@ test("team research mutations queue one durable Discord card revision in their t
   );
   for (const source of [contribute, rush, apply]) {
     assert.doesNotMatch(source, /notifyEquipmentResearchEvent/);
-    assert.match(source, /scheduleEquipmentResearchDiscordCardSync/);
+    assert.doesNotMatch(source, /scheduleEquipmentResearchDiscordCardSync/);
+    assert.doesNotMatch(source, /\bafter\(/);
   }
 });
 
-test("research Discord cards sync only from post-commit after() work", async () => {
-  const [syncSource, scheduleSource, vercelConfig] = await Promise.all([
+test("research Discord card delivery is left to the long-running worker", async () => {
+  const [syncSource, vercelConfig] = await Promise.all([
     readFile(RESEARCH_DISCORD_SYNC, "utf8"),
-    readFile(RESEARCH_DISCORD_SCHEDULE, "utf8"),
     readFile(VERCEL_CONFIG, "utf8"),
   ]);
 
   assert.doesNotMatch(syncSource, /syncPendingEquipmentResearchDiscordCards/);
-  assert.match(scheduleSource, /after\(run\)/);
-  assert.doesNotMatch(scheduleSource, /cron/);
   assert.doesNotMatch(vercelConfig, /\/api\/cron\/research\/discord-cards/);
 });
 

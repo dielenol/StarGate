@@ -120,12 +120,12 @@ test("공방의 모든 절차 단계에 전용 DM 문구가 있다", () => {
   );
 });
 
-test("공방 상태 전이 라우트가 저장 성공 뒤 아메리 DM을 전달한다", () => {
+test("공방 상태 전이 라우트는 아메리 outbox만 저장하고 worker가 전달한다", () => {
   assert.match(requestRoute, /createEquipmentWorkshopDiscordDmOutboxEvent/);
   assert.match(requestRoute, /event: "REQUESTED"/);
-  assert.match(requestRoute, /drainEquipmentWorkshopDiscordDms/);
-  assert.match(adminActionRoute, /drainEquipmentWorkshopDiscordDms/);
-  assert.match(playerActionRoute, /drainEquipmentWorkshopDiscordDms/);
+  assert.doesNotMatch(requestRoute, /drainEquipmentWorkshopDiscordDms/);
+  assert.doesNotMatch(adminActionRoute, /drainEquipmentWorkshopDiscordDms/);
+  assert.doesNotMatch(playerActionRoute, /drainEquipmentWorkshopDiscordDms/);
 });
 
 test("공방 DM은 아메리 전용 봇 토큰으로만 발신한다", () => {

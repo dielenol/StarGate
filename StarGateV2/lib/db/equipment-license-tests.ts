@@ -17,6 +17,19 @@ import {
   type TowaskiLicenseTestDifficulty,
   type TowaskiLicenseTarget,
 } from "@/lib/equipment-shop/license-test";
+import {
+  createTowaskiLicenseV2State,
+  evaluateTowaskiLicenseProgramProgress,
+  getTowaskiLicenseModeForSlug,
+  isTowaskiLicenseV2Complete,
+  resolveTowaskiLicenseProgramStep,
+  TOWASKI_LICENSE_CHALLENGE_TTL_MS,
+  TOWASKI_LICENSE_PROGRAM_VERSION,
+  validateTowaskiLicenseV2StepTiming,
+  type TowaskiLicenseTestMode,
+  type TowaskiLicenseV2ChallengeState,
+  type TowaskiLicenseV2StepInput,
+} from "@/lib/equipment-shop/license-test-v2";
 import type { TowaskiLicenseSlug } from "@/lib/equipment-shop/licenses";
 
 const COLLECTION_NAME = "equipment_license_tests";
@@ -38,6 +51,9 @@ export interface TowaskiLicenseChallenge {
   characterCodename: string;
   licenseSlug: TowaskiLicenseSlug;
   difficulty?: TowaskiLicenseTestDifficulty;
+  programVersion?: number;
+  mode?: TowaskiLicenseTestMode;
+  v2?: TowaskiLicenseV2ChallengeState;
   startRequestId?: string;
   sequence: TowaskiLicenseTarget[];
   currentRound: number;
@@ -59,6 +75,9 @@ interface TowaskiLicenseChallengeOutcome {
   hostileHits: number;
   civilianHits: number;
   shots: number;
+  programVersion?: number;
+  mode?: TowaskiLicenseTestMode;
+  v2?: TowaskiLicenseV2ChallengeState;
   status: TowaskiLicenseChallengeStatus;
   roundStartedAt: Date;
   completedAt?: Date;
@@ -73,6 +92,8 @@ type TowaskiLicenseTestRequestRecord =
       action: "start";
       licenseSlug?: TowaskiLicenseSlug;
       difficulty: TowaskiLicenseTestDifficulty;
+      programVersion?: number;
+      mode?: TowaskiLicenseTestMode;
       challengeId: ObjectId;
       outcome: TowaskiLicenseChallengeOutcome;
       createdAt: Date;
@@ -87,6 +108,20 @@ type TowaskiLicenseTestRequestRecord =
       round: number;
       hit: boolean;
       shots: number;
+      outcome: TowaskiLicenseChallengeOutcome;
+      createdAt: Date;
+    }
+  | {
+      _id?: ObjectId;
+      userId: string;
+      characterId: string;
+      requestId: string;
+      action: "resolve";
+      challengeId: ObjectId;
+      step: number;
+      input: TowaskiLicenseV2StepInput;
+      programVersion: number;
+      mode: TowaskiLicenseTestMode;
       outcome: TowaskiLicenseChallengeOutcome;
       createdAt: Date;
     };
@@ -106,6 +141,26 @@ export class TowaskiLicenseChallengeError extends Error {
     super(message);
     this.name = "TowaskiLicenseChallengeError";
   }
+}
+
+function getPinnedV2ProgramVersion(
+  challenge: Pick<
+    TowaskiLicenseChallenge,
+    "licenseSlug" | "programVersion" | "mode" | "v2"
+  >,
+): number {
+  if (
+    challenge.programVersion !== TOWASKI_LICENSE_PROGRAM_VERSION ||
+    challenge.v2?.programVersion !== challenge.programVersion ||
+    challenge.mode !== challenge.v2.mode ||
+    challenge.mode !== getTowaskiLicenseModeForSlug(challenge.licenseSlug)
+  ) {
+    throw new TowaskiLicenseChallengeError(
+      "INVALID_LICENSE_TEST",
+      "지원하지 않거나 버전 정보가 손상된 자격시험 세션입니다.",
+    );
+  }
+  return challenge.programVersion;
 }
 
 let ensureIndexesPromise: Promise<void> | null = null;
@@ -198,6 +253,11 @@ function challengeOutcome(
     hostileHits: challenge.hostileHits,
     civilianHits: challenge.civilianHits,
     shots: challenge.shots,
+    ...(challenge.programVersion
+      ? { programVersion: challenge.programVersion }
+      : {}),
+    ...(challenge.mode ? { mode: challenge.mode } : {}),
+    ...(challenge.v2 ? { v2: challenge.v2 } : {}),
     status: challenge.status,
     roundStartedAt: challenge.roundStartedAt,
     ...(challenge.completedAt ? { completedAt: challenge.completedAt } : {}),
@@ -208,12 +268,18 @@ function applyChallengeOutcome(
   challenge: TowaskiLicenseChallenge,
   outcome: TowaskiLicenseChallengeOutcome,
 ): TowaskiLicenseChallenge {
+  if (challenge.status === "redeeming" || challenge.status === "redeemed") {
+    return challenge;
+  }
   return {
     ...challenge,
     currentRound: outcome.currentRound,
     hostileHits: outcome.hostileHits,
     civilianHits: outcome.civilianHits,
     shots: outcome.shots,
+    programVersion: outcome.programVersion ?? challenge.programVersion,
+    mode: outcome.mode ?? challenge.mode,
+    v2: outcome.v2 ?? challenge.v2,
     status: outcome.status,
     roundStartedAt: outcome.roundStartedAt,
     completedAt: outcome.completedAt,
@@ -226,17 +292,39 @@ function createTowaskiLicenseChallengeDocument(args: {
   characterCodename: string;
   licenseSlug: TowaskiLicenseSlug;
   difficulty: TowaskiLicenseTestDifficulty;
+  programVersion?: number;
+  mode?: TowaskiLicenseTestMode;
   requestId: string;
 }): TowaskiLicenseChallenge {
   const now = new Date();
+  const programVersion = args.programVersion ?? 1;
+  const isV2 = programVersion === TOWASKI_LICENSE_PROGRAM_VERSION;
+  if (
+    ![1, TOWASKI_LICENSE_PROGRAM_VERSION].includes(programVersion) ||
+    (isV2 &&
+      (!args.mode ||
+        args.mode !== getTowaskiLicenseModeForSlug(args.licenseSlug))) ||
+    (!isV2 && args.mode !== undefined)
+  ) {
+    throw new TowaskiLicenseChallengeError(
+      "INVALID_LICENSE_TEST",
+      "지원하지 않거나 종목이 일치하지 않는 자격시험 버전입니다.",
+    );
+  }
+  const v2 = isV2
+    ? createTowaskiLicenseV2State(args.mode!, randomInt)
+    : undefined;
   return {
     userId: args.userId,
     characterId: args.characterId,
     characterCodename: args.characterCodename,
     licenseSlug: args.licenseSlug,
     difficulty: args.difficulty,
+    ...(args.programVersion ? { programVersion: args.programVersion } : {}),
+    ...(args.mode ? { mode: args.mode } : {}),
+    ...(v2 ? { v2 } : {}),
     startRequestId: args.requestId,
-    sequence: createTargetSequence(),
+    sequence: v2 ? [] : createTargetSequence(),
     currentRound: 0,
     hostileHits: 0,
     civilianHits: 0,
@@ -245,7 +333,10 @@ function createTowaskiLicenseChallengeDocument(args: {
     startedAt: now,
     roundStartedAt: now,
     expiresAt: new Date(
-      now.getTime() + TOWASKI_BASIC_LICENSE_TEST_RULES.challengeTtlMs,
+      now.getTime() +
+        (v2
+          ? TOWASKI_LICENSE_CHALLENGE_TTL_MS
+          : TOWASKI_BASIC_LICENSE_TEST_RULES.challengeTtlMs),
     ),
   };
 }
@@ -266,6 +357,8 @@ async function findStartRequestReplay(
     requestId: string;
     licenseSlug: TowaskiLicenseSlug;
     difficulty: TowaskiLicenseTestDifficulty;
+    programVersion?: number;
+    mode?: TowaskiLicenseTestMode;
   },
   session?: ClientSession,
 ): Promise<TowaskiLicenseChallenge | null> {
@@ -286,7 +379,9 @@ async function findStartRequestReplay(
       request.action !== "start" ||
       (request.licenseSlug ?? TOWASKI_BASIC_FIREARM_LICENSE_SLUG) !==
         args.licenseSlug ||
-      request.difficulty !== args.difficulty
+      request.difficulty !== args.difficulty ||
+      (request.programVersion ?? 1) !== (args.programVersion ?? 1) ||
+      request.mode !== args.mode
     ) {
       throw new TowaskiLicenseChallengeError(
         "LICENSE_TEST_CONFLICT",
@@ -317,7 +412,9 @@ async function findStartRequestReplay(
   if (
     legacy &&
     (legacy.licenseSlug !== args.licenseSlug ||
-      (legacy.difficulty ?? "standard") !== args.difficulty)
+      (legacy.difficulty ?? "standard") !== args.difficulty ||
+      (legacy.programVersion ?? 1) !== (args.programVersion ?? 1) ||
+      legacy.mode !== args.mode)
   ) {
     throw new TowaskiLicenseChallengeError(
       "LICENSE_TEST_CONFLICT",
@@ -333,6 +430,8 @@ export async function startOrResumeTowaskiLicenseChallenge(args: {
   characterCodename: string;
   licenseSlug: TowaskiLicenseSlug;
   difficulty: TowaskiLicenseTestDifficulty;
+  programVersion?: number;
+  mode?: TowaskiLicenseTestMode;
   requestId: string;
 }): Promise<TowaskiLicenseChallenge> {
   const replay = await findStartRequestReplay(args);
@@ -392,20 +491,27 @@ export async function startOrResumeTowaskiLicenseChallenge(args: {
           selected = { ...created, _id: result.insertedId };
         }
         if (!selected._id) throw new Error("사격 시험 challenge ID 발급 실패");
-        if (
-          selected.status === "active" &&
-          selected.currentRound >= selected.sequence.length
-        ) {
-          const evaluation = evaluateTowaskiBasicLicenseTest(
-            {
-              hostileHits: selected.hostileHits,
-              civilianHits: selected.civilianHits,
-              shots: selected.shots,
-              durationMs:
-                selected.roundStartedAt.getTime() - selected.startedAt.getTime(),
-            },
-            selected.difficulty ?? "standard",
-          );
+        if (selected.v2) getPinnedV2ProgramVersion(selected);
+        const selectedComplete = selected.v2
+          ? isTowaskiLicenseV2Complete(selected.v2)
+          : selected.currentRound >= selected.sequence.length;
+        if (selected.status === "active" && selectedComplete) {
+          const evaluation = selected.v2
+            ? evaluateTowaskiLicenseProgramProgress(
+                getPinnedV2ProgramVersion(selected),
+                selected.v2.progress,
+              )
+            : evaluateTowaskiBasicLicenseTest(
+                {
+                  hostileHits: selected.hostileHits,
+                  civilianHits: selected.civilianHits,
+                  shots: selected.shots,
+                  durationMs:
+                    selected.roundStartedAt.getTime() -
+                    selected.startedAt.getTime(),
+                },
+                selected.difficulty ?? "standard",
+              );
           const completed = await challenges.findOneAndUpdate(
             { _id: selected._id, status: "active" },
             {
@@ -433,6 +539,10 @@ export async function startOrResumeTowaskiLicenseChallenge(args: {
             action: "start",
             licenseSlug: args.licenseSlug,
             difficulty: args.difficulty,
+            ...(args.programVersion
+              ? { programVersion: args.programVersion }
+              : {}),
+            ...(args.mode ? { mode: args.mode } : {}),
             challengeId: selected._id,
             outcome: challengeOutcome(selected),
             createdAt: now,
@@ -516,6 +626,7 @@ export async function resolveTowaskiLicenseChallengeRound(args: {
     if (!request) return null;
     if (
       request.action !== "resolve" ||
+      !("round" in request) ||
       request.challengeId.toString() !== args.challengeId ||
       request.round !== args.round ||
       request.hit !== args.hit ||
@@ -572,6 +683,12 @@ export async function resolveTowaskiLicenseChallengeRound(args: {
         throw new TowaskiLicenseChallengeError(
           "LICENSE_TEST_STALE_ROUND",
           "이미 종료된 사격 시험입니다.",
+        );
+      }
+      if (challenge.v2) {
+        throw new TowaskiLicenseChallengeError(
+          "INVALID_LICENSE_TEST",
+          "v2 자격시험에는 종별 단계 입력이 필요합니다.",
         );
       }
 
@@ -709,6 +826,212 @@ export async function resolveTowaskiLicenseChallengeRound(args: {
   }
 }
 
+export async function resolveTowaskiLicenseChallengeStep(args: {
+  challengeId: string;
+  userId: string;
+  characterId: string;
+  step: number;
+  input: TowaskiLicenseV2StepInput;
+  requestId: string;
+}): Promise<TowaskiLicenseChallenge> {
+  const [challenges, requests, client] = await Promise.all([
+    challengeCollection(),
+    requestCollection(),
+    getClient(),
+  ]);
+  const findReplay = async (session?: ClientSession) => {
+    const request = await requests.findOne(
+      {
+        userId: args.userId,
+        characterId: args.characterId,
+        requestId: args.requestId,
+      },
+      { session },
+    );
+    if (!request) return null;
+    if (
+      request.action !== "resolve" ||
+      !("step" in request) ||
+      request.challengeId.toString() !== args.challengeId ||
+      request.step !== args.step ||
+      JSON.stringify(request.input) !== JSON.stringify(args.input)
+    ) {
+      throw new TowaskiLicenseChallengeError(
+        "LICENSE_TEST_CONFLICT",
+        "동일한 요청 키를 다른 자격시험 단계에 사용할 수 없습니다.",
+      );
+    }
+    const replay = await challenges.findOne(
+      { _id: request.challengeId },
+      { session },
+    );
+    if (!replay) {
+      throw new TowaskiLicenseChallengeError(
+        "LICENSE_TEST_EXPIRED",
+        "자격시험 요청 기록이 만료되었습니다. 새 요청으로 다시 시작해 주세요.",
+      );
+    }
+    return applyChallengeOutcome(replay, request.outcome);
+  };
+
+  const replay = await findReplay();
+  if (replay) return replay;
+  if (!ObjectId.isValid(args.challengeId)) {
+    throw new TowaskiLicenseChallengeError(
+      "INVALID_LICENSE_TEST",
+      "유효한 자격시험 세션을 찾을 수 없습니다.",
+    );
+  }
+
+  const session = client.startSession();
+  try {
+    const updated = await session.withTransaction(async () => {
+      const transactionReplay = await findReplay(session);
+      if (transactionReplay) return transactionReplay;
+
+      const challenge = await challenges.findOne(
+        {
+          _id: new ObjectId(args.challengeId),
+          userId: args.userId,
+          characterId: args.characterId,
+        },
+        { session },
+      );
+      if (!challenge?._id || !challenge.v2 || !challenge.mode) {
+        throw new TowaskiLicenseChallengeError(
+          "INVALID_LICENSE_TEST",
+          "유효한 v2 자격시험 세션을 찾을 수 없습니다.",
+        );
+      }
+      const programVersion = getPinnedV2ProgramVersion(challenge);
+      if (challenge.status !== "active") {
+        throw new TowaskiLicenseChallengeError(
+          "LICENSE_TEST_STALE_ROUND",
+          "이미 종료된 자격시험입니다.",
+        );
+      }
+      if (
+        challenge.mode !== args.input.mode ||
+        challenge.v2.mode !== args.input.mode
+      ) {
+        throw new TowaskiLicenseChallengeError(
+          "INVALID_LICENSE_TEST",
+          "시험 종목과 제출한 단계 입력이 일치하지 않습니다.",
+        );
+      }
+
+      const now = new Date();
+      if (challenge.expiresAt.getTime() <= now.getTime()) {
+        throw new TowaskiLicenseChallengeError(
+          "LICENSE_TEST_EXPIRED",
+          "자격시험 세션이 만료되었습니다. 다시 시작해 주세요.",
+        );
+      }
+      if (challenge.v2.progress.step !== args.step) {
+        throw new TowaskiLicenseChallengeError(
+          "LICENSE_TEST_STALE_ROUND",
+          "이미 처리됐거나 순서가 맞지 않는 시험 단계입니다.",
+        );
+      }
+
+      const scenario = challenge.v2.scenarios[args.step];
+      if (!scenario) {
+        throw new TowaskiLicenseChallengeError(
+          "LICENSE_TEST_STALE_ROUND",
+          "처리할 시험 시나리오가 없습니다.",
+        );
+      }
+      const elapsedMs = now.getTime() - challenge.roundStartedAt.getTime();
+      if (!validateTowaskiLicenseV2StepTiming({
+        scenario,
+        input: args.input,
+        elapsedMs,
+      })) {
+        throw new TowaskiLicenseChallengeError(
+          "LICENSE_TEST_TOO_FAST",
+          "단계 반응 시간이 시험 범위를 벗어났습니다.",
+        );
+      }
+
+      const stepResult = resolveTowaskiLicenseProgramStep({
+        programVersion,
+        scenario,
+        input: args.input,
+        progress: challenge.v2.progress,
+      });
+      const v2 = { ...challenge.v2, progress: stepResult.progress };
+      const completed = isTowaskiLicenseV2Complete(v2);
+      const advanced = !["firearm", "precision"].includes(v2.mode);
+      const failedEarly = advanced && stepResult.safetyViolation;
+      const evaluation =
+        completed || failedEarly
+          ? evaluateTowaskiLicenseProgramProgress(
+              programVersion,
+              v2.progress,
+            )
+          : null;
+
+      const next = await challenges.findOneAndUpdate(
+        {
+          _id: challenge._id,
+          userId: args.userId,
+          characterId: args.characterId,
+          status: "active",
+          "v2.progress.step": args.step,
+        },
+        {
+          $set: {
+            v2,
+            currentRound: v2.progress.step,
+            roundStartedAt: now,
+            ...(evaluation
+              ? {
+                  status:
+                    completed && evaluation.passed ? "passed" : "failed",
+                  completedAt: now,
+                }
+              : {}),
+          },
+        },
+        { returnDocument: "after", session },
+      );
+      if (!next) {
+        throw new TowaskiLicenseChallengeError(
+          "LICENSE_TEST_CONFLICT",
+          "동시에 같은 시험 단계가 처리되었습니다.",
+        );
+      }
+      await requests.insertOne(
+        {
+          userId: args.userId,
+          characterId: args.characterId,
+          requestId: args.requestId,
+          action: "resolve",
+          challengeId: challenge._id,
+          step: args.step,
+          input: args.input,
+          programVersion,
+          mode: challenge.mode,
+          outcome: challengeOutcome(next),
+          createdAt: now,
+        },
+        { session },
+      );
+      return next;
+    });
+    if (!updated) throw new Error("자격시험 단계 처리 결과가 없습니다.");
+    return updated;
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      const concurrentReplay = await findReplay();
+      if (concurrentReplay) return concurrentReplay;
+    }
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+}
+
 export async function markTowaskiLicenseChallengeRedeemed(
   challengeId: string,
   redemptionToken: string,
@@ -758,7 +1081,7 @@ export async function claimTowaskiLicenseChallengeRedemption(
           now.getTime() + TOWASKI_LICENSE_REDEMPTION_LEASE_MS,
         ),
         expiresAt: new Date(
-          now.getTime() + TOWASKI_BASIC_LICENSE_TEST_RULES.challengeTtlMs,
+          now.getTime() + TOWASKI_LICENSE_CHALLENGE_TTL_MS,
         ),
       },
     },

@@ -51,3 +51,22 @@ test("retry briefing stays in qualification context", () => {
   assert.match(line, /다시|재시험|한 번 더/);
   assert.doesNotMatch(line, /재고|진열장|방호구|소모품|카운터/);
 });
+
+test("advanced modes use equipment-specific start and failure dialogue", () => {
+  const sonicStart = getTowaskiQualificationDialogueLine({
+    type: "start",
+    difficulty: "expert",
+    mode: "sonic",
+    attempt: 1,
+  });
+  const explosiveFailure = getTowaskiQualificationDialogueLine({
+    type: "failed",
+    difficulty: "expert",
+    mode: "explosive",
+    attempt: 1,
+    reasons: ["backblast"],
+  });
+
+  assert.match(sonicStart, /공진|출력|펄스/);
+  assert.match(explosiveFailure, /폭발|후폭풍|기폭/);
+});

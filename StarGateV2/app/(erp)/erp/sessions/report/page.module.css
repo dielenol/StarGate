@@ -249,7 +249,14 @@
 }
 
 @media (max-width: 680px) {
+  .mapBox {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
   .mapStage {
+    width: 680px;
+    min-width: 680px;
     aspect-ratio: 1625 / 968;
   }
 

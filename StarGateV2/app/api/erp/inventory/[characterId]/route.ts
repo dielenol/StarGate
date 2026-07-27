@@ -24,7 +24,7 @@ import {
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
-import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
 
 const MAX_GRANT_QUANTITY = 999;
 const MAX_REMOVE_QUANTITY = 999;
@@ -34,6 +34,10 @@ interface RemoveInventoryOperationBody {
   itemName?: string;
   error?: string;
   code?: string;
+}
+
+interface GrantInventoryOperationBody {
+  entry: Awaited<ReturnType<typeof addToInventory>>;
 }
 
 export async function GET(
@@ -100,6 +104,17 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const requestId = readIdempotencyKey(request);
+  if (!requestId) {
+    return NextResponse.json(
+      {
+        error: "유효한 Idempotency-Key 헤더가 필요합니다.",
+        code: "INVALID_IDEMPOTENCY_KEY",
+      },
+      { status: 400 },
+    );
+  }
+
   const { characterId } = await params;
   if (!isValidObjectId(characterId)) {
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
@@ -158,38 +173,70 @@ export async function POST(
     );
   }
 
+  const itemId = body.itemId.trim();
+  const quantity = body.quantity;
+  const note = body.note ?? "";
+  const auditDedupeKey = `inventory-grant:${requestId}:audit`;
+  const createAuditPayload = (timestamp: Date) => ({
+    action: "캐릭터 아이템 지급",
+    actor: {
+      id: session.user.id,
+      displayName: session.user.displayName,
+      role: session.user.role,
+    },
+    summary: `${masterItem.name} x${quantity}`,
+    target: character.codename,
+    details: note ? [{ name: "메모", value: note }] : undefined,
+    timestamp,
+  });
+
   try {
-    const entry = await addToInventory({
-      characterId,
-      characterCodename: character.codename,
-      itemId: body.itemId,
-      // itemName 은 클라이언트 입력 무시 — master 의 정식 명칭만 사용.
-      itemName: masterItem.name,
-      quantity: body.quantity,
-      acquiredAt: new Date(),
-      note: body.note ?? "",
-    });
+    await prepareCharacterInventoryItemLocks(characterId, [itemId]);
+    const acquiredAt = new Date();
+    const operation =
+      await executeEconomicOperationResult<GrantInventoryOperationBody>({
+        requestId,
+        domain: "inventory-grant",
+        actorId: session.user.id,
+        payload: { characterId, itemId, quantity, note },
+        run: async (dbSession) => {
+          const entry = await addToInventory(
+            {
+              characterId,
+              characterCodename: character.codename,
+              itemId,
+              // itemName 은 클라이언트 입력 무시 — master 의 정식 명칭만 사용.
+              itemName: masterItem.name,
+              quantity,
+              acquiredAt,
+              note,
+            },
+            { session: dbSession },
+          );
+          await enqueueGmAdminAudit(createAuditPayload(acquiredAt), {
+            session: dbSession,
+            dedupeKey: auditDedupeKey,
+          });
+          return { status: 201, body: { entry } };
+        },
+      });
 
-    scheduleGmAdminAudit({
-      action: "캐릭터 아이템 지급",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: `${masterItem.name} x${body.quantity}`,
-      target: character.codename,
-      details: body.note ? [{ name: "메모", value: body.note }] : undefined,
-      timestamp: new Date(),
-    });
+    // 완료 응답 유실 뒤 replay된 경우에도 기존 mutation을 반복하지 않고
+    // deterministic dedupe key로 누락된 outbox만 복구한다.
+    if (operation.replayed) {
+      await enqueueGmAdminAudit(
+        createAuditPayload(new Date(operation.body.entry.acquiredAt)),
+        { dedupeKey: auditDedupeKey },
+      );
+    }
 
-    if (character.ownerId) {
+    if (!operation.replayed && character.ownerId) {
       await notifyUser({
         userId: character.ownerId,
         type: "SYSTEM",
         title: "아이템이 지급되었습니다",
         message: [
-          `${character.codename} · ${masterItem.name} x${body.quantity}`,
+          `${character.codename} · ${masterItem.name} x${quantity}`,
           `지급자 ${session.user.displayName}`,
         ].join(" · "),
         link: `/erp/inventory/${characterId}`,
@@ -198,8 +245,25 @@ export async function POST(
       });
     }
 
-    return NextResponse.json({ entry }, { status: 201 });
+    return NextResponse.json(operation.body, {
+      status: operation.status,
+      headers: operation.replayed
+        ? { "X-Idempotency-Replayed": "true" }
+        : undefined,
+    });
   } catch (err) {
+    if (err instanceof EconomicOperationConflictError) {
+      return NextResponse.json(
+        {
+          error:
+            err.reason === "processing"
+              ? "동일한 지급 요청이 처리 중입니다."
+              : "동일 Idempotency-Key가 다른 요청에 사용되었습니다.",
+          code: "DUPLICATE_REQUEST",
+        },
+        { status: 409 },
+      );
+    }
     const message =
       err instanceof Error ? err.message : "아이템 지급 실패";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -285,6 +349,19 @@ export async function DELETE(
 
   try {
     await prepareCharacterInventoryItemLocks(characterId, [itemId]);
+    const occurredAt = new Date();
+    const auditDedupeKey = `inventory-remove:${requestId}:audit`;
+    const createAuditPayload = (itemName: string, remaining: number) => ({
+      action: "캐릭터 아이템 제거",
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+      summary: `${itemName} x${quantity} · 잔여 ${remaining}`,
+      target: character.codename,
+      timestamp: occurredAt,
+    });
     const operation =
       await executeEconomicOperationResult<RemoveInventoryOperationBody>({
         requestId,
@@ -326,6 +403,13 @@ export async function DELETE(
               },
             };
           }
+          await enqueueGmAdminAudit(
+            createAuditPayload(targetEntry.itemName, remaining),
+            {
+              session: dbSession,
+              dedupeKey: auditDedupeKey,
+            },
+          );
           return {
             status: 200,
             body: { remaining, itemName: targetEntry.itemName },
@@ -347,21 +431,16 @@ export async function DELETE(
       });
     }
 
+    if (operation.replayed) {
+      await enqueueGmAdminAudit(
+        createAuditPayload(operation.body.itemName, operation.body.remaining),
+        { dedupeKey: auditDedupeKey },
+      );
+    }
+
     if (!operation.replayed) {
       const remaining = operation.body.remaining;
       const itemName = operation.body.itemName;
-      scheduleGmAdminAudit({
-        action: "캐릭터 아이템 제거",
-        actor: {
-          id: session.user.id,
-          displayName: session.user.displayName,
-          role: session.user.role,
-        },
-        summary: `${itemName} x${quantity} · 잔여 ${remaining}`,
-        target: character.codename,
-        timestamp: new Date(),
-      });
-
       if (character.ownerId) {
         await notifyUser({
           userId: character.ownerId,

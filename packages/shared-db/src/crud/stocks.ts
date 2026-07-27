@@ -9,7 +9,7 @@
  * Phase 2 ledger 가 character 단위로 전환되어 holdings 도 characterId 단위.
  */
 
-import type { ClientSession } from "mongodb";
+import { MongoServerError, type ClientSession } from "mongodb";
 
 import type {
   CreateStockPriceHistoryInput,
@@ -23,6 +23,7 @@ import {
   stockPriceHistoryCol,
   stockPricesCol,
 } from "../collections.js";
+import { getClient } from "../client.js";
 
 /* ── stock_prices ── */
 
@@ -31,9 +32,12 @@ export async function getStockPrices(): Promise<StockPrice[]> {
   return col.find().sort({ ticker: 1 }).toArray();
 }
 
-export async function getStockPrice(ticker: string): Promise<StockPrice | null> {
+export async function getStockPrice(
+  ticker: string,
+  options: { session?: ClientSession } = {},
+): Promise<StockPrice | null> {
   const col = await stockPricesCol();
-  return col.findOne({ ticker });
+  return col.findOne({ ticker }, { session: options.session });
 }
 
 /**
@@ -47,11 +51,9 @@ export async function ensureStockPrice(
   initialPrice: number,
   initialLastUpdateKst: string,
   initialEventText: string = "상장",
+  options: { session?: ClientSession } = {},
 ): Promise<StockPrice> {
   const col = await stockPricesCol();
-  const existing = await col.findOne({ ticker });
-  if (existing) return existing;
-
   const doc: StockPrice = {
     ticker,
     price: initialPrice,
@@ -59,8 +61,19 @@ export async function ensureStockPrice(
     eventText: initialEventText,
     lastUpdate: initialLastUpdateKst,
   };
-  const result = await col.insertOne(doc);
-  return { ...doc, _id: result.insertedId };
+  const result = await col.findOneAndUpdate(
+    { ticker },
+    { $setOnInsert: doc },
+    {
+      upsert: true,
+      returnDocument: "after",
+      session: options.session,
+    },
+  );
+  if (!result) {
+    throw new Error(`Failed to ensure stock price: ${ticker}`);
+  }
+  return result;
 }
 
 /**
@@ -109,6 +122,7 @@ export async function updateStockPrice(
   newPrice: number,
   eventText: string,
   lastUpdateKst: string,
+  options: { session?: ClientSession } = {},
 ): Promise<StockPrice> {
   const col = await stockPricesCol();
   const result = await col.findOneAndUpdate(
@@ -123,12 +137,197 @@ export async function updateStockPrice(
         },
       },
     ],
-    { returnDocument: "after" },
+    { returnDocument: "after", session: options.session },
   );
   if (!result) {
     throw new Error(`Stock price not found: ${ticker}`);
   }
   return result;
+}
+
+export interface ScheduledStockPriceMutation {
+  price: number;
+  eventText: string;
+  eventTier: NonNullable<StockPriceHistory["eventTier"]>;
+}
+
+export interface ApplyScheduledStockPriceMutationInput {
+  ticker: string;
+  operationKey: string;
+  initialPrice: number;
+  initialLastUpdateKst: string;
+  initialEventText?: string;
+  calculate: (current: StockPrice) => ScheduledStockPriceMutation;
+}
+
+export interface ApplyScheduledStockPriceMutationResult {
+  applied: boolean;
+  initialized: boolean;
+  price: StockPrice;
+  history: StockPriceHistory;
+}
+
+function isDuplicateKeyError(error: unknown): boolean {
+  return error instanceof MongoServerError && error.code === 11_000;
+}
+
+/**
+ * ticker의 예약 가격 변경과 append-only history를 단일 Mongo transaction으로 묶는다.
+ *
+ * operationKey unique 제약이 동시 실행의 DB-level 승자를 결정한다. transaction retry 시
+ * calculate가 다시 호출될 수 있으므로 호출자는 같은 current에 항상 같은 값을 반환해야 한다.
+ */
+export async function applyScheduledStockPriceMutation(
+  input: ApplyScheduledStockPriceMutationInput,
+): Promise<ApplyScheduledStockPriceMutationResult> {
+  if (!input.operationKey.trim()) {
+    throw new Error("Scheduled stock operationKey must not be empty");
+  }
+  if (!Number.isFinite(input.initialPrice) || input.initialPrice <= 0) {
+    throw new Error(
+      `Scheduled stock initialPrice must be positive: ${input.initialPrice}`,
+    );
+  }
+
+  const client = await getClient();
+  const session = client.startSession();
+  let outcome: ApplyScheduledStockPriceMutationResult | null = null;
+
+  try {
+    try {
+      await session.withTransaction(async () => {
+        const prices = await stockPricesCol();
+        const history = await stockPriceHistoryCol();
+        const existingHistory = await history.findOne(
+          { operationKey: input.operationKey },
+          { session },
+        );
+        const current = await prices.findOne(
+          { ticker: input.ticker },
+          { session },
+        );
+
+        if (existingHistory) {
+          if (!current) {
+            throw new Error(
+              `Scheduled stock history exists without price: ${input.operationKey}`,
+            );
+          }
+          outcome = {
+            applied: false,
+            initialized:
+              existingHistory.eventText ===
+              (input.initialEventText ?? "정기 시세 초기화"),
+            price: current,
+            history: existingHistory,
+          };
+          return;
+        }
+
+        const createdAt = new Date();
+        if (!current) {
+          const initialEventText =
+            input.initialEventText ?? "정기 시세 초기화";
+          const priceDoc: StockPrice = {
+            ticker: input.ticker,
+            price: input.initialPrice,
+            prevPrice: input.initialPrice,
+            eventText: initialEventText,
+            lastUpdate: input.initialLastUpdateKst,
+          };
+          const priceInsert = await prices.insertOne(priceDoc, { session });
+          const savedPrice = { ...priceDoc, _id: priceInsert.insertedId };
+          const historyDoc: StockPriceHistory = {
+            operationKey: input.operationKey,
+            ticker: input.ticker,
+            price: input.initialPrice,
+            prevPrice: input.initialPrice,
+            eventText: initialEventText,
+            eventTier: "routine",
+            source: "scheduled",
+            createdAt,
+          };
+          const historyInsert = await history.insertOne(historyDoc, {
+            session,
+          });
+          outcome = {
+            applied: true,
+            initialized: true,
+            price: savedPrice,
+            history: { ...historyDoc, _id: historyInsert.insertedId },
+          };
+          return;
+        }
+
+        const mutation = input.calculate(current);
+        if (!Number.isFinite(mutation.price) || mutation.price <= 0) {
+          throw new Error(
+            `Scheduled stock calculated invalid price: ${mutation.price}`,
+          );
+        }
+        const savedPrice = await prices.findOneAndUpdate(
+          { ticker: input.ticker },
+          {
+            $set: {
+              prevPrice: current.price,
+              price: mutation.price,
+              eventText: mutation.eventText,
+              lastUpdate: input.initialLastUpdateKst,
+            },
+          },
+          { returnDocument: "after", session },
+        );
+        if (!savedPrice) {
+          throw new Error(`Stock price not found: ${input.ticker}`);
+        }
+
+        const historyDoc: StockPriceHistory = {
+          operationKey: input.operationKey,
+          ticker: input.ticker,
+          price: savedPrice.price,
+          prevPrice: current.price,
+          eventText: mutation.eventText,
+          eventTier: mutation.eventTier,
+          source: "scheduled",
+          createdAt,
+        };
+        const historyInsert = await history.insertOne(historyDoc, { session });
+        outcome = {
+          applied: true,
+          initialized: false,
+          price: savedPrice,
+          history: { ...historyDoc, _id: historyInsert.insertedId },
+        };
+      });
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) throw error;
+
+      const history = await stockPriceHistoryCol();
+      const prices = await stockPricesCol();
+      const [existingHistory, current] = await Promise.all([
+        history.findOne({ operationKey: input.operationKey }),
+        prices.findOne({ ticker: input.ticker }),
+      ]);
+      if (!existingHistory || !current) throw error;
+      outcome = {
+        applied: false,
+        initialized:
+          existingHistory.eventText ===
+          (input.initialEventText ?? "정기 시세 초기화"),
+        price: current,
+        history: existingHistory,
+      };
+    }
+
+    if (!outcome) {
+      throw new Error(
+        `Scheduled stock mutation returned no result: ${input.operationKey}`,
+      );
+    }
+    return outcome;
+  } finally {
+    await session.endSession();
+  }
 }
 
 /* ── stock_holdings ── */
@@ -317,19 +516,20 @@ export async function getAllHoldings(): Promise<StockHolding[]> {
 /**
  * 가격 변동 시계열 1건 append (M1: ERP 차트 표시용).
  *
- * - createdAt 은 CRUD 가 항상 now 부여 (호출자 주입 금지 — 입력 타입에서 Omit).
+ * - createdAt 은 기본 now이며 transaction retry에서 동일 시각이 필요하면 options로 고정한다.
  * - source 분류는 호출자가 결정 ("scheduled" | "trade" | "gm-event").
  * - TTL 인덱스가 30 일 후 자동 만료.
  */
 export async function recordStockPriceHistory(
   input: CreateStockPriceHistoryInput,
+  options: { session?: ClientSession; createdAt?: Date } = {},
 ): Promise<StockPriceHistory> {
   const col = await stockPriceHistoryCol();
   const doc: StockPriceHistory = {
     ...input,
-    createdAt: new Date(),
+    createdAt: options.createdAt ?? new Date(),
   };
-  const result = await col.insertOne(doc);
+  const result = await col.insertOne(doc, { session: options.session });
   return { ...doc, _id: result.insertedId };
 }
 

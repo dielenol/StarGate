@@ -24,20 +24,26 @@ test("비공개 캐릭터는 GM에게만 보인다", () => {
   assert.equal(canViewCharacter("U", {}), true);
 });
 
-test("개인 인벤토리는 소유자 또는 V+만 볼 수 있다", () => {
+test("개인 인벤토리는 소유자 또는 공개 캐릭터의 V+만 볼 수 있다", () => {
   const ownCharacter = { ownerId: "user-a" };
   const otherCharacter = { ownerId: "user-b" };
+  const ownPrivateCharacter = { ownerId: "user-a", isPublic: false };
+  const otherPrivateCharacter = { ownerId: "user-b", isPublic: false };
 
   assert.equal(canViewPersonalInventory("user-a", "U", ownCharacter), true);
   assert.equal(canViewPersonalInventory("user-a", "U", otherCharacter), false);
   assert.equal(canViewPersonalInventory("user-a", "V", otherCharacter), true);
   assert.equal(canViewPersonalInventory("user-a", "GM", otherCharacter), true);
   assert.equal(
-    canViewPersonalInventory("user-a", "V", { ownerId: "user-a", isPublic: false }),
+    canViewPersonalInventory("user-a", "J", ownPrivateCharacter),
+    true,
+  );
+  assert.equal(
+    canViewPersonalInventory("user-a", "V", otherPrivateCharacter),
     false,
   );
   assert.equal(
-    canViewPersonalInventory("user-a", "GM", { ownerId: "user-b", isPublic: false }),
+    canViewPersonalInventory("user-a", "GM", otherPrivateCharacter),
     true,
   );
 });

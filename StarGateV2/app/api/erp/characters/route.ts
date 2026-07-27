@@ -141,7 +141,7 @@ export async function POST(request: Request) {
     const character = await createCharacter(
       createPayload as unknown as CreateCharacterInput,
     );
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "캐릭터 생성",
       actor: {
         id: session.user.id,

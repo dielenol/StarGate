@@ -7,8 +7,8 @@ const HAS_DB =
 const TEST_DB_NAME = `stargate_test_equipment_loadout_${process.pid}`;
 const CHARACTER_ID = "equipment-loadout-character";
 
-let close;
 let equipCharacterInventoryItem;
+let getClient;
 let getDb;
 let removeFromInventory;
 
@@ -17,8 +17,8 @@ before(async () => {
   const sharedDb = await import("../../../dist/index.js");
   sharedDb.initServerless({ uri: TEST_URI, dbName: TEST_DB_NAME, maxPoolSize: 2 });
   ({
-    close,
     equipCharacterInventoryItem,
+    getClient,
     getDb,
     removeFromInventory,
   } = sharedDb);
@@ -41,7 +41,7 @@ beforeEach(async () => {
 after(async () => {
   if (!HAS_DB || !getDb) return;
   await (await getDb()).dropDatabase();
-  await close();
+  await (await getClient()).close();
 });
 
 function inventoryRow(itemId, itemName) {

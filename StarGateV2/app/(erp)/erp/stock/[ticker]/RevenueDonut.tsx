@@ -47,7 +47,11 @@ export default function RevenueDonut({ data, centerLabel }: Props) {
 
   return (
     <div className={styles.infoPanel__donutChart} data-donut-id={safeId}>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        initialDimension={{ width: 180, height: 180 }}
+      >
         <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
           <Tooltip
             cursor={false}

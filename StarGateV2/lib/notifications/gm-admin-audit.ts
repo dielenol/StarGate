@@ -1,14 +1,13 @@
-import { after } from "next/server";
+import type { GmAdminAuditWebhookPayload } from "@/lib/discord";
+import type { ClientSession } from "mongodb";
 
-import {
-  notifyGmAdminAudit,
-  type GmAdminAuditWebhookPayload,
-} from "@/lib/discord";
+import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
 
-/** 성공한 GM 관리 mutation의 Discord 감사를 응답 이후 실행한다. */
-export function scheduleGmAdminAudit(
+/** 성공한 GM 관리 mutation의 Discord 감사를 durable outbox에 기록한다. */
+export async function scheduleGmAdminAudit(
   payload: GmAdminAuditWebhookPayload,
-): void {
+  options: { session?: ClientSession } = {},
+): Promise<void> {
   if (payload.actor.role !== "GM") return;
-  after(() => notifyGmAdminAudit(payload));
+  await enqueueGmAdminAudit(payload, options);
 }

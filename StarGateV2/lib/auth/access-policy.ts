@@ -31,9 +31,9 @@ export function canViewPersonalInventory(
   viewerRole: UserRole,
   character: CharacterAccessSubject,
 ): boolean {
-  if (!canViewCharacter(viewerRole, character)) return false;
-  if (viewerRole === "GM" || viewerRole === "V") return true;
-  return normalizeId(character.ownerId) === viewerId;
+  if (viewerRole === "GM") return true;
+  if (normalizeId(character.ownerId) === viewerId) return true;
+  return character.isPublic !== false && viewerRole === "V";
 }
 
 export function canManageCharacterEquipment(

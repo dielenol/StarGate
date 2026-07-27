@@ -5,14 +5,14 @@
  * 실제 재입고 처리는 운영자가 GM 재고 관리에서 수행한다.
  */
 
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { listUsers } from "@/lib/db/users";
-import { notifyShopReorderRequest } from "@/lib/discord";
 import { getStock } from "@/lib/db/shop";
 import { notifyUser, notifyUsers } from "@/lib/notifications/events";
+import { enqueueShopReorderRequestWebhook } from "@/lib/outbox/integration";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import {
@@ -116,85 +116,74 @@ export async function POST(request: Request) {
     userId: session.user.id,
     slug,
   });
-  if (existingPending) {
-    return NextResponse.json(
-      {
-        ok: true,
-        status: "already-requested",
-        slug,
-        message: "오늘 이미 발주 요청한 상품입니다.",
-      },
-      { status: 200 },
-    );
-  }
+  let doc = existingPending;
+  let created = false;
 
-  const requestCount = await countShopReorderRequestsForUserItem({
-    date: today,
-    userId: session.user.id,
-    slug,
-  });
-  const doc: ShopReorderRequestDoc = {
-    _id: buildShopReorderRequestId(
-      today,
-      session.user.id,
+  if (!doc) {
+    const requestCount = await countShopReorderRequestsForUserItem({
+      date: today,
+      userId: session.user.id,
       slug,
-      requestCount + 1,
-    ),
-    kind: "shop-reorder-request",
-    date: today,
-    slug,
-    itemName: item.name,
-    userId: session.user.id,
-    userName: session.user.displayName,
-    ...(mainChar?._id
-      ? {
-          characterId: String(mainChar._id),
-          characterCodename: mainChar.codename,
-        }
-      : {}),
-    status: "REQUESTED",
-    createdAt: new Date(),
-  };
+    });
+    const nextDoc: ShopReorderRequestDoc = {
+      _id: buildShopReorderRequestId(
+        today,
+        session.user.id,
+        slug,
+        requestCount + 1,
+      ),
+      kind: "shop-reorder-request",
+      date: today,
+      slug,
+      itemName: item.name,
+      userId: session.user.id,
+      userName: session.user.displayName,
+      ...(mainChar?._id
+        ? {
+            characterId: String(mainChar._id),
+            characterCodename: mainChar.codename,
+          }
+        : {}),
+      status: "REQUESTED",
+      createdAt: new Date(),
+    };
 
-  try {
-    await insertShopReorderRequest(doc);
-  } catch (error) {
-    if (isDuplicateKeyError(error)) {
-      const pending = await findPendingShopReorderRequestForUserItem({
+    try {
+      await insertShopReorderRequest(nextDoc);
+      doc = nextDoc;
+      created = true;
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) throw error;
+      doc = await findPendingShopReorderRequestForUserItem({
         date: today,
         userId: session.user.id,
         slug,
       });
-      if (!pending) throw error;
-
-      return NextResponse.json(
-        {
-          ok: true,
-          status: "already-requested",
-          slug,
-          message: "오늘 이미 발주 요청한 상품입니다.",
-        },
-        { status: 200 },
-      );
+      if (!doc) throw error;
     }
-    throw error;
   }
 
-  await notifyUser({
-    userId: session.user.id,
-    type: "SYSTEM",
-    title: "편의점 발주 요청이 접수되었습니다",
-    message: [
-      mainChar?.codename ? `${mainChar.codename} · ${item.name}` : item.name,
-      "품절 상품 발주 요청",
-      "운영자 확인 대기",
-    ].join(" · "),
-    link: "/erp/shop",
-  });
+  if (created) {
+    await Promise.allSettled([
+      notifyUser({
+        userId: session.user.id,
+        type: "SYSTEM",
+        title: "편의점 발주 요청이 접수되었습니다",
+        message: [
+          mainChar?.codename
+            ? `${mainChar.codename} · ${item.name}`
+            : item.name,
+          "품절 상품 발주 요청",
+          "운영자 확인 대기",
+        ].join(" · "),
+        link: "/erp/shop",
+      }),
+      notifyShopReorderOperators(doc),
+    ]);
+  }
 
-  after(async () => {
-    await notifyShopReorderOperators(doc);
-    await notifyShopReorderRequest({
+  await enqueueShopReorderRequestWebhook(
+    {
       today,
       item: {
         slug: item.slug,
@@ -216,16 +205,19 @@ export async function POST(request: Request) {
           }
         : {}),
       requestedAt: doc.createdAt,
-    });
-  });
+    },
+    `shop-reorder:${doc._id}:requested`,
+  );
 
   return NextResponse.json(
     {
       ok: true,
-      status: "requested",
+      status: created ? "requested" : "already-requested",
       slug,
-      message: "발주 요청이 접수되었습니다.",
+      message: created
+        ? "발주 요청이 접수되었습니다."
+        : "오늘 이미 발주 요청한 상품입니다.",
     },
-    { status: 201 },
+    { status: created ? 201 : 200 },
   );
 }

@@ -58,5 +58,7 @@
 
 - 로컬 ERP 인증 브라우저 테스트는 `http://localhost:3000`을 사용한다. `AUTH_URL`과 쿠키 호스트가 달라지는 `127.0.0.1`은 사용하지 않는다.
 - 테스트 계정 값은 Git 비추적 파일인 `.env.local`의 `E2E_TEST_USERNAME` / `E2E_TEST_PASSWORD`에서 읽는다. 기준 주소는 `E2E_TEST_BASE_URL`을 사용한다.
+- 플레이어 역할별 인증 테스트는 Git 비추적 파일인 `.env.test-accounts.local`의 `E2E_PLAYER_TEST_USERNAMES` / `E2E_PLAYER_TEST_PASSWORD`를 읽고, 기준 주소는 `E2E_PLAYER_TEST_BASE_URL`을 사용한다. 현재 계정 목록은 이 파일을 SSOT로 삼으며 자격증명 값을 로그·스크린샷·커밋·대화 응답에 출력하지 않는다.
+- `JTEST`는 운영상 닫힌 플레이어 서비스까지 검증하는 공식 테스트 계정이다. 나머지 `*TEST` 계정은 각 역할의 일반 플레이어 권한·기능 매트릭스를 검증할 때 사용한다.
 - 테스트 자격증명, 해시, URI를 명령 인자·로그·스크린샷·커밋·대화 응답에 출력하지 않는다.
-- 계정은 인증 UI 검증용 GM 테스트 계정이다. 메인 캐릭터·크레딧·인벤토리·경제 상태가 필요하면 기존 데이터를 임의 생성하지 말고 `critical` 변경 절차와 사용자 범위를 다시 확인한다.
+- `.env.local`의 `E2E_TEST_*` 계정은 인증 UI 검증용 GM 테스트 계정이다. 메인 캐릭터·크레딧·인벤토리·경제 상태가 필요하면 역할에 맞는 `.env.test-accounts.local` 계정을 선택하되, 기존 데이터를 임의 생성하지 말고 `critical` 변경 절차와 사용자 범위를 다시 확인한다.

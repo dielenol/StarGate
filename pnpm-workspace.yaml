@@ -2,6 +2,7 @@ packages:
   - 'packages/*'
   - 'StarGateV2'
   - 'registra-bot'
+  - 'stargate-worker'
   - 'trpg-bot'
   - 'trpg-web'
 

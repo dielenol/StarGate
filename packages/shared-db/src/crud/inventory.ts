@@ -557,7 +557,8 @@ export async function listSharedInventory(
 }
 
 export async function addToSharedInventory(
-  input: CreateSharedInventoryInput
+  input: CreateSharedInventoryInput,
+  options: { session?: ClientSession } = {},
 ): Promise<SharedInventory> {
   const col = await sharedInventoryCol();
 
@@ -572,7 +573,11 @@ export async function addToSharedInventory(
         note: input.note,
       },
     },
-    { upsert: true, returnDocument: "after" }
+    {
+      upsert: true,
+      returnDocument: "after",
+      session: options.session,
+    },
   );
   if (!result) {
     throw new Error(

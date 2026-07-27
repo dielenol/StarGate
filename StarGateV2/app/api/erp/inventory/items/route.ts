@@ -126,7 +126,7 @@ export async function POST(request: Request) {
       authorName: trimOptional(body.authorName),
     });
 
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "마스터 아이템 생성",
       actor: {
         id: session.user.id,

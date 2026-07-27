@@ -48,9 +48,12 @@ export type CreateStockHoldingInput = Omit<StockHolding, "_id">;
  *   - "scheduled": tia_bot 스케줄 갱신.
  *   - "trade": 매매로 인한 가격 변동.
  *   - "gm-event": GM 수동 이벤트 (폭락/폭등 등).
+ * - operationKey: 예약 실행만 사용하는 ticker/slot 멱등 키.
  */
 export interface StockPriceHistory {
   _id?: ObjectId;
+  /** 예약 시세 변경의 ticker/slot 멱등 키. 수동/거래 이력에는 없을 수 있다. */
+  operationKey?: string;
   ticker: string;
   price: number;
   prevPrice: number;

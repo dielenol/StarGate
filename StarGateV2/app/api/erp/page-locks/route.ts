@@ -60,7 +60,7 @@ export async function PATCH(request: Request) {
       updatedById: session.user.id,
       updatedByName: session.user.displayName,
     });
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "ERP 페이지 잠금 변경",
       actor: {
         id: session.user.id,

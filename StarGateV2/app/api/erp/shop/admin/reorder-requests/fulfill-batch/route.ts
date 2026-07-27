@@ -4,13 +4,13 @@
  * 같은 품목의 여러 대기 발주 요청을 한 번에 닫고, 총 입고 수량만큼 재고를 증가시킨다.
  */
 
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
-import { notifyShopReorderFulfilled } from "@/lib/discord";
 import { notifyUsers } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { enqueueShopReorderFulfilledWebhook } from "@/lib/outbox/integration";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import {
@@ -94,19 +94,46 @@ export async function POST(request: Request) {
         fulfilledAt,
         itemId: item.slug,
         today,
+        persistFollowUps: async ({
+          requests: persistedRequests,
+          stock: persistedStock,
+          session: dbSession,
+        }) => {
+          await Promise.all([
+            scheduleGmAdminAudit(
+              {
+                action: "편의점 발주 묶음 처리",
+                actor: {
+                  id: session.user.id,
+                  displayName: session.user.displayName,
+                  role: session.user.role,
+                },
+                summary: `${persistedRequests.length}건 완료 · +${quantity.toLocaleString()} EA · 현재 ${persistedStock.stock.toLocaleString()} EA`,
+                target: item.name,
+                timestamp: fulfilledAt,
+              },
+              { session: dbSession },
+            ),
+            enqueueShopReorderFulfilledWebhook(
+              {
+                today,
+                item: {
+                  slug: item.slug,
+                  name: item.name,
+                  icon: item.icon,
+                  price: item.price,
+                  pageGroup: item.pageGroup,
+                },
+                quantity,
+                stock: persistedStock.stock,
+                fulfilledAt,
+              },
+              `shop-reorder-batch:${requestIds.slice().sort().join(",")}:fulfilled`,
+              { session: dbSession },
+            ),
+          ]);
+        },
       });
-
-    scheduleGmAdminAudit({
-      action: "편의점 발주 묶음 처리",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: `${requests.length}건 완료 · +${quantity.toLocaleString()} EA · 현재 ${stock.stock.toLocaleString()} EA`,
-      target: item.name,
-      timestamp: fulfilledAt,
-    });
 
     await recordShopStockAuditLog({
       action: "REORDER_FULFILL",
@@ -124,37 +151,21 @@ export async function POST(request: Request) {
       },
     });
 
-    after(async () => {
-      await notifyUsers(
-        requests.map((fulfilled) => ({
-          userId: fulfilled.userId,
-          type: "SYSTEM",
-          title: "편의점 추가 발주가 완료되었습니다",
-          message: [
-            fulfilled.characterCodename
-              ? `${fulfilled.characterCodename} · ${item.name}`
-              : item.name,
-            `+${quantity.toLocaleString("ko-KR")} EA 입고`,
-            "편의점에서 확인하세요",
-          ].join(" · "),
-          link: "/erp/shop",
-        })),
-      );
-
-      await notifyShopReorderFulfilled({
-        today,
-        item: {
-          slug: item.slug,
-          name: item.name,
-          icon: item.icon,
-          price: item.price,
-          pageGroup: item.pageGroup,
-        },
-        quantity,
-        stock: stock.stock,
-        fulfilledAt,
-      });
-    });
+    await notifyUsers(
+      requests.map((fulfilled) => ({
+        userId: fulfilled.userId,
+        type: "SYSTEM",
+        title: "편의점 추가 발주가 완료되었습니다",
+        message: [
+          fulfilled.characterCodename
+            ? `${fulfilled.characterCodename} · ${item.name}`
+            : item.name,
+          `+${quantity.toLocaleString("ko-KR")} EA 입고`,
+          "편의점에서 확인하세요",
+        ].join(" · "),
+        link: "/erp/shop",
+      })),
+    );
     return NextResponse.json({
       ok: true,
       status: "fulfilled",

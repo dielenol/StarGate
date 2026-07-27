@@ -55,16 +55,20 @@ export function useGrantInventory() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      characterId,
-      data,
-    }: {
+    mutationFn: async (input: {
       characterId: string;
       data: GrantInventoryBody;
     }) => {
+      const { characterId, data } = input;
       const res = await fetch(`/api/erp/inventory/${characterId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey(
+            "inventory-grant",
+            input,
+          ),
+        },
         body: JSON.stringify(data),
       });
       if (!res.ok) {
@@ -119,7 +123,13 @@ export function useGrantSharedInventory() {
     mutationFn: async (data: GrantInventoryBody) => {
       const res = await fetch("/api/erp/inventory/shared", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey(
+            "shared-inventory-grant",
+            data,
+          ),
+        },
         body: JSON.stringify(data),
       });
       if (!res.ok) {

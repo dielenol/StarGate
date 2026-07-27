@@ -118,7 +118,7 @@ export async function PATCH(request: Request) {
     const today = getTodayKst();
     const before = (await getStock(itemId))?.stock ?? 0;
     await refreshStock(itemId, stock, today);
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "편의점 재고 직접 조정",
       actor: {
         id: session.user.id,

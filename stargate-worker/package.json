@@ -1,0 +1,30 @@
+{
+  "name": "stargate-worker",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "job": "node dist/cli/run-job.js",
+    "test": "pnpm build && node --test test/**/*.test.mjs"
+  },
+  "dependencies": {
+    "@stargate/core": "workspace:*",
+    "@stargate/shared-db": "workspace:*",
+    "dotenv": "^16.4.5",
+    "jose": "^6.2.3",
+    "mongodb": "^7.1.1",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "socket.io-client": "^4.8.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}

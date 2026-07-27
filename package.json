@@ -4,9 +4,13 @@
   "packageManager": "pnpm@10.13.1",
   "scripts": {
     "build:shared": "pnpm --filter @stargate/shared-db build",
+    "build:core": "pnpm --filter @stargate/core build",
+    "build:worker": "pnpm --filter @stargate/shared-db build && pnpm --filter @stargate/core build && pnpm --filter stargate-worker build",
+    "test:worker": "pnpm --filter @stargate/core test && pnpm --filter stargate-worker test",
     "build:web": "pnpm --filter stargatev2 build",
     "build:bot": "pnpm --filter registrar-bot build",
     "build:registra-bot": "pnpm --filter registrar-bot build",
+    "test:registra-bot": "pnpm --filter registrar-bot test",
     "build:trpg-bot": "pnpm --filter trpg-discord-bot build",
     "build:bots": "pnpm --filter registrar-bot build && pnpm --filter trpg-discord-bot build"
   },

@@ -66,7 +66,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
   try {
     await unlinkDiscord(id);
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "사용자 Discord 연동 해제",
       actor: {
         id: session.user.id,

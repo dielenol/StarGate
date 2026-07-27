@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       );
     }
 
-    scheduleGmAdminAudit({
+    await scheduleGmAdminAudit({
       action: "장비 연구 효과 적용",
       actor: {
         id: authResult.session.id,
