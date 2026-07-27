@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import {
-  JTEST_DISCORD_DM_MIRROR_RULE,
+  JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE,
   resolveDiscordDmRecipients,
   type DiscordDmRecipientKind,
 } from "@stargate/shared-db";
@@ -301,7 +301,7 @@ export async function notifyEquipmentWorkshopDiscordDm(
     dependencies.resolveRecipients ?? resolveDiscordDmRecipients
   )(
     input.userId,
-    { mirror: JTEST_DISCORD_DM_MIRROR_RULE },
+    { mirror: JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE },
   );
   if (resolution.sourceState === "inactive") {
     return "skipped_inactive";
