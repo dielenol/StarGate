@@ -356,6 +356,7 @@ export async function acceptWorkshopQuoteInTransaction(input: {
       createdById: input.actorId,
       createdByName: input.actorName,
       requestId: childIdempotencyKey(input.requestId, "credit"),
+      allowNegative: true,
       session: input.session,
     });
   }

@@ -22,6 +22,7 @@ const TEST_CHARACTER_IDS = [
   "credit-ledger-fault-b",
   "credit-decimal",
   "credit-legacy-bootstrap",
+  "credit-workshop-debt",
 ];
 const TEST_URI = process.env.MONGODB_TEST_URI;
 const HAS_DB =
@@ -159,6 +160,33 @@ test(
     assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
     assert.equal(results.filter((result) => result.status === "rejected").length, 1);
     assert.equal(await getCharacterBalance(TEST_CHARACTER_IDS[2]), 10);
+  },
+);
+
+test(
+  "명시적으로 허용한 공방 차감은 음수 잔액을 만들고 이후 수입으로 상계된다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const characterId = "credit-workshop-debt";
+    const workshopDebit = {
+      ...creditInput(characterId, -500, "workshop-debt"),
+      allowNegative: true,
+    };
+    const first = await addCredit(workshopDebit);
+    const replay = await addCredit(workshopDebit);
+
+    assert.equal(String(first._id), String(replay._id));
+    assert.equal(await getCharacterBalance(characterId), -500);
+
+    await addCredit(creditInput(characterId, 120, "workshop-income-a"));
+    assert.equal(await getCharacterBalance(characterId), -380);
+
+    await addCredit(creditInput(characterId, 380, "workshop-income-b"));
+    assert.equal(await getCharacterBalance(characterId), 0);
+    assert.equal(
+      await (await creditTransactionsCol()).countDocuments({ characterId }),
+      3,
+    );
   },
 );
 
