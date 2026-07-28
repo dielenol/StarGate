@@ -93,11 +93,6 @@ export default function KeyringSurveyPage() {
             </div>
           </div>
 
-          {/* Purchase notice */}
-          <div className={styles.survey__notice}>
-            <p>⚠ 구매의사가 확실하실 때, 폼 제출해주시면 감사하겠습니다 ⚠</p>
-          </div>
-
           {/* Section 02 */}
           <div className={styles.survey__section}>
             <div className={styles["survey__sectionTitle--cyan"]}>
@@ -132,7 +127,8 @@ export default function KeyringSurveyPage() {
                   <tr>
                     <td className={styles.survey__tableLabel}>QUANTITY</td>
                     <td className={styles.survey__tableValue}>
-                      인당 최대 <b className={styles.cyan}>14개</b>
+                      인당 최대 <b className={styles.cyan}>14개</b> &amp;{" "}
+                      <b className={styles.cyan}>동일 제품 불가능</b>
                     </td>
                   </tr>
                 </tbody>
