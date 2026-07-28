@@ -9,6 +9,7 @@ import {
   applyEquipmentResearchCapabilityEffect,
   canCharacterReceivePersonalEquipmentResearchEffect,
   canViewerApplyEquipmentResearchProject,
+  filterEquipmentResearchProjectsForCharacter,
   getEquipmentResearchEffect,
   getEquipmentResearchNode,
   getEquipmentResearchPrerequisiteTier,
@@ -18,6 +19,37 @@ import {
   quoteEquipmentResearchRush,
   quoteEquipmentResearchStart,
 } from "../research.ts";
+
+test("연구 화면은 팀 연구와 대표 캐릭터의 개인 연구만 표시한다", () => {
+  const projects = [
+    {
+      key: "BIO-02",
+      scope: "personal",
+      targetCharacterIds: ["woody"],
+    },
+    {
+      key: "BIO-02",
+      scope: "personal",
+      targetCharacterIds: ["maria"],
+    },
+    {
+      key: "BIO-02",
+      scope: "team",
+      targetCharacterIds: ["woody", "maria"],
+    },
+  ];
+
+  assert.deepEqual(
+    filterEquipmentResearchProjectsForCharacter(projects, "woody").map(
+      (project) => `${project.scope}:${project.targetCharacterIds[0]}`,
+    ),
+    ["personal:woody", "team:woody"],
+  );
+  assert.deepEqual(
+    filterEquipmentResearchProjectsForCharacter(projects, null),
+    [projects[2]],
+  );
+});
 
 test("GM NPC는 경제·해금 연구만 개인 대상으로 받을 수 있다", () => {
   assert.equal(

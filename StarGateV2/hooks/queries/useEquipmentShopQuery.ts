@@ -34,7 +34,9 @@ export const equipmentShopKeys = {
     scope: EquipmentShopCatalogScope,
     characterId: string | null,
   ) => ["equipment-shop", "catalog", scope, characterId ?? "unassigned"] as const,
-  research: ["equipment-shop", "research"] as const,
+  researchRoot: ["equipment-shop", "research"] as const,
+  research: (characterId: string | null) =>
+    ["equipment-shop", "research", characterId ?? "unassigned"] as const,
   workshopRequestsRoot: ["equipment-shop", "workshop-requests"] as const,
   workshopRequests: (viewerKey: string) =>
     ["equipment-shop", "workshop-requests", viewerKey] as const,
@@ -216,10 +218,12 @@ export function useEquipmentShopCatalog(options?: {
 
 export function useEquipmentResearch(options?: {
   initialData?: EquipmentResearchOverviewResponse;
+  characterId?: string | null;
   enabled?: boolean;
 }) {
+  const characterId = options?.characterId ?? null;
   return useQuery({
-    queryKey: equipmentShopKeys.research,
+    queryKey: equipmentShopKeys.research(characterId),
     queryFn: fetchEquipmentResearch,
     staleTime: RESEARCH_STALE_TIME_MS,
     initialData: options?.initialData,

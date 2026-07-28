@@ -19,6 +19,14 @@ const RESEARCH_CLIENT = new URL(
   "../../../app/(erp)/erp/equipment-shop/EquipmentShopClient.tsx",
   import.meta.url,
 );
+const RESEARCH_QUERY = new URL(
+  "../../../hooks/queries/useEquipmentShopQuery.ts",
+  import.meta.url,
+);
+const RESEARCH_MUTATION = new URL(
+  "../../../hooks/mutations/useEquipmentShopMutation.ts",
+  import.meta.url,
+);
 const RESEARCH_ROUTE_LIB = new URL(
   "../../../app/api/erp/equipment-shop/research/_lib.ts",
   import.meta.url,
@@ -37,6 +45,10 @@ test("research GET is lock-gated and read-only", async () => {
   const source = await readFile(RESEARCH_ROUTE, "utf8");
 
   assert.match(source, /requireResearchAccess\(\)/);
+  assert.match(
+    source,
+    /listEquipmentResearchProjects\(\{ mainCharacterId \}\)/,
+  );
   assert.doesNotMatch(source, /applyReadyEquipmentResearchProjects/);
   assert.doesNotMatch(source, /export async function POST/);
 });
@@ -48,6 +60,34 @@ test("equipment-shop page loader never applies completed research", async () => 
   assert.doesNotMatch(source, /const mainAgent =/);
   assert.match(source, /type: mainCharacter\.type/);
   assert.match(source, /mainCharacter\.type === "AGENT"/);
+  assert.match(
+    source,
+    /buildEquipmentResearchOverviewResponse\(mainCharacterId\)/,
+  );
+  assert.match(
+    source,
+    /listEquipmentResearchProjects\(\{ mainCharacterId \}\)/,
+  );
+});
+
+test("research project list filters personal visibility before applying its limit", async () => {
+  const source = await readFile(RESEARCH_DB, "utf8");
+  const functionStart = source.indexOf(
+    "export async function listEquipmentResearchProjects",
+  );
+  const functionEnd = source.indexOf(
+    "export async function listReadyEquipmentResearchProjects",
+    functionStart,
+  );
+  const functionSource = source.slice(functionStart, functionEnd);
+
+  assert.ok(functionStart >= 0);
+  assert.ok(functionEnd > functionStart);
+  assert.match(
+    functionSource,
+    /scope: "personal",[\s\S]*targetCharacterIds: options\.mainCharacterId/,
+  );
+  assert.match(functionSource, /\.find\(visibilityFilter\)[\s\S]*\.limit\(/);
 });
 
 for (const action of ["start", "contribute", "rush"]) {
@@ -265,10 +305,43 @@ test("research UI keeps every active project reachable and blocks stale-data mut
   assert.match(source, /canViewerApplyEquipmentResearchProject/);
   assert.match(
     source,
+    /filterEquipmentResearchProjectsForCharacter\(\s*research\.projects/,
+  );
+  assert.match(
+    source,
     /enabled: mode === "hub" \|\| initialZone === "lab"/,
   );
+  assert.match(source, /characterId: mainCharacter\?\.id \?\? null/);
   assert.match(source, /팀 연구 시작 ·/);
   assert.doesNotMatch(source, />\s*자동 반영\s*</);
+});
+
+test("research query cache is scoped by character and mutations invalidate its root", async () => {
+  const [querySource, mutationSource] = await Promise.all([
+    readFile(RESEARCH_QUERY, "utf8"),
+    readFile(RESEARCH_MUTATION, "utf8"),
+  ]);
+
+  assert.match(
+    querySource,
+    /research: \(characterId: string \| null\)[\s\S]*characterId \?\? "unassigned"/,
+  );
+  assert.match(
+    querySource,
+    /queryKey: equipmentShopKeys\.research\(characterId\)/,
+  );
+  assert.doesNotMatch(
+    mutationSource,
+    /queryKey: equipmentShopKeys\.research[),]/,
+  );
+  assert.equal(
+    (
+      mutationSource.match(
+        /queryKey: equipmentShopKeys\.researchRoot/g,
+      ) ?? []
+    ).length,
+    4,
+  );
 });
 
 test("research economy mutations require confirmation and GM can preview every Suture mood", async () => {

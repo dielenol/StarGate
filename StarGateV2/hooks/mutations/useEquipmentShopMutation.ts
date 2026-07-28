@@ -623,7 +623,9 @@ export function useStartEquipmentResearch() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.research });
+      queryClient.invalidateQueries({
+        queryKey: equipmentShopKeys.researchRoot,
+      });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
     },
   });
@@ -650,7 +652,9 @@ export function useRushEquipmentResearch() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.research });
+      queryClient.invalidateQueries({
+        queryKey: equipmentShopKeys.researchRoot,
+      });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
     },
   });
@@ -680,7 +684,9 @@ export function useContributeEquipmentResearch() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.research });
+      queryClient.invalidateQueries({
+        queryKey: equipmentShopKeys.researchRoot,
+      });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
     },
   });
@@ -704,7 +710,9 @@ export function useCompleteEquipmentResearch() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.research });
+      queryClient.invalidateQueries({
+        queryKey: equipmentShopKeys.researchRoot,
+      });
       queryClient.invalidateQueries({ queryKey: characterKeys.all });
       queryClient.invalidateQueries({ queryKey: personnelKeys.all });
       queryClient.invalidateQueries({ queryKey: characterChangeLogsKeys.all });

@@ -146,6 +146,7 @@ import {
   canCharacterReceivePersonalEquipmentResearchEffect,
   canViewerApplyEquipmentResearchProject,
   describeEquipmentResearchEffect,
+  filterEquipmentResearchProjectsForCharacter,
   type EquipmentResearchEffect,
   type EquipmentResearchStat,
   getEquipmentResearchPrerequisiteTier,
@@ -1494,6 +1495,7 @@ export default function EquipmentShopClient({
   });
   const researchQuery = useEquipmentResearch({
     initialData: initialResearch,
+    characterId: mainCharacter?.id ?? null,
     enabled: mode === "hub" || initialZone === "lab",
   });
   const creditsQuery = useCredits({ initialData: initialCredits });
@@ -1585,7 +1587,14 @@ export default function EquipmentShopClient({
   const researchDataUnavailable =
     isGM && (researchQuery.isError || researchQuery.isRefetchError);
   const researchTree = research.tree;
-  const researchProjects = research.projects;
+  const researchProjects = useMemo(
+    () =>
+      filterEquipmentResearchProjectsForCharacter(
+        research.projects,
+        mainCharacter?.id ?? null,
+      ),
+    [mainCharacter?.id, research.projects],
+  );
   const selectedResearchKey = selectedResearchKeys[activeResearchScope];
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
   const isHub = mode === "hub";

@@ -41,7 +41,7 @@ export async function GET() {
     recentContributions,
     contributionRankings,
   ] = await Promise.all([
-    listEquipmentResearchProjects(),
+    listEquipmentResearchProjects({ mainCharacterId }),
     getEquipmentResearchCapabilities(mainCharacterId),
     listTeamFundingPools(),
     listEquipmentResearchContributions(),

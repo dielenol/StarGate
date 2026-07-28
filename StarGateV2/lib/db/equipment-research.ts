@@ -306,13 +306,29 @@ export async function createEquipmentResearchProject(
 }
 
 export async function listEquipmentResearchProjects(
-  limit = 100,
+  options: {
+    mainCharacterId: string | null;
+    limit?: number;
+  },
 ): Promise<Array<WithId<EquipmentResearchProject>>> {
   const col = await equipmentResearchProjectsCol();
+  const visibilityFilter: Filter<EquipmentResearchProject> =
+    options.mainCharacterId
+      ? {
+          $or: [
+            { scope: "team" },
+            {
+              scope: "personal",
+              targetCharacterIds: options.mainCharacterId,
+            },
+          ],
+        }
+      : { scope: "team" };
+
   return col
-    .find({})
+    .find(visibilityFilter)
     .sort({ status: 1, tier: 1, startedAt: -1 })
-    .limit(limit)
+    .limit(options.limit ?? 100)
     .toArray();
 }
 
