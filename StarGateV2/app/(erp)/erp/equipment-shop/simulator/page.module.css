@@ -467,16 +467,30 @@
   line-height: 1.2;
 }
 
-.tokenToggle {
-  display: inline-flex;
-  min-height: 38px;
-  padding: 3px;
+.placementControl {
+  display: grid;
+  gap: 3px;
+  min-width: 280px;
+  padding: 5px;
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
 
-.tokenToggle button {
+.placementStatus {
+  padding: 1px 7px;
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.placementButtons {
+  display: inline-flex;
+}
+
+.placementButtons button {
+  flex: 1;
   min-height: 30px;
   padding: 5px 10px;
   background: transparent;
@@ -487,7 +501,12 @@
   cursor: pointer;
 }
 
-.tokenToggle .activeToggle {
+.placementButtons button:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.placementButtons .activeToggle {
   background: color-mix(in srgb, var(--gold) 18%, rgba(0, 0, 0, 0.4));
   color: var(--gold);
 }
@@ -959,11 +978,12 @@
   }
 
   .boardToolbarActions,
-  .tokenToggle {
+  .placementControl {
     width: 100%;
+    min-width: 0;
   }
 
-  .tokenToggle button {
+  .placementButtons button {
     flex: 1;
   }
 

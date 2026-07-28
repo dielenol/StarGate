@@ -111,7 +111,7 @@ const TRAINING_STEPS: TrainingStep[] = [
   {
     label: "STEP 02",
     title: "거리 배치",
-    hint: "공격자·표적 토큰 이동",
+    hint: "적 배치 후 내 위치 조정",
   },
   {
     label: "STEP 03",
@@ -262,6 +262,7 @@ export default function EquipmentSimulatorClient({
       "basic-pistol",
   );
   const [activeToken, setActiveToken] = useState<ActiveToken>("target");
+  const [enemyPositionConfirmed, setEnemyPositionConfirmed] = useState(false);
   const [attackerPosition, setAttackerPosition] = useState(
     DEFAULT_ATTACKER_POSITION,
   );
@@ -285,7 +286,7 @@ export default function EquipmentSimulatorClient({
     {
       id: 0,
       tone: "info",
-      text: "5x5 훈련장 준비. 표적 토큰을 움직여 사거리를 확인하세요.",
+      text: "5x5 훈련장 준비. 먼저 적을 배치한 뒤 내 위치를 조정하세요.",
     },
   ]);
 
@@ -306,7 +307,7 @@ export default function EquipmentSimulatorClient({
     simulatorItems.find((item) => item.slug === selectedSlug) ??
     simulatorItems[0];
   const selectedRule = getSimulatorWeaponRule(selectedSlug);
-  const range = getSimulatorRange(attackerPosition, targetPosition);
+  const defaultRange = getSimulatorRange(attackerPosition, targetPosition);
   const selectedRuntime = selectedRule
     ? attackRuntimeFor(
         selectedRule,
@@ -330,13 +331,32 @@ export default function EquipmentSimulatorClient({
     selectedRule?.resource && selectedRule.slug in resourceBySlug
       ? resourceBySlug[selectedRule.slug]
       : 0;
+  const range = selectedResult?.range ?? defaultRange;
+  const usesCardinalDirections =
+    selectedRule !== null && selectedRule.role !== "냉병기";
+  const isCardinallyAligned =
+    attackerPosition.row === targetPosition.row ||
+    attackerPosition.col === targetPosition.col;
+  const attackDistance = range.attackDistance ?? range.verticalDistance;
+  const attackAxisLabel =
+    range.attackAxis === "horizontal"
+      ? "가로"
+      : range.attackAxis === "vertical"
+        ? "세로"
+        : "세로";
   const rangeRows = [attackerPosition.row, targetPosition.row].sort(
     (a, b) => a - b,
   );
+  const rangeColumns = [
+    SIMULATOR_BOARD_COLUMNS.indexOf(attackerPosition.col),
+    SIMULATOR_BOARD_COLUMNS.indexOf(targetPosition.col),
+  ].sort((a, b) => a - b);
   const selectedName = selectedItem?.name ?? selectedRule?.name ?? "장비";
-  const resultSummary = selectedResult?.ok
-    ? selectedResult.summary
-    : selectedResult?.reasonLabel ?? "판정 대기";
+  const resultSummary = !enemyPositionConfirmed
+    ? "적 위치 지정 필요"
+    : selectedResult?.ok
+      ? selectedResult.summary
+      : selectedResult?.reasonLabel ?? "판정 대기";
   const resultSentence = /[.!?]$/.test(resultSummary)
     ? resultSummary
     : `${resultSummary}.`;
@@ -350,12 +370,15 @@ export default function EquipmentSimulatorClient({
       case "position":
         return {
           title: `${formatSimulatorCoord(attackerPosition)} → ${formatSimulatorCoord(targetPosition)} 배치 확인`,
-          text: `세로 ${range.verticalDistance}칸은 ${SIMULATOR_RANGE_LABELS[range.band]} 판정입니다. 예상 판정: ${resultSentence} 준비되면 공격을 실행하십시오.`,
+          text:
+            usesCardinalDirections && !isCardinallyAligned
+              ? `나와 적이 대각선에 있습니다. 화기는 같은 가로줄 또는 세로줄에 놓아야 합니다. 예상 판정: ${resultSentence}`
+              : `${attackAxisLabel} ${attackDistance}칸은 ${SIMULATOR_RANGE_LABELS[range.band]} 판정입니다. 예상 판정: ${resultSentence} 준비되면 공격을 실행하십시오.`,
         };
       case "attack":
         return {
           title: "공격 결과 반영 완료",
-          text: `${resultSummary}. 표적 상태와 남은 자원을 확인한 뒤 다시 공격하거나 다음 턴으로 진행하십시오.`,
+          text: `${resultSummary}. 적 상태와 남은 자원을 확인한 뒤 다시 공격하거나 다음 턴으로 진행하십시오.`,
         };
       case "blocked":
         return {
@@ -379,8 +402,8 @@ export default function EquipmentSimulatorClient({
         };
       default:
         return {
-          title: "장비를 선택하고 공격 조건을 확인하십시오",
-          text: `기본 배치는 ${formatSimulatorCoord(attackerPosition)} → ${formatSimulatorCoord(targetPosition)}, ${SIMULATOR_RANGE_LABELS[range.band]}입니다. 왼쪽에서 장비를 고른 뒤 토큰을 옮기거나 바로 공격할 수 있습니다.`,
+          title: "먼저 적 위치를 지정하십시오",
+          text: `전투판에서 적을 놓을 칸을 선택하면 바로 내 위치 조정 단계로 넘어갑니다. 기본 배치는 내 위치 ${formatSimulatorCoord(attackerPosition)}, 적 위치 ${formatSimulatorCoord(targetPosition)}입니다.`,
         };
     }
   })();
@@ -449,18 +472,39 @@ export default function EquipmentSimulatorClient({
     const currentCoord = token === "attacker" ? attackerPosition : targetPosition;
     const nextAttacker = token === "attacker" ? coord : attackerPosition;
     const nextTarget = token === "target" ? coord : targetPosition;
-    const nextRange = getSimulatorRange(nextAttacker, nextTarget);
+    const nextResult = selectedRule
+      ? resolveSimulatorAttack({
+          weaponSlug: selectedRule.slug,
+          attacker: nextAttacker,
+          target: nextTarget,
+          attackerStats: attacker,
+          targetStats,
+          runtime: selectedRuntime,
+        })
+      : null;
+    const nextRange =
+      nextResult?.range ?? getSimulatorRange(nextAttacker, nextTarget);
+    const nextDistance =
+      nextRange.attackDistance ?? nextRange.verticalDistance;
+    const nextAxisLabel =
+      nextRange.attackAxis === "horizontal" ? "가로" : "세로";
     if (token === "attacker") {
       setAttackerPosition(coord);
     } else {
       setTargetPosition(coord);
+      setEnemyPositionConfirmed(true);
+      setActiveToken("attacker");
     }
     setTrainingEvent("position");
     setActiveStep(2);
     showFeedback(
       "info",
-      `${token === "attacker" ? "공격자" : "표적"} ${sameCoord(currentCoord, coord) ? "위치 확인" : "이동 완료"}`,
-      `${formatSimulatorCoord(coord)} · ${SIMULATOR_RANGE_LABELS[nextRange.band]} · 세로 ${nextRange.verticalDistance}칸`,
+      `${token === "attacker" ? "내" : "적"} 위치 ${sameCoord(currentCoord, coord) ? "확인" : "이동 완료"}`,
+      token === "target"
+        ? `${formatSimulatorCoord(coord)}에 적을 배치했습니다. 이제 전투판을 눌러 내 위치를 조정하세요.`
+        : nextResult?.reason === "NOT_CARDINAL"
+          ? `${formatSimulatorCoord(coord)} · ${nextResult.reasonLabel}`
+          : `${formatSimulatorCoord(coord)} · ${SIMULATOR_RANGE_LABELS[nextRange.band]} · ${nextAxisLabel} ${nextDistance}칸`,
     );
   }
 
@@ -480,11 +524,14 @@ export default function EquipmentSimulatorClient({
   }
 
   function handleSelectActiveToken(token: ActiveToken) {
+    if (token === "attacker" && !enemyPositionConfirmed) return;
     setActiveToken(token);
     showFeedback(
       "info",
-      "이동 대상 변경",
-      `${token === "attacker" ? "공격자" : "표적"} 토큰을 이동할 칸을 선택하십시오.`,
+      token === "attacker" ? "내 위치 조정" : "적 위치 다시 지정",
+      token === "attacker"
+        ? "전투판에서 내가 이동할 칸을 선택하세요."
+        : "전투판에서 적을 다시 배치할 칸을 선택하세요. 배치 후 내 위치 조정으로 자동 전환됩니다.",
     );
   }
 
@@ -505,6 +552,10 @@ export default function EquipmentSimulatorClient({
     event: DragEvent<HTMLSpanElement>,
     token: ActiveToken,
   ) {
+    if (token === "attacker" && !enemyPositionConfirmed) {
+      event.preventDefault();
+      return;
+    }
     event.dataTransfer.setData("text/plain", token);
     event.dataTransfer.effectAllowed = "move";
   }
@@ -516,7 +567,7 @@ export default function EquipmentSimulatorClient({
     event.preventDefault();
     const token = event.dataTransfer.getData("text/plain");
     if (token !== "attacker" && token !== "target") return;
-    setActiveToken(token);
+    if (token === "attacker" && !enemyPositionConfirmed) return;
     moveToken(token, coord);
   }
 
@@ -583,6 +634,7 @@ export default function EquipmentSimulatorClient({
     setHmgShotsInCycle(0);
     setTurn(1);
     setActiveToken("target");
+    setEnemyPositionConfirmed(false);
     setTrainingEvent("ready");
     setActiveStep(0);
     setLogs([
@@ -601,6 +653,16 @@ export default function EquipmentSimulatorClient({
   }
 
   function handleAttack() {
+    if (!enemyPositionConfirmed) {
+      setTrainingEvent("blocked");
+      setActiveStep(1);
+      showFeedback(
+        "error",
+        "적 위치를 먼저 지정하세요",
+        "전투판에서 적을 배치하면 내 위치 조정과 공격이 활성화됩니다.",
+      );
+      return;
+    }
     if (!selectedRule || !selectedResult) return;
 
     if (!selectedResult.ok) {
@@ -814,31 +876,69 @@ export default function EquipmentSimulatorClient({
                 <span>TURN</span>
                 <strong>{String(turn).padStart(2, "0")}</strong>
               </div>
-              <div className={styles.tokenToggle} aria-label="이동할 토큰 선택">
-                <button
-                  type="button"
-                  className={activeToken === "attacker" ? styles.activeToggle : ""}
-                  aria-pressed={activeToken === "attacker"}
-                  onClick={() => handleSelectActiveToken("attacker")}
+              <div className={styles.placementControl}>
+                <span
+                  id="simulator-placement-status"
+                  className={styles.placementStatus}
+                  aria-live="polite"
                 >
-                  공격자 이동
-                </button>
-                <button
-                  type="button"
-                  className={activeToken === "target" ? styles.activeToggle : ""}
-                  aria-pressed={activeToken === "target"}
-                  onClick={() => handleSelectActiveToken("target")}
+                  {activeToken === "target"
+                    ? "1 · 적 위치 지정"
+                    : "2 · 내 위치 조정"}
+                </span>
+                <div
+                  className={styles.placementButtons}
+                  role="group"
+                  aria-label="배치 단계 선택"
                 >
-                  표적 이동
-                </button>
+                  <button
+                    type="button"
+                    className={
+                      activeToken === "attacker" ? styles.activeToggle : ""
+                    }
+                    aria-pressed={activeToken === "attacker"}
+                    disabled={!enemyPositionConfirmed}
+                    onClick={() => handleSelectActiveToken("attacker")}
+                  >
+                    {activeToken === "attacker"
+                      ? "내 위치 조정 중"
+                      : "내 위치 조정"}
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      activeToken === "target" ? styles.activeToggle : ""
+                    }
+                    aria-pressed={activeToken === "target"}
+                    onClick={() => handleSelectActiveToken("target")}
+                  >
+                    {activeToken === "target"
+                      ? "적 위치 지정 중"
+                      : "적 위치 다시 지정"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
           <div className={styles.rangeStrip} aria-live="polite">
-            <span>{SIMULATOR_RANGE_LABELS[range.band]}</span>
-            <strong>세로 {range.verticalDistance}칸</strong>
-            <em>가로 칸은 사거리 계산에서 제외</em>
+            <span>
+              {usesCardinalDirections && !isCardinallyAligned
+                ? "사격 불가"
+                : SIMULATOR_RANGE_LABELS[range.band]}
+            </span>
+            <strong>
+              {usesCardinalDirections && !isCardinallyAligned
+                ? "직선 정렬 필요"
+                : `${attackAxisLabel} ${attackDistance}칸`}
+            </strong>
+            <em>
+              {usesCardinalDirections
+                ? isCardinallyAligned
+                  ? "나와 적의 직선 거리로 사거리 계산"
+                  : "화기는 같은 가로줄 또는 세로줄에서만 공격 가능"
+                : "가로 칸은 냉병기 사거리 계산에서 제외"}
+            </em>
             <small>0칸 근거리 · 1–2칸 중거리 · 3–4칸 장거리</small>
           </div>
 
@@ -848,7 +948,8 @@ export default function EquipmentSimulatorClient({
                 type="button"
                 className={styles.fireButton}
                 onClick={handleAttack}
-                disabled={!selectedRule}
+                disabled={!selectedRule || !enemyPositionConfirmed}
+                aria-describedby="simulator-placement-status"
               >
                 공격 실행
               </button>
@@ -933,8 +1034,17 @@ export default function EquipmentSimulatorClient({
                   const coord: SimulatorBoardCoord = { col, row };
                   const hasAttacker = sameCoord(coord, attackerPosition);
                   const hasTarget = sameCoord(coord, targetPosition);
-                  const inVerticalLane =
-                    row >= rangeRows[0] && row <= rangeRows[1];
+                  const columnIndex = SIMULATOR_BOARD_COLUMNS.indexOf(col);
+                  const inAttackLane = usesCardinalDirections
+                    ? attackerPosition.row === targetPosition.row
+                      ? row === attackerPosition.row &&
+                        columnIndex >= rangeColumns[0] &&
+                        columnIndex <= rangeColumns[1]
+                      : attackerPosition.col === targetPosition.col &&
+                        col === attackerPosition.col &&
+                        row >= rangeRows[0] &&
+                        row <= rangeRows[1]
+                    : row >= rangeRows[0] && row <= rangeRows[1];
                   return (
                     <div
                       key={cellKey(coord)}
@@ -942,7 +1052,7 @@ export default function EquipmentSimulatorClient({
                       tabIndex={0}
                       className={[
                         styles.boardCell,
-                        inVerticalLane ? styles["boardCell--lane"] : "",
+                        inAttackLane ? styles["boardCell--lane"] : "",
                         hasAttacker ? styles["boardCell--attacker"] : "",
                         hasTarget ? styles["boardCell--target"] : "",
                       ]
@@ -952,12 +1062,16 @@ export default function EquipmentSimulatorClient({
                       onDragOver={(event) => event.preventDefault()}
                       onDrop={(event) => handleCellDrop(event, coord)}
                       onKeyDown={(event) => handleCellKeyDown(event, coord)}
-                      aria-label={`${cellKey(coord)} 칸으로 ${activeToken === "attacker" ? "공격자" : "표적"} 이동`}
+                      aria-label={
+                        activeToken === "attacker"
+                          ? `나를 ${cellKey(coord)} 칸으로 이동`
+                          : `적을 ${cellKey(coord)} 칸에 배치`
+                      }
                     >
                       <span className={styles.cellCoord}>{cellKey(coord)}</span>
                       {hasAttacker ? (
                         <span
-                          draggable
+                          draggable={enemyPositionConfirmed}
                           className={[
                             styles.token,
                             styles["token--attacker"],
@@ -965,9 +1079,9 @@ export default function EquipmentSimulatorClient({
                           onDragStart={(event) =>
                             handleTokenDragStart(event, "attacker")
                           }
-                          aria-label="공격자 토큰"
+                          aria-label="내 위치 토큰"
                         >
-                          ATK
+                          나
                         </span>
                       ) : null}
                       {hasTarget ? (
@@ -980,9 +1094,9 @@ export default function EquipmentSimulatorClient({
                           onDragStart={(event) =>
                             handleTokenDragStart(event, "target")
                           }
-                          aria-label="표적 토큰"
+                          aria-label="적 위치 토큰"
                         >
-                          TGT
+                          적
                         </span>
                       ) : null}
                     </div>
@@ -994,14 +1108,14 @@ export default function EquipmentSimulatorClient({
 
         </section>
 
-        <aside className={styles.targetPanel} aria-label="표적 상태와 룰 카드">
+        <aside className={styles.targetPanel} aria-label="적 상태와 룰 카드">
           <div className={styles.panelIntro}>
             <Eyebrow>RULE CARD</Eyebrow>
             <strong>{selectedRule?.name ?? "장비 없음"}</strong>
           </div>
 
           <div className={styles.profileBlock}>
-            <span>공격자</span>
+            <span>나</span>
             <strong>{attacker.codename}</strong>
             <em>
               ATK {attacker.atk} · {attacker.source === "agent" ? "MAIN AGENT" : "SANDBOX"}
@@ -1029,7 +1143,7 @@ export default function EquipmentSimulatorClient({
             </div>
           </div>
 
-          <div className={styles.statusList} aria-label="상태이상">
+          <div className={styles.statusList} aria-label="적 상태이상">
             {targetStats.statuses.length > 0 ? (
               targetStats.statuses.map((status) => (
                 <Tag key={status} tone="danger">
@@ -1137,7 +1251,11 @@ export default function EquipmentSimulatorClient({
                       {item.name}
                     </button>
                   </span>
-                  <span role="cell">{SIMULATOR_RANGE_LABELS[result.range.band]}</span>
+                  <span role="cell">
+                    {result.reason === "NOT_CARDINAL"
+                      ? "직선 정렬 필요"
+                      : SIMULATOR_RANGE_LABELS[result.range.band]}
+                  </span>
                   <span role="cell">
                     {result.ok && result.targetStat
                       ? `${result.damageApplied} ${SIMULATOR_TARGET_STAT_LABELS[result.targetStat]}`

@@ -30,16 +30,16 @@ test("physical damage is reduced by DEF while ranged weapons ignore ATK", () => 
   const result = resolveSimulatorAttack({
     weaponSlug: "basic-pistol",
     attacker: { col: "A", row: 1 },
-    target: { col: "E", row: 1 },
+    target: { col: "A", row: 2 },
     attackerStats: { atk: 99 },
     targetStats: { def: 2 },
     runtime: { resourceRemaining: 5 },
   });
 
   assert.equal(result.ok, true);
-  assert.equal(result.rawDamage, 7);
+  assert.equal(result.rawDamage, 5);
   assert.equal(result.mitigation, 2);
-  assert.equal(result.damageApplied, 5);
+  assert.equal(result.damageApplied, 3);
   assert.equal(result.targetStat, "hp");
   assert.equal(result.nextResourceRemaining, 4);
 });
@@ -63,7 +63,7 @@ test("sonic emitter damages sanity and ignores DEF", () => {
   const result = resolveSimulatorAttack({
     weaponSlug: "basic-sonic-emitter",
     attacker: { col: "A", row: 1 },
-    target: { col: "E", row: 3 },
+    target: { col: "A", row: 3 },
     attackerStats,
     targetStats: { def: 99 },
     runtime: { resourceRemaining: 3 },
@@ -79,7 +79,7 @@ test("flamethrower applies burn on supported range", () => {
   const result = resolveSimulatorAttack({
     weaponSlug: "basic-flamethrower",
     attacker: { col: "A", row: 1 },
-    target: { col: "B", row: 2 },
+    target: { col: "A", row: 2 },
     attackerStats,
     targetStats,
     runtime: { resourceRemaining: 4 },
@@ -88,6 +88,76 @@ test("flamethrower applies burn on supported range", () => {
   assert.equal(result.ok, true);
   assert.equal(result.damageApplied, 8);
   assert.deepEqual(result.statusesApplied, ["burn"]);
+});
+
+test("firearms use distance along a shared row or column", () => {
+  const horizontal = resolveSimulatorAttack({
+    weaponSlug: "basic-assault-rifle",
+    attacker: { col: "A", row: 1 },
+    target: { col: "E", row: 1 },
+    attackerStats,
+    targetStats,
+    runtime: { resourceRemaining: 6 },
+  });
+  assert.equal(horizontal.ok, true);
+  assert.equal(horizontal.range.band, "far");
+  assert.equal(horizontal.range.attackAxis, "horizontal");
+  assert.equal(horizontal.range.attackDistance, 4);
+  assert.equal(horizontal.damageApplied, 7);
+
+  const vertical = resolveSimulatorAttack({
+    weaponSlug: "basic-assault-rifle",
+    attacker: { col: "C", row: 1 },
+    target: { col: "C", row: 3 },
+    attackerStats,
+    targetStats,
+    runtime: { resourceRemaining: 6 },
+  });
+  assert.equal(vertical.ok, true);
+  assert.equal(vertical.range.band, "mid");
+  assert.equal(vertical.range.attackAxis, "vertical");
+  assert.equal(vertical.range.attackDistance, 2);
+  assert.equal(vertical.damageApplied, 10);
+});
+
+test("all firearm roles reject diagonal attacks with a clear reason", () => {
+  for (const weaponSlug of [
+    "basic-pistol",
+    "basic-heavy-machine-gun",
+    "basic-flamethrower",
+  ]) {
+    const result = resolveSimulatorAttack({
+      weaponSlug,
+      attacker: { col: "A", row: 1 },
+      target: { col: "B", row: 2 },
+      attackerStats,
+      targetStats,
+      runtime: {
+        resourceRemaining: 10,
+        installed: true,
+        shotsInCycle: 0,
+      },
+    });
+
+    assert.equal(result.ok, false, weaponSlug);
+    assert.equal(result.reason, "NOT_CARDINAL", weaponSlug);
+    assert.match(result.reasonLabel, /같은 가로줄 또는 세로줄/, weaponSlug);
+  }
+});
+
+test("melee attacks keep their existing vertical-distance behavior", () => {
+  const result = resolveSimulatorAttack({
+    weaponSlug: "basic-dagger",
+    attacker: { col: "A", row: 1 },
+    target: { col: "B", row: 2 },
+    attackerStats,
+    targetStats,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.range.band, "mid");
+  assert.equal(result.range.verticalDistance, 1);
+  assert.equal(result.range.attackAxis, undefined);
 });
 
 test("chainsaw consumes start charge and blocks when charge is empty", () => {

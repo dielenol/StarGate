@@ -66,10 +66,13 @@ export interface SimulatorWeaponRule {
 export interface SimulatorRangeState {
   verticalDistance: number;
   band: SimulatorRangeBand;
+  attackDistance?: number;
+  attackAxis?: "horizontal" | "vertical";
 }
 
 export type SimulatorAttackFailureReason =
   | "NO_RULE"
+  | "NOT_CARDINAL"
   | "OUT_OF_RANGE"
   | "NO_RESOURCE"
   | "SETUP_REQUIRED"
@@ -390,13 +393,45 @@ export function getSimulatorRange(
   target: SimulatorBoardCoord,
 ): SimulatorRangeState {
   const verticalDistance = Math.abs(attacker.row - target.row);
-  if (verticalDistance === 0) {
-    return { verticalDistance, band: "near" };
+  return { verticalDistance, band: getSimulatorRangeBand(verticalDistance) };
+}
+
+function getSimulatorRangeBand(distance: number): SimulatorRangeBand {
+  if (distance === 0) return "near";
+  if (distance <= 2) return "mid";
+  return "far";
+}
+
+function isCardinalWeapon(rule: SimulatorWeaponRule): boolean {
+  return rule.role !== "냉병기";
+}
+
+function getCardinalRange(
+  attacker: SimulatorBoardCoord,
+  target: SimulatorBoardCoord,
+): SimulatorRangeState | null {
+  const baseRange = getSimulatorRange(attacker, target);
+  if (attacker.row === target.row) {
+    const attackerColumn = SIMULATOR_BOARD_COLUMNS.indexOf(attacker.col);
+    const targetColumn = SIMULATOR_BOARD_COLUMNS.indexOf(target.col);
+    const attackDistance = Math.abs(attackerColumn - targetColumn);
+    return {
+      ...baseRange,
+      band: getSimulatorRangeBand(attackDistance),
+      attackDistance,
+      attackAxis: "horizontal",
+    };
   }
-  if (verticalDistance <= 2) {
-    return { verticalDistance, band: "mid" };
+  if (attacker.col === target.col) {
+    const attackDistance = baseRange.verticalDistance;
+    return {
+      ...baseRange,
+      band: getSimulatorRangeBand(attackDistance),
+      attackDistance,
+      attackAxis: "vertical",
+    };
   }
-  return { verticalDistance, band: "far" };
+  return null;
 }
 
 export function formatSimulatorDamage(profile: SimulatorDamageProfile): string {
@@ -434,12 +469,13 @@ function failureResult(
   reasonLabel: string,
   rule?: SimulatorWeaponRule,
   profile?: SimulatorDamageProfile,
+  range = getSimulatorRange(input.attacker, input.target),
 ): SimulatorAttackResult {
   return {
     ok: false,
     reason,
     reasonLabel,
-    range: getSimulatorRange(input.attacker, input.target),
+    range,
     ...(rule ? { rule } : {}),
     ...(profile ? { profile } : {}),
     rawDamage: 0,
@@ -453,12 +489,25 @@ function failureResult(
 export function resolveSimulatorAttack(
   input: SimulatorAttackInput,
 ): SimulatorAttackResult {
-  const range = getSimulatorRange(input.attacker, input.target);
   const rule = getSimulatorWeaponRule(input.weaponSlug);
   if (!rule) {
     return failureResult(input, "NO_RULE", "등록되지 않은 장비입니다.");
   }
 
+  const requiresCardinalAlignment = isCardinalWeapon(rule);
+  const cardinalRange = requiresCardinalAlignment
+    ? getCardinalRange(input.attacker, input.target)
+    : null;
+  if (requiresCardinalAlignment && !cardinalRange) {
+    return failureResult(
+      input,
+      "NOT_CARDINAL",
+      "화기는 나와 적이 같은 가로줄 또는 세로줄에 있을 때만 공격할 수 있습니다.",
+      rule,
+    );
+  }
+
+  const range = cardinalRange ?? getSimulatorRange(input.attacker, input.target);
   const profile = rule.ranges[range.band];
   if (!profile) {
     return failureResult(
@@ -466,6 +515,8 @@ export function resolveSimulatorAttack(
       "OUT_OF_RANGE",
       `${SIMULATOR_RANGE_LABELS[range.band]} 피해값이 없습니다.`,
       rule,
+      undefined,
+      range,
     );
   }
 
@@ -479,6 +530,7 @@ export function resolveSimulatorAttack(
       `${rule.resource.label}이 부족합니다.`,
       rule,
       profile,
+      range,
     );
   }
 
@@ -489,6 +541,7 @@ export function resolveSimulatorAttack(
       "설치 선언 후 사용할 수 있습니다.",
       rule,
       profile,
+      range,
     );
   }
 
@@ -500,6 +553,7 @@ export function resolveSimulatorAttack(
       `${rule.cadence.cycleTurns}턴 주기 사격 횟수를 모두 사용했습니다.`,
       rule,
       profile,
+      range,
     );
   }
 
