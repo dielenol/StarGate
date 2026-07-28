@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
+import { buildAmeriWorkshopDiscordDmContent } from "@stargate/core/domain/discord-dm-dialogue";
 import {
   JTEST_WORKSHOP_DISCORD_DM_MIRROR_RULE,
   getDb,
@@ -61,14 +62,6 @@ interface WorkshopRequest {
   discordDmOutbox?: WorkshopDmOutboxEvent[];
 }
 
-function escapeMarkdown(value: string, max: number): string {
-  return value
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, max)
-    .replace(/[\\`*_{}[\]()#+\-.!|>~]/g, "\\$&");
-}
-
 function siteBaseUrl(value?: string): string {
   const candidate = value?.trim() || "https://www.ordonet.co.kr";
   try {
@@ -82,137 +75,24 @@ function siteBaseUrl(value?: string): string {
   }
 }
 
-function label(kind: WorkshopRequest["kind"]): string {
-  if (kind === "reload") return "재장전";
-  return kind === "upgrade" ? "장비 강화" : "신규 제작";
-}
-
-function formatDuration(minutes: number): string {
-  if (minutes % 1_440 === 0) {
-    return `${minutes / 60}시간 · ${minutes / 1_440}일`;
-  }
-  if (minutes % 60 === 0) return `${minutes / 60}시간`;
-  return `${minutes.toLocaleString("ko-KR")}분`;
-}
-
-function formatKst(value: Date | string): string {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    month: "2-digit",
-    day: "2-digit",
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(value));
-}
-
 function content(
   request: WorkshopRequest,
   event: WorkshopDmOutboxEvent,
   baseUrl: string,
 ): string {
   const payload = event.payload ?? {};
-  const requestLabel = label(request.kind);
   const equipmentName =
     payload.equipmentName ??
     request.quote?.result?.name ??
     request.equipmentName;
-  const target = [
-    escapeMarkdown(request.characterCodename, 100),
-    equipmentName ? escapeMarkdown(equipmentName, 180) : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  const url = `${baseUrl}/erp/equipment-shop/custom`;
-  const footer = [`▶ 공방 문서함: ${url}`, "— NOVUS ORDO · AMERI"];
-  const lines: string[] = [];
-
-  switch (event.event) {
-    case "REQUESTED":
-      lines.push(
-        `**◆ 공방 ${requestLabel} 요청이 접수되었습니다.**`,
-        target,
-        "신청 문서를 검토 대기열에 등록했습니다.",
-      );
-      break;
-    case "IN_REVIEW":
-      lines.push(
-        `**◆ 공방 ${requestLabel} 검토가 시작되었습니다.**`,
-        target,
-        "담당자가 신청 내용과 보유 장비·재료를 확인하고 있습니다.",
-      );
-      break;
-    case "QUOTED":
-      lines.push(
-        `**◆ 공방 ${requestLabel} 견적이 도착했습니다.**`,
-        target,
-      );
-      if (payload.totalCost !== undefined) {
-        lines.push(
-          `총 경제 부담: **${payload.totalCost.toLocaleString("ko-KR")} CR**`,
-        );
-      }
-      if (payload.durationMinutes !== undefined) {
-        lines.push(`예상 작업 시간: ${formatDuration(payload.durationMinutes)}`);
-      }
-      lines.push("견적 내용을 확인한 뒤 수락 또는 거절을 회신하십시오.");
-      break;
-    case "IN_PROGRESS":
-      lines.push(
-        `**◆ 공방 ${requestLabel} 작업이 시작되었습니다.**`,
-        target,
-      );
-      if (payload.readyAt) {
-        lines.push(`수령 예정: ${formatKst(payload.readyAt)} KST`);
-      }
-      lines.push("작업 완료 시 수령 가능 통지를 다시 보내드리겠습니다.");
-      break;
-    case "READY":
-      lines.push(
-        `**◆ 공방 ${requestLabel} 작업이 완료되었습니다.**`,
-        target,
-        "공방 문서함에서 결과 장비를 수령할 수 있습니다.",
-      );
-      break;
-    case "DECLINED":
-      lines.push(
-        `**■ 공방 ${requestLabel} 견적 거절이 접수되었습니다.**`,
-        target,
-        "해당 견적은 폐기되었으며 비용과 재료는 차감되지 않습니다.",
-      );
-      break;
-    case "REJECTED":
-      lines.push(
-        `**■ 공방 ${requestLabel} 요청이 반려되었습니다.**`,
-        target,
-      );
-      if (payload.note) {
-        lines.push(`반려 사유: ${escapeMarkdown(payload.note, 400)}`);
-      }
-      break;
-    case "CANCELLED":
-      lines.push(
-        `**■ 공방 ${requestLabel} 작업이 취소되었습니다.**`,
-        target,
-      );
-      if (payload.note) {
-        lines.push(`취소 사유: ${escapeMarkdown(payload.note, 400)}`);
-      }
-      break;
-    case "COMPLETED":
-      lines.push(
-        request.kind === "reload"
-          ? "**◆ 공방 재장전 결재가 완료되었습니다.**"
-          : `**◆ 공방 ${requestLabel} 결과 수령이 완료되었습니다.**`,
-        target,
-        request.kind === "reload"
-          ? "장비 액션 충전 상태가 복구되었습니다."
-          : "결과 장비가 자산 대장에 반영되었습니다.",
-      );
-      break;
-  }
-  return [...lines, ...footer].join("\n");
+  return buildAmeriWorkshopDiscordDmContent({
+    event: event.event,
+    kind: request.kind,
+    characterCodename: request.characterCodename,
+    ...payload,
+    ...(equipmentName ? { equipmentName } : {}),
+    workshopUrl: `${baseUrl}/erp/equipment-shop/custom`,
+  });
 }
 
 function nonce(

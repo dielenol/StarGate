@@ -97,6 +97,11 @@ test("활성화한 webhook과 거래 DM kind는 실제 Discord REST payload를 �
   assert.match(requests[0].body.embeds[0].fields[0].value, /@​everyone/);
   assert.equal(requests[2].body.enforce_nonce, true);
   assert.equal(requests[2].body.nonce.length, 25);
+  assert.match(requests[2].body.content, /자산 교환이 최종 확정되었습니다/);
+  assert.match(
+    requests[2].body.content,
+    /별도 절차 없이는 허용되지 않습니다/,
+  );
 });
 
 test("활성화한 kind의 secret이 없으면 claim 전에 설정 오류를 낸다", () => {

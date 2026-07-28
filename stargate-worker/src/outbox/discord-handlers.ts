@@ -1,13 +1,17 @@
 import { createHash } from "node:crypto";
 
 import {
+  buildRegistrarTradeDiscordDmContent,
+  type RegistrarTradeDmEvent,
+} from "@stargate/core/domain/discord-dm-dialogue";
+import { findStockByTicker } from "@stargate/core/domain/stock-catalog";
+import {
   INTEGRATION_OUTBOX_KINDS,
   findUserById,
   type IntegrationOutboxEvent,
   type IntegrationOutboxKind,
   type User,
 } from "@stargate/shared-db";
-import { findStockByTicker } from "@stargate/core/domain/stock-catalog";
 
 import {
   DiscordDeliveryError,
@@ -446,68 +450,37 @@ function buildWebhookPayload(
   }
 }
 
-function escapeMarkdown(value: string, max: number): string {
-  return value
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, max)
-    .replace(/[\\`*_{}[\]()#+\-.!|>~]/g, "\\$&");
-}
-
-function offerSummary(value: unknown): string {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return "제시 자산 없음";
+function tradeDmEvent(value: unknown): RegistrarTradeDmEvent {
+  switch (value) {
+    case "EXCHANGE_OPENED":
+    case "GIFT_RECEIVED":
+    case "EXCHANGE_COMPLETED":
+    case "EXCHANGE_CANCELLED":
+      return value;
+    default:
+      throw new Error("지원하지 않는 PLAYER_TRADE_DM event입니다.");
   }
-  const offer = value as Record<string, unknown>;
-  const lines: string[] = [];
-  if (typeof offer.credits === "number" && offer.credits > 0) {
-    lines.push(`${offer.credits.toLocaleString("ko-KR")} CR`);
-  }
-  if (Array.isArray(offer.items)) {
-    for (const raw of offer.items.slice(0, 6)) {
-      const item = record(raw, "offer.items");
-      lines.push(
-        `${escapeMarkdown(String(item.itemName ?? ""), 80)} × ${Number(item.quantity ?? 0).toLocaleString("ko-KR")}`,
-      );
-    }
-  }
-  if (Array.isArray(offer.stocks)) {
-    for (const raw of offer.stocks.slice(0, 6)) {
-      const stock = record(raw, "offer.stocks");
-      lines.push(
-        `${escapeMarkdown(String(stock.ticker ?? ""), 20)} ${Number(stock.shares ?? 0).toLocaleString("ko-KR")}주`,
-      );
-    }
-  }
-  return lines.length > 0 ? lines.slice(0, 6).join(" · ") : "제시 자산 없음";
 }
 
 function tradeDmContent(
   payload: Record<string, unknown>,
   env: Environment,
 ): string {
-  const recipient = escapeMarkdown(
-    text(payload.recipientCodename, "recipientCodename"),
-    100,
-  );
-  const other = escapeMarkdown(
-    text(payload.otherCharacterCodename, "otherCharacterCodename"),
-    100,
-  );
-  const url = `${siteBaseUrl(env)}/erp/trades`;
-  const suffix = `\n▶ 거래 대장: ${url}\n— NOVUS ORDO · REGISTRAR`;
-  switch (payload.event) {
-    case "EXCHANGE_OPENED":
-      return `**◆ 자산 교환 요청이 등재되었습니다.**\n${recipient}님, ${other} 측에서 교환 절차를 개시했습니다.\n제시 자산: ${offerSummary(payload.offer)}${suffix}`;
-    case "GIFT_RECEIVED":
-      return `**◆ 자산 전달 기록이 확정되었습니다.**\n${recipient}님, ${other} 측에서 다음 자산을 전달했습니다.\n전달 자산: ${offerSummary(payload.offer)}${suffix}`;
-    case "EXCHANGE_COMPLETED":
-      return `**◆ 자산 교환 절차가 확정되었습니다.**\n${recipient}님, ${other} 측과의 교환이 체결되었습니다.${suffix}`;
-    case "EXCHANGE_CANCELLED":
-      return `**■ 자산 교환 요청이 기각되었습니다.**\n${recipient}님, ${other} 측과 진행하던 교환 절차가 취소되었습니다.${suffix}`;
-    default:
-      throw new Error(`지원하지 않는 PLAYER_TRADE_DM event입니다.`);
-  }
+  return buildRegistrarTradeDiscordDmContent({
+    event: tradeDmEvent(payload.event),
+    recipientCodename: text(
+      payload.recipientCodename,
+      "recipientCodename",
+      100,
+    ),
+    otherCharacterCodename: text(
+      payload.otherCharacterCodename,
+      "otherCharacterCodename",
+      100,
+    ),
+    offer: payload.offer,
+    tradeUrl: `${siteBaseUrl(env)}/erp/trades`,
+  });
 }
 
 function enabledKinds(env: Environment): IntegrationOutboxKind[] {

@@ -73,7 +73,7 @@ test("공방 견적 DM은 비용·시간·복합 담당·아메리 서명을 포
     "https://erp.example.test/base/",
   );
 
-  assert.match(content, /공방 장비 강화 견적이 도착했습니다/);
+  assert.match(content, /공방 장비 강화 견적서를 정리했어요/);
   assert.match(content, /LEE DONGSIK/);
   assert.match(content, /2,200 CR/);
   assert.match(content, /72시간 · 3일/);
@@ -88,15 +88,15 @@ test("공방 견적 DM은 비용·시간·복합 담당·아메리 서명을 포
 
 test("공방의 모든 절차 단계에 전용 DM 문구가 있다", () => {
   const cases = [
-    ["REQUESTED", /접수되었습니다/],
-    ["IN_REVIEW", /검토가 시작되었습니다/],
-    ["QUOTED", /견적이 도착했습니다/],
-    ["IN_PROGRESS", /작업이 시작되었습니다/],
-    ["READY", /작업이 완료되었습니다/],
-    ["DECLINED", /견적 거절이 접수되었습니다/],
-    ["REJECTED", /요청이 반려되었습니다/],
-    ["CANCELLED", /작업이 취소되었습니다/],
-    ["COMPLETED", /결과 수령이 완료되었습니다/],
+    ["REQUESTED", /요청을 접수했어요/],
+    ["IN_REVIEW", /요청을 검토 중이에요/],
+    ["QUOTED", /견적서를 정리했어요/],
+    ["IN_PROGRESS", /작업 문서를 넘겼어요/],
+    ["READY", /완료 보고가 도착했어요/],
+    ["DECLINED", /견적 거절로 기록했어요/],
+    ["REJECTED", /요청이 반려됐어요/],
+    ["CANCELLED", /작업을 취소 처리했어요/],
+    ["COMPLETED", /수령 처리를 종결했어요/],
   ];
 
   for (const [event, pattern] of cases) {
@@ -116,7 +116,7 @@ test("공방의 모든 절차 단계에 전용 DM 문구가 있다", () => {
       event: "COMPLETED",
       kind: "reload",
     }),
-    /재장전 결재가 완료되었습니다/,
+    /재장전 결재를 종결했어요/,
   );
 });
 
