@@ -33,7 +33,6 @@ import {
   SIMULATOR_RANGE_BANDS,
   SIMULATOR_RANGE_LABELS,
   SIMULATOR_STATUS_LABELS,
-  SIMULATOR_TARGET_STAT_LABELS,
   SIMULATOR_WEAPON_ORDER,
   type SimulatorAttackerProfile,
   type SimulatorAttackResult,
@@ -101,6 +100,10 @@ const DEFAULT_TARGET: SimulatorTargetStats = {
   def: 2,
   statuses: [],
 };
+const TURN_END_SFX_SRC =
+  "/assets/equipment-shop/sfx/ui-notice-level-up.mp3";
+const TURN_REVEAL_OUT_MS = 1900;
+const TURN_REVEAL_END_MS = 2400;
 
 const TRAINING_STEPS: TrainingStep[] = [
   {
@@ -169,6 +172,17 @@ function playTrainingTone(
     oscillator.start(start);
     oscillator.stop(end + 0.02);
   });
+}
+
+function createTurnEndAudio(): HTMLAudioElement {
+  const audio = new Audio(TURN_END_SFX_SRC);
+  audio.volume = 0.42;
+  return audio;
+}
+
+function restartTurnEndAudio(audio: HTMLAudioElement): Promise<void> {
+  audio.currentTime = 0;
+  return audio.play();
 }
 
 function buildSimulatorItems(
@@ -279,9 +293,16 @@ export default function EquipmentSimulatorClient({
   const [trainingEvent, setTrainingEvent] = useState<TrainingEvent>("ready");
   const [activeStep, setActiveStep] = useState(0);
   const [feedback, setFeedback] = useState<TrainingFeedback | null>(null);
+  const [turnReveal, setTurnReveal] = useState<{
+    endedTurn: number;
+    phase: "in" | "out";
+  } | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const turnEndAudioRef = useRef<HTMLAudioElement | null>(null);
   const feedbackSequenceRef = useRef(0);
   const feedbackTimerRef = useRef<number | null>(null);
+  const turnRevealOutTimerRef = useRef<number | null>(null);
+  const turnRevealEndTimerRef = useRef<number | null>(null);
   const [logs, setLogs] = useState<SimLog[]>([
     {
       id: 0,
@@ -295,10 +316,22 @@ export default function EquipmentSimulatorClient({
       if (feedbackTimerRef.current !== null) {
         window.clearTimeout(feedbackTimerRef.current);
       }
+      if (turnRevealOutTimerRef.current !== null) {
+        window.clearTimeout(turnRevealOutTimerRef.current);
+      }
+      if (turnRevealEndTimerRef.current !== null) {
+        window.clearTimeout(turnRevealEndTimerRef.current);
+      }
       const context = audioContextRef.current;
       audioContextRef.current = null;
       if (context && context.state !== "closed") {
         void context.close().catch(() => undefined);
+      }
+      const turnEndAudio = turnEndAudioRef.current;
+      turnEndAudioRef.current = null;
+      if (turnEndAudio) {
+        turnEndAudio.pause();
+        turnEndAudio.removeAttribute("src");
       }
     };
   }, []);
@@ -442,11 +475,14 @@ export default function EquipmentSimulatorClient({
     tone: TrainingFeedbackTone,
     title: string,
     detail: string,
+    options: { sound?: boolean } = {},
   ) {
     const id = feedbackSequenceRef.current + 1;
     feedbackSequenceRef.current = id;
     setFeedback({ id, tone, title, detail });
-    playFeedbackSound(tone);
+    if (options.sound !== false) {
+      playFeedbackSound(tone);
+    }
 
     if (feedbackTimerRef.current !== null) {
       window.clearTimeout(feedbackTimerRef.current);
@@ -466,6 +502,41 @@ export default function EquipmentSimulatorClient({
       feedbackTimerRef.current = null;
     }
     setFeedback(null);
+  }
+
+  function playTurnEndSound() {
+    try {
+      const audio = turnEndAudioRef.current ?? createTurnEndAudio();
+      turnEndAudioRef.current = audio;
+      void restartTurnEndAudio(audio).catch(() => undefined);
+    } catch {
+      // Ignore unsupported audio environments and browser playback policies.
+    }
+  }
+
+  function showTurnEndReveal(endedTurn: number) {
+    if (turnRevealOutTimerRef.current !== null) {
+      window.clearTimeout(turnRevealOutTimerRef.current);
+    }
+    if (turnRevealEndTimerRef.current !== null) {
+      window.clearTimeout(turnRevealEndTimerRef.current);
+    }
+
+    setTurnReveal({ endedTurn, phase: "in" });
+    turnRevealOutTimerRef.current = window.setTimeout(() => {
+      setTurnReveal((current) =>
+        current?.endedTurn === endedTurn
+          ? { ...current, phase: "out" }
+          : current,
+      );
+      turnRevealOutTimerRef.current = null;
+    }, TURN_REVEAL_OUT_MS);
+    turnRevealEndTimerRef.current = window.setTimeout(() => {
+      setTurnReveal((current) =>
+        current?.endedTurn === endedTurn ? null : current,
+      );
+      turnRevealEndTimerRef.current = null;
+    }, TURN_REVEAL_END_MS);
   }
 
   function moveToken(token: ActiveToken, coord: SimulatorBoardCoord) {
@@ -602,8 +673,11 @@ export default function EquipmentSimulatorClient({
   }
 
   function handleNextTurn() {
+    const endedTurn = turn;
     const nextTurn = turn + 1;
     const resetCycle = isNewSimulatorCadenceCycle(turn, nextTurn);
+    playTurnEndSound();
+    showTurnEndReveal(endedTurn);
     setTurn(nextTurn);
     if (resetCycle) {
       setHmgShotsInCycle(0);
@@ -616,6 +690,7 @@ export default function EquipmentSimulatorClient({
       resetCycle
         ? "중기관총 사격 주기가 갱신되었습니다."
         : "장비와 배치를 유지한 채 다음 행동을 진행합니다.",
+      { sound: false },
     );
     pushLog(
       resetCycle
@@ -759,6 +834,31 @@ export default function EquipmentSimulatorClient({
           >
             ×
           </button>
+        </div>
+      ) : null}
+
+      {turnReveal ? (
+        <div
+          className={[
+            styles["turn-reveal-banner"],
+            styles["turn-reveal-banner--visible"],
+            styles[
+              turnReveal.phase === "in"
+                ? "turn-reveal-banner--slide-in"
+                : "turn-reveal-banner--slide-out"
+            ],
+          ].join(" ")}
+          role="status"
+          aria-live="polite"
+          aria-label={`${turnReveal.endedTurn} 턴 종료`}
+        >
+          <div className={styles["trb-shell"]}>
+            <div className={styles["trb-orbit"]} aria-hidden />
+            <div className={styles["trb-mainline"]} aria-hidden>
+              <b className={styles["trb-number"]}>{turnReveal.endedTurn}</b>
+              <span className={styles["trb-word"]}>턴 종료</span>
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -1079,9 +1179,31 @@ export default function EquipmentSimulatorClient({
                           onDragStart={(event) =>
                             handleTokenDragStart(event, "attacker")
                           }
-                          aria-label="내 위치 토큰"
+                          role="img"
+                          aria-label={`내 캐릭터 ${attacker.codename} 위치 토큰`}
                         >
-                          나
+                          {attacker.portraitUrl ? (
+                            <Image
+                              src={attacker.portraitUrl}
+                              width={64}
+                              height={64}
+                              alt=""
+                              aria-hidden
+                              className={styles.token__portrait}
+                              draggable={false}
+                              unoptimized
+                            />
+                          ) : (
+                            <span
+                              className={styles.token__fallback}
+                              aria-hidden
+                            >
+                              나
+                            </span>
+                          )}
+                          <span className={styles.token__label} aria-hidden>
+                            내 캐릭터
+                          </span>
                         </span>
                       ) : null}
                       {hasTarget ? (
@@ -1182,7 +1304,7 @@ export default function EquipmentSimulatorClient({
         </aside>
       </section>
 
-      <section className={styles.bottomGrid} aria-label="로그와 장비 비교">
+      <section className={styles.bottomGrid} aria-label="공격 로그">
         <div className={styles.logPanel}>
           <div className={styles.panelIntro}>
             <Eyebrow>SIM LOG</Eyebrow>
@@ -1202,70 +1324,6 @@ export default function EquipmentSimulatorClient({
           </div>
         </div>
 
-        <div className={styles.comparePanel}>
-          <div className={styles.panelIntro}>
-            <Eyebrow>EXPECTED OUTPUT</Eyebrow>
-            <strong>현재 배치 기준 비교</strong>
-          </div>
-          <div className={styles.compareTable} role="table">
-            <div className={styles.compareHeader} role="row">
-              <span role="columnheader">장비</span>
-              <span role="columnheader">판정</span>
-              <span role="columnheader">결과</span>
-            </div>
-            {simulatorItems.map((item) => {
-              const rule = getSimulatorWeaponRule(item.slug);
-              if (!rule) return null;
-              const result = resolveSimulatorAttack({
-                weaponSlug: item.slug,
-                attacker: attackerPosition,
-                target: targetPosition,
-                attackerStats: attacker,
-                targetStats,
-                runtime: attackRuntimeFor(
-                  rule,
-                  resourceBySlug,
-                  hmgInstalled,
-                  hmgShotsInCycle,
-                  turn,
-                ),
-              });
-              return (
-                <div
-                  key={item.slug}
-                  className={[
-                    styles.compareRow,
-                    item.slug === selectedSlug ? styles["compareRow--active"] : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  role="row"
-                >
-                  <span role="cell">
-                    <button
-                      type="button"
-                      className={styles.compareSelectButton}
-                      aria-pressed={item.slug === selectedSlug}
-                      onClick={() => handleSelectWeapon(item.slug)}
-                    >
-                      {item.name}
-                    </button>
-                  </span>
-                  <span role="cell">
-                    {result.reason === "NOT_CARDINAL"
-                      ? "직선 정렬 필요"
-                      : SIMULATOR_RANGE_LABELS[result.range.band]}
-                  </span>
-                  <span role="cell">
-                    {result.ok && result.targetStat
-                      ? `${result.damageApplied} ${SIMULATOR_TARGET_STAT_LABELS[result.targetStat]}`
-                      : result.reasonLabel}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </section>
     </div>
   );

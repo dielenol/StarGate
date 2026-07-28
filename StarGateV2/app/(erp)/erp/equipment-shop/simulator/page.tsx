@@ -1,5 +1,6 @@
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import type { SimulatorAttackerProfile } from "@/lib/equipment-shop/simulator";
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import EquipmentShopComingSoon from "../EquipmentShopComingSoon";
 import { requireEquipmentShopSession } from "../_access";
@@ -34,17 +35,25 @@ export default async function EquipmentShopSimulatorPage() {
   try {
     const mainCharacter = await findMainCharacterByOwner(session.user.id);
     if (mainCharacter?.type === "AGENT") {
+      const portraitUrl = mainCharacter.previewImage.trim();
       attacker = {
         codename: mainCharacter.codename,
         atk: mainCharacter.play.atk,
         hp: mainCharacter.play.hp,
         san: mainCharacter.play.san,
+        ...(portraitUrl
+          ? { portraitUrl: preferOptimizedPublicImagePath(portraitUrl) }
+          : {}),
         source: "agent",
       };
     } else if (mainCharacter) {
+      const portraitUrl = mainCharacter.previewImage.trim();
       attacker = {
         ...attacker,
         codename: mainCharacter.codename,
+        ...(portraitUrl
+          ? { portraitUrl: preferOptimizedPublicImagePath(portraitUrl) }
+          : {}),
       };
     }
   } catch (err) {

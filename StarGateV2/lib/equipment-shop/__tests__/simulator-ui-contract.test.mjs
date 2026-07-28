@@ -1,0 +1,94 @@
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+const CLIENT_URL = new URL(
+  "../../../app/(erp)/erp/equipment-shop/simulator/EquipmentSimulatorClient.tsx",
+  import.meta.url,
+);
+const PAGE_URL = new URL(
+  "../../../app/(erp)/erp/equipment-shop/simulator/page.tsx",
+  import.meta.url,
+);
+const STYLES_URL = new URL(
+  "../../../app/(erp)/erp/equipment-shop/simulator/page.module.css",
+  import.meta.url,
+);
+const SIMULATOR_URL = new URL("../simulator.ts", import.meta.url);
+const TURN_END_SFX_URL = new URL(
+  "../../../public/assets/equipment-shop/sfx/ui-notice-level-up.mp3",
+  import.meta.url,
+);
+
+test("comparison UI is removed and the attack log remains as the bottom section", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(STYLES_URL, "utf8"),
+  ]);
+
+  assert.doesNotMatch(client, /EXPECTED OUTPUT|현재 배치 기준 비교|comparePanel/);
+  assert.doesNotMatch(styles, /\.compare(?:Panel|Table|Header|Row|SelectButton)/);
+  assert.match(client, /className=\{styles\.bottomGrid\} aria-label="공격 로그"/);
+  assert.match(client, /<strong>공격 로그<\/strong>/);
+});
+
+test("action controls wrap inside the board at desktop and mobile widths", async () => {
+  const styles = await readFile(STYLES_URL, "utf8");
+
+  assert.match(
+    styles,
+    /\.actionRow\s*\{[^}]*display: grid;[^}]*repeat\(auto-fit, minmax\(128px, 1fr\)\)/s,
+  );
+  assert.match(
+    styles,
+    /\.actionRow button\s*\{[^}]*width: 100%;[^}]*min-width: 0;/s,
+  );
+  assert.doesNotMatch(styles, /\.nextTurnButton\s*\{[^}]*margin-left: auto;/s);
+  assert.match(
+    styles,
+    /@media \(max-width: 720px\)[\s\S]*\.actionRow\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/,
+  );
+});
+
+test("the serialized main-character portrait is optimized and rendered with an accessible fallback", async () => {
+  const [page, client, simulator] = await Promise.all([
+    readFile(PAGE_URL, "utf8"),
+    readFile(CLIENT_URL, "utf8"),
+    readFile(SIMULATOR_URL, "utf8"),
+  ]);
+
+  assert.match(simulator, /portraitUrl\?: string/);
+  assert.match(page, /mainCharacter\.previewImage\.trim\(\)/);
+  assert.match(page, /portraitUrl: preferOptimizedPublicImagePath\(portraitUrl\)/);
+  assert.match(client, /attacker\.portraitUrl \? \(/);
+  assert.match(client, /src=\{attacker\.portraitUrl\}/);
+  assert.match(client, /내 캐릭터 \$\{attacker\.codename\} 위치 토큰/);
+  assert.match(client, /className=\{styles\.token__fallback\}/);
+  assert.match(client, />\s*내 캐릭터\s*<\/span>/);
+});
+
+test("turn end uses the nochichim reveal timing and only the copied notice SFX", async () => {
+  const [client, styles, sfx] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(STYLES_URL, "utf8"),
+    readFile(TURN_END_SFX_URL),
+  ]);
+
+  assert.match(
+    client,
+    /TURN_END_SFX_SRC\s*=\s*[\s\S]*"\/assets\/equipment-shop\/sfx\/ui-notice-level-up\.mp3"/,
+  );
+  assert.match(client, /const TURN_REVEAL_OUT_MS = 1900/);
+  assert.match(client, /const TURN_REVEAL_END_MS = 2400/);
+  assert.match(client, /playTurnEndSound\(\);\s*showTurnEndReveal\(endedTurn\)/);
+  assert.match(client, /\{ sound: false \}/);
+  assert.match(client, /aria-label=\{`\$\{turnReveal\.endedTurn\} 턴 종료`\}/);
+  assert.match(styles, /@keyframes trb-in/);
+  assert.match(styles, /@keyframes trb-out/);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.equal(
+    createHash("sha256").update(sfx).digest("hex"),
+    "63d3ed13b0de5f1506aa4f8d8cfe47999fcd54882831440fbc12ae7212c75439",
+  );
+});
