@@ -16,7 +16,7 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 
 ## 작업 전 중복 확인
 
-1. 대상 route와 가장 가까운 상위 route의 이력 문서를 찾는다.
+1. 대상 route와 가장 가까운 상위 route의 이력 문서, 작업 목적과 관련된 `shared/` 공용 이력을 찾는다.
 2. 최근 30일 항목에서 현재 요청과 목적이 같은 작업이 있는지 확인한다.
 3. 같은 작업이 있으면 관련 커밋과 현재 `HEAD` 사이에서 해당 페이지와 당시 영향 파일이 실질적으로 바뀌었는지 확인한다.
 4. 관련 변경이 없다면 구현을 중단하고 기존 작업일, 변경 내용, 검증 결과와 커밋을 사용자에게 알린다.
@@ -75,29 +75,56 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 ## 2026-07-28 · 버그 수정 · 주문 중복 방지
 ```
 
+## 초기 소급 정리 범위
+
+- 기준 브랜치: `origin/main`
+- 기준 시점: `50bae5e` (2026-07-28, Asia/Seoul)
+- 확인 기간: 2026-06-29 00:00부터 2026-07-28 23:59까지 최근 30일
+- 확인 대상: 기준 브랜치에서 도달 가능한 커밋 371개
+- 기록 기준: 사용자 동작이나 향후 유지보수 판단을 바꾸는 완료 작업만 페이지별로 묶었다.
+- 제외 기준: 배포·CI, 문서·테스트만의 변경, 실행 여부가 확인되지 않은 seed·migration, 최종 동작에 남지 않은 단순 조정은 이력에 넣지 않았다.
+
 ## 현재 페이지 이력
 
+- [`/erp`](routes/erp.md)
 - [`/erp/account`](routes/erp/account.md)
 - [`/erp/admin/credits`](routes/erp/admin/credits.md)
 - [`/erp/admin/equipment-workshop`](routes/erp/admin/equipment-workshop.md)
 - [`/erp/admin/inventory/[characterId]`](routes/erp/admin/inventory/_characterId.md)
+- [`/erp/admin/stocks`](routes/erp/admin/stocks.md)
+- [`/erp/characters`](routes/erp/characters.md)
 - [`/erp/characters/[id]`](routes/erp/characters/_id.md)
 - [`/erp/credits`](routes/erp/credits.md)
 - [`/erp/equipment-shop`](routes/erp/equipment-shop.md)
+- [`/erp/equipment-shop/acheron`](routes/erp/equipment-shop/acheron.md)
 - [`/erp/equipment-shop/custom`](routes/erp/equipment-shop/custom.md)
 - [`/erp/equipment-shop/lab`](routes/erp/equipment-shop/lab.md)
+- [`/erp/equipment-shop/simulator`](routes/erp/equipment-shop/simulator.md)
 - [`/erp/equipment-shop/strategic`](routes/erp/equipment-shop/strategic.md)
 - [`/erp/equipment-shop/towaski`](routes/erp/equipment-shop/towaski.md)
+- [`/erp/factions`](routes/erp/factions.md)
 - [`/erp/inventory/[characterId]`](routes/erp/inventory/_characterId.md)
+- [`/erp/notifications`](routes/erp/notifications.md)
 - [`/erp/personnel`](routes/erp/personnel.md)
+- [`/erp/personnel/[id]`](routes/erp/personnel/_id.md)
+- [`/erp/sessions`](routes/erp/sessions.md)
 - [`/erp/sessions/report`](routes/erp/sessions/report.md)
 - [`/erp/shop`](routes/erp/shop.md)
 - [`/erp/stock`](routes/erp/stock.md)
+- [`/erp/stock/[ticker]`](routes/erp/stock/_ticker.md)
 - [`/erp/stock/portfolio`](routes/erp/stock/portfolio.md)
 - [`/erp/trades`](routes/erp/trades.md)
+- [`/erp/wiki`](routes/erp/wiki.md)
+- [`/erp/wiki/catalog/[category]`](routes/erp/wiki/catalog/_category.md)
+- [`/erp/wiki/catalog/item/[key]`](routes/erp/wiki/catalog/item/_key.md)
 - [`/survey/keyring`](routes/survey/keyring.md)
+- [`/world/player`](routes/world/player.md)
 
 ## 현재 공용 이력
 
+- [ERP 접근 제어](shared/erp-access-control.md)
+- [ERP 공용 셸](shared/erp-shell.md)
+- [ERP 시각 체계](shared/erp-visual-system.md)
+- [경제·인벤토리 정합성](shared/economy-inventory-safety.md)
 - [장기 실행 worker와 durable 처리](shared/worker-runtime.md)
 - [성능 관측](shared/performance-observability.md)
