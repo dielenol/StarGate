@@ -5430,6 +5430,17 @@ export default function EquipmentShopClient({
                                 충전 {quote.result.equipmentAction.maxCharges}/{quote.result.equipmentAction.maxCharges} · 재장전 {formatCredits(quote.result.equipmentAction.reloadCreditCost)}
                               </p>
                             ) : null}
+                            {quote.result.equipmentAbilityOverrides?.map(
+                              (override) => (
+                                <p key={override.targetCode}>
+                                  <strong>
+                                    {override.targetCode} · 장착형 어빌리티 강화
+                                  </strong>
+                                  <br />
+                                  {override.effect}
+                                </p>
+                              ),
+                            )}
                           </div>
                         </div>
                         <dl className={styles.workshopQuoteSummary}>

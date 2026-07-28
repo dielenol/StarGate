@@ -37,6 +37,9 @@ const {
   findEquipmentWorkshopPreset,
   getEquipmentWorkshopPresetSelectionValue,
 } = await import("../workshop-presets.ts");
+const { buildWorkshopResultMasterItem } = await import(
+  "../workshop-result-master-item.ts"
+);
 
 test("upgrade requests require an equipped inventory entry and enough detail", () => {
   assert.deepEqual(
@@ -216,6 +219,177 @@ test("quote validation accepts specialist override and a charge-backed U action"
   assert.equal(parsed.input.result.equipmentAction.reloadCreditCost, 200);
 });
 
+test("quote validation preserves structured equipment ability overrides", () => {
+  const parsed = parseEquipmentWorkshopQuote({
+    expectedVersion: 0,
+    creditCost: 500,
+    durationMinutes: 4_320,
+    specialistCodename: "TEMPER",
+    specialistWorkflow: [
+      { specialistCodename: "TEMPER", task: "근거리 타격 구조 개조" },
+      { specialistCodename: "VERNIER", task: "절제 출혈 효과 연동 검수" },
+    ],
+    modificationDomain: "GENERAL",
+    materials: [],
+    result: {
+      category: "WEAPON",
+      name: "악식의 콘치타 - 개조형",
+      description: "원본과 별개로 생성되는 캐릭터 전용 개조 결과입니다.",
+      damage: "근거리 15 물리 / 중거리 5 물리",
+      equipmentAbilityOverrides: [
+        {
+          targetCode: "A1",
+          effect:
+            "단일 대상에게 중근거리 출혈 상태이상을 부여한다. 라운드당 10 피해, 5라운드 지속.",
+        },
+      ],
+    },
+  });
+
+  assert.equal(parsed.ok, true);
+  assert.deepEqual(parsed.input.result.equipmentAbilityOverrides, [
+    {
+      targetCode: "A1",
+      effect:
+        "단일 대상에게 중근거리 출혈 상태이상을 부여한다. 라운드당 10 피해, 5라운드 지속.",
+    },
+  ]);
+  assert.equal(parsed.input.result.equipmentAction, undefined);
+});
+
+test("accepted quote builds the claimed master item without losing ability overrides", () => {
+  const parsed = parseEquipmentWorkshopQuote({
+    expectedVersion: 0,
+    creditCost: 500,
+    durationMinutes: 4_320,
+    specialistCodename: "TEMPER",
+    specialistWorkflow: [
+      { specialistCodename: "TEMPER", task: "근거리 타격 구조 개조" },
+      { specialistCodename: "VERNIER", task: "절제 출혈 효과 연동 검수" },
+    ],
+    modificationDomain: "GENERAL",
+    materials: [],
+    result: {
+      category: "WEAPON",
+      name: "악식의 콘치타 - 개조형",
+      description: "개조형 단검",
+      damage: "근거리 15 물리 / 중거리 5 물리",
+      previewImage:
+        "/assets/catalog/equipment/conchita-of-gluttony-modified.webp",
+      equipmentAbilityOverrides: [
+        {
+          targetCode: "A1",
+          effect:
+            "단일 대상에게 중근거리 출혈 상태이상을 부여한다. 라운드당 10 피해, 5라운드 지속.",
+        },
+      ],
+    },
+  });
+  assert.equal(parsed.ok, true);
+
+  const resultItemId = "507f1f77bcf86cd799439011";
+  const now = new Date("2026-07-28T08:00:00.000Z");
+  const resultMaster = buildWorkshopResultMasterItem(
+    {
+      _id: "equipment-workshop-request:test",
+      kind: "upgrade",
+      userId: "owner-id",
+      userName: "힘이",
+      characterId: "character-id",
+      characterCodename: "TIGER298",
+      sourceItemId: "source-item-id",
+      sourceSlot: "WEAPON",
+      inventoryEntryId: "inventory-entry-id",
+      equipmentName: "악식의 콘치타",
+      details: "무기 기본 공격력 증가 강화",
+      status: "IN_PROGRESS",
+      createdAt: now,
+      updatedAt: now,
+      quote: {
+        ...parsed.input,
+        version: 1,
+        materialCost: 0,
+        totalCost: 500,
+        result: {
+          ...parsed.input.result,
+          itemId: resultItemId,
+          slug: `workshop-${resultItemId}`,
+          category: "WEAPON",
+          tags: ["공방개조", "TIGER298"],
+          generation: 1,
+        },
+        issuedAt: now,
+        issuedById: "gm-id",
+        issuedByName: "GM",
+      },
+    },
+    now,
+  );
+
+  assert.deepEqual(
+    resultMaster.equipmentAbilityOverrides,
+    parsed.input.result.equipmentAbilityOverrides,
+  );
+  assert.equal(resultMaster.name, "악식의 콘치타 - 개조형");
+  assert.equal(resultMaster.damage, "근거리 15 물리 / 중거리 5 물리");
+  assert.equal(
+    resultMaster.previewImage,
+    "/assets/catalog/equipment/conchita-of-gluttony-modified.webp",
+  );
+  assert.equal(resultMaster.workshop.sourceItemName, "악식의 콘치타");
+});
+
+test("quote validation rejects duplicate, empty and oversized ability overrides", () => {
+  const base = {
+    expectedVersion: 0,
+    creditCost: 500,
+    durationMinutes: 4_320,
+    modificationDomain: "GENERAL",
+    materials: [],
+    result: {
+      category: "WEAPON",
+      name: "악식의 콘치타 - 개조형",
+      description: "장착형 어빌리티 강화 입력 검증용 결과입니다.",
+    },
+  };
+
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      ...base,
+      result: {
+        ...base.result,
+        equipmentAbilityOverrides: [
+          { targetCode: "A1", effect: "첫 효과" },
+          { targetCode: "A1", effect: "중복 효과" },
+        ],
+      },
+    }).ok,
+    false,
+  );
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      ...base,
+      result: {
+        ...base.result,
+        equipmentAbilityOverrides: [{ targetCode: "A1", effect: " " }],
+      },
+    }).ok,
+    false,
+  );
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      ...base,
+      result: {
+        ...base.result,
+        equipmentAbilityOverrides: [
+          { targetCode: "A1", effect: "가".repeat(1_001) },
+        ],
+      },
+    }).ok,
+    false,
+  );
+});
+
 test("quote validation rejects a mismatched primary specialist or duplicated workflow", () => {
   const base = {
     expectedVersion: 0,
@@ -366,6 +540,102 @@ test("workshop blueprint parser keeps reusable defaults separate from quote snap
     ),
     ["TEMPER", "TOWASKI"],
   );
+});
+
+test("workshop blueprint keeps equipment ability overrides in reusable defaults", () => {
+  const parsed = parseEquipmentWorkshopBlueprint({
+    slug: "conchita-of-gluttony-modified",
+    displayName: "악식의 콘치타 - 개조형",
+    applicability: {
+      kinds: ["upgrade"],
+      sourceSlugs: ["conchita-of-gluttony"],
+      sourceCategories: ["WEAPON"],
+      resultCategory: "WEAPON",
+    },
+    defaults: {
+      creditCost: 500,
+      durationMinutes: 4_320,
+      specialistCodename: "TEMPER",
+      specialistWorkflow: [
+        { specialistCodename: "TEMPER", task: "근거리 타격 구조 개조" },
+        { specialistCodename: "VERNIER", task: "절제 출혈 효과 연동 검수" },
+      ],
+      modificationDomain: "GENERAL",
+      materials: [],
+      result: {
+        name: "악식의 콘치타 - 개조형",
+        description: "원본과 별개로 생성되는 캐릭터 전용 개조 결과입니다.",
+        damage: "근거리 15 물리 / 중거리 5 물리",
+        equipmentAbilityOverrides: [
+          {
+            targetCode: "A1",
+            effect:
+              "단일 대상에게 중근거리 출혈 상태이상을 부여한다. 라운드당 10 피해, 5라운드 지속.",
+          },
+        ],
+      },
+    },
+  });
+
+  assert.equal(parsed.ok, true);
+  assert.equal(
+    parsed.input.defaults.result.equipmentAbilityOverrides[0].targetCode,
+    "A1",
+  );
+});
+
+test("conchita modification is available as a non-mutating built-in preset", () => {
+  const preset = EQUIPMENT_WORKSHOP_PRESETS.find(
+    (entry) => entry.key === "conchita-of-gluttony-modified",
+  );
+
+  assert.ok(preset);
+  assert.equal(parseEquipmentWorkshopBlueprint(preset.blueprint).ok, true);
+  assert.deepEqual(preset.blueprint.applicability.sourceSlugs, [
+    "conchita-of-gluttony",
+  ]);
+  assert.equal(preset.blueprint.defaults.creditCost, 500);
+  assert.equal(preset.blueprint.defaults.durationMinutes, 4_320);
+  assert.deepEqual(preset.blueprint.defaults.materials, []);
+  assert.equal(preset.blueprint.defaults.modificationDomain, "GENERAL");
+  assert.deepEqual(
+    preset.blueprint.defaults.specialistWorkflow.map(
+      (step) => [step.specialistCodename, step.task],
+    ),
+    [
+      ["TEMPER", "근거리 타격 구조 개조"],
+      ["VERNIER", "절제 출혈 효과 연동 검수"],
+    ],
+  );
+  assert.equal(
+    preset.blueprint.defaults.result.description,
+    "악식의 콘치타의 근거리 타격 구조를 보강하고 절제의 출혈 지속 피해를 연동한 개조형 단검.",
+  );
+  assert.equal(
+    preset.blueprint.defaults.result.damage,
+    "근거리 15 물리 / 중거리 5 물리",
+  );
+  assert.equal(
+    preset.blueprint.defaults.result.previewImage,
+    "/assets/catalog/equipment/conchita-of-gluttony-modified.webp",
+  );
+  assert.deepEqual(preset.blueprint.defaults.result.tags, [
+    "전용장비",
+    "단검",
+    "TIGER298",
+  ]);
+  assert.deepEqual(
+    preset.blueprint.defaults.result.equipmentAbilityOverrides,
+    [
+      {
+        targetCode: "A1",
+        effect:
+          "단일 대상에게 중근거리 출혈 상태이상을 부여한다. 라운드당 10 피해, 5라운드 지속.",
+      },
+    ],
+  );
+  assert.equal(preset.blueprint.defaults.result.equipmentAction, undefined);
+  assert.doesNotMatch(JSON.stringify(preset.blueprint), /atkDelta/);
 });
 
 test("claymore shield is available as a built-in editable workshop preset", () => {
@@ -529,22 +799,26 @@ test("image upload verifies GM role, declared MIME, file size and magic bytes", 
 
 test("accept, claim and cancel keep every economy mutation inside the supplied transaction", () => {
   const operations = readFileSync(new URL("../workshop-operations.ts", import.meta.url), "utf8");
+  const resultMasterItem = readFileSync(
+    new URL("../workshop-result-master-item.ts", import.meta.url),
+    "utf8",
+  );
   const playerRoute = readFileSync(new URL("../../../app/api/erp/equipment-shop/workshop-request/[requestId]/[action]/route.ts", import.meta.url), "utf8");
   const adminRoute = readFileSync(new URL("../../../app/api/erp/admin/equipment-workshop/[requestId]/[action]/route.ts", import.meta.url), "utf8");
   assert.match(playerRoute, /executeEconomicOperation\([\s\S]*acceptWorkshopQuoteInTransaction/);
   assert.match(playerRoute, /executeEconomicOperation\([\s\S]*claimWorkshopResultInTransaction/);
   assert.match(adminRoute, /executeEconomicOperation\([\s\S]*cancelWorkshopInTransaction/);
   assert.match(operations, /request\.kind === "upgrade"[\s\S]*escrowEquippedSource\(request, input\.session\)[\s\S]*consumeMaterials\(request, input\.session\)[\s\S]*addCredit\([\s\S]*session: input\.session/);
-  assert.match(operations, /isAvailable: false/);
-  assert.match(operations, /isPublic: false/);
-  assert.match(operations, /price: 0/);
-  assert.match(operations, /ownerId: request\.userId/);
-  assert.match(operations, /lifecycle: "operational"/);
-  assert.match(operations, /balanceStatus: "approved"/);
-  assert.match(operations, /specialistWorkflow: request\.quote\.specialistWorkflow/);
+  assert.match(resultMasterItem, /isAvailable: false/);
+  assert.match(resultMasterItem, /isPublic: false/);
+  assert.match(resultMasterItem, /price: 0/);
+  assert.match(resultMasterItem, /ownerId: request\.userId/);
+  assert.match(resultMasterItem, /lifecycle: "operational"/);
+  assert.match(resultMasterItem, /balanceStatus: "approved"/);
+  assert.match(resultMasterItem, /specialistWorkflow: request\.quote\.specialistWorkflow/);
   assert.match(operations, /const resultSlot = request\.quote\.result\.category/);
   assert.match(operations, /equipCharacterInventoryItem\([\s\S]*request\.quote\.result\.itemId,[\s\S]*resultSlot/);
-  assert.match(operations, /equipmentAction: request\.quote\.result\.equipmentAction/);
+  assert.match(resultMasterItem, /equipmentAction: request\.quote\.result\.equipmentAction/);
   assert.match(operations, /equipmentCharge:[\s\S]*current: request\.quote\.result\.equipmentAction\.maxCharges/);
   assert.match(operations, /const existingResult = await inventory\.findOne/);
   assert.match(operations, /결과 장비가 이미 인벤토리에 있어 안전하게 수령할 수 없습니다/);
@@ -647,6 +921,58 @@ test("quotes snapshot procurement cost and Nochichim exposes equipped actions se
   assert.match(snapshots, /equipmentActions/);
   assert.match(snapshots, /consumeEquippedEquipmentCharge/);
   assert.match(actionRoute, /requireNochichimSyncAuth/);
+});
+
+test("ability overrides flow from quote validation to equipped ERP, public and VTT sheets", () => {
+  const adminRoute = readFileSync(
+    new URL(
+      "../../../app/api/erp/admin/equipment-workshop/[requestId]/[action]/route.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const operations = readFileSync(
+    new URL("../workshop-operations.ts", import.meta.url),
+    "utf8",
+  );
+  const inventory = readFileSync(
+    new URL("../../db/inventory.ts", import.meta.url),
+    "utf8",
+  );
+  const characterDetail = readFileSync(
+    new URL(
+      "../../../app/(erp)/erp/characters/[id]/CharacterDetailClient.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const publicPlayer = readFileSync(
+    new URL("../../public-player.ts", import.meta.url),
+    "utf8",
+  );
+  const snapshots = readFileSync(
+    new URL(
+      "../../../app/api/vtt/nochichim/_lib/snapshots.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const playerQuote = readFileSync(
+    new URL(
+      "../../../app/(erp)/erp/equipment-shop/EquipmentShopClient.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(adminRoute, /ABILITY_TARGET_CHANGED/);
+  assert.match(adminRoute, /equipmentAbilityOverrides/);
+  assert.match(operations, /equipmentAbilityOverrides/);
+  assert.match(inventory, /equipmentAbilityOverrides/);
+  assert.match(characterDetail, /applyEquipmentAbilityOverrides/);
+  assert.match(publicPlayer, /applyEquipmentAbilityOverrides/);
+  assert.match(snapshots, /applyEquipmentAbilityOverrides/);
+  assert.match(playerQuote, /장착형 어빌리티 강화/);
 });
 
 test("quote issuance persists its outbox event without web-process Discord drain", () => {

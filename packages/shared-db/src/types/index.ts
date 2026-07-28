@@ -81,6 +81,7 @@ export type {
   ItemCategory,
   EquipmentSlot,
   EquipmentAction,
+  EquipmentAbilityOverride,
   EquipmentChargeState,
   LicenseQualification,
   ShopMeta,

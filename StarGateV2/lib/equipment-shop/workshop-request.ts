@@ -1,5 +1,6 @@
 import type {
   EquipmentAction,
+  EquipmentAbilityOverride,
   EquipmentChargeState,
   EquipmentSlot,
   ItemCategory,
@@ -79,6 +80,7 @@ export interface EquipmentWorkshopResultBlueprint {
   tags: string[];
   previewImage?: string;
   equipmentAction?: EquipmentAction;
+  equipmentAbilityOverrides?: EquipmentAbilityOverride[];
   generation: number;
 }
 
@@ -202,6 +204,7 @@ export interface EquipmentWorkshopQuoteInput {
     tags?: string[];
     previewImage?: string;
     equipmentAction?: EquipmentAction;
+    equipmentAbilityOverrides?: EquipmentAbilityOverride[];
   };
   internalNote?: string;
 }
@@ -419,6 +422,35 @@ function parseEquipmentAction(value: unknown): EquipmentAction | undefined | nul
   };
 }
 
+function parseEquipmentAbilityOverrides(
+  value: unknown,
+): EquipmentAbilityOverride[] | undefined | null {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value) || value.length > 11) return null;
+
+  const seen = new Set<string>();
+  const overrides: EquipmentAbilityOverride[] = [];
+  for (const raw of value) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const source = raw as Record<string, unknown>;
+    const targetCode =
+      typeof source.targetCode === "string" ? source.targetCode.trim() : "";
+    const effect = typeof source.effect === "string" ? source.effect.trim() : "";
+    if (
+      !targetCode ||
+      targetCode.length > 40 ||
+      !effect ||
+      effect.length > 1000 ||
+      seen.has(targetCode)
+    ) {
+      return null;
+    }
+    seen.add(targetCode);
+    overrides.push({ targetCode, effect });
+  }
+  return overrides.length > 0 ? overrides : undefined;
+}
+
 function optionalText(value: unknown, max: number): string | undefined | null {
   if (value === undefined || value === null || value === "") return undefined;
   if (typeof value !== "string") return null;
@@ -459,8 +491,12 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
   const specialistNote = optionalText(source.specialistNote, 200);
   const internalNote = optionalText(source.internalNote, 1000);
   const equipmentAction = parseEquipmentAction(result.equipmentAction);
+  const equipmentAbilityOverrides = parseEquipmentAbilityOverrides(
+    result.equipmentAbilityOverrides,
+  );
   if (damage === null || effect === null || previewImage === null || specialistNote === null || internalNote === null) return { ok: false, error: "견적의 선택 입력값 길이가 올바르지 않습니다." };
   if (equipmentAction === null) return { ok: false, error: "장비 액션은 U 코드, 설명, 효과, 액션·충전 비용, 최대 충전과 GM 재장전 비용을 확인해 주세요." };
+  if (equipmentAbilityOverrides === null) return { ok: false, error: "어빌리티 강화는 중복되지 않은 대상 코드와 1~1,000자의 효과를 최대 11개까지 입력해 주세요." };
   if (previewImage && !previewImage.startsWith("/assets/") && !/^https:\/\//i.test(previewImage)) return { ok: false, error: "이미지는 /assets 경로 또는 HTTPS URL이어야 합니다." };
   const rawTags = Array.isArray(result.tags) ? result.tags : [];
   const tags = rawTags.filter((tag): tag is string => typeof tag === "string").map((tag) => tag.trim()).filter(Boolean);
@@ -530,6 +566,7 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
         tags,
         ...(previewImage ? { previewImage } : {}),
         ...(equipmentAction ? { equipmentAction } : {}),
+        ...(equipmentAbilityOverrides ? { equipmentAbilityOverrides } : {}),
       },
       ...(internalNote ? { internalNote } : {}),
     },

@@ -2,6 +2,8 @@ import { ObjectId } from "mongodb";
 
 import "@/lib/db/init";
 import { findSessionById } from "@/lib/db/sessions";
+import { applyEquipmentAbilityOverrides } from "@/lib/equipment/equipment-ability-overrides";
+import { mergePublicEquipment } from "@/lib/equipment/public-equipment";
 import { notifyUser } from "@/lib/notifications/events";
 import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 
@@ -250,35 +252,61 @@ export async function loadCharacterConsumables(
   });
 }
 
-export async function loadCharacterEquipmentActions(
-  characterId: string,
-): Promise<NochichimEquipmentActionSnapshot[]> {
+async function loadCharacterEquippedState(characterId: string) {
   const inventory = (await listCharacterInventory(characterId)).filter(
-    (entry) => entry.quantity > 0 && Boolean(entry.equippedSlot),
+    (entry) => entry.quantity > 0,
+  );
+  const equippedInventory = inventory.filter((entry) =>
+    Boolean(entry.equippedSlot),
   );
   const itemMap = await loadMasterItemMap(inventory);
 
-  return inventory.flatMap((entry) => {
+  const equipmentActions: NochichimEquipmentActionSnapshot[] =
+    equippedInventory.flatMap((entry) => {
+      const item = itemMap.get(entry.itemId);
+      const action = item?.equipmentAction;
+      const charge = entry.equipmentCharge;
+      if (!item || !action || !charge || !entry._id) return [];
+      return [{
+        itemId: entry.itemId,
+        inventoryEntryId: objectIdString(entry._id),
+        itemName: item.name || entry.itemName,
+        code: action.code,
+        name: action.name,
+        description: action.description,
+        effect: action.effect,
+        actionCost: action.actionCost,
+        chargeCost: action.chargeCost,
+        currentCharges: charge.current,
+        maxCharges: charge.maximum,
+        reloadCreditCost: action.reloadCreditCost,
+        reloadApproval: action.reloadApproval,
+      }];
+    });
+  const masterSources = inventory.flatMap((entry) => {
     const item = itemMap.get(entry.itemId);
-    const action = item?.equipmentAction;
-    const charge = entry.equipmentCharge;
-    if (!item || !action || !charge || !entry._id) return [];
+    if (!item) return [];
     return [{
-      itemId: entry.itemId,
-      inventoryEntryId: objectIdString(entry._id),
       itemName: item.name || entry.itemName,
-      code: action.code,
-      name: action.name,
-      description: action.description,
-      effect: action.effect,
-      actionCost: action.actionCost,
-      chargeCost: action.chargeCost,
-      currentCharges: charge.current,
-      maxCharges: charge.maximum,
-      reloadCreditCost: action.reloadCreditCost,
-      reloadApproval: action.reloadApproval,
+      equippedSlot: entry.equippedSlot,
+      slug: item.slug,
+      price: item.price,
+      damage: item.damage,
+      description: item.description,
+      effect: item.effect,
+      isPublic: item.isPublic,
+      workshop: item.workshop,
+      equipmentAbilityOverrides: item.equipmentAbilityOverrides,
     }];
   });
+
+  return { equipmentActions, masterSources };
+}
+
+export async function loadCharacterEquipmentActions(
+  characterId: string,
+): Promise<NochichimEquipmentActionSnapshot[]> {
+  return (await loadCharacterEquippedState(characterId)).equipmentActions;
 }
 
 export async function loadCharacterSnapshot(
@@ -288,11 +316,25 @@ export async function loadCharacterSnapshot(
   if (!character) return null;
 
   const id = objectIdString(character._id);
-  const [consumables, equipmentActions] = await Promise.all([
+  const [consumables, equippedState] = await Promise.all([
     loadCharacterConsumables(id),
-    loadCharacterEquipmentActions(id),
+    loadCharacterEquippedState(id),
   ]);
+  const { equipmentActions, masterSources } = equippedState;
   const play = character.play;
+  const abilities = applyEquipmentAbilityOverrides(
+    play.abilities,
+    masterSources,
+  );
+  const equipment = mergePublicEquipment({
+    inventoryEntries: masterSources,
+    legacyEquipment: play.equipment,
+    includePrivate: true,
+  }).map((entry) => ({
+    ...entry,
+    ...(entry.price === "" ? { price: undefined } : { price: String(entry.price) }),
+  }));
+  const effectivePlay = { ...play, abilities, equipment };
   const stats = {
     hp: finalStat(play.hp, play.hpDelta),
     maxHp: finalStat(play.hp, play.hpDelta),
@@ -313,7 +355,7 @@ export async function loadCharacterSnapshot(
       pixelCharacterImage: character.pixelCharacterImage,
     },
     lore: character.lore,
-    play,
+    play: effectivePlay,
     nochichim: {
       name: character.lore.name || character.codename,
       codename: character.codename,
@@ -324,7 +366,7 @@ export async function loadCharacterSnapshot(
         character.pixelCharacterImage ||
         "",
       stats,
-      cantrips: play.abilities
+      cantrips: abilities
         .filter(abilityHasContent)
         .map(toNochichimCantrip),
       equipmentActions,

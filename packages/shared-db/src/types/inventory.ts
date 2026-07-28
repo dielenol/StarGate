@@ -55,6 +55,12 @@ export interface EquipmentAction {
   reloadApproval: "GM";
 }
 
+/** 장착 중인 장비가 캐릭터의 기존 어빌리티 효과 문구를 대체한다. */
+export interface EquipmentAbilityOverride {
+  targetCode: string;
+  effect: string;
+}
+
 /** 인벤토리 장비 인스턴스의 현재/최대 충전 상태. */
 export interface EquipmentChargeState {
   current: number;
@@ -112,6 +118,8 @@ export interface MasterItem {
   authorName?: string;
   /** 장착 중일 때만 ERP/VTT에 노출되는 장비 전용 액션. */
   equipmentAction?: EquipmentAction;
+  /** 장착 중일 때만 캐릭터 시트에 합성되는 기존 어빌리티 효과 대체. */
+  equipmentAbilityOverrides?: EquipmentAbilityOverride[];
   /** GM 공방에서 생성한 캐릭터 전용 강화 결과의 추적 메타데이터. */
   workshop?: {
     requestId: string;

@@ -21,6 +21,7 @@ import {
   type EquipmentWorkshopRequestDoc,
 } from "@/lib/db/equipment-workshop-requests";
 import { childIdempotencyKey } from "@/lib/api/idempotency";
+import { buildWorkshopResultMasterItem } from "@/lib/equipment-shop/workshop-result-master-item";
 
 const slotLockId = (slot: string) => `@equipment-slot:${slot}`;
 
@@ -139,6 +140,51 @@ async function requireWorkshopCharacterOwnership(
     throw new WorkshopOperationError(
       "FORBIDDEN",
       "GM 소유 NPC만 공방 장비를 처리할 수 있습니다.",
+    );
+  }
+}
+
+async function requireQuotedAbilityTargets(
+  request: EquipmentWorkshopRequestDoc & {
+    quote: NonNullable<EquipmentWorkshopRequestDoc["quote"]>;
+  },
+  session: ClientSession,
+): Promise<void> {
+  const overrides = request.quote.result.equipmentAbilityOverrides;
+  if (!overrides) return;
+  if (!ObjectId.isValid(request.characterId)) {
+    throw new WorkshopOperationError(
+      "TARGET_CHANGED",
+      "어빌리티 강화 대상 캐릭터를 확인할 수 없습니다.",
+    );
+  }
+
+  const character = await (await charactersCol()).findOne(
+    {
+      _id: new ObjectId(request.characterId),
+      type: "AGENT",
+    },
+    { session, projection: { "play.abilities": 1, type: 1 } },
+  );
+  if (!character || character.type !== "AGENT") {
+    throw new WorkshopOperationError(
+      "TARGET_CHANGED",
+      "어빌리티 강화 대상 캐릭터를 확인할 수 없습니다.",
+    );
+  }
+
+  const missingTarget = overrides.find(
+    (override) =>
+      !character.play.abilities.some(
+        (ability) =>
+          ability.slot === override.targetCode ||
+          ability.code?.trim() === override.targetCode,
+      ),
+  );
+  if (missingTarget) {
+    throw new WorkshopOperationError(
+      "TARGET_CHANGED",
+      `견적 발행 이후 ${missingTarget.targetCode} 어빌리티가 변경되었습니다.`,
     );
   }
 }
@@ -280,6 +326,7 @@ export async function acceptWorkshopQuoteInTransaction(input: {
     request.userId,
     input.session,
   );
+  await requireQuotedAbilityTargets(request, input.session);
   let sourceSnapshot: {
     sourceEquipmentCharge?: EquipmentChargeState;
     sourceNote?: string;
@@ -468,48 +515,8 @@ async function ensureResultMasterItem(
   session: ClientSession,
 ): Promise<MasterItem> {
   const items = await masterItemsCol();
-  const resultId = new ObjectId(request.quote.result.itemId);
   const now = new Date();
-  const doc: MasterItem = {
-    _id: resultId,
-    slug: request.quote.result.slug,
-    name: request.quote.result.name,
-    category: request.quote.result.category,
-    description: request.quote.result.description,
-    price: 0,
-    ...(request.quote.result.damage ? { damage: request.quote.result.damage } : {}),
-    ...(request.quote.result.effect ? { effect: request.quote.result.effect } : {}),
-    tags: request.quote.result.tags,
-    ...(request.quote.result.previewImage ? { previewImage: request.quote.result.previewImage } : {}),
-    ...(request.quote.result.equipmentAction
-      ? { equipmentAction: request.quote.result.equipmentAction }
-      : {}),
-    isAvailable: false,
-    isPublic: false,
-    source: "manual",
-    workshop: {
-      requestId: request._id,
-      ownerId: request.userId,
-      ...(request.sourceItemId ? { sourceItemId: request.sourceItemId } : {}),
-      ...(request.sourceItemId
-        ? { sourceItemName: request.equipmentName ?? "장비" }
-        : {}),
-      characterId: request.characterId,
-      characterCodename: request.characterCodename,
-      specialistCodename: request.quote.specialistCodename,
-      ...(request.quote.specialistWorkflow
-        ? { specialistWorkflow: request.quote.specialistWorkflow }
-        : {}),
-      ...(request.quote.blueprintRef
-        ? { blueprintRef: request.quote.blueprintRef }
-        : {}),
-      generation: request.quote.result.generation,
-      lifecycle: "operational",
-      balanceStatus: "approved",
-    },
-    createdAt: now,
-    updatedAt: now,
-  };
+  const doc = buildWorkshopResultMasterItem(request, now);
   try {
     await items.insertOne(doc, { session });
   } catch (error) {

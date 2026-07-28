@@ -12,6 +12,55 @@ export const EQUIPMENT_WORKSHOP_PRESET_PREFIX = "preset:";
 
 export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
   {
+    key: "conchita-of-gluttony-modified",
+    displayName: "악식의 콘치타 - 개조형",
+    sourceClass: "design-proposal",
+    balanceStatus: "balance-candidate",
+    blueprint: {
+      slug: "conchita-of-gluttony-modified",
+      displayName: "악식의 콘치타 - 개조형",
+      applicability: {
+        kinds: ["upgrade"],
+        sourceSlugs: ["conchita-of-gluttony"],
+        sourceCategories: ["WEAPON"],
+        resultCategory: "WEAPON",
+      },
+      defaults: {
+        creditCost: 500,
+        durationMinutes: 4_320,
+        specialistCodename: "TEMPER",
+        specialistWorkflow: [
+          {
+            specialistCodename: "TEMPER",
+            task: "근거리 타격 구조 개조",
+          },
+          {
+            specialistCodename: "VERNIER",
+            task: "절제 출혈 효과 연동 검수",
+          },
+        ],
+        modificationDomain: "GENERAL",
+        materials: [],
+        result: {
+          name: "악식의 콘치타 - 개조형",
+          description:
+            "악식의 콘치타의 근거리 타격 구조를 보강하고 절제의 출혈 지속 피해를 연동한 개조형 단검.",
+          damage: "근거리 15 물리 / 중거리 5 물리",
+          previewImage:
+            "/assets/catalog/equipment/conchita-of-gluttony-modified.webp",
+          tags: ["전용장비", "단검", "TIGER298"],
+          equipmentAbilityOverrides: [
+            {
+              targetCode: "A1",
+              effect:
+                "단일 대상에게 중근거리 출혈 상태이상을 부여한다. 라운드당 10 피해, 5라운드 지속.",
+            },
+          ],
+        },
+      },
+    },
+  },
+  {
     key: "claymore-assault-shield-u1",
     displayName: "공격 방패 - 크레모아 개조형",
     sourceClass: "design-proposal",

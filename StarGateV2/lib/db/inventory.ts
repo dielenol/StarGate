@@ -114,6 +114,9 @@ export async function listCharacterInventoryEntries(
       ...(master?.equipmentAction
         ? { equipmentAction: master.equipmentAction }
         : {}),
+      ...(master?.equipmentAbilityOverrides
+        ? { equipmentAbilityOverrides: master.equipmentAbilityOverrides }
+        : {}),
       ...(entry.equipmentCharge
         ? { equipmentCharge: entry.equipmentCharge }
         : {}),

@@ -363,6 +363,22 @@
   gap: 10px;
 }
 
+.abilityOverrideRows {
+  display: grid;
+  gap: 10px;
+}
+
+.abilityOverrideRow {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.25fr) minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid #30343b;
+  border-radius: 8px;
+  background: #0b0d10;
+}
+
 .specialistHeading {
   display: flex;
   align-items: end;
@@ -635,6 +651,10 @@
   }
 
   .specialistRow {
+    grid-template-columns: 1fr;
+  }
+
+  .abilityOverrideRow {
     grid-template-columns: 1fr;
   }
 

@@ -6,6 +6,7 @@ import { isValidIdempotencyKey, readIdempotencyKey } from "@/lib/api/idempotency
 import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
+import { findCharacterById } from "@/lib/db/characters";
 import {
   findEquipmentWorkshopBlueprintById,
 } from "@/lib/db/equipment-workshop-blueprints";
@@ -159,6 +160,32 @@ export async function PUT(request: Request, context: RouteContext) {
   if (current.kind === "upgrade" && validation.input.result.category && validation.input.result.category !== resultCategory) {
     return NextResponse.json({ error: "강화 결과 장비 분류는 원본 장착 슬롯과 같아야 합니다." }, { status: 400 });
   }
+  if (validation.input.result.equipmentAbilityOverrides) {
+    const character = await findCharacterById(current.characterId);
+    if (!character || character.type !== "AGENT") {
+      return NextResponse.json(
+        { error: "어빌리티 강화 대상 캐릭터를 찾을 수 없습니다." },
+        { status: 409 },
+      );
+    }
+    const missingTarget = validation.input.result.equipmentAbilityOverrides.find(
+      (override) =>
+        !character.play.abilities.some(
+          (ability) =>
+            ability.slot === override.targetCode ||
+            ability.code?.trim() === override.targetCode,
+        ),
+    );
+    if (missingTarget) {
+      return NextResponse.json(
+        {
+          error: `캐릭터 시트에 ${missingTarget.targetCode} 어빌리티가 없습니다.`,
+          code: "ABILITY_TARGET_CHANGED",
+        },
+        { status: 409 },
+      );
+    }
+  }
   if (referencedBlueprint) {
     const sourceSlugMatches =
       referencedBlueprint.applicability.sourceSlugs.length === 0 ||
@@ -283,6 +310,12 @@ export async function PUT(request: Request, context: RouteContext) {
       ...(validation.input.result.previewImage ? { previewImage: validation.input.result.previewImage } : {}),
       ...(validation.input.result.equipmentAction
         ? { equipmentAction: validation.input.result.equipmentAction }
+        : {}),
+      ...(validation.input.result.equipmentAbilityOverrides
+        ? {
+            equipmentAbilityOverrides:
+              validation.input.result.equipmentAbilityOverrides,
+          }
         : {}),
       generation,
     },

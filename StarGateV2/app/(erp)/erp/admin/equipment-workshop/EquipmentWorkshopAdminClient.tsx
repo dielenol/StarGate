@@ -83,6 +83,7 @@ interface QuoteDraft {
   actionEffect: string;
   actionMaxCharges: string;
   actionReloadCreditCost: string;
+  abilityOverrides: Array<{ targetCode: string; effect: string }>;
   internalNote: string;
 }
 
@@ -207,6 +208,10 @@ function createDraft(
     actionReloadCreditCost: String(
       request.quote?.result.equipmentAction?.reloadCreditCost ?? 200,
     ),
+    abilityOverrides:
+      request.quote?.result.equipmentAbilityOverrides?.map((override) => ({
+        ...override,
+      })) ?? [],
     internalNote: request.internalNote ?? "",
   };
 }
@@ -254,6 +259,10 @@ function draftFromBlueprint(
     actionReloadCreditCost: String(
       defaults.result.equipmentAction?.reloadCreditCost ?? 200,
     ),
+    abilityOverrides:
+      defaults.result.equipmentAbilityOverrides?.map((override) => ({
+        ...override,
+      })) ?? [],
   };
 }
 
@@ -614,6 +623,19 @@ export default function EquipmentWorkshopAdminClient({
         ? `${draft.actionCode.toUpperCase()} · ${draft.actionName || "이름 미입력"}`
         : "없음",
     },
+    {
+      label: "어빌리티 강화",
+      before: "캐릭터 원본 효과",
+      after:
+        draft.abilityOverrides.length > 0
+          ? draft.abilityOverrides
+              .map(
+                (override) =>
+                  `${override.targetCode || "코드 미입력"} · ${override.effect || "효과 미입력"}`,
+              )
+              .join(" / ")
+          : "없음",
+    },
   ];
 
   const selectRequest = (
@@ -813,6 +835,16 @@ export default function EquipmentWorkshopAdminClient({
               },
             }
           : {}),
+        ...(draft.abilityOverrides.length > 0
+          ? {
+              equipmentAbilityOverrides: draft.abilityOverrides.map(
+                (override) => ({
+                  targetCode: override.targetCode.trim(),
+                  effect: override.effect.trim(),
+                }),
+              ),
+            }
+          : {}),
       },
     },
   });
@@ -958,6 +990,16 @@ export default function EquipmentWorkshopAdminClient({
                     ),
                     reloadApproval: "GM" as const,
                   },
+                }
+              : {}),
+            ...(draft.abilityOverrides.length > 0
+              ? {
+                  equipmentAbilityOverrides: draft.abilityOverrides.map(
+                    (override) => ({
+                      targetCode: override.targetCode.trim(),
+                      effect: override.effect.trim(),
+                    }),
+                  ),
                 }
               : {}),
           },
@@ -1772,6 +1814,98 @@ export default function EquipmentWorkshopAdminClient({
                       />
                     </label>
                   </div>
+                </details>
+
+                <details
+                  className={styles.actionEditor}
+                  open={draft.abilityOverrides.length > 0}
+                >
+                  <summary>장착형 어빌리티 강화 (ABILITY OVERRIDE, 선택)</summary>
+                  <p className={styles.emptyHint}>
+                    캐릭터 원본 시트는 변경하지 않으며, 이 장비를 장착한 동안에만 대상 효과를 대체합니다.
+                  </p>
+                  <div className={styles.abilityOverrideRows}>
+                    {draft.abilityOverrides.map((override, index) => (
+                      <div
+                        className={styles.abilityOverrideRow}
+                        key={`ability-override-${index}`}
+                      >
+                        <label>
+                          <span>대상 코드</span>
+                          <input
+                            required
+                            maxLength={40}
+                            value={override.targetCode}
+                            onChange={(event) =>
+                              setDraft({
+                                ...draft,
+                                abilityOverrides: draft.abilityOverrides.map(
+                                  (row, rowIndex) =>
+                                    rowIndex === index
+                                      ? {
+                                          ...row,
+                                          targetCode: event.target.value,
+                                        }
+                                      : row,
+                                ),
+                              })
+                            }
+                            placeholder="A1"
+                          />
+                        </label>
+                        <label>
+                          <span>장착 중 대체 효과</span>
+                          <textarea
+                            required
+                            maxLength={1000}
+                            rows={4}
+                            value={override.effect}
+                            onChange={(event) =>
+                              setDraft({
+                                ...draft,
+                                abilityOverrides: draft.abilityOverrides.map(
+                                  (row, rowIndex) =>
+                                    rowIndex === index
+                                      ? { ...row, effect: event.target.value }
+                                      : row,
+                                ),
+                              })
+                            }
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDraft({
+                              ...draft,
+                              abilityOverrides:
+                                draft.abilityOverrides.filter(
+                                  (_, rowIndex) => rowIndex !== index,
+                                ),
+                            })
+                          }
+                        >
+                          제거
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {draft.abilityOverrides.length < 11 ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          abilityOverrides: [
+                            ...draft.abilityOverrides,
+                            { targetCode: "", effect: "" },
+                          ],
+                        })
+                      }
+                    >
+                      어빌리티 강화 추가
+                    </button>
+                  ) : null}
                 </details>
 
                 <label>

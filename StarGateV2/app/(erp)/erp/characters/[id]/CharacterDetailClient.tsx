@@ -12,8 +12,10 @@ import {
   characterKeys,
   personnelKeys,
 } from "@/hooks/queries/useCharactersQuery";
+import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
 
 import type { CharacterEditMode } from "@/lib/auth/rbac";
+import { applyEquipmentAbilityOverrides } from "@/lib/equipment/equipment-ability-overrides";
 import { getCharacterDisplayName } from "@/lib/format/character-display";
 
 import Box from "@/components/ui/Box/Box";
@@ -89,12 +91,20 @@ export default function CharacterDetailClient({
   const canEdit = editMode !== "none";
   const router = useRouter();
   const queryClient = useQueryClient();
+  const characterId = String(character._id);
+  const inventoryQuery = useCharacterInventory(characterId, {
+    initialData: initialInventory,
+    enabled: canManageEquipment,
+  });
 
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const characterId = String(character._id);
+  const effectiveAbilities = applyEquipmentAbilityOverrides(
+    character.play.abilities,
+    inventoryQuery.data?.entries ?? initialInventory.entries,
+  );
   const displayName = getCharacterDisplayName(character);
   const showActions = canEdit || canDelete;
   const adminSyncAt = formatCharacterTimestamp(character.bulkUpdatedAt);
@@ -247,7 +257,7 @@ export default function CharacterDetailClient({
         height={character.lore.height}
         quote={character.lore.quote}
         playSheet={character.play}
-        abilities={character.play.abilities}
+        abilities={effectiveAbilities}
       />
 
       <div className={styles.main}>

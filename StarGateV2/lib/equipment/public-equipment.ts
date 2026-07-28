@@ -19,6 +19,9 @@ interface PublicInventoryEquipmentInput {
   effect?: string;
   equippedSlot?: string;
   isPublic?: boolean;
+  workshop?: {
+    sourceItemName?: string;
+  };
 }
 
 interface LegacyEquipmentInput {
@@ -38,10 +41,17 @@ export interface PublicEquipmentEntry {
 export function mergePublicEquipment(args: {
   inventoryEntries?: PublicInventoryEquipmentInput[];
   legacyEquipment: LegacyEquipmentInput[];
+  includePrivate?: boolean;
 }): PublicEquipmentEntry[] {
   const inventoryEntries = args.inventoryEntries;
   const inventoryEquipment = (inventoryEntries ?? [])
-    .filter((entry) => Boolean(entry.equippedSlot) && entry.isPublic !== false)
+    .filter(
+      (entry) =>
+        Boolean(entry.equippedSlot) &&
+        (args.includePrivate ||
+          entry.isPublic !== false ||
+          Boolean(entry.workshop)),
+    )
     .map((entry) => ({
       name: entry.itemName,
       price: entry.price ?? "",
@@ -49,7 +59,12 @@ export function mergePublicEquipment(args: {
       description: entry.description ?? entry.effect ?? "",
     }));
   const inventoryNames = new Set(
-    inventoryEntries?.map((entry) => entry.itemName) ?? [],
+    inventoryEntries?.flatMap((entry) => [
+      entry.itemName,
+      ...(entry.workshop?.sourceItemName
+        ? [entry.workshop.sourceItemName]
+        : []),
+    ]) ?? [],
   );
   const inventorySlugs = new Set(
     inventoryEntries?.flatMap((entry) => (entry.slug ? [entry.slug] : [])) ?? [],

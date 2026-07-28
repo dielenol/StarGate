@@ -7,6 +7,7 @@ import type {
 } from "@/types/public-player";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { applyEquipmentAbilityOverrides } from "@/lib/equipment/equipment-ability-overrides";
 import { mergePublicEquipment } from "@/lib/equipment/public-equipment";
 import { getPixelCharacterPath } from "@/lib/format/character-asset";
 
@@ -43,6 +44,11 @@ export function toPublicAgentSheet(
   character: AgentCharacter,
   inventoryEntries?: InventoryEntryDto[],
 ): PublicAgentSheet {
+  const abilities = applyEquipmentAbilityOverrides(
+    character.play.abilities,
+    inventoryEntries,
+  );
+
   return {
     codename: character.codename,
     name: character.lore.name,
@@ -68,7 +74,7 @@ export function toPublicAgentSheet(
       inventoryEntries,
       legacyEquipment: character.play.equipment,
     }),
-    abilities: character.play.abilities.map((ability) => ({
+    abilities: abilities.map((ability) => ({
       code: ability.code ?? ability.slot,
       name: ability.name,
       description: ability.description ?? "",
