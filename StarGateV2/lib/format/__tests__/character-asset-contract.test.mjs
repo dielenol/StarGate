@@ -8,6 +8,7 @@ import sharp from "sharp";
 
 import {
   getPixelCharacterPath,
+  getPixelProfilePath,
   KNOWN_CHARACTER_ASSET_SLUGS,
   resolveCharacterAssetSlug,
 } from "../character-asset.ts";
@@ -33,6 +34,10 @@ test("known playable character slugs have matching PNG/WebP core assets", async 
     assert.equal(
       getPixelCharacterPath(slug),
       `/assets/peoples/${slug}-pixel-character.webp`,
+    );
+    assert.equal(
+      getPixelProfilePath(slug),
+      `/assets/peoples/${slug}-pixel-profile.webp`,
     );
 
     for (const kind of REQUIRED_PAIRED_KINDS) {
@@ -72,4 +77,5 @@ test("unmapped partial character assets cannot masquerade as complete token sets
   assert.deepEqual([...partialSlugs].sort(), ["Hunter"]);
   assert.equal(resolveCharacterAssetSlug("HUNTER"), null);
   assert.equal(getPixelCharacterPath("HUNTER"), null);
+  assert.equal(getPixelProfilePath("HUNTER"), null);
 });

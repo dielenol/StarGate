@@ -1,6 +1,10 @@
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import type { SimulatorAttackerProfile } from "@/lib/equipment-shop/simulator";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import {
+  getPixelCharacterPath,
+  getPixelProfilePath,
+} from "@/lib/format/character-asset";
 
 import EquipmentShopComingSoon from "../EquipmentShopComingSoon";
 import { requireEquipmentShopSession } from "../_access";
@@ -32,11 +36,13 @@ function simulatorCharacterAssets(character: {
       ? REGISTRAR_SIMULATOR_ASSETS
       : undefined;
   const portraitUrl =
-    optimizedAssetPath(character.previewImage) ??
-    registrarAssets?.portraitUrl;
+    registrarAssets?.portraitUrl ??
+    getPixelProfilePath(character.codename) ??
+    optimizedAssetPath(character.previewImage);
   const characterUrl =
-    optimizedAssetPath(character.pixelCharacterImage) ??
-    registrarAssets?.characterUrl;
+    registrarAssets?.characterUrl ??
+    getPixelCharacterPath(character.codename) ??
+    optimizedAssetPath(character.pixelCharacterImage);
 
   return {
     ...(portraitUrl ? { portraitUrl } : {}),
@@ -48,11 +54,15 @@ function fallbackAttackerProfile(sessionUser: {
   displayName?: string | null;
   username?: string | null;
 }): SimulatorAttackerProfile {
+  const codename =
+    sessionUser.displayName ?? sessionUser.username ?? "훈련 요원";
+
   return {
-    codename: sessionUser.displayName ?? sessionUser.username ?? "훈련 요원",
+    codename,
     atk: 0,
     hp: 20,
     san: 20,
+    ...simulatorCharacterAssets({ codename }),
     source: "sandbox",
   };
 }

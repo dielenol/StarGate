@@ -51,7 +51,7 @@ test("action controls wrap inside the board at desktop and mobile widths", async
   );
 });
 
-test("the main-character SD token falls back through profile and text safely", async () => {
+test("the main-character pixel profile token falls back through SD and account initial safely", async () => {
   const [page, client, simulator] = await Promise.all([
     readFile(PAGE_URL, "utf8"),
     readFile(CLIENT_URL, "utf8"),
@@ -64,13 +64,39 @@ test("the main-character SD token falls back through profile and text safely", a
   assert.doesNotMatch(page, /mainCharacter\.previewImage\.trim\(\)/);
   assert.match(page, /Registrar-pixel-profile\.webp/);
   assert.match(page, /Registrar-pixel-character\.webp/);
+  assert.match(page, /getPixelProfilePath\(character\.codename\)/);
+  assert.match(page, /getPixelCharacterPath\(character\.codename\)/);
   assert.match(page, /optimizedAssetPath\(character\.pixelCharacterImage\)/);
-  assert.match(client, /attacker\.characterUrl \?\? attacker\.portraitUrl/);
+  assert.match(page, /\.\.\.simulatorCharacterAssets\(\{ codename \}\)/);
+  assert.match(client, /attacker\.portraitUrl \?\? attacker\.characterUrl/);
   assert.match(client, /src=\{attackerTokenUrl\}/);
   assert.match(client, /styles\.token__character/);
-  assert.match(client, /내 캐릭터 \$\{attacker\.codename\} 위치 토큰/);
+  assert.match(client, /나, \$\{attacker\.codename\} 위치 토큰/);
   assert.match(client, /className=\{styles\.token__fallback\}/);
-  assert.match(client, />\s*내 캐릭터\s*<\/span>/);
+  assert.match(client, /\{attackerTokenInitial\}/);
+  assert.match(client, /\? "이미지 미등록"/);
+});
+
+test("nochichim-style combat tokens own HP, status, and hover stats without a duplicate side status card", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(STYLES_URL, "utf8"),
+  ]);
+
+  assert.match(client, /className=\{styles\.token__hp\}/);
+  assert.match(client, /<TokenStatPopover/);
+  assert.match(client, /className=\{styles\.token__status\}/);
+  assert.match(client, /aria-label="선택 장비 룰 카드"/);
+  assert.doesNotMatch(client, /className=\{styles\.profileBlock\}/);
+  assert.doesNotMatch(client, /className=\{styles\.targetMeters\}/);
+  assert.doesNotMatch(client, /aria-label="적 상태이상"/);
+  assert.match(styles, /\.token\s*\{[^}]*border-radius: 50%;/s);
+  assert.match(styles, /\.token__hp\s*\{[^}]*bottom: -8px;/s);
+  assert.match(styles, /\.tokenStats\s*\{[^}]*opacity: 0;/s);
+  assert.match(
+    styles,
+    /\.token:hover \.tokenStats,[\s\S]*opacity: 1;/,
+  );
 });
 
 test("turn end uses the nochichim reveal timing and only the copied notice SFX", async () => {

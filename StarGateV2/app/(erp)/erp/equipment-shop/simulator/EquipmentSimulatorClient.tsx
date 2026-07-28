@@ -226,6 +226,109 @@ function sameCoord(a: SimulatorBoardCoord, b: SimulatorBoardCoord): boolean {
   return a.col === b.col && a.row === b.row;
 }
 
+type TokenVitalTone = "healthy" | "warn" | "danger";
+
+interface TokenStatPopoverProps {
+  name: string;
+  tag: string;
+  hp: number;
+  maxHp: number;
+  san: number;
+  maxSan: number;
+  atk?: number;
+  def?: number;
+  statuses?: SimulatorStatusKind[];
+}
+
+function tokenVitalPercent(current: number, max: number): number {
+  if (max <= 0) return 0;
+  return Math.max(0, Math.min(100, (current / max) * 100));
+}
+
+function tokenVitalTone(current: number, max: number): TokenVitalTone {
+  const percent = tokenVitalPercent(current, max);
+  if (percent <= 30) return "danger";
+  if (percent <= 60) return "warn";
+  return "healthy";
+}
+
+function TokenStatBar({
+  label,
+  current,
+  max,
+  kind,
+}: {
+  label: string;
+  current: number;
+  max: number;
+  kind: "hp" | "san";
+}) {
+  const tone = kind === "hp" ? tokenVitalTone(current, max) : "san";
+
+  return (
+    <div className={styles.tokenStats__bar}>
+      <span>{label}</span>
+      <div className={styles.tokenStats__track}>
+        <i
+          className={[
+            styles.tokenStats__fill,
+            styles[`tokenStats__fill--${tone}`],
+          ].join(" ")}
+          style={{ width: `${tokenVitalPercent(current, max)}%` }}
+        />
+        <strong>
+          {current}/{max}
+        </strong>
+      </div>
+    </div>
+  );
+}
+
+function TokenStatPopover({
+  name,
+  tag,
+  hp,
+  maxHp,
+  san,
+  maxSan,
+  atk,
+  def,
+  statuses = [],
+}: TokenStatPopoverProps) {
+  return (
+    <div className={styles.tokenStats} aria-hidden>
+      <span className={styles.tokenStats__head}>
+        <strong>{name}</strong>
+        <b>{tag}</b>
+      </span>
+      <div className={styles.tokenStats__bars}>
+        <TokenStatBar label="HP" current={hp} max={maxHp} kind="hp" />
+        <TokenStatBar label="SAN" current={san} max={maxSan} kind="san" />
+      </div>
+      <span className={styles.tokenStats__chips}>
+        {typeof atk === "number" ? (
+          <span>
+            ATK <b>{atk}</b>
+          </span>
+        ) : null}
+        {typeof def === "number" ? (
+          <span>
+            DEF <b>{def}</b>
+          </span>
+        ) : null}
+      </span>
+      <span className={styles.tokenStats__statuses}>
+        <b>상태</b>
+        <span>
+          {statuses.length > 0
+            ? statuses.map((status) => SIMULATOR_STATUS_LABELS[status]).join(" · ")
+            : "정상"}
+        </span>
+      </span>
+    </div>
+  );
+}
+
 function resultTone(result: SimulatorAttackResult): SimLogTone {
   if (result.ok) return "hit";
   return result.reason === "SETUP_REQUIRED" || result.reason === "NO_RESOURCE"
@@ -340,7 +443,10 @@ export default function EquipmentSimulatorClient({
     simulatorItems.find((item) => item.slug === selectedSlug) ??
     simulatorItems[0];
   const selectedRule = getSimulatorWeaponRule(selectedSlug);
-  const attackerTokenUrl = attacker.characterUrl ?? attacker.portraitUrl;
+  const attackerTokenUrl = attacker.portraitUrl ?? attacker.characterUrl;
+  const attackerTokenIsPortrait = Boolean(attacker.portraitUrl);
+  const attackerTokenInitial =
+    attacker.codename.trim().charAt(0).toUpperCase() || "요";
   const defaultRange = getSimulatorRange(attackerPosition, targetPosition);
   const selectedRuntime = selectedRule
     ? attackRuntimeFor(
@@ -412,7 +518,7 @@ export default function EquipmentSimulatorClient({
       case "attack":
         return {
           title: "공격 결과 반영 완료",
-          text: `${resultSummary}. 적 상태와 남은 자원을 확인한 뒤 다시 공격하거나 다음 턴으로 진행하십시오.`,
+          text: `${resultSummary}. 적 토큰 상태와 남은 자원을 확인한 뒤 다시 공격하거나 다음 턴으로 진행하십시오.`,
         };
       case "blocked":
         return {
@@ -1164,67 +1270,179 @@ export default function EquipmentSimulatorClient({
                       onDrop={(event) => handleCellDrop(event, coord)}
                       onKeyDown={(event) => handleCellKeyDown(event, coord)}
                       aria-label={
-                        activeToken === "attacker"
-                          ? `나를 ${cellKey(coord)} 칸으로 이동`
-                          : `적을 ${cellKey(coord)} 칸에 배치`
+                        `${
+                          activeToken === "attacker"
+                            ? `나를 ${cellKey(coord)} 칸으로 이동`
+                            : `적을 ${cellKey(coord)} 칸에 배치`
+                        }${
+                          hasAttacker
+                            ? `; 나 ${attacker.codename}, HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}`
+                            : ""
+                        }${
+                          hasTarget
+                            ? `; 적 훈련 표적, HP ${targetStats.hp}/${targetStats.maxHp}, 정신력 ${targetStats.san}/${targetStats.maxSan}, DEF ${targetStats.def}`
+                            : ""
+                        }`
                       }
                     >
                       <span className={styles.cellCoord}>{cellKey(coord)}</span>
                       {hasAttacker ? (
-                        <span
+                        <div
                           draggable={enemyPositionConfirmed}
                           className={[
                             styles.token,
                             styles["token--attacker"],
+                            attackerPosition.row <= 2
+                              ? styles["token--popoverBelow"]
+                              : "",
+                            SIMULATOR_BOARD_COLUMNS.indexOf(
+                              attackerPosition.col,
+                            ) >= 3
+                              ? styles["token--popoverLeft"]
+                              : "",
                           ].join(" ")}
                           onDragStart={(event) =>
                             handleTokenDragStart(event, "attacker")
                           }
                           role="img"
-                          aria-label={`내 캐릭터 ${attacker.codename} 위치 토큰`}
+                          aria-label={`나, ${attacker.codename} 위치 토큰. HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}`}
                         >
-                          {attackerTokenUrl ? (
-                            <Image
-                              src={attackerTokenUrl}
-                              width={64}
-                              height={64}
-                              alt=""
-                              aria-hidden
-                              className={
-                                attacker.characterUrl
-                                  ? styles.token__character
-                                  : styles.token__portrait
-                              }
-                              draggable={false}
-                              unoptimized
-                            />
-                          ) : (
-                            <span
-                              className={styles.token__fallback}
-                              aria-hidden
-                            >
-                              나
-                            </span>
-                          )}
-                          <span className={styles.token__label} aria-hidden>
-                            내 캐릭터
+                          <span className={styles.token__inner} aria-hidden>
+                            {attackerTokenUrl ? (
+                              <Image
+                                src={attackerTokenUrl}
+                                width={64}
+                                height={64}
+                                alt=""
+                                className={
+                                  attackerTokenIsPortrait
+                                    ? styles.token__portrait
+                                    : styles.token__character
+                                }
+                                draggable={false}
+                                loading="eager"
+                                unoptimized
+                              />
+                            ) : (
+                              <span className={styles.token__fallback}>
+                                {attackerTokenInitial}
+                              </span>
+                            )}
                           </span>
-                        </span>
+                          <span
+                            className={styles.token__hp}
+                            title={`HP ${attacker.hp}/${attacker.hp}`}
+                            aria-hidden
+                          >
+                            <i
+                              className={[
+                                styles.token__hpFill,
+                                styles["token__hpFill--healthy"],
+                              ].join(" ")}
+                            />
+                          </span>
+                          <span className={styles.token__label} aria-hidden>
+                            <b>나</b>
+                            <span>{attacker.codename}</span>
+                          </span>
+                          <TokenStatPopover
+                            name={attacker.codename}
+                            tag={
+                              attackerTokenUrl
+                                ? "내 캐릭터"
+                                : attacker.source === "agent"
+                                  ? "이미지 미등록"
+                                  : "훈련 요원"
+                            }
+                            hp={attacker.hp}
+                            maxHp={attacker.hp}
+                            san={attacker.san}
+                            maxSan={attacker.san}
+                            atk={attacker.atk}
+                          />
+                        </div>
                       ) : null}
                       {hasTarget ? (
-                        <span
+                        <div
                           draggable
                           className={[
                             styles.token,
                             styles["token--target"],
+                            targetPosition.row <= 2
+                              ? styles["token--popoverBelow"]
+                              : "",
+                            SIMULATOR_BOARD_COLUMNS.indexOf(
+                              targetPosition.col,
+                            ) >= 3
+                              ? styles["token--popoverLeft"]
+                              : "",
                           ].join(" ")}
                           onDragStart={(event) =>
                             handleTokenDragStart(event, "target")
                           }
-                          aria-label="적 위치 토큰"
+                          role="img"
+                          aria-label={`적, 훈련 표적 위치 토큰. HP ${targetStats.hp}/${targetStats.maxHp}, 정신력 ${targetStats.san}/${targetStats.maxSan}, DEF ${targetStats.def}, 상태 ${
+                            targetStats.statuses.length > 0
+                              ? targetStats.statuses
+                                  .map(
+                                    (status) =>
+                                      SIMULATOR_STATUS_LABELS[status],
+                                  )
+                                  .join(", ")
+                              : "정상"
+                          }`}
                         >
-                          적
-                        </span>
+                          <span className={styles.token__inner} aria-hidden>
+                            <span className={styles.token__fallback}>적</span>
+                          </span>
+                          <span
+                            className={styles.token__hp}
+                            title={`HP ${targetStats.hp}/${targetStats.maxHp}`}
+                            aria-hidden
+                          >
+                            <i
+                              className={[
+                                styles.token__hpFill,
+                                styles[
+                                  `token__hpFill--${tokenVitalTone(
+                                    targetStats.hp,
+                                    targetStats.maxHp,
+                                  )}`
+                                ],
+                              ].join(" ")}
+                              style={{
+                                width: `${tokenVitalPercent(
+                                  targetStats.hp,
+                                  targetStats.maxHp,
+                                )}%`,
+                              }}
+                            />
+                          </span>
+                          <span className={styles.token__label} aria-hidden>
+                            <b>적</b>
+                            <span>훈련 표적</span>
+                          </span>
+                          {targetStats.statuses.map((status) => (
+                            <span
+                              key={status}
+                              className={styles.token__status}
+                              title={SIMULATOR_STATUS_LABELS[status]}
+                              aria-hidden
+                            >
+                              {status === "burn" ? "화" : "!"}
+                            </span>
+                          ))}
+                          <TokenStatPopover
+                            name="훈련 표적"
+                            tag="적"
+                            hp={targetStats.hp}
+                            maxHp={targetStats.maxHp}
+                            san={targetStats.san}
+                            maxSan={targetStats.maxSan}
+                            def={targetStats.def}
+                            statuses={targetStats.statuses}
+                          />
+                        </div>
                       ) : null}
                     </div>
                   );
@@ -1235,52 +1453,10 @@ export default function EquipmentSimulatorClient({
 
         </section>
 
-        <aside className={styles.targetPanel} aria-label="적 상태와 룰 카드">
+        <aside className={styles.targetPanel} aria-label="선택 장비 룰 카드">
           <div className={styles.panelIntro}>
             <Eyebrow>RULE CARD</Eyebrow>
             <strong>{selectedRule?.name ?? "장비 없음"}</strong>
-          </div>
-
-          <div className={styles.profileBlock}>
-            <span>나</span>
-            <strong>{attacker.codename}</strong>
-            <em>
-              ATK {attacker.atk} · {attacker.source === "agent" ? "MAIN AGENT" : "SANDBOX"}
-            </em>
-          </div>
-
-          <div className={styles.targetMeters}>
-            <div>
-              <span>HP</span>
-              <strong>
-                {targetStats.hp}/{targetStats.maxHp}
-              </strong>
-              <meter min={0} max={targetStats.maxHp} value={targetStats.hp} />
-            </div>
-            <div>
-              <span>정신력</span>
-              <strong>
-                {targetStats.san}/{targetStats.maxSan}
-              </strong>
-              <meter min={0} max={targetStats.maxSan} value={targetStats.san} />
-            </div>
-            <div>
-              <span>DEF</span>
-              <strong>{targetStats.def}</strong>
-            </div>
-          </div>
-
-          <div className={styles.statusList} aria-label="적 상태이상">
-            {targetStats.statuses.length > 0 ? (
-              targetStats.statuses.map((status) => (
-                <Tag key={status} tone="danger">
-                  {SIMULATOR_STATUS_LABELS[status]}
-                </Tag>
-              ))
-            ) : (
-              <Tag tone="success">정상</Tag>
-            )}
-            {hmgInstalled ? <Tag tone="gold">중기관총 설치됨</Tag> : null}
           </div>
 
           <div className={styles.rangeMatrix} aria-label="사거리별 피해">

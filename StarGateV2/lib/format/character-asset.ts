@@ -79,3 +79,12 @@ export function getPixelCharacterPath(codename: string): string | null {
   const slug = resolveCharacterAssetSlug(codename);
   return slug ? `${ASSET_BASE}/${slug}-pixel-character.webp` : null;
 }
+
+/**
+ * pixel-profile (도트 캐릭터 얼굴 토큰) 경로.
+ * 전투판처럼 작은 원형 토큰에서는 pixel-character 풀샷보다 우선 사용한다.
+ */
+export function getPixelProfilePath(codename: string): string | null {
+  const slug = resolveCharacterAssetSlug(codename);
+  return slug ? `${ASSET_BASE}/${slug}-pixel-profile.webp` : null;
+}
