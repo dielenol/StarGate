@@ -340,6 +340,7 @@ export default function EquipmentSimulatorClient({
     simulatorItems.find((item) => item.slug === selectedSlug) ??
     simulatorItems[0];
   const selectedRule = getSimulatorWeaponRule(selectedSlug);
+  const attackerTokenUrl = attacker.characterUrl ?? attacker.portraitUrl;
   const defaultRange = getSimulatorRange(attackerPosition, targetPosition);
   const selectedRuntime = selectedRule
     ? attackRuntimeFor(
@@ -1182,14 +1183,18 @@ export default function EquipmentSimulatorClient({
                           role="img"
                           aria-label={`내 캐릭터 ${attacker.codename} 위치 토큰`}
                         >
-                          {attacker.portraitUrl ? (
+                          {attackerTokenUrl ? (
                             <Image
-                              src={attacker.portraitUrl}
+                              src={attackerTokenUrl}
                               width={64}
                               height={64}
                               alt=""
                               aria-hidden
-                              className={styles.token__portrait}
+                              className={
+                                attacker.characterUrl
+                                  ? styles.token__character
+                                  : styles.token__portrait
+                              }
                               draggable={false}
                               unoptimized
                             />

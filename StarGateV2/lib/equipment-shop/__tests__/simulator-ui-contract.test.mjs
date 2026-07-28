@@ -51,7 +51,7 @@ test("action controls wrap inside the board at desktop and mobile widths", async
   );
 });
 
-test("the serialized main-character portrait is optimized and rendered with an accessible fallback", async () => {
+test("the main-character SD token falls back through profile and text safely", async () => {
   const [page, client, simulator] = await Promise.all([
     readFile(PAGE_URL, "utf8"),
     readFile(CLIENT_URL, "utf8"),
@@ -59,10 +59,15 @@ test("the serialized main-character portrait is optimized and rendered with an a
   ]);
 
   assert.match(simulator, /portraitUrl\?: string/);
-  assert.match(page, /mainCharacter\.previewImage\.trim\(\)/);
-  assert.match(page, /portraitUrl: preferOptimizedPublicImagePath\(portraitUrl\)/);
-  assert.match(client, /attacker\.portraitUrl \? \(/);
-  assert.match(client, /src=\{attacker\.portraitUrl\}/);
+  assert.match(simulator, /characterUrl\?: string/);
+  assert.match(page, /value\?\.trim\(\)/);
+  assert.doesNotMatch(page, /mainCharacter\.previewImage\.trim\(\)/);
+  assert.match(page, /Registrar-pixel-profile\.webp/);
+  assert.match(page, /Registrar-pixel-character\.webp/);
+  assert.match(page, /optimizedAssetPath\(character\.pixelCharacterImage\)/);
+  assert.match(client, /attacker\.characterUrl \?\? attacker\.portraitUrl/);
+  assert.match(client, /src=\{attackerTokenUrl\}/);
+  assert.match(client, /styles\.token__character/);
   assert.match(client, /내 캐릭터 \$\{attacker\.codename\} 위치 토큰/);
   assert.match(client, /className=\{styles\.token__fallback\}/);
   assert.match(client, />\s*내 캐릭터\s*<\/span>/);

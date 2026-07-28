@@ -12,6 +12,38 @@ export const metadata = {
   title: "훈련장 · 병기부 · Stargate ERP",
 };
 
+const REGISTRAR_SIMULATOR_ASSETS = {
+  portraitUrl: "/assets/npcs/Registrar-pixel-profile.webp",
+  characterUrl: "/assets/npcs/Registrar-pixel-character.webp",
+} as const;
+
+function optimizedAssetPath(value?: string | null): string | undefined {
+  const path = value?.trim();
+  return path ? preferOptimizedPublicImagePath(path) : undefined;
+}
+
+function simulatorCharacterAssets(character: {
+  codename: string;
+  previewImage?: string | null;
+  pixelCharacterImage?: string | null;
+}): Pick<SimulatorAttackerProfile, "portraitUrl" | "characterUrl"> {
+  const registrarAssets =
+    character.codename.toUpperCase() === "REGISTRAR"
+      ? REGISTRAR_SIMULATOR_ASSETS
+      : undefined;
+  const portraitUrl =
+    optimizedAssetPath(character.previewImage) ??
+    registrarAssets?.portraitUrl;
+  const characterUrl =
+    optimizedAssetPath(character.pixelCharacterImage) ??
+    registrarAssets?.characterUrl;
+
+  return {
+    ...(portraitUrl ? { portraitUrl } : {}),
+    ...(characterUrl ? { characterUrl } : {}),
+  };
+}
+
 function fallbackAttackerProfile(sessionUser: {
   displayName?: string | null;
   username?: string | null;
@@ -35,25 +67,19 @@ export default async function EquipmentShopSimulatorPage() {
   try {
     const mainCharacter = await findMainCharacterByOwner(session.user.id);
     if (mainCharacter?.type === "AGENT") {
-      const portraitUrl = mainCharacter.previewImage.trim();
       attacker = {
         codename: mainCharacter.codename,
         atk: mainCharacter.play.atk,
         hp: mainCharacter.play.hp,
         san: mainCharacter.play.san,
-        ...(portraitUrl
-          ? { portraitUrl: preferOptimizedPublicImagePath(portraitUrl) }
-          : {}),
+        ...simulatorCharacterAssets(mainCharacter),
         source: "agent",
       };
     } else if (mainCharacter) {
-      const portraitUrl = mainCharacter.previewImage.trim();
       attacker = {
         ...attacker,
         codename: mainCharacter.codename,
-        ...(portraitUrl
-          ? { portraitUrl: preferOptimizedPublicImagePath(portraitUrl) }
-          : {}),
+        ...simulatorCharacterAssets(mainCharacter),
       };
     }
   } catch (err) {

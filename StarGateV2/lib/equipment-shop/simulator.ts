@@ -22,6 +22,7 @@ export interface SimulatorAttackerProfile {
   hp: number;
   san: number;
   portraitUrl?: string;
+  characterUrl?: string;
   source: "agent" | "sandbox";
 }
 

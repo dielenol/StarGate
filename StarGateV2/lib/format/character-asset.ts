@@ -7,9 +7,9 @@
  *
  * 매칭 우선순위:
  *   1. EXPLICIT_CODENAME_TO_SLUG — 정규화로 안 잡히는 케이스 (TIME → Cronus 등)
- *   2. 정규화 (소문자 + 공백/하이픈 제거) 매칭 — KNOWN_SLUGS 와 비교
+ *   2. 정규화 (소문자 + 공백/하이픈 제거) 매칭 — KNOWN_CHARACTER_ASSET_SLUGS 와 비교
  *
- * 신규 캐릭터 등록 시 KNOWN_SLUGS / EXPLICIT 둘 중 하나에 추가 필요.
+ * 신규 캐릭터 등록 시 KNOWN_CHARACTER_ASSET_SLUGS / EXPLICIT 둘 중 하나에 추가 필요.
  * 향후 lore.pixelCharacter 필드 도입 시 본 헬퍼 deprecated 가능.
  */
 
@@ -28,7 +28,7 @@ const EXPLICIT_CODENAME_TO_SLUG: Record<string, string> = {
 };
 
 /** 디스크에 존재하는 슬러그 화이트리스트. 정규화 매칭의 후보. */
-const KNOWN_SLUGS = [
+export const KNOWN_CHARACTER_ASSET_SLUGS = [
   "BigBoy",
   "Clown",
   "Cronus",
@@ -65,7 +65,7 @@ export function resolveCharacterAssetSlug(codename: string): string | null {
   const explicit = EXPLICIT_CODENAME_TO_SLUG[codename];
   if (explicit) return explicit;
   const norm = normalize(codename);
-  for (const slug of KNOWN_SLUGS) {
+  for (const slug of KNOWN_CHARACTER_ASSET_SLUGS) {
     if (normalize(slug) === norm) return slug;
   }
   return null;

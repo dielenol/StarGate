@@ -932,6 +932,7 @@
 }
 
 .token__portrait,
+.token__character,
 .token__fallback {
   position: absolute;
   inset: 0;
@@ -941,6 +942,12 @@
 
 .token__portrait {
   object-fit: cover;
+  image-rendering: pixelated;
+}
+
+.token__character {
+  padding: 2px 6px 13px;
+  object-fit: contain;
   image-rendering: pixelated;
 }
 
