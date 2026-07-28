@@ -1,0 +1,170 @@
+[
+  {
+    "collection": "master_items",
+    "type": "session-reward-catalog",
+    "payload": {
+      "slug": "zulu-0028-contained-entity",
+      "name": "ZULU-0028 검열된 비명 격리 개체",
+      "nameEn": "ZULU-0028 Contained Entity",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "생포 개체 격리 자산",
+      "description": "S1E1 질서 작전 전리품으로 생포된 검열된 비명(ZULU-0028) 격리 개체.",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E1-ORDER", "S1E1-ORDER", "전리품", "ZULU-0028", "ZULU-028", "검열된비명", "생포", "격리개체"],
+      "lore": {
+        "background": "검열된 비명은 청각 자극과 발성 구조를 매개로 영향을 주는 개체로 기록되며, 관련 회수물인 깨진 음절과 별도 자산으로 관리한다.",
+        "acquisition": "S1E1 질서 작전 전리품으로 생포되었다. 일반 획득 및 상점 보급 대상이 아니다.",
+        "notes": "기존 ZULU-0028 특수 격리 상자는 격리 장비이며, 본 항목은 생포된 개체 자체를 나타낸다."
+      },
+      "source": "session-reward",
+      "createdAt": "2026-07-28T00:00:00.000Z",
+      "updatedAt": "2026-07-28T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "session-reward-catalog",
+    "payload": {
+      "slug": "montauk-slaughter-hound-appearance-plate",
+      "name": "도살견 외관 도본",
+      "nameEn": "Slaughter Hound Appearance Plate",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "도살견 외관 식별 자료",
+      "description": "S1E3 망령 작전 전리품으로 회수된 몬탁 프로젝트 도살견의 외관 도본.",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "몬탁프로젝트", "도살견", "외관도본", "작전물증"],
+      "lore": {
+        "background": "도살견은 아르고 기지와 몬탁 프로젝트에 연결된 전술병기로 기록된다. 본 항목은 개체 자체가 아니라 작전 후 회수된 도본이다.",
+        "acquisition": "S1E3 망령 작전 전리품으로 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.",
+        "notes": "관련 위키 도판은 별도 자산 역할이므로 카탈로그 미리보기로 자동 재사용하지 않는다."
+      },
+      "source": "session-reward",
+      "createdAt": "2026-07-28T00:00:00.000Z",
+      "updatedAt": "2026-07-28T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "session-reward-catalog",
+    "payload": {
+      "slug": "conductor-corpse",
+      "name": "지휘자 시신",
+      "nameEn": "Conductor Corpse",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "황금여명회 지휘 개체 사후 분석 대상",
+      "description": "S1E3 망령 작전 종료 후 전리품으로 회수된 황금여명회 지휘자의 시신.",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "지휘자", "황금여명회", "시신", "작전물증"],
+      "lore": {
+        "background": "지휘자는 S1E3 망령 기록에서 황금여명회 측 적대 지휘 개체로 확인되었다.",
+        "acquisition": "S1E3 망령 작전 전리품으로 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.",
+        "notes": "지휘자와 함께 회수된 음반축은 수량 관리를 위해 별도 카탈로그 항목으로 분리한다."
+      },
+      "source": "session-reward",
+      "createdAt": "2026-07-28T00:00:00.000Z",
+      "updatedAt": "2026-07-28T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "session-reward-catalog",
+    "payload": {
+      "slug": "conductor-record-spindle",
+      "name": "음반축",
+      "nameEn": "Conductor Record Spindle",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "지휘자 관련 회수 물증",
+      "description": "S1E3 망령 작전에서 지휘자 시신과 함께 회수된 음반축.",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "지휘자", "음반축", "황금여명회", "작전물증"],
+      "lore": {
+        "background": "본 항목은 지휘자와 연결된 회수 물증으로 등록하며, 상세 구조와 기능은 현재 보상 기록만으로 확정하지 않는다.",
+        "acquisition": "S1E3 망령 작전에서 세 개가 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.",
+        "notes": "공용 인벤토리에서 실제 회수 수량을 관리한다."
+      },
+      "source": "session-reward",
+      "createdAt": "2026-07-28T00:00:00.000Z",
+      "updatedAt": "2026-07-28T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "session-reward-catalog",
+    "payload": {
+      "slug": "golden-dawn-cultist-mask",
+      "name": "황금여명회 컬티스트의 가면",
+      "nameEn": "Golden Dawn Cultist Mask",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "황금여명회 식별·분석용 회수 물증",
+      "description": "S1E3 망령 작전에서 황금여명회 컬티스트에게서 회수한 가면.",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "황금여명회", "컬티스트", "가면", "작전물증"],
+      "lore": {
+        "background": "황금여명회 컬티스트의 신원과 조직 활동을 추적하기 위한 작전 물증으로 분류한다.",
+        "acquisition": "S1E3 망령 작전에서 다섯 개가 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.",
+        "notes": "공용 인벤토리에서 실제 회수 수량을 관리한다."
+      },
+      "source": "session-reward",
+      "createdAt": "2026-07-28T00:00:00.000Z",
+      "updatedAt": "2026-07-28T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "session-reward-catalog",
+    "payload": {
+      "slug": "inverted-sock-contained-entity",
+      "name": "뒤집어진 양말 격리 개체",
+      "nameEn": "Inverted Sock Contained Entity",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "생포 개체 격리 자산",
+      "description": "S1E4 프라토 작전에서 생포되어 회수된 뒤집어진 양말 격리 개체.",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["NOSB-S1E4-PRATO-PART2", "S1E4", "전리품", "뒤집어진양말", "생포", "격리개체", "바르지냐"],
+      "lore": {
+        "background": "뒤집어진 양말은 프라토 작전에서 무력화된 뒤 노부스 오르도와 세계이사회의 회수 대상으로 결정되었다.",
+        "acquisition": "S1E4 프라토 작전 전리품으로 생포되었다. 일반 획득 및 상점 보급 대상이 아니다.",
+        "notes": "관련 위키 도판은 별도 자산 역할이므로 카탈로그 미리보기로 자동 재사용하지 않는다."
+      },
+      "source": "session-reward",
+      "createdAt": "2026-07-28T00:00:00.000Z",
+      "updatedAt": "2026-07-28T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "session-reward-catalog",
+    "payload": {
+      "slug": "white-rose-assistant-call",
+      "name": "화이트 로즈 조력자 호출권",
+      "nameEn": "White Rose Assistant Call",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "작전 중 화이트 로즈 조력자 호출 가능",
+      "description": "화이트 로즈 조력자를 작전 중 호출할 수 있는 전리품성 지원권.",
+      "isAvailable": false,
+      "isPublic": true,
+      "tags": ["전리품", "화이트로즈", "조력자", "작전지원", "호출권"],
+      "lore": {
+        "background": "화이트 로즈 측이 노부스 오르도의 작전을 지원하기 위해 제공한 전리품성 작전 지원으로 등록한다.",
+        "acquisition": "화이트 로즈의 보상 기록을 통해 호출 권한이 제공되었다. 일반 획득 및 상점 보급 대상이 아니다.",
+        "notes": "구체적인 호출 절차, 조력자 지정 방식과 사용 후 소모 여부는 현재 보상 기록만으로 확정하지 않는다."
+      },
+      "source": "session-reward",
+      "createdAt": "2026-07-28T00:00:00.000Z",
+      "updatedAt": "2026-07-28T00:00:00.000Z"
+    }
+  }
+]
