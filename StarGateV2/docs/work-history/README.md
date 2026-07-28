@@ -45,6 +45,8 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 
 줄 수가 아니라 사용자 동작이 달라졌는지를 기준으로 판단한다.
 
+이력은 저장소에 구현된 코드 기준이다. seed·migration·운영 mutation 코드가 추가됐다는 사실만으로 라이브 DB나 외부 시스템에 실제 실행됐다고 기록하지 않는다. 라이브 실행까지 확인된 경우에만 실행 대상과 검증 근거를 별도로 명시한다.
+
 ## 기록 순서
 
 1. 구현과 검증을 완료한다.
@@ -63,7 +65,7 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 - 변경 내용 A
 - 변경 내용 B
 - 검증: 실행한 테스트, 측정 또는 확인한 viewport
-- 관련 커밋: `abcdef1`
+- 관련 커밋: `abcdef1`, `abcdef2`
 - 후속 작업: 필요한 경우에만 작성
 ```
 
@@ -76,7 +78,26 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 ## 현재 페이지 이력
 
 - [`/erp/account`](routes/erp/account.md)
+- [`/erp/admin/credits`](routes/erp/admin/credits.md)
+- [`/erp/admin/equipment-workshop`](routes/erp/admin/equipment-workshop.md)
+- [`/erp/admin/inventory/[characterId]`](routes/erp/admin/inventory/_characterId.md)
 - [`/erp/characters/[id]`](routes/erp/characters/_id.md)
+- [`/erp/credits`](routes/erp/credits.md)
+- [`/erp/equipment-shop`](routes/erp/equipment-shop.md)
+- [`/erp/equipment-shop/custom`](routes/erp/equipment-shop/custom.md)
+- [`/erp/equipment-shop/lab`](routes/erp/equipment-shop/lab.md)
+- [`/erp/equipment-shop/strategic`](routes/erp/equipment-shop/strategic.md)
+- [`/erp/equipment-shop/towaski`](routes/erp/equipment-shop/towaski.md)
+- [`/erp/inventory/[characterId]`](routes/erp/inventory/_characterId.md)
 - [`/erp/personnel`](routes/erp/personnel.md)
 - [`/erp/sessions/report`](routes/erp/sessions/report.md)
+- [`/erp/shop`](routes/erp/shop.md)
 - [`/erp/stock`](routes/erp/stock.md)
+- [`/erp/stock/portfolio`](routes/erp/stock/portfolio.md)
+- [`/erp/trades`](routes/erp/trades.md)
+- [`/survey/keyring`](routes/survey/keyring.md)
+
+## 현재 공용 이력
+
+- [장기 실행 worker와 durable 처리](shared/worker-runtime.md)
+- [성능 관측](shared/performance-observability.md)
