@@ -66,7 +66,7 @@ test("교환 요청 DM은 레지스트라 행정 문체와 자산 대장 링크�
     "https://erp.example.test/base/",
   );
 
-  assert.match(content, /자산 교환 요청이 등재되었습니다/);
+  assert.match(content, /자산 교환 요청이 대장에 등재되었습니다/);
   assert.match(content, /INDEXER님/);
   assert.match(content, /LEE\\_DONGSIK 측/);
   assert.match(content, /1,500 CR/);
@@ -110,11 +110,12 @@ test("선물·완료·취소 DM은 절차 상태에 맞는 레지스트라 문�
     offer: undefined,
   });
 
-  assert.match(gift, /자산 전달 기록이 확정되었습니다/);
+  assert.match(gift, /자산 전달이 대장에 확정되었습니다/);
   assert.match(gift, /별도 회신은 필요하지 않습니다/);
-  assert.match(completed, /양측 확정이 일치하여 체결되었습니다/);
-  assert.match(cancelled, /기각되었습니다/);
-  assert.match(cancelled, /더 이상 유효하지 않습니다/);
+  assert.match(completed, /양측 확인이 일치하여 체결되었습니다/);
+  assert.match(completed, /별도 절차 없이는 허용되지 않습니다/);
+  assert.match(cancelled, /취소·종결되었습니다/);
+  assert.match(cancelled, /즉시 효력을 상실/);
 });
 
 test("활성 Discord 연결 사용자에게 거래 이벤트별 deterministic nonce로 DM을 전송한다", async () => {

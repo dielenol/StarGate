@@ -7,6 +7,7 @@ export {
 } from "./domain/realtime.js";
 
 export * from "./domain/kst-time.js";
+export * from "./domain/discord-dm-dialogue.js";
 export * from "./domain/equipment-research.js";
 export * from "./domain/research-discord-card.js";
 export * from "./domain/shop-catalog.js";

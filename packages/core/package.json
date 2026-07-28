@@ -18,6 +18,10 @@
       "types": "./dist/domain/equipment-research.d.ts",
       "import": "./dist/domain/equipment-research.js"
     },
+    "./domain/discord-dm-dialogue": {
+      "types": "./dist/domain/discord-dm-dialogue.d.ts",
+      "import": "./dist/domain/discord-dm-dialogue.js"
+    },
     "./domain/kst-time": {
       "types": "./dist/domain/kst-time.d.ts",
       "import": "./dist/domain/kst-time.js"
