@@ -128,7 +128,14 @@ const REQUEST_KIND_LABELS = {
   reload: "재장전 (RELOAD)",
 } as const;
 
-const QUOTABLE = new Set<EquipmentWorkshopRequestStatus>([
+const QUOTE_EDITABLE_STATUSES = new Set<EquipmentWorkshopRequestStatus>([
+  "REQUESTED",
+  "IN_REVIEW",
+  "APPROVED",
+  "QUOTED",
+]);
+
+const QUOTE_PUBLISHABLE_STATUSES = new Set<EquipmentWorkshopRequestStatus>([
   "IN_REVIEW",
   "APPROVED",
   "QUOTED",
@@ -919,6 +926,13 @@ export default function EquipmentWorkshopAdminClient({
 
   const submitQuote = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!QUOTE_PUBLISHABLE_STATUSES.has(selected.status)) {
+      setFeedback({
+        tone: "error",
+        text: "7단계에서 검토를 시작한 뒤 견적을 발행해 주세요.",
+      });
+      return;
+    }
     const workflowError = specialistWorkflowError(draft.specialistWorkflow);
     if (workflowError) {
       setFeedback({ tone: "error", text: workflowError });
@@ -1200,7 +1214,7 @@ export default function EquipmentWorkshopAdminClient({
             </div>
           </Box>
 
-          {isBuildRequest && QUOTABLE.has(selected.status) ? (
+          {isBuildRequest && QUOTE_EDITABLE_STATUSES.has(selected.status) ? (
             <form className={styles.quoteForm} onSubmit={submitQuote}>
               <Box className={styles.section}>
                 <div className={styles.sectionHeading}>
@@ -1960,17 +1974,22 @@ export default function EquipmentWorkshopAdminClient({
                     quoteMutation.isPending ||
                     uploading ||
                     missingMaterials.length > 0 ||
-                    !selectedTemplateCompatible
+                    !selectedTemplateCompatible ||
+                    !QUOTE_PUBLISHABLE_STATUSES.has(selected.status)
                   }
                 >
                   {quoteMutation.isPending
                     ? "견적 발행 중"
+                    : selected.status === "REQUESTED"
+                      ? "검토 시작 후 견적 발행 가능"
                     : selected.quote
                       ? "수정 견적 발행"
                       : "견적 발행"}
                 </button>
                 <p className={styles.emptyHint}>
-                  견적 발행은 설계 스냅샷만 저장합니다. 실제 결과 장비는 의뢰인이 제작 완료 후 수령할 때 생성됩니다.
+                  {selected.status === "REQUESTED"
+                    ? "7단계에서 검토를 시작한 뒤 견적을 발행해 주세요."
+                    : "견적 발행은 설계 스냅샷만 저장합니다. 실제 결과 장비는 의뢰인이 제작 완료 후 수령할 때 생성됩니다."}
                 </p>
               </Box>
             </form>

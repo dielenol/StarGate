@@ -1083,3 +1083,33 @@ test("GM workshop uses the shared accessible dropdown instead of native selects"
   assert.match(dropdown, /event\.key === "Enter" \|\| event\.key === " "/);
   assert.match(dropdown, /event\.key === "Escape"/);
 });
+
+test("GM workshop keeps quote steps visible for newly requested build requests", () => {
+  const adminClient = readFileSync(
+    new URL(
+      "../../../app/(erp)/erp/admin/equipment-workshop/EquipmentWorkshopAdminClient.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const editableStatuses = adminClient.match(
+    /const QUOTE_EDITABLE_STATUSES = new Set<EquipmentWorkshopRequestStatus>\(\[([\s\S]*?)\]\);/,
+  )?.[1];
+  const publishableStatuses = adminClient.match(
+    /const QUOTE_PUBLISHABLE_STATUSES = new Set<EquipmentWorkshopRequestStatus>\(\[([\s\S]*?)\]\);/,
+  )?.[1];
+
+  assert.ok(editableStatuses);
+  assert.ok(publishableStatuses);
+  assert.match(editableStatuses, /"REQUESTED"/);
+  assert.doesNotMatch(publishableStatuses, /"REQUESTED"/);
+  assert.match(
+    adminClient,
+    /isBuildRequest && QUOTE_EDITABLE_STATUSES\.has\(selected\.status\)/,
+  );
+  assert.match(
+    adminClient,
+    /!QUOTE_PUBLISHABLE_STATUSES\.has\(selected\.status\)/,
+  );
+  assert.match(adminClient, /검토 시작 후 견적 발행 가능/);
+});
