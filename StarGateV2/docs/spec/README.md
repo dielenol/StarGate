@@ -195,12 +195,15 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 
 ### peoples/ (AGENT — 플레이어블 캐릭터)
 
-`StarGateV2/public/assets/peoples/<Slug>-<type>.<ext>` 4종:
+`StarGateV2/public/assets/peoples/<Slug>-<type>.<ext>` 규격:
 
-- `<Slug>-main-image.png` — 신원조회 portrait, `lore.mainImage` 매핑
-- `<Slug>-pixel-character.png` — 도트 풀샷, `pixelCharacterImage` 매핑
-- `<Slug>-pixel-profile.png` — 도트 프로필, `previewImage` 매핑
-- `<Slug>-poster.webp` — 캐릭터 상세 PosterHero 와이드 히어로, `lore.posterImage` 매핑
+- 핵심 3종은 PNG 원본과 WebP 최적화본을 같은 해상도로 함께 보관한다.
+  - `<Slug>-main-image.{png,webp}` — 신원조회 portrait, `lore.mainImage` 매핑
+  - `<Slug>-pixel-character.{png,webp}` — 도트 풀샷, `pixelCharacterImage` 매핑
+  - `<Slug>-pixel-profile.{png,webp}` — 도트 프로필, `previewImage` 매핑
+- `<Slug>-poster.webp` — 캐릭터 상세 PosterHero 와이드 히어로. `lore.posterImage`가 있는 캐릭터만 보관하는 선택 자산이다.
+- `preferOptimizedPublicImagePath()`가 DB의 PNG 경로를 WebP로 우선 변환하므로 PNG/WebP 쌍의 파일명과 해상도가 반드시 일치해야 한다.
+- `KNOWN_CHARACTER_ASSET_SLUGS`에 등록된 플레이어블 캐릭터는 핵심 3종의 PNG/WebP 쌍이 모두 있어야 한다. 메인 이미지만 있는 미니세션 캐릭터는 픽셀 자산이 준비되기 전까지 등록하지 않는다.
 
 ### npcs/ (NPC — 비플레이어블)
 
@@ -210,7 +213,7 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 
 - **PascalCase 영문 강제** (예: `BigBoy`, `InDexer`, `Margaret`, `Unyeon`, `Yuhoe`).
 - 한글 슬러그 금지 (URL 인코딩 + macOS/Windows/Linux 간 NFC/NFD 차이로 인한 OS 호환성 문제).
-- codename ↔ slug 매핑은 `StarGateV2/lib/format/character-asset.ts` 의 `EXPLICIT_CODENAME_TO_SLUG` + `KNOWN_SLUGS` 가 SSOT. 신규 캐릭터/NPC 추가 시 매핑을 **동시에** 갱신해야 한다 (매핑 없이 파일만 추가하면 폴백 경로가 mismatch).
+- codename ↔ slug 매핑은 `StarGateV2/lib/format/character-asset.ts` 의 `EXPLICIT_CODENAME_TO_SLUG` + `KNOWN_CHARACTER_ASSET_SLUGS` 가 SSOT. 신규 캐릭터/NPC 추가 시 매핑을 **동시에** 갱신해야 한다 (매핑 없이 파일만 추가하면 폴백 경로가 mismatch).
 
 ### 원본 파일
 
@@ -244,7 +247,7 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 > ```bash
 > grep -rn 'assets/(peoples|npcs)/' StarGateV2/{app,components,lib}
 > ```
-> 결과를 `lib/format/character-asset.ts` 의 `KNOWN_SLUGS` + 마이그 스크립트의 `REPLACEMENTS` 와 교차 검증.
+> 결과를 `lib/format/character-asset.ts` 의 `KNOWN_CHARACTER_ASSET_SLUGS` + 마이그 스크립트의 `REPLACEMENTS` 와 교차 검증.
 
 ## 작업 흐름
 
