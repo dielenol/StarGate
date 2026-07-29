@@ -172,6 +172,29 @@ test("the board exposes real token dragging, weapon range cells, and turn-consum
   assert.match(styles, /\.boardCell--dropTarget/);
 });
 
+test("melee range copy requires overlap while preserving the dagger throw exception", async () => {
+  const [client, simulator] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(SIMULATOR_URL, "utf8"),
+  ]);
+
+  assert.match(simulator, /function getMeleeRange/);
+  assert.match(simulator, /rule\.role === "냉병기"/);
+  assert.match(
+    simulator,
+    /근접무기는 적과 같은 칸에 있을 때만 공격할 수 있습니다/,
+  );
+  assert.match(client, /근접무기는 적과 같은 칸에서만 공격 가능/);
+  assert.match(client, /단검은 같은 칸에서 근접 공격하거나 2칸 이내로 투척 가능/);
+  assert.match(client, /0칸 근접 공격만 가능/);
+  assert.match(client, /meleeOutOfRange/);
+  assert.match(client, /적과 같은 칸 필요/);
+  assert.match(client, /function handleTokenClick/);
+  assert.match(client, /activeToken !== token/);
+  assert.match(client, /suppressTokenClickRef/);
+  assert.doesNotMatch(client, /가로 칸은 냉병기 사거리 계산에서 제외/);
+});
+
 test("the ranged weapon rule card exposes canonical statuses and special actions", async () => {
   const [client, simulator, styles] = await Promise.all([
     readFile(CLIENT_URL, "utf8"),

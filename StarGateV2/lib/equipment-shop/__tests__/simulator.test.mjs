@@ -94,7 +94,7 @@ test("melee weapons apply ATK bonus before physical DEF mitigation", () => {
   const result = resolveSimulatorAttack({
     weaponSlug: "basic-longsword",
     attacker: { col: "B", row: 2 },
-    target: { col: "D", row: 2 },
+    target: { col: "B", row: 2 },
     attackerStats: { atk: 3 },
     targetStats: { def: 4 },
   });
@@ -383,7 +383,46 @@ test("installed heavy machine gun uses a four-cell Manhattan diamond", () => {
   );
 });
 
-test("melee attacks keep their existing vertical-distance behavior", () => {
+test("non-throwing melee weapons only attack targets in the same cell", () => {
+  for (const weaponSlug of [
+    "basic-katana",
+    "basic-longsword",
+    "basic-blunt-weapon",
+    "basic-chainsaw",
+  ]) {
+    const result = resolveSimulatorAttack({
+      weaponSlug,
+      attacker: { col: "A", row: 1 },
+      target: { col: "B", row: 1 },
+      attackerStats,
+      targetStats,
+      runtime:
+        weaponSlug === "basic-chainsaw"
+          ? { resourceRemaining: 5 }
+          : undefined,
+    });
+
+    assert.equal(result.ok, false, weaponSlug);
+    assert.equal(result.reason, "OUT_OF_RANGE", weaponSlug);
+    assert.equal(result.range.attackDistance, 1, weaponSlug);
+    assert.equal(
+      result.reasonLabel,
+      "근접무기는 적과 같은 칸에 있을 때만 공격할 수 있습니다.",
+      weaponSlug,
+    );
+    assert.equal(
+      isSimulatorAttackableCell(
+        weaponSlug,
+        { col: "A", row: 1 },
+        { col: "B", row: 1 },
+      ),
+      false,
+      weaponSlug,
+    );
+  }
+});
+
+test("dagger throws use total grid distance and keep the two-cell exception", () => {
   const result = resolveSimulatorAttack({
     weaponSlug: "basic-dagger",
     attacker: { col: "A", row: 1 },
@@ -395,7 +434,24 @@ test("melee attacks keep their existing vertical-distance behavior", () => {
   assert.equal(result.ok, true);
   assert.equal(result.range.band, "mid");
   assert.equal(result.range.verticalDistance, 1);
+  assert.equal(result.range.attackDistance, 2);
   assert.equal(result.range.attackAxis, undefined);
+
+  const beyondThrowRange = resolveSimulatorAttack({
+    weaponSlug: "basic-dagger",
+    attacker: { col: "A", row: 1 },
+    target: { col: "D", row: 1 },
+    attackerStats,
+    targetStats,
+  });
+
+  assert.equal(beyondThrowRange.ok, false);
+  assert.equal(beyondThrowRange.reason, "OUT_OF_RANGE");
+  assert.equal(beyondThrowRange.range.attackDistance, 3);
+  assert.equal(
+    beyondThrowRange.reasonLabel,
+    "단검 투척은 적과 2칸 이내일 때만 공격할 수 있습니다.",
+  );
 });
 
 test("chainsaw consumes start charge and blocks when charge is empty", () => {

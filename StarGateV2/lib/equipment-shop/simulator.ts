@@ -597,6 +597,23 @@ function getManhattanRange(
   };
 }
 
+function getMeleeRange(
+  attacker: SimulatorBoardCoord,
+  target: SimulatorBoardCoord,
+): SimulatorRangeState {
+  const attackerColumn = SIMULATOR_BOARD_COLUMNS.indexOf(attacker.col);
+  const targetColumn = SIMULATOR_BOARD_COLUMNS.indexOf(target.col);
+  const attackDistance =
+    Math.abs(attackerColumn - targetColumn) +
+    Math.abs(attacker.row - target.row);
+
+  return {
+    ...getSimulatorRange(attacker, target),
+    band: getSimulatorRangeBand(attackDistance),
+    attackDistance,
+  };
+}
+
 export function getSimulatorWeaponRange(
   weaponSlug: string,
   attacker: SimulatorBoardCoord,
@@ -604,6 +621,9 @@ export function getSimulatorWeaponRange(
 ): SimulatorRangeState | null {
   const rule = getSimulatorWeaponRule(weaponSlug);
   if (!rule) return null;
+  if (rule.role === "냉병기") {
+    return getMeleeRange(attacker, target);
+  }
   if (rule.slug === "basic-heavy-machine-gun") {
     return getManhattanRange(attacker, target);
   }
@@ -873,10 +893,16 @@ export function resolveSimulatorAttack(
   }
   const profile = rule.ranges[range.band];
   if (!profile) {
+    const reasonLabel =
+      rule.role === "냉병기"
+        ? rule.slug === "basic-dagger"
+          ? "단검 투척은 적과 2칸 이내일 때만 공격할 수 있습니다."
+          : "근접무기는 적과 같은 칸에 있을 때만 공격할 수 있습니다."
+        : `${SIMULATOR_RANGE_LABELS[range.band]} 피해값이 없습니다.`;
     return failureResult(
       input,
       "OUT_OF_RANGE",
-      `${SIMULATOR_RANGE_LABELS[range.band]} 피해값이 없습니다.`,
+      reasonLabel,
       rule,
       undefined,
       range,

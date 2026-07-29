@@ -3,6 +3,7 @@
 import Image from "next/image";
 import {
   type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
   useEffect,
   useMemo,
@@ -486,6 +487,7 @@ export default function EquipmentSimulatorClient({
   const audioContextRef = useRef<AudioContext | null>(null);
   const turnEndAudioRef = useRef<HTMLAudioElement | null>(null);
   const dragDestinationRef = useRef<SimulatorBoardCoord | null>(null);
+  const suppressTokenClickRef = useRef<ActiveToken | null>(null);
   const feedbackSequenceRef = useRef(0);
   const feedbackTimerRef = useRef<number | null>(null);
   const turnRevealOutTimerRef = useRef<number | null>(null);
@@ -583,10 +585,14 @@ export default function EquipmentSimulatorClient({
     selectedRule.slug !== "basic-heavy-machine-gun";
   const usesDiamondRange =
     selectedRule?.slug === "basic-heavy-machine-gun";
+  const usesMeleeRange = selectedRule?.role === "냉병기";
+  const usesDaggerThrow = selectedRule?.slug === "basic-dagger";
   const isCardinallyAligned =
     attackerPosition.row === targetPosition.row ||
     attackerPosition.col === targetPosition.col;
   const attackDistance = range.attackDistance ?? range.verticalDistance;
+  const meleeOutOfRange =
+    usesMeleeRange && !usesDaggerThrow && attackDistance > 0;
   const attackAxisLabel =
     range.attackAxis === "horizontal"
       ? "가로"
@@ -594,7 +600,9 @@ export default function EquipmentSimulatorClient({
         ? "세로"
         : range.attackAxis === "diamond"
           ? "다이아몬드"
-        : "세로";
+          : usesMeleeRange
+            ? "거리"
+            : "세로";
   const selectedName = selectedItem?.name ?? selectedRule?.name ?? "장비";
   const resultSummary = !enemyPositionConfirmed
     ? "적 위치 지정 필요"
@@ -617,6 +625,8 @@ export default function EquipmentSimulatorClient({
           text:
             usesCardinalDirections && !isCardinallyAligned
               ? `나와 적이 대각선에 있습니다. 화기는 같은 가로줄 또는 세로줄에 놓아야 합니다. 예상 판정: ${resultSentence}`
+              : meleeOutOfRange
+                ? `적과 ${attackDistance}칸 떨어져 있습니다. 이 근접무기는 적과 같은 칸에 있어야 공격할 수 있습니다.`
               : usesDiamondRange
                 ? `가로·세로 이동 칸의 합 ${attackDistance}칸은 ${SIMULATOR_RANGE_LABELS[range.band]} 판정입니다. 예상 판정: ${resultSentence} 준비되면 공격을 실행하십시오.`
               : `${attackAxisLabel} ${attackDistance}칸은 ${SIMULATOR_RANGE_LABELS[range.band]} 판정입니다. 예상 판정: ${resultSentence} 준비되면 공격을 실행하십시오.`,
@@ -788,7 +798,9 @@ export default function EquipmentSimulatorClient({
         ? "가로"
         : nextRange.attackAxis === "diamond"
           ? "다이아몬드"
-          : "세로";
+          : selectedRule?.role === "냉병기"
+            ? "거리"
+            : "세로";
     if (token === "attacker") {
       setAttackerPosition(coord);
     } else {
@@ -910,7 +922,17 @@ export default function EquipmentSimulatorClient({
     token: ActiveToken,
   ) {
     const coord = coordFromPointer(event) ?? dragDestinationRef.current;
+    const currentCoord = token === "attacker" ? attackerPosition : targetPosition;
+    const didMove = Boolean(coord && !sameCoord(currentCoord, coord));
     dragDestinationRef.current = null;
+    suppressTokenClickRef.current = didMove ? token : null;
+    if (didMove) {
+      window.setTimeout(() => {
+        if (suppressTokenClickRef.current === token) {
+          suppressTokenClickRef.current = null;
+        }
+      }, 0);
+    }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -919,6 +941,21 @@ export default function EquipmentSimulatorClient({
     setDraggedToken(null);
     setDragOverCell(null);
     if (coord) moveToken(token, coord);
+  }
+
+  function handleTokenClick(
+    event: MouseEvent<HTMLDivElement>,
+    token: ActiveToken,
+    coord: SimulatorBoardCoord,
+  ) {
+    event.stopPropagation();
+    if (suppressTokenClickRef.current === token) {
+      suppressTokenClickRef.current = null;
+      return;
+    }
+    if (activeToken !== token) {
+      handleCellActivate(coord);
+    }
   }
 
   function handleTokenPointerCancel(
@@ -1597,13 +1634,17 @@ export default function EquipmentSimulatorClient({
 
           <div className={styles.rangeStrip} aria-live="polite">
             <span>
-              {usesCardinalDirections && !isCardinallyAligned
-                ? "사격 불가"
-                : SIMULATOR_RANGE_LABELS[range.band]}
+              {meleeOutOfRange
+                ? "공격 불가"
+                : usesCardinalDirections && !isCardinallyAligned
+                  ? "사격 불가"
+                  : SIMULATOR_RANGE_LABELS[range.band]}
             </span>
             <strong>
               {usesCardinalDirections && !isCardinallyAligned
                 ? "직선 정렬 필요"
+                : meleeOutOfRange
+                  ? "적과 같은 칸 필요"
                 : usesDiamondRange
                   ? `이동 합계 ${attackDistance}칸`
                   : `${attackAxisLabel} ${attackDistance}칸`}
@@ -1615,9 +1656,17 @@ export default function EquipmentSimulatorClient({
                   ? isCardinallyAligned
                     ? "나와 적의 직선 거리로 사거리 계산"
                     : "화기는 같은 가로줄 또는 세로줄에서만 공격 가능"
-                  : "가로 칸은 냉병기 사거리 계산에서 제외"}
+                  : usesDaggerThrow
+                    ? "단검은 같은 칸에서 근접 공격하거나 2칸 이내로 투척 가능"
+                    : "근접무기는 적과 같은 칸에서만 공격 가능"}
             </em>
-            <small>0칸 근거리 · 1–2칸 중거리 · 3–4칸 장거리</small>
+            <small>
+              {usesMeleeRange
+                ? usesDaggerThrow
+                  ? "0칸 근접 · 1–2칸 투척"
+                  : "0칸 근접 공격만 가능"
+                : "0칸 근거리 · 1–2칸 중거리 · 3–4칸 장거리"}
+            </small>
           </div>
 
           <section className={styles.controlPanel} aria-label="전투 조작 패널">
@@ -1828,7 +1877,9 @@ export default function EquipmentSimulatorClient({
                               ? styles["token--popoverLeft"]
                               : "",
                           ].join(" ")}
-                          onClick={(event) => event.stopPropagation()}
+                          onClick={(event) =>
+                            handleTokenClick(event, "attacker", coord)
+                          }
                           onPointerDown={(event) =>
                             handleTokenPointerDown(event, "attacker")
                           }
@@ -1923,7 +1974,9 @@ export default function EquipmentSimulatorClient({
                               ? styles["token--popoverLeft"]
                               : "",
                           ].join(" ")}
-                          onClick={(event) => event.stopPropagation()}
+                          onClick={(event) =>
+                            handleTokenClick(event, "target", coord)
+                          }
                           onPointerDown={(event) =>
                             handleTokenPointerDown(event, "target")
                           }
