@@ -38,6 +38,7 @@ import {
   type SimulatorAttackerProfile,
   type SimulatorAttackResult,
   type SimulatorBoardCoord,
+  type SimulatorEquippedWeapon,
   type SimulatorStatusKind,
   type SimulatorTargetStats,
   type SimulatorWeaponRule,
@@ -85,10 +86,12 @@ interface SimulatorDisplayItem {
   price: number;
   previewImage?: string;
   catalogDescription?: string;
+  isEquipped: boolean;
 }
 
 interface Props {
   attacker: SimulatorAttackerProfile;
+  equippedWeapons: SimulatorEquippedWeapon[];
   initialCatalog: EquipmentShopCatalogResponse;
 }
 
@@ -233,28 +236,38 @@ function restartTurnEndAudio(audio: HTMLAudioElement): Promise<void> {
 
 function buildSimulatorItems(
   catalogItems: EquipmentShopCatalogEntry[],
+  equippedWeapons: SimulatorEquippedWeapon[],
 ): SimulatorDisplayItem[] {
   const catalogBySlug = new Map(
     catalogItems
       .filter((item) => item.category === "WEAPON")
       .map((item) => [item.slug ?? item.key, item]),
   );
+  const equippedBySlug = new Map<SimulatorWeaponSlug, SimulatorEquippedWeapon>();
+  for (const item of equippedWeapons) {
+    if (item.slug) equippedBySlug.set(item.slug, item);
+  }
 
   return SIMULATOR_WEAPON_ORDER.map((slug) => {
     const rule = getSimulatorWeaponRule(slug);
     const catalogItem = catalogBySlug.get(slug);
+    const equippedItem = equippedBySlug.get(slug);
     return {
       slug,
-      name: catalogItem?.name ?? rule?.name ?? slug,
+      name: equippedItem?.name ?? catalogItem?.name ?? rule?.name ?? slug,
       price: catalogItem?.price ?? rule?.price ?? 0,
-      ...(catalogItem?.previewImage
-        ? { previewImage: catalogItem.previewImage }
+      ...(equippedItem?.previewImage ?? catalogItem?.previewImage
+        ? {
+            previewImage:
+              equippedItem?.previewImage ?? catalogItem?.previewImage,
+          }
         : {}),
       ...(catalogItem?.description
         ? { catalogDescription: catalogItem.description }
         : {}),
+      isEquipped: Boolean(equippedItem),
     };
-  });
+  }).sort((a, b) => Number(b.isEquipped) - Number(a.isEquipped));
 }
 
 function uniqueStatuses(
@@ -413,14 +426,16 @@ function controlReloadLabel(rule: SimulatorWeaponRule | null): string {
 
 export default function EquipmentSimulatorClient({
   attacker,
+  equippedWeapons,
   initialCatalog,
 }: Props) {
   const simulatorItems = useMemo(
-    () => buildSimulatorItems(initialCatalog.items),
-    [initialCatalog.items],
+    () => buildSimulatorItems(initialCatalog.items, equippedWeapons),
+    [equippedWeapons, initialCatalog.items],
   );
   const [selectedSlug, setSelectedSlug] = useState<SimulatorWeaponSlug>(
-    simulatorItems.find((item) => item.slug === "basic-pistol")?.slug ??
+    simulatorItems.find((item) => item.isEquipped)?.slug ??
+      simulatorItems.find((item) => item.slug === "basic-pistol")?.slug ??
       simulatorItems[0]?.slug ??
       "basic-pistol",
   );
@@ -1232,12 +1247,51 @@ export default function EquipmentSimulatorClient({
       </section>
 
       <section className={styles.simLayout} aria-label="훈련장">
-        <aside className={styles.catalogPanel} aria-label="보급형 장비 목록">
+        <aside className={styles.catalogPanel} aria-label="훈련 장비 목록">
           <div className={styles.panelIntro}>
             <Eyebrow>WEAPON RACK</Eyebrow>
-            <strong>보급형 장비</strong>
+            <strong>
+              {equippedWeapons.length > 0 ? "장착 장비 우선" : "보급형 장비"}
+            </strong>
           </div>
           <div className={styles.itemRail}>
+            {equippedWeapons
+              .filter((item) => !item.slug)
+              .map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={[
+                    styles.itemButton,
+                    styles["itemButton--equipped"],
+                    styles["itemButton--unsupported"],
+                  ].join(" ")}
+                  disabled
+                >
+                  <span className={styles.itemThumb}>
+                    {item.previewImage ? (
+                      <Image
+                        src={item.previewImage}
+                        width={54}
+                        height={54}
+                        alt=""
+                        aria-hidden
+                        unoptimized
+                      />
+                    ) : (
+                      <span aria-hidden>?</span>
+                    )}
+                  </span>
+                  <span className={styles.itemMain}>
+                    <strong>{item.name}</strong>
+                    <small>훈련 규칙 미등록</small>
+                  </span>
+                  <span className={styles.itemMeta}>
+                    장착 무기
+                    <span className={styles.itemEquippedBadge}>EQUIPPED</span>
+                  </span>
+                </button>
+              ))}
             {simulatorItems.map((item) => {
               const rule = getSimulatorWeaponRule(item.slug);
               const active = selectedSlug === item.slug;
@@ -1247,6 +1301,7 @@ export default function EquipmentSimulatorClient({
                   type="button"
                   className={[
                     styles.itemButton,
+                    item.isEquipped ? styles["itemButton--equipped"] : "",
                     active ? styles["itemButton--active"] : "",
                   ]
                     .filter(Boolean)
@@ -1270,9 +1325,16 @@ export default function EquipmentSimulatorClient({
                   </span>
                   <span className={styles.itemMain}>
                     <strong>{item.name}</strong>
-                    <small>{formatCredits(item.price)}</small>
+                    <small>
+                      {item.isEquipped ? "현재 장착 중" : formatCredits(item.price)}
+                    </small>
                   </span>
-                  <span className={styles.itemMeta}>{rule?.role ?? "장비"}</span>
+                  <span className={styles.itemMeta}>
+                    {rule?.role ?? "장비"}
+                    {item.isEquipped ? (
+                      <span className={styles.itemEquippedBadge}>EQUIPPED</span>
+                    ) : null}
+                  </span>
                 </button>
               );
             })}

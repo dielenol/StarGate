@@ -617,6 +617,18 @@
   color: var(--ink-0);
 }
 
+.itemButton--equipped {
+  background:
+    linear-gradient(135deg, rgba(201, 168, 90, 0.13), transparent 58%),
+    rgba(0, 0, 0, 0.32);
+  border-color: color-mix(in srgb, var(--gold-dim) 72%, var(--line));
+}
+
+.itemButton--unsupported {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 .itemThumb {
   grid-area: thumb;
   display: grid;
@@ -663,9 +675,24 @@
 
 .itemMeta {
   grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   color: var(--ink-3);
   font-size: 14px;
   line-height: 1.2;
+}
+
+.itemEquippedBadge {
+  padding: 2px 5px;
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 70%, transparent);
+  border-radius: 999px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
 .boardPanel {

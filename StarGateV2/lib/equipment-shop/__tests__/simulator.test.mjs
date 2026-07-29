@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  getSimulatorEquippedWeapons,
   getInitialSimulatorResources,
   getSimulatorRange,
   isSimulatorAttackableCell,
@@ -11,6 +12,41 @@ import {
 
 const attackerStats = { atk: 0 };
 const targetStats = { def: 0 };
+
+test("equipped simulator weapons keep inventory art and expose unsupported weapons", () => {
+  assert.deepEqual(
+    getSimulatorEquippedWeapons([
+      {
+        itemName: "내 보급형 돌격소총",
+        slug: "basic-assault-rifle",
+        previewImage: "/equipped-rifle.webp",
+        equippedSlot: "WEAPON",
+      },
+      {
+        itemName: "훈련 규칙 없는 커스텀 무기",
+        slug: "custom-weapon",
+        equippedSlot: "WEAPON",
+      },
+      {
+        itemName: "보급형 방탄복",
+        slug: "basic-armor",
+        equippedSlot: "ARMOR",
+      },
+    ]),
+    [
+      {
+        key: "basic-assault-rifle",
+        slug: "basic-assault-rifle",
+        name: "내 보급형 돌격소총",
+        previewImage: "/equipped-rifle.webp",
+      },
+      {
+        key: "custom-weapon",
+        name: "훈련 규칙 없는 커스텀 무기",
+      },
+    ],
+  );
+});
 
 test("range uses vertical distance only on the 5x5 board", () => {
   assert.deepEqual(

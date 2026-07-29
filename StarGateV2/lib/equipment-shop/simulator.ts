@@ -26,6 +26,13 @@ export interface SimulatorAttackerProfile {
   source: "agent" | "sandbox";
 }
 
+export interface SimulatorEquippedWeapon {
+  key: string;
+  slug?: SimulatorWeaponSlug;
+  name: string;
+  previewImage?: string;
+}
+
 export interface SimulatorTargetStats {
   hp: number;
   maxHp: number;
@@ -389,6 +396,34 @@ export function getSimulatorWeaponRule(
   slug: string,
 ): SimulatorWeaponRule | null {
   return SIMULATOR_WEAPON_RULES[slug as SimulatorWeaponSlug] ?? null;
+}
+
+export function getSimulatorEquippedWeapons(
+  entries: readonly {
+    itemName: string;
+    slug?: string;
+    previewImage?: string;
+    equippedSlot?: string;
+  }[],
+): SimulatorEquippedWeapon[] {
+  const seen = new Set<string>();
+
+  return entries.flatMap((entry) => {
+    if (entry.equippedSlot !== "WEAPON") return [];
+    const rule = entry.slug ? getSimulatorWeaponRule(entry.slug) : null;
+    const key = entry.slug ?? `equipped:${entry.itemName}`;
+    if (seen.has(key)) return [];
+
+    seen.add(key);
+    return [
+      {
+        key,
+        ...(rule ? { slug: rule.slug as SimulatorWeaponSlug } : {}),
+        name: entry.itemName,
+        ...(entry.previewImage ? { previewImage: entry.previewImage } : {}),
+      },
+    ];
+  });
 }
 
 export function formatSimulatorCoord(coord: SimulatorBoardCoord): string {

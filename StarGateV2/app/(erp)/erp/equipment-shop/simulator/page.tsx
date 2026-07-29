@@ -1,5 +1,10 @@
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
-import type { SimulatorAttackerProfile } from "@/lib/equipment-shop/simulator";
+import { listCharacterInventoryEntries } from "@/lib/db/inventory";
+import {
+  getSimulatorEquippedWeapons,
+  type SimulatorAttackerProfile,
+  type SimulatorEquippedWeapon,
+} from "@/lib/equipment-shop/simulator";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import {
   getPixelCharacterPath,
@@ -78,8 +83,10 @@ export default async function EquipmentShopSimulatorPage() {
   }
 
   let attacker = fallbackAttackerProfile(session.user);
+  let mainCharacterId: string | null = null;
   try {
     const mainCharacter = await findMainCharacterByOwner(session.user.id);
+    mainCharacterId = mainCharacter?._id ? String(mainCharacter._id) : null;
     if (mainCharacter?.type === "AGENT") {
       attacker = {
         codename: mainCharacter.codename,
@@ -103,15 +110,34 @@ export default async function EquipmentShopSimulatorPage() {
     console.error("[equipment-simulator] failed to load main character", err);
   }
 
-  const catalog = await buildEquipmentShopCatalogResponse().catch(() => ({
-    items: [],
-    recentActivity: [],
-    isOpen: true,
-    mode: "open" as const,
-    scheduledOpen: true,
-    forceOpen: true,
-    forceClosed: false,
-  }));
+  const [catalog, equippedWeapons] = await Promise.all([
+    buildEquipmentShopCatalogResponse().catch(() => ({
+      items: [],
+      recentActivity: [],
+      isOpen: true,
+      mode: "open" as const,
+      scheduledOpen: true,
+      forceOpen: true,
+      forceClosed: false,
+    })),
+    mainCharacterId
+      ? listCharacterInventoryEntries(mainCharacterId)
+          .then(({ entries }) => getSimulatorEquippedWeapons(entries))
+          .catch((err) => {
+            console.error(
+              "[equipment-simulator] failed to load equipped weapons",
+              err,
+            );
+            return [] as SimulatorEquippedWeapon[];
+          })
+      : Promise.resolve<SimulatorEquippedWeapon[]>([]),
+  ]);
 
-  return <EquipmentSimulatorClient attacker={attacker} initialCatalog={catalog} />;
+  return (
+    <EquipmentSimulatorClient
+      attacker={attacker}
+      equippedWeapons={equippedWeapons}
+      initialCatalog={catalog}
+    />
+  );
 }

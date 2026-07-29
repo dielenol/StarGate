@@ -92,6 +92,31 @@ test("the standard 5x5 battlefield can switch to vertical 1x5 and horizontal 5x1
   );
 });
 
+test("the weapon rack prioritizes and initially selects the main character's equipped weapon", async () => {
+  const [page, client, simulator, styles] = await Promise.all([
+    readFile(PAGE_URL, "utf8"),
+    readFile(CLIENT_URL, "utf8"),
+    readFile(SIMULATOR_URL, "utf8"),
+    readFile(STYLES_URL, "utf8"),
+  ]);
+
+  assert.match(page, /listCharacterInventoryEntries\(mainCharacterId\)/);
+  assert.match(page, /getSimulatorEquippedWeapons\(entries\)/);
+  assert.match(page, /equippedWeapons=\{equippedWeapons\}/);
+  assert.match(simulator, /entry\.equippedSlot !== "WEAPON"/);
+  assert.match(simulator, /getSimulatorWeaponRule\(entry\.slug\)/);
+  assert.match(client, /equippedWeapons: SimulatorEquippedWeapon\[\]/);
+  assert.match(client, /Number\(b\.isEquipped\) - Number\(a\.isEquipped\)/);
+  assert.match(client, /find\(\(item\) => item\.isEquipped\)\?\.slug/);
+  assert.match(client, /"현재 장착 중"/);
+  assert.match(client, /훈련 규칙 미등록/);
+  assert.match(client, /styles\["itemButton--equipped"\]/);
+  assert.match(client, /styles\["itemButton--unsupported"\]/);
+  assert.match(styles, /\.itemButton--equipped/);
+  assert.match(styles, /\.itemButton--unsupported/);
+  assert.match(styles, /\.itemEquippedBadge/);
+});
+
 test("the main-character token uses mapped art, a no-character field agent, and a safe initial fallback", async () => {
   const [page, client, simulator, defaultAgent, defaultTarget] = await Promise.all([
     readFile(PAGE_URL, "utf8"),
