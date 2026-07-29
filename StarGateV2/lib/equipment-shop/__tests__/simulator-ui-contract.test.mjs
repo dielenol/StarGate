@@ -20,6 +20,14 @@ const TURN_END_SFX_URL = new URL(
   "../../../public/assets/equipment-shop/sfx/ui-notice-level-up.mp3",
   import.meta.url,
 );
+const DEFAULT_AGENT_URL = new URL(
+  "../../../public/assets/npcs/Sector-C-Field-Agent-profile.webp",
+  import.meta.url,
+);
+const DEFAULT_TARGET_URL = new URL(
+  "../../../public/assets/npcs/General-Combatant-profile.webp",
+  import.meta.url,
+);
 
 test("comparison UI is removed and the attack log remains as the bottom section", async () => {
   const [client, styles] = await Promise.all([
@@ -51,11 +59,13 @@ test("action controls wrap inside the board at desktop and mobile widths", async
   );
 });
 
-test("the main-character pixel profile token falls back through SD and account initial safely", async () => {
-  const [page, client, simulator] = await Promise.all([
+test("the main-character token uses mapped art, a no-character field agent, and a safe initial fallback", async () => {
+  const [page, client, simulator, defaultAgent, defaultTarget] = await Promise.all([
     readFile(PAGE_URL, "utf8"),
     readFile(CLIENT_URL, "utf8"),
     readFile(SIMULATOR_URL, "utf8"),
+    readFile(DEFAULT_AGENT_URL),
+    readFile(DEFAULT_TARGET_URL),
   ]);
 
   assert.match(simulator, /portraitUrl\?: string/);
@@ -67,7 +77,11 @@ test("the main-character pixel profile token falls back through SD and account i
   assert.match(page, /getPixelProfilePath\(character\.codename\)/);
   assert.match(page, /getPixelCharacterPath\(character\.codename\)/);
   assert.match(page, /optimizedAssetPath\(character\.pixelCharacterImage\)/);
-  assert.match(page, /\.\.\.simulatorCharacterAssets\(\{ codename \}\)/);
+  assert.match(page, /const assets = simulatorCharacterAssets\(\{ codename \}\)/);
+  assert.match(page, /portraitUrl: assets\.portraitUrl \?\? DEFAULT_TRAINING_AGENT_PORTRAIT/);
+  assert.match(page, /Sector-C-Field-Agent-profile\.webp/);
+  assert.match(client, /General-Combatant-profile\.webp/);
+  assert.match(client, /src=\{DEFAULT_TARGET_PORTRAIT\}/);
   assert.match(client, /attacker\.portraitUrl \?\? attacker\.characterUrl/);
   assert.match(client, /src=\{attackerTokenUrl\}/);
   assert.match(client, /styles\.token__character/);
@@ -75,6 +89,29 @@ test("the main-character pixel profile token falls back through SD and account i
   assert.match(client, /className=\{styles\.token__fallback\}/);
   assert.match(client, /\{attackerTokenInitial\}/);
   assert.match(client, /\? "이미지 미등록"/);
+  assert.ok(defaultAgent.byteLength > 0);
+  assert.ok(defaultTarget.byteLength > 0);
+});
+
+test("the board exposes real token dragging, weapon range cells, and turn-consuming HMG setup", async () => {
+  const [client, simulator, styles] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(SIMULATOR_URL, "utf8"),
+    readFile(STYLES_URL, "utf8"),
+  ]);
+
+  assert.match(client, /setPointerCapture\(event\.pointerId\)/);
+  assert.match(client, /elementFromPoint\(event\.clientX, event\.clientY\)/);
+  assert.match(client, /handleTokenPointerUp\(event, "attacker"\)/);
+  assert.doesNotMatch(client, /draggable=\{enemyPositionConfirmed\}/);
+  assert.match(client, /isSimulatorAttackableCell\(/);
+  assert.match(client, /중기관총 설치 \(1턴\)/);
+  assert.match(client, /중기관총 해체 \(1턴\)/);
+  assert.match(client, /advanceTurnForAction\(/);
+  assert.match(simulator, /attackAxis\?: "horizontal" \| "vertical" \| "diamond"/);
+  assert.match(simulator, /getManhattanRange/);
+  assert.match(styles, /\.boardCell--attackable/);
+  assert.match(styles, /\.boardCell--dropTarget/);
 });
 
 test("nochichim-style combat tokens own HP, status, and hover stats without a duplicate side status card", async () => {

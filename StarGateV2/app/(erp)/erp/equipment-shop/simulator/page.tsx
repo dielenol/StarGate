@@ -20,6 +20,8 @@ const REGISTRAR_SIMULATOR_ASSETS = {
   portraitUrl: "/assets/npcs/Registrar-pixel-profile.webp",
   characterUrl: "/assets/npcs/Registrar-pixel-character.webp",
 } as const;
+const DEFAULT_TRAINING_AGENT_PORTRAIT =
+  "/assets/npcs/Sector-C-Field-Agent-profile.webp";
 
 function optimizedAssetPath(value?: string | null): string | undefined {
   const path = value?.trim();
@@ -56,13 +58,15 @@ function fallbackAttackerProfile(sessionUser: {
 }): SimulatorAttackerProfile {
   const codename =
     sessionUser.displayName ?? sessionUser.username ?? "훈련 요원";
+  const assets = simulatorCharacterAssets({ codename });
 
   return {
     codename,
     atk: 0,
     hp: 20,
     san: 20,
-    ...simulatorCharacterAssets({ codename }),
+    ...assets,
+    portraitUrl: assets.portraitUrl ?? DEFAULT_TRAINING_AGENT_PORTRAIT,
     source: "sandbox",
   };
 }
@@ -87,9 +91,12 @@ export default async function EquipmentShopSimulatorPage() {
       };
     } else if (mainCharacter) {
       attacker = {
-        ...attacker,
         codename: mainCharacter.codename,
+        atk: attacker.atk,
+        hp: attacker.hp,
+        san: attacker.san,
         ...simulatorCharacterAssets(mainCharacter),
+        source: "sandbox",
       };
     }
   } catch (err) {

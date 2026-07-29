@@ -69,7 +69,7 @@ export interface SimulatorRangeState {
   verticalDistance: number;
   band: SimulatorRangeBand;
   attackDistance?: number;
-  attackAxis?: "horizontal" | "vertical";
+  attackAxis?: "horizontal" | "vertical" | "diamond";
 }
 
 export type SimulatorAttackFailureReason =
@@ -317,7 +317,12 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
       shotsPerCycle: 2,
     },
     description: "설치 후 3턴 주기로 2회 사격 가능한 중화기입니다.",
-    notes: ["설치 전에는 공격할 수 없습니다.", "근거리 피해는 적용하지 않습니다."],
+    notes: [
+      "설치와 해체에 각각 1턴을 소모합니다.",
+      "설치 전에는 공격할 수 없습니다.",
+      "가로·세로 이동 칸의 합이 4칸 이내인 대각선 표적도 공격할 수 있습니다.",
+      "근거리 피해는 적용하지 않습니다.",
+    ],
   },
   "basic-sniper-rifle": {
     slug: "basic-sniper-rifle",
@@ -404,8 +409,10 @@ function getSimulatorRangeBand(distance: number): SimulatorRangeBand {
   return "far";
 }
 
-function isCardinalWeapon(rule: SimulatorWeaponRule): boolean {
-  return rule.role !== "냉병기";
+function requiresCardinalAlignment(rule: SimulatorWeaponRule): boolean {
+  return (
+    rule.role !== "냉병기" && rule.slug !== "basic-heavy-machine-gun"
+  );
 }
 
 function getCardinalRange(
@@ -434,6 +441,57 @@ function getCardinalRange(
     };
   }
   return null;
+}
+
+function getManhattanRange(
+  attacker: SimulatorBoardCoord,
+  target: SimulatorBoardCoord,
+): SimulatorRangeState {
+  const attackerColumn = SIMULATOR_BOARD_COLUMNS.indexOf(attacker.col);
+  const targetColumn = SIMULATOR_BOARD_COLUMNS.indexOf(target.col);
+  const attackDistance =
+    Math.abs(attackerColumn - targetColumn) +
+    Math.abs(attacker.row - target.row);
+
+  return {
+    ...getSimulatorRange(attacker, target),
+    band: getSimulatorRangeBand(attackDistance),
+    attackDistance,
+    attackAxis: "diamond",
+  };
+}
+
+export function getSimulatorWeaponRange(
+  weaponSlug: string,
+  attacker: SimulatorBoardCoord,
+  target: SimulatorBoardCoord,
+): SimulatorRangeState | null {
+  const rule = getSimulatorWeaponRule(weaponSlug);
+  if (!rule) return null;
+  if (rule.slug === "basic-heavy-machine-gun") {
+    return getManhattanRange(attacker, target);
+  }
+  if (requiresCardinalAlignment(rule)) {
+    return getCardinalRange(attacker, target);
+  }
+  return getSimulatorRange(attacker, target);
+}
+
+export function isSimulatorAttackableCell(
+  weaponSlug: string,
+  attacker: SimulatorBoardCoord,
+  target: SimulatorBoardCoord,
+): boolean {
+  const rule = getSimulatorWeaponRule(weaponSlug);
+  const range = getSimulatorWeaponRange(weaponSlug, attacker, target);
+  if (!rule || !range) return false;
+  if (
+    rule.slug === "basic-heavy-machine-gun" &&
+    (range.attackDistance ?? 0) > 4
+  ) {
+    return false;
+  }
+  return Boolean(rule.ranges[range.band]);
 }
 
 export function formatSimulatorDamage(profile: SimulatorDamageProfile): string {
@@ -496,11 +554,12 @@ export function resolveSimulatorAttack(
     return failureResult(input, "NO_RULE", "등록되지 않은 장비입니다.");
   }
 
-  const requiresCardinalAlignment = isCardinalWeapon(rule);
-  const cardinalRange = requiresCardinalAlignment
-    ? getCardinalRange(input.attacker, input.target)
-    : null;
-  if (requiresCardinalAlignment && !cardinalRange) {
+  const range = getSimulatorWeaponRange(
+    rule.slug,
+    input.attacker,
+    input.target,
+  );
+  if (!range && requiresCardinalAlignment(rule)) {
     return failureResult(
       input,
       "NOT_CARDINAL",
@@ -509,7 +568,22 @@ export function resolveSimulatorAttack(
     );
   }
 
-  const range = cardinalRange ?? getSimulatorRange(input.attacker, input.target);
+  if (!range) {
+    return failureResult(input, "OUT_OF_RANGE", "사거리를 계산할 수 없습니다.", rule);
+  }
+  if (
+    rule.slug === "basic-heavy-machine-gun" &&
+    (range.attackDistance ?? 0) > 4
+  ) {
+    return failureResult(
+      input,
+      "OUT_OF_RANGE",
+      "중기관총 사거리는 가로·세로 이동 칸의 합 4칸 이내입니다.",
+      rule,
+      undefined,
+      range,
+    );
+  }
   const profile = rule.ranges[range.band];
   if (!profile) {
     return failureResult(

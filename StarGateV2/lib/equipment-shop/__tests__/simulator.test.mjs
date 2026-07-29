@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   getInitialSimulatorResources,
   getSimulatorRange,
+  isSimulatorAttackableCell,
   isNewSimulatorCadenceCycle,
   resolveSimulatorAttack,
 } from "../simulator.ts";
@@ -120,10 +121,9 @@ test("firearms use distance along a shared row or column", () => {
   assert.equal(vertical.damageApplied, 10);
 });
 
-test("all firearm roles reject diagonal attacks with a clear reason", () => {
+test("ordinary firearm roles reject diagonal attacks with a clear reason", () => {
   for (const weaponSlug of [
     "basic-pistol",
-    "basic-heavy-machine-gun",
     "basic-flamethrower",
   ]) {
     const result = resolveSimulatorAttack({
@@ -143,6 +143,66 @@ test("all firearm roles reject diagonal attacks with a clear reason", () => {
     assert.equal(result.reason, "NOT_CARDINAL", weaponSlug);
     assert.match(result.reasonLabel, /같은 가로줄 또는 세로줄/, weaponSlug);
   }
+});
+
+test("installed heavy machine gun uses a four-cell Manhattan diamond", () => {
+  for (const target of [
+    { col: "A", row: 3 },
+    { col: "B", row: 4 },
+    { col: "C", row: 5 },
+    { col: "D", row: 4 },
+    { col: "E", row: 3 },
+  ]) {
+    const result = resolveSimulatorAttack({
+      weaponSlug: "basic-heavy-machine-gun",
+      attacker: { col: "C", row: 1 },
+      target,
+      attackerStats,
+      targetStats,
+      runtime: {
+        resourceRemaining: 10,
+        installed: true,
+        shotsInCycle: 0,
+      },
+    });
+
+    assert.equal(result.ok, true, `${target.col}${target.row}`);
+    assert.equal(result.range.attackAxis, "diamond");
+    assert.equal(result.range.attackDistance, 4);
+    assert.equal(result.range.band, "far");
+    assert.equal(result.damageApplied, 10);
+    assert.equal(
+      isSimulatorAttackableCell(
+        "basic-heavy-machine-gun",
+        { col: "C", row: 1 },
+        target,
+      ),
+      true,
+    );
+  }
+
+  const beyondRange = resolveSimulatorAttack({
+    weaponSlug: "basic-heavy-machine-gun",
+    attacker: { col: "C", row: 1 },
+    target: { col: "A", row: 5 },
+    attackerStats,
+    targetStats,
+    runtime: {
+      resourceRemaining: 10,
+      installed: true,
+      shotsInCycle: 0,
+    },
+  });
+  assert.equal(beyondRange.ok, false);
+  assert.equal(beyondRange.reason, "OUT_OF_RANGE");
+  assert.equal(
+    isSimulatorAttackableCell(
+      "basic-heavy-machine-gun",
+      { col: "C", row: 1 },
+      { col: "A", row: 5 },
+    ),
+    false,
+  );
 });
 
 test("melee attacks keep their existing vertical-distance behavior", () => {

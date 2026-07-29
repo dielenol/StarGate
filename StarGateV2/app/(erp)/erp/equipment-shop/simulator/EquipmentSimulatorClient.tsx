@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import {
-  type DragEvent,
   type KeyboardEvent,
+  type PointerEvent,
   useEffect,
   useMemo,
   useRef,
@@ -25,6 +25,7 @@ import {
   formatSimulatorDamage,
   getInitialSimulatorResources,
   getSimulatorRange,
+  isSimulatorAttackableCell,
   getSimulatorWeaponRule,
   isNewSimulatorCadenceCycle,
   resolveSimulatorAttack,
@@ -69,6 +70,7 @@ type TrainingEvent =
   | "blocked"
   | "reload"
   | "install"
+  | "uninstall"
   | "turn";
 
 type TrainingStep = {
@@ -102,6 +104,10 @@ const DEFAULT_TARGET: SimulatorTargetStats = {
 };
 const TURN_END_SFX_SRC =
   "/assets/equipment-shop/sfx/ui-notice-level-up.mp3";
+const DEFAULT_TRAINING_AGENT_PORTRAIT =
+  "/assets/npcs/Sector-C-Field-Agent-profile.webp";
+const DEFAULT_TARGET_PORTRAIT =
+  "/assets/npcs/General-Combatant-profile.webp";
 const TURN_REVEAL_OUT_MS = 1900;
 const TURN_REVEAL_END_MS = 2400;
 
@@ -391,6 +397,8 @@ export default function EquipmentSimulatorClient({
   );
   const [hmgInstalled, setHmgInstalled] = useState(false);
   const [hmgShotsInCycle, setHmgShotsInCycle] = useState(0);
+  const [draggedToken, setDraggedToken] = useState<ActiveToken | null>(null);
+  const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [turn, setTurn] = useState(1);
   const [sequence, setSequence] = useState(1);
   const [trainingEvent, setTrainingEvent] = useState<TrainingEvent>("ready");
@@ -402,6 +410,7 @@ export default function EquipmentSimulatorClient({
   } | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const turnEndAudioRef = useRef<HTMLAudioElement | null>(null);
+  const dragDestinationRef = useRef<SimulatorBoardCoord | null>(null);
   const feedbackSequenceRef = useRef(0);
   const feedbackTimerRef = useRef<number | null>(null);
   const turnRevealOutTimerRef = useRef<number | null>(null);
@@ -445,6 +454,8 @@ export default function EquipmentSimulatorClient({
   const selectedRule = getSimulatorWeaponRule(selectedSlug);
   const attackerTokenUrl = attacker.portraitUrl ?? attacker.characterUrl;
   const attackerTokenIsPortrait = Boolean(attacker.portraitUrl);
+  const attackerUsesFieldAgentPortrait =
+    attacker.portraitUrl === DEFAULT_TRAINING_AGENT_PORTRAIT;
   const attackerTokenInitial =
     attacker.codename.trim().charAt(0).toUpperCase() || "요";
   const defaultRange = getSimulatorRange(attackerPosition, targetPosition);
@@ -473,7 +484,11 @@ export default function EquipmentSimulatorClient({
       : 0;
   const range = selectedResult?.range ?? defaultRange;
   const usesCardinalDirections =
-    selectedRule !== null && selectedRule.role !== "냉병기";
+    selectedRule !== null &&
+    selectedRule.role !== "냉병기" &&
+    selectedRule.slug !== "basic-heavy-machine-gun";
+  const usesDiamondRange =
+    selectedRule?.slug === "basic-heavy-machine-gun";
   const isCardinallyAligned =
     attackerPosition.row === targetPosition.row ||
     attackerPosition.col === targetPosition.col;
@@ -483,14 +498,9 @@ export default function EquipmentSimulatorClient({
       ? "가로"
       : range.attackAxis === "vertical"
         ? "세로"
+        : range.attackAxis === "diamond"
+          ? "다이아몬드"
         : "세로";
-  const rangeRows = [attackerPosition.row, targetPosition.row].sort(
-    (a, b) => a - b,
-  );
-  const rangeColumns = [
-    SIMULATOR_BOARD_COLUMNS.indexOf(attackerPosition.col),
-    SIMULATOR_BOARD_COLUMNS.indexOf(targetPosition.col),
-  ].sort((a, b) => a - b);
   const selectedName = selectedItem?.name ?? selectedRule?.name ?? "장비";
   const resultSummary = !enemyPositionConfirmed
     ? "적 위치 지정 필요"
@@ -513,6 +523,8 @@ export default function EquipmentSimulatorClient({
           text:
             usesCardinalDirections && !isCardinallyAligned
               ? `나와 적이 대각선에 있습니다. 화기는 같은 가로줄 또는 세로줄에 놓아야 합니다. 예상 판정: ${resultSentence}`
+              : usesDiamondRange
+                ? `가로·세로 이동 칸의 합 ${attackDistance}칸은 ${SIMULATOR_RANGE_LABELS[range.band]} 판정입니다. 예상 판정: ${resultSentence} 준비되면 공격을 실행하십시오.`
               : `${attackAxisLabel} ${attackDistance}칸은 ${SIMULATOR_RANGE_LABELS[range.band]} 판정입니다. 예상 판정: ${resultSentence} 준비되면 공격을 실행하십시오.`,
         };
       case "attack":
@@ -533,7 +545,12 @@ export default function EquipmentSimulatorClient({
       case "install":
         return {
           title: "중기관총 설치 완료",
-          text: "3턴 주기마다 2회 사격할 수 있습니다. 현재 거리의 피해 판정을 확인하고 공격을 실행하십시오.",
+          text: `설치에 1턴을 사용해 ${turn}턴이 시작되었습니다. 다이아몬드 사거리 안에서 3턴 주기마다 2회 사격할 수 있습니다.`,
+        };
+      case "uninstall":
+        return {
+          title: "중기관총 해체 완료",
+          text: `해체에 1턴을 사용해 ${turn}턴이 시작되었습니다. 이제 내 토큰을 다시 이동할 수 있습니다.`,
         };
       case "turn":
         return {
@@ -647,6 +664,14 @@ export default function EquipmentSimulatorClient({
   }
 
   function moveToken(token: ActiveToken, coord: SimulatorBoardCoord) {
+    if (token === "attacker" && hmgInstalled) {
+      showFeedback(
+        "error",
+        "중기관총 해체 필요",
+        "설치 중에는 내 위치를 바꿀 수 없습니다. 중기관총을 해체한 뒤 이동하세요.",
+      );
+      return;
+    }
     const currentCoord = token === "attacker" ? attackerPosition : targetPosition;
     const nextAttacker = token === "attacker" ? coord : attackerPosition;
     const nextTarget = token === "target" ? coord : targetPosition;
@@ -665,7 +690,11 @@ export default function EquipmentSimulatorClient({
     const nextDistance =
       nextRange.attackDistance ?? nextRange.verticalDistance;
     const nextAxisLabel =
-      nextRange.attackAxis === "horizontal" ? "가로" : "세로";
+      nextRange.attackAxis === "horizontal"
+        ? "가로"
+        : nextRange.attackAxis === "diamond"
+          ? "다이아몬드"
+          : "세로";
     if (token === "attacker") {
       setAttackerPosition(coord);
     } else {
@@ -726,27 +755,92 @@ export default function EquipmentSimulatorClient({
     handleCellActivate(coord);
   }
 
-  function handleTokenDragStart(
-    event: DragEvent<HTMLSpanElement>,
+  function handleTokenPointerDown(
+    event: PointerEvent<HTMLDivElement>,
     token: ActiveToken,
   ) {
-    if (token === "attacker" && !enemyPositionConfirmed) {
-      event.preventDefault();
+    if (!event.isPrimary || event.button !== 0) return;
+    if (
+      token === "attacker" &&
+      (!enemyPositionConfirmed || hmgInstalled)
+    ) {
+      if (hmgInstalled) {
+        showFeedback(
+          "error",
+          "중기관총 해체 필요",
+          "설치 중에는 내 토큰을 드래그할 수 없습니다.",
+        );
+      }
       return;
     }
-    event.dataTransfer.setData("text/plain", token);
-    event.dataTransfer.effectAllowed = "move";
+    event.preventDefault();
+    event.stopPropagation();
+    dragDestinationRef.current = null;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDraggedToken(token);
   }
 
-  function handleCellDrop(
-    event: DragEvent<HTMLDivElement>,
-    coord: SimulatorBoardCoord,
+  function coordFromPointer(
+    event: PointerEvent<HTMLDivElement>,
+  ): SimulatorBoardCoord | null {
+    const cell = document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest<HTMLElement>("[data-simulator-cell]");
+    const col = cell?.dataset.simulatorCol;
+    const row = Number(cell?.dataset.simulatorRow);
+    if (
+      !col ||
+      !SIMULATOR_BOARD_COLUMNS.some((value) => value === col) ||
+      !SIMULATOR_BOARD_ROWS.some((value) => value === row)
+    ) {
+      return null;
+    }
+    return {
+      col: col as SimulatorBoardCoord["col"],
+      row: row as SimulatorBoardCoord["row"],
+    };
+  }
+
+  function handleTokenPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    const coord = coordFromPointer(event);
+    dragDestinationRef.current = coord;
+    setDragOverCell(coord ? cellKey(coord) : null);
+  }
+
+  function handleTokenPointerUp(
+    event: PointerEvent<HTMLDivElement>,
+    token: ActiveToken,
   ) {
+    const coord = coordFromPointer(event) ?? dragDestinationRef.current;
+    dragDestinationRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     event.preventDefault();
-    const token = event.dataTransfer.getData("text/plain");
-    if (token !== "attacker" && token !== "target") return;
-    if (token === "attacker" && !enemyPositionConfirmed) return;
-    moveToken(token, coord);
+    event.stopPropagation();
+    setDraggedToken(null);
+    setDragOverCell(null);
+    if (coord) moveToken(token, coord);
+  }
+
+  function handleTokenPointerCancel(
+    event: PointerEvent<HTMLDivElement>,
+  ) {
+    dragDestinationRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setDraggedToken(null);
+    setDragOverCell(null);
+  }
+
+  function handleTokenPointerCaptureLost(token: ActiveToken) {
+    const coord = dragDestinationRef.current;
+    dragDestinationRef.current = null;
+    setDraggedToken(null);
+    setDragOverCell(null);
+    if (coord) moveToken(token, coord);
   }
 
   function handleReload() {
@@ -765,18 +859,41 @@ export default function EquipmentSimulatorClient({
     pushLog(`${selectedRule.name} ${controlReloadLabel(selectedRule)} 완료`, "info");
   }
 
-  function handleInstallHmg() {
-    if (selectedRule?.slug !== "basic-heavy-machine-gun") return;
-    setHmgInstalled(true);
-    setHmgShotsInCycle(0);
-    setTrainingEvent("install");
+  function advanceTurnForAction(
+    event: Extract<TrainingEvent, "install" | "uninstall" | "turn">,
+    title: string,
+    detail: string,
+    log: string,
+  ) {
+    const endedTurn = turn;
+    const nextTurn = turn + 1;
+    const resetCycle = isNewSimulatorCadenceCycle(turn, nextTurn);
+    playTurnEndSound();
+    showTurnEndReveal(endedTurn);
+    setTurn(nextTurn);
+    if (resetCycle) {
+      setHmgShotsInCycle(0);
+    }
+    setTrainingEvent(event);
     setActiveStep(2);
-    showFeedback(
-      "success",
-      "중기관총 설치 완료",
-      "3턴 주기에서 2회 사격할 수 있습니다.",
+    showFeedback("success", title, `${detail} ${nextTurn}턴 시작.`, {
+      sound: false,
+    });
+    pushLog(`${log} · ${nextTurn}턴 시작.`, "info");
+  }
+
+  function handleToggleHmg() {
+    if (selectedRule?.slug !== "basic-heavy-machine-gun") return;
+    const nextInstalled = !hmgInstalled;
+    setHmgInstalled(nextInstalled);
+    advanceTurnForAction(
+      nextInstalled ? "install" : "uninstall",
+      nextInstalled ? "중기관총 설치 완료" : "중기관총 해체 완료",
+      nextInstalled
+        ? "설치에 1턴을 사용했습니다."
+        : "해체에 1턴을 사용했습니다.",
+      nextInstalled ? "중기관총 설치 완료" : "중기관총 해체 완료",
     );
-    pushLog("중기관총 설치 완료. 현재 3턴 주기에서 2회 사격 가능합니다.", "info");
   }
 
   function handleNextTurn() {
@@ -814,6 +931,9 @@ export default function EquipmentSimulatorClient({
     setResourceBySlug(getInitialSimulatorResources());
     setHmgInstalled(false);
     setHmgShotsInCycle(0);
+    dragDestinationRef.current = null;
+    setDraggedToken(null);
+    setDragOverCell(null);
     setTurn(1);
     setActiveToken("target");
     setEnemyPositionConfirmed(false);
@@ -1137,14 +1257,18 @@ export default function EquipmentSimulatorClient({
             <strong>
               {usesCardinalDirections && !isCardinallyAligned
                 ? "직선 정렬 필요"
-                : `${attackAxisLabel} ${attackDistance}칸`}
+                : usesDiamondRange
+                  ? `이동 합계 ${attackDistance}칸`
+                  : `${attackAxisLabel} ${attackDistance}칸`}
             </strong>
             <em>
-              {usesCardinalDirections
-                ? isCardinallyAligned
-                  ? "나와 적의 직선 거리로 사거리 계산"
-                  : "화기는 같은 가로줄 또는 세로줄에서만 공격 가능"
-                : "가로 칸은 냉병기 사거리 계산에서 제외"}
+              {usesDiamondRange
+                ? "중기관총은 가로·세로 이동 칸의 합으로 다이아몬드 사거리 계산"
+                : usesCardinalDirections
+                  ? isCardinallyAligned
+                    ? "나와 적의 직선 거리로 사거리 계산"
+                    : "화기는 같은 가로줄 또는 세로줄에서만 공격 가능"
+                  : "가로 칸은 냉병기 사거리 계산에서 제외"}
             </em>
             <small>0칸 근거리 · 1–2칸 중거리 · 3–4칸 장거리</small>
           </div>
@@ -1171,13 +1295,12 @@ export default function EquipmentSimulatorClient({
               <button
                 type="button"
                 className={styles.controlButton}
-                onClick={handleInstallHmg}
-                disabled={
-                  selectedRule?.slug !== "basic-heavy-machine-gun" ||
-                  hmgInstalled
-                }
+                onClick={handleToggleHmg}
+                disabled={selectedRule?.slug !== "basic-heavy-machine-gun"}
               >
-                중기관총 설치
+                {hmgInstalled
+                  ? "중기관총 해체 (1턴)"
+                  : "중기관총 설치 (1턴)"}
               </button>
               <button
                 type="button"
@@ -1216,7 +1339,7 @@ export default function EquipmentSimulatorClient({
                 <span>턴 사용 규칙</span>
                 <strong>
                   {selectedRule?.cadence
-                    ? `3턴당 ${selectedRule.cadence.shotsPerCycle}회 · 현재 ${hmgShotsInCycle}/2`
+                    ? `${hmgInstalled ? "설치됨" : "미설치"} · 3턴당 ${selectedRule.cadence.shotsPerCycle}회 · 현재 ${hmgShotsInCycle}/2`
                     : "같은 턴 연속 시험 가능"}
                 </strong>
               </div>
@@ -1241,39 +1364,46 @@ export default function EquipmentSimulatorClient({
                   const coord: SimulatorBoardCoord = { col, row };
                   const hasAttacker = sameCoord(coord, attackerPosition);
                   const hasTarget = sameCoord(coord, targetPosition);
-                  const columnIndex = SIMULATOR_BOARD_COLUMNS.indexOf(col);
-                  const inAttackLane = usesCardinalDirections
-                    ? attackerPosition.row === targetPosition.row
-                      ? row === attackerPosition.row &&
-                        columnIndex >= rangeColumns[0] &&
-                        columnIndex <= rangeColumns[1]
-                      : attackerPosition.col === targetPosition.col &&
-                        col === attackerPosition.col &&
-                        row >= rangeRows[0] &&
-                        row <= rangeRows[1]
-                    : row >= rangeRows[0] && row <= rangeRows[1];
+                  const isAttackable =
+                    selectedRule !== null &&
+                    isSimulatorAttackableCell(
+                      selectedRule.slug,
+                      attackerPosition,
+                      coord,
+                    );
+                  const isDropTarget = dragOverCell === cellKey(coord);
                   return (
                     <div
                       key={cellKey(coord)}
                       role="button"
                       tabIndex={0}
+                      data-simulator-cell
+                      data-simulator-col={col}
+                      data-simulator-row={row}
                       className={[
                         styles.boardCell,
-                        inAttackLane ? styles["boardCell--lane"] : "",
+                        isAttackable
+                          ? styles["boardCell--attackable"]
+                          : "",
+                        isDropTarget
+                          ? styles["boardCell--dropTarget"]
+                          : "",
                         hasAttacker ? styles["boardCell--attacker"] : "",
                         hasTarget ? styles["boardCell--target"] : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
                       onClick={() => handleCellActivate(coord)}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={(event) => handleCellDrop(event, coord)}
                       onKeyDown={(event) => handleCellKeyDown(event, coord)}
                       aria-label={
                         `${
                           activeToken === "attacker"
                             ? `나를 ${cellKey(coord)} 칸으로 이동`
                             : `적을 ${cellKey(coord)} 칸에 배치`
+                        }${
+                          isAttackable
+                            ? `; ${selectedName} 공격 가능 범위`
+                            : ""
                         }${
                           hasAttacker
                             ? `; 나 ${attacker.codename}, HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}`
@@ -1288,10 +1418,12 @@ export default function EquipmentSimulatorClient({
                       <span className={styles.cellCoord}>{cellKey(coord)}</span>
                       {hasAttacker ? (
                         <div
-                          draggable={enemyPositionConfirmed}
                           className={[
                             styles.token,
                             styles["token--attacker"],
+                            draggedToken === "attacker"
+                              ? styles["token--dragging"]
+                              : "",
                             attackerPosition.row <= 2
                               ? styles["token--popoverBelow"]
                               : "",
@@ -1301,8 +1433,17 @@ export default function EquipmentSimulatorClient({
                               ? styles["token--popoverLeft"]
                               : "",
                           ].join(" ")}
-                          onDragStart={(event) =>
-                            handleTokenDragStart(event, "attacker")
+                          onClick={(event) => event.stopPropagation()}
+                          onPointerDown={(event) =>
+                            handleTokenPointerDown(event, "attacker")
+                          }
+                          onPointerMove={handleTokenPointerMove}
+                          onPointerUp={(event) =>
+                            handleTokenPointerUp(event, "attacker")
+                          }
+                          onPointerCancel={handleTokenPointerCancel}
+                          onLostPointerCapture={() =>
+                            handleTokenPointerCaptureLost("attacker")
                           }
                           role="img"
                           aria-label={`나, ${attacker.codename} 위치 토큰. HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}`}
@@ -1316,7 +1457,16 @@ export default function EquipmentSimulatorClient({
                                 alt=""
                                 className={
                                   attackerTokenIsPortrait
-                                    ? styles.token__portrait
+                                    ? [
+                                        styles.token__portrait,
+                                        attackerUsesFieldAgentPortrait
+                                          ? styles[
+                                              "token__portrait--fieldAgent"
+                                            ]
+                                          : "",
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" ")
                                     : styles.token__character
                                 }
                                 draggable={false}
@@ -1364,10 +1514,12 @@ export default function EquipmentSimulatorClient({
                       ) : null}
                       {hasTarget ? (
                         <div
-                          draggable
                           className={[
                             styles.token,
                             styles["token--target"],
+                            draggedToken === "target"
+                              ? styles["token--dragging"]
+                              : "",
                             targetPosition.row <= 2
                               ? styles["token--popoverBelow"]
                               : "",
@@ -1377,8 +1529,17 @@ export default function EquipmentSimulatorClient({
                               ? styles["token--popoverLeft"]
                               : "",
                           ].join(" ")}
-                          onDragStart={(event) =>
-                            handleTokenDragStart(event, "target")
+                          onClick={(event) => event.stopPropagation()}
+                          onPointerDown={(event) =>
+                            handleTokenPointerDown(event, "target")
+                          }
+                          onPointerMove={handleTokenPointerMove}
+                          onPointerUp={(event) =>
+                            handleTokenPointerUp(event, "target")
+                          }
+                          onPointerCancel={handleTokenPointerCancel}
+                          onLostPointerCapture={() =>
+                            handleTokenPointerCaptureLost("target")
                           }
                           role="img"
                           aria-label={`적, 훈련 표적 위치 토큰. HP ${targetStats.hp}/${targetStats.maxHp}, 정신력 ${targetStats.san}/${targetStats.maxSan}, DEF ${targetStats.def}, 상태 ${
@@ -1393,7 +1554,19 @@ export default function EquipmentSimulatorClient({
                           }`}
                         >
                           <span className={styles.token__inner} aria-hidden>
-                            <span className={styles.token__fallback}>적</span>
+                            <Image
+                              src={DEFAULT_TARGET_PORTRAIT}
+                              width={64}
+                              height={64}
+                              alt=""
+                              className={[
+                                styles.token__portrait,
+                                styles["token__portrait--fieldAgent"],
+                              ].join(" ")}
+                              draggable={false}
+                              loading="eager"
+                              unoptimized
+                            />
                           </span>
                           <span
                             className={styles.token__hp}
