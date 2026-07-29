@@ -4,13 +4,11 @@ import test from "node:test";
 
 const STATUS_DESCRIPTION =
   "뜨거운 물질(물, 기름, 불), 화학물질, 전기, 마찰, 방사선 등으로 인해 피부와 조직이 손상되는 것을 말";
-const GENERIC_STATUS_EFFECT =
+const STATUS_EFFECT =
   "매 라운드 동안 N의 수치에 해당하는 지속 피해를 입게 되며 방어력은 -N만큼 유지";
 const STACK_EFFECT = "방어력에 적용되는 -N이 누적";
 const SUMMARY_EFFECT = "매 라운드 N의 지속 피해와 방어력 -N";
 const SUMMARY_STACK = "중복 시 방어력 감소가 누적";
-const WEAPON_EFFECT = "3라운드 동안 5의 지속 피해와 방어력 -5";
-const WEAPON_DESCRIPTION = "3라운드 동안 5 피해·방어력 -5";
 
 const EQUIPMENT_SPEC_URL = new URL(
   "../../../docs/spec/equipment/basic-flamethrower.md",
@@ -40,12 +38,16 @@ test("flamethrower spec and durable payload share the canonical burn rule", asyn
 
   assert.ok(flamethrower);
   for (const text of [spec, flamethrower.loreMd, flamethrower.lore.notes]) {
-    assert.match(text, new RegExp(WEAPON_EFFECT));
-    assert.doesNotMatch(text, /N의 수치|회복 적용이 되지 않는 한/);
+    assert.match(text, new RegExp(STATUS_EFFECT));
+    assert.match(text, new RegExp(STACK_EFFECT));
   }
-  assert.match(flamethrower.description, new RegExp(WEAPON_DESCRIPTION));
-  assert.match(spec, /소이선/);
-  assert.match(flamethrower.loreMd, /소이선/);
+  assert.match(flamethrower.description, new RegExp(SUMMARY_EFFECT));
+  assert.match(flamethrower.description, new RegExp(SUMMARY_STACK));
+  assert.match(spec, new RegExp(STATUS_DESCRIPTION.replace(/[()]/g, "\\$&")));
+  assert.match(
+    flamethrower.loreMd,
+    new RegExp(STATUS_DESCRIPTION.replace(/[()]/g, "\\$&")),
+  );
 });
 
 test("status wiki and BIG BOY equipment mirror the corrected burn description", async () => {
@@ -66,7 +68,7 @@ test("status wiki and BIG BOY equipment mirror the corrected burn description", 
     statusPage.content,
     new RegExp(STATUS_DESCRIPTION.replace(/[()]/g, "\\$&")),
   );
-  assert.match(statusPage.content, new RegExp(GENERIC_STATUS_EFFECT));
+  assert.match(statusPage.content, new RegExp(STATUS_EFFECT));
   assert.match(statusPage.content, new RegExp(STACK_EFFECT));
   assert.match(bigBoyEquipment.description, new RegExp(SUMMARY_EFFECT));
   assert.match(bigBoyEquipment.description, new RegExp(SUMMARY_STACK));

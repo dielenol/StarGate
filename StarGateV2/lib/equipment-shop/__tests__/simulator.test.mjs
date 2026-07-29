@@ -156,12 +156,18 @@ test("flamethrower applies burn on supported range", () => {
   assert.equal(result.ok, true);
   assert.equal(result.damageApplied, 8);
   assert.deepEqual(result.statusesApplied, ["burn"]);
-  assert.equal(SIMULATOR_STATUS_RULES.burn.durationRounds, 3);
-  assert.equal(SIMULATOR_STATUS_RULES.burn.ongoingDamage, 5);
-  assert.equal(SIMULATOR_STATUS_RULES.burn.armorReduction, 5);
+  assert.match(
+    SIMULATOR_STATUS_RULES.burn.description,
+    /뜨거운 물질\(물, 기름, 불\)/,
+  );
+  assert.match(
+    SIMULATOR_STATUS_RULES.burn.effect,
+    /매 라운드 동안 N의 수치에 해당하는 지속 피해/,
+  );
+  assert.match(SIMULATOR_STATUS_RULES.burn.effect, /방어력은 -N만큼/);
 });
 
-test("burn lasts three rounds, deals 5 ongoing damage, and reduces DEF by 5", () => {
+test("burn persists until recovery without inventing an N value", () => {
   const baseTarget = {
     hp: 60,
     maxHp: 60,
@@ -172,19 +178,14 @@ test("burn lasts three rounds, deals 5 ongoing damage, and reduces DEF by 5", ()
     statusRounds: {},
   };
   const burning = applySimulatorStatuses(baseTarget, ["burn"]);
-  assert.equal(burning.statusRounds.burn, 3);
-  assert.equal(getSimulatorEffectiveDef(burning), 3);
+  assert.equal(burning.statusRounds.burn, 1);
+  assert.equal(getSimulatorEffectiveDef(burning), 8);
 
   const afterOneRound = advanceSimulatorTargetRound(burning);
-  assert.equal(afterOneRound.hp, 55);
-  assert.equal(afterOneRound.statusRounds.burn, 2);
-
-  const afterThreeRounds = advanceSimulatorTargetRound(
-    advanceSimulatorTargetRound(afterOneRound),
-  );
-  assert.equal(afterThreeRounds.hp, 45);
-  assert.deepEqual(afterThreeRounds.statuses, []);
-  assert.equal(getSimulatorEffectiveDef(afterThreeRounds), 8);
+  assert.equal(afterOneRound.hp, 60);
+  assert.equal(afterOneRound.statusRounds.burn, 1);
+  assert.deepEqual(afterOneRound.statuses, ["burn"]);
+  assert.equal(getSimulatorEffectiveDef(afterOneRound), 8);
 });
 
 test("sniper rifle penetrates 10 DEF before mitigation", () => {
