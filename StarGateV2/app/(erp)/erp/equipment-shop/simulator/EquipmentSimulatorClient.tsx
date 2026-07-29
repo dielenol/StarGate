@@ -497,14 +497,8 @@ export default function EquipmentSimulatorClient({
     DEFAULT_BATTLEFIELD;
   const boardColumns = battlefield.columns;
   const boardRows = battlefield.rows;
-  const boardColumnTemplate =
-    boardColumns.length === 1
-      ? "minmax(160px, 240px)"
-      : `repeat(${boardColumns.length}, minmax(46px, 1fr))`;
-  const boardRowTemplate =
-    boardRows.length === 1
-      ? "minmax(96px, 120px)"
-      : `repeat(${boardRows.length}, minmax(78px, 1fr))`;
+  const boardColumnTemplate = `repeat(${boardColumns.length}, minmax(46px, 1fr))`;
+  const boardRowTemplate = `repeat(${boardRows.length}, minmax(78px, 1fr))`;
 
   const selectedItem =
     simulatorItems.find((item) => item.slug === selectedSlug) ??
@@ -1472,15 +1466,6 @@ export default function EquipmentSimulatorClient({
             style={{
               gridTemplateColumns: `34px ${boardColumnTemplate}`,
               gridTemplateRows: `28px ${boardRowTemplate}`,
-              minHeight:
-                boardRows.length === 1
-                  ? "190px"
-                  : boardColumns.length === 1
-                    ? "530px"
-                    : undefined,
-              justifyContent:
-                boardColumns.length === 1 ? "center" : undefined,
-              alignContent: boardRows.length === 1 ? "center" : undefined,
             }}
           >
             <div className={styles.cornerLabel} aria-hidden />

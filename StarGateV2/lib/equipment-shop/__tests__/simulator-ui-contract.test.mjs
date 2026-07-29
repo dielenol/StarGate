@@ -75,8 +75,21 @@ test("the standard 5x5 battlefield can switch to vertical 1x5 and horizontal 5x1
   assert.match(client, /boardRows\.map\(\(row\)/);
   assert.match(client, /boardColumns\.map\(\(col\)/);
   assert.match(client, /resetTrainingState\(\s*nextBattlefield/);
+  assert.match(
+    client,
+    /boardColumnTemplate = `repeat\(\$\{boardColumns\.length\}, minmax\(46px, 1fr\)\)`/,
+  );
+  assert.match(
+    client,
+    /boardRowTemplate = `repeat\(\$\{boardRows\.length\}, minmax\(78px, 1fr\)\)`/,
+  );
+  assert.doesNotMatch(client, /minmax\(160px, 240px\)|minmax\(96px, 120px\)/);
   assert.match(styles, /\.battlefieldSelector/);
   assert.match(styles, /\.battlefieldSelector__button--active/);
+  assert.match(
+    styles,
+    /\.boardCell--attackable\s*\{[^}]*rgba\(255, 72, 72, 0\.88\)[^}]*repeating-linear-gradient/s,
+  );
 });
 
 test("the main-character token uses mapped art, a no-character field agent, and a safe initial fallback", async () => {
