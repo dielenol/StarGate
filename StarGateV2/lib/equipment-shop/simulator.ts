@@ -12,7 +12,11 @@ export interface SimulatorBoardCoord {
 export type SimulatorRangeBand = "near" | "mid" | "far";
 export type SimulatorDamageKind = "physical" | "fire" | "sound";
 export type SimulatorTargetStat = "hp" | "san";
-export type SimulatorStatusKind = "burn";
+export type SimulatorStatusKind = "burn" | "dazed";
+export type SimulatorWeaponActionKind =
+  | "knockback"
+  | "area-spray"
+  | "incendiary-line";
 export type SimulatorWeaponRole = "냉병기" | "화기" | "설치화기" | "특수화기";
 export type SimulatorResourceKind = "ammo" | "charge";
 
@@ -40,6 +44,7 @@ export interface SimulatorTargetStats {
   maxSan: number;
   def: number;
   statuses: SimulatorStatusKind[];
+  statusRounds: Partial<Record<SimulatorStatusKind, number>>;
 }
 
 export interface SimulatorDamageProfile {
@@ -48,7 +53,15 @@ export interface SimulatorDamageProfile {
   label: string;
   targetStat: SimulatorTargetStat;
   appliesDef: boolean;
+  armorPenetration?: number;
   statuses?: SimulatorStatusKind[];
+}
+
+export interface SimulatorWeaponAction {
+  kind: SimulatorWeaponActionKind;
+  name: string;
+  resourceCost: number | "all";
+  description: string;
 }
 
 export interface SimulatorWeaponRule {
@@ -68,6 +81,7 @@ export interface SimulatorWeaponRule {
     cycleTurns: number;
     shotsPerCycle: number;
   };
+  actions?: SimulatorWeaponAction[];
   description: string;
   notes: string[];
 }
@@ -144,15 +158,47 @@ export const SIMULATOR_TARGET_STAT_LABELS: Record<SimulatorTargetStat, string> =
 
 export const SIMULATOR_STATUS_LABELS: Record<SimulatorStatusKind, string> = {
   burn: "화상",
+  dazed: "멍함",
 };
 
-function physical(amount: number): SimulatorDamageProfile {
+export const SIMULATOR_STATUS_RULES: Record<
+  SimulatorStatusKind,
+  {
+    description: string;
+    effect: string;
+    durationRounds?: number;
+    persistentUntilRecovery?: boolean;
+    ongoingDamage?: number;
+    armorReduction?: number;
+    rangedAttackReductionPercent?: number;
+  }
+> = {
+  burn: {
+    description:
+      "뜨거운 물질(물, 기름, 불), 화학물질, 전기, 마찰, 방사선 등으로 인해 피부와 조직이 손상되는 것을 말합니다. 습윤밴드, 저온 요법 등으로 완화할 수 있습니다.",
+    effect:
+      "“화상” 상태이상은 회복 적용이 되지 않는 한 지속 적용됩니다. 매 라운드 동안 N의 수치에 해당하는 지속 피해를 입게 되며 방어력은 -N만큼 유지됩니다. 해당 상태이상이 중복되는 경우 방어력에 적용되는 -N이 누적됩니다.",
+    persistentUntilRecovery: true,
+  },
+  dazed: {
+    description: "음파 방출기에 명중한 대상에게 부여됩니다.",
+    effect: "다음 1라운드 동안 원거리 공격 피해가 20% 감소합니다.",
+    durationRounds: 1,
+    rangedAttackReductionPercent: 20,
+  },
+};
+
+function physical(
+  amount: number,
+  armorPenetration?: number,
+): SimulatorDamageProfile {
   return {
     amount,
     kind: "physical",
     label: "물리",
     targetStat: "hp",
     appliesDef: true,
+    ...(armorPenetration ? { armorPenetration } : {}),
   };
 }
 
@@ -174,8 +220,12 @@ function sound(amount: number): SimulatorDamageProfile {
     label: "소리",
     targetStat: "san",
     appliesDef: false,
+    statuses: ["dazed"],
   };
 }
+
+const RANGED_RANGE_RULE_NOTE =
+  "같은 영역은 근거리, 1~2영역 차이는 중거리, 3영역 이상 차이는 장거리로 판정합니다.";
 
 export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
   "basic-dagger": {
@@ -264,7 +314,10 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
     },
     usesAtkBonus: false,
     description: "한 손 또는 양손으로 파지 가능한 소형 화기입니다.",
-    notes: ["원거리 무기는 무기 고유 피해값을 사용합니다."],
+    notes: [
+      "원거리 무기는 무기 고유 피해값을 사용합니다.",
+      RANGED_RANGE_RULE_NOTE,
+    ],
   },
   "basic-assault-rifle": {
     slug: "basic-assault-rifle",
@@ -282,8 +335,8 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
       max: 6,
     },
     usesAtkBonus: false,
-    description: "전 구간 시험이 가능한 기본 자동소총입니다.",
-    notes: ["중거리에서 가장 높은 피해를 냅니다."],
+    description: "흔히 자동소총을 의미하는 기본 소총류입니다.",
+    notes: [RANGED_RANGE_RULE_NOTE],
   },
   "basic-shotgun": {
     slug: "basic-shotgun",
@@ -300,8 +353,17 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
       max: 4,
     },
     usesAtkBonus: false,
-    description: "근거리 산탄 피해가 큰 기본 산탄총입니다.",
-    notes: ["장거리 피해는 적용하지 않습니다."],
+    actions: [
+      {
+        kind: "knockback",
+        name: "넉백",
+        resourceCost: 2,
+        description:
+          "탄환 2를 소모합니다. 명중한 대상을 1칸 뒤로 물러나게 하며, 세로 전장에서는 사용할 수 없습니다.",
+      },
+    ],
+    description: "근거리 산탄 피해가 큰 기본 샷건입니다.",
+    notes: [RANGED_RANGE_RULE_NOTE, "장거리 피해는 적용하지 않습니다."],
   },
   "basic-heavy-machine-gun": {
     slug: "basic-heavy-machine-gun",
@@ -320,14 +382,23 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
     usesAtkBonus: false,
     requiresSetup: true,
     cadence: {
-      cycleTurns: 3,
+      cycleTurns: 1,
       shotsPerCycle: 2,
     },
-    description: "설치 후 3턴 주기로 2회 사격 가능한 중화기입니다.",
+    actions: [
+      {
+        kind: "area-spray",
+        name: "광역 난사",
+        resourceCost: "all",
+        description:
+          "모든 탄환을 소모해 사거리 안의 모든 개체를 공격합니다. 각 대상은 1d6에서 4 이하가 나오면 피해를 입습니다.",
+      },
+    ],
+    description: "설치 후 매 턴 2회 공격할 수 있는 중기관총입니다.",
     notes: [
-      "설치와 해체에 각각 1턴을 소모합니다.",
-      "설치 전에는 공격할 수 없습니다.",
-      "가로·세로 이동 칸의 합이 4칸 이내인 대각선 표적도 공격할 수 있습니다.",
+      "자신의 턴에 설치를 선언한 뒤 사용할 수 있으며, 설치 후에는 이동할 수 없습니다.",
+      "수평 전투에서는 대각선 범위에도 사거리를 부여합니다.",
+      RANGED_RANGE_RULE_NOTE,
       "근거리 피해는 적용하지 않습니다.",
     ],
   },
@@ -337,7 +408,7 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
     role: "화기",
     price: 500,
     ranges: {
-      far: physical(20),
+      far: physical(20, 10),
     },
     resource: {
       kind: "ammo",
@@ -345,8 +416,12 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
       max: 3,
     },
     usesAtkBonus: false,
-    description: "장거리에서만 강력한 피해를 내는 저격소총입니다.",
-    notes: ["근거리와 중거리 피해는 적용하지 않습니다."],
+    description: "강력한 파괴력을 지닌 장거리 저격소총입니다.",
+    notes: [
+      RANGED_RANGE_RULE_NOTE,
+      "철갑탄은 대상 방어력 10을 관통합니다.",
+      "근거리와 중거리 피해는 적용하지 않습니다.",
+    ],
   },
   "basic-flamethrower": {
     slug: "basic-flamethrower",
@@ -359,12 +434,27 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
     },
     resource: {
       kind: "ammo",
-      label: "연료",
+      label: "탄환",
       max: 4,
     },
     usesAtkBonus: false,
-    description: "명중한 표적에게 화상 상태를 추가하는 화염 장비입니다.",
-    notes: ["화염 피해에는 DEF를 적용하지 않습니다."],
+    actions: [
+      {
+        kind: "incendiary-line",
+        name: "소이선",
+        resourceCost: 2,
+        description:
+          "탄환 2를 소모해 영역 하나 또는 전방 3칸의 가로·세로 화염 지대를 만듭니다. 지대는 3라운드 지속되며, 들어선 대상은 화상을 얻습니다.",
+      },
+    ],
+    description:
+      "화염 피해와 “화상” 상태이상을 부여하는 기본 군용 화염방사기입니다.",
+    notes: [
+      RANGED_RANGE_RULE_NOTE,
+      "화염 피해에는 DEF를 적용하지 않습니다.",
+      "명중한 대상은 회복 적용 전까지 매 라운드 N의 지속 피해를 입고 방어력이 -N만큼 감소하는 “화상” 상태이상을 얻습니다.",
+      "N 수치와 회복 적용은 현재 훈련장에서 자동 계산하지 않습니다.",
+    ],
   },
   "basic-sonic-emitter": {
     slug: "basic-sonic-emitter",
@@ -377,12 +467,16 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
     },
     resource: {
       kind: "ammo",
-      label: "출력",
+      label: "탄환",
       max: 3,
     },
     usesAtkBonus: false,
     description: "일정 거리를 두고 정신력에 피해를 주는 음파 장비입니다.",
-    notes: ["소리 피해는 HP가 아닌 정신력에 적용합니다."],
+    notes: [
+      RANGED_RANGE_RULE_NOTE,
+      "소리 피해는 HP가 아닌 정신력에 적용합니다.",
+      "정신 혼미: 명중한 대상은 다음 1라운드 동안 원거리 공격 피해가 20% 감소하는 멍함을 얻습니다.",
+    ],
   },
 };
 
@@ -542,7 +636,136 @@ export function getInitialSimulatorResources(): Record<string, number> {
   );
 }
 
-export function getSimulatorCadenceCycle(turn: number, cycleTurns = 3): number {
+export function getSimulatorEffectiveDef(
+  target: Pick<SimulatorTargetStats, "def" | "statuses" | "statusRounds">,
+): number {
+  const armorReduction = target.statuses.reduce((total, status) => {
+    if ((target.statusRounds[status] ?? 0) <= 0) return total;
+    return total + (SIMULATOR_STATUS_RULES[status].armorReduction ?? 0);
+  }, 0);
+  return Math.max(0, target.def - armorReduction);
+}
+
+export function applySimulatorStatuses(
+  target: SimulatorTargetStats,
+  statuses: readonly SimulatorStatusKind[],
+): SimulatorTargetStats {
+  if (statuses.length === 0) return target;
+
+  const nextStatuses = Array.from(new Set([...target.statuses, ...statuses]));
+  const nextStatusRounds = { ...target.statusRounds };
+  for (const status of statuses) {
+    const rule = SIMULATOR_STATUS_RULES[status];
+    if (rule.persistentUntilRecovery) {
+      nextStatusRounds[status] = Math.max(nextStatusRounds[status] ?? 0, 1);
+      continue;
+    }
+    nextStatusRounds[status] = Math.max(
+      nextStatusRounds[status] ?? 0,
+      rule.durationRounds ?? 0,
+    );
+  }
+
+  return {
+    ...target,
+    statuses: nextStatuses,
+    statusRounds: nextStatusRounds,
+  };
+}
+
+export function advanceSimulatorTargetRound(
+  target: SimulatorTargetStats,
+): SimulatorTargetStats {
+  let ongoingDamage = 0;
+  const nextStatusRounds: Partial<Record<SimulatorStatusKind, number>> = {};
+  const nextStatuses: SimulatorStatusKind[] = [];
+
+  for (const status of target.statuses) {
+    const remaining = target.statusRounds[status] ?? 0;
+    if (remaining <= 0) continue;
+    const rule = SIMULATOR_STATUS_RULES[status];
+    ongoingDamage += rule.ongoingDamage ?? 0;
+    if (rule.persistentUntilRecovery) {
+      nextStatuses.push(status);
+      nextStatusRounds[status] = remaining;
+      continue;
+    }
+    const nextRemaining = remaining - 1;
+    if (nextRemaining > 0) {
+      nextStatuses.push(status);
+      nextStatusRounds[status] = nextRemaining;
+    }
+  }
+
+  return {
+    ...target,
+    hp: Math.max(0, target.hp - ongoingDamage),
+    statuses: nextStatuses,
+    statusRounds: nextStatusRounds,
+  };
+}
+
+export function getSimulatorKnockbackTarget(
+  attacker: SimulatorBoardCoord,
+  target: SimulatorBoardCoord,
+  columns: readonly SimulatorBoardColumn[] = SIMULATOR_BOARD_COLUMNS,
+  rows: readonly SimulatorBoardRow[] = SIMULATOR_BOARD_ROWS,
+): SimulatorBoardCoord | null {
+  const attackerColumn = columns.indexOf(attacker.col);
+  const targetColumn = columns.indexOf(target.col);
+  const attackerRow = rows.indexOf(attacker.row);
+  const targetRow = rows.indexOf(target.row);
+
+  if (attacker.row === target.row && attackerColumn !== targetColumn) {
+    const nextColumn = targetColumn + Math.sign(targetColumn - attackerColumn);
+    const col = columns[nextColumn];
+    return col ? { col, row: target.row } : null;
+  }
+  if (attacker.col === target.col && attackerRow !== targetRow) {
+    const nextRow = targetRow + Math.sign(targetRow - attackerRow);
+    const row = rows[nextRow];
+    return row ? { col: target.col, row } : null;
+  }
+  return null;
+}
+
+export function getSimulatorIncendiaryLineCells(
+  attacker: SimulatorBoardCoord,
+  target: SimulatorBoardCoord,
+  columns: readonly SimulatorBoardColumn[] = SIMULATOR_BOARD_COLUMNS,
+  rows: readonly SimulatorBoardRow[] = SIMULATOR_BOARD_ROWS,
+): SimulatorBoardCoord[] {
+  if (attacker.col === target.col && attacker.row === target.row) {
+    return [target];
+  }
+
+  const attackerColumn = columns.indexOf(attacker.col);
+  const targetColumn = columns.indexOf(target.col);
+  const attackerRow = rows.indexOf(attacker.row);
+  const targetRow = rows.indexOf(target.row);
+  const cells: SimulatorBoardCoord[] = [];
+
+  if (attacker.row === target.row && attackerColumn !== targetColumn) {
+    const direction = Math.sign(targetColumn - attackerColumn);
+    for (let distance = 1; distance <= 3; distance += 1) {
+      const col = columns[attackerColumn + direction * distance];
+      if (!col) break;
+      cells.push({ col, row: attacker.row });
+    }
+    return cells;
+  }
+  if (attacker.col === target.col && attackerRow !== targetRow) {
+    const direction = Math.sign(targetRow - attackerRow);
+    for (let distance = 1; distance <= 3; distance += 1) {
+      const row = rows[attackerRow + direction * distance];
+      if (!row) break;
+      cells.push({ col: attacker.col, row });
+    }
+  }
+  return cells;
+}
+
+export function getSimulatorCadenceCycle(turn: number, cycleTurns = 1): number {
   const normalizedTurn = Math.max(1, Math.floor(turn));
   return Math.floor((normalizedTurn - 1) / cycleTurns);
 }
@@ -550,7 +773,7 @@ export function getSimulatorCadenceCycle(turn: number, cycleTurns = 3): number {
 export function isNewSimulatorCadenceCycle(
   previousTurn: number,
   nextTurn: number,
-  cycleTurns = 3,
+  cycleTurns = 1,
 ): boolean {
   return (
     getSimulatorCadenceCycle(previousTurn, cycleTurns) !==
@@ -670,8 +893,12 @@ export function resolveSimulatorAttack(
 
   const atkBonus = rule.usesAtkBonus ? Math.max(0, input.attackerStats.atk) : 0;
   const rawDamage = profile.amount + atkBonus;
+  const penetratedDef = Math.max(
+    0,
+    input.targetStats.def - (profile.armorPenetration ?? 0),
+  );
   const mitigation = profile.appliesDef
-    ? Math.min(rawDamage, Math.max(0, input.targetStats.def))
+    ? Math.min(rawDamage, penetratedDef)
     : 0;
   const damageApplied = Math.max(0, rawDamage - mitigation);
   const statusesApplied = profile.statuses ?? [];

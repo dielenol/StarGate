@@ -21,9 +21,14 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import { formatCredits } from "@/lib/format/credit";
 import {
+  advanceSimulatorTargetRound,
+  applySimulatorStatuses,
   formatSimulatorCoord,
   formatSimulatorDamage,
   getInitialSimulatorResources,
+  getSimulatorEffectiveDef,
+  getSimulatorIncendiaryLineCells,
+  getSimulatorKnockbackTarget,
   getSimulatorRange,
   isSimulatorAttackableCell,
   getSimulatorWeaponRule,
@@ -34,6 +39,7 @@ import {
   SIMULATOR_RANGE_BANDS,
   SIMULATOR_RANGE_LABELS,
   SIMULATOR_STATUS_LABELS,
+  SIMULATOR_STATUS_RULES,
   SIMULATOR_WEAPON_ORDER,
   type SimulatorAttackerProfile,
   type SimulatorAttackResult,
@@ -144,6 +150,7 @@ const DEFAULT_TARGET: SimulatorTargetStats = {
   maxSan: 40,
   def: 2,
   statuses: [],
+  statusRounds: {},
 };
 const TURN_END_SFX_SRC =
   "/assets/equipment-shop/sfx/ui-notice-level-up.mp3";
@@ -270,13 +277,6 @@ function buildSimulatorItems(
   }).sort((a, b) => Number(b.isEquipped) - Number(a.isEquipped));
 }
 
-function uniqueStatuses(
-  statuses: SimulatorStatusKind[],
-  next: SimulatorStatusKind[],
-): SimulatorStatusKind[] {
-  return Array.from(new Set([...statuses, ...next]));
-}
-
 function cellKey(coord: SimulatorBoardCoord): string {
   return formatSimulatorCoord(coord);
 }
@@ -297,11 +297,16 @@ interface TokenStatPopoverProps {
   atk?: number;
   def?: number;
   statuses?: SimulatorStatusKind[];
+  statusRounds?: Partial<Record<SimulatorStatusKind, number>>;
 }
 
 function tokenVitalPercent(current: number, max: number): number {
   if (max <= 0) return 0;
   return Math.max(0, Math.min(100, (current / max) * 100));
+}
+
+function rollD6(): number {
+  return Math.floor(Math.random() * 6) + 1;
 }
 
 function tokenVitalTone(current: number, max: number): TokenVitalTone {
@@ -353,6 +358,7 @@ function TokenStatPopover({
   atk,
   def,
   statuses = [],
+  statusRounds = {},
 }: TokenStatPopoverProps) {
   return (
     <div className={styles.tokenStats} aria-hidden>
@@ -380,7 +386,14 @@ function TokenStatPopover({
         <b>상태</b>
         <span>
           {statuses.length > 0
-            ? statuses.map((status) => SIMULATOR_STATUS_LABELS[status]).join(" · ")
+            ? statuses
+                .map(
+                  (status) =>
+                    SIMULATOR_STATUS_RULES[status].persistentUntilRecovery
+                      ? `${SIMULATOR_STATUS_LABELS[status]} · 회복 전 지속`
+                      : `${SIMULATOR_STATUS_LABELS[status]} ${statusRounds[status] ?? 0}R`,
+                )
+                .join(" · ")
             : "정상"}
         </span>
       </span>
@@ -419,8 +432,6 @@ function resourceLabel(rule: SimulatorWeaponRule, remaining: number): string {
 function controlReloadLabel(rule: SimulatorWeaponRule | null): string {
   if (!rule?.resource) return "재장전";
   if (rule.resource.kind === "charge") return "재시동";
-  if (rule.slug === "basic-flamethrower") return "연료 보충";
-  if (rule.slug === "basic-sonic-emitter") return "출력 재충전";
   return "재장전";
 }
 
@@ -456,6 +467,10 @@ export default function EquipmentSimulatorClient({
   );
   const [hmgInstalled, setHmgInstalled] = useState(false);
   const [hmgShotsInCycle, setHmgShotsInCycle] = useState(0);
+  const [fireZone, setFireZone] = useState<{
+    cells: string[];
+    rounds: number;
+  } | null>(null);
   const [draggedToken, setDraggedToken] = useState<ActiveToken | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [turn, setTurn] = useState(1);
@@ -519,6 +534,16 @@ export default function EquipmentSimulatorClient({
     simulatorItems.find((item) => item.slug === selectedSlug) ??
     simulatorItems[0];
   const selectedRule = getSimulatorWeaponRule(selectedSlug);
+  const selectedAction = selectedRule?.actions?.[0] ?? null;
+  const selectedStatusKinds = selectedRule
+    ? Array.from(
+        new Set(
+          SIMULATOR_RANGE_BANDS.flatMap(
+            (band) => selectedRule.ranges[band]?.statuses ?? [],
+          ),
+        ),
+      )
+    : [];
   const attackerTokenUrl = attacker.portraitUrl ?? attacker.characterUrl;
   const attackerTokenIsPortrait = Boolean(attacker.portraitUrl);
   const attackerUsesFieldAgentPortrait =
@@ -526,6 +551,7 @@ export default function EquipmentSimulatorClient({
   const attackerTokenInitial =
     attacker.codename.trim().charAt(0).toUpperCase() || "요";
   const defaultRange = getSimulatorRange(attackerPosition, targetPosition);
+  const targetEffectiveDef = getSimulatorEffectiveDef(targetStats);
   const selectedRuntime = selectedRule
     ? attackRuntimeFor(
         selectedRule,
@@ -541,7 +567,7 @@ export default function EquipmentSimulatorClient({
         attacker: attackerPosition,
         target: targetPosition,
         attackerStats: attacker,
-        targetStats,
+        targetStats: { def: targetEffectiveDef },
         runtime: selectedRuntime,
       })
     : null;
@@ -612,7 +638,7 @@ export default function EquipmentSimulatorClient({
       case "install":
         return {
           title: "중기관총 설치 완료",
-          text: `설치에 1턴을 사용해 ${turn}턴이 시작되었습니다. 다이아몬드 사거리 안에서 3턴 주기마다 2회 사격할 수 있습니다.`,
+          text: `설치에 1턴을 사용해 ${turn}턴이 시작되었습니다. 수평 전투의 대각선 사거리를 포함해 매 턴 2회 사격할 수 있습니다.`,
         };
       case "uninstall":
         return {
@@ -622,7 +648,7 @@ export default function EquipmentSimulatorClient({
       case "turn":
         return {
           title: `${turn}턴 행동 대기`,
-          text: "일반 장비는 같은 턴에도 반복 시험할 수 있습니다. 턴 진행은 중기관총의 3턴 사격 주기를 갱신할 때 사용합니다.",
+          text: "일반 장비는 같은 턴에도 반복 시험할 수 있습니다. 턴 진행 시 중기관총의 2회 사격 한도와 상태이상 지속 라운드를 갱신합니다.",
         };
       default:
         return {
@@ -748,7 +774,7 @@ export default function EquipmentSimulatorClient({
           attacker: nextAttacker,
           target: nextTarget,
           attackerStats: attacker,
-          targetStats,
+          targetStats: { def: targetEffectiveDef },
           runtime: selectedRuntime,
         })
       : null;
@@ -766,6 +792,9 @@ export default function EquipmentSimulatorClient({
       setAttackerPosition(coord);
     } else {
       setTargetPosition(coord);
+      if (fireZone?.cells.includes(cellKey(coord))) {
+        setTargetStats((prev) => applySimulatorStatuses(prev, ["burn"]));
+      }
       setEnemyPositionConfirmed(true);
       setActiveToken("attacker");
     }
@@ -926,6 +955,33 @@ export default function EquipmentSimulatorClient({
     pushLog(`${selectedRule.name} ${controlReloadLabel(selectedRule)} 완료`, "info");
   }
 
+  function applyAttackResult(result: SimulatorAttackResult) {
+    setTargetStats((prev) =>
+      applySimulatorStatuses(
+        {
+          ...prev,
+          hp:
+            result.targetStat === "hp"
+              ? Math.max(0, prev.hp - result.damageApplied)
+              : prev.hp,
+          san:
+            result.targetStat === "san"
+              ? Math.max(0, prev.san - result.damageApplied)
+              : prev.san,
+        },
+        result.statusesApplied,
+      ),
+    );
+  }
+
+  function advanceRoundEffects() {
+    setTargetStats((prev) => advanceSimulatorTargetRound(prev));
+    setFireZone((prev) => {
+      if (!prev || prev.rounds <= 1) return null;
+      return { ...prev, rounds: prev.rounds - 1 };
+    });
+  }
+
   function advanceTurnForAction(
     event: Extract<TrainingEvent, "install" | "uninstall" | "turn">,
     title: string,
@@ -937,6 +993,7 @@ export default function EquipmentSimulatorClient({
     const resetCycle = isNewSimulatorCadenceCycle(turn, nextTurn);
     playTurnEndSound();
     showTurnEndReveal(endedTurn);
+    advanceRoundEffects();
     setTurn(nextTurn);
     if (resetCycle) {
       setHmgShotsInCycle(0);
@@ -969,6 +1026,7 @@ export default function EquipmentSimulatorClient({
     const resetCycle = isNewSimulatorCadenceCycle(turn, nextTurn);
     playTurnEndSound();
     showTurnEndReveal(endedTurn);
+    advanceRoundEffects();
     setTurn(nextTurn);
     if (resetCycle) {
       setHmgShotsInCycle(0);
@@ -1009,6 +1067,7 @@ export default function EquipmentSimulatorClient({
     setResourceBySlug(getInitialSimulatorResources());
     setHmgInstalled(false);
     setHmgShotsInCycle(0);
+    setFireZone(null);
     dragDestinationRef.current = null;
     setDraggedToken(null);
     setDragOverCell(null);
@@ -1092,18 +1151,7 @@ export default function EquipmentSimulatorClient({
     setTrainingEvent("attack");
     setActiveStep(3);
 
-    setTargetStats((prev) => ({
-      ...prev,
-      hp:
-        selectedResult.targetStat === "hp"
-          ? Math.max(0, prev.hp - selectedResult.damageApplied)
-          : prev.hp,
-      san:
-        selectedResult.targetStat === "san"
-          ? Math.max(0, prev.san - selectedResult.damageApplied)
-          : prev.san,
-      statuses: uniqueStatuses(prev.statuses, selectedResult.statusesApplied),
-    }));
+    applyAttackResult(selectedResult);
 
     const statusText = selectedResult.statusesApplied.length
       ? ` · ${selectedResult.statusesApplied
@@ -1117,6 +1165,125 @@ export default function EquipmentSimulatorClient({
     );
     pushLog(
       `${selectedRule.name} ${selectedResult.summary}${statusText}`,
+      "hit",
+    );
+  }
+
+  function handleSpecialAction() {
+    if (!enemyPositionConfirmed || !selectedRule || !selectedAction) return;
+
+    const fail = (detail: string) => {
+      setTrainingEvent("blocked");
+      setActiveStep(2);
+      showFeedback("error", `${selectedAction.name} 실행 실패`, detail);
+      pushLog(`${selectedAction.name} 실패 · ${detail}`, "miss");
+    };
+    const actionResourceCost =
+      selectedAction.resourceCost === "all"
+        ? selectedResource
+        : selectedAction.resourceCost;
+
+    if (
+      selectedAction.resourceCost !== "all" &&
+      selectedResource < selectedAction.resourceCost
+    ) {
+      fail(`${selectedRule.resource?.label ?? "자원"}이 부족합니다.`);
+      return;
+    }
+
+    if (selectedAction.kind === "knockback") {
+      if (battlefield.id === "1x5") {
+        fail("세로 전장에서는 넉백을 사용할 수 없습니다.");
+        return;
+      }
+      if (!selectedResult?.ok) {
+        fail(selectedResult?.reasonLabel ?? "현재 표적을 명중시킬 수 없습니다.");
+        return;
+      }
+      const nextTarget = getSimulatorKnockbackTarget(
+        attackerPosition,
+        targetPosition,
+        boardColumns,
+        boardRows,
+      );
+      if (!nextTarget) {
+        fail("대상을 뒤로 밀어낼 빈 칸이 없습니다.");
+        return;
+      }
+      setResourceBySlug((prev) => ({
+        ...prev,
+        [selectedRule.slug]: selectedResource - actionResourceCost,
+      }));
+      setTargetPosition(nextTarget);
+      applyAttackResult(selectedResult);
+      setTrainingEvent("attack");
+      setActiveStep(3);
+      showFeedback(
+        "success",
+        "넉백 실행 완료",
+        `${selectedResult.summary} · 적 ${formatSimulatorCoord(nextTarget)}로 1칸 후퇴`,
+      );
+      pushLog(
+        `${selectedRule.name} 넉백 · ${selectedResult.summary} · 적 ${formatSimulatorCoord(nextTarget)}로 이동`,
+        "hit",
+      );
+      return;
+    }
+
+    if (selectedAction.kind === "area-spray") {
+      if (!selectedResult?.ok) {
+        fail(selectedResult?.reasonLabel ?? "현재 표적이 사거리 밖에 있습니다.");
+        return;
+      }
+      const roll = rollD6();
+      const hit = roll <= 4;
+      setResourceBySlug((prev) => ({ ...prev, [selectedRule.slug]: 0 }));
+      if (selectedResult.nextShotsInCycle !== undefined) {
+        setHmgShotsInCycle(selectedResult.nextShotsInCycle);
+      }
+      if (hit) applyAttackResult(selectedResult);
+      setTrainingEvent("attack");
+      setActiveStep(3);
+      showFeedback(
+        hit ? "success" : "info",
+        hit ? "광역 난사 명중" : "광역 난사 회피",
+        `1d6=${roll} · ${hit ? selectedResult.summary : "5 이상으로 피해 없음"} · 모든 탄환 소모`,
+      );
+      pushLog(
+        `${selectedRule.name} 광역 난사 · 1d6=${roll} · ${hit ? selectedResult.summary : "회피"} · 탄환 0`,
+        hit ? "hit" : "info",
+      );
+      return;
+    }
+
+    const cells = getSimulatorIncendiaryLineCells(
+      attackerPosition,
+      targetPosition,
+      boardColumns,
+      boardRows,
+    );
+    if (cells.length === 0) {
+      fail("나와 적을 같은 가로줄 또는 세로줄에 배치해야 합니다.");
+      return;
+    }
+    const zoneCells = cells.map(cellKey);
+    setResourceBySlug((prev) => ({
+      ...prev,
+      [selectedRule.slug]: selectedResource - actionResourceCost,
+    }));
+    setFireZone({ cells: zoneCells, rounds: 3 });
+    if (zoneCells.includes(cellKey(targetPosition))) {
+      setTargetStats((prev) => applySimulatorStatuses(prev, ["burn"]));
+    }
+    setTrainingEvent("attack");
+    setActiveStep(3);
+    showFeedback(
+      "success",
+      "소이선 생성 완료",
+      `${zoneCells.join(", ")} · 3라운드 화염 지대 · 진입 대상 화상`,
+    );
+    pushLog(
+      `${selectedRule.name} 소이선 · ${zoneCells.join(", ")} · 3라운드`,
       "hit",
     );
   }
@@ -1461,6 +1628,25 @@ export default function EquipmentSimulatorClient({
               >
                 공격 실행
               </button>
+              {selectedAction ? (
+                <button
+                  type="button"
+                  className={styles.controlButton}
+                  onClick={handleSpecialAction}
+                  disabled={
+                    !enemyPositionConfirmed ||
+                    selectedResource <= 0 ||
+                    (typeof selectedAction.resourceCost === "number" &&
+                      selectedResource < selectedAction.resourceCost)
+                  }
+                >
+                  {selectedAction.name} (
+                  {selectedAction.resourceCost === "all"
+                    ? "전 탄환"
+                    : `${selectedAction.resourceCost} 소모`}
+                  )
+                </button>
+              ) : null}
               <button
                 type="button"
                 className={styles.controlButton}
@@ -1516,7 +1702,7 @@ export default function EquipmentSimulatorClient({
                 <span>턴 사용 규칙</span>
                 <strong>
                   {selectedRule?.cadence
-                    ? `${hmgInstalled ? "설치됨" : "미설치"} · 3턴당 ${selectedRule.cadence.shotsPerCycle}회 · 현재 ${hmgShotsInCycle}/2`
+                    ? `${hmgInstalled ? "설치됨" : "미설치"} · 매 턴 ${selectedRule.cadence.shotsPerCycle}회 · 현재 ${hmgShotsInCycle}/${selectedRule.cadence.shotsPerCycle}`
                     : "같은 턴 연속 시험 가능"}
                 </strong>
               </div>
@@ -1573,6 +1759,7 @@ export default function EquipmentSimulatorClient({
                       coord,
                     );
                   const isDropTarget = dragOverCell === cellKey(coord);
+                  const isFireZone = fireZone?.cells.includes(cellKey(coord));
                   return (
                     <div
                       key={cellKey(coord)}
@@ -1589,6 +1776,7 @@ export default function EquipmentSimulatorClient({
                         isDropTarget
                           ? styles["boardCell--dropTarget"]
                           : "",
+                        isFireZone ? styles["boardCell--fireZone"] : "",
                         hasAttacker ? styles["boardCell--attacker"] : "",
                         hasTarget ? styles["boardCell--target"] : "",
                       ]
@@ -1606,12 +1794,16 @@ export default function EquipmentSimulatorClient({
                             ? `; ${selectedName} 공격 가능 범위`
                             : ""
                         }${
+                          isFireZone
+                            ? `; 소이선 화염 지대 ${fireZone?.rounds ?? 0}라운드`
+                            : ""
+                        }${
                           hasAttacker
                             ? `; 나 ${attacker.codename}, HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}`
                             : ""
                         }${
                           hasTarget
-                            ? `; 적 훈련 표적, HP ${targetStats.hp}/${targetStats.maxHp}, 정신력 ${targetStats.san}/${targetStats.maxSan}, DEF ${targetStats.def}`
+                            ? `; 적 훈련 표적, HP ${targetStats.hp}/${targetStats.maxHp}, 정신력 ${targetStats.san}/${targetStats.maxSan}, DEF ${targetEffectiveDef}`
                             : ""
                         }`
                       }
@@ -1741,7 +1933,7 @@ export default function EquipmentSimulatorClient({
                             handleTokenPointerCaptureLost("target")
                           }
                           role="img"
-                          aria-label={`적, 훈련 표적 위치 토큰. HP ${targetStats.hp}/${targetStats.maxHp}, 정신력 ${targetStats.san}/${targetStats.maxSan}, DEF ${targetStats.def}, 상태 ${
+                          aria-label={`적, 훈련 표적 위치 토큰. HP ${targetStats.hp}/${targetStats.maxHp}, 정신력 ${targetStats.san}/${targetStats.maxSan}, DEF ${targetEffectiveDef}, 상태 ${
                             targetStats.statuses.length > 0
                               ? targetStats.statuses
                                   .map(
@@ -1798,10 +1990,15 @@ export default function EquipmentSimulatorClient({
                             <span
                               key={status}
                               className={styles.token__status}
-                              title={SIMULATOR_STATUS_LABELS[status]}
+                              title={`${SIMULATOR_STATUS_LABELS[status]}${
+                                SIMULATOR_STATUS_RULES[status]
+                                  .persistentUntilRecovery
+                                  ? " · 회복 전 지속"
+                                  : ` ${targetStats.statusRounds[status] ?? 0}라운드`
+                              }: ${SIMULATOR_STATUS_RULES[status].effect}`}
                               aria-hidden
                             >
-                              {status === "burn" ? "화" : "!"}
+                              {status === "burn" ? "화" : "멍"}
                             </span>
                           ))}
                           <TokenStatPopover
@@ -1811,8 +2008,9 @@ export default function EquipmentSimulatorClient({
                             maxHp={targetStats.maxHp}
                             san={targetStats.san}
                             maxSan={targetStats.maxSan}
-                            def={targetStats.def}
+                            def={targetEffectiveDef}
                             statuses={targetStats.statuses}
+                            statusRounds={targetStats.statusRounds}
                           />
                         </div>
                       ) : null}
@@ -1844,8 +2042,8 @@ export default function EquipmentSimulatorClient({
           </div>
 
           <p className={styles.descriptionText}>
-            {selectedItem?.catalogDescription ??
-              selectedRule?.description ??
+            {selectedRule?.description ??
+              selectedItem?.catalogDescription ??
               "카탈로그 장비를 선택하면 운용 메모가 표시됩니다."}
           </p>
 
@@ -1854,6 +2052,38 @@ export default function EquipmentSimulatorClient({
               <span key={note}>{note}</span>
             ))}
           </div>
+
+          {(selectedRule?.actions ?? []).map((action) => (
+            <section
+              key={action.kind}
+              className={styles.actionRule}
+              aria-label={`${action.name} 행동 효과`}
+            >
+              <strong>[행동 효과] {action.name}</strong>
+              <p>{action.description}</p>
+            </section>
+          ))}
+
+          {selectedStatusKinds.map((status) => {
+            const statusRule = SIMULATOR_STATUS_RULES[status];
+            return (
+              <section
+                key={status}
+                className={styles.statusRule}
+                aria-label={`${SIMULATOR_STATUS_LABELS[status]} 상태이상 규칙`}
+              >
+                <strong>[{SIMULATOR_STATUS_LABELS[status]}]</strong>
+                <p>
+                  <b>설명</b>
+                  {statusRule.description}
+                </p>
+                <p>
+                  <b>효과</b>
+                  {statusRule.effect}
+                </p>
+              </section>
+            );
+          })}
         </aside>
       </section>
 

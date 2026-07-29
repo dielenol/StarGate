@@ -2,12 +2,19 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  advanceSimulatorTargetRound,
+  applySimulatorStatuses,
   getSimulatorEquippedWeapons,
+  getSimulatorEffectiveDef,
   getInitialSimulatorResources,
+  getSimulatorIncendiaryLineCells,
+  getSimulatorKnockbackTarget,
   getSimulatorRange,
+  getSimulatorWeaponRule,
   isSimulatorAttackableCell,
   isNewSimulatorCadenceCycle,
   resolveSimulatorAttack,
+  SIMULATOR_STATUS_RULES,
 } from "../simulator.ts";
 
 const attackerStats = { atk: 0 };
@@ -110,6 +117,7 @@ test("sonic emitter damages sanity and ignores DEF", () => {
   assert.equal(result.damageApplied, 15);
   assert.equal(result.targetStat, "san");
   assert.equal(result.nextResourceRemaining, 2);
+  assert.deepEqual(result.statusesApplied, ["dazed"]);
 });
 
 test("flamethrower applies burn on supported range", () => {
@@ -125,6 +133,91 @@ test("flamethrower applies burn on supported range", () => {
   assert.equal(result.ok, true);
   assert.equal(result.damageApplied, 8);
   assert.deepEqual(result.statusesApplied, ["burn"]);
+  assert.match(
+    SIMULATOR_STATUS_RULES.burn.description,
+    /뜨거운 물질\(물, 기름, 불\)/,
+  );
+  assert.match(
+    SIMULATOR_STATUS_RULES.burn.effect,
+    /매 라운드 동안 N의 수치에 해당하는 지속 피해/,
+  );
+  assert.match(SIMULATOR_STATUS_RULES.burn.effect, /방어력은 -N만큼/);
+});
+
+test("burn persists until recovery without inventing an N value", () => {
+  const baseTarget = {
+    hp: 60,
+    maxHp: 60,
+    san: 40,
+    maxSan: 40,
+    def: 8,
+    statuses: [],
+    statusRounds: {},
+  };
+  const burning = applySimulatorStatuses(baseTarget, ["burn"]);
+  assert.equal(burning.statusRounds.burn, 1);
+  assert.equal(getSimulatorEffectiveDef(burning), 8);
+
+  const afterOneRound = advanceSimulatorTargetRound(burning);
+  assert.equal(afterOneRound.hp, 60);
+  assert.equal(afterOneRound.statusRounds.burn, 1);
+  assert.deepEqual(afterOneRound.statuses, ["burn"]);
+  assert.equal(getSimulatorEffectiveDef(afterOneRound), 8);
+});
+
+test("sniper rifle penetrates 10 DEF before mitigation", () => {
+  const result = resolveSimulatorAttack({
+    weaponSlug: "basic-sniper-rifle",
+    attacker: { col: "A", row: 1 },
+    target: { col: "A", row: 5 },
+    attackerStats,
+    targetStats: { def: 15 },
+    runtime: { resourceRemaining: 3 },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.rawDamage, 20);
+  assert.equal(result.mitigation, 5);
+  assert.equal(result.damageApplied, 15);
+  assert.equal(result.profile?.armorPenetration, 10);
+});
+
+test("special action geometry handles shotgun knockback and a three-cell incendiary line", () => {
+  assert.deepEqual(
+    getSimulatorKnockbackTarget(
+      { col: "A", row: 1 },
+      { col: "C", row: 1 },
+    ),
+    { col: "D", row: 1 },
+  );
+  assert.equal(
+    getSimulatorKnockbackTarget(
+      { col: "A", row: 1 },
+      { col: "A", row: 5 },
+      ["A"],
+      [1, 2, 3, 4, 5],
+    ),
+    null,
+  );
+  assert.deepEqual(
+    getSimulatorIncendiaryLineCells(
+      { col: "C", row: 1 },
+      { col: "C", row: 5 },
+    ),
+    [
+      { col: "C", row: 2 },
+      { col: "C", row: 3 },
+      { col: "C", row: 4 },
+    ],
+  );
+  assert.equal(
+    getSimulatorWeaponRule("basic-shotgun")?.actions?.[0]?.resourceCost,
+    2,
+  );
+  assert.equal(
+    getSimulatorWeaponRule("basic-heavy-machine-gun")?.actions?.[0]?.resourceCost,
+    "all",
+  );
 });
 
 test("firearms use distance along a shared row or column", () => {
@@ -284,7 +377,7 @@ test("chainsaw consumes start charge and blocks when charge is empty", () => {
   assert.equal(empty.reason, "NO_RESOURCE");
 });
 
-test("heavy machine gun requires setup and is limited to two shots per 3-turn cycle", () => {
+test("heavy machine gun requires setup and is limited to two shots every turn", () => {
   const beforeSetup = resolveSimulatorAttack({
     weaponSlug: "basic-heavy-machine-gun",
     attacker: { col: "A", row: 1 },
@@ -318,7 +411,11 @@ test("heavy machine gun requires setup and is limited to two shots per 3-turn cy
   });
   assert.equal(locked.ok, false);
   assert.equal(locked.reason, "CADENCE_LOCKED");
-  assert.equal(isNewSimulatorCadenceCycle(3, 4), true);
+  assert.equal(isNewSimulatorCadenceCycle(1, 2), true);
+  assert.equal(
+    getSimulatorWeaponRule("basic-heavy-machine-gun")?.cadence?.cycleTurns,
+    1,
+  );
 });
 
 test("unsupported range returns an explicit out-of-range result", () => {
