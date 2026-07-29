@@ -41,12 +41,7 @@ const EXPECTED = {
   "basic-flamethrower": {
     price: 500,
     damage: "근거리 10 화염 / 중거리 8 화염",
-    fragments: [
-      "탄환은 4/4",
-      "회복 적용이 되지 않는 한",
-      "N의 수치",
-      "방어력은 -N",
-    ],
+    fragments: ["탄환은 4/4", "소각", "3라운드", "방어력 -5", "소이선"],
   },
   "basic-sonic-emitter": {
     price: 500,
@@ -93,7 +88,5 @@ test("seven ranged weapon specs, base payload, and focused update stay in parity
   const flamethrower = focusedPayload.find(
     (entry) => entry.filter?.slug === "basic-flamethrower",
   ).update.$set;
-  assert.match(flamethrower.loreMd, /N의 수치/);
-  assert.match(flamethrower.loreMd, /회복 적용이 되지 않는 한/);
-  assert.match(flamethrower.loreMd, /방어력에 적용되는 -N이 누적/);
+  assert.doesNotMatch(flamethrower.loreMd, /N의 수치|회복 적용이 되지 않는 한/);
 });

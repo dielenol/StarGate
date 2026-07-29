@@ -174,11 +174,11 @@ export const SIMULATOR_STATUS_RULES: Record<
   }
 > = {
   burn: {
-    description:
-      "뜨거운 물질(물, 기름, 불), 화학물질, 전기, 마찰, 방사선 등으로 인해 피부와 조직이 손상되는 것을 말합니다. 습윤밴드, 저온 요법 등으로 완화할 수 있습니다.",
-    effect:
-      "“화상” 상태이상은 회복 적용이 되지 않는 한 지속 적용됩니다. 매 라운드 동안 N의 수치에 해당하는 지속 피해를 입게 되며 방어력은 -N만큼 유지됩니다. 해당 상태이상이 중복되는 경우 방어력에 적용되는 -N이 누적됩니다.",
-    persistentUntilRecovery: true,
+    description: "화염방사기에 명중하거나 소이선에 들어선 대상에게 부여됩니다.",
+    effect: "3라운드 동안 라운드마다 5 피해를 입고 방어력이 5 감소합니다.",
+    durationRounds: 3,
+    ongoingDamage: 5,
+    armorReduction: 5,
   },
   dazed: {
     description: "음파 방출기에 명중한 대상에게 부여됩니다.",
@@ -452,8 +452,7 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
     notes: [
       RANGED_RANGE_RULE_NOTE,
       "화염 피해에는 DEF를 적용하지 않습니다.",
-      "명중한 대상은 회복 적용 전까지 매 라운드 N의 지속 피해를 입고 방어력이 -N만큼 감소하는 “화상” 상태이상을 얻습니다.",
-      "N 수치와 회복 적용은 현재 훈련장에서 자동 계산하지 않습니다.",
+      "소각: 명중한 대상은 3라운드 동안 라운드마다 5 피해를 입고 방어력이 5 감소하는 화상을 얻습니다.",
     ],
   },
   "basic-sonic-emitter": {

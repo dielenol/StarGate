@@ -172,22 +172,19 @@ test("the board exposes real token dragging, weapon range cells, and turn-consum
   assert.match(styles, /\.boardCell--dropTarget/);
 });
 
-test("the ranged weapon rule card exposes canonical statuses and special actions", async () => {
+test("the ranged weapon rule card exposes fixed-duration statuses and special actions", async () => {
   const [client, simulator, styles] = await Promise.all([
     readFile(CLIENT_URL, "utf8"),
     readFile(SIMULATOR_URL, "utf8"),
     readFile(STYLES_URL, "utf8"),
   ]);
 
-  assert.match(simulator, /뜨거운 물질\(물, 기름, 불\)/);
-  assert.match(simulator, /매 라운드 동안 N의 수치에 해당하는 지속 피해/);
-  assert.match(simulator, /방어력에 적용되는 -N이 누적/);
+  assert.match(simulator, /3라운드 동안 라운드마다 5 피해/);
   assert.match(simulator, /다음 1라운드 동안 원거리 공격 피해가 20% 감소/);
   assert.match(simulator, /name: "넉백"/);
   assert.match(simulator, /name: "광역 난사"/);
   assert.match(simulator, /name: "소이선"/);
   assert.match(client, /SIMULATOR_STATUS_RULES/);
-  assert.match(client, /회복 전 지속/);
   assert.match(client, /상태이상 규칙/);
   assert.match(client, /className=\{styles\.statusRule\}/);
   assert.match(client, /handleSpecialAction/);
