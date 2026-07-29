@@ -92,8 +92,48 @@ interface Props {
   initialCatalog: EquipmentShopCatalogResponse;
 }
 
-const DEFAULT_ATTACKER_POSITION: SimulatorBoardCoord = { col: "C", row: 1 };
-const DEFAULT_TARGET_POSITION: SimulatorBoardCoord = { col: "C", row: 3 };
+type BattlefieldId = "5x5" | "1x5" | "5x1";
+
+interface BattlefieldConfig {
+  id: BattlefieldId;
+  label: string;
+  description: string;
+  columns: readonly SimulatorBoardCoord["col"][];
+  rows: readonly SimulatorBoardCoord["row"][];
+  attackerPosition: SimulatorBoardCoord;
+  targetPosition: SimulatorBoardCoord;
+}
+
+const BATTLEFIELDS: readonly BattlefieldConfig[] = [
+  {
+    id: "5x5",
+    label: "5×5",
+    description: "표준 전장",
+    columns: SIMULATOR_BOARD_COLUMNS,
+    rows: SIMULATOR_BOARD_ROWS,
+    attackerPosition: { col: "C", row: 1 },
+    targetPosition: { col: "C", row: 3 },
+  },
+  {
+    id: "1x5",
+    label: "1×5",
+    description: "세로 전장",
+    columns: ["A"],
+    rows: SIMULATOR_BOARD_ROWS,
+    attackerPosition: { col: "A", row: 1 },
+    targetPosition: { col: "A", row: 3 },
+  },
+  {
+    id: "5x1",
+    label: "5×1",
+    description: "가로 전장",
+    columns: SIMULATOR_BOARD_COLUMNS,
+    rows: [1],
+    attackerPosition: { col: "A", row: 1 },
+    targetPosition: { col: "C", row: 1 },
+  },
+] as const;
+const DEFAULT_BATTLEFIELD = BATTLEFIELDS[0];
 const DEFAULT_TARGET: SimulatorTargetStats = {
   hp: 60,
   maxHp: 60,
@@ -384,12 +424,16 @@ export default function EquipmentSimulatorClient({
       simulatorItems[0]?.slug ??
       "basic-pistol",
   );
+  const [battlefieldId, setBattlefieldId] =
+    useState<BattlefieldId>(DEFAULT_BATTLEFIELD.id);
   const [activeToken, setActiveToken] = useState<ActiveToken>("target");
   const [enemyPositionConfirmed, setEnemyPositionConfirmed] = useState(false);
   const [attackerPosition, setAttackerPosition] = useState(
-    DEFAULT_ATTACKER_POSITION,
+    DEFAULT_BATTLEFIELD.attackerPosition,
   );
-  const [targetPosition, setTargetPosition] = useState(DEFAULT_TARGET_POSITION);
+  const [targetPosition, setTargetPosition] = useState(
+    DEFAULT_BATTLEFIELD.targetPosition,
+  );
   const [targetStats, setTargetStats] =
     useState<SimulatorTargetStats>(DEFAULT_TARGET);
   const [resourceBySlug, setResourceBySlug] = useState(() =>
@@ -419,7 +463,7 @@ export default function EquipmentSimulatorClient({
     {
       id: 0,
       tone: "info",
-      text: "5x5 훈련장 준비. 먼저 적을 배치한 뒤 내 위치를 조정하세요.",
+      text: "5×5 표준 전장 준비. 먼저 적을 배치한 뒤 내 위치를 조정하세요.",
     },
   ]);
 
@@ -447,6 +491,20 @@ export default function EquipmentSimulatorClient({
       }
     };
   }, []);
+
+  const battlefield =
+    BATTLEFIELDS.find((candidate) => candidate.id === battlefieldId) ??
+    DEFAULT_BATTLEFIELD;
+  const boardColumns = battlefield.columns;
+  const boardRows = battlefield.rows;
+  const boardColumnTemplate =
+    boardColumns.length === 1
+      ? "minmax(160px, 240px)"
+      : `repeat(${boardColumns.length}, minmax(46px, 1fr))`;
+  const boardRowTemplate =
+    boardRows.length === 1
+      ? "minmax(96px, 120px)"
+      : `repeat(${boardRows.length}, minmax(78px, 1fr))`;
 
   const selectedItem =
     simulatorItems.find((item) => item.slug === selectedSlug) ??
@@ -924,9 +982,20 @@ export default function EquipmentSimulatorClient({
     );
   }
 
-  function handleReset() {
-    setAttackerPosition(DEFAULT_ATTACKER_POSITION);
-    setTargetPosition(DEFAULT_TARGET_POSITION);
+  function resetTrainingState(
+    nextBattlefield: BattlefieldConfig,
+    logText: string,
+  ) {
+    if (turnRevealOutTimerRef.current !== null) {
+      window.clearTimeout(turnRevealOutTimerRef.current);
+      turnRevealOutTimerRef.current = null;
+    }
+    if (turnRevealEndTimerRef.current !== null) {
+      window.clearTimeout(turnRevealEndTimerRef.current);
+      turnRevealEndTimerRef.current = null;
+    }
+    setAttackerPosition(nextBattlefield.attackerPosition);
+    setTargetPosition(nextBattlefield.targetPosition);
     setTargetStats(DEFAULT_TARGET);
     setResourceBySlug(getInitialSimulatorResources());
     setHmgInstalled(false);
@@ -939,18 +1008,41 @@ export default function EquipmentSimulatorClient({
     setEnemyPositionConfirmed(false);
     setTrainingEvent("ready");
     setActiveStep(0);
+    setTurnReveal(null);
     setLogs([
       {
         id: sequence,
         tone: "info",
-        text: "시험장 상태를 초기화했습니다.",
+        text: logText,
       },
     ]);
     setSequence((prev) => prev + 1);
+  }
+
+  function handleBattlefieldChange(nextBattlefieldId: BattlefieldId) {
+    if (nextBattlefieldId === battlefieldId) return;
+    const nextBattlefield =
+      BATTLEFIELDS.find(
+        (candidate) => candidate.id === nextBattlefieldId,
+      ) ?? DEFAULT_BATTLEFIELD;
+    setBattlefieldId(nextBattlefield.id);
+    resetTrainingState(
+      nextBattlefield,
+      `${nextBattlefield.label} ${nextBattlefield.description}으로 전환했습니다.`,
+    );
+    showFeedback(
+      "success",
+      `${nextBattlefield.label} 전장 선택`,
+      `${nextBattlefield.description} 기본 배치로 훈련 상태를 초기화했습니다.`,
+    );
+  }
+
+  function handleReset() {
+    resetTrainingState(battlefield, "시험장 상태를 초기화했습니다.");
     showFeedback(
       "info",
       "훈련장 초기화 완료",
-      "1턴 기본 배치와 모든 장비 자원을 복구했습니다.",
+      `${battlefield.label} 전장의 1턴 기본 배치와 모든 장비 자원을 복구했습니다.`,
     );
   }
 
@@ -1092,13 +1184,17 @@ export default function EquipmentSimulatorClient({
       <section className={styles.stageHeader}>
         <div className={styles.stageIntro}>
           <Eyebrow>ARMORY TEST GRID</Eyebrow>
-          <h1>5x5 전투판 장비 훈련</h1>
+          <h1>전장 선택형 장비 훈련</h1>
           <p>
-            장비의 거리·피해·자원 소모를 턴 단위로 시험하는 모의 전투입니다.
-            실제 캐릭터와 인벤토리는 변경되지 않습니다.
+            5×5·1×5·5×1 전장을 선택해 장비의 거리·피해·자원 소모를
+            턴 단위로 시험합니다. 실제 캐릭터와 인벤토리는 변경되지
+            않습니다.
           </p>
           <div className={styles.stageBadges} aria-label="훈련장 상태">
             <Tag tone="gold">턴 단위 모의훈련</Tag>
+            <Tag tone="info">
+              {battlefield.label} {battlefield.description}
+            </Tag>
             <Tag tone="info">실데이터 미반영</Tag>
           </div>
         </div>
@@ -1189,10 +1285,35 @@ export default function EquipmentSimulatorClient({
           </div>
         </aside>
 
-        <section className={styles.boardPanel} aria-label="5x5 전투판">
+        <section
+          className={styles.boardPanel}
+          aria-label={`${battlefield.label} ${battlefield.description}`}
+        >
           <div className={styles.boardToolbar}>
-            <div>
+            <div className={styles.boardIdentity}>
               <Eyebrow>TACTICAL BOARD</Eyebrow>
+              <div
+                className={styles.battlefieldSelector}
+                role="group"
+                aria-label="전장 규격 선택"
+              >
+                {BATTLEFIELDS.map((candidate) => (
+                  <button
+                    key={candidate.id}
+                    type="button"
+                    className={
+                      battlefieldId === candidate.id
+                        ? styles["battlefieldSelector__button--active"]
+                        : ""
+                    }
+                    aria-pressed={battlefieldId === candidate.id}
+                    onClick={() => handleBattlefieldChange(candidate.id)}
+                  >
+                    <strong>{candidate.label}</strong>
+                    <span>{candidate.description}</span>
+                  </button>
+                ))}
+              </div>
               <strong>
                 {formatSimulatorCoord(attackerPosition)} →{" "}
                 {formatSimulatorCoord(targetPosition)}
@@ -1346,21 +1467,54 @@ export default function EquipmentSimulatorClient({
             </div>
           </section>
 
-          <div className={styles.boardFrame}>
+          <div
+            className={styles.boardFrame}
+            style={{
+              gridTemplateColumns: `34px ${boardColumnTemplate}`,
+              gridTemplateRows: `28px ${boardRowTemplate}`,
+              minHeight:
+                boardRows.length === 1
+                  ? "190px"
+                  : boardColumns.length === 1
+                    ? "530px"
+                    : undefined,
+              justifyContent:
+                boardColumns.length === 1 ? "center" : undefined,
+              alignContent: boardRows.length === 1 ? "center" : undefined,
+            }}
+          >
             <div className={styles.cornerLabel} aria-hidden />
-            {SIMULATOR_BOARD_COLUMNS.map((col) => (
-              <div key={col} className={styles.columnLabel} aria-hidden>
+            {boardColumns.map((col, columnIndex) => (
+              <div
+                key={col}
+                className={styles.columnLabel}
+                style={{ gridColumn: columnIndex + 2 }}
+                aria-hidden
+              >
                 {col}
               </div>
             ))}
-            {SIMULATOR_BOARD_ROWS.map((row) => (
-              <div key={`row-${row}`} className={styles.rowLabel} aria-hidden>
+            {boardRows.map((row, rowIndex) => (
+              <div
+                key={`row-${row}`}
+                className={styles.rowLabel}
+                style={{ gridRow: rowIndex + 2 }}
+                aria-hidden
+              >
                 {row}
               </div>
             ))}
-            <div className={styles.boardGrid}>
-              {SIMULATOR_BOARD_ROWS.map((row) =>
-                SIMULATOR_BOARD_COLUMNS.map((col) => {
+            <div
+              className={styles.boardGrid}
+              style={{
+                gridColumn: `2 / ${boardColumns.length + 2}`,
+                gridRow: `2 / ${boardRows.length + 2}`,
+                gridTemplateColumns: boardColumnTemplate,
+                gridTemplateRows: boardRowTemplate,
+              }}
+            >
+              {boardRows.map((row) =>
+                boardColumns.map((col) => {
                   const coord: SimulatorBoardCoord = { col, row };
                   const hasAttacker = sameCoord(coord, attackerPosition);
                   const hasTarget = sameCoord(coord, targetPosition);
@@ -1427,9 +1581,8 @@ export default function EquipmentSimulatorClient({
                             attackerPosition.row <= 2
                               ? styles["token--popoverBelow"]
                               : "",
-                            SIMULATOR_BOARD_COLUMNS.indexOf(
-                              attackerPosition.col,
-                            ) >= 3
+                            boardColumns.indexOf(attackerPosition.col) >=
+                            Math.ceil(boardColumns.length / 2)
                               ? styles["token--popoverLeft"]
                               : "",
                           ].join(" ")}
@@ -1523,9 +1676,8 @@ export default function EquipmentSimulatorClient({
                             targetPosition.row <= 2
                               ? styles["token--popoverBelow"]
                               : "",
-                            SIMULATOR_BOARD_COLUMNS.indexOf(
-                              targetPosition.col,
-                            ) >= 3
+                            boardColumns.indexOf(targetPosition.col) >=
+                            Math.ceil(boardColumns.length / 2)
                               ? styles["token--popoverLeft"]
                               : "",
                           ].join(" ")}

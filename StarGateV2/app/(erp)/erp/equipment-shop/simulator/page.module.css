@@ -680,6 +680,57 @@
   gap: 12px;
 }
 
+.boardIdentity {
+  display: grid;
+  gap: 7px;
+}
+
+.battlefieldSelector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.battlefieldSelector button {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px 9px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.battlefieldSelector button:hover,
+.battlefieldSelector button:focus-visible,
+.battlefieldSelector__button--active {
+  border-color: var(--gold-dim) !important;
+  color: var(--gold) !important;
+}
+
+.battlefieldSelector__button--active {
+  background: color-mix(in srgb, var(--gold) 13%, rgba(0, 0, 0, 0.34)) !important;
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+.battlefieldSelector button strong {
+  display: inline;
+  margin: 0;
+  color: currentColor;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.battlefieldSelector button span {
+  color: currentColor;
+  font-size: 14px;
+  line-height: 1;
+}
+
 .boardToolbarActions {
   display: flex;
   align-items: stretch;

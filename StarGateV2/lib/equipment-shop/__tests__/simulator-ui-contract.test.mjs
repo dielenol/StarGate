@@ -59,6 +59,26 @@ test("action controls wrap inside the board at desktop and mobile widths", async
   );
 });
 
+test("the standard 5x5 battlefield can switch to vertical 1x5 and horizontal 5x1 boards", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(STYLES_URL, "utf8"),
+  ]);
+
+  assert.match(client, /type BattlefieldId = "5x5" \| "1x5" \| "5x1"/);
+  assert.match(client, /const DEFAULT_BATTLEFIELD = BATTLEFIELDS\[0\]/);
+  assert.match(client, /id: "5x5"[\s\S]*description: "표준 전장"/);
+  assert.match(client, /id: "1x5"[\s\S]*columns: \["A"\]/);
+  assert.match(client, /id: "5x1"[\s\S]*rows: \[1\]/);
+  assert.match(client, /aria-label="전장 규격 선택"/);
+  assert.match(client, /handleBattlefieldChange\(candidate\.id\)/);
+  assert.match(client, /boardRows\.map\(\(row\)/);
+  assert.match(client, /boardColumns\.map\(\(col\)/);
+  assert.match(client, /resetTrainingState\(\s*nextBattlefield/);
+  assert.match(styles, /\.battlefieldSelector/);
+  assert.match(styles, /\.battlefieldSelector__button--active/);
+});
+
 test("the main-character token uses mapped art, a no-character field agent, and a safe initial fallback", async () => {
   const [page, client, simulator, defaultAgent, defaultTarget] = await Promise.all([
     readFile(PAGE_URL, "utf8"),
