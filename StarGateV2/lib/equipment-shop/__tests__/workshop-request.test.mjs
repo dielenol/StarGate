@@ -811,7 +811,7 @@ test("accept, claim and cancel keep every economy mutation inside the supplied t
   assert.match(operations, /request\.kind === "upgrade"[\s\S]*escrowEquippedSource\(request, input\.session\)[\s\S]*consumeMaterials\(request, input\.session\)[\s\S]*addCredit\([\s\S]*session: input\.session/);
   assert.match(
     operations,
-    /amount: -request\.quote\.creditCost[\s\S]*type: "PURCHASE"[\s\S]*requestId: childIdempotencyKey\(input\.requestId, "credit"\)[\s\S]*allowNegative: true[\s\S]*session: input\.session/,
+    /amount: -request\.quote\.creditCost[\s\S]*type: "PURCHASE"[\s\S]*requestId: childIdempotencyKey\(input\.requestId, "credit"\)[\s\S]*session: input\.session/,
   );
   assert.match(resultMasterItem, /isAvailable: false/);
   assert.match(resultMasterItem, /isPublic: false/);
@@ -834,7 +834,15 @@ test("accept, claim and cancel keep every economy mutation inside the supplied t
   );
 });
 
-test("workshop quote acceptance allows negative credit while still requiring materials", () => {
+test("workshop quote acceptance blocks insufficient credit while still requiring materials", () => {
+  const operations = readFileSync(
+    new URL("../workshop-operations.ts", import.meta.url),
+    "utf8",
+  );
+  const acceptOperation = operations.slice(
+    operations.indexOf("export async function acceptWorkshopQuoteInTransaction"),
+    operations.indexOf("export async function cancelWorkshopInTransaction"),
+  );
   const playerClient = readFileSync(
     new URL(
       "../../../app/(erp)/erp/equipment-shop/EquipmentShopClient.tsx",
@@ -845,21 +853,19 @@ test("workshop quote acceptance allows negative credit while still requiring mat
 
   assert.match(
     playerClient,
-    /const balanceAfterAcceptance = balance - quote\.creditCost/,
-  );
-  assert.match(playerClient, /const usesWorkshopCreditDebt = balanceAfterAcceptance < 0/);
-  assert.match(
-    playerClient,
-    /공임 부족분은 마이너스 잔액으로 이월되며 이후 크레딧 수입에서 자동 상계됩니다/,
+    /const creditReady = balance >= quote\.creditCost/,
   );
   assert.match(
     playerClient,
-    /disabled=\{!materialsReady \|\| acceptWorkshopQuoteMutation\.isPending\}/,
+    /disabled=\{!materialsReady \|\| !creditReady \|\| acceptWorkshopQuoteMutation\.isPending\}/,
   );
-  assert.doesNotMatch(playerClient, /const creditReady = balance >= quote\.creditCost/);
   assert.doesNotMatch(
     playerClient,
-    /disabled=\{[^}]*creditReady[^}]*\}/,
+    /공임 부족분은 마이너스 잔액으로 이월/,
+  );
+  assert.doesNotMatch(
+    acceptOperation,
+    /allowNegative: true/,
   );
 });
 

@@ -5391,8 +5391,7 @@ export default function EquipmentShopClient({
                       (material) =>
                         (availableByItemId.get(material.itemId) ?? 0) >= material.quantity,
                     );
-                    const balanceAfterAcceptance = balance - quote.creditCost;
-                    const usesWorkshopCreditDebt = balanceAfterAcceptance < 0;
+                    const creditReady = balance >= quote.creditCost;
                     return (
                       <section className={styles.workshopQuote}>
                         <div className={styles.workshopNpcReply}>
@@ -5456,7 +5455,7 @@ export default function EquipmentShopClient({
                         <dl className={styles.workshopQuoteSummary}>
                           <div>
                             <dt>공방 공임</dt>
-                            <dd>{formatCredits(quote.creditCost)}</dd>
+                            <dd data-ready={creditReady}>{formatCredits(quote.creditCost)}</dd>
                           </div>
                           <div>
                             <dt>재료 조달가</dt>
@@ -5475,12 +5474,6 @@ export default function EquipmentShopClient({
                             <dd>{WORKSHOP_MODIFICATION_DOMAIN_LABELS[quote.modificationDomain]}</dd>
                           </div>
                         </dl>
-                        {usesWorkshopCreditDebt ? (
-                          <p className={styles.workshopCreditDebtNotice}>
-                            공임 부족분은 마이너스 잔액으로 이월되며 이후 크레딧 수입에서 자동 상계됩니다.
-                            {" "}수락 후 예상 잔액: {formatCredits(balanceAfterAcceptance)}
-                          </p>
-                        ) : null}
                         {quote.materials.length > 0 ? (
                           <ul className={styles.workshopMaterials}>
                             {quote.materials.map((material) => {
@@ -5504,7 +5497,7 @@ export default function EquipmentShopClient({
                             <button
                               type="button"
                               className={styles.primaryAction}
-                              disabled={!materialsReady || acceptWorkshopQuoteMutation.isPending}
+                              disabled={!materialsReady || !creditReady || acceptWorkshopQuoteMutation.isPending}
                               onClick={() => acceptWorkshopQuoteMutation.mutate(
                                 { requestId: request._id, expectedQuoteVersion: quote.version },
                                 {
