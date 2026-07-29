@@ -113,6 +113,7 @@ export interface SimulatorAttackInput {
   attacker: SimulatorBoardCoord;
   target: SimulatorBoardCoord;
   attackerStats: Pick<SimulatorAttackerProfile, "atk">;
+  attackerStatuses?: Pick<SimulatorTargetStats, "statuses" | "statusRounds">;
   targetStats: Pick<SimulatorTargetStats, "def">;
   runtime?: SimulatorAttackRuntime;
 }
@@ -132,6 +133,12 @@ export interface SimulatorAttackResult {
   nextResourceRemaining?: number;
   nextShotsInCycle?: number;
   summary: string;
+}
+
+export interface SimulatorAreaSprayOutcome {
+  result: SimulatorAttackResult;
+  roll: number;
+  hit: boolean;
 }
 
 export const SIMULATOR_RANGE_BANDS = ["near", "mid", "far"] as const;
@@ -645,6 +652,27 @@ export function getSimulatorEffectiveDef(
   return Math.max(0, target.def - armorReduction);
 }
 
+export function getSimulatorRangedDamageMultiplier(
+  attacker?: Pick<SimulatorTargetStats, "statuses" | "statusRounds">,
+): number {
+  if (!attacker) return 1;
+  const reductionPercent = attacker.statuses.reduce((total, status) => {
+    if ((attacker.statusRounds[status] ?? 0) <= 0) return total;
+    return total + (SIMULATOR_STATUS_RULES[status].rangedAttackReductionPercent ?? 0);
+  }, 0);
+  return Math.max(0, 1 - reductionPercent / 100);
+}
+
+export function resolveSimulatorAreaSpray(
+  results: readonly SimulatorAttackResult[],
+  rollD6: () => number,
+): SimulatorAreaSprayOutcome[] {
+  return results.map((result) => {
+    const roll = rollD6();
+    return { result, roll, hit: result.ok && roll <= 4 };
+  });
+}
+
 export function applySimulatorStatuses(
   target: SimulatorTargetStats,
   statuses: readonly SimulatorStatusKind[],
@@ -760,8 +788,9 @@ export function getSimulatorIncendiaryLineCells(
       if (!row) break;
       cells.push({ col: attacker.col, row });
     }
+    return cells;
   }
-  return cells;
+  return [target];
 }
 
 export function getSimulatorCadenceCycle(turn: number, cycleTurns = 1): number {
@@ -891,7 +920,10 @@ export function resolveSimulatorAttack(
   }
 
   const atkBonus = rule.usesAtkBonus ? Math.max(0, input.attackerStats.atk) : 0;
-  const rawDamage = profile.amount + atkBonus;
+  const rangedDamageMultiplier = rule.usesAtkBonus
+    ? 1
+    : getSimulatorRangedDamageMultiplier(input.attackerStatuses);
+  const rawDamage = (profile.amount + atkBonus) * rangedDamageMultiplier;
   const penetratedDef = Math.max(
     0,
     input.targetStats.def - (profile.armorPenetration ?? 0),

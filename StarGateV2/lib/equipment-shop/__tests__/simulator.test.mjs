@@ -10,9 +10,11 @@ import {
   getSimulatorIncendiaryLineCells,
   getSimulatorKnockbackTarget,
   getSimulatorRange,
+  getSimulatorRangedDamageMultiplier,
   getSimulatorWeaponRule,
   isSimulatorAttackableCell,
   isNewSimulatorCadenceCycle,
+  resolveSimulatorAreaSpray,
   resolveSimulatorAttack,
   SIMULATOR_STATUS_RULES,
 } from "../simulator.ts";
@@ -120,6 +122,27 @@ test("sonic emitter damages sanity and ignores DEF", () => {
   assert.deepEqual(result.statusesApplied, ["dazed"]);
 });
 
+test("dazed reduces outgoing ranged damage by 20% for one active round", () => {
+  const dazed = {
+    statuses: ["dazed"],
+    statusRounds: { dazed: 1 },
+  };
+  assert.equal(getSimulatorRangedDamageMultiplier(dazed), 0.8);
+
+  const result = resolveSimulatorAttack({
+    weaponSlug: "basic-heavy-machine-gun",
+    attacker: { col: "A", row: 1 },
+    target: { col: "A", row: 3 },
+    attackerStats,
+    attackerStatuses: dazed,
+    targetStats,
+    runtime: { resourceRemaining: 10, installed: true },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.rawDamage, 12);
+  assert.equal(result.damageApplied, 12);
+});
+
 test("flamethrower applies burn on supported range", () => {
   const result = resolveSimulatorAttack({
     weaponSlug: "basic-flamethrower",
@@ -181,7 +204,7 @@ test("sniper rifle penetrates 10 DEF before mitigation", () => {
   assert.equal(result.profile?.armorPenetration, 10);
 });
 
-test("special action geometry handles shotgun knockback and a three-cell incendiary line", () => {
+test("special actions handle knockback, per-target spray rolls, and both fire-zone shapes", () => {
   assert.deepEqual(
     getSimulatorKnockbackTarget(
       { col: "A", row: 1 },
@@ -207,6 +230,32 @@ test("special action geometry handles shotgun knockback and a three-cell incendi
       { col: "C", row: 2 },
       { col: "C", row: 3 },
       { col: "C", row: 4 },
+    ],
+  );
+  assert.deepEqual(
+    getSimulatorIncendiaryLineCells(
+      { col: "A", row: 1 },
+      { col: "C", row: 3 },
+    ),
+    [{ col: "C", row: 3 }],
+  );
+  const sprayResults = resolveSimulatorAreaSpray(
+    [
+      { ok: true, summary: "대상 1" },
+      { ok: true, summary: "대상 2" },
+      { ok: true, summary: "대상 3" },
+    ],
+    (() => {
+      const rolls = [2, 5, 4];
+      return () => rolls.shift();
+    })(),
+  );
+  assert.deepEqual(
+    sprayResults.map(({ roll, hit }) => ({ roll, hit })),
+    [
+      { roll: 2, hit: true },
+      { roll: 5, hit: false },
+      { roll: 4, hit: true },
     ],
   );
   assert.equal(

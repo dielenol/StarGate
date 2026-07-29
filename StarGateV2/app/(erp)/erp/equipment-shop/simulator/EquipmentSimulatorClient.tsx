@@ -33,6 +33,7 @@ import {
   isSimulatorAttackableCell,
   getSimulatorWeaponRule,
   isNewSimulatorCadenceCycle,
+  resolveSimulatorAreaSpray,
   resolveSimulatorAttack,
   SIMULATOR_BOARD_COLUMNS,
   SIMULATOR_BOARD_ROWS,
@@ -1235,13 +1236,15 @@ export default function EquipmentSimulatorClient({
         fail(selectedResult?.reasonLabel ?? "현재 표적이 사거리 밖에 있습니다.");
         return;
       }
-      const roll = rollD6();
-      const hit = roll <= 4;
+      const outcomes = resolveSimulatorAreaSpray([selectedResult], rollD6);
+      const [{ roll, hit }] = outcomes;
       setResourceBySlug((prev) => ({ ...prev, [selectedRule.slug]: 0 }));
       if (selectedResult.nextShotsInCycle !== undefined) {
         setHmgShotsInCycle(selectedResult.nextShotsInCycle);
       }
-      if (hit) applyAttackResult(selectedResult);
+      for (const outcome of outcomes) {
+        if (outcome.hit) applyAttackResult(outcome.result);
+      }
       setTrainingEvent("attack");
       setActiveStep(3);
       showFeedback(
