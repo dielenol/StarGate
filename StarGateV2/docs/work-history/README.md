@@ -76,6 +76,7 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 ## 현재 페이지 이력
 
 - [`/erp/account`](routes/erp/account.md)
+- [`/erp/admin/catalog`](routes/erp/admin/catalog.md)
 - [`/erp/admin/equipment-workshop`](routes/erp/admin/equipment-workshop.md)
 - [`/erp/characters/[id]`](routes/erp/characters/_id.md)
 - [`/erp/equipment-shop/custom`](routes/erp/equipment-shop/custom.md)
