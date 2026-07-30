@@ -5,23 +5,23 @@
 - 대상: `shared_inventory`, scope `GLOBAL`
 - 출처 등급: 사용자 제공 보상표(`canon-from-source`) + 기존 DB/세션 기록 식별자 대조
 - 목적: 이미 별도 지급된 포인트·크레딧·호의도·해금 보상을 제외하고, 미지급 전리품만 공용 인벤토리에 등록
-- 현재 상태: live apply 전 dry-run 및 사용자 실행 확인 대기
+- 현재 상태: 2026-07-30 live apply 및 독립 재조회 완료
 
 ## 커버리지
 
 | 보상 묶음 | 원문 전리품 | 정규화된 카탈로그 slug | 수량 | master 상태 | 적용 상태 |
 |---|---|---|---:|---|---|
-| S1E1 질서 | Zulu 028 개체(생포) | `zulu-0028-contained-entity` | 1 | 신규 | 대기 |
-| S1E1 질서 | 깨진 음절 샘플 | `broken-syllable` | 3 | 기존 재사용 | 대기 |
-| S1E2 선택 | Zulu 040 "왕관" 본체 생포 | `zulu-0040-crown-specimen` | 1 | 기존 재사용 | 대기 |
-| S1E2 선택 | Zulu 872-3 "이동식의 날개" | `zulu-0872-3-dongsik-wings` | 1 | 기존 재사용 | 대기 |
-| S1E2 선택 | Zulu 1004 "커룹의 불칼" | `kerub-fireblade` | 1 | 기존 재사용 | 대기 |
-| S1E3 망령 | 도살견 외관 도본 | `montauk-slaughter-hound-appearance-plate` | 1 | 신규 | 대기 |
-| S1E3 망령 | 지휘자 시신 | `conductor-corpse` | 1 | 신규 | 대기 |
-| S1E3 망령 | 음반축 | `conductor-record-spindle` | 3 | 신규 | 대기 |
-| S1E3 망령 | 황금여명회 컬티스트의 가면 | `golden-dawn-cultist-mask` | 5 | 신규 | 대기 |
-| S1E4 프라토 | 뒤집어진 양말 생포 | `inverted-sock-contained-entity` | 1 | 신규 | 대기 |
-| 세션 ID 미확정 보상표 | 작전 중 화이트 로즈 조력자 호출 가능 | `white-rose-assistant-call` | 1 | 신규 | 대기 |
+| S1E1 질서 | Zulu 028 개체(생포) | `zulu-0028-contained-entity` | 1 | 신규 | 적용 완료 |
+| S1E1 질서 | 깨진 음절 샘플 | `broken-syllable` | 3 | 기존 재사용 | 적용 완료 |
+| S1E2 선택 | Zulu 040 "왕관" 본체 생포 | `zulu-0040-crown-specimen` | 1 | 기존 재사용 | 적용 완료 |
+| S1E2 선택 | Zulu 872-3 "이동식의 날개" | `zulu-0872-3-dongsik-wings` | 1 | 기존 재사용 | 적용 완료 |
+| S1E2 선택 | Zulu 1004 "커룹의 불칼" | `kerub-fireblade` | 1 | 기존 재사용 | 적용 완료 |
+| S1E3 망령 | 도살견 외관 도본 | `montauk-slaughter-hound-appearance-plate` | 1 | 신규 | 적용 완료 |
+| S1E3 망령 | 지휘자 시신 | `conductor-corpse` | 1 | 신규 | 적용 완료 |
+| S1E3 망령 | 음반축 | `conductor-record-spindle` | 3 | 신규 | 적용 완료 |
+| S1E3 망령 | 황금여명회 컬티스트의 가면 | `golden-dawn-cultist-mask` | 5 | 신규 | 적용 완료 |
+| S1E4 프라토 | 뒤집어진 양말 생포 | `inverted-sock-contained-entity` | 1 | 신규 | 적용 완료 |
+| 세션 ID 미확정 보상표 | 작전 중 화이트 로즈 조력자 호출 가능 | `white-rose-assistant-call` | 1 | 신규 | 적용 완료 |
 
 - 합계: 11종, 19개
 - `지휘자 시신과 음반축 3개`는 시신 1개와 음반축 3개로 분리한다.
@@ -46,8 +46,16 @@
 
 ## 실행 게이트
 
-- dry-run 기준 신규 `master_items` 7건, 기존 4건 재사용.
-- dry-run 기준 대상 11종의 현재 공용 수량은 모두 0.
+- 실행 전 dry-run 기준 신규 `master_items` 7건, 기존 4건 재사용.
+- 실행 전 대상 11종의 공용 수량은 모두 0이었다.
 - 실제 실행은 대상 행이 하나라도 선행 생성되면 트랜잭션을 중단한다.
 - 실제 실행은 사용자에게 변경 전→후와 부수 효과를 제시하고 즉시 실행 확인을 받은 뒤에만 수행한다.
 - 실행 후 `economic_operations`, `master_items`, `shared_inventory`를 독립 재조회한다.
+
+## 실행 결과
+
+- 실행 일시: 2026-07-30
+- operation ID: `shared-inventory-session-loot-backfill-2026-07-30-v1`
+- 실행 결과: 신규 `master_items` 7건 생성, 기존 4건 재사용, `GLOBAL` 공용 인벤토리 11행·총 19개 지급
+- 독립 재조회 결과: operation 상태 `completed`, 11종 수량 일치, 신규 master payload와 정식 spec adapter 결과 일치
+- 재실행 확인: 동일 operation은 `replay`로 판정되어 수량을 추가하지 않고 11행·총 19개를 유지
