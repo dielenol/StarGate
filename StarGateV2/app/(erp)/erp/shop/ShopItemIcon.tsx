@@ -1,11 +1,13 @@
-import Image from "next/image";
-
 import type { CSSProperties } from "react";
+
+import Image from "next/image";
 
 import { getShopItemImageSrc } from "@/lib/shop/item-images";
 
 interface Props {
   slug: string;
+  imageSrc?: string;
+  icon?: string;
   size?: number;
   className?: string;
   style?: CSSProperties;
@@ -13,11 +15,16 @@ interface Props {
 
 export default function ShopItemIcon({
   slug,
+  imageSrc,
+  icon,
   size = 32,
   className,
   style,
 }: Props) {
-  const src = getShopItemImageSrc(slug);
+  const src =
+    imageSrc?.startsWith("/assets/") === true
+      ? imageSrc
+      : getShopItemImageSrc(slug);
   const mergedStyle: CSSProperties = {
     display: "block",
     width: size,
@@ -28,6 +35,26 @@ export default function ShopItemIcon({
   };
 
   if (!src) {
+    if (icon?.trim()) {
+      return (
+        <span
+          className={className}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: size,
+            height: size,
+            fontSize: Math.max(14, Math.floor(size * 0.68)),
+            lineHeight: 1,
+            ...style,
+          }}
+          aria-hidden
+        >
+          {icon}
+        </span>
+      );
+    }
     return (
       <svg
         width={size}

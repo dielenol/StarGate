@@ -1,7 +1,7 @@
 /**
  * GET/PATCH /api/erp/shop/admin/stock — GM 전용 편의점 재고 관리.
  *
- * GET: SHOP_CATALOG 전체 품목 + 현재 stock + lastRefresh.
+ * GET: runtime catalog 전체 품목 + 현재 stock + lastRefresh.
  * PATCH: { itemId, stock } — 단일 item stock 직접 set (lastRefresh=todayKst 동기화).
  *
  * 권한: GM 만 통과. requireRole("GM") 위반 시 403.
@@ -12,9 +12,12 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { getAllDailyStocks, getStock, refreshStock } from "@/lib/db/shop";
-import { findShopItemBySlug, SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import { listPendingShopReorderRequests } from "@/lib/shop/reorder-requests";
+import {
+  findRuntimeShopItemBySlug,
+  loadRuntimeShopCatalog,
+} from "@/lib/shop/runtime-catalog";
 import { recordShopStockAuditLog } from "@/lib/shop/stock-audit";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
@@ -30,7 +33,8 @@ export async function GET() {
   }
 
   try {
-    const [stocks, reorders] = await Promise.all([
+    const [catalog, stocks, reorders] = await Promise.all([
+      loadRuntimeShopCatalog(),
       getAllDailyStocks(),
       listPendingShopReorderRequests(),
     ]);
@@ -43,7 +47,7 @@ export async function GET() {
     }
     const today = getTodayKst();
 
-    const items = SHOP_CATALOG.map((item) => {
+    const items = catalog.map((item) => {
       const doc = byId.get(item.slug);
       const pendingReorders = (reordersBySlug.get(item.slug) ?? []).map(
         (reorder) => ({
@@ -59,6 +63,7 @@ export async function GET() {
         slug: item.slug,
         name: item.name,
         icon: item.icon,
+        ...(item.previewImage ? { previewImage: item.previewImage } : {}),
         stockMin: item.stockMin,
         stockMax: item.stockMax,
         appearRate: item.appearRate,
@@ -100,7 +105,7 @@ export async function PATCH(request: Request) {
   if (!itemId) {
     return NextResponse.json({ error: "itemId 누락" }, { status: 400 });
   }
-  const catalogItem = findShopItemBySlug(itemId);
+  const catalogItem = await findRuntimeShopItemBySlug(itemId);
   if (!catalogItem) {
     return NextResponse.json(
       { error: `unknown itemId: ${itemId}` },

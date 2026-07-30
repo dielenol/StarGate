@@ -50,6 +50,7 @@ test("100 concurrent refresh runs count each item/date exactly once", async () =
       ensureDailyStockRefresh(now, {
         refreshIfStale,
         rollStock: () => 1,
+        catalog: SHOP_CATALOG,
       }),
     ),
   );

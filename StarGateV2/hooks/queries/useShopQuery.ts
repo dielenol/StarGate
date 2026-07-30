@@ -10,7 +10,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { ShopCatalogItem } from "@/lib/shop/catalog";
+import type { RuntimeShopCatalogItem } from "@/lib/shop/runtime-catalog";
 
 /* ── Query keys ── */
 
@@ -54,7 +54,7 @@ export class ShopApiError extends Error {
 
 /* ── 응답 타입 ── */
 
-export interface ShopCatalogEntry extends ShopCatalogItem {
+export interface ShopCatalogEntry extends RuntimeShopCatalogItem {
   stock: number;
   available: boolean;
 }
@@ -77,6 +77,7 @@ export interface ShopInventoryItem {
   acquiredAt: string;
   icon: string;
   effect: string;
+  previewImage?: string;
 }
 
 export interface ShopInventoryResponse {

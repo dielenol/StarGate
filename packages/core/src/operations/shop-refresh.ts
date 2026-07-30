@@ -13,12 +13,16 @@
 
 import { refreshStockIfStale } from "@stargate/shared-db";
 
-import { SHOP_CATALOG } from "../domain/shop-catalog.js";
+import {
+  SHOP_CATALOG,
+  type ShopCatalogItem,
+} from "../domain/shop-catalog.js";
 import { rollShopDailyStock } from "../domain/shop-stock.js";
 
 interface DailyStockRefreshDependencies {
   refreshIfStale?: typeof refreshStockIfStale;
   rollStock?: typeof rollShopDailyStock;
+  catalog?: readonly ShopCatalogItem[];
 }
 
 /**
@@ -46,9 +50,10 @@ export async function ensureDailyStockRefresh(
   const refreshIfStale =
     dependencies.refreshIfStale ?? refreshStockIfStale;
   const rollStock = dependencies.rollStock ?? rollShopDailyStock;
+  const catalog = dependencies.catalog ?? SHOP_CATALOG;
 
   const results = await Promise.all(
-    SHOP_CATALOG.map(async (item) => {
+    catalog.map(async (item) => {
       const stock = rollStock(item);
       return refreshIfStale(item.slug, stock, today);
     }),

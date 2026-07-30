@@ -269,6 +269,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "주식 운영", keywords: "stocks admin market price 주식 시세", icon: IconStock, href: "/erp/admin/stocks" },
       { label: "대사 비프 테스트", keywords: "dialogue beep audio npc hud undertale", icon: IconSystem, href: "/erp/admin/dialogue-beep" },
       { label: "인벤토리 운영", keywords: "inventory admin grant items 지급 마스터", icon: IconInventory, href: "/erp/admin/inventory" },
+      { label: "신규 품목 운영", keywords: "catalog shop armory item 편의점 병기부 품목 등록", icon: IconCoreArchive, href: "/erp/admin/catalog" },
       { label: "공방 운영", keywords: "equipment workshop upgrade quote 강화 견적", icon: IconArmoryWorkshop, href: "/erp/admin/equipment-workshop" },
       { label: "캐릭터 등록", keywords: "character person register import", icon: IconPersonCard, href: "/erp/admin/characters/import" },
     ],

@@ -30,8 +30,9 @@ test("daily shop restock uses one singleton revision and lease state", async () 
   assert.match(source, /cleanupMessageIds/);
   assert.match(
     source,
-    /SHOP_CATALOG\.every\(\(item\) => stockByItemId\.has\(item\.slug\)\)/,
+    /catalog\.every\(\(item\) => stockByItemId\.has\(item\.slug\)\)/,
   );
+  assert.match(source, /loadRuntimeShopCatalog\(\)/);
   assert.doesNotMatch(source, /daily-shop-restock:\$\{today\}/);
   assert.doesNotMatch(source, /sentAt/);
   assert.match(

@@ -11,6 +11,7 @@ import {
   requestStockMarketWireState,
 } from "./desired-state.js";
 import { ScheduledJobHandlerRegistry } from "./handler-registry.js";
+import { loadRuntimeShopCatalog } from "./runtime-shop-catalog.js";
 
 /**
  * StarGateV2 서버 모듈을 import하지 않고 runtime-neutral core operation을 실행한다.
@@ -22,11 +23,15 @@ export function createDefaultScheduledJobHandlers(): ScheduledJobHandlerRegistry
       jobName: "shop.refresh",
       async execute(context) {
         context.signal.throwIfAborted();
-        const result = await ensureDailyStockRefresh(context.requestedAt);
+        const catalog = await loadRuntimeShopCatalog();
+        const result = await ensureDailyStockRefresh(context.requestedAt, {
+          catalog,
+        });
         context.signal.throwIfAborted();
         const announcement = await requestDailyShopRestockState(
           result.today,
           context.requestedAt,
+          catalog,
         );
         context.signal.throwIfAborted();
         return {

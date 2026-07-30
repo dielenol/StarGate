@@ -3,7 +3,7 @@
  *
  * - character_inventory.itemId 는 master_items._id (ObjectId hex) 형식.
  *   slug 로 lookup 하려면 master_items 의 _id ↔ slug 매핑이 필요.
- * - SHOP_CATALOG 의 slug 만 응답에 포함 (편의점 외 장비/소지품은 별도 페이지가 처리).
+ * - runtime 편의점 catalog 의 slug 만 응답에 포함 (그 외 장비/소지품은 별도 페이지가 처리).
  *
  * 응답:
  * - items: { itemId(=master._id), slug, name, quantity, acquiredAt(ISO), icon, effect }
@@ -21,7 +21,7 @@ import {
   findMasterItemsBySlugs,
   listCharacterInventory,
 } from "@/lib/db/inventory";
-import { findShopItemBySlug, SHOP_CATALOG } from "@/lib/shop/catalog";
+import { loadRuntimeShopCatalog } from "@/lib/shop/runtime-catalog";
 
 export async function GET() {
   const session = await auth();
@@ -53,8 +53,10 @@ export async function GET() {
   }
 
   try {
-    // SHOP_CATALOG slug → master._id 매핑 (한 번에 $in 조회).
-    const catalogSlugs = SHOP_CATALOG.map((c) => c.slug);
+    const catalog = await loadRuntimeShopCatalog();
+    const catalogBySlug = new Map(catalog.map((item) => [item.slug, item]));
+    // runtime catalog slug → master._id 매핑 (한 번에 $in 조회).
+    const catalogSlugs = catalog.map((item) => item.slug);
     const masterDocs = await findMasterItemsBySlugs(catalogSlugs);
 
     // master._id(string) → slug
@@ -68,7 +70,7 @@ export async function GET() {
     for (const row of inventory) {
       const slug = idToSlug.get(row.itemId);
       if (!slug) continue; // 편의점 카탈로그 외 아이템은 본 응답 대상 X
-      const meta = findShopItemBySlug(slug);
+      const meta = catalogBySlug.get(slug);
       if (!meta) continue;
       items.push({
         itemId: row.itemId,
@@ -78,6 +80,7 @@ export async function GET() {
         acquiredAt: row.acquiredAt.toISOString(),
         icon: meta.icon,
         effect: meta.effect,
+        ...(meta.previewImage ? { previewImage: meta.previewImage } : {}),
       });
     }
 

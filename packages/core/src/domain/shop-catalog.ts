@@ -12,7 +12,10 @@
  * - isShopOpen() 은 KST 06:00~20:00 영업 + 일요일 종일 마감 룰을 따른다.
  */
 
-import type { ShopPageGroup } from "@stargate/shared-db/types";
+import type {
+  MasterItem,
+  ShopPageGroup,
+} from "@stargate/shared-db/types";
 
 /* ── 상수 ── */
 
@@ -41,6 +44,146 @@ export interface ShopCatalogItem {
   /** #RRGGBB. */
   color: string;
   pageGroup: ShopPageGroup;
+}
+
+export interface RuntimeShopCatalogItem extends ShopCatalogItem {
+  previewImage?: string;
+}
+
+const RUNTIME_SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]{1,79}$/;
+const RUNTIME_HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const RUNTIME_LOCAL_ASSET_PATTERN = /^\/assets\/[a-zA-Z0-9_./-]+$/;
+const MAX_RUNTIME_SHOP_PRICE = 1_000_000_000;
+const RUNTIME_PAGE_GROUPS = new Set<ShopPageGroup>([
+  "BASIC",
+  "RECOVERY",
+  "LUXURY",
+  "RARE",
+]);
+
+function isSafeRuntimeAssetPath(value: string): boolean {
+  if (
+    !RUNTIME_LOCAL_ASSET_PATTERN.test(value) ||
+    value.includes("//")
+  ) {
+    return false;
+  }
+  return !value
+    .slice("/assets/".length)
+    .split("/")
+    .some((segment) => segment === "." || segment === "..");
+}
+
+function toRuntimePrice(value: unknown): number | null {
+  const parsed =
+    typeof value === "number" && Number.isFinite(value)
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+  return Number.isSafeInteger(parsed) &&
+    parsed > 0 &&
+    parsed <= MAX_RUNTIME_SHOP_PRICE
+    ? parsed
+    : null;
+}
+
+export function toRuntimeShopCatalogItem(
+  item: MasterItem,
+): RuntimeShopCatalogItem | null {
+  const slug = typeof item.slug === "string" ? item.slug.trim() : "";
+  const name = typeof item.name === "string" ? item.name.trim() : "";
+  const description =
+    typeof item.description === "string" ? item.description.trim() : "";
+  const effect = typeof item.effect === "string" ? item.effect.trim() : "";
+  const meta =
+    typeof item.shopMeta === "object" && item.shopMeta !== null
+      ? item.shopMeta
+      : null;
+  const icon =
+    meta && typeof meta.icon === "string" ? meta.icon.trim() : undefined;
+  const color =
+    meta && typeof meta.color === "string" ? meta.color : undefined;
+  const pageGroup = meta?.pageGroup;
+  const price = toRuntimePrice(item.price);
+
+  if (
+    !slug ||
+    !RUNTIME_SLUG_PATTERN.test(slug) ||
+    !name ||
+    item.category !== "CONSUMABLE" ||
+    item.isAvailable !== true ||
+    item.isPublic !== true ||
+    !meta ||
+    price === null ||
+    !Number.isInteger(meta.stockMin) ||
+    !Number.isInteger(meta.stockMax) ||
+    meta.stockMin < 1 ||
+    meta.stockMax < meta.stockMin ||
+    meta.stockMax > 999 ||
+    !Number.isFinite(meta.appearRate) ||
+    meta.appearRate < 0 ||
+    meta.appearRate > 1 ||
+    (pageGroup !== undefined && !RUNTIME_PAGE_GROUPS.has(pageGroup)) ||
+    (color !== undefined && !RUNTIME_HEX_COLOR_PATTERN.test(color)) ||
+    (icon !== undefined && icon.length > 16)
+  ) {
+    return null;
+  }
+
+  const previewImage =
+    typeof item.previewImage === "string" &&
+    isSafeRuntimeAssetPath(item.previewImage)
+      ? item.previewImage
+      : undefined;
+
+  return {
+    slug,
+    name,
+    icon: icon || "◈",
+    price,
+    effect: effect || "사용 효과 없음",
+    description: description || "스타마트 운영 카탈로그 등록 품목입니다.",
+    stockMin: meta.stockMin,
+    stockMax: meta.stockMax,
+    appearRate: meta.appearRate,
+    color: color ?? "#d1b25c",
+    pageGroup: pageGroup ?? "BASIC",
+    ...(previewImage ? { previewImage } : {}),
+  };
+}
+
+export function mergeRuntimeShopCatalog(
+  staticCatalog: readonly ShopCatalogItem[],
+  masterItems: readonly MasterItem[],
+): RuntimeShopCatalogItem[] {
+  const masterBySlug = new Map(
+    masterItems.flatMap((item) =>
+      typeof item.slug === "string" && item.slug.trim()
+        ? [[item.slug.trim(), item] as const]
+        : [],
+    ),
+  );
+  const merged = new Map<string, RuntimeShopCatalogItem>();
+
+  for (const item of staticCatalog) {
+    const backing = masterBySlug.get(item.slug);
+    if (
+      backing?.category === "CONSUMABLE" &&
+      backing.isAvailable === true &&
+      backing.isPublic === true
+    ) {
+      merged.set(item.slug, item);
+    }
+  }
+
+  for (const masterItem of masterItems) {
+    const item = toRuntimeShopCatalogItem(masterItem);
+    if (item && !merged.has(item.slug)) {
+      merged.set(item.slug, item);
+    }
+  }
+  return Array.from(merged.values());
 }
 
 /* ── Catalog ── */

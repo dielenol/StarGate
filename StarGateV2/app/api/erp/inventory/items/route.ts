@@ -1,55 +1,21 @@
 import { NextResponse } from "next/server";
-import { ITEM_CATEGORIES } from "@stargate/shared-db";
-
-import type { CreateMasterItemInput, ItemCategory } from "@/types/inventory";
+import { getClient } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { createMasterItem, listVisibleMasterItems } from "@/lib/db/inventory";
+import { equipmentShopItemZone } from "@/lib/equipment-shop/catalog";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { findShopItemBySlug } from "@/lib/shop/catalog";
+import { normalizeCatalogItemCreateBody } from "@/lib/shop/catalog-item-input";
 
-function isItemCategory(value: unknown): value is ItemCategory {
+function isDuplicateKeyError(error: unknown): boolean {
   return (
-    typeof value === "string" &&
-    (ITEM_CATEGORIES as readonly string[]).includes(value)
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === 11000
   );
-}
-
-function trimOptional(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed === "" ? undefined : trimmed;
-}
-
-function normalizeTags(value: unknown): string[] | undefined {
-  if (!Array.isArray(value)) return undefined;
-  const tags = value
-    .filter((tag): tag is string => typeof tag === "string")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-  return tags.length > 0 ? tags : undefined;
-}
-
-function normalizeLore(value: unknown): CreateMasterItemInput["lore"] {
-  if (!value || typeof value !== "object") return undefined;
-  const raw = value as Record<string, unknown>;
-  const lore = {
-    background: trimOptional(raw.background),
-    acquisition: trimOptional(raw.acquisition),
-    notes: trimOptional(raw.notes),
-  };
-  return lore.background || lore.acquisition || lore.notes ? lore : undefined;
-}
-
-function normalizePrice(value: unknown): number | string {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed === "") return 0;
-    const parsed = Number(trimmed);
-    return Number.isFinite(parsed) ? parsed : trimmed;
-  }
-  return 0;
 }
 
 export async function GET() {
@@ -90,56 +56,102 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = (await request.json()) as Partial<CreateMasterItemInput>;
-
-  if (!body.name?.trim()) {
+  const body = await request.json().catch(() => null);
+  const normalized = normalizeCatalogItemCreateBody(body);
+  if (!normalized.ok) {
     return NextResponse.json(
-      { error: "name은 필수입니다." },
+      { error: normalized.error },
       { status: 400 },
     );
   }
 
-  if (!isItemCategory(body.category)) {
+  const armoryZone = equipmentShopItemZone({
+    category: normalized.value.input.category,
+    slug: normalized.value.input.slug,
+    tags: normalized.value.input.tags,
+  });
+  if (armoryZone && normalized.value.target !== "armory") {
     return NextResponse.json(
-      { error: "유효한 category를 선택하세요." },
+      {
+        error:
+          "병기부 품목은 target과 armoryZone을 명시해 운영 카탈로그 검증을 통과해야 합니다.",
+        code: "ARMORY_TARGET_REQUIRED",
+      },
       { status: 400 },
+    );
+  }
+  const requiresGm = Boolean(normalized.value.target || armoryZone);
+  if (requiresGm) {
+    try {
+      requireRole(session.user.role, "GM");
+    } catch {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  if (
+    normalized.value.input.slug &&
+    findShopItemBySlug(normalized.value.input.slug)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "기본 편의점 품목 slug는 운영 화면에서 다시 등록할 수 없습니다.",
+        code: "STATIC_SHOP_SLUG_RESERVED",
+      },
+      { status: 409 },
     );
   }
 
   try {
-    const item = await createMasterItem({
-      slug: trimOptional(body.slug),
-      name: body.name.trim(),
-      category: body.category,
-      description: trimOptional(body.description) ?? "",
-      price: normalizePrice(body.price),
-      damage: trimOptional(body.damage),
-      effect: trimOptional(body.effect),
-      tags: normalizeTags(body.tags),
-      previewImage: trimOptional(body.previewImage),
-      isAvailable: body.isAvailable ?? true,
-      isPublic: body.isPublic ?? true,
-      lore: normalizeLore(body.lore),
-      loreMd: trimOptional(body.loreMd),
-      source: body.source ?? "manual",
-      authorId: trimOptional(body.authorId),
-      authorName: trimOptional(body.authorName),
-    });
-
-    await scheduleGmAdminAudit({
+    const timestamp = new Date();
+    const auditPayload = {
       action: "마스터 아이템 생성",
       actor: {
         id: session.user.id,
         displayName: session.user.displayName,
         role: session.user.role,
       },
-      summary: `${item.category} · ${item.isAvailable === false ? "지급 불가" : "지급 가능"}`,
-      target: `${item.name} (${item.slug})`,
-      timestamp: new Date(),
-    });
+      summary: `${normalized.value.input.category} · ${normalized.value.input.isAvailable === false ? "지급 불가" : "지급 가능"}`,
+      target: `${normalized.value.input.name} (${normalized.value.input.slug ?? "slug 없음"})`,
+      timestamp,
+    } as const;
+
+    let item;
+    if (session.user.role === "GM") {
+      const client = await getClient();
+      const mongoSession = client.startSession();
+      try {
+        await mongoSession.withTransaction(async () => {
+          item = await createMasterItem(normalized.value.input, {
+            session: mongoSession,
+          });
+          await scheduleGmAdminAudit(auditPayload, {
+            session: mongoSession,
+          });
+        });
+      } finally {
+        await mongoSession.endSession();
+      }
+    } else {
+      item = await createMasterItem(normalized.value.input);
+    }
+
+    if (!item) {
+      throw new Error("마스터 아이템 생성이 완료되지 않았습니다.");
+    }
 
     return NextResponse.json({ item }, { status: 201 });
   } catch (err) {
+    if (isDuplicateKeyError(err)) {
+      return NextResponse.json(
+        {
+          error: "이미 사용 중인 slug입니다. 다른 slug를 입력하세요.",
+          code: "ITEM_SLUG_EXISTS",
+        },
+        { status: 409 },
+      );
+    }
     const message =
       err instanceof Error ? err.message : "아이템 생성 실패";
     return NextResponse.json({ error: message }, { status: 400 });

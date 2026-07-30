@@ -11,13 +11,13 @@ import { requireRole } from "@/lib/auth/rbac";
 import { notifyUser } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { enqueueShopReorderFulfilledWebhook } from "@/lib/outbox/integration";
-import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import {
   findShopReorderRequestById,
   fulfillShopReorderRequestAndIncrementStock,
   ShopReorderRequestNotPendingError,
 } from "@/lib/shop/reorder-requests";
+import { findRuntimeShopItemBySlug } from "@/lib/shop/runtime-catalog";
 import { recordShopStockAuditLog } from "@/lib/shop/stock-audit";
 
 interface FulfillRequestBody {
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const item = findShopItemBySlug(reorder.slug);
+  const item = await findRuntimeShopItemBySlug(reorder.slug);
   if (!item) {
     return NextResponse.json(
       { error: `편의점 카탈로그에 없는 발주 품목입니다: ${reorder.slug}` },

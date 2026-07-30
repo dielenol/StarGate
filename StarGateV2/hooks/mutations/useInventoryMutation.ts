@@ -4,10 +4,12 @@ import type {
   CreateMasterItemInput,
   RemoveInventoryInput,
 } from "@/types/inventory";
+import type { CatalogItemCreateRequest } from "@/lib/shop/catalog-item-input";
 
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { equipmentShopKeys } from "@/hooks/queries/useEquipmentShopQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
+import { shopKeys } from "@/hooks/queries/useShopQuery";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 interface GrantInventoryBody {
@@ -31,7 +33,9 @@ export function useCreateItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: CreateMasterItemInput) => {
+    mutationFn: async (
+      input: CreateMasterItemInput | CatalogItemCreateRequest,
+    ) => {
       const res = await fetch("/api/erp/inventory/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,10 +47,13 @@ export function useCreateItem() {
       }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
-      queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: equipmentShopKeys.all }),
+        queryClient.invalidateQueries({ queryKey: shopKeys.all }),
+        queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+      ]);
     },
   });
 }

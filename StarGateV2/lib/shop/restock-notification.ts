@@ -6,7 +6,7 @@ import { getDb } from "@stargate/shared-db";
 
 import { getAllDailyStocks } from "@/lib/db/shop";
 import {
-  buildShopRestockDiscordPayload,
+  buildShopRestockDiscordPayloads,
   createDailyShopRestockDiscordMessage,
   deleteDailyShopRestockDiscordMessage,
   type DiscordPayload,
@@ -17,8 +17,8 @@ import {
   type DiscordMessageBatchSyncResult,
 } from "@/lib/discord/message-batch-sync";
 
-import { SHOP_CATALOG } from "./catalog";
 import { getShopOpenState } from "./open-state";
+import { loadRuntimeShopCatalog } from "./runtime-catalog";
 
 type ShopRestockNotificationStatus =
   | "sent"
@@ -71,7 +71,7 @@ async function findNotificationState(): Promise<ShopRestockNotificationState | n
 
 async function requestNotificationSync(args: {
   date: string;
-  payload: DiscordPayload;
+  payloads: DiscordPayload[];
 }): Promise<void> {
   const now = new Date();
   await (await notificationCollection()).updateOne(
@@ -81,7 +81,7 @@ async function requestNotificationSync(args: {
       $setOnInsert: { syncedRevision: 0, createdAt: now },
       $set: {
         desiredDate: args.date,
-        desiredPayloads: [args.payload],
+        desiredPayloads: args.payloads,
         updatedAt: now,
       },
       $unset: { lastError: "", nextAttemptAt: "" },
@@ -210,8 +210,11 @@ async function buildRestockPayload(
   today: string,
   now: Date,
 ): Promise<{ payload: ShopRestockWebhookPayload; complete: boolean }> {
-  const openState = await getShopOpenState(now);
-  const stocks = await getAllDailyStocks();
+  const [catalog, openState, stocks] = await Promise.all([
+    loadRuntimeShopCatalog(),
+    getShopOpenState(now),
+    getAllDailyStocks(),
+  ]);
   const stockByItemId = new Map(
     stocks
       .filter((stock) => stock.lastRefresh === today)
@@ -219,13 +222,13 @@ async function buildRestockPayload(
   );
 
   return {
-    complete: SHOP_CATALOG.every((item) => stockByItemId.has(item.slug)),
+    complete: catalog.every((item) => stockByItemId.has(item.slug)),
     payload: {
       today,
       isOpen: openState.isOpen,
       openMode: openState.mode,
       scheduledOpen: openState.scheduledOpen,
-      items: SHOP_CATALOG.map((item) => ({
+      items: catalog.map((item) => ({
         name: item.name,
         icon: item.icon,
         stock: stockByItemId.get(item.slug) ?? 0,
@@ -296,9 +299,11 @@ export async function recoverDailyShopRestockDiscordMessage(
     };
   }
 
-  const discordPayload = buildShopRestockDiscordPayload(payload);
-  if (!discordPayload) return { status: "no-stock", itemCount: 0 };
-  await requestNotificationSync({ date: today, payload: discordPayload });
+  const discordPayloads = buildShopRestockDiscordPayloads(payload);
+  if (discordPayloads.length === 0) {
+    return { status: "no-stock", itemCount: 0 };
+  }
+  await requestNotificationSync({ date: today, payloads: discordPayloads });
   return { status: "requested", itemCount };
 }
 

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import {
   SHOP_CATALOG,
   isShopOpen,
+  type ShopCatalogItem,
 } from "@stargate/core/domain/shop-catalog";
 import { findStockByTicker } from "@stargate/core/domain/stock-catalog";
 import { formatSignedStockValue } from "@stargate/core/domain/stock-pricing";
@@ -16,6 +17,7 @@ const STOCK_STATE_ID = "scheduled";
 const SHOP_URL = "https://www.ordonet.co.kr/erp/shop";
 const STOCK_URL = "https://www.ordonet.co.kr/erp/stock";
 const FIELD_VALUE_MAX = 1_000;
+const SHOP_FIELDS_PER_PAYLOAD = 5;
 
 interface DesiredMessageState {
   _id: string;
@@ -100,9 +102,120 @@ function shopStatusLine(open: ReturnType<typeof shopOpenState>): string {
     : "지금은 영업 시간이 아니에요. 새 물건은 미리 봐둬도 돼요.";
 }
 
+function chunkDiscordFieldLines(lines: string[]): string[] {
+  const chunks: string[] = [];
+  let current = "";
+
+  for (const line of lines) {
+    const segments = Array.from(
+      { length: Math.ceil(line.length / FIELD_VALUE_MAX) },
+      (_, index) =>
+        line.slice(
+          index * FIELD_VALUE_MAX,
+          (index + 1) * FIELD_VALUE_MAX,
+        ),
+    );
+    for (const segment of segments) {
+      const candidate = current ? `${current}\n${segment}` : segment;
+      if (candidate.length > FIELD_VALUE_MAX) {
+        if (current) chunks.push(current);
+        current = segment;
+      } else {
+        current = candidate;
+      }
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+export function buildShopRestockDesiredPayloads(input: {
+  date: string;
+  now: Date;
+  catalog: readonly ShopCatalogItem[];
+  stockBySlug: ReadonlyMap<string, number>;
+  runtimeState: {
+    forceOpen?: boolean;
+    forceClosed?: boolean;
+  } | null;
+}): DiscordWebhookPayload[] {
+  const groupLabels = {
+    BASIC: "기본 물품",
+    RECOVERY: "회복 물품",
+    LUXURY: "기호품",
+    RARE: "희귀 물품",
+  } as const;
+  const itemFields: DiscordWebhookPayload["embeds"][number]["fields"] = [];
+  for (const group of ["BASIC", "RECOVERY", "LUXURY", "RARE"] as const) {
+    const lines = input.catalog
+      .filter((item) => item.pageGroup === group)
+      .map((item) => {
+        const stock = input.stockBySlug.get(item.slug) ?? 0;
+        return `${item.icon} ${sanitize(item.name)} x${stock} · ${item.price.toLocaleString("ko-KR")}C`;
+      })
+      .filter((line) => !line.includes(" x0 "));
+    const values = chunkDiscordFieldLines(lines);
+    itemFields.push(
+      ...values.map((value, index) => ({
+        name:
+          index === 0
+            ? groupLabels[group]
+            : `${groupLabels[group]} (${index + 1})`,
+        value,
+      })),
+    );
+  }
+
+  const payloadCount = Math.max(
+    1,
+    Math.ceil(itemFields.length / SHOP_FIELDS_PER_PAYLOAD),
+  );
+  const open = shopOpenState(input.now, input.runtimeState);
+  return Array.from({ length: payloadCount }, (_, index) => {
+    const fields = itemFields.slice(
+      index * SHOP_FIELDS_PER_PAYLOAD,
+      (index + 1) * SHOP_FIELDS_PER_PAYLOAD,
+    );
+    fields.push({
+      name: "편의점으로 가기",
+      value: `[띠아 편의점 들어가기](${SHOP_URL})`,
+    });
+    return {
+      username: "띠아",
+      ...(process.env.DISCORD_WEBHOOK_SHOP_AVATAR_URL?.trim()
+        ? {
+            avatar_url:
+              process.env.DISCORD_WEBHOOK_SHOP_AVATAR_URL.trim(),
+          }
+        : {}),
+      allowed_mentions: { parse: [] },
+      embeds: [
+        {
+          title:
+            payloadCount === 1
+              ? "편의점 입고 알림"
+              : `편의점 입고 알림 (${index + 1}/${payloadCount})`,
+          url: SHOP_URL,
+          description: `오늘 새로 들어온 물건들이에요.\n${shopStatusLine(open)}`,
+          color: 0xc5a059,
+          fields,
+          footer: {
+            text:
+              payloadCount === 1
+                ? `${input.date} KST`
+                : `${input.date} KST · ${index + 1}/${payloadCount}`,
+          },
+          timestamp: input.now.toISOString(),
+        },
+      ],
+    };
+  });
+}
+
 export async function requestDailyShopRestockState(
   date: string,
   now: Date,
+  catalog: readonly ShopCatalogItem[] = SHOP_CATALOG,
 ): Promise<"requested" | "current"> {
   const db = await getDb();
   const [stocks, runtimeState] = await Promise.all([
@@ -125,7 +238,7 @@ export async function requestDailyShopRestockState(
   const stockBySlug = new Map(
     stocks.map((stock) => [stock.itemId, stock.stock]),
   );
-  const missing = SHOP_CATALOG.filter(
+  const missing = catalog.filter(
     (item) => !stockBySlug.has(item.slug),
   );
   if (missing.length > 0) {
@@ -134,51 +247,13 @@ export async function requestDailyShopRestockState(
     );
   }
 
-  const groupLabels = {
-    BASIC: "기본 물품",
-    RECOVERY: "회복 물품",
-    LUXURY: "기호품",
-    RARE: "희귀 물품",
-  } as const;
-  const fields: DiscordWebhookPayload["embeds"][number]["fields"] = [];
-  for (const group of ["BASIC", "RECOVERY", "LUXURY", "RARE"] as const) {
-    const value = SHOP_CATALOG.filter((item) => item.pageGroup === group)
-      .map((item) => {
-        const stock = stockBySlug.get(item.slug) ?? 0;
-        return `${item.icon} ${sanitize(item.name)} x${stock} · ${item.price.toLocaleString("ko-KR")}C`;
-      })
-      .filter((line) => !line.includes(" x0 "))
-      .join("\n")
-      .slice(0, FIELD_VALUE_MAX);
-    if (value) fields.push({ name: groupLabels[group], value });
-  }
-  fields.push({
-    name: "편의점으로 가기",
-    value: `[띠아 편의점 들어가기](${SHOP_URL})`,
+  const payloads = buildShopRestockDesiredPayloads({
+    date,
+    now,
+    catalog,
+    stockBySlug,
+    runtimeState,
   });
-
-  const open = shopOpenState(now, runtimeState);
-  const payload: DiscordWebhookPayload = {
-    username: "띠아",
-    ...(process.env.DISCORD_WEBHOOK_SHOP_AVATAR_URL?.trim()
-      ? {
-          avatar_url:
-            process.env.DISCORD_WEBHOOK_SHOP_AVATAR_URL.trim(),
-        }
-      : {}),
-    allowed_mentions: { parse: [] },
-    embeds: [
-      {
-        title: "편의점 입고 알림",
-        url: SHOP_URL,
-        description: `오늘 새로 들어온 물건들이에요.\n${shopStatusLine(open)}`,
-        color: 0xc5a059,
-        fields,
-        footer: { text: `${date} KST` },
-        timestamp: now.toISOString(),
-      },
-    ],
-  };
   const sourceRevision = createHash("sha256")
     .update(
       JSON.stringify(
@@ -193,7 +268,7 @@ export async function requestDailyShopRestockState(
     stateId: SHOP_STATE_ID,
     date,
     sourceRevision,
-    payloads: [payload],
+    payloads,
   });
 }
 

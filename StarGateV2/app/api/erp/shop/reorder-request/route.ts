@@ -13,7 +13,6 @@ import { listUsers } from "@/lib/db/users";
 import { getStock } from "@/lib/db/shop";
 import { notifyUser, notifyUsers } from "@/lib/notifications/events";
 import { enqueueShopReorderRequestWebhook } from "@/lib/outbox/integration";
-import { findShopItemBySlug } from "@/lib/shop/catalog";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
 import {
   buildShopReorderRequestId,
@@ -22,6 +21,7 @@ import {
   insertShopReorderRequest,
   type ShopReorderRequestDoc,
 } from "@/lib/shop/reorder-requests";
+import { findRuntimeShopItemBySlug } from "@/lib/shop/runtime-catalog";
 
 interface ReorderRequestBody {
   slug?: unknown;
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     | ReorderRequestBody
     | null;
   const slug = typeof body?.slug === "string" ? body.slug.trim() : "";
-  const item = findShopItemBySlug(slug);
+  const item = await findRuntimeShopItemBySlug(slug);
   if (!slug || !item) {
     return NextResponse.json(
       { error: "편의점 카탈로그에 없는 아이템입니다." },

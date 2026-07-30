@@ -14,6 +14,7 @@ interface Props {
     name: string;
     icon: string;
     effect: string;
+    previewImage?: string;
   };
   inventoryQuantity: number;
   onClose: () => void;
@@ -70,6 +71,8 @@ export default function ConsumeModal({
     <ShopModalShell
       name={item.name}
       slug={item.slug}
+      imageSrc={item.previewImage}
+      icon={item.icon}
       ariaLabel={`${item.name} 사용/폐기`}
       onClose={onClose}
       isPending={isPending}

@@ -18,7 +18,7 @@ import {
   removeFromInventory,
 } from "@/lib/db/inventory";
 import { notifyUser } from "@/lib/notifications/events";
-import { findShopItemBySlug } from "@/lib/shop/catalog";
+import { findRuntimeShopItemBySlug } from "@/lib/shop/runtime-catalog";
 
 /* ── 상수 ── */
 
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  if (!findShopItemBySlug(slug)) {
+  if (!(await findRuntimeShopItemBySlug(slug))) {
     return NextResponse.json(
       { error: "편의점 카탈로그에 없는 아이템입니다." },
       { status: 400 },

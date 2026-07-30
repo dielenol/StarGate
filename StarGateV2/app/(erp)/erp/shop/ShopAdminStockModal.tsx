@@ -20,6 +20,7 @@ interface AdminStockItem {
   slug: string;
   name: string;
   icon: string;
+  previewImage?: string;
   stockMin: number;
   stockMax: number;
   appearRate: number;
@@ -435,7 +436,12 @@ export default function ShopAdminStockModal({
                           <td className={styles.cellName}>
                             <div className={styles.itemCell}>
                               <span className={styles.icon} aria-hidden>
-                                <ShopItemIcon slug={item.slug} size={20} />
+                                <ShopItemIcon
+                                  slug={item.slug}
+                                  imageSrc={item.previewImage}
+                                  icon={item.icon}
+                                  size={20}
+                                />
                               </span>
                               <span className={styles.itemName}>
                                 {item.name}

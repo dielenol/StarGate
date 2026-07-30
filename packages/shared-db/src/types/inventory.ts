@@ -38,6 +38,8 @@ export interface ShopMeta {
   stockMin: number;
   stockMax: number;
   appearRate: number;
+  /** 카드/알림 fallback에 쓰는 짧은 표시 아이콘(주로 emoji). */
+  icon?: string;
   color?: string;
   pageGroup?: ShopPageGroup;
 }

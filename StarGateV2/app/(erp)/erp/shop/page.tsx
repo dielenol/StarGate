@@ -20,10 +20,10 @@ import {
   listCreditTransactions,
 } from "@/lib/db/credits";
 import { getAllDailyStocks } from "@/lib/db/shop";
-import { SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getShopOpenState } from "@/lib/shop/open-state";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 import { countPendingShopReorderRequests } from "@/lib/shop/reorder-requests";
+import { loadRuntimeShopCatalog } from "@/lib/shop/runtime-catalog";
 
 import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type { ShopCatalogResponse } from "@/hooks/queries/useShopQuery";
@@ -41,14 +41,15 @@ export const metadata = {
 async function buildCatalogResponse(
   playerServiceTestAccess: boolean,
 ): Promise<ShopCatalogResponse> {
-  await ensureDailyStockRefresh();
+  const catalog = await loadRuntimeShopCatalog();
+  await ensureDailyStockRefresh(new Date(), { catalog });
 
   const stocks = await getAllDailyStocks();
   const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
   const openState = await getShopOpenState();
   const isOpen = openState.isOpen || playerServiceTestAccess;
 
-  const items = SHOP_CATALOG.map((item) => {
+  const items = catalog.map((item) => {
     const stock = stockBySlug.get(item.slug) ?? 0;
     return {
       ...item,

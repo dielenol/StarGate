@@ -844,7 +844,12 @@ export default function ShopClient({
                           </span>
                         </span>
                         <span className={styles.productCard__icon} aria-hidden>
-                          <ShopItemIcon slug={item.slug} size={46} />
+                          <ShopItemIcon
+                            slug={item.slug}
+                            imageSrc={item.previewImage}
+                            icon={item.icon}
+                            size={46}
+                          />
                         </span>
                         <span className={styles.productCard__name}>
                           {item.name}
@@ -902,7 +907,12 @@ export default function ShopClient({
                 <>
                   <div className={styles.detailPanel__top}>
                     <span className={styles.detailPanel__icon} aria-hidden>
-                      <ShopItemIcon slug={selectedItem.slug} size={56} />
+                      <ShopItemIcon
+                        slug={selectedItem.slug}
+                        imageSrc={selectedItem.previewImage}
+                        icon={selectedItem.icon}
+                        size={56}
+                      />
                     </span>
                     <div>
                       <span className={styles.detailPanel__group}>

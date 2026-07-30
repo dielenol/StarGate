@@ -158,12 +158,13 @@ export async function findMasterItemsBySlugsOrIds(
 }
 
 export async function createMasterItem(
-  input: CreateMasterItemInput
+  input: CreateMasterItemInput,
+  options: { session?: ClientSession } = {},
 ): Promise<MasterItem> {
   const col = await masterItemsCol();
   const now = new Date();
   const doc: MasterItem = { ...input, createdAt: now, updatedAt: now };
-  const result = await col.insertOne(doc);
+  const result = await col.insertOne(doc, { session: options.session });
   return { ...doc, _id: result.insertedId };
 }
 

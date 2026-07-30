@@ -382,6 +382,7 @@ const SHOP_GROUP_LABELS: Record<ShopRestockWebhookItem["pageGroup"], string> = {
   RARE: "희귀 물품",
 };
 const SHOP_WEB_URL = "https://www.ordonet.co.kr/erp/shop";
+const SHOP_FIELDS_PER_PAYLOAD = 5;
 
 function getShopWebhookUrl(): string {
   const webhookUrl = process.env.DISCORD_WEBHOOK_SHOP_URL;
@@ -405,13 +406,42 @@ function formatShopRestockFields(
 
     if (lines.length === 0) return [];
 
-    return [
-      {
-        name: SHOP_GROUP_LABELS[group],
-        value: lines.join("\n").slice(0, DISCORD_FIELD_VALUE_MAX),
-      },
-    ];
+    const values = chunkDiscordFieldLines(lines);
+    return values.map((value, index) => ({
+      name:
+        index === 0
+          ? SHOP_GROUP_LABELS[group]
+          : `${SHOP_GROUP_LABELS[group]} (${index + 1})`,
+      value,
+    }));
   });
+}
+
+function chunkDiscordFieldLines(lines: string[]): string[] {
+  const chunks: string[] = [];
+  let current = "";
+
+  for (const line of lines) {
+    const segments = Array.from(
+      { length: Math.ceil(line.length / DISCORD_FIELD_VALUE_MAX) },
+      (_, index) =>
+        line.slice(
+          index * DISCORD_FIELD_VALUE_MAX,
+          (index + 1) * DISCORD_FIELD_VALUE_MAX,
+        ),
+    );
+    for (const segment of segments) {
+      const candidate = current ? `${current}\n${segment}` : segment;
+      if (candidate.length > DISCORD_FIELD_VALUE_MAX) {
+        if (current) chunks.push(current);
+        current = segment;
+      } else {
+        current = candidate;
+      }
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
 }
 
 function formatShopRestockStatusLine(
@@ -432,38 +462,55 @@ function formatShopRestockStatusLine(
   return "지금은 영업 시간이 아니라 바로 구매는 어려워요. 새로 들어온 물건은 미리 봐둬도 돼요.";
 }
 
-export function buildShopRestockDiscordPayload(
+export function buildShopRestockDiscordPayloads(
   payload: ShopRestockWebhookPayload,
-): DiscordPayload | null {
+): DiscordPayload[] {
   const items = payload.items.filter((item) => item.stock > 0);
-  if (items.length === 0) return null;
+  if (items.length === 0) return [];
 
-  const fields = [
-    ...formatShopRestockFields(items),
-    {
+  const itemFields = formatShopRestockFields(items);
+  const payloadCount = Math.ceil(
+    itemFields.length / SHOP_FIELDS_PER_PAYLOAD,
+  );
+  const timestamp = new Date().toISOString();
+
+  return Array.from({ length: payloadCount }, (_, index) => {
+    const fields = itemFields.slice(
+      index * SHOP_FIELDS_PER_PAYLOAD,
+      (index + 1) * SHOP_FIELDS_PER_PAYLOAD,
+    );
+    fields.push({
       name: "편의점으로 가기",
       value: `[띠아 편의점 들어가기](${SHOP_WEB_URL})`,
-    },
-  ];
-  return {
-    username: "띠아",
-    avatar_url: process.env.DISCORD_WEBHOOK_SHOP_AVATAR_URL || undefined,
-    allowed_mentions: { parse: [] },
-    embeds: [
-      {
-        title: "편의점 입고 알림",
-        url: SHOP_WEB_URL,
-        description: [
-          "오늘 새로 들어온 물건들이에요.",
-          formatShopRestockStatusLine(payload),
-        ].join("\n"),
-        color: DISCORD_COLORS.shopRestock,
-        fields,
-        footer: { text: `${payload.today} KST` },
-        timestamp: new Date().toISOString(),
-      },
-    ],
-  };
+    });
+    return {
+      username: "띠아",
+      avatar_url: process.env.DISCORD_WEBHOOK_SHOP_AVATAR_URL || undefined,
+      allowed_mentions: { parse: [] },
+      embeds: [
+        {
+          title:
+            payloadCount === 1
+              ? "편의점 입고 알림"
+              : `편의점 입고 알림 (${index + 1}/${payloadCount})`,
+          url: SHOP_WEB_URL,
+          description: [
+            "오늘 새로 들어온 물건들이에요.",
+            formatShopRestockStatusLine(payload),
+          ].join("\n"),
+          color: DISCORD_COLORS.shopRestock,
+          fields,
+          footer: {
+            text:
+              payloadCount === 1
+                ? `${payload.today} KST`
+                : `${payload.today} KST · ${index + 1}/${payloadCount}`,
+          },
+          timestamp,
+        },
+      ],
+    };
+  });
 }
 
 export async function createDailyShopRestockDiscordMessage(

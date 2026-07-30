@@ -98,6 +98,8 @@ export default function BuyModal({
     <ShopModalShell
       name={item.name}
       slug={item.slug}
+      imageSrc={item.previewImage}
+      icon={item.icon}
       ariaLabel={`${item.name} 구매`}
       onClose={onClose}
       isPending={isPending}

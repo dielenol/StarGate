@@ -22,14 +22,13 @@ import {
 import { reduceStock } from "@/lib/db/shop";
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
-import { findShopItemBySlug, SHOP_CATALOG } from "@/lib/shop/catalog";
 import { getShopOpenState } from "@/lib/shop/open-state";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
+import { loadRuntimeShopCatalog } from "@/lib/shop/runtime-catalog";
 import { recordShopStockAuditLog } from "@/lib/shop/stock-audit";
 
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY_PER_ITEM = 9;
-const MAX_CART_LINES = SHOP_CATALOG.length;
 
 interface CheckoutBody {
   items?: Array<{
@@ -49,6 +48,7 @@ interface CheckoutLine {
 
 function normalizeCartItems(
   rawItems: CheckoutBody["items"],
+  maxCartLines: number,
 ): Array<{ slug: string; quantity: number }> | null {
   if (!Array.isArray(rawItems) || rawItems.length === 0) return null;
 
@@ -68,7 +68,7 @@ function normalizeCartItems(
   }
 
   const items = Array.from(merged, ([slug, quantity]) => ({ slug, quantity }));
-  if (items.length === 0 || items.length > MAX_CART_LINES) return null;
+  if (items.length === 0 || items.length > maxCartLines) return null;
   if (items.some((item) => item.quantity > MAX_QUANTITY_PER_ITEM)) return null;
   return items;
 }
@@ -95,11 +95,21 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => null)) as CheckoutBody | null;
-  const normalizedItems = normalizeCartItems(body?.items);
+  let catalog;
+  try {
+    catalog = await loadRuntimeShopCatalog();
+  } catch (error) {
+    console.error("[shop/checkout] runtime catalog load failed", error);
+    return NextResponse.json(
+      { error: "편의점 카탈로그를 불러올 수 없습니다." },
+      { status: 500 },
+    );
+  }
+  const normalizedItems = normalizeCartItems(body?.items, catalog.length);
   if (!normalizedItems) {
     return NextResponse.json(
       {
-        error: `장바구니는 1~${MAX_CART_LINES}개 품목, 품목당 1~${MAX_QUANTITY_PER_ITEM}개까지만 결제할 수 있습니다.`,
+        error: `장바구니는 1~${catalog.length}개 품목, 품목당 1~${MAX_QUANTITY_PER_ITEM}개까지만 결제할 수 있습니다.`,
         code: "INVALID_CART",
       },
       { status: 400 },
@@ -154,7 +164,7 @@ export async function POST(request: Request) {
   }
   const ownerName = owner.discordUsername ?? owner.displayName;
 
-  await ensureDailyStockRefresh().catch((err) => {
+  await ensureDailyStockRefresh(new Date(), { catalog }).catch((err) => {
     console.error("[shop/checkout] ensureDailyStockRefresh 실패", err);
   });
 
@@ -166,10 +176,11 @@ export async function POST(request: Request) {
       .filter((doc) => doc.slug && doc._id)
       .map((doc) => [doc.slug as string, String(doc._id)]),
   );
+  const catalogBySlug = new Map(catalog.map((item) => [item.slug, item]));
 
   const lines: CheckoutLine[] = [];
   for (const item of normalizedItems) {
-    const catalogItem = findShopItemBySlug(item.slug);
+    const catalogItem = catalogBySlug.get(item.slug);
     const itemId = masterIdBySlug.get(item.slug);
     if (!catalogItem || !itemId) {
       return NextResponse.json(
@@ -190,6 +201,15 @@ export async function POST(request: Request) {
   }
 
   const totalPrice = lines.reduce((sum, line) => sum + line.totalPrice, 0);
+  if (!Number.isSafeInteger(totalPrice) || totalPrice < 1) {
+    return NextResponse.json(
+      {
+        error: "장바구니 합계가 허용 범위를 벗어났습니다.",
+        code: "INVALID_CART",
+      },
+      { status: 400 },
+    );
+  }
   const characterId = String(mainChar._id);
   const committed: { balance: number | null } = { balance: null };
   let response: NextResponse;

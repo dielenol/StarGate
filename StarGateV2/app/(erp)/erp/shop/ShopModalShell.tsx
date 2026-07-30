@@ -18,11 +18,9 @@ import styles from "./ShopModal.module.css";
  */
 
 interface Props {
-  /**
-   * @deprecated 더 이상 emoji string 을 받지 않는다 — slug 기반으로 ShopItemIcon 이 자동 렌더.
-   * `false` 명시 시 아이콘 박스 자체 생략 (주식 모달처럼 아이콘이 없는 경우 대응).
-   */
+  /** `false` 명시 시 아이콘 박스 자체를 생략한다. */
   icon?: string | false;
+  imageSrc?: string;
   name: string;
   slug: string;
   ariaLabel: string;
@@ -34,6 +32,7 @@ interface Props {
 
 export default function ShopModalShell({
   icon,
+  imageSrc,
   name,
   slug,
   ariaLabel,
@@ -155,7 +154,12 @@ export default function ShopModalShell({
         >
           {icon === false ? null : (
             <div className={styles.header__icon} aria-hidden>
-              <ShopItemIcon slug={slug} size={40} />
+              <ShopItemIcon
+                slug={slug}
+                imageSrc={imageSrc}
+                icon={icon}
+                size={40}
+              />
             </div>
           )}
           <div className={styles.header__main}>
