@@ -119,7 +119,7 @@ test("the weapon rack prioritizes and initially selects the main character's equ
   assert.match(styles, /\.itemEquippedBadge/);
 });
 
-test("the main-character token uses mapped art, a no-character field agent, and a safe initial fallback", async () => {
+test("the main-character token uses final sheet stats, mapped art, and safe fallbacks", async () => {
   const [page, client, simulator, defaultAgent, defaultTarget] = await Promise.all([
     readFile(PAGE_URL, "utf8"),
     readFile(CLIENT_URL, "utf8"),
@@ -136,6 +136,11 @@ test("the main-character token uses mapped art, a no-character field agent, and 
   assert.match(page, /Registrar-pixel-character\.webp/);
   assert.match(page, /getPixelProfilePath\(character\.codename\)/);
   assert.match(page, /getPixelCharacterPath\(character\.codename\)/);
+  assert.match(page, /function simulatorStat\(base: number, delta\?: number\)/);
+  assert.match(page, /mainCharacter\.play\.atkDelta/);
+  assert.match(page, /mainCharacter\.play\.defDelta/);
+  assert.match(page, /mainCharacter\.play\.hpDelta/);
+  assert.match(page, /mainCharacter\.play\.sanDelta/);
   assert.match(page, /optimizedAssetPath\(character\.pixelCharacterImage\)/);
   assert.match(page, /const assets = simulatorCharacterAssets\(\{ codename \}\)/);
   assert.match(page, /portraitUrl: assets\.portraitUrl \?\? DEFAULT_TRAINING_AGENT_PORTRAIT/);
@@ -146,6 +151,9 @@ test("the main-character token uses mapped art, a no-character field agent, and 
   assert.match(client, /src=\{attackerTokenUrl\}/);
   assert.match(client, /styles\.token__character/);
   assert.match(client, /나, \$\{attacker\.codename\} 위치 토큰/);
+  assert.match(client, /ATK \$\{attacker\.atk\}, DEF \$\{attacker\.def\}/);
+  assert.match(client, /atk=\{attacker\.atk\}/);
+  assert.match(client, /def=\{attacker\.def\}/);
   assert.match(client, /className=\{styles\.token__fallback\}/);
   assert.match(client, /\{attackerTokenInitial\}/);
   assert.match(client, /\? "이미지 미등록"/);
@@ -224,7 +232,10 @@ test("encounter modes, editable targets, bosses, and blast previews are wired in
   assert.match(client, /\(turn > 1 \|\| logs\.length > 1\)/);
   assert.match(client, /수동 조정/);
   assert.match(client, /다음 표적을 직접 선택하세요/);
-  assert.match(client, /\(selectedEnemyId \? enemies\[0\] \?\? null : null\)/);
+  assert.match(
+    client,
+    /encounterMode !== "horde" && livingEnemies\.length === 1/,
+  );
   assert.match(client, /className=\{styles\.bossStage\}/);
   assert.match(client, /mammoth-boss\.webp/);
   assert.match(client, /DEFAULT_BOSS_FOOTPRINT/);
@@ -329,6 +340,31 @@ test("nochichim-style combat tokens own HP, status, and hover stats without a du
     styles,
     /\.token:hover \.tokenStats,[\s\S]*opacity: 1;/,
   );
+});
+
+test("attacks expose detailed formulas, token damage floats, and explicit direct targets", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(STYLES_URL, "utf8"),
+  ]);
+
+  assert.match(client, /function attackDamageDetails\(/);
+  assert.match(
+    client,
+    /장비 피해 \$\{formatDamageValue\(baseDamage\)\} \+ 캐릭터 ATK/,
+  );
+  assert.match(client, /- DEF \$\{formatDamageValue\(result\.mitigation\)\}/);
+  assert.match(client, /function showTokenDamageFloat\(/);
+  assert.match(client, /styles\.tokenDamageFloat/);
+  assert.match(client, /entry\.targetStat\.toUpperCase\(\)/);
+  assert.match(client, /aria-label="사거리 내 공격 대상 선택"/);
+  assert.match(client, /inRangeDirectAttackTargets\.map/);
+  assert.match(client, /aria-label="대형몹 공격 부위 선택"/);
+  assert.match(client, /livingBossParts\.length === 1/);
+  assert.match(styles, /\.tokenDamageFloat/);
+  assert.match(styles, /@keyframes tokenDamageFloat/);
+  assert.match(styles, /\.attackTargetPicker/);
+  assert.match(styles, /\.attackTargetPicker__target--active/);
 });
 
 test("turn end uses the nochichim reveal timing and only the copied notice SFX", async () => {

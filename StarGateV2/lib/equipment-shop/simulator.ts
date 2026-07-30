@@ -24,6 +24,7 @@ export type SimulatorResourceKind = "ammo" | "charge" | "consumable";
 export interface SimulatorAttackerProfile {
   codename: string;
   atk: number;
+  def: number;
   hp: number;
   san: number;
   portraitUrl?: string;

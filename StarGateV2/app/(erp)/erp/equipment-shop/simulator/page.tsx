@@ -33,6 +33,10 @@ function optimizedAssetPath(value?: string | null): string | undefined {
   return path ? preferOptimizedPublicImagePath(path) : undefined;
 }
 
+function simulatorStat(base: number, delta?: number): number {
+  return Math.max(0, Math.trunc((Number(base) || 0) + (Number(delta) || 0)));
+}
+
 function simulatorCharacterAssets(character: {
   codename: string;
   previewImage?: string | null;
@@ -68,6 +72,7 @@ function fallbackAttackerProfile(sessionUser: {
   return {
     codename,
     atk: 0,
+    def: 0,
     hp: 20,
     san: 20,
     ...assets,
@@ -90,9 +95,22 @@ export default async function EquipmentShopSimulatorPage() {
     if (mainCharacter?.type === "AGENT") {
       attacker = {
         codename: mainCharacter.codename,
-        atk: mainCharacter.play.atk,
-        hp: mainCharacter.play.hp,
-        san: mainCharacter.play.san,
+        atk: simulatorStat(
+          mainCharacter.play.atk,
+          mainCharacter.play.atkDelta,
+        ),
+        def: simulatorStat(
+          mainCharacter.play.def,
+          mainCharacter.play.defDelta,
+        ),
+        hp: simulatorStat(
+          mainCharacter.play.hp,
+          mainCharacter.play.hpDelta,
+        ),
+        san: simulatorStat(
+          mainCharacter.play.san,
+          mainCharacter.play.sanDelta,
+        ),
         ...simulatorCharacterAssets(mainCharacter),
         source: "agent",
       };
@@ -100,6 +118,7 @@ export default async function EquipmentShopSimulatorPage() {
       attacker = {
         codename: mainCharacter.codename,
         atk: attacker.atk,
+        def: attacker.def,
         hp: attacker.hp,
         san: attacker.san,
         ...simulatorCharacterAssets(mainCharacter),

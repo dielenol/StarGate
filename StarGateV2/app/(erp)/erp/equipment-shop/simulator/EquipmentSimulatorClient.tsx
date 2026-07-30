@@ -63,6 +63,7 @@ import {
   type SimulatorEquippedWeapon,
   type SimulatorWeaponActionKind,
   type SimulatorStatusKind,
+  type SimulatorTargetStat,
   type SimulatorTargetStats,
   type SimulatorWeaponRule,
   type SimulatorWeaponSlug,
@@ -88,6 +89,13 @@ type TrainingFeedback = {
   tone: TrainingFeedbackTone;
   title: string;
   detail: string;
+};
+type TokenDamageFloat = {
+  id: number;
+  enemyId: string;
+  amount: number;
+  targetStat: SimulatorTargetStat;
+  detail?: string;
 };
 
 type TrainingEvent =
@@ -422,6 +430,39 @@ function sameCoord(a: SimulatorBoardCoord, b: SimulatorBoardCoord): boolean {
   return a.col === b.col && a.row === b.row;
 }
 
+function getEnemyAttackTargetPosition(
+  enemy: SimulatorEnemy,
+  attackerPosition: SimulatorBoardCoord,
+  weaponSlug: SimulatorWeaponSlug | null,
+  boardColumns: readonly SimulatorBoardCoord["col"][],
+  boardRows: readonly SimulatorBoardCoord["row"][],
+): SimulatorBoardCoord {
+  const occupiedCells = getSimulatorEnemyOccupiedCells(
+    enemy,
+    boardColumns,
+    boardRows,
+  );
+  const attackableCells = weaponSlug
+    ? occupiedCells.filter((coord) =>
+        isSimulatorAttackableCell(weaponSlug, attackerPosition, coord),
+      )
+    : [];
+
+  return (
+    (attackableCells.length ? attackableCells : occupiedCells).reduce<
+      SimulatorBoardCoord | null
+    >((nearest, coord) => {
+      if (!nearest) return coord;
+      const nearestRange = getSimulatorRange(attackerPosition, nearest);
+      const coordRange = getSimulatorRange(attackerPosition, coord);
+      return (coordRange.attackDistance ?? coordRange.verticalDistance) <
+        (nearestRange.attackDistance ?? nearestRange.verticalDistance)
+        ? coord
+        : nearest;
+    }, null) ?? enemy.position
+  );
+}
+
 type TokenVitalTone = "healthy" | "warn" | "danger";
 
 interface TokenStatPopoverProps {
@@ -440,6 +481,12 @@ interface TokenStatPopoverProps {
 function tokenVitalPercent(current: number, max: number): number {
   if (max <= 0) return 0;
   return Math.max(0, Math.min(100, (current / max) * 100));
+}
+
+function formatDamageValue(value: number): string {
+  return Number.isInteger(value)
+    ? String(value)
+    : value.toFixed(1).replace(/\.0$/, "");
 }
 
 function rollD6(): number {
@@ -641,6 +688,9 @@ export default function EquipmentSimulatorClient({
   const [trainingEvent, setTrainingEvent] = useState<TrainingEvent>("ready");
   const [activeStep, setActiveStep] = useState(0);
   const [feedback, setFeedback] = useState<TrainingFeedback | null>(null);
+  const [tokenDamageFloats, setTokenDamageFloats] = useState<
+    TokenDamageFloat[]
+  >([]);
   const [turnReveal, setTurnReveal] = useState<{
     endedTurn: number;
     phase: "in" | "out";
@@ -653,6 +703,8 @@ export default function EquipmentSimulatorClient({
   const suppressTokenClickRef = useRef<string | null>(null);
   const enemySequenceRef = useRef(2);
   const feedbackSequenceRef = useRef(0);
+  const damageFloatSequenceRef = useRef(0);
+  const damageFloatTimersRef = useRef<number[]>([]);
   const resetCancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const feedbackTimerRef = useRef<number | null>(null);
   const turnRevealOutTimerRef = useRef<number | null>(null);
@@ -676,6 +728,10 @@ export default function EquipmentSimulatorClient({
       if (turnRevealEndTimerRef.current !== null) {
         window.clearTimeout(turnRevealEndTimerRef.current);
       }
+      damageFloatTimersRef.current.forEach((timer) =>
+        window.clearTimeout(timer),
+      );
+      damageFloatTimersRef.current = [];
       const context = audioContextRef.current;
       audioContextRef.current = null;
       if (context && context.state !== "closed") {
@@ -749,46 +805,40 @@ export default function EquipmentSimulatorClient({
     simulatorItems.find((item) => item.slug === selectedSlug) ??
     simulatorItems[0];
   const selectedRule = getSimulatorWeaponRule(selectedSlug);
+  const livingEnemies = enemies.filter(
+    (enemy) => !isSimulatorEnemyDefeated(enemy),
+  );
   const selectedEnemy =
     enemies.find((enemy) => enemy.id === selectedEnemyId) ??
-    (selectedEnemyId ? enemies[0] ?? null : null);
-  const selectedEnemyOccupiedCells = selectedEnemy
-    ? getSimulatorEnemyOccupiedCells(
+    (encounterMode !== "horde" && livingEnemies.length === 1
+      ? livingEnemies[0]
+      : selectedEnemyId
+        ? enemies[0] ?? null
+        : null);
+  const targetPosition = selectedEnemy
+    ? getEnemyAttackTargetPosition(
         selectedEnemy,
+        attackerPosition,
+        selectedRule?.slug ?? null,
         boardColumns,
         boardRows,
       )
-    : [];
-  const attackableSelectedEnemyCells = selectedRule
-    ? selectedEnemyOccupiedCells.filter((coord) =>
-        isSimulatorAttackableCell(
-          selectedRule.slug,
-          attackerPosition,
-          coord,
-        ),
-      )
-    : [];
-  const targetPosition =
-    (
-      attackableSelectedEnemyCells.length
-        ? attackableSelectedEnemyCells
-        : selectedEnemyOccupiedCells
-    ).reduce<SimulatorBoardCoord | null>((nearest, coord) => {
-      if (!nearest) return coord;
-      const nearestRange = getSimulatorRange(attackerPosition, nearest);
-      const coordRange = getSimulatorRange(attackerPosition, coord);
-      return (coordRange.attackDistance ?? coordRange.verticalDistance) <
-        (nearestRange.attackDistance ?? nearestRange.verticalDistance)
-        ? coord
-        : nearest;
-    }, null) ??
-    selectedEnemy?.position ??
-    battlefield.targetPosition;
+    : battlefield.targetPosition;
   const targetStats = selectedEnemy?.stats ?? DEFAULT_TARGET;
   const selectedBossPart =
     selectedEnemy?.bossParts?.find(
       (part) => part.id === selectedBossPartId,
     ) ?? null;
+  const livingBossParts =
+    selectedEnemy?.kind === "boss"
+      ? (selectedEnemy.bossParts ?? []).filter((part) => part.hp > 0)
+      : [];
+  const attackBossPart =
+    selectedBossPart && selectedBossPart.hp > 0
+      ? selectedBossPart
+      : livingBossParts.length === 1
+        ? livingBossParts[0]
+        : null;
   const selectedBossFootprint =
     selectedEnemy?.kind === "boss"
       ? normalizeSimulatorEnemyFootprint(
@@ -849,6 +899,36 @@ export default function EquipmentSimulatorClient({
         runtime: selectedRuntime,
       })
     : null;
+  const directAttackTargets =
+    selectedRule && !selectedRule.blast
+      ? livingEnemies.map((enemy) => {
+          const occupiedCells = getSimulatorEnemyOccupiedCells(
+            enemy,
+            boardColumns,
+            boardRows,
+          );
+          return {
+            enemy,
+            targetPosition: getEnemyAttackTargetPosition(
+              enemy,
+              attackerPosition,
+              selectedRule.slug,
+              boardColumns,
+              boardRows,
+            ),
+            inRange: occupiedCells.some((coord) =>
+              isSimulatorAttackableCell(
+                selectedRule.slug,
+                attackerPosition,
+                coord,
+              ),
+            ),
+          };
+        })
+      : [];
+  const inRangeDirectAttackTargets = directAttackTargets.filter(
+    (candidate) => candidate.inRange,
+  );
   const selectedResource =
     selectedRule?.resource && selectedRule.slug in resourceBySlug
       ? resourceBySlug[selectedRule.slug]
@@ -889,11 +969,15 @@ export default function EquipmentSimulatorClient({
     ? "착탄점 선택 필요"
     : !selectedEnemy && !selectedRule?.blast
       ? "표적 선택 필요"
+      : selectedEnemy &&
+          isSimulatorEnemyDefeated(selectedEnemy) &&
+          !selectedRule?.blast
+        ? "표적 전투불능"
       : selectedEnemy?.kind === "boss" &&
           selectedResult?.profile?.targetStat === "hp" &&
           !selectedRule?.blast &&
           selectedActionKind !== "area-spray" &&
-          !selectedBossPart
+          !attackBossPart
         ? "부위 선택 필요"
         : !enemyPositionConfirmed
     ? "적 위치 지정 필요"
@@ -926,10 +1010,16 @@ export default function EquipmentSimulatorClient({
                 ? "표적 미선택"
                 : selectedActionKind !== "area-spray" &&
                     selectedActionKind !== "incendiary-line" &&
+                    !selectedRule.blast &&
+                    selectedEnemy &&
+                    isSimulatorEnemyDefeated(selectedEnemy)
+                  ? "표적 전투불능"
+                : selectedActionKind !== "area-spray" &&
+                    selectedActionKind !== "incendiary-line" &&
                     selectedEnemy?.kind === "boss" &&
                     selectedResult?.profile?.targetStat === "hp" &&
                     !selectedRule.blast &&
-                    !selectedBossPart
+                    !attackBossPart
                   ? "부위 미선택"
                   : selectedActionKind !== "area-spray" &&
                       selectedActionKind !== "incendiary-line" &&
@@ -995,6 +1085,103 @@ export default function EquipmentSimulatorClient({
         };
     }
   })();
+
+  function attackDamageDetails(
+    result: SimulatorAttackResult,
+    enemy: SimulatorEnemy,
+  ): string[] {
+    const profile = result.profile;
+    const rule = result.rule;
+    if (!profile || !rule) return [result.summary];
+
+    const baseDamage = profile.amount;
+    const atkBonus = rule.usesAtkBonus ? Math.max(0, attacker.atk) : 0;
+    const subtotal = baseDamage + atkBonus;
+    const multiplier = subtotal > 0 ? result.rawDamage / subtotal : 1;
+    const effectiveDef = getSimulatorEffectiveDef(enemy.stats);
+    const armorPenetration = profile.armorPenetration ?? 0;
+    const defAfterPenetration = Math.max(
+      0,
+      effectiveDef - armorPenetration,
+    );
+    const targetLabel =
+      result.targetStat === "san" ? "정신력" : "HP";
+    const details = [
+      `${SIMULATOR_RANGE_LABELS[result.range.band]} · ${profile.label} → ${targetLabel}`,
+      rule.usesAtkBonus
+        ? `장비 피해 ${formatDamageValue(baseDamage)} + 캐릭터 ATK ${formatDamageValue(atkBonus)} = ${formatDamageValue(subtotal)}`
+        : `장비 피해 ${formatDamageValue(baseDamage)} · 캐릭터 ATK 미적용`,
+    ];
+
+    if (multiplier !== 1) {
+      details.push(
+        `상태 보정 ${formatDamageValue(subtotal)} × ${formatDamageValue(multiplier * 100)}% = 원 피해 ${formatDamageValue(result.rawDamage)}`,
+      );
+    } else {
+      details.push(`합산 원 피해 ${formatDamageValue(result.rawDamage)}`);
+    }
+
+    if (!profile.appliesDef) {
+      details.push(
+        `DEF 미적용 · 최종 ${formatDamageValue(result.damageApplied)} ${targetLabel} 피해`,
+      );
+    } else if (armorPenetration > 0) {
+      details.push(
+        `DEF ${formatDamageValue(effectiveDef)} - 관통 ${formatDamageValue(armorPenetration)} = 적용 DEF ${formatDamageValue(defAfterPenetration)}`,
+      );
+      details.push(
+        `${formatDamageValue(result.rawDamage)} - ${formatDamageValue(result.mitigation)} = 최종 ${formatDamageValue(result.damageApplied)} ${targetLabel} 피해`,
+      );
+    } else {
+      details.push(
+        `${formatDamageValue(result.rawDamage)} - DEF ${formatDamageValue(result.mitigation)} = 최종 ${formatDamageValue(result.damageApplied)} ${targetLabel} 피해`,
+      );
+    }
+    return details;
+  }
+
+  function attackDamageFormula(result: SimulatorAttackResult): string {
+    const profile = result.profile;
+    const rule = result.rule;
+    if (!profile || !rule) return result.summary;
+    const atkBonus = rule.usesAtkBonus ? Math.max(0, attacker.atk) : 0;
+    const subtotal = profile.amount + atkBonus;
+    const multiplier = subtotal > 0 ? result.rawDamage / subtotal : 1;
+    const attackTerms = rule.usesAtkBonus
+      ? `장비 ${formatDamageValue(profile.amount)} + ATK ${formatDamageValue(atkBonus)}`
+      : `장비 ${formatDamageValue(profile.amount)}`;
+    const adjustedTerms =
+      multiplier === 1
+        ? attackTerms
+        : `(${attackTerms}) × ${formatDamageValue(multiplier * 100)}%`;
+    const targetLabel = result.targetStat === "san" ? "정신력" : "HP";
+    return profile.appliesDef
+      ? `${adjustedTerms} - DEF ${formatDamageValue(result.mitigation)} = ${formatDamageValue(result.damageApplied)} ${targetLabel} 피해`
+      : `${adjustedTerms} = ${formatDamageValue(result.damageApplied)} ${targetLabel} 피해`;
+  }
+
+  function showTokenDamageFloat(
+    enemyId: string,
+    amount: number,
+    targetStat: SimulatorTargetStat,
+    detail?: string,
+  ) {
+    if (amount <= 0) return;
+    const id = damageFloatSequenceRef.current + 1;
+    damageFloatSequenceRef.current = id;
+    setTokenDamageFloats((current) => [
+      ...current,
+      { id, enemyId, amount, targetStat, ...(detail ? { detail } : {}) },
+    ]);
+    const timer = window.setTimeout(() => {
+      setTokenDamageFloats((current) =>
+        current.filter((entry) => entry.id !== id),
+      );
+      damageFloatTimersRef.current =
+        damageFloatTimersRef.current.filter((entry) => entry !== timer);
+    }, 1500);
+    damageFloatTimersRef.current.push(timer);
+  }
 
   function pushLog(
     text: string,
@@ -2034,7 +2221,7 @@ export default function EquipmentSimulatorClient({
     if (
       selectedEnemy.kind === "boss" &&
       selectedResult.targetStat === "hp" &&
-      (!selectedBossPart || selectedBossPart.hp <= 0)
+      !attackBossPart
     ) {
       setTrainingEvent("blocked");
       setActiveStep(4);
@@ -2059,8 +2246,16 @@ export default function EquipmentSimulatorClient({
     setActiveStep(5);
 
     const targetOutcome = applyAttackResult(selectedResult, selectedEnemy.id, {
-      ...(selectedBossPart ? { partId: selectedBossPart.id } : {}),
+      ...(attackBossPart ? { partId: attackBossPart.id } : {}),
     });
+    if (selectedResult.targetStat) {
+      showTokenDamageFloat(
+        selectedEnemy.id,
+        selectedResult.damageApplied,
+        selectedResult.targetStat,
+        attackBossPart?.name,
+      );
+    }
     const defeatText = targetOutcome?.enemyDefeated
       ? " · 전투불능. 다음 표적을 직접 선택하세요."
       : targetOutcome?.partDestroyed
@@ -2072,17 +2267,19 @@ export default function EquipmentSimulatorClient({
           .map((status) => SIMULATOR_STATUS_LABELS[status])
           .join(", ")}`
       : "";
+    const damageFormula = attackDamageFormula(selectedResult);
     showFeedback(
       "success",
       "공격 실행 완료",
-      `${selectedRule.name} · ${selectedEnemy.name}${selectedBossPart ? ` ${selectedBossPart.name}` : ""} · ${selectedResult.summary}${statusText}${defeatText}`,
+      `${selectedRule.name} · ${selectedEnemy.name}${attackBossPart ? ` ${attackBossPart.name}` : ""} · ${damageFormula}${statusText}${defeatText}`,
     );
     pushLog(
-      `${selectedRule.name} 기본 공격 · ${selectedEnemy.name}${selectedBossPart ? ` / ${selectedBossPart.name}` : ""}`,
+      `${selectedRule.name} 기본 공격 · ${selectedEnemy.name}${attackBossPart ? ` / ${attackBossPart.name}` : ""}`,
       "hit",
       [
-        `${selectedResult.summary}${statusText}${defeatText}`,
-        `원 피해 ${selectedResult.rawDamage} · DEF 경감 ${selectedResult.mitigation} · 최종 ${selectedResult.damageApplied}`,
+        ...attackDamageDetails(selectedResult, selectedEnemy),
+        ...(statusText ? [`상태이상${statusText}`] : []),
+        ...(defeatText ? [defeatText.replace(/^ · /, "")] : []),
       ],
     );
   }
@@ -2138,6 +2335,12 @@ export default function EquipmentSimulatorClient({
 
     const affectedKeys = new Set(blastCells.map(cellKey));
     const details: string[] = [];
+    const damageNotices: Array<{
+      enemyId: string;
+      amount: number;
+      targetStat: SimulatorTargetStat;
+      detail: string;
+    }> = [];
     let affectedCount = 0;
     const nextEnemies = enemies.map((enemy) => {
         if (isSimulatorEnemyDefeated(enemy)) return enemy;
@@ -2164,13 +2367,27 @@ export default function EquipmentSimulatorClient({
         );
         affectedCount += 1;
         details.push(
-          `${enemy.name} · ${isCenter ? "중심" : "주변"} · 원 ${resolution.rawDamage} / DEF ${resolution.mitigation} / 최종 ${resolution.damageApplied}`,
+          `${enemy.name} · ${isCenter ? "중심" : "주변"} · 원 피해 ${formatDamageValue(resolution.rawDamage)} - DEF ${formatDamageValue(resolution.mitigation)} = 최종 ${formatDamageValue(resolution.damageApplied)} ${resolution.targetStat === "san" ? "정신력" : "HP"} 피해`,
         );
+        damageNotices.push({
+          enemyId: enemy.id,
+          amount: resolution.damageApplied,
+          targetStat: resolution.targetStat,
+          detail: isCenter ? "폭발 중심" : "폭발 주변",
+        });
         return applySimulatorResolutionToEnemy(enemy, resolution, {
           distributeBossDamage: enemy.kind === "boss",
         });
       });
     setEnemies(nextEnemies);
+    damageNotices.forEach((notice) =>
+      showTokenDamageFloat(
+        notice.enemyId,
+        notice.amount,
+        notice.targetStat,
+        notice.detail,
+      ),
+    );
     const selectedAfterBlast = nextEnemies.find(
       (enemy) => enemy.id === selectedEnemyId,
     );
@@ -2240,6 +2457,14 @@ export default function EquipmentSimulatorClient({
         fail(selectedResult?.reasonLabel ?? "현재 표적을 명중시킬 수 없습니다.");
         return;
       }
+      if (
+        selectedEnemy.kind === "boss" &&
+        selectedResult.targetStat === "hp" &&
+        !attackBossPart
+      ) {
+        fail("공격할 대형몹 부위를 선택하세요.");
+        return;
+      }
       const nextTarget = getSimulatorKnockbackTarget(
         attackerPosition,
         targetPosition,
@@ -2292,22 +2517,30 @@ export default function EquipmentSimulatorClient({
             targetStat: selectedResult.targetStat ?? "hp",
             statusesApplied: selectedResult.statusesApplied,
           },
-          { ...(selectedBossPart ? { partId: selectedBossPart.id } : {}) },
+          { ...(attackBossPart ? { partId: attackBossPart.id } : {}) },
         ),
         position: knockbackPosition,
       }));
+      if (selectedResult.targetStat) {
+        showTokenDamageFloat(
+          selectedEnemy.id,
+          selectedResult.damageApplied,
+          selectedResult.targetStat,
+          attackBossPart?.name ?? "넉백",
+        );
+      }
       setTrainingEvent("attack");
       setActiveStep(5);
       showFeedback(
         "success",
         "넉백 실행 완료",
-        `${selectedResult.summary} · ${selectedEnemy.name} ${formatSimulatorCoord(knockbackPosition)}로 1칸 후퇴`,
+        `${attackDamageFormula(selectedResult)} · ${selectedEnemy.name} ${formatSimulatorCoord(knockbackPosition)}로 1칸 후퇴`,
       );
       pushLog(
-        `${selectedRule.name} 넉백 · ${selectedEnemy.name}`,
+        `${selectedRule.name} 넉백 · ${selectedEnemy.name}${attackBossPart ? ` / ${attackBossPart.name}` : ""}`,
         "hit",
         [
-          selectedResult.summary,
+          ...attackDamageDetails(selectedResult, selectedEnemy),
           `${formatSimulatorCoord(selectedEnemy.position)} → ${formatSimulatorCoord(knockbackPosition)}`,
         ],
       );
@@ -2350,6 +2583,11 @@ export default function EquipmentSimulatorClient({
         rollD6,
       );
       const details: string[] = [];
+      const damageNotices: Array<{
+        enemyId: string;
+        amount: number;
+        targetStat: SimulatorTargetStat;
+      }> = [];
       let hitCount = 0;
       const nextEnemies = enemies.map((enemy) => {
           const candidateIndex = candidates.findIndex(
@@ -2363,8 +2601,16 @@ export default function EquipmentSimulatorClient({
           }
           hitCount += 1;
           details.push(
-            `${enemy.name} · 1d6=${outcome.roll} · ${outcome.result.damageApplied} 피해`,
+            `${enemy.name} · 1d6=${outcome.roll} · 명중`,
+            ...attackDamageDetails(outcome.result, enemy).map(
+              (detail) => `└ ${detail}`,
+            ),
           );
+          damageNotices.push({
+            enemyId: enemy.id,
+            amount: outcome.result.damageApplied,
+            targetStat: outcome.result.targetStat ?? "hp",
+          });
           return applySimulatorResolutionToEnemy(
             enemy,
             {
@@ -2376,6 +2622,14 @@ export default function EquipmentSimulatorClient({
           );
         });
       setEnemies(nextEnemies);
+      damageNotices.forEach((notice) =>
+        showTokenDamageFloat(
+          notice.enemyId,
+          notice.amount,
+          notice.targetStat,
+          "광역 난사",
+        ),
+      );
       const selectedAfterSpray = nextEnemies.find(
         (enemy) => enemy.id === selectedEnemyId,
       );
@@ -2988,6 +3242,104 @@ export default function EquipmentSimulatorClient({
                 </button>
               ))}
             </div>
+            {encounterMode === "horde" &&
+            selectedRule &&
+            !selectedRule.blast &&
+            (selectedActionKind === "attack" ||
+              selectedActionKind === "knockback") ? (
+              <div
+                className={styles.attackTargetPicker}
+                aria-label="사거리 내 공격 대상 선택"
+              >
+                <div>
+                  <span>ATTACK TARGET</span>
+                  <strong>사거리 내 표적 선택</strong>
+                </div>
+                {inRangeDirectAttackTargets.length ? (
+                  <div role="group" aria-label="공격 가능한 표적">
+                    {inRangeDirectAttackTargets.map((candidate) => (
+                      <button
+                        key={candidate.enemy.id}
+                        type="button"
+                        className={
+                          candidate.enemy.id === selectedEnemy?.id
+                            ? styles["attackTargetPicker__target--active"]
+                            : ""
+                        }
+                        aria-pressed={
+                          candidate.enemy.id === selectedEnemy?.id
+                        }
+                        onClick={() => {
+                          setSelectedEnemyId(candidate.enemy.id);
+                          setSelectedBossPartId(null);
+                          setActiveToken("target");
+                          setTrainingEvent("weapon");
+                          setActiveStep(4);
+                        }}
+                      >
+                        <strong>{candidate.enemy.name}</strong>
+                        <span>
+                          {formatSimulatorCoord(candidate.targetPosition)} · HP{" "}
+                          {candidate.enemy.stats.hp}/
+                          {candidate.enemy.stats.maxHp}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p>현재 장비의 사거리 안에 생존 표적이 없습니다.</p>
+                )}
+              </div>
+            ) : null}
+            {selectedEnemy?.kind === "boss" &&
+            selectedResult?.targetStat === "hp" &&
+            !selectedRule?.blast &&
+            (selectedActionKind === "attack" ||
+              selectedActionKind === "knockback") ? (
+              <div
+                className={styles.attackTargetPicker}
+                aria-label="대형몹 공격 부위 선택"
+              >
+                <div>
+                  <span>BOSS PART</span>
+                  <strong>공격 부위 선택</strong>
+                </div>
+                {livingBossParts.length === 1 ? (
+                  <p>
+                    생존 부위가 하나이므로{" "}
+                    <strong>{livingBossParts[0]?.name}</strong>에 자동
+                    조준합니다.
+                  </p>
+                ) : livingBossParts.length > 1 ? (
+                  <div role="group" aria-label="공격 가능한 대형몹 부위">
+                    {livingBossParts.map((part) => (
+                      <button
+                        key={part.id}
+                        type="button"
+                        className={
+                          part.id === attackBossPart?.id
+                            ? styles["attackTargetPicker__target--active"]
+                            : ""
+                        }
+                        aria-pressed={part.id === attackBossPart?.id}
+                        onClick={() => {
+                          setSelectedBossPartId(part.id);
+                          setTrainingEvent("weapon");
+                          setActiveStep(4);
+                        }}
+                      >
+                        <strong>{part.name}</strong>
+                        <span>
+                          HP {part.hp}/{part.maxHp}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p>공격 가능한 생존 부위가 없습니다.</p>
+                )}
+              </div>
+            ) : null}
             <div className={styles.actionRow}>
               <button
                 type="button"
@@ -3185,7 +3537,7 @@ export default function EquipmentSimulatorClient({
                             : ""
                         }${
                           hasAttacker
-                            ? `; 나 ${attacker.codename}, HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}`
+                            ? `; 나 ${attacker.codename}, HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}, DEF ${attacker.def}`
                             : ""
                         }${
                           hasTarget
@@ -3222,7 +3574,7 @@ export default function EquipmentSimulatorClient({
                           onPointerCancel={handleTokenPointerCancel}
                           onLostPointerCapture={handleTokenPointerCaptureLost}
                           role="img"
-                          aria-label={`나, ${attacker.codename} 위치 토큰. HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}`}
+                          aria-label={`나, ${attacker.codename} 위치 토큰. HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}, DEF ${attacker.def}`}
                         >
                           <span className={styles.token__inner} aria-hidden>
                             {attackerTokenUrl ? (
@@ -3285,6 +3637,7 @@ export default function EquipmentSimulatorClient({
                             san={attacker.san}
                             maxSan={attacker.san}
                             atk={attacker.atk}
+                            def={attacker.def}
                           />
                         </div>
                       ) : null}
@@ -3297,7 +3650,10 @@ export default function EquipmentSimulatorClient({
                             boardColumns,
                             boardRows,
                           );
-                        const isSelected = enemy.id === selectedEnemyId;
+                        const enemyDamageFloats = tokenDamageFloats.filter(
+                          (entry) => entry.enemyId === enemy.id,
+                        );
+                        const isSelected = enemy.id === selectedEnemy?.id;
                         const isDragging =
                           draggedToken?.kind === "enemy" &&
                           draggedToken.enemyId === enemy.id;
@@ -3313,6 +3669,9 @@ export default function EquipmentSimulatorClient({
                               isSelected ? styles["token--selected"] : "",
                               defeated ? styles["token--defeated"] : "",
                               isDragging ? styles["token--dragging"] : "",
+                              enemyDamageFloats.length
+                                ? styles["token--takingDamage"]
+                                : "",
                               enemy.position.row <= 2
                                 ? styles["token--popoverBelow"]
                                 : "",
@@ -3401,6 +3760,31 @@ export default function EquipmentSimulatorClient({
                                 />
                               )}
                             </span>
+                            {enemyDamageFloats.map((entry, index) => (
+                              <span
+                                key={entry.id}
+                                className={[
+                                  styles.tokenDamageFloat,
+                                  styles[
+                                    `tokenDamageFloat--${entry.targetStat}`
+                                  ],
+                                ].join(" ")}
+                                style={
+                                  {
+                                    "--damage-float-index": index,
+                                  } as CSSProperties
+                                }
+                                role="status"
+                              >
+                                <b>
+                                  {entry.targetStat.toUpperCase()} -
+                                  {formatDamageValue(entry.amount)}
+                                </b>
+                                {entry.detail ? (
+                                  <small>{entry.detail}</small>
+                                ) : null}
+                              </span>
+                            ))}
                             {enemy.kind === "boss"
                               ? (enemy.bossParts ?? []).slice(0, 6).map((part, index) => (
                                   <span
