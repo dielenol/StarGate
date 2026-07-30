@@ -137,6 +137,9 @@ export async function POST(request: Request) {
               ...(normalized.value.input.effect
                 ? { effect: normalized.value.input.effect }
                 : {}),
+              ...(normalized.value.input.previewImage
+                ? { previewImage: normalized.value.input.previewImage }
+                : {}),
             },
             launchedAt: timestamp,
           }

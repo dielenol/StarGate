@@ -187,6 +187,7 @@ test("편의점 신제품 출시는 띠아 대사와 전용 편의점 webhook으
         pageGroup: "LUXURY",
         description: "@everyone도 궁금해할 바삭한 신제품",
         effect: "SAN 3 회복",
+        previewImage: "/assets/shop/new-snack.png",
       },
       launchedAt: new Date().toISOString(),
     }),
@@ -206,8 +207,54 @@ test("편의점 신제품 출시는 띠아 대사와 전용 편의점 webhook으
     requests[0].body.embeds[0].title,
     "띠아 편의점 신제품 출시",
   );
-  assert.match(requests[0].body.embeds[0].description, /새 상품이 들어왔어요/);
+  assert.match(
+    requests[0].body.embeds[0].description,
+    /제가 먼저 시험해 본 건 아니지만/,
+  );
   assert.match(requests[0].body.embeds[0].fields[1].value, /기호품 · 80C/);
   assert.match(requests[0].body.embeds[0].fields[2].value, /@​everyone/);
+  assert.equal(
+    requests[0].body.embeds[0].image.url,
+    "https://www.ordonet.co.kr/assets/shop/new-snack.png",
+  );
   assert.deepEqual(requests[0].body.allowed_mentions, { parse: [] });
+});
+
+test("신제품 이미지가 없거나 안전하지 않으면 이미지 없이 발송한다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "SHOP_PRODUCT_LAUNCH_WEBHOOK",
+      DISCORD_WEBHOOK_SHOP_URL:
+        "https://discord.com/api/webhooks/shop/token",
+      NEXT_PUBLIC_SITE_URL: "https://staging.ordonet.co.kr",
+    },
+    {
+      async fetchImpl(url, init) {
+        requests.push({
+          url: String(url),
+          body: init?.body ? JSON.parse(String(init.body)) : null,
+        });
+        return new Response(null, { status: 204 });
+      },
+    },
+  );
+
+  await registry.get("SHOP_PRODUCT_LAUNCH_WEBHOOK").deliver(
+    outboxEvent("SHOP_PRODUCT_LAUNCH_WEBHOOK", {
+      item: {
+        slug: "unsafe_image",
+        name: "수상한 상품",
+        icon: "◈",
+        price: 10,
+        pageGroup: "BASIC",
+        description: "이미지 경로 검증용",
+        previewImage: "https://example.com/tracker.png",
+      },
+      launchedAt: new Date().toISOString(),
+    }),
+  );
+
+  assert.equal(requests.length, 1);
+  assert.equal("image" in requests[0].body.embeds[0], false);
 });

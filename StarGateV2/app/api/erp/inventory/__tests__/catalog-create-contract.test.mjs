@@ -42,6 +42,10 @@ test("public shop item creation commits one product launch webhook with the item
   );
   assert.match(
     source,
+    /normalized\.value\.input\.previewImage[\s\S]*previewImage: normalized\.value\.input\.previewImage/,
+  );
+  assert.match(
+    source,
     /if \(!createdItem\._id\)[\s\S]*enqueueShopProductLaunchWebhook\([\s\S]*`shop-product-launch:\$\{createdItem\._id\.toHexString\(\)\}`[\s\S]*session: mongoSession/,
   );
   assert.match(

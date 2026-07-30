@@ -26,6 +26,7 @@ const FIELD_VALUE_MAX = 1_000;
 const FIELD_NAME_MAX = 256;
 const SHOP_URL = "https://www.ordonet.co.kr/erp/shop";
 const SNOWFLAKE = /^\d{17,20}$/;
+const LOCAL_ASSET_PATTERN = /^\/assets\/[a-zA-Z0-9_./-]+$/;
 const SHOP_GROUP_LABELS: Record<string, string> = {
   BASIC: "기본 물품",
   RECOVERY: "회복 물품",
@@ -119,6 +120,21 @@ function siteBaseUrl(env: Environment): string {
   }
 }
 
+function localAssetUrl(value: unknown, env: Environment): string | null {
+  if (
+    typeof value !== "string" ||
+    !LOCAL_ASSET_PATTERN.test(value) ||
+    value.includes("//") ||
+    value
+      .slice("/assets/".length)
+      .split("/")
+      .some((segment) => segment === "." || segment === "..")
+  ) {
+    return null;
+  }
+  return new URL(value, `${siteBaseUrl(env)}/`).toString();
+}
+
 function commonWebhookUrl(env: Environment): string | undefined {
   return (
     env.DISCORD_WEBHOOK_CHAR_EDIT_URL?.trim() ||
@@ -175,6 +191,7 @@ function basePayload(
     fields?: DiscordWebhookPayload["embeds"][number]["fields"];
     avatarUrl?: string;
     footer?: string;
+    imageUrl?: string;
   } = {},
 ): DiscordWebhookPayload {
   return {
@@ -190,6 +207,7 @@ function basePayload(
         ...(options.url ? { url: options.url } : {}),
         color: options.color ?? 0xc5a059,
         fields: options.fields ?? [],
+        ...(options.imageUrl ? { image: { url: options.imageUrl } } : {}),
         ...(options.footer ? { footer: { text: options.footer } } : {}),
         timestamp,
       },
@@ -403,6 +421,7 @@ function buildShopProductLaunch(
   }
   const description = optionalText(rawItem.description);
   const effect = optionalText(rawItem.effect);
+  const previewImageUrl = localAssetUrl(rawItem.previewImage, env);
   const fields: DiscordWebhookPayload["embeds"][number]["fields"] = [
     { name: "신제품", value: item.label, inline: true },
     {
@@ -428,11 +447,12 @@ function buildShopProductLaunch(
     isoTimestamp(payload.launchedAt),
     {
       url: SHOP_URL,
-      description: `새 상품이 들어왔어요!\n${item.label}, 오늘부터 띠아 편의점에서 만나 보세요.`,
+      description: `새 물건이 들어왔어요! 이번 신제품은 ${item.label}예요.\n제가 먼저 시험해 본 건 아니지만… 꽤 괜찮아 보이죠? 오늘부터 편의점에서 만나 보세요!`,
       color: 0xc5a059,
       fields,
       footer: "띠아 편의점 신제품 알림",
       avatarUrl: env.DISCORD_WEBHOOK_SHOP_AVATAR_URL?.trim(),
+      ...(previewImageUrl ? { imageUrl: previewImageUrl } : {}),
     },
   );
 }

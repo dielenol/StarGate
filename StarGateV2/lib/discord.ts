@@ -377,6 +377,7 @@ export interface ShopProductLaunchWebhookPayload {
     pageGroup: "BASIC" | "RECOVERY" | "LUXURY" | "RARE";
     description: string;
     effect?: string;
+    previewImage?: string;
   };
   launchedAt: Date;
 }

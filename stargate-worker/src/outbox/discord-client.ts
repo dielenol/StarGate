@@ -14,6 +14,7 @@ export interface DiscordWebhookPayload {
     description?: string;
     color: number;
     fields: Array<{ name: string; value: string; inline?: boolean }>;
+    image?: { url: string };
     footer?: { text: string };
     timestamp: string;
   }>;
