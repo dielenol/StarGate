@@ -3,6 +3,7 @@
     "collection": "master_items",
     "type": "session-reward-catalog",
     "payload": {
+      "code": "ZULU_0028_CONTAINED_ENTITY",
       "slug": "zulu-0028-contained-entity",
       "name": "ZULU-0028 검열된 비명 격리 개체",
       "nameEn": "ZULU-0028 Contained Entity",
@@ -14,6 +15,7 @@
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E1-ORDER", "S1E1-ORDER", "전리품", "ZULU-0028", "ZULU-028", "검열된비명", "생포", "격리개체"],
+      "loreMd": "## 설명\nZULU-0028 검열된 비명 격리 개체는 S1E1 질서 작전의 보상 기록에서 생포 전리품으로 확인된 개체다.\n\n## 배경\n검열된 비명은 청각 자극과 발성 구조를 매개로 영향을 주는 개체로 기록되며, 관련 회수물인 깨진 음절과 별도 자산으로 관리한다.\n\n## 획득 경로\nS1E1 질서 작전 전리품으로 생포되었다. 일반 획득 및 상점 보급 대상이 아니다.\n\n## 비고\n기존 ZULU-0028 특수 격리 상자는 격리 장비이며, 본 항목은 생포된 개체 자체를 나타낸다.\n",
       "lore": {
         "background": "검열된 비명은 청각 자극과 발성 구조를 매개로 영향을 주는 개체로 기록되며, 관련 회수물인 깨진 음절과 별도 자산으로 관리한다.",
         "acquisition": "S1E1 질서 작전 전리품으로 생포되었다. 일반 획득 및 상점 보급 대상이 아니다.",
@@ -28,6 +30,7 @@
     "collection": "master_items",
     "type": "session-reward-catalog",
     "payload": {
+      "code": "MONTAUK_SLAUGHTER_HOUND_PLATE",
       "slug": "montauk-slaughter-hound-appearance-plate",
       "name": "도살견 외관 도본",
       "nameEn": "Slaughter Hound Appearance Plate",
@@ -39,6 +42,7 @@
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "몬탁프로젝트", "도살견", "외관도본", "작전물증"],
+      "loreMd": "## 설명\n도살견 외관 도본은 S1E3 망령 작전 종료 보상에서 전리품으로 확인된 외관 식별 자료다.\n\n## 배경\n도살견은 아르고 기지와 몬탁 프로젝트에 연결된 전술병기로 기록된다. 본 항목은 개체 자체가 아니라 작전 후 회수된 도본이다.\n\n## 획득 경로\nS1E3 망령 작전 전리품으로 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.\n\n## 비고\n관련 위키 도판은 별도 자산 역할이므로 카탈로그 미리보기로 자동 재사용하지 않는다.\n",
       "lore": {
         "background": "도살견은 아르고 기지와 몬탁 프로젝트에 연결된 전술병기로 기록된다. 본 항목은 개체 자체가 아니라 작전 후 회수된 도본이다.",
         "acquisition": "S1E3 망령 작전 전리품으로 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.",
@@ -53,6 +57,7 @@
     "collection": "master_items",
     "type": "session-reward-catalog",
     "payload": {
+      "code": "CONDUCTOR_CORPSE",
       "slug": "conductor-corpse",
       "name": "지휘자 시신",
       "nameEn": "Conductor Corpse",
@@ -64,6 +69,7 @@
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "지휘자", "황금여명회", "시신", "작전물증"],
+      "loreMd": "## 설명\n지휘자 시신은 S1E3 망령 작전 종료 보상에서 전리품으로 확인된 황금여명회 지휘 개체의 시신이다.\n\n## 배경\n지휘자는 S1E3 망령 기록에서 황금여명회 측 적대 지휘 개체로 확인되었다.\n\n## 획득 경로\nS1E3 망령 작전 전리품으로 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.\n\n## 비고\n지휘자와 함께 회수된 음반축은 수량 관리를 위해 별도 카탈로그 항목으로 분리한다.\n",
       "lore": {
         "background": "지휘자는 S1E3 망령 기록에서 황금여명회 측 적대 지휘 개체로 확인되었다.",
         "acquisition": "S1E3 망령 작전 전리품으로 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.",
@@ -78,6 +84,7 @@
     "collection": "master_items",
     "type": "session-reward-catalog",
     "payload": {
+      "code": "CONDUCTOR_RECORD_SPINDLE",
       "slug": "conductor-record-spindle",
       "name": "음반축",
       "nameEn": "Conductor Record Spindle",
@@ -89,6 +96,7 @@
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "지휘자", "음반축", "황금여명회", "작전물증"],
+      "loreMd": "## 설명\n음반축은 S1E3 망령 작전 종료 보상에서 지휘자 시신과 함께 회수된 전리품이다.\n\n## 배경\n본 항목은 지휘자와 연결된 회수 물증으로 등록하며, 상세 구조와 기능은 현재 보상 기록만으로 확정하지 않는다.\n\n## 획득 경로\nS1E3 망령 작전에서 세 개가 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.\n\n## 비고\n공용 인벤토리에서 실제 회수 수량을 관리한다.\n",
       "lore": {
         "background": "본 항목은 지휘자와 연결된 회수 물증으로 등록하며, 상세 구조와 기능은 현재 보상 기록만으로 확정하지 않는다.",
         "acquisition": "S1E3 망령 작전에서 세 개가 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.",
@@ -103,6 +111,7 @@
     "collection": "master_items",
     "type": "session-reward-catalog",
     "payload": {
+      "code": "GOLDEN_DAWN_CULTIST_MASK",
       "slug": "golden-dawn-cultist-mask",
       "name": "황금여명회 컬티스트의 가면",
       "nameEn": "Golden Dawn Cultist Mask",
@@ -114,6 +123,7 @@
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "황금여명회", "컬티스트", "가면", "작전물증"],
+      "loreMd": "## 설명\n황금여명회 컬티스트의 가면은 S1E3 망령 작전 종료 보상에서 전리품으로 확인된 회수 물증이다.\n\n## 배경\n황금여명회 컬티스트의 신원과 조직 활동을 추적하기 위한 작전 물증으로 분류한다.\n\n## 획득 경로\nS1E3 망령 작전에서 다섯 개가 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.\n\n## 비고\n공용 인벤토리에서 실제 회수 수량을 관리한다.\n",
       "lore": {
         "background": "황금여명회 컬티스트의 신원과 조직 활동을 추적하기 위한 작전 물증으로 분류한다.",
         "acquisition": "S1E3 망령 작전에서 다섯 개가 회수되었다. 일반 획득 및 상점 보급 대상이 아니다.",
@@ -128,6 +138,7 @@
     "collection": "master_items",
     "type": "session-reward-catalog",
     "payload": {
+      "code": "INVERTED_SOCK_CONTAINED_ENTITY",
       "slug": "inverted-sock-contained-entity",
       "name": "뒤집어진 양말 격리 개체",
       "nameEn": "Inverted Sock Contained Entity",
@@ -139,6 +150,7 @@
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E4-PRATO-PART2", "S1E4", "전리품", "뒤집어진양말", "생포", "격리개체", "바르지냐"],
+      "loreMd": "## 설명\n뒤집어진 양말 격리 개체는 S1E4 프라토 작전 종료 보상에서 생포 전리품으로 확인된 개체다.\n\n## 배경\n뒤집어진 양말은 프라토 작전에서 무력화된 뒤 노부스 오르도와 세계이사회의 회수 대상으로 결정되었다.\n\n## 획득 경로\nS1E4 프라토 작전 전리품으로 생포되었다. 일반 획득 및 상점 보급 대상이 아니다.\n\n## 비고\n관련 위키 도판은 별도 자산 역할이므로 카탈로그 미리보기로 자동 재사용하지 않는다.\n",
       "lore": {
         "background": "뒤집어진 양말은 프라토 작전에서 무력화된 뒤 노부스 오르도와 세계이사회의 회수 대상으로 결정되었다.",
         "acquisition": "S1E4 프라토 작전 전리품으로 생포되었다. 일반 획득 및 상점 보급 대상이 아니다.",
@@ -153,6 +165,7 @@
     "collection": "master_items",
     "type": "session-reward-catalog",
     "payload": {
+      "code": "WHITE_ROSE_ASSISTANT_CALL",
       "slug": "white-rose-assistant-call",
       "name": "화이트 로즈 조력자 호출권",
       "nameEn": "White Rose Assistant Call",
@@ -164,10 +177,11 @@
       "isAvailable": false,
       "isPublic": true,
       "tags": ["전리품", "화이트로즈", "조력자", "작전지원", "호출권", "소모품", "1회사용", "지역안정도", "시민협조"],
+      "loreMd": "## 설명\n\n화이트 로즈 조력자 호출권은 화이트 로즈의 지원을 작전 현장에 요청하는 1회용 소모품이다.\n\n## 배경\n\n화이트 로즈 측이 노부스 오르도의 작전을 지원하기 위해 제공한 전리품성 작전 지원으로 등록한다.\n\n## 획득 경로\n\n화이트 로즈의 보상 기록을 통해 호출권 한 개가 제공되었다. 일반 획득 및 상점 보급 대상이 아니다.\n\n## 효과 및 사용 규칙\n\n- 사용자는 호출권을 사용한다는 사실을 명시적으로 선언한다.\n- 승인된 사용 시 호출권 한 개를 소모한다.\n- 기자회견 절차 없이 현재 작전 지역 안정도를 즉시 1로 조정한다.\n- 시민들이 줄루 대응을 지지하고 협조하는 상태가 발생한다.\n\n## 비고\n\n구체적인 조력자 인원, 등장 방식과 지속 시간은 현재 근거로 확정하지 않는다.\n",
       "lore": {
         "background": "화이트 로즈 측이 노부스 오르도의 작전을 지원하기 위해 제공한 전리품성 작전 지원으로 등록한다.",
-        "acquisition": "화이트 로즈의 보상 기록을 통해 호출 권한이 제공되었다. 일반 획득 및 상점 보급 대상이 아니다.",
-        "notes": "사용자는 호출권 사용 사실을 선언해야 한다. 사용 시 1개가 소모되며, 기자회견 절차 없이 현재 작전 지역 안정도를 즉시 1로 조정하고 시민 협조를 발생시킨다."
+        "acquisition": "화이트 로즈의 보상 기록을 통해 호출권 한 개가 제공되었다. 일반 획득 및 상점 보급 대상이 아니다.",
+        "notes": "구체적인 조력자 인원, 등장 방식과 지속 시간은 현재 근거로 확정하지 않는다."
       },
       "source": "session-reward",
       "createdAt": "2026-07-28T00:00:00.000Z",

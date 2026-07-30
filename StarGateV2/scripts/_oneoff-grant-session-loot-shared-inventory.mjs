@@ -3,6 +3,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { MongoClient } from "mongodb";
+import {
+  parseFrontmatter,
+  toDbCatalogItem,
+  toDbConsumable,
+} from "@stargate/shared-db/schemas";
 
 const EXECUTE = process.argv.includes("--execute");
 const YES = process.argv.includes("--yes");
@@ -13,6 +18,24 @@ const PAYLOAD_PATH = resolve(
   process.cwd(),
   "scripts/seed-payloads/catalog-session-loot-backfill-2026-07-28.json",
 );
+const SPEC_FILES = new Map([
+  ["zulu-0028-contained-entity", "docs/spec/catalog/zulu-0028-contained-entity.md"],
+  [
+    "montauk-slaughter-hound-appearance-plate",
+    "docs/spec/catalog/montauk-slaughter-hound-appearance-plate.md",
+  ],
+  ["conductor-corpse", "docs/spec/catalog/conductor-corpse.md"],
+  ["conductor-record-spindle", "docs/spec/catalog/conductor-record-spindle.md"],
+  ["golden-dawn-cultist-mask", "docs/spec/catalog/golden-dawn-cultist-mask.md"],
+  [
+    "inverted-sock-contained-entity",
+    "docs/spec/catalog/inverted-sock-contained-entity.md",
+  ],
+  [
+    "white-rose-assistant-call",
+    "docs/spec/consumable/white-rose-assistant-call.md",
+  ],
+]);
 
 const TARGETS = [
   { slug: "zulu-0028-contained-entity", quantity: 1 },
@@ -62,6 +85,7 @@ function loadEnvFile(fileName) {
 }
 
 function stableValue(value) {
+  if (value instanceof Date) return value.toISOString();
   if (Array.isArray(value)) return value.map(stableValue);
   if (value && typeof value === "object") {
     return Object.fromEntries(
@@ -73,9 +97,13 @@ function stableValue(value) {
   return value;
 }
 
+function stableJson(value) {
+  return JSON.stringify(stableValue(value));
+}
+
 function payloadHash(payload) {
   return createHash("sha256")
-    .update(JSON.stringify(stableValue(payload)))
+    .update(stableJson(payload))
     .digest("hex");
 }
 
@@ -91,6 +119,7 @@ function parseCatalogPayloads() {
     .map((entry) => entry.payload);
   const bySlug = new Map(masters.map((item) => [item?.slug, item]));
   assertCondition(bySlug.size === 7, `신규 master payload는 7건이어야 합니다: ${bySlug.size}`);
+  assertCondition(SPEC_FILES.size === bySlug.size, "spec 파일 매핑 수가 신규 payload와 다릅니다.");
 
   for (const [slug, item] of bySlug) {
     assertCondition(item && TARGETS.some((target) => target.slug === slug), `예상하지 않은 신규 slug: ${slug}`);
@@ -101,6 +130,21 @@ function parseCatalogPayloads() {
       typeof item.previewImage === "string" &&
         existsSync(resolve(process.cwd(), `public${item.previewImage}`)),
       `${slug}: previewImage 파일을 찾을 수 없습니다.`,
+    );
+    const specFile = SPEC_FILES.get(slug);
+    assertCondition(specFile && existsSync(resolve(process.cwd(), specFile)), `${slug}: spec 파일이 없습니다.`);
+    const raw = readFileSync(resolve(process.cwd(), specFile), "utf8");
+    const { data, body } = parseFrontmatter(raw, {
+      allowMissing: false,
+      fileName: specFile,
+    });
+    const canonical =
+      slug === "white-rose-assistant-call"
+        ? toDbConsumable(data, body)
+        : toDbCatalogItem(data, body);
+    assertCondition(
+      stableJson(item) === stableJson(canonical),
+      `${slug}: durable payload가 정식 spec adapter 결과와 일치하지 않습니다.`,
     );
   }
 
@@ -149,7 +193,7 @@ async function readState(db, session) {
   return { masters, shared, operation };
 }
 
-function summarize(state, newPayloads) {
+function summarize(state, newPayloads, operationState) {
   const mastersBySlug = new Map(state.masters.map((item) => [item.slug, item]));
   const sharedByItemId = new Map(state.shared.map((entry) => [entry.itemId, entry]));
   return TARGETS.map((target) => {
@@ -160,7 +204,10 @@ function summarize(state, newPayloads) {
       requested: target.quantity,
       master: master ? "existing" : newPayloads.has(target.slug) ? "insert" : "missing",
       before: shared?.quantity ?? 0,
-      after: (shared?.quantity ?? 0) + target.quantity,
+      after:
+        operationState === "replay"
+          ? shared?.quantity ?? 0
+          : (shared?.quantity ?? 0) + target.quantity,
     };
   });
 }
@@ -194,8 +241,14 @@ function verifyBaseline(state, newPayloads, expectedHash) {
   return "not-started";
 }
 
-function verifyFinalState(state) {
+function verifyFinalState(state, newPayloads, expectedHash) {
   assertCondition(state.operation?.status === "completed", "economic operation 완료 상태를 확인할 수 없습니다.");
+  assertCondition(
+    state.operation?.payloadHash === expectedHash &&
+      state.operation?.domain === "shared-inventory-session-loot-backfill" &&
+      state.operation?.actorId === ACTOR_ID,
+    "economic operation의 hash/domain/actor가 실행 계획과 일치하지 않습니다.",
+  );
   assertCondition(state.masters.length === TARGETS.length, "master_items 11종을 모두 확인할 수 없습니다.");
   assertCondition(state.shared.length === TARGETS.length, "shared_inventory 11행을 모두 확인할 수 없습니다.");
   const mastersBySlug = new Map(state.masters.map((item) => [item.slug, item]));
@@ -204,6 +257,18 @@ function verifyFinalState(state) {
   for (const target of TARGETS) {
     const master = mastersBySlug.get(target.slug);
     assertCondition(master, `${target.slug}: master가 없습니다.`);
+    if (newPayloads.has(target.slug)) {
+      const expected = toMasterDocument(newPayloads.get(target.slug));
+      const actual = Object.fromEntries(
+        Object.keys(expected).map((key) => [key, master[key]]),
+      );
+      assertCondition(
+        stableJson(actual) === stableJson(expected),
+        `${target.slug}: 저장된 master가 durable payload와 일치하지 않습니다.`,
+      );
+    } else {
+      verifyExistingMaster(master, target.slug);
+    }
     const shared = sharedByItemId.get(master._id.toString());
     assertCondition(shared?.quantity === target.quantity, `${target.slug}: 지급 수량이 일치하지 않습니다.`);
     assertCondition(shared?.itemName === master.name, `${target.slug}: 공용 인벤토리 이름이 master와 다릅니다.`);
@@ -241,16 +306,22 @@ try {
         mode: EXECUTE ? "execute" : "dry-run",
         operationId: OPERATION_ID,
         operationState: baseline,
-        rows: summarize(before, newPayloads),
+        rows: summarize(before, newPayloads, baseline),
       },
       null,
       2,
     ),
   );
 
-  if (!EXECUTE) process.exitCode = 0;
+  if (!EXECUTE) {
+    if (baseline === "replay") {
+      const verified = verifyFinalState(before, newPayloads, expectedHash);
+      console.log(JSON.stringify({ replayed: true, verified }, null, 2));
+    }
+    process.exitCode = 0;
+  }
   else if (baseline === "replay") {
-    const verified = verifyFinalState(before);
+    const verified = verifyFinalState(before, newPayloads, expectedHash);
     console.log(JSON.stringify({ replayed: true, verified }, null, 2));
   } else {
     const session = client.startSession();
@@ -336,7 +407,7 @@ try {
     }
 
     const after = await readState(db);
-    const verified = verifyFinalState(after);
+    const verified = verifyFinalState(after, newPayloads, expectedHash);
     console.log(JSON.stringify({ replayed: false, verified }, null, 2));
   }
 } finally {
