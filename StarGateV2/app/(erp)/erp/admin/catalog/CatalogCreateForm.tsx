@@ -9,9 +9,10 @@ import { useCreateItem } from "@/hooks/mutations/useInventoryMutation";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
+import DropdownSelect from "@/components/ui/DropdownSelect/DropdownSelect";
+import type { DropdownSelectOption } from "@/components/ui/DropdownSelect/DropdownSelect";
 import Input from "@/components/ui/Input/Input";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
-import Select from "@/components/ui/Select/Select";
 
 import type {
   ArmoryZone,
@@ -87,6 +88,24 @@ const PAGE_GROUP_LABELS: Record<ShopPageGroup, string> = {
   LUXURY: "기호",
   RARE: "희귀",
 };
+
+const TARGET_OPTIONS: readonly DropdownSelectOption<CatalogTarget>[] = [
+  { value: "shop", label: "편의점" },
+  { value: "armory", label: "병기부" },
+];
+
+const ARMORY_ZONE_OPTIONS: readonly DropdownSelectOption<ArmoryZone>[] = [
+  { value: "towaski", label: "토와스키 건샵" },
+  { value: "acheron", label: "아케론 대장간" },
+  { value: "strategic", label: "전략 장비 보급소" },
+];
+
+const PAGE_GROUP_OPTIONS = Object.entries(PAGE_GROUP_LABELS).map(
+  ([value, label]) => ({
+    value: value as ShopPageGroup,
+    label,
+  }),
+) satisfies readonly DropdownSelectOption<ShopPageGroup>[];
 
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]{1,79}$/;
 const LOCAL_ASSET_PATTERN = /^\/assets\/[a-zA-Z0-9_./-]+$/;
@@ -260,49 +279,39 @@ export default function CatalogCreateForm() {
         <PanelTitle>CATALOG DESTINATION</PanelTitle>
         <div className={styles.grid}>
           <Field id="catalog-target" label="판매처">
-            <Select
+            <DropdownSelect
               id="catalog-target"
+              ariaLabel="판매처"
               value={form.target}
-              onChange={(event) =>
-                handleTargetChange(event.target.value as CatalogTarget)
-              }
-            >
-              <option value="shop">편의점</option>
-              <option value="armory">병기부</option>
-            </Select>
+              onChange={handleTargetChange}
+              options={TARGET_OPTIONS}
+            />
           </Field>
 
           {form.target === "armory" ? (
             <Field id="armory-zone" label="병기부 존">
-              <Select
+              <DropdownSelect
                 id="armory-zone"
+                ariaLabel="병기부 존"
                 value={form.armoryZone}
-                onChange={(event) =>
-                  handleArmoryZoneChange(event.target.value as ArmoryZone)
-                }
-              >
-                <option value="towaski">토와스키 건샵</option>
-                <option value="acheron">아케론 대장간</option>
-                <option value="strategic">전략 장비 보급소</option>
-              </Select>
+                onChange={handleArmoryZoneChange}
+                options={ARMORY_ZONE_OPTIONS}
+              />
             </Field>
           ) : null}
 
           <Field id="item-category" label="카테고리">
-            <Select
+            <DropdownSelect
               id="item-category"
+              ariaLabel="카테고리"
               value={form.category}
-              onChange={(event) =>
-                update("category", event.target.value as ItemCategory)
-              }
+              onChange={(category) => update("category", category)}
               disabled={form.target === "shop"}
-            >
-              {categoryOptions.map((category) => (
-                <option key={category} value={category}>
-                  {CATEGORY_LABELS[category]}
-                </option>
-              ))}
-            </Select>
+              options={categoryOptions.map((category) => ({
+                value: category,
+                label: CATEGORY_LABELS[category],
+              }))}
+            />
           </Field>
         </div>
       </Box>
@@ -436,19 +445,13 @@ export default function CatalogCreateForm() {
             </Field>
 
             <Field id="page-group" label="페이지 그룹">
-              <Select
+              <DropdownSelect
                 id="page-group"
+                ariaLabel="페이지 그룹"
                 value={form.pageGroup}
-                onChange={(event) =>
-                  update("pageGroup", event.target.value as ShopPageGroup)
-                }
-              >
-                {Object.entries(PAGE_GROUP_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
+                onChange={(pageGroup) => update("pageGroup", pageGroup)}
+                options={PAGE_GROUP_OPTIONS}
+              />
             </Field>
 
             <Field id="shop-icon" label="표시 아이콘">

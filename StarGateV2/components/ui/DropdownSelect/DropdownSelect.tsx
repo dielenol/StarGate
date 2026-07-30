@@ -21,6 +21,7 @@ interface DropdownSelectProps<T extends string> {
   ariaLabel: string;
   className?: string;
   disabled?: boolean;
+  id?: string;
   onChange: (value: T) => void;
   options: readonly DropdownSelectOption<T>[];
   value: T;
@@ -30,6 +31,7 @@ export default function DropdownSelect<T extends string>({
   ariaLabel,
   className,
   disabled = false,
+  id,
   onChange,
   options,
   value,
@@ -147,6 +149,7 @@ export default function DropdownSelect<T extends string>({
       onBlur={handleBlur}
     >
       <button
+        id={id}
         ref={triggerRef}
         type="button"
         className={styles.dropdown__trigger}
