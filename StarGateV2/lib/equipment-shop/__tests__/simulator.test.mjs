@@ -6,11 +6,13 @@ import {
   applySimulatorResolutionToEnemy,
   applySimulatorStatuses,
   distributeSimulatorBossDamage,
+  fitSimulatorEnemyPosition,
   getSimulatorEquippedWeapons,
   getSimulatorEffectiveDef,
   getSimulatorBlastCells,
   getSimulatorBossPartState,
   getSimulatorBossSummary,
+  getSimulatorEnemyOccupiedCells,
   getInitialSimulatorResources,
   getSimulatorIncendiaryLineCells,
   getSimulatorKnockbackTarget,
@@ -19,6 +21,7 @@ import {
   getSimulatorWeaponRule,
   isSimulatorAttackableCell,
   isNewSimulatorCadenceCycle,
+  normalizeSimulatorEnemyFootprint,
   resolveSimulatorAreaSpray,
   resolveSimulatorAttack,
   resolveSimulatorDamageProfile,
@@ -420,6 +423,48 @@ test("boss parts derive body HP and receive direct or distributed damage", () =>
     distributeBossDamage: true,
   });
   assert.equal(getSimulatorBossSummary(distributed.bossParts).hp, 72);
+});
+
+test("boss footprints default to multiple cells and stay inside each battlefield", () => {
+  const footprint = normalizeSimulatorEnemyFootprint(
+    { columns: 2, rows: 2 },
+    ["A", "B", "C", "D", "E"],
+    [1, 2, 3, 4, 5],
+  );
+  assert.deepEqual(footprint, { columns: 2, rows: 2 });
+  assert.deepEqual(
+    fitSimulatorEnemyPosition(
+      { col: "E", row: 5 },
+      footprint,
+      ["A", "B", "C", "D", "E"],
+      [1, 2, 3, 4, 5],
+    ),
+    { col: "D", row: 4 },
+  );
+  assert.deepEqual(
+    getSimulatorEnemyOccupiedCells(
+      {
+        position: { col: "D", row: 4 },
+        footprint,
+      },
+      ["A", "B", "C", "D", "E"],
+      [1, 2, 3, 4, 5],
+    ),
+    [
+      { col: "D", row: 4 },
+      { col: "E", row: 4 },
+      { col: "D", row: 5 },
+      { col: "E", row: 5 },
+    ],
+  );
+  assert.deepEqual(
+    normalizeSimulatorEnemyFootprint(
+      footprint,
+      ["A"],
+      [1, 2, 3, 4, 5],
+    ),
+    { columns: 1, rows: 2 },
+  );
 });
 
 test("firearms use distance along a shared row or column", () => {

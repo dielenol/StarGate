@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import {
+  type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
@@ -27,9 +28,11 @@ import {
   applySimulatorStatuses,
   formatSimulatorCoord,
   formatSimulatorDamage,
+  fitSimulatorEnemyPosition,
   getSimulatorBlastCells,
   getSimulatorBossPartState,
   getSimulatorBossSummary,
+  getSimulatorEnemyOccupiedCells,
   getInitialSimulatorResources,
   getSimulatorEffectiveDef,
   getSimulatorIncendiaryLineCells,
@@ -39,6 +42,7 @@ import {
   getSimulatorWeaponRule,
   isSimulatorEnemyDefeated,
   isNewSimulatorCadenceCycle,
+  normalizeSimulatorEnemyFootprint,
   resolveSimulatorAreaSpray,
   resolveSimulatorAttack,
   resolveSimulatorDamageProfile,
@@ -55,6 +59,7 @@ import {
   type SimulatorBossPart,
   type SimulatorEncounterMode,
   type SimulatorEnemy,
+  type SimulatorEnemyFootprint,
   type SimulatorEquippedWeapon,
   type SimulatorWeaponActionKind,
   type SimulatorStatusKind,
@@ -197,6 +202,12 @@ const DEFAULT_TRAINING_AGENT_PORTRAIT =
   "/assets/npcs/Sector-C-Field-Agent-profile.webp";
 const DEFAULT_TARGET_PORTRAIT =
   "/assets/npcs/General-Combatant-profile.webp";
+const DEFAULT_BOSS_PORTRAIT =
+  "/assets/equipment-shop/simulator/mammoth-boss.webp";
+const DEFAULT_BOSS_FOOTPRINT: SimulatorEnemyFootprint = {
+  columns: 2,
+  rows: 2,
+};
 const TURN_REVEAL_OUT_MS = 1900;
 const TURN_REVEAL_END_MS = 2400;
 
@@ -255,32 +266,50 @@ function createStandardEnemy(
   };
 }
 
-function createBossEnemy(position: SimulatorBoardCoord): SimulatorEnemy {
+function createBossEnemy(
+  position: SimulatorBoardCoord,
+  columns: BattlefieldConfig["columns"],
+  rows: BattlefieldConfig["rows"],
+): SimulatorEnemy {
   const summary = getSimulatorBossSummary(DEFAULT_BOSS_PARTS);
+  const footprint = normalizeSimulatorEnemyFootprint(
+    DEFAULT_BOSS_FOOTPRINT,
+    columns,
+    rows,
+  );
   return {
     id: "boss-target",
     kind: "boss",
     name: "대형 훈련 표적",
-    position,
+    position: fitSimulatorEnemyPosition(position, footprint, columns, rows),
     stats: {
       ...cloneTargetStats(),
       hp: summary.hp,
       maxHp: summary.maxHp,
     },
     bossParts: DEFAULT_BOSS_PARTS.map((part) => ({ ...part })),
+    footprint,
   };
 }
 
 function createEncounterEnemies(
   mode: SimulatorEncounterMode,
-  position: SimulatorBoardCoord,
+  battlefield: BattlefieldConfig,
 ): SimulatorEnemy[] {
-  if (mode === "boss") return [createBossEnemy(position)];
+  if (mode === "boss") {
+    return [
+      createBossEnemy(
+        battlefield.targetPosition,
+        battlefield.columns,
+        battlefield.rows,
+      ),
+    ];
+  }
   return [
     createStandardEnemy(
       "training-target-1",
       mode === "duel" ? "훈련 표적" : "훈련 표적 1",
-      position,
+      battlefield.targetPosition,
     ),
   ];
 }
@@ -716,25 +745,63 @@ export default function EquipmentSimulatorClient({
   const boardRows = battlefield.rows;
   const boardColumnTemplate = `repeat(${boardColumns.length}, minmax(46px, 1fr))`;
   const boardRowTemplate = `repeat(${boardRows.length}, minmax(78px, 1fr))`;
+  const selectedItem =
+    simulatorItems.find((item) => item.slug === selectedSlug) ??
+    simulatorItems[0];
+  const selectedRule = getSimulatorWeaponRule(selectedSlug);
   const selectedEnemy =
     enemies.find((enemy) => enemy.id === selectedEnemyId) ??
     (selectedEnemyId ? enemies[0] ?? null : null);
+  const selectedEnemyOccupiedCells = selectedEnemy
+    ? getSimulatorEnemyOccupiedCells(
+        selectedEnemy,
+        boardColumns,
+        boardRows,
+      )
+    : [];
+  const attackableSelectedEnemyCells = selectedRule
+    ? selectedEnemyOccupiedCells.filter((coord) =>
+        isSimulatorAttackableCell(
+          selectedRule.slug,
+          attackerPosition,
+          coord,
+        ),
+      )
+    : [];
   const targetPosition =
-    selectedEnemy?.position ?? battlefield.targetPosition;
+    (
+      attackableSelectedEnemyCells.length
+        ? attackableSelectedEnemyCells
+        : selectedEnemyOccupiedCells
+    ).reduce<SimulatorBoardCoord | null>((nearest, coord) => {
+      if (!nearest) return coord;
+      const nearestRange = getSimulatorRange(attackerPosition, nearest);
+      const coordRange = getSimulatorRange(attackerPosition, coord);
+      return (coordRange.attackDistance ?? coordRange.verticalDistance) <
+        (nearestRange.attackDistance ?? nearestRange.verticalDistance)
+        ? coord
+        : nearest;
+    }, null) ??
+    selectedEnemy?.position ??
+    battlefield.targetPosition;
   const targetStats = selectedEnemy?.stats ?? DEFAULT_TARGET;
   const selectedBossPart =
     selectedEnemy?.bossParts?.find(
       (part) => part.id === selectedBossPartId,
     ) ?? null;
+  const selectedBossFootprint =
+    selectedEnemy?.kind === "boss"
+      ? normalizeSimulatorEnemyFootprint(
+          selectedEnemy.footprint ?? DEFAULT_BOSS_FOOTPRINT,
+          boardColumns,
+          boardRows,
+        )
+      : DEFAULT_BOSS_FOOTPRINT;
   const draggedEnemy =
     draggedToken?.kind === "enemy"
       ? enemies.find((enemy) => enemy.id === draggedToken.enemyId) ?? null
       : null;
 
-  const selectedItem =
-    simulatorItems.find((item) => item.slug === selectedSlug) ??
-    simulatorItems[0];
-  const selectedRule = getSimulatorWeaponRule(selectedSlug);
   const selectedAction =
     selectedActionKind === "attack"
       ? null
@@ -1051,7 +1118,26 @@ export default function EquipmentSimulatorClient({
   ) {
     return enemies.some(
       (enemy) =>
-        enemy.id !== movingEnemyId && sameCoord(enemy.position, coord),
+        enemy.id !== movingEnemyId &&
+        getSimulatorEnemyOccupiedCells(
+          enemy,
+          boardColumns,
+          boardRows,
+        ).some((occupied) => sameCoord(occupied, coord)),
+    );
+  }
+
+  function isEnemyPlacementBlocked(
+    enemy: SimulatorEnemy,
+    position: SimulatorBoardCoord,
+  ) {
+    const candidateCells = getSimulatorEnemyOccupiedCells(
+      { ...enemy, position },
+      boardColumns,
+      boardRows,
+    );
+    return candidateCells.some((coord) =>
+      isEnemyCellOccupied(coord, enemy.id),
     );
   }
 
@@ -1070,9 +1156,18 @@ export default function EquipmentSimulatorClient({
         ? enemies.find((enemy) => enemy.id === token.enemyId)
         : null;
     if (token.kind === "enemy" && !movingEnemy) return;
+    const fittedCoord = movingEnemy
+      ? fitSimulatorEnemyPosition(
+          coord,
+          movingEnemy.footprint,
+          boardColumns,
+          boardRows,
+        )
+      : coord;
     if (
       token.kind === "enemy" &&
-      isEnemyCellOccupied(coord, token.enemyId)
+      movingEnemy &&
+      isEnemyPlacementBlocked(movingEnemy, fittedCoord)
     ) {
       showFeedback(
         "error",
@@ -1090,12 +1185,19 @@ export default function EquipmentSimulatorClient({
       setAttackerPosition(coord);
     } else {
       updateEnemy(token.enemyId, (enemy) => {
+        const occupiedCells = getSimulatorEnemyOccupiedCells(
+          { ...enemy, position: fittedCoord },
+          boardColumns,
+          boardRows,
+        );
         const isBurningCell = fireZones.some((zone) =>
-          zone.cells.includes(cellKey(coord)),
+          occupiedCells.some((occupied) =>
+            zone.cells.includes(cellKey(occupied)),
+          ),
         );
         return {
           ...enemy,
-          position: coord,
+          position: fittedCoord,
           stats: isBurningCell
             ? applySimulatorStatuses(enemy.stats, ["burn"])
             : enemy.stats,
@@ -1111,13 +1213,13 @@ export default function EquipmentSimulatorClient({
       token.kind === "attacker"
         ? "내 캐릭터"
         : movingEnemy?.name ?? "적";
-    const detail = `${formatSimulatorCoord(currentCoord)} → ${formatSimulatorCoord(coord)}`;
+    const detail = `${formatSimulatorCoord(currentCoord)} → ${formatSimulatorCoord(fittedCoord)}`;
     showFeedback(
       "info",
-      `${label} 위치 ${sameCoord(currentCoord, coord) ? "확인" : "이동 완료"}`,
+      `${label} 위치 ${sameCoord(currentCoord, fittedCoord) ? "확인" : "이동 완료"}`,
       detail,
     );
-    if (!sameCoord(currentCoord, coord)) {
+    if (!sameCoord(currentCoord, fittedCoord)) {
       pushLog(`${label} 이동 · ${detail}`, "info");
     }
   }
@@ -1495,10 +1597,7 @@ export default function EquipmentSimulatorClient({
       turnRevealEndTimerRef.current = null;
     }
     setAttackerPosition(nextBattlefield.attackerPosition);
-    const nextEnemies = createEncounterEnemies(
-      nextMode,
-      nextBattlefield.targetPosition,
-    );
+    const nextEnemies = createEncounterEnemies(nextMode, nextBattlefield);
     setEnemies(nextEnemies);
     setSelectedEnemyId(nextEnemies[0]?.id ?? "");
     setSelectedBossPartId(null);
@@ -1768,6 +1867,48 @@ export default function EquipmentSimulatorClient({
     };
   }
 
+  function handleBossFootprintChange(
+    axis: keyof SimulatorEnemyFootprint,
+    rawValue: string,
+  ) {
+    if (selectedEnemy?.kind !== "boss") return;
+    const value = Number(rawValue);
+    updateEnemy(selectedEnemy.id, (enemy) => {
+      const footprint = normalizeSimulatorEnemyFootprint(
+        {
+          ...DEFAULT_BOSS_FOOTPRINT,
+          ...enemy.footprint,
+          [axis]: Number.isFinite(value) ? value : 1,
+        },
+        boardColumns,
+        boardRows,
+      );
+      return {
+        ...enemy,
+        footprint,
+        position: fitSimulatorEnemyPosition(
+          enemy.position,
+          footprint,
+          boardColumns,
+          boardRows,
+        ),
+      };
+    });
+  }
+
+  function logBossFootprintAdjustment() {
+    if (selectedEnemy?.kind !== "boss") return;
+    const footprint = normalizeSimulatorEnemyFootprint(
+      selectedEnemy.footprint ?? DEFAULT_BOSS_FOOTPRINT,
+      boardColumns,
+      boardRows,
+    );
+    pushLog(
+      `${selectedEnemy.name} 점유 크기 · ${footprint.columns}×${footprint.rows}`,
+      "info",
+    );
+  }
+
   function handleAddBossPart(x = 50, y = 50) {
     if (selectedEnemy?.kind !== "boss") return;
     const parts = selectedEnemy.bossParts ?? [];
@@ -2000,8 +2141,19 @@ export default function EquipmentSimulatorClient({
     let affectedCount = 0;
     const nextEnemies = enemies.map((enemy) => {
         if (isSimulatorEnemyDefeated(enemy)) return enemy;
-        if (!affectedKeys.has(cellKey(enemy.position))) return enemy;
-        const isCenter = sameCoord(enemy.position, blastImpact);
+        const occupiedCells = getSimulatorEnemyOccupiedCells(
+          enemy,
+          boardColumns,
+          boardRows,
+        );
+        if (
+          !occupiedCells.some((coord) => affectedKeys.has(cellKey(coord)))
+        ) {
+          return enemy;
+        }
+        const isCenter = occupiedCells.some((coord) =>
+          sameCoord(coord, blastImpact),
+        );
         const profile = isCenter
           ? selectedRule.blast?.center
           : selectedRule.blast?.splash;
@@ -2098,7 +2250,33 @@ export default function EquipmentSimulatorClient({
         fail("대상을 뒤로 밀어낼 빈 칸이 없습니다.");
         return;
       }
-      if (isEnemyCellOccupied(nextTarget, selectedEnemy.id)) {
+      const knockbackPosition =
+        selectedEnemy.kind === "boss"
+          ? fitSimulatorEnemyPosition(
+              {
+                col:
+                  boardColumns[
+                    boardColumns.indexOf(selectedEnemy.position.col) +
+                      (boardColumns.indexOf(nextTarget.col) -
+                        boardColumns.indexOf(targetPosition.col))
+                  ] ?? selectedEnemy.position.col,
+                row:
+                  boardRows[
+                    boardRows.indexOf(selectedEnemy.position.row) +
+                      (boardRows.indexOf(nextTarget.row) -
+                        boardRows.indexOf(targetPosition.row))
+                  ] ?? selectedEnemy.position.row,
+              },
+              selectedEnemy.footprint,
+              boardColumns,
+              boardRows,
+            )
+          : nextTarget;
+      if (sameCoord(knockbackPosition, selectedEnemy.position)) {
+        fail("전장 경계 밖으로는 대상을 밀어낼 수 없습니다.");
+        return;
+      }
+      if (isEnemyPlacementBlocked(selectedEnemy, knockbackPosition)) {
         fail("밀려날 칸을 다른 적이 점유하고 있습니다.");
         return;
       }
@@ -2116,21 +2294,21 @@ export default function EquipmentSimulatorClient({
           },
           { ...(selectedBossPart ? { partId: selectedBossPart.id } : {}) },
         ),
-        position: nextTarget,
+        position: knockbackPosition,
       }));
       setTrainingEvent("attack");
       setActiveStep(5);
       showFeedback(
         "success",
         "넉백 실행 완료",
-        `${selectedResult.summary} · ${selectedEnemy.name} ${formatSimulatorCoord(nextTarget)}로 1칸 후퇴`,
+        `${selectedResult.summary} · ${selectedEnemy.name} ${formatSimulatorCoord(knockbackPosition)}로 1칸 후퇴`,
       );
       pushLog(
         `${selectedRule.name} 넉백 · ${selectedEnemy.name}`,
         "hit",
         [
           selectedResult.summary,
-          `${formatSimulatorCoord(targetPosition)} → ${formatSimulatorCoord(nextTarget)}`,
+          `${formatSimulatorCoord(selectedEnemy.position)} → ${formatSimulatorCoord(knockbackPosition)}`,
         ],
       );
       return;
@@ -2140,10 +2318,23 @@ export default function EquipmentSimulatorClient({
       const candidates = enemies
         .filter((enemy) => !isSimulatorEnemyDefeated(enemy))
         .flatMap((enemy) => {
+          const occupiedCells = getSimulatorEnemyOccupiedCells(
+            enemy,
+            boardColumns,
+            boardRows,
+          );
+          const target =
+            occupiedCells.find((coord) =>
+              isSimulatorAttackableCell(
+                selectedRule.slug,
+                attackerPosition,
+                coord,
+              ),
+            ) ?? enemy.position;
           const result = resolveSimulatorAttack({
             weaponSlug: selectedRule.slug,
             attacker: attackerPosition,
-            target: enemy.position,
+            target,
             attackerStats: attacker,
             targetStats: { def: getSimulatorEffectiveDef(enemy.stats) },
             runtime: selectedRuntime,
@@ -2241,7 +2432,15 @@ export default function EquipmentSimulatorClient({
     const burnedNames: string[] = [];
     const nextEnemies = enemies.map((enemy) => {
         if (isSimulatorEnemyDefeated(enemy)) return enemy;
-        if (!zoneCells.includes(cellKey(enemy.position))) return enemy;
+        if (
+          !getSimulatorEnemyOccupiedCells(
+            enemy,
+            boardColumns,
+            boardRows,
+          ).some((coord) => zoneCells.includes(cellKey(coord)))
+        ) {
+          return enemy;
+        }
         burnedNames.push(enemy.name);
         return {
           ...enemy,
@@ -2375,7 +2574,17 @@ export default function EquipmentSimulatorClient({
             {draggedToken.kind === "attacker"
               ? attackerTokenInitial
               : draggedEnemy?.kind === "boss"
-                ? "大"
+                ? (
+                    <Image
+                      src={DEFAULT_BOSS_PORTRAIT}
+                      width={64}
+                      height={64}
+                      alt=""
+                      className={styles.dragGhost__bossPortrait}
+                      draggable={false}
+                      unoptimized
+                    />
+                  )
                 : "적"}
           </span>
           <strong>
@@ -2904,8 +3113,15 @@ export default function EquipmentSimulatorClient({
                 boardColumns.map((col) => {
                   const coord: SimulatorBoardCoord = { col, row };
                   const hasAttacker = sameCoord(coord, attackerPosition);
-                  const cellEnemies = enemies.filter((enemy) =>
+                  const anchoredEnemies = enemies.filter((enemy) =>
                     sameCoord(coord, enemy.position),
+                  );
+                  const cellEnemies = enemies.filter((enemy) =>
+                    getSimulatorEnemyOccupiedCells(
+                      enemy,
+                      boardColumns,
+                      boardRows,
+                    ).some((occupied) => sameCoord(occupied, coord)),
                   );
                   const hasTarget = cellEnemies.length > 0;
                   const isAttackable =
@@ -3072,9 +3288,15 @@ export default function EquipmentSimulatorClient({
                           />
                         </div>
                       ) : null}
-                      {cellEnemies.map((enemy) => {
+                      {anchoredEnemies.map((enemy) => {
                         const defeated = isSimulatorEnemyDefeated(enemy);
                         const enemyDef = getSimulatorEffectiveDef(enemy.stats);
+                        const enemyFootprint =
+                          normalizeSimulatorEnemyFootprint(
+                            enemy.footprint,
+                            boardColumns,
+                            boardRows,
+                          );
                         const isSelected = enemy.id === selectedEnemyId;
                         const isDragging =
                           draggedToken?.kind === "enemy" &&
@@ -3101,6 +3323,14 @@ export default function EquipmentSimulatorClient({
                             ]
                               .filter(Boolean)
                               .join(" ")}
+                            style={
+                              enemy.kind === "boss"
+                                ? ({
+                                    "--boss-width": `calc(${enemyFootprint.columns * 100}% + ${(enemyFootprint.columns - 1) * 4}px - 8px)`,
+                                    "--boss-height": `calc(${enemyFootprint.rows * 100}% + ${(enemyFootprint.rows - 1) * 4}px - 8px)`,
+                                  } as CSSProperties)
+                                : undefined
+                            }
                             onClick={(event) =>
                               handleEnemyTokenClick(
                                 event,
@@ -3141,13 +3371,20 @@ export default function EquipmentSimulatorClient({
                                 setActiveToken("target");
                               }
                             }}
-                            aria-label={`적, ${enemy.name} 위치 토큰. HP ${enemy.stats.hp}/${enemy.stats.maxHp}, 정신력 ${enemy.stats.san}/${enemy.stats.maxSan}, DEF ${enemyDef}, 상태 ${defeated ? "전투불능" : enemy.stats.statuses.map((status) => SIMULATOR_STATUS_LABELS[status]).join(", ") || "정상"}`}
+                            aria-label={`적, ${enemy.name} 위치 토큰${enemy.kind === "boss" ? `, ${enemyFootprint.columns}×${enemyFootprint.rows}칸 점유` : ""}. HP ${enemy.stats.hp}/${enemy.stats.maxHp}, 정신력 ${enemy.stats.san}/${enemy.stats.maxSan}, DEF ${enemyDef}, 상태 ${defeated ? "전투불능" : enemy.stats.statuses.map((status) => SIMULATOR_STATUS_LABELS[status]).join(", ") || "정상"}`}
                           >
                             <span className={styles.token__inner} aria-hidden>
                               {enemy.kind === "boss" ? (
-                                <span className={styles.token__bossFallback}>
-                                  大
-                                </span>
+                                <Image
+                                  src={DEFAULT_BOSS_PORTRAIT}
+                                  width={1024}
+                                  height={683}
+                                  alt=""
+                                  className={styles.token__bossPortrait}
+                                  draggable={false}
+                                  loading="eager"
+                                  unoptimized
+                                />
                               ) : (
                                 <Image
                                   src={DEFAULT_TARGET_PORTRAIT}
@@ -3415,9 +3652,58 @@ export default function EquipmentSimulatorClient({
                   </em>
                 </div>
                 <div
+                  className={styles.bossFootprintEditor}
+                  aria-label="대형몹 전장 점유 크기"
+                >
+                  <div>
+                    <strong>전장 점유 크기</strong>
+                    <span>
+                      현재 {selectedBossFootprint.columns}×
+                      {selectedBossFootprint.rows}칸
+                    </span>
+                  </div>
+                  <label>
+                    가로
+                    <input
+                      type="number"
+                      min={1}
+                      max={boardColumns.length}
+                      value={selectedBossFootprint.columns}
+                      onChange={(event) =>
+                        handleBossFootprintChange(
+                          "columns",
+                          event.target.value,
+                        )
+                      }
+                      onBlur={logBossFootprintAdjustment}
+                    />
+                  </label>
+                  <span aria-hidden>×</span>
+                  <label>
+                    세로
+                    <input
+                      type="number"
+                      min={1}
+                      max={boardRows.length}
+                      value={selectedBossFootprint.rows}
+                      onChange={(event) =>
+                        handleBossFootprintChange("rows", event.target.value)
+                      }
+                      onBlur={logBossFootprintAdjustment}
+                    />
+                  </label>
+                  <small>
+                    전장 경계를 넘으면 위치와 크기가 자동으로 맞춰집니다.
+                  </small>
+                </div>
+                <div
                   className={styles.bossStage}
                   onClick={(event) => {
-                    if (event.target !== event.currentTarget) return;
+                    if (
+                      (event.target as HTMLElement).closest("button")
+                    ) {
+                      return;
+                    }
                     const rect = event.currentTarget.getBoundingClientRect();
                     handleAddBossPart(
                       ((event.clientX - rect.left) / rect.width) * 100,
@@ -3431,9 +3717,15 @@ export default function EquipmentSimulatorClient({
                   }}
                   aria-label="대형몹 부위도. 빈 곳을 눌러 부위를 추가합니다."
                 >
-                  <span className={styles.bossStage__placeholder} aria-hidden>
-                    大
-                  </span>
+                  <Image
+                    src={DEFAULT_BOSS_PORTRAIT}
+                    fill
+                    sizes="(max-width: 720px) 100vw, 340px"
+                    alt=""
+                    className={styles.bossStage__portrait}
+                    draggable={false}
+                    unoptimized
+                  />
                   {(selectedEnemy.bossParts ?? []).map((part, index) => (
                     <button
                       key={part.id}

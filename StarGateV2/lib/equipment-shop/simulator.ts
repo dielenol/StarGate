@@ -58,6 +58,11 @@ export interface SimulatorBossPart {
   y: number;
 }
 
+export interface SimulatorEnemyFootprint {
+  columns: number;
+  rows: number;
+}
+
 export interface SimulatorEnemy {
   id: string;
   kind: "standard" | "boss";
@@ -65,6 +70,7 @@ export interface SimulatorEnemy {
   position: SimulatorBoardCoord;
   stats: SimulatorTargetStats;
   bossParts?: SimulatorBossPart[];
+  footprint?: SimulatorEnemyFootprint;
 }
 
 export interface SimulatorEncounter {
@@ -266,6 +272,70 @@ export const SIMULATOR_STATUS_RULES: Record<
     rangedAttackReductionPercent: 20,
   },
 };
+
+export function normalizeSimulatorEnemyFootprint(
+  footprint: Partial<SimulatorEnemyFootprint> | undefined,
+  columns: readonly SimulatorBoardColumn[] = SIMULATOR_BOARD_COLUMNS,
+  rows: readonly SimulatorBoardRow[] = SIMULATOR_BOARD_ROWS,
+): SimulatorEnemyFootprint {
+  return {
+    columns: Math.max(
+      1,
+      Math.min(columns.length, Math.round(Number(footprint?.columns) || 1)),
+    ),
+    rows: Math.max(
+      1,
+      Math.min(rows.length, Math.round(Number(footprint?.rows) || 1)),
+    ),
+  };
+}
+
+export function fitSimulatorEnemyPosition(
+  position: SimulatorBoardCoord,
+  footprint: Partial<SimulatorEnemyFootprint> | undefined,
+  columns: readonly SimulatorBoardColumn[] = SIMULATOR_BOARD_COLUMNS,
+  rows: readonly SimulatorBoardRow[] = SIMULATOR_BOARD_ROWS,
+): SimulatorBoardCoord {
+  const normalized = normalizeSimulatorEnemyFootprint(
+    footprint,
+    columns,
+    rows,
+  );
+  const columnIndex = Math.max(0, columns.indexOf(position.col));
+  const rowIndex = Math.max(0, rows.indexOf(position.row));
+  return {
+    col: columns[
+      Math.min(columnIndex, Math.max(0, columns.length - normalized.columns))
+    ],
+    row: rows[Math.min(rowIndex, Math.max(0, rows.length - normalized.rows))],
+  };
+}
+
+export function getSimulatorEnemyOccupiedCells(
+  enemy: Pick<SimulatorEnemy, "position" | "footprint">,
+  columns: readonly SimulatorBoardColumn[] = SIMULATOR_BOARD_COLUMNS,
+  rows: readonly SimulatorBoardRow[] = SIMULATOR_BOARD_ROWS,
+): SimulatorBoardCoord[] {
+  const footprint = normalizeSimulatorEnemyFootprint(
+    enemy.footprint,
+    columns,
+    rows,
+  );
+  const position = fitSimulatorEnemyPosition(
+    enemy.position,
+    footprint,
+    columns,
+    rows,
+  );
+  const columnIndex = columns.indexOf(position.col);
+  const rowIndex = rows.indexOf(position.row);
+  return Array.from({ length: footprint.rows }, (_, rowOffset) =>
+    Array.from({ length: footprint.columns }, (_, columnOffset) => ({
+      col: columns[columnIndex + columnOffset],
+      row: rows[rowIndex + rowOffset],
+    })),
+  ).flat();
+}
 
 function physical(
   amount: number,

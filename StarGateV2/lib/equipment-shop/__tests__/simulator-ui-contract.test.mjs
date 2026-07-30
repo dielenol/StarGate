@@ -226,6 +226,10 @@ test("encounter modes, editable targets, bosses, and blast previews are wired in
   assert.match(client, /다음 표적을 직접 선택하세요/);
   assert.match(client, /\(selectedEnemyId \? enemies\[0\] \?\? null : null\)/);
   assert.match(client, /className=\{styles\.bossStage\}/);
+  assert.match(client, /mammoth-boss\.webp/);
+  assert.match(client, /DEFAULT_BOSS_FOOTPRINT/);
+  assert.match(client, /전장 점유 크기/);
+  assert.match(client, /getSimulatorEnemyOccupiedCells/);
   assert.match(client, /setPointerCapture\(event\.pointerId\)/);
   assert.match(
     client,
@@ -243,6 +247,8 @@ test("encounter modes, editable targets, bosses, and blast previews are wired in
   assert.match(simulator, /interface SimulatorActionResolution/);
   assert.match(simulator, /function getSimulatorBlastCells/);
   assert.match(simulator, /function distributeSimulatorBossDamage/);
+  assert.match(simulator, /function fitSimulatorEnemyPosition/);
+  assert.match(simulator, /function getSimulatorEnemyOccupiedCells/);
   assert.match(
     client,
     /selectedActionKind !== "incendiary-line"[\s\S]*!selectedRule\.blast[\s\S]*!selectedEnemy/,
@@ -250,6 +256,8 @@ test("encounter modes, editable targets, bosses, and blast previews are wired in
   assert.match(styles, /\.encounterSelector/);
   assert.match(styles, /\.targetEditor/);
   assert.match(styles, /\.bossStage/);
+  assert.match(styles, /\.bossFootprintEditor/);
+  assert.match(styles, /\.token__bossPortrait/);
   assert.match(styles, /\.boardCell--blastCenter/);
 });
 
