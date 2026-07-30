@@ -13,3 +13,11 @@
 - 인벤토리 Query 갱신에 따라 장비 교체 시 강화 효과가 즉시 적용되거나 원본 효과로 복귀한다.
 - 검증: 장착·비장착 resolver 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 로컬 TIGER298 시트에서 ATK 20과 원본 절제 7×5 보존 확인
 - 관련 커밋: `75be2ab`
+
+## 2026-07-30 · 기능 변경 · 상세 Query와 동시 편집 보호
+
+- 캐릭터 상세를 기존 detail Query에 연결하고 외부 변경 시 열린 화면을 갱신한다.
+- 편집 중에는 로컬 입력을 보존하고 저장을 잠그며, `expectedUpdatedAt` CAS가 어긋나면 `409 STALE_VERSION`과 최신본 불러오기를 제공한다.
+- `updatedAt`이 없는 기존 문서는 `null` 버전으로 첫 저장할 수 있어 backfill은 추가하지 않았다.
+- 검증: shared-db CAS 26건, realtime/거래 계약 24건, `pnpm lint`, `pnpm typecheck`, `pnpm build:web`
+- 관련 커밋: `bba8924`

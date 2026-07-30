@@ -43,7 +43,7 @@ flowchart LR
 | active 예약 job | 구현 | 네 CLI, slot lease heartbeat/token fencing, 최종 시도 crash DEAD 회수 |
 | active 범용 outbox | 구현 | opt-in kind만 claim, 지수 backoff, 최대 8회 및 만료 lease DEAD 회수 |
 | active desired-state/아메리 | 구현 | 기존 embedded/desired-state lease와 5분 retry를 유지한 opt-in consumer |
-| ERP realtime client | 구현 | 단일 Provider, resource별 Query invalidate, gap 시 active/pending socket 재인증 |
+| ERP realtime client | 구현 | `off/observe/primary`, 연결 상태별 polling fallback, 100ms Query batch, 알림 toast |
 | Registra finalization | 구현 | 불변 trigger/operation key, lease/token/nonce, `DELIVERY_UNKNOWN`·legacy 격리로 자동 중복 발송 차단 |
 | legacy `tia_bot` | 제거 | 코드·이미지만 삭제, 과거 문서 archive, Mongo 데이터 유지 |
 | Dokploy webhook workflow | 구현 | worker는 수동 `worker-shadow` 선택 + GitHub Environment 승인 뒤에만 호출 |
@@ -84,7 +84,7 @@ Dokploy Application Job은 동일 이미지에서 다음 명령을 실행한다.
 
 StarGateV2가 활성 Auth.js 세션을 검증한 뒤 최대 60초 HS256 ticket을 발급한다. worker는 issuer, audience, `version=1`, `status=ACTIVE`, `sub`, `role`, `iat`, `exp`를 handshake에서 검증한다. 60초는 연결 수명이 아니라 handshake 유효기간이다. 정상 role/status 변경은 해당 사용자를 끊고, Change Stream gap은 connection generation을 올려 active socket과 검증 중인 pending handshake를 모두 폐기한다.
 
-서버 이벤트는 다음 한 종류다.
+서버 이벤트는 두 종류다.
 
 ```ts
 type RealtimeInvalidateV1 = {
@@ -94,9 +94,29 @@ type RealtimeInvalidateV1 = {
   resources: RealtimeResource[];
   emittedAt: string;
 };
+
+type RealtimeSessionRefreshV1 = {
+  version: 1;
+  id: string;
+  type: "session-refresh";
+  reason: "identity-changed";
+  emittedAt: string;
+};
 ```
 
-payload에는 이름, 크레딧, 수량, 문서 본문을 넣지 않는다. 브라우저는 resource에 대응하는 TanStack Query를 invalidate/refetch한다. `users.role` 또는 `users.status` 변경 시 해당 사용자 ID의 socket을 끊어 재인증시킨다.
+payload에는 사용자 ID, 이름, 크레딧, 수량, 문서 본문을 넣지 않는다. 브라우저는 resource에 대응하는 TanStack Query를 invalidate/refetch한다. 알림과 플레이어 거래는 Change Stream `fullDocument`에서 worker 내부 라우팅용 사용자 ID만 추출해 대상 socket에만 같은 공개 event를 보내며, 삭제나 라우팅 불명 변경은 전체 invalidate로 안전하게 폴백한다.
+
+`users.role` 또는 `users.status` 변경은 해당 사용자에게 `session-refresh`를 보낸 뒤 socket과 검증 중 handshake를 폐기한다. 브라우저는 현재 세션과 route를 다시 검증하며 비활성 계정은 로그인 경계로 이동한다.
+
+StarGateV2의 `REALTIME_CLIENT_MODE`는 다음 세 단계다.
+
+| 값 | 동작 |
+|---|---|
+| `off` | WebSocket을 열지 않고 polling fallback을 유지 |
+| `observe` | WebSocket invalidation과 polling을 함께 사용해 결과 비교 |
+| `primary` | 연결 중 전환 대상 polling을 중지하고 장애 중에만 재개 |
+
+연결 상태는 `connecting`, `connected`, `degraded`, `disabled`로 제공한다. disconnect와 reconnect 때 active Query 전체를 각각 한 번 재검증하고, 평상시 event는 100ms 동안 resource와 Query root를 합쳐 같은 root를 한 번만 refetch한다. event ID는 최근 256개까지만 보관해 중복 전달을 무시한다.
 
 ## 환경변수
 
@@ -105,6 +125,7 @@ payload에는 이름, 크레딧, 수량, 문서 본문을 넣지 않는다. 브�
 - worker: `WORKER_MODE`, `WORKER_REPLICA_COUNT=1`, `WORKER_HOST`, `WORKER_PORT`, `WORKER_POLL_INTERVAL_MS`, `WORKER_CONSUMERS`, `WORKER_OUTBOX_KINDS`
 - MongoDB: `MONGODB_URI`, `MONGODB_DB_NAME`, `MONGODB_MAX_POOL_SIZE`
 - realtime: `REALTIME_TICKET_SECRET`, `REALTIME_TICKET_ISSUER`, `REALTIME_TICKET_AUDIENCE`, `REALTIME_ALLOWED_ORIGINS`, `REALTIME_MAX_PAYLOAD_BYTES`, `REALTIME_MAX_CONNECTIONS`, `REALTIME_MAX_CONNECTIONS_PER_USER`
+- web realtime client: `REALTIME_CLIENT_MODE=off|observe|primary`
 - delivery: `DISCORD_WEBHOOK_*`, `REGISTRAR_DISCORD_BOT_TOKEN`, `NEXT_PUBLIC_SITE_URL`
 
 `REALTIME_TICKET_SECRET`은 StarGateV2의 ticket 발급 환경과 동일한 최소 32바이트 secret이어야 한다. 값을 로그, CI 출력, 문서에 남기지 않는다.

@@ -87,6 +87,22 @@ production 코드의 `after()` 직접 외부 전송은 제거했다. 내부 ERP 
 
 worker는 whitelist 밖 컬렉션을 구독하지 않고, 이벤트에는 위 resource 외 DB 값을 넣지 않는다.
 
+알림과 플레이어 거래의 사용자 ID는 worker 내부 socket 선택에만 사용하며 공개 frame에는 노출하지 않는다. `users.role/status` 변경은 별도 `session-refresh` control event와 handshake fencing으로 현재 세션 재검증을 강제한다.
+
+## ERP 실시간 Query 전환
+
+| 화면군 | 상태 | 동작 |
+|---|---|---|
+| 전역 알림·페이지 잠금·거래 | CODE_READY | 대상 invalidation, toast, 초안 보존, 장애 시 기존 polling |
+| 세션·공방·연구·주식 | CODE_READY | 연결 중 고정 polling 중지, 장애 중 자동 복귀 |
+| 편의점·병기부·인벤토리·크레딧 | CODE_READY | 복합 resource 의존성과 본문 Query 갱신 |
+| 대시보드·계정·관리자 인벤토리 | CODE_READY | 서버/API 공용 조회와 `initialData` 하이브리드 Query |
+| 캐릭터·Dossier·위키·보고서 상세 | CODE_READY | 상세 Query와 편집 중 외부 변경 감지 |
+| 캐릭터·위키·보고서 저장 | CODE_READY | nullable `expectedUpdatedAt` CAS, 불일치 `409 STALE_VERSION` |
+| 세력 board·접촉 기록 | CODE_READY | board/activity Query와 관련 resource 연동 |
+
+운영 기본값은 `REALTIME_CLIENT_MODE=off`다. live 전환은 `observe` 24시간 비교와 blocker 0건 확인 뒤 `primary`로 진행하며, 이상 시 `off`로 되돌린다. DB backfill, index 적용, live 환경변수 변경은 이 상태 표에 포함되지 않는다.
+
 ## Legacy
 
 | 대상 | 처리 | 데이터 경계 |

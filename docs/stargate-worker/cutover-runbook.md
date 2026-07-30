@@ -148,17 +148,33 @@ ERP 세션 알림은 마지막 old 21:00 실행 직후 old owner를 끄고 다�
 
 ## 5. WebSocket 활성화
 
-1. StarGateV2의 `POST /api/erp/realtime/ticket`이 활성 세션만 60초 ticket을 발급하는지 확인한다.
-2. Dokploy Domain을 worker port 3001에 연결하고 WSS만 노출한다.
-3. 허용 origin에서 `/erp`, WebSocket transport로만 연결되는지 확인한다.
-4. 잘못된 서명, issuer, audience, handshake 전에 만료된 ticket, 비ACTIVE ticket을 거부한다. 60초 TTL은 handshake 시작 기한이며 이미 인증된 socket의 연결 수명으로 사용하지 않는다.
-5. resource → TanStack Query key 매핑을 테스트 DB에서 확인한다.
-6. role/status 변경 시 해당 사용자의 socket이 종료되고 재인증되는지 확인한다.
-7. socket/Change Stream 장애 시 기존 HTTP Query와 mutation은 정상 동작하는지 확인한다.
-8. reconnect 또는 resume gap에서 활성 Query 전체를 한 번 재검증한다.
-9. verifier가 대기 중인 handshake도 gap generation 변경 뒤 연결되지 않고 새 ticket을 요구하는지 확인한다.
+1. StarGateV2는 `REALTIME_CLIENT_MODE=off`로 배포해 기존 polling 동작을 먼저 확인한다.
+2. `POST /api/erp/realtime/ticket`이 활성 세션만 60초 ticket을 발급하는지 확인한다.
+3. Dokploy Domain을 worker port 3001에 연결하고 WSS만 노출한다.
+4. 허용 origin에서 `/erp`, WebSocket transport로만 연결되는지 확인한다.
+5. 잘못된 서명, issuer, audience, handshake 전에 만료된 ticket, 비ACTIVE ticket을 거부한다. 60초 TTL은 handshake 시작 기한이며 이미 인증된 socket의 연결 수명으로 사용하지 않는다.
+6. 테스트 환경에서 `REALTIME_CLIENT_MODE=observe`로 전환하고 WebSocket invalidation과 polling 결과를 최소 24시간 비교한다.
+7. resource → TanStack Query key 매핑과 100ms batch 안의 같은 Query root refetch가 최대 1회인지 확인한다.
+8. 알림은 대상 사용자에게만 도착하고 다른 사용자는 notification Query를 재조회하지 않는지 확인한다.
+9. 플레이어 거래 생성·제안 변경·확정·취소가 두 당사자 화면에 2초 안에 반영되고 작성 중 초안이 원격 revision으로 덮어써지지 않는지 확인한다.
+10. WebSocket frame에 사용자 ID, 이름, 잔액, 수량, DB 본문이 없는지 확인한다.
+11. role/status 변경 시 `session-refresh` 뒤 해당 socket과 검증 중 handshake가 종료되고 현재 세션/route가 재검증되는지 확인한다.
+12. socket/Change Stream 장애 시 active Query 전체를 한 번 재조회하고 polling이 재개되며, 기존 HTTP Query와 mutation은 정상 동작하는지 확인한다.
+13. reconnect 또는 resume gap에서 active Query 전체를 한 번 재검증한 뒤 polling이 중지되는지 확인한다.
+14. 위 blocker가 0건일 때만 `REALTIME_CLIENT_MODE=primary`로 전환한다.
 
 초기 운영은 replica 1이다. 두 개 이상으로 늘리기 전 Redis adapter 또는 동등한 fan-out/checkpoint 소유권 설계를 추가한다.
+
+### 승인 게이트 D
+
+`observe`와 `primary`의 Vercel/Dokploy 환경변수 변경은 각각 별도 운영 승인 대상이다. 코드 배포와 로컬 테스트는 live WebSocket 활성화 승인이 아니다.
+
+### WebSocket rollback
+
+1. StarGateV2의 `REALTIME_CLIENT_MODE`를 `off`로 되돌린다.
+2. 전환 대상 Query가 기존 fallback polling을 다시 사용하는지 확인한다.
+3. worker WebSocket 장애가 HTTP 조회, 사용자 mutation, 경제 transaction에 영향을 주지 않았는지 확인한다.
+4. 원인과 마지막 정상 event ID, Change Stream checkpoint, 영향 페이지를 기록한다.
 
 ## 6. Registra finalization 확인
 
@@ -178,6 +194,9 @@ ERP 세션 알림은 마지막 old 21:00 실행 직후 old owner를 끄고 다�
 - job duration, slot duplicate
 - Change Stream disconnect/resume/gap
 - socket connection/reauthentication count
+- DB commit → 열린 화면 반영 P95, 목표 2초 이하
+- 100ms batch당 Query root refetch 횟수, 목표 최대 1회
+- `primary + connected`에서 전환 대상 고정 polling 횟수, 목표 0회
 - `/readyz` component 상태
 
 로그에는 token, Mongo URI, Discord ID 외의 불필요한 개인정보, payload 전문을 남기지 않는다.
@@ -190,5 +209,7 @@ ERP 세션 알림은 마지막 old 21:00 실행 직후 old owner를 끄고 다�
 4. 보호된 Vercel route 또는 기존 consumer를 한 owner만 활성화한다.
 5. Discord/경제 mutation은 자동 보상하지 않는다. 이미 발생한 운영 변경과 예상 부수 효과를 보고하고 별도 원복 승인을 받는다.
 6. 원인, 영향 범위, 마지막 성공 checkpoint와 run history를 기록한다.
+
+WebSocket만 이상한 경우에는 외부 전달·예약 owner를 바꾸기 전에 `REALTIME_CLIENT_MODE=off`로 되돌려 기존 polling 체계를 먼저 복구한다.
 
 DB schema/data를 삭제하는 rollback은 하지 않는다. legacy `tia_bot/` tracked 코드·이미지는 이미 제거됐지만 로컬 DB 파일과 현재 ERP Mongo 컬렉션은 보존한다.

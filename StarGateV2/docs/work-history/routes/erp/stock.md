@@ -7,3 +7,10 @@
 - 모바일 첫 렌더에서 주가 차트와 매출 구성 차트의 크기를 안정화했다.
 - 검증: 1482px, 1280px, 768px, 390px viewport, 문서 가로 넘침과 브라우저 warning/error를 확인했다.
 - 관련 커밋: `5ebf8f6`
+
+## 2026-07-30 · 기능 변경 · 시세 실시간 갱신
+
+- 시세·지수·공시의 60초 polling을 연결 장애 중에만 사용하는 fallback으로 전환했다.
+- 주식 가격·보유량 변경은 주식 화면과 거래 복합 응답을 함께 무효화한다.
+- 검증: realtime Query 계약 테스트, `pnpm lint`, `pnpm typecheck`, `pnpm build:web`
+- 관련 커밋: `bba8924`
