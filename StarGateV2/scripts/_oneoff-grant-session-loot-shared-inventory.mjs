@@ -370,7 +370,6 @@ try {
             itemName: master.name,
             quantity: target.quantity,
             acquiredAt: now,
-            note: "미지급 전리품 백필 — 사용자 제공 보상표",
           };
         });
         await db.collection("shared_inventory").insertMany(sharedDocuments, {
