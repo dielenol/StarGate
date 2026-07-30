@@ -580,7 +580,7 @@ export default function ShopClient({
               state.mode === "open"
                 ? "GM 강제 오픈으로 편의점을 열었습니다."
                 : state.mode === "closed"
-                  ? "GM 강제 종료로 편의점을 닫았습니다."
+                  ? "다음 자동 개점 전까지 편의점을 닫았습니다."
                   : "편의점을 자동 영업시간 모드로 되돌렸습니다.",
           });
         },
@@ -752,7 +752,7 @@ export default function ShopClient({
               <strong>CLOSED</strong>
               <span>
                 {catalog.forceClosed
-                  ? "GM 운영 제어로 임시 마감 중"
+                  ? "GM 운영 제어로 다음 자동 개점 전까지 임시 마감 중"
                   : "STAFF OFF DUTY · 영업 06:00~20:00"}
               </span>
             </div>

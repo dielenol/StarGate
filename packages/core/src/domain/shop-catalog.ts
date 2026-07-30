@@ -28,6 +28,9 @@ const CLOSE_HOUR_KST = 20;
 /** Asia/Seoul 타임존 ID. */
 const KST_TIMEZONE = "Asia/Seoul";
 
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 /* ── Interface ── */
 
 export interface ShopCatalogItem {
@@ -48,6 +51,22 @@ export interface ShopCatalogItem {
 
 export interface RuntimeShopCatalogItem extends ShopCatalogItem {
   previewImage?: string;
+}
+
+export type ShopOpenMode = "auto" | "open" | "closed";
+
+export interface ShopRuntimeOpenState {
+  forceOpen?: boolean;
+  forceClosed?: boolean;
+  updatedAt?: Date;
+}
+
+export interface ResolvedShopOpenState {
+  mode: ShopOpenMode;
+  scheduledOpen: boolean;
+  forceOpen: boolean;
+  forceClosed: boolean;
+  isOpen: boolean;
 }
 
 const RUNTIME_SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]{1,79}$/;
@@ -454,4 +473,97 @@ export function isShopOpen(now: Date = new Date()): boolean {
 
   if (weekday === "Sunday") return false;
   return hour >= OPEN_HOUR_KST && hour < CLOSE_HOUR_KST;
+}
+
+function getKstDayOfWeek(timestamp: number): number {
+  return new Date(timestamp + KST_OFFSET_MS).getUTCDay();
+}
+
+function getKstTimeParts(now: Date) {
+  const kstNow = new Date(now.getTime() + KST_OFFSET_MS);
+
+  return {
+    year: kstNow.getUTCFullYear(),
+    month: kstNow.getUTCMonth(),
+    day: kstNow.getUTCDate(),
+    hour: kstNow.getUTCHours(),
+  };
+}
+
+function getKstHourTimestamp(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+): number {
+  return Date.UTC(year, month, day, hour) - KST_OFFSET_MS;
+}
+
+export function getNextScheduledShopOpening(after: Date): Date {
+  const { year, month, day } = getKstTimeParts(after);
+  let opening = getKstHourTimestamp(
+    year,
+    month,
+    day,
+    OPEN_HOUR_KST,
+  );
+
+  if (opening <= after.getTime()) {
+    opening += ONE_DAY_MS;
+  }
+
+  while (getKstDayOfWeek(opening) === 0) {
+    opening += ONE_DAY_MS;
+  }
+
+  return new Date(opening);
+}
+
+export function hasShopForceCloseExpired(
+  closedAt: Date,
+  now: Date,
+): boolean {
+  return getNextScheduledShopOpening(closedAt).getTime() <= now.getTime();
+}
+
+export function getNextShopScheduleBoundary(after: Date): Date {
+  const { year, month, day, hour } = getKstTimeParts(after);
+  const dayOfWeek = getKstDayOfWeek(after.getTime());
+
+  if (
+    dayOfWeek !== 0 &&
+    hour >= OPEN_HOUR_KST &&
+    hour < CLOSE_HOUR_KST
+  ) {
+    return new Date(
+      getKstHourTimestamp(year, month, day, CLOSE_HOUR_KST),
+    );
+  }
+
+  return getNextScheduledShopOpening(after);
+}
+
+export function resolveShopOpenState(
+  now: Date,
+  runtimeState: ShopRuntimeOpenState | null,
+): ResolvedShopOpenState {
+  const scheduledOpen = isShopOpen(now);
+  const forceOpen = runtimeState?.forceOpen === true;
+  const forceClosed =
+    runtimeState?.forceClosed === true &&
+    (!runtimeState.updatedAt ||
+      !hasShopForceCloseExpired(runtimeState.updatedAt, now));
+  const mode: ShopOpenMode = forceClosed
+    ? "closed"
+    : forceOpen
+      ? "open"
+      : "auto";
+
+  return {
+    mode,
+    scheduledOpen,
+    forceOpen,
+    forceClosed,
+    isOpen: !forceClosed && (scheduledOpen || forceOpen),
+  };
 }

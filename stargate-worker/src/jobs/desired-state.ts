@@ -2,8 +2,9 @@ import { createHash } from "node:crypto";
 
 import {
   SHOP_CATALOG,
-  isShopOpen,
+  resolveShopOpenState,
   type ShopCatalogItem,
+  type ShopRuntimeOpenState,
 } from "@stargate/core/domain/shop-catalog";
 import { findStockByTicker } from "@stargate/core/domain/stock-catalog";
 import { formatSignedStockValue } from "@stargate/core/domain/stock-pricing";
@@ -75,22 +76,9 @@ async function requestDesiredState(input: {
   return "requested";
 }
 
-function shopOpenState(
-  now: Date,
-  doc: { forceOpen?: boolean; forceClosed?: boolean } | null,
-) {
-  const scheduledOpen = isShopOpen(now);
-  const forceOpen = doc?.forceOpen === true;
-  const forceClosed = doc?.forceClosed === true;
-  const mode = forceClosed ? "closed" : forceOpen ? "open" : "auto";
-  return {
-    mode,
-    scheduledOpen,
-    isOpen: !forceClosed && (scheduledOpen || forceOpen),
-  } as const;
-}
-
-function shopStatusLine(open: ReturnType<typeof shopOpenState>): string {
+function shopStatusLine(
+  open: ReturnType<typeof resolveShopOpenState>,
+): string {
   if (open.mode === "open") {
     return "지금은 GM이 문 열어뒀어요. 필요한 거 있으면 바로 들러요.";
   }
@@ -134,10 +122,7 @@ export function buildShopRestockDesiredPayloads(input: {
   now: Date;
   catalog: readonly ShopCatalogItem[];
   stockBySlug: ReadonlyMap<string, number>;
-  runtimeState: {
-    forceOpen?: boolean;
-    forceClosed?: boolean;
-  } | null;
+  runtimeState: ShopRuntimeOpenState | null;
 }): DiscordWebhookPayload[] {
   const groupLabels = {
     BASIC: "기본 물품",
@@ -170,7 +155,7 @@ export function buildShopRestockDesiredPayloads(input: {
     1,
     Math.ceil(itemFields.length / SHOP_FIELDS_PER_PAYLOAD),
   );
-  const open = shopOpenState(input.now, input.runtimeState);
+  const open = resolveShopOpenState(input.now, input.runtimeState);
   return Array.from({ length: payloadCount }, (_, index) => {
     const fields = itemFields.slice(
       index * SHOP_FIELDS_PER_PAYLOAD,
@@ -230,6 +215,7 @@ export async function requestDailyShopRestockState(
         _id: string;
         forceOpen?: boolean;
         forceClosed?: boolean;
+        updatedAt?: Date;
       }>(
         "shop_runtime_state",
       )
@@ -254,12 +240,16 @@ export async function requestDailyShopRestockState(
     stockBySlug,
     runtimeState,
   });
+  const openState = resolveShopOpenState(now, runtimeState);
   const sourceRevision = createHash("sha256")
     .update(
       JSON.stringify(
-        [...stockBySlug.entries()].sort(([left], [right]) =>
-          left.localeCompare(right),
-        ),
+        {
+          stock: [...stockBySlug.entries()].sort(([left], [right]) =>
+            left.localeCompare(right),
+          ),
+          openState,
+        },
       ),
     )
     .digest("hex");

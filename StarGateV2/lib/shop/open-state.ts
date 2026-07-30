@@ -2,7 +2,7 @@ import "@/lib/db/init";
 
 import { getDb } from "@stargate/shared-db";
 
-import { isShopOpen } from "@/lib/shop/catalog";
+import { resolveShopOpenState } from "@/lib/shop/catalog";
 
 const COLLECTION_NAME = "shop_runtime_state";
 const OPEN_STATE_ID = "open-state";
@@ -45,21 +45,10 @@ function toOpenState(
   doc: ShopOpenStateDoc | null,
   now: Date,
 ): ShopOpenState {
-  const scheduledOpen = isShopOpen(now);
-  const forceOpen = doc?.forceOpen === true;
-  const forceClosed = doc?.forceClosed === true;
-  const mode: ShopOpenMode = forceClosed
-    ? "closed"
-    : forceOpen
-      ? "open"
-      : "auto";
+  const resolved = resolveShopOpenState(now, doc);
 
   return {
-    mode,
-    scheduledOpen,
-    forceOpen,
-    forceClosed,
-    isOpen: !forceClosed && (scheduledOpen || forceOpen),
+    ...resolved,
     updatedAt: doc?.updatedAt ?? null,
     updatedById: doc?.updatedById ?? null,
     updatedByName: doc?.updatedByName ?? null,

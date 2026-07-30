@@ -9,6 +9,7 @@
 
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getNextShopScheduleBoundary } from "@stargate/core/domain/shop-catalog";
 
 import type { RuntimeShopCatalogItem } from "@/lib/shop/runtime-catalog";
 
@@ -117,19 +118,10 @@ async function fetchShopInventory(): Promise<ShopInventoryResponse> {
 
 const CATALOG_STALE_TIME_MS = 10 * 60 * 1000;
 const INVENTORY_STALE_TIME_MS = 5 * 60 * 1000;
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 function getMsUntilNextShopBoundary(now = new Date()): number {
-  const kstNow = new Date(now.getTime() + KST_OFFSET_MS);
-  const year = kstNow.getUTCFullYear();
-  const month = kstNow.getUTCMonth();
-  const day = kstNow.getUTCDate();
-  const hour = kstNow.getUTCHours();
-  const boundaryHour = hour < 6 ? 6 : hour < 20 ? 20 : 6;
-  const boundaryDay = hour < 20 ? day : day + 1;
-  const boundaryAsUtc = Date.UTC(year, month, boundaryDay, boundaryHour);
-  const boundary = boundaryAsUtc - KST_OFFSET_MS;
-  return Math.max(1_000, boundary - now.getTime() + 1_000);
+  const boundary = getNextShopScheduleBoundary(now);
+  return Math.max(1_000, boundary.getTime() - now.getTime() + 1_000);
 }
 
 export function useShopCatalog(options?: {
@@ -141,15 +133,28 @@ export function useShopCatalog(options?: {
     queryFn: fetchShopCatalog,
     staleTime: CATALOG_STALE_TIME_MS,
     refetchOnWindowFocus: true,
+    refetchOnMount: "always",
     initialData: options?.initialData,
   });
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      void queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
-    }, getMsUntilNextShopBoundary());
+    let active = true;
+    let timeoutId: number | undefined;
 
-    return () => window.clearTimeout(timeoutId);
+    const scheduleNextBoundary = () => {
+      timeoutId = window.setTimeout(() => {
+        if (!active) return;
+        scheduleNextBoundary();
+        void queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
+      }, getMsUntilNextShopBoundary());
+    };
+
+    scheduleNextBoundary();
+
+    return () => {
+      active = false;
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
   }, [queryClient]);
 
   return query;

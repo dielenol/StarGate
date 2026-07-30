@@ -43,3 +43,41 @@ test("large runtime catalogs preserve every item across bounded Discord fields",
   const combined = values.join("\n");
   for (const item of catalog) assert.ok(combined.includes(item.name));
 });
+
+test("expired GM force-close uses the automatic opening line", () => {
+  const catalog = [
+    {
+      slug: "test-item",
+      name: "테스트 상품",
+      icon: "◈",
+      price: 100,
+      effect: "효과",
+      description: "설명",
+      stockMin: 1,
+      stockMax: 3,
+      appearRate: 1,
+      color: "#d1b25c",
+      pageGroup: "BASIC",
+    },
+  ];
+
+  const [payload] = buildShopRestockDesiredPayloads({
+    date: "2024-01-03",
+    now: new Date("2024-01-02T21:00:00.000Z"),
+    catalog,
+    stockBySlug: new Map([["test-item", 3]]),
+    runtimeState: {
+      forceClosed: true,
+      updatedAt: new Date("2024-01-01T22:00:00.000Z"),
+    },
+  });
+
+  assert.match(
+    payload.embeds[0].description,
+    /지금은 문 열려 있어요/,
+  );
+  assert.doesNotMatch(
+    payload.embeds[0].description,
+    /GM이 잠깐 셔터/,
+  );
+});
