@@ -9,6 +9,8 @@ import {
   resolveTowaskiLicenseProgramStep,
   resolveTowaskiLicenseV2Step,
   TOWASKI_LICENSE_MAX_STEP_SAMPLES,
+  TOWASKI_PRECISION_BULLSEYE_RADIUS,
+  TOWASKI_PRECISION_SCORING_RADIUS,
   validateTowaskiLicenseV2StepTiming,
 } from "../license-test-v2.ts";
 
@@ -79,6 +81,45 @@ test("precision qualification computes impact from aim and server wind", () => {
   assert.equal(evaluation.passed, true);
   assert.equal(evaluation.metrics.score, 12);
   assert.equal(evaluation.metrics.protectedHits, 0);
+});
+
+test("precision qualification uses the reduced bullseye and scoring radii", () => {
+  const state = createTowaskiLicenseV2State("precision", () => 0);
+  const scenario = state.scenarios[0];
+  assert.equal(TOWASKI_PRECISION_BULLSEYE_RADIUS, 0.03);
+  assert.equal(TOWASKI_PRECISION_SCORING_RADIUS, 0.065);
+
+  const innerRing = resolveTowaskiLicenseV2Step({
+    scenario,
+    input: {
+      mode: "precision",
+      aimX:
+        scenario.target.x -
+        scenario.wind.x +
+        TOWASKI_PRECISION_BULLSEYE_RADIUS +
+        0.001,
+      aimY: scenario.target.y - scenario.wind.y,
+      holdMs: 500,
+    },
+    progress: state.progress,
+  });
+  assert.equal(innerRing.progress.score, 1);
+
+  const miss = resolveTowaskiLicenseV2Step({
+    scenario,
+    input: {
+      mode: "precision",
+      aimX:
+        scenario.target.x -
+        scenario.wind.x +
+        TOWASKI_PRECISION_SCORING_RADIUS +
+        0.001,
+      aimY: scenario.target.y - scenario.wind.y,
+      holdMs: 500,
+    },
+    progress: state.progress,
+  });
+  assert.equal(miss.progress.score, 0);
 });
 
 test("heavy qualification rewards short compensated bursts without overheating", () => {

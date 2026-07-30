@@ -7,6 +7,10 @@ import {
   useState,
 } from "react";
 
+import {
+  TOWASKI_PRECISION_SCORING_RADIUS,
+} from "@/lib/equipment-shop/license-test-v2";
+
 import type { TowaskiLicenseV2GameProps } from "./TowaskiLicenseV2Game";
 import styles from "./TowaskiLicenseV2.module.css";
 
@@ -27,6 +31,20 @@ export function TowaskiPrecisionGame({
     return null;
   }
   const scenario = challenge.scenario;
+  const predictedImpact = {
+    x: aim.x + scenario.wind.x,
+    y: aim.y + scenario.wind.y,
+  };
+  const targetDistance = Math.hypot(
+    predictedImpact.x - scenario.target.x,
+    predictedImpact.y - scenario.target.y,
+  );
+  const protectedDistance = Math.hypot(
+    predictedImpact.x - scenario.protectedZone.x,
+    predictedImpact.y - scenario.protectedZone.y,
+  );
+  const onTarget = targetDistance <= TOWASKI_PRECISION_SCORING_RADIUS;
+  const protectedRisk = protectedDistance <= scenario.protectedZone.radius;
 
   function updateAim(event: PointerEvent<HTMLDivElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -71,13 +89,18 @@ export function TowaskiPrecisionGame({
         onPointerDown={updateAim}
       >
         <div className={styles.grid} aria-hidden />
+        <div className={styles.coachmark}>
+          <strong>행동</strong>
+          화면을 클릭하거나 슬라이더로 조준점을 옮기십시오. 적색 소형 원이
+          목표이며 청색 SAFE 원은 탄착 금지입니다.
+        </div>
         <span
           className={`${styles.zone} ${styles["zone--hostile"]}`}
           style={
             {
               "--zone-x": scenario.target.x,
               "--zone-y": scenario.target.y,
-              "--zone-radius": 0.09,
+              "--zone-radius": TOWASKI_PRECISION_SCORING_RADIUS,
             } as CSSProperties
           }
           aria-hidden
@@ -107,6 +130,20 @@ export function TowaskiPrecisionGame({
           }
           aria-hidden
         />
+        <span
+          className={[
+            styles.statusBanner,
+            protectedRisk ? styles["statusBanner--danger"] : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          {protectedRisk
+            ? "보호 구역 탄착 위험"
+            : onTarget
+              ? "예상 탄착: TARGET"
+              : "예상 탄착: 표적 밖"}
+        </span>
       </div>
       <div className={styles.controls}>
         <p className={styles.hint}>

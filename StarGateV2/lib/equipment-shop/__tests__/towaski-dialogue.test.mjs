@@ -70,3 +70,37 @@ test("advanced modes use equipment-specific start and failure dialogue", () => {
   assert.match(sonicStart, /공진|출력|펄스/);
   assert.match(explosiveFailure, /폭발|후폭풍|기폭/);
 });
+
+test("specialist modes rotate mode-specific coaching lines", () => {
+  const sonicLines = Array.from({ length: 6 }, (_, index) =>
+    getTowaskiQualificationDialogueLine({
+      type: "start",
+      difficulty: "expert",
+      mode: "sonic",
+      attempt: index + 1,
+    }),
+  );
+
+  assert.ok(new Set(sonicLines).size > 1);
+  for (const line of sonicLines) {
+    assert.match(line, /Hz|공진|출력|펄스|계기/);
+  }
+});
+
+test("mode-specific retry briefing repeats the actual controls", () => {
+  const sonicBriefing = getTowaskiQualificationDialogueLine({
+    type: "briefing",
+    difficulty: "expert",
+    mode: "sonic",
+    attempt: 2,
+  });
+  const flameBriefing = getTowaskiQualificationDialogueLine({
+    type: "briefing",
+    difficulty: "expert",
+    mode: "flame",
+    attempt: 2,
+  });
+
+  assert.match(sonicBriefing, /Hz|출력|폭|부하/);
+  assert.match(flameBriefing, /경로|소각|손을 떼/);
+});

@@ -5,6 +5,8 @@ export const TOWASKI_LICENSE_CHALLENGE_TTL_MS = 5 * 60_000;
 export const TOWASKI_LICENSE_MAX_STEP_SAMPLES = 160;
 export const TOWASKI_LICENSE_MIN_SAMPLE_INTERVAL_MS = 50;
 export const TOWASKI_LICENSE_TIMING_TOLERANCE_MS = 500;
+export const TOWASKI_PRECISION_BULLSEYE_RADIUS = 0.03;
+export const TOWASKI_PRECISION_SCORING_RADIUS = 0.065;
 
 export type TowaskiLicenseTestMode =
   | "firearm"
@@ -956,9 +958,9 @@ function resolvePrecision(
     distance(impact, scenario.protectedZone) <= scenario.protectedZone.radius;
   const stable = input.holdMs >= 500;
   const points = stable && !protectedHit
-    ? targetDistance <= 0.045
+    ? targetDistance <= TOWASKI_PRECISION_BULLSEYE_RADIUS
       ? 2
-      : targetDistance <= 0.09
+      : targetDistance <= TOWASKI_PRECISION_SCORING_RADIUS
         ? 1
         : 0
     : 0;

@@ -158,6 +158,11 @@ export function TowaskiHeavyGame({
         onPointerCancel={ceaseFire}
       >
         <div className={styles.grid} aria-hidden />
+        <div className={styles.coachmark}>
+          <strong>점사 훈련</strong>
+          조준점을 ARMOR에 끌어 둔 채 누르면 사격합니다. 반동으로 밀리는
+          조준점을 계속 보정하고 1.8초 전에 손을 떼어 냉각하십시오.
+        </div>
         <span
           className={`${styles.zone} ${styles["zone--hostile"]}`}
           style={
@@ -195,8 +200,28 @@ export function TowaskiHeavyGame({
           }
           aria-hidden
         />
+        <span
+          className={[
+            styles.statusBanner,
+            civilianActive ? styles["statusBanner--danger"] : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          aria-live="assertive"
+        >
+          {civilianActive
+            ? "CROSSING — 즉시 사격 중지"
+            : firing
+              ? `점사 ${burstMs}ms / 1800ms`
+              : "ARMOR 조준 · 짧은 점사 준비"}
+        </span>
       </div>
       <div className={styles.controls}>
+        <p className={styles.hint}>
+          <strong>화면을 누르고 끌어 반동을 억제</strong>하십시오. 한 번에
+          1.2–1.6초씩 점사하고, 청색 CROSSING이 켜진 동안은 냉각
+          구간으로 사용하십시오.
+        </p>
         <div className={styles.controlGrid}>
           <label className={styles.control}>
             수평 반동 보정 <strong>{Math.round(aim.x * 100)}</strong>

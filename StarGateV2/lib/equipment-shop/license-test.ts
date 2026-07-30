@@ -126,7 +126,7 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     mode: "precision",
     programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
-      "거리와 풍향을 역산해 여섯 표적의 조준점을 보정하고, 호흡을 안정시킨 뒤 한 발만 발사하십시오.",
+      "화면의 적색 소형 표적이 명중 목표입니다. 표시된 풍향만큼 반대 방향으로 조준점을 옮기고, 호흡 고정을 0.5초 이상 완료한 뒤 여섯 발을 각각 단발로 발사하십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-heavy-weapon": {
@@ -142,7 +142,7 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     mode: "heavy",
     programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
-      "네 제압 구간에서 반동을 억제해 짧게 점사하고, 횡단 인원과 총열 과열을 피하십시오.",
+      "조준점을 적색 장갑 표적에 붙들어 둔 채 1.8초보다 짧은 점사를 나누어 가하십시오. 청색 횡단 인원이 켜지면 즉시 방아쇠를 놓고 냉각한 뒤 다시 제압하십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-flame-weapon": {
@@ -158,7 +158,7 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     mode: "flame",
     programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
-      "화염 원뿔을 끊어 분사하며 적성 구역만 소각하고, 민간 구역과 연료통을 피하십시오.",
+      "시험장 안에서 누르고 끌어 분사 경로를 그리십시오. 적색 소각 지점 다섯 곳 중 네 곳 이상을 경로에 포함하되, 청색 보호 구역과 황색 연료통 앞에서는 손을 떼어 화염을 끊으십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-sonic-equipment": {
@@ -174,7 +174,7 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     mode: "sonic",
     programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
-      "상황별 공진 주파수에 파형을 맞춘 뒤 출력과 폭을 안전 범위로 봉인해 펄스를 방출하십시오.",
+      "사격 표적을 맞히는 시험이 아닙니다. 화면에 제시된 목표 Hz와 허용 출력·파동 폭에 세 계기를 맞추고, 출력×폭이 보호 임계값을 넘지 않는지 확인한 뒤 0.6–1.5초 충전한 펄스를 방출하십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-explosive-ordnance": {
@@ -190,7 +190,7 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     mode: "explosive",
     programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     briefing:
-      "탄종·착탄점·신관을 선택해 적성 집단만 제압하고, 민간 피해와 로켓 후폭풍을 방지하십시오.",
+      "현장 정보 카드를 읽고 ① 탄종·신관 선택 ② 지도에서 폭발 반경 배치 ③ 안전 발사선 선택을 순서대로 완료하십시오. 적성 두 명만 반경에 넣고 민간과 로켓 후폭풍 구역은 제외해야 합니다.",
     requiresBasicLicense: true,
   },
 };

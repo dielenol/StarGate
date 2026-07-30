@@ -83,6 +83,84 @@
   pointer-events: none;
 }
 
+.coachmark {
+  position: absolute;
+  z-index: 8;
+  top: 14px;
+  left: 14px;
+  max-width: min(480px, calc(100% - 28px));
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--mode-accent) 55%, transparent);
+  background: rgb(3 9 11 / 88%);
+  color: #e8ece9;
+  font-size: 14px;
+  line-height: 1.45;
+  pointer-events: none;
+}
+
+.coachmark strong {
+  flex: none;
+  color: var(--mode-accent);
+  font-family: var(--font-mono);
+}
+
+.statusBanner {
+  position: absolute;
+  z-index: 9;
+  right: 14px;
+  bottom: 14px;
+  min-width: 210px;
+  padding: 10px 14px;
+  border: 1px solid var(--mode-accent);
+  background: rgb(4 10 12 / 90%);
+  color: var(--mode-accent);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+  pointer-events: none;
+}
+
+.statusBanner--danger {
+  border-color: #ff6559;
+  background: rgb(68 13 10 / 92%);
+  color: #ffb1aa;
+}
+
+.checklist {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.checklist span {
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 8px 10px;
+  border: 1px solid #47575b;
+  background: #0d171a;
+  color: #aab5b2;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-align: center;
+}
+
+.checklist .checklist--ready {
+  border-color: #6bc7a5;
+  color: #9ce3c8;
+  background: rgb(39 118 90 / 15%);
+}
+
+.checklist .checklist--danger {
+  border-color: #d76558;
+  color: #ffaaa0;
+  background: rgb(145 48 35 / 14%);
+}
+
 .zone {
   position: absolute;
   width: calc(var(--zone-radius) * 200%);
@@ -301,19 +379,10 @@
   pointer-events: none;
 }
 
-.flameCone {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.flameCone polygon {
-  fill: color-mix(in srgb, var(--mode-accent) 24%, transparent);
-  stroke: var(--mode-accent);
-  stroke-width: 0.45;
-  vector-effect: non-scaling-stroke;
+.zone--visited {
+  color: #f5d981;
+  background: rgb(235 111 54 / 40%);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--mode-accent) 60%, transparent);
 }
 
 .hint {
@@ -325,6 +394,78 @@
 
 .hint strong {
   color: var(--mode-accent);
+}
+
+.decisionPanel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: #0b1316;
+}
+
+.decisionPanel h3 {
+  margin: 0;
+  color: var(--mode-accent);
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+
+.decisionPanel p {
+  margin: 0;
+  color: #c1c9c6;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.decisionSteps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.decisionSteps span {
+  min-height: 46px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border: 1px solid #46555a;
+  background: #101a1e;
+  color: #9eaaa8;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-align: center;
+}
+
+.decisionSteps .decisionSteps--active {
+  border-color: var(--mode-accent);
+  color: #f4edd5;
+}
+
+.decisionSteps .decisionSteps--done {
+  border-color: #6bc7a5;
+  color: #9ce3c8;
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.choiceGrid .choice {
+  width: 100%;
+  min-width: 0;
+}
+
+.launchLaneDiagram {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.launchLaneDiagram button {
+  min-height: 72px;
 }
 
 @media (max-width: 800px) {
@@ -341,6 +482,21 @@
     grid-template-columns: 1fr;
   }
 
+  .checklist,
+  .decisionSteps,
+  .choiceGrid,
+  .launchLaneDiagram {
+    grid-template-columns: 1fr;
+  }
+
+  .coachmark {
+    position: relative;
+    top: auto;
+    left: auto;
+    max-width: none;
+    margin: 12px;
+  }
+
   .actionRow {
     display: grid;
     grid-template-columns: 1fr;
@@ -355,7 +511,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .wave span,
-  .flameCone polygon,
   .trailDot {
     animation: none !important;
     transition: none !important;

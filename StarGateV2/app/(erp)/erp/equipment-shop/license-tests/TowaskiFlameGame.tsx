@@ -2,6 +2,7 @@
 
 import {
   type CSSProperties,
+  type KeyboardEvent,
   type PointerEvent,
   useEffect,
   useRef,
@@ -21,6 +22,7 @@ export function TowaskiFlameGame({
   const [aim, setAim] = useState({ x: 0.5, y: 0.82 });
   const [samples, setSamples] = useState<TowaskiTimedPointerSample[]>([]);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [spraying, setSpraying] = useState(false);
   const startedAtRef = useRef(0);
   const lastSampleAtRef = useRef(-100);
 
@@ -43,14 +45,39 @@ export function TowaskiFlameGame({
   if (!scenario || !progress) return null;
 
   const durationMs = scenario.durationMs;
-  const fuelRemaining = Math.max(0, Math.round(100 - samples.length * 0.7));
+  const activeSamples = samples.filter((sample) => sample.active);
+  const fuelRemaining = Math.max(
+    0,
+    Math.round(100 - activeSamples.length * 0.7),
+  );
+  const visitedZoneIds = new Set(
+    scenario.hostileZones
+      .filter((zone) =>
+        activeSamples.some(
+          (sample) =>
+            Math.hypot(sample.x - zone.x, sample.y - zone.y) <= zone.radius,
+        ),
+      )
+      .map((zone) => zone.id),
+  );
+  const protectedRisk = activeSamples.some(
+    (sample) =>
+      Math.hypot(
+        sample.x - scenario.civilianZone.x,
+        sample.y - scenario.civilianZone.y,
+      ) <= scenario.civilianZone.radius ||
+      Math.hypot(
+        sample.x - scenario.fuelTankZone.x,
+        sample.y - scenario.fuelTankZone.y,
+      ) <= scenario.fuelTankZone.radius,
+  );
 
   function addSample(point: { x: number; y: number }) {
     const t = Math.min(
       durationMs,
       Math.round(performance.now() - startedAtRef.current),
     );
-    if (t - lastSampleAtRef.current < 80) return;
+    if (t - lastSampleAtRef.current < 100) return;
     lastSampleAtRef.current = t;
     setAim(point);
     setSamples((current) =>
@@ -91,6 +118,7 @@ export function TowaskiFlameGame({
         aria-label="화염 장비 확산 제어 구역"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId);
+          setSpraying(true);
           addSample(pointFromEvent(event));
         }}
         onPointerMove={(event) => {
@@ -98,23 +126,51 @@ export function TowaskiFlameGame({
             addSample(pointFromEvent(event));
           }
         }}
-        onPointerUp={(event) => addSample(pointFromEvent(event))}
+        onPointerUp={(event) => {
+          addSample(pointFromEvent(event));
+          setSpraying(false);
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }}
+        onPointerCancel={() => setSpraying(false)}
+        onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+          if (disabled) return;
+          const amount = event.shiftKey ? 0.08 : 0.04;
+          if (event.key === " ") {
+            event.preventDefault();
+            addSample(aim);
+            return;
+          }
+          const movement = {
+            ArrowLeft: { x: -amount, y: 0 },
+            ArrowRight: { x: amount, y: 0 },
+            ArrowUp: { x: 0, y: -amount },
+            ArrowDown: { x: 0, y: amount },
+          }[event.key];
+          if (!movement) return;
+          event.preventDefault();
+          setAim((current) => ({
+            x: Math.max(0, Math.min(1, current.x + movement.x)),
+            y: Math.max(0, Math.min(1, current.y + movement.y)),
+          }));
+        }}
       >
         <div className={styles.grid} aria-hidden />
-        <svg
-          className={styles.flameCone}
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden
-        >
-          <polygon
-            points={`50,100 ${Math.max(0, aim.x * 100 - 7)},${aim.y * 100} ${Math.min(100, aim.x * 100 + 7)},${aim.y * 100}`}
-          />
-        </svg>
+        <div className={styles.coachmark}>
+          <strong>분사 경로</strong>
+          시험장을 누른 채 적색 BURN 지점을 따라 끌고, 청색 SAFE와 황색
+          FUEL 앞에서는 손을 떼어 분사를 끊은 뒤 다른 위치에서 다시
+          시작하십시오. 키보드는 방향키로 조준하고 Space로 분사합니다.
+        </div>
         {scenario.hostileZones.map((zone) => (
           <span
             key={zone.id}
-            className={`${styles.zone} ${styles["zone--hostile"]}`}
+            className={[
+              styles.zone,
+              styles["zone--hostile"],
+              visitedZoneIds.has(zone.id) ? styles["zone--visited"] : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             style={
               {
                 "--zone-x": zone.x,
@@ -124,7 +180,7 @@ export function TowaskiFlameGame({
             }
             aria-hidden
           >
-            BURN
+            {visitedZoneIds.has(zone.id) ? "BURNED" : "BURN"}
           </span>
         ))}
         <span
@@ -167,62 +223,77 @@ export function TowaskiFlameGame({
             aria-hidden
           />
         ))}
+        <span
+          className={styles.reticle}
+          style={
+            {
+              "--aim-x": aim.x,
+              "--aim-y": aim.y,
+            } as CSSProperties
+          }
+          aria-hidden
+        />
+        <span
+          className={[
+            styles.statusBanner,
+            protectedRisk ? styles["statusBanner--danger"] : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          aria-live="polite"
+        >
+          {protectedRisk
+            ? "보호 구역 노출 — 경로 실패"
+            : spraying
+              ? `분사 중 · 소각 ${visitedZoneIds.size}/5`
+              : `분사 중지 · 소각 ${visitedZoneIds.size}/5`}
+        </span>
       </div>
       <div className={styles.controls}>
         <p className={styles.hint}>
-          <strong>적성 구역을 80% 이상 소각</strong>하되 청색 보호 구역과
-          점선 연료통을 피하십시오.
+          <strong>적색 소각 지점 5곳 중 4곳 이상</strong>을 경로로
+          통과하십시오. 연료는 경로를 그릴 때만 소모되며, 손을 떼면 즉시
+          분사가 멈춥니다.
         </p>
-        <div className={styles.controlGrid}>
-          <label className={styles.control}>
-            노즐 수평 <strong>{Math.round(aim.x * 100)}</strong>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round(aim.x * 100)}
-              disabled={disabled}
-              onChange={(event) =>
-                setAim((value) => ({
-                  ...value,
-                  x: Number(event.target.value) / 100,
-                }))
-              }
-            />
-          </label>
-          <label className={styles.control}>
-            노즐 수직 <strong>{Math.round(aim.y * 100)}</strong>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round(aim.y * 100)}
-              disabled={disabled}
-              onChange={(event) =>
-                setAim((value) => ({
-                  ...value,
-                  y: Number(event.target.value) / 100,
-                }))
-              }
-            />
-          </label>
-          <div className={styles.control}>
-            경과 시간 <strong>{Math.min(12, Math.floor(elapsedMs / 1_000))}초</strong>
-            <button
-              type="button"
-              className={styles.secondaryAction}
-              disabled={disabled || samples.length >= 160}
-              onClick={() => addSample(aim)}
-            >
-              현재 위치 분사
-            </button>
-          </div>
+        <div className={styles.checklist} aria-label="화염 경로 판정 상태">
+          <span
+            className={
+              visitedZoneIds.size >= 4 ? styles["checklist--ready"] : ""
+            }
+          >
+            소각 지점 {visitedZoneIds.size} / 5
+          </span>
+          <span
+            className={
+              fuelRemaining >= 10
+                ? styles["checklist--ready"]
+                : styles["checklist--danger"]
+            }
+          >
+            연료 {fuelRemaining}%
+          </span>
+          <span
+            className={
+              protectedRisk
+                ? styles["checklist--danger"]
+                : styles["checklist--ready"]
+            }
+          >
+            보호 구역 {protectedRisk ? "노출" : "안전"}
+          </span>
+          <span>경과 {Math.min(12, Math.floor(elapsedMs / 1_000))}초</span>
         </div>
         <div className={styles.actionRow}>
           <button
             type="button"
             className={styles.action}
-            disabled={disabled || elapsedMs < 1_000 || samples.length === 0}
+            disabled={
+              disabled ||
+              elapsedMs < 1_000 ||
+              visitedZoneIds.size < 4 ||
+              protectedRisk ||
+              fuelRemaining < 10
+            }
             onClick={() => onResolve({ mode: "flame", samples })}
           >
             분사 종료 · 판정

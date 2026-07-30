@@ -41,6 +41,16 @@ export function TowaskiSonicGame({
   if (!scenario || !progress) return null;
 
   const exposure = output * width;
+  const frequencyDeviation =
+    Math.abs(frequencyHz - scenario.targetFrequencyHz) /
+    scenario.targetFrequencyHz;
+  const frequencyReady = frequencyDeviation <= 0.05;
+  const outputReady =
+    output >= scenario.outputBand.min && output <= scenario.outputBand.max;
+  const widthReady =
+    width >= scenario.widthBand.min && width <= scenario.widthBand.max;
+  const loadSafe = exposure <= scenario.protectionThreshold;
+  const pulseReady = pulseMs >= 600 && pulseMs <= 1_500;
 
   function startPulse() {
     pulseStartedAtRef.current = performance.now();
@@ -71,6 +81,11 @@ export function TowaskiSonicGame({
       </div>
       <div className={styles.field} aria-label="음파 공진 보정 화면">
         <div className={styles.grid} aria-hidden />
+        <div className={styles.coachmark}>
+          <strong>맞출 것</strong>
+          사람이나 표적을 쏘는 시험이 아닙니다. 아래 세 슬라이더를 제시된
+          숫자 구간에 맞추고 안전 부하를 초록으로 만든 뒤 펄스를 방출하십시오.
+        </div>
         <div className={styles.wave} aria-hidden>
           {Array.from({ length: 7 }, (_, index) => (
             <span
@@ -110,6 +125,27 @@ export function TowaskiSonicGame({
           {Math.round(scenario.widthBand.min * 100)}–
           {Math.round(scenario.widthBand.max * 100)}
         </p>
+        <div className={styles.checklist} aria-label="음파 방출 준비 조건">
+          <span className={frequencyReady ? styles["checklist--ready"] : ""}>
+            ① 주파수 ±5% {frequencyReady ? "✓" : ""}
+          </span>
+          <span className={outputReady ? styles["checklist--ready"] : ""}>
+            ② 출력 허용 구간 {outputReady ? "✓" : ""}
+          </span>
+          <span className={widthReady ? styles["checklist--ready"] : ""}>
+            ③ 파동 폭 허용 구간 {widthReady ? "✓" : ""}
+          </span>
+          <span
+            className={
+              loadSafe
+                ? styles["checklist--ready"]
+                : styles["checklist--danger"]
+            }
+          >
+            ④ 안전 부하 {Math.round(exposure * 100)} /{" "}
+            {Math.round(scenario.protectionThreshold * 100)}
+          </span>
+        </div>
         <div className={styles.controlGrid}>
           <label className={styles.control}>
             주파수 <strong>{frequencyHz}Hz</strong>
@@ -166,7 +202,14 @@ export function TowaskiSonicGame({
           <button
             type="button"
             className={styles.action}
-            disabled={disabled || pulseMs < 600}
+            disabled={
+              disabled ||
+              !frequencyReady ||
+              !outputReady ||
+              !widthReady ||
+              !loadSafe ||
+              !pulseReady
+            }
             onClick={() =>
               onResolve({
                 mode: "sonic",
@@ -177,7 +220,7 @@ export function TowaskiSonicGame({
               })
             }
           >
-            펄스 방출 · {pulseMs}ms
+            펄스 방출 · {pulseMs}ms / 600–1500ms
           </button>
         </div>
       </div>

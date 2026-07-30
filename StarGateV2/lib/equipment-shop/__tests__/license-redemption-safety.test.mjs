@@ -283,7 +283,13 @@ test("Towaski qualification keeps accessible mobile controls and explains every 
   assert.match(v2Styles, /touch-action: none/);
   assert.match(v2Styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(heavyGame, /event\.key === " " \|\| event\.key === "Enter"/);
-  assert.match(explosiveGame, /착탄 수평[\s\S]*착탄 수직/);
+  assert.match(
+    explosiveGame,
+    /1 · 탄종 \/ 신관[\s\S]*2 · 폭발 반경[\s\S]*3 · 발사선/,
+  );
+  assert.match(explosiveGame, /onPointerDown=\{updateImpact\}/);
+  assert.match(explosiveGame, /onKeyDown=\{moveImpactWithKeyboard\}/);
+  assert.doesNotMatch(explosiveGame, /type="range"/);
   assert.match(
     client,
     /event\.type === "start"[\s\S]*title: "자격시험 시작"/,

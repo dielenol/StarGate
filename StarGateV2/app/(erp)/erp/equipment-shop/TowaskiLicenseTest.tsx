@@ -132,6 +132,132 @@ function qualificationSafetyHint(mode: TowaskiLicenseTestMode): string {
   }
 }
 
+function qualificationCoachSteps(
+  mode: TowaskiLicenseTestMode,
+): Array<{ label: string; instruction: string }> {
+  switch (mode) {
+    case "firearm":
+      return [
+        { label: "1 · 식별", instruction: "표적의 THREAT / NO FIRE 표시를 확인" },
+        { label: "2 · 조작", instruction: "THREAT는 표적 클릭, 민간은 사격 보류" },
+        { label: "3 · 주의", instruction: "빈 공간 오발 없이 한 발씩 처리" },
+      ];
+    case "precision":
+      return [
+        { label: "1 · 목표", instruction: "작은 적색 TARGET 원을 명중" },
+        { label: "2 · 보정", instruction: "풍향 수치의 반대쪽으로 조준 이동" },
+        { label: "3 · 발사", instruction: "호흡을 0.5초 고정한 뒤 단발" },
+      ];
+    case "heavy":
+      return [
+        { label: "1 · 조준", instruction: "반동을 눌러 적색 ARMOR에 조준점 유지" },
+        { label: "2 · 점사", instruction: "1.8초 전에 손을 떼고 냉각" },
+        { label: "3 · 중지", instruction: "청색 CROSSING 점등 중 절대 사격 금지" },
+      ];
+    case "flame":
+      return [
+        { label: "1 · 분사", instruction: "시험장을 누른 채 적색 지점으로 드래그" },
+        { label: "2 · 경로", instruction: "적색 소각 지점 5곳 중 4곳 이상 통과" },
+        { label: "3 · 차단", instruction: "청색·황색 앞에서 손을 떼고 우회" },
+      ];
+    case "sonic":
+      return [
+        { label: "1 · 공진", instruction: "주파수를 제시된 목표 Hz ±5%에 맞춤" },
+        { label: "2 · 봉인", instruction: "출력·파동 폭을 각각 허용 구간에 맞춤" },
+        { label: "3 · 방출", instruction: "안전 부하 확인 후 0.6–1.5초 충전 펄스" },
+      ];
+    case "explosive":
+      return [
+        { label: "1 · 판독", instruction: "정보 카드로 탄종과 신관 선택" },
+        { label: "2 · 배치", instruction: "지도 클릭으로 적성만 폭발 반경에 포함" },
+        { label: "3 · 안전", instruction: "후폭풍 없는 발사선을 고르고 기폭" },
+      ];
+  }
+}
+
+function modeStandbyCopy(mode: TowaskiLicenseTestMode): {
+  eyebrow: string;
+  title: string;
+  instruction: string;
+} {
+  switch (mode) {
+    case "firearm":
+      return {
+        eyebrow: "IDENTIFICATION RANGE",
+        title: "표적 식별 장비 준비",
+        instruction: "THREAT는 사격 · NO FIRE는 보류",
+      };
+    case "precision":
+      return {
+        eyebrow: "BALLISTIC OPTICS",
+        title: "탄도·풍향 계산기 보정",
+        instruction: "작은 적색 표적 · 풍향 반대 보정 · 호흡 고정",
+      };
+    case "heavy":
+      return {
+        eyebrow: "RECOIL CONTROL",
+        title: "총열 냉각·횡단 감지기 준비",
+        instruction: "짧은 점사 · 냉각 · CROSSING 즉시 사격 중지",
+      };
+    case "flame":
+      return {
+        eyebrow: "BURN ROUTE",
+        title: "구역 소각 경로 투영",
+        instruction: "누르고 끌어 소각 · 보호 구역 앞에서 분사 차단",
+      };
+    case "sonic":
+      return {
+        eyebrow: "RESONANCE CALIBRATION",
+        title: "공진 계기 영점 조정",
+        instruction: "목표 Hz · 출력 · 파동 폭 · 안전 부하를 모두 일치",
+      };
+    case "explosive":
+      return {
+        eyebrow: "ORDNANCE DECISION",
+        title: "탄종·신관·발사선 정보 수신",
+        instruction: "판독 → 반경 배치 → 후폭풍 안전 확인",
+      };
+  }
+}
+
+function TowaskiModeStandby({
+  mode,
+  phase,
+  countdown,
+}: {
+  mode: TowaskiLicenseTestMode;
+  phase: Extract<TestPhase, "countdown" | "starting">;
+  countdown: number;
+}) {
+  const copy = modeStandbyCopy(mode);
+  return (
+    <div
+      className={[
+        styles.modeStandby,
+        styles[`modeStandby--${mode}`],
+      ].join(" ")}
+      aria-live="assertive"
+    >
+      <div className={styles.modeStandbyHud}>
+        <span>{copy.eyebrow}</span>
+        <strong>{mode.toUpperCase()} / STANDBY</strong>
+      </div>
+      <div className={styles.modeStandbyField} aria-hidden>
+        <span className={styles.modeStandbyGrid} />
+        <span className={styles.modeStandbyPrimary} />
+        <span className={styles.modeStandbySafe} />
+        <span className={styles.modeStandbyReticle} />
+      </div>
+      <div className={styles.modeStandbyOverlay}>
+        <span>{phase === "countdown" ? "시험 모드 고정" : "시험 세션 발급 중"}</span>
+        <strong>{phase === "countdown" ? countdown : "LINK"}</strong>
+        <h3>{copy.title}</h3>
+        <p>{copy.instruction}</p>
+      </div>
+    </div>
+  );
+}
+
 function failureMessage(
   mode: TowaskiLicenseTestMode,
   evaluation: TowaskiLicenseTestEvaluation | null,
@@ -717,6 +843,14 @@ export default function TowaskiLicenseTest({
             <p className={styles.noFireHint}>
               <strong>SAFETY</strong> {qualificationSafetyHint(program.mode)}
             </p>
+            <div className={styles.coachSteps} aria-label="시험 조작 순서">
+              {qualificationCoachSteps(program.mode).map((step) => (
+                <span key={step.label}>
+                  <strong>{step.label}</strong>
+                  {step.instruction}
+                </span>
+              ))}
+            </div>
             <div className={styles.criteria} aria-label="합격 기준">
               {qualificationCriteria(program.mode).map((criterion) => (
                 <span key={criterion}>
@@ -808,6 +942,12 @@ export default function TowaskiLicenseTest({
             </button>
           </div>
         </div>
+      ) : phase === "countdown" || phase === "starting" ? (
+        <TowaskiModeStandby
+          mode={program.mode}
+          phase={phase}
+          countdown={countdown}
+        />
       ) : v2Challenge ? (
         renderV2Game({
           challenge: v2Challenge,
@@ -859,18 +999,6 @@ export default function TowaskiLicenseTest({
             <span />
           </div>
           <div className={styles.rangeFloor} aria-hidden />
-          {phase === "countdown" ? (
-            <div className={styles.countdown} aria-live="assertive">
-              <span>STANDBY</span>
-              <strong>{countdown}</strong>
-            </div>
-          ) : null}
-          {phase === "starting" ? (
-            <div className={styles.transmitting} role="status">
-              <span>QUALIFICATION CONTROL</span>
-              <strong>시험 세션 발급 중</strong>
-            </div>
-          ) : null}
           {(phase === "active" || phase === "resolving") && currentTarget ? (
             <button
               type="button"

@@ -54,6 +54,11 @@ export function TowaskiFirearmGame({
         aria-label="기본 화기 안전 식별 시험장"
       >
         <div className={styles.grid} aria-hidden />
+        <div className={styles.coachmark}>
+          <strong>행동</strong>
+          THREAT 표적은 직접 클릭해 한 발 사격하고, NO FIRE 표적은 아래
+          사격 보류 버튼으로 통과하십시오.
+        </div>
         <button
           type="button"
           className={styles.targetButton}
