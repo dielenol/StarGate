@@ -10,7 +10,7 @@ import {
   findEquipmentWorkshopRequestByActiveOperationKey,
   insertEquipmentWorkshopRequest,
   listActiveEquipmentWorkshopRequests,
-  listEquipmentWorkshopRequests,
+  listEquipmentWorkshopOperationsRequests,
   serializeAdminEquipmentWorkshopRequest,
   serializeEquipmentWorkshopRequest,
   updateEquipmentWorkshopRequestStatus,
@@ -55,16 +55,10 @@ export async function GET() {
 
   const isGM = hasRole(session.user.role, "GM");
   const requests = isGM
-    ? await Promise.all([
-        listActiveEquipmentWorkshopRequests(),
-        listEquipmentWorkshopRequests({ limit: 30 }),
-      ]).then(([active, recent]) => [
-        ...active,
-        ...recent.filter(
-          (request) => !active.some((entry) => entry._id === request._id),
-        ),
-      ])
-    : await listEquipmentWorkshopRequests({ userId: session.user.id });
+    ? await listEquipmentWorkshopOperationsRequests({ recentLimit: 100 })
+    : await listActiveEquipmentWorkshopRequests({
+        userId: session.user.id,
+      });
   return NextResponse.json(
     {
       requests: requests.map((entry) =>

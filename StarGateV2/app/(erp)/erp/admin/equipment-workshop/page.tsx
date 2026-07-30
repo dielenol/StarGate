@@ -9,7 +9,7 @@ import {
   serializeEquipmentWorkshopBlueprint,
 } from "@/lib/db/equipment-workshop-blueprints";
 import {
-  listEquipmentWorkshopRequests,
+  listEquipmentWorkshopOperationsRequests,
   serializeAdminEquipmentWorkshopRequest,
 } from "@/lib/db/equipment-workshop-requests";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
@@ -22,7 +22,7 @@ export default async function EquipmentWorkshopAdminPage() {
   if (!hasRole(session.user.role, "GM")) redirect("/erp");
 
   const [requests, blueprints, itemDocuments] = await Promise.all([
-    listEquipmentWorkshopRequests({ limit: 100 }),
+    listEquipmentWorkshopOperationsRequests({ recentLimit: 100 }),
     listEquipmentWorkshopBlueprints(),
     (await masterItemsCol())
       .find({}, { projection: { name: 1, category: 1, slug: 1, price: 1, isPublic: 1 } })

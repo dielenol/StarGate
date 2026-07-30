@@ -36,6 +36,7 @@ import {
 } from "@/lib/equipment-shop/workshop-presets";
 import {
   getEquipmentWorkshopUserTags,
+  isActiveEquipmentWorkshopRequestStatus,
   WORKSHOP_COST_POLICY,
   type AdminSerializedEquipmentWorkshopRequest,
   type EquipmentWorkshopModificationDomain,
@@ -556,13 +557,7 @@ export default function EquipmentWorkshopAdminClient({
       const statusMatch =
         statusFilter === "ALL" ||
         (statusFilter === "ACTIVE"
-          ? [
-              "REQUESTED",
-              "IN_REVIEW",
-              "APPROVED",
-              "QUOTED",
-              "IN_PROGRESS",
-            ].includes(request.status)
+          ? isActiveEquipmentWorkshopRequestStatus(request.status)
           : request.status === statusFilter);
       const textMatch =
         !needle ||
@@ -580,6 +575,12 @@ export default function EquipmentWorkshopAdminClient({
 
   if (!selected || !draft) return <Box>공방 요청이 없습니다.</Box>;
 
+  const readOnlyQuote =
+    isBuildRequest &&
+    selected.quote &&
+    !QUOTE_EDITABLE_STATUSES.has(selected.status)
+      ? selected.quote
+      : null;
   const materialRows = draft.materials.map((material) => ({
     ...material,
     option: items.find((item) => item.slug === material.slug),
@@ -1214,6 +1215,165 @@ export default function EquipmentWorkshopAdminClient({
             </div>
           </Box>
 
+          {readOnlyQuote ? (
+            <Box className={`${styles.section} ${styles.resultArchive}`}>
+              <div className={styles.sectionHeading}>
+                <div>
+                  <Eyebrow>발행 결과 장비 (RESULT SNAPSHOT)</Eyebrow>
+                  <h2>{readOnlyQuote.result.name}</h2>
+                </div>
+                <span className={styles.statusBadge}>
+                  {selected.status === "COMPLETED"
+                    ? "수령 완료 결과"
+                    : "발행 견적 스냅샷"}
+                </span>
+              </div>
+
+              <div className={styles.resultArchive__content}>
+                {readOnlyQuote.result.previewImage ? (
+                  <span className={styles.resultPreview}>
+                    <Image
+                      src={readOnlyQuote.result.previewImage}
+                      alt={`${readOnlyQuote.result.name} 결과 장비`}
+                      fill
+                      sizes="240px"
+                      unoptimized
+                    />
+                  </span>
+                ) : (
+                  <p className={styles.emptyHint}>결과 이미지 없음</p>
+                )}
+                <div className={styles.resultArchive__body}>
+                  <dl className={styles.resultArchive__specs}>
+                    <div>
+                      <dt>분류</dt>
+                      <dd>{readOnlyQuote.result.category}</dd>
+                    </div>
+                    <div>
+                      <dt>피해</dt>
+                      <dd>{readOnlyQuote.result.damage ?? "피해 정보 없음"}</dd>
+                    </div>
+                    <div>
+                      <dt>세대</dt>
+                      <dd>{readOnlyQuote.result.generation}</dd>
+                    </div>
+                    <div>
+                      <dt>개조 계통</dt>
+                      <dd>
+                        {MODIFICATION_DOMAINS.find(
+                          (domain) =>
+                            domain.value === readOnlyQuote.modificationDomain,
+                        )?.label ?? readOnlyQuote.modificationDomain}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>결과 itemId</dt>
+                      <dd>{readOnlyQuote.result.itemId}</dd>
+                    </div>
+                    <div>
+                      <dt>결과 slug</dt>
+                      <dd>{readOnlyQuote.result.slug}</dd>
+                    </div>
+                  </dl>
+                  <p>{readOnlyQuote.result.description}</p>
+                  {readOnlyQuote.result.effect ? (
+                    <p>{readOnlyQuote.result.effect}</p>
+                  ) : null}
+                  <p className={styles.resultArchive__tags}>
+                    {readOnlyQuote.result.tags.join(" · ") || "태그 없음"}
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.costSummary}>
+                <div>
+                  <span>재료 조달가</span>
+                  <strong>{readOnlyQuote.materialCost.toLocaleString()} CR</strong>
+                </div>
+                <div>
+                  <span>공임</span>
+                  <strong>{readOnlyQuote.creditCost.toLocaleString()} CR</strong>
+                </div>
+                <div data-total>
+                  <span>총 경제 부담</span>
+                  <strong>{readOnlyQuote.totalCost.toLocaleString()} CR</strong>
+                </div>
+                <div>
+                  <span>제작 시간</span>
+                  <strong>
+                    {formatDuration(readOnlyQuote.durationMinutes)}
+                  </strong>
+                </div>
+              </div>
+
+              <div className={styles.resultArchive__columns}>
+                <section>
+                  <strong>담당 공정</strong>
+                  <ol>
+                    {(readOnlyQuote.specialistWorkflow ?? [
+                      {
+                        specialistCodename:
+                          readOnlyQuote.specialistCodename,
+                        task: "주 담당",
+                      },
+                    ]).map((step) => (
+                      <li key={step.specialistCodename}>
+                        {SPECIALIST_LABELS[step.specialistCodename]} · {step.task}
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+                <section>
+                  <strong>투입 재료</strong>
+                  {readOnlyQuote.materials.length > 0 ? (
+                    <ul>
+                      {readOnlyQuote.materials.map((material) => (
+                        <li key={material.itemId}>
+                          {material.itemName} × {material.quantity} ·{" "}
+                          {material.subtotal.toLocaleString()} CR
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>투입 재료 없음</p>
+                  )}
+                </section>
+              </div>
+
+              {readOnlyQuote.result.equipmentAction ? (
+                <section className={styles.resultArchive__feature}>
+                  <strong>
+                    {readOnlyQuote.result.equipmentAction.code} ·{" "}
+                    {readOnlyQuote.result.equipmentAction.name}
+                  </strong>
+                  <p>{readOnlyQuote.result.equipmentAction.description}</p>
+                  <p>{readOnlyQuote.result.equipmentAction.effect}</p>
+                  <small>
+                    충전{" "}
+                    {readOnlyQuote.result.equipmentAction.maxCharges} · 재장전{" "}
+                    {readOnlyQuote.result.equipmentAction.reloadCreditCost.toLocaleString()}{" "}
+                    CR
+                  </small>
+                </section>
+              ) : null}
+
+              {readOnlyQuote.result.equipmentAbilityOverrides?.length ? (
+                <section className={styles.resultArchive__feature}>
+                  <strong>장착형 어빌리티 강화</strong>
+                  <ul>
+                    {readOnlyQuote.result.equipmentAbilityOverrides.map(
+                      (override) => (
+                        <li key={override.targetCode}>
+                          {override.targetCode} · {override.effect}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </section>
+              ) : null}
+            </Box>
+          ) : null}
+
           {isBuildRequest && QUOTE_EDITABLE_STATUSES.has(selected.status) ? (
             <form className={styles.quoteForm} onSubmit={submitQuote}>
               <Box className={styles.section}>
@@ -1396,6 +1556,10 @@ export default function EquipmentWorkshopAdminClient({
                     />
                   </label>
                 </div>
+                <p className={styles.emptyHint}>
+                  개조 계통은 결과 장비의 분류이며, 투입 재료와 독립적으로
+                  선택됩니다.
+                </p>
                 <fieldset className={styles.durationPresets}>
                   <legend>
                     제작 시간 · {formatDuration(Number(draft.durationMinutes))}
@@ -1564,6 +1728,10 @@ export default function EquipmentWorkshopAdminClient({
                     재료 추가
                   </button>
                 </div>
+                <p className={styles.emptyHint}>
+                  재료는 개조 계통과 관계없이 현재 공개 마스터 품목에서 선택할
+                  수 있습니다.
+                </p>
                 <div className={styles.materialRows}>
                   {draft.materials.length === 0 ? (
                     <p className={styles.emptyHint}>필요 재료 없음</p>

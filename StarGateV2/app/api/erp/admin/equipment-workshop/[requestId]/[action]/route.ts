@@ -223,20 +223,6 @@ export async function PUT(request: Request, context: RouteContext) {
   ) {
     return NextResponse.json({ error: "강화 대상 장비를 재료로 지정할 수 없습니다." }, { status: 400 });
   }
-  const incompatibleSpecialMaterial = resolvedMaterials.find(({ item }) => (
-    (item?.slug === "force_core" && validation.input.modificationDomain !== "ENERGY_EXPLOSIVE_OUTPUT") ||
-    (item?.slug === "vf_blood" && validation.input.modificationDomain !== "BIO_REGEN_REPAIR")
-  ));
-  if (incompatibleSpecialMaterial) {
-    return NextResponse.json(
-      {
-        error: incompatibleSpecialMaterial.item?.slug === "force_core"
-          ? "포스코어는 에너지장·폭발·출력 계통 개조에만 사용할 수 있습니다."
-          : "VF혈액팩은 생체 접속·재생·자기수복 계통 개조에만 사용할 수 있습니다.",
-      },
-      { status: 400 },
-    );
-  }
   const materials = resolvedMaterials.map(({ input: material, item }) => {
     if (!item) return null;
     const unitPrice = procurementUnitPrice(item);

@@ -33,6 +33,19 @@ export const WORKSHOP_COST_POLICY = {
 export type EquipmentWorkshopRequestKind = "upgrade" | "custom" | "reload";
 export type EquipmentWorkshopRequestStatus =
   (typeof EQUIPMENT_WORKSHOP_REQUEST_STATUSES)[number];
+export const EQUIPMENT_WORKSHOP_ACTIVE_STATUSES = [
+  "REQUESTED",
+  "IN_REVIEW",
+  "APPROVED",
+  "QUOTED",
+  "IN_PROGRESS",
+] as const satisfies readonly EquipmentWorkshopRequestStatus[];
+export const EQUIPMENT_WORKSHOP_TERMINAL_STATUSES = [
+  "COMPLETED",
+  "DECLINED",
+  "REJECTED",
+  "CANCELLED",
+] as const satisfies readonly EquipmentWorkshopRequestStatus[];
 export type EquipmentWorkshopComputedStatus =
   | EquipmentWorkshopRequestStatus
   | "READY";
@@ -224,6 +237,29 @@ export function isEquipmentWorkshopRequestStatus(
     typeof value === "string" &&
     (EQUIPMENT_WORKSHOP_REQUEST_STATUSES as readonly string[]).includes(value)
   );
+}
+
+export function isActiveEquipmentWorkshopRequestStatus(
+  status: EquipmentWorkshopRequestStatus,
+): boolean {
+  return (EQUIPMENT_WORKSHOP_ACTIVE_STATUSES as readonly string[]).includes(
+    status,
+  );
+}
+
+export function mergeEquipmentWorkshopRequestLists<
+  T extends { _id: string },
+>(activeRequests: readonly T[], recentRequests: readonly T[]): T[] {
+  const activeRequestIds = new Set(
+    activeRequests.map((request) => request._id),
+  );
+
+  return [
+    ...activeRequests,
+    ...recentRequests.filter(
+      (request) => !activeRequestIds.has(request._id),
+    ),
+  ];
 }
 
 export function canTransitionEquipmentWorkshopRequestStatus(

@@ -53,6 +53,7 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
 import {
+  isActiveEquipmentWorkshopRequestStatus,
   WORKSHOP_RELOAD_REQUEST_DETAILS,
   WORKSHOP_REQUEST_DETAIL_MIN_LENGTH,
   type EquipmentWorkshopComputedStatus,
@@ -4969,7 +4970,9 @@ export default function EquipmentShopClient({
   }
 
   function renderCustomPanel() {
-    const workshopRequests = workshopRequestsQuery.data?.requests ?? [];
+    const workshopRequests = (workshopRequestsQuery.data?.requests ?? []).filter(
+      (request) => isActiveEquipmentWorkshopRequestStatus(request.status),
+    );
     const actionEquipment = equippedEntries.filter(
       (entry) => entry.equipmentAction && entry.equipmentCharge,
     );
@@ -5211,7 +5214,9 @@ export default function EquipmentShopClient({
 
           <section className={styles.workshopRequestCard}>
             <span>REQUEST LEDGER</span>
-            <strong>{isGM ? "공방 요청 처리 현황" : "내 공방 요청"}</strong>
+            <strong>
+              {isGM ? "진행 중 공방 요청" : "진행 중인 내 공방 요청"}
+            </strong>
             {isGM ? (
               <Link className={styles.workshopAdminLink} href="/erp/admin/equipment-workshop">
                 GM 공방 관리 페이지 열기
@@ -5222,7 +5227,7 @@ export default function EquipmentShopClient({
             ) : workshopRequestsQuery.isError ? (
               <p role="alert">접수 기록을 불러오지 못했습니다.</p>
             ) : workshopRequests.length === 0 ? (
-              <p>아직 접수된 공방 요청이 없습니다.</p>
+              <p>현재 진행 중인 공방 요청이 없습니다.</p>
             ) : (
               workshopRequests.map((request) => (
                 <article key={request._id}>

@@ -5,11 +5,14 @@ import test from "node:test";
 
 import {
   canTransitionEquipmentWorkshopRequestStatus,
+  EQUIPMENT_WORKSHOP_TERMINAL_STATUSES,
   buildEquipmentWorkshopResultTags,
   getEquipmentWorkshopUserTags,
   getEquipmentWorkshopComputedStatus,
   getEquipmentWorkshopRequestLabel,
+  isActiveEquipmentWorkshopRequestStatus,
   isSameEquipmentWorkshopRequestPayload,
+  mergeEquipmentWorkshopRequestLists,
   parseEquipmentWorkshopQuote,
   parseEquipmentWorkshopRequest,
   requiresEquipmentWorkshopOperatorNote,
@@ -121,6 +124,16 @@ test("request validation rejects unknown kinds and oversized details", () => {
 });
 
 test("workshop request status transitions keep terminal states closed", () => {
+  assert.equal(isActiveEquipmentWorkshopRequestStatus("REQUESTED"), true);
+  assert.equal(isActiveEquipmentWorkshopRequestStatus("IN_PROGRESS"), true);
+  assert.equal(isActiveEquipmentWorkshopRequestStatus("COMPLETED"), false);
+  assert.equal(isActiveEquipmentWorkshopRequestStatus("REJECTED"), false);
+  assert.deepEqual(EQUIPMENT_WORKSHOP_TERMINAL_STATUSES, [
+    "COMPLETED",
+    "DECLINED",
+    "REJECTED",
+    "CANCELLED",
+  ]);
   assert.equal(
     canTransitionEquipmentWorkshopRequestStatus("REQUESTED", "IN_REVIEW"),
     true,
@@ -150,6 +163,35 @@ test("workshop request status transitions keep terminal states closed", () => {
   assert.equal(requiresEquipmentWorkshopOperatorNote("IN_REVIEW"), false);
 });
 
+test("operations request merge preserves active requests beyond the recent history limit", () => {
+  const activeRequests = Array.from({ length: 150 }, (_, index) => ({
+    _id: `active-${index}`,
+    status: "IN_PROGRESS",
+  }));
+  const recentRequests = [
+    ...activeRequests.slice(100),
+    ...Array.from({ length: 50 }, (_, index) => ({
+      _id: `completed-${index}`,
+      status: "COMPLETED",
+    })),
+  ];
+
+  const mergedRequests = mergeEquipmentWorkshopRequestLists(
+    activeRequests,
+    recentRequests,
+  );
+
+  assert.equal(mergedRequests.length, 200);
+  assert.deepEqual(
+    mergedRequests.slice(0, 150).map((request) => request._id),
+    activeRequests.map((request) => request._id),
+  );
+  assert.equal(
+    new Set(mergedRequests.map((request) => request._id)).size,
+    mergedRequests.length,
+  );
+});
+
 test("quote validation enforces cost precision, material quantities, duration and image URL", () => {
   const valid = {
     expectedVersion: 0,
@@ -169,6 +211,35 @@ test("quote validation enforces cost precision, material quantities, duration an
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, durationMinutes: 43_201 }).ok, false);
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, materials: [{ ...valid.materials[0], quantity: 1000 }] }).ok, false);
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, result: { ...valid.result, previewImage: "http://unsafe.test/item.png" } }).ok, false);
+});
+
+test("modification domains and selected materials validate independently", () => {
+  const baseQuote = {
+    expectedVersion: 0,
+    creditCost: 1800,
+    durationMinutes: 60,
+    result: {
+      name: "재료 독립 검증 장비",
+      description: "개조 계통과 투입 재료를 독립적으로 검증하는 장비입니다.",
+    },
+  };
+
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      ...baseQuote,
+      modificationDomain: "BIO_REGEN_REPAIR",
+      materials: [{ itemId: "64b64c1f4b13a06f4d0f0001", quantity: 1 }],
+    }).ok,
+    true,
+  );
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      ...baseQuote,
+      modificationDomain: "GENERAL",
+      materials: [{ itemId: "64b64c1f4b13a06f4d0f0002", quantity: 1 }],
+    }).ok,
+    true,
+  );
 });
 
 test("quote validation accepts specialist override and a charge-backed U action", () => {
@@ -754,8 +825,36 @@ test("workshop route derives ownership and equipped gear on the server", () => {
     /CUSTOM_WEAPON_SLOT_REQUIRED|getEquipmentResearchCapabilities/,
   );
   assert.match(route, /export async function GET/);
+  assert.match(
+    route,
+    /listActiveEquipmentWorkshopRequests\(\{\s*userId: session\.user\.id,\s*\}\)/,
+  );
+  assert.match(
+    route,
+    /listEquipmentWorkshopOperationsRequests\(\{ recentLimit: 100 \}\)/,
+  );
   assert.match(route, /export async function PATCH/);
   assert.match(route, /장비 강화·신규 제작은 견적·수락·수령 또는 제작 취소 전용 API/);
+});
+
+test("operations request query leaves the active request list uncapped", () => {
+  const db = readFileSync(
+    new URL("../../db/equipment-workshop-requests.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    db,
+    /if \(options\.limit !== undefined\) \{[\s\S]*cursor\.limit/,
+  );
+  assert.match(
+    db,
+    /listEquipmentWorkshopOperationsRequests[\s\S]*listActiveEquipmentWorkshopRequests\(\)/,
+  );
+  assert.match(
+    db,
+    /listEquipmentWorkshopOperationsRequests[\s\S]*listTerminalEquipmentWorkshopRequests\(\{[\s\S]*limit: options\.recentLimit \?\? 100/,
+  );
 });
 
 test("workshop requests use idempotency and invalidate their request ledger", () => {
@@ -946,8 +1045,9 @@ test("quotes snapshot procurement cost and Nochichim exposes equipped actions se
   const snapshots = readFileSync(new URL("../../../app/api/vtt/nochichim/_lib/snapshots.ts", import.meta.url), "utf8");
   const actionRoute = readFileSync(new URL("../../../app/api/vtt/nochichim/characters/[id]/equipment-action/route.ts", import.meta.url), "utf8");
   assert.match(adminRoute, /findShopItemBySlug/);
-  assert.match(adminRoute, /포스코어는 에너지장·폭발·출력 계통 개조에만/);
-  assert.match(adminRoute, /VF혈액팩은 생체 접속·재생·자기수복 계통 개조에만/);
+  assert.doesNotMatch(adminRoute, /incompatibleSpecialMaterial/);
+  assert.doesNotMatch(adminRoute, /포스코어는 .* 계통 개조에만/);
+  assert.doesNotMatch(adminRoute, /VF혈액팩은 .* 계통 개조에만/);
   assert.match(adminRoute, /materialCost/);
   assert.match(adminRoute, /specialistWorkflow/);
   assert.match(playerClient, /workshopSpecialistWorkflow/);
@@ -1118,4 +1218,35 @@ test("GM workshop keeps quote steps visible for newly requested build requests",
     /!QUOTE_PUBLISHABLE_STATUSES\.has\(selected\.status\)/,
   );
   assert.match(adminClient, /검토 시작 후 견적 발행 가능/);
+});
+
+test("workshop ledger hides terminal requests while GM operations renders result snapshots", () => {
+  const playerClient = readFileSync(
+    new URL(
+      "../../../app/(erp)/erp/equipment-shop/EquipmentShopClient.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const adminClient = readFileSync(
+    new URL(
+      "../../../app/(erp)/erp/admin/equipment-workshop/EquipmentWorkshopAdminClient.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(
+    playerClient,
+    /\.filter\([\s\S]*isActiveEquipmentWorkshopRequestStatus\(request\.status\)/,
+  );
+  assert.match(adminClient, /발행 결과 장비 \(RESULT SNAPSHOT\)/);
+  assert.match(adminClient, /readOnlyQuote\.result\.previewImage/);
+  assert.match(adminClient, /readOnlyQuote\.result\.description/);
+  assert.match(adminClient, /readOnlyQuote\.result\.equipmentAction/);
+  assert.match(adminClient, /readOnlyQuote\.result\.equipmentAbilityOverrides/);
+  assert.match(
+    adminClient,
+    /개조 계통은 결과 장비의 분류이며,[\s\S]*투입 재료와 독립적으로/,
+  );
 });

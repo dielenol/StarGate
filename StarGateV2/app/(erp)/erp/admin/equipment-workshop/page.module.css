@@ -263,6 +263,115 @@
   width: min(240px, 100%);
 }
 
+.resultArchive {
+  border-color: #4d684f;
+  background: linear-gradient(
+    145deg,
+    rgba(17, 28, 20, 0.97),
+    rgba(8, 12, 10, 0.95)
+  );
+}
+
+.resultArchive__content {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.resultArchive__body {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 12px;
+  min-width: 0;
+}
+
+.resultArchive__body > p,
+.resultArchive__columns p,
+.resultArchive__feature p {
+  margin: 0;
+  color: #c8c4b9;
+  font-size: 15px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.resultArchive__specs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #334139;
+  border-radius: 8px;
+  background: #334139;
+}
+
+.resultArchive__specs div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 11px 12px;
+  background: #0d1410;
+}
+
+.resultArchive__specs dt {
+  color: #9fbc9f;
+  font-size: 14px;
+}
+
+.resultArchive__specs dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #ece9df;
+  font-size: 15px;
+}
+
+.resultArchive__tags {
+  color: #b9d5b9 !important;
+}
+
+.resultArchive__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.resultArchive__columns section,
+.resultArchive__feature {
+  padding: 14px;
+  border: 1px solid #334139;
+  border-radius: 8px;
+  background: #0d1410;
+}
+
+.resultArchive__columns strong,
+.resultArchive__feature > strong {
+  color: #dce9d9;
+  font-size: 15px;
+}
+
+.resultArchive__columns ol,
+.resultArchive__columns ul,
+.resultArchive__feature ul {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding-left: 22px;
+  color: #c8c4b9;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.resultArchive__feature {
+  display: grid;
+  gap: 9px;
+}
+
+.resultArchive__feature small {
+  color: #a9c5aa;
+  font-size: 14px;
+}
+
 .twoColumns,
 .blueprintPicker,
 .imageFields {
@@ -640,6 +749,7 @@
 
   .sectionHeading,
   .sourceCard__content,
+  .resultArchive__content,
   .specialistHeading {
     align-items: stretch;
     flex-direction: column;
@@ -655,6 +765,11 @@
   }
 
   .abilityOverrideRow {
+    grid-template-columns: 1fr;
+  }
+
+  .resultArchive__specs,
+  .resultArchive__columns {
     grid-template-columns: 1fr;
   }
 

@@ -14,7 +14,12 @@ import type {
   SerializedEquipmentWorkshopRequest,
   AdminSerializedEquipmentWorkshopRequest,
 } from "@/lib/equipment-shop/workshop-request";
-import { getEquipmentWorkshopComputedStatus } from "@/lib/equipment-shop/workshop-request";
+import {
+  EQUIPMENT_WORKSHOP_ACTIVE_STATUSES,
+  EQUIPMENT_WORKSHOP_TERMINAL_STATUSES,
+  getEquipmentWorkshopComputedStatus,
+  mergeEquipmentWorkshopRequestLists,
+} from "@/lib/equipment-shop/workshop-request";
 import {
   createEquipmentWorkshopDiscordDmOutboxEvent,
   createEquipmentWorkshopStatusDmOutboxEvents,
@@ -229,13 +234,52 @@ export async function listEquipmentWorkshopRequests(options: {
 }
 
 export async function listActiveEquipmentWorkshopRequests(
-  limit = 100,
+  options: {
+    userId?: string;
+    limit?: number;
+  } = {},
+): Promise<EquipmentWorkshopRequestDoc[]> {
+  const cursor = (await equipmentWorkshopRequestsCol())
+    .find({
+      ...(options.userId ? { userId: options.userId } : {}),
+      status: { $in: [...EQUIPMENT_WORKSHOP_ACTIVE_STATUSES] },
+    })
+    .sort({ createdAt: 1 });
+
+  if (options.limit !== undefined) {
+    cursor.limit(Math.min(Math.max(options.limit, 1), 200));
+  }
+
+  return cursor.toArray();
+}
+
+export async function listTerminalEquipmentWorkshopRequests(
+  options: {
+    limit?: number;
+  } = {},
 ): Promise<EquipmentWorkshopRequestDoc[]> {
   return (await equipmentWorkshopRequestsCol())
-    .find({ status: { $in: ["REQUESTED", "IN_REVIEW", "APPROVED", "QUOTED", "IN_PROGRESS"] } })
-    .sort({ createdAt: 1 })
-    .limit(Math.min(Math.max(limit, 1), 200))
+    .find({
+      status: { $in: [...EQUIPMENT_WORKSHOP_TERMINAL_STATUSES] },
+    })
+    .sort({ createdAt: -1 })
+    .limit(Math.min(Math.max(options.limit ?? 100, 1), 100))
     .toArray();
+}
+
+export async function listEquipmentWorkshopOperationsRequests(
+  options: {
+    recentLimit?: number;
+  } = {},
+): Promise<EquipmentWorkshopRequestDoc[]> {
+  const [activeRequests, recentRequests] = await Promise.all([
+    listActiveEquipmentWorkshopRequests(),
+    listTerminalEquipmentWorkshopRequests({
+      limit: options.recentLimit ?? 100,
+    }),
+  ]);
+
+  return mergeEquipmentWorkshopRequestLists(activeRequests, recentRequests);
 }
 
 export async function claimDueEquipmentWorkshopDiscordDmDelivery(input: {
