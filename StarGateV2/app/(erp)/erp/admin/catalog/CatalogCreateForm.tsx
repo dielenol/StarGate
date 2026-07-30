@@ -18,30 +18,16 @@ import type {
   ArmoryZone,
   CatalogTarget,
 } from "@/lib/shop/catalog-item-input";
+import {
+  CATALOG_ITEM_PRESETS,
+  findCatalogItemPreset,
+  getCatalogItemPresetSelectionValue,
+  type CatalogItemPresetForm,
+} from "@/lib/shop/catalog-presets";
 
 import styles from "./page.module.css";
 
-interface FormState {
-  target: CatalogTarget;
-  armoryZone: ArmoryZone;
-  category: ItemCategory;
-  slug: string;
-  name: string;
-  price: string;
-  description: string;
-  damage: string;
-  effect: string;
-  previewImage: string;
-  tags: string;
-  isAvailable: boolean;
-  isPublic: boolean;
-  stockMin: string;
-  stockMax: string;
-  appearRate: string;
-  pageGroup: ShopPageGroup;
-  icon: string;
-  color: string;
-}
+type FormState = CatalogItemPresetForm;
 
 const INITIAL_FORM: FormState = {
   target: "shop",
@@ -107,6 +93,15 @@ const PAGE_GROUP_OPTIONS = Object.entries(PAGE_GROUP_LABELS).map(
   }),
 ) satisfies readonly DropdownSelectOption<ShopPageGroup>[];
 
+const PRESET_OPTIONS: readonly DropdownSelectOption<string>[] = [
+  { value: "", label: "프리셋 없이 직접 입력" },
+  ...CATALOG_ITEM_PRESETS.map((preset) => ({
+    value: getCatalogItemPresetSelectionValue(preset.key),
+    label: `${preset.displayName} · 프리셋`,
+    group: preset.form.target === "shop" ? "편의점 프리셋" : "병기부 프리셋",
+  })),
+];
+
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]{1,79}$/;
 const LOCAL_ASSET_PATTERN = /^\/assets\/[a-zA-Z0-9_./-]+$/;
 const MAX_CATALOG_PRICE = 1_000_000_000;
@@ -121,6 +116,7 @@ function isSafeLocalAssetPath(value: string): boolean {
 
 export default function CatalogCreateForm() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [selectedPresetId, setSelectedPresetId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -131,11 +127,21 @@ export default function CatalogCreateForm() {
   }
 
   function handleTargetChange(target: CatalogTarget) {
+    setSelectedPresetId("");
     setForm((current) => ({
       ...current,
       target,
       category: target === "shop" ? "CONSUMABLE" : "WEAPON",
     }));
+    setError("");
+    setNotice("");
+  }
+
+  function applyPreset(selectionValue: string) {
+    setSelectedPresetId(selectionValue);
+    const preset = findCatalogItemPreset(selectionValue);
+    if (!preset) return;
+    setForm({ ...preset.form });
     setError("");
     setNotice("");
   }
@@ -245,6 +251,7 @@ export default function CatalogCreateForm() {
 
     createItem.mutate(input, {
       onSuccess: () => {
+        setSelectedPresetId("");
         setNotice(
           `${form.name.trim()} 품목이 ${form.target === "shop" ? "편의점" : "병기부"} 카탈로그에 등록되었습니다.`,
         );
@@ -272,9 +279,35 @@ export default function CatalogCreateForm() {
     form.target === "shop"
       ? (["CONSUMABLE"] as const)
       : ARMORY_CATEGORY_OPTIONS[form.armoryZone];
+  const selectedPreset = findCatalogItemPreset(selectedPresetId);
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
+      <Box className={styles.panel}>
+        <PanelTitle>CATALOG PRESET</PanelTitle>
+        <Field id="catalog-preset" label="프리셋 라이브러리" full>
+          <DropdownSelect
+            id="catalog-preset"
+            ariaLabel="카탈로그 프리셋 라이브러리"
+            value={selectedPresetId}
+            onChange={applyPreset}
+            options={PRESET_OPTIONS}
+          />
+        </Field>
+        {selectedPreset ? (
+          <div className={styles.presetCard}>
+            <strong>{selectedPreset.displayName}</strong>
+            <span>{selectedPreset.summary}</span>
+            <small>{selectedPreset.sourceLabel}</small>
+          </div>
+        ) : null}
+        <p className={styles.hint}>
+          기본 제공 프리셋은 편집 폼만 채웁니다. 모든 값을 수정할 수 있으며
+          아래 등록 버튼을 누르기 전에는 품목·재고·웹훅이 생성되지 않습니다.
+          편의점과 병기부 프리셋을 같은 라이브러리에서 관리합니다.
+        </p>
+      </Box>
+
       <Box className={styles.panel}>
         <PanelTitle>CATALOG DESTINATION</PanelTitle>
         <div className={styles.grid}>

@@ -83,6 +83,31 @@
   line-height: 1.6;
 }
 
+.presetCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 14px;
+  color: var(--ink-1);
+  background: color-mix(in srgb, var(--gold) 7%, var(--bg-2));
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.presetCard strong {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.presetCard small {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
 .messageError,
 .messageSuccess {
   padding: 12px 14px;
