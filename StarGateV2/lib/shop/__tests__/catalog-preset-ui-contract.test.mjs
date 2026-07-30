@@ -34,3 +34,12 @@ test("프리셋 설명은 ERP 최소 글자 크기와 내부 패널 스타일을
   assert.doesNotMatch(presetBlock, /font-size:\s*(?:[0-9]|1[0-3])px/);
   assert.match(presetBlock, /border-left: 3px solid var\(--gold-dim\)/);
 });
+
+test("선택한 프리셋과 이미지 입력값은 썸네일 또는 미지정 상태를 보여준다", async () => {
+  const source = await readFile(FORM, "utf8");
+  assert.match(source, /selectedPreset\?\.form\.previewImage/);
+  assert.match(source, /프리셋 이미지/);
+  assert.match(source, /신규 품목.*이미지 미리보기/);
+  assert.match(source, /이미지 미지정/);
+  assert.match(source, /이미지 경로 확인 필요/);
+});

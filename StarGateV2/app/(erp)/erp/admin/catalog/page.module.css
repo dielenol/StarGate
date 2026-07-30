@@ -84,8 +84,8 @@
 }
 
 .presetCard {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
   gap: 6px;
   padding: 13px 14px;
   color: var(--ink-1);
@@ -97,6 +97,42 @@
   line-height: 1.55;
 }
 
+.presetCard__media,
+.imagePreview {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  background: var(--bg-2);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.presetCard__image,
+.imagePreview__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.presetCard__empty,
+.imagePreview__empty {
+  padding: 8px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.presetCard__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
 .presetCard strong {
   color: var(--gold);
   font-family: var(--font-mono);
@@ -106,6 +142,10 @@
 .presetCard small {
   color: var(--ink-3);
   font-size: 14px;
+}
+
+.imagePreview {
+  margin-top: 2px;
 }
 
 .messageError,
@@ -138,6 +178,15 @@
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .presetCard {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .presetCard__media {
+    width: 72px;
+    height: 72px;
   }
 
   .field--full {

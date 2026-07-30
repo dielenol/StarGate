@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 import type { FormEvent } from "react";
@@ -280,6 +281,10 @@ export default function CatalogCreateForm() {
       ? (["CONSUMABLE"] as const)
       : ARMORY_CATEGORY_OPTIONS[form.armoryZone];
   const selectedPreset = findCatalogItemPreset(selectedPresetId);
+  const selectedPresetImage = selectedPreset?.form.previewImage.trim() ?? "";
+  const previewImage = form.previewImage.trim();
+  const canPreviewImage =
+    previewImage.length > 0 && isSafeLocalAssetPath(previewImage);
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
@@ -296,9 +301,24 @@ export default function CatalogCreateForm() {
         </Field>
         {selectedPreset ? (
           <div className={styles.presetCard}>
-            <strong>{selectedPreset.displayName}</strong>
-            <span>{selectedPreset.summary}</span>
-            <small>{selectedPreset.sourceLabel}</small>
+            <div className={styles.presetCard__media}>
+              {selectedPresetImage ? (
+                <Image
+                  className={styles.presetCard__image}
+                  src={selectedPresetImage}
+                  alt={`${selectedPreset.displayName} 프리셋 이미지`}
+                  width={96}
+                  height={96}
+                />
+              ) : (
+                <span className={styles.presetCard__empty}>이미지 미지정</span>
+              )}
+            </div>
+            <div className={styles.presetCard__body}>
+              <strong>{selectedPreset.displayName}</strong>
+              <span>{selectedPreset.summary}</span>
+              <small>{selectedPreset.sourceLabel}</small>
+            </div>
           </div>
         ) : null}
         <p className={styles.hint}>
@@ -393,6 +413,21 @@ export default function CatalogCreateForm() {
               onChange={(event) => update("previewImage", event.target.value)}
               placeholder="/assets/catalog/..."
             />
+            <div className={styles.imagePreview} aria-live="polite">
+              {canPreviewImage ? (
+                <Image
+                  className={styles.imagePreview__image}
+                  src={previewImage}
+                  alt={`${form.name.trim() || "신규 품목"} 이미지 미리보기`}
+                  width={96}
+                  height={96}
+                />
+              ) : (
+                <span className={styles.imagePreview__empty}>
+                  {previewImage ? "이미지 경로 확인 필요" : "이미지 미지정"}
+                </span>
+              )}
+            </div>
           </Field>
 
           <Field id="item-damage" label="효과·피해 수치 (선택)">
