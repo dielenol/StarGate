@@ -8,13 +8,13 @@ category: SPECIAL
 price: 0
 effect: 황금여명회 지휘 개체 사후 분석 대상
 description: S1E3 망령 작전 종료 후 전리품으로 회수된 황금여명회 지휘자의 시신.
-previewImage:
+previewImage: /assets/catalog/special/conductor-corpse.png
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E3-PHANTOM, S1E3, 전리품, 지휘자, 황금여명회, 시신, 작전물증]
 source: session-reward
 createdAt: 2026-07-28T00:00:00Z
-updatedAt: 2026-07-28T00:00:00Z
+updatedAt: 2026-07-30T00:00:00Z
 ---
 
 ## 설명

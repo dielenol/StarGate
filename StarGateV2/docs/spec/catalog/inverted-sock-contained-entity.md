@@ -8,13 +8,13 @@ category: SPECIAL
 price: 0
 effect: 생포 개체 격리 자산
 description: S1E4 프라토 작전에서 생포되어 회수된 뒤집어진 양말 격리 개체.
-previewImage:
+previewImage: /assets/catalog/special/inverted-sock-contained-entity.png
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E4-PRATO-PART2, S1E4, 전리품, 뒤집어진양말, 생포, 격리개체, 바르지냐]
 source: session-reward
 createdAt: 2026-07-28T00:00:00Z
-updatedAt: 2026-07-28T00:00:00Z
+updatedAt: 2026-07-30T00:00:00Z
 ---
 
 ## 설명

@@ -8,13 +8,13 @@ category: SPECIAL
 price: 0
 effect: 황금여명회 식별·분석용 회수 물증
 description: S1E3 망령 작전에서 황금여명회 컬티스트에게서 회수한 가면.
-previewImage:
+previewImage: /assets/catalog/special/golden-dawn-cultist-mask.png
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E3-PHANTOM, S1E3, 전리품, 황금여명회, 컬티스트, 가면, 작전물증]
 source: session-reward
 createdAt: 2026-07-28T00:00:00Z
-updatedAt: 2026-07-28T00:00:00Z
+updatedAt: 2026-07-30T00:00:00Z
 ---
 
 ## 설명

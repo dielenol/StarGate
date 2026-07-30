@@ -10,6 +10,7 @@
       "price": 0,
       "effect": "생포 개체 격리 자산",
       "description": "S1E1 질서 작전 전리품으로 생포된 검열된 비명(ZULU-0028) 격리 개체.",
+      "previewImage": "/assets/catalog/special/zulu-0028-contained-entity.png",
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E1-ORDER", "S1E1-ORDER", "전리품", "ZULU-0028", "ZULU-028", "검열된비명", "생포", "격리개체"],
@@ -20,7 +21,7 @@
       },
       "source": "session-reward",
       "createdAt": "2026-07-28T00:00:00.000Z",
-      "updatedAt": "2026-07-28T00:00:00.000Z"
+      "updatedAt": "2026-07-30T00:00:00.000Z"
     }
   },
   {
@@ -34,6 +35,7 @@
       "price": 0,
       "effect": "도살견 외관 식별 자료",
       "description": "S1E3 망령 작전 전리품으로 회수된 몬탁 프로젝트 도살견의 외관 도본.",
+      "previewImage": "/assets/catalog/special/montauk-slaughter-hound-appearance-plate.png",
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "몬탁프로젝트", "도살견", "외관도본", "작전물증"],
@@ -44,7 +46,7 @@
       },
       "source": "session-reward",
       "createdAt": "2026-07-28T00:00:00.000Z",
-      "updatedAt": "2026-07-28T00:00:00.000Z"
+      "updatedAt": "2026-07-30T00:00:00.000Z"
     }
   },
   {
@@ -58,6 +60,7 @@
       "price": 0,
       "effect": "황금여명회 지휘 개체 사후 분석 대상",
       "description": "S1E3 망령 작전 종료 후 전리품으로 회수된 황금여명회 지휘자의 시신.",
+      "previewImage": "/assets/catalog/special/conductor-corpse.png",
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "지휘자", "황금여명회", "시신", "작전물증"],
@@ -68,7 +71,7 @@
       },
       "source": "session-reward",
       "createdAt": "2026-07-28T00:00:00.000Z",
-      "updatedAt": "2026-07-28T00:00:00.000Z"
+      "updatedAt": "2026-07-30T00:00:00.000Z"
     }
   },
   {
@@ -82,6 +85,7 @@
       "price": 0,
       "effect": "지휘자 관련 회수 물증",
       "description": "S1E3 망령 작전에서 지휘자 시신과 함께 회수된 음반축.",
+      "previewImage": "/assets/catalog/special/conductor-record-spindle.png",
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "지휘자", "음반축", "황금여명회", "작전물증"],
@@ -92,7 +96,7 @@
       },
       "source": "session-reward",
       "createdAt": "2026-07-28T00:00:00.000Z",
-      "updatedAt": "2026-07-28T00:00:00.000Z"
+      "updatedAt": "2026-07-30T00:00:00.000Z"
     }
   },
   {
@@ -106,6 +110,7 @@
       "price": 0,
       "effect": "황금여명회 식별·분석용 회수 물증",
       "description": "S1E3 망령 작전에서 황금여명회 컬티스트에게서 회수한 가면.",
+      "previewImage": "/assets/catalog/special/golden-dawn-cultist-mask.png",
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E3-PHANTOM", "S1E3", "전리품", "황금여명회", "컬티스트", "가면", "작전물증"],
@@ -116,7 +121,7 @@
       },
       "source": "session-reward",
       "createdAt": "2026-07-28T00:00:00.000Z",
-      "updatedAt": "2026-07-28T00:00:00.000Z"
+      "updatedAt": "2026-07-30T00:00:00.000Z"
     }
   },
   {
@@ -130,6 +135,7 @@
       "price": 0,
       "effect": "생포 개체 격리 자산",
       "description": "S1E4 프라토 작전에서 생포되어 회수된 뒤집어진 양말 격리 개체.",
+      "previewImage": "/assets/catalog/special/inverted-sock-contained-entity.png",
       "isAvailable": false,
       "isPublic": true,
       "tags": ["NOSB-S1E4-PRATO-PART2", "S1E4", "전리품", "뒤집어진양말", "생포", "격리개체", "바르지냐"],
@@ -140,7 +146,7 @@
       },
       "source": "session-reward",
       "createdAt": "2026-07-28T00:00:00.000Z",
-      "updatedAt": "2026-07-28T00:00:00.000Z"
+      "updatedAt": "2026-07-30T00:00:00.000Z"
     }
   },
   {
@@ -154,6 +160,7 @@
       "price": 0,
       "effect": "작전 중 화이트 로즈 조력자 호출 가능",
       "description": "화이트 로즈 조력자를 작전 중 호출할 수 있는 전리품성 지원권.",
+      "previewImage": "/assets/catalog/special/white-rose-assistant-call.png",
       "isAvailable": false,
       "isPublic": true,
       "tags": ["전리품", "화이트로즈", "조력자", "작전지원", "호출권"],
@@ -164,7 +171,7 @@
       },
       "source": "session-reward",
       "createdAt": "2026-07-28T00:00:00.000Z",
-      "updatedAt": "2026-07-28T00:00:00.000Z"
+      "updatedAt": "2026-07-30T00:00:00.000Z"
     }
   }
 ]

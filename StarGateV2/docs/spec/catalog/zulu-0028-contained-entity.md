@@ -8,13 +8,13 @@ category: SPECIAL
 price: 0
 effect: 생포 개체 격리 자산
 description: S1E1 질서 작전 전리품으로 생포된 검열된 비명(ZULU-0028) 격리 개체.
-previewImage:
+previewImage: /assets/catalog/special/zulu-0028-contained-entity.png
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E1-ORDER, S1E1-ORDER, 전리품, ZULU-0028, ZULU-028, 검열된비명, 생포, 격리개체]
 source: session-reward
 createdAt: 2026-07-28T00:00:00Z
-updatedAt: 2026-07-28T00:00:00Z
+updatedAt: 2026-07-30T00:00:00Z
 ---
 
 ## 설명

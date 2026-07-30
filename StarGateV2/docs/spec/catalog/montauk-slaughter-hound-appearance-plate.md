@@ -8,13 +8,13 @@ category: SPECIAL
 price: 0
 effect: 도살견 외관 식별 자료
 description: S1E3 망령 작전 전리품으로 회수된 몬탁 프로젝트 도살견의 외관 도본.
-previewImage:
+previewImage: /assets/catalog/special/montauk-slaughter-hound-appearance-plate.png
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E3-PHANTOM, S1E3, 전리품, 몬탁프로젝트, 도살견, 외관도본, 작전물증]
 source: session-reward
 createdAt: 2026-07-28T00:00:00Z
-updatedAt: 2026-07-28T00:00:00Z
+updatedAt: 2026-07-30T00:00:00Z
 ---
 
 ## 설명

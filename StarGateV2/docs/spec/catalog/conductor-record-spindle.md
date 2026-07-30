@@ -8,13 +8,13 @@ category: SPECIAL
 price: 0
 effect: 지휘자 관련 회수 물증
 description: S1E3 망령 작전에서 지휘자 시신과 함께 회수된 음반축.
-previewImage:
+previewImage: /assets/catalog/special/conductor-record-spindle.png
 isAvailable: false
 isPublic: true
 tags: [NOSB-S1E3-PHANTOM, S1E3, 전리품, 지휘자, 음반축, 황금여명회, 작전물증]
 source: session-reward
 createdAt: 2026-07-28T00:00:00Z
-updatedAt: 2026-07-28T00:00:00Z
+updatedAt: 2026-07-30T00:00:00Z
 ---
 
 ## 설명

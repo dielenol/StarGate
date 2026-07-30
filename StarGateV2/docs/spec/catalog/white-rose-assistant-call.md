@@ -8,13 +8,13 @@ category: SPECIAL
 price: 0
 effect: 작전 중 화이트 로즈 조력자 호출 가능
 description: 화이트 로즈 조력자를 작전 중 호출할 수 있는 전리품성 지원권.
-previewImage:
+previewImage: /assets/catalog/special/white-rose-assistant-call.png
 isAvailable: false
 isPublic: true
 tags: [전리품, 화이트로즈, 조력자, 작전지원, 호출권]
 source: session-reward
 createdAt: 2026-07-28T00:00:00Z
-updatedAt: 2026-07-28T00:00:00Z
+updatedAt: 2026-07-30T00:00:00Z
 ---
 
 ## 설명
