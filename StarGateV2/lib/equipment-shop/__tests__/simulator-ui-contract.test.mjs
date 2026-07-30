@@ -253,6 +253,25 @@ test("encounter modes, editable targets, bosses, and blast previews are wired in
   assert.match(styles, /\.boardCell--blastCenter/);
 });
 
+test("destructive simulator changes use the NOVUS reset dialog instead of native confirm", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(STYLES_URL, "utf8"),
+  ]);
+
+  assert.doesNotMatch(client, /window\.confirm/);
+  assert.match(client, /useState<PendingTrainingReset \| null>\(null\)/);
+  assert.match(client, /role="dialog"/);
+  assert.match(client, /aria-modal="true"/);
+  assert.match(client, /R-05 \/ RESET AUTHORIZATION/);
+  assert.match(client, /초기화하고 변경/);
+  assert.match(client, /event\.key === "Escape"/);
+  assert.match(styles, /\.resetModalLayer/);
+  assert.match(styles, /\.resetModalBackdrop/);
+  assert.match(styles, /\.resetModal__transition/);
+  assert.match(styles, /\.resetModal__confirm/);
+});
+
 test("the ranged weapon rule card exposes canonical statuses and special actions", async () => {
   const [client, simulator, styles] = await Promise.all([
     readFile(CLIENT_URL, "utf8"),

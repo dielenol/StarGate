@@ -118,6 +118,9 @@ interface Props {
 }
 
 type BattlefieldId = "5x5" | "1x5" | "5x1";
+type PendingTrainingReset =
+  | { kind: "battlefield"; battlefieldId: BattlefieldId }
+  | { kind: "encounter"; mode: SimulatorEncounterMode };
 
 interface BattlefieldConfig {
   id: BattlefieldId;
@@ -560,6 +563,8 @@ export default function EquipmentSimulatorClient({
     useState<BattlefieldId>(DEFAULT_BATTLEFIELD.id);
   const [encounterMode, setEncounterMode] =
     useState<SimulatorEncounterMode>("duel");
+  const [pendingTrainingReset, setPendingTrainingReset] =
+    useState<PendingTrainingReset | null>(null);
   const [activeToken, setActiveToken] = useState<ActiveToken>("target");
   const [enemyPositionConfirmed, setEnemyPositionConfirmed] = useState(true);
   const [attackerPosition, setAttackerPosition] = useState(
@@ -619,6 +624,7 @@ export default function EquipmentSimulatorClient({
   const suppressTokenClickRef = useRef<string | null>(null);
   const enemySequenceRef = useRef(2);
   const feedbackSequenceRef = useRef(0);
+  const resetCancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const feedbackTimerRef = useRef<number | null>(null);
   const turnRevealOutTimerRef = useRef<number | null>(null);
   const turnRevealEndTimerRef = useRef<number | null>(null);
@@ -655,9 +661,57 @@ export default function EquipmentSimulatorClient({
     };
   }, []);
 
+  useEffect(() => {
+    if (!pendingTrainingReset) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusFrame = window.requestAnimationFrame(() => {
+      resetCancelButtonRef.current?.focus();
+    });
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setPendingTrainingReset(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [pendingTrainingReset]);
+
   const battlefield =
     BATTLEFIELDS.find((candidate) => candidate.id === battlefieldId) ??
     DEFAULT_BATTLEFIELD;
+  const pendingBattlefield =
+    pendingTrainingReset?.kind === "battlefield"
+      ? BATTLEFIELDS.find(
+          (candidate) =>
+            candidate.id === pendingTrainingReset.battlefieldId,
+        ) ?? DEFAULT_BATTLEFIELD
+      : null;
+  const resetConfirmation = pendingTrainingReset
+    ? pendingTrainingReset.kind === "battlefield"
+      ? {
+          eyebrow: "BATTLEFIELD RECONFIGURATION",
+          title: "전장 규격을 변경할까요?",
+          current: `${battlefield.label} ${battlefield.description}`,
+          next: `${pendingBattlefield?.label ?? DEFAULT_BATTLEFIELD.label} ${pendingBattlefield?.description ?? DEFAULT_BATTLEFIELD.description}`,
+          detail:
+            "새 전장 규격의 기본 배치로 전환하며 현재 훈련 진행 상태를 정리합니다.",
+        }
+      : {
+          eyebrow: "ENCOUNTER RECONFIGURATION",
+          title: "교전 모드를 변경할까요?",
+          current: `${ENCOUNTER_MODE_META[encounterMode].label} · ${ENCOUNTER_MODE_META[encounterMode].description}`,
+          next: `${ENCOUNTER_MODE_META[pendingTrainingReset.mode].label} · ${ENCOUNTER_MODE_META[pendingTrainingReset.mode].description}`,
+          detail:
+            "새 교전 모드의 기본 표적 구성으로 전환하며 현재 훈련 진행 상태를 정리합니다.",
+        }
+    : null;
   const boardColumns = battlefield.columns;
   const boardRows = battlefield.rows;
   const boardColumnTemplate = `repeat(${boardColumns.length}, minmax(46px, 1fr))`;
@@ -1477,20 +1531,10 @@ export default function EquipmentSimulatorClient({
     setSequence((prev) => prev + 1);
   }
 
-  function handleBattlefieldChange(nextBattlefieldId: BattlefieldId) {
-    if (nextBattlefieldId === battlefieldId) return;
+  function applyBattlefieldChange(nextBattlefieldId: BattlefieldId) {
     const nextBattlefield =
-      BATTLEFIELDS.find(
-        (candidate) => candidate.id === nextBattlefieldId,
-      ) ?? DEFAULT_BATTLEFIELD;
-    if (
-      (turn > 1 || logs.length > 1) &&
-      !window.confirm(
-        "전장 규격을 바꾸면 턴·자원·상태·로그가 초기화됩니다. 계속할까요?",
-      )
-    ) {
-      return;
-    }
+      BATTLEFIELDS.find((candidate) => candidate.id === nextBattlefieldId) ??
+      DEFAULT_BATTLEFIELD;
     setBattlefieldId(nextBattlefield.id);
     resetTrainingState(
       nextBattlefield,
@@ -1503,6 +1547,18 @@ export default function EquipmentSimulatorClient({
     );
   }
 
+  function handleBattlefieldChange(nextBattlefieldId: BattlefieldId) {
+    if (nextBattlefieldId === battlefieldId) return;
+    if (turn > 1 || logs.length > 1) {
+      setPendingTrainingReset({
+        kind: "battlefield",
+        battlefieldId: nextBattlefieldId,
+      });
+      return;
+    }
+    applyBattlefieldChange(nextBattlefieldId);
+  }
+
   function handleReset() {
     resetTrainingState(battlefield, "시험장 상태를 초기화했습니다.");
     showFeedback(
@@ -1512,16 +1568,7 @@ export default function EquipmentSimulatorClient({
     );
   }
 
-  function handleEncounterModeChange(nextMode: SimulatorEncounterMode) {
-    if (nextMode === encounterMode) return;
-    if (
-      (turn > 1 || logs.length > 1) &&
-      !window.confirm(
-        "교전 모드를 바꾸면 턴·자원·상태·로그가 초기화됩니다. 계속할까요?",
-      )
-    ) {
-      return;
-    }
+  function applyEncounterModeChange(nextMode: SimulatorEncounterMode) {
     setEncounterMode(nextMode);
     resetTrainingState(
       battlefield,
@@ -1534,6 +1581,26 @@ export default function EquipmentSimulatorClient({
       `${ENCOUNTER_MODE_META[nextMode].label} 모드`,
       `${ENCOUNTER_MODE_META[nextMode].description} 기본 구성을 불러왔습니다.`,
     );
+  }
+
+  function handleEncounterModeChange(nextMode: SimulatorEncounterMode) {
+    if (nextMode === encounterMode) return;
+    if (turn > 1 || logs.length > 1) {
+      setPendingTrainingReset({ kind: "encounter", mode: nextMode });
+      return;
+    }
+    applyEncounterModeChange(nextMode);
+  }
+
+  function handleConfirmTrainingReset() {
+    const pendingReset = pendingTrainingReset;
+    if (!pendingReset) return;
+    setPendingTrainingReset(null);
+    if (pendingReset.kind === "battlefield") {
+      applyBattlefieldChange(pendingReset.battlefieldId);
+      return;
+    }
+    applyEncounterModeChange(pendingReset.mode);
   }
 
   function findFreeEnemyCell(): SimulatorBoardCoord | null {
@@ -2209,6 +2276,91 @@ export default function EquipmentSimulatorClient({
         ]}
         title="훈련장"
       />
+
+      {resetConfirmation ? (
+        <div className={styles.resetModalLayer}>
+          <button
+            type="button"
+            className={styles.resetModalBackdrop}
+            onClick={() => setPendingTrainingReset(null)}
+            aria-label="훈련 상태 초기화 확인창 닫기"
+          />
+          <section
+            className={styles.resetModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="simulator-reset-title"
+            aria-describedby="simulator-reset-description"
+          >
+            <div className={styles.resetModal__topline}>
+              <span>R-05 / RESET AUTHORIZATION</span>
+              <b>LOCAL SIMULATION</b>
+            </div>
+            <button
+              type="button"
+              className={styles.resetModal__close}
+              onClick={() => setPendingTrainingReset(null)}
+              aria-label="취소하고 확인창 닫기"
+            >
+              ×
+            </button>
+            <header className={styles.resetModal__header}>
+              <span className={styles.resetModal__icon} aria-hidden>
+                !
+              </span>
+              <div>
+                <Eyebrow>{resetConfirmation.eyebrow}</Eyebrow>
+                <h2 id="simulator-reset-title">{resetConfirmation.title}</h2>
+                <p id="simulator-reset-description">
+                  {resetConfirmation.detail}
+                </p>
+              </div>
+            </header>
+            <div
+              className={styles.resetModal__transition}
+              aria-label={`현재 ${resetConfirmation.current}, 다음 ${resetConfirmation.next}`}
+            >
+              <span>
+                <small>CURRENT</small>
+                <strong>{resetConfirmation.current}</strong>
+              </span>
+              <b aria-hidden>→</b>
+              <span>
+                <small>NEXT</small>
+                <strong>{resetConfirmation.next}</strong>
+              </span>
+            </div>
+            <div className={styles.resetModal__resetScope}>
+              <strong>초기화되는 훈련 항목</strong>
+              <ul>
+                <li>현재 턴과 공격·이동 로그</li>
+                <li>탄환·충전·보충 수량과 설치 상태</li>
+                <li>표적 상태이상과 화염 지대 및 행동 선택</li>
+              </ul>
+            </div>
+            <p className={styles.resetModal__notice}>
+              캐릭터·인벤토리 원본 데이터에는 영향을 주지 않습니다.
+            </p>
+            <footer className={styles.resetModal__actions}>
+              <button
+                ref={resetCancelButtonRef}
+                type="button"
+                className={styles.resetModal__cancel}
+                onClick={() => setPendingTrainingReset(null)}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className={styles.resetModal__confirm}
+                onClick={handleConfirmTrainingReset}
+              >
+                초기화하고 변경
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
 
       {draggedToken && dragOverlay?.active ? (
         <div
