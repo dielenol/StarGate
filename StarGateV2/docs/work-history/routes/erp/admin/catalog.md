@@ -25,3 +25,9 @@
 - 검증: 집중 테스트 14개, worker 전체 테스트 38개, `pnpm typecheck`, 대상 ESLint, `pnpm build`, `git diff --check`
 - 관련 커밋: `068e443`
 - 후속 작업: 운영 worker의 `WORKER_OUTBOX_KINDS`에 `SHOP_PRODUCT_LAUNCH_WEBHOOK`을 추가한 뒤 실제 Mongo 트랜잭션 재시도·Discord 수신을 staging에서 확인해야 한다.
+
+## 2026-07-30 · 기능 개선 · 신제품 웹훅 이미지
+
+- 신제품에 등록된 `previewImage`를 출시 outbox에 포함해 Discord 공지 카드에서도 상품 이미지를 표시하도록 확장했다.
+- 검증: 웹 계약 테스트 7개, worker 전체 테스트 39개, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`
+- 관련 커밋: `54631c1`
