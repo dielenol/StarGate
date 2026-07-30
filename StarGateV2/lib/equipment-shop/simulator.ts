@@ -639,6 +639,12 @@ export function isSimulatorAttackableCell(
   target: SimulatorBoardCoord,
 ): boolean {
   const rule = getSimulatorWeaponRule(weaponSlug);
+  if (
+    rule?.role === "냉병기" &&
+    rule.slug !== "basic-dagger"
+  ) {
+    return attacker.col === target.col && attacker.row === target.row;
+  }
   const range = getSimulatorWeaponRange(weaponSlug, attacker, target);
   if (!rule || !range) return false;
   if (

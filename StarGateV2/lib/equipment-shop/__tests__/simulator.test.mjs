@@ -422,6 +422,31 @@ test("non-throwing melee weapons only attack targets in the same cell", () => {
   }
 });
 
+test("non-throwing melee highlights only the attacker cell on a horizontal row", () => {
+  const attacker = { col: "C", row: 1 };
+  const row = ["A", "B", "C", "D", "E"].map((col) => ({
+    col,
+    row: 1,
+  }));
+
+  for (const weaponSlug of [
+    "basic-katana",
+    "basic-longsword",
+    "basic-blunt-weapon",
+    "basic-chainsaw",
+  ]) {
+    assert.deepEqual(
+      row
+        .filter((target) =>
+          isSimulatorAttackableCell(weaponSlug, attacker, target),
+        )
+        .map((target) => `${target.col}${target.row}`),
+      ["C1"],
+      weaponSlug,
+    );
+  }
+});
+
 test("dagger throws use total grid distance and keep the two-cell exception", () => {
   const result = resolveSimulatorAttack({
     weaponSlug: "basic-dagger",
