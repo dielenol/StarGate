@@ -7,3 +7,11 @@
 - 검증: `pnpm lint`, focused ESLint, `git diff --check`, 인증 브라우저 1280×720·390×844 확인(가로 넘침·고정 UI 충돌·콘솔 오류 없음)
 - 관련 커밋: `7ea4903`
 - 후속 작업: 전체 `pnpm typecheck`는 별도 작업 중인 `equipment-shop/simulator/EquipmentSimulatorClient.tsx`의 null 가능성 오류로 차단됨
+
+## 2026-07-30 · 기능 추가 · 띠아 신제품 웹훅
+
+- 신제품 출시 알림을 편의점 전용 Discord 웹훅으로 전달하고, 띠아가 상품명·분류·가격·효과와 편의점 링크를 안내하도록 추가했다.
+- 사용자 입력 문구의 Discord 멘션을 무력화하고, 외부 전송 실패는 상품 출시와 분리된 outbox 재시도 대상으로 처리했다.
+- 검증: 집중 테스트 14개, worker 전체 테스트 38개, `pnpm typecheck`, 대상 ESLint, `pnpm build`, `git diff --check`
+- 관련 커밋: `068e443`
+- 후속 작업: 운영 worker의 `WORKER_OUTBOX_KINDS` opt-in 전환 전에는 알림이 `PENDING`으로만 적재된다.

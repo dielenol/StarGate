@@ -17,3 +17,11 @@
 - 검증: `pnpm typecheck`, `pnpm lint`, `git diff --check`
 - 브라우저 확인: 네이티브 `<select>` 0개, 공용 listbox 렌더링, 마우스 선택과 `End`·`Enter` 키보드 선택, 전략 장비 선택 시 특수 카테고리 전환, 콘솔 오류·가로 넘침 없음
 - 관련 커밋: `4883481`
+
+## 2026-07-30 · 기능 추가 · 편의점 신제품 출시 알림
+
+- 공개·판매 가능한 편의점 신제품을 등록하면 상품·GM 감사 기록과 띠아 출시 알림 outbox를 같은 트랜잭션으로 저장하도록 연결했다.
+- 실제 생성된 상품 ID를 알림 dedupe 기준으로 사용해 요청 재시도는 중복 적재하지 않고, 삭제 후 같은 slug로 재출시하는 상품은 새 알림을 만들 수 있게 했다.
+- 검증: 집중 테스트 14개, worker 전체 테스트 38개, `pnpm typecheck`, 대상 ESLint, `pnpm build`, `git diff --check`
+- 관련 커밋: `068e443`
+- 후속 작업: 운영 worker의 `WORKER_OUTBOX_KINDS`에 `SHOP_PRODUCT_LAUNCH_WEBHOOK`을 추가한 뒤 실제 Mongo 트랜잭션 재시도·Discord 수신을 staging에서 확인해야 한다.
