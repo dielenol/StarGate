@@ -83,6 +83,7 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 - [`/erp/equipment-shop/custom`](routes/erp/equipment-shop/custom.md)
 - [`/erp/equipment-shop/lab`](routes/erp/equipment-shop/lab.md)
 - [`/erp/equipment-shop/simulator`](routes/erp/equipment-shop/simulator.md)
+- [`/erp/equipment-shop/towaski`](routes/erp/equipment-shop/towaski.md)
 - [`/erp/personnel`](routes/erp/personnel.md)
 - [`/erp/sessions/report`](routes/erp/sessions/report.md)
 - [`/erp/shop`](routes/erp/shop.md)
