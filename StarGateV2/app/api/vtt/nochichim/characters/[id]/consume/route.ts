@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 
+import {
+  EconomicOperationConflictError,
+  executeEconomicOperationResult,
+} from "@/lib/db/execute-economic-operation";
+
 import { requireNochichimSyncAuth } from "../../../_lib/auth";
 import {
   consumeCharacterConsumable,
+  consumeSharedNochichimConsumable,
+  loadCharacterConsumables,
+  nochichimSharedConsumableMasterItemId,
   type NochichimConsumptionSessionContext,
 } from "../../../_lib/snapshots";
 
@@ -20,6 +28,7 @@ interface ConsumeBody {
   sessionTitle?: unknown;
   sessionName?: unknown;
   operationTitle?: unknown;
+  requestId?: unknown;
 }
 
 function normalizeQuantity(value: unknown): number | null {
@@ -63,15 +72,91 @@ export async function POST(request: Request, context: RouteContext) {
   const itemId = typeof body?.itemId === "string" ? body.itemId.trim() : "";
   const quantity = normalizeQuantity(body?.quantity);
   const sessionContext = normalizeSessionContext(body);
+  const requestId = normalizeOptionalString(body?.requestId);
+  const sharedMasterItemId = nochichimSharedConsumableMasterItemId(itemId);
 
-  if (!itemId || quantity === null) {
+  if (!itemId || quantity === null || (sharedMasterItemId && !requestId)) {
     return NextResponse.json(
-      { error: "itemId and positive quantity are required" },
+      {
+        error:
+          sharedMasterItemId && !requestId
+            ? "requestId is required for shared consumables"
+            : "itemId and positive quantity are required",
+      },
       { status: 400 },
     );
   }
 
   try {
+    if (sharedMasterItemId) {
+      if (quantity !== 1) {
+        return NextResponse.json(
+          { error: "Shared call ticket quantity must be 1" },
+          { status: 400 },
+        );
+      }
+      const characterId = decodeURIComponent(id);
+      const operation = await executeEconomicOperationResult<{
+        ok: boolean;
+        remaining: number;
+      }>({
+        requestId: `nochichim-shared-consumable:${requestId}`,
+        domain: "shared-inventory-consume-vtt",
+        actorId: "vtt:nochichim",
+        payload: { characterId, itemId, quantity },
+        run: async (dbSession) => {
+          const result = await consumeSharedNochichimConsumable(
+            { characterId, itemId, quantity },
+            { session: dbSession },
+          );
+          return { status: result.ok ? 200 : 409, body: result };
+        },
+      });
+      let consumables;
+      try {
+        consumables = await loadCharacterConsumables(characterId);
+      } catch {
+        return NextResponse.json(
+          {
+            ...operation.body,
+            error:
+              "Shared consumable operation committed, but inventory refresh failed",
+            retryable: true,
+          },
+          {
+            status: 503,
+            headers: operation.replayed
+              ? { "X-Idempotency-Replayed": "true" }
+              : undefined,
+          },
+        );
+      }
+      if (!operation.body.ok) {
+        return NextResponse.json(
+          {
+            ...operation.body,
+            consumables,
+            error: "Insufficient quantity",
+          },
+          {
+            status: operation.status,
+            headers: operation.replayed
+              ? { "X-Idempotency-Replayed": "true" }
+              : undefined,
+          },
+        );
+      }
+      return NextResponse.json(
+        { ...operation.body, consumables },
+        {
+          status: operation.status,
+          headers: operation.replayed
+            ? { "X-Idempotency-Replayed": "true" }
+            : undefined,
+        },
+      );
+    }
+
     const result = await consumeCharacterConsumable({
       characterId: decodeURIComponent(id),
       itemId,
@@ -93,8 +178,21 @@ export async function POST(request: Request, context: RouteContext) {
 
     return NextResponse.json(result);
   } catch (err) {
+    if (err instanceof EconomicOperationConflictError) {
+      return NextResponse.json(
+        { error: "Shared consumable request is already processing" },
+        { status: 409 },
+      );
+    }
     const message =
       err instanceof Error ? err.message : "Failed to consume item";
-    return NextResponse.json({ error: message }, { status: 404 });
+    const status = [
+      "Character not found",
+      "Consumable not found",
+      "Shared consumable not found",
+    ].includes(message)
+      ? 404
+      : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

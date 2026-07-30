@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { ObjectId, type ClientSession } from "mongodb";
 
 import "@/lib/db/init";
 import { findSessionById } from "@/lib/db/sessions";
@@ -10,9 +10,11 @@ import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 import {
   findCharacterByCodename,
   findCharacterById,
+  listSharedInventory,
   listAgentCharacters,
   listCharacterInventory,
   masterItemsCol,
+  sharedInventoryCol,
   consumeEquippedEquipmentCharge,
   removeFromInventory,
   type Ability,
@@ -35,6 +37,9 @@ export interface NochichimConsumableSnapshot {
   note?: string;
   acquiredAt: SerializedDate;
 }
+
+export const NOCHICHIM_SHARED_CONSUMABLE_PREFIX = "shared:";
+const WHITE_ROSE_ASSISTANT_CALL_SLUG = "white-rose-assistant-call";
 
 export interface NochichimEquipmentActionSnapshot {
   itemId: string;
@@ -207,7 +212,8 @@ export async function listNochichimCharacters(
 }
 
 async function loadMasterItemMap(
-  inventory: CharacterInventory[],
+  inventory: Array<Pick<CharacterInventory, "itemId">>,
+  options: { session?: ClientSession } = {},
 ): Promise<Map<string, MasterItem>> {
   const objectIds = inventory
     .map((entry) => entry.itemId)
@@ -217,7 +223,7 @@ async function loadMasterItemMap(
   if (objectIds.length === 0) return new Map();
 
   const items = await (await masterItemsCol())
-    .find({ _id: { $in: objectIds } })
+    .find({ _id: { $in: objectIds } }, { session: options.session })
     .toArray();
 
   return new Map(items.map((item) => [objectIdString(item._id), item]));
@@ -226,12 +232,17 @@ async function loadMasterItemMap(
 export async function loadCharacterConsumables(
   characterId: string,
 ): Promise<NochichimConsumableSnapshot[]> {
-  const inventory = (await listCharacterInventory(characterId)).filter(
-    (entry) => entry.quantity > 0,
-  );
-  const itemMap = await loadMasterItemMap(inventory);
+  const [inventory, sharedInventory] = await Promise.all([
+    listCharacterInventory(characterId).then((entries) =>
+      entries.filter((entry) => entry.quantity > 0),
+    ),
+    listSharedInventory().then((entries) =>
+      entries.filter((entry) => entry.quantity > 0),
+    ),
+  ]);
+  const itemMap = await loadMasterItemMap([...inventory, ...sharedInventory]);
 
-  return inventory.flatMap((entry) => {
+  const personal = inventory.flatMap((entry) => {
     const item = itemMap.get(entry.itemId);
     if (!item || item.category !== "CONSUMABLE") return [];
 
@@ -250,6 +261,86 @@ export async function loadCharacterConsumables(
       },
     ];
   });
+  const shared = sharedInventory.flatMap((entry) => {
+    const item = itemMap.get(entry.itemId);
+    if (
+      !item ||
+      item.category !== "CONSUMABLE" ||
+      item.slug !== WHITE_ROSE_ASSISTANT_CALL_SLUG
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        itemId: `${NOCHICHIM_SHARED_CONSUMABLE_PREFIX}${entry.itemId}`,
+        slug: item.slug,
+        name: item.name || entry.itemName,
+        description: item.description ?? "",
+        effect: item.effect ?? "",
+        quantity: entry.quantity,
+        previewImage:
+          getConsumableItemImageSrc(item.slug ?? "") ?? item.previewImage ?? "",
+        note: entry.note,
+        acquiredAt: dateToIso(entry.acquiredAt),
+      },
+    ];
+  });
+  return [...personal, ...shared];
+}
+
+export function nochichimSharedConsumableMasterItemId(
+  itemId: string,
+): string | null {
+  if (!itemId.startsWith(NOCHICHIM_SHARED_CONSUMABLE_PREFIX)) return null;
+  const masterItemId = itemId.slice(NOCHICHIM_SHARED_CONSUMABLE_PREFIX.length);
+  return ObjectId.isValid(masterItemId) ? masterItemId : null;
+}
+
+export async function consumeSharedNochichimConsumable(
+  input: {
+    characterId: string;
+    itemId: string;
+    quantity: number;
+  },
+  options: { session: ClientSession },
+): Promise<{ ok: boolean; remaining: number }> {
+  const character = await findAgentCharacterByKey(input.characterId);
+  if (!character) throw new Error("Character not found");
+  const masterItemId = nochichimSharedConsumableMasterItemId(input.itemId);
+  if (!masterItemId) throw new Error("Shared consumable not found");
+  const item = (
+    await loadMasterItemMap(
+      [{ itemId: masterItemId }],
+      { session: options.session },
+    )
+  ).get(masterItemId);
+  if (
+    !item ||
+    item.category !== "CONSUMABLE" ||
+    item.slug !== WHITE_ROSE_ASSISTANT_CALL_SLUG
+  ) {
+    throw new Error("Shared consumable not found");
+  }
+
+  const collection = await sharedInventoryCol();
+  const entry = await collection.findOneAndUpdate(
+    {
+      scope: "GLOBAL",
+      itemId: masterItemId,
+      quantity: { $gte: input.quantity },
+    },
+    { $inc: { quantity: -input.quantity } },
+    { returnDocument: "after", session: options.session },
+  );
+  if (!entry) return { ok: false, remaining: 0 };
+  if (entry.quantity === 0) {
+    await collection.deleteOne(
+      { _id: entry._id, quantity: 0 },
+      { session: options.session },
+    );
+  }
+  return { ok: true, remaining: entry.quantity };
 }
 
 async function loadCharacterEquippedState(characterId: string) {
@@ -388,14 +479,7 @@ export async function consumeCharacterEquipmentAction(input: {
   if (!character) throw new Error("Character not found");
   const characterId = objectIdString(character._id);
   const item = (await loadMasterItemMap([
-    {
-      characterId,
-      characterCodename: character.codename,
-      itemId: input.itemId,
-      itemName: "",
-      quantity: 1,
-      acquiredAt: new Date(),
-    },
+    { itemId: input.itemId },
   ])).get(input.itemId);
   const action = item?.equipmentAction;
   if (!item || !action || action.code !== input.actionCode) {
@@ -476,14 +560,7 @@ export async function consumeCharacterConsumable(input: {
   }
 
   const item = (await loadMasterItemMap([
-    {
-      characterId: input.characterId,
-      characterCodename: character.codename,
-      itemId: input.itemId,
-      itemName: "",
-      quantity: input.quantity,
-      acquiredAt: new Date(),
-    },
+    { itemId: input.itemId },
   ])).get(input.itemId);
 
   if (!item || item.category !== "CONSUMABLE") {
