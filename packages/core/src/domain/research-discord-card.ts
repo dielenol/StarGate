@@ -47,7 +47,12 @@ export interface ResearchDiscordPayload {
 }
 
 const DISCORD_FIELD_VALUE_MAX = 1000;
-const DISCORD_RESEARCH_COLOR = 0x9bd8ec;
+const DISCORD_RESEARCH_COLORS = {
+  funding: 0xc5a059,
+  inProgress: 0x5ea3c5,
+  completed: 0x2fbf71,
+  cancelled: 0xd95f5f,
+} as const;
 
 export function sanitizeResearchDiscordText(text: string): string {
   return text
@@ -154,6 +159,19 @@ function getResearchStatus(snapshot: ResearchDiscordCardSnapshot): string {
   return "연구비 모금 중";
 }
 
+function getResearchColor(snapshot: ResearchDiscordCardSnapshot): number {
+  if (snapshot.project?.status === "applied") {
+    return DISCORD_RESEARCH_COLORS.completed;
+  }
+  if (snapshot.project) {
+    return DISCORD_RESEARCH_COLORS.inProgress;
+  }
+  if (snapshot.fundingStatus === "cancelled") {
+    return DISCORD_RESEARCH_COLORS.cancelled;
+  }
+  return DISCORD_RESEARCH_COLORS.funding;
+}
+
 function formatKstTimestamp(date: Date): string {
   return new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
@@ -220,7 +238,7 @@ export function buildResearchDiscordCardPayload(
           256,
         ),
         url: snapshot.labUrl,
-        color: DISCORD_RESEARCH_COLOR,
+        color: getResearchColor(snapshot),
         fields,
         footer: { text: `최종 갱신 · ${formatKstTimestamp(snapshot.updatedAt)}` },
         timestamp: snapshot.updatedAt.toISOString(),

@@ -108,6 +108,56 @@ test("현황 카드는 전체 진행과 분리된 기여 장부를 한 임베드
   assert.deepEqual(payload.allowed_mentions, { parse: [] });
 });
 
+test("연구 단계별로 Discord 임베드 색상을 구분한다", () => {
+  const base = {
+    projectKey: "BIO-02",
+    projectName: "생체 방호 프로토콜",
+    targetCost: 300,
+    fundedAmount: 100,
+    fundingStatus: "funding",
+    contributions: [],
+    updatedAt: new Date("2026-07-20T04:00:00.000Z"),
+    labUrl: "https://example.test/erp/equipment-shop/lab",
+  };
+  const color = (snapshot) =>
+    buildResearchDiscordCardPayload(snapshot).embeds[0].color;
+
+  assert.deepEqual(
+    {
+      funding: color(base),
+      inProgress: color({
+        ...base,
+        fundedAmount: 300,
+        fundingStatus: "started",
+        project: {
+          status: "in_progress",
+          completedAt: new Date("2026-07-28T03:00:00.000Z"),
+        },
+      }),
+      completed: color({
+        ...base,
+        fundedAmount: 300,
+        fundingStatus: "started",
+        project: {
+          status: "applied",
+          completedAt: new Date("2026-07-28T03:00:00.000Z"),
+          appliedAt: new Date("2026-07-28T04:00:00.000Z"),
+        },
+      }),
+      cancelled: color({
+        ...base,
+        fundingStatus: "cancelled",
+      }),
+    },
+    {
+      funding: 0xc5a059,
+      inProgress: 0x5ea3c5,
+      completed: 0x2fbf71,
+      cancelled: 0xd95f5f,
+    },
+  );
+});
+
 test("기여자가 많아도 Discord field 제한 안에서 외 N명으로 줄인다", () => {
   const contributions = Array.from({ length: 80 }, (_, index) => ({
     action: "fund",
