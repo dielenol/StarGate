@@ -36,6 +36,14 @@ export interface RealtimeInvalidateV1 {
   emittedAt: string;
 }
 
+export interface RealtimeSessionRefreshV1 {
+  version: 1;
+  id: string;
+  type: "session-refresh";
+  reason: "identity-changed";
+  emittedAt: string;
+}
+
 /**
  * Auth.js 세션을 확인한 StarGateV2만 이 claim을 발급한다.
  * 토큰 자체는 60초 이내 만료되고 worker는 ACTIVE 사용자만 허용한다.

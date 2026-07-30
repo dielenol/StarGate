@@ -41,6 +41,12 @@ function waitForConnectError(socket) {
   });
 }
 
+function waitForEvent(socket, eventName) {
+  return new Promise((resolve) => {
+    socket.once(eventName, resolve);
+  });
+}
+
 test("Socket.IO는 Origin, ticket, 전체/사용자별 연결 제한을 적용한다", async () => {
   const server = createServer();
   const realtime = new RealtimeSocketServer(server, {
@@ -393,6 +399,163 @@ test("Change Stream gap 대응용 disconnectAll은 모든 활성 socket을 끊�
   } finally {
     first.disconnect();
     second.disconnect();
+    await realtime.close();
+    if (server.listening) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  }
+});
+
+test("대상 invalidate는 해당 사용자 socket에만 공개 데이터 없이 전달한다", async () => {
+  const server = createServer();
+  const realtime = new RealtimeSocketServer(server, {
+    allowedOrigins: ["http://allowed.test"],
+    maxPayloadBytes: 4_096,
+    maxConnections: 10,
+    maxConnectionsPerUser: 2,
+    verifier: {
+      async verify(token) {
+        return principal(token);
+      },
+    },
+    logger: {
+      info() {},
+      warn() {},
+      error() {},
+    },
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const url = `http://127.0.0.1:${address.port}`;
+  const target = connect(url, "target-user");
+  const bystander = connect(url, "bystander-user");
+
+  try {
+    await Promise.all([waitForConnect(target), waitForConnect(bystander)]);
+    const received = waitForEvent(target, "invalidate");
+    let bystanderReceived = false;
+    bystander.once("invalidate", () => {
+      bystanderReceived = true;
+    });
+
+    realtime.emitInvalidate(["notifications"], ["target-user"]);
+    const event = await received;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    assert.equal(bystanderReceived, false);
+    assert.deepEqual(event.resources, ["notifications"]);
+    assert.equal(event.type, "invalidate");
+    assert.equal("userId" in event, false);
+    assert.equal("audienceUserIds" in event, false);
+  } finally {
+    target.disconnect();
+    bystander.disconnect();
+    await realtime.close();
+    if (server.listening) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  }
+});
+
+test("identity 변경은 session-refresh를 보낸 뒤 해당 socket만 종료한다", async () => {
+  const server = createServer();
+  const realtime = new RealtimeSocketServer(server, {
+    allowedOrigins: ["http://allowed.test"],
+    maxPayloadBytes: 4_096,
+    maxConnections: 10,
+    maxConnectionsPerUser: 2,
+    verifier: {
+      async verify(token) {
+        return principal(token);
+      },
+    },
+    logger: {
+      info() {},
+      warn() {},
+      error() {},
+    },
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const url = `http://127.0.0.1:${address.port}`;
+  const target = connect(url, "identity-user");
+  const bystander = connect(url, "stable-user");
+
+  try {
+    await Promise.all([waitForConnect(target), waitForConnect(bystander)]);
+    const refresh = waitForEvent(target, "session-refresh");
+    const disconnected = waitForEvent(target, "disconnect");
+
+    assert.equal(
+      realtime.refreshSessionAndDisconnect("identity-user"),
+      1,
+    );
+    const event = await refresh;
+    assert.equal(event.type, "session-refresh");
+    assert.equal(event.reason, "identity-changed");
+    assert.equal("userId" in event, false);
+    assert.equal(await disconnected, "io server disconnect");
+    assert.equal(bystander.connected, true);
+  } finally {
+    target.disconnect();
+    bystander.disconnect();
+    await realtime.close();
+    if (server.listening) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  }
+});
+
+test("활성 socket이 없어도 identity 변경은 검증 중 handshake를 폐기한다", async () => {
+  const server = createServer();
+  let releaseVerification;
+  let verificationStarted;
+  const verificationGate = new Promise((resolve) => {
+    releaseVerification = resolve;
+  });
+  const verificationStartedPromise = new Promise((resolve) => {
+    verificationStarted = resolve;
+  });
+  const realtime = new RealtimeSocketServer(server, {
+    allowedOrigins: ["http://allowed.test"],
+    maxPayloadBytes: 4_096,
+    maxConnections: 10,
+    maxConnectionsPerUser: 2,
+    verifier: {
+      async verify() {
+        verificationStarted();
+        await verificationGate;
+        return principal("pending-identity-user");
+      },
+    },
+    logger: {
+      info() {},
+      warn() {},
+      error() {},
+    },
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const socket = connect(
+    `http://127.0.0.1:${address.port}`,
+    "pending-ticket",
+  );
+
+  try {
+    await verificationStartedPromise;
+    assert.equal(
+      realtime.refreshSessionAndDisconnect("pending-identity-user"),
+      0,
+    );
+    releaseVerification();
+    const error = await waitForConnectError(socket);
+    assert.match(error.message, /not_ready/);
+  } finally {
+    releaseVerification();
+    socket.disconnect();
     await realtime.close();
     if (server.listening) {
       await new Promise((resolve) => server.close(resolve));

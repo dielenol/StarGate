@@ -35,6 +35,38 @@ function documentId(value: unknown): string | undefined {
   return String(value);
 }
 
+function stringField(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+export function extractRealtimeAudienceUserIds(
+  collectionName: string,
+  fullDocument: Document | null | undefined,
+): string[] | undefined {
+  if (!fullDocument) return undefined;
+
+  if (collectionName === "notifications") {
+    const userId = stringField(fullDocument.userId);
+    return userId ? [userId] : undefined;
+  }
+
+  if (collectionName === "player_trades") {
+    const initiator = fullDocument.initiator as
+      | Record<string, unknown>
+      | undefined;
+    const counterparty = fullDocument.counterparty as
+      | Record<string, unknown>
+      | undefined;
+    const userIds = [
+      stringField(initiator?.userId),
+      stringField(counterparty?.userId),
+    ].filter((userId): userId is string => Boolean(userId));
+    return userIds.length > 0 ? [...new Set(userIds)] : undefined;
+  }
+
+  return undefined;
+}
+
 export class MongoRealtimeChangeStreamSource
   implements RealtimeChangeStreamSource
 {
@@ -144,6 +176,7 @@ export class MongoRealtimeChangeStreamSource
     const detail = change as ChangeStreamDocument<Document> & {
       ns?: { coll?: string };
       documentKey?: { _id?: unknown };
+      fullDocument?: Document | null;
       updateDescription?: { updatedFields?: Record<string, unknown> };
     };
     const collectionName = detail.ns?.coll;
@@ -155,6 +188,10 @@ export class MongoRealtimeChangeStreamSource
       documentId: documentId(detail.documentKey?._id),
       updatedFields: Object.keys(
         detail.updateDescription?.updatedFields ?? {},
+      ),
+      audienceUserIds: extractRealtimeAudienceUserIds(
+        collectionName,
+        detail.fullDocument,
       ),
     });
     await this.checkpoints.save(this.checkpointKey, change._id);

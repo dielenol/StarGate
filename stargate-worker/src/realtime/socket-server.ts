@@ -4,6 +4,7 @@ import type { Server as HttpServer } from "node:http";
 import type {
   RealtimeInvalidateV1,
   RealtimeResource,
+  RealtimeSessionRefreshV1,
 } from "@stargate/core";
 import { Server, type Socket } from "socket.io";
 
@@ -15,6 +16,7 @@ import type {
 
 interface ServerToClientEvents {
   invalidate: (event: RealtimeInvalidateV1) => void;
+  "session-refresh": (event: RealtimeSessionRefreshV1) => void;
 }
 
 interface InterServerEvents {}
@@ -180,7 +182,10 @@ export class RealtimeSocketServer {
     else this.#pendingByUserId.set(userId, remaining);
   }
 
-  emitInvalidate(resources: readonly RealtimeResource[]): void {
+  emitInvalidate(
+    resources: readonly RealtimeResource[],
+    audienceUserIds?: readonly string[],
+  ): void {
     const uniqueResources = [...new Set(resources)];
     if (uniqueResources.length === 0) return;
 
@@ -191,7 +196,38 @@ export class RealtimeSocketServer {
       resources: uniqueResources,
       emittedAt: new Date().toISOString(),
     };
-    this.#io.of("/erp").emit("invalidate", event);
+    if (!audienceUserIds) {
+      this.#io.of("/erp").emit("invalidate", event);
+      return;
+    }
+
+    for (const userId of new Set(audienceUserIds)) {
+      for (const socket of this.#socketsByUserId.get(userId) ?? []) {
+        socket.emit("invalidate", event);
+      }
+    }
+  }
+
+  refreshSessionAndDisconnect(userId: string): number {
+    // 활성 socket이 없어도 이전 identity로 검증 중인 handshake를 폐기한다.
+    this.#connectionGeneration += 1;
+    const sockets = this.#socketsByUserId.get(userId);
+    if (!sockets) return 0;
+
+    const event: RealtimeSessionRefreshV1 = {
+      version: 1,
+      id: randomUUID(),
+      type: "session-refresh",
+      reason: "identity-changed",
+      emittedAt: new Date().toISOString(),
+    };
+    const count = sockets.size;
+    for (const socket of sockets) {
+      socket.emit("session-refresh", event);
+      socket.disconnect(true);
+    }
+    this.#socketsByUserId.delete(userId);
+    return count;
   }
 
   disconnectUser(userId: string): number {

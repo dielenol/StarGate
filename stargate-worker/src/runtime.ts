@@ -127,15 +127,19 @@ export class WorkerRuntime {
           const mapped = mapRealtimeChange(change);
           if (!mapped) return;
           if (mapped.disconnectUserId) {
-            const disconnected = this.#http.realtime.disconnectUser(
-              mapped.disconnectUserId,
-            );
+            const disconnected =
+              this.#http.realtime.refreshSessionAndDisconnect(
+                mapped.disconnectUserId,
+              );
             this.#logger.info("realtime_user_reauthentication", {
               userId: mapped.disconnectUserId,
               disconnected,
             });
           }
-          this.#http.realtime.emitInvalidate(mapped.resources);
+          this.#http.realtime.emitInvalidate(
+            mapped.resources,
+            mapped.audienceUserIds,
+          );
         },
         onError: () => {
           this.#health.setComponent("changeStream", false);

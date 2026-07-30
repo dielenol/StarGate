@@ -10,7 +10,10 @@ import {
   RealtimeTicketError,
   createRealtimeTicketVerifier,
 } from "../dist/realtime/ticket-verifier.js";
-import { MongoRealtimeChangeStreamSource } from "../dist/realtime/change-stream-source.js";
+import {
+  MongoRealtimeChangeStreamSource,
+  extractRealtimeAudienceUserIds,
+} from "../dist/realtime/change-stream-source.js";
 
 const ticketConfig = {
   secret: "0123456789abcdef0123456789abcdef",
@@ -66,6 +69,55 @@ test("role/status 변경은 해당 사용자의 재인증을 요구한다", () =
     {
       resources: ["users", "personnel"],
       disconnectUserId: "user-id",
+    },
+  );
+});
+
+test("알림과 거래의 대상 사용자 ID는 worker 내부 라우팅 정보로만 추출한다", () => {
+  assert.deepEqual(
+    extractRealtimeAudienceUserIds("notifications", {
+      userId: "notification-user",
+      title: "외부로 보내면 안 되는 제목",
+    }),
+    ["notification-user"],
+  );
+  assert.deepEqual(
+    extractRealtimeAudienceUserIds("player_trades", {
+      initiator: { userId: "initiator-user", characterCodename: "비공개" },
+      counterparty: { userId: "counterparty-user" },
+      offers: { credits: 100_000 },
+    }),
+    ["initiator-user", "counterparty-user"],
+  );
+  assert.equal(
+    extractRealtimeAudienceUserIds("notifications", null),
+    undefined,
+  );
+  assert.equal(
+    extractRealtimeAudienceUserIds("player_trades", {
+      initiator: {},
+      counterparty: {},
+    }),
+    undefined,
+  );
+});
+
+test("대상 사용자 ID는 공개 resource 매핑 결과의 내부 필드로만 유지된다", () => {
+  assert.deepEqual(
+    mapRealtimeChange({
+      collectionName: "player_trades",
+      operationType: "update",
+      documentId: "trade-id",
+      updatedFields: ["revision"],
+      audienceUserIds: [
+        "initiator-user",
+        "counterparty-user",
+        "initiator-user",
+      ],
+    }),
+    {
+      resources: ["trades"],
+      audienceUserIds: ["initiator-user", "counterparty-user"],
     },
   );
 });

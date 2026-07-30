@@ -54,10 +54,12 @@ export interface RealtimeDatabaseChange {
   operationType: string;
   documentId?: string;
   updatedFields: string[];
+  audienceUserIds?: string[];
 }
 
 export interface MappedRealtimeChange {
   resources: RealtimeResource[];
+  audienceUserIds?: string[];
   disconnectUserId?: string;
 }
 
@@ -85,6 +87,9 @@ export function mapRealtimeChange(
 
   return {
     resources: [...resources],
+    ...(change.audienceUserIds
+      ? { audienceUserIds: [...new Set(change.audienceUserIds)] }
+      : {}),
     ...(shouldReauthenticateUser(change)
       ? { disconnectUserId: change.documentId }
       : {}),

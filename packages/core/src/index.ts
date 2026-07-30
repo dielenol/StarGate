@@ -3,6 +3,7 @@ export {
   isRealtimeResource,
   type RealtimeInvalidateV1,
   type RealtimeResource,
+  type RealtimeSessionRefreshV1,
   type RealtimeTicketClaimsV1,
 } from "./domain/realtime.js";
 
