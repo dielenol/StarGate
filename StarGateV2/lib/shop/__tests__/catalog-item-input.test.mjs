@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { normalizeCatalogItemCreateBody } from "../catalog-item-input.ts";
+import {
+  normalizeCatalogItemCreateBody,
+  shouldAnnounceShopProductLaunch,
+} from "../catalog-item-input.ts";
 
 function base(overrides = {}) {
   return {
@@ -41,6 +44,31 @@ test("shop target normalizes only DB master item fields", () => {
     icon: "🥫",
     color: "#445566",
   });
+});
+
+test("only public and available shop items qualify for a launch notice", () => {
+  const cases = [
+    [base(), true],
+    [base({ isAvailable: false }), false],
+    [base({ isPublic: false }), false],
+    [
+      base({
+        target: "armory",
+        armoryZone: "towaski",
+        category: "WEAPON",
+        shopMeta: undefined,
+      }),
+      false,
+    ],
+  ];
+
+  for (const [input, expected] of cases) {
+    const result = normalizeCatalogItemCreateBody(input);
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.equal(shouldAnnounceShopProductLaunch(result.value), expected);
+    }
+  }
 });
 
 test("armory target emits exact zone tags and rejects invalid category combinations", () => {

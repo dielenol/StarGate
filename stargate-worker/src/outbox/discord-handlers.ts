@@ -26,6 +26,12 @@ const FIELD_VALUE_MAX = 1_000;
 const FIELD_NAME_MAX = 256;
 const SHOP_URL = "https://www.ordonet.co.kr/erp/shop";
 const SNOWFLAKE = /^\d{17,20}$/;
+const SHOP_GROUP_LABELS: Record<string, string> = {
+  BASIC: "기본 물품",
+  RECOVERY: "회복 물품",
+  LUXURY: "기호품",
+  RARE: "희귀 물품",
+};
 
 type Environment = NodeJS.ProcessEnv;
 
@@ -137,7 +143,8 @@ function webhookUrlFor(
     kind === "STOCK_MANUAL_INTERVENTION_WEBHOOK"
       ? env.DISCORD_WEBHOOK_STOCK_URL?.trim() ||
         env.DISCORD_STOCK_WEBHOOK_URL?.trim()
-      : kind === "SHOP_REORDER_FULFILLED_WEBHOOK"
+      : kind === "SHOP_REORDER_FULFILLED_WEBHOOK" ||
+          kind === "SHOP_PRODUCT_LAUNCH_WEBHOOK"
       ? env.DISCORD_WEBHOOK_SHOP_URL?.trim()
       : kind === "SHOP_REORDER_REQUEST_WEBHOOK" ||
           kind === "EQUIPMENT_WORKSHOP_WEBHOOK"
@@ -383,6 +390,53 @@ function buildShopFulfilled(
   );
 }
 
+function buildShopProductLaunch(
+  payload: Record<string, unknown>,
+  env: Environment,
+): DiscordWebhookPayload {
+  const rawItem = record(payload.item, "item");
+  const item = shopItem(payload);
+  const pageGroup = text(rawItem.pageGroup, "item.pageGroup", 20);
+  const pageGroupLabel = SHOP_GROUP_LABELS[pageGroup];
+  if (!pageGroupLabel) {
+    throw new Error(`지원하지 않는 편의점 pageGroup입니다: ${pageGroup}`);
+  }
+  const description = optionalText(rawItem.description);
+  const effect = optionalText(rawItem.effect);
+  const fields: DiscordWebhookPayload["embeds"][number]["fields"] = [
+    { name: "신제품", value: item.label, inline: true },
+    {
+      name: "분류 / 가격",
+      value: `${pageGroupLabel} · ${item.price.toLocaleString("ko-KR")}C`,
+      inline: true,
+    },
+  ];
+  if (description) {
+    fields.push({ name: "상품 안내", value: description });
+  }
+  if (effect) {
+    fields.push({ name: "사용 효과", value: effect });
+  }
+  fields.push({
+    name: "편의점으로 가기",
+    value: `[띠아 편의점에서 신제품 보기](${SHOP_URL})`,
+  });
+
+  return basePayload(
+    "띠아",
+    "띠아 편의점 신제품 출시",
+    isoTimestamp(payload.launchedAt),
+    {
+      url: SHOP_URL,
+      description: `새 상품이 들어왔어요!\n${item.label}, 오늘부터 띠아 편의점에서 만나 보세요.`,
+      color: 0xc5a059,
+      fields,
+      footer: "띠아 편의점 신제품 알림",
+      avatarUrl: env.DISCORD_WEBHOOK_SHOP_AVATAR_URL?.trim(),
+    },
+  );
+}
+
 function buildStockManualIntervention(
   payload: Record<string, unknown>,
 ): DiscordWebhookPayload {
@@ -443,6 +497,8 @@ function buildWebhookPayload(
       return buildShopRequest(event.payload, env);
     case "SHOP_REORDER_FULFILLED_WEBHOOK":
       return buildShopFulfilled(event.payload, env);
+    case "SHOP_PRODUCT_LAUNCH_WEBHOOK":
+      return buildShopProductLaunch(event.payload, env);
     case "STOCK_MANUAL_INTERVENTION_WEBHOOK":
       return buildStockManualIntervention(event.payload);
     case "PLAYER_TRADE_DM":

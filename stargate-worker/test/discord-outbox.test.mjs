@@ -155,3 +155,59 @@ test("수동 주가 조정 공시는 전용 webhook payload로 전달한다", as
   );
   assert.deepEqual(requests[0].body.allowed_mentions, { parse: [] });
 });
+
+test("편의점 신제품 출시는 띠아 대사와 전용 편의점 webhook으로 전달한다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "SHOP_PRODUCT_LAUNCH_WEBHOOK",
+      DISCORD_WEBHOOK_SHOP_URL:
+        "https://discord.com/api/webhooks/shop/token",
+      DISCORD_WEBHOOK_SHOP_AVATAR_URL:
+        "https://www.ordonet.co.kr/assets/shop/tia.png",
+    },
+    {
+      async fetchImpl(url, init) {
+        requests.push({
+          url: String(url),
+          body: init?.body ? JSON.parse(String(init.body)) : null,
+        });
+        return new Response(null, { status: 204 });
+      },
+    },
+  );
+
+  await registry.get("SHOP_PRODUCT_LAUNCH_WEBHOOK").deliver(
+    outboxEvent("SHOP_PRODUCT_LAUNCH_WEBHOOK", {
+      item: {
+        slug: "new_snack",
+        name: "별가루 스낵",
+        icon: "✨",
+        price: 80,
+        pageGroup: "LUXURY",
+        description: "@everyone도 궁금해할 바삭한 신제품",
+        effect: "SAN 3 회복",
+      },
+      launchedAt: new Date().toISOString(),
+    }),
+  );
+
+  assert.equal(requests.length, 1);
+  assert.equal(
+    requests[0].url,
+    "https://discord.com/api/webhooks/shop/token?wait=true",
+  );
+  assert.equal(requests[0].body.username, "띠아");
+  assert.equal(
+    requests[0].body.avatar_url,
+    "https://www.ordonet.co.kr/assets/shop/tia.png",
+  );
+  assert.equal(
+    requests[0].body.embeds[0].title,
+    "띠아 편의점 신제품 출시",
+  );
+  assert.match(requests[0].body.embeds[0].description, /새 상품이 들어왔어요/);
+  assert.match(requests[0].body.embeds[0].fields[1].value, /기호품 · 80C/);
+  assert.match(requests[0].body.embeds[0].fields[2].value, /@​everyone/);
+  assert.deepEqual(requests[0].body.allowed_mentions, { parse: [] });
+});

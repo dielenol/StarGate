@@ -76,7 +76,7 @@ shadow는 `worker_checkpoints`에 resume token을 기록한다. 이는 passive �
 4. `stock-market-wire` 추가
 5. 범용 `integration_outbox` kind를 한 종류씩 추가
 
-도메인 consumer와 범용 outbox는 서로 다른 opt-in이다. `WORKER_CONSUMERS`에는 `ameri-dm`, `research-card`, `shop-restock`, `stock-market-wire`만 넣는다. 범용 outbox는 전환할 kind만 `WORKER_OUTBOX_KINDS`에 추가한다. 지원 kind는 GM 감사, 캐릭터 변경, 공방, 발주 요청/완료, 수동 주가 공시, 거래 DM이다. 한 번에 하나만 추가하고 필요한 `DISCORD_WEBHOOK_*`, `AMERI_DISCORD_BOT_TOKEN`, `REGISTRAR_DISCORD_BOT_TOKEN`을 claim 전에 주입한다.
+도메인 consumer와 범용 outbox는 서로 다른 opt-in이다. `WORKER_CONSUMERS`에는 `ameri-dm`, `research-card`, `shop-restock`, `stock-market-wire`만 넣는다. 범용 outbox는 전환할 kind만 `WORKER_OUTBOX_KINDS`에 추가한다. 지원 kind는 GM 감사, 캐릭터 변경, 공방, 발주 요청/완료, 편의점 신제품 출시, 수동 주가 공시, 거래 DM이다. 한 번에 하나만 추가하고 필요한 `DISCORD_WEBHOOK_*`, `AMERI_DISCORD_BOT_TOKEN`, `REGISTRAR_DISCORD_BOT_TOKEN`을 claim 전에 주입한다.
 
 각 consumer 공통 기준:
 

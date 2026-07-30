@@ -40,6 +40,16 @@ type NormalizeCatalogItemCreateResult =
   | { ok: true; value: NormalizedCatalogItemCreate }
   | { ok: false; error: string };
 
+export function shouldAnnounceShopProductLaunch(
+  value: NormalizedCatalogItemCreate,
+): boolean {
+  return (
+    value.target === "shop" &&
+    value.input.isAvailable === true &&
+    value.input.isPublic === true
+  );
+}
+
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]{1,79}$/;
 const LOCAL_ASSET_PATTERN = /^\/assets\/[a-zA-Z0-9_./-]+$/;
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;

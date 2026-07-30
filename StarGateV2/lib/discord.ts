@@ -368,6 +368,19 @@ export interface ShopReorderFulfilledWebhookPayload {
   fulfilledAt: Date;
 }
 
+export interface ShopProductLaunchWebhookPayload {
+  item: {
+    slug: string;
+    name: string;
+    icon: string;
+    price: number;
+    pageGroup: "BASIC" | "RECOVERY" | "LUXURY" | "RARE";
+    description: string;
+    effect?: string;
+  };
+  launchedAt: Date;
+}
+
 const SHOP_GROUP_ORDER: ShopRestockWebhookItem["pageGroup"][] = [
   "BASIC",
   "RECOVERY",

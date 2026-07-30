@@ -44,12 +44,13 @@
 | 플레이어 거래 DM | route enqueue | `integration_outbox` | CODE_READY | 발송 직전 사용자/Discord 재조회 + nonce |
 | 공방 상태 webhook/DM | route enqueue/embedded outbox | worker consumer | CODE_READY | 웹 mutation과 외부 실패 분리 |
 | 편의점 발주/입고 webhook | transaction 내 enqueue | `integration_outbox` | CODE_READY | 재고/요청 변경과 enqueue 원자적 커밋 |
+| 편의점 신제품 출시 webhook | 상품 생성 transaction 내 enqueue | `integration_outbox` | CODE_READY | 공개·판매 가능 신제품 생성과 enqueue 원자적 커밋 |
 | 캐릭터 변경 감사 | route enqueue | `integration_outbox` | CODE_READY | 변경 이력은 웹 transaction 유지 |
 | 수동 주가 조정 공시 | route enqueue | `integration_outbox` | CODE_READY | 직접 webhook 제거, 전용 stock webhook 사용 |
 
 production 코드의 `after()` 직접 외부 전송은 제거했다. 내부 ERP 알림 생성은 외부 전달과 분리하고, 편의점 입고처럼 경제 transaction과 강하게 결합된 enqueue는 같은 Mongo session에 포함했다.
 
-`integration_outbox`의 생성/claim/complete/fail, 지수 backoff, 최대 8회 후 DEAD persistence와 handler registry가 구현되어 있다. webhook 6종과 거래 DM handler가 있으며 `WORKER_OUTBOX_KINDS`에 명시한 kind만 claim한다. 거래 DM은 발송 직전 사용자의 ACTIVE 상태와 Discord 연결을 재조회하고 nonce를 강제한다. 활성 kind가 0개이거나 필요한 secret이 없으면 어떤 문서도 claim하기 전에 기동을 거부한다.
+`integration_outbox`의 생성/claim/complete/fail, 지수 backoff, 최대 8회 후 DEAD persistence와 handler registry가 구현되어 있다. webhook 7종과 거래 DM handler가 있으며 `WORKER_OUTBOX_KINDS`에 명시한 kind만 claim한다. 거래 DM은 발송 직전 사용자의 ACTIVE 상태와 Discord 연결을 재조회하고 nonce를 강제한다. 활성 kind가 0개이거나 필요한 secret이 없으면 어떤 문서도 claim하기 전에 기동을 거부한다.
 
 `integration_outbox`의 dedupe는 queue enqueue/claim 중복을 막지만 Discord webhook API에는 bot message의 `enforce_nonce`와 같은 계약이 없다. 따라서 webhook은 네트워크 응답과 완료 기록 사이 장애 구간에서 외부 at-least-once 가능성이 남는다. 아메리·연구·입고·공시 desired-state는 첫 이관에서 범용 outbox로 재작성하지 않았고, 기존 5분 retry를 계속 사용하므로 8회 DEAD 정책 대상이 아니다.
 

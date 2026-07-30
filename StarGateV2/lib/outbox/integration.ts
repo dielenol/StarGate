@@ -12,6 +12,7 @@ import type {
   CharacterEditWebhookPayload,
   EquipmentWorkshopRequestWebhookPayload,
   GmAdminAuditWebhookPayload,
+  ShopProductLaunchWebhookPayload,
   ShopReorderFulfilledWebhookPayload,
   ShopReorderWebhookPayload,
 } from "@/lib/discord";
@@ -123,6 +124,21 @@ export async function enqueueShopReorderFulfilledWebhook(
     payload: {
       ...payload,
       fulfilledAt: payload.fulfilledAt.toISOString(),
+    },
+    dedupeKey,
+  }, options);
+}
+
+export async function enqueueShopProductLaunchWebhook(
+  payload: ShopProductLaunchWebhookPayload,
+  dedupeKey?: string,
+  options: { session?: ClientSession } = {},
+): Promise<void> {
+  await enqueueDelivery({
+    kind: "SHOP_PRODUCT_LAUNCH_WEBHOOK",
+    payload: {
+      ...payload,
+      launchedAt: payload.launchedAt.toISOString(),
     },
     dedupeKey,
   }, options);

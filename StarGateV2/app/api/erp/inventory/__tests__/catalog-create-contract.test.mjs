@@ -34,6 +34,22 @@ test("operational item creation commits the master item and GM audit together", 
   assert.doesNotMatch(source, /GM audit scheduling failed/);
 });
 
+test("public shop item creation commits one product launch webhook with the item", async () => {
+  const source = await readFile(ROUTE, "utf8");
+  assert.match(
+    source,
+    /shouldAnnounceShopProductLaunch\(normalized\.value\)/,
+  );
+  assert.match(
+    source,
+    /if \(!createdItem\._id\)[\s\S]*enqueueShopProductLaunchWebhook\([\s\S]*`shop-product-launch:\$\{createdItem\._id\.toHexString\(\)\}`[\s\S]*session: mongoSession/,
+  );
+  assert.match(
+    source,
+    /mongoSession\.withTransaction\([\s\S]*createMasterItem\([\s\S]*scheduleGmAdminAudit\([\s\S]*enqueueShopProductLaunchWebhook\(/,
+  );
+});
+
 test("an inferred armory item cannot bypass operational validation by omitting target", async () => {
   const source = await readFile(ROUTE, "utf8");
   assert.match(

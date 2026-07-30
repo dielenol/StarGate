@@ -6,8 +6,12 @@ import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { createMasterItem, listVisibleMasterItems } from "@/lib/db/inventory";
 import { equipmentShopItemZone } from "@/lib/equipment-shop/catalog";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { enqueueShopProductLaunchWebhook } from "@/lib/outbox/integration";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
-import { normalizeCatalogItemCreateBody } from "@/lib/shop/catalog-item-input";
+import {
+  normalizeCatalogItemCreateBody,
+  shouldAnnounceShopProductLaunch,
+} from "@/lib/shop/catalog-item-input";
 
 function isDuplicateKeyError(error: unknown): boolean {
   return (
@@ -116,6 +120,27 @@ export async function POST(request: Request) {
       target: `${normalized.value.input.name} (${normalized.value.input.slug ?? "slug 없음"})`,
       timestamp,
     } as const;
+    const shopLaunchPayload =
+      shouldAnnounceShopProductLaunch(normalized.value) &&
+      normalized.value.input.slug &&
+      normalized.value.input.shopMeta &&
+      typeof normalized.value.input.price === "number"
+        ? {
+            item: {
+              slug: normalized.value.input.slug,
+              name: normalized.value.input.name,
+              icon: normalized.value.input.shopMeta.icon ?? "◈",
+              price: normalized.value.input.price,
+              pageGroup:
+                normalized.value.input.shopMeta.pageGroup ?? "BASIC",
+              description: normalized.value.input.description,
+              ...(normalized.value.input.effect
+                ? { effect: normalized.value.input.effect }
+                : {}),
+            },
+            launchedAt: timestamp,
+          }
+        : null;
 
     let item;
     if (session.user.role === "GM") {
@@ -123,12 +148,25 @@ export async function POST(request: Request) {
       const mongoSession = client.startSession();
       try {
         await mongoSession.withTransaction(async () => {
-          item = await createMasterItem(normalized.value.input, {
+          const createdItem = await createMasterItem(normalized.value.input, {
             session: mongoSession,
           });
+          item = createdItem;
           await scheduleGmAdminAudit(auditPayload, {
             session: mongoSession,
           });
+          if (shopLaunchPayload) {
+            if (!createdItem._id) {
+              throw new Error(
+                "신제품 출시 알림 식별자를 생성하지 못했습니다.",
+              );
+            }
+            await enqueueShopProductLaunchWebhook(
+              shopLaunchPayload,
+              `shop-product-launch:${createdItem._id.toHexString()}`,
+              { session: mongoSession },
+            );
+          }
         });
       } finally {
         await mongoSession.endSession();
