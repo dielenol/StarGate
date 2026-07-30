@@ -15,6 +15,11 @@
   backdrop-filter: blur(10px);
 }
 
+.control.control--shopHud,
+.control.control--equipmentHud {
+  bottom: 176px;
+}
+
 .control__copy {
   display: grid;
   min-width: 0;
@@ -101,7 +106,19 @@
 }
 
 @media (max-width: 720px) {
-  .control--acheron {
-    bottom: 154px;
+  .control.control--shopHud {
+    bottom: 134px;
+  }
+
+  .control.control--equipmentHud {
+    bottom: 160px;
+  }
+
+  .control.control--equipmentLabHud {
+    bottom: 136px;
+  }
+
+  .control.control--equipmentStrategicHud {
+    bottom: 236px;
   }
 }

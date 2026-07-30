@@ -10,10 +10,6 @@
   padding-bottom: var(--armory-hud-reserved-height);
 }
 
-.armoryRoot--hudCollapsed {
-  --armory-hud-reserved-height: calc(48px + var(--armory-hud-bottom) + 14px);
-}
-
 @media (min-width: 721px) {
   .armoryRoot--hub {
     --armory-hub-page-height: calc(
@@ -3513,87 +3509,6 @@
   pointer-events: none;
 }
 
-.npcHud--collapsed {
-  left: auto;
-  display: block;
-}
-
-.npcHud--collapsed .npcPortrait,
-.npcHud--collapsed .npcDialogue {
-  display: none;
-}
-
-.npcHudRecall {
-  display: none;
-}
-
-.npcHud--collapsed .npcHudRecall {
-  display: grid;
-  grid-template-columns: 10px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  width: min(220px, calc(100vw - 32px));
-  height: 48px;
-  padding: 6px 10px;
-  background:
-    linear-gradient(90deg, rgba(201, 168, 90, 0.09), transparent 48%),
-    rgba(5, 7, 8, 0.94);
-  border: 1px solid color-mix(in srgb, var(--gold-dim) 72%, var(--line));
-  border-radius: var(--radius-sm);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
-  color: var(--ink-1);
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-:global(body:has([aria-label="운영 페이지 잠금 설정"])) .npcHud--collapsed {
-  right: 190px;
-}
-
-.npcHudRecall:hover,
-.npcHudRecall:focus-visible {
-  background:
-    linear-gradient(90deg, rgba(201, 168, 90, 0.15), transparent 58%),
-    rgba(7, 10, 11, 0.97);
-  border-color: var(--gold);
-}
-
-.npcHudRecall__signal {
-  width: 8px;
-  height: 8px;
-  background: var(--gold);
-  border-radius: 50%;
-  box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 68%, transparent);
-}
-
-.npcHudRecall__identity {
-  display: grid;
-  min-width: 0;
-  text-align: left;
-}
-
-.npcHudRecall__identity small {
-  color: var(--ink-2);
-  font-size: 14px;
-  letter-spacing: 0.1em;
-  line-height: 1;
-}
-
-.npcHudRecall__identity strong {
-  overflow: hidden;
-  color: var(--ink-0);
-  font-size: 15px;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.npcHudRecall__action {
-  color: color-mix(in srgb, var(--gold) 78%, var(--ink-1));
-  font-size: 14px;
-  white-space: nowrap;
-}
-
 .npcPortrait {
   position: relative;
   width: var(--armory-hud-height);
@@ -4385,29 +4300,6 @@
     right: 12px;
     left: 12px;
     grid-template-columns: 1fr;
-  }
-
-  .npcHud--collapsed {
-    left: auto;
-  }
-
-  :global(body:has([aria-label="운영 페이지 잠금 설정"])) .npcHud--collapsed {
-    right: auto;
-    bottom: var(--armory-hud-bottom);
-    left: 12px;
-  }
-
-  :global(body:has([aria-label="운영 페이지 잠금 설정"]))
-    .npcHud--collapsed
-    .npcHudRecall {
-    grid-template-columns: 10px minmax(0, 1fr);
-    width: 104px;
-  }
-
-  :global(body:has([aria-label="운영 페이지 잠금 설정"]))
-    .npcHud--collapsed
-    .npcHudRecall__identity {
-    display: none;
   }
 
   .npcPortrait {

@@ -1119,48 +1119,37 @@ export default function ShopClient({
           </div>
         )}
 
-        {catalog.isOpen ? (
-          <section className={styles.tiaHud} aria-label="띠아 상점 HUD">
-            <div className={styles.tiaHud__portraitFrame}>
-              <Image
-                className={styles.tiaHud__portrait}
-                src={TIA_MOOD_ASSETS[tiaMood]}
-                alt={`띠아 ${TIA_MOOD_LABELS[tiaMood]} 표정`}
-                fill
-                sizes="(max-width: 720px) 160px, 190px"
-              />
-            </div>
-            <div className={styles.tiaHud__dialogue}>
-              <div className={styles.tiaHud__header}>
-                <span className={styles.tiaHud__profile}>
-                  <Image src={TIA_PROFILE_SRC} alt="" fill sizes="38px" />
-                </span>
-                <div className={styles.tiaHud__speaker} title={tiaLine}>
-                  <span>STAR MART CREW</span>
-                  <strong>띠아</strong>
-                </div>
-                <span className={styles.tiaHud__mood}>
-                  {TIA_MOOD_LABELS[tiaMood]}
-                </span>
+        <section className={styles.tiaHud} aria-label="띠아 상점 HUD">
+          <div className={styles.tiaHud__portraitFrame}>
+            <Image
+              className={styles.tiaHud__portrait}
+              src={TIA_MOOD_ASSETS[tiaMood]}
+              alt={`띠아 ${TIA_MOOD_LABELS[tiaMood]} 표정`}
+              fill
+              sizes="(max-width: 720px) 160px, 190px"
+            />
+          </div>
+          <div className={styles.tiaHud__dialogue}>
+            <div className={styles.tiaHud__header}>
+              <span className={styles.tiaHud__profile}>
+                <Image src={TIA_PROFILE_SRC} alt="" fill sizes="38px" />
+              </span>
+              <div className={styles.tiaHud__speaker} title={tiaLine}>
+                <span>STAR MART CREW</span>
+                <strong>띠아</strong>
               </div>
-              <p className={styles.tiaHud__text} aria-live="polite">
-                {tiaVisibleLine || " "}
-                {tiaTyping ? (
-                  <span className={styles.tiaHud__cursor}>▸</span>
-                ) : null}
-              </p>
+              <span className={styles.tiaHud__mood}>
+                {TIA_MOOD_LABELS[tiaMood]}
+              </span>
             </div>
-          </section>
-        ) : (
-          <section className={styles.closedHud} aria-label="편의점 폐점 안내">
-            <p aria-live="polite">
+            <p className={styles.tiaHud__text} aria-live="polite">
               {tiaVisibleLine || " "}
               {tiaTyping ? (
-                <span className={styles.closedHud__cursor}>▸</span>
+                <span className={styles.tiaHud__cursor}>▸</span>
               ) : null}
             </p>
-          </section>
-        )}
+          </div>
+        </section>
       </section>
 
       {adminOpen ? (

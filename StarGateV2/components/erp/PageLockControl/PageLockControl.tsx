@@ -25,7 +25,16 @@ export default function PageLockControl({
   initialPageLocks,
 }: PageLockControlProps) {
   const pathname = usePathname();
-  const isAcheronForge = pathname.startsWith("/erp/equipment-shop/acheron");
+  const isShopHudPage = pathname === "/erp/shop";
+  const isEquipmentHudPage =
+    pathname === "/erp/equipment-shop" ||
+    [
+      "/erp/equipment-shop/lab",
+      "/erp/equipment-shop/towaski",
+      "/erp/equipment-shop/acheron",
+      "/erp/equipment-shop/strategic",
+      "/erp/equipment-shop/custom",
+    ].some((path) => pathname === path || pathname.startsWith(`${path}/`));
   const { data: pageLocks } = usePageLocks({ initialData: initialPageLocks });
   const setPageLock = useSetPageLock();
 
@@ -41,7 +50,14 @@ export default function PageLockControl({
     <aside
       className={[
         styles.control,
-        isAcheronForge ? styles["control--acheron"] : "",
+        isShopHudPage ? styles["control--shopHud"] : "",
+        isEquipmentHudPage ? styles["control--equipmentHud"] : "",
+        pathname.startsWith("/erp/equipment-shop/lab")
+          ? styles["control--equipmentLabHud"]
+          : "",
+        pathname.startsWith("/erp/equipment-shop/strategic")
+          ? styles["control--equipmentStrategicHud"]
+          : "",
       ]
         .filter(Boolean)
         .join(" ")}
