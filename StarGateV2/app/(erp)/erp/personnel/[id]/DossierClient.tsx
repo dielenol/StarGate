@@ -19,6 +19,7 @@ import {
 import {
   characterKeys,
   personnelKeys,
+  usePersonnelByIdQuery,
 } from "@/hooks/queries/useCharactersQuery";
 
 import {
@@ -576,7 +577,7 @@ interface RelatedCharacterSummary {
  */
 
 export default function DossierClient({
-  character,
+  character: initialCharacter,
   clearance,
   canEditDossier = false,
   relatedReports = [],
@@ -586,7 +587,16 @@ export default function DossierClient({
   const [activeTab, setActiveTab] = useState<DossierTabKey>("dossier");
   const [guideOpen, setGuideOpen] = useState(false);
 
-  const characterId = character._id ? String(character._id) : null;
+  const characterId = initialCharacter._id
+    ? String(initialCharacter._id)
+    : null;
+  const { data: character = initialCharacter } = usePersonnelByIdQuery(
+    characterId ?? "",
+    {
+      initialData: initialCharacter,
+      enabled: Boolean(characterId),
+    },
+  );
 
   /* ── 편집 상태 ──
    *
@@ -599,6 +609,15 @@ export default function DossierClient({
   );
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [editingExpectedUpdatedAt, setEditingExpectedUpdatedAt] = useState<
+    string | null
+  >(null);
+  const externalChangeWhileEditing =
+    isEditing &&
+    editingExpectedUpdatedAt !==
+      (character.updatedAt
+        ? new Date(character.updatedAt).toISOString()
+        : null);
 
   /**
    * 편집 시작 시점의 초기 draft 스냅샷.
@@ -631,6 +650,11 @@ export default function DossierClient({
     initialDraftRef.current = snapshot;
     setDraft(snapshot);
     setEditError(null);
+    setEditingExpectedUpdatedAt(
+      character.updatedAt
+        ? new Date(character.updatedAt).toISOString()
+        : null,
+    );
     setActiveTab("dossier"); // 편집 폼은 DOSSIER 탭에 모여 있음
     setIsEditing(true);
   };
@@ -639,11 +663,28 @@ export default function DossierClient({
     setDraft(buildInitialDraft(character));
     initialDraftRef.current = null;
     setEditError(null);
+    setEditingExpectedUpdatedAt(null);
     setIsEditing(false);
+  };
+
+  const handleReloadLatest = () => {
+    const snapshot = buildInitialDraft(character);
+    initialDraftRef.current = snapshot;
+    setDraft(snapshot);
+    setEditingExpectedUpdatedAt(
+      character.updatedAt
+        ? new Date(character.updatedAt).toISOString()
+        : null,
+    );
+    setEditError(null);
   };
 
   const handleSaveEdit = async () => {
     if (!characterId) return;
+    if (externalChangeWhileEditing) {
+      setEditError("최신 Dossier를 불러온 뒤 다시 저장하세요.");
+      return;
+    }
     setSaving(true);
     setEditError(null);
     try {
@@ -667,14 +708,27 @@ export default function DossierClient({
       const res = await fetch(`/api/erp/characters/${characterId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, reason: "personnel dossier 편집" }),
+        body: JSON.stringify({
+          ...body,
+          expectedUpdatedAt: editingExpectedUpdatedAt,
+          reason: "personnel dossier 편집",
+        }),
       });
       if (!res.ok) {
-        const data: { error?: string } = await res.json().catch(() => ({}));
+        const data: { code?: string; error?: string } = await res
+          .json()
+          .catch(() => ({}));
+        if (res.status === 409 && data.code === "STALE_VERSION") {
+          await queryClient.refetchQueries({
+            queryKey: personnelKeys.byId(characterId),
+            type: "active",
+          });
+        }
         throw new Error(data.error ?? "저장 실패");
       }
       setIsEditing(false);
       initialDraftRef.current = null;
+      setEditingExpectedUpdatedAt(null);
 
       // characters / personnel 양쪽 캐시 무효화 — router.refresh() 대신 정공법.
       await Promise.all([
@@ -864,7 +918,7 @@ export default function DossierClient({
             variant="primary"
             size="sm"
             onClick={handleSaveEdit}
-            disabled={saving}
+            disabled={saving || externalChangeWhileEditing}
           >
             {saving ? "저장 중…" : "✓ 저장"}
           </Button>
@@ -1533,9 +1587,15 @@ export default function DossierClient({
         >
           <span className={styles.readOnlyNotice__label}>EDIT MODE</span>
           <span className={styles.readOnlyNotice__body}>
-            편집 중 — 저장 시 즉시 반영됩니다. 잠긴 섹션도 GM 권한으로 모두 편집
-            가능.
+            {externalChangeWhileEditing
+              ? "다른 사용자가 이 Dossier를 수정했습니다. 작성 중인 초안은 보존됩니다."
+              : "편집 중 — 저장 시 즉시 반영됩니다. 잠긴 섹션도 GM 권한으로 모두 편집 가능."}
           </span>
+          {externalChangeWhileEditing ? (
+            <Button size="sm" onClick={handleReloadLatest}>
+              최신본 불러오기
+            </Button>
+          ) : null}
           {editError ? (
             <span className={styles.readOnlyNotice__error}>
               ⚠ {editError}

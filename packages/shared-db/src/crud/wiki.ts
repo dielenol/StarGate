@@ -131,12 +131,23 @@ export async function updateWikiPage(
   id: string,
   update: UpdateWikiPageInput,
   editorId: string,
-  editorName: string
+  editorName: string,
+  expectedUpdatedAt?: Date | null
 ): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const col = await wikiPagesCol();
   const existing = await col.findOne({ _id: new ObjectId(id) });
   if (!existing) return false;
+
+  const filter: Record<string, unknown> = { _id: new ObjectId(id) };
+  if (expectedUpdatedAt !== undefined) {
+    filter.updatedAt = expectedUpdatedAt;
+  }
+  const result = await col.updateOne(
+    filter,
+    { $set: { ...update, updatedAt: new Date() } }
+  );
+  if (result.modifiedCount === 0) return false;
 
   if (update.content && update.content !== existing.content) {
     const revCol = await wikiPageRevisionsCol();
@@ -148,11 +159,6 @@ export async function updateWikiPage(
       createdAt: new Date(),
     });
   }
-
-  const result = await col.updateOne(
-    { _id: new ObjectId(id) },
-    { $set: { ...update, updatedAt: new Date() } }
-  );
   return result.modifiedCount > 0;
 }
 

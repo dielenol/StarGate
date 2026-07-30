@@ -11,6 +11,7 @@ import { characterChangeLogsKeys } from "@/hooks/queries/useCharacterChangeLogs"
 import {
   characterKeys,
   personnelKeys,
+  useAgentCharacterQuery,
 } from "@/hooks/queries/useCharactersQuery";
 import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
 
@@ -79,7 +80,7 @@ function formatCharacterTimestamp(value: Date | string | null | undefined) {
 }
 
 export default function CharacterDetailClient({
-  character,
+  character: initialCharacter,
   initialInventory,
   editMode,
   canDelete,
@@ -91,13 +92,19 @@ export default function CharacterDetailClient({
   const canEdit = editMode !== "none";
   const router = useRouter();
   const queryClient = useQueryClient();
-  const characterId = String(character._id);
+  const characterId = String(initialCharacter._id);
+  const { data: character = initialCharacter } = useAgentCharacterQuery(
+    characterId,
+    { initialData: initialCharacter },
+  );
   const inventoryQuery = useCharacterInventory(characterId, {
     initialData: initialInventory,
     enabled: canManageEquipment,
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [editingCharacter, setEditingCharacter] =
+    useState<AgentCharacter | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -114,6 +121,11 @@ export default function CharacterDetailClient({
   const showUpdateMeta = showAdminSync || showOwnerUpdate;
   const deleteDisabled = !canDelete || isDeleting;
   const deleteTitle = canDelete ? undefined : "GM만 삭제할 수 있습니다.";
+  const editingBaseline = editingCharacter ?? character;
+  const externalChangeWhileEditing =
+    isEditing &&
+    new Date(editingBaseline.updatedAt ?? 0).getTime() !==
+      new Date(character.updatedAt ?? 0).getTime();
 
   async function handleDelete() {
     const confirmed = window.confirm(
@@ -159,11 +171,18 @@ export default function CharacterDetailClient({
           title={`${displayName} · 편집`}
         />
         <CharacterEditForm
-          character={character}
+          key={`${characterId}:${String(editingBaseline.updatedAt ?? "legacy")}`}
+          character={editingBaseline}
           editMode={editMode}
-          onCancel={() => setIsEditing(false)}
+          externalChange={externalChangeWhileEditing}
+          onCancel={() => {
+            setIsEditing(false);
+            setEditingCharacter(null);
+          }}
+          onReloadLatest={() => setEditingCharacter(character)}
           onSaved={async () => {
             setIsEditing(false);
+            setEditingCharacter(null);
             // characters / personnel 양쪽 무효화 — character lore 가 personnel dossier 에도
             // 노출되므로 한쪽만 invalidate 하면 다른 라우트에 stale 잔존.
             // change-logs 도 함께 — admin 편집은 audit row 가 즉시 추가되므로 같은 페이지의
@@ -219,7 +238,10 @@ export default function CharacterDetailClient({
                 <Button
                   type="button"
                   variant="primary"
-                  onClick={() => setIsEditing(true)}
+                  onClick={() => {
+                    setEditingCharacter(character);
+                    setIsEditing(true);
+                  }}
                 >
                   편집
                 </Button>

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { sessionReportKeys } from "@/hooks/queries/useSessionReportsQuery";
+import { throwMutationError } from "./StaleVersionApiError";
 
 interface ReportMutationBody {
   sessionId?: string;
@@ -52,25 +53,29 @@ export function useUpdateReport() {
 
   return useMutation({
     mutationFn: async ({
+      expectedUpdatedAt,
       id,
       input,
     }: {
+      expectedUpdatedAt: string | null;
       id: string;
       input: ReportUpdateMutationBody;
     }) => {
       const res = await fetch(`/api/erp/session-reports/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify({ ...input, expectedUpdatedAt }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "리포트 수정에 실패했습니다.");
+        await throwMutationError(res, "리포트 수정에 실패했습니다.");
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: sessionReportKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: sessionReportKeys.byId(variables.id),
+      });
     },
   });
 }

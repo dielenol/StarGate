@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
 import type { TradesResponse } from "@/types/trade";
 
 export const tradeKeys = {
@@ -34,11 +35,12 @@ async function fetchTrades(): Promise<TradesResponse> {
 }
 
 export function useTradesQuery() {
+  const refetchInterval = useRealtimeRefetchInterval(2_500);
   return useQuery({
     queryKey: tradeKeys.all,
     queryFn: fetchTrades,
     staleTime: 1_000,
-    refetchInterval: 2_500,
+    refetchInterval,
     refetchIntervalInBackground: false,
     retry: (failureCount, error) => {
       if (error instanceof TradesApiError && error.status < 500) return false;

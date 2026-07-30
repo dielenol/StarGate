@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import type { ClientSessionReport } from "@/types/session-report";
 
 import { useUpdateReport } from "@/hooks/mutations/useReportMutation";
+import { StaleVersionApiError } from "@/hooks/mutations/StaleVersionApiError";
+import { useSessionReport } from "@/hooks/queries/useSessionReportsQuery";
 
 import Button from "@/components/ui/Button/Button";
 import Input from "@/components/ui/Input/Input";
@@ -47,6 +49,10 @@ function parseMapCoordinate(value: string): number | null {
 export default function ReportEditForm({ report }: Props) {
   const router = useRouter();
   const updateReport = useUpdateReport();
+  const reportQuery = useSessionReport(report._id, {
+    initialData: report,
+  });
+  const latestReport = reportQuery.data ?? report;
 
   const [sessionTitle, setSessionTitle] = useState(report.sessionTitle);
   const [summary, setSummary] = useState(report.summary);
@@ -64,29 +70,65 @@ export default function ReportEditForm({ report }: Props) {
   const [mapPrecision, setMapPrecision] = useState<"confirmed" | "estimated">(
     report.mapPrecision ?? "estimated",
   );
+  const [baselineReport, setBaselineReport] = useState(report);
+  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const externalChange =
+    dirty && latestReport.updatedAt !== baselineReport.updatedAt;
+
+  if (!dirty && latestReport.updatedAt !== baselineReport.updatedAt) {
+    setSessionTitle(latestReport.sessionTitle);
+    setSummary(latestReport.summary);
+    setHighlights(initialRows(latestReport.highlights ?? []));
+    setParticipants(initialRows(latestReport.participants ?? []));
+    setLocationLabel(latestReport.locationLabel ?? "");
+    setMapX(formatCoordinate(latestReport.mapX));
+    setMapY(formatCoordinate(latestReport.mapY));
+    setMapPrecision(latestReport.mapPrecision ?? "estimated");
+    setBaselineReport(latestReport);
+  }
+
+  function reloadLatestReport() {
+    setSessionTitle(latestReport.sessionTitle);
+    setSummary(latestReport.summary);
+    setHighlights(initialRows(latestReport.highlights ?? []));
+    setParticipants(initialRows(latestReport.participants ?? []));
+    setLocationLabel(latestReport.locationLabel ?? "");
+    setMapX(formatCoordinate(latestReport.mapX));
+    setMapY(formatCoordinate(latestReport.mapY));
+    setMapPrecision(latestReport.mapPrecision ?? "estimated");
+    setBaselineReport(latestReport);
+    setDirty(false);
+    setError(null);
+  }
 
   const handleAddHighlight = () => {
+    setDirty(true);
     setHighlights((prev) => [...prev, ""]);
   };
 
   const handleRemoveHighlight = (index: number) => {
+    setDirty(true);
     setHighlights((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleHighlightChange = (index: number, value: string) => {
+    setDirty(true);
     setHighlights((prev) => prev.map((h, i) => (i === index ? value : h)));
   };
 
   const handleAddParticipant = () => {
+    setDirty(true);
     setParticipants((prev) => [...prev, ""]);
   };
 
   const handleRemoveParticipant = (index: number) => {
+    setDirty(true);
     setParticipants((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleParticipantChange = (index: number, value: string) => {
+    setDirty(true);
     setParticipants((prev) => prev.map((p, i) => (i === index ? value : p)));
   };
 
@@ -105,7 +147,7 @@ export default function ReportEditForm({ report }: Props) {
     const trimmedLocationLabel = locationLabel.trim();
     const trimmedMapX = mapX.trim();
     const trimmedMapY = mapY.trim();
-    const hadStoredCoordinate = hasStoredCoordinate(report);
+    const hadStoredCoordinate = hasStoredCoordinate(baselineReport);
 
     if (!trimmedTitle || !trimmedSummary) {
       setError("제목과 작전 본문은 비워둘 수 없습니다.");
@@ -142,6 +184,7 @@ export default function ReportEditForm({ report }: Props) {
     updateReport.mutate(
       {
         id: report._id,
+        expectedUpdatedAt: baselineReport.updatedAt ?? null,
         input: {
           sessionTitle: trimmedTitle,
           summary: trimmedSummary,
@@ -149,7 +192,7 @@ export default function ReportEditForm({ report }: Props) {
           participants: filteredParticipants,
           ...(trimmedLocationLabel
             ? { locationLabel: trimmedLocationLabel }
-            : report.locationLabel
+            : baselineReport.locationLabel
               ? { locationLabel: null }
               : {}),
           ...mapFields,
@@ -161,6 +204,9 @@ export default function ReportEditForm({ report }: Props) {
         },
         onError: (err) => {
           setError(err.message);
+          if (err instanceof StaleVersionApiError) {
+            void reportQuery.refetch();
+          }
         },
       },
     );
@@ -174,7 +220,10 @@ export default function ReportEditForm({ report }: Props) {
           <Input
             type="text"
             value={sessionTitle}
-            onChange={(e) => setSessionTitle(e.target.value)}
+            onChange={(e) => {
+              setDirty(true);
+              setSessionTitle(e.target.value);
+            }}
             placeholder="작전 보고서 제목"
             required
             aria-label="작전 보고서 제목"
@@ -186,7 +235,10 @@ export default function ReportEditForm({ report }: Props) {
           <textarea
             className={styles.textarea}
             value={summary}
-            onChange={(e) => setSummary(e.target.value)}
+            onChange={(e) => {
+              setDirty(true);
+              setSummary(e.target.value);
+            }}
             placeholder="작전 개요를 작성하세요..."
             rows={10}
             required
@@ -200,7 +252,10 @@ export default function ReportEditForm({ report }: Props) {
             <Input
               type="text"
               value={locationLabel}
-              onChange={(e) => setLocationLabel(e.target.value)}
+              onChange={(e) => {
+                setDirty(true);
+                setLocationLabel(e.target.value);
+              }}
               placeholder="표시 위치"
               aria-label="지도 표시 위치"
             />
@@ -210,7 +265,10 @@ export default function ReportEditForm({ report }: Props) {
               max="100"
               step="0.01"
               value={mapX}
-              onChange={(e) => setMapX(e.target.value)}
+              onChange={(e) => {
+                setDirty(true);
+                setMapX(e.target.value);
+              }}
               placeholder="X%"
               aria-label="지도 X 좌표"
             />
@@ -220,16 +278,20 @@ export default function ReportEditForm({ report }: Props) {
               max="100"
               step="0.01"
               value={mapY}
-              onChange={(e) => setMapY(e.target.value)}
+              onChange={(e) => {
+                setDirty(true);
+                setMapY(e.target.value);
+              }}
               placeholder="Y%"
               aria-label="지도 Y 좌표"
             />
             <select
               className={styles.select}
               value={mapPrecision}
-              onChange={(e) =>
+              onChange={(e) => {
+                setDirty(true);
                 setMapPrecision(e.target.value as "confirmed" | "estimated")
-              }
+              }}
               aria-label="지도 좌표 확정도"
             >
               <option value="confirmed">확정</option>
@@ -302,6 +364,21 @@ export default function ReportEditForm({ report }: Props) {
           </Stack>
         </div>
 
+        {externalChange ? (
+          <div className={styles.staleNotice} role="alert">
+            <div>
+              <strong>다른 사용자가 이 리포트를 수정했습니다.</strong>
+              <span>
+                작성 중인 내용은 보존했습니다. 최신본을 불러오기 전에는
+                저장할 수 없습니다.
+              </span>
+            </div>
+            <Button type="button" onClick={reloadLatestReport}>
+              최신본 불러오기
+            </Button>
+          </div>
+        ) : null}
+
         {error ? (
           <div className={styles.error} role="alert">
             {error}
@@ -315,7 +392,7 @@ export default function ReportEditForm({ report }: Props) {
           <Button
             type="submit"
             variant="primary"
-            disabled={updateReport.isPending}
+            disabled={updateReport.isPending || externalChange}
           >
             {updateReport.isPending ? "저장 중..." : "변경사항 저장"}
           </Button>

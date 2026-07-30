@@ -7,6 +7,7 @@ import {
   getCharacterBalance,
   listCreditTransactions,
 } from "@/lib/db/credits";
+import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Button from "@/components/ui/Button/Button";
@@ -69,6 +70,18 @@ export default async function CreditsPage() {
         createdAt: createdAtIso,
       };
     });
+  const initialCredits: CreditsResponse | undefined =
+    mainCharacter && myCharacterId
+      ? {
+          transactions: transactions.map((transaction) => ({
+            ...transaction,
+            _id: transaction._id?.toString() as unknown as typeof transaction._id,
+          })),
+          balance,
+          characterId: myCharacterId,
+          characterCodename: mainCharacter.codename,
+        }
+      : undefined;
 
   return (
     <>
@@ -95,6 +108,7 @@ export default async function CreditsPage() {
             : null
         }
         integrityError={mainIntegrityError}
+        initialCredits={initialCredits}
         isGm={hasRole(role, "GM")}
         transactions={serializedTransactions}
       />

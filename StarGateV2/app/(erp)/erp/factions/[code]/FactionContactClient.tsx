@@ -4,8 +4,8 @@
 
 import { type CSSProperties, useMemo, useState } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import {
   IconAffinity,
@@ -17,7 +17,16 @@ import {
 } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
+import {
+  factionKeys,
+  useFactionActivity,
+} from "@/hooks/queries/useFactionsQuery";
 import type { AgentLevel } from "@/types/character";
+import type {
+  FactionActivityResponse,
+  SerializedFactionQuestProgress,
+  SerializedFactionRelationLog,
+} from "@/types/erp-realtime";
 
 import {
   FACTION_SUPPORT_OPTIONS,
@@ -56,33 +65,6 @@ type FactionActivityKind =
   | "SUPPORT"
   | "QUEST_ACCEPT"
   | "QUEST_COMPLETE";
-
-interface SerializedFactionRelationLog {
-  id: string;
-  kind: FactionActivityKind;
-  title: string;
-  detail: string;
-  delta: number;
-  favorabilityBefore: number;
-  favorabilityAfter: number;
-  actorName: string;
-  createdAt: string;
-  characterCodename: string | null;
-  creditCost: number | null;
-  questId: string | null;
-}
-
-interface SerializedFactionQuestProgress {
-  id: string;
-  questId: string;
-  status: "ACTIVE" | "COMPLETED";
-  title: string;
-  actorName: string;
-  startedAt: string;
-  updatedAt: string;
-  characterCodename: string | null;
-  completedAt: string | null;
-}
 
 interface ContactSelection {
   id: string;
@@ -294,12 +276,20 @@ export default function FactionContactClient({
   initialLogs,
   initialQuestProgress,
 }: FactionContactClientProps) {
-  const router = useRouter();
-  const [currentFavorability, setCurrentFavorability] = useState(
-    favorability ?? 0,
-  );
-  const [logs, setLogs] = useState(initialLogs);
-  const [questProgress, setQuestProgress] = useState(initialQuestProgress);
+  const queryClient = useQueryClient();
+  const initialActivity: FactionActivityResponse = {
+    favorability: favorability ?? 0,
+    logs: initialLogs,
+    questProgress: initialQuestProgress,
+  };
+  const { data: activityData } = useFactionActivity(code, {
+    initialData: initialActivity,
+  });
+  const {
+    favorability: currentFavorability,
+    logs,
+    questProgress,
+  } = activityData ?? initialActivity;
   const [selected, setSelected] = useState<ContactSelection>(() =>
     storyChoiceSelection(profile.scene.storyChoices[0]),
   );
@@ -445,20 +435,27 @@ export default function FactionContactClient({
         },
       );
 
-      const payload = (await res.json()) as {
-        favorability?: number;
-        logs?: SerializedFactionRelationLog[];
-        questProgress?: SerializedFactionQuestProgress[];
+      const payload = (await res.json()) as Partial<FactionActivityResponse> & {
         error?: string;
       };
 
-      if (!res.ok || typeof payload.favorability !== "number") {
+      if (
+        !res.ok ||
+        typeof payload.favorability !== "number" ||
+        !payload.logs ||
+        !payload.questProgress
+      ) {
         throw new Error(payload.error ?? "세력 활동 반영에 실패했습니다.");
       }
 
-      setCurrentFavorability(payload.favorability);
-      if (payload.logs) setLogs(payload.logs);
-      if (payload.questProgress) setQuestProgress(payload.questProgress);
+      queryClient.setQueryData<FactionActivityResponse>(
+        factionKeys.activity(code),
+        {
+          favorability: payload.favorability,
+          logs: payload.logs,
+          questProgress: payload.questProgress,
+        },
+      );
 
       if (selected.kind === "quest") {
         setSelected((prev) => ({
@@ -470,7 +467,7 @@ export default function FactionContactClient({
       }
 
       setMessage("세력 활동이 기록되었습니다.");
-      router.refresh();
+      await queryClient.invalidateQueries({ queryKey: factionKeys.board });
     } catch (err) {
       setMessage(
         err instanceof Error ? err.message : "세력 활동 반영에 실패했습니다.",

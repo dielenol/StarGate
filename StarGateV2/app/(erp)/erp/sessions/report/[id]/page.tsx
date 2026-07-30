@@ -22,7 +22,7 @@ import {
   relatedWikiForReport,
 } from "@/lib/lore-links";
 import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
-import { renderMarkdown } from "@/lib/wiki-render";
+import type { ClientSessionReport } from "@/types/session-report";
 
 import { IconReportDocument, IconReportMini } from "@/components/icons";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
@@ -80,6 +80,12 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const isGmOrAbove = hasRole(session.user.role, "V");
   const isAdmin = hasRole(session.user.role, "GM");
   const reportId = String(report._id);
+  const serializedReport: ClientSessionReport = {
+    ...report,
+    _id: reportId,
+    createdAt: report.createdAt.toISOString(),
+    updatedAt: report.updatedAt?.toISOString() ?? "",
+  };
   const displayTitle = formatOperationReportTitle(report.sessionTitle);
   const shortReporterName = formatShortReporterName(report.gmName);
   const mapLocationLabel = report.locationLabel || "작전지 미등록";
@@ -119,11 +125,6 @@ export default async function SessionReportDetailPage({ params }: Props) {
     characters: visibleCharacters,
     reports: linkableReports,
     wikiPages: visibleWikiPages,
-  });
-  const summaryHtml = renderMarkdown(report.summary || "—", {
-    links: autoLinkTargets,
-    maxAutoLinksPerTarget: 1,
-    maxAutoLinksTotal: 32,
   });
   const relatedWikiLinks = relatedWikiForReport(report, allPages);
   const relatedCatalogItems = relatedCatalogItemsForReport(report, visibleItems);
@@ -394,34 +395,10 @@ export default async function SessionReportDetailPage({ params }: Props) {
         </div>
 
         <div className={styles.main}>
-          <Box className={styles.reportPanel}>
-            <PanelTitle>작전 본문</PanelTitle>
-            <ReportBodyContent html={summaryHtml} />
-          </Box>
-
-          {report.highlights.length > 0 ? (
-            <Box className={styles.reportPanel}>
-              <PanelTitle
-                right={
-                  <span className={styles.mono}>
-                    {report.highlights.length}
-                  </span>
-                }
-              >
-                전개 기록
-              </PanelTitle>
-              <ul className={styles.list}>
-                {report.highlights.map((h, i) => (
-                  <li key={i} className={styles.list__item}>
-                    <Eyebrow tone="gold" className={styles.list__num}>
-                      {String(i + 1).padStart(2, "0")}
-                    </Eyebrow>
-                    <span className={styles.list__text}>{h}</span>
-                  </li>
-                ))}
-              </ul>
-            </Box>
-          ) : null}
+          <ReportBodyContent
+            initialReport={serializedReport}
+            links={autoLinkTargets}
+          />
         </div>
       </div>
       </div>

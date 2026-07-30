@@ -1,0 +1,85 @@
+.region {
+  position: fixed;
+  z-index: 1200;
+  top: 76px;
+  right: 18px;
+  display: grid;
+  width: min(390px, calc(100vw - 32px));
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 14px 15px;
+  background: color-mix(in srgb, var(--bg-1) 96%, black);
+  border: 1px solid color-mix(in srgb, var(--gold) 58%, var(--line));
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.36);
+  pointer-events: auto;
+  animation: toastIn 180ms ease-out;
+}
+
+.content {
+  min-width: 0;
+  color: var(--ink-1);
+  text-decoration: none;
+}
+
+.title {
+  display: block;
+  overflow: hidden;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message {
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.dismiss {
+  align-self: start;
+  padding: 3px 6px;
+  background: transparent;
+  border: 0;
+  color: var(--ink-3);
+  cursor: pointer;
+  font: inherit;
+}
+
+.dismiss:hover,
+.dismiss:focus-visible {
+  color: var(--ink-0);
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 720px) {
+  .region {
+    top: 66px;
+    right: 16px;
+  }
+}

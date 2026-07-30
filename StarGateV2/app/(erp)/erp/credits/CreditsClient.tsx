@@ -5,7 +5,10 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import type { CreditTransactionType } from "@/types/credit";
+import type {
+  CreditTransaction,
+  CreditTransactionType,
+} from "@/types/credit";
 
 import { CREDIT_TRANSACTION_TYPES } from "@/types/credit";
 
@@ -33,6 +36,10 @@ import Tag from "@/components/ui/Tag/Tag";
 import { CREDIT_TYPE_META } from "@/lib/credit-meta";
 import { formatCredits } from "@/lib/format/credit";
 import { formatDateTime } from "@/lib/format/date";
+import {
+  useCredits,
+  type CreditsResponse,
+} from "@/hooks/queries/useCreditsQuery";
 
 import styles from "./page.module.css";
 
@@ -58,6 +65,7 @@ interface CreditsClientProps {
       }
     | null;
   integrityError: string | null;
+  initialCredits?: CreditsResponse;
   isGm: boolean;
   transactions: SerializedCreditTransaction[];
 }
@@ -163,6 +171,31 @@ function sumAmounts(rows: SerializedCreditTransaction[]): {
   }
 
   return { income, spend, net: income - spend };
+}
+
+function serializeCreditTransactions(
+  transactions: CreditTransaction[],
+): SerializedCreditTransaction[] {
+  return transactions.map((transaction) => {
+    const createdAt = new Date(transaction.createdAt);
+    const createdAtIso = Number.isNaN(createdAt.getTime())
+      ? new Date(0).toISOString()
+      : createdAt.toISOString();
+    return {
+      id: String(
+        transaction._id ??
+          `${transaction.characterId}-${createdAtIso}-${transaction.amount}`,
+      ),
+      type: transaction.type,
+      amount: transaction.amount,
+      balance: transaction.balance,
+      characterCodename: transaction.characterCodename,
+      ownerName: transaction.ownerName,
+      description: transaction.description,
+      createdByName: transaction.createdByName,
+      createdAt: createdAtIso,
+    };
+  });
 }
 
 function buildMonthlyBuckets(rows: SerializedCreditTransaction[]) {
@@ -305,12 +338,33 @@ function FilterDropdown<T extends string>({
 }
 
 export default function CreditsClient({
-  balance,
-  character,
+  balance: initialBalance,
+  character: initialCharacter,
   integrityError,
+  initialCredits,
   isGm,
-  transactions,
+  transactions: initialTransactions,
 }: CreditsClientProps) {
+  const creditsQuery = useCredits({
+    enabled: Boolean(initialCharacter),
+    initialData: initialCredits,
+  });
+  const balance = creditsQuery.data?.balance ?? initialBalance;
+  const character = initialCharacter
+    ? {
+        ...initialCharacter,
+        id: creditsQuery.data?.characterId ?? initialCharacter.id,
+        codename:
+          creditsQuery.data?.characterCodename ?? initialCharacter.codename,
+      }
+    : null;
+  const transactions = useMemo(
+    () =>
+      creditsQuery.data
+        ? serializeCreditTransactions(creditsQuery.data.transactions)
+        : initialTransactions,
+    [creditsQuery.data, initialTransactions],
+  );
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<
     CreditTransactionType | typeof TYPE_ALL

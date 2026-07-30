@@ -1,5 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
+import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
+import type { UpcomingSessionsResponse } from "@/types/erp-realtime";
 import type { ResponseStatus, SessionStatus } from "@/types/session";
 
 /**
@@ -50,6 +52,7 @@ export const sessionKeys = {
   all: ["sessions"] as const,
   byMonth: (year: number, month: number, guildId: string) =>
     ["sessions", year, month, guildId] as const,
+  upcoming: (guildId: string) => ["sessions", "upcoming", guildId] as const,
 };
 
 const CURRENT_MONTH_STALE_TIME_MS = 60 * 1000;
@@ -72,12 +75,25 @@ async function fetchSessionsByMonth(
   return data.sessions;
 }
 
+async function fetchUpcomingSessions(): Promise<UpcomingSessionsResponse> {
+  const response = await fetch("/api/erp/sessions/upcoming", {
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error("예정 세션을 불러올 수 없습니다.");
+  }
+  return response.json();
+}
+
 export function useSessionsByMonth(
   year: number,
   month: number,
   guildId: string,
   options?: { initialData?: SerializedSession[] },
 ) {
+  const currentMonthRefetchInterval = useRealtimeRefetchInterval(
+    CURRENT_MONTH_REFETCH_INTERVAL_MS,
+  );
   const now = new Date();
   const isCurrentMonth =
     year === now.getFullYear() && month === now.getMonth() + 1;
@@ -90,11 +106,30 @@ export function useSessionsByMonth(
       ? CURRENT_MONTH_STALE_TIME_MS
       : ARCHIVE_MONTH_STALE_TIME_MS,
     refetchInterval: isCurrentMonth
-      ? CURRENT_MONTH_REFETCH_INTERVAL_MS
+      ? currentMonthRefetchInterval
       : false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: isCurrentMonth,
     initialData: options?.initialData,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useUpcomingSessions(
+  guildId: string,
+  options?: { initialData?: UpcomingSessionsResponse },
+) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    CURRENT_MONTH_REFETCH_INTERVAL_MS,
+  );
+  return useQuery({
+    queryKey: sessionKeys.upcoming(guildId),
+    queryFn: fetchUpcomingSessions,
+    enabled: guildId.length > 0,
+    staleTime: CURRENT_MONTH_STALE_TIME_MS,
+    refetchInterval,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    initialData: options?.initialData,
   });
 }

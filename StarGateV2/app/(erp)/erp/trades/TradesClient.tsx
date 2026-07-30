@@ -50,6 +50,7 @@ interface OfferEditorProps {
   busy: boolean;
   kind?: "GIFT" | "EXCHANGE";
   initialOffer?: PlayerTradeOffer;
+  onDirtyChange?: (dirty: boolean) => void;
   onSubmit: (offer: PlayerTradeOffer) => void;
   requireAssets?: boolean;
   submitDisabled?: boolean;
@@ -61,7 +62,11 @@ interface TradeCardProps {
   busy: boolean;
   errorMessage?: string;
   meUserId: string;
-  onUpdate: (tradeId: string, action: TradeAction) => void;
+  onUpdate: (
+    tradeId: string,
+    action: TradeAction,
+    options?: { onSuccess?: () => void },
+  ) => void;
   trade: PlayerTradeDto;
 }
 
@@ -239,6 +244,7 @@ function OfferEditor({
   busy,
   kind = "EXCHANGE",
   initialOffer = EMPTY_OFFER,
+  onDirtyChange,
   onSubmit,
   requireAssets = false,
   submitDisabled = false,
@@ -274,6 +280,7 @@ function OfferEditor({
     selectedStocks.length;
 
   function setItemQuantity(itemId: string, quantity: number, maximum: number) {
+    onDirtyChange?.(true);
     setItemQuantities((current) => ({
       ...current,
       [itemId]: Math.min(maximum, Math.max(0, Math.floor(quantity) || 0)),
@@ -281,10 +288,16 @@ function OfferEditor({
   }
 
   function setStockQuantity(ticker: string, shares: number, maximum: number) {
+    onDirtyChange?.(true);
     setStockShares((current) => ({
       ...current,
       [ticker]: Math.min(maximum, Math.max(0, Math.floor(shares) || 0)),
     }));
+  }
+
+  function setCreditValue(value: string) {
+    onDirtyChange?.(true);
+    setCredits(value);
   }
 
   function selectAssetTab(
@@ -385,12 +398,18 @@ function OfferEditor({
                   inputMode="decimal"
                   placeholder="0"
                   value={credits}
-                  onChange={(event) => setCredits(normalizeCreditInput(event.target.value))}
+                  onChange={(event) =>
+                    setCreditValue(normalizeCreditInput(event.target.value))
+                  }
                   onKeyDown={(event) => {
                     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
                     event.preventDefault();
-                    setCredits((current) =>
-                      stepCreditInput(current, event.key === "ArrowUp" ? 1 : -1, assets.credits),
+                    setCreditValue(
+                      stepCreditInput(
+                        credits,
+                        event.key === "ArrowUp" ? 1 : -1,
+                        assets.credits,
+                      ),
                     );
                   }}
                 />
@@ -531,7 +550,7 @@ function OfferEditor({
                 <button
                   type="button"
                   className={styles.offerSlotRemove}
-                  onClick={() => setCredits("")}
+                  onClick={() => setCreditValue("")}
                   aria-label="크레딧 제거"
                 >
                   ×
@@ -677,6 +696,11 @@ function TradeCard({
   trade,
 }: TradeCardProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [editorDirty, setEditorDirty] = useState(false);
+  const [editorSnapshot, setEditorSnapshot] = useState({
+    revision: trade.revision,
+    version: 0,
+  });
   const isInitiator = trade.initiator.userId === meUserId;
   const other = isInitiator ? trade.counterparty : trade.initiator;
   const myOffer = isInitiator
@@ -693,6 +717,39 @@ function TradeCard({
     (isInitiator
       ? trade.counterpartyConfirmedRevision
       : trade.initiatorConfirmedRevision) === trade.revision;
+  const remoteRevisionDetected =
+    isEditing &&
+    editorDirty &&
+    editorSnapshot.revision !== trade.revision;
+
+  function handleEditorDirtyChange(dirty: boolean) {
+    if (dirty && !editorDirty) {
+      setEditorSnapshot((current) => ({
+        ...current,
+        revision: trade.revision,
+      }));
+    }
+    setEditorDirty(dirty);
+  }
+
+  function reloadLatestOffer() {
+    setEditorSnapshot((current) => ({
+      revision: trade.revision,
+      version: current.version + 1,
+    }));
+    setEditorDirty(false);
+  }
+
+  function toggleEditor() {
+    if (!isEditing) {
+      setEditorSnapshot((current) => ({
+        revision: trade.revision,
+        version: current.version + 1,
+      }));
+      setEditorDirty(false);
+    }
+    setIsEditing((current) => !current);
+  }
 
   return (
     <article className={styles.tradeCard}>
@@ -728,18 +785,44 @@ function TradeCard({
             제안을 저장하면 revision이 갱신되어 양측의 확정이 다시
             필요합니다.
           </p>
+          {remoteRevisionDetected ? (
+            <div className={styles.remoteRevisionNotice} role="alert">
+              <div>
+                <strong>상대가 거래 구성을 갱신했습니다.</strong>
+                <p>
+                  작성 중인 내 초안은 보존했습니다. 최신 구성을 불러오기
+                  전에는 저장할 수 없습니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={reloadLatestOffer}
+              >
+                최신 구성 불러오기
+              </button>
+            </div>
+          ) : null}
           <OfferEditor
-            key={`${trade.id}:${trade.revision}`}
+            key={`${trade.id}:${
+              editorDirty ? editorSnapshot.revision : trade.revision
+            }:${editorSnapshot.version}`}
             assets={assets}
             busy={busy}
             initialOffer={myOffer}
+            onDirtyChange={handleEditorDirtyChange}
+            submitDisabled={remoteRevisionDetected}
             submitLabel="내 제안 저장"
             onSubmit={(offer) =>
-              onUpdate(trade.id, {
-                action: "SET_OFFER",
-                expectedRevision: trade.revision,
-                offer,
-              })
+              onUpdate(
+                trade.id,
+                {
+                  action: "SET_OFFER",
+                  expectedRevision: trade.revision,
+                  offer,
+                },
+                { onSuccess: () => setEditorDirty(false) },
+              )
             }
           />
         </div>
@@ -751,7 +834,7 @@ function TradeCard({
           aria-controls={`trade-editor-${trade.id}`}
           aria-expanded={isEditing}
           disabled={busy}
-          onClick={() => setIsEditing((current) => !current)}
+          onClick={toggleEditor}
         >
           {isEditing ? "편집 닫기" : "내 제안 편집"}
         </button>
@@ -824,11 +907,16 @@ export default function TradesClient() {
     return () => window.clearTimeout(timeoutId);
   }, [feedback]);
 
-  function updateTrade(tradeId: string, action: TradeAction) {
+  function updateTrade(
+    tradeId: string,
+    action: TradeAction,
+    options?: { onSuccess?: () => void },
+  ) {
     updateMutation.mutate(
       { tradeId, action },
       {
         onSuccess: (response) => {
+          options?.onSuccess?.();
           if (action.action === "SET_OFFER") {
             setFeedback("내 교환 제안을 저장했습니다.");
             return;

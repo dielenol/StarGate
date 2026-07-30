@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
 import type { ClientNotification } from "@/types/notification";
 
 export const notificationKeys = {
@@ -34,11 +35,14 @@ async function fetchNotificationSummary(): Promise<NotificationSummaryResponse> 
 export function useNotifications(options?: {
   initialData?: ClientNotification[];
 }) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    NOTIFICATION_REFETCH_INTERVAL_MS,
+  );
   return useQuery({
     queryKey: notificationKeys.list,
     queryFn: fetchNotifications,
     staleTime: NOTIFICATION_STALE_TIME_MS,
-    refetchInterval: NOTIFICATION_REFETCH_INTERVAL_MS,
+    refetchInterval,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     initialData: options?.initialData,
@@ -49,11 +53,14 @@ export function useNotifications(options?: {
 export function useNotificationSummary(options?: {
   initialData?: NotificationSummaryResponse;
 }) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    NOTIFICATION_REFETCH_INTERVAL_MS,
+  );
   return useQuery({
     queryKey: notificationKeys.summary,
     queryFn: fetchNotificationSummary,
     staleTime: NOTIFICATION_STALE_TIME_MS,
-    refetchInterval: NOTIFICATION_REFETCH_INTERVAL_MS,
+    refetchInterval,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     initialData: options?.initialData,

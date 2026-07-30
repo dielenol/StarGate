@@ -127,12 +127,14 @@ async function getCurrentFavorability(code: string) {
 }
 
 async function getSnapshot(code: string) {
-  const [logs, questProgress] = await Promise.all([
+  const [favorability, logs, questProgress] = await Promise.all([
+    getCurrentFavorability(code),
     listFactionRelationLogs(code).catch(() => []),
     listFactionQuestProgress(code).catch(() => []),
   ]);
 
   return {
+    favorability,
     logs: logs.map(serializeLog),
     questProgress: questProgress.map(serializeQuestProgress),
   };
@@ -404,7 +406,6 @@ export async function POST(request: Request, context: ActivityRouteContext) {
 
   const snapshot = await getSnapshot(code);
   return NextResponse.json({
-    favorability: after,
     updatedQuestProgress: questProgress
       ? serializeQuestProgress(questProgress)
       : undefined,

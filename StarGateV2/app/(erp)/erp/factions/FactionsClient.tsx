@@ -7,6 +7,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
 
+import { useFactionBoard } from "@/hooks/queries/useFactionsQuery";
+import type {
+  FactionBoardCode,
+  FactionBoardData,
+  FactionBoardNode,
+} from "@/types/erp-realtime";
 import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
@@ -27,50 +33,13 @@ import OrgIcon, {
 import orgStyles from "../personnel/_components/OrgCanvas.module.css";
 import styles from "./page.module.css";
 
-export type FactionBoardCode = string;
-export type FactionBoardNodeKind =
-  | "external"
-  | "branch"
-  | "internal"
-  | "hostile";
-
-export interface FactionBoardNode {
-  code: FactionBoardCode;
-  label: string;
-  labelEn: string;
-  kind: FactionBoardNodeKind;
-  scopeLabel: string;
-  parentCode: FactionBoardCode | null;
-  parentLabel?: string;
-  summary: string;
-  doctrine: string;
-  briefingPoints?: readonly string[];
-  logoUrl: string;
-  favorability: number | null;
-  memberCount: number;
-  contactCount: number;
-  wikiCount: number;
-  signalCount: number;
-  subUnitCount?: number;
-}
-
-export interface FactionBoardTotals {
-  nodeCount: number;
-  factionCount: number;
-  internalCount: number;
-  subOrgCount: number;
-  memberCount: number;
-  contactCount: number;
-  wikiCount: number;
-  signalCount: number;
-}
-
-export interface FactionBoardData {
-  boardNodes: FactionBoardNode[];
-  totals: FactionBoardTotals;
-  generatedAt: string;
-  canEditFavorability: boolean;
-}
+export type {
+  FactionBoardCode,
+  FactionBoardData,
+  FactionBoardNode,
+  FactionBoardNodeKind,
+  FactionBoardTotals,
+} from "@/types/erp-realtime";
 
 interface FactionsClientProps {
   data: FactionBoardData;
@@ -134,7 +103,12 @@ function favorabilityToneClass(value: number | null): string {
   return styles["favorability--neutral"];
 }
 
-export default function FactionsClient({ data }: FactionsClientProps) {
+export default function FactionsClient({
+  data: initialData,
+}: FactionsClientProps) {
+  const { data = initialData } = useFactionBoard({
+    initialData,
+  });
   const [boardNodes, setBoardNodes] = useState(data.boardNodes);
   const [selectedCode, setSelectedCode] =
     useState<FactionBoardCode>(DEFAULT_NODE);
@@ -145,6 +119,10 @@ export default function FactionsClient({ data }: FactionsClientProps) {
   );
   const [isSavingFavorability, setIsSavingFavorability] = useState(false);
   const lastFavorabilityCodeRef = useRef<FactionBoardCode | null>(null);
+
+  useEffect(() => {
+    setBoardNodes(data.boardNodes);
+  }, [data.boardNodes]);
 
   const nodesByCode = useMemo(() => {
     const entries = boardNodes.map((node) => [node.code, node] as const);

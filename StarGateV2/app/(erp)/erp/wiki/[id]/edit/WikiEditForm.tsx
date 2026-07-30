@@ -5,6 +5,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useUpdateWiki } from "@/hooks/mutations/useWikiMutation";
+import { StaleVersionApiError } from "@/hooks/mutations/StaleVersionApiError";
+import { useWikiPage } from "@/hooks/queries/useWikiQuery";
+import type { WikiPageClient } from "@/types/wiki";
 
 import { renderMarkdown } from "@/lib/wiki-render";
 
@@ -17,31 +20,51 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import styles from "./WikiEditForm.module.css";
 
 interface WikiEditFormProps {
-  pageId: string;
-  initialTitle: string;
-  initialCategory: string;
-  initialTags: string[];
-  initialContent: string;
-  initialIsPublic: boolean;
+  initialPage: WikiPageClient;
 }
 
 export default function WikiEditForm({
-  pageId,
-  initialTitle,
-  initialCategory,
-  initialTags,
-  initialContent,
-  initialIsPublic,
+  initialPage,
 }: WikiEditFormProps) {
+  const pageId = initialPage._id;
   const router = useRouter();
   const updateWiki = useUpdateWiki();
+  const pageQuery = useWikiPage(pageId, { initialData: initialPage });
 
-  const [title, setTitle] = useState(initialTitle);
-  const [category, setCategory] = useState(initialCategory);
-  const [tagsInput, setTagsInput] = useState(initialTags.join(", "));
-  const [content, setContent] = useState(initialContent);
-  const [isPublic, setIsPublic] = useState(initialIsPublic);
+  const [title, setTitle] = useState(initialPage.title);
+  const [category, setCategory] = useState(initialPage.category);
+  const [tagsInput, setTagsInput] = useState(initialPage.tags.join(", "));
+  const [content, setContent] = useState(initialPage.content);
+  const [isPublic, setIsPublic] = useState(initialPage.isPublic);
+  const [baselineUpdatedAt, setBaselineUpdatedAt] = useState<string | null>(
+    initialPage.updatedAt || null,
+  );
+  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const latestPage = pageQuery.data ?? initialPage;
+  const latestUpdatedAt = latestPage.updatedAt || null;
+  const externalChange =
+    dirty && latestUpdatedAt !== baselineUpdatedAt;
+
+  if (!dirty && latestUpdatedAt !== baselineUpdatedAt) {
+    setTitle(latestPage.title);
+    setCategory(latestPage.category);
+    setTagsInput(latestPage.tags.join(", "));
+    setContent(latestPage.content);
+    setIsPublic(latestPage.isPublic);
+    setBaselineUpdatedAt(latestUpdatedAt);
+  }
+
+  function reloadLatestPage() {
+    setTitle(latestPage.title);
+    setCategory(latestPage.category);
+    setTagsInput(latestPage.tags.join(", "));
+    setContent(latestPage.content);
+    setIsPublic(latestPage.isPublic);
+    setBaselineUpdatedAt(latestUpdatedAt);
+    setDirty(false);
+    setError(null);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,13 +76,20 @@ export default function WikiEditForm({
       .filter(Boolean);
 
     updateWiki.mutate(
-      { id: pageId, data: { title, category, tags, content, isPublic } },
+      {
+        id: pageId,
+        data: { title, category, tags, content, isPublic },
+        expectedUpdatedAt: baselineUpdatedAt,
+      },
       {
         onSuccess: () => {
           router.push(`/erp/wiki/${pageId}`);
         },
         onError: (err) => {
           setError(err.message);
+          if (err instanceof StaleVersionApiError) {
+            void pageQuery.refetch();
+          }
         },
       },
     );
@@ -73,7 +103,7 @@ export default function WikiEditForm({
         breadcrumb={[
           { label: "ERP", href: "/erp" },
           { label: "CODEX", href: "/erp/wiki" },
-          { label: initialCategory.toUpperCase(), href: `/erp/wiki/${pageId}` },
+          { label: category.toUpperCase(), href: `/erp/wiki/${pageId}` },
           { label: "EDIT" },
         ]}
         title="문서 수정"
@@ -94,7 +124,10 @@ export default function WikiEditForm({
               </label>
               <Input
                 id="wiki-title"
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  setDirty(true);
+                  setTitle(e.target.value);
+                }}
                 placeholder="문서 제목"
                 required
                 type="text"
@@ -107,7 +140,10 @@ export default function WikiEditForm({
               </label>
               <Input
                 id="wiki-category"
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => {
+                  setDirty(true);
+                  setCategory(e.target.value);
+                }}
                 placeholder="카테고리"
                 type="text"
                 value={category}
@@ -119,7 +155,10 @@ export default function WikiEditForm({
               </label>
               <Input
                 id="wiki-tags"
-                onChange={(e) => setTagsInput(e.target.value)}
+                onChange={(e) => {
+                  setDirty(true);
+                  setTagsInput(e.target.value);
+                }}
                 placeholder="태그1, 태그2, 태그3 (콤마 구분)"
                 type="text"
                 value={tagsInput}
@@ -130,7 +169,10 @@ export default function WikiEditForm({
                 <input
                   checked={isPublic}
                   className={styles.checkbox__input}
-                  onChange={(e) => setIsPublic(e.target.checked)}
+                  onChange={(e) => {
+                    setDirty(true);
+                    setIsPublic(e.target.checked);
+                  }}
                   type="checkbox"
                 />
                 <span>공개 문서</span>
@@ -146,7 +188,10 @@ export default function WikiEditForm({
               <span className={styles.label}>MARKDOWN</span>
               <textarea
                 className={styles.textarea}
-                onChange={(e) => setContent(e.target.value)}
+                onChange={(e) => {
+                  setDirty(true);
+                  setContent(e.target.value);
+                }}
                 placeholder="마크다운으로 작성하세요..."
                 rows={24}
                 value={content}
@@ -170,6 +215,21 @@ export default function WikiEditForm({
           </div>
         </Box>
 
+        {externalChange ? (
+          <div className={styles.staleNotice} role="alert">
+            <div>
+              <strong>다른 사용자가 이 문서를 수정했습니다.</strong>
+              <span>
+                작성 중인 내용은 보존했습니다. 최신본을 불러오기 전에는
+                저장할 수 없습니다.
+              </span>
+            </div>
+            <Button type="button" onClick={reloadLatestPage}>
+              최신본 불러오기
+            </Button>
+          </div>
+        ) : null}
+
         {error ? (
           <div className={styles.error} role="alert">
             {error}
@@ -180,7 +240,7 @@ export default function WikiEditForm({
           <Button
             type="submit"
             variant="primary"
-            disabled={updateWiki.isPending}
+            disabled={updateWiki.isPending || externalChange}
           >
             {updateWiki.isPending ? "저장 중..." : "저장"}
           </Button>

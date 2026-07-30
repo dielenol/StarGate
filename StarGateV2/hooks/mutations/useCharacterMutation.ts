@@ -7,6 +7,7 @@ import {
   personnelKeys,
 } from "@/hooks/queries/useCharactersQuery";
 import { equipmentShopKeys } from "@/hooks/queries/useEquipmentShopQuery";
+import { throwMutationError } from "./StaleVersionApiError";
 
 /**
  * 캐릭터 생성 — POST /api/erp/characters.
@@ -37,6 +38,7 @@ export function useCreateCharacter() {
 }
 
 interface SubDocPatchVars<T> {
+  expectedUpdatedAt: string | null;
   id: string;
   patch: Partial<T>;
   /** 변경 사유 — audit/webhook 으로만 흐름. update payload 에 포함되지 않음. */
@@ -53,8 +55,13 @@ export function useUpdatePlayMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, patch, reason }: SubDocPatchVars<PlaySheet>) => {
-      const body: Record<string, unknown> = { play: patch };
+    mutationFn: async ({
+      expectedUpdatedAt,
+      id,
+      patch,
+      reason,
+    }: SubDocPatchVars<PlaySheet>) => {
+      const body: Record<string, unknown> = { expectedUpdatedAt, play: patch };
       if (reason) body.reason = reason;
       const res = await fetch(`/api/erp/characters/${id}`, {
         method: "PATCH",
@@ -62,8 +69,7 @@ export function useUpdatePlayMutation() {
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? "play 수정에 실패했습니다.");
+        await throwMutationError(res, "play 수정에 실패했습니다.");
       }
       return res.json();
     },
@@ -85,8 +91,13 @@ export function useUpdateLoreMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, patch, reason }: SubDocPatchVars<LoreSheet>) => {
-      const body: Record<string, unknown> = { lore: patch };
+    mutationFn: async ({
+      expectedUpdatedAt,
+      id,
+      patch,
+      reason,
+    }: SubDocPatchVars<LoreSheet>) => {
+      const body: Record<string, unknown> = { expectedUpdatedAt, lore: patch };
       if (reason) body.reason = reason;
       const res = await fetch(`/api/erp/characters/${id}`, {
         method: "PATCH",
@@ -94,8 +105,7 @@ export function useUpdateLoreMutation() {
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? "lore 수정에 실패했습니다.");
+        await throwMutationError(res, "lore 수정에 실패했습니다.");
       }
       return res.json();
     },

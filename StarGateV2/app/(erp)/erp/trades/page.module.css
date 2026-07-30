@@ -864,6 +864,29 @@
 .tradeCard__guide { margin: 0 0 4px; }
 .tradeEditor { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 14px; }
 .tradeCard .offerEditor { margin-top: 12px; }
+.remoteRevisionNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--danger) 8%, var(--bg-1));
+  border: 1px solid color-mix(in srgb, var(--danger) 58%, var(--line));
+  border-radius: 6px;
+}
+.remoteRevisionNotice strong {
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+.remoteRevisionNotice p {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.remoteRevisionNotice button { flex: 0 0 auto; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 
 .historyRow {
@@ -931,6 +954,7 @@
   .stockGrid { grid-template-columns: 1fr; }
   .exchangeBoard { grid-template-columns: 1fr; }
   .exchangeBoard__mark { transform: rotate(90deg); }
+  .remoteRevisionNotice { align-items: stretch; flex-direction: column; }
 }
 
 @media (max-width: 480px) {

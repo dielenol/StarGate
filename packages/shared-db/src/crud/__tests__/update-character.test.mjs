@@ -396,6 +396,45 @@ if (!HAS_MODULE_MOCK) {
     );
   });
 
+  test("CAS: expectedUpdatedAt을 Mongo update filter에 포함한다", async () => {
+    capturedSetPayload = null;
+    capturedFilter = null;
+    const expectedUpdatedAt = new Date("2026-07-30T01:23:45.000Z");
+
+    const result = await updateCharacter(
+      VALID_ID,
+      { codename: "CAS_AGENT" },
+      { expectedUpdatedAt },
+    );
+
+    assert.equal(result, true);
+    assert.ok(capturedFilter);
+    assert.equal(
+      capturedFilter.expectedUpdatedAt,
+      undefined,
+      "공개 옵션명은 DB 필드로 누설하지 않는다",
+    );
+    assert.equal(capturedFilter.updatedAt, expectedUpdatedAt);
+  });
+
+  test("CAS: expectedUpdatedAt null은 legacy 문서용 null filter로 유지한다", async () => {
+    capturedSetPayload = null;
+    capturedFilter = null;
+
+    const result = await updateCharacter(
+      VALID_ID,
+      { codename: "LEGACY_AGENT" },
+      { expectedUpdatedAt: null },
+    );
+
+    assert.equal(result, true);
+    assert.ok(capturedFilter);
+    assert.ok(
+      Object.prototype.hasOwnProperty.call(capturedFilter, "updatedAt"),
+    );
+    assert.equal(capturedFilter.updatedAt, null);
+  });
+
   test("S2: ADMIN 디폴트는 'lore' / 'play' 루트 키 포함 (PLAYER와 대조)", () => {
     assert.ok(
       ADMIN_ALLOWED_CHARACTER_FIELDS.has("lore"),

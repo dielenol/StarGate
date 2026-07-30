@@ -2,20 +2,18 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth/config";
-import { findUserById } from "@/lib/db/users";
+import { getCurrentAccountResponse } from "@/lib/erp/current-account";
 import { formatDate, formatDateTime } from "@/lib/format/date";
 
 import {
   IconAccount,
   IconLinked,
-  IconPasskey,
   IconSecurity,
-  IconStatus,
-  IconTenure,
 } from "@/components/icons";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
 import DiscordLinkButton from "./DiscordLinkButton";
+import AccountLiveOverview from "./AccountLiveOverview";
 import PasswordForm from "./PasswordForm";
 
 import styles from "./page.module.css";
@@ -35,7 +33,7 @@ export default async function AccountPage() {
     redirect("/login");
   }
 
-  const user = await findUserById(session.user.id);
+  const user = await getCurrentAccountResponse(session.user.id);
 
   if (!user) {
     redirect("/login");
@@ -45,7 +43,6 @@ export default async function AccountPage() {
   const statusActive = user.status === "ACTIVE";
   const discordConnected = Boolean(user.discordId);
   const pwChangedDays = daysSince(user.passwordChangedAt);
-  const accountAgeDays = daysSince(user.createdAt);
 
   return (
     <>
@@ -58,72 +55,7 @@ export default async function AccountPage() {
       />
 
       <div className={styles.accountShell}>
-        <section className={styles.overviewPanel} aria-label="계정 요약">
-          <div className={styles.overviewPanel__body}>
-            <span className={styles.sectionLabel}>
-              <IconAccount className={styles.sectionLabel__icon} aria-hidden />
-              ACCOUNT CONTROL
-            </span>
-            <h2 className={styles.overviewPanel__title}>{user.displayName}</h2>
-            <div className={styles.overviewPanel__meta}>
-              <span>{user.username}</span>
-              <span>{user.role}</span>
-              <span>{user.status}</span>
-            </div>
-          </div>
-          <div className={styles.summaryGrid}>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryItem__label}>
-                <IconStatus className={styles.summaryItem__icon} aria-hidden />
-                STATUS
-              </span>
-              <strong
-                className={[
-                  styles.summaryItem__value,
-                  statusActive ? styles["summaryItem__value--success"] : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                {user.status}
-              </strong>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryItem__label}>
-                <IconLinked className={styles.summaryItem__icon} aria-hidden />
-                DISCORD
-              </span>
-              <strong
-                className={[
-                  styles.summaryItem__value,
-                  discordConnected ? styles["summaryItem__value--gold"] : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                {discordConnected ? "LINKED" : "OPEN"}
-              </strong>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryItem__label}>
-                <IconPasskey className={styles.summaryItem__icon} aria-hidden />
-                PASSWORD
-              </span>
-              <strong className={styles.summaryItem__value}>
-                {pwChangedDays !== null ? `${pwChangedDays}D` : "N/A"}
-              </strong>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryItem__label}>
-                <IconTenure className={styles.summaryItem__icon} aria-hidden />
-                TENURE
-              </span>
-              <strong className={styles.summaryItem__value}>
-                {accountAgeDays !== null ? `${accountAgeDays}D` : "N/A"}
-              </strong>
-            </div>
-          </div>
-        </section>
+        <AccountLiveOverview initialAccount={user} />
 
         <div className={styles.layout}>
           {/* ── 좌측 사이드 (신원 dossier) ── */}

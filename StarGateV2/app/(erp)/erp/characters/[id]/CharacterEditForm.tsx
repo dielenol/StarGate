@@ -20,6 +20,7 @@ import {
   characterEditQuotaKeys,
   useCharacterEditQuota,
 } from "@/hooks/queries/useCharacterEditQuota";
+import { characterKeys } from "@/hooks/queries/useCharactersQuery";
 
 import type { DiffEntry } from "./DiffPreviewModal";
 
@@ -49,7 +50,9 @@ interface Props {
   /** AGENT 전용 — page.tsx 가 NPC 를 redirect 하므로 NPC 분기 불필요. */
   character: AgentCharacter;
   editMode: EditMode;
+  externalChange: boolean;
   onCancel: () => void;
+  onReloadLatest: () => void;
   onSaved: () => void;
 }
 
@@ -292,7 +295,9 @@ function normalizeStepperDraft(raw: string, signed: boolean): string {
 export default function CharacterEditForm({
   character,
   editMode,
+  externalChange,
   onCancel,
+  onReloadLatest,
   onSaved,
 }: Props) {
   const characterId = String(character._id);
@@ -468,7 +473,14 @@ export default function CharacterEditForm({
     setSubmitting(true);
     setError(null);
 
-    const finalBody = reason ? { ...body, reason } : body;
+    const expectedUpdatedAt = character.updatedAt
+      ? new Date(character.updatedAt).toISOString()
+      : null;
+    const finalBody = {
+      ...body,
+      expectedUpdatedAt,
+      ...(reason ? { reason } : {}),
+    };
 
     try {
       const res = await fetch(`/api/erp/characters/${characterId}`, {
@@ -478,10 +490,19 @@ export default function CharacterEditForm({
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as {
+          code?: string;
+          error?: string;
+        };
         if (res.status === 429 && isPlayer) {
           await queryClient.invalidateQueries({
             queryKey: characterEditQuotaKeys.byCharacter(characterId),
+          });
+        }
+        if (res.status === 409 && data.code === "STALE_VERSION") {
+          await queryClient.refetchQueries({
+            queryKey: characterKeys.agent.byId(characterId),
+            type: "active",
           });
         }
         setError(data.error ?? "저장에 실패했습니다.");
@@ -509,6 +530,10 @@ export default function CharacterEditForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (externalChange) {
+      setError("최신 캐릭터 정보를 불러온 뒤 다시 저장하세요.");
+      return;
+    }
 
     const diff = computeFormDiff();
     if (diff.length === 0) {
@@ -551,7 +576,7 @@ export default function CharacterEditForm({
         <button
           type="submit"
           className={styles.submitBtn}
-          disabled={submitting}
+          disabled={submitting || externalChange}
           aria-busy={submitting}
         >
           {submitting ? "저장 중" : "저장"}
@@ -624,6 +649,25 @@ export default function CharacterEditForm({
           </div>
         ) : null}
       </div>
+
+      {externalChange ? (
+        <div className={styles.staleNotice} role="alert">
+          <div>
+            <strong>다른 사용자가 이 캐릭터를 수정했습니다.</strong>
+            <span>
+              작성 중인 내용은 보존했습니다. 최신본을 불러오기 전에는
+              저장할 수 없습니다.
+            </span>
+          </div>
+          <button
+            type="button"
+            className={styles.cancelBtn}
+            onClick={onReloadLatest}
+          >
+            최신본 불러오기
+          </button>
+        </div>
+      ) : null}
 
       {/* ── BASIC INFO (root + 일부 lore meta) ── */}
       <CollapsiblePanel

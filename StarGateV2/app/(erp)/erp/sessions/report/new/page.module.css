@@ -80,6 +80,31 @@
   font-size: 14px;
 }
 
+.staleNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.staleNotice > div {
+  display: grid;
+  gap: 4px;
+}
+
+.staleNotice strong {
+  color: var(--danger);
+}
+
+.staleNotice span {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
 /* ── Utility ── */
 
 .mono {
@@ -102,5 +127,10 @@
 
   .submitRow {
     justify-content: stretch;
+  }
+
+  .staleNotice {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

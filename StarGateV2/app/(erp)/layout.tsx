@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth/player-service-test-access";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
+import { getRealtimeClientMode } from "@/lib/realtime/config";
 
 import SessionWrapper from "@/components/erp/SessionWrapper";
 import QueryProvider from "@/components/erp/QueryProvider";
@@ -64,11 +65,12 @@ export default async function ERPLayout({
     session.user.role !== "GM" &&
     isNavPathLocked(pathname, pageLockOverrides);
   const initialPageLocks = { overrides: pageLockOverrides };
+  const realtimeClientMode = getRealtimeClientMode();
 
   return (
     <SessionWrapper session={session}>
       <QueryProvider>
-        <RealtimeProvider>
+        <RealtimeProvider mode={realtimeClientMode}>
           <PageHeadProvider>
             <NavPendingProvider>
               <div className={styles.erp} data-scope="erp">

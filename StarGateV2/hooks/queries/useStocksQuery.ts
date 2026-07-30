@@ -16,6 +16,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
 /* ── Query keys ── */
 
 export const stocksKeys = {
@@ -281,11 +282,14 @@ const MARKET_REFETCH_INTERVAL_MS = 60 * 1000;
 export function useStockPrices(options?: {
   initialData?: StockPricesResponse;
 }) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    MARKET_REFETCH_INTERVAL_MS,
+  );
   return useQuery({
     queryKey: stocksKeys.prices,
     queryFn: fetchStockPrices,
     staleTime: PRICES_STALE_MS,
-    refetchInterval: MARKET_REFETCH_INTERVAL_MS,
+    refetchInterval,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     initialData: options?.initialData,
@@ -363,11 +367,14 @@ export function useStockMarketIndexHistory(
   days: number = 7,
   options?: { initialData?: StockMarketIndexHistoryResponse },
 ) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    MARKET_REFETCH_INTERVAL_MS,
+  );
   return useQuery({
     queryKey: stocksKeys.marketIndexHistory(days),
     queryFn: () => fetchStockMarketIndexHistory(days),
     staleTime: MARKET_INDEX_HISTORY_STALE_MS,
-    refetchInterval: MARKET_REFETCH_INTERVAL_MS,
+    refetchInterval,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     initialData: options?.initialData,
@@ -389,11 +396,14 @@ export function useStockMarketWire(
 ) {
   const days = options?.days ?? 7;
   const limit = options?.limit ?? 12;
+  const refetchInterval = useRealtimeRefetchInterval(
+    MARKET_REFETCH_INTERVAL_MS,
+  );
   return useQuery({
     queryKey: stocksKeys.marketWire(days, limit),
     queryFn: () => fetchStockMarketWire(days, limit),
     staleTime: MARKET_WIRE_STALE_MS,
-    refetchInterval: MARKET_REFETCH_INTERVAL_MS,
+    refetchInterval,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     initialData: options?.initialData,

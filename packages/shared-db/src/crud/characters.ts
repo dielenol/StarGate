@@ -565,7 +565,10 @@ function buildUpdatePatch(
 export async function updateCharacter(
   id: string,
   update: Record<string, unknown>,
-  options?: { allowedFields?: Set<string> }
+  options?: {
+    allowedFields?: Set<string>;
+    expectedUpdatedAt?: Date | null;
+  }
 ): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
 
@@ -574,8 +577,12 @@ export async function updateCharacter(
   if (Object.keys(sanitized).length === 0) return false;
 
   const col = await charactersCol();
+  const filter: Record<string, unknown> = { _id: new ObjectId(id) };
+  if (options && "expectedUpdatedAt" in options) {
+    filter.updatedAt = options.expectedUpdatedAt;
+  }
   const result = await col.updateOne(
-    { _id: new ObjectId(id) },
+    filter,
     { $set: { ...sanitized, updatedAt: new Date() } as Record<string, unknown> }
   );
   return result.modifiedCount > 0;

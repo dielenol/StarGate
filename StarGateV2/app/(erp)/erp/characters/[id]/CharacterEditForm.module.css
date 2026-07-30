@@ -623,6 +623,31 @@
   flex-shrink: 0;
 }
 
+.staleNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid rgba(193, 74, 61, 0.55);
+  border-radius: var(--radius-sm);
+  background: rgba(193, 74, 61, 0.08);
+}
+
+.staleNotice > div {
+  display: grid;
+  gap: 4px;
+}
+
+.staleNotice strong {
+  color: #e0a59e;
+}
+
+.staleNotice span {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
 /* ---------- actions / footer ---------- */
 .actions {
   position: relative;

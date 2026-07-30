@@ -17,7 +17,7 @@ import {
 } from "@/lib/lore-links";
 import { filterCharacterByClearance, getUserClearance } from "@/lib/personnel";
 import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
-import { renderMarkdown } from "@/lib/wiki-render";
+import type { WikiPageClient } from "@/types/wiki";
 
 import Box from "@/components/ui/Box/Box";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
@@ -52,27 +52,16 @@ interface TocEntry {
   text: string;
 }
 
-/**
- * 마크다운 본문에서 heading (#-####) 을 뽑아 TOC 엔트리로 변환.
- *
- * `lib/wiki-render.ts` 와 동일한 파싱 규칙:
- *   `#`/`##` → h2, `###` → h3, `####` → h4.
- * 본문이 `dangerouslySetInnerHTML` 로 렌더되므로 서버에서 id 슬러그를 발급해
- * 클라이언트 컴포넌트가 동일 순서로 주입할 수 있게 한다.
- */
 function extractToc(content: string): TocEntry[] {
-  if (!content) return [];
   const entries: TocEntry[] = [];
-  const lines = content.split("\n");
   let counter = 0;
-  for (const line of lines) {
+  for (const line of content.split("\n")) {
     const match = line.match(/^(#{1,4})\s+(.+)$/);
     if (!match) continue;
     const level = (
       match[1].length <= 2 ? 2 : match[1].length === 3 ? 3 : 4
     ) as 2 | 3 | 4;
     const text = match[2]
-      // 인라인 마크다운 제거 (볼드/이탤릭)
       .replace(/\*\*(.+?)\*\*/g, "$1")
       .replace(/\*(.+?)\*/g, "$1")
       .trim();
@@ -101,6 +90,12 @@ export default async function WikiDetailPage({
   const isGM = hasRole(session.user.role, "V");
   const isAdmin = hasRole(session.user.role, "GM");
   const pageId = page._id!.toString();
+  const serializedPage: WikiPageClient = {
+    ...page,
+    _id: pageId,
+    createdAt: page.createdAt.toISOString(),
+    updatedAt: page.updatedAt?.toISOString() ?? "",
+  };
 
   // 카테고리 네비 + 자동링크/연관 문서용 컬렉션 4종 — 서로 독립 조회라 병렬 로드
   // (실패 시 빈 목록). 직렬 4 RTT → 1 RTT.
@@ -147,11 +142,6 @@ export default async function WikiDetailPage({
     currentWikiPageId: pageId,
     reports: allReports,
     wikiPages: visibleWikiPages,
-  });
-  const contentHtml = renderMarkdown(articleContent, {
-    links: autoLinkTargets,
-    maxAutoLinksPerTarget: 2,
-    maxAutoLinksTotal: 48,
   });
   const relatedReports = relatedReportsForWiki(page, allReports);
   const relatedCatalogItems = relatedCatalogItemsForWiki(page, visibleItems);
@@ -258,7 +248,10 @@ export default async function WikiDetailPage({
               </div>
             </div>
 
-            <WikiDetailContent html={contentHtml} toc={toc} />
+            <WikiDetailContent
+              initialPage={serializedPage}
+              links={autoLinkTargets}
+            />
 
             <div className={styles.footer}>
               <dl className={styles.footerMeta}>

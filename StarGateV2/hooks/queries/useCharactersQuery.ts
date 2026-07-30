@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
 import type {
   AgentCharacter,
   Character,
@@ -96,12 +97,15 @@ export function useAgentCharacterQuery(
   id: string,
   options?: { initialData?: AgentCharacter; enabled?: boolean },
 ) {
+  const refetchInterval = useRealtimeRefetchInterval(60_000);
   return useQuery({
     queryKey: characterKeys.agent.byId(id),
     queryFn: () => fetchAgentCharacterById(id),
     staleTime: CHARACTER_STALE_TIME_MS,
-    initialData: options?.initialData,
+    refetchInterval,
+    refetchIntervalInBackground: false,
     enabled: options?.enabled ?? true,
+    initialData: options?.initialData,
   });
 }
 
@@ -120,11 +124,14 @@ export function usePersonnelByIdQuery(
   id: string,
   options?: { initialData?: Character; enabled?: boolean },
 ) {
+  const refetchInterval = useRealtimeRefetchInterval(60_000);
   return useQuery({
     queryKey: personnelKeys.byId(id),
     queryFn: () => fetchPersonnelCharacterById(id),
     staleTime: CHARACTER_STALE_TIME_MS,
-    initialData: options?.initialData,
+    refetchInterval,
+    refetchIntervalInBackground: false,
     enabled: options?.enabled ?? true,
+    initialData: options?.initialData,
   });
 }

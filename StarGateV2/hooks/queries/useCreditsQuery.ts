@@ -55,11 +55,15 @@ async function fetchCredits(): Promise<CreditsResponse> {
   return res.json();
 }
 
-export function useCredits(options?: { initialData?: CreditsResponse }) {
+export function useCredits(options?: {
+  enabled?: boolean;
+  initialData?: CreditsResponse;
+}) {
   return useQuery({
     queryKey: creditKeys.all,
     queryFn: fetchCredits,
     staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled,
     initialData: options?.initialData,
     refetchOnMount: "always",
     refetchOnWindowFocus: "always",

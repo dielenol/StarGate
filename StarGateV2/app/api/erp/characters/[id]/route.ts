@@ -21,6 +21,10 @@ import {
 import { checkEditCooldown } from "@/lib/character/cooldown";
 import { computeCharacterDiff } from "@/lib/character/diff";
 import {
+  isExpectedUpdatedAtCurrent,
+  parseExpectedUpdatedAt,
+} from "@/lib/api/expected-updated-at";
+import {
   findCharacterById,
   updateCharacter,
   deleteCharacter,
@@ -191,6 +195,26 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const body = (await request.json()) as Record<string, unknown>;
+  const expectedUpdatedAt = parseExpectedUpdatedAt(body);
+  if (!expectedUpdatedAt.ok) {
+    return NextResponse.json(
+      { error: expectedUpdatedAt.error },
+      { status: 400 },
+    );
+  }
+  delete body.expectedUpdatedAt;
+  if (
+    !isExpectedUpdatedAtCurrent(before.updatedAt, expectedUpdatedAt.value)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "다른 사용자가 캐릭터를 수정했습니다. 최신본을 불러온 뒤 다시 시도하세요.",
+        code: "STALE_VERSION",
+      },
+      { status: 409 },
+    );
+  }
 
   const reason =
     typeof body.reason === "string" ? body.reason.trim() || undefined : undefined;
@@ -236,8 +260,28 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    const updated = await updateCharacter(id, body, { allowedFields });
+    const updated = await updateCharacter(id, body, {
+      allowedFields,
+      expectedUpdatedAt: expectedUpdatedAt.value,
+    });
     if (!updated) {
+      const latest = await findCharacterById(id);
+      if (
+        latest &&
+        !isExpectedUpdatedAtCurrent(
+          latest.updatedAt,
+          expectedUpdatedAt.value,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "다른 사용자가 캐릭터를 수정했습니다. 최신본을 불러온 뒤 다시 시도하세요.",
+            code: "STALE_VERSION",
+          },
+          { status: 409 },
+        );
+      }
       return NextResponse.json(
         { error: "캐릭터를 찾을 수 없거나 변경 사항이 없습니다." },
         { status: 404 },
@@ -293,7 +337,11 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    const current = await findCharacterById(id);
+    return NextResponse.json({
+      success: true,
+      updatedAt: current?.updatedAt?.toISOString() ?? null,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "캐릭터 수정 실패";
     return NextResponse.json({ error: message }, { status: 400 });

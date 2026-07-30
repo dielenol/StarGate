@@ -5,23 +5,45 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
   RealtimeResource,
   readonly QueryKey[]
 > = {
-  users: [["users"]],
+  users: [
+    ["users"],
+    ["trades"],
+    ["dashboard"],
+    ["factions"],
+    ["account"],
+  ],
   characters: [
     ["characters"],
     ["character-change-logs"],
     ["character-edit-quota"],
+    ["personnel"],
+    ["trades"],
+    ["dashboard"],
+    ["factions"],
+    ["account"],
   ],
   personnel: [["personnel"]],
-  credits: [["credits"], ["credits-admin"]],
-  inventory: [["inventory"]],
-  notifications: [["notifications"]],
+  credits: [
+    ["credits"],
+    ["credits-admin"],
+    ["trades"],
+    ["dashboard"],
+  ],
+  inventory: [
+    ["inventory"],
+    ["trades"],
+    ["shop"],
+    ["equipment-shop"],
+    ["admin-inventory-overview"],
+  ],
+  notifications: [["notifications"], ["dashboard"]],
   shop: [["shop"]],
-  stocks: [["stocks"]],
+  stocks: [["stocks"], ["trades"]],
   trades: [["trades"]],
-  sessions: [["sessions"]],
-  reports: [["session-reports"]],
+  sessions: [["sessions"], ["dashboard"]],
+  reports: [["session-reports"], ["dashboard"], ["factions"]],
   "equipment-shop": [["equipment-shop"]],
-  wiki: [["wiki"]],
+  wiki: [["wiki"], ["dashboard"], ["factions"]],
   factions: [["factions"]],
   "page-locks": [["erp-page-locks"]],
 };
@@ -29,7 +51,13 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
 export function queryKeysForRealtimeResources(
   resources: readonly RealtimeResource[],
 ): QueryKey[] {
-  return resources.flatMap(
-    (resource) => REALTIME_RESOURCE_QUERY_KEYS[resource],
-  );
+  const seen = new Set<string>();
+  return resources
+    .flatMap((resource) => REALTIME_RESOURCE_QUERY_KEYS[resource])
+    .filter((queryKey) => {
+      const signature = JSON.stringify(queryKey);
+      if (seen.has(signature)) return false;
+      seen.add(signature);
+      return true;
+    });
 }

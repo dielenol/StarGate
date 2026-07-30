@@ -22,7 +22,7 @@ import type {
   FactionBoardData,
   FactionBoardNode,
   FactionBoardTotals,
-} from "./FactionsClient";
+} from "@/types/erp-realtime";
 
 const EXTERNAL_FACTION_CODES = ["COUNCIL", "MILITARY", "CIVIL"] as const;
 const HOSTILE_FACTION_CODE = "HOSTILE" as const;

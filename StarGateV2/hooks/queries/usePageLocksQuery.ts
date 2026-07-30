@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import type { ErpPageLockOverrides } from "@/lib/erp/page-lock-policy";
+import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
 
 export interface PageLocksResponse {
   overrides: ErpPageLockOverrides;
@@ -22,12 +23,15 @@ async function fetchPageLocks(): Promise<PageLocksResponse> {
 }
 
 export function usePageLocks(options?: { initialData?: PageLocksResponse }) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    PAGE_LOCK_REFETCH_INTERVAL_MS,
+  );
   return useQuery({
     queryKey: pageLockKeys.all,
     queryFn: fetchPageLocks,
     initialData: options?.initialData,
     staleTime: PAGE_LOCK_STALE_TIME_MS,
-    refetchInterval: PAGE_LOCK_REFETCH_INTERVAL_MS,
+    refetchInterval,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });

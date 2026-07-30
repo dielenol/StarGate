@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import {
+  isExpectedUpdatedAtCurrent,
+  parseExpectedUpdatedAt,
+} from "@/lib/api/expected-updated-at";
 import { sanitizeWikiBody } from "@/lib/api/wiki-validators";
 import {
   deleteWikiPage,
@@ -95,7 +99,15 @@ export async function PATCH(
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
 
-  const sanitized = sanitizeWikiBody(await request.json());
+  const body = (await request.json()) as Record<string, unknown>;
+  const expectedUpdatedAt = parseExpectedUpdatedAt(body);
+  if (!expectedUpdatedAt.ok) {
+    return NextResponse.json(
+      { error: expectedUpdatedAt.error },
+      { status: 400 },
+    );
+  }
+  const sanitized = sanitizeWikiBody(body);
   if ("error" in sanitized) return sanitized.error;
   const update: Record<string, unknown> = { ...sanitized.value };
   delete update.slug;
@@ -103,14 +115,46 @@ export async function PATCH(
   if (normalizeError) return normalizeError;
 
   try {
+    const before = await findWikiPageById(id);
+    if (
+      before &&
+      !isExpectedUpdatedAtCurrent(before.updatedAt, expectedUpdatedAt.value)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "다른 사용자가 문서를 수정했습니다. 최신본을 불러온 뒤 다시 시도하세요.",
+          code: "STALE_VERSION",
+        },
+        { status: 409 },
+      );
+    }
     const updated = await updateWikiPage(
       id,
       update,
       session.user.id,
       session.user.displayName,
+      expectedUpdatedAt.value,
     );
 
     if (!updated) {
+      const latest = await findWikiPageById(id);
+      if (
+        latest &&
+        !isExpectedUpdatedAtCurrent(
+          latest.updatedAt,
+          expectedUpdatedAt.value,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "다른 사용자가 문서를 수정했습니다. 최신본을 불러온 뒤 다시 시도하세요.",
+            code: "STALE_VERSION",
+          },
+          { status: 409 },
+        );
+      }
       return NextResponse.json(
         { error: "문서를 찾을 수 없거나 변경사항이 없습니다." },
         { status: 404 },
@@ -129,7 +173,11 @@ export async function PATCH(
       timestamp: new Date(),
     });
 
-    return NextResponse.json({ success: true });
+    const current = await findWikiPageById(id);
+    return NextResponse.json({
+      success: true,
+      updatedAt: current?.updatedAt?.toISOString() ?? null,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "문서 수정 실패";
     return NextResponse.json({ error: message }, { status: 400 });

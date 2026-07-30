@@ -52,7 +52,8 @@ const ALLOWED_REPORT_FIELDS = new Set([
 
 export async function updateSessionReport(
   id: string,
-  update: Record<string, unknown>
+  update: Record<string, unknown>,
+  expectedUpdatedAt?: Date | null
 ): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
 
@@ -73,8 +74,12 @@ export async function updateSessionReport(
   if (Object.keys(toUnset).length > 0) updateDoc.$unset = toUnset;
 
   const col = await sessionReportsCol();
+  const filter: Record<string, unknown> = { _id: new ObjectId(id) };
+  if (expectedUpdatedAt !== undefined) {
+    filter.updatedAt = expectedUpdatedAt;
+  }
   const result = await col.updateOne(
-    { _id: new ObjectId(id) },
+    filter,
     updateDoc
   );
   return result.matchedCount > 0;

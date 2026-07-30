@@ -12,6 +12,7 @@ import {
 
 import {
   useSessionsByMonth,
+  useUpcomingSessions,
   type SerializedSession,
   type SerializedSessionParticipant,
 } from "@/hooks/queries/useSessionsQuery";
@@ -42,7 +43,7 @@ import {
   type StatusGroup,
 } from "./_utils";
 
-import type { UpcomingSessionLink } from "./page";
+import type { UpcomingSessionLink } from "@/types/erp-realtime";
 
 import styles from "./page.module.css";
 
@@ -115,6 +116,9 @@ export default function SessionsClient({
     refetch: refetchSessions,
   } = useSessionsByMonth(year, month, guildId, {
     initialData: isInitialMonth ? initialSessions : undefined,
+  });
+  const { data: upcomingData } = useUpcomingSessions(guildId, {
+    initialData: { sessions: initialUpcoming },
   });
 
   const handlePrevMonth = useCallback(() => {
@@ -405,7 +409,7 @@ export default function SessionsClient({
           <SessionsRail
             counts={counts}
             myRsvp={myRsvpUpcoming}
-            openImminent={initialUpcoming}
+            openImminent={upcomingData?.sessions ?? initialUpcoming}
             trpgWebBaseUrl={trpgWebBaseUrl}
           />
         ) : null}

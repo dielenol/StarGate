@@ -240,3 +240,15 @@ test("거래 작성기는 선택 상태와 처리 상태를 분리하고 큰 편
   assert.match(tradesClient, /const \[isEditing, setIsEditing\] = useState\(false\)/);
   assert.match(tradesClient, /aria-expanded=\{isEditing\}/);
 });
+
+test("원격 revision 변경은 작성 중인 초안을 보존하고 저장을 잠근다", () => {
+  assert.match(tradesClient, /const remoteRevisionDetected =/);
+  assert.match(tradesClient, /editorSnapshot\.revision !== trade\.revision/);
+  assert.match(tradesClient, /작성 중인 내 초안은 보존했습니다/);
+  assert.match(tradesClient, /최신 구성 불러오기/);
+  assert.match(tradesClient, /submitDisabled=\{remoteRevisionDetected\}/);
+  assert.match(
+    tradesClient,
+    /editorDirty \? editorSnapshot\.revision : trade\.revision/,
+  );
+});

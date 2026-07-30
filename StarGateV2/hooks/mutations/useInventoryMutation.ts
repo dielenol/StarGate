@@ -11,6 +11,7 @@ import { equipmentShopKeys } from "@/hooks/queries/useEquipmentShopQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import { shopKeys } from "@/hooks/queries/useShopQuery";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
+import { adminInventoryOverviewKeys } from "@/hooks/queries/useAdminInventoryOverviewQuery";
 
 interface GrantInventoryBody {
   itemId: string;
@@ -53,6 +54,9 @@ export function useCreateItem() {
         queryClient.invalidateQueries({ queryKey: equipmentShopKeys.all }),
         queryClient.invalidateQueries({ queryKey: shopKeys.all }),
         queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: adminInventoryOverviewKeys.all,
+        }),
       ]);
     },
   });
@@ -86,6 +90,9 @@ export function useGrantInventory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: adminInventoryOverviewKeys.all,
+      });
     },
   });
 }
@@ -118,6 +125,9 @@ export function useRemoveInventory(characterId: string) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
         queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: adminInventoryOverviewKeys.all,
+        }),
       ]);
     },
   });
@@ -148,6 +158,9 @@ export function useGrantSharedInventory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: adminInventoryOverviewKeys.all,
+      });
     },
   });
 }

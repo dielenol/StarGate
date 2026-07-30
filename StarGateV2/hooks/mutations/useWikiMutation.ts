@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { UpdateWikiPageInput } from "@/types/wiki";
 
 import { wikiKeys } from "@/hooks/queries/useWikiQuery";
+import { throwMutationError } from "./StaleVersionApiError";
 
 interface CreateWikiBody {
   slug?: string;
@@ -40,25 +41,29 @@ export function useUpdateWiki() {
 
   return useMutation({
     mutationFn: async ({
+      expectedUpdatedAt,
       id,
       data,
     }: {
+      expectedUpdatedAt: string | null;
       id: string;
       data: UpdateWikiPageInput;
     }) => {
       const res = await fetch(`/api/erp/wiki/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, expectedUpdatedAt }),
       });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? "위키 페이지 수정에 실패했습니다.");
+        await throwMutationError(res, "위키 페이지 수정에 실패했습니다.");
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: wikiKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: wikiKeys.byId(variables.id),
+      });
     },
   });
 }

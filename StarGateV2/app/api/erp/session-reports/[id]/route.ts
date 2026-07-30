@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import {
+  isExpectedUpdatedAtCurrent,
+  parseExpectedUpdatedAt,
+} from "@/lib/api/expected-updated-at";
+import {
   validateSessionReportArrays,
   validateSessionReportMapUpdate,
 } from "@/lib/api/session-report-validators";
@@ -65,7 +69,14 @@ export async function PATCH(
   if (!isValidObjectId(id)) {
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
-  const body = await request.json();
+  const body = (await request.json()) as Record<string, unknown>;
+  const expectedUpdatedAt = parseExpectedUpdatedAt(body);
+  if (!expectedUpdatedAt.ok) {
+    return NextResponse.json(
+      { error: expectedUpdatedAt.error },
+      { status: 400 },
+    );
+  }
   const { sessionTitle, summary } = body as {
     sessionTitle?: string;
     summary?: string;
@@ -92,6 +103,20 @@ export async function PATCH(
   if ("error" in map) return map.error;
 
   try {
+    const before = await findReportById(id);
+    if (
+      before &&
+      !isExpectedUpdatedAtCurrent(before.updatedAt, expectedUpdatedAt.value)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "다른 사용자가 리포트를 수정했습니다. 최신본을 불러온 뒤 다시 시도하세요.",
+          code: "STALE_VERSION",
+        },
+        { status: 409 },
+      );
+    }
     const update: Record<string, unknown> = {};
     if (sessionTitle !== undefined) update.sessionTitle = sessionTitle.trim();
     if (summary !== undefined) update.summary = summary.trim();
@@ -99,8 +124,29 @@ export async function PATCH(
     if (participants !== undefined) update.participants = participants;
     Object.assign(update, map.value);
 
-    const updated = await updateSessionReport(id, update);
+    const updated = await updateSessionReport(
+      id,
+      update,
+      expectedUpdatedAt.value,
+    );
     if (!updated) {
+      const latest = await findReportById(id);
+      if (
+        latest &&
+        !isExpectedUpdatedAtCurrent(
+          latest.updatedAt,
+          expectedUpdatedAt.value,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "다른 사용자가 리포트를 수정했습니다. 최신본을 불러온 뒤 다시 시도하세요.",
+            code: "STALE_VERSION",
+          },
+          { status: 409 },
+        );
+      }
       return NextResponse.json(
         { error: "리포트를 찾을 수 없거나 변경사항이 없습니다." },
         { status: 404 },
@@ -119,7 +165,11 @@ export async function PATCH(
       timestamp: new Date(),
     });
 
-    return NextResponse.json({ success: true });
+    const current = await findReportById(id);
+    return NextResponse.json({
+      success: true,
+      updatedAt: current?.updatedAt?.toISOString() ?? null,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "리포트 수정 실패";
     return NextResponse.json({ error: message }, { status: 400 });

@@ -8,6 +8,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
 import type { EquipmentShopCatalogItem } from "@/lib/equipment-shop/catalog";
 import type { EquipmentShopActivityEntry } from "@/lib/equipment-shop/activity";
 import type {
@@ -222,13 +223,14 @@ export function useEquipmentResearch(options?: {
   enabled?: boolean;
 }) {
   const characterId = options?.characterId ?? null;
+  const refetchInterval = useRealtimeRefetchInterval(60 * 1000);
   return useQuery({
     queryKey: equipmentShopKeys.research(characterId),
     queryFn: fetchEquipmentResearch,
     staleTime: RESEARCH_STALE_TIME_MS,
     initialData: options?.initialData,
     enabled: options?.enabled,
-    refetchInterval: 60 * 1000,
+    refetchInterval,
   });
 }
 
@@ -237,13 +239,14 @@ export function useEquipmentWorkshopRequests(options: {
   enabled?: boolean;
   initialData?: EquipmentWorkshopRequestsResponse;
 }) {
+  const refetchInterval = useRealtimeRefetchInterval(30 * 1000);
   return useQuery({
     queryKey: equipmentShopKeys.workshopRequests(options.viewerKey),
     queryFn: fetchEquipmentWorkshopRequests,
     staleTime: 30 * 1000,
     enabled: options?.enabled,
     initialData: options.initialData,
-    refetchInterval: 30 * 1000,
+    refetchInterval,
   });
 }
 
