@@ -39,6 +39,8 @@ test("comparison UI is removed and the attack log remains as the bottom section"
   assert.doesNotMatch(styles, /\.compare(?:Panel|Table|Header|Row|SelectButton)/);
   assert.match(client, /className=\{styles\.bottomGrid\} aria-label="공격 로그"/);
   assert.match(client, /<strong>공격 로그<\/strong>/);
+  assert.match(client, /log\.details\?\.length[\s\S]*<details>/);
+  assert.match(styles, /\.logItem summary/);
 });
 
 test("action controls wrap inside the board at desktop and mobile widths", async () => {
@@ -160,7 +162,16 @@ test("the board exposes real token dragging, weapon range cells, and turn-consum
 
   assert.match(client, /setPointerCapture\(event\.pointerId\)/);
   assert.match(client, /elementFromPoint\(event\.clientX, event\.clientY\)/);
-  assert.match(client, /handleTokenPointerUp\(event, "attacker"\)/);
+  assert.match(
+    client,
+    /handleTokenPointerUp\(event, \{ kind: "attacker" \}\)/,
+  );
+  assert.match(client, /className=\{styles\.dragGhost\}/);
+  assert.match(client, /Math\.hypot\(event\.clientX - origin\.x/);
+  assert.match(
+    client,
+    /const didDrag = origin[\s\S]*Math\.hypot\(event\.clientX - origin\.x/,
+  );
   assert.doesNotMatch(client, /draggable=\{enemyPositionConfirmed\}/);
   assert.match(client, /isSimulatorAttackableCell\(/);
   assert.match(client, /중기관총 설치 \(1턴\)/);
@@ -189,10 +200,57 @@ test("melee range copy requires overlap while preserving the dagger throw except
   assert.match(client, /0칸 근접 공격만 가능/);
   assert.match(client, /meleeOutOfRange/);
   assert.match(client, /적과 같은 칸 필요/);
-  assert.match(client, /function handleTokenClick/);
-  assert.match(client, /activeToken !== token/);
+  assert.match(client, /function handleEnemyTokenClick/);
+  assert.match(client, /function handleAttackerTokenClick/);
   assert.match(client, /suppressTokenClickRef/);
   assert.doesNotMatch(client, /가로 칸은 냉병기 사거리 계산에서 제외/);
+});
+
+test("encounter modes, editable targets, bosses, and blast previews are wired into the simulator", async () => {
+  const [client, simulator, styles] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(SIMULATOR_URL, "utf8"),
+    readFile(STYLES_URL, "utf8"),
+  ]);
+
+  assert.match(client, /useState<SimulatorEncounterMode>\("duel"\)/);
+  assert.match(client, /duel: \{ label: "1:1"/);
+  assert.match(client, /horde: \{ label: "다수 표적"/);
+  assert.match(client, /boss: \{ label: "대형몹"/);
+  assert.match(client, /const MAX_HORDE_ENEMIES = 8/);
+  assert.match(client, /updateSelectedEnemyField\("hp"/);
+  assert.match(client, /표적 회복/);
+  assert.match(client, /기본값 복원/);
+  assert.match(client, /\(turn > 1 \|\| logs\.length > 1\)/);
+  assert.match(client, /수동 조정/);
+  assert.match(client, /다음 표적을 직접 선택하세요/);
+  assert.match(client, /\(selectedEnemyId \? enemies\[0\] \?\? null : null\)/);
+  assert.match(client, /className=\{styles\.bossStage\}/);
+  assert.match(client, /setPointerCapture\(event\.pointerId\)/);
+  assert.match(
+    client,
+    /if \(activeToken === "aim"\) \{\s*handleCellActivate\(position\)/,
+  );
+  assert.match(client, /적 위치 조정 버튼을 누른 뒤 전투판을 클릭하거나/);
+  assert.match(client, /<details className=\{styles\.targetControl\} open>/);
+  assert.match(client, /selectedRule\?\.requiresSetup \?/);
+  assert.doesNotMatch(
+    client,
+    /disabled=\{selectedRule\?\.slug !== "basic-heavy-machine-gun"\}/,
+  );
+  assert.match(simulator, /"military-fragment-grenade"/);
+  assert.match(simulator, /"rocket-launcher"/);
+  assert.match(simulator, /interface SimulatorActionResolution/);
+  assert.match(simulator, /function getSimulatorBlastCells/);
+  assert.match(simulator, /function distributeSimulatorBossDamage/);
+  assert.match(
+    client,
+    /selectedActionKind !== "incendiary-line"[\s\S]*!selectedRule\.blast[\s\S]*!selectedEnemy/,
+  );
+  assert.match(styles, /\.encounterSelector/);
+  assert.match(styles, /\.targetEditor/);
+  assert.match(styles, /\.bossStage/);
+  assert.match(styles, /\.boardCell--blastCenter/);
 });
 
 test("the ranged weapon rule card exposes canonical statuses and special actions", async () => {

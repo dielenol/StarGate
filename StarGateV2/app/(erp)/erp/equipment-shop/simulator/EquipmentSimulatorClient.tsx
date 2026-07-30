@@ -23,9 +23,13 @@ import Tag from "@/components/ui/Tag/Tag";
 import { formatCredits } from "@/lib/format/credit";
 import {
   advanceSimulatorTargetRound,
+  applySimulatorResolutionToEnemy,
   applySimulatorStatuses,
   formatSimulatorCoord,
   formatSimulatorDamage,
+  getSimulatorBlastCells,
+  getSimulatorBossPartState,
+  getSimulatorBossSummary,
   getInitialSimulatorResources,
   getSimulatorEffectiveDef,
   getSimulatorIncendiaryLineCells,
@@ -33,9 +37,11 @@ import {
   getSimulatorRange,
   isSimulatorAttackableCell,
   getSimulatorWeaponRule,
+  isSimulatorEnemyDefeated,
   isNewSimulatorCadenceCycle,
   resolveSimulatorAreaSpray,
   resolveSimulatorAttack,
+  resolveSimulatorDamageProfile,
   SIMULATOR_BOARD_COLUMNS,
   SIMULATOR_BOARD_ROWS,
   SIMULATOR_RANGE_BANDS,
@@ -46,7 +52,11 @@ import {
   type SimulatorAttackerProfile,
   type SimulatorAttackResult,
   type SimulatorBoardCoord,
+  type SimulatorBossPart,
+  type SimulatorEncounterMode,
+  type SimulatorEnemy,
   type SimulatorEquippedWeapon,
+  type SimulatorWeaponActionKind,
   type SimulatorStatusKind,
   type SimulatorTargetStats,
   type SimulatorWeaponRule,
@@ -55,12 +65,16 @@ import {
 
 import styles from "./page.module.css";
 
-type ActiveToken = "attacker" | "target";
+type ActiveToken = "attacker" | "target" | "aim";
+type DraggedToken =
+  | { kind: "attacker" }
+  | { kind: "enemy"; enemyId: string };
 type SimLogTone = "hit" | "miss" | "info";
 type SimLog = {
   id: number;
   tone: SimLogTone;
   text: string;
+  details?: string[];
 };
 
 type TrainingFeedbackTone = "info" | "success" | "error";
@@ -154,6 +168,26 @@ const DEFAULT_TARGET: SimulatorTargetStats = {
   statuses: [],
   statusRounds: {},
 };
+const MAX_HORDE_ENEMIES = 8;
+const ENCOUNTER_MODE_META: Record<
+  SimulatorEncounterMode,
+  { label: string; description: string }
+> = {
+  duel: { label: "1:1", description: "기본 표적 훈련" },
+  horde: { label: "다수 표적", description: "최대 8기 교전" },
+  boss: { label: "대형몹", description: "부위 파괴 훈련" },
+};
+const DEFAULT_BOSS_PARTS: SimulatorBossPart[] = [
+  {
+    id: "boss-part-core",
+    name: "본체",
+    hp: 60,
+    maxHp: 60,
+    note: "",
+    x: 50,
+    y: 50,
+  },
+];
 const TURN_END_SFX_SRC =
   "/assets/equipment-shop/sfx/ui-notice-level-up.mp3";
 const DEFAULT_TRAINING_AGENT_PORTRAIT =
@@ -166,25 +200,91 @@ const TURN_REVEAL_END_MS = 2400;
 const TRAINING_STEPS: TrainingStep[] = [
   {
     label: "STEP 01",
-    title: "장비 선택",
-    hint: "왼쪽 목록에서 시험 장비 선택",
+    title: "교전 모드",
+    hint: "1:1·다수·대형몹 선택",
   },
   {
     label: "STEP 02",
-    title: "거리 배치",
-    hint: "적 배치 후 내 위치 조정",
+    title: "표적 설정",
+    hint: "수치와 부위 구성",
   },
   {
     label: "STEP 03",
-    title: "공격 실행",
-    hint: "예상 피해 확인 후 공격",
+    title: "배치 조정",
+    hint: "클릭 또는 토큰 드래그",
   },
   {
     label: "STEP 04",
-    title: "결과·다음 턴",
-    hint: "피해·자원 확인 후 계속 진행",
+    title: "행동 선택",
+    hint: "장비와 특수행동 선택",
+  },
+  {
+    label: "STEP 05",
+    title: "조준·실행",
+    hint: "표적·부위·착탄점 확인",
+  },
+  {
+    label: "STEP 06",
+    title: "결과 확인",
+    hint: "피해·자원·다음 턴",
   },
 ];
+
+function cloneTargetStats(stats: SimulatorTargetStats = DEFAULT_TARGET) {
+  return {
+    ...stats,
+    statuses: [...stats.statuses],
+    statusRounds: { ...stats.statusRounds },
+  };
+}
+
+function createStandardEnemy(
+  id: string,
+  name: string,
+  position: SimulatorBoardCoord,
+): SimulatorEnemy {
+  return {
+    id,
+    kind: "standard",
+    name,
+    position,
+    stats: cloneTargetStats(),
+  };
+}
+
+function createBossEnemy(position: SimulatorBoardCoord): SimulatorEnemy {
+  const summary = getSimulatorBossSummary(DEFAULT_BOSS_PARTS);
+  return {
+    id: "boss-target",
+    kind: "boss",
+    name: "대형 훈련 표적",
+    position,
+    stats: {
+      ...cloneTargetStats(),
+      hp: summary.hp,
+      maxHp: summary.maxHp,
+    },
+    bossParts: DEFAULT_BOSS_PARTS.map((part) => ({ ...part })),
+  };
+}
+
+function createEncounterEnemies(
+  mode: SimulatorEncounterMode,
+  position: SimulatorBoardCoord,
+): SimulatorEnemy[] {
+  if (mode === "boss") return [createBossEnemy(position)];
+  return [
+    createStandardEnemy(
+      "training-target-1",
+      mode === "duel" ? "훈련 표적" : "훈련 표적 1",
+      position,
+    ),
+  ];
+}
+
+function dragTokenKey(token: DraggedToken): string {
+  return token.kind === "attacker" ? "attacker" : `enemy:${token.enemyId}`;
+}
 
 const TRAINING_SOUND_PATTERNS: Record<
   TrainingFeedbackTone,
@@ -249,7 +349,10 @@ function buildSimulatorItems(
 ): SimulatorDisplayItem[] {
   const catalogBySlug = new Map(
     catalogItems
-      .filter((item) => item.category === "WEAPON")
+      .filter(
+        (item) =>
+          item.category === "WEAPON" || item.category === "CONSUMABLE",
+      )
       .map((item) => [item.slug ?? item.key, item]),
   );
   const equippedBySlug = new Map<SimulatorWeaponSlug, SimulatorEquippedWeapon>();
@@ -434,6 +537,7 @@ function resourceLabel(rule: SimulatorWeaponRule, remaining: number): string {
 function controlReloadLabel(rule: SimulatorWeaponRule | null): string {
   if (!rule?.resource) return "재장전";
   if (rule.resource.kind === "charge") return "재시동";
+  if (rule.resource.kind === "consumable") return "보충";
   return "재장전";
 }
 
@@ -454,26 +558,49 @@ export default function EquipmentSimulatorClient({
   );
   const [battlefieldId, setBattlefieldId] =
     useState<BattlefieldId>(DEFAULT_BATTLEFIELD.id);
+  const [encounterMode, setEncounterMode] =
+    useState<SimulatorEncounterMode>("duel");
   const [activeToken, setActiveToken] = useState<ActiveToken>("target");
-  const [enemyPositionConfirmed, setEnemyPositionConfirmed] = useState(false);
+  const [enemyPositionConfirmed, setEnemyPositionConfirmed] = useState(true);
   const [attackerPosition, setAttackerPosition] = useState(
     DEFAULT_BATTLEFIELD.attackerPosition,
   );
-  const [targetPosition, setTargetPosition] = useState(
-    DEFAULT_BATTLEFIELD.targetPosition,
+  const [enemies, setEnemies] = useState<SimulatorEnemy[]>(() => [
+    createStandardEnemy(
+      "training-target-1",
+      "훈련 표적",
+      DEFAULT_BATTLEFIELD.targetPosition,
+    ),
+  ]);
+  const [selectedEnemyId, setSelectedEnemyId] = useState<string>(
+    "training-target-1",
   );
-  const [targetStats, setTargetStats] =
-    useState<SimulatorTargetStats>(DEFAULT_TARGET);
+  const [selectedBossPartId, setSelectedBossPartId] = useState<string | null>(
+    null,
+  );
+  const [selectedActionKind, setSelectedActionKind] = useState<
+    "attack" | SimulatorWeaponActionKind
+  >("attack");
+  const [blastImpact, setBlastImpact] =
+    useState<SimulatorBoardCoord | null>(null);
   const [resourceBySlug, setResourceBySlug] = useState(() =>
     getInitialSimulatorResources(),
   );
   const [hmgInstalled, setHmgInstalled] = useState(false);
   const [hmgShotsInCycle, setHmgShotsInCycle] = useState(0);
-  const [fireZone, setFireZone] = useState<{
-    cells: string[];
-    rounds: number;
+  const [fireZones, setFireZones] = useState<
+    {
+      id: number;
+      cells: string[];
+      rounds: number;
+    }[]
+  >([]);
+  const [draggedToken, setDraggedToken] = useState<DraggedToken | null>(null);
+  const [dragOverlay, setDragOverlay] = useState<{
+    x: number;
+    y: number;
+    active: boolean;
   } | null>(null);
-  const [draggedToken, setDraggedToken] = useState<ActiveToken | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [turn, setTurn] = useState(1);
   const [sequence, setSequence] = useState(1);
@@ -487,7 +614,10 @@ export default function EquipmentSimulatorClient({
   const audioContextRef = useRef<AudioContext | null>(null);
   const turnEndAudioRef = useRef<HTMLAudioElement | null>(null);
   const dragDestinationRef = useRef<SimulatorBoardCoord | null>(null);
-  const suppressTokenClickRef = useRef<ActiveToken | null>(null);
+  const dragOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const draggedBossPartRef = useRef<string | null>(null);
+  const suppressTokenClickRef = useRef<string | null>(null);
+  const enemySequenceRef = useRef(2);
   const feedbackSequenceRef = useRef(0);
   const feedbackTimerRef = useRef<number | null>(null);
   const turnRevealOutTimerRef = useRef<number | null>(null);
@@ -496,7 +626,7 @@ export default function EquipmentSimulatorClient({
     {
       id: 0,
       tone: "info",
-      text: "5×5 표준 전장 준비. 먼저 적을 배치한 뒤 내 위치를 조정하세요.",
+      text: "5×5 1:1 기본 훈련 준비. 표적 수치와 위치를 바로 조정할 수 있습니다.",
     },
   ]);
 
@@ -532,12 +662,31 @@ export default function EquipmentSimulatorClient({
   const boardRows = battlefield.rows;
   const boardColumnTemplate = `repeat(${boardColumns.length}, minmax(46px, 1fr))`;
   const boardRowTemplate = `repeat(${boardRows.length}, minmax(78px, 1fr))`;
+  const selectedEnemy =
+    enemies.find((enemy) => enemy.id === selectedEnemyId) ??
+    (selectedEnemyId ? enemies[0] ?? null : null);
+  const targetPosition =
+    selectedEnemy?.position ?? battlefield.targetPosition;
+  const targetStats = selectedEnemy?.stats ?? DEFAULT_TARGET;
+  const selectedBossPart =
+    selectedEnemy?.bossParts?.find(
+      (part) => part.id === selectedBossPartId,
+    ) ?? null;
+  const draggedEnemy =
+    draggedToken?.kind === "enemy"
+      ? enemies.find((enemy) => enemy.id === draggedToken.enemyId) ?? null
+      : null;
 
   const selectedItem =
     simulatorItems.find((item) => item.slug === selectedSlug) ??
     simulatorItems[0];
   const selectedRule = getSimulatorWeaponRule(selectedSlug);
-  const selectedAction = selectedRule?.actions?.[0] ?? null;
+  const selectedAction =
+    selectedActionKind === "attack"
+      ? null
+      : (selectedRule?.actions?.find(
+          (action) => action.kind === selectedActionKind,
+        ) ?? null);
   const selectedStatusKinds = selectedRule
     ? Array.from(
         new Set(
@@ -553,7 +702,12 @@ export default function EquipmentSimulatorClient({
     attacker.portraitUrl === DEFAULT_TRAINING_AGENT_PORTRAIT;
   const attackerTokenInitial =
     attacker.codename.trim().charAt(0).toUpperCase() || "요";
-  const defaultRange = getSimulatorRange(attackerPosition, targetPosition);
+  const attackTargetPosition =
+    selectedRule?.blast && blastImpact ? blastImpact : targetPosition;
+  const defaultRange = getSimulatorRange(
+    attackerPosition,
+    attackTargetPosition,
+  );
   const targetEffectiveDef = getSimulatorEffectiveDef(targetStats);
   const selectedRuntime = selectedRule
     ? attackRuntimeFor(
@@ -568,7 +722,7 @@ export default function EquipmentSimulatorClient({
     ? resolveSimulatorAttack({
         weaponSlug: selectedRule.slug,
         attacker: attackerPosition,
-        target: targetPosition,
+        target: attackTargetPosition,
         attackerStats: attacker,
         targetStats: { def: targetEffectiveDef },
         runtime: selectedRuntime,
@@ -581,15 +735,17 @@ export default function EquipmentSimulatorClient({
   const range = selectedResult?.range ?? defaultRange;
   const usesCardinalDirections =
     selectedRule !== null &&
-    selectedRule.role !== "냉병기" &&
-    selectedRule.slug !== "basic-heavy-machine-gun";
+    (selectedRule.blast?.aim === "cardinal" ||
+      (!selectedRule.blast &&
+        selectedRule.role !== "냉병기" &&
+        selectedRule.slug !== "basic-heavy-machine-gun"));
   const usesDiamondRange =
     selectedRule?.slug === "basic-heavy-machine-gun";
   const usesMeleeRange = selectedRule?.role === "냉병기";
   const usesDaggerThrow = selectedRule?.slug === "basic-dagger";
   const isCardinallyAligned =
-    attackerPosition.row === targetPosition.row ||
-    attackerPosition.col === targetPosition.col;
+    attackerPosition.row === attackTargetPosition.row ||
+    attackerPosition.col === attackTargetPosition.col;
   const attackDistance = range.attackDistance ?? range.verticalDistance;
   const meleeOutOfRange =
     usesMeleeRange && !usesDaggerThrow && attackDistance > 0;
@@ -604,7 +760,21 @@ export default function EquipmentSimulatorClient({
             ? "거리"
             : "세로";
   const selectedName = selectedItem?.name ?? selectedRule?.name ?? "장비";
-  const resultSummary = !enemyPositionConfirmed
+  const blastCells =
+    selectedRule?.blast && blastImpact
+      ? getSimulatorBlastCells(blastImpact, boardColumns, boardRows)
+      : [];
+  const resultSummary = selectedRule?.blast && !blastImpact
+    ? "착탄점 선택 필요"
+    : !selectedEnemy && !selectedRule?.blast
+      ? "표적 선택 필요"
+      : selectedEnemy?.kind === "boss" &&
+          selectedResult?.profile?.targetStat === "hp" &&
+          !selectedRule?.blast &&
+          selectedActionKind !== "area-spray" &&
+          !selectedBossPart
+        ? "부위 선택 필요"
+        : !enemyPositionConfirmed
     ? "적 위치 지정 필요"
     : selectedResult?.ok
       ? selectedResult.summary
@@ -612,12 +782,48 @@ export default function EquipmentSimulatorClient({
   const resultSentence = /[.!?]$/.test(resultSummary)
     ? resultSummary
     : `${resultSummary}.`;
+  const executionBlockedReason = !selectedRule
+    ? "장비 미선택"
+    : selectedAction &&
+        typeof selectedAction.resourceCost === "number" &&
+        selectedResource < selectedAction.resourceCost
+      ? `${selectedRule.resource?.label ?? "자원"} 부족`
+      : selectedActionKind === "attack" &&
+          selectedRule.resource &&
+          selectedResource <= 0
+        ? `${selectedRule.resource.label} 부족`
+        : selectedRule.requiresSetup && !hmgInstalled
+          ? "설치 필요"
+          : selectedActionKind === "attack" && selectedRule.blast && !blastImpact
+            ? "착탄점 미선택"
+            : selectedActionKind === "incendiary-line" && !blastImpact
+              ? "지점 미선택"
+              : selectedActionKind !== "area-spray" &&
+                  selectedActionKind !== "incendiary-line" &&
+                  !selectedRule.blast &&
+                  !selectedEnemy
+                ? "표적 미선택"
+                : selectedActionKind !== "area-spray" &&
+                    selectedActionKind !== "incendiary-line" &&
+                    selectedEnemy?.kind === "boss" &&
+                    selectedResult?.profile?.targetStat === "hp" &&
+                    !selectedRule.blast &&
+                    !selectedBossPart
+                  ? "부위 미선택"
+                  : selectedActionKind !== "area-spray" &&
+                      selectedActionKind !== "incendiary-line" &&
+                      selectedResult &&
+                      !selectedResult.ok
+                    ? selectedResult.reasonLabel ?? "사거리 밖"
+                    : null;
   const instructorBrief = (() => {
     switch (trainingEvent) {
       case "weapon":
         return {
           title: `${selectedName} 선택 완료`,
-          text: `현재 ${SIMULATOR_RANGE_LABELS[range.band]}입니다. 예상 판정: ${resultSentence} 토큰 위치를 조정하거나 공격을 실행하십시오.`,
+          text: selectedRule?.blast
+            ? `${resultSentence} 전투판의 붉은 셀에서 착탄점을 선택하고 중심·주변 범위를 확인하십시오.`
+            : `현재 ${SIMULATOR_RANGE_LABELS[range.band]}입니다. 예상 판정: ${resultSentence} 표적과 부위를 확인한 뒤 공격을 실행하십시오.`,
         };
       case "position":
         return {
@@ -634,7 +840,7 @@ export default function EquipmentSimulatorClient({
       case "attack":
         return {
           title: "공격 결과 반영 완료",
-          text: `${resultSummary}. 적 토큰 상태와 남은 자원을 확인한 뒤 다시 공격하거나 다음 턴으로 진행하십시오.`,
+          text: `${resultSummary}. 표적별 로그와 남은 자원을 확인한 뒤 다시 공격하거나 다음 턴으로 진행하십시오.`,
         };
       case "blocked":
         return {
@@ -663,14 +869,23 @@ export default function EquipmentSimulatorClient({
         };
       default:
         return {
-          title: "먼저 적 위치를 지정하십시오",
-          text: `전투판에서 적을 놓을 칸을 선택하면 바로 내 위치 조정 단계로 넘어갑니다. 기본 배치는 내 위치 ${formatSimulatorCoord(attackerPosition)}, 적 위치 ${formatSimulatorCoord(targetPosition)}입니다.`,
+          title: `${ENCOUNTER_MODE_META[encounterMode].label} 훈련 준비 완료`,
+          text: `현재 내 위치 ${formatSimulatorCoord(attackerPosition)}, ${selectedEnemy?.name ?? "표적"} 위치 ${formatSimulatorCoord(targetPosition)}입니다. 우측에서 표적 수치를 조정하고, 위치 조정 버튼이나 토큰 드래그를 사용하십시오.`,
         };
     }
   })();
 
-  function pushLog(text: string, tone: SimLogTone) {
-    setLogs((prev) => [{ id: sequence, text, tone }, ...prev].slice(0, 8));
+  function pushLog(
+    text: string,
+    tone: SimLogTone,
+    details?: string[],
+  ) {
+    setLogs((prev) =>
+      [{ id: sequence, text, tone, ...(details?.length ? { details } : {}) }, ...prev].slice(
+        0,
+        10,
+      ),
+    );
     setSequence((prev) => prev + 1);
   }
 
@@ -767,8 +982,27 @@ export default function EquipmentSimulatorClient({
     }, TURN_REVEAL_END_MS);
   }
 
-  function moveToken(token: ActiveToken, coord: SimulatorBoardCoord) {
-    if (token === "attacker" && hmgInstalled) {
+  function updateEnemy(
+    enemyId: string,
+    updater: (enemy: SimulatorEnemy) => SimulatorEnemy,
+  ) {
+    setEnemies((current) =>
+      current.map((enemy) => (enemy.id === enemyId ? updater(enemy) : enemy)),
+    );
+  }
+
+  function isEnemyCellOccupied(
+    coord: SimulatorBoardCoord,
+    movingEnemyId?: string,
+  ) {
+    return enemies.some(
+      (enemy) =>
+        enemy.id !== movingEnemyId && sameCoord(enemy.position, coord),
+    );
+  }
+
+  function moveToken(token: DraggedToken, coord: SimulatorBoardCoord) {
+    if (token.kind === "attacker" && hmgInstalled) {
       showFeedback(
         "error",
         "중기관총 해체 필요",
@@ -776,58 +1010,71 @@ export default function EquipmentSimulatorClient({
       );
       return;
     }
-    const currentCoord = token === "attacker" ? attackerPosition : targetPosition;
-    const nextAttacker = token === "attacker" ? coord : attackerPosition;
-    const nextTarget = token === "target" ? coord : targetPosition;
-    const nextResult = selectedRule
-      ? resolveSimulatorAttack({
-          weaponSlug: selectedRule.slug,
-          attacker: nextAttacker,
-          target: nextTarget,
-          attackerStats: attacker,
-          targetStats: { def: targetEffectiveDef },
-          runtime: selectedRuntime,
-        })
-      : null;
-    const nextRange =
-      nextResult?.range ?? getSimulatorRange(nextAttacker, nextTarget);
-    const nextDistance =
-      nextRange.attackDistance ?? nextRange.verticalDistance;
-    const nextAxisLabel =
-      nextRange.attackAxis === "horizontal"
-        ? "가로"
-        : nextRange.attackAxis === "diamond"
-          ? "다이아몬드"
-          : selectedRule?.role === "냉병기"
-            ? "거리"
-            : "세로";
-    if (token === "attacker") {
+
+    const movingEnemy =
+      token.kind === "enemy"
+        ? enemies.find((enemy) => enemy.id === token.enemyId)
+        : null;
+    if (token.kind === "enemy" && !movingEnemy) return;
+    if (
+      token.kind === "enemy" &&
+      isEnemyCellOccupied(coord, token.enemyId)
+    ) {
+      showFeedback(
+        "error",
+        "배치할 수 없는 칸",
+        "다른 적이 점유한 칸에는 적을 겹쳐 배치할 수 없습니다.",
+      );
+      return;
+    }
+
+    const currentCoord =
+      token.kind === "attacker"
+        ? attackerPosition
+        : (movingEnemy?.position ?? coord);
+    if (token.kind === "attacker") {
       setAttackerPosition(coord);
     } else {
-      setTargetPosition(coord);
-      if (fireZone?.cells.includes(cellKey(coord))) {
-        setTargetStats((prev) => applySimulatorStatuses(prev, ["burn"]));
-      }
+      updateEnemy(token.enemyId, (enemy) => {
+        const isBurningCell = fireZones.some((zone) =>
+          zone.cells.includes(cellKey(coord)),
+        );
+        return {
+          ...enemy,
+          position: coord,
+          stats: isBurningCell
+            ? applySimulatorStatuses(enemy.stats, ["burn"])
+            : enemy.stats,
+        };
+      });
+      setSelectedEnemyId(token.enemyId);
       setEnemyPositionConfirmed(true);
-      setActiveToken("attacker");
     }
+
     setTrainingEvent("position");
     setActiveStep(2);
+    const label =
+      token.kind === "attacker"
+        ? "내 캐릭터"
+        : movingEnemy?.name ?? "적";
+    const detail = `${formatSimulatorCoord(currentCoord)} → ${formatSimulatorCoord(coord)}`;
     showFeedback(
       "info",
-      `${token === "attacker" ? "내" : "적"} 위치 ${sameCoord(currentCoord, coord) ? "확인" : "이동 완료"}`,
-      token === "target"
-        ? `${formatSimulatorCoord(coord)}에 적을 배치했습니다. 이제 전투판을 눌러 내 위치를 조정하세요.`
-        : nextResult?.reason === "NOT_CARDINAL"
-          ? `${formatSimulatorCoord(coord)} · ${nextResult.reasonLabel}`
-          : `${formatSimulatorCoord(coord)} · ${SIMULATOR_RANGE_LABELS[nextRange.band]} · ${nextAxisLabel} ${nextDistance}칸`,
+      `${label} 위치 ${sameCoord(currentCoord, coord) ? "확인" : "이동 완료"}`,
+      detail,
     );
+    if (!sameCoord(currentCoord, coord)) {
+      pushLog(`${label} 이동 · ${detail}`, "info");
+    }
   }
 
   function handleSelectWeapon(slug: SimulatorWeaponSlug) {
     setSelectedSlug(slug);
+    setSelectedActionKind("attack");
+    setBlastImpact(null);
+    setActiveToken(getSimulatorWeaponRule(slug)?.blast ? "aim" : "target");
     setTrainingEvent("weapon");
-    setActiveStep(1);
+    setActiveStep(3);
     const itemName =
       simulatorItems.find((item) => item.slug === slug)?.name ??
       getSimulatorWeaponRule(slug)?.name ??
@@ -840,19 +1087,56 @@ export default function EquipmentSimulatorClient({
   }
 
   function handleSelectActiveToken(token: ActiveToken) {
-    if (token === "attacker" && !enemyPositionConfirmed) return;
+    if (token === "aim") return;
     setActiveToken(token);
     showFeedback(
       "info",
-      token === "attacker" ? "내 위치 조정" : "적 위치 다시 지정",
+      token === "attacker" ? "내 위치 조정" : "적 위치 조정",
       token === "attacker"
         ? "전투판에서 내가 이동할 칸을 선택하세요."
-        : "전투판에서 적을 다시 배치할 칸을 선택하세요. 배치 후 내 위치 조정으로 자동 전환됩니다.",
+        : `${selectedEnemy?.name ?? "적"}을 이동할 칸을 선택하거나 토큰을 직접 드래그하세요.`,
     );
   }
 
   function handleCellActivate(coord: SimulatorBoardCoord) {
-    moveToken(activeToken, coord);
+    if (activeToken === "aim") {
+      const canAim =
+        selectedActionKind === "incendiary-line" ||
+        (selectedRule?.blast &&
+          isSimulatorAttackableCell(
+            selectedRule.slug,
+            attackerPosition,
+            coord,
+          ));
+      if (!canAim) {
+        showFeedback(
+          "error",
+          "조준할 수 없는 칸",
+          selectedRule?.blast
+            ? `${selectedRule.name}의 착탄 가능 범위를 벗어났습니다.`
+            : "현재 행동의 유효 범위를 확인하세요.",
+        );
+        return;
+      }
+      setBlastImpact(coord);
+      setTrainingEvent("position");
+      setActiveStep(4);
+      showFeedback(
+        "info",
+        selectedActionKind === "incendiary-line"
+          ? "소이선 방향 선택"
+          : "착탄점 선택",
+        `${formatSimulatorCoord(coord)} 기준 예상 범위를 확인한 뒤 실행하세요.`,
+      );
+      return;
+    }
+    if (activeToken === "attacker") {
+      moveToken({ kind: "attacker" }, coord);
+      return;
+    }
+    if (selectedEnemy) {
+      moveToken({ kind: "enemy", enemyId: selectedEnemy.id }, coord);
+    }
   }
 
   function handleCellKeyDown(
@@ -866,12 +1150,12 @@ export default function EquipmentSimulatorClient({
 
   function handleTokenPointerDown(
     event: PointerEvent<HTMLDivElement>,
-    token: ActiveToken,
+    token: DraggedToken,
   ) {
     if (!event.isPrimary || event.button !== 0) return;
     if (
-      token === "attacker" &&
-      (!enemyPositionConfirmed || hmgInstalled)
+      token.kind === "attacker" &&
+      hmgInstalled
     ) {
       if (hmgInstalled) {
         showFeedback(
@@ -885,8 +1169,10 @@ export default function EquipmentSimulatorClient({
     event.preventDefault();
     event.stopPropagation();
     dragDestinationRef.current = null;
+    dragOriginRef.current = { x: event.clientX, y: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
     setDraggedToken(token);
+    setDragOverlay({ x: event.clientX, y: event.clientY, active: false });
   }
 
   function coordFromPointer(
@@ -912,23 +1198,32 @@ export default function EquipmentSimulatorClient({
 
   function handleTokenPointerMove(event: PointerEvent<HTMLDivElement>) {
     if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    const origin = dragOriginRef.current;
+    const active = origin
+      ? Math.hypot(event.clientX - origin.x, event.clientY - origin.y) >= 6
+      : false;
     const coord = coordFromPointer(event);
     dragDestinationRef.current = coord;
-    setDragOverCell(coord ? cellKey(coord) : null);
+    setDragOverlay({ x: event.clientX, y: event.clientY, active });
+    setDragOverCell(active && coord ? cellKey(coord) : null);
   }
 
   function handleTokenPointerUp(
     event: PointerEvent<HTMLDivElement>,
-    token: ActiveToken,
+    token: DraggedToken,
   ) {
     const coord = coordFromPointer(event) ?? dragDestinationRef.current;
-    const currentCoord = token === "attacker" ? attackerPosition : targetPosition;
-    const didMove = Boolean(coord && !sameCoord(currentCoord, coord));
+    const origin = dragOriginRef.current;
+    const didDrag = origin
+      ? Math.hypot(event.clientX - origin.x, event.clientY - origin.y) >= 6
+      : dragOverlay?.active === true;
     dragDestinationRef.current = null;
-    suppressTokenClickRef.current = didMove ? token : null;
-    if (didMove) {
+    dragOriginRef.current = null;
+    const key = dragTokenKey(token);
+    suppressTokenClickRef.current = didDrag ? key : null;
+    if (didDrag) {
       window.setTimeout(() => {
-        if (suppressTokenClickRef.current === token) {
+        if (suppressTokenClickRef.current === key) {
           suppressTokenClickRef.current = null;
         }
       }, 0);
@@ -939,42 +1234,67 @@ export default function EquipmentSimulatorClient({
     event.preventDefault();
     event.stopPropagation();
     setDraggedToken(null);
+    setDragOverlay(null);
     setDragOverCell(null);
-    if (coord) moveToken(token, coord);
+    if (didDrag && coord) moveToken(token, coord);
   }
 
-  function handleTokenClick(
+  function handleAttackerTokenClick(
     event: MouseEvent<HTMLDivElement>,
-    token: ActiveToken,
-    coord: SimulatorBoardCoord,
   ) {
     event.stopPropagation();
-    if (suppressTokenClickRef.current === token) {
+    if (suppressTokenClickRef.current === "attacker") {
       suppressTokenClickRef.current = null;
       return;
     }
-    if (activeToken !== token) {
-      handleCellActivate(coord);
+    if (activeToken === "aim") {
+      handleCellActivate(attackerPosition);
+      return;
     }
+    setActiveToken("attacker");
+  }
+
+  function handleEnemyTokenClick(
+    event: MouseEvent<HTMLDivElement>,
+    enemyId: string,
+    position: SimulatorBoardCoord,
+  ) {
+    event.stopPropagation();
+    const key = `enemy:${enemyId}`;
+    if (suppressTokenClickRef.current === key) {
+      suppressTokenClickRef.current = null;
+      return;
+    }
+    if (activeToken === "aim") {
+      handleCellActivate(position);
+      return;
+    }
+    setSelectedEnemyId(enemyId);
+    setSelectedBossPartId(null);
+    setActiveToken("target");
+    setTrainingEvent("position");
+    setActiveStep(3);
   }
 
   function handleTokenPointerCancel(
     event: PointerEvent<HTMLDivElement>,
   ) {
     dragDestinationRef.current = null;
+    dragOriginRef.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     setDraggedToken(null);
+    setDragOverlay(null);
     setDragOverCell(null);
   }
 
-  function handleTokenPointerCaptureLost(token: ActiveToken) {
-    const coord = dragDestinationRef.current;
+  function handleTokenPointerCaptureLost() {
     dragDestinationRef.current = null;
+    dragOriginRef.current = null;
     setDraggedToken(null);
+    setDragOverlay(null);
     setDragOverCell(null);
-    if (coord) moveToken(token, coord);
   }
 
   function handleReload() {
@@ -993,31 +1313,51 @@ export default function EquipmentSimulatorClient({
     pushLog(`${selectedRule.name} ${controlReloadLabel(selectedRule)} 완료`, "info");
   }
 
-  function applyAttackResult(result: SimulatorAttackResult) {
-    setTargetStats((prev) =>
-      applySimulatorStatuses(
-        {
-          ...prev,
-          hp:
-            result.targetStat === "hp"
-              ? Math.max(0, prev.hp - result.damageApplied)
-              : prev.hp,
-          san:
-            result.targetStat === "san"
-              ? Math.max(0, prev.san - result.damageApplied)
-              : prev.san,
-        },
-        result.statusesApplied,
-      ),
+  function applyAttackResult(
+    result: SimulatorAttackResult,
+    enemyId = selectedEnemy?.id,
+    options: { partId?: string; distributeBossDamage?: boolean } = {},
+  ): { enemyDefeated: boolean; partDestroyed: boolean } | null {
+    if (!enemyId || !result.targetStat) return null;
+    const enemy = enemies.find((candidate) => candidate.id === enemyId);
+    if (!enemy) return null;
+    const targetStat = result.targetStat;
+    const nextEnemy = applySimulatorResolutionToEnemy(
+      enemy,
+      {
+        damageApplied: result.damageApplied,
+        targetStat,
+        statusesApplied: result.statusesApplied,
+      },
+      options,
     );
+    updateEnemy(enemyId, () => nextEnemy);
+    const enemyDefeated = isSimulatorEnemyDefeated(nextEnemy);
+    const partDestroyed = Boolean(
+      options.partId &&
+        nextEnemy.bossParts?.find((part) => part.id === options.partId)?.hp === 0,
+    );
+    if (enemyDefeated && selectedEnemyId === enemyId) {
+      setSelectedEnemyId("");
+      setSelectedBossPartId(null);
+    } else if (partDestroyed && selectedBossPartId === options.partId) {
+      setSelectedBossPartId(null);
+    }
+    return { enemyDefeated, partDestroyed };
   }
 
   function advanceRoundEffects() {
-    setTargetStats((prev) => advanceSimulatorTargetRound(prev));
-    setFireZone((prev) => {
-      if (!prev || prev.rounds <= 1) return null;
-      return { ...prev, rounds: prev.rounds - 1 };
-    });
+    setEnemies((current) =>
+      current.map((enemy) => ({
+        ...enemy,
+        stats: advanceSimulatorTargetRound(enemy.stats),
+      })),
+    );
+    setFireZones((current) =>
+      current
+        .map((zone) => ({ ...zone, rounds: zone.rounds - 1 }))
+        .filter((zone) => zone.rounds > 0),
+    );
   }
 
   function advanceTurnForAction(
@@ -1090,6 +1430,7 @@ export default function EquipmentSimulatorClient({
   function resetTrainingState(
     nextBattlefield: BattlefieldConfig,
     logText: string,
+    nextMode: SimulatorEncounterMode = encounterMode,
   ) {
     if (turnRevealOutTimerRef.current !== null) {
       window.clearTimeout(turnRevealOutTimerRef.current);
@@ -1100,18 +1441,29 @@ export default function EquipmentSimulatorClient({
       turnRevealEndTimerRef.current = null;
     }
     setAttackerPosition(nextBattlefield.attackerPosition);
-    setTargetPosition(nextBattlefield.targetPosition);
-    setTargetStats(DEFAULT_TARGET);
+    const nextEnemies = createEncounterEnemies(
+      nextMode,
+      nextBattlefield.targetPosition,
+    );
+    setEnemies(nextEnemies);
+    setSelectedEnemyId(nextEnemies[0]?.id ?? "");
+    setSelectedBossPartId(null);
+    enemySequenceRef.current = 2;
     setResourceBySlug(getInitialSimulatorResources());
     setHmgInstalled(false);
     setHmgShotsInCycle(0);
-    setFireZone(null);
+    setFireZones([]);
+    setBlastImpact(null);
+    setSelectedActionKind("attack");
     dragDestinationRef.current = null;
+    dragOriginRef.current = null;
+    draggedBossPartRef.current = null;
     setDraggedToken(null);
+    setDragOverlay(null);
     setDragOverCell(null);
     setTurn(1);
     setActiveToken("target");
-    setEnemyPositionConfirmed(false);
+    setEnemyPositionConfirmed(true);
     setTrainingEvent("ready");
     setActiveStep(0);
     setTurnReveal(null);
@@ -1131,6 +1483,14 @@ export default function EquipmentSimulatorClient({
       BATTLEFIELDS.find(
         (candidate) => candidate.id === nextBattlefieldId,
       ) ?? DEFAULT_BATTLEFIELD;
+    if (
+      (turn > 1 || logs.length > 1) &&
+      !window.confirm(
+        "전장 규격을 바꾸면 턴·자원·상태·로그가 초기화됩니다. 계속할까요?",
+      )
+    ) {
+      return;
+    }
     setBattlefieldId(nextBattlefield.id);
     resetTrainingState(
       nextBattlefield,
@@ -1152,28 +1512,329 @@ export default function EquipmentSimulatorClient({
     );
   }
 
-  function handleAttack() {
-    if (!enemyPositionConfirmed) {
-      setTrainingEvent("blocked");
-      setActiveStep(1);
+  function handleEncounterModeChange(nextMode: SimulatorEncounterMode) {
+    if (nextMode === encounterMode) return;
+    if (
+      (turn > 1 || logs.length > 1) &&
+      !window.confirm(
+        "교전 모드를 바꾸면 턴·자원·상태·로그가 초기화됩니다. 계속할까요?",
+      )
+    ) {
+      return;
+    }
+    setEncounterMode(nextMode);
+    resetTrainingState(
+      battlefield,
+      `${ENCOUNTER_MODE_META[nextMode].label} 모드로 전환했습니다.`,
+      nextMode,
+    );
+    setActiveStep(1);
+    showFeedback(
+      "success",
+      `${ENCOUNTER_MODE_META[nextMode].label} 모드`,
+      `${ENCOUNTER_MODE_META[nextMode].description} 기본 구성을 불러왔습니다.`,
+    );
+  }
+
+  function findFreeEnemyCell(): SimulatorBoardCoord | null {
+    const candidates = boardRows.flatMap((row) =>
+      boardColumns.map((col) => ({ col, row }) as SimulatorBoardCoord),
+    );
+    return (
+      candidates.find(
+        (coord) =>
+          !sameCoord(coord, attackerPosition) &&
+          !isEnemyCellOccupied(coord),
+      ) ??
+      candidates.find((coord) => !isEnemyCellOccupied(coord)) ??
+      null
+    );
+  }
+
+  function handleAddEnemy(copySelected = false) {
+    if (encounterMode !== "horde") return;
+    if (enemies.length >= MAX_HORDE_ENEMIES) {
       showFeedback(
         "error",
-        "적 위치를 먼저 지정하세요",
-        "전투판에서 적을 배치하면 내 위치 조정과 공격이 활성화됩니다.",
+        "표적 상한 도달",
+        `다수 표적전은 최대 ${MAX_HORDE_ENEMIES}기까지 배치할 수 있습니다.`,
       );
+      return;
+    }
+    const position = findFreeEnemyCell();
+    if (!position) {
+      showFeedback(
+        "error",
+        "빈 칸 없음",
+        "적을 추가하려면 다른 적이 점유하지 않은 칸이 필요합니다.",
+      );
+      return;
+    }
+    const number = enemySequenceRef.current;
+    enemySequenceRef.current += 1;
+    const id = `training-target-${number}`;
+    const source = copySelected ? selectedEnemy : null;
+    const enemy: SimulatorEnemy = source
+      ? {
+          ...source,
+          id,
+          kind: "standard",
+          name: `${source.name} 복제 ${number}`,
+          position,
+          stats: cloneTargetStats(source.stats),
+          bossParts: undefined,
+        }
+      : createStandardEnemy(id, `훈련 표적 ${number}`, position);
+    setEnemies((current) => [...current, enemy]);
+    setSelectedEnemyId(id);
+    setSelectedBossPartId(null);
+    setActiveStep(1);
+    pushLog(`${enemy.name} 추가 · ${formatSimulatorCoord(position)}`, "info");
+  }
+
+  function handleRemoveEnemy(enemyId: string) {
+    if (encounterMode !== "horde" || enemies.length <= 1) return;
+    const enemy = enemies.find((candidate) => candidate.id === enemyId);
+    const next = enemies.filter((candidate) => candidate.id !== enemyId);
+    setEnemies(next);
+    if (selectedEnemyId === enemyId) {
+      setSelectedEnemyId(next[0]?.id ?? "");
+      setSelectedBossPartId(null);
+    }
+    pushLog(`${enemy?.name ?? "표적"} 제거`, "info");
+  }
+
+  function updateSelectedEnemyField(
+    field: "name" | "hp" | "maxHp" | "san" | "maxSan" | "def",
+    rawValue: string,
+  ) {
+    if (!selectedEnemy) return;
+    updateEnemy(selectedEnemy.id, (enemy) => {
+      if (field === "name") {
+        return {
+          ...enemy,
+          name: rawValue.slice(0, 48) || enemy.name,
+        };
+      }
+      const value = Math.max(
+        field === "maxHp" || field === "maxSan" ? 1 : 0,
+        Math.min(99_999, Math.round(Number(rawValue) || 0)),
+      );
+      const stats = { ...enemy.stats, [field]: value };
+      if (field === "maxHp") stats.hp = Math.min(stats.hp, value);
+      if (field === "maxSan") stats.san = Math.min(stats.san, value);
+      if (field === "hp") stats.hp = Math.min(value, stats.maxHp);
+      if (field === "san") stats.san = Math.min(value, stats.maxSan);
+      return { ...enemy, stats };
+    });
+  }
+
+  function logSelectedEnemyAdjustment() {
+    if (!selectedEnemy) return;
+    pushLog(
+      `${selectedEnemy.name} 수동 조정`,
+      "info",
+      [
+        `HP ${selectedEnemy.stats.hp}/${selectedEnemy.stats.maxHp} · SAN ${selectedEnemy.stats.san}/${selectedEnemy.stats.maxSan} · DEF ${selectedEnemy.stats.def}`,
+      ],
+    );
+  }
+
+  function handleRecoverTarget() {
+    if (!selectedEnemy) return;
+    updateEnemy(selectedEnemy.id, (enemy) => {
+      if (enemy.kind === "boss" && enemy.bossParts?.length) {
+        const bossParts = enemy.bossParts.map((part) => ({
+          ...part,
+          hp: part.maxHp,
+        }));
+        const summary = getSimulatorBossSummary(bossParts);
+        return {
+          ...enemy,
+          bossParts,
+          stats: {
+            ...enemy.stats,
+            hp: summary.hp,
+            maxHp: summary.maxHp,
+            san: enemy.stats.maxSan,
+            statuses: [],
+            statusRounds: {},
+          },
+        };
+      }
+      return {
+        ...enemy,
+        stats: {
+          ...enemy.stats,
+          hp: enemy.stats.maxHp,
+          san: enemy.stats.maxSan,
+          statuses: [],
+          statusRounds: {},
+        },
+      };
+    });
+    pushLog(`${selectedEnemy.name} 회복 · HP/SAN/상태 초기화`, "info");
+  }
+
+  function handleRestoreTargetDefaults() {
+    if (!selectedEnemy || selectedEnemy.kind === "boss") return;
+    updateEnemy(selectedEnemy.id, (enemy) => ({
+      ...enemy,
+      name:
+        encounterMode === "duel"
+          ? "훈련 표적"
+          : `훈련 표적 ${enemy.id.split("-").at(-1) ?? "1"}`,
+      stats: cloneTargetStats(),
+    }));
+    pushLog(`${selectedEnemy.name} 기본 수치 복원`, "info");
+  }
+
+  function syncBossParts(
+    enemy: SimulatorEnemy,
+    bossParts: SimulatorBossPart[],
+  ): SimulatorEnemy {
+    const summary = getSimulatorBossSummary(bossParts);
+    return {
+      ...enemy,
+      bossParts,
+      stats: { ...enemy.stats, hp: summary.hp, maxHp: summary.maxHp },
+    };
+  }
+
+  function handleAddBossPart(x = 50, y = 50) {
+    if (selectedEnemy?.kind !== "boss") return;
+    const parts = selectedEnemy.bossParts ?? [];
+    if (parts.length >= 16) {
+      showFeedback("error", "부위 상한 도달", "부위는 최대 16개입니다.");
+      return;
+    }
+    const id = `boss-part-${Date.now()}-${parts.length + 1}`;
+    const part: SimulatorBossPart = {
+      id,
+      name: `부위 ${parts.length + 1}`,
+      hp: 50,
+      maxHp: 50,
+      note: "",
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y)),
+    };
+    updateEnemy(selectedEnemy.id, (enemy) =>
+      syncBossParts(enemy, [...(enemy.bossParts ?? []), part]),
+    );
+    setSelectedBossPartId(id);
+  }
+
+  function updateBossPart(
+    partId: string,
+    patch: Partial<SimulatorBossPart>,
+  ) {
+    if (selectedEnemy?.kind !== "boss") return;
+    updateEnemy(selectedEnemy.id, (enemy) => {
+      const bossParts = (enemy.bossParts ?? []).map((part) => {
+        if (part.id !== partId) return part;
+        const maxHp =
+          patch.maxHp === undefined
+            ? part.maxHp
+            : Math.max(1, Math.min(99_999, Math.round(patch.maxHp)));
+        return {
+          ...part,
+          ...patch,
+          name: (patch.name ?? part.name).slice(0, 48),
+          note: (patch.note ?? part.note).slice(0, 160),
+          maxHp,
+          hp: Math.max(
+            0,
+            Math.min(maxHp, Math.round(patch.hp ?? part.hp)),
+          ),
+          x: Math.max(0, Math.min(100, patch.x ?? part.x)),
+          y: Math.max(0, Math.min(100, patch.y ?? part.y)),
+        };
+      });
+      return syncBossParts(enemy, bossParts);
+    });
+  }
+
+  function handleRemoveBossPart(partId: string) {
+    if (selectedEnemy?.kind !== "boss") return;
+    const parts = selectedEnemy.bossParts ?? [];
+    if (parts.length <= 1) {
+      showFeedback(
+        "error",
+        "부위 유지 필요",
+        "대형몹에는 최소 한 개의 부위가 필요합니다.",
+      );
+      return;
+    }
+    updateEnemy(selectedEnemy.id, (enemy) =>
+      syncBossParts(
+        enemy,
+        (enemy.bossParts ?? []).filter((part) => part.id !== partId),
+      ),
+    );
+    if (selectedBossPartId === partId) setSelectedBossPartId(null);
+  }
+
+  function bossPartCoordFromPointer(
+    event: PointerEvent<HTMLElement>,
+  ): { x: number; y: number } {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) / Math.max(1, rect.width)) * 100,
+      y: ((event.clientY - rect.top) / Math.max(1, rect.height)) * 100,
+    };
+  }
+
+  function handleBossStagePointerMove(event: PointerEvent<HTMLElement>) {
+    const draggedBossPartId = draggedBossPartRef.current;
+    if (!draggedBossPartId) return;
+    const coord = bossPartCoordFromPointer(event);
+    updateBossPart(draggedBossPartId, coord);
+  }
+
+  function handleBossStagePointerUp(event: PointerEvent<HTMLElement>) {
+    const draggedBossPartId = draggedBossPartRef.current;
+    if (!draggedBossPartId) return;
+    const coord = bossPartCoordFromPointer(event);
+    updateBossPart(draggedBossPartId, coord);
+    draggedBossPartRef.current = null;
+  }
+
+  function handleAttack() {
+    if (selectedActionKind !== "attack") {
+      handleSpecialAction();
       return;
     }
     if (!selectedRule || !selectedResult) return;
 
+    if (selectedRule.blast) {
+      handleBlastAttack();
+      return;
+    }
+    if (!selectedEnemy) return;
+
     if (!selectedResult.ok) {
       setTrainingEvent("blocked");
-      setActiveStep(2);
+      setActiveStep(4);
       showFeedback(
         "error",
         "공격 실행 실패",
         selectedResult.reasonLabel ?? selectedResult.summary,
       );
       pushLog(selectedResult.reasonLabel ?? selectedResult.summary, resultTone(selectedResult));
+      return;
+    }
+    if (
+      selectedEnemy.kind === "boss" &&
+      selectedResult.targetStat === "hp" &&
+      (!selectedBossPart || selectedBossPart.hp <= 0)
+    ) {
+      setTrainingEvent("blocked");
+      setActiveStep(4);
+      showFeedback(
+        "error",
+        "공격 부위 선택 필요",
+        "대형몹 부위도에서 파괴되지 않은 부위를 선택하세요.",
+      );
       return;
     }
 
@@ -1187,9 +1848,16 @@ export default function EquipmentSimulatorClient({
       setHmgShotsInCycle(selectedResult.nextShotsInCycle);
     }
     setTrainingEvent("attack");
-    setActiveStep(3);
+    setActiveStep(5);
 
-    applyAttackResult(selectedResult);
+    const targetOutcome = applyAttackResult(selectedResult, selectedEnemy.id, {
+      ...(selectedBossPart ? { partId: selectedBossPart.id } : {}),
+    });
+    const defeatText = targetOutcome?.enemyDefeated
+      ? " · 전투불능. 다음 표적을 직접 선택하세요."
+      : targetOutcome?.partDestroyed
+        ? " · 부위 파괴. 다음 부위를 선택하세요."
+        : "";
 
     const statusText = selectedResult.statusesApplied.length
       ? ` · ${selectedResult.statusesApplied
@@ -1199,20 +1867,127 @@ export default function EquipmentSimulatorClient({
     showFeedback(
       "success",
       "공격 실행 완료",
-      `${selectedRule.name} · ${selectedResult.summary}${statusText}`,
+      `${selectedRule.name} · ${selectedEnemy.name}${selectedBossPart ? ` ${selectedBossPart.name}` : ""} · ${selectedResult.summary}${statusText}${defeatText}`,
     );
     pushLog(
-      `${selectedRule.name} ${selectedResult.summary}${statusText}`,
+      `${selectedRule.name} 기본 공격 · ${selectedEnemy.name}${selectedBossPart ? ` / ${selectedBossPart.name}` : ""}`,
       "hit",
+      [
+        `${selectedResult.summary}${statusText}${defeatText}`,
+        `원 피해 ${selectedResult.rawDamage} · DEF 경감 ${selectedResult.mitigation} · 최종 ${selectedResult.damageApplied}`,
+      ],
+    );
+  }
+
+  function handleSelectAction(
+    kind: "attack" | SimulatorWeaponActionKind,
+  ) {
+    setSelectedActionKind(kind);
+    setBlastImpact(null);
+    const needsCell =
+      kind === "incendiary-line" ||
+      (kind === "attack" && Boolean(selectedRule?.blast));
+    setActiveToken(needsCell ? "aim" : "target");
+    setTrainingEvent("weapon");
+    setActiveStep(3);
+    const actionName =
+      kind === "attack"
+        ? selectedRule?.blast
+          ? "착탄 공격"
+          : "기본 공격"
+        : selectedRule?.actions?.find((action) => action.kind === kind)?.name ??
+          "특수행동";
+    showFeedback(
+      "info",
+      `${actionName} 선택`,
+      needsCell
+        ? "전투판에서 공격 지점을 선택하세요."
+        : "대상과 예상 판정을 확인한 뒤 공격 실행을 누르세요.",
+    );
+  }
+
+  function handleBlastAttack() {
+    if (!selectedRule?.blast || !selectedResult || !blastImpact) {
+      setTrainingEvent("blocked");
+      setActiveStep(4);
+      showFeedback(
+        "error",
+        "착탄점 선택 필요",
+        "전투판에서 붉은 공격 가능 셀을 착탄점으로 선택하세요.",
+      );
+      return;
+    }
+    if (!selectedResult.ok) {
+      setTrainingEvent("blocked");
+      setActiveStep(4);
+      showFeedback(
+        "error",
+        "공격 실행 실패",
+        selectedResult.reasonLabel ?? selectedResult.summary,
+      );
+      return;
+    }
+
+    const affectedKeys = new Set(blastCells.map(cellKey));
+    const details: string[] = [];
+    let affectedCount = 0;
+    const nextEnemies = enemies.map((enemy) => {
+        if (isSimulatorEnemyDefeated(enemy)) return enemy;
+        if (!affectedKeys.has(cellKey(enemy.position))) return enemy;
+        const isCenter = sameCoord(enemy.position, blastImpact);
+        const profile = isCenter
+          ? selectedRule.blast?.center
+          : selectedRule.blast?.splash;
+        if (!profile) return enemy;
+        const resolution = resolveSimulatorDamageProfile(
+          profile,
+          getSimulatorEffectiveDef(enemy.stats),
+        );
+        affectedCount += 1;
+        details.push(
+          `${enemy.name} · ${isCenter ? "중심" : "주변"} · 원 ${resolution.rawDamage} / DEF ${resolution.mitigation} / 최종 ${resolution.damageApplied}`,
+        );
+        return applySimulatorResolutionToEnemy(enemy, resolution, {
+          distributeBossDamage: enemy.kind === "boss",
+        });
+      });
+    setEnemies(nextEnemies);
+    const selectedAfterBlast = nextEnemies.find(
+      (enemy) => enemy.id === selectedEnemyId,
+    );
+    const selectedDefeatedByBlast = Boolean(
+      selectedAfterBlast && isSimulatorEnemyDefeated(selectedAfterBlast),
+    );
+    if (selectedDefeatedByBlast) {
+      setSelectedEnemyId("");
+      setSelectedBossPartId(null);
+    }
+    if (selectedResult.nextResourceRemaining !== undefined) {
+      setResourceBySlug((current) => ({
+        ...current,
+        [selectedRule.slug]: selectedResult.nextResourceRemaining ?? 0,
+      }));
+    }
+    setTrainingEvent("attack");
+    setActiveStep(5);
+    showFeedback(
+      affectedCount > 0 ? "success" : "info",
+      `${selectedRule.name} 폭발`,
+      `${formatSimulatorCoord(blastImpact)} 착탄 · ${affectedCount}기 피해 · 자원 1회 소모${selectedDefeatedByBlast ? " · 선택 표적 전투불능. 다음 표적을 직접 선택하세요." : ""}`,
+    );
+    pushLog(
+      `${selectedRule.name} 폭발 · ${formatSimulatorCoord(blastImpact)} · ${affectedCount}기`,
+      affectedCount > 0 ? "hit" : "info",
+      details.length ? details : ["피해 범위 안에 적이 없습니다."],
     );
   }
 
   function handleSpecialAction() {
-    if (!enemyPositionConfirmed || !selectedRule || !selectedAction) return;
+    if (!selectedRule || !selectedAction) return;
 
     const fail = (detail: string) => {
       setTrainingEvent("blocked");
-      setActiveStep(2);
+      setActiveStep(4);
       showFeedback("error", `${selectedAction.name} 실행 실패`, detail);
       pushLog(`${selectedAction.name} 실패 · ${detail}`, "miss");
     };
@@ -1228,8 +2003,16 @@ export default function EquipmentSimulatorClient({
       fail(`${selectedRule.resource?.label ?? "자원"}이 부족합니다.`);
       return;
     }
+    if (selectedAction.resourceCost === "all" && selectedResource <= 0) {
+      fail(`${selectedRule.resource?.label ?? "자원"}이 부족합니다.`);
+      return;
+    }
 
     if (selectedAction.kind === "knockback") {
+      if (!selectedEnemy) {
+        fail("밀어낼 적을 선택하세요.");
+        return;
+      }
       if (battlefield.id === "1x5") {
         fail("세로 전장에서는 넉백을 사용할 수 없습니다.");
         return;
@@ -1248,57 +2031,130 @@ export default function EquipmentSimulatorClient({
         fail("대상을 뒤로 밀어낼 빈 칸이 없습니다.");
         return;
       }
+      if (isEnemyCellOccupied(nextTarget, selectedEnemy.id)) {
+        fail("밀려날 칸을 다른 적이 점유하고 있습니다.");
+        return;
+      }
       setResourceBySlug((prev) => ({
         ...prev,
         [selectedRule.slug]: selectedResource - actionResourceCost,
       }));
-      setTargetPosition(nextTarget);
-      applyAttackResult(selectedResult);
+      updateEnemy(selectedEnemy.id, (enemy) => ({
+        ...applySimulatorResolutionToEnemy(
+          enemy,
+          {
+            damageApplied: selectedResult.damageApplied,
+            targetStat: selectedResult.targetStat ?? "hp",
+            statusesApplied: selectedResult.statusesApplied,
+          },
+          { ...(selectedBossPart ? { partId: selectedBossPart.id } : {}) },
+        ),
+        position: nextTarget,
+      }));
       setTrainingEvent("attack");
-      setActiveStep(3);
+      setActiveStep(5);
       showFeedback(
         "success",
         "넉백 실행 완료",
-        `${selectedResult.summary} · 적 ${formatSimulatorCoord(nextTarget)}로 1칸 후퇴`,
+        `${selectedResult.summary} · ${selectedEnemy.name} ${formatSimulatorCoord(nextTarget)}로 1칸 후퇴`,
       );
       pushLog(
-        `${selectedRule.name} 넉백 · ${selectedResult.summary} · 적 ${formatSimulatorCoord(nextTarget)}로 이동`,
+        `${selectedRule.name} 넉백 · ${selectedEnemy.name}`,
         "hit",
+        [
+          selectedResult.summary,
+          `${formatSimulatorCoord(targetPosition)} → ${formatSimulatorCoord(nextTarget)}`,
+        ],
       );
       return;
     }
 
     if (selectedAction.kind === "area-spray") {
-      if (!selectedResult?.ok) {
-        fail(selectedResult?.reasonLabel ?? "현재 표적이 사거리 밖에 있습니다.");
+      const candidates = enemies
+        .filter((enemy) => !isSimulatorEnemyDefeated(enemy))
+        .flatMap((enemy) => {
+          const result = resolveSimulatorAttack({
+            weaponSlug: selectedRule.slug,
+            attacker: attackerPosition,
+            target: enemy.position,
+            attackerStats: attacker,
+            targetStats: { def: getSimulatorEffectiveDef(enemy.stats) },
+            runtime: selectedRuntime,
+          });
+          return result.ok ? [{ enemy, result }] : [];
+        });
+      if (candidates.length === 0) {
+        fail("사거리 안에 공격 가능한 적이 없습니다.");
         return;
       }
-      const outcomes = resolveSimulatorAreaSpray([selectedResult], rollD6);
-      const [{ roll, hit }] = outcomes;
-      setResourceBySlug((prev) => ({ ...prev, [selectedRule.slug]: 0 }));
-      if (selectedResult.nextShotsInCycle !== undefined) {
-        setHmgShotsInCycle(selectedResult.nextShotsInCycle);
+      const outcomes = resolveSimulatorAreaSpray(
+        candidates.map((candidate) => candidate.result),
+        rollD6,
+      );
+      const details: string[] = [];
+      let hitCount = 0;
+      const nextEnemies = enemies.map((enemy) => {
+          const candidateIndex = candidates.findIndex(
+            (candidate) => candidate.enemy.id === enemy.id,
+          );
+          if (candidateIndex < 0) return enemy;
+          const outcome = outcomes[candidateIndex];
+          if (!outcome?.hit) {
+            details.push(`${enemy.name} · 1d6=${outcome?.roll ?? "-"} · 회피`);
+            return enemy;
+          }
+          hitCount += 1;
+          details.push(
+            `${enemy.name} · 1d6=${outcome.roll} · ${outcome.result.damageApplied} 피해`,
+          );
+          return applySimulatorResolutionToEnemy(
+            enemy,
+            {
+              damageApplied: outcome.result.damageApplied,
+              targetStat: outcome.result.targetStat ?? "hp",
+              statusesApplied: outcome.result.statusesApplied,
+            },
+            { distributeBossDamage: enemy.kind === "boss" },
+          );
+        });
+      setEnemies(nextEnemies);
+      const selectedAfterSpray = nextEnemies.find(
+        (enemy) => enemy.id === selectedEnemyId,
+      );
+      const selectedDefeatedBySpray = Boolean(
+        selectedAfterSpray && isSimulatorEnemyDefeated(selectedAfterSpray),
+      );
+      if (selectedDefeatedBySpray) {
+        setSelectedEnemyId("");
+        setSelectedBossPartId(null);
       }
-      for (const outcome of outcomes) {
-        if (outcome.hit) applyAttackResult(outcome.result);
+      setResourceBySlug((prev) => ({ ...prev, [selectedRule.slug]: 0 }));
+      const firstResult = candidates[0]?.result;
+      if (firstResult?.nextShotsInCycle !== undefined) {
+        setHmgShotsInCycle(firstResult.nextShotsInCycle);
       }
       setTrainingEvent("attack");
-      setActiveStep(3);
+      setActiveStep(5);
       showFeedback(
-        hit ? "success" : "info",
-        hit ? "광역 난사 명중" : "광역 난사 회피",
-        `1d6=${roll} · ${hit ? selectedResult.summary : "5 이상으로 피해 없음"} · 모든 탄환 소모`,
+        hitCount > 0 ? "success" : "info",
+        "광역 난사 완료",
+        `${candidates.length}기 판정 · ${hitCount}기 명중 · 모든 탄환 소모${selectedDefeatedBySpray ? " · 선택 표적 전투불능. 다음 표적을 직접 선택하세요." : ""}`,
       );
       pushLog(
-        `${selectedRule.name} 광역 난사 · 1d6=${roll} · ${hit ? selectedResult.summary : "회피"} · 탄환 0`,
-        hit ? "hit" : "info",
+        `${selectedRule.name} 광역 난사 · ${hitCount}/${candidates.length}기 명중`,
+        hitCount > 0 ? "hit" : "info",
+        details,
       );
       return;
     }
 
+    if (!blastImpact) {
+      fail("소이선을 만들 셀 또는 방향을 선택하세요.");
+      return;
+    }
     const cells = getSimulatorIncendiaryLineCells(
       attackerPosition,
-      targetPosition,
+      blastImpact,
       boardColumns,
       boardRows,
     );
@@ -1311,20 +2167,34 @@ export default function EquipmentSimulatorClient({
       ...prev,
       [selectedRule.slug]: selectedResource - actionResourceCost,
     }));
-    setFireZone({ cells: zoneCells, rounds: 3 });
-    if (zoneCells.includes(cellKey(targetPosition))) {
-      setTargetStats((prev) => applySimulatorStatuses(prev, ["burn"]));
-    }
+    setFireZones((current) => [
+      ...current,
+      { id: sequence, cells: zoneCells, rounds: 3 },
+    ]);
+    const burnedNames: string[] = [];
+    const nextEnemies = enemies.map((enemy) => {
+        if (isSimulatorEnemyDefeated(enemy)) return enemy;
+        if (!zoneCells.includes(cellKey(enemy.position))) return enemy;
+        burnedNames.push(enemy.name);
+        return {
+          ...enemy,
+          stats: applySimulatorStatuses(enemy.stats, ["burn"]),
+        };
+      });
+    setEnemies(nextEnemies);
     setTrainingEvent("attack");
-    setActiveStep(3);
+    setActiveStep(5);
     showFeedback(
       "success",
       "소이선 생성 완료",
-      `${zoneCells.join(", ")} · 3라운드 화염 지대 · 진입 대상 화상`,
+      `${zoneCells.join(", ")} · 3라운드 · ${burnedNames.length}기 화상`,
     );
     pushLog(
       `${selectedRule.name} 소이선 · ${zoneCells.join(", ")} · 3라운드`,
       "hit",
+      burnedNames.length
+        ? burnedNames.map((name) => `${name} · 화상`)
+        : ["현재 지대 안에 적이 없습니다."],
     );
   }
 
@@ -1339,6 +2209,30 @@ export default function EquipmentSimulatorClient({
         ]}
         title="훈련장"
       />
+
+      {draggedToken && dragOverlay?.active ? (
+        <div
+          className={styles.dragGhost}
+          style={{
+            left: dragOverlay.x,
+            top: dragOverlay.y,
+          }}
+          aria-hidden
+        >
+          <span>
+            {draggedToken.kind === "attacker"
+              ? attackerTokenInitial
+              : draggedEnemy?.kind === "boss"
+                ? "大"
+                : "적"}
+          </span>
+          <strong>
+            {draggedToken.kind === "attacker"
+              ? attacker.codename
+              : draggedEnemy?.name ?? "훈련 표적"}
+          </strong>
+        </div>
+      ) : null}
 
       {feedback ? (
         <div
@@ -1402,14 +2296,17 @@ export default function EquipmentSimulatorClient({
           <Eyebrow>ARMORY TEST GRID</Eyebrow>
           <h1>전장 선택형 장비 훈련</h1>
           <p>
-            5×5·1×5·5×1 전장을 선택해 장비의 거리·피해·자원 소모를
-            턴 단위로 시험합니다. 실제 캐릭터와 인벤토리는 변경되지
-            않습니다.
+            기본 1:1부터 다수 표적과 대형몹 부위 파괴까지 장비의
+            거리·피해·광역 효과를 턴 단위로 시험합니다. 실제 캐릭터와
+            인벤토리는 변경되지 않습니다.
           </p>
           <div className={styles.stageBadges} aria-label="훈련장 상태">
             <Tag tone="gold">턴 단위 모의훈련</Tag>
             <Tag tone="info">
               {battlefield.label} {battlefield.description}
+            </Tag>
+            <Tag tone="info">
+              {ENCOUNTER_MODE_META[encounterMode].label}
             </Tag>
             <Tag tone="info">실데이터 미반영</Tag>
           </div>
@@ -1432,6 +2329,34 @@ export default function EquipmentSimulatorClient({
             </li>
           ))}
         </ol>
+      </section>
+
+      <section className={styles.encounterSelector} aria-label="교전 모드 선택">
+        <div>
+          <Eyebrow>ENCOUNTER MODE</Eyebrow>
+          <strong>교전 구성을 선택하세요</strong>
+          <span>페이지 진입 기본값은 기존과 같은 1:1 훈련입니다.</span>
+        </div>
+        <div className={styles.encounterSelector__buttons} role="group">
+          {(Object.keys(ENCOUNTER_MODE_META) as SimulatorEncounterMode[]).map(
+            (mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={
+                  encounterMode === mode
+                    ? styles["encounterSelector__button--active"]
+                    : ""
+                }
+                aria-pressed={encounterMode === mode}
+                onClick={() => handleEncounterModeChange(mode)}
+              >
+                <strong>{ENCOUNTER_MODE_META[mode].label}</strong>
+                <span>{ENCOUNTER_MODE_META[mode].description}</span>
+              </button>
+            ),
+          )}
+        </div>
       </section>
 
       <section className={styles.guidePanel} aria-labelledby="range-guide-title">
@@ -1593,9 +2518,11 @@ export default function EquipmentSimulatorClient({
                   className={styles.placementStatus}
                   aria-live="polite"
                 >
-                  {activeToken === "target"
-                    ? "1 · 적 위치 지정"
-                    : "2 · 내 위치 조정"}
+                  {activeToken === "attacker"
+                    ? "내 위치 조정 중"
+                    : activeToken === "aim"
+                      ? "공격 지점 선택 중"
+                      : `적 위치 조정 중 · ${selectedEnemy?.name ?? "표적 없음"}`}
                 </span>
                 <div
                   className={styles.placementButtons}
@@ -1608,7 +2535,6 @@ export default function EquipmentSimulatorClient({
                       activeToken === "attacker" ? styles.activeToggle : ""
                     }
                     aria-pressed={activeToken === "attacker"}
-                    disabled={!enemyPositionConfirmed}
                     onClick={() => handleSelectActiveToken("attacker")}
                   >
                     {activeToken === "attacker"
@@ -1625,9 +2551,13 @@ export default function EquipmentSimulatorClient({
                   >
                     {activeToken === "target"
                       ? "적 위치 지정 중"
-                      : "적 위치 다시 지정"}
+                      : "적 위치 조정"}
                   </button>
                 </div>
+                <p className={styles.placementHelp}>
+                  적 위치 조정 버튼을 누른 뒤 전투판을 클릭하거나, 토큰을
+                  직접 드래그해 위치를 조정할 수 있습니다.
+                </p>
               </div>
             </div>
           </div>
@@ -1670,53 +2600,64 @@ export default function EquipmentSimulatorClient({
           </div>
 
           <section className={styles.controlPanel} aria-label="전투 조작 패널">
+            <div className={styles.actionPicker} role="group" aria-label="행동 선택">
+              <button
+                type="button"
+                className={
+                  selectedActionKind === "attack" ? styles.activeToggle : ""
+                }
+                aria-pressed={selectedActionKind === "attack"}
+                onClick={() => handleSelectAction("attack")}
+              >
+                {selectedRule?.blast ? "착탄 공격" : "기본 공격"}
+              </button>
+              {(selectedRule?.actions ?? []).map((action) => (
+                <button
+                  key={action.kind}
+                  type="button"
+                  className={
+                    selectedActionKind === action.kind
+                      ? styles.activeToggle
+                      : ""
+                  }
+                  aria-pressed={selectedActionKind === action.kind}
+                  onClick={() => handleSelectAction(action.kind)}
+                >
+                  {action.name}
+                </button>
+              ))}
+            </div>
             <div className={styles.actionRow}>
               <button
                 type="button"
                 className={styles.fireButton}
                 onClick={handleAttack}
-                disabled={!selectedRule || !enemyPositionConfirmed}
+                disabled={Boolean(executionBlockedReason)}
                 aria-describedby="simulator-placement-status"
               >
-                공격 실행
+                {selectedAction?.name ?? "공격"} 실행
               </button>
-              {selectedAction ? (
+              {selectedRule?.resource ? (
                 <button
                   type="button"
                   className={styles.controlButton}
-                  onClick={handleSpecialAction}
-                  disabled={
-                    !enemyPositionConfirmed ||
-                    selectedResource <= 0 ||
-                    (typeof selectedAction.resourceCost === "number" &&
-                      selectedResource < selectedAction.resourceCost)
-                  }
+                  onClick={handleReload}
+                  disabled={selectedResource >= selectedRule.resource.max}
                 >
-                  {selectedAction.name} (
-                  {selectedAction.resourceCost === "all"
-                    ? "전 탄환"
-                    : `${selectedAction.resourceCost} 소모`}
-                  )
+                  {controlReloadLabel(selectedRule)}
                 </button>
               ) : null}
-              <button
-                type="button"
-                className={styles.controlButton}
-                onClick={handleReload}
-                disabled={!selectedRule?.resource}
-              >
-                {controlReloadLabel(selectedRule)}
-              </button>
-              <button
-                type="button"
-                className={styles.controlButton}
-                onClick={handleToggleHmg}
-                disabled={selectedRule?.slug !== "basic-heavy-machine-gun"}
-              >
-                {hmgInstalled
-                  ? "중기관총 해체 (1턴)"
-                  : "중기관총 설치 (1턴)"}
-              </button>
+              {selectedRule?.requiresSetup ? (
+                <button
+                  type="button"
+                  className={styles.controlButton}
+                  onClick={handleToggleHmg}
+                >
+                  {hmgInstalled
+                    ? "중기관총 해체 (1턴)"
+                    : "중기관총 설치 (1턴)"}
+                </button>
+              ) : null}
               <button
                 type="button"
                 className={styles.nextTurnButton}
@@ -1732,6 +2673,15 @@ export default function EquipmentSimulatorClient({
                 초기화
               </button>
             </div>
+            {executionBlockedReason ? (
+              <p className={styles.actionBlocker} role="status">
+                실행 대기 · {executionBlockedReason}
+              </p>
+            ) : (
+              <p className={styles.actionReady} role="status">
+                대상과 예상 범위를 확인했습니다. 실행할 수 있습니다.
+              </p>
+            )}
 
             <div className={styles.controlReadouts}>
               <div>
@@ -1802,7 +2752,10 @@ export default function EquipmentSimulatorClient({
                 boardColumns.map((col) => {
                   const coord: SimulatorBoardCoord = { col, row };
                   const hasAttacker = sameCoord(coord, attackerPosition);
-                  const hasTarget = sameCoord(coord, targetPosition);
+                  const cellEnemies = enemies.filter((enemy) =>
+                    sameCoord(coord, enemy.position),
+                  );
+                  const hasTarget = cellEnemies.length > 0;
                   const isAttackable =
                     selectedRule !== null &&
                     isSimulatorAttackableCell(
@@ -1811,7 +2764,16 @@ export default function EquipmentSimulatorClient({
                       coord,
                     );
                   const isDropTarget = dragOverCell === cellKey(coord);
-                  const isFireZone = fireZone?.cells.includes(cellKey(coord));
+                  const activeFireZones = fireZones.filter((zone) =>
+                    zone.cells.includes(cellKey(coord)),
+                  );
+                  const isFireZone = activeFireZones.length > 0;
+                  const isBlastArea = blastCells.some((cell) =>
+                    sameCoord(cell, coord),
+                  );
+                  const isBlastCenter = Boolean(
+                    blastImpact && sameCoord(blastImpact, coord),
+                  );
                   return (
                     <div
                       key={cellKey(coord)}
@@ -1829,6 +2791,8 @@ export default function EquipmentSimulatorClient({
                           ? styles["boardCell--dropTarget"]
                           : "",
                         isFireZone ? styles["boardCell--fireZone"] : "",
+                        isBlastArea ? styles["boardCell--blastArea"] : "",
+                        isBlastCenter ? styles["boardCell--blastCenter"] : "",
                         hasAttacker ? styles["boardCell--attacker"] : "",
                         hasTarget ? styles["boardCell--target"] : "",
                       ]
@@ -1840,14 +2804,16 @@ export default function EquipmentSimulatorClient({
                         `${
                           activeToken === "attacker"
                             ? `나를 ${cellKey(coord)} 칸으로 이동`
-                            : `적을 ${cellKey(coord)} 칸에 배치`
+                            : activeToken === "aim"
+                              ? `${cellKey(coord)} 칸을 공격 지점으로 선택`
+                              : `${selectedEnemy?.name ?? "적"}을 ${cellKey(coord)} 칸에 배치`
                         }${
                           isAttackable
                             ? `; ${selectedName} 공격 가능 범위`
                             : ""
                         }${
                           isFireZone
-                            ? `; 소이선 화염 지대 ${fireZone?.rounds ?? 0}라운드`
+                            ? `; 소이선 화염 지대 ${Math.max(...activeFireZones.map((zone) => zone.rounds))}라운드`
                             : ""
                         }${
                           hasAttacker
@@ -1855,7 +2821,7 @@ export default function EquipmentSimulatorClient({
                             : ""
                         }${
                           hasTarget
-                            ? `; 적 훈련 표적, HP ${targetStats.hp}/${targetStats.maxHp}, 정신력 ${targetStats.san}/${targetStats.maxSan}, DEF ${targetEffectiveDef}`
+                            ? `; ${cellEnemies.map((enemy) => `${enemy.name} HP ${enemy.stats.hp}/${enemy.stats.maxHp}`).join(", ")}`
                             : ""
                         }`
                       }
@@ -1866,7 +2832,7 @@ export default function EquipmentSimulatorClient({
                           className={[
                             styles.token,
                             styles["token--attacker"],
-                            draggedToken === "attacker"
+                            draggedToken?.kind === "attacker"
                               ? styles["token--dragging"]
                               : "",
                             attackerPosition.row <= 2
@@ -1877,20 +2843,16 @@ export default function EquipmentSimulatorClient({
                               ? styles["token--popoverLeft"]
                               : "",
                           ].join(" ")}
-                          onClick={(event) =>
-                            handleTokenClick(event, "attacker", coord)
-                          }
+                          onClick={handleAttackerTokenClick}
                           onPointerDown={(event) =>
-                            handleTokenPointerDown(event, "attacker")
+                            handleTokenPointerDown(event, { kind: "attacker" })
                           }
                           onPointerMove={handleTokenPointerMove}
                           onPointerUp={(event) =>
-                            handleTokenPointerUp(event, "attacker")
+                            handleTokenPointerUp(event, { kind: "attacker" })
                           }
                           onPointerCancel={handleTokenPointerCancel}
-                          onLostPointerCapture={() =>
-                            handleTokenPointerCaptureLost("attacker")
-                          }
+                          onLostPointerCapture={handleTokenPointerCaptureLost}
                           role="img"
                           aria-label={`나, ${attacker.codename} 위치 토큰. HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}`}
                         >
@@ -1958,118 +2920,178 @@ export default function EquipmentSimulatorClient({
                           />
                         </div>
                       ) : null}
-                      {hasTarget ? (
-                        <div
-                          className={[
-                            styles.token,
-                            styles["token--target"],
-                            draggedToken === "target"
-                              ? styles["token--dragging"]
-                              : "",
-                            targetPosition.row <= 2
-                              ? styles["token--popoverBelow"]
-                              : "",
-                            boardColumns.indexOf(targetPosition.col) >=
-                            Math.ceil(boardColumns.length / 2)
-                              ? styles["token--popoverLeft"]
-                              : "",
-                          ].join(" ")}
-                          onClick={(event) =>
-                            handleTokenClick(event, "target", coord)
-                          }
-                          onPointerDown={(event) =>
-                            handleTokenPointerDown(event, "target")
-                          }
-                          onPointerMove={handleTokenPointerMove}
-                          onPointerUp={(event) =>
-                            handleTokenPointerUp(event, "target")
-                          }
-                          onPointerCancel={handleTokenPointerCancel}
-                          onLostPointerCapture={() =>
-                            handleTokenPointerCaptureLost("target")
-                          }
-                          role="img"
-                          aria-label={`적, 훈련 표적 위치 토큰. HP ${targetStats.hp}/${targetStats.maxHp}, 정신력 ${targetStats.san}/${targetStats.maxSan}, DEF ${targetEffectiveDef}, 상태 ${
-                            targetStats.statuses.length > 0
-                              ? targetStats.statuses
-                                  .map(
-                                    (status) =>
-                                      SIMULATOR_STATUS_LABELS[status],
-                                  )
-                                  .join(", ")
-                              : "정상"
-                          }`}
-                        >
-                          <span className={styles.token__inner} aria-hidden>
-                            <Image
-                              src={DEFAULT_TARGET_PORTRAIT}
-                              width={64}
-                              height={64}
-                              alt=""
-                              className={[
-                                styles.token__portrait,
-                                styles["token__portrait--fieldAgent"],
-                              ].join(" ")}
-                              draggable={false}
-                              loading="eager"
-                              unoptimized
-                            />
-                          </span>
-                          <span
-                            className={styles.token__hp}
-                            title={`HP ${targetStats.hp}/${targetStats.maxHp}`}
-                            aria-hidden
+                      {cellEnemies.map((enemy) => {
+                        const defeated = isSimulatorEnemyDefeated(enemy);
+                        const enemyDef = getSimulatorEffectiveDef(enemy.stats);
+                        const isSelected = enemy.id === selectedEnemyId;
+                        const isDragging =
+                          draggedToken?.kind === "enemy" &&
+                          draggedToken.enemyId === enemy.id;
+                        return (
+                          <div
+                            key={enemy.id}
+                            className={[
+                              styles.token,
+                              styles["token--target"],
+                              enemy.kind === "boss"
+                                ? styles["token--boss"]
+                                : "",
+                              isSelected ? styles["token--selected"] : "",
+                              defeated ? styles["token--defeated"] : "",
+                              isDragging ? styles["token--dragging"] : "",
+                              enemy.position.row <= 2
+                                ? styles["token--popoverBelow"]
+                                : "",
+                              boardColumns.indexOf(enemy.position.col) >=
+                              Math.ceil(boardColumns.length / 2)
+                                ? styles["token--popoverLeft"]
+                                : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            onClick={(event) =>
+                              handleEnemyTokenClick(
+                                event,
+                                enemy.id,
+                                enemy.position,
+                              )
+                            }
+                            onPointerDown={(event) =>
+                              handleTokenPointerDown(event, {
+                                kind: "enemy",
+                                enemyId: enemy.id,
+                              })
+                            }
+                            onPointerMove={handleTokenPointerMove}
+                            onPointerUp={(event) =>
+                              handleTokenPointerUp(event, {
+                                kind: "enemy",
+                                enemyId: enemy.id,
+                              })
+                            }
+                            onPointerCancel={handleTokenPointerCancel}
+                            onLostPointerCapture={handleTokenPointerCaptureLost}
+                            role="button"
+                            tabIndex={0}
+                            aria-pressed={isSelected}
+                            onKeyDown={(event) => {
+                              if (
+                                event.key !== "Enter" &&
+                                event.key !== " "
+                              ) {
+                                return;
+                              }
+                              event.preventDefault();
+                              if (activeToken === "aim") {
+                                handleCellActivate(enemy.position);
+                              } else {
+                                setSelectedEnemyId(enemy.id);
+                                setActiveToken("target");
+                              }
+                            }}
+                            aria-label={`적, ${enemy.name} 위치 토큰. HP ${enemy.stats.hp}/${enemy.stats.maxHp}, 정신력 ${enemy.stats.san}/${enemy.stats.maxSan}, DEF ${enemyDef}, 상태 ${defeated ? "전투불능" : enemy.stats.statuses.map((status) => SIMULATOR_STATUS_LABELS[status]).join(", ") || "정상"}`}
                           >
-                            <i
-                              className={[
-                                styles.token__hpFill,
-                                styles[
-                                  `token__hpFill--${tokenVitalTone(
-                                    targetStats.hp,
-                                    targetStats.maxHp,
-                                  )}`
-                                ],
-                              ].join(" ")}
-                              style={{
-                                width: `${tokenVitalPercent(
-                                  targetStats.hp,
-                                  targetStats.maxHp,
-                                )}%`,
-                              }}
-                            />
-                          </span>
-                          <span className={styles.token__label} aria-hidden>
-                            <b>적</b>
-                            <span>훈련 표적</span>
-                          </span>
-                          {targetStats.statuses.map((status) => (
+                            <span className={styles.token__inner} aria-hidden>
+                              {enemy.kind === "boss" ? (
+                                <span className={styles.token__bossFallback}>
+                                  大
+                                </span>
+                              ) : (
+                                <Image
+                                  src={DEFAULT_TARGET_PORTRAIT}
+                                  width={64}
+                                  height={64}
+                                  alt=""
+                                  className={[
+                                    styles.token__portrait,
+                                    styles["token__portrait--fieldAgent"],
+                                  ].join(" ")}
+                                  draggable={false}
+                                  loading="eager"
+                                  unoptimized
+                                />
+                              )}
+                            </span>
+                            {enemy.kind === "boss"
+                              ? (enemy.bossParts ?? []).slice(0, 6).map((part, index) => (
+                                  <span
+                                    key={part.id}
+                                    className={[
+                                      styles.token__bossPin,
+                                      getSimulatorBossPartState(part) ===
+                                      "destroyed"
+                                        ? styles["token__bossPin--destroyed"]
+                                        : "",
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" ")}
+                                    style={{
+                                      left: `${part.x}%`,
+                                      top: `${part.y}%`,
+                                    }}
+                                    aria-hidden
+                                  >
+                                    {index + 1}
+                                  </span>
+                                ))
+                              : null}
                             <span
-                              key={status}
-                              className={styles.token__status}
-                              title={`${SIMULATOR_STATUS_LABELS[status]}${
-                                SIMULATOR_STATUS_RULES[status]
-                                  .persistentUntilRecovery
-                                  ? " · 회복 전 지속"
-                                  : ` ${targetStats.statusRounds[status] ?? 0}라운드`
-                              }: ${SIMULATOR_STATUS_RULES[status].effect}`}
+                              className={styles.token__hp}
+                              title={`HP ${enemy.stats.hp}/${enemy.stats.maxHp}`}
                               aria-hidden
                             >
-                              {status === "burn" ? "화" : "멍"}
+                              <i
+                                className={[
+                                  styles.token__hpFill,
+                                  styles[
+                                    `token__hpFill--${tokenVitalTone(
+                                      enemy.stats.hp,
+                                      enemy.stats.maxHp,
+                                    )}`
+                                  ],
+                                ].join(" ")}
+                                style={{
+                                  width: `${tokenVitalPercent(
+                                    enemy.stats.hp,
+                                    enemy.stats.maxHp,
+                                  )}%`,
+                                }}
+                              />
                             </span>
-                          ))}
-                          <TokenStatPopover
-                            name="훈련 표적"
-                            tag="적"
-                            hp={targetStats.hp}
-                            maxHp={targetStats.maxHp}
-                            san={targetStats.san}
-                            maxSan={targetStats.maxSan}
-                            def={targetEffectiveDef}
-                            statuses={targetStats.statuses}
-                            statusRounds={targetStats.statusRounds}
-                          />
-                        </div>
-                      ) : null}
+                            <span className={styles.token__label} aria-hidden>
+                              <b>{enemy.kind === "boss" ? "대형" : "적"}</b>
+                              <span>{enemy.name}</span>
+                            </span>
+                            {enemy.stats.statuses.map((status) => (
+                              <span
+                                key={status}
+                                className={styles.token__status}
+                                title={`${SIMULATOR_STATUS_LABELS[status]}: ${SIMULATOR_STATUS_RULES[status].effect}`}
+                                aria-hidden
+                              >
+                                {status === "burn" ? "화" : "멍"}
+                              </span>
+                            ))}
+                            <TokenStatPopover
+                              name={enemy.name}
+                              tag={
+                                defeated
+                                  ? "전투불능"
+                                  : enemy.kind === "boss"
+                                    ? "대형몹"
+                                    : "적"
+                              }
+                              hp={enemy.stats.hp}
+                              maxHp={enemy.stats.maxHp}
+                              san={enemy.stats.san}
+                              maxSan={enemy.stats.maxSan}
+                              def={enemyDef}
+                              statuses={enemy.stats.statuses}
+                              statusRounds={enemy.stats.statusRounds}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 }),
@@ -2080,6 +3102,310 @@ export default function EquipmentSimulatorClient({
         </section>
 
         <aside className={styles.targetPanel} aria-label="선택 장비 룰 카드">
+          <details className={styles.targetControl} open>
+            <summary>
+              <span>
+                <Eyebrow>TARGET CONTROL</Eyebrow>
+                <strong>표적 제어</strong>
+              </span>
+              <b>{enemies.length}기</b>
+            </summary>
+
+            {encounterMode === "horde" ? (
+              <div className={styles.enemyRoster} aria-label="다수 표적 목록">
+                {enemies.map((enemy, index) => (
+                  <button
+                    key={enemy.id}
+                    type="button"
+                    className={
+                      enemy.id === selectedEnemyId
+                        ? styles["enemyRoster__item--active"]
+                        : ""
+                    }
+                    aria-pressed={enemy.id === selectedEnemyId}
+                    onClick={() => {
+                      setSelectedEnemyId(enemy.id);
+                      setSelectedBossPartId(null);
+                    }}
+                  >
+                    <span>{index + 1}</span>
+                    <strong>{enemy.name}</strong>
+                    <em>
+                      HP {enemy.stats.hp}/{enemy.stats.maxHp}
+                    </em>
+                  </button>
+                ))}
+                <div className={styles.enemyRoster__actions}>
+                  <button type="button" onClick={() => handleAddEnemy(false)}>
+                    + 표적 추가
+                  </button>
+                  <button type="button" onClick={() => handleAddEnemy(true)}>
+                    선택 복제
+                  </button>
+                  <button
+                    type="button"
+                    disabled={enemies.length <= 1 || !selectedEnemy}
+                    onClick={() =>
+                      selectedEnemy && handleRemoveEnemy(selectedEnemy.id)
+                    }
+                  >
+                    선택 삭제
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {selectedEnemy ? (
+              <div className={styles.targetEditor}>
+                <label className={styles.targetEditor__wide}>
+                  <span>표적 이름</span>
+                  <input
+                    value={selectedEnemy.name}
+                    maxLength={48}
+                    onBlur={logSelectedEnemyAdjustment}
+                    onChange={(event) =>
+                      updateSelectedEnemyField("name", event.target.value)
+                    }
+                  />
+                </label>
+                <label>
+                  <span>현재 HP</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={selectedEnemy.stats.maxHp}
+                    value={selectedEnemy.stats.hp}
+                    disabled={selectedEnemy.kind === "boss"}
+                    onBlur={logSelectedEnemyAdjustment}
+                    onChange={(event) =>
+                      updateSelectedEnemyField("hp", event.target.value)
+                    }
+                  />
+                </label>
+                <label>
+                  <span>최대 HP</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={99999}
+                    value={selectedEnemy.stats.maxHp}
+                    disabled={selectedEnemy.kind === "boss"}
+                    onBlur={logSelectedEnemyAdjustment}
+                    onChange={(event) =>
+                      updateSelectedEnemyField("maxHp", event.target.value)
+                    }
+                  />
+                </label>
+                <label>
+                  <span>현재 SAN</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={selectedEnemy.stats.maxSan}
+                    value={selectedEnemy.stats.san}
+                    onBlur={logSelectedEnemyAdjustment}
+                    onChange={(event) =>
+                      updateSelectedEnemyField("san", event.target.value)
+                    }
+                  />
+                </label>
+                <label>
+                  <span>최대 SAN</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={99999}
+                    value={selectedEnemy.stats.maxSan}
+                    onBlur={logSelectedEnemyAdjustment}
+                    onChange={(event) =>
+                      updateSelectedEnemyField("maxSan", event.target.value)
+                    }
+                  />
+                </label>
+                <label className={styles.targetEditor__wide}>
+                  <span>DEF</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={99999}
+                    value={selectedEnemy.stats.def}
+                    onBlur={logSelectedEnemyAdjustment}
+                    onChange={(event) =>
+                      updateSelectedEnemyField("def", event.target.value)
+                    }
+                  />
+                </label>
+                <div className={styles.targetEditor__actions}>
+                  <button type="button" onClick={handleRecoverTarget}>
+                    표적 회복
+                  </button>
+                  {selectedEnemy.kind === "standard" ? (
+                    <button type="button" onClick={handleRestoreTargetDefaults}>
+                      기본값 복원
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
+            {selectedEnemy?.kind === "boss" ? (
+              <section className={styles.bossEditor} aria-label="대형몹 부위 편집">
+                <div className={styles.bossSummary}>
+                  <span>합산 본체 HP</span>
+                  <strong>
+                    {getSimulatorBossSummary(selectedEnemy.bossParts ?? []).hp} /{" "}
+                    {getSimulatorBossSummary(selectedEnemy.bossParts ?? []).maxHp}
+                  </strong>
+                  <em>
+                    생존 부위{" "}
+                    {getSimulatorBossSummary(selectedEnemy.bossParts ?? []).alive}/
+                    {getSimulatorBossSummary(selectedEnemy.bossParts ?? []).total}
+                  </em>
+                </div>
+                <div
+                  className={styles.bossStage}
+                  onClick={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    handleAddBossPart(
+                      ((event.clientX - rect.left) / rect.width) * 100,
+                      ((event.clientY - rect.top) / rect.height) * 100,
+                    );
+                  }}
+                  onPointerMove={handleBossStagePointerMove}
+                  onPointerUp={handleBossStagePointerUp}
+                  onPointerCancel={() => {
+                    draggedBossPartRef.current = null;
+                  }}
+                  aria-label="대형몹 부위도. 빈 곳을 눌러 부위를 추가합니다."
+                >
+                  <span className={styles.bossStage__placeholder} aria-hidden>
+                    大
+                  </span>
+                  {(selectedEnemy.bossParts ?? []).map((part, index) => (
+                    <button
+                      key={part.id}
+                      type="button"
+                      className={[
+                        styles.bossPin,
+                        selectedBossPartId === part.id
+                          ? styles["bossPin--selected"]
+                          : "",
+                        styles[
+                          `bossPin--${getSimulatorBossPartState(part)}`
+                        ],
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      style={{ left: `${part.x}%`, top: `${part.y}%` }}
+                      aria-pressed={selectedBossPartId === part.id}
+                      aria-label={`${part.name}, HP ${part.hp}/${part.maxHp}, ${getSimulatorBossPartState(part)}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedBossPartId(part.id);
+                      }}
+                      onPointerDown={(event) => {
+                        event.stopPropagation();
+                        event.currentTarget.setPointerCapture(event.pointerId);
+                        setSelectedBossPartId(part.id);
+                        draggedBossPartRef.current = part.id;
+                      }}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+                <p className={styles.bossStageHelp}>
+                  빈 곳을 눌러 부위를 추가하고, 핀을 드래그해 위치를
+                  조정합니다. 전투에서는 선택된 핀에 직접 피해가 적용됩니다.
+                </p>
+                <div className={styles.bossPartList}>
+                  {(selectedEnemy.bossParts ?? []).map((part, index) => (
+                    <div
+                      key={part.id}
+                      className={[
+                        styles.bossPartRow,
+                        selectedBossPartId === part.id
+                          ? styles["bossPartRow--selected"]
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      <button
+                        type="button"
+                        className={styles.bossPartRow__select}
+                        onClick={() => setSelectedBossPartId(part.id)}
+                      >
+                        {index + 1}
+                      </button>
+                      <input
+                        aria-label={`${index + 1}번 부위 이름`}
+                        value={part.name}
+                        maxLength={48}
+                        onChange={(event) =>
+                          updateBossPart(part.id, { name: event.target.value })
+                        }
+                      />
+                      <input
+                        aria-label={`${part.name} 현재 HP`}
+                        type="number"
+                        min={0}
+                        max={part.maxHp}
+                        value={part.hp}
+                        onChange={(event) =>
+                          updateBossPart(part.id, {
+                            hp: Number(event.target.value),
+                          })
+                        }
+                      />
+                      <input
+                        aria-label={`${part.name} 최대 HP`}
+                        type="number"
+                        min={1}
+                        max={99999}
+                        value={part.maxHp}
+                        onChange={(event) =>
+                          updateBossPart(part.id, {
+                            maxHp: Number(event.target.value),
+                          })
+                        }
+                      />
+                      <button
+                        type="button"
+                        className={styles.bossPartRow__remove}
+                        disabled={(selectedEnemy.bossParts?.length ?? 0) <= 1}
+                        onClick={() => handleRemoveBossPart(part.id)}
+                        aria-label={`${part.name} 삭제`}
+                      >
+                        ×
+                      </button>
+                      <input
+                        className={styles.bossPartRow__note}
+                        aria-label={`${part.name} 메모`}
+                        placeholder="부위 메모"
+                        value={part.note}
+                        maxLength={160}
+                        onChange={(event) =>
+                          updateBossPart(part.id, { note: event.target.value })
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className={styles.bossAddButton}
+                  disabled={(selectedEnemy.bossParts?.length ?? 0) >= 16}
+                  onClick={() => handleAddBossPart()}
+                >
+                  + 부위 추가
+                </button>
+              </section>
+            ) : null}
+          </details>
+
+          <div className={styles.ruleDivider} />
           <div className={styles.panelIntro}>
             <Eyebrow>RULE CARD</Eyebrow>
             <strong>{selectedRule?.name ?? "장비 없음"}</strong>
@@ -2157,7 +3483,20 @@ export default function EquipmentSimulatorClient({
                   " ",
                 )}
               >
-                {log.text}
+                {log.details?.length ? (
+                  <details>
+                    <summary>
+                      <strong>{log.text}</strong>
+                    </summary>
+                    <ul>
+                      {log.details.map((detail) => (
+                        <li key={detail}>{detail}</li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : (
+                  <strong>{log.text}</strong>
+                )}
               </div>
             ))}
           </div>

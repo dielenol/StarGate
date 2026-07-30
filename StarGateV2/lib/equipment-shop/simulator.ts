@@ -13,12 +13,13 @@ export type SimulatorRangeBand = "near" | "mid" | "far";
 export type SimulatorDamageKind = "physical" | "fire" | "sound";
 export type SimulatorTargetStat = "hp" | "san";
 export type SimulatorStatusKind = "burn" | "dazed";
+export type SimulatorEncounterMode = "duel" | "horde" | "boss";
 export type SimulatorWeaponActionKind =
   | "knockback"
   | "area-spray"
   | "incendiary-line";
 export type SimulatorWeaponRole = "냉병기" | "화기" | "설치화기" | "특수화기";
-export type SimulatorResourceKind = "ammo" | "charge";
+export type SimulatorResourceKind = "ammo" | "charge" | "consumable";
 
 export interface SimulatorAttackerProfile {
   codename: string;
@@ -45,6 +46,48 @@ export interface SimulatorTargetStats {
   def: number;
   statuses: SimulatorStatusKind[];
   statusRounds: Partial<Record<SimulatorStatusKind, number>>;
+}
+
+export interface SimulatorBossPart {
+  id: string;
+  name: string;
+  hp: number;
+  maxHp: number;
+  note: string;
+  x: number;
+  y: number;
+}
+
+export interface SimulatorEnemy {
+  id: string;
+  kind: "standard" | "boss";
+  name: string;
+  position: SimulatorBoardCoord;
+  stats: SimulatorTargetStats;
+  bossParts?: SimulatorBossPart[];
+}
+
+export interface SimulatorEncounter {
+  mode: SimulatorEncounterMode;
+  enemies: SimulatorEnemy[];
+  selectedEnemyId: string | null;
+  selectedBossPartId: string | null;
+}
+
+export type SimulatorAim =
+  | { kind: "enemy"; enemyId: string; partId?: string }
+  | { kind: "cell"; coord: SimulatorBoardCoord }
+  | { kind: "all-in-range" };
+
+export type SimulatorActionSelection =
+  | { kind: "attack" }
+  | { kind: "special"; action: SimulatorWeaponActionKind };
+
+export interface SimulatorBlastRule {
+  center: SimulatorDamageProfile;
+  splash: SimulatorDamageProfile;
+  maxDistance: number;
+  aim: "manhattan" | "cardinal";
 }
 
 export interface SimulatorDamageProfile {
@@ -81,6 +124,7 @@ export interface SimulatorWeaponRule {
     cycleTurns: number;
     shotsPerCycle: number;
   };
+  blast?: SimulatorBlastRule;
   actions?: SimulatorWeaponAction[];
   description: string;
   notes: string[];
@@ -140,6 +184,34 @@ export interface SimulatorAreaSprayOutcome {
   roll: number;
   hit: boolean;
 }
+
+export interface SimulatorDamageResolution {
+  profile: SimulatorDamageProfile;
+  rawDamage: number;
+  mitigation: number;
+  damageApplied: number;
+  targetStat: SimulatorTargetStat;
+  statusesApplied: SimulatorStatusKind[];
+}
+
+export interface SimulatorActionResolution {
+  selection: SimulatorActionSelection;
+  aim: SimulatorAim;
+  weaponSlug: string;
+  resourceSpent: number;
+  targets: {
+    enemyId: string;
+    partId?: string;
+    roll?: number;
+    result: SimulatorAttackResult | SimulatorDamageResolution;
+  }[];
+}
+
+export type SimulatorBossPartState =
+  | "normal"
+  | "damaged"
+  | "critical"
+  | "destroyed";
 
 export const SIMULATOR_RANGE_BANDS = ["near", "mid", "far"] as const;
 
@@ -345,6 +417,34 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
     description: "흔히 자동소총을 의미하는 기본 소총류입니다.",
     notes: [RANGED_RANGE_RULE_NOTE],
   },
+  "military-fragment-grenade": {
+    slug: "military-fragment-grenade",
+    name: "군용 세열 수류탄",
+    role: "특수화기",
+    price: 120,
+    ranges: {
+      near: physical(30),
+      mid: physical(30),
+    },
+    resource: {
+      kind: "consumable",
+      label: "수량",
+      max: 1,
+    },
+    usesAtkBonus: false,
+    blast: {
+      center: physical(30),
+      splash: physical(15),
+      maxDistance: 2,
+      aim: "manhattan",
+    },
+    description:
+      "최대 중거리 영역까지 투척하며 착탄 중심과 주변에 파편 물리 피해를 입힙니다.",
+    notes: [
+      "착탄 중심은 30, 주변 범위는 15의 파편 물리 피해를 받습니다.",
+      "수직 전투열에서는 해당 열 전체, 그 외 전장에서는 착탄 중심 기준 3×3 구역에 피해를 적용합니다.",
+    ],
+  },
   "basic-shotgun": {
     slug: "basic-shotgun",
     name: "보급형 샷건",
@@ -428,6 +528,36 @@ export const SIMULATOR_WEAPON_RULES: Record<string, SimulatorWeaponRule> = {
       RANGED_RANGE_RULE_NOTE,
       "철갑탄은 대상 방어력 10을 관통합니다.",
       "근거리와 중거리 피해는 적용하지 않습니다.",
+    ],
+  },
+  "rocket-launcher": {
+    slug: "rocket-launcher",
+    name: "로켓 런처",
+    role: "특수화기",
+    price: 700,
+    ranges: {
+      near: physical(45),
+      mid: physical(45),
+      far: physical(45),
+    },
+    resource: {
+      kind: "ammo",
+      label: "탄환",
+      max: 1,
+    },
+    usesAtkBonus: false,
+    blast: {
+      center: physical(45),
+      splash: physical(20),
+      maxDistance: 4,
+      aim: "cardinal",
+    },
+    description:
+      "최대 장거리 영역까지 사격하며 착탄 중심과 주변에 파편 물리 피해를 입힙니다.",
+    notes: [
+      RANGED_RANGE_RULE_NOTE,
+      "착탄 중심은 45, 주변 범위는 20의 파편 물리 피해를 받습니다.",
+      "수직 전투열에서는 해당 열 전체, 그 외 전장에서는 착탄 중심 기준 3×3 구역에 피해를 적용합니다.",
     ],
   },
   "basic-flamethrower": {
@@ -546,6 +676,7 @@ function getSimulatorRangeBand(distance: number): SimulatorRangeBand {
 }
 
 function requiresCardinalAlignment(rule: SimulatorWeaponRule): boolean {
+  if (rule.blast) return rule.blast.aim === "cardinal";
   return (
     rule.role !== "냉병기" && rule.slug !== "basic-heavy-machine-gun"
   );
@@ -621,6 +752,12 @@ export function getSimulatorWeaponRange(
 ): SimulatorRangeState | null {
   const rule = getSimulatorWeaponRule(weaponSlug);
   if (!rule) return null;
+  if (rule.blast?.aim === "manhattan") {
+    return getManhattanRange(attacker, target);
+  }
+  if (rule.blast?.aim === "cardinal") {
+    return getCardinalRange(attacker, target);
+  }
   if (rule.role === "냉병기") {
     return getMeleeRange(attacker, target);
   }
@@ -650,6 +787,12 @@ export function isSimulatorAttackableCell(
   if (
     rule.slug === "basic-heavy-machine-gun" &&
     (range.attackDistance ?? 0) > 4
+  ) {
+    return false;
+  }
+  if (
+    rule.blast &&
+    (range.attackDistance ?? 0) > rule.blast.maxDistance
   ) {
     return false;
   }
@@ -698,6 +841,183 @@ export function resolveSimulatorAreaSpray(
     const roll = rollD6();
     return { result, roll, hit: result.ok && roll <= 4 };
   });
+}
+
+export function resolveSimulatorDamageProfile(
+  profile: SimulatorDamageProfile,
+  targetDef: number,
+): SimulatorDamageResolution {
+  const rawDamage = profile.amount;
+  const penetratedDef = Math.max(
+    0,
+    targetDef - (profile.armorPenetration ?? 0),
+  );
+  const mitigation = profile.appliesDef
+    ? Math.min(rawDamage, penetratedDef)
+    : 0;
+  return {
+    profile,
+    rawDamage,
+    mitigation,
+    damageApplied: Math.max(0, rawDamage - mitigation),
+    targetStat: profile.targetStat,
+    statusesApplied: profile.statuses ?? [],
+  };
+}
+
+export function normalizeSimulatorBossParts(
+  parts: readonly Partial<SimulatorBossPart>[],
+): SimulatorBossPart[] {
+  const seen = new Set<string>();
+  return parts.slice(0, 16).flatMap((part, index) => {
+    const id = String(part.id ?? `boss-part-${index + 1}`).slice(0, 100);
+    if (seen.has(id)) return [];
+    seen.add(id);
+    const maxHp = Math.max(
+      1,
+      Math.min(99_999, Math.round(Number(part.maxHp ?? part.hp ?? 50) || 50)),
+    );
+    const hp = Math.max(
+      0,
+      Math.min(maxHp, Math.round(Number(part.hp ?? maxHp) || 0)),
+    );
+    return [
+      {
+        id,
+        name: String(part.name ?? `부위 ${index + 1}`).slice(0, 48),
+        hp,
+        maxHp,
+        note: String(part.note ?? "").slice(0, 160),
+        x: Math.max(0, Math.min(100, Number(part.x ?? 50) || 0)),
+        y: Math.max(0, Math.min(100, Number(part.y ?? 50) || 0)),
+      },
+    ];
+  });
+}
+
+export function getSimulatorBossSummary(
+  parts: readonly SimulatorBossPart[],
+): { hp: number; maxHp: number; alive: number; total: number; percent: number } {
+  const maxHp = parts.reduce((sum, part) => sum + part.maxHp, 0);
+  const hp = parts.reduce((sum, part) => sum + part.hp, 0);
+  return {
+    hp,
+    maxHp,
+    alive: parts.filter((part) => part.hp > 0).length,
+    total: parts.length,
+    percent: maxHp > 0 ? Math.max(0, Math.min(100, (hp / maxHp) * 100)) : 0,
+  };
+}
+
+export function getSimulatorBossPartState(
+  part: Pick<SimulatorBossPart, "hp" | "maxHp">,
+): SimulatorBossPartState {
+  if (part.hp <= 0) return "destroyed";
+  const percent = part.maxHp > 0 ? (part.hp / part.maxHp) * 100 : 0;
+  if (percent <= 30) return "critical";
+  if (percent < 100) return "damaged";
+  return "normal";
+}
+
+export function distributeSimulatorBossDamage(
+  parts: readonly SimulatorBossPart[],
+  damage: number,
+): SimulatorBossPart[] {
+  const clean = normalizeSimulatorBossParts(parts);
+  const summary = getSimulatorBossSummary(clean);
+  const targetHp = Math.max(0, summary.hp - Math.max(0, damage));
+  if (summary.hp <= 0 || targetHp === summary.hp) return clean;
+  if (targetHp <= 0) return clean.map((part) => ({ ...part, hp: 0 }));
+
+  const rows = clean.map((part, index) => {
+    const raw = (part.hp / summary.hp) * targetHp;
+    const hp = Math.max(0, Math.min(part.maxHp, Math.floor(raw)));
+    return { index, part: { ...part, hp }, fraction: raw - hp };
+  });
+  let remaining = targetHp - rows.reduce((sum, row) => sum + row.part.hp, 0);
+  rows.sort((a, b) => b.fraction - a.fraction);
+  for (const row of rows) {
+    if (remaining <= 0) break;
+    if (row.part.hp >= row.part.maxHp) continue;
+    row.part.hp += 1;
+    remaining -= 1;
+  }
+  rows.sort((a, b) => a.index - b.index);
+  return rows.map((row) => row.part);
+}
+
+export function applySimulatorResolutionToEnemy(
+  enemy: SimulatorEnemy,
+  resolution: Pick<
+    SimulatorDamageResolution,
+    "damageApplied" | "targetStat" | "statusesApplied"
+  >,
+  options: { partId?: string; distributeBossDamage?: boolean } = {},
+): SimulatorEnemy {
+  let bossParts = enemy.bossParts;
+  let stats = enemy.stats;
+
+  if (resolution.targetStat === "san") {
+    stats = {
+      ...stats,
+      san: Math.max(0, stats.san - resolution.damageApplied),
+    };
+  } else if (enemy.kind === "boss" && bossParts?.length) {
+    bossParts = options.distributeBossDamage
+      ? distributeSimulatorBossDamage(bossParts, resolution.damageApplied)
+      : bossParts.map((part) =>
+          part.id === options.partId
+            ? { ...part, hp: Math.max(0, part.hp - resolution.damageApplied) }
+            : part,
+        );
+    const summary = getSimulatorBossSummary(bossParts);
+    stats = { ...stats, hp: summary.hp, maxHp: summary.maxHp };
+  } else {
+    stats = {
+      ...stats,
+      hp: Math.max(0, stats.hp - resolution.damageApplied),
+    };
+  }
+
+  return {
+    ...enemy,
+    ...(bossParts ? { bossParts } : {}),
+    stats: applySimulatorStatuses(stats, resolution.statusesApplied),
+  };
+}
+
+export function isSimulatorEnemyDefeated(enemy: SimulatorEnemy): boolean {
+  if (enemy.kind === "boss" && enemy.bossParts?.length) {
+    return (
+      getSimulatorBossSummary(enemy.bossParts).hp <= 0 || enemy.stats.san <= 0
+    );
+  }
+  return enemy.stats.hp <= 0 || enemy.stats.san <= 0;
+}
+
+export function getSimulatorBlastCells(
+  impact: SimulatorBoardCoord,
+  columns: readonly SimulatorBoardColumn[] = SIMULATOR_BOARD_COLUMNS,
+  rows: readonly SimulatorBoardRow[] = SIMULATOR_BOARD_ROWS,
+): SimulatorBoardCoord[] {
+  if (columns.length === 1 && rows.length > 1) {
+    return rows.map((row) => ({ col: columns[0], row }));
+  }
+
+  const impactColumn = columns.indexOf(impact.col);
+  const impactRow = rows.indexOf(impact.row);
+  if (impactColumn < 0 || impactRow < 0) return [];
+
+  const cells: SimulatorBoardCoord[] = [];
+  for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+    const row = rows[impactRow + rowOffset];
+    if (!row) continue;
+    for (let columnOffset = -1; columnOffset <= 1; columnOffset += 1) {
+      const col = columns[impactColumn + columnOffset];
+      if (col) cells.push({ col, row });
+    }
+  }
+  return cells;
 }
 
 export function applySimulatorStatuses(
@@ -892,6 +1212,16 @@ export function resolveSimulatorAttack(
       input,
       "OUT_OF_RANGE",
       "중기관총 사거리는 가로·세로 이동 칸의 합 4칸 이내입니다.",
+      rule,
+      undefined,
+      range,
+    );
+  }
+  if (rule.blast && (range.attackDistance ?? 0) > rule.blast.maxDistance) {
+    return failureResult(
+      input,
+      "OUT_OF_RANGE",
+      `${rule.name}의 착탄 가능 거리를 벗어났습니다.`,
       rule,
       undefined,
       range,

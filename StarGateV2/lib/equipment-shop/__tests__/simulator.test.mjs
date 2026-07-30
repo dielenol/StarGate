@@ -3,9 +3,14 @@ import assert from "node:assert/strict";
 
 import {
   advanceSimulatorTargetRound,
+  applySimulatorResolutionToEnemy,
   applySimulatorStatuses,
+  distributeSimulatorBossDamage,
   getSimulatorEquippedWeapons,
   getSimulatorEffectiveDef,
+  getSimulatorBlastCells,
+  getSimulatorBossPartState,
+  getSimulatorBossSummary,
   getInitialSimulatorResources,
   getSimulatorIncendiaryLineCells,
   getSimulatorKnockbackTarget,
@@ -16,6 +21,7 @@ import {
   isNewSimulatorCadenceCycle,
   resolveSimulatorAreaSpray,
   resolveSimulatorAttack,
+  resolveSimulatorDamageProfile,
   SIMULATOR_STATUS_RULES,
 } from "../simulator.ts";
 
@@ -267,6 +273,153 @@ test("special actions handle knockback, per-target spray rolls, and both fire-zo
     getSimulatorWeaponRule("basic-heavy-machine-gun")?.actions?.[0]?.resourceCost,
     "all",
   );
+});
+
+test("grenade and rocket use canonical ranges, resources, and damage", () => {
+  const grenade = getSimulatorWeaponRule("military-fragment-grenade");
+  const rocket = getSimulatorWeaponRule("rocket-launcher");
+
+  assert.equal(grenade?.price, 120);
+  assert.equal(grenade?.resource?.kind, "consumable");
+  assert.equal(grenade?.blast?.center.amount, 30);
+  assert.equal(grenade?.blast?.splash.amount, 15);
+  assert.equal(rocket?.price, 700);
+  assert.equal(rocket?.resource?.max, 1);
+  assert.equal(rocket?.blast?.center.amount, 45);
+  assert.equal(rocket?.blast?.splash.amount, 20);
+
+  assert.equal(
+    isSimulatorAttackableCell(
+      "military-fragment-grenade",
+      { col: "A", row: 1 },
+      { col: "B", row: 2 },
+    ),
+    true,
+  );
+  assert.equal(
+    isSimulatorAttackableCell(
+      "military-fragment-grenade",
+      { col: "A", row: 1 },
+      { col: "C", row: 2 },
+    ),
+    false,
+  );
+  assert.equal(
+    isSimulatorAttackableCell(
+      "rocket-launcher",
+      { col: "A", row: 1 },
+      { col: "A", row: 5 },
+    ),
+    true,
+  );
+  assert.equal(
+    isSimulatorAttackableCell(
+      "rocket-launcher",
+      { col: "A", row: 1 },
+      { col: "E", row: 5 },
+    ),
+    false,
+  );
+});
+
+test("blast areas cover a clipped 3x3 or the full vertical lane", () => {
+  assert.deepEqual(
+    getSimulatorBlastCells(
+      { col: "A", row: 1 },
+      ["A", "B", "C", "D", "E"],
+      [1, 2, 3, 4, 5],
+    ),
+    [
+      { col: "A", row: 1 },
+      { col: "B", row: 1 },
+      { col: "A", row: 2 },
+      { col: "B", row: 2 },
+    ],
+  );
+  assert.equal(
+    getSimulatorBlastCells(
+      { col: "C", row: 3 },
+      ["A", "B", "C", "D", "E"],
+      [1, 2, 3, 4, 5],
+    ).length,
+    9,
+  );
+  assert.deepEqual(
+    getSimulatorBlastCells({ col: "A", row: 3 }, ["A"], [1, 2, 3, 4, 5]),
+    [
+      { col: "A", row: 1 },
+      { col: "A", row: 2 },
+      { col: "A", row: 3 },
+      { col: "A", row: 4 },
+      { col: "A", row: 5 },
+    ],
+  );
+  assert.deepEqual(
+    getSimulatorBlastCells(
+      { col: "C", row: 1 },
+      ["A", "B", "C", "D", "E"],
+      [1],
+    ),
+    [
+      { col: "B", row: 1 },
+      { col: "C", row: 1 },
+      { col: "D", row: 1 },
+    ],
+  );
+});
+
+test("boss parts derive body HP and receive direct or distributed damage", () => {
+  const parts = [
+    { id: "head", name: "머리", hp: 30, maxHp: 30, note: "", x: 50, y: 20 },
+    { id: "body", name: "몸통", hp: 70, maxHp: 70, note: "", x: 50, y: 60 },
+  ];
+  assert.deepEqual(getSimulatorBossSummary(parts), {
+    hp: 100,
+    maxHp: 100,
+    alive: 2,
+    total: 2,
+    percent: 100,
+  });
+  assert.equal(getSimulatorBossPartState(parts[0]), "normal");
+  assert.deepEqual(
+    distributeSimulatorBossDamage(parts, 20).map((part) => part.hp),
+    [24, 56],
+  );
+
+  const boss = {
+    id: "boss",
+    kind: "boss",
+    name: "대형 훈련 표적",
+    position: { col: "C", row: 3 },
+    stats: {
+      hp: 100,
+      maxHp: 100,
+      san: 40,
+      maxSan: 40,
+      def: 2,
+      statuses: [],
+      statusRounds: {},
+    },
+    bossParts: parts,
+  };
+  const physical = resolveSimulatorDamageProfile(
+    getSimulatorWeaponRule("basic-pistol").ranges.mid,
+    2,
+  );
+  const direct = applySimulatorResolutionToEnemy(boss, physical, {
+    partId: "head",
+  });
+  assert.equal(direct.bossParts[0].hp, 27);
+  assert.equal(direct.stats.hp, 97);
+
+  const blast = resolveSimulatorDamageProfile(
+    getSimulatorWeaponRule("military-fragment-grenade").blast.center,
+    2,
+  );
+  const distributed = applySimulatorResolutionToEnemy(boss, blast, {
+    distributeBossDamage: true,
+  });
+  assert.equal(getSimulatorBossSummary(distributed.bossParts).hp, 72);
 });
 
 test("firearms use distance along a shared row or column", () => {
