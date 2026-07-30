@@ -1,226 +1,192 @@
 "use client";
 
-import {
-  type CSSProperties,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 
-import type { TowaskiLicenseV2GameProps } from "./TowaskiLicenseV2Game";
+import {
+  TOWASKI_LICENSE_V3_SONIC_GOOD_MS,
+  type TowaskiV3SonicProgress,
+  type TowaskiV3SonicScenario,
+} from "@/lib/equipment-shop/license-test-v3";
+
+import type { TowaskiLicenseV3GameProps } from "./TowaskiLicenseV3Game";
+import { playTowaskiRhythmCue } from "./towaski-license-audio";
 import styles from "./TowaskiLicenseV2.module.css";
+
+const WAVEFORM_HEIGHTS = Array.from(
+  { length: 32 },
+  (_, index) => 18 + ((index * 17) % 64),
+);
 
 export function TowaskiSonicGame({
   challenge,
   disabled,
   onResolve,
-}: TowaskiLicenseV2GameProps) {
-  const [frequencyHz, setFrequencyHz] = useState(350);
-  const [output, setOutput] = useState(0.5);
-  const [width, setWidth] = useState(0.4);
-  const [pulseMs, setPulseMs] = useState(0);
-  const pulseStartedAtRef = useRef<number | null>(null);
+}: TowaskiLicenseV3GameProps) {
+  const scenario = challenge.scenario as TowaskiV3SonicScenario;
+  const progress = challenge.progress as TowaskiV3SonicProgress;
+  const startedAtRef = useRef(0);
+  const submittedRef = useRef(false);
+  const tapsRef = useRef<number[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const soundedBeatsRef = useRef(new Set<number>());
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [taps, setTaps] = useState<number[]>([]);
 
-  const scenario =
-    challenge.mode === "sonic" && challenge.scenario.mode === "sonic"
-      ? challenge.scenario
-      : null;
-  const progress =
-    challenge.progress.mode === "sonic" ? challenge.progress : null;
+  const intervalMs = 60_000 / scenario.bpm;
+  const finalBeatMs =
+    scenario.beatStartMs + intervalMs * (scenario.beatKinds.length - 1);
 
-  const alignment = useMemo(() => {
-    if (!scenario) return 0;
-    return Math.max(
-      0,
-      1 -
-        Math.abs(frequencyHz - scenario.targetFrequencyHz) /
-          scenario.targetFrequencyHz,
-    );
-  }, [frequencyHz, scenario]);
+  useEffect(() => {
+    startedAtRef.current = performance.now();
+    submittedRef.current = false;
+    tapsRef.current = [];
+    soundedBeatsRef.current = new Set();
+    const timer = window.setInterval(() => {
+      const elapsed = Math.round(performance.now() - startedAtRef.current);
+      setElapsedMs(elapsed);
+      scenario.beatKinds.forEach((kind, index) => {
+        const beatMs = scenario.beatStartMs + index * intervalMs;
+        if (
+          elapsed >= beatMs &&
+          !soundedBeatsRef.current.has(index)
+        ) {
+          soundedBeatsRef.current.add(index);
+          const context = audioContextRef.current;
+          if (context) playTowaskiRhythmCue(context, kind);
+        }
+      });
+      if (
+        elapsed >= finalBeatMs + TOWASKI_LICENSE_V3_SONIC_GOOD_MS + 120 &&
+        !submittedRef.current
+      ) {
+        submittedRef.current = true;
+        window.clearInterval(timer);
+        onResolve({
+          mode: "sonic",
+          tapsMs: tapsRef.current,
+          elapsedMs: elapsed,
+        });
+      }
+    }, 20);
+    return () => window.clearInterval(timer);
+  }, [
+    challenge.step,
+    finalBeatMs,
+    intervalMs,
+    onResolve,
+    scenario.beatKinds,
+    scenario.beatStartMs,
+  ]);
 
-  if (!scenario || !progress) return null;
+  useEffect(
+    () => () => {
+      const context = audioContextRef.current;
+      if (context && context.state !== "closed") void context.close();
+    },
+    [],
+  );
 
-  const exposure = output * width;
-  const frequencyDeviation =
-    Math.abs(frequencyHz - scenario.targetFrequencyHz) /
-    scenario.targetFrequencyHz;
-  const frequencyReady = frequencyDeviation <= 0.05;
-  const outputReady =
-    output >= scenario.outputBand.min && output <= scenario.outputBand.max;
-  const widthReady =
-    width >= scenario.widthBand.min && width <= scenario.widthBand.max;
-  const loadSafe = exposure <= scenario.protectionThreshold;
-  const pulseReady = pulseMs >= 600 && pulseMs <= 1_500;
+  if (challenge.mode !== "sonic" || scenario.mode !== "sonic") return null;
 
-  function startPulse() {
-    pulseStartedAtRef.current = performance.now();
-    setPulseMs(0);
-  }
-
-  function finishPulse() {
-    if (pulseStartedAtRef.current === null) return;
-    setPulseMs(Math.round(performance.now() - pulseStartedAtRef.current));
-    pulseStartedAtRef.current = null;
+  function tap() {
+    if (disabled || submittedRef.current || tapsRef.current.length >= 8) return;
+    const elapsed = Math.round(performance.now() - startedAtRef.current);
+    if (!audioContextRef.current) {
+      const audioWindow = window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const AudioContextConstructor =
+        audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
+      if (AudioContextConstructor) {
+        try {
+          audioContextRef.current = new AudioContextConstructor();
+        } catch {
+          // Visual rhythm timing remains fully playable without audio.
+        }
+      }
+    }
+    tapsRef.current = [...tapsRef.current, elapsed];
+    setTaps(tapsRef.current);
   }
 
   return (
     <div className={`${styles.game} ${styles["game--sonic"]}`}>
       <div className={styles.hud}>
-        <span>
-          RESONANCE <strong>{progress.successes} / 4</strong>
-        </span>
-        <span>
-          ALIGN <strong>{Math.round(alignment * 100)}%</strong>
-        </span>
-        <span>
-          EXPOSURE <strong>{Math.round(exposure * 100)}</strong>
-        </span>
-        <span>
-          PULSE <strong>{challenge.step + 1} / 4</strong>
-        </span>
+        <span>STAGE <strong>{challenge.step + 1} / 4</strong></span>
+        <span>BPM <strong>{scenario.bpm}</strong></span>
+        <span>CLEAR <strong>{progress.successfulStages} / 4</strong></span>
+        <span>PROTECTED <strong>{progress.protectedHits}</strong></span>
       </div>
-      <div className={styles.field} aria-label="음파 공진 보정 화면">
+      <div
+        className={`${styles.field} ${styles.rhythmField}`}
+        role="application"
+        tabIndex={0}
+        aria-label="음파 8박 리듬 시험"
+        onKeyDown={(event) => {
+          if ((event.key === " " || event.key === "Enter") && !event.repeat) {
+            event.preventDefault();
+            tap();
+          }
+        }}
+      >
         <div className={styles.grid} aria-hidden />
         <div className={styles.coachmark}>
-          <strong>맞출 것</strong>
-          사람이나 표적을 쏘는 시험이 아닙니다. 아래 세 슬라이더를 제시된
-          숫자 구간에 맞추고 안전 부하를 초록으로 만든 뒤 펄스를 방출하십시오.
+          <strong>6 TARGET + 2 PROTECTED</strong>
+          TARGET 박자만 Space 또는 아래 패드로 입력하십시오. 보호 박자
+          입력은 즉시 안전 위반입니다.
         </div>
-        <div className={styles.wave} aria-hidden>
-          {Array.from({ length: 7 }, (_, index) => (
-            <span
-              key={index}
-              style={
-                {
-                  "--wave-strength": Math.max(
-                    0.08,
-                    alignment - Math.abs(index - 3) * 0.08,
-                  ),
-                } as CSSProperties
-              }
-            />
-          ))}
+        <div className={styles.rhythmTrack}>
+          <div className={styles.rhythmWaveform} aria-hidden>
+            {WAVEFORM_HEIGHTS.map((height, index) => (
+              <span key={index} style={{ height: `${height}%` }} />
+            ))}
+          </div>
+          {scenario.beatKinds.map((kind, index) => {
+            const beatMs = scenario.beatStartMs + index * intervalMs;
+            const delta = beatMs - elapsedMs;
+            return (
+              <span
+                key={`${kind}-${index}`}
+                className={[
+                  styles.rhythmBeat,
+                  styles[`rhythmBeat--${kind}`],
+                  Math.abs(delta) <= TOWASKI_LICENSE_V3_SONIC_GOOD_MS
+                    ? styles["rhythmBeat--window"]
+                    : "",
+                  delta < -TOWASKI_LICENSE_V3_SONIC_GOOD_MS
+                    ? styles["rhythmBeat--past"]
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                style={
+                  {
+                    "--beat-position": Math.max(
+                      0,
+                      Math.min(100, 50 + delta / 20),
+                    ),
+                  } as CSSProperties
+                }
+              >
+                {kind === "target" ? "TARGET" : "PROTECTED"}
+              </span>
+            );
+          })}
+          <span className={styles.rhythmStrikeLine} aria-hidden />
         </div>
-        <span
-          className={`${styles.zone} ${styles["zone--civilian"]}`}
-          style={
-            {
-              "--zone-x": 0.82,
-              "--zone-y": 0.7,
-              "--zone-radius": 0.11,
-              opacity:
-                exposure > scenario.protectionThreshold ? 1 : 0.35,
-            } as CSSProperties
-          }
-          aria-hidden
-        >
-          SAFE
+        <span className={styles.statusBanner}>
+          PERFECT ±90ms · GOOD ±170ms · INPUT {taps.length}/8
         </span>
       </div>
       <div className={styles.controls}>
-        <p className={styles.hint}>
-          기준 공진 <strong>{scenario.targetFrequencyHz}Hz</strong> · 출력{" "}
-          {Math.round(scenario.outputBand.min * 100)}–
-          {Math.round(scenario.outputBand.max * 100)} · 파동 폭{" "}
-          {Math.round(scenario.widthBand.min * 100)}–
-          {Math.round(scenario.widthBand.max * 100)}
-        </p>
-        <div className={styles.checklist} aria-label="음파 방출 준비 조건">
-          <span className={frequencyReady ? styles["checklist--ready"] : ""}>
-            ① 주파수 ±5% {frequencyReady ? "✓" : ""}
-          </span>
-          <span className={outputReady ? styles["checklist--ready"] : ""}>
-            ② 출력 허용 구간 {outputReady ? "✓" : ""}
-          </span>
-          <span className={widthReady ? styles["checklist--ready"] : ""}>
-            ③ 파동 폭 허용 구간 {widthReady ? "✓" : ""}
-          </span>
-          <span
-            className={
-              loadSafe
-                ? styles["checklist--ready"]
-                : styles["checklist--danger"]
-            }
-          >
-            ④ 안전 부하 {Math.round(exposure * 100)} /{" "}
-            {Math.round(scenario.protectionThreshold * 100)}
-          </span>
-        </div>
-        <div className={styles.controlGrid}>
-          <label className={styles.control}>
-            주파수 <strong>{frequencyHz}Hz</strong>
-            <input
-              type="range"
-              min="80"
-              max="1200"
-              step="5"
-              value={frequencyHz}
-              disabled={disabled}
-              onChange={(event) => setFrequencyHz(Number(event.target.value))}
-            />
-          </label>
-          <label className={styles.control}>
-            출력 <strong>{Math.round(output * 100)}</strong>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round(output * 100)}
-              disabled={disabled}
-              onChange={(event) => setOutput(Number(event.target.value) / 100)}
-            />
-          </label>
-          <label className={styles.control}>
-            파동 폭 <strong>{Math.round(width * 100)}</strong>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round(width * 100)}
-              disabled={disabled}
-              onChange={(event) => setWidth(Number(event.target.value) / 100)}
-            />
-          </label>
-        </div>
         <div className={styles.actionRow}>
           <button
             type="button"
-            className={styles.secondaryAction}
-            disabled={disabled}
-            onPointerDown={startPulse}
-            onPointerUp={finishPulse}
-            onPointerCancel={finishPulse}
-            onKeyDown={(event) => {
-              if (event.key === " " && !event.repeat) startPulse();
-            }}
-            onKeyUp={(event) => {
-              if (event.key === " ") finishPulse();
-            }}
-          >
-            길게 눌러 출력 충전
-          </button>
-          <button
-            type="button"
             className={styles.action}
-            disabled={
-              disabled ||
-              !frequencyReady ||
-              !outputReady ||
-              !widthReady ||
-              !loadSafe ||
-              !pulseReady
-            }
-            onClick={() =>
-              onResolve({
-                mode: "sonic",
-                frequencyHz,
-                output,
-                width,
-                pulseMs,
-              })
-            }
+            disabled={disabled}
+            onClick={tap}
           >
-            펄스 방출 · {pulseMs}ms / 600–1500ms
+            TARGET PULSE / SPACE
           </button>
         </div>
       </div>

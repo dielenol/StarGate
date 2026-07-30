@@ -1,292 +1,226 @@
 "use client";
 
+import Image from "next/image";
 import {
   type CSSProperties,
   type PointerEvent,
-  useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
 
-import type { TowaskiTimedPointerSample } from "@/lib/equipment-shop/license-test-v2";
+import {
+  computeTowaskiHeavyImpact,
+  type TowaskiLicenseV3Scenario,
+  type TowaskiV3RangeProgress,
+} from "@/lib/equipment-shop/license-test-v3";
 
-import type { TowaskiLicenseV2GameProps } from "./TowaskiLicenseV2Game";
+import type { TowaskiLicenseV3GameProps } from "./TowaskiLicenseV3Game";
 import styles from "./TowaskiLicenseV2.module.css";
+
+type HeavyScenario = Extract<
+  TowaskiLicenseV3Scenario,
+  { mode: "firearm" | "precision" | "heavy" }
+>;
+
+function clampAim(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
 
 export function TowaskiHeavyGame({
   challenge,
   disabled,
   onResolve,
-}: TowaskiLicenseV2GameProps) {
-  const [aim, setAim] = useState({ x: 0.5, y: 0.62 });
-  const [firing, setFiring] = useState(false);
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [burstMs, setBurstMs] = useState(0);
-  const aimRef = useRef(aim);
-  const firingRef = useRef(false);
-  const samplesRef = useRef<TowaskiTimedPointerSample[]>([]);
+}: TowaskiLicenseV3GameProps) {
+  const scenario = challenge.scenario as HeavyScenario;
+  const progress = challenge.progress as TowaskiV3RangeProgress;
   const startedAtRef = useRef(0);
-  const burstStartedAtRef = useRef<number | null>(null);
   const submittedRef = useRef(false);
-
-  const scenario =
-    challenge.mode === "heavy" && challenge.scenario.mode === "heavy"
-      ? challenge.scenario
-      : null;
-  const progress =
-    challenge.progress.mode === "heavy" ? challenge.progress : null;
-
-  const submit = useCallback(() => {
-    if (submittedRef.current || !scenario) return;
-    submittedRef.current = true;
-    const samples =
-      samplesRef.current.length > 0
-        ? samplesRef.current
-        : [{ t: scenario.durationMs, x: aimRef.current.x, y: aimRef.current.y, active: false }];
-    onResolve({ mode: "heavy", samples });
-  }, [onResolve, scenario]);
+  const baseAimRef = useRef({ x: 0.5, y: 0.5 });
+  const [impact, setImpact] = useState({ x: 0.5, y: 0.5 });
+  const [elapsedMs, setElapsedMs] = useState(0);
 
   useEffect(() => {
-    if (!scenario || disabled) return;
     startedAtRef.current = performance.now();
-    samplesRef.current = [];
     submittedRef.current = false;
-    firingRef.current = false;
-    burstStartedAtRef.current = null;
     const timer = window.setInterval(() => {
       const elapsed = Math.min(
-        scenario.durationMs,
+        scenario.windowMs,
         Math.round(performance.now() - startedAtRef.current),
       );
-      const point = aimRef.current;
-      samplesRef.current.push({
-        t: elapsed,
-        x: point.x,
-        y: point.y,
-        active: firingRef.current,
-      });
       setElapsedMs(elapsed);
-      if (burstStartedAtRef.current !== null) {
-        setBurstMs(Math.round(performance.now() - burstStartedAtRef.current));
-      }
-      if (elapsed >= scenario.durationMs) {
+      setImpact(computeTowaskiHeavyImpact(scenario, baseAimRef.current, elapsed));
+      if (elapsed >= scenario.windowMs) {
         window.clearInterval(timer);
-        submit();
+        if (!submittedRef.current) {
+          submittedRef.current = true;
+          onResolve({
+            mode: "heavy",
+            fired: false,
+            shots: 0,
+            elapsedMs: scenario.windowMs,
+          });
+        }
       }
-    }, 100);
-    return () => {
-      window.clearInterval(timer);
-      firingRef.current = false;
-      burstStartedAtRef.current = null;
-    };
-  }, [challenge.step, disabled, scenario, submit]);
+    }, 40);
+    return () => window.clearInterval(timer);
+  }, [challenge.step, onResolve, scenario]);
 
-  if (!scenario || !progress) return null;
+  if (challenge.mode !== "heavy" || scenario.mode !== "heavy") return null;
 
-  const elapsedRatio = Math.min(1, elapsedMs / scenario.durationMs);
-  const effectiveAim = {
-    x: aim.x + scenario.recoil.x * elapsedRatio,
-    y: aim.y + scenario.recoil.y * elapsedRatio,
-  };
-  const civilianActive =
-    elapsedMs >= scenario.civilianWindow.startMs &&
-    elapsedMs <= scenario.civilianWindow.endMs;
-
-  function setAimPoint(next: { x: number; y: number }) {
-    aimRef.current = next;
-    setAim(next);
-  }
-
-  function updateAim(event: PointerEvent<HTMLDivElement>) {
+  function pointFromEvent(event: PointerEvent<HTMLDivElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
-    setAimPoint({
+    return {
       x: Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)),
       y: Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height)),
+    };
+  }
+
+  function aim(event: PointerEvent<HTMLDivElement>) {
+    const base = pointFromEvent(event);
+    baseAimRef.current = base;
+    const elapsed = Math.round(performance.now() - startedAtRef.current);
+    setImpact(computeTowaskiHeavyImpact(scenario, base, elapsed));
+  }
+
+  function fire(event: PointerEvent<HTMLDivElement>) {
+    if (disabled || submittedRef.current) return;
+    const base = pointFromEvent(event);
+    const elapsed = Math.round(performance.now() - startedAtRef.current);
+    baseAimRef.current = base;
+    submittedRef.current = true;
+    onResolve({
+      mode: "heavy",
+      fired: true,
+      shots: 1,
+      aimX: base.x,
+      aimY: base.y,
+      elapsedMs: elapsed,
     });
   }
 
-  function beginFire() {
-    if (firingRef.current) return;
-    firingRef.current = true;
-    burstStartedAtRef.current = performance.now();
-    setFiring(true);
+  function fireAtCurrentAim() {
+    if (disabled || submittedRef.current) return;
+    const elapsed = Math.round(performance.now() - startedAtRef.current);
+    submittedRef.current = true;
+    onResolve({
+      mode: "heavy",
+      fired: true,
+      shots: 1,
+      aimX: baseAimRef.current.x,
+      aimY: baseAimRef.current.y,
+      elapsedMs: elapsed,
+    });
   }
 
-  function ceaseFire() {
-    firingRef.current = false;
-    burstStartedAtRef.current = null;
-    setFiring(false);
-    setBurstMs(0);
+  function moveBaseAim(deltaX: number, deltaY: number) {
+    const base = {
+      x: clampAim(baseAimRef.current.x + deltaX),
+      y: clampAim(baseAimRef.current.y + deltaY),
+    };
+    const elapsed = Math.round(performance.now() - startedAtRef.current);
+    baseAimRef.current = base;
+    setImpact(computeTowaskiHeavyImpact(scenario, base, elapsed));
+  }
+
+  function noFire() {
+    if (disabled || submittedRef.current || elapsedMs < 120) return;
+    submittedRef.current = true;
+    onResolve({
+      mode: "heavy",
+      fired: false,
+      shots: 0,
+      elapsedMs,
+    });
   }
 
   return (
     <div className={`${styles.game} ${styles["game--heavy"]}`}>
       <div className={styles.hud}>
-        <span>
-          SUPPRESS <strong>{progress.neutralized} / 4</strong>
-        </span>
-        <span>
-          HEAT <strong>{Math.min(100, Math.round((burstMs / 1_800) * 100))}%</strong>
-        </span>
-        <span>
-          NO FIRE <strong>{progress.civilianHits}</strong>
-        </span>
-        <span>
-          WAVE <strong>{challenge.step + 1} / 4</strong>
-        </span>
+        <span>HIT <strong>{progress.hostileHits} / 10</strong></span>
+        <span>NO FIRE <strong>{progress.civilianHits}</strong></span>
+        <span>SHOTS <strong>{progress.shots}</strong></span>
+        <span>ROUND <strong>{challenge.step + 1} / 12</strong></span>
       </div>
       <div
-        className={styles.field}
+        className={`${styles.field} ${styles.heavyRange}`}
         role="application"
         tabIndex={0}
-        aria-label="중화기 반동 및 과열 제어 구역"
-        onPointerDown={(event) => {
-          event.currentTarget.setPointerCapture(event.pointerId);
-          updateAim(event);
-          beginFire();
-        }}
-        onPointerMove={(event) => {
-          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            updateAim(event);
+        aria-label="결정론적 조준 흔들림 중화기 시험장"
+        onPointerMove={aim}
+        onPointerDown={fire}
+        onKeyDown={(event) => {
+          const movement: Partial<Record<string, readonly [number, number]>> = {
+            ArrowUp: [0, -0.025],
+            ArrowRight: [0.025, 0],
+            ArrowDown: [0, 0.025],
+            ArrowLeft: [-0.025, 0],
+          };
+          const delta = movement[event.key];
+          if (delta) {
+            event.preventDefault();
+            moveBaseAim(delta[0], delta[1]);
+            return;
+          }
+          if (
+            (event.key === " " || event.key === "Enter") &&
+            !event.repeat
+          ) {
+            event.preventDefault();
+            fireAtCurrentAim();
           }
         }}
-        onPointerUp={(event) => {
-          updateAim(event);
-          ceaseFire();
-        }}
-        onPointerCancel={ceaseFire}
       >
         <div className={styles.grid} aria-hidden />
         <div className={styles.coachmark}>
-          <strong>점사 훈련</strong>
-          조준점을 ARMOR에 끌어 둔 채 누르면 사격합니다. 반동으로 밀리는
-          조준점을 계속 보정하고 1.8초 전에 손을 떼어 냉각하십시오.
+          <strong>80ms 결정 패턴 / 프레임 보간</strong>
+          시스템 커서는 숨겨집니다. 마우스 또는 방향키로 기본 조준점을
+          움직이고, 흔들리는 전자 조준점이 THREAT에 닿을 때 단발 사격하십시오.
         </div>
         <span
-          className={`${styles.zone} ${styles["zone--hostile"]}`}
+          className={styles.targetButton}
           style={
             {
-              "--zone-x": scenario.target.x,
-              "--zone-y": scenario.target.y,
-              "--zone-radius": scenario.target.radius,
+              "--target-x": scenario.x,
+              "--target-y": scenario.y,
+              "--v3-target-scale": scenario.visibleScale,
             } as CSSProperties
           }
           aria-hidden
         >
-          ARMOR
-        </span>
-        <span
-          className={`${styles.zone} ${styles["zone--civilian"]}`}
-          style={
-            {
-              "--zone-x": scenario.civilianZone.x,
-              "--zone-y": scenario.civilianZone.y,
-              "--zone-radius": scenario.civilianZone.radius,
-              opacity: civilianActive ? 1 : 0.25,
-            } as CSSProperties
-          }
-          aria-hidden
-        >
-          {civilianActive ? "CROSSING" : "STANDBY"}
+          <Image
+            src="/assets/equipment-shop/training-target.png"
+            width={226}
+            height={438}
+            alt=""
+            draggable={false}
+            unoptimized
+          />
+          <span>{scenario.kind === "hostile" ? "THREAT" : "NO FIRE"}</span>
         </span>
         <span
           className={styles.reticle}
           style={
             {
-              "--aim-x": effectiveAim.x,
-              "--aim-y": effectiveAim.y,
+              "--aim-x": impact.x,
+              "--aim-y": impact.y,
             } as CSSProperties
           }
           aria-hidden
         />
-        <span
-          className={[
-            styles.statusBanner,
-            civilianActive ? styles["statusBanner--danger"] : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          aria-live="assertive"
-        >
-          {civilianActive
-            ? "CROSSING — 즉시 사격 중지"
-            : firing
-              ? `점사 ${burstMs}ms / 1800ms`
-              : "ARMOR 조준 · 짧은 점사 준비"}
+        <span className={styles.statusBanner}>
+          JITTER ±8% X / ±10% Y · {Math.max(0, 3_000 - elapsedMs)}ms
         </span>
       </div>
       <div className={styles.controls}>
-        <p className={styles.hint}>
-          <strong>화면을 누르고 끌어 반동을 억제</strong>하십시오. 한 번에
-          1.2–1.6초씩 점사하고, 청색 CROSSING이 켜진 동안은 냉각
-          구간으로 사용하십시오.
-        </p>
-        <div className={styles.controlGrid}>
-          <label className={styles.control}>
-            수평 반동 보정 <strong>{Math.round(aim.x * 100)}</strong>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round(aim.x * 100)}
-              disabled={disabled}
-              onChange={(event) =>
-                setAimPoint({ ...aimRef.current, x: Number(event.target.value) / 100 })
-              }
-            />
-          </label>
-          <label className={styles.control}>
-            수직 반동 보정 <strong>{Math.round(aim.y * 100)}</strong>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round(aim.y * 100)}
-              disabled={disabled}
-              onChange={(event) =>
-                setAimPoint({ ...aimRef.current, y: Number(event.target.value) / 100 })
-              }
-            />
-          </label>
-          <div className={styles.control}>
-            점사 제한 <strong>1.8초</strong>
-            <div className={styles.meter} aria-label={`과열 ${Math.round((burstMs / 1_800) * 100)}%`}>
-              <span
-                style={
-                  {
-                    "--meter-value": Math.min(
-                      100,
-                      Math.round((burstMs / 1_800) * 100),
-                    ),
-                  } as CSSProperties
-                }
-              />
-            </div>
-          </div>
-        </div>
         <div className={styles.actionRow}>
           <button
             type="button"
-            className={styles.action}
-            disabled={disabled}
-            onPointerDown={beginFire}
-            onPointerUp={ceaseFire}
-            onPointerCancel={ceaseFire}
-            onKeyDown={(event) => {
-              if (
-                (event.key === " " || event.key === "Enter") &&
-                !event.repeat
-              ) {
-                beginFire();
-              }
-            }}
-            onKeyUp={(event) => {
-              if (event.key === " " || event.key === "Enter") ceaseFire();
-            }}
-            aria-pressed={firing}
+            className={styles.secondaryAction}
+            disabled={disabled || elapsedMs < 120}
+            onClick={noFire}
           >
-            {firing ? "점사 중 — 떼서 냉각" : "길게 눌러 점사"}
+            NO FIRE / 사격 보류
           </button>
         </div>
       </div>

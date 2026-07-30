@@ -76,3 +76,21 @@ export function playTowaskiLicenseModeSound(
   oscillator.start(now);
   oscillator.stop(now + config.duration + 0.02);
 }
+
+export function playTowaskiRhythmCue(
+  context: AudioContext,
+  kind: "target" | "protected",
+): void {
+  const now = context.currentTime;
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = kind === "target" ? "sine" : "square";
+  oscillator.frequency.setValueAtTime(kind === "target" ? 720 : 180, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.09, now + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.1);
+}

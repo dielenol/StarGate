@@ -67,8 +67,8 @@ test("advanced modes use equipment-specific start and failure dialogue", () => {
     reasons: ["backblast"],
   });
 
-  assert.match(sonicStart, /공진|출력|펄스/);
-  assert.match(explosiveFailure, /폭발|후폭풍|기폭/);
+  assert.match(sonicStart, /리듬|박자|적성|보호/);
+  assert.match(explosiveFailure, /위험품|격리|검수/);
 });
 
 test("specialist modes rotate mode-specific coaching lines", () => {
@@ -83,7 +83,7 @@ test("specialist modes rotate mode-specific coaching lines", () => {
 
   assert.ok(new Set(sonicLines).size > 1);
   for (const line of sonicLines) {
-    assert.match(line, /Hz|공진|출력|펄스|계기/);
+    assert.match(line, /리듬|박자|적성|보호|퍼펙트|굿/);
   }
 });
 
@@ -101,6 +101,19 @@ test("mode-specific retry briefing repeats the actual controls", () => {
     attempt: 2,
   });
 
-  assert.match(sonicBriefing, /Hz|출력|폭|부하/);
-  assert.match(flameBriefing, /경로|소각|손을 떼/);
+  assert.match(sonicBriefing, /박자|적성|보호|단계/);
+  assert.match(flameBriefing, /경로|세 칸|가로|세로|직선/);
+});
+
+test("sonic protected-hit failure stays in rhythm safety dialogue", () => {
+  const line = getTowaskiQualificationDialogueLine({
+    type: "failed",
+    difficulty: "expert",
+    mode: "sonic",
+    attempt: 1,
+    reasons: ["protected_hit"],
+  });
+
+  assert.match(line, /보호 박자|TARGET|PROTECTED|파형/);
+  assert.doesNotMatch(line, /축소 표적|사분의 일|풍향|호흡/);
 });

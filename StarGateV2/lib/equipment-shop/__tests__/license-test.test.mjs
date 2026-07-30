@@ -10,7 +10,7 @@ import {
   TOWASKI_LICENSE_TEST_DIFFICULTIES,
 } from "../license-test.ts";
 import { TOWASKI_LICENSE_DEFINITIONS } from "../licenses.ts";
-import { TOWASKI_LICENSE_PROGRAM_VERSION } from "../license-test-v2.ts";
+import { TOWASKI_LICENSE_PROGRAM_VERSION_V3 } from "../license-test-v3.ts";
 
 test("passes a clean basic firearm qualification result", () => {
   const result = evaluateTowaskiBasicLicenseTest({
@@ -156,7 +156,7 @@ test("license programs fix progression and server-side difficulty", () => {
   assert.equal(basic.tier, "basic");
   assert.equal(basic.difficulty, "basic");
   assert.equal(basic.mode, "firearm");
-  assert.equal(basic.programVersion, TOWASKI_LICENSE_PROGRAM_VERSION);
+  assert.equal(basic.programVersion, TOWASKI_LICENSE_PROGRAM_VERSION_V3);
   assert.equal(basic.requiresBasicLicense, false);
   assert.equal(precision.tier, "intermediate");
   assert.equal(precision.difficulty, "standard");

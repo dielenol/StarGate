@@ -232,7 +232,7 @@
 .targetButton {
   position: absolute;
   width: 116px;
-  min-height: 180px;
+  height: 180px;
   left: calc(var(--target-x) * 100%);
   top: calc(var(--target-y) * 100%);
   translate: -50% -50%;
@@ -240,6 +240,7 @@
   background: transparent;
   color: #f2df9a;
   cursor: crosshair;
+  pointer-events: none;
 }
 
 .targetButton:focus-visible {
@@ -248,18 +249,32 @@
 }
 
 .targetButton img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 100%;
   height: 150px;
+  translate: -50% -50%;
+  scale: var(--v3-target-scale, 1);
   object-fit: contain;
   filter: sepia(0.3) contrast(1.15);
 }
 
 .targetButton span {
-  display: block;
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 42px);
+  translate: -50% 0;
+  min-width: max-content;
   padding: 5px 8px;
   background: rgb(0 0 0 / 72%);
   font-family: var(--font-mono);
   font-size: 14px;
+}
+
+.game--firearm .targetButton span,
+.game--heavy .targetButton span {
+  top: calc(50% + 78px);
 }
 
 .controls {
@@ -468,6 +483,274 @@
   min-height: 72px;
 }
 
+.precisionRange {
+  cursor: crosshair;
+}
+
+.heavyRange {
+  cursor: none;
+}
+
+.rhythmField {
+  display: grid;
+  place-items: center;
+}
+
+.rhythmTrack {
+  position: relative;
+  width: min(860px, calc(100% - 32px));
+  height: 180px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  background: rgb(2 9 11 / 72%);
+  overflow: hidden;
+}
+
+.rhythmWaveform {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-inline: 10px;
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+.rhythmWaveform span {
+  flex: 1;
+  min-width: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--mode-accent),
+    transparent
+  );
+}
+
+.rhythmBeat {
+  position: absolute;
+  left: calc(var(--beat-position) * 1%);
+  top: 50%;
+  width: 84px;
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  translate: -50% -50%;
+  border: 2px solid #6ac7b3;
+  background: rgb(35 118 98 / 72%);
+  color: #d9fff4;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.rhythmBeat--protected {
+  border-color: #70a9d6;
+  background: rgb(32 81 119 / 78%);
+  color: #d9efff;
+}
+
+.rhythmBeat--window {
+  box-shadow: 0 0 24px currentColor;
+}
+
+.rhythmBeat--past {
+  opacity: 0.18;
+}
+
+.rhythmStrikeLine {
+  position: absolute;
+  left: 50%;
+  inset-block: 0;
+  width: 2px;
+  background: #f7e08c;
+  box-shadow: 0 0 16px #f7e08c;
+}
+
+.manifestField {
+  overflow: auto;
+  touch-action: pan-y;
+}
+
+.manifestBins {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 86px 16px 0;
+}
+
+.manifestBin {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed rgb(255 255 255 / 28%);
+  background: rgb(3 10 12 / 88%);
+  color: #cbd8d4;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.manifestBin span {
+  min-width: 26px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  text-align: center;
+}
+
+.manifestList {
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+.manifestItem {
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 0.55fr)
+    minmax(260px, 1fr)
+    minmax(320px, 1.2fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(3 10 12 / 88%);
+}
+
+.manifestItem header {
+  display: grid;
+  gap: 5px;
+}
+
+.manifestItem header strong {
+  color: var(--mode-accent);
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+
+.manifestItem header span {
+  color: #c2cbc8;
+  font-size: 14px;
+}
+
+.inspectionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.inspectionGrid div {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid rgb(255 255 255 / 9%);
+  background: rgb(255 255 255 / 3%);
+}
+
+.inspectionGrid dt {
+  color: #70817e;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.inspectionGrid dd {
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: #e4e9e7;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flameGridField {
+  display: grid;
+  place-items: center;
+  padding: 86px 16px 58px;
+}
+
+.flameGrid {
+  width: min(720px, 100%);
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.flameCell {
+  aspect-ratio: 1;
+  min-width: 0;
+  border: 1px solid #415158;
+  background: #101b1f;
+  color: #82908e;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.flameCell span {
+  display: block;
+  font-size: clamp(7px, 1.1vw, 11px);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.flameCell--hostile {
+  border-color: #db664e;
+  background: rgb(132 44 29 / 50%);
+  color: #ffb09f;
+}
+
+.flameCell--ally,
+.flameCell--retreat {
+  border-color: #69a9d0;
+  background: rgb(29 75 108 / 55%);
+  color: #c7eaff;
+}
+
+.flameCell--fuel {
+  border-color: #e1b654;
+  background: rgb(116 83 19 / 55%);
+  color: #ffe1a0;
+}
+
+.flameCell--selected {
+  outline: 3px solid #ff744d;
+  outline-offset: -4px;
+  box-shadow: inset 0 0 18px rgb(255 94 54 / 72%);
+}
+
+.flamePreview {
+  width: min(720px, 100%);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.flamePreview > * {
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  background: rgb(2 9 11 / 82%);
+  text-align: center;
+}
+
+.flamePreview strong {
+  color: var(--mode-accent);
+}
+
+.directionGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
 @media (max-width: 800px) {
   .game {
     min-height: 620px;
@@ -487,6 +770,44 @@
   .choiceGrid,
   .launchLaneDiagram {
     grid-template-columns: 1fr;
+  }
+
+  .manifestItem {
+    grid-template-columns: 1fr;
+  }
+
+  .manifestBins {
+    padding-top: 12px;
+  }
+
+  .manifestBin {
+    display: grid;
+    justify-items: center;
+    padding-inline: 4px;
+    font-size: 9px;
+    text-align: center;
+  }
+
+  .manifestList {
+    padding-top: 12px;
+  }
+
+  .manifestItem .choiceGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .manifestItem .choice {
+    padding-inline: 4px;
+    font-size: 10px;
+  }
+
+  .flameGrid {
+    gap: 3px;
+  }
+
+  .flamePreview,
+  .directionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .coachmark {

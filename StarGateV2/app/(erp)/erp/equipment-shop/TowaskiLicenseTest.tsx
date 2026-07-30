@@ -17,19 +17,14 @@ import {
   getTowaskiLicenseTargetRemainingMs,
   getTowaskiLicenseTestProgram,
   getTowaskiLicenseTestRules,
-  resolveTowaskiDebugLicenseTestV2,
-  startTowaskiDebugLicenseTestV2,
   TOWASKI_LICENSE_TARGET_LAYOUTS,
-  type TowaskiDebugLicenseV2Session,
   type TowaskiLicenseTestEvaluation,
   type TowaskiLicenseTestRequest,
   type TowaskiLicenseTestResponse,
   type TowaskiLicenseTestStats,
 } from "@/lib/equipment-shop/license-test";
-import type {
-  TowaskiLicenseTestMode,
-  TowaskiLicenseV2StepInput,
-} from "@/lib/equipment-shop/license-test-v2";
+import type { TowaskiLicenseTestMode } from "@/lib/equipment-shop/license-test-v2";
+import type { TowaskiLicenseV3StepInput } from "@/lib/equipment-shop/license-test-v3";
 import {
   TOWASKI_LICENSE_DEFINITIONS,
   type TowaskiLicenseSlug,
@@ -42,7 +37,7 @@ import { TowaskiFlameGame } from "./license-tests/TowaskiFlameGame";
 import { TowaskiHeavyGame } from "./license-tests/TowaskiHeavyGame";
 import { TowaskiPrecisionGame } from "./license-tests/TowaskiPrecisionGame";
 import { TowaskiSonicGame } from "./license-tests/TowaskiSonicGame";
-import type { TowaskiLicenseV2ActiveResponse } from "./license-tests/TowaskiLicenseV2Game";
+import type { TowaskiLicenseV3ActiveResponse } from "./license-tests/TowaskiLicenseV3Game";
 import { playTowaskiLicenseModeSound } from "./license-tests/towaski-license-audio";
 import styles from "./TowaskiLicenseTest.module.css";
 
@@ -75,16 +70,26 @@ interface TestSubmissionCallbacks {
   onError: (error: Error) => void;
 }
 
+interface DebugLicenseTestApiResponse {
+  session: unknown;
+  response: TowaskiLicenseTestResponse;
+}
+
 const EMPTY_STATS: TowaskiLicenseTestStats = {
   hostileHits: 0,
   civilianHits: 0,
   shots: 0,
 };
 
-function isV2ActiveChallenge(
+function isV3ActiveChallenge(
   challenge: ActiveChallenge | null,
-): challenge is TowaskiLicenseV2ActiveResponse {
-  return Boolean(challenge && "step" in challenge && "scenario" in challenge);
+): challenge is TowaskiLicenseV3ActiveResponse {
+  return Boolean(
+    challenge &&
+      "step" in challenge &&
+      "scenario" in challenge &&
+      challenge.programVersion === 3,
+  );
 }
 
 function isLegacyActiveChallenge(
@@ -103,15 +108,15 @@ function qualificationCriteria(mode: TowaskiLicenseTestMode): string[] {
     case "firearm":
       return ["적성 7 / 10 이상", "민간 오사 0", "명중률 65% 이상"];
     case "precision":
-      return ["탄착 점수 8 / 12", "호흡 안정 0.5초", "보호 구역 피격 0"];
+      return ["적성 8 / 10 이상", "명중률 60% 이상", "민간 오사 0"];
     case "heavy":
-      return ["제압 3 / 4 이상", "연속 점사 1.8초 이하", "오사·과열 0"];
+      return ["적성 7 / 10 이상", "명중률 65% 이상", "민간 오사 0"];
     case "flame":
-      return ["적성 구역 80% 이상", "연료 10% 이상", "보호 구역 노출 0"];
+      return ["3칸 직선 경로", "적성 2명 차단", "3회 중 2회 · 안전 침범 0"];
     case "sonic":
-      return ["공진 성공 3 / 4", "주파수 편차 5% 이내", "과부하·보호 노출 0"];
+      return ["단계당 TARGET 5 / 6", "최종 3 / 4 단계", "보호 박자 입력 0"];
     case "explosive":
-      return ["제압 성공 4 / 5", "민간 피해 0", "후폭풍 위반 0"];
+      return ["명세 9 / 10 이상", "위험품 반출 0", "격리 누락 0"];
   }
 }
 
@@ -120,15 +125,15 @@ function qualificationSafetyHint(mode: TowaskiLicenseTestMode): string {
     case "firearm":
       return "민간 표적은 사격하지 않고 NO FIRE로 통과하십시오.";
     case "precision":
-      return "풍향을 역산하고 보호 구역을 탄착 반경에서 제외하십시오.";
+      return "1.125초 축소 표적에서 NO FIRE 식별을 우선하십시오.";
     case "heavy":
-      return "짧은 점사 사이에 냉각하고 횡단 인원이 나타나면 즉시 사격을 중지하십시오.";
+      return "숨겨진 시스템 커서 대신 80ms 전자 조준점만 확인하십시오.";
     case "flame":
-      return "화염 원뿔이 민간 구역과 연료통에 닿지 않게 분사선을 끊으십시오.";
+      return "ALLY·FUEL·RETREAT 셀을 경로에서 모두 제외하십시오.";
     case "sonic":
-      return "공진 대역을 맞춘 뒤 출력과 파동 폭을 보호 임계값 아래로 유지하십시오.";
+      return "청색 보호 박자는 소리가 나도 절대 입력하지 마십시오.";
     case "explosive":
-      return "착탄 반경과 신관, 로켓 후폭풍 발사선을 모두 확인하십시오.";
+      return "RELEASE 전에 정비·격리 표식을 한 번 더 확인하십시오.";
   }
 }
 
@@ -144,33 +149,33 @@ function qualificationCoachSteps(
       ];
     case "precision":
       return [
-        { label: "1 · 목표", instruction: "작은 적색 TARGET 원을 명중" },
-        { label: "2 · 보정", instruction: "풍향 수치의 반대쪽으로 조준 이동" },
-        { label: "3 · 발사", instruction: "호흡을 0.5초 고정한 뒤 단발" },
+        { label: "1 · 식별", instruction: "25% 축소 THREAT / NO FIRE 확인" },
+        { label: "2 · 조준", instruction: "보이는 축소 표적 안을 직접 조준" },
+        { label: "3 · 발사", instruction: "1.125초 안에 한 발 또는 보류" },
       ];
     case "heavy":
       return [
-        { label: "1 · 조준", instruction: "반동을 눌러 적색 ARMOR에 조준점 유지" },
-        { label: "2 · 점사", instruction: "1.8초 전에 손을 떼고 냉각" },
-        { label: "3 · 중지", instruction: "청색 CROSSING 점등 중 절대 사격 금지" },
+        { label: "1 · 추적", instruction: "80ms 간격 전자 조준점 확인" },
+        { label: "2 · 보정", instruction: "X ±8% · Y ±10% 흔들림 추적" },
+        { label: "3 · 발사", instruction: "THREAT에만 단발 · NO FIRE 보류" },
       ];
     case "flame":
       return [
-        { label: "1 · 분사", instruction: "시험장을 누른 채 적색 지점으로 드래그" },
-        { label: "2 · 경로", instruction: "적색 소각 지점 5곳 중 4곳 이상 통과" },
-        { label: "3 · 차단", instruction: "청색·황색 앞에서 손을 떼고 우회" },
+        { label: "1 · 시작", instruction: "7×5 격자의 시작 셀 선택" },
+        { label: "2 · 방향", instruction: "상하좌우 중 정확히 3칸 방향 선택" },
+        { label: "3 · 차단", instruction: "3라운드 적성 경로 2개 · 안전 경로 0 확인" },
       ];
     case "sonic":
       return [
-        { label: "1 · 공진", instruction: "주파수를 제시된 목표 Hz ±5%에 맞춤" },
-        { label: "2 · 봉인", instruction: "출력·파동 폭을 각각 허용 구간에 맞춤" },
-        { label: "3 · 방출", instruction: "안전 부하 확인 후 0.6–1.5초 충전 펄스" },
+        { label: "1 · 판독", instruction: "8박 중 TARGET 6 · PROTECTED 2 확인" },
+        { label: "2 · 입력", instruction: "TARGET만 ±170ms 안에 Space 입력" },
+        { label: "3 · 통과", instruction: "단계당 5개 이상 · 총 3단계" },
       ];
     case "explosive":
       return [
-        { label: "1 · 판독", instruction: "정보 카드로 탄종과 신관 선택" },
-        { label: "2 · 배치", instruction: "지도 클릭으로 적성만 폭발 반경에 포함" },
-        { label: "3 · 안전", instruction: "후폭풍 없는 발사선을 고르고 기폭" },
+        { label: "1 · 판독", instruction: "수류탄·로켓 상태 기록 확인" },
+        { label: "2 · 분류", instruction: "각 명세 3 반출 · 1 정비 · 1 격리" },
+        { label: "3 · 안전", instruction: "위험품 반출·격리 누락 없이 제출" },
       ];
   }
 }
@@ -189,33 +194,33 @@ function modeStandbyCopy(mode: TowaskiLicenseTestMode): {
       };
     case "precision":
       return {
-        eyebrow: "BALLISTIC OPTICS",
-        title: "탄도·풍향 계산기 보정",
-        instruction: "작은 적색 표적 · 풍향 반대 보정 · 호흡 고정",
+        eyebrow: "MICRO TARGET RANGE",
+        title: "25% 축소 표적 투영",
+        instruction: "THREAT 직접 조준 · 1.125초 · NO FIRE 식별",
       };
     case "heavy":
       return {
-        eyebrow: "RECOIL CONTROL",
-        title: "총열 냉각·횡단 감지기 준비",
-        instruction: "짧은 점사 · 냉각 · CROSSING 즉시 사격 중지",
+        eyebrow: "JITTER RANGE",
+        title: "전자 조준점 반동 패턴 동기화",
+        instruction: "80ms 패턴 보간 · 방향키/마우스 조준 · 단발",
       };
     case "flame":
       return {
-        eyebrow: "BURN ROUTE",
-        title: "구역 소각 경로 투영",
-        instruction: "누르고 끌어 소각 · 보호 구역 앞에서 분사 차단",
+        eyebrow: "INCENDIARY LINE",
+        title: "3라운드 전술 경로 투영",
+        instruction: "시작 칸 + 방향 · 정확히 3칸 · 안전 경로 회피",
       };
     case "sonic":
       return {
-        eyebrow: "RESONANCE CALIBRATION",
-        title: "공진 계기 영점 조정",
-        instruction: "목표 Hz · 출력 · 파동 폭 · 안전 부하를 모두 일치",
+        eyebrow: "RESONANCE RHYTHM",
+        title: "실시간 공진 박자 동기화",
+        instruction: "TARGET 입력 · PROTECTED 보류 · 음소거 플레이 지원",
       };
     case "explosive":
       return {
-        eyebrow: "ORDNANCE DECISION",
-        title: "탄종·신관·발사선 정보 수신",
-        instruction: "판독 → 반경 배치 → 후폭풍 안전 확인",
+        eyebrow: "ORDNANCE INSPECTION",
+        title: "병기 검수 명세서 수신",
+        instruction: "안전장치·외피·봉인·점검값 → 3분류",
       };
   }
 }
@@ -273,6 +278,20 @@ function failureMessage(
   ) {
     return "보호 대상을 위험 범위에 넣었군. 출력보다 안전 확인이 먼저다.";
   }
+  if (
+    reasons.some((reason) =>
+      ["ally_hit", "fuel_hit", "retreat_blocked"].includes(reason),
+    )
+  ) {
+    return "화염 차단선이 안전 표식을 침범했다. 세 칸의 경로를 다시 계산해.";
+  }
+  if (
+    reasons.some((reason) =>
+      ["unsafe_release", "quarantine_breach"].includes(reason),
+    )
+  ) {
+    return "위험품 반출 또는 격리 누락이다. 이 기록은 즉시 탈락 처리한다.";
+  }
   if (reasons.includes("overheat")) {
     return "총열 과열이다. 길게 누르는 건 제압이 아니라 장비 파손이야.";
   }
@@ -290,13 +309,13 @@ function failureMessage(
     return "후폭풍 구역을 비우지 않았다. 발사선부터 다시 확인해.";
   }
   if (mode === "precision") {
-    return "탄착 편차가 기준을 벗어났다. 풍향 반대쪽으로 조준점을 보정해.";
+    return "축소 표적 명중률이 기준을 벗어났다. 보이는 면적 안에서 한 발씩 처리해.";
   }
   if (mode === "flame") {
-    return "적성 구역 처리율이 부족하다. 연료를 아끼면서 분사선을 이어.";
+    return "차단한 적성 이동 경로가 부족하다. 세 라운드 경로를 겹쳐 다시 읽어.";
   }
   if (mode === "explosive") {
-    return "폭발 반경에 적성 집단이 충분히 들어오지 않았다.";
+    return "명세 분류 정확도가 기준에 미달했다. 상태 기록을 다시 읽어.";
   }
   return "자격 기준에 미달했다. 계기를 확인하고 같은 절차로 다시.";
 }
@@ -332,6 +351,13 @@ function resultStats(
         },
       ];
     case "precision":
+      if ("hostileHits" in evaluation.metrics) {
+        return [
+          { label: "적성 적중", value: `${evaluation.metrics.hostileHits} / 10` },
+          { label: "민간 오사", value: String(evaluation.metrics.civilianHits) },
+          { label: "명중률", value: `${Math.round(evaluation.metrics.accuracy * 100)}%` },
+        ];
+      }
       return [
         { label: "탄착 점수", value: `${evaluation.metrics.score} / 12` },
         {
@@ -344,6 +370,13 @@ function resultStats(
         },
       ];
     case "heavy":
+      if ("hostileHits" in evaluation.metrics) {
+        return [
+          { label: "적성 적중", value: `${evaluation.metrics.hostileHits} / 10` },
+          { label: "민간 오사", value: String(evaluation.metrics.civilianHits) },
+          { label: "명중률", value: `${Math.round(evaluation.metrics.accuracy * 100)}%` },
+        ];
+      }
       return [
         {
           label: "제압 성공",
@@ -356,6 +389,20 @@ function resultStats(
         },
       ];
     case "flame":
+      if ("successfulRoutes" in evaluation.metrics) {
+        return [
+          { label: "경로 성공", value: `${evaluation.metrics.successfulRoutes} / 3` },
+          { label: "적성 차단", value: String(evaluation.metrics.hostilesBlocked) },
+          {
+            label: "안전 침범",
+            value: String(
+              evaluation.metrics.allyHits +
+                evaluation.metrics.fuelHits +
+                evaluation.metrics.retreatHits,
+            ),
+          },
+        ];
+      }
       return [
         {
           label: "처리율",
@@ -374,6 +421,13 @@ function resultStats(
         },
       ];
     case "sonic":
+      if ("successfulStages" in evaluation.metrics) {
+        return [
+          { label: "리듬 통과", value: `${evaluation.metrics.successfulStages} / 4` },
+          { label: "TARGET", value: String(evaluation.metrics.targetHits) },
+          { label: "보호 입력", value: String(evaluation.metrics.protectedHits) },
+        ];
+      }
       return [
         {
           label: "공진 성공",
@@ -392,6 +446,13 @@ function resultStats(
         },
       ];
     case "explosive":
+      if ("correctDecisions" in evaluation.metrics) {
+        return [
+          { label: "정확 분류", value: `${evaluation.metrics.correctDecisions} / 10` },
+          { label: "위험 반출", value: String(evaluation.metrics.unsafeReleases) },
+          { label: "격리 누락", value: String(evaluation.metrics.quarantineBreaches) },
+        ];
+      }
       return [
         {
           label: "제압 성공",
@@ -409,10 +470,10 @@ function resultStats(
   }
 }
 
-function renderV2Game(args: {
-  challenge: TowaskiLicenseV2ActiveResponse;
+function renderV3Game(args: {
+  challenge: TowaskiLicenseV3ActiveResponse;
   disabled: boolean;
-  onResolve: (input: TowaskiLicenseV2StepInput) => void;
+  onResolve: (input: TowaskiLicenseV3StepInput) => void;
 }) {
   const props = args;
   switch (args.challenge.mode) {
@@ -460,8 +521,7 @@ export default function TowaskiLicenseTest({
   const modeAudioContextRef = useRef<AudioContext | null>(null);
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deadlineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const debugTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const debugSessionRef = useRef<TowaskiDebugLicenseV2Session | null>(null);
+  const debugSessionRef = useRef<unknown | null>(null);
   const roundShotsRef = useRef(0);
   const resolvingRef = useRef(false);
   const attemptRef = useRef(0);
@@ -473,7 +533,7 @@ export default function TowaskiLicenseTest({
   const hitAdvanceMs =
     Math.ceil(rules.minDurationMs / TOWASKI_LICENSE_TARGET_LAYOUTS.length) + 20;
   const legacyChallenge = isLegacyActiveChallenge(challenge) ? challenge : null;
-  const v2Challenge = isV2ActiveChallenge(challenge) ? challenge : null;
+  const v3Challenge = isV3ActiveChallenge(challenge) ? challenge : null;
   const currentTarget = legacyChallenge?.target ?? null;
   const displayedShots = stats.shots + roundShots;
   const liveAccuracy = formatAccuracy(stats.hostileHits, displayedShots);
@@ -497,7 +557,6 @@ export default function TowaskiLicenseTest({
     return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
       if (deadlineTimerRef.current) clearTimeout(deadlineTimerRef.current);
-      if (debugTimerRef.current) clearTimeout(debugTimerRef.current);
       void audioRef.current?.destroy();
       audioRef.current = null;
       const context = modeAudioContextRef.current;
@@ -533,7 +592,6 @@ export default function TowaskiLicenseTest({
   const resetTest = useCallback(() => {
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
     if (deadlineTimerRef.current) clearTimeout(deadlineTimerRef.current);
-    if (debugTimerRef.current) clearTimeout(debugTimerRef.current);
     debugSessionRef.current = null;
     setChallenge(null);
     setStats(EMPTY_STATS);
@@ -607,22 +665,31 @@ export default function TowaskiLicenseTest({
         });
         return;
       }
-      if (debugTimerRef.current) clearTimeout(debugTimerRef.current);
-      debugTimerRef.current = setTimeout(() => {
+      void (async () => {
         try {
-          if (input.action === "start") {
-            const result = startTowaskiDebugLicenseTestV2(input.licenseSlug);
-            debugSessionRef.current = result.session;
-            callbacks.onSuccess(result.response);
-            return;
-          }
-          if (!debugSessionRef.current || !("step" in input)) {
+          if (input.action !== "start" && !debugSessionRef.current) {
             throw new Error("DEBUG_LICENSE_SESSION_MISSING");
           }
-          const result = resolveTowaskiDebugLicenseTestV2(
-            debugSessionRef.current,
-            input,
+          const response = await fetch(
+            "/api/erp/equipment-shop/license-test/debug",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                request: input,
+                session:
+                  input.action === "start" ? null : debugSessionRef.current,
+              }),
+            },
           );
+          const result = (await response.json().catch(() => null)) as
+            | (DebugLicenseTestApiResponse & { error?: string })
+            | null;
+          if (!response.ok || !result?.response) {
+            throw new Error(
+              result?.error ?? "디버그 자격시험 판정에 실패했습니다.",
+            );
+          }
           debugSessionRef.current = result.session;
           callbacks.onSuccess(result.response);
         } catch (error) {
@@ -630,7 +697,7 @@ export default function TowaskiLicenseTest({
             error instanceof Error ? error : new Error("DEBUG_LICENSE_FAILED"),
           );
         }
-      }, 80);
+      })();
     },
     [debugSandbox, submitLiveTest],
   );
@@ -708,17 +775,17 @@ export default function TowaskiLicenseTest({
     [handleMutationError, handleResponse, legacyChallenge, submitTest],
   );
 
-  const resolveV2Step = useCallback(
-    (input: TowaskiLicenseV2StepInput) => {
-      if (!v2Challenge || resolvingRef.current) return;
+  const resolveV3Step = useCallback(
+    (input: TowaskiLicenseV3StepInput) => {
+      if (!v3Challenge || resolvingRef.current) return;
       resolvingRef.current = true;
       playModeSound(input.mode);
       setPhase("resolving");
       submitTest(
         {
           action: "resolve",
-          challengeId: v2Challenge.challengeId,
-          step: v2Challenge.step,
+          challengeId: v3Challenge.challengeId,
+          step: v3Challenge.step,
           input,
         },
         { onSuccess: handleResponse, onError: handleMutationError },
@@ -729,7 +796,7 @@ export default function TowaskiLicenseTest({
       handleResponse,
       playModeSound,
       submitTest,
-      v2Challenge,
+      v3Challenge,
     ],
   );
 
@@ -948,11 +1015,11 @@ export default function TowaskiLicenseTest({
           phase={phase}
           countdown={countdown}
         />
-      ) : v2Challenge ? (
-        renderV2Game({
-          challenge: v2Challenge,
+      ) : v3Challenge ? (
+        renderV3Game({
+          challenge: v3Challenge,
           disabled: phase !== "active",
-          onResolve: resolveV2Step,
+          onResolve: resolveV3Step,
         })
       ) : (
         <div

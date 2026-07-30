@@ -1,302 +1,271 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
+
 import {
-  type CSSProperties,
-  type KeyboardEvent,
-  type PointerEvent,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+  evaluateTowaskiFlamePlacement,
+  type TowaskiV3FlameDirection,
+  type TowaskiV3FlameProgress,
+  type TowaskiV3FlameScenario,
+  type TowaskiV3GridPoint,
+} from "@/lib/equipment-shop/license-test-v3";
 
-import type { TowaskiTimedPointerSample } from "@/lib/equipment-shop/license-test-v2";
-
-import type { TowaskiLicenseV2GameProps } from "./TowaskiLicenseV2Game";
+import type { TowaskiLicenseV3GameProps } from "./TowaskiLicenseV3Game";
 import styles from "./TowaskiLicenseV2.module.css";
+
+const DIRECTIONS = [
+  ["up", "↑ 위"],
+  ["right", "→ 오른쪽"],
+  ["down", "↓ 아래"],
+  ["left", "← 왼쪽"],
+] as const satisfies ReadonlyArray<
+  readonly [TowaskiV3FlameDirection, string]
+>;
+
+function samePoint(first: TowaskiV3GridPoint, second: TowaskiV3GridPoint) {
+  return first.x === second.x && first.y === second.y;
+}
 
 export function TowaskiFlameGame({
   challenge,
   disabled,
   onResolve,
-}: TowaskiLicenseV2GameProps) {
-  const [aim, setAim] = useState({ x: 0.5, y: 0.82 });
-  const [samples, setSamples] = useState<TowaskiTimedPointerSample[]>([]);
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [spraying, setSpraying] = useState(false);
+}: TowaskiLicenseV3GameProps) {
+  const scenario = challenge.scenario as TowaskiV3FlameScenario;
+  const progress = challenge.progress as TowaskiV3FlameProgress;
   const startedAtRef = useRef(0);
-  const lastSampleAtRef = useRef(-100);
+  const submittedRef = useRef(false);
+  const startRef = useRef<TowaskiV3GridPoint | null>(null);
+  const directionRef = useRef<TowaskiV3FlameDirection>("right");
+  const [start, setStart] = useState<TowaskiV3GridPoint | null>(null);
+  const [hoveredStart, setHoveredStart] =
+    useState<TowaskiV3GridPoint | null>(null);
+  const [direction, setDirection] =
+    useState<TowaskiV3FlameDirection>("right");
+  const [remainingSeconds, setRemainingSeconds] = useState(18);
 
-  const scenario =
-    challenge.mode === "flame" && challenge.scenario.mode === "flame"
-      ? challenge.scenario
-      : null;
-  const progress =
-    challenge.progress.mode === "flame" ? challenge.progress : null;
+  const previewStart = hoveredStart ?? start;
+  const placement = useMemo(
+    () =>
+      previewStart
+        ? evaluateTowaskiFlamePlacement(scenario, previewStart, direction)
+        : null,
+    [direction, previewStart, scenario],
+  );
+  const route = placement?.cells ?? null;
+  const safePlacement = Boolean(
+    route &&
+      placement &&
+      placement.hostilesBlocked >= 2 &&
+      !placement.allyHit &&
+      !placement.fuelHit &&
+      !placement.retreatHit,
+  );
 
   useEffect(() => {
     startedAtRef.current = performance.now();
-    lastSampleAtRef.current = -100;
+    submittedRef.current = false;
+    startRef.current = null;
+    directionRef.current = "right";
     const timer = window.setInterval(() => {
-      setElapsedMs(Math.round(performance.now() - startedAtRef.current));
-    }, 100);
+      const elapsed = Math.round(performance.now() - startedAtRef.current);
+      setRemainingSeconds(
+        Math.max(0, Math.ceil((scenario.durationMs - elapsed) / 1_000)),
+      );
+      if (elapsed >= scenario.durationMs && !submittedRef.current) {
+        submittedRef.current = true;
+        window.clearInterval(timer);
+        onResolve({
+          mode: "flame",
+          start: startRef.current ?? { x: 0, y: 0 },
+          direction: startRef.current ? directionRef.current : "left",
+          elapsedMs: scenario.durationMs,
+        });
+      }
+    }, 200);
     return () => window.clearInterval(timer);
-  }, [challenge.step]);
+  }, [challenge.step, onResolve, scenario.durationMs]);
 
-  if (!scenario || !progress) return null;
+  if (challenge.mode !== "flame" || scenario.mode !== "flame") return null;
 
-  const durationMs = scenario.durationMs;
-  const activeSamples = samples.filter((sample) => sample.active);
-  const fuelRemaining = Math.max(
-    0,
-    Math.round(100 - activeSamples.length * 0.7),
-  );
-  const visitedZoneIds = new Set(
-    scenario.hostileZones
-      .filter((zone) =>
-        activeSamples.some(
-          (sample) =>
-            Math.hypot(sample.x - zone.x, sample.y - zone.y) <= zone.radius,
-        ),
-      )
-      .map((zone) => zone.id),
-  );
-  const protectedRisk = activeSamples.some(
-    (sample) =>
-      Math.hypot(
-        sample.x - scenario.civilianZone.x,
-        sample.y - scenario.civilianZone.y,
-      ) <= scenario.civilianZone.radius ||
-      Math.hypot(
-        sample.x - scenario.fuelTankZone.x,
-        sample.y - scenario.fuelTankZone.y,
-      ) <= scenario.fuelTankZone.radius,
-  );
-
-  function addSample(point: { x: number; y: number }) {
-    const t = Math.min(
-      durationMs,
-      Math.round(performance.now() - startedAtRef.current),
-    );
-    if (t - lastSampleAtRef.current < 100) return;
-    lastSampleAtRef.current = t;
-    setAim(point);
-    setSamples((current) =>
-      current.length >= 160
-        ? current
-        : [...current, { t, ...point, active: true }],
-    );
+  function selectCell(point: TowaskiV3GridPoint) {
+    if (disabled) return;
+    startRef.current = point;
+    setStart(point);
+    setHoveredStart(null);
   }
 
-  function pointFromEvent(event: PointerEvent<HTMLDivElement>) {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    return {
-      x: Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)),
-      y: Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height)),
-    };
+  function selectDirection(nextDirection: TowaskiV3FlameDirection) {
+    if (disabled) return;
+    directionRef.current = nextDirection;
+    setDirection(nextDirection);
+  }
+
+  function submit() {
+    if (!start || !route || disabled || submittedRef.current) return;
+    submittedRef.current = true;
+    onResolve({
+      mode: "flame",
+      start,
+      direction,
+      elapsedMs: Math.round(performance.now() - startedAtRef.current),
+    });
   }
 
   return (
     <div className={`${styles.game} ${styles["game--flame"]}`}>
       <div className={styles.hud}>
-        <span>
-          COVERAGE <strong>{Math.round((progress.coverageTotal / Math.max(1, progress.step)) * 100)}%</strong>
-        </span>
-        <span>
-          FUEL <strong>{fuelRemaining}%</strong>
-        </span>
-        <span>
-          COLLATERAL <strong>{progress.civilianExposures + progress.fuelTankIgnitions}</strong>
-        </span>
-        <span>
-          ZONE <strong>{challenge.step + 1} / 3</strong>
-        </span>
+        <span>MAP <strong>{challenge.step + 1} / 3</strong></span>
+        <span>CLEAR <strong>{progress.successfulRoutes} / 3</strong></span>
+        <span>BLOCK <strong>{progress.hostilesBlocked}</strong></span>
+        <span>TIME <strong>{remainingSeconds}s</strong></span>
       </div>
-      <div
-        className={styles.field}
-        role="application"
-        tabIndex={0}
-        aria-label="화염 장비 확산 제어 구역"
-        onPointerDown={(event) => {
-          event.currentTarget.setPointerCapture(event.pointerId);
-          setSpraying(true);
-          addSample(pointFromEvent(event));
-        }}
-        onPointerMove={(event) => {
-          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            addSample(pointFromEvent(event));
-          }
-        }}
-        onPointerUp={(event) => {
-          addSample(pointFromEvent(event));
-          setSpraying(false);
-          event.currentTarget.releasePointerCapture(event.pointerId);
-        }}
-        onPointerCancel={() => setSpraying(false)}
-        onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
-          if (disabled) return;
-          const amount = event.shiftKey ? 0.08 : 0.04;
-          if (event.key === " ") {
-            event.preventDefault();
-            addSample(aim);
-            return;
-          }
-          const movement = {
-            ArrowLeft: { x: -amount, y: 0 },
-            ArrowRight: { x: amount, y: 0 },
-            ArrowUp: { x: 0, y: -amount },
-            ArrowDown: { x: 0, y: amount },
-          }[event.key];
-          if (!movement) return;
-          event.preventDefault();
-          setAim((current) => ({
-            x: Math.max(0, Math.min(1, current.x + movement.x)),
-            y: Math.max(0, Math.min(1, current.y + movement.y)),
-          }));
-        }}
-      >
-        <div className={styles.grid} aria-hidden />
+      <div className={`${styles.field} ${styles.flameGridField}`}>
         <div className={styles.coachmark}>
-          <strong>분사 경로</strong>
-          시험장을 누른 채 적색 BURN 지점을 따라 끌고, 청색 SAFE와 황색
-          FUEL 앞에서는 손을 떼어 분사를 끊은 뒤 다른 위치에서 다시
-          시작하십시오. 키보드는 방향키로 조준하고 Space로 분사합니다.
+          <strong>향후 3라운드 경로 / 정확히 3칸</strong>
+          시작 칸과 상하좌우 방향을 정하십시오. 서로 다른 적성 경로 2개를
+          막고 ALLY·FUEL·EXIT 경로는 모두 피해야 합니다.
         </div>
-        {scenario.hostileZones.map((zone) => (
-          <span
-            key={zone.id}
-            className={[
-              styles.zone,
-              styles["zone--hostile"],
-              visitedZoneIds.has(zone.id) ? styles["zone--visited"] : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            style={
-              {
-                "--zone-x": zone.x,
-                "--zone-y": zone.y,
-                "--zone-radius": zone.radius,
-              } as CSSProperties
-            }
-            aria-hidden
-          >
-            {visitedZoneIds.has(zone.id) ? "BURNED" : "BURN"}
+        <div
+          className={styles.flameGrid}
+          role="grid"
+          aria-label="7열 5행, 향후 3라운드 화염 차단 격자"
+          onPointerLeave={() => setHoveredStart(null)}
+        >
+          {Array.from(
+            { length: scenario.height * scenario.width },
+            (_, index) => {
+              const point = {
+                x: index % scenario.width,
+                y: Math.floor(index / scenario.width),
+              };
+              const hostileMarkers = scenario.hostilePaths.flatMap((path) =>
+                path.cells.flatMap((value, round) =>
+                  samePoint(value, point) ? [`${path.id}·R${round + 1}`] : [],
+                ),
+              );
+              const allyMarkers = scenario.allyPath.cells.flatMap(
+                (value, round) =>
+                  samePoint(value, point) ? [`ALLY·R${round + 1}`] : [],
+              );
+              const retreatMarkers = scenario.retreatPath.cells.flatMap(
+                (value, round) =>
+                  samePoint(value, point) ? [`EXIT·R${round + 1}`] : [],
+              );
+              const fuel = samePoint(scenario.fuel, point);
+              const selected = Boolean(
+                route?.some((value) => samePoint(value, point)),
+              );
+              const markers = [
+                ...hostileMarkers,
+                ...allyMarkers,
+                ...(fuel ? ["FUEL"] : []),
+                ...retreatMarkers,
+              ];
+              const cellKind = allyMarkers.length
+                ? "ally"
+                : fuel
+                  ? "fuel"
+                  : retreatMarkers.length
+                    ? "retreat"
+                    : hostileMarkers.length
+                      ? "hostile"
+                      : "clear";
+              return (
+                <button
+                  key={`${point.x}-${point.y}`}
+                  type="button"
+                  role="gridcell"
+                  className={[
+                    styles.flameCell,
+                    styles[`flameCell--${cellKind}`],
+                    selected ? styles["flameCell--selected"] : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  disabled={disabled}
+                  onClick={() => selectCell(point)}
+                  onFocus={() => setHoveredStart(point)}
+                  onPointerEnter={(event) => {
+                    if (event.pointerType !== "touch") setHoveredStart(point);
+                  }}
+                  onKeyDown={(event) => {
+                    const keyDirection: Partial<
+                      Record<string, TowaskiV3FlameDirection>
+                    > = {
+                      ArrowUp: "up",
+                      ArrowRight: "right",
+                      ArrowDown: "down",
+                      ArrowLeft: "left",
+                    };
+                    const nextDirection = keyDirection[event.key];
+                    if (nextDirection) {
+                      event.preventDefault();
+                      selectCell(point);
+                      selectDirection(nextDirection);
+                    }
+                  }}
+                  aria-label={`${point.x + 1}열 ${point.y + 1}행 ${
+                    markers.join(", ") || "CLEAR"
+                  }`}
+                >
+                  <span>{markers.join(" ") || "·"}</span>
+                </button>
+              );
+            },
+          )}
+        </div>
+        <div className={styles.flamePreview} aria-live="polite">
+          <span>
+            3칸 {route ? "VALID" : "OUT OF GRID"}
           </span>
-        ))}
-        <span
-          className={`${styles.zone} ${styles["zone--civilian"]}`}
-          style={
-            {
-              "--zone-x": scenario.civilianZone.x,
-              "--zone-y": scenario.civilianZone.y,
-              "--zone-radius": scenario.civilianZone.radius,
-            } as CSSProperties
-          }
-          aria-hidden
-        >
-          SAFE
-        </span>
-        <span
-          className={`${styles.zone} ${styles["zone--hazard"]}`}
-          style={
-            {
-              "--zone-x": scenario.fuelTankZone.x,
-              "--zone-y": scenario.fuelTankZone.y,
-              "--zone-radius": scenario.fuelTankZone.radius,
-            } as CSSProperties
-          }
-          aria-hidden
-        >
-          FUEL
-        </span>
-        {samples.slice(-48).map((sample, index) => (
-          <span
-            key={`${sample.t}-${index}`}
-            className={styles.trailDot}
-            style={
-              {
-                "--trail-x": sample.x,
-                "--trail-y": sample.y,
-                opacity: 0.3 + index / 72,
-              } as CSSProperties
-            }
-            aria-hidden
-          />
-        ))}
-        <span
-          className={styles.reticle}
-          style={
-            {
-              "--aim-x": aim.x,
-              "--aim-y": aim.y,
-            } as CSSProperties
-          }
-          aria-hidden
-        />
-        <span
-          className={[
-            styles.statusBanner,
-            protectedRisk ? styles["statusBanner--danger"] : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          aria-live="polite"
-        >
-          {protectedRisk
-            ? "보호 구역 노출 — 경로 실패"
-            : spraying
-              ? `분사 중 · 소각 ${visitedZoneIds.size}/5`
-              : `분사 중지 · 소각 ${visitedZoneIds.size}/5`}
-        </span>
+          <span>적성 경로 {placement?.hostilesBlocked ?? 0} / 2</span>
+          <span>
+            안전 충돌{" "}
+            {placement
+              ? Number(placement.allyHit) +
+                Number(placement.fuelHit) +
+                Number(placement.retreatHit)
+              : 0}
+          </span>
+          <strong>{safePlacement ? "배치 안전" : "충돌 결과 확인 필요"}</strong>
+        </div>
       </div>
       <div className={styles.controls}>
-        <p className={styles.hint}>
-          <strong>적색 소각 지점 5곳 중 4곳 이상</strong>을 경로로
-          통과하십시오. 연료는 경로를 그릴 때만 소모되며, 손을 떼면 즉시
-          분사가 멈춥니다.
-        </p>
-        <div className={styles.checklist} aria-label="화염 경로 판정 상태">
-          <span
-            className={
-              visitedZoneIds.size >= 4 ? styles["checklist--ready"] : ""
-            }
-          >
-            소각 지점 {visitedZoneIds.size} / 5
-          </span>
-          <span
-            className={
-              fuelRemaining >= 10
-                ? styles["checklist--ready"]
-                : styles["checklist--danger"]
-            }
-          >
-            연료 {fuelRemaining}%
-          </span>
-          <span
-            className={
-              protectedRisk
-                ? styles["checklist--danger"]
-                : styles["checklist--ready"]
-            }
-          >
-            보호 구역 {protectedRisk ? "노출" : "안전"}
-          </span>
-          <span>경과 {Math.min(12, Math.floor(elapsedMs / 1_000))}초</span>
+        <div className={styles.directionGrid} aria-label="소이선 방향">
+          {DIRECTIONS.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={styles.choice}
+              aria-pressed={direction === value}
+              disabled={disabled}
+              onClick={() => selectDirection(value)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
         <div className={styles.actionRow}>
           <button
             type="button"
-            className={styles.action}
-            disabled={
-              disabled ||
-              elapsedMs < 1_000 ||
-              visitedZoneIds.size < 4 ||
-              protectedRisk ||
-              fuelRemaining < 10
-            }
-            onClick={() => onResolve({ mode: "flame", samples })}
+            className={styles.secondaryAction}
+            disabled={disabled}
+            onClick={() => {
+              startRef.current = null;
+              setStart(null);
+              setHoveredStart(null);
+            }}
           >
-            분사 종료 · 판정
+            시작 칸 초기화
+          </button>
+          <button
+            type="button"
+            className={styles.action}
+            disabled={disabled || !start || !route}
+            onClick={submit}
+          >
+            3칸 소이선 확정
           </button>
         </div>
       </div>

@@ -36,6 +36,18 @@ const LICENSE_TEST_CLIENT = new URL(
   "../../../app/(erp)/erp/equipment-shop/TowaskiLicenseTest.tsx",
   import.meta.url,
 );
+const LICENSE_DEBUG_ROUTE = new URL(
+  "../../../app/api/erp/equipment-shop/license-test/debug/route.ts",
+  import.meta.url,
+);
+const LICENSE_V3_DEBUG_JUDGE = new URL(
+  "../license-test-v3-debug.ts",
+  import.meta.url,
+);
+const BOUNDED_REQUEST_BODY = new URL(
+  "../../api/bounded-request-body.ts",
+  import.meta.url,
+);
 const LICENSE_TEST_STYLES = new URL(
   "../../../app/(erp)/erp/equipment-shop/TowaskiLicenseTest.module.css",
   import.meta.url,
@@ -102,7 +114,7 @@ test("license inventory grant and redeemed transition share one transaction", as
   );
   assert.match(
     challengeDb,
-    /challenge\.status === "redeeming" \|\| challenge\.status === "redeemed"/,
+    /challenge\.status !== "active"/,
   );
 });
 
@@ -115,6 +127,57 @@ test("v2 challenge timing and judge dispatch are pinned to the stored program", 
   assert.match(challengeDb, /resolveTowaskiLicenseProgramStep/);
   assert.match(challengeDb, /evaluateTowaskiLicenseProgramProgress/);
   assert.doesNotMatch(challengeDb, /programVersion: challenge\.programVersion \?\? 2/);
+});
+
+test("V3 timing starts once at response activation and stops at request arrival", async () => {
+  const [route, challengeDb, boundedRequestBody] = await Promise.all([
+    readFile(LICENSE_ROUTE, "utf8"),
+    readFile(CHALLENGE_DB, "utf8"),
+    readFile(BOUNDED_REQUEST_BODY, "utf8"),
+  ]);
+
+  assert.match(route, /readBoundedRequestBody/);
+  assert.match(route, /MAX_LICENSE_TEST_REQUEST_BYTES/);
+  assert.match(route, /bodyAbortController\.abort\(\)/);
+  assert.doesNotMatch(route, /request\.text\(\)/);
+  assert.match(boundedRequestBody, /byteLength > maxBytes/);
+  assert.match(boundedRequestBody, /requestReceivedAt: new Date\(\)/);
+  assert.match(route, /activateV3ChallengeForResponse/);
+  assert.match(
+    route,
+    /resolveTowaskiLicenseChallengeStep\([\s\S]*bodyReceipt\.requestReceivedAt/,
+  );
+  assert.match(
+    challengeDb,
+    /export async function activateTowaskiLicenseChallengeStep/,
+  );
+  assert.match(
+    challengeDb,
+    /v3ActivatedStep: \{ \$exists: false \}/,
+  );
+  assert.match(challengeDb, /v3ActivatedStep: \{ \$lt: args\.step \}/);
+  assert.match(challengeDb, /requestReceivedAt\?\.getTime\(\)/);
+  assert.match(
+    challengeDb,
+    /receivedAtMs! - challenge\.roundStartedAt\.getTime\(\)/,
+  );
+});
+
+test("GM debug sandbox keeps the V3 judge server-side without DB writes", async () => {
+  const [client, route, debugJudge] = await Promise.all([
+    readFile(LICENSE_TEST_CLIENT, "utf8"),
+    readFile(LICENSE_DEBUG_ROUTE, "utf8"),
+    readFile(LICENSE_V3_DEBUG_JUDGE, "utf8"),
+  ]);
+
+  assert.match(client, /\/api\/erp\/equipment-shop\/license-test\/debug/);
+  assert.doesNotMatch(client, /startTowaskiDebugLicenseTestV3/);
+  assert.doesNotMatch(client, /resolveTowaskiDebugLicenseTestV3/);
+  assert.match(route, /hasRole\(session\.user\.role, "GM"\)/);
+  assert.match(route, /startTowaskiDebugLicenseTestV3/);
+  assert.match(route, /resolveTowaskiDebugLicenseTestV3/);
+  assert.doesNotMatch(route, /equipment-license-tests|equipment-licenses|grant/);
+  assert.match(debugJudge, /resolveTowaskiLicenseV3Step/);
 });
 
 test("license difficulty is fixed on the server challenge", async () => {
@@ -285,10 +348,10 @@ test("Towaski qualification keeps accessible mobile controls and explains every 
   assert.match(heavyGame, /event\.key === " " \|\| event\.key === "Enter"/);
   assert.match(
     explosiveGame,
-    /1 · 탄종 \/ 신관[\s\S]*2 · 폭발 반경[\s\S]*3 · 발사선/,
+    /3 RELEASE · 1 SERVICE · 1 QUARANTINE/,
   );
-  assert.match(explosiveGame, /onPointerDown=\{updateImpact\}/);
-  assert.match(explosiveGame, /onKeyDown=\{moveImpactWithKeyboard\}/);
+  assert.match(explosiveGame, /scenario\.items\.map/);
+  assert.match(explosiveGame, /명세서 판정 제출/);
   assert.doesNotMatch(explosiveGame, /type="range"/);
   assert.match(
     client,

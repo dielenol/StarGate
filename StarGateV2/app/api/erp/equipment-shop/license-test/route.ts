@@ -13,9 +13,14 @@ import {
   isValidIdempotencyKey,
   readIdempotencyKey,
 } from "@/lib/api/idempotency";
+import {
+  readBoundedRequestBody,
+  RequestBodyTooLargeError,
+} from "@/lib/api/bounded-request-body";
 import { auth } from "@/lib/auth/config";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
 import {
+  activateTowaskiLicenseChallengeStep,
   claimTowaskiLicenseChallengeRedemption,
   findTowaskiLicenseTestRequestChallenge,
   markTowaskiLicenseChallengeRedeemed,
@@ -48,10 +53,18 @@ import {
   TOWASKI_LICENSE_PROGRAM_VERSION,
 } from "@/lib/equipment-shop/license-test-v2";
 import {
+  evaluateTowaskiLicenseV3Progress,
+  getTowaskiLicenseV3StepWindowMs,
+  toTowaskiLicenseV3PublicScenario,
+  TOWASKI_LICENSE_PROGRAM_VERSION_V3,
+} from "@/lib/equipment-shop/license-test-v3";
+import {
   TOWASKI_LICENSE_DEFINITIONS,
   type TowaskiLicenseSlug,
 } from "@/lib/equipment-shop/licenses";
 import { notifyUser } from "@/lib/notifications/events";
+
+const MAX_LICENSE_TEST_REQUEST_BYTES = 32_768;
 
 async function isTowaskiLicenseTestAvailable(
   licenseSlug: TowaskiLicenseSlug,
@@ -79,31 +92,56 @@ function challengeStats(
 function pinnedChallengeProgramVersion(
   challenge: TowaskiLicenseChallenge,
 ): number {
-  if (
-    !challenge.v2 ||
-    challenge.programVersion !== TOWASKI_LICENSE_PROGRAM_VERSION ||
-    challenge.v2.programVersion !== challenge.programVersion ||
-    challenge.mode !== challenge.v2.mode
-  ) {
+  const validV2 =
+    challenge.v2 &&
+    challenge.programVersion === TOWASKI_LICENSE_PROGRAM_VERSION &&
+    challenge.v2.programVersion === challenge.programVersion &&
+    challenge.mode === challenge.v2.mode;
+  const validV3 =
+    challenge.v3 &&
+    challenge.programVersion === TOWASKI_LICENSE_PROGRAM_VERSION_V3 &&
+    challenge.v3.programVersion === challenge.programVersion &&
+    challenge.mode === challenge.v3.mode;
+  if (!validV2 && !validV3) {
     throw new TowaskiLicenseChallengeError(
       "INVALID_LICENSE_TEST",
       "지원하지 않거나 버전 정보가 손상된 자격시험입니다.",
     );
   }
-  return challenge.programVersion;
+  return challenge.programVersion!;
 }
 
 function activeResponse(
   challenge: TowaskiLicenseChallenge,
 ): TowaskiLicenseTestResponse | null {
   const challengeId = challenge._id?.toString();
+  if (challengeId && challenge.v3 && challenge.mode) {
+    pinnedChallengeProgramVersion(challenge);
+    const scenario = challenge.v3.scenarios[challenge.v3.progress.step];
+    if (!scenario) return null;
+    return {
+      status: "active",
+      programVersion: TOWASKI_LICENSE_PROGRAM_VERSION_V3,
+      mode: challenge.mode,
+      challengeId,
+      step: challenge.v3.progress.step,
+      scenario: toTowaskiLicenseV3PublicScenario(scenario),
+      licenseSlug: challenge.licenseSlug,
+      difficulty: challenge.difficulty ?? "standard",
+      progress: challenge.v3.progress,
+      stepDeadlineAt: new Date(
+        challenge.roundStartedAt.getTime() +
+          getTowaskiLicenseV3StepWindowMs(scenario),
+      ).toISOString(),
+    };
+  }
   if (challengeId && challenge.v2 && challenge.mode) {
     const programVersion = pinnedChallengeProgramVersion(challenge);
     const scenario = challenge.v2.scenarios[challenge.v2.progress.step];
     if (!scenario) return null;
     return {
       status: "active",
-      programVersion,
+      programVersion: programVersion as 2,
       mode: challenge.mode,
       challengeId,
       step: challenge.v2.progress.step,
@@ -137,7 +175,46 @@ function activeResponse(
   };
 }
 
+async function activateV3ChallengeForResponse(
+  challenge: TowaskiLicenseChallenge,
+  userId: string,
+  characterId: string,
+): Promise<TowaskiLicenseChallenge> {
+  let current = challenge;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const challengeId = current._id?.toString();
+    if (
+      current.status !== "active" ||
+      !current.v3 ||
+      !challengeId
+    ) {
+      return current;
+    }
+    current = await activateTowaskiLicenseChallengeStep({
+      challengeId,
+      userId,
+      characterId,
+      step: current.v3.progress.step,
+    });
+    if (
+      current.status !== "active" ||
+      !current.v3 ||
+      current.v3ActivatedStep === current.v3.progress.step
+    ) {
+      return current;
+    }
+  }
+  throw new TowaskiLicenseChallengeError(
+    "LICENSE_TEST_CONFLICT",
+    "V3 자격시험 조작 시간을 활성화하지 못했습니다.",
+  );
+}
+
 function challengeEvaluation(challenge: TowaskiLicenseChallenge) {
+  if (challenge.v3) {
+    pinnedChallengeProgramVersion(challenge);
+    return evaluateTowaskiLicenseV3Progress(challenge.v3.progress);
+  }
   if (challenge.v2) {
     return evaluateTowaskiLicenseProgramProgress(
       pinnedChallengeProgramVersion(challenge),
@@ -158,6 +235,8 @@ function expectedChallengeProgramVersion(
   challenge: TowaskiLicenseChallenge,
 ): number {
   return challenge.v2
+    ? pinnedChallengeProgramVersion(challenge)
+    : challenge.v3
     ? pinnedChallengeProgramVersion(challenge)
     : (challenge.programVersion ?? 1);
 }
@@ -192,12 +271,28 @@ function failedResponse(
     );
     return {
       status: "failed",
-      programVersion,
+      programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
       mode: challenge.mode,
       challengeId,
       licenseSlug: challenge.licenseSlug,
       difficulty: challenge.difficulty ?? "standard",
       progress: challenge.v2.progress,
+      evaluation,
+    };
+  }
+  if (challenge.v3 && challenge.mode) {
+    pinnedChallengeProgramVersion(challenge);
+    const evaluation = evaluateTowaskiLicenseV3Progress(
+      challenge.v3.progress,
+    );
+    return {
+      status: "failed",
+      programVersion: TOWASKI_LICENSE_PROGRAM_VERSION_V3,
+      mode: challenge.mode,
+      challengeId,
+      licenseSlug: challenge.licenseSlug,
+      difficulty: challenge.difficulty ?? "standard",
+      progress: challenge.v3.progress,
       evaluation,
     };
   }
@@ -268,7 +363,7 @@ export async function GET(request: Request) {
       { status: 404 },
     );
   }
-  const { challenge } = result;
+  let { challenge } = result;
   const license = TOWASKI_LICENSE_DEFINITIONS[challenge.licenseSlug];
   const qualification = await getTowaskiLicenseQualificationStatus(
     characterId,
@@ -294,6 +389,24 @@ export async function GET(request: Request) {
     );
   }
   if (challenge.status === "active") {
+    try {
+      challenge = await activateV3ChallengeForResponse(
+        challenge,
+        session.user.id,
+        characterId,
+      );
+    } catch (error) {
+      if (error instanceof TowaskiLicenseChallengeError) {
+        return challengeErrorResponse(error);
+      }
+      return NextResponse.json(
+        {
+          error: "자격시험 조작 시간 활성화에 실패했습니다.",
+          code: "LICENSE_TEST_CONFLICT",
+        },
+        { status: 409 },
+      );
+    }
     const response = activeResponse(challenge);
     if (response) return NextResponse.json(response);
   }
@@ -339,10 +452,51 @@ async function waitForCurrentTowaskiLicense(
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const declaredContentLength = Number(
+    request.headers.get("content-length") ?? 0,
+  );
+  if (
+    Number.isFinite(declaredContentLength) &&
+    declaredContentLength > MAX_LICENSE_TEST_REQUEST_BYTES
+  ) {
+    return NextResponse.json(
+      { error: "자격시험 입력 크기가 허용 범위를 초과했습니다." },
+      { status: 413 },
+    );
+  }
+  const bodyAbortController = new AbortController();
+  const bodyReceiptPromise = readBoundedRequestBody(
+    request,
+    MAX_LICENSE_TEST_REQUEST_BYTES,
+    bodyAbortController.signal,
+  ).then(
+    (value) => ({ ok: true as const, value }),
+    (error: unknown) => ({ ok: false as const, error }),
+  );
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    bodyAbortController.abort();
+    await bodyReceiptPromise;
+    throw error;
+  }
   if (!session?.user) {
+    bodyAbortController.abort();
+    await bodyReceiptPromise;
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const bodyReceiptResult = await bodyReceiptPromise;
+  if (!bodyReceiptResult.ok) {
+    if (!(bodyReceiptResult.error instanceof RequestBodyTooLargeError)) {
+      throw bodyReceiptResult.error;
+    }
+    return NextResponse.json(
+      { error: "자격시험 입력 크기가 허용 범위를 초과했습니다." },
+      { status: 413 },
+    );
+  }
+  const bodyReceipt = bodyReceiptResult.value;
   const requestId = readIdempotencyKey(request);
   if (!requestId) {
     return NextResponse.json(
@@ -354,9 +508,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = parseTowaskiLicenseTestRequest(
-    await request.json().catch(() => null),
-  );
+  const rawBody = (() => {
+    try {
+      return JSON.parse(bodyReceipt.rawBody) as unknown;
+    } catch {
+      return null;
+    }
+  })();
+  const body = parseTowaskiLicenseTestRequest(rawBody);
   if (!body) {
     return NextResponse.json(
       {
@@ -458,6 +617,11 @@ export async function POST(request: Request) {
           "이미 종료된 사격 시험 시작 요청입니다.",
         );
       }
+      challenge = await activateV3ChallengeForResponse(
+        challenge,
+        session.user.id,
+        characterId,
+      );
       const response = activeResponse(challenge);
       if (response) return NextResponse.json(response);
     } catch (error) {
@@ -483,6 +647,7 @@ export async function POST(request: Request) {
               userId: session.user.id,
               characterId,
               requestId,
+              requestReceivedAt: bodyReceipt.requestReceivedAt,
             })
           : await resolveTowaskiLicenseChallengeRound({
               challengeId: body.challengeId,
@@ -493,6 +658,15 @@ export async function POST(request: Request) {
               characterId,
               requestId,
             });
+      if (challenge.status === "active") {
+        challenge = await activateV3ChallengeForResponse(
+          challenge,
+          session.user.id,
+          characterId,
+        );
+        const response = activeResponse(challenge);
+        if (response) return NextResponse.json(response);
+      }
     } catch (error) {
       if (error instanceof TowaskiLicenseChallengeError) {
         return challengeErrorResponse(error);
@@ -504,12 +678,6 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
-
-    if (challenge.status === "active") {
-      const response = activeResponse(challenge);
-      if (response) return NextResponse.json(response);
-    }
-
   }
 
   const licenseSlug = challenge.licenseSlug;

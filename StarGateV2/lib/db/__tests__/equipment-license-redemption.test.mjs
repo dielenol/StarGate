@@ -12,6 +12,7 @@ process.env.DB_NAME = TEST_DB_NAME;
 const LICENSE_SLUG = "towaski-license-basic-firearm";
 const HEAVY_LICENSE_SLUG = "towaski-license-heavy-weapon";
 let claimTowaskiLicenseChallengeRedemption;
+let activateTowaskiLicenseChallengeStep;
 let getTowaskiLicenseQualificationStatus;
 let grantTowaskiLicenseOnce;
 let markTowaskiLicenseChallengeRedeemed;
@@ -28,6 +29,7 @@ before(async () => {
   ({ ObjectId } = await import("mongodb"));
   ({ getClient, getDb } = await import("@stargate/shared-db"));
   ({
+    activateTowaskiLicenseChallengeStep,
     claimTowaskiLicenseChallengeRedemption,
     markTowaskiLicenseChallengeRedeemed,
     resolveTowaskiLicenseChallengeRound,
@@ -282,6 +284,204 @@ test(
     assert.equal(first.v2.progress.step, 1);
     assert.equal(replay.v2.progress.step, 1);
     assert.deepEqual(replay.v2.progress, first.v2.progress);
+  },
+);
+
+test(
+  "V3 시작은 active V2만 supersede하고 passed V2는 기존 redemption 대상으로 보존한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const db = await getDb();
+    const activeV2 = await startOrResumeTowaskiLicenseChallenge({
+      userId: "license-v3-upgrade-user",
+      characterId: "license-v3-upgrade-character",
+      characterCodename: "V3-UPGRADE",
+      licenseSlug: LICENSE_SLUG,
+      difficulty: "basic",
+      programVersion: 2,
+      mode: "firearm",
+      requestId: "license-v3-upgrade-v2-start",
+    });
+    const activeV3 = await startOrResumeTowaskiLicenseChallenge({
+      userId: activeV2.userId,
+      characterId: activeV2.characterId,
+      characterCodename: activeV2.characterCodename,
+      licenseSlug: LICENSE_SLUG,
+      difficulty: "basic",
+      programVersion: 3,
+      mode: "firearm",
+      requestId: "license-v3-upgrade-v3-start",
+    });
+    const superseded = await db
+      .collection("equipment_license_tests")
+      .findOne({ _id: activeV2._id });
+    assert.equal(superseded.status, "superseded");
+    assert.equal(activeV3.status, "active");
+    assert.equal(activeV3.programVersion, 3);
+    assert.equal(activeV3.v3?.programVersion, 3);
+    const supersededReplay = await startOrResumeTowaskiLicenseChallenge({
+      userId: activeV2.userId,
+      characterId: activeV2.characterId,
+      characterCodename: activeV2.characterCodename,
+      licenseSlug: LICENSE_SLUG,
+      difficulty: "basic",
+      programVersion: 2,
+      mode: "firearm",
+      requestId: "license-v3-upgrade-v2-start",
+    });
+    assert.equal(supersededReplay.status, "superseded");
+
+    await Promise.all([
+      db.collection("equipment_license_tests").updateOne(
+        { _id: activeV3._id },
+        { $set: { status: "failed", completedAt: new Date() } },
+      ),
+      db.collection("equipment_license_tests").updateOne(
+        { _id: activeV2._id },
+        {
+          $set: {
+            status: "passed",
+            completedAt: new Date(),
+            currentRound: 12,
+            "v2.progress": {
+              mode: "firearm",
+              step: 12,
+              hostileHits: 10,
+              civilianHits: 0,
+              shots: 10,
+            },
+          },
+        },
+      ),
+    ]);
+    const passedReplay = await startOrResumeTowaskiLicenseChallenge({
+      userId: activeV2.userId,
+      characterId: activeV2.characterId,
+      characterCodename: activeV2.characterCodename,
+      licenseSlug: LICENSE_SLUG,
+      difficulty: "basic",
+      programVersion: 2,
+      mode: "firearm",
+      requestId: "license-v3-upgrade-v2-start",
+    });
+    assert.equal(passedReplay.status, "passed");
+    const replayablePassed = await startOrResumeTowaskiLicenseChallenge({
+      userId: activeV3.userId,
+      characterId: activeV3.characterId,
+      characterCodename: activeV3.characterCodename,
+      licenseSlug: LICENSE_SLUG,
+      difficulty: "basic",
+      programVersion: 3,
+      mode: "firearm",
+      requestId: "license-v3-passed-redemption-start",
+    });
+    assert.equal(String(replayablePassed._id), String(activeV2._id));
+    assert.equal(replayablePassed.status, "passed");
+    assert.equal(replayablePassed.programVersion, 2);
+  },
+);
+
+test(
+  "V3 단계 시간은 한 번만 활성화되고 요청 도착 시각과 종료 상태 재전송을 보존한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const challenge = await startOrResumeTowaskiLicenseChallenge({
+      userId: "license-v3-clock-user",
+      characterId: "license-v3-clock-character",
+      characterCodename: "V3-CLOCK",
+      licenseSlug: LICENSE_SLUG,
+      difficulty: "basic",
+      programVersion: 3,
+      mode: "firearm",
+      requestId: "license-v3-clock-start",
+    });
+    const activationInput = {
+      challengeId: String(challenge._id),
+      userId: challenge.userId,
+      characterId: challenge.characterId,
+      step: 0,
+    };
+    const activated = await activateTowaskiLicenseChallengeStep(
+      activationInput,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const activationReplay = await activateTowaskiLicenseChallengeStep(
+      activationInput,
+    );
+
+    assert.equal(activated.v3ActivatedStep, 0);
+    assert.equal(
+      activationReplay.roundStartedAt.getTime(),
+      activated.roundStartedAt.getTime(),
+    );
+
+    const delayedRoundStartedAt = new Date(Date.now() - 5_000);
+    const requestReceivedAt = new Date(
+      delayedRoundStartedAt.getTime() + 150,
+    );
+    const db = await getDb();
+    await db.collection("equipment_license_tests").updateOne(
+      { _id: challenge._id },
+      { $set: { roundStartedAt: delayedRoundStartedAt } },
+    );
+    const request = {
+      ...activationInput,
+      input: {
+        mode: "firearm",
+        fired: false,
+        shots: 0,
+        elapsedMs: 150,
+      },
+      requestId: "license-v3-clock-resolve",
+      requestReceivedAt,
+    };
+    const resolved = await resolveTowaskiLicenseChallengeStep(request);
+    assert.equal(resolved.status, "active");
+    assert.equal(resolved.v3.progress.step, 1);
+
+    const completedAt = new Date();
+    await db.collection("equipment_license_tests").updateOne(
+      { _id: challenge._id },
+      { $set: { status: "failed", completedAt } },
+    );
+    const terminalReplay = await resolveTowaskiLicenseChallengeStep(request);
+    assert.equal(terminalReplay.status, "failed");
+    assert.deepEqual(terminalReplay.completedAt, completedAt);
+  },
+);
+
+test(
+  "V2 challenge는 V3 elapsed 입력을 저장소 경계에서 거부한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const challenge = await startOrResumeTowaskiLicenseChallenge({
+      userId: "license-cross-version-user",
+      characterId: "license-cross-version-character",
+      characterCodename: "CROSS-VERSION",
+      licenseSlug: LICENSE_SLUG,
+      difficulty: "basic",
+      programVersion: 2,
+      mode: "firearm",
+      requestId: "license-cross-version-start",
+    });
+
+    await assert.rejects(
+      resolveTowaskiLicenseChallengeStep({
+        challengeId: String(challenge._id),
+        userId: challenge.userId,
+        characterId: challenge.characterId,
+        step: 0,
+        input: {
+          mode: "firearm",
+          fired: false,
+          shots: 0,
+          elapsedMs: 150,
+        },
+        requestId: "license-cross-version-resolve",
+        requestReceivedAt: new Date(),
+      }),
+      /시험 버전과 제출한 단계 입력/,
+    );
   },
 );
 

@@ -16,6 +16,14 @@ import {
   type TowaskiLicenseV2Scenario,
   type TowaskiLicenseV2StepInput,
 } from "./license-test-v2.ts";
+import {
+  parseTowaskiLicenseV3StepInput,
+  TOWASKI_LICENSE_PROGRAM_VERSION_V3,
+  type TowaskiLicenseV3Evaluation,
+  type TowaskiLicenseV3Progress,
+  type TowaskiLicenseV3PublicScenario,
+  type TowaskiLicenseV3StepInput,
+} from "./license-test-v3.ts";
 
 export const TOWASKI_BASIC_FIREARM_LICENSE_SLUG =
   "towaski-license-basic-firearm" as const;
@@ -108,7 +116,7 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tierLabel: "기초",
     difficulty: "basic",
     mode: "firearm",
-    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION_V3,
     briefing:
       "적성 표적을 식별해 사격하고 민간 표적에는 사격하지 마십시오.",
     requiresBasicLicense: false,
@@ -124,9 +132,9 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tierLabel: "중급",
     difficulty: "standard",
     mode: "precision",
-    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION_V3,
     briefing:
-      "화면의 적색 소형 표적이 명중 목표입니다. 표시된 풍향만큼 반대 방향으로 조준점을 옮기고, 호흡 고정을 0.5초 이상 완료한 뒤 여섯 발을 각각 단발로 발사하십시오.",
+      "1.125초 동안 나타나는 축소 표적을 직접 조준하십시오. 적성 10개 중 8개 이상을 맞히고 민간 표적에는 사격하지 마십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-heavy-weapon": {
@@ -140,9 +148,9 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tierLabel: "고급",
     difficulty: "expert",
     mode: "heavy",
-    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION_V3,
     briefing:
-      "조준점을 적색 장갑 표적에 붙들어 둔 채 1.8초보다 짧은 점사를 나누어 가하십시오. 청색 횡단 인원이 켜지면 즉시 방아쇠를 놓고 냉각한 뒤 다시 제압하십시오.",
+      "네이티브 조준점은 숨겨집니다. 80ms 단위로 흔들리는 전자 조준점을 읽고 적성 표적에만 단발 사격하십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-flame-weapon": {
@@ -156,9 +164,9 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tierLabel: "고급",
     difficulty: "expert",
     mode: "flame",
-    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION_V3,
     briefing:
-      "시험장 안에서 누르고 끌어 분사 경로를 그리십시오. 적색 소각 지점 다섯 곳 중 네 곳 이상을 경로에 포함하되, 청색 보호 구역과 황색 연료통 앞에서는 손을 떼어 화염을 끊으십시오.",
+      "7×5 격자에서 정확히 세 칸의 직선 화염 차단선을 지정하십시오. 적성 둘을 막되 아군·연료·후퇴로를 침범해서는 안 됩니다.",
     requiresBasicLicense: true,
   },
   "towaski-license-sonic-equipment": {
@@ -172,9 +180,9 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tierLabel: "고급",
     difficulty: "expert",
     mode: "sonic",
-    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION_V3,
     briefing:
-      "사격 표적을 맞히는 시험이 아닙니다. 화면에 제시된 목표 Hz와 허용 출력·파동 폭에 세 계기를 맞추고, 출력×폭이 보호 임계값을 넘지 않는지 확인한 뒤 0.6–1.5초 충전한 펄스를 방출하십시오.",
+      "네 단계의 8박 리듬에서 적성 신호 6개만 타격하십시오. 보호 신호 2개는 건너뛰고 각 단계에서 적성 5개 이상을 맞히십시오.",
     requiresBasicLicense: true,
   },
   "towaski-license-explosive-ordnance": {
@@ -188,9 +196,9 @@ export const TOWASKI_LICENSE_TEST_PROGRAMS: Record<
     tierLabel: "고급",
     difficulty: "expert",
     mode: "explosive",
-    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION_V3,
     briefing:
-      "현장 정보 카드를 읽고 ① 탄종·신관 선택 ② 지도에서 폭발 반경 배치 ③ 안전 발사선 선택을 순서대로 완료하십시오. 적성 두 명만 반경에 넣고 민간과 로켓 후폭풍 구역은 제외해야 합니다.",
+      "수류탄·로켓 반출 명세서 각 5개를 RELEASE·SERVICE·QUARANTINE으로 분류하십시오. 위험품 반출과 격리 누락은 즉시 탈락입니다.",
     requiresBasicLicense: true,
   },
 };
@@ -307,14 +315,23 @@ export type TowaskiLicenseV2ResolveRequest = {
   input: TowaskiLicenseV2StepInput;
 };
 
+export type TowaskiLicenseV3ResolveRequest = {
+  action: "resolve";
+  challengeId: string;
+  step: number;
+  input: TowaskiLicenseV3StepInput;
+};
+
 export type TowaskiLicenseTestRequest =
   | { action: "start"; licenseSlug: TowaskiLicenseSlug }
   | TowaskiLegacyLicenseTestResolveRequest
-  | TowaskiLicenseV2ResolveRequest;
+  | TowaskiLicenseV2ResolveRequest
+  | TowaskiLicenseV3ResolveRequest;
 
 export type TowaskiLicenseTestEvaluation =
   | TowaskiBasicLicenseTestEvaluation
-  | TowaskiLicenseV2Evaluation;
+  | TowaskiLicenseV2Evaluation
+  | TowaskiLicenseV3Evaluation;
 
 export type TowaskiLicenseTestResponse =
   | {
@@ -331,7 +348,7 @@ export type TowaskiLicenseTestResponse =
     }
   | {
       status: "active";
-      programVersion: number;
+      programVersion: 2;
       mode: TowaskiLicenseTestMode;
       challengeId: string;
       step: number;
@@ -339,6 +356,18 @@ export type TowaskiLicenseTestResponse =
       licenseSlug: TowaskiLicenseSlug;
       difficulty: TowaskiLicenseTestDifficulty;
       progress: TowaskiLicenseV2Progress;
+      stepDeadlineAt: string;
+    }
+  | {
+      status: "active";
+      programVersion: 3;
+      mode: TowaskiLicenseTestMode;
+      challengeId: string;
+      step: number;
+      scenario: TowaskiLicenseV3PublicScenario;
+      licenseSlug: TowaskiLicenseSlug;
+      difficulty: TowaskiLicenseTestDifficulty;
+      progress: TowaskiLicenseV3Progress;
       stepDeadlineAt: string;
     }
   | {
@@ -361,13 +390,23 @@ export type TowaskiLicenseTestResponse =
     }
   | {
       status: "failed";
-      programVersion: number;
+      programVersion: 2;
       mode: TowaskiLicenseTestMode;
       challengeId: string;
       licenseSlug: TowaskiLicenseSlug;
       difficulty: TowaskiLicenseTestDifficulty;
       progress: TowaskiLicenseV2Progress;
       evaluation: TowaskiLicenseV2Evaluation;
+    }
+  | {
+      status: "failed";
+      programVersion: 3;
+      mode: TowaskiLicenseTestMode;
+      challengeId: string;
+      licenseSlug: TowaskiLicenseSlug;
+      difficulty: TowaskiLicenseTestDifficulty;
+      progress: TowaskiLicenseV3Progress;
+      evaluation: TowaskiLicenseV3Evaluation;
     }
   | {
       status: "granted" | "already_owned";
@@ -403,13 +442,22 @@ export function parseTowaskiLicenseTestRequest(
     body.step >= 0 &&
     body.step < TOWASKI_LICENSE_TARGET_LAYOUTS.length
   ) {
-    const input = parseTowaskiLicenseV2StepInput(body.input);
-    return input
+    const v3Input = parseTowaskiLicenseV3StepInput(body.input);
+    if (v3Input) {
+      return {
+        action: "resolve",
+        challengeId: body.challengeId,
+        step: body.step,
+        input: v3Input,
+      };
+    }
+    const v2Input = parseTowaskiLicenseV2StepInput(body.input);
+    return v2Input
       ? {
           action: "resolve",
           challengeId: body.challengeId,
           step: body.step,
-          input,
+          input: v2Input,
         }
       : null;
   }
@@ -648,7 +696,7 @@ function debugV2ActiveResponse(
   if (!scenario) throw new Error("DEBUG_LICENSE_SCENARIO_MISSING");
   return {
     status: "active",
-    programVersion: session.state.programVersion,
+    programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
     mode: session.state.mode,
     challengeId: session.challengeId,
     step: session.state.progress.step,
@@ -738,7 +786,7 @@ export function resolveTowaskiDebugLicenseTestV2(
       session: nextSession,
       response: {
         status: "failed",
-        programVersion: state.programVersion,
+        programVersion: TOWASKI_LICENSE_PROGRAM_VERSION,
         mode: state.mode,
         challengeId: session.challengeId,
         licenseSlug: session.licenseSlug,

@@ -83,3 +83,24 @@ test("v2 qualification is active and does not offer another test", () => {
   assert.equal(status.grantsPurchaseAccess, true);
   assert.equal(status.canTakeTest, false);
 });
+
+test("v3 rollout preserves V2-earned purchase access while accepting V3 records", () => {
+  for (const programVersion of [2, 3]) {
+    const status = resolveTowaskiLicenseQualificationStatus({
+      licenseSlug: "towaski-license-heavy-weapon",
+      entry: {
+        quantity: 1,
+        licenseQualification: {
+          authority: "TOWASKI",
+          programVersion,
+          qualifiedAt: NOW,
+        },
+      },
+      now: NOW,
+    });
+    assert.equal(status.state, "active");
+    assert.equal(status.grantsPurchaseAccess, true);
+    assert.equal(status.canTakeTest, false);
+    assert.equal(status.programVersion, programVersion);
+  }
+});
