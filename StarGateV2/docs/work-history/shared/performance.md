@@ -10,3 +10,11 @@
 - shared-db 신설 함수는 전부 additive(기존 export 시그니처 불변), worker/봇 영향 없음.
 - 검증: 등가성 테스트 25건 신규(웜패스/KST 카운트 oracle/벌크 알림/리페치 런타임) + 기존 스위트 회귀 없음(core 7, shop 44, sessions 37), `pnpm lint`, `pnpm typecheck`, `pnpm build`
 - 관련 커밋: `e652df2`, `de996ea`, `e1bd14f`, `49d2866`
+
+## 2026-07-31 · 성능 최적화 · RSC 페이로드 프로젝션 (성능 캠페인 Phase 2)
+
+- 메인 캐릭터 조회를 display-lite(identity+lore.name) 캐시 변형으로 교체 — 전 ERP 라우트 layout이 lore 전문 대신 수백 B 페이로드 사용 (play/full 실소비 3곳은 heavy 유지, 두 변형 혼용 금지 문서화).
+- 실 DB 29유저 전수 대조로 main 캐릭터 선정 등가 확인 (GM NPC 폴백 2건 실증 포함).
+- wiki 목록의 동일 배열 이중 props 전달 제거.
+- 검증: `pnpm lint`, `pnpm typecheck`, `pnpm build`, 등가성 테스트 15건
+- 관련 커밋: `a174e28`

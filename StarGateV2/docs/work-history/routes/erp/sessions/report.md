@@ -13,3 +13,17 @@
 - 편집 중 외부 수정은 입력을 폐기하지 않고 저장을 잠그며 `expectedUpdatedAt` 불일치는 `409 STALE_VERSION`으로 처리한다.
 - 검증: shared-db CAS 26건, realtime 계약 테스트, `pnpm lint`, `pnpm typecheck`, `pnpm build:web`
 - 관련 커밋: `bba8924`
+
+## 2026-07-31 · 성능 최적화 · 상세 참조 조회 경량화
+
+- 보고서 상세의 캐릭터/아이템/보고서 참조를 ref 프로젝션으로 교체 (위키는 본문 content 매칭이 판정 입력이라 의도적으로 full 유지 — 연관 위키 카드 결과 보존).
+- 검증: 연관 매칭 등가성 테스트(content 의존 입증 포함), `pnpm build`
+- 관련 커밋: `a174e28`
+
+## 2026-07-31 · 버그 수정 · 상세 실명 마스킹 적용
+
+- 자동링크·참여 인원·관련 인물 경로가 캐릭터 실명을 등급 무관 평문 노출하던 것을 위키 상세와 동일한 clearance 마스킹으로 통일 (clearanceOverrides 존중, 2026-07-31 정책 확정). G 미만 등급은 실명 대신 닉네임/[CLASSIFIED] 표기.
+- 연관 위키 후보를 visibleWikiPages 로 제한 — 비공개 문서 제목의 연관 카드 노출 차단 (GM 동작 불변).
+- GM 이 본문에 직접 쓴 participants 원문 문자열은 그대로 유지 (DB 조인 표시만 게이트).
+- 검증: 마스킹 후 연관 매칭 생존 테스트(appearsInEvents/codename/닉네임), validator 재검 PASS
+- 관련 커밋: `3492c1b`
