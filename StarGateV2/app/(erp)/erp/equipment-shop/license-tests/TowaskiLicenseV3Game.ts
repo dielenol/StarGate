@@ -10,4 +10,9 @@ export interface TowaskiLicenseV3GameProps {
   challenge: TowaskiLicenseV3ActiveResponse;
   disabled: boolean;
   onResolve: (input: TowaskiLicenseV3StepInput) => void;
+  sonicStageFeedback?: {
+    successful: boolean;
+    targetHits: number;
+    protectedHit: boolean;
+  } | null;
 }

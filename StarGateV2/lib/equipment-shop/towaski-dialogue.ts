@@ -141,6 +141,10 @@ const QUALIFICATION_FAILURE_LINES = {
   sonic_safety: [
     "보호 박자 입력이 잡혔다. 파형의 TARGET과 PROTECTED 표시부터 다시 구분해.",
   ],
+  sonic_rhythm: [
+    "보호 박자는 잘 넘겼지만 TARGET 적중이 부족하다. 판정선 안에서 단계당 다섯 박자를 맞춰.",
+    "리듬 단계 통과 수가 모자란다. TARGET이 코어에 닿는 순간만 입력해.",
+  ],
   explosive_safety: [
     "위험품 반출 또는 격리 누락이다. 네 검수값을 다시 대조해.",
   ],
@@ -159,13 +163,11 @@ function qualificationFailureKey(
   reasons: readonly string[],
   mode?: TowaskiLicenseTestMode,
 ): keyof typeof QUALIFICATION_FAILURE_LINES {
-  if (
-    mode === "sonic" &&
-    reasons.some((reason) =>
-      ["protected_hit", "rhythm_stages"].includes(reason),
-    )
-  ) {
+  if (mode === "sonic" && reasons.includes("protected_hit")) {
     return "sonic_safety";
+  }
+  if (mode === "sonic" && reasons.includes("rhythm_stages")) {
+    return "sonic_rhythm";
   }
   if (
     mode === "flame" &&
@@ -227,12 +229,12 @@ function qualificationFailureKey(
         "frequency_deviation",
         "protected_exposure",
         "overload",
-        "rhythm_stages",
       ].includes(reason),
     )
   ) {
     return "sonic_safety";
   }
+  if (reasons.includes("rhythm_stages")) return "sonic_rhythm";
   if (
     reasons.some((reason) =>
       [

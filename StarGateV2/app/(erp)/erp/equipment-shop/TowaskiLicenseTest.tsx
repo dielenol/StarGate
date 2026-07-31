@@ -24,7 +24,10 @@ import {
   type TowaskiLicenseTestStats,
 } from "@/lib/equipment-shop/license-test";
 import type { TowaskiLicenseTestMode } from "@/lib/equipment-shop/license-test-v2";
-import type { TowaskiLicenseV3StepInput } from "@/lib/equipment-shop/license-test-v3";
+import type {
+  TowaskiV3SonicProgress,
+  TowaskiLicenseV3StepInput,
+} from "@/lib/equipment-shop/license-test-v3";
 import {
   TOWASKI_LICENSE_DEFINITIONS,
   type TowaskiLicenseSlug,
@@ -37,7 +40,10 @@ import { TowaskiFlameGame } from "./license-tests/TowaskiFlameGame";
 import { TowaskiHeavyGame } from "./license-tests/TowaskiHeavyGame";
 import { TowaskiPrecisionGame } from "./license-tests/TowaskiPrecisionGame";
 import { TowaskiSonicGame } from "./license-tests/TowaskiSonicGame";
-import type { TowaskiLicenseV3ActiveResponse } from "./license-tests/TowaskiLicenseV3Game";
+import type {
+  TowaskiLicenseV3ActiveResponse,
+  TowaskiLicenseV3GameProps,
+} from "./license-tests/TowaskiLicenseV3Game";
 import { playTowaskiLicenseModeSound } from "./license-tests/towaski-license-audio";
 import styles from "./TowaskiLicenseTest.module.css";
 
@@ -214,7 +220,7 @@ function modeStandbyCopy(mode: TowaskiLicenseTestMode): {
       return {
         eyebrow: "RESONANCE RHYTHM",
         title: "실시간 공진 박자 동기화",
-        instruction: "TARGET 입력 · PROTECTED 보류 · 음소거 플레이 지원",
+        instruction: "시작 즉시 Space·시험장 탭·PULSE로 TARGET만 입력 · PROTECTED 보류",
       };
     case "explosive":
       return {
@@ -474,6 +480,7 @@ function renderV3Game(args: {
   challenge: TowaskiLicenseV3ActiveResponse;
   disabled: boolean;
   onResolve: (input: TowaskiLicenseV3StepInput) => void;
+  sonicStageFeedback?: TowaskiLicenseV3GameProps["sonicStageFeedback"];
 }) {
   const props = args;
   switch (args.challenge.mode) {
@@ -516,6 +523,9 @@ export default function TowaskiLicenseTest({
   >["license"] | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [reticle, setReticle] = useState({ x: 50, y: 50, visible: false });
+  const [sonicStageFeedback, setSonicStageFeedback] = useState<
+    TowaskiLicenseV3GameProps["sonicStageFeedback"]
+  >(null);
 
   const audioRef = useRef<DialogueBeepEngine | null>(null);
   const modeAudioContextRef = useRef<AudioContext | null>(null);
@@ -600,6 +610,7 @@ export default function TowaskiLicenseTest({
     setLastEvaluation(null);
     setGrantedLicense(null);
     setSubmissionError(null);
+    setSonicStageFeedback(null);
     roundShotsRef.current = 0;
     resolvingRef.current = false;
   }, []);
@@ -612,6 +623,24 @@ export default function TowaskiLicenseTest({
         return;
       }
       if (response.status === "active") {
+        if (
+          program.mode === "sonic" &&
+          isV3ActiveChallenge(challenge) &&
+          challenge.mode === "sonic" &&
+          response.mode === "sonic"
+        ) {
+          const previousProgress = challenge.progress as TowaskiV3SonicProgress;
+          const nextProgress = response.progress as TowaskiV3SonicProgress;
+          setSonicStageFeedback({
+            successful:
+              nextProgress.successfulStages > previousProgress.successfulStages,
+            targetHits: nextProgress.targetHits - previousProgress.targetHits,
+            protectedHit:
+              nextProgress.protectedHits > previousProgress.protectedHits,
+          });
+        } else {
+          setSonicStageFeedback(null);
+        }
         setChallenge(response);
         if ("stats" in response) setStats(response.stats);
         setRoundShots(0);
@@ -637,7 +666,7 @@ export default function TowaskiLicenseTest({
       setGrantedLicense(response.license);
       setPhase("passed");
     },
-    [onDialogueEvent, program.mode],
+    [challenge, onDialogueEvent, program.mode],
   );
 
   const handleMutationError = useCallback(
@@ -918,6 +947,23 @@ export default function TowaskiLicenseTest({
                 </span>
               ))}
             </div>
+            {program.mode === "sonic" ? (
+              <div className={styles.sonicBriefing} aria-label="음파 시험 상세 안내">
+                <div className={styles.sonicBriefing__headline}>
+                  <span>SONIC V3 / RESONANCE PROTOCOL</span>
+                  <strong>파형의 TARGET만 동기화하고 보호 공진은 침묵으로 통과하십시오.</strong>
+                </div>
+                <div className={styles.sonicBriefing__legend}>
+                  <span className={styles["sonicBriefing__legend--target"]}>TARGET · 입력</span>
+                  <span className={styles["sonicBriefing__legend--protected"]}>PROTECTED · 입력 금지</span>
+                </div>
+                <div className={styles.sonicBriefing__grid}>
+                  <span><strong>조작</strong>SPACE · 시험장 탭 · PULSE 버튼</span>
+                  <span><strong>판정</strong>PERFECT ±90ms · GOOD ±170ms</span>
+                  <span><strong>합격</strong>매 stage 5 / 6 · 최종 3 / 4 · 보호 입력 0</span>
+                </div>
+              </div>
+            ) : null}
             <div className={styles.criteria} aria-label="합격 기준">
               {qualificationCriteria(program.mode).map((criterion) => (
                 <span key={criterion}>
@@ -1020,6 +1066,7 @@ export default function TowaskiLicenseTest({
           challenge: v3Challenge,
           disabled: phase !== "active",
           onResolve: resolveV3Step,
+          sonicStageFeedback,
         })
       ) : (
         <div

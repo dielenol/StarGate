@@ -117,3 +117,16 @@ test("sonic protected-hit failure stays in rhythm safety dialogue", () => {
   assert.match(line, /보호 박자|TARGET|PROTECTED|파형/);
   assert.doesNotMatch(line, /축소 표적|사분의 일|풍향|호흡/);
 });
+
+test("sonic rhythm miss does not falsely report a protected-beat hit", () => {
+  const line = getTowaskiQualificationDialogueLine({
+    type: "failed",
+    difficulty: "expert",
+    mode: "sonic",
+    attempt: 2,
+    reasons: ["rhythm_stages"],
+  });
+
+  assert.match(line, /TARGET|리듬|박자|적중/);
+  assert.doesNotMatch(line, /보호 박자 입력이 잡혔다/);
+});
