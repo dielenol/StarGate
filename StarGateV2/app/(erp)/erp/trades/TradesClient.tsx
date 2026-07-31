@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import type { ItemCategory } from "@stargate/shared-db/types";
 
@@ -687,7 +687,12 @@ function OfferEditor({
   );
 }
 
-function TradeCard({
+/**
+ * 10s 폴링 tick 마다 부모가 리렌더돼도 props 가 구조 공유로 동일하면
+ * 카드 서브트리(제안 보드 + 에디터) 리렌더를 건너뛴다.
+ * 전제: onUpdate 는 useCallback, trade/assets 는 TanStack Query 구조 공유 참조.
+ */
+const TradeCard = memo(function TradeCard({
   assets,
   busy,
   errorMessage,
@@ -870,7 +875,7 @@ function TradeCard({
       ) : null}
     </article>
   );
-}
+});
 
 export default function TradesClient() {
   const query = useTradesQuery();
@@ -907,33 +912,39 @@ export default function TradesClient() {
     return () => window.clearTimeout(timeoutId);
   }, [feedback]);
 
-  function updateTrade(
-    tradeId: string,
-    action: TradeAction,
-    options?: { onSuccess?: () => void },
-  ) {
-    updateMutation.mutate(
-      { tradeId, action },
-      {
-        onSuccess: (response) => {
-          options?.onSuccess?.();
-          if (action.action === "SET_OFFER") {
-            setFeedback("내 교환 제안을 저장했습니다.");
-            return;
-          }
-          if (action.action === "CANCEL") {
-            setFeedback("교환을 취소했습니다.");
-            return;
-          }
-          setFeedback(
-            response.completed
-              ? "자산 교환이 완료되었습니다."
-              : "교환을 확정했습니다. 상대 확정을 기다립니다.",
-          );
+  // TradeCard(memo) 에 내려가는 콜백 — 폴링 리렌더에서 참조가 흔들리지 않도록 고정.
+  // v5 의 mutation.mutate 는 참조 안정이므로 deps 로 안전하다.
+  const { mutate: mutateTradeUpdate } = updateMutation;
+  const updateTrade = useCallback(
+    (
+      tradeId: string,
+      action: TradeAction,
+      options?: { onSuccess?: () => void },
+    ) => {
+      mutateTradeUpdate(
+        { tradeId, action },
+        {
+          onSuccess: (response) => {
+            options?.onSuccess?.();
+            if (action.action === "SET_OFFER") {
+              setFeedback("내 교환 제안을 저장했습니다.");
+              return;
+            }
+            if (action.action === "CANCEL") {
+              setFeedback("교환을 취소했습니다.");
+              return;
+            }
+            setFeedback(
+              response.completed
+                ? "자산 교환이 완료되었습니다."
+                : "교환을 확정했습니다. 상대 확정을 기다립니다.",
+            );
+          },
         },
-      },
-    );
-  }
+      );
+    },
+    [mutateTradeUpdate],
+  );
 
   if (query.isPending) {
     return <div className={styles.state}>거래 정보를 불러오는 중입니다…</div>;

@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 import { useInternalLinkPendingNavigation } from "@/components/erp/NavPending/useInternalLinkPendingNavigation";
 import { useSessionReport } from "@/hooks/queries/useSessionReportsQuery";
 import type { ClientSessionReport } from "@/types/session-report";
@@ -26,11 +28,15 @@ export default function ReportBodyContent({
     initialReport._id,
     { initialData: initialReport },
   );
-  const html = renderMarkdown(report.summary || "—", {
-    links,
-    maxAutoLinksPerTarget: 1,
-    maxAutoLinksTotal: 32,
-  });
+  const html = useMemo(
+    () =>
+      renderMarkdown(report.summary || "—", {
+        links,
+        maxAutoLinksPerTarget: 1,
+        maxAutoLinksTotal: 32,
+      }),
+    [report.summary, links],
+  );
 
   return (
     <>

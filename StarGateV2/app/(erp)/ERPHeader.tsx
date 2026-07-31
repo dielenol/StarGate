@@ -67,6 +67,7 @@ const getServerKbdLabel = () => "⌘K";
 
 const ERP_BGM_MAX_VOLUME = 0.32;
 const ERP_BGM_DEFAULT_VOLUME_LEVEL = 70;
+const ERP_BGM_INITIAL_TIME_LABEL = "0:00 / 0:00";
 const ERP_BGM_LAST_TRACK_STORAGE_KEY = "novus-ordo-erp-last-bgm-index";
 const NOTIFICATION_DROPDOWN_ID = "erp-header-notifications";
 const ERP_BGM_TRACKS = [
@@ -223,7 +224,6 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const [bgmPlaying, setBgmPlaying] = useState(false);
   const [bgmPending, setBgmPending] = useState(false);
   const [bgmError, setBgmError] = useState(false);
-  const [bgmCurrentTime, setBgmCurrentTime] = useState(0);
   const [bgmDuration, setBgmDuration] = useState(0);
   const [bgmVolumeLevel, setBgmVolumeLevel] = useState(
     ERP_BGM_DEFAULT_VOLUME_LEVEL,
@@ -231,6 +231,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
   const bgmProgressInputRef = useRef<HTMLInputElement | null>(null);
   const bgmVolumeInputRef = useRef<HTMLInputElement | null>(null);
+  const bgmTimeLabelRef = useRef<HTMLSpanElement | null>(null);
   const notificationWrapRef = useRef<HTMLDivElement | null>(null);
   const bgmTrackIndexRef = useRef<number | null>(null);
   const playBgmTrackRef = useRef<(trackIndex: number) => Promise<boolean>>(
@@ -248,6 +249,37 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
       window.removeEventListener("no:sidebar-state", handleSidebarState);
   }, []);
 
+  /**
+   * ~4Hz timeupdate 를 React state 로 올리면 헤더 전체가 재생 내내 리렌더된다.
+   * 시간 라벨 텍스트와 시크바(값 + --bgm-progress 변수)는 DOM 에 직접 기록한다.
+   */
+  const writeBgmProgressDom = useCallback(
+    (currentTime: number, duration: number) => {
+      const durationValue = getFiniteAudioTime(duration);
+      const currentTimeValue = Math.min(
+        getFiniteAudioTime(currentTime),
+        durationValue || getFiniteAudioTime(currentTime),
+      );
+      const progressPercent =
+        durationValue > 0 ? (currentTimeValue / durationValue) * 100 : 0;
+
+      if (bgmTimeLabelRef.current) {
+        bgmTimeLabelRef.current.textContent = `${formatBgmTime(
+          currentTimeValue,
+        )} / ${formatBgmTime(durationValue)}`;
+      }
+      const progressInput = bgmProgressInputRef.current;
+      if (progressInput) {
+        progressInput.value = String(durationValue > 0 ? currentTimeValue : 0);
+        progressInput.style.setProperty(
+          "--bgm-progress",
+          `${progressPercent}%`,
+        );
+      }
+    },
+    [],
+  );
+
   const getBgmAudio = useCallback(() => {
     if (!bgmAudioRef.current) {
       const audio = new Audio();
@@ -258,18 +290,20 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
       };
       audio.ondurationchange = () => {
         setBgmDuration(getFiniteAudioTime(audio.duration));
+        writeBgmProgressDom(audio.currentTime, audio.duration);
       };
       audio.onloadedmetadata = () => {
         setBgmDuration(getFiniteAudioTime(audio.duration));
+        writeBgmProgressDom(audio.currentTime, audio.duration);
       };
       audio.ontimeupdate = () => {
-        setBgmCurrentTime(getFiniteAudioTime(audio.currentTime));
+        writeBgmProgressDom(audio.currentTime, audio.duration);
       };
       bgmAudioRef.current = audio;
     }
 
     return bgmAudioRef.current;
-  }, []);
+  }, [writeBgmProgressDom]);
 
   const playBgmTrack = useCallback(
     async (trackIndex: number) => {
@@ -282,8 +316,8 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
       setBgmError(false);
 
       if (bgmTrackIndexRef.current !== trackIndex || audio.src.length === 0) {
-        setBgmCurrentTime(0);
         setBgmDuration(0);
+        writeBgmProgressDom(0, 0);
         audio.src = track.src;
         audio.load();
         bgmTrackIndexRef.current = trackIndex;
@@ -308,7 +342,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
         setBgmPending(false);
       }
     },
-    [bgmVolumeLevel, getBgmAudio],
+    [bgmVolumeLevel, getBgmAudio, writeBgmProgressDom],
   );
 
   useEffect(() => {
@@ -365,18 +399,6 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const activeBgm =
     activeBgmIndex === null ? null : ERP_BGM_TRACKS[activeBgmIndex];
   const bgmDurationValue = getFiniteAudioTime(bgmDuration);
-  const bgmCurrentTimeValue = Math.min(
-    getFiniteAudioTime(bgmCurrentTime),
-    bgmDurationValue || getFiniteAudioTime(bgmCurrentTime),
-  );
-  const bgmProgressPercent =
-    bgmDurationValue > 0 ? (bgmCurrentTimeValue / bgmDurationValue) * 100 : 0;
-  useEffect(() => {
-    bgmProgressInputRef.current?.style.setProperty(
-      "--bgm-progress",
-      `${bgmProgressPercent}%`,
-    );
-  }, [bgmProgressPercent]);
   useEffect(() => {
     bgmVolumeInputRef.current?.style.setProperty(
       "--bgm-progress",
@@ -388,9 +410,6 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
     : bgmError
       ? "ERR"
       : activeBgm?.label ?? "bgm";
-  const bgmTimeLabel = `${formatBgmTime(bgmCurrentTimeValue)} / ${formatBgmTime(
-    bgmDurationValue,
-  )}`;
   const bgmState = bgmError ? "error" : bgmPlaying ? "playing" : "idle";
   const bgmToggleLabel = bgmPlaying
     ? "bgm 중지"
@@ -465,11 +484,10 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
 
   function handleSeekBgm(event: ChangeEvent<HTMLInputElement>) {
     const nextTime = Number(event.target.value);
-    setBgmCurrentTime(nextTime);
-
     const audio = bgmAudioRef.current;
     if (!audio || !Number.isFinite(audio.duration)) return;
     audio.currentTime = nextTime;
+    writeBgmProgressDom(nextTime, audio.duration);
   }
 
   function handleBgmVolumeChange(event: ChangeEvent<HTMLInputElement>) {
@@ -565,13 +583,17 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
               <span className={styles.header__bgmLabel} aria-live="polite">
                 {bgmStatusLabel}
               </span>
-              <span className={styles.header__bgmTime}>{bgmTimeLabel}</span>
+              {/* 재생 위치 텍스트는 writeBgmProgressDom 이 직접 갱신 (4Hz 리렌더 방지) */}
+              <span ref={bgmTimeLabelRef} className={styles.header__bgmTime}>
+                {ERP_BGM_INITIAL_TIME_LABEL}
+              </span>
             </div>
 
             <label className={styles.header__bgmControl}>
               <span className={styles.header__bgmControlLabel} aria-hidden>
                 <IconTimeline />
               </span>
+              {/* uncontrolled — 재생 위치 값은 writeBgmProgressDom 이 직접 기록 */}
               <input
                 ref={bgmProgressInputRef}
                 type="range"
@@ -579,7 +601,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
                 min={0}
                 max={bgmDurationValue || 0}
                 step={0.1}
-                value={bgmDurationValue > 0 ? bgmCurrentTimeValue : 0}
+                defaultValue={0}
                 onChange={handleSeekBgm}
                 disabled={bgmDurationValue <= 0}
                 aria-label="bgm 재생 위치"

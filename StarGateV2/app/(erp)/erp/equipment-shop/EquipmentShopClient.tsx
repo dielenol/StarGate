@@ -1467,6 +1467,49 @@ function ResearchPixelIcon({
   );
 }
 
+function formatWorkshopCountdownLabel(readyAt: string, nowMs: number): string {
+  if (!nowMs) return "남은 시간 계산 중";
+  const remainingSeconds = Math.max(
+    0,
+    Math.ceil((new Date(readyAt).getTime() - nowMs) / 1000),
+  );
+  if (remainingSeconds === 0) return "제작 완료 · 수령 가능";
+  const days = Math.floor(remainingSeconds / 86_400);
+  const hours = Math.floor((remainingSeconds % 86_400) / 3_600);
+  const minutes = Math.floor((remainingSeconds % 3_600) / 60);
+  const seconds = remainingSeconds % 60;
+  return [days ? `${days}일` : "", hours ? `${hours}시간` : "", `${minutes}분`, `${seconds}초`]
+    .filter(Boolean)
+    .join(" ");
+}
+
+/**
+ * 공방 카운트다운 leaf — 1Hz tick 상태를 이 컴포넌트 안에 가둬
+ * EquipmentShopClient 전체 트리가 매초 리렌더되지 않게 한다.
+ * custom 존 전용 renderCustomPanel 경로에서만 마운트되므로 기존
+ * `initialZone === "custom"` 인터벌 가드와 동일 범위로 동작한다.
+ * nowMs 초기값 0 은 SSR/hydration 양쪽에서 "남은 시간 계산 중" 폴백을 보장하며,
+ * 마운트 직후 align tick(매크로태스크)에서 실제 시각으로 전환된다.
+ */
+function WorkshopCountdown({ readyAt }: { readyAt: string }) {
+  const [nowMs, setNowMs] = useState(0);
+
+  useEffect(() => {
+    const tick = () => setNowMs(Date.now());
+    // mid-session 마운트(견적 수락 직후)의 1초 "계산 중" 플래시 제거 —
+    // 최초 동기화를 매크로태스크로 미뤄 hydration mismatch 와
+    // set-state-in-effect(동기 setState) 룰을 모두 회피한다.
+    const align = window.setTimeout(tick, 0);
+    const timer = window.setInterval(tick, 1000);
+    return () => {
+      window.clearTimeout(align);
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  return <>{formatWorkshopCountdownLabel(readyAt, nowMs)}</>;
+}
+
 export default function EquipmentShopClient({
   mode,
   initialZone = "lab",
@@ -1570,13 +1613,6 @@ export default function EquipmentShopClient({
   const [upgradeEntryId, setUpgradeEntryId] = useState("");
   const [upgradeRequestDetails, setUpgradeRequestDetails] = useState("");
   const [customRequestDetails, setCustomRequestDetails] = useState("");
-  const [workshopClock, setWorkshopClock] = useState(0);
-
-  useEffect(() => {
-    if (initialZone !== "custom") return;
-    const timer = window.setInterval(() => setWorkshopClock(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [initialZone]);
 
   const catalog = catalogQuery.data ?? initialCatalog;
   const research = researchQuery.data ?? initialResearch;
@@ -3024,22 +3060,6 @@ export default function EquipmentShopClient({
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date(value));
-  }
-
-  function formatWorkshopCountdown(readyAt: string): string {
-    if (!workshopClock) return "남은 시간 계산 중";
-    const remainingSeconds = Math.max(
-      0,
-      Math.ceil((new Date(readyAt).getTime() - workshopClock) / 1000),
-    );
-    if (remainingSeconds === 0) return "제작 완료 · 수령 가능";
-    const days = Math.floor(remainingSeconds / 86_400);
-    const hours = Math.floor((remainingSeconds % 86_400) / 3_600);
-    const minutes = Math.floor((remainingSeconds % 3_600) / 60);
-    const seconds = remainingSeconds % 60;
-    return [days ? `${days}일` : "", hours ? `${hours}시간` : "", `${minutes}분`, `${seconds}초`]
-      .filter(Boolean)
-      .join(" ");
   }
 
   function projectStatusLabel(
@@ -5375,7 +5395,7 @@ export default function EquipmentShopClient({
                         ) : null}
                         {request.readyAt && ["IN_PROGRESS", "READY"].includes(request.computedStatus) ? (
                           <p className={styles.workshopCountdown}>
-                            {formatWorkshopCountdown(request.readyAt)} · 완료 예정 {formatDateTime(request.readyAt)}
+                            <WorkshopCountdown readyAt={request.readyAt} /> · 완료 예정 {formatDateTime(request.readyAt)}
                           </p>
                         ) : null}
                         {!isGM && request.status === "QUOTED" ? (
