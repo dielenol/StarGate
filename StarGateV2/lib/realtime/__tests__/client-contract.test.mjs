@@ -58,8 +58,26 @@ test("실시간 클라이언트는 중복 방지·100ms batching·gap 재검증�
   assert.match(provider, /const RECENT_EVENT_ID_LIMIT = 256/);
   assert.match(provider, /recentEventIds\.has\(eventId\)/);
   assert.match(provider, /queryKeysForRealtimeResources\(resources\)/);
-  assert.match(provider, /refetchQueries\(\{ type: "active" \}\)/);
+  // gap 재검증은 전체 active refetch 가 아니라 realtime 매핑 리소스 전체로 한정한다.
+  assert.match(
+    provider,
+    /queryKeysForRealtimeResources\(REALTIME_RESOURCES\)/,
+  );
+  assert.doesNotMatch(provider, /refetchQueries\(\{ type: "active" \}\)/);
   assert.match(provider, /0\.75 \+ Math\.random\(\) \* 0\.5/);
+});
+
+test("socket.io-client 는 정적 value import 없이 연결 시점에 로드되고 unmount 후 연결을 만들지 않는다", () => {
+  // 타입 import 만 허용 — value import 는 ERP 초기 번들에 socket.io 를 되돌린다.
+  assert.match(provider, /import type \{ Socket \} from "socket\.io-client"/);
+  assert.doesNotMatch(
+    provider,
+    /import \{[^}]*\bio\b[^}]*\} from "socket\.io-client"/,
+  );
+  assert.match(provider, /import\("socket\.io-client"\)/);
+  // 늦게 resolve 된 import/ticket 이 unmount 이후 소켓을 만들지 않는 가드.
+  assert.match(provider, /let disposed = false/);
+  assert.match(provider, /if \(disposed \|\| controller\.signal\.aborted\) return/);
 });
 
 test("session-refresh 공개 frame은 식별자나 DB 값을 포함하지 않는다", () => {

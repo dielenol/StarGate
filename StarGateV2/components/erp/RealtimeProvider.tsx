@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   isRealtimeResource,
+  REALTIME_RESOURCES,
   type RealtimeInvalidateV1,
   type RealtimeResource,
   type RealtimeSessionRefreshV1,
 } from "@stargate/core/domain/realtime";
 import { useQueryClient } from "@tanstack/react-query";
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 
 import {
   RealtimeClientContextProvider,
@@ -92,6 +93,7 @@ export default function RealtimeProvider({
     if (mode === "off") return;
 
     const controller = new AbortController();
+    let disposed = false;
     let socket: Socket | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let invalidationTimer: ReturnType<typeof setTimeout> | null = null;
@@ -142,6 +144,17 @@ export default function RealtimeProvider({
       );
     };
 
+    // 갭 복구는 realtime 매핑 리소스의 쿼리 키로만 한정한다 (전체 active refetch 금지).
+    const refetchRealtimeMappedQueries = () => {
+      const queryKeys = queryKeysForRealtimeResources(REALTIME_RESOURCES);
+      for (const queryKey of queryKeys) {
+        void queryClient.invalidateQueries({
+          queryKey,
+          refetchType: "active",
+        });
+      }
+    };
+
     const enterDegraded = () => {
       setConnectionState("degraded");
       if (gapRefetched) return;
@@ -151,7 +164,7 @@ export default function RealtimeProvider({
         invalidationTimer = null;
         pendingResources.clear();
       }
-      void queryClient.refetchQueries({ type: "active" });
+      refetchRealtimeMappedQueries();
     };
 
     const scheduleReconnect = (connect: () => Promise<void>) => {
@@ -173,8 +186,12 @@ export default function RealtimeProvider({
       setConnectionState("connecting");
 
       try {
-        const ticket = await requestTicket(controller.signal);
-        if (controller.signal.aborted) return;
+        // socket.io-client 는 ERP 초기 번들에서 제외하고 첫 연결 시점에 로드한다.
+        const [{ io }, ticket] = await Promise.all([
+          import("socket.io-client"),
+          requestTicket(controller.signal),
+        ]);
+        if (disposed || controller.signal.aborted) return;
 
         socket?.removeAllListeners();
         socket?.disconnect();
@@ -191,7 +208,7 @@ export default function RealtimeProvider({
           clearReconnectTimer();
           setConnectionState("connected");
           // 최초 연결 전 DB 변경과 재연결 gap을 모두 닫는다.
-          void queryClient.refetchQueries({ type: "active" });
+          refetchRealtimeMappedQueries();
         });
         socket.on("invalidate", (event: unknown) => {
           if (!isRealtimeInvalidateEvent(event)) return;
@@ -224,6 +241,7 @@ export default function RealtimeProvider({
     void connect();
 
     return () => {
+      disposed = true;
       controller.abort();
       clearReconnectTimer();
       if (invalidationTimer) clearTimeout(invalidationTimer);
