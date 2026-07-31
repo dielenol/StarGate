@@ -417,6 +417,27 @@ export async function ensureAllIndexes(): Promise<void> {
       { name: "shop_daily_stock_itemId_unique", unique: true },
     ),
 
+    /* ── shop_reorder_requests (편의점 재입고 요청) ──
+     *
+     * StarGateV2 lib/shop/reorder-requests.ts 조회 패턴:
+     * - pending 목록/카운트: {kind, status} + sort {createdAt: 1}
+     * - 사용자·품목 일일 dedupe/한도: {kind, date, userId, slug} (+status)
+     * - fulfill 류는 {_id $in} 주도라 _id 기본 인덱스로 충분.
+     *
+     * stock_discord_market_wires 는 `_id: "scheduled"` 싱글턴 조회만,
+     * shop_stock_audit_logs 는 insert-only — 둘 다 보조 인덱스 불필요.
+     */
+    db.collection("shop_reorder_requests").createIndexes([
+      {
+        key: { kind: 1, status: 1, createdAt: 1 },
+        name: "shop_reorder_requests_kind_status_createdAt",
+      },
+      {
+        key: { kind: 1, date: 1, userId: 1, slug: 1, status: 1 },
+        name: "shop_reorder_requests_user_item_daily",
+      },
+    ]),
+
     /* ── stock_prices (tia_bot 통합) ── */
     db.collection("stock_prices").createIndex(
       { ticker: 1 },
