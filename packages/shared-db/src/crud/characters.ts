@@ -297,7 +297,7 @@ export async function findCharactersByIdsLite(
 /** codename 매칭 캐릭터의 dossier 연관 표시용 경량 행. */
 export type CharacterRelationLite = Pick<
   Character,
-  "_id" | "codename" | "type" | "agentLevel" | "isPublic"
+  "_id" | "codename" | "type" | "agentLevel" | "isPublic" | "clearanceOverrides"
 > & {
   lore: Pick<Character["lore"], "name" | "nickname">;
 };
@@ -322,6 +322,7 @@ export async function findCharactersByCodenames(
       type: 1,
       agentLevel: 1,
       isPublic: 1,
+      clearanceOverrides: 1,
       "lore.name": 1,
       "lore.nickname": 1,
     })

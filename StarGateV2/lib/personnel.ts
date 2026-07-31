@@ -325,20 +325,51 @@ export function filterCharacterByClearance(
   const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
   const canMeta = canViewField(clearance, "meta", overrides);
 
+  // 원본 시트 전문(loreMd/rawText)은 필드별 게이트를 통째로 우회하는 기밀이라
+  // 등급 무관 제거 — 클라이언트 소비처 0 (dossier 는 redact 된 lore/play 만 렌더).
   if (character.type === "AGENT") {
+    const safe = { ...character };
+    delete safe.loreMd;
+    delete safe.rawText;
     return {
-      ...character,
+      ...safe,
       ownerId: canMeta ? character.ownerId : null,
       lore: redactLore(character.lore, clearance, overrides),
       play: redactPlay(character.play, clearance, overrides),
     };
   }
 
+  const safe = { ...character };
+  delete safe.loreMd;
+  delete safe.rawText;
   return {
-    ...character,
+    ...safe,
     ownerId: canMeta ? character.ownerId : null,
     lore: redactLore(character.lore, clearance, overrides),
   };
+}
+
+/**
+ * 관계/링크 카드용 표시명 — 마스킹 게이트 통과 후 닉네임 → 실명 → 코드네임 순.
+ * 마스킹된 실명은 "[CLASSIFIED]" 를 라벨로 노출하는 대신 codename 으로 폴백한다
+ * (codename 은 등급 무관 공개 필드).
+ */
+export function maskedDisplayName(
+  character: {
+    codename: string;
+    clearanceOverrides?: Character["clearanceOverrides"];
+    lore: { name: string; nickname?: string };
+  },
+  clearance: AgentLevel,
+): string {
+  const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
+  const nickname = canViewField(clearance, "identity", overrides)
+    ? character.lore.nickname
+    : undefined;
+  const name = canViewRealName(clearance, overrides)
+    ? character.lore.name
+    : undefined;
+  return nickname || name || character.codename;
 }
 
 /**

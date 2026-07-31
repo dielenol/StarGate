@@ -26,6 +26,7 @@ import {
   filterCharacterByClearance,
   filterCharacterForList,
   filterCharacterForLoreLinks,
+  maskedDisplayName,
 } from "../personnel.ts";
 
 const CLEARANCES = ["U", "J", "G", "H", "M", "A", "V", "GM"];
@@ -367,6 +368,91 @@ test("E-5: 입력 불변 — filterCharacterForList/ForLoreLinks 는 원본을 �
 
   assert.equal(JSON.stringify(listItem), listSnapshot, "list 입력이 변형됨");
   assert.equal(JSON.stringify(refItem), refSnapshot, "ref 입력이 변형됨");
+});
+
+test("E-8: maskedDisplayName — 노출 규칙이 redactNameFields 게이트와 전 매트릭스 일치 + [CLASSIFIED] 라벨 0", () => {
+  // (2026-07-31 커밋 B4) 관계/링크 카드 표시명: 닉네임(identity 게이트) → 실명(realName
+  // 게이트) → codename 폴백. 게이트 미달 필드는 skip — "[CLASSIFIED]" 를 라벨로 노출 금지.
+  const NICKNAME_VARIANTS = [
+    ["nickname-present", "스틸"],
+    ["nickname-absent", undefined],
+    ["nickname-empty", ""],
+  ];
+
+  let checked = 0;
+  for (const [ovLabel, overrides] of OVERRIDE_SCENARIOS) {
+    for (const [nickLabel, nickname] of NICKNAME_VARIANTS) {
+      for (const clearance of CLEARANCES) {
+        const label = `${nickLabel} / ${ovLabel} / clearance=${clearance}`;
+        const full = agentChar(
+          { clearanceOverrides: overrides },
+          { nickname },
+        );
+        // 실제 호출처 shape: CharacterRelationLite projection (codename +
+        // clearanceOverrides + lore.name/nickname 만) — MIRRORS shared-db
+        // findCharactersByCodenames projection.
+        const relationLite = {
+          _id: full._id,
+          codename: full.codename,
+          type: full.type,
+          agentLevel: full.agentLevel,
+          isPublic: full.isPublic,
+          ...(full.clearanceOverrides !== undefined
+            ? { clearanceOverrides: full.clearanceOverrides }
+            : {}),
+          lore: {
+            name: full.lore.name,
+            ...(nickname !== undefined ? { nickname } : {}),
+          },
+        };
+
+        const display = maskedDisplayName(relationLite, clearance);
+
+        // 기준 게이트: redactLore(=redactNameFields) 출력에서 가시성 도출
+        const oldLore = filterCharacterByClearance(full, clearance).lore;
+        const nicknameVisible =
+          nickname !== undefined && oldLore.nickname !== "[CLASSIFIED]";
+        const nameVisible = oldLore.name !== "[CLASSIFIED]";
+        const expected =
+          (nicknameVisible ? nickname : undefined) ||
+          (nameVisible ? full.lore.name : undefined) ||
+          full.codename;
+
+        assert.equal(display, expected, `${label} :: 폴백 순서/게이트 불일치`);
+        assert.notEqual(display, "[CLASSIFIED]", `${label} :: 마스킹 문자열이 라벨로 노출`);
+        if (!nameVisible) {
+          assert.notEqual(display, full.lore.name, `${label} :: 게이트 미달인데 실명 노출`);
+        }
+        if (!nicknameVisible && nickname) {
+          assert.notEqual(display, nickname, `${label} :: 게이트 미달인데 닉네임 노출`);
+        }
+        checked += 1;
+      }
+    }
+  }
+  assert.ok(checked >= 8 * OVERRIDE_SCENARIOS.length * NICKNAME_VARIANTS.length - 1);
+  console.log(`maskedDisplayName matrix checked: ${checked} combos, classified-label: 0`);
+});
+
+test("E-9: filterCharacterByClearance — loreMd/rawText 등급 무관 드랍 (커밋 B1, 마스킹 강화)", () => {
+  for (const clearance of CLEARANCES) {
+    for (const makeChar of [
+      () => agentChar({ loreMd: "# 원본 시트 전문", rawText: "raw sheet" }),
+      () => npcChar({ loreMd: "# NPC 시트", rawText: "npc raw" }),
+    ]) {
+      const filtered = filterCharacterByClearance(makeChar(), clearance);
+      assert.equal(Object.hasOwn(filtered, "loreMd"), false, `clearance=${clearance} loreMd 잔존`);
+      assert.equal(Object.hasOwn(filtered, "rawText"), false, `clearance=${clearance} rawText 잔존`);
+    }
+  }
+  // 드랍이 다른 필드를 건드리지 않음 (GM 전체 노출 경로 보존)
+  const gm = filterCharacterByClearance(
+    agentChar({ loreMd: "# 전문", rawText: "raw" }),
+    "GM",
+  );
+  assert.equal(gm.lore.name, "김철수");
+  assert.equal(gm.play.hp, 80);
+  assert.equal(gm.codename, "AGENT_001");
 });
 
 test("E-7: U 등급 절대 마스킹 보장 — full 경로와 무관하게 실명 3종은 REDACTED", () => {

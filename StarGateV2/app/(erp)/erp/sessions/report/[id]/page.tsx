@@ -25,6 +25,7 @@ import {
   relatedPersonnelForReport,
   relatedWikiForReport,
 } from "@/lib/lore-links";
+import { filterCharacterForLoreLinks, getUserClearance } from "@/lib/personnel";
 import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
 import type { ClientSessionReport } from "@/types/session-report";
 
@@ -120,6 +121,12 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const visibleCharacters = isAdmin
     ? allCharacters
     : allCharacters.filter((character) => character.isPublic !== false);
+  // 실명/닉네임은 wiki 상세와 동일하게 clearance 마스킹 후 링크·패널에 투입
+  // (2026-07-31 정책 확정 — 보고서 화면도 clearanceOverrides 존중).
+  const userClearance = getUserClearance(session.user.role);
+  const linkableCharacters = visibleCharacters.map((character) =>
+    filterCharacterForLoreLinks(character, userClearance),
+  );
   const visibleItems = isGmOrAbove
     ? allItems
     : allItems.filter((item) => item.isPublic !== false);
@@ -131,15 +138,16 @@ export default async function SessionReportDetailPage({ params }: Props) {
   );
   const autoLinkTargets = buildWikiAutoLinkTargets({
     catalogItems: visibleItems,
-    characters: visibleCharacters,
+    characters: linkableCharacters,
     reports: linkableReports,
     wikiPages: visibleWikiPages,
   });
-  const relatedWikiLinks = relatedWikiForReport(report, allPages);
+  // 비공개(unlisted) 위키는 연관 카드 후보에서도 제외 — 같은 페이지의 다른 목록과 동일 필터.
+  const relatedWikiLinks = relatedWikiForReport(report, visibleWikiPages);
   const relatedCatalogItems = relatedCatalogItemsForReport(report, visibleItems);
   const relatedPersonnelLinks = relatedPersonnelForReport(
     report,
-    visibleCharacters,
+    linkableCharacters,
   );
   const participantEntries = report.participants.map((participant) => ({
     label: participant,

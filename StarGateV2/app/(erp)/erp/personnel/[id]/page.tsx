@@ -9,7 +9,11 @@ import {
   findCharactersByCodenames,
 } from "@/lib/db/characters";
 import { findSessionReportsBySessionIds } from "@/lib/db/session-reports";
-import { getUserClearance, filterCharacterByClearance } from "@/lib/personnel";
+import {
+  getUserClearance,
+  filterCharacterByClearance,
+  maskedDisplayName,
+} from "@/lib/personnel";
 
 import DossierClient from "./DossierClient";
 
@@ -35,6 +39,8 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
   const clearance = isOwnCharacter
     ? "GM"
     : getUserClearance(session.user.role);
+  // 본인 승격은 "자기 캐릭터" 데이터에만 적용 — 관계 패널의 제3자 이름은 뷰어 실등급으로 게이트.
+  const viewerClearance = getUserClearance(session.user.role);
   const canEditDossier = hasRole(session.user.role, "GM");
 
   const filtered = filterCharacterByClearance(character, clearance);
@@ -73,8 +79,8 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
     .map((candidate) => ({
       id: candidate._id?.toString() ?? "",
       codename: candidate.codename,
-      displayName:
-        candidate.lore.nickname || candidate.lore.name || candidate.codename,
+      // 실명은 뷰어 clearance 게이트를 통과할 때만 노출 (마스킹 시 codename 폴백).
+      displayName: maskedDisplayName(candidate, viewerClearance),
       type: candidate.type,
       agentLevel: candidate.agentLevel,
     }))
