@@ -35,11 +35,13 @@ async function fetchTrades(): Promise<TradesResponse> {
 }
 
 export function useTradesQuery() {
-  const refetchInterval = useRealtimeRefetchInterval(2_500);
+  // 10s 폴링 — 요청당 6 DB RTT 라 2.5s 는 과도. 자기 탭 뮤테이션은 invalidation 이
+  // 즉시 갱신하고, realtime primary 전환 시 폴링은 자동 해제된다.
+  const refetchInterval = useRealtimeRefetchInterval(10_000);
   return useQuery({
     queryKey: tradeKeys.all,
     queryFn: fetchTrades,
-    staleTime: 1_000,
+    staleTime: 5_000,
     refetchInterval,
     refetchIntervalInBackground: false,
     retry: (failureCount, error) => {

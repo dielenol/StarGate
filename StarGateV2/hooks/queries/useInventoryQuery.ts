@@ -54,7 +54,6 @@ export function useCharacterInventory(
     staleTime: 30 * 1000,
     initialData: options?.initialData,
     enabled: options?.enabled ?? true,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: "always",
+    refetchOnWindowFocus: true,
   });
 }

@@ -133,7 +133,6 @@ export function useShopCatalog(options?: {
     queryFn: fetchShopCatalog,
     staleTime: CATALOG_STALE_TIME_MS,
     refetchOnWindowFocus: true,
-    refetchOnMount: "always",
     initialData: options?.initialData,
   });
 
