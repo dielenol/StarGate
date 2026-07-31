@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { getAdminInventoryOverviewResponse } from "@/lib/erp/admin-inventory-overview";
 
@@ -10,7 +10,7 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import AdminInventoryOverviewClient from "./AdminInventoryOverviewClient";
 
 export default async function AdminInventoryHubPage() {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

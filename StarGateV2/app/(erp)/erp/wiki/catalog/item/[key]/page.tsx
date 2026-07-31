@@ -13,7 +13,7 @@ import {
   relatedReportsForCatalogItem,
   relatedWikiForCatalogItem,
 } from "@/lib/catalog/related";
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { findVisibleMasterItemBySlugOrId } from "@/lib/db/inventory";
 import { listSessionReports } from "@/lib/db/session-reports";
@@ -80,7 +80,7 @@ function itemTagTone(category: MasterItem["category"]): TagTone {
 export default async function CatalogItemPage({
   params,
 }: CatalogItemPageProps) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     redirect("/login");
   }

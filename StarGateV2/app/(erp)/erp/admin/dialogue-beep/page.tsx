@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 
 import DialogueBeepLabClient from "./DialogueBeepLabClient";
@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 export default async function DialogueBeepLabPage() {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) redirect("/login");
   if (!hasRole(session.user.role, "GM")) redirect("/erp");
 

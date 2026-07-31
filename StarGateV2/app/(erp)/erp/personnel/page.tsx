@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import type { Character } from "@/types/character";
 import type { UserRole } from "@/types/user";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { listCharacters } from "@/lib/db/characters";
 import { getUserClearance, filterCharacterByClearance } from "@/lib/personnel";
@@ -39,7 +39,7 @@ async function PersonnelBody({ role }: { role: UserRole }) {
 }
 
 export default async function PersonnelPage() {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) redirect("/login");
 
   return (

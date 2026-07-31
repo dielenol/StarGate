@@ -9,7 +9,7 @@
 
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
 
@@ -26,7 +26,7 @@ export const metadata = {
 };
 
 export default async function StockPortfolioPage() {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     redirect("/login");
   }

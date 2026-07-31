@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { listUserNotifications } from "@/lib/db/notifications";
 
 import type { ClientNotification, Notification } from "@/types/notification";
@@ -8,7 +8,7 @@ import type { ClientNotification, Notification } from "@/types/notification";
 import NotificationsClient from "./NotificationsClient";
 
 export default async function NotificationsPage() {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

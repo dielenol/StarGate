@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 
 import Box from "@/components/ui/Box/Box";
@@ -30,7 +30,7 @@ function getSearchValues(value: string | string[] | undefined): string[] {
 export default async function NewReportPage({
   searchParams,
 }: NewReportPageProps) {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

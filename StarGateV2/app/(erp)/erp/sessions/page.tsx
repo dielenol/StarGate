@@ -5,7 +5,7 @@ import {
 } from "@/lib/db/sessions";
 import { getTrpgWebBaseUrl } from "@/lib/db/trpg-sessions-bridge";
 import { getUpcomingSessionsResponse } from "@/lib/erp/upcoming-sessions";
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 
 import type { SerializedSession } from "@/hooks/queries/useSessionsQuery";
@@ -19,7 +19,7 @@ import SessionsClient from "./SessionsClient";
 import styles from "./page.module.css";
 
 export default async function SessionsPage() {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

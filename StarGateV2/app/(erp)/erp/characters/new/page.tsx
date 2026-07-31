@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 
 import Button from "@/components/ui/Button/Button";
@@ -9,7 +9,7 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import CharacterCreateForm from "./CharacterCreateForm";
 
 export default async function CharacterNewPage() {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

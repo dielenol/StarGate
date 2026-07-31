@@ -13,7 +13,7 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
 import {
@@ -99,7 +99,7 @@ function serializeQuestProgress(doc: FactionQuestProgressDoc) {
 export default async function FactionDetailPage({
   params,
 }: FactionDetailPageProps) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) redirect("/login");
 
   const canPreview =

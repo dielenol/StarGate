@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { relatedCatalogItemsForReport } from "@/lib/catalog/related";
 import { listCharacters } from "@/lib/db/characters";
@@ -63,7 +63,7 @@ function findPersonnelForParticipant(
 }
 
 export default async function SessionReportDetailPage({ params }: Props) {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

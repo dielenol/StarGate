@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { getCurrentAccountResponse } from "@/lib/erp/current-account";
 import { formatDate, formatDateTime } from "@/lib/format/date";
 
@@ -27,7 +27,7 @@ function daysSince(d: Date | string | null | undefined): number | null {
 }
 
 export default async function AccountPage() {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

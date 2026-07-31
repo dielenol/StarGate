@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { listCharactersByOwner } from "@/lib/db/characters";
 
 import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
 export default async function InventoryPage() {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

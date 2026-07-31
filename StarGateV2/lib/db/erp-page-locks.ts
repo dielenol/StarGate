@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { getDb } from "@stargate/shared-db";
 
 import "./init";
@@ -21,16 +23,19 @@ async function pageLocksCollection() {
   return db.collection<ErpPageLockDocument>(COLLECTION_NAME);
 }
 
-export async function getErpPageLockOverrides(): Promise<ErpPageLockOverrides> {
-  const collection = await pageLocksCollection();
-  const documents = await collection
-    .find({}, { projection: { _id: 1, locked: 1 } })
-    .toArray();
+// cache()는 같은 RSC 렌더 패스의 layout+page 중복 조회를 1회로 합친다 (API 라우트에서는 무해).
+export const getErpPageLockOverrides = cache(
+  async (): Promise<ErpPageLockOverrides> => {
+    const collection = await pageLocksCollection();
+    const documents = await collection
+      .find({}, { projection: { _id: 1, locked: 1 } })
+      .toArray();
 
-  return Object.fromEntries(
-    documents.map((document) => [document._id, document.locked]),
-  );
-}
+    return Object.fromEntries(
+      documents.map((document) => [document._id, document.locked]),
+    );
+  },
+);
 
 export async function setErpPageLockOverride(args: {
   lockKey: string;

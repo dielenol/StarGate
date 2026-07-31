@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import type { ItemCategory } from "@stargate/shared-db";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import {
   CATALOG_SCOPE_CATEGORIES,
@@ -17,7 +17,7 @@ export default async function CatalogPage({
 }: {
   params: Promise<{ category: string }>;
 }) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     redirect("/login");
   }

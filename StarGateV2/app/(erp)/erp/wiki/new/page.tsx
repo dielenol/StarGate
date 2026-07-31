@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { requireRole } from "@/lib/auth/rbac";
 
 import WikiCreateForm from "./WikiCreateForm";
 
 export default async function WikiNewPage() {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     redirect("/login");
   }

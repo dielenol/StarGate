@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { isNavPathLocked } from "@/components/erp/nav-config";
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasPlayerServiceTestPathAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
@@ -15,7 +15,7 @@ import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
 export async function requireEquipmentShopSession(
   lockPath = "/erp/equipment-shop",
 ) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     redirect("/login");
   }

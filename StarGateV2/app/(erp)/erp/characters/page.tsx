@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import type { CharacterTier } from "@/types/character";
 import { CHARACTER_TIERS } from "@/types/character";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { listAgentCharacterCards } from "@/lib/db/characters";
 
@@ -14,7 +14,7 @@ interface PageProps {
 }
 
 export default async function CharactersPage({ searchParams }: PageProps) {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

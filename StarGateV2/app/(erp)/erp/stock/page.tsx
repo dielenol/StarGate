@@ -16,7 +16,7 @@
 
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { resolvePlayerServiceAvailability } from "@/lib/auth/player-service-test-access";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
@@ -48,7 +48,7 @@ export const metadata = {
 };
 
 export default async function StockPage() {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     redirect("/login");
   }

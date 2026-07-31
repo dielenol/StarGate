@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { listWikiPages } from "@/lib/db/wiki";
 import type { WikiPage, WikiPageClient } from "@/types/wiki";
@@ -31,7 +31,7 @@ function serializeWikiPage(page: WikiPage): WikiPageClient {
 export default async function WikiListPage({
   searchParams,
 }: WikiListPageProps) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     redirect("/login");
   }

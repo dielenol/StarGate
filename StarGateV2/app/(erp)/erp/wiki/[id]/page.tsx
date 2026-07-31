@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { relatedCatalogItemsForWiki } from "@/lib/catalog/related";
 import { listCharacters } from "@/lib/db/characters";
@@ -74,7 +74,7 @@ function extractToc(content: string): TocEntry[] {
 export default async function WikiDetailPage({
   params,
 }: WikiDetailPageProps) {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     redirect("/login");
   }

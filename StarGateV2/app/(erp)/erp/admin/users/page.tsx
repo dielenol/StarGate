@@ -2,14 +2,14 @@ import { redirect } from "next/navigation";
 
 import type { UserPublic } from "@/types/user";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { listUsers } from "@/lib/db/users";
 
 import UsersAdminClient from "./UsersAdminClient";
 
 export default async function UsersAdminPage() {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

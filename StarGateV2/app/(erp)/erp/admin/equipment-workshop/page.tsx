@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { masterItemsCol } from "@stargate/shared-db";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import {
   listEquipmentWorkshopBlueprints,
@@ -17,7 +17,7 @@ import { findShopItemBySlug } from "@/lib/shop/catalog";
 import EquipmentWorkshopAdminClient from "./EquipmentWorkshopAdminClient";
 
 export default async function EquipmentWorkshopAdminPage() {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) redirect("/login");
   if (!hasRole(session.user.role, "GM")) redirect("/erp");
 

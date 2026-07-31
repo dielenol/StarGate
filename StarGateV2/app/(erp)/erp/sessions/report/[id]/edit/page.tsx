@@ -5,7 +5,7 @@ import type {
   SessionReport,
 } from "@/types/session-report";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { findReportById } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
@@ -36,7 +36,7 @@ function serializeReport(report: SessionReport): ClientSessionReport {
 }
 
 export default async function EditReportPage({ params }: Props) {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");

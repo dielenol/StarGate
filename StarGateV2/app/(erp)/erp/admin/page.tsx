@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 
 import Box from "@/components/ui/Box/Box";
@@ -10,7 +10,7 @@ import Tag from "@/components/ui/Tag/Tag";
 import styles from "./page.module.css";
 
 export default async function AdminPage() {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");
