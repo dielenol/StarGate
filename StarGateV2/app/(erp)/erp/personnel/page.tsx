@@ -2,20 +2,20 @@ import { Suspense } from "react";
 
 import { redirect } from "next/navigation";
 
-import type { Character } from "@/types/character";
 import type { UserRole } from "@/types/user";
+import type { CharacterListItemDto } from "@/hooks/queries/useCharactersQuery";
 
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
-import { listCharacters } from "@/lib/db/characters";
-import { getUserClearance, filterCharacterByClearance } from "@/lib/personnel";
+import { listCharacterListItems } from "@/lib/db/characters";
+import { getUserClearance, filterCharacterForList } from "@/lib/personnel";
 
 import ERPLoading from "../loading";
 
 import PersonnelClient from "./PersonnelClient";
 
 async function PersonnelBody({ role }: { role: UserRole }) {
-  const rawCharacters = await listCharacters().catch(() => []);
+  const rawCharacters = await listCharacterListItems().catch(() => []);
   const clearance = getUserClearance(role);
   const isGM = hasRole(role, "GM");
 
@@ -25,13 +25,13 @@ async function PersonnelBody({ role }: { role: UserRole }) {
     : rawCharacters.filter((c) => c.isPublic !== false);
 
   // MongoDB ObjectId -> string 직렬화 (Client Component 전달용)
-  const filtered = characters.map((c) => {
-    const masked = filterCharacterByClearance(c, clearance);
+  const filtered: CharacterListItemDto[] = characters.map((c) => {
+    const masked = filterCharacterForList(c, clearance);
     return {
       ...masked,
       _id: masked._id?.toString() ?? "",
     };
-  }) as unknown as Character[];
+  });
 
   return (
     <PersonnelClient initialCharacters={filtered} clearance={clearance} />

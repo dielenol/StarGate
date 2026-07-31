@@ -3,7 +3,7 @@ import { FACTIONS, INSTITUTIONS } from "@/types/character";
 import type { UserRole } from "@/types/user";
 
 import { hasRole } from "@/lib/auth/rbac";
-import { listCharacters } from "@/lib/db/characters";
+import { listCharacterRefs } from "@/lib/db/characters";
 import { listFactionFavorabilityOverrides } from "@/lib/db/faction-favorability";
 import { listSessionReports } from "@/lib/db/session-reports";
 import { listWikiPages } from "@/lib/db/wiki";
@@ -98,7 +98,16 @@ const EXTERNAL_FACTION_BRIEFING: Record<
   },
 } as const;
 
-function resolveExternalSubOrg(c: Character) {
+/**
+ * 소속 버킷 판정이 소비하는 최소 필드 — `listCharacterRefs()` projection 과
+ * full `Character` 모두 만족한다.
+ */
+type FactionMemberRef = Pick<
+  Character,
+  "department" | "factionCode" | "institutionCode"
+>;
+
+function resolveExternalSubOrg(c: FactionMemberRef) {
   return (
     getExternalSubOrg(c.department ?? "") ??
     getExternalSubOrg(c.factionCode ?? "") ??
@@ -106,7 +115,7 @@ function resolveExternalSubOrg(c: Character) {
   );
 }
 
-function resolvePrimaryGroup(c: Character): string | null {
+function resolvePrimaryGroup(c: FactionMemberRef): string | null {
   const externalSubOrg = resolveExternalSubOrg(c);
   if (externalSubOrg) return externalSubOrg.parentCode;
 
@@ -128,7 +137,7 @@ function resolvePrimaryGroup(c: Character): string | null {
   return null;
 }
 
-function getContactBucketCodes(c: Character): string[] {
+function getContactBucketCodes(c: FactionMemberRef): string[] {
   const primary = resolvePrimaryGroup(c);
   if (!primary || !TRACKED_NODE_CODE_SET.has(primary)) return [];
 
@@ -368,9 +377,11 @@ function buildBoardNodes(
 export async function getFactionBoardData(
   role: UserRole,
 ): Promise<FactionBoardData> {
+  // 캐릭터는 소속 버킷 판정 필드만 쓰므로 ref projection. 위키(content 키워드 카운트)와
+  // 리포트(summary/highlights 시그널 카운트)는 본문성 필드가 매칭에 참여해 full 유지.
   const [rawCharacters, rawReports, rawWikiPages, favorabilityOverrides] =
     await Promise.all([
-      listCharacters().catch(() => []),
+      listCharacterRefs().catch(() => []),
       listSessionReports().catch(() => []),
       listWikiPages().catch(() => []),
       listFactionFavorabilityOverrides().catch(() => ({})),

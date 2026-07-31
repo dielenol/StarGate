@@ -16,6 +16,7 @@ import type {
   PlaySheet,
 } from "@/types/character";
 import type { UserRole } from "@/types/user";
+import type { CharacterListItem, CharacterRef } from "@/lib/db/characters";
 
 /* ── 등급 수치화 (rbac.ts와 동일 rank 공유) ── */
 
@@ -173,6 +174,34 @@ const REDACTED = "[CLASSIFIED]";
  * Optional 필드(nameNative/nickname/nameEn/roleDetail/notes/posterImage) 는 원본이 undefined 면
  * 결과도 undefined 유지. "필드 자체가 없음" 과 "마스킹됨" 을 구분해야 검색 oracle 누출 방지.
  */
+/**
+ * 이름 필드(name/nameNative/nickname/nameEn) 공통 게이트 — 이름 마스킹 정책의 단일 지점.
+ * `redactLore` / `filterCharacterForList` / `filterCharacterForLoreLinks` 가 공유한다.
+ * optional 필드는 원본이 undefined 면 결과에서도 키를 만들지 않는다
+ * ("필드 자체가 없음" 과 "마스킹됨" 구분 — 검색 oracle 누출 방지).
+ */
+function redactNameFields(
+  lore: Pick<LoreSheet, "name" | "nameNative" | "nickname" | "nameEn">,
+  canRealName: boolean,
+  canIdentity: boolean,
+): Pick<LoreSheet, "name"> &
+  Partial<Pick<LoreSheet, "nameNative" | "nickname" | "nameEn">> {
+  const result: Pick<LoreSheet, "name"> &
+    Partial<Pick<LoreSheet, "nameNative" | "nickname" | "nameEn">> = {
+    name: canRealName ? lore.name : REDACTED,
+  };
+  if (lore.nameNative !== undefined) {
+    result.nameNative = canRealName ? lore.nameNative : REDACTED;
+  }
+  if (lore.nickname !== undefined) {
+    result.nickname = canIdentity ? lore.nickname : REDACTED;
+  }
+  if (lore.nameEn !== undefined) {
+    result.nameEn = canRealName ? lore.nameEn : REDACTED;
+  }
+  return result;
+}
+
 function redactLore(
   lore: LoreSheet,
   clearance: AgentLevel,
@@ -182,9 +211,9 @@ function redactLore(
   const canRealName = canViewRealName(clearance, overrides);
   const canProfile = canViewField(clearance, "profile", overrides);
 
-  // 필수 필드는 항상 마스킹 또는 원본
+  // 필수 필드는 항상 마스킹 또는 원본 (이름 4종은 redactNameFields 공통 게이트)
   const result: LoreSheet = {
-    name: canRealName ? lore.name : REDACTED,
+    ...redactNameFields(lore, canRealName, canIdentity),
     gender: canIdentity ? lore.gender : REDACTED,
     age: canIdentity ? lore.age : REDACTED,
     height: canIdentity ? lore.height : REDACTED,
@@ -197,15 +226,6 @@ function redactLore(
   };
 
   // optional 필드 — 원본이 undefined 면 결과도 undefined 유지
-  if (lore.nameNative !== undefined) {
-    result.nameNative = canRealName ? lore.nameNative : REDACTED;
-  }
-  if (lore.nickname !== undefined) {
-    result.nickname = canIdentity ? lore.nickname : REDACTED;
-  }
-  if (lore.nameEn !== undefined) {
-    result.nameEn = canRealName ? lore.nameEn : REDACTED;
-  }
   if (lore.roleDetail !== undefined) {
     result.roleDetail = canProfile ? lore.roleDetail : REDACTED;
   }
@@ -322,22 +342,67 @@ export function filterCharacterByClearance(
 }
 
 /**
- * 목록용 캐릭터 필터링 — lore.name 만 clearance 체크.
- * 카드/그룹핑 인덱스 단계에서 호출. 무거운 sub-document 마스킹은 회피.
+ * 참조(projection) 전용 캐릭터 마스킹 — `listCharacterRefs()` 결과에 사용.
+ *
+ * 위키 상세의 자동링크 타깃/연관 인물 경로가 full 도큐먼트 +
+ * `filterCharacterByClearance` 조합을 쓰던 것을 대체한다. 이름 4종은
+ * `redactNameFields` 공통 게이트(redactLore 와 동일 지점)를 사용하고,
+ * appearsInEvents 는 마스킹 대상 아님 (passthrough — full 경로와 동일).
+ *
+ * REDACTED("[CLASSIFIED]") 는 auto-link 의 LOW_SIGNAL_ALIASES 에 포함되어
+ * 마스킹된 이름이 링크 키워드로 노출되지 않는다 — full 경로와 동일한 결과.
+ * projection 에 없는 기밀 필드(lore 서사/play/loreMd/rawText/ownerId)는 DB 단계에서
+ * 이미 제외되므로 여기서 다룰 것이 없다.
+ */
+export function filterCharacterForLoreLinks(
+  character: CharacterRef,
+  clearance: AgentLevel,
+): CharacterRef {
+  const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
+  const canIdentity = canViewField(clearance, "identity", overrides);
+  const canRealName = canViewRealName(clearance, overrides);
+
+  const lore: CharacterRef["lore"] = redactNameFields(
+    character.lore,
+    canRealName,
+    canIdentity,
+  );
+
+  if (character.lore.appearsInEvents !== undefined) {
+    lore.appearsInEvents = character.lore.appearsInEvents;
+  }
+
+  return { ...character, lore };
+}
+
+/**
+ * 목록(projection) 전용 캐릭터 마스킹 — `listCharacterListItems()` 결과에 사용.
+ *
+ * 이름 4종은 `redactNameFields` 공통 게이트(redactLore 와 동일 지점)를 사용하고,
+ * 나머지는 redactLore 와 동일한 필드별 게이트를 projection 필드에만 적용한다:
+ *   - mainImage → identity 미달 시 ""
+ *   - loreTags → 마스킹 대상 아님 (passthrough)
+ *
+ * projection 에 없는 기밀 필드(loreMd/rawText/play/서사 필드/ownerId)는 DB 단계에서
+ * 이미 제외되므로 여기서 다룰 것이 없다. `clearanceOverrides` 는 게이트 연산에 사용하며
+ * full 경로(스프레드 통과)와 동일하게 결과에 그대로 남는다.
  */
 export function filterCharacterForList(
-  character: Character,
+  character: CharacterListItem,
   clearance: AgentLevel,
-): Character {
+): CharacterListItem {
   const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
+  const canIdentity = canViewField(clearance, "identity", overrides);
   const canRealName = canViewRealName(clearance, overrides);
-  if (canRealName) return character;
 
-  return {
-    ...character,
-    lore: {
-      ...character.lore,
-      name: REDACTED,
-    },
-  } as Character;
+  const lore: CharacterListItem["lore"] = {
+    ...redactNameFields(character.lore, canRealName, canIdentity),
+    mainImage: canIdentity ? character.lore.mainImage : "",
+  };
+
+  if (character.lore.loreTags !== undefined) {
+    lore.loreTags = character.lore.loreTags;
+  }
+
+  return { ...character, lore };
 }

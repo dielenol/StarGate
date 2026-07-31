@@ -7,6 +7,7 @@ import "./init";
 export {
   listWikiPages,
   listWikiPagesLite,
+  listWikiPageRefs,
   listRecentWikiPagesLite,
   listPublicWikiPages,
   listWikiPagesByCategory,
@@ -18,3 +19,5 @@ export {
   deleteWikiPage,
   listRevisions,
 } from "@stargate/shared-db";
+
+export type { WikiPageRef } from "@stargate/shared-db";

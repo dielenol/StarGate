@@ -5,17 +5,17 @@ import { notFound, redirect } from "next/navigation";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { relatedCatalogItemsForWiki } from "@/lib/catalog/related";
-import { listCharacters } from "@/lib/db/characters";
-import { listMasterItems } from "@/lib/db/inventory";
-import { listSessionReports } from "@/lib/db/session-reports";
+import { listCharacterRefs } from "@/lib/db/characters";
+import { listMasterItemRefs } from "@/lib/db/inventory";
+import { listSessionReportRefs } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
-import { findWikiPageById, listWikiPages } from "@/lib/db/wiki";
+import { findWikiPageById, listWikiPageRefs } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
 import {
   relatedPersonnelForReports,
   relatedReportsForWiki,
 } from "@/lib/lore-links";
-import { filterCharacterByClearance, getUserClearance } from "@/lib/personnel";
+import { filterCharacterForLoreLinks, getUserClearance } from "@/lib/personnel";
 import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
 import type { WikiPageClient } from "@/types/wiki";
 
@@ -82,7 +82,17 @@ export default async function WikiDetailPage({
   const { id } = await params;
   if (!isValidObjectId(id)) notFound();
 
-  const page = await findWikiPageById(id);
+  // 본문 + 카테고리 네비/자동링크/연관 문서용 참조 4종 — 서로 독립 조회라 병렬 로드
+  // (참조는 실패 시 빈 목록). 직렬 1+4 RTT → 1 RTT. 참조 4종은 ref projection —
+  // 본문(content)/lore 서사/play/summary 등 이 화면이 쓰지 않는 heavy 필드 미전송.
+  const [page, allPages, allReports, allCharacters, allItems] =
+    await Promise.all([
+      findWikiPageById(id),
+      listWikiPageRefs().catch(() => []),
+      listSessionReportRefs().catch(() => []),
+      listCharacterRefs().catch(() => []),
+      listMasterItemRefs().catch(() => []),
+    ]);
   if (!page) {
     notFound();
   }
@@ -96,15 +106,6 @@ export default async function WikiDetailPage({
     createdAt: page.createdAt.toISOString(),
     updatedAt: page.updatedAt?.toISOString() ?? "",
   };
-
-  // 카테고리 네비 + 자동링크/연관 문서용 컬렉션 4종 — 서로 독립 조회라 병렬 로드
-  // (실패 시 빈 목록). 직렬 4 RTT → 1 RTT.
-  const [allPages, allReports, allCharacters, allItems] = await Promise.all([
-    listWikiPages().catch(() => []),
-    listSessionReports().catch(() => []),
-    listCharacters().catch(() => []),
-    listMasterItems().catch(() => []),
-  ]);
   const categories = sortWikiCategories([
     ...new Set(allPages.map((p) => p.category)),
   ]);
@@ -128,7 +129,7 @@ export default async function WikiDetailPage({
     ? allCharacters
     : allCharacters.filter((character) => character.isPublic !== false);
   const linkableCharacters = visibleCharacters.map((character) =>
-    filterCharacterByClearance(character, userClearance),
+    filterCharacterForLoreLinks(character, userClearance),
   );
   const visibleItems = isGM
     ? allItems

@@ -4,6 +4,8 @@ import type {
   WikiPage,
 } from "@stargate/shared-db/types";
 
+import type { MasterItemRef } from "@/lib/db/inventory";
+
 import { ITEM_CATEGORY_LABEL } from "./categories";
 import {
   extractExactSessionKeys,
@@ -65,7 +67,11 @@ function isGenericCatalogTag(value: string): boolean {
   );
 }
 
-function itemTextValues(item: MasterItem): string[] {
+/**
+ * 연관 매칭이 스캔하는 텍스트 소스 — `MasterItemRef` projection 이 이 필드 전부를
+ * 포함해야 full 로드와 매칭 결과가 동일하다 (shared-db `listMasterItemRefs` 참조).
+ */
+function itemTextValues(item: MasterItemRef): string[] {
   return [
     item.slug,
     item.name,
@@ -120,12 +126,12 @@ function pageAllowsSessionKeyCatalogMatch(page: WikiPage): boolean {
   );
 }
 
-function catalogItemKey(item: MasterItem): string | null {
+function catalogItemKey(item: MasterItemRef): string | null {
   return item.slug?.trim() || item._id?.toString() || null;
 }
 
 function toRelatedCatalogItemLink(
-  item: MasterItem,
+  item: MasterItemRef,
 ): RelatedCatalogItemLink | null {
   const key = catalogItemKey(item);
   if (!key) return null;
@@ -155,7 +161,7 @@ function sortRelatedCatalogItemLinks(
 }
 
 function itemMatchesContext(
-  item: MasterItem,
+  item: MasterItemRef,
   contextText: string,
   contextSessionKeys: Set<string>,
   contextExactSessionKeys: Set<string>,
@@ -188,15 +194,15 @@ function itemMatchesContext(
   );
 }
 
-export function catalogItemSessionKeys(item: MasterItem): string[] {
+export function catalogItemSessionKeys(item: MasterItemRef): string[] {
   return extractSessionKeys(...itemTextValues(item));
 }
 
-export function catalogItemExactSessionKeys(item: MasterItem): string[] {
+export function catalogItemExactSessionKeys(item: MasterItemRef): string[] {
   return extractExactSessionKeys(...itemTextValues(item));
 }
 
-export function catalogItemSearchTerms(item: MasterItem): string[] {
+export function catalogItemSearchTerms(item: MasterItemRef): string[] {
   const sessionKeys = new Set(catalogItemSessionKeys(item));
   const exactSessionKeys = new Set(catalogItemExactSessionKeys(item));
   const terms = new Set<string>();
@@ -219,7 +225,7 @@ export function catalogItemSearchTerms(item: MasterItem): string[] {
 }
 
 export function relatedWikiForCatalogItem(
-  item: MasterItem,
+  item: MasterItemRef,
   pages: WikiPage[],
 ): RelatedWikiLink[] {
   const terms = catalogItemSearchTerms(item);
@@ -251,7 +257,7 @@ export function relatedWikiForCatalogItem(
 }
 
 export function relatedReportsForCatalogItem(
-  item: MasterItem,
+  item: MasterItemRef,
   reports: SessionReport[],
 ): RelatedReportLink[] {
   const exactSessionKeys = new Set(catalogItemExactSessionKeys(item));
@@ -308,7 +314,7 @@ export function relatedReportsForCatalogItem(
 
 export function relatedCatalogItemsForReport(
   report: SessionReport,
-  items: MasterItem[],
+  items: MasterItemRef[],
 ): RelatedCatalogItemLink[] {
   const contextValues = reportTextValues(report);
   const contextText = contextValues.join(" ");
@@ -336,7 +342,7 @@ export function relatedCatalogItemsForReport(
 
 export function relatedCatalogItemsForWiki(
   page: WikiPage,
-  items: MasterItem[],
+  items: MasterItemRef[],
 ): RelatedCatalogItemLink[] {
   const contextValues = pageTextValues(page);
   const contextText = contextValues.join(" ");

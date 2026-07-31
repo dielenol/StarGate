@@ -43,6 +43,130 @@ export async function listCharacters(): Promise<Character[]> {
   return col.find().sort({ type: 1, codename: 1 }).toArray();
 }
 
+/**
+ * 신원조회(/erp/personnel) 목록 카드 전용 경량 행.
+ *
+ * 카드 렌더/검색/그룹핑/정렬이 실제 소비하는 필드만 포함한다.
+ * loreMd/rawText(원본 시트 전문)·play(능력치/어빌리티)·lore 서사 필드
+ * (appearance/personality/background 등)는 목록에서 쓰지 않으므로 제외.
+ * `clearanceOverrides` 는 호출자(StarGateV2)의 목록 마스킹 연산에 필요해 포함.
+ */
+export type CharacterListItem = Pick<
+  Character,
+  | "_id"
+  | "codename"
+  | "type"
+  | "role"
+  | "agentLevel"
+  | "department"
+  | "factionCode"
+  | "institutionCode"
+  | "previewImage"
+  | "isPublic"
+  | "clearanceOverrides"
+> & {
+  lore: Pick<
+    Character["lore"],
+    "name" | "nameNative" | "nickname" | "nameEn" | "loreTags" | "mainImage"
+  >;
+};
+
+/**
+ * 신원조회 목록 전용 projection 조회 — `listCharacters()`(무프로젝션 전체 컬렉션) 대체.
+ *
+ * - 정렬은 `listCharacters` 와 동일한 `{ type: 1, codename: 1 }` — 목록 대체 시 표시 순서 보존.
+ * - optional 필드(lore.nameNative 등)는 도큐먼트에 없으면 projection 결과에서도 부재(undefined)
+ *   — "필드 자체가 없음" 시그널이 전체 로드와 동일하게 유지된다.
+ * - 상세(Dossier) 경로는 full 도큐먼트가 필요하므로 `findCharacterById` 를 그대로 사용할 것.
+ */
+export async function listCharacterListItems(): Promise<CharacterListItem[]> {
+  const col = await charactersCol();
+  return col
+    .find()
+    .project<CharacterListItem>({
+      _id: 1,
+      codename: 1,
+      type: 1,
+      role: 1,
+      agentLevel: 1,
+      department: 1,
+      factionCode: 1,
+      institutionCode: 1,
+      previewImage: 1,
+      isPublic: 1,
+      clearanceOverrides: 1,
+      "lore.name": 1,
+      "lore.nameNative": 1,
+      "lore.nickname": 1,
+      "lore.nameEn": 1,
+      "lore.loreTags": 1,
+      "lore.mainImage": 1,
+    })
+    .sort({ type: 1, codename: 1 })
+    .toArray();
+}
+
+/**
+ * 자동링크(personnel 타깃)/연관 인물/세력 보드 집계용 참조 행.
+ *
+ * lore 서사(appearance/personality/background 등)·play 시트·loreMd/rawText 제외.
+ * `clearanceOverrides` 는 호출자(StarGateV2)의 참조 마스킹(`filterCharacterForLoreLinks`)
+ * 연산에 필요해 포함. `lore.appearsInEvents` 는 연관 인물 매칭
+ * (`relatedPersonnelForReports`)이 세션 ID 교차에 사용.
+ */
+export type CharacterRef = Pick<
+  Character,
+  | "_id"
+  | "codename"
+  | "type"
+  | "role"
+  | "agentLevel"
+  | "department"
+  | "factionCode"
+  | "institutionCode"
+  | "isPublic"
+  | "clearanceOverrides"
+> & {
+  lore: Pick<
+    Character["lore"],
+    "name" | "nameNative" | "nickname" | "nameEn" | "appearsInEvents"
+  >;
+};
+
+/**
+ * 위키/보고서 상세·세력 보드 전용 참조 projection 조회 — `listCharacters()`
+ * (무프로젝션 전체 컬렉션) 대체.
+ *
+ * - 정렬은 `listCharacters` 와 동일한 `{ type: 1, codename: 1 }` — 목록 대체 시 순서 보존.
+ * - optional 필드는 도큐먼트에 없으면 결과에서도 부재(undefined) — "필드 자체가 없음"
+ *   시그널이 전체 로드와 동일하게 유지된다.
+ * - 신원조회 목록 카드는 `listCharacterListItems`, 상세(Dossier)는 `findCharacterById` 사용.
+ */
+export async function listCharacterRefs(): Promise<CharacterRef[]> {
+  const col = await charactersCol();
+  return col
+    .find()
+    .project<CharacterRef>({
+      _id: 1,
+      codename: 1,
+      type: 1,
+      role: 1,
+      agentLevel: 1,
+      department: 1,
+      factionCode: 1,
+      institutionCode: 1,
+      isPublic: 1,
+      clearanceOverrides: 1,
+      "lore.name": 1,
+      "lore.nameNative": 1,
+      "lore.nickname": 1,
+      "lore.nameEn": 1,
+      "lore.appearsInEvents": 1,
+    })
+    .sort({ type: 1, codename: 1 })
+    .toArray();
+}
+
 export async function listCharactersByType(
   type: CharacterType
 ): Promise<Character[]> {
@@ -354,6 +478,71 @@ export async function findMainCharacterLiteByOwner(
       agentLevel: 1,
       isPublic: 1,
     })
+    .toArray();
+
+  if (fallbackDocs.length === 0) return null;
+  if (fallbackDocs.length > 1) {
+    throw mainCharacterIntegrityError(
+      ownerId,
+      fallbackDocs,
+      "owned NPC fallback candidates",
+    );
+  }
+
+  return fallbackDocs[0];
+}
+
+/**
+ * ERP 렌더 패스 표시용 메인 캐릭터 행 — identity 필드 + 표시명(lore.name).
+ * `MainCharacterIdentity` 로는 헤더/크레딧 카드의 표시명을 만들 수 없어
+ * `lore.name` 만 추가한 변형이다.
+ */
+export type MainCharacterDisplayLite = MainCharacterIdentity & {
+  lore: Pick<Character["lore"], "name">;
+};
+
+/**
+ * `findMainCharacterByOwner` 의 렌더 패스 표시용 경량 projection 변형.
+ *
+ * (erp)/layout 헤더 identity(lore.name/codename/agentLevel)와 크레딧/주식/상점
+ * 페이지(_id/codename)가 소비하는 필드만 포함한다. 같은 렌더 패스의 layout·page 가
+ * 동일 변형을 공유해야 React cache 가 1쿼리로 합쳐지므로, 페이지 렌더 경로는
+ * 이 함수(의 cached 래퍼)로 통일한다. 조회 조건·GM NPC fallback·0건 null·
+ * 2건 이상 throw(1인 1 MAIN 정합성)의 의미론은 원본과 동일하다.
+ *
+ * lore 전문/play 시트가 필요한 렌더 경로(장비 상점 라이선스 자격 판정, 시뮬레이터
+ * 스탯, 대시보드 displayCharacter)는 원본 `findMainCharacterByOwner` 를 유지할 것.
+ */
+export async function findMainCharacterDisplayLiteByOwner(
+  ownerId: string
+): Promise<MainCharacterDisplayLite | null> {
+  const projection = {
+    _id: 1,
+    codename: 1,
+    ownerId: 1,
+    type: 1,
+    tier: 1,
+    agentLevel: 1,
+    isPublic: 1,
+    "lore.name": 1,
+  } as const;
+
+  const col = await charactersCol();
+  const docs = await col
+    .find(mainAgentFilter(ownerId))
+    .project<MainCharacterDisplayLite>(projection)
+    .toArray();
+
+  if (docs.length === 1) return docs[0];
+  if (docs.length > 1) {
+    throw mainCharacterIntegrityError(ownerId, docs, "MAIN agents");
+  }
+
+  if (!(await canUseOwnedNpcFallback(ownerId))) return null;
+
+  const fallbackDocs = await col
+    .find(ownedNpcFallbackFilter(ownerId))
+    .project<MainCharacterDisplayLite>(projection)
     .toArray();
 
   if (fallbackDocs.length === 0) return null;

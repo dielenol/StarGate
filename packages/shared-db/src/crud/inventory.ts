@@ -43,6 +43,60 @@ export async function listAvailableItems(): Promise<MasterItem[]> {
     .toArray();
 }
 
+/**
+ * 자동링크(catalog 타깃)/연관 카탈로그 매칭용 참조 행.
+ *
+ * 연관 매칭(`catalogItemSessionKeys`/`catalogItemSearchTerms`)이 텍스트 스캔에
+ * 실제 사용하는 필드(description/damage/effect/lore/loreMd/tags)는 **의도적으로 유지**
+ * — 누락 시 세션 키 추출이 조용히 빠져 연관 문서가 사라진다. 대신 매칭에 참여하지
+ * 않는 운영 필드(price/shopMeta/isAvailable/previewImage/source/authorId/authorName/
+ * equipmentAction/equipmentAbilityOverrides/workshop/createdAt/updatedAt)를 제외한다.
+ */
+export type MasterItemRef = Pick<
+  MasterItem,
+  | "_id"
+  | "slug"
+  | "name"
+  | "nameEn"
+  | "category"
+  | "tags"
+  | "description"
+  | "damage"
+  | "effect"
+  | "lore"
+  | "loreMd"
+  | "isPublic"
+>;
+
+/**
+ * 위키/보고서 상세의 자동링크 타깃·연관 카탈로그 전용 참조 list —
+ * `listMasterItems()` 대체.
+ *
+ * 정렬은 `listMasterItems` 와 동일한 `{ category: 1, name: 1 }` — 목록 대체 시 순서 보존.
+ * 카탈로그 상세/상점 등 가격·재고·워크샵 메타가 필요한 화면은 기존 함수를 사용할 것.
+ */
+export async function listMasterItemRefs(): Promise<MasterItemRef[]> {
+  const col = await masterItemsCol();
+  return col
+    .find()
+    .project<MasterItemRef>({
+      _id: 1,
+      slug: 1,
+      name: 1,
+      nameEn: 1,
+      category: 1,
+      tags: 1,
+      description: 1,
+      damage: 1,
+      effect: 1,
+      lore: 1,
+      loreMd: 1,
+      isPublic: 1,
+    })
+    .sort({ category: 1, name: 1 })
+    .toArray();
+}
+
 export async function listMasterItemsByCategories(
   categories: readonly ItemCategory[],
   opts: { publicOnly?: boolean; availableOnly?: boolean } = {}

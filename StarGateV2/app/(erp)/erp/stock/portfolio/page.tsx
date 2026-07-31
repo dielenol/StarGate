@@ -10,7 +10,7 @@
 import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
-import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
 
 import type {

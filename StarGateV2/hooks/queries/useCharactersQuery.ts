@@ -6,10 +6,17 @@ import type {
   Character,
   CharacterTier,
 } from "@/types/character";
-import type { AgentCharacterCard } from "@/lib/db/characters";
+import type {
+  AgentCharacterCard,
+  CharacterListItem,
+} from "@/lib/db/characters";
 
 export type AgentTierFilter = CharacterTier | "ALL";
 export type AgentCharacterCardDto = Omit<AgentCharacterCard, "_id"> & {
+  _id: string;
+};
+/** 신원조회 목록 행 — `CharacterListItem` 의 `_id` string 직렬화 형. */
+export type CharacterListItemDto = Omit<CharacterListItem, "_id"> & {
   _id: string;
 };
 
@@ -63,7 +70,7 @@ async function fetchAgentCharacterById(id: string): Promise<AgentCharacter> {
   return data.character as AgentCharacter;
 }
 
-async function fetchPersonnelCharacters(): Promise<Character[]> {
+async function fetchPersonnelCharacters(): Promise<CharacterListItemDto[]> {
   const res = await fetch("/api/erp/personnel");
   if (!res.ok) throw new Error("신원조회 목록을 불러올 수 없습니다.");
   const data = await res.json();
@@ -109,8 +116,10 @@ export function useAgentCharacterQuery(
   });
 }
 
-/** Personnel 카탈로그 — AGENT + NPC + lore 마스킹 결과. */
-export function usePersonnelQuery(options?: { initialData?: Character[] }) {
+/** Personnel 카탈로그 — AGENT + NPC, 목록 projection + lore 마스킹 결과. */
+export function usePersonnelQuery(options?: {
+  initialData?: CharacterListItemDto[];
+}) {
   return useQuery({
     queryKey: personnelKeys.all,
     queryFn: fetchPersonnelCharacters,

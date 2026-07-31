@@ -45,8 +45,8 @@ import {
 import styles from "./page.module.css";
 
 interface Props {
+  /** 서버 초기 로드 — TanStack 캐시 시드 겸 첫 렌더 데이터 (단일 prop, 이중 직렬화 방지). */
   initialPages: WikiPageClient[];
-  allPages: WikiPageClient[];
   categories: string[];
   currentCategory?: string;
   currentQuery?: string;
@@ -129,7 +129,6 @@ function filterWikiPages(
 
 export default function WikiClient({
   initialPages,
-  allPages,
   categories,
   currentCategory,
   currentQuery,
@@ -159,9 +158,8 @@ export default function WikiClient({
     [categories],
   );
 
-  const seedPages = allPages.length > 0 ? allPages : initialPages;
-  const { data: cachedPages = seedPages } = useWikiPages(undefined, {
-    initialData: seedPages,
+  const { data: cachedPages = initialPages } = useWikiPages(undefined, {
+    initialData: initialPages,
   });
 
   const activeQueryTrimmed = activeQuery.trim();

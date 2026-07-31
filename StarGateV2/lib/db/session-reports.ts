@@ -6,6 +6,7 @@ import "./init";
 
 export {
   listSessionReports,
+  listSessionReportRefs,
   findReportBySessionId,
   findReportById,
   findSessionReportsBySessionIds,
@@ -13,3 +14,5 @@ export {
   updateSessionReport,
   deleteSessionReport,
 } from "@stargate/shared-db";
+
+export type { SessionReportRef } from "@stargate/shared-db";

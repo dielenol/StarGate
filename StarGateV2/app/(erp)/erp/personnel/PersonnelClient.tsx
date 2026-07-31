@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import type { AgentLevel, Character } from "@/types/character";
+import type { AgentLevel } from "@/types/character";
+import type { CharacterListItemDto } from "@/hooks/queries/useCharactersQuery";
 import { FACTIONS, INSTITUTIONS, INTERNAL_FACTION_CODE } from "@/types/character";
 
 import { usePersonnelQuery } from "@/hooks/queries/useCharactersQuery";
@@ -92,7 +93,7 @@ type SubUnitItem = { code: string; label: string };
  * Phase 1 후 factionCode / institutionCode 는 AGENT/NPC 공통 root 필드로 승격되었으므로
  * type 분기 없이 동일 로직 적용.
  */
-function resolveGroup(c: Character): string {
+function resolveGroup(c: CharacterListItemDto): string {
   const externalSubOrg = resolveExternalSubOrg(c);
   if (externalSubOrg) return externalSubOrg.parentCode;
 
@@ -113,7 +114,7 @@ function resolveGroup(c: Character): string {
   return UNASSIGNED_CODE;
 }
 
-function resolveExternalSubOrg(c: Character) {
+function resolveExternalSubOrg(c: CharacterListItemDto) {
   return (
     getExternalSubOrg(c.department ?? "") ??
     getExternalSubOrg(c.factionCode ?? "") ??
@@ -121,7 +122,7 @@ function resolveExternalSubOrg(c: Character) {
   );
 }
 
-function resolveSubUnitCode(c: Character): string | null {
+function resolveSubUnitCode(c: CharacterListItemDto): string | null {
   const externalSubOrg = resolveExternalSubOrg(c);
   if (externalSubOrg) return externalSubOrg.code;
 
@@ -136,7 +137,7 @@ function resolveSubUnitCode(c: Character): string | null {
   return null;
 }
 
-function characterUsesAgentLevels(c: Character): boolean {
+function characterUsesAgentLevels(c: CharacterListItemDto): boolean {
   return isInternalOrgCode(resolveGroup(c));
 }
 
@@ -172,7 +173,10 @@ function getOrgTone(code: string | null | undefined): "hostile" | undefined {
 }
 
 /** 같은 그룹/서브유닛 내부 카드 정렬: 등급 내림차순 → codename 오름차순 */
-function compareForCardOrder(a: Character, b: Character): number {
+function compareForCardOrder(
+  a: CharacterListItemDto,
+  b: CharacterListItemDto,
+): number {
   if (characterUsesAgentLevels(a) && characterUsesAgentLevels(b)) {
     if (a.agentLevel && b.agentLevel) {
       const levelCmp = compareLevels(b.agentLevel, a.agentLevel);
@@ -251,7 +255,7 @@ function textMatchesQuery(
 /* ── Props ── */
 
 interface Props {
-  initialCharacters: Character[];
+  initialCharacters: CharacterListItemDto[];
   clearance: AgentLevel;
 }
 
@@ -337,7 +341,7 @@ export default function PersonnelClient({
 
   /* 그룹별 인덱스 (AGENT / NPC 구분 없이 세계관 내 모든 인물) */
   const groupIndex = useMemo(() => {
-    const map = new Map<string, Character[]>();
+    const map = new Map<string, CharacterListItemDto[]>();
     for (const c of characters) {
       const g = resolveGroup(c);
       const bucket = map.get(g);
@@ -349,7 +353,7 @@ export default function PersonnelClient({
 
   /* 하위 기구별 인덱스 (institution 산하) */
   const subUnitIndex = useMemo(() => {
-    const map = new Map<string, Character[]>();
+    const map = new Map<string, CharacterListItemDto[]>();
     for (const inst of INSTITUTIONS) {
       map.set(inst.code, []);
       for (const sub of inst.subUnits) {
@@ -575,10 +579,10 @@ export default function PersonnelClient({
   // 현재 선택 그룹 멤버 (정렬 포함).
   // NOVUS_ORDO 본부 박스: 본부 직속 + 산하 SECRETARIAT/MANUS 캐릭터 union.
   const selectedGroupMembers = useMemo(() => {
-    if (!selectedGroup) return [] as Character[];
+    if (!selectedGroup) return [] as CharacterListItemDto[];
 
     if (selectedGroup === INTERNAL_FACTION_CODE) {
-      const merged: Character[] = [
+      const merged: CharacterListItemDto[] = [
         ...(groupIndex.get(INTERNAL_FACTION_CODE) ?? []),
         ...INSTITUTIONS.flatMap((inst) => groupIndex.get(inst.code) ?? []),
       ];
@@ -765,12 +769,12 @@ export default function PersonnelClient({
 
   /* ── 렌더 ── */
 
-  const matchState = (c: Character): "default" | "matched" | "dimmed" => {
+  const matchState = (c: CharacterListItemDto): "default" | "matched" | "dimmed" => {
     if (!query.trim()) return "default";
     return searchMatches.ids.has(String(c._id)) ? "matched" : "dimmed";
   };
 
-  const renderCardGrid = (members: Character[]) => {
+  const renderCardGrid = (members: CharacterListItemDto[]) => {
     if (members.length === 0) {
       return <div className={styles.empty}>소속 인원 없음</div>;
     }

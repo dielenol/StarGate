@@ -7,7 +7,7 @@ import {
   hasPlayerServiceTestAccess,
   hasPlayerServiceTestPathAccess,
 } from "@/lib/auth/player-service-test-access";
-import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
 import { getRealtimeClientMode } from "@/lib/realtime/config";
 

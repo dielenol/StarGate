@@ -4,6 +4,9 @@ import type {
   WikiPage,
 } from "@stargate/shared-db/types";
 
+import type { CharacterRef } from "@/lib/db/characters";
+import type { SessionReportRef } from "@/lib/db/session-reports";
+
 import { formatOperationReportTitle } from "./format/session-report";
 
 export interface RelatedWikiLink {
@@ -135,7 +138,7 @@ function addPersonnelKey(keys: Set<string>, value?: string | null): void {
   }
 }
 
-function characterParticipantKeys(character: Character): string[] {
+function characterParticipantKeys(character: CharacterRef): string[] {
   const keys = new Set<string>();
 
   for (const value of [
@@ -279,7 +282,7 @@ export function relatedWikiForReport(
 }
 
 export function toRelatedPersonnelLink(
-  character: Character,
+  character: CharacterRef,
 ): RelatedPersonnelLink | null {
   const id = characterId(character);
   if (!id) return null;
@@ -301,7 +304,7 @@ export function toRelatedPersonnelLink(
 
 export function relatedPersonnelForReport(
   report: SessionReport,
-  characters: Character[],
+  characters: CharacterRef[],
 ): RelatedPersonnelLink[] {
   const participantKeySets = report.participants.map(participantCandidateKeys);
 
@@ -336,7 +339,7 @@ export function relatedPersonnelLinkMatchesParticipant(
 }
 
 export function toRelatedReportLink(
-  report: SessionReport,
+  report: SessionReportRef,
 ): RelatedReportLink | null {
   const id = reportId(report);
   if (!id) return null;
@@ -353,7 +356,7 @@ export function toRelatedReportLink(
 
 export function relatedReportsForWiki(
   page: WikiPage,
-  reports: SessionReport[],
+  reports: SessionReportRef[],
 ): RelatedReportLink[] {
   const exactKeys = new Set(pageExactSessionKeys(page));
   const keys = new Set(pageSessionKeys(page));
@@ -389,7 +392,7 @@ export function relatedReportsForWiki(
 
 export function relatedPersonnelForReports(
   reports: RelatedReportLink[],
-  characters: Character[],
+  characters: CharacterRef[],
 ): RelatedPersonnelLink[] {
   const sessionIds = new Set(reports.map((report) => report.sessionId));
   const participantKeySets = reports.flatMap((report) =>

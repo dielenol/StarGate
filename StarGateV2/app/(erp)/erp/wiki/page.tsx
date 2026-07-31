@@ -55,7 +55,6 @@ export default async function WikiListPage({
   return (
     <WikiClient
       initialPages={serializedPages}
-      allPages={serializedPages}
       categories={categories}
       currentCategory={category}
       currentQuery={q}

@@ -281,22 +281,48 @@ test("D-8: NPC 캐릭터 — filterCharacterByClearance 결과에 play 키 없�
   );
 });
 
-/* ── D-9: filterCharacterForList — name 만 마스킹 ── */
+/* ── D-9: filterCharacterForList — redactLore 와 동일한 필드별 게이트 (Phase 2 강화) ──
+ *
+ * (2026-07-31 갱신) 구버전은 name 만 마스킹하고 nameNative/nameEn(실명 그룹)을
+ * 통과시켰다. Phase 2 에서 목록 projection(CharacterListItem) 전용으로 재작성되며
+ * redactLore 와 동일한 게이트(실명 3종/nickname/mainImage)로 강화 — 등가성 전 매트릭스는
+ * personnel-list-masking-equivalence.test.mjs 가 검증한다.
+ */
 
-test("D-9: filterCharacterForList — U 사용자: name 만 REDACTED, 나머지 lore 원본", () => {
-  const original = agentChar();
+function listItemOf(character) {
+  // listCharacterListItems() projection 시뮬레이션 (존재 필드만 복사)
+  const top = {};
+  for (const f of [
+    "_id", "codename", "type", "role", "agentLevel", "department",
+    "factionCode", "institutionCode", "previewImage", "isPublic", "clearanceOverrides",
+  ]) {
+    if (character[f] !== undefined) top[f] = character[f];
+  }
+  const lore = {};
+  for (const f of ["name", "nameNative", "nickname", "nameEn", "loreTags", "mainImage"]) {
+    if (character.lore?.[f] !== undefined) lore[f] = character.lore[f];
+  }
+  return { ...top, lore };
+}
+
+test("D-9: filterCharacterForList — U 사용자: 실명 3종 REDACTED, identity 필드는 노출", () => {
+  const original = listItemOf(agentChar());
   const filtered = filterCharacterForList(original, "U");
   assert.equal(filtered.lore.name, REDACTED);
-  // 나머지는 그대로 (목록용 가벼운 필터)
-  assert.equal(filtered.lore.appearance, "tall");
-  assert.equal(filtered.lore.background, "ex-soldier");
+  assert.equal(filtered.lore.nameNative, REDACTED);
+  assert.equal(filtered.lore.nameEn, REDACTED);
+  // identity 그룹(U)과 메타 배열은 노출
+  assert.equal(filtered.lore.nickname, "JJ");
+  assert.equal(filtered.lore.mainImage, "/m.png");
+  // 원본은 변형되지 않음
+  assert.equal(original.lore.name, "John");
 });
 
-test("D-9b: filterCharacterForList — G 사용자(실명 통과): 원본 그대로 반환", () => {
-  const original = agentChar();
+test("D-9b: filterCharacterForList — G 사용자(실명 통과): 모든 목록 필드 원본 값", () => {
+  const original = listItemOf(agentChar());
   const filtered = filterCharacterForList(original, "G");
-  // 실명 통과 시 원본 그대로 returned (얕은 비교가 아닌 동일 reference)
-  assert.equal(filtered, original, "실명 통과 시 동일 reference 반환");
+  assert.deepEqual(filtered.lore, original.lore, "G 등급은 목록 lore 필드 전부 원본");
+  assert.equal(filtered.codename, original.codename);
 });
 
 /* ── D-10: clearance 등급 함수 ── */

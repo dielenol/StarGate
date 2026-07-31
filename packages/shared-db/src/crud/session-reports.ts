@@ -54,6 +54,49 @@ export async function findSessionReportsBySessionIds(
     .toArray();
 }
 
+/** 자동링크/연관 문서/보고서 넘버링용 참조 행 — summary/highlights 등 본문성 필드 제외. */
+export type SessionReportRef = Pick<
+  SessionReport,
+  | "_id"
+  | "sessionId"
+  | "sessionTitle"
+  | "reportNumber"
+  | "locationLabel"
+  | "participants"
+  | "createdAt"
+>;
+
+/**
+ * 위키/보고서 상세의 자동링크 타깃·연관 보고서·넘버링 전용 참조 list —
+ * `listSessionReports()` 대체.
+ *
+ * 포함 필드 근거:
+ * - `buildWikiAutoLinkTargets` — _id/sessionId/sessionTitle
+ * - `relatedReportsForWiki`(+`toRelatedReportLink`) — sessionId/sessionTitle/
+ *   locationLabel/participants/createdAt
+ * - `findOperationReportNumberMeta` — _id/sessionId/sessionTitle/createdAt/reportNumber
+ *
+ * **summary/highlights 가 매칭에 참여하는 경로는 사용 금지** — 카탈로그 상세의
+ * `relatedReportsForCatalogItem`, 세력 보드의 시그널 카운트는 `listSessionReports()` 유지.
+ * 정렬은 `listSessionReports` 와 동일한 `{ createdAt: -1 }` — 목록 대체 시 순서 보존.
+ */
+export async function listSessionReportRefs(): Promise<SessionReportRef[]> {
+  const col = await sessionReportsCol();
+  return col
+    .find()
+    .project<SessionReportRef>({
+      _id: 1,
+      sessionId: 1,
+      sessionTitle: 1,
+      reportNumber: 1,
+      locationLabel: 1,
+      participants: 1,
+      createdAt: 1,
+    })
+    .sort({ createdAt: -1 })
+    .toArray();
+}
+
 export async function findReportById(id: string): Promise<SessionReport | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await sessionReportsCol();

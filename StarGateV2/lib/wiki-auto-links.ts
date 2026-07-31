@@ -1,19 +1,22 @@
-import type {
-  Character,
-  MasterItem,
-  SessionReport,
-  WikiPage,
-} from "@stargate/shared-db/types";
+import type { CharacterRef } from "@/lib/db/characters";
+import type { MasterItemRef } from "@/lib/db/inventory";
+import type { SessionReportRef } from "@/lib/db/session-reports";
+import type { WikiPageRef } from "@/lib/db/wiki";
 
 import type { MarkdownLinkTarget } from "./wiki-render";
 import { formatOperationReportTitle } from "./format/session-report";
 
+/**
+ * 입력은 참조(ref) projection 기준 최소 필드 계약 — full 도큐먼트도 구조적으로
+ * 만족하므로 그대로 전달 가능. 타깃 키워드가 소비하는 필드가 projection 에서
+ * 빠지면 해당 링크가 조용히 사라지므로, ref 함수 projection 과 함께 관리한다.
+ */
 interface BuildWikiAutoLinkTargetsInput {
-  catalogItems: MasterItem[];
-  characters: Character[];
+  catalogItems: MasterItemRef[];
+  characters: CharacterRef[];
   currentWikiPageId?: string;
-  reports: SessionReport[];
-  wikiPages: WikiPage[];
+  reports: SessionReportRef[];
+  wikiPages: WikiPageRef[];
 }
 
 const CODE_ALIAS_PATTERN =
@@ -37,7 +40,7 @@ function idString(value: { _id?: unknown }): string | null {
   return value._id?.toString() ?? null;
 }
 
-function itemKey(item: MasterItem): string | null {
+function itemKey(item: MasterItemRef): string | null {
   return item.slug ?? idString(item);
 }
 

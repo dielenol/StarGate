@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import type { AgentLevel, Character, CharacterType } from "@/types/character";
+import type { AgentLevel, CharacterType } from "@/types/character";
+import type { CharacterListItemDto } from "@/hooks/queries/useCharactersQuery";
 
 import { getLevelDisplayRank, getLevelDisplayTotal } from "@/lib/personnel";
 import { getTopLevelGroup, isInternalOrgCode } from "@/lib/org-structure";
@@ -23,7 +24,7 @@ type MatchState = "matched" | "dimmed" | "default";
 
 const REDACT_NAME = "████████";
 interface Props {
-  character: Character;
+  character: CharacterListItemDto;
   showIdentity: boolean;
   isLead?: boolean;
   isRedacted?: boolean;
@@ -178,7 +179,7 @@ export default function PersonnelCard({
   );
 }
 
-function isHostileCharacter(character: Character): boolean {
+function isHostileCharacter(character: CharacterListItemDto): boolean {
   return [
     character.department,
     character.factionCode,
@@ -186,7 +187,7 @@ function isHostileCharacter(character: Character): boolean {
   ].some((code) => code === "HOSTILE" || getTopLevelGroup(code) === "HOSTILE");
 }
 
-function renderAvatar(character: Character, isRedacted: boolean) {
+function renderAvatar(character: CharacterListItemDto, isRedacted: boolean) {
   if (isRedacted) return <span aria-hidden>☩</span>;
 
   /*

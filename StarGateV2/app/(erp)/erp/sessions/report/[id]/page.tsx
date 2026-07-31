@@ -4,9 +4,13 @@ import { redirect, notFound } from "next/navigation";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { relatedCatalogItemsForReport } from "@/lib/catalog/related";
-import { listCharacters } from "@/lib/db/characters";
-import { listMasterItems } from "@/lib/db/inventory";
-import { findReportById, listSessionReports } from "@/lib/db/session-reports";
+import { listCharacterRefs } from "@/lib/db/characters";
+import { listMasterItemRefs } from "@/lib/db/inventory";
+import {
+  findReportById,
+  listSessionReportRefs,
+  type SessionReportRef,
+} from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
 import { listWikiPages } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
@@ -94,14 +98,19 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const reportLead = report.locationLabel
     ? `${mapLocationLabel}에서 기록된 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.`
     : "작전지 좌표가 아직 등록되지 않은 세션 작전 보고서. 본문은 원본 로그를 작전 개요, 시간대별 전개, 교전·격리 결과, 후속 문서로 재구성한다.";
-  // 자동링크/연관 문서용 컬렉션 3종 — 서로 독립 조회라 병렬 로드 (실패 시 빈 목록).
+  // 자동링크/연관 문서용 컬렉션 4종 — 서로 독립 조회라 병렬 로드 (실패 시 빈 목록).
+  // 캐릭터/아이템/보고서는 ref projection (lore 서사/play/summary 등 미전송).
+  // 위키는 relatedWikiForReport 가 본문(content) 스캔에 의존하므로 full 로드 유지.
   const [allPages, allCharacters, allItems, allReports] = await Promise.all([
     listWikiPages().catch(() => []),
-    listCharacters().catch(() => []),
-    listMasterItems().catch(() => []),
-    listSessionReports().catch(() => [report]),
+    listCharacterRefs().catch(() => []),
+    listMasterItemRefs().catch(() => []),
+    listSessionReportRefs().catch(() => [report]),
   ]);
-  const reportNumberMeta = findOperationReportNumberMeta(report, allReports);
+  const reportNumberMeta = findOperationReportNumberMeta<SessionReportRef>(
+    report,
+    allReports,
+  );
   const reportCode = reportNumberMeta.number;
   const isMiniReport = reportNumberMeta.series === "mini";
   const ReportIcon = isMiniReport ? IconReportMini : IconReportDocument;

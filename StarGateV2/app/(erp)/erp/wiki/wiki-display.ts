@@ -419,14 +419,24 @@ function pageId(page: Pick<WikiPage, "_id">): string | null {
   return page._id?.toString() ?? null;
 }
 
+/**
+ * 연관 문서 후보가 소비하는 최소 필드 계약 — `listWikiPageRefs()` projection 과
+ * full `WikiPage` 모두 만족한다. 후보 매칭은 본문(content)을 쓰지 않는다
+ * (현재 페이지 `page` 의 content 만 "관련 문서" 섹션 파싱에 사용).
+ */
+type WikiRelatedCandidate = Pick<
+  WikiPage,
+  "_id" | "title" | "slug" | "category" | "tags"
+>;
+
 export function wikiRelatedLinks(
   page: WikiPage,
-  allPages: WikiPage[],
+  allPages: WikiRelatedCandidate[],
   maxCount = 8,
 ): WikiRelatedLink[] {
   const currentId = pageId(page);
-  const byTitle = new Map<string, WikiPage>();
-  const bySlug = new Map<string, WikiPage>();
+  const byTitle = new Map<string, WikiRelatedCandidate>();
+  const bySlug = new Map<string, WikiRelatedCandidate>();
   const result: WikiRelatedLink[] = [];
   const seenIds = new Set<string>();
 
@@ -435,7 +445,7 @@ export function wikiRelatedLinks(
     bySlug.set(normalizePageTitle(candidate.slug), candidate);
   }
 
-  function push(candidate: WikiPage | undefined, relation: WikiRelatedLink["relation"]) {
+  function push(candidate: WikiRelatedCandidate | undefined, relation: WikiRelatedLink["relation"]) {
     if (!candidate) return;
     const id = pageId(candidate);
     if (!id || id === currentId || seenIds.has(id)) return;

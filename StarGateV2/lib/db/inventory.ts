@@ -24,6 +24,7 @@ import type {
 
 export {
   listMasterItems,
+  listMasterItemRefs,
   listMasterItemsByCategories,
   listAvailableItems,
   findMasterItemById,
@@ -47,6 +48,8 @@ export {
   addToSharedInventory,
   removeFromSharedInventory,
 } from "@stargate/shared-db";
+
+export type { MasterItemRef } from "@stargate/shared-db";
 
 function dateToIso(value: Date | string | undefined): string | undefined {
   if (!value) return undefined;

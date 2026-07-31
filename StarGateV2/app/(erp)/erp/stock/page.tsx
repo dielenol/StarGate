@@ -18,7 +18,7 @@ import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
 import { resolvePlayerServiceAvailability } from "@/lib/auth/player-service-test-access";
-import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
 import { STOCK_CATALOG } from "@/lib/stocks/catalog";
 import { isStockMarketEnabled } from "@/lib/stocks/market";

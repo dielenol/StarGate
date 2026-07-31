@@ -14,7 +14,7 @@ import { redirect } from "next/navigation";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
-import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
+import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import {
   getCharacterBalance,
   listCreditTransactions,

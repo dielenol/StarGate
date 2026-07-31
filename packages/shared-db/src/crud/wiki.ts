@@ -88,6 +88,38 @@ export async function listRecentWikiPagesLite(
     .toArray();
 }
 
+/** 자동링크/카테고리 내비/연관 매칭용 참조 행 — 본문(content) 제외. */
+export type WikiPageRef = Pick<
+  WikiPage,
+  "_id" | "slug" | "title" | "category" | "tags" | "isPublic"
+>;
+
+/**
+ * 위키 상세의 자동링크 타깃/카테고리 내비 전용 참조 list — `listWikiPages()` 대체.
+ *
+ * - auto-link 타깃 빌더(`buildWikiAutoLinkTargets`)와 `wikiRelatedLinks` 후보 매칭이
+ *   소비하는 필드(_id/slug/title/category/tags)+공개여부 필터(isPublic)만 포함.
+ * - **본문(content)이 매칭에 참여하는 경로는 사용 금지** — 작전 보고서 상세의
+ *   `relatedWikiForReport`, 카탈로그 상세의 `relatedWikiForCatalogItem`, 세력 보드의
+ *   본문 키워드 카운트는 content 전문 스캔이 필요하므로 `listWikiPages()` 를 유지할 것.
+ * - 정렬은 `listWikiPages` 와 동일한 `{ category: 1, title: 1 }` — 목록 대체 시 순서 보존.
+ */
+export async function listWikiPageRefs(): Promise<WikiPageRef[]> {
+  const col = await wikiPagesCol();
+  return col
+    .find()
+    .project<WikiPageRef>({
+      _id: 1,
+      slug: 1,
+      title: 1,
+      category: 1,
+      tags: 1,
+      isPublic: 1,
+    })
+    .sort({ category: 1, title: 1 })
+    .toArray();
+}
+
 export async function listPublicWikiPages(): Promise<WikiPage[]> {
   const col = await wikiPagesCol();
   return col
