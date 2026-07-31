@@ -21,13 +21,19 @@ import {
 
 import {
   getMrBeastLotteryPrize,
+  isMrBeastLotteryActive,
   isMrBeastLotteryAnnouncementCandidate,
+  isSafeMrBeastLotteryEventId,
+  MRBEAST_LOTTERY_PRIZE_TABLE_VERSION,
   MRBEAST_LOTTERY_SLUG,
 } from "@/lib/shop/mrbeast-lottery";
+import { findMasterItemBySlug } from "@/lib/db/inventory";
 import { SYSTEM_USER_ID_SENTINEL } from "@/lib/db/system-actor";
 
 const LOTTERY_CLAIMS_COLLECTION = "mrbeast_lottery_claims";
 const LOTTERY_ENTITLEMENTS_COLLECTION = "mrbeast_lottery_entitlements";
+const LOTTERY_CONFIG_COLLECTION = "shop_runtime_state";
+const LOTTERY_CONFIG_ID = "mrbeast-lottery";
 const CHARACTERS_COLLECTION = "characters";
 const NOTIFICATIONS_COLLECTION = "notifications";
 const LOTTERY_EVENT_ACTOR_NAME = "MRBEAST_LOTTERY_EVENT";
@@ -74,6 +80,38 @@ export interface MrBeastLotteryWinnerDto {
   label: string;
   reward: number;
   revealedAt: string;
+}
+
+export interface MrBeastLotteryConfigDoc {
+  _id: typeof LOTTERY_CONFIG_ID;
+  enabled: boolean;
+  eventId: string;
+  startAt: Date;
+  endAt: Date;
+  version: number;
+  grantFenceVersion?: number;
+  updatedAt: Date;
+  updatedById: string;
+  updatedByName: string;
+}
+
+export interface MrBeastLotteryAdminConfigDto {
+  enabled: boolean;
+  active: boolean;
+  eventId: string;
+  startAt: string | null;
+  endAt: string | null;
+  version: number;
+  updatedAt: string | null;
+  updatedByName: string | null;
+  readiness: MrBeastLotteryReadinessDto;
+}
+
+export interface MrBeastLotteryReadinessDto {
+  ready: boolean;
+  indexesReady: boolean;
+  masterItemReady: boolean;
+  issues: string[];
 }
 
 interface MrBeastLotteryClaim {
@@ -148,6 +186,136 @@ async function entitlementsCol(): Promise<
   return db.collection<MrBeastLotteryEntitlement>(
     LOTTERY_ENTITLEMENTS_COLLECTION,
   );
+}
+
+async function lotteryConfigCol(): Promise<
+  Collection<MrBeastLotteryConfigDoc>
+> {
+  const db = await getDb();
+  return db.collection<MrBeastLotteryConfigDoc>(LOTTERY_CONFIG_COLLECTION);
+}
+
+function validDate(value: unknown): value is Date {
+  return value instanceof Date && !Number.isNaN(value.getTime());
+}
+
+function toMrBeastLotteryConfig(
+  doc: MrBeastLotteryConfigDoc | null,
+  now: Date,
+): MrBeastLotteryConfig {
+  const eventId =
+    typeof doc?.eventId === "string" &&
+    isSafeMrBeastLotteryEventId(doc.eventId)
+      ? doc.eventId
+      : null;
+  const startAt = validDate(doc?.startAt) ? doc.startAt : null;
+  const endAt = validDate(doc?.endAt) ? doc.endAt : null;
+  const config: MrBeastLotteryConfig = {
+    enabled: doc?.enabled === true,
+    active: false,
+    version:
+      Number.isSafeInteger(doc?.version) && Number(doc?.version) >= 1
+        ? Number(doc?.version)
+        : 0,
+    eventId,
+    startAt,
+    endAt,
+    prizeTableVersion: MRBEAST_LOTTERY_PRIZE_TABLE_VERSION,
+  };
+  config.active = isMrBeastLotteryActive(config, now);
+  return config;
+}
+
+export async function getMrBeastLotteryConfig(
+  now: Date = new Date(),
+  options: { session?: ClientSession } = {},
+): Promise<MrBeastLotteryConfig> {
+  const doc = await (await lotteryConfigCol()).findOne(
+    { _id: LOTTERY_CONFIG_ID },
+    { session: options.session },
+  );
+  return toMrBeastLotteryConfig(doc, now);
+}
+
+export async function updateMrBeastLotteryConfig(input: {
+  enabled: boolean;
+  eventId: string;
+  startAt: Date;
+  endAt: Date;
+  expectedVersion: number;
+  updatedById: string;
+  updatedByName: string;
+  now?: Date;
+  session?: ClientSession;
+}): Promise<MrBeastLotteryConfigDoc | null> {
+  const now = input.now ?? new Date();
+  try {
+    return await (await lotteryConfigCol()).findOneAndUpdate(
+      {
+        _id: LOTTERY_CONFIG_ID,
+        version: input.expectedVersion,
+      },
+      {
+        $set: {
+          enabled: input.enabled,
+          eventId: input.eventId,
+          startAt: input.startAt,
+          endAt: input.endAt,
+          updatedAt: now,
+          updatedById: input.updatedById,
+          updatedByName: input.updatedByName,
+        },
+        $inc: { version: 1 },
+      },
+      {
+        upsert: input.expectedVersion === 0,
+        returnDocument: "after",
+        session: input.session,
+      },
+    );
+  } catch (error) {
+    // 동시에 최초 설정을 저장한 경우 deterministic _id 충돌을 version 충돌로 취급한다.
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: unknown }).code === 11000
+    ) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * 신규 복권 지급 transaction과 GM 설정 변경을 같은 singleton 문서의 write로
+ * 직렬화한다. MongoDB가 write conflict를 재시도하면 새 snapshot에서 활성
+ * 기간과 version을 다시 검증하므로, 비활성화가 먼저 확정된 뒤 지급되지 않는다.
+ */
+export async function fenceActiveMrBeastLotteryConfigForGrant(input: {
+  expectedEventId: string;
+  expectedVersion: number;
+  now: Date;
+  session: ClientSession;
+}): Promise<MrBeastLotteryConfig | null> {
+  const doc = await (await lotteryConfigCol()).findOneAndUpdate(
+    {
+      _id: LOTTERY_CONFIG_ID,
+      enabled: true,
+      eventId: input.expectedEventId,
+      version: input.expectedVersion,
+      startAt: { $lte: input.now },
+      endAt: { $gt: input.now },
+    },
+    { $inc: { grantFenceVersion: 1 } },
+    {
+      returnDocument: "after",
+      session: input.session,
+    },
+  );
+  if (!doc) return null;
+  const config = toMrBeastLotteryConfig(doc, input.now);
+  return config.active ? config : null;
 }
 
 interface RequiredLotteryIndex {
@@ -311,8 +479,77 @@ export function isMrBeastLotteryTicketMasterReady(master: {
   );
 }
 
+export async function getMrBeastLotteryReadiness(
+  options: { freshIndexes?: boolean } = {},
+): Promise<MrBeastLotteryReadinessDto> {
+  let indexesReady = false;
+  let masterItemReady = false;
+  const issues: string[] = [];
+
+  try {
+    if (options.freshIndexes) {
+      await validateMrBeastLotteryIndexes();
+    } else {
+      await assertMrBeastLotteryIndexesReady();
+    }
+    indexesReady = true;
+  } catch {
+    issues.push("복권 필수 인덱스가 누락되었거나 설정과 다릅니다.");
+  }
+
+  try {
+    const master = await findMasterItemBySlug(MRBEAST_LOTTERY_SLUG);
+    masterItemReady = isMrBeastLotteryTicketMasterReady(master);
+    if (!masterItemReady) {
+      issues.push(
+        "비공개 복권 마스터 아이템이 canonical 안전 조건과 다릅니다.",
+      );
+    }
+  } catch (error) {
+    console.error("[mrbeast-lottery] master item readiness lookup failed", error);
+    issues.push("복권 마스터 아이템 준비 상태를 확인할 수 없습니다.");
+  }
+
+  return {
+    ready: indexesReady && masterItemReady,
+    indexesReady,
+    masterItemReady,
+    issues,
+  };
+}
+
+export function serializeMrBeastLotteryAdminConfig(
+  doc: MrBeastLotteryConfigDoc | null,
+  readiness: MrBeastLotteryReadinessDto,
+  now: Date = new Date(),
+): MrBeastLotteryAdminConfigDto {
+  const config = toMrBeastLotteryConfig(doc, now);
+  return {
+    enabled: config.enabled,
+    active: config.active,
+    eventId: config.eventId ?? "",
+    startAt: config.startAt?.toISOString() ?? null,
+    endAt: config.endAt?.toISOString() ?? null,
+    version: config.version,
+    updatedAt: validDate(doc?.updatedAt) ? doc.updatedAt.toISOString() : null,
+    updatedByName:
+      typeof doc?.updatedByName === "string" ? doc.updatedByName : null,
+    readiness,
+  };
+}
+
+export async function getMrBeastLotteryAdminConfig(
+  now: Date = new Date(),
+): Promise<MrBeastLotteryAdminConfigDto> {
+  const [doc, readiness] = await Promise.all([
+    (await lotteryConfigCol()).findOne({ _id: LOTTERY_CONFIG_ID }),
+    getMrBeastLotteryReadiness(),
+  ]);
+  return serializeMrBeastLotteryAdminConfig(doc, readiness, now);
+}
+
 function requireActiveEvent(config: MrBeastLotteryConfig): string {
-  if (!config.enabled || !config.eventId) {
+  if (!config.active || !config.eventId) {
     throw new MrBeastLotteryError(
       "LOTTERY_DISABLED",
       "미스터비스트 복권 이벤트가 활성화되지 않았습니다.",
@@ -388,7 +625,7 @@ async function countAvailableEntitlements(
  * 전용 version을 실제 증가시키는 update를 transaction에 포함해, route 확인 뒤
  * owner가 바뀌면 write conflict 후 새 snapshot으로 재검증하거나 안전하게 거부한다.
  */
-async function fenceLotteryCharacterOwner(input: {
+export async function fenceLotteryCharacterOwner(input: {
   characterId: string;
   ownerId: string;
   session: ClientSession;
@@ -470,7 +707,7 @@ export async function grantMrBeastLotteryTicketsForPurchase(input: {
   acquiredAt: Date;
   session: ClientSession;
 }): Promise<number> {
-  if (!input.config.enabled || !input.config.eventId || input.quantity === 0) {
+  if (!input.config.active || !input.config.eventId || input.quantity === 0) {
     return 0;
   }
   if (!Number.isSafeInteger(input.quantity) || input.quantity < 1) {
@@ -538,8 +775,8 @@ export async function getMrBeastLotteryState(
 
   return {
     enabled:
-      config.enabled || availableTickets > 0 || pendingClaim !== null,
-    active: config.enabled,
+      config.active || availableTickets > 0 || pendingClaim !== null,
+    active: config.active,
     eventId: config.eventId,
     availableTickets,
     pendingClaim: pendingClaim ? serializePendingClaim(pendingClaim) : null,

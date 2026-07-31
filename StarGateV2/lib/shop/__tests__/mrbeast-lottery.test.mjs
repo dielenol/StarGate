@@ -5,10 +5,11 @@ import test from "node:test";
 import {
   getMrBeastLotteryPrize,
   isMrBeastLotteryAnnouncementCandidate,
+  isMrBeastLotteryActive,
   MRBEAST_LOTTERY_PRIZES,
   MRBEAST_LOTTERY_TOTAL_BUCKETS,
+  parseMrBeastLotteryConfigUpdate,
   resolveMrBeastLotteryPrizeTable,
-  resolveMrBeastLotteryConfig,
 } from "../mrbeast-lottery.ts";
 
 const WEB_ROOT = new URL("../../../", import.meta.url);
@@ -76,37 +77,126 @@ test("1,000,000 버킷 확률표의 수량과 경계가 정확하다", () => {
   );
 });
 
-test("명시적인 이벤트 ID와 유효한 UTC 기간 없이는 절대 활성화되지 않는다", () => {
+test("저장 토글과 유효한 UTC 기간이 모두 맞아야 현재 이벤트가 활성화된다", () => {
   const now = new Date("2026-08-01T12:00:00.000Z");
-  const activeEnvironment = {
-    MRBEAST_LOTTERY_ENABLED: "true",
-    MRBEAST_LOTTERY_EVENT_ID: "mrbeast-test",
-    MRBEAST_LOTTERY_START_AT: "2026-08-01T00:00:00.000Z",
-    MRBEAST_LOTTERY_END_AT: "2026-08-02T00:00:00.000Z",
+  const activeConfig = {
+    enabled: true,
+    eventId: "mrbeast-test",
+    startAt: new Date("2026-08-01T00:00:00.000Z"),
+    endAt: new Date("2026-08-02T00:00:00.000Z"),
   };
 
-  assert.equal(resolveMrBeastLotteryConfig({}, now).enabled, false);
   assert.equal(
-    resolveMrBeastLotteryConfig(
-      { ...activeEnvironment, MRBEAST_LOTTERY_EVENT_ID: "" },
-      now,
-    ).enabled,
+    isMrBeastLotteryActive({ ...activeConfig, enabled: false }, now),
     false,
   );
   assert.equal(
-    resolveMrBeastLotteryConfig(
-      { ...activeEnvironment, MRBEAST_LOTTERY_END_AT: "" },
-      now,
-    ).enabled,
+    isMrBeastLotteryActive({ ...activeConfig, eventId: null }, now),
     false,
   );
-  assert.equal(resolveMrBeastLotteryConfig(activeEnvironment, now).enabled, true);
   assert.equal(
-    resolveMrBeastLotteryConfig(
-      activeEnvironment,
+    isMrBeastLotteryActive({ ...activeConfig, endAt: null }, now),
+    false,
+  );
+  assert.equal(isMrBeastLotteryActive(activeConfig, now), true);
+  assert.equal(
+    isMrBeastLotteryActive(
+      activeConfig,
       new Date("2026-08-02T00:00:00.000Z"),
-    ).enabled,
+    ),
     false,
+  );
+});
+
+test("GM 설정 입력은 안전한 eventId, UTC ISO 기간, expectedVersion을 엄격 검증한다", () => {
+  const valid = {
+    enabled: true,
+    eventId: "mrbeast-lottery-2026-01",
+    startAt: "2026-08-01T00:00:00.000Z",
+    endAt: "2026-08-02T00:00:00Z",
+    expectedVersion: 0,
+  };
+  const parsed = parseMrBeastLotteryConfigUpdate(valid);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.ok && parsed.input.startAt instanceof Date, true);
+  assert.equal(
+    parseMrBeastLotteryConfigUpdate({
+      ...valid,
+      eventId: "mrbeast_lottery-2026_01",
+    }).ok,
+    true,
+  );
+
+  for (const invalid of [
+    { ...valid, eventId: "../unsafe" },
+    { ...valid, eventId: "MrBeast-2026" },
+    { ...valid, startAt: "2026-08-01T09:00:00+09:00" },
+    { ...valid, endAt: valid.startAt },
+    { ...valid, expectedVersion: -1 },
+    { ...valid, unexpected: true },
+  ]) {
+    assert.equal(parseMrBeastLotteryConfigUpdate(invalid).ok, false);
+  }
+});
+
+test("복권 운영 설정은 deterministic singleton과 GM version CAS로만 변경된다", async () => {
+  const [database, adminRoute, publicRoute, checkout, environment] =
+    await Promise.all([
+      readWeb("lib/db/mrbeast-lottery.ts"),
+      readWeb("app/api/erp/shop/admin/lottery/route.ts"),
+      readWeb("app/api/erp/shop/lottery/route.ts"),
+      readWeb("app/api/erp/shop/checkout/route.ts"),
+      readWeb(".env.example"),
+    ]);
+
+  assert.match(database, /LOTTERY_CONFIG_ID = "mrbeast-lottery"/);
+  assert.match(database, /LOTTERY_CONFIG_COLLECTION = "shop_runtime_state"/);
+  assert.match(
+    database,
+    /_id: LOTTERY_CONFIG_ID,[\s\S]*version: input\.expectedVersion/,
+  );
+  assert.match(database, /\$inc: \{ version: 1 \}/);
+  assert.match(database, /upsert: input\.expectedVersion === 0/);
+  assert.match(
+    database,
+    /fenceActiveMrBeastLotteryConfigForGrant[\s\S]*version: input\.expectedVersion[\s\S]*startAt: \{ \$lte: input\.now \}[\s\S]*endAt: \{ \$gt: input\.now \}[\s\S]*\$inc: \{ grantFenceVersion: 1 \}[\s\S]*session: input\.session/,
+  );
+  assert.doesNotMatch(database, /\.createIndex(?:es)?\(/);
+
+  assert.match(adminRoute, /requireRole\(role, "GM"\)/);
+  assert.match(adminRoute, /parseMrBeastLotteryConfigUpdate/);
+  assert.match(adminRoute, /freshIndexes: validation\.input\.enabled/);
+  assert.match(
+    adminRoute,
+    /validation\.input\.enabled && !readiness\.ready/,
+  );
+  assert.match(adminRoute, /LOTTERY_CONFIG_CHANGED/);
+  assert.match(
+    adminRoute,
+    /withTransaction[\s\S]*updateMrBeastLotteryConfig\([\s\S]*session: mongoSession[\s\S]*scheduleGmAdminAudit\([\s\S]*\{ session: mongoSession \}/,
+  );
+  assert.match(adminRoute, /private, no-store/);
+
+  assert.match(
+    publicRoute,
+    /const config = await getMrBeastLotteryConfig\(\)/,
+  );
+  assert.match(
+    checkout,
+    /const lotteryConfig = await getMrBeastLotteryConfig\(\)/,
+  );
+  assert.match(
+    checkout,
+    /fenceActiveMrBeastLotteryConfigForGrant\([\s\S]*expectedVersion: lotteryConfig\.version[\s\S]*session: mongoSession/,
+  );
+  assert.match(
+    checkout,
+    /fenceLotteryCharacterOwner\([\s\S]*ownerId: session\.user\.id[\s\S]*session: mongoSession/,
+  );
+  assert.match(checkout, /lotteryConfig\.active/);
+  assert.doesNotMatch(
+    [database, adminRoute, publicRoute, checkout, environment].join("\n"),
+    /MRBEAST_LOTTERY_(?:ENABLED|EVENT_ID|START_AT|END_AT)/,
   );
 });
 
@@ -148,7 +238,7 @@ test("checkout은 PURCHASE 수량만큼 entitlement와 표시 mirror를 같은 s
   assert.match(checkout, /assertMrBeastLotteryIndexesReady\(\)/);
   assert.match(
     checkout,
-    /executeEconomicOperation\([\s\S]*type: "PURCHASE"[\s\S]*grantMrBeastLotteryTicketsForPurchase\([\s\S]*sourceRequestId: requestId[\s\S]*quantity: lotteryTicketQuantity[\s\S]*session: mongoSession/,
+    /executeEconomicOperation\([\s\S]*type: "PURCHASE"[\s\S]*grantMrBeastLotteryTicketsForPurchase\([\s\S]*sourceRequestId: requestId[\s\S]*quantity: lotteryEventUnchanged \? lotteryTicketQuantity : 0[\s\S]*session: mongoSession/,
   );
   assert.match(database, /mrbeast_lottery_entitlements/);
   assert.match(database, /sourceRequestId: input\.sourceRequestId/);
@@ -236,7 +326,7 @@ test("종료·EVENT_ID·소유자 변경 뒤에도 global pending을 현재 소�
   assert.match(database, /eventId: claim\.eventId/);
   assert.match(
     database,
-    /config\.enabled \|\| availableTickets > 0 \|\| pendingClaim !== null/,
+    /config\.active \|\| availableTickets > 0 \|\| pendingClaim !== null/,
   );
 
   const revealFunction = database.slice(

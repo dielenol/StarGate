@@ -22,7 +22,10 @@ import {
 } from "@/lib/db/inventory";
 import {
   assertMrBeastLotteryIndexesReady,
+  fenceActiveMrBeastLotteryConfigForGrant,
+  fenceLotteryCharacterOwner,
   grantMrBeastLotteryTicketsForPurchase,
+  getMrBeastLotteryConfig,
   isMrBeastLotteryTicketMasterReady,
   MrBeastLotteryError,
 } from "@/lib/db/mrbeast-lottery";
@@ -36,7 +39,6 @@ import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import {
   MRBEAST_LOTTERY_SLUG,
   MRBEAST_SODA_SLUG,
-  resolveMrBeastLotteryConfig,
 } from "@/lib/shop/mrbeast-lottery";
 import {
   createMrBeastSodaDailyPurchaseKey,
@@ -185,6 +187,12 @@ export async function POST(request: Request) {
     );
   }
   const ownerId = mainChar.ownerId;
+  if (ownerId !== session.user.id) {
+    return NextResponse.json(
+      { error: "캐릭터 owner 연결이 현재 사용자와 일치하지 않습니다." },
+      { status: 403 },
+    );
+  }
 
   const owner = await findUserById(ownerId);
   if (!owner) {
@@ -199,7 +207,7 @@ export async function POST(request: Request) {
     console.error("[shop/checkout] ensureDailyStockRefresh 실패", err);
   });
 
-  const lotteryConfig = resolveMrBeastLotteryConfig();
+  const lotteryConfig = await getMrBeastLotteryConfig();
   const expectsLotteryTickets = body?.expectsLotteryTickets === true;
   const sodaDailyPurchaseQuantity =
     normalizedItems.find((item) => item.slug === MRBEAST_SODA_SLUG)
@@ -211,7 +219,7 @@ export async function POST(request: Request) {
           slug: MRBEAST_SODA_SLUG,
         })
       : null;
-  const lotteryTicketQuantity = lotteryConfig.enabled
+  const lotteryTicketQuantity = lotteryConfig.active
     ? sodaDailyPurchaseQuantity
     : 0;
   if (lotteryTicketQuantity > 0) {
@@ -322,13 +330,31 @@ export async function POST(request: Request) {
         ...(expectsLotteryTickets ? { expectsLotteryTickets: true } : {}),
       },
       run: async (mongoSession) => {
+        const lotteryConfigAtCommit =
+          lotteryTicketQuantity > 0
+            ? await fenceActiveMrBeastLotteryConfigForGrant({
+                expectedEventId: lotteryConfig.eventId ?? "",
+                expectedVersion: lotteryConfig.version,
+                now: new Date(),
+                session: mongoSession,
+              })
+            : lotteryConfig;
+        const lotteryEventUnchanged =
+          lotteryConfigAtCommit !== null &&
+          lotteryConfigAtCommit.active &&
+          lotteryConfigAtCommit.eventId === lotteryConfig.eventId;
         if (
           expectsLotteryTickets &&
           sodaDailyPurchaseQuantity > 0 &&
-          !lotteryConfig.enabled
+          !lotteryEventUnchanged
         ) {
           throw new ShopLotteryStateChangedError();
         }
+        await fenceLotteryCharacterOwner({
+          characterId,
+          ownerId: session.user.id,
+          session: mongoSession,
+        });
         if (sodaDailyPurchaseKey) {
           await incrementMrBeastSodaDailyPurchaseCounter({
             key: sodaDailyPurchaseKey,
@@ -374,12 +400,15 @@ export async function POST(request: Request) {
         }
         const lotteryTicketsGranted =
           await grantMrBeastLotteryTicketsForPurchase({
-            config: lotteryConfig,
+            config: {
+              ...(lotteryConfigAtCommit ?? lotteryConfig),
+              active: lotteryEventUnchanged,
+            },
             characterId,
             characterCodename: mainChar.codename,
             ticketItemId: lotteryTicketItemId ?? "",
             sourceRequestId: requestId,
-            quantity: lotteryTicketQuantity,
+            quantity: lotteryEventUnchanged ? lotteryTicketQuantity : 0,
             acquiredAt: new Date(),
             session: mongoSession,
           });

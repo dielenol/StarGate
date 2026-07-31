@@ -51,6 +51,7 @@ import { useNpcDialogue } from "@/hooks/useNpcDialogue";
 
 import ShopAdminStockModal from "./ShopAdminStockModal";
 import ShopItemIcon from "./ShopItemIcon";
+import ShopLotteryAdminModal from "./ShopLotteryAdminModal";
 import MrBeastLotteryModal from "./MrBeastLotteryModal";
 
 import styles from "./page.module.css";
@@ -250,6 +251,7 @@ export default function ShopClient({
   );
   const highlightTimersRef = useRef<number[]>([]);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [lotteryAdminOpen, setLotteryAdminOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
   const [lotteryClaim, setLotteryClaim] =
@@ -831,6 +833,18 @@ export default function ShopClient({
                     </span>
                   ) : null}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setLotteryAdminOpen(true)}
+                  className={[
+                    styles.adminBtn,
+                    lotteryState?.active ? styles["adminBtn--active"] : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  복권 이벤트 · GM
+                </button>
               </>
             ) : null}
           </div>
@@ -1362,6 +1376,12 @@ export default function ShopClient({
             markStockHighlights(changedSlugs ?? []);
           }}
           onPendingCountChange={setPendingReorderCount}
+        />
+      ) : null}
+
+      {lotteryAdminOpen ? (
+        <ShopLotteryAdminModal
+          onClose={() => setLotteryAdminOpen(false)}
         />
       ) : null}
 

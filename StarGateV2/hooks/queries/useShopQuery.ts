@@ -24,6 +24,7 @@ export const shopKeys = {
   catalog: ["shop", "catalog"] as const,
   inventory: ["shop", "inventory"] as const,
   lottery: ["shop", "lottery"] as const,
+  lotteryAdmin: ["shop", "lottery", "admin"] as const,
 };
 
 /* ── 에러 타입 ── */
@@ -106,6 +107,23 @@ export interface ShopLotteryStateResponse {
   recentWinners: MrBeastLotteryWinnerDto[];
 }
 
+export interface ShopLotteryAdminConfigResponse {
+  enabled: boolean;
+  active: boolean;
+  eventId: string;
+  startAt: string | null;
+  endAt: string | null;
+  version: number;
+  updatedAt: string | null;
+  updatedByName: string | null;
+  readiness: {
+    ready: boolean;
+    indexesReady: boolean;
+    masterItemReady: boolean;
+    issues: string[];
+  };
+}
+
 /* ── Fetchers ── */
 
 async function parseShopError(res: Response): Promise<never> {
@@ -136,6 +154,14 @@ async function fetchShopInventory(): Promise<ShopInventoryResponse> {
 
 async function fetchShopLotteryState(): Promise<ShopLotteryStateResponse> {
   const res = await fetch("/api/erp/shop/lottery", { cache: "no-store" });
+  if (!res.ok) await parseShopError(res);
+  return res.json();
+}
+
+async function fetchShopLotteryAdminConfig(): Promise<ShopLotteryAdminConfigResponse> {
+  const res = await fetch("/api/erp/shop/admin/lottery", {
+    cache: "no-store",
+  });
   if (!res.ok) await parseShopError(res);
   return res.json();
 }
@@ -219,6 +245,22 @@ export function useShopLotteryState(options?: { enabled?: boolean }) {
           err.code === "LOTTERY_MISCONFIGURED" ||
           err.code === "MAIN_CHARACTER_INTEGRITY")
       ) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+  });
+}
+
+export function useShopLotteryAdminConfig(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: shopKeys.lotteryAdmin,
+    queryFn: fetchShopLotteryAdminConfig,
+    staleTime: 0,
+    enabled: options?.enabled,
+    refetchOnWindowFocus: true,
+    retry: (failureCount, err) => {
+      if (err instanceof ShopApiError && [401, 403].includes(err.status)) {
         return false;
       }
       return failureCount < 2;

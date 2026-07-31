@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth/config";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import {
   assertMrBeastLotteryIndexesReady,
+  getMrBeastLotteryConfig,
   getMrBeastLotteryState,
   isMrBeastLotteryTicketMasterReady,
   listRecentMrBeastLotteryWinners,
@@ -20,8 +21,9 @@ import {
 import {
   drawMrBeastLotteryPrize,
   MRBEAST_LOTTERY_SLUG,
-  resolveMrBeastLotteryConfig,
 } from "@/lib/shop/mrbeast-lottery";
+
+const NO_STORE_HEADERS = { "Cache-Control": "private, no-store" } as const;
 
 function lotteryErrorResponse(error: MrBeastLotteryError): NextResponse {
   const status =
@@ -34,7 +36,7 @@ function lotteryErrorResponse(error: MrBeastLotteryError): NextResponse {
           : 400;
   return NextResponse.json(
     { error: error.message, code: error.code },
-    { status },
+    { status, headers: NO_STORE_HEADERS },
   );
 }
 
@@ -57,19 +59,19 @@ export async function GET() {
   }
 
   try {
-    const config = resolveMrBeastLotteryConfig();
+    const config = await getMrBeastLotteryConfig();
     const mainCharacter = await findAuthorizedMainCharacter(session.user.id);
     if (!mainCharacter) {
       const recentWinners = await listRecentMrBeastLotteryWinners();
       return NextResponse.json({
-        enabled: config.enabled,
-        active: config.enabled,
+        enabled: config.active,
+        active: config.active,
         eventId: config.eventId,
         availableTickets: 0,
         pendingClaim: null,
         recentWinners,
       }, {
-        headers: { "Cache-Control": "private, no-store" },
+        headers: NO_STORE_HEADERS,
       });
     }
     const state = await getMrBeastLotteryState(
@@ -90,7 +92,7 @@ export async function GET() {
     }
 
     return NextResponse.json(state, {
-      headers: { "Cache-Control": "private, no-store" },
+      headers: NO_STORE_HEADERS,
     });
   } catch (error) {
     if (error instanceof MrBeastLotteryError) {
@@ -99,7 +101,7 @@ export async function GET() {
     console.error("[shop/lottery] GET failed", error);
     return NextResponse.json(
       { error: "복권 상태 조회에 실패했습니다." },
-      { status: 500 },
+      { status: 500, headers: NO_STORE_HEADERS },
     );
   }
 }

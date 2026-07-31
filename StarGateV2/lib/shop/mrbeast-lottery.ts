@@ -27,12 +27,29 @@ export interface MrBeastLotteryPrize {
 }
 
 export interface MrBeastLotteryConfig {
+  /** GM이 저장한 운영 토글. 실제 지급 가능 여부는 active를 사용한다. */
   enabled: boolean;
+  /** enabled와 유효한 [startAt, endAt) UTC 기간에서 파생한 현재 활성 상태. */
+  active: boolean;
+  /** GM 설정 CAS 버전. 결제 transaction의 activation fence에도 사용한다. */
+  version: number;
   eventId: string | null;
   startAt: Date | null;
   endAt: Date | null;
   prizeTableVersion: typeof MRBEAST_LOTTERY_PRIZE_TABLE_VERSION;
 }
+
+export interface MrBeastLotteryConfigUpdate {
+  enabled: boolean;
+  eventId: string;
+  startAt: Date;
+  endAt: Date;
+  expectedVersion: number;
+}
+
+export type MrBeastLotteryConfigUpdateValidation =
+  | { ok: true; input: MrBeastLotteryConfigUpdate }
+  | { ok: false; error: string };
 
 export const MRBEAST_LOTTERY_PRIZES: readonly MrBeastLotteryPrize[] = [
   {
@@ -92,42 +109,114 @@ export const MRBEAST_LOTTERY_PRIZE_TABLES = {
   Record<string, readonly MrBeastLotteryPrize[]>
 >;
 
-export function resolveMrBeastLotteryConfig(
-  environment: NodeJS.ProcessEnv = process.env,
+export function isMrBeastLotteryActive(
+  config: Pick<
+    MrBeastLotteryConfig,
+    "enabled" | "eventId" | "startAt" | "endAt"
+  >,
   now = new Date(),
-): MrBeastLotteryConfig {
-  const enabledFlag = environment.MRBEAST_LOTTERY_ENABLED?.trim().toLowerCase();
-  const eventId = environment.MRBEAST_LOTTERY_EVENT_ID?.trim() ?? "";
-  const startAt = parseIsoEventDate(environment.MRBEAST_LOTTERY_START_AT);
-  const endAt = parseIsoEventDate(environment.MRBEAST_LOTTERY_END_AT);
-  const isWithinValidWindow =
-    startAt !== null &&
-    endAt !== null &&
-    startAt.getTime() < endAt.getTime() &&
-    now.getTime() >= startAt.getTime() &&
-    now.getTime() < endAt.getTime();
-
-  return {
-    enabled:
-      enabledFlag === "true" &&
-      eventId.length > 0 &&
-      isWithinValidWindow,
-    eventId: eventId || null,
-    startAt,
-    endAt,
-    prizeTableVersion: MRBEAST_LOTTERY_PRIZE_TABLE_VERSION,
-  };
+): boolean {
+  return (
+    config.enabled &&
+    typeof config.eventId === "string" &&
+    isSafeMrBeastLotteryEventId(config.eventId) &&
+    config.startAt instanceof Date &&
+    !Number.isNaN(config.startAt.getTime()) &&
+    config.endAt instanceof Date &&
+    !Number.isNaN(config.endAt.getTime()) &&
+    config.startAt.getTime() < config.endAt.getTime() &&
+    now.getTime() >= config.startAt.getTime() &&
+    now.getTime() < config.endAt.getTime()
+  );
 }
 
-function parseIsoEventDate(value: string | undefined): Date | null {
-  const trimmed = value?.trim() ?? "";
+export function isSafeMrBeastLotteryEventId(value: string): boolean {
+  return (
+    value.length <= 64 &&
+    /^[a-z0-9][a-z0-9_-]{0,63}$/.test(value)
+  );
+}
+
+function parseIsoUtcDate(value: unknown): Date | null {
+  if (typeof value !== "string") return null;
   if (
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(trimmed)
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value)
   ) {
     return null;
   }
-  const parsed = new Date(trimmed);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const canonical = parsed.toISOString();
+  return value === canonical || value === canonical.replace(".000Z", "Z")
+    ? parsed
+    : null;
+}
+
+export function parseMrBeastLotteryConfigUpdate(
+  value: unknown,
+): MrBeastLotteryConfigUpdateValidation {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { ok: false, error: "복권 이벤트 설정 형식이 올바르지 않습니다." };
+  }
+
+  const body = value as Record<string, unknown>;
+  const allowedKeys = new Set([
+    "enabled",
+    "eventId",
+    "startAt",
+    "endAt",
+    "expectedVersion",
+  ]);
+  if (
+    Object.keys(body).length !== allowedKeys.size ||
+    Object.keys(body).some((key) => !allowedKeys.has(key))
+  ) {
+    return { ok: false, error: "복권 이벤트 설정 필드가 올바르지 않습니다." };
+  }
+  if (typeof body.enabled !== "boolean") {
+    return { ok: false, error: "enabled는 boolean이어야 합니다." };
+  }
+  if (
+    typeof body.eventId !== "string" ||
+    !isSafeMrBeastLotteryEventId(body.eventId)
+  ) {
+    return {
+      ok: false,
+      error:
+        "eventId는 소문자 영문·숫자로 시작하는 1~64자의 영문·숫자·하이픈·밑줄만 사용할 수 있습니다.",
+    };
+  }
+  const startAt = parseIsoUtcDate(body.startAt);
+  const endAt = parseIsoUtcDate(body.endAt);
+  if (!startAt || !endAt) {
+    return {
+      ok: false,
+      error: "startAt과 endAt은 Z로 끝나는 유효한 UTC ISO 시각이어야 합니다.",
+    };
+  }
+  if (startAt.getTime() >= endAt.getTime()) {
+    return { ok: false, error: "endAt은 startAt보다 늦어야 합니다." };
+  }
+  if (
+    !Number.isSafeInteger(body.expectedVersion) ||
+    Number(body.expectedVersion) < 0
+  ) {
+    return {
+      ok: false,
+      error: "expectedVersion은 0 이상의 안전한 정수여야 합니다.",
+    };
+  }
+
+  return {
+    ok: true,
+    input: {
+      enabled: body.enabled,
+      eventId: body.eventId,
+      startAt,
+      endAt,
+      expectedVersion: Number(body.expectedVersion),
+    },
+  };
 }
 
 export function getMrBeastLotteryPrize(

@@ -20,6 +20,7 @@ import {
   ShopApiError,
   shopKeys,
   type ShopCatalogResponse,
+  type ShopLotteryAdminConfigResponse,
 } from "@/hooks/queries/useShopQuery";
 import type {
   MrBeastLotteryPendingClaimDto,
@@ -94,6 +95,14 @@ interface ShopOpenStateResponse {
   updatedAt: string | null;
   updatedById: string | null;
   updatedByName: string | null;
+}
+
+export interface UpdateShopLotteryAdminConfigInput {
+  enabled: boolean;
+  eventId: string;
+  startAt: string;
+  endAt: string;
+  expectedVersion: number;
 }
 
 /* ── 공통 에러 파서 ── */
@@ -219,6 +228,30 @@ export function useSetShopOpenMode() {
         },
       );
       queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
+    },
+  });
+}
+
+export function useUpdateShopLotteryAdminConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ShopLotteryAdminConfigResponse,
+    ShopApiError,
+    UpdateShopLotteryAdminConfigInput
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/shop/admin/lottery", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwShopError(res);
+      return res.json();
+    },
+    onSuccess: (state) => {
+      queryClient.setQueryData(shopKeys.lotteryAdmin, state);
+      queryClient.invalidateQueries({ queryKey: shopKeys.lottery });
     },
   });
 }

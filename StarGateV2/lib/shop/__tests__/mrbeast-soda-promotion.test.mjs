@@ -59,7 +59,7 @@ test("활성 복권 이벤트는 소다·복권 이미지와 일일 한도를 �
   );
   assert.match(
     checkout,
-    /payload: \{[\s\S]*items: normalizedItems[\s\S]*expectsLotteryTickets \? \{ expectsLotteryTickets: true \} : \{\}[\s\S]*run: async \(mongoSession\) => \{[\s\S]*expectsLotteryTickets[\s\S]*!lotteryConfig\.enabled[\s\S]*throw new ShopLotteryStateChangedError/,
+    /payload: \{[\s\S]*items: normalizedItems[\s\S]*expectsLotteryTickets \? \{ expectsLotteryTickets: true \} : \{\}[\s\S]*run: async \(mongoSession\) => \{[\s\S]*fenceActiveMrBeastLotteryConfigForGrant\([\s\S]*expectsLotteryTickets[\s\S]*!lotteryEventUnchanged[\s\S]*throw new ShopLotteryStateChangedError/,
   );
   assert.match(
     checkout,
