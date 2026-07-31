@@ -318,7 +318,7 @@ export async function fenceActiveMrBeastLotteryConfigForGrant(input: {
   return config.active ? config : null;
 }
 
-interface RequiredLotteryIndex {
+export interface RequiredLotteryIndex {
   collection: typeof LOTTERY_CLAIMS_COLLECTION | typeof LOTTERY_ENTITLEMENTS_COLLECTION;
   name: string;
   key: ReadonlyArray<readonly [string, 1 | -1]>;
@@ -326,7 +326,7 @@ interface RequiredLotteryIndex {
   partialFilterExpression: Record<string, unknown> | null;
 }
 
-const REQUIRED_LOTTERY_INDEXES: readonly RequiredLotteryIndex[] = [
+export const REQUIRED_LOTTERY_INDEXES: readonly RequiredLotteryIndex[] = [
   {
     collection: LOTTERY_CLAIMS_COLLECTION,
     name: "mrbeast_lottery_claims_pending_character_global_unique",

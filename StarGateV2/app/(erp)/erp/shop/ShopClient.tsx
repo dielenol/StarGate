@@ -196,6 +196,7 @@ const ERROR_MESSAGE: Record<ShopErrorCode, string> = {
   REORDER_NOT_AVAILABLE: "아직 품절이 아닌 상품은 발주 요청할 수 없습니다.",
   LOTTERY_DISABLED: "미스터비스트 복권 이벤트가 활성화되지 않았습니다.",
   LOTTERY_MISCONFIGURED: "복권 이벤트 설정을 확인할 수 없습니다.",
+  LOTTERY_PREPARATION_FAILED: "복권 운영 기반을 준비하지 못했습니다.",
   NO_LOTTERY_TICKET: "사용할 수 있는 미스터비스트 복권이 없습니다.",
   LOTTERY_CLAIM_NOT_FOUND: "이어갈 복권을 찾을 수 없습니다.",
   LOTTERY_CLAIM_INVALID: "복권 상태를 확인할 수 없습니다.",

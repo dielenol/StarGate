@@ -2,7 +2,10 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-import { useUpdateShopLotteryAdminConfig } from "@/hooks/mutations/useShopMutation";
+import {
+  usePrepareShopLotteryInfrastructure,
+  useUpdateShopLotteryAdminConfig,
+} from "@/hooks/mutations/useShopMutation";
 import {
   ShopApiError,
   type ShopLotteryAdminConfigResponse,
@@ -42,11 +45,12 @@ export default function ShopLotteryAdminModal({ onClose }: Props) {
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const configQuery = useShopLotteryAdminConfig({ enabled: true });
+  const preparationMutation = usePrepareShopLotteryInfrastructure();
   const updateMutation = useUpdateShopLotteryAdminConfig();
   const [conflictError, setConflictError] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const config = configQuery.data;
-  const busy = updateMutation.isPending;
+  const busy = preparationMutation.isPending || updateMutation.isPending;
 
   useEffect(() => {
     closeButtonRef.current?.focus();
@@ -115,6 +119,7 @@ export default function ShopLotteryAdminModal({ onClose }: Props) {
             onClose={onClose}
             onPreview={() => setPreviewOpen(true)}
             onRefreshReadiness={() => void configQuery.refetch()}
+            preparationMutation={preparationMutation}
             refreshingReadiness={configQuery.isFetching}
             updateMutation={updateMutation}
           />
@@ -137,6 +142,9 @@ interface LotteryAdminFormBodyProps {
   onClose: () => void;
   onPreview: () => void;
   onRefreshReadiness: () => void;
+  preparationMutation: ReturnType<
+    typeof usePrepareShopLotteryInfrastructure
+  >;
   refreshingReadiness: boolean;
   updateMutation: ReturnType<typeof useUpdateShopLotteryAdminConfig>;
 }
@@ -149,6 +157,7 @@ function LotteryAdminFormBody({
   onClose,
   onPreview,
   onRefreshReadiness,
+  preparationMutation,
   refreshingReadiness,
   updateMutation,
 }: LotteryAdminFormBodyProps) {
@@ -159,7 +168,7 @@ function LotteryAdminFormBody({
     endAtKst: isoToKstInput(config.endAt),
   });
   const [formError, setFormError] = useState<string | null>(null);
-  const busy = updateMutation.isPending;
+  const busy = preparationMutation.isPending || updateMutation.isPending;
   const stateLabel = config.active
     ? "진행 중"
     : config.enabled
@@ -212,8 +221,22 @@ function LotteryAdminFormBody({
     }
   }
 
+  async function handlePrepareInfrastructure() {
+    setFormError(null);
+    onClearConflict();
+    const confirmed = window.confirm(
+      "운영 DB에 복권 전용 안전장치 5개와 숨김 복권 아이템을 준비합니다. 이벤트는 자동으로 켜지지 않습니다. 계속할까요?",
+    );
+    if (!confirmed) return;
+    await preparationMutation.mutateAsync().catch(() => undefined);
+  }
+
   const requestError =
-    formError ?? conflictError ?? updateMutation.error?.message ?? null;
+    formError ??
+    conflictError ??
+    preparationMutation.error?.message ??
+    updateMutation.error?.message ??
+    null;
 
   return (
     <form className={styles.body} onSubmit={handleSubmit}>
@@ -313,14 +336,28 @@ function LotteryAdminFormBody({
             ))}
           </ul>
         ) : null}
-        <button
-          type="button"
-          className={styles.readinessRefreshBtn}
-          onClick={onRefreshReadiness}
-          disabled={refreshingReadiness}
-        >
-          {refreshingReadiness ? "준비 상태 확인 중..." : "준비 상태 다시 확인"}
-        </button>
+        <div className={styles.readiness__actions}>
+          <button
+            type="button"
+            className={styles.readinessPrepareBtn}
+            onClick={() => void handlePrepareInfrastructure()}
+            disabled={busy || config.readiness.ready}
+          >
+            {preparationMutation.isPending
+              ? "운영 기반 준비 중..."
+              : config.readiness.ready
+                ? "운영 기반 준비 완료"
+                : "운영 기반 한 번에 준비"}
+          </button>
+          <button
+            type="button"
+            className={styles.readinessRefreshBtn}
+            onClick={onRefreshReadiness}
+            disabled={refreshingReadiness || busy}
+          >
+            {refreshingReadiness ? "준비 상태 확인 중..." : "상태 다시 확인"}
+          </button>
+        </div>
       </section>
 
       {requestError ? (

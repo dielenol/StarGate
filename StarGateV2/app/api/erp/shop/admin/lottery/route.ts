@@ -9,6 +9,10 @@ import {
   serializeMrBeastLotteryAdminConfig,
   updateMrBeastLotteryConfig,
 } from "@/lib/db/mrbeast-lottery";
+import {
+  MrBeastLotteryPreparationError,
+  prepareMrBeastLotteryInfrastructure,
+} from "@/lib/db/mrbeast-lottery-setup";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { parseMrBeastLotteryConfigUpdate } from "@/lib/shop/mrbeast-lottery";
 
@@ -49,6 +53,46 @@ export async function GET() {
     console.error("[shop/admin/lottery] GET failed", error);
     return json(
       { error: "복권 이벤트 설정을 불러올 수 없습니다." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST() {
+  const session = await auth();
+  if (!session?.user) {
+    return json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const forbidden = forbidUnlessGM(session.user.role);
+  if (forbidden) return forbidden;
+
+  try {
+    const result = await prepareMrBeastLotteryInfrastructure({
+      actor: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+        role: session.user.role,
+      },
+    });
+    return json(result);
+  } catch (error) {
+    console.error("[shop/admin/lottery] POST failed", error);
+    if (error instanceof MrBeastLotteryPreparationError) {
+      return json(
+        {
+          error: error.message,
+          code: "LOTTERY_PREPARATION_FAILED",
+          readiness: error.readiness,
+        },
+        { status: error.setupInProgress ? 409 : 500 },
+      );
+    }
+    return json(
+      {
+        error:
+          "복권 운영 기반을 준비하지 못했습니다. 기존 데이터나 인덱스 설정을 확인해 주세요.",
+        code: "LOTTERY_PREPARATION_FAILED",
+      },
       { status: 500 },
     );
   }

@@ -42,6 +42,50 @@ test("GM 복권 설정은 전용 query key와 PATCH 후 공개 상태 무효화�
   assert.doesNotMatch(`${queries}\n${mutations}`, /router\.refresh/);
 });
 
+test("GM만 복권 운영 기반을 멱등 준비하고 관리자 상태를 다시 조회한다", async () => {
+  const [route, database, setup, seed, mutations] = await Promise.all([
+    readWeb("app/api/erp/shop/admin/lottery/route.ts"),
+    readWeb("lib/db/mrbeast-lottery.ts"),
+    readWeb("lib/db/mrbeast-lottery-setup.ts"),
+    readWeb(
+      "scripts/seed-payloads/consumable-mrbeast-lottery-2026-07-31.json",
+    ),
+    readWeb("hooks/mutations/useShopMutation.ts"),
+  ]);
+
+  assert.match(route, /export async function POST\(\)/);
+  assert.match(
+    route,
+    /forbidUnlessGM[\s\S]*prepareMrBeastLotteryInfrastructure/,
+  );
+  assert.doesNotMatch(database, /\.createIndex(?:es)?\(/);
+  assert.match(setup, /prepareMrBeastLotteryInfrastructure/);
+  assert.match(setup, /미스터비스트 복권 운영 기반 준비/);
+  assert.match(setup, /createIndexes/);
+  assert.match(setup, /status: "PREPARING"/);
+  assert.match(setup, /status: "READY"/);
+  assert.match(setup, /status: "FAILED"/);
+  assert.match(setup, /startPreparationHeartbeat/);
+  assert.match(setup, /renewPreparationLease/);
+  assert.match(setup, /postIndexReadiness\.indexesReady/);
+  assert.match(setup, /withTransaction/);
+  assert.match(setup, /scheduleGmAdminAudit/);
+  assert.match(setup, /initialReadiness\.ready &&/);
+  assert.match(setup, /previousOperation\.status === "READY"/);
+  assert.match(setup, /isMrBeastLotteryTicketMasterReady\(preparedMaster\)/);
+  assert.match(setup, /consumable-mrbeast-lottery-2026-07-31\.json/);
+  assert.match(setup, /LOTTERY_MASTER_ITEM_ID/);
+  assert.match(seed, /"isAvailable": false/);
+  assert.match(seed, /"isPublic": false/);
+  assert.doesNotMatch(setup, /dropIndex|dropIndexes/);
+  assert.match(mutations, /usePrepareShopLotteryInfrastructure/);
+  assert.match(mutations, /method: "POST"/);
+  assert.match(
+    mutations,
+    /invalidateQueries\(\{ queryKey: shopKeys\.lotteryAdmin \}\)/,
+  );
+});
+
 test("GM 모달은 KST 기간·준비 상태·버전 충돌을 명시한다", async () => {
   const [component, css, preview, previewCss] = await Promise.all([
     readWeb("app/(erp)/erp/shop/ShopLotteryAdminModal.tsx"),
@@ -58,7 +102,9 @@ test("GM 모달은 KST 기간·준비 상태·버전 충돌을 명시한다", as
   assert.match(component, /config\.readiness\.indexesReady/);
   assert.match(component, /config\.readiness\.masterItemReady/);
   assert.match(component, /중복 지급·사용 방지 DB 인덱스 5개/);
-  assert.match(component, /준비 상태 다시 확인/);
+  assert.match(component, /운영 기반 한 번에 준비/);
+  assert.match(component, /상태 다시 확인/);
+  assert.match(component, /window\.confirm/);
   assert.match(component, /이벤트 화면 미리보기/);
   assert.match(component, /재배포가 필요하지 않습니다/);
   assert.match(preview, /GM SAFE PREVIEW/);

@@ -97,6 +97,11 @@ interface ShopOpenStateResponse {
   updatedByName: string | null;
 }
 
+interface PrepareShopLotteryInfrastructureResponse {
+  changed: boolean;
+  readiness: ShopLotteryAdminConfigResponse["readiness"];
+}
+
 export interface UpdateShopLotteryAdminConfigInput {
   enabled: boolean;
   eventId: string;
@@ -252,6 +257,36 @@ export function useUpdateShopLotteryAdminConfig() {
     onSuccess: (state) => {
       queryClient.setQueryData(shopKeys.lotteryAdmin, state);
       queryClient.invalidateQueries({ queryKey: shopKeys.lottery });
+    },
+  });
+}
+
+export function usePrepareShopLotteryInfrastructure() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    PrepareShopLotteryInfrastructureResponse,
+    ShopApiError,
+    void
+  >({
+    mutationFn: async () => {
+      const res = await fetch("/api/erp/shop/admin/lottery", {
+        method: "POST",
+      });
+      if (!res.ok) await throwShopError(res);
+      return res.json();
+    },
+    onSuccess: (result) => {
+      queryClient.setQueryData<ShopLotteryAdminConfigResponse>(
+        shopKeys.lotteryAdmin,
+        (previous) =>
+          previous
+            ? { ...previous, readiness: result.readiness }
+            : previous,
+      );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: shopKeys.lotteryAdmin });
     },
   });
 }
