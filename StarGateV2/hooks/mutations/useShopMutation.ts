@@ -21,6 +21,10 @@ import {
   shopKeys,
   type ShopCatalogResponse,
 } from "@/hooks/queries/useShopQuery";
+import type {
+  MrBeastLotteryPendingClaimDto,
+  MrBeastLotteryRevealDto,
+} from "@/lib/db/mrbeast-lottery";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 /* ── 입력/응답 타입 ── */
@@ -44,6 +48,7 @@ interface CheckoutResponse {
     totalPrice: number;
   };
   balance: number;
+  lotteryTicketsGranted: number;
 }
 
 interface ReorderInput {
@@ -64,6 +69,12 @@ interface ConsumeInput {
 
 interface ConsumeResponse {
   remaining: number;
+}
+
+export interface StartMrBeastLotteryResponse {
+  claim: MrBeastLotteryPendingClaimDto;
+  resumed: boolean;
+  availableTickets: number;
 }
 
 export type ShopOpenMode = "auto" | "open" | "closed";
@@ -123,6 +134,7 @@ export function useCheckoutShopCart() {
       queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      queryClient.invalidateQueries({ queryKey: shopKeys.lottery });
     },
   });
 }
@@ -204,6 +216,66 @@ export function useSetShopOpenMode() {
         },
       );
       queryClient.invalidateQueries({ queryKey: shopKeys.catalog });
+    },
+  });
+}
+
+export function useStartMrBeastLotteryClaim() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    StartMrBeastLotteryResponse,
+    ShopApiError,
+    { actionId: string }
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/shop/lottery", {
+        method: "POST",
+        headers: {
+          "Idempotency-Key": createIdempotencyKey(
+            "shop-mrbeast-lottery-claim",
+            input,
+          ),
+        },
+      });
+      if (!res.ok) await throwShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: shopKeys.lottery });
+      queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
+    },
+  });
+}
+
+export function useRevealMrBeastLotteryClaim() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    MrBeastLotteryRevealDto,
+    ShopApiError,
+    { claimId: string }
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/shop/lottery/reveal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey(
+            "shop-mrbeast-lottery-reveal",
+            input,
+          ),
+        },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) await throwShopError(res);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: shopKeys.lottery });
+      queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
+      queryClient.invalidateQueries({ queryKey: creditKeys.all });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 }

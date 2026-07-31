@@ -20,6 +20,7 @@ export const CREDIT_TYPE_META: Record<
   { label: string; tone: "gold" | "info" | "success" | "danger" | "default" }
 > = {
   SESSION_REWARD: { label: "세션 보상", tone: "success" },
+  EVENT_REWARD: { label: "이벤트 보상", tone: "gold" },
   PURCHASE: { label: "구매", tone: "info" },
   ADMIN_GRANT: { label: "관리자 지급", tone: "gold" },
   ADMIN_DEDUCT: { label: "관리자 차감", tone: "danger" },

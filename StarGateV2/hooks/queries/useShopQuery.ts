@@ -12,6 +12,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getNextShopScheduleBoundary } from "@stargate/core/domain/shop-catalog";
 
 import type { RuntimeShopCatalogItem } from "@/lib/shop/runtime-catalog";
+import type {
+  MrBeastLotteryPendingClaimDto,
+  MrBeastLotteryWinnerDto,
+} from "@/lib/db/mrbeast-lottery";
 
 /* ── Query keys ── */
 
@@ -19,6 +23,7 @@ export const shopKeys = {
   all: ["shop"] as const,
   catalog: ["shop", "catalog"] as const,
   inventory: ["shop", "inventory"] as const,
+  lottery: ["shop", "lottery"] as const,
 };
 
 /* ── 에러 타입 ── */
@@ -33,7 +38,12 @@ export type ShopErrorCode =
   | "INVENTORY_FAILED_REFUNDED"
   | "REFUND_FAILED"
   | "INVALID_CART"
-  | "REORDER_NOT_AVAILABLE";
+  | "REORDER_NOT_AVAILABLE"
+  | "LOTTERY_DISABLED"
+  | "LOTTERY_MISCONFIGURED"
+  | "NO_LOTTERY_TICKET"
+  | "LOTTERY_CLAIM_NOT_FOUND"
+  | "LOTTERY_CLAIM_INVALID";
 
 export class ShopApiError extends Error {
   readonly status: number;
@@ -86,6 +96,15 @@ export interface ShopInventoryResponse {
   hasMainCharacter: boolean;
 }
 
+export interface ShopLotteryStateResponse {
+  enabled: boolean;
+  active: boolean;
+  eventId: string | null;
+  availableTickets: number;
+  pendingClaim: MrBeastLotteryPendingClaimDto | null;
+  recentWinners: MrBeastLotteryWinnerDto[];
+}
+
 /* ── Fetchers ── */
 
 async function parseShopError(res: Response): Promise<never> {
@@ -114,10 +133,17 @@ async function fetchShopInventory(): Promise<ShopInventoryResponse> {
   return res.json();
 }
 
+async function fetchShopLotteryState(): Promise<ShopLotteryStateResponse> {
+  const res = await fetch("/api/erp/shop/lottery", { cache: "no-store" });
+  if (!res.ok) await parseShopError(res);
+  return res.json();
+}
+
 /* ── Hooks ── */
 
 const CATALOG_STALE_TIME_MS = 10 * 60 * 1000;
 const INVENTORY_STALE_TIME_MS = 5 * 60 * 1000;
+const LOTTERY_STALE_TIME_MS = 15 * 1000;
 
 function getMsUntilNextShopBoundary(now = new Date()): number {
   const boundary = getNextShopScheduleBoundary(now);
@@ -170,6 +196,30 @@ export function useShopInventory(options?: {
     // 메인 캐릭 정합성 위반은 사용자 인풋으로 회복 불가 → 재시도 비활성.
     retry: (failureCount, err) => {
       if (err instanceof ShopApiError && err.status === 409) return false;
+      return failureCount < 2;
+    },
+  });
+}
+
+export function useShopLotteryState(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: shopKeys.lottery,
+    queryFn: fetchShopLotteryState,
+    staleTime: LOTTERY_STALE_TIME_MS,
+    enabled: options?.enabled,
+    refetchOnWindowFocus: true,
+    // 비활성 → 활성 전환도 현재 페이지에서 감지해야 하므로 메인 캐릭터가 있으면 polling.
+    refetchInterval:
+      options?.enabled === false ? false : LOTTERY_STALE_TIME_MS,
+    retry: (failureCount, err) => {
+      if (
+        err instanceof ShopApiError &&
+        (err.code === "LOTTERY_DISABLED" ||
+          err.code === "LOTTERY_MISCONFIGURED" ||
+          err.code === "MAIN_CHARACTER_INTEGRITY")
+      ) {
+        return false;
+      }
       return failureCount < 2;
     },
   });

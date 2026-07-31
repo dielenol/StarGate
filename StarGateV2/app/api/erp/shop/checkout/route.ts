@@ -15,13 +15,25 @@ import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/
 import { addCredit } from "@/lib/db/credits";
 import {
   addToInventory,
+  findMasterItemBySlug,
   findMasterItemsBySlugs,
   lockCharacterInventoryItems,
   prepareCharacterInventoryItemLocks,
 } from "@/lib/db/inventory";
+import {
+  assertMrBeastLotteryIndexesReady,
+  grantMrBeastLotteryTicketsForPurchase,
+  isMrBeastLotteryTicketMasterReady,
+  MrBeastLotteryError,
+} from "@/lib/db/mrbeast-lottery";
 import { reduceStock } from "@/lib/db/shop";
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
+import {
+  MRBEAST_LOTTERY_SLUG,
+  MRBEAST_SODA_SLUG,
+  resolveMrBeastLotteryConfig,
+} from "@/lib/shop/mrbeast-lottery";
 import { getShopOpenState } from "@/lib/shop/open-state";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 import { loadRuntimeShopCatalog } from "@/lib/shop/runtime-catalog";
@@ -168,14 +180,61 @@ export async function POST(request: Request) {
     console.error("[shop/checkout] ensureDailyStockRefresh 실패", err);
   });
 
-  const masterDocs = await findMasterItemsBySlugs(
-    normalizedItems.map((item) => item.slug),
-  );
+  const lotteryConfig = resolveMrBeastLotteryConfig();
+  const lotteryTicketQuantity = lotteryConfig.enabled
+    ? (normalizedItems.find((item) => item.slug === MRBEAST_SODA_SLUG)
+        ?.quantity ?? 0)
+    : 0;
+  if (lotteryTicketQuantity > 0) {
+    try {
+      await assertMrBeastLotteryIndexesReady();
+    } catch (error) {
+      if (error instanceof MrBeastLotteryError) {
+        return NextResponse.json(
+          { error: error.message, code: error.code },
+          { status: 503 },
+        );
+      }
+      console.error("[shop/checkout] lottery readiness failed", error);
+      return NextResponse.json(
+        {
+          error: "복권 이벤트 준비 상태를 확인할 수 없습니다.",
+          code: "LOTTERY_MISCONFIGURED",
+        },
+        { status: 503 },
+      );
+    }
+  }
+  const masterLookupSlugs = [
+    ...normalizedItems.map((item) => item.slug),
+    ...(lotteryTicketQuantity > 0 ? [MRBEAST_LOTTERY_SLUG] : []),
+  ];
+  const [masterDocs, lotteryTicketMaster] = await Promise.all([
+    findMasterItemsBySlugs(masterLookupSlugs),
+    lotteryTicketQuantity > 0
+      ? findMasterItemBySlug(MRBEAST_LOTTERY_SLUG)
+      : Promise.resolve(null),
+  ]);
   const masterIdBySlug = new Map(
     masterDocs
       .filter((doc) => doc.slug && doc._id)
       .map((doc) => [doc.slug as string, String(doc._id)]),
   );
+  const lotteryTicketItemId = masterIdBySlug.get(MRBEAST_LOTTERY_SLUG);
+  if (
+    lotteryTicketQuantity > 0 &&
+    (!lotteryTicketItemId ||
+      !isMrBeastLotteryTicketMasterReady(lotteryTicketMaster))
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "복권 마스터 아이템 설정이 누락되었거나 안전 조건과 다릅니다.",
+        code: "LOTTERY_MISCONFIGURED",
+      },
+      { status: 503 },
+    );
+  }
   const catalogBySlug = new Map(catalog.map((item) => [item.slug, item]));
 
   const lines: CheckoutLine[] = [];
@@ -211,12 +270,16 @@ export async function POST(request: Request) {
     );
   }
   const characterId = String(mainChar._id);
+  const inventoryLockItemIds = [
+    ...lines.map((line) => line.itemId),
+    ...(lotteryTicketItemId ? [lotteryTicketItemId] : []),
+  ];
   const committed: { balance: number | null } = { balance: null };
   let response: NextResponse;
   try {
     await prepareCharacterInventoryItemLocks(
       characterId,
-      lines.map((line) => line.itemId),
+      inventoryLockItemIds,
     );
     response = await executeEconomicOperation({
       requestId,
@@ -226,7 +289,7 @@ export async function POST(request: Request) {
       run: async (mongoSession) => {
         await lockCharacterInventoryItems(
           characterId,
-          lines.map((line) => line.itemId),
+          inventoryLockItemIds,
           mongoSession,
         );
         for (const line of lines) {
@@ -260,6 +323,17 @@ export async function POST(request: Request) {
             { session: mongoSession },
           );
         }
+        const lotteryTicketsGranted =
+          await grantMrBeastLotteryTicketsForPurchase({
+            config: lotteryConfig,
+            characterId,
+            characterCodename: mainChar.codename,
+            ticketItemId: lotteryTicketItemId ?? "",
+            sourceRequestId: requestId,
+            quantity: lotteryTicketQuantity,
+            acquiredAt: new Date(),
+            session: mongoSession,
+          });
         committed.balance = debit.balance;
         return {
           status: 201,
@@ -275,6 +349,7 @@ export async function POST(request: Request) {
               totalPrice,
             },
             balance: debit.balance,
+            lotteryTicketsGranted,
           },
         };
       },

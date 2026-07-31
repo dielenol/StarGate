@@ -141,6 +141,42 @@ export async function ensureAllIndexes(): Promise<void> {
       { status: 1, updatedAt: 1 },
       { name: "economic_operations_status_updatedAt" },
     ),
+    /* ── MrBeast soda lottery (activation prerequisite; not auto-run) ── */
+    db.collection("mrbeast_lottery_claims").createIndexes([
+      {
+        key: { characterId: 1 },
+        name: "mrbeast_lottery_claims_pending_character_global_unique",
+        unique: true,
+        partialFilterExpression: { status: "PENDING" },
+      },
+      {
+        key: {
+          status: 1,
+          tier: 1,
+          characterIsPublic: 1,
+          revealedAt: -1,
+          _id: -1,
+        },
+        name: "mrbeast_lottery_claims_winners_recent",
+      },
+    ]),
+    db.collection("mrbeast_lottery_entitlements").createIndexes([
+      {
+        key: { eventId: 1, sourceRequestId: 1, ordinal: 1 },
+        name: "mrbeast_lottery_entitlements_source_ordinal_unique",
+        unique: true,
+      },
+      {
+        key: { characterId: 1, status: 1, grantedAt: 1, _id: 1 },
+        name: "mrbeast_lottery_entitlements_character_available_fifo",
+      },
+      {
+        key: { claimId: 1 },
+        name: "mrbeast_lottery_entitlements_claim_unique",
+        unique: true,
+        partialFilterExpression: { claimId: { $type: "string" } },
+      },
+    ]),
     db.collection("equipment_workshop_requests").createIndexes([
       {
         key: { userId: 1, createdAt: -1 },

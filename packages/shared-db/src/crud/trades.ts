@@ -27,12 +27,16 @@ const MAX_ITEM_QUANTITY = 999;
 const MAX_STOCK_SHARES = 1_000_000_000;
 const MAX_CREDITS = 1_000_000_000;
 const NON_TRANSFERABLE_ITEM_SLUG_PREFIXES = ["towaski-license-"] as const;
+const NON_TRANSFERABLE_ITEM_SLUGS = new Set(["mrbeast_lottery"]);
 
 export function isPlayerTradeItemSlugTransferable(
   slug: string | null | undefined,
 ): boolean {
-  return !NON_TRANSFERABLE_ITEM_SLUG_PREFIXES.some((prefix) =>
-    slug?.startsWith(prefix),
+  return (
+    !NON_TRANSFERABLE_ITEM_SLUGS.has(slug ?? "") &&
+    !NON_TRANSFERABLE_ITEM_SLUG_PREFIXES.some((prefix) =>
+      slug?.startsWith(prefix),
+    )
   );
 }
 

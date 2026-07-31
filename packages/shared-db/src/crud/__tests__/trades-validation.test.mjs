@@ -21,6 +21,7 @@ test("토와스키 자격증 slug는 거래할 수 없다", () => {
   ]) {
     assert.equal(isPlayerTradeItemSlugTransferable(slug), false, slug);
   }
+  assert.equal(isPlayerTradeItemSlugTransferable("mrbeast_lottery"), false);
   assert.equal(isPlayerTradeItemSlugTransferable("basic-pistol"), true);
 });
 

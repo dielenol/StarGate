@@ -4,6 +4,7 @@ import type { ObjectId } from "mongodb";
  * 크레딧 거래 type 상수 배열.
  *
  * - SESSION_REWARD: 세션 보상 지급
+ * - EVENT_REWARD: 서버 검증 이벤트 보상 지급
  * - PURCHASE: 일반 구매 (캐릭터 인벤토리 구매 등)
  * - ADMIN_GRANT: 관리자 수동 지급
  * - ADMIN_DEDUCT: 관리자 수동 차감
@@ -17,6 +18,7 @@ import type { ObjectId } from "mongodb";
  */
 export const CREDIT_TRANSACTION_TYPES = [
   "SESSION_REWARD",
+  "EVENT_REWARD",
   "PURCHASE",
   "ADMIN_GRANT",
   "ADMIN_DEDUCT",
@@ -49,6 +51,7 @@ export const WEB_ALLOWED_CREDIT_TYPES = [
   "ADMIN_GRANT",
   "ADMIN_DEDUCT",
   "SESSION_REWARD",
+  "EVENT_REWARD",
   "DAILY_ALLOWANCE",
   "PURCHASE",
   "STOCK_BUY",

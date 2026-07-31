@@ -13,6 +13,7 @@ import {
   type ShopOpenMode,
   useCheckoutShopCart,
   useRequestShopReorder,
+  useStartMrBeastLotteryClaim,
   useSetShopOpenMode,
 } from "@/hooks/mutations/useShopMutation";
 import {
@@ -21,6 +22,7 @@ import {
   type ShopCatalogResponse,
   type ShopErrorCode,
   useShopCatalog,
+  useShopLotteryState,
 } from "@/hooks/queries/useShopQuery";
 
 import Box from "@/components/ui/Box/Box";
@@ -37,6 +39,7 @@ import {
 } from "@/components/icons";
 
 import type { DialogueBeepOptions } from "@/lib/audio/dialogue-beep-engine";
+import type { MrBeastLotteryPendingClaimDto } from "@/lib/db/mrbeast-lottery";
 import { describeApiError } from "@/lib/api/describe-error";
 import { formatCredits } from "@/lib/format/credit";
 
@@ -44,6 +47,7 @@ import { useNpcDialogue } from "@/hooks/useNpcDialogue";
 
 import ShopAdminStockModal from "./ShopAdminStockModal";
 import ShopItemIcon from "./ShopItemIcon";
+import MrBeastLotteryModal from "./MrBeastLotteryModal";
 
 import styles from "./page.module.css";
 
@@ -171,6 +175,11 @@ const ERROR_MESSAGE: Record<ShopErrorCode, string> = {
     "구매 실패 + 자동 환불 실패. 운영자(GM)에게 문의해 잔액 정정을 요청하세요.",
   INVALID_CART: "장바구니 구성이 올바르지 않습니다.",
   REORDER_NOT_AVAILABLE: "아직 품절이 아닌 상품은 발주 요청할 수 없습니다.",
+  LOTTERY_DISABLED: "미스터비스트 복권 이벤트가 활성화되지 않았습니다.",
+  LOTTERY_MISCONFIGURED: "복권 이벤트 설정을 확인할 수 없습니다.",
+  NO_LOTTERY_TICKET: "사용할 수 있는 미스터비스트 복권이 없습니다.",
+  LOTTERY_CLAIM_NOT_FOUND: "이어갈 복권을 찾을 수 없습니다.",
+  LOTTERY_CLAIM_INVALID: "복권 상태를 확인할 수 없습니다.",
 };
 
 interface Props {
@@ -198,8 +207,12 @@ export default function ShopClient({
 }: Props) {
   const catalogQuery = useShopCatalog({ initialData: initialCatalog });
   const creditsQuery = useCredits({ initialData: initialCredits });
+  const lotteryQuery = useShopLotteryState({
+    enabled: mainCharacter !== null && !mainCharacterError,
+  });
   const checkoutMutation = useCheckoutShopCart();
   const reorderMutation = useRequestShopReorder();
+  const startLotteryMutation = useStartMrBeastLotteryClaim();
   const openModeMutation = useSetShopOpenMode();
 
   const [activeTab, setActiveTab] = useState<ShopTabValue>("ALL");
@@ -221,7 +234,10 @@ export default function ShopClient({
   const [adminOpen, setAdminOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>(null);
+  const [lotteryClaim, setLotteryClaim] =
+    useState<MrBeastLotteryPendingClaimDto | null>(null);
   const catalog = catalogQuery.data ?? initialCatalog;
+  const lotteryState = lotteryQuery.data;
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
 
   const {
@@ -517,7 +533,10 @@ export default function ShopClient({
           playTiaLine("purchase", TIA_DIALOGUE_LINES.goodbye);
           setNotice({
             tone: "success",
-            text: `${res.order.items.length}종 결제가 완료되었습니다.`,
+            text:
+              res.lotteryTicketsGranted > 0
+                ? `${res.order.items.length}종 결제 완료 · 미스터비스트 복권 ${res.lotteryTicketsGranted}장 지급`
+                : `${res.order.items.length}종 결제가 완료되었습니다.`,
           });
         },
         onError: (err) => {
@@ -586,6 +605,34 @@ export default function ShopClient({
         },
         onError: (err) => {
           setErrorMessage(describeShopError(err));
+        },
+      },
+    );
+  }
+
+  function handleOpenLottery() {
+    const pendingClaim = lotteryState?.pendingClaim;
+    if (pendingClaim) {
+      setLotteryClaim(pendingClaim);
+      return;
+    }
+    if (
+      !lotteryState?.enabled ||
+      lotteryState.availableTickets < 1 ||
+      startLotteryMutation.isPending
+    ) {
+      return;
+    }
+
+    setErrorMessage(null);
+    startLotteryMutation.mutate(
+      { actionId: crypto.randomUUID() },
+      {
+        onSuccess: (response) => {
+          setLotteryClaim(response.claim);
+        },
+        onError: (error) => {
+          setErrorMessage(describeShopError(error));
         },
       },
     );
@@ -743,8 +790,50 @@ export default function ShopClient({
               <span>카트</span>
               <strong>{cartCount}개</strong>
             </div>
+            {lotteryState?.enabled ? (
+              <button
+                type="button"
+                className={styles.lotteryChip}
+                onClick={handleOpenLottery}
+                disabled={
+                  !lotteryState.pendingClaim &&
+                  (lotteryState.availableTickets < 1 ||
+                    startLotteryMutation.isPending)
+                }
+              >
+                <span>
+                  {lotteryState.pendingClaim
+                    ? "복권 이어하기"
+                    : "복권"}
+                </span>
+                <strong>
+                  {startLotteryMutation.isPending
+                    ? "준비 중"
+                    : lotteryState.pendingClaim
+                      ? "진행 중"
+                      : `${lotteryState.availableTickets}장`}
+                </strong>
+              </button>
+            ) : null}
           </div>
         </header>
+
+        {lotteryState?.enabled && lotteryState.recentWinners.length > 0 ? (
+          <section
+            className={styles.lotteryWinners}
+            aria-label="미스터비스트 복권 최근 당첨 공지"
+          >
+            <strong>LOTTERY WINNERS</strong>
+            <div>
+              {lotteryState.recentWinners.map((winner) => (
+                <span key={winner.claimId}>
+                  {winner.characterCodename} · {winner.label} · +
+                  {winner.reward.toLocaleString()} CR
+                </span>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         {!catalog.isOpen ? (
           <>
@@ -1160,6 +1249,15 @@ export default function ShopClient({
             markStockHighlights(changedSlugs ?? []);
           }}
           onPendingCountChange={setPendingReorderCount}
+        />
+      ) : null}
+
+      {lotteryClaim ? (
+        <MrBeastLotteryModal
+          claim={lotteryClaim}
+          onClose={() => {
+            setLotteryClaim(null);
+          }}
         />
       ) : null}
     </div>
