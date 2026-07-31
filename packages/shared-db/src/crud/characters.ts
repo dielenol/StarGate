@@ -340,6 +340,8 @@ export async function listCharactersByOwner(
       agentLevel: 1,
       codename: 1,
     })
+    // natural order 의존 제거 — 대시보드 firstCharacter 선정/ETag 해시 입력 결정화.
+    .sort({ _id: 1 })
     .toArray();
 }
 

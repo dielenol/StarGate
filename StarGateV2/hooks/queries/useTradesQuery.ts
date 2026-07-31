@@ -19,7 +19,8 @@ export class TradesApiError extends Error {
 }
 
 async function fetchTrades(): Promise<TradesResponse> {
-  const response = await fetch("/api/erp/trades", { cache: "no-store" });
+  // no-cache = ETag 재검증 허용 (304 시 브라우저 캐시 재사용)
+  const response = await fetch("/api/erp/trades", { cache: "no-cache" });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       error?: string;

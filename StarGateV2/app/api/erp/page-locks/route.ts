@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { findNavItemByLockKey } from "@/components/erp/nav-config";
+import { jsonWithETag } from "@/lib/api/http-cache";
 import { getActiveSession } from "@/lib/auth/active-session";
 import {
   getErpPageLockOverrides,
@@ -15,7 +16,7 @@ interface PageLockBody {
   locked?: unknown;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getActiveSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,7 +24,7 @@ export async function GET() {
 
   try {
     const overrides = await getErpPageLockOverrides();
-    return NextResponse.json({ overrides }, { headers: NO_STORE_HEADERS });
+    return jsonWithETag(request, { overrides });
   } catch (error) {
     console.error("[page-locks] failed to load overrides", error);
     return NextResponse.json(

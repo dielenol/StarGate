@@ -29,6 +29,8 @@ export const getErpPageLockOverrides = cache(
     const collection = await pageLocksCollection();
     const documents = await collection
       .find({}, { projection: { _id: 1, locked: 1 } })
+      // 키 순서 = 반환 순서 = ETag 해시 입력 — natural order 의존 제거.
+      .sort({ _id: 1 })
       .toArray();
 
     return Object.fromEntries(

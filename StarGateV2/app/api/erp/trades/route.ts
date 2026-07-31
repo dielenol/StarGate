@@ -7,6 +7,7 @@ import type {
   TradesResponse,
 } from "@/types/trade";
 
+import { jsonWithETag } from "@/lib/api/http-cache";
 import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth/config";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
@@ -86,7 +87,7 @@ async function resolveSelf(
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -105,7 +106,7 @@ export async function GET() {
         trades: trades.map(serializePlayerTrade),
         assets: { credits: 0, items: [], stocks: [] },
       };
-      return NextResponse.json(response);
+      return jsonWithETag(request, response);
     }
 
     const [balance, inventoryResult, holdings] = await Promise.all([
@@ -144,9 +145,7 @@ export async function GET() {
       trades: trades.map(serializePlayerTrade),
       assets: { credits: balance, items, stocks },
     };
-    return NextResponse.json(response, {
-      headers: { "Cache-Control": "private, no-store" },
-    });
+    return jsonWithETag(request, response);
   } catch (error) {
     console.error("[trades] list failed:", error);
     return NextResponse.json(

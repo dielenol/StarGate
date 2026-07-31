@@ -196,7 +196,8 @@ export async function findUpcomingSessionsByGuild(
       status: "OPEN",
       targetDateTime: { $gte: new Date() },
     })
-    .sort({ targetDateTime: 1 })
+    // _id 보조 키: 동시각 세션의 표시/해시 순서 결정화.
+    .sort({ targetDateTime: 1, _id: 1 })
     .limit(limit)
     .toArray();
 }

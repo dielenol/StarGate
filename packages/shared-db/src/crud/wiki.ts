@@ -83,7 +83,8 @@ export async function listRecentWikiPagesLite(
       title: 1,
       updatedAt: 1,
     })
-    .sort({ updatedAt: -1 })
+    // _id 보조 키: seed 일괄 쓰기의 동일 updatedAt 동점 순서 결정화 (ETag 해시 입력 안정).
+    .sort({ updatedAt: -1, _id: -1 })
     .limit(limit)
     .toArray();
 }

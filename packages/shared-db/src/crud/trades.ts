@@ -488,7 +488,9 @@ export async function listPlayerTradesForUser(
         { "counterparty.userId": userId },
       ],
     })
-    .sort({ updatedAt: -1 })
+    // _id 보조 키: 체결/취소가 양측 문서를 같은 시각으로 갱신해 동점이 실발생 —
+    // 폴링 간 순서 플립(ETag 플랩 + 목록 재정렬)을 결정적으로 차단.
+    .sort({ updatedAt: -1, _id: -1 })
     .limit(limit)
     .toArray();
 }
@@ -510,6 +512,8 @@ export async function listPlayerTradeCounterparties(
       { status: "ACTIVE", _id: { $ne: new ObjectId(excludeUserId) } },
       { projection: { displayName: 1 } },
     )
+    // natural order 는 문서 갱신으로 변동 — 응답 순서(=ETag 해시 입력) 결정화.
+    .sort({ _id: 1 })
     .toArray();
   const ownerIds = users.map((user) => String(user._id));
   if (ownerIds.length === 0) return [];

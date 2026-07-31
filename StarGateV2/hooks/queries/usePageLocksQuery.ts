@@ -15,7 +15,8 @@ const PAGE_LOCK_STALE_TIME_MS = 15 * 1000;
 const PAGE_LOCK_REFETCH_INTERVAL_MS = 30 * 1000;
 
 async function fetchPageLocks(): Promise<PageLocksResponse> {
-  const response = await fetch("/api/erp/page-locks", { cache: "no-store" });
+  // no-cache = ETag 재검증 허용 (304 시 브라우저 캐시 재사용)
+  const response = await fetch("/api/erp/page-locks", { cache: "no-cache" });
   if (!response.ok) {
     throw new Error("페이지 잠금 상태를 불러오지 못했습니다.");
   }

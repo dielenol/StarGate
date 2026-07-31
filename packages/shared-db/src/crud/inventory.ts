@@ -257,7 +257,8 @@ export async function listCharacterInventory(
   const col = await characterInventoryCol();
   return col
     .find({ characterId }, { session: options.session })
-    .sort({ acquiredAt: -1 })
+    // _id 보조 키: 일괄 지급 배치가 동일 acquiredAt 을 만들므로 순서 결정화.
+    .sort({ acquiredAt: -1, _id: -1 })
     .toArray();
 }
 

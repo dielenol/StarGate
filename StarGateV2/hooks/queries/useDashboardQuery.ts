@@ -9,7 +9,8 @@ export const dashboardKeys = {
 
 async function fetchDashboard(): Promise<ErpDashboardResponse> {
   const response = await fetch("/api/erp/dashboard", {
-    cache: "no-store",
+    // no-cache = ETag 재검증 허용 (304 시 브라우저 캐시 재사용)
+    cache: "no-cache",
   });
   if (!response.ok) {
     throw new Error("대시보드를 불러올 수 없습니다.");
