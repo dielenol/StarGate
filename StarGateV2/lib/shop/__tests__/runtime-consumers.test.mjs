@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const CONSUMERS = [
-  "../../../app/(erp)/erp/shop/page.tsx",
-  "../../../app/api/erp/shop/catalog/route.ts",
+  // page + catalog route 의 공유 빌더 (직접 소비자)
+  "../../../app/(erp)/erp/shop/_data.ts",
   "../../../app/api/erp/shop/checkout/route.ts",
   "../../../app/api/erp/shop/consume/route.ts",
   "../../../app/api/erp/shop/inventory/route.ts",
@@ -12,6 +12,12 @@ const CONSUMERS = [
   "../../../app/api/erp/shop/admin/stock/route.ts",
   "../../../app/api/erp/shop/admin/reorder-requests/fulfill/route.ts",
   "../../../app/api/erp/shop/admin/reorder-requests/fulfill-batch/route.ts",
+].map((path) => new URL(path, import.meta.url));
+
+// 공유 빌더(shop/_data.ts)를 경유하는 소비자 — 빌더 import 로 계약 충족.
+const BUILDER_CONSUMERS = [
+  "../../../app/(erp)/erp/shop/page.tsx",
+  "../../../app/api/erp/shop/catalog/route.ts",
 ].map((path) => new URL(path, import.meta.url));
 
 test("all shop state-transition consumers resolve the runtime catalog", async () => {
@@ -22,6 +28,15 @@ test("all shop state-transition consumers resolve the runtime catalog", async ()
       /(?:loadRuntimeShopCatalog|findRuntimeShopItemBySlug)/,
       consumer.pathname,
     );
+    assert.doesNotMatch(
+      source,
+      /from ["']@\/lib\/shop\/catalog["']/,
+      consumer.pathname,
+    );
+  }
+  for (const consumer of BUILDER_CONSUMERS) {
+    const source = await readFile(consumer, "utf8");
+    assert.match(source, /buildShopCatalogResponse/, consumer.pathname);
     assert.doesNotMatch(
       source,
       /from ["']@\/lib\/shop\/catalog["']/,

@@ -11,7 +11,7 @@
 
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
@@ -19,15 +19,12 @@ import {
   getCharacterBalance,
   listCreditTransactions,
 } from "@/lib/db/credits";
-import { getAllDailyStocks } from "@/lib/db/shop";
-import { getShopOpenState } from "@/lib/shop/open-state";
-import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 import { countPendingShopReorderRequests } from "@/lib/shop/reorder-requests";
-import { loadRuntimeShopCatalog } from "@/lib/shop/runtime-catalog";
 
 import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type { ShopCatalogResponse } from "@/hooks/queries/useShopQuery";
 
+import { buildShopCatalogResponse } from "./_data";
 import ShopClient from "./ShopClient";
 
 const INITIAL_LEDGER_LIMIT = 50;
@@ -36,42 +33,10 @@ export const metadata = {
   title: "편의점 — Stargate ERP",
 };
 
-/* ── 서버 측 카탈로그 응답 빌더 (catalog API 와 동일 형식) ── */
-
-async function buildCatalogResponse(
-  playerServiceTestAccess: boolean,
-): Promise<ShopCatalogResponse> {
-  const catalog = await loadRuntimeShopCatalog();
-  await ensureDailyStockRefresh(new Date(), { catalog });
-
-  const stocks = await getAllDailyStocks();
-  const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
-  const openState = await getShopOpenState();
-  const isOpen = openState.isOpen || playerServiceTestAccess;
-
-  const items = catalog.map((item) => {
-    const stock = stockBySlug.get(item.slug) ?? 0;
-    return {
-      ...item,
-      stock,
-      available: isOpen && stock > 0,
-    };
-  });
-
-  return {
-    items,
-    isOpen,
-    mode: playerServiceTestAccess && !openState.isOpen ? "open" : openState.mode,
-    scheduledOpen: openState.scheduledOpen,
-    forceOpen: openState.forceOpen || playerServiceTestAccess,
-    forceClosed: openState.forceClosed && !playerServiceTestAccess,
-  };
-}
-
 /* ── 페이지 ── */
 
 export default async function ShopPage() {
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     redirect("/login");
   }
@@ -103,7 +68,7 @@ export default async function ShopPage() {
   // ledger 는 useCredits 의 initialData 시드용 (페이지 진입 시 1회 fetch 절약).
   const [initialCatalog, initialBalance, initialLedger, pendingReorderCount] =
     await Promise.all([
-      buildCatalogResponse(playerServiceTestAccess).catch(
+      buildShopCatalogResponse(playerServiceTestAccess).catch(
         (): ShopCatalogResponse => ({
           items: [],
           isOpen: false,

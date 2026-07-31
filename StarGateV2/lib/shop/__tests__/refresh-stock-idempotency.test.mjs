@@ -51,6 +51,8 @@ test("100 concurrent refresh runs count each item/date exactly once", async () =
         refreshIfStale,
         rollStock: () => 1,
         catalog: SHOP_CATALOG,
+        // 웜패스 스냅샷 비움 — 전 품목 stale 로 판정시켜 race 카운트 검증 유지.
+        listStocks: async () => [],
       }),
     ),
   );

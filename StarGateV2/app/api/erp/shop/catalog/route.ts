@@ -13,15 +13,9 @@
 
 import { NextResponse } from "next/server";
 
+import { buildShopCatalogResponse } from "@/app/(erp)/erp/shop/_data";
 import { auth } from "@/lib/auth/config";
-import {
-  hasPlayerServiceTestAccess,
-  resolvePlayerServiceAvailability,
-} from "@/lib/auth/player-service-test-access";
-import { getAllDailyStocks } from "@/lib/db/shop";
-import { getShopOpenState } from "@/lib/shop/open-state";
-import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
-import { loadRuntimeShopCatalog } from "@/lib/shop/runtime-catalog";
+import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 
 export async function GET() {
   const session = await auth();
@@ -30,45 +24,16 @@ export async function GET() {
   }
 
   try {
-    const catalog = await loadRuntimeShopCatalog();
-    await ensureDailyStockRefresh(new Date(), { catalog });
-
-    const stocks = await getAllDailyStocks();
-    const stockBySlug = new Map(stocks.map((s) => [s.itemId, s.stock]));
-    const openState = await getShopOpenState();
-    const playerServiceTestAccess = hasPlayerServiceTestAccess(session.user);
-    const isOpen = resolvePlayerServiceAvailability(
-      openState.isOpen,
-      session.user,
+    // 응답 조립은 /erp/shop 페이지와 공유하는 빌더가 담당 (shop/_data.ts).
+    const payload = await buildShopCatalogResponse(
+      hasPlayerServiceTestAccess(session.user),
     );
 
-    const items = catalog.map((item) => {
-      const stock = stockBySlug.get(item.slug) ?? 0;
-      return {
-        ...item,
-        stock,
-        available: isOpen && stock > 0,
-      };
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "private, no-store",
+      },
     });
-
-    return NextResponse.json(
-      {
-        items,
-        isOpen,
-        mode:
-          playerServiceTestAccess && !openState.isOpen
-            ? "open"
-            : openState.mode,
-        scheduledOpen: openState.scheduledOpen,
-        forceOpen: openState.forceOpen || playerServiceTestAccess,
-        forceClosed: openState.forceClosed && !playerServiceTestAccess,
-      },
-      {
-        headers: {
-          "Cache-Control": "private, no-store",
-        },
-      },
-    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "카탈로그 조회 실패";
     return NextResponse.json({ error: message }, { status: 500 });
