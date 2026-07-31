@@ -55,7 +55,7 @@ export const CATALOG_ITEM_PRESETS: readonly CatalogItemPreset[] = [
         "톡 쏘는 탄산과 강한 에너지 향으로 몸과 정신을 함께 끌어올리는 한정 소다.",
       damage: "",
       effect: "HP 10 / SAN 10 회복",
-      previewImage: "",
+      previewImage: "/assets/shop/items/mrbeast_soda.png",
       tags: "편의점, 회복, 소다, 미스터비스트",
       isAvailable: true,
       isPublic: true,

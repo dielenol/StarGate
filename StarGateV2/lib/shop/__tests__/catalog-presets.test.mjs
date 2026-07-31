@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { access } from "node:fs/promises";
 import test from "node:test";
 
 import { normalizeCatalogItemCreateBody } from "../catalog-item-input.ts";
@@ -17,7 +18,10 @@ test("미스터비스트 소다 프리셋은 협의한 회복량과 권장가를
   assert.equal(preset.form.category, "CONSUMABLE");
   assert.equal(preset.form.price, "80");
   assert.equal(preset.form.effect, "HP 10 / SAN 10 회복");
-  assert.equal(preset.form.previewImage, "");
+  assert.equal(
+    preset.form.previewImage,
+    "/assets/shop/items/mrbeast_soda.png",
+  );
   assert.equal(preset.form.stockMin, "2");
   assert.equal(preset.form.stockMax, "5");
   assert.equal(preset.form.appearRate, "0.75");
@@ -34,6 +38,7 @@ test("카탈로그 프리셋은 실제 운영 생성 계약을 통과하는 편�
     price: Number(preset.form.price),
     description: preset.form.description,
     effect: preset.form.effect,
+    previewImage: preset.form.previewImage,
     isAvailable: preset.form.isAvailable,
     isPublic: preset.form.isPublic,
     tags: preset.form.tags.split(",").map((tag) => tag.trim()),
@@ -48,6 +53,16 @@ test("카탈로그 프리셋은 실제 운영 생성 계약을 통과하는 편�
   });
 
   assert.equal(result.ok, true);
+});
+
+test("미스터비스트 소다 프리셋 이미지는 배포 가능한 로컬 자산이다", async () => {
+  const preset = CATALOG_ITEM_PRESETS.find(
+    (entry) => entry.key === "mrbeast-soda-recovery",
+  );
+  assert.ok(preset);
+  await access(
+    new URL(`../../../public${preset.form.previewImage}`, import.meta.url),
+  );
 });
 
 test("프리셋 선택값은 공방처럼 prefix로 일반 카탈로그 값과 분리한다", () => {
