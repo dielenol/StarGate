@@ -42,6 +42,10 @@ import type { DialogueBeepOptions } from "@/lib/audio/dialogue-beep-engine";
 import type { MrBeastLotteryPendingClaimDto } from "@/lib/db/mrbeast-lottery";
 import { describeApiError } from "@/lib/api/describe-error";
 import { formatCredits } from "@/lib/format/credit";
+import {
+  retainIdempotencyOperation,
+  type RetainedIdempotencyOperation,
+} from "@/lib/query/idempotency";
 
 import { useNpcDialogue } from "@/hooks/useNpcDialogue";
 
@@ -54,6 +58,9 @@ import styles from "./page.module.css";
 type ShopTabValue = ShopPageGroup | "ALL";
 type CartState = Record<string, number>;
 type NoticeState = { tone: "success" | "info"; text: string } | null;
+interface RetainedCheckoutOperation extends RetainedIdempotencyOperation {
+  expectsLotteryTickets: boolean;
+}
 type TiaMood =
   | "welcome"
   | "tired"
@@ -64,6 +71,11 @@ type TiaMood =
   | "nap";
 
 const MAX_CART_QUANTITY_PER_ITEM = 9;
+const MRBEAST_SODA_POSTER_SRC =
+  "/assets/shop/events/mrbeast-soda-lottery-poster.png";
+const MRBEAST_SODA_SRC = "/assets/shop/items/mrbeast_soda.png";
+const MRBEAST_LOTTERY_SRC =
+  "/assets/shop/events/mrbeast-lottery-transparent.png";
 const SHOP_ENTRY_SFX_SRC = "/assets/shop/sfx/convenience-chime.mp3";
 const SHOP_ENTRY_SFX_VOLUME = 0.145;
 const TIA_IDLE_DELAY_MS = 18000;
@@ -133,6 +145,10 @@ const TIA_DIALOGUE_LINES = {
   noAgent: "앗... 먼저 메인 AGENT 확인이 필요해요. GM에게 문의해 주세요.",
   checkoutError:
     "잠깐만요... 결제 정보가 맞지 않는 것 같아요. 다시 한번 확인해 주세요.",
+  lotteryEnded:
+    "앗, 방금 복권 이벤트가 끝났어요. 소다 결제는 진행하지 않았으니 다시 확인해 주세요.",
+  sodaDailyLimit:
+    "미스터비스트 소다는 하루에 10개까지만 구매할 수 있어요. 내일 다시 확인해 주세요~",
   cartAdjusted:
     "재고가 방금 바뀌었어요. 장바구니 수량을 최신 재고에 맞춰 다시 정리해뒀습니다.",
 } as const;
@@ -174,6 +190,8 @@ const ERROR_MESSAGE: Record<ShopErrorCode, string> = {
   REFUND_FAILED:
     "구매 실패 + 자동 환불 실패. 운영자(GM)에게 문의해 잔액 정정을 요청하세요.",
   INVALID_CART: "장바구니 구성이 올바르지 않습니다.",
+  MRBEAST_SODA_DAILY_LIMIT_EXCEEDED:
+    "미스터비스트 소다는 사용자당 하루 최대 10개까지 구매할 수 있습니다.",
   REORDER_NOT_AVAILABLE: "아직 품절이 아닌 상품은 발주 요청할 수 없습니다.",
   LOTTERY_DISABLED: "미스터비스트 복권 이벤트가 활성화되지 않았습니다.",
   LOTTERY_MISCONFIGURED: "복권 이벤트 설정을 확인할 수 없습니다.",
@@ -236,6 +254,8 @@ export default function ShopClient({
   const [notice, setNotice] = useState<NoticeState>(null);
   const [lotteryClaim, setLotteryClaim] =
     useState<MrBeastLotteryPendingClaimDto | null>(null);
+  const checkoutOperationRef =
+    useRef<RetainedCheckoutOperation | null>(null);
   const catalog = catalogQuery.data ?? initialCatalog;
   const lotteryState = lotteryQuery.data;
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
@@ -520,15 +540,38 @@ export default function ShopClient({
     if (!canCheckout) return;
     setErrorMessage(null);
     setNotice(null);
+    const items = cartLines.map((line) => ({
+      slug: line.item.slug,
+      quantity: line.quantity,
+    }));
+    const currentLotteryExpectation =
+      lotteryState?.active === true &&
+      items.some((item) => item.slug === "mrbeast_soda");
+    const checkoutFingerprint = JSON.stringify({ items });
+    const retainedOperation = retainIdempotencyOperation(
+      checkoutOperationRef.current,
+      "shop-checkout",
+      checkoutFingerprint,
+    );
+    if (retainedOperation.key !== checkoutOperationRef.current?.key) {
+      checkoutOperationRef.current = {
+        ...retainedOperation,
+        expectsLotteryTickets: currentLotteryExpectation,
+      };
+    }
+    const operation = checkoutOperationRef.current;
+    if (!operation) return;
     checkoutMutation.mutate(
       {
-        items: cartLines.map((line) => ({
-          slug: line.item.slug,
-          quantity: line.quantity,
-        })),
+        idempotencyKey: operation.key,
+        items,
+        expectsLotteryTickets: operation.expectsLotteryTickets,
       },
       {
         onSuccess: (res) => {
+          if (checkoutOperationRef.current?.key === operation.key) {
+            checkoutOperationRef.current = null;
+          }
           setCart({});
           playTiaLine("purchase", TIA_DIALOGUE_LINES.goodbye);
           setNotice({
@@ -543,6 +586,20 @@ export default function ShopClient({
           if (err instanceof ShopApiError && err.code === "OUT_OF_STOCK") {
             playTiaLine("soldout", TIA_DIALOGUE_LINES.soldOut);
             void reconcileCartWithLatestStock(err.slug);
+          } else if (
+            err instanceof ShopApiError &&
+            err.code === "MRBEAST_SODA_DAILY_LIMIT_EXCEEDED"
+          ) {
+            playTiaLine("tired", TIA_DIALOGUE_LINES.sodaDailyLimit);
+          } else if (
+            err instanceof ShopApiError &&
+            err.code === "LOTTERY_DISABLED"
+          ) {
+            if (checkoutOperationRef.current?.key === operation.key) {
+              checkoutOperationRef.current = null;
+            }
+            playTiaLine("tired", TIA_DIALOGUE_LINES.lotteryEnded);
+            void lotteryQuery.refetch();
           } else {
             playTiaLine("tired", TIA_DIALOGUE_LINES.checkoutError);
           }
@@ -817,6 +874,62 @@ export default function ShopClient({
             ) : null}
           </div>
         </header>
+
+        {lotteryState?.active ? (
+          <section
+            className={styles.lotteryPromotion}
+            aria-labelledby="mrbeast-lottery-promotion-title"
+          >
+            <div className={styles.lotteryPromotion__poster}>
+              <Image
+                src={MRBEAST_SODA_POSTER_SRC}
+                alt="미스터비스트 소다 구매 시 복권을 지급하는 기간 한정 이벤트 포스터"
+                width={1086}
+                height={1448}
+                sizes="(max-width: 720px) 100vw, 250px"
+                priority
+              />
+            </div>
+            <div className={styles.lotteryPromotion__content}>
+              <span className={styles.lotteryPromotion__eyebrow}>
+                LIMITED EVENT
+              </span>
+              <h2 id="mrbeast-lottery-promotion-title">
+                소다 한 캔, 복권 한 장
+              </h2>
+              <p>
+                이벤트 기간에 미스터비스트 소다를 구매하면 구매 수량만큼
+                스크래치 복권을 즉시 지급합니다.
+              </p>
+              <div className={styles.lotteryPromotion__items}>
+                <div>
+                  <Image
+                    src={MRBEAST_SODA_SRC}
+                    alt=""
+                    width={72}
+                    height={72}
+                  />
+                  <span>미스터비스트 소다</span>
+                </div>
+                <strong aria-hidden="true">+</strong>
+                <div>
+                  <Image
+                    src={MRBEAST_LOTTERY_SRC}
+                    alt=""
+                    width={72}
+                    height={72}
+                  />
+                  <span>미스터비스트 복권</span>
+                </div>
+              </div>
+              <div className={styles.lotteryPromotion__badges}>
+                <span>소다 1개당 복권 1장</span>
+                <span>사용자당 하루 최대 10개</span>
+                <strong>0등 100,000 CR</strong>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         {lotteryState?.enabled && lotteryState.recentWinners.length > 0 ? (
           <section

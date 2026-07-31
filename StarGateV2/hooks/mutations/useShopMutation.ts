@@ -30,10 +30,12 @@ import { createIdempotencyKey } from "@/lib/query/idempotency";
 /* ── 입력/응답 타입 ── */
 
 interface CheckoutInput {
+  idempotencyKey: string;
   items: Array<{
     slug: string;
     quantity: number;
   }>;
+  expectsLotteryTickets?: boolean;
 }
 
 interface CheckoutResponse {
@@ -118,13 +120,14 @@ export function useCheckoutShopCart() {
 
   return useMutation<CheckoutResponse, ShopApiError, CheckoutInput>({
     mutationFn: async (input) => {
+      const { idempotencyKey, ...body } = input;
       const res = await fetch("/api/erp/shop/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": createIdempotencyKey("shop-checkout", input),
+          "Idempotency-Key": idempotencyKey,
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(body),
       });
       if (!res.ok) await throwShopError(res);
       return res.json();

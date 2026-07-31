@@ -26,6 +26,10 @@ import {
   isMrBeastLotteryTicketMasterReady,
   MrBeastLotteryError,
 } from "@/lib/db/mrbeast-lottery";
+import {
+  incrementMrBeastSodaDailyPurchaseCounter,
+  prepareMrBeastSodaDailyPurchaseCounter,
+} from "@/lib/db/mrbeast-soda-daily-limit";
 import { reduceStock } from "@/lib/db/shop";
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
@@ -34,6 +38,11 @@ import {
   MRBEAST_SODA_SLUG,
   resolveMrBeastLotteryConfig,
 } from "@/lib/shop/mrbeast-lottery";
+import {
+  createMrBeastSodaDailyPurchaseKey,
+  MRBEAST_SODA_DAILY_PURCHASE_LIMIT,
+  MrBeastSodaDailyLimitError,
+} from "@/lib/shop/mrbeast-soda-daily-limit";
 import { getShopOpenState } from "@/lib/shop/open-state";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 import { loadRuntimeShopCatalog } from "@/lib/shop/runtime-catalog";
@@ -47,6 +56,7 @@ interface CheckoutBody {
     slug?: unknown;
     quantity?: unknown;
   }>;
+  expectsLotteryTickets?: unknown;
 }
 
 interface CheckoutLine {
@@ -56,6 +66,15 @@ interface CheckoutLine {
   unitPrice: number;
   totalPrice: number;
   itemId: string;
+}
+
+class ShopLotteryStateChangedError extends Error {
+  constructor() {
+    super(
+      "복권 이벤트가 종료되어 소다 결제를 중단했습니다. 이벤트 상태를 새로 확인해 주세요.",
+    );
+    this.name = "ShopLotteryStateChangedError";
+  }
 }
 
 function normalizeCartItems(
@@ -181,9 +200,19 @@ export async function POST(request: Request) {
   });
 
   const lotteryConfig = resolveMrBeastLotteryConfig();
+  const expectsLotteryTickets = body?.expectsLotteryTickets === true;
+  const sodaDailyPurchaseQuantity =
+    normalizedItems.find((item) => item.slug === MRBEAST_SODA_SLUG)
+      ?.quantity ?? 0;
+  const sodaDailyPurchaseKey =
+    sodaDailyPurchaseQuantity > 0
+      ? createMrBeastSodaDailyPurchaseKey({
+          userId: session.user.id,
+          slug: MRBEAST_SODA_SLUG,
+        })
+      : null;
   const lotteryTicketQuantity = lotteryConfig.enabled
-    ? (normalizedItems.find((item) => item.slug === MRBEAST_SODA_SLUG)
-        ?.quantity ?? 0)
+    ? sodaDailyPurchaseQuantity
     : 0;
   if (lotteryTicketQuantity > 0) {
     try {
@@ -277,6 +306,9 @@ export async function POST(request: Request) {
   const committed: { balance: number | null } = { balance: null };
   let response: NextResponse;
   try {
+    if (sodaDailyPurchaseKey) {
+      await prepareMrBeastSodaDailyPurchaseCounter(sodaDailyPurchaseKey);
+    }
     await prepareCharacterInventoryItemLocks(
       characterId,
       inventoryLockItemIds,
@@ -285,8 +317,25 @@ export async function POST(request: Request) {
       requestId,
       domain: "shop-checkout",
       actorId: session.user.id,
-      payload: { items: normalizedItems },
+      payload: {
+        items: normalizedItems,
+        ...(expectsLotteryTickets ? { expectsLotteryTickets: true } : {}),
+      },
       run: async (mongoSession) => {
+        if (
+          expectsLotteryTickets &&
+          sodaDailyPurchaseQuantity > 0 &&
+          !lotteryConfig.enabled
+        ) {
+          throw new ShopLotteryStateChangedError();
+        }
+        if (sodaDailyPurchaseKey) {
+          await incrementMrBeastSodaDailyPurchaseCounter({
+            key: sodaDailyPurchaseKey,
+            quantity: sodaDailyPurchaseQuantity,
+            session: mongoSession,
+          });
+        }
         await lockCharacterInventoryItems(
           characterId,
           inventoryLockItemIds,
@@ -355,6 +404,22 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
+    if (err instanceof ShopLotteryStateChangedError) {
+      return NextResponse.json(
+        { error: err.message, code: "LOTTERY_DISABLED" },
+        { status: 409 },
+      );
+    }
+    if (err instanceof MrBeastSodaDailyLimitError) {
+      return NextResponse.json(
+        {
+          error: err.message,
+          code: err.code,
+          limit: MRBEAST_SODA_DAILY_PURCHASE_LIMIT,
+        },
+        { status: 400 },
+      );
+    }
     const message = err instanceof Error ? err.message : "결제 실패";
     if (message.startsWith("OUT_OF_STOCK:")) {
       const slug = message.slice("OUT_OF_STOCK:".length);
@@ -363,7 +428,14 @@ export async function POST(request: Request) {
     if (message.includes("음수 잔액")) {
       return NextResponse.json({ error: "잔액이 부족합니다.", code: "INSUFFICIENT_BALANCE" }, { status: 400 });
     }
-    return NextResponse.json({ error: message, code: "CHECKOUT_TRANSACTION_FAILED" }, { status: 500 });
+    console.error("[shop/checkout] transaction failed", err);
+    return NextResponse.json(
+      {
+        error: "결제를 완료할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+        code: "CHECKOUT_TRANSACTION_FAILED",
+      },
+      { status: 500 },
+    );
   }
 
   if (committed.balance !== null) {
