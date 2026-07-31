@@ -4,8 +4,11 @@ import { ObjectId } from "mongodb";
 import { canViewCharacter } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole, isCharacterOwner } from "@/lib/auth/rbac";
-import { findCharacterById, listCharacters } from "@/lib/db/characters";
-import { listSessionReports } from "@/lib/db/session-reports";
+import {
+  findCharacterById,
+  findCharactersByCodenames,
+} from "@/lib/db/characters";
+import { findSessionReportsBySessionIds } from "@/lib/db/session-reports";
 import { getUserClearance, filterCharacterByClearance } from "@/lib/personnel";
 
 import DossierClient from "./DossierClient";
@@ -42,18 +45,20 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
       .map((relation) => relation.targetCodename)
       .filter((codename): codename is string => codename.trim().length > 0),
   );
-  // 두 조회는 서로 독립 — 병렬 로드 (조건 미충족 시 fetch 자체를 스킵, 빈 배열이면
-  // 아래 filter 체인이 그대로 빈 결과를 내 기존 분기와 동일).
+  // 두 조회는 서로 독립 — 병렬 로드 (조건 미충족 시 fetch 자체를 스킵).
+  // 전체 컬렉션 로드 + JS 필터 대신 sessionId / codename `$in` 조회로 좁힌다
+  // (정렬은 각 함수가 기존 목록 함수와 동일하게 유지 — 표시 순서 보존).
   const [reportsForEvents, charactersForRelations] = await Promise.all([
     eventIds.size > 0
-      ? listSessionReports().catch(() => [])
+      ? findSessionReportsBySessionIds(Array.from(eventIds)).catch(() => [])
       : Promise.resolve([]),
     relationTargetCodes.size > 0
-      ? listCharacters().catch(() => [])
+      ? findCharactersByCodenames(Array.from(relationTargetCodes)).catch(
+          () => [],
+        )
       : Promise.resolve([]),
   ]);
   const relatedReports = reportsForEvents
-    .filter((report) => eventIds.has(report.sessionId))
     .map((report) => ({
       id: report._id?.toString() ?? "",
       sessionId: report.sessionId,
@@ -64,10 +69,7 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
     .filter((report) => report.id.length > 0);
   const serializedRelatedReports = JSON.parse(JSON.stringify(relatedReports));
   const relatedCharacters = charactersForRelations
-    .filter((candidate) => {
-      if (!relationTargetCodes.has(candidate.codename)) return false;
-      return canEditDossier || candidate.isPublic !== false;
-    })
+    .filter((candidate) => canEditDossier || candidate.isPublic !== false)
     .map((candidate) => ({
       id: candidate._id?.toString() ?? "",
       codename: candidate.codename,

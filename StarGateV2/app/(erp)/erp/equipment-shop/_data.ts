@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
@@ -22,9 +22,9 @@ import {
 } from "@/lib/db/equipment-research";
 import { listMasterItemsByCategoryFilter } from "@/lib/db/inventory";
 import {
-  hasOwnedTowaskiLicense,
   emptyTowaskiLicenseAccess,
   listTowaskiLicenseAccess,
+  type TowaskiLicenseAccessSnapshot,
 } from "@/lib/db/equipment-licenses";
 import {
   applyAcheronArmorReferrals,
@@ -89,6 +89,12 @@ export async function buildEquipmentShopCatalogResponse(options: {
   zone?: EquipmentShopZone;
   character?: EquipmentLicenseCharacter | null;
   characterId?: string | null;
+  /**
+   * 호출자가 이미 시작한 listTowaskiLicenseAccess fetch 를 공유해 중복 조회를 회피
+   * (loadEquipmentShopPageData 의 기초 화기 라이선스 판정과 단일 fetch 공용).
+   * 미전달 시 characterId 기준으로 기존과 동일하게 자체 조회.
+   */
+  licenseAccess?: Promise<TowaskiLicenseAccessSnapshot>;
   armorReferral?: {
     token?: string | null;
     userId: string;
@@ -98,9 +104,10 @@ export async function buildEquipmentShopCatalogResponse(options: {
 } = {}): Promise<EquipmentShopCatalogResponse> {
   const [masterItems, licenseAccess, recentActivity] = await Promise.all([
     listMasterItemsByCategoryFilter(EQUIPMENT_SHOP_CATEGORIES),
-    options.characterId
-      ? listTowaskiLicenseAccess(options.characterId)
-      : Promise.resolve(emptyTowaskiLicenseAccess()),
+    options.licenseAccess ??
+      (options.characterId
+        ? listTowaskiLicenseAccess(options.characterId)
+        : Promise.resolve(emptyTowaskiLicenseAccess())),
     options.characterId
       ? listRecentEquipmentShopActivity(options.characterId).catch(() => [])
       : Promise.resolve([]),
@@ -178,7 +185,7 @@ export async function loadEquipmentShopPageData(
   const requireGm = options.requireGm ?? true;
   const includeResearch = options.includeResearch ?? true;
   const includeCatalog = options.includeCatalog ?? true;
-  const session = await auth();
+  const session = await getActiveSession();
   if (!session?.user) {
     redirect("/login");
   }
@@ -209,6 +216,14 @@ export async function loadEquipmentShopPageData(
   const referralToken = cookieStore.get(ARMOR_REFERRAL_COOKIE_NAME)?.value;
   const referralSecret = process.env.AUTH_SECRET;
 
+  // 라이선스 접근 스냅샷 단일 fetch — 카탈로그 빌더와 기초 화기 라이선스 판정이 공유.
+  // 기존 hasOwnedTowaskiLicense(마스터 findOne + 인벤 findOne 2 RTT)는 카탈로그가
+  // 이미 resolve 하는 ownedLicenseSlugs 와 중복이라 제거하고 여기서 파생한다
+  // (resolveTowaskiLicenseQualificationStatus.owned === quantity>0 보유 — 동일 판정).
+  const licenseAccessPromise = mainCharacterId
+    ? listTowaskiLicenseAccess(mainCharacterId)
+    : Promise.resolve(emptyTowaskiLicenseAccess());
+
   const [
     initialCatalog,
     initialResearch,
@@ -221,6 +236,7 @@ export async function loadEquipmentShopPageData(
         zone: options.catalogZone,
         character: mainCharacter,
         characterId: mainCharacterId,
+        licenseAccess: licenseAccessPromise,
         ...(mainCharacterId && referralSecret
           ? {
               armorReferral: {
@@ -281,12 +297,11 @@ export async function loadEquipmentShopPageData(
             () => [],
           )
         : Promise.resolve([]),
-      mainCharacterId
-        ? hasOwnedTowaskiLicense(
-            mainCharacterId,
-            TOWASKI_BASIC_FIREARM_LICENSE_SLUG,
-          ).catch(() => false)
-        : Promise.resolve(false),
+      licenseAccessPromise
+        .then((access) =>
+          access.ownedLicenseSlugs.has(TOWASKI_BASIC_FIREARM_LICENSE_SLUG),
+        )
+        .catch(() => false),
     ]);
 
   const initialCredits: CreditsResponse | undefined =

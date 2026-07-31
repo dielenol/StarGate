@@ -2,24 +2,25 @@ import "server-only";
 
 import type { StockAdminHoldingsResponse } from "@/hooks/queries/useStocksQuery";
 
-import { listCharacters } from "@/lib/db/characters";
+import { findCharactersByIdsLite } from "@/lib/db/characters";
 import { getAllHoldings, getStockPrices } from "@/lib/db/stocks";
 import { findUsersByIds } from "@/lib/db/users";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 import { roundStockValue } from "@/lib/stocks/pricing";
 
 export async function buildStockAdminHoldingsResponse(): Promise<StockAdminHoldingsResponse> {
-  const [holdings, prices, characters] = await Promise.all([
+  const [holdings, prices] = await Promise.all([
     getAllHoldings(),
     getStockPrices(),
-    listCharacters(),
   ]);
   const activeHoldings = holdings.filter((holding) => holding.shares > 0);
-  const characterIds = new Set(activeHoldings.map((holding) => holding.characterId));
+  // 전체 캐릭터 로드 + JS 필터 대신, 보유 장부에 등장하는 characterId 만 `$in` 경량 조회.
+  const characterIds = Array.from(
+    new Set(activeHoldings.map((holding) => holding.characterId)),
+  );
+  const characters = await findCharactersByIdsLite(characterIds);
   const characterById = new Map(
-    characters
-      .filter((character) => characterIds.has(String(character._id)))
-      .map((character) => [String(character._id), character]),
+    characters.map((character) => [String(character._id), character]),
   );
   const ownerIds = Array.from(
     new Set(

@@ -11,11 +11,14 @@
 
 import "server-only";
 
+import { cache } from "react";
+
 import {
   getHoldings,
   getStockPrices,
   listStockPriceHistory,
   listStockPriceHistoryBulk,
+  listStockPriceHistoryRowsBulk,
 } from "@/lib/db/stocks";
 import { buildStockMarketIndexHistory } from "@/lib/stocks/market-index";
 import { findStockByTicker, STOCK_CATALOG } from "@/lib/stocks/catalog";
@@ -150,9 +153,21 @@ export async function buildHistoryResponse(
 /* ── market wire (전 종목 최근 공시) ── */
 
 /**
+ * 카탈로그 전 종목의 최근 N 일 가격 이력 flat 행 — wire / index-history 빌더 공용 fetch.
+ *
+ * 종목별 `listStockPriceHistory` 루프(9 쿼리)를 단일 `$in` 벌크 1 쿼리로 대체.
+ * cache() 는 같은 RSC 렌더 패스에서 두 빌더가 동일 days 윈도를 읽을 때
+ * (스톡 페이지가 wire + index-history 를 동시 시드) DB 왕복을 1회로 합친다.
+ */
+const listCatalogHistoryRows = cache(async (days: number) => {
+  const tickers = STOCK_CATALOG.map((meta) => meta.ticker);
+  return listStockPriceHistoryRowsBulk(tickers, days);
+});
+
+/**
  * 전 종목 최근 가격 이벤트를 ORDO-NET 공시 피드 형태로 평탄화한다.
  *
- * - `listStockPriceHistory` 는 종목별 오름차순 반환이므로, 여기서 전체 내림차순 정렬.
+ * - 벌크 조회는 전체 오름차순 flat 배열이므로, 여기서 전체 내림차순 정렬.
  * - source 가 trade 인 과거 데이터가 생겨도 같은 피드에 섞어 보여준다.
  */
 export async function buildMarketWireResponse(
@@ -161,30 +176,28 @@ export async function buildMarketWireResponse(
 ): Promise<StockMarketWireResponse> {
   const safeDays = Math.max(1, Math.min(30, Math.floor(days)));
   const safeLimit = Math.max(1, Math.min(50, Math.floor(limit)));
-  const rows = await Promise.all(
-    STOCK_CATALOG.map(async (meta) => {
-      const history = await listStockPriceHistory(meta.ticker, safeDays);
-      return history.map((row) => {
-        const changePercent =
-          row.prevPrice > 0
-            ? ((row.price - row.prevPrice) / row.prevPrice) * 100
-            : 0;
-        return {
-          ticker: meta.ticker,
-          name: meta.name,
-          price: row.price,
-          prevPrice: row.prevPrice,
-          changePercent,
-          eventText: row.eventText ?? "공시 문구 미등록",
-          source: row.source,
-          createdAt: row.createdAt.toISOString(),
-        };
-      });
-    }),
+  const rows = await listCatalogHistoryRows(safeDays);
+  const nameByTicker = new Map(
+    STOCK_CATALOG.map((meta) => [meta.ticker, meta.name]),
   );
 
-  const items = rows
-    .flat()
+  const items: StockMarketWireResponse["items"] = rows
+    .map((row) => {
+      const changePercent =
+        row.prevPrice > 0
+          ? ((row.price - row.prevPrice) / row.prevPrice) * 100
+          : 0;
+      return {
+        ticker: row.ticker,
+        name: nameByTicker.get(row.ticker) ?? row.ticker,
+        price: row.price,
+        prevPrice: row.prevPrice,
+        changePercent,
+        eventText: row.eventText ?? "공시 문구 미등록",
+        source: row.source,
+        createdAt: row.createdAt.toISOString(),
+      };
+    })
     .sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -206,19 +219,9 @@ export async function buildMarketIndexHistoryResponse(
   days: number = 7,
 ): Promise<StockMarketIndexHistoryResponse> {
   const safeDays = Math.max(1, Math.min(30, Math.floor(days)));
-  const [prices, rowsByTicker] = await Promise.all([
+  const [prices, historyRows] = await Promise.all([
     getStockPrices(),
-    Promise.all(
-      STOCK_CATALOG.map(async (meta) => {
-        const rows = await listStockPriceHistory(meta.ticker, safeDays);
-        return rows.map((row) => ({
-          ticker: meta.ticker,
-          price: row.price,
-          prevPrice: row.prevPrice,
-          createdAt: row.createdAt,
-        }));
-      }),
-    ),
+    listCatalogHistoryRows(safeDays),
   ]);
   const priceByTicker = new Map(prices.map((price) => [price.ticker, price]));
   const currentQuotes = STOCK_CATALOG.map((meta) => {
@@ -229,8 +232,15 @@ export async function buildMarketIndexHistoryResponse(
       prevPrice: row?.prevPrice ?? meta.basePrice,
     };
   });
+  // buildStockMarketIndexHistory 는 entries 를 내부에서 createdAt 오름차순 재정렬하므로
+  // flat 벌크 행(전역 오름차순)을 그대로 넘겨도 기존 per-ticker 그룹 입력과 동일 결과.
   const points = buildStockMarketIndexHistory(
-    rowsByTicker.flat(),
+    historyRows.map((row) => ({
+      ticker: row.ticker,
+      price: row.price,
+      prevPrice: row.prevPrice,
+      createdAt: row.createdAt,
+    })),
     currentQuotes,
   );
   return { points, days: safeDays };

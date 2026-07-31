@@ -10,8 +10,8 @@ import { canViewPersonalInventory } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { findCharacterById } from "@/lib/db/characters";
 import {
+  findMasterItemsBySlugsOrIds,
   listCharacterInventoryEntries,
-  listMasterItems,
   listSharedInventory,
   serializeCharacterInventory,
 } from "@/lib/db/inventory";
@@ -99,8 +99,10 @@ export default async function CharacterInventoryPage({
 
   if (uniqueItemIds.length > 0) {
     try {
+      // 마스터 전체 로드 + JS 필터 대신 itemId(hex) `$in` 단일 조회.
+      // slug 일치로 섞여 들어올 수 있는 행은 아래 itemIdSet 필터가 걸러낸다 (기존 semantics 동일).
       const itemIdSet = new Set(uniqueItemIds);
-      const masters = (await listMasterItems()).filter(
+      const masters = (await findMasterItemsBySlugsOrIds(uniqueItemIds)).filter(
         (item) => item._id && itemIdSet.has(String(item._id)),
       );
       masterByItemId = new Map(

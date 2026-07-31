@@ -31,6 +31,11 @@ export function clampTeamResearchContribution(args: {
   return Math.min(args.requestedAmount, remaining);
 }
 
+/**
+ * 프로덕션 랭킹 경로는 `lib/db/equipment-research.ts` 의 aggregation 파이프라인이다.
+ * 본 함수는 그 파이프라인의 reference oracle (research-contributions.test.mjs 가 검증) —
+ * 랭킹 semantics(모수 1000 · 최신 codename · 2-key 정렬) 변경 시 양쪽을 함께 수정할 것.
+ */
 export function buildResearchContributionRankings(
   contributions: readonly ResearchContributionLike[],
 ): ResearchContributionRanking[] {

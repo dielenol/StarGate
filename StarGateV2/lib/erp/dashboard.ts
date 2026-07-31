@@ -15,15 +15,16 @@ import {
   listUserNotifications,
 } from "@/lib/db/notifications";
 import {
+  countMergedSessionsOnKstDate,
   countParticipationForUser,
   enrichSessions,
-  findMergedSessionsByGuildInMonth,
   findUpcomingSessionsByGuild,
 } from "@/lib/db/sessions";
 import { findUserById } from "@/lib/db/users";
-import { listWikiPagesLite } from "@/lib/db/wiki";
+import { listRecentWikiPagesLite } from "@/lib/db/wiki";
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const RECENT_WIKI_LIMIT = 3;
 
 function daysSinceCreated(createdAt: Date | string): number {
   const date =
@@ -89,7 +90,7 @@ export async function getErpDashboardResponse(input: {
     notifications,
     unreadCount,
     upcomingRaw,
-    todayMergedSessions,
+    todaySessionCount,
     mySessionCount,
     wikiPages,
   ] = await Promise.all([
@@ -101,18 +102,20 @@ export async function getErpDashboardResponse(input: {
     guildId
       ? findUpcomingSessionsByGuild(guildId, 20).catch(() => [])
       : Promise.resolve([]),
+    // 오늘 세션 수만 필요 — 한 달치 merged 목록 + enrich(3쿼리) 대신 경량 카운트.
+    // viewerDiscordId 는 카운트에 불필요해 전달하지 않는다.
     guildId
-      ? findMergedSessionsByGuildInMonth(
+      ? countMergedSessionsOnKstDate(
           guildId,
           todayKstYearMonth.year,
           todayKstYearMonth.monthIndex,
-          viewerDiscordId,
-        ).catch(() => [])
-      : Promise.resolve([]),
+          todayKst,
+        ).catch(() => 0)
+      : Promise.resolve(0),
     viewerDiscordId
       ? countParticipationForUser(viewerDiscordId).catch(() => 0)
       : Promise.resolve(null),
-    listWikiPagesLite().catch(() => []),
+    listRecentWikiPagesLite(RECENT_WIKI_LIMIT).catch(() => []),
   ]);
 
   const mainCharacter = mainCharacterResult.ok
@@ -161,18 +164,12 @@ export async function getErpDashboardResponse(input: {
     )
     .slice(0, 5)
     .map(({ raw }) => serializeDashboardSession(raw));
-  const recentWikis = [...wikiPages]
-    .sort(
-      (left, right) =>
-        new Date(right.updatedAt).getTime() -
-        new Date(left.updatedAt).getTime(),
-    )
-    .slice(0, 3)
-    .map((page) => ({
-      _id: page._id?.toString() ?? "",
-      title: page.title,
-      updatedAt: new Date(page.updatedAt).toISOString(),
-    }));
+  // listRecentWikiPagesLite 가 updatedAt 내림차순 + limit 을 DB 에서 적용 — 재정렬 불필요.
+  const recentWikis = wikiPages.map((page) => ({
+    _id: page._id?.toString() ?? "",
+    title: page.title,
+    updatedAt: new Date(page.updatedAt).toISOString(),
+  }));
   const notificationPreview = notifications.slice(0, 5).map(
     (notification) => ({
       ...notification,
@@ -180,11 +177,6 @@ export async function getErpDashboardResponse(input: {
       createdAt: new Date(notification.createdAt).toISOString(),
     }),
   );
-  const todaySessionCount = todayMergedSessions.filter(
-    (session) =>
-      session.status !== "CANCELED" &&
-      toKstDateString(session.targetDateTime) === todayKst,
-  ).length;
   const characterPointBalance =
     displayCharacter?.type === "AGENT"
       ? (displayCharacter.play?.points ?? 0)

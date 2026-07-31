@@ -313,3 +313,41 @@ export async function listChangeLogRewardedCharacterIdsBySession(
 
   return new Set(rows.map((row) => row.characterId.toString()));
 }
+
+/**
+ * 여러 세션의 자동 보상 change_log characterId 집합을 단일 `$in` 쿼리로 일괄 조회.
+ *
+ * `listChangeLogRewardedCharacterIdsBySession` 의 세션별 루프 호출(N+1) 대체용 —
+ * 필터(autoReward + revertedAt: null) semantics 는 단건 함수와 동일.
+ * 반환 Map 은 이력이 존재하는 sessionId 에만 엔트리를 가진다. 호출자는
+ * `get(sid) ?? 빈 Set` 폴백으로 소비 (단건 함수의 빈 Set 반환과 동일 semantics).
+ */
+export async function listChangeLogRewardedCharacterIdsBySessions(
+  sessionIds: string[],
+): Promise<Map<string, Set<string>>> {
+  const grouped = new Map<string, Set<string>>();
+  if (sessionIds.length === 0) return grouped;
+
+  const col = await characterChangeLogsCol();
+  const rows = await col
+    .find({
+      "metadata.autoReward": true,
+      "metadata.sessionId": { $in: sessionIds },
+      revertedAt: null,
+    })
+    .project<{ characterId: ObjectId; metadata?: { sessionId?: unknown } }>({
+      characterId: 1,
+      "metadata.sessionId": 1,
+    })
+    .toArray();
+
+  for (const row of rows) {
+    const sessionId =
+      typeof row.metadata?.sessionId === "string" ? row.metadata.sessionId : "";
+    if (!sessionId) continue;
+    const bucket = grouped.get(sessionId);
+    if (bucket) bucket.add(row.characterId.toString());
+    else grouped.set(sessionId, new Set([row.characterId.toString()]));
+  }
+  return grouped;
+}

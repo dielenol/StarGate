@@ -19,6 +19,8 @@ export {
   listPublicCharactersByType,
   findCharacterById,
   findCharacterByCodename,
+  findCharactersByIdsLite,
+  findCharactersByCodenames,
   listCharactersByOwner,
   listCharactersByOwnerIds,
   findMainCharacterByOwner,

@@ -262,6 +262,42 @@ function serializeEnrichedSessions(
  * @param monthIndex 0-11 (JS Date month index)
  * @param viewerDiscordId 현재 유저 discord id — myRsvp 계산용
  */
+/**
+ * registra + trpg 월간 세션 2소스 fetch — `Promise.allSettled` 격리 공통부.
+ * 한쪽 실패 시 console.error 흔적 + 빈 배열 폴백 (다른 쪽은 그대로 노출).
+ */
+async function fetchMergedMonthSources(
+  guildId: string,
+  year: number,
+  monthIndex: number,
+  viewer: string | null,
+  logTag: string,
+): Promise<{
+  registraRaw: Awaited<ReturnType<typeof findSessionsByGuildInMonth>>;
+  trpgSerialized: SerializedSession[];
+}> {
+  const [registraRawResult, trpgSerializedResult] = await Promise.allSettled([
+    findSessionsByGuildInMonth(guildId, year, monthIndex),
+    fetchTrpgSessionsAsSerialized(year, monthIndex, viewer),
+  ]);
+
+  if (registraRawResult.status === "rejected") {
+    console.error(`[${logTag}] registra fetch failed`, registraRawResult.reason);
+  }
+  if (trpgSerializedResult.status === "rejected") {
+    console.error(`[${logTag}] trpg fetch failed`, trpgSerializedResult.reason);
+  }
+
+  return {
+    registraRaw:
+      registraRawResult.status === "fulfilled" ? registraRawResult.value : [],
+    trpgSerialized:
+      trpgSerializedResult.status === "fulfilled"
+        ? trpgSerializedResult.value
+        : [],
+  };
+}
+
 export async function findMergedSessionsByGuildInMonth(
   guildId: string,
   year: number,
@@ -270,30 +306,13 @@ export async function findMergedSessionsByGuildInMonth(
 ): Promise<SerializedSession[]> {
   const viewer = viewerDiscordId ?? null;
 
-  const [registraRawResult, trpgSerializedResult] = await Promise.allSettled([
-    findSessionsByGuildInMonth(guildId, year, monthIndex),
-    fetchTrpgSessionsAsSerialized(year, monthIndex, viewer),
-  ]);
-
-  if (registraRawResult.status === "rejected") {
-    console.error(
-      "[findMergedSessions] registra fetch failed",
-      registraRawResult.reason,
-    );
-  }
-  if (trpgSerializedResult.status === "rejected") {
-    console.error(
-      "[findMergedSessions] trpg fetch failed",
-      trpgSerializedResult.reason,
-    );
-  }
-
-  const registraRaw =
-    registraRawResult.status === "fulfilled" ? registraRawResult.value : [];
-  const trpgSerialized =
-    trpgSerializedResult.status === "fulfilled"
-      ? trpgSerializedResult.value
-      : [];
+  const { registraRaw, trpgSerialized } = await fetchMergedMonthSources(
+    guildId,
+    year,
+    monthIndex,
+    viewer,
+    "findMergedSessions",
+  );
 
   const registraEnriched = await enrichSessions(registraRaw, viewer);
   const registraSerialized = serializeEnrichedSessions(registraEnriched);
@@ -302,6 +321,64 @@ export async function findMergedSessionsByGuildInMonth(
   return [...registraSerialized, ...trpgSerialized].sort((a, b) =>
     a.targetDateTime.localeCompare(b.targetDateTime),
   );
+}
+
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/**
+ * Date / ISO 문자열을 KST 날짜 문자열(YYYY-MM-DD)로 변환.
+ * Invalid Date 는 null 반환 — 날짜 비교에서 항상 불일치 처리 (throw 하지 않음).
+ */
+function toKstDateStringOrNull(value: Date | string): string | null {
+  const date = typeof value === "string" ? new Date(value) : value;
+  const time = date.getTime();
+  if (Number.isNaN(time)) return null;
+  return new Date(time + KST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/**
+ * registra + trpg 두 소스에서 특정 KST 날짜의 세션 수(취소 제외)를 합산한다.
+ *
+ * `findMergedSessionsByGuildInMonth` 결과를 "오늘 + status !== CANCELED" 로 필터해
+ * count 만 쓰던 경로(대시보드 todaySessionCount) 전용 경량 버전 —
+ * `enrichSessions`(responses/users/characters 3쿼리) 와 직렬화를 생략한다.
+ *
+ * semantics 근거:
+ * - registra 는 raw `Session.status` 가 직렬화(serializeEnrichedSessions)에서 그대로
+ *   통과되므로 raw 필터와 직렬화 후 필터가 동일 (`SessionStatus` 도메인 공유).
+ * - trpg 는 `fetchTrpgSessionsAsSerialized` 를 그대로 사용해 상태 매핑
+ *   (open→OPEN/CLOSED, cancelled→CANCELED) 과 invalid row skip 규칙을 보존.
+ * - 두 fetch 는 기존과 동일하게 `Promise.allSettled` 격리 (한쪽 실패 시 다른 쪽 카운트 유지).
+ *
+ * @param kstDateString `YYYY-MM-DD` (KST) — 호출자가 KST 기준으로 산출해 전달
+ */
+export async function countMergedSessionsOnKstDate(
+  guildId: string,
+  year: number,
+  monthIndex: number,
+  kstDateString: string,
+): Promise<number> {
+  const { registraRaw, trpgSerialized } = await fetchMergedMonthSources(
+    guildId,
+    year,
+    monthIndex,
+    null,
+    "countMergedSessionsOnKstDate",
+  );
+
+  const isOnDate = (targetDateTime: Date | string): boolean =>
+    toKstDateStringOrNull(targetDateTime) === kstDateString;
+
+  const registraCount = registraRaw.filter(
+    (session) =>
+      session.status !== "CANCELED" && isOnDate(session.targetDateTime),
+  ).length;
+  const trpgCount = trpgSerialized.filter(
+    (session) =>
+      session.status !== "CANCELED" && isOnDate(session.targetDateTime),
+  ).length;
+
+  return registraCount + trpgCount;
 }
 
 /**

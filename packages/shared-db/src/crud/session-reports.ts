@@ -23,6 +23,37 @@ export async function findReportBySessionId(
   return col.findOne({ sessionId });
 }
 
+/** 세션 연관 카드 표시용 경량 리포트 행. */
+export type SessionReportRefLite = Pick<
+  SessionReport,
+  "_id" | "sessionId" | "sessionTitle" | "locationLabel" | "createdAt"
+>;
+
+/**
+ * 여러 sessionId 의 리포트를 연관 표시 필드만으로 일괄 조회.
+ *
+ * 신원조회(Dossier) 등장 이벤트 카드처럼 sessionId → 제목/장소 매핑만 필요한 경로 전용
+ * (`listSessionReports()` 전체 로드 + JS 필터 대체).
+ * - 정렬은 `listSessionReports` 와 동일한 `{ createdAt: -1 }` — 목록 대체 시 표시 순서 보존.
+ * - 빈 배열 입력은 즉시 short-circuit.
+ */
+export async function findSessionReportsBySessionIds(
+  sessionIds: string[]
+): Promise<SessionReportRefLite[]> {
+  if (sessionIds.length === 0) return [];
+  const col = await sessionReportsCol();
+  return col
+    .find({ sessionId: { $in: sessionIds } })
+    .project<SessionReportRefLite>({
+      sessionId: 1,
+      sessionTitle: 1,
+      locationLabel: 1,
+      createdAt: 1,
+    })
+    .sort({ createdAt: -1 })
+    .toArray();
+}
+
 export async function findReportById(id: string): Promise<SessionReport | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await sessionReportsCol();

@@ -28,4 +28,5 @@ export {
   listCreditTransactionsFiltered,
   countCreditTransactionsFiltered,
   findTransactionsBySessionMetadata,
+  findTransactionsBySessionMetadataBulk,
 } from "@stargate/shared-db";

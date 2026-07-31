@@ -8,6 +8,7 @@ export {
   listSessionReports,
   findReportBySessionId,
   findReportById,
+  findSessionReportsBySessionIds,
   createSessionReport,
   updateSessionReport,
   deleteSessionReport,

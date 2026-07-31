@@ -136,6 +136,75 @@ export async function findCharacterByCodename(
   return col.findOne({ codename });
 }
 
+/** 캐릭터 식별/표시용 초경량 행 — lore/play 시트 제외. */
+export type CharacterIdentityLite = Pick<
+  Character,
+  "_id" | "codename" | "type" | "ownerId"
+>;
+
+/**
+ * 여러 캐릭터 `_id`(hex 문자열)를 식별/표시 필드만으로 일괄 조회.
+ *
+ * 주식 관리자 보드처럼 characterId → codename/type/ownerId 매핑만 필요한 경로 전용
+ * (`listCharacters()` 전체 로드 + JS 필터 대체).
+ * - 유효하지 않은 hex 는 사전 필터링 (`findCharacterById` 의 null 반환과 동일하게 누락).
+ * - 빈/전부 무효 입력은 즉시 short-circuit.
+ */
+export async function findCharactersByIdsLite(
+  ids: string[]
+): Promise<CharacterIdentityLite[]> {
+  if (ids.length === 0) return [];
+  const objectIds: ObjectId[] = [];
+  for (const id of ids) {
+    if (ObjectId.isValid(id)) objectIds.push(new ObjectId(id));
+  }
+  if (objectIds.length === 0) return [];
+  const col = await charactersCol();
+  return col
+    .find({ _id: { $in: objectIds } })
+    .project<CharacterIdentityLite>({
+      codename: 1,
+      type: 1,
+      ownerId: 1,
+    })
+    .toArray();
+}
+
+/** codename 매칭 캐릭터의 dossier 연관 표시용 경량 행. */
+export type CharacterRelationLite = Pick<
+  Character,
+  "_id" | "codename" | "type" | "agentLevel" | "isPublic"
+> & {
+  lore: Pick<Character["lore"], "name" | "nickname">;
+};
+
+/**
+ * 여러 codename 의 캐릭터를 연관 표시 필드만으로 일괄 조회.
+ *
+ * 신원조회(Dossier) 관계 카드처럼 codename → 표시명/등급 매핑만 필요한 경로 전용
+ * (`listCharacters()` 전체 로드 + JS 필터 대체).
+ * - 정렬은 `listCharacters` 와 동일한 `{ type: 1, codename: 1 }` — 목록 대체 시 표시 순서 보존.
+ * - 빈 배열 입력은 즉시 short-circuit.
+ */
+export async function findCharactersByCodenames(
+  codenames: string[]
+): Promise<CharacterRelationLite[]> {
+  if (codenames.length === 0) return [];
+  const col = await charactersCol();
+  return col
+    .find({ codename: { $in: codenames } })
+    .project<CharacterRelationLite>({
+      codename: 1,
+      type: 1,
+      agentLevel: 1,
+      isPublic: 1,
+      "lore.name": 1,
+      "lore.nickname": 1,
+    })
+    .sort({ type: 1, codename: 1 })
+    .toArray();
+}
+
 export async function listCharactersByOwner(
   ownerId: string
 ): Promise<Pick<Character, "_id" | "agentLevel" | "codename">[]> {

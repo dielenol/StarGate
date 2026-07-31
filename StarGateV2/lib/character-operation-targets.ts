@@ -1,3 +1,7 @@
+import "server-only";
+
+import { cache } from "react";
+
 import type {
   AgentCharacter,
   Character,
@@ -72,28 +76,35 @@ export function selectOperationMainCharacterForUser(
   return { character: null, integrity: false, isNpcFallback: false };
 }
 
-export async function listUsersWithOperationMainCharacters(): Promise<
-  UserOperationMainSelection[]
-> {
-  const users = await listUsers();
-  const characters = await listCharactersByOwnerIds(users.map((u) => u._id));
-  const charactersByOwner = new Map<string, OperationTargetCharacter[]>();
+/**
+ * 전체 user + 소유 캐릭터를 스캔해 user 별 운영 메인 선택 결과를 만든다.
+ *
+ * cache() 는 같은 RSC 렌더 패스에서 여러 빌더(KPI/잔액/로그/발급 타깃)가 본 함수(또는
+ * 이를 경유하는 파생 함수)를 재호출해도 users + characters 스캔을 1회로 합친다.
+ * API 라우트 단건 호출에서는 무해 (lib/db/erp-page-locks.ts 와 동일 패턴).
+ */
+export const listUsersWithOperationMainCharacters = cache(
+  async (): Promise<UserOperationMainSelection[]> => {
+    const users = await listUsers();
+    const characters = await listCharactersByOwnerIds(users.map((u) => u._id));
+    const charactersByOwner = new Map<string, OperationTargetCharacter[]>();
 
-  for (const character of characters) {
-    if (!character.ownerId) continue;
-    const list = charactersByOwner.get(character.ownerId);
-    if (list) list.push(character);
-    else charactersByOwner.set(character.ownerId, [character]);
-  }
+    for (const character of characters) {
+      if (!character.ownerId) continue;
+      const list = charactersByOwner.get(character.ownerId);
+      if (list) list.push(character);
+      else charactersByOwner.set(character.ownerId, [character]);
+    }
 
-  return users.map((user) => ({
-    user,
-    ...selectOperationMainCharacterForUser(
+    return users.map((user) => ({
       user,
-      charactersByOwner.get(user._id) ?? [],
-    ),
-  }));
-}
+      ...selectOperationMainCharacterForUser(
+        user,
+        charactersByOwner.get(user._id) ?? [],
+      ),
+    }));
+  },
+);
 
 export async function listGmNpcFallbackCharacters(): Promise<
   OperationTargetCharacter[]
@@ -104,18 +115,23 @@ export async function listGmNpcFallbackCharacters(): Promise<
     .map((entry) => entry.character!);
 }
 
-export async function listCreditOperationCharacters(): Promise<
-  OperationTargetCharacter[]
-> {
-  const [mainAgents, npcFallbacks] = await Promise.all([
-    listAgentCharacters("MAIN"),
-    listGmNpcFallbackCharacters(),
-  ]);
+/**
+ * cache() 근거는 `listUsersWithOperationMainCharacters` 와 동일 — /erp/admin/credits
+ * 서버 진입 시 KPI/잔액/로그 빌더 3곳이 재호출하므로 `listAgentCharacters("MAIN")`
+ * 조회까지 렌더 패스당 1회로 합친다.
+ */
+export const listCreditOperationCharacters = cache(
+  async (): Promise<OperationTargetCharacter[]> => {
+    const [mainAgents, npcFallbacks] = await Promise.all([
+      listAgentCharacters("MAIN"),
+      listGmNpcFallbackCharacters(),
+    ]);
 
-  return [...mainAgents, ...npcFallbacks].filter(
-    (character) => character.isPublic !== false,
-  );
-}
+    return [...mainAgents, ...npcFallbacks].filter(
+      (character) => character.isPublic !== false,
+    );
+  },
+);
 
 export async function listInventoryOperationCharacters(): Promise<
   OperationTargetCharacter[]

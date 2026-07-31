@@ -640,3 +640,32 @@ export async function listStockPriceHistoryBulk(
 
   return result.map((row) => ({ ticker: row._id, points: row.points }));
 }
+
+/**
+ * 다수 ticker 의 최근 N 일 가격 이력 "원본 행"을 단일 `$in` 쿼리로 일괄 조회.
+ *
+ * `listStockPriceHistory` 의 종목별 루프 호출(N+1) 대체용 — 시장 공시 피드(wire)와
+ * 종합지수 시계열처럼 prevPrice / eventText / source 등 원본 필드가 필요한 경로 전용.
+ * (ts/price 포인트만 필요하면 `listStockPriceHistoryBulk` 사용.)
+ *
+ * - tickers: 조회 대상. 빈 배열이면 즉시 `[]` 반환 (round-trip 절약).
+ * - days: 조회 기간 (기본 7 일 — 단건 `listStockPriceHistory` 의 기본 30 일과 다름).
+ * - 반환은 전체 ticker 를 섞은 flat 배열 · createdAt 오름차순 — ticker 별 그룹핑은 호출자 몫.
+ * - limit: `500 * tickers.length` 글로벌 캡 — semantics 가 아니라 payload 가드.
+ *   단건의 per-ticker 500 상한과의 truncation 경계 차이는 가드가 발동하는
+ *   비정상 볼륨(종목당 7일 500행 초과)에서만 존재한다.
+ * - 인덱스: `{ ticker: 1, createdAt: -1 }` 활용.
+ */
+export async function listStockPriceHistoryRowsBulk(
+  tickers: string[],
+  days: number = 7,
+): Promise<StockPriceHistory[]> {
+  if (tickers.length === 0) return [];
+  const col = await stockPriceHistoryCol();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  return col
+    .find({ ticker: { $in: tickers }, createdAt: { $gte: since } })
+    .sort({ createdAt: 1 })
+    .limit(500 * tickers.length)
+    .toArray();
+}

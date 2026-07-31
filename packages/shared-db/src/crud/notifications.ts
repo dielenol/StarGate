@@ -2,7 +2,7 @@
  * notifications CRUD
  */
 
-import { MongoServerError, ObjectId } from "mongodb";
+import { MongoBulkWriteError, MongoServerError, ObjectId } from "mongodb";
 
 import type {
   CreateNotificationInput,
@@ -16,10 +16,11 @@ export async function listUserNotifications(
   limit = 50
 ): Promise<Notification[]> {
   const col = await notificationsCol();
+  // _id 보조 키: 벌크 insert 배치가 createdAt 을 공유하므로 동점 순서를 결정적으로.
   return col
     .find({ userId })
     .project<Notification>({ dedupeKey: 0 })
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .limit(limit)
     .toArray();
 }
@@ -40,6 +41,46 @@ export async function createNotification(
   };
   const result = await col.insertOne(doc);
   return { ...doc, _id: result.insertedId };
+}
+
+/**
+ * 여러 알림을 단일 `insertMany` 로 일괄 생성 — 브로드캐스트의 건별 insert(N+1) 대체용.
+ *
+ * doc shape 는 `createNotification` 과 동일 (`isRead: false` + `createdAt: now`).
+ * `ordered: false` 로 개별 실패(예: dedupeKey partial unique 충돌)를 허용한다 —
+ * `MongoBulkWriteError` 는 흡수하고 성공/실패 건수만 warn 로그로 남긴다.
+ * 그 외 에러(연결 실패 등)는 호출자에게 전파.
+ *
+ * @returns 실제 insert 된 문서 수
+ */
+export async function createNotificationsBulk(
+  inputs: readonly CreateNotificationInput[]
+): Promise<number> {
+  if (inputs.length === 0) return 0;
+  const col = await notificationsCol();
+  const now = new Date();
+  const docs: Notification[] = inputs.map((input) => ({
+    ...input,
+    isRead: false,
+    createdAt: now,
+  }));
+  try {
+    const result = await col.insertMany(docs, { ordered: false });
+    return result.insertedCount;
+  } catch (error) {
+    if (error instanceof MongoBulkWriteError) {
+      const insertedCount = error.insertedCount ?? 0;
+      const failedCount = Array.isArray(error.writeErrors)
+        ? error.writeErrors.length
+        : 1;
+      console.warn(
+        `[notifications] createNotificationsBulk partial failure — ` +
+          `inserted=${insertedCount}/${docs.length}, failed=${failedCount}`
+      );
+      return insertedCount;
+    }
+    throw error;
+  }
 }
 
 export interface CreateNotificationOnceResult {

@@ -15,9 +15,13 @@ import type {
   SessionRewardCandidate,
 } from "@/types/credit-admin";
 
-import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
-import { listChangeLogRewardedCharacterIdsBySession } from "@/lib/db/character-points";
-import { findTransactionsBySessionMetadata } from "@/lib/db/credits";
+import {
+  selectOperationMainCharacterForUser,
+  type OperationTargetCharacter,
+} from "@/lib/character-operation-targets";
+import { listCharactersByOwnerIds } from "@/lib/db/characters";
+import { listChangeLogRewardedCharacterIdsBySessions } from "@/lib/db/character-points";
+import { findTransactionsBySessionMetadataBulk } from "@/lib/db/credits";
 import {
   findResponsesBySessionIds,
   findUsersByDiscordIds,
@@ -55,8 +59,8 @@ export interface RawSessionLike {
  * 단계:
  *  1) 모든 세션의 YES 응답 batch 조회
  *  2) discordId 로 user batch 매핑
- *  3) ownerId 별 메인 캐릭터 조회 (1인 1 MAIN 위반은 throw → integrity-violation)
- *  4) 세션별 자동 보상 트랜잭션 조회 (이미 발급된 character 검출 → already-rewarded)
+ *  3) ownerId 소유 캐릭터 batch 조회 → 운영 메인 JS 판정 (1인 1 MAIN 위반 → integrity-violation)
+ *  4) 세션별 자동 보상 이력 batch 조회 (이미 발급된 character 검출 → already-rewarded)
  *  5) 응답자마다 분기 라벨링
  *
  * silent drop 금지 — 모든 응답자는 status 와 함께 노출된다.
@@ -79,44 +83,63 @@ export async function buildSessionRewardCandidates(
   const users = await findUsersByDiscordIds(allDiscordIds);
   const userByDiscordId = new Map(users.map((u) => [u.discordId!, u]));
 
-  // (3) ownerId 별 메인 캐릭. findMainCharacterByOwner 는 1인 1 MAIN 위반 시 throw.
+  // (3) ownerId 별 메인 캐릭 — owner 별 개별 조회(N+1) 대신 소유 캐릭터 단일 `$in`
+  // 조회 후 JS 판정. `selectOperationMainCharacterForUser` 는 findMainCharacterByOwner
+  // 와 동일 semantics: AGENT + (tier MAIN | 미설정) 1건 → 메인, 복수 → integrity 위반,
+  // 0건이면 ACTIVE GM 소유 단일 NPC fallback (복수 → integrity 위반).
   type MainEntry =
-    | { main: NonNullable<Awaited<ReturnType<typeof findMainCharacterByOwner>>>; integrity: false }
+    | { main: OperationTargetCharacter; integrity: false }
     | { main: null; integrity: false }
     | { main: null; integrity: true };
 
   const ownerIds = Array.from(new Set(users.map((u) => u._id!.toString())));
-  const mainByOwnerId = new Map<string, MainEntry>();
-  await Promise.all(
-    ownerIds.map(async (ownerId) => {
-      try {
-        const main = await findMainCharacterByOwner(ownerId);
-        if (main) {
-          mainByOwnerId.set(ownerId, { main, integrity: false });
-        } else {
-          mainByOwnerId.set(ownerId, { main: null, integrity: false });
-        }
-      } catch {
-        mainByOwnerId.set(ownerId, { main: null, integrity: true });
-      }
-    }),
-  );
+  const ownedCharacters = await listCharactersByOwnerIds(ownerIds);
+  const ownedByOwnerId = new Map<string, OperationTargetCharacter[]>();
+  for (const character of ownedCharacters) {
+    if (!character.ownerId) continue;
+    const bucket = ownedByOwnerId.get(character.ownerId);
+    if (bucket) bucket.push(character);
+    else ownedByOwnerId.set(character.ownerId, [character]);
+  }
 
-  // (4) 세션별 자동 보상 트랜잭션 batch — 세션마다 1회 호출 (인덱스 partial).
+  const mainByOwnerId = new Map<string, MainEntry>();
+  for (const user of users) {
+    const ownerId = user._id!.toString();
+    const selection = selectOperationMainCharacterForUser(
+      { _id: ownerId, role: user.role, status: user.status },
+      ownedByOwnerId.get(ownerId) ?? [],
+    );
+    if (selection.integrity) {
+      mainByOwnerId.set(ownerId, { main: null, integrity: true });
+    } else if (selection.character) {
+      mainByOwnerId.set(ownerId, {
+        main: selection.character,
+        integrity: false,
+      });
+    } else {
+      mainByOwnerId.set(ownerId, { main: null, integrity: false });
+    }
+  }
+
+  // (4) 세션별 자동 보상 이력 — 세션당 2쿼리 루프 대신 소스별 단일 `$in` 배치
+  // ((1) findResponsesBySessionIds / (2) findUsersByDiscordIds 와 동일 패턴).
+  const [creditRewardedRows, changeLogRewardedBySession] = await Promise.all([
+    findTransactionsBySessionMetadataBulk(sessionIds),
+    listChangeLogRewardedCharacterIdsBySessions(sessionIds),
+  ]);
   const rewardedByCharacterBySession = new Map<string, Set<string>>();
-  await Promise.all(
-    sessionIds.map(async (sid) => {
-      const [creditRewarded, changeLogRewarded] = await Promise.all([
-        findTransactionsBySessionMetadata(sid),
-        listChangeLogRewardedCharacterIdsBySession(sid),
-      ]);
-      const charSet = new Set([
-        ...creditRewarded.map((t) => t.characterId),
-        ...changeLogRewarded,
-      ]);
-      rewardedByCharacterBySession.set(sid, charSet);
-    }),
-  );
+  for (const sid of sessionIds) {
+    rewardedByCharacterBySession.set(
+      sid,
+      new Set(changeLogRewardedBySession.get(sid) ?? []),
+    );
+  }
+  for (const tx of creditRewardedRows) {
+    const sid =
+      typeof tx.metadata?.sessionId === "string" ? tx.metadata.sessionId : "";
+    if (!sid) continue;
+    rewardedByCharacterBySession.get(sid)?.add(tx.characterId);
+  }
 
   // 세션별 응답 그룹핑.
   const yesBySessionId = new Map<string, typeof yesResponses>();

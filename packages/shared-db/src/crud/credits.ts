@@ -637,3 +637,28 @@ export async function findTransactionsBySessionMetadata(
     .sort({ createdAt: -1 })
     .toArray();
 }
+
+/**
+ * 여러 세션의 자동 보상 이력을 단일 `$in` 쿼리로 일괄 조회.
+ *
+ * `findTransactionsBySessionMetadata` 의 세션별 루프 호출(N+1) 대체용 —
+ * 세션 자동 보상 후보 빌더가 already-rewarded 라벨링에 사용한다.
+ * 세션별 그룹핑은 호출자가 `metadata.sessionId` 로 수행.
+ *
+ * - 빈 sessionId 는 사전 필터링, 전부 비면 즉시 short-circuit.
+ * - 인덱스: `credit_transactions_metadata_sessionId_autoReward` (partial sparse) 활용.
+ */
+export async function findTransactionsBySessionMetadataBulk(
+  sessionIds: string[]
+): Promise<CreditTransaction[]> {
+  const validIds = sessionIds.filter((id) => id.length > 0);
+  if (validIds.length === 0) return [];
+  const col = await creditTransactionsCol();
+  return col
+    .find({
+      "metadata.sessionId": { $in: validIds },
+      "metadata.autoReward": true,
+    })
+    .sort({ createdAt: -1 })
+    .toArray();
+}

@@ -1,7 +1,10 @@
 import type { CreateNotificationInput } from "@/types/notification";
 import type { UserPublic } from "@/types/user";
 
-import { createNotification } from "@/lib/db/notifications";
+import {
+  createNotification,
+  createNotificationsBulk,
+} from "@/lib/db/notifications";
 import { listUsers } from "@/lib/db/users";
 
 type NotificationPayload = Omit<CreateNotificationInput, "userId">;
@@ -41,8 +44,16 @@ export async function notifyUser(
 export async function notifyUsers(
   inputs: readonly CreateNotificationInput[],
 ): Promise<void> {
-  for (const input of inputs) {
-    await notifyUser(input);
+  if (inputs.length === 0) return;
+  try {
+    // 건별 insert 직렬 루프(N 왕복) 대신 단일 insertMany.
+    // 개별 문서 실패는 createNotificationsBulk 가 흡수 (ordered: false + warn 로그).
+    await createNotificationsBulk(inputs);
+  } catch (error) {
+    console.warn("[notifications] bulk create failed", {
+      count: inputs.length,
+      error: getNotificationErrorMessage(error),
+    });
   }
 }
 

@@ -63,6 +63,31 @@ export async function listWikiPagesLite(): Promise<WikiPageLite[]> {
     .toArray();
 }
 
+/**
+ * 최근 갱신 순 상위 N 개의 초경량 위키 행 — 대시보드 "최근 위키" 카드 전용.
+ *
+ * `listWikiPagesLite` 전체 로드 + JS 재정렬 대체: projection 을 title/updatedAt 만으로
+ * 더 좁히고 정렬(`updatedAt: -1`)·limit 을 DB 로 내린다.
+ * 카테고리/공개여부 등 목록 필드가 필요한 화면은 `listWikiPagesLite` 를 사용할 것.
+ * limit ≤ 0 은 빈 배열 — Mongo `limit(0)` 의 "무제한" 함정 방지.
+ */
+export async function listRecentWikiPagesLite(
+  limit: number
+): Promise<Pick<WikiPageLite, "_id" | "title" | "updatedAt">[]> {
+  if (limit <= 0) return [];
+  const col = await wikiPagesCol();
+  return col
+    .find()
+    .project<Pick<WikiPageLite, "_id" | "title" | "updatedAt">>({
+      _id: 1,
+      title: 1,
+      updatedAt: 1,
+    })
+    .sort({ updatedAt: -1 })
+    .limit(limit)
+    .toArray();
+}
+
 export async function listPublicWikiPages(): Promise<WikiPage[]> {
   const col = await wikiPagesCol();
   return col
