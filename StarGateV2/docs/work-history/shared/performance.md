@@ -18,3 +18,12 @@
 - wiki 목록의 동일 배열 이중 props 전달 제거.
 - 검증: `pnpm lint`, `pnpm typecheck`, `pnpm build`, 등가성 테스트 15건
 - 관련 커밋: `a174e28`
+
+## 2026-07-31 · 성능 최적화 · 클라이언트 번들·헤더·전송 (성능 캠페인 Phase 3)
+
+- socket.io-client를 dynamic import로 전환 — realtime off(현 운영 기본) 동안 전 ERP 라우트 초기 번들에서 소켓 청크 제외 (빌드 매니페스트 미참조 확인). 재연결 갭 복구는 realtime 매핑 키로 한정.
+- ERP 헤더 BGM 진행 표시를 4Hz setState에서 ref 직접 기록으로 — 재생 중 헤더(알림 드롭다운 포함) 리렌더 0.
+- jsonWithETag 공용 헬퍼 + 핫 폴링 GET 5곳(trades/dashboard/notifications×2/page-locks) 304 재검증. 디스크 캐시 잔존 트레이드오프는 내부 ERP·개인 단말 전제로 수용 (공용 단말 도입 시 재검토 — 헬퍼 문서 명시).
+- 응답 배열 소스 7곳 정렬 보조 키 — ETag 플랩 차단 겸 표시 순서 결정화.
+- 검증: 계약/단위 테스트 12건(realtime 9 + http-cache 5 중 12 green), 전 스위트 회귀 없음, `pnpm lint`, `pnpm typecheck`, `pnpm build`
+- 관련 커밋: `c10bc33`, `1b3bf56`, `0390f80`

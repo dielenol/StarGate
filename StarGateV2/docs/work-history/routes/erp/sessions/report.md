@@ -27,3 +27,9 @@
 - GM 이 본문에 직접 쓴 participants 원문 문자열은 그대로 유지 (DB 조인 표시만 게이트).
 - 검증: 마스킹 후 연관 매칭 생존 테스트(appearsInEvents/codename/닉네임), validator 재검 PASS
 - 관련 커밋: `3492c1b`
+
+## 2026-07-31 · 성능 최적화 · 본문 마크다운 메모이제이션
+
+- 보고서 본문 renderMarkdown을 useMemo로 전환 — 60초 폴링 tick마다 재파싱하던 것 제거 (위키 상세와 동일 패턴).
+- 검증: `pnpm build`
+- 관련 커밋: `1b3bf56`

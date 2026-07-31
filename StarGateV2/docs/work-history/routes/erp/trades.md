@@ -15,3 +15,10 @@
 - staleTime을 1초→5초로 정렬했다.
 - 검증: TanStack v5 실런타임 리페치 테스트 5건, `pnpm lint`, `pnpm typecheck`, `pnpm build`
 - 관련 커밋: `bce9d0a`
+
+## 2026-07-31 · 성능 최적화 · 카드 메모이제이션과 304 재검증
+
+- 거래 카드(TradeCard)를 React.memo + useCallback으로 안정화 — 10초 폴링에서 데이터 불변 시 카드 리렌더 0 (뮤테이션 즉시 갱신은 invalidate 경로 보존).
+- 거래 목록 GET에 ETag/304 재검증 도입 — 데이터 불변 시 응답 바디 0B. 거래 목록/상대 목록 정렬에 보조 키를 추가해 동점 순서 플립(ETag 플랩 + 목록 재정렬) 차단.
+- 검증: realtime/http-cache 계약 테스트, `pnpm lint`, `pnpm typecheck`, `pnpm build`
+- 관련 커밋: `1b3bf56`, `0390f80`
