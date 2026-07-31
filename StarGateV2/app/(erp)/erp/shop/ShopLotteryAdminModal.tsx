@@ -9,6 +9,7 @@ import {
   useShopLotteryAdminConfig,
 } from "@/hooks/queries/useShopQuery";
 
+import ShopLotteryEventPreviewModal from "./ShopLotteryEventPreviewModal";
 import styles from "./ShopLotteryAdminModal.module.css";
 
 interface Props {
@@ -43,6 +44,7 @@ export default function ShopLotteryAdminModal({ onClose }: Props) {
   const configQuery = useShopLotteryAdminConfig({ enabled: true });
   const updateMutation = useUpdateShopLotteryAdminConfig();
   const [conflictError, setConflictError] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const config = configQuery.data;
   const busy = updateMutation.isPending;
 
@@ -52,11 +54,11 @@ export default function ShopLotteryAdminModal({ onClose }: Props) {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !busy) onClose();
+      if (event.key === "Escape" && !busy && !previewOpen) onClose();
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [busy, onClose]);
+  }, [busy, onClose, previewOpen]);
 
   async function refreshAfterConflict() {
     setConflictError(
@@ -111,10 +113,18 @@ export default function ShopLotteryAdminModal({ onClose }: Props) {
             onClearConflict={() => setConflictError(null)}
             onConflict={refreshAfterConflict}
             onClose={onClose}
+            onPreview={() => setPreviewOpen(true)}
+            onRefreshReadiness={() => void configQuery.refetch()}
+            refreshingReadiness={configQuery.isFetching}
             updateMutation={updateMutation}
           />
         )}
       </section>
+      {previewOpen ? (
+        <ShopLotteryEventPreviewModal
+          onClose={() => setPreviewOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -125,6 +135,9 @@ interface LotteryAdminFormBodyProps {
   onClearConflict: () => void;
   onConflict: () => Promise<void>;
   onClose: () => void;
+  onPreview: () => void;
+  onRefreshReadiness: () => void;
+  refreshingReadiness: boolean;
   updateMutation: ReturnType<typeof useUpdateShopLotteryAdminConfig>;
 }
 
@@ -134,6 +147,9 @@ function LotteryAdminFormBody({
   onClearConflict,
   onConflict,
   onClose,
+  onPreview,
+  onRefreshReadiness,
+  refreshingReadiness,
   updateMutation,
 }: LotteryAdminFormBodyProps) {
   const [form, setForm] = useState<LotteryAdminForm>({
@@ -274,18 +290,22 @@ function LotteryAdminFormBody({
         </div>
         <div className={styles.readiness__checks}>
           <span>
-            필수 인덱스{" "}
+            중복 지급·사용 방지 DB 인덱스 5개{" "}
             <strong>
               {config.readiness.indexesReady ? "정상" : "확인 필요"}
             </strong>
           </span>
           <span>
-            복권 마스터 아이템{" "}
+            인벤토리 표시용 비공개 복권 아이템{" "}
             <strong>
               {config.readiness.masterItemReady ? "정상" : "확인 필요"}
             </strong>
           </span>
         </div>
+        <p className={styles.readiness__description}>
+          두 항목은 중복 당첨과 잘못된 아이템 판매를 막는 안전장치입니다.
+          미리보기에는 필요하지 않으며 실제 이벤트 활성화에만 필요합니다.
+        </p>
         {config.readiness.issues.length ? (
           <ul>
             {config.readiness.issues.map((issue) => (
@@ -293,6 +313,14 @@ function LotteryAdminFormBody({
             ))}
           </ul>
         ) : null}
+        <button
+          type="button"
+          className={styles.readinessRefreshBtn}
+          onClick={onRefreshReadiness}
+          disabled={refreshingReadiness}
+        >
+          {refreshingReadiness ? "준비 상태 확인 중..." : "준비 상태 다시 확인"}
+        </button>
       </section>
 
       {requestError ? (
@@ -302,9 +330,16 @@ function LotteryAdminFormBody({
       ) : null}
 
       <footer className={styles.footer}>
-        <button type="button" onClick={onClose} disabled={busy}>
-          취소
+        <button
+          type="button"
+          className={styles.previewBtn}
+          onClick={onPreview}
+          disabled={busy}
+        >
+          이벤트 화면 미리보기
         </button>
+        <span className={styles.footer__spacer} />
+        <button type="button" onClick={onClose} disabled={busy}>취소</button>
         <button type="submit" className={styles.saveBtn} disabled={busy}>
           {busy ? "저장 중..." : "이벤트 설정 저장"}
         </button>

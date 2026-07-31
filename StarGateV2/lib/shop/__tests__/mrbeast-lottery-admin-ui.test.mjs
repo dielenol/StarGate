@@ -43,9 +43,11 @@ test("GM 복권 설정은 전용 query key와 PATCH 후 공개 상태 무효화�
 });
 
 test("GM 모달은 KST 기간·준비 상태·버전 충돌을 명시한다", async () => {
-  const [component, css] = await Promise.all([
+  const [component, css, preview, previewCss] = await Promise.all([
     readWeb("app/(erp)/erp/shop/ShopLotteryAdminModal.tsx"),
     readWeb("app/(erp)/erp/shop/ShopLotteryAdminModal.module.css"),
+    readWeb("app/(erp)/erp/shop/ShopLotteryEventPreviewModal.tsx"),
+    readWeb("app/(erp)/erp/shop/ShopLotteryEventPreviewModal.module.css"),
   ]);
 
   assert.match(component, /시작 시각 · KST/);
@@ -55,7 +57,22 @@ test("GM 모달은 KST 기간·준비 상태·버전 충돌을 명시한다", as
   assert.match(component, /error\.status === 409/);
   assert.match(component, /config\.readiness\.indexesReady/);
   assert.match(component, /config\.readiness\.masterItemReady/);
+  assert.match(component, /중복 지급·사용 방지 DB 인덱스 5개/);
+  assert.match(component, /준비 상태 다시 확인/);
+  assert.match(component, /이벤트 화면 미리보기/);
   assert.match(component, /재배포가 필요하지 않습니다/);
+  assert.match(preview, /GM SAFE PREVIEW/);
+  assert.match(preview, /이벤트 포스터/);
+  assert.match(preview, /긁기 전/);
+  for (const label of ["꽝", "5등", "4등", "3등", "2등", "1등", "0등"]) {
+    assert.match(preview, new RegExp(`label: "${label}"`));
+  }
+  assert.match(preview, /복권 소모,[\s\S]*크레딧 지급,[\s\S]*발생하지 않습니다/);
+  assert.doesNotMatch(preview, /useRevealMrBeastLotteryClaim|mutate(?:Async)?\(/);
   assert.match(css, /@media \(max-width: 640px\)/);
-  assert.doesNotMatch(css, /font-size:\s*(?:[0-9]|1[0-3])px/);
+  assert.match(previewCss, /@media \(max-width: 640px\)/);
+  assert.doesNotMatch(
+    `${css}\n${previewCss}`,
+    /font-size:\s*(?:[0-9]|1[0-3])px/,
+  );
 });
