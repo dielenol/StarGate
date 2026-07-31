@@ -14,3 +14,10 @@
 - 주식 가격·보유량 변경은 주식 화면과 거래 복합 응답을 함께 무효화한다.
 - 검증: realtime Query 계약 테스트, `pnpm lint`, `pnpm typecheck`, `pnpm build:web`
 - 관련 커밋: `bba8924`
+
+## 2026-07-31 · 성능 최적화 · 시세 히스토리 벌크 조회
+
+- 공시 wire·지수 히스토리가 티커별로 반복하던 18회 히스토리 쿼리를 `$in` 벌크 1회로 교체했다. 페이지 경로는 두 빌더가 한 번의 조회를 공유한다.
+- 진입 시 initialData가 있는데도 refetchOnMount "always"로 즉시 중복 페치하던 holdings 훅을 정리했다.
+- 검증: 응답 형식 등가 보존 확인, `pnpm lint`, `pnpm typecheck`, `pnpm build`
+- 관련 커밋: `e1bd14f`, `bce9d0a`
