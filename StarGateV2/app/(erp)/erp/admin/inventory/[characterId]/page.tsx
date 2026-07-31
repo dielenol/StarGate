@@ -5,7 +5,7 @@ import type {
   MasterItem,
 } from "@/types/inventory";
 
-import { auth } from "@/lib/auth/config";
+import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
@@ -48,7 +48,7 @@ function toInventoryGrantItems(items: MasterItem[]): InventoryGrantItem[] {
 export default async function AdminCharacterInventoryPage({
   params,
 }: AdminInventoryPageProps) {
-  const session = await auth();
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");
