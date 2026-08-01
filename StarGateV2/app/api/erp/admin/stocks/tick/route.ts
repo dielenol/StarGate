@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isMrBeastSodaStockImpactTickEnabled } from "@stargate/core/domain/mrbeast-soda-stock-impact";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
@@ -40,6 +41,9 @@ export async function POST(request: Request) {
   }
   const summary = await applyScheduledStockTick({
     force,
+    sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
+      process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
+    ),
     ...(force ? { operationId } : {}),
   });
   if (summary.results.some((result) => result.status !== "skipped")) {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isMrBeastSodaStockImpactTickEnabled } from "@stargate/core/domain/mrbeast-soda-stock-impact";
 
 import { grantDailyCreditAllowances } from "@/lib/credits/daily-allowance";
 import { isLegacyCronJobEnabled } from "@/lib/runtime/legacy-cron";
@@ -9,7 +10,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function runScheduledStockTick() {
-  const summary = await applyScheduledStockTick();
+  const summary = await applyScheduledStockTick({
+    sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
+      process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
+    ),
+  });
   const marketWire = await notifyScheduledStockMarketWire(summary);
   if (marketWire.status === "failed") {
     throw new Error(marketWire.error ?? "Discord 정기 공시 교체에 실패했습니다.");

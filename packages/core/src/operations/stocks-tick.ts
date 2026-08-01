@@ -1,5 +1,6 @@
 import {
   applyScheduledStockPriceMutation,
+  consumeMrBeastSodaStockImpactDemand,
   listScheduledStockPriceHistoryRange,
   type ApplyScheduledStockPriceMutationResult,
 } from "@stargate/shared-db";
@@ -15,6 +16,10 @@ import {
   type StockPriceDirection,
 } from "../domain/stock-events.js";
 import { normalizeStockPrice } from "../domain/stock-pricing.js";
+import {
+  calculateMrBeastSodaStockImpactPercent,
+  MRBEAST_SODA_STOCK_IMPACT_TICKER,
+} from "../domain/mrbeast-soda-stock-impact.js";
 import { kstDateTag, kstNowTag } from "../domain/kst-time.js";
 
 const UP_DIRECTION_CHANCE = 0.55;
@@ -26,10 +31,13 @@ export interface ApplyScheduledStockTickOptions {
   now?: Date;
   /** force 재시도에서 호출자가 재사용하는 안정 operation id. */
   operationId?: string;
+  /** Backfill 검증 뒤에만 켜는 소다 판매량 자동 소비 gate. */
+  sodaStockImpactEnabled?: boolean;
 }
 
 interface ApplyScheduledStockTickDependencies {
   applyMutation?: typeof applyScheduledStockPriceMutation;
+  consumeStockImpact?: typeof consumeMrBeastSodaStockImpactDemand;
   random?: () => number;
   createRunId?: () => string;
 }
@@ -133,6 +141,7 @@ function calculateScheduledMutation(
   current: StockPrice,
   meta: (typeof STOCK_CATALOG)[number],
   randomSamples: readonly number[],
+  stockImpact: { soldQuantity: number; eventIds: string[] } | undefined,
 ) {
   const random = replayRandom(randomSamples);
   const direction = rollDirection(random);
@@ -148,15 +157,26 @@ function calculateScheduledMutation(
     direction,
     random,
   );
+  const stockImpactPercent = calculateMrBeastSodaStockImpactPercent(
+    stockImpact?.soldQuantity ?? 0,
+  );
+  const combinedPercent = rolledEvent.percent + stockImpactPercent;
   const nextPrice = calculateNextPrice(
     current.price,
     meta.basePrice,
-    rolledEvent.percent,
+    combinedPercent,
   );
   const percent = changePercent(current.price, nextPrice);
+  const stockImpactText =
+    stockImpactPercent > 0
+      ? ` · 미스터비스트 소다 ${stockImpact!.soldQuantity.toLocaleString("ko-KR")}개 판매 +${(stockImpactPercent * 100).toFixed(2)}%p`
+      : "";
   return {
     price: nextPrice,
-    eventText: `${rolledEvent.text} ${percent >= 0 ? "+" : ""}${percent.toFixed(2)}%`,
+    eventText:
+      stockImpactPercent > 0
+        ? `${rolledEvent.text}${stockImpactText} · 최종 ${percent >= 0 ? "+" : ""}${percent.toFixed(2)}%`
+        : `${rolledEvent.text} ${percent >= 0 ? "+" : ""}${percent.toFixed(2)}%`,
     eventTier: rolledEvent.tier,
   };
 }
@@ -187,6 +207,8 @@ export async function applyScheduledStockTick(
   const results: ScheduledStockTickResult[] = [];
   const applyMutation =
     dependencies.applyMutation ?? applyScheduledStockPriceMutation;
+  const consumeStockImpact =
+    dependencies.consumeStockImpact ?? consumeMrBeastSodaStockImpactDemand;
   const random = dependencies.random ?? Math.random;
   const forceRunId = options.force
     ? options.operationId ??
@@ -199,14 +221,31 @@ export async function applyScheduledStockTick(
       ? `stocks.tick.manual:${today}:${forceRunId}:${meta.ticker}`
       : `stocks.tick:${today}:${meta.ticker}`;
     const randomSamples = collectRandomSamples(random);
+    const loadStockImpact =
+      options.sodaStockImpactEnabled === true &&
+      !options.force &&
+      meta.ticker === MRBEAST_SODA_STOCK_IMPACT_TICKER
+        ? (session: Parameters<typeof consumeStockImpact>[0]["session"]) =>
+            consumeStockImpact({
+              operationKey,
+              now,
+              session,
+            })
+        : undefined;
     const outcome = await applyMutation({
       ticker: meta.ticker,
       operationKey,
       initialPrice: meta.basePrice,
       initialLastUpdateKst: lastUpdate,
       initialEventText: "정기 시세 초기화",
-      calculate: (current) =>
-        calculateScheduledMutation(current, meta, randomSamples),
+      loadContext: loadStockImpact,
+      calculate: (current, stockImpact) =>
+        calculateScheduledMutation(
+          current,
+          meta,
+          randomSamples,
+          stockImpact,
+        ),
     });
 
     if (!outcome.applied) {

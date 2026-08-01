@@ -21,6 +21,7 @@ import type { ShopInventory, ShopDailyStock } from "./types/shop.js";
 import type {
   StockPrice,
   StockHolding,
+  MrBeastSodaStockImpactDemand,
   StockPriceHistory,
 } from "./types/stock.js";
 import type { PlayerTrade } from "./types/trade.js";
@@ -61,6 +62,7 @@ const COL = {
   STOCK_PRICES: "stock_prices",
   STOCK_HOLDINGS: "stock_holdings",
   STOCK_PRICE_HISTORY: "stock_price_history",
+  MRBEAST_SODA_STOCK_IMPACT_DEMAND: "mrbeast_soda_stock_impact_demand",
   PLAYER_TRADES: "player_trades",
   TRPG_SESSIONS: "trpg_sessions",
   TRPG_GUILD_MEMBERS: "trpg_guild_members",
@@ -217,6 +219,15 @@ export async function integrationOutboxCol(): Promise<Collection<IntegrationOutb
   return db.collection<IntegrationOutboxEvent>(COL.INTEGRATION_OUTBOX);
 }
 
+export async function mrBeastSodaStockImpactDemandCol(): Promise<
+  Collection<MrBeastSodaStockImpactDemand>
+> {
+  const db = await getDb();
+  return db.collection<MrBeastSodaStockImpactDemand>(
+    COL.MRBEAST_SODA_STOCK_IMPACT_DEMAND,
+  );
+}
+
 export async function workerCheckpointsCol(): Promise<Collection<WorkerCheckpoint>> {
   const db = await getDb();
   return db.collection<WorkerCheckpoint>(COL.WORKER_CHECKPOINTS);
@@ -341,6 +352,14 @@ export function scheduledJobRunsColSync(): Collection<ScheduledJobRun> {
 export function integrationOutboxColSync(): Collection<IntegrationOutboxEvent> {
   return getDbSync().collection<IntegrationOutboxEvent>(
     COL.INTEGRATION_OUTBOX,
+  );
+}
+
+export function mrBeastSodaStockImpactDemandColSync(): Collection<
+  MrBeastSodaStockImpactDemand
+> {
+  return getDbSync().collection<MrBeastSodaStockImpactDemand>(
+    COL.MRBEAST_SODA_STOCK_IMPACT_DEMAND,
   );
 }
 

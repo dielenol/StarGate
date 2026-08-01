@@ -141,6 +141,7 @@ export type {
   StockPrice,
   StockHolding,
   StockPriceHistory,
+  MrBeastSodaStockImpactDemand,
   CreateStockPriceInput,
   CreateStockHoldingInput,
   CreateStockPriceHistoryInput,

@@ -193,6 +193,8 @@ const ERROR_MESSAGE: Record<ShopErrorCode, string> = {
   INVALID_CART: "장바구니 구성이 올바르지 않습니다.",
   MRBEAST_SODA_DAILY_LIMIT_EXCEEDED:
     "미스터비스트 소다는 사용자당 하루 최대 10개까지 구매할 수 있습니다.",
+  STOCK_IMPACT_UNAVAILABLE:
+    "스타마트 판매량 연동을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.",
   REORDER_NOT_AVAILABLE: "아직 품절이 아닌 상품은 발주 요청할 수 없습니다.",
   LOTTERY_DISABLED: "미스터비스트 복권 이벤트가 활성화되지 않았습니다.",
   LOTTERY_MISCONFIGURED: "복권 이벤트 설정을 확인할 수 없습니다.",
@@ -944,6 +946,7 @@ export default function ShopClient({
               <div className={styles.lotteryPromotion__badges}>
                 <span>소다 1개당 복권 1장</span>
                 <span>사용자당 하루 최대 10개</span>
+                <span>판매 1개당 STM +0.10%p</span>
                 <strong>0등 100,000 CR</strong>
               </div>
             </div>

@@ -83,6 +83,7 @@ export type {
   StockPrice,
   StockHolding,
   StockPriceHistory,
+  MrBeastSodaStockImpactDemand,
   CreateStockPriceInput,
   CreateStockHoldingInput,
   CreateStockPriceHistoryInput,
@@ -184,6 +185,7 @@ export {
   trpgSessionNotificationsCol,
   scheduledJobRunsCol,
   integrationOutboxCol,
+  mrBeastSodaStockImpactDemandCol,
   workerCheckpointsCol,
 } from "./collections.js";
 
@@ -219,6 +221,7 @@ export {
   trpgSessionNotificationsColSync,
   scheduledJobRunsColSync,
   integrationOutboxColSync,
+  mrBeastSodaStockImpactDemandColSync,
   workerCheckpointsColSync,
 } from "./collections.js";
 

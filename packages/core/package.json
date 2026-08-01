@@ -26,6 +26,10 @@
       "types": "./dist/domain/kst-time.d.ts",
       "import": "./dist/domain/kst-time.js"
     },
+    "./domain/mrbeast-soda-stock-impact": {
+      "types": "./dist/domain/mrbeast-soda-stock-impact.d.ts",
+      "import": "./dist/domain/mrbeast-soda-stock-impact.js"
+    },
     "./domain/shop-catalog": {
       "types": "./dist/domain/shop-catalog.d.ts",
       "import": "./dist/domain/shop-catalog.js"

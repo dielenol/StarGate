@@ -7,6 +7,11 @@
 
 import { NextResponse } from "next/server";
 
+import {
+  isMrBeastSodaStockImpactPurchaseEligible,
+  resolveMrBeastSodaStockImpactWindow,
+} from "@stargate/core/domain/mrbeast-soda-stock-impact";
+
 import { auth } from "@/lib/auth/config";
 import { resolvePlayerServiceAvailability } from "@/lib/auth/player-service-test-access";
 import { readIdempotencyKey } from "@/lib/api/idempotency";
@@ -33,6 +38,11 @@ import {
   incrementMrBeastSodaDailyPurchaseCounter,
   prepareMrBeastSodaDailyPurchaseCounter,
 } from "@/lib/db/mrbeast-soda-daily-limit";
+import {
+  incrementMrBeastSodaStockImpactDemand,
+  prepareMrBeastSodaStockImpactDemand,
+  MrBeastSodaStockImpactDemandError,
+} from "@/lib/db/mrbeast-soda-stock-impact";
 import { reduceStock } from "@/lib/db/shop";
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
@@ -208,6 +218,7 @@ export async function POST(request: Request) {
   });
 
   const lotteryConfig = await getMrBeastLotteryConfig();
+  const checkoutStartedAt = new Date();
   const expectsLotteryTickets = body?.expectsLotteryTickets === true;
   const sodaDailyPurchaseQuantity =
     normalizedItems.find((item) => item.slug === MRBEAST_SODA_SLUG)
@@ -218,6 +229,27 @@ export async function POST(request: Request) {
           userId: session.user.id,
           slug: MRBEAST_SODA_SLUG,
         })
+      : null;
+  const sodaStockImpactWindow = resolveMrBeastSodaStockImpactWindow({
+    eventId: lotteryConfig.eventId,
+    configVersion: lotteryConfig.version,
+    startAt: lotteryConfig.startAt,
+    endAt: lotteryConfig.endAt,
+  });
+  const sodaStockImpactKey =
+    sodaDailyPurchaseQuantity > 0 &&
+    lotteryConfig.active &&
+    sodaStockImpactWindow &&
+    isMrBeastSodaStockImpactPurchaseEligible(
+      sodaStockImpactWindow,
+      checkoutStartedAt,
+    )
+      ? {
+          eventId: sodaStockImpactWindow.eventId,
+          configVersion: sodaStockImpactWindow.configVersion,
+          startAt: sodaStockImpactWindow.startAt,
+          endAt: sodaStockImpactWindow.endAt,
+        }
       : null;
   const lotteryTicketQuantity = lotteryConfig.active
     ? sodaDailyPurchaseQuantity
@@ -317,6 +349,9 @@ export async function POST(request: Request) {
     if (sodaDailyPurchaseKey) {
       await prepareMrBeastSodaDailyPurchaseCounter(sodaDailyPurchaseKey);
     }
+    if (sodaStockImpactKey) {
+      await prepareMrBeastSodaStockImpactDemand(sodaStockImpactKey);
+    }
     await prepareCharacterInventoryItemLocks(
       characterId,
       inventoryLockItemIds,
@@ -330,12 +365,13 @@ export async function POST(request: Request) {
         ...(expectsLotteryTickets ? { expectsLotteryTickets: true } : {}),
       },
       run: async (mongoSession) => {
+        const committedAt = new Date();
         const lotteryConfigAtCommit =
           lotteryTicketQuantity > 0
             ? await fenceActiveMrBeastLotteryConfigForGrant({
                 expectedEventId: lotteryConfig.eventId ?? "",
                 expectedVersion: lotteryConfig.version,
-                now: new Date(),
+                now: committedAt,
                 session: mongoSession,
               })
             : lotteryConfig;
@@ -359,6 +395,22 @@ export async function POST(request: Request) {
           await incrementMrBeastSodaDailyPurchaseCounter({
             key: sodaDailyPurchaseKey,
             quantity: sodaDailyPurchaseQuantity,
+            session: mongoSession,
+          });
+        }
+        if (
+          sodaStockImpactKey &&
+          sodaStockImpactWindow &&
+          lotteryEventUnchanged &&
+          isMrBeastSodaStockImpactPurchaseEligible(
+            sodaStockImpactWindow,
+            committedAt,
+          )
+        ) {
+          await incrementMrBeastSodaStockImpactDemand({
+            key: sodaStockImpactKey,
+            quantity: sodaDailyPurchaseQuantity,
+            purchasedAt: committedAt,
             session: mongoSession,
           });
         }
@@ -447,6 +499,17 @@ export async function POST(request: Request) {
           limit: MRBEAST_SODA_DAILY_PURCHASE_LIMIT,
         },
         { status: 400 },
+      );
+    }
+    if (err instanceof MrBeastSodaStockImpactDemandError) {
+      console.error("[shop/checkout] stock impact demand failed", err);
+      return NextResponse.json(
+        {
+          error:
+            "스타마트 판매량 연동을 기록할 수 없어 결제를 중단했습니다. 잠시 후 다시 시도해 주세요.",
+          code: "STOCK_IMPACT_UNAVAILABLE",
+        },
+        { status: 503 },
       );
     }
     const message = err instanceof Error ? err.message : "결제 실패";

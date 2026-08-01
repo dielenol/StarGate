@@ -72,3 +72,21 @@ export type CreateStockPriceHistoryInput = Omit<
   StockPriceHistory,
   "_id" | "createdAt"
 >;
+
+export interface MrBeastSodaStockImpactDemand {
+  _id: string;
+  promotion: "mrbeast-soda-stm-v1";
+  ticker: "STM";
+  eventId: string;
+  configVersion: number;
+  startAt: Date;
+  endAt: Date;
+  soldQuantity: number;
+  appliedQuantity: number;
+  createdAt: Date;
+  updatedAt: Date;
+  lastAppliedAt?: Date;
+  lastAppliedOperationKey?: string;
+  backfilledAt?: Date;
+  backfillSource?: "shop_daily_purchase_counters";
+}

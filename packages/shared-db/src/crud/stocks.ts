@@ -151,13 +151,17 @@ export interface ScheduledStockPriceMutation {
   eventTier: NonNullable<StockPriceHistory["eventTier"]>;
 }
 
-export interface ApplyScheduledStockPriceMutationInput {
+export interface ApplyScheduledStockPriceMutationInput<TContext = undefined> {
   ticker: string;
   operationKey: string;
   initialPrice: number;
   initialLastUpdateKst: string;
   initialEventText?: string;
-  calculate: (current: StockPrice) => ScheduledStockPriceMutation;
+  loadContext?: (session: ClientSession) => Promise<TContext>;
+  calculate: (
+    current: StockPrice,
+    context: TContext,
+  ) => ScheduledStockPriceMutation;
 }
 
 export interface ApplyScheduledStockPriceMutationResult {
@@ -177,8 +181,8 @@ function isDuplicateKeyError(error: unknown): boolean {
  * operationKey unique 제약이 동시 실행의 DB-level 승자를 결정한다. transaction retry 시
  * calculate가 다시 호출될 수 있으므로 호출자는 같은 current에 항상 같은 값을 반환해야 한다.
  */
-export async function applyScheduledStockPriceMutation(
-  input: ApplyScheduledStockPriceMutationInput,
+export async function applyScheduledStockPriceMutation<TContext = undefined>(
+  input: ApplyScheduledStockPriceMutationInput<TContext>,
 ): Promise<ApplyScheduledStockPriceMutationResult> {
   if (!input.operationKey.trim()) {
     throw new Error("Scheduled stock operationKey must not be empty");
@@ -259,7 +263,10 @@ export async function applyScheduledStockPriceMutation(
           return;
         }
 
-        const mutation = input.calculate(current);
+        const context = input.loadContext
+          ? await input.loadContext(session)
+          : (undefined as TContext);
+        const mutation = input.calculate(current, context);
         if (!Number.isFinite(mutation.price) || mutation.price <= 0) {
           throw new Error(
             `Scheduled stock calculated invalid price: ${mutation.price}`,

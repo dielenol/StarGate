@@ -1,4 +1,5 @@
 import { grantDailyCreditAllowances } from "@stargate/core/operations/daily-allowance";
+import { isMrBeastSodaStockImpactTickEnabled } from "@stargate/core/domain/mrbeast-soda-stock-impact";
 import { runSessionReminderNotifications } from "@stargate/core/operations/session-reminders";
 import { ensureDailyStockRefresh } from "@stargate/core/operations/shop-refresh";
 import {
@@ -48,6 +49,9 @@ export function createDefaultScheduledJobHandlers(): ScheduledJobHandlerRegistry
         context.signal.throwIfAborted();
         const applied = await applyScheduledStockTick({
           now: context.requestedAt,
+          sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
+            process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
+          ),
         });
         context.signal.throwIfAborted();
         const result =

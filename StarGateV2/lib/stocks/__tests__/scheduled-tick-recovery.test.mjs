@@ -126,6 +126,7 @@ test("100 concurrent scheduled runs apply one ticker/date operation each", async
   const operationPromises = new Map();
   const appliedByTicker = new Map();
   const operationKeys = new Set();
+  let stockImpactConsumeCalls = 0;
 
   const applyMutation = async (input) => {
     operationKeys.add(input.operationKey);
@@ -138,8 +139,11 @@ test("100 concurrent scheduled runs apply one ticker/date operation each", async
     const operation = (async () => {
       await Promise.resolve();
       const current = currentByTicker.get(input.ticker);
-      const first = input.calculate(current);
-      const retry = input.calculate(current);
+      const context = input.loadContext
+        ? await input.loadContext({ inTransaction: () => true })
+        : undefined;
+      const first = input.calculate(current, context);
+      const retry = input.calculate(current, context);
       assert.deepEqual(retry, first, "transaction retry must be deterministic");
       const price = {
         ...current,
@@ -175,9 +179,13 @@ test("100 concurrent scheduled runs apply one ticker/date operation each", async
   const summaries = await Promise.all(
     Array.from({ length: 100 }, () =>
       applyScheduledStockTick(
-        {},
+        { sodaStockImpactEnabled: true },
         {
           applyMutation,
+          consumeStockImpact: async () => {
+            stockImpactConsumeCalls += 1;
+            return { soldQuantity: 36, eventIds: ["mrbeast-2026"] };
+          },
           random: () => 0.5,
         },
       ),
@@ -199,4 +207,106 @@ test("100 concurrent scheduled runs apply one ticker/date operation each", async
   for (const meta of STOCK_CATALOG) {
     assert.equal(appliedByTicker.get(meta.ticker), 1);
   }
+  assert.equal(stockImpactConsumeCalls, 1);
+  const updatedStm = summaries
+    .flatMap((summary) => summary.results)
+    .find((result) => result.ticker === "STM" && result.status === "updated");
+  assert.match(updatedStm.eventText, /소다 36개 판매 \+3\.60%p/);
+  const updatedTws = summaries
+    .flatMap((summary) => summary.results)
+    .find((result) => result.ticker === "TWS" && result.status === "updated");
+  assert.doesNotMatch(updatedTws.eventText, /미스터비스트|최종/);
+});
+
+test("GM force tick은 소다 판매량을 조기 소비하지 않는다", async () => {
+  let consumeCalls = 0;
+  const summary = await applyScheduledStockTick(
+    {
+      force: true,
+      operationId: "gm-manual-test",
+      sodaStockImpactEnabled: true,
+    },
+    {
+      consumeStockImpact: async () => {
+        consumeCalls += 1;
+        return { soldQuantity: 10, eventIds: ["mrbeast-2026"] };
+      },
+      random: () => 0.5,
+      applyMutation: async (input) => {
+        assert.equal(input.loadContext, undefined);
+        const current = {
+          ticker: input.ticker,
+          price: input.initialPrice,
+          prevPrice: input.initialPrice,
+          eventText: "seed",
+          lastUpdate: input.initialLastUpdateKst,
+        };
+        const mutation = input.calculate(current, undefined);
+        return {
+          applied: true,
+          initialized: false,
+          price: { ...current, ...mutation },
+          history: {
+            operationKey: input.operationKey,
+            ticker: input.ticker,
+            prevPrice: current.price,
+            price: mutation.price,
+            eventText: mutation.eventText,
+            eventTier: mutation.eventTier,
+            source: "scheduled",
+            createdAt: new Date(),
+          },
+        };
+      },
+    },
+  );
+
+  assert.equal(consumeCalls, 0);
+  assert.ok(summary.results.every((result) => result.status === "updated"));
+  assert.ok(
+    summary.results.every(
+      (result) => !result.eventText.includes("미스터비스트"),
+    ),
+  );
+});
+
+test("backfill gate가 닫혀 있으면 자동 tick도 소다 판매량을 소비하지 않는다", async () => {
+  let consumeCalls = 0;
+  await applyScheduledStockTick(
+    {},
+    {
+      consumeStockImpact: async () => {
+        consumeCalls += 1;
+        return { soldQuantity: 10, eventIds: ["mrbeast-2026"] };
+      },
+      random: () => 0.5,
+      applyMutation: async (input) => {
+        assert.equal(input.loadContext, undefined);
+        const current = {
+          ticker: input.ticker,
+          price: input.initialPrice,
+          prevPrice: input.initialPrice,
+          eventText: "seed",
+          lastUpdate: input.initialLastUpdateKst,
+        };
+        const mutation = input.calculate(current, undefined);
+        return {
+          applied: true,
+          initialized: false,
+          price: { ...current, ...mutation },
+          history: {
+            operationKey: input.operationKey,
+            ticker: input.ticker,
+            prevPrice: current.price,
+            price: mutation.price,
+            eventText: mutation.eventText,
+            eventTier: mutation.eventTier,
+            source: "scheduled",
+            createdAt: new Date(),
+          },
+        };
+      },
+    },
+  );
+  assert.equal(consumeCalls, 0);
 });

@@ -29,6 +29,7 @@ test("활성 복권 이벤트는 소다·복권 이미지와 일일 한도를 �
   assert.match(client, /assets\/shop\/items\/mrbeast_soda\.png/);
   assert.match(client, /assets\/shop\/events\/mrbeast-lottery-transparent\.png/);
   assert.match(client, /사용자당 하루 최대 10개/);
+  assert.match(client, /판매 1개당 STM \+0\.10%p/);
   assert.match(client, /0등 100,000 CR/);
   assert.match(styles, /\.lotteryPromotion/);
   assert.match(queries, /MRBEAST_SODA_DAILY_LIMIT_EXCEEDED/);
