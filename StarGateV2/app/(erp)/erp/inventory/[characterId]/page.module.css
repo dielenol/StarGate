@@ -601,6 +601,21 @@
   line-height: 1.45;
 }
 
+.lotteryResumeNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--gold) 8%, var(--bg-2));
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .slot__qty {
   align-self: start;
   min-width: 34px;
@@ -701,5 +716,10 @@
 
   .slot__qty {
     width: fit-content;
+  }
+
+  .lotteryResumeNotice {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

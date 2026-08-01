@@ -25,6 +25,10 @@ import {
 
 const NO_STORE_HEADERS = { "Cache-Control": "private, no-store" } as const;
 
+interface StartLotteryBody {
+  expectedCharacterId?: unknown;
+}
+
 function lotteryErrorResponse(error: MrBeastLotteryError): NextResponse {
   const status =
     error.code === "LOTTERY_MISCONFIGURED"
@@ -123,6 +127,23 @@ export async function POST(request: Request) {
     );
   }
 
+  const body = (await request.json().catch(
+    () => null,
+  )) as StartLotteryBody | null;
+  const expectedCharacterId =
+    typeof body?.expectedCharacterId === "string"
+      ? body.expectedCharacterId.trim()
+      : "";
+  if (!ObjectId.isValid(expectedCharacterId)) {
+    return NextResponse.json(
+      {
+        error: "유효한 expectedCharacterId가 필요합니다.",
+        code: "LOTTERY_CLAIM_INVALID",
+      },
+      { status: 400, headers: NO_STORE_HEADERS },
+    );
+  }
+
   try {
     const mainCharacter = await findAuthorizedMainCharacter(session.user.id);
     if (!mainCharacter) {
@@ -148,6 +169,16 @@ export async function POST(request: Request) {
     }
 
     const characterId = String(mainCharacter._id);
+    if (characterId !== expectedCharacterId) {
+      return NextResponse.json(
+        {
+          error:
+            "메인 캐릭터가 변경되어 복권 사용을 중단했습니다. 인벤토리를 새로 확인해 주세요.",
+          code: "LOTTERY_CLAIM_INVALID",
+        },
+        { status: 409, headers: NO_STORE_HEADERS },
+      );
+    }
     await assertMrBeastLotteryIndexesReady();
     const ticketMaster = await findMasterItemBySlug(MRBEAST_LOTTERY_SLUG);
     if (!isMrBeastLotteryTicketMasterReady(ticketMaster)) {
@@ -165,7 +196,7 @@ export async function POST(request: Request) {
       requestId,
       domain: "shop-mrbeast-lottery-claim",
       actorId: session.user.id,
-      payload: { action: "start-or-resume" },
+      payload: { action: "start-or-resume", expectedCharacterId },
       run: async (mongoSession) => {
         const result = await startOrResumeMrBeastLotteryClaim({
           characterId,

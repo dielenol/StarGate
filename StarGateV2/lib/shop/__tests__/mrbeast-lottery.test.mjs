@@ -363,7 +363,10 @@ test("종료·EVENT_ID·소유자 변경 뒤에도 global pending을 현재 소�
 
   const startPost = route.slice(route.indexOf("export async function POST"));
   assert.doesNotMatch(startPost, /config\.enabled/);
-  assert.match(startPost, /payload: \{ action: "start-or-resume" \}/);
+  assert.match(
+    startPost,
+    /payload: \{ action: "start-or-resume", expectedCharacterId \}/,
+  );
 });
 
 test("신규 grant/start readiness는 listIndexes와 hidden master shape로 fail closed한다", async () => {

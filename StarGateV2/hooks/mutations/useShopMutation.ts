@@ -15,6 +15,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
+import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import {
   ShopApiError,
@@ -297,24 +298,31 @@ export function useStartMrBeastLotteryClaim() {
   return useMutation<
     StartMrBeastLotteryResponse,
     ShopApiError,
-    { actionId: string }
+    { actionId: string; expectedCharacterId: string }
   >({
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/shop/lottery", {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           "Idempotency-Key": createIdempotencyKey(
             "shop-mrbeast-lottery-claim",
             input,
           ),
         },
+        body: JSON.stringify({
+          expectedCharacterId: input.expectedCharacterId,
+        }),
       });
       if (!res.ok) await throwShopError(res);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_result, input) => {
       queryClient.invalidateQueries({ queryKey: shopKeys.lottery });
       queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
+      queryClient.invalidateQueries({
+        queryKey: inventoryKeys.byCharacter(input.expectedCharacterId),
+      });
     },
   });
 }
@@ -345,6 +353,7 @@ export function useRevealMrBeastLotteryClaim() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: shopKeys.lottery });
       queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
+      queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
       queryClient.invalidateQueries({ queryKey: creditKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },

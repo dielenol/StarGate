@@ -677,6 +677,7 @@ export default function ShopClient({
       return;
     }
     if (
+      !mainCharacter ||
       !lotteryState?.enabled ||
       lotteryState.availableTickets < 1 ||
       startLotteryMutation.isPending
@@ -686,7 +687,10 @@ export default function ShopClient({
 
     setErrorMessage(null);
     startLotteryMutation.mutate(
-      { actionId: crypto.randomUUID() },
+      {
+        actionId: crypto.randomUUID(),
+        expectedCharacterId: mainCharacter.id,
+      },
       {
         onSuccess: (response) => {
           setLotteryClaim(response.claim);

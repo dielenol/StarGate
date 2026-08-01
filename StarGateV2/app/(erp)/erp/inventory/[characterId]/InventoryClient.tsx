@@ -8,12 +8,15 @@ import type {
   InventoryEntryDto,
   ItemCategory,
 } from "@/types/inventory";
+import type { MrBeastLotteryPendingClaimDto } from "@/lib/db/mrbeast-lottery";
 
 import {
   useEquipInventoryItem,
   useRemoveInventory,
 } from "@/hooks/mutations/useInventoryMutation";
+import { useStartMrBeastLotteryClaim } from "@/hooks/mutations/useShopMutation";
 import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
+import { useShopLotteryState } from "@/hooks/queries/useShopQuery";
 
 import {
   IconArchive,
@@ -27,6 +30,7 @@ import {
   IconTimeline,
   type IconComponent,
 } from "@/components/icons";
+import MrBeastLotteryModal from "@/app/(erp)/erp/shop/MrBeastLotteryModal";
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import Input from "@/components/ui/Input/Input";
@@ -34,6 +38,7 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
 import { formatDate } from "@/lib/format/date";
 import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
+import { MRBEAST_LOTTERY_SLUG } from "@/lib/shop/mrbeast-lottery";
 
 import styles from "./page.module.css";
 
@@ -48,6 +53,7 @@ interface InventoryClientProps {
   emptyText?: string;
   filteredEmptyText?: string;
   canRemove?: boolean;
+  canUseMrBeastLottery?: boolean;
 }
 
 type InventoryTab = "ALL" | "EQUIPMENT" | "CONSUMABLE" | "OTHER";
@@ -192,20 +198,61 @@ export default function InventoryClient({
   emptyText = "보유 아이템이 없습니다.",
   filteredEmptyText = "이 카테고리에 보유 아이템이 없습니다.",
   canRemove = false,
+  canUseMrBeastLottery = false,
 }: InventoryClientProps) {
   const [activeTab, setActiveTab] = useState<InventoryTab>("ALL");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<InventoryView>("GRID");
   const [equipmentError, setEquipmentError] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const [lotteryError, setLotteryError] = useState<string | null>(null);
+  const [lotteryClaim, setLotteryClaim] =
+    useState<MrBeastLotteryPendingClaimDto | null>(null);
   const inventoryQuery = useCharacterInventory(characterId ?? "", {
     initialData: initialResponse,
     enabled: variant === "personal" && Boolean(characterId),
   });
   const equipMutation = useEquipInventoryItem(characterId ?? "");
   const removeMutation = useRemoveInventory(characterId ?? "");
+  const lotteryQuery = useShopLotteryState({
+    enabled: canUseMrBeastLottery,
+  });
+  const startLotteryMutation = useStartMrBeastLotteryClaim();
   const entries = inventoryQuery.data?.entries ?? initialEntries;
   const SectionIcon = SECTION_ICONS[variant];
+
+  function handleUseMrBeastLottery() {
+    if (!canUseMrBeastLottery || !characterId) return;
+
+    const lotteryState = lotteryQuery.data;
+    if (lotteryState?.pendingClaim) {
+      setLotteryError(null);
+      setLotteryClaim(lotteryState.pendingClaim);
+      return;
+    }
+    if (!lotteryState) {
+      setLotteryError(
+        lotteryQuery.error?.message ?? "복권 사용 상태를 확인하고 있습니다.",
+      );
+      return;
+    }
+    if (!lotteryState.enabled || lotteryState.availableTickets < 1) {
+      setLotteryError("사용할 수 있는 미스터비스트 복권이 없습니다.");
+      return;
+    }
+
+    setLotteryError(null);
+    startLotteryMutation.mutate(
+      {
+        actionId: crypto.randomUUID(),
+        expectedCharacterId: characterId,
+      },
+      {
+        onSuccess: (response) => setLotteryClaim(response.claim),
+        onError: (error) => setLotteryError(error.message),
+      },
+    );
+  }
 
   function handleEquip(entry: InventoryClientEntry) {
     if (!characterId || !entry.category) return;
@@ -336,9 +383,19 @@ export default function InventoryClient({
   const activeTabLabel =
     TAB_DEFS.find((tab) => tab.value === activeTab)?.label ?? "전체";
   const hasQuery = normalizedQuery.length > 0;
+  const hasMrBeastLotteryEntry = entries.some(
+    (entry) => entry.slug === MRBEAST_LOTTERY_SLUG,
+  );
+  const pendingLotteryClaim = lotteryQuery.data?.pendingClaim ?? null;
+  const lotteryStatusError =
+    lotteryError ??
+    (canUseMrBeastLottery && lotteryQuery.isError
+      ? lotteryQuery.error.message
+      : null);
 
   return (
-    <Box className={styles.inventoryPanel}>
+    <>
+      <Box className={styles.inventoryPanel}>
       <PanelTitle
         right={
           <span className={styles.mono}>
@@ -401,6 +458,23 @@ export default function InventoryClient({
       {removeError ? (
         <div className={styles.equipmentNotice} role="alert">
           {removeError}
+        </div>
+      ) : null}
+      {lotteryStatusError ? (
+        <div className={styles.equipmentNotice} role="alert">
+          {lotteryStatusError}
+        </div>
+      ) : null}
+      {canUseMrBeastLottery && pendingLotteryClaim && !hasMrBeastLotteryEntry ? (
+        <div className={styles.lotteryResumeNotice}>
+          <span>진행 중인 미스터비스트 복권이 있습니다.</span>
+          <button
+            type="button"
+            className={styles.equipButton}
+            onClick={handleUseMrBeastLottery}
+          >
+            복권 이어하기
+          </button>
         </div>
       ) : null}
 
@@ -517,6 +591,10 @@ export default function InventoryClient({
           {filteredEntries.map((entry) => {
             const tone = categoryTone(entry.category);
             const isConsumable = entry.category === "CONSUMABLE";
+            const isMrBeastLottery =
+              canUseMrBeastLottery &&
+              variant === "personal" &&
+              entry.slug === MRBEAST_LOTTERY_SLUG;
             const isEquippable =
               variant === "personal" &&
               Boolean(characterId) &&
@@ -576,8 +654,29 @@ export default function InventoryClient({
                   {isConsumable && !entry.effect && !entry.note ? (
                     <div className={styles.slot__note}>효과 정보 미등록</div>
                   ) : null}
-                  {isEquippable || canRemove ? (
+                  {isEquippable || canRemove || isMrBeastLottery ? (
                     <div className={styles.slot__actions}>
+                      {isMrBeastLottery ? (
+                        <button
+                          type="button"
+                          className={styles.equipButton}
+                          disabled={
+                            startLotteryMutation.isPending ||
+                            (!pendingLotteryClaim &&
+                              (lotteryQuery.isPending ||
+                                (lotteryQuery.data?.availableTickets ?? 0) < 1))
+                          }
+                          onClick={handleUseMrBeastLottery}
+                        >
+                          {startLotteryMutation.isPending
+                            ? "준비 중"
+                            : pendingLotteryClaim
+                              ? "이어하기"
+                              : lotteryQuery.isPending
+                                ? "확인 중"
+                                : "사용"}
+                        </button>
+                      ) : null}
                       {isEquippable ? (
                         isEquipped ? (
                           <span className={styles.equippedBadge}>장착 중</span>
@@ -629,6 +728,18 @@ export default function InventoryClient({
           })}
         </div>
       )}
-    </Box>
+      </Box>
+
+      {lotteryClaim ? (
+        <MrBeastLotteryModal
+          claim={lotteryClaim}
+          onClose={() => {
+            setLotteryClaim(null);
+            void lotteryQuery.refetch();
+            void inventoryQuery.refetch();
+          }}
+        />
+      ) : null}
+    </>
   );
 }

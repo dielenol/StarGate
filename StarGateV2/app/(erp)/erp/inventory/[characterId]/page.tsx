@@ -8,7 +8,10 @@ import type {
 
 import { canViewPersonalInventory } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
-import { findCharacterById } from "@/lib/db/characters";
+import {
+  findCharacterById,
+  findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner,
+} from "@/lib/db/characters";
 import {
   findMasterItemsBySlugsOrIds,
   listCharacterInventoryEntries,
@@ -54,6 +57,9 @@ export default async function CharacterInventoryPage({
   ) {
     notFound();
   }
+  const mainCharacter = await findMainCharacterByOwner(session.user.id);
+  const canUseMrBeastLottery =
+    mainCharacter !== null && String(mainCharacter._id) === characterId;
 
   let inventoryResponse: CharacterInventoryResponse = {
     inventory: [],
@@ -162,6 +168,7 @@ export default async function CharacterInventoryPage({
           initialResponse={inventoryResponse}
           title="개인 인벤토리"
           variant="personal"
+          canUseMrBeastLottery={canUseMrBeastLottery}
         />
         <InventoryClient
           entries={sharedEntries}
