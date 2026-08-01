@@ -17,6 +17,10 @@ export const MRBEAST_LOTTERY_TIERS = [
 ] as const;
 
 export type MrBeastLotteryTier = (typeof MRBEAST_LOTTERY_TIERS)[number];
+export type MrBeastLotteryAnnouncementTier = Extract<
+  MrBeastLotteryTier,
+  "second" | "first" | "zeroth"
+>;
 
 export interface MrBeastLotteryPrize {
   tier: MrBeastLotteryTier;
@@ -267,6 +271,6 @@ export function drawMrBeastLotteryPrize(
 
 export function isMrBeastLotteryAnnouncementCandidate(
   tier: MrBeastLotteryTier,
-): boolean {
+): tier is MrBeastLotteryAnnouncementTier {
   return tier === "second" || tier === "first" || tier === "zeroth";
 }

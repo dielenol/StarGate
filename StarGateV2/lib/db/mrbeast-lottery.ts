@@ -29,6 +29,7 @@ import {
 } from "@/lib/shop/mrbeast-lottery";
 import { findMasterItemBySlug } from "@/lib/db/inventory";
 import { SYSTEM_USER_ID_SENTINEL } from "@/lib/db/system-actor";
+import { enqueueMrBeastLotteryWinnerWebhook } from "@/lib/outbox/integration";
 
 const LOTTERY_CLAIMS_COLLECTION = "mrbeast_lottery_claims";
 const LOTTERY_ENTITLEMENTS_COLLECTION = "mrbeast_lottery_entitlements";
@@ -629,7 +630,7 @@ export async function fenceLotteryCharacterOwner(input: {
   characterId: string;
   ownerId: string;
   session: ClientSession;
-}): Promise<void> {
+}): Promise<{ isPublic: boolean }> {
   if (!ObjectId.isValid(input.characterId)) {
     throw new MrBeastLotteryError(
       "LOTTERY_CLAIM_INVALID",
@@ -637,26 +638,28 @@ export async function fenceLotteryCharacterOwner(input: {
     );
   }
   const db = await getDb();
-  const result = await db
+  const character = await db
     .collection<{
       _id: ObjectId;
       ownerId?: string;
+      isPublic?: boolean;
       lotteryEconomyFenceVersion?: number;
     }>(CHARACTERS_COLLECTION)
-    .updateOne(
+    .findOneAndUpdate(
       {
         _id: new ObjectId(input.characterId),
         ownerId: input.ownerId,
       },
       { $inc: { lotteryEconomyFenceVersion: 1 } },
-      { session: input.session },
+      { returnDocument: "after", session: input.session },
     );
-  if (result.matchedCount !== 1) {
+  if (!character) {
     throw new MrBeastLotteryError(
       "LOTTERY_CLAIM_INVALID",
       "복권 캐릭터의 현재 소유권을 확인할 수 없습니다.",
     );
   }
+  return { isPublic: character.isPublic === true };
 }
 
 async function reconcileTicketInventoryMirror(input: {
@@ -995,7 +998,7 @@ export async function revealMrBeastLotteryClaim(input: {
     );
   }
 
-  await fenceLotteryCharacterOwner({
+  const characterFence = await fenceLotteryCharacterOwner({
     characterId: input.characterId,
     ownerId: input.ownerId,
     session: input.session,
@@ -1113,6 +1116,28 @@ export async function revealMrBeastLotteryClaim(input: {
     },
     { session: input.session },
   );
+
+  if (
+    characterFence.isPublic &&
+    isMrBeastLotteryAnnouncementCandidate(completed.tier)
+  ) {
+    await enqueueMrBeastLotteryWinnerWebhook(
+      {
+        claimId: completed._id.toHexString(),
+        eventId: completed.eventId,
+        character: {
+          id: completed.characterId,
+          codename: completed.characterCodename,
+        },
+        tier: completed.tier,
+        label: completed.label,
+        reward: completed.reward,
+        revealedAt: completed.revealedAt ?? now,
+      },
+      `mrbeast-lottery-winner:${completed._id.toHexString()}`,
+      { session: input.session },
+    );
+  }
 
   return serializeReveal(completed);
 }

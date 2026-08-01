@@ -346,7 +346,7 @@ test("종료·EVENT_ID·소유자 변경 뒤에도 global pending을 현재 소�
   assert.match(revealFunction, /ownerName: input\.ownerName/);
   assert.match(
     database,
-    /fenceLotteryCharacterOwner[\s\S]*updateOne\([\s\S]*ownerId: input\.ownerId[\s\S]*\$inc: \{ lotteryEconomyFenceVersion: 1 \}[\s\S]*matchedCount !== 1/,
+    /fenceLotteryCharacterOwner[\s\S]*findOneAndUpdate\([\s\S]*ownerId: input\.ownerId[\s\S]*\$inc: \{ lotteryEconomyFenceVersion: 1 \}[\s\S]*returnDocument: "after"/,
   );
   assert.ok(
     database.match(/await fenceLotteryCharacterOwner\(/g)?.length === 2,
@@ -412,13 +412,19 @@ test("reveal은 claim 상태 전환과 EVENT_REWARD를 exactly-once 결합한다
   assert.match(database, /session: input\.session/);
 });
 
-test("공개 캐릭터의 cross-event 고액 당첨만 ERP 최근 당첨 공지에 표시된다", async () => {
-  const [database, client] = await Promise.all([
+test("2등 이상 당첨은 durable Discord 공지로 예약되고 공개 캐릭터만 ERP 최근 당첨에 표시된다", async () => {
+  const [database, client, outbox] = await Promise.all([
     readWeb("lib/db/mrbeast-lottery.ts"),
     readWeb("app/(erp)/erp/shop/ShopClient.tsx"),
+    readWeb("lib/outbox/integration.ts"),
   ]);
 
-  assert.doesNotMatch(database, /integration_outbox/);
+  assert.match(
+    database,
+    /characterFence\.isPublic[\s\S]*isMrBeastLotteryAnnouncementCandidate\(completed\.tier\)[\s\S]*enqueueMrBeastLotteryWinnerWebhook\([\s\S]*mrbeast-lottery-winner:[\s\S]*session: input\.session/,
+  );
+  assert.match(outbox, /kind: "MRBEAST_LOTTERY_WINNER_WEBHOOK"/);
+  assert.match(outbox, /revealedAt: payload\.revealedAt\.toISOString\(\)/);
   assert.match(database, /tier: \{ \$in: \["second", "first", "zeroth"\] \}/);
   assert.match(database, /characterIsPublic: true/);
   assert.match(database, /characterIsPublic: input\.characterIsPublic/);

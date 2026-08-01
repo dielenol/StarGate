@@ -156,6 +156,40 @@ test("수동 주가 조정 공시는 전용 webhook payload로 전달한다", as
   assert.deepEqual(requests[0].body.allowed_mentions, { parse: [] });
 });
 
+test("공개가 취소된 미스터비스트 복권 당첨자는 채널에 노출하지 않는다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "MRBEAST_LOTTERY_WINNER_WEBHOOK",
+      DISCORD_WEBHOOK_SHOP_URL:
+        "https://discord.com/api/webhooks/shop/token",
+    },
+    {
+      async fetchImpl(url) {
+        requests.push(String(url));
+        return new Response(null, { status: 204 });
+      },
+      async findCharacter() {
+        return { isPublic: false };
+      },
+    },
+  );
+
+  await registry.get("MRBEAST_LOTTERY_WINNER_WEBHOOK").deliver(
+    outboxEvent("MRBEAST_LOTTERY_WINNER_WEBHOOK", {
+      claimId: "claim-private",
+      eventId: "mrbeast-2026",
+      character: { id: "character-private", codename: "SECRET" },
+      tier: "zeroth",
+      label: "0등",
+      reward: 100_000,
+      revealedAt: new Date().toISOString(),
+    }),
+  );
+
+  assert.equal(requests.length, 0);
+});
+
 test("편의점 신제품 출시는 띠아 대사와 전용 편의점 webhook으로 전달한다", async () => {
   const requests = [];
   const registry = createDiscordIntegrationOutboxHandlers(
@@ -257,4 +291,55 @@ test("신제품 이미지가 없거나 안전하지 않으면 이미지 없이 �
 
   assert.equal(requests.length, 1);
   assert.equal("image" in requests[0].body.embeds[0], false);
+});
+
+test("미스터비스트 복권 2등 이상은 편의점 채널에 고액 당첨 공지로 전달한다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "MRBEAST_LOTTERY_WINNER_WEBHOOK",
+      DISCORD_WEBHOOK_SHOP_URL:
+        "https://discord.com/api/webhooks/shop/token",
+      DISCORD_WEBHOOK_SHOP_AVATAR_URL:
+        "https://www.ordonet.co.kr/assets/shop/tia.png",
+    },
+    {
+      async fetchImpl(url, init) {
+        requests.push({
+          url: String(url),
+          body: init?.body ? JSON.parse(String(init.body)) : null,
+        });
+        return new Response(null, { status: 204 });
+      },
+      async findCharacter() {
+        return { isPublic: true };
+      },
+    },
+  );
+
+  await registry.get("MRBEAST_LOTTERY_WINNER_WEBHOOK").deliver(
+    outboxEvent("MRBEAST_LOTTERY_WINNER_WEBHOOK", {
+      claimId: "claim-1",
+      eventId: "mrbeast-2026",
+      character: { id: "character-1", codename: "JTEST" },
+      tier: "second",
+      label: "2등",
+      reward: 800,
+      revealedAt: new Date().toISOString(),
+    }),
+  );
+
+  assert.equal(requests.length, 1);
+  assert.equal(
+    requests[0].url,
+    "https://discord.com/api/webhooks/shop/token?wait=true",
+  );
+  assert.equal(requests[0].body.username, "띠아");
+  assert.equal(
+    requests[0].body.embeds[0].title,
+    "🎉 미스터비스트 복권 2등 당첨!",
+  );
+  assert.match(requests[0].body.embeds[0].description, /JTEST/);
+  assert.equal(requests[0].body.embeds[0].fields[2].value, "+800 CR");
+  assert.deepEqual(requests[0].body.allowed_mentions, { parse: [] });
 });

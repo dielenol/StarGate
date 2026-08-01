@@ -382,6 +382,19 @@ export interface ShopProductLaunchWebhookPayload {
   launchedAt: Date;
 }
 
+export interface MrBeastLotteryWinnerWebhookPayload {
+  claimId: string;
+  eventId: string;
+  character: {
+    id: string;
+    codename: string;
+  };
+  tier: "second" | "first" | "zeroth";
+  label: string;
+  reward: number;
+  revealedAt: Date;
+}
+
 const SHOP_GROUP_ORDER: ShopRestockWebhookItem["pageGroup"][] = [
   "BASIC",
   "RECOVERY",

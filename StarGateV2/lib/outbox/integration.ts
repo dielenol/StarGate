@@ -12,6 +12,7 @@ import type {
   CharacterEditWebhookPayload,
   EquipmentWorkshopRequestWebhookPayload,
   GmAdminAuditWebhookPayload,
+  MrBeastLotteryWinnerWebhookPayload,
   ShopProductLaunchWebhookPayload,
   ShopReorderFulfilledWebhookPayload,
   ShopReorderWebhookPayload,
@@ -139,6 +140,21 @@ export async function enqueueShopProductLaunchWebhook(
     payload: {
       ...payload,
       launchedAt: payload.launchedAt.toISOString(),
+    },
+    dedupeKey,
+  }, options);
+}
+
+export async function enqueueMrBeastLotteryWinnerWebhook(
+  payload: MrBeastLotteryWinnerWebhookPayload,
+  dedupeKey?: string,
+  options: { session?: ClientSession } = {},
+): Promise<void> {
+  await enqueueDelivery({
+    kind: "MRBEAST_LOTTERY_WINNER_WEBHOOK",
+    payload: {
+      ...payload,
+      revealedAt: payload.revealedAt.toISOString(),
     },
     dedupeKey,
   }, options);

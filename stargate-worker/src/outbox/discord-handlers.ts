@@ -7,6 +7,7 @@ import {
 import { findStockByTicker } from "@stargate/core/domain/stock-catalog";
 import {
   INTEGRATION_OUTBOX_KINDS,
+  findCharacterById,
   findUserById,
   type IntegrationOutboxEvent,
   type IntegrationOutboxKind,
@@ -38,6 +39,7 @@ type Environment = NodeJS.ProcessEnv;
 
 interface DiscordHandlerDependencies {
   fetchImpl?: typeof fetch;
+  findCharacter?: typeof findCharacterById;
   findUser?: (id: string) => Promise<User | null>;
 }
 
@@ -160,7 +162,8 @@ function webhookUrlFor(
       ? env.DISCORD_WEBHOOK_STOCK_URL?.trim() ||
         env.DISCORD_STOCK_WEBHOOK_URL?.trim()
       : kind === "SHOP_REORDER_FULFILLED_WEBHOOK" ||
-          kind === "SHOP_PRODUCT_LAUNCH_WEBHOOK"
+          kind === "SHOP_PRODUCT_LAUNCH_WEBHOOK" ||
+          kind === "MRBEAST_LOTTERY_WINNER_WEBHOOK"
       ? env.DISCORD_WEBHOOK_SHOP_URL?.trim()
       : kind === "SHOP_REORDER_REQUEST_WEBHOOK" ||
           kind === "EQUIPMENT_WORKSHOP_WEBHOOK"
@@ -457,6 +460,61 @@ function buildShopProductLaunch(
   );
 }
 
+function buildMrBeastLotteryWinner(
+  payload: Record<string, unknown>,
+  env: Environment,
+): DiscordWebhookPayload {
+  const character = record(payload.character, "character");
+  const tier = text(payload.tier, "tier", 20);
+  const tierPresentation: Record<string, { label: string; color: number }> = {
+    second: { label: "2등", color: 0x5ea3c5 },
+    first: { label: "1등", color: 0xc5a059 },
+    zeroth: { label: "0등", color: 0xff4d6d },
+  };
+  const presentation = tierPresentation[tier];
+  if (!presentation) {
+    throw new Error(`공지 대상이 아닌 미스터비스트 복권 등수입니다: ${tier}`);
+  }
+  const reward = numberValue(payload.reward, "reward");
+  if (!Number.isSafeInteger(reward) || reward <= 0) {
+    throw new Error("미스터비스트 복권 보상은 양의 안전한 정수여야 합니다.");
+  }
+
+  return basePayload(
+    "띠아",
+    `🎉 미스터비스트 복권 ${presentation.label} 당첨!`,
+    isoTimestamp(payload.revealedAt),
+    {
+      url: SHOP_URL,
+      description: `${text(character.codename, "character.codename", 100)} 요원이 미스터비스트 복권 ${presentation.label}에 당첨됐어요!`,
+      color: presentation.color,
+      fields: [
+        {
+          name: "당첨자",
+          value: text(character.codename, "character.codename", 100),
+          inline: true,
+        },
+        {
+          name: "당첨 등수",
+          value: presentation.label,
+          inline: true,
+        },
+        {
+          name: "당첨 보상",
+          value: `+${reward.toLocaleString("ko-KR")} CR`,
+          inline: true,
+        },
+        {
+          name: "복권 확인",
+          value: `[띠아 편의점으로 가기](${SHOP_URL})`,
+        },
+      ],
+      footer: "미스터비스트 복권 고액 당첨 공지",
+      avatarUrl: env.DISCORD_WEBHOOK_SHOP_AVATAR_URL?.trim(),
+    },
+  );
+}
+
 function buildStockManualIntervention(
   payload: Record<string, unknown>,
 ): DiscordWebhookPayload {
@@ -519,6 +577,8 @@ function buildWebhookPayload(
       return buildShopFulfilled(event.payload, env);
     case "SHOP_PRODUCT_LAUNCH_WEBHOOK":
       return buildShopProductLaunch(event.payload, env);
+    case "MRBEAST_LOTTERY_WINNER_WEBHOOK":
+      return buildMrBeastLotteryWinner(event.payload, env);
     case "STOCK_MANUAL_INTERVENTION_WEBHOOK":
       return buildStockManualIntervention(event.payload);
     case "PLAYER_TRADE_DM":
@@ -580,6 +640,7 @@ export function createDiscordIntegrationOutboxHandlers(
   dependencies: DiscordHandlerDependencies = {},
 ): IntegrationOutboxHandlerRegistry {
   const fetchImpl = dependencies.fetchImpl ?? fetch;
+  const findCharacter = dependencies.findCharacter ?? findCharacterById;
   const findUser = dependencies.findUser ?? findUserById;
   const handlers: IntegrationOutboxDeliveryHandler[] = [];
 
@@ -631,6 +692,31 @@ export function createDiscordIntegrationOutboxHandlers(
             }
             throw error;
           }
+        },
+      });
+      continue;
+    }
+
+    if (kind === "MRBEAST_LOTTERY_WINNER_WEBHOOK") {
+      const webhookUrl = webhookUrlFor(kind, env);
+      handlers.push({
+        kind,
+        async deliver(event) {
+          if (event.version !== 1) {
+            throw new Error(
+              `지원하지 않는 ${kind} payload version입니다: ${event.version}`,
+            );
+          }
+          const character = record(event.payload.character, "character");
+          const currentCharacter = await findCharacter(
+            text(character.id, "character.id", 200),
+          );
+          if (!currentCharacter || currentCharacter.isPublic !== true) return;
+          await sendDiscordWebhook(
+            webhookUrl,
+            buildMrBeastLotteryWinner(event.payload, env),
+            fetchImpl,
+          );
         },
       });
       continue;
