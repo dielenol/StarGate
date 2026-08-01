@@ -81,3 +81,11 @@
 - 장시간 인덱스 생성과 부분 실패를 작업 임대·heartbeat·재시도로 복구하고, 마스터 아이템·준비 완료 상태·GM 감사 outbox를 하나의 transaction으로 확정한다.
 - 검증: shop 테스트 65개, 집중 테스트 17개, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, critical risk review, 인증 브라우저 데스크톱·390×844 확인(버튼 노출·오류 오버레이·콘솔 오류·가로 넘침 없음)
 - 관련 커밋: `4192b0b`
+
+## 2026-08-01 · 버그 수정 · 복권 고액 당첨 채널 공지
+
+- 공개 캐릭터가 미스터비스트 복권 2등·1등·0등에 당첨되면 당첨 확정과 함께 편의점 Discord 공지를 durable outbox에 예약하도록 누락된 전달 경로를 연결했다.
+- 띠아 이름·아바타의 고액 당첨 카드로 당첨 캐릭터·등수·보상을 안내하고, 발송 직전에도 캐릭터 공개 상태를 재확인해 비공개 정보는 채널에 노출하지 않는다.
+- 검증: 복권/outbox 집중 테스트 15건, worker 테스트 47건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, critical risk review
+- 관련 커밋: `4784958`
+- 후속 작업: 실제 전달 전 worker에 `MRBEAST_LOTTERY_WINNER_WEBHOOK` kind를 opt-in하고 편의점 webhook secret을 확인한 뒤 PENDING drain을 검증해야 한다.

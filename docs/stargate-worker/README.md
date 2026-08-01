@@ -132,7 +132,7 @@ StarGateV2의 `REALTIME_CLIENT_MODE`는 다음 세 단계다.
 
 `WORKER_CONSUMERS`는 `ameri-dm`, `research-card`, `shop-restock`, `stock-market-wire`의 쉼표 구분 opt-in 목록이다. 필요한 Discord secret이 없으면 claim 전에 기동을 거부한다.
 
-`WORKER_OUTBOX_KINDS`는 별도의 opt-in 목록이다. 지원 값은 `GM_ADMIN_AUDIT`, `CHARACTER_EDIT_WEBHOOK`, `EQUIPMENT_WORKSHOP_WEBHOOK`, `SHOP_REORDER_REQUEST_WEBHOOK`, `SHOP_REORDER_FULFILLED_WEBHOOK`, `SHOP_PRODUCT_LAUNCH_WEBHOOK`, `STOCK_MANUAL_INTERVENTION_WEBHOOK`, `PLAYER_TRADE_DM`이다. 활성화한 kind에 필요한 webhook/bot token이 없으면 worker는 outbox를 claim하기 전에 기동을 거부한다.
+`WORKER_OUTBOX_KINDS`는 별도의 opt-in 목록이다. 지원 값은 `GM_ADMIN_AUDIT`, `CHARACTER_EDIT_WEBHOOK`, `EQUIPMENT_WORKSHOP_WEBHOOK`, `SHOP_REORDER_REQUEST_WEBHOOK`, `SHOP_REORDER_FULFILLED_WEBHOOK`, `SHOP_PRODUCT_LAUNCH_WEBHOOK`, `MRBEAST_LOTTERY_WINNER_WEBHOOK`, `STOCK_MANUAL_INTERVENTION_WEBHOOK`, `PLAYER_TRADE_DM`이다. 활성화한 kind에 필요한 webhook/bot token이 없으면 worker는 outbox를 claim하기 전에 기동을 거부한다.
 
 `integration_outbox.dedupeKey`는 queue 문서 중복을 막는다. Bot Create Message 기반 DM은 `nonce`와 `enforce_nonce`도 사용한다. 반면 Discord Execute Webhook에는 같은 nonce 계약이 없으므로, 2xx 응답 직후 프로세스가 종료되는 매우 짧은 구간까지 외부 webhook 정확히 한 번을 보장하지는 못한다. 이 전달은 queue 수준 멱등 + 외부 at-least-once로 분류한다. 엄격한 외부 exactly-once가 필요하면 bot channel 전송 또는 수신측 idempotency/reconciliation을 별도 설계한다.
 
