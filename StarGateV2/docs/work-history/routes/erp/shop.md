@@ -89,3 +89,12 @@
 - 검증: 복권/outbox 집중 테스트 15건, worker 테스트 47건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, critical risk review
 - 관련 커밋: `4784958`
 - 후속 작업: 실제 전달 전 worker에 `MRBEAST_LOTTERY_WINNER_WEBHOOK` kind를 opt-in하고 편의점 webhook secret을 확인한 뒤 PENDING drain을 검증해야 한다.
+
+## 2026-08-01 · 기능 추가 · 소다 판매량 STM 시세 연동
+
+- 복권 이벤트 시작부터 최대 14일 동안 미스터비스트 소다 판매 수량을 결제·재고·크레딧과 같은 transaction에서 주가 수요 원장에 기록하도록 추가했다.
+- 이벤트 포스터에 `판매 1개당 STM +0.10%p` 안내를 표시하고, 원장 준비에 실패하면 결제 전체를 rollback해 판매량 누락을 막는다.
+- 기존 판매량 이관은 기본 dry-run이며, 기간 경계·설정 버전·DB·tick gate를 검증한 뒤에만 원자적으로 실행할 수 있다. 읽기 전용 운영 집계는 9명·64개였고 DB는 변경하지 않았다.
+- 검증: core 테스트 10개, focused web 테스트 10개, worker 테스트 47개, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, critical risk review, 인증 브라우저 1280×720·390×844 확인(배지 노출·가로 넘침·콘솔 오류 없음)
+- 관련 커밋: `eff30f76`
+- 후속 작업: 격리 replica-set용 `TEST_MONGODB_URI`가 없어 rollback/replay 통합 테스트 1개는 skip됐다. 라이브 배포·backfill·Web/worker gate 활성화는 배포 런북 순서와 별도 운영 승인이 필요하다.

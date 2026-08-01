@@ -21,3 +21,12 @@
 - 진입 시 initialData가 있는데도 refetchOnMount "always"로 즉시 중복 페치하던 holdings 훅을 정리했다.
 - 검증: 응답 형식 등가 보존 확인, `pnpm lint`, `pnpm typecheck`, `pnpm build`
 - 관련 커밋: `e1bd14f`, `bce9d0a`
+
+## 2026-08-01 · 기능 추가 · 소다 판매량 STM 자동 반영
+
+- 활성 이벤트의 미적용 소다 판매량을 다음 자동 STM 정기 시세에 1개당 `+0.10%p`, 1회 최대 `+5.00%p`로 가산하고 공시 문구에 판매 수량과 영향을 표시한다.
+- 판매량 소비·STM 가격·append-only history를 같은 transaction으로 묶어 동시 tick과 replay에서도 한 번만 반영한다. GM force tick은 판매량을 소비하지 않는다.
+- 자동 소비는 기본 비활성 gate로 두고, checkout dual-write 배포와 기존 판매량 backfill 검증이 끝난 뒤 Web·worker에서 함께 활성화하도록 했다. 지연된 미적용 판매량은 만료시키지 않는다.
+- 검증: core 테스트 10개, focused stock/shop 테스트 10개, worker 테스트 47개, shared-db build, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, critical risk review
+- 관련 커밋: `eff30f76`
+- 후속 작업: 격리 replica-set용 `TEST_MONGODB_URI`가 없어 Mongo rollback/replay 통합 테스트 1개는 skip됐다. 라이브 활성화 후 첫 자동 tick에서 STM history와 demand 원장을 재조회해야 한다.
