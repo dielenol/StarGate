@@ -71,16 +71,16 @@ async function requestDesiredState(input: {
     },
     $unset: { lastError: "", nextAttemptAt: "" },
   };
-  const updated = await col.updateOne(
-    {
-      _id: input.stateId,
-      $or: [
-        { desiredDate: { $exists: false } },
-        { desiredDate: { $lte: input.date } },
-      ],
-    },
-    mutation,
-  );
+  const monotonicFilter = {
+    _id: input.stateId,
+    $or: [
+      { desiredDate: { $exists: false } },
+      { desiredDate: { $lte: input.date } },
+    ],
+  };
+  const updateMonotonically = () =>
+    col.updateOne(monotonicFilter, mutation);
+  const updated = await updateMonotonically();
   if (updated.matchedCount === 1) return "requested";
 
   try {
@@ -99,13 +99,15 @@ async function requestDesiredState(input: {
       },
       { upsert: true },
     );
-    return inserted.upsertedCount === 1 ? "requested" : "current";
+    if (inserted.upsertedCount === 1) return "requested";
   } catch (error) {
-    if (error instanceof MongoServerError && error.code === 11_000) {
-      return "current";
+    if (!(error instanceof MongoServerError) || error.code !== 11_000) {
+      throw error;
     }
-    throw error;
   }
+
+  const raced = await updateMonotonically();
+  return raced.matchedCount === 1 ? "requested" : "current";
 }
 
 function shopStatusLine(
