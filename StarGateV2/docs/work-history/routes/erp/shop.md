@@ -98,3 +98,11 @@
 - 검증: core 테스트 10개, focused web 테스트 10개, worker 테스트 47개, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, critical risk review, 인증 브라우저 1280×720·390×844 확인(배지 노출·가로 넘침·콘솔 오류 없음)
 - 관련 커밋: `eff30f76`
 - 후속 작업: 격리 replica-set용 `TEST_MONGODB_URI`가 없어 rollback/replay 통합 테스트 1개는 skip됐다. 라이브 배포·backfill·Web/worker gate 활성화는 배포 런북 순서와 별도 운영 승인이 필요하다.
+
+## 2026-08-02 · 버그 수정 · 일요일 자동 영업
+
+- 일요일 종일 마감 예외를 제거하고 요일과 관계없이 매일 한국시간 06:00 이상 20:00 미만에 자동 개점하도록 변경했다.
+- 토요일 강제 종료도 일요일 06:00에 만료되며, 일요일 영업 중 다음 상태 갱신 경계는 당일 20:00이 되도록 보정했다.
+- 화면과 결제 API의 폐점 안내를 `매일 06:00~20:00`로 통일했다.
+- 검증: 영업 일정 테스트 8개, core 테스트 10개, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, 인증 브라우저 일요일 확인(폐점 장면 없음·상품 17개 담기 활성·가로 넘침·콘솔 오류 없음)
+- 관련 커밋: `550c60be`
