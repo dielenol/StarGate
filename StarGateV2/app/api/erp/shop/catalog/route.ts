@@ -3,7 +3,7 @@
  *
  * 응답:
  * - items: 정적 + master_items 동적 품목 + 당일 재고 + available(isOpen && stock>0).
- * - isOpen: 영업 시간 판정 (`isShopOpen` — 06:00~20:00 / 일요일 마감).
+ * - isOpen: 영업 시간 판정 (`isShopOpen` — 매일 06:00~20:00).
  *
  * 권한: ERP 로그인이면 OK (별도 RBAC 게이트 없음).
  *

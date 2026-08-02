@@ -9,7 +9,7 @@
  * - pageGroup 은 SHOP_PAGES 분류와 정합 (BASIC / RECOVERY / LUXURY / RARE).
  * - stockMin / stockMax / appearRate 는 일자별 재고 시드 룰 (M2/M3 에서 활용).
  *   appearRate 는 최소 재고 보장 후 stockMax 로 입고될 확률이다.
- * - isShopOpen() 은 KST 06:00~20:00 영업 + 일요일 종일 마감 룰을 따른다.
+ * - isShopOpen() 은 요일과 관계없이 KST 06:00~20:00 영업 룰을 따른다.
  */
 
 import type {
@@ -447,8 +447,7 @@ export const SHOP_PAGE_GROUPS: Record<ShopPageGroup, ShopCatalogItem[]> = {
 /**
  * 편의점 영업 여부 판정.
  *
- * - 일요일 (Sun): 종일 마감.
- * - 월~토: KST 06:00 이상, 20:00 미만만 open.
+ * - 매일 KST 06:00 이상, 20:00 미만만 open.
  *
  * KST 변환은 `Intl.DateTimeFormat` 의 `Asia/Seoul` 을 통해 수행.
  * (Date 객체의 getDay/getHours 는 서버 OS 타임존 의존이라 사용하지 않음.)
@@ -457,26 +456,19 @@ export const SHOP_PAGE_GROUPS: Record<ShopPageGroup, ShopCatalogItem[]> = {
  * @returns true=영업중, false=마감.
  */
 export function isShopOpen(now: Date = new Date()): boolean {
-  // KST 기준 요일 (long: "Sunday" .. "Saturday") + 시간 (24h, "00".."23") 추출.
+  // KST 기준 시간 (24h, "00".."23") 추출.
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: KST_TIMEZONE,
-    weekday: "long",
     hour: "2-digit",
     hour12: false,
   });
 
   const parts = formatter.formatToParts(now);
-  const weekday = parts.find((p) => p.type === "weekday")?.value ?? "";
   const hourStr = parts.find((p) => p.type === "hour")?.value ?? "0";
   // Intl 의 hour="2-digit" + hour12=false 는 24 시를 "24" 로 줄 수 있어 mod 24 보정.
   const hour = Number.parseInt(hourStr, 10) % 24;
 
-  if (weekday === "Sunday") return false;
   return hour >= OPEN_HOUR_KST && hour < CLOSE_HOUR_KST;
-}
-
-function getKstDayOfWeek(timestamp: number): number {
-  return new Date(timestamp + KST_OFFSET_MS).getUTCDay();
 }
 
 function getKstTimeParts(now: Date) {
@@ -512,10 +504,6 @@ export function getNextScheduledShopOpening(after: Date): Date {
     opening += ONE_DAY_MS;
   }
 
-  while (getKstDayOfWeek(opening) === 0) {
-    opening += ONE_DAY_MS;
-  }
-
   return new Date(opening);
 }
 
@@ -528,10 +516,7 @@ export function hasShopForceCloseExpired(
 
 export function getNextShopScheduleBoundary(after: Date): Date {
   const { year, month, day, hour } = getKstTimeParts(after);
-  const dayOfWeek = getKstDayOfWeek(after.getTime());
-
   if (
-    dayOfWeek !== 0 &&
     hour >= OPEN_HOUR_KST &&
     hour < CLOSE_HOUR_KST
   ) {

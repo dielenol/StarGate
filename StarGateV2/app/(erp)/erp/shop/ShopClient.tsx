@@ -179,7 +179,7 @@ const GROUP_LABELS: Record<ShopPageGroup, string> = {
 };
 
 const ERROR_MESSAGE: Record<ShopErrorCode, string> = {
-  SHOP_CLOSED: "영업 시간이 아닙니다 (06:00~20:00·일요일 마감).",
+  SHOP_CLOSED: "영업 시간이 아닙니다 (매일 06:00~20:00).",
   OUT_OF_STOCK: "재고가 부족합니다.",
   INSUFFICIENT_BALANCE: "잔액이 부족합니다.",
   INSUFFICIENT_QUANTITY: "보유 수량이 부족합니다.",
