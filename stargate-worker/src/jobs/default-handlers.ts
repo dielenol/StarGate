@@ -13,11 +13,36 @@ import {
 import { ScheduledJobHandlerRegistry } from "./handler-registry.js";
 import { loadRuntimeShopCatalog } from "./runtime-shop-catalog.js";
 
+export class ScheduledJobPartialFailureError extends Error {
+  constructor(jobName: string, details: Record<string, number | string>) {
+    super(
+      `${jobName} 부분 실패: ${Object.entries(details)
+        .map(([key, value]) => `${key}=${value}`)
+        .join(", ")}`,
+    );
+    this.name = "ScheduledJobPartialFailureError";
+  }
+}
+
+function throwIfScheduledJobPartiallyFailed(
+  jobName: string,
+  failureCount: number,
+  details: Record<string, number | string>,
+): void {
+  if (failureCount <= 0) return;
+  throw new ScheduledJobPartialFailureError(jobName, details);
+}
+
 /**
  * StarGateV2 서버 모듈을 import하지 않고 runtime-neutral core operation을 실행한다.
  * 외부 Discord 전달은 여기서 하지 않고 desired-state/outbox consumer가 맡는다.
  */
-export function createDefaultScheduledJobHandlers(): ScheduledJobHandlerRegistry {
+export function createDefaultScheduledJobHandlers(
+  dependencies: {
+    grantAllowances?: typeof grantDailyCreditAllowances;
+    sendSessionReminders?: typeof runSessionReminderNotifications;
+  } = {},
+): ScheduledJobHandlerRegistry {
   return new ScheduledJobHandlerRegistry([
     {
       jobName: "shop.refresh",
@@ -80,10 +105,19 @@ export function createDefaultScheduledJobHandlers(): ScheduledJobHandlerRegistry
       jobName: "credits.daily-allowance",
       async execute(context) {
         context.signal.throwIfAborted();
-        const result = await grantDailyCreditAllowances(
-          context.requestedAt,
-        );
+        const result = await (
+          dependencies.grantAllowances ?? grantDailyCreditAllowances
+        )(context.requestedAt);
         context.signal.throwIfAborted();
+        throwIfScheduledJobPartiallyFailed(
+          "credits.daily-allowance",
+          result.failed + result.notificationsFailed,
+          {
+            date: result.date,
+            failed: result.failed,
+            notificationsFailed: result.notificationsFailed,
+          },
+        );
         return {
           date: result.date,
           candidates: result.totalCandidates,
@@ -101,10 +135,20 @@ export function createDefaultScheduledJobHandlers(): ScheduledJobHandlerRegistry
       jobName: "sessions.erp-reminders",
       async execute(context) {
         context.signal.throwIfAborted();
-        const result = await runSessionReminderNotifications(
-          context.requestedAt,
-        );
+        const result = await (
+          dependencies.sendSessionReminders ??
+          runSessionReminderNotifications
+        )(context.requestedAt);
         context.signal.throwIfAborted();
+        const failed = result.registra.failed + result.trpg.failed;
+        throwIfScheduledJobPartiallyFailed(
+          "sessions.erp-reminders",
+          failed,
+          {
+            windowStart: result.now,
+            failed,
+          },
+        );
         return {
           windowStart: result.now,
           windowEnd: result.windowEnd,
@@ -112,7 +156,7 @@ export function createDefaultScheduledJobHandlers(): ScheduledJobHandlerRegistry
             result.registra.candidates + result.trpg.candidates,
           notifications:
             result.registra.notifications + result.trpg.notifications,
-          failed: result.registra.failed + result.trpg.failed,
+          failed,
           mutated:
             result.registra.notifications + result.trpg.notifications > 0,
         };

@@ -140,3 +140,50 @@ test("active lease sweeper는 scheduled/outbox 만료 건을 합산해 보고한
     { observedDue: 5, dead: 5 },
   );
 });
+
+test("재시도 claim lease는 원래 요청 시각이 아니라 현재 시각에서 시작한다", async () => {
+  const retryAt = new Date("2099-01-02T00:00:00.000Z");
+  let claimNow;
+  let claimRequestedAt;
+  let handlerRequestedAt;
+  const persistence = {
+    async claim(input) {
+      claimNow = input.now;
+      claimRequestedAt = input.requestedAt;
+      return claimedRun();
+    },
+    async renew() {
+      return new Date(retryAt.getTime() + 100);
+    },
+    async complete() {
+      return true;
+    },
+    async fail() {
+      return "FAILED";
+    },
+  };
+  const handlers = new ScheduledJobHandlerRegistry([
+    {
+      jobName: context.jobName,
+      async execute(handlerContext) {
+        handlerRequestedAt = handlerContext.requestedAt;
+        return { mutated: false };
+      },
+    },
+  ]);
+  const coordinator = new SharedDbScheduledJobCoordinator(
+    handlers,
+    {
+      leaseMs: 100,
+      leaseRenewIntervalMs: 5,
+      now: () => retryAt,
+    },
+    persistence,
+  );
+
+  await coordinator.executeOnce(context);
+
+  assert.equal(claimNow, retryAt);
+  assert.equal(claimRequestedAt, context.requestedAt);
+  assert.equal(handlerRequestedAt, context.requestedAt);
+});

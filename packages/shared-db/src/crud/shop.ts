@@ -135,9 +135,9 @@ export async function refreshStock(
 /**
  * 해당 품목이 아직 todayKst로 갱신되지 않았을 때만 재고를 교체한다.
  *
- * 기존 문서는 `{ itemId, lastRefresh: { $ne: todayKst } }` 조건부 update로 한 호출만
- * 성공한다. 미존재 문서는 insert를 시도하고, 동시 insert나 이미 당일 갱신된 문서의
- * itemId unique 충돌은 "다른 호출이 먼저 갱신함"으로 처리한다.
+ * 기존 문서는 todayKst보다 과거인 경우에만 갱신해 오래된 worker 슬롯이 최신 재고를
+ * 되돌리지 못하게 한다. 미존재 문서는 insert를 시도하고, 동시 insert나 이미 당일
+ * 갱신된 문서의 itemId unique 충돌은 "다른 호출이 먼저 갱신함"으로 처리한다.
  */
 export async function refreshStockIfStale(
   itemId: string,
@@ -146,7 +146,13 @@ export async function refreshStockIfStale(
 ): Promise<boolean> {
   const col = await shopDailyStockCol();
   const updated = await col.updateOne(
-    { itemId, lastRefresh: { $ne: todayKst } },
+    {
+      itemId,
+      $or: [
+        { lastRefresh: { $lt: todayKst } },
+        { lastRefresh: { $exists: false } },
+      ],
+    },
     { $set: { stock, lastRefresh: todayKst } },
   );
   if (updated.modifiedCount > 0) return true;

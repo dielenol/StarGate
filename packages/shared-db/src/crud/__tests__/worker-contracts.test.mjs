@@ -9,7 +9,10 @@ import {
   completeScheduledJobRun,
   connect,
   enqueueIntegrationOutbox,
+  expireStaleScheduledJobRuns,
+  findDueScheduledJobRuns,
   getDb,
+  refreshStockIfStale,
   renewScheduledJobRunLease,
 } from "../../../dist/index.js";
 
@@ -30,6 +33,7 @@ before(async () => {
   await Promise.all([
     db.collection("scheduled_job_runs").deleteMany({}),
     db.collection("integration_outbox").deleteMany({}),
+    db.collection("shop_daily_stock").deleteMany({}),
     db
       .collection("scheduled_job_runs")
       .createIndex(
@@ -41,6 +45,12 @@ before(async () => {
       .createIndex(
         { dedupeKey: 1 },
         { unique: true, name: "integration_outbox_dedupeKey_unique" },
+      ),
+    db
+      .collection("shop_daily_stock")
+      .createIndex(
+        { itemId: 1 },
+        { unique: true, name: "shop_daily_stock_itemId_unique" },
       ),
   ]);
 });
@@ -138,6 +148,113 @@ test(
     assert.equal(stored?.attempts, 1);
     assert.equal(stored?.leaseToken, undefined);
     assert.ok(stored?.completedAt instanceof Date);
+  },
+);
+
+test(
+  "scheduled retry 조회는 backoff가 끝난 지원 작업과 만료 lease만 반환한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const now = new Date("2099-01-05T00:00:00.000Z");
+    const db = await getDb();
+    await db.collection("scheduled_job_runs").insertMany([
+      {
+        jobName: "shop.refresh",
+        slotKey: "2099-01-05",
+        status: "FAILED",
+        attempts: 1,
+        availableAt: new Date(now.getTime() - 2_000),
+        startedAt: new Date(now.getTime() - 10_000),
+        updatedAt: new Date(now.getTime() - 2_000),
+      },
+      {
+        jobName: "stocks.tick",
+        slotKey: "2099-01-05",
+        status: "RUNNING",
+        attempts: 1,
+        availableAt: new Date(now.getTime() - 1_000),
+        leaseUntil: new Date(now.getTime() - 500),
+        startedAt: new Date(now.getTime() - 9_000),
+        updatedAt: new Date(now.getTime() - 1_000),
+      },
+      {
+        jobName: "credits.daily-allowance",
+        slotKey: "2099-01-05",
+        status: "FAILED",
+        attempts: 1,
+        availableAt: new Date(now.getTime() + 1_000),
+        startedAt: new Date(now.getTime() - 8_000),
+        updatedAt: now,
+      },
+      {
+        jobName: "sessions.erp-reminders",
+        slotKey: "2099-01-05",
+        status: "FAILED",
+        attempts: 8,
+        availableAt: new Date(now.getTime() - 1_000),
+        startedAt: new Date(now.getTime() - 7_000),
+        updatedAt: now,
+      },
+    ]);
+
+    const runs = await findDueScheduledJobRuns({
+      now,
+      maxAttempts: 8,
+      jobNames: [
+        "shop.refresh",
+        "stocks.tick",
+        "credits.daily-allowance",
+        "sessions.erp-reminders",
+      ],
+    });
+
+    assert.deepEqual(
+      runs.map((run) => run.jobName),
+      ["shop.refresh", "stocks.tick"],
+    );
+
+    assert.equal(
+      await expireStaleScheduledJobRuns({
+        currentSlotKey: "2099-01-06",
+        now: new Date("2099-01-06T00:00:00.000Z"),
+        jobNames: [
+          "shop.refresh",
+          "stocks.tick",
+          "credits.daily-allowance",
+          "sessions.erp-reminders",
+        ],
+      }),
+      4,
+    );
+    assert.equal(
+      await db.collection("scheduled_job_runs").countDocuments({
+        slotKey: "2099-01-05",
+        status: "DEAD",
+      }),
+      4,
+    );
+  },
+);
+
+test(
+  "과거 shop refresh는 더 최신 날짜의 재고를 덮지 않는다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    assert.equal(
+      await refreshStockIfStale("test-monotonic-item", 5, "2099-01-02"),
+      true,
+    );
+    assert.equal(
+      await refreshStockIfStale("test-monotonic-item", 99, "2099-01-01"),
+      false,
+    );
+
+    const db = await getDb();
+    const stored = await db.collection("shop_daily_stock").findOne({
+      itemId: "test-monotonic-item",
+    });
+    assert.equal(stored?.stock, 5);
+    assert.equal(stored?.lastRefresh, "2099-01-02");
   },
 );
 

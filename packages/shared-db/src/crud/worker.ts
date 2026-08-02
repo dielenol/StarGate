@@ -28,8 +28,23 @@ export interface ClaimScheduledJobRunInput {
   jobName: string;
   slotKey: string;
   now?: Date;
+  requestedAt?: Date;
   leaseMs?: number;
   maxAttempts?: number;
+}
+
+export interface FindDueScheduledJobRunsInput {
+  now?: Date;
+  maxAttempts?: number;
+  limit?: number;
+  jobNames?: string[];
+  slotKey?: string;
+}
+
+export interface ExpireStaleScheduledJobRunsInput {
+  currentSlotKey: string;
+  now?: Date;
+  jobNames?: string[];
 }
 
 export interface EnqueueIntegrationOutboxInput {
@@ -108,7 +123,7 @@ export async function claimScheduledJobRun(
     availableAt: now,
     leaseToken,
     leaseUntil,
-    startedAt: now,
+    startedAt: input.requestedAt ?? now,
     updatedAt: now,
   };
 
@@ -148,6 +163,63 @@ export async function claimScheduledJobRun(
     },
     { returnDocument: "after" },
   );
+}
+
+export async function findDueScheduledJobRuns(
+  input: FindDueScheduledJobRunsInput = {},
+): Promise<ScheduledJobRun[]> {
+  const col = await scheduledJobRunsCol();
+  const now = input.now ?? new Date();
+  const maxAttempts = normalizePositiveInteger(
+    input.maxAttempts,
+    DEFAULT_MAX_ATTEMPTS,
+  );
+  const limit = normalizePositiveInteger(input.limit, 50);
+
+  return col
+    .find({
+      ...(input.jobNames && input.jobNames.length > 0
+        ? { jobName: { $in: input.jobNames } }
+        : {}),
+      ...(input.slotKey ? { slotKey: input.slotKey } : {}),
+      attempts: { $lt: maxAttempts },
+      $or: [
+        { status: "FAILED", availableAt: { $lte: now } },
+        { status: "RUNNING", leaseUntil: { $lte: now } },
+      ],
+    })
+    .sort({ availableAt: 1, startedAt: 1, _id: 1 })
+    .limit(limit)
+    .toArray();
+}
+
+export async function expireStaleScheduledJobRuns(
+  input: ExpireStaleScheduledJobRunsInput,
+): Promise<number> {
+  const col = await scheduledJobRunsCol();
+  const now = input.now ?? new Date();
+  const result = await col.updateMany(
+    {
+      ...(input.jobNames && input.jobNames.length > 0
+        ? { jobName: { $in: input.jobNames } }
+        : {}),
+      slotKey: { $lt: input.currentSlotKey },
+      $or: [
+        { status: "FAILED" },
+        { status: "RUNNING", leaseUntil: { $lte: now } },
+      ],
+    },
+    {
+      $set: {
+        status: "DEAD",
+        lastError: `현재 ${input.currentSlotKey}보다 오래된 예약 작업 슬롯이라 재실행하지 않았습니다.`,
+        completedAt: now,
+        updatedAt: now,
+      },
+      $unset: { leaseToken: "", leaseUntil: "" },
+    },
+  );
+  return result.modifiedCount;
 }
 
 export async function renewScheduledJobRunLease(input: {

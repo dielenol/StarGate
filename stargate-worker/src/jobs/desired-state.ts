@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { MongoServerError, type UpdateFilter } from "mongodb";
+
 import {
   SHOP_CATALOG,
   resolveShopOpenState,
@@ -58,22 +60,52 @@ async function requestDesiredState(input: {
   }
 
   const now = new Date();
-  await col.updateOne(
-    { _id: input.stateId },
-    {
-      $inc: { requestedRevision: 1 },
-      $setOnInsert: { syncedRevision: 0, createdAt: now },
-      $set: {
-        desiredDate: input.date,
-        desiredSourceRevision: input.sourceRevision,
-        desiredPayloads: input.payloads,
-        updatedAt: now,
-      },
-      $unset: { lastError: "", nextAttemptAt: "" },
+  const mutation: UpdateFilter<DesiredMessageState> = {
+    $inc: { requestedRevision: 1 },
+    $setOnInsert: { syncedRevision: 0, createdAt: now },
+    $set: {
+      desiredDate: input.date,
+      desiredSourceRevision: input.sourceRevision,
+      desiredPayloads: input.payloads,
+      updatedAt: now,
     },
-    { upsert: true },
+    $unset: { lastError: "", nextAttemptAt: "" },
+  };
+  const updated = await col.updateOne(
+    {
+      _id: input.stateId,
+      $or: [
+        { desiredDate: { $exists: false } },
+        { desiredDate: { $lte: input.date } },
+      ],
+    },
+    mutation,
   );
-  return "requested";
+  if (updated.matchedCount === 1) return "requested";
+
+  try {
+    const inserted = await col.updateOne(
+      { _id: input.stateId },
+      {
+        $setOnInsert: {
+          requestedRevision: 1,
+          syncedRevision: 0,
+          desiredDate: input.date,
+          desiredSourceRevision: input.sourceRevision,
+          desiredPayloads: input.payloads,
+          createdAt: now,
+          updatedAt: now,
+        },
+      },
+      { upsert: true },
+    );
+    return inserted.upsertedCount === 1 ? "requested" : "current";
+  } catch (error) {
+    if (error instanceof MongoServerError && error.code === 11_000) {
+      return "current";
+    }
+    throw error;
+  }
 }
 
 function shopStatusLine(

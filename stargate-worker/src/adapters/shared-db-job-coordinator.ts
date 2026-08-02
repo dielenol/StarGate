@@ -53,6 +53,7 @@ export class SharedDbScheduledJobCoordinator
       leaseRenewIntervalMs?: number;
       maxAttempts?: number;
       backoffBaseMs?: number;
+      now?: () => Date;
     } = {},
     private readonly persistence: ScheduledJobRunPersistencePort =
       SHARED_DB_PERSISTENCE,
@@ -62,6 +63,7 @@ export class SharedDbScheduledJobCoordinator
     context: ScheduledJobExecutionContext,
   ): Promise<ScheduledJobExecutionResult> {
     const handler = this.handlers.require(context.jobName);
+    const now = this.options.now ?? (() => new Date());
     const leaseMs = this.options.leaseMs ?? DEFAULT_LEASE_MS;
     const leaseRenewIntervalMs =
       this.options.leaseRenewIntervalMs ??
@@ -81,7 +83,8 @@ export class SharedDbScheduledJobCoordinator
     const run = await this.persistence.claim({
       jobName: context.jobName,
       slotKey: context.slotKey,
-      now: context.requestedAt,
+      now: now(),
+      requestedAt: context.requestedAt,
       leaseMs,
       maxAttempts: this.options.maxAttempts,
     });
@@ -110,7 +113,7 @@ export class SharedDbScheduledJobCoordinator
             const renewedUntil = await this.persistence.renew({
               id: run._id!,
               leaseToken: run.leaseToken!,
-              now: new Date(),
+              now: now(),
               leaseMs,
             });
             if (!renewedUntil) {
@@ -148,7 +151,7 @@ export class SharedDbScheduledJobCoordinator
         id: run._id,
         leaseToken: run.leaseToken,
         summary,
-        now: new Date(),
+        now: now(),
       });
       if (!completed) {
         throw new ScheduledJobLeaseLostError(
@@ -172,7 +175,7 @@ export class SharedDbScheduledJobCoordinator
         attempts: run.attempts,
         maxAttempts: this.options.maxAttempts,
         backoffBaseMs: this.options.backoffBaseMs,
-        now: new Date(),
+        now: now(),
       });
       throw error;
     }
