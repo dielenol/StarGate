@@ -20,6 +20,8 @@ export interface StockCatalogItem {
   name: string;
   /** IPO 시드 가격 (정수). 시드 미적재 시 fallback. */
   basePrice: number;
+  /** NOVEX 시가총액 가중치 계산에 사용하는 발행주식수. */
+  sharesOutstanding: number;
   /** 종목 설명 (UI 표시용). */
   description: string;
   /**
@@ -36,6 +38,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     ticker: "TWS",
     name: "토와스키",
     basePrice: 10,
+    sharesOutstanding: 1_230_000_000,
     description:
       "연식 있는 브랜드 총기 제조사. 군·경찰·민간 시장에 걸쳐 폭넓은 유통망 보유.",
     color: "#4A5560",
@@ -44,6 +47,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     ticker: "STM",
     name: "스타마트",
     basePrice: 10,
+    sharesOutstanding: 180_000_000,
     description:
       "미국 상권 지분 30%를 차지하는 대형 마트 브랜드. 생활용품부터 초인 장비까지 취급.",
     color: "#E08A1F",
@@ -52,6 +56,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     ticker: "SSR",
     name: "송사리",
     basePrice: 30,
+    sharesOutstanding: 180_000_000,
     description:
       "다국적기업의 종합 해운 기업으로 컨테이너·벌크·LNG 화물 운송 및 항만 터미널 운영, 선박 건조 사업을 영위함.",
     color: "#1F6B8F",
@@ -60,6 +65,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     ticker: "MSF",
     name: "만세식품",
     basePrice: 50,
+    sharesOutstanding: 24_000_000,
     description:
       "한국계 제과 기업. 서울-만세 아이스크림으로 유명하며 현재 고급화 전략 추진 중.",
     color: "#D87093",
@@ -68,6 +74,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     ticker: "VFP",
     name: "VF제약",
     basePrice: 80,
+    sharesOutstanding: 111_250_000,
     description:
       "일본계 생명공학·의약품 회사. 과학자 혈청 등 특수 의약품의 주요 공급처.",
     color: "#9B6FBF",
@@ -76,6 +83,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     ticker: "BPE",
     name: "블랙피라미드 에너지",
     basePrice: 100,
+    sharesOutstanding: 220_000_000,
     description: "블랙피라미드에서 생산되는 전력을 전 세계에 공급하는 에너지 기업.",
     color: "#9B2C6F",
   },
@@ -83,6 +91,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     ticker: "ART",
     name: "오로라텍",
     basePrice: 120,
+    sharesOutstanding: 120_000_000,
     description:
       "오로라 판데믹 이후 창설된 중국계 기업. 오로라 바이러스 백신 및 광원화 활용 연구.",
     color: "#1F9B7A",
@@ -91,6 +100,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     ticker: "GN3",
     name: "지니어스 33",
     basePrice: 350,
+    sharesOutstanding: 100_000_000,
     description:
       "글로벌 자산 운용사. 사모펀드·투자 등 금융 전반에 걸친 사업 포트폴리오 보유.",
     color: "#2F6B4F",
@@ -99,6 +109,7 @@ export const STOCK_CATALOG: StockCatalogItem[] = [
     ticker: "SPZ",
     name: "스페이스 제로",
     basePrice: 1000,
+    sharesOutstanding: 1_240_000_000,
     description:
       "우주항공·무기·AI 산업 글로벌 선두주자. 전기차 산업까지 이끄는 초대형 기업.",
     color: "#3A8FBF",

@@ -5,6 +5,7 @@ const MAX_RATE_LIMIT_RETRIES = 2;
 const MAX_RATE_LIMIT_WAIT_MS = 10_000;
 
 export interface DiscordWebhookPayload {
+  content?: string;
   username: string;
   avatar_url?: string;
   allowed_mentions: { parse: string[] };
