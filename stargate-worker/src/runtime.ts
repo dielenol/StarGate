@@ -4,16 +4,19 @@ import {
   SharedDbConnectionAdapter,
   type DatabaseConnectionPort,
 } from "./adapters/shared-db-connection.js";
+import { SharedDbScheduledJobCoordinator } from "./adapters/shared-db-job-coordinator.js";
 import { SharedDbIntegrationOutboxAdapter } from "./adapters/shared-db-outbox.js";
 import type { WorkerConfig } from "./config.js";
 import { ConsumerManager } from "./consumers/manager.js";
 import type { DueWorkConsumerPort } from "./consumers/port.js";
 import { createDefaultDomainConsumers } from "./consumers/factory.js";
 import { WorkerLeaseSweeper } from "./consumers/lease-sweeper.js";
+import { ScheduledJobRetryConsumer } from "./consumers/scheduled-job-retry.js";
 import { createShadowDomainConsumers } from "./consumers/shadow-consumers.js";
 import { WorkerHttpServer } from "./health/http-server.js";
 import { WorkerHealthState } from "./health/state.js";
 import { logger as defaultLogger, type WorkerLogger } from "./logger.js";
+import { createDefaultScheduledJobHandlers } from "./jobs/default-handlers.js";
 import { createShadowOutboxConsumer } from "./outbox/shadow-consumer.js";
 import { SharedDbIntegrationOutboxConsumer } from "./outbox/active-consumer.js";
 import { createDefaultIntegrationOutboxHandlers } from "./outbox/default-handlers.js";
@@ -63,6 +66,10 @@ export class WorkerRuntime {
         ? dependencies.integrationOutboxHandlers ??
           createDefaultIntegrationOutboxHandlers()
         : null;
+    const scheduledJobHandlers =
+      config.mode === "active"
+        ? createDefaultScheduledJobHandlers()
+        : null;
     const defaultConsumers =
       config.mode === "shadow"
         ? [
@@ -71,6 +78,15 @@ export class WorkerRuntime {
           ]
         : [
             new WorkerLeaseSweeper(),
+            ...(scheduledJobHandlers
+              ? [
+                  new ScheduledJobRetryConsumer(
+                    new SharedDbScheduledJobCoordinator(
+                      scheduledJobHandlers,
+                    ),
+                  ),
+                ]
+              : []),
             ...createDefaultDomainConsumers(config.enabledConsumers),
             ...(integrationOutboxHandlers &&
             integrationOutboxHandlers.size > 0
