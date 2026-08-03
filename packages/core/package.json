@@ -30,6 +30,14 @@
       "types": "./dist/domain/combat-rules.d.ts",
       "import": "./dist/domain/combat-rules.js"
     },
+    "./domain/status-effects": {
+      "types": "./dist/domain/status-effects.d.ts",
+      "import": "./dist/domain/status-effects.js"
+    },
+    "./domain/agent-combat-abilities": {
+      "types": "./dist/domain/agent-combat-abilities.d.ts",
+      "import": "./dist/domain/agent-combat-abilities.js"
+    },
     "./domain/mrbeast-soda-stock-impact": {
       "types": "./dist/domain/mrbeast-soda-stock-impact.d.ts",
       "import": "./dist/domain/mrbeast-soda-stock-impact.js"
