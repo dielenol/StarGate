@@ -44,6 +44,8 @@ docs/lore/
 - [깨진 음절](concept/broken-syllable.md)
 - [광원화 (Light-sourcing)](concept/light-sourcing.md)
 - [노부스 오르도 전투 근간 규칙](concept/novus-ordo-combat-foundations.md)
+- [산성 상태이상](concept/acid-status-effect.md)
+- [박애솔 화염방사기 전투 스킬](concept/park-aesol-flamethrower-abilities.md)
 
 ### faction/
 
