@@ -17,10 +17,10 @@ test("scheduled stock mutation wraps price and history in one transaction", asyn
 
 test("shop refresh uses item/date conditional update and unique-race fallback", async () => {
   const source = await readFile(SHOP, "utf8");
-  assert.match(
-    source,
-    /\{ itemId, lastRefresh: \{ \$ne: todayKst \} \}/,
-  );
+  // 날짜 단조성(96ad1a22): `$ne` 대신 과거/미존재 슬롯만 갱신해 오래된 worker 슬롯이
+  // 최신 재고를 되돌리지 못하게 한다.
+  assert.match(source, /\{ lastRefresh: \{ \$lt: todayKst \} \}/);
+  assert.match(source, /\{ lastRefresh: \{ \$exists: false \} \}/);
   assert.match(source, /insertOne\(\{ itemId, stock, lastRefresh: todayKst \}\)/);
   assert.match(source, /error\.code === 11_000/);
 });
