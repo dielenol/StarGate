@@ -12,6 +12,8 @@ import {
   useState,
 } from "react";
 
+import { COMBAT_TRAINING_MAP_PRESETS } from "@stargate/core/domain/combat-rules";
+
 import type {
   EquipmentShopCatalogEntry,
   EquipmentShopCatalogResponse,
@@ -145,35 +147,33 @@ interface BattlefieldConfig {
   targetPosition: SimulatorBoardCoord;
 }
 
-const BATTLEFIELDS: readonly BattlefieldConfig[] = [
-  {
-    id: "5x5",
-    label: "5×5",
-    description: "표준 전장",
-    columns: SIMULATOR_BOARD_COLUMNS,
-    rows: SIMULATOR_BOARD_ROWS,
+const BATTLEFIELD_INITIAL_POSITIONS: Record<
+  BattlefieldId,
+  Pick<BattlefieldConfig, "attackerPosition" | "targetPosition">
+> = {
+  "5x5": {
     attackerPosition: { col: "C", row: 1 },
     targetPosition: { col: "C", row: 3 },
   },
-  {
-    id: "1x5",
-    label: "1×5",
-    description: "세로 전장",
-    columns: ["A"],
-    rows: SIMULATOR_BOARD_ROWS,
+  "1x5": {
     attackerPosition: { col: "A", row: 1 },
     targetPosition: { col: "A", row: 3 },
   },
-  {
-    id: "5x1",
-    label: "5×1",
-    description: "가로 전장",
-    columns: SIMULATOR_BOARD_COLUMNS,
-    rows: [1],
+  "5x1": {
     attackerPosition: { col: "A", row: 1 },
     targetPosition: { col: "C", row: 1 },
   },
-] as const;
+};
+
+const BATTLEFIELDS: readonly BattlefieldConfig[] =
+  COMBAT_TRAINING_MAP_PRESETS.map((preset) => ({
+    id: preset.id,
+    label: preset.label,
+    description: preset.description,
+    columns: SIMULATOR_BOARD_COLUMNS.slice(0, preset.columns),
+    rows: SIMULATOR_BOARD_ROWS.slice(0, preset.rows),
+    ...BATTLEFIELD_INITIAL_POSITIONS[preset.id],
+  }));
 const DEFAULT_BATTLEFIELD = BATTLEFIELDS[0];
 const DEFAULT_TARGET: SimulatorTargetStats = {
   hp: 60,

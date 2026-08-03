@@ -69,9 +69,10 @@ test("the standard 5x5 battlefield can switch to vertical 1x5 and horizontal 5x1
 
   assert.match(client, /type BattlefieldId = "5x5" \| "1x5" \| "5x1"/);
   assert.match(client, /const DEFAULT_BATTLEFIELD = BATTLEFIELDS\[0\]/);
-  assert.match(client, /id: "5x5"[\s\S]*description: "표준 전장"/);
-  assert.match(client, /id: "1x5"[\s\S]*columns: \["A"\]/);
-  assert.match(client, /id: "5x1"[\s\S]*rows: \[1\]/);
+  assert.match(client, /COMBAT_TRAINING_MAP_PRESETS\.map/);
+  assert.match(client, /BATTLEFIELD_INITIAL_POSITIONS/);
+  assert.match(client, /slice\(0, preset\.columns\)/);
+  assert.match(client, /slice\(0, preset\.rows\)/);
   assert.match(client, /aria-label="전장 규격 선택"/);
   assert.match(client, /handleBattlefieldChange\(candidate\.id\)/);
   assert.match(client, /boardRows\.map\(\(row\)/);

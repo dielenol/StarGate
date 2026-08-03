@@ -150,6 +150,19 @@ test("dazed reduces outgoing ranged damage by 20% for one active round", () => {
   assert.equal(result.ok, true);
   assert.equal(result.rawDamage, 12);
   assert.equal(result.damageApplied, 12);
+
+  const roundedResult = resolveSimulatorAttack({
+    weaponSlug: "basic-pistol",
+    attacker: { col: "A", row: 1 },
+    target: { col: "A", row: 1 },
+    attackerStats,
+    attackerStatuses: dazed,
+    targetStats,
+    runtime: { resourceRemaining: 5 },
+  });
+  assert.equal(roundedResult.ok, true);
+  assert.equal(roundedResult.rawDamage, 6);
+  assert.equal(roundedResult.damageApplied, 6);
 });
 
 test("flamethrower applies burn on supported range", () => {

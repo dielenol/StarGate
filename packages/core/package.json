@@ -26,6 +26,10 @@
       "types": "./dist/domain/kst-time.d.ts",
       "import": "./dist/domain/kst-time.js"
     },
+    "./domain/combat-rules": {
+      "types": "./dist/domain/combat-rules.d.ts",
+      "import": "./dist/domain/combat-rules.js"
+    },
     "./domain/mrbeast-soda-stock-impact": {
       "types": "./dist/domain/mrbeast-soda-stock-impact.d.ts",
       "import": "./dist/domain/mrbeast-soda-stock-impact.js"

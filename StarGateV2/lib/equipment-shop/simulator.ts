@@ -1,3 +1,5 @@
+import { roundCombatPercentageDamage } from "@stargate/core/domain/combat-rules";
+
 export const SIMULATOR_BOARD_COLUMNS = ["A", "B", "C", "D", "E"] as const;
 export const SIMULATOR_BOARD_ROWS = [1, 2, 3, 4, 5] as const;
 
@@ -1357,7 +1359,12 @@ export function resolveSimulatorAttack(
   const rangedDamageMultiplier = rule.usesAtkBonus
     ? 1
     : getSimulatorRangedDamageMultiplier(input.attackerStatuses);
-  const rawDamage = (profile.amount + atkBonus) * rangedDamageMultiplier;
+  const unroundedDamage =
+    (profile.amount + atkBonus) * rangedDamageMultiplier;
+  const rawDamage =
+    rangedDamageMultiplier === 1
+      ? unroundedDamage
+      : roundCombatPercentageDamage(unroundedDamage);
   const penetratedDef = Math.max(
     0,
     input.targetStats.def - (profile.armorPenetration ?? 0),
