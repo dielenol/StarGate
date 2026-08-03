@@ -1,7 +1,6 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- Static WebP public assets avoid next/image hydration noise. */
-
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -188,12 +187,10 @@ export default function Sidebar() {
       >
         <div className={styles["sidebar__header"]}>
           <span className={styles["sidebar__brand-icon"]}>
-            <img
+            <Image
               alt="NOVUS ORDO 로고"
               className={styles["sidebar__brand-image"]}
               height={36}
-              loading="lazy"
-              decoding="async"
               src={brandLogoSrc}
               width={36}
             />

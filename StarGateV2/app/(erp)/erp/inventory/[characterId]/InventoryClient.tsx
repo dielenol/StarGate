@@ -36,6 +36,7 @@ import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import Input from "@/components/ui/Input/Input";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { formatDate } from "@/lib/format/date";
 import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 import { MRBEAST_LOTTERY_SLUG } from "@/lib/shop/mrbeast-lottery";
@@ -151,9 +152,13 @@ function CategoryIcon({
       ? getConsumableItemImageSrc(slug)
       : undefined;
   const previewImageSrc = previewImage?.trim();
-  const imageSrc =
+  const rawImageSrc =
     canonicalImage ??
     (previewImageSrc?.startsWith("/assets/") ? previewImageSrc : undefined);
+  // canonical PNG 맵은 불변 — 소비 지점에서 webp 사이드카로 rewrite (unoptimized 유지, 바이트 절감).
+  const imageSrc = rawImageSrc
+    ? preferOptimizedPublicImagePath(rawImageSrc)
+    : undefined;
 
   if (imageSrc && !imageFailed) {
     return (

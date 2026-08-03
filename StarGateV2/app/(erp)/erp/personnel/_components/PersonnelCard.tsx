@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -209,6 +210,20 @@ function PersonnelAvatarImage({
   const [errored, setErrored] = useState(false);
   if (src && !errored) {
     const optimizedSrc = preferOptimizedPublicImagePath(src);
+    // 로컬 자산만 next/image 최적화 (remotePatterns 는 discord CDN 2종뿐 —
+    // 그 외 외부 URL 은 next/image 가 throw 하므로 raw <img> 폴백 유지).
+    if (optimizedSrc.startsWith("/assets/")) {
+      return (
+        <Image
+          className={styles.avatar__img}
+          src={optimizedSrc}
+          alt=""
+          fill
+          sizes="52px"
+          onError={() => setErrored(true)}
+        />
+      );
+    }
     return (
       /* eslint-disable-next-line @next/next/no-img-element */
       <img

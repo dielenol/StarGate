@@ -25,6 +25,7 @@ import {
   IconSuccess,
 } from "@/components/icons";
 
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
 
 import styles from "./page.module.css";
@@ -121,9 +122,13 @@ function TradeItemVisual({
       ? getConsumableItemImageSrc(slug)
       : undefined;
   const previewImageSrc = previewImage?.trim();
-  const imageSrc =
+  const rawImageSrc =
     canonicalImage ??
     (previewImageSrc?.startsWith("/assets/") ? previewImageSrc : undefined);
+  // canonical PNG 맵은 불변 — 소비 지점에서 webp 사이드카로 rewrite (unoptimized 유지, 바이트 절감).
+  const imageSrc = rawImageSrc
+    ? preferOptimizedPublicImagePath(rawImageSrc)
+    : undefined;
 
   if (imageSrc && !imageFailed) {
     return (

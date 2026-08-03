@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import type { MouseEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -711,13 +712,25 @@ function CharacterCardThumb({
     const optimizedSrc = preferOptimizedPublicImagePath(src);
     return (
       <div className={styles.card__thumbWrap}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={optimizedSrc}
-          alt={alt}
-          className={styles.card__thumb}
-          onError={() => setErrored(true)}
-        />
+        {/* 로컬 자산만 next/image 최적화 (외부 URL 은 remotePatterns 미등록 시 throw — raw <img> 폴백). */}
+        {optimizedSrc.startsWith("/assets/") ? (
+          <Image
+            src={optimizedSrc}
+            alt={alt}
+            fill
+            sizes="(max-width: 480px) 40px, 54px"
+            className={styles.card__thumb}
+            onError={() => setErrored(true)}
+          />
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={optimizedSrc}
+            alt={alt}
+            className={styles.card__thumb}
+            onError={() => setErrored(true)}
+          />
+        )}
         <span
           className={`${styles.card__thumb__tick} ${styles["card__thumb__tick--tl"]}`}
           aria-hidden

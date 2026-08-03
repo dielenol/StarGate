@@ -12,6 +12,8 @@ import type {
 import { useEquipInventoryItem } from "@/hooks/mutations/useInventoryMutation";
 import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
 
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+
 import {
   IconInventoryEquipment,
   IconSwordShield,
@@ -43,7 +45,10 @@ function itemDescription(item: InventoryEntryDto): string {
 
 function itemImageSrc(item: InventoryEntryDto): string | null {
   const src = item.previewImage?.trim();
-  return src?.startsWith("/assets/") ? src : null;
+  // DB 값은 png 기준 — 소비 지점에서 webp 사이드카로 rewrite (unoptimized 유지, 바이트 절감).
+  return src?.startsWith("/assets/")
+    ? preferOptimizedPublicImagePath(src)
+    : null;
 }
 
 export default function CharacterEquipmentPanel({

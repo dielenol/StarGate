@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 
 import Image from "next/image";
 
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { getShopItemImageSrc } from "@/lib/shop/item-images";
 
 interface Props {
@@ -21,10 +22,12 @@ export default function ShopItemIcon({
   className,
   style,
 }: Props) {
-  const src =
+  // canonical PNG 맵은 불변 — 소비 지점에서 webp 사이드카로 rewrite (unoptimized 유지, 바이트 절감).
+  const rawSrc =
     imageSrc?.startsWith("/assets/") === true
       ? imageSrc
       : getShopItemImageSrc(slug);
+  const src = rawSrc ? preferOptimizedPublicImagePath(rawSrc) : rawSrc;
   const mergedStyle: CSSProperties = {
     display: "block",
     width: size,

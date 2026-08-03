@@ -1,5 +1,6 @@
-/* eslint-disable @next/next/no-img-element -- Static WebP public assets avoid next/image hydration noise. */
+/* eslint-disable @next/next/no-img-element -- 초상 등 정적 WebP 는 raw <img> 유지 (로고는 LCP 라 next/image 최적화). */
 
+import Image from "next/image";
 import Link from "next/link";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
@@ -31,14 +32,14 @@ export default function HomePage() {
               <p className={styles["stargate__logo-placeholder"]}>
                 <span className={styles["stargate__logo-title"]}>NOVUS ORDO</span>
                 <br />
-                <img
+                {/* LCP — next/image priority 가 preload + fetchPriority=high 를 대체. */}
+                <Image
                   className={styles["stargate__logo-image"]}
                   src={logoSrc}
                   alt="Star Gate logo"
                   width={220}
                   height={183}
-                  decoding="async"
-                  fetchPriority="high"
+                  priority
                 />
               </p>
             </div>

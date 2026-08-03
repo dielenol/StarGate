@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 import Link from "next/link";
 
 import type {
@@ -252,6 +253,22 @@ function DossierPortraitImage({
   const [errored, setErrored] = useState(false);
   if (src && !errored) {
     const optimizedSrc = preferOptimizedPublicImagePath(src);
+    // 로컬 자산만 next/image 최적화 (외부 URL 은 remotePatterns 미등록 시 throw — raw <img> 폴백).
+    // intrinsic 238×317 = .portraitImg max-width(238px) × aspect-ratio(3/4).
+    // 렌더 크기는 CSS(width:100%/aspect-ratio)가 결정하고, 이 값은 srcset 산출 기준.
+    if (optimizedSrc.startsWith("/assets/")) {
+      return (
+        <Image
+          src={optimizedSrc}
+          alt={alt}
+          width={238}
+          height={317}
+          priority
+          className={styles.portraitImg}
+          onError={() => setErrored(true)}
+        />
+      );
+    }
     return (
       /* eslint-disable-next-line @next/next/no-img-element */
       <img

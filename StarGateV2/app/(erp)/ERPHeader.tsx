@@ -1,7 +1,6 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- Static header logo avoids next/image hydration attribute noise. */
-
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -510,14 +509,13 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
       </button>
 
       <Link href="/erp" className={styles.header__brand} aria-label="ERP 홈">
-        <img
+        <Image
           className={styles.header__logo}
           src={logoSrc}
           alt="NOVUS ORDO"
           width={44}
           height={44}
-          decoding="async"
-          fetchPriority="high"
+          priority
         />
         <span className={styles.header__brandName}>NOVUS ORDO</span>
       </Link>
