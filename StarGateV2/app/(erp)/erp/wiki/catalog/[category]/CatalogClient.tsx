@@ -17,6 +17,7 @@ import {
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import { useInventoryItems } from "@/hooks/queries/useInventoryQuery";
 
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import {
   CATALOG_SCOPE_CATEGORIES,
   CATALOG_SCOPE_HREF,
@@ -90,11 +91,11 @@ function assetImageSrc(value?: string): string | null {
 }
 
 function itemImageSrc(item: CatalogItem): string | null {
-  return (
+  const src =
     getConsumableItemImageSrc(item.slug ?? "") ??
-    assetImageSrc(item.previewImage) ??
-    null
-  );
+    assetImageSrc(item.previewImage);
+  // canonical 맵/DB 값은 png 기준 — 소비 지점에서 webp 사이드카로 rewrite.
+  return src ? preferOptimizedPublicImagePath(src) : null;
 }
 
 function scopeFromPathname(pathname: string): CatalogScope | null {
@@ -267,11 +268,17 @@ export default function CatalogClient({ category, initialItems }: Props) {
                   <div className={styles.card__media}>
                     {imageSrc ? (
                       <>
+                        {/* 픽셀아트 — image-rendering: pixelated 유지 위해 next/image 미사용.
+                            .card__media img 는 88×88 고정 (CLS 방지용 intrinsic size). */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={imageSrc}
                           alt=""
                           aria-hidden
+                          width={88}
+                          height={88}
+                          loading="lazy"
+                          decoding="async"
                           draggable={false}
                         />
                       </>

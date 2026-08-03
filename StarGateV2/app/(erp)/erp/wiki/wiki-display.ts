@@ -1,6 +1,8 @@
 import type { TagTone } from "@/components/ui/Tag/Tag";
 import type { WikiPage } from "@/types/wiki";
 
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+
 export interface WikiInfoboxImage {
   src: string;
   alt: string;
@@ -119,7 +121,8 @@ function markdownImageFromLine(line: string): WikiInfoboxImage | null {
   const caption = stripInlineMarkdown((match[3] ?? match[1]).trim());
 
   return {
-    src: match[2].trim(),
+    // 인포박스 이미지도 /assets/ png·jpg 는 webp 사이드카로 rewrite.
+    src: preferOptimizedPublicImagePath(match[2].trim()),
     alt,
     caption,
   };

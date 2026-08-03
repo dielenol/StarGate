@@ -1139,7 +1139,7 @@ export default function TowaskiLicenseTest({
             >
               <Image
                 className={styles.targetImage}
-                src="/assets/equipment-shop/training-target.png"
+                src="/assets/equipment-shop/training-target.webp"
                 width={226}
                 height={438}
                 alt=""

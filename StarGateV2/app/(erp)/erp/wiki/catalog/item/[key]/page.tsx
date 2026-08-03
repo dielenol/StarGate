@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import type { MasterItem } from "@stargate/shared-db/types";
 
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import {
   CATALOG_SCOPE_HREF,
   ITEM_CATEGORY_LABEL,
@@ -62,10 +63,13 @@ function itemMarkdown(item: MasterItem): string {
 }
 
 function previewImage(item: MasterItem): string | null {
+  // canonical 맵/DB 값은 png 기준 — 소비 지점에서 webp 사이드카로 rewrite.
   const catalogSrc = getConsumableItemImageSrc(item.slug ?? "");
-  if (catalogSrc) return catalogSrc;
+  if (catalogSrc) return preferOptimizedPublicImagePath(catalogSrc);
   const src = item.previewImage?.trim();
-  if (src && src.startsWith("/assets/")) return src;
+  if (src && src.startsWith("/assets/")) {
+    return preferOptimizedPublicImagePath(src);
+  }
   return null;
 }
 
@@ -173,7 +177,12 @@ export default async function CatalogItemPage({
                 <div className={styles.figure__frame}>
                   {image ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={image} alt={item.name} />
+                    <img
+                      src={image}
+                      alt={item.name}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     <span className={styles.figure__placeholder} aria-hidden />
                   )}

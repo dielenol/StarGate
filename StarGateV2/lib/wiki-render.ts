@@ -4,6 +4,8 @@
  * 외부 라이브러리 없이 위키 본문에서 쓰는 안전한 subset만 처리한다.
  */
 
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+
 export type MarkdownLinkKind = "wiki" | "catalog" | "personnel" | "report";
 
 export interface MarkdownLinkTarget {
@@ -342,8 +344,11 @@ function renderImage(line: string): string | null {
   const imageMatch = line.match(/^!\[([^\]]*)\]\((\S+?)(?:\s+"([^"]*)")?\)$/);
   if (!imageMatch) return null;
 
-  const src = normalizeImageSrc(imageMatch[2]);
-  if (!src) return null;
+  const normalizedSrc = normalizeImageSrc(imageMatch[2]);
+  if (!normalizedSrc) return null;
+
+  // /assets/ 로컬 경로만 webp 사이드카로 rewrite (helper 가 외부/기타 경로는 그대로 통과).
+  const src = preferOptimizedPublicImagePath(normalizedSrc);
 
   const alt = escapeHtml(imageMatch[1].trim());
   const caption = escapeHtml((imageMatch[3] ?? imageMatch[1]).trim());

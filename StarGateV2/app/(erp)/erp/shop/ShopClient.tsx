@@ -98,13 +98,13 @@ const SHOP_CLOSED_BEEP_OPTIONS = {
 >;
 
 const TIA_MOOD_ASSETS: Record<TiaMood, string> = {
-  welcome: "/assets/shop/hud/tia-welcome.png",
-  tired: "/assets/shop/hud/tia-tired.png",
-  soldout: "/assets/shop/hud/tia-soldout.png",
-  bag: "/assets/shop/hud/tia-bag.png",
-  doodle: "/assets/shop/hud/tia-doodle.png",
-  purchase: "/assets/shop/hud/tia-purchase-complete.png",
-  nap: "/assets/shop/hud/tia-nap.png",
+  welcome: "/assets/shop/hud/tia-welcome.webp",
+  tired: "/assets/shop/hud/tia-tired.webp",
+  soldout: "/assets/shop/hud/tia-soldout.webp",
+  bag: "/assets/shop/hud/tia-bag.webp",
+  doodle: "/assets/shop/hud/tia-doodle.webp",
+  purchase: "/assets/shop/hud/tia-purchase-complete.webp",
+  nap: "/assets/shop/hud/tia-nap.webp",
 };
 
 const TIA_MOOD_LABELS: Record<TiaMood, string> = {

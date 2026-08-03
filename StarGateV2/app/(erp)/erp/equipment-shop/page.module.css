@@ -291,7 +291,7 @@
 }
 
 .armoryStage--acheron {
-  --armory-bg-image: url("/assets/equipment-shop/rooms/acheron-forge.jpg");
+  --armory-bg-image: url("/assets/equipment-shop/rooms/acheron-forge.webp");
   --armory-bg-position: center top;
   --armory-bg-overlay:
     radial-gradient(circle at 78% 58%, rgba(244, 170, 72, 0.12), transparent 24%),
@@ -667,7 +667,7 @@
   padding: 12px;
   background:
     linear-gradient(180deg, rgba(4, 4, 5, 0.1), rgba(4, 4, 5, 0.42)),
-    url("/assets/equipment-shop/rooms/armory-information-desk.jpg");
+    url("/assets/equipment-shop/rooms/armory-information-desk.webp");
   background-position: center;
   background-size: cover;
   border: 1px solid color-mix(in srgb, var(--gold-dim) 62%, var(--line));
