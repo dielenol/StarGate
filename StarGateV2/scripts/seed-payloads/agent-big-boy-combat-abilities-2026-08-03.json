@@ -1,0 +1,70 @@
+{
+  "collection": "characters",
+  "type": "agent-big-boy-combat-abilities-update",
+  "filter": {
+    "codename": "BIG BOY",
+    "type": "AGENT",
+    "play.abilities.slot": { "$all": ["A1", "A2"] }
+  },
+  "update": [
+    {
+      "$set": {
+        "play.abilities": {
+          "$map": {
+            "input": { "$ifNull": ["$play.abilities", []] },
+            "as": "ability",
+            "in": {
+              "$switch": {
+                "branches": [
+                  {
+                    "case": { "$eq": ["$$ability.slot", "A1"] },
+                    "then": {
+                      "slot": "A1",
+                      "code": "A1",
+                      "name": "불쇼",
+                      "description": "양손에 화염 방사기를 장착합니다.",
+                      "effect": "두 배로 증가하지만 탄환 소모도 두 배가 됩니다. 화상 피해의 N치도 10으로 증가합니다. 종료시까지 매 자신의 턴 SAN치 5를 소모합니다."
+                    }
+                  },
+                  {
+                    "case": { "$eq": ["$$ability.slot", "A2"] },
+                    "then": {
+                      "slot": "A2",
+                      "code": "A2",
+                      "name": "다목적 방사기",
+                      "description": "SAN치 10을 소모합니다.",
+                      "effect": "화염방사기 하나의 속성을 \"화염, 냉기, 산성\" 중에 하나로 바꿀 수 있습니다."
+                    }
+                  }
+                ],
+                "default": "$$ability"
+              }
+            }
+          }
+        },
+        "loreMd": {
+          "$cond": [
+            {
+              "$regexMatch": {
+                "input": { "$ifNull": ["$loreMd", ""] },
+                "regex": "(^|\\n)### A1 불쇼(?:\\n|$)"
+              }
+            },
+            "$loreMd",
+            {
+              "$concat": [
+                { "$ifNull": ["$loreMd", ""] },
+                "\n\n## 능력 조형\n### A1 불쇼\n- 설명: 양손에 화염 방사기를 장착합니다.\n- 효과: 두 배로 증가하지만 탄환 소모도 두 배가 됩니다. 화상 피해의 N치도 10으로 증가합니다. 종료시까지 매 자신의 턴 SAN치 5를 소모합니다.\n\n### A2 다목적 방사기\n- 설명: SAN치 10을 소모합니다.\n- 효과: 화염방사기 하나의 속성을 \"화염, 냉기, 산성\" 중에 하나로 바꿀 수 있습니다."
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$set": {
+        "updatedAt": "2026-08-03T00:00:00.000Z"
+      }
+    }
+  ]
+}

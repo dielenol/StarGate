@@ -1,0 +1,43 @@
+{
+  "collection": "wiki_pages",
+  "type": "official-rule-status-effects-acid-update",
+  "filter": {
+    "slug": "status-effects",
+    "content": { "$regex": "(^|\\n)### 동상(?:\\n|$)" }
+  },
+  "update": [
+    {
+      "$set": {
+        "content": {
+          "$cond": [
+            {
+              "$regexMatch": {
+                "input": { "$ifNull": ["$content", ""] },
+                "regex": "(^|\\n)### 산성(?:\\n|$)"
+              }
+            },
+            "$content",
+            {
+              "$replaceOne": {
+                "input": "$content",
+                "find": "### 동상",
+                "replacement": "### 산성\n- 설명: 장비나 물건을 부식시키는 여러 종류의 부식성 피해이다.\n- 효과: ‘산성’ 상태이상은 자체적인 피해는 없지만 N의 공격력 또는 방어력 부식 효과를 입힌다. 산성 피해로 부식된 방어력과 공격력 누적 손실이 최대치의 절반까지 오면, 해당 손실만큼 체력 피해를 입히고 효과를 초기화한다. 해당 피해는 방어력을 무시한다.\n\n### 동상"
+              }
+            }
+          ]
+        },
+        "tags": {
+          "$setUnion": [
+            { "$ifNull": ["$tags", []] },
+            ["산성", "부식"]
+          ]
+        }
+      }
+    },
+    {
+      "$set": {
+        "updatedAt": "2026-08-03T00:00:00.000Z"
+      }
+    }
+  ]
+}
