@@ -1,10 +1,16 @@
 import frameStyles from "../page.module.css";
 import styles from "./rules.module.css";
+import {
+  COMBAT_MAP_RULES,
+  COMBAT_MOVEMENT_RULES,
+  COMBAT_PERCENTAGE_ROUNDING_RULE,
+} from "@stargate/core/domain/combat-rules";
 import TableOfContents, { type TocItem } from "@/components/TableOfContents/TableOfContents";
 import { IconDivider } from "@/components/icons";
 
 const RULES_TOC_ITEMS: TocItem[] = [
   { id: "welcome", label: "환영" },
+  { id: "combat-foundations", label: "전투 근간 규칙" },
   { id: "class", label: "클래스" },
   { id: "stats", label: "캐릭터 능력치와 포인트" },
   { id: "hp", label: "체력 (HP)" },
@@ -67,6 +73,69 @@ export default function RulesPage() {
                   이상현상의 위협으로부터 인류의 질서와 종속을 수호하는 것입니다.
                 </span>
               </p>
+            </section>
+
+            <section className={styles.section} id="combat-foundations">
+              <h2 className={styles.section__title}>전투 근간 규칙</h2>
+              <p className={styles.section__text}>
+                이동 선언, 백분율 피해의 소수점 처리, 전투 맵 규격은 모든
+                전투 데이터와 훈련장 판정이 공통으로 따르는 기준입니다.
+              </p>
+
+              <div className={styles.statBox}>
+                <p className={styles.termTitle}>이동 선언</p>
+                <ol className={styles.numberList}>
+                  <li>
+                    적의 차례에는 적의 공격을 회피할 때 이동을 선언할 수
+                    있습니다.
+                  </li>
+                  <li>
+                    아군의 차례에는 이동을 선언할 수 있습니다. 행동 선언 없이
+                    이동만 {COMBAT_MOVEMENT_RULES.allyTurnMovement.declarationsPerTurn}
+                    회 선언하거나, 이동 선언과 행동 선언을 섞어 선언할 수
+                    있습니다.
+                  </li>
+                  <li>
+                    아군 또는 적의 능력으로 발생한 강제 이동은 각 스킬에 적힌
+                    효과를 따릅니다.
+                  </li>
+                </ol>
+              </div>
+
+              <div className={styles.statBox}>
+                <p className={styles.termTitle}>전투 수치의 소수점</p>
+                <p className={styles.section__text}>
+                  백분율이 적용되어 피해에 소수점이 생기면 소수 부분이{" "}
+                  <span className={styles.emph}>
+                    {COMBAT_PERCENTAGE_ROUNDING_RULE.fractionThreshold} 이상
+                  </span>
+                  일 때 1로 환산해 더하고, 그 미만은 버립니다.
+                </p>
+                <p className={styles.section__example}>
+                  예: {COMBAT_PERCENTAGE_ROUNDING_RULE.example.baseValue}의{" "}
+                  {COMBAT_PERCENTAGE_ROUNDING_RULE.example.percentage}% 추가 피해 ={" "}
+                  {COMBAT_PERCENTAGE_ROUNDING_RULE.example.derivedValue} →{" "}
+                  {COMBAT_PERCENTAGE_ROUNDING_RULE.example.appliedValue} 피해 적용
+                </p>
+              </div>
+
+              <div className={styles.statBox}>
+                <p className={styles.termTitle}>전투 거리와 맵</p>
+                <ul className={styles.statList}>
+                  <li>
+                    클래식 맵: 가로{" "}
+                    {COMBAT_MAP_RULES.classicHorizontal.minimumColumns}×
+                    {COMBAT_MAP_RULES.classicHorizontal.minimumRows} 또는 세로{" "}
+                    {COMBAT_MAP_RULES.classicVertical.minimumColumns}×
+                    {COMBAT_MAP_RULES.classicVertical.minimumRows} 이상의 일자형 맵
+                  </li>
+                  <li>
+                    리뉴얼 맵: 가로·세로가 결합된{" "}
+                    {COMBAT_MAP_RULES.renewal.minimumColumns}×
+                    {COMBAT_MAP_RULES.renewal.minimumRows} 이상의 맵
+                  </li>
+                </ul>
+              </div>
             </section>
 
             <section className={styles.section} id="class">

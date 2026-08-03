@@ -2110,6 +2110,15 @@
   color: #a9deb2;
 }
 
+.movementRule {
+  margin: 0;
+  padding: 9px 11px;
+  border-left: 2px solid color-mix(in srgb, var(--gold) 68%, var(--line));
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .controlReadouts {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

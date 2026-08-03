@@ -5,6 +5,8 @@ import {
   advanceSimulatorTargetRound,
   applySimulatorResolutionToEnemy,
   applySimulatorStatuses,
+  canDeclareSimulatorMovement,
+  consumeSimulatorMovementDeclaration,
   distributeSimulatorBossDamage,
   fitSimulatorEnemyPosition,
   getSimulatorEquippedWeapons,
@@ -25,11 +27,22 @@ import {
   resolveSimulatorAreaSpray,
   resolveSimulatorAttack,
   resolveSimulatorDamageProfile,
+  SIMULATOR_MOVEMENT_DECLARATION_LIMIT,
   SIMULATOR_STATUS_RULES,
 } from "../simulator.ts";
 
 const attackerStats = { atk: 0 };
 const targetStats = { def: 0 };
+
+test("movement declarations are limited to two uses per ally turn", () => {
+  assert.equal(SIMULATOR_MOVEMENT_DECLARATION_LIMIT, 2);
+  assert.equal(canDeclareSimulatorMovement(0), true);
+  assert.equal(consumeSimulatorMovementDeclaration(0), 1);
+  assert.equal(canDeclareSimulatorMovement(1), true);
+  assert.equal(consumeSimulatorMovementDeclaration(1), 2);
+  assert.equal(canDeclareSimulatorMovement(2), false);
+  assert.equal(consumeSimulatorMovementDeclaration(2), 2);
+});
 
 test("equipped simulator weapons keep inventory art and expose unsupported weapons", () => {
   assert.deepEqual(

@@ -1,7 +1,23 @@
-import { roundCombatPercentageDamage } from "@stargate/core/domain/combat-rules";
+import {
+  COMBAT_MOVEMENT_RULES,
+  roundCombatPercentageDamage,
+} from "@stargate/core/domain/combat-rules";
 
 export const SIMULATOR_BOARD_COLUMNS = ["A", "B", "C", "D", "E"] as const;
 export const SIMULATOR_BOARD_ROWS = [1, 2, 3, 4, 5] as const;
+export const SIMULATOR_MOVEMENT_DECLARATION_LIMIT =
+  COMBAT_MOVEMENT_RULES.allyTurnMovement.declarationsPerTurn;
+
+export function canDeclareSimulatorMovement(used: number): boolean {
+  return used < SIMULATOR_MOVEMENT_DECLARATION_LIMIT;
+}
+
+export function consumeSimulatorMovementDeclaration(used: number): number {
+  return Math.min(
+    SIMULATOR_MOVEMENT_DECLARATION_LIMIT,
+    Math.max(0, Math.floor(used)) + 1,
+  );
+}
 
 export type SimulatorBoardColumn = (typeof SIMULATOR_BOARD_COLUMNS)[number];
 export type SimulatorBoardRow = (typeof SIMULATOR_BOARD_ROWS)[number];

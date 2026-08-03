@@ -28,6 +28,8 @@ import {
   advanceSimulatorTargetRound,
   applySimulatorResolutionToEnemy,
   applySimulatorStatuses,
+  canDeclareSimulatorMovement,
+  consumeSimulatorMovementDeclaration,
   formatSimulatorCoord,
   formatSimulatorDamage,
   fitSimulatorEnemyPosition,
@@ -50,6 +52,7 @@ import {
   resolveSimulatorDamageProfile,
   SIMULATOR_BOARD_COLUMNS,
   SIMULATOR_BOARD_ROWS,
+  SIMULATOR_MOVEMENT_DECLARATION_LIMIT,
   SIMULATOR_RANGE_BANDS,
   SIMULATOR_RANGE_LABELS,
   SIMULATOR_STATUS_LABELS,
@@ -232,8 +235,8 @@ const TRAINING_STEPS: TrainingStep[] = [
   },
   {
     label: "STEP 03",
-    title: "배치 조정",
-    hint: "클릭 또는 토큰 드래그",
+    title: "이동 선언",
+    hint: "선언 후 클릭 또는 드래그",
   },
   {
     label: "STEP 04",
@@ -642,6 +645,9 @@ export default function EquipmentSimulatorClient({
   const [pendingTrainingReset, setPendingTrainingReset] =
     useState<PendingTrainingReset | null>(null);
   const [activeToken, setActiveToken] = useState<ActiveToken>("target");
+  const [movementDeclarationPending, setMovementDeclarationPending] =
+    useState(false);
+  const [movementDeclarationsUsed, setMovementDeclarationsUsed] = useState(0);
   const [enemyPositionConfirmed, setEnemyPositionConfirmed] = useState(true);
   const [attackerPosition, setAttackerPosition] = useState(
     DEFAULT_BATTLEFIELD.attackerPosition,
@@ -1081,7 +1087,7 @@ export default function EquipmentSimulatorClient({
       default:
         return {
           title: `${ENCOUNTER_MODE_META[encounterMode].label} 훈련 준비 완료`,
-          text: `현재 내 위치 ${formatSimulatorCoord(attackerPosition)}, ${selectedEnemy?.name ?? "표적"} 위치 ${formatSimulatorCoord(targetPosition)}입니다. 우측에서 표적 수치를 조정하고, 위치 조정 버튼이나 토큰 드래그를 사용하십시오.`,
+          text: `현재 내 위치 ${formatSimulatorCoord(attackerPosition)}, ${selectedEnemy?.name ?? "표적"} 위치 ${formatSimulatorCoord(targetPosition)}입니다. 내 이동은 이동 선언 후 목적지를 선택하고, 적 위치는 배치 조정으로 변경하십시오.`,
         };
     }
   })();
@@ -1369,7 +1375,38 @@ export default function EquipmentSimulatorClient({
         ? attackerPosition
         : (movingEnemy?.position ?? coord);
     if (token.kind === "attacker") {
+      if (sameCoord(currentCoord, coord)) {
+        showFeedback(
+          "info",
+          "현재 위치 확인",
+          `${formatSimulatorCoord(coord)}에 머뭅니다. 이동 선언은 소모되지 않았습니다.`,
+        );
+        return;
+      }
+      if (!movementDeclarationPending) {
+        showFeedback(
+          "error",
+          "이동 선언 필요",
+          "내 캐릭터를 옮기기 전에 이동 선언을 선택하세요.",
+        );
+        return;
+      }
+      if (!canDeclareSimulatorMovement(movementDeclarationsUsed)) {
+        setMovementDeclarationPending(false);
+        setActiveToken("target");
+        showFeedback(
+          "error",
+          "이동 선언 소진",
+          `이번 턴의 이동 선언 ${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}회를 모두 사용했습니다.`,
+        );
+        return;
+      }
       setAttackerPosition(coord);
+      const nextMovementDeclarationsUsed =
+        consumeSimulatorMovementDeclaration(movementDeclarationsUsed);
+      setMovementDeclarationsUsed(nextMovementDeclarationsUsed);
+      setMovementDeclarationPending(false);
+      setActiveToken("target");
     } else {
       updateEnemy(token.enemyId, (enemy) => {
         const occupiedCells = getSimulatorEnemyOccupiedCells(
@@ -1401,20 +1438,53 @@ export default function EquipmentSimulatorClient({
         ? "내 캐릭터"
         : movingEnemy?.name ?? "적";
     const detail = `${formatSimulatorCoord(currentCoord)} → ${formatSimulatorCoord(fittedCoord)}`;
+    const movementDetail =
+      token.kind === "attacker"
+        ? ` · 이동 선언 ${consumeSimulatorMovementDeclaration(movementDeclarationsUsed)}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}`
+        : "";
     showFeedback(
       "info",
       `${label} 위치 ${sameCoord(currentCoord, fittedCoord) ? "확인" : "이동 완료"}`,
-      detail,
+      `${detail}${movementDetail}`,
     );
     if (!sameCoord(currentCoord, fittedCoord)) {
-      pushLog(`${label} 이동 · ${detail}`, "info");
+      pushLog(`${label} 이동 · ${detail}${movementDetail}`, "info");
     }
+  }
+
+  function handleDeclareMovement() {
+    if (hmgInstalled) {
+      showFeedback(
+        "error",
+        "중기관총 해체 필요",
+        "설치 중에는 이동 선언을 할 수 없습니다. 중기관총을 해체한 뒤 이동하세요.",
+      );
+      return;
+    }
+    if (!canDeclareSimulatorMovement(movementDeclarationsUsed)) {
+      showFeedback(
+        "error",
+        "이동 선언 소진",
+        `이번 턴의 이동 선언 ${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}회를 모두 사용했습니다.`,
+      );
+      return;
+    }
+    setMovementDeclarationPending(true);
+    setActiveToken("attacker");
+    setTrainingEvent("position");
+    setActiveStep(2);
+    showFeedback(
+      "info",
+      `이동 선언 ${movementDeclarationsUsed + 1}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}`,
+      "전투판에서 이동할 칸을 선택하거나 내 토큰을 드래그하세요. 실제 이동 시 선언이 소모됩니다.",
+    );
   }
 
   function handleSelectWeapon(slug: SimulatorWeaponSlug) {
     setSelectedSlug(slug);
     setSelectedActionKind("attack");
     setBlastImpact(null);
+    setMovementDeclarationPending(false);
     setActiveToken(getSimulatorWeaponRule(slug)?.blast ? "aim" : "target");
     setTrainingEvent("weapon");
     setActiveStep(3);
@@ -1431,13 +1501,16 @@ export default function EquipmentSimulatorClient({
 
   function handleSelectActiveToken(token: ActiveToken) {
     if (token === "aim") return;
+    if (token === "attacker") {
+      handleDeclareMovement();
+      return;
+    }
+    setMovementDeclarationPending(false);
     setActiveToken(token);
     showFeedback(
       "info",
-      token === "attacker" ? "내 위치 조정" : "적 위치 조정",
-      token === "attacker"
-        ? "전투판에서 내가 이동할 칸을 선택하세요."
-        : `${selectedEnemy?.name ?? "적"}을 이동할 칸을 선택하거나 토큰을 직접 드래그하세요.`,
+      "적 위치 조정",
+      `${selectedEnemy?.name ?? "적"}을 이동할 칸을 선택하거나 토큰을 직접 드래그하세요.`,
     );
   }
 
@@ -1496,17 +1569,20 @@ export default function EquipmentSimulatorClient({
     token: DraggedToken,
   ) {
     if (!event.isPrimary || event.button !== 0) return;
-    if (
-      token.kind === "attacker" &&
-      hmgInstalled
-    ) {
-      if (hmgInstalled) {
-        showFeedback(
-          "error",
-          "중기관총 해체 필요",
-          "설치 중에는 내 토큰을 드래그할 수 없습니다.",
-        );
-      }
+    if (token.kind === "attacker" && hmgInstalled) {
+      showFeedback(
+        "error",
+        "중기관총 해체 필요",
+        "설치 중에는 내 토큰을 드래그할 수 없습니다.",
+      );
+      return;
+    }
+    if (token.kind === "attacker" && !movementDeclarationPending) {
+      showFeedback(
+        "error",
+        "이동 선언 필요",
+        "이동 선언을 선택한 뒤 내 토큰을 드래그하세요.",
+      );
       return;
     }
     event.preventDefault();
@@ -1594,7 +1670,7 @@ export default function EquipmentSimulatorClient({
       handleCellActivate(attackerPosition);
       return;
     }
-    setActiveToken("attacker");
+    handleDeclareMovement();
   }
 
   function handleEnemyTokenClick(
@@ -1614,6 +1690,7 @@ export default function EquipmentSimulatorClient({
     }
     setSelectedEnemyId(enemyId);
     setSelectedBossPartId(null);
+    setMovementDeclarationPending(false);
     setActiveToken("target");
     setTrainingEvent("position");
     setActiveStep(3);
@@ -1716,6 +1793,8 @@ export default function EquipmentSimulatorClient({
     showTurnEndReveal(endedTurn);
     advanceRoundEffects();
     setTurn(nextTurn);
+    setMovementDeclarationPending(false);
+    setMovementDeclarationsUsed(0);
     if (resetCycle) {
       setHmgShotsInCycle(0);
     }
@@ -1749,6 +1828,8 @@ export default function EquipmentSimulatorClient({
     showTurnEndReveal(endedTurn);
     advanceRoundEffects();
     setTurn(nextTurn);
+    setMovementDeclarationPending(false);
+    setMovementDeclarationsUsed(0);
     if (resetCycle) {
       setHmgShotsInCycle(0);
     }
@@ -1802,6 +1883,8 @@ export default function EquipmentSimulatorClient({
     setDragOverlay(null);
     setDragOverCell(null);
     setTurn(1);
+    setMovementDeclarationPending(false);
+    setMovementDeclarationsUsed(0);
     setActiveToken("target");
     setEnemyPositionConfirmed(true);
     setTrainingEvent("ready");
@@ -2289,6 +2372,7 @@ export default function EquipmentSimulatorClient({
   ) {
     setSelectedActionKind(kind);
     setBlastImpact(null);
+    setMovementDeclarationPending(false);
     const needsCell =
       kind === "incendiary-line" ||
       (kind === "attack" && Boolean(selectedRule?.blast));
@@ -2912,8 +2996,8 @@ export default function EquipmentSimulatorClient({
           <h1>전장 선택형 장비 훈련</h1>
           <p>
             기본 1:1부터 다수 표적과 대형몹 부위 파괴까지 장비의
-            거리·피해·광역 효과를 턴 단위로 시험합니다. 실제 캐릭터와
-            인벤토리는 변경되지 않습니다.
+            거리·피해·광역 효과와 이동 선언을 턴 단위로 시험합니다. 실제
+            캐릭터와 인벤토리는 변경되지 않습니다.
           </p>
           <div className={styles.stageBadges} aria-label="훈련장 상태">
             <Tag tone="gold">턴 단위 모의훈련</Tag>
@@ -2922,6 +3006,10 @@ export default function EquipmentSimulatorClient({
             </Tag>
             <Tag tone="info">
               {ENCOUNTER_MODE_META[encounterMode].label}
+            </Tag>
+            <Tag tone="info">
+              이동 {movementDeclarationsUsed}/
+              {SIMULATOR_MOVEMENT_DECLARATION_LIMIT}
             </Tag>
             <Tag tone="info">실데이터 미반영</Tag>
           </div>
@@ -3134,7 +3222,7 @@ export default function EquipmentSimulatorClient({
                   aria-live="polite"
                 >
                   {activeToken === "attacker"
-                    ? "내 위치 조정 중"
+                    ? `이동 선언 ${movementDeclarationsUsed + 1}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT} 목적지 선택 중`
                     : activeToken === "aim"
                       ? "공격 지점 선택 중"
                       : `적 위치 조정 중 · ${selectedEnemy?.name ?? "표적 없음"}`}
@@ -3153,8 +3241,8 @@ export default function EquipmentSimulatorClient({
                     onClick={() => handleSelectActiveToken("attacker")}
                   >
                     {activeToken === "attacker"
-                      ? "내 위치 조정 중"
-                      : "내 위치 조정"}
+                      ? "이동 목적지 선택 중"
+                      : `이동 선언 ${movementDeclarationsUsed}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}`}
                   </button>
                   <button
                     type="button"
@@ -3170,8 +3258,8 @@ export default function EquipmentSimulatorClient({
                   </button>
                 </div>
                 <p className={styles.placementHelp}>
-                  적 위치 조정 버튼을 누른 뒤 전투판을 클릭하거나, 토큰을
-                  직접 드래그해 위치를 조정할 수 있습니다.
+                  내 캐릭터는 이동 선언 후 전투판 클릭 또는 토큰 드래그로
+                  이동합니다. 적 토큰 배치는 이동 선언을 소모하지 않습니다.
                 </p>
               </div>
             </div>
@@ -3216,6 +3304,19 @@ export default function EquipmentSimulatorClient({
 
           <section className={styles.controlPanel} aria-label="전투 조작 패널">
             <div className={styles.actionPicker} role="group" aria-label="행동 선택">
+              <button
+                type="button"
+                className={movementDeclarationPending ? styles.activeToggle : ""}
+                aria-pressed={movementDeclarationPending}
+                onClick={handleDeclareMovement}
+                disabled={
+                  hmgInstalled ||
+                  !canDeclareSimulatorMovement(movementDeclarationsUsed)
+                }
+              >
+                이동 선언 {movementDeclarationsUsed}/
+                {SIMULATOR_MOVEMENT_DECLARATION_LIMIT}
+              </button>
               <button
                 type="button"
                 className={
@@ -3272,6 +3373,7 @@ export default function EquipmentSimulatorClient({
                         onClick={() => {
                           setSelectedEnemyId(candidate.enemy.id);
                           setSelectedBossPartId(null);
+                          setMovementDeclarationPending(false);
                           setActiveToken("target");
                           setTrainingEvent("weapon");
                           setActiveStep(4);
@@ -3421,7 +3523,20 @@ export default function EquipmentSimulatorClient({
                     : "같은 턴 연속 시험 가능"}
                 </strong>
               </div>
+              <div>
+                <span>이동 선언</span>
+                <strong>
+                  {movementDeclarationsUsed}/
+                  {SIMULATOR_MOVEMENT_DECLARATION_LIMIT} 사용
+                  {movementDeclarationPending ? " · 목적지 선택 중" : ""}
+                </strong>
+              </div>
             </div>
+            <p className={styles.movementRule}>
+              적 차례에는 공격 회피를 위해 이동을 선언할 수 있습니다. 아군
+              차례에는 이동 2회 또는 이동과 행동을 섞어 선언할 수 있으며,
+              강제 이동은 각 스킬 효과를 따릅니다.
+            </p>
           </section>
 
           <div
@@ -3727,6 +3842,7 @@ export default function EquipmentSimulatorClient({
                                 handleCellActivate(enemy.position);
                               } else {
                                 setSelectedEnemyId(enemy.id);
+                                setMovementDeclarationPending(false);
                                 setActiveToken("target");
                               }
                             }}

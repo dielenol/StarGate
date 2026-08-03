@@ -95,6 +95,23 @@ test("the standard 5x5 battlefield can switch to vertical 1x5 and horizontal 5x1
   );
 });
 
+test("player movement requires a declaration and resets its two-use allowance each turn", async () => {
+  const [client, simulator] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(SIMULATOR_URL, "utf8"),
+  ]);
+
+  assert.match(simulator, /COMBAT_MOVEMENT_RULES\.allyTurnMovement\.declarationsPerTurn/);
+  assert.match(simulator, /function canDeclareSimulatorMovement/);
+  assert.match(simulator, /function consumeSimulatorMovementDeclaration/);
+  assert.match(client, /function handleDeclareMovement/);
+  assert.match(client, /if \(!movementDeclarationPending\)/);
+  assert.match(client, /이동 선언 필요/);
+  assert.match(client, /setMovementDeclarationsUsed\(0\)/);
+  assert.match(client, /이동 2회 또는 이동과 행동을 섞어 선언/);
+  assert.match(client, /강제 이동은 각 스킬 효과를 따릅니다/);
+});
+
 test("the weapon rack prioritizes and initially selects the main character's equipped weapon", async () => {
   const [page, client, simulator, styles] = await Promise.all([
     readFile(PAGE_URL, "utf8"),
@@ -247,7 +264,7 @@ test("encounter modes, editable targets, bosses, and blast previews are wired in
     client,
     /if \(activeToken === "aim"\) \{\s*handleCellActivate\(position\)/,
   );
-  assert.match(client, /적 위치 조정 버튼을 누른 뒤 전투판을 클릭하거나/);
+  assert.match(client, /적 토큰 배치는 이동 선언을 소모하지 않습니다/);
   assert.match(client, /<details className=\{styles\.targetControl\} open>/);
   assert.match(client, /selectedRule\?\.requiresSetup \?/);
   assert.doesNotMatch(
