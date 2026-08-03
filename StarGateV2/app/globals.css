@@ -4,7 +4,10 @@
    ERP 14px floor 정책의 시각적 보장 위해 130% 로 글리프 키움. */
 @font-face {
   font-family: "PokemonDPPT";
-  src: url("/fonts/pokemon-dppt.otf") format("opentype");
+  /* woff2(41KB) 우선 + otf(412KB) 폴백 — 동일 CFF 글리프의 재압축본. */
+  src:
+    url("/fonts/pokemon-dppt.woff2") format("woff2"),
+    url("/fonts/pokemon-dppt.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;

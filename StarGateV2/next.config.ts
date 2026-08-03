@@ -27,11 +27,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // 내용 변경 시 lib/asset-path.ts 의 CACHE_BUSTED_PUBLIC_IMAGES(?v= bust-map)로
+        // URL 을 갈아끼우는 운영 전제 — 장기 max-age 를 안전하게 사용한다.
         source: "/assets/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=86400, stale-while-revalidate=604800",
+            value: "public, max-age=604800, stale-while-revalidate=2592000",
           },
         ],
       },

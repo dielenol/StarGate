@@ -113,15 +113,16 @@ export const metadata: Metadata = {
   description: "노부스 오르도에 오신 것을 환영합니다.",
   metadataBase,
   // 공유 미리보기에서 페이지 본문 이미지를 임의로 집어오지 않도록
-  // OG/Twitter 이미지를 로고로 명시적으로 고정합니다.
+  // OG/Twitter 이미지를 전용 1200×630 jpg(48KB)로 명시적으로 고정합니다.
+  // (기존 928KB StarGate_logo.png 직접 참조 제거 — 원본 파일은 유지)
   openGraph: {
     title: "NOVUS ORDO",
     description: "노부스 오르도에 오신 것을 환영합니다.",
     images: [
       {
-        url: "/assets/StarGate_logo.png",
+        url: "/assets/og/novus-ordo-og.jpg",
         width: 1200,
-        height: 1200,
+        height: 630,
         alt: "StarGate 로고",
       },
     ],
@@ -130,7 +131,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "NOVUS ORDO",
     description: "노부스 오르도에 오신 것을 환영합니다.",
-    images: ["/assets/StarGate_logo.png"],
+    images: ["/assets/og/novus-ordo-og.jpg"],
   },
   icons: {
     icon: "/assets/favicon.ico",
