@@ -1,6 +1,6 @@
 ---
 title: 로어북
-updated: 2026-07-15
+updated: 2026-08-03
 ---
 
 # StarGate 로어북
@@ -43,6 +43,7 @@ docs/lore/
 - [이상 현상 (Anomaly)](concept/anomaly.md)
 - [깨진 음절](concept/broken-syllable.md)
 - [광원화 (Light-sourcing)](concept/light-sourcing.md)
+- [노부스 오르도 전투 근간 규칙](concept/novus-ordo-combat-foundations.md)
 
 ### faction/
 
