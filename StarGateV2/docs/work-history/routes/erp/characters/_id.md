@@ -21,3 +21,12 @@
 - `updatedAt`이 없는 기존 문서는 `null` 버전으로 첫 저장할 수 있어 backfill은 추가하지 않았다.
 - 검증: shared-db CAS 26건, realtime/거래 계약 24건, `pnpm lint`, `pnpm typecheck`, `pnpm build:web`
 - 관련 커밋: `bba8924`
+
+## 2026-08-04 · 기능 추가 · R 궁극기 슬롯
+
+- 캐릭터 생성·편집·관리자 import·상세에 `R` 궁극기 전용 슬롯을 추가하고 상세 카드에서 `ULTIMATE`로 표시한다.
+- POST와 owner/admin PATCH에서 모든 어빌리티 슬롯 중복을 차단하며, legacy 시트 이관도 기존 7슬롯 위치 의미를 보존한 채 공식 12슬롯까지 확장한다.
+- 라이브 TIME/크로노스의 `A5 · code R` 능력을 내용 변경 없이 `R · code R`로 이관했다.
+- 검증: 관련 테스트 59건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, payload CAS dry-run 및 쓰기 후 DB 재조회 통과
+- 브라우저 확인: 인증된 로컬 크로노스 상세에서 `ABILITY · R`, `ULTIMATE`, `11 / 12 SLOTS`와 기존 능력명 렌더링 확인
+- 관련 커밋: `da2c2e3f`
