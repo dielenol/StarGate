@@ -32,6 +32,8 @@ test("main push에서 worker 변경을 감지하면 Dokploy 배포를 실행한�
     workerFilter,
     /- '\.github\/workflows\/deploy-bots\.yml'/,
   );
+  assert.match(workerJob, /--arg repo "\$GITHUB_REPOSITORY"/);
+  assert.match(workerJob, /repository: \{full_name: \$repo\}/);
 });
 
 test("초기 shadow 배포의 수동 확인 경계는 유지한다", () => {
