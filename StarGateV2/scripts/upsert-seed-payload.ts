@@ -509,6 +509,7 @@ async function writeWithDb(
     if (!col) throw new Error(`[seed-payload] collection handle 누락: ${plan.collection}`);
 
     const existing = await col.findOne(plan.filter, { projection: { _id: 1 } });
+    let writtenId = existing?._id;
     if (plan.mode === "update") {
       if (!plan.update) {
         throw new Error(`[seed-payload] update plan 누락: ${plan.collection}`);
@@ -518,9 +519,17 @@ async function writeWithDb(
           `[seed-payload] update 대상 없음: ${plan.collection} ${JSON.stringify(plan.filter)}`,
         );
       }
-      await col.updateOne(plan.filter, plan.update as Document | Document[], {
-        upsert: plan.upsert === true,
-      });
+      const result = await col.updateOne(
+        plan.filter,
+        plan.update as Document | Document[],
+        { upsert: plan.upsert === true },
+      );
+      if (result.matchedCount + result.upsertedCount !== 1) {
+        throw new Error(
+          `[seed-payload] update CAS 불일치: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+        );
+      }
+      writtenId ??= result.upsertedId ?? undefined;
     } else {
       if (!plan.payload) {
         throw new Error(`[seed-payload] payload plan 누락: ${plan.collection}`);
@@ -528,7 +537,7 @@ async function writeWithDb(
       const { setPayload, createdAt } = omitMongoManagedFields(plan.payload);
       if (setPayload.updatedAt === undefined) setPayload.updatedAt = new Date();
 
-      await col.updateOne(
+      const result = await col.updateOne(
         plan.filter,
         {
           $set: setPayload,
@@ -536,9 +545,17 @@ async function writeWithDb(
         },
         { upsert: true },
       );
+      if (result.matchedCount + result.upsertedCount !== 1) {
+        throw new Error(
+          `[seed-payload] payload upsert 실패: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+        );
+      }
+      writtenId ??= result.upsertedId ?? undefined;
     }
 
-    const saved = await col.findOne(plan.filter);
+    const saved = writtenId
+      ? await col.findOne({ _id: writtenId })
+      : await col.findOne(plan.filter);
     if (!saved) {
       throw new Error(
         `[seed-payload] write 후 재조회 실패: ${plan.collection} ${JSON.stringify(plan.filter)}`,

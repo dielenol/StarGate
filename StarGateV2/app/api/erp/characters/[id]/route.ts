@@ -8,6 +8,7 @@ import {
   ALLOWED_PLAY_FIELDS_PLAYER,
   insertChangeLog,
   loreSheetSchema,
+  playSheetSchema,
 } from "@stargate/shared-db";
 
 import { canViewCharacter } from "@/lib/auth/access-policy";
@@ -231,6 +232,24 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
     body.lore = parsed.data;
+  }
+
+  if (
+    (playAllowed || isPlayer) &&
+    body.play &&
+    typeof body.play === "object" &&
+    !Array.isArray(body.play) &&
+    "abilities" in body.play
+  ) {
+    const play = body.play as Record<string, unknown>;
+    const parsed = playSheetSchema.shape.abilities.safeParse(play.abilities);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "play.abilities 형식 오류 또는 중복 슬롯" },
+        { status: 400 },
+      );
+    }
+    play.abilities = parsed.data;
   }
 
   // clearanceOverrides 는 admin 만 갱신 가능. 유효 FieldGroup × RoleLevel 쌍으로 제한.

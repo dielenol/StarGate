@@ -95,8 +95,24 @@ if (EXECUTE && MONGODB_URI) {
 
 /* ── 상수 ── */
 
-/** 어빌리티 인덱스 → slot 매핑 (legacy 데이터 호환). */
-const ABILITY_SLOT_BY_INDEX: readonly AbilitySlot[] = [
+/** 캐릭터 시트의 공식 어빌리티 표시 순서. */
+const ABILITY_SLOT_ORDER: readonly AbilitySlot[] = [
+  "C1",
+  "C2",
+  "C3",
+  "C4",
+  "C5",
+  "P",
+  "A1",
+  "A2",
+  "A3",
+  "A4",
+  "A5",
+  "R",
+] as const;
+
+/** slot 없는 legacy 7슬롯의 위치 의미를 보존한 뒤 신규 슬롯을 뒤에 배정한다. */
+const LEGACY_ABILITY_SLOT_BY_INDEX: readonly AbilitySlot[] = [
   "C1",
   "C2",
   "C3",
@@ -104,10 +120,15 @@ const ABILITY_SLOT_BY_INDEX: readonly AbilitySlot[] = [
   "A1",
   "A2",
   "A3",
+  "C4",
+  "C5",
+  "A4",
+  "A5",
+  "R",
 ] as const;
 
-/** 길이 7 고정. */
-const ABILITY_SLOT_COUNT = ABILITY_SLOT_BY_INDEX.length;
+/** 길이 12 고정. */
+const ABILITY_SLOT_COUNT = ABILITY_SLOT_ORDER.length;
 
 /** lore sub-document 으로 옮기는 sheet 키 (AGENT/NPC 공통). 문서화 목적 상수. */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -326,7 +347,7 @@ function buildExistingLoreRepairPatch(
 }
 
 /** 유효한 slot 문자열 집합 (런타임 검증용). */
-const VALID_ABILITY_SLOTS = new Set<AbilitySlot>(ABILITY_SLOT_BY_INDEX);
+const VALID_ABILITY_SLOTS = new Set<AbilitySlot>(ABILITY_SLOT_ORDER);
 
 /** Legacy ability → 정상화된 ability payload 로 변환. slot 은 호출자가 결정. */
 function buildAbilityPayload(
@@ -350,13 +371,13 @@ function buildAbilityPayload(
 }
 
 /**
- * 어빌리티 배열에 slot 자동 할당 + 길이 7 보정.
+ * 어빌리티 배열에 slot 자동 할당 + 길이 12 보정.
  *
- * - 이미 모든 항목에 slot 이 있으면 그대로 보존 (길이 7 강제 안 함)
+ * - 이미 모든 항목에 고유한 slot 이 있으면 그대로 보존 (길이 12 강제 안 함)
  * - 일부라도 slot 누락 → "명시 slot 우선 보존 + 빈 슬롯에 잔여 항목 채움" 전략 (slot 중복 방지)
- * - 7개 미만 → 부족분 빈 항목 채움
- * - 7개 초과 → 처음 7개만 보존 (warnings 에 기록)
- * - 결과는 ABILITY_SLOT_BY_INDEX 순서로 정렬
+ * - 12개 미만 → 부족분 빈 항목 채움
+ * - 12개 초과 → 처음 12개만 보존 (warnings 에 기록)
+ * - 결과는 ABILITY_SLOT_ORDER 순서로 정렬
  *
  * 중복 slot 방지: src.slot 이 명시된 항목들을 먼저 자리잡게 하고, slot 누락/충돌 항목은
  * 비어있는 표준 슬롯 순서로 채운다. 이렇게 하면 같은 slot 이 두 번 나오는 사고가 없다.
@@ -370,25 +391,27 @@ function normalizeAbilities(
   const warnings: string[] = [];
 
   if (!Array.isArray(rawAbilities) || rawAbilities.length === 0) {
-    // 빈 7슬롯
+    // 빈 12슬롯
     return {
-      abilities: ABILITY_SLOT_BY_INDEX.map((slot) => ({ slot, name: "" })),
+      abilities: ABILITY_SLOT_ORDER.map((slot) => ({ slot, name: "" })),
       warnings,
     };
   }
 
   const sourceList = rawAbilities as LegacyAbility[];
-  const allHaveValidSlot = sourceList.every(
-    (a) =>
-      typeof a?.slot === "string" &&
-      VALID_ABILITY_SLOTS.has(a.slot as AbilitySlot),
-  );
+  const explicitSlots = sourceList.map((ability) => ability?.slot);
+  const allHaveUniqueValidSlots =
+    explicitSlots.every(
+      (slot) =>
+        typeof slot === "string" &&
+        VALID_ABILITY_SLOTS.has(slot as AbilitySlot),
+    ) && new Set(explicitSlots).size === explicitSlots.length;
 
-  // 이미 모든 항목에 유효 slot 있음 → 그대로 보존 (길이 7 강제 X)
-  if (allHaveValidSlot) {
+  // 이미 모든 항목에 고유한 유효 slot 있음 → 그대로 보존 (길이 12 강제 X)
+  if (allHaveUniqueValidSlots) {
     if (sourceList.length > ABILITY_SLOT_COUNT) {
       warnings.push(
-        `abilities 길이 ${sourceList.length} > 7 — 처음 ${ABILITY_SLOT_COUNT}개만 보존하고 나머지는 무시 (codename=${codename})`,
+        `abilities 길이 ${sourceList.length} > ${ABILITY_SLOT_COUNT} — 처음 ${ABILITY_SLOT_COUNT}개만 보존하고 나머지는 무시 (codename=${codename})`,
       );
     }
     const sliced = sourceList.slice(0, ABILITY_SLOT_COUNT);
@@ -403,7 +426,7 @@ function normalizeAbilities(
   // 일부 또는 전부 slot 누락 → 명시 slot 우선 보존 + 빈 슬롯에 fallback (slot 중복 방지)
   if (sourceList.length > ABILITY_SLOT_COUNT) {
     warnings.push(
-      `abilities 길이 ${sourceList.length} > 7 — 처음 ${ABILITY_SLOT_COUNT}개만 보존하고 나머지는 무시 (codename=${codename})`,
+      `abilities 길이 ${sourceList.length} > ${ABILITY_SLOT_COUNT} — 처음 ${ABILITY_SLOT_COUNT}개만 보존하고 나머지는 무시 (codename=${codename})`,
     );
   }
   const truncated = sourceList.slice(0, ABILITY_SLOT_COUNT);
@@ -430,15 +453,15 @@ function normalizeAbilities(
   }
 
   // Pass 2: 빈 슬롯을 표준 순서로 순회하며 remaining 으로 채움
-  const emptySlots = ABILITY_SLOT_BY_INDEX.filter((s) => !slotMap.has(s));
+  const emptySlots = LEGACY_ABILITY_SLOT_BY_INDEX.filter((s) => !slotMap.has(s));
   for (let i = 0; i < emptySlots.length; i += 1) {
     const slot = emptySlots[i]!;
     const src = remaining[i];
     slotMap.set(slot, src ?? { slot, name: "" });
   }
 
-  // Pass 3: ABILITY_SLOT_BY_INDEX 순서로 결과 정렬
-  const out: PlayPayload["abilities"] = ABILITY_SLOT_BY_INDEX.map((slot) =>
+  // Pass 3: 공식 슬롯 순서로 결과 정렬
+  const out: PlayPayload["abilities"] = ABILITY_SLOT_ORDER.map((slot) =>
     buildAbilityPayload(slotMap.get(slot), slot),
   );
 

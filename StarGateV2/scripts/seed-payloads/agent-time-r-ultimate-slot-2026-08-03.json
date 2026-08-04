@@ -1,0 +1,90 @@
+{
+  "collection": "characters",
+  "type": "agent-r-ultimate-slot-normalization",
+  "filter": {
+    "codename": "TIME",
+    "type": "AGENT",
+    "updatedAt": "2026-07-28T13:23:15.567Z",
+    "play.abilities": {
+      "$elemMatch": {
+        "slot": "A5",
+        "code": { "$in": ["R", "-R"] }
+      }
+    },
+    "play.abilities.slot": { "$ne": "R" },
+    "$expr": {
+      "$eq": [
+        {
+          "$size": {
+            "$filter": {
+              "input": { "$ifNull": ["$play.abilities", []] },
+              "as": "ability",
+              "cond": {
+                "$and": [
+                  { "$eq": ["$$ability.slot", "A5"] },
+                  {
+                    "$in": [
+                      {
+                        "$toUpper": {
+                          "$trim": {
+                            "input": { "$ifNull": ["$$ability.code", ""] },
+                            "chars": " -"
+                          }
+                        }
+                      },
+                      ["R"]
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        1
+      ]
+    }
+  },
+  "update": [
+    {
+      "$set": {
+        "play.abilities": {
+          "$map": {
+            "input": { "$ifNull": ["$play.abilities", []] },
+            "as": "ability",
+            "in": {
+              "$cond": [
+                {
+                  "$and": [
+                    { "$eq": ["$$ability.slot", "A5"] },
+                    {
+                      "$in": [
+                        {
+                          "$toUpper": {
+                            "$trim": {
+                              "input": { "$ifNull": ["$$ability.code", ""] },
+                              "chars": " -"
+                            }
+                          }
+                        },
+                        ["R"]
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "$mergeObjects": [
+                    "$$ability",
+                    { "slot": "R", "code": "R" }
+                  ]
+                },
+                "$$ability"
+              ]
+            }
+          }
+        },
+        "bulkUpdatedAt": "$$NOW",
+        "updatedAt": "$$NOW"
+      }
+    }
+  ]
+}

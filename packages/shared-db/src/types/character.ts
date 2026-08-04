@@ -115,8 +115,8 @@ export interface PlaySheet {
   skillTraining: string[];
   credit: string;
   equipment: Equipment[];
-  /** 길이 11 고정 권장 — slot 기준으로 C1~C5/P/A1~A5.
-   *  C(Cantrip) 5개 + P(Passive) 1개 + A(Active) 5개. */
+  /** 길이 12 고정 권장 — slot 기준으로 C1~C5/P/A1~A5/R.
+   *  C(Cantrip) 5개 + P(Passive) 1개 + A(Active) 5개 + R(Ultimate) 1개. */
   abilities: Ability[];
 }
 
@@ -132,8 +132,9 @@ export interface Equipment {
 }
 
 /** 어빌리티 슬롯 식별자.
- *  C1~C5 = Cantrip(5개), P = Passive(1개), A1~A5 = Active(5개). 총 11슬롯.
- *  TRPG 룰: 캔트립·액티브 모두 캐릭터당 최대 5개까지 보유 가능. */
+ *  C1~C5 = Cantrip(5개), P = Passive(1개), A1~A5 = Active(5개),
+ *  R = Ultimate(궁극기 1개). 총 12슬롯.
+ *  TRPG 룰: 캔트립·액티브는 각각 최대 5개, 궁극기는 최대 1개까지 보유 가능. */
 export type AbilitySlot =
   | "C1"
   | "C2"
@@ -145,7 +146,8 @@ export type AbilitySlot =
   | "A2"
   | "A3"
   | "A4"
-  | "A5";
+  | "A5"
+  | "R";
 
 export interface Ability {
   /** 슬롯 식별자 (필수). 슬롯이 비어있어도 slot 자체는 보존. */

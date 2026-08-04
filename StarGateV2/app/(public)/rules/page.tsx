@@ -360,6 +360,14 @@ export default function RulesPage() {
                 위력, 범용성, 발동 조건의 난이도, 지속 시간, 리스크 유무 등에 따라
                 &apos;능력 조형&apos;에 소모되는 포인트는 달라질 수 있습니다.
               </p>
+              <div className={styles.statBox}>
+                <p className={styles.termTitle}>R · 궁극기 슬롯</p>
+                <ul className={styles.statList}>
+                  <li>캐릭터마다 하나만 보유할 수 있는 궁극기 전용 슬롯입니다.</li>
+                  <li>R은 A1~A5 액티브 슬롯과 분리되어 액티브 보유 한도를 차지하지 않습니다.</li>
+                  <li>구체적인 발동 조건과 비용, 효과는 각 궁극기 설명을 우선합니다.</li>
+                </ul>
+              </div>
             </section>
 
             <section className={styles.section} id="weapon">

@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import type {
-  AbilitySlot,
   Ability,
   AgentCharacter,
   LoreSheet,
@@ -21,24 +20,12 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
 import { parseCharacterText } from "@/lib/parsers/character-text";
 
+import { ABILITY_SLOTS } from "../../../characters/_form-utils";
+
 import styles from "./page.module.css";
 
 const LORE_PREVIEW_LIMIT = 300;
 const CODENAME_RE = /^[A-Z0-9_]+$/;
-
-const ABILITY_SLOTS: readonly AbilitySlot[] = [
-  "C1",
-  "C2",
-  "C3",
-  "C4",
-  "C5",
-  "P",
-  "A1",
-  "A2",
-  "A3",
-  "A4",
-  "A5",
-] as const;
 
 /** 미리보기 필드 — domain + key 페어. 파서가 lore/play 분리 산출하므로 매핑도 분리. */
 type PreviewRow =

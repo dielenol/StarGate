@@ -62,7 +62,7 @@ export const FIELD_REQUIRED_LEVEL: Record<FieldGroup, AgentLevel> = {
   identity: "U", // codename / type / 소속(faction/institution/department) / agentLevel — 모두 노출
   profile: "J", // 외모 / 성격 / 배경 (lore) — J 부터
   combatStats: "G", // HP / SAN / ATK / DEF / 등급별 stat — G 부터
-  abilities: "H", // 어빌리티 11 슬롯 — H 부터
+  abilities: "H", // 어빌리티 12 슬롯 — H 부터
   meta: "V", // GM 운영 메타 (createdAt 등) — V 부터
 };
 

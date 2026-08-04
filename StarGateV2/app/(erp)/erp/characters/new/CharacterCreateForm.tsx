@@ -88,7 +88,7 @@ export default function CharacterCreateForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /* ── Ability helpers — 11-슬롯 고정 ── */
+  /* ── Ability helpers — 12-슬롯 고정 ── */
   function updateAbility(index: number, field: keyof Ability, value: string) {
     setAbilities((prev) =>
       prev.map((ab, i) => (i === index ? { ...ab, [field]: value } : ab)),
@@ -563,9 +563,9 @@ export default function CharacterCreateForm() {
         </div>
       </Box>
 
-      {/* Abilities — 7 슬롯 */}
+      {/* Abilities — 12 슬롯 */}
       <Box className={styles.form__box}>
-        <PanelTitle>ABILITIES · 11 SLOTS (C1~C5/P/A1~A5)</PanelTitle>
+        <PanelTitle>ABILITIES · 12 SLOTS (C1~C5/P/A1~A5/R)</PanelTitle>
         <div className={styles.list}>
           {abilities.map((ab, i) => (
             <div key={ab.slot} className={styles.listItem}>

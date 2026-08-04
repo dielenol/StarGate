@@ -1,0 +1,85 @@
+[
+  {
+    "collection": "wiki_pages",
+    "type": "official-rule-ultimate-ability",
+    "filter": {
+      "slug": "ultimate-ability"
+    },
+    "update": [
+      {
+        "$set": {
+          "slug": { "$ifNull": ["$slug", "ultimate-ability"] },
+          "title": { "$ifNull": ["$title", "궁극기"] },
+          "category": { "$ifNull": ["$category", "규정"] },
+          "tags": {
+            "$ifNull": [
+              "$tags",
+              ["궁극기", "R슬롯", "능력조형", "전투규정", "노부스오르도룰"]
+            ]
+          },
+          "isPublic": { "$ifNull": ["$isPublic", true] },
+          "authorId": {
+            "$ifNull": ["$authorId", "novus-ordo-rules-office"]
+          },
+          "authorName": {
+            "$ifNull": ["$authorName", "NOVUS ORDO 사무국 작전규정과"]
+          },
+          "createdAt": { "$ifNull": ["$createdAt", "$$NOW"] },
+          "updatedAt": { "$ifNull": ["$updatedAt", "$$NOW"] },
+          "content": {
+            "$ifNull": [
+              "$content",
+              "# 궁극기\n\n궁극기는 요원이 지닌 능력 조형 가운데 결정적인 효과를 담당하는 전용 능력이다. 캐릭터 시트에서는 R 슬롯으로 기록하며, 다른 어빌리티 슬롯과 구분해 관리한다.\n\n## 요약 정보\n분류: 캐릭터 능력 / 궁극기\n표기: R\n보유 한도: 캐릭터당 1개\n관련 공개 기준: /rules 능력 메이킹\n기록 확정도: GM 제공 공식 규정\n\n## 슬롯 구성\n\n캐릭터 시트의 어빌리티는 캔트립 C1~C5, 패시브 P, 액티브 A1~A5, 궁극기 R로 구성한다. R은 열두 번째 전용 슬롯이며 액티브 보유 한도를 차지하지 않는다.\n\n## 운용 원칙\n\n- 캐릭터 하나가 보유할 수 있는 궁극기는 최대 하나다.\n- R 슬롯은 A1~A5 액티브 슬롯과 분리한다.\n- 궁극기의 구체적인 발동 조건, 비용, 효과와 제한은 각 능력에 기록된 설명을 우선한다.\n\n## 관련 문서\n[[노부스 오르도 룰]], [[전투 근간 규칙]]\n\n## 출처\nGM 제공 궁극기 슬롯 규정, 2026년 8월 3일."
+            ]
+          }
+        }
+      }
+    ],
+    "upsert": true
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "official-rule-ultimate-ability-link",
+    "filter": {
+      "slug": "novus-ordo-rules",
+      "updatedAt": "2026-06-09T16:11:58.681Z",
+      "$or": [
+        {
+          "content": {
+            "$regex": "(^|\\n)## 궁극기(?:\\n|$)"
+          }
+        },
+        {
+          "content": {
+            "$regex": "\\n\\n## 관련 문서"
+          }
+        }
+      ]
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": { "$ifNull": ["$content", ""] },
+                  "regex": "(^|\\n)## 궁극기(?:\\n|$)"
+                }
+              },
+              "$content",
+              {
+                "$replaceOne": {
+                  "input": { "$ifNull": ["$content", ""] },
+                  "find": "\n\n## 관련 문서",
+                  "replacement": "\n\n## 궁극기\n\n캐릭터 시트에는 캔트립 C1~C5, 패시브 P, 액티브 A1~A5와 분리된 궁극기 R 슬롯이 존재한다. R은 캐릭터당 하나만 보유할 수 있으며 액티브 보유 한도를 차지하지 않는다. 구체적인 발동 조건과 비용, 효과는 각 능력 설명과 [[궁극기]] 규정을 따른다.\n\n## 관련 문서"
+                }
+              }
+            ]
+          },
+          "updatedAt": "$$NOW"
+        }
+      }
+    ]
+  }
+]

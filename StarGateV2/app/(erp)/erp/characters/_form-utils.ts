@@ -5,7 +5,7 @@
 
 import type { Ability, AbilitySlot, Equipment } from "@/types/character";
 
-/** 캐릭터 시트 ability 슬롯 순서 (11 슬롯). */
+/** 캐릭터 시트 ability 슬롯 순서 (12 슬롯). R은 캐릭터별 궁극기 전용 슬롯. */
 export const ABILITY_SLOTS: readonly AbilitySlot[] = [
   "C1",
   "C2",
@@ -18,13 +18,14 @@ export const ABILITY_SLOTS: readonly AbilitySlot[] = [
   "A3",
   "A4",
   "A5",
+  "R",
 ] as const;
 
 export function emptyEquipment(): Equipment {
   return { name: "", price: "", damage: "", ammo: "", grip: "", description: "" };
 }
 
-/** 11-슬롯 ability 초기화. 기존 ability 가 슬롯에 없으면 빈 슬롯으로 채움. */
+/** 12-슬롯 ability 초기화. 기존 ability 가 슬롯에 없으면 빈 슬롯으로 채움. */
 export function initAbilities(existing: Ability[] = []): Ability[] {
   const map = new Map(existing.map((a) => [a.slot, a]));
   return ABILITY_SLOTS.map((slot) => map.get(slot) ?? { slot, name: "" });

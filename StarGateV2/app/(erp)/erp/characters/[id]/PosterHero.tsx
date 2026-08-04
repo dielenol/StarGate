@@ -35,6 +35,8 @@ import {
   getCharacterRoleLine,
 } from "@/lib/format/character-display";
 
+import { ABILITY_SLOTS } from "../_form-utils";
+
 import styles from "./PosterHero.module.css";
 
 interface Props {
@@ -72,21 +74,6 @@ interface Props {
    */
   playSheet?: PlaySheet;
 }
-
-/** ABILITIES 슬롯 표시 순서 (CharacterDetailClient 와 동일). */
-const ABILITY_SLOT_ORDER: AbilitySlot[] = [
-  "C1",
-  "C2",
-  "C3",
-  "C4",
-  "C5",
-  "P",
-  "A1",
-  "A2",
-  "A3",
-  "A4",
-  "A5",
-];
 
 /**
  * factionCode 미지정 시 기본 노부스 오르도 로고.
@@ -138,12 +125,15 @@ function getInitial(source: string): string {
 
 function getAbilityDisplayCode(slot: AbilitySlot, ability: Ability): string {
   const code = ability.code?.trim();
-  return code && /^[CPA]\d?$/.test(code) ? code : slot;
+  return code && (/^[CPA]\d?$/.test(code) || code === "R") ? code : slot;
 }
 
-function getAbilityKind(slot: AbilitySlot): "CANTRIP" | "PASSIVE" | "ACTIVE" {
+function getAbilityKind(
+  slot: AbilitySlot,
+): "CANTRIP" | "PASSIVE" | "ACTIVE" | "ULTIMATE" {
   if (slot.startsWith("C")) return "CANTRIP";
   if (slot === "P") return "PASSIVE";
+  if (slot === "R") return "ULTIMATE";
   return "ACTIVE";
 }
 
@@ -530,7 +520,7 @@ export default function PosterHero({
         {abilities
           ? (() => {
               const bySlot = new Map(abilities.map((ab) => [ab.slot, ab]));
-              const filled = ABILITY_SLOT_ORDER.flatMap((slot) => {
+              const filled = ABILITY_SLOTS.flatMap((slot) => {
                 const ab = bySlot.get(slot);
                 return ab && ab.name.trim().length > 0 ? [{ slot, ab }] : [];
               });
@@ -548,7 +538,7 @@ export default function PosterHero({
                       ABILITIES
                     </span>
                     <span className={styles.hero__panelHeadSub}>
-                      {filled.length} / {ABILITY_SLOT_ORDER.length} SLOTS
+                      {filled.length} / {ABILITY_SLOTS.length} SLOTS
                     </span>
                   </div>
                   {filled.length === 0 ? (

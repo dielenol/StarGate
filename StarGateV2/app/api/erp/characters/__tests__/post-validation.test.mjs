@@ -312,7 +312,24 @@ test("E-12b: AGENT play.abilities[i].slot enum — 잘못된 slot 거부", () =>
   const play = validPlay();
   play.abilities = [{ slot: "X9", name: "evil" }];
   const result = playSheetSchema.safeParse(play);
-  assert.equal(result.success, false, "C1/C2/C3/P/A1/A2/A3 외 slot 거부");
+  assert.equal(result.success, false, "C1~C5/P/A1~A5/R 외 slot 거부");
+});
+
+test("E-12c: AGENT play.abilities[i].slot enum — R 궁극기 slot 허용", () => {
+  const play = validPlay();
+  play.abilities = [{ slot: "R", code: "R", name: "궁극기" }];
+  const result = playSheetSchema.safeParse(play);
+  assert.equal(result.success, true);
+});
+
+test("E-12d: AGENT play.abilities — R 궁극기 slot 중복 거부", () => {
+  const play = validPlay();
+  play.abilities = [
+    { slot: "R", code: "R", name: "첫 번째 궁극기" },
+    { slot: "R", code: "R", name: "두 번째 궁극기" },
+  ];
+  const result = playSheetSchema.safeParse(play);
+  assert.equal(result.success, false);
 });
 
 test("E-13: AGENT 생성 payload의 초기 장비는 거부한다", () => {

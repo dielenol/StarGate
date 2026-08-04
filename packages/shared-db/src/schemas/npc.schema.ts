@@ -104,6 +104,7 @@ const abilitySlotSchema = z.enum([
   "A3",
   "A4",
   "A5",
+  "R",
 ]);
 
 const abilitySchema = z.object({
@@ -112,6 +113,21 @@ const abilitySchema = z.object({
   code: z.string().optional(),
   description: z.string().optional(),
   effect: z.string().optional(),
+});
+
+const abilitiesSchema = z.array(abilitySchema).superRefine((abilities, ctx) => {
+  const seenSlots = new Set<string>();
+  abilities.forEach((ability, index) => {
+    if (seenSlots.has(ability.slot)) {
+      ctx.addIssue({
+        code: "custom",
+        path: [index, "slot"],
+        message: `어빌리티 슬롯 ${ability.slot}은 중복될 수 없습니다.`,
+      });
+      return;
+    }
+    seenSlots.add(ability.slot);
+  });
 });
 
 export const playSheetSchema = z.object({
@@ -131,7 +147,7 @@ export const playSheetSchema = z.object({
   skillTraining: z.array(z.string()),
   credit: z.string(),
   equipment: z.array(equipmentSchema),
-  abilities: z.array(abilitySchema),
+  abilities: abilitiesSchema,
 });
 
 /* ── 공통 필드 ── */

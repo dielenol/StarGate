@@ -1186,10 +1186,10 @@ export default function CharacterEditForm({
             <Link href={`/erp/inventory/${characterId}`}>인벤토리 장비 관리</Link>
           </div>
 
-          {/* Abilities — 11-슬롯 고정 그리드 */}
+          {/* Abilities — 12-슬롯 고정 그리드 */}
           <CollapsiblePanel
             sectionId="abilities"
-            title="ABILITIES · 11 SLOTS (C1~C5/P/A1~A5)"
+            title="ABILITIES · 12 SLOTS (C1~C5/P/A1~A5/R)"
             collapsed={isSectionCollapsed("abilities")}
             onToggle={() => toggleSection("abilities")}
           >

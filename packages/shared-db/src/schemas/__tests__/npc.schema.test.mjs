@@ -90,6 +90,42 @@ test("playSheetSchema: AGENT play 필수 구조 검증", () => {
   );
 });
 
+test("playSheetSchema: R 궁극기 슬롯을 허용하고 비표준 R 슬롯은 거부한다", () => {
+  const basePlay = {
+    className: "실험체",
+    hp: 50,
+    san: 30,
+    def: 0,
+    atk: 5,
+    weaponTraining: [],
+    skillTraining: [],
+    credit: "0",
+    equipment: [],
+  };
+
+  assert.doesNotThrow(() =>
+    playSheetSchema.parse({
+      ...basePlay,
+      abilities: [{ slot: "R", code: "R", name: "궁극기" }],
+    })
+  );
+  assert.throws(() =>
+    playSheetSchema.parse({
+      ...basePlay,
+      abilities: [{ slot: "R1", code: "R1", name: "잘못된 궁극기" }],
+    })
+  );
+  assert.throws(() =>
+    playSheetSchema.parse({
+      ...basePlay,
+      abilities: [
+        { slot: "R", code: "R", name: "첫 번째 궁극기" },
+        { slot: "R", code: "R", name: "두 번째 궁극기" },
+      ],
+    })
+  );
+});
+
 test("npcDocSchema: 최소 유효 NPC 문서", () => {
   const parsed = npcDocSchema.parse({
     codename: "REGISTRAR",

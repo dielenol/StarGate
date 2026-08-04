@@ -113,13 +113,13 @@ test("B-1: Fresh AGENT 1회차 — update 액션 + lore/play 모두 set", () => 
   assert.deepEqual(play.skillTraining, ["스텔스", "잠입"]);
   assert.equal(
     play.abilities.length,
-    7,
-    "7-슬롯 자동 보정",
+    12,
+    "12-슬롯 자동 보정",
   );
   // slot 자동 매핑
   assert.equal(play.abilities[0].slot, "C1");
   assert.equal(play.abilities[1].slot, "C2");
-  assert.equal(play.abilities[6].slot, "A3");
+  assert.equal(play.abilities[11].slot, "R");
 
   assert.deepEqual(plan.unsetKeys, ["sheet"]);
 });
@@ -228,19 +228,19 @@ test("B-4: lore O + sheet X + root.loreTags/appearsInEvents 잔존 → cleanup-s
   );
 });
 
-/* ── B-5: AGENT abilities 7개 초과 → warning + 잘림 ── */
+/* ── B-5: AGENT abilities 12개 초과 → warning + 잘림 ── */
 
-test("B-5: AGENT abilities 9개 → 7개로 절단 + warning", () => {
+test("B-5: AGENT abilities 13개 → 12개로 절단 + warning", () => {
   const doc = freshAgent();
-  doc.sheet.abilities = Array.from({ length: 9 }, (_, i) => ({
+  doc.sheet.abilities = Array.from({ length: 13 }, (_, i) => ({
     name: `ability-${i}`,
     code: `C${i}`,
   }));
   const plan = planForDoc(doc);
   const play = plan.setPayload.play;
-  assert.equal(play.abilities.length, 7);
+  assert.equal(play.abilities.length, 12);
   assert.ok(plan.warnings && plan.warnings.length > 0, "warning 발생해야 함");
-  assert.match(plan.warnings[0], /길이 9.*무시/);
+  assert.match(plan.warnings[0], /길이 13.*무시/);
 });
 
 /* ── B-6: AGENT weaponTraining/skillTraining 이미 string[] → 재변환 안 함 ── */
@@ -277,9 +277,9 @@ test("B-8: abilities 혼재 slot — 명시 slot 보존, 잔여 항목은 빈 �
   ];
   const plan = planForDoc(doc);
   const play = plan.setPayload.play;
-  assert.equal(play.abilities.length, 7);
+  assert.equal(play.abilities.length, 12);
 
-  // 결과는 ABILITY_SLOT_BY_INDEX 순서 (C1/C2/C3/P/A1/A2/A3)
+  // 결과는 공식 순서 (C1~C5/P/A1~A5/R)
   assert.equal(play.abilities[0].slot, "C1");
   assert.equal(play.abilities[0].name, "사격");
   assert.equal(play.abilities[1].slot, "C2");
@@ -287,18 +287,19 @@ test("B-8: abilities 혼재 slot — 명시 slot 보존, 잔여 항목은 빈 �
   assert.equal(play.abilities[1].name, "은신");
   assert.equal(play.abilities[2].slot, "C3");
   assert.equal(play.abilities[2].name, "");
-  assert.equal(play.abilities[3].slot, "P");
-  assert.equal(play.abilities[3].name, "");
+  assert.equal(play.abilities[5].slot, "P");
+  assert.equal(play.abilities[5].name, "");
   // A1 은 명시 보존
-  assert.equal(play.abilities[4].slot, "A1");
-  assert.equal(play.abilities[4].name, "치료");
-  assert.equal(play.abilities[5].slot, "A2");
-  assert.equal(play.abilities[6].slot, "A3");
+  assert.equal(play.abilities[6].slot, "A1");
+  assert.equal(play.abilities[6].name, "치료");
+  assert.equal(play.abilities[7].slot, "A2");
+  assert.equal(play.abilities[8].slot, "A3");
+  assert.equal(play.abilities[11].slot, "R");
 
-  // slot 중복 없음 — 7개 모두 unique
+  // slot 중복 없음 — 12개 모두 unique
   const slots = play.abilities.map((a) => a.slot);
   const slotSet = new Set(slots);
-  assert.equal(slotSet.size, 7, "slot 7개 모두 unique");
+  assert.equal(slotSet.size, 12, "slot 12개 모두 unique");
 });
 
 test("B-8b: abilities slot 충돌 — 동일 slot 두 번 등장 시 두 번째는 잔여로 처리 + warning", () => {
@@ -311,14 +312,14 @@ test("B-8b: abilities slot 충돌 — 동일 slot 두 번 등장 시 두 번째�
   ];
   const plan = planForDoc(doc);
   const play = plan.setPayload.play;
-  assert.equal(play.abilities.length, 7);
+  assert.equal(play.abilities.length, 12);
   // C1 은 first 보존
   assert.equal(play.abilities[0].slot, "C1");
   assert.equal(play.abilities[0].name, "first");
   // 두 번째 C1 + slot 미정의 → remaining 으로 처리, 빈 슬롯 C2/C3 등에 채워짐
   const slots = play.abilities.map((a) => a.slot);
   const slotSet = new Set(slots);
-  assert.equal(slotSet.size, 7, "slot 모두 unique");
+  assert.equal(slotSet.size, 12, "slot 모두 unique");
   // warning 발생 — 중복 감지
   assert.ok(
     plan.warnings && plan.warnings.some((w) => /slot 중복/.test(w)),
@@ -342,6 +343,30 @@ test("B-8c: abilities 비유효 slot 문자열 → 잔여로 처리", () => {
   const weird = play.abilities.find((a) => a.name === "weird");
   assert.ok(weird, "INVALID slot 항목도 잔여로 보존");
   assert.notEqual(weird.slot, "INVALID", "비유효 slot 은 표준 슬롯으로 재할당");
+});
+
+test("B-8d: 기존 R 궁극기 slot과 내용을 보존한다", () => {
+  const doc = freshAgent();
+  doc.sheet.abilities = [
+    { slot: "C1", name: "일반 능력" },
+    {
+      slot: "R",
+      code: "R",
+      name: "궁극기",
+      description: "설명",
+      effect: "효과",
+    },
+  ];
+
+  const plan = planForDoc(doc);
+  const ultimate = plan.setPayload.play.abilities.find((ability) => ability.slot === "R");
+  assert.deepEqual(ultimate, {
+    slot: "R",
+    code: "R",
+    name: "궁극기",
+    description: "설명",
+    effect: "효과",
+  });
 });
 
 /* ── B-Idempotency: 두 번째 plan 은 cleanup 또는 skip ── */
