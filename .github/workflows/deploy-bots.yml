@@ -6,6 +6,8 @@ on:
     paths:
       - 'registra-bot/**'
       - 'trpg-bot/**'
+      - 'stargate-worker/**'
+      - 'packages/core/**'
       - 'packages/shared-db/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -68,6 +70,7 @@ jobs:
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
+              - '.github/workflows/deploy-bots.yml'
 
   # ------------------------------------------------------------
   # registra-bot 배포 (Dokploy webhook 호출)
@@ -148,9 +151,10 @@ jobs:
     name: Deploy stargate-worker
     needs: detect-changes
     if: |
-      github.event_name == 'workflow_dispatch' &&
-      inputs.target == 'worker-shadow' &&
-      inputs.confirm_worker_shadow_mode == true
+      (github.event_name == 'push' && needs.detect-changes.outputs.worker == 'true') ||
+      (github.event_name == 'workflow_dispatch' &&
+       inputs.target == 'worker-shadow' &&
+       inputs.confirm_worker_shadow_mode == true)
     runs-on: ubuntu-latest
     environment: stargate-worker-deploy
     steps:

@@ -57,7 +57,7 @@
 ## 2. Passive shadow 배포
 
 1. Dokploy의 `WORKER_MODE=shadow`, replica 1을 먼저 확인한다.
-2. GitHub Actions의 `Deploy bots`를 수동 실행해 `target=worker-shadow`와 shadow 확인 체크를 명시한다. main push는 worker webhook을 호출하지 않는다.
+2. 최초 shadow 배포는 GitHub Actions의 `Deploy bots`를 수동 실행해 `target=worker-shadow`와 shadow 확인 체크를 명시한다. 컷오버 완료 뒤에는 worker 영향 경로의 main push가 Dokploy webhook을 자동 호출한다.
 3. `/healthz`가 200이고 프로세스 상태가 `RUNNING`인지 확인한다.
 4. `/readyz`에서 `mongo`, `consumers`, `changeStream`이 모두 true인지 확인한다.
 5. `consumer_tick` 로그가 `mode=shadow`이고 due 수만 기록하며 claim, Discord REST/webhook, 경제 DB mutation이 0건인지 확인한다.

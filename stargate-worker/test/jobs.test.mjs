@@ -110,6 +110,10 @@ test("정기 주식 공시는 시장감시실 4개 장부 메시지로 구성한
       "보합 및 감시실 특이사항",
     ],
   );
+  assert.deepEqual(
+    payloads.slice(1).map((payload) => payload.embeds[0].color),
+    [0x2fbf71, 0xd95f5f, 0xc5a059],
+  );
   assert.match(payloads[0].content, /ORDO-NET 주식 거래소 바로가기/);
   assert.equal(payloads[1].content, undefined);
   assert.equal(payloads[0].username, "재무기구 시장감시실");

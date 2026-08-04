@@ -46,9 +46,11 @@ flowchart LR
 | ERP realtime client | 구현 | `off/observe/primary`, 연결 상태별 polling fallback, 100ms Query batch, 알림 toast |
 | Registra finalization | 구현 | 불변 trigger/operation key, lease/token/nonce, `DELIVERY_UNKNOWN`·legacy 격리로 자동 중복 발송 차단 |
 | legacy `tia_bot` | 제거 | 코드·이미지만 삭제, 과거 문서 archive, Mongo 데이터 유지 |
-| Dokploy webhook workflow | 구현 | worker는 수동 `worker-shadow` 선택 + GitHub Environment 승인 뒤에만 호출 |
+| Dokploy webhook workflow | 구현 | `main`의 worker 영향 경로는 자동 배포, 초기 shadow 배포는 수동 확인 뒤 호출 |
 
-현재 기본값은 `WORKER_MODE=shadow`다. shadow도 Change Stream 재시작을 위해 `worker_checkpoints`만 기록하며 경제 상태, queue 상태, 외부 전달은 변경하지 않는다. active 상시 consumer는 `WORKER_CONSUMERS`, 범용 outbox kind는 `WORKER_OUTBOX_KINDS`에 각각 명시한 값만 claim한다. 코드 연결은 끝났지만 live owner 전환은 수행하지 않았다.
+코드 기본값은 `WORKER_MODE=shadow`다. shadow도 Change Stream 재시작을 위해 `worker_checkpoints`만 기록하며 경제 상태, queue 상태, 외부 전달은 변경하지 않는다. 실제 배포 모드는 Dokploy 환경 설정을 따르고, active 상시 consumer는 `WORKER_CONSUMERS`, 범용 outbox kind는 `WORKER_OUTBOX_KINDS`에 각각 명시한 값만 claim한다.
+
+초기 shadow 검증을 마친 뒤에는 `main`에 `stargate-worker/**`, `packages/core/**`, `packages/shared-db/**` 또는 관련 workspace·workflow 파일이 변경되면 GitHub Actions가 Dokploy worker webhook을 자동 호출한다. 배포 모드는 저장소가 아니라 Dokploy의 `WORKER_MODE` 설정을 그대로 따른다.
 
 ## 패키지 구조
 
