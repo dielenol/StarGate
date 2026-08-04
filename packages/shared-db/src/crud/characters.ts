@@ -35,7 +35,18 @@ export type AgentCharacterCard = Pick<
     Character["lore"],
     "name" | "nameNative" | "nickname" | "nameEn" | "loreTags"
   >;
-  play: Pick<AgentCharacter["play"], "className" | "hp" | "san">;
+  play: Pick<
+    AgentCharacter["play"],
+    | "className"
+    | "hp"
+    | "hpDelta"
+    | "san"
+    | "sanDelta"
+    | "def"
+    | "defDelta"
+    | "atk"
+    | "atkDelta"
+  >;
 };
 
 export async function listCharacters(): Promise<Character[]> {
@@ -226,7 +237,13 @@ export async function listAgentCharacterCards(
       "lore.loreTags": 1,
       "play.className": 1,
       "play.hp": 1,
+      "play.hpDelta": 1,
       "play.san": 1,
+      "play.sanDelta": 1,
+      "play.def": 1,
+      "play.defDelta": 1,
+      "play.atk": 1,
+      "play.atkDelta": 1,
     })
     .sort({ codename: 1 })
     .toArray();

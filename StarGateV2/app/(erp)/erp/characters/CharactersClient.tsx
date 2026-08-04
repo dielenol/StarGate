@@ -11,6 +11,7 @@ import { AGENT_LEVEL_LABELS } from "@/types/character";
 import type { AgentLevel, CharacterTier } from "@/types/character";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { finalCharacterStat } from "@/lib/character/stats";
 import {
   getCharacterDepartmentLabel,
   getCharacterDisplayName,
@@ -343,7 +344,9 @@ function getCardPattern(
   viewerUserId: string,
 ): CardPattern {
   if (c.ownerId === viewerUserId) return "mine";
-  if (c.play.hp <= 0 || c.play.san < 30) return "risk";
+  const hp = finalCharacterStat(c.play.hp, c.play.hpDelta);
+  const san = finalCharacterStat(c.play.san, c.play.sanDelta);
+  if (hp <= 0 || san < 30) return "risk";
   if (tierOf(c) === "MINI") return "mini";
 
   const seed = [id, c.codename, c.department ?? "", c.role].join("|");
@@ -585,6 +588,10 @@ export default function CharactersClient({
             const roleClass = getRoleClassMeta(c);
             const orgBadge = getOrgBadgeMeta(c);
             const pattern = getCardPattern(c, id, viewerUserId);
+            const hp = finalCharacterStat(c.play.hp, c.play.hpDelta);
+            const san = finalCharacterStat(c.play.san, c.play.sanDelta);
+            const atk = finalCharacterStat(c.play.atk, c.play.atkDelta);
+            const def = finalCharacterStat(c.play.def, c.play.defDelta);
 
             return (
               <Link
@@ -675,16 +682,23 @@ export default function CharactersClient({
                   <div className={styles.card__stats}>
                     <StatRow
                       label="HP"
-                      value={c.play.hp}
+                      value={hp}
                       max={HP_MAX}
                       tone="gold"
                     />
                     <StatRow
                       label="SAN"
-                      value={c.play.san}
+                      value={san}
                       max={SAN_MAX}
-                      tone={c.play.san < 30 ? "danger" : "info"}
+                      tone={san < 30 ? "danger" : "info"}
                     />
+                    <div
+                      className={styles.card__combatStats}
+                      aria-label={`기본 공격력 ${atk}, 방어력 ${def}`}
+                    >
+                      <CombatStat label="ATK" value={atk} />
+                      <CombatStat label="DEF" value={def} />
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -804,5 +818,20 @@ function StatRow({
       </span>
       <span className={valueClass}>{value}</span>
     </div>
+  );
+}
+
+function CombatStat({
+  label,
+  value,
+}: {
+  label: "ATK" | "DEF";
+  value: number;
+}) {
+  return (
+    <span className={styles.card__combatStat}>
+      <span>{label}</span>
+      <b>{value}</b>
+    </span>
   );
 }
