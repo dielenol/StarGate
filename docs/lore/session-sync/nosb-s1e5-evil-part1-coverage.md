@@ -38,9 +38,9 @@ source: stargate-lore
 | 루빈 마을 교수형 | p.3-p.5 | report/wiki | 민간인 교수형, 발바닥의 미네르바의 눈, 섹터 C의 경고 방식 기록 | Applied + Verified |
 | 섹터 C | p.18-p.22, p.32-p.69, p.101-p.111 | `wiki_pages.sector-c` | 조직·시설·냉동 격리·사보타주 현황을 장소/시설 문서로 등록 | Applied + Verified |
 | MANUS 찰리 섹터 역할 | p.63-p.68, p.107 + 기존 MANUS spec/DB | institution spec + `institutions.MANUS.subUnits` | 기존 잠입 임무 설명을 보존하면서 광원화 감염자 수용·극저온 격리 임무를 source-backed로 보강 | Applied + DB re-read |
-| 그리고리 페초린 대령 | p.18-p.22, p.61-p.70 + 사용자 등급·초상 재확인 | NPC spec + Dossier | 수호대 통솔 기록, H등급과 사용자 제공 중장갑 초상 반영 | durable updated · live apply pending |
-| 로드리온 로마노비치 라스콜니코프 | p.32-p.60, p.77, p.101-p.109 + 사용자 설정·초상 지정 | NPC spec + Dossier | `грибы(버섯들)` 별칭, 67세·190cm, 균체 감염·내부 숙청 설정과 제공 초상 반영 | durable updated · live apply pending |
-| 니콜라이 바자로프 교수 | p.76-p.79, p.101-p.108 + 사용자 설정·초상 지정 | NPC spec + Dossier | 전체 이름·`богослов(신학자)` 별칭, 176cm, 연구원장→감독관 이력, 차원 균열·아젠트 설정과 제공 초상 반영 | durable updated · live apply pending |
+| 그리고리 페초린 대령 | p.18-p.22, p.61-p.70 + 사용자 등급·초상 재확인 | NPC spec + Dossier | 수호대 통솔 기록, H등급과 사용자 제공 중장갑 초상 반영 | initial live applied · structured prose parity repair pending |
+| 로드리온 로마노비치 라스콜니코프 | p.32-p.60, p.77, p.101-p.109 + 사용자 설정·초상 지정 | NPC spec + Dossier | `грибы(버섯들)` 별칭, 67세·190cm, 균체 감염·내부 숙청 설정과 제공 초상 반영 | Applied + DB re-read + browser verified |
+| 니콜라이 바자로프 교수 | p.76-p.79, p.101-p.108 + 사용자 설정·초상 지정 | NPC spec + Dossier | 전체 이름·`богослов(신학자)` 별칭, 176cm, 연구원장→감독관 이력, 차원 균열·아젠트 설정과 제공 초상 반영 | Applied + DB re-read + browser verified |
 | 발레리아 아젠트 / AEGIS | p.76-p.79, p.101-p.108 | existing Dossier | 로드리온의 강압적 격리, 바자로프의 해방, 유지시설 대응 합류 기록 | Applied + DB re-read |
 | 광원화 임시 백신 | p.57-p.60, p.111 | `wiki_pages.aurora-virus`, report | 보랏빛 물질 투여 후 상처 회복, 감염력 `0.000000392`, 상태 해제, 5인분 예방제 확보 기록 | Applied + Verified |
 | 광원화 냉동 감염자 | p.66-p.69, p.109-p.111 | `wiki_pages.aurora-virus`, `wiki_pages.sector-c` | 최소 수십만 명 생존 냉동, 냉기 적응, 무기 감염·전략적 사고 증언, 해동 개시 기록 | Applied + Verified |
@@ -76,9 +76,9 @@ source: stargate-lore
 | 우디 | `WD-(𝓃)` | 로드리온 음주 승부·냉기 방사기 획득 장면 | Applied + DB re-read |
 | 발레리아 아젠트 | `AEGIS` | 격리 해제·유지시설 대응 합류 | Applied + DB re-read |
 | 닥터 모스 | `DOCTOR_MOSS` | 마가렛의 관측 속 사후 경고 | Applied + DB re-read |
-| 그리고리 페초린 | `PECHORIN` | H등급·사용자 제공 초상·초상 기반 외형 durable 반영 | live apply pending |
-| 로드리온 라스콜니코프 | `RODION` | M등급·사용자 제공 신상/별칭/균체 감염/숙청 기록·초상 durable 반영 | live apply pending |
-| 니콜라이 바자로프 교수 | `BAZAROV` | H등급·MANUS 섹터 C 소속·연구원장→감독관 이력·사용자 제공 신상/별칭/초상 durable 반영 | live apply pending |
+| 그리고리 페초린 | `PECHORIN` | H등급·사용자 제공 초상·초상 기반 외형 live 반영; 구조화 배경/역할 상세/이름 설명 교정 대기 | focused repair pending |
+| 로드리온 라스콜니코프 | `RODION` | M등급·사용자 제공 신상/별칭/균체 감염/숙청 기록·초상 live 반영 | Applied + DB re-read + browser verified |
+| 니콜라이 바자로프 교수 | `BAZAROV` | H등급·MANUS 섹터 C 소속·연구원장→감독관 이력·사용자 제공 신상/별칭/초상 live 반영 | Applied + DB re-read + browser verified |
 
 ## NPC Approval Ledger
 
@@ -151,9 +151,9 @@ source: stargate-lore
 | `bazarov-valeria-armor-restoration.webp` | p.78 바자로프의 갑주 반환 장면 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene | included (durable; live pending) | included (durable; live pending) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 바자로프의 격리 해제·복귀 조치를 보여 주는 보고서 전용 컷신 |
 | `sector-c-ballerina.webp` | p.90 발레리나 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene + entity-archive | included (live; order repair pending) | included (live; order repair pending) | included (`sector-c-ballerina`) | not-applicable | not-applicable | 해당 개체가 직접 보이는 세션 도판 |
 | `zulu-0103-wendigo.webp` | p.99 웬디고 | 1035×503 | yes — PDF embedded VTT frame | report-cutscene + entity-archive | included (live; order repair pending) | included (live; order repair pending) | included (`zulu-0103-wendigo`) | not-applicable | not-applicable | 해당 개체가 직접 보이는 세션 도판 |
-| `Pechorin-profile.webp` | 2026-08-04 사용자 제공 페초린 초상; 기존 최적화본과 동일 인물·구도 | 1086×1448 | no — user-provided full portrait | personnel-image | not-applicable | not-applicable | not-applicable | not-applicable | included (durable; live pending) | exact Dossier portrait; 보고서 컷신 역할과 분리 |
-| `Rodion-profile.webp` | 2026-08-04 사용자 제공 로드리온 초상과 동일 작품·구도의 기존 최적화본 | 832×1216 | no — user-provided full portrait | personnel-image | not-applicable | not-applicable | not-applicable | not-applicable | included (durable; live pending) | 고해상도 Dossier portrait; `грибы(버섯들)` 별칭과 실명 필드는 별도 |
-| `Bazarov-profile.webp` | 2026-08-04 사용자 제공 니콜라이 바자로프 초상과 동일 작품·구도의 기존 최적화본 | 832×1216 | no — user-provided full portrait | personnel-image | not-applicable | not-applicable | not-applicable | not-applicable | included (durable; live pending) | 고해상도 Dossier portrait; MANUS 섹터 C 소속·직책 이력과 별도 |
+| `Pechorin-profile.webp` | 2026-08-04 사용자 제공 페초린 초상; 기존 최적화본과 동일 인물·구도 | 1086×1448 | no — user-provided full portrait | personnel-image | not-applicable | not-applicable | not-applicable | not-applicable | included (live + browser verified) | exact Dossier portrait; 보고서 컷신 역할과 분리 |
+| `Rodion-profile.webp` | 2026-08-04 사용자 제공 로드리온 초상과 동일 작품·구도의 기존 최적화본 | 832×1216 | no — user-provided full portrait | personnel-image | not-applicable | not-applicable | not-applicable | not-applicable | included (live + browser verified) | 고해상도 Dossier portrait; `грибы(버섯들)` 별칭과 실명 필드는 별도 |
+| `Bazarov-profile.webp` | 2026-08-04 사용자 제공 니콜라이 바자로프 초상과 동일 작품·구도의 기존 최적화본 | 832×1216 | no — user-provided full portrait | personnel-image | not-applicable | not-applicable | not-applicable | not-applicable | included (live + browser verified) | 고해상도 Dossier portrait; MANUS 섹터 C 소속·직책 이력과 별도 |
 
 ## ERP Gap Map
 
@@ -161,7 +161,7 @@ source: stargate-lore
 |---|---|---|---|
 | `/erp/sessions/report` | partial | live 보고서는 6개 시각 자료만 포함하고 p.32·p.76·p.78 컷신이 빠져 있음; 9개 ordered set 교정 payload는 durable 준비 상태 | 전용 1건 payload를 live 적용한 뒤 9개 이미지의 natural/rendered 치수, `object-fit: contain`, blurred backdrop, 캡션을 재검증 |
 | `/erp/wiki` | partial | 보고서 wiki mirror도 같은 3개 컷신이 빠져 있음; `sector-c` 3장과 개체 wiki 3장의 전용 소비처는 각각 유지 | mirror 전용 1건 payload를 live 적용해 보고서와 9개 경로·순서·캡션을 1:1 대조하고, 장소/개체 wiki는 별도 렌더 재검증 |
-| `/erp/personnel` | partial | 세 NPC의 사용자 제공 설정·등급·초상·조직·실명/별칭 분리는 durable 반영됐지만 live DB 적용 전 | NPC 승인 원장 strict 검사, 교정 payload dry-run, risk review 뒤 별도 live 실행 승인 필요 |
+| `/erp/personnel` | partial | 세 NPC의 등급·초상·신원은 live 반영·재조회됐고 목록/상세 초상도 렌더됨; 페초린의 구조화 배경·역할 상세·이름 설명만 durable spec과 문구 불일치 | `nosb-s1e5-evil-part1-pechorin-structured-repair.json` 단일 update 적용 후 DB·Dossier 재검증 |
 | `/erp/wiki/catalog` | verified/partial | 냉기 방사기는 `SPECIAL`·비매품·보관 전용으로 등록, 임시 백신은 정체·장기 효능 미확정 | `cold-emitter`만 등록하고 임시 백신은 후보-only 유지 |
 | `/erp/stock` | no-action | 기업 귀속·공시 없는 비공개 연구 성과 | `ART` watchlist만 기록 |
 | relation graph | verified/partial | 확인된 인물 간 관계만 구조화 가능 | 신규 NPC 3개 관계와 기존 Dossier 11개 방향성 관계를 재조회; entity 관계는 wiki/report prose 유지 |
@@ -185,21 +185,21 @@ source: stargate-lore
 - 공개 본문의 로컬 경로, parser/payload 표현, 대체문자, 원시 `[[...]]` 토큰 검사를 통과했다.
 - `node --test lib/__tests__/lore-links.test.mjs` 3건, `pnpm typecheck`, `pnpm lint`를 통과했다.
 - 기존 인증 브라우저 검사는 보고서·위키에서 깨진 이미지와 콘솔 오류가 0건인지만 기록했고, natural/rendered 치수·원본 비율·`object-fit`·blurred backdrop·캡션을 남기지 않았다. 따라서 이번 시각 자료 감사에서는 그 기록만으로 `browser verified`를 인정하지 않는다.
-- NPC 승인 누락 교정 감사에서 live DB의 `PECHORIN`, `RODION`, `BAZAROV` 모두 `agentLevel` 필드가 없고 `previewImage`·`lore.mainImage`가 빈 값임을 재확인했다. 기존 화면의 `J`는 DB 값이 아니라 UI fallback이었다.
+- 초기 승인 전 NPC 감사에서 live DB의 `PECHORIN`, `RODION`, `BAZAROV` 모두 `agentLevel` 필드가 없고 `previewImage`·`lore.mainImage`가 빈 값임을 재확인했다. 당시 화면의 `J`는 DB 값이 아니라 UI fallback이었다.
 - PDF p.18의 `그리고리 페초린 대령`·`감독관 로드리온 로마노비치`, p.33의 전체 이름·`로쟈` 별칭 제안, p.82의 `바자로프, 수석 연구원`을 다시 대조했다.
 - 교정 코드에 대해 `node --experimental-strip-types --test lib/__tests__/personnel-identity-display.test.mjs` 3건과 `node --test lib/__tests__/personnel-redaction.test.mjs` 20건, `pnpm typecheck`, `pnpm lint`를 통과했다.
-- 인증된 ERP 브라우저에서 세 NPC 카드가 실명을 기본 이름으로, 기존 `nickname`을 별도 `ALIAS` 줄로 표시하고 `권한등급 : 미지정`을 유지함을 확인했다. 로드리온 Dossier 제목·실명 필드는 전체 이름, `ALIAS`·별칭 필드는 `로쟈`로 분리됐으며, 편집 폼의 누락 등급 기본값도 `미지정 · GM 확인 필요`였다. Dossier 초상 `<img>`는 생성되지 않았고 콘솔 경고·오류는 0건이다.
+- 초기 승인 전 인증된 ERP 브라우저에서는 세 NPC가 `권한등급 : 미지정`, 초상 `<img>` 없음으로 표시됐고, 로드리온의 당시 별칭은 `로쟈`였다. 이 기록은 live apply 전 비교 기준이다.
 - 2026-08-04 사용자 제공 초상 3장은 기존 Dossier 자산과 동일 인물·구도임을 확인했다. 페초린은 기존 1086×1448, 로드리온과 니콜라이 바자로프는 첨부보다 해상도가 높고 전송 크기도 유리한 기존 832×1216 최적화 WebP를 유지했다.
 - 세 NPC spec은 `PECHORIN` H등급·중장갑 초상, `RODION` M등급·`грибы(버섯들)`·67세·190cm·균체 감염, `BAZAROV` H등급·니콜라이 바자로프·`богослов(신학자)`·176cm·MANUS 섹터 C·연구원장→감독관을 durable 값으로 가진다. 세 레코드의 `lore.mainImage`는 건드리지 않고 NPC convention에 따라 `previewImage`를 Dossier 초상 폴백으로 사용한다.
-- 전용 교정 payload dry-run에서 `RODION`, `BAZAROV`, `PECHORIN` 기존 문서 3건만 `예상 update`로 확인됐다. live 재조회 기준 세 문서 모두 `agentLevel` 미지정·`previewImage` 빈 값이며, 바자로프는 아직 `MANUS / SECTOR_C`, 페초린·바자로프의 기존 `nickname`은 직함 호칭이다.
+- 전용 3건 payload dry-run 뒤 `RODION`, `BAZAROV`, `PECHORIN`을 live 적용했다. 재조회에서 각각 M/H/H 등급과 지정 초상, 신원·별칭을 확인했고 기존 관계·세션 등장·이벤트 배열은 각 1건씩 보존됐다. 후속 브라우저 검사에서 페초린의 structured `background`·`roleDetail`·`notes`만 spec/loreMd보다 오래된 값임을 발견했다.
 - NPC 승인 원장 구조·ready 검사와 전용 payload 대상 대조를 통과해 세 update 대상 모두 원장에 포함됐음을 확인했다. `stargate-lore` 회귀 테스트 19건과 `skill-creator` quick validation도 통과했다.
 - 2026-08-04 critical risk review에서 세 NPC의 기존 관계·세션 등장·이벤트 배열은 payload가 건드리지 않음을 확인했다. 초기 payload가 기존 주제 태그 일부를 덮어쓰는 문제는 RODION의 `변이`·`냉동격리`, BAZAROV의 `수석연구원`·`비상대응`·`다층차원관측실`을 신규 태그와 합쳐 보존하도록 교정했다. 조직 변경과 모순되는 BAZAROV의 과거 후보 태그 `연구기구`·`파견`만 최신 사용자 지정에 따라 제외한다.
-- 세 portrait 경로는 `origin/main`에도 이미 존재한다. live 적용 직전 프로덕션 URL 3개의 `200 image/webp`를 확인하고, 반드시 3건 전용 `nosb-s1e5-evil-part1-npc-approval.json`만 사용한다. 12건·5개 컬렉션 전체 sync payload는 이번 교정에 사용하지 않는다.
+- 세 portrait 경로는 `origin/main`과 프로덕션 `https://ordonet.co.kr`에서 모두 `200 image/webp`로 확인됐다. 최초 live 반영에는 3건 전용 `nosb-s1e5-evil-part1-npc-approval.json`을 사용했으며, 후속 페초린 문구 교정은 1건 전용 `nosb-s1e5-evil-part1-pechorin-structured-repair.json`만 사용한다. 12건·5개 컬렉션 전체 sync payload는 이번 교정에 사용하지 않는다.
 - 후속 변경에 대해 신원조회 테스트 23건, `pnpm typecheck`, `pnpm lint`, `git diff --check`를 통과했다.
 - 로컬 서버에서 세 WebP URL이 모두 `200 image/webp`로 응답했다. 인증된 로드리온 Dossier 상세에서 풀네임과 `로쟈` 별칭이 분리되고 별칭 계산 글꼴 크기가 14px이며, live 적용 전이라 인물 초상은 아직 렌더되지 않음을 확인했다. 콘솔 경고·오류는 0건이다.
 - 로드리온·바자로프의 저해상도 첨부 파일로 기존 고해상도 최적화본을 교체하지 않았으므로 이번 변경에는 신규 정적 자산 배포가 필요하지 않다. 다만 live DB의 `previewImage` 설정 전 프로덕션 자산 응답은 별도로 재확인한다.
 - 2026-08-04 최종 교정 뒤 NPC ledger structural/ready/public-text, spec→adapter→payload 일치, live read-only dry-run 3건, 신원조회·권한 마스킹·로어 링크 테스트 26건, `@stargate/shared-db` build, `pnpm typecheck`, `pnpm lint`, `git diff --check`를 통과했다. critical risk review에서도 durable blocker가 없음을 확인했다.
-- 2026-08-04 후속 교정 시점에도 live DB 값은 쓰지 않았다. 사용자 제공 설정과 초상은 durable spec/payload에 반영하고, 공개 여부 `true`와 기존 ERP 식별자는 보존했다. live apply는 정확한 3건의 변경 전→후 제시와 최신 실행 승인을 기다린다.
+- 2026-08-04 사용자 승인 뒤 live DB의 세 NPC를 적용·재조회했다. 공개 여부 `true`, 기존 ERP 식별자, `lore.mainImage`, 관계·세션 등장·이벤트 배열을 보존했다. 페초린 structured prose parity는 브라우저에서 발견된 후속 갭이며 단일 focused repair 적용을 기다린다.
 - S1E4 프라토 1·2부의 현재 보고서 렌더를 비교 기준으로 재확인했다. 1035×503 가로 원본은 662×322, 사용자 제공 1024×1536 세로 원본은 298×446으로 원본 비율을 보존했고, 모두 `object-fit: contain`, `--wiki-render-image` blurred backdrop과 캡션이 적용됐다.
 - S1E5의 9개 보고서 시각 자료는 PDF 내부의 실제 1035×503 JPEG+soft-mask 원본이다. 화면 캡처나 사후 임의 크롭이 아니지만, VTT 원본 프레임 자체가 1035×503 가로 구도라는 사실을 ledger에 분리 기록했다.
 - p.32 로드리온, p.76 발레리아 격리, p.78 바자로프 갑주 반환 프레임을 alpha 보존 WebP 3장으로 추가했다. 세 파일은 모두 1035×503, alpha 범위 0–1이며 Dossier·catalog·전용 entity wiki에는 재사용하지 않는다.

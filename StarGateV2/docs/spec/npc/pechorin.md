@@ -21,7 +21,7 @@ appearsInEvents: [NOSB-S1E5-EVIL-PART1]
 source: session-log
 previewImage: /assets/npcs/Pechorin-profile.webp
 createdAt: 2026-06-28T00:00:00.000Z
-updatedAt: 2026-08-04T07:34:41.000Z
+updatedAt: 2026-08-04T08:18:48.000Z
 ---
 
 ## 대사
