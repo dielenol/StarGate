@@ -235,8 +235,8 @@ const TRAINING_STEPS: TrainingStep[] = [
   },
   {
     label: "STEP 03",
-    title: "이동 선언",
-    hint: "선언 후 클릭 또는 드래그",
+    title: "이동 (선택)",
+    hint: "필요할 때 선언 후 이동",
   },
   {
     label: "STEP 04",
@@ -993,47 +993,110 @@ export default function EquipmentSimulatorClient({
   const resultSentence = /[.!?]$/.test(resultSummary)
     ? resultSummary
     : `${resultSummary}.`;
-  const executionBlockedReason = !selectedRule
-    ? "장비 미선택"
-    : selectedAction &&
-        typeof selectedAction.resourceCost === "number" &&
-        selectedResource < selectedAction.resourceCost
-      ? `${selectedRule.resource?.label ?? "자원"} 부족`
-      : selectedActionKind === "attack" &&
-          selectedRule.resource &&
-          selectedResource <= 0
-        ? `${selectedRule.resource.label} 부족`
-        : selectedRule.requiresSetup && !hmgInstalled
-          ? "설치 필요"
-          : selectedActionKind === "attack" && selectedRule.blast && !blastImpact
-            ? "착탄점 미선택"
-            : selectedActionKind === "incendiary-line" && !blastImpact
-              ? "지점 미선택"
-              : selectedActionKind !== "area-spray" &&
-                  selectedActionKind !== "incendiary-line" &&
-                  !selectedRule.blast &&
-                  !selectedEnemy
-                ? "표적 미선택"
-                : selectedActionKind !== "area-spray" &&
-                    selectedActionKind !== "incendiary-line" &&
-                    !selectedRule.blast &&
-                    selectedEnemy &&
-                    isSimulatorEnemyDefeated(selectedEnemy)
-                  ? "표적 전투불능"
-                : selectedActionKind !== "area-spray" &&
-                    selectedActionKind !== "incendiary-line" &&
-                    selectedEnemy?.kind === "boss" &&
-                    selectedResult?.profile?.targetStat === "hp" &&
-                    !selectedRule.blast &&
-                    !attackBossPart
-                  ? "부위 미선택"
-                  : selectedActionKind !== "area-spray" &&
-                      selectedActionKind !== "incendiary-line" &&
-                      selectedResult &&
-                      !selectedResult.ok
-                    ? selectedResult.reasonLabel ?? "사거리 밖"
-                    : null;
+  const executionBlocker = (() => {
+    if (!selectedRule) {
+      return {
+        reason: "장비 미선택",
+        instruction: "왼쪽 장비 목록에서 시험할 장비를 선택하세요.",
+      };
+    }
+
+    const actionResourceShortage =
+      selectedAction &&
+      ((typeof selectedAction.resourceCost === "number" &&
+        selectedResource < selectedAction.resourceCost) ||
+        (selectedAction.resourceCost === "all" && selectedResource <= 0));
+    const attackResourceEmpty =
+      selectedActionKind === "attack" &&
+      selectedRule.resource &&
+      selectedResource <= 0;
+    if (actionResourceShortage || attackResourceEmpty) {
+      return {
+        reason: `${selectedRule.resource?.label ?? "자원"} 부족`,
+        instruction: `‘${controlReloadLabel(selectedRule)}’ 버튼을 눌러 자원을 복구한 뒤 다시 실행하세요.`,
+      };
+    }
+
+    if (selectedRule.requiresSetup && !hmgInstalled) {
+      return {
+        reason: "중기관총 미설치",
+        instruction:
+          "‘중기관총 설치 (1턴)’ 버튼을 누르세요. 설치가 끝나면 다음 턴부터 공격할 수 있습니다.",
+      };
+    }
+
+    if (selectedActionKind === "attack" && selectedRule.blast && !blastImpact) {
+      return {
+        reason: "착탄점 미선택",
+        instruction:
+          "전투판의 붉은 공격 가능 셀을 착탄점으로 선택한 뒤 ‘공격 실행’ 버튼을 누르세요.",
+      };
+    }
+
+    if (selectedActionKind === "incendiary-line" && !blastImpact) {
+      return {
+        reason: "소이선 지점 미선택",
+        instruction:
+          "전투판에서 소이선을 만들 셀 또는 방향을 선택한 뒤 ‘소이선 실행’ 버튼을 누르세요.",
+      };
+    }
+
+    const requiresDirectTarget =
+      selectedActionKind !== "area-spray" &&
+      selectedActionKind !== "incendiary-line" &&
+      !selectedRule.blast;
+    if (requiresDirectTarget && !selectedEnemy) {
+      return {
+        reason: "표적 미선택",
+        instruction: "전투판에서 공격할 생존 적 토큰을 선택하세요.",
+      };
+    }
+    if (
+      requiresDirectTarget &&
+      selectedEnemy &&
+      isSimulatorEnemyDefeated(selectedEnemy)
+    ) {
+      return {
+        reason: "선택 표적 전투불능",
+        instruction: "전투판에서 다른 생존 적 토큰을 선택하세요.",
+      };
+    }
+    if (
+      requiresDirectTarget &&
+      selectedEnemy?.kind === "boss" &&
+      selectedResult?.profile?.targetStat === "hp" &&
+      !attackBossPart
+    ) {
+      return {
+        reason: "공격 부위 미선택",
+        instruction:
+          "전투 조작 패널의 ‘공격 부위 선택’에서 파괴되지 않은 부위를 선택하세요.",
+      };
+    }
+
+    if (requiresDirectTarget && selectedResult && !selectedResult.ok) {
+      if (selectedResult.reason === "CADENCE_LOCKED") {
+        return {
+          reason: "이번 턴 사격 횟수 소진",
+          instruction: `‘턴 종료 → ${turn + 1}턴’ 버튼을 눌러 다음 턴으로 진행하세요.`,
+        };
+      }
+      return {
+        reason: selectedResult.reasonLabel ?? "공격 조건 불충족",
+        instruction: `상단의 ‘내 위치 이동 선언 ${movementDeclarationsUsed}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}’ 또는 ‘적 위치 조정’으로 배치를 바꾼 뒤 다시 확인하세요.`,
+      };
+    }
+
+    return null;
+  })();
+  const executionBlockedReason = executionBlocker?.reason ?? null;
   const instructorBrief = (() => {
+    if (executionBlocker && trainingEvent !== "position") {
+      return {
+        title: `다음 행동 · ${executionBlocker.reason}`,
+        text: executionBlocker.instruction,
+      };
+    }
     switch (trainingEvent) {
       case "weapon":
         return {
@@ -1334,6 +1397,20 @@ export default function EquipmentSimulatorClient({
     );
   }
 
+  function showMovementDeclarationGuide() {
+    const title =
+      activeToken === "target"
+        ? "현재 적 위치 조정 중"
+        : activeToken === "aim"
+          ? "현재 공격 지점 선택 중"
+          : "이동 선언 필요";
+    showFeedback(
+      "error",
+      title,
+      `내 캐릭터를 옮기려면 상단의 ‘내 위치 이동 선언 ${movementDeclarationsUsed}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}’ 버튼을 누른 뒤, 목적지 칸을 선택하거나 내 토큰을 드래그하세요.`,
+    );
+  }
+
   function moveToken(token: DraggedToken, coord: SimulatorBoardCoord) {
     if (token.kind === "attacker" && hmgInstalled) {
       showFeedback(
@@ -1384,11 +1461,7 @@ export default function EquipmentSimulatorClient({
         return;
       }
       if (!movementDeclarationPending) {
-        showFeedback(
-          "error",
-          "이동 선언 필요",
-          "내 캐릭터를 옮기기 전에 이동 선언을 선택하세요.",
-        );
+        showMovementDeclarationGuide();
         return;
       }
       if (!canDeclareSimulatorMovement(movementDeclarationsUsed)) {
@@ -1578,11 +1651,7 @@ export default function EquipmentSimulatorClient({
       return;
     }
     if (token.kind === "attacker" && !movementDeclarationPending) {
-      showFeedback(
-        "error",
-        "이동 선언 필요",
-        "이동 선언을 선택한 뒤 내 토큰을 드래그하세요.",
-      );
+      showMovementDeclarationGuide();
       return;
     }
     event.preventDefault();
@@ -2386,12 +2455,13 @@ export default function EquipmentSimulatorClient({
           : "기본 공격"
         : selectedRule?.actions?.find((action) => action.kind === kind)?.name ??
           "특수행동";
+    const executeLabel = kind === "attack" ? "공격 실행" : `${actionName} 실행`;
     showFeedback(
       "info",
       `${actionName} 선택`,
       needsCell
-        ? "전투판에서 공격 지점을 선택하세요."
-        : "대상과 예상 판정을 확인한 뒤 공격 실행을 누르세요.",
+        ? `전투판에서 공격 지점을 선택한 뒤 ‘${executeLabel}’ 버튼을 누르세요.`
+        : `대상과 예상 판정을 확인한 뒤 ‘${executeLabel}’ 버튼을 누르세요.`,
     );
   }
 
@@ -3241,8 +3311,8 @@ export default function EquipmentSimulatorClient({
                     onClick={() => handleSelectActiveToken("attacker")}
                   >
                     {activeToken === "attacker"
-                      ? "이동 목적지 선택 중"
-                      : `이동 선언 ${movementDeclarationsUsed}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}`}
+                      ? "내 위치 목적지 선택 중"
+                      : `내 위치 이동 선언 ${movementDeclarationsUsed}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}`}
                   </button>
                   <button
                     type="button"
@@ -3448,7 +3518,7 @@ export default function EquipmentSimulatorClient({
                 className={styles.fireButton}
                 onClick={handleAttack}
                 disabled={Boolean(executionBlockedReason)}
-                aria-describedby="simulator-placement-status"
+                aria-describedby="simulator-action-status"
               >
                 {selectedAction?.name ?? "공격"} 실행
               </button>
@@ -3489,11 +3559,20 @@ export default function EquipmentSimulatorClient({
               </button>
             </div>
             {executionBlockedReason ? (
-              <p className={styles.actionBlocker} role="status">
-                실행 대기 · {executionBlockedReason}
+              <p
+                id="simulator-action-status"
+                className={styles.actionBlocker}
+                role="status"
+              >
+                <strong>실행 대기 · {executionBlockedReason}</strong>
+                <span>{executionBlocker?.instruction}</span>
               </p>
             ) : (
-              <p className={styles.actionReady} role="status">
+              <p
+                id="simulator-action-status"
+                className={styles.actionReady}
+                role="status"
+              >
                 대상과 예상 범위를 확인했습니다. 실행할 수 있습니다.
               </p>
             )}

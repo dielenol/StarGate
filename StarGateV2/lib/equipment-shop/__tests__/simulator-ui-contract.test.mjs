@@ -106,10 +106,37 @@ test("player movement requires a declaration and resets its two-use allowance ea
   assert.match(simulator, /function consumeSimulatorMovementDeclaration/);
   assert.match(client, /function handleDeclareMovement/);
   assert.match(client, /if \(!movementDeclarationPending\)/);
-  assert.match(client, /이동 선언 필요/);
+  assert.match(client, /현재 적 위치 조정 중/);
+  assert.match(client, /현재 공격 지점 선택 중/);
+  assert.match(
+    client,
+    /상단의 ‘내 위치 이동 선언 \$\{movementDeclarationsUsed\}\/\$\{SIMULATOR_MOVEMENT_DECLARATION_LIMIT\}’ 버튼/,
+  );
+  assert.match(client, /내 위치 목적지 선택 중/);
+  assert.match(client, /필요할 때 선언 후 이동/);
+  assert.equal(client.match(/showMovementDeclarationGuide\(\);/g)?.length, 2);
   assert.match(client, /setMovementDeclarationsUsed\(0\)/);
   assert.match(client, /이동 2회 또는 이동과 행동을 섞어 선언/);
   assert.match(client, /강제 이동은 각 스킬 효과를 따릅니다/);
+});
+
+test("blocked actions identify the exact recovery control and special action button", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(CLIENT_URL, "utf8"),
+    readFile(STYLES_URL, "utf8"),
+  ]);
+
+  assert.match(client, /const executionBlocker =/);
+  assert.match(client, /selectedAction\.resourceCost === "all"/);
+  assert.match(client, /‘중기관총 설치 \(1턴\)’ 버튼/);
+  assert.match(client, /‘턴 종료 → \$\{turn \+ 1\}턴’ 버튼/);
+  assert.match(client, /controlReloadLabel\(selectedRule\)/);
+  assert.match(client, /‘공격 부위 선택’/);
+  assert.match(client, /‘\$\{executeLabel\}’ 버튼/);
+  assert.match(client, /다음 행동 · \$\{executionBlocker\.reason\}/);
+  assert.match(client, /aria-describedby="simulator-action-status"/);
+  assert.match(client, /<span>\{executionBlocker\?\.instruction\}<\/span>/);
+  assert.match(styles, /\.actionBlocker\s*\{[^}]*display: grid;[^}]*gap: 3px;/s);
 });
 
 test("the weapon rack prioritizes and initially selects the main character's equipped weapon", async () => {

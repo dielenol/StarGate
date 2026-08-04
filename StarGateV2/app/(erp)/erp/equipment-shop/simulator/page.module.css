@@ -2094,14 +2094,24 @@
   margin: 0;
   padding: 7px 9px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.35;
 }
 
 .actionBlocker {
+  display: grid;
+  gap: 3px;
   background: rgba(174, 45, 34, 0.12);
   border: 1px solid color-mix(in srgb, var(--danger) 52%, var(--line));
   color: #e4aaa4;
+}
+
+.actionBlocker strong {
+  color: #f2c0bb;
+}
+
+.actionBlocker span {
+  color: var(--ink-1);
 }
 
 .actionReady {
