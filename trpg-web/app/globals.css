@@ -1,23 +1,77 @@
 :root {
-  --bg: #0f1115;
-  --bg-elev: #181b22;
-  --bg-elev-2: #20242d;
-  --border: #2a2f3a;
-  --border-strong: #3a4150;
-  --text: #e4e7ee;
-  --text-muted: #9aa3b3;
-  --text-dim: #6c7585;
-  --accent: #5865f2;
-  --accent-hover: #4752c4;
-  --danger: #ed4245;
-  --warning: #faa61a;
-  --success: #57f287;
+  color-scheme: light dark;
+
+  --bg: light-dark(#f5f7fb, #0f1115);
+  --bg-elev: light-dark(#ffffff, #181b22);
+  --bg-elev-2: light-dark(#eef1f6, #20242d);
+  --border: light-dark(#dce1ea, #2a2f3a);
+  --border-strong: light-dark(#bcc4d2, #3a4150);
+  --text: light-dark(#202633, #e4e7ee);
+  --text-muted: light-dark(#596477, #9aa3b3);
+  --text-dim: light-dark(#596477, #8a94a5);
+  --accent: light-dark(#4f5de0, #5865f2);
+  --accent-hover: light-dark(#3d49bd, #4752c4);
+  --danger: light-dark(#c7353b, #ed4245);
+  --warning: light-dark(#9a5c00, #faa61a);
+  --success: light-dark(#177c47, #57f287);
+  --brand-gold: light-dark(#8a671c, #c5a059);
+
+  --control-bg: light-dark(#ffffff, #181b22);
+  --control-bg-hover: light-dark(#eef1f6, #20242d);
+  --surface-muted: light-dark(rgba(235, 239, 247, 0.78), rgba(24, 27, 34, 0.5));
+  --surface-frosted: light-dark(rgba(255, 255, 255, 0.96), rgba(24, 27, 34, 0.92));
+  --surface-panel: light-dark(rgba(255, 255, 255, 0.94), rgba(24, 27, 34, 0.9));
+  --surface-brand-ring: light-dark(rgba(255, 255, 255, 0.86), rgba(15, 17, 21, 0.72));
+  --overlay-backdrop: light-dark(rgba(18, 24, 38, 0.32), rgba(0, 0, 0, 0.55));
+  --grid-line-soft: light-dark(rgba(90, 101, 120, 0.14), rgba(42, 47, 58, 0.18));
+  --neutral-soft: light-dark(rgba(31, 41, 55, 0.08), rgba(255, 255, 255, 0.12));
+  --neutral-soft-subtle: light-dark(rgba(31, 41, 55, 0.05), rgba(255, 255, 255, 0.06));
+  --neutral-border: light-dark(rgba(31, 41, 55, 0.2), rgba(255, 255, 255, 0.22));
+  --neutral-border-strong: light-dark(rgba(31, 41, 55, 0.3), rgba(255, 255, 255, 0.42));
+  --highlight-subtle: light-dark(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.04));
+
+  --accent-soft-1: rgba(88, 101, 242, 0.08);
+  --accent-soft-2: rgba(88, 101, 242, 0.1);
+  --accent-soft-3: rgba(88, 101, 242, 0.14);
+  --accent-soft-4: rgba(88, 101, 242, 0.16);
+  --accent-soft-5: rgba(88, 101, 242, 0.22);
+  --accent-soft-6: rgba(88, 101, 242, 0.28);
+  --accent-border: light-dark(rgba(63, 76, 197, 0.4), rgba(88, 101, 242, 0.5));
+  --accent-border-strong: light-dark(#3446b8, #8ea0ff);
+  --accent-text: light-dark(#3d4dbd, #c7d0ff);
+  --accent-text-strong: light-dark(#273797, #eef1ff);
+  --danger-soft: rgba(237, 66, 69, 0.12);
+  --danger-border: rgba(237, 66, 69, 0.35);
+  --warning-soft: rgba(250, 166, 26, 0.14);
+  --success-soft: rgba(35, 165, 90, 0.14);
+
+  --holiday-text: light-dark(#b22f36, #e26b6f);
+  --saturday-text: light-dark(#4057c8, #6e8bff);
+  --session-blue: light-dark(#334fc2, #8ea0ff);
+  --session-green: light-dark(#0b5b35, #69e8a1);
+  --session-yellow: light-dark(#704300, #ffc45c);
+  --session-red: light-dark(#982a32, #ff8588);
+  --google-blue: light-dark(#1a5fb4, #8ab4f8);
+
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.16);
+  --shadow-panel: light-dark(0 20px 55px rgba(54, 65, 88, 0.18), 0 24px 70px rgba(0, 0, 0, 0.4));
+  --shadow-card: light-dark(0 12px 32px rgba(54, 65, 88, 0.18), 0 16px 42px rgba(0, 0, 0, 0.35));
+  --date-picker-filter: light-dark(none, brightness(0) saturate(100%) invert(68%) sepia(11%) saturate(590%) hue-rotate(179deg) brightness(93%) contrast(88%));
+  --date-picker-filter-hover: light-dark(none, brightness(0) saturate(100%) invert(95%) sepia(8%) saturate(210%) hue-rotate(180deg) brightness(100%) contrast(94%));
 
   --font-body:
     "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 * {

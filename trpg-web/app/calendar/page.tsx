@@ -19,7 +19,10 @@ import type { TrpgMemberView } from "@/app/api/trpg/members/route";
 import { auth } from "@/lib/auth/config";
 import { yearMonthFromDateKey } from "@/lib/calendar/date-key";
 import { currentKstYearMonth } from "@/lib/calendar/month";
+import { getGoogleCalendarConnectionView } from "@/lib/db/google-calendar-connections";
 import { TRPG_GUILD_ID } from "@/lib/env";
+import { isGoogleCalendarEnabled } from "@/lib/google-calendar/config";
+import type { GoogleCalendarConnectionView } from "@/lib/google-calendar/types";
 import { toTrpgSessionView, type TrpgSessionView } from "@/lib/trpg/serializer";
 
 import { CalendarClient } from "./CalendarClient";
@@ -51,6 +54,7 @@ export default async function CalendarPage({
   const params = searchParams ? await searchParams : {};
   const sessionId = firstSearchParam(params, "sessionId");
   const dateParam = firstSearchParam(params, "date");
+  const googleStatus = firstSearchParam(params, "google");
   const linkedSession = sessionId
     ? await findTrpgSessionById(sessionId).catch(() => null)
     : null;
@@ -61,10 +65,21 @@ export default async function CalendarPage({
     linkedSession?.status === "open" ? linkedSession._id?.toString() : null;
   const { year, month } = linkedYearMonth ?? currentKstYearMonth();
 
-  // 초기 sessions + members 병렬 prefetch.
-  const [rawSessions, rawMembers] = await Promise.all([
+  const googleCalendarEnabled = isGoogleCalendarEnabled();
+  const disabledGoogleConnection: GoogleCalendarConnectionView = {
+    enabled: false,
+    connected: false,
+    reconnectRequired: false,
+    selectedCalendarCount: 0,
+  };
+
+  // 초기 sessions + members + Google 연결 상태 병렬 prefetch.
+  const [rawSessions, rawMembers, initialGoogleConnection] = await Promise.all([
     findTrpgSessionsByMonth(guildId, year, month).catch(() => []),
     listActiveTrpgGuildMembers(guildId).catch(() => []),
+    googleCalendarEnabled
+      ? getGoogleCalendarConnectionView(session.user.discordUserId)
+      : Promise.resolve(disabledGoogleConnection),
   ]);
 
   const initialSessions: TrpgSessionView[] = rawSessions.map(toTrpgSessionView);
@@ -81,6 +96,8 @@ export default async function CalendarPage({
       initialMonth={month}
       initialSessions={initialSessions}
       initialMembers={initialMembers}
+      initialGoogleConnection={initialGoogleConnection}
+      initialGoogleStatus={googleStatus}
       initialSelectedDate={initialSelectedDate}
       initialFocusedSessionId={initialFocusedSessionId}
     />

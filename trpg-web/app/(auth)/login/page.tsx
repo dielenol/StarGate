@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 import { signIn } from "@/lib/auth/config";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 import styles from "./page.module.css";
 
@@ -22,6 +23,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <main className={styles.login}>
+      <div className={styles.login__themeToggle}>
+        <ThemeToggle />
+      </div>
       <div className={styles.login__panel}>
         <div className={styles.login__brand} aria-hidden="true">
           <span className={styles.login__brandRing}>

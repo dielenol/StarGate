@@ -19,11 +19,11 @@
   align-items: center;
   padding: 13px 14px;
   color: var(--text);
-  background: rgba(24, 27, 34, 0.96);
+  background: var(--surface-frosted);
   border: 1px solid var(--border-strong);
   border-left: 4px solid var(--success);
   border-radius: 8px;
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-card);
   pointer-events: auto;
   transform-origin: bottom right;
   animation: toast-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
