@@ -30,3 +30,10 @@
 - 검증: 관련 테스트 59건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, payload CAS dry-run 및 쓰기 후 DB 재조회 통과
 - 브라우저 확인: 인증된 로컬 크로노스 상세에서 `ABILITY · R`, `ULTIMATE`, `11 / 12 SLOTS`와 기존 능력명 렌더링 확인
 - 관련 커밋: `da2c2e3f`
+
+## 2026-08-05 · 버그 수정 · 보고서 인물 참조 보존
+
+- 작전 보고서가 참조 중인 캐릭터는 코드네임 변경·비공개 전환·삭제를 수행할 수 없으며 API가 충돌 이유를 `409`로 반환한다.
+- 캐릭터 생성 payload를 관리자 허용 필드로 제한해 내부 참조 잠금 메타데이터를 외부 입력으로 주입할 수 없게 했다.
+- 검증: shared-db transaction/reference 테스트, character API 계약, `pnpm typecheck`, `pnpm lint`, `pnpm build`
+- 관련 커밋: `a57ecd94`

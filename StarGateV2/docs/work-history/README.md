@@ -97,6 +97,7 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 - [`/erp/shop`](routes/erp/shop.md)
 - [`/erp/stock`](routes/erp/stock.md)
 - [`/erp/trades`](routes/erp/trades.md)
+- [`/erp/wiki`](routes/erp/wiki.md)
 - [`/erp/wiki/[id]`](routes/erp/wiki/_id.md)
 - [공용 ERP realtime](shared/realtime.md)
 - [`/rules`](routes/rules.md)

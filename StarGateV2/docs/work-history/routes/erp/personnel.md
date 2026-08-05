@@ -44,3 +44,10 @@
 - 일반 캐릭터/VTT DTO에서는 원문 근거를 제거하고 Personnel profile clearance만으로 노출한다. owner SSR/polling 권한과 polling 후 작전보고서 링크도 같은 데이터 계약으로 맞췄다.
 - 검증: 관련 테스트 74건, lore checker 6건, durable payload 105파일/601건 parse dry-run, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review. 라이브 DB write는 실행하지 않았다.
 - 관련 커밋: `fbbf167e`
+
+## 2026-08-05 · 기능 변경 · 구조화 작전 보고서 역참조
+
+- Dossier의 관련 작전 보고서를 본문 키워드 추정 대신 `relatedPersonnelCodenames` 명시 참조로 연결했다.
+- 보고서가 참조 중인 인물의 코드네임 변경·비공개 전환·삭제는 원자적 참조 잠금과 `409`로 차단해 끊어진 링크를 방지한다.
+- 검증: shared-db 참조 무결성 테스트, API 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 상세 화면 확인
+- 관련 커밋: `a57ecd94`

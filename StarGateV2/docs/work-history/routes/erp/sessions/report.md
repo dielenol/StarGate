@@ -33,3 +33,12 @@
 - 보고서 본문 renderMarkdown을 useMemo로 전환 — 60초 폴링 tick마다 재파싱하던 것 제거 (위키 상세와 동일 패턴).
 - 검증: `pnpm build`
 - 관련 커밋: `1b3bf56`
+
+## 2026-08-05 · 기능 변경 · 구조화 로어 참조와 출처 무결성
+
+- 보고서 작성·편집에 관련 위키, 인물, 카탈로그를 안정 식별자로 선택하는 구조화 참조 필드를 추가하고 상세 화면의 링크·역참조를 같은 데이터로 통일했다.
+- 등록 세션 보고서는 세션 제목 SSOT와 1:1 identity를 강제하고, 중복 생성·참조 대상 변경·원본 세션 삭제를 transaction lock과 `409`로 차단한다.
+- repository seed 출처는 커밋·content hash에 고정하며 historical provenance backfill은 domain/economy payload를 재실행하지 않는 전용 도구로 분리했다.
+- 검증: shared-db 전체 테스트 256건, 변경 app/script 테스트 77건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `a57ecd94`
+- 후속 작업: live unique/backlink index와 historical provenance 적용은 별도 운영 승인 후 진행한다.
