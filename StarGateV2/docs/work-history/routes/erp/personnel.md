@@ -36,3 +36,11 @@
 - 기존 관계·세션 출현·참조 사건과 공개·조직 상태를 보존하고, 세 초상은 투명 배경의 기존 고해상도 최적화 WebP를 사용했다.
 - 검증: NPC 승인 원장·payload dry-run, live DB exact re-read, 프로덕션 초상 `200 image/webp`, 인증된 `/erp/personnel` 목록과 세 상세 Dossier, 브라우저 콘솔 경고·오류 0건
 - 관련 커밋: `512e3218`, `f730f952`
+
+## 2026-08-05 · 기능 변경 · 세션별 성격 관찰 누적
+
+- 세션 대사·묘사·행동에서 확인한 성격 근거를 불변 ID, 세션, 성향, 출처, 신뢰도와 함께 `lore.personalityObservations`에 누적하고 Dossier 프로필에서 근거 유형별로 표시한다.
+- 동일 ID 재동기화는 멱등 no-op으로 처리하고, 같은 ID의 다른 내용·candidate 적용·배열 교체·우회 mutation·companion mutation을 차단한다. 기존 character payload 재적용도 누적 관찰을 보존한다.
+- 일반 캐릭터/VTT DTO에서는 원문 근거를 제거하고 Personnel profile clearance만으로 노출한다. owner SSR/polling 권한과 polling 후 작전보고서 링크도 같은 데이터 계약으로 맞췄다.
+- 검증: 관련 테스트 74건, lore checker 6건, durable payload 105파일/601건 parse dry-run, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review. 라이브 DB write는 실행하지 않았다.
+- 관련 커밋: `fbbf167e`
