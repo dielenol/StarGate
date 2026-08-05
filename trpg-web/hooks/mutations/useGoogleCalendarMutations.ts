@@ -63,6 +63,7 @@ export function useDisconnectGoogleCalendar() {
         googleCalendarKeys.connection,
         (current) => ({
           enabled: current?.enabled ?? true,
+          available: true,
           connected: false,
           reconnectRequired: false,
           selectedCalendarCount: 0,

@@ -1,5 +1,7 @@
 import "@/lib/db/init";
 
+import { randomUUID } from "node:crypto";
+
 import { getDb } from "@stargate/shared-db";
 import { z } from "zod";
 
@@ -25,17 +27,30 @@ const googleCalendarSecretPayloadSchema = z.object({
   grantedScopes: z.array(z.string().min(1)),
 });
 
+const googleCalendarConnectionIdentitySchema = z.object({
+  generation: z.string().uuid(),
+  revision: z.string().uuid(),
+});
+
 interface GoogleCalendarConnectionDocument {
   _id: string;
+  generation: string;
+  revision: string;
   encryptedPayload: EncryptedGoogleCalendarPayload;
   reconnectRequiredAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
+export interface GoogleCalendarConnectionIdentity {
+  generation: string;
+  revision: string;
+}
+
 export interface GoogleCalendarConnection {
   payload: GoogleCalendarSecretPayload;
   reconnectRequired: boolean;
+  identity: GoogleCalendarConnectionIdentity;
 }
 
 function connectionId(discordUserId: string): string {
@@ -56,6 +71,10 @@ export async function findGoogleCalendarConnection(
   if (!document) return null;
 
   const { encryptionKey } = getGoogleCalendarConfig();
+  const identity = googleCalendarConnectionIdentitySchema.parse({
+    generation: document.generation,
+    revision: document.revision,
+  });
   const payload = googleCalendarSecretPayloadSchema.parse(
     decryptGoogleCalendarPayload<unknown>(
       document.encryptedPayload,
@@ -66,14 +85,20 @@ export async function findGoogleCalendarConnection(
   return {
     payload,
     reconnectRequired: document.reconnectRequiredAt !== null,
+    identity,
   };
 }
 
-export async function saveGoogleCalendarConnection(
+export async function upsertGoogleCalendarConnection(
   discordUserId: string,
   payload: GoogleCalendarSecretPayload,
+  generation: string,
 ): Promise<void> {
   const validated = googleCalendarSecretPayloadSchema.parse(payload);
+  const identity = googleCalendarConnectionIdentitySchema.parse({
+    generation,
+    revision: randomUUID(),
+  });
   const { encryptionKey } = getGoogleCalendarConfig();
   const encryptedPayload = encryptGoogleCalendarPayload(
     validated,
@@ -86,6 +111,7 @@ export async function saveGoogleCalendarConnection(
     { _id: connectionId(discordUserId) },
     {
       $set: {
+        ...identity,
         encryptedPayload,
         reconnectRequiredAt: null,
         updatedAt: now,
@@ -96,49 +122,105 @@ export async function saveGoogleCalendarConnection(
   );
 }
 
+export async function updateGoogleCalendarConnection(
+  discordUserId: string,
+  identity: GoogleCalendarConnectionIdentity,
+  payload: GoogleCalendarSecretPayload,
+): Promise<GoogleCalendarConnectionIdentity | null> {
+  const validatedIdentity = googleCalendarConnectionIdentitySchema.parse(
+    identity,
+  );
+  const validatedPayload = googleCalendarSecretPayloadSchema.parse(payload);
+  const nextIdentity: GoogleCalendarConnectionIdentity = {
+    generation: validatedIdentity.generation,
+    revision: randomUUID(),
+  };
+  const { encryptionKey } = getGoogleCalendarConfig();
+  const id = connectionId(discordUserId);
+  const encryptedPayload = encryptGoogleCalendarPayload(
+    validatedPayload,
+    encryptionKey,
+    id,
+  );
+  const col = await connectionCollection();
+  const result = await col.updateOne(
+    {
+      _id: id,
+      generation: validatedIdentity.generation,
+      revision: validatedIdentity.revision,
+    },
+    {
+      $set: {
+        revision: nextIdentity.revision,
+        encryptedPayload,
+        reconnectRequiredAt: null,
+        updatedAt: new Date(),
+      },
+    },
+  );
+  return result.matchedCount === 1 ? nextIdentity : null;
+}
+
 export async function markGoogleCalendarReconnectRequired(
   discordUserId: string,
-): Promise<void> {
+  identity: GoogleCalendarConnectionIdentity,
+): Promise<GoogleCalendarConnectionIdentity | null> {
+  const validatedIdentity = googleCalendarConnectionIdentitySchema.parse(
+    identity,
+  );
+  const nextIdentity: GoogleCalendarConnectionIdentity = {
+    generation: validatedIdentity.generation,
+    revision: randomUUID(),
+  };
   const col = await connectionCollection();
   const now = new Date();
-  await col.updateOne(
-    { _id: connectionId(discordUserId) },
-    { $set: { reconnectRequiredAt: now, updatedAt: now } },
+  const result = await col.updateOne(
+    {
+      _id: connectionId(discordUserId),
+      generation: validatedIdentity.generation,
+      revision: validatedIdentity.revision,
+    },
+    {
+      $set: {
+        revision: nextIdentity.revision,
+        reconnectRequiredAt: now,
+        updatedAt: now,
+      },
+    },
   );
+  return result.matchedCount === 1 ? nextIdentity : null;
 }
 
 export async function deleteGoogleCalendarConnection(
   discordUserId: string,
-): Promise<void> {
+  generation?: string,
+): Promise<boolean> {
   const col = await connectionCollection();
-  await col.deleteOne({ _id: connectionId(discordUserId) });
+  const result = await col.deleteOne({
+    _id: connectionId(discordUserId),
+    ...(generation ? { generation } : {}),
+  });
+  return result.deletedCount === 1;
 }
 
 export async function getGoogleCalendarConnectionView(
   discordUserId: string,
 ): Promise<GoogleCalendarConnectionView> {
-  try {
-    const connection = await findGoogleCalendarConnection(discordUserId);
-    if (!connection) {
-      return {
-        enabled: true,
-        connected: false,
-        reconnectRequired: false,
-        selectedCalendarCount: 0,
-      };
-    }
+  const connection = await findGoogleCalendarConnection(discordUserId);
+  if (!connection) {
     return {
       enabled: true,
-      connected: true,
-      reconnectRequired: connection.reconnectRequired,
-      selectedCalendarCount: connection.payload.selectedCalendarIds.length,
-    };
-  } catch {
-    return {
-      enabled: true,
-      connected: true,
-      reconnectRequired: true,
+      available: true,
+      connected: false,
+      reconnectRequired: false,
       selectedCalendarCount: 0,
     };
   }
+  return {
+    enabled: true,
+    available: true,
+    connected: true,
+    reconnectRequired: connection.reconnectRequired,
+    selectedCalendarCount: connection.payload.selectedCalendarIds.length,
+  };
 }

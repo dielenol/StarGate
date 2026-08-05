@@ -2,6 +2,7 @@ export const MAX_SELECTED_GOOGLE_CALENDARS = 10;
 
 export interface GoogleCalendarConnectionView {
   enabled: boolean;
+  available: boolean;
   connected: boolean;
   reconnectRequired: boolean;
   selectedCalendarCount: number;

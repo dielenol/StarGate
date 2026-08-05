@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { ZodError } from "zod";
+import { ZodError, type ZodType } from "zod";
 
 import {
+  GoogleCalendarConnectionChangedError,
   GoogleCalendarFeatureDisabledError,
+  GoogleCalendarInvalidRequestError,
   GoogleCalendarNotConnectedError,
   GoogleCalendarReconnectRequiredError,
   GoogleCalendarUpstreamError,
@@ -42,7 +44,16 @@ export function googleCalendarErrorResponse(error: unknown): NextResponse {
       { status: 409, headers: PRIVATE_NO_STORE_HEADERS },
     );
   }
-  if (error instanceof ZodError) {
+  if (error instanceof GoogleCalendarConnectionChangedError) {
+    return NextResponse.json(
+      { error: error.message, code: "GOOGLE_CONNECTION_CHANGED" },
+      { status: 409, headers: PRIVATE_NO_STORE_HEADERS },
+    );
+  }
+  if (
+    error instanceof GoogleCalendarInvalidRequestError ||
+    error instanceof ZodError
+  ) {
     return NextResponse.json(
       { error: "요청 값이 올바르지 않습니다.", code: "INVALID_REQUEST" },
       { status: 400, headers: PRIVATE_NO_STORE_HEADERS },
@@ -58,6 +69,19 @@ export function googleCalendarErrorResponse(error: unknown): NextResponse {
     { error: "Google Calendar 처리 중 오류가 발생했습니다." },
     { status: 500, headers: PRIVATE_NO_STORE_HEADERS },
   );
+}
+
+export async function parseGoogleCalendarJson<T>(
+  request: Request,
+  schema: ZodType<T>,
+): Promise<T> {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    throw new GoogleCalendarInvalidRequestError();
+  }
+  return schema.parse(body);
 }
 
 export function unauthorizedGoogleCalendarResponse(): NextResponse {

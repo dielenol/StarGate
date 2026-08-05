@@ -7,6 +7,7 @@ import {
   forbiddenGoogleCalendarResponse,
   googleCalendarErrorResponse,
   isSameOriginRequest,
+  parseGoogleCalendarJson,
   PRIVATE_NO_STORE_HEADERS,
   unauthorizedGoogleCalendarResponse,
 } from "@/lib/google-calendar/http";
@@ -50,7 +51,7 @@ export async function PUT(request: Request) {
   }
   try {
     assertGoogleCalendarEnabled();
-    const body = updateCalendarsSchema.parse(await request.json());
+    const body = await parseGoogleCalendarJson(request, updateCalendarsSchema);
     const selectedCalendarCount = await updateSelectedGoogleCalendars(
       session.user.discordUserId,
       body.calendarIds,
