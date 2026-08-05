@@ -1,0 +1,29 @@
+[
+  {
+    "collection": "characters",
+    "type": "lore-storage-required-field-parity",
+    "filter": {
+      "codename": "WEXLER"
+    },
+    "update": {
+      "$set": {
+        "lore.weight": "미상",
+        "updatedAt": "2026-08-06T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "lore-storage-required-field-parity",
+    "filter": {
+      "slug": "zulu-269-punk-cat"
+    },
+    "update": {
+      "$set": {
+        "authorId": "novus-ordo-record-control",
+        "authorName": "NOVUS ORDO 기록통제실",
+        "updatedAt": "2026-08-06T00:00:00.000Z"
+      }
+    }
+  }
+]
