@@ -4,8 +4,8 @@
 
 ## Runtime Boundary
 
-- 프로젝트 기본 모델/추론은 `.codex/config.toml`의 `gpt-5.6-sol` + `high`다.
-- 이 값은 새 로컬 태스크의 기본값이다. 사용자가 composer, `/model`, CLI flag, `--config`로 명시한 현재 태스크 설정을 바꿨다고 주장하지 않는다.
+- 프로젝트 기본 모델은 `.codex/config.toml`의 `gpt-5.6-sol`이다. 추론 강도는 프로젝트 설정에서 고정하지 않고 composer, `/model`, CLI flag, `--config`의 현재 태스크 선택을 따른다.
+- 모델 기본값은 새 로컬 태스크에 적용된다. 사용자가 현재 태스크에서 명시한 모델·추론 강도를 바꿨다고 주장하지 않는다.
 - config와 custom agent 변경은 새 태스크에서 확실히 적용된다. 이미 열린 태스크가 hot reload됐다고 가정하지 않는다.
 - 이 중첩 설정은 trusted 상태에서 태스크의 workspace/cwd가 `StarGateV2/` 또는 그 하위일 때 적용된다. 모노레포 루트 `StarGate/`에서 시작한 태스크에는 적용됐다고 가정하지 않는다.
 - 현재 태스크가 `Ultra`면 루트 에이전트는 `Ultra`로 유지된다. 아래 라우터는 작업 분류, 검증 강도, delegation, 하위 에이전트 모델만 조절한다.

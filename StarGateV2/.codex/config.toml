@@ -1,6 +1,5 @@
-# StarGateV2 local default. Explicit composer/CLI selections still take precedence.
+# StarGateV2 model default. Reasoning effort follows the composer/CLI selection.
 model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
 
 [agents]
 max_threads = 4
