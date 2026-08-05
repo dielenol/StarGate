@@ -6,6 +6,7 @@ import { applyEquipmentAbilityOverrides } from "@/lib/equipment/equipment-abilit
 import { mergePublicEquipment } from "@/lib/equipment/public-equipment";
 import { notifyUser } from "@/lib/notifications/events";
 import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
+import { stripDossierPersonalityObservations } from "@/lib/personnel";
 
 import {
   findCharacterByCodename,
@@ -445,7 +446,7 @@ export async function loadCharacterSnapshot(
       previewImage: character.previewImage,
       pixelCharacterImage: character.pixelCharacterImage,
     },
-    lore: character.lore,
+    lore: stripDossierPersonalityObservations(character).lore,
     play: effectivePlay,
     nochichim: {
       name: character.lore.name || character.codename,

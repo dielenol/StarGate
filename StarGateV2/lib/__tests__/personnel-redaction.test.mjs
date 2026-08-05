@@ -22,9 +22,11 @@ import assert from "node:assert/strict";
 import {
   filterCharacterByClearance,
   filterCharacterForList,
+  getEffectivePersonnelClearance,
   getLevelDisplayRank,
   getLevelDisplayTotal,
   getUserClearance,
+  stripDossierPersonalityObservations,
 } from "../personnel.ts";
 
 const REDACTED = "[CLASSIFIED]";
@@ -57,6 +59,17 @@ function agentChar(overrides = {}) {
       nameEn: "John Doe",
       roleDetail: "field op",
       notes: "trusted",
+      personalityObservations: [
+        {
+          id: "NOSB-S1E5:AGENT_001:calm-under-pressure",
+          sessionId: "NOSB-S1E5",
+          trait: "위기 상황의 침착함",
+          summary: "위험 상황에서도 짧고 정확하게 대응했다.",
+          evidence: [{ kind: "action", text: "대피 경로를 먼저 확보했다." }],
+          sourceLabel: "작전 보고서 S1E5",
+          confidence: "confirmed",
+        },
+      ],
     },
     play: {
       className: "Operative",
@@ -144,12 +157,14 @@ test("D-2: clearance U → appearance/personality/background/quote 마스킹 (pr
   assert.equal(filtered.lore.quote, REDACTED);
   assert.equal(filtered.lore.roleDetail, REDACTED);
   assert.equal(filtered.lore.notes, REDACTED);
+  assert.deepEqual(filtered.lore.personalityObservations, []);
 });
 
 test("D-2b: clearance J → profile 노출 (J 가 cutoff)", () => {
   const filtered = filterCharacterByClearance(agentChar(), "J");
   assert.equal(filtered.lore.appearance, "tall");
   assert.equal(filtered.lore.background, "ex-soldier");
+  assert.equal(filtered.lore.personalityObservations.length, 1);
 });
 
 /* ── D-3: AGENT play — combatStats 는 G 미만 0, abilities 는 H 미만 마스킹 ── */
@@ -190,6 +205,7 @@ test("D-5: clearance GM → 모든 필드 원본 그대로", () => {
   assert.equal(filtered.lore.name, "John");
   assert.equal(filtered.lore.nameNative, "ジョン");
   assert.equal(filtered.lore.appearance, "tall");
+  assert.equal(filtered.lore.personalityObservations.length, 1);
   assert.equal(filtered.play.hp, 80);
   assert.equal(filtered.play.abilityType, "강화");
   assert.deepEqual(filtered.play.equipment, [{ name: "Pistol" }]);
@@ -225,6 +241,7 @@ test("D-7: redactLore — 원본 optional 필드 undefined 면 결과도 undefin
   assert.equal(filtered.lore.nameEn, undefined);
   assert.equal(filtered.lore.roleDetail, undefined);
   assert.equal(filtered.lore.notes, undefined);
+  assert.equal(filtered.lore.personalityObservations, undefined);
   // 실명은 그대로 REDACTED (U < G), identity 그룹은 U 부터 노출
   assert.equal(filtered.lore.name, REDACTED);
   assert.equal(filtered.lore.gender, "female");
@@ -340,6 +357,26 @@ test("D-10b: display pips use V as full scale and GM as overflow", () => {
   assert.equal(getLevelDisplayRank("A"), 5);
   assert.equal(getLevelDisplayTotal("GM"), 7);
   assert.equal(getLevelDisplayRank("GM"), 7);
+});
+
+test("D-10c: owner 실효 clearance는 SSR과 polling API 모두 GM이다", () => {
+  const character = agentChar();
+  assert.equal(
+    getEffectivePersonnelClearance("owner-1", "U", character),
+    "GM",
+  );
+  assert.equal(
+    getEffectivePersonnelClearance("other", "U", character),
+    "U",
+  );
+});
+
+test("D-10d: 일반 캐릭터 DTO는 Dossier 전용 성격 원문을 제거하고 원본을 보존한다", () => {
+  const original = agentChar();
+  const sanitized = stripDossierPersonalityObservations(original);
+  assert.equal(sanitized.lore.personalityObservations, undefined);
+  assert.equal(original.lore.personalityObservations.length, 1);
+  assert.notEqual(sanitized.lore, original.lore);
 });
 
 /* ── D-11: 입력 객체 변경 안 함 (immutability) ── */

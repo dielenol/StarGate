@@ -463,6 +463,119 @@
   letter-spacing: 0.15em;
 }
 
+.personalityEvidence {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+
+.personalityEvidenceList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.personalityEvidenceCard {
+  display: block;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--dossier-accent) 15%, var(--line));
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, var(--dossier-accent-bg), transparent 65%),
+    var(--dossier-card-pattern),
+    var(--bg-2);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.personalityEvidenceCard--linked:hover {
+  border-color: var(--dossier-accent-dim);
+  background:
+    linear-gradient(180deg, var(--dossier-accent-bg-strong), transparent 65%),
+    var(--dossier-card-pattern),
+    var(--bg-2);
+  transform: translateY(-1px);
+}
+
+.personalityEvidenceHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.personalityEvidenceHead strong {
+  color: var(--ink-0);
+  font-size: 15px;
+}
+
+.personalityEvidenceHead span,
+.personalityEvidenceMeta {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.personalityEvidenceMeta {
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.personalityEvidenceSummary {
+  margin: 8px 0 0;
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.personalityEvidenceSources {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.personalityEvidenceSources li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.personalityEvidenceSourceLabel {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--dossier-accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.personalityEvidenceSourceText {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  word-break: break-word;
+}
+
 /* Combat stats grid */
 
 .combatStatsGrid {

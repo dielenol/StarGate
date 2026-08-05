@@ -30,6 +30,18 @@ import { resolve } from "path";
 
 import { MongoClient, type Collection, type Document } from "mongodb";
 
+import type { DossierPersonalityObservation } from "@stargate/shared-db/types";
+
+import {
+  appendPersonalityObservation,
+  classifyPersonalityObservationWrite,
+  extractPersonalityObservationUpdate,
+  toProtectedCharacterSetPayload,
+  validateInitialPersonalityObservations,
+  withParsedInitialPersonalityObservations,
+  withParsedPersonalityObservation,
+} from "./lib/personality-observation-update.ts";
+
 /* ── env ─────────────────────────────────────────────────────────────── */
 
 function loadEnvFile(fileName: string): void {
@@ -126,6 +138,8 @@ interface UpsertPlan {
   update?: Record<string, unknown> | Record<string, unknown>[];
   upsert?: boolean;
   allowQuestionMarkPlaceholder?: boolean;
+  personalityObservation?: DossierPersonalityObservation;
+  initialPersonalityObservations?: DossierPersonalityObservation[];
 }
 
 interface UpsertResultSummary {
@@ -136,9 +150,11 @@ interface UpsertResultSummary {
     | "예상 insert"
     | "예상 update"
     | "예상 missing"
+    | "예상 unchanged"
     | "예상 미상"
     | "inserted"
-    | "updated";
+    | "updated"
+    | "unchanged";
   id?: string;
   verification?: Record<string, unknown>;
 }
@@ -301,7 +317,7 @@ function buildPlans(files: string[]): UpsertPlan[] {
   const plans: UpsertPlan[] = [];
   for (const file of files) {
     for (const envelope of parseEnvelope(file)) {
-      const payload = envelope.payload
+      let payload = envelope.payload
         ? (normalizeDates(envelope.payload) as Record<string, unknown>)
         : undefined;
       const filter = envelope.filter
@@ -315,22 +331,49 @@ function buildPlans(files: string[]): UpsertPlan[] {
         );
       }
       if (envelope.update) {
+        const normalizedUpdate = normalizeDates(envelope.update) as
+          | Record<string, unknown>
+          | Record<string, unknown>[];
+        const personalityObservation =
+          envelope.collection === "characters"
+            ? extractPersonalityObservationUpdate(normalizedUpdate)
+            : null;
+        if (personalityObservation && envelope.upsert === true) {
+          throw new Error(
+            `[seed-payload] personality observation append는 기존 character만 대상으로 하며 upsert를 허용하지 않습니다: ${file}`,
+          );
+        }
         plans.push({
           file,
           collection: envelope.collection,
           mode: "update",
           filter,
-          update: normalizeDates(envelope.update) as
-            | Record<string, unknown>
-            | Record<string, unknown>[],
+          update:
+            personalityObservation && !Array.isArray(normalizedUpdate)
+              ? withParsedPersonalityObservation(
+                  normalizedUpdate,
+                  personalityObservation,
+                )
+              : normalizedUpdate,
           upsert: envelope.upsert === true,
           allowQuestionMarkPlaceholder:
             envelope.allowQuestionMarkPlaceholder === true,
+          personalityObservation: personalityObservation ?? undefined,
         });
         continue;
       }
       if (!payload) {
         throw new Error(`[seed-payload] ${file}: payload가 필요합니다.`);
+      }
+      const initialPersonalityObservations =
+        envelope.collection === "characters"
+          ? validateInitialPersonalityObservations(payload)
+          : null;
+      if (initialPersonalityObservations !== null) {
+        payload = withParsedInitialPersonalityObservations(
+          payload,
+          initialPersonalityObservations,
+        );
       }
       plans.push({
         file,
@@ -338,6 +381,8 @@ function buildPlans(files: string[]): UpsertPlan[] {
         mode: "payload",
         filter,
         payload,
+        initialPersonalityObservations:
+          initialPersonalityObservations ?? undefined,
         allowQuestionMarkPlaceholder:
           envelope.allowQuestionMarkPlaceholder === true,
       });
@@ -398,6 +443,17 @@ function summarizeSavedDoc(
           isRecord(doc.lore) && Array.isArray(doc.lore.sessionAppearances)
             ? doc.lore.sessionAppearances.length
             : 0,
+        personalityObservationCount:
+          isRecord(doc.lore) && Array.isArray(doc.lore.personalityObservations)
+            ? doc.lore.personalityObservations.length
+            : 0,
+        personalityObservationIds:
+          isRecord(doc.lore) && Array.isArray(doc.lore.personalityObservations)
+            ? doc.lore.personalityObservations
+                .filter(isRecord)
+                .map((observation) => observation.id)
+                .filter((id): id is string => typeof id === "string")
+            : [],
         personnelVisible: doc.isPublic !== false && doc.type === "NPC",
       };
     case "wiki_pages":
@@ -485,13 +541,34 @@ async function dryRunWithDb(
   for (const plan of plans) {
     const col = colByName.get(plan.collection);
     if (!col) throw new Error(`[seed-payload] collection handle 누락: ${plan.collection}`);
-    const existing = await col.findOne(plan.filter, { projection: { _id: 1 } });
+    const needsPersonalityState =
+      plan.personalityObservation !== undefined ||
+      plan.initialPersonalityObservations !== undefined;
+    const existing = await col.findOne(plan.filter, {
+      projection: needsPersonalityState
+        ? { _id: 1, "lore.personalityObservations": 1 }
+        : { _id: 1 },
+    });
+    if (existing && plan.initialPersonalityObservations !== undefined) {
+      throw new Error(
+        `[seed-payload] 최초 personality observations가 포함된 character payload는 기존 문서를 갱신할 수 없습니다: ${JSON.stringify(plan.filter)}`,
+      );
+    }
+    const personalityAction =
+      existing && plan.personalityObservation
+        ? classifyPersonalityObservationWrite(
+            existing,
+            plan.personalityObservation,
+          )
+        : null;
     printSummary({
       file: plan.file,
       collection: plan.collection,
       filter: plan.filter,
       action: existing
-        ? "예상 update"
+        ? personalityAction === "unchanged"
+          ? "예상 unchanged"
+          : "예상 update"
         : plan.mode === "payload" || plan.upsert
           ? "예상 insert"
           : "예상 missing",
@@ -508,8 +585,16 @@ async function writeWithDb(
     const col = colByName.get(plan.collection);
     if (!col) throw new Error(`[seed-payload] collection handle 누락: ${plan.collection}`);
 
-    const existing = await col.findOne(plan.filter, { projection: { _id: 1 } });
+    const needsPersonalityState =
+      plan.personalityObservation !== undefined ||
+      plan.initialPersonalityObservations !== undefined;
+    const existing = await col.findOne(plan.filter, {
+      projection: needsPersonalityState
+        ? { _id: 1, "lore.personalityObservations": 1 }
+        : { _id: 1 },
+    });
     let writtenId = existing?._id;
+    let unchanged = false;
     if (plan.mode === "update") {
       if (!plan.update) {
         throw new Error(`[seed-payload] update plan 누락: ${plan.collection}`);
@@ -519,17 +604,33 @@ async function writeWithDb(
           `[seed-payload] update 대상 없음: ${plan.collection} ${JSON.stringify(plan.filter)}`,
         );
       }
-      const result = await col.updateOne(
-        plan.filter,
-        plan.update as Document | Document[],
-        { upsert: plan.upsert === true },
-      );
-      if (result.matchedCount + result.upsertedCount !== 1) {
-        throw new Error(
-          `[seed-payload] update CAS 불일치: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+      if (plan.personalityObservation) {
+        if (Array.isArray(plan.update)) {
+          throw new Error(
+            `[seed-payload] personality observation pipeline update는 지원하지 않습니다.`,
+          );
+        }
+        const result = await appendPersonalityObservation(
+          col,
+          plan.filter,
+          plan.update,
+          plan.personalityObservation,
         );
+        writtenId = result.id as typeof writtenId;
+        unchanged = result.status === "unchanged";
+      } else {
+        const result = await col.updateOne(
+          plan.filter,
+          plan.update as Document | Document[],
+          { upsert: plan.upsert === true },
+        );
+        if (result.matchedCount + result.upsertedCount !== 1) {
+          throw new Error(
+            `[seed-payload] update CAS 불일치: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+          );
+        }
+        writtenId ??= result.upsertedId ?? undefined;
       }
-      writtenId ??= result.upsertedId ?? undefined;
     } else {
       if (!plan.payload) {
         throw new Error(`[seed-payload] payload plan 누락: ${plan.collection}`);
@@ -537,20 +638,37 @@ async function writeWithDb(
       const { setPayload, createdAt } = omitMongoManagedFields(plan.payload);
       if (setPayload.updatedAt === undefined) setPayload.updatedAt = new Date();
 
-      const result = await col.updateOne(
-        plan.filter,
-        {
-          $set: setPayload,
-          $setOnInsert: { createdAt: createdAt ?? new Date() },
-        },
-        { upsert: true },
-      );
-      if (result.matchedCount + result.upsertedCount !== 1) {
-        throw new Error(
-          `[seed-payload] payload upsert 실패: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+      if (plan.initialPersonalityObservations !== undefined) {
+        if (existing) {
+          throw new Error(
+            `[seed-payload] 최초 personality observations가 포함된 character payload는 기존 문서를 갱신할 수 없습니다: ${JSON.stringify(plan.filter)}`,
+          );
+        }
+        const result = await col.insertOne({
+          ...setPayload,
+          createdAt: createdAt ?? new Date(),
+        });
+        writtenId = result.insertedId;
+      } else {
+        const protectedSetPayload =
+          plan.collection === "characters"
+            ? toProtectedCharacterSetPayload(setPayload)
+            : setPayload;
+        const result = await col.updateOne(
+          plan.filter,
+          {
+            $set: protectedSetPayload,
+            $setOnInsert: { createdAt: createdAt ?? new Date() },
+          },
+          { upsert: true },
         );
+        if (result.matchedCount + result.upsertedCount !== 1) {
+          throw new Error(
+            `[seed-payload] payload upsert 실패: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+          );
+        }
+        writtenId ??= result.upsertedId ?? undefined;
       }
-      writtenId ??= result.upsertedId ?? undefined;
     }
 
     const saved = writtenId
@@ -567,7 +685,7 @@ async function writeWithDb(
       file: plan.file,
       collection: plan.collection,
       filter: plan.filter,
-      action: existing ? "updated" : "inserted",
+      action: unchanged ? "unchanged" : existing ? "updated" : "inserted",
       id: saved._id ? String(saved._id) : undefined,
       verification,
     });

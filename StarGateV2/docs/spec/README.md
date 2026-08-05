@@ -102,6 +102,8 @@ StarGate 세계관 자산은 **핵심 도메인**(NPC / Faction / Institution / 
 
 **body 섹션**: `## 대사` / `## 외형` / `## 성격` / `## 배경` / `## 역할 상세` / `## 이름 설명`
 
+세션 동기화에서 확인된 성격 근거는 단일 `## 성격` 문단에 덮어쓰지 않는다. `lore.personalityObservations[]`에 불변 관찰 ID, `sessionId`, 성향 라벨, 편집 요약, `dialogue | description | action` 근거, 출처, 신뢰도를 누적한다. 이 구조 배열은 평탄 frontmatter나 일반 캐릭터 PATCH가 아니라 세션별 durable seed payload에서 관리한다. 기존 Dossier에는 관찰 하나당 별도 envelope의 단일 `$addToSet`만 허용되며, 사건·관계·메타 갱신은 다른 envelope로 분리한다. ID는 대소문자를 구분하지 않는 불변 키다. 동일 ID·동일 내용 재실행은 no-op, 동일 ID·다른 내용은 충돌로 중단한다. `candidate`는 검토 ledger에만 남기고 live 배열에는 `confirmed | testimony`만 적재한다. 최초 배열을 포함한 full character payload는 신규 문서 생성에만 사용할 수 있다. 관찰 배열이 없는 일반 character payload의 중첩 `lore`는 seed runner가 dot-path `$set`으로 변환해 이미 누적된 관찰을 보존한다.
+
 ### Faction (`packages/shared-db/src/schemas/faction.schema.ts`)
 
 | 필드 | 타입 | 필수 | 비고 |

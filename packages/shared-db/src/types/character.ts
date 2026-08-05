@@ -39,6 +39,8 @@ export interface LoreSheet {
   relations?: DossierRelation[];
   /** 세션별 출현 맥락. appearsInEvents 의 구조화 보강 필드. */
   sessionAppearances?: DossierSessionAppearance[];
+  /** 대사·묘사·행동에서 확인된 세션별 성격 근거. 누적 성격 요약의 추적 가능한 원천이다. */
+  personalityObservations?: DossierPersonalityObservation[];
 
   /* NPC 호환 필드 (AGENT 에서는 보통 미사용) */
   /** 영문 이름 (NPC 위주). */
@@ -85,6 +87,41 @@ export interface DossierSessionAppearance {
   sourceLabel?: string;
   /** ISO timestamp 문자열. */
   updatedAt?: string;
+}
+
+export type DossierPersonalityEvidenceKind =
+  | "dialogue"
+  | "description"
+  | "action";
+
+/** candidate 해석은 검토 ledger에만 두며 live Dossier에는 저장하지 않는다. */
+export type DossierPersonalityObservationConfidence = Exclude<
+  DossierRelationConfidence,
+  "candidate"
+>;
+
+export interface DossierPersonalityEvidence {
+  /** 근거의 출처 형태. 대사와 서술·행동을 혼동하지 않도록 구분한다. */
+  kind: DossierPersonalityEvidenceKind;
+  /** 세션 원문에서 확인한 짧은 인용 또는 충실한 행동·묘사 기록. */
+  text: string;
+}
+
+export interface DossierPersonalityObservation {
+  /** 세션 동기화 재실행에도 유지되는 불변 식별자. */
+  id: string;
+  /** 근거 세션/사건 ID. appearsInEvents 와 같은 키를 쓴다. */
+  sessionId: string;
+  /** 관찰에서 도출한 짧은 성향 라벨. */
+  trait: string;
+  /** 근거가 해당 성향을 어떻게 보여주는지 설명하는 편집 요약. */
+  summary: string;
+  /** 대사·묘사·행동 원천을 역할별로 보존한다. */
+  evidence: DossierPersonalityEvidence[];
+  /** 근거 문서/작전보고서 제목. */
+  sourceLabel: string;
+  /** confirmed는 확인 사실, testimony는 증언 근거다. candidate는 검토 ledger에만 둔다. */
+  confidence: DossierPersonalityObservationConfidence;
 }
 
 /* ── PlaySheet ──

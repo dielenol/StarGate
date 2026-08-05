@@ -18,6 +18,7 @@
   - nickname: 짧은 별칭/통칭.
   - weight: 체중. lore 영역(신상 정보)으로 분류.
   - 긴 서술(대사/외형/성격/배경/역할 상세/이름 설명)은 아래 body 섹션에 작성
+  - 세션별 성격 근거는 이 문서의 평탄 frontmatter가 아니라 sync payload의 lore.personalityObservations[]에 누적
   - frontmatter는 평탄 YAML만 허용. 중첩 객체 금지.
 -->
 ---

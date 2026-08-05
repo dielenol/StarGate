@@ -33,6 +33,7 @@ import {
 import { isValidObjectId } from "@/lib/db/utils";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { enqueueCharacterEditWebhook } from "@/lib/outbox/integration";
+import { stripDossierPersonalityObservations } from "@/lib/personnel";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -57,7 +58,9 @@ export async function GET(_request: Request, context: RouteContext) {
         { status: 404 },
       );
     }
-    return NextResponse.json({ character });
+    return NextResponse.json({
+      character: stripDossierPersonalityObservations(character),
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "캐릭터 조회 실패";
     return NextResponse.json({ error: message }, { status: 500 });

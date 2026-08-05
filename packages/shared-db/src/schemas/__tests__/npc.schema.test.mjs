@@ -41,6 +41,72 @@ test("loreSheetSchema: 신규 옵션 필드 (nameNative, nickname, weight) 허�
   );
 });
 
+test("loreSheetSchema: 세션별 성격 관찰과 역할별 근거를 검증한다", () => {
+  const observation = {
+    id: "NOSB-S1E5:RODION:coercive-control",
+    sessionId: "NOSB-S1E5-EVIL-PART1",
+    trait: "강압적 통제 성향",
+    summary: "규정과 공개 경고를 공포 통제 수단으로 사용했다.",
+    evidence: [
+      { kind: "dialogue", text: "여긴 내 세상이야." },
+      { kind: "action", text: "명령 거부자를 강제로 격리했다." },
+    ],
+    sourceLabel: "작전 보고서 S1E5: 악 1부",
+    confidence: "confirmed",
+  };
+
+  assert.doesNotThrow(() =>
+    loreSheetSchema.parse({
+      ...validLore,
+      personalityObservations: [observation],
+    })
+  );
+  assert.throws(() =>
+    loreSheetSchema.parse({
+      ...validLore,
+      personalityObservations: [{ ...observation, evidence: [] }],
+    })
+  );
+  assert.throws(() =>
+    loreSheetSchema.parse({
+      ...validLore,
+      personalityObservations: [
+        {
+          ...observation,
+          evidence: [{ kind: "inference", text: "근거 없음" }],
+        },
+      ],
+    })
+  );
+  assert.throws(() =>
+    loreSheetSchema.parse({
+      ...validLore,
+      personalityObservations: [observation, observation],
+    })
+  );
+  assert.throws(() =>
+    loreSheetSchema.parse({
+      ...validLore,
+      personalityObservations: [
+        observation,
+        { ...observation, id: observation.id.toLowerCase() },
+      ],
+    })
+  );
+  assert.throws(() =>
+    loreSheetSchema.parse({
+      ...validLore,
+      personalityObservations: [{ ...observation, trait: "   " }],
+    })
+  );
+  assert.throws(() =>
+    loreSheetSchema.parse({
+      ...validLore,
+      personalityObservations: [{ ...observation, confidence: "candidate" }],
+    })
+  );
+});
+
 test("playSheetSchema: AGENT play 필수 구조 검증", () => {
   assert.doesNotThrow(() =>
     playSheetSchema.parse({

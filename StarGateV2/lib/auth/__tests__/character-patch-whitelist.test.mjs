@@ -375,4 +375,42 @@ if (!HAS_MODULE_MOCK) {
     assert.ok(adminCompose.allowedFields.has("lore.weight"), "admin lore.weight 가능");
     assert.ok(playerCompose.allowedFields.has("lore.weight"), "player lore.weight 가능 (ASK A)");
   });
+
+  test("C-11: 세션별 성격 관찰은 일반 PATCH에서 admin/player 모두 갱신할 수 없다", async () => {
+    capturedSetPayload = null;
+    const observation = {
+      id: "NOSB-S1E5:RODION:coercive-control",
+      sessionId: "NOSB-S1E5-EVIL-PART1",
+      trait: "강압적 통제 성향",
+      summary: "공포와 규정으로 시설을 통제했다.",
+      evidence: [{ kind: "action", text: "명령 거부자를 격리했다." }],
+      sourceLabel: "작전 보고서 S1E5: 악 1부",
+      confidence: "confirmed",
+    };
+    const adminCompose = composeAllowedFields({
+      session: { user: { id: "v", role: "V" } },
+      before: { type: "NPC", ownerId: null },
+    });
+    const playerCompose = composeAllowedFields({
+      session: { user: { id: "u-self", role: "U" } },
+      before: { type: "AGENT", ownerId: "u-self" },
+    });
+
+    assert.ok(!adminCompose.allowedFields.has("lore.personalityObservations"));
+    assert.ok(!playerCompose.allowedFields.has("lore.personalityObservations"));
+
+    capturedSetPayload = null;
+    await updateCharacter(
+      VALID_ID,
+      {
+        lore: {
+          appearance: "허용된 변경",
+          personalityObservations: [observation],
+        },
+      },
+      { allowedFields: adminCompose.allowedFields },
+    );
+    assert.equal(capturedSetPayload["lore.appearance"], "허용된 변경");
+    assert.ok(!("lore.personalityObservations" in capturedSetPayload));
+  });
 }

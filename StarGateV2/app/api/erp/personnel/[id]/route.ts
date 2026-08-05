@@ -6,8 +6,9 @@ import { findCharacterById } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
 import {
   filterCharacterByClearance,
-  getUserClearance,
+  getEffectivePersonnelClearance,
 } from "@/lib/personnel";
+import { findPersonnelRelatedReports } from "@/lib/personnel-related-reports";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -33,10 +34,14 @@ export async function GET(_request: Request, context: RouteContext) {
       );
     }
 
-    const clearance = getUserClearance(session.user.role);
-    return NextResponse.json({
-      character: filterCharacterByClearance(character, clearance),
-    });
+    const clearance = getEffectivePersonnelClearance(
+      session.user.id,
+      session.user.role,
+      character,
+    );
+    const filtered = filterCharacterByClearance(character, clearance);
+    const relatedReports = await findPersonnelRelatedReports(filtered.lore);
+    return NextResponse.json({ character: filtered, relatedReports });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "신원조회 상세 조회 실패";

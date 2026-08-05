@@ -15,6 +15,7 @@ import {
   serializeCharacterInventory,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
+import { stripDossierPersonalityObservations } from "@/lib/personnel";
 
 import type { ChangeLogsPanelMode } from "./ChangeLogsPanel";
 import CharacterDetailClient from "./CharacterDetailClient";
@@ -71,7 +72,9 @@ export default async function CharacterDetailPage({ params }: PageProps) {
     : "none";
 
   // MongoDB ObjectId -> string 직렬화 (client 전달용). 위 type guard 로 AgentCharacter 확정.
-  const serialized = JSON.parse(JSON.stringify(character)) as AgentCharacter;
+  const serialized = JSON.parse(
+    JSON.stringify(stripDossierPersonalityObservations(character)),
+  ) as AgentCharacter;
   const inventoryResult = await listCharacterInventoryEntries(id);
   const canManageEquipment = canViewPersonalInventory(userId, role, character);
   const visibleInventoryEntries = canManageEquipment

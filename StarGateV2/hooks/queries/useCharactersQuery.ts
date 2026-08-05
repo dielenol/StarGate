@@ -10,6 +10,7 @@ import type {
   AgentCharacterCard,
   CharacterListItem,
 } from "@/lib/db/characters";
+import type { PersonnelRelatedReport } from "@/lib/personnel-related-reports";
 
 export type AgentTierFilter = CharacterTier | "ALL";
 export type AgentCharacterCardDto = Omit<AgentCharacterCard, "_id"> & {
@@ -19,6 +20,10 @@ export type AgentCharacterCardDto = Omit<AgentCharacterCard, "_id"> & {
 export type CharacterListItemDto = Omit<CharacterListItem, "_id"> & {
   _id: string;
 };
+export interface PersonnelDetailDto {
+  character: Character;
+  relatedReports: PersonnelRelatedReport[];
+}
 
 const CHARACTER_STALE_TIME_MS = 20 * 60 * 1000;
 
@@ -77,11 +82,14 @@ async function fetchPersonnelCharacters(): Promise<CharacterListItemDto[]> {
   return data.characters;
 }
 
-async function fetchPersonnelCharacterById(id: string): Promise<Character> {
+async function fetchPersonnelCharacterById(id: string): Promise<PersonnelDetailDto> {
   const res = await fetch(`/api/erp/personnel/${id}`);
   if (!res.ok) throw new Error("dossier 를 불러올 수 없습니다.");
   const data = await res.json();
-  return data.character as Character;
+  return {
+    character: data.character as Character,
+    relatedReports: (data.relatedReports ?? []) as PersonnelRelatedReport[],
+  };
 }
 
 /* ── Hooks ── */
@@ -131,7 +139,7 @@ export function usePersonnelQuery(options?: {
 /** 개별 Personnel dossier. */
 export function usePersonnelByIdQuery(
   id: string,
-  options?: { initialData?: Character; enabled?: boolean },
+  options?: { initialData?: PersonnelDetailDto; enabled?: boolean },
 ) {
   const refetchInterval = useRealtimeRefetchInterval(60_000);
   return useQuery({

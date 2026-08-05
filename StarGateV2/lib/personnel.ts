@@ -91,6 +91,21 @@ export function getUserClearance(userRole: UserRole): AgentLevel {
   return userRole;
 }
 
+/**
+ * Personnel SSR/API가 공유하는 실효 열람 등급.
+ * 소유자는 자기 캐릭터에 한해서 GM 등급으로 승격하며, polling 응답도 같은 규칙을 쓴다.
+ */
+export function getEffectivePersonnelClearance(
+  userId: string,
+  userRole: UserRole,
+  character: Pick<Character, "ownerId">,
+): AgentLevel {
+  const ownerId = character.ownerId;
+  return ownerId !== null && ownerId !== undefined && String(ownerId) === userId
+    ? "GM"
+    : getUserClearance(userRole);
+}
+
 /* ── 필드 그룹 열람 가능 여부 ── */
 
 /**
@@ -167,7 +182,7 @@ const REDACTED = "[CLASSIFIED]";
 /**
  * lore sub-document 마스킹.
  * - identity 미달: name / nameNative / nickname / nameEn / gender / age / height / weight / mainImage 마스킹
- * - profile 미달: appearance / personality / background / quote / roleDetail / notes 마스킹
+ * - profile 미달: appearance / personality / personalityObservations / background / quote / roleDetail / notes 마스킹
  *
  * weight 는 lore 영역으로 이동되었으므로 identity 그룹에서 마스킹 (구 abilities → identity 로 격상).
  *
@@ -249,6 +264,11 @@ function redactLore(
   }
   if (lore.sessionAppearances !== undefined) {
     result.sessionAppearances = canIdentity ? lore.sessionAppearances : [];
+  }
+  if (lore.personalityObservations !== undefined) {
+    result.personalityObservations = canProfile
+      ? lore.personalityObservations
+      : [];
   }
 
   return result;
@@ -347,6 +367,20 @@ export function filterCharacterByClearance(
     ownerId: canMeta ? character.ownerId : null,
     lore: redactLore(character.lore, clearance, overrides),
   };
+}
+
+/**
+ * 일반 캐릭터 상세/API DTO에서는 Dossier 전용 원문 성격 근거를 제거한다.
+ * 해당 근거는 `/erp/personnel`의 clearance projection을 거친 경로에서만 노출한다.
+ */
+export function stripDossierPersonalityObservations(
+  character: Character,
+): Character {
+  if (character.lore.personalityObservations === undefined) return character;
+
+  const lore = { ...character.lore };
+  delete lore.personalityObservations;
+  return { ...character, lore } as Character;
 }
 
 /**

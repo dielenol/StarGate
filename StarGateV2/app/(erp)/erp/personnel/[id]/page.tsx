@@ -3,17 +3,18 @@ import { ObjectId } from "mongodb";
 
 import { canViewCharacter } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
-import { hasRole, isCharacterOwner } from "@/lib/auth/rbac";
+import { hasRole } from "@/lib/auth/rbac";
 import {
   findCharacterById,
   findCharactersByCodenames,
 } from "@/lib/db/characters";
-import { findSessionReportsBySessionIds } from "@/lib/db/session-reports";
 import {
   getUserClearance,
+  getEffectivePersonnelClearance,
   filterCharacterByClearance,
   maskedDisplayName,
 } from "@/lib/personnel";
+import { findPersonnelRelatedReports } from "@/lib/personnel-related-reports";
 
 import DossierClient from "./DossierClient";
 
@@ -35,17 +36,17 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
 
   // 본인 보유 캐릭터는 자동 GM clearance — 자기 캐릭터의 전체 정보(스탯/어빌리티/메타)는
   // 권한 등급과 무관하게 볼 수 있어야 한다 (예: J 등급 플레이어가 본인 캐릭터 스탯 확인 가능).
-  const isOwnCharacter = isCharacterOwner(session.user.id, character);
-  const clearance = isOwnCharacter
-    ? "GM"
-    : getUserClearance(session.user.role);
+  const clearance = getEffectivePersonnelClearance(
+    session.user.id,
+    session.user.role,
+    character,
+  );
   // 본인 승격은 "자기 캐릭터" 데이터에만 적용 — 관계 패널의 제3자 이름은 뷰어 실등급으로 게이트.
   const viewerClearance = getUserClearance(session.user.role);
   const canEditDossier = hasRole(session.user.role, "GM");
 
   const filtered = filterCharacterByClearance(character, clearance);
   const serialized = JSON.parse(JSON.stringify(filtered));
-  const eventIds = new Set(filtered.lore.appearsInEvents ?? []);
   const relationTargetCodes = new Set(
     (filtered.lore.relations ?? [])
       .map((relation) => relation.targetCodename)
@@ -55,25 +56,16 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
   // 전체 컬렉션 로드 + JS 필터 대신 sessionId / codename `$in` 조회로 좁힌다
   // (정렬은 각 함수가 기존 목록 함수와 동일하게 유지 — 표시 순서 보존).
   const [reportsForEvents, charactersForRelations] = await Promise.all([
-    eventIds.size > 0
-      ? findSessionReportsBySessionIds(Array.from(eventIds)).catch(() => [])
-      : Promise.resolve([]),
+    // SSR은 보고서 저장소 장애 시 Dossier 본문을 계속 보여주되, polling API는
+    // 오류를 전파해 TanStack Query가 마지막 정상 링크 데이터를 보존하게 한다.
+    findPersonnelRelatedReports(filtered.lore).catch(() => []),
     relationTargetCodes.size > 0
       ? findCharactersByCodenames(Array.from(relationTargetCodes)).catch(
           () => [],
         )
       : Promise.resolve([]),
   ]);
-  const relatedReports = reportsForEvents
-    .map((report) => ({
-      id: report._id?.toString() ?? "",
-      sessionId: report.sessionId,
-      sessionTitle: report.sessionTitle,
-      locationLabel: report.locationLabel,
-      createdAt: report.createdAt,
-    }))
-    .filter((report) => report.id.length > 0);
-  const serializedRelatedReports = JSON.parse(JSON.stringify(relatedReports));
+  const serializedRelatedReports = JSON.parse(JSON.stringify(reportsForEvents));
   const relatedCharacters = charactersForRelations
     .filter((candidate) => canEditDossier || candidate.isPublic !== false)
     .map((candidate) => ({

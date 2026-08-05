@@ -148,7 +148,7 @@ export function canEditPlay(
  * lore sub-document 편집 가능 여부 + 모드.
  *
  * 정책:
- *  - admin (V+) : lore 전체 편집 가능
+ *  - admin (V+) : 운영 lore 필드 편집 가능. 세션별 성격 관찰은 일반 PATCH가 아닌 동기화 경로에서만 관리한다.
  *  - player (본인 AGENT 소유자) : lore 8필드 (서사/신상) 만 편집
  *  - 그 외 : none
  *

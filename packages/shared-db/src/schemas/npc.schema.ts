@@ -45,6 +45,51 @@ export const dossierSessionAppearanceSchema = z.object({
   updatedAt: isoDateStringSchema.optional(),
 });
 
+export const dossierPersonalityEvidenceKindSchema = z.enum([
+  "dialogue",
+  "description",
+  "action",
+]);
+
+export const dossierPersonalityEvidenceSchema = z.object({
+  kind: dossierPersonalityEvidenceKindSchema,
+  text: z.string().trim().min(1).max(500),
+});
+
+export const dossierPersonalityObservationConfidenceSchema = z.enum([
+  "confirmed",
+  "testimony",
+]);
+
+export const dossierPersonalityObservationSchema = z.object({
+  id: z
+    .string()
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{2,159}$/),
+  sessionId: z.string().trim().min(1).max(80),
+  trait: z.string().trim().min(1).max(120),
+  summary: z.string().trim().min(1).max(1000),
+  evidence: z.array(dossierPersonalityEvidenceSchema).min(1).max(12),
+  sourceLabel: z.string().trim().min(1).max(160),
+  confidence: dossierPersonalityObservationConfidenceSchema,
+});
+
+export const dossierPersonalityObservationsSchema = z
+  .array(dossierPersonalityObservationSchema)
+  .superRefine((observations, ctx) => {
+    const seen = new Set<string>();
+    observations.forEach((observation, index) => {
+      const canonicalId = observation.id.toLocaleLowerCase("en-US");
+      if (seen.has(canonicalId)) {
+        ctx.addIssue({
+          code: "custom",
+          path: [index, "id"],
+          message: "personality observation id must be unique",
+        });
+      }
+      seen.add(canonicalId);
+    });
+  });
+
 export const loreSheetSchema = z.object({
   /* 이름 */
   name: loreString(),
@@ -73,6 +118,7 @@ export const loreSheetSchema = z.object({
   appearsInEvents: z.array(z.string().max(80)).optional(),
   relations: z.array(dossierRelationSchema).optional(),
   sessionAppearances: z.array(dossierSessionAppearanceSchema).optional(),
+  personalityObservations: dossierPersonalityObservationsSchema.optional(),
 
   /* NPC 호환 필드 */
   nameEn: loreString().optional(),

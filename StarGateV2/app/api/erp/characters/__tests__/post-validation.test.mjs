@@ -344,3 +344,38 @@ test("E-13: AGENT 생성 payload의 초기 장비는 거부한다", () => {
   assert.equal(res.status, 400);
   assert.match(res.error, /인벤토리/);
 });
+
+test("E-14: 성격 관찰은 근거가 있는 구조만 허용한다", () => {
+  const lore = validLore();
+  lore.personalityObservations = [
+    {
+      id: "NOSB-S1E5:RODION:coercive-control",
+      sessionId: "NOSB-S1E5-EVIL-PART1",
+      trait: "강압적 통제 성향",
+      summary: "공포와 규정으로 시설을 통제했다.",
+      evidence: [{ kind: "action", text: "명령 거부자를 격리했다." }],
+      sourceLabel: "작전 보고서 S1E5: 악 1부",
+      confidence: "confirmed",
+    },
+  ];
+
+  assert.equal(loreSheetSchema.safeParse(lore).success, true);
+  lore.personalityObservations[0].evidence = [];
+  assert.equal(loreSheetSchema.safeParse(lore).success, false);
+});
+
+test("E-14b: candidate 성격 해석과 공백 근거는 live payload에서 거부한다", () => {
+  const lore = validLore();
+  lore.personalityObservations = [
+    {
+      id: "NOSB-S1E5:RODION:candidate",
+      sessionId: "NOSB-S1E5",
+      trait: "   ",
+      summary: "후보 해석",
+      evidence: [{ kind: "dialogue", text: "   " }],
+      sourceLabel: "작전 보고서",
+      confidence: "candidate",
+    },
+  ];
+  assert.equal(loreSheetSchema.safeParse(lore).success, false);
+});

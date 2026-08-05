@@ -122,6 +122,19 @@ function getRelationConfidenceLabel(value: string | undefined): string {
   }
 }
 
+function getPersonalityEvidenceKindLabel(
+  value: "dialogue" | "description" | "action",
+): string {
+  switch (value) {
+    case "dialogue":
+      return "대사";
+    case "description":
+      return "묘사";
+    case "action":
+      return "행동";
+  }
+}
+
 function resolveCharacterGroup(character: Character): string {
   const department = character.department;
   if (department && department !== "UNASSIGNED") {
@@ -607,13 +620,18 @@ export default function DossierClient({
   const characterId = initialCharacter._id
     ? String(initialCharacter._id)
     : null;
-  const { data: character = initialCharacter } = usePersonnelByIdQuery(
+  const { data: detail } = usePersonnelByIdQuery(
     characterId ?? "",
     {
-      initialData: initialCharacter,
+      initialData: {
+        character: initialCharacter,
+        relatedReports,
+      },
       enabled: Boolean(characterId),
     },
   );
+  const character = detail?.character ?? initialCharacter;
+  const currentRelatedReports = detail?.relatedReports ?? relatedReports;
 
   /* ── 편집 상태 ──
    *
@@ -799,7 +817,7 @@ export default function DossierClient({
       typeof event === "string" && event.trim().length > 0,
   );
   const relatedReportBySessionId = new Map(
-    relatedReports.map((report) => [report.sessionId, report]),
+    currentRelatedReports.map((report) => [report.sessionId, report]),
   );
   const relationTargetsByCodename = new Map(
     relatedCharacters.map((target) => [target.codename, target]),
@@ -810,6 +828,17 @@ export default function DossierClient({
   const sessionAppearances = (lore.sessionAppearances ?? []).filter(
     (appearance) => appearance.sessionId.trim().length > 0,
   );
+  const personalityObservations = Array.isArray(lore.personalityObservations)
+    ? lore.personalityObservations.filter(
+        (observation) =>
+          typeof observation?.id === "string" &&
+          observation.id.trim().length > 0 &&
+          typeof observation.sessionId === "string" &&
+          observation.sessionId.trim().length > 0 &&
+          Array.isArray(observation.evidence) &&
+          observation.evidence.length > 0,
+      )
+    : [];
   const appearanceBySessionId = new Map(
     sessionAppearances.map((appearance) => [appearance.sessionId, appearance]),
   );
@@ -1069,6 +1098,75 @@ export default function DossierClient({
           </div>
         ) : null}
       </>
+    );
+  };
+
+  const renderPersonalityObservations = () => {
+    if (!canProfile || personalityObservations.length === 0) return null;
+
+    return (
+      <div className={styles.personalityEvidence}>
+        <div className={styles.profileHeading}>
+          PERSONALITY EVIDENCE · 세션별 성격 관찰
+        </div>
+        <div className={styles.personalityEvidenceList}>
+          {personalityObservations.map((observation, index) => {
+            const report = relatedReportBySessionId.get(observation.sessionId);
+            const cardBody = (
+              <>
+                <div className={styles.personalityEvidenceHead}>
+                  <strong>{observation.trait}</strong>
+                  <span>
+                    OBS {String(index + 1).padStart(2, "0")} ·{" "}
+                    {getRelationConfidenceLabel(observation.confidence)}
+                  </span>
+                </div>
+                <div className={styles.personalityEvidenceMeta}>
+                  {observation.sessionId} · {observation.sourceLabel}
+                </div>
+                <p className={styles.personalityEvidenceSummary}>
+                  {observation.summary}
+                </p>
+                <ul className={styles.personalityEvidenceSources}>
+                  {observation.evidence.map((evidence, evidenceIndex) => (
+                    <li key={`${observation.id}-${evidenceIndex}`}>
+                      <span className={styles.personalityEvidenceSourceLabel}>
+                        {getPersonalityEvidenceKindLabel(evidence.kind)}
+                      </span>
+                      {evidence.kind === "dialogue" ? (
+                        <q className={styles.personalityEvidenceSourceText}>
+                          {evidence.text}
+                        </q>
+                      ) : (
+                        <span className={styles.personalityEvidenceSourceText}>
+                          {evidence.text}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            );
+
+            return report ? (
+              <Link
+                key={observation.id}
+                href={`/erp/sessions/report/${report.id}`}
+                className={`${styles.personalityEvidenceCard} ${styles["personalityEvidenceCard--linked"]}`}
+              >
+                {cardBody}
+              </Link>
+            ) : (
+              <article
+                key={observation.id}
+                className={styles.personalityEvidenceCard}
+              >
+                {cardBody}
+              </article>
+            );
+          })}
+        </div>
+      </div>
     );
   };
 
@@ -1347,6 +1445,7 @@ export default function DossierClient({
           CHARACTER PROFILE · 인적 사항
         </PanelTitle>
         {renderCharacterProfile()}
+        {renderPersonalityObservations()}
       </Box>
 
       {/* REFERENCES & NOTES — 항상 표시, 빈 placeholder 로 자리 잡음. */}
