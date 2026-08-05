@@ -74,6 +74,12 @@ test("factionRelationshipSchema: enum 및 note 제약", () => {
       type: "ally",
     })
   );
+  assert.doesNotThrow(() =>
+    factionRelationshipSchema.parse({
+      targetCode: "SECRETARIAT",
+      type: "sibling",
+    })
+  );
   assert.throws(() =>
     factionRelationshipSchema.parse({
       targetCode: "COUNCIL",

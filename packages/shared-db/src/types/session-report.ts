@@ -6,12 +6,20 @@ export interface SessionReport {
   _id?: ObjectId;
   /** sessions._id 참조 */
   sessionId: string;
+  /** repository seed가 이 historical report에 적용한 immutable source ledger. */
+  provenanceSourceIds?: string[];
   sessionTitle: string;
   /** 지도/목록에 표시할 고정 보고서 번호. 없으면 날짜순 위치로 계산한다. */
   reportNumber?: string;
   summary: string;
   highlights: string[];
   participants: string[];
+  /** 명시적 graph link: catalog slug 목록. */
+  relatedCatalogSlugs?: string[];
+  /** 명시적 graph link: personnel codename 목록. */
+  relatedPersonnelCodenames?: string[];
+  /** 명시적 graph link: wiki slug 목록. */
+  relatedWikiSlugs?: string[];
   /** 작전 보고서 세계지도 표시명 */
   locationLabel?: string;
   /** 세계지도 이미지 기준 퍼센트 좌표. */
@@ -28,5 +36,9 @@ export interface SessionReport {
 
 export type CreateSessionReportInput = Omit<
   SessionReport,
-  "_id" | "createdAt" | "updatedAt"
+  | "_id"
+  | "sessionTitle"
+  | "provenanceSourceIds"
+  | "createdAt"
+  | "updatedAt"
 >;

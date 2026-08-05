@@ -11,6 +11,9 @@ async function loadLoreLinksModule() {
   const reportModuleUrl = `data:text/javascript;base64,${Buffer.from(
     stripTypeScriptTypes(reportSource, { mode: "transform" }),
   ).toString("base64")}`;
+  const wikiCategoriesModuleUrl = `data:text/javascript;base64,${Buffer.from(
+    "export const WIKI_CATEGORY_ORDER = [];",
+  ).toString("base64")}`;
 
   const loreLinksSource = await readFile(
     new URL("../lore-links.ts", import.meta.url),
@@ -18,10 +21,15 @@ async function loadLoreLinksModule() {
   );
   const loreLinksModule = stripTypeScriptTypes(loreLinksSource, {
     mode: "transform",
-  }).replace(
-    'from "./format/session-report";',
-    `from "${reportModuleUrl}";`,
-  );
+  })
+    .replace(
+      'from "./format/session-report";',
+      `from "${reportModuleUrl}";`,
+    )
+    .replace(
+      'from "./wiki-categories";',
+      `from "${wikiCategoriesModuleUrl}";`,
+    );
 
   return import(
     `data:text/javascript;base64,${Buffer.from(loreLinksModule).toString("base64")}`

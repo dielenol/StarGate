@@ -1,6 +1,6 @@
-<!-- ZULU-113 격리 개체 아카이브 기반 기대 샘플 카탈로그 spec. -->
+<!-- ZULU-113 격리 개체 아카이브 기반 기대 샘플 카탈로그 spec. Runtime SSOT는 slug이며, 보조 code는 codeSchema 32자 제한에 맞춰 기존 의미를 보존한 축약형을 사용한다. -->
 ---
-code: ELECTRONIC_MENTAL_DISRUPTION_SUBSTANCE
+code: ELECTRONIC_MENTAL_DISRUPTION
 slug: electronic-mental-disruption-substance
 name: 전자화된 정신교란물질
 nameEn: Electronic Mental Disruption Substance

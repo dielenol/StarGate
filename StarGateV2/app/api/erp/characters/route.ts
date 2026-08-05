@@ -10,6 +10,7 @@ import type { CharacterTier, CreateCharacterInput } from "@/types/character";
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import {
+  ADMIN_ALLOWED_CHARACTER_FIELDS,
   listAgentCharacterCards,
   createCharacter,
 } from "@/lib/db/characters";
@@ -106,7 +107,11 @@ export async function POST(request: Request) {
   }
 
   const createPayload: Record<string, unknown> = {
-    ...bodyRecord,
+    ...Object.fromEntries(
+      Object.entries(bodyRecord).filter(([key]) =>
+        ADMIN_ALLOWED_CHARACTER_FIELDS.has(key),
+      ),
+    ),
     lore: loreResult.data,
   };
 

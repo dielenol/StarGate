@@ -10,16 +10,22 @@ interface Props {
   reportId: string;
   canEdit: boolean;
   canDelete: boolean;
+  expectedUpdatedAt: string;
 }
 
-export default function ReportActions({ reportId, canEdit, canDelete }: Props) {
+export default function ReportActions({
+  reportId,
+  canEdit,
+  canDelete,
+  expectedUpdatedAt,
+}: Props) {
   const router = useRouter();
   const deleteReport = useDeleteReport();
 
   const handleDelete = () => {
     if (!confirm("정말로 이 작전 보고서를 삭제하시겠습니까?")) return;
 
-    deleteReport.mutate(reportId, {
+    deleteReport.mutate({ id: reportId, expectedUpdatedAt }, {
       onSuccess: () => {
         router.push("/erp/sessions/report");
       },

@@ -21,6 +21,7 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
     ["dashboard"],
     ["factions"],
     ["account"],
+    ["wiki", "lore-search"],
   ],
   personnel: [["personnel"]],
   credits: [
@@ -35,16 +36,22 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
     ["shop"],
     ["equipment-shop"],
     ["admin-inventory-overview"],
+    ["wiki", "lore-search"],
   ],
   notifications: [["notifications"], ["dashboard"]],
   shop: [["shop"]],
   stocks: [["stocks"], ["trades"]],
   trades: [["trades"]],
   sessions: [["sessions"], ["dashboard"]],
-  reports: [["session-reports"], ["dashboard"], ["factions"]],
+  reports: [
+    ["session-reports"],
+    ["dashboard"],
+    ["factions"],
+    ["wiki", "lore-search"],
+  ],
   "equipment-shop": [["equipment-shop"]],
-  wiki: [["wiki"], ["dashboard"], ["factions"]],
-  factions: [["factions"]],
+  wiki: [["wiki"], ["dashboard"], ["factions"], ["wiki", "lore-search"]],
+  factions: [["factions"], ["wiki", "lore-search"]],
   "page-locks": [["erp-page-locks"]],
 };
 

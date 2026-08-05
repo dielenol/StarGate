@@ -1,5 +1,371 @@
+import type { Db, IndexDescription } from "mongodb";
+
 import { getDb } from "./client.js";
 import { ensureChangeLogsIndexes } from "./migrations/ensure-change-logs-indexes.js";
+
+/**
+ * Lore auxiliary collections are rebuildable projections over the domain SSOT.
+ * Keep their exact index contract exported so the narrow preflight/migration
+ * CLI and the broad `ensureAllIndexes()` path cannot drift apart.
+ */
+export const LORE_INDEX_DEFINITIONS: Record<string, IndexDescription[]> = {
+  lore_sources: [
+    {
+      key: { sourceId: 1 },
+      name: "lore_sources_sourceId_unique",
+      unique: true,
+    },
+    {
+      key: { kind: 1, capturedAt: -1 },
+      name: "lore_sources_kind_capturedAt",
+    },
+    {
+      key: { sessionId: 1 },
+      name: "lore_sources_sessionId",
+      partialFilterExpression: { sessionId: { $type: "string" } },
+    },
+    {
+      key: { ingestionRunId: 1 },
+      name: "lore_sources_ingestionRunId",
+      partialFilterExpression: { ingestionRunId: { $type: "string" } },
+    },
+  ],
+  lore_aliases: [
+    {
+      key: { aliasId: 1 },
+      name: "lore_aliases_aliasId_unique",
+      unique: true,
+    },
+    {
+      key: { logicalKey: 1 },
+      name: "lore_aliases_active_logicalKey_unique",
+      unique: true,
+      partialFilterExpression: { "lineage.state": "active" },
+    },
+    {
+      key: { normalizedAlias: 1, "lineage.state": 1, confidence: -1 },
+      name: "lore_aliases_normalized_state_confidence",
+    },
+    {
+      key: { entityRef: 1, "lineage.state": 1 },
+      name: "lore_aliases_entityRef_state",
+    },
+    {
+      key: { "evidence.sourceId": 1 },
+      name: "lore_aliases_evidence_sourceId",
+    },
+  ],
+  lore_edges: [
+    {
+      key: { edgeId: 1 },
+      name: "lore_edges_edgeId_unique",
+      unique: true,
+    },
+    {
+      key: { logicalKey: 1 },
+      name: "lore_edges_active_logicalKey_unique",
+      unique: true,
+      partialFilterExpression: { "lineage.state": "active" },
+    },
+    {
+      key: { fromRef: 1, relation: 1, "lineage.state": 1 },
+      name: "lore_edges_from_relation_state",
+    },
+    {
+      key: { toRef: 1, relation: 1, "lineage.state": 1 },
+      name: "lore_edges_to_relation_state",
+    },
+    {
+      key: { "evidence.sourceId": 1 },
+      name: "lore_edges_evidence_sourceId",
+    },
+  ],
+  lore_claims: [
+    {
+      key: { claimId: 1 },
+      name: "lore_claims_claimId_unique",
+      unique: true,
+    },
+    {
+      key: { logicalKey: 1 },
+      name: "lore_claims_active_logicalKey_unique",
+      unique: true,
+      partialFilterExpression: { "lineage.state": "active" },
+    },
+    {
+      key: { subjectRef: 1, predicate: 1, "lineage.state": 1 },
+      name: "lore_claims_subject_predicate_state",
+    },
+    {
+      key: { status: 1, "lineage.state": 1, updatedAt: -1 },
+      name: "lore_claims_status_state_updatedAt",
+    },
+    {
+      key: { "evidence.sourceId": 1 },
+      name: "lore_claims_evidence_sourceId",
+    },
+  ],
+  lore_search_documents: [
+    {
+      key: { entityRef: 1 },
+      name: "lore_search_documents_entityRef_unique",
+      unique: true,
+    },
+    {
+      key: {
+        title: "text",
+        aliases: "text",
+        summary: "text",
+        searchText: "text",
+      },
+      name: "lore_search_documents_text",
+      weights: { title: 10, aliases: 8, summary: 5, searchText: 1 },
+      default_language: "none",
+    },
+    {
+      key: {
+        "access.visibility": 1,
+        projectionOwner: 1,
+        entityKind: 1,
+        status: 1,
+        updatedAt: -1,
+      },
+      name: "lore_search_documents_access_owner_kind_status_updatedAt",
+    },
+    {
+      key: { "facets.categories": 1 },
+      name: "lore_search_documents_facets_categories",
+    },
+    {
+      key: { "facets.tags": 1 },
+      name: "lore_search_documents_facets_tags",
+    },
+    {
+      key: { "facets.sessionIds": 1 },
+      name: "lore_search_documents_facets_sessionIds",
+    },
+    {
+      key: { "facets.factionCodes": 1 },
+      name: "lore_search_documents_facets_factionCodes",
+    },
+    {
+      key: { "facets.institutionCodes": 1 },
+      name: "lore_search_documents_facets_institutionCodes",
+    },
+  ],
+  lore_ingestion_runs: [
+    {
+      key: { runId: 1 },
+      name: "lore_ingestion_runs_runId_unique",
+      unique: true,
+    },
+    {
+      key: { status: 1, startedAt: -1, createdAt: -1 },
+      name: "lore_ingestion_runs_status_startedAt",
+    },
+    {
+      key: { mode: 1, startedAt: -1, createdAt: -1 },
+      name: "lore_ingestion_runs_mode_startedAt",
+    },
+    {
+      key: { sourceIds: 1 },
+      name: "lore_ingestion_runs_sourceIds",
+    },
+    {
+      key: { status: 1, leaseExpiresAt: 1 },
+      name: "lore_ingestion_runs_status_leaseExpiresAt",
+    },
+    {
+      key: { mode: 1, status: 1 },
+      name: "lore_ingestion_runs_mode_running_unique",
+      unique: true,
+      partialFilterExpression: { status: "running" },
+    },
+  ],
+};
+
+/** 보고서 identity와 명시적 graph backlink/inbound 조회 계약. */
+export const SESSION_REPORT_INDEX_DEFINITIONS: IndexDescription[] = [
+  {
+    key: { sessionId: 1 },
+    name: "session_reports_sessionId",
+  },
+  {
+    key: { sessionId: 1 },
+    name: "session_reports_sessionId_unique",
+    unique: true,
+  },
+  {
+    key: { relatedWikiSlugs: 1 },
+    name: "session_reports_relatedWikiSlugs",
+  },
+  {
+    key: { relatedPersonnelCodenames: 1 },
+    name: "session_reports_relatedPersonnelCodenames",
+  },
+  {
+    key: { relatedCatalogSlugs: 1 },
+    name: "session_reports_relatedCatalogSlugs",
+  },
+];
+
+/** 단일 unique index의 현재 데이터 중복 여부를 검사한다. */
+export async function hasLoreUniqueIndexConflict(
+  db: Db,
+  collectionName: string,
+  index: IndexDescription,
+): Promise<boolean> {
+  if (index.unique !== true) return false;
+  const exists = await db
+    .listCollections({ name: collectionName }, { nameOnly: true })
+    .hasNext();
+  if (!exists) return false;
+
+  const key = index.key instanceof Map
+    ? Object.fromEntries(index.key)
+    : index.key;
+  const fields = Object.keys(key);
+  if (fields.length === 0) return false;
+  const groupId = Object.fromEntries(
+    fields.map((field, indexPosition) => [
+      `key${indexPosition}`,
+      `$${field}`,
+    ]),
+  );
+  const pipeline: Record<string, unknown>[] = [];
+  if (index.partialFilterExpression) {
+    pipeline.push({ $match: index.partialFilterExpression });
+  }
+  // logicalKey가 없는 legacy projection은 storage migration에서 계산형
+  // identity로 backfill한다. 누락 행 전체를 null 중복으로 오판하지 않는다.
+  if (fields.length === 1 && fields[0] === "logicalKey") {
+    pipeline.push({ $match: { logicalKey: { $type: "string" } } });
+  }
+  pipeline.push(
+    { $group: { _id: groupId, count: { $sum: 1 } } },
+    { $match: { count: { $gt: 1 } } },
+    { $limit: 1 },
+  );
+  return db.collection(collectionName).aggregate(pipeline).hasNext();
+}
+
+/** 모든 lore unique 계약의 현재 중복 blocker를 진단한다. */
+export async function findLoreUniqueIndexConflicts(db: Db): Promise<string[]> {
+  const conflicts: string[] = [];
+  for (const [collectionName, indexes] of Object.entries(
+    LORE_INDEX_DEFINITIONS,
+  )) {
+    for (const index of indexes) {
+      if (
+        index.unique === true &&
+        (await hasLoreUniqueIndexConflict(db, collectionName, index))
+      ) {
+        conflicts.push(`${collectionName}.${String(index.name)}`);
+      }
+    }
+  }
+  return conflicts;
+}
+
+async function assertLoreIndexMigrationReady(db: Db): Promise<void> {
+  const uniqueConflicts = await findLoreUniqueIndexConflicts(db);
+  if (uniqueConflicts.length > 0) {
+    throw new Error(
+      `[lore-indexes] unique index 중복 키를 먼저 정리해야 합니다: ${uniqueConflicts.join(", ")}`,
+    );
+  }
+  const configs = [
+    {
+      collection: "lore_aliases",
+      expression: { $concat: ["$entityRef", "|", "$aliasType", "|", "$normalizedAlias"] },
+    },
+    {
+      collection: "lore_edges",
+      expression: { $concat: ["$fromRef", "|", "$relation", "|", "$toRef"] },
+    },
+    {
+      collection: "lore_claims",
+      expression: { $concat: ["$subjectRef", "|", "$predicate"] },
+    },
+  ] as const;
+  for (const config of configs) {
+    const exists = await db
+      .listCollections({ name: config.collection }, { nameOnly: true })
+      .hasNext();
+    if (!exists) continue;
+    const collection = db.collection(config.collection);
+    const invalid = await collection.countDocuments({
+      $or: [
+        { logicalKey: { $not: { $type: "string" } } },
+        { $expr: { $ne: ["$logicalKey", config.expression] } },
+      ],
+    });
+    const duplicate = await collection
+      .aggregate([
+        { $match: { "lineage.state": "active" } },
+        { $group: { _id: config.expression, count: { $sum: 1 } } },
+        { $match: { count: { $gt: 1 } } },
+        { $limit: 1 },
+      ])
+      .hasNext();
+    if (invalid > 0 || duplicate) {
+      throw new Error(
+        `[lore-indexes] ${config.collection} logical identity migration이 필요합니다. 먼저 lore:storage를 실행하세요.`,
+      );
+    }
+  }
+  const searchExists = await db
+    .listCollections({ name: "lore_search_documents" }, { nameOnly: true })
+    .hasNext();
+  if (
+    searchExists &&
+    (await db.collection("lore_search_documents").countDocuments({
+      projectionOwner: { $not: { $type: "string" } },
+    })) > 0
+  ) {
+    throw new Error(
+      "[lore-indexes] search projection owner migration이 필요합니다. 먼저 lore:storage를 실행하세요.",
+    );
+  }
+}
+
+export async function ensureLoreIndexes(database?: Db): Promise<void> {
+  const db = database ?? (await getDb());
+  await assertLoreIndexMigrationReady(db);
+  // MongoDB index DDL은 collection 간 원자적이지 않다. 각 index를 순차·멱등
+  // 적용하고 unique DDL 직전에 다시 검사해 preflight 이후 데이터 race를 닫는다.
+  // 중간 실패 뒤에도 이미 생성된 동일 spec은 createIndex가 재사용하므로 재실행 가능하다.
+  for (const [collection, indexes] of Object.entries(LORE_INDEX_DEFINITIONS)) {
+    for (const index of indexes) {
+      if (
+        index.unique === true &&
+        (await hasLoreUniqueIndexConflict(db, collection, index))
+      ) {
+        throw new Error(
+          `[lore-indexes] unique index 중복 키를 먼저 정리해야 합니다: ${collection}.${String(index.name)}`,
+        );
+      }
+      const { key, ...options } = index;
+      await db.collection(collection).createIndex(key, options);
+    }
+  }
+}
+
+export async function ensureSessionReportIndexes(database?: Db): Promise<void> {
+  const db = database ?? (await getDb());
+  for (const index of SESSION_REPORT_INDEX_DEFINITIONS) {
+    if (
+      index.unique === true &&
+      (await hasLoreUniqueIndexConflict(db, "session_reports", index))
+    ) {
+      throw new Error(
+        `[session-report-indexes] unique index 중복 키를 먼저 정리해야 합니다: session_reports.${String(index.name)}`,
+      );
+    }
+    const { key, ...options } = index;
+    await db.collection("session_reports").createIndex(key, options);
+  }
+}
 
 /**
  * 모든 컬렉션의 인덱스를 생성한다.
@@ -10,6 +376,9 @@ export async function ensureAllIndexes(): Promise<void> {
   const db = await getDb();
 
   await Promise.all([
+    ensureLoreIndexes(db),
+    ensureSessionReportIndexes(db),
+
     /* ── character_change_logs (감사 로그) ── */
     ensureChangeLogsIndexes(db),
 
@@ -287,12 +656,6 @@ export async function ensureAllIndexes(): Promise<void> {
     db.collection("wiki_page_revisions").createIndex(
       { pageId: 1, createdAt: -1 },
       { name: "wiki_page_revisions_pageId_createdAt" },
-    ),
-
-    /* ── session_reports (from task spec) ── */
-    db.collection("session_reports").createIndex(
-      { sessionId: 1 },
-      { name: "session_reports_sessionId" },
     ),
 
     /* ── notifications (from task spec) ── */

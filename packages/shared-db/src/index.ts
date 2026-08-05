@@ -65,6 +65,9 @@ export type {
   CreateSharedInventoryInput,
   WikiPage,
   WikiPageLite,
+  WikiPageSummary,
+  WikiCategoryFacet,
+  WikiPageSummaryConnection,
   WikiPageRevision,
   CreateWikiPageInput,
   UpdateWikiPageInput,
@@ -113,6 +116,30 @@ export type {
   IntegrationOutboxStatus,
   IntegrationOutboxKind,
   WorkerCheckpoint,
+  LoreEntityKind,
+  LoreEntityRef,
+  LoreRecordStatus,
+  LoreVisibility,
+  LoreAccess,
+  LoreSourceKind,
+  LoreSourceLocatorKind,
+  LoreSourceLocator,
+  LoreEvidenceRef,
+  LoreLineageState,
+  LoreLineage,
+  LoreSource,
+  LoreAliasType,
+  LoreAlias,
+  LoreEdge,
+  LoreClaimValue,
+  LoreClaim,
+  LoreSearchFacets,
+  LoreSearchDocument,
+  LoreIngestionMode,
+  LoreIngestionStatus,
+  LoreIngestionStats,
+  LoreIngestionError,
+  LoreIngestionRun,
 } from "./types/index.js";
 
 export {
@@ -142,6 +169,16 @@ export {
   SCHEDULED_JOB_RUN_STATUSES,
   INTEGRATION_OUTBOX_STATUSES,
   INTEGRATION_OUTBOX_KINDS,
+  LORE_ENTITY_KINDS,
+  LORE_RECORD_STATUSES,
+  LORE_VISIBILITIES,
+  LORE_SOURCE_KINDS,
+  LORE_SOURCE_LOCATOR_KINDS,
+  LORE_LINEAGE_STATES,
+  LORE_ALIAS_TYPES,
+  LORE_INGESTION_MODES,
+  LORE_INGESTION_STATUSES,
+  LORE_DOMAIN_SEARCH_PROJECTION_OWNER,
 } from "./types/index.js";
 
 /* ── Client ── */
@@ -191,6 +228,12 @@ export {
   integrationOutboxCol,
   mrBeastSodaStockImpactDemandCol,
   workerCheckpointsCol,
+  loreSourcesCol,
+  loreAliasesCol,
+  loreEdgesCol,
+  loreClaimsCol,
+  loreSearchDocumentsCol,
+  loreIngestionRunsCol,
 } from "./collections.js";
 
 /* ── Collections (sync, long-running only) ── */
@@ -227,11 +270,24 @@ export {
   integrationOutboxColSync,
   mrBeastSodaStockImpactDemandColSync,
   workerCheckpointsColSync,
+  loreSourcesColSync,
+  loreAliasesColSync,
+  loreEdgesColSync,
+  loreClaimsColSync,
+  loreSearchDocumentsColSync,
+  loreIngestionRunsColSync,
 } from "./collections.js";
 
 /* ── Indexes ── */
 
-export { ensureAllIndexes } from "./indexes.js";
+export {
+  ensureAllIndexes,
+  ensureLoreIndexes,
+  ensureSessionReportIndexes,
+  findLoreUniqueIndexConflicts,
+  LORE_INDEX_DEFINITIONS,
+  SESSION_REPORT_INDEX_DEFINITIONS,
+} from "./indexes.js";
 export { ensureChangeLogsIndexes } from "./migrations/ensure-change-logs-indexes.js";
 
 /* ── Utils ── */

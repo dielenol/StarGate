@@ -13,6 +13,7 @@ if (!HAS_MODULE_MOCK) {
   let wikiModifiedCount = 0;
   let revisionInsertCount = 0;
   let reportFilter = null;
+  const reportSessionId = new ObjectId().toHexString();
 
   const wikiPage = {
     _id: new ObjectId(),
@@ -52,6 +53,20 @@ if (!HAS_MODULE_MOCK) {
           },
         }),
         sessionReportsCol: async () => ({
+          async findOne() {
+            return {
+              _id: new ObjectId(),
+              sessionId: reportSessionId,
+              sessionTitle: "등록 세션",
+              summary: "이전 요약",
+              highlights: [],
+              participants: [],
+              gmId: "gm",
+              gmName: "GM",
+              createdAt: new Date(),
+              updatedAt: null,
+            };
+          },
           async updateOne(filter) {
             reportFilter = filter;
             return {
@@ -61,6 +76,10 @@ if (!HAS_MODULE_MOCK) {
             };
           },
         }),
+        charactersCol: async () => ({}),
+        masterItemsCol: async () => ({}),
+        sessionResponsesCol: async () => ({}),
+        sessionsCol: async () => ({}),
       },
     },
   );
@@ -115,6 +134,34 @@ if (!HAS_MODULE_MOCK) {
       VALID_ID,
       { summary: "새 요약" },
       null,
+      {
+        session: { id: "transaction-session" },
+        db: {
+          collection(name) {
+            if (name === "sessions") {
+              return {
+                async findOne() {
+                  return {
+                    title: "등록 세션",
+                    updatedAt: new Date("2026-07-30T00:00:00.000Z"),
+                  };
+                },
+                async updateOne() {
+                  return { matchedCount: 1 };
+                },
+              };
+            }
+            if (name === "wiki_pages" || name === "characters" || name === "master_items") {
+              return {
+                find() {
+                  return { async toArray() { return []; } };
+                },
+              };
+            }
+            throw new Error(`unexpected collection ${name}`);
+          },
+        },
+      },
     );
 
     assert.equal(updated, true);

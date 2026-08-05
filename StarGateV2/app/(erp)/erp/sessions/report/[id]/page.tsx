@@ -9,6 +9,7 @@ import { listMasterItemRefs } from "@/lib/db/inventory";
 import {
   findReportById,
   listSessionReportRefs,
+  sanitizeSessionReportReferencesForPublicTargets,
   type SessionReportRef,
 } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
@@ -77,10 +78,12 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const { id } = await params;
   if (!isValidObjectId(id)) notFound();
 
-  const report = await findReportById(id);
-  if (!report) {
+  const rawReport = await findReportById(id);
+  if (!rawReport) {
     notFound();
   }
+  const [report] =
+    await sanitizeSessionReportReferencesForPublicTargets([rawReport]);
 
   const isGmOrAbove = hasRole(session.user.role, "V");
   const isAdmin = hasRole(session.user.role, "GM");
@@ -103,7 +106,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
   // 캐릭터/아이템/보고서는 ref projection (lore 서사/play/summary 등 미전송).
   // 위키는 relatedWikiForReport 가 본문(content) 스캔에 의존하므로 full 로드 유지.
   const [allPages, allCharacters, allItems, allReports] = await Promise.all([
-    listWikiPages().catch(() => []),
+    listWikiPages({ includePrivate: isGmOrAbove }).catch(() => []),
     listCharacterRefs().catch(() => []),
     listMasterItemRefs().catch(() => []),
     listSessionReportRefs().catch(() => [report]),
@@ -132,7 +135,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
     : allItems.filter((item) => item.isPublic !== false);
   const visibleWikiPages = isGmOrAbove
     ? allPages
-    : allPages.filter((page) => page.isPublic !== false);
+    : allPages.filter((page) => page.isPublic === true);
   const linkableReports = allReports.filter(
     (candidate) => String(candidate._id) !== reportId,
   );
@@ -184,6 +187,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
               reportId={reportId}
               canEdit={isGmOrAbove}
               canDelete={isAdmin}
+              expectedUpdatedAt={serializedReport.updatedAt}
             />
           ) : null
         }

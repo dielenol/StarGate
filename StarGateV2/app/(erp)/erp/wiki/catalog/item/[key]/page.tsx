@@ -106,12 +106,12 @@ export default async function CatalogItemPage({
   const primarySpec = item.effect ?? item.damage ?? "기록 없음";
 
   const [allPages, allReports] = await Promise.all([
-    listWikiPages().catch(() => []),
+    listWikiPages({ includePrivate: isCurator }).catch(() => []),
     listSessionReports().catch(() => []),
   ]);
   const visiblePages = isCurator
     ? allPages
-    : allPages.filter((page) => page.isPublic !== false);
+    : allPages.filter((page) => page.isPublic === true);
   const relatedWiki = relatedWikiForCatalogItem(item, visiblePages);
   const relatedReports = relatedReportsForCatalogItem(item, allReports);
 

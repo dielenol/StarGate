@@ -1,6 +1,12 @@
 # NOSB-S1E2-CHOICE 로어 동기화 커버리지
 
-Updated: 2026-06-03
+Updated: 2026-08-05
+
+## Session Coverage Identity
+
+| sessionId | report payload | source availability | audit status |
+|---|---|---|---|
+| `NOSB-S1E2-CHOICE` | `scripts/seed-payloads/nosb-s1e2-choice-sync.json` | partial | historical-reconstruction |
 
 ## 소스 범위
 
@@ -93,3 +99,15 @@ Updated: 2026-06-03
 - 제인 피쉬, 물주먹 래키, 송사리 호, 지휘자 후속 훅은 S1E2 말미 단서로만 보존한다. 별도 로그나 자료 없이는 독립 동기화 대상으로 승격하지 않는다.
 - 보상 포인트, 세력 호의도, 해금품 실제 재고·지급 처리는 별도 경제/진행도 승인 후 적용한다.
 - 2026-06-03 복구: S1E2 보고서와 위키에서 S1E1/미니 계열 타임라인 앵커(`블랙 피라미드 입소`, `한국 투입`, `감염된 비명`, `백색소음`, `청각 의존성`, `특수 격리 상자`)가 제거되었음을 DB read로 확인했다.
+
+## NPC Approval Ledger
+
+- skipped: source unavailable — the historical sync predates the exact approval-ledger contract and the original intake decisions are not available for safe reconstruction.
+
+## Visual Asset Ledger
+
+- skipped: source unavailable — historical report and entity visuals exist, but complete source-frame provenance and every consumer disposition cannot be reconstructed from the available note alone.
+
+## Personality Evidence Ledger
+
+- skipped: source unavailable — no immutable personality observation ledger can be reconstructed without the original typed session evidence.

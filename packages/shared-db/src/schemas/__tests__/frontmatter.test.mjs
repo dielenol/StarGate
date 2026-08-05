@@ -8,6 +8,8 @@ import { dirname } from "node:path";
 import {
   parseFrontmatter,
   parseMdBody,
+  parseRelationshipLines,
+  parseSubUnitLines,
   toDbNpc,
   toDbFaction,
   toDbInstitution,
@@ -94,6 +96,45 @@ test("parseMdBody: 영어 alias 인식 + 대소문자 무시", () => {
   const sections = parseMdBody(`## Appearance\nA\n## IDEOLOGY\nB\n`);
   assert.equal(sections.appearance, "A");
   assert.equal(sections.ideology, "B");
+});
+
+test("parseMdBody: 관계와 조직 구조 섹션 alias 인식", () => {
+  const sections = parseMdBody(
+    `## 타 세력/기관 관계\n- \`COUNCIL\` — ally — 협력\n## 조직 구조\n- \`HQ\` — 본부\n`
+  );
+  assert.match(sections.relationships, /COUNCIL/);
+  assert.match(sections.subUnits, /HQ/);
+});
+
+test("parseRelationshipLines: ASCII/em dash와 sibling을 구조화", () => {
+  assert.deepEqual(
+    parseRelationshipLines(
+      `- \`COUNCIL\` - ally - 공식 협력
+- \`SECRETARIAT\` — sibling — 행정 파트너`
+    ),
+    [
+      { targetCode: "COUNCIL", type: "ally", note: "공식 협력" },
+      {
+        targetCode: "SECRETARIAT",
+        type: "sibling",
+        note: "행정 파트너",
+      },
+    ]
+  );
+});
+
+test("parseSubUnitLines: 설명 문단을 무시하고 목록만 구조화", () => {
+  assert.deepEqual(
+    parseSubUnitLines(
+      `조직 구조 설명.
+- \`HQ\` — 사무총장실 — 정책 조정
+- \`RESEARCH\` - 연구 기구`
+    ),
+    [
+      { code: "HQ", label: "사무총장실", summary: "정책 조정" },
+      { code: "RESEARCH", label: "연구 기구" },
+    ]
+  );
 });
 
 test("parseMdBody: 등록되지 않은 섹션은 무시", () => {
@@ -194,4 +235,32 @@ test("ROUND-TRIP: institution.template.md → toDbInstitution 성공 (현재 FAI
   );
   const { data, body } = parseFrontmatter(raw);
   assert.doesNotThrow(() => toDbInstitution(data, body));
+});
+
+test("ROUND-TRIP: faction body 관계가 DB candidate에 보존됨", () => {
+  const raw = readFileSync(resolve(TEMPLATES, "faction.template.md"), "utf8");
+  const { data, body } = parseFrontmatter(raw);
+  const doc = toDbFaction(data, body);
+  assert.deepEqual(doc.relationships, [
+    { targetCode: "COUNCIL", type: "ally", note: "창설 이래 공식 동맹" },
+    { targetCode: "MILITARY", type: "neutral", note: "사안별 대응" },
+    { targetCode: "UNDERGROUND", type: "rival", note: "자원 쟁탈" },
+  ]);
+});
+
+test("ROUND-TRIP: institution body subUnits/관계가 DB candidate에 보존됨", () => {
+  const raw = readFileSync(
+    resolve(TEMPLATES, "institution.template.md"),
+    "utf8"
+  );
+  const { data, body } = parseFrontmatter(raw);
+  const doc = toDbInstitution(data, body);
+  assert.deepEqual(doc.subUnits, [
+    { code: "SUB_UNIT_1", label: "하위 부서 1", summary: "설명" },
+    { code: "SUB_UNIT_2", label: "하위 부서 2", summary: "설명" },
+  ]);
+  assert.deepEqual(doc.relationships, [
+    { targetCode: "OTHER_INSTITUTION", type: "ally", note: "비고" },
+    { targetCode: "RIVAL_ORG", type: "rival", note: "비고" },
+  ]);
 });

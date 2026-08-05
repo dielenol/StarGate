@@ -9,6 +9,7 @@ import type { MarkdownLinkTarget } from "@/lib/wiki-render";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import { wikiArticleContent } from "../wiki-display";
+import { replaceUnresolvedExplicitMarkup } from "../explicit-link-fallback";
 
 import styles from "./page.module.css";
 
@@ -62,11 +63,13 @@ export default function WikiDetailContent({ initialPage, links }: Props) {
   const toc = useMemo(() => extractToc(articleContent), [articleContent]);
   const html = useMemo(
     () =>
-      renderMarkdown(articleContent, {
-        links,
-        maxAutoLinksPerTarget: 2,
-        maxAutoLinksTotal: 48,
-      }),
+      replaceUnresolvedExplicitMarkup(
+        renderMarkdown(articleContent, {
+          links,
+          maxAutoLinksPerTarget: 2,
+          maxAutoLinksTotal: 48,
+        }),
+      ),
     [articleContent, links],
   );
 

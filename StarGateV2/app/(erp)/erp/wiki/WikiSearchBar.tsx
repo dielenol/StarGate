@@ -61,9 +61,10 @@ export default function WikiSearchBar({
 
   return (
     <Input
-      aria-label="위키 문서 검색"
+      aria-label="로어 통합 검색"
+      maxLength={120}
       onChange={handleChange}
-      placeholder="제목, 내용, 태그 검색"
+      placeholder="위키·보고서·Dossier·카탈로그 통합 검색"
       type="search"
       value={inputValue}
     />

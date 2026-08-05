@@ -8,9 +8,13 @@ import Button from "@/components/ui/Button/Button";
 
 interface WikiDeleteButtonProps {
   pageId: string;
+  expectedUpdatedAt: string;
 }
 
-export default function WikiDeleteButton({ pageId }: WikiDeleteButtonProps) {
+export default function WikiDeleteButton({
+  pageId,
+  expectedUpdatedAt,
+}: WikiDeleteButtonProps) {
   const router = useRouter();
   const deleteWiki = useDeleteWiki();
 
@@ -23,7 +27,7 @@ export default function WikiDeleteButton({ pageId }: WikiDeleteButtonProps) {
       return;
     }
 
-    deleteWiki.mutate(pageId, {
+    deleteWiki.mutate({ id: pageId, expectedUpdatedAt }, {
       onSuccess: () => {
         router.push("/erp/wiki");
       },

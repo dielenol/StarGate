@@ -56,8 +56,11 @@ const {
   relatedPersonnelForReports,
   toRelatedReportLink,
 } = await import("../lore-links.ts");
-const { relatedCatalogItemsForReport, relatedCatalogItemsForWiki } =
-  await import("../catalog/related.ts");
+const {
+  relatedCatalogItemsForReport,
+  relatedCatalogItemsForWiki,
+  relatedReportsForCatalogItem,
+} = await import("../catalog/related.ts");
 const { filterCharacterByClearance, filterCharacterForLoreLinks } =
   await import("../personnel.ts");
 
@@ -102,6 +105,9 @@ function toSessionReportRef(doc) {
     "reportNumber",
     "locationLabel",
     "participants",
+    "relatedCatalogSlugs",
+    "relatedPersonnelCodenames",
+    "relatedWikiSlugs",
     "createdAt",
   ]);
 }
@@ -498,4 +504,80 @@ test("L-5: relatedCatalogItemsForReport/ForWiki — MasterItemRef === full", () 
   const refForWiki = relatedCatalogItemsForWiki(page, items.map(toMasterItemRef));
   assert.deepEqual(refForWiki, fullForWiki);
   assert.ok(fullForWiki.length > 0, "위키-카탈로그 매칭 0건");
+});
+
+test("명시적 report graph key는 텍스트 추론과 무관하게 visible 후보에서 우선 결합", () => {
+  const report = makeReport({
+    sessionId: "NO-TEXT-MATCH",
+    sessionTitle: "무관 제목",
+    summary: "무관 요약",
+    highlights: [],
+    participants: [],
+    relatedWikiSlugs: ["explicit-wiki"],
+    relatedPersonnelCodenames: ["NPC_FAR"],
+    relatedCatalogSlugs: ["camo-kit"],
+  });
+  const pages = [
+    makeWikiPage({
+      _id: "explicit-wiki-id",
+      slug: "explicit-wiki",
+      title: "명시 위키",
+      content: "연관 신호 없음",
+    }),
+  ];
+
+  assert.deepEqual(
+    relatedWikiForReport(report, pages).map((entry) => entry.id),
+    ["explicit-wiki-id"],
+  );
+  assert.deepEqual(
+    relatedPersonnelForReport(report, makeCharacters()).map((entry) => entry.id),
+    ["char-3"],
+  );
+  assert.deepEqual(
+    relatedCatalogItemsForReport(report, makeItems()).map((entry) => entry.key),
+    ["camo-kit"],
+  );
+
+  // 호출자가 visibility를 적용해 후보에서 제거한 대상은 명시 key여도 복구하지 않는다.
+  assert.deepEqual(relatedWikiForReport(report, []), []);
+  assert.deepEqual(relatedPersonnelForReport(report, []), []);
+  assert.deepEqual(relatedCatalogItemsForReport(report, []), []);
+});
+
+test("명시적 report graph key는 대상의 역링크에서도 추론 없이 결합", () => {
+  const report = makeReport({
+    sessionId: "NO-TEXT-MATCH",
+    sessionTitle: "무관 제목",
+    summary: "무관 요약",
+    highlights: [],
+    participants: [],
+    relatedWikiSlugs: ["explicit-wiki"],
+    relatedPersonnelCodenames: ["NPC_FAR"],
+    relatedCatalogSlugs: ["camo-kit"],
+  });
+  const page = makeWikiPage({
+    slug: "explicit-wiki",
+    title: "명시 위키",
+    content: "연관 신호 없음",
+  });
+  const reportRef = toSessionReportRef(report);
+
+  assert.deepEqual(
+    relatedReportsForWiki(page, [reportRef]).map((entry) => entry.id),
+    ["report-1"],
+  );
+  assert.deepEqual(
+    relatedReportsForCatalogItem(makeItems()[1], [report]).map(
+      (entry) => entry.id,
+    ),
+    ["report-1"],
+  );
+  assert.deepEqual(
+    relatedPersonnelForReports(
+      [toRelatedReportLink(reportRef)],
+      makeCharacters().map(toCharacterRef),
+    ).map((entry) => entry.id),
+    ["char-3"],
+  );
 });

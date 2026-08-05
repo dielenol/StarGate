@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useCreateWiki } from "@/hooks/mutations/useWikiMutation";
 
 import { renderMarkdown } from "@/lib/wiki-render";
+import { WIKI_CATEGORY_ORDER } from "@/lib/wiki-categories";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
@@ -89,13 +90,20 @@ export default function WikiCreateForm() {
               <label className={styles.label} htmlFor="wiki-category">
                 CATEGORY
               </label>
-              <Input
+              <select
+                className={styles.select}
                 id="wiki-category"
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="카테고리"
-                type="text"
+                required
                 value={category}
-              />
+              >
+                <option value="">카테고리 선택</option>
+                {WIKI_CATEGORY_ORDER.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className={`${styles.field} ${styles["field--full"]}`}>
               <label className={styles.label} htmlFor="wiki-tags">

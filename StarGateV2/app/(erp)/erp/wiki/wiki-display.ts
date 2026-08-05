@@ -2,6 +2,9 @@ import type { TagTone } from "@/components/ui/Tag/Tag";
 import type { WikiPage } from "@/types/wiki";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { WIKI_CATEGORY_ORDER } from "@/lib/wiki-categories";
+
+import { replaceUnresolvedExplicitMarkup } from "./explicit-link-fallback";
 
 export interface WikiInfoboxImage {
   src: string;
@@ -45,22 +48,6 @@ const CATEGORY_TONES: Record<string, TagTone> = {
   소모품: "rank-u",
 };
 
-const WIKI_CATEGORY_ORDER = [
-  "작전 보고서",
-  "개체",
-  "줄루",
-  "개념",
-  "세력",
-  "기관",
-  "장소",
-  "규정",
-  "인물",
-  "장비",
-  "물품",
-  "소모품",
-  "문헌",
-];
-
 const LOW_SIGNAL_TAGS = new Set([
   "세션로그",
   "현장요원",
@@ -73,7 +60,7 @@ function normalizeLabel(value: string): string {
 }
 
 function stripInlineMarkdown(value: string): string {
-  return value
+  return replaceUnresolvedExplicitMarkup(value)
     .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")

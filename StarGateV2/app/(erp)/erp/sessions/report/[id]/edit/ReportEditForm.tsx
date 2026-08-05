@@ -8,6 +8,11 @@ import type { ClientSessionReport } from "@/types/session-report";
 import { useUpdateReport } from "@/hooks/mutations/useReportMutation";
 import { StaleVersionApiError } from "@/hooks/mutations/StaleVersionApiError";
 import { useSessionReport } from "@/hooks/queries/useSessionReportsQuery";
+import {
+  formatSessionReportReferenceTexts,
+  parseSessionReportReferenceTexts,
+  type SessionReportReferenceField,
+} from "@/lib/session-report-references";
 
 import Button from "@/components/ui/Button/Button";
 import Input from "@/components/ui/Input/Input";
@@ -15,6 +20,7 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Row from "@/components/ui/Row/Row";
 import Stack from "@/components/ui/Stack/Stack";
 
+import ReportReferenceFields from "../../ReportReferenceFields";
 import styles from "../../new/page.module.css";
 
 interface Props {
@@ -70,6 +76,9 @@ export default function ReportEditForm({ report }: Props) {
   const [mapPrecision, setMapPrecision] = useState<"confirmed" | "estimated">(
     report.mapPrecision ?? "estimated",
   );
+  const [referenceTexts, setReferenceTexts] = useState(() =>
+    formatSessionReportReferenceTexts(report),
+  );
   const [baselineReport, setBaselineReport] = useState(report);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +94,7 @@ export default function ReportEditForm({ report }: Props) {
     setMapX(formatCoordinate(latestReport.mapX));
     setMapY(formatCoordinate(latestReport.mapY));
     setMapPrecision(latestReport.mapPrecision ?? "estimated");
+    setReferenceTexts(formatSessionReportReferenceTexts(latestReport));
     setBaselineReport(latestReport);
   }
 
@@ -97,6 +107,7 @@ export default function ReportEditForm({ report }: Props) {
     setMapX(formatCoordinate(latestReport.mapX));
     setMapY(formatCoordinate(latestReport.mapY));
     setMapPrecision(latestReport.mapPrecision ?? "estimated");
+    setReferenceTexts(formatSessionReportReferenceTexts(latestReport));
     setBaselineReport(latestReport);
     setDirty(false);
     setError(null);
@@ -132,11 +143,18 @@ export default function ReportEditForm({ report }: Props) {
     setParticipants((prev) => prev.map((p, i) => (i === index ? value : p)));
   };
 
+  const handleReferenceChange = (
+    field: SessionReportReferenceField,
+    value: string,
+  ) => {
+    setDirty(true);
+    setReferenceTexts((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const trimmedTitle = sessionTitle.trim();
     const trimmedSummary = summary.trim();
     const filteredHighlights = highlights
       .map((h) => h.trim())
@@ -149,13 +167,19 @@ export default function ReportEditForm({ report }: Props) {
     const trimmedMapY = mapY.trim();
     const hadStoredCoordinate = hasStoredCoordinate(baselineReport);
 
-    if (!trimmedTitle || !trimmedSummary) {
-      setError("제목과 작전 본문은 비워둘 수 없습니다.");
+    if (!trimmedSummary) {
+      setError("작전 본문은 비워둘 수 없습니다.");
       return;
     }
 
     if ((trimmedMapX && !trimmedMapY) || (!trimmedMapX && trimmedMapY)) {
       setError("지도 X/Y 좌표는 함께 입력해야 합니다.");
+      return;
+    }
+
+    const references = parseSessionReportReferenceTexts(referenceTexts);
+    if (!references.ok) {
+      setError(references.error);
       return;
     }
 
@@ -186,10 +210,10 @@ export default function ReportEditForm({ report }: Props) {
         id: report._id,
         expectedUpdatedAt: baselineReport.updatedAt ?? null,
         input: {
-          sessionTitle: trimmedTitle,
           summary: trimmedSummary,
           highlights: filteredHighlights,
           participants: filteredParticipants,
+          ...references.value,
           ...(trimmedLocationLabel
             ? { locationLabel: trimmedLocationLabel }
             : baselineReport.locationLabel
@@ -218,12 +242,10 @@ export default function ReportEditForm({ report }: Props) {
         <div>
           <PanelTitle>OPERATION REPORT TITLE</PanelTitle>
           <Input
+            maxLength={200}
+            readOnly
             type="text"
             value={sessionTitle}
-            onChange={(e) => {
-              setDirty(true);
-              setSessionTitle(e.target.value);
-            }}
             placeholder="작전 보고서 제목"
             required
             aria-label="작전 보고서 제목"
@@ -234,6 +256,7 @@ export default function ReportEditForm({ report }: Props) {
           <PanelTitle>OPERATION SUMMARY</PanelTitle>
           <textarea
             className={styles.textarea}
+            maxLength={2000}
             value={summary}
             onChange={(e) => {
               setDirty(true);
@@ -363,6 +386,11 @@ export default function ReportEditForm({ report }: Props) {
             </Button>
           </Stack>
         </div>
+
+        <ReportReferenceFields
+          values={referenceTexts}
+          onChange={handleReferenceChange}
+        />
 
         {externalChange ? (
           <div className={styles.staleNotice} role="alert">

@@ -7,6 +7,8 @@
 
 import { NextResponse } from "next/server";
 
+import { WIKI_CATEGORY_ORDER } from "@/lib/wiki-categories";
+
 const ALLOWED_WIKI_FIELDS = new Set([
   "slug",
   "title",
@@ -17,6 +19,7 @@ const ALLOWED_WIKI_FIELDS = new Set([
 ] as const);
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const WIKI_CATEGORIES = new Set(WIKI_CATEGORY_ORDER);
 
 export const SLUG_MAX = 80;
 export const TITLE_MAX = 200;
@@ -39,7 +42,7 @@ export type SanitizeResult =
   | { value: SanitizedWikiBody };
 
 export function sanitizeWikiBody(body: unknown): SanitizeResult {
-  if (!body || typeof body !== "object") {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
     return {
       error: NextResponse.json({ error: "잘못된 요청 본문" }, { status: 400 }),
     };
@@ -69,10 +72,15 @@ export function sanitizeWikiBody(body: unknown): SanitizeResult {
       }
       value.content = v;
     } else if (k === "category") {
-      if (typeof v !== "string" || v.length > CATEGORY_MAX) {
+      const category = typeof v === "string" ? v.trim() : "";
+      if (
+        !category ||
+        category.length > CATEGORY_MAX ||
+        !WIKI_CATEGORIES.has(category)
+      ) {
         return badRequest("category 형식 오류");
       }
-      value.category = v;
+      value.category = category;
     } else if (k === "tags") {
       if (
         !Array.isArray(v) ||

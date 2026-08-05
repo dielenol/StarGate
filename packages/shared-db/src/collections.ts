@@ -33,6 +33,14 @@ import type {
   ScheduledJobRun,
   WorkerCheckpoint,
 } from "./types/worker.js";
+import type {
+  LoreAlias,
+  LoreClaim,
+  LoreEdge,
+  LoreIngestionRun,
+  LoreSearchDocument,
+  LoreSource,
+} from "./types/lore-knowledge.js";
 
 import { getDb, getDbSync } from "./client.js";
 
@@ -70,6 +78,12 @@ const COL = {
   SCHEDULED_JOB_RUNS: "scheduled_job_runs",
   INTEGRATION_OUTBOX: "integration_outbox",
   WORKER_CHECKPOINTS: "worker_checkpoints",
+  LORE_SOURCES: "lore_sources",
+  LORE_ALIASES: "lore_aliases",
+  LORE_EDGES: "lore_edges",
+  LORE_CLAIMS: "lore_claims",
+  LORE_SEARCH_DOCUMENTS: "lore_search_documents",
+  LORE_INGESTION_RUNS: "lore_ingestion_runs",
 } as const;
 
 /* ── Async accessors (both modes) ── */
@@ -233,6 +247,36 @@ export async function workerCheckpointsCol(): Promise<Collection<WorkerCheckpoin
   return db.collection<WorkerCheckpoint>(COL.WORKER_CHECKPOINTS);
 }
 
+export async function loreSourcesCol(): Promise<Collection<LoreSource>> {
+  const db = await getDb();
+  return db.collection<LoreSource>(COL.LORE_SOURCES);
+}
+
+export async function loreAliasesCol(): Promise<Collection<LoreAlias>> {
+  const db = await getDb();
+  return db.collection<LoreAlias>(COL.LORE_ALIASES);
+}
+
+export async function loreEdgesCol(): Promise<Collection<LoreEdge>> {
+  const db = await getDb();
+  return db.collection<LoreEdge>(COL.LORE_EDGES);
+}
+
+export async function loreClaimsCol(): Promise<Collection<LoreClaim>> {
+  const db = await getDb();
+  return db.collection<LoreClaim>(COL.LORE_CLAIMS);
+}
+
+export async function loreSearchDocumentsCol(): Promise<Collection<LoreSearchDocument>> {
+  const db = await getDb();
+  return db.collection<LoreSearchDocument>(COL.LORE_SEARCH_DOCUMENTS);
+}
+
+export async function loreIngestionRunsCol(): Promise<Collection<LoreIngestionRun>> {
+  const db = await getDb();
+  return db.collection<LoreIngestionRun>(COL.LORE_INGESTION_RUNS);
+}
+
 /* ── Sync accessors (long-running only) ── */
 
 export function usersColSync(): Collection<User> {
@@ -365,4 +409,28 @@ export function mrBeastSodaStockImpactDemandColSync(): Collection<
 
 export function workerCheckpointsColSync(): Collection<WorkerCheckpoint> {
   return getDbSync().collection<WorkerCheckpoint>(COL.WORKER_CHECKPOINTS);
+}
+
+export function loreSourcesColSync(): Collection<LoreSource> {
+  return getDbSync().collection<LoreSource>(COL.LORE_SOURCES);
+}
+
+export function loreAliasesColSync(): Collection<LoreAlias> {
+  return getDbSync().collection<LoreAlias>(COL.LORE_ALIASES);
+}
+
+export function loreEdgesColSync(): Collection<LoreEdge> {
+  return getDbSync().collection<LoreEdge>(COL.LORE_EDGES);
+}
+
+export function loreClaimsColSync(): Collection<LoreClaim> {
+  return getDbSync().collection<LoreClaim>(COL.LORE_CLAIMS);
+}
+
+export function loreSearchDocumentsColSync(): Collection<LoreSearchDocument> {
+  return getDbSync().collection<LoreSearchDocument>(COL.LORE_SEARCH_DOCUMENTS);
+}
+
+export function loreIngestionRunsColSync(): Collection<LoreIngestionRun> {
+  return getDbSync().collection<LoreIngestionRun>(COL.LORE_INGESTION_RUNS);
 }

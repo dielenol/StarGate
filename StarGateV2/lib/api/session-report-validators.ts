@@ -7,11 +7,41 @@
 
 import { NextResponse } from "next/server";
 
+import {
+  SESSION_REPORT_REFERENCE_FIELDS,
+  type SessionReportReferenceField,
+  validateSessionReportReferenceList,
+} from "@/lib/session-report-references";
+
 export const HIGHLIGHT_ITEM_MAX = 500;
 export const PARTICIPANT_ITEM_MAX = 200;
 export const HIGHLIGHTS_MAX_COUNT = 50;
 export const PARTICIPANTS_MAX_COUNT = 30;
 export const LOCATION_LABEL_MAX = 80;
+export const SESSION_ID_MAX = 160;
+export const SESSION_TITLE_MAX = 200;
+export const SESSION_SUMMARY_MAX = 2_000;
+
+export function validateSessionReportCoreText(body: {
+  sessionId?: unknown;
+  sessionTitle?: unknown;
+  summary?: unknown;
+}): { error: NextResponse } | { value: { sessionId?: string; sessionTitle?: string; summary?: string } } {
+  const value: { sessionId?: string; sessionTitle?: string; summary?: string } = {};
+  for (const [key, max] of [
+    ["sessionId", SESSION_ID_MAX],
+    ["sessionTitle", SESSION_TITLE_MAX],
+    ["summary", SESSION_SUMMARY_MAX],
+  ] as const) {
+    const raw = body[key];
+    if (raw === undefined) continue;
+    if (typeof raw !== "string") return badRequest(`${key} 형식 오류`);
+    const normalized = raw.trim();
+    if (!normalized || normalized.length > max) return badRequest(`${key} 형식 오류`);
+    value[key] = normalized;
+  }
+  return { value };
+}
 
 type MapPrecision = "confirmed" | "estimated";
 
@@ -39,6 +69,12 @@ export type SessionReportMapUpdateCheck =
         mapY?: number | null;
         mapPrecision?: MapPrecision | null;
       };
+    };
+
+export type SessionReportReferenceCheck =
+  | { error: NextResponse }
+  | {
+      value: Partial<Record<SessionReportReferenceField, string[]>>;
     };
 
 export function validateSessionReportArrays(body: {
@@ -71,6 +107,21 @@ export function validateSessionReportArrays(body: {
       return badRequest("participants 형식 오류");
     }
     value.participants = body.participants;
+  }
+
+  return { value };
+}
+
+export function validateSessionReportReferences(
+  body: Partial<Record<SessionReportReferenceField, unknown>>,
+): SessionReportReferenceCheck {
+  const value: Partial<Record<SessionReportReferenceField, string[]>> = {};
+
+  for (const field of SESSION_REPORT_REFERENCE_FIELDS) {
+    if (body[field] === undefined) continue;
+    const result = validateSessionReportReferenceList(field, body[field]);
+    if (!result.ok) return badRequest(result.error);
+    value[field] = result.value;
   }
 
   return { value };

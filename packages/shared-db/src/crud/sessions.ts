@@ -5,16 +5,21 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { ObjectId, type Filter } from "mongodb";
+import { ObjectId, type ClientSession, type Db, type Filter } from "mongodb";
 
 import type {
   Session,
   SessionFinalizationKind,
   SessionFinalizationTrigger,
   SessionStatus,
+  TrpgSession,
 } from "../types/index.js";
 
-import { sessionResponsesCol, sessionsCol } from "../collections.js";
+import {
+  sessionResponsesCol,
+  sessionsCol,
+} from "../collections.js";
+import { getClient, getDb } from "../client.js";
 
 /** MongoDB 내부 _id는 ObjectId이므로 필터용 타입 */
 type SessionFilter = Filter<Session> & { _id?: ObjectId };
@@ -43,14 +48,80 @@ export async function createSession(input: CreateSessionInput): Promise<string> 
 }
 
 /** ID로 세션을 조회합니다. */
-export async function findSessionById(sessionId: string): Promise<Session | null> {
+export async function findSessionById(
+  sessionId: string,
+  options: { session?: ClientSession } = {},
+): Promise<Session | null> {
   if (!ObjectId.isValid(sessionId)) return null;
 
   const col = await sessionsCol();
-  const doc = await col.findOne({
-    _id: new ObjectId(sessionId),
-  } as SessionFilter);
+  const doc = await col.findOne(
+    { _id: new ObjectId(sessionId) } as SessionFilter,
+    { session: options.session },
+  );
   return doc;
+}
+
+export interface ReportSessionSource {
+  kind: "sessions" | "trpg_sessions";
+  title: string;
+}
+
+export class SessionReportSourceInboundReferenceError extends Error {
+  readonly code = "SESSION_REPORT_SOURCE_INBOUND_REFERENCE";
+
+  constructor(readonly sessionId: string) {
+    super("작전 보고서가 참조 중인 세션은 삭제할 수 없습니다.");
+    this.name = "SessionReportSourceInboundReferenceError";
+  }
+}
+
+/**
+ * Resolve and write-lock the canonical report source inside the caller's transaction.
+ * The internal revision makes concurrent source deletion/update conflict with report
+ * creation instead of allowing a successful orphan reference.
+ */
+export async function lockReportSessionSource(
+  sessionId: string,
+  session: ClientSession,
+  options: { db?: Db } = {},
+): Promise<ReportSessionSource | null> {
+  if (!ObjectId.isValid(sessionId)) return null;
+  const _id = new ObjectId(sessionId);
+  const db = options.db ?? await getDb();
+
+  const registraCol = db.collection<Session>("sessions");
+  const registra = await registraCol.findOne(
+    { _id } as SessionFilter,
+    { session },
+  );
+  if (registra) {
+    const locked = await registraCol.updateOne(
+      { _id, updatedAt: registra.updatedAt } as SessionFilter,
+      { $inc: { reportReferenceRevision: 1 } },
+      { session },
+    );
+    if (locked.matchedCount !== 1) {
+      throw new Error(`report source session CAS failed: ${sessionId}`);
+    }
+    return { kind: "sessions", title: registra.title };
+  }
+
+  const trpgCol = db.collection<TrpgSession>("trpg_sessions");
+  const trpg = await trpgCol.findOne(
+    { _id } as Filter<TrpgSession>,
+    { session },
+  );
+  if (!trpg) return null;
+  const locked = await trpgCol.updateOne(
+    { _id, updatedAt: trpg.updatedAt } as Filter<TrpgSession>,
+    { $inc: { reportReferenceRevision: 1 } },
+    { session },
+  );
+  if (locked.matchedCount !== 1) {
+    throw new Error(`report source trpg session CAS failed: ${sessionId}`);
+  }
+  return { kind: "trpg_sessions", title: trpg.title };
 }
 
 /** 세션 상태를 업데이트합니다. */
@@ -83,14 +154,54 @@ export async function updateSessionMessageId(
   return result.modifiedCount > 0;
 }
 
-/** 세션을 삭제합니다. */
-export async function deleteSessionById(sessionId: string): Promise<boolean> {
+/** 보고서 source FK를 보존하면서 세션을 삭제합니다. */
+export async function deleteSessionById(
+  sessionId: string,
+  options: { session?: ClientSession; db?: Db } = {},
+): Promise<boolean> {
   if (!ObjectId.isValid(sessionId)) return false;
 
-  const col = await sessionsCol();
-  const result = await col.deleteOne({
-    _id: new ObjectId(sessionId),
-  } as SessionFilter);
+  if (!options.session) {
+    const session = (await getClient()).startSession();
+    let deleted = false;
+    try {
+      await session.withTransaction(async () => {
+        deleted = await deleteSessionById(sessionId, { session });
+      });
+      return deleted;
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  const db = options.db ?? await getDb();
+  const col = db.collection<Session>("sessions");
+  const _id = new ObjectId(sessionId);
+  const source = await col.findOne(
+    { _id } as SessionFilter,
+    { projection: { updatedAt: 1 }, session: options.session },
+  );
+  if (!source) return false;
+
+  const locked = await col.updateOne(
+    { _id, updatedAt: source.updatedAt } as SessionFilter,
+    { $inc: { reportReferenceRevision: 1 } },
+    { session: options.session },
+  );
+  if (locked.matchedCount !== 1) {
+    throw new Error(`report source session CAS failed: ${sessionId}`);
+  }
+
+  const inbound = await db.collection("session_reports").findOne(
+    { sessionId },
+    { projection: { _id: 1 }, session: options.session },
+  );
+  if (inbound) throw new SessionReportSourceInboundReferenceError(sessionId);
+
+  const result = await col.deleteOne(
+    { _id } as SessionFilter,
+    { session: options.session },
+  );
   return result.deletedCount > 0;
 }
 

@@ -22,15 +22,43 @@
  * Usage:
  *   pnpm run seed:payload -- scripts/seed-payloads/npc-doctor-moss.json
  *   pnpm run seed:payload -- scripts/seed-payloads/npc-doctor-moss.json --execute --yes
+ *   pnpm run seed:payload -- <economic-payload.json> --execute --yes --allow-economic-fields
  *   pnpm run seed:payload -- scripts/seed-payloads --execute --yes --verbose
  */
 
+import { createHash, randomUUID } from "crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "fs";
-import { resolve } from "path";
+import { basename, dirname, relative, resolve } from "path";
+import { fileURLToPath } from "url";
+import { isDeepStrictEqual } from "util";
 
-import { MongoClient, type Collection, type Document } from "mongodb";
+import {
+  MongoClient,
+  ObjectId,
+  type ClientSession,
+  type Collection,
+  type Db,
+  type Document,
+} from "mongodb";
 
 import type { DossierPersonalityObservation } from "@stargate/shared-db/types";
+import {
+  findSessionReportReferenceTargetIssues,
+  hasSessionReportInboundReference,
+  lockAndAssertNoSessionReportInboundReference,
+  validateAndLockSessionReportWrite,
+  validateAndLockSessionReportReferences,
+  type SessionReportReferences,
+} from "@stargate/shared-db";
+import {
+  loreIngestionRunSchema,
+  loreSourceDocumentSchema,
+  validateSeedInsertCandidate,
+  validateSeedCharacterSheets,
+  validateSeedPayloadPatch,
+  validateSeedStoredDocument,
+  validateSeedUpdate,
+} from "@stargate/shared-db/schemas";
 
 import {
   appendPersonalityObservation,
@@ -41,6 +69,21 @@ import {
   withParsedInitialPersonalityObservations,
   withParsedPersonalityObservation,
 } from "./lib/personality-observation-update.ts";
+import {
+  ingestionLeaseFields,
+  reconcileExpiredIngestionRuns,
+} from "./lib/ingestion-run-lease.ts";
+import {
+  assertSingleFileExecutionScope,
+  mergeSeedProvenanceSourceIds,
+  normalizeSeedPayloadDates,
+  withSeedRunnerInsertUpdatedAt,
+} from "./lib/seed-payload-normalization.ts";
+import { assertCommittedRepositorySource } from "./lib/repository-source.ts";
+import { seedPayloadSourceId } from "./lib/seed-provenance.ts";
+
+const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const SEED_PAYLOAD_ROOT = resolve(PROJECT_ROOT, "scripts/seed-payloads");
 
 /* ── env ─────────────────────────────────────────────────────────────── */
 
@@ -77,6 +120,7 @@ const EXECUTE = process.argv.includes("--execute");
 const YES = process.argv.includes("--yes");
 const DRY_RUN = !EXECUTE;
 const VERBOSE = process.argv.includes("--verbose") || process.argv.includes("-v");
+const ALLOW_ECONOMIC_FIELDS = process.argv.includes("--allow-economic-fields");
 
 const INPUT_ARGS = process.argv
   .slice(2)
@@ -98,15 +142,29 @@ if (INPUT_ARGS.length === 0) {
 }
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const DB_NAME = process.env.DB_NAME ?? "stargate";
-
-if (EXECUTE && MONGODB_URI) {
-  try {
-    console.log(`[seed-payload] WRITE 대상 호스트: ${new URL(MONGODB_URI).host}`);
-  } catch {
-    console.log("[seed-payload] WRITE 모드 (MONGODB_URI 호스트 파싱 실패)");
-  }
+if (
+  process.env.DB_NAME &&
+  process.env.MONGODB_DB_NAME &&
+  process.env.DB_NAME !== process.env.MONGODB_DB_NAME
+) {
+  throw new Error(
+    `[seed-payload] DB_NAME(${process.env.DB_NAME})과 MONGODB_DB_NAME(${process.env.MONGODB_DB_NAME})이 다릅니다.`,
+  );
 }
+const DB_NAME = process.env.DB_NAME ?? process.env.MONGODB_DB_NAME ?? "stargate";
+if (EXECUTE && !process.env.DB_NAME && !process.env.MONGODB_DB_NAME) {
+  throw new Error("[seed-payload] WRITE에는 DB_NAME 또는 MONGODB_DB_NAME을 명시해야 합니다.");
+}
+const TARGET_HOST = (() => {
+  if (!MONGODB_URI) return "not-configured";
+  try {
+    return new URL(MONGODB_URI).host;
+  } catch {
+    return "unparseable";
+  }
+})();
+
+console.log(`[seed-payload] target host=${TARGET_HOST} db=${DB_NAME}`);
 
 /* ── types ───────────────────────────────────────────────────────────── */
 
@@ -126,17 +184,22 @@ interface SeedPayloadEnvelope {
   filter?: Record<string, unknown>;
   update?: Record<string, unknown> | Record<string, unknown>[];
   upsert?: boolean;
+  postcondition?: Record<string, unknown>;
   allowQuestionMarkPlaceholder?: boolean;
 }
 
 interface UpsertPlan {
   file: string;
+  manifestHash: string;
   collection: SupportedCollection;
   mode: "payload" | "update";
   filter: Record<string, unknown>;
   payload?: Record<string, unknown>;
   update?: Record<string, unknown> | Record<string, unknown>[];
   upsert?: boolean;
+  postcondition?: Record<string, unknown>;
+  /** Runner-owned immutable source application for a report plan. */
+  provenanceSourceId?: string;
   allowQuestionMarkPlaceholder?: boolean;
   personalityObservation?: DossierPersonalityObservation;
   initialPersonalityObservations?: DossierPersonalityObservation[];
@@ -157,6 +220,12 @@ interface UpsertResultSummary {
     | "unchanged";
   id?: string;
   verification?: Record<string, unknown>;
+  economicChanges?: Array<{
+    path: string;
+    before: unknown;
+    after: unknown;
+  }>;
+  sideEffects?: string[];
 }
 
 const SUPPORTED_COLLECTIONS = new Set<SupportedCollection>([
@@ -167,6 +236,31 @@ const SUPPORTED_COLLECTIONS = new Set<SupportedCollection>([
   "institutions",
   "session_reports",
   "equipment_workshop_blueprints",
+]);
+
+const ENVELOPE_KEYS = new Set([
+  "collection",
+  "type",
+  "payload",
+  "filter",
+  "update",
+  "upsert",
+  "postcondition",
+  "allowQuestionMarkPlaceholder",
+]);
+
+const FORBIDDEN_QUERY_OPERATORS = new Set([
+  "$where",
+  "$function",
+  "$accumulator",
+]);
+const MASTER_ITEM_ECONOMIC_ROOTS = new Set(["price", "isAvailable", "shopMeta"]);
+const BLUEPRINT_ECONOMIC_ROOTS = new Set([
+  "version",
+  "status",
+  "applicability",
+  "defaults",
+  "balanceStatus",
 ]);
 
 /* ── input loading ───────────────────────────────────────────────────── */
@@ -199,12 +293,163 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseEnvelope(file: string): SeedPayloadEnvelope[] {
-  const raw = JSON.parse(readFileSync(file, "utf-8")) as unknown;
+function assertSafeQuery(value: unknown, context: string): void {
+  if (Array.isArray(value)) {
+    for (const child of value) assertSafeQuery(child, context);
+    return;
+  }
+  if (!isRecord(value)) return;
+  for (const [key, child] of Object.entries(value)) {
+    if (FORBIDDEN_QUERY_OPERATORS.has(key)) {
+      throw new Error(`[seed-payload] ${context}: 금지된 query operator ${key}`);
+    }
+    assertSafeQuery(child, context);
+  }
+}
+
+function stableIdentityKey(collection: SupportedCollection): string {
+  switch (collection) {
+    case "characters":
+      return "codename";
+    case "wiki_pages":
+    case "master_items":
+    case "equipment_workshop_blueprints":
+      return "slug";
+    case "factions":
+    case "institutions":
+      return "code";
+    case "session_reports":
+      return "sessionId";
+  }
+}
+
+function assertPostconditionIdentity(
+  collection: SupportedCollection,
+  filter: Record<string, unknown>,
+  postcondition: Record<string, unknown>,
+  context: string,
+): void {
+  const key = stableIdentityKey(collection);
+  if (typeof filter[key] !== "string" || typeof postcondition[key] !== "string") {
+    throw new Error(
+      `[seed-payload] ${context}: postcondition.${key}는 정확한 문자열이어야 합니다.`,
+    );
+  }
+  if (filter[key] !== postcondition[key]) {
+    throw new Error(
+      `[seed-payload] ${context}: stable identity rename(${String(filter[key])} -> ${String(postcondition[key])})는 generic runner에서 금지됩니다. 전용 migration을 사용하세요.`,
+    );
+  }
+}
+
+function assertStableIdentityFilter(
+  collection: SupportedCollection,
+  filter: Record<string, unknown>,
+  context: string,
+): void {
+  const key = stableIdentityKey(collection);
+  if (typeof filter[key] !== "string" || filter[key].trim() === "") {
+    throw new Error(
+      `[seed-payload] ${context}: filter.${key}는 비어 있지 않은 정확한 문자열이어야 합니다.`,
+    );
+  }
+}
+
+function assertProtectedFieldsNotUnset(
+  collection: SupportedCollection,
+  update: Record<string, unknown> | Record<string, unknown>[],
+  context: string,
+): void {
+  const protectedRoots = new Set([
+    stableIdentityKey(collection),
+    "createdAt",
+    "updatedAt",
+    ...(["characters", "wiki_pages", "master_items", "factions", "institutions"].includes(
+      collection,
+    )
+      ? ["isPublic"]
+      : []),
+  ]);
+  const stages = Array.isArray(update) ? update : [update];
+  for (const stage of stages) {
+    const unset = stage.$unset;
+    const paths = Array.isArray(unset)
+      ? unset
+      : typeof unset === "string"
+        ? [unset]
+        : isRecord(unset)
+          ? Object.keys(unset)
+          : [];
+    const blocked = paths.filter((path) =>
+      protectedRoots.has(path.split(".", 1)[0]),
+    );
+    if (blocked.length > 0) {
+      throw new Error(
+        `[seed-payload] ${context}: 보호 필드는 $unset할 수 없습니다: ${blocked.join(", ")}`,
+      );
+    }
+  }
+}
+
+/**
+ * Seed 파일의 historical updatedAt은 provenance 정보이지 live version이 아니다.
+ * update 본문에서는 제거하고 실제 도메인 변경을 확인한 뒤 runner가 한 번만 전진시킨다.
+ */
+function withoutManagedUpdatedAt(
+  update: Record<string, unknown> | Record<string, unknown>[],
+): Record<string, unknown> | Record<string, unknown>[] {
+  if (Array.isArray(update)) {
+    return update.flatMap((stage) => {
+      const [operator, operand] = Object.entries(stage)[0] ?? [];
+      if (!operator) return [];
+      if (operator === "$unset") {
+        const paths = Array.isArray(operand)
+          ? operand.filter((path) => path !== "updatedAt")
+          : typeof operand === "string"
+            ? operand === "updatedAt"
+              ? []
+              : [operand]
+            : isRecord(operand)
+              ? Object.fromEntries(
+                  Object.entries(operand).filter(([path]) => path !== "updatedAt"),
+                )
+              : operand;
+        if (Array.isArray(paths) && paths.length === 0) return [];
+        if (isRecord(paths) && Object.keys(paths).length === 0) return [];
+        return [{ [operator]: paths }];
+      }
+      if (!isRecord(operand)) return [stage];
+      const nextOperand = Object.fromEntries(
+        Object.entries(operand).filter(([path]) => path.split(".", 1)[0] !== "updatedAt"),
+      );
+      return Object.keys(nextOperand).length > 0
+        ? [{ [operator]: nextOperand }]
+        : [];
+    });
+  }
+  return Object.fromEntries(
+    Object.entries(update).flatMap(([operator, operand]) => {
+      if (!isRecord(operand)) return [[operator, operand]];
+      const nextOperand = Object.fromEntries(
+        Object.entries(operand).filter(([path]) => path.split(".", 1)[0] !== "updatedAt"),
+      );
+      return Object.keys(nextOperand).length > 0 ? [[operator, nextOperand]] : [];
+    }),
+  );
+}
+
+function parseEnvelope(file: string, sourceText: string): SeedPayloadEnvelope[] {
+  const raw = JSON.parse(sourceText) as unknown;
   const entries = Array.isArray(raw) ? raw : [raw];
   return entries.map((entry, index) => {
     if (!isRecord(entry)) {
       throw new Error(`[seed-payload] ${file}#${index}: 객체가 아닙니다.`);
+    }
+    const unknownKeys = Object.keys(entry).filter((key) => !ENVELOPE_KEYS.has(key));
+    if (unknownKeys.length > 0) {
+      throw new Error(
+        `[seed-payload] ${file}#${index}: 알 수 없는 envelope 필드=${unknownKeys.join(",")}`,
+      );
     }
     const collection = entry.collection;
     if (
@@ -224,6 +469,16 @@ function parseEnvelope(file: string): SeedPayloadEnvelope[] {
         `[seed-payload] ${file}#${index}: payload 또는 update 객체가 필요합니다.`,
       );
     }
+    if ("postcondition" in entry && !isRecord(entry.postcondition)) {
+      throw new Error(
+        `[seed-payload] ${file}#${index}: postcondition은 객체여야 합니다.`,
+      );
+    }
+    if ("upsert" in entry && typeof entry.upsert !== "boolean") {
+      throw new Error(
+        `[seed-payload] ${file}#${index}: upsert는 boolean이어야 합니다.`,
+      );
+    }
     return {
       collection: collection as SupportedCollection,
       type: typeof entry.type === "string" ? entry.type : undefined,
@@ -235,6 +490,9 @@ function parseEnvelope(file: string): SeedPayloadEnvelope[] {
         ? (entry.update as Record<string, unknown> | Record<string, unknown>[])
         : undefined,
       upsert: typeof entry.upsert === "boolean" ? entry.upsert : undefined,
+      postcondition: isRecord(entry.postcondition)
+        ? entry.postcondition
+        : undefined,
       allowQuestionMarkPlaceholder:
         entry.allowQuestionMarkPlaceholder === true,
     };
@@ -243,36 +501,11 @@ function parseEnvelope(file: string): SeedPayloadEnvelope[] {
 
 /* ── payload normalization ───────────────────────────────────────────── */
 
-function looksLikeIsoDate(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value);
-}
-
-function shouldCoerceDate(key: string, value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    looksLikeIsoDate(value) &&
-    (key.endsWith("At") || key === "date")
-  );
-}
-
-function normalizeDates(value: unknown, key = ""): unknown {
-  if (value instanceof Date) return value;
-  if (shouldCoerceDate(key, value)) return new Date(value);
-  if (Array.isArray(value)) return value.map((item) => normalizeDates(item));
-  if (!isRecord(value)) return value;
-
-  const result: Record<string, unknown> = {};
-  for (const [childKey, childValue] of Object.entries(value)) {
-    result[childKey] = normalizeDates(childValue, childKey);
-  }
-  return result;
-}
-
 function omitMongoManagedFields(payload: Record<string, unknown>): {
   setPayload: Record<string, unknown>;
   createdAt: Date | undefined;
 } {
-  const normalized = normalizeDates(payload) as Record<string, unknown>;
+  const normalized = normalizeSeedPayloadDates(payload) as Record<string, unknown>;
   const { createdAt, ...rest } = normalized;
   delete rest._id;
   return {
@@ -313,15 +546,42 @@ function buildFilter(
   }
 }
 
+function assertNoManagedReportProvenance(
+  collection: SupportedCollection,
+  value: Record<string, unknown> | Record<string, unknown>[],
+  context: string,
+): void {
+  if (collection !== "session_reports") return;
+  const blocked = new Set(["provenanceSourceId", "provenanceSourceIds"]);
+  const stages = Array.isArray(value) ? value : [value];
+  for (const stage of stages) {
+    for (const [key, operand] of Object.entries(stage)) {
+      if (blocked.has(key)) {
+        throw new Error(`[seed-payload] ${context}: provenance는 runner가 관리합니다.`);
+      }
+      if (!key.startsWith("$") || !isRecord(operand)) continue;
+      if (
+        Object.keys(operand).some((path) =>
+          blocked.has(path.split(".", 1)[0]),
+        )
+      ) {
+        throw new Error(`[seed-payload] ${context}: provenance는 runner가 관리합니다.`);
+      }
+    }
+  }
+}
+
 function buildPlans(files: string[]): UpsertPlan[] {
   const plans: UpsertPlan[] = [];
   for (const file of files) {
-    for (const envelope of parseEnvelope(file)) {
+    const sourceText = readFileSync(file, "utf8");
+    const manifestHash = sha256(sourceText);
+    for (const envelope of parseEnvelope(file, sourceText)) {
       let payload = envelope.payload
-        ? (normalizeDates(envelope.payload) as Record<string, unknown>)
+        ? (normalizeSeedPayloadDates(envelope.payload) as Record<string, unknown>)
         : undefined;
       const filter = envelope.filter
-        ? (normalizeDates(envelope.filter) as Record<string, unknown>)
+        ? (normalizeSeedPayloadDates(envelope.filter) as Record<string, unknown>)
         : payload
           ? buildFilter(envelope.collection, payload)
           : undefined;
@@ -330,13 +590,47 @@ function buildPlans(files: string[]): UpsertPlan[] {
           `[seed-payload] ${file}: update envelope에는 filter가 필요합니다.`,
         );
       }
+      assertSafeQuery(filter, `${file} filter`);
+      assertStableIdentityFilter(envelope.collection, filter, file);
+      const postcondition = envelope.postcondition
+        ? (normalizeSeedPayloadDates(envelope.postcondition) as Record<string, unknown>)
+        : undefined;
+      if (postcondition) {
+        assertSafeQuery(postcondition, `${file} postcondition`);
+        assertPostconditionIdentity(
+          envelope.collection,
+          filter,
+          postcondition,
+          file,
+        );
+      }
       if (envelope.update) {
-        const normalizedUpdate = normalizeDates(envelope.update) as
+        const normalizedUpdate = normalizeSeedPayloadDates(envelope.update) as
           | Record<string, unknown>
           | Record<string, unknown>[];
+        assertNoManagedReportProvenance(
+          envelope.collection,
+          normalizedUpdate,
+          file,
+        );
+        assertProtectedFieldsNotUnset(
+          envelope.collection,
+          normalizedUpdate,
+          file,
+        );
+        const guardedUpdate = withoutManagedUpdatedAt(normalizedUpdate);
+        if (
+          (Array.isArray(guardedUpdate) && guardedUpdate.length === 0) ||
+          (!Array.isArray(guardedUpdate) && Object.keys(guardedUpdate).length === 0)
+        ) {
+          throw new Error(
+            `[seed-payload] updatedAt 외 변경이 없는 update는 허용하지 않습니다: ${file}`,
+          );
+        }
+        validateSeedUpdate(envelope.collection, guardedUpdate);
         const personalityObservation =
           envelope.collection === "characters"
-            ? extractPersonalityObservationUpdate(normalizedUpdate)
+            ? extractPersonalityObservationUpdate(guardedUpdate)
             : null;
         if (personalityObservation && envelope.upsert === true) {
           throw new Error(
@@ -345,17 +639,23 @@ function buildPlans(files: string[]): UpsertPlan[] {
         }
         plans.push({
           file,
+          manifestHash,
           collection: envelope.collection,
           mode: "update",
           filter,
           update:
-            personalityObservation && !Array.isArray(normalizedUpdate)
+            personalityObservation && !Array.isArray(guardedUpdate)
               ? withParsedPersonalityObservation(
-                  normalizedUpdate,
+                  guardedUpdate,
                   personalityObservation,
                 )
-              : normalizedUpdate,
+              : guardedUpdate,
           upsert: envelope.upsert === true,
+          postcondition,
+          provenanceSourceId:
+            envelope.collection === "session_reports"
+              ? seedPayloadSourceId(file, manifestHash, PROJECT_ROOT)
+              : undefined,
           allowQuestionMarkPlaceholder:
             envelope.allowQuestionMarkPlaceholder === true,
           personalityObservation: personalityObservation ?? undefined,
@@ -365,6 +665,8 @@ function buildPlans(files: string[]): UpsertPlan[] {
       if (!payload) {
         throw new Error(`[seed-payload] ${file}: payload가 필요합니다.`);
       }
+      assertNoManagedReportProvenance(envelope.collection, payload, file);
+      payload = validateSeedPayloadPatch(envelope.collection, payload);
       const initialPersonalityObservations =
         envelope.collection === "characters"
           ? validateInitialPersonalityObservations(payload)
@@ -377,10 +679,16 @@ function buildPlans(files: string[]): UpsertPlan[] {
       }
       plans.push({
         file,
+        manifestHash,
         collection: envelope.collection,
         mode: "payload",
         filter,
         payload,
+        postcondition,
+        provenanceSourceId:
+          envelope.collection === "session_reports"
+            ? seedPayloadSourceId(file, manifestHash, PROJECT_ROOT)
+            : undefined,
         initialPersonalityObservations:
           initialPersonalityObservations ?? undefined,
         allowQuestionMarkPlaceholder:
@@ -513,9 +821,188 @@ function printSummary(summary: UpsertResultSummary): void {
   const filter = JSON.stringify(summary.filter);
   console.log(`  ${marker} ${summary.collection.padEnd(15)} ${filter} | ${summary.action}`);
   if (summary.id) console.log(`     id: ${summary.id}`);
+  for (const change of summary.economicChanges ?? []) {
+    console.log(
+      `     economic ${change.path}: ${JSON.stringify(change.before)} -> ${JSON.stringify(change.after)}`,
+    );
+  }
+  for (const sideEffect of summary.sideEffects ?? []) {
+    console.log(`     side-effect: ${sideEffect}`);
+  }
   if (VERBOSE && summary.verification) {
     console.log(`     verification: ${JSON.stringify(summary.verification, null, 2)}`);
   }
+}
+
+function economicRootSet(plan: UpsertPlan): Set<string> {
+  if (plan.collection === "master_items") return MASTER_ITEM_ECONOMIC_ROOTS;
+  if (plan.collection === "equipment_workshop_blueprints") {
+    return BLUEPRINT_ECONOMIC_ROOTS;
+  }
+  return new Set();
+}
+
+function economicTouchedPaths(plan: UpsertPlan): string[] {
+  const roots = economicRootSet(plan);
+  if (roots.size === 0) return [];
+  const paths = new Set<string>();
+  const consider = (path: string) => {
+    if (roots.has(path.split(".", 1)[0])) paths.add(path);
+  };
+  for (const path of Object.keys(plan.payload ?? {})) consider(path);
+  for (const stage of plan.update
+    ? Array.isArray(plan.update)
+      ? plan.update
+      : [plan.update]
+    : []) {
+    for (const operand of Object.values(stage)) {
+      if (Array.isArray(operand)) {
+        for (const path of operand) if (typeof path === "string") consider(path);
+      } else if (isRecord(operand)) {
+        for (const path of Object.keys(operand)) consider(path);
+      }
+    }
+  }
+  return [...paths].sort();
+}
+
+function planRequiresEconomicAcknowledgement(plan: UpsertPlan): boolean {
+  return economicTouchedPaths(plan).length > 0;
+}
+
+function getPath(value: Document | null, path: string): unknown {
+  let current: unknown = value;
+  for (const segment of path.split(".")) {
+    if (!isRecord(current) || !(segment in current)) return undefined;
+    current = current[segment];
+  }
+  return current;
+}
+
+function setPath(target: Document, path: string, value: unknown): void {
+  const segments = path.split(".");
+  let current = target;
+  for (const segment of segments.slice(0, -1)) {
+    if (!isRecord(current[segment])) current[segment] = {};
+    current = current[segment] as Document;
+  }
+  const leaf = segments.at(-1);
+  if (leaf) current[leaf] = value;
+}
+
+function unsetPath(target: Document, path: string): void {
+  const segments = path.split(".");
+  let current: unknown = target;
+  for (const segment of segments.slice(0, -1)) {
+    if (!isRecord(current) || !isRecord(current[segment])) return;
+    current = current[segment];
+  }
+  const leaf = segments.at(-1);
+  if (leaf && isRecord(current)) delete current[leaf];
+}
+
+function applyClassicPreview(
+  plan: UpsertPlan,
+  existing: Document | null,
+): Document | null {
+  if (!existing && plan.mode === "update" && !plan.upsert) return null;
+  const candidate: Document = existing ? { ...existing } : { ...plan.filter };
+  if (plan.payload) {
+    for (const [path, value] of Object.entries(plan.payload)) {
+      setPath(candidate, path, value);
+    }
+  }
+  if (!plan.update || Array.isArray(plan.update)) return candidate;
+  for (const [operator, rawOperand] of Object.entries(plan.update)) {
+    if (!isRecord(rawOperand)) continue;
+    if (operator === "$set" || (operator === "$setOnInsert" && !existing)) {
+      for (const [path, value] of Object.entries(rawOperand)) {
+        setPath(candidate, path, value);
+      }
+    } else if (operator === "$unset") {
+      for (const path of Object.keys(rawOperand)) unsetPath(candidate, path);
+    } else if (operator === "$addToSet") {
+      for (const [path, value] of Object.entries(rawOperand)) {
+        const before = getPath(candidate, path);
+        const additions = isRecord(value) && Array.isArray(value.$each)
+          ? value.$each
+          : [value];
+        const after = Array.isArray(before) ? [...before] : [];
+        for (const addition of additions) {
+          if (!after.some((entry) => isDeepStrictEqual(entry, addition))) {
+            after.push(addition);
+          }
+        }
+        setPath(candidate, path, after);
+      }
+    }
+  }
+  return candidate;
+}
+
+function withReportProvenance(
+  plan: UpsertPlan,
+  candidate: Document | null,
+): Document | null {
+  if (!candidate || plan.collection !== "session_reports") return candidate;
+  if (!plan.provenanceSourceId) {
+    throw new Error(`[seed-payload] report provenance plan 누락: ${plan.file}`);
+  }
+  const legacy =
+    typeof candidate.provenanceSourceId === "string"
+      ? candidate.provenanceSourceId
+      : undefined;
+  const { provenanceSourceId: _legacyProvenanceSourceId, ...rest } = candidate;
+  void _legacyProvenanceSourceId;
+  return {
+    ...rest,
+    provenanceSourceIds: mergeSeedProvenanceSourceIds(
+      candidate.provenanceSourceIds,
+      plan.provenanceSourceId,
+      legacy,
+    ),
+  };
+}
+
+function previewValue(value: unknown): unknown {
+  if (value === undefined) return "<absent>";
+  if (value instanceof Date) return value.toISOString();
+  return value;
+}
+
+async function buildEconomicPreview(
+  col: Collection<Document> | null,
+  plan: UpsertPlan,
+  existing: Document | null,
+): Promise<Pick<UpsertResultSummary, "economicChanges" | "sideEffects">> {
+  const paths = economicTouchedPaths(plan);
+  if (paths.length === 0) return {};
+  let candidate = applyClassicPreview(plan, existing);
+  if (Array.isArray(plan.update) && (!col || !existing)) {
+    throw new Error(
+      `[seed-payload] pipeline 경제 변경의 before → after를 계산할 수 없습니다: ${plan.file}. 대상 문서가 존재하는 DB 연결 dry-run에서 다시 검토하세요.`,
+    );
+  }
+  if (col && existing && Array.isArray(plan.update)) {
+    candidate = await col
+      .aggregate<Document>([
+        { $match: { _id: existing._id } },
+        ...(plan.update as Document[]),
+        { $limit: 1 },
+      ])
+      .next();
+  }
+  const economicChanges = paths
+    .map((path) => ({
+      path,
+      before: previewValue(existing ? getPath(existing, path) : undefined),
+      after: previewValue(candidate ? getPath(candidate, path) : undefined),
+    }))
+    .filter((change) => !isDeepStrictEqual(change.before, change.after));
+  const sideEffects = plan.collection === "master_items"
+    ? ["편의점/병기부 가격·판매 가능 여부·재고 노출 정책에 영향을 줄 수 있음"]
+    : ["향후 공방 견적의 크레딧·재료·제작 시간·결과 장비 규칙에 영향을 줌"];
+  return { economicChanges, sideEffects };
 }
 
 /* ── main ────────────────────────────────────────────────────────────── */
@@ -525,30 +1012,122 @@ async function dryRunWithoutDb(plans: UpsertPlan[]): Promise<void> {
     "[seed-payload] MONGODB_URI 미설정 — DB 조회 없이 계획만 출력합니다.",
   );
   for (const plan of plans) {
+    // DB-less mode cannot know whether an update target exists, but reviewers
+    // still need the proposed economic value. Seed a synthetic identity-only
+    // document so classic $set/payload plans render <absent> -> planned deltas.
+    const preview = await buildEconomicPreview(null, plan, { ...plan.filter });
     printSummary({
       file: plan.file,
       collection: plan.collection,
       filter: plan.filter,
       action: "예상 미상",
+      ...preview,
     });
   }
 }
 
+async function auditSeedReferenceIntegrity(
+  db: Db,
+  plan: UpsertPlan,
+  before: Document | null,
+  candidate: Document | null,
+): Promise<void> {
+  if (!candidate) return;
+  if (plan.collection === "session_reports") {
+    const sessionId = candidate.sessionId;
+    const sessionTitle = candidate.sessionTitle;
+    const provenanceSourceIds = candidate.provenanceSourceIds;
+    if (
+      typeof sessionId !== "string" ||
+      typeof sessionTitle !== "string" ||
+      !Array.isArray(provenanceSourceIds) ||
+      provenanceSourceIds.some((value) => typeof value !== "string") ||
+      new Set(provenanceSourceIds).size !== provenanceSourceIds.length ||
+      !plan.provenanceSourceId ||
+      !provenanceSourceIds.includes(plan.provenanceSourceId)
+    ) {
+      throw new Error(
+        `[seed-payload] session_reports 최종 identity/provenance가 유효하지 않습니다: ${plan.file}`,
+      );
+    }
+    if (ObjectId.isValid(sessionId)) {
+      const _id = new ObjectId(sessionId);
+      const source =
+        (await db.collection("sessions").findOne(
+          { _id },
+          { projection: { title: 1 } },
+        )) ??
+        (await db.collection("trpg_sessions").findOne(
+          { _id },
+          { projection: { title: 1 } },
+        ));
+      if (!source || typeof source.title !== "string") {
+        throw new Error(
+          `[seed-payload] 등록 세션 source를 찾을 수 없습니다: ${sessionId}`,
+        );
+      }
+      if (sessionTitle !== source.title.slice(0, 200)) {
+        throw new Error(
+          `[seed-payload] sessionTitle은 등록 세션 SSOT와 일치해야 합니다: ${plan.file}`,
+        );
+      }
+    }
+    const issues = await findSessionReportReferenceTargetIssues(
+      reportReferencesFromCandidate(candidate),
+      { db },
+    );
+    if (issues.length > 0) {
+      throw new Error(
+        `[seed-payload] 구조화 로어 링크 target 불일치: ${issues
+          .map((issue) => `${issue.field}:${issue.value}:${issue.reason}`)
+          .join(", ")}`,
+      );
+    }
+    return;
+  }
+
+  const target = referenceTargetMutation(plan, before, candidate);
+  if (
+    target &&
+    (await hasSessionReportInboundReference(target.field, target.value, { db }))
+  ) {
+    throw new Error(
+      `[seed-payload] 작전 보고서가 참조 중인 target은 식별자 변경·비공개 전환할 수 없습니다: ${target.field}:${target.value}`,
+    );
+  }
+}
+
 async function dryRunWithDb(
+  db: Db,
   colByName: Map<SupportedCollection, Collection<Document>>,
   plans: UpsertPlan[],
 ): Promise<void> {
+  const indexIssues = await findSeedAuditIndexIssues(db);
+  const planIssues: string[] = [];
+  const planIssueKeys = new Set<string>();
+  if (indexIssues.length > 0) {
+    console.warn(
+      `[seed-payload] EXECUTE BLOCKED — 필수 인덱스 미준비: ${indexIssues.join(", ")}`,
+    );
+  }
   for (const plan of plans) {
+    try {
     const col = colByName.get(plan.collection);
     if (!col) throw new Error(`[seed-payload] collection handle 누락: ${plan.collection}`);
-    const needsPersonalityState =
-      plan.personalityObservation !== undefined ||
-      plan.initialPersonalityObservations !== undefined;
-    const existing = await col.findOne(plan.filter, {
-      projection: needsPersonalityState
-        ? { _id: 1, "lore.personalityObservations": 1 }
-        : { _id: 1 },
-    });
+    const needsReferenceState = [
+      "characters",
+      "wiki_pages",
+      "master_items",
+      "session_reports",
+    ].includes(plan.collection);
+    // Full saved-document validation needs the complete current row. A narrow
+    // projection could make required fields look absent or hide invalid legacy
+    // state that the write would otherwise preserve.
+    const existing = await col.findOne(plan.filter);
+    const postconditionMatch =
+      !existing && plan.postcondition
+        ? await col.findOne(plan.postcondition, { projection: { _id: 1 } })
+        : null;
     if (existing && plan.initialPersonalityObservations !== undefined) {
       throw new Error(
         `[seed-payload] 최초 personality observations가 포함된 character payload는 기존 문서를 갱신할 수 없습니다: ${JSON.stringify(plan.filter)}`,
@@ -561,6 +1140,42 @@ async function dryRunWithDb(
             plan.personalityObservation,
           )
         : null;
+    let referenceCandidate = withReportProvenance(
+      plan,
+      withSeedRunnerInsertUpdatedAt(
+        applyClassicPreview(plan, existing),
+        !existing && plan.mode === "update" && plan.upsert === true,
+      ),
+    );
+    if (Array.isArray(plan.update)) {
+      if (!existing && plan.upsert && needsReferenceState) {
+        throw new Error(
+          `[seed-payload] 참조 무결성 대상의 pipeline upsert는 최종 문서를 dry-run에서 계산할 수 없어 허용하지 않습니다: ${plan.file}`,
+        );
+      }
+      if (existing) {
+        referenceCandidate = withReportProvenance(
+          plan,
+          await col
+            .aggregate<Document>([
+              { $match: { _id: existing._id } },
+              ...(plan.update as Document[]),
+              { $limit: 1 },
+            ])
+            .next(),
+        );
+      }
+    }
+    if (referenceCandidate) {
+      validateCompleteSavedDocument(plan, referenceCandidate);
+    }
+    await auditSeedReferenceIntegrity(
+      db,
+      plan,
+      existing,
+      referenceCandidate,
+    );
+    const preview = await buildEconomicPreview(col, plan, existing);
     printSummary({
       file: plan.file,
       collection: plan.collection,
@@ -569,153 +1184,914 @@ async function dryRunWithDb(
         ? personalityAction === "unchanged"
           ? "예상 unchanged"
           : "예상 update"
-        : plan.mode === "payload" || plan.upsert
+        : postconditionMatch
+          ? "예상 unchanged"
+          : plan.mode === "payload" || plan.upsert
           ? "예상 insert"
           : "예상 missing",
-      id: existing?._id ? String(existing._id) : undefined,
+      id:
+        existing?._id || postconditionMatch?._id
+          ? String(existing?._id ?? postconditionMatch?._id)
+          : undefined,
+      ...preview,
     });
+    } catch (error) {
+      const message = (error instanceof Error ? error.message : String(error))
+        .replace(/\s+/gu, " ")
+        .trim();
+      const issueKey = `${plan.collection} ${JSON.stringify(plan.filter)}: ${message}`;
+      if (!planIssueKeys.has(issueKey)) {
+        planIssueKeys.add(issueKey);
+        const issue = `${relative(process.cwd(), plan.file)} ${issueKey}`;
+        planIssues.push(issue);
+        console.warn(`  [blocked] ${issue}`);
+      }
+    }
+  }
+  if (indexIssues.length > 0 || planIssues.length > 0) {
+    throw new Error(
+      `[seed-payload] dry-run 계획은 산출했지만 실행 준비 blocker가 남았습니다: indexes=${indexIssues.length}, plans=${planIssues.length}`,
+    );
+  }
+}
+
+function touchedRootFields(plan: UpsertPlan): Set<string> {
+  const fields = new Set<string>();
+  const addPath = (path: string) => fields.add(path.split(".", 1)[0]);
+
+  if (plan.payload) {
+    for (const path of Object.keys(plan.payload)) addPath(path);
+  }
+  if (plan.update) {
+    const stages = Array.isArray(plan.update) ? plan.update : [plan.update];
+    for (const stage of stages) {
+      for (const operand of Object.values(stage)) {
+        if (Array.isArray(operand)) {
+          for (const path of operand) {
+            if (typeof path === "string") addPath(path);
+          }
+        } else if (isRecord(operand)) {
+          for (const path of Object.keys(operand)) addPath(path);
+        }
+      }
+    }
+  }
+  return fields;
+}
+
+function validateCompleteSavedDocument(plan: UpsertPlan, saved: Document): void {
+  const {
+    _id,
+    __sessionReportReferenceLockAt: _referenceLockAt,
+    __sessionReportReferenceVersion: _legacyReferenceVersion,
+    provenanceSourceId: _legacyProvenanceSourceId,
+    ...candidate
+  } = saved;
+  void _id;
+  void _referenceLockAt;
+  void _legacyReferenceVersion;
+  void _legacyProvenanceSourceId;
+  validateSeedStoredDocument(plan.collection, candidate);
+  if (
+    plan.collection === "session_reports" &&
+    !ObjectId.isValid(String(candidate.sessionId ?? "")) &&
+    (!Array.isArray(candidate.provenanceSourceIds) ||
+      candidate.provenanceSourceIds.length === 0)
+  ) {
+    throw new Error(
+      `[seed-payload] historical report에는 provenanceSourceIds가 필요합니다: ${plan.file}`,
+    );
+  }
+}
+
+function validateSavedIdentity(plan: UpsertPlan, saved: Document): void {
+  const key = stableIdentityKey(plan.collection);
+  const expected = plan.postcondition?.[key] ?? plan.filter[key];
+  if (saved[key] !== expected) {
+    throw new Error(
+      `[seed-payload] write 후 stable identity 불일치: ${plan.collection}.${key}`,
+    );
+  }
+}
+
+async function verifyPostcondition(
+  col: Collection<Document>,
+  plan: UpsertPlan,
+  session: ClientSession,
+): Promise<void> {
+  if (!plan.postcondition) return;
+  const matched = await col.findOne(plan.postcondition, {
+    projection: { _id: 1 },
+    session,
+  });
+  if (!matched) {
+    throw new Error(
+      `[seed-payload] postcondition 불일치: ${plan.collection} ${JSON.stringify(plan.postcondition)}`,
+    );
+  }
+}
+
+function accessControlledCollection(collection: SupportedCollection): boolean {
+  return ["characters", "wiki_pages", "master_items", "factions", "institutions"].includes(
+    collection,
+  );
+}
+
+function validateProtectedInvariants(
+  plan: UpsertPlan,
+  before: Document | null,
+  saved: Document,
+): void {
+  const identity = stableIdentityKey(plan.collection);
+  const expectedIdentity = plan.postcondition?.[identity] ?? plan.filter[identity];
+  if (typeof saved[identity] !== "string" || saved[identity] !== expectedIdentity) {
+    throw new Error(`[seed-payload] write 후 stable identity 불일치: ${plan.collection}.${identity}`);
+  }
+  if (!(saved.createdAt instanceof Date) || !(saved.updatedAt instanceof Date)) {
+    throw new Error(`[seed-payload] write 후 createdAt/updatedAt invariant 불일치: ${plan.collection}`);
+  }
+  if (before && !isDeepStrictEqual(saved.createdAt, before.createdAt)) {
+    throw new Error(`[seed-payload] 기존 createdAt 변경은 허용하지 않습니다: ${plan.collection}`);
+  }
+  if (accessControlledCollection(plan.collection) && typeof saved.isPublic !== "boolean") {
+    throw new Error(`[seed-payload] write 후 isPublic boolean invariant 불일치: ${plan.collection}`);
+  }
+  if (plan.collection === "characters") {
+    validateSeedCharacterSheets(saved as Record<string, unknown>);
+  }
+}
+
+async function evaluatePipelineResult(
+  col: Collection<Document>,
+  plan: UpsertPlan,
+  existing: Document | null,
+  session: ClientSession,
+): Promise<Document | null> {
+  if (!existing || !Array.isArray(plan.update)) return null;
+  return col
+    .aggregate<Document>([
+      { $match: { _id: existing._id } },
+      ...(plan.update as Document[]),
+      { $limit: 1 },
+    ], { session })
+    .next();
+}
+
+function reportReferencesFromCandidate(
+  candidate: Document,
+): SessionReportReferences {
+  const references: SessionReportReferences = {};
+  for (const field of [
+    "relatedCatalogSlugs",
+    "relatedPersonnelCodenames",
+    "relatedWikiSlugs",
+  ] as const) {
+    const value = candidate[field];
+    if (value === undefined) {
+      references[field] = [];
+      continue;
+    }
+    if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+      throw new Error(`[seed-payload] session_reports.${field} 최종 배열이 유효하지 않습니다.`);
+    }
+    references[field] = value;
+  }
+  return references;
+}
+
+function referenceTargetMutation(
+  plan: UpsertPlan,
+  before: Document | null,
+  candidate: Document | null,
+): {
+  field:
+    | "relatedCatalogSlugs"
+    | "relatedPersonnelCodenames"
+    | "relatedWikiSlugs";
+  value: string;
+} | null {
+  if (!before || !candidate) return null;
+  const target =
+    plan.collection === "characters"
+      ? {
+          field: "relatedPersonnelCodenames" as const,
+          identity: "codename",
+          wasPublic: before.isPublic !== false,
+          isPublic: candidate.isPublic !== false,
+        }
+      : plan.collection === "wiki_pages"
+        ? {
+            field: "relatedWikiSlugs" as const,
+            identity: "slug",
+            wasPublic: before.isPublic === true,
+            isPublic: candidate.isPublic === true,
+          }
+        : plan.collection === "master_items"
+          ? {
+              field: "relatedCatalogSlugs" as const,
+              identity: "slug",
+              wasPublic: before.isPublic !== false,
+              isPublic: candidate.isPublic !== false,
+            }
+          : null;
+  if (!target) return null;
+
+  const beforeIdentity = before[target.identity];
+  const afterIdentity = candidate[target.identity];
+  if (typeof beforeIdentity !== "string") return null;
+  const changesIdentity = afterIdentity !== beforeIdentity;
+  const makesPrivate = target.wasPublic && !target.isPublic;
+  return changesIdentity || makesPrivate
+    ? { field: target.field, value: beforeIdentity }
+    : null;
+}
+
+async function enforceSessionReportReferenceIntegrity(
+  db: Db,
+  plan: UpsertPlan,
+  before: Document | null,
+  candidate: Document | null,
+  session: ClientSession,
+): Promise<void> {
+  if (!candidate) return;
+
+  if (plan.collection === "session_reports") {
+    const sessionId = candidate.sessionId;
+    const sessionTitle = candidate.sessionTitle;
+    const provenanceSourceIds = candidate.provenanceSourceIds;
+    if (
+      typeof sessionId !== "string" ||
+      typeof sessionTitle !== "string" ||
+      !Array.isArray(provenanceSourceIds) ||
+      provenanceSourceIds.length === 0 ||
+      provenanceSourceIds.some((sourceId) => typeof sourceId !== "string")
+    ) {
+      throw new Error(
+        "[seed-payload] session_reports 최종 sessionId/sessionTitle/provenanceSourceIds가 필요합니다.",
+      );
+    }
+    const provenanceCount = await db.collection("lore_sources").countDocuments(
+      { sourceId: { $in: provenanceSourceIds } },
+      { session },
+    );
+    if (provenanceCount !== new Set(provenanceSourceIds).size) {
+      throw new Error(
+        `[seed-payload] report provenance source를 찾을 수 없습니다: ${provenanceSourceIds.join(", ")}`,
+      );
+    }
+    const references = reportReferencesFromCandidate(candidate);
+    if (ObjectId.isValid(sessionId)) {
+      const integrity = await validateAndLockSessionReportWrite(
+        sessionId,
+        references,
+        session,
+        { db },
+      );
+      if (sessionTitle !== integrity.sessionTitle) {
+        throw new Error(
+          `[seed-payload] sessionTitle은 등록 세션 SSOT와 일치해야 합니다: ${plan.file}`,
+        );
+      }
+    } else {
+      await validateAndLockSessionReportReferences(references, session, { db });
+    }
+    return;
+  }
+
+  const target = referenceTargetMutation(plan, before, candidate);
+  if (target) {
+    await lockAndAssertNoSessionReportInboundReference(
+      target.field,
+      target.value,
+      session,
+      { db },
+    );
+  }
+}
+
+function verifyEvaluatedPipeline(
+  plan: UpsertPlan,
+  expected: Document | null,
+  saved: Document,
+): void {
+  if (!expected) return;
+  for (const field of touchedRootFields(plan)) {
+    if (field === "updatedAt") continue;
+    if (!isDeepStrictEqual(saved[field], expected[field])) {
+      throw new Error(
+        `[seed-payload] pipeline 계산 결과와 저장 결과가 다릅니다: ${plan.collection}.${field}`,
+      );
+    }
+  }
+}
+
+async function writePlan(
+  db: Db,
+  colByName: Map<SupportedCollection, Collection<Document>>,
+  revisionCol: Collection<Document>,
+  plan: UpsertPlan,
+  session: ClientSession,
+): Promise<UpsertResultSummary> {
+  const col = colByName.get(plan.collection);
+  if (!col) {
+    throw new Error(`[seed-payload] collection handle 누락: ${plan.collection}`);
+  }
+
+  const existing = await col.findOne(plan.filter, {
+    session,
+  });
+  if (existing && plan.initialPersonalityObservations !== undefined) {
+    throw new Error(
+      `[seed-payload] 최초 personality observations가 포함된 character payload는 기존 문서를 갱신할 수 없습니다: ${JSON.stringify(plan.filter)}`,
+    );
+  }
+
+  if (!existing && plan.mode === "update" && !plan.upsert) {
+    const satisfied = plan.postcondition
+      ? await col.findOne(plan.postcondition, { session })
+      : null;
+    if (satisfied) {
+      validateSavedIdentity(plan, satisfied);
+      validateCompleteSavedDocument(plan, satisfied);
+      const verification = summarizeSavedDoc(plan.collection, satisfied);
+      return {
+        file: plan.file,
+        collection: plan.collection,
+        filter: plan.filter,
+        action: "unchanged",
+        id: satisfied._id ? String(satisfied._id) : undefined,
+        verification,
+      };
+    }
+    throw new Error(
+      `[seed-payload] update 대상 없음: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+    );
+  }
+
+  let writtenId = existing?._id;
+  let unchanged = false;
+  let domainChanged = false;
+  const evaluatedPipeline = await evaluatePipelineResult(col, plan, existing, session);
+  await enforceSessionReportReferenceIntegrity(
+    db,
+    plan,
+    existing,
+    withReportProvenance(
+      plan,
+      evaluatedPipeline ?? applyClassicPreview(plan, existing),
+    ),
+    session,
+  );
+  if (plan.mode === "update") {
+    if (!plan.update) {
+      throw new Error(`[seed-payload] update plan 누락: ${plan.collection}`);
+    }
+    if (plan.personalityObservation) {
+      if (Array.isArray(plan.update)) {
+        throw new Error(
+          `[seed-payload] personality observation pipeline update는 지원하지 않습니다.`,
+        );
+      }
+      const result = await appendPersonalityObservation(
+        col,
+        plan.filter,
+        plan.update,
+        plan.personalityObservation,
+        session,
+      );
+      writtenId = result.id as typeof writtenId;
+      unchanged = result.status === "unchanged";
+      domainChanged = !unchanged;
+    } else {
+      const result = await col.updateOne(
+        plan.filter,
+        plan.update as Document | Document[],
+        { upsert: plan.upsert === true, session },
+      );
+      if (result.matchedCount + result.upsertedCount !== 1) {
+        throw new Error(
+          `[seed-payload] update CAS 불일치: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+        );
+      }
+      writtenId ??= result.upsertedId ?? undefined;
+      unchanged = result.modifiedCount === 0 && result.upsertedCount === 0;
+      domainChanged = !unchanged;
+    }
+  } else {
+    if (!plan.payload) {
+      throw new Error(`[seed-payload] payload plan 누락: ${plan.collection}`);
+    }
+    const { setPayload, createdAt } = omitMongoManagedFields(plan.payload);
+    if (existing) delete setPayload.updatedAt;
+    else setPayload.updatedAt ??= new Date();
+    if (!existing) {
+      validateSeedInsertCandidate(plan.collection, {
+        ...setPayload,
+        createdAt: createdAt ?? new Date(),
+      });
+    }
+
+    if (plan.initialPersonalityObservations !== undefined) {
+      const result = await col.insertOne(
+        {
+          ...setPayload,
+          createdAt: createdAt ?? new Date(),
+        },
+        { session },
+      );
+      writtenId = result.insertedId;
+      domainChanged = true;
+    } else {
+      const protectedSetPayload =
+        plan.collection === "characters"
+          ? toProtectedCharacterSetPayload(setPayload)
+          : setPayload;
+      const result = await col.updateOne(
+        plan.filter,
+        {
+          $set: protectedSetPayload,
+          $setOnInsert: { createdAt: createdAt ?? new Date() },
+        },
+        { upsert: true, session },
+      );
+      if (result.matchedCount + result.upsertedCount !== 1) {
+        throw new Error(
+          `[seed-payload] payload upsert 실패: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+        );
+      }
+      writtenId ??= result.upsertedId ?? undefined;
+      unchanged = result.modifiedCount === 0 && result.upsertedCount === 0;
+      domainChanged = !unchanged;
+    }
+  }
+
+  if (plan.collection === "session_reports") {
+    if (!writtenId || !plan.provenanceSourceId) {
+      throw new Error(`[seed-payload] report provenance write target 누락: ${plan.file}`);
+    }
+    const provenanceResult = await col.updateOne(
+      { _id: writtenId },
+      {
+        $addToSet: { provenanceSourceIds: plan.provenanceSourceId },
+        $unset: { provenanceSourceId: "" },
+      },
+      { session },
+    );
+    if (provenanceResult.matchedCount !== 1) {
+      throw new Error(`[seed-payload] report provenance ledger write 실패: ${plan.file}`);
+    }
+    domainChanged = domainChanged || provenanceResult.modifiedCount > 0;
+    unchanged = unchanged && provenanceResult.modifiedCount === 0;
+  }
+
+  if (domainChanged && writtenId) {
+    const versionResult = await col.updateOne(
+      { _id: writtenId },
+      { $currentDate: { updatedAt: true } },
+      { session },
+    );
+    if (versionResult.matchedCount !== 1) {
+      throw new Error(`[seed-payload] updatedAt version bump 실패: ${plan.collection}`);
+    }
+  }
+
+  const saved = writtenId
+    ? await col.findOne({ _id: writtenId }, { session })
+    : await col.findOne(plan.filter, { session });
+  if (!saved) {
+    throw new Error(
+      `[seed-payload] write 후 재조회 실패: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+    );
+  }
+
+  await verifyPostcondition(col, plan, session);
+  validateProtectedInvariants(plan, existing, saved);
+  validateCompleteSavedDocument(plan, saved);
+  verifyEvaluatedPipeline(plan, evaluatedPipeline, saved);
+
+  if (
+    plan.collection === "wiki_pages" &&
+    existing?._id &&
+    typeof existing.content === "string" &&
+    typeof saved.content === "string" &&
+    existing.content !== saved.content
+  ) {
+    await revisionCol.insertOne(
+      {
+        pageId: String(existing._id),
+        content: existing.content,
+        editedById: "system:seed-payload",
+        editedByName: `seed-payload:${basename(plan.file)}`,
+        createdAt: new Date(),
+      },
+      { session },
+    );
+  }
+
+  const verification = summarizeSavedDoc(plan.collection, saved);
+  if (
+    verification.textIntegrity === "warning" &&
+    !(plan.allowQuestionMarkPlaceholder && !hasReplacementCharacter(saved))
+  ) {
+    throw new Error(
+      `[seed-payload] text integrity warning: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+    );
+  }
+  if (verification.textIntegrity === "warning") {
+    console.warn(
+      `[seed-payload] 사용자 승인 literal "???" 허용: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+    );
+  }
+
+  return {
+    file: plan.file,
+    collection: plan.collection,
+    filter: plan.filter,
+    action: unchanged ? "unchanged" : existing ? "updated" : "inserted",
+    id: saved._id ? String(saved._id) : undefined,
+    verification,
+  };
+}
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function immutableSourcePayload(source: Document): Document {
+  const { _id, createdAt, updatedAt, ...immutable } = source;
+  void _id;
+  void createdAt;
+  void updatedAt;
+  return immutable;
+}
+
+function groupPlansByFile(plans: UpsertPlan[]): Map<string, UpsertPlan[]> {
+  const grouped = new Map<string, UpsertPlan[]>();
+  for (const plan of plans) {
+    const group = grouped.get(plan.file) ?? [];
+    group.push(plan);
+    grouped.set(plan.file, group);
+  }
+  return grouped;
+}
+
+async function findSeedAuditIndexIssues(db: Db): Promise<string[]> {
+  const required: Array<{
+    collection: string;
+    name: string;
+    key: Record<string, 1 | -1>;
+    unique?: boolean;
+    sparse?: boolean;
+    partialFilterExpression?: Document;
+  }> = [
+    {
+      collection: "lore_sources",
+      name: "lore_sources_sourceId_unique",
+      key: { sourceId: 1 },
+      unique: true,
+    },
+    {
+      collection: "lore_ingestion_runs",
+      name: "lore_ingestion_runs_runId_unique",
+      key: { runId: 1 },
+      unique: true,
+    },
+    {
+      collection: "lore_ingestion_runs",
+      name: "lore_ingestion_runs_mode_running_unique",
+      key: { mode: 1, status: 1 },
+      unique: true,
+      partialFilterExpression: { status: "running" },
+    },
+    {
+      collection: "session_reports",
+      name: "session_reports_sessionId_unique",
+      key: { sessionId: 1 },
+      unique: true,
+    },
+    {
+      collection: "session_reports",
+      name: "session_reports_relatedWikiSlugs",
+      key: { relatedWikiSlugs: 1 },
+    },
+    {
+      collection: "session_reports",
+      name: "session_reports_relatedPersonnelCodenames",
+      key: { relatedPersonnelCodenames: 1 },
+    },
+    {
+      collection: "session_reports",
+      name: "session_reports_relatedCatalogSlugs",
+      key: { relatedCatalogSlugs: 1 },
+    },
+    {
+      collection: "characters",
+      name: "characters_codename_unique",
+      key: { codename: 1 },
+      unique: true,
+    },
+    {
+      collection: "wiki_pages",
+      name: "wiki_pages_slug_unique",
+      key: { slug: 1 },
+      unique: true,
+    },
+    {
+      collection: "master_items",
+      name: "master_items_slug_unique",
+      key: { slug: 1 },
+      unique: true,
+      sparse: true,
+    },
+    {
+      collection: "factions",
+      name: "factions_code_unique",
+      key: { code: 1 },
+      unique: true,
+    },
+    {
+      collection: "institutions",
+      name: "institutions_code_unique",
+      key: { code: 1 },
+      unique: true,
+    },
+    {
+      collection: "equipment_workshop_blueprints",
+      name: "equipment_workshop_blueprints_slug_unique",
+      key: { slug: 1 },
+      unique: true,
+    },
+  ];
+
+  const missing: string[] = [];
+  for (const expected of required) {
+    const exists = await db
+      .listCollections({ name: expected.collection }, { nameOnly: true })
+      .hasNext();
+    const indexes = exists
+      ? await db.collection(expected.collection).listIndexes().toArray()
+      : [];
+    const index = indexes.find((candidate) => candidate.name === expected.name);
+    if (
+      !index ||
+      Boolean(index.unique) !== Boolean(expected.unique) ||
+      JSON.stringify(index.key) !== JSON.stringify(expected.key) ||
+      Boolean(index.sparse) !== Boolean(expected.sparse) ||
+      JSON.stringify(index.partialFilterExpression ?? null) !==
+        JSON.stringify(expected.partialFilterExpression ?? null)
+    ) {
+      missing.push(`${expected.collection}.${expected.name}`);
+    }
+  }
+
+  return missing;
+}
+
+async function assertSeedAuditIndexesReady(db: Db): Promise<void> {
+  const missing = await findSeedAuditIndexIssues(db);
+  if (missing.length > 0) {
+    throw new Error(
+      `[seed-payload] 감사 원자성에 필요한 인덱스가 준비되지 않았습니다: ${missing.join(", ")}. 먼저 pnpm lore:storage로 점검하고 별도 승인 후 적용하세요.`,
+    );
   }
 }
 
 async function writeWithDb(
+  client: MongoClient,
+  db: Db,
   colByName: Map<SupportedCollection, Collection<Document>>,
   plans: UpsertPlan[],
 ): Promise<void> {
-  for (const plan of plans) {
-    const col = colByName.get(plan.collection);
-    if (!col) throw new Error(`[seed-payload] collection handle 누락: ${plan.collection}`);
+  const revisionCol = db.collection<Document>("wiki_page_revisions");
+  const sourceCol = db.collection<Document>("lore_sources");
+  const ingestionCol = db.collection<Document>("lore_ingestion_runs");
 
-    const needsPersonalityState =
-      plan.personalityObservation !== undefined ||
-      plan.initialPersonalityObservations !== undefined;
-    const existing = await col.findOne(plan.filter, {
-      projection: needsPersonalityState
-        ? { _id: 1, "lore.personalityObservations": 1 }
-        : { _id: 1 },
-    });
-    let writtenId = existing?._id;
-    let unchanged = false;
-    if (plan.mode === "update") {
-      if (!plan.update) {
-        throw new Error(`[seed-payload] update plan 누락: ${plan.collection}`);
+  const committedSources = new Map(
+    [...groupPlansByFile(plans).keys()].map((file) => {
+      const source = assertCommittedRepositorySource(file, {
+        projectRoot: PROJECT_ROOT,
+        requiredRoot: SEED_PAYLOAD_ROOT,
+      });
+      const planHash = plans.find((plan) => plan.file === file)?.manifestHash;
+      if (!planHash || sha256(readFileSync(file, "utf8")) !== planHash) {
+        throw new Error(`[seed-payload] plan 이후 원본 파일이 변경되었습니다: ${file}`);
       }
-      if (!existing && !plan.upsert) {
-        throw new Error(
-          `[seed-payload] update 대상 없음: ${plan.collection} ${JSON.stringify(plan.filter)}`,
-        );
-      }
-      if (plan.personalityObservation) {
-        if (Array.isArray(plan.update)) {
-          throw new Error(
-            `[seed-payload] personality observation pipeline update는 지원하지 않습니다.`,
-          );
-        }
-        const result = await appendPersonalityObservation(
-          col,
-          plan.filter,
-          plan.update,
-          plan.personalityObservation,
-        );
-        writtenId = result.id as typeof writtenId;
-        unchanged = result.status === "unchanged";
-      } else {
-        const result = await col.updateOne(
-          plan.filter,
-          plan.update as Document | Document[],
-          { upsert: plan.upsert === true },
-        );
-        if (result.matchedCount + result.upsertedCount !== 1) {
-          throw new Error(
-            `[seed-payload] update CAS 불일치: ${plan.collection} ${JSON.stringify(plan.filter)}`,
-          );
-        }
-        writtenId ??= result.upsertedId ?? undefined;
-      }
-    } else {
-      if (!plan.payload) {
-        throw new Error(`[seed-payload] payload plan 누락: ${plan.collection}`);
-      }
-      const { setPayload, createdAt } = omitMongoManagedFields(plan.payload);
-      if (setPayload.updatedAt === undefined) setPayload.updatedAt = new Date();
+      return [file, source] as const;
+    }),
+  );
 
-      if (plan.initialPersonalityObservations !== undefined) {
-        if (existing) {
-          throw new Error(
-            `[seed-payload] 최초 personality observations가 포함된 character payload는 기존 문서를 갱신할 수 없습니다: ${JSON.stringify(plan.filter)}`,
-          );
-        }
-        const result = await col.insertOne({
-          ...setPayload,
-          createdAt: createdAt ?? new Date(),
-        });
-        writtenId = result.insertedId;
-      } else {
-        const protectedSetPayload =
-          plan.collection === "characters"
-            ? toProtectedCharacterSetPayload(setPayload)
-            : setPayload;
-        const result = await col.updateOne(
-          plan.filter,
-          {
-            $set: protectedSetPayload,
-            $setOnInsert: { createdAt: createdAt ?? new Date() },
-          },
-          { upsert: true },
-        );
-        if (result.matchedCount + result.upsertedCount !== 1) {
-          throw new Error(
-            `[seed-payload] payload upsert 실패: ${plan.collection} ${JSON.stringify(plan.filter)}`,
-          );
-        }
-        writtenId ??= result.upsertedId ?? undefined;
-      }
-    }
+  await assertSeedAuditIndexesReady(db);
+  const reconciledRuns = await reconcileExpiredIngestionRuns(
+    ingestionCol,
+    "worldbuilding-library",
+  );
+  if (reconciledRuns > 0) {
+    console.warn(`[seed-payload] expired running audit ${reconciledRuns}건을 failed로 정리했습니다.`);
+  }
 
-    const saved = writtenId
-      ? await col.findOne({ _id: writtenId })
-      : await col.findOne(plan.filter);
-    if (!saved) {
+  for (const [file, filePlans] of groupPlansByFile(plans)) {
+    const manifestHashes = new Set(filePlans.map((plan) => plan.manifestHash));
+    if (manifestHashes.size !== 1) {
       throw new Error(
-        `[seed-payload] write 후 재조회 실패: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+        `[seed-payload] 같은 파일의 manifestHash가 일치하지 않습니다: ${file}`,
       );
     }
-
-    const verification = summarizeSavedDoc(plan.collection, saved);
-    printSummary({
-      file: plan.file,
-      collection: plan.collection,
-      filter: plan.filter,
-      action: unchanged ? "unchanged" : existing ? "updated" : "inserted",
-      id: saved._id ? String(saved._id) : undefined,
-      verification,
+    const manifestHash = filePlans[0].manifestHash;
+    const committedSource = committedSources.get(file);
+    if (!committedSource) {
+      throw new Error(`[seed-payload] 커밋 provenance 누락: ${file}`);
+    }
+    const sourceId = seedPayloadSourceId(file, manifestHash, PROJECT_ROOT);
+    const now = new Date();
+    const source = loreSourceDocumentSchema.parse({
+      sourceId,
+      kind: "repository-document",
+      title: basename(file),
+      locator: {
+        kind: "repository-path",
+        value: committedSource.projectPath,
+        anchor: `git:${committedSource.commitSha}`,
+      },
+      contentHash: manifestHash,
+      access: { visibility: "gm-only" },
+      capturedAt: committedSource.committedAt,
+      createdAt: now,
+      updatedAt: now,
     });
-
+    await sourceCol.updateOne(
+      { sourceId },
+      { $setOnInsert: source },
+      { upsert: true },
+    );
+    const savedSource = await sourceCol.findOne({ sourceId });
+    if (!savedSource) {
+      throw new Error(`[seed-payload] source 재조회 실패: ${sourceId}`);
+    }
+    const { _id: savedSourceObjectId, ...savedSourceData } = savedSource;
+    void savedSourceObjectId;
+    const parsedSource = loreSourceDocumentSchema.parse(savedSourceData);
     if (
-      verification.textIntegrity === "warning" &&
-      !(
-        plan.allowQuestionMarkPlaceholder &&
-        !hasReplacementCharacter(saved)
+      !isDeepStrictEqual(
+        immutableSourcePayload(parsedSource),
+        immutableSourcePayload(source),
       )
     ) {
-      throw new Error(
-        `[seed-payload] text integrity warning: ${plan.collection} ${JSON.stringify(plan.filter)}`,
-      );
+      throw new Error(`[seed-payload] immutable sourceId provenance 충돌: ${sourceId}`);
     }
-    if (verification.textIntegrity === "warning") {
-      console.warn(
-        `[seed-payload] 사용자 승인 literal "???" 허용: ${plan.collection} ${JSON.stringify(plan.filter)}`,
+
+    const run = loreIngestionRunSchema.parse({
+      runId: `seed-payload:${randomUUID()}`,
+      mode: "worldbuilding-library",
+      status: "running",
+      dryRun: false,
+      sourceIds: [sourceId],
+      manifestHash,
+      parserVersion: "seed-payload-v2",
+      stats: {
+        discovered: filePlans.length,
+        processed: 0,
+        written: 0,
+        skipped: 0,
+        blocked: 0,
+        failed: 0,
+      },
+      errors: [],
+      startedAt: now,
+      ...ingestionLeaseFields(now),
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ingestionCol.insertOne(run);
+
+    const session = client.startSession();
+    let committedSummaries: UpsertResultSummary[] = [];
+    let lastAttemptProcessed = 0;
+    try {
+      await session.withTransaction(
+        async () => {
+          const attemptSummaries: UpsertResultSummary[] = [];
+          lastAttemptProcessed = 0;
+          for (const plan of filePlans) {
+            attemptSummaries.push(
+              await writePlan(db, colByName, revisionCol, plan, session),
+            );
+            lastAttemptProcessed += 1;
+          }
+          const completedAt = new Date();
+          const written = attemptSummaries.filter(
+            (summary) => summary.action === "inserted" || summary.action === "updated",
+          ).length;
+          const skipped = attemptSummaries.length - written;
+          const result = await ingestionCol.updateOne(
+            { runId: run.runId, status: "running" },
+            {
+              $set: {
+                status: "succeeded",
+                stats: {
+                  discovered: filePlans.length,
+                  processed: filePlans.length,
+                  written,
+                  skipped,
+                  blocked: 0,
+                  failed: 0,
+                },
+                completedAt,
+                heartbeatAt: completedAt,
+                updatedAt: completedAt,
+              },
+              $unset: { leaseExpiresAt: "" },
+            },
+            { session },
+          );
+          if (result.matchedCount !== 1) {
+            throw new Error(`[seed-payload] ingestion run CAS 불일치: ${run.runId}`);
+          }
+          committedSummaries = attemptSummaries;
+        },
+        {
+          readConcern: { level: "snapshot" },
+          writeConcern: { w: "majority" },
+        },
       );
+
+      const savedRun = await ingestionCol.findOne({ runId: run.runId });
+      if (!savedRun) {
+        throw new Error(`[seed-payload] ingestion run 재조회 실패: ${run.runId}`);
+      }
+      const { _id: savedRunObjectId, ...savedRunData } = savedRun;
+      void savedRunObjectId;
+      loreIngestionRunSchema.parse(savedRunData);
+      console.log(
+        `[seed-payload] atomic commit: ${relative(process.cwd(), file)} | run=${run.runId}`,
+      );
+      for (const summary of committedSummaries) printSummary(summary);
+    } catch (error) {
+      const completedAt = new Date();
+      const message = error instanceof Error ? error.message : String(error);
+      const failureProcessed = Math.min(
+        filePlans.length,
+        Math.max(1, lastAttemptProcessed + 1),
+      );
+      const failedResult = await ingestionCol.updateOne(
+        { runId: run.runId, status: "running" },
+        {
+          $set: {
+            status: "failed",
+            stats: {
+              discovered: filePlans.length,
+              processed: failureProcessed,
+              written: 0,
+              skipped: 0,
+              blocked: Math.max(0, failureProcessed - 1),
+              failed: 1,
+            },
+            errors: [
+              {
+                code: "SEED_PAYLOAD_TRANSACTION_FAILED",
+                message: message.slice(0, 2_000),
+                sourceId,
+              },
+            ],
+            completedAt,
+            heartbeatAt: completedAt,
+            updatedAt: completedAt,
+          },
+          $unset: { leaseExpiresAt: "" },
+        },
+      );
+      if (failedResult.matchedCount !== 1) {
+        throw new AggregateError(
+          [error],
+          `[seed-payload] transaction 실패 후 ingestion audit 기록도 실패했습니다: ${run.runId}`,
+        );
+      }
+      throw error;
+    } finally {
+      await session.endSession();
     }
   }
 }
 
 async function main(): Promise<void> {
   const files = collectJsonFiles(INPUT_ARGS);
+  assertSingleFileExecutionScope(files, EXECUTE);
   const plans = buildPlans(files);
 
   if (plans.length === 0) {
     console.warn("[seed-payload] 처리할 payload가 없습니다.");
     return;
+  }
+
+  const economicPlans = plans.filter(planRequiresEconomicAcknowledgement);
+  if (economicPlans.length > 0) {
+    console.warn(
+      `[seed-payload] 경제·밸런스 경계 payload ${economicPlans.length}건 감지: dry-run의 before→after와 side-effect를 검토하세요.`,
+    );
+  }
+  if (EXECUTE && economicPlans.length > 0 && !ALLOW_ECONOMIC_FIELDS) {
+    throw new Error(
+      "[seed-payload] 가격/판매/재고 또는 공방 blueprint WRITE에는 --allow-economic-fields 확인이 추가로 필요합니다.",
+    );
   }
 
   console.log(
@@ -740,9 +2116,9 @@ async function main(): Promise<void> {
     );
 
     if (DRY_RUN) {
-      await dryRunWithDb(colByName, plans);
+      await dryRunWithDb(db, colByName, plans);
     } else {
-      await writeWithDb(colByName, plans);
+      await writeWithDb(client, db, colByName, plans);
     }
   } finally {
     await client.close();

@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 
-import type { Collection, Document } from "mongodb";
+import type { ClientSession, Collection, Document } from "mongodb";
 
 import {
   dossierPersonalityObservationSchema,
@@ -332,9 +332,10 @@ export async function appendPersonalityObservation(
   filter: Record<string, unknown>,
   update: Record<string, unknown>,
   candidate: DossierPersonalityObservation,
+  session?: ClientSession,
 ): Promise<{ status: "updated" | "unchanged"; id: unknown }> {
   const projection = { _id: 1, "lore.personalityObservations": 1 };
-  const existing = await collection.findOne(filter, { projection });
+  const existing = await collection.findOne(filter, { projection, session });
   if (!existing) {
     throw new Error(
       `[seed-payload] personality observation 대상 character가 없습니다: ${JSON.stringify(filter)}`,
@@ -348,14 +349,14 @@ export async function appendPersonalityObservation(
   const result = await collection.updateOne(
     withPersonalityObservationGuard(filter, candidate.id),
     update,
-    { upsert: false },
+    { upsert: false, session },
   );
   if (result.matchedCount === 1) {
     return { status: "updated", id: existing._id };
   }
 
   // 같은 ID가 경합 중 먼저 들어온 경우를 재조회해 exact rerun만 no-op으로 인정한다.
-  const concurrent = await collection.findOne(filter, { projection });
+  const concurrent = await collection.findOne(filter, { projection, session });
   if (
     concurrent &&
     classifyPersonalityObservationWrite(concurrent, candidate) === "unchanged"

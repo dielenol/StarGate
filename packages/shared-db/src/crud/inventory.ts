@@ -27,20 +27,29 @@ import {
   sharedInventoryCol,
 } from "../collections.js";
 import { getClient, getDb } from "../client.js";
+import { lockAndAssertNoSessionReportInboundReference } from "./session-report-reference-integrity.js";
+import {
+  withoutSessionReportReferenceStorageFields,
+  withoutSessionReportReferenceStorageFieldsMany,
+} from "./internal-storage.js";
 
 /* ── Master Items ── */
 
 export async function listMasterItems(): Promise<MasterItem[]> {
   const col = await masterItemsCol();
-  return col.find().sort({ category: 1, name: 1 }).toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col.find().sort({ category: 1, name: 1 }).toArray(),
+  );
 }
 
 export async function listAvailableItems(): Promise<MasterItem[]> {
   const col = await masterItemsCol();
-  return col
-    .find({ isAvailable: true })
-    .sort({ category: 1, name: 1 })
-    .toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col
+      .find({ isAvailable: true })
+      .sort({ category: 1, name: 1 })
+      .toArray(),
+  );
 }
 
 /**
@@ -112,13 +121,16 @@ export async function listMasterItemsByCategories(
   if (availableOnly) query.isAvailable = { $ne: false };
 
   const col = await masterItemsCol();
-  return col.find(query).sort({ category: 1, name: 1 }).toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col.find(query).sort({ category: 1, name: 1 }).toArray(),
+  );
 }
 
 export async function findMasterItemById(id: string): Promise<MasterItem | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await masterItemsCol();
-  return col.findOne({ _id: new ObjectId(id) });
+  const item = await col.findOne({ _id: new ObjectId(id) });
+  return item ? withoutSessionReportReferenceStorageFields(item) : null;
 }
 
 /**
@@ -134,7 +146,8 @@ export async function findMasterItemBySlug(
   const trimmed = slug?.trim();
   if (!trimmed) return null;
   const col = await masterItemsCol();
-  return col.findOne({ slug: trimmed });
+  const item = await col.findOne({ slug: trimmed });
+  return item ? withoutSessionReportReferenceStorageFields(item) : null;
 }
 
 /**
@@ -208,7 +221,9 @@ export async function findMasterItemsBySlugsOrIds(
   const conditions: Filter<MasterItem>[] = [];
   if (slugs.length > 0) conditions.push({ slug: { $in: slugs } });
   if (objectIds.length > 0) conditions.push({ _id: { $in: objectIds } });
-  return col.find({ $or: conditions }).toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col.find({ $or: conditions }).toArray(),
+  );
 }
 
 export async function createMasterItem(
@@ -217,28 +232,93 @@ export async function createMasterItem(
 ): Promise<MasterItem> {
   const col = await masterItemsCol();
   const now = new Date();
-  const doc: MasterItem = { ...input, createdAt: now, updatedAt: now };
+  const safeInput = withoutSessionReportReferenceStorageFields(input);
+  const doc: MasterItem = { ...safeInput, createdAt: now, updatedAt: now };
   const result = await col.insertOne(doc, { session: options.session });
   return { ...doc, _id: result.insertedId };
 }
 
 export async function updateMasterItem(
   id: string,
-  update: Record<string, unknown>
+  update: Record<string, unknown>,
+  options: { session?: ClientSession } = {},
 ): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
+  const mutatesReferenceIdentity =
+    Object.hasOwn(update, "slug") || update.isPublic === false;
+  if (mutatesReferenceIdentity && !options.session) {
+    const session = (await getClient()).startSession();
+    let updated = false;
+    try {
+      await session.withTransaction(async () => {
+        updated = await updateMasterItem(id, update, { session });
+      });
+      return updated;
+    } finally {
+      await session.endSession();
+    }
+  }
   const col = await masterItemsCol();
+  if (mutatesReferenceIdentity) {
+    const existing = await col.findOne(
+      { _id: new ObjectId(id) },
+      { session: options.session },
+    );
+    if (!existing) return false;
+    const changesSlug =
+      Object.hasOwn(update, "slug") && update.slug !== existing.slug;
+    const makesPrivate =
+      update.isPublic === false && existing.isPublic !== false;
+    if ((changesSlug || makesPrivate) && existing.slug) {
+      await lockAndAssertNoSessionReportInboundReference(
+        "relatedCatalogSlugs",
+        existing.slug,
+        options.session!,
+      );
+    }
+  }
   const result = await col.updateOne(
     { _id: new ObjectId(id) },
-    { $set: { ...update, updatedAt: new Date() } as Record<string, unknown> }
+    { $set: { ...update, updatedAt: new Date() } as Record<string, unknown> },
+    { session: options.session },
   );
   return result.modifiedCount > 0;
 }
 
-export async function deleteMasterItem(id: string): Promise<boolean> {
+export async function deleteMasterItem(
+  id: string,
+  options: { session?: ClientSession } = {},
+): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
+  if (!options.session) {
+    const session = (await getClient()).startSession();
+    let deleted = false;
+    try {
+      await session.withTransaction(async () => {
+        deleted = await deleteMasterItem(id, { session });
+      });
+      return deleted;
+    } finally {
+      await session.endSession();
+    }
+  }
   const col = await masterItemsCol();
-  const result = await col.deleteOne({ _id: new ObjectId(id) });
+  const existing = await col.findOne(
+    { _id: new ObjectId(id) },
+    { session: options.session },
+  );
+  if (!existing) return false;
+  if (existing.slug) {
+    await lockAndAssertNoSessionReportInboundReference(
+      "relatedCatalogSlugs",
+      existing.slug,
+      options.session,
+    );
+  }
+  const result = await col.deleteOne(
+    { _id: new ObjectId(id) },
+    { session: options.session },
+  );
   return result.deletedCount > 0;
 }
 

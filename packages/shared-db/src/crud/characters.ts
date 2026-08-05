@@ -2,7 +2,7 @@
  * characters 컬렉션 CRUD
  */
 
-import { ObjectId, type Filter } from "mongodb";
+import { ObjectId, type ClientSession, type Filter } from "mongodb";
 
 import type {
   AgentCharacter,
@@ -13,6 +13,12 @@ import type {
 } from "../types/index.js";
 
 import { charactersCol, usersCol } from "../collections.js";
+import { getClient } from "../client.js";
+import { lockAndAssertNoSessionReportInboundReference } from "./session-report-reference-integrity.js";
+import {
+  withoutSessionReportReferenceStorageFields,
+  withoutSessionReportReferenceStorageFieldsMany,
+} from "./internal-storage.js";
 
 /* ── 조회 ── */
 
@@ -51,7 +57,9 @@ export type AgentCharacterCard = Pick<
 
 export async function listCharacters(): Promise<Character[]> {
   const col = await charactersCol();
-  return col.find().sort({ type: 1, codename: 1 }).toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col.find().sort({ type: 1, codename: 1 }).toArray(),
+  );
 }
 
 /**
@@ -182,7 +190,9 @@ export async function listCharactersByType(
   type: CharacterType
 ): Promise<Character[]> {
   const col = await charactersCol();
-  return col.find({ type }).sort({ codename: 1 }).toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col.find({ type }).sort({ codename: 1 }).toArray(),
+  );
 }
 
 /**
@@ -202,7 +212,9 @@ export async function listAgentCharacters(
   } else if (tier === "MINI") {
     filter.tier = "MINI";
   }
-  return col.find(filter).sort({ codename: 1 }).toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col.find(filter).sort({ codename: 1 }).toArray(),
+  );
 }
 
 export async function listAgentCharacterCards(
@@ -251,30 +263,43 @@ export async function listAgentCharacterCards(
 
 export async function listPublicCharacters(): Promise<Character[]> {
   const col = await charactersCol();
-  return col.find({ isPublic: true }).sort({ type: 1, codename: 1 }).toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col
+      .find({ isPublic: true })
+      .sort({ type: 1, codename: 1 })
+      .toArray(),
+  );
 }
 
 export async function listPublicCharactersByType(
   type: CharacterType
 ): Promise<Character[]> {
   const col = await charactersCol();
-  return col
-    .find({ isPublic: true, type })
-    .sort({ codename: 1 })
-    .toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col
+      .find({ isPublic: true, type })
+      .sort({ codename: 1 })
+      .toArray(),
+  );
 }
 
 export async function findCharacterById(id: string): Promise<Character | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await charactersCol();
-  return col.findOne({ _id: new ObjectId(id) });
+  const character = await col.findOne({ _id: new ObjectId(id) });
+  return character
+    ? withoutSessionReportReferenceStorageFields(character)
+    : null;
 }
 
 export async function findCharacterByCodename(
   codename: string
 ): Promise<Character | null> {
   const col = await charactersCol();
-  return col.findOne({ codename });
+  const character = await col.findOne({ codename });
+  return character
+    ? withoutSessionReportReferenceStorageFields(character)
+    : null;
 }
 
 /** 캐릭터 식별/표시용 초경량 행 — lore/play 시트 제외. */
@@ -434,7 +459,11 @@ export async function findMainCharacterByOwner(
   const col = await charactersCol();
   const docs = await col.find(mainAgentFilter(ownerId)).toArray();
 
-  if (docs.length === 1) return docs[0] as MainCharacter;
+  if (docs.length === 1) {
+    return withoutSessionReportReferenceStorageFields(
+      docs[0],
+    ) as MainCharacter;
+  }
   if (docs.length > 1) {
     throw mainCharacterIntegrityError(ownerId, docs, "MAIN agents");
   }
@@ -451,7 +480,9 @@ export async function findMainCharacterByOwner(
     );
   }
 
-  return fallbackDocs[0] as MainCharacter;
+  return withoutSessionReportReferenceStorageFields(
+    fallbackDocs[0],
+  ) as MainCharacter;
 }
 
 /**
@@ -621,9 +652,10 @@ export async function createCharacter(
 ): Promise<Character> {
   const col = await charactersCol();
   const now = new Date();
+  const safeInput = withoutSessionReportReferenceStorageFields(input);
 
   const doc = {
-    ...input,
+    ...safeInput,
     createdAt: now,
     updatedAt: now,
   };
@@ -846,6 +878,7 @@ export async function updateCharacter(
   options?: {
     allowedFields?: Set<string>;
     expectedUpdatedAt?: Date | null;
+    session?: ClientSession;
   }
 ): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
@@ -854,14 +887,52 @@ export async function updateCharacter(
   const sanitized = buildUpdatePatch(update, allowedFields);
   if (Object.keys(sanitized).length === 0) return false;
 
+  const mutatesReferenceIdentity =
+    Object.hasOwn(sanitized, "codename") || sanitized.isPublic === false;
+  if (mutatesReferenceIdentity && !options?.session) {
+    const session = (await getClient()).startSession();
+    let updated = false;
+    try {
+      await session.withTransaction(async () => {
+        updated = await updateCharacter(id, update, {
+          ...options,
+          session,
+        });
+      });
+      return updated;
+    } finally {
+      await session.endSession();
+    }
+  }
+
   const col = await charactersCol();
+  if (mutatesReferenceIdentity) {
+    const existing = await col.findOne(
+      { _id: new ObjectId(id) },
+      { session: options?.session },
+    );
+    if (!existing) return false;
+    const changesCodename =
+      Object.hasOwn(sanitized, "codename") &&
+      sanitized.codename !== existing.codename;
+    const makesPrivate =
+      sanitized.isPublic === false && existing.isPublic !== false;
+    if (changesCodename || makesPrivate) {
+      await lockAndAssertNoSessionReportInboundReference(
+        "relatedPersonnelCodenames",
+        existing.codename,
+        options!.session!,
+      );
+    }
+  }
   const filter: Record<string, unknown> = { _id: new ObjectId(id) };
   if (options && "expectedUpdatedAt" in options) {
     filter.updatedAt = options.expectedUpdatedAt;
   }
   const result = await col.updateOne(
     filter,
-    { $set: { ...sanitized, updatedAt: new Date() } as Record<string, unknown> }
+    { $set: { ...sanitized, updatedAt: new Date() } as Record<string, unknown> },
+    { session: options?.session },
   );
   return result.modifiedCount > 0;
 }
@@ -885,9 +956,37 @@ export async function clearCharacterOwnerByUserId(
 
 /* ── 삭제 ── */
 
-export async function deleteCharacter(id: string): Promise<boolean> {
+export async function deleteCharacter(
+  id: string,
+  options: { session?: ClientSession } = {},
+): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
+  if (!options.session) {
+    const session = (await getClient()).startSession();
+    let deleted = false;
+    try {
+      await session.withTransaction(async () => {
+        deleted = await deleteCharacter(id, { session });
+      });
+      return deleted;
+    } finally {
+      await session.endSession();
+    }
+  }
   const col = await charactersCol();
-  const result = await col.deleteOne({ _id: new ObjectId(id) });
+  const existing = await col.findOne(
+    { _id: new ObjectId(id) },
+    { session: options.session },
+  );
+  if (!existing) return false;
+  await lockAndAssertNoSessionReportInboundReference(
+    "relatedPersonnelCodenames",
+    existing.codename,
+    options.session,
+  );
+  const result = await col.deleteOne(
+    { _id: new ObjectId(id) },
+    { session: options.session },
+  );
   return result.deletedCount > 0;
 }

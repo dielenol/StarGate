@@ -4,6 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useCreateReport } from "@/hooks/mutations/useReportMutation";
+import {
+  emptySessionReportReferenceTexts,
+  parseSessionReportReferenceTexts,
+  type SessionReportReferenceField,
+} from "@/lib/session-report-references";
 
 import Button from "@/components/ui/Button/Button";
 import Input from "@/components/ui/Input/Input";
@@ -11,6 +16,7 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Row from "@/components/ui/Row/Row";
 import Stack from "@/components/ui/Stack/Stack";
 
+import ReportReferenceFields from "../ReportReferenceFields";
 import styles from "./page.module.css";
 
 interface ReportCreateFormProps {
@@ -27,7 +33,7 @@ export default function ReportCreateForm({
   const router = useRouter();
   const createReport = useCreateReport();
 
-  const [sessionTitle, setSessionTitle] = useState(initialSessionTitle);
+  const sessionTitle = initialSessionTitle;
   const [summary, setSummary] = useState("");
   const [highlights, setHighlights] = useState<string[]>([""]);
   const [participants, setParticipants] = useState<string[]>(
@@ -38,6 +44,9 @@ export default function ReportCreateForm({
   const [mapY, setMapY] = useState("");
   const [mapPrecision, setMapPrecision] = useState<"confirmed" | "estimated">(
     "estimated",
+  );
+  const [referenceTexts, setReferenceTexts] = useState(
+    emptySessionReportReferenceTexts,
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +74,13 @@ export default function ReportCreateForm({
     setParticipants((prev) => prev.map((p, i) => (i === index ? value : p)));
   };
 
+  const handleReferenceChange = (
+    field: SessionReportReferenceField,
+    value: string,
+  ) => {
+    setReferenceTexts((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -80,8 +96,19 @@ export default function ReportCreateForm({
     const trimmedMapY = mapY.trim();
     const trimmedSessionId = initialSessionId.trim();
 
+    if (!trimmedSessionId) {
+      setError("연결된 세션 ID가 없어 작전 보고서를 생성할 수 없습니다.");
+      return;
+    }
+
     if ((trimmedMapX && !trimmedMapY) || (!trimmedMapX && trimmedMapY)) {
       setError("지도 X/Y 좌표는 함께 입력해야 합니다.");
+      return;
+    }
+
+    const references = parseSessionReportReferenceTexts(referenceTexts);
+    if (!references.ok) {
+      setError(references.error);
       return;
     }
 
@@ -96,11 +123,12 @@ export default function ReportCreateForm({
 
     createReport.mutate(
       {
-        ...(trimmedSessionId ? { sessionId: trimmedSessionId } : {}),
+        sessionId: trimmedSessionId,
         sessionTitle: sessionTitle.trim(),
         summary: summary.trim(),
         highlights: filteredHighlights,
         participants: filteredParticipants,
+        ...references.value,
         ...(trimmedLocationLabel
           ? { locationLabel: trimmedLocationLabel }
           : {}),
@@ -123,9 +151,10 @@ export default function ReportCreateForm({
         <div>
           <PanelTitle>OPERATION REPORT TITLE</PanelTitle>
           <Input
+            maxLength={200}
             type="text"
             value={sessionTitle}
-            onChange={(e) => setSessionTitle(e.target.value)}
+            readOnly
             placeholder="작전 보고서 제목"
             required
             aria-label="작전 보고서 제목"
@@ -135,6 +164,7 @@ export default function ReportCreateForm({
         <div>
           <PanelTitle>OPERATION SUMMARY</PanelTitle>
           <textarea
+            maxLength={2000}
             className={styles.textarea}
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
@@ -258,6 +288,11 @@ export default function ReportCreateForm({
             </Button>
           </Stack>
         </div>
+
+        <ReportReferenceFields
+          values={referenceTexts}
+          onChange={handleReferenceChange}
+        />
 
         {error ? (
           <div className={styles.error} role="alert">

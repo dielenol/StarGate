@@ -31,6 +31,7 @@ export {
   findMainCharacterByOwner,
   findMainCharacterLiteByOwner,
   findMainCharacterDisplayLiteByOwner,
+  ADMIN_ALLOWED_CHARACTER_FIELDS,
   createCharacter,
   updateCharacter,
   deleteCharacter,

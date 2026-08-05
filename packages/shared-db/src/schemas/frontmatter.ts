@@ -52,6 +52,15 @@ const BODY_SECTION_ALIASES: Record<string, string> = {
   "ideology": "ideology",
   "임무": "mission",
   "mission": "mission",
+  "타 세력/기관 관계": "relationships",
+  "타 세력 관계": "relationships",
+  "타 조직 관계": "relationships",
+  "relationships": "relationships",
+  "relations": "relationships",
+  "조직 구조": "subUnits",
+  "조직구조": "subUnits",
+  "subunits": "subUnits",
+  "sub units": "subUnits",
   "설명": "description",
   "description": "description",
   "획득": "acquisition",
@@ -288,6 +297,63 @@ export function parseMdBody(body: string): Record<string, string> {
   return result;
 }
 
+const RELATIONSHIP_LINE_RE =
+  /^-\s+[`']?([A-Z_][A-Z0-9_]*)[`']?\s+[-—]\s+(ally|rival|neutral|subordinate|parent|sibling)(?:\s+[-—]\s+(.*))?$/u;
+
+const SUB_UNIT_LINE_RE =
+  /^-\s+[`']?([A-Z_][A-Z0-9_]*)[`']?\s+[-—]\s+([^-—]+?)(?:\s+[-—]\s+(.*))?$/u;
+
+/**
+ * faction/institution 본문의 관계 목록을 구조화한다.
+ *
+ * 설명 문단과 인용문은 그대로 `loreMd`에 남기고, 계약 형식과 정확히 일치하는
+ * 목록 행만 관계 레코드로 승격한다. 형식이 다른 행을 추측해 보정하지 않는다.
+ */
+export function parseRelationshipLines(value?: string): Array<{
+  targetCode: string;
+  type: "ally" | "rival" | "neutral" | "subordinate" | "parent" | "sibling";
+  note?: string;
+}> {
+  if (!value) return [];
+
+  return value
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .map((line) => RELATIONSHIP_LINE_RE.exec(line))
+    .filter((match): match is RegExpExecArray => match !== null)
+    .map((match) => ({
+      targetCode: match[1],
+      type: match[2] as
+        | "ally"
+        | "rival"
+        | "neutral"
+        | "subordinate"
+        | "parent"
+        | "sibling",
+      ...(match[3]?.trim() ? { note: match[3].trim() } : {}),
+    }));
+}
+
+/** 평탄 Markdown 목록에서 institution 하위 조직만 보수적으로 추출한다. */
+export function parseSubUnitLines(value?: string): Array<{
+  code: string;
+  label: string;
+  summary?: string;
+}> {
+  if (!value) return [];
+
+  return value
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .map((line) => SUB_UNIT_LINE_RE.exec(line))
+    .filter((match): match is RegExpExecArray => match !== null)
+    .map((match) => ({
+      code: match[1],
+      label: match[2].trim(),
+      ...(match[3]?.trim() ? { summary: match[3].trim() } : {}),
+    }));
+}
+
 /* ── DB 문서 변환 ── */
 
 function now(): Date {
@@ -310,11 +376,15 @@ function emptyToUndefined<T>(value: T | "" | undefined): T | undefined {
 export function toDbFaction(frontmatter: unknown, body: string): FactionDoc {
   const parsed = factionFrontmatterSchema.parse(frontmatter);
   const sections = parseMdBody(body);
+  const bodyRelationships = parseRelationshipLines(sections.relationships);
 
   const n = now();
   const candidate: FactionDoc = {
     ...parsed,
     ideology: parsed.ideology ?? sections.ideology,
+    relationships:
+      parsed.relationships ??
+      (bodyRelationships.length > 0 ? bodyRelationships : undefined),
     loreMd: parsed.loreMd ?? (body.trim() !== "" ? body : undefined),
     createdAt: coerceDate(parsed.createdAt, n),
     updatedAt: coerceDate(parsed.updatedAt, n),
@@ -329,6 +399,8 @@ export function toDbInstitution(
 ): InstitutionDoc {
   const parsed = institutionFrontmatterSchema.parse(frontmatter);
   const sections = parseMdBody(body);
+  const bodyRelationships = parseRelationshipLines(sections.relationships);
+  const bodySubUnits = parseSubUnitLines(sections.subUnits);
 
   const n = now();
   const candidate: InstitutionDoc = {
@@ -336,6 +408,11 @@ export function toDbInstitution(
     parentFactionCode: emptyToUndefined(parsed.parentFactionCode),
     leaderCodename: emptyToUndefined(parsed.leaderCodename),
     mission: parsed.mission ?? sections.mission,
+    subUnits:
+      parsed.subUnits ?? (bodySubUnits.length > 0 ? bodySubUnits : undefined),
+    relationships:
+      parsed.relationships ??
+      (bodyRelationships.length > 0 ? bodyRelationships : undefined),
     loreMd: parsed.loreMd ?? (body.trim() !== "" ? body : undefined),
     createdAt: coerceDate(parsed.createdAt, n),
     updatedAt: coerceDate(parsed.updatedAt, n),

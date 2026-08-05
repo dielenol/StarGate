@@ -1,13 +1,16 @@
 import type { Character, FactionCode, InstitutionCode } from "@/types/character";
 import { FACTIONS, INSTITUTIONS } from "@/types/character";
 import type { UserRole } from "@/types/user";
+import type { FactionDoc, InstitutionDoc } from "@stargate/shared-db/schemas";
 
 import { hasRole } from "@/lib/auth/rbac";
 import { listCharacterRefs } from "@/lib/db/characters";
 import { listFactionFavorabilityOverrides } from "@/lib/db/faction-favorability";
-import { listSessionReports } from "@/lib/db/session-reports";
-import { listWikiPages } from "@/lib/db/wiki";
-import { getTopLevelGroup, isFaction } from "@/lib/org-structure";
+import {
+  countLoreSignals,
+  listLoreOrganizations,
+} from "@/lib/db/lore-organizations";
+import { getTopLevelGroup } from "@/lib/org-structure";
 
 import {
   EXTERNAL_SUB_ORGS,
@@ -34,8 +37,6 @@ const TRACKED_NODE_CODES = [
   ...EXTERNAL_SUB_ORGS.map((org) => org.code),
   ...INTERNAL_NODE_CODES,
 ] as const;
-
-const TRACKED_NODE_CODE_SET = new Set<string>(TRACKED_NODE_CODES);
 
 export const DEFAULT_FACTION_FAVORABILITY_BY_CODE: Record<string, number> = {
   COUNCIL: 3,
@@ -130,16 +131,17 @@ function resolvePrimaryGroup(c: FactionMemberRef): string | null {
     return top !== "UNASSIGNED" ? top : c.institutionCode;
   }
 
-  if (c.factionCode && isFaction(c.factionCode)) {
-    return c.factionCode;
-  }
+  if (c.factionCode) return c.factionCode;
 
   return null;
 }
 
-function getContactBucketCodes(c: FactionMemberRef): string[] {
+function getContactBucketCodes(
+  c: FactionMemberRef,
+  trackedCodes: ReadonlySet<string>,
+): string[] {
   const primary = resolvePrimaryGroup(c);
-  if (!primary || !TRACKED_NODE_CODE_SET.has(primary)) return [];
+  if (!primary || !trackedCodes.has(primary)) return [];
 
   const codes = new Set<string>([primary]);
   const externalSubOrg = resolveExternalSubOrg(c);
@@ -152,24 +154,36 @@ function getContactBucketCodes(c: FactionMemberRef): string[] {
   return [...codes];
 }
 
-function keywordSetFor(code: string): string[] {
+function keywordSetFor(
+  code: string,
+  factionByCode: ReadonlyMap<string, FactionDoc>,
+  institutionByCode: ReadonlyMap<string, InstitutionDoc>,
+): string[] {
   const faction = FACTIONS.find((f) => f.code === code);
   const institution = INSTITUTIONS.find((inst) => inst.code === code);
+  const loreFaction = factionByCode.get(code);
+  const loreInstitution = institutionByCode.get(code);
   const subOrg = getExternalSubOrg(code);
   const subUnitLabels =
-    institution?.subUnits.flatMap((unit) => [unit.code, unit.label]) ?? [];
+    (loreInstitution?.subUnits ?? institution?.subUnits)?.flatMap((unit) => [
+      unit.code,
+      unit.label,
+      "labelEn" in unit ? unit.labelEn : undefined,
+    ]) ?? [];
   const keywords = [
     code,
     faction?.label,
     faction?.labelEn,
-    FACTION_DOCTRINE[code as FactionCode],
     institution?.label,
     institution?.labelEn,
-    INSTITUTION_DOCTRINE[code as InstitutionCode],
+    loreFaction?.label,
+    loreFaction?.labelEn,
+    ...(loreFaction?.tags ?? []),
+    loreInstitution?.label,
+    loreInstitution?.labelEn,
+    ...(loreInstitution?.tags ?? []),
     subOrg?.label,
     subOrg?.labelEn,
-    subOrg?.summary,
-    subOrg?.doctrine,
     ...subUnitLabels,
   ].filter((value): value is string => Boolean(value));
 
@@ -181,7 +195,7 @@ function keywordSetFor(code: string): string[] {
     for (const org of EXTERNAL_SUB_ORGS.filter(
       (entry) => entry.parentCode === code,
     )) {
-      keywords.push(org.code, org.label, org.labelEn, org.summary, org.doctrine);
+      keywords.push(org.code, org.label, org.labelEn);
     }
   }
 
@@ -189,7 +203,7 @@ function keywordSetFor(code: string): string[] {
     for (const org of EXTERNAL_SUB_ORGS.filter(
       (entry) => entry.parentCode === HOSTILE_FACTION_CODE,
     )) {
-      keywords.push(org.code, org.label, org.labelEn, org.summary, org.doctrine);
+      keywords.push(org.code, org.label, org.labelEn);
     }
   }
 
@@ -198,11 +212,6 @@ function keywordSetFor(code: string): string[] {
   }
 
   return [...new Set(keywords.map((value) => value.toLowerCase()))];
-}
-
-function textMatchesFaction(text: string, code: string): boolean {
-  const normalized = text.toLowerCase();
-  return keywordSetFor(code).some((keyword) => normalized.includes(keyword));
 }
 
 function addStats(
@@ -234,20 +243,28 @@ function buildBoardNodes(
   wikiCounts: Record<string, number>,
   signalCounts: Record<string, number>,
   favorabilityByCode: Record<string, number>,
+  factionDocs: FactionDoc[],
+  institutionDocs: InstitutionDoc[],
 ): FactionBoardNode[] {
+  const factionByCode = new Map(factionDocs.map((doc) => [doc.code, doc]));
+  const institutionByCode = new Map(
+    institutionDocs.map((doc) => [doc.code, doc]),
+  );
+
   const externalNodes = EXTERNAL_FACTION_CODES.map((code) => {
     const faction = FACTIONS.find((f) => f.code === code);
+    const lore = factionByCode.get(code);
     const briefing = EXTERNAL_FACTION_BRIEFING[code];
     return addStats(
       {
         code,
-        label: faction?.label ?? code,
-        labelEn: faction?.labelEn ?? code,
+        label: lore?.label ?? faction?.label ?? code,
+        labelEn: lore?.labelEn ?? faction?.labelEn ?? code,
         kind: "external",
         scopeLabel: briefing.scopeLabel,
         parentCode: null,
-        summary: briefing.summary,
-        doctrine: briefing.doctrine,
+        summary: lore?.summary ?? briefing.summary,
+        doctrine: lore?.ideology ?? briefing.doctrine,
         briefingPoints: briefing.briefingPoints,
         logoUrl: FACTION_LOGO[code],
       },
@@ -260,38 +277,46 @@ function buildBoardNodes(
 
   const branchNodes = EXTERNAL_SUB_ORGS.filter(
     (org) => org.parentCode !== HOSTILE_FACTION_CODE,
-  ).map((org) =>
-    addStats(
+  ).map((org) => {
+    const loreFaction = factionByCode.get(org.code);
+    const loreInstitution = institutionByCode.get(org.code);
+    return addStats(
       {
         code: org.code,
-        label: org.label,
-        labelEn: org.labelEn,
+        label: loreFaction?.label ?? loreInstitution?.label ?? org.label,
+        labelEn:
+          loreFaction?.labelEn ?? loreInstitution?.labelEn ?? org.labelEn,
         kind: "branch",
         scopeLabel: `${org.parentLabel} 하위 세력`,
         parentCode: org.parentCode,
         parentLabel: org.parentLabel,
-        summary: org.summary,
-        doctrine: org.doctrine,
+        summary: loreFaction?.summary ?? loreInstitution?.summary ?? org.summary,
+        doctrine:
+          loreFaction?.ideology ?? loreInstitution?.mission ?? org.doctrine,
         logoUrl: BOARD_LOGO_BY_CODE[org.code] ?? org.logoUrl,
       },
       groupCounts,
       wikiCounts,
       signalCounts,
       favorabilityByCode,
-    ),
-  );
+    );
+  });
 
   const hostileFaction = FACTIONS.find((f) => f.code === HOSTILE_FACTION_CODE);
+  const hostileLore = factionByCode.get(HOSTILE_FACTION_CODE);
   const hostileNode = addStats(
     {
       code: HOSTILE_FACTION_CODE,
-      label: hostileFaction?.label ?? "적대세력",
-      labelEn: hostileFaction?.labelEn ?? "Hostile Forces",
+      label: hostileLore?.label ?? hostileFaction?.label ?? "적대세력",
+      labelEn:
+        hostileLore?.labelEn ?? hostileFaction?.labelEn ?? "Hostile Forces",
       kind: "hostile",
       scopeLabel: "적대세력 분류",
       parentCode: null,
-      summary: "작전상 적대 또는 충돌 대상으로 분류되는 세력",
-      doctrine: FACTION_DOCTRINE[HOSTILE_FACTION_CODE],
+      summary:
+        hostileLore?.summary ?? "작전상 적대 또는 충돌 대상으로 분류되는 세력",
+      doctrine:
+        hostileLore?.ideology ?? FACTION_DOCTRINE[HOSTILE_FACTION_CODE],
       logoUrl: FACTION_LOGO[HOSTILE_FACTION_CODE],
     },
     groupCounts,
@@ -302,39 +327,53 @@ function buildBoardNodes(
 
   const hostileBranchNodes = EXTERNAL_SUB_ORGS.filter(
     (org) => org.parentCode === HOSTILE_FACTION_CODE,
-  ).map((org) =>
-    addStats(
+  ).map((org) => {
+    const loreFaction = factionByCode.get(org.code);
+    const loreInstitution = institutionByCode.get(org.code);
+    return addStats(
       {
         code: org.code,
-        label: org.label,
-        labelEn: org.labelEn,
+        label: loreFaction?.label ?? loreInstitution?.label ?? org.label,
+        labelEn:
+          loreFaction?.labelEn ?? loreInstitution?.labelEn ?? org.labelEn,
         kind: "hostile",
         scopeLabel: "적대 하위 세력",
         parentCode: org.parentCode,
         parentLabel: org.parentLabel,
-        summary: org.summary,
-        doctrine: org.doctrine,
+        summary: loreFaction?.summary ?? loreInstitution?.summary ?? org.summary,
+        doctrine:
+          loreFaction?.ideology ?? loreInstitution?.mission ?? org.doctrine,
         logoUrl: BOARD_LOGO_BY_CODE[org.code] ?? org.logoUrl,
       },
       groupCounts,
       wikiCounts,
       signalCounts,
       favorabilityByCode,
-    ),
-  );
+    );
+  });
 
   const novusOrdo = FACTIONS.find((f) => f.code === "NOVUS_ORDO");
+  const novusLore = factionByCode.get("NOVUS_ORDO");
+  const internalInstitutionCodes = [
+    ...new Set([
+      ...INSTITUTIONS.map((institution) => institution.code as string),
+      ...institutionDocs
+        .filter((institution) => institution.parentFactionCode === "NOVUS_ORDO")
+        .map((institution) => institution.code),
+    ]),
+  ];
   const internalNodes = [
     addStats(
       {
         code: "NOVUS_ORDO",
-        label: novusOrdo?.label ?? "노부스 오르도",
-        labelEn: novusOrdo?.labelEn ?? "Novus Ordo",
+        label: novusLore?.label ?? novusOrdo?.label ?? "노부스 오르도",
+        labelEn:
+          novusLore?.labelEn ?? novusOrdo?.labelEn ?? "Novus Ordo",
         kind: "internal",
         scopeLabel: "내부 본부",
         parentCode: null,
-        summary: "본부 통할",
-        doctrine: FACTION_DOCTRINE.NOVUS_ORDO,
+        summary: novusLore?.summary ?? "본부 통할",
+        doctrine: novusLore?.ideology ?? FACTION_DOCTRINE.NOVUS_ORDO,
         logoUrl: FACTION_LOGO.NOVUS_ORDO,
       },
       groupCounts,
@@ -342,52 +381,142 @@ function buildBoardNodes(
       signalCounts,
       favorabilityByCode,
     ),
-    ...INSTITUTIONS.map((institution) =>
-      addStats(
+    ...internalInstitutionCodes.map((code) => {
+      const institution = INSTITUTIONS.find((entry) => entry.code === code);
+      const lore = institutionByCode.get(code);
+      const subUnitCount =
+        lore?.subUnits?.length ?? institution?.subUnits.length ?? 0;
+      return addStats(
         {
-          code: institution.code,
-          label: institution.label,
-          labelEn: institution.labelEn,
+          code,
+          label: lore?.label ?? institution?.label ?? code,
+          labelEn: lore?.labelEn ?? institution?.labelEn ?? code,
           kind: "internal",
           scopeLabel: "내부 기관",
           parentCode: "NOVUS_ORDO",
           parentLabel: "노부스 오르도",
-          summary: `${institution.subUnits.length}개 하위 기구`,
-          doctrine: INSTITUTION_DOCTRINE[institution.code],
+          summary: lore?.summary ?? `${subUnitCount}개 하위 기구`,
+          doctrine:
+            lore?.mission ??
+            INSTITUTION_DOCTRINE[code as InstitutionCode] ??
+            "기관 임무 정보 없음",
           logoUrl: INSTITUTION_LOGO,
-          subUnitCount: institution.subUnits.length,
+          subUnitCount,
         },
         groupCounts,
         wikiCounts,
         signalCounts,
         favorabilityByCode,
-      ),
-    ),
+      );
+    }),
   ];
 
-  return [
+  const knownNodes = [
     ...externalNodes,
     ...branchNodes,
     hostileNode,
     ...hostileBranchNodes,
     ...internalNodes,
   ];
+  const representedCodes = new Set(knownNodes.map((node) => node.code));
+  const supplementalFactionNodes = factionDocs
+    .filter((faction) => !representedCodes.has(faction.code))
+    .map((faction) => {
+      representedCodes.add(faction.code);
+      return addStats(
+        {
+          code: faction.code,
+          label: faction.label,
+          labelEn: faction.labelEn ?? faction.code,
+          kind: faction.scope === "internal" ? "internal" : "external",
+          scopeLabel:
+            faction.scope === "internal" ? "내부 본부" : "외부 권력 블록",
+          parentCode: null,
+          summary: faction.summary,
+          doctrine: faction.ideology ?? "교리 정보 없음",
+          logoUrl: FACTION_LOGO[faction.code as FactionCode],
+        },
+        groupCounts,
+        wikiCounts,
+        signalCounts,
+        favorabilityByCode,
+      );
+    });
+  const supplementalInstitutionNodes = institutionDocs
+    .filter((institution) => !representedCodes.has(institution.code))
+    .map((institution) => {
+      const parentCode = institution.parentFactionCode ?? null;
+      const parent = parentCode ? factionByCode.get(parentCode) : undefined;
+      return addStats(
+        {
+          code: institution.code,
+          label: institution.label,
+          labelEn: institution.labelEn ?? institution.code,
+          kind: parentCode === "NOVUS_ORDO" ? "internal" : "branch",
+          scopeLabel:
+            parentCode === "NOVUS_ORDO" ? "내부 기관" : "외부 하위 세력",
+          parentCode,
+          parentLabel: parent?.label,
+          summary: institution.summary,
+          doctrine: institution.mission ?? "기관 임무 정보 없음",
+          logoUrl: INSTITUTION_LOGO,
+          subUnitCount: institution.subUnits?.length ?? 0,
+        },
+        groupCounts,
+        wikiCounts,
+        signalCounts,
+        favorabilityByCode,
+      );
+    });
+
+  return [
+    ...knownNodes,
+    ...supplementalFactionNodes,
+    ...supplementalInstitutionNodes,
+  ];
 }
 
 export async function getFactionBoardData(
   role: UserRole,
 ): Promise<FactionBoardData> {
-  // 캐릭터는 소속 버킷 판정 필드만 쓰므로 ref projection. 위키(content 키워드 카운트)와
-  // 리포트(summary/highlights 시그널 카운트)는 본문성 필드가 매칭에 참여해 full 유지.
-  const [rawCharacters, rawReports, rawWikiPages, favorabilityOverrides] =
+  const isGM = hasRole(role, "GM");
+  const canSeePrivateLore = hasRole(role, "V");
+  const [rawCharacters, organizationSnapshot, favorabilityOverrides] =
     await Promise.all([
       listCharacterRefs().catch(() => []),
-      listSessionReports().catch(() => []),
-      listWikiPages().catch(() => []),
+      listLoreOrganizations(canSeePrivateLore).catch(() => ({
+        factions: [],
+        institutions: [],
+      })),
       listFactionFavorabilityOverrides().catch(() => ({})),
     ]);
+  const factionByCode = new Map(
+    organizationSnapshot.factions.map((doc) => [doc.code, doc]),
+  );
+  const institutionByCode = new Map(
+    organizationSnapshot.institutions.map((doc) => [doc.code, doc]),
+  );
+  const trackedCodes = new Set<string>([
+    ...TRACKED_NODE_CODES,
+    ...factionByCode.keys(),
+    ...institutionByCode.keys(),
+  ]);
+  const keywordsByCode = Object.fromEntries(
+    [...trackedCodes].map((code) => [
+      code,
+      keywordSetFor(code, factionByCode, institutionByCode),
+    ]),
+  );
+  const signalCounts = await countLoreSignals({
+    role,
+    includePrivateWiki: canSeePrivateLore,
+    keywordsByCode,
+  }).catch(() => ({
+    wiki: Object.fromEntries([...trackedCodes].map((code) => [code, 0])),
+    reports: Object.fromEntries([...trackedCodes].map((code) => [code, 0])),
+    source: "domain-fallback" as const,
+  }));
 
-  const isGM = hasRole(role, "GM");
   const visibleCharacters = isGM
     ? rawCharacters
     : rawCharacters.filter((c) => c.isPublic !== false);
@@ -397,7 +526,7 @@ export async function getFactionBoardData(
 
   for (const raw of visibleCharacters) {
     const primaryGroup = resolvePrimaryGroup(raw);
-    const bucketCodes = getContactBucketCodes(raw);
+    const bucketCodes = getContactBucketCodes(raw, trackedCodes);
     if (bucketCodes.length === 0 || !primaryGroup) continue;
 
     visibleTrackedMemberCount += 1;
@@ -407,51 +536,32 @@ export async function getFactionBoardData(
     }
   }
 
-  const wikiCounts: Record<string, number> = {};
-  for (const page of rawWikiPages) {
-    if (!isGM && page.isPublic === false) continue;
-
-    const text = `${page.title} ${page.category} ${page.tags.join(" ")} ${
-      page.content
-    }`;
-
-    for (const code of TRACKED_NODE_CODES) {
-      if (textMatchesFaction(text, code)) {
-        wikiCounts[code] = (wikiCounts[code] ?? 0) + 1;
-      }
-    }
-  }
-
-  const signalCounts: Record<string, number> = {};
-  for (const report of rawReports) {
-    const text = [
-      report.sessionTitle,
-      report.summary,
-      report.highlights.join(" "),
-      report.participants.join(" "),
-      report.locationLabel ?? "",
-    ].join(" ");
-
-    for (const code of TRACKED_NODE_CODES) {
-      if (textMatchesFaction(text, code)) {
-        signalCounts[code] = (signalCounts[code] ?? 0) + 1;
-      }
-    }
-  }
-
-  const boardNodes = buildBoardNodes(groupCounts, wikiCounts, signalCounts, {
-    ...DEFAULT_FACTION_FAVORABILITY_BY_CODE,
-    ...favorabilityOverrides,
-  });
+  const wikiCounts = signalCounts.wiki;
+  const reportCounts = signalCounts.reports;
+  const boardNodes = buildBoardNodes(
+    groupCounts,
+    wikiCounts,
+    reportCounts,
+    {
+      ...DEFAULT_FACTION_FAVORABILITY_BY_CODE,
+      ...favorabilityOverrides,
+    },
+    organizationSnapshot.factions,
+    organizationSnapshot.institutions,
+  );
   const totals: FactionBoardTotals = {
     nodeCount: boardNodes.length,
-    factionCount: EXTERNAL_FACTION_CODES.length + 1,
-    internalCount: INTERNAL_NODE_CODES.length,
-    subOrgCount: EXTERNAL_SUB_ORGS.length,
+    factionCount: boardNodes.filter(
+      (node) => node.parentCode === null && node.code !== "NOVUS_ORDO",
+    ).length,
+    internalCount: boardNodes.filter((node) => node.kind === "internal").length,
+    subOrgCount: boardNodes.filter(
+      (node) => node.parentCode !== null && node.kind !== "internal",
+    ).length,
     memberCount: visibleTrackedMemberCount,
     contactCount: visibleTrackedMemberCount,
     wikiCount: Object.values(wikiCounts).reduce((sum, count) => sum + count, 0),
-    signalCount: Object.values(signalCounts).reduce(
+    signalCount: Object.values(reportCounts).reduce(
       (sum, count) => sum + count,
       0,
     ),

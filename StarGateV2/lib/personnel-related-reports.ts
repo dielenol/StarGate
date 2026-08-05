@@ -1,6 +1,6 @@
 import type { LoreSheet } from "@/types/character";
 
-import { findSessionReportsBySessionIds } from "@/lib/db/session-reports";
+import { findSessionReportsForPersonnel } from "@/lib/db/session-reports";
 
 export interface PersonnelRelatedReport {
   id: string;
@@ -13,6 +13,7 @@ export interface PersonnelRelatedReport {
 /** Dossier 활동·성격 관찰이 참조하는 작전보고서를 sessionId로 좁혀 조회한다. */
 export async function findPersonnelRelatedReports(
   lore: LoreSheet,
+  codename: string,
 ): Promise<PersonnelRelatedReport[]> {
   const personalityObservations = Array.isArray(lore.personalityObservations)
     ? lore.personalityObservations
@@ -30,9 +31,10 @@ export async function findPersonnelRelatedReports(
     (sessionId) =>
       typeof sessionId === "string" && sessionId.trim().length > 0,
   );
-  if (validSessionIds.length === 0) return [];
-
-  const reports = await findSessionReportsBySessionIds(validSessionIds);
+  const reports = await findSessionReportsForPersonnel(
+    validSessionIds,
+    codename,
+  );
   return reports
     .map((report) => ({
       id: report._id?.toString() ?? "",

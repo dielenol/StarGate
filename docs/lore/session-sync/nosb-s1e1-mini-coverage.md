@@ -2,13 +2,19 @@
 title: NOSB-S1E1-MINI session sync coverage
 category: session-sync
 tags: [NOSB-S1E1-MINI, S1E1-MINI, stargate-lore]
-updated: 2026-06-02
+updated: 2026-08-05
 source: stargate-lore
 ---
 
 # NOSB-S1E1-MINI Sync Coverage
 
 이 문서는 공개 위키가 아니라 `stargate-lore` 동기화 감사를 위한 내부 coverage matrix다. 목적은 `NOSB-S1E1-MINI` 로그에서 추출한 대상이 ERP의 작전보고서, 위키, 카탈로그, 신원조회, 관계 서사 축 중 어디에 반영됐는지와 어디가 아직 후보/미해결인지 분리하는 것이다.
+
+## Session Coverage Identity
+
+| sessionId | report payload | source availability | audit status |
+|---|---|---|---|
+| `NOSB-S1E1-MINI` | `scripts/seed-payloads/nosb-s1e1-mini-sync.json` | partial | historical-reconstruction |
 
 ## Source Profile
 
@@ -134,3 +140,15 @@ Stock impact conclusion for `NOSB-S1E1-MINI`: the log contains a Space Zero stor
 - Current-source non-actions: no inventory grant, no shop stock, no credit ledger, no stock price/history mutation, and no market-wire. `SPZ` remains watchlist/no-action because the Space Zero approach was covert and refused.
 - Blocked or needs user/source: the Europe lab emergency hook requires its own follow-up log/source before a separate operation report/wiki/Dossier sync; cross-domain entity/institution relation graphing requires an ERP schema/UI decision; relation-tab click screenshots require an available browser-click tool or manual user verification.
 - Next recommended step: proceed to the Europe lab follow-up source when available, or explicitly request the optional cross-domain relation model if entity/institution relationship graphing should become an ERP feature.
+
+## NPC Approval Ledger
+
+- skipped: source unavailable — this historical sync predates the exact approval-ledger contract; existing NPC/Dossier payloads remain historical evidence but do not authorize a new profile apply.
+
+## Visual Asset Ledger
+
+- skipped: source unavailable — historical entity assets exist, but the complete report/mirror visual inventory and source-frame provenance cannot be reconstructed safely from this coverage note alone.
+
+## Personality Evidence Ledger
+
+- skipped: source unavailable — historical relationship prose is not converted into immutable personality observations without the original typed dialogue/description/action evidence.

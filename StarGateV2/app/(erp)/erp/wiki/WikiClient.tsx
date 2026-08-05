@@ -1,12 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { LoreRecordStatus } from "@stargate/shared-db/types";
 
 import Link from "next/link";
 
-import type { WikiPageClient } from "@/types/wiki";
+import type {
+  WikiPageSummaryClient,
+  WikiPageSummaryConnectionClient,
+} from "@/types/wiki";
 
 import { useWikiPages } from "@/hooks/queries/useWikiQuery";
+import {
+  useLoreSearch,
+  type LoreSearchKind,
+  type LoreSearchResponseClient,
+} from "@/hooks/queries/useLoreSearchQuery";
 
 import { formatDate } from "@/lib/format/date";
 
@@ -38,15 +47,14 @@ import WikiSearchBar from "./WikiSearchBar";
 import {
   sortWikiCategories,
   wikiCategoryTone,
-  wikiKeywordTags,
-  wikiSummary,
 } from "./wiki-display";
 
 import styles from "./page.module.css";
 
 interface Props {
-  /** 서버 초기 로드 — TanStack 캐시 시드 겸 첫 렌더 데이터 (단일 prop, 이중 직렬화 방지). */
-  initialPages: WikiPageClient[];
+  /** 서버 초기 로드 — 본문 전문 없이 첫 page/facet/recent만 Query 캐시에 시드한다. */
+  initialWiki: WikiPageSummaryConnectionClient;
+  initialLore?: LoreSearchResponseClient;
   categories: string[];
   currentCategory?: string;
   currentQuery?: string;
@@ -104,31 +112,27 @@ function shouldUseClientNavigation(
   );
 }
 
-function searchHaystack(page: WikiPageClient): string {
-  return `${page.title} ${page.content} ${page.tags?.join(" ") ?? ""}`.toLowerCase();
-}
+const LORE_KIND_LABELS: Record<LoreSearchKind, string> = {
+  wiki: "WIKI",
+  report: "REPORT",
+  personnel: "DOSSIER",
+  catalog: "CATALOG",
+  faction: "FACTION",
+  institution: "INSTITUTION",
+};
 
-function filterWikiPages(
-  pages: WikiPageClient[],
-  category?: string,
-  q?: string,
-): WikiPageClient[] {
-  const query = q?.trim().toLowerCase();
-  if (query) {
-    return pages
-      .filter((page) => searchHaystack(page).includes(query))
-      .sort(
-        (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      )
-      .slice(0, 50);
-  }
-  if (category) return pages.filter((page) => page.category === category);
-  return pages;
+const LORE_STATUS_LABELS: Partial<Record<LoreRecordStatus, string>> = {
+  "canon-from-source": "CANON",
+  "session-confirmed": "SESSION",
+};
+
+function tagsForSummary(page: WikiPageSummaryClient): string[] {
+  return page.tags.filter((tag) => tag.trim()).slice(0, 4);
 }
 
 export default function WikiClient({
-  initialPages,
+  initialWiki,
+  initialLore,
   categories,
   currentCategory,
   currentQuery,
@@ -153,20 +157,41 @@ export default function WikiClient({
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const sortedCategories = useMemo(
-    () => sortWikiCategories(categories),
-    [categories],
-  );
-
-  const { data: cachedPages = initialPages } = useWikiPages(undefined, {
-    initialData: initialPages,
-  });
-
   const activeQueryTrimmed = activeQuery.trim();
-
+  const initialCategory = currentQuery ? undefined : currentCategory;
+  const canUseInitialWiki =
+    !activeQueryTrimmed && activeCategory === initialCategory;
+  const wikiQuery = useWikiPages(
+    activeCategory ? { category: activeCategory } : undefined,
+    {
+      enabled: !activeQueryTrimmed,
+      initialData: canUseInitialWiki ? initialWiki : undefined,
+    },
+  );
+  const loreQuery = useLoreSearch(activeQueryTrimmed, {
+    initialData:
+      activeQueryTrimmed === currentQuery?.trim() ? initialLore : undefined,
+  });
+  const wikiConnections = useMemo(
+    () =>
+      wikiQuery.data?.pages ?? (canUseInitialWiki ? [initialWiki] : []),
+    [canUseInitialWiki, initialWiki, wikiQuery.data?.pages],
+  );
   const pages = useMemo(
-    () => filterWikiPages(cachedPages, activeCategory, activeQueryTrimmed),
-    [cachedPages, activeCategory, activeQueryTrimmed],
+    () => wikiConnections.flatMap((connection) => connection.pages),
+    [wikiConnections],
+  );
+  const currentWiki = wikiConnections[0] ?? initialWiki;
+  const loreResults = loreQuery.data?.results ?? [];
+  const sortedCategories = useMemo(
+    () =>
+      sortWikiCategories([
+        ...new Set([
+          ...categories,
+          ...currentWiki.facets.map((facet) => facet.category),
+        ]),
+      ]),
+    [categories, currentWiki.facets],
   );
 
   const handleCategoryNav = useCallback(
@@ -182,7 +207,7 @@ export default function WikiClient({
   );
 
   const handleSearch = useCallback((nextQuery: string) => {
-    const trimmed = nextQuery.trim();
+    const trimmed = nextQuery.trim().slice(0, 120);
     setActiveQuery(trimmed);
     if (trimmed) {
       setActiveCategory(undefined);
@@ -203,35 +228,30 @@ export default function WikiClient({
     [],
   );
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const p of cachedPages) {
-      counts[p.category] = (counts[p.category] ?? 0) + 1;
-    }
-    return counts;
-  }, [cachedPages]);
-
-  const recent = useMemo(
+  const categoryCounts = useMemo(
     () =>
-      [...cachedPages]
-        .sort(
-          (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-        )
-        .slice(0, 5),
-    [cachedPages],
+      Object.fromEntries(
+        currentWiki.facets.map((facet) => [facet.category, facet.count]),
+      ) as Record<string, number>,
+    [currentWiki.facets],
   );
-
-  const totalCount = cachedPages.length;
-  const visibleCount = pages.length;
+  const recent = currentWiki.recent;
+  const totalAvailable = currentWiki.facets.reduce(
+    (sum, facet) => sum + facet.count,
+    0,
+  );
+  const totalCount = activeQueryTrimmed
+    ? loreResults.length
+    : currentWiki.totalCount;
+  const visibleCount = activeQueryTrimmed ? loreResults.length : pages.length;
   const noFilter = !activeCategory && !activeQueryTrimmed;
   const resultTitle = activeQueryTrimmed
-    ? "검색 결과"
+    ? "Lore Explorer"
     : activeCategory
       ? `${activeCategory} 문서`
       : "전체 문서";
   const resultSubtitle = activeQueryTrimmed
-    ? `"${activeQueryTrimmed}" 검색어로 제목, 본문, 태그를 조회한 결과입니다.`
+    ? `"${activeQueryTrimmed}"와 연결된 위키·보고서·Dossier·카탈로그·조직 기록입니다.`
     : activeCategory
       ? `${activeCategory} 카테고리에 등록된 문서만 표시합니다.`
       : "공개 위키와 내부 문서 전체를 카테고리 기준으로 탐색합니다.";
@@ -266,7 +286,7 @@ export default function WikiClient({
                   <IconGridAll className={styles.nav__icon} aria-hidden />
                   <span>전체</span>
                 </span>
-                <span className={styles.nav__count}>{totalCount}</span>
+                <span className={styles.nav__count}>{totalAvailable}</span>
               </Link>
             </li>
             {sortedCategories.map((cat) => {
@@ -336,7 +356,28 @@ export default function WikiClient({
               </div>
             ) : null}
 
-            {pages.length === 0 ? (
+            {activeQueryTrimmed.length >= 2 &&
+            (loreQuery.data?.degradedSources.length ?? 0) > 0 ? (
+              <div className={styles.searchWarning} role="status">
+                일부 기록원({loreQuery.data?.degradedSources.join(", ")})을
+                조회하지 못했습니다. 표시된 결과는 부분 결과입니다.
+              </div>
+            ) : null}
+
+            {activeQueryTrimmed.length === 1 ? (
+              <div className={styles.empty}>검색어를 2자 이상 입력해 주세요.</div>
+            ) : activeQueryTrimmed && loreQuery.isError ? (
+              <div className={styles.empty} role="alert">
+                로어 기록을 조회하지 못했습니다. 잠시 후 다시 시도해 주세요.
+                <div className={styles.empty__action}>
+                  <Button size="sm" onClick={() => loreQuery.refetch()}>
+                    다시 시도
+                  </Button>
+                </div>
+              </div>
+            ) : (activeQueryTrimmed ? loreQuery.isLoading : wikiQuery.isLoading) ? (
+              <div className={styles.empty}>기록을 조회하고 있습니다.</div>
+            ) : (activeQueryTrimmed ? loreResults.length : pages.length) === 0 ? (
               <div className={styles.empty}>
                 {activeQueryTrimmed
                   ? `"${activeQueryTrimmed}"에 대한 검색 결과가 없습니다.`
@@ -344,31 +385,42 @@ export default function WikiClient({
               </div>
             ) : (
               <div className={styles.list}>
-                {pages.map((page) => {
-                  const id = String(page._id);
-                  const summary = wikiSummary(page.content);
-                  const keywordTags = wikiKeywordTags(page);
-                  return (
+                {activeQueryTrimmed
+                  ? loreResults.map((result) => (
                     <Link
-                      key={id}
-                      href={`/erp/wiki/${id}`}
+                      key={`${result.kind}:${result.key}`}
+                      href={result.href}
                       className={styles.item}
                     >
                       <LinkPendingProbe />
                       <div className={styles.item__body}>
                         <div className={styles.item__head}>
-                          <Tag tone={wikiCategoryTone(page.category)}>
-                            {page.category}
+                          <Tag tone="info">
+                            {LORE_KIND_LABELS[result.kind]}
                           </Tag>
-                          {!page.isPublic ? (
+                          <Tag tone={wikiCategoryTone(result.category)}>
+                            {result.category}
+                          </Tag>
+                          {result.status ? (
+                            <Tag
+                              tone={
+                                result.status === "session-confirmed"
+                                  ? "success"
+                                  : "gold"
+                              }
+                            >
+                              {LORE_STATUS_LABELS[result.status] ?? result.status}
+                            </Tag>
+                          ) : null}
+                          {!result.isPublic ? (
                             <Tag tone="danger">PRIVATE</Tag>
                           ) : null}
                         </div>
-                        <div className={styles.item__title}>{page.title}</div>
-                        <p className={styles.item__summary}>{summary}</p>
-                        {keywordTags.length > 0 ? (
+                        <div className={styles.item__title}>{result.title}</div>
+                        <p className={styles.item__summary}>{result.excerpt}</p>
+                        {result.tags.length > 0 ? (
                           <div className={styles.item__meta}>
-                            {keywordTags.map((tag) => (
+                            {result.tags.slice(0, 4).map((tag) => (
                               <Tag key={tag}>{tag}</Tag>
                             ))}
                           </div>
@@ -376,11 +428,59 @@ export default function WikiClient({
                       </div>
                       <span className={styles.item__dateBlock}>
                         <span>수정</span>
-                        <b>{formatDate(page.updatedAt, "padded")}</b>
+                        <b>{formatDate(result.updatedAt, "padded")}</b>
                       </span>
                     </Link>
-                  );
-                })}
+                  ))
+                  : pages.map((page) => {
+                      const id = String(page._id);
+                      const keywordTags = tagsForSummary(page);
+                      return (
+                        <Link
+                          key={id}
+                          href={`/erp/wiki/${id}`}
+                          className={styles.item}
+                        >
+                          <LinkPendingProbe />
+                          <div className={styles.item__body}>
+                            <div className={styles.item__head}>
+                              <Tag tone={wikiCategoryTone(page.category)}>
+                                {page.category}
+                              </Tag>
+                              {!page.isPublic ? (
+                                <Tag tone="danger">PRIVATE</Tag>
+                              ) : null}
+                            </div>
+                            <div className={styles.item__title}>{page.title}</div>
+                            <p className={styles.item__summary}>{page.excerpt}</p>
+                            {keywordTags.length > 0 ? (
+                              <div className={styles.item__meta}>
+                                {keywordTags.map((tag) => (
+                                  <Tag key={tag}>{tag}</Tag>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                          <span className={styles.item__dateBlock}>
+                            <span>수정</span>
+                            <b>{formatDate(page.updatedAt, "padded")}</b>
+                          </span>
+                        </Link>
+                      );
+                    })}
+                {!activeQueryTrimmed && wikiQuery.hasNextPage ? (
+                  <div className={styles.loadMore}>
+                    <Button
+                      type="button"
+                      disabled={wikiQuery.isFetchingNextPage}
+                      onClick={() => void wikiQuery.fetchNextPage()}
+                    >
+                      {wikiQuery.isFetchingNextPage
+                        ? "불러오는 중"
+                        : "문서 더 보기"}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             )}
           </Box>
@@ -404,7 +504,7 @@ export default function WikiClient({
             <dl className={styles.stats}>
               <div>
                 <dt>전체</dt>
-                <dd>{totalCount}</dd>
+                <dd>{totalAvailable}</dd>
               </div>
               <div>
                 <dt>표시</dt>

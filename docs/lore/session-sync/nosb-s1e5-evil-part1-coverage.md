@@ -2,13 +2,19 @@
 title: NOSB-S1E5-EVIL-PART1 session sync coverage
 category: session-sync
 tags: [NOSB-S1E5-EVIL-PART1, S1E5, 악, sector-c, stargate-lore]
-updated: 2026-08-04
+updated: 2026-08-05
 source: stargate-lore
 ---
 
 # NOSB-S1E5-EVIL-PART1 동기화 커버리지
 
 이 문서는 공개 위키가 아니라 `stargate-lore` 동기화 감사를 위한 내부 기록이다. 현재 소스에서 확인된 사실, live ERP 반영 결과, 후보-only 항목과 경제·주식 비변경 경계를 분리한다.
+
+## Session Coverage Identity
+
+| sessionId | report payload | source availability | audit status |
+|---|---|---|---|
+| `NOSB-S1E5-EVIL-PART1` | `scripts/seed-payloads/nosb-s1e5-evil-part1-sync.json` | available | partial |
 
 ## Source Profile
 
@@ -209,3 +215,7 @@ source: stargate-lore
 - clean worktree의 인증된 현재 live 보고서 렌더에서 기존 6장은 모두 원본 1035×503, 렌더 662×322, `object-fit: contain`, 동일 자산 blurred backdrop, 캡션 일치, broken 0으로 확인됐다. 즉 S1E4의 전역 렌더 보정은 S1E5에도 작동하며, 이번 결함은 CSS 크롭이 아니라 3개 컷신의 소스 판정 누락이다.
 - 보고서 wiki mirror는 첫 시각 자료를 infobox로 승격하고 나머지를 본문에 렌더한다. 현재 6개 ordered set 가운데 지도는 Next Image infobox에서 `object-fit: contain`, 나머지 5장은 본문에서 1035×503 → 732×356, blurred backdrop·캡션·broken 0으로 확인됐다.
 - 전용 위키 소비처도 별도 확인했다. `sector-c`는 지도 infobox와 최고 격리구역·냉동 감염자 본문 도판, `bear-hunting-armor`, `sector-c-ballerina`, `zulu-0103-wendigo`는 각각 전용 infobox 한 장을 사용하며 모두 `object-fit: contain`·broken 0이었다. 로컬 서버 재시작 이후 새 console warning/error는 0건이다.
+
+## Personality Evidence Ledger
+
+- skipped: source unavailable — this coverage predates immutable observation extraction, and the current audit does not have a source-complete dialogue/description/action inventory from which to create safe observation rows.

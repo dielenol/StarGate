@@ -2,13 +2,20 @@
 title: NOSB-S1E4-PRATO session sync coverage
 category: session-sync
 tags: [NOSB-S1E4-PRATO-PART1, NOSB-S1E4-PRATO-PART2, S1E4, stargate-lore]
-updated: 2026-07-06
+updated: 2026-08-05
 source: stargate-lore
 ---
 
 # NOSB-S1E4-PRATO Sync Coverage
 
 이 문서는 공개 위키가 아니라 `stargate-lore` 동기화 감사를 위한 내부 coverage matrix다. 목적은 `NOSB-S1E4-PRATO-PART1` 및 `NOSB-S1E4-PRATO-PART2` 보존 로그에서 추출한 대상이 작전보고서, 위키, 카탈로그, Dossier, 관계 서사, 경제/주식 축 중 어디에 반영됐는지와 어디가 후보/미해결인지 분리하는 것이다.
+
+## Session Coverage Identity
+
+| sessionId | report payload | source availability | audit status |
+|---|---|---|---|
+| `NOSB-S1E4-PRATO-PART1` | `scripts/seed-payloads/nosb-s1e4-prato-sync.json` | partial | historical-reconstruction |
+| `NOSB-S1E4-PRATO-PART2` | `scripts/seed-payloads/nosb-s1e4-prato-sync.json` | partial | historical-reconstruction |
 
 ## Source Profile
 
@@ -228,7 +235,19 @@ source: stargate-lore
 - Part2 catalog DB re-read: `behavior-correction-substance` has `NOSB-S1E4-PRATO-PART2` and 광원화/뒤집어진양말 tags; `aurora-virus-black-smoke-sample` records Maria request plus Pipette collection and follow-up observation notes.
 - Part2 Dossier DB re-read: `INDEXER`, `PIPETTE`, `MARIA`, `MARGARET`, `TIME`, `네베드`, `TIGER298`, `DOCTOR_MOSS`, `TOWASKI`, and `CLOWN` each have a sourced `NOSB-S1E4-PRATO-PART2` session appearance; `TOWASKI` and `CLOWN` have reciprocal `장비 조정` relations.
 - Part2 public prose scan: `check_lore_output.py --public-text` passed for saved Part2 report, Part2 wiki pages, catalog text, and Dossier extracts.
-- Part2 browser-authenticated ERP render verification: using `admin / admin1234`, `/erp/sessions/report/6a462ca158ca8c543f61b6a5`, `/erp/wiki/6a462ca158ca8c543f61b6a6`, `/erp/wiki/6a4b491099f4aaa100f4efc3`, `/erp/wiki/6a4b050199f4aaa100f4ed68`, both catalog item pages, and the Doctor Moss/Towaski/Margaret/Pipette session appearance tabs rendered without raw `[[...]]` markup or console/page errors.
+- Part2 browser-authenticated ERP render verification: using the repository-documented local test account, `/erp/sessions/report/6a462ca158ca8c543f61b6a5`, `/erp/wiki/6a462ca158ca8c543f61b6a6`, `/erp/wiki/6a4b491099f4aaa100f4efc3`, `/erp/wiki/6a4b050199f4aaa100f4ed68`, both catalog item pages, and the Doctor Moss/Towaski/Margaret/Pipette session appearance tabs rendered without raw `[[...]]` markup or console/page errors.
 - Part2 report image verification: report detail image `뒤집어진 양말` loads `/assets/session-reports/s1e4-prato/inverted-sock-full-frame.webp` at natural size 1024x1536 with `object-fit: contain`, preserving the 0.667 source ratio inside the report frame.
 - Part2 map render verification: `/erp/sessions/report` shows both `04` and `04.5`; after label fix the actual label boxes are `x=442.875,w=240` and `x=706.875,w=240`, overlap `0`.
 - Part2 render screenshots: `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/report-part2.png`, `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/wiki-part2.png`, `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/wiki-radio.png`, `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/wiki-relay.png`, `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/catalog-black-smoke.png`, `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/catalog-behavior.png`, `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/personnel-doctor-moss.png`, `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/personnel-towaski.png`, `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/personnel-margaret.png`, `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/personnel-pipette.png`, `/Users/flitto/.codex/tmp/stargate-lore-prato-part2/render-final/report-map.png`.
+
+## NPC Approval Ledger
+
+- skipped: source unavailable — historical Dossier updates predate the exact approval-ledger contract; the current note does not authorize new identity, clearance, portrait, visibility, demographic, prose, or relation changes.
+
+## Visual Asset Ledger
+
+- skipped: source unavailable — the historical asset section does not preserve the exact current ledger columns for every consumer, and complete source-frame provenance is unavailable for safe reconstruction.
+
+## Personality Evidence Ledger
+
+- skipped: source unavailable — existing relation summaries are not promoted to immutable personality observations without the original typed evidence.

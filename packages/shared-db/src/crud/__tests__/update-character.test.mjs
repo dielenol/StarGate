@@ -43,8 +43,46 @@ if (!HAS_MODULE_MOCK) {
   };
 
   const fakeCol = {
+    async findOne() {
+      return {
+        _id: new ObjectId(),
+        codename: "ORIGINAL_AGENT",
+        isPublic: true,
+      };
+    },
     updateOne: fakeUpdateOne,
   };
+
+  testApi.mock.module(
+    new URL("../../../dist/client.js", import.meta.url).href,
+    {
+      namedExports: {
+        getClient: async () => ({
+          startSession() {
+            return {
+              async withTransaction(callback) {
+                return callback();
+              },
+              async endSession() {},
+            };
+          },
+        }),
+        getDb: async () => ({
+          collection(name) {
+            if (name === "characters") {
+              return {
+                async updateOne() {
+                  return { matchedCount: 1 };
+                },
+              };
+            }
+            assert.equal(name, "session_reports");
+            return { findOne: async () => null };
+          },
+        }),
+      },
+    },
+  );
 
   // mock.module: collections.js의 charactersCol export를 fake로 교체
   testApi.mock.module(

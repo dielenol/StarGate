@@ -8,6 +8,7 @@ import type { CharacterRef } from "@/lib/db/characters";
 import type { SessionReportRef } from "@/lib/db/session-reports";
 
 import { formatOperationReportTitle } from "./format/session-report";
+import { WIKI_CATEGORY_ORDER } from "./wiki-categories";
 
 export interface RelatedWikiLink {
   id: string;
@@ -31,24 +32,9 @@ export interface RelatedReportLink {
   title: string;
   locationLabel?: string;
   participants: string[];
+  relatedPersonnelCodenames?: string[];
   createdAt: Date;
 }
-
-const WIKI_CATEGORY_ORDER = [
-  "작전 보고서",
-  "개체",
-  "줄루",
-  "개념",
-  "세력",
-  "기관",
-  "장소",
-  "인물",
-  "규정",
-  "장비",
-  "물품",
-  "소모품",
-  "문헌",
-];
 
 const EXACT_SESSION_KEY_PATTERN =
   /NOSB-[A-Z0-9]+(?:-[A-Z0-9]+)*|(?:[A-Z0-9]+-)?S\d+E\d+(?:-[A-Z0-9]+)+/giu;
@@ -271,9 +257,11 @@ export function relatedWikiForReport(
     report.sessionTitle,
     displayTitle,
   );
+  const explicitSlugs = new Set(report.relatedWikiSlugs ?? []);
 
   return allPages
     .filter((page) =>
+      explicitSlugs.has(page.slug) ||
       pageMatchesReport(page, sessionKeys, exactSessionKeys, displayTitle),
     )
     .map(toRelatedWikiLink)
@@ -307,9 +295,11 @@ export function relatedPersonnelForReport(
   characters: CharacterRef[],
 ): RelatedPersonnelLink[] {
   const participantKeySets = report.participants.map(participantCandidateKeys);
+  const explicitCodenames = new Set(report.relatedPersonnelCodenames ?? []);
 
   return characters
     .filter((character) =>
+      explicitCodenames.has(character.codename) ||
       character.lore.appearsInEvents?.includes(report.sessionId) ||
       participantKeySets.some((participantKeys) =>
         personnelKeySetsMatch(
@@ -350,6 +340,7 @@ export function toRelatedReportLink(
     title: formatOperationReportTitle(report.sessionTitle),
     locationLabel: report.locationLabel,
     participants: report.participants,
+    relatedPersonnelCodenames: report.relatedPersonnelCodenames,
     createdAt: report.createdAt,
   };
 }
@@ -360,10 +351,12 @@ export function relatedReportsForWiki(
 ): RelatedReportLink[] {
   const exactKeys = new Set(pageExactSessionKeys(page));
   const keys = new Set(pageSessionKeys(page));
-  if (keys.size === 0 && exactKeys.size === 0) return [];
+  const pageSlug = page.slug?.trim();
+  if (keys.size === 0 && exactKeys.size === 0 && !pageSlug) return [];
 
   return reports
     .filter((report) => {
+      if (pageSlug && report.relatedWikiSlugs?.includes(pageSlug)) return true;
       const displayTitle = formatOperationReportTitle(report.sessionTitle);
       if (page.title === displayTitle) return true;
 
@@ -398,10 +391,14 @@ export function relatedPersonnelForReports(
   const participantKeySets = reports.flatMap((report) =>
     report.participants.map(participantCandidateKeys),
   );
+  const explicitCodenames = new Set(
+    reports.flatMap((report) => report.relatedPersonnelCodenames ?? []),
+  );
   const seen = new Set<string>();
 
   return characters
     .filter((character) =>
+      explicitCodenames.has(character.codename) ||
       character.lore.appearsInEvents?.some((event) => sessionIds.has(event)) ||
       participantKeySets.some((participantKeys) =>
         personnelKeySetsMatch(

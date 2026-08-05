@@ -10,6 +10,7 @@ import { useWikiPage } from "@/hooks/queries/useWikiQuery";
 import type { WikiPageClient } from "@/types/wiki";
 
 import { renderMarkdown } from "@/lib/wiki-render";
+import { WIKI_CATEGORY_ORDER } from "@/lib/wiki-categories";
 
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
@@ -138,16 +139,27 @@ export default function WikiEditForm({
               <label className={styles.label} htmlFor="wiki-category">
                 CATEGORY
               </label>
-              <Input
+              <select
+                className={styles.select}
                 id="wiki-category"
                 onChange={(e) => {
                   setDirty(true);
                   setCategory(e.target.value);
                 }}
-                placeholder="카테고리"
-                type="text"
+                required
                 value={category}
-              />
+              >
+                {!WIKI_CATEGORY_ORDER.includes(category) ? (
+                  <option value={category} disabled>
+                    미지원 카테고리: {category}
+                  </option>
+                ) : null}
+                {WIKI_CATEGORY_ORDER.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className={`${styles.field} ${styles["field--full"]}`}>
               <label className={styles.label} htmlFor="wiki-tags">

@@ -62,6 +62,8 @@ export interface TrpgSession {
 
   createdAt: Date;
   updatedAt: Date;
+  /** 보고서 FK 생성과 세션 삭제/수정 경합을 직렬화하는 내부 revision. */
+  reportReferenceRevision?: number;
 }
 
 /* ── 결과 union ──

@@ -218,9 +218,24 @@
   color: var(--ink-0);
 }
 
+.searchWarning {
+  padding: 10px 12px;
+  border-bottom: 1px dashed var(--line);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
 .list {
   display: flex;
   flex-direction: column;
+}
+
+.loadMore {
+  display: flex;
+  justify-content: center;
+  padding: 18px 4px 4px;
 }
 
 .item {
@@ -468,4 +483,8 @@
   font-size: 14px;
   letter-spacing: 0.1em;
   text-align: center;
+}
+
+.empty__action {
+  margin-top: 14px;
 }

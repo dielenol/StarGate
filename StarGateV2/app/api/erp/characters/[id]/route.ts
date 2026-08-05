@@ -34,6 +34,7 @@ import { isValidObjectId } from "@/lib/db/utils";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { enqueueCharacterEditWebhook } from "@/lib/outbox/integration";
 import { stripDossierPersonalityObservations } from "@/lib/personnel";
+import { SessionReportInboundReferenceError } from "@/lib/db/session-reports";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -365,6 +366,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       updatedAt: current?.updatedAt?.toISOString() ?? null,
     });
   } catch (err) {
+    if (err instanceof SessionReportInboundReferenceError) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
     const message = err instanceof Error ? err.message : "캐릭터 수정 실패";
     return NextResponse.json({ error: message }, { status: 400 });
   }
@@ -415,6 +419,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     });
     return NextResponse.json({ success: true });
   } catch (err) {
+    if (err instanceof SessionReportInboundReferenceError) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
     const message = err instanceof Error ? err.message : "캐릭터 삭제 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

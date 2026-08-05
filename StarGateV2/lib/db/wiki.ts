@@ -6,12 +6,15 @@ import "./init";
 
 export {
   listWikiPages,
+  InvalidWikiPageCursorError,
+  listWikiPageSummaries,
   listWikiPagesLite,
   listWikiPageRefs,
   listRecentWikiPagesLite,
   listPublicWikiPages,
   listWikiPagesByCategory,
   findWikiPageById,
+  findVisibleWikiPageById,
   findWikiPageBySlug,
   searchWikiPages,
   createWikiPage,
@@ -20,4 +23,7 @@ export {
   listRevisions,
 } from "@stargate/shared-db";
 
-export type { WikiPageRef } from "@stargate/shared-db";
+export type {
+  ListWikiPageSummariesOptions,
+  WikiPageRef,
+} from "@stargate/shared-db";

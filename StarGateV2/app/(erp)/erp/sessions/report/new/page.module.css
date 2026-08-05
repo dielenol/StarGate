@@ -56,6 +56,50 @@
   outline: none;
 }
 
+.referenceHint {
+  margin: 0 0 10px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.referenceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.referenceField {
+  display: grid;
+  gap: 6px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.referenceTextarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 9px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.referenceTextarea:focus {
+  border-color: var(--gold-dim);
+  outline: none;
+}
+
+.referenceTextarea::placeholder {
+  color: var(--ink-3);
+}
+
 /* ── Dynamic-row add button ── */
 
 .addBtn {
@@ -123,6 +167,10 @@
 
   .mapGrid > :first-child {
     grid-column: 1 / -1;
+  }
+
+  .referenceGrid {
+    grid-template-columns: 1fr;
   }
 
   .submitRow {

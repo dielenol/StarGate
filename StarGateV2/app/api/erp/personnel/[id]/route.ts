@@ -40,7 +40,10 @@ export async function GET(_request: Request, context: RouteContext) {
       character,
     );
     const filtered = filterCharacterByClearance(character, clearance);
-    const relatedReports = await findPersonnelRelatedReports(filtered.lore);
+    const relatedReports = await findPersonnelRelatedReports(
+      filtered.lore,
+      filtered.codename,
+    );
     return NextResponse.json({ character: filtered, relatedReports });
   } catch (err) {
     const message =

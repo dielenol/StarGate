@@ -10,3 +10,5 @@ export * from "./change-log.schema.js";
 export * from "./trpg-session.schema.js";
 export * from "./trpg-guild-member.schema.js";
 export * from "./trpg-session-notification.schema.js";
+export * from "./lore-knowledge.schema.js";
+export * from "./seed-payload.schema.js";

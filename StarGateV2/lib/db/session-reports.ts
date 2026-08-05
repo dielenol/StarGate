@@ -10,9 +10,27 @@ export {
   findReportBySessionId,
   findReportById,
   findSessionReportsBySessionIds,
+  findSessionReportsForPersonnel,
+  findSessionReportReferenceTargetIssues,
+  validateAndLockSessionReportWrite,
+  sanitizeSessionReportReferencesForPublicTargets,
+  lockSessionReportReferenceTargets,
+  lockAndAssertNoSessionReportInboundReference,
+  hasSessionReportInboundReference,
+  assertNoSessionReportInboundReference,
+  SessionReportReferenceConflictError,
+  SessionReportReferenceTargetError,
+  SessionReportAlreadyExistsError,
+  SessionReportSourceNotFoundError,
+  SessionReportInboundReferenceError,
   createSessionReport,
   updateSessionReport,
   deleteSessionReport,
 } from "@stargate/shared-db";
 
-export type { SessionReportRef } from "@stargate/shared-db";
+export type {
+  SessionReportRef,
+  SessionReportReferences,
+  SessionReportReferenceField,
+  SessionReportReferenceTargetIssue,
+} from "@stargate/shared-db";

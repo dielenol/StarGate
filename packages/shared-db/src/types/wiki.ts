@@ -35,6 +35,38 @@ export interface WikiPageLite {
   updatedAt: Date;
 }
 
+/**
+ * 위키 목록/검색 카드 전용 경량 projection.
+ *
+ * 본문 전문 대신 서버에서 생성한 짧은 excerpt만 전달하여 목록 응답 크기가
+ * 문서 본문 총량에 비례해 커지지 않게 한다.
+ */
+export interface WikiPageSummary {
+  _id: ObjectId;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  tags: string[];
+  isPublic: boolean;
+  authorName: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WikiCategoryFacet {
+  category: string;
+  count: number;
+}
+
+export interface WikiPageSummaryConnection {
+  pages: WikiPageSummary[];
+  facets: WikiCategoryFacet[];
+  recent: WikiPageSummary[];
+  totalCount: number;
+  nextCursor: string | null;
+}
+
 export interface WikiPageRevision {
   _id?: ObjectId;
   pageId: string;

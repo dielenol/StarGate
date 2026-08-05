@@ -41,6 +41,8 @@ export interface Session {
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+  /** 보고서 FK 생성과 세션 삭제/수정 경합을 직렬화하는 내부 revision. */
+  reportReferenceRevision?: number;
   /** 배정 24시간 전 리마인드(가용 YES 멘션) 발송 여부 */
   sessionStartReminder24hSent?: boolean;
   /** 배정 24시간 전 리마인드 발송권 선점 토큰 */

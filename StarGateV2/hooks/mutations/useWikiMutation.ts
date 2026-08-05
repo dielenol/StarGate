@@ -72,13 +72,14 @@ export function useDeleteWiki() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, expectedUpdatedAt }: { id: string; expectedUpdatedAt: string }) => {
       const res = await fetch(`/api/erp/wiki/${id}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expectedUpdatedAt }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "위키 페이지 삭제에 실패했습니다.");
+        await throwMutationError(res, "위키 페이지 삭제에 실패했습니다.");
       }
       return res.json();
     },

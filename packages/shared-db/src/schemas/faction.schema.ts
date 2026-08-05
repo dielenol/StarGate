@@ -22,7 +22,14 @@ export const FACTIONS_COLLECTION = "factions" as const;
 
 export const factionRelationshipSchema = z.object({
   targetCode: codeSchema,
-  type: z.enum(["ally", "rival", "neutral", "subordinate", "parent"]),
+  type: z.enum([
+    "ally",
+    "rival",
+    "neutral",
+    "subordinate",
+    "parent",
+    "sibling",
+  ]),
   note: z.string().max(200).optional(),
 });
 

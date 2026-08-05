@@ -11,7 +11,7 @@ export const sessionReportKeys = {
 const REPORT_STALE_TIME_MS = 20 * 60 * 1000;
 
 async function fetchSessionReports(): Promise<ClientSessionReport[]> {
-  const res = await fetch("/api/erp/session-reports");
+  const res = await fetch("/api/erp/session-reports", { cache: "no-store" });
   if (!res.ok) throw new Error("세션 리포트를 불러올 수 없습니다.");
   const data = await res.json();
   return data.reports;
@@ -39,6 +39,7 @@ export function useSessionReports(options?: {
     queryKey: sessionReportKeys.all,
     queryFn: fetchSessionReports,
     staleTime: REPORT_STALE_TIME_MS,
+    refetchOnMount: "always",
     initialData: options?.initialData,
   });
 }

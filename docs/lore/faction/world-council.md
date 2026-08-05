@@ -2,12 +2,12 @@
 title: 세계 이사회 (World Council)
 code: COUNCIL
 category: faction
-updated: 2026-04-22
+updated: 2026-08-05
 ---
 
 ## 개요
 
-(TBD — 세부 롱폼 미작성. `/create-lore faction` 또는 직접 편집으로 확장 예정.)
+(세부 롱폼은 아직 미작성이다. 검증 가능한 세션 기록·운영 문서·구조화 spec 근거가 확보되면 `stargate-lore` workflow로 확장한다.)
 
 ## 관련 항목
 

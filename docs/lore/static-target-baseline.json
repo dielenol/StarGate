@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "environment": "live",
+  "database": "stargate",
+  "observedAt": "2026-08-05T12:17:52.000Z",
+  "expiresAt": "2026-09-04T12:17:52.000Z",
+  "targets": [
+    {
+      "kind": "wiki",
+      "key": "black-pyramid",
+      "aliases": [
+        "블랙 피라미드"
+      ],
+      "evidence": "read-only DB inventory, 2026-08-05",
+      "observedUpdatedAt": "2026-06-09T16:11:58.056Z",
+      "contentHash": "2a8594b0c199547b366ad10e5f89f79339ab9ccb36c49a774b991936fde68027"
+    }
+  ]
+}

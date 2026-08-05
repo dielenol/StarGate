@@ -263,13 +263,20 @@ export function relatedReportsForCatalogItem(
   const exactSessionKeys = new Set(catalogItemExactSessionKeys(item));
   const sessionKeys = new Set(catalogItemSessionKeys(item));
   const terms = catalogItemSearchTerms(item);
+  const itemSlug = item.slug?.trim();
 
-  if (exactSessionKeys.size === 0 && sessionKeys.size === 0 && terms.length === 0) {
+  if (
+    exactSessionKeys.size === 0 &&
+    sessionKeys.size === 0 &&
+    terms.length === 0 &&
+    !itemSlug
+  ) {
     return [];
   }
 
   return reports
     .filter((report) => {
+      if (itemSlug && report.relatedCatalogSlugs?.includes(itemSlug)) return true;
       const reportExactKeys = extractExactSessionKeys(
         report.sessionId,
         report.sessionTitle,
@@ -322,9 +329,11 @@ export function relatedCatalogItemsForReport(
   const contextExactSessionKeys = new Set(
     extractExactSessionKeys(...contextValues),
   );
+  const explicitSlugs = new Set(report.relatedCatalogSlugs ?? []);
 
   return items
     .filter((item) =>
+      (typeof item.slug === "string" && explicitSlugs.has(item.slug)) ||
       itemMatchesContext(
         item,
         contextText,

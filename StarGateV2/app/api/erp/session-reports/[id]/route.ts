@@ -8,15 +8,24 @@ import {
 } from "@/lib/api/expected-updated-at";
 import {
   validateSessionReportArrays,
+  validateSessionReportCoreText,
   validateSessionReportMapUpdate,
+  validateSessionReportReferences,
 } from "@/lib/api/session-report-validators";
 import {
   deleteSessionReport,
   findReportById,
+  sanitizeSessionReportReferencesForPublicTargets,
+  SessionReportReferenceTargetError,
+  SessionReportReferenceConflictError,
+  SessionReportSourceNotFoundError,
   updateSessionReport,
 } from "@/lib/db/session-reports";
+import { describeSessionReportReferenceTargetIssues } from "@/lib/api/session-report-reference-targets";
 import { isValidObjectId } from "@/lib/db/utils";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { getClient } from "@/lib/db/client";
+import { readJsonObjectBody } from "@/lib/api/json-body";
 
 export async function GET(
   _request: Request,
@@ -41,7 +50,9 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ report });
+    const [safeReport] =
+      await sanitizeSessionReportReferencesForPublicTargets([report]);
+    return NextResponse.json({ report: safeReport });
   } catch {
     return NextResponse.json(
       { error: "리포트 조회 실패" },
@@ -69,7 +80,9 @@ export async function PATCH(
   if (!isValidObjectId(id)) {
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
-  const body = (await request.json()) as Record<string, unknown>;
+  const parsedBody = await readJsonObjectBody(request);
+  if ("error" in parsedBody) return parsedBody.error;
+  const body = parsedBody.value;
   const expectedUpdatedAt = parseExpectedUpdatedAt(body);
   if (!expectedUpdatedAt.ok) {
     return NextResponse.json(
@@ -77,21 +90,12 @@ export async function PATCH(
       { status: 400 },
     );
   }
-  const { sessionTitle, summary } = body as {
-    sessionTitle?: string;
-    summary?: string;
-  };
-
-  if (sessionTitle !== undefined && !sessionTitle.trim()) {
+  const core = validateSessionReportCoreText(body);
+  if ("error" in core) return core.error;
+  const { summary } = core.value;
+  if (body.sessionTitle !== undefined) {
     return NextResponse.json(
-      { error: "sessionTitle은 비워둘 수 없습니다." },
-      { status: 400 },
-    );
-  }
-
-  if (summary !== undefined && !summary.trim()) {
-    return NextResponse.json(
-      { error: "summary는 비워둘 수 없습니다." },
+      { error: "sessionTitle은 연결된 세션에서 파생되므로 수정할 수 없습니다." },
       { status: 400 },
     );
   }
@@ -101,6 +105,8 @@ export async function PATCH(
   const { highlights, participants } = arrays.value;
   const map = validateSessionReportMapUpdate(body);
   if ("error" in map) return map.error;
+  const references = validateSessionReportReferences(body);
+  if ("error" in references) return references.error;
 
   try {
     const before = await findReportById(id);
@@ -118,17 +124,48 @@ export async function PATCH(
       );
     }
     const update: Record<string, unknown> = {};
-    if (sessionTitle !== undefined) update.sessionTitle = sessionTitle.trim();
-    if (summary !== undefined) update.summary = summary.trim();
+    if (summary !== undefined) update.summary = summary;
     if (highlights !== undefined) update.highlights = highlights;
     if (participants !== undefined) update.participants = participants;
+    Object.assign(update, references.value);
     Object.assign(update, map.value);
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json(
+        { error: "수정할 리포트 필드가 없습니다." },
+        { status: 400 },
+      );
+    }
 
-    const updated = await updateSessionReport(
-      id,
-      update,
-      expectedUpdatedAt.value,
-    );
+    const mongoSession = (await getClient()).startSession();
+    let updated = false;
+    try {
+      await mongoSession.withTransaction(async () => {
+        updated = false;
+        updated = await updateSessionReport(
+          id,
+          update,
+          expectedUpdatedAt.value,
+          { session: mongoSession },
+        );
+        if (!updated) return;
+        await scheduleGmAdminAudit(
+          {
+            action: "세션 리포트 수정",
+            actor: {
+              id: session.user.id,
+              displayName: session.user.displayName,
+              role: session.user.role,
+            },
+            summary: `변경 필드: ${Object.keys(update).join(", ")}`,
+            target: before?.sessionTitle || id,
+            timestamp: new Date(),
+          },
+          { session: mongoSession },
+        );
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
     if (!updated) {
       const latest = await findReportById(id);
       if (
@@ -153,31 +190,32 @@ export async function PATCH(
       );
     }
 
-    await scheduleGmAdminAudit({
-      action: "세션 리포트 수정",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: `변경 필드: ${Object.keys(update).join(", ")}`,
-      target: sessionTitle?.trim() || id,
-      timestamp: new Date(),
-    });
-
     const current = await findReportById(id);
     return NextResponse.json({
       success: true,
       updatedAt: current?.updatedAt?.toISOString() ?? null,
     });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "리포트 수정 실패";
-    return NextResponse.json({ error: message }, { status: 400 });
+  } catch (error) {
+    if (error instanceof SessionReportSourceNotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    if (error instanceof SessionReportReferenceTargetError) {
+      const response = describeSessionReportReferenceTargetIssues(error.issues);
+      return NextResponse.json({ error: response.error }, { status: response.status });
+    }
+    if (error instanceof SessionReportReferenceConflictError) {
+      return NextResponse.json(
+        { error: "구조화 로어 링크 대상이 동시에 변경되었습니다. 다시 시도하세요." },
+        { status: 409 },
+      );
+    }
+    console.error("session report update failed", error);
+    return NextResponse.json({ error: "리포트 수정 실패" }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
@@ -195,27 +233,57 @@ export async function DELETE(
   if (!isValidObjectId(id)) {
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
+  const parsedBody = await readJsonObjectBody(request);
+  if ("error" in parsedBody) return parsedBody.error;
+  const expectedUpdatedAt = parseExpectedUpdatedAt(parsedBody.value);
+  if (!expectedUpdatedAt.ok) {
+    return NextResponse.json({ error: expectedUpdatedAt.error }, { status: 400 });
+  }
 
   try {
-    const deleted = await deleteSessionReport(id);
+    const mongoSession = (await getClient()).startSession();
+    let deleted = false;
+    try {
+      await mongoSession.withTransaction(async () => {
+        deleted = false;
+        deleted = await deleteSessionReport(id, expectedUpdatedAt.value, {
+          session: mongoSession,
+        });
+        if (!deleted) return;
+        await scheduleGmAdminAudit(
+          {
+            action: "세션 리포트 삭제",
+            actor: {
+              id: session.user.id,
+              displayName: session.user.displayName,
+              role: session.user.role,
+            },
+            summary: "세션 리포트 영구 삭제",
+            target: id,
+            timestamp: new Date(),
+          },
+          { session: mongoSession },
+        );
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
     if (!deleted) {
+      const latest = await findReportById(id);
+      if (
+        latest &&
+        !isExpectedUpdatedAtCurrent(latest.updatedAt, expectedUpdatedAt.value)
+      ) {
+        return NextResponse.json(
+          { error: "다른 사용자가 리포트를 수정했습니다.", code: "STALE_VERSION" },
+          { status: 409 },
+        );
+      }
       return NextResponse.json(
         { error: "리포트를 찾을 수 없습니다." },
         { status: 404 },
       );
     }
-
-    await scheduleGmAdminAudit({
-      action: "세션 리포트 삭제",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: "세션 리포트 영구 삭제",
-      target: id,
-      timestamp: new Date(),
-    });
 
     return NextResponse.json({ success: true });
   } catch {

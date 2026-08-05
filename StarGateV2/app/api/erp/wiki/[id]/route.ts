@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { requireRole } from "@/lib/auth/rbac";
+import { hasRole, requireRole } from "@/lib/auth/rbac";
 import {
   isExpectedUpdatedAtCurrent,
   parseExpectedUpdatedAt,
@@ -10,10 +10,14 @@ import { sanitizeWikiBody } from "@/lib/api/wiki-validators";
 import {
   deleteWikiPage,
   findWikiPageById,
+  findVisibleWikiPageById,
   updateWikiPage,
 } from "@/lib/db/wiki";
 import { isValidObjectId } from "@/lib/db/utils";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { getClient } from "@/lib/db/client";
+import { readJsonObjectBody } from "@/lib/api/json-body";
+import { SessionReportInboundReferenceError } from "@/lib/db/session-reports";
 
 function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
@@ -35,7 +39,7 @@ function normalizeWikiUpdate(
   }
 
   if (typeof update.category === "string") {
-    update.category = update.category.trim() || "미분류";
+    update.category = update.category.trim();
   }
 
   if (Array.isArray(update.tags)) {
@@ -62,7 +66,9 @@ export async function GET(
   }
 
   try {
-    const page = await findWikiPageById(id);
+    const page = await findVisibleWikiPageById(id, {
+      includePrivate: hasRole(session.user.role, "V"),
+    });
     if (!page) {
       return NextResponse.json(
         { error: "문서를 찾을 수 없습니다." },
@@ -99,7 +105,9 @@ export async function PATCH(
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
 
-  const body = (await request.json()) as Record<string, unknown>;
+  const parsedBody = await readJsonObjectBody(request);
+  if ("error" in parsedBody) return parsedBody.error;
+  const body = parsedBody.value;
   const expectedUpdatedAt = parseExpectedUpdatedAt(body);
   if (!expectedUpdatedAt.ok) {
     return NextResponse.json(
@@ -113,6 +121,9 @@ export async function PATCH(
   delete update.slug;
   const normalizeError = normalizeWikiUpdate(update);
   if (normalizeError) return normalizeError;
+  if (Object.keys(update).length === 0) {
+    return badRequest("수정할 위키 필드가 없습니다.");
+  }
 
   try {
     const before = await findWikiPageById(id);
@@ -129,13 +140,38 @@ export async function PATCH(
         { status: 409 },
       );
     }
-    const updated = await updateWikiPage(
-      id,
-      update,
-      session.user.id,
-      session.user.displayName,
-      expectedUpdatedAt.value,
-    );
+    const mongoSession = (await getClient()).startSession();
+    let updated = false;
+    try {
+      await mongoSession.withTransaction(async () => {
+        updated = false;
+        updated = await updateWikiPage(
+          id,
+          update,
+          session.user.id,
+          session.user.displayName,
+          expectedUpdatedAt.value,
+          { session: mongoSession },
+        );
+        if (!updated) return;
+        await scheduleGmAdminAudit(
+          {
+            action: "위키 문서 수정",
+            actor: {
+              id: session.user.id,
+              displayName: session.user.displayName,
+              role: session.user.role,
+            },
+            summary: `변경 필드: ${Object.keys(update).join(", ")}`,
+            target: typeof update.title === "string" ? update.title : id,
+            timestamp: new Date(),
+          },
+          { session: mongoSession },
+        );
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
 
     if (!updated) {
       const latest = await findWikiPageById(id);
@@ -161,31 +197,22 @@ export async function PATCH(
       );
     }
 
-    await scheduleGmAdminAudit({
-      action: "위키 문서 수정",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: `변경 필드: ${Object.keys(update).join(", ")}`,
-      target: typeof update.title === "string" ? update.title : id,
-      timestamp: new Date(),
-    });
-
     const current = await findWikiPageById(id);
     return NextResponse.json({
       success: true,
       updatedAt: current?.updatedAt?.toISOString() ?? null,
     });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "문서 수정 실패";
-    return NextResponse.json({ error: message }, { status: 400 });
+  } catch (error) {
+    if (error instanceof SessionReportInboundReferenceError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    console.error("wiki update failed", error);
+    return NextResponse.json({ error: "문서 수정 실패" }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
@@ -203,30 +230,63 @@ export async function DELETE(
   if (!isValidObjectId(id)) {
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
+  const parsedBody = await readJsonObjectBody(request);
+  if ("error" in parsedBody) return parsedBody.error;
+  const expectedUpdatedAt = parseExpectedUpdatedAt(parsedBody.value);
+  if (!expectedUpdatedAt.ok) {
+    return NextResponse.json({ error: expectedUpdatedAt.error }, { status: 400 });
+  }
 
   try {
-    const deleted = await deleteWikiPage(id);
+    const mongoSession = (await getClient()).startSession();
+    let deleted = false;
+    try {
+      await mongoSession.withTransaction(async () => {
+        deleted = false;
+        deleted = await deleteWikiPage(id, expectedUpdatedAt.value, {
+          session: mongoSession,
+        });
+        if (!deleted) return;
+        await scheduleGmAdminAudit(
+          {
+            action: "위키 문서 삭제",
+            actor: {
+              id: session.user.id,
+              displayName: session.user.displayName,
+              role: session.user.role,
+            },
+            summary: "위키 문서 영구 삭제",
+            target: id,
+            timestamp: new Date(),
+          },
+          { session: mongoSession },
+        );
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
     if (!deleted) {
+      const latest = await findWikiPageById(id);
+      if (
+        latest &&
+        !isExpectedUpdatedAtCurrent(latest.updatedAt, expectedUpdatedAt.value)
+      ) {
+        return NextResponse.json(
+          { error: "다른 사용자가 문서를 수정했습니다.", code: "STALE_VERSION" },
+          { status: 409 },
+        );
+      }
       return NextResponse.json(
         { error: "문서를 찾을 수 없습니다." },
         { status: 404 },
       );
     }
 
-    await scheduleGmAdminAudit({
-      action: "위키 문서 삭제",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: "위키 문서 영구 삭제",
-      target: id,
-      timestamp: new Date(),
-    });
-
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    if (error instanceof SessionReportInboundReferenceError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     return NextResponse.json(
       { error: "문서 삭제 실패" },
       { status: 500 },

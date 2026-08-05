@@ -1,0 +1,63 @@
+{
+  "collection": "wiki_pages",
+  "type": "operation-report-wiki-visual-parity",
+  "filter": {
+    "slug": "mini-s1e1-new-dublin"
+  },
+  "update": [
+    {
+      "$set": {
+        "content": {
+          "$replaceOne": {
+            "input": "$content",
+            "find": "현장팀은 공항에서 데이빗 오 캘러핸을 만나 네온 발키리로 이동했다. 데이빗은 뉴 더블린 지부의 유일한 인원이며, 케이시 레이서의 네온 발키리가 임시 지부 기반이라고 설명했다.\n\n## 네온 발키리",
+            "replacement": "현장팀은 공항에서 데이빗 오 캘러핸을 만나 네온 발키리로 이동했다. 데이빗은 뉴 더블린 지부의 유일한 인원이며, 케이시 레이서의 네온 발키리가 임시 지부 기반이라고 설명했다.\n\n![뉴 더블린 도심 진입로](/assets/session-reports/new-dublin/new-dublin-street.webp \"뉴 더블린 도심 진입로\")\n\n## 네온 발키리"
+          }
+        }
+      }
+    },
+    {
+      "$set": {
+        "content": {
+          "$replaceOne": {
+            "input": "$content",
+            "find": "네온 발키리는 케이시 레이서가 운영하는 지하 펑크 바다. 현장팀은 바 앞에서 케이시를 위협하던 폭력배들을 제압했고, 이후 ORSIS-201 도나도나와 접촉했다. 도나도나는 합성인간의 소유 구조와 스페이스 제로의 비활성화 기술을 설명했다.\n\n## NOGA",
+            "replacement": "네온 발키리는 케이시 레이서가 운영하는 지하 펑크 바다. 현장팀은 바 앞에서 케이시를 위협하던 폭력배들을 제압했고, 이후 ORSIS-201 도나도나와 접촉했다. 도나도나는 합성인간의 소유 구조와 스페이스 제로의 비활성화 기술을 설명했다.\n\n![네온 발키리 바 카운터](/assets/session-reports/new-dublin/neon-valkyrie-bar.webp \"네온 발키리 바 카운터\")\n\n## NOGA"
+          }
+        }
+      }
+    },
+    {
+      "$set": {
+        "content": {
+          "$replaceOne": {
+            "input": "$content",
+            "find": "퍼크슈타인 에스홀은 NOGA 더블린 지부 지부장으로 전투에 나섰고, 최종적으로 현장에서 사망했다. 작전 후 네온 발키리는 안전을 되찾았고, 데이빗과 협력자들은 현장팀을 환대했다.\n\n그러나 이그리트가",
+            "replacement": "퍼크슈타인 에스홀은 NOGA 더블린 지부 지부장으로 전투에 나섰고, 최종적으로 현장에서 사망했다. 작전 후 네온 발키리는 안전을 되찾았고, 데이빗과 협력자들은 현장팀을 환대했다.\n\n![NOGA 거점 교전 기록](/assets/session-reports/new-dublin/puck-asshole-encounter.webp \"NOGA 거점 교전 기록\")\n\n그러나 이그리트가"
+          }
+        },
+        "updatedAt": "$$NOW"
+      }
+    }
+  ],
+  "postcondition": {
+    "slug": "mini-s1e1-new-dublin",
+    "$and": [
+      {
+        "content": {
+          "$regex": "/assets/session-reports/new-dublin/new-dublin-street\\.webp"
+        }
+      },
+      {
+        "content": {
+          "$regex": "/assets/session-reports/new-dublin/neon-valkyrie-bar\\.webp"
+        }
+      },
+      {
+        "content": {
+          "$regex": "/assets/session-reports/new-dublin/puck-asshole-encounter\\.webp"
+        }
+      }
+    ]
+  }
+}

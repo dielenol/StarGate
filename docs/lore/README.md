@@ -1,15 +1,15 @@
 ---
 title: 로어북
-updated: 2026-08-03
+updated: 2026-08-05
 ---
 
 # StarGate 로어북
 
-StarGate 세계관의 **배경 자료집**. Claude(메인 세션)가 NPC / Faction / Institution 문서를 작성할 때 자동 참조하는 독립된 산문 모음이다.
+StarGate 세계관의 **배경 자료집**. Codex의 `stargate-lore` workflow가 NPC / Faction / Institution 문서 작성, 세션 동기화, canon 조회와 연속성 감사에 참조하는 독립 산문 모음이다.
 
-- **Claude가 `/create-lore` 실행 시 이 폴더를 전체 Read해서 배경 컨텍스트로 사용**한다. 사용자는 추가로 명령하지 않아도 된다.
+- **`stargate-lore`는 작업 도메인에 필요한 문서만 우선 읽고, 연속성 판단이 필요하면 이 인덱스와 관련 산문을 함께 조회**한다. `/create-lore`는 현행 skill의 legacy 호출 별칭일 뿐 별도 계약이 아니다.
 - **Zod 검증 없음 — 자유 산문.** 규격 강제보다 일관성과 가독성이 우선. 규격 문서가 필요하면 `StarGateV2/docs/spec/` 를 사용한다.
-- **웹앱/봇은 이 폴더를 참조하지 않는다.** 런타임 의존 없는 독립 자료집이며, 홍보 사이트나 ERP UI에 직접 렌더링되지 않는다.
+- **웹앱/봇은 산문 MD를 직접 렌더링하지 않는다.** ERP에 노출할 내용은 검증된 spec/seed payload/DB record로 별도 동기화한다. `session-sync/`와 `static-target-baseline.json`은 checker가 읽는 내부 감사 자료다.
 
 ## 폴더 구조
 
@@ -21,7 +21,8 @@ docs/lore/
 ├── concept/                # 개념, 용어, 현상 정의
 ├── faction/                # 세력 스켈레톤 (세부는 롱폼 추가 예정)
 ├── place/                  # 장소, 지리 (현재 비어있음)
-└── session-sync/           # 세션 동기화 사설 점검/coverage 노트
+├── session-sync/           # 세션 동기화 내부 점검/coverage 노트
+└── static-target-baseline.json # payload가 없는 read-only 검증 live target inventory
 ```
 
 ## 현재 문서 인덱스
@@ -60,18 +61,40 @@ docs/lore/
 
 ### session-sync/
 
+- [NOSB MINI01 뉴 더블린 coverage](session-sync/nosb-mini-s1e1-new-dublin-coverage.md)
+- [NOSB MINI02 미니미니 유산 coverage](session-sync/nosb-mini-mini-legacy-coverage.md)
+- [NOSB MINI03 5959 사태 coverage](session-sync/nosb-mini-5959-containment-coverage.md)
+- [NOSB MINI04 화양연화 coverage](session-sync/nosb-mini-hwayangyeonhwa-coverage.md)
+- [NOSB S1E1 질서 coverage](session-sync/nosb-s1e1-order-coverage.md)
 - [NOSB S1E1 미니 coverage](session-sync/nosb-s1e1-mini-coverage.md)
 - [NOSB S1E2 선택 coverage](session-sync/nosb-s1e2-choice-coverage.md)
+- [NOSB S1E2 미니 coverage](session-sync/nosb-s1e2-mini-coverage.md)
+- [NOSB S1E3 망령 coverage](session-sync/nosb-s1e3-phantom-coverage.md)
 - [NOSB S1E4 프라토 coverage](session-sync/nosb-s1e4-prato-coverage.md)
 - [NOSB S1E5 악 1부 coverage](session-sync/nosb-s1e5-evil-part1-coverage.md)
+
+### static target baseline
+
+- [`static-target-baseline.json`](static-target-baseline.json) — durable payload가 아직 없는 live renderer target을 read-only 근거와 함께 제한적으로 등록한다. 관측 시각·만료일(최대 31일)·DB명·renderer payload hash를 포함하며, 자격증명·URI·비밀 값은 기록하지 않는다.
+
+## 구조화 로어 연결
+
+이 산문 인덱스에 항목이 없다고 해서 구조화 로어가 없는 것은 아니다. 이름·코드·소속·공개 여부·아이템 category처럼 DB 계약이 있는 정보는 [세계관 문서 규격](../../StarGateV2/docs/spec/README.md)과 아래 domain 디렉토리가 SSOT다. 같은 내용을 `docs/lore/`에 얇게 복제하지 않고 필요할 때 함께 조회한다.
+
+- [NPC specs](../../StarGateV2/docs/spec/npc/)
+- [Faction specs](../../StarGateV2/docs/spec/faction/)
+- [Institution specs](../../StarGateV2/docs/spec/institution/)
+- [Equipment specs](../../StarGateV2/docs/spec/equipment/)
+- [Consumable specs](../../StarGateV2/docs/spec/consumable/)
+- [Catalog specs](../../StarGateV2/docs/spec/catalog/)
 
 ## 문서 추가 방법
 
 두 가지 경로 중 편한 쪽을 사용한다.
 
-### 1. `/create-lore lore` skill 호출
+### 1. `stargate-lore` skill 호출
 
-Claude에게 `/create-lore lore` (또는 `/create-lore lore <category>`) 로 요청한다. 카테고리·제목·slug·본문을 대화형으로 입력하면 skill이 frontmatter 포함 MD 파일을 해당 카테고리 폴더에 저장한다. Zod 검증이나 FK 매칭은 없으며, 파일 쓰기 직전 미리보기·승인 게이트만 작동한다.
+Codex에서 `$stargate-lore`를 지정하거나 세계관 문서 작성·세션 동기화를 요청한다. `/create-lore lore`는 legacy alias로 같은 workflow에 라우팅된다. 산문은 frontmatter 포함 MD로 저장하며, 구조화 자산은 `StarGateV2/docs/spec/`의 schema/adapter 계약을 별도로 따른다.
 
 ### 2. 직접 편집
 
@@ -93,7 +116,7 @@ YAML 블록에 다음 필드를 기본으로 둔다 (일관성용 권장이며 �
 | `category` | `history` / `ideology` / `concept` / `faction` / `place` 중 하나 |
 | `tags` | 자유 문자열 배열 (optional) |
 | `updated` | 마지막 수정일 (ISO, `YYYY-MM-DD`) |
-| `source` | 출처 표기 (예: `world-page-timeline`, `create-lore`, `manual`) |
+| `source` | 출처 표기 (예: `world-page-timeline`, `stargate-lore`, `manual`) |
 
 세력 문서(`faction/`)는 `code` 필드(`MILITARY` / `COUNCIL` / `CIVIL` 등) 를 추가로 둔다.
 
@@ -107,6 +130,24 @@ YAML 블록에 다음 필드를 기본으로 둔다 (일관성용 권장이며 �
 
 ## 제약
 
-- 이 폴더는 **lore 도메인 작성 시에만 Write** 된다. NPC / Faction / Institution 작성은 `StarGateV2/docs/spec/` 에 저장된다.
-- 커밋은 사용자 몫. skill은 파일 생성만 수행한다.
-- README의 인덱스는 **자동 갱신되지 않는다.** 새 문서를 추가한 사람이 직접 링크를 보충한다.
+- 이 폴더의 산문은 lore 도메인에, 구조화 NPC / Faction / Institution / Equipment / Consumable / Catalog 문서는 `StarGateV2/docs/spec/`에 저장한다.
+- 세션 sync coverage는 `Session Coverage Identity`, `NPC Approval Ledger`, `Visual Asset Ledger`, `Personality Evidence Ledger`를 유지한다. 원본이 없으면 checker가 허용하는 정확한 `not-applicable:` 또는 `skipped: source unavailable — ...` 사유를 남기며 apply 승인으로 취급하지 않는다.
+- 새 문서나 coverage note를 추가한 변경은 이 README 인덱스를 같은 패스에서 갱신한다.
+
+## 결정적 감사 명령
+
+```bash
+cd StarGateV2
+pnpm lore:baseline
+pnpm lore:baseline -- --verify-live # MONGODB_URI가 있는 read-only parity 확인
+cd ..
+
+python3 "$CODEX_HOME/skills/stargate-lore/scripts/check_lore_output.py" \
+  --coverage-audit docs/lore/session-sync \
+  --payload-root StarGateV2/scripts/seed-payloads \
+  --static-payload-audit \
+  --static-baseline docs/lore/static-target-baseline.json \
+  --asset-root StarGateV2/public
+```
+
+첫 검사는 baseline 만료·중복·durable payload 승격 여부를 차단하고, `--verify-live`는 레코드 존재·updatedAt·content hash·alias를 재확인한다. 이어지는 검사는 session report ID의 coverage 누락·중복, 원장 구조/예외, wiki category taxonomy, payload renderer link target을 함께 확인한다. baseline은 seed/live parity를 대신하지 않는다.

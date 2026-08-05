@@ -20,7 +20,7 @@
  * @module crud/trpg-sessions
  */
 
-import { ObjectId, type Filter } from "mongodb";
+import { ObjectId, type ClientSession, type Filter } from "mongodb";
 
 import type {
   CancelTrpgSessionResult,
@@ -73,11 +73,15 @@ export async function createTrpgSession(
 /** ID 로 trpg 세션을 조회한다. */
 export async function findTrpgSessionById(
   id: string,
+  options: { session?: ClientSession } = {},
 ): Promise<TrpgSession | null> {
   if (!ObjectId.isValid(id)) return null;
 
   const col = await trpgSessionsCol();
-  return col.findOne({ _id: new ObjectId(id) } as TrpgSessionFilter);
+  return col.findOne(
+    { _id: new ObjectId(id) } as TrpgSessionFilter,
+    { session: options.session },
+  );
 }
 
 /**

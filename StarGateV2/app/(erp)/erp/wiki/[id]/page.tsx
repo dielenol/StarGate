@@ -9,7 +9,7 @@ import { listCharacterRefs } from "@/lib/db/characters";
 import { listMasterItemRefs } from "@/lib/db/inventory";
 import { listSessionReportRefs } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
-import { findWikiPageById, listWikiPageRefs } from "@/lib/db/wiki";
+import { findVisibleWikiPageById, listWikiPageRefs } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
 import {
   relatedPersonnelForReports,
@@ -81,14 +81,15 @@ export default async function WikiDetailPage({
 
   const { id } = await params;
   if (!isValidObjectId(id)) notFound();
+  const canViewPrivate = hasRole(session.user.role, "V");
 
   // 본문 + 카테고리 네비/자동링크/연관 문서용 참조 4종 — 서로 독립 조회라 병렬 로드
   // (참조는 실패 시 빈 목록). 직렬 1+4 RTT → 1 RTT. 참조 4종은 ref projection —
   // 본문(content)/lore 서사/play/summary 등 이 화면이 쓰지 않는 heavy 필드 미전송.
   const [page, allPages, allReports, allCharacters, allItems] =
     await Promise.all([
-      findWikiPageById(id),
-      listWikiPageRefs().catch(() => []),
+      findVisibleWikiPageById(id, { includePrivate: canViewPrivate }),
+      listWikiPageRefs({ includePrivate: canViewPrivate }).catch(() => []),
       listSessionReportRefs().catch(() => []),
       listCharacterRefs().catch(() => []),
       listMasterItemRefs().catch(() => []),
@@ -97,7 +98,7 @@ export default async function WikiDetailPage({
     notFound();
   }
 
-  const isGM = hasRole(session.user.role, "V");
+  const isGM = canViewPrivate;
   const isAdmin = hasRole(session.user.role, "GM");
   const pageId = page._id!.toString();
   const serializedPage: WikiPageClient = {
@@ -136,7 +137,7 @@ export default async function WikiDetailPage({
     : allItems.filter((item) => item.isPublic !== false);
   const visibleWikiPages = isGM
     ? allPages
-    : allPages.filter((wikiPage) => wikiPage.isPublic !== false);
+    : allPages.filter((wikiPage) => wikiPage.isPublic === true);
   const autoLinkTargets = buildWikiAutoLinkTargets({
     catalogItems: visibleItems,
     characters: linkableCharacters,
@@ -174,7 +175,12 @@ export default async function WikiDetailPage({
                 편집
               </Button>
             ) : null}
-            {isAdmin ? <WikiDeleteButton pageId={pageId} /> : null}
+            {isAdmin ? (
+              <WikiDeleteButton
+                pageId={pageId}
+                expectedUpdatedAt={serializedPage.updatedAt}
+              />
+            ) : null}
           </>
         }
       />

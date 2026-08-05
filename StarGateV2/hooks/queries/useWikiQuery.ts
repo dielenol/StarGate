@@ -1,7 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
-import type { WikiPageClient } from "@/types/wiki";
+import type {
+  WikiPageClient,
+  WikiPageSummaryConnectionClient,
+} from "@/types/wiki";
 
 export const wikiKeys = {
   all: ["wiki"] as const,
@@ -14,19 +17,23 @@ const WIKI_STALE_TIME_MS = 30 * 60 * 1000;
 
 async function fetchWikiPages(params?: {
   category?: string;
+  cursor?: string | null;
+  limit?: number;
   q?: string;
-}): Promise<WikiPageClient[]> {
+}): Promise<WikiPageSummaryConnectionClient> {
   const searchParams = new URLSearchParams();
   if (params?.category) searchParams.set("category", params.category);
+  if (params?.cursor) searchParams.set("cursor", params.cursor);
+  if (params?.limit) searchParams.set("limit", String(params.limit));
   if (params?.q) searchParams.set("q", params.q);
 
   const qs = searchParams.toString();
   const url = qs ? `/api/erp/wiki?${qs}` : "/api/erp/wiki";
 
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("위키 페이지를 불러올 수 없습니다.");
   const data = await res.json();
-  return data.pages;
+  return data as WikiPageSummaryConnectionClient;
 }
 
 async function fetchWikiPageById(id: string): Promise<WikiPageClient> {
@@ -42,13 +49,23 @@ async function fetchWikiPageById(id: string): Promise<WikiPageClient> {
 
 export function useWikiPages(
   params?: { category?: string; q?: string },
-  options?: { initialData?: WikiPageClient[] },
+  options?: {
+    enabled?: boolean;
+    initialData?: WikiPageSummaryConnectionClient;
+  },
 ) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: wikiKeys.list(params),
-    queryFn: () => fetchWikiPages(params),
+    queryFn: ({ pageParam }) =>
+      fetchWikiPages({ ...params, cursor: pageParam, limit: 20 }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
     staleTime: WIKI_STALE_TIME_MS,
-    initialData: options?.initialData,
+    enabled: options?.enabled ?? true,
+    refetchOnMount: "always",
+    initialData: options?.initialData
+      ? { pages: [options.initialData], pageParams: [null] }
+      : undefined,
   });
 }
 
