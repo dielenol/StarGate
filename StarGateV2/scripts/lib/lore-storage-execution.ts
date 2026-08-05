@@ -27,14 +27,51 @@ function errorMessage(error: unknown): string {
 function hasUnknownTransactionCommitResult(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
   const labeled = error as {
+    dataTransactionOutcomeUnknown?: unknown;
     errorLabels?: unknown;
     hasErrorLabel?: (label: string) => boolean;
   };
+  if (labeled.dataTransactionOutcomeUnknown === true) return true;
   if (typeof labeled.hasErrorLabel === "function") {
     return labeled.hasErrorLabel("UnknownTransactionCommitResult");
   }
   return Array.isArray(labeled.errorLabels) &&
     labeled.errorLabels.includes("UnknownTransactionCommitResult");
+}
+
+function markDataTransactionOutcomeUnknown(error: unknown): Error {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { dataTransactionOutcomeUnknown?: unknown })
+      .dataTransactionOutcomeUnknown === true
+  ) {
+    return error as Error;
+  }
+  const wrapped = new Error(errorMessage(error), { cause: error });
+  Object.defineProperty(wrapped, "dataTransactionOutcomeUnknown", {
+    value: true,
+    enumerable: false,
+  });
+  return wrapped;
+}
+
+/**
+ * Callback이 mutation을 시작한 뒤 driver가 label 없는 timeout/network 오류를
+ * 반환해도 abort로 단정하지 않는다. 호출자는 첫 mutation 직전에 mark를 호출한다.
+ */
+export async function guardDataTransactionOutcome<T>(
+  execute: (markMutationAttempted: () => void) => Promise<T>,
+): Promise<T> {
+  let mutationAttempted = false;
+  try {
+    return await execute(() => {
+      mutationAttempted = true;
+    });
+  } catch (error) {
+    if (!mutationAttempted) throw error;
+    throw markDataTransactionOutcomeUnknown(error);
+  }
 }
 
 export function reconcileDataTransactionCommit(options: {

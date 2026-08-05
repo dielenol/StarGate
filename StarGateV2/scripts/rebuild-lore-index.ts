@@ -9,7 +9,10 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { LORE_INDEX_DEFINITIONS } from "@stargate/shared-db";
+import {
+  LORE_INDEX_DEFINITIONS,
+  SESSION_REPORT_INDEX_DEFINITIONS,
+} from "@stargate/shared-db";
 import {
   loreAliasSchema,
   loreClaimSchema,
@@ -32,8 +35,6 @@ import {
   type Collection,
   type Db,
   type Document,
-  type IndexDescription,
-  type IndexDescriptionInfo,
 } from "mongodb";
 
 import {
@@ -52,6 +53,7 @@ import {
   ingestionLeaseFields,
   reconcileExpiredIngestionRuns,
 } from "./lib/ingestion-run-lease.ts";
+import { indexDefinitionIssues } from "./lib/lore-index-inspection.ts";
 
 function loadEnvFile(fileName: string): void {
   try {
@@ -670,40 +672,6 @@ async function releaseSnapshotLocks(
   }
 }
 
-function canonicalize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalize);
-  if (value === null || typeof value !== "object") return value;
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, nested]) => [key, canonicalize(nested)]),
-  );
-}
-
-function sameDocument(left: unknown, right: unknown): boolean {
-  return JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right));
-}
-
-function sameIndexKey(expected: IndexDescription["key"], actual: Document): boolean {
-  const normalizedExpected =
-    expected instanceof Map ? Object.fromEntries(expected) : expected;
-  return JSON.stringify(Object.entries(normalizedExpected)) ===
-    JSON.stringify(Object.entries(actual));
-}
-
-function indexMatches(
-  expected: IndexDescription,
-  actual: IndexDescriptionInfo,
-): boolean {
-  return (
-    sameIndexKey(expected.key, actual.key) &&
-    (expected.unique === true) === (actual.unique === true) &&
-    sameDocument(expected.partialFilterExpression, actual.partialFilterExpression) &&
-    sameDocument(expected.weights, actual.weights) &&
-    expected.default_language === actual.default_language
-  );
-}
-
 async function assertLoreIndexesReady(db: Db): Promise<void> {
   const missing: string[] = [];
   const invalid: string[] = [];
@@ -720,7 +688,7 @@ async function assertLoreIndexesReady(db: Db): Promise<void> {
       const actual = actualIndexes.find((index) => index.name === expected.name);
       if (!actual) {
         missing.push(`${collection}.${String(expected.name)}`);
-      } else if (!indexMatches(expected, actual)) {
+      } else if (indexDefinitionIssues(expected, actual).length > 0) {
         invalid.push(`${collection}.${String(expected.name)}:definition`);
       }
     }
@@ -732,11 +700,16 @@ async function assertLoreIndexesReady(db: Db): Promise<void> {
   const reportIdentityIndex = reportIndexes.find(
     (index) => index.name === "session_reports_sessionId_unique",
   );
-  if (!reportIdentityIndex) {
+  const expectedReportIdentityIndex = SESSION_REPORT_INDEX_DEFINITIONS.find(
+    (index) => index.name === "session_reports_sessionId_unique",
+  );
+  if (!reportIdentityIndex || !expectedReportIdentityIndex) {
     missing.push("session_reports.session_reports_sessionId_unique");
   } else if (
-    !sameIndexKey({ sessionId: 1 }, reportIdentityIndex.key) ||
-    reportIdentityIndex.unique !== true
+    indexDefinitionIssues(
+      expectedReportIdentityIndex,
+      reportIdentityIndex,
+    ).length > 0
   ) {
     invalid.push("session_reports.session_reports_sessionId_unique:definition");
   }

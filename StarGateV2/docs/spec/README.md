@@ -347,6 +347,8 @@ pnpm lore:baseline -- --verify-live
 
 `lore:storage`, `lore:rebuild`, `lore:provenance`의 실제 쓰기는 `--execute --yes`와 명시적 `DB_NAME`/`MONGODB_DB_NAME`이 모두 필요하다. 이는 기술적 확인일 뿐 live 승인 자체가 아니며, 정확한 대상·변경 전후·부수 효과에 대한 최신 사용자 승인이 별도로 있어야 한다. dry-run은 stale run 정리, index 생성, backfill, projection write를 수행하지 않는다. 승인된 `lore:storage` 실행은 nested dossier의 legacy BSON Date를 ISO provenance 문자열로 바꾸고 optional catalog managed field의 `null`을 field absence로 정규화하는 무손실 보정도 transaction/CAS로 수행한다. read-only 출력은 대상 host/DB, lore backfill, exact collection/id/stable key/기대 `updatedAt`/변환, index DDL 대상을 묶은 `executionPlanDigest`를 제공하며, 실행에는 같은 값을 `--expected-plan-digest`로 전달해야 한다. 모든 data plan은 첫 mutation 전에 같은 transaction snapshot에서 다시 검증하고 한 transaction으로 commit하므로 승인 뒤 추가되거나 변경된 대상을 함께 보정하지 않는다. 비원자적인 index DDL은 별도 phase로 실행하며, 실패 시 nonzero 종료와 함께 `partial-apply`, 승인·적용·잔여 목록을 구조화 출력한다. transaction commit 응답이 불명확하면 `commit-unknown`으로 분리하고 별도 read-only snapshot transaction에서 remaining plan과 승인 target의 존재·logicalKey/projectionOwner·정규화 필드·field absence·`updatedAt` 변경을 함께 확인한 경우에만 commit-consistent로 기록한 뒤 DDL은 시작하지 않는다. 필수 character 필드나 wiki 작성자처럼 출처가 필요한 값은 자동 생성하지 않고 stable key와 누락 필드를 보고하며, 검토된 durable payload로 보강한다. `lore:provenance`는 domain/economy payload를 다시 적용하지 않고 repository source와 historical report의 add-only ledger만 한 transaction에서 backfill한다.
 
+데이터 mutation을 시작한 뒤 driver가 표준 commit label 없이 timeout/network 오류를 반환해도 확정 abort로 처리하지 않고 `commit-unknown`으로 승격한다. MongoDB text index는 `listIndexes`가 선언 필드 대신 반환하는 내부 `_fts`/`_ftsx` key와 field weights를 함께 비교하여 정상 DDL을 drift로 오판하지 않는다.
+
 ```bash
 # 1) read-only 출력의 executionPlanDigest와 대상 목록을 검토한다.
 pnpm lore:storage

@@ -5,20 +5,33 @@ import test from "node:test";
 const STORAGE_SCRIPT = new URL("../../migrate-lore-storage.ts", import.meta.url);
 const COMPATIBILITY_SCRIPT = new URL("../lore-seed-compatibility.ts", import.meta.url);
 const EXECUTION_SCRIPT = new URL("../lore-storage-execution.ts", import.meta.url);
+const INDEX_INSPECTION_SCRIPT = new URL("../lore-index-inspection.ts", import.meta.url);
+const REBUILD_SCRIPT = new URL("../../rebuild-lore-index.ts", import.meta.url);
 const SEED_SCRIPT = new URL("../../upsert-seed-payload.ts", import.meta.url);
 const PROVENANCE_SCRIPT = new URL("../../backfill-report-provenance.ts", import.meta.url);
 
 test("lore storage preflight는 sparse와 internal lock metadata를 진단한다", async () => {
-  const [source, compatibilitySource, executionSource] = await Promise.all([
+  const [
+    source,
+    compatibilitySource,
+    executionSource,
+    indexInspectionSource,
+    rebuildSource,
+  ] = await Promise.all([
     readFile(STORAGE_SCRIPT, "utf8"),
     readFile(COMPATIBILITY_SCRIPT, "utf8"),
     readFile(EXECUTION_SCRIPT, "utf8"),
+    readFile(INDEX_INSPECTION_SCRIPT, "utf8"),
+    readFile(REBUILD_SCRIPT, "utf8"),
   ]);
 
   assert.match(
-    source,
+    indexInspectionSource,
     /\(expected\.sparse === true\) !== \(actual\.sparse === true\)/u,
   );
+  assert.match(indexInspectionSource, /entries\.push\(\["_fts", "text"\], \["_ftsx", 1\]\)/u);
+  assert.match(rebuildSource, /indexDefinitionIssues\(expected, actual\)\.length > 0/u);
+  assert.match(rebuildSource, /SESSION_REPORT_INDEX_DEFINITIONS/u);
   assert.match(source, /uniqueIndex\.sparse === true \? \["sparse"\]/u);
   assert.match(source, /invalid_report_reference_lock_timestamp/u);
   assert.match(source, /legacy_report_reference_version/u);
@@ -42,6 +55,8 @@ test("lore storage preflight는 sparse와 internal lock metadata를 진단한다
   assert.match(executionSource, /UnknownTransactionCommitResult/u);
   assert.match(executionSource, /status: commitUnknown \? "commit-unknown"/u);
   assert.match(executionSource, /reconcileDataTransactionCommit/u);
+  assert.match(executionSource, /guardDataTransactionOutcome/u);
+  assert.match(executionSource, /dataTransactionOutcomeUnknown/u);
   assert.match(executionSource, /appliedDataPlan/u);
   assert.match(source, /onEnsured: recordEnsuredIndex/u);
   assert.match(source, /postflightInspectionError/u);

@@ -58,6 +58,10 @@ test("모든 lore 논리 ID와 active generation은 DB unique 계약을 가진�
     "기존 이름에 새 key spec을 덮어써 MongoDB IndexKeySpecsConflict를 만들면 안 됨",
   );
   assert.equal(typeof findLoreUniqueIndexConflicts, "function");
+  const searchText = LORE_INDEX_DEFINITIONS.lore_search_documents.find(
+    (index) => index.name === "lore_search_documents_text",
+  );
+  assert.equal(searchText?.textIndexVersion, 3);
 });
 
 test("구조화 report 역참조는 각 target identity의 multikey index를 가진다", () => {

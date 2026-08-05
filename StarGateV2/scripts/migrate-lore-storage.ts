@@ -39,10 +39,13 @@ import type {
   ClientSession,
   Db,
   Document,
-  IndexDescription,
   IndexDescriptionInfo,
 } from "mongodb";
 
+import {
+  indexDefinitionIssues,
+  sameIndexKey,
+} from "./lib/lore-index-inspection.ts";
 import {
   auditLoreSourceIntegrity,
   type LoreSourceIdentity,
@@ -58,6 +61,7 @@ import {
   type SeedCompatibilityRepair,
 } from "./lib/lore-seed-compatibility.ts";
 import {
+  guardDataTransactionOutcome,
   observeInReadOnlySnapshot,
   reconcileDataTransactionCommit,
   runLoreStorageExecutionPhases,
@@ -124,45 +128,6 @@ function withDefaultUriOptions(
   }
   const nextQuery = params.toString();
   return nextQuery ? `${base}?${nextQuery}` : base;
-}
-
-function canonicalize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalize);
-  if (value === null || typeof value !== "object") return value;
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, nested]) => [key, canonicalize(nested)]),
-  );
-}
-
-function sameDocument(left: unknown, right: unknown): boolean {
-  return JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right));
-}
-
-function sameKey(expected: IndexDescription["key"], actual: Document): boolean {
-  if (expected instanceof Map) {
-    return sameDocument(Object.fromEntries(expected), actual);
-  }
-  return JSON.stringify(Object.entries(expected)) === JSON.stringify(Object.entries(actual));
-}
-
-function indexIssues(
-  expected: IndexDescription,
-  actual: IndexDescriptionInfo,
-): string[] {
-  const issues: string[] = [];
-  if (!sameKey(expected.key, actual.key)) issues.push("key");
-  if ((expected.unique === true) !== (actual.unique === true)) issues.push("unique");
-  if ((expected.sparse === true) !== (actual.sparse === true)) issues.push("sparse");
-  if (!sameDocument(expected.partialFilterExpression, actual.partialFilterExpression)) {
-    issues.push("partialFilterExpression");
-  }
-  if (!sameDocument(expected.weights, actual.weights)) issues.push("weights");
-  if (expected.default_language !== actual.default_language) {
-    issues.push("default_language");
-  }
-  return issues;
 }
 
 async function collectionExists(db: Db, name: string): Promise<boolean> {
@@ -809,40 +774,48 @@ async function applyStorageDataPlan(
   );
   const session = (await getClient()).startSession();
   try {
-    await session.withTransaction(async () => {
-      // 모든 data plan을 첫 mutation 전에 같은 transaction snapshot에서 고정한다.
-      const currentLoreBackfill = await inspectLoreBackfill(db, session);
-      const currentSeedCompatibility = await inspectSeedCompatibility(db, session);
-      if (
-        storageDataPlanDigest(
-          currentLoreBackfill,
-          currentSeedCompatibility.repairs,
-        ) !== expectedDataPlanDigest
-      ) {
-        throw new Error("lore storage data inspection/CAS snapshot이 변경되었습니다.");
-      }
+    await guardDataTransactionOutcome((markMutationAttempted) =>
+      session.withTransaction(async () => {
+        // 모든 data plan을 첫 mutation 전에 같은 transaction snapshot에서 고정한다.
+        const currentLoreBackfill = await inspectLoreBackfill(db, session);
+        const currentSeedCompatibility = await inspectSeedCompatibility(db, session);
+        if (
+          storageDataPlanDigest(
+            currentLoreBackfill,
+            currentSeedCompatibility.repairs,
+          ) !== expectedDataPlanDigest
+        ) {
+          throw new Error("lore storage data inspection/CAS snapshot이 변경되었습니다.");
+        }
 
-      await writeLoreBackfill(db, currentLoreBackfill, session);
-      await applySeedCompatibilityRepairsInSession(
-        db,
-        session,
-        approvedSeedCompatibilityRepairs,
-        seedPlanDigest,
-        async (activeSession) =>
-          (await inspectSeedCompatibility(db, activeSession)).repairs,
-      );
+        const mutationCount =
+          currentLoreBackfill.assertionUpdates.length +
+          currentLoreBackfill.searchOwnerEntityRefs.length +
+          currentSeedCompatibility.repairs.length;
+        if (mutationCount > 0) markMutationAttempted();
 
-      const afterLoreBackfill = await inspectLoreBackfill(db, session);
-      if (
-        afterLoreBackfill.assertionUpdates.length > 0 ||
-        afterLoreBackfill.searchOwnerEntityRefs.length > 0 ||
-        afterLoreBackfill.invalidRows.length > 0 ||
-        afterLoreBackfill.duplicateActiveLogicalKeys.length > 0 ||
-        afterLoreBackfill.unknownSearchOwners.length > 0
-      ) {
-        throw new Error("lore storage data transaction postflight가 실패했습니다.");
-      }
-    });
+        await writeLoreBackfill(db, currentLoreBackfill, session);
+        await applySeedCompatibilityRepairsInSession(
+          db,
+          session,
+          approvedSeedCompatibilityRepairs,
+          seedPlanDigest,
+          async (activeSession) =>
+            (await inspectSeedCompatibility(db, activeSession)).repairs,
+        );
+
+        const afterLoreBackfill = await inspectLoreBackfill(db, session);
+        if (
+          afterLoreBackfill.assertionUpdates.length > 0 ||
+          afterLoreBackfill.searchOwnerEntityRefs.length > 0 ||
+          afterLoreBackfill.invalidRows.length > 0 ||
+          afterLoreBackfill.duplicateActiveLogicalKeys.length > 0 ||
+          afterLoreBackfill.unknownSearchOwners.length > 0
+        ) {
+          throw new Error("lore storage data transaction postflight가 실패했습니다.");
+        }
+      }),
+    );
   } finally {
     await session.endSession();
   }
@@ -1058,7 +1031,7 @@ async function inspectStorage(db: Db): Promise<StorageInspection> {
     const actualIndexes = await listIndexes(db, collection);
     for (const expected of expectedIndexes) {
       const actual = actualIndexes.find((index) => index.name === expected.name);
-      const issues = actual ? indexIssues(expected, actual) : [];
+      const issues = actual ? indexDefinitionIssues(expected, actual) : [];
       const state = !actual ? "missing" : issues.length > 0 ? "invalid" : "valid";
       loreIndexes.push({
         collection,
@@ -1238,7 +1211,7 @@ async function inspectStorage(db: Db): Promise<StorageInspection> {
     const indexes = await listIndexes(db, "session_reports");
     sessionReportIndexes = SESSION_REPORT_INDEX_DEFINITIONS.map((expected) => {
       const actual = indexes.find((index) => index.name === expected.name);
-      const issues = actual ? indexIssues(expected, actual) : [];
+      const issues = actual ? indexDefinitionIssues(expected, actual) : [];
       const state = !actual ? "missing" : issues.length > 0 ? "invalid" : "valid";
       if (state === "invalid") {
         blockers.push(
@@ -1252,7 +1225,7 @@ async function inspectStorage(db: Db): Promise<StorageInspection> {
     );
     if (uniqueIndex) {
       uniqueIndexIssues = [
-        ...(!sameKey({ sessionId: 1 }, uniqueIndex.key) ? ["key"] : []),
+        ...(!sameIndexKey({ sessionId: 1 }, uniqueIndex.key) ? ["key"] : []),
         ...(uniqueIndex.unique === true ? [] : ["unique"]),
         ...(uniqueIndex.sparse === true ? ["sparse"] : []),
       ];

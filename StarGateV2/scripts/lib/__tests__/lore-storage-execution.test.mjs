@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const {
+  guardDataTransactionOutcome,
   observeInReadOnlySnapshot,
   reconcileDataTransactionCommit,
   runLoreStorageExecutionPhases,
@@ -50,6 +51,33 @@ test("data transaction 실패는 DDL을 시작하지 않고 no-commit으로 보�
     error: { phase: "data-transaction", message: "snapshot drift" },
   });
   assert.equal(ddlCalls, 0);
+});
+
+test("mutation 전 실패는 확정 no-commit으로 유지한다", async () => {
+  const result = await runLoreStorageExecutionPhases({
+    applyDataPlan: () => guardDataTransactionOutcome(async () => {
+      throw new Error("preflight drift");
+    }),
+    applyIndexDdl: async () => assert.fail("DDL을 시작하면 안 됩니다."),
+  });
+
+  assert.equal(result.status, "failed-no-commit");
+  assert.equal(result.dataTransaction, "aborted");
+});
+
+test("mutation 시작 후 label 없는 timeout도 commit-unknown으로 fail-closed한다", async () => {
+  const result = await runLoreStorageExecutionPhases({
+    applyDataPlan: () => guardDataTransactionOutcome(async (markMutationAttempted) => {
+      markMutationAttempted();
+      throw new Error("Timed out during socket read");
+    }),
+    applyIndexDdl: async () => assert.fail("DDL을 시작하면 안 됩니다."),
+  });
+
+  assert.equal(result.status, "commit-unknown");
+  assert.equal(result.dataTransaction, "unknown");
+  assert.equal(result.indexDdl, "not-started");
+  assert.equal(result.error?.message, "Timed out during socket read");
 });
 
 test("UnknownTransactionCommitResult는 미커밋으로 단정하지 않는다", async () => {

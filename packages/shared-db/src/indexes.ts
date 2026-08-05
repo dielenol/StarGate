@@ -121,6 +121,7 @@ export const LORE_INDEX_DEFINITIONS: Record<string, IndexDescription[]> = {
       name: "lore_search_documents_text",
       weights: { title: 10, aliases: 8, summary: 5, searchText: 1 },
       default_language: "none",
+      textIndexVersion: 3,
     },
     {
       key: {
