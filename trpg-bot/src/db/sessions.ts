@@ -9,6 +9,9 @@ import { ObjectId, type Filter } from "mongodb";
 import { sessionsCollection } from "./index.js";
 import type { Session, SessionStatus } from "../types/session.js";
 
+/** 작전 보고서 source FK 보호가 포함된 shared 삭제 경로만 노출한다. */
+export { deleteSessionById } from "@stargate/shared-db";
+
 /** MongoDB 내부 _id는 ObjectId이므로 필터용 타입 */
 type SessionFilter = Filter<Session> & { _id?: ObjectId };
 
@@ -88,21 +91,6 @@ export async function updateSessionMessageId(
     { $set: { messageId, updatedAt: new Date() } }
   );
   return result.modifiedCount > 0;
-}
-
-/**
- * 세션을 삭제합니다.
- * 생성 보상 롤백에 사용합니다.
- * @param sessionId ObjectId 문자열
- * @returns 삭제 성공 여부
- */
-export async function deleteSessionById(sessionId: string): Promise<boolean> {
-  if (!ObjectId.isValid(sessionId)) return false;
-
-  const result = await sessionsCollection().deleteOne({
-    _id: new ObjectId(sessionId),
-  } as SessionFilter);
-  return result.deletedCount > 0;
 }
 
 /**
