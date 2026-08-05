@@ -322,7 +322,7 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 - alias/edge/claim은 `logicalKey`별 active row를 하나만 허용하고, 교체 시 predecessor 전환과 successor insert를 같은 transaction에서 처리한다. 내용이 같은 rebuild 재실행은 기존 lineage를 유지하는 no-op이다.
 - `logicalKey`가 없는 legacy 행은 raw null/missing 값을 같은 duplicate group으로 오판하지 않는다. storage migration이 계산형 logical identity로 실제 중복을 먼저 확인하고 backfill한 뒤 unique index를 적용한다. 기존 검색 인덱스와 key가 달라진 owner-scoped 검색 인덱스는 별도 이름(`lore_search_documents_access_owner_kind_status_updatedAt`)을 사용해 `IndexKeySpecsConflict`를 피한다.
 - lore index DDL은 collection 간 원자적이지 않으므로 index 하나씩 순차 적용한다. 각 unique index는 broad preflight와 별개로 `createIndex` 직전에 중복을 다시 검사하며, 이미 생성된 동일 spec은 재사용되므로 중간 실패 뒤 같은 명령을 안전하게 재실행할 수 있다.
-- `session_reports`는 고유 `sessionId`뿐 아니라 세 구조화 참조 배열 각각에 multikey index를 두어 wiki/catalog/dossier 역링크와 target lifecycle inbound 검사가 전체 보고서 스캔으로 퇴화하지 않게 한다. `lore:storage` read-only 결과가 이 5개 보고서 index의 missing/invalid 상태도 함께 보고한다.
+- `session_reports`는 고유 `sessionId`뿐 아니라 세 구조화 참조 배열 각각에 multikey index를 두어 wiki/catalog/dossier 역링크와 target lifecycle inbound 검사가 전체 보고서 스캔으로 퇴화하지 않게 한다. `lore:storage` read-only 결과가 이 5개 보고서 index의 missing/invalid 상태와 seed 호환성 문제의 stable key·필드·자동 보정 계획을 함께 보고한다.
 - 모든 evidence/sourceIds는 실제 `lore_sources.sourceId`를 참조해야 한다. storage preflight는 source schema, 중복 ID, 고아 참조, parent 순환, ingestion source FK를 읽기 전용으로 검사한다.
 - edge access는 양 끝 entity의 공개 범위를 교집합으로 계산한다. 공개 문서에서 비공개 인물로 향하는 관계가 공개 edge로 승격되지 않는다.
 - `search-rebuild`는 mode당 하나의 running generation만 허용하며 heartbeat/lease를 가진다. 만료 lease 정리는 write 모드에서만 schema-valid `failed` audit으로 전환한다.
@@ -331,7 +331,7 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 ### read-only 운영 점검
 
 ```bash
-# index/identity/source FK/visibility/ingestion 무결성 점검 (기본 read-only)
+# index/identity/source FK/visibility/ingestion/seed 호환성 점검 (기본 read-only)
 pnpm lore:storage
 
 # domain SSOT → source/alias/edge/claim/search projection 계획 (기본 dry-run)
@@ -345,7 +345,15 @@ pnpm lore:baseline
 pnpm lore:baseline -- --verify-live
 ```
 
-`lore:storage`, `lore:rebuild`, `lore:provenance`의 실제 쓰기는 `--execute --yes`와 명시적 `DB_NAME`/`MONGODB_DB_NAME`이 모두 필요하다. 이는 기술적 확인일 뿐 live 승인 자체가 아니며, 정확한 대상·변경 전후·부수 효과에 대한 최신 사용자 승인이 별도로 있어야 한다. dry-run은 stale run 정리, index 생성, backfill, projection write를 수행하지 않는다. `lore:provenance`는 domain/economy payload를 다시 적용하지 않고 repository source와 historical report의 add-only ledger만 한 transaction에서 backfill한다.
+`lore:storage`, `lore:rebuild`, `lore:provenance`의 실제 쓰기는 `--execute --yes`와 명시적 `DB_NAME`/`MONGODB_DB_NAME`이 모두 필요하다. 이는 기술적 확인일 뿐 live 승인 자체가 아니며, 정확한 대상·변경 전후·부수 효과에 대한 최신 사용자 승인이 별도로 있어야 한다. dry-run은 stale run 정리, index 생성, backfill, projection write를 수행하지 않는다. 승인된 `lore:storage` 실행은 nested dossier의 legacy BSON Date를 ISO provenance 문자열로 바꾸고 optional catalog managed field의 `null`을 field absence로 정규화하는 무손실 보정도 transaction/CAS로 수행한다. read-only 출력은 대상 host/DB, lore backfill, exact collection/id/stable key/기대 `updatedAt`/변환, index DDL 대상을 묶은 `executionPlanDigest`를 제공하며, 실행에는 같은 값을 `--expected-plan-digest`로 전달해야 한다. 모든 data plan은 첫 mutation 전에 같은 transaction snapshot에서 다시 검증하고 한 transaction으로 commit하므로 승인 뒤 추가되거나 변경된 대상을 함께 보정하지 않는다. 비원자적인 index DDL은 별도 phase로 실행하며, 실패 시 nonzero 종료와 함께 `partial-apply`, 승인·적용·잔여 목록을 구조화 출력한다. transaction commit 응답이 불명확하면 `commit-unknown`으로 분리하고 별도 read-only snapshot transaction에서 remaining plan과 승인 target의 존재·logicalKey/projectionOwner·정규화 필드·field absence·`updatedAt` 변경을 함께 확인한 경우에만 commit-consistent로 기록한 뒤 DDL은 시작하지 않는다. 필수 character 필드나 wiki 작성자처럼 출처가 필요한 값은 자동 생성하지 않고 stable key와 누락 필드를 보고하며, 검토된 durable payload로 보강한다. `lore:provenance`는 domain/economy payload를 다시 적용하지 않고 repository source와 historical report의 add-only ledger만 한 transaction에서 backfill한다.
+
+```bash
+# 1) read-only 출력의 executionPlanDigest와 대상 목록을 검토한다.
+pnpm lore:storage
+
+# 2) 별도 live 승인 후, 검토한 digest를 그대로 고정해 실행한다.
+pnpm lore:storage -- --execute --yes --expected-plan-digest "$LORE_STORAGE_PLAN_DIGEST"
+```
 
 세션 보고서는 `relatedWikiSlugs`, `relatedPersonnelCodenames`, `relatedCatalogSlugs`를 명시적 graph link로 저장할 수 있다. 생성·수정 화면의 `STRUCTURED LORE LINKS`에서 한 줄에 하나씩 입력하며, 각 배열은 trim된 고유 문자열 최대 200개·항목당 160자로 검증된다. 모든 로그인 사용자가 보고서를 읽을 수 있으므로 target도 전 사용자에게 공개 가능한 `wiki_pages.isPublic:true`, `characters.isPublic != false`, `master_items.isPublic != false` exact identity만 허용한다. 비공개 target은 미존재와 같은 400으로 처리해 존재 oracle을 만들지 않으며, 중복 identity는 409로 거부한다. 신규 운영 보고서는 등록된 `sessions`/`trpg_sessions` source와 source에서 파생한 제목을 shared create gate가 강제한다. repository seed가 관리하는 historical report는 immutable `sessionId`와 함께 적용된 모든 `lore_sources.sourceId`를 add-only `provenanceSourceIds` ledger로 저장한다. generic runner는 다중 파일 WRITE를 거부하고 파일 1개를 transaction/audit 단위로 처리하므로 중단 뒤 파일별 재개가 가능하며, 같은 파일 재실행은 provenance와 `updatedAt`을 churn하지 않는다. 수정에서는 source identity를 변경할 수 없고, ObjectId 기반 운영 보고서는 신규·기존 모두 등록 source와 제목 SSOT를 다시 확인한다. 요청에 포함되지 않은 배열까지 합친 최종 세 참조 배열도 shared gate가 다시 검증한다. 따라서 API뿐 아니라 shared CRUD와 generic seed runner도 같은 규칙을 우회할 수 없다. 검증 뒤 target document의 내부 lock timestamp를 갱신해 report insert/update와 target 삭제·identity 변경·비공개 전환을 같은 Mongo write-conflict 경계에 두며, 이미 inbound report가 있는 target lifecycle mutation은 409로 차단한다. 등록 세션 삭제도 같은 source document를 transaction에서 잠근 뒤 inbound report를 검사한다. 이 내부 필드와 provenance ledger는 create DTO와 모든 공개 full-document 반환값에서 제거되고 provenance hash 입력에서도 제외된다. 응답 직전에도 공개 target으로 다시 해석되지 않는 legacy 참조를 fail-closed로 제거한다. 저장된 명시 링크는 보고서 상세뿐 아니라 wiki/catalog/dossier의 역링크와 위키의 관련 인물 계산에도 사용한다. 자동 본문 추론은 보조 수단이고, canon상 반드시 유지할 연결은 이 명시 필드를 사용한다. 보고서가 commit된 뒤 알림 전송만 실패한 경우에는 성공한 생성을 500으로 뒤집지 않고 서버 오류 로그로 분리한다.
 

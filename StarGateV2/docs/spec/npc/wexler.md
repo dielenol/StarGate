@@ -8,6 +8,7 @@ nameEn: Calvin R. Wexler
 gender: male
 age: 76
 height: 188cm
+weight: 미상
 factionCode: MILITARY
 institutionCode:
 department: USA

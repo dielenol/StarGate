@@ -209,6 +209,10 @@ export const SESSION_REPORT_INDEX_DEFINITIONS: IndexDescription[] = [
   },
 ];
 
+export interface IndexEnsureOptions {
+  onEnsured?: (index: { collection: string; name: string }) => void;
+}
+
 /** 단일 unique index의 현재 데이터 중복 여부를 검사한다. */
 export async function hasLoreUniqueIndexConflict(
   db: Db,
@@ -329,7 +333,10 @@ async function assertLoreIndexMigrationReady(db: Db): Promise<void> {
   }
 }
 
-export async function ensureLoreIndexes(database?: Db): Promise<void> {
+export async function ensureLoreIndexes(
+  database?: Db,
+  options: IndexEnsureOptions = {},
+): Promise<void> {
   const db = database ?? (await getDb());
   await assertLoreIndexMigrationReady(db);
   // MongoDB index DDL은 collection 간 원자적이지 않다. 각 index를 순차·멱등
@@ -345,13 +352,17 @@ export async function ensureLoreIndexes(database?: Db): Promise<void> {
           `[lore-indexes] unique index 중복 키를 먼저 정리해야 합니다: ${collection}.${String(index.name)}`,
         );
       }
-      const { key, ...options } = index;
-      await db.collection(collection).createIndex(key, options);
+      const { key, ...indexOptions } = index;
+      const name = await db.collection(collection).createIndex(key, indexOptions);
+      options.onEnsured?.({ collection, name });
     }
   }
 }
 
-export async function ensureSessionReportIndexes(database?: Db): Promise<void> {
+export async function ensureSessionReportIndexes(
+  database?: Db,
+  options: IndexEnsureOptions = {},
+): Promise<void> {
   const db = database ?? (await getDb());
   for (const index of SESSION_REPORT_INDEX_DEFINITIONS) {
     if (
@@ -362,8 +373,11 @@ export async function ensureSessionReportIndexes(database?: Db): Promise<void> {
         `[session-report-indexes] unique index 중복 키를 먼저 정리해야 합니다: session_reports.${String(index.name)}`,
       );
     }
-    const { key, ...options } = index;
-    await db.collection("session_reports").createIndex(key, options);
+    const { key, ...indexOptions } = index;
+    const name = await db
+      .collection("session_reports")
+      .createIndex(key, indexOptions);
+    options.onEnsured?.({ collection: "session_reports", name });
   }
 }
 

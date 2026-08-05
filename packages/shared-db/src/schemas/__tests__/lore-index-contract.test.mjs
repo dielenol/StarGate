@@ -81,6 +81,7 @@ test("구조화 report 역참조는 각 target identity의 multikey index를 가
 
 test("sessionId unique DDL도 직전 duplicate preflight 후 순차 적용한다", async () => {
   const operations = [];
+  const ensured = [];
   const fakeDb = {
     listCollections() {
       return { hasNext: async () => true };
@@ -100,7 +101,9 @@ test("sessionId unique DDL도 직전 duplicate preflight 후 순차 적용한다
     },
   };
 
-  await ensureSessionReportIndexes(fakeDb);
+  await ensureSessionReportIndexes(fakeDb, {
+    onEnsured: (index) => ensured.push(index),
+  });
   assert.equal(
     operations.filter((operation) => operation.startsWith("create:")).length,
     SESSION_REPORT_INDEX_DEFINITIONS.length,
@@ -109,6 +112,10 @@ test("sessionId unique DDL도 직전 duplicate preflight 후 순차 적용한다
     "create:session_reports_sessionId_unique",
   );
   assert.equal(operations[uniqueCreate - 1], "aggregate");
+  assert.deepEqual(
+    ensured.map((index) => index.name),
+    SESSION_REPORT_INDEX_DEFINITIONS.map((index) => index.name),
+  );
 });
 
 test("legacy logicalKey 누락 행은 backfill 전 generic duplicate group에서 제외한다", async () => {
@@ -146,6 +153,7 @@ test("legacy logicalKey 누락 행은 backfill 전 generic duplicate group에서
 
 test("unique lore index는 각 createIndex 직전에 중복을 다시 검사하며 순차 재실행 가능하다", async () => {
   const operations = [];
+  const ensured = [];
   const fakeDb = {
     listCollections() {
       return { hasNext: async () => true };
@@ -169,7 +177,9 @@ test("unique lore index는 각 createIndex 직전에 중복을 다시 검사하�
     },
   };
 
-  await ensureLoreIndexes(fakeDb);
+  await ensureLoreIndexes(fakeDb, {
+    onEnsured: (index) => ensured.push(index),
+  });
 
   const uniqueNames = new Set(
     Object.values(LORE_INDEX_DEFINITIONS)
@@ -183,6 +193,13 @@ test("unique lore index는 각 createIndex 직전에 중복을 다시 검사하�
   assert.equal(
     createOperations.length,
     Object.values(LORE_INDEX_DEFINITIONS).flat().length,
+  );
+  assert.deepEqual(
+    ensured,
+    createOperations.map((operation) => ({
+      collection: operation.collection,
+      name: operation.name,
+    })),
   );
 
   for (let index = 0; index < operations.length; index += 1) {

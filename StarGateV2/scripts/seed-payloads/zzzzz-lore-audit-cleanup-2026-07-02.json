@@ -17,6 +17,7 @@
         "gender": "male",
         "age": "76",
         "height": "188cm",
+        "weight": "미상",
         "appearance": "70대 중반이지만 단상에 서면 작게 보이지 않는 편이다. 성조기 핀과 노부스 오르도 군부 금장을 단 양복 차림으로 공개 석상에 선다.",
         "personality": "자기확신이 곧 세계관인 정치형 NPC. 공개 발언은 거칠고 과장되지만, 자금·공포·충성의 계산은 냉정하게 유지한다.",
         "background": "미국 정치권에서 두 차례 대통령 임기를 연임한 뒤 부통령으로 자리를 옮긴 이례적 경력을 지닌다. 노부스 오르도 내부에서는 군부 세력 지도부의 일원으로 선제 격리·무장 대응 라인을 주도한다.",
@@ -529,6 +530,8 @@
               "replacement": "## 관련 문서\n- [[네온 발키리]]\n- [[뉴 더블린]]\n- [[personnel:SANDMAN|데이빗 오 캘러핸]]\n- [[personnel:CASEY_RACER|케이시 레이서]]\n- [[personnel:ORSIS_201|도나도나]]"
             }
           },
+          "authorId": "novus-ordo-record-control",
+          "authorName": "NOVUS ORDO 기록통제실",
           "updatedAt": {
             "$toDate": "2026-07-02T00:00:00.000Z"
           }

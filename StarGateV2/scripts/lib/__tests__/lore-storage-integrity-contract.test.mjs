@@ -3,11 +3,17 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const STORAGE_SCRIPT = new URL("../../migrate-lore-storage.ts", import.meta.url);
+const COMPATIBILITY_SCRIPT = new URL("../lore-seed-compatibility.ts", import.meta.url);
+const EXECUTION_SCRIPT = new URL("../lore-storage-execution.ts", import.meta.url);
 const SEED_SCRIPT = new URL("../../upsert-seed-payload.ts", import.meta.url);
 const PROVENANCE_SCRIPT = new URL("../../backfill-report-provenance.ts", import.meta.url);
 
 test("lore storage preflight는 sparse와 internal lock metadata를 진단한다", async () => {
-  const source = await readFile(STORAGE_SCRIPT, "utf8");
+  const [source, compatibilitySource, executionSource] = await Promise.all([
+    readFile(STORAGE_SCRIPT, "utf8"),
+    readFile(COMPATIBILITY_SCRIPT, "utf8"),
+    readFile(EXECUTION_SCRIPT, "utf8"),
+  ]);
 
   assert.match(
     source,
@@ -21,6 +27,36 @@ test("lore storage preflight는 sparse와 internal lock metadata를 진단한다
   assert.match(source, /characterRequiredFieldRows/u);
   assert.match(source, /masterItemNullableManagedRows/u);
   assert.match(source, /wikiMissingAuthorRows/u);
+  assert.match(source, /applySeedCompatibilityRepairs/u);
+  assert.match(source, /seedCompatibilityAutomaticRepairs/u);
+  assert.match(source, /seedCompatibilityAppliedRepairs/u);
+  assert.match(source, /seedCompatibilityRemainingRepairs/u);
+  assert.match(source, /--expected-plan-digest/u);
+  assert.match(source, /executionPlanDigest/u);
+  assert.match(source, /\{ dbName, host: targetHost \}/u);
+  assert.match(source, /seedCompatibilityPlanDigest/u);
+  assert.match(source, /모든 data plan을 첫 mutation 전에 같은 transaction snapshot/u);
+  assert.match(source, /storageIndexPlanDigest\(beforeDdl\) !== indexPlanDigest/u);
+  assert.match(source, /runLoreStorageExecutionPhases/u);
+  assert.match(executionSource, /status: "partial-apply"/u);
+  assert.match(executionSource, /UnknownTransactionCommitResult/u);
+  assert.match(executionSource, /status: commitUnknown \? "commit-unknown"/u);
+  assert.match(executionSource, /reconcileDataTransactionCommit/u);
+  assert.match(executionSource, /appliedDataPlan/u);
+  assert.match(source, /onEnsured: recordEnsuredIndex/u);
+  assert.match(source, /postflightInspectionError/u);
+  assert.match(source, /state-consistent-with-commit/u);
+  assert.match(source, /verifyStorageDataPlanPostconditions/u);
+  assert.match(source, /seedCompatibilityRepairPostconditionIssues/u);
+  assert.match(source, /observeCommitUnknownDataState/u);
+  assert.match(executionSource, /readConcern: \{ level: "snapshot" \}/u);
+  assert.match(source, /BSON Date -> ISO-8601 string/u);
+  assert.match(source, /null -> absent/u);
+  assert.match(compatibilitySource, /seed compatibility inspection\/CAS snapshot/u);
+  assert.match(compatibilitySource, /seedCompatibilityRepairDigest\(currentRepairs\)/u);
+  assert.match(compatibilitySource, /\$currentDate: \{ updatedAt: true \}/u);
+  assert.match(source, /if \(!session\) return Promise\.all/u);
+  assert.match(source, /for \(const operation of operations\) results\.push\(await operation\(\)\)/u);
 });
 
 test("historical report provenance는 domain/economy 재실행 없는 전용 멱등 backfill을 쓴다", async () => {
