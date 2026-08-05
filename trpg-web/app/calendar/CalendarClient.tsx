@@ -1,10 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 
 import type { TrpgMemberView } from "@/app/api/trpg/members/route";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useToast } from "@/components/ToastProvider";
+import {
+  useGoogleCalendarConnection,
+  useGoogleCalendarEvents,
+} from "@/hooks/queries/useGoogleCalendar";
+import { useTrpgMembers } from "@/hooks/queries/useTrpgMembers";
+import { useTrpgSessions } from "@/hooks/queries/useTrpgSessions";
 import { yearMonthFromDateKey } from "@/lib/calendar/date-key";
 import {
   getKoreanHolidayInfo,
@@ -17,11 +26,14 @@ import {
   shiftMonth,
   type CalendarCell,
 } from "@/lib/calendar/month";
+import { GoogleCalendarClientError } from "@/lib/google-calendar/client";
+import type {
+  GoogleCalendarConnectionView,
+  GoogleCalendarEventView,
+} from "@/lib/google-calendar/types";
 import type { TrpgSessionView } from "@/lib/trpg/serializer";
 
-import { useTrpgMembers } from "@/hooks/queries/useTrpgMembers";
-import { useTrpgSessions } from "@/hooks/queries/useTrpgSessions";
-
+import { GoogleCalendarSettingsModal } from "./GoogleCalendarSettingsModal";
 import { SessionCreateModal } from "./SessionCreateModal";
 import { SessionDetailModal } from "./SessionDetailModal";
 
@@ -45,6 +57,8 @@ interface Props {
   initialMonth: number;
   initialSessions: TrpgSessionView[];
   initialMembers: TrpgMemberView[];
+  initialGoogleConnection: GoogleCalendarConnectionView;
+  initialGoogleStatus?: string | null;
   initialSelectedDate?: string | null;
   initialFocusedSessionId?: string | null;
 }
@@ -65,9 +79,13 @@ export function CalendarClient({
   initialMonth,
   initialSessions,
   initialMembers,
+  initialGoogleConnection,
+  initialGoogleStatus = null,
   initialSelectedDate = null,
   initialFocusedSessionId = null,
 }: Props) {
+  const router = useRouter();
+  const { showToast } = useToast();
   const [{ year, month }, setYearMonth] = useState(() => ({
     year: initialYear,
     month: initialMonth,
@@ -80,6 +98,10 @@ export function CalendarClient({
     initialFocusedSessionId,
   );
   const [showMineOnly, setShowMineOnly] = useState(false);
+  const [googleSettingsOpen, setGoogleSettingsOpen] = useState(
+    initialGoogleStatus === "connected",
+  );
+  const [googleCallbackStatus] = useState(initialGoogleStatus);
   const [detailModalSession, setDetailModalSession] =
     useState<TrpgSessionView | null>(
       () =>
@@ -97,6 +119,35 @@ export function CalendarClient({
     initialData: isInitialMonth ? initialSessions : undefined,
   });
   const membersQuery = useTrpgMembers({ initialData: initialMembers });
+  const googleConnectionQuery = useGoogleCalendarConnection(
+    initialGoogleConnection,
+  );
+  const googleConnection =
+    googleConnectionQuery.data ?? initialGoogleConnection;
+  const googleEventsEnabled =
+    googleConnection.enabled &&
+    googleConnection.connected &&
+    !googleConnection.reconnectRequired &&
+    googleConnection.selectedCalendarCount > 0;
+  const googleEventsQuery = useGoogleCalendarEvents(
+    year,
+    month,
+    googleEventsEnabled,
+  );
+  const googleQueryNeedsReconnect =
+    googleEventsQuery.error instanceof GoogleCalendarClientError &&
+    googleEventsQuery.error.code === "GOOGLE_RECONNECT_REQUIRED";
+  const effectiveGoogleConnection = googleQueryNeedsReconnect
+    ? { ...googleConnection, reconnectRequired: true }
+    : googleConnection;
+
+  useEffect(() => {
+    if (!googleCallbackStatus) return;
+    if (googleCallbackStatus === "connected") {
+      showToast("Google Calendar가 연결되었습니다.");
+    }
+    router.replace("/calendar", { scroll: false });
+  }, [googleCallbackStatus, router, showToast]);
 
   const sessions = useMemo(
     () => sessionsQuery.data ?? [],
@@ -121,6 +172,16 @@ export function CalendarClient({
     [currentUserDiscordId, members],
   );
 
+  const googleEventsByDate = useMemo(() => {
+    const map = new Map<string, GoogleCalendarEventView[]>();
+    for (const event of googleEventsQuery.data?.events ?? []) {
+      const items = map.get(event.date) ?? [];
+      items.push(event);
+      map.set(event.date, items);
+    }
+    return map;
+  }, [googleEventsQuery.data?.events]);
+
   const sessionsByDate = useMemo(() => {
     const map = new Map<string, TrpgSessionView[]>();
     for (const s of displaySessions) {
@@ -143,6 +204,10 @@ export function CalendarClient({
     if (!selectedDate) return [];
     return sessionsByDate.get(selectedDate) ?? [];
   }, [sessionsByDate, selectedDate]);
+  const selectedDateGoogleEvents = useMemo(() => {
+    if (!selectedDate) return [];
+    return googleEventsByDate.get(selectedDate) ?? [];
+  }, [googleEventsByDate, selectedDate]);
   const selectedDateCanCreate = selectedDate ? selectedDate >= todayKey : true;
 
   function handlePrev() {
@@ -186,6 +251,10 @@ export function CalendarClient({
     setDetailModalSession(session);
   }
 
+  const handleCloseGoogleSettings = useCallback(() => {
+    setGoogleSettingsOpen(false);
+  }, []);
+
   return (
     <main className={styles.calendar}>
       <header className={styles.calendar__header}>
@@ -210,6 +279,32 @@ export function CalendarClient({
           >
             {showMineOnly ? "전체 세션 보기" : "내 세션만 보기"}
           </button>
+          {googleConnection.enabled ? (
+            <button
+              className={`${styles["calendar__google-toggle"]} ${
+                effectiveGoogleConnection.connected
+                  ? styles["calendar__google-toggle--connected"]
+                  : ""
+              } ${
+                effectiveGoogleConnection.reconnectRequired
+                  ? styles["calendar__google-toggle--warning"]
+                  : ""
+              }`}
+              type="button"
+              onClick={() => setGoogleSettingsOpen(true)}
+              aria-label="Google Calendar 연결 및 표시 설정"
+            >
+              <span aria-hidden="true">G</span>
+              <span>Google 일정</span>
+              {effectiveGoogleConnection.connected ? (
+                <strong>
+                  {effectiveGoogleConnection.reconnectRequired
+                    ? "!"
+                    : effectiveGoogleConnection.selectedCalendarCount}
+                </strong>
+              ) : null}
+            </button>
+          ) : null}
           <button
             className={styles["calendar__create-btn"]}
             type="button"
@@ -239,6 +334,7 @@ export function CalendarClient({
           <span className={styles.calendar__profile} title="현재 로그인 사용자">
             {currentMember?.displayName ?? currentUserDiscordId}
           </span>
+          <ThemeToggle />
           <button
             className={styles["calendar__sign-out"]}
             type="button"
@@ -257,11 +353,51 @@ export function CalendarClient({
         </p>
       ) : null}
 
+      {googleCallbackStatus && googleCallbackStatus !== "connected" ? (
+        <p className={styles.calendar__error} role="alert">
+          {getGoogleCallbackMessage(googleCallbackStatus)}
+        </p>
+      ) : null}
+
+      {googleEventsQuery.isError ? (
+        <div className={styles["calendar__google-warning"]} role="alert">
+          <span>
+            {googleQueryNeedsReconnect
+              ? "Google Calendar 재연결이 필요합니다."
+              : googleEventsQuery.error instanceof Error
+                ? googleEventsQuery.error.message
+                : "Google 일정을 불러오지 못했습니다."}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              googleQueryNeedsReconnect
+                ? setGoogleSettingsOpen(true)
+                : googleEventsQuery.refetch()
+            }
+          >
+            {googleQueryNeedsReconnect ? "재연결" : "다시 시도"}
+          </button>
+        </div>
+      ) : googleEventsQuery.data &&
+        (googleEventsQuery.data.failedCalendarCount > 0 ||
+          googleEventsQuery.data.truncated) ? (
+        <p className={styles["calendar__google-warning"]} role="status">
+          {googleEventsQuery.data.failedCalendarCount > 0
+            ? `Google 캘린더 ${googleEventsQuery.data.failedCalendarCount}개의 일정을 불러오지 못했습니다.`
+            : "Google 일정이 많아 일부만 표시합니다."}
+        </p>
+      ) : null}
+
       <div className={styles.calendar__body}>
         {selectedDate ? (
           <DateSessionsPanel
             dateKey={selectedDate}
             sessions={selectedDateSessions}
+            googleEvents={selectedDateGoogleEvents}
+            showGoogleSection={
+              googleEventsEnabled && !googleQueryNeedsReconnect
+            }
             focusedSessionId={focusedSessionId}
             members={members}
             currentUserDiscordId={currentUserDiscordId}
@@ -283,7 +419,6 @@ export function CalendarClient({
                 className={`${styles.calendar__weekday} ${
                   styles[item.toneClass]
                 }`}
-                aria-label={item.ariaLabel}
               >
                 <span
                   className={styles["calendar__weekday-icon"]}
@@ -291,8 +426,14 @@ export function CalendarClient({
                 >
                   <span className={styles["calendar__weekday-icon-top"]} />
                 </span>
-                <span className={styles["calendar__weekday-text"]}>
+                <span
+                  className={styles["calendar__weekday-text"]}
+                  aria-hidden="true"
+                >
                   {item.label}
+                </span>
+                <span className={styles["calendar__sr-only"]}>
+                  {item.ariaLabel}
                 </span>
               </div>
             ))}
@@ -301,6 +442,8 @@ export function CalendarClient({
           <div className={styles.calendar__grid}>
             {grid.map((cell) => {
               const daySessions = sessionsByDate.get(cell.dateKey) ?? [];
+              const dayGoogleEvents =
+                googleEventsByDate.get(cell.dateKey) ?? [];
               const visible = daySessions.slice(
                 0,
                 MAX_VISIBLE_SESSIONS_PER_CELL,
@@ -330,15 +473,6 @@ export function CalendarClient({
                 >
                   <div
                     className={styles["calendar__cell-head"]}
-                    onClick={() => handleSelectDate(cell.dateKey)}
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter" && event.key !== " ") return;
-                      event.preventDefault();
-                      handleSelectDate(cell.dateKey);
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${cell.dateKey} 세션 목록 보기`}
                   >
                     <span
                       className={styles["calendar__cell-date"]}
@@ -408,6 +542,34 @@ export function CalendarClient({
                     ) : null}
                   </ul>
 
+                  {dayGoogleEvents.length > 0 ? (
+                    <button
+                      type="button"
+                      className={styles["calendar__google-summary"]}
+                      onClick={() => handleSelectDate(cell.dateKey)}
+                      aria-label={`${cell.dateKey} 개인 Google 일정 ${dayGoogleEvents.length}개 보기`}
+                    >
+                      <span
+                        className={styles["calendar__google-dot"]}
+                        style={{ backgroundColor: dayGoogleEvents[0].color }}
+                        aria-hidden="true"
+                      />
+                      <span className={styles["calendar__google-label"]}>
+                        {dayGoogleEvents[0].title}
+                      </span>
+                      <strong className={styles["calendar__google-count"]}>
+                        <span className={styles["calendar__google-count-desktop"]}>
+                          {dayGoogleEvents.length > 1
+                            ? `+${dayGoogleEvents.length - 1}`
+                            : "G"}
+                        </span>
+                        <span className={styles["calendar__google-count-mobile"]}>
+                          G {dayGoogleEvents.length}
+                        </span>
+                      </strong>
+                    </button>
+                  ) : null}
+
                   {/* 셀의 빈 여백을 날짜 상세 진입점으로 사용한다. chip / + 버튼은
                       above z-index 로 가린다. */}
                   <button
@@ -444,6 +606,13 @@ export function CalendarClient({
           onClose={() => setDetailModalSession(null)}
         />
       ) : null}
+
+      {googleSettingsOpen ? (
+        <GoogleCalendarSettingsModal
+          connection={effectiveGoogleConnection}
+          onClose={handleCloseGoogleSettings}
+        />
+      ) : null}
     </main>
   );
 }
@@ -451,6 +620,8 @@ export function CalendarClient({
 interface DateSessionsPanelProps {
   dateKey: string;
   sessions: TrpgSessionView[];
+  googleEvents: GoogleCalendarEventView[];
+  showGoogleSection: boolean;
   focusedSessionId: string | null;
   members: TrpgMemberView[];
   currentUserDiscordId: string;
@@ -463,6 +634,8 @@ interface DateSessionsPanelProps {
 function DateSessionsPanel({
   dateKey,
   sessions,
+  googleEvents,
+  showGoogleSection,
   focusedSessionId,
   members,
   currentUserDiscordId,
@@ -599,8 +772,76 @@ function DateSessionsPanel({
           이 날짜에 등록된 세션이 없습니다.
         </p>
       )}
+
+      {showGoogleSection ? (
+        <section
+          className={styles.dayPanel__google}
+          aria-labelledby="day-panel-google-title"
+        >
+          <div className={styles["dayPanel__google-heading"]}>
+            <h3 id="day-panel-google-title">내 Google 일정</h3>
+            <span>{googleEvents.length}</span>
+          </div>
+          {googleEvents.length > 0 ? (
+            <ul className={styles["dayPanel__google-list"]}>
+              {googleEvents.map((event) => (
+                <li key={event.id}>
+                  {event.htmlLink ? (
+                    <a
+                      className={styles["dayPanel__google-event"]}
+                      href={event.htmlLink}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <span
+                        className={styles["dayPanel__google-color"]}
+                        style={{ backgroundColor: event.color }}
+                        aria-hidden="true"
+                      />
+                      <span className={styles["dayPanel__google-time"]}>
+                        {event.timeLabel}
+                      </span>
+                      <strong>{event.title}</strong>
+                      <span aria-hidden="true">↗</span>
+                    </a>
+                  ) : (
+                    <div className={styles["dayPanel__google-event"]}>
+                      <span
+                        className={styles["dayPanel__google-color"]}
+                        style={{ backgroundColor: event.color }}
+                        aria-hidden="true"
+                      />
+                      <span className={styles["dayPanel__google-time"]}>
+                        {event.timeLabel}
+                      </span>
+                      <strong>{event.title}</strong>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles["dayPanel__google-empty"]}>
+              이 날짜에 선택된 Google 일정이 없습니다.
+            </p>
+          )}
+        </section>
+      ) : null}
     </aside>
   );
+}
+
+function getGoogleCallbackMessage(status: string): string {
+  switch (status) {
+    case "denied":
+      return "Google Calendar 연결 권한이 승인되지 않았습니다.";
+    case "invalid-state":
+      return "Google Calendar 연결 요청이 만료되었거나 올바르지 않습니다.";
+    case "session-expired":
+      return "로그인 세션이 만료되어 Google Calendar를 연결하지 못했습니다.";
+    default:
+      return "Google Calendar 연결에 실패했습니다. 잠시 후 다시 시도해주세요.";
+  }
 }
 
 function formatPanelDate(dateKey: string): string {
