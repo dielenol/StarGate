@@ -68,6 +68,14 @@ export default async function CalendarPage({
   const googleCalendarEnabled = isGoogleCalendarEnabled();
   const disabledGoogleConnection: GoogleCalendarConnectionView = {
     enabled: false,
+    available: false,
+    connected: false,
+    reconnectRequired: false,
+    selectedCalendarCount: 0,
+  };
+  const unavailableGoogleConnection: GoogleCalendarConnectionView = {
+    enabled: true,
+    available: false,
     connected: false,
     reconnectRequired: false,
     selectedCalendarCount: 0,
@@ -78,7 +86,9 @@ export default async function CalendarPage({
     findTrpgSessionsByMonth(guildId, year, month).catch(() => []),
     listActiveTrpgGuildMembers(guildId).catch(() => []),
     googleCalendarEnabled
-      ? getGoogleCalendarConnectionView(session.user.discordUserId)
+      ? getGoogleCalendarConnectionView(session.user.discordUserId).catch(
+          () => unavailableGoogleConnection,
+        )
       : Promise.resolve(disabledGoogleConnection),
   ]);
 

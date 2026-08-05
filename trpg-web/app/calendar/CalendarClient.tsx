@@ -124,8 +124,11 @@ export function CalendarClient({
   );
   const googleConnection =
     googleConnectionQuery.data ?? initialGoogleConnection;
+  const googleConnectionUnavailable =
+    !googleConnection.available || googleConnectionQuery.isError;
   const googleEventsEnabled =
     googleConnection.enabled &&
+    !googleConnectionUnavailable &&
     googleConnection.connected &&
     !googleConnection.reconnectRequired &&
     googleConnection.selectedCalendarCount > 0;
@@ -137,9 +140,11 @@ export function CalendarClient({
   const googleQueryNeedsReconnect =
     googleEventsQuery.error instanceof GoogleCalendarClientError &&
     googleEventsQuery.error.code === "GOOGLE_RECONNECT_REQUIRED";
-  const effectiveGoogleConnection = googleQueryNeedsReconnect
-    ? { ...googleConnection, reconnectRequired: true }
-    : googleConnection;
+  const effectiveGoogleConnection = googleConnectionUnavailable
+    ? { ...googleConnection, available: false }
+    : googleQueryNeedsReconnect
+      ? { ...googleConnection, reconnectRequired: true }
+      : googleConnection;
 
   useEffect(() => {
     if (!googleCallbackStatus) return;
@@ -286,19 +291,25 @@ export function CalendarClient({
                   ? styles["calendar__google-toggle--connected"]
                   : ""
               } ${
+                !effectiveGoogleConnection.available ||
                 effectiveGoogleConnection.reconnectRequired
                   ? styles["calendar__google-toggle--warning"]
                   : ""
               }`}
               type="button"
               onClick={() => setGoogleSettingsOpen(true)}
-              aria-label="Google Calendar 연결 및 표시 설정"
+              aria-label={
+                effectiveGoogleConnection.available
+                  ? "Google Calendar 연결 및 표시 설정"
+                  : "Google Calendar 연결 상태 확인 실패. 설정 열기"
+              }
             >
               <span aria-hidden="true">G</span>
               <span>Google 일정</span>
               {effectiveGoogleConnection.connected ? (
                 <strong>
-                  {effectiveGoogleConnection.reconnectRequired
+                  {!effectiveGoogleConnection.available ||
+                  effectiveGoogleConnection.reconnectRequired
                     ? "!"
                     : effectiveGoogleConnection.selectedCalendarCount}
                 </strong>
@@ -359,7 +370,20 @@ export function CalendarClient({
         </p>
       ) : null}
 
-      {googleEventsQuery.isError ? (
+      {googleConnection.enabled && !effectiveGoogleConnection.available ? (
+        <div className={styles["calendar__google-warning"]} role="alert">
+          <span>Google Calendar 연결 상태를 확인하지 못했습니다.</span>
+          <button
+            type="button"
+            onClick={() => googleConnectionQuery.refetch()}
+            disabled={googleConnectionQuery.isFetching}
+          >
+            {googleConnectionQuery.isFetching ? "확인 중..." : "다시 시도"}
+          </button>
+        </div>
+      ) : null}
+
+      {effectiveGoogleConnection.available && googleEventsQuery.isError ? (
         <div className={styles["calendar__google-warning"]} role="alert">
           <span>
             {googleQueryNeedsReconnect
@@ -379,7 +403,8 @@ export function CalendarClient({
             {googleQueryNeedsReconnect ? "재연결" : "다시 시도"}
           </button>
         </div>
-      ) : googleEventsQuery.data &&
+      ) : effectiveGoogleConnection.available &&
+        googleEventsQuery.data &&
         (googleEventsQuery.data.failedCalendarCount > 0 ||
           googleEventsQuery.data.truncated) ? (
         <p className={styles["calendar__google-warning"]} role="status">
@@ -610,7 +635,9 @@ export function CalendarClient({
       {googleSettingsOpen ? (
         <GoogleCalendarSettingsModal
           connection={effectiveGoogleConnection}
+          connectionRetrying={googleConnectionQuery.isFetching}
           onClose={handleCloseGoogleSettings}
+          onRetryConnection={() => googleConnectionQuery.refetch()}
         />
       ) : null}
     </main>

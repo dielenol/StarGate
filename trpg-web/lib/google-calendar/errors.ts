@@ -12,6 +12,20 @@ export class GoogleCalendarNotConnectedError extends Error {
   }
 }
 
+export class GoogleCalendarConnectionChangedError extends Error {
+  constructor() {
+    super("Google Calendar 연결 상태가 변경되었습니다. 다시 시도해주세요.");
+    this.name = "GoogleCalendarConnectionChangedError";
+  }
+}
+
+export class GoogleCalendarInvalidRequestError extends Error {
+  constructor() {
+    super("요청 값이 올바르지 않습니다.");
+    this.name = "GoogleCalendarInvalidRequestError";
+  }
+}
+
 export class GoogleCalendarReconnectRequiredError extends Error {
   constructor() {
     super("Google Calendar 재연결이 필요합니다.");

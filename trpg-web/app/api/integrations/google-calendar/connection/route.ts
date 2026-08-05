@@ -23,6 +23,7 @@ export async function GET() {
     return NextResponse.json(
       {
         enabled: false,
+        available: false,
         connected: false,
         reconnectRequired: false,
         selectedCalendarCount: 0,

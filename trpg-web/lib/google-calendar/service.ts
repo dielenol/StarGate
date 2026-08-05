@@ -1,14 +1,19 @@
+import { randomUUID } from "node:crypto";
+
 import { z } from "zod";
 
 import {
   deleteGoogleCalendarConnection,
   findGoogleCalendarConnection,
   markGoogleCalendarReconnectRequired,
-  saveGoogleCalendarConnection,
+  updateGoogleCalendarConnection,
+  upsertGoogleCalendarConnection,
+  type GoogleCalendarConnectionIdentity,
 } from "@/lib/db/google-calendar-connections";
 
 import { getGoogleCalendarConfig, GOOGLE_CALENDAR_SCOPES } from "./config";
 import {
+  GoogleCalendarConnectionChangedError,
   GoogleCalendarNotConnectedError,
   GoogleCalendarReconnectRequiredError,
   GoogleCalendarUpstreamError,
@@ -36,6 +41,7 @@ import { parseSelectedGoogleCalendarIds } from "./selection";
 
 const ACCESS_TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
 const MAX_RETURNED_EVENT_SLICES = 500;
+const MAX_CONNECTION_UPDATE_RETRIES = 1;
 
 function hasRequiredScopes(grantedScopes: string[]): boolean {
   const granted = new Set(grantedScopes);
@@ -53,13 +59,18 @@ async function requireConnection(discordUserId: string) {
 
 async function markReconnectOnFailure<T>(
   discordUserId: string,
+  identity: GoogleCalendarConnectionIdentity,
   operation: () => Promise<T>,
 ): Promise<T> {
   try {
     return await operation();
   } catch (error) {
     if (error instanceof GoogleCalendarReconnectRequiredError) {
-      await markGoogleCalendarReconnectRequired(discordUserId);
+      const marked = await markGoogleCalendarReconnectRequired(
+        discordUserId,
+        identity,
+      );
+      if (!marked) throw new GoogleCalendarConnectionChangedError();
     }
     throw error;
   }
@@ -67,7 +78,12 @@ async function markReconnectOnFailure<T>(
 
 async function getValidAccessToken(
   discordUserId: string,
-): Promise<{ accessToken: string; payload: GoogleCalendarSecretPayload }> {
+  remainingRetries = MAX_CONNECTION_UPDATE_RETRIES,
+): Promise<{
+  accessToken: string;
+  payload: GoogleCalendarSecretPayload;
+  identity: GoogleCalendarConnectionIdentity;
+}> {
   const connection = await requireConnection(discordUserId);
   const payload = connection.payload;
   if (
@@ -75,35 +91,65 @@ async function getValidAccessToken(
     payload.accessTokenExpiresAt &&
     payload.accessTokenExpiresAt > Date.now() + ACCESS_TOKEN_REFRESH_BUFFER_MS
   ) {
-    return { accessToken: payload.accessToken, payload };
+    return {
+      accessToken: payload.accessToken,
+      payload,
+      identity: connection.identity,
+    };
   }
 
+  let refreshed: Awaited<ReturnType<typeof refreshGoogleAccessToken>>;
   try {
-    const refreshed = await refreshGoogleAccessToken(
+    refreshed = await refreshGoogleAccessToken(
       getGoogleCalendarConfig(),
       payload.refreshToken,
     );
-    const nextPayload: GoogleCalendarSecretPayload = {
-      ...payload,
-      refreshToken: refreshed.refreshToken ?? payload.refreshToken,
-      accessToken: refreshed.accessToken,
-      accessTokenExpiresAt: refreshed.accessTokenExpiresAt,
-      grantedScopes:
-        refreshed.grantedScopes.length > 0
-          ? refreshed.grantedScopes
-          : payload.grantedScopes,
-    };
-    if (!hasRequiredScopes(nextPayload.grantedScopes)) {
-      throw new GoogleCalendarReconnectRequiredError();
-    }
-    await saveGoogleCalendarConnection(discordUserId, nextPayload);
-    return { accessToken: refreshed.accessToken, payload: nextPayload };
   } catch (error) {
     if (error instanceof GoogleCalendarReconnectRequiredError) {
-      await markGoogleCalendarReconnectRequired(discordUserId);
+      const marked = await markGoogleCalendarReconnectRequired(
+        discordUserId,
+        connection.identity,
+      );
+      if (!marked) throw new GoogleCalendarConnectionChangedError();
     }
     throw error;
   }
+
+  const nextPayload: GoogleCalendarSecretPayload = {
+    ...payload,
+    refreshToken: refreshed.refreshToken ?? payload.refreshToken,
+    accessToken: refreshed.accessToken,
+    accessTokenExpiresAt: refreshed.accessTokenExpiresAt,
+    grantedScopes:
+      refreshed.grantedScopes.length > 0
+        ? refreshed.grantedScopes
+        : payload.grantedScopes,
+  };
+  if (!hasRequiredScopes(nextPayload.grantedScopes)) {
+    const marked = await markGoogleCalendarReconnectRequired(
+      discordUserId,
+      connection.identity,
+    );
+    if (!marked) throw new GoogleCalendarConnectionChangedError();
+    throw new GoogleCalendarReconnectRequiredError();
+  }
+
+  const nextIdentity = await updateGoogleCalendarConnection(
+    discordUserId,
+    connection.identity,
+    nextPayload,
+  );
+  if (!nextIdentity) {
+    if (remainingRetries > 0) {
+      return getValidAccessToken(discordUserId, remainingRetries - 1);
+    }
+    throw new GoogleCalendarConnectionChangedError();
+  }
+  return {
+    accessToken: refreshed.accessToken,
+    payload: nextPayload,
+    identity: nextIdentity,
+  };
 }
 
 export async function connectGoogleCalendar(
@@ -117,15 +163,31 @@ export async function connectGoogleCalendar(
     codeVerifier,
   );
   if (!token.refreshToken || !hasRequiredScopes(token.grantedScopes)) {
+    await revokeGoogleToken(token.refreshToken ?? token.accessToken).catch(
+      () => false,
+    );
     throw new GoogleCalendarReconnectRequiredError();
   }
-  await saveGoogleCalendarConnection(discordUserId, {
-    refreshToken: token.refreshToken,
-    accessToken: token.accessToken,
-    accessTokenExpiresAt: token.accessTokenExpiresAt,
-    selectedCalendarIds: ["primary"],
-    grantedScopes: token.grantedScopes,
-  });
+  const generation = randomUUID();
+  try {
+    await upsertGoogleCalendarConnection(
+      discordUserId,
+      {
+        refreshToken: token.refreshToken,
+        accessToken: token.accessToken,
+        accessTokenExpiresAt: token.accessTokenExpiresAt,
+        selectedCalendarIds: ["primary"],
+        grantedScopes: token.grantedScopes,
+      },
+      generation,
+    );
+  } catch (error) {
+    await Promise.allSettled([
+      revokeGoogleToken(token.refreshToken),
+      deleteGoogleCalendarConnection(discordUserId, generation),
+    ]);
+    throw error;
+  }
 }
 
 function isSelectedCalendar(
@@ -141,9 +203,12 @@ function isSelectedCalendar(
 export async function getGoogleCalendarOptions(
   discordUserId: string,
 ): Promise<GoogleCalendarOptionView[]> {
-  const { accessToken, payload } = await getValidAccessToken(discordUserId);
-  const calendars = await markReconnectOnFailure(discordUserId, () =>
-    listGoogleCalendars(accessToken),
+  const { accessToken, payload, identity } =
+    await getValidAccessToken(discordUserId);
+  const calendars = await markReconnectOnFailure(
+    discordUserId,
+    identity,
+    () => listGoogleCalendars(accessToken),
   );
   const selectedIds = new Set(payload.selectedCalendarIds);
   return calendars
@@ -166,9 +231,24 @@ export async function updateSelectedGoogleCalendars(
   calendarIds: unknown,
 ): Promise<number> {
   const selectedIds = parseSelectedGoogleCalendarIds(calendarIds);
-  const { accessToken, payload } = await getValidAccessToken(discordUserId);
-  const calendars = await markReconnectOnFailure(discordUserId, () =>
-    listGoogleCalendars(accessToken),
+  return updateValidatedSelectedGoogleCalendars(
+    discordUserId,
+    selectedIds,
+    MAX_CONNECTION_UPDATE_RETRIES,
+  );
+}
+
+async function updateValidatedSelectedGoogleCalendars(
+  discordUserId: string,
+  selectedIds: string[],
+  remainingRetries: number,
+): Promise<number> {
+  const { accessToken, payload, identity } =
+    await getValidAccessToken(discordUserId);
+  const calendars = await markReconnectOnFailure(
+    discordUserId,
+    identity,
+    () => listGoogleCalendars(accessToken),
   );
   const allowedIds = new Set(calendars.map((calendar) => calendar.id));
   if (selectedIds.some((id) => !allowedIds.has(id))) {
@@ -180,10 +260,21 @@ export async function updateSelectedGoogleCalendars(
       },
     ]);
   }
-  await saveGoogleCalendarConnection(discordUserId, {
-    ...payload,
-    selectedCalendarIds: selectedIds,
-  });
+  const nextIdentity = await updateGoogleCalendarConnection(
+    discordUserId,
+    identity,
+    { ...payload, selectedCalendarIds: selectedIds },
+  );
+  if (!nextIdentity) {
+    if (remainingRetries > 0) {
+      return updateValidatedSelectedGoogleCalendars(
+        discordUserId,
+        selectedIds,
+        remainingRetries - 1,
+      );
+    }
+    throw new GoogleCalendarConnectionChangedError();
+  }
   return selectedIds.length;
 }
 
@@ -214,13 +305,16 @@ export async function getGoogleCalendarEvents(
   year: number,
   month: number,
 ): Promise<GoogleCalendarEventsView> {
-  const { accessToken, payload } = await getValidAccessToken(discordUserId);
+  const { accessToken, payload, identity } =
+    await getValidAccessToken(discordUserId);
   if (payload.selectedCalendarIds.length === 0) {
     return { events: [], failedCalendarCount: 0, truncated: false };
   }
 
-  const calendars = await markReconnectOnFailure(discordUserId, () =>
-    listGoogleCalendars(accessToken),
+  const calendars = await markReconnectOnFailure(
+    discordUserId,
+    identity,
+    () => listGoogleCalendars(accessToken),
   );
   const selected = payload.selectedCalendarIds
     .map((id) => resolveCalendarForRequest(id, calendars))
@@ -255,7 +349,11 @@ export async function getGoogleCalendarEvents(
   for (const result of results) {
     if (result.status === "rejected") {
       if (result.reason instanceof GoogleCalendarReconnectRequiredError) {
-        await markGoogleCalendarReconnectRequired(discordUserId);
+        const marked = await markGoogleCalendarReconnectRequired(
+          discordUserId,
+          identity,
+        );
+        if (!marked) throw new GoogleCalendarConnectionChangedError();
         throw result.reason;
       }
       failedCalendarCount += 1;
@@ -304,7 +402,10 @@ export async function disconnectGoogleCalendar(
   } catch {
     revoked = false;
   } finally {
-    await deleteGoogleCalendarConnection(discordUserId);
+    await deleteGoogleCalendarConnection(
+      discordUserId,
+      connection.identity.generation,
+    );
   }
   return { revoked };
 }

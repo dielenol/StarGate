@@ -17,15 +17,21 @@ import styles from "./styles.module.css";
 
 interface Props {
   connection: GoogleCalendarConnectionView;
+  connectionRetrying: boolean;
   onClose: () => void;
+  onRetryConnection: () => void;
 }
 
 export function GoogleCalendarSettingsModal({
   connection,
+  connectionRetrying,
   onClose,
+  onRetryConnection,
 }: Props) {
   const optionsQuery = useGoogleCalendarOptions(
-    connection.connected && !connection.reconnectRequired,
+    connection.available &&
+      connection.connected &&
+      !connection.reconnectRequired,
   );
   const updateMutation = useUpdateSelectedGoogleCalendars();
   const disconnectMutation = useDisconnectGoogleCalendar();
@@ -154,7 +160,23 @@ export function GoogleCalendarSettingsModal({
             </p>
           ) : null}
 
-          {!connection.connected || needsReconnect ? (
+          {!connection.available ? (
+            <div className={styles.googleSettings__status} role="alert">
+              <p>
+                Google Calendar 연결 상태를 확인하지 못했습니다. 잠시 후 다시
+                시도해주세요.
+              </p>
+              <div className={styles.googleSettings__statusActions}>
+                <button
+                  type="button"
+                  onClick={onRetryConnection}
+                  disabled={connectionRetrying}
+                >
+                  {connectionRetrying ? "확인 중..." : "다시 시도"}
+                </button>
+              </div>
+            </div>
+          ) : !connection.connected || needsReconnect ? (
             <div className={styles.googleSettings__connectPanel}>
               <span className={styles.googleSettings__mark} aria-hidden="true">
                 G

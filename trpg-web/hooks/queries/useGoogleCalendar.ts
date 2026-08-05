@@ -34,6 +34,8 @@ export function useGoogleCalendarConnection(
     },
     initialData,
     enabled: initialData.enabled,
+    refetchOnMount: initialData.available ? undefined : "always",
+    staleTime: initialData.available ? undefined : 0,
   });
 }
 
