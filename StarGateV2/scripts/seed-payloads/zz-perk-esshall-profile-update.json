@@ -2,18 +2,10 @@
   {
     "collection": "characters",
     "filter": {
-      "$or": [
-        {
-          "codename": "PUCK_ASSHOLE"
-        },
-        {
-          "codename": "PERK_ESHHALL"
-        }
-      ]
+      "codename": "PERK_ESHHALL"
     },
     "update": {
       "$set": {
-        "codename": "PERK_ESHHALL",
         "role": "NOGA 더블린 지부 지부장",
         "factionCode": "MILITARY",
         "institutionCode": "",
@@ -21,7 +13,6 @@
         "isPublic": true,
         "previewImage": "/assets/npcs/Puck-Asshole-profile.webp",
         "source": "manual",
-        "updatedAt": "2026-06-11T00:00:00.000Z",
         "lore.name": "퍼크슈타인 에스홀",
         "lore.nameEn": "Perk Esshall",
         "lore.nickname": "",
@@ -71,7 +62,6 @@
     "update": [
       {
         "$set": {
-          "updatedAt": "2026-06-11T00:00:00.000Z",
           "lore.background": {
             "$replaceAll": {
               "input": {
@@ -200,7 +190,6 @@
     "update": [
       {
         "$set": {
-          "updatedAt": "2026-06-11T00:00:00.000Z",
           "summary": {
             "$replaceAll": {
               "input": {
@@ -274,7 +263,6 @@
     "update": [
       {
         "$set": {
-          "updatedAt": "2026-06-11T00:00:00.000Z",
           "content": {
             "$replaceAll": {
               "input": {
@@ -312,7 +300,6 @@
     "update": [
       {
         "$set": {
-          "updatedAt": "2026-06-11T00:00:00.000Z",
           "content": {
             "$replaceAll": {
               "input": {
