@@ -15,3 +15,10 @@
 - 시간 경과와 라이선스 복구에 필요한 기존 timer/polling은 유지했다.
 - 검증: `pnpm test:worker`, realtime 계약 테스트, `pnpm lint`, `pnpm typecheck`, `pnpm build:web`
 - 관련 커밋: `bba8924`
+
+## 2026-08-06 · 기능 확장 · 공방 요청 장비 계약
+
+- 공방 요청과 인벤토리 응답에서 재료 범위, 복수 장비 액션, 충전, 탄약, 거치 규격을 구조화해 보존한다.
+- 요청·결과 이미지의 역할을 분리하고 정확한 사거리나 기계 판정이 없는 공격 액션은 Nochichim에서 실행 가능 상태로 추정하지 않는다.
+- 검증: 집중 테스트 74건 중 68건 통과·Mongo 통합 6건 환경 부재로 skip, `pnpm typecheck`, `pnpm lint`, `pnpm build`
+- 관련 커밋: `30ffe959`
