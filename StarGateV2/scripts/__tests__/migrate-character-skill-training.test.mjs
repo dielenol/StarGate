@@ -35,14 +35,14 @@ test("철학 단독 및 결합 토큰은 안전하게 문학으로 변환한다"
   });
 });
 
-test("문학과 철학이 별도 토큰으로 함께 있으면 원본을 바꾸지 않고 수동 해결로 남긴다", () => {
+test("문학과 철학이 별도 토큰으로 함께 있으면 문학 하나로 통합한다", () => {
   const source = ["문학", "철학", "관찰"];
   const snapshot = structuredClone(source);
 
   assert.deepEqual(planSkillTrainingMigration(source), {
-    status: "manual_resolution_required",
+    status: "update",
     original: ["문학", "철학", "관찰"],
-    reason: "literature_and_philosophy_conflict",
+    normalized: ["문학", "관찰"],
   });
   assert.deepEqual(source, snapshot);
 });

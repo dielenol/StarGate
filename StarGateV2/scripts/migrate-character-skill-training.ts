@@ -8,8 +8,8 @@
  *   node --env-file-if-exists=.env.local --experimental-strip-types \
  *     scripts/migrate-character-skill-training.ts --execute --yes
  *
- * `문학`과 `철학`이 별도 토큰으로 함께 존재하면 어느 값을 우선하거나 합칠지
- * 추정하지 않고 manual_resolution_required로 보고한 뒤 변경하지 않는다.
+ * `문학`과 `철학`은 같은 기술 훈련 항목이므로 둘이 함께 존재하더라도
+ * `문학` 하나만 남기고 중복을 제거한다.
  */
 
 import { MongoClient, type ObjectId } from "mongodb";
@@ -21,11 +21,6 @@ export type SkillTrainingMigrationPlan =
       status: "unchanged" | "update";
       original: string[];
       normalized: string[];
-    }
-  | {
-      status: "manual_resolution_required";
-      original: string[];
-      reason: "literature_and_philosophy_conflict";
     }
   | {
       status: "invalid_skill_training";
@@ -72,14 +67,6 @@ export function planSkillTrainingMigration(
   }
 
   const original = [...input] as string[];
-  if (original.includes("문학") && original.includes("철학")) {
-    return {
-      status: "manual_resolution_required",
-      original,
-      reason: "literature_and_philosophy_conflict",
-    };
-  }
-
   const normalized = normalizeSkillTraining(original);
   return {
     status: arraysEqual(original, normalized) ? "unchanged" : "update",
@@ -113,7 +100,6 @@ async function main(): Promise<void> {
     const counts = {
       update: 0,
       unchanged: 0,
-      manual_resolution_required: 0,
       invalid_skill_training: 0,
     };
 
@@ -126,12 +112,6 @@ async function main(): Promise<void> {
       counts[plan.status] += 1;
       const target = `${document.codename ?? "(codename 없음)"} (${document._id.toString()})`;
 
-      if (plan.status === "manual_resolution_required") {
-        console.warn(
-          `[skill-training] manual_resolution_required target=${target} values=${JSON.stringify(plan.original)}`,
-        );
-        continue;
-      }
       if (plan.status === "invalid_skill_training") {
         console.warn(
           `[skill-training] invalid_skill_training target=${target}`,
