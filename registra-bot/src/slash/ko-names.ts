@@ -12,8 +12,8 @@ export const INFO_ROOT_EN = "info";
 export const CREDIT_ROOT = "크레딧";
 /** `/잔액` — 누구나 사용 가능한 본인 메인 캐릭 잔액 조회 (단일 명령, 서브 ❌) */
 export const BALANCE_ROOT = "잔액";
-/** `/제작투표 ...` — CENSOR-3 제작 동의 투표 관리 */
-export const CRAFTING_VOTE_ROOT = "제작투표";
+/** `/사용투표 ...` — CENSOR-3 1발 사용 동의 투표 관리 */
+export const CRAFTING_VOTE_ROOT = "사용투표";
 
 export const Sub = {
   create: "생성",
@@ -77,7 +77,6 @@ export const CraftingVoteOpt = {
   closeTime: "응답마감",
   eligibleRole: "투표역할",
   voteId: "투표아이디",
-  outcome: "결론",
   reason: "사유",
   reconciliationAction: "복구동작",
   messageId: "메시지아이디",

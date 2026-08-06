@@ -57,7 +57,7 @@ export async function handleCraftingVoteButton(
 
   const vote = await findCraftingVoteById(parsed.voteId, interaction.guildId);
   if (!vote) {
-    await replyEphemeral(interaction, "■ 해당 제작 투표를 찾지 못했습니다.");
+    await replyEphemeral(interaction, "■ 해당 사용 투표를 찾지 못했습니다.");
     return;
   }
 
@@ -85,7 +85,7 @@ export async function handleCraftingVoteButton(
       .catch(() => {});
     await replyEphemeral(
       interaction,
-      "※ 응답 접수가 끝났습니다. 이 건은 GM 수동 결론을 기다립니다."
+      "※ 응답 접수가 끝났습니다. 이 건은 유효표 과반 판정을 기다립니다."
     );
     return;
   }
@@ -113,12 +113,12 @@ export async function handleCraftingVoteButton(
   if (!updated) {
     await replyEphemeral(
       interaction,
-      "※ 마감 또는 GM 결론과 동시에 처리되어 표를 기록하지 않았습니다. 현황을 다시 확인하십시오."
+      "※ 마감 또는 과반 결론과 동시에 처리되어 표를 기록하지 않았습니다. 현황을 다시 확인하십시오."
     );
     return;
   }
 
-  // 각 edit 뒤 단조 증가 revision을 재조회합니다. 더 최신 ballot/GM 결론이
+  // 각 edit 뒤 단조 증가 revision을 재조회합니다. 더 최신 ballot/과반 결론이
   // 확인되면 다시 렌더해, 먼저 시작한 handler가 마지막에 stale 화면을 남기지 않습니다.
   let renderVote = updated;
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -140,9 +140,9 @@ export async function handleCraftingVoteButton(
     renderVote = latest;
   }
 
-  const label = parsed.choice === "YES" ? "제작 동의" : "제작 반대";
+  const label = parsed.choice === "YES" ? "사용 동의" : "사용 반대";
   await replyEphemeral(
     interaction,
-    `◆ **${label}** 응답을 기록했습니다. 재클릭하면 기존 응답을 덮어씁니다.\n※ 표 수만으로 자동 승인되지는 않습니다.`
+    `◆ **${label}** 응답을 기록했습니다. 재클릭하면 기존 응답을 덮어씁니다.\n※ 마감 뒤 결론 명령이 유효표 과반으로 판정합니다.`
   );
 }

@@ -24,11 +24,9 @@ function phaseLabel(vote: CraftingVote, now: Date): string {
   const phase = getCraftingVotePhase(vote, now);
   if (phase === "PUBLISH_PENDING") return "공지 전달 확인 대기";
   if (phase === "OPEN") return "응답 접수 중";
-  if (phase === "CLOSED_PENDING_GM") return "마감 · GM 결론 대기";
+  if (phase === "CLOSED_PENDING_RESOLUTION") return "마감 · 과반 판정 대기";
   const outcome = vote.resolution?.outcome;
-  if (outcome === "APPROVED") return "GM 승인";
-  if (outcome === "REJECTED") return "GM 반려";
-  return "GM 보류";
+  return outcome === "APPROVED" ? "과반 승인" : "과반 미달";
 }
 
 export function buildCraftingVoteEmbed(
@@ -39,13 +37,13 @@ export function buildCraftingVoteEmbed(
   const phase = getCraftingVotePhase(vote, now);
   const embed = new EmbedBuilder()
     .setColor(REGISTRAR_COLORS.primary)
-    .setTitle("【제작 동의 투표】 CENSOR-3")
+    .setTitle("【사용 동의 투표】 CENSOR-3")
     .setDescription(
       [
         `**${vote.subject.displayName}**`,
-        `제작 대상: **${vote.subject.targetCharacterCodename}** · ${vote.subject.outputQuantity}발`,
+        `사용 대상: **${vote.subject.targetCharacterCodename}** · ${vote.subject.usageQuantity}발`,
         "",
-        "이 투표는 제작 동의만 기록합니다. 표 수만으로 자동 승인하지 않으며, 크레딧·재료·인벤토리는 변경하지 않습니다.",
+        "이 투표는 CENSOR-3 한 발 사용 동의를 기록합니다. 마감 뒤 유효표의 과반이 찬성해야 승인되며, 동률·무투표는 반려됩니다.",
       ].join("\n")
     )
     .addFields(
@@ -76,12 +74,12 @@ export function buildCraftingVoteEmbed(
       }
     )
     .setFooter({
-      text: `${REGISTRAR_SIGNATURE} · 자동 판정 없음 · GM 수동 결론 필수`,
+      text: `${REGISTRAR_SIGNATURE} · 유효표 과반 · 승인 1건당 1발`,
     });
 
   if (phase === "RESOLVED" && vote.resolution) {
     embed.addFields({
-      name: "GM 결론 사유",
+      name: "과반 판정",
       value: inline(vote.resolution.reason),
       inline: false,
     });
@@ -102,12 +100,12 @@ export function buildCraftingVoteActionRow(
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(buildCraftingVoteButtonCustomId(voteId, "YES"))
-      .setLabel("제작 동의")
+      .setLabel("사용 동의")
       .setStyle(ButtonStyle.Success)
       .setDisabled(disabled),
     new ButtonBuilder()
       .setCustomId(buildCraftingVoteButtonCustomId(voteId, "NO"))
-      .setLabel("제작 반대")
+      .setLabel("사용 반대")
       .setStyle(ButtonStyle.Danger)
       .setDisabled(disabled)
   );

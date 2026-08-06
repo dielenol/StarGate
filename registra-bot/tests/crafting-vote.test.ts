@@ -13,6 +13,7 @@ const {
   buildCraftingVoteResolutionReceipt,
   classifyCraftingVotePublication,
   countCraftingVoteBallots,
+  decideCraftingVoteMajority,
   getCraftingVotePhase,
   isCanonicalCraftingVoteSource,
   isCraftingVoteAnnouncementDeletionSafe,
@@ -20,7 +21,7 @@ const {
 } = await import("../src/services/crafting-vote.js");
 const {
   CENSOR3_VOTE_CHANNEL_ID,
-  CRAFTING_VOTE_BUTTON_PREFIX,
+  CENSOR_USE_VOTE_BUTTON_PREFIX,
 } = await import("../src/constants/registrar.js");
 const { CRAFTING_VOTE_CMD } = await import("../src/commands/register.js");
 
@@ -28,19 +29,19 @@ function vote(overrides: Record<string, unknown> = {}) {
   const now = new Date("2026-08-06T12:00:00.000Z");
   return {
     _id: new ObjectId("507f1f77bcf86cd799439011"),
-    schemaVersion: 1 as const,
+    schemaVersion: 2 as const,
     revision: 0,
     guildId: "guild-1",
     channelId: CENSOR3_VOTE_CHANNEL_ID,
     messageId: "message-1",
-    requestRef: "workshop-request-1",
+    requestRef: "censor-use-1",
     eligibleRoleId: "role-1",
     subject: {
-      kind: "CENSOR_3_MANUFACTURE_APPROVAL" as const,
+      kind: "CENSOR_3_USE_APPROVAL" as const,
       code: "ZULU_0028_CENSOR_3" as const,
       displayName: "ZULU-0028 파쇄음절탄 「CENSOR-3」",
       targetCharacterCodename: "네베드" as const,
-      outputQuantity: 3 as const,
+      usageQuantity: 1 as const,
     },
     status: "OPEN" as const,
     ballots: {},
@@ -59,7 +60,29 @@ function vote(overrides: Record<string, unknown> = {}) {
 
 test("CENSOR-3 투표 채널과 버튼 namespace는 사용자 지정값으로 고정된다", () => {
   assert.equal(CENSOR3_VOTE_CHANNEL_ID, "1534753076399833249");
-  assert.equal(CRAFTING_VOTE_BUTTON_PREFIX, "registrar:craft-vote:");
+  assert.equal(
+    CENSOR_USE_VOTE_BUTTON_PREFIX,
+    "registrar:censor-use-vote:v2:"
+  );
+});
+
+test("v2 사용 투표 DB 접근은 schemaVersion과 고정 subject guard를 항상 포함한다", async () => {
+  const source = await readFile(
+    new URL("../src/db/crafting-votes.ts", import.meta.url),
+    "utf8"
+  );
+  assert.match(source, /const CENSOR_USE_VOTE_GUARD = \{/);
+  assert.match(source, /schemaVersion: 2/);
+  assert.match(source, /"subject\.kind": "CENSOR_3_USE_APPROVAL"/);
+  assert.match(source, /"subject\.code": "ZULU_0028_CENSOR_3"/);
+  assert.match(
+    source,
+    /return \{[\s\S]*_id: new ObjectId\(voteId\)[\s\S]*\.\.\.CENSOR_USE_VOTE_GUARD/,
+  );
+  assert.match(
+    source,
+    /\{ _id: doc\._id, \.\.\.CENSOR_USE_VOTE_GUARD \}/,
+  );
 });
 
 test("동일 길드·요청참조는 결정적인 Mongo ID로 중복 생성을 차단한다", () => {
@@ -79,16 +102,21 @@ test("버튼 customId는 유효한 ObjectId와 yes/no만 허용한다", () => {
     choice: "YES",
   });
   assert.equal(
-    parseCraftingVoteButtonCustomId(`${CRAFTING_VOTE_BUTTON_PREFIX}bad:yes`),
+    parseCraftingVoteButtonCustomId(`${CENSOR_USE_VOTE_BUTTON_PREFIX}bad:yes`),
     null
   );
   assert.equal(
-    parseCraftingVoteButtonCustomId(`${CRAFTING_VOTE_BUTTON_PREFIX}${id}:maybe`),
+    parseCraftingVoteButtonCustomId(`${CENSOR_USE_VOTE_BUTTON_PREFIX}${id}:maybe`),
     null
+  );
+  assert.equal(
+    parseCraftingVoteButtonCustomId(`registrar:craft-vote:${id}:yes`),
+    null,
+    "legacy v1 manufacture vote buttons must be rejected",
   );
 });
 
-test("마감과 결론은 자동 승인 없이 명시적으로 분리된다", () => {
+test("마감과 유효표 과반 판정 단계는 명시적으로 분리된다", () => {
   const openVote = vote();
   assert.equal(
     getCraftingVotePhase(
@@ -103,7 +131,7 @@ test("마감과 결론은 자동 승인 없이 명시적으로 분리된다", ()
   );
   assert.equal(
     getCraftingVotePhase(openVote, new Date("2026-08-06T13:00:00.000Z")),
-    "CLOSED_PENDING_GM"
+    "CLOSED_PENDING_RESOLUTION"
   );
   assert.equal(
     getCraftingVotePhase(
@@ -200,6 +228,43 @@ test("동일 사용자 ballot map은 현재 선택만 집계한다", () => {
   assert.deepEqual(tally, { yes: 2, no: 1, total: 3 });
 });
 
+test("유효표 과반만 승인하며 동률과 무투표는 반려한다", () => {
+  const submittedAt = new Date("2026-08-06T12:10:00.000Z");
+  assert.deepEqual(
+    decideCraftingVoteMajority(
+      vote({
+        ballots: {
+          user1: { choice: "YES", displayName: "A", submittedAt },
+          user2: { choice: "NO", displayName: "B", submittedAt },
+          user3: { choice: "YES", displayName: "C", submittedAt },
+        },
+      }),
+    ),
+    {
+      outcome: "APPROVED",
+      reason: "유효표 과반 찬성 (2/3)",
+      tally: { yes: 2, no: 1, total: 3 },
+    },
+  );
+  assert.equal(
+    decideCraftingVoteMajority(
+      vote({
+        ballots: {
+          user1: { choice: "YES", displayName: "A", submittedAt },
+          user2: { choice: "NO", displayName: "B", submittedAt },
+        },
+      }),
+    ).outcome,
+    "REJECTED",
+  );
+  assert.deepEqual(decideCraftingVoteMajority(vote()).tally, {
+    yes: 0,
+    no: 0,
+    total: 0,
+  });
+  assert.equal(decideCraftingVoteMajority(vote()).outcome, "REJECTED");
+});
+
 test("ballot 기록은 OPEN·마감 전 조건과 사용자별 map 갱신을 단일 Mongo 연산에 둔다", async () => {
   const source = await readFile(
     new URL("../src/db/crafting-votes.ts", import.meta.url),
@@ -217,7 +282,7 @@ test("ballot 기록은 OPEN·마감 전 조건과 사용자별 map 갱신을 단
   assert.match(implementation, /findOneAndUpdate\(filter, update/);
 });
 
-test("결론 receipt는 ERP·크레딧·인벤토리 자동 mutation을 명시적으로 금지한다", () => {
+test("과반 승인 receipt는 ERP의 1회 사용 claim 대기 상태를 명시한다", () => {
   const resolvedAt = new Date("2026-08-06T13:05:00.000Z");
   const receipt = buildCraftingVoteResolutionReceipt(
     vote({
@@ -230,8 +295,10 @@ test("결론 receipt는 ERP·크레딧·인벤토리 자동 mutation을 명시�
         },
       },
       resolution: {
-        outcome: "DEFERRED",
-        reason: "동률·무투표 처리 기준 미확정",
+        outcome: "APPROVED",
+        reason: "유효표 과반 찬성 (1/1)",
+        rule: "CAST_BALLOT_MAJORITY",
+        tally: { yes: 1, no: 0, total: 1 },
         resolvedByDiscordUserId: "gm-1",
         resolvedAt,
       },
@@ -239,19 +306,19 @@ test("결론 receipt는 ERP·크레딧·인벤토리 자동 mutation을 명시�
   );
 
   assert.ok(receipt);
-  assert.equal(receipt.schema, "registrar.crafting-vote-resolution.v1");
-  assert.equal(receipt.resolution.outcome, "DEFERRED");
+  assert.equal(receipt.schema, "registrar.censor-use-vote-resolution.v2");
+  assert.equal(receipt.resolution.outcome, "APPROVED");
   assert.deepEqual(receipt.tally, { yes: 1, no: 0, total: 1 });
   assert.deepEqual(receipt.execution, {
-    mode: "MANUAL_GM_REVIEW_REQUIRED",
-    automaticallyApproved: false,
+    mode: "APPROVED_USE_AVAILABLE",
+    automaticallyResolved: true,
     erpMutationsPerformed: false,
     creditMutationsPerformed: false,
     inventoryMutationsPerformed: false,
   });
   assert.deepEqual(receipt.source, {
     collection: "registrar_crafting_votes",
-    schemaVersion: 1,
+    schemaVersion: 2,
     revision: 0,
     createdByDiscordUserId: "gm-1",
     createdAt: "2026-08-06T12:00:00.000Z",
@@ -265,7 +332,8 @@ test("결론 receipt는 ERP·크레딧·인벤토리 자동 mutation을 명시�
   assert.equal(receipt.verification.lookup.voteId, "507f1f77bcf86cd799439011");
 });
 
-test("슬래시 명령은 마감·역할·참조를 요구하고 자동 판정 옵션을 노출하지 않는다", () => {
+test("사용투표 명령은 마감·역할·참조를 요구하고 결론 수동 덮어쓰기를 노출하지 않는다", () => {
+  assert.equal(CRAFTING_VOTE_CMD.name, "사용투표");
   const create = CRAFTING_VOTE_CMD.options.find((option) => option.name === "생성");
   const resolve = CRAFTING_VOTE_CMD.options.find((option) => option.name === "결론");
   const reconcile = CRAFTING_VOTE_CMD.options.find(
@@ -284,14 +352,12 @@ test("슬래시 명령은 마감·역할·참조를 요구하고 자동 판정 �
   );
   assert.deepEqual(
     resolve.options.map((option) => [option.name, option.required]),
-    [
-      ["투표아이디", true],
-      ["결론", true],
-      ["사유", true],
-    ]
+    [["투표아이디", true]],
   );
   const serialized = JSON.stringify(CRAFTING_VOTE_CMD);
-  assert.doesNotMatch(serialized, /threshold|quorum|자동승인|통과기준/i);
+  assert.doesNotMatch(serialized, /DEFERRED|수동 결론|보류/);
+  assert.match(serialized, /과반/);
+  assert.match(serialized, /표적·세션과는 결합하지 않습니다/);
 });
 
 test("RESOLVED 현황은 결정적 receipt 재발급 경로를 유지한다", async () => {
@@ -300,10 +366,34 @@ test("RESOLVED 현황은 결정적 receipt 재발급 경로를 유지한다", as
     "utf8"
   );
   const start = source.indexOf("async function handleStatus");
-  const end = source.indexOf("function parseOutcome");
+  const end = source.indexOf("async function handleResolve");
   const implementation = source.slice(start, end);
   assert.match(implementation, /buildReceiptAttachment\(vote\)/);
   assert.match(implementation, /files: receipt \? \[receipt\] : \[\]/);
+});
+
+test("결론 명령은 마감 뒤 유효표 과반 결과만 DB에 기록한다", async () => {
+  const [commandSource, dbSource] = await Promise.all([
+    readFile(new URL("../src/commands/crafting-vote.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/db/crafting-votes.ts", import.meta.url), "utf8"),
+  ]);
+  const command = commandSource.slice(
+    commandSource.indexOf("async function handleResolve"),
+    commandSource.indexOf("function messageHasCraftingVoteButtons"),
+  );
+  assert.match(command, /decideCraftingVoteMajority\(before\)/);
+  assert.match(command, /expectedRevision: before\.revision/);
+  assert.match(command, /outcome: decision\.outcome/);
+  assert.match(command, /tally: decision\.tally/);
+  assert.doesNotMatch(command, /getString\(CraftingVoteOpt\.outcome/);
+
+  const resolution = dbSource.slice(
+    dbSource.indexOf("export async function resolveCraftingVote"),
+  );
+  assert.match(resolution, /closesAt: \{ \$lte: input\.resolvedAt \}/);
+  assert.match(resolution, /revision: input\.expectedRevision/);
+  assert.match(resolution, /rule: "CAST_BALLOT_MAJORITY"/);
+  assert.match(resolution, /tally: input\.tally/);
 });
 
 test("게시 saga는 PENDING claim과 DISPATCHING 불확실 상태를 자동 재전송하지 않는다", async () => {

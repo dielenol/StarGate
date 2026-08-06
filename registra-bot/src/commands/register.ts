@@ -477,27 +477,27 @@ const BALANCE_CMD = {
 };
 
 /**
- * `/제작투표` — CENSOR-3 제작 동의 투표.
+ * `/사용투표` — CENSOR-3 한 발 사용 동의 투표.
  *
- * 자동 판정 규칙이 확정되지 않았으므로 생성 시 마감·역할·요청참조를 모두
- * 명시하고, 마감 뒤 관리자가 승인/반려/보류와 사유를 직접 기록합니다.
+ * 생성 시 마감·역할·요청참조를 명시하고, 마감 뒤 유효표 과반으로 결론을
+ * 확정합니다. 승인된 원장 한 건은 ERP에서 CENSOR-3 한 발 사용에만 쓰입니다.
  */
 export const CRAFTING_VOTE_CMD = {
   type: 1 as const,
   name: CRAFTING_VOTE_ROOT,
-  description: "CENSOR-3 제작 동의 투표를 생성·조회·수동 결론 처리합니다.",
+  description: "CENSOR-3 한 발 사용 동의 투표를 생성·조회·과반 판정합니다.",
   default_member_permissions: String(PermissionFlagsBits.ManageGuild),
   dm_permission: false,
   options: [
     {
       type: 1,
       name: CraftingVoteSub.create,
-      description: "지정 채널에 CENSOR-3 제작 동의 투표를 등재합니다.",
+      description: "지정 채널에 CENSOR-3 한 발 사용 동의 투표를 등재합니다.",
       options: [
         {
           type: 3,
           name: CraftingVoteOpt.requestRef,
-          description: "후속 ERP 수동 검토와 연결할 공방 요청 참조값.",
+          description: "중복 생성을 막는 운영 참조값. 표적·세션과는 결합하지 않습니다.",
           required: true,
           min_length: 1,
           max_length: 120,
@@ -534,7 +534,7 @@ export const CRAFTING_VOTE_CMD = {
     {
       type: 1,
       name: CraftingVoteSub.resolve,
-      description: "응답 마감 후 GM 결론과 사유를 기록하고 receipt를 발급합니다.",
+      description: "응답 마감 후 유효표 과반을 판정하고 receipt를 발급합니다.",
       options: [
         {
           type: 3,
@@ -543,25 +543,6 @@ export const CRAFTING_VOTE_CMD = {
           required: true,
           min_length: 24,
           max_length: 24,
-        },
-        {
-          type: 3,
-          name: CraftingVoteOpt.outcome,
-          description: "표 수가 아닌 GM의 명시적인 수동 결론.",
-          required: true,
-          choices: [
-            { name: "승인", value: "APPROVED" },
-            { name: "반려", value: "REJECTED" },
-            { name: "보류", value: "DEFERRED" },
-          ],
-        },
-        {
-          type: 3,
-          name: CraftingVoteOpt.reason,
-          description: "동률·무투표를 포함한 결론 근거. 반드시 직접 기재합니다.",
-          required: true,
-          min_length: 1,
-          max_length: 300,
         },
       ],
     },

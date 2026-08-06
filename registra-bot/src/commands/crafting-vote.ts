@@ -15,6 +15,7 @@ import {
 import {
   buildCraftingVoteResolutionReceipt,
   classifyCraftingVotePublication,
+  decideCraftingVoteMajority,
   getCraftingVotePhase,
   isCraftingVoteAnnouncementDeletionSafe,
   parseCraftingVoteButtonCustomId,
@@ -23,10 +24,7 @@ import {
   CraftingVoteOpt,
   CraftingVoteSub,
 } from "../slash/ko-names.js";
-import type {
-  CraftingVote,
-  CraftingVoteOutcome,
-} from "../types/crafting-vote.js";
+import type { CraftingVote } from "../types/crafting-vote.js";
 import { parseStrictDateTimeInput } from "../utils/date-time-input.js";
 import { deferReplyAndRequireAdminOrManageGuild } from "../utils/require-admin-or-manage-guild.js";
 import { resolveGuildTextSendChannel } from "../utils/resolve-guild-text-send-channel.js";
@@ -44,7 +42,7 @@ function buildReceiptAttachment(vote: CraftingVote) {
   if (!receipt || !vote._id) return null;
   return {
     attachment: Buffer.from(`${JSON.stringify(receipt, null, 2)}\n`, "utf8"),
-    name: `crafting-vote-${vote._id.toHexString()}-receipt.json`,
+    name: `censor-use-vote-${vote._id.toHexString()}-receipt.json`,
   };
 }
 
@@ -225,8 +223,8 @@ async function handleCreate(
       );
       await interaction.editReply({
         content: canonical
-          ? `${N}동일 요청 참조의 제작 투표가 이미 존재합니다. 투표 ID: \`${voteId}\``
-          : `${E}원장은 SENT이지만 공식 Discord 공지를 확인할 수 없습니다. 자동 재게시하지 말고 \`/제작투표 게시복구\`를 실행하십시오.`,
+          ? `${N}동일 요청 참조의 사용 투표가 이미 존재합니다. 투표 ID: \`${voteId}\``
+          : `${E}원장은 SENT이지만 공식 Discord 공지를 확인할 수 없습니다. 자동 재게시하지 말고 \`/사용투표 게시복구\`를 실행하십시오.`,
       });
       return;
     }
@@ -235,7 +233,7 @@ async function handleCreate(
         content: [
           `${N}이 요청의 Discord 전달 상태가 불확실하여 자동 재전송하지 않습니다.`,
           `투표 ID: \`${voteId}\``,
-          `${N}\`/제작투표 게시복구\`에서 실제 채널 상태를 확인한 뒤 복구하십시오.`,
+          `${N}\`/사용투표 게시복구\`에서 실제 채널 상태를 확인한 뒤 복구하십시오.`,
         ].join("\n"),
       });
       return;
@@ -277,7 +275,7 @@ async function handleCreate(
     };
 
     announcement = await resolvedChannel.channel.send({
-      content: `<@&${claimed.eligibleRoleId}> CENSOR-3 제작 동의 투표가 접수되었습니다.`,
+      content: `<@&${claimed.eligibleRoleId}> CENSOR-3 1발 사용 동의 투표가 접수되었습니다.`,
       embeds: [buildCraftingVoteEmbed(announcementView, now)],
       components: [buildCraftingVoteActionRow(announcementView, now)],
       allowedMentions: { roles: [claimed.eligibleRoleId] },
@@ -323,16 +321,16 @@ async function handleCreate(
         ? `${E}투표 원장 준비에 실패했습니다. 동일 요청으로 다시 시도할 수 있습니다.`
         : confirmedDeleted && publicationReleased
           ? `${E}투표 공지를 원장에 연결하지 못해 게시물을 삭제했습니다. 동일 요청으로 다시 실행할 수 있습니다.`
-          : `${E}투표 공지 전달 결과가 불확실합니다. 자동 재전송하지 않습니다. \`/제작투표 게시복구\`로 확인하십시오.`,
+          : `${E}투표 공지 전달 결과가 불확실합니다. 자동 재전송하지 않습니다. \`/사용투표 게시복구\`로 확인하십시오.`,
     });
     return;
   }
 
   await interaction.editReply({
     content: [
-      `${S}CENSOR-3 제작 동의 투표를 등재했습니다. [공지 열람](${announcement.url})`,
+      `${S}CENSOR-3 1발 사용 동의 투표를 등재했습니다. [공지 열람](${announcement.url})`,
       `투표 ID: \`${voteId}\``,
-      `${N}자동 승인·크레딧 차감·재료 소모·인벤토리 지급은 수행하지 않습니다.`,
+      `${N}마감 뒤 유효표 과반으로 판정합니다. 승인 1건은 CENSOR-3 1발 사용 시 한 번만 소비됩니다.`,
     ].join("\n"),
   });
 }
@@ -356,13 +354,6 @@ async function handleStatus(
   });
 }
 
-function parseOutcome(value: string): CraftingVoteOutcome | null {
-  if (value === "APPROVED" || value === "REJECTED" || value === "DEFERRED") {
-    return value;
-  }
-  return null;
-}
-
 async function handleResolve(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
@@ -372,19 +363,6 @@ async function handleResolve(
   }
 
   const voteId = interaction.options.getString(CraftingVoteOpt.voteId, true);
-  const outcome = parseOutcome(
-    interaction.options.getString(CraftingVoteOpt.outcome, true)
-  );
-  const reason = interaction.options
-    .getString(CraftingVoteOpt.reason, true)
-    .trim();
-  if (!outcome || !reason) {
-    await interaction.editReply({
-      content: `${E}결론과 사유를 모두 명시해야 합니다.`,
-    });
-    return;
-  }
-
   const before = await findCraftingVoteById(voteId, interaction.guildId);
   if (!before) {
     await interaction.editReply({ content: `${E}해당 투표를 찾지 못했습니다.` });
@@ -405,7 +383,7 @@ async function handleResolve(
   }
   if (phase === "RESOLVED") {
     await interaction.editReply({
-      content: `${N}이미 GM 결론이 기록된 투표입니다. 현황 명령으로 확인하십시오.`,
+      content: `${N}이미 과반 결론이 기록된 투표입니다. 현황 명령으로 확인하십시오.`,
     });
     return;
   }
@@ -417,11 +395,14 @@ async function handleResolve(
   }
 
   const resolvedAt = new Date();
+  const decision = decideCraftingVoteMajority(before);
   const vote = await resolveCraftingVote({
     voteId,
     guildId: interaction.guildId,
-    outcome,
-    reason,
+    expectedRevision: before.revision,
+    outcome: decision.outcome,
+    reason: decision.reason,
+    tally: decision.tally,
     resolvedByDiscordUserId: interaction.user.id,
     resolvedAt,
   });
@@ -446,8 +427,8 @@ async function handleResolve(
 
   await interaction.editReply({
     content: [
-      `${S}GM 수동 결론을 기록했습니다: **${outcome}**`,
-      `${N}이 결과는 ERP 승인 근거일 뿐, 지급·차감·제작을 자동 실행하지 않습니다.${warning}`,
+      `${S}유효표 과반 결론을 기록했습니다: **${decision.outcome}** · 찬성 ${decision.tally.yes}/${decision.tally.total}`,
+      `${N}승인 결과는 CENSOR-3 1발 사용 시 ERP가 한 번만 claim합니다.${warning}`,
     ].join("\n"),
     files: [
       receipt,
@@ -623,6 +604,6 @@ export async function handleCraftingVoteCommand(
   }
 
   await interaction.editReply({
-    content: `${E}지원하지 않는 제작 투표 명령입니다.`,
+    content: `${E}지원하지 않는 사용 투표 명령입니다.`,
   });
 }

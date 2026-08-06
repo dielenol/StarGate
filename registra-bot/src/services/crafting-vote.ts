@@ -1,5 +1,5 @@
 import {
-  CRAFTING_VOTE_BUTTON_PREFIX,
+  CENSOR_USE_VOTE_BUTTON_PREFIX,
 } from "../constants/registrar.js";
 import { createHash } from "node:crypto";
 import type {
@@ -10,13 +10,19 @@ import type {
 export type CraftingVotePhase =
   | "PUBLISH_PENDING"
   | "OPEN"
-  | "CLOSED_PENDING_GM"
+  | "CLOSED_PENDING_RESOLUTION"
   | "RESOLVED";
 
 export interface CraftingVoteTally {
   yes: number;
   no: number;
   total: number;
+}
+
+export interface CraftingVoteMajorityDecision {
+  outcome: "APPROVED" | "REJECTED";
+  reason: string;
+  tally: CraftingVoteTally;
 }
 
 export type CraftingVotePublicationConfirmation =
@@ -61,7 +67,7 @@ export function buildCraftingVoteLedgerId(
   requestRef: string
 ): string {
   return createHash("sha256")
-    .update(`registrar:censor3:${guildId}:${requestRef}`, "utf8")
+    .update(`registrar:censor3-use:${guildId}:${requestRef}`, "utf8")
     .digest("hex")
     .slice(0, 24);
 }
@@ -78,6 +84,23 @@ export function countCraftingVoteBallots(
   return { yes, no, total: yes + no };
 }
 
+/** 유효표의 과반(YES > 전체 유효표 / 2)만 승인한다. 동률·무투표는 반려다. */
+export function decideCraftingVoteMajority(
+  vote: Pick<CraftingVote, "ballots">
+): CraftingVoteMajorityDecision {
+  const tally = countCraftingVoteBallots(vote);
+  const approved = tally.yes > tally.total / 2;
+  return {
+    outcome: approved ? "APPROVED" : "REJECTED",
+    reason: approved
+      ? `유효표 과반 찬성 (${tally.yes}/${tally.total})`
+      : tally.total === 0
+        ? "유효표 없음: 과반 미달"
+        : `유효표 과반 미달 (${tally.yes}/${tally.total})`,
+    tally,
+  };
+}
+
 export function getCraftingVotePhase(
   vote: Pick<CraftingVote, "status" | "closesAt" | "publication">,
   now = new Date()
@@ -85,7 +108,7 @@ export function getCraftingVotePhase(
   if (vote.status === "RESOLVED") return "RESOLVED";
   if (vote.publication.state !== "SENT") return "PUBLISH_PENDING";
   if (vote.closesAt.getTime() <= now.getTime()) {
-    return "CLOSED_PENDING_GM";
+    return "CLOSED_PENDING_RESOLUTION";
   }
   return "OPEN";
 }
@@ -107,16 +130,16 @@ export function buildCraftingVoteButtonCustomId(
   voteId: string,
   choice: CraftingVoteChoice
 ): string {
-  return `${CRAFTING_VOTE_BUTTON_PREFIX}${voteId}:${choice.toLowerCase()}`;
+  return `${CENSOR_USE_VOTE_BUTTON_PREFIX}${voteId}:${choice.toLowerCase()}`;
 }
 
 export function parseCraftingVoteButtonCustomId(customId: string): {
   voteId: string;
   choice: CraftingVoteChoice;
 } | null {
-  if (!customId.startsWith(CRAFTING_VOTE_BUTTON_PREFIX)) return null;
+  if (!customId.startsWith(CENSOR_USE_VOTE_BUTTON_PREFIX)) return null;
 
-  const parts = customId.slice(CRAFTING_VOTE_BUTTON_PREFIX.length).split(":");
+  const parts = customId.slice(CENSOR_USE_VOTE_BUTTON_PREFIX.length).split(":");
   if (parts.length !== 2) return null;
   const [voteId, rawChoice] = parts;
   if (!/^[a-f\d]{24}$/i.test(voteId)) return null;
@@ -128,8 +151,7 @@ export function parseCraftingVoteButtonCustomId(customId: string): {
 }
 
 /**
- * 후속 ERP 수동 승인 단계에 넘길 구조화 receipt입니다.
- * 이 receipt 자체는 크레딧·인벤토리·공방 상태를 변경하지 않습니다.
+ * ERP가 원장을 재조회해 승인된 CENSOR-3 한 발 사용을 한 번만 claim할 수 있는 receipt입니다.
  */
 export function buildCraftingVoteResolutionReceipt(vote: CraftingVote) {
   if (!vote._id || !vote.resolution || vote.status !== "RESOLVED") {
@@ -137,7 +159,7 @@ export function buildCraftingVoteResolutionReceipt(vote: CraftingVote) {
   }
 
   return {
-    schema: "registrar.crafting-vote-resolution.v1" as const,
+    schema: "registrar.censor-use-vote-resolution.v2" as const,
     voteId: vote._id.toHexString(),
     requestRef: vote.requestRef,
     subject: vote.subject,
@@ -162,11 +184,28 @@ export function buildCraftingVoteResolutionReceipt(vote: CraftingVote) {
       resolvedAt: vote.resolution.resolvedAt.toISOString(),
     },
     execution: {
-      mode: "MANUAL_GM_REVIEW_REQUIRED" as const,
-      automaticallyApproved: false,
-      erpMutationsPerformed: false,
+      mode: vote.execution
+        ? ("CONSUMED" as const)
+        : vote.resolution.outcome === "APPROVED"
+          ? ("APPROVED_USE_AVAILABLE" as const)
+          : ("REJECTED" as const),
+      automaticallyResolved: true,
+      erpMutationsPerformed: Boolean(vote.execution),
       creditMutationsPerformed: false,
-      inventoryMutationsPerformed: false,
+      inventoryMutationsPerformed: Boolean(vote.execution),
+      ...(vote.execution
+        ? {
+            claim: {
+              requestId: vote.execution.requestId,
+              characterId: vote.execution.characterId,
+              equipmentItemId: vote.execution.equipmentItemId,
+              actionCode: vote.execution.actionCode,
+              consumableSlug: vote.execution.consumableSlug,
+              quantity: vote.execution.quantity,
+              claimedAt: vote.execution.claimedAt.toISOString(),
+            },
+          }
+        : {}),
     },
     verification: {
       receiptIsAuthoritative: false,
@@ -183,6 +222,7 @@ export function buildCraftingVoteResolutionReceipt(vote: CraftingVote) {
         "closesAt",
         "tally<-ballots",
         "resolution",
+        "execution",
         "messageId",
         "publication.state",
       ] as const,

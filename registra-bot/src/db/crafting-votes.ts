@@ -17,6 +17,11 @@ import { buildCraftingVoteLedgerId } from "../services/crafting-vote.js";
 import { getClient } from "./client.js";
 
 const COLLECTION = "registrar_crafting_votes";
+const CENSOR_USE_VOTE_GUARD = {
+  schemaVersion: 2,
+  "subject.kind": "CENSOR_3_USE_APPROVAL",
+  "subject.code": "ZULU_0028_CENSOR_3",
+} as const;
 
 function votes() {
   return getClient().db(config.mongoDbName).collection<CraftingVote>(COLLECTION);
@@ -27,7 +32,11 @@ function objectIdFilter(
   extra: Omit<Filter<CraftingVote>, "_id"> = {}
 ): Filter<CraftingVote> | null {
   if (!ObjectId.isValid(voteId)) return null;
-  return { _id: new ObjectId(voteId), ...extra } as Filter<CraftingVote>;
+  return {
+    _id: new ObjectId(voteId),
+    ...extra,
+    ...CENSOR_USE_VOTE_GUARD,
+  } as Filter<CraftingVote>;
 }
 
 export interface CreateCraftingVoteInput {
@@ -45,7 +54,7 @@ export async function createCraftingVote(
   const voteId = buildCraftingVoteLedgerId(input.guildId, input.requestRef);
   const doc: CraftingVote = {
     _id: new ObjectId(voteId),
-    schemaVersion: 1,
+    schemaVersion: 2,
     revision: 0,
     guildId: input.guildId,
     channelId: CENSOR3_VOTE_CHANNEL_ID,
@@ -66,7 +75,7 @@ export async function createCraftingVote(
   };
 
   const result = await votes().updateOne(
-    { _id: doc._id } as Filter<CraftingVote>,
+    { _id: doc._id, ...CENSOR_USE_VOTE_GUARD } as Filter<CraftingVote>,
     { $setOnInsert: doc },
     { upsert: true }
   );
@@ -297,19 +306,22 @@ export async function recordCraftingVoteBallot(input: {
 }
 
 /**
- * 마감 이후에만 명시적인 GM 결론을 기록합니다. 표 수로 자동 판정하지 않습니다.
+ * 마감 이후에만 유효표 과반 판정 결과를 한 번 기록합니다.
  */
 export async function resolveCraftingVote(input: {
   voteId: string;
   guildId: string;
+  expectedRevision: number;
   outcome: CraftingVoteOutcome;
   reason: string;
+  tally: { yes: number; no: number; total: number };
   resolvedByDiscordUserId: string;
   resolvedAt: Date;
 }): Promise<CraftingVote | null> {
   const filter = objectIdFilter(input.voteId, {
     guildId: input.guildId,
     status: "OPEN",
+    revision: input.expectedRevision,
     closesAt: { $lte: input.resolvedAt },
     "publication.state": "SENT",
   });
@@ -323,6 +335,8 @@ export async function resolveCraftingVote(input: {
         resolution: {
           outcome: input.outcome,
           reason: input.reason,
+          rule: "CAST_BALLOT_MAJORITY",
+          tally: input.tally,
           resolvedByDiscordUserId: input.resolvedByDiscordUserId,
           resolvedAt: input.resolvedAt,
         },
