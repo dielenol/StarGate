@@ -37,3 +37,10 @@
 - 캐릭터 생성 payload를 관리자 허용 필드로 제한해 내부 참조 잠금 메타데이터를 외부 입력으로 주입할 수 없게 했다.
 - 검증: shared-db transaction/reference 테스트, character API 계약, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - 관련 커밋: `a57ecd94`
+
+## 2026-08-06 · 버그 수정 · 최종 능력치 표시 통일
+
+- 캐릭터 상세 VITALS의 HP/SAN/ATK/DEF를 목록·VTT와 같은 기본값+보정값 최종 수치로 표시한다.
+- 보정값 표기는 유지하고 SAN 위험 색상과 HP/SAN 진행 바도 최종 수치를 기준으로 계산한다.
+- 검증: 캐릭터 능력치 집중 테스트 4건, `pnpm typecheck`, `pnpm lint`, 인증된 로컬 데스크톱에서 우디 목록·상세 비교 및 브라우저 오류 0건 확인
+- 관련 커밋: `76c962d9`
