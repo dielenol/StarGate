@@ -44,13 +44,35 @@ export interface ShopMeta {
   pageGroup?: ShopPageGroup;
 }
 
-export type EquipmentActionKind = "CHARGED" | "STANCE";
+export type EquipmentActionKind = "CHARGED" | "STANCE" | "CONSUMABLE";
 
 export interface EquipmentActionDamage {
   type: "PHYSICAL" | "FIRE" | "PSYCHIC";
   amount: number;
   ignoresDefense?: boolean;
   scaling: "NONE" | "STANDARD";
+}
+
+export interface EquipmentActionConsumableCost {
+  slug: string;
+  quantity: number;
+  approval: "REGISTRA_MAJORITY";
+}
+
+export interface EquipmentWeaponDamageBand {
+  minCells: number;
+  maxCells: number;
+  damage: EquipmentActionDamage;
+}
+
+export interface EquipmentWeaponAttackProfile {
+  weaponCategory: string;
+  rangeMinCells: number;
+  rangeMaxCells: number;
+  /** 총기는 캐릭터 기본 ATK를 합산하지 않고 표기 피해만 사용한다. */
+  usesCharacterAttack: false;
+  consumesRegularAmmo: number;
+  damageByRange: EquipmentWeaponDamageBand[];
 }
 
 /** 캐릭터 능력 슬롯과 분리되어 장착 장비가 제공하는 전용 액션. */
@@ -74,6 +96,12 @@ export interface EquipmentAction {
   rangeMinCells?: number;
   rangeMaxCells?: number;
   damage?: EquipmentActionDamage;
+  /** 무기의 구조화 기본 사격 프로필을 함께 사용한다. */
+  usesWeaponAttack?: boolean;
+  /** 기본 사격과 별도 판정하는 고정 추가 피해. */
+  additionalDamage?: EquipmentActionDamage;
+  /** 장비 충전 대신 실제 인벤토리 소모품을 차감하는 비용. */
+  consumableCost?: EquipmentActionConsumableCost;
 }
 
 export interface EquipmentMountRules {
@@ -81,12 +109,17 @@ export interface EquipmentMountRules {
   unmountActionCost: number;
   blocksMovement: boolean;
   allowsDiagonalFire: boolean;
+  /** 비거치 상태에서는 직선 방향 사격만 허용한다. */
+  diagonalFireRequiresMounted?: boolean;
+  /** 거치 중 대각선 사거리 계산 방식. DIAMOND는 맨해튼 거리다. */
+  mountedRangeShape?: "DIAMOND";
   bonusDamage: number;
 }
 
 export interface EquipmentCombatProfile {
   ammoCapacity?: number;
   mount?: EquipmentMountRules;
+  weaponAttack?: EquipmentWeaponAttackProfile;
 }
 
 /** 장착 중인 장비가 캐릭터의 기존 어빌리티 효과 문구를 대체한다. */

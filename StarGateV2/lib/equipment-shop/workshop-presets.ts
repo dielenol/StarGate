@@ -127,6 +127,164 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
       },
     },
   },
+  {
+    key: "neved-pian-bulwark",
+    displayName: "CMMG Mk.47 Mutant 「피안의 보루」",
+    sourceClass: "design-proposal",
+    balanceStatus: "balance-candidate",
+    blueprint: {
+      slug: "cmmg-mk47-mutant-pian-bulwark",
+      displayName: "CMMG Mk.47 Mutant 「피안의 보루」",
+      applicability: {
+        kinds: ["upgrade"],
+        sourceSlugs: ["cmmg-mk47-mutant-nosb-mod"],
+        sourceCategories: ["WEAPON"],
+        resultCategory: "WEAPON",
+      },
+      defaults: {
+        creditCost: 1_200,
+        durationMinutes: 180,
+        specialistCodename: "TOWASKI",
+        specialistWorkflow: [
+          {
+            specialistCodename: "TOWASKI",
+            task: "Mk.47 총기 거치대·강화 탄창·급탄 계통을 일체형으로 개조한다.",
+          },
+          {
+            specialistCodename: "VERNIER",
+            task: "가공한 포스코어를 리시버 내부 안정화 계통에 통합하고 출력 안전성을 검수한다.",
+          },
+        ],
+        specialistNote:
+          "립 토와스키 (TOWASKI) 화기 개조 주담당 / 베르니에 (VERNIER) 포스코어 통합 검수",
+        modificationDomain: "ENERGY_EXPLOSIVE_OUTPUT",
+        materials: [
+          { slug: "force_core", quantity: 1 },
+          { slug: "extended-magazine-mod", quantity: 1 },
+        ],
+        result: {
+          name: "CMMG Mk.47 Mutant 「피안의 보루」",
+          description:
+            "네베드의 Mk.47에 강화 12발 탄창과 접이식 일체형 거치대, 가공 포스코어 안정화 계통을 통합한 전용 개조 돌격소총.",
+          damage: "근거리 7 물리 / 중거리 12 물리 / 장거리 12 물리",
+          effect:
+            "액션을 소모해 거치·해제한다. 거치 중 이동 불가, 대각선 사격은 다이아몬드 범위를 사용한다.",
+          previewImage:
+            "/assets/catalog/equipment/cmmg-mk47-mutant-pian-bulwark.webp",
+          tags: [
+            "공방개조",
+            "전용장비",
+            "원거리무기",
+            "화기",
+            "돌격소총",
+            "네베드",
+            "피안의보루",
+            "거치무기",
+            "TOWASKI",
+            "VERNIER",
+            "U1",
+            "U2",
+          ],
+          equipmentActions: [
+            {
+              code: "U1",
+              name: "총기 거치 전환",
+              description:
+                "접이식 거치대를 전개하거나 회수해 총기의 거치 상태를 전환한다.",
+              effect:
+                "거치와 해제는 각각 액션 1을 소모한다. 거치 상태에서는 이동할 수 없고, 대각선 사격을 다이아몬드 범위로 판정한다.",
+              kind: "STANCE",
+              actionCost: 1,
+              chargeCost: 0,
+              maxCharges: 0,
+              reloadCreditCost: 0,
+              reloadApproval: "GM",
+              reloadable: false,
+            },
+            {
+              code: "U2",
+              name: "파쇄음절탄 사격",
+              description:
+                "거치 상태에서 CENSOR-3 한 발을 장전해 기본 소총 피해와 고정 심령 피해를 함께 가한다.",
+              effect:
+                "액션 1과 승인된 CENSOR-3 1발을 소모한다. 기본 소총 피해에 방어를 무시하는 30 심령 피해를 추가한다.",
+              kind: "CONSUMABLE",
+              actionCost: 1,
+              chargeCost: 0,
+              maxCharges: 0,
+              reloadCreditCost: 0,
+              reloadApproval: "GM",
+              reloadable: false,
+              requiresMounted: true,
+              consumesRegularAmmo: 0,
+              rangeMinCells: 0,
+              rangeMaxCells: 4,
+              usesWeaponAttack: true,
+              additionalDamage: {
+                type: "PSYCHIC",
+                amount: 30,
+                ignoresDefense: true,
+                scaling: "NONE",
+              },
+              consumableCost: {
+                slug: "zulu-0028-censor-3",
+                quantity: 1,
+                approval: "REGISTRA_MAJORITY",
+              },
+            },
+          ],
+          combatProfile: {
+            ammoCapacity: 12,
+            mount: {
+              mountActionCost: 1,
+              unmountActionCost: 1,
+              blocksMovement: true,
+              allowsDiagonalFire: true,
+              diagonalFireRequiresMounted: true,
+              mountedRangeShape: "DIAMOND",
+              bonusDamage: 0,
+            },
+            weaponAttack: {
+              weaponCategory: "rifle",
+              rangeMinCells: 0,
+              rangeMaxCells: 4,
+              usesCharacterAttack: false,
+              consumesRegularAmmo: 1,
+              damageByRange: [
+                {
+                  minCells: 0,
+                  maxCells: 0,
+                  damage: {
+                    type: "PHYSICAL",
+                    amount: 7,
+                    scaling: "NONE",
+                  },
+                },
+                {
+                  minCells: 1,
+                  maxCells: 2,
+                  damage: {
+                    type: "PHYSICAL",
+                    amount: 12,
+                    scaling: "NONE",
+                  },
+                },
+                {
+                  minCells: 3,
+                  maxCells: 4,
+                  damage: {
+                    type: "PHYSICAL",
+                    amount: 12,
+                    scaling: "NONE",
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  },
 ];
 
 export function getEquipmentWorkshopPresetSelectionValue(key: string): string {

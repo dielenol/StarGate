@@ -1,32 +1,46 @@
 {
-  "kind": "equipment-workshop-blueprint-candidate",
-  "status": "BLOCKED",
-  "readyForWorkshopQuote": false,
-  "targetCharacterCodename": "NEVED",
+  "kind": "equipment-workshop-blueprint-contract",
+  "status": "READY",
+  "readyForWorkshopQuote": true,
+  "targetCharacterCodename": "네베드",
   "source": {
     "slug": "cmmg-mk47-mutant-nosb-mod",
     "category": "WEAPON"
   },
   "result": {
     "slug": "cmmg-mk47-mutant-pian-bulwark",
-    "workingName": "CMMG Mk.47 Mutant 「피안의 보루」",
-    "nameStatus": "working-proposal",
+    "name": "CMMG Mk.47 Mutant 「피안의 보루」",
     "category": "WEAPON",
     "previewImage": "/assets/catalog/equipment/cmmg-mk47-mutant-pian-bulwark.webp",
     "imageStatus": "user-confirmed",
     "damage": {
-      "melee": 7,
+      "near": 7,
       "medium": 12,
       "long": 12,
-      "type": "PHYSICAL"
+      "type": "PHYSICAL",
+      "usesCharacterAttack": false,
+      "allowedDamageBonus": "NEVED_RIFLE_PASSIVE_ONLY"
+    },
+    "range": {
+      "minimumCells": 0,
+      "maximumCells": 4,
+      "bands": [
+        { "minimumCells": 0, "maximumCells": 0, "damage": 7 },
+        { "minimumCells": 1, "maximumCells": 2, "damage": 12 },
+        { "minimumCells": 3, "maximumCells": 4, "damage": 12 }
+      ]
     },
     "ammoCapacity": 12,
     "mount": {
+      "actionCode": "U1",
+      "actionName": "총기 거치 전환",
       "mountActionCost": 1,
-      "unmountActionCost": null,
+      "unmountActionCost": 1,
       "blocksMovement": true,
       "allowsDiagonalFire": true,
-      "bonusDamage": null
+      "diagonalFireRequiresMounted": true,
+      "mountedRangeShape": "DIAMOND",
+      "bonusDamage": 0
     }
   },
   "materials": [
@@ -41,14 +55,23 @@
       "quantity": 1
     }
   ],
-  "creditCost": null,
-  "durationMinutes": null,
-  "specialistCodename": null,
-  "modificationDomain": null,
+  "creditCost": 1200,
+  "durationMinutes": 180,
+  "specialistCodename": "TOWASKI",
+  "specialistWorkflow": [
+    {
+      "specialistCodename": "TOWASKI",
+      "task": "Mk.47 총기 거치대·강화 탄창·급탄 계통을 일체형으로 개조한다."
+    },
+    {
+      "specialistCodename": "VERNIER",
+      "task": "가공한 포스코어를 리시버 내부 안정화 계통에 통합하고 출력 안전성을 검수한다."
+    }
+  ],
+  "modificationDomain": "ENERGY_EXPLOSIVE_OUTPUT",
   "specialAmmunition": {
     "slug": "zulu-0028-censor-3",
-    "workingName": "ZULU-0028 파쇄음절탄 「CENSOR-3」",
-    "nameStatus": "working-proposal",
+    "name": "ZULU-0028 파쇄음절탄 「CENSOR-3」",
     "category": "CONSUMABLE",
     "previewImage": "/assets/catalog/consumables/zulu-0028-censor-3.webp",
     "imageStatus": "user-confirmed",
@@ -59,44 +82,30 @@
     "damageType": "PSYCHIC",
     "ignoreDefense": true,
     "scaling": "NONE",
-    "regularAmmoCost": null,
-    "attackResolution": null,
-    "actionCode": null,
-    "actionName": null,
+    "regularAmmoCost": 0,
+    "attackResolution": "BASE_WEAPON_PLUS_FIXED_ADDITIONAL_DAMAGE",
+    "actionCode": "U2",
+    "actionName": "파쇄음절탄 사격",
     "material": {
       "slug": "broken-syllable",
       "scope": "SHARED",
       "quantity": 3
     },
     "approval": {
+      "scope": "ONE_ROUND_PER_APPROVED_VOTE",
       "system": "REGISTRA_DISCORD_VOTE",
       "channelId": "1534753076399833249",
-      "voterRoleId": null,
-      "deadline": null,
-      "quorum": null,
-      "approvalThreshold": null,
-      "tieRule": null,
-      "noVoteRule": null,
-      "resolution": "GM_MANUAL"
+      "voterRoleId": "REQUIRED_AT_VOTE_CREATION",
+      "deadline": "REQUIRED_AT_VOTE_CREATION",
+      "quorum": "NONE",
+      "approvalThreshold": "YES_GT_CAST_BALLOTS_DIV_2",
+      "tieRule": "REJECTED",
+      "noVoteRule": "REJECTED",
+      "resolution": "MAJORITY_ON_RESOLVE_COMMAND_AFTER_DEADLINE",
+      "binding": "FUNGIBLE_ONE_USE_APPROVAL",
+      "claimOrder": "OLDEST_APPROVED_UNUSED_FIRST",
+      "claimLimit": 1
     }
   },
-  "unresolvedFields": [
-    "creditCost",
-    "durationMinutes",
-    "specialistCodename",
-    "modificationDomain",
-    "result.mount.unmountActionCost",
-    "result.mount.bonusDamage",
-    "result.exactRangeContract",
-    "specialAmmunition.regularAmmoCost",
-    "specialAmmunition.attackResolution",
-    "specialAmmunition.actionCode",
-    "specialAmmunition.actionName",
-    "specialAmmunition.approval.voterRoleId",
-    "specialAmmunition.approval.deadline",
-    "specialAmmunition.approval.quorum",
-    "specialAmmunition.approval.approvalThreshold",
-    "specialAmmunition.approval.tieRule",
-    "specialAmmunition.approval.noVoteRule"
-  ]
+  "unresolvedFields": []
 }

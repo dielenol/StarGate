@@ -39,6 +39,7 @@
     "migrate:credit-balances": "node --experimental-strip-types scripts/migrate-credit-balances.ts",
     "migrate:character-equipment": "node --experimental-strip-types scripts/migrate-character-equipment-to-inventory.ts",
     "migrate:character-codename": "node --experimental-strip-types scripts/migrate-character-codename.ts",
+    "migrate:neved-censor-3": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/migrate-neved-censor-3.ts",
     "migrate:towaski-license-renewals": "node --experimental-strip-types scripts/backfill-towaski-license-renewals.ts",
     "migrate:workshop-dm-outbox": "node --experimental-strip-types scripts/backfill-workshop-discord-dm-outbox.ts",
     "backfill:mrbeast-soda-stock-impact": "pnpm --filter @stargate/core build && node --env-file-if-exists=.env.local --experimental-strip-types scripts/backfill-mrbeast-soda-stock-impact.ts",

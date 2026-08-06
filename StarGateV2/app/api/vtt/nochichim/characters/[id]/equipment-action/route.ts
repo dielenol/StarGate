@@ -10,7 +10,7 @@ import { requireNochichimSyncAuth } from "../../../_lib/auth";
 import {
   consumeCharacterEquipmentAction,
   loadCharacterEquippedState,
-  prepareCharacterInventoryConsumption,
+  prepareCharacterEquipmentActionConsumption,
 } from "../../../_lib/snapshots";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +44,7 @@ export async function POST(request: Request, context: RouteContext) {
   const requestId = headerRequestId ?? bodyRequestId;
   if (
     !itemId ||
-    !/^U[1-9][0-9]?$/.test(actionCode) ||
+    !/^(?:U|W)[1-9][0-9]?$/.test(actionCode) ||
     !requestId ||
     !isValidIdempotencyKey(requestId) ||
     (headerRequestId !== undefined &&
@@ -54,16 +54,17 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json(
       {
         error:
-          "itemId, a valid U actionCode, and a valid matching request id are required",
+          "itemId, a valid U/W actionCode, and a valid matching request id are required",
       },
       { status: 400 },
     );
   }
 
   try {
-    const characterId = await prepareCharacterInventoryConsumption({
+    const characterId = await prepareCharacterEquipmentActionConsumption({
       characterKey: decodeURIComponent(id),
       itemId,
+      actionCode,
     });
     const operation = await executeEconomicOperationResult<
       Awaited<ReturnType<typeof consumeCharacterEquipmentAction>>
@@ -77,6 +78,7 @@ export async function POST(request: Request, context: RouteContext) {
           characterId,
           itemId,
           actionCode,
+          requestId,
           dbSession,
         });
         return { status: result.ok ? 200 : 409, body: result };
@@ -104,12 +106,18 @@ export async function POST(request: Request, context: RouteContext) {
     }
     const responseBody = { ...operation.body, ...equippedState };
     if (!operation.body.ok) {
+      const code = operation.body.code ?? "EQUIPMENT_UNAVAILABLE";
+      const unavailableMessage =
+        code === "APPROVAL_UNAVAILABLE"
+          ? "An unused approved CENSOR-3 use vote is required"
+          : code === "CONSUMABLE_UNAVAILABLE"
+            ? "CENSOR-3 consumable is unavailable"
+            : "Equipment is unequipped or has insufficient charges or ammunition";
       return NextResponse.json(
         {
           ...responseBody,
-          error:
-            "Equipment is unequipped or has insufficient charges or ammunition",
-          code: "EQUIPMENT_UNAVAILABLE",
+          error: unavailableMessage,
+          code,
         },
         {
           status: operation.status,

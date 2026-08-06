@@ -418,6 +418,72 @@ test("quote validation preserves multiple actions, mount rules and non-reloadabl
   );
 });
 
+test("네베드 preset은 소모품 기반 U2와 구조화 돌격소총 피해 계약을 통과한다", () => {
+  const preset = findEquipmentWorkshopPreset(
+    getEquipmentWorkshopPresetSelectionValue("neved-pian-bulwark"),
+  );
+  assert.ok(preset);
+  assert.equal(preset.blueprint.defaults.creditCost, 1_200);
+  assert.equal(preset.blueprint.defaults.durationMinutes, 180);
+  assert.equal(parseEquipmentWorkshopBlueprint(preset.blueprint).ok, true);
+
+  const result = preset.blueprint.defaults.result;
+  const parsed = parseEquipmentWorkshopQuote({
+    expectedVersion: 0,
+    ...preset.blueprint.defaults,
+    materials: preset.blueprint.defaults.materials,
+    result: {
+      ...result,
+      category: "WEAPON",
+    },
+  });
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.input.result.combatProfile.weaponAttack.usesCharacterAttack, false);
+  assert.deepEqual(
+    parsed.input.result.combatProfile.weaponAttack.damageByRange.map(
+      (band) => [band.minCells, band.maxCells, band.damage.amount],
+    ),
+    [
+      [0, 0, 7],
+      [1, 2, 12],
+      [3, 4, 12],
+    ],
+  );
+  assert.equal(parsed.input.result.combatProfile.mount.mountedRangeShape, "DIAMOND");
+  const censor = parsed.input.result.equipmentActions.find(
+    (action) => action.code === "U2",
+  );
+  assert.equal(censor.kind, "CONSUMABLE");
+  assert.equal(censor.consumesRegularAmmo, 0);
+  assert.deepEqual(censor.consumableCost, {
+    slug: "zulu-0028-censor-3",
+    quantity: 1,
+    approval: "REGISTRA_MAJORITY",
+  });
+  assert.deepEqual(censor.additionalDamage, {
+    type: "PSYCHIC",
+    amount: 30,
+    ignoresDefense: true,
+    scaling: "NONE",
+  });
+});
+
+test("구조화 총기는 캐릭터 ATK 적용이나 무탄약 기본 사격을 허용하지 않는다", () => {
+  const preset = structuredClone(
+    EQUIPMENT_WORKSHOP_PRESETS.find(
+      (candidate) => candidate.key === "neved-pian-bulwark",
+    ).blueprint.defaults,
+  );
+  preset.expectedVersion = 0;
+
+  preset.result.combatProfile.weaponAttack.usesCharacterAttack = true;
+  assert.equal(parseEquipmentWorkshopQuote(preset).ok, false);
+
+  preset.result.combatProfile.weaponAttack.usesCharacterAttack = false;
+  preset.result.combatProfile.weaponAttack.consumesRegularAmmo = 0;
+  assert.equal(parseEquipmentWorkshopQuote(preset).ok, false);
+});
+
 test("quote validation accepts specialist override and a charge-backed U action", () => {
   const parsed = parseEquipmentWorkshopQuote({
     expectedVersion: 0,

@@ -53,7 +53,7 @@ test("충전형 U 액션은 충전·일반 탄약을 같은 멱등 transaction�
   assert.match(route, /domain: "equipment-action-consume-vtt"/);
   assert.match(
     route,
-    /prepareCharacterInventoryConsumption\([\s\S]*executeEconomicOperationResult/,
+    /prepareCharacterEquipmentActionConsumption\([\s\S]*executeEconomicOperationResult/,
   );
   assert.match(route, /executeEconomicOperationResult/);
   assert.match(route, /run: async \(dbSession\)/);
@@ -96,4 +96,66 @@ test("충전형 U 액션은 충전·일반 탄약을 같은 멱등 transaction�
     snapshots,
     /prepareCharacterInventoryItemLocks\(characterId, \[input\.itemId\]\)/,
   );
+});
+
+test("피안의 보루 W1·CENSOR-3 U2는 탄창·소모품·과반 승인 원장을 각각 원자 처리한다", async () => {
+  const [route, consumeRoute, snapshots, voteLedger, inventory] = await Promise.all([
+    readWeb(
+      "app/api/vtt/nochichim/characters/[id]/equipment-action/route.ts",
+    ),
+    readWeb("app/api/vtt/nochichim/characters/[id]/consume/route.ts"),
+    readWeb("app/api/vtt/nochichim/_lib/snapshots.ts"),
+    readWeb("lib/db/registrar-crafting-votes.ts"),
+    readFile(
+      new URL(
+        "../../../../../../packages/shared-db/src/crud/inventory.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(route, /\/\^\(\?:U\|W\)\[1-9\]\[0-9\]\?\$\//);
+  assert.match(route, /prepareCharacterEquipmentActionConsumption/);
+  assert.match(route, /requestId,[\s\S]*dbSession/);
+  assert.match(route, /APPROVAL_UNAVAILABLE/);
+  assert.match(route, /CONSUMABLE_UNAVAILABLE/);
+
+  assert.match(snapshots, /code: "W1"/);
+  assert.match(snapshots, /kind: "WEAPON"/);
+  assert.match(snapshots, /item\.combatProfile\?\.weaponAttack/);
+  assert.match(snapshots, /consumeEquippedEquipmentAmmo/);
+  assert.match(snapshots, /action\.consumableCost/);
+  assert.match(snapshots, /character\.codename !== "네베드"/);
+  assert.match(snapshots, /item\.slug !== PIAN_BULWARK_WEAPON_SLUG/);
+  assert.match(snapshots, /claimApprovedCensorUseVote/);
+  assert.match(snapshots, /removeFromInventory\([\s\S]*input\.dbSession/);
+  assert.match(
+    snapshots,
+    /lockItemIds\.push\(equipmentSlotLockId\("WEAPON"\)\)/,
+  );
+  assert.match(
+    snapshots,
+    /lockCharacterInventoryItems\([\s\S]*equipmentSlotLockId\("WEAPON"\)[\s\S]*input\.dbSession[\s\S]*const equippedEntry/,
+  );
+  assert.match(snapshots, /item\.slug === CENSOR_3_CONSUMABLE_SLUG/);
+  assert.match(snapshots, /throw new Error\("Consumable requires equipment action"\)/);
+  assert.match(consumeRoute, /EQUIPMENT_ACTION_REQUIRED/);
+
+  assert.match(voteLedger, /schemaVersion: 2/);
+  assert.match(voteLedger, /"subject\.kind": "CENSOR_3_USE_APPROVAL"/);
+  assert.match(voteLedger, /"resolution\.outcome": "APPROVED"/);
+  assert.match(voteLedger, /"resolution\.rule": "CAST_BALLOT_MAJORITY"/);
+  assert.match(voteLedger, /\$divide: \["\$resolution\.tally\.total", 2\]/);
+  assert.match(voteLedger, /execution: \{ \$exists: false \}/);
+  assert.match(voteLedger, /sort: \{ "resolution\.resolvedAt": 1, _id: 1 \}/);
+  assert.match(voteLedger, /requestRef: vote\.requestRef/);
+  assert.match(voteLedger, /session: input\.session/);
+  assert.match(snapshots, /approvalRequestRef: approval\.requestRef/);
+
+  assert.match(inventory, /export async function consumeEquippedEquipmentAmmo/);
+  assert.match(inventory, /export function equipmentSlotLockId/);
+  assert.match(inventory, /"equipmentAmmo\.maximum": expectedMaximum/);
+  assert.match(inventory, /equippedSlot: "WEAPON"/);
+  assert.match(inventory, /"equipmentAmmo\.current": -ammunitionCost/);
 });

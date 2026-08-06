@@ -274,7 +274,17 @@ export async function POST(request: Request, context: RouteContext) {
       "Shared consumable not found",
     ].includes(message)
       ? 404
-      : 500;
-    return NextResponse.json({ error: message }, { status });
+      : message === "Consumable requires equipment action"
+        ? 409
+        : 500;
+    return NextResponse.json(
+      {
+        error: message,
+        ...(message === "Consumable requires equipment action"
+          ? { code: "EQUIPMENT_ACTION_REQUIRED" }
+          : {}),
+      },
+      { status },
+    );
   }
 }

@@ -430,6 +430,34 @@ function parseEquipmentWorkshopSpecialistWorkflow(
   return workflow;
 }
 
+function parseEquipmentActionDamage(
+  value: unknown,
+): EquipmentAction["damage"] | undefined | null {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) return null;
+  const source = value as Record<string, unknown>;
+  const damageType = source.type;
+  const amount = source.amount;
+  const ignoresDefense = source.ignoresDefense;
+  const scaling = source.scaling;
+  if (
+    !["PHYSICAL", "FIRE", "PSYCHIC"].includes(String(damageType)) ||
+    !Number.isSafeInteger(amount) ||
+    Number(amount) < 1 ||
+    Number(amount) > 999 ||
+    (ignoresDefense !== undefined && typeof ignoresDefense !== "boolean") ||
+    scaling !== "NONE"
+  ) {
+    return null;
+  }
+  return {
+    type: damageType as NonNullable<EquipmentAction["damage"]>["type"],
+    amount: Number(amount),
+    ...(ignoresDefense === true ? { ignoresDefense: true } : {}),
+    scaling,
+  };
+}
+
 function parseEquipmentAction(value: unknown): EquipmentAction | undefined | null {
   if (value === undefined || value === null) return undefined;
   if (typeof value !== "object" || Array.isArray(value)) return null;
@@ -448,16 +476,48 @@ function parseEquipmentAction(value: unknown): EquipmentAction | undefined | nul
   const consumesRegularAmmo = source.consumesRegularAmmo;
   const rangeMinCells = source.rangeMinCells;
   const rangeMaxCells = source.rangeMaxCells;
-  const damage = source.damage;
+  const usesWeaponAttack = source.usesWeaponAttack;
+  const parsedDamage = parseEquipmentActionDamage(source.damage);
+  const parsedAdditionalDamage = parseEquipmentActionDamage(
+    source.additionalDamage,
+  );
+  const rawConsumableCost = source.consumableCost;
+  let consumableCost: EquipmentAction["consumableCost"];
+  if (rawConsumableCost !== undefined) {
+    if (
+      !rawConsumableCost ||
+      typeof rawConsumableCost !== "object" ||
+      Array.isArray(rawConsumableCost)
+    ) {
+      return null;
+    }
+    const cost = rawConsumableCost as Record<string, unknown>;
+    const slug = typeof cost.slug === "string" ? cost.slug.trim() : "";
+    if (
+      !/^[a-z0-9][a-z0-9_-]{1,79}$/.test(slug) ||
+      !Number.isSafeInteger(cost.quantity) ||
+      Number(cost.quantity) < 1 ||
+      Number(cost.quantity) > 99 ||
+      cost.approval !== "REGISTRA_MAJORITY"
+    ) {
+      return null;
+    }
+    consumableCost = {
+      slug,
+      quantity: Number(cost.quantity),
+      approval: "REGISTRA_MAJORITY",
+    };
+  }
   if (
     !/^U[1-9][0-9]?$/.test(code) ||
     !name || name.length > 80 ||
     !description || description.length > 500 ||
     !effect || effect.length > 1000 ||
     actionCost !== 1 ||
-    (kind !== "CHARGED" && kind !== "STANCE") ||
+    (kind !== "CHARGED" && kind !== "STANCE" && kind !== "CONSUMABLE") ||
     typeof reloadable !== "boolean" ||
     (requiresMounted !== undefined && typeof requiresMounted !== "boolean") ||
+    (usesWeaponAttack !== undefined && typeof usesWeaponAttack !== "boolean") ||
     (consumesRegularAmmo !== undefined &&
       (!Number.isSafeInteger(consumesRegularAmmo) || Number(consumesRegularAmmo) < 0 || Number(consumesRegularAmmo) > 99)) ||
     ((rangeMinCells === undefined) !== (rangeMaxCells === undefined)) ||
@@ -471,40 +531,19 @@ function parseEquipmentAction(value: unknown): EquipmentAction | undefined | nul
     !Number.isSafeInteger(maxCharges) ||
     (kind === "CHARGED" &&
       (Number(chargeCost) < 1 || Number(maxCharges) < Number(chargeCost) || Number(maxCharges) > 99)) ||
-    (kind === "STANCE" &&
+    ((kind === "STANCE" || kind === "CONSUMABLE") &&
       (Number(chargeCost) !== 0 || Number(maxCharges) !== 0 || reloadable)) ||
     typeof reloadCreditCost !== "number" || !Number.isFinite(reloadCreditCost) ||
     reloadCreditCost < 0 || Number(reloadCreditCost.toFixed(2)) !== reloadCreditCost ||
-    (kind === "STANCE" && reloadCreditCost !== 0) ||
-    (damage !== undefined &&
-      (!damage || typeof damage !== "object" || Array.isArray(damage))) ||
+    ((kind === "STANCE" || kind === "CONSUMABLE") && reloadCreditCost !== 0) ||
+    parsedDamage === null ||
+    parsedAdditionalDamage === null ||
+    (kind === "CONSUMABLE") !== Boolean(consumableCost) ||
+    (parsedAdditionalDamage !== undefined && usesWeaponAttack !== true) ||
+    (usesWeaponAttack === true && rangeMinCells === undefined) ||
     source.reloadApproval !== "GM"
   ) {
     return null;
-  }
-  let parsedDamage: EquipmentAction["damage"];
-  if (damage !== undefined) {
-    const damageSource = damage as Record<string, unknown>;
-    const damageType = damageSource.type;
-    const amount = damageSource.amount;
-    const ignoresDefense = damageSource.ignoresDefense;
-    const scaling = damageSource.scaling;
-    if (
-      !["PHYSICAL", "FIRE", "PSYCHIC"].includes(String(damageType)) ||
-      !Number.isSafeInteger(amount) ||
-      Number(amount) < 1 ||
-      Number(amount) > 999 ||
-      (ignoresDefense !== undefined && typeof ignoresDefense !== "boolean") ||
-      scaling !== "NONE"
-    ) {
-      return null;
-    }
-    parsedDamage = {
-      type: damageType as NonNullable<EquipmentAction["damage"]>["type"],
-      amount: Number(amount),
-      ...(ignoresDefense === true ? { ignoresDefense: true } : {}),
-      scaling,
-    };
   }
   return {
     code,
@@ -516,7 +555,7 @@ function parseEquipmentAction(value: unknown): EquipmentAction | undefined | nul
     maxCharges: Number(maxCharges),
     reloadCreditCost,
     reloadApproval: "GM",
-    ...(kind === "STANCE" ? { kind } : {}),
+    ...(kind !== "CHARGED" ? { kind } : {}),
     ...(reloadable === false ? { reloadable } : {}),
     ...(requiresMounted !== undefined ? { requiresMounted } : {}),
     ...(consumesRegularAmmo !== undefined
@@ -529,6 +568,11 @@ function parseEquipmentAction(value: unknown): EquipmentAction | undefined | nul
         }
       : {}),
     ...(parsedDamage ? { damage: parsedDamage } : {}),
+    ...(usesWeaponAttack !== undefined ? { usesWeaponAttack } : {}),
+    ...(parsedAdditionalDamage
+      ? { additionalDamage: parsedAdditionalDamage }
+      : {}),
+    ...(consumableCost ? { consumableCost } : {}),
   };
 }
 
@@ -563,6 +607,7 @@ function parseEquipmentCombatProfile(
   const source = value as Record<string, unknown>;
   const ammoCapacity = source.ammoCapacity;
   const mount = source.mount;
+  const weaponAttack = source.weaponAttack;
   if (
     ammoCapacity !== undefined &&
     (!Number.isSafeInteger(ammoCapacity) || Number(ammoCapacity) < 1 || Number(ammoCapacity) > 999)
@@ -580,6 +625,10 @@ function parseEquipmentCombatProfile(
       Number(mountSource.unmountActionCost) !== 1 ||
       typeof mountSource.blocksMovement !== "boolean" ||
       typeof mountSource.allowsDiagonalFire !== "boolean" ||
+      (mountSource.diagonalFireRequiresMounted !== undefined &&
+        typeof mountSource.diagonalFireRequiresMounted !== "boolean") ||
+      (mountSource.mountedRangeShape !== undefined &&
+        mountSource.mountedRangeShape !== "DIAMOND") ||
       !Number.isSafeInteger(mountSource.bonusDamage) ||
       Number(mountSource.bonusDamage) < 0 ||
       Number(mountSource.bonusDamage) > 999
@@ -591,13 +640,98 @@ function parseEquipmentCombatProfile(
       unmountActionCost: Number(mountSource.unmountActionCost),
       blocksMovement: mountSource.blocksMovement,
       allowsDiagonalFire: mountSource.allowsDiagonalFire,
+      ...(mountSource.diagonalFireRequiresMounted === true
+        ? { diagonalFireRequiresMounted: true }
+        : {}),
+      ...(mountSource.mountedRangeShape === "DIAMOND"
+        ? { mountedRangeShape: "DIAMOND" as const }
+        : {}),
       bonusDamage: Number(mountSource.bonusDamage),
     };
   }
-  if (ammoCapacity === undefined && !parsedMount) return null;
+  let parsedWeaponAttack: EquipmentCombatProfile["weaponAttack"];
+  if (weaponAttack !== undefined) {
+    if (!weaponAttack || typeof weaponAttack !== "object" || Array.isArray(weaponAttack)) {
+      return null;
+    }
+    const attack = weaponAttack as Record<string, unknown>;
+    const weaponCategory =
+      typeof attack.weaponCategory === "string"
+        ? attack.weaponCategory.trim()
+        : "";
+    const rangeMinCells = attack.rangeMinCells;
+    const rangeMaxCells = attack.rangeMaxCells;
+    const usesCharacterAttack = attack.usesCharacterAttack;
+    const consumesRegularAmmo = attack.consumesRegularAmmo;
+    const damageByRange = attack.damageByRange;
+    if (
+      !weaponCategory ||
+      weaponCategory.length > 40 ||
+      !Number.isSafeInteger(rangeMinCells) ||
+      !Number.isSafeInteger(rangeMaxCells) ||
+      Number(rangeMinCells) < 0 ||
+      Number(rangeMaxCells) < Number(rangeMinCells) ||
+      Number(rangeMaxCells) > 99 ||
+      usesCharacterAttack !== false ||
+      !Number.isSafeInteger(consumesRegularAmmo) ||
+      Number(consumesRegularAmmo) < 1 ||
+      Number(consumesRegularAmmo) > 99 ||
+      !Array.isArray(damageByRange) ||
+      damageByRange.length < 1 ||
+      damageByRange.length > 10
+    ) {
+      return null;
+    }
+    const parsedBands: NonNullable<
+      EquipmentCombatProfile["weaponAttack"]
+    >["damageByRange"] = [];
+    let nextExpectedCell = Number(rangeMinCells);
+    for (const rawBand of damageByRange) {
+      if (!rawBand || typeof rawBand !== "object" || Array.isArray(rawBand)) {
+        return null;
+      }
+      const band = rawBand as Record<string, unknown>;
+      const minCells = band.minCells;
+      const maxCells = band.maxCells;
+      const damage = parseEquipmentActionDamage(band.damage);
+      if (
+        !Number.isSafeInteger(minCells) ||
+        !Number.isSafeInteger(maxCells) ||
+        Number(minCells) !== nextExpectedCell ||
+        Number(maxCells) < Number(minCells) ||
+        Number(maxCells) > Number(rangeMaxCells) ||
+        !damage
+      ) {
+        return null;
+      }
+      parsedBands.push({
+        minCells: Number(minCells),
+        maxCells: Number(maxCells),
+        damage,
+      });
+      nextExpectedCell = Number(maxCells) + 1;
+    }
+    if (nextExpectedCell !== Number(rangeMaxCells) + 1) return null;
+    if (
+      ammoCapacity === undefined ||
+      Number(consumesRegularAmmo) > Number(ammoCapacity)
+    ) {
+      return null;
+    }
+    parsedWeaponAttack = {
+      weaponCategory,
+      rangeMinCells: Number(rangeMinCells),
+      rangeMaxCells: Number(rangeMaxCells),
+      usesCharacterAttack,
+      consumesRegularAmmo: Number(consumesRegularAmmo),
+      damageByRange: parsedBands,
+    };
+  }
+  if (ammoCapacity === undefined && !parsedMount && !parsedWeaponAttack) return null;
   return {
     ...(ammoCapacity !== undefined ? { ammoCapacity: Number(ammoCapacity) } : {}),
     ...(parsedMount ? { mount: parsedMount } : {}),
+    ...(parsedWeaponAttack ? { weaponAttack: parsedWeaponAttack } : {}),
   };
 }
 

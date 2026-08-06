@@ -327,7 +327,7 @@ export async function deleteMasterItem(
 
 const MAX_CHARACTER_INVENTORY_MUTATION_QUANTITY = 999;
 
-function equipmentSlotLockId(slot: EquipmentSlot): string {
+export function equipmentSlotLockId(slot: EquipmentSlot): string {
   return `@equipment-slot:${slot}`;
 }
 
@@ -712,6 +712,64 @@ export async function consumeEquippedEquipmentCharge(
         chargeCost,
         expectedMaximum,
         { ...options, session },
+      );
+    });
+    return result ?? { ok: false, current: 0 };
+  } finally {
+    await session.endSession();
+  }
+}
+
+/** 장착 장비의 구조화 탄창만 원자적으로 차감한다. */
+export async function consumeEquippedEquipmentAmmo(
+  characterId: string,
+  itemId: string,
+  ammunitionCost: number,
+  expectedMaximum: number,
+  options: { session?: ClientSession } = {},
+): Promise<{ ok: boolean; current: number }> {
+  if (
+    !characterId.trim() ||
+    !itemId.trim() ||
+    !Number.isSafeInteger(ammunitionCost) ||
+    ammunitionCost < 1 ||
+    !Number.isSafeInteger(expectedMaximum) ||
+    expectedMaximum < ammunitionCost
+  ) {
+    throw new Error("Invalid equipment ammunition consumption input");
+  }
+
+  if (options.session) {
+    await lockCharacterInventoryItems(characterId, [itemId], options.session);
+    const entry = await (await characterInventoryCol()).findOneAndUpdate(
+      {
+        characterId,
+        itemId,
+        quantity: { $gte: 1 },
+        equippedSlot: "WEAPON",
+        "equipmentAmmo.current": { $gte: ammunitionCost },
+        "equipmentAmmo.maximum": expectedMaximum,
+      },
+      { $inc: { "equipmentAmmo.current": -ammunitionCost } },
+      { returnDocument: "after", session: options.session },
+    );
+    return entry?.equipmentAmmo
+      ? { ok: true, current: entry.equipmentAmmo.current }
+      : { ok: false, current: 0 };
+  }
+
+  await prepareCharacterInventoryItemLocks(characterId, [itemId]);
+  const client = await getClient();
+  const session = client.startSession();
+  try {
+    let result: { ok: boolean; current: number } | undefined;
+    await session.withTransaction(async () => {
+      result = await consumeEquippedEquipmentAmmo(
+        characterId,
+        itemId,
+        ammunitionCost,
+        expectedMaximum,
+        { session },
       );
     });
     return result ?? { ok: false, current: 0 };

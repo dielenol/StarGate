@@ -2,6 +2,7 @@ import { ObjectId, type ClientSession } from "mongodb";
 
 import "@/lib/db/init";
 import { findSessionById } from "@/lib/db/sessions";
+import { claimApprovedCensorUseVote } from "@/lib/db/registrar-crafting-votes";
 import { applyEquipmentAbilityOverrides } from "@/lib/equipment/equipment-ability-overrides";
 import { mergePublicEquipment } from "@/lib/equipment/public-equipment";
 import { notifyUser } from "@/lib/notifications/events";
@@ -19,9 +20,13 @@ import {
   listAgentCharacters,
   listCharacterInventory,
   masterItemsCol,
+  characterInventoryCol,
   prepareCharacterInventoryItemLocks,
+  lockCharacterInventoryItems,
+  equipmentSlotLockId,
   sharedInventoryCol,
   consumeEquippedEquipmentCharge,
+  consumeEquippedEquipmentAmmo,
   removeFromInventory,
   type Ability,
   type AgentCharacter,
@@ -47,6 +52,8 @@ export interface NochichimConsumableSnapshot {
 }
 
 export const NOCHICHIM_SHARED_CONSUMABLE_PREFIX = "shared:";
+export const CENSOR_3_CONSUMABLE_SLUG = "zulu-0028-censor-3";
+const PIAN_BULWARK_WEAPON_SLUG = "cmmg-mk47-mutant-pian-bulwark";
 const WHITE_ROSE_ASSISTANT_CALL_SLUG = "white-rose-assistant-call";
 
 export interface NochichimEquipmentActionSnapshot {
@@ -57,7 +64,7 @@ export interface NochichimEquipmentActionSnapshot {
   name: string;
   description: string;
   effect: string;
-  kind: "CHARGED" | "STANCE";
+  kind: "CHARGED" | "STANCE" | "CONSUMABLE" | "WEAPON";
   actionCost: number;
   chargeCost: number;
   currentCharges: number;
@@ -70,6 +77,13 @@ export interface NochichimEquipmentActionSnapshot {
   rangeMinCells?: number;
   rangeMaxCells?: number;
   damage?: NonNullable<MasterItem["equipmentActions"]>[number]["damage"];
+  usesWeaponAttack?: boolean;
+  additionalDamage?: NonNullable<
+    MasterItem["equipmentActions"]
+  >[number]["additionalDamage"];
+  consumableCost?: NonNullable<
+    MasterItem["equipmentActions"]
+  >[number]["consumableCost"];
 }
 
 export interface NochichimEquipmentSnapshot {
@@ -276,7 +290,13 @@ export async function loadCharacterConsumables(
 
   const personal = inventory.flatMap((entry) => {
     const item = itemMap.get(entry.itemId);
-    if (!item || item.category !== "CONSUMABLE") return [];
+    if (
+      !item ||
+      item.category !== "CONSUMABLE" ||
+      item.slug === CENSOR_3_CONSUMABLE_SLUG
+    ) {
+      return [];
+    }
 
     return [
       {
@@ -383,9 +403,35 @@ function toNochichimEquipmentActions(
   item: MasterItem,
 ): NochichimEquipmentActionSnapshot[] {
   if (!entry._id) return [];
+  const weaponAttack = item.combatProfile?.weaponAttack;
+  const weaponActions: NochichimEquipmentActionSnapshot[] = weaponAttack
+    ? [
+        {
+          itemId: entry.itemId,
+          inventoryEntryId: objectIdString(entry._id),
+          itemName: item.name || entry.itemName,
+          code: "W1",
+          name: `${item.name || entry.itemName} 사격`,
+          description: "장비에 등록된 돌격소총 사거리별 피해로 사격한다.",
+          effect: "일반 탄약 1발을 소모해 무기 고유 피해를 적용한다.",
+          kind: "WEAPON",
+          actionCost: 1,
+          chargeCost: 0,
+          currentCharges: 0,
+          maxCharges: 0,
+          reloadCreditCost: 0,
+          reloadApproval: "GM",
+          reloadable: false,
+          consumesRegularAmmo: weaponAttack.consumesRegularAmmo,
+          rangeMinCells: weaponAttack.rangeMinCells,
+          rangeMaxCells: weaponAttack.rangeMaxCells,
+          usesWeaponAttack: true,
+        },
+      ]
+    : [];
   const actions = item.equipmentActions ??
     (item.equipmentAction ? [item.equipmentAction] : []);
-  return actions.flatMap((action) => {
+  const structuredActions = actions.flatMap((action) => {
     const kind = action.kind ?? "CHARGED";
     const charge = item.equipmentActions
       ? entry.equipmentCharges?.[action.code]
@@ -420,8 +466,18 @@ function toNochichimEquipmentActions(
           }
         : {}),
       ...(action.damage ? { damage: action.damage } : {}),
+      ...(action.usesWeaponAttack !== undefined
+        ? { usesWeaponAttack: action.usesWeaponAttack }
+        : {}),
+      ...(action.additionalDamage
+        ? { additionalDamage: action.additionalDamage }
+        : {}),
+      ...(action.consumableCost
+        ? { consumableCost: action.consumableCost }
+        : {}),
     }];
   });
+  return [...weaponActions, ...structuredActions];
 }
 
 export async function loadCharacterEquippedState(
@@ -506,6 +562,48 @@ export async function prepareCharacterInventoryConsumption(input: {
   return characterId;
 }
 
+export async function prepareCharacterEquipmentActionConsumption(input: {
+  characterKey: string;
+  itemId: string;
+  actionCode: string;
+}): Promise<string> {
+  const character = await findAgentCharacterByKey(input.characterKey);
+  if (!character) throw new Error("Character not found");
+  const item = (
+    await loadMasterItemMap([{ itemId: input.itemId }])
+  ).get(input.itemId);
+  if (!item) throw new Error("Equipment action not found");
+
+  const isWeaponAttack =
+    input.actionCode === "W1" && Boolean(item.combatProfile?.weaponAttack);
+  const action = item.equipmentActions?.find(
+    (candidate) => candidate.code === input.actionCode,
+  ) ?? (item.equipmentAction?.code === input.actionCode
+    ? item.equipmentAction
+    : undefined);
+  if (!isWeaponAttack && !action) throw new Error("Equipment action not found");
+
+  const lockItemIds = [input.itemId];
+  if (
+    (action?.kind ?? "CHARGED") === "CONSUMABLE" &&
+    action?.usesWeaponAttack === true
+  ) {
+    lockItemIds.push(equipmentSlotLockId("WEAPON"));
+  }
+  if (action?.consumableCost) {
+    const consumable = await (await masterItemsCol()).findOne({
+      slug: action.consumableCost.slug,
+      category: "CONSUMABLE",
+    });
+    if (!consumable?._id) throw new Error("Equipment consumable not found");
+    lockItemIds.push(objectIdString(consumable._id));
+  }
+
+  const characterId = objectIdString(character._id);
+  await prepareCharacterInventoryItemLocks(characterId, lockItemIds);
+  return characterId;
+}
+
 export async function loadCharacterSnapshot(
   key: string,
 ): Promise<NochichimCharacterSnapshot | null> {
@@ -581,10 +679,19 @@ export async function consumeCharacterEquipmentAction(input: {
   characterId: string;
   itemId: string;
   actionCode: string;
+  requestId: string;
   dbSession: ClientSession;
 }): Promise<{
   ok: boolean;
   currentCharges: number;
+  currentAmmo?: number;
+  consumableRemaining?: number;
+  approvalVoteId?: string;
+  approvalRequestRef?: string;
+  code?:
+    | "EQUIPMENT_UNAVAILABLE"
+    | "CONSUMABLE_UNAVAILABLE"
+    | "APPROVAL_UNAVAILABLE";
 }> {
   const character = await findTransactionalAgentCharacterByKey(
     input.characterId,
@@ -595,6 +702,28 @@ export async function consumeCharacterEquipmentAction(input: {
   const item = (await loadMasterItemMap([
     { itemId: input.itemId },
   ], { session: input.dbSession })).get(input.itemId);
+  const weaponAttack = item?.combatProfile?.weaponAttack;
+  if (input.actionCode === "W1" && item && weaponAttack) {
+    const ammoCapacity = item.combatProfile?.ammoCapacity;
+    if (!ammoCapacity || weaponAttack.consumesRegularAmmo < 1) {
+      throw new Error("Equipment weapon attack contract is invalid");
+    }
+    const result = await consumeEquippedEquipmentAmmo(
+      characterId,
+      input.itemId,
+      weaponAttack.consumesRegularAmmo,
+      ammoCapacity,
+      { session: input.dbSession },
+    );
+    return result.ok
+      ? { ok: true, currentCharges: 0, currentAmmo: result.current }
+      : {
+          ok: false,
+          currentCharges: 0,
+          currentAmmo: result.current,
+          code: "EQUIPMENT_UNAVAILABLE",
+        };
+  }
   const action = item?.equipmentActions?.find(
     (candidate) => candidate.code === input.actionCode,
   ) ?? (item?.equipmentAction?.code === input.actionCode
@@ -605,6 +734,112 @@ export async function consumeCharacterEquipmentAction(input: {
   }
   if ((action.kind ?? "CHARGED") === "STANCE") {
     throw new Error("Equipment stance action is local-only");
+  }
+
+  if ((action.kind ?? "CHARGED") === "CONSUMABLE") {
+    const cost = action.consumableCost;
+    if (
+      character.codename !== "네베드" ||
+      item.slug !== PIAN_BULWARK_WEAPON_SLUG ||
+      !cost ||
+      cost.slug !== CENSOR_3_CONSUMABLE_SLUG ||
+      cost.quantity !== 1 ||
+      cost.approval !== "REGISTRA_MAJORITY" ||
+      action.requiresMounted !== true ||
+      action.usesWeaponAttack !== true ||
+      (action.consumesRegularAmmo ?? 0) !== 0 ||
+      !item.combatProfile?.weaponAttack
+    ) {
+      throw new Error("Equipment consumable action contract is invalid");
+    }
+    const consumable = await (await masterItemsCol()).findOne(
+      { slug: cost.slug, category: "CONSUMABLE" },
+      { session: input.dbSession },
+    );
+    const consumableItemId = objectIdString(consumable?._id);
+    if (!consumableItemId) {
+      throw new Error("Equipment consumable not found");
+    }
+    await lockCharacterInventoryItems(
+      characterId,
+      [
+        input.itemId,
+        consumableItemId,
+        equipmentSlotLockId("WEAPON"),
+      ],
+      input.dbSession,
+    );
+    const equippedEntry = await (await characterInventoryCol()).findOne(
+      {
+        characterId,
+        itemId: input.itemId,
+        quantity: { $gte: 1 },
+        equippedSlot: "WEAPON",
+      },
+      { session: input.dbSession },
+    );
+    if (!equippedEntry) {
+      return {
+        ok: false,
+        currentCharges: 0,
+        code: "EQUIPMENT_UNAVAILABLE",
+      };
+    }
+    const consumableEntry = await (await characterInventoryCol()).findOne(
+      {
+        characterId,
+        itemId: consumableItemId,
+        quantity: { $gte: cost.quantity },
+        equippedSlot: { $exists: false },
+      },
+      { session: input.dbSession },
+    );
+    if (!consumableEntry) {
+      return {
+        ok: false,
+        currentCharges: 0,
+        code: "CONSUMABLE_UNAVAILABLE",
+      };
+    }
+    const approval = await claimApprovedCensorUseVote({
+      requestId: input.requestId,
+      characterId,
+      characterCodename: character.codename,
+      equipmentItemId: input.itemId,
+      actionCode: action.code,
+      consumableSlug: cost.slug,
+      quantity: cost.quantity,
+      claimedAt: new Date(),
+      session: input.dbSession,
+    });
+    if (!approval) {
+      return {
+        ok: false,
+        currentCharges: 0,
+        code: "APPROVAL_UNAVAILABLE",
+      };
+    }
+    const consumed = await removeFromInventory(
+      characterId,
+      consumableItemId,
+      cost.quantity,
+      { session: input.dbSession },
+    );
+    if (!consumed.ok) {
+      throw new Error(
+        "CENSOR-3 inventory changed after approved vote claim",
+      );
+    }
+    return {
+      ok: true,
+      currentCharges: 0,
+      ...(equippedEntry.equipmentAmmo
+        ? { currentAmmo: equippedEntry.equipmentAmmo.current }
+        : {}),
+      consumableRemaining: consumed.remaining,
+      approvalVoteId: approval.voteId,
+      approvalRequestRef: approval.requestRef,
+    };
   }
 
   const result = await consumeEquippedEquipmentCharge(
@@ -722,6 +957,9 @@ export async function consumeCharacterConsumable(input: {
 
   if (!item || item.category !== "CONSUMABLE") {
     throw new Error("Consumable not found");
+  }
+  if (item.slug === CENSOR_3_CONSUMABLE_SLUG) {
+    throw new Error("Consumable requires equipment action");
   }
 
   const result = await removeFromInventory(

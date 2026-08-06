@@ -8,9 +8,13 @@ const HAS_DB =
 
 let ObjectId;
 let characterId;
+let equipCharacterInventoryItem;
+let equipmentSlotLockId;
 let findTransactionalAgentCharacterByKey;
 let getClient;
 let getDb;
+let lockCharacterInventoryItems;
+let prepareCharacterInventoryItemLocks;
 
 before(async () => {
   if (!HAS_DB) return;
@@ -21,7 +25,14 @@ before(async () => {
     dbName: TEST_DB_NAME,
     maxPoolSize: 5,
   });
-  ({ getClient, getDb } = sharedDb);
+  ({
+    equipCharacterInventoryItem,
+    equipmentSlotLockId,
+    getClient,
+    getDb,
+    lockCharacterInventoryItems,
+    prepareCharacterInventoryItemLocks,
+  } = sharedDb);
   ({ findTransactionalAgentCharacterByKey } = await import(
     "../_lib/transactional-character.ts"
   ));
@@ -87,6 +98,110 @@ test(
       assert.equal(resolved, null);
     } finally {
       await deletedSession.endSession();
+    }
+  },
+);
+
+test(
+  "U2의 WEAPON 슬롯 잠금은 동시 무기 교체를 승인·탄환 소비 뒤까지 직렬화한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const db = await getDb();
+    const inventory = db.collection("character_inventory");
+    const lockCharacterId = new ObjectId().toString();
+    const firstItemId = new ObjectId().toString();
+    const secondItemId = new ObjectId().toString();
+    const slotLockId = equipmentSlotLockId("WEAPON");
+    const now = new Date();
+
+    await inventory.insertMany([
+      {
+        characterId: lockCharacterId,
+        itemId: firstItemId,
+        itemName: "피안의 보루",
+        quantity: 1,
+        equippedSlot: "WEAPON",
+        equippedAt: now,
+        acquiredAt: now,
+      },
+      {
+        characterId: lockCharacterId,
+        itemId: secondItemId,
+        itemName: "교체 무기",
+        quantity: 1,
+        acquiredAt: now,
+      },
+    ]);
+    await prepareCharacterInventoryItemLocks(lockCharacterId, [
+      firstItemId,
+      secondItemId,
+      slotLockId,
+    ]);
+
+    const session = (await getClient()).startSession();
+    let releaseSlotLock;
+    const slotLockHeld = new Promise((resolve) => {
+      releaseSlotLock = resolve;
+    });
+    let confirmSlotLock;
+    const slotLockAcquired = new Promise((resolve) => {
+      confirmSlotLock = resolve;
+    });
+
+    try {
+      const u2Transaction = session.withTransaction(async () => {
+        await lockCharacterInventoryItems(
+          lockCharacterId,
+          [firstItemId, slotLockId],
+          session,
+        );
+        const equipped = await inventory.findOne(
+          {
+            characterId: lockCharacterId,
+            itemId: firstItemId,
+            equippedSlot: "WEAPON",
+          },
+          { session },
+        );
+        assert.ok(equipped, "U2 precondition must observe Pian Bulwark equipped");
+        confirmSlotLock();
+        await slotLockHeld;
+      });
+      await slotLockAcquired;
+
+      const swap = equipCharacterInventoryItem(
+        lockCharacterId,
+        secondItemId,
+        "WEAPON",
+      );
+      const earlyResult = await Promise.race([
+        swap.then(() => "swapped"),
+        new Promise((resolve) => setTimeout(() => resolve("blocked"), 100)),
+      ]);
+      assert.equal(
+        earlyResult,
+        "blocked",
+        "동시 무기 교체는 U2 슬롯 잠금이 풀리기 전에 commit되면 안 된다",
+      );
+
+      releaseSlotLock();
+      await u2Transaction;
+      const swapResult = await swap;
+      assert.equal(swapResult.ok, true);
+      assert.equal(
+        (await inventory.findOne({
+          characterId: lockCharacterId,
+          itemId: secondItemId,
+        }))?.equippedSlot,
+        "WEAPON",
+      );
+    } finally {
+      releaseSlotLock?.();
+      await session.endSession();
+      await inventory.deleteMany({ characterId: lockCharacterId });
+      await db
+        .collection("character_inventory_locks")
+        .deleteMany({ characterId: lockCharacterId });
     }
   },
 );

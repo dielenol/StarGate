@@ -91,7 +91,7 @@ const workshopEquipmentActionSchema = z
     name: z.string().trim().min(1).max(80),
     description: z.string().trim().min(1).max(500),
     effect: z.string().trim().min(1).max(1_000),
-    kind: z.enum(["CHARGED", "STANCE"]).optional(),
+    kind: z.enum(["CHARGED", "STANCE", "CONSUMABLE"]).optional(),
     actionCost: z.literal(1),
     chargeCost: z.number().int().min(0).max(99),
     maxCharges: z.number().int().min(0).max(99),
@@ -103,6 +103,16 @@ const workshopEquipmentActionSchema = z
     rangeMinCells: z.number().int().min(0).max(99).optional(),
     rangeMaxCells: z.number().int().min(0).max(99).optional(),
     damage: workshopEquipmentDamageSchema.optional(),
+    usesWeaponAttack: z.boolean().optional(),
+    additionalDamage: workshopEquipmentDamageSchema.optional(),
+    consumableCost: z
+      .object({
+        slug: catalogSlugSchema,
+        quantity: z.number().int().min(1).max(99),
+        approval: z.literal("REGISTRA_MAJORITY"),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -121,13 +131,22 @@ const workshopEquipmentActionSchema = z
       ctx.addIssue({ code: "custom", path: ["maxCharges"], message: "충전 액션의 최대 충전은 충전 비용 이상이어야 합니다." });
     }
     if (
-      kind === "STANCE" &&
+      (kind === "STANCE" || kind === "CONSUMABLE") &&
       (value.chargeCost !== 0 ||
         value.maxCharges !== 0 ||
         value.reloadCreditCost !== 0 ||
         value.reloadable !== false)
     ) {
-      ctx.addIssue({ code: "custom", path: ["kind"], message: "STANCE 액션은 충전·재장전 값을 0/false로 고정해야 합니다." });
+      ctx.addIssue({ code: "custom", path: ["kind"], message: "STANCE/CONSUMABLE 액션은 충전·재장전 값을 0/false로 고정해야 합니다." });
+    }
+    if ((kind === "CONSUMABLE") !== Boolean(value.consumableCost)) {
+      ctx.addIssue({ code: "custom", path: ["consumableCost"], message: "CONSUMABLE 액션만 실제 소모품 비용을 가져야 합니다." });
+    }
+    if (value.additionalDamage && value.usesWeaponAttack !== true) {
+      ctx.addIssue({ code: "custom", path: ["additionalDamage"], message: "추가 피해는 구조화 무기 사격과 함께 사용해야 합니다." });
+    }
+    if (value.usesWeaponAttack === true && value.rangeMinCells === undefined) {
+      ctx.addIssue({ code: "custom", path: ["rangeMinCells"], message: "구조화 무기 사격 액션에는 사거리가 필요합니다." });
     }
   });
 
@@ -140,14 +159,71 @@ const workshopCombatProfileSchema = z
         unmountActionCost: z.literal(1),
         blocksMovement: z.boolean(),
         allowsDiagonalFire: z.boolean(),
+        diagonalFireRequiresMounted: z.boolean().optional(),
+        mountedRangeShape: z.literal("DIAMOND").optional(),
         bonusDamage: z.number().int().min(0).max(999),
+      })
+      .strict()
+      .optional(),
+    weaponAttack: z
+      .object({
+        weaponCategory: z.string().trim().min(1).max(40),
+        rangeMinCells: z.number().int().min(0).max(99),
+        rangeMaxCells: z.number().int().min(0).max(99),
+        usesCharacterAttack: z.literal(false),
+        consumesRegularAmmo: z.number().int().min(1).max(99),
+        damageByRange: z
+          .array(
+            z
+              .object({
+                minCells: z.number().int().min(0).max(99),
+                maxCells: z.number().int().min(0).max(99),
+                damage: workshopEquipmentDamageSchema,
+              })
+              .strict(),
+          )
+          .min(1)
+          .max(10),
       })
       .strict()
       .optional(),
   })
   .strict()
-  .refine((value) => value.ammoCapacity !== undefined || value.mount !== undefined, {
-    message: "combatProfile에는 ammoCapacity 또는 mount가 필요합니다.",
+  .superRefine((value, ctx) => {
+    if (
+      value.ammoCapacity === undefined &&
+      value.mount === undefined &&
+      value.weaponAttack === undefined
+    ) {
+      ctx.addIssue({ code: "custom", message: "combatProfile에는 ammoCapacity, mount 또는 weaponAttack이 필요합니다." });
+    }
+    const attack = value.weaponAttack;
+    if (!attack) return;
+    if (attack.rangeMaxCells < attack.rangeMinCells) {
+      ctx.addIssue({ code: "custom", path: ["weaponAttack", "rangeMaxCells"], message: "최대 사거리는 최소 사거리 이상이어야 합니다." });
+      return;
+    }
+    if (
+      value.ammoCapacity === undefined ||
+      attack.consumesRegularAmmo > value.ammoCapacity
+    ) {
+      ctx.addIssue({ code: "custom", path: ["weaponAttack", "consumesRegularAmmo"], message: "구조화 총기 사격은 탄창 용량 이내의 일반 탄약을 소비해야 합니다." });
+    }
+    let nextCell = attack.rangeMinCells;
+    for (const [index, band] of attack.damageByRange.entries()) {
+      if (
+        band.minCells !== nextCell ||
+        band.maxCells < band.minCells ||
+        band.maxCells > attack.rangeMaxCells
+      ) {
+        ctx.addIssue({ code: "custom", path: ["weaponAttack", "damageByRange", index], message: "사거리 피해 구간은 최소부터 최대까지 빈틈없이 이어져야 합니다." });
+        return;
+      }
+      nextCell = band.maxCells + 1;
+    }
+    if (nextCell !== attack.rangeMaxCells + 1) {
+      ctx.addIssue({ code: "custom", path: ["weaponAttack", "damageByRange"], message: "사거리 피해 구간이 최대 사거리까지 이어져야 합니다." });
+    }
   });
 
 const workshopResultSchema = z
