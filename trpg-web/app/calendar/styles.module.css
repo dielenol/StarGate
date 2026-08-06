@@ -526,6 +526,11 @@
   overflow: hidden;
   margin: 0;
   padding: 0;
+  pointer-events: none;
+}
+
+.calendar__cell-sessions > li > button {
+  pointer-events: auto;
 }
 
 .calendar__google-summary {
