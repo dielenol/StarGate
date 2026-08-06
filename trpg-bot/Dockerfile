@@ -35,8 +35,11 @@ RUN pnpm --filter=@stargate/shared-db build \
 # ========= Stage 2: runner =========
 FROM node:22-bookworm-slim AS runner
 
+ARG YT_DLP_VERSION=2026.7.4
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
         chromium \
+        ffmpeg \
         fonts-noto-cjk \
         fonts-liberation \
         libnss3 \
@@ -48,7 +51,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libgbm1 \
         libasound2 \
         dumb-init \
+        python3 \
+        python3-pip \
         tini \
+    && python3 -m pip install --break-system-packages --no-cache-dir \
+        "yt-dlp[default]==${YT_DLP_VERSION}" \
+    && yt-dlp --version \
+    && ffmpeg -version \
     && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production \
