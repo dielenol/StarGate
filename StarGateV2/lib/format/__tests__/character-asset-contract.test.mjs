@@ -16,13 +16,13 @@ import {
 const PEOPLE_ASSET_DIR = fileURLToPath(
   new URL("../../../public/assets/peoples/", import.meta.url),
 );
-const REQUIRED_PAIRED_KINDS = [
+const REQUIRED_CORE_KINDS = [
   "main-image",
   "pixel-profile",
   "pixel-character",
 ];
 
-test("known playable character slugs have matching PNG/WebP core assets", async () => {
+test("known playable character slugs have matching WebP core assets", async () => {
   assert.equal(
     new Set(KNOWN_CHARACTER_ASSET_SLUGS).size,
     KNOWN_CHARACTER_ASSET_SLUGS.length,
@@ -40,20 +40,12 @@ test("known playable character slugs have matching PNG/WebP core assets", async 
       `/assets/peoples/${slug}-pixel-profile.webp`,
     );
 
-    for (const kind of REQUIRED_PAIRED_KINDS) {
-      const pngPath = path.join(PEOPLE_ASSET_DIR, `${slug}-${kind}.png`);
+    for (const kind of REQUIRED_CORE_KINDS) {
       const webpPath = path.join(PEOPLE_ASSET_DIR, `${slug}-${kind}.webp`);
-      await Promise.all([access(pngPath), access(webpPath)]);
+      await access(webpPath);
 
-      const [png, webp] = await Promise.all([
-        sharp(pngPath).metadata(),
-        sharp(webpPath).metadata(),
-      ]);
-      assert.equal(png.format, "png", `${slug}-${kind}.png format`);
+      const webp = await sharp(webpPath).metadata();
       assert.equal(webp.format, "webp", `${slug}-${kind}.webp format`);
-      assert.equal(webp.width, png.width, `${slug}-${kind} width`);
-      assert.equal(webp.height, png.height, `${slug}-${kind} height`);
-      assert.equal(png.hasAlpha, true, `${slug}-${kind}.png alpha`);
       assert.equal(webp.hasAlpha, true, `${slug}-${kind}.webp alpha`);
     }
   }

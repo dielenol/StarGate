@@ -29,6 +29,7 @@ const EXPLICIT_CODENAME_TO_SLUG: Record<string, string> = {
 
 /** 디스크에 존재하는 슬러그 화이트리스트. 정규화 매칭의 후보. */
 export const KNOWN_CHARACTER_ASSET_SLUGS = [
+  "Accel",
   "BigBoy",
   "Clown",
   "Cronus",
