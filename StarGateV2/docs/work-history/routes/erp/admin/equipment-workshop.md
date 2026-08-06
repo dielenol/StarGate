@@ -36,3 +36,12 @@
 - 검증: 공방·VTT 포함 집중 테스트 74건 중 68건 통과·Mongo 통합 6건 환경 부재로 skip, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 브라우저 데스크톱 확인
 - 관련 커밋: `30ffe959`
 - 후속 작업: 네베드용 실제 프리셋·견적·수락·납품은 확정 스펙과 별도 라이브 승인 전까지 생성하지 않았다.
+
+## 2026-08-06 · 기능 확장 · 네베드 전용 청사진
+
+- `CMMG Mk.47 Mutant 「피안의 보루」` 프리셋을 1,200 CR, 180분, TOWASKI 화기 개조와 VERNIER 포스코어 통합 검수의 복합 공정으로 확정했다.
+- 결과 장비에 12발 탄창, 액션 1 거치·해제, 거치 중 이동 제한, DIAMOND 대각선 사격, CENSOR-3 1발 기반 고정 30 심령 추가 피해를 보존한다.
+- 승인된 결과 이미지와 원본 장비 이미지를 분리하고, seed와 migration은 기본 dry-run 및 수량 drift 차단으로 운영 쓰기를 fail-closed 처리한다.
+- 검증: 공방·VTT·migration 집중 테스트 60건 중 58건 통과·Mongo 통합 2건 skip, `pnpm typecheck`, `pnpm lint`, `pnpm build`, seed payload read-only dry-run, critical risk review
+- 관련 커밋: `44b83580`, `0ca9972c`, `cfb2df1`
+- 후속 작업: 실제 청사진 seed와 CENSOR-3 3발 전환은 운영 DB의 변경 전후 수량을 확인하고 별도 승인 뒤 실행한다.

@@ -22,3 +22,12 @@
 - 요청·결과 이미지의 역할을 분리하고 정확한 사거리나 기계 판정이 없는 공격 액션은 Nochichim에서 실행 가능 상태로 추정하지 않는다.
 - 검증: 집중 테스트 74건 중 68건 통과·Mongo 통합 6건 환경 부재로 skip, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - 관련 커밋: `30ffe959`
+
+## 2026-08-06 · 기능 확장 · 피안의 보루 전투 연동
+
+- 네베드 전용 공방 프리셋에 1,200 CR·180분·TOWASKI 주담당·VERNIER 검수와 확정된 재료·이미지를 등록했다.
+- W1은 돌격소총 사거리별 고유 피해와 일반 탄약 1발만 사용하고 캐릭터 기본 ATK를 더하지 않으며, U1 거치·해제와 U2 CENSOR-3 승인탄 사격을 구조화했다.
+- CENSOR-3 한 발 사용은 Registra 유효표 과반 승인 원장과 실제 소모품 차감을 같은 멱등 트랜잭션으로 묶었다.
+- 검증: 집중 테스트 60건 중 58건 통과·Mongo 통합 2건 환경 부재로 skip, Registra 28건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, Nochichim 장비 판정 테스트, critical risk review
+- 관련 커밋: `44b83580`, `0ca9972c`, `cfb2df1`
+- 후속 작업: 라이브 seed·깨진 음절 3개 전환·공방 견적 및 Discord 투표 생성은 별도 운영 승인 뒤 실행한다.
