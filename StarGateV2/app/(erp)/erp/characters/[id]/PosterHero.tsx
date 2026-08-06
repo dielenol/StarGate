@@ -30,6 +30,7 @@ import {
 
 import { getFactionLogo, FACTION_LOGO } from "@/app/(erp)/erp/personnel/_constants";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { finalCharacterStat } from "@/lib/character/stats";
 import {
   getCharacterDisplayName,
   getCharacterRoleLine,
@@ -437,28 +438,32 @@ export default function PosterHero({
               </div>
               <VitalBarRow
                 label="HP"
-                value={playSheet.hp}
+                value={finalCharacterStat(playSheet.hp, playSheet.hpDelta)}
                 delta={playSheet.hpDelta}
                 max={300}
                 tone="gold"
               />
               <VitalBarRow
                 label="SAN"
-                value={playSheet.san}
+                value={finalCharacterStat(playSheet.san, playSheet.sanDelta)}
                 delta={playSheet.sanDelta}
                 max={100}
-                tone={playSheet.san < 30 ? "danger" : "info"}
+                tone={
+                  finalCharacterStat(playSheet.san, playSheet.sanDelta) < 30
+                    ? "danger"
+                    : "info"
+                }
               />
               <div className={styles.hero__vitalsPair}>
                 <SmallVital
                   label="DEF"
-                  value={playSheet.def}
+                  value={finalCharacterStat(playSheet.def, playSheet.defDelta)}
                   delta={playSheet.defDelta}
                   max={5}
                 />
                 <SmallVital
                   label="ATK"
-                  value={playSheet.atk}
+                  value={finalCharacterStat(playSheet.atk, playSheet.atkDelta)}
                   delta={playSheet.atkDelta}
                   max={20}
                 />

@@ -12,6 +12,10 @@ const CHARACTERS_CLIENT_URL = new URL(
   "../../../app/(erp)/erp/characters/CharactersClient.tsx",
   import.meta.url,
 );
+const POSTER_HERO_URL = new URL(
+  "../../../app/(erp)/erp/characters/[id]/PosterHero.tsx",
+  import.meta.url,
+);
 
 test("캐릭터 카드 최종 능력치는 기본값과 포인트 보정값을 합산한다", () => {
   assert.equal(finalCharacterStat(50, 3), 53);
@@ -50,4 +54,23 @@ test("캐릭터 카드는 네 능력치를 최종값으로 렌더한다", async 
   assert.match(source, /const def = finalCharacterStat\(c\.play\.def, c\.play\.defDelta\)/);
   assert.match(source, /<CombatStat label="ATK" value=\{atk\} \/>/);
   assert.match(source, /<CombatStat label="DEF" value=\{def\} \/>/);
+});
+
+test("캐릭터 상세 VITALS도 네 능력치를 최종값으로 렌더한다", async () => {
+  const source = await readFile(POSTER_HERO_URL, "utf8");
+  const compactSource = source.replace(/\s+/g, " ");
+
+  for (const stat of ["hp", "san", "def", "atk"]) {
+    assert.match(
+      compactSource,
+      new RegExp(
+        `value=\\{finalCharacterStat\\(playSheet\\.${stat}, playSheet\\.${stat}Delta\\)\\}`,
+      ),
+    );
+  }
+
+  assert.match(
+    compactSource,
+    /finalCharacterStat\(playSheet\.san, playSheet\.sanDelta\) < 30/,
+  );
 });
