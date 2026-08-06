@@ -8,6 +8,7 @@ import type { CatalogItemCreateRequest } from "@/lib/shop/catalog-item-input";
 
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { equipmentShopKeys } from "@/hooks/queries/useEquipmentShopQuery";
+import { loreSearchKeys } from "@/hooks/queries/useLoreSearchQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import { shopKeys } from "@/hooks/queries/useShopQuery";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
@@ -54,6 +55,7 @@ export function useCreateItem() {
         queryClient.invalidateQueries({ queryKey: equipmentShopKeys.all }),
         queryClient.invalidateQueries({ queryKey: shopKeys.all }),
         queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+        queryClient.invalidateQueries({ queryKey: loreSearchKeys.all }),
         queryClient.invalidateQueries({
           queryKey: adminInventoryOverviewKeys.all,
         }),

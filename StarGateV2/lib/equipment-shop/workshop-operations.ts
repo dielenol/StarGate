@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+  addToSharedInventory,
   addToInventory,
   addCredit,
   characterInventoryCol,
@@ -9,6 +10,7 @@ import {
   lockCharacterInventoryItems,
   masterItemsCol,
   prepareCharacterInventoryItemLocks,
+  sharedInventoryCol,
   usersCol,
   type EquipmentChargeState,
   type MasterItem,
@@ -197,7 +199,9 @@ export async function prepareWorkshopOperationLocks(
     ...(request.sourceItemId ? [request.sourceItemId] : []),
     request.quote.result.itemId,
     slotLockId(request.quote.result.category),
-    ...request.quote.materials.map((material) => material.itemId),
+    ...request.quote.materials
+      .filter((material) => material.scope !== "SHARED")
+      .map((material) => material.itemId),
   ]);
 }
 
@@ -220,6 +224,8 @@ async function escrowEquippedSource(
   session: ClientSession,
 ): Promise<{
   sourceEquipmentCharge?: EquipmentChargeState;
+  sourceEquipmentCharges?: Record<string, EquipmentChargeState>;
+  sourceEquipmentAmmo?: EquipmentChargeState;
   sourceNote?: string;
 }> {
   const inventory = await characterInventoryCol();
@@ -235,9 +241,26 @@ async function escrowEquippedSource(
   } as const;
   const source = await inventory.findOne(filter, { session });
   if (!source) throw new WorkshopOperationError("TARGET_CHANGED", "견적 대상 장비가 더 이상 해당 슬롯에 장착되어 있지 않습니다.");
+  const hasStatefulEquipmentData = Boolean(
+    source.equipmentCharge ||
+      source.equipmentCharges ||
+      source.equipmentAmmo,
+  );
+  if (hasStatefulEquipmentData && source.quantity !== 1) {
+    throw new WorkshopOperationError(
+      "TARGET_CHANGED",
+      "충전 또는 탄약 상태가 있는 강화 원본은 수량이 1개인 인벤토리 항목만 접수할 수 있습니다.",
+    );
+  }
   const snapshot = {
     ...(source.equipmentCharge
       ? { sourceEquipmentCharge: source.equipmentCharge }
+      : {}),
+    ...(source.equipmentCharges
+      ? { sourceEquipmentCharges: source.equipmentCharges }
+      : {}),
+    ...(source.equipmentAmmo
+      ? { sourceEquipmentAmmo: source.equipmentAmmo }
       : {}),
     ...(source.note ? { sourceNote: source.note } : {}),
   };
@@ -262,7 +285,38 @@ async function consumeMaterials(
   session: ClientSession,
 ): Promise<void> {
   const inventory = await characterInventoryCol();
+  const sharedInventory = await sharedInventoryCol();
   for (const material of request.quote.materials) {
+    if (material.scope === "SHARED") {
+      const sharedEntry = await sharedInventory.findOneAndUpdate(
+        {
+          scope: "GLOBAL",
+          itemId: material.itemId,
+          quantity: { $gte: material.quantity },
+        },
+        { $inc: { quantity: -material.quantity } },
+        { returnDocument: "after", session },
+      );
+      if (!sharedEntry) {
+        throw new WorkshopOperationError(
+          "MATERIAL_SHORTAGE",
+          `${material.itemName} 공용 재료가 부족합니다.`,
+        );
+      }
+      if (sharedEntry.quantity === 0) {
+        const deleted = await sharedInventory.deleteOne(
+          { _id: sharedEntry._id, scope: "GLOBAL", quantity: 0 },
+          { session },
+        );
+        if (deleted.deletedCount !== 1) {
+          throw new WorkshopOperationError(
+            "MATERIAL_SHORTAGE",
+            `${material.itemName} 공용 재료 상태가 변경되었습니다.`,
+          );
+        }
+      }
+      continue;
+    }
     const entries = await inventory.find(
       {
         characterId: request.characterId,
@@ -317,7 +371,9 @@ export async function acceptWorkshopQuoteInTransaction(input: {
       ...(request.sourceItemId ? [request.sourceItemId] : []),
       request.quote.result.itemId,
       slotLockId(request.quote.result.category),
-      ...request.quote.materials.map((item) => item.itemId),
+      ...request.quote.materials
+        .filter((item) => item.scope !== "SHARED")
+        .map((item) => item.itemId),
     ],
     input.session,
   );
@@ -329,6 +385,8 @@ export async function acceptWorkshopQuoteInTransaction(input: {
   await requireQuotedAbilityTargets(request, input.session);
   let sourceSnapshot: {
     sourceEquipmentCharge?: EquipmentChargeState;
+    sourceEquipmentCharges?: Record<string, EquipmentChargeState>;
+    sourceEquipmentAmmo?: EquipmentChargeState;
     sourceNote?: string;
   } = {};
   if (request.kind === "upgrade") {
@@ -402,7 +460,11 @@ async function restoreInventory(
     request.escrow.sourceItemName &&
     request.escrow.sourceSlot
   ) {
-    if (request.escrow.sourceEquipmentCharge) {
+    if (
+      request.escrow.sourceEquipmentCharge ||
+      request.escrow.sourceEquipmentCharges ||
+      request.escrow.sourceEquipmentAmmo
+    ) {
       const reacquiredSource = await inventory.findOne(
         {
           characterId: request.characterId,
@@ -430,11 +492,31 @@ async function restoreInventory(
         ...(request.escrow.sourceEquipmentCharge
           ? { equipmentCharge: request.escrow.sourceEquipmentCharge }
           : {}),
+        ...(request.escrow.sourceEquipmentCharges
+          ? { equipmentCharges: request.escrow.sourceEquipmentCharges }
+          : {}),
+        ...(request.escrow.sourceEquipmentAmmo
+          ? { equipmentAmmo: request.escrow.sourceEquipmentAmmo }
+          : {}),
       },
       { session },
     );
   }
   for (const material of request.escrow.materials) {
+    if (material.scope === "SHARED") {
+      await addToSharedInventory(
+        {
+          scope: "GLOBAL",
+          itemId: material.itemId,
+          itemName: material.itemName,
+          quantity: material.quantity,
+          acquiredAt: new Date(),
+          note: `공방 취소 공용 재료 반환 · ${request._id}`,
+        },
+        { session },
+      );
+      continue;
+    }
     await addToInventory(
       {
         characterId: request.characterId,
@@ -583,6 +665,15 @@ export async function claimWorkshopResultInTransaction(input: {
     );
   }
   await ensureResultMasterItem(request, input.session);
+  const equipmentCharges = Object.fromEntries(
+    (request.quote.result.equipmentActions ?? [])
+      .filter((action) => (action.kind ?? "CHARGED") === "CHARGED")
+      .map((action) => [
+        action.code,
+        { current: action.maxCharges, maximum: action.maxCharges },
+      ]),
+  );
+  const ammoCapacity = request.quote.result.combatProfile?.ammoCapacity;
   await addToInventory(
     {
       characterId: request.characterId,
@@ -597,6 +688,17 @@ export async function claimWorkshopResultInTransaction(input: {
             equipmentCharge: {
               current: request.quote.result.equipmentAction.maxCharges,
               maximum: request.quote.result.equipmentAction.maxCharges,
+            },
+          }
+        : {}),
+      ...(Object.keys(equipmentCharges).length > 0
+        ? { equipmentCharges }
+        : {}),
+      ...(ammoCapacity !== undefined
+        ? {
+            equipmentAmmo: {
+              current: ammoCapacity,
+              maximum: ammoCapacity,
             },
           }
         : {}),
@@ -665,6 +767,7 @@ export async function approveWorkshopReloadInTransaction(input: {
     !action ||
     action.code !== request.reload.actionCode ||
     action.reloadApproval !== "GM" ||
+    action.reloadable === false ||
     action.reloadCreditCost !== request.reload.creditCost
   ) {
     throw new WorkshopOperationError("TARGET_CHANGED", "장비 액션 또는 재장전 비용이 요청 이후 변경되었습니다.");

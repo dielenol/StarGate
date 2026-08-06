@@ -7,6 +7,7 @@ import {
   ObjectId,
   type ClientSession,
   type Filter,
+  type UpdateFilter,
 } from "mongodb";
 
 import type {
@@ -481,6 +482,12 @@ export async function addToInventory(
         ...(input.equipmentCharge
           ? { equipmentCharge: input.equipmentCharge }
           : {}),
+        ...(input.equipmentCharges
+          ? { equipmentCharges: input.equipmentCharges }
+          : {}),
+        ...(input.equipmentAmmo
+          ? { equipmentAmmo: input.equipmentAmmo }
+          : {}),
       },
     },
     { upsert: true, returnDocument: "after", session: options.session }
@@ -631,41 +638,83 @@ export async function consumeEquippedEquipmentCharge(
   itemId: string,
   chargeCost: number,
   expectedMaximum: number,
+  options: {
+    session?: ClientSession;
+    actionCode?: string;
+    ammunitionCost?: number;
+  } = {},
 ): Promise<{ ok: boolean; current: number }> {
+  const ammunitionCost = options.ammunitionCost ?? 0;
   if (
     !characterId.trim() ||
     !itemId.trim() ||
     !Number.isSafeInteger(chargeCost) ||
     chargeCost < 1 ||
     !Number.isSafeInteger(expectedMaximum) ||
-    expectedMaximum < chargeCost
+    expectedMaximum < chargeCost ||
+    !Number.isSafeInteger(ammunitionCost) ||
+    ammunitionCost < 0 ||
+    ammunitionCost > 999 ||
+    (options.actionCode !== undefined &&
+      !/^U[1-9][0-9]?$/.test(options.actionCode))
   ) {
     throw new Error("Invalid equipment charge consumption input");
+  }
+
+  if (options.session) {
+    await lockCharacterInventoryItems(characterId, [itemId], options.session);
+    const chargePath = options.actionCode
+      ? `equipmentCharges.${options.actionCode}`
+      : "equipmentCharge";
+    const currentPath = `${chargePath}.current`;
+    const maximumPath = `${chargePath}.maximum`;
+    const filter = {
+      characterId,
+      itemId,
+      quantity: { $gte: 1 },
+      equippedSlot: { $exists: true },
+      [currentPath]: { $gte: chargeCost },
+      [maximumPath]: expectedMaximum,
+      ...(ammunitionCost > 0
+        ? { "equipmentAmmo.current": { $gte: ammunitionCost } }
+        : {}),
+    } as Filter<CharacterInventory>;
+    const update = {
+      $inc: {
+        [currentPath]: -chargeCost,
+        ...(ammunitionCost > 0
+          ? { "equipmentAmmo.current": -ammunitionCost }
+          : {}),
+      },
+    } as UpdateFilter<CharacterInventory>;
+    const entry = await (await characterInventoryCol()).findOneAndUpdate(
+      filter,
+      update,
+      { returnDocument: "after", session: options.session },
+    );
+    const current = options.actionCode
+      ? entry?.equipmentCharges?.[options.actionCode]?.current
+      : entry?.equipmentCharge?.current;
+    return current === undefined
+      ? { ok: false, current: 0 }
+      : { ok: true, current };
   }
 
   await prepareCharacterInventoryItemLocks(characterId, [itemId]);
   const client = await getClient();
   const session = client.startSession();
   try {
-    let current: number | undefined;
+    let result: { ok: boolean; current: number } | undefined;
     await session.withTransaction(async () => {
-      await lockCharacterInventoryItems(characterId, [itemId], session);
-      const col = await characterInventoryCol();
-      const entry = await col.findOneAndUpdate(
-        {
-          characterId,
-          itemId,
-          quantity: { $gte: 1 },
-          equippedSlot: { $exists: true },
-          "equipmentCharge.current": { $gte: chargeCost },
-          "equipmentCharge.maximum": expectedMaximum,
-        },
-        { $inc: { "equipmentCharge.current": -chargeCost } },
-        { returnDocument: "after", session },
+      result = await consumeEquippedEquipmentCharge(
+        characterId,
+        itemId,
+        chargeCost,
+        expectedMaximum,
+        { ...options, session },
       );
-      current = entry?.equipmentCharge?.current;
     });
-    return current === undefined ? { ok: false, current: 0 } : { ok: true, current };
+    return result ?? { ok: false, current: 0 };
   } finally {
     await session.endSession();
   }

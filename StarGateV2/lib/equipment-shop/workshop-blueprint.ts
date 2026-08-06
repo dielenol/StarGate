@@ -30,7 +30,11 @@ export interface EquipmentWorkshopBlueprintDefaults {
   specialistWorkflow?: EquipmentWorkshopSpecialistStep[];
   specialistNote?: string;
   modificationDomain: EquipmentWorkshopModificationDomain;
-  materials: Array<{ slug: string; quantity: number }>;
+  materials: Array<{
+    slug: string;
+    scope?: "CHARACTER" | "SHARED";
+    quantity: number;
+  }>;
   result: Omit<EquipmentWorkshopQuoteInput["result"], "category">;
 }
 
@@ -132,7 +136,11 @@ export function parseEquipmentWorkshopBlueprint(
   if (!Array.isArray(defaults.materials)) {
     return { ok: false, error: "설계안 재료 목록이 올바르지 않습니다." };
   }
-  const materials: Array<{ slug: string; quantity: number }> = [];
+  const materials: Array<{
+    slug: string;
+    scope?: "CHARACTER" | "SHARED";
+    quantity: number;
+  }> = [];
   const seen = new Set<string>();
   for (const raw of defaults.materials) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
@@ -141,18 +149,24 @@ export function parseEquipmentWorkshopBlueprint(
     const material = raw as Record<string, unknown>;
     const materialSlug =
       typeof material.slug === "string" ? material.slug.trim() : "";
+    const scope = material.scope ?? "CHARACTER";
     const quantity = material.quantity;
     if (
       !/^[a-z0-9][a-z0-9_-]{1,79}$/.test(materialSlug) ||
+      (scope !== "CHARACTER" && scope !== "SHARED") ||
       !Number.isInteger(quantity) ||
       Number(quantity) < 1 ||
       Number(quantity) > 999 ||
-      seen.has(materialSlug)
+      seen.has(`${scope}:${materialSlug}`)
     ) {
       return { ok: false, error: "설계안 재료 slug·수량 또는 중복 항목을 확인해 주세요." };
     }
-    seen.add(materialSlug);
-    materials.push({ slug: materialSlug, quantity: Number(quantity) });
+    seen.add(`${scope}:${materialSlug}`);
+    materials.push({
+      slug: materialSlug,
+      ...(scope === "SHARED" ? { scope } : {}),
+      quantity: Number(quantity),
+    });
   }
 
   const quoteValidation = parseEquipmentWorkshopQuote({

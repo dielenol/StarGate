@@ -7,6 +7,7 @@
  */
 
 import type { CreditPool } from "../types/index.js";
+import type { ClientSession } from "mongodb";
 
 import { creditPoolsCol } from "../collections.js";
 
@@ -57,7 +58,11 @@ export async function getAllCreditPools(): Promise<CreditPool[]> {
 export async function addCreditPoolBalance(
   poolId: string,
   delta: number,
-  options?: { allowNegative?: boolean },
+  options?: {
+    allowNegative?: boolean;
+    maxBalance?: number;
+    session?: ClientSession;
+  },
 ): Promise<CreditPool> {
   const col = await creditPoolsCol();
   const allowNegative = options?.allowNegative ?? false;
@@ -66,6 +71,9 @@ export async function addCreditPoolBalance(
   if (!allowNegative && delta < 0) {
     filter.balance = { $gte: -delta };
   }
+  if (options?.maxBalance !== undefined && delta > 0) {
+    filter.balance = { $lte: options.maxBalance - delta };
+  }
 
   const result = await col.findOneAndUpdate(
     filter,
@@ -73,18 +81,58 @@ export async function addCreditPoolBalance(
       $inc: { balance: delta },
       $set: { updatedAt: new Date() },
     },
-    { returnDocument: "after" },
+    { returnDocument: "after", session: options?.session },
   );
 
   if (!result) {
     // 가드 실패 후 snapshot 시점은 에러 발생 후 — 첫 호출 시점의 잔액과 다를 수 있음 (디버깅 시 참고).
-    const snapshot = await col.findOne({ poolId });
+    const snapshot = await col.findOne(
+      { poolId },
+      { session: options?.session },
+    );
     if (!snapshot) {
       throw new Error(`Credit pool not found: ${poolId}`);
+    }
+    if (
+      options?.maxBalance !== undefined &&
+      snapshot.balance + delta > options.maxBalance
+    ) {
+      throw new Error(
+        `Pool ${poolId} exceeds maximum balance ${options.maxBalance}`,
+      );
     }
     throw new Error(
       `Pool ${poolId} insufficient (snapshot at error time: balance=${snapshot.balance}, requested=${-delta})`,
     );
+  }
+  return result;
+}
+
+/**
+ * 풀 잔액을 absolute value 로 atomic 하게 설정한다.
+ *
+ * 명시적인 GM set 동작용이다. 증감형 경제 동작은 동시 writer의 변경을
+ * 보존할 수 있도록 addCreditPoolBalance 를 사용해야 한다.
+ */
+export async function setCreditPoolBalance(
+  poolId: string,
+  balance: number,
+  options?: { session?: ClientSession },
+): Promise<CreditPool> {
+  const col = await creditPoolsCol();
+  const result = await col.findOneAndUpdate(
+    { poolId },
+    {
+      $set: {
+        balance,
+        updatedAt: new Date(),
+      },
+    },
+    { returnDocument: "after", session: options?.session },
+  );
+
+  if (!result) {
+    throw new Error(`Credit pool not found: ${poolId}`);
   }
   return result;
 }

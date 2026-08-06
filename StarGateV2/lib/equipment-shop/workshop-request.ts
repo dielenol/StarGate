@@ -2,6 +2,7 @@ import type {
   EquipmentAction,
   EquipmentAbilityOverride,
   EquipmentChargeState,
+  EquipmentCombatProfile,
   EquipmentSlot,
   ItemCategory,
 } from "@stargate/shared-db/types";
@@ -31,6 +32,7 @@ export const WORKSHOP_COST_POLICY = {
 } as const;
 
 export type EquipmentWorkshopRequestKind = "upgrade" | "custom" | "reload";
+export type EquipmentWorkshopMaterialScope = "CHARACTER" | "SHARED";
 export type EquipmentWorkshopRequestStatus =
   (typeof EQUIPMENT_WORKSHOP_REQUEST_STATUSES)[number];
 export const EQUIPMENT_WORKSHOP_ACTIVE_STATUSES = [
@@ -77,6 +79,8 @@ export interface EquipmentWorkshopMaterial {
   slug?: string;
   itemName: string;
   category: ItemCategory;
+  /** 기존 견적은 CHARACTER로 해석한다. */
+  scope?: EquipmentWorkshopMaterialScope;
   quantity: number;
   unitPrice: number;
   subtotal: number;
@@ -93,6 +97,8 @@ export interface EquipmentWorkshopResultBlueprint {
   tags: string[];
   previewImage?: string;
   equipmentAction?: EquipmentAction;
+  equipmentActions?: EquipmentAction[];
+  combatProfile?: EquipmentCombatProfile;
   equipmentAbilityOverrides?: EquipmentAbilityOverride[];
   generation: number;
 }
@@ -128,6 +134,8 @@ export interface EquipmentWorkshopEscrow {
   materials: EquipmentWorkshopMaterial[];
   creditCost: number;
   sourceEquipmentCharge?: EquipmentChargeState;
+  sourceEquipmentCharges?: Record<string, EquipmentChargeState>;
+  sourceEquipmentAmmo?: EquipmentChargeState;
   sourceNote?: string;
 }
 
@@ -206,6 +214,7 @@ export interface EquipmentWorkshopQuoteInput {
   materials: Array<{
     slug?: string;
     itemId?: string;
+    scope?: EquipmentWorkshopMaterialScope;
     quantity: number;
   }>;
   result: {
@@ -217,6 +226,8 @@ export interface EquipmentWorkshopQuoteInput {
     tags?: string[];
     previewImage?: string;
     equipmentAction?: EquipmentAction;
+    equipmentActions?: EquipmentAction[];
+    combatProfile?: EquipmentCombatProfile;
     equipmentAbilityOverrides?: EquipmentAbilityOverride[];
   };
   internalNote?: string;
@@ -431,19 +442,69 @@ function parseEquipmentAction(value: unknown): EquipmentAction | undefined | nul
   const chargeCost = source.chargeCost;
   const maxCharges = source.maxCharges;
   const reloadCreditCost = source.reloadCreditCost;
+  const kind = source.kind ?? "CHARGED";
+  const reloadable = source.reloadable ?? true;
+  const requiresMounted = source.requiresMounted;
+  const consumesRegularAmmo = source.consumesRegularAmmo;
+  const rangeMinCells = source.rangeMinCells;
+  const rangeMaxCells = source.rangeMaxCells;
+  const damage = source.damage;
   if (
     !/^U[1-9][0-9]?$/.test(code) ||
     !name || name.length > 80 ||
     !description || description.length > 500 ||
     !effect || effect.length > 1000 ||
-    !Number.isSafeInteger(actionCost) || Number(actionCost) < 1 ||
-    !Number.isSafeInteger(chargeCost) || Number(chargeCost) < 1 ||
-    !Number.isSafeInteger(maxCharges) || Number(maxCharges) < Number(chargeCost) || Number(maxCharges) > 99 ||
+    actionCost !== 1 ||
+    (kind !== "CHARGED" && kind !== "STANCE") ||
+    typeof reloadable !== "boolean" ||
+    (requiresMounted !== undefined && typeof requiresMounted !== "boolean") ||
+    (consumesRegularAmmo !== undefined &&
+      (!Number.isSafeInteger(consumesRegularAmmo) || Number(consumesRegularAmmo) < 0 || Number(consumesRegularAmmo) > 99)) ||
+    ((rangeMinCells === undefined) !== (rangeMaxCells === undefined)) ||
+    (rangeMinCells !== undefined &&
+      (!Number.isSafeInteger(rangeMinCells) ||
+        !Number.isSafeInteger(rangeMaxCells) ||
+        Number(rangeMinCells) < 0 ||
+        Number(rangeMaxCells) < Number(rangeMinCells) ||
+        Number(rangeMaxCells) > 99)) ||
+    !Number.isSafeInteger(chargeCost) ||
+    !Number.isSafeInteger(maxCharges) ||
+    (kind === "CHARGED" &&
+      (Number(chargeCost) < 1 || Number(maxCharges) < Number(chargeCost) || Number(maxCharges) > 99)) ||
+    (kind === "STANCE" &&
+      (Number(chargeCost) !== 0 || Number(maxCharges) !== 0 || reloadable)) ||
     typeof reloadCreditCost !== "number" || !Number.isFinite(reloadCreditCost) ||
     reloadCreditCost < 0 || Number(reloadCreditCost.toFixed(2)) !== reloadCreditCost ||
+    (kind === "STANCE" && reloadCreditCost !== 0) ||
+    (damage !== undefined &&
+      (!damage || typeof damage !== "object" || Array.isArray(damage))) ||
     source.reloadApproval !== "GM"
   ) {
     return null;
+  }
+  let parsedDamage: EquipmentAction["damage"];
+  if (damage !== undefined) {
+    const damageSource = damage as Record<string, unknown>;
+    const damageType = damageSource.type;
+    const amount = damageSource.amount;
+    const ignoresDefense = damageSource.ignoresDefense;
+    const scaling = damageSource.scaling;
+    if (
+      !["PHYSICAL", "FIRE", "PSYCHIC"].includes(String(damageType)) ||
+      !Number.isSafeInteger(amount) ||
+      Number(amount) < 1 ||
+      Number(amount) > 999 ||
+      (ignoresDefense !== undefined && typeof ignoresDefense !== "boolean") ||
+      scaling !== "NONE"
+    ) {
+      return null;
+    }
+    parsedDamage = {
+      type: damageType as NonNullable<EquipmentAction["damage"]>["type"],
+      amount: Number(amount),
+      ...(ignoresDefense === true ? { ignoresDefense: true } : {}),
+      scaling,
+    };
   }
   return {
     code,
@@ -455,6 +516,88 @@ function parseEquipmentAction(value: unknown): EquipmentAction | undefined | nul
     maxCharges: Number(maxCharges),
     reloadCreditCost,
     reloadApproval: "GM",
+    ...(kind === "STANCE" ? { kind } : {}),
+    ...(reloadable === false ? { reloadable } : {}),
+    ...(requiresMounted !== undefined ? { requiresMounted } : {}),
+    ...(consumesRegularAmmo !== undefined
+      ? { consumesRegularAmmo: Number(consumesRegularAmmo) }
+      : {}),
+    ...(rangeMinCells !== undefined
+      ? {
+          rangeMinCells: Number(rangeMinCells),
+          rangeMaxCells: Number(rangeMaxCells),
+        }
+      : {}),
+    ...(parsedDamage ? { damage: parsedDamage } : {}),
+  };
+}
+
+function parseEquipmentActions(
+  value: unknown,
+): EquipmentAction[] | undefined | null {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value) || value.length < 1 || value.length > 5) return null;
+  const actions: EquipmentAction[] = [];
+  const seen = new Set<string>();
+  for (const raw of value) {
+    const action = parseEquipmentAction(raw);
+    if (
+      !action ||
+      seen.has(action.code) ||
+      ((action.kind ?? "CHARGED") === "CHARGED" &&
+        action.reloadable !== false)
+    ) {
+      return null;
+    }
+    seen.add(action.code);
+    actions.push(action);
+  }
+  return actions;
+}
+
+function parseEquipmentCombatProfile(
+  value: unknown,
+): EquipmentCombatProfile | undefined | null {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) return null;
+  const source = value as Record<string, unknown>;
+  const ammoCapacity = source.ammoCapacity;
+  const mount = source.mount;
+  if (
+    ammoCapacity !== undefined &&
+    (!Number.isSafeInteger(ammoCapacity) || Number(ammoCapacity) < 1 || Number(ammoCapacity) > 999)
+  ) {
+    return null;
+  }
+  let parsedMount: EquipmentCombatProfile["mount"];
+  if (mount !== undefined) {
+    if (!mount || typeof mount !== "object" || Array.isArray(mount)) return null;
+    const mountSource = mount as Record<string, unknown>;
+    if (
+      !Number.isSafeInteger(mountSource.mountActionCost) ||
+      Number(mountSource.mountActionCost) !== 1 ||
+      !Number.isSafeInteger(mountSource.unmountActionCost) ||
+      Number(mountSource.unmountActionCost) !== 1 ||
+      typeof mountSource.blocksMovement !== "boolean" ||
+      typeof mountSource.allowsDiagonalFire !== "boolean" ||
+      !Number.isSafeInteger(mountSource.bonusDamage) ||
+      Number(mountSource.bonusDamage) < 0 ||
+      Number(mountSource.bonusDamage) > 999
+    ) {
+      return null;
+    }
+    parsedMount = {
+      mountActionCost: Number(mountSource.mountActionCost),
+      unmountActionCost: Number(mountSource.unmountActionCost),
+      blocksMovement: mountSource.blocksMovement,
+      allowsDiagonalFire: mountSource.allowsDiagonalFire,
+      bonusDamage: Number(mountSource.bonusDamage),
+    };
+  }
+  if (ammoCapacity === undefined && !parsedMount) return null;
+  return {
+    ...(ammoCapacity !== undefined ? { ammoCapacity: Number(ammoCapacity) } : {}),
+    ...(parsedMount ? { mount: parsedMount } : {}),
   };
 }
 
@@ -527,11 +670,15 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
   const specialistNote = optionalText(source.specialistNote, 200);
   const internalNote = optionalText(source.internalNote, 1000);
   const equipmentAction = parseEquipmentAction(result.equipmentAction);
+  const equipmentActions = parseEquipmentActions(result.equipmentActions);
+  const combatProfile = parseEquipmentCombatProfile(result.combatProfile);
   const equipmentAbilityOverrides = parseEquipmentAbilityOverrides(
     result.equipmentAbilityOverrides,
   );
   if (damage === null || effect === null || previewImage === null || specialistNote === null || internalNote === null) return { ok: false, error: "견적의 선택 입력값 길이가 올바르지 않습니다." };
   if (equipmentAction === null) return { ok: false, error: "장비 액션은 U 코드, 설명, 효과, 액션·충전 비용, 최대 충전과 GM 재장전 비용을 확인해 주세요." };
+  if (equipmentActions === null || (equipmentAction && equipmentActions)) return { ok: false, error: "복수 장비 액션은 재장전 불가 상태의 서로 다른 U 코드 1~5개이며 단일 액션과 함께 입력할 수 없습니다." };
+  if (combatProfile === null) return { ok: false, error: "장비 탄창·거치 규칙을 확인해 주세요." };
   if (equipmentAbilityOverrides === null) return { ok: false, error: "어빌리티 강화는 중복되지 않은 대상 코드와 1~1,000자의 효과를 최대 11개까지 입력해 주세요." };
   if (previewImage && !previewImage.startsWith("/assets/") && !/^https:\/\//i.test(previewImage)) return { ok: false, error: "이미지는 /assets 경로 또는 HTTPS URL이어야 합니다." };
   const rawTags = Array.isArray(result.tags) ? result.tags : [];
@@ -565,8 +712,10 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
     const itemId = typeof material.itemId === "string" ? material.itemId.trim() : "";
     const slug = typeof material.slug === "string" ? material.slug.trim() : "";
     const quantity = material.quantity;
-    const key = slug ? `slug:${slug}` : `id:${itemId}`;
+    const scope = material.scope ?? "CHARACTER";
+    const key = `${scope}:${slug ? `slug:${slug}` : `id:${itemId}`}`;
     if (
+      (scope !== "CHARACTER" && scope !== "SHARED") ||
       (Boolean(itemId) === Boolean(slug)) ||
       (itemId && !/^[a-f0-9]{24}$/i.test(itemId)) ||
       (slug && !/^[a-z0-9][a-z0-9_-]{1,79}$/.test(slug)) ||
@@ -578,6 +727,7 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
     seen.add(key);
     materials.push({
       ...(slug ? { slug } : { itemId }),
+      ...(scope === "SHARED" ? { scope } : {}),
       quantity: Number(quantity),
     });
   }
@@ -602,6 +752,8 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
         tags,
         ...(previewImage ? { previewImage } : {}),
         ...(equipmentAction ? { equipmentAction } : {}),
+        ...(equipmentActions ? { equipmentActions } : {}),
+        ...(combatProfile ? { combatProfile } : {}),
         ...(equipmentAbilityOverrides ? { equipmentAbilityOverrides } : {}),
       },
       ...(internalNote ? { internalNote } : {}),

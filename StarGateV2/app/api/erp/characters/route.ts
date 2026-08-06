@@ -9,6 +9,7 @@ import type { CharacterTier, CreateCharacterInput } from "@/types/character";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
+import { parseSkillTrainingInput } from "@/lib/character/skill-training";
 import {
   ADMIN_ALLOWED_CHARACTER_FIELDS,
   listAgentCharacterCards,
@@ -132,7 +133,19 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    createPayload.play = playResult.data;
+    const skillTrainingResult = parseSkillTrainingInput(
+      playResult.data.skillTraining,
+    );
+    if (!skillTrainingResult.success) {
+      return NextResponse.json(
+        { error: "play.skillTraining은 문자열 배열이어야 합니다." },
+        { status: 400 },
+      );
+    }
+    createPayload.play = {
+      ...playResult.data,
+      skillTraining: skillTrainingResult.data,
+    };
   } else if (bodyRecord.play !== undefined) {
     return NextResponse.json(
       { error: "NPC 생성 payload에는 play sub-document를 포함할 수 없습니다." },

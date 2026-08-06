@@ -545,7 +545,7 @@
 
 .materialRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 90px auto;
+  grid-template-columns: minmax(0, 1fr) 140px 90px auto;
   gap: 9px;
   align-items: start;
 }
@@ -774,7 +774,7 @@
   }
 
   .materialRow {
-    grid-template-columns: minmax(0, 1fr) 78px;
+    grid-template-columns: minmax(0, 1fr) 120px 78px;
   }
 
   .materialRow > button {

@@ -129,7 +129,12 @@ export async function POST(request: Request) {
     if (validation.input.kind === "reload") {
       const action = equippedEntry.equipmentAction;
       const charge = equippedEntry.equipmentCharge;
-      if (!action || !charge || action.reloadApproval !== "GM") {
+      if (
+        !action ||
+        !charge ||
+        action.reloadApproval !== "GM" ||
+        action.reloadable === false
+      ) {
         return NextResponse.json(
           { error: "GM 승인형 재장전을 지원하는 장비 액션이 없습니다." },
           { status: 400 },

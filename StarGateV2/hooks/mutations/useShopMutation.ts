@@ -28,6 +28,7 @@ import type {
   MrBeastLotteryRevealDto,
 } from "@/lib/db/mrbeast-lottery";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
+import type { MrBeastSodaConsumptionOutcome } from "@/lib/shop/mrbeast-soda-consumption";
 
 /* ── 입력/응답 타입 ── */
 
@@ -71,8 +72,9 @@ interface ConsumeInput {
   quantity: number;
 }
 
-interface ConsumeResponse {
+export interface ConsumeResponse {
   remaining: number;
+  outcomes: MrBeastSodaConsumptionOutcome[];
 }
 
 export interface StartMrBeastLotteryResponse {
@@ -181,17 +183,25 @@ export function useConsumeShopItem() {
 
   return useMutation<ConsumeResponse, ShopApiError, ConsumeInput>({
     mutationFn: async (input) => {
+      const requestId = createIdempotencyKey("shop-consume", input);
       const res = await fetch("/api/erp/shop/consume", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": requestId,
+        },
+        body: JSON.stringify({ ...input, requestId }),
       });
       if (!res.ok) await throwShopError(res);
       return res.json();
     },
+    retry: (failureCount, error) =>
+      failureCount < 1 &&
+      (!(error instanceof ShopApiError) || error.status >= 500),
     onSuccess: () => {
       // 보유 인벤 + 알림 변동.
       queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
+      queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });

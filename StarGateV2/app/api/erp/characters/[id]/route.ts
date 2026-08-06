@@ -21,6 +21,7 @@ import {
 } from "@/lib/auth/rbac";
 import { checkEditCooldown } from "@/lib/character/cooldown";
 import { computeCharacterDiff } from "@/lib/character/diff";
+import { parseEditedSkillTrainingInput } from "@/lib/character/skill-training";
 import {
   isExpectedUpdatedAtCurrent,
   parseExpectedUpdatedAt,
@@ -254,6 +255,29 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
     play.abilities = parsed.data;
+  }
+
+  if (
+    (playAllowed || isPlayer) &&
+    body.play &&
+    typeof body.play === "object" &&
+    !Array.isArray(body.play) &&
+    "skillTraining" in body.play
+  ) {
+    const play = body.play as Record<string, unknown>;
+    const existingSkillTraining =
+      before.type === "AGENT" ? before.play.skillTraining : [];
+    const parsed = parseEditedSkillTrainingInput(
+      play.skillTraining,
+      existingSkillTraining,
+    );
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "play.skillTraining은 문자열 배열이어야 합니다." },
+        { status: 400 },
+      );
+    }
+    play.skillTraining = parsed.data;
   }
 
   // clearanceOverrides 는 admin 만 갱신 가능. 유효 FieldGroup × RoleLevel 쌍으로 제한.

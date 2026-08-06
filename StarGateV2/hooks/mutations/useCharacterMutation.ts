@@ -7,6 +7,7 @@ import {
   personnelKeys,
 } from "@/hooks/queries/useCharactersQuery";
 import { equipmentShopKeys } from "@/hooks/queries/useEquipmentShopQuery";
+import { loreSearchKeys } from "@/hooks/queries/useLoreSearchQuery";
 import { throwMutationError } from "./StaleVersionApiError";
 
 /**
@@ -33,6 +34,7 @@ export function useCreateCharacter() {
       queryClient.invalidateQueries({ queryKey: characterKeys.all });
       queryClient.invalidateQueries({ queryKey: personnelKeys.all });
       queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
+      queryClient.invalidateQueries({ queryKey: loreSearchKeys.all });
     },
   });
 }
@@ -118,6 +120,7 @@ export function useUpdateLoreMutation() {
       queryClient.invalidateQueries({ queryKey: personnelKeys.all });
       queryClient.invalidateQueries({ queryKey: personnelKeys.byId(vars.id) });
       queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
+      queryClient.invalidateQueries({ queryKey: loreSearchKeys.all });
     },
   });
 }

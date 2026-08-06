@@ -44,17 +44,49 @@ export interface ShopMeta {
   pageGroup?: ShopPageGroup;
 }
 
+export type EquipmentActionKind = "CHARGED" | "STANCE";
+
+export interface EquipmentActionDamage {
+  type: "PHYSICAL" | "FIRE" | "PSYCHIC";
+  amount: number;
+  ignoresDefense?: boolean;
+  scaling: "NONE" | "STANDARD";
+}
+
 /** 캐릭터 능력 슬롯과 분리되어 장착 장비가 제공하는 전용 액션. */
 export interface EquipmentAction {
   code: string;
   name: string;
   description: string;
   effect: string;
+  /** 기존 문서는 CHARGED로 간주한다. STANCE는 VTT 세션 상태만 바꾼다. */
+  kind?: EquipmentActionKind;
   actionCost: number;
   chargeCost: number;
   maxCharges: number;
   reloadCreditCost: number;
   reloadApproval: "GM";
+  /** false면 충전이 0이어도 공방 재장전 요청을 만들 수 없다. */
+  reloadable?: boolean;
+  requiresMounted?: boolean;
+  consumesRegularAmmo?: number;
+  /** VTT 격자 사거리. 둘 다 없으면 공격 액션은 실행 불가로 남긴다. */
+  rangeMinCells?: number;
+  rangeMaxCells?: number;
+  damage?: EquipmentActionDamage;
+}
+
+export interface EquipmentMountRules {
+  mountActionCost: number;
+  unmountActionCost: number;
+  blocksMovement: boolean;
+  allowsDiagonalFire: boolean;
+  bonusDamage: number;
+}
+
+export interface EquipmentCombatProfile {
+  ammoCapacity?: number;
+  mount?: EquipmentMountRules;
 }
 
 /** 장착 중인 장비가 캐릭터의 기존 어빌리티 효과 문구를 대체한다. */
@@ -120,6 +152,10 @@ export interface MasterItem {
   authorName?: string;
   /** 장착 중일 때만 ERP/VTT에 노출되는 장비 전용 액션. */
   equipmentAction?: EquipmentAction;
+  /** 복수 전용 액션. 기존 equipmentAction은 하위 호환용으로 유지한다. */
+  equipmentActions?: EquipmentAction[];
+  /** 탄창·거치처럼 설명 문자열에서 추론하면 안 되는 전투 규칙. */
+  combatProfile?: EquipmentCombatProfile;
   /** 장착 중일 때만 캐릭터 시트에 합성되는 기존 어빌리티 효과 대체. */
   equipmentAbilityOverrides?: EquipmentAbilityOverride[];
   /** GM 공방에서 생성한 캐릭터 전용 강화 결과의 추적 메타데이터. */
@@ -161,6 +197,10 @@ export interface CharacterInventory {
   equippedAt?: Date;
   /** equipmentAction을 가진 장비 인스턴스의 충전 상태. */
   equipmentCharge?: EquipmentChargeState;
+  /** 복수 액션의 코드별 충전 상태. */
+  equipmentCharges?: Record<string, EquipmentChargeState>;
+  /** 일반 탄약의 현재/최대 상태. */
+  equipmentAmmo?: EquipmentChargeState;
   /** 라이선스 아이템의 시험 버전과 갱신 기한. 일반 아이템에는 미설정한다. */
   licenseQualification?: LicenseQualification;
 }

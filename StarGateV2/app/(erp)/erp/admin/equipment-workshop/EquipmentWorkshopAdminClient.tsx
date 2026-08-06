@@ -63,6 +63,10 @@ interface MaterialOption {
   unitPrice: number;
 }
 
+type WorkshopQuoteResult = NonNullable<
+  AdminSerializedEquipmentWorkshopRequest["quote"]
+>["result"];
+
 interface QuoteDraft {
   expectedVersion: number;
   creditCost: string;
@@ -70,7 +74,11 @@ interface QuoteDraft {
   specialistWorkflow: EquipmentWorkshopSpecialistStep[];
   specialistNote: string;
   modificationDomain: EquipmentWorkshopModificationDomain;
-  materials: Array<{ slug: string; quantity: string }>;
+  materials: Array<{
+    slug: string;
+    scope: "CHARACTER" | "SHARED";
+    quantity: string;
+  }>;
   resultName: string;
   resultDescription: string;
   resultCategory: "WEAPON" | "ARMOR";
@@ -84,6 +92,8 @@ interface QuoteDraft {
   actionEffect: string;
   actionMaxCharges: string;
   actionReloadCreditCost: string;
+  preservedEquipmentActions: WorkshopQuoteResult["equipmentActions"];
+  preservedCombatProfile: WorkshopQuoteResult["combatProfile"];
   abilityOverrides: Array<{ targetCode: string; effect: string }>;
   internalNote: string;
 }
@@ -188,6 +198,7 @@ function createDraft(
           material.slug ??
           items.find((item) => item.id === material.itemId)?.slug ??
           "",
+        scope: material.scope ?? "CHARACTER",
         quantity: String(material.quantity),
       })) ?? [],
     resultName:
@@ -216,6 +227,8 @@ function createDraft(
     actionReloadCreditCost: String(
       request.quote?.result.equipmentAction?.reloadCreditCost ?? 200,
     ),
+    preservedEquipmentActions: request.quote?.result.equipmentActions,
+    preservedCombatProfile: request.quote?.result.combatProfile,
     abilityOverrides:
       request.quote?.result.equipmentAbilityOverrides?.map((override) => ({
         ...override,
@@ -248,6 +261,7 @@ function draftFromBlueprint(
     modificationDomain: defaults.modificationDomain,
     materials: defaults.materials.map((material) => ({
       slug: material.slug,
+      scope: material.scope ?? "CHARACTER",
       quantity: String(material.quantity),
     })),
     resultName: defaults.result.name,
@@ -267,6 +281,8 @@ function draftFromBlueprint(
     actionReloadCreditCost: String(
       defaults.result.equipmentAction?.reloadCreditCost ?? 200,
     ),
+    preservedEquipmentActions: defaults.result.equipmentActions,
+    preservedCombatProfile: defaults.result.combatProfile,
     abilityOverrides:
       defaults.result.equipmentAbilityOverrides?.map((override) => ({
         ...override,
@@ -810,6 +826,7 @@ export default function EquipmentWorkshopAdminClient({
       modificationDomain: draft.modificationDomain,
       materials: draft.materials.map((material) => ({
         slug: material.slug,
+        ...(material.scope === "SHARED" ? { scope: material.scope } : {}),
         quantity: Number(material.quantity),
       })),
       result: {
@@ -842,6 +859,12 @@ export default function EquipmentWorkshopAdminClient({
                 reloadApproval: "GM" as const,
               },
             }
+          : {}),
+        ...(draft.preservedEquipmentActions?.length
+          ? { equipmentActions: draft.preservedEquipmentActions }
+          : {}),
+        ...(draft.preservedCombatProfile
+          ? { combatProfile: draft.preservedCombatProfile }
           : {}),
         ...(draft.abilityOverrides.length > 0
           ? {
@@ -971,6 +994,7 @@ export default function EquipmentWorkshopAdminClient({
           modificationDomain: draft.modificationDomain,
           materials: draft.materials.map((material) => ({
             slug: material.slug,
+            ...(material.scope === "SHARED" ? { scope: material.scope } : {}),
             quantity: Number(material.quantity),
           })),
           result: {
@@ -1006,6 +1030,12 @@ export default function EquipmentWorkshopAdminClient({
                     reloadApproval: "GM" as const,
                   },
                 }
+              : {}),
+            ...(draft.preservedEquipmentActions?.length
+              ? { equipmentActions: draft.preservedEquipmentActions }
+              : {}),
+            ...(draft.preservedCombatProfile
+              ? { combatProfile: draft.preservedCombatProfile }
               : {}),
             ...(draft.abilityOverrides.length > 0
               ? {
@@ -1328,9 +1358,12 @@ export default function EquipmentWorkshopAdminClient({
                   {readOnlyQuote.materials.length > 0 ? (
                     <ul>
                       {readOnlyQuote.materials.map((material) => (
-                        <li key={material.itemId}>
+                        <li key={`${material.scope ?? "CHARACTER"}:${material.itemId}`}>
                           {material.itemName} × {material.quantity} ·{" "}
-                          {material.subtotal.toLocaleString()} CR
+                          {material.subtotal.toLocaleString()} CR ·{" "}
+                          {material.scope === "SHARED"
+                            ? "공용 인벤토리"
+                            : "캐릭터 인벤토리"}
                         </li>
                       ))}
                     </ul>
@@ -1720,7 +1753,7 @@ export default function EquipmentWorkshopAdminClient({
                         ...draft,
                         materials: [
                           ...draft.materials,
-                          { slug: "", quantity: "1" },
+                          { slug: "", scope: "CHARACTER", quantity: "1" },
                         ],
                       })
                     }
@@ -1739,13 +1772,26 @@ export default function EquipmentWorkshopAdminClient({
                   {draft.materials.map((material, index) => (
                     <div
                       className={styles.materialRow}
-                      key={`${index}:${material.slug}`}
+                      key={`${index}:${material.scope}:${material.slug}`}
                     >
                       <SearchableMaterialSelect
                         excludedItemId={selected.sourceItemId}
                         items={items}
                         value={material.slug}
                         onChange={(slug) => updateMaterial(index, { slug })}
+                      />
+                      <DropdownSelect
+                        ariaLabel="재료 보관 범위"
+                        value={material.scope}
+                        onChange={(scope) =>
+                          updateMaterial(index, {
+                            scope,
+                          })
+                        }
+                        options={[
+                          { value: "CHARACTER", label: "개인 인벤토리" },
+                          { value: "SHARED", label: "공용 인벤토리" },
+                        ]}
                       />
                       <input
                         aria-label="재료 수량"
@@ -1913,8 +1959,30 @@ export default function EquipmentWorkshopAdminClient({
                   )}
                 </div>
 
-                <details className={styles.actionEditor} open={Boolean(draft.actionCode)}>
+                <details
+                  className={styles.actionEditor}
+                  open={Boolean(
+                    draft.actionCode ||
+                      draft.preservedEquipmentActions?.length ||
+                      draft.preservedCombatProfile,
+                  )}
+                >
                   <summary>장비 액션 (EQUIPMENT ACTION, 선택)</summary>
+                  {draft.preservedEquipmentActions?.length ||
+                  draft.preservedCombatProfile ? (
+                    <p className={styles.emptyHint}>
+                      복수 U 액션
+                      {draft.preservedEquipmentActions?.length
+                        ? ` ${draft.preservedEquipmentActions
+                            .map((action) => `${action.code} · ${action.name}`)
+                            .join(", ")}`
+                        : " 없음"}
+                      {" · "}
+                      전투 프로필 {draft.preservedCombatProfile ? "있음" : "없음"}
+                      {" · "}
+                      이 구조화 계약은 현재 읽기 전용이며 견적·설계안 저장 시 그대로 보존됩니다.
+                    </p>
+                  ) : null}
                   <div className={styles.twoColumns}>
                     <label>
                       <span>액션 코드</span>

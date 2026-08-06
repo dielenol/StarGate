@@ -27,6 +27,7 @@ import {
   IconNotification,
   IconPersonCard,
   IconReportDocument,
+  IconSample,
   IconSession,
   IconShop,
   IconStock,
@@ -189,6 +190,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "교환·전달", keywords: "trade exchange transfer 거래 교환 전달 송금", icon: IconTransactions, href: "/erp/trades" },
       /* 편의점 · 주식 — M1 stub. M2/M3 에서 본 구현 활성화. */
       { label: "편의점", keywords: "shop convenience store consumable 소모품 편의점", icon: IconShop, href: "/erp/shop" },
+      { label: "샘플 연구소", keywords: "research sample lab zulu 연구 샘플 줄루", icon: IconSample, href: "/erp/research" },
       {
         label: "병기부",
         keywords:

@@ -36,6 +36,7 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
     ["shop"],
     ["equipment-shop"],
     ["admin-inventory-overview"],
+    ["research"],
     ["wiki", "lore-search"],
   ],
   notifications: [["notifications"], ["dashboard"]],

@@ -242,6 +242,182 @@ test("modification domains and selected materials validate independently", () =>
   );
 });
 
+test("quote materials keep personal and shared inventory scopes distinct", () => {
+  const base = {
+    expectedVersion: 0,
+    creditCost: 0,
+    durationMinutes: 60,
+    modificationDomain: "GENERAL",
+    result: {
+      name: "재료 범위 검증 장비",
+      description: "개인 재료와 공용 재료의 식별 범위를 검증합니다.",
+    },
+  };
+  const parsed = parseEquipmentWorkshopQuote({
+    ...base,
+    materials: [
+      { slug: "broken-syllable", quantity: 1 },
+      { slug: "broken-syllable", scope: "SHARED", quantity: 3 },
+    ],
+  });
+  assert.equal(parsed.ok, true);
+  assert.deepEqual(parsed.input.materials, [
+    { slug: "broken-syllable", quantity: 1 },
+    { slug: "broken-syllable", scope: "SHARED", quantity: 3 },
+  ]);
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      ...base,
+      materials: [
+        { slug: "broken-syllable", scope: "SHARED", quantity: 1 },
+        { slug: "broken-syllable", scope: "SHARED", quantity: 2 },
+      ],
+    }).ok,
+    false,
+  );
+});
+
+test("quote validation preserves multiple actions, mount rules and non-reloadable charges", () => {
+  const result = {
+    name: "복수 액션 검증 장비",
+    description: "구조화된 거치와 제한 탄환 계약을 검증합니다.",
+    equipmentActions: [
+      {
+        code: "U1",
+        name: "거치 전환",
+        description: "장비의 거치 상태를 전환합니다.",
+        effect: "거치와 회수 규칙은 전투 프로필을 따릅니다.",
+        kind: "STANCE",
+        actionCost: 1,
+        chargeCost: 0,
+        maxCharges: 0,
+        reloadCreditCost: 0,
+        reloadApproval: "GM",
+        reloadable: false,
+      },
+      {
+        code: "U2",
+        name: "제한 탄환",
+        description: "거치 중 제한 탄환을 발사합니다.",
+        effect: "충전 1회를 소모합니다.",
+        actionCost: 1,
+        chargeCost: 1,
+        maxCharges: 3,
+        reloadCreditCost: 0,
+        reloadApproval: "GM",
+        reloadable: false,
+        requiresMounted: true,
+        consumesRegularAmmo: 0,
+        rangeMinCells: 1,
+        rangeMaxCells: 6,
+        damage: {
+          type: "PSYCHIC",
+          amount: 30,
+          ignoresDefense: true,
+          scaling: "NONE",
+        },
+      },
+    ],
+    combatProfile: {
+      ammoCapacity: 12,
+      mount: {
+        mountActionCost: 1,
+        unmountActionCost: 1,
+        blocksMovement: true,
+        allowsDiagonalFire: true,
+        bonusDamage: 0,
+      },
+    },
+  };
+  const parsed = parseEquipmentWorkshopQuote({
+    expectedVersion: 0,
+    creditCost: 0,
+    durationMinutes: 60,
+    modificationDomain: "GENERAL",
+    materials: [],
+    result,
+  });
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.input.result.equipmentActions[1].reloadable, false);
+  assert.equal(parsed.input.result.equipmentActions[1].rangeMinCells, 1);
+  assert.equal(parsed.input.result.equipmentActions[1].rangeMaxCells, 6);
+  assert.deepEqual(parsed.input.result.equipmentActions[1].damage, {
+    type: "PSYCHIC",
+    amount: 30,
+    ignoresDefense: true,
+    scaling: "NONE",
+  });
+  assert.equal(parsed.input.result.combatProfile.ammoCapacity, 12);
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      expectedVersion: 0,
+      creditCost: 0,
+      durationMinutes: 60,
+      modificationDomain: "GENERAL",
+      materials: [],
+      result: {
+        ...result,
+        equipmentActions: result.equipmentActions.map((action) =>
+          action.code === "U2"
+            ? { ...action, reloadable: true }
+            : action,
+        ),
+      },
+    }).ok,
+    false,
+    "복수 액션 재장전 경로는 지원 근거가 없으므로 허용하지 않는다",
+  );
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      expectedVersion: 0,
+      creditCost: 0,
+      durationMinutes: 60,
+      modificationDomain: "GENERAL",
+      materials: [],
+      result: {
+        ...result,
+        equipmentActions: result.equipmentActions.map((action) =>
+          action.code === "U2" ? { ...action, actionCost: 2 } : action,
+        ),
+      },
+    }).ok,
+    false,
+    "boolean action economy에서는 비용 2 이상을 허용하지 않는다",
+  );
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      expectedVersion: 0,
+      creditCost: 0,
+      durationMinutes: 60,
+      modificationDomain: "GENERAL",
+      materials: [],
+      result: {
+        ...result,
+        combatProfile: {
+          ...result.combatProfile,
+          mount: { ...result.combatProfile.mount, unmountActionCost: 2 },
+        },
+      },
+    }).ok,
+    false,
+    "거치와 회수도 현재 행동 자원 계약상 정확히 1만 허용한다",
+  );
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      expectedVersion: 0,
+      creditCost: 0,
+      durationMinutes: 60,
+      modificationDomain: "GENERAL",
+      materials: [],
+      result: {
+        ...result,
+        equipmentAction: result.equipmentActions[1],
+      },
+    }).ok,
+    false,
+  );
+});
+
 test("quote validation accepts specialist override and a charge-backed U action", () => {
   const parsed = parseEquipmentWorkshopQuote({
     expectedVersion: 0,
@@ -593,14 +769,15 @@ test("workshop blueprint parser keeps reusable defaults separate from quote snap
     ),
   );
   assert.match(blueprint, /parseEquipmentWorkshopBlueprint/);
-  assert.match(blueprint, /materials: Array<\{ slug: string; quantity: number \}>/);
+  assert.match(blueprint, /materials: Array<\{/);
+  assert.match(blueprint, /scope\?: "CHARACTER" \| "SHARED"/);
   assert.equal(
     parseEquipmentWorkshopBlueprint(seed.update.$setOnInsert).ok,
     true,
   );
   assert.equal(
     seed.update.$setOnInsert.defaults.result.previewImage,
-    "/assets/catalog/equipment/assault-shield-claymore-modified-v2.png",
+    "/assets/catalog/equipment/assault-shield-claymore-modified-v2.webp",
   );
   assert.deepEqual(seed.update.$setOnInsert.defaults.materials, [{ slug: "force_core", quantity: 1 }]);
   assert.equal(seed.update.$setOnInsert.displayName, "공격 방패 - 크레모아 개조형");
@@ -733,7 +910,7 @@ test("claymore shield is available as a built-in editable workshop preset", () =
   assert.equal(preset.blueprint.defaults.result.damage, "12 물리");
   assert.equal(
     preset.blueprint.defaults.result.previewImage,
-    "/assets/catalog/equipment/assault-shield-claymore-modified-v2.png",
+    "/assets/catalog/equipment/assault-shield-claymore-modified-v2.webp",
   );
   assert.equal(
     existsSync(
@@ -926,6 +1103,14 @@ test("accept, claim and cancel keep every economy mutation inside the supplied t
   assert.match(operations, /const existingResult = await inventory\.findOne/);
   assert.match(operations, /결과 장비가 이미 인벤토리에 있어 안전하게 수령할 수 없습니다/);
   assert.match(operations, /sourceEquipmentCharge/);
+  assert.match(operations, /sourceEquipmentCharges/);
+  assert.match(operations, /sourceEquipmentAmmo/);
+  assert.match(
+    operations,
+    /hasStatefulEquipmentData && source\.quantity !== 1[\s\S]*수량이 1개인 인벤토리 항목만 접수/,
+  );
+  assert.match(operations, /sharedInventory\.findOneAndUpdate\([\s\S]*scope: "GLOBAL"[\s\S]*session/);
+  assert.match(operations, /addToSharedInventory\([\s\S]*공방 취소 공용 재료 반환/);
   assert.match(operations, /requireWorkshopCharacterOwnership/);
   assert.match(
     operations,
@@ -1161,6 +1346,14 @@ test("GM material picker supports name and category search", () => {
     adminClient,
     /selectedBlueprint[\s\S]*blueprintRef:[\s\S]*id: selectedBlueprint\._id/,
   );
+  assert.match(adminClient, /preservedEquipmentActions/);
+  assert.match(adminClient, /preservedCombatProfile/);
+  assert.match(
+    adminClient,
+    /equipmentActions: draft\.preservedEquipmentActions/,
+  );
+  assert.match(adminClient, /combatProfile: draft\.preservedCombatProfile/);
+  assert.match(adminClient, /구조화 계약은 현재 읽기 전용/);
 });
 
 test("GM workshop uses the shared accessible dropdown instead of native selects", () => {

@@ -30,6 +30,12 @@ export function buildWorkshopResultMasterItem(
     ...(request.quote.result.equipmentAction
       ? { equipmentAction: request.quote.result.equipmentAction }
       : {}),
+    ...(request.quote.result.equipmentActions
+      ? { equipmentActions: request.quote.result.equipmentActions }
+      : {}),
+    ...(request.quote.result.combatProfile
+      ? { combatProfile: request.quote.result.combatProfile }
+      : {}),
     ...(request.quote.result.equipmentAbilityOverrides
       ? {
           equipmentAbilityOverrides:

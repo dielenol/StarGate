@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isValidIdempotencyKey } from "@/lib/api/idempotency";
 import {
   EconomicOperationConflictError,
   executeEconomicOperationResult,
@@ -11,6 +12,8 @@ import {
   consumeSharedNochichimConsumable,
   loadCharacterConsumables,
   nochichimSharedConsumableMasterItemId,
+  notifyCharacterConsumableUsed,
+  prepareCharacterInventoryConsumption,
   type NochichimConsumptionSessionContext,
 } from "../../../_lib/snapshots";
 
@@ -72,16 +75,29 @@ export async function POST(request: Request, context: RouteContext) {
   const itemId = typeof body?.itemId === "string" ? body.itemId.trim() : "";
   const quantity = normalizeQuantity(body?.quantity);
   const sessionContext = normalizeSessionContext(body);
-  const requestId = normalizeOptionalString(body?.requestId);
+  const headerRequestId = normalizeOptionalString(
+    request.headers.get("Idempotency-Key"),
+  );
+  const bodyRequestId = normalizeOptionalString(body?.requestId);
+  const requestId = headerRequestId ?? bodyRequestId;
   const sharedMasterItemId = nochichimSharedConsumableMasterItemId(itemId);
 
-  if (!itemId || quantity === null || (sharedMasterItemId && !requestId)) {
+  if (
+    !itemId ||
+    quantity === null ||
+    !requestId ||
+    !isValidIdempotencyKey(requestId) ||
+    (headerRequestId !== undefined &&
+      bodyRequestId !== undefined &&
+      headerRequestId !== bodyRequestId)
+  ) {
     return NextResponse.json(
       {
-        error:
-          sharedMasterItemId && !requestId
+        error: !requestId
+          ? sharedMasterItemId
             ? "requestId is required for shared consumables"
-            : "itemId and positive quantity are required",
+            : "Idempotency-Key or requestId is required for personal consumables"
+          : "itemId, positive quantity, and a valid matching request id are required",
       },
       { status: 400 },
     );
@@ -157,30 +173,96 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const result = await consumeCharacterConsumable({
-      characterId: decodeURIComponent(id),
+    const characterId = await prepareCharacterInventoryConsumption({
+      characterKey: decodeURIComponent(id),
       itemId,
-      quantity,
-      session: sessionContext,
+    });
+    const operation = await executeEconomicOperationResult<
+      Awaited<ReturnType<typeof consumeCharacterConsumable>>
+    >({
+      requestId: `nochichim-personal-consumable:${requestId}`,
+      domain: "personal-inventory-consume-vtt",
+      actorId: "vtt:nochichim",
+      payload: { characterId, itemId, quantity, session: sessionContext },
+      run: async (dbSession) => {
+        const result = await consumeCharacterConsumable({
+          characterId,
+          itemId,
+          quantity,
+          dbSession,
+        });
+        return { status: result.ok ? 200 : 409, body: result };
+      },
     });
 
-    if (!result.ok) {
+    if (
+      operation.body.ok &&
+      operation.body.committedCharacterId &&
+      operation.body.committedCharacterCodename &&
+      operation.body.committedOwnerId &&
+      operation.body.committedItemName &&
+      !operation.replayed
+    ) {
+      await notifyCharacterConsumableUsed({
+        characterId: operation.body.committedCharacterId,
+        characterCodename: operation.body.committedCharacterCodename,
+        ownerId: operation.body.committedOwnerId,
+        itemName: operation.body.committedItemName,
+        quantity,
+        remaining: operation.body.remaining,
+        session: sessionContext,
+      }).catch((error) => {
+        console.warn("[nochichim] failed to notify consumable use", {
+          characterId,
+          itemId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+    }
+
+    const responseBody = { ...operation.body };
+    delete responseBody.committedCharacterId;
+    delete responseBody.committedCharacterCodename;
+    delete responseBody.committedOwnerId;
+    delete responseBody.committedItemName;
+
+    let consumables;
+    try {
+      consumables = await loadCharacterConsumables(characterId);
+    } catch {
       return NextResponse.json(
         {
-          ok: false,
-          remaining: result.remaining,
-          consumables: result.consumables,
-          error: "Insufficient quantity",
+          ...responseBody,
+          error:
+            "Personal consumable operation committed, but inventory refresh failed",
+          retryable: true,
         },
-        { status: 409 },
+        {
+          status: 503,
+          headers: operation.replayed
+            ? { "X-Idempotency-Replayed": "true" }
+            : undefined,
+        },
       );
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json(
+      {
+        ...responseBody,
+        consumables,
+        ...(responseBody.ok ? {} : { error: "Insufficient quantity" }),
+      },
+      {
+        status: operation.status,
+        headers: operation.replayed
+          ? { "X-Idempotency-Replayed": "true" }
+          : undefined,
+      },
+    );
   } catch (err) {
     if (err instanceof EconomicOperationConflictError) {
       return NextResponse.json(
-        { error: "Shared consumable request is already processing" },
+        { error: "Consumable request is already processing or conflicts" },
         { status: 409 },
       );
     }

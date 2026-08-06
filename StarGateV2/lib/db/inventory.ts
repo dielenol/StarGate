@@ -117,11 +117,23 @@ export async function listCharacterInventoryEntries(
       ...(master?.equipmentAction
         ? { equipmentAction: master.equipmentAction }
         : {}),
+      ...(master?.equipmentActions
+        ? { equipmentActions: master.equipmentActions }
+        : {}),
+      ...(master?.combatProfile
+        ? { combatProfile: master.combatProfile }
+        : {}),
       ...(master?.equipmentAbilityOverrides
         ? { equipmentAbilityOverrides: master.equipmentAbilityOverrides }
         : {}),
       ...(entry.equipmentCharge
         ? { equipmentCharge: entry.equipmentCharge }
+        : {}),
+      ...(entry.equipmentCharges
+        ? { equipmentCharges: entry.equipmentCharges }
+        : {}),
+      ...(entry.equipmentAmmo
+        ? { equipmentAmmo: entry.equipmentAmmo }
         : {}),
       ...(master?.workshop ? { workshop: master.workshop } : {}),
       ...(entry.equippedSlot ? { equippedSlot: entry.equippedSlot } : {}),

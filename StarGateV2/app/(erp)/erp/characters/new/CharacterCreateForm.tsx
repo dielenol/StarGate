@@ -25,7 +25,11 @@ import Input from "@/components/ui/Input/Input";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Select from "@/components/ui/Select/Select";
 
-import { initAbilities, stringToTags } from "../_form-utils";
+import {
+  initAbilities,
+  stringToSkillTraining,
+  stringToTags,
+} from "../_form-utils";
 
 import styles from "../[id]/CharacterEditForm.module.css";
 
@@ -130,7 +134,7 @@ export default function CharacterCreateForm() {
       points,
       abilityType: abilityType || undefined,
       weaponTraining: stringToTags(weaponTrainingStr),
-      skillTraining: stringToTags(skillTrainingStr),
+      skillTraining: stringToSkillTraining(skillTrainingStr),
       credit,
       equipment: [],
       abilities,

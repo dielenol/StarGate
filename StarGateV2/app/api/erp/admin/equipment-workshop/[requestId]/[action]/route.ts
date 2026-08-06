@@ -232,6 +232,7 @@ export async function PUT(request: Request, context: RouteContext) {
       slug: item.slug,
       itemName: item.name,
       category: item.category,
+      ...(material.scope === "SHARED" ? { scope: "SHARED" as const } : {}),
       quantity: material.quantity,
       unitPrice,
       subtotal: Number((unitPrice * material.quantity).toFixed(2)),
@@ -296,6 +297,12 @@ export async function PUT(request: Request, context: RouteContext) {
       ...(validation.input.result.previewImage ? { previewImage: validation.input.result.previewImage } : {}),
       ...(validation.input.result.equipmentAction
         ? { equipmentAction: validation.input.result.equipmentAction }
+        : {}),
+      ...(validation.input.result.equipmentActions
+        ? { equipmentActions: validation.input.result.equipmentActions }
+        : {}),
+      ...(validation.input.result.combatProfile
+        ? { combatProfile: validation.input.result.combatProfile }
         : {}),
       ...(validation.input.result.equipmentAbilityOverrides
         ? {

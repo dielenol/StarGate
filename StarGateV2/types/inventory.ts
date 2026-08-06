@@ -31,8 +31,15 @@ export interface InventoryEntryDto {
   isPublic?: boolean;
   tags?: string[];
   equipmentAction?: import("@stargate/shared-db/types").EquipmentAction;
+  equipmentActions?: import("@stargate/shared-db/types").EquipmentAction[];
+  combatProfile?: import("@stargate/shared-db/types").EquipmentCombatProfile;
   equipmentAbilityOverrides?: import("@stargate/shared-db/types").EquipmentAbilityOverride[];
   equipmentCharge?: import("@stargate/shared-db/types").EquipmentChargeState;
+  equipmentCharges?: Record<
+    string,
+    import("@stargate/shared-db/types").EquipmentChargeState
+  >;
+  equipmentAmmo?: import("@stargate/shared-db/types").EquipmentChargeState;
   workshop?: import("@stargate/shared-db/types").MasterItem["workshop"];
   equippedSlot?: import("@stargate/shared-db/types").EquipmentSlot;
   equippedAt?: string;

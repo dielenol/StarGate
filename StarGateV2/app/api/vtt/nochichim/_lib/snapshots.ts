@@ -6,6 +6,10 @@ import { applyEquipmentAbilityOverrides } from "@/lib/equipment/equipment-abilit
 import { mergePublicEquipment } from "@/lib/equipment/public-equipment";
 import { notifyUser } from "@/lib/notifications/events";
 import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
+import {
+  resolveConsumableOutcomes,
+  type MrBeastSodaConsumptionOutcome,
+} from "@/lib/shop/mrbeast-soda-consumption";
 import { stripDossierPersonalityObservations } from "@/lib/personnel";
 
 import {
@@ -15,6 +19,7 @@ import {
   listAgentCharacters,
   listCharacterInventory,
   masterItemsCol,
+  prepareCharacterInventoryItemLocks,
   sharedInventoryCol,
   consumeEquippedEquipmentCharge,
   removeFromInventory,
@@ -24,6 +29,8 @@ import {
   type CharacterInventory,
   type MasterItem,
 } from "@stargate/shared-db";
+
+import { findTransactionalAgentCharacterByKey } from "./transactional-character";
 
 type SerializedDate = string | null;
 
@@ -50,12 +57,35 @@ export interface NochichimEquipmentActionSnapshot {
   name: string;
   description: string;
   effect: string;
+  kind: "CHARGED" | "STANCE";
   actionCost: number;
   chargeCost: number;
   currentCharges: number;
   maxCharges: number;
   reloadCreditCost: number;
   reloadApproval: "GM";
+  reloadable: boolean;
+  requiresMounted?: boolean;
+  consumesRegularAmmo?: number;
+  rangeMinCells?: number;
+  rangeMaxCells?: number;
+  damage?: NonNullable<MasterItem["equipmentActions"]>[number]["damage"];
+}
+
+export interface NochichimEquipmentSnapshot {
+  itemId: string;
+  inventoryEntryId: string;
+  slug?: string;
+  name: string;
+  category: "WEAPON" | "ARMOR";
+  equippedSlot: "WEAPON" | "ARMOR";
+  source: "stargate";
+  damage?: string;
+  description: string;
+  effect: string;
+  ammo?: { current: number; maximum: number };
+  combatProfile?: MasterItem["combatProfile"];
+  actions: NochichimEquipmentActionSnapshot[];
 }
 
 export interface NochichimCharacterListItem {
@@ -105,6 +135,7 @@ export interface NochichimCharacterSnapshot extends NochichimCharacterListItem {
       stargateSlot: string;
       stargateCode?: string;
     }>;
+    equipment: NochichimEquipmentSnapshot[];
     equipmentActions: NochichimEquipmentActionSnapshot[];
   };
   consumables: NochichimConsumableSnapshot[];
@@ -306,7 +337,10 @@ export async function consumeSharedNochichimConsumable(
   },
   options: { session: ClientSession },
 ): Promise<{ ok: boolean; remaining: number }> {
-  const character = await findAgentCharacterByKey(input.characterId);
+  const character = await findTransactionalAgentCharacterByKey(
+    input.characterId,
+    options.session,
+  );
   if (!character) throw new Error("Character not found");
   const masterItemId = nochichimSharedConsumableMasterItemId(input.itemId);
   if (!masterItemId) throw new Error("Shared consumable not found");
@@ -344,37 +378,95 @@ export async function consumeSharedNochichimConsumable(
   return { ok: true, remaining: entry.quantity };
 }
 
-async function loadCharacterEquippedState(characterId: string) {
-  const inventory = (await listCharacterInventory(characterId)).filter(
+function toNochichimEquipmentActions(
+  entry: CharacterInventory,
+  item: MasterItem,
+): NochichimEquipmentActionSnapshot[] {
+  if (!entry._id) return [];
+  const actions = item.equipmentActions ??
+    (item.equipmentAction ? [item.equipmentAction] : []);
+  return actions.flatMap((action) => {
+    const kind = action.kind ?? "CHARGED";
+    const charge = item.equipmentActions
+      ? entry.equipmentCharges?.[action.code]
+      : entry.equipmentCharge;
+    if (kind === "CHARGED" && !charge) return [];
+    return [{
+      itemId: entry.itemId,
+      inventoryEntryId: objectIdString(entry._id),
+      itemName: item.name || entry.itemName,
+      code: action.code,
+      name: action.name,
+      description: action.description,
+      effect: action.effect,
+      kind,
+      actionCost: action.actionCost,
+      chargeCost: action.chargeCost,
+      currentCharges: charge?.current ?? 0,
+      maxCharges: charge?.maximum ?? 0,
+      reloadCreditCost: action.reloadCreditCost,
+      reloadApproval: action.reloadApproval,
+      reloadable: action.reloadable !== false && kind === "CHARGED",
+      ...(action.requiresMounted !== undefined
+        ? { requiresMounted: action.requiresMounted }
+        : {}),
+      ...(action.consumesRegularAmmo !== undefined
+        ? { consumesRegularAmmo: action.consumesRegularAmmo }
+        : {}),
+      ...(action.rangeMinCells !== undefined && action.rangeMaxCells !== undefined
+        ? {
+            rangeMinCells: action.rangeMinCells,
+            rangeMaxCells: action.rangeMaxCells,
+          }
+        : {}),
+      ...(action.damage ? { damage: action.damage } : {}),
+    }];
+  });
+}
+
+export async function loadCharacterEquippedState(
+  characterId: string,
+  options: { session?: ClientSession } = {},
+) {
+  const inventory = (
+    await listCharacterInventory(characterId, { session: options.session })
+  ).filter(
     (entry) => entry.quantity > 0,
   );
   const equippedInventory = inventory.filter((entry) =>
     Boolean(entry.equippedSlot),
   );
-  const itemMap = await loadMasterItemMap(inventory);
+  const itemMap = await loadMasterItemMap(inventory, options);
 
-  const equipmentActions: NochichimEquipmentActionSnapshot[] =
-    equippedInventory.flatMap((entry) => {
+  const equipment: NochichimEquipmentSnapshot[] = equippedInventory.flatMap(
+    (entry) => {
       const item = itemMap.get(entry.itemId);
-      const action = item?.equipmentAction;
-      const charge = entry.equipmentCharge;
-      if (!item || !action || !charge || !entry._id) return [];
+      if (
+        !item ||
+        !entry._id ||
+        !entry.equippedSlot ||
+        (item.category !== "WEAPON" && item.category !== "ARMOR")
+      ) {
+        return [];
+      }
       return [{
         itemId: entry.itemId,
         inventoryEntryId: objectIdString(entry._id),
-        itemName: item.name || entry.itemName,
-        code: action.code,
-        name: action.name,
-        description: action.description,
-        effect: action.effect,
-        actionCost: action.actionCost,
-        chargeCost: action.chargeCost,
-        currentCharges: charge.current,
-        maxCharges: charge.maximum,
-        reloadCreditCost: action.reloadCreditCost,
-        reloadApproval: action.reloadApproval,
+        ...(item.slug ? { slug: item.slug } : {}),
+        name: item.name || entry.itemName,
+        category: item.category,
+        equippedSlot: entry.equippedSlot,
+        source: "stargate" as const,
+        ...(item.damage ? { damage: item.damage } : {}),
+        description: item.description ?? "",
+        effect: item.effect ?? "",
+        ...(entry.equipmentAmmo ? { ammo: entry.equipmentAmmo } : {}),
+        ...(item.combatProfile ? { combatProfile: item.combatProfile } : {}),
+        actions: toNochichimEquipmentActions(entry, item),
       }];
-    });
+    },
+  );
+  const equipmentActions = equipment.flatMap((entry) => entry.actions);
   const masterSources = inventory.flatMap((entry) => {
     const item = itemMap.get(entry.itemId);
     if (!item) return [];
@@ -392,13 +484,26 @@ async function loadCharacterEquippedState(characterId: string) {
     }];
   });
 
-  return { equipmentActions, masterSources };
+  return { equipment, equipmentActions, masterSources };
 }
 
 export async function loadCharacterEquipmentActions(
   characterId: string,
+  options: { session?: ClientSession } = {},
 ): Promise<NochichimEquipmentActionSnapshot[]> {
-  return (await loadCharacterEquippedState(characterId)).equipmentActions;
+  return (await loadCharacterEquippedState(characterId, options))
+    .equipmentActions;
+}
+
+export async function prepareCharacterInventoryConsumption(input: {
+  characterKey: string;
+  itemId: string;
+}): Promise<string> {
+  const character = await findAgentCharacterByKey(input.characterKey);
+  if (!character) throw new Error("Character not found");
+  const characterId = objectIdString(character._id);
+  await prepareCharacterInventoryItemLocks(characterId, [input.itemId]);
+  return characterId;
 }
 
 export async function loadCharacterSnapshot(
@@ -412,13 +517,17 @@ export async function loadCharacterSnapshot(
     loadCharacterConsumables(id),
     loadCharacterEquippedState(id),
   ]);
-  const { equipmentActions, masterSources } = equippedState;
+  const {
+    equipment: structuredEquipment,
+    equipmentActions,
+    masterSources,
+  } = equippedState;
   const play = character.play;
   const abilities = applyEquipmentAbilityOverrides(
     play.abilities,
     masterSources,
   );
-  const equipment = mergePublicEquipment({
+  const legacyEquipment = mergePublicEquipment({
     inventoryEntries: masterSources,
     legacyEquipment: play.equipment,
     includePrivate: true,
@@ -426,7 +535,7 @@ export async function loadCharacterSnapshot(
     ...entry,
     ...(entry.price === "" ? { price: undefined } : { price: String(entry.price) }),
   }));
-  const effectivePlay = { ...play, abilities, equipment };
+  const effectivePlay = { ...play, abilities, equipment: legacyEquipment };
   const stats = {
     hp: finalStat(play.hp, play.hpDelta),
     maxHp: finalStat(play.hp, play.hpDelta),
@@ -461,6 +570,7 @@ export async function loadCharacterSnapshot(
       cantrips: abilities
         .filter(abilityHasContent)
         .map(toNochichimCantrip),
+      equipment: structuredEquipment,
       equipmentActions,
     },
     consumables,
@@ -471,20 +581,30 @@ export async function consumeCharacterEquipmentAction(input: {
   characterId: string;
   itemId: string;
   actionCode: string;
+  dbSession: ClientSession;
 }): Promise<{
   ok: boolean;
   currentCharges: number;
-  equipmentActions: NochichimEquipmentActionSnapshot[];
 }> {
-  const character = await findAgentCharacterByKey(input.characterId);
+  const character = await findTransactionalAgentCharacterByKey(
+    input.characterId,
+    input.dbSession,
+  );
   if (!character) throw new Error("Character not found");
   const characterId = objectIdString(character._id);
   const item = (await loadMasterItemMap([
     { itemId: input.itemId },
-  ])).get(input.itemId);
-  const action = item?.equipmentAction;
+  ], { session: input.dbSession })).get(input.itemId);
+  const action = item?.equipmentActions?.find(
+    (candidate) => candidate.code === input.actionCode,
+  ) ?? (item?.equipmentAction?.code === input.actionCode
+    ? item.equipmentAction
+    : undefined);
   if (!item || !action || action.code !== input.actionCode) {
     throw new Error("Equipment action not found");
+  }
+  if ((action.kind ?? "CHARGED") === "STANCE") {
+    throw new Error("Equipment stance action is local-only");
   }
 
   const result = await consumeEquippedEquipmentCharge(
@@ -492,11 +612,15 @@ export async function consumeCharacterEquipmentAction(input: {
     input.itemId,
     action.chargeCost,
     action.maxCharges,
+    {
+      session: input.dbSession,
+      ...(item.equipmentActions ? { actionCode: action.code } : {}),
+      ammunitionCost: action.consumesRegularAmmo ?? 0,
+    },
   );
   return {
     ok: result.ok,
     currentCharges: result.current,
-    equipmentActions: await loadCharacterEquipmentActions(characterId),
   };
 }
 
@@ -519,29 +643,51 @@ async function resolveConsumptionSessionTitle(
 }
 
 async function notifyConsumableUsed(input: {
-  character: AgentCharacter;
-  item: MasterItem;
+  characterId: string;
+  characterCodename: string;
+  ownerId: string | null;
+  itemName: string;
   quantity: number;
   remaining: number;
   session?: NochichimConsumptionSessionContext;
 }): Promise<void> {
-  if (!input.character.ownerId) return;
+  if (!input.ownerId) return;
 
-  const characterId = objectIdString(input.character._id);
-  const itemName = input.item.name || "소모품";
   const sessionTitle = await resolveConsumptionSessionTitle(input.session);
 
   await notifyUser({
-    userId: input.character.ownerId,
+    userId: input.ownerId,
     type: "CONSUMABLE_USED",
-    title: `${itemName} 사용이 기록되었습니다`,
+    title: `${input.itemName} 사용이 기록되었습니다`,
     message: [
-      `${input.character.codename} · ${itemName} x${input.quantity}`,
+      `${input.characterCodename} · ${input.itemName} x${input.quantity}`,
       sessionTitle ? `세션: ${sessionTitle}` : "세션: 미지정",
       `잔여 ${input.remaining}`,
       "노치찜 연동",
     ].join(" · "),
-    link: characterId ? `/erp/inventory/${characterId}` : "/erp/notifications",
+    link: input.characterId
+      ? `/erp/inventory/${input.characterId}`
+      : "/erp/notifications",
+  });
+}
+
+export async function notifyCharacterConsumableUsed(input: {
+  characterId: string;
+  characterCodename: string;
+  ownerId: string | null;
+  itemName: string;
+  quantity: number;
+  remaining: number;
+  session?: NochichimConsumptionSessionContext;
+}): Promise<void> {
+  await notifyConsumableUsed({
+    characterId: input.characterId,
+    characterCodename: input.characterCodename,
+    ownerId: input.ownerId,
+    itemName: input.itemName,
+    quantity: input.quantity,
+    remaining: input.remaining,
+    session: input.session,
   });
 }
 
@@ -549,44 +695,52 @@ export async function consumeCharacterConsumable(input: {
   characterId: string;
   itemId: string;
   quantity: number;
-  session?: NochichimConsumptionSessionContext;
+  dbSession: ClientSession;
 }): Promise<{
   ok: boolean;
   remaining: number;
-  consumables: NochichimConsumableSnapshot[];
+  outcomes: MrBeastSodaConsumptionOutcome[];
+  committedCharacterId?: string;
+  committedCharacterCodename?: string;
+  committedOwnerId?: string | null;
+  committedItemName?: string;
 }> {
-  const character = await findAgentCharacterByKey(input.characterId);
+  const character = await findTransactionalAgentCharacterByKey(
+    input.characterId,
+    input.dbSession,
+  );
   if (!character) {
     throw new Error("Character not found");
   }
 
-  const item = (await loadMasterItemMap([
-    { itemId: input.itemId },
-  ])).get(input.itemId);
+  const item = (
+    await loadMasterItemMap(
+      [{ itemId: input.itemId }],
+      { session: input.dbSession },
+    )
+  ).get(input.itemId);
 
   if (!item || item.category !== "CONSUMABLE") {
     throw new Error("Consumable not found");
   }
 
   const result = await removeFromInventory(
-    input.characterId,
+    objectIdString(character._id),
     input.itemId,
     input.quantity,
+    { session: input.dbSession },
   );
 
-  if (result.ok) {
-    await notifyConsumableUsed({
-      character,
-      item,
-      quantity: input.quantity,
-      remaining: result.remaining,
-      session: input.session,
-    });
+  if (!result.ok) {
+    return { ok: false, remaining: result.remaining, outcomes: [] };
   }
-
   return {
-    ok: result.ok,
+    ok: true,
     remaining: result.remaining,
-    consumables: await loadCharacterConsumables(input.characterId),
+    outcomes: resolveConsumableOutcomes(item.slug, input.quantity),
+    committedCharacterId: objectIdString(character._id),
+    committedCharacterCodename: character.codename,
+    committedOwnerId: character.ownerId,
+    committedItemName: item.name,
   };
 }

@@ -24,7 +24,11 @@ import { characterKeys } from "@/hooks/queries/useCharactersQuery";
 
 import type { DiffEntry } from "./DiffPreviewModal";
 
-import { initAbilities, stringToTags } from "../_form-utils";
+import {
+  initAbilities,
+  stringToEditedSkillTraining,
+  stringToTags,
+} from "../_form-utils";
 
 import styles from "./CharacterEditForm.module.css";
 
@@ -460,7 +464,10 @@ export default function CharacterEditForm({
         points: pointsAfterSpend,
         abilityType: emptyToUndefined(abilityType),
         weaponTraining: stringToTags(weaponTrainingStr),
-        skillTraining: stringToTags(skillTrainingStr),
+        skillTraining: stringToEditedSkillTraining(
+          skillTrainingStr,
+          play.skillTraining,
+        ),
         credit,
         abilities,
       },

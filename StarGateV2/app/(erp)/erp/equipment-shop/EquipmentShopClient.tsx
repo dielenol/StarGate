@@ -44,7 +44,10 @@ import {
   useEquipmentResearch,
   useEquipmentWorkshopRequests,
 } from "@/hooks/queries/useEquipmentShopQuery";
-import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
+import {
+  useCharacterInventory,
+  useSharedInventory,
+} from "@/hooks/queries/useInventoryQuery";
 
 import Box from "@/components/ui/Box/Box";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -1548,6 +1551,9 @@ export default function EquipmentShopClient({
       enabled: initialZone === "custom" && mainCharacter !== null,
     },
   );
+  const sharedInventoryQuery = useSharedInventory({
+    enabled: initialZone === "custom",
+  });
   const purchaseMutation = usePurchaseEquipmentShopItem();
   const armorReferralMutation = useRegisterTowaskiArmorReferral();
   const quoteMutation = useEquipmentShopQuote();
@@ -4993,9 +4999,20 @@ export default function EquipmentShopClient({
     const workshopRequests = (workshopRequestsQuery.data?.requests ?? []).filter(
       (request) => isActiveEquipmentWorkshopRequestStatus(request.status),
     );
-    const actionEquipment = equippedEntries.filter(
-      (entry) => entry.equipmentAction && entry.equipmentCharge,
-    );
+    const actionEquipment = equippedEntries.flatMap((entry) => [
+      ...(entry.equipmentAction && entry.equipmentCharge
+        ? [{
+            entry,
+            action: entry.equipmentAction,
+            charge: entry.equipmentCharge,
+          }]
+        : []),
+      ...(entry.equipmentActions ?? []).map((action) => ({
+        entry,
+        action,
+        charge: entry.equipmentCharges?.[action.code],
+      })),
+    ]);
     const submitWorkshopRequest = (
       event: FormEvent<HTMLFormElement>,
       kind: "upgrade" | "custom",
@@ -5084,25 +5101,27 @@ export default function EquipmentShopClient({
             <span>EXCLUSIVE EQUIPMENT</span>
             <strong>전용 장비 액션</strong>
             <p>
-              장착 중인 공방 장비 액션과 충전 상태입니다. 완전히 소진된 장비는
-              관료 결재를 거쳐 정액 재장전할 수 있습니다.
+              장착 중인 공방 장비 액션과 충전 상태입니다. 재장전 가능한 단일 액션은
+              완전히 소진된 뒤 관료 결재를 요청할 수 있습니다.
             </p>
             {actionEquipment.length === 0 ? (
               <Tag tone="gold">장착 액션 없음</Tag>
             ) : (
-              actionEquipment.map((entry) => {
-                const action = entry.equipmentAction;
-                const charge = entry.equipmentCharge;
-                if (!action || !charge || !entry._id) return null;
-                const depleted = charge.current === 0;
+              actionEquipment.map(({ entry, action, charge }) => {
+                if (!entry._id) return null;
+                const charged = (action.kind ?? "CHARGED") === "CHARGED";
+                if (charged && !charge) return null;
+                const depleted = charge?.current === 0;
                 return (
-                  <article key={entry._id}>
+                  <article key={`${entry._id}:${action.code}`}>
                     <strong>{action.code} [{action.name}]</strong>
                     <p>{action.description}</p>
                     <small>
-                      충전 {charge.current}/{charge.maximum} · 재장전 {formatCredits(action.reloadCreditCost)} · GM 승인
+                      {charged && charge
+                        ? `충전 ${charge.current}/${charge.maximum} · ${action.reloadable === false ? "재장전 불가" : `재장전 ${formatCredits(action.reloadCreditCost)} · GM 승인`}`
+                        : "태세 전환 · 세션 로컬 상태"}
                     </small>
-                    {depleted ? (
+                    {depleted && action.reloadable !== false ? (
                       <button
                         type="button"
                         disabled={workshopRequestMutation.isPending}
@@ -5293,9 +5312,21 @@ export default function EquipmentShopClient({
                         (availableByItemId.get(entry.itemId) ?? 0) + entry.quantity,
                       );
                     }
+                    const sharedAvailableByItemId = new Map(
+                      (sharedInventoryQuery.data?.inventory ?? []).map((entry) => [
+                        entry.itemId,
+                        entry.quantity,
+                      ]),
+                    );
+                    const availableMaterialQuantity = (
+                      material: (typeof quote.materials)[number],
+                    ) =>
+                      material.scope === "SHARED"
+                        ? (sharedAvailableByItemId.get(material.itemId) ?? 0)
+                        : (availableByItemId.get(material.itemId) ?? 0);
                     const materialsReady = quote.materials.every(
                       (material) =>
-                        (availableByItemId.get(material.itemId) ?? 0) >= material.quantity,
+                        availableMaterialQuantity(material) >= material.quantity,
                     );
                     const creditReady = balance >= quote.creditCost;
                     return (
@@ -5345,6 +5376,25 @@ export default function EquipmentShopClient({
                                 충전 {quote.result.equipmentAction.maxCharges}/{quote.result.equipmentAction.maxCharges} · 재장전 {formatCredits(quote.result.equipmentAction.reloadCreditCost)}
                               </p>
                             ) : null}
+                            {quote.result.equipmentActions?.map((action) => (
+                              <p key={action.code}>
+                                <strong>{action.code} [{action.name}]</strong><br />
+                                {action.effect}<br />
+                                {(action.kind ?? "CHARGED") === "CHARGED"
+                                  ? `충전 ${action.maxCharges}/${action.maxCharges}${action.reloadable === false ? " · 재장전 불가" : ` · 재장전 ${formatCredits(action.reloadCreditCost)}`}`
+                                  : "태세 전환 액션"}
+                              </p>
+                            ))}
+                            {quote.result.combatProfile ? (
+                              <p>
+                                {quote.result.combatProfile.ammoCapacity !== undefined
+                                  ? `탄창 ${quote.result.combatProfile.ammoCapacity}/${quote.result.combatProfile.ammoCapacity}`
+                                  : ""}
+                                {quote.result.combatProfile.mount
+                                  ? `${quote.result.combatProfile.ammoCapacity !== undefined ? " · " : ""}거치 ${quote.result.combatProfile.mount.mountActionCost} 액션 / 회수 ${quote.result.combatProfile.mount.unmountActionCost} 액션${quote.result.combatProfile.mount.blocksMovement ? " · 거치 중 이동 불가" : ""}${quote.result.combatProfile.mount.allowsDiagonalFire ? " · 대각선 사격 가능" : ""}`
+                                  : ""}
+                              </p>
+                            ) : null}
                             {quote.result.equipmentAbilityOverrides?.map(
                               (override) => (
                                 <p key={override.targetCode}>
@@ -5383,10 +5433,10 @@ export default function EquipmentShopClient({
                         {quote.materials.length > 0 ? (
                           <ul className={styles.workshopMaterials}>
                             {quote.materials.map((material) => {
-                              const available = availableByItemId.get(material.itemId) ?? 0;
+                              const available = availableMaterialQuantity(material);
                               return (
-                                <li key={material.itemId} data-ready={available >= material.quantity}>
-                                  <span>{material.itemName} · {formatCredits(material.unitPrice)} × {material.quantity}</span>
+                                <li key={`${material.scope ?? "CHARACTER"}:${material.itemId}`} data-ready={available >= material.quantity}>
+                                  <span>{material.itemName} · {formatCredits(material.unitPrice)} × {material.quantity} · {material.scope === "SHARED" ? "공용 인벤토리" : "캐릭터 인벤토리"}</span>
                                   <strong>{available} / {material.quantity} · {formatCredits(material.subtotal)}</strong>
                                 </li>
                               );
