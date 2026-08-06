@@ -7,60 +7,23 @@
     },
     "update": {
       "$set": {
-        "role": "미국 대통령·군부 핵심 인사",
+        "role": "미국 부통령·외부 군부 핵심 인사",
         "lore.weight": "미상",
-        "lore.background": "미합중국 대통령으로 재임 중이며, NOVUS ORDO 내부 요원이 아니라 외부 군부(MILITARY) 권력 블록의 핵심 인사로서 선제 격리·무장 대응 노선을 주도한다.",
+        "lore.background": "미국 정치권에서 두 차례 대통령 임기를 연임한 뒤 부통령으로 자리를 옮긴 전직 대통령이다. NOVUS ORDO 내부 요원이 아니라 외부 군부(MILITARY) 권력 블록의 핵심 인사로서 선제 격리·무장 대응 노선을 주도한다.",
         "lore.loreTags": [
           "미국",
-          "대통령",
+          "부통령",
+          "전직대통령",
           "군부",
           "WASP",
           "기독교근본주의",
-          "백인우월주의"
+          "백인우월주의",
+          "그림자권력"
         ],
-        "lore.roleDetail": "- 공식 직함: 미합중국 대통령 / 외부 군부 핵심 인사\n- 소속 분류: 외부 군부(MILITARY) 미국 정치·군사 라인\n- 내부 권한등급: 없음(시스템상 강제 비교 시에만 V 상당으로 해석하며 agentLevel에는 저장하지 않음)\n- 정책 기조: 이상 현상에 대한 선제 격리·무장 대응, 민간·상업 영역에 대한 군 개입 확대\n- NPC 특성: 전투 요원은 아니며 정책 결정·인사·자금 배분·언론 프레임으로 판을 움직인다.",
+        "lore.roleDetail": "- 공식 직함: 미합중국 부통령 / 외부 군부 핵심 인사\n- 소속 분류: 외부 군부(MILITARY) 미국 정치·군사 라인\n- 내부 권한등급: 없음(시스템상 강제 비교 시에만 V 상당으로 해석하며 agentLevel에는 저장하지 않음)\n- 정책 기조: 이상 현상에 대한 선제 격리·무장 대응, 민간·상업 영역에 대한 군 개입 확대\n- NPC 특성: 전투 요원은 아니며 정책 결정·인사·자금 배분·언론 프레임으로 판을 움직인다.",
         "updatedAt": "2026-08-06T00:00:00.000Z"
       }
     }
-  },
-  {
-    "collection": "session_reports",
-    "type": "wexler-presidency-canon-correction",
-    "filter": {
-      "sessionId": "NOSB-S1E3-PHANTOM"
-    },
-    "update": [
-      {
-        "$set": {
-          "summary": {
-            "$replaceAll": {
-              "input": "$summary",
-              "find": "미국 부통령",
-              "replacement": "미국 대통령"
-            }
-          },
-          "highlights": {
-            "$map": {
-              "input": {
-                "$ifNull": [
-                  "$highlights",
-                  []
-                ]
-              },
-              "as": "highlight",
-              "in": {
-                "$replaceAll": {
-                  "input": "$$highlight",
-                  "find": "미국 부통령",
-                  "replacement": "미국 대통령"
-                }
-              }
-            }
-          },
-          "updatedAt": "2026-08-06T00:00:00.000Z"
-        }
-      }
-    ]
   },
   {
     "collection": "wiki_pages",

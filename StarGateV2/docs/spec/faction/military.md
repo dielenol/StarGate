@@ -11,7 +11,7 @@ notableMembers: [WEXLER, JOHN_WONG, PERK_ESHHALL]
 isPublic: true
 source: manual
 createdAt: 2026-05-14T00:00:00Z
-updatedAt: 2026-07-04T00:00:00Z
+updatedAt: 2026-08-06T00:00:00Z
 ---
 
 ## 이념/가치관
@@ -36,7 +36,7 @@ updatedAt: 2026-07-04T00:00:00Z
 
 ## 주요 인물
 
-- `WEXLER` - 미국 대통령이자 외부 군부 핵심 인사인 캘빈 R. 웩슬러. NOVUS ORDO 내부 `agentLevel`은 없다.
+- `WEXLER` - 미국 부통령이자 전직 대통령이며 외부 군부 핵심 인사인 캘빈 R. 웩슬러. NOVUS ORDO 내부 `agentLevel`은 없다.
 - `JOHN_WONG` - 프라토 1부에서 확인된 CIA 고위 요원.
 - `PERK_ESHHALL` - NOGA 더블린 지부 지부장.
 
