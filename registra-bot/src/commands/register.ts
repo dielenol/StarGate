@@ -10,6 +10,9 @@ import { Cmd, Help } from "../constants/registrar-voice.js";
 import { config } from "../config.js";
 import {
   BALANCE_ROOT,
+  CRAFTING_VOTE_ROOT,
+  CraftingVoteOpt,
+  CraftingVoteSub,
   CREDIT_ROOT,
   CreditOpt,
   CreditSub,
@@ -474,6 +477,139 @@ const BALANCE_CMD = {
 };
 
 /**
+ * `/제작투표` — CENSOR-3 제작 동의 투표.
+ *
+ * 자동 판정 규칙이 확정되지 않았으므로 생성 시 마감·역할·요청참조를 모두
+ * 명시하고, 마감 뒤 관리자가 승인/반려/보류와 사유를 직접 기록합니다.
+ */
+export const CRAFTING_VOTE_CMD = {
+  type: 1 as const,
+  name: CRAFTING_VOTE_ROOT,
+  description: "CENSOR-3 제작 동의 투표를 생성·조회·수동 결론 처리합니다.",
+  default_member_permissions: String(PermissionFlagsBits.ManageGuild),
+  dm_permission: false,
+  options: [
+    {
+      type: 1,
+      name: CraftingVoteSub.create,
+      description: "지정 채널에 CENSOR-3 제작 동의 투표를 등재합니다.",
+      options: [
+        {
+          type: 3,
+          name: CraftingVoteOpt.requestRef,
+          description: "후속 ERP 수동 검토와 연결할 공방 요청 참조값.",
+          required: true,
+          min_length: 1,
+          max_length: 120,
+        },
+        {
+          type: 3,
+          name: CraftingVoteOpt.closeTime,
+          description: "응답 마감. 형식: YYYY-MM-DD HH:mm (24시간).",
+          required: true,
+        },
+        {
+          type: 8,
+          name: CraftingVoteOpt.eligibleRole,
+          description: "이번 건에 실제 투표권을 부여할 관료 역할.",
+          required: true,
+        },
+      ],
+    },
+    {
+      type: 1,
+      name: CraftingVoteSub.status,
+      description: "투표 집계와 상태를 비밀 열람합니다.",
+      options: [
+        {
+          type: 3,
+          name: CraftingVoteOpt.voteId,
+          description: "생성 결과에 표시된 24자리 투표 ID.",
+          required: true,
+          min_length: 24,
+          max_length: 24,
+        },
+      ],
+    },
+    {
+      type: 1,
+      name: CraftingVoteSub.resolve,
+      description: "응답 마감 후 GM 결론과 사유를 기록하고 receipt를 발급합니다.",
+      options: [
+        {
+          type: 3,
+          name: CraftingVoteOpt.voteId,
+          description: "생성 결과에 표시된 24자리 투표 ID.",
+          required: true,
+          min_length: 24,
+          max_length: 24,
+        },
+        {
+          type: 3,
+          name: CraftingVoteOpt.outcome,
+          description: "표 수가 아닌 GM의 명시적인 수동 결론.",
+          required: true,
+          choices: [
+            { name: "승인", value: "APPROVED" },
+            { name: "반려", value: "REJECTED" },
+            { name: "보류", value: "DEFERRED" },
+          ],
+        },
+        {
+          type: 3,
+          name: CraftingVoteOpt.reason,
+          description: "동률·무투표를 포함한 결론 근거. 반드시 직접 기재합니다.",
+          required: true,
+          min_length: 1,
+          max_length: 300,
+        },
+      ],
+    },
+    {
+      type: 1,
+      name: CraftingVoteSub.reconcile,
+      description: "불확실한 Discord 공지 전달 상태를 관리자가 수동 복구합니다.",
+      options: [
+        {
+          type: 3,
+          name: CraftingVoteOpt.voteId,
+          description: "복구할 24자리 투표 ID.",
+          required: true,
+          min_length: 24,
+          max_length: 24,
+        },
+        {
+          type: 3,
+          name: CraftingVoteOpt.reconciliationAction,
+          description: "채널 확인 뒤 선택하는 명시적 복구 동작.",
+          required: true,
+          choices: [
+            { name: "미게시 확인·재시도 허용", value: "CONFIRM_NOT_SENT" },
+            { name: "기존 공지 연결", value: "LINK_EXISTING_MESSAGE" },
+          ],
+        },
+        {
+          type: 3,
+          name: CraftingVoteOpt.messageId,
+          description: "기존 공지 연결 시 필수인 Discord 메시지 ID.",
+          required: false,
+          min_length: 17,
+          max_length: 19,
+        },
+        {
+          type: 3,
+          name: CraftingVoteOpt.reason,
+          description: "채널 확인 내용과 복구 근거.",
+          required: true,
+          min_length: 1,
+          max_length: 300,
+        },
+      ],
+    },
+  ],
+};
+
+/**
  * 슬래시 커맨드를 Discord에 등록합니다.
  */
 export async function registerCommands(): Promise<void> {
@@ -487,6 +623,7 @@ export async function registerCommands(): Promise<void> {
     INFO_EN_CMD,
     CREDIT_CMD,
     BALANCE_CMD,
+    CRAFTING_VOTE_CMD,
   ];
 
   if (config.guildId) {

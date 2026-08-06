@@ -11,11 +11,13 @@ import {
   GatewayIntentBits,
 } from "discord.js";
 import { L } from "./constants/registrar-voice.js";
+import { CRAFTING_VOTE_BUTTON_PREFIX } from "./constants/registrar.js";
 import { config } from "./config.js";
 import { connectDb, closeDb } from "./db/client.js";
 import { registerCommands } from "./commands/register.js";
 import {
   BALANCE_ROOT,
+  CRAFTING_VOTE_ROOT,
   CREDIT_ROOT,
   HELP_ROOT_EN,
   HELP_ROOT_KO,
@@ -25,6 +27,8 @@ import {
   Sub,
 } from "./slash/ko-names.js";
 import { handleButtonInteraction } from "./handlers/button-handler.js";
+import { handleCraftingVoteButton } from "./handlers/crafting-vote-button-handler.js";
+import { handleCraftingVoteCommand } from "./commands/crafting-vote.js";
 import {
   handleCreditCommand,
   handleSelfBalanceCommand,
@@ -141,6 +145,11 @@ client.on(Events.InteractionCreate, (interaction) => {
       return;
     }
 
+    if (safeInteraction.commandName === CRAFTING_VOTE_ROOT) {
+      await handleCraftingVoteCommand(safeInteraction);
+      return;
+    }
+
     if (safeInteraction.commandName !== SCHEDULE_ROOT) return;
 
     const sub = safeInteraction.options.getSubcommand();
@@ -184,7 +193,10 @@ client.on(Events.InteractionCreate, (interaction) => {
 /** 버튼 클릭 시: 가용/불가 응답 처리 */
 client.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isButton()) {
-    void safeHandleInteraction("button", interaction, handleButtonInteraction);
+    const handler = interaction.customId.startsWith(CRAFTING_VOTE_BUTTON_PREFIX)
+      ? handleCraftingVoteButton
+      : handleButtonInteraction;
+    void safeHandleInteraction("button", interaction, handler);
   }
 });
 
