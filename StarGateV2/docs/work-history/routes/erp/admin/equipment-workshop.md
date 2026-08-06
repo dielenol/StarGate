@@ -44,4 +44,4 @@
 - 승인된 결과 이미지와 원본 장비 이미지를 분리하고, seed와 migration은 기본 dry-run 및 수량 drift 차단으로 운영 쓰기를 fail-closed 처리한다.
 - 검증: 공방·VTT·migration 집중 테스트 60건 중 58건 통과·Mongo 통합 2건 skip, `pnpm typecheck`, `pnpm lint`, `pnpm build`, seed payload read-only dry-run, critical risk review
 - 관련 커밋: `44b83580`, `0ca9972c`, `cfb2df1`
-- 후속 작업: 실제 청사진 seed와 CENSOR-3 3발 전환은 운영 DB의 변경 전후 수량을 확인하고 별도 승인 뒤 실행한다.
+- 운영 경계: 청사진 seed는 `equipment_workshop_blueprints`의 `DRAFT` 문서만 만들며 완성품 카탈로그·요청 상태·재료·크레딧·인벤토리를 변경하지 않는다. 깨진 음절 차감과 CENSOR-3 지급, 견적·수락·제작·납품은 공방 운영자가 화면의 정상 흐름에서 처리하고 별도 migration으로 선행하지 않는다.
