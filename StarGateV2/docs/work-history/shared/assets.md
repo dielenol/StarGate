@@ -10,3 +10,12 @@
 - 폰트 정책: Noto Sans KR은 무변경 유지 — 빌드 CSS 실측 gzip 28.5KB이고 weight 배열 지정 시 정적 페이스로 전환돼 오히려 커짐, unicode-range 슬라이싱이 한국어 UI에 최적. 재작업 방지용 기록.
 - 검증: `pnpm typecheck`, `pnpm lint`, `pnpm build`, 프리렌더 HTML의 png/jpg 서빙 0건(OG jpg 제외), 자산 계약 테스트 통과
 - 관련 커밋: `c396c45`, `210f53cc`, `d8bd99ee`, `10c024b2`
+
+## 2026-08-06 · 기능 추가 · ACCEL 캐릭터 자산 연결
+
+- 엘 볼라도르의 메인 초상·픽셀 프로필·픽셀 캐릭터 누끼 WebP를 역할별 경로로 추가했다.
+- `ACCEL` codename을 공용 캐릭터 자산 resolver에 연결해 등록 후 대시보드·공개 플레이어 시트·장비 시뮬레이터가 전용 픽셀 캐릭터를 찾도록 했다.
+- 자산 계약 테스트를 현재 WebP-only 배포 정책과 맞추고 미등록 부분 자산 감지를 유지했다.
+- 검증: 캐릭터 자산 계약 테스트 2건, `pnpm typecheck`, `pnpm lint`, WebP alpha·해상도 확인
+- 관련 커밋: `4b35fdce`
+- 후속 작업: ACCEL 캐릭터의 라이브 등록은 운영 필드 확인과 별도 실행 승인 후 진행한다.
