@@ -1,6 +1,6 @@
 ---
 title: 로어북
-updated: 2026-08-05
+updated: 2026-08-06
 ---
 
 # StarGate 로어북
@@ -72,6 +72,7 @@ docs/lore/
 - [NOSB S1E3 망령 coverage](session-sync/nosb-s1e3-phantom-coverage.md)
 - [NOSB S1E4 프라토 coverage](session-sync/nosb-s1e4-prato-coverage.md)
 - [NOSB S1E5 악 1부 coverage](session-sync/nosb-s1e5-evil-part1-coverage.md)
+- [NOSB S1E5 악 2부 coverage](session-sync/nosb-s1e5-evil-part2-coverage.md)
 
 ### static target baseline
 

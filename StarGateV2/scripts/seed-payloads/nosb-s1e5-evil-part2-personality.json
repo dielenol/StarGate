@@ -1,0 +1,126 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "PECHORIN"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E5-EVIL-PART2:PECHORIN:self-sacrifice",
+          "sessionId": "NOSB-S1E5-EVIL-PART2",
+          "trait": "자기희생적 책임감",
+          "summary": "동료를 지키고 자신의 죽은 몸을 냉각 복구 수단으로 제공해 지휘 책임을 끝까지 수행했다.",
+          "evidence": [
+            {"kind": "action", "text": "웬디고에게서 마가렛과 킴라박을 보호했고"},
+            {"kind": "dialogue", "text": "내가 도와주지"}
+          ],
+          "sourceLabel": "작전 보고서 S1E5: 악 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "KIMLEE"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E5-EVIL-PART2:KIMLEE:anti-expendability",
+          "sessionId": "NOSB-S1E5-EVIL-PART2",
+          "trait": "소모품화 거부",
+          "summary": "전투 효율보다 병사의 생존을 우선하고 즉결처형을 물리적으로 저지했다.",
+          "evidence": [
+            {"kind": "action", "text": "자폭 임무를 맡은 병사를 유인해 구하고 페초린의 권총을 쏘아 즉결처형을 막은 뒤"},
+            {"kind": "dialogue", "text": "우리 식으로 처리하겠습니다"}
+          ],
+          "sourceLabel": "작전 보고서 S1E5: 악 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "MARGARET"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E5-EVIL-PART2:MARGARET:total-commitment",
+          "sessionId": "NOSB-S1E5-EVIL-PART2",
+          "trait": "극단적 임무 헌신",
+          "summary": "자신의 정신력을 전부 소모하는 대가를 감수하고 유지시설 냉각 복구를 완수했다.",
+          "evidence": [
+            {"kind": "action", "text": "모든 정신력을 사용해 페초린의 시체를 조종하고 수동 냉각 장치를 활성화함"}
+          ],
+          "sourceLabel": "작전 보고서 S1E5: 악 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "INDEXER"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E5-EVIL-PART2:INDEXER:procedural-skepticism",
+          "sessionId": "NOSB-S1E5-EVIL-PART2",
+          "trait": "절차적 회의와 견제",
+          "summary": "권력 교체의 목적만으로 충분하다고 보지 않고 후계자와 선례, 처분 절차를 계속 검증했다.",
+          "evidence": [
+            {"kind": "dialogue", "text": "R에게 교체 적임자와 실각의 선례를 반복 질의했고 제압된 로드리온은 본부 인계를 주장함"}
+          ],
+          "sourceLabel": "작전 보고서 S1E5: 악 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "TIME"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E5-EVIL-PART2:TIME:civilian-life-priority",
+          "sessionId": "NOSB-S1E5-EVIL-PART2",
+          "trait": "민간인 생명 우선",
+          "summary": "정치적 손익보다 구조 가능한 민간인의 생명을 우선해야 한다고 일관되게 주장했다.",
+          "evidence": [
+            {"kind": "dialogue", "text": "누구도 죽어 마땅한 사람은 없습니다"},
+            {"kind": "dialogue", "text": "한 사람이라도 더 희생을 막아야"}
+          ],
+          "sourceLabel": "작전 보고서 S1E5: 악 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "CLAIRVOYANCE"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E5-EVIL-PART2:CLAIRVOYANCE:pragmatic-mediation",
+          "sessionId": "NOSB-S1E5-EVIL-PART2",
+          "trait": "실용적 중재",
+          "summary": "양립하지 않는 주장 사이에서 즉시 실행 가능한 구조·철수안을 만들어 결정을 종결했다.",
+          "evidence": [
+            {"kind": "action", "text": "대립 중인 일행 사이에 개입해"},
+            {"kind": "dialogue", "text": "철수, 세 동료 구조와 이동식 회수·상황 보고를 하나의 실행안으로 제시함"}
+          ],
+          "sourceLabel": "작전 보고서 S1E5: 악 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  }
+]
