@@ -12,6 +12,7 @@ import { isValidObjectId } from "@/lib/db/utils";
 import { findVisibleWikiPageById, listWikiPageRefs } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
 import {
+  formatRelatedPersonnelMeta,
   relatedPersonnelForReports,
   relatedReportsForWiki,
 } from "@/lib/lore-links";
@@ -438,7 +439,7 @@ export default async function WikiDetailPage({
                   >
                     <LinkPendingProbe />
                     <span className={styles.related__meta}>
-                      {character.type} · {character.agentLevel ?? "U"}
+                      {formatRelatedPersonnelMeta(character)}
                     </span>
                     <span className={styles.related__title}>
                       {character.name}

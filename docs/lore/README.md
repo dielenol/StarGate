@@ -73,6 +73,7 @@ docs/lore/
 - [NOSB S1E4 프라토 coverage](session-sync/nosb-s1e4-prato-coverage.md)
 - [NOSB S1E5 악 1부 coverage](session-sync/nosb-s1e5-evil-part1-coverage.md)
 - [NOSB S1E5 악 2부 coverage](session-sync/nosb-s1e5-evil-part2-coverage.md)
+- [NOSB S1E5 악 2부 NPC 적용 명세](session-sync/nosb-s1e5-evil-part2-npc-apply.md)
 
 ### static target baseline
 

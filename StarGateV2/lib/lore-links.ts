@@ -26,6 +26,14 @@ export interface RelatedPersonnelLink {
   aliases?: string[];
 }
 
+export function formatRelatedPersonnelMeta(
+  character: Pick<RelatedPersonnelLink, "type" | "agentLevel">,
+): string {
+  return character.agentLevel
+    ? `${character.type} · ${character.agentLevel}`
+    : character.type;
+}
+
 export interface RelatedReportLink {
   id: string;
   sessionId: string;

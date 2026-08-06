@@ -1,0 +1,75 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "GERASIMOV"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "RODION",
+              "targetName": "로드리온 로마노비치 라스콜니코프",
+              "label": "섹터 C 지도부 경쟁",
+              "summary": "섹터 C 국영화와 지휘권을 두고 대립했으며, 두 사람 모두 지도부 처리 과정에서 사망했다.",
+              "sourceEvent": "NOSB-S1E5-EVIL-PART2",
+              "sourceLabel": "작전 보고서 S1E5: 악 2부",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "OTILIA",
+              "targetName": "오틸리아 발트만",
+              "label": "지도부 처단",
+              "summary": "지도부 처리 투표 결과에 따라 오틸리아의 공격을 받고 사망했다.",
+              "sourceEvent": "NOSB-S1E5-EVIL-PART2",
+              "sourceLabel": "작전 보고서 S1E5: 악 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "RODION"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "GERASIMOV",
+          "targetName": "게라쉬모프",
+          "label": "섹터 C 지도부 경쟁",
+          "summary": "섹터 C 국영화와 지휘권을 두고 대립했으며, 두 사람 모두 지도부 처리 과정에서 사망했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART2",
+          "sourceLabel": "작전 보고서 S1E5: 악 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "OTILIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "GERASIMOV",
+          "targetName": "게라쉬모프",
+          "label": "지도부 처단",
+          "summary": "지도부 처리 투표 결과에 따라 게라쉬모프를 공격했고, 게라쉬모프는 이 공격으로 사망했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART2",
+          "sourceLabel": "작전 보고서 S1E5: 악 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  }
+]

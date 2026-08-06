@@ -37,9 +37,21 @@ async function loadLoreLinksModule() {
 }
 
 const {
+  formatRelatedPersonnelMeta,
   relatedPersonnelLinkMatchesParticipant,
   toRelatedPersonnelLink,
 } = await loadLoreLinksModule();
+
+test("연관 인물 메타는 미지정 권한등급을 U로 만들지 않는다", () => {
+  assert.equal(
+    formatRelatedPersonnelMeta({ type: "NPC", agentLevel: undefined }),
+    "NPC",
+  );
+  assert.equal(
+    formatRelatedPersonnelMeta({ type: "NPC", agentLevel: "H" }),
+    "NPC · H",
+  );
+});
 
 function character(overrides = {}) {
   return {

@@ -21,6 +21,7 @@ import {
   formatShortReporterName,
 } from "@/lib/format/session-report";
 import {
+  formatRelatedPersonnelMeta,
   type RelatedPersonnelLink,
   relatedPersonnelLinkMatchesParticipant,
   relatedPersonnelForReport,
@@ -398,7 +399,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
                       >
                         <LinkPendingProbe />
                         <span className={styles.relatedWiki__category}>
-                          {character.type} · {character.agentLevel ?? "U"}
+                          {formatRelatedPersonnelMeta(character)}
                         </span>
                         <span className={styles.relatedWiki__title}>
                           {character.name}

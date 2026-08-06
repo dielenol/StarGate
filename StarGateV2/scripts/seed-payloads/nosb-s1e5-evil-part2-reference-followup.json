@@ -1,0 +1,44 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "operation-report-reference-followup",
+    "filter": {
+      "sessionId": "NOSB-S1E5-EVIL-PART2"
+    },
+    "update": [
+      {
+        "$set": {
+          "relatedWikiSlugs": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$relatedWikiSlugs",
+                  []
+                ]
+              },
+              [
+                "sector-c-electrical-orb",
+                "sector-c-strigoi",
+                "sector-c-mammoth"
+              ]
+            ]
+          },
+          "relatedPersonnelCodenames": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$relatedPersonnelCodenames",
+                  []
+                ]
+              },
+              [
+                "GERASIMOV",
+                "RUBIN_BABUSHKA"
+              ]
+            ]
+          }
+        }
+      }
+    ]
+  }
+]
