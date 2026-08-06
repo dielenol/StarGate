@@ -201,7 +201,8 @@ export function idleMusicPanelView(notice: string | null = null): MusicPanelView
 export class MusicPanel {
   private channel: TextChannel | null = null;
   private message: Message<true> | null = null;
-  private updateChain: Promise<void> = Promise.resolve();
+  private pendingView: MusicPanelView | null = null;
+  private updateDrain: Promise<void> | null = null;
 
   constructor(
     private readonly client: Client,
@@ -218,15 +219,31 @@ export class MusicPanel {
   }
 
   update(view: MusicPanelView): void {
-    const snapshot: MusicPanelView = {
+    this.pendingView = {
       ...view,
       upcoming: [...view.upcoming],
     };
-    this.updateChain = this.updateChain
-      .then(() => this.upsert(snapshot))
+    this.startUpdateDrain();
+  }
+
+  private startUpdateDrain(): void {
+    if (this.updateDrain) return;
+    this.updateDrain = this.drainUpdates()
       .catch((error) => {
         console.error("[music] 상태판 갱신 실패:", error);
+      })
+      .finally(() => {
+        this.updateDrain = null;
+        if (this.pendingView) this.startUpdateDrain();
       });
+  }
+
+  private async drainUpdates(): Promise<void> {
+    while (this.pendingView) {
+      const view = this.pendingView;
+      this.pendingView = null;
+      await this.upsert(view);
+    }
   }
 
   updateIdle(notice: string | null = null): void {
@@ -234,7 +251,9 @@ export class MusicPanel {
   }
 
   async flush(): Promise<void> {
-    await this.updateChain;
+    while (this.updateDrain) {
+      await this.updateDrain;
+    }
   }
 
   private async getChannel(): Promise<TextChannel> {

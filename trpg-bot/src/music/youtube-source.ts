@@ -7,7 +7,11 @@
 
 import { spawn } from "node:child_process";
 
-import type { AudioQualityMode } from "./types.js";
+import {
+  MusicOperationAbortedError,
+  isMusicOperationAbortedError,
+  type AudioQualityMode,
+} from "./types.js";
 
 const YT_DLP_TIMEOUT_MS = 45_000;
 const PROCESS_OUTPUT_LIMIT_BYTES = 8 * 1024 * 1024;
@@ -67,6 +71,10 @@ export interface YoutubeMediaSource {
 export interface MusicRuntimeInfo {
   ytDlpVersion: string;
   ffmpegVersion: string;
+}
+
+export interface YoutubeResolveOptions {
+  signal?: AbortSignal;
 }
 
 export class YoutubeSourceError extends Error {
@@ -160,11 +168,19 @@ function appendWithLimit(
   return nextBytes;
 }
 
+function abortedOperation(signal: AbortSignal | undefined): MusicOperationAbortedError {
+  return signal?.reason instanceof MusicOperationAbortedError
+    ? signal.reason
+    : new MusicOperationAbortedError();
+}
+
 async function runProcess(
   executable: string,
   args: string[],
   timeoutMs: number,
+  signal?: AbortSignal,
 ): Promise<{ stdout: string; stderr: string }> {
+  if (signal?.aborted) throw abortedOperation(signal);
   return new Promise((resolve, reject) => {
     const child = spawn(executable, args, {
       shell: false,
@@ -177,10 +193,15 @@ async function runProcess(
     let stderrBytes = 0;
     let settled = false;
 
+    const cleanup = (): void => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", handleAbort);
+    };
+
     const finishReject = (error: Error): void => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      cleanup();
       if (!child.killed) child.kill("SIGKILL");
       reject(error);
     };
@@ -194,6 +215,16 @@ async function runProcess(
       );
     }, timeoutMs);
     timer.unref();
+
+    function handleAbort(): void {
+      finishReject(abortedOperation(signal));
+    }
+
+    signal?.addEventListener("abort", handleAbort, { once: true });
+    if (signal?.aborted) {
+      handleAbort();
+      return;
+    }
 
     child.stdout.on("data", (chunk: Buffer) => {
       try {
@@ -221,7 +252,7 @@ async function runProcess(
     child.once("close", (code, signal) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      cleanup();
       const stdout = Buffer.concat(stdoutChunks).toString("utf8");
       const stderr = Buffer.concat(stderrChunks).toString("utf8");
       if (code !== 0) {
@@ -434,6 +465,7 @@ function sourceFailureMessage(error: unknown): string {
 
 export async function resolveYoutubeTrack(
   rawInput: string,
+  options: YoutubeResolveOptions = {},
 ): Promise<YoutubeTrackMetadata> {
   const input = normalizeYoutubeRequest(rawInput);
   try {
@@ -441,9 +473,11 @@ export async function resolveYoutubeTrack(
       getYtDlpExecutable(),
       ytDlpInfoArgs(input),
       YT_DLP_TIMEOUT_MS,
+      options.signal,
     );
     return parseYoutubeTrackMetadata(stdout);
   } catch (error) {
+    if (isMusicOperationAbortedError(error)) throw error;
     if (error instanceof YoutubeSourceError) throw error;
     throw new YoutubeSourceError(sourceFailureMessage(error), { cause: error });
   }
@@ -451,15 +485,18 @@ export async function resolveYoutubeTrack(
 
 export async function resolveYoutubeMedia(
   videoUrl: string,
+  options: YoutubeResolveOptions = {},
 ): Promise<YoutubeMediaSource> {
   try {
     const { stdout } = await runProcess(
       getYtDlpExecutable(),
       ytDlpInfoArgs(normalizeYoutubeRequest(videoUrl)),
       YT_DLP_TIMEOUT_MS,
+      options.signal,
     );
     return parseYoutubeMediaSource(stdout);
   } catch (error) {
+    if (isMusicOperationAbortedError(error)) throw error;
     if (error instanceof YoutubeSourceError) throw error;
     throw new YoutubeSourceError(sourceFailureMessage(error), { cause: error });
   }

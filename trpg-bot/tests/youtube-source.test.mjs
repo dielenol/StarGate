@@ -6,8 +6,13 @@ import {
   normalizeYoutubeRequest,
   parseYoutubeMediaSource,
   parseYoutubeTrackMetadata,
+  resolveYoutubeTrack,
   YoutubeSourceError,
 } from "../dist/music/youtube-source.js";
+import {
+  MusicOperationAbortedError,
+  isMusicOperationAbortedError,
+} from "../dist/music/types.js";
 
 test("검색어는 ytsearch1 한 건 검색으로 제한한다", () => {
   assert.equal(normalizeYoutubeRequest("  test song  "), "ytsearch1:test song");
@@ -132,5 +137,16 @@ test("yt-dlp가 반환한 비 HTTP 미디어 주소를 거부한다", () => {
         }),
       ),
     (error) => error instanceof YoutubeSourceError,
+  );
+});
+
+test("이미 취소된 해석 요청은 yt-dlp 실행 전에 종료한다", async () => {
+  const controller = new AbortController();
+  controller.abort(new MusicOperationAbortedError("해석 취소"));
+
+  await assert.rejects(
+    resolveYoutubeTrack("테스트 곡", { signal: controller.signal }),
+    (error) =>
+      isMusicOperationAbortedError(error) && error.message === "해석 취소",
   );
 });

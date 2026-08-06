@@ -24,11 +24,14 @@ import type {
 
 import {
   createYoutubeAudioResource,
+  type AudioResourceRequestOptions,
   type ManagedAudioResource,
 } from "./audio-source.js";
 import { MusicPanel } from "./music-panel.js";
 import {
+  MusicOperationAbortedError,
   MusicUserError,
+  isMusicOperationAbortedError,
   type AudioQualityMode,
   type MusicTrack,
 } from "./types.js";
@@ -37,12 +40,15 @@ import {
   resolveYoutubeTrack,
   YoutubeSourceError,
   type MusicRuntimeInfo,
+  type YoutubeResolveOptions,
+  type YoutubeTrackMetadata,
 } from "./youtube-source.js";
 
 const MAX_QUEUED_TRACKS = 100;
 const IDLE_DISCONNECT_MS = 5 * 60_000;
 const EMPTY_CHANNEL_DISCONNECT_MS = 30_000;
 const VOICE_READY_TIMEOUT_MS = 30_000;
+const MAX_CONCURRENT_RESOLUTIONS_PER_GUILD = 2;
 
 export interface QueueSnapshot {
   current: MusicTrack | null;
@@ -65,12 +71,68 @@ interface EnqueueRequest {
   requestedByName: string;
 }
 
-class GuildMusicSession {
-  private readonly player: AudioPlayer;
+type TrackResolver = (
+  rawInput: string,
+  options?: YoutubeResolveOptions,
+) => Promise<YoutubeTrackMetadata>;
+
+type SessionConnector = (
+  channel: VoiceBasedChannel,
+  panel: MusicPanel,
+  onDestroyed: (session: GuildMusicSession, notice: string) => void,
+) => Promise<GuildMusicSession>;
+
+interface PendingMusicSession {
+  voiceChannelId: string;
+  promise: Promise<GuildMusicSession>;
+}
+
+interface TrackRequestReservation {
+  signal: AbortSignal;
+  finishResolution(): void;
+  release(): void;
+}
+
+export interface MusicServiceDependencies {
+  panel: MusicPanel;
+  resolveTrack: TrackResolver;
+  inspectRuntime: () => Promise<MusicRuntimeInfo>;
+  connectSession: SessionConnector;
+  maxConcurrentResolutionsPerGuild: number;
+}
+
+type AudioResourceFactory = (
+  track: MusicTrack,
+  options?: AudioResourceRequestOptions,
+) => Promise<ManagedAudioResource>;
+
+export interface GuildMusicSessionDependencies {
+  createAudioResource: AudioResourceFactory;
+  idleDisconnectMs: number;
+  emptyChannelDisconnectMs: number;
+}
+
+const DEFAULT_SESSION_DEPENDENCIES: GuildMusicSessionDependencies = {
+  createAudioResource: createYoutubeAudioResource,
+  idleDisconnectMs: IDLE_DISCONNECT_MS,
+  emptyChannelDisconnectMs: EMPTY_CHANNEL_DISCONNECT_MS,
+};
+
+function createMusicAudioPlayer(): AudioPlayer {
+  return createAudioPlayer({
+    behaviors: {
+      noSubscriber: NoSubscriberBehavior.Pause,
+    },
+  });
+}
+
+export class GuildMusicSession {
+  private readonly dependencies: GuildMusicSessionDependencies;
   private readonly queue: MusicTrack[] = [];
   private current: MusicTrack | null = null;
   private currentQualityMode: AudioQualityMode | null = null;
   private activeResource: ManagedAudioResource | null = null;
+  private resourceAbortController: AbortController | null = null;
   private idleTimer: NodeJS.Timeout | null = null;
   private emptyChannelTimer: NodeJS.Timeout | null = null;
   private startChain: Promise<void> = Promise.resolve();
@@ -78,7 +140,7 @@ class GuildMusicSession {
   private recentError: string | null = null;
   private destroyed = false;
 
-  private constructor(
+  constructor(
     readonly guildId: string,
     readonly voiceChannelId: string,
     private readonly connection: VoiceConnection,
@@ -87,12 +149,13 @@ class GuildMusicSession {
       session: GuildMusicSession,
       notice: string,
     ) => void,
+    private readonly player: AudioPlayer = createMusicAudioPlayer(),
+    dependencies: Partial<GuildMusicSessionDependencies> = {},
   ) {
-    this.player = createAudioPlayer({
-      behaviors: {
-        noSubscriber: NoSubscriberBehavior.Pause,
-      },
-    });
+    this.dependencies = {
+      ...DEFAULT_SESSION_DEPENDENCIES,
+      ...dependencies,
+    };
     this.connection.subscribe(this.player);
 
     this.player.on("stateChange", (oldState, newState) => {
@@ -186,7 +249,9 @@ class GuildMusicSession {
     this.recentError = null;
     const startedImmediately = this.current === null && this.queue.length === 0;
     this.queue.push(track);
-    const queuePosition = startedImmediately ? 0 : this.queue.length;
+    const queuePosition = startedImmediately
+      ? 0
+      : this.queue.length - (this.current ? 0 : 1);
     this.syncPanel();
     this.queueStart();
     return { track, startedImmediately, queuePosition };
@@ -263,7 +328,7 @@ class GuildMusicSession {
       ) {
         this.dispose(true, "청취자가 없어 음성 채널에서 자동으로 나갔습니다.");
       }
-    }, EMPTY_CHANNEL_DISCONNECT_MS);
+    }, this.dependencies.emptyChannelDisconnectMs);
     this.emptyChannelTimer.unref();
   }
 
@@ -289,13 +354,23 @@ class GuildMusicSession {
     this.clearIdleTimer();
     this.syncPanel();
 
+    const resourceController = new AbortController();
+    this.resourceAbortController = resourceController;
     try {
-      const managed = await createYoutubeAudioResource(next);
+      const managed = await this.dependencies.createAudioResource(next, {
+        signal: resourceController.signal,
+      });
       if (
         this.destroyed ||
         this.playbackToken !== token ||
         this.current !== next
       ) {
+        if (this.resourceAbortController === resourceController) {
+          this.resourceAbortController = null;
+        }
+        if (!resourceController.signal.aborted) {
+          resourceController.abort(new MusicOperationAbortedError());
+        }
         managed.dispose();
         return;
       }
@@ -304,6 +379,20 @@ class GuildMusicSession {
       this.player.play(managed.resource);
       this.syncPanel();
     } catch (error) {
+      const expectedCancellation =
+        isMusicOperationAbortedError(error) &&
+        (this.destroyed ||
+          this.playbackToken !== token ||
+          this.current !== next);
+      if (this.resourceAbortController === resourceController) {
+        this.resourceAbortController = null;
+      }
+      if (!resourceController.signal.aborted) {
+        resourceController.abort(new MusicOperationAbortedError());
+      }
+      this.activeResource?.dispose();
+      this.activeResource = null;
+      if (expectedCancellation) return;
       console.error(
         `[music] 트랙 재생 준비 실패 guild=${this.guildId} track=${next.videoId}:`,
         error,
@@ -333,6 +422,11 @@ class GuildMusicSession {
   }
 
   private disposeActiveResource(): void {
+    const controller = this.resourceAbortController;
+    this.resourceAbortController = null;
+    if (controller && !controller.signal.aborted) {
+      controller.abort(new MusicOperationAbortedError());
+    }
     this.activeResource?.dispose();
     this.activeResource = null;
   }
@@ -394,7 +488,7 @@ class GuildMusicSession {
       if (!this.current && this.queue.length === 0) {
         this.dispose(true, "대기열이 5분간 비어 있어 자동으로 나갔습니다.");
       }
-    }, IDLE_DISCONNECT_MS);
+    }, this.dependencies.idleDisconnectMs);
     this.idleTimer.unref();
   }
 
@@ -448,16 +542,43 @@ class GuildMusicSession {
 
 export class MusicService {
   private readonly sessions = new Map<string, GuildMusicSession>();
-  private readonly pendingSessions = new Map<
+  private readonly pendingSessions = new Map<string, PendingMusicSession>();
+  private readonly reservedTrackSlots = new Map<string, number>();
+  private readonly activeResolutions = new Map<string, number>();
+  private readonly reservedVoiceChannelIds = new Map<string, string>();
+  private readonly pendingRequestControllers = new Map<
     string,
-    Promise<GuildMusicSession>
+    Set<AbortController>
   >();
   private readonly panel: MusicPanel;
+  private readonly resolveTrack: TrackResolver;
+  private readonly inspectRuntime: () => Promise<MusicRuntimeInfo>;
+  private readonly connectSession: SessionConnector;
+  private readonly maxConcurrentResolutionsPerGuild: number;
   private runtimeInfo: MusicRuntimeInfo | null = null;
   private runtimeError: string | null = "음악 재생 런타임을 아직 확인하지 않았습니다.";
 
-  constructor(client: Client, guildId: string, musicChannelId: string | undefined) {
-    this.panel = new MusicPanel(client, guildId, musicChannelId);
+  constructor(
+    client: Client,
+    guildId: string,
+    musicChannelId: string | undefined,
+    dependencies: Partial<MusicServiceDependencies> = {},
+  ) {
+    this.panel =
+      dependencies.panel ?? new MusicPanel(client, guildId, musicChannelId);
+    this.resolveTrack = dependencies.resolveTrack ?? resolveYoutubeTrack;
+    this.inspectRuntime = dependencies.inspectRuntime ?? inspectMusicRuntime;
+    this.connectSession =
+      dependencies.connectSession ?? GuildMusicSession.connect;
+    const resolutionLimit =
+      dependencies.maxConcurrentResolutionsPerGuild ??
+      MAX_CONCURRENT_RESOLUTIONS_PER_GUILD;
+    this.maxConcurrentResolutionsPerGuild = Math.max(
+      1,
+      Number.isFinite(resolutionLimit)
+        ? Math.floor(resolutionLimit)
+        : MAX_CONCURRENT_RESOLUTIONS_PER_GUILD,
+    );
   }
 
   async initialize(): Promise<MusicRuntimeInfo> {
@@ -465,7 +586,7 @@ export class MusicService {
     try {
       await this.panel.initialize();
       panelReady = true;
-      this.runtimeInfo = await inspectMusicRuntime();
+      this.runtimeInfo = await this.inspectRuntime();
       this.runtimeError = null;
       return this.runtimeInfo;
     } catch (error) {
@@ -494,39 +615,54 @@ export class MusicService {
 
   async resolveAndEnqueue(request: EnqueueRequest): Promise<EnqueueResult> {
     this.assertRuntimeReady();
-    const existing = this.sessions.get(request.guild.id);
-    if (existing) {
-      this.assertSameChannel(existing, request.voiceChannel.id);
-      existing.assertCanAcceptTrack();
-    }
-
-    let metadata;
-    try {
-      metadata = await resolveYoutubeTrack(request.query);
-    } catch (error) {
-      if (error instanceof YoutubeSourceError) {
-        throw new MusicUserError(error.message, { cause: error });
-      }
-      throw error;
-    }
-
-    if (
-      request.guild.voiceStates.cache.get(request.requestedBy.id)?.channelId !==
-      request.voiceChannel.id
-    ) {
-      throw new MusicUserError("검색 중 음성 채널에서 나갔습니다. 다시 시도해 주세요.");
-    }
-
-    const session = await this.getOrCreateSession(
-      request.guild,
-      request.voiceChannel,
+    const reservation = this.reserveTrackRequest(
+      request.guild.id,
+      request.voiceChannel.id,
     );
-    const track: MusicTrack = {
-      ...metadata,
-      requestedById: request.requestedBy.id,
-      requestedByName: request.requestedByName,
-    };
-    return session.enqueue(track);
+    try {
+      let metadata: YoutubeTrackMetadata;
+      try {
+        metadata = await this.resolveTrack(request.query, {
+          signal: reservation.signal,
+        });
+      } catch (error) {
+        if (isMusicOperationAbortedError(error)) {
+          throw new MusicUserError("재생 요청이 취소되었습니다.", {
+            cause: error,
+          });
+        }
+        if (error instanceof YoutubeSourceError) {
+          throw new MusicUserError(error.message, { cause: error });
+        }
+        throw error;
+      } finally {
+        reservation.finishResolution();
+      }
+      this.assertTrackRequestActive(reservation.signal);
+
+      if (
+        request.guild.voiceStates.cache.get(request.requestedBy.id)?.channelId !==
+        request.voiceChannel.id
+      ) {
+        throw new MusicUserError(
+          "검색 중 음성 채널에서 나갔습니다. 다시 시도해 주세요.",
+        );
+      }
+
+      const session = await this.getOrCreateSession(
+        request.guild,
+        request.voiceChannel,
+      );
+      this.assertTrackRequestActive(reservation.signal);
+      const track: MusicTrack = {
+        ...metadata,
+        requestedById: request.requestedBy.id,
+        requestedByName: request.requestedByName,
+      };
+      return session.enqueue(track);
+    } finally {
+      reservation.release();
+    }
   }
 
   getSnapshot(guildId: string): QueueSnapshot | null {
@@ -550,11 +686,13 @@ export class MusicService {
 
   stop(guildId: string, voiceChannelId: string): number {
     const session = this.requireSession(guildId, voiceChannelId);
-    return session.stop();
+    const cancelledRequests = this.cancelPendingTrackRequests(guildId);
+    return session.stop() + cancelledRequests;
   }
 
   leave(guildId: string, voiceChannelId: string): void {
     const session = this.requireSession(guildId, voiceChannelId);
+    this.cancelPendingTrackRequests(guildId);
     session.disconnect();
   }
 
@@ -572,6 +710,9 @@ export class MusicService {
   }
 
   async destroyAll(): Promise<void> {
+    for (const guildId of this.pendingRequestControllers.keys()) {
+      this.cancelPendingTrackRequests(guildId);
+    }
     for (const session of [...this.sessions.values()]) {
       session.disconnect("봇이 종료되어 음악 재생을 정리했습니다.");
     }
@@ -591,22 +732,31 @@ export class MusicService {
 
     const pending = this.pendingSessions.get(guild.id);
     if (pending) {
-      const session = await pending;
+      if (pending.voiceChannelId !== channel.id) {
+        throw new MusicUserError(
+          "봇과 같은 음성 채널에서 명령을 사용해 주세요.",
+        );
+      }
+      const session = await pending.promise;
       this.assertSameChannel(session, channel.id);
       return session;
     }
 
-    const connectionPromise = GuildMusicSession.connect(
+    const connectionPromise = this.connectSession(
       channel,
       this.panel,
       (session, notice) => {
         if (this.sessions.get(session.guildId) === session) {
           this.sessions.delete(session.guildId);
+          this.cancelPendingTrackRequests(session.guildId);
           this.panel.updateIdle(notice);
         }
       },
     );
-    this.pendingSessions.set(guild.id, connectionPromise);
+    this.pendingSessions.set(guild.id, {
+      voiceChannelId: channel.id,
+      promise: connectionPromise,
+    });
     try {
       const session = await connectionPromise;
       this.sessions.set(guild.id, session);
@@ -636,5 +786,108 @@ export class MusicService {
     if (session.voiceChannelId !== voiceChannelId) {
       throw new MusicUserError("봇과 같은 음성 채널에서 명령을 사용해 주세요.");
     }
+  }
+
+  private reserveTrackRequest(
+    guildId: string,
+    voiceChannelId: string,
+  ): TrackRequestReservation {
+    const session = this.sessions.get(guildId);
+    if (session) this.assertSameChannel(session, voiceChannelId);
+
+    const pendingSession = this.pendingSessions.get(guildId);
+    if (
+      pendingSession &&
+      pendingSession.voiceChannelId !== voiceChannelId
+    ) {
+      throw new MusicUserError(
+        "봇과 같은 음성 채널에서 명령을 사용해 주세요.",
+      );
+    }
+
+    const reservedVoiceChannelId = this.reservedVoiceChannelIds.get(guildId);
+    if (
+      reservedVoiceChannelId &&
+      reservedVoiceChannelId !== voiceChannelId
+    ) {
+      throw new MusicUserError(
+        "봇과 같은 음성 채널에서 명령을 사용해 주세요.",
+      );
+    }
+
+    const reservedSlots = this.reservedTrackSlots.get(guildId) ?? 0;
+    if ((session?.totalTrackCount ?? 0) + reservedSlots >= MAX_QUEUED_TRACKS) {
+      throw new MusicUserError(
+        `대기열은 최대 ${MAX_QUEUED_TRACKS}곡까지 추가할 수 있습니다.`,
+      );
+    }
+
+    const activeResolutions = this.activeResolutions.get(guildId) ?? 0;
+    if (activeResolutions >= this.maxConcurrentResolutionsPerGuild) {
+      throw new MusicUserError(
+        "현재 YouTube 요청을 여러 개 처리 중입니다. 잠시 뒤 다시 시도해 주세요.",
+      );
+    }
+
+    const controller = new AbortController();
+    const controllers =
+      this.pendingRequestControllers.get(guildId) ?? new Set<AbortController>();
+    controllers.add(controller);
+    this.pendingRequestControllers.set(guildId, controllers);
+    this.reservedTrackSlots.set(guildId, reservedSlots + 1);
+    this.reservedVoiceChannelIds.set(guildId, voiceChannelId);
+    this.activeResolutions.set(guildId, activeResolutions + 1);
+
+    let resolving = true;
+    let released = false;
+    const finishResolution = (): void => {
+      if (!resolving) return;
+      resolving = false;
+      this.decrementCounter(this.activeResolutions, guildId);
+    };
+    const release = (): void => {
+      if (released) return;
+      released = true;
+      finishResolution();
+      this.decrementCounter(this.reservedTrackSlots, guildId);
+      controllers.delete(controller);
+      if (controllers.size === 0) {
+        this.pendingRequestControllers.delete(guildId);
+      }
+      if (!this.reservedTrackSlots.has(guildId)) {
+        this.reservedVoiceChannelIds.delete(guildId);
+      }
+    };
+    return { signal: controller.signal, finishResolution, release };
+  }
+
+  private cancelPendingTrackRequests(guildId: string): number {
+    const controllers = this.pendingRequestControllers.get(guildId);
+    if (!controllers) return 0;
+    let cancelled = 0;
+    for (const controller of controllers) {
+      if (controller.signal.aborted) continue;
+      controller.abort(
+        new MusicOperationAbortedError("재생 요청이 취소되었습니다."),
+      );
+      cancelled += 1;
+    }
+    return cancelled;
+  }
+
+  private assertTrackRequestActive(signal: AbortSignal): void {
+    if (!signal.aborted) return;
+    throw new MusicUserError("재생 요청이 취소되었습니다.", {
+      cause:
+        signal.reason instanceof Error
+          ? signal.reason
+          : new MusicOperationAbortedError(),
+    });
+  }
+
+  private decrementCounter(map: Map<string, number>, guildId: string): void {
+    const next = (map.get(guildId) ?? 1) - 1;
+    if (next <= 0) map.delete(guildId);
+    else map.set(guildId, next);
   }
 }

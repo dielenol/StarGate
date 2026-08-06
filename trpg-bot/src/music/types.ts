@@ -21,3 +21,17 @@ export class MusicUserError extends Error {
     this.name = "MusicUserError";
   }
 }
+
+/** 스킵·정지·퇴장·종료로 정상 취소된 음악 준비 작업. */
+export class MusicOperationAbortedError extends Error {
+  constructor(message = "음악 재생 준비가 취소되었습니다.", options?: ErrorOptions) {
+    super(message, options);
+    this.name = "MusicOperationAbortedError";
+  }
+}
+
+export function isMusicOperationAbortedError(
+  error: unknown,
+): error is MusicOperationAbortedError {
+  return error instanceof MusicOperationAbortedError;
+}

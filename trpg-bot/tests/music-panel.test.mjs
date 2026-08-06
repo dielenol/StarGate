@@ -131,6 +131,83 @@ test("기존 상태판을 복구한 뒤 새 메시지 없이 순서대로 수정
   ]);
 });
 
+test("편집 중 상태가 여러 번 바뀌면 현재 편집과 최신 상태만 반영한다", async () => {
+  const editedTitles = [];
+  let releaseBlockedEdit;
+  let blockNextEdit = false;
+  const existingMessage = {
+    author: { id: "bot-user" },
+    embeds: [{ footer: { text: "다채봇 음악 상태판 · 기존 메시지" } }],
+    async edit(payload) {
+      editedTitles.push(payload.embeds[0].toJSON().title);
+      if (!blockNextEdit) return this;
+      blockNextEdit = false;
+      return new Promise((resolve) => {
+        releaseBlockedEdit = () => resolve(this);
+      });
+    },
+  };
+  const channel = {
+    type: 0,
+    guildId: "guild-id",
+    messages: {
+      async fetch() {
+        return {
+          find(predicate) {
+            return predicate(existingMessage) ? existingMessage : undefined;
+          },
+        };
+      },
+    },
+    async send() {
+      throw new Error("기존 상태판을 재사용해야 합니다.");
+    },
+  };
+  const panel = new MusicPanel(
+    {
+      user: { id: "bot-user" },
+      channels: { fetch: async () => channel },
+    },
+    "guild-id",
+    "music-channel-id",
+  );
+
+  await panel.initialize();
+  blockNextEdit = true;
+  panel.update({
+    connected: true,
+    voiceChannelId: "voice-channel-id",
+    current: track(1),
+    currentQualityMode: null,
+    upcoming: [],
+    paused: false,
+    recentError: null,
+    notice: null,
+  });
+  assert.equal(typeof releaseBlockedEdit, "function");
+
+  for (let index = 2; index <= 20; index += 1) {
+    panel.update({
+      connected: true,
+      voiceChannelId: "voice-channel-id",
+      current: track(index),
+      currentQualityMode: "opus-passthrough",
+      upcoming: [],
+      paused: index === 20,
+      recentError: null,
+      notice: null,
+    });
+  }
+  releaseBlockedEdit();
+  await panel.flush();
+
+  assert.deepEqual(editedTitles, [
+    "⏹️ 재생 대기 중",
+    "⏳ 재생 준비 중",
+    "⏸️ 일시정지",
+  ]);
+});
+
 test("전용 채널 ID가 없으면 공개 메시지를 만들지 않고 음악 준비만 실패한다", async () => {
   let fetchCount = 0;
   const panel = new MusicPanel(
