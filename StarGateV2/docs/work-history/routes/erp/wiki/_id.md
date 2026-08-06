@@ -30,3 +30,11 @@
 - 보고서가 참조 중인 위키의 slug 변경·비공개 전환·삭제는 transaction lock과 `409`로 차단한다.
 - 검증: visibility/pagination·링크 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 상세·편집 화면과 콘솔 오류 0건 확인
 - 관련 커밋: `a57ecd94`
+
+## 2026-08-06 · 버그 수정 · 외부 NPC 등급 표기
+
+- 위키 상세의 관련 인물 카드에서 권한등급이 없는 외부 NPC를 `NPC · U`로 오표시하지 않고 `NPC`로만 표시한다.
+- 내부 등급이 있는 인물은 기존 등급 메타를 그대로 표시한다.
+- 검증: 연관 인물 링크 테스트 12건, `pnpm typecheck`, `pnpm lint`, critical risk review
+- 관련 커밋: `3454ae58`
+- 후속 작업: 해당 revision 배포와 신규 공개 Dossier 적용 뒤 위키 상세 링크·메타를 인증 브라우저에서 확인한다.

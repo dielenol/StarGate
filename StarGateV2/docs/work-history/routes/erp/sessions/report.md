@@ -51,3 +51,11 @@
 - 검증: 번호·구조화 참조·로어 링크 테스트 19건, 전체 lore static audit, payload 3종 DB dry-run, `pnpm typecheck`, `pnpm lint`, critical risk review
 - 관련 커밋: `ff37a111`
 - 후속 작업: 신규 wiki·시각 자산 공개 범위 승인, NPC apply-ready gate 해소, live 적용·DB 재조회·인증 브라우저 검증이 필요하다.
+
+## 2026-08-06 · 버그 수정 · 외부 NPC 등급 표기
+
+- 관련 인물 카드에서 권한등급이 없는 외부 NPC를 `NPC · U`로 오표시하지 않고 `NPC`로만 표시한다.
+- 내부 등급이 있는 인물은 기존 `NPC · H` 형식을 그대로 유지한다.
+- 검증: 연관 인물 링크 테스트 12건, `pnpm typecheck`, `pnpm lint`, critical risk review
+- 관련 커밋: `3454ae58`
+- 후속 작업: 해당 revision 배포 뒤 외부 NPC가 연결된 보고서 상세를 인증 브라우저에서 확인한다.
