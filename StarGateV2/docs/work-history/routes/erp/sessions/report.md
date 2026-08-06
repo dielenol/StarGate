@@ -42,3 +42,12 @@
 - 검증: shared-db 전체 테스트 256건, 변경 app/script 테스트 77건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `a57ecd94`
 - 후속 작업: live unique/backlink index와 historical provenance 적용은 별도 운영 승인 후 진행한다.
+
+## 2026-08-06 · 기능 변경 · S1E5 악 2부 보고서 지원
+
+- S1E5 악 2부를 정규 보고서 `05.5`로 식별하는 ID preset과 제목 fallback을 추가했다.
+- 같은 섹터 C 좌표를 쓰는 `05`와 `05.5` 지도 카드가 겹치지 않도록 좌우 배치를 분리했다.
+- 보고서·wiki·Dossier·성격 관찰 dry-run payload와 장면 자산 15종을 준비했으며, live DB에는 적용하지 않았다.
+- 검증: 번호·구조화 참조·로어 링크 테스트 19건, 전체 lore static audit, payload 3종 DB dry-run, `pnpm typecheck`, `pnpm lint`, critical risk review
+- 관련 커밋: `ff37a111`
+- 후속 작업: 신규 wiki·시각 자산 공개 범위 승인, NPC apply-ready gate 해소, live 적용·DB 재조회·인증 브라우저 검증이 필요하다.
