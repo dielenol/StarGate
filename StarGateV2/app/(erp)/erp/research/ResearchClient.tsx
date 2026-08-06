@@ -27,8 +27,13 @@ import {
   retainIdempotencyOperation,
   type RetainedIdempotencyOperation,
 } from "@/lib/query/idempotency";
+import {
+  ZULU_SAMPLE_LINE_ID,
+  getZuluExtractionRecipe,
+} from "@/lib/research/zulu-sample-lab";
 
 import styles from "./page.module.css";
+import XenoGuide from "./XenoGuide";
 
 interface ResearchClientProps {
   isGm: boolean;
@@ -52,6 +57,23 @@ function eligibilityMessage(
   return null;
 }
 
+function hasRegisteredRecipeContract(data: ZuluSampleLabOverview): boolean {
+  const recipe = getZuluExtractionRecipe(data.recipe.id);
+  return Boolean(
+    recipe &&
+      recipe.id === ZULU_SAMPLE_LINE_ID &&
+      data.source.slug === recipe.source.slug &&
+      data.source.image === recipe.source.image &&
+      data.recipe.sourceQuantity === recipe.source.quantity &&
+      data.sample.slug === recipe.output.slug &&
+      data.sample.image === recipe.output.image &&
+      data.recipe.initialOutputQuantity === recipe.output.initialQuantity &&
+      data.recipe.extractionOutputQuantity ===
+        recipe.output.extractionQuantity &&
+      data.extractionCost === recipe.extraction.creditCost,
+  );
+}
+
 export default function ResearchClient({ isGm }: ResearchClientProps) {
   const unlockOperationRef = useRef<RetainedIdempotencyOperation | null>(null);
   const extractOperationRef = useRef<RetainedIdempotencyOperation | null>(null);
@@ -71,12 +93,23 @@ export default function ResearchClient({ isGm }: ResearchClientProps) {
   }
 
   const data = overview.data;
+  if (!hasRegisteredRecipeContract(data)) {
+    return (
+      <Box className={styles.stateBox}>
+        등록되지 않은 추출 레시피입니다. 연구 작업은 실행되지 않습니다.
+      </Box>
+    );
+  }
+
   const unlocked = data.line !== null;
   const balance = data.viewer.balance;
   const eligibility = eligibilityMessage(data.viewer);
   const hasEnoughCredits =
     balance !== null && balance >= data.extractionCost;
-  const canUnlock = isGm && !unlocked && data.source.sharedQuantity >= 1;
+  const canUnlock =
+    isGm &&
+    !unlocked &&
+    data.source.sharedQuantity >= data.recipe.sourceQuantity;
   const canExtract =
     unlocked &&
     data.viewer.eligibilityCode === "ELIGIBLE" &&
@@ -86,7 +119,7 @@ export default function ResearchClient({ isGm }: ResearchClientProps) {
   const handleUnlock = () => {
     if (
       !window.confirm(
-        "공용 ZULU-0028 격리 개체 1개를 제출하고 샘플 라인을 개방하시겠습니까?",
+        `공용 ${data.source.name} ${data.recipe.sourceQuantity}개를 제출하고 샘플 라인을 개방하시겠습니까?`,
       )
     ) {
       return;
@@ -95,7 +128,7 @@ export default function ResearchClient({ isGm }: ResearchClientProps) {
     const operation = retainIdempotencyOperation(
       unlockOperationRef.current,
       "zulu-sample-line-unlock",
-      "ZULU-0028",
+      data.recipe.id,
     );
     unlockOperationRef.current = operation;
     unlock.mutate(
@@ -114,7 +147,7 @@ export default function ResearchClient({ isGm }: ResearchClientProps) {
   const handleExtract = () => {
     if (
       !window.confirm(
-        `${data.extractionCost.toLocaleString()} CR을 사용해 깨진 음절 1개를 공용 인벤토리에 추가하시겠습니까?`,
+        `${data.extractionCost.toLocaleString()} CR을 사용해 ${data.sample.name} ${data.recipe.extractionOutputQuantity}개를 공용 인벤토리에 추가하시겠습니까?`,
       )
     ) {
       return;
@@ -124,7 +157,7 @@ export default function ResearchClient({ isGm }: ResearchClientProps) {
       extractOperationRef.current,
       "zulu-sample-extraction",
       JSON.stringify([
-        "ZULU-0028",
+        data.recipe.id,
         data.viewer.character?.id ?? "unassigned",
         data.extractionCost,
       ]),
@@ -159,6 +192,16 @@ export default function ResearchClient({ isGm }: ResearchClientProps) {
         </Tag>
       </section>
 
+      <XenoGuide
+        unlocked={unlocked}
+        sourceAvailable={
+          data.source.sharedQuantity >= data.recipe.sourceQuantity
+        }
+        eligibilityCode={data.viewer.eligibilityCode}
+        hasEnoughCredits={hasEnoughCredits}
+        extractionCost={data.extractionCost}
+      />
+
       <div className={styles.itemFlow}>
         <Box className={styles.itemCard}>
           <PanelTitle right={<Tag tone="info">공용 {data.source.sharedQuantity}</Tag>}>
@@ -176,7 +219,10 @@ export default function ResearchClient({ isGm }: ResearchClientProps) {
             </div>
             <div>
               <strong>{data.source.name}</strong>
-              <p>최초 개방 시 공용 인벤토리에서 1개를 소모합니다.</p>
+              <p>
+                최초 개방 시 공용 인벤토리에서
+                {` ${data.recipe.sourceQuantity}개`}를 소모합니다.
+              </p>
             </div>
           </div>
         </Box>
@@ -201,8 +247,9 @@ export default function ResearchClient({ isGm }: ResearchClientProps) {
             <div>
               <strong>{data.sample.name}</strong>
               <p>
-                최초 개방 보상 또는 추출 1회당 공용 인벤토리에 1개가
-                추가됩니다.
+                최초 개방 시 {data.recipe.initialOutputQuantity}개, 추출
+                1회당 {data.recipe.extractionOutputQuantity}개가 공용
+                인벤토리에 추가됩니다.
               </p>
             </div>
           </div>
@@ -219,11 +266,15 @@ export default function ResearchClient({ isGm }: ResearchClientProps) {
             </div>
             <div>
               <dt>소모</dt>
-              <dd>{data.source.name} ×1</dd>
+              <dd>
+                {data.source.name} ×{data.recipe.sourceQuantity}
+              </dd>
             </div>
             <div>
               <dt>최초 지급</dt>
-              <dd>{data.sample.name} ×1</dd>
+              <dd>
+                {data.sample.name} ×{data.recipe.initialOutputQuantity}
+              </dd>
             </div>
           </dl>
           {data.line ? (

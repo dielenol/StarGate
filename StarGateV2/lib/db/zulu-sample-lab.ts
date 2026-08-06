@@ -11,15 +11,12 @@ import {
 import { MongoServerError, ObjectId, type ClientSession } from "mongodb";
 
 import {
-  BROKEN_SYLLABLE_IMAGE,
-  BROKEN_SYLLABLE_SLUG,
-  ZULU_CONTAINED_ENTITY_IMAGE,
-  ZULU_CONTAINED_ENTITY_SLUG,
-  ZULU_SAMPLE_EXTRACTION_COST,
   ZULU_SAMPLE_LINE_ID,
   ZuluSampleLabError,
+  getZuluExtractionRecipe,
   type ExtractZuluSampleResponse,
   type UnlockZuluSampleLineResponse,
+  type ZuluExtractionRecipe,
   type ZuluSampleLabItemDto,
   type ZuluSampleLabOverview,
   type ZuluSampleLineDto,
@@ -38,7 +35,7 @@ interface ZuluSampleLineDocument {
 
 interface LabItemRef {
   id: string;
-  slug: typeof ZULU_CONTAINED_ENTITY_SLUG | typeof BROKEN_SYLLABLE_SLUG;
+  slug: string;
   name: string;
 }
 
@@ -57,6 +54,18 @@ async function sampleLinesCol() {
   return db.collection<ZuluSampleLineDocument>("zulu_sample_lines");
 }
 
+function requireRecipe(): ZuluExtractionRecipe {
+  const recipe = getZuluExtractionRecipe(ZULU_SAMPLE_LINE_ID);
+  if (!recipe) {
+    throw new ZuluSampleLabError(
+      "RECIPE_NOT_REGISTERED",
+      503,
+      "등록된 ZULU 추출 레시피를 찾을 수 없습니다.",
+    );
+  }
+  return recipe;
+}
+
 function serializeLine(line: ZuluSampleLineDocument): ZuluSampleLineDto {
   return {
     id: line._id,
@@ -66,6 +75,7 @@ function serializeLine(line: ZuluSampleLineDocument): ZuluSampleLineDto {
 }
 
 async function resolveLabItems(
+  recipe: ZuluExtractionRecipe,
   session?: ClientSession,
 ): Promise<{
   source: LabItemRef;
@@ -75,16 +85,21 @@ async function resolveLabItems(
   const items = await collection
     .find(
       {
-        slug: { $in: [ZULU_CONTAINED_ENTITY_SLUG, BROKEN_SYLLABLE_SLUG] },
+        slug: { $in: [recipe.source.slug, recipe.output.slug] },
       },
       { session },
     )
-    .project({ _id: 1, slug: 1, name: 1 })
+    .project({ _id: 1, slug: 1, name: 1, category: 1 })
     .toArray();
   const bySlug = new Map(items.map((item) => [item.slug, item]));
-  const source = bySlug.get(ZULU_CONTAINED_ENTITY_SLUG);
-  const sample = bySlug.get(BROKEN_SYLLABLE_SLUG);
-  if (!source?._id || !sample?._id) {
+  const source = bySlug.get(recipe.source.slug);
+  const sample = bySlug.get(recipe.output.slug);
+  if (
+    !source?._id ||
+    source.category !== recipe.source.category ||
+    !sample?._id ||
+    sample.category !== recipe.output.category
+  ) {
     throw new ZuluSampleLabError(
       "LAB_ITEM_MISSING",
       503,
@@ -94,12 +109,12 @@ async function resolveLabItems(
   return {
     source: {
       id: String(source._id),
-      slug: ZULU_CONTAINED_ENTITY_SLUG,
+      slug: recipe.source.slug,
       name: source.name,
     },
     sample: {
       id: String(sample._id),
-      slug: BROKEN_SYLLABLE_SLUG,
+      slug: recipe.output.slug,
       name: sample.name,
     },
   };
@@ -116,14 +131,15 @@ async function sharedQuantity(
   return row?.quantity ?? 0;
 }
 
-async function removeOneSharedItem(
+async function removeSharedItem(
   item: LabItemRef,
+  quantity: number,
   session: ClientSession,
 ): Promise<number> {
   const collection = await sharedInventoryCol();
   const row = await collection.findOneAndUpdate(
-    { scope: "GLOBAL", itemId: item.id, quantity: { $gte: 1 } },
-    { $inc: { quantity: -1 } },
+    { scope: "GLOBAL", itemId: item.id, quantity: { $gte: quantity } },
+    { $inc: { quantity: -quantity } },
     { returnDocument: "after", session },
   );
   if (!row) {
@@ -139,8 +155,9 @@ async function removeOneSharedItem(
   return row.quantity;
 }
 
-async function addOneSharedItem(
+async function addSharedItem(
   item: LabItemRef,
+  quantity: number,
   note: string,
   session: ClientSession,
 ): Promise<number> {
@@ -149,7 +166,7 @@ async function addOneSharedItem(
       scope: "GLOBAL",
       itemId: item.id,
       itemName: item.name,
-      quantity: 1,
+      quantity,
       acquiredAt: new Date(),
       note,
     },
@@ -239,16 +256,14 @@ async function requireActiveMainAgent(args: {
 
 function itemDto(
   item: LabItemRef,
+  image: string,
   quantity: number,
 ): ZuluSampleLabItemDto {
   return {
     itemId: item.id,
     slug: item.slug,
     name: item.name,
-    image:
-      item.slug === ZULU_CONTAINED_ENTITY_SLUG
-        ? ZULU_CONTAINED_ENTITY_IMAGE
-        : BROKEN_SYLLABLE_IMAGE,
+    image,
     sharedQuantity: quantity,
   };
 }
@@ -257,7 +272,8 @@ export async function getZuluSampleLabOverview(args: {
   userId: string;
   isGm: boolean;
 }): Promise<ZuluSampleLabOverview> {
-  const { source, sample } = await resolveLabItems();
+  const recipe = requireRecipe();
+  const { source, sample } = await resolveLabItems(recipe);
   const [line, sourceQuantity, sampleQuantity] = await Promise.all([
     (await sampleLinesCol()).findOne({ _id: ZULU_SAMPLE_LINE_ID }),
     sharedQuantity(source.id),
@@ -280,10 +296,16 @@ export async function getZuluSampleLabOverview(args: {
   }
 
   return {
+    recipe: {
+      id: recipe.id,
+      sourceQuantity: recipe.source.quantity,
+      initialOutputQuantity: recipe.output.initialQuantity,
+      extractionOutputQuantity: recipe.output.extractionQuantity,
+    },
     line: line ? serializeLine(line) : null,
-    source: itemDto(source, sourceQuantity),
-    sample: itemDto(sample, sampleQuantity),
-    extractionCost: ZULU_SAMPLE_EXTRACTION_COST,
+    source: itemDto(source, recipe.source.image, sourceQuantity),
+    sample: itemDto(sample, recipe.output.image, sampleQuantity),
+    extractionCost: recipe.extraction.creditCost,
     viewer: {
       isGm: args.isGm,
       eligibilityCode,
@@ -298,6 +320,7 @@ export async function unlockZuluSampleLine(args: {
   requestId: string;
   session: ClientSession;
 }): Promise<UnlockZuluSampleLineResponse> {
+  const recipe = requireRecipe();
   const gm = await requireActiveGm(args.actor, args.session);
   const lines = await sampleLinesCol();
   const existing = await lines.findOne(
@@ -312,8 +335,12 @@ export async function unlockZuluSampleLine(args: {
     );
   }
 
-  const { source, sample } = await resolveLabItems(args.session);
-  const sourceQuantity = await removeOneSharedItem(source, args.session);
+  const { source, sample } = await resolveLabItems(recipe, args.session);
+  const sourceQuantity = await removeSharedItem(
+    source,
+    recipe.source.quantity,
+    args.session,
+  );
   const unlockedAt = new Date();
   const line: ZuluSampleLineDocument = {
     _id: ZULU_SAMPLE_LINE_ID,
@@ -335,8 +362,9 @@ export async function unlockZuluSampleLine(args: {
     }
     throw error;
   }
-  const sampleQuantity = await addOneSharedItem(
+  const sampleQuantity = await addSharedItem(
     sample,
+    recipe.output.initialQuantity,
     "ZULU-0028 샘플 라인 최초 개방 보상",
     args.session,
   );
@@ -353,6 +381,7 @@ export async function extractZuluSample(args: {
   requestId: string;
   session: ClientSession;
 }): Promise<ExtractZuluSampleResponse> {
+  const recipe = requireRecipe();
   const line = await (await sampleLinesCol()).findOne(
     { _id: ZULU_SAMPLE_LINE_ID },
     { session: args.session },
@@ -370,7 +399,7 @@ export async function extractZuluSample(args: {
     expectedCharacter: args.expectedCharacter,
     session: args.session,
   });
-  const { sample } = await resolveLabItems(args.session);
+  const { sample } = await resolveLabItems(recipe, args.session);
   let debit;
   try {
     debit = await addCredit({
@@ -378,7 +407,7 @@ export async function extractZuluSample(args: {
       characterCodename: owner.character.codename,
       ownerId: args.actor.id,
       ownerName: owner.ownerName,
-      amount: -ZULU_SAMPLE_EXTRACTION_COST,
+      amount: -recipe.extraction.creditCost,
       type: "PURCHASE",
       description: "ZULU-0028 샘플 추출",
       metadata: {
@@ -386,7 +415,7 @@ export async function extractZuluSample(args: {
         lineId: ZULU_SAMPLE_LINE_ID,
         itemId: sample.id,
         itemSlug: sample.slug,
-        quantity: 1,
+        quantity: recipe.output.extractionQuantity,
       },
       createdById: args.actor.id,
       createdByName: args.actor.displayName,
@@ -407,8 +436,9 @@ export async function extractZuluSample(args: {
     }
     throw error;
   }
-  const sampleQuantity = await addOneSharedItem(
+  const sampleQuantity = await addSharedItem(
     sample,
+    recipe.output.extractionQuantity,
     `${owner.character.codename} ZULU-0028 샘플 추출`,
     args.session,
   );
