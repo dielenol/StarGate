@@ -4,8 +4,8 @@
  * Discord REST API 로 슬래시 커맨드를 등록합니다.
  *
  * Phase 2부터 `/일정` 루트와 `/참여확인` 단독 커맨드 등록은 해제되었습니다.
- * 현재는 세션 확인, 주사위, YouTube 음악 명령만 등록합니다. 기존 일정 관리
- * 핸들러 코드는 비활성 상태로 보존되어 있습니다 (호출처 없음).
+ * 현재는 도움말, 세션 확인, 주사위, YouTube 음악 명령만 등록합니다. 기존
+ * 일정 관리 핸들러 코드는 비활성 상태로 보존되어 있습니다 (호출처 없음).
  *
  * @module commands/register
  */
@@ -14,6 +14,9 @@ import { REST, Routes } from "discord.js";
 
 import { config } from "../config.js";
 import {
+  HELP_NAME,
+  HELP_TOPIC_OPTION,
+  HelpTopic,
   MUSIC_QUERY_OPTION,
   MUSIC_ROOT,
   MusicSubcommand,
@@ -100,6 +103,27 @@ const ROLL_SHORT_CMD = {
   options: DICE_ROLL_OPTIONS,
 };
 
+const HELP_CMD = {
+  type: 1 as const,
+  name: HELP_NAME,
+  description: "다채봇의 세션·주사위·음악 명령 사용법과 실행 예시를 확인합니다",
+  default_member_permissions: null,
+  options: [
+    {
+      type: 3 as const,
+      name: HELP_TOPIC_OPTION,
+      description: "자세히 확인할 기능을 선택합니다 (미입력 시 전체)",
+      required: false,
+      choices: [
+        { name: "전체 명령", value: HelpTopic.all },
+        { name: "세션 확인", value: HelpTopic.session },
+        { name: "주사위", value: HelpTopic.dice },
+        { name: "YouTube 음악", value: HelpTopic.music },
+      ],
+    },
+  ],
+} as const;
+
 const MUSIC_COMMAND = {
   type: 1 as const,
   name: MUSIC_ROOT,
@@ -159,6 +183,7 @@ export const ACTIVE_COMMANDS = [
   SESSION_CHECK_CMD,
   ROLL_CMD,
   ROLL_SHORT_CMD,
+  HELP_CMD,
   MUSIC_COMMAND,
 ] as const;
 

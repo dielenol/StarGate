@@ -4,9 +4,10 @@
  * Phase 2 에서는 일정 슬래시 (`/일정`, `/참여확인`) 와 버튼 응답 흐름 / 마감·
  * 리마인드 스케줄러 호출을 모두 제거하고, 다음 책임만 유지한다:
  *   1. `/세션확인` 슬래시 처리
- *   2. 길드 멤버 동기화 (ClientReady + GuildMember* 이벤트 + 24h 재동기화)
- *   3. trpg_sessions 생성/수정/취소 알림 폴링 + 24h 리마인드 폴링
- *   4. YouTube 오디오 검색·재생과 길드별 음성 대기열
+ *   2. `/도움말`, `/roll`, `/r` 슬래시 처리
+ *   3. 길드 멤버 동기화 (ClientReady + GuildMember* 이벤트 + 24h 재동기화)
+ *   4. trpg_sessions 생성/수정/취소 알림 폴링 + 24h 리마인드 폴링
+ *   5. YouTube 오디오 검색·재생과 길드별 음성 대기열
  *
  * 비활성 파일 (`commands/session-*`, `scheduler/close-checker`, `scheduler/reminder-checker`,
  * `handlers/button-handler`, `utils/result-card-image`) 은 코드만 보존되어 있으며
@@ -21,6 +22,7 @@ import { config } from "./config.js";
 import { closeDb, connectDb } from "./db/client.js";
 
 import { handleDiceRoll, isDiceRollCommandName } from "./commands/dice-roll.js";
+import { handleHelpCommand } from "./commands/help.js";
 import { handleMusicCommand } from "./commands/music.js";
 import { registerCommands } from "./commands/register.js";
 import { handleTrpgSessionCheck } from "./commands/trpg-session-check.js";
@@ -36,6 +38,7 @@ import {
   upsertGuildMemberFromDiscord,
 } from "./services/member-sync.js";
 import {
+  HELP_NAME,
   isMusicCommandName,
   SESSION_CHECK_NAME,
 } from "./slash/ko-names.js";
@@ -113,7 +116,7 @@ client.once(Events.ClientReady, async (readyClient) => {
   try {
     await registerCommands();
     console.log(
-      "[TRPG Bot] 슬래시 커맨드 등록 완료 (/세션확인, /roll, /r, /음악)",
+      "[TRPG Bot] 슬래시 커맨드 등록 완료 (/세션확인, /roll, /r, /도움말, /음악)",
     );
   } catch (err) {
     console.error("[TRPG Bot] 커맨드 등록 실패:", err);
@@ -163,6 +166,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
   if (isDiceRollCommandName(interaction.commandName)) {
     await handleDiceRoll(interaction);
+    return;
+  }
+  if (interaction.commandName === HELP_NAME) {
+    await handleHelpCommand(interaction);
     return;
   }
   if (isMusicCommandName(interaction.commandName)) {
