@@ -1,0 +1,102 @@
+{
+  "kind": "equipment-workshop-blueprint-candidate",
+  "status": "BLOCKED",
+  "readyForWorkshopQuote": false,
+  "targetCharacterCodename": "NEVED",
+  "source": {
+    "slug": "cmmg-mk47-mutant-nosb-mod",
+    "category": "WEAPON"
+  },
+  "result": {
+    "slug": "cmmg-mk47-mutant-pian-bulwark",
+    "workingName": "CMMG Mk.47 Mutant 「피안의 보루」",
+    "nameStatus": "working-proposal",
+    "category": "WEAPON",
+    "previewImage": "/assets/catalog/equipment/cmmg-mk47-mutant-pian-bulwark.webp",
+    "imageStatus": "user-confirmed",
+    "damage": {
+      "melee": 7,
+      "medium": 12,
+      "long": 12,
+      "type": "PHYSICAL"
+    },
+    "ammoCapacity": 12,
+    "mount": {
+      "mountActionCost": 1,
+      "unmountActionCost": null,
+      "blocksMovement": true,
+      "allowsDiagonalFire": true,
+      "bonusDamage": null
+    }
+  },
+  "materials": [
+    {
+      "slug": "force_core",
+      "scope": "CHARACTER",
+      "quantity": 1
+    },
+    {
+      "slug": "extended-magazine-mod",
+      "scope": "CHARACTER",
+      "quantity": 1
+    }
+  ],
+  "creditCost": null,
+  "durationMinutes": null,
+  "specialistCodename": null,
+  "modificationDomain": null,
+  "specialAmmunition": {
+    "slug": "zulu-0028-censor-3",
+    "workingName": "ZULU-0028 파쇄음절탄 「CENSOR-3」",
+    "nameStatus": "working-proposal",
+    "category": "CONSUMABLE",
+    "previewImage": "/assets/catalog/consumables/zulu-0028-censor-3.webp",
+    "imageStatus": "user-confirmed",
+    "outputQuantity": 3,
+    "seasonMaximum": 3,
+    "requiresMountedWeapon": true,
+    "bonusDamage": 30,
+    "damageType": "PSYCHIC",
+    "ignoreDefense": true,
+    "scaling": "NONE",
+    "regularAmmoCost": null,
+    "attackResolution": null,
+    "actionCode": null,
+    "actionName": null,
+    "material": {
+      "slug": "broken-syllable",
+      "scope": "SHARED",
+      "quantity": 3
+    },
+    "approval": {
+      "system": "REGISTRA_DISCORD_VOTE",
+      "channelId": "1534753076399833249",
+      "voterRoleId": null,
+      "deadline": null,
+      "quorum": null,
+      "approvalThreshold": null,
+      "tieRule": null,
+      "noVoteRule": null,
+      "resolution": "GM_MANUAL"
+    }
+  },
+  "unresolvedFields": [
+    "creditCost",
+    "durationMinutes",
+    "specialistCodename",
+    "modificationDomain",
+    "result.mount.unmountActionCost",
+    "result.mount.bonusDamage",
+    "result.exactRangeContract",
+    "specialAmmunition.regularAmmoCost",
+    "specialAmmunition.attackResolution",
+    "specialAmmunition.actionCode",
+    "specialAmmunition.actionName",
+    "specialAmmunition.approval.voterRoleId",
+    "specialAmmunition.approval.deadline",
+    "specialAmmunition.approval.quorum",
+    "specialAmmunition.approval.approvalThreshold",
+    "specialAmmunition.approval.tieRule",
+    "specialAmmunition.approval.noVoteRule"
+  ]
+}
