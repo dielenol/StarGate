@@ -207,7 +207,7 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
               description:
                 "거치 상태에서 CENSOR-3 한 발을 장전해 기본 소총 피해와 고정 심령 피해를 함께 가한다.",
               effect:
-                "액션 1과 승인된 CENSOR-3 1발을 소모한다. 기본 소총 피해에 방어를 무시하는 30 심령 피해를 추가한다.",
+                "액션 1과 실제 CENSOR-3 1발을 소모한다. 기본 소총 피해에 방어를 무시하는 30 심령 피해를 추가한다.",
               kind: "CONSUMABLE",
               actionCost: 1,
               chargeCost: 0,
@@ -229,7 +229,6 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
               consumableCost: {
                 slug: "zulu-0028-censor-3",
                 quantity: 1,
-                approval: "REGISTRA_MAJORITY",
               },
             },
           ],

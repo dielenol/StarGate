@@ -26,3 +26,4 @@ export * from "./trpg-guild-members.js";
 export * from "./trpg-session-notifications.js";
 export * from "./worker.js";
 export * from "./lore-knowledge.js";
+export * from "./bureaucrat-votes.js";

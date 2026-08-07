@@ -214,6 +214,52 @@ export interface IndexEnsureOptions {
   onEnsured?: (index: { collection: string; name: string }) => void;
 }
 
+export const BUREAUCRAT_VOTE_INDEX_DEFINITIONS: IndexDescription[] = [
+  {
+    key: { requestKey: 1 },
+    name: "bureaucrat_votes_requestKey_unique",
+    unique: true,
+  },
+  {
+    key: { activePresetKey: 1 },
+    name: "bureaucrat_votes_activePresetKey_unique",
+    unique: true,
+    partialFilterExpression: {
+      schemaVersion: 1,
+      status: "OPEN",
+      activePresetKey: { $type: "string" },
+    },
+  },
+  {
+    key: { status: 1, closesAt: 1 },
+    name: "bureaucrat_votes_status_closesAt",
+  },
+  {
+    key: {
+      status: 1,
+      "publication.state": 1,
+      "publication.leaseUntil": 1,
+      createdAt: 1,
+    },
+    name: "bureaucrat_votes_publication_queue",
+  },
+];
+
+export async function ensureBureaucratVoteIndexes(
+  database?: Db,
+  options: IndexEnsureOptions = {},
+): Promise<void> {
+  const db = database ?? (await getDb());
+  for (const index of BUREAUCRAT_VOTE_INDEX_DEFINITIONS) {
+    const { key, ...indexOptions } = index;
+    const name = await db.collection("bureaucrat_votes").createIndex(
+      key,
+      indexOptions,
+    );
+    options.onEnsured?.({ collection: "bureaucrat_votes", name });
+  }
+}
+
 /** 단일 unique index의 현재 데이터 중복 여부를 검사한다. */
 export async function hasLoreUniqueIndexConflict(
   db: Db,
@@ -393,6 +439,7 @@ export async function ensureAllIndexes(): Promise<void> {
   await Promise.all([
     ensureLoreIndexes(db),
     ensureSessionReportIndexes(db),
+    ensureBureaucratVoteIndexes(db),
 
     /* ── character_change_logs (감사 로그) ── */
     ensureChangeLogsIndexes(db),

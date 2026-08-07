@@ -108,11 +108,9 @@ export async function POST(request: Request, context: RouteContext) {
     if (!operation.body.ok) {
       const code = operation.body.code ?? "EQUIPMENT_UNAVAILABLE";
       const unavailableMessage =
-        code === "APPROVAL_UNAVAILABLE"
-          ? "An unused approved CENSOR-3 use vote is required"
-          : code === "CONSUMABLE_UNAVAILABLE"
-            ? "CENSOR-3 consumable is unavailable"
-            : "Equipment is unequipped or has insufficient charges or ammunition";
+        code === "CONSUMABLE_UNAVAILABLE"
+          ? "CENSOR-3 consumable is unavailable"
+          : "Equipment is unequipped or has insufficient charges or ammunition";
       return NextResponse.json(
         {
           ...responseBody,

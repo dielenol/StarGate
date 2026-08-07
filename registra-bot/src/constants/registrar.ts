@@ -8,22 +8,6 @@
 /** Discord 버튼·customId 접두사 (다른 봇과 분리) */
 export const ATTEND_BUTTON_PREFIX = "registrar:attend:";
 
-/** CENSOR-3 v2 한 발 사용 동의 투표 버튼 customId 접두사 */
-export const CENSOR_USE_VOTE_BUTTON_PREFIX =
-  "registrar:censor-use-vote:v2:";
-
-/** 사용자 지정 CENSOR-3 사용 동의 투표 채널 */
-export const CENSOR3_VOTE_CHANNEL_ID = "1534753076399833249";
-
-/** 투표 대상은 CENSOR-3 한 발 사용으로 고정하며 런타임에서 임의 변경하지 않습니다. */
-export const CENSOR3_VOTE_SUBJECT = {
-  kind: "CENSOR_3_USE_APPROVAL",
-  code: "ZULU_0028_CENSOR_3",
-  displayName: "ZULU-0028 파쇄음절탄 「CENSOR-3」",
-  targetCharacterCodename: "네베드",
-  usageQuantity: 1,
-} as const;
-
 /** 콘솔 로그 태그 */
 export const LOG_PREFIX = "[Registrar]";
 

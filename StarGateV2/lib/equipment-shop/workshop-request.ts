@@ -497,15 +497,13 @@ function parseEquipmentAction(value: unknown): EquipmentAction | undefined | nul
       !/^[a-z0-9][a-z0-9_-]{1,79}$/.test(slug) ||
       !Number.isSafeInteger(cost.quantity) ||
       Number(cost.quantity) < 1 ||
-      Number(cost.quantity) > 99 ||
-      cost.approval !== "REGISTRA_MAJORITY"
+      Number(cost.quantity) > 99
     ) {
       return null;
     }
     consumableCost = {
       slug,
       quantity: Number(cost.quantity),
-      approval: "REGISTRA_MAJORITY",
     };
   }
   if (

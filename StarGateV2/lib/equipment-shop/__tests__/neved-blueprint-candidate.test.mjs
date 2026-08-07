@@ -74,7 +74,7 @@ test("피안의 보루는 돌격소총 사거리·ATK 미적용·거치 다이�
   assert.equal(candidate.result.mount.bonusDamage, 0);
 });
 
-test("CENSOR-3 투표는 제작이 아니라 한 발 사용 승인만 과반으로 처리한다", () => {
+test("CENSOR-3 표결은 배치 제작 권한만 승인하고 발사에는 재승인을 요구하지 않는다", () => {
   const ammo = candidate.specialAmmunition;
   assert.equal(ammo.outputQuantity, 3);
   assert.equal(ammo.regularAmmoCost, 0);
@@ -82,17 +82,30 @@ test("CENSOR-3 투표는 제작이 아니라 한 발 사용 승인만 과반으�
   assert.equal(ammo.bonusDamage, 30);
   assert.equal(ammo.ignoreDefense, true);
   assert.equal(ammo.scaling, "NONE");
-  assert.equal(ammo.approval.scope, "ONE_ROUND_PER_APPROVED_VOTE");
-  assert.equal(ammo.approval.approvalThreshold, "YES_GT_CAST_BALLOTS_DIV_2");
-  assert.equal(ammo.approval.tieRule, "REJECTED");
-  assert.equal(ammo.approval.noVoteRule, "REJECTED");
   assert.equal(
-    ammo.approval.resolution,
-    "MAJORITY_ON_RESOLVE_COMMAND_AFTER_DEADLINE",
+    ammo.manufactureApproval.scope,
+    "BATCH_MANUFACTURE_AUTHORIZATION",
   );
-  assert.equal(ammo.approval.binding, "FUNGIBLE_ONE_USE_APPROVAL");
-  assert.equal(ammo.approval.claimOrder, "OLDEST_APPROVED_UNUSED_FIRST");
-  assert.equal(ammo.approval.claimLimit, 1);
+  assert.equal(
+    ammo.manufactureApproval.presetKey,
+    "zulu-0028-censor-3-manufacture-v1",
+  );
+  assert.equal(ammo.manufactureApproval.durationHours, 6);
+  assert.equal(
+    ammo.manufactureApproval.approvalThreshold,
+    "YES_GT_CAST_BALLOTS_DIV_2",
+  );
+  assert.equal(ammo.manufactureApproval.tieRule, "REJECTED");
+  assert.equal(ammo.manufactureApproval.noVoteRule, "REJECTED");
+  assert.equal(
+    ammo.manufactureApproval.effect,
+    "MANUFACTURE_AUTHORITY_ONLY",
+  );
+  assert.equal(
+    ammo.manufactureApproval.workshopExecution,
+    "SEPARATE_OPERATIONAL_PROCESS",
+  );
+  assert.equal(ammo.manufactureApproval.consumableUseApproval, "NOT_REQUIRED");
 });
 
 test("실행 청사진 seed는 후보 계약과 같은 전투 수치를 보존한다", () => {
@@ -111,6 +124,7 @@ test("실행 청사진 seed는 후보 계약과 같은 전투 수치를 보존�
   );
   assert.equal(censor.kind, "CONSUMABLE");
   assert.equal(censor.consumableCost.quantity, 1);
+  assert.equal("approval" in censor.consumableCost, false);
   assert.equal(censor.additionalDamage.amount, 30);
 });
 

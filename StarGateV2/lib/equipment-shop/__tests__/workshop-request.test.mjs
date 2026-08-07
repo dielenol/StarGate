@@ -458,7 +458,6 @@ test("네베드 preset은 소모품 기반 U2와 구조화 돌격소총 피해 �
   assert.deepEqual(censor.consumableCost, {
     slug: "zulu-0028-censor-3",
     quantity: 1,
-    approval: "REGISTRA_MAJORITY",
   });
   assert.deepEqual(censor.additionalDamage, {
     type: "PSYCHIC",

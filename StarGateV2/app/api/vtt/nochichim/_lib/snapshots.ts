@@ -2,7 +2,6 @@ import { ObjectId, type ClientSession } from "mongodb";
 
 import "@/lib/db/init";
 import { findSessionById } from "@/lib/db/sessions";
-import { claimApprovedCensorUseVote } from "@/lib/db/registrar-crafting-votes";
 import { applyEquipmentAbilityOverrides } from "@/lib/equipment/equipment-ability-overrides";
 import { mergePublicEquipment } from "@/lib/equipment/public-equipment";
 import { notifyUser } from "@/lib/notifications/events";
@@ -686,12 +685,9 @@ export async function consumeCharacterEquipmentAction(input: {
   currentCharges: number;
   currentAmmo?: number;
   consumableRemaining?: number;
-  approvalVoteId?: string;
-  approvalRequestRef?: string;
   code?:
     | "EQUIPMENT_UNAVAILABLE"
-    | "CONSUMABLE_UNAVAILABLE"
-    | "APPROVAL_UNAVAILABLE";
+    | "CONSUMABLE_UNAVAILABLE";
 }> {
   const character = await findTransactionalAgentCharacterByKey(
     input.characterId,
@@ -744,7 +740,6 @@ export async function consumeCharacterEquipmentAction(input: {
       !cost ||
       cost.slug !== CENSOR_3_CONSUMABLE_SLUG ||
       cost.quantity !== 1 ||
-      cost.approval !== "REGISTRA_MAJORITY" ||
       action.requiresMounted !== true ||
       action.usesWeaponAttack !== true ||
       (action.consumesRegularAmmo ?? 0) !== 0 ||
@@ -801,24 +796,6 @@ export async function consumeCharacterEquipmentAction(input: {
         code: "CONSUMABLE_UNAVAILABLE",
       };
     }
-    const approval = await claimApprovedCensorUseVote({
-      requestId: input.requestId,
-      characterId,
-      characterCodename: character.codename,
-      equipmentItemId: input.itemId,
-      actionCode: action.code,
-      consumableSlug: cost.slug,
-      quantity: cost.quantity,
-      claimedAt: new Date(),
-      session: input.dbSession,
-    });
-    if (!approval) {
-      return {
-        ok: false,
-        currentCharges: 0,
-        code: "APPROVAL_UNAVAILABLE",
-      };
-    }
     const consumed = await removeFromInventory(
       characterId,
       consumableItemId,
@@ -826,9 +803,7 @@ export async function consumeCharacterEquipmentAction(input: {
       { session: input.dbSession },
     );
     if (!consumed.ok) {
-      throw new Error(
-        "CENSOR-3 inventory changed after approved vote claim",
-      );
+      throw new Error("CENSOR-3 inventory changed after item lock");
     }
     return {
       ok: true,
@@ -837,8 +812,6 @@ export async function consumeCharacterEquipmentAction(input: {
         ? { currentAmmo: equippedEntry.equipmentAmmo.current }
         : {}),
       consumableRemaining: consumed.remaining,
-      approvalVoteId: approval.voteId,
-      approvalRequestRef: approval.requestRef,
     };
   }
 

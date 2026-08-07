@@ -190,6 +190,25 @@ export type {
   TrpgNotificationKind,
   TrpgNotificationDeliveryMethod,
 } from "./trpg-session-notification.js";
+
+export {
+  BUREAUCRAT_VOTE_BUTTON_PREFIX,
+  BUREAUCRAT_VOTE_CHANNEL_ID,
+  BUREAUCRAT_VOTE_CONTENT_MAX_LENGTH,
+  BUREAUCRAT_VOTE_DURATION_MS,
+  BUREAUCRAT_VOTE_TITLE_MAX_LENGTH,
+} from "./bureaucrat-vote.js";
+export type {
+  BureaucratVote,
+  BureaucratVoteActor,
+  BureaucratVoteBallot,
+  BureaucratVoteChoice,
+  BureaucratVoteOutcome,
+  BureaucratVotePublication,
+  BureaucratVotePublicationState,
+  BureaucratVoteResolution,
+  BureaucratVoteStatus,
+} from "./bureaucrat-vote.js";
 export {
   SCHEDULED_JOB_RUN_STATUSES,
   INTEGRATION_OUTBOX_STATUSES,

@@ -109,7 +109,6 @@ const workshopEquipmentActionSchema = z
       .object({
         slug: catalogSlugSchema,
         quantity: z.number().int().min(1).max(99),
-        approval: z.literal("REGISTRA_MAJORITY"),
       })
       .strict()
       .optional(),

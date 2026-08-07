@@ -56,7 +56,6 @@ export interface EquipmentActionDamage {
 export interface EquipmentActionConsumableCost {
   slug: string;
   quantity: number;
-  approval: "REGISTRA_MAJORITY";
 }
 
 export interface EquipmentWeaponDamageBand {

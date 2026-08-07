@@ -147,6 +147,15 @@ export type {
   LoreIngestionStats,
   LoreIngestionError,
   LoreIngestionRun,
+  BureaucratVote,
+  BureaucratVoteActor,
+  BureaucratVoteBallot,
+  BureaucratVoteChoice,
+  BureaucratVoteOutcome,
+  BureaucratVotePublication,
+  BureaucratVotePublicationState,
+  BureaucratVoteResolution,
+  BureaucratVoteStatus,
 } from "./types/index.js";
 
 export {
@@ -186,6 +195,11 @@ export {
   LORE_INGESTION_MODES,
   LORE_INGESTION_STATUSES,
   LORE_DOMAIN_SEARCH_PROJECTION_OWNER,
+  BUREAUCRAT_VOTE_BUTTON_PREFIX,
+  BUREAUCRAT_VOTE_CHANNEL_ID,
+  BUREAUCRAT_VOTE_CONTENT_MAX_LENGTH,
+  BUREAUCRAT_VOTE_DURATION_MS,
+  BUREAUCRAT_VOTE_TITLE_MAX_LENGTH,
 } from "./types/index.js";
 
 /* ── Client ── */
@@ -241,6 +255,7 @@ export {
   loreClaimsCol,
   loreSearchDocumentsCol,
   loreIngestionRunsCol,
+  bureaucratVotesCol,
 } from "./collections.js";
 
 /* ── Collections (sync, long-running only) ── */
@@ -283,6 +298,7 @@ export {
   loreClaimsColSync,
   loreSearchDocumentsColSync,
   loreIngestionRunsColSync,
+  bureaucratVotesColSync,
 } from "./collections.js";
 
 /* ── Indexes ── */
@@ -291,9 +307,11 @@ export {
   ensureAllIndexes,
   ensureLoreIndexes,
   ensureSessionReportIndexes,
+  ensureBureaucratVoteIndexes,
   findLoreUniqueIndexConflicts,
   LORE_INDEX_DEFINITIONS,
   SESSION_REPORT_INDEX_DEFINITIONS,
+  BUREAUCRAT_VOTE_INDEX_DEFINITIONS,
 } from "./indexes.js";
 export { ensureChangeLogsIndexes } from "./migrations/ensure-change-logs-indexes.js";
 

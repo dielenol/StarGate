@@ -12,8 +12,8 @@ export const INFO_ROOT_EN = "info";
 export const CREDIT_ROOT = "크레딧";
 /** `/잔액` — 누구나 사용 가능한 본인 메인 캐릭 잔액 조회 (단일 명령, 서브 ❌) */
 export const BALANCE_ROOT = "잔액";
-/** `/사용투표 ...` — CENSOR-3 1발 사용 동의 투표 관리 */
-export const CRAFTING_VOTE_ROOT = "사용투표";
+/** `/관료투표 생성` — 관료 채널 전용 단순 표결 */
+export const BUREAUCRAT_VOTE_ROOT = "관료투표";
 
 export const Sub = {
   create: "생성",
@@ -65,19 +65,11 @@ export const CreditOpt = {
   reason: "사유",
 } as const;
 
-export const CraftingVoteSub = {
+export const BureaucratVoteSub = {
   create: "생성",
-  status: "현황",
-  resolve: "결론",
-  reconcile: "게시복구",
 } as const;
 
-export const CraftingVoteOpt = {
-  requestRef: "요청참조",
-  closeTime: "응답마감",
-  eligibleRole: "투표역할",
-  voteId: "투표아이디",
-  reason: "사유",
-  reconciliationAction: "복구동작",
-  messageId: "메시지아이디",
+export const BureaucratVoteOpt = {
+  title: "안건제목",
+  content: "안건내용",
 } as const;

@@ -41,6 +41,7 @@ import type {
   LoreSearchDocument,
   LoreSource,
 } from "./types/lore-knowledge.js";
+import type { BureaucratVote } from "./types/bureaucrat-vote.js";
 
 import { getDb, getDbSync } from "./client.js";
 
@@ -84,6 +85,7 @@ const COL = {
   LORE_CLAIMS: "lore_claims",
   LORE_SEARCH_DOCUMENTS: "lore_search_documents",
   LORE_INGESTION_RUNS: "lore_ingestion_runs",
+  BUREAUCRAT_VOTES: "bureaucrat_votes",
 } as const;
 
 /* ── Async accessors (both modes) ── */
@@ -277,6 +279,11 @@ export async function loreIngestionRunsCol(): Promise<Collection<LoreIngestionRu
   return db.collection<LoreIngestionRun>(COL.LORE_INGESTION_RUNS);
 }
 
+export async function bureaucratVotesCol(): Promise<Collection<BureaucratVote>> {
+  const db = await getDb();
+  return db.collection<BureaucratVote>(COL.BUREAUCRAT_VOTES);
+}
+
 /* ── Sync accessors (long-running only) ── */
 
 export function usersColSync(): Collection<User> {
@@ -433,4 +440,8 @@ export function loreSearchDocumentsColSync(): Collection<LoreSearchDocument> {
 
 export function loreIngestionRunsColSync(): Collection<LoreIngestionRun> {
   return getDbSync().collection<LoreIngestionRun>(COL.LORE_INGESTION_RUNS);
+}
+
+export function bureaucratVotesColSync(): Collection<BureaucratVote> {
+  return getDbSync().collection<BureaucratVote>(COL.BUREAUCRAT_VOTES);
 }

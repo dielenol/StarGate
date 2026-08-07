@@ -91,20 +91,20 @@
       "scope": "SHARED",
       "quantity": 3
     },
-    "approval": {
-      "scope": "ONE_ROUND_PER_APPROVED_VOTE",
-      "system": "REGISTRA_DISCORD_VOTE",
+    "manufactureApproval": {
+      "scope": "BATCH_MANUFACTURE_AUTHORIZATION",
+      "system": "REGISTRAR_BUREAUCRAT_VOTE",
+      "presetKey": "zulu-0028-censor-3-manufacture-v1",
       "channelId": "1534753076399833249",
-      "voterRoleId": "REQUIRED_AT_VOTE_CREATION",
-      "deadline": "REQUIRED_AT_VOTE_CREATION",
+      "durationHours": 6,
       "quorum": "NONE",
       "approvalThreshold": "YES_GT_CAST_BALLOTS_DIV_2",
       "tieRule": "REJECTED",
       "noVoteRule": "REJECTED",
-      "resolution": "MAJORITY_ON_RESOLVE_COMMAND_AFTER_DEADLINE",
-      "binding": "FUNGIBLE_ONE_USE_APPROVAL",
-      "claimOrder": "OLDEST_APPROVED_UNUSED_FIRST",
-      "claimLimit": 1
+      "resolution": "AUTOMATIC_AT_SIX_HOURS_OR_AUTHORIZED_MANUAL_CLOSE",
+      "effect": "MANUFACTURE_AUTHORITY_ONLY",
+      "workshopExecution": "SEPARATE_OPERATIONAL_PROCESS",
+      "consumableUseApproval": "NOT_REQUIRED"
     }
   },
   "unresolvedFields": []

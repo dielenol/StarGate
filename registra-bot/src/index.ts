@@ -10,14 +10,14 @@ import {
   Events,
   GatewayIntentBits,
 } from "discord.js";
+import { BUREAUCRAT_VOTE_BUTTON_PREFIX } from "@stargate/shared-db";
 import { L } from "./constants/registrar-voice.js";
-import { CENSOR_USE_VOTE_BUTTON_PREFIX } from "./constants/registrar.js";
 import { config } from "./config.js";
 import { connectDb, closeDb } from "./db/client.js";
 import { registerCommands } from "./commands/register.js";
 import {
   BALANCE_ROOT,
-  CRAFTING_VOTE_ROOT,
+  BUREAUCRAT_VOTE_ROOT,
   CREDIT_ROOT,
   HELP_ROOT_EN,
   HELP_ROOT_KO,
@@ -27,8 +27,8 @@ import {
   Sub,
 } from "./slash/ko-names.js";
 import { handleButtonInteraction } from "./handlers/button-handler.js";
-import { handleCraftingVoteButton } from "./handlers/crafting-vote-button-handler.js";
-import { handleCraftingVoteCommand } from "./commands/crafting-vote.js";
+import { handleBureaucratVoteButton } from "./handlers/bureaucrat-vote-button-handler.js";
+import { handleBureaucratVoteCommand } from "./commands/bureaucrat-vote.js";
 import {
   handleCreditCommand,
   handleSelfBalanceCommand,
@@ -50,6 +50,10 @@ import {
 } from "./commands/session-manage.js";
 import { startCloseChecker } from "./scheduler/close-checker.js";
 import {
+  startBureaucratVoteChecker,
+  type BureaucratVoteCheckerHandle,
+} from "./scheduler/bureaucrat-vote-checker.js";
+import {
   startReminderChecker,
   type ReminderCheckerHandle,
 } from "./scheduler/reminder-checker.js";
@@ -64,6 +68,7 @@ const client = new Client({
 /** 기동 중인 스케줄러 타이머 핸들 (종료 시 해제용) */
 let closeCheckerTimer: NodeJS.Timeout | null = null;
 let reminderCheckerHandle: ReminderCheckerHandle | null = null;
+let bureaucratVoteCheckerHandle: BureaucratVoteCheckerHandle | null = null;
 
 /** shutdown 재진입 방지 플래그 (SIGINT + SIGTERM 중복 수신 방어) */
 let isShuttingDown = false;
@@ -94,6 +99,8 @@ client.once(Events.ClientReady, (readyClient) => {
     console.log(L.schedulerClose);
     reminderCheckerHandle = startReminderChecker(client);
     console.log(L.schedulerRemind);
+    bureaucratVoteCheckerHandle = startBureaucratVoteChecker(client);
+    console.log("[Registrar] 관료 표결 게시·자동 마감 스케줄러 시작");
   });
 });
 
@@ -145,8 +152,8 @@ client.on(Events.InteractionCreate, (interaction) => {
       return;
     }
 
-    if (safeInteraction.commandName === CRAFTING_VOTE_ROOT) {
-      await handleCraftingVoteCommand(safeInteraction);
+    if (safeInteraction.commandName === BUREAUCRAT_VOTE_ROOT) {
+      await handleBureaucratVoteCommand(safeInteraction);
       return;
     }
 
@@ -193,8 +200,8 @@ client.on(Events.InteractionCreate, (interaction) => {
 /** 버튼 클릭 시: 가용/불가 응답 처리 */
 client.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isButton()) {
-    const handler = interaction.customId.startsWith(CENSOR_USE_VOTE_BUTTON_PREFIX)
-      ? handleCraftingVoteButton
+    const handler = interaction.customId.startsWith(BUREAUCRAT_VOTE_BUTTON_PREFIX)
+      ? handleBureaucratVoteButton
       : handleButtonInteraction;
     void safeHandleInteraction("button", interaction, handler);
   }
@@ -213,6 +220,10 @@ async function shutdown(): Promise<void> {
   if (reminderCheckerHandle !== null) {
     reminderCheckerHandle.stop();
     reminderCheckerHandle = null;
+  }
+  if (bureaucratVoteCheckerHandle !== null) {
+    bureaucratVoteCheckerHandle.stop();
+    bureaucratVoteCheckerHandle = null;
   }
   await client.destroy().catch((err) => {
     console.error("[shutdown] client.destroy failed", err);
