@@ -35,7 +35,7 @@ test("pitboy credentials update is CAS-protected and does not rotate on rerun", 
   assert.match(source, /await compare\(password, plan\.user\.hashedPassword\)/);
   assert.match(source, /비밀번호 회전을 허용하지 않습니다/);
   assert.match(source, /\$addToSet:\s*\{ characterIds:/);
-  assert.match(source, /password\.length >= 8 && password\.length <= 128/);
+  assert.match(source, /password\.length >= 4 && password\.length <= 128/);
 });
 
 test("pitboy/Susan migration CAS-protects the complete account linkage preimage", () => {

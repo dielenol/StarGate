@@ -211,8 +211,8 @@ function printPlan(plan, mode) {
 
 async function executePlan(client, db, plan, password) {
   assert(
-    password.length >= 8 && password.length <= 128,
-    "Credentials 비밀번호는 8~128자여야 합니다.",
+    password.length >= 4 && password.length <= 128,
+    "이 전용 migration의 Credentials 비밀번호는 4~128자여야 합니다.",
   );
   let passwordHash = null;
   if (plan.user.hashedPassword) {
