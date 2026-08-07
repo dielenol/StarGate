@@ -13,3 +13,10 @@
 - role/status 변경은 `session-refresh` 뒤 현재 세션과 route를 다시 검증한다.
 - 검증: `pnpm lint`, `pnpm typecheck`, `pnpm build:web`, realtime 계약 테스트
 - 관련 커밋: `bba8924`
+
+## 2026-08-07 · 운영 연동 · pitboy Credentials 로그인과 수잔 표시 신원
+
+- 기존 Discord GM 계정에 중복 계정을 만들지 않고 `pitboy` Credentials 로그인을 연결하고, 소유 NPC 수잔 델라웨어를 ERP 표시 신원으로 지정했다.
+- 계정 화면은 `pitboy` 사용자명·Discord 연동·`GM`/`ACTIVE` 상태를 그대로 보여 주며, 공용 헤더는 수잔의 H 등급을 표시한다. 실제 RBAC 역할과 관리자 접근 권한은 GM으로 유지된다.
+- 검증: 운영 반영 직후 사용자·기존 GM `MAIN`·수잔 소유권/등급/이미지·경제 행 수를 독립 재조회하고, Credentials 로그인 후 `/erp/account`와 `/erp/admin`을 읽기 전용 브라우저로 확인
+- 관련 커밋: `2f19fd84`, `2ff49207`

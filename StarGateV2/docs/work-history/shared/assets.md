@@ -19,3 +19,10 @@
 - 검증: 캐릭터 자산 계약 테스트 2건, `pnpm typecheck`, `pnpm lint`, WebP alpha·해상도 확인
 - 관련 커밋: `4b35fdce`
 - 후속 작업: ACCEL 캐릭터의 라이브 등록은 운영 필드 확인과 별도 실행 승인 후 진행한다.
+
+## 2026-08-07 · 기능 추가 · CLAIRVOYANCE 픽셀 자산 연결
+
+- 기존 `Clairvoyance-profile.webp`를 기준으로 고해상도 픽셀 프로필과 SD 전신 캐릭터를 생성하고, 각각 `Clairvoyance-pixel-profile.webp`와 `Clairvoyance-pixel-character.webp`로 추가했다.
+- `stargate-images`의 캐릭터 고정 워크플로와 `local-cutout`의 `character`/`lucida` 모델을 적용해 투명 WebP로 정리하고, 수잔 NPC의 역할별 이미지 필드에 연결했다. 로컬 누끼 결과가 기준을 충족해 생성형 폴백은 사용하지 않았다.
+- 검증: 알파 채널·해상도·체커/흰색/검은색 합성 QA, 자산 계약 테스트, 운영 DB 재조회, `/erp` 대시보드에서 SD 이미지 176×176 원본의 정상 로드와 `object-fit: contain`, 신원조회에서 기존 메인 초상 정상 로드 확인
+- 관련 커밋: `2f19fd84`
