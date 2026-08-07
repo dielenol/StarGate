@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { validateSeedInsertCandidate } from "@stargate/shared-db/schemas";
+import {
+  parseFrontmatter,
+  toDbConsumable,
+  toDbEquipment,
+  validateSeedInsertCandidate,
+} from "@stargate/shared-db/schemas";
 
 const candidate = JSON.parse(
   readFileSync(
@@ -42,6 +47,22 @@ const censorSeed = JSON.parse(
     ),
     "utf8",
   ),
+);
+
+const censorSpec = readFileSync(
+  new URL(
+    "../../../docs/spec/consumable/zulu-0028-censor-3.md",
+    import.meta.url,
+  ),
+  "utf8",
+);
+
+const bulwarkSpec = readFileSync(
+  new URL(
+    "../../../docs/spec/equipment/cmmg-mk47-mutant-pian-bulwark.md",
+    import.meta.url,
+  ),
+  "utf8",
 );
 
 test("네베드 청사진은 공임·시간·복합 담당과 재료 계약을 완성한다", () => {
@@ -230,4 +251,47 @@ test("청사진과 CENSOR-3 seed는 공유 DB의 완전 문서 schema를 통과�
   assert.doesNotThrow(() =>
     validateSeedInsertCandidate("master_items", censorSeed.payload),
   );
+});
+
+test("CENSOR-3 비공개 로어 SSOT는 15 소리·방어 무시·SAN 감소 계약을 함께 보존한다", () => {
+  const sources = [
+    censorSpec,
+    bulwarkSpec,
+    censorSeed.payload.effect,
+    censorSeed.payload.loreMd,
+    censorSeed.payload.lore.notes,
+  ];
+
+  for (const source of sources) {
+    assert.match(source, /15 소리 피해/);
+    assert.match(source, /방어(?:를)?\s*무시/);
+    assert.match(source, /SAN/);
+    assert.doesNotMatch(source, /심령 피해/);
+  }
+  assert.equal(censorSeed.payload.isPublic, false);
+  assert.equal(censorSeed.payload.isAvailable, false);
+
+  const parsedCensorSpec = parseFrontmatter(censorSpec, {
+    allowMissing: false,
+    fileName: "zulu-0028-censor-3.md",
+  });
+  const parsedBulwarkSpec = parseFrontmatter(bulwarkSpec, {
+    allowMissing: false,
+    fileName: "cmmg-mk47-mutant-pian-bulwark.md",
+  });
+  const censorDoc = toDbConsumable(
+    parsedCensorSpec.data,
+    parsedCensorSpec.body,
+  );
+  const bulwarkDoc = toDbEquipment(
+    parsedBulwarkSpec.data,
+    parsedBulwarkSpec.body,
+  );
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(censorDoc)),
+    censorSeed.payload,
+  );
+  assert.equal(censorDoc.isPublic, false);
+  assert.equal(bulwarkDoc.isPublic, false);
 });
