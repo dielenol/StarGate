@@ -27,5 +27,6 @@ source: stargate-lore
 - 신규·기존 Dossier 관계 원자적 payload: `scripts/seed-payloads/nosb-s1e5-evil-part2-dossier-relations.json` — `GERASIMOV`↔`RODION`, `GERASIMOV`↔`OTILIA`, `WHITE_ROSE_R`↔`INDEXER` 여섯 관계를 한 파일의 트랜잭션으로 추가한다.
 - 기존 Dossier 갱신 payload: `scripts/seed-payloads/nosb-s1e5-evil-part2-dossiers.json`
 - 바자로프 등급 단독 교정 payload: `scripts/seed-payloads/nosb-s1e5-evil-part2-bazarov-level-repair.json` — 현재 role이 `섹터 C 연구원장 → 섹터 C 감독관`이고 등급이 `H`인 상태를 전제해 도메인 필드는 `agentLevel: M`만 쓰며, 같은 role에서 이미 `M`이면 postcondition으로 멱등 종료한다. 다른 Dossier 도메인 필드나 캐릭터 대상은 건드리지 않지만, 실제 변경 시 runner가 `BAZAROV.updatedAt`을 갱신하고 실행 시도별 `lore_ingestion_runs` 감사 레코드를 생성·완료 또는 실패 상태로 갱신한다.
+- 바자로프 등급 단독 교정은 2026-08-07 live 적용·DB 재조회까지 완료했다. 저장 결과는 `agentLevel: M`, 감사 실행은 `succeeded`(`written=1`, `failed=0`)이며 사후 dry-run은 `예상 unchanged`다.
 - 외부 인물 `GERASIMOV`, `WHITE_ROSE_R`, `RUBIN_BABUSHKA`에는 내부 권한등급을 저장하지 않는다.
 - `WHITE_ROSE_R`의 `previewImage`와 `lore.mainImage`는 사용자 지시에 따라 빈 값으로 저장한다.

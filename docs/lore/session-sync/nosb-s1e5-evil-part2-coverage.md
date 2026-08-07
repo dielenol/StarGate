@@ -166,12 +166,12 @@ source: stargate-lore
 - 여섯 session-sync payload와 바자로프 1건 전용 등급 repair payload의 도메인 envelope는 `session_reports`, `wiki_pages`, `characters`만 대상으로 준비한다. 실제 실행 시 runner는 별도로 `lore_ingestion_runs` 감사 레코드를 기록한다.
 - `credit_transactions`, `credit_balances`, `character_inventory`, `shop_inventory`, `shop_daily_stock`, `stock_prices`, `stock_holdings`, `stock_price_history`, `master_items`에는 envelope를 만들지 않는다.
 - 나치 문양 금괴는 수사 증거이지 플레이어 보상이나 판매 카탈로그가 아니다.
-- live DB에는 이번 패스에서 어떤 mutation도 실행하지 않는다. 실제 적용은 별도 승인 뒤 payload별 정확한 대상과 부수효과를 다시 제시해야 한다.
+- 사용자 승인으로 focused BAZAROV 등급 repair 1건만 live 실행했다. 그 외 2부 payload mutation은 실행하지 않으며, 실제 적용은 별도 승인 뒤 payload별 정확한 대상과 부수효과를 다시 제시해야 한다.
 
-### Focused BAZAROV Grade Repair (separate approval required)
+### Focused BAZAROV Grade Repair (live applied 2026-08-07)
 
 - `nosb-s1e5-evil-part2-bazarov-level-repair.json`은 현재 role이 `섹터 C 연구원장 → 섹터 C 감독관`인 `characters.BAZAROV`의 `agentLevel` 도메인 필드만 `H → M`으로 바꾸는 별도 CAS repair다. role이 다르거나 등급이 `H`·`M` 어느 쪽도 아니면 실행을 중단한다. 변경 시 runner-managed `BAZAROV.updatedAt` 갱신과 `lore_ingestion_runs` 감사 레코드 기록이 함께 발생한다.
-- 이 repair는 전체 2부 sync 전에 독립 실행할 수 있다. 실행 직전 위 부수효과까지 포함해 별도 확인을 받고, 실행 후 `codename`, `role`, `agentLevel`, `updatedAt`과 audit run 상태를 재조회한다. 이후 전체 sync의 21건 Dossier 단계는 같은 `M`을 재확인하므로 등급에 관해서는 멱등이다.
+- 이 repair는 사용자에게 부수효과를 제시하고 별도 승인을 받은 뒤 전체 2부 sync 전에 독립 실행했다. 실행 후 `codename`, `role`, `agentLevel`, `updatedAt`과 audit run 상태를 재조회했다. 이후 전체 sync의 21건 Dossier 단계는 같은 `M`을 재확인하므로 등급에 관해서는 멱등이다. 다만 BAZAROV 행의 다른 2부 Dossier 필드는 아직 전체 payload 적용 전이므로 원장 판정은 `ready-for-apply`를 유지한다.
 
 ### Ordered Live Runbook (approval required)
 
@@ -257,7 +257,7 @@ source: stargate-lore
 - focused grade repair: `BAZAROV` role이 승인된 감독관 이력과 같고 현재 등급이 `H`이면 1건 `예상 update`, 같은 role에서 이미 `M`이면 1건 `예상 unchanged`, role/등급 precondition이 다르면 `예상 missing`으로 중단해야 한다. 실제 update 뒤 `updatedAt` 증가와 `lore_ingestion_runs` 성공 audit을 함께 확인한다.
 - personality: 6개 observation은 immutable ID별 단일 `$addToSet` envelope이며 timestamp를 포함하지 않아야 한다.
 - 경제: payload 전체에 경제·인벤토리·상점·주식·`master_items` mutation이 없어야 한다.
-- live DB mutation과 쓰기 후 재조회·인증 브라우저 검증은 최종 실행 확인 전까지 남은 갭으로 유지한다.
+- focused BAZAROV 등급 교정은 live 적용·DB 재조회·감사 레코드 확인까지 완료했다. 나머지 2부 payload의 live mutation과 인증 브라우저 검증은 별도 실행 범위로 남는다.
 
 ## Verification Evidence
 
@@ -266,9 +266,10 @@ source: stargate-lore
 - 보고서·wiki mirror의 15개 이미지 path/order/alt/caption parity, 33개 visual ledger, main NPC ledger, payload 대상 전용 apply-ready ledger, personality ready ledger와 관찰 6개의 일치를 `check_lore_output.py`로 검증했다. `BAZAROV`의 `H → M` ledger/payload 일치, 외부 신규 세 NPC의 `agentLevel` assignment 부재, `WHITE_ROSE_R`의 명시적 무이미지 결정과 NPC payload 포함이 apply-ready 검사를 통과했다.
 - repository 전체 coverage/static payload/category/link/asset 감사가 통과했고 coverage·NPC 적용 명세는 `docs/lore/README.md` 인덱스에 포함됐다. public payload 문자열의 내부 경로·parser·payload·raw page/line·candidate-only·경제 no-op 표현 검사도 통과했다.
 - 2026-08-07 live read-only 등급 preflight에서 `BAZAROV`의 현재 role이 `섹터 C 연구원장 → 섹터 C 감독관`, `agentLevel`이 `H`임을 확인했고, `nosb-s1e5-evil-part2-bazarov-level-repair.json`의 `H → M` 단일 등급 변경이 1건 `예상 update`로 판정됐다.
+- 2026-08-07 사용자 실행 승인 뒤 focused repair를 live `stargate.characters`에 적용했다. `_id=6a57248f3f2831d09ed5ebff`의 role·소속·공개·초상은 유지되고 `agentLevel: M`과 `updatedAt: 2026-08-07T06:22:04.851Z`가 재조회됐으며, `lore_ingestion_runs.runId=seed-payload:82b0090c-b5db-4326-94bc-12ac3a3d6b33`은 `succeeded`, `written=1`, `failed=0`이었다. 사후 dry-run은 같은 대상 1건을 `예상 unchanged`로 판정했다.
 - live 연결 read-only seed dry-run에서 여섯 파일 46개 계획을 검증했다. sync 10건은 `session_reports` 신규 1건, `wiki_pages` 공개 신규 4건·기존 5건이었고, 생성 전용 Dossier 3건은 `GERASIMOV`, `RUBIN_BABUSHKA`, `WHITE_ROSE_R` 예상 insert, 기존 Dossier 21건과 personality observation 6건은 모두 예상 update였다.
 - 관계 파일은 현재 `GERASIMOV`, `WHITE_ROSE_R`이 없으므로 두 대상 `예상 missing`, `RODION`·`OTILIA`·`INDEXER`는 예상 update로 확인됐다. 신규 Dossier 생성·재조회 뒤 다섯 대상이 모두 update 또는 unchanged인 live 연결 dry-run을 통과해야 관계 트랜잭션을 실행한다.
 - live preflight 재조회에서 2부 report·신규 wiki 4건·신규 NPC 3건은 아직 없고, 1부 report와 mirror에는 당시 기록인 `이름이 확인되지 않은 러시아 장군` 문구가 남아 있음을 확인했다. follow-up은 문자열 치환 없이 2부 report의 구조화 배열만 합집합으로 보강하며, 신규 target 생성·재조회 뒤 live 연결 dry-run을 통과해야 실행할 수 있다.
 - 연관 인물 링크 테스트 12건(외부 NPC의 미지정 등급 비노출 포함), 번호 formatter 테스트 2건, personality update/seed normalization 테스트 13건, frontmatter·NPC·seed payload corpus 테스트 46건이 모두 통과했다.
 - `pnpm --filter @stargate/shared-db build`, `pnpm typecheck`, `pnpm lint`, `git diff --check`가 통과했다.
-- live `--execute`, push/deploy, 경제·인벤토리·주식 mutation, 인증 브라우저 확인은 수행하지 않았다. 따라서 audit status는 `partial`이며 정확한 대상에 대한 최종 실행 확인, 실제 적용·단계별 DB 재조회·ERP 렌더가 남은 갭이다.
+- focused BAZAROV 등급 repair의 live `--execute`와 DB·감사 재조회는 완료했다. 나머지 2부 sync payload 실행, push/deploy, 경제·인벤토리·주식 mutation, 인증 브라우저 확인은 수행하지 않았으므로 전체 세션 audit status는 `partial`을 유지한다.
