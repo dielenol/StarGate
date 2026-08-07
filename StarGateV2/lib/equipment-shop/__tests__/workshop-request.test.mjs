@@ -1533,6 +1533,11 @@ test("GM material picker supports name and category search", () => {
   );
   assert.match(adminClient, /combatProfile: draft\.preservedCombatProfile/);
   assert.match(adminClient, /구조화 계약은 현재 읽기 전용/);
+  assert.match(adminClient, /aria-label="프리셋 장비 액션"/);
+  assert.match(adminClient, /draft\.preservedEquipmentActions\.map/);
+  assert.match(adminClient, /action\.actionCost/);
+  assert.match(adminClient, /action\.consumableCost/);
+  assert.match(adminClient, /action\.additionalDamage/);
 });
 
 test("GM workshop uses the shared accessible dropdown instead of native selects", () => {

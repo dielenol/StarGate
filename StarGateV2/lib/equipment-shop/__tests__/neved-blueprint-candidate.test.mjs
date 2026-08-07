@@ -130,9 +130,16 @@ test("실행 청사진 seed는 후보 계약과 같은 전투 수치를 보존�
     ),
     [7, 12, 12],
   );
+  const mount = defaults.result.equipmentActions.find(
+    (action) => action.code === "U1",
+  );
+  assert.equal(mount.name, "총기 거치 전환");
+  assert.equal(mount.kind, "STANCE");
+  assert.equal(mount.actionCost, 1);
   const censor = defaults.result.equipmentActions.find(
     (action) => action.code === "U2",
   );
+  assert.equal(censor.name, "파쇄음절탄 사격");
   assert.equal(censor.kind, "CONSUMABLE");
   assert.equal(censor.consumableCost.quantity, 1);
   assert.equal("approval" in censor.consumableCost, false);

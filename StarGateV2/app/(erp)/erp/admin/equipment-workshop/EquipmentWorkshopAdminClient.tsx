@@ -68,6 +68,10 @@ type WorkshopQuoteResult = NonNullable<
   AdminSerializedEquipmentWorkshopRequest["quote"]
 >["result"];
 
+type WorkshopEquipmentAction = NonNullable<
+  WorkshopQuoteResult["equipmentActions"]
+>[number];
+
 interface QuoteDraft {
   expectedVersion: number;
   creditCost: string;
@@ -203,6 +207,33 @@ function formatEquipmentActionSummary(
   return actionCode
     ? `${actionCode.toUpperCase()} · ${actionName || "이름 미입력"}`
     : "없음";
+}
+
+function getEquipmentActionKindLabel(
+  kind: WorkshopEquipmentAction["kind"],
+): string {
+  if (kind === "STANCE") return "상태 전환";
+  if (kind === "CONSUMABLE") return "소모품 사용";
+  return "충전형";
+}
+
+function getEquipmentActionDamageLabel(
+  damage: WorkshopEquipmentAction["additionalDamage"],
+): string | null {
+  if (!damage) return null;
+  const damageType =
+    damage.type === "PSYCHIC"
+      ? "심령"
+      : damage.type === "FIRE"
+        ? "화염"
+        : "물리";
+  return [
+    `${damage.amount.toLocaleString()} ${damageType}`,
+    damage.ignoresDefense ? "방어 무시" : null,
+    damage.scaling === "NONE" ? "고정 피해" : "표준 보정",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function createDraft(
@@ -2521,102 +2552,196 @@ export default function EquipmentWorkshopAdminClient({
                   )}
                 >
                   <summary>장비 액션 (EQUIPMENT ACTION, 선택)</summary>
-                  {draft.preservedEquipmentActions?.length ||
-                  draft.preservedCombatProfile ? (
-                    <p className={styles.emptyHint}>
-                      복수 U 액션
-                      {draft.preservedEquipmentActions?.length
-                        ? ` ${draft.preservedEquipmentActions
-                            .map((action) => `${action.code} · ${action.name}`)
-                            .join(", ")}`
-                        : " 없음"}
-                      {" · "}
-                      전투 프로필 {draft.preservedCombatProfile ? "있음" : "없음"}
-                      {" · "}
-                      이 구조화 계약은 현재 읽기 전용이며 견적·설계안 저장 시 그대로 보존됩니다.
-                    </p>
-                  ) : null}
-                  <div className={styles.twoColumns}>
-                    <label>
-                      <span>액션 코드</span>
-                      <input
-                        maxLength={3}
-                        value={draft.actionCode}
-                        onChange={(event) =>
-                          setDraft({ ...draft, actionCode: event.target.value })
-                        }
-                        placeholder="U1"
-                      />
-                    </label>
-                    <label>
-                      <span>액션명</span>
-                      <input
-                        maxLength={80}
-                        value={draft.actionName}
-                        onChange={(event) =>
-                          setDraft({ ...draft, actionName: event.target.value })
-                        }
-                      />
-                    </label>
-                  </div>
-                  <label>
-                    <span>액션 설명</span>
-                    <textarea
-                      maxLength={500}
-                      rows={3}
-                      value={draft.actionDescription}
-                      onChange={(event) =>
-                        setDraft({
-                          ...draft,
-                          actionDescription: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>액션 효과</span>
-                    <textarea
-                      maxLength={1000}
-                      rows={6}
-                      value={draft.actionEffect}
-                      onChange={(event) =>
-                        setDraft({ ...draft, actionEffect: event.target.value })
-                      }
-                    />
-                  </label>
-                  <div className={styles.twoColumns}>
-                    <label>
-                      <span>최대 충전</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max="99"
-                        step="1"
-                        value={draft.actionMaxCharges}
-                        onChange={(event) =>
-                          setDraft({
-                            ...draft,
-                            actionMaxCharges: event.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                    <label>
-                      <span>GM 승인 재장전 비용</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={draft.actionReloadCreditCost}
-                        onChange={(event) =>
-                          setDraft({
-                            ...draft,
-                            actionReloadCreditCost: event.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                  </div>
+                  {draft.preservedEquipmentActions?.length ? (
+                    <section
+                      aria-label="프리셋 장비 액션"
+                      className={styles.presetActions}
+                    >
+                      <div className={styles.presetActions__heading}>
+                        <strong>프리셋 장비 액션</strong>
+                        <span>
+                          U 액션 {draft.preservedEquipmentActions.length}개
+                        </span>
+                      </div>
+                      <div className={styles.presetActions__grid}>
+                        {draft.preservedEquipmentActions.map((action) => {
+                          const additionalDamage =
+                            getEquipmentActionDamageLabel(
+                              action.additionalDamage,
+                            );
+                          return (
+                            <article
+                              className={styles.presetActionCard}
+                              key={action.code}
+                            >
+                              <header>
+                                <span>{action.code}</span>
+                                <strong>{action.name}</strong>
+                              </header>
+                              <div className={styles.presetActionCard__badges}>
+                                <span>
+                                  {getEquipmentActionKindLabel(action.kind)}
+                                </span>
+                                <span>액션 {action.actionCost} 소모</span>
+                                {action.requiresMounted ? (
+                                  <span>거치 상태 필요</span>
+                                ) : null}
+                              </div>
+                              <p>{action.description}</p>
+                              <p className={styles.presetActionCard__effect}>
+                                <strong>효과</strong>
+                                {action.effect}
+                              </p>
+                              <dl>
+                                {action.rangeMinCells !== undefined &&
+                                action.rangeMaxCells !== undefined ? (
+                                  <div>
+                                    <dt>사거리</dt>
+                                    <dd>
+                                      {action.rangeMinCells}–
+                                      {action.rangeMaxCells}칸
+                                    </dd>
+                                  </div>
+                                ) : null}
+                                {action.usesWeaponAttack ? (
+                                  <div>
+                                    <dt>기본 사격</dt>
+                                    <dd>총기 표기 피해 함께 판정</dd>
+                                  </div>
+                                ) : null}
+                                {action.consumesRegularAmmo !== undefined ? (
+                                  <div>
+                                    <dt>일반 탄약</dt>
+                                    <dd>
+                                      {action.consumesRegularAmmo > 0
+                                        ? `${action.consumesRegularAmmo}발 소모`
+                                        : "소모하지 않음"}
+                                    </dd>
+                                  </div>
+                                ) : null}
+                                {additionalDamage ? (
+                                  <div>
+                                    <dt>추가 피해</dt>
+                                    <dd>{additionalDamage}</dd>
+                                  </div>
+                                ) : null}
+                                {action.consumableCost ? (
+                                  <div>
+                                    <dt>전용 소모품</dt>
+                                    <dd>
+                                      {action.consumableCost.slug} ×
+                                      {action.consumableCost.quantity}
+                                    </dd>
+                                  </div>
+                                ) : null}
+                              </dl>
+                            </article>
+                          );
+                        })}
+                      </div>
+                      <p className={styles.emptyHint}>
+                        이 프리셋의 복수 액션과 전투 프로필 구조화 계약은 현재 읽기 전용이며 견적·설계안 저장 시 그대로 보존됩니다.
+                      </p>
+                    </section>
+                  ) : (
+                    <>
+                      {draft.preservedCombatProfile ? (
+                        <p className={styles.emptyHint}>
+                          전투 프로필 구조화 계약은 현재 읽기 전용이며 견적·설계안 저장 시 그대로 보존됩니다.
+                        </p>
+                      ) : null}
+                      <div className={styles.twoColumns}>
+                        <label>
+                          <span>액션 코드</span>
+                          <input
+                            maxLength={3}
+                            value={draft.actionCode}
+                            onChange={(event) =>
+                              setDraft({
+                                ...draft,
+                                actionCode: event.target.value,
+                              })
+                            }
+                            placeholder="U1"
+                          />
+                        </label>
+                        <label>
+                          <span>액션명</span>
+                          <input
+                            maxLength={80}
+                            value={draft.actionName}
+                            onChange={(event) =>
+                              setDraft({
+                                ...draft,
+                                actionName: event.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                      </div>
+                      <label>
+                        <span>액션 설명</span>
+                        <textarea
+                          maxLength={500}
+                          rows={3}
+                          value={draft.actionDescription}
+                          onChange={(event) =>
+                            setDraft({
+                              ...draft,
+                              actionDescription: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span>액션 효과</span>
+                        <textarea
+                          maxLength={1000}
+                          rows={6}
+                          value={draft.actionEffect}
+                          onChange={(event) =>
+                            setDraft({
+                              ...draft,
+                              actionEffect: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                      <div className={styles.twoColumns}>
+                        <label>
+                          <span>최대 충전</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max="99"
+                            step="1"
+                            value={draft.actionMaxCharges}
+                            onChange={(event) =>
+                              setDraft({
+                                ...draft,
+                                actionMaxCharges: event.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          <span>GM 승인 재장전 비용</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={draft.actionReloadCreditCost}
+                            onChange={(event) =>
+                              setDraft({
+                                ...draft,
+                                actionReloadCreditCost: event.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                      </div>
+                    </>
+                  )}
                 </details>
 
                 <details

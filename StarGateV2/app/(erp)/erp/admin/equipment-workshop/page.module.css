@@ -430,6 +430,127 @@
   cursor: pointer;
 }
 
+.presetActions {
+  display: grid;
+  gap: 12px;
+}
+
+.presetActions__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.presetActions__heading strong {
+  color: #f0e5c5;
+  font-size: 15px;
+}
+
+.presetActions__heading span {
+  color: #b8aa82;
+  font-size: 13px;
+}
+
+.presetActions__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.presetActionCard {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #4b4534;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #12130f, #0d0f12);
+}
+
+.presetActionCard header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.presetActionCard header > span {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border: 1px solid #8c7540;
+  border-radius: 5px;
+  background: #272112;
+  color: #f0cf73;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.presetActionCard header > strong {
+  min-width: 0;
+  color: #f2eee2;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.presetActionCard__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.presetActionCard__badges span {
+  padding: 3px 7px;
+  border: 1px solid #353a42;
+  border-radius: 999px;
+  background: #15181c;
+  color: #bfc5cc;
+  font-size: 12px;
+}
+
+.presetActionCard p {
+  margin: 0;
+  color: #c7c2b6;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.presetActionCard__effect {
+  display: grid;
+  gap: 3px;
+  padding-top: 9px;
+  border-top: 1px solid #2b2e31;
+}
+
+.presetActionCard__effect strong {
+  color: #d9bd70;
+  font-size: 12px;
+}
+
+.presetActionCard dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.presetActionCard dl > div {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.presetActionCard dt {
+  color: #8f8b82;
+}
+
+.presetActionCard dd {
+  min-width: 0;
+  margin: 0;
+  color: #d8d4ca;
+  overflow-wrap: anywhere;
+}
+
 .blueprintActions,
 .operationActions {
   display: flex;
@@ -791,6 +912,15 @@
 
   .resultArchive__specs,
   .resultArchive__columns {
+    grid-template-columns: 1fr;
+  }
+
+  .presetActions__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .presetActions__grid {
     grid-template-columns: 1fr;
   }
 
