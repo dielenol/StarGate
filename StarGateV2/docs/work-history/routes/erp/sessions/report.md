@@ -59,3 +59,18 @@
 - 검증: 연관 인물 링크 테스트 12건, `pnpm typecheck`, `pnpm lint`, critical risk review
 - 관련 커밋: `3454ae58`
 - 후속 작업: 해당 revision 배포 뒤 외부 NPC가 연결된 보고서 상세를 인증 브라우저에서 확인한다.
+
+## 2026-08-07 · 기능 변경 · 작전 보고서 열람 등급
+
+- 작전 보고서에 `minRole`을 추가하고 목록·상세·편집·API에서 뷰어 역할에 따라 존재 여부를 숨기도록 통일했다.
+- 위키·카탈로그·Dossier 역참조와 통합 Lore Explorer도 같은 역할 필터를 적용하며, 비공개 참조 대상은 보고서 공개 범위를 초과할 수 없게 검증한다.
+- 검증: shared-db 11건(2건 skip), app 19건, projection 11건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `1949c42d`
+
+## 2026-08-07 · 로어 동기화 · MINI05 로맨티드
+
+- 미니세션 `로맨티드`를 정규 보고서 `MINI05`로 식별하고 보고서·wiki·Dossier·관계·성격 관찰 payload와 장면 자산 8종을 준비했다.
+- 신규 보고서는 라이브 공개 전까지 V 이상만 열람하도록 staging했으며, live DB에는 적용하지 않았다.
+- 검증: PDF 145페이지/1,847레코드 추출, lore 전체 감사, schema corpus 11건, 참조·Dossier·관계·성격 관찰 read-only dry-run
+- 관련 커밋: `e3fe81ae`
+- 후속 작업: `book-810`, `key-shaped-bookmark` 참조 대상을 먼저 live 반영한 뒤 보고서·mirror 적용, DB 재조회, 역할별 인증 브라우저 검증이 필요하다.

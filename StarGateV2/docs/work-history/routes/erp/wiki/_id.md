@@ -38,3 +38,10 @@
 - 검증: 연관 인물 링크 테스트 12건, `pnpm typecheck`, `pnpm lint`, critical risk review
 - 관련 커밋: `3454ae58`
 - 후속 작업: 해당 revision 배포와 신규 공개 Dossier 적용 뒤 위키 상세 링크·메타를 인증 브라우저에서 확인한다.
+
+## 2026-08-07 · 기능 변경 · 관련 보고서 열람 등급
+
+- 위키 상세의 관련 작전 보고서 카드를 뷰어 역할별로 필터링해 권한 미달 보고서의 제목·링크·존재 여부를 숨긴다.
+- 비공개 위키를 참조하는 보고서는 V 이상으로 제한해 위키와 보고서의 공개 범위가 어긋나지 않게 검증한다.
+- 검증: app 19건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `1949c42d`

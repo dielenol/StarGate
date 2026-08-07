@@ -68,3 +68,10 @@
 - 검증: shared-db schema 162건, 대상 회귀 테스트 31건, NPC 승인 게이트, payload live read-only dry-run, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 820px·590px·580px 브라우저 확인, critical risk review
 - 관련 커밋: `aaafb429`
 - 후속 작업: 별도 라이브 실행 승인 후 사망 인원 5명 payload 적용·DB 재조회·상세 보고서 링크 확인
+
+## 2026-08-07 · 기능 변경 · Dossier 보고서 열람 등급
+
+- Dossier의 관련 작전 보고서 링크를 뷰어 역할별로 필터링해 권한 미달 보고서의 제목·사건 연결을 노출하지 않는다.
+- 비공개 인물을 참조하는 보고서는 GM 전용으로 제한해 인물 공개 범위와 역참조가 어긋나지 않게 검증한다.
+- 검증: app 19건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `1949c42d`

@@ -9,3 +9,10 @@
 - 검증: 검색·권한·pagination 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build` 86페이지, 인증된 데스크톱·390px 브라우저에서 가로 overflow 0 및 콘솔 오류 0건
 - 관련 커밋: `a57ecd94`
 - 후속 작업: live lore index 생성과 projection rebuild는 별도 운영 승인 후 적용·재검증한다.
+
+## 2026-08-07 · 기능 변경 · 보고서 검색·카탈로그 열람 등급
+
+- 통합 Lore Explorer의 live index와 fallback 검색 모두 보고서 `minRole`을 적용해 권한 미달 결과의 제목·존재 여부를 숨긴다.
+- 카탈로그 상세의 관련 보고서 카드도 같은 서버 필터를 사용하며, 비공개 카탈로그를 참조하는 보고서는 V 이상으로 제한한다.
+- 검증: app 19건, projection 11건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `1949c42d`
