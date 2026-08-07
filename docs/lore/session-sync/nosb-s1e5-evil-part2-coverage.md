@@ -91,20 +91,20 @@ source: stargate-lore
 
 ## NPC Approval Ledger
 
-기존 세 NPC는 현재 spec의 승인값을 보존하면서 2부 상태만 갱신한다. 게라쉬모프와 바부슈카는 사용자 제공 초상·공개 결정과 외부 소속 분류를 반영해 신규 Dossier로 준비한다. R은 화이트로즈 소속 공개 Dossier로 생성하되, 사용자 지시에 따라 초상 없이 등록하고 실명 미상 상태를 보존한다.
+기존 세 NPC는 2부 상태를 갱신하되, `PECHORIN`·`RODION`의 등급은 보존하고 `BAZAROV`는 감독관 취임에 대한 사용자 승인에 따라 `H → M`으로 승급한다. 기존 세 NPC의 초상·공개 여부·소속은 보존한다. 게라쉬모프와 바부슈카는 사용자 제공 초상·공개 결정과 외부 소속 분류를 반영해 신규 Dossier로 준비한다. R은 화이트로즈 소속 공개 Dossier로 생성하되, 사용자 지시에 따라 초상 없이 등록하고 실명 미상 상태를 보존한다.
 
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `PECHORIN` | 그리고리 페초린 | 없음(기록 없음) | 섹터 C 전방 수호대 통솔 대령 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 없음(정규 배치) | `H`(기존 승인값 유지) | `/assets/npcs/Pechorin-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이·신장·체중 미상 | 마가렛에게 데드핸드 실행을 맡기고 자결해 비상 냉각을 가능하게 함; 사망 상태 추가 | ready-for-apply |
 | `RODION` | 로드리온 로마노비치 라스콜니코프 | `грибы(버섯들)` | 전 섹터 C 감독관 / 심부 굴착 생존자 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 없음(정규 배치) | `M`(기존 승인값 유지) | `/assets/npcs/Rodion-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 67세; 190cm; 체중 미상 | 실각 투표 뒤 마리아가 오브에 투척했고 화염·전기 피해로 사망 | ready-for-apply |
-| `BAZAROV` | 니콜라이 바자로프 | `богослов(신학자)` | 섹터 C 연구원장 → 섹터 C 감독관 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 연구원장→감독관 직책 변경 | `H`(기존 승인값 유지) | `/assets/npcs/Bazarov-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이 미상; 176cm; 체중 미상 | 레짐 체인지 프로토콜로 새 감독관이 되었고 섹터 C 사태가 후속 안정화됨 | ready-for-apply |
+| `BAZAROV` | 니콜라이 바자로프 | `богослов(신학자)` | 섹터 C 연구원장 → 섹터 C 감독관 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 연구원장→감독관 직책 변경 | `H → M`(사용자 승인; 섹터 C 단일 부서 감독관 취임에 따른 부서 관리자 등급) | `/assets/npcs/Bazarov-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이 미상; 176cm; 체중 미상 | 레짐 체인지 프로토콜로 새 감독관이 되었고 섹터 C 사태가 후속 안정화됨 | ready-for-apply |
 | `GERASIMOV` | 게라쉬모프(성만 확인; 이름·부칭은 원문 미상) | 없음(기록 없음) | 러시아 측 파견 장군 / 섹터 C 국영화 추진자 | 로드리온의 호명, 1·2부 역할 연속성, 사용자 제공 초상 매칭; 성 기반 기술 식별자 | `MILITARY` 외부 군부 | 러시아 측 / 섹터 C 국영화·지도부 교체 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Gerasimov-profile.webp`(사용자 제공 원본 초상) | `true`(사용자 공개 결정) | 남성; 나이·신장·체중은 원문 미상 | 로드리온과 지휘권 경쟁; 지도부 투표 뒤 오틸리아의 공격으로 사망; 양방향 Dossier 관계 | ready-for-apply |
 | `WHITE_ROSE_R` | R(교신 식별명; 실명·전체 이름은 원문 미상) | 없음(`R`은 현재 확인된 주 식별명) | 화이트로즈 수장(자칭) / 레짐 체인지 제안자 | 통신에서 본인이 조직 수장 R이라고 발화; 조직명과 식별명을 결합한 기술 식별자 | `CIVIL / WHITE_ROSE` 외부 시민사회 | 본부 긴급 통신망 개입 / 섹터 C 후임 파견 제안 | 없음(외부 조직 인물; `agentLevel` 미저장) | 빈 값(사용자 명시적 무이미지 결정; 교신 컷신 재사용 금지) | `true`(앞선 공개 결정 유지) | 성별·나이·신장·체중은 원문 미상 | 지도부 동시 실각과 화이트로즈 인사 파견을 제안; `INDEXER`와 양방향 testimony 관계 | ready-for-apply |
 | `RUBIN_BABUSHKA` | 바부슈카(실명은 원문 미상; speaker label을 표시명으로 보존) | 없음(바부슈카는 기록 표시명) | 루빈 인근 마을 주민 / 실명 미상 | 종료 장면 speaker label과 사용자 제공 초상; 사건 기반 기술 식별자 | `CIVIL` 외부 시민사회 | 루빈 인근 마을 주민 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Rubin-Babushka-profile.webp`(사용자 제공 원본 초상) | `true`(사용자 공개 결정) | 여성 노인; 신장·체중은 원문 미상 | 웬디고와 `Мама`·`내 아들` 발화를 교환했다는 증언만 보존하고 실제 가족관계는 확정하지 않음 | ready-for-apply |
 
 ### NPC Decision Register
 
-- 기존 `PECHORIN`, `RODION`, `BAZAROV`의 등급·초상·공개 여부·소속은 1부 승인값을 그대로 보존한다.
+- `PECHORIN`과 `RODION`의 등급은 1부 승인값을 보존한다. `BAZAROV`는 사용자 승인에 따라 연구원장 `H`에서 섹터 C 단일 부서 감독관 `M`으로 승급한다. 기존 세 NPC의 초상·공개 여부·소속은 그대로 보존한다.
 - `PECHORIN`과 `RODION`의 사망은 GM 서술로 확정됐으므로 spec 및 기존 Dossier 상태 서술에 반영한다.
 - `BAZAROV`의 감독관 취임은 레짐 체인지 방송과 종료 시점 GM 서술이 함께 뒷받침한다.
 - `GERASIMOV`는 `MILITARY`, `RUBIN_BABUSHKA`는 `CIVIL`, `WHITE_ROSE_R`은 `CIVIL / WHITE_ROSE` 외부 인물로 분류하고 내부 `agentLevel`은 저장하지 않는다. 러시아와 루빈 마을은 역할·태그·서사에 보존하며 단일 인물을 위해 새 조직 코드를 만들지 않는다.
@@ -163,10 +163,15 @@ source: stargate-lore
 
 ### No-mutation Boundary
 
-- 여섯 payload는 `session_reports`, `wiki_pages`, `characters`만 대상으로 준비한다.
+- 여섯 session-sync payload와 바자로프 1건 전용 등급 repair payload의 도메인 envelope는 `session_reports`, `wiki_pages`, `characters`만 대상으로 준비한다. 실제 실행 시 runner는 별도로 `lore_ingestion_runs` 감사 레코드를 기록한다.
 - `credit_transactions`, `credit_balances`, `character_inventory`, `shop_inventory`, `shop_daily_stock`, `stock_prices`, `stock_holdings`, `stock_price_history`, `master_items`에는 envelope를 만들지 않는다.
 - 나치 문양 금괴는 수사 증거이지 플레이어 보상이나 판매 카탈로그가 아니다.
 - live DB에는 이번 패스에서 어떤 mutation도 실행하지 않는다. 실제 적용은 별도 승인 뒤 payload별 정확한 대상과 부수효과를 다시 제시해야 한다.
+
+### Focused BAZAROV Grade Repair (separate approval required)
+
+- `nosb-s1e5-evil-part2-bazarov-level-repair.json`은 현재 role이 `섹터 C 연구원장 → 섹터 C 감독관`인 `characters.BAZAROV`의 `agentLevel` 도메인 필드만 `H → M`으로 바꾸는 별도 CAS repair다. role이 다르거나 등급이 `H`·`M` 어느 쪽도 아니면 실행을 중단한다. 변경 시 runner-managed `BAZAROV.updatedAt` 갱신과 `lore_ingestion_runs` 감사 레코드 기록이 함께 발생한다.
+- 이 repair는 전체 2부 sync 전에 독립 실행할 수 있다. 실행 직전 위 부수효과까지 포함해 별도 확인을 받고, 실행 후 `codename`, `role`, `agentLevel`, `updatedAt`과 audit run 상태를 재조회한다. 이후 전체 sync의 21건 Dossier 단계는 같은 `M`을 재확인하므로 등급에 관해서는 멱등이다.
 
 ### Ordered Live Runbook (approval required)
 
@@ -175,7 +180,7 @@ source: stargate-lore
 3. `nosb-s1e5-evil-part2-sync.json`을 먼저 실행하고 report 1건, 기존 wiki 5건, 공개 신규 wiki 4건을 DB에서 재조회한다. 하나라도 불일치하면 이후 파일을 실행하지 않는다.
 4. 최초 `personalityObservations` 배열로 보호한 생성 전용 `nosb-s1e5-evil-part2-new-npcs.json`을 실행하고 `GERASIMOV`, `RUBIN_BABUSHKA`, `WHITE_ROSE_R`의 외부 소속, `agentLevel` 부재, 공개 여부, 초상 또는 명시적 무이미지, 사건 역링크를 재조회한다. 기존 문서가 발견되면 runner가 덮어쓰지 않고 중단한다.
 5. `nosb-s1e5-evil-part2-dossier-relations.json`을 live 연결 dry-run한 뒤 실행해 `GERASIMOV`↔`RODION`, `GERASIMOV`↔`OTILIA`, `WHITE_ROSE_R`↔`INDEXER` 여섯 관계를 한 트랜잭션으로 추가하고 다섯 Dossier를 재조회한다.
-6. `nosb-s1e5-evil-part2-dossiers.json`을 실행하고 21개 기존 대상의 event/session appearance 및 나머지 확인 관계를 재조회한다. 실패하면 personality 단계로 넘어가지 않는다.
+6. `nosb-s1e5-evil-part2-dossiers.json`을 실행하고 21개 기존 대상의 event/session appearance, `BAZAROV.agentLevel: M` 및 나머지 확인 관계를 재조회한다. 실패하면 personality 단계로 넘어가지 않는다.
 7. `nosb-s1e5-evil-part2-personality.json`을 실행하고 immutable observation ID 6개를 재조회한다.
 8. 신규 대상 존재를 재확인한 뒤 `nosb-s1e5-evil-part2-reference-followup.json`을 live 연결 dry-run하고 실행해 2부 보고서에 신규 wiki 3건·신규 NPC 3건의 구조화 참조만 합집합으로 추가한다. 1부 보고서 본문은 당시의 `이름이 확인되지 않은 러시아 장군` 기록을 유지하고, 1부 연결은 게라쉬모프 Dossier의 사건·세션 역링크로 제공한다.
 9. direct seed는 열린 클라이언트 Query cache를 무효화하지 않으므로 새 브라우저 세션 또는 강제 새로고침으로 personnel/report/wiki를 확인한다. `05`/`05.5` 카드 분리, 이미지 17개 geometry, 외부 인물의 권한등급 비노출, R의 무이미지 카드·상세, 상세 링크·역링크·통합 검색을 검증한다.
@@ -247,8 +252,9 @@ source: stargate-lore
 - 보고서·wiki mirror: 15개 이미지 경로·순서·alt·caption이 완전히 같아야 한다.
 - 보고서 구조화 링크: 최초 sync에는 현재 live target만 저장하고, 신규 wiki 3건·NPC 3건 생성 뒤 follow-up이 2부 forward edge를 합집합으로 추가해야 한다. 1부 연결은 `GERASIMOV` Dossier의 `appearsInEvents`와 `sessionAppearances`로 제공한다.
 - 정적 자산: 보고서 WebP 15개는 모두 1035×503, Dossier 초상은 각각 876×1280·956×1280이며 payload·ledger 경로와 일치해야 한다.
-- NPC: 기존 세 NPC는 현재 등급·초상·공개 여부·소속을 보존한다. `GERASIMOV`와 `RUBIN_BABUSHKA`는 외부 소속·등급 없음·공개 초상으로, `WHITE_ROSE_R`은 `CIVIL / WHITE_ROSE`·등급 없음·빈 초상·공개 상태로 신규 생성해야 한다.
+- NPC: `PECHORIN`·`RODION`은 기존 등급을 보존하고 `BAZAROV`는 `H → M`으로 승급하며, 기존 세 NPC의 초상·공개 여부·소속은 보존한다. `GERASIMOV`와 `RUBIN_BABUSHKA`는 외부 소속·등급 없음·공개 초상으로, `WHITE_ROSE_R`은 `CIVIL / WHITE_ROSE`·등급 없음·빈 초상·공개 상태로 신규 생성해야 한다.
 - Dossier: 21개 기존 codename이 모두 dry-run에서 `예상 update` 또는 멱등 `예상 unchanged`여야 한다.
+- focused grade repair: `BAZAROV` role이 승인된 감독관 이력과 같고 현재 등급이 `H`이면 1건 `예상 update`, 같은 role에서 이미 `M`이면 1건 `예상 unchanged`, role/등급 precondition이 다르면 `예상 missing`으로 중단해야 한다. 실제 update 뒤 `updatedAt` 증가와 `lore_ingestion_runs` 성공 audit을 함께 확인한다.
 - personality: 6개 observation은 immutable ID별 단일 `$addToSet` envelope이며 timestamp를 포함하지 않아야 한다.
 - 경제: payload 전체에 경제·인벤토리·상점·주식·`master_items` mutation이 없어야 한다.
 - live DB mutation과 쓰기 후 재조회·인증 브라우저 검증은 최종 실행 확인 전까지 남은 갭으로 유지한다.
@@ -256,9 +262,10 @@ source: stargate-lore
 ## Verification Evidence
 
 - 원본 113쪽에서 1,485개 기록과 31개 시각 프레임을 추출했고 빈 페이지·대체문자가 없음을 확인했다. 대표 시작·중간·종료 페이지와 선정 프레임을 시각 판독했다.
-- `PECHORIN`, `RODION`, `BAZAROV`, `GERASIMOV`, `WHITE_ROSE_R`, `RUBIN_BABUSHKA` spec은 `parseFrontmatter → npcFrontmatterSchema → toDbNpc → npcDocSchema` 계약을 통과했다. 신규 세 NPC는 외부 소속, 직렬화 후 `agentLevel` field absence, `isPublic: true`가 확인됐고 R은 `CIVIL / WHITE_ROSE`, 빈 `previewImage`로 검증됐다.
-- 보고서·wiki mirror의 15개 이미지 path/order/alt/caption parity, 33개 visual ledger, main NPC ledger, payload 대상 전용 apply-ready ledger, personality ready ledger와 관찰 6개의 일치를 `check_lore_output.py`로 검증했다. `WHITE_ROSE_R`의 명시적 무이미지 결정과 NPC payload 포함도 apply-ready 검사를 통과했다.
+- `PECHORIN`, `RODION`, `BAZAROV`, `GERASIMOV`, `WHITE_ROSE_R`, `RUBIN_BABUSHKA` spec은 `parseFrontmatter → npcFrontmatterSchema → toDbNpc → npcDocSchema` 계약을 통과했다. `BAZAROV`는 사용자 승인 승급값 `M`으로 정정했고, 신규 세 NPC는 외부 소속, 직렬화 후 `agentLevel` field absence, `isPublic: true`가 확인됐으며 R은 `CIVIL / WHITE_ROSE`, 빈 `previewImage`로 검증됐다.
+- 보고서·wiki mirror의 15개 이미지 path/order/alt/caption parity, 33개 visual ledger, main NPC ledger, payload 대상 전용 apply-ready ledger, personality ready ledger와 관찰 6개의 일치를 `check_lore_output.py`로 검증했다. `BAZAROV`의 `H → M` ledger/payload 일치, 외부 신규 세 NPC의 `agentLevel` assignment 부재, `WHITE_ROSE_R`의 명시적 무이미지 결정과 NPC payload 포함이 apply-ready 검사를 통과했다.
 - repository 전체 coverage/static payload/category/link/asset 감사가 통과했고 coverage·NPC 적용 명세는 `docs/lore/README.md` 인덱스에 포함됐다. public payload 문자열의 내부 경로·parser·payload·raw page/line·candidate-only·경제 no-op 표현 검사도 통과했다.
+- 2026-08-07 live read-only 등급 preflight에서 `BAZAROV`의 현재 role이 `섹터 C 연구원장 → 섹터 C 감독관`, `agentLevel`이 `H`임을 확인했고, `nosb-s1e5-evil-part2-bazarov-level-repair.json`의 `H → M` 단일 등급 변경이 1건 `예상 update`로 판정됐다.
 - live 연결 read-only seed dry-run에서 여섯 파일 46개 계획을 검증했다. sync 10건은 `session_reports` 신규 1건, `wiki_pages` 공개 신규 4건·기존 5건이었고, 생성 전용 Dossier 3건은 `GERASIMOV`, `RUBIN_BABUSHKA`, `WHITE_ROSE_R` 예상 insert, 기존 Dossier 21건과 personality observation 6건은 모두 예상 update였다.
 - 관계 파일은 현재 `GERASIMOV`, `WHITE_ROSE_R`이 없으므로 두 대상 `예상 missing`, `RODION`·`OTILIA`·`INDEXER`는 예상 update로 확인됐다. 신규 Dossier 생성·재조회 뒤 다섯 대상이 모두 update 또는 unchanged인 live 연결 dry-run을 통과해야 관계 트랜잭션을 실행한다.
 - live preflight 재조회에서 2부 report·신규 wiki 4건·신규 NPC 3건은 아직 없고, 1부 report와 mirror에는 당시 기록인 `이름이 확인되지 않은 러시아 장군` 문구가 남아 있음을 확인했다. follow-up은 문자열 치환 없이 2부 report의 구조화 배열만 합집합으로 보강하며, 신규 target 생성·재조회 뒤 live 연결 dry-run을 통과해야 실행할 수 있다.

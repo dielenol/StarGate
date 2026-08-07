@@ -14,14 +14,14 @@ weight: 미상
 factionCode: NOVUS_ORDO
 institutionCode: MANUS
 department: SECTOR_C
-agentLevel: H
+agentLevel: M
 isPublic: true
 loreTags: [섹터C, 수석연구원, 비상대응, 다층차원관측실, 연구원장, 감독관, 차원균열, 발레리아아젠트, богослов]
 appearsInEvents: [NOSB-S1E5-EVIL-PART1, NOSB-S1E5-EVIL-PART2]
 source: manual
 previewImage: /assets/npcs/Bazarov-profile.webp
 createdAt: 2026-06-28T00:00:00.000Z
-updatedAt: 2026-08-06T00:00:00.000Z
+updatedAt: 2026-08-07T00:00:00.000Z
 ---
 
 ## 대사

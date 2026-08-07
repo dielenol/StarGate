@@ -1,0 +1,21 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "BAZAROV",
+      "role": "섹터 C 연구원장 → 섹터 C 감독관",
+      "agentLevel": "H"
+    },
+    "postcondition": {
+      "codename": "BAZAROV",
+      "role": "섹터 C 연구원장 → 섹터 C 감독관",
+      "agentLevel": "M"
+    },
+    "update": {
+      "$set": {
+        "agentLevel": "M"
+      }
+    }
+  }
+]
