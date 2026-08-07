@@ -8,7 +8,7 @@ source: stargate-lore
 
 # NOSB-MINI-ROMANTID 동기화 커버리지
 
-이 문서는 사용자 제공 보존본을 근거로 `MINI05: 로맨티드`의 보고서·위키·Dossier·카탈로그·시각 자료 반영 범위를 추적하는 내부 감사 기록이다. 책 내부의 인격과 대응체는 관측된 현상으로 보존하되, 독립 실재 인물이나 조직으로 확정하지 않는다.
+이 문서는 사용자 제공 보존본을 근거로 `MINI05: 로맨티드`의 보고서·위키·Dossier·세력·카탈로그·시각 자료 반영 범위를 추적하는 내부 감사 기록이다. 미니세션은 정사에 포함하고 `언더 더 브릿지`는 실재 조직으로 등록한다. 책 내부의 대응체는 관측 현상으로 보존하되 각각을 독립 실재 인물이나 조직의 정식 구성원으로 확정하지 않는다.
 
 ## Session Coverage Identity
 
@@ -48,7 +48,7 @@ source: stargate-lore
 1. 해쉬 테거는 모교 다름슈타트 공과대학에서 줄루 특강을 마친 뒤, 누구도 완독하지 못했다는 제목 없는 고서 `810번 도서`를 읽었다.
 2. 해쉬가 소지하던 열쇠 모양의 줄루를 책갈피처럼 꽂자 해쉬가 소실됐고, 도서관에는 약 6.5피트 규모의 펼쳐진 책과 회전하는 입구가 나타났다.
 3. Mr. 오드는 가용 인원을 독일로 긴급 차출해 해쉬의 신변 확보를 지시했다. 현장팀은 거대 도서의 입구를 통해 보랏빛의 노부스 오르도 유사 시설로 진입했다.
-4. 해쉬와 닮은 `컨텐처`는 그곳을 `언더 더 브릿지`라고 소개하며, 노부스 오르도와 비밀 협약을 맺은 음지 조직이라는 주장과 전입 또는 기억 소거 선택지를 제시했다. 이 조직 설명은 컨텐처의 증언이며 독립 실재는 확인되지 않았다.
+4. 해쉬와 닮은 `컨텐처`는 그곳을 `언더 더 브릿지`라고 소개하며, 노부스 오르도와 비밀 협약을 맺은 음지 조직이라는 설명과 전입 또는 기억 소거 선택지를 제시했다. 사용자 정사 판정에 따라 조직의 실재는 확정하며, 협약의 체결 주체·범위와 현실 거점은 미확인으로 남긴다.
 5. 실버레이스, 엔시스, 오케아노스, 라이언, 현회, 고정형, 지핵권의 침식자, 포모르는 각각 현장 인원의 모습을 비튼 대응체로 관측됐다. 이들은 도서 내부 인격/현상으로 분류하며 신규 Dossier로 만들지 않는다.
 6. 현장팀은 줄루 우월주의, 인간 식용·학대, 강제 전입을 거부했다. 컨텐처는 자신이 밖으로 나가겠다고 선언하고 `테이블 오프 컨텐처`, `지은이`라고 재소개했다.
 7. 전투 중 컨텐처의 주사기총은 부상자를 회복시켰지만 완전히 건강한 대응체에게 과치료를 일으켰다. 실버레이스가 남긴 넥타이핀은 회복을 피해로 뒤집었고, 마리아와 크로노스는 이를 이용해 컨텐처를 공격했다.
@@ -67,14 +67,14 @@ source: stargate-lore
 | 보고서 번호·지도 카드 | 사용자 지정 미니세션, 기존 MINI04 다음 순서, 다름슈타트 작전지 | `lib/format/session-report.ts`, report map | `MINI05` preset·제목 fallback·근접 유럽 표적 카드 배치 추가 | ready-for-draft |
 | 810번 도서 | 도서관 괴담, 거대 입구 발현, 현실 귀환 뒤 잔존 | `wiki_pages.book-810`, `master_items.book-810` | 비공개 물품 wiki와 비판매 `SPECIAL` 카탈로그 등록 | ready-for-draft |
 | 열쇠형 책갈피 | 해쉬 소지 열쇠형 줄루, 도서 입구·탈출 핵 작동, 현실 회수 | `master_items.key-shaped-bookmark`, 810번 도서 wiki | 비공개 비판매 `SPECIAL` 카탈로그 및 도서 문서의 구성 물품으로 등록 | ready-for-draft |
-| 언더 더 브릿지 | 컨텐처의 조직 주장과 도서 내부 관측 | report, 810번 도서 wiki | 조직 실재는 `증언/검토필요`, 내부 공간과 대응체 관측만 확인 사실로 기록 | ready-for-draft |
-| 컨텐처와 대응체 | 장면·대화에서 관측, 현실 잔존 미확인 | report, 810번 도서 wiki | 도서 내부 인격/현상으로 병합하고 신규 Dossier·세력·기관 생성은 생략 | ready-for-draft |
+| 언더 더 브릿지 | MINI05 보존 기록과 사용자 정사 판정 | `factions.UNDER_THE_BRIDGE`, `wiki_pages.under-the-bridge`, report, 810번 도서 wiki | 비공개 외부 세력과 전용 위키를 생성하고 보고서·도서 문서에서 구조화 링크 | ready-for-apply |
+| 컨텐처와 대응체 | 장면·대화에서 관측, 현실 잔존 미확인 | report, 810번 도서 wiki, 언더 더 브릿지 wiki | 도서 내부 인격/현상으로 병합하고 신규 Dossier·기관은 생성하지 않음 | ready-for-draft |
 | 해쉬와 오틸리아 | 기억 장벽과 최종 대화 | 양측 Dossier relation, personality observations | 사랑·상실 약속·자기혐오 직시를 세션 근거와 함께 누적 | ready-for-draft |
 | 해쉬와 마가렛 | 프로젝트 데드핸즈 메리골드 기억 | `INDEXER` Dossier relation/observation, report | 초기 수단화 반성과 개인으로서의 애착을 해쉬 측 관계로 누적 | ready-for-draft |
 | 현장 참가자 | briefing과 전체 화자 집합 | 12개 기존 Dossier | `appearsInEvents`, `sessionAppearances`, 세션 태그를 멱등 추가 | ready-for-draft |
 | 한스·마르타 테거 | 해쉬의 어린 시절 기억 | report prose | 부모 이름과 기억 장면만 보존; 현재 신원·초상·공개 분류가 없어 Dossier 미생성 | candidate-only |
 | 필립과 다름슈타트 교수 | 강연 종료 전 대화 | report prose | 강연 맥락만 보존; 필립의 성·교수 신원이 없어 Dossier 미생성 | candidate-only |
-| 크로노스의 소다 사용 2회 | 시스템 사용 기록 2건 | inventory side-effect plan | `TIME`의 `soda` 2개 차감 후보로만 기록; exact live 승인 전 미적용 | approval-only |
+| 크로노스의 소다 사용 2회 | 시스템 사용 기록 2건과 사용자 차감 승인 | inventory side-effect plan | live 재조회 68개 → 2개 차감 후 66개; 실제 mutation 직전 별도 확인 대기 | approved-for-apply |
 | 주식 영향 | 상장사·시장 공개 사건 없음 | stock pass | 비밀 작전과 개인 관계 사건이므로 `no-action` | reviewed |
 
 ## Dossier Event Link Pass
@@ -134,13 +134,15 @@ source: stargate-lore
 
 ## Visual Asset Ledger
 
-선정된 8개 장면은 원본 VTT 프레임을 비율 변경 없이 WebP로 변환해 report와 mirror에 같은 순서로 사용한다. 다른 장면 프레임은 반복 배경·전환 화면·서사 중복으로 제외하며, 대화 아바타는 VTT UI용 크롭이므로 정식 초상으로 전용하지 않는다.
+선정된 8개 장면은 원본 VTT 프레임을 비율 변경 없이 WebP로 변환해 report와 mirror에 같은 순서로 사용한다. 사용자 지정에 따라 도서 입구 장면은 810번 도서 전용 위키 대표 이미지로도 사용한다. 카탈로그 2건은 `stargate-images` 물품 아이콘 워크플로로 별도 생성하고 `local-cutout`으로 투명 배경 QA를 통과한 자산을 사용한다. 다른 장면 프레임은 반복 배경·전환 화면·서사 중복으로 제외하며, 대화 아바타는 VTT UI용 크롭이므로 정식 초상으로 전용하지 않는다.
 
 | asset | source | source dimensions | source-frame crop | source role | report | report wiki mirror | dedicated wiki | catalog | Dossier/personnel | decision/evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
 | `source-frame:p002-i01-23a7adcd6f` | p.2 frame 1 | 1035×503 | yes — VTT 장면 프레임 | report-cutscene | excluded: 개막 로고 UI | excluded: 개막 로고 UI | not-applicable | not-applicable | excluded: 정식 초상 아님 | 사건 장면이 아닌 VTT 로고 |
 | `source-frame:p002-i02-27be4cc8ad` | p.2 frame 2 | 1035×503 | yes — VTT 장면 프레임 | report-cutscene | excluded: 강연장 보조 배경 | excluded: 강연장 보조 배경 | not-applicable | not-applicable | excluded: 정식 초상 아님 | 진입 사건보다 서사 우선도가 낮음 |
-| `/assets/session-reports/romantid/darmstadt-book-portal.webp` | p.8 frame 5 | 1035×503 | yes — VTT 장면 프레임 | report-cutscene | included | included | candidate-only | excluded: 물품 단독 이미지 아님 | excluded: 정식 초상 아님 | 거대 810번 도서와 입구가 함께 확인되는 핵심 진입 컷 |
+| `/assets/session-reports/romantid/darmstadt-book-portal.webp` | p.8 frame 5 | 1035×503 | yes — VTT 장면 프레임 | report-cutscene + entity-archive | included | included | included: `book-810` 사용자 지정 대표 이미지 | excluded: 전용 물품 아이콘과 역할 분리 | excluded: 정식 초상 아님 | 거대 810번 도서와 입구가 함께 확인되는 핵심 진입 컷 |
+| `/assets/catalog/special/book-810.webp` | `stargate-images` 생성 후 `local-cutout` | 1254×1254 | no | catalog-sample | excluded: 카탈로그 전용 물품 아이콘 | excluded: 카탈로그 전용 물품 아이콘 | excluded: 위키 대표 장면과 역할 분리 | included: `book-810` | not-applicable | 열린 고서와 페이지 내부의 보랏빛 관문을 단일 물품 아이콘으로 제작; 투명 배경·프린지 QA 통과 |
+| `/assets/catalog/special/key-shaped-bookmark.webp` | `stargate-images` 생성 후 `local-cutout` | 1254×1254 | no | catalog-sample | excluded: 카탈로그 전용 물품 아이콘 | excluded: 카탈로그 전용 물품 아이콘 | excluded: 전용 위키 미생성 | included: `key-shaped-bookmark` | not-applicable | 열쇠형 줄루를 단일 물품 아이콘으로 제작; 내부 구멍 투명도·프린지 QA 통과 |
 | `source-frame:p012-i01-0bc96e0928` | p.12 frame 1 | 1035×503 | yes — VTT 장면 프레임 | report-cutscene | excluded: 도서관 보조 전경 | excluded: 도서관 보조 전경 | not-applicable | not-applicable | excluded: 정식 초상 아님 | 선택된 도서 입구 컷과 장소 정보가 중복됨 |
 | `source-frame:p012-i02-e8dac5072d` | p.12 frame 2 | 1035×503 | yes — VTT 장면 프레임 | report-cutscene | excluded: 도서 입구 중복 | excluded: 도서 입구 중복 | excluded: 선택 장면과 중복 | excluded: 물품 단독 이미지 아님 | excluded: 정식 초상 아님 | p.8 선택 컷과 동일 사건의 대체 프레임 |
 | `source-frame:p018-i03-017a3a4ca6` | p.18 frame 3 | 1035×503 | yes — VTT 장면 프레임 | report-cutscene | excluded: 내부 복도 보조 전경 | excluded: 내부 복도 보조 전경 | not-applicable | not-applicable | excluded: 정식 초상 아님 | 환영 장면으로 내부 공간을 대표함 |
@@ -192,14 +194,14 @@ source: stargate-lore
 
 | target | classification | durable action | live/economy side effect | status |
 |---|---|---|---|---|
-| `book-810` | `SPECIAL`, 비판매, 비공개 | spec·master_items payload와 `book-810` wiki 연결 | 인벤토리 지급 없음; 마리아의 현장 회수는 소유권 확정이 아님 | ready-for-draft |
-| `key-shaped-bookmark` | `SPECIAL`, 비판매, 비공개 | spec·master_items payload와 `book-810` wiki 연결 | 인벤토리 지급 없음; 최종 보관 위치 미확인 | ready-for-draft |
-| `TIME`의 `soda` | 기존 consumable 사용 기록 | 보고서에 전술 사용만 기록 | `character_inventory` 2개 차감은 exact 대상·수량 승인 전 금지 | approval-only |
+| `book-810` | `SPECIAL`, 비판매, 비공개 | spec·master_items payload·전용 아이콘과 `book-810` wiki 대표 장면 연결 | 인벤토리 지급 없음; 마리아의 현장 회수는 소유권 확정이 아님 | ready-for-apply |
+| `key-shaped-bookmark` | `SPECIAL`, 비판매, 비공개 | spec·master_items payload·전용 아이콘과 `book-810` wiki 연결 | 인벤토리 지급 없음; 최종 보관 위치 미확인 | ready-for-apply |
+| `TIME`의 `soda` | 기존 consumable 사용 기록 | 보고서에는 세션 사용 사실만 기록 | live 재조회 68개 → 2개 차감 후 66개; 실제 mutation 직전 별도 확인 대기 | approved-for-apply |
 | stocks | 관련 상장사 없음 | 별도 문서·event 없음 | 가격·history·wire 변경 대상 없음 | no-action |
 
 ## Access Control Decision
 
-- 원본 분류는 `TIER-3 · EYES ONLY`이며 operation-report wiki mirror, 810번 도서 wiki, 카탈로그 2건은 `isPublic: false`로 준비했다.
+- 원본 분류는 `TIER-3 · EYES ONLY`이며 operation-report wiki mirror, 언더 더 브릿지 faction/wiki, 810번 도서 wiki, 카탈로그 2건은 `isPublic: false`로 준비했다.
 - 사용자 결정에 따라 live publication 전 보고서는 `minRole: V`로 준비한다. 미설정 legacy 보고서는 기존 계약대로 `U`로 해석한다.
 - 서버 목록·직접 상세·GET API·통합 검색의 index live-check/fallback·wiki/catalog 역링크·Dossier 이벤트 링크가 동일한 역할 필터를 사용한다. 권한 미달 직접 상세/API는 존재를 숨기는 `404` 계약이다.
 - `V` 제한 보고서는 V 이상이 볼 수 있는 비공개 wiki/catalog 구조화 참조를 유지할 수 있다. 비공개 personnel은 GM 제한 보고서에서만 참조 가능하다.
@@ -209,11 +211,12 @@ source: stargate-lore
 ## Graph And Verification Plan
 
 - report ↔ operation-report wiki mirror: `NOSB-MINI-ROMANTID`와 `mini05-romantid`, 동일한 8개 이미지 tuple.
-- report/wiki ↔ dedicated wiki: `[[wiki:book-810|810번 도서]]`.
+- report/wiki ↔ dedicated wiki: `[[wiki:under-the-bridge|언더 더 브릿지]]`, `[[wiki:book-810|810번 도서]]`.
+- faction ↔ wiki/report: `factions.UNDER_THE_BRIDGE`는 `NOVUS_ORDO` 관계를 보존하고, 전용 wiki에서 MINI05 보고서와 810번 도서를 양방향 연결한다.
 - report/wiki ↔ catalog: `[[catalog:book-810|810번 도서]]`, `[[catalog:key-shaped-bookmark|열쇠형 책갈피]]`.
 - report/wiki ↔ personnel: 12개 `relatedPersonnelCodenames`와 각 Dossier `appearsInEvents`.
 - personnel → report: `lore.appearsInEvents = NOSB-MINI-ROMANTID`와 세션 appearance.
 - 관계: `INDEXER ↔ OTILIA`, `INDEXER → MARGARET`를 세션 근거와 함께 누적.
 - 정적 검사: coverage/static payload audit, NPC/personality/visual ready checks, report-mirror visual parity, schema adapter 검증.
-- 런타임 검사: reference target 3건과 Dossier/관계/성격 22건은 seed runner read-only dry-run을 통과했다. report/mirror 2건은 reference target 미적용 때문에 대기한다.
-- live 순서: reference target 적용·재조회 → report/mirror dry-run → exact publication audience와 연결 target 가시성 재확인 → 승인된 report/mirror 적용·재조회 → Dossier/관계/성격 적용·재조회 → ERP graph/link/image consumer 확인.
+- 런타임 검사: reference target 5건은 seed runner read-only dry-run에서 모두 insert 계획을 통과했다. report/mirror 2건은 live reference target 미적용 때문에 보고서가 구조화 링크 4건(`under-the-bridge`, `book-810`, 카탈로그 2건)에서 차단되고 mirror만 insert 계획이 산출되는 예상 순서를 확인했다. Dossier/NPC·성격 ready checker와 전체 coverage/static/visual parity checker는 모두 통과했다.
+- live 순서: reference target 적용·재조회 → report/mirror dry-run → exact publication audience와 연결 target 가시성 재확인 → 승인된 report/mirror 적용·재조회 → Dossier/관계/성격 적용·재조회 → ERP graph/link/image consumer 확인. 이번 단계에서는 TIME 소다 차감 외 lore live write를 수행하지 않는다.
